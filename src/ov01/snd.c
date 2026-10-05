@@ -504,7 +504,66 @@ void dataSndSeRegLoad2(ObjectTask *unit)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", sndSeTrans);
+extern int sndConvRegNo(int id);
+extern int xglSoundSendSed(void *sed, int bank);
+extern void SsdCheckSpuMemory(int mode);
+extern const char D_00A4E728[];
+extern const char D_00A4E740[];
+extern const char D_00A4E768[];
+extern const char D_00A4E788[];
+extern const char D_00A4E7B0[];
+extern const char D_00A4E7C8[];
+
+int sndSeTrans(int seId, int volume)
+{
+    short charaId;
+    SndSeRegBank *bank;
+    int *sed;
+    int *swd;
+    int b;
+    int r1;
+    int r2;
+
+    if (volume == 0) {
+        return 0;
+    }
+    charaId = calcUPGet((ObjectTask *)seId)->charaId;
+    if (sndSeRegChk((ObjectTask *)seId, volume) != 0) {
+        bank = &sndSeRegAdrGet(charaId)->bank[sndConvRegNo(volume)];
+    } else {
+        bank = (SndSeRegBank *)(sndSeDat + 4);
+    }
+    if (bank->work.seType != 0) {
+        b = sndBankGet(seId, volume);
+        if (volume == 2 && dmgBankOffs[b] != 0) {
+            printf(D_00A4E728);
+            return 0;
+        }
+        sed = *(int **)&bank->unmodeled_0c[0];
+        if (sed[0] != 0x73646573) {
+            printf(D_00A4E740, sed[0], sed);
+            return 0;
+        }
+        if (sed[2] > 0x10000) {
+            printf(D_00A4E768, sed[2]);
+            return 0;
+        }
+        swd = *(int **)&bank->unmodeled_0c[4];
+        if (swd[0] != 0x6D647773) {
+            printf(D_00A4E788, swd[0], swd);
+            return 0;
+        }
+        r1 = xglSoundSendSed(sed, b);
+        r2 = xglSoundSendSwd(*(int **)&bank->unmodeled_0c[4], b);
+        printf(D_00A4E7B0, r1, r2);
+        if (r1 < 0 || r2 < 0) {
+            SsdCheckSpuMemory(1);
+        }
+        return 1;
+    }
+    printf(D_00A4E7C8, charaId, volume);
+    return 0;
+}
 
 extern void xglSoundEffectNormalID(int sound_id, int variant);
 
