@@ -1025,7 +1025,34 @@ int calcPlusAglGet(ObjectTask *unit, int id)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmg);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", futtobiChk);
+int futtobiChk(ObjectTask *unit, unsigned short *tec)
+{
+    ObjectTask **table;
+    int count;
+    int i;
+    int lv;
+
+    if ((tec[1] & 0x100) == 0) {
+        return 0;
+    }
+    if ((*(unsigned *)unit->work & 0x40)
+        || (calcUPGet(unit)->flags & 0x40)
+        || (calcUPGet(unit)->charaId >= 0xBB && calcUPGet(unit)->charaId < 0xC3)) {
+        return 0;
+    }
+    lv = *(short *)calcUPGet(unit)->unmodeled_44;
+    if (lv >= 4) {
+        return 0;
+    }
+    count = unitTblGet(0, &table);
+    lv += 3;
+    for (i = 0; i < count; i++) {
+        if (table[i] != 0 && *(short *)calcUPGet(table[i])->unmodeled_44 == lv) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStat);
 
