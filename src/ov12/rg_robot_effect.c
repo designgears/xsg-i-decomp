@@ -44,7 +44,29 @@ static void _InitRobEff(RgRobotEffect *effect);
 static void _ClearEffect(RgRobotEffectItem *item);
 extern void RgRobotEffectTermJet(RgRobotEffect *effect);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot_effect", _InitJetDefault);
+extern void InitRgParticleEffectEssence(void *essence);
+typedef struct { long long a; unsigned short b; } JetTexName;
+extern JetTexName D_00A52358;
+
+static int _InitJetDefault(void *essence)
+{
+    char *buffer = essence;
+    InitRgParticleEffectEssence(buffer);
+    ((JetTexName *)buffer)->a = D_00A52358.a;
+    ((JetTexName *)buffer)->b = D_00A52358.b;
+    *(int *)(buffer + 0x40) = 0x20;
+    *(float *)(buffer + 0x70) = 5.0f;
+    *(float *)(buffer + 0x50) = 0.26f;
+    *(float *)(buffer + 0x54) = 1.0f;
+    *(float *)(buffer + 0x60) = -0.1f;
+    *(float *)(buffer + 0x64) = -1.0f;
+    *(float *)(buffer + 0x74) = 91.3f;
+    *(float *)(buffer + 0x98) = 2.0f;
+    *(float *)(buffer + 0x94) = 2.0f;
+    *(float *)(buffer + 0x90) = 0.55850536f;
+    *(int *)(buffer + 0x9C) = 1;
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot_effect", _InitDashDefault);
 
