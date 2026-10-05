@@ -178,7 +178,40 @@ static void swapf(float *left, float *right)
     *right = value;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_pillar", CheckIntersect_00A2E8A8);
+static int CheckIntersect(const RgVector from, const RgVector to, float *lower, float *upper)
+{
+    float a;
+    float b;
+    int neg;
+
+    a = (upper[0] - lower[0]) * (to[2] - from[2]);
+    b = (to[0] - from[0]) * (upper[2] - lower[2]);
+    if (a == b) {
+        return 0;
+    }
+    a = a - b;
+    if (a < 0.0f) {
+        neg = 1;
+        a = -a;
+    } else {
+        neg = 0;
+    }
+    b = (lower[2] - from[2]) * (to[0] - from[0]) - (lower[0] - from[0]) * (to[2] - from[2]);
+    if (neg) {
+        b = -b;
+    }
+    if (b < 0.0f || a < b) {
+        return 0;
+    }
+    b = (lower[2] - from[2]) * (upper[0] - lower[0]) - (lower[0] - from[0]) * (upper[2] - lower[2]);
+    if (neg) {
+        b = -b;
+    }
+    if (b < 0.0f || a < b) {
+        return 0;
+    }
+    return 1;
+}
 
 static int GetIntersectionPointLineX(float *intersection, const float *line_start,
                                      const float *line_end, float x)
