@@ -341,7 +341,44 @@ void Java_xeno_Unit_move__Lxeno_util_Spline_IZ(JThread *thread, UnitMoveSplCall 
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ);
+extern int SEQ_rotateUnitSPL();
+
+void Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ(JThread *thread, UnitMoveSplCall *arguments,
+                                                  u32 *failure_result)
+{
+    JavaField *peer_field;
+    u8 *object;
+    UnitPeer *peer;
+    UnitSequenceEntry *entry;
+    u8 *spline;
+    u8 *sargs;
+    int nf;
+    int wait;
+
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Unit,
+                                  loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + peer_field->offset);
+    entry = &unitSequence[peer->serial];
+    sargs = (u8 *)entry + 0xb8;
+    entry->state |= 0xE;
+    lookupClassField(classJava_xeno_Unit, loadConstString(D_004D16F8, -1), 0);
+    spline = arguments->spline;
+    wait = arguments->wait;
+    nf = arguments->pad;
+    *(u16 *)(sargs + 8) = nf;
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotateUnitSPL;
+    *(u8 **)sargs = spline;
+    *(u16 *)(sargs + 6) = *(u16 *)(spline + 8);
+    if (wait == 1) {
+        *(u32 *)peer |= 2;
+        unit_move_wait((UnitMoveThread *)thread, peer);
+    }
+}
 
 /*
  * The Object-argument overloads of move are empty natives: they take the
