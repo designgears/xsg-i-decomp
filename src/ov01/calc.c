@@ -978,7 +978,22 @@ int calcPowLevGet(ObjectTask *unit, int id)
     return pow;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPlusAglGet);
+int calcPlusAglGet(ObjectTask *unit, int id)
+{
+    int agl;
+    short *spec;
+
+    agl = ((signed char *)dataTecGet(id))[7];
+    if (((signed char *)dataTecGet(id))[0x11] == 2 && (*(unsigned *)unit->work & 0x40) == 0
+        && (calcUPGet(unit)->flags & 0x40) == 0
+        && (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+        spec = dataSpecDataGet(calcUPGet(unit)->charaId, id);
+        if (spec != 0) {
+            agl += spec[3];
+        }
+    }
+    return agl;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmg);
 
