@@ -820,7 +820,41 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStat);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatAtk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatClr);
+typedef struct CalcStatClrArg {
+    int tecId;
+    ObjectTask *unit;
+} CalcStatClrArg;
+typedef struct CalcStatClrOut {
+    int pad[5];
+    int category;
+    int mask;
+} CalcStatClrOut;
+
+int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out)
+{
+    unsigned char *tec;
+    int cat;
+    int val;
+
+    tec = (unsigned char *)dataTecGet(arg->tecId);
+    if ((signed char)tec[4] == 4) {
+        if (calcBattleChk(arg->unit) == 0) {
+            ((CalcActorRecord *)arg->unit->work)->flags &= ~0x10;
+        }
+        cat = (signed char)tec[0xC];
+        if (cat == 8) {
+            out->category = cat;
+            out->mask = 0xFFFF;
+        } else {
+            out->category = cat;
+            out->mask = *(unsigned short *)(tec + 0xE);
+        }
+        return 1;
+    }
+    out->mask = 0;
+    out->category = 8;
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCrit);
 
