@@ -6,7 +6,44 @@
 #include "main/xgl_2.h"
 #include "umn_procurator.h"
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnManzaiControl);
+extern PadPrefix PadData;
+extern int eMessageNextPage(void *message, int arg);
+extern void xglSoundEffectNormalID(int sound_id, int variant);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern char D_00A12060[];
+
+int UmnManzaiControl(void)
+{
+    unsigned int flag;
+    unsigned int half;
+    short *next;
+
+    if (!(UmnManzaiFlag & 0x40)) {
+        if ((UmnManzaiFlag & 0x30) == 0x30) {
+            flag = UmnManzaiFlag;
+            half = flag & ~1;
+            UmnManzaiFlag = half & ~8;
+            if ((flag & 0x206) == 0)
+            if (PadData.half_2a == 0x20) {
+                UmnManzaiFlag |= 1;
+                if (eMessageNextPage(UmnWork + 0x7C + *UmnManzaiText * 0xA4, 0) == 0) {
+                    next = UmnEventTextNextGet(1);
+                    xglSoundEffectNormalID(1, 0);
+                    if (next == 0) {
+                        UmnManzaiFlag |= 0x40;
+                    } else {
+                        UmnManzaiText = next;
+                        UmnManzaiFlag |= 8;
+                    }
+                }
+            }
+        }
+    } else if (!(UmnManzaiFlag & 0x30)) {
+        return 0;
+    }
+    xglFontDebugPrintf(0x80, 0x40, D_00A12060, UmnManzaiFlag);
+    return 1;
+}
 
 int UmnManzaiInit(void)
 {
