@@ -132,7 +132,80 @@ char *dataSndStEdNameGet(char *name, ObjectTask *unit, int type)
     return name;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndSeNameGet);
+typedef struct {
+    unsigned char unmodeled_00[0x11]; /* +0x00 */
+    signed char category;             /* +0x11 */
+    unsigned char unmodeled_12[4];    /* +0x12 */
+    short spid;                       /* +0x16 */
+} TecData;
+
+extern TecData *dataTecGet(int tecId);
+
+extern char *strcpy(char *destination, const char *source);
+extern char *strcat(char *destination, const char *source);
+extern char *strlwr(char *s);
+extern char *sefGetEffectName(int effectNo);
+extern unsigned char *dataWpnGet(int index);
+extern char *D_00A424EC[];
+extern char *plChaMidSeName[];
+extern char *plAgwsMidSeName[];
+extern char *enemyMidSeName[];
+
+int dataSndSeNameGet(char *name, ObjectTask *unit, int seType)
+{
+    short charaId;
+    char *base;
+    short id;
+    short wpn;
+
+    charaId = calcUPGet(unit)->charaId;
+    *name = 0;
+    if (seType < 0x1A) {
+        if (!(*(unsigned int *)unit->work & 0x40) && !(calcUPGet(unit)->flags & 0x40)
+            && (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+            if ((unsigned int)(seType - 0x18) < 2) {
+                dataSndStEdNameGet(name, unit, seType);
+            } else {
+                base = D_00A424EC[charaId];
+                if (base != 0) {
+                    strcpy(name, base);
+                    strcat(name, plChaMidSeName[seType]);
+                }
+            }
+        } else if (calcUPGet(unit)->flags & 0x40) {
+            base = D_00A424EC[charaId];
+            if (base != 0) {
+                if (seType < 3) {
+                    strcpy(name, base);
+                    strcat(name, plAgwsMidSeName[seType]);
+                } else {
+                    wpn = calcUPGet(unit)->sefSetupParams[seType - 3];
+                    if (wpn != 0) {
+                        strcpy(name, sefGetEffectName(dataTecGet(*(short *)(dataWpnGet(wpn) + 0x14))->spid));
+                    }
+                }
+            }
+        } else {
+            base = D_00A424EC[charaId];
+            if (base != 0) {
+                if (seType < 3) {
+                    strcpy(name, base);
+                    strcat(name, enemyMidSeName[seType]);
+                } else {
+                    id = ((short *)((char *)calcUPGet(unit) + 0x70))[seType];
+                    if (id != 0) {
+                        strcpy(name, base);
+                        strcpy(name, sefGetEffectName(dataTecGet(id)->spid));
+                    }
+                }
+            }
+        }
+    } else {
+        strcpy(name, sefGetEffectName(seType - 0x1A));
+    }
+    strlwr(name);
+    return (int)name;
+}
 
 void *sndSeAdrGet(void)
 {
@@ -493,16 +566,9 @@ int sndConvRegNo(int id)
 INCLUDE_ASM("asm/nonmatchings/ov01/snd", sndBankGet);
 
 typedef struct {
-    unsigned char unmodeled_00[0x11]; /* +0x00 */
-    signed char category;             /* +0x11 */
-    unsigned char unmodeled_12[4];    /* +0x12 */
-    short spid;                       /* +0x16 */
-} TecData;
-typedef struct {
     unsigned char unmodeled_00[0x10]; /* +0x00 */
     short spid;                       /* +0x10 */
 } ItmData;
-extern TecData *dataTecGet(int tecId);
 extern ItmData *dataItmGet(int itmId);
 extern int dataSpecBaseGet(int charaId);
 extern int dataBakpBaseGet(int charaId);
