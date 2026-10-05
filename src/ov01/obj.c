@@ -210,7 +210,47 @@ void objStdInit(ObjectTask *task)
     objCmdClear(task);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/obj", objStdMove);
+int objStdMove(ObjectTask *task)
+{
+    typedef struct {
+        Vector4 pos;
+        unsigned char unmodeled_10[0x30];
+        Vector4 velocity;
+        Vector4 accel;
+        Vector4 target;
+        unsigned char unmodeled_70[0x10];
+    } MoveTransform;
+    MoveTransform *t;
+    int count;
+
+    t = (MoveTransform *)&((ObjectWork *)task->work)->transform;
+    count = 0;
+
+#define AXIS(c)                                               \
+    {                                                         \
+    float v, p, g, d, m;                                      \
+    v = t->velocity.c + t->accel.c;                           \
+    p = t->pos.c + v;                                         \
+    g = t->target.c;                                          \
+    t->velocity.c = v;                                        \
+    t->pos.c = p;                                             \
+    if (p == g) {                                             \
+        count++;                                              \
+    } else if ((0.0f < v && g < p)                            \
+               || (v < 0.0f && p < g)                         \
+               || ((d = g - p) < 0.0f ? (m = -d) : d) <= 1e-06f) {  \
+        t->pos.c = g;                                         \
+        count++;                                              \
+    }                                                         \
+    }
+
+    AXIS(x)
+    AXIS(y)
+    AXIS(z)
+#undef AXIS
+
+    return count == 3;
+}
 
 /*
  * Aim an object at its target: give each axis the velocity that closes the
