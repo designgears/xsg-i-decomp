@@ -2729,6 +2729,33 @@
     },
     {
      "range": [
+      "0x00a44570",
+      "0x00a44620"
+     ],
+     "generated": [
+      "0x00a44570",
+      "0x00a44620"
+     ],
+     "generated_by": [
+      "calcStatAtk"
+     ],
+     "c_owned_symbols": [
+      "D_00A44570",
+      "D_00A44588",
+      "D_00A445A8",
+      "D_00A445C8",
+      "D_00A445E8",
+      "D_00A44600"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+     }
+    },
+    {
+     "range": [
       "0x00a447a0",
       "0x00a447b8"
      ],

@@ -1536,7 +1536,95 @@ int calcStat(int unused, CalcStatMainArg *arg, unsigned char *mode, int *val)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatAtk);
+extern int calcStatSetChk(ObjectTask *unit, unsigned int group, int mask, int force);
+typedef struct CalcStatAtkArg {
+    int tecId;
+    ObjectTask *unit;
+    int slot;
+    int kind;
+} CalcStatAtkArg;
+
+int calcStatAtk(ObjectTask *self, CalcStatAtkArg *arg, unsigned char *out)
+{
+    unsigned char *tec;
+    unsigned char *att;
+    unsigned short flags;
+    int rate;
+    int group;
+    unsigned short mask;
+
+    tec = (unsigned char *)dataTecGet(arg->tecId);
+    flags = calcUPGet(arg->unit)->flags;
+    if (*out == 0 || *out == 6) {
+        return 0;
+    }
+    if (((flags & 0x4000) && tec[8] == 1) || ((flags & 0x2000) && tec[9] == 1)
+        || ((flags & 0x1000) && tec[10] == 1)) {
+        printf("** Stat: no effect\n");
+        return 0;
+    }
+    rate = (signed char)tec[0xD];
+    group = (signed char)tec[0xC];
+    mask = *(unsigned short *)(tec + 0xE);
+    if (arg->kind == 1 && arg->slot != -1) {
+        if ((*(unsigned *)self->work & 0x40) == 0
+            && (calcUPGet(self)->flags & 0x40) == 0
+            && (calcUPGet(self)->charaId < 0xBB || calcUPGet(self)->charaId >= 0xC3)) {
+            if (*(unsigned short *)(tec + 2) & 0x4000) {
+                short id = calcUPGet(self)->sefSetupParams[arg->slot];
+                if (!(*(unsigned short *)(tec + 2) & 0x2000)) {
+                    att = dataAttGet(calcUPGet(self)->sefSetupParams[arg->slot + 6]);
+                    if (att != 0) {
+                        rate = (signed char)att[3];
+                        group = (signed char)att[2];
+                        mask = *(unsigned short *)(att + 4);
+                        printf("** calcStatAtk: Att stat\n");
+                    } else {
+                        printf("** calcStatAtk: Att equip err!\n");
+                    }
+                } else {
+                    unsigned char *wtec = (unsigned char *)dataTecGet(*(short *)((char *)dataWpnGet(id) + 0x14));
+                    rate = (signed char)wtec[0xD];
+                    group = (signed char)wtec[0xC];
+                    mask = *(unsigned short *)(wtec + 0xE);
+                    printf("** calcStatAtk: Wpn stat\n");
+                }
+            }
+        } else if (calcAttWpnChk(calcUPGet(self)->sefSetupParams[arg->slot]) != 0) {
+            att = dataAttGet(calcUPGet(self)->sefSetupParams[arg->slot + 6]);
+            if (att != 0) {
+                rate = (signed char)att[3];
+                group = (signed char)att[2];
+                mask = *(unsigned short *)(att + 4);
+                printf("** calcStatAtk: Att stat\n");
+            } else {
+                printf("** calcStatAtk: Att equip err!\n");
+            }
+        }
+    }
+    if (mask == 0) {
+        return 0;
+    }
+    if (calcStatSetChk(arg->unit, group, mask, 0) == 0) {
+        printf("** Stat: Chk NG\n");
+        return 0;
+    }
+    if (calcStatGet(arg->unit, 1, 8) != 0) {
+        rate *= 2;
+        if (rate > 100) {
+            rate = 100;
+        }
+    }
+    if (rnd(99) + 1 <= rate) {
+        *(int *)(out + 0xC) = group;
+        *(int *)(out + 0x10) = mask;
+        printf("** Stat: Atk (%d%%) %d %04X\n", rate, group, mask);
+        return 1;
+    }
+    *(int *)(out + 0x10) = 0;
+    *(int *)(out + 0xC) = 8;
+    return 0;
+}
 
 typedef struct CalcStatClrArg {
     int tecId;
