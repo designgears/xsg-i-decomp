@@ -1137,7 +1137,29 @@ void Java_xeno_Chr_setPointLightCol__IFFF(JThread *thread, ChrPLC *args)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPointLightPos__IFFF);
+typedef struct ChrPLP { u8 *object; ChrU idx; ChrU x, y, z; } ChrPLP;
+typedef struct ChrPP { unsigned flags; u8 pad[0x93c]; struct { float c[4]; } l[3]; unsigned pad2[12]; unsigned f9a0; } ChrPP;
+
+void Java_xeno_Chr_setPointLightPos__IFFF(JThread *thread, ChrPLP *args)
+{
+    JavaField *peer_field;
+    ChrPP *peer;
+    u8 *object;
+
+    lookupClassField(classJava_xeno_Chr,
+                     loadConstString(chr_peer_string, -1), 0);
+    object = args->object;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(ChrPP **)(object + peer_field->offset);
+    if (args->idx.u < 3) {
+        peer->flags |= 0x800;
+        peer->l[args->idx.u].c[0] = args->x.f;
+        peer->l[args->idx.u].c[1] = args->y.f;
+        peer->l[args->idx.u].c[2] = args->z.f;
+        peer->f9a0 |= 0x20;
+    }
+}
 
 void Java_xeno_Chr_setPointLightReset__(JThread *thread, ChrTalkCall *arguments)
 {
