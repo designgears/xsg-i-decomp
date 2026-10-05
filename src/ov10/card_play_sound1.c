@@ -196,7 +196,48 @@ void CardMainItemGetSub(int *prizes, int round)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", CardMainAddItemSub);
+extern int CardAddList(void *o, int idx);
+extern void dataAccBoxInc(int accessory_id);
+
+void CardMainAddItemSub(CardGameWork *work, int *prizes)
+{
+    int i;
+    u16 *dst;
+    u8 *bits;
+
+    i = 0;
+    if (prizes[0] > 0) {
+        do {
+            i++;
+            ((int (*)(int))dataEvtBoxInc)(0x36);
+        } while (i < prizes[0]);
+    }
+    i = 0;
+    if (prizes[1] > 0) {
+        do {
+            i++;
+            ((int (*)(int))dataEvtBoxInc)(0x37);
+        } while (i < prizes[1]);
+    }
+    if (prizes[2] != 0) {
+        if (prizes[2] == 1) {
+            CardAddList(work, 1);
+        } else {
+            CardAddList(work, 8);
+        }
+    }
+    if (prizes[3] != 0) {
+        dataAccBoxInc(0x8E);
+    }
+    dst = (u16 *)work->unmodeled_0010;
+    bits = &work->save->unmodeled_02[2];
+    for (i = 0; i < 150; i++) {
+        int t = bits[i / 4];
+        t = (t >> ((i % 4) * 2)) & 3;
+        *dst = t;
+        dst++;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", NewCMPGameModeExit);
 
