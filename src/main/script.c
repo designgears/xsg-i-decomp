@@ -1185,7 +1185,69 @@ int loadScriptCD2(ScriptDbEntry *entry_, const char *path)
     return ret;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", loadScript);
+extern int sceRead(int fd, void *buf, int n);
+extern int sceLseek(int fd, int off, int whence);
+typedef struct {
+    int a;
+    int b;
+    int size;
+    int len;
+} ScriptFileHeader;
+
+int loadScript(ScriptDbEntry *entry_, const char *base, const char *path)
+{
+    ScriptDbLoadView *entry = (ScriptDbLoadView *)entry_;
+    char buf[256];
+    ScriptFileHeader hdr;
+    int count;
+    int fd;
+    int fd2;
+    int size;
+    int len;
+    int cls;
+
+    DebugMenuResourceSizeAdd = 0;
+    if (base != 0) {
+        strcpy(buf, base);
+        strcat(buf, path);
+        fd = sceOpen(buf, 1);
+        if (fd < 0) {
+            return 0;
+        }
+        sceRead(fd, &hdr, 12);
+        __builtin_memcpy(entry->script, (char *)&hdr, 12);
+        len = hdr.size - 12;
+        if (len != sceRead(fd, (char *)entry->script + 12, len)) {
+            return 0;
+        }
+        sceClose(fd);
+        replacePathExt(buf, D_004DA4B0);
+        fd2 = sceOpen(buf, 1);
+        if (fd2 >= 0) {
+            size = sceLseek(fd2, 0, 2);
+            sceLseek(fd2, 0, 0);
+            sceRead(fd2, entry->fpk, size);
+            sceClose(fd2);
+            ACT_initExMotion(0, 1, entry->fpk);
+            DebugMenuResourceSizeAdd += size;
+        } else {
+            ACT_initExMotion(0, 1, 0);
+        }
+        replacePathExt(buf, D_004DA4B8);
+        fd2 = sceOpen(buf, 1);
+        if (fd2 >= 0) {
+            int size2 = sceLseek(fd2, 0, 2);
+            sceLseek(fd2, 0, 0);
+            sceRead(fd2, entry->arc, size2);
+            sceClose(fd2);
+            DebugMenuResourceSizeAdd += size2;
+        }
+    }
+    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, &count);
+    entry->active = cls;
+    entry->count = count;
+    return cls;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_evtMonitor);
 
