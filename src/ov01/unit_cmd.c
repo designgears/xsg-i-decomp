@@ -1319,7 +1319,25 @@ void unitCmdRec(ObjectTask *unit)
     unitCmdNext(unit);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdWake);
+extern void sndSeTransPlay(int unit, int seId, int volume);
+
+int unitCmdWake(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    unitCmdPtrGet(unit);
+    if (actor->moveState == 0) {
+        unitMotSet(unit, 0x25);
+        sndSeTransPlay((int)unit, 2, 5);
+        actor->moveState++;
+    } else if ((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000) {
+        actor->flags &= ~0x80;
+        unitMotStandSet(unit);
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 void unitCmdStat(ObjectTask *unit)
 {
