@@ -481,7 +481,47 @@ void xglSoundEffectParamID(int soundEffectId, int volume, int pan, int pitch)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundEffectPosID);
+extern void *GameLoopState[];
+extern int F2I(float value);
+extern float atan2f(float y, float x);
+extern float sqrtf(float x);
+
+void xglSoundEffectPosID(int soundEffectId, float *pos, int direct, int pitch)
+{
+    float d[3];
+    float dist;
+    float ang;
+    int pan;
+    int volume;
+
+    d[0] = pos[0] - ((float *)GameLoopState[1])[4];
+    d[1] = pos[1] - ((float *)GameLoopState[1])[5];
+    d[2] = pos[2] - ((float *)GameLoopState[1])[6];
+    dist = __builtin_sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (dist > 6.0f) {
+        xglSoundEffectStopID(soundEffectId, pitch);
+        return;
+    }
+    dist = (dist * dist) / 13.0f;
+    if (dist < 1.0f) {
+        dist = 1.0f;
+    }
+    ang = atan2f(d[0], d[2]);
+    ang += 1.5707964f;
+    while (ang > 3.14159265f) {
+        ang -= 6.2831853f;
+    }
+    if (ang < 0.0f) {
+        ang = -ang;
+    }
+    pan = F2I((ang * 127.0f) / 3.14159265f);
+    volume = 0x319C / F2I(dist * 100.0f);
+    if (direct == 0) {
+        xglSoundEffectParamID(soundEffectId, volume, pan, pitch);
+    } else {
+        xglMakeSePacket(0x7C, ((int)SoundWork.effect_banks[soundEffectId >> 16].handle << 16) + (soundEffectId & 0xFFFF), volume, pan, pitch);
+    }
+}
 
 void SsdStopEffect(int effect_id, int source_id);
 
