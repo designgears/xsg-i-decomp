@@ -268,7 +268,78 @@ void Java_xeno_Unit_move__IFFZ(JThread *thread, void *arguments,
     UNIT_moveXZ(0, thread, arguments, failure_result);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_move__Lxeno_util_Spline_IZ);
+extern int SEQ_moveUnitSPL();
+typedef struct UnitMoveSplCall {
+    u8 *object;
+    u8 *spline;
+    int pad;
+    u8 wait;
+} UnitMoveSplCall;
+typedef struct UnitMoveThread {
+    u8 pad00[0xc];
+    u8 state;
+    u8 next;
+    u8 pad0e[0x24 - 0xe];
+    u32 flags;
+    u8 pad28[0x30 - 0x28];
+    void *wait_object;
+    u8 pad34[0x3c - 0x34];
+    u16 pc;
+    u16 pc2;
+} UnitMoveThread;
+static inline void unit_move_wait(UnitMoveThread *t, void *peer)
+{
+    if (t->state != 5 && !(t->flags & 0x40))
+        return;
+    if (t->flags & 0x40) {
+        t->wait_object = peer;
+        t->next = 6;
+        t->pc = t->pc2;
+        t->flags |= 4;
+    }
+    t->pc = t->pc2;
+    t->flags |= 1;
+}
+
+void Java_xeno_Unit_move__Lxeno_util_Spline_IZ(JThread *thread, UnitMoveSplCall *arguments,
+                                                u32 *failure_result)
+{
+    JavaField *peer_field;
+    u8 *object;
+    UnitPeer *peer;
+    UnitSequenceEntry *entry;
+    u8 *spline;
+    UnitMoveThread *t;
+    u8 *sargs;
+    int nf;
+    u32 flags;
+    int wait;
+    u16 v;
+
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Unit,
+                                  loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + peer_field->offset);
+    entry = &unitSequence[peer->serial];
+    sargs = (u8 *)entry + 0x38;
+    entry->state |= 1;
+    lookupClassField(classJava_xeno_Unit, loadConstString(D_004D16F8, -1), 0);
+    spline = arguments->spline;
+    wait = arguments->wait;
+    nf = arguments->pad;
+    *(u16 *)(sargs + 8) = nf;
+    *(void **)((u8 *)entry + 0x24) = SEQ_moveUnitSPL;
+    *(u8 **)sargs = spline;
+    *(u16 *)(sargs + 6) = *(u16 *)(spline + 8);
+    if (wait == 1) {
+        *(u32 *)peer |= 2;
+        unit_move_wait((UnitMoveThread *)thread, peer);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ);
 
