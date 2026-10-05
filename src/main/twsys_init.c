@@ -200,7 +200,40 @@ void TWSYS_draw(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", PARSE_int);
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", STRING_int);
+extern void *memcpy(void *destination, const void *source, unsigned int count);
+extern unsigned char radixTenUnits[100];
+extern unsigned char radixTenTenths[100];
+
+int STRING_int(char *dst, int val)
+{
+    char buf[12];
+    int j;
+    int i;
+    int neg;
+
+    neg = (unsigned)val >> 31;
+    if (neg) {
+        val = -val;
+    }
+    i = 12;
+    j = 12;
+    do {
+        int r = val % 100;
+        i -= 2;
+        buf[--j] = radixTenUnits[r];
+        buf[--j] = radixTenTenths[r];
+        val /= 100;
+    } while (val != 0);
+    if ((unsigned char)buf[j] == '0') {
+        i++;
+    }
+    if (neg) {
+        i--;
+        buf[i] = '-';
+    }
+    memcpy(dst, buf + i, 12 - i);
+    return (int)dst - i + 12;
+}
 
 void STRING_h2zEUC(char *destination, const char *source)
 {
