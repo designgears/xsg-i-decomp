@@ -22,7 +22,161 @@ static signed char GetLastWord(signed char *text)
 
 INCLUDE_ASM("asm/main/nonmatchings/exm_1", EXM_PresetHair);
 
-INCLUDE_ASM("asm/main/nonmatchings/exm_1", GetHairTypeSelection);
+extern const float D_004D86D4;
+extern const float D_004D86D8;
+extern const float D_004D86DC;
+extern const float D_004D86E0;
+extern int humancol[];
+extern int shelleycol[];
+extern int kosmoscol[];
+extern float skirtColliSize;
+extern float skirtColliSizeB;
+extern float skirtColliSizeS;
+extern float skirtColliFootRad;
+
+static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
+{
+    int ret;
+    signed char *name;
+
+    name = *(signed char **)(obj + 0x80C);
+    ret = 0;
+    *flag = 0;
+    if (name != 0) {
+    switch (*name) {
+    case 'P': {
+        short type = *(short *)(obj + 0x4C2);
+        *col = humancol;
+        skirtColliSize = D_004D86D4;
+        skirtColliSizeB = 1.0f;
+        skirtColliSizeS = 1.0f;
+        skirtColliFootRad = D_004D86D8;
+        switch (type) {
+        case 0x4A:
+            ret = 0x10;
+            *flag = 0x4400;
+            break;
+        case 0x4F:
+            ret = 0x10;
+            *flag = 0xC00;
+            break;
+        case 0x54:
+            goto ret8;
+        case 0x57:
+        case 0x5B:
+            goto ret5;
+        case 0x5F:
+        case 0x64:
+            ret = 7;
+            break;
+        }
+        break;
+    }
+    case 'S': {
+        short type = *(short *)(obj + 0x4C2);
+        *col = shelleycol;
+        skirtColliSize = 1.0f;
+        skirtColliSizeB = 1.0f;
+        skirtColliSizeS = 1.0f;
+        skirtColliFootRad = D_004D86DC;
+        switch (type) {
+        case 0x4A:
+            ret = 0x10;
+            *flag = 0x4400;
+            break;
+        case 0x4D:
+            ret = 0x10;
+            *flag = 0xC00;
+            break;
+        case 0x50:
+            ret = 2;
+            *flag = 1;
+            break;
+        case 0x56:
+        case 0x5A:
+            goto ret5;
+        case 0x5E:
+        case 0x65:
+            goto ret4;
+        }
+        break;
+    }
+    case 'B': {
+        short type = *(short *)(obj + 0x4C2);
+        skirtColliSize = 1.0f;
+        skirtColliSizeB = 1.0f;
+        skirtColliSizeS = 1.0f;
+        skirtColliFootRad = D_004D86E0;
+        switch (type) {
+        case 0x71:
+            ret = 0x10;
+            *flag = 0x5500;
+            break;
+        case 0x75:
+            ret = 0x10;
+            *flag = 0x4500;
+            break;
+        case 0x79:
+            ret = 0x10;
+            *flag = 0x6500;
+            break;
+        case 0x7D:
+            ret = 0x10;
+            *flag = 0x11D00;
+            break;
+        case 0x80:
+            ret = 0x10;
+            *flag = 0x12D00;
+            break;
+        case 0x83:
+        case 0x87:
+        case 0x8B:
+        case 0x96:
+        case 0x9B:
+        ret4:
+            ret = 4;
+            break;
+        case 0x8E:
+        case 0x92:
+            goto ret5;
+        }
+        break;
+    }
+    case 'K': {
+        short type = *(short *)(obj + 0x4C2);
+        *col = kosmoscol;
+        switch (type) {
+        case 0x4A:
+        case 0x4D:
+        case 0x50:
+        case 0x53:
+            ret = 0xC;
+            break;
+        case 0x56:
+            ret = 3;
+            *flag |= 1;
+            break;
+        case 0x5C:
+        case 0x5F:
+        ret5:
+            ret = 5;
+            break;
+        case 0x62:
+        case 0x67:
+            ret = 4;
+            *flag |= 2;
+            break;
+        case 0x6C:
+        ret8:
+            ret = 8;
+            break;
+        }
+        break;
+    }
+    }
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/exm_1", EXM_CheckExCollision);
 
