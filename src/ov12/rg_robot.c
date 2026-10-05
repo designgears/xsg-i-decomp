@@ -1009,7 +1009,40 @@ static int _DamagePassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
     return 0x10;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitDamageStatus);
+extern int RgRobSubGetDamageMotion(RgGeomPoint *geometry, RgVector direction);
+
+static void _InitDamageStatus(RgRobotStatus *status, RgBody *body,
+                              RgCmd *command, float p5, int flag, float p6)
+{
+    RgRobotSpec *spec;
+    float t;
+    float v;
+
+    spec = body->spec;
+    if (status == 0) {
+        assert_prog(D_00A518F0, D_00A51840, 0x9AE);
+    }
+    _StopAllShotThread(body);
+    _SetStatus(status, 6, body);
+    body->weakHitAccum = 0.0f;
+    body->weakHitWindow = 0.0f;
+    status->execCmdMethod = (RgStatusExecCmdFunc)_DamageExecCmd;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_DamagePassTime;
+    t = p5 * *(float *)((char *)spec + 0x50);
+    if (t < 0.1f) {
+        v = 0.1f;
+    } else if (t > 10.0f) {
+        v = 10.0f;
+    } else {
+        v = t;
+    }
+    status->scratch0AsFloat = v;
+    status->scratch1 = flag;
+    if (p6 > 0.0f) {
+        status->scratch0AsFloat = p6;
+    }
+    _BodyPlayMotion(body, RgRobSubGetDamageMotion(body->geometry, (float *)command));
+}
 
 static int _AllowDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _GetDropMotion(int eSide);
