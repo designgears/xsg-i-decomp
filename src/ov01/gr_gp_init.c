@@ -496,7 +496,53 @@ void grPutF2(GrPacket *packet, GrF2 *prim, const Matrix4 matrix)
     f2Num += 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutF4);
+typedef struct GrF4 {
+    Vector4 vertex[4];      /* +0x00 */
+    unsigned char col[4];   /* +0x40 */
+} GrF4;
+
+void grPutF4(GrPacket *packet, GrF4 *prim, const Matrix4 matrix)
+{
+    int clip;
+    int *count;
+    int *count2;
+    int i;
+    int idx;
+    int last;
+    Vector4 *v;
+    Vector4 *w;
+
+    clip = 0;
+    count = &packet->count;
+    v = prim->vertex;
+    w = v;
+    for (i = 0; i < 4; i++) {
+        ((GrQuad *)packet->data)[packet->count].i[0] = prim->col[0];
+        ((GrQuad *)packet->data)[packet->count].i[1] = prim->col[1];
+        ((GrQuad *)packet->data)[packet->count].i[2] = prim->col[2];
+        count2 = &packet->count;
+        idx = *count2;
+        ((GrQuad *)packet->data)[idx].i[3] = prim->col[3];
+        idx++;
+        *count2 = idx;
+        if (matrix == 0) {
+            ((GrQuad *)packet->data)[idx].i[0] = (int)v->x * 16 + 0x7000;
+            ((GrQuad *)packet->data)[*count].i[1] = (int)v->y * 16 + 0x7200;
+            ((GrQuad *)packet->data)[*count].i[2] = (int)v->z;
+            last = *count;
+            ((GrQuad *)packet->data)[last].i[3] = 0;
+            last++;
+            *count = last;
+        } else {
+            *count = idx + 1;
+            grRotTransPers((GrScreenVertex *)((GrQuad *)packet->data + idx), matrix,
+                           w, &clip);
+        }
+        w++;
+        v++;
+    }
+    f4Num += 4;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutFT4);
 
