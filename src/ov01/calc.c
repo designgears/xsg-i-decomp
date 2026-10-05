@@ -799,7 +799,44 @@ int calcHitMotChk(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitDmg);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitRate);
+typedef struct CalcHitRateArg {
+    int tecId;
+    ObjectTask *unit;
+} CalcHitRateArg;
+extern int calcHitParaGet(ObjectTask *unit);
+
+int calcHitRate(ObjectTask *attacker, CalcHitRateArg *arg)
+{
+    int hit;
+    int eva;
+    int rate;
+
+    hit = calcHitParaGet(attacker);
+    eva = (signed char)calcUPGet(arg->unit)->unmodeled_0d[0];
+    if (calcStatGet(arg->unit, 0, 0x200) != 0 || calcStatGet(arg->unit, 4, 0x100) != 0) {
+        eva /= 2;
+    } else if (calcStatGet(attacker, 2, 0x20) != 0) {
+        eva += eva / 4;
+    }
+    if ((short)calcUPGet(arg->unit)->currentHp == 0) {
+        return 0;
+    }
+    if (*(unsigned *)arg->unit->work & 0x800) {
+        return 1;
+    }
+    if (dataTecGet(arg->tecId)[1] & 0x200) {
+        return 0;
+    }
+    rate = hit - eva;
+    if (rnd(100) - rate >= 90 && !(calcUPGet(arg->unit)->flags & 1)
+        && !(dataTecGet(arg->tecId)[1] & 0x400) && calcBattleChk(arg->unit) != 0) {
+        return 2;
+    }
+    if (rnd(100) - rate >= 85 && !(calcUPGet(arg->unit)->flags & 2) && calcBattleChk(arg->unit) != 0) {
+        return 1;
+    }
+    return 0;
+}
 
 int calcHitParaGet(ObjectTask *unit) {
     int hitRate;
