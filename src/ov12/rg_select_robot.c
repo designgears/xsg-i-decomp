@@ -147,7 +147,64 @@ static void _InitLoad(void)
     xglCdReadCancel();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _InitAct);
+extern const char D_00A56DD8[];
+extern const char D_00A56DE8[];
+extern const char D_00A56DF8[];
+extern const char D_00A56E08[];
+extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName, const char *pszRoot);
+RgFileSys *InstanceOfRgFileSys(void);
+extern RgDispModel *CreateXrgDispModelImpl(const char *name, const char *variant);
+
+static void *_InitAct(RgSelectRobot *pCont, void *heap, int regionBytes, int count)
+{
+    char *p = (char *)pCont;
+    char *q;
+    unsigned int i;
+
+    if (pCont == 0) {
+        assert_prog(D_00A56DD8, D_00A56DA0, 0xB7);
+    }
+    pCont->screenPos = 0.0f;
+    q = p + 0xC;
+    *(int *)(p + 0x120) = -1;
+    *(int *)p = 0;
+    pCont->actorFlags = 0;
+    *(int *)(p + 0x10C) = 0;
+    *(int *)(p + 0x124) = 0;
+    *(int *)(p + 0x150) = 0;
+    *(float *)(p + 0x154) = pCont->screenPos;
+    pCont->displayPosition = pCont->screenPos;
+    for (i = 0; i < 4; i++) {
+        q[i * 0x40] = 0;
+        ((void **)(p + 0x110))[i] = heap;
+        heap = (char *)heap + regionBytes;
+    }
+    if (count != 0) {
+        pCont->hasActions = 1;
+        for (i = 0; i < 3; i++) {
+            RgSelectRobot *pSub;
+            char *s;
+
+            pSub = RgHeapAlloc(InstanceOfRgHeap(), 0x164, D_00A56DA0, 0xCC);
+            ((RgSelectRobot **)(q + 0x120))[i] = pSub;
+            heap = _InitAct(pSub, heap, regionBytes, 0);
+            s = (char *)pSub;
+            *(RgSelectRobot **)(s + 0x124) = pCont;
+            *(unsigned int *)(s + 0x160) = i;
+            ((int *)(p + 0x144))[i] = 0;
+            *(int *)(s + 0x15C) = 0;
+        }
+        pCont->fileData = RgFileSysRead(InstanceOfRgFileSys(), D_00A56DE8, D_00A56DF8);
+        if (pCont->fileData != 0) {
+            pCont->displayModel = CreateXrgDispModelImpl(pCont->fileData->data, D_00A56E08);
+        }
+    } else {
+        pCont->hasActions = 0;
+        pCont->fileData = 0;
+        pCont->displayModel = 0;
+    }
+    return heap;
+}
 
 extern void xglLightIntensityAmbient(StudioLight *light,
                                      const Vector4 *intensity);
@@ -423,7 +480,7 @@ INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _JobAct);
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _DrawAct);
 
 extern RgHeap *InstanceOfRgHeapData(void);
-static void _InitAct(RgSelectRobot *pCont, void *heap, int regionBytes, int count);
+static void *_InitAct(RgSelectRobot *pCont, void *heap, int regionBytes, int count);
 
 void _InitSelRob(RgSelectRobot *pCont)
 {
