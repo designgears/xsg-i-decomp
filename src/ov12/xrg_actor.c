@@ -206,7 +206,55 @@ SkeMani *_CreateAccMani_sub(XenoAct *pXenoAct, int accID,
     return pMani;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _DisposeUseXenoActor);
+extern void ACT_dispose(void *pXenoAct);
+extern void DisposeRgMatricesEffector(void *pEffector);
+extern void DisposeRgVector(void *pVector, const char *source_file, int line);
+extern void DisposeRgFileSysData_sub(RgFileSysData *pFile, const char *source_file,
+                                     int line);
+typedef struct XrgEffSet {
+    unsigned char pad_00[0x70];
+    void *eff[2][8];
+    unsigned char pad_b0[0xF0 - 0xB0];
+    unsigned int num[2];
+} XrgEffSet;
+static inline unsigned int _EffNum(XrgEffSet *e, unsigned int i)
+{
+    return e->num[i];
+}
+static inline void *_EffGet(XrgEffSet *e, unsigned int i, unsigned int j)
+{
+    return e->eff[i][j];
+}
+
+void _DisposeUseXenoActor(XrgActor *pActor)
+{
+    unsigned int i;
+    unsigned int j;
+
+    if (pActor->resourceFiles[0] != 0) {
+        DisposeRgFileSysData_sub(pActor->resourceFiles[0], D_00A587E0, 0x141);
+    }
+    if (pActor->resourceFiles[1] != 0) {
+        DisposeRgFileSysData_sub(pActor->resourceFiles[1], D_00A587E0, 0x143);
+    }
+    if (pActor->resourceFiles[2] != 0) {
+        DisposeRgFileSysData_sub(pActor->resourceFiles[2], D_00A587E0, 0x145);
+    }
+    if (pActor->resourceFiles[3] != 0) {
+        DisposeRgFileSysData_sub(pActor->resourceFiles[3], D_00A587E0, 0x147);
+    }
+    if (pActor->pXenoAct != 0) {
+        ACT_dispose(pActor->pXenoAct);
+    }
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < _EffNum((XrgEffSet *)((char *)pActor + 4), i); j++) {
+            DisposeRgMatricesEffector(_EffGet((XrgEffSet *)((char *)pActor + 4), i, j));
+        }
+        pActor->effectors[i] = 0;
+    }
+    DisposeRgVector(pActor->children, D_00A587E0, 0x154);
+    pActor->children = 0;
+}
 
 /*
  * _copy_matrix copies src into dst and drops its translation column
