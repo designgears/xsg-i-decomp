@@ -901,7 +901,42 @@ z:
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _EntryCmdQueue);
+extern const char D_00A51A58[];
+extern int s_anCmdLevel[];
+
+static RgCmd *_EntryCmdQueue(void *pQ, int cmdType)
+{
+    RgCmdQueue *cmdQueue = pQ;
+    RgCmd *command;
+    int diff;
+    int level;
+
+    if (cmdQueue == 0) {
+        assert_prog(D_00A51A58, D_00A51840, 0xA41);
+    }
+    if (cmdQueue->count >= RG_CMD_QUEUE_CAPACITY) {
+        return 0;
+    }
+    if ((unsigned int)cmdType >= 0xF) {
+        return 0;
+    }
+    cmdQueue->entryCount++;
+    level = s_anCmdLevel[cmdType];
+    if (cmdQueue->count != 0) {
+        diff = s_anCmdLevel[cmdQueue->cmd[0].type] - level;
+    } else {
+        diff = 0;
+    }
+    if (diff > 0) {
+        return 0;
+    }
+    if (diff < 0) {
+        cmdQueue->count = 0;
+    }
+    command = &cmdQueue->cmd[cmdQueue->count++];
+    command->type = cmdType;
+    return command;
+}
 
 /* ov12:0x00a51a58 contains the assertion expression "pQ != NIL". */
 extern const char D_00A51A58[];
