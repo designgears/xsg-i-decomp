@@ -74,7 +74,30 @@ int MMvInit(void)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_mv", MMvExec);
+extern MvRenderControl sRender;
+
+void MMvExec(void)
+{
+    int done;
+
+    if (mvFlags_00A43720 & MV_FLAG_PLAYING)
+    {
+        if ((mvFlags_00A43720 & MV_FLAG_SKIP_ENABLED) && (PadData.half_28 & 0x100) && (PadData.half_2a & 0x40))
+        {
+            MMvStop();
+            return;
+        }
+        done = xglMoviePlay(D_00A5B6D0);
+        mvEnv.transfer_tag = 0x24020000 | (sRender.movie_gif_control << 5) | 0x2000000640000000ULL;
+        FlushCache(0);
+        xglDmaDirectNormal(2, (u32)&mvEnv, 9);
+        if (done != 0)
+        {
+            xglMovieClose(D_00A5B6D0);
+            mvFlags_00A43720 &= ~MV_FLAG_PLAYING;
+        }
+    }
+}
 
 int MMvPlay(const char *filename)
 {
