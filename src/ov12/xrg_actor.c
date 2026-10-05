@@ -633,7 +633,21 @@ XrgActor *DuplicateXrgActor(XrgActor *pActor, XrgActor *pNewParent)
     return pDup;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", DisposeXrgActor);
+extern int RgHeapIsInvalidMemory(void *heap, void *ptr);
+extern void _DisposeUseXenoActor(XrgActor *pActor);
+extern const char D_00A58B68[];
+
+void DisposeXrgActor(XrgActor *pActor)
+{
+    if (RgHeapIsInvalidMemory(InstanceOfRgHeap(), pActor)) {
+        RgError(D_00A58B68, D_00A587E0, 985, pActor);
+    }
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 987);
+    }
+    _DisposeUseXenoActor(pActor);
+    RgHeapFree(InstanceOfRgHeap(), pActor, D_00A587E0, 989);
+}
 
 void XrgActorSetLocal(XrgActor *pActor, const RgMatrix matrix)
 {
