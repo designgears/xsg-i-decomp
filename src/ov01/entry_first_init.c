@@ -891,7 +891,78 @@ void fadeOutObj(FadeObjTask *self)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", fadeObjDraw);
+typedef struct EncPacket {
+    int unmodeled[4];
+} EncPacket;
+
+extern void grGpInit(EncPacket *packet);
+
+extern void grPacketSend(EncPacket *packet);
+
+typedef struct FadeGpPacket {
+    void *data;
+    int count;
+    int unmodeled[2];
+} FadeGpPacket;
+typedef union FadeGifWord {
+    unsigned long long bits;
+    int i[2];
+    void *p;
+} FadeGifWord;
+typedef struct FadeGifTag {
+    FadeGifWord control;
+    FadeGifWord register_id;
+} FadeGifTag;
+typedef union FadeQuad {
+    int i[4];
+    void *p;
+} FadeQuad;
+static inline void fadeGifOpen(FadeGpPacket *packet, unsigned long long register_id)
+{
+    FadeGifTag *tags = packet->data;
+    tags[packet->count].register_id.bits = register_id;
+}
+static inline void fadeGifAppend(FadeGpPacket *packet, unsigned long long register_id,
+                                 unsigned long long control)
+{
+    FadeGifTag *tags;
+    int *count;
+    int tag_index;
+
+    fadeGifOpen(packet, register_id);
+    count = &packet->count;
+    tags = packet->data;
+    tag_index = *count;
+    tags[tag_index].control.bits = control;
+    *count = tag_index + 1;
+}
+static inline void fadeVertex(FadeGpPacket *packet, int x, int y)
+{
+    int *count = &packet->count;
+    int idx;
+
+    ((FadeQuad *)packet->data)[packet->count].i[0] = x;
+    ((FadeQuad *)packet->data)[packet->count].i[1] = y;
+    ((FadeQuad *)packet->data)[packet->count].i[2] = 0xFFFFFC;
+    idx = *count;
+    ((FadeQuad *)packet->data)[idx].i[3] = 0;
+    *count = idx + 1;
+}
+
+void fadeObjDraw(FadeObjTask *self)
+{
+    FadeGpPacket packet;
+    int life = self->life;
+
+    grGpInit((EncPacket *)&packet);
+    fadeGifAppend(&packet, 0xE, 0x1000000000008002ULL);
+    fadeGifAppend(&packet, 0x42, ((unsigned long long)life << 32) | 0xA9);
+    fadeGifAppend(&packet, 0x47, 0x50000);
+    fadeGifAppend(&packet, 5, 0x1023400000008002ULL);
+    fadeVertex(&packet, 0x7000, 0x7200);
+    fadeVertex(&packet, 0x9000, 0x8E00);
+    grPacketSend((EncPacket *)&packet);
+}
 
 extern int grFBAdrGet(int index);
 extern void GS_REG_SET(void *packet, long long register_id, long long control);
@@ -941,12 +1012,6 @@ void effCalcMatrix(void *unused, float (*m)[4], int t) {
     grRotMatrix(m, m, rot);
     xglMatrixScale(m, m, scale);
 }
-
-typedef struct EncPacket {
-    int unmodeled[4];
-} EncPacket;
-
-extern void grGpInit(EncPacket *packet);
 
 typedef struct EncDrawPacket {
     void *data;
@@ -1031,8 +1096,6 @@ extern const EncFrameBaseTable D_00A466C8;
 extern const EncVramCopyParams D_00A466D0;
 extern void grVramCopy(EncVramCopyParams *params);
 extern void grGsRegSet(EncPacket *packet, unsigned long long register_id, unsigned long long value);
-extern void grPacketSend(EncPacket *packet);
-
 void encEffVramCopy(int size)
 {
     EncPacket packet;
