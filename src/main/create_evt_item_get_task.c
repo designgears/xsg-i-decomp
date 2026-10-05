@@ -252,6 +252,24 @@ void InitSpecialSymbol(ItemMapUnit *unit)
 
 INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", SetItemSymbolRsrc);
 
+typedef struct ItemGetTask {
+    XglTaskPrefix task;
+    int w10;
+    int w14;
+    unsigned char pad18[4];
+    ItemMapUnit *unit;
+    unsigned char pad20[6];
+    unsigned short itemNo;
+    unsigned char pad28[8];
+    unsigned char b30;
+} ItemGetTask;
+
+extern void UwamonoCommonFunc(void *unit);
+
+extern void xglSoundEffectNormalID(int sound_id, int variant);
+
+extern int taskItemGet(XglTaskPrefix *task);
+
 INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", MAP_updateUnitItemBox);
 
 extern void nmlModelEntry(int entry);
@@ -300,22 +318,7 @@ void MAP_drawUnitItemBox(UnitItemBox *box)
 
 extern float D_004D7F60;
 extern float D_004D7F64;
-extern void UwamonoCommonFunc(void *unit);
 extern float CheckDist3D(Vector4 *a, Vector4 *b);
-extern void xglSoundEffectNormalID(int sound_id, int variant);
-extern int taskItemGet(XglTaskPrefix *task);
-typedef struct ItemGetTask {
-    XglTaskPrefix task;
-    int w10;
-    int w14;
-    unsigned char pad18[4];
-    ItemMapUnit *unit;
-    unsigned char pad20[6];
-    unsigned short itemNo;
-    unsigned char pad28[8];
-    unsigned char b30;
-} ItemGetTask;
-
 void MAP_updateUnitItemSymbol(ItemMapUnit *unit)
 {
     XglTaskScheduler *scheduler;
