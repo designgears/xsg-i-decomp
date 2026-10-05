@@ -99,7 +99,36 @@ void calcPara2OrgSub(ObjectTask *unit) {
     origin->ep = param->currentEp;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDeadReset);
+extern int unitTblGet(int type, ObjectTask ***table);
+
+void calcDeadReset(void)
+{
+    ObjectTask **table;
+    ObjectTask **t;
+    ObjectTask **nt;
+    ObjectTask *u;
+    CalcCharParaData *origin;
+    int count;
+    int i;
+
+    i = 0;
+    count = unitTblGet(0, &table);
+    if (count > 0) {
+        t = table;
+        do {
+            if (t[i] != 0) {
+                origin = dataUnitOrgGet(calcUPGet(t[i])->charaId);
+                nt = table;
+                t = nt;
+                u = nt[i];
+                if (u == 0 || (((CalcActorRecord *)u->work)->flags & 0x80) || origin->hp == 0) {
+                    origin->hp = 1;
+                }
+            }
+            i++;
+        } while (i < count);
+    }
+}
 
 CalcUnitParam *calcUPGet(ObjectTask *unit)
 {
