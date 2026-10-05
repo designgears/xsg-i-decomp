@@ -81,7 +81,79 @@ typedef struct CalcSpline {
     int frame;
 } CalcSpline;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCopyParaMake);
+typedef struct CalcParaTable {
+    short maxHp;            /* +0x00 */
+    short maxEp;            /* +0x02 */
+    short val4;             /* +0x04 */
+    short val6;             /* +0x06 */
+    short eatk;             /* +0x08 */
+    short edef;             /* +0x0A */
+    signed char hit;        /* +0x0C */
+    signed char eva;        /* +0x0D */
+    unsigned char valE;     /* +0x0E */
+    unsigned char unmodeled_0f[0x36 - 0x0F];
+    short ep;               /* +0x36 */
+    short agwsId;           /* +0x38 */
+    unsigned char unmodeled_3a[0x56 - 0x3A];
+    short engineId;         /* +0x56 */
+    short frameId;          /* +0x58 */
+    unsigned char unmodeled_5a[0x180 - 0x5A];
+} CalcParaTable;
+typedef struct CalcPartAdj {
+    unsigned char unmodeled_00[8];
+    short a8;               /* +0x08 */
+    short aA;               /* +0x0A */
+    short aC;               /* +0x0C */
+    unsigned char aE;       /* +0x0E */
+} CalcPartAdj;
+extern int unitAgwsPilotGet(int charaId);
+extern unsigned char *dataFrmGet(int index);
+extern unsigned char *dataEngGet(int index);
+extern int printf(const char *format, ...);
+
+void calcCopyParaMake(CalcCharParaData *origin, unsigned char *table)
+{
+    unsigned char buf[0x180];
+    CalcParaTable *t;
+    CalcParaTable *r;
+    CalcPartAdj *frm;
+    CalcPartAdj *eng;
+    int pilot;
+
+    frm = 0;
+    eng = 0;
+    t = (CalcParaTable *)table;
+    *t = *(CalcParaTable *)origin;
+    if (t->agwsId > 0x10) {
+        pilot = unitAgwsPilotGet(t->agwsId);
+        if (t->frameId != 0) {
+            frm = (CalcPartAdj *)dataFrmGet(t->frameId);
+        }
+        if (t->engineId != 0) {
+            eng = (CalcPartAdj *)dataEngGet(t->engineId);
+        }
+        if (pilot != 0) {
+            r = (CalcParaTable *)calcTotalParaMenuSub(pilot, 0, 0, buf);
+            t->eatk = r->eatk;
+            t->edef = r->edef;
+            t->hit = r->hit;
+            t->eva = r->eva;
+            t->ep = r->ep;
+            t->maxEp = r->maxEp;
+            printf("** AGWS para = EP=%d EPMAX=%d\n", t->ep, t->maxEp);
+            printf("** AGWS para = Eatk=%d Edef=%d HIT=%d EVA=%d\n", t->eatk, t->edef, t->hit, t->eva);
+        }
+        if (frm != 0) {
+            t->maxHp += frm->a8;
+            t->val6 += frm->aA;
+            t->valE += frm->aE;
+            t->edef += frm->aC;
+        }
+        if (eng != 0) {
+            t->val4 += eng->a8;
+        }
+    }
+}
 
 /*
  * calcTotalParaMenuSub/calcSkillEquChkAll's (this TU) own fake unit: a

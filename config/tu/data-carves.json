@@ -2670,17 +2670,20 @@
    ".rodata": [
     {
      "range": [
-      "0x00a44360",
+      "0x00a44310",
       "0x00a44388"
      ],
      "generated": [
-      "0x00a44360",
+      "0x00a44310",
       "0x00a44388"
      ],
      "generated_by": [
+      "calcCopyParaMake",
       "calcHpDmg"
      ],
      "c_owned_symbols": [
+      "D_00A44310",
+      "D_00A44330",
       "jtbl_00A44360"
      ],
      "also_referenced_by_c": [],
