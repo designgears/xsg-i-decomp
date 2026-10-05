@@ -125,7 +125,61 @@ static char *getStrIndex(char *string, int length, int ch)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/system", Java_xeno_vm_System_println__Ljava_lang_String_);
+extern char tmpString[];
+extern char D_004DC090[];
+extern char *strncpy(char *, const char *, unsigned int);
+extern int sprintf(char *, const char *, ...);
+extern int PARSE_int(char *, int, int);
+extern int JNI_getRegister(int);
+
+void Java_xeno_vm_System_println__Ljava_lang_String_(void *thread, void **arguments, unsigned int *result)
+{
+    char buf[16];
+    int len;
+    int n;
+    char *src;
+    char *end;
+    char *p;
+    char *r;
+    union { int i; float f; } v;
+
+    src = (char *)((int *)((int *)*arguments)[1])[2];
+    len = ((int *)((int *)*arguments)[1])[1];
+    end = src + len;
+    while (1) {
+        {
+            p = getStrIndex(src, len, '/');
+            r = p + 2;
+            if (p == 0) {
+                return;
+            }
+            if (p[1] != '[') {
+                continue;
+            }
+        }
+        n = p - src;
+        len -= n;
+        strncpy(tmpString, src, n);
+        tmpString[n] = 0;
+        src = getStrIndex(r, len, ']');
+        p = (char *)(src - p);
+        n = (int)p - 2;
+        if (src == 0) {
+            return;
+        }
+        strncpy(tmpString, r, n);
+        if (tmpString[0] == '$') {
+        } else if (tmpString[0] == '#') {
+            v.i = JNI_getRegister(PARSE_int(tmpString + 1, (int)p - 3, 10));
+            sprintf(buf, D_004DC090, v.f);
+        }
+        src++;
+        len -= n;
+        if (end <= src) {
+            return;
+        }
+    }
+}
 
 extern void *classJava_xeno_Chr;
 extern void *classJava_xeno_Stage;
