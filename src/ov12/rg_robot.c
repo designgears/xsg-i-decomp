@@ -738,7 +738,72 @@ static int _ExecCmdInShield(RgRobotStatus *status, RgBody *body, RgCmd *command)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ShieldPassTime);
+extern const char D_00A51968[];
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern void RgGeomRobotCalcLocal(RgGeomPoint *geometry, RgVector local[4]);
+extern void XrgNegateVector(RgVector destination, RgVector source);
+extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
+extern void RgGeomPointAddForce(RgGeomPoint *point, RgVector force);
+extern float RgWeaponGetShotNum(void *weapon);
+
+static int _ShieldPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
+{
+    RgVector local[4];
+    RgVector force;
+    void *actor;
+    void *weapon;
+    int info;
+    int action;
+    float weight;
+
+    actor = body->actor;
+    weapon = *(void **)&status->scratchTimer;
+    info = *(int *)&status->unmodeled_10[0];
+    if (*(int *)&status->unmodeled_10[4] != 0) {
+        weight = RgGeomPointGetWeight(body->geometry);
+        *(int *)&status->unmodeled_10[4] = 0;
+        action = RgMotionInfoGetActionInTime(info, 3, 1e8f);
+        XrgScaleVector(force, (float *)&status->unmodeled_1c[4], (-weight * 7.0f) / deltaTime);
+        RgGeomPointAddForce(body->geometry, force);
+        if (action != 0) {
+            _BodyPlayMotion(body, *(int *)(action + 0xC));
+        }
+    }
+    switch ((unsigned int)status->scratch0) {
+    case 0:
+        if (actor == 0 || XrgActorIsEndOfMotion(actor) != 0) {
+            status->scratch0 = 1;
+        }
+        break;
+    case 1:
+        body->shieldActive = status->scratch0;
+        RgGeomRobotCalcLocal(body->geometry, local);
+        XrgNegateVector((float *)&body->unmodeled_34[0xC], local[2]);
+        *(int *)&body->unmodeled_34[0x10] = 0;
+        if (status->scratch1 == 0 || RgWeaponGetShotNum(weapon) <= 0.0f) {
+            action = RgMotionInfoGetActionInTime(info, 2, 1e8f);
+            if (action != 0) {
+                _BodyPlayMotion(body, *(int *)(action + 0xC));
+                if (weapon != 0) {
+                    RgWeaponPlayMotion(weapon, *(int *)(action + 0x10));
+                }
+            }
+            status->scratch0 = 2;
+        }
+        break;
+    case 2:
+        body->shieldActive = 0;
+        if (actor == 0 || XrgActorIsEndOfMotion(actor) != 0) {
+            _InitMovingStatus(status, body);
+        }
+        break;
+    default:
+        RgError(D_00A51968, D_00A51840, 0x63C, status->scratch0);
+        break;
+    }
+    status->scratch1 = 0;
+    return 0x80;
+}
 
 static void _ShieldExit(RgRobotStatus *status, RgBody *body)
 {
