@@ -60,7 +60,34 @@ extern const char D_00A543E0[];
  */
 extern const char D_00A54460[];
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_read_text", _InitReader);
+extern void XrgFileSysPushMode(int eMode);
+extern void XrgFileSysPopMode(void);
+extern RgFileSys *InstanceOfRgFileSys(void);
+extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName,
+                                    const char *pszDir);
+extern const char D_00A543D0[];
+
+static int _InitReader(RgReadText *pReader, const char *pszName)
+{
+    RgFileSysData *pFile;
+
+    if (pReader == 0) {
+        assert_prog(D_00A543A8, D_00A543B8, 40);
+    }
+    XrgFileSysPushMode(1);
+    pFile = RgFileSysRead(InstanceOfRgFileSys(), pszName, D_00A543D0);
+    pReader->m_pFile = pFile;
+    XrgFileSysPopMode();
+    if (pFile == 0) {
+        return 0;
+    }
+    *(char **)&pReader->m_bUngetPending = 0;
+    pReader->m_nSize = pFile->size;
+    pReader->m_pszBuf = pFile->data;
+    pReader->m_pszCur = pFile->data;
+    pReader->m_pszDelim = 0;
+    return 1;
+}
 
 static void _DisposeReader(RgReadText *pReader)
 {
