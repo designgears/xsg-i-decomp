@@ -2177,16 +2177,17 @@
     {
      "range": [
       "0x004d83f0",
-      "0x004d8418"
+      "0x004d841c"
      ],
      "generated": [
       "0x004d83f0",
-      "0x004d8418"
+      "0x004d841c"
      ],
      "generated_by": [
       "CHR_rotX",
       "CHR_rotY",
       "CHR_rotZ",
+      "Java_xeno_Chr_getRotate__",
       "Java_xeno_Chr_setRotate__"
      ],
      "c_owned_symbols": [
@@ -2199,10 +2200,37 @@
       "D_004D8408",
       "D_004D840C",
       "D_004D8410",
-      "D_004D8414"
+      "D_004D8414",
+      "D_004D8418"
      ],
      "also_referenced_by_c": [
       "D_004D841C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/chr.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d16e0",
+      "0x004d16f8"
+     ],
+     "generated": [
+      "0x004d16e0",
+      "0x004d16f8"
+     ],
+     "generated_by": [
+      "Java_xeno_Chr_start__ILjava_lang_Object_"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004D16E0"
+     ],
+     "also_referenced_by_c": [
+      "chr_algorithm_string"
      ],
      "basis": {
       "kind": "derived",

@@ -535,7 +535,125 @@ static ItemBoxView *checkItemBox(u8 *self)
 
 INCLUDE_ASM("asm/main/nonmatchings/game", CheckGameSymbol);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameDispTag);
+extern void xglMatrixMul(Matrix4 destination, Matrix4 left, Matrix4 right);
+extern float xglRotTransPers(void *out, void *matrix, void *point, int cameraId);
+extern void xglMatrixStackUnit(void);
+extern void xglMatrixStackScale(const float scale[4]);
+extern void xglMatrixStackTrans(const float translation[4]);
+extern void xglMatrixStackRotX(float angle);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackRotZ(float angle);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern char str_0[];
+extern char str_1[];
+extern char D_004D8A60[];
+typedef int gdt_q __attribute__((mode(TI)));
+typedef union { float m[4][4]; gdt_q q[4]; } GdtMtx;
+typedef struct { gdt_q q[4]; } GdtQ4;
+
+static void GameDispTag(void)
+{
+    gdt_q t;
+    GdtMtx mtx;
+    int scr[4];
+    float pos[4];
+    int cam;
+    int i;
+    unsigned int color;
+
+    pos[0] = 0;
+    pos[3] = 1.0f;
+    pos[1] = 0;
+    pos[2] = 0;
+    for (cam = 0; cam < 8; cam++) {
+        if (xglStudioGetCamera2(cam)->active == 1) break;
+    }
+    for (i = 0; i < 64; i++) {
+        ActorHead *a = &actor[i];
+        ActorHead *p;
+        if (a->inUseId == 0) continue;
+        p = *(ActorHead **)((u8 *)a + 0x8FC);
+        if (!(a->inUseId & 0xF000)) {
+            if (p == 0) {
+                GdtMtx *m = *(GdtMtx **)((u8 *)a + 0x824);
+                xglMatrixMul(mtx.m, m->m, (m + 45)->m);
+                mtx.m[3][3] = 1.0f;
+                xglRotTransPers(scr, 0, mtx.m[3], cam);
+                goto check;
+            }
+            goto other;
+        }
+        if (p == 0) goto copy;
+    other:
+        if (!(p->inUseId & 0xF000)) {
+            GdtMtx *m = *(GdtMtx **)((u8 *)p + 0x824);
+            xglMatrixMul(mtx.m, m->m, (m + 45)->m);
+        } else {
+        copy:
+            p = *(ActorHead **)((u8 *)a + 0x824);
+            t = ((GdtMtx *)p)->q[0]; mtx.q[0] = t;
+            t = ((GdtMtx *)p)->q[1]; mtx.q[1] = t;
+            t = ((GdtMtx *)p)->q[2]; mtx.q[2] = t;
+            t = ((GdtMtx *)p)->q[3]; mtx.q[3] = t;
+        }
+        mtx.m[3][3] = 1.0f;
+        xglRotTransPers(scr, 0, mtx.m[3], cam);
+    check:
+        if ((unsigned)(scr[0] - 0x7001) < 0x1FFF && scr[1] > 0x7200 && scr[1] < 0x8E00 && scr[2] > 0) {
+            color = 0xFFFFFF;
+            if (a->unmodeled_04[0x7E] == 1) {
+                color = 0xFF9933;
+            } else {
+                switch (a->inUseId & 0xF000) {
+                case 0x0:
+                    color = 0x3399FF;
+                    break;
+                case 0x4000:
+                    color = 0x33FF33;
+                    break;
+                case 0x2000:
+                    color = 0xFF3333;
+                    break;
+                }
+            }
+            str_0[1] = color >> 16;
+            str_0[2] = color >> 8;
+            str_0[3] = color;
+            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, str_0, i + 0x200, scr[2]);
+        }
+    }
+    for (i = 0; i < 64; i++) {
+        u8 *u = MapUnit + i * 0x300;
+        if (*(short *)(u + 0xA4) < 0) continue;
+        xglMatrixStackUnit();
+        xglMatrixStackScale((float *)(u + 0x30));
+        xglMatrixStackTrans((float *)(u + 0x10));
+        xglMatrixStackRotX(*(float *)(u + 0x20));
+        xglMatrixStackRotY(*(float *)(u + 0x24));
+        xglMatrixStackRotZ(*(float *)(u + 0x28));
+        xglMatrixStackSave(mtx.m);
+        xglRotTransPers(scr, mtx.m, pos, cam);
+        if ((unsigned)(scr[0] - 0x7001) < 0x1FFF && scr[1] > 0x7200 && scr[1] < 0x8E00 && scr[2] > 0) {
+            color = 0xFFFFFF;
+            switch (*(short *)(u + 0xA4) & 0xF000) {
+            case 0x5000:
+                color = 0x7F7F7F;
+                break;
+            case 0x6000:
+                color = 0xCC66FF;
+                break;
+            case 0x3000:
+                color = 0xFFFF00;
+                break;
+            }
+            str_1[1] = color >> 16;
+            str_1[2] = color >> 8;
+            str_1[3] = color;
+            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, D_004D8A60, i + 0x300, scr[2]);
+        }
+    }
+}
 
 /*
  * The engine's actor record (`actor`, 64-entry array at main 0x0043c1e0,
