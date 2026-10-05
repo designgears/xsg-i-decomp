@@ -318,7 +318,55 @@ static void _CurSetMatrix(const Matrix4 matrix)
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFlush);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFlushWide);
+extern char D_28[];
+extern char D_28_1[] __asm__("D_28");
+extern char D_28_2[] __asm__("D_28");
+extern char D_28_3[] __asm__("D_28");
+extern char D_28_4[] __asm__("D_28");
+extern char D_28_5[] __asm__("D_28");
+extern char D_28_6[] __asm__("D_28");
+
+void nmlPacketAddGsFlushWide(void)
+{
+    s_pPacket = xglPacketGetCurrent();
+    if (g_nGsEntry > 0) {
+        g_aGsTag[0].w[1] = 0x10000000;
+        g_aGsTag[1].w[0] = 0xE;
+        g_aGsTag[0].w[0] = g_nGsEntry + 0x8000;
+        g_aGsTag[1].w[1] = 0;
+        sceVif1PkCnt(s_pPacket, 0);
+        nmlPacketAddWaitMicrocode();
+        sceVif1PkOpenUpkCode(s_pPacket, 0x2DC, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, g_aGsTag, g_nGsEntry + 1);
+        sceVif1PkCloseUpkCode(s_pPacket);
+        switch (s_nProgType) {
+        case 7:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 1:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_1 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 2:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_2 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 3:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_3 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 4:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_4 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 5:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_5 >> 3) | VIF_CODE_MSCAL);
+            break;
+        case 6:
+            sceVif1PkAddCode(s_pPacket, ((u32)D_28_6 >> 3) | VIF_CODE_MSCAL);
+            break;
+        }
+        sceVif1PkAddCode(s_pPacket, 0x17000000);
+        nmlPacketAddWaitMicrocode();
+    }
+    g_nGsEntry = 0;
+}
 
 extern struct { char pad[8]; u16 zbp; } sRender;
 
