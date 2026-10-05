@@ -2697,13 +2697,36 @@
      ],
      "generated": [
       "0x00a443d8",
-      "0x00a443f5"
+      "0x00a443f8"
      ],
      "generated_by": [
       "calcBp2Tid"
      ],
      "c_owned_symbols": [
       "D_00A443D8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a44450",
+      "0x00a44498"
+     ],
+     "generated": [
+      "0x00a44450",
+      "0x00a44498"
+     ],
+     "generated_by": [
+      "calcWpnAtkGet"
+     ],
+     "c_owned_symbols": [
+      "D_00A44450",
+      "D_00A44478"
      ],
      "also_referenced_by_c": [],
      "basis": {

@@ -786,7 +786,42 @@ int calcHitParaGet(ObjectTask *unit) {
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHit);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcWpnAtkGet);
+extern int calcAttWpnChk(int weaponId);
+extern unsigned char *dataAttGet(int index);
+
+int calcWpnAtkGet(ObjectTask *unit, int slot)
+{
+    int atk;
+    short id;
+    short att;
+
+    atk = 0;
+    if (slot != -1) {
+        id = calcUPGet(unit)->sefSetupParams[slot];
+        if (id != 0) {
+            if (calcAttWpnChk(id) != 0) {
+                att = calcUPGet(unit)->sefSetupParams[slot + 6];
+                if (att != 0) {
+                    atk = *(short *)dataAttGet(att);
+                } else {
+                    printf("** calcWpnAtkGet: Att equip err! %d\n", id);
+                }
+            } else {
+                atk = *(short *)dataWpnGet(id);
+            }
+        }
+        if (*(int *)((char *)calcUPGet(unit) + 0x17C) != 0) {
+            calcUPGet(unit);
+            if (!(*(unsigned *)unit->work & 0x40) && !(calcUPGet(unit)->flags & 0x40)
+                && (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+                atk = *(short *)((char *)calcUPGet(unit) + 4);
+            }
+            atk += atk * *(int *)((char *)calcUPGet(unit) + 0x17C) / 100;
+            printf("** calcWpnAtkGet: wpnAtkAdj=%d\n", atk);
+        }
+    }
+    return atk;
+}
 
 int calcPhyDefGet(ObjectTask *unit) {
     int res;
