@@ -106,7 +106,42 @@ CalcUnitParam *calcUPGet(ObjectTask *unit)
     return ((CalcActorRecord *)unit->work)->up;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHpDmg);
+int calcHp(ObjectTask *unit, int delta);
+int calcEp(ObjectTask *unit, int delta);
+
+int calcHpDmg(ObjectTask *src, ObjectTask *dst, unsigned char type, int val)
+{
+    int ret;
+
+    switch (type) {
+    case 1:
+        ret = calcHp(dst, -val);
+        break;
+    case 3:
+        ret = calcEp(dst, -val);
+        break;
+    case 2:
+        ret = calcHp(dst, val);
+        break;
+    case 4:
+        ret = calcEp(dst, val);
+        break;
+    case 7:
+    case 8:
+        ret = calcHp(dst, -val);
+        calcHp(src, val);
+        break;
+    case 9:
+    case 10:
+        ret = calcEp(dst, -val);
+        calcEp(src, val);
+        break;
+    default:
+        ret = 1;
+        break;
+    }
+    return ret;
+}
 
 /*
  * calcTotalParaMenuSub (this TU, still asm, 0x00a11128): calcTotalParaMenu's
