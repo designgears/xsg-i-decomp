@@ -953,6 +953,58 @@
    ]
   },
   "main/tu170": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7e14",
+      "0x004d7e1c"
+     ],
+     "generated": [
+      "0x004d7e14",
+      "0x004d7e1c"
+     ],
+     "generated_by": [
+      "CharCategoryMain"
+     ],
+     "c_owned_symbols": [
+      "D_004D7E14",
+      "D_004D7E18"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7E1C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d7e34",
+      "0x004d7e38"
+     ],
+     "generated": [
+      "0x004d7e34",
+      "0x004d7e38"
+     ],
+     "generated_by": [
+      "MenuBattleModelMain"
+     ],
+     "c_owned_symbols": [
+      "D_004D7E34"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7E50",
+      "D_004D7E54"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -971,7 +1023,12 @@
       "jtbl_004C5510",
       "jtbl_004C5530"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     },
     {
      "range": [
@@ -1059,6 +1116,11 @@
       "D_004C5CC0": "D_004C5D58",
       "D_004C5CF8": "D_004C5D58",
       "D_004C5D28": "D_004C5D58"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
      }
     },
     {
@@ -1078,7 +1140,12 @@
      ],
      "also_referenced_by_c": [
       "D_004C6398"
-     ]
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     },
     {
      "range": [
@@ -1098,10 +1165,43 @@
       "jtbl_004C64D0"
      ],
      "also_referenced_by_c": [
+      "D_004C6580",
+      "D_004C65A0",
+      "D_004C65C0",
+      "D_004C65E0",
+      "D_004C6680"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c66e0",
+      "0x004c6760"
+     ],
+     "generated": [
+      "0x004c66e0",
+      "0x004c6760"
+     ],
+     "generated_by": [
+      "MenuBattleModelMain"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C66E0"
+     ],
+     "also_referenced_by_c": [
       "D_004C6770",
       "D_004C67D0",
       "D_004C67F0"
-     ]
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     },
     {
      "range": [
@@ -1118,30 +1218,12 @@
      "c_owned_symbols": [
       "jtbl_004C6800"
      ],
-     "also_referenced_by_c": []
-    }
-   ],
-   ".lit4": [
-    {
-     "range": [
-      "0x004d7e14",
-      "0x004d7e1c"
-     ],
-     "generated": [
-      "0x004d7e14",
-      "0x004d7e1c"
-     ],
-     "generated_by": [
-      "CharCategoryMain"
-     ],
-     "c_owned_symbols": [
-      "D_004D7E14",
-      "D_004D7E18"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7E50",
-      "D_004D7E54"
-     ]
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     }
    ],
    ".sdata": [
@@ -1160,7 +1242,12 @@
      "c_owned_symbols": [
       "D_004DAD18"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     },
     {
      "range": [
@@ -1196,6 +1283,11 @@
       "D_004DAD90": "D_004C5B60",
       "D_004DADA0": "D_004C5C50",
       "D_004DADA8": "D_004C5C50"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
      }
     },
     {
@@ -1235,7 +1327,12 @@
       "CharList",
       "CharSwitch",
       "CharPoint"
-     ]
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_para_pt_rate_get.o"
+     }
     }
    ]
   },

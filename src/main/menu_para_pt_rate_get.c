@@ -3709,7 +3709,126 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuCharCameraMove);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuCharModelMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuBattleModelMain);
+typedef struct { MenuCamVec1 v[6]; } BattleModelPosTable;
+extern BattleModelPosTable D_004C6680;
+int PartyAttackPosGet(int party_id);
+typedef struct BattleModelPose {
+    Vector4 pos;
+    unsigned char unmodeled_10[0x60 - 0x10];
+    float alpha;
+} BattleModelPose;
+typedef struct BattleModelActor {
+    unsigned char unmodeled_00[0xC0];
+    BattleModelPose pose;
+} BattleModelActor;
+typedef struct BattleModelUnit {
+    unsigned char unmodeled_00[0x10];
+    signed char taskPhase;
+    unsigned char active;
+    unsigned char unmodeled_12;
+    unsigned char state;
+    unsigned char unmodeled_14[4];
+    unsigned short chrNo;
+    unsigned char unmodeled_1a[6];
+    BattleModelActor *actor;
+} BattleModelUnit;
+typedef struct { unsigned short party_id; signed char attack_position; } BattleModelSlot;
+void MenuModelUnitBreak(BattleModelUnit *unit);
+void MenuModelUnitOpen(BattleModelUnit *unit, int mode);
+
+void MenuBattleModelMain(BattleModelUnit *unit)
+{
+    BattleModelPosTable tbl;
+    BattleModelActor *actor;
+    BattleModelPose *pose;
+    Vector4 *src;
+    unsigned char *party;
+    int i;
+    int slot;
+    int idx;
+
+    actor = unit->actor;
+    if (actor == 0 && MenuWork.state == 0xF0) {
+        MenuModelUnitBreak(unit);
+    }
+    if (unit->active == 0) {
+        return;
+    }
+    tbl = D_004C6680;
+    pose = &actor->pose;
+    party = PartyDataGet();
+    slot = 1;
+    for (i = 0; i < 3; i++) {
+        int off = i * 4 + 0x30;
+        BattleModelSlot *p = (BattleModelSlot *)(party + off);
+        if (p->party_id == unit->chrNo) {
+            slot = p->attack_position;
+            break;
+        }
+    }
+    switch (unit->state) {
+    case 0:
+        pose->pos = tbl.v[slot - 1].v;
+        unit->state = 1;
+        break;
+    case 1:
+        MenuModelUnitOpen(unit, 2);
+        unit->state = 0x14;
+    case 0x14:
+        if ((MenuWork.state >> 4) == 0xB && unit->chrNo != MenuWork.view.chrNo) {
+            unit->state = 0x16;
+            MenuModelUnitOpen(unit, 4);
+        }
+        if ((MenuWork.state >> 4) == 0xC) {
+            unit->state = 0x18;
+            MenuModelUnitOpen(unit, 3);
+        }
+        break;
+    case 0x16:
+        if ((MenuWork.state >> 4) != 0xB) {
+            MenuModelUnitOpen(unit, 2);
+            unit->state = 0x14;
+        }
+        break;
+    case 0x18:
+        if ((MenuWork.state >> 4) != 0xC) {
+            MenuModelUnitOpen(unit, 2);
+            unit->state = 0x14;
+        }
+        break;
+    case 0x1E:
+        MenuModelUnitOpen(unit, 3);
+        unit->state = 0x1F;
+    case 0x1F:
+        if (pose->alpha == 0.0f) {
+            unit->taskPhase = -1;
+        }
+        break;
+    }
+    if (MenuWork.state == 0xF0) {
+        unit->state = 0x1E;
+    }
+    if (unit->chrNo == (signed char)MenuWork.swapOutId) {
+        MenuWork.swapOutId = 0;
+        unit->state = 0x1E;
+    }
+    src = &tbl.v[slot - 1].v;
+    if (MenuWork.state != 0xB5) {
+        if (MenuWork.state == 0xB6 && unit->chrNo == MenuWork.view.chrNo) {
+            src = &tbl.v[MenuWork.formationSlot - 1].v;
+        }
+    } else {
+        int occ = PartyAttackPosCheck(MenuWork.formationSlot);
+        if (unit->chrNo == MenuWork.view.chrNo) {
+            src = &tbl.v[MenuWork.formationSlot - 1].v;
+        } else if (unit->chrNo == occ) {
+            src = &tbl.v[PartyAttackPosGet(MenuWork.view.chrNo) - 1].v;
+        }
+    }
+    pose->pos.x += (src->x - pose->pos.x) * 0.2f;
+    pose->pos.y += (src->y - pose->pos.y) * 0.2f;
+    pose->pos.z += (src->z - pose->pos.z) * 0.2f;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", tskCharLineField);
 
@@ -3969,7 +4088,7 @@ void MenuParaUp(int chrNo, int statIndex);
 void MenuCharCameraSet(void);
 void MenuCharCameraMove(void);
 void MenuCharModelMain(void);
-void MenuBattleModelMain(void);
+void MenuBattleModelMain();
 int tskCharLineField(XglTaskPrefix *task);
 
 /*
