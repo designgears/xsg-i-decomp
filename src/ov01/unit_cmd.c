@@ -1472,7 +1472,30 @@ int unitCmdAgws2(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdEscape);
+int unitCmdEscape(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    switch (actor->moveState) {
+    case 0:
+        actor->moveState = 1;
+        break;
+    case 1:
+        if (unitTelOut(unit) != 0) {
+            actor->moveState++;
+        }
+        break;
+    case 2:
+        ((union { int i; void *p; } *)actor)->i = (actor->flags & 0x61) | 0x80;
+        if (((Actor *)unit->work)->flags & 0x40) {
+            unitTblRemove(unit);
+            unitRemove((UnitRecord *)unit, 0);
+        }
+        break;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdFadeIn);
 
