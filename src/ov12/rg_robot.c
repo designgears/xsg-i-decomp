@@ -699,7 +699,42 @@ static void _InitShieldStatus(RgRobotStatus *status, RgBody *body, int motion,
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInTargetting);
+extern float RgWeaponGetShotNum(void *weapon);
+
+static int _ExecCmdInTargetting(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result;
+    float time;
+    void *weapon;
+
+    time = status->elapsedTime;
+    result = _AllowDamageCmd(status, body, command);
+    if (*(float *)&status->scratch1 <= time) {
+        switch (command->type) {
+        case 1:
+            result |= _AllowAllCmdInMoving(status, (int)body, (RgBody *)command);
+            _StopHomingThread(body->homingThread);
+            break;
+        case 2:
+            weapon = body->weapon[command->param];
+            if (weapon == 0) {
+                break;
+            }
+            if (!(RgWeaponGetShotNum(weapon) > 0.0f)) {
+                return result;
+            }
+            if (RgWeaponGetControlFlag(weapon) & 7) {
+                break;
+            }
+        case 0:
+        case 4:
+        case 5:
+            result |= _AllowAllCmdInMoving(status, (int)body, (RgBody *)command);
+            break;
+        }
+    }
+    return result;
+}
 
 static int _TargettingPassTime(RgRobotStatus *status, RgBody *body)
 {

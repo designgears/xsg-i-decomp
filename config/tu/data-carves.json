@@ -3874,7 +3874,7 @@
      ],
      "generated": [
       "0x00a51900",
-      "0x00a5193c"
+      "0x00a51940"
      ],
      "generated_by": [
       "_AllowAllCmdInMoving"
@@ -3887,6 +3887,30 @@
       "D_00A51840",
       "D_00A51858",
       "D_00A518F0",
+      "D_00A51940"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_robot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a51990",
+      "0x00a519a8"
+     ],
+     "generated": [
+      "0x00a51990",
+      "0x00a519a8"
+     ],
+     "generated_by": [
+      "_ExecCmdInTargetting"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A51990"
+     ],
+     "also_referenced_by_c": [
       "D_00A51A58",
       "D_00A51A68",
       "D_00A51A78",
