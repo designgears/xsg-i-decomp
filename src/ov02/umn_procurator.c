@@ -94,7 +94,36 @@ INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorManzai);
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorMail);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorTop);
+typedef void (*LLS2)(unsigned int *, int);
+
+void UmnProcuratorTop(void *task)
+{
+    unsigned char *t = (unsigned char *)task;
+    unsigned int *model;
+    float *a;
+    float *b;
+
+    if (t[0x11] != 0) {
+        model = *(unsigned int **)(t + 0x20);
+        a = (float *)((char *)model + 0xC0);
+        b = (float *)((char *)model + 0xD0);
+        switch (t[0x13]) {
+        case 0:
+            a[0] = 1.0f;
+            a[1] = -0.3f;
+            b[0] = 0.0f;
+            b[1] = -0.7853982f;
+            ((LLS2)LocalLightSet)(model, 0);
+            t[0x13] = 1;
+        case 1:
+            MenuModelUnitOpen(task, 2);
+            t[0x13] = 2;
+            break;
+        case 2:
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorGoodBy);
 
