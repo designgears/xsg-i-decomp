@@ -186,7 +186,7 @@ typedef struct CalcScratchUnit {
  * through calcUPGet, so calcTotalParaMenuSub hands them its own fake unit
  * above. */
 extern void calcCopyParaMake(CalcCharParaData *origin, unsigned char *table);
-extern void calcSkillInit(ObjectTask *unit);
+extern int calcSkillInit(ObjectTask *unit);
 extern int calcWpnAtkGet(ObjectTask *unit, int slot);
 extern int calcPhyDefGet(ObjectTask *unit);
 extern int calcMagDefGet(ObjectTask *unit);
@@ -266,20 +266,45 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseItemMenu);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseItem);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInit);
-
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInitSub);
-
-int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask);
 typedef struct CalcSkillView {
     unsigned char unmodeled_00[0xA6];
     short skillId[3];
 } CalcSkillView;
+
 typedef struct CalcAccSkillView {
     unsigned char unmodeled_00[0xE];
     unsigned short skillId;
 } CalcAccSkillView;
 
+int calcSkillInitSub(ObjectTask *unit, int skillId);
+
+int calcSkillInit(ObjectTask *unit)
+{
+    int i;
+    int id;
+    short acc;
+
+    for (i = 0; i < 3; i++) {
+        acc = calcUPGet(unit)->accessoryId[i];
+        if (acc != 0) {
+            id = ((CalcAccSkillView *)dataAccGet(acc))->skillId;
+            if (id != 0) {
+                calcSkillInitSub(unit, id);
+            }
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        id = ((CalcSkillView *)calcUPGet(unit))->skillId[i];
+        if (id != 0) {
+            calcSkillInitSub(unit, id);
+        }
+    }
+    return 1;
+}
+
+INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInitSub);
+
+int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask);
 int calcSkill(ObjectTask *unit, int typeMask, int levelMask)
 {
     int total;
