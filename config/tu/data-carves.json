@@ -407,14 +407,15 @@
     {
      "range": [
       "0x004c1b00",
-      "0x004c1b90"
+      "0x004c1bb0"
      ],
      "generated": [
       "0x004c1b00",
-      "0x004c1b88"
+      "0x004c1ba8"
      ],
      "generated_by": [
       "TWIN_popCF",
+      "TWIN_popScene",
       "TWSYS_draw",
       "TWSYS_update"
      ],
@@ -423,7 +424,8 @@
       "D_004C1B18",
       "D_004C1B30",
       "jtbl_004C1B50",
-      "jtbl_004C1B70"
+      "jtbl_004C1B70",
+      "jtbl_004C1B90"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -1140,6 +1142,35 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_tec.o"
+     }
+    }
+   ]
+  },
+  "main/tu179": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004c9ac0",
+      "0x004c9ad0"
+     ],
+     "generated": [
+      "0x004c9ac0",
+      "0x004c9ad0"
+     ],
+     "generated_by": [
+      "subTreeLineDraw"
+     ],
+     "c_owned_symbols": [
+      "D_004C9AC0"
+     ],
+     "also_referenced_by_c": [
+      "D_004C9AB0",
+      "D_004C9AD0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ether_tree.o"
      }
     }
    ]

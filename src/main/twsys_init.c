@@ -486,7 +486,70 @@ void TWIN_popCF(char *w)
     MSG_queueReset(q, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_popScene);
+void TWIN_popScene(char *w)
+{
+    void *q;
+    short c;
+    short *lw;
+    int i;
+    unsigned char n;
+
+    if ((*(unsigned int *)(w + 0x10) & 3) != 1) {
+        return;
+    }
+    if (*(short *)(w + 0xB6) <= 0) {
+        return;
+    }
+    q = w + 0xAC;
+    lw = (short *)(w + 0xC);
+    do {
+        *(short *)(w + 0xC0) = *(short *)(w + 0xC);
+        *(unsigned char *)(w + 0x184) += MSG_queuePop(q, ((char **)*(int *)(w + 0x17C))[*(unsigned char *)(w + 0x185)] + *(unsigned char *)(w + 0x184), 0x18);
+        lw[*(unsigned char *)(w + 0x185) + 0xA0] = *(short *)(w + 0xBC);
+        c = *(short *)(w + 0xBE);
+        if (c >= 0x80) {
+            switch (c) {
+            case 0x83:
+                *(short *)(w + 0x14) = 0xD;
+                *(short *)(w + 0x30) = *(short *)(w + 0xC8);
+                break;
+            case 0x84:
+                *(short *)(w + 0x14) = 2;
+                break;
+            case 0x81:
+                *(short *)(w + 0xBA) = 0;
+                *(short *)(w + 0x14) = 9;
+                *(short *)(w + 0xBC) = 0;
+                break;
+            case 0x80:
+                *(short *)(w + 0x14) = 8;
+                *(int *)(w + 0x120) = *(int *)(w + 0xC8);
+                break;
+            case 0x85:
+                strcpy(*(char **)(w + 0xA8), *(char **)(w + 0xC8));
+                break;
+            case 0x82:
+                break;
+            }
+            return;
+        }
+        if (*(short *)(w + 0xBC) >= *(short *)(w + 0xC) || c == 10) {
+            MSG_queueReset(q, 0x10A);
+            i = *(unsigned char *)(w + 0x185) + 1;
+            n = *(unsigned char *)(w + 0x187);
+            *(unsigned char *)(w + 0x184) = 0;
+            *(unsigned char *)(w + 0x185) = i;
+            if ((unsigned char)i >= n) {
+                *(unsigned char *)(w + 0x185) = *(unsigned char *)(w + 0x187) - 1;
+                *(short *)(w + 0x14) = 0xC;
+                *(int *)(w + 0x120) = *(int *)(w + 0xC8);
+                return;
+            }
+        }
+    } while (*(short *)(w + 0xB4) < *(short *)(w + 0xB6));
+    *(short *)(w + 0xB4) = 0;
+    *(short *)(w + 0xB6) = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_update2);
 
