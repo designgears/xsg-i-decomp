@@ -935,14 +935,46 @@ INCLUDE_ASM("asm/main/nonmatchings/ether_tree", sub2ObjectLampDraw);
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeObjectDraw);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subTreeLineDraw);
+typedef struct TLNode { char pad0[0xC]; struct TLNode *child; char pad10[8]; unsigned char flags; char pad19[7]; long long p0; long long p1; } TLNode;
+
+typedef struct { TLNode *node; int pad[3]; long long a0; long long a1; int pad2[4]; long long b0; long long b1; } TLWork;
+
+void subTreeLineDraw(TLWork *w, int *arg)
+{
+    int num[4] = { 0, 1, 5, 6 };
+    EtherTreeSystemData *sys = EtherTreeSystem;
+    float *center = &sys->centerX;
+    float *node = &sys->nodeX;
+    TLWork *p;
+    int *q;
+    int i = 0;
+
+    if (num[*(unsigned short *)((char *)w->node + 8)] > 0) {
+        q = arg;
+        p = w;
+        do {
+            float *a = (float *)&p->a0;
+            float *f = (float *)p;
+            i++;
+            a[0] = (a[0] + node[0] + center[0]) * node[3];
+            f[12] = (f[12] + node[0] + center[0]) * node[3];
+            f[5] = (f[5] + node[1] + center[1]) * node[3];
+            f[13] = (f[13] + node[1] + center[1]) * node[3];
+            f[6] = node[2] - 2.0f;
+            f[14] = node[2] - 2.0f;
+            EtherTreeLineColorGet((unsigned char *)p->pad2, *q);
+            EtherTreeLineColorGet((unsigned char *)(p + 1), *q);
+            q++;
+            endPrintExtFunc(0, 0x10, a);
+            p++;
+        } while (i < num[*(unsigned short *)((char *)w->node + 8)]);
+    }
+}
 
 void subTreeLineDraw_type_0(void)
 {
 }
 
-typedef struct TLNode { char pad0[0xC]; struct TLNode *child; char pad10[8]; unsigned char flags; char pad19[7]; long long p0; long long p1; } TLNode;
-typedef struct { TLNode *node; int pad[3]; long long a0; long long a1; int pad2[4]; long long b0; long long b1; } TLWork;
 void subTreeLineDraw(TLWork *w, int *arg);
 
 void subTreeLineDraw_type_1(TLWork *w)
