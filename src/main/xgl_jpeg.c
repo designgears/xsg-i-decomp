@@ -176,7 +176,37 @@ static void EncodeAc(int value, int runIndex, JpegHuffCode *table)
     PutBits(bits, length);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", HuffmanEncode);
+extern unsigned char ZigZag[];
+
+static void HuffmanEncode(short *coef, JpegHuffCodeDc *dc, JpegHuffCode *ac, u16 *prev)
+{
+    int run = 0;
+    int i = 1;
+    short v;
+    short diff = *(u16 *)coef - *prev;
+    *(int *)prev = *(int *)prev + diff;
+    EncodeDc(diff, dc);
+    for (;;) {
+        v = coef[ZigZag[i] * 2];
+        i++;
+        if (v == 0) {
+            if (i >= 64) {
+                EncodeAc(0, 0, ac);
+                break;
+            }
+            run = (short)(run + 1);
+            continue;
+        }
+        while (run >= 16) {
+            EncodeAc(0, 0xF0, ac);
+            run = (short)(run - 16);
+        }
+        EncodeAc(v, run << 4, ac);
+        if (i >= 64)
+            break;
+        run = 0;
+    }
+}
 
 static void ExtractHuffmanTableSub(JpegHuffCode *table, u8 *data, int table_size)
 {
