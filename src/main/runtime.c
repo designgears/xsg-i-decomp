@@ -324,7 +324,44 @@ void Java_xeno_util_Runtime_CaptureStart__Ljava_lang_String_I(JThread *thread,
     tyaCaptureStart(arguments->string->value->bytes, arguments->value);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_jump_sub);
+extern void GameDefocusSet(int mode, int strength, int *table);
+extern void xglSoundStreamStop(int channel);
+extern void GameMovieStop(void);
+extern void xglSoundSequenceFadeOut2(int channel, int time);
+extern void InitCfSystem(void);
+extern void UnduInit(int flag);
+extern void SCRIPT_reset(int mode);
+extern void GameResourceLoad(int scene_id);
+extern void ACT_setModelWrapper(void *actor, int flags);
+extern void ACT_setHumanHand(void *actor, int hand);
+
+void Java_xeno_util_Runtime_jump_sub(int destination, int argument)
+{
+    int i;
+
+    tyaCaptureEnd();
+    xglSoundStreamStop(0);
+    GameMovieStop();
+    GameDefocusSet(-1, 0, 0);
+    if (!(destination & 0x10000)) {
+        for (i = 0; i < 8; i++)
+            xglSoundSequenceFadeOut2(i, 1000);
+    }
+    if (argument >= 0)
+        GameLoopState.entrance = argument;
+    GameLoopState.event_id = destination & 0xFFF0FFFF;
+    InitCfSystem();
+    *(int *)((char *)&GameLoopState + 0x54) = 0;
+    UnduInit(0);
+    SCRIPT_reset(0);
+    if (GameLoopState.event_id == 0x270E || GameLoopState.event_id == 0x270F)
+        GameLoopState.flags |= 0x88000000;
+    GameResourceLoad(GameLoopState.event_id);
+    if (GameLoopState.player != 0 && *(unsigned short *)((char *)&GameLoopState + 0xC) == 2) {
+        ACT_setModelWrapper(GameLoopState.player, 0);
+        ACT_setHumanHand(GameLoopState.player, 0);
+    }
+}
 
 extern void Java_xeno_util_Runtime_jump_sub(int destination, int argument);
 
@@ -954,7 +991,73 @@ void Java_xeno_util_Runtime_mpeg2AfterCrossFade__I(JThread *thread, int *argumen
     nmlModelSetMpeg2CrossFadeTime(time);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_mailFlag__I);
+unsigned char *UmnMailDataGet(int box_id);
+void UmnMailBoxSet(int box_id);
+void xglSoundEffectNormalID(int id, int channel);
+void Vibration_Set_Weak(int t);
+typedef struct { unsigned char read : 1; unsigned char b1 : 1; unsigned char pad : 2; unsigned char b4 : 2; } MailFlagView;
+
+void Java_xeno_util_Runtime_mailFlag__I(JThread *thread, int *arguments, int *result)
+{
+    int ret = 0;
+    unsigned char *m = UmnMailDataGet(arguments[0] & 0xFFFFFF);
+    int n, i;
+    signed char *work;
+
+    switch (arguments[0] >> 24) {
+    case 0:
+        ret = m[0] & 1;
+        break;
+    case 1:
+        ret = (m[0] & 2) != 0;
+        break;
+    case 2:
+        if (m[1] != 0) {
+            ret = (m[1] & 0x80) ? 2 : 1;
+        } else {
+            ret = 0;
+        }
+        break;
+    case 3:
+        ret = (m[0] & 0x30) >> 4;
+        break;
+    case 4:
+        m[0] |= 1;
+        UmnMailBoxSet(arguments[0] & 0xFFFFFF);
+        xglSoundEffectNormalID(0x24, 0);
+        Vibration_Set_Weak(0x1E);
+        break;
+    case 5:
+
+        work = (signed char *)(SaveData + 0x1025C);
+        n = 0;
+        i = 0;
+        if (work[0] >= 0) {
+            n = 1;
+            do {
+                i++;
+                if (i >= 0x80 || work[i] < 0)
+                    break;
+                n++;
+            } while (1);
+        }
+        switch (arguments[0] & 0xFFFFFF) {
+        case 0:
+            ret = n;
+            break;
+        case 1:
+            work = (signed char *)(SaveData + 0x1025C);
+            ret = 0;
+            for (i = 0; i < n; i++) {
+                if (!(*UmnMailDataGet(work[i]) & 2))
+                    ret++;
+            }
+            break;
+        }
+        break;
+    }
+    *result = ret;
+}
 
 extern void UmnMailMain(int mail);
 extern void xglCullingIgnore(void);
