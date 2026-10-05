@@ -693,7 +693,71 @@ static void _ExitTargettingStatus(RgRobotStatus *status, RgBody *body)
     RgRobotEffectSetJetInertia(body->effect, 1);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitTargettingStatus);
+struct RgPointVector;
+extern void RgGeomPointGetVel(RgGeomPoint *point, RgVector velocity);
+extern void RgGeomPointSetVel(RgGeomPoint *point, RgVector velocity);
+extern float RgGetGeomGravity(void);
+extern void __RgGeomPointGetPos(RgGeomPoint *point, struct RgPointVector *destination,
+                                const char *source_file, int line);
+extern int RgGeomGetEventFlag(RgGeom *geom);
+extern void XrgSoundRingStopMoving(int soundID);
+extern void XrgSoundRingMoving(int soundID, int unused, float volume);
+extern void RgRobotEffectStartJet(RgRobotEffect *effect, float stopTime);
+extern int _ExecCmdInTargetting();
+
+static void _InitTargettingStatus(RgStatus *pStatus, RgBody *body, void *target)
+{
+    RgRobotStatus *status = (RgRobotStatus *)pStatus;
+    RgVector velocity;
+    RgVector position;
+    void *homingTarget;
+    int homing;
+    float gravity;
+    float height;
+
+    homingTarget = body->target;
+    if (status == 0) {
+        assert_prog(D_00A518F0, D_00A51840, 0x6F2);
+    }
+    _StopAllShotThread(body);
+    homing = RgGeomGetEventFlag((RgGeom *)body->eyeGeometry) == 0;
+    if (homingTarget == 0) {
+        homing = 0;
+    }
+    if (body->confuse > 0.0f) {
+        homing = 0;
+    }
+    _SetStatus(status, 4, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_ExecCmdInTargetting;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_TargettingPassTime;
+    status->exitMethod = _ExitTargettingStatus;
+    if (target != 0) {
+        RgGeomPoint *geometry = body->geometry;
+        RgGeomPointGetVel(geometry, velocity);
+        __RgGeomPointGetPos(geometry, (struct RgPointVector *)position, D_00A51840, 0x70D);
+        gravity = RgGetGeomGravity();
+        height = 7.5f - position[1];
+        if (height > 0.0f) {
+            velocity[1] = __builtin_sqrtf((gravity + gravity) * height);
+        }
+        RgGeomPointSetVel(geometry, velocity);
+        *(float *)&status->scratch2 = (velocity[1] + velocity[1]) / RgGetGeomGravity();
+        XrgSoundRingStopMoving(body->landingSoundID);
+        XrgSoundRingMoving(body->landingSoundID, 1, *(float *)&status->scratch2);
+        RgRobotEffectStartJet(body->effect, *(float *)&status->scratch2 * 0.4f);
+        RgRobotEffectSetJetInertia(body->effect, 0);
+        body->grounded = 0;
+    } else {
+        *(float *)&status->scratch2 = 0.8f;
+    }
+    *(float *)&status->scratch1 = *(float *)&status->scratch2 * 0.2f;
+    if (homing) {
+        _StartHomingThread(body->homingThread, body->geometry, body->target,
+                           *(float *)&status->scratch1);
+    }
+    _BodyPlayMotion(body, 0x13);
+    status->scratch0 = 0;
+}
 
 extern void RgGeomRobotAddRotForce(RgGeomPoint *point, float force);
 
