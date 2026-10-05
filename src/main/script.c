@@ -750,7 +750,56 @@ static char *replacePathExt(char *path, const char *ext)
     return strcpy(getStrIndex(path, strlen(path), '.'), ext);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", attrObserver);
+extern char D_004DA480[];
+extern char D_004DA488[];
+
+int attrObserver(XglTaskPrefix *task_)
+{
+    ScriptObserverTask *task = (ScriptObserverTask *)task_;
+    SceneObject object = task->object;
+    SceneMethod *method;
+    signed char vm_slot;
+    int arg;
+    SceneObject arguments[2];
+
+    if ((task->state_flags & 1) == 0) {
+        unsigned int owner_flags = task->owner->flags;
+        if (owner_flags & 0x400) {
+            xglTaskRemove(&task->task);
+            return;
+        }
+        task->owner->flags = owner_flags | 0x400;
+        if (getEmptyVM(task) == 0) {
+            xglTaskRemove(&task->task);
+            return;
+        }
+        task->state_flags |= 1;
+    }
+    {
+        SceneObjectHeader *header = (SceneObjectHeader *)object;
+        SceneClass *scene_class = header->class_ref->scene_class;
+        SceneString *name = loadConstString(D_004DA480, -1);
+        SceneString *signature = loadConstString(D_004DA488, -1);
+        method = findMethod(scene_class, name, signature);
+    }
+    if (method == 0) {
+        task->owner->flags &= ~0x400;
+        xglTaskRemove(&task->task);
+        return;
+    }
+    vm_slot = task->vm_slot;
+    arg = task->argument1;
+    ((union { int i; SceneThread *t; } *)arguments)->t = (SceneThread *)object;
+    arguments[1] = (SceneObject)arg;
+    JNI_callMethod(evtVM[vm_slot], method, arguments, 0);
+    if (evtVM[vm_slot]->flags & SCENE_THREAD_CALL_PENDING) {
+        JNI_catchException();
+        task->owner->flags &= ~0x400;
+        UseVMFlag &= ~(1 << vm_slot);
+        xglTaskRemove(&task->task);
+        ((GameLoopFlagsPrefix *)GameLoopState)->flags &= ~0x100000;
+    }
+}
 
 extern struct {
     u8 pad_00[0x58];
