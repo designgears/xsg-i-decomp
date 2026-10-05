@@ -1081,7 +1081,79 @@ static int _DashExecCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashPassTime);
+extern const char D_00A519A8[];
+extern void RgRobSubAcceralate(RgGeomPoint *geometry, RgVector direction, float scale);
+
+static int _DashPassTime(RgRobotStatus *status, RgBody *body, float dt)
+{
+    RgVector dir;
+    RgRobotSpec *spec;
+    int mask;
+    int result;
+    int next;
+    float maxSpd;
+    float accel;
+
+    result = 0;
+    spec = body->spec;
+    mask = body->cmdMask;
+    maxSpd = _CalcMaxSpeed(body, *(float *)&spec->unmodeled_10[0]);
+    switch ((unsigned int)status->scratch0) {
+    case 0:
+        body->dashTime = body->dashTime - dt;
+        if (body->dashTime < 0.0f) {
+            body->dashTime = 0.0f;
+        }
+        *(float *)&status->unmodeled_1c[0xc] = *(float *)&status->unmodeled_1c[0xc] - dt;
+        if (*(float *)&status->unmodeled_1c[0xc] < 0.0f) {
+            *(float *)&status->unmodeled_1c[0xc] = 0.0f;
+        }
+        result = 4;
+        accel = spec->accelRate * spec->attackAdvanceRate;
+        RgGeomPointSetMaxXYSpd(body->geometry, maxSpd);
+        RgRobSubAcceralate(body->geometry, (float *)status->unmodeled_10, accel);
+        if (*(int *)&status->unmodeled_1c[4] == 0) {
+            _BodyPlayMotion(body, RgRobSubGetAdvanceMot(body->geometry, 1));
+            *(int *)&status->unmodeled_1c[4] = 1;
+        }
+        next = 0;
+        if (*(float *)&status->unmodeled_1c[0xc] <= 0.0f) {
+            next = 1;
+            if (mask & 0x40) {
+                if (*(int *)&status->unmodeled_1c[0x10] != 0) {
+                    next = 2;
+                }
+            }
+        }
+        if (RgGeomGetEventFlag((RgGeom *)body->advanceGeometry) != 0) {
+            next = 1;
+        }
+        if (next == 2) {
+            XrgCopyVector(dir, (float *)status->unmodeled_10);
+            _InitDashVRStatus(status, body, (RgCmd *)dir);
+        } else if (next == 1) {
+            status->scratch0 = next;
+            *(float *)&status->unmodeled_1c[8] = 0.3f;
+        }
+        break;
+    case 1:
+        if (*(int *)&status->unmodeled_1c[4] != 0) {
+            _BodyPlayMotionLoop(body, RgRobSubGetAdvanceMot(body->geometry, 0));
+            *(int *)&status->unmodeled_1c[4] = 0;
+            RgRobotEffectTermJet(body->effect);
+            RgRobotEffectTermDash(body->effect);
+        }
+        *(float *)&status->unmodeled_1c[8] = *(float *)&status->unmodeled_1c[8] - dt;
+        if (*(float *)&status->unmodeled_1c[8] < 0.0f) {
+            _InitMovingStatus(status, body);
+        }
+        break;
+    default:
+        RgError(D_00A519A8, D_00A51840, 0x7FE, *(volatile int *)&status->scratch0);
+        break;
+    }
+    return result;
+}
 
 extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
 extern void RgRobotEffectTermJet(RgRobotEffect *effect);
