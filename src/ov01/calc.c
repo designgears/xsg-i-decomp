@@ -1169,7 +1169,56 @@ int calcAttWpnChk(int weaponId)
     return dataWpnGet(weaponId)->equipped != 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitItem);
+typedef struct CalcHitItemArg {
+    int unk0;
+    ObjectTask *unit;
+    int itm;
+} CalcHitItemArg;
+typedef struct CalcHitItemOut {
+    int unk0[3];
+    int unkC;
+    int unk10;
+    int unk14;
+    int unk18;
+} CalcHitItemOut;
+
+int calcHitItem(ObjectTask *attacker, CalcHitItemArg *arg, CalcHitItemOut *out)
+{
+    unsigned char *itm;
+    unsigned short flags;
+    int hit;
+
+    itm = dataItmGet(arg->itm);
+    out->unkC = 8;
+    out->unk10 = 0;
+    out->unk14 = 8;
+    out->unk18 = 0;
+    flags = *(unsigned short *)(itm + 0xC);
+    if (flags & 1) {
+        hit = 2;
+        if (calcUPGet(arg->unit)->flags & 0x200) {
+            hit = calcRevHit(2);
+        }
+        if (calcStatGet(arg->unit, 0, 0x10) != 0) {
+            hit = calcRevHit(hit);
+        }
+    } else if (flags & 2) {
+        hit = 4;
+    } else if (flags & 4) {
+        hit = 6;
+    } else if (flags & 0x10) {
+        hit = 5;
+    } else if (flags & 0x20) {
+        hit = 5;
+    } else if (flags & 8) {
+        hit = 0x802;
+    } else if (flags & 0x100) {
+        hit = itm[10] == 1 ? 1 : 6;
+    } else {
+        hit = 1;
+    }
+    return hit;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmgItem);
 
