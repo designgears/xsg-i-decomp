@@ -538,7 +538,44 @@ int xglCdReadFile(const char *name, void *buffer, int mode, int flags)
     return xglCdReadFilePart(name, buffer, mode, (CdCompletionCallback *)flags, 0, -1);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdReadCancel);
+extern int sceCdBreak(void);
+
+void xglCdReadCancel(void)
+{
+    int *fd;
+
+    CD_READ_CONTROL->queue_tail = CD_READ_CONTROL->queue_cursor;
+    if (CD_READ_CONTROL->dispatch_state == 1) {
+        if (CD_READ_CONTROL->read_poll_mode != 0) {
+            if (CD_READ_CONTROL->read_poll_mode >= 0) {
+                if (CD_READ_CONTROL->read_poll_mode < 3)
+                    CD_READ_CONTROL->remaining_bytes = 0;
+            }
+        } else {
+            goto brk;
+        }
+    } else if (CD_READ_CONTROL->dispatch_state == 2) {
+        if (CD_READ_CONTROL->read_poll_mode != 0) {
+            if (CD_READ_CONTROL->read_poll_mode >= 0) {
+                if (CD_READ_CONTROL->read_poll_mode < 3)
+                    goto cls;
+            }
+        } else {
+brk:
+            sceCdBreak();
+            sceCdPause();
+        }
+    }
+    goto out;
+cls:
+    fd = (int *)LW;
+    if (*fd >= 0) {
+        sceClose(*fd);
+        *fd = -1;
+    }
+out:
+    CD_READ_CONTROL->dispatch_state = 0;
+}
 
 int xglCdSync(void)
 {
