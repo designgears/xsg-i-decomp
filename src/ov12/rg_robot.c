@@ -1316,7 +1316,34 @@ static void _BodyAutoHomingPassTime(RgBody *body, float deltaTime)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyPassTime);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyDisp);
+extern void XrgActorSetLocal(void *actor, RgVector local[4]);
+extern void XrgActorDraw(void *actor);
+extern void RgWeaponDisp(void *weapon);
+extern void RgRobotEffectDisp(RgRobotEffect *effect);
+
+static void _BodyDisp(RgRobotStatus *robotStatus, RgBody *body)
+{
+    unsigned int i;
+    void *w;
+    RgVector local[4];
+
+    if (!body) {
+        assert_prog(D_00A51A68, D_00A51840, 0xD0E);
+    }
+    _StatusDisp(robotStatus, body);
+    RgGeomRobotCalcLocal(body->geometry, local);
+    if (body->actor) {
+        XrgActorSetLocal(body->actor, local);
+        XrgActorDraw(body->actor);
+    }
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        w = body->weapon[i];
+        if (w) {
+            RgWeaponDisp(w);
+        }
+    }
+    RgRobotEffectDisp(body->effect);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitBody);
 
