@@ -166,7 +166,42 @@ void MenuSystemInitSet(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_system", subMenuSystemMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_system", subMenuSystemInit);
+extern int MenuHddCheck;
+extern unsigned char *MenuSystemPas;
+extern unsigned char *MenuSystemMenu;
+
+void subMenuSystemInit(int workEnd)
+{
+    unsigned char *p;
+    int r;
+
+    p = (unsigned char *)((workEnd + 0x7F) & ~0x7F);
+    MenuSystemPas = p;
+    p += 0x340;
+    *MenuSystemPas = 0;
+    *(unsigned char **)&MenuSystemInfo = p;
+    p += 0x3D0;
+    MenuSystemInfo->state = 0;
+    MenuSystemMenu = p;
+    p += 0x100;
+    *MenuSystemMenu = 0;
+    MenuWork.unmodeled_12[0] = 0x10;
+    MenuWork.unmodeled_12[1] = 0xC;
+    MenuWork.soundOutput = SaveData[SAVE_DATA_BYTE_28] ^ 1;
+    MenuWork.padMode = SaveData[SAVE_DATA_BYTE_44];
+    MenuWork.radarMode = SaveData[SAVE_DATA_BYTE_3C];
+    MenuWork.unmodeled_04[0xC] = 0;
+    MenuWork.displayMode = ((MenuSystemPartyDataPrefix *)PartyDataGet())->radar_disp ^ 1;
+    r = xglHddMount();
+    MenuHddCheck = r;
+    if (r == 1 && xglHddActivate(-1) != 0) {
+        MenuWork.hddMounted = r;
+        MenuWork.hddActive = SaveData[SAVE_DATA_BYTE_40];
+    } else {
+        MenuWork.hddActive = 1;
+        MenuWork.hddMounted = 0;
+    }
+}
 
 void MenuSystem(void)
 {
