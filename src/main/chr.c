@@ -19,7 +19,134 @@ void Java_xeno_Chr_getPlayer__(JThread *thread, ChrScaleCall *arguments)
 
 INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPlayer__);
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", CHR_moveXZ);
+extern void SEQ_moveXZ(void);
+extern void SEQ_moveChr(void);
+struct ChrMoveCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } a;
+    union { int i; float f; u8 *p; } b;
+    union { int i; float f; u8 *p; } c;
+    u8 wait;
+};
+typedef struct ChrMoveObjCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } a;
+    union { int i; float f; u8 *p; } b;
+    u8 wait;
+} ChrMoveObjCall;
+typedef struct ChrMoveState {
+    void *target;
+    int frames;
+    u8 pad08[0x20 - 0x08];
+    float x;
+    u8 pad24[0x28 - 0x24];
+    float z;
+    float speed;
+} ChrMoveState;
+typedef struct ChrMoveEntry {
+    u32 flags;
+    u32 state_flags;
+    u32 mask;
+} ChrMoveEntry;
+
+static void CHR_moveXZ(int mode, JThread *thread, ChrMoveCall *arguments,
+                       u32 *failure_result)
+{
+    JavaField *field;
+    Actor *peer;
+    float *offset;
+    ChrMoveEntry *entry;
+    ChrMoveState *move;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + field->offset);
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    move = (ChrMoveState *)((u8 *)entry + 0x38);
+    entry->mask = 1;
+    entry->state_flags |= 1;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_algorithm_string, -1), 0);
+    offset = (*(u32 *)(object + field->offset) & 1)
+        ? (float *)((u8 *)peer + 0x10) : defaultOffset;
+
+    switch (mode) {
+    case 0:
+        move->frames = arguments->a.i;
+        move->x = arguments->b.f + offset[0];
+        {
+            float c = arguments->c.f;
+            float o2 = offset[2];
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveXZ;
+            move->z = c + o2;
+        }
+        wait = arguments->wait;
+        break;
+    case 1:
+        move->frames = -1;
+        move->x = arguments->a.f + offset[0];
+        move->z = arguments->b.f + offset[2];
+        {
+            float c = arguments->c.f;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveXZ;
+            move->speed = c / 30.0f;
+        }
+        wait = arguments->wait;
+        break;
+    case 2:
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(chr_peer_string, -1), 0);
+        {
+            u8 *o = ((ChrMoveObjCall *)arguments)->b.p + field->offset;
+            int fr = ((ChrMoveObjCall *)arguments)->a.i;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveChr;
+            o = *(u8 **)o;
+            move->frames = fr;
+            move->target = o;
+        }
+        wait = ((ChrMoveObjCall *)arguments)->wait;
+        break;
+    case 3:
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(chr_peer_string, -1), 0);
+        {
+            u8 *o = ((ChrMoveObjCall *)arguments)->a.p + field->offset;
+            move->frames = -1;
+            o = *(u8 **)o;
+            move->target = o;
+        }
+        {
+            float c = ((ChrMoveObjCall *)arguments)->b.f;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveChr;
+            move->speed = c / 30.0f;
+        }
+        wait = ((ChrMoveObjCall *)arguments)->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
 
 /*
  * CHR_moveXZ is local to this file in the original (glabel ..., local); it
