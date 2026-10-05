@@ -416,7 +416,50 @@ int checkItemBoxDir(u8 *actor, ItemBoxView *box)
     return CheckPointLine(&v1, &v2, (Vector4 *)(actor + 0x10)) == 2;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game", checkItemBox);
+extern float D_004D7B90;
+extern float D_004D7B94;
+extern float D_004D7B98;
+extern u8 MapUnit[];
+extern float atan2f(float y, float x);
+float nearDir(float from, float to);
+
+static ItemBoxView *checkItemBox(u8 *self)
+{
+    float pos[4];
+    ItemBoxView *best;
+    float bestDist;
+    float dx, dz, ex, ez, lim, k;
+    int i;
+
+    best = 0;
+    bestDist = D_004D7B90;
+    pos[0] = *(float *)(self + 0x10);
+    pos[1] = *(float *)(self + 0x14);
+    pos[2] = *(float *)(self + 0x18);
+    for (i = 0; i < 64; i++) {
+        ItemBoxView *u = (ItemBoxView *)(MapUnit + i * 0x300);
+        if (__builtin_fabsf(*(float *)(self + 0x14) - u->position.v.y) > D_004D7B94) continue;
+        if (*(short *)((u8 *)u + 0xA4) == -1) continue;
+        if (!(*(u32 *)u & 0x08000000)) continue;
+        if (*((u8 *)u + 0xA2) != 0) continue;
+        dx = u->position.v.x - pos[0];
+        dz = u->position.v.z - pos[2];
+        ex = u->extent.v.x;
+        ez = u->extent.v.z;
+        k = 1.0f;
+        lim = dx * dx + dz * dz;
+        if (ez < ex) pos[3] = ex * ex;
+        else pos[3] = ez * ez;
+        lim = __builtin_fabsf(lim);
+        if (!(lim < __builtin_fabsf(pos[3] + k))) continue;
+        if (!(__builtin_fabsf(nearDir(atan2f(dx, dz), *(float *)(self + 0x54))) < D_004D7B98)) continue;
+        if (!(lim < bestDist)) continue;
+        if (checkItemBoxDir(self, u) == 0) continue;
+        bestDist = lim;
+        best = u;
+    }
+    return best;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game", CheckGameSymbol);
 
