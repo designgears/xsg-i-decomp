@@ -406,7 +406,142 @@ void CardDispFieldPointScale(Matrix4 matrix, const float translation[4],
     nmlModelEntry(cardlex_tbl[kind]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispTejyun);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) TejyunVec;
+extern const CardHelpPackedVector D_00A4E0F0;
+extern const CardHelpPackedVector D_00A4E100;
+extern const CardHelpPackedVector D_00A4E110;
+
+void CardDispTejyun(Matrix4 matrix, int mode)
+{
+    Matrix4 transformed;
+    TejyunVec trans1;
+    TejyunVec trans2;
+    TejyunVec scale;
+    Matrix4 color;
+    float light;
+
+    trans1 = *(TejyunVec *)&D_00A4E0F0;
+    trans2 = *(TejyunVec *)&D_00A4E100;
+    scale = *(TejyunVec *)&D_00A4E110;
+    light = (xglSin((((float)ChangeCnt * 11.25f) / 180.0f) * 3.1415927f) * 0.5f) + 1.0f;
+    color[3][0] = color[3][1] = color[3][2] = light;
+    xglMatrixTrans(transformed, matrix, &trans1.x);
+    xglMatrixScale(transformed, transformed, &scale.x);
+    nmlModelSetPlace((const Vector4 *)transformed);
+    nmlModelSetTexture(cardxtx_tbl[0x12]);
+    nmlModelEntry(cardlex_tbl[0x12]);
+    xglMatrixTrans(transformed, matrix, &trans2.x);
+    switch (mode) {
+    case 27:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x10);
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x13);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1B]);
+        nmlModelEntry(cardlex_tbl[0x1B]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1C]);
+        nmlModelEntry(cardlex_tbl[0x1C]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1D]);
+        nmlModelEntry(cardlex_tbl[0x1D]);
+        break;
+    case 28:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x11);
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x18);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1B]);
+        nmlModelEntry(cardlex_tbl[0x1B]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetTexture(cardxtx_tbl[0x1C]);
+        nmlModelEntry(cardlex_tbl[0x1C]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1D]);
+        nmlModelEntry(cardlex_tbl[0x1D]);
+        break;
+    case 29:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x13);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1C]);
+        nmlModelEntry(cardlex_tbl[0x1C]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetTexture(cardxtx_tbl[0x1D]);
+        nmlModelEntry(cardlex_tbl[0x1D]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1E]);
+        nmlModelEntry(cardlex_tbl[0x1E]);
+        break;
+    case 30:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x13);
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x18);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1D]);
+        nmlModelEntry(cardlex_tbl[0x1D]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetTexture(cardxtx_tbl[0x1E]);
+        nmlModelEntry(cardlex_tbl[0x1E]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1F]);
+        nmlModelEntry(cardlex_tbl[0x1F]);
+        break;
+    case 31:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x14);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1E]);
+        nmlModelEntry(cardlex_tbl[0x1E]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetTexture(cardxtx_tbl[0x1F]);
+        nmlModelEntry(cardlex_tbl[0x1F]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x20]);
+        nmlModelEntry(cardlex_tbl[0x20]);
+        break;
+    case 32:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x11);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1F]);
+        nmlModelEntry(cardlex_tbl[0x1F]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetLight(color, asDir);
+        nmlModelSetTexture(cardxtx_tbl[0x20]);
+        nmlModelEntry(cardlex_tbl[0x20]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x21]);
+        nmlModelEntry(cardlex_tbl[0x21]);
+        break;
+    case 33:
+        CardDispFieldPointScale(matrix, &trans1.x, &scale.x, 0x13);
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x1F]);
+        nmlModelEntry(cardlex_tbl[0x1F]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x20]);
+        nmlModelEntry(cardlex_tbl[0x20]);
+        transformed[3][1] -= 0.3f;
+        nmlModelSetPlace((const Vector4 *)transformed);
+        nmlModelSetTexture(cardxtx_tbl[0x21]);
+        nmlModelSetLight(color, asDir);
+        nmlModelEntry(cardlex_tbl[0x21]);
+        break;
+    }
+}
 
 void CardDispFieldPoint(Matrix4 matrix, const float translation[4], int kind)
 {
