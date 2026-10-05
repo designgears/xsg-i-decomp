@@ -691,7 +691,112 @@ void GameDrawShadow(void)
     ACT_DrawShadowEnd();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameDrawSync);
+typedef struct GameClearEnvColor {
+    u8 unmodeled_00[0x20];
+    u32 color_r;
+    u32 color_g;
+    u32 color_b;
+    u32 color_a;
+} GameClearEnvColor;
+extern GameClearEnvColor ClearEnv;
+extern u32 TestEnv_2_00338620[];
+extern int StudioEntrySkip;
+typedef struct GameDrawSyncView {
+    u8 unmodeled_00[0x10];
+    union {
+        u32 flags;
+        u64 flags64;
+    } f;
+    u8 unmodeled_18[0x2c - 0x18];
+    void (*clear_hook)(void);
+    void (*map_hook)(void);
+    void (*act_hook)(void);
+    void (*shadow_hook)(void);
+    void (*unit_hook)(void);
+    void (*phase_hook)(int phase);
+    u8 unmodeled_44[0xb8 - 0x44];
+    int wait;
+} GameDrawSyncView;
+extern void VibrationEngine(void);
+extern void xglStudioMainCameraMove(void);
+extern void xglStudioMove(void);
+extern void TWSYS_draw(void);
+extern void MapDraw(void);
+extern void ACT_draw(void);
+extern void MAP_drawUnit(void);
+extern void sefExecEffect(void);
+extern void GameMovieMain(void);
+extern int xglSoundStreamMain(void);
+extern void GameSnapShotCheck(void);
+extern void xglSleep(void);
+extern void nmlModelSetGlobalFogReset(void);
+
+void GameDrawSync(void)
+{
+
+
+
+    VibrationEngine();
+    xglStudioMainCameraMove();
+    xglStudioMove();
+    if (((GameDrawSyncView *)&GameLoopState)->phase_hook != 0) {
+        ((GameDrawSyncView *)&GameLoopState)->phase_hook(3);
+    }
+    if (((GameDrawSyncView *)&GameLoopState)->f.flags & 2) {
+        if (((GameDrawSyncView *)&GameLoopState)->clear_hook != 0) {
+            ((GameDrawSyncView *)&GameLoopState)->clear_hook();
+        } else {
+            TestEnv_2_00338620[12] = ClearEnv.color_r;
+            TestEnv_2_00338620[13] = ClearEnv.color_g;
+            TestEnv_2_00338620[14] = ClearEnv.color_b;
+            TestEnv_2_00338620[15] = 0x80;
+            sceVif1PkRef(xglPacketGetCurrent(), TestEnv_2_00338620, 6, 0, 0, 0);
+        }
+        TWSYS_draw();
+        if (((GameDrawSyncView *)&GameLoopState)->map_hook != 0) {
+            ((GameDrawSyncView *)&GameLoopState)->map_hook();
+        } else {
+            MapDraw();
+        }
+        if (((GameDrawSyncView *)&GameLoopState)->act_hook != 0) {
+            ((GameDrawSyncView *)&GameLoopState)->act_hook();
+        } else {
+            ACT_draw();
+        }
+        if (((GameDrawSyncView *)&GameLoopState)->shadow_hook != 0) {
+            ((GameDrawSyncView *)&GameLoopState)->shadow_hook();
+        } else {
+            GameDrawShadow();
+        }
+        if (((GameDrawSyncView *)&GameLoopState)->unit_hook != 0) {
+            ((GameDrawSyncView *)&GameLoopState)->unit_hook();
+        } else {
+            MAP_drawUnit();
+        }
+        if (!(((GameDrawSyncView *)&GameLoopState)->f.flags64 & 0x4000001)) {
+            sefExecEffect();
+        }
+        GameMovieMain();
+        xglSoundStreamMain();
+        if (((GameDrawSyncView *)&GameLoopState)->f.flags & 4) {
+            GameDispTag();
+        }
+    }
+    if (((GameDrawSyncView *)&GameLoopState)->phase_hook != 0) {
+        ((GameDrawSyncView *)&GameLoopState)->phase_hook(4);
+    }
+    GameSnapShotCheck();
+    StudioEntrySkip = 1;
+    xglSleep();
+    nmlModelSetGlobalFogReset();
+    StudioEntrySkip = 0;
+    if (((GameDrawSyncView *)&GameLoopState)->wait > 0) {
+        ((GameDrawSyncView *)&GameLoopState)->wait--;
+    }
+    if (((GameDrawSyncView *)&GameLoopState)->phase_hook != 0) {
+        ((GameDrawSyncView *)&GameLoopState)->phase_hook(5);
+    }
+}
 
 static int GameModeEvtTools(void)
 {
