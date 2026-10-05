@@ -471,7 +471,36 @@ reset:
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBp2Tid);
+extern unsigned short *dataTecGet(int tecId);
+extern int menuTimeGet(void);
+extern int printf(const char *format, ...);
+
+int calcBp2Tid(ObjectTask *unit, int tecId)
+{
+    int delta;
+    signed char cat;
+
+    if (*(unsigned *)unit->work & 0x40) {
+        return 0;
+    }
+    delta = 4;
+    cat = ((signed char *)dataTecGet(tecId))[0x11];
+    if (cat != 0) {
+        delta = 6;
+        if (cat != 1) {
+            delta = 10;
+            if (cat != 2) {
+                delta = 0;
+            }
+        }
+    }
+    if (menuTimeGet() == 2) {
+        delta *= 3;
+        printf("** BP up: EventTimer G (%d)\n", delta);
+    }
+    calcBp(unit, delta);
+    return 1;
+}
 
 int calcBc(BattleUnit *bu, int delta)
 {
