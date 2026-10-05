@@ -178,7 +178,142 @@ void AgwsPasMain(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_agws_para_set", AgwsInfoMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_agws_para_set", AgwsSelectMain);
+typedef struct AgwsSelWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    const char *title;
+    unsigned char state;
+    unsigned char unmodeled_11[0x14 - 0x11];
+    void *select;
+    void *selectArg;
+    unsigned char unmodeled_1c[0x194 - 0x1C];
+} AgwsSelWindow;
+typedef struct AgwsSelList {
+    unsigned char unmodeled_00[0x02];
+    unsigned short hasPrompt;
+    int cursor;
+    const char *items;
+    const char *prompt;
+    unsigned char unmodeled_10[0x5F8 - 0x10];
+} AgwsSelList;
+typedef struct AgwsSelectWork {
+    unsigned char state;
+    unsigned char mask;
+    signed char selectNo;
+    unsigned char unmodeled_03;
+    int color;
+    AgwsSelWindow window[4];
+    unsigned char unmodeled_658[0x658 - 0x658];
+    AgwsSelList list[4];
+} AgwsSelectWork;
+extern AgwsSelectWork *AgwsSelect;
+extern const char D_004DAF80[];
+extern const char D_004DAF88[];
+extern const char D_004DAF90[];
+extern char mmsg_9[];
+extern const char *msg_7_0036D9F8[];
+extern const char *msg01_8_0036DA40[];
+void MenuSelectWindow(void);
+char *strcat(char *dst, const char *src);
+
+void AgwsSelectMain(void)
+{
+    AgwsSelectWork *work = AgwsSelect;
+    short x[8];
+    short y[8];
+    int i;
+    signed char *p;
+    int c;
+
+    switch (work->state) {
+    case 0:
+        work->color = 0x00FFFFF0;
+        for (i = 0; i < 4; i++) {
+            WindowDXSet(&work->window[i]);
+            work->window[i].color = work->color;
+            work->window[i].title = D_004DAF80;
+            work->list[i].cursor = 0;
+            work->list[i].items = msg_7_0036D9F8[1];
+            work->list[i].hasPrompt = 0;
+            work->window[i].select = (void *)MenuSelectWindow;
+            work->window[i].selectArg = &work->list[i];
+        }
+        work->list[2].items = msg01_8_0036DA40[0];
+        work->window[3].title = D_004DAF88;
+        work->list[3].items = msg01_8_0036DA40[2];
+        work->window[0].x = 0x220;
+        work->window[0].y = 0xA0;
+        work->window[0].width = 0xA0;
+        work->window[0].height = 0x4E;
+        work->window[1].x = -0xC0;
+        work->window[1].y = 0x80;
+        work->window[1].width = 0xA6;
+        work->window[1].height = 0;
+        work->window[2].x = 0x220;
+        work->window[2].y = 0xB0;
+        work->window[2].width = 0xB0;
+        work->window[2].height = 0x60;
+        work->window[3].x = 0x220;
+        work->window[3].y = 0x80;
+        work->window[3].width = 0xB0;
+        work->window[3].height = 0x70;
+        work->list[3].hasPrompt = 1;
+        work->list[3].prompt = msg01_8_0036DA40[1];
+        for (i = 0; i < 4; i++) {
+            work->window[i].state = 1;
+            WindowDXMain(&work->window[i]);
+            work->window[i].state = 3;
+        }
+        work->mask = 1;
+        work->selectNo = -1;
+        work->state = 2;
+        /* fallthrough */
+    case 2:
+        break;
+    default:
+        return;
+    }
+
+    y[0] = 0xA0;
+    x[1] = -0xC0;
+    y[2] = 0xB0;
+    x[0] = 0x220;
+    y[1] = 0x80;
+    x[2] = 0x220;
+    x[3] = 0x220;
+    y[3] = 0x80;
+    {
+
+        switch (MenuWork.state) {
+        case 0x22:
+            x[0] = 0x110;
+            work->list[0].cursor = MenuWork.reserveCursor;
+            break;
+        case 0x42:
+            mmsg_9[0] = D_004DAF90[0];
+            i = 0;
+            while ((c = MenuWork.weaponSlot[i]) != 0) {
+                strcat(mmsg_9, msg_7_0036D9F8[c + 10]);
+                if (++i >= 6)
+                    break;
+            }
+            work->window[1].height = (signed char)MenuWork.unmodeled_57[3] * 0x18 + 6;
+            work->list[1].items = mmsg_9;
+            x[1] = 0x30;
+            work->list[1].cursor = MenuWork.selectedIndex;
+            break;
+        }
+    }
+
+    for (i = 0; i < 4; i++) {
+        MoveSlide(&work->window[i].x, &x[i], 3.0f);
+        MoveSlide(&work->window[i].y, &y[i], 3.0f);
+        WindowDXMain(&work->window[i]);
+    }
+}
 
 /* The weapon list of the AGWS mount position under the cursor: each row is
  * flagged when the weapon cannot go on that position. */
