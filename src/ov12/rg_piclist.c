@@ -692,7 +692,200 @@ void RgPicDebugEditPosition(int *x, int *y)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicDebugControl);
+extern int RgBxxGetTexNum(RgBxx *pBxx);
+extern int RgBxxGetPicID(RgBxx *pBxx, unsigned int id);
+extern int XrgHostCreateOpen(const char *filename);
+extern int XrgHostReadOpen(const char *filename);
+extern void XrgHostClose(int handle);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern const char D_00A573C8[];
+extern const char D_00A573E0[];
+extern const char D_00A573F8[];
+typedef struct {
+    unsigned char _p[0x28];
+    unsigned short held;
+    unsigned short pressed;
+    unsigned short trig;
+    unsigned char _r[0xa];
+    signed char lx;
+    signed char ly;
+    signed char rx;
+    signed char ry;
+} PadDCtl;
+static inline int RgClamp(int v, int lo, int hi)
+{
+    if (v < lo)
+        return lo;
+    return hi < v ? hi : v;
+}
+static inline int RgPicDebugClampIndex(RgPicDebug *pDebug)
+{
+    return RgClamp(pDebug->index, 0, RgPicListGetSize(pDebug->list) - 1);
+}
+
+void RgPicDebugControl(RgPicDebug *pDebug)
+{
+    int x;
+    int y;
+    int dx;
+    int dy;
+    int ofsX;
+    int ofsY;
+    int sy;
+    int sx;
+    int held;
+    int trig;
+    int num;
+    int id;
+    int idx;
+    int max;
+    int h;
+    RgPic *prev;
+    RgPic *pic;
+    RgPic *npic;
+    int mx;
+    int mode;
+    int my;
+    PadDCtl *pad = (PadDCtl *)&PadData;
+
+    {
+        int rx = pad->rx;
+        sy = pad->ly + pad->ry;
+        sx = pad->lx + rx;
+    }
+    trig = pad->trig;
+    held = pad->held;
+    if (pDebug == 0)
+        assert_prog(D_00A573B8, D_00A57320, 0x27C);
+    mode = pDebug->mode;
+    if (mode == 1) {
+        pic = RgPicListGetPic(pDebug->list, pDebug->index);
+        if (pic != 0) {
+            x = RgPicGetX(pic);
+            y = RgPicGetY(pic);
+            RgPicDebugEditPosition(&x, &y);
+            if (trig & 8) {
+                unsigned int a = RgPicGetAlpha(pic) + 1;
+                RgPicSetAlpha(pic, a < 4 ? a : 0);
+            }
+            RgPicSetPos(pic, x, y);
+        }
+        if (trig & 0x10)
+            pDebug->index--;
+        if (trig & 0x80)
+            pDebug->index++;
+        pDebug->index = RgClamp(pDebug->index, 0, RgPicListGetSize(pDebug->list) - 1);
+        if (trig & 0x20)
+            pDebug->mode = 0;
+        if (trig & 0x40)
+            pDebug->mode = 2;
+        if ((held & 5) == 5)
+            pDebug->mode = 3;
+        if ((held & 0xA) == 0xA)
+            pDebug->mode = 4;
+        if (trig & 0x800)
+            pDebug->mode = 5;
+    } else if (mode == 0) {
+        num = RgBxxGetTexNum(pDebug->bxx);
+        if (num == 0)
+            pDebug->mode = 1;
+        if (trig & 0x10)
+            pDebug->picId--;
+        else if (trig & 0x80)
+            pDebug->picId++;
+        pDebug->picId = RgClamp(pDebug->picId, 0, num - 1);
+        if (trig & 0x20) {
+            id = RgBxxGetPicID(pDebug->bxx, pDebug->picId);
+            if (id != 0) {
+                prev = RgPicListGetPic(pDebug->list, pDebug->index);
+                npic = RgPicListAddPic(pDebug->list, (const char *)id);
+                if (npic != 0) {
+                    if (prev == 0) {
+                        RgPicSetPos(npic, 0x40, 0x80);
+                    } else {
+                        mx = 0x80 - RgPicGetX(prev);
+                        my = 0x80 - RgPicGetY(prev);
+                        if (sx < -0x50) {
+                            my = 0;
+                            mx = -RgPicGetWidth(npic);
+                        } else if (sx > 0x50) {
+                            my = 0;
+                            mx = RgPicGetWidth(prev);
+                        } else if (sy < -0x50) {
+                            mx = 0;
+                            my = -RgPicGetHeight(npic);
+                        } else if (sy > 0x50) {
+                            mx = 0;
+                            my = RgPicGetHeight(prev);
+                        }
+                        RgPicSetPos(npic, RgPicGetX(prev) + mx, RgPicGetY(prev) + my);
+                    }
+                }
+            }
+            pDebug->mode = 1;
+            pDebug->index = RgPicListGetSize(pDebug->list) - 1;
+        }
+        if (trig & 0x40)
+            pDebug->mode = 1;
+    } else if (mode == 2) {
+        if (trig & 0x20) {
+            RgPicListDelPic(pDebug->list, pDebug->index);
+            if (RgPicListGetSize(pDebug->list) != 0)
+                pDebug->index = RgPicDebugClampIndex(pDebug);
+            else
+                pDebug->index = -1;
+            pDebug->mode = 1;
+        }
+        if (trig & 0x840)
+            pDebug->mode = 1;
+    } else if (mode == 3) {
+        if (trig & 0x20) {
+            if (InstanceOfRgDebugFlags()->flags[3] != 0) {
+                h = XrgHostCreateOpen(D_00A573C8);
+                if (h >= 0) {
+                    RgPicListWrite(pDebug->list, h);
+                    XrgHostClose(h);
+                }
+            }
+            pDebug->mode = 1;
+        } else if (trig & 0x40) {
+            pDebug->mode = 1;
+        }
+    } else if (mode == 4) {
+        if (trig & 0x20) {
+            if (InstanceOfRgDebugFlags()->flags[3] != 0) {
+                h = XrgHostReadOpen(D_00A573C8);
+                if (h >= 0) {
+                    DisposeRgPicList(pDebug->list);
+                    pDebug->list = RgPicListRead(h, pDebug->bxx);
+                    if (pDebug->list == 0)
+                        assert_prog(D_00A573E0, D_00A57320, 0x302);
+                    XrgHostClose(h);
+                    pDebug->index = RgPicListGetSize(pDebug->list) - 1;
+                }
+            }
+            pDebug->mode = 1;
+        } else if (trig & 0x40) {
+            pDebug->mode = 1;
+        }
+    } else if (mode == 5) {
+        ofsX = RgPicListGetOfsX(pDebug->list);
+        ofsY = RgPicListGetOfsY(pDebug->list);
+        if (held & 8) {
+            dx = 0;
+            dy = 0;
+            RgPicDebugEditPosition(&dx, &dy);
+            RgPicListMoveAllPic(pDebug->list, dx, dy);
+        } else {
+            RgPicDebugEditPosition(&ofsX, &ofsY);
+            RgPicListSetOffset(pDebug->list, ofsX, ofsY);
+        }
+        if (trig & 0x20)
+            pDebug->mode = 1;
+    } else {
+        RgError(D_00A573F8, D_00A57320, 0x322, mode);
+    }
+}
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern int RgBxxGetPicID(RgBxx *pBxx, unsigned int id);
