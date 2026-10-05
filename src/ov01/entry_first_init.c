@@ -982,7 +982,102 @@ void encEnvMake(void *packet)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", encEffObjInit);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", encEffObj);
+extern float thetaInc;
+extern float theta;
+extern int encObjCnt;
+void effCalcMatrix(void *unused, float (*m)[4], int t);
+extern void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector);
+typedef struct EncEffVtx {
+    float x;
+    float y;
+    float z;
+    int pad;
+} EncEffVtx;
+typedef struct EncEffObjFull {
+    short active;
+    short idx[4];
+    short pad[3];
+    Vector4 v[4];
+    EncEffVtx vtx[4];
+    unsigned char r, g, b;
+    unsigned char pad2[0x2D];
+} EncEffObjFull;
+
+void encEffObj(ObjectTask *task)
+{
+    FadeObjTask *self = (FadeObjTask *)task;
+    float mats[65][4][4];
+    float out[4];
+    EncEffObjFull *obj;
+    int i;
+    int k;
+    int cx = 256;
+    int cy = 224;
+    float *zp;
+    Vector4 *v;
+    short *ip;
+
+    obj = (EncEffObjFull *)0x01DBF840;
+    switch (encEffCmd) {
+    case 0:
+        theta += thetaInc;
+        if (theta > 6.2831855f) {
+            theta -= 6.2831855f;
+        }
+        break;
+    case 1:
+        theta -= thetaInc;
+        if (theta <= 0.0f) {
+            encEffCmd = 2;
+            theta = 0.0f;
+            self->delay = 4;
+        }
+        break;
+    default:
+        if (--self->delay == 0) {
+            objRemove(task);
+            return;
+        }
+        break;
+    }
+    self->life = 0x80;
+    if (encEffCmd != 0) {
+        self->speed += 0x10;
+    }
+    for (i = 0; i < 65; i++) {
+        effCalcMatrix(task, mats[i], i);
+    }
+    for (k = 0; k < encObjCnt; k++, obj++) {
+        zp = &obj->vtx[0].z;
+        v = obj->v;
+        ip = obj->idx;
+        for (i = 3; i >= 0; i--) {
+            xglVectorMulMat((Vector4 *)out, mats[*ip++], v++);
+            zp[-2] = (int)(cx + out[0]);
+            zp[-1] = (int)(cy + out[1]);
+            zp[0] = 16777213.0f;
+            zp += 4;
+        }
+        switch (encEffCmd) {
+        case 0:
+            obj->r += 4;
+            obj->g += 4;
+            obj->b += 4;
+            if (obj->r > 0xF8) obj->r = 0xF8;
+            if (obj->g > 0xF8) obj->g = 0xF8;
+            if (obj->b > 0xF8) obj->b = 0xF8;
+            break;
+        case 1:
+            obj->r -= 4;
+            obj->g -= 4;
+            obj->b -= 4;
+            if (obj->r < 0x80) obj->r = 0x80;
+            if (obj->g < 0x80) obj->g = 0x80;
+            if (obj->b < 0x80) obj->b = 0x80;
+            break;
+        }
+    }
+}
 
 extern void xglMatrixUnit(float (*matrix)[4]);
 extern void xglMatrixTrans(float (*destination)[4], float (*source)[4], const float translation[4]);
