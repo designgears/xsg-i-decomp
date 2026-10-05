@@ -1113,7 +1113,37 @@ int calcA2Chk(ObjectTask *unit)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLineChk);
+extern short dataPosLineGet(int id);
+
+int calcLineChk(ObjectTask *unit)
+{
+    ObjectTask **table;
+    ObjectTask *u;
+    int count;
+    int i;
+    short line;
+    short l;
+    unsigned flag;
+
+    line = dataPosLineGet(*(short *)((char *)calcUPGet(unit) + 0x44));
+    if (line == 0) {
+        return 1;
+    }
+    i = 0;
+    flag = *(unsigned *)unit->work & 0x40;
+    count = unitTblGet(flag != 0, &table);
+    for (; i < count; i++) {
+        u = table[i];
+        if (u == 0) continue;
+        if (*(unsigned *)u->work & 0x80) continue;
+        l = dataPosLineGet(*(short *)((char *)calcUPGet(u) + 0x44));
+        if (l == 0) continue;
+        if (l < line) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBackLineChk);
 
