@@ -811,7 +811,74 @@ int PauseMenuPagePartyDebugFriend(void)
     xglFontDebugPrintf(8, 0xC0, D_004C2EC0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/endou_test", PauseMenuPagePartyDebugAttacker);
+extern int Select_82;
+extern char *text00_83[];
+extern char *text01_84[];
+extern char *text02_85[];
+extern char D_004C2F10[];
+extern char D_004C2F30[];
+unsigned char *PartyDataGet(void);
+typedef struct { unsigned short id; signed char lv; unsigned char pad; } AttackerEntry;
+
+int PauseMenuPagePartyDebugAttacker(void)
+{
+    int i;
+    int y;
+    unsigned char *party;
+    unsigned char *p;
+
+    if (((PadLockView *)&PadData)->rep & 0x1000) {
+        if (Select_82 == 0) {
+            Select_82 = 5;
+        } else {
+            Select_82 -= 1;
+        }
+    }
+    if (((PadLockView *)&PadData)->rep & 0x4000) {
+        if (Select_82 == 5) {
+            Select_82 = 0;
+        } else {
+            Select_82 += 1;
+        }
+    }
+    if (Select_82 < 3) {
+        unsigned int v = *(unsigned short *)(PartyDataGet() + Select_82 * 4 + 0x30);
+        unsigned short rep = ((PadLockView *)&PadData)->rep;
+        if (rep & 0x8000) {
+            v = v != 0 ? v - 1 : 0x1D;
+        }
+        if (rep & 0x2000) {
+            v = v != 0x1D ? v + 1 : 0;
+        }
+        *(unsigned short *)(PartyDataGet() + Select_82 * 4 + 0x30) = v;
+    } else {
+        int v = *(signed char *)(PartyDataGet() + Select_82 * 4 + 0x26);
+        unsigned short rep = ((PadLockView *)&PadData)->rep;
+        if (rep & 0x8000) {
+            v = v != 0 ? v - 1 : 9;
+        }
+        if (rep & 0x2000) {
+            v = v != 9 ? v + 1 : 0;
+        }
+        *(signed char *)(PartyDataGet() + Select_82 * 4 + 0x26) = v;
+    }
+    party = PartyDataGet();
+    xglFontDebugPrintf(8, 0x20, D_004C2F10);
+    xglFontDebugPrintf(8, Select_82 * 16 + 0x30, D_004DA768);
+    for (i = 0; i < 3; i++) {
+        y = i * 16 + 0x30;
+        xglFontDebugPrintf(0x10, y, text01_84[i]);
+        xglFontDebugPrintf(0x30, y, text02_85[0]);
+        xglFontDebugPrintf(0x70, y, MenuCharNameGet(*(unsigned short *)(party + i * 4 + 0x30)));
+    }
+    for (i = 0; i < 3; i++) {
+        y = i * 16 + 0x60;
+        xglFontDebugPrintf(0x10, y, text01_84[i]);
+        xglFontDebugPrintf(0x30, y, text02_85[1]);
+        xglFontDebugPrintf(0x70, y, text00_83[((AttackerEntry *)(party + 0x30))[i].lv]);
+    }
+    xglFontDebugPrintf(8, 0xC0, D_004C2F30);
+}
 
 extern char D_004C2F68[];
 extern char D_004C2F90[];
