@@ -1189,7 +1189,43 @@ int unitCmdMoveNext(ObjectTask *unit, int mode)
     return unitCmdNext(unit);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMoveChaNorm);
+extern float unitCmdLenGet(void *arg0);
+extern void unitCmdDivSet(UnitRecord *unit, float distance, float step);
+
+int unitCmdMoveChaNorm(UnitRecord *unit)
+{
+    Actor *actor;
+    float distance;
+
+    actor = unit->task.work;
+    switch (actor->moveState) {
+    case 0:
+        distance = unitCmdLenGet(unit);
+        unitCmdDivSet(unit, distance, distance - 255.0f);
+        unitCmdVASet(&unit->task, 1, 0);
+        unitCmdRun(&unit->task, 1, 2);
+        actor->moveState++;
+        break;
+    case 1:
+        if (unitCmdRun(&unit->task, 1, 2) != 0) {
+            actor->moveState++;
+        }
+        break;
+    case 2:
+        actor->movePhase = 0;
+        unitCmdDstSet(&unit->task, 3, 0);
+        unitCmdVASet(&unit->task, 3, 0);
+        unitCmdJump(&unit->task, 3, 0, 0);
+        actor->moveState++;
+        break;
+    default:
+        if (unitCmdJump(&unit->task, 3, 0, 0) != 0) {
+            unitCmdMoveNext(&unit->task, 0);
+        }
+        break;
+    }
+    return 0;
+}
 
 int unitCmdMoveChaRun(ObjectTask *unit)
 {
