@@ -1662,7 +1662,84 @@ int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCrit);
+int calcAtrChg(ObjectTask *unit, int attribute);
+int calcSlotAChk(ObjectTask *unit, int id);
+typedef struct CalcCritArg {
+    int tecId;
+    ObjectTask *unit;
+} CalcCritArg;
+
+int calcCrit(ObjectTask *self, CalcCritArg *arg, unsigned int *out, int *dmg)
+{
+    int rate;
+    int mul;
+    unsigned short flags;
+    unsigned char *tec;
+    int weak;
+
+    rate = 10;
+    mul = 3;
+    flags = calcUPGet(arg->unit)->flags;
+    tec = (unsigned char *)dataTecGet(arg->tecId);
+    if ((((int)*out >> 8) & 2) || (*out & 0xFF) != 1 || calcStatGet(arg->unit, 2, 8) != 0) {
+        printf("** Crit: no effect\n");
+        return 0;
+    }
+    if (calcStatGet(self, 7, 0x200) != 0 && calcSlotAChk(self, arg->tecId) != 0) {
+        rate = 50;
+        printf("** Crit: slot A\n");
+    }
+    if (menuTimeGet() == 1) {
+        rate = 50;
+        printf("** Crit: EventTimer R\n");
+    }
+    if (*(unsigned int *)self->work & 0x2000) {
+        rate = 80;
+        printf("** Crit: OBJ_CRIT\n");
+    }
+    weak = *(unsigned short *)((char *)calcUPGet(arg->unit) + 0x18) & calcAtrChg(self, *(unsigned short *)(tec + 0x12));
+    if (weak != 0) {
+        rate = 100;
+
+        if (*(unsigned short *)((char *)calcUPGet(arg->unit) + 0x18) & 0x4000) {
+            mul = 4;
+        }
+        if (weak & 0x300) {
+            mul++;
+        }
+        if (weak & 0xE0) {
+            mul++;
+        }
+        if (weak & 0x1F) {
+            mul++;
+        }
+        printf("** Crit: weak (%04X) x%f\n", weak, (double)((float)mul * 0.5f));
+    }
+    if (arg->tecId == 0xF && (flags & 0xC00) == 0x400) {
+        rate += 50;
+    }
+    if (((flags & 0x4000) && tec[8] == 4) || ((flags & 0x2000) && tec[9] == 4)
+        || ((flags & 0x1000) && tec[10] == 4)) {
+        rate += 50;
+        printf("** Crit: monKind %04X\n", flags);
+    }
+    if (calcStatGet(arg->unit, 4, 0x10) != 0) {
+        rate += 70;
+        calcStatReset(arg->unit, 4, 0x10, 0);
+    }
+    rate += calcSkill(self, 0x4000, 0x8000);
+    if (rate > 100) {
+        rate = 100;
+    }
+    if (rnd(99) + 1 <= rate) {
+        ((union { int i; void *p; } *)dmg)->i = *dmg * mul / 2;
+        *(unsigned int *)self->work |= 0x2000;
+        *out |= 0x100;
+        printf("** Crit: Atk (%d%%) %d\n", rate, *dmg);
+        return 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSpec);
 
