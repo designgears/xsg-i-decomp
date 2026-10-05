@@ -2508,18 +2508,24 @@
     {
      "range": [
       "0x004d1920",
-      "0x004d1960"
+      "0x004d1a00"
      ],
      "generated": [
       "0x004d1920",
-      "0x004d1954"
+      "0x004d19f4"
      ],
      "generated_by": [
+      "FCV2_getPackVal",
       "FCV_getPackVal2f"
      ],
      "c_owned_symbols": [
       "jtbl_004D1920",
-      "jtbl_004D1940"
+      "jtbl_004D1940",
+      "jtbl_004D1960",
+      "jtbl_004D1980",
+      "jtbl_004D19A0",
+      "jtbl_004D19C0",
+      "jtbl_004D19E0"
      ],
      "also_referenced_by_c": [],
      "basis": {

@@ -316,8 +316,6 @@ static s32 FCV_getFKeyType(u32 keyIndex, u8 *types)
     return (packed >> ((3 - (keyIndex & 3)) * 2)) & 3;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getPackVal);
-
 typedef struct FCV2Key {
     u16 type;
     u16 frame;
@@ -325,6 +323,158 @@ typedef struct FCV2Key {
     f32 in;
     f32 out;
 } FCV2Key;
+
+typedef struct FCV2PackCur {
+    FCV2Key *cursor;
+    f32 scale;
+    f32 offset;
+    f32 pad[5];
+    f32 snap;
+} FCV2PackCur;
+
+static f32 FCV2_getPackVal(void **arg0, unsigned char *data, s32 key, void **arg3, f32 frame)
+{
+    FCV2PackCur *st = (FCV2PackCur *)arg0;
+    FCV2Key *prev;
+    FCV2Key *p;
+    FCV2Key *fprev;
+    FCV2Key *fp;
+    s32 i;
+    s32 type;
+    f32 scale, t, d, t0, t1, v0, v1, o, m, s, inv, s2, s3, a, q, h;
+    f32 *pv;
+
+    prev = (FCV2Key *)data;
+    p = prev;
+    switch (prev->type) {
+    case 0:
+    case 2:
+    case 3:
+        p = (FCV2Key *)(data + 8);
+        break;
+    case 4:
+        p = (FCV2Key *)(data + 0xC);
+        break;
+    case 1:
+        p = (FCV2Key *)(data + 0x10);
+        break;
+    }
+    scale = st->scale;
+    frame += st->offset;
+    t = ((FCV2Key *)data)->frame * scale;
+    if (frame <= t) {
+        pv = &((FCV2Key *)data)->val;
+        for (i = 1; i < key; i++) {
+            switch (p->type) {
+            case 0:
+            case 2:
+            case 3:
+                p = (FCV2Key *)((char *)p + 8);
+                break;
+            case 4:
+                p = (FCV2Key *)((char *)p + 0xC);
+                break;
+            case 1:
+                p = (FCV2Key *)((char *)p + 0x10);
+                break;
+            }
+        }
+        st->cursor = p;
+        return *pv;
+    }
+    fprev = 0;
+    fp = 0;
+    for (i = 1; i < key; i++) {
+        d = frame - p->frame * scale;
+        if (fprev == 0 && d < st->snap) {
+            t = __builtin_fabsf(d);
+            fprev = prev;
+            fp = p;
+        }
+        prev = p;
+        switch (prev->type) {
+        case 0:
+        case 2:
+        case 3:
+            p = (FCV2Key *)((char *)p + 8);
+            break;
+        case 4:
+            p = (FCV2Key *)((char *)p + 0xC);
+            break;
+        case 1:
+            p = (FCV2Key *)((char *)p + 0x10);
+            break;
+        }
+    }
+    st->cursor = p;
+    if (fprev == 0) {
+        return prev->val;
+    }
+    if (t < st->snap * 0.5f) {
+        return fp->val;
+    }
+    t0 = scale * fprev->frame;
+    t1 = scale * fp->frame;
+    pv = &fp->val;
+    switch (fp->type) {
+    case 0:
+    case 2:
+        m = 0.0f;
+        v1 = pv[0];
+        break;
+    case 1:
+    case 4:
+        v1 = pv[0];
+        m = pv[1];
+        break;
+    default:
+        m = 0.0f;
+        v1 = m;
+        break;
+    }
+    type = fprev->type;
+    pv = &fprev->val;
+    switch (type) {
+    case 0:
+    case 2:
+    case 3:
+        o = 0.0f;
+        v0 = pv[0];
+        break;
+    case 4:
+        v0 = pv[0];
+        o = pv[1];
+        break;
+    case 1:
+        v0 = pv[0];
+        o = pv[2];
+        break;
+    default:
+        o = 0.0f;
+        v0 = o;
+        break;
+    }
+    switch (fprev->type) {
+    case 3:
+        return v0;
+    case 0:
+        return v0 + (v1 - v0) * (frame - t0) / (t1 - t0);
+    case 1:
+    case 2:
+    case 4:
+        s = frame - t0;
+        inv = 1.0f / (t1 - t0);
+        s2 = s * s;
+        s3 = s2 * s * (inv * inv);
+        a = s2 * 3.0f * (inv * inv);
+        q = s2 * inv;
+        h = (s3 + s3) * inv;
+        s3 = s3 - q;
+        return v0 * ((h - a) + 1.0f) + v1 * (a - h) + o * ((s3 - q) + s) + m * s3;
+    }
+    return 0.0f;
+}
+
 typedef union FCV2Out {
     void *p;
     f32 f;
@@ -666,9 +816,9 @@ void *FCV2_getPackAttribute(FCV2Pack *pack)
     return result;
 }
 
-f32 FCV2_getPackVal(void **, unsigned char *, u16, void **);
+f32 FCV2_getPackVal(void **, unsigned char *, s32, void **, f32);
 
-f32 FCV2_getPackValue(void **arg0) {
+f32 FCV2_getPackValue(void **arg0, f32 frame) {
     unsigned char *p = *arg0;
     f32 r = 0.0f;
 
@@ -681,7 +831,7 @@ f32 FCV2_getPackValue(void **arg0) {
         *arg0 = p + 8;
         break;
     case 3:
-        r = FCV2_getPackVal(arg0, p + 4, *(u16 *)p, arg0);
+        r = FCV2_getPackVal(arg0, p + 4, *(u16 *)p, arg0, frame);
         break;
     default:
         *arg0 = p + 4;
@@ -724,7 +874,7 @@ u16 *FCV2_getKey(u16 *key, f32 time)
     return ret;
 }
 
-f32 FCV2_getPackVal(void **, unsigned char *, u16, void **);
+f32 FCV2_getPackVal(void **, unsigned char *, s32, void **, f32);
 
 void FCV2_dump(FCV2AttrHeader *hdr)
 {
