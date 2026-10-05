@@ -3,17 +3,134 @@
  */
 #include "common.h"
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_interface2", tskUmnBgCubeMain);
+typedef struct { char pad[0x10]; unsigned char unk10, unk11, unk12; char pad2; int unk14; int unk18; int unk1C; } UmnBgCubeTask;
+
+typedef struct { int unk0; int unk4; char pad[0x94-8]; float unk94; char pad2[0xA0-0x98]; float unkA0; float unkA4; float unkA8; char pad3[0xD0-0xAC]; float unkD0; float unkD4; float unkD8; } UmnCam;
+
+extern UmnCam *xglStudioGetCamera2(int);
+
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) UmnBgVec;
+typedef struct {
+    UmnBgVec ambient;
+    UmnBgVec intensity[3];
+    UmnBgVec direction[3];
+} UmnBgLightParam;
+typedef struct {
+    UmnBgVec ambient;
+    UmnBgVec lights[6];
+    float matrix[4][4];
+    float color[4][4];
+} UmnBgLight;
+typedef struct {
+    UmnBgVec trans;
+    UmnBgVec rot;
+    UmnBgVec rot2;
+    UmnBgVec scale;
+    float place[4][4];
+} UmnBgCubeData;
+extern unsigned char UmnWork[];
+extern UmnBgVec D_00A11E60;
+extern UmnBgLightParam D_00A11E70;
+extern void *memset(void *dest, int value, unsigned int size);
+extern float xglFRand(void);
+extern int xglTaskWaitRemove(void *task);
+extern void xglMatrixStackUnit(void);
+extern void xglMatrixStackScale(const float scale[4]);
+extern void xglMatrixStackTrans(const float translation[4]);
+extern void xglMatrixStackRotX(float angle);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackRotZ(float angle);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void xglLightIntensityAmbient(UmnBgLight *light, UmnBgVec *ambient);
+extern void xglLightIntensityParallel(UmnBgLight *light, int index, UmnBgVec *intensity);
+extern void xglLightDirection(UmnBgLight *light, int index, UmnBgVec *direction);
+extern void xglLightCalcMatrix(UmnBgLight *light);
+extern void nmlModelSetLight(float color[4][4], float matrix[4][4]);
+extern void nmlModelSetTexture(int tex);
+extern void nmlModelSetPlace(float matrix[4][4]);
+extern void nmlModelEntry(int model);
+
+void tskUmnBgCubeMain(void *arg) {
+    UmnBgCubeTask *t = arg;
+    UmnBgCubeData *d;
+    UmnBgVec *rot;
+    UmnBgVec *rot2;
+    UmnBgVec *scale;
+    float (*place)[4];
+    UmnBgVec v;
+    UmnBgVec s;
+    UmnBgLight light;
+    UmnBgLightParam lp;
+    int i;
+
+    d = (UmnBgCubeData *)t->unk1C;
+    rot = &d->rot;
+    rot2 = &d->rot2;
+    scale = &d->scale;
+    place = d->place;
+    if (UmnWork[1] == 0xFF) {
+        t->unk10 = 0x63;
+    }
+    switch (t->unk10) {
+    case 0:
+        t->unk10 = 1;
+        t->unk11 = 1;
+        memset(&v, 0, 0x10);
+        v.w = 1.0f;
+        s = D_00A11E60;
+        d->trans = v;
+        *rot = v;
+        *rot2 = v;
+        *scale = s;
+        rot->x = xglFRand();
+        rot->y = xglFRand();
+        rot->z = xglFRand();
+        rot2->x = xglFRand();
+        rot2->y = xglFRand();
+        rot2->z = xglFRand();
+        scale->z = 7.5f;
+        scale->y = 7.5f;
+        scale->x = 7.5f;
+    case 1:
+        for (i = 0; i < 3; i++) {
+            (&rot->x)[i] += 0.001f;
+        }
+        break;
+    case 0x63:
+        xglTaskWaitRemove(t);
+        return;
+    }
+    if (t->unk11 != 0) {
+        xglStudioGetCamera2(t->unk12)->unk0 = 1;
+        xglMatrixStackUnit();
+        xglMatrixStackScale(&scale->x);
+        xglMatrixStackTrans(&d->trans.x);
+        xglMatrixStackRotZ(rot->z);
+        xglMatrixStackRotY(rot->y);
+        xglMatrixStackRotX(rot->x);
+        xglMatrixStackSave(d->place);
+        lp = D_00A11E70;
+        xglLightIntensityAmbient(&light, &lp.ambient);
+        xglLightIntensityParallel(&light, 0, &lp.intensity[0]);
+        xglLightDirection(&light, 0, &lp.direction[0]);
+        xglLightIntensityParallel(&light, 1, &lp.intensity[1]);
+        xglLightDirection(&light, 1, &lp.direction[1]);
+        xglLightIntensityParallel(&light, 2, &lp.intensity[2]);
+        xglLightDirection(&light, 2, &lp.direction[2]);
+        xglLightCalcMatrix(&light);
+        nmlModelSetLight(light.color, light.matrix);
+        nmlModelSetTexture(t->unk14);
+        nmlModelSetPlace(place);
+        nmlModelEntry(t->unk18);
+    }
+}
 
 typedef struct { char pad[8]; void *unk8; } UmnTaskSched;
-typedef struct { char pad[0x10]; unsigned char unk10, unk11, unk12; char pad2; int unk14; int unk18; int unk1C; } UmnBgCubeTask;
-typedef struct { int unk0; int unk4; char pad[0x94-8]; float unk94; char pad2[0xA0-0x98]; float unkA0; float unkA4; float unkA8; char pad3[0xD0-0xAC]; float unkD0; float unkD4; float unkD8; } UmnCam;
 extern void tskUmnBgCubeMain(void *);
 extern int UmnBgCubeLex;
 extern int UmnBgCubeXtx;
 extern UmnTaskSched *task_xmx;
 extern UmnBgCubeTask *xglTaskEntryNext(UmnTaskSched *, void (*)(void *), void *);
-extern UmnCam *xglStudioGetCamera2(int);
 extern void xglCameraInit(UmnCam *);
 
 int UmnBgCubeInit(int arg0) {
