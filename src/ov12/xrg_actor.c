@@ -735,7 +735,60 @@ void XrgActorSetPlayMotionComaStep(XrgActor *pActor, int step)
     pActor->motionComaStepAccum = 0.0f;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _LoadXenoActor);
+extern void XrgActorSetLight(XrgActor *pActor, RgVector *pLight);
+extern XenoAct *ACT_create(int type, int id);
+extern void _InitXenoActor(XrgActor *pActor);
+extern const char D_00A58B00[];
+extern const char D_00A58B10[];
+extern const char D_00A58B20[];
+
+void _LoadXenoActor(XrgActor *pActor, int actorID)
+{
+    XrgActorEssence *pEss = (XrgActorEssence *)actorID;
+    XenoDatEntry *pEntry;
+    int id;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x372);
+    }
+    if (pEss == 0) {
+        assert_prog(D_00A58B00, D_00A587E0, 0x373);
+    }
+    id = pEss->actorID;
+    pEntry = _GetXenoDatEntry(id);
+    if (pEntry == 0) {
+        assert_prog(D_00A58B10, D_00A587E0, 0x377);
+    }
+    _InitXenoActor(pActor);
+    pActor->actorID = id;
+    if (pEntry != 0) {
+        pActor->pXenoAct = ACT_create(-1, pEntry->unk[0]);
+        if (pActor->pXenoAct == 0) {
+            assert_prog(D_00A587F8, D_00A587E0, 0x37E);
+        }
+        if (pEss->fileName[0] == 0) {
+            if (pEntry->unk[2] == 0) {
+                assert_prog(D_00A58B20, D_00A587E0, 0x383);
+            }
+            _LoadXenoActorMdl(pActor, (const char *)pEntry->unk[2]);
+        } else {
+            _LoadXenoActorMdl(pActor, pEss->fileName);
+        }
+        if (pEntry->unk[1] != 0) {
+            pActor->resourceFiles[0] = RgFileSysRead(InstanceOfRgFileSys(), (const char *)pEntry->unk[1], 0);
+        }
+        _InitAfterLoadXenoActor(pActor);
+    } else {
+        pActor->pXenoAct = 0;
+    }
+    if (pEss->state != 0) {
+        XrgActorSetLight(pActor, (RgVector *)pEss->state);
+    } else {
+        XrgActorSetLight(pActor, (RgVector *)InstanceOfGlobalLight());
+    }
+    pActor->pakaPakaActive = 0;
+    *(int *)((char *)pActor + 0x160) = 0;
+}
 
 extern XenoAct *ACT_create(int type, int id);
 extern const char D_00A58B10[];
