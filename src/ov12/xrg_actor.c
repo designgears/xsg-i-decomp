@@ -711,7 +711,33 @@ void XrgActorSetPlayMotionComaStep(XrgActor *pActor, int step)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _LoadXenoActor);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _DupXenoActor);
+extern XenoAct *ACT_create(int type, int id);
+extern const char D_00A58B10[];
+
+void _DupXenoActor(XrgActor *pDup, XrgActor *pActor)
+{
+    XenoDatEntry *pEntry;
+    int id;
+
+    if (pDup == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x3A5);
+    }
+    if (pActor == 0) {
+        assert_prog(D_00A58AC8, D_00A587E0, 0x3A6);
+    }
+    pEntry = _GetXenoDatEntry(pActor->actorID);
+    if (pEntry == 0) {
+        assert_prog(D_00A58B10, D_00A587E0, 0x3A9);
+    }
+    id = pActor->actorID;
+    pDup->motionComaStep = 0;
+    pDup->actorID = id;
+    _InitXenoActor(pDup);
+    pDup->pXenoAct = ACT_create(-1, pEntry->unk[0]);
+    _DupLoadXenoActor(pDup, pActor);
+    _InitAfterLoadXenoActor(pDup);
+    pDup->pakaPakaActive = 0;
+}
 
 XrgActor *CreateXrgActor(int actorID)
 {
