@@ -969,7 +969,36 @@ void XrgActorGetLocal(XrgActor *pActor, RgMatrix matrix)
     XrgCopyMatrix(matrix, pActor->local);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorGetJointLocal);
+int XrgActorGetJointLocal(XrgActor *pActor, int eJntID, RgMatrix matrix)
+{
+    XenoAct *pXenoAct;
+    int ret = 0;
+    int joint;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x489);
+    }
+    pXenoAct = pActor->pXenoAct;
+    if (pXenoAct == 0) {
+        assert_prog(D_00A587F8, D_00A587E0, 0x48B);
+    }
+    if (!(RG_ACTOR_JNT_LEFT_HAND <= eJntID && eJntID < RG_ACTOR_JNT_MAX)) {
+        assert_prog(D_00A58A50, D_00A587E0, 0x48C);
+    }
+    if (eJntID < 20) {
+    if (eJntID >= 0) {
+        joint = (int)_ActJntToJoint(pXenoAct, eJntID);
+        if (joint >= 0) {
+            RgMatrix *mats = *(RgMatrix **)((char *)pXenoAct + 0x824);
+            if (joint < *(unsigned short *)((char *)pXenoAct->jointData + 6)) {
+                ret = 1;
+                XrgCopyMatrix(matrix, mats[joint]);
+            }
+        }
+    }
+    }
+    return ret;
+}
 
 int XrgActorGetAttachedJoint(XrgActor *pActor)
 {
