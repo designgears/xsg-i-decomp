@@ -164,7 +164,144 @@ f32 FCV_getPackValue(FCVPack *pack, f32 frame)
     return ret;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV_getPackVal2f);
+static f32 FCV_getPackVal2f(FCVPack *pack, s32 keyCount, f32 frame)
+{
+    u32 i;
+    f32 *k;
+    f32 *p;
+    f32 *q;
+    f32 *last;
+    f32 *pv;
+    u32 type;
+    u32 type2;
+    f32 t1, t0, v0, v1, o, m, s, inv, s2, s3, a, q2, h;
+
+    k = pack->key_values;
+    type = *(u32 *)k;
+    p = k;
+    switch (type) {
+    case 0:
+    case 2:
+    case 3:
+        p = k + 3;
+        break;
+    case 4:
+        p = k + 4;
+        break;
+    case 1:
+        p = k;
+        break;
+    }
+    i = 1;
+    last = k;
+    q = p;
+    for (; i < (u32)keyCount; i++) {
+        last = q;
+        switch (*(u32 *)last) {
+        case 0:
+        case 2:
+        case 3:
+            q += 3;
+            break;
+        case 4:
+            q += 4;
+            break;
+        case 1:
+            q += 5;
+            break;
+        }
+    }
+    pack->key_values = q;
+    if (frame < k[1]) {
+        return k[2];
+    }
+    if (last[1] <= frame) {
+        return last[2];
+    }
+    i = 1;
+    t1 = p[1];
+    while (i < (u32)keyCount) {
+        if (frame <= t1) {
+            if (frame == t1) {
+                return p[2];
+            }
+            break;
+        }
+        k = p;
+        type = *(u32 *)k;
+        switch (type) {
+        case 1:
+            p = k + 5;
+            t1 = p[1];
+            break;
+        case 4:
+            p = k + 4;
+            t1 = p[1];
+            break;
+        case 0:
+        case 2:
+            p = p + 3;
+            t1 = p[1];
+            break;
+        }
+        i++;
+    }
+    t0 = k[1];
+    pv = p + 2;
+    switch (*(u32 *)p) {
+    case 0:
+    case 2:
+        m = 0.0f;
+        v1 = pv[0];
+        break;
+    case 1:
+    case 4:
+        v1 = pv[0];
+        m = pv[1];
+        break;
+    default:
+        m = 0.0f;
+        v1 = 0.0f;
+        break;
+    }
+    pv = k + 2;
+    switch (type) {
+    case 0:
+    case 2:
+        o = 0.0f;
+        v0 = pv[0];
+        break;
+    case 4:
+        v0 = pv[0];
+        o = pv[1];
+        break;
+    case 1:
+        v0 = pv[0];
+        o = pv[2];
+        break;
+    default:
+        o = 0.0f;
+        v0 = 0.0f;
+        break;
+    }
+    switch (type) {
+    case 0:
+        return v0 + (v1 - v0) * (frame - t0) / (t1 - t0);
+    case 1:
+    case 2:
+    case 4:
+        s = frame - t0;
+        inv = 1.0f / (t1 - t0);
+        s2 = s * s;
+        s3 = s2 * s * (inv * inv);
+        a = s2 * 3.0f * (inv * inv);
+        q2 = s2 * inv;
+        h = (s3 + s3) * inv;
+        s3 = s3 - q2;
+        return v0 * ((h - a) + 1.0f) + v1 * (a - h) + o * ((s3 - q2) + s) + m * s3;
+    }
+    return 0.0f;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV_getPackVal2s);
 

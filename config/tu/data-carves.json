@@ -2306,6 +2306,33 @@
     }
    ]
   },
+  "main/tu259": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004d1920",
+      "0x004d1960"
+     ],
+     "generated": [
+      "0x004d1920",
+      "0x004d1954"
+     ],
+     "generated_by": [
+      "FCV_getPackVal2f"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004D1920",
+      "jtbl_004D1940"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/fcv2.o"
+     }
+    }
+   ]
+  },
   "main/tu260": {
    ".lit4": [
     {
