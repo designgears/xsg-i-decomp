@@ -680,7 +680,37 @@ int dataFileLoadNB(const char *name, void *dst)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileInfoInit);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileInfoInitChg);
+extern const char D_00A45A48[];
+
+void dataFileInfoInitChg(ObjectTask *unit, int charaId)
+{
+    char *file = dataUnitFileGet(unit, charaId);
+    int i, j;
+    char *p4, *p8, *pc, *p10;
+
+    if (file == 0) {
+        printf(D_00A45A48);
+        return;
+    }
+    i = 0;
+    p8 = file + 8;
+    pc = file + 12;
+    p10 = file + 16;
+    *(int *)(file + 4) = 0;
+    p4 = file + 4;
+    for (; i < 3; i++) {
+        int off = 0x38 + i * 24;
+        *(int *)(p8 + off) = 0;
+        *(float *)(pc + off) = 0.0f;
+        *(int *)(p10 + off) = 0;
+        for (j = 0; j < 3; j++) {
+            int k = 0xa0 + i * 36 + j * 12;
+            *(int *)(file + k) = 0;
+            *(int *)(p4 + k) = 0;
+            *(int *)(p8 + k) = 0;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEnemyMdlChk);
 
