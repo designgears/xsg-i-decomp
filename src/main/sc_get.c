@@ -2,7 +2,43 @@
 #include "shared.h"
 #include "sc_get.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scInitScript);
+extern void *memset(void *dst, int val, unsigned int n);
+extern short _cmdPut;
+
+void scInitScript(void)
+{
+    int base;
+    int i;
+    int j;
+    int off;
+    short *hdr;
+    unsigned char *task;
+
+    base = (int)_scriptWork;
+    _cmdPut = 0;
+    hdr = (short *)(base + 0x440);
+    i = 0;
+    off = 0;
+    do {
+        *(int *)(hdr - 0x20) = 0;
+        hdr[2] = -1;
+        hdr[4] = 0;
+        task = (unsigned char *)((char *)((i << 10) + off) + base);
+        hdr[3] = 0;
+        j = 0;
+        hdr[5] = 0;
+        do {
+            memset(task, 0, 0x80U);
+            *(short *)(task + 4) = (short)j;
+            j = j + 1;
+            *(short *)(task + 6) = (short)i;
+            task = task + 0x80;
+        } while (j < 8);
+        i++;
+        hdr += 0x228;
+        off += 0x50;
+    } while (i < 16);
+}
 
 /*
  * scFindScriptData is a genuine tail call (`j sefSearchMapperIndex`, not
