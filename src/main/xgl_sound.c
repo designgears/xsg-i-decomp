@@ -63,9 +63,35 @@ int xglSoundSendSwd(void *swd, int bank)
     e[0] = result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundSendSmd2);
+int SsdAddSequenceData(void *smd);
+void SsdDisposeSequence(int sequence);
 
-void xglSoundSendSmd2(void *smd, int bank);
+int xglSoundSendSmd2(void *smd, int bank)
+{
+    int result;
+    unsigned short *e = (unsigned short *)((char *)&SoundWork + (bank << 2));
+
+    if (e[1] != 0xFFFF) {
+        SsdStopSequence(e[1]);
+        do {
+        } while (SsdGetResultValue(&result) < 0);
+        SsdDisposeSequence(e[1]);
+        do {
+        } while (SsdGetResultValue(&result) < 0);
+    }
+    result = 0xFFFF;
+    if (smd != 0) {
+        SsdAddSequenceData(smd);
+        do {
+        } while (SsdGetResultValue(&result) < 0);
+        if (result < 0) {
+            result = 0xFFFF;
+        }
+    }
+    e[1] = result;
+}
+
+int xglSoundSendSmd2(void *smd, int bank);
 
 void xglSoundSendSmd(void *smd)
 {
