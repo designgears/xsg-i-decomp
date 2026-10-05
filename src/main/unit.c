@@ -166,7 +166,142 @@ void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCN
     args[6].f = arguments->z;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_moveXZ);
+extern int SEQ_moveUnitXZ();
+extern int SEQ_moveChr();
+extern float defaultOffset_0043C1D0[];
+typedef struct UnitMoveCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } a;
+    union { int i; float f; u8 *p; } b;
+    union { int i; float f; u8 *p; } c;
+    u8 wait;
+} UnitMoveCall;
+typedef struct UnitMoveObjCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } a;
+    union { int i; float f; u8 *p; } b;
+    u8 wait;
+} UnitMoveObjCall;
+typedef struct UnitMoveState {
+    void *target;
+    int frames;
+    u8 pad08[0x20 - 0x08];
+    float x;
+    u8 pad24[0x28 - 0x24];
+    float z;
+    float speed;
+} UnitMoveState;
+typedef struct UnitMoveWaitThread {
+    u8 pad00[0xc];
+    u8 state;
+    u8 next;
+    u8 pad0e[0x24 - 0xe];
+    u32 flags;
+    u8 pad28[0x30 - 0x28];
+    void *wait_object;
+    u8 pad34[0x3c - 0x34];
+    u16 pc;
+    u16 pc2;
+} UnitMoveWaitThread;
+
+static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
+                        u32 *failure_result)
+{
+    UnitMoveCall *arguments = arguments_;
+    JavaField *field;
+    UnitPeer *peer;
+    float *offset;
+    UnitSequenceEntry *entry;
+    UnitMoveState *move;
+    u8 *object;
+    int wait;
+
+    object = arguments->object;
+    wait = 0;
+    if (JNI_isInstanceOf((SceneObject)object, classJava_xeno_Unit) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + field->offset);
+    entry = &unitSequence[peer->serial];
+    move = (UnitMoveState *)((u8 *)entry + 0x38);
+    entry->state |= 1;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004D16F8, -1), 0);
+    offset = (*(u32 *)(object + field->offset) & 1)
+        ? (float *)((u8 *)peer + 0x10) : defaultOffset_0043C1D0;
+
+    switch (mode) {
+    case 0:
+        move->frames = arguments->a.i;
+        move->x = arguments->b.f + offset[0];
+        {
+            float c = arguments->c.f;
+            float o2 = offset[2];
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveUnitXZ;
+            move->z = c + o2;
+        }
+        wait = arguments->wait;
+        break;
+    case 1:
+        move->frames = -1;
+        move->x = arguments->a.f + offset[0];
+        move->z = arguments->b.f + offset[2];
+        {
+            float c = arguments->c.f;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveUnitXZ;
+            move->speed = c / 30.0f;
+        }
+        wait = arguments->wait;
+        break;
+    case 2:
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(D_004DC1D0, -1), 0);
+        {
+            u8 *o = ((UnitMoveObjCall *)arguments)->b.p + field->offset;
+            int fr = ((UnitMoveObjCall *)arguments)->a.i;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveChr;
+            o = *(u8 **)o;
+            move->frames = fr;
+            move->target = o;
+        }
+        wait = ((UnitMoveObjCall *)arguments)->wait;
+        break;
+    case 3:
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(D_004DC1D0, -1), 0);
+        {
+            u8 *o = ((UnitMoveObjCall *)arguments)->a.p + field->offset;
+            move->frames = -1;
+            o = *(u8 **)o;
+            move->target = o;
+        }
+        {
+            float c = ((UnitMoveObjCall *)arguments)->b.f;
+            *(void **)((u8 *)entry + 0x24) = SEQ_moveChr;
+            move->speed = c / 30.0f;
+        }
+        wait = ((UnitMoveObjCall *)arguments)->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        UnitMoveWaitThread *t = (UnitMoveWaitThread *)thread;
+        peer->flags |= 2;
+        if (t->state != 5 && !(t->flags & 0x40))
+            return;
+        if (t->flags & 0x40) {
+            t->wait_object = peer;
+            t->next = 6;
+            t->pc = t->pc2;
+            t->flags |= 4;
+        }
+        t->pc = t->pc2;
+        t->flags |= 1;
+    }
+}
 
 extern int SEQ_rotateUnit();
 extern float defaultOffset_0043C1D0[];
