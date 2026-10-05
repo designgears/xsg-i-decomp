@@ -1071,7 +1071,25 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCrit);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSpec);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLinePos);
+int calcLinePos(int unused, CalcStatClrArg *arg, unsigned char *mode, int *val)
+{
+    int ret;
+    unsigned char m;
+    int line;
+
+    ret = 0;
+    m = *mode;
+    line = dataPosLineGet(*(short *)((char *)calcUPGet(arg->unit) + 0x44));
+    if (m == 1 && (*(unsigned *)arg->unit->work & 0x40) == 0
+        && (calcUPGet(arg->unit)->flags & 0x40) == 0
+        && (calcUPGet(arg->unit)->charaId < 0xBB || calcUPGet(arg->unit)->charaId >= 0xC3)
+        && line == 2) {
+        ret = 1;
+        *val -= *val / 5;
+        printf("** LinePos: adjust\n");
+    }
+    return ret;
+}
 
 int calcRevHit(int hitMode)
 {
