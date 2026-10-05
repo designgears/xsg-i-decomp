@@ -172,7 +172,40 @@ static int _IsEOF(RgReadText *pReader)
     return _SkipWhiteSpace(pReader) == 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_read_text", _GetString);
+extern const char D_00A54428[];
+extern char *strcpy(char *dest, const char *src);
+
+static void _GetString(RgReadText *pReader, char *pszOut, unsigned int nCapacity)
+{
+    char *pCur;
+
+    if (pReader->m_bUngetPending != 0) {
+        strcpy(pszOut, pReader->m_szUngetToken);
+        pReader->m_bUngetPending = 0;
+        return;
+    }
+    pCur = _SkipWhiteSpace(pReader);
+    if (pCur == 0) {
+        assert_prog(D_00A54418, D_00A543B8, 171);
+    }
+    for (;;) {
+        if (_IsWhiteSpace((unsigned char)pCur[0])) {
+            break;
+        }
+        if (nCapacity == 0) {
+            assert_prog(D_00A54428, D_00A543B8, 173);
+        }
+        if ((unsigned char)*pCur == '@') {
+            *pszOut++ = ' ';
+            pCur++;
+        } else {
+            *pszOut++ = *pCur++;
+        }
+        _SetCurrent(pReader, pCur);
+        nCapacity--;
+    }
+    *pszOut = 0;
+}
 
 static float _GetFloat(RgReadText *pReader)
 {
