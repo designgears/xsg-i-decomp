@@ -987,7 +987,44 @@ void Java_xeno_Chr_setElevatorMode__I(JThread *thread, ChrIntCall *arguments)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setParent__Lxeno_Chr_III);
+extern int ACT_setRelation(Actor *actor, Actor *parent, int rel, int id);
+extern int ACT_setParent(Actor *actor, int type, Actor *parent, int joint, int id);
+static inline void chr_set_parent(Actor *actor, Actor *parent, int rel,
+                                  int joint, int id, int type)
+{
+    if (rel & 0x8000) {
+        ACT_setRelation(actor, parent, rel, id);
+        return;
+    }
+    ACT_setParent(actor, type, parent, joint, id);
+}
+
+void Java_xeno_Chr_setParent__Lxeno_Chr_III(JThread *thread,
+                                            union { int i; void *p; } *args)
+{
+    JavaField *peer_field;
+    u8 *object;
+    Actor *actor;
+    Actor *parent;
+    int joint;
+    int type;
+    int id;
+
+    object = args[0].p;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    joint = args[2].i;
+    id = args[4].i;
+    type = args[3].i;
+    actor = *(Actor **)(object + peer_field->offset);
+    object = args[1].p;
+    parent = *(Actor **)(object + peer_field->offset);
+    if (joint & 0x8000) {
+        ACT_setRelation(actor, parent, joint, id);
+    } else {
+        ACT_setParent(actor, type, parent, joint, id);
+    }
+}
 
 void Java_xeno_Chr_setMotionFlags__IZ(JThread *thread,
                                       ChrMotionFlagsCall *arguments)
