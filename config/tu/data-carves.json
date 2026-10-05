@@ -2901,6 +2901,52 @@
    ".rodata": [
     {
      "range": [
+      "0x00a50490",
+      "0x00a50550"
+     ],
+     "generated": [
+      "0x00a50490",
+      "0x00a50550"
+     ],
+     "generated_by": [
+      "debugCmdPrint"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A50490"
+     ],
+     "also_referenced_by_c": [
+      "D_00A50380",
+      "D_00A503A8",
+      "D_00A503C0",
+      "D_00A503E0",
+      "D_00A50400",
+      "D_00A50430",
+      "D_00A50438",
+      "D_00A50440",
+      "D_00A50468",
+      "D_00A50550",
+      "D_00A50558",
+      "D_00A50560",
+      "D_00A50568",
+      "D_00A50570",
+      "D_00A50580",
+      "D_00A50588",
+      "D_00A505A0",
+      "D_00A505A8",
+      "D_00A505B0",
+      "D_00A505C0",
+      "D_00A505D0",
+      "D_00A505D8",
+      "D_00A505E8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/debug_entry.o"
+     }
+    },
+    {
+     "range": [
       "0x00a505f0",
       "0x00a50650"
      ],
@@ -2915,20 +2961,6 @@
       "jtbl_00A505F0"
      ],
      "also_referenced_by_c": [
-      "D_00A50550",
-      "D_00A50558",
-      "D_00A50560",
-      "D_00A50568",
-      "D_00A50570",
-      "D_00A50580",
-      "D_00A50588",
-      "D_00A505A0",
-      "D_00A505A8",
-      "D_00A505B0",
-      "D_00A505C0",
-      "D_00A505D0",
-      "D_00A505D8",
-      "D_00A505E8",
       "D_00A50650",
       "D_00A50668",
       "D_00A50690",

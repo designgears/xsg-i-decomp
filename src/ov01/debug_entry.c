@@ -34,9 +34,132 @@ char *debugWpnGet(int wpnId) {
     return err;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugCmdPrint);
+/*
+ * calcUPGet's per-unit parameter record, evidenced here by debugParaDisp's
+ * own printf labels (include/ov01/calc.h's CalcUnitParam is this TU's own
+ * independent, differently-scoped view of the same object: it already
+ * evidences agility/moveKindId +0x0E-0x0F, flags +0x1C, charaId +0x38 and
+ * turnBias/waitCount/waitCountBase +0x3E-0x42 from other functions).
+ */
+typedef struct DebugUnitPara {
+    short maxHp;             /* +0x00: "HP=%d/%d" 2nd */
+    short maxEp;             /* +0x02: "EP=%d/%d" 2nd */
+    short str;               /* +0x04: "STR=%3d" */
+    short vit;               /* +0x06: "VIT=%3d" */
+    short eatk;              /* +0x08: "EATK=%3d" */
+    short edef;              /* +0x0A: "EDEF=%3d" */
+    signed char hit;         /* +0x0C: "HIT=%3d" */
+    signed char eva;         /* +0x0D: "EVA=%3d" */
+    signed char agility;     /* +0x0E: "AGL=%3d" */
+    signed char moveKindId;  /* +0x0F: "MVTYPE=%1d" */
+    unsigned char unmodeled_10[0x14 - 0x10];
+    signed char level;       /* +0x14: "LV=%d" */
+    unsigned char unmodeled_15[0x16 - 0x15];
+    signed char cRate;       /* +0x16: "C_RATE=%3d" */
+    unsigned char unmodeled_17[0x18 - 0x17];
+    unsigned short weak;     /* +0x18: "WEAK=%04X" */
+    unsigned short spec;     /* +0x1A: "SPEC=%04X" */
+    unsigned short flags;    /* +0x1C: "INFO=%04X" */
+    unsigned char unmodeled_1e[0x34 - 0x1E];
+    short hp;                /* +0x34: "HP=%d/%d" 1st */
+    short ep;                /* +0x36: "EP=%d/%d" 1st */
+    short charaId;           /* +0x38: debugNameGet's argument */
+    signed char ap;          /* +0x3A: debugCmdPrint "AP=%2d" */
+    unsigned char unmodeled_3b[0x3C - 0x3B];
+    signed char bc;          /* +0x3C: "BC =%3d" */
+    signed char bp;          /* +0x3D: "BP = %3d" */
+    short turnBias;          /* +0x3E: "AGLPLUS=%3d" */
+    short waitCount;         /* +0x40: "WCT=%3d/%3d" 1st */
+    short waitCountBase;     /* +0x42: "WCT=%3d/%3d" 2nd */
+    unsigned char unmodeled_44[0x14C - 0x44];
+    unsigned short etherDis; /* +0x14C: "ETHERDIS=%04X" */
+    unsigned char unmodeled_14e[0x17C - 0x14E];
+    int wpnAtkAdj;           /* +0x17C: "WPNATKADJ=%3d" */
+} DebugUnitPara;
+
+extern DebugUnitPara *calcUPGet(ObjectTask *unit);
+
+extern int unitNoGet(ObjectTask *unit);
 
 extern char *cmdStrTbl[];
+
+extern int *unitCmdPtrGet(ObjectTask *unit);
+extern int frameCntGet(void);
+extern unsigned char *dataItmGet(int index);
+extern int dataTecGet(int tecId);
+extern int printf(const char *format, ...);
+extern const char D_00A50380[];
+extern const char D_00A503A8[];
+extern const char D_00A503C0[];
+extern const char D_00A503E0[];
+extern const char D_00A50400[];
+extern const char D_00A50430[];
+extern const char D_00A50438[];
+extern const char D_00A50440[];
+extern const char D_00A50468[];
+
+void debugCmdPrint(ObjectTask *unit, int cmd)
+{
+    int *p;
+    int tid;
+    ObjectTask *tgt;
+    int para;
+    unsigned char flag;
+
+    p = unitCmdPtrGet(unit);
+    tid = p[1];
+    tgt = (ObjectTask *)p[2];
+    para = p[3];
+    switch (cmd) {
+    case 1:
+    case 2:
+    case 3:
+        printf(D_00A50380, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, para);
+        break;
+    case 15: case 17: case 19: case 21: case 23:
+    case 25: case 27: case 29: case 31: case 33:
+        printf(D_00A503A8, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd]);
+        break;
+    case 5: case 6: case 16: case 18: case 20: case 22:
+    case 24: case 26: case 28: case 30: case 32: case 34:
+        printf(D_00A503C0, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd], tid);
+        break;
+    case 13:
+        printf(D_00A503E0, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd], tid);
+        break;
+    case 4: case 8: case 9: case 10: case 11: case 12:
+    case 37: case 38: case 39: case 40: case 41: case 42:
+    case 44: case 45: case 46: case 47: case 48:
+        printf(D_00A503A8, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd]);
+        break;
+    case 14:
+        if (p[4] == 3) {
+            flag = dataItmGet(para)[8];
+        } else {
+            flag = *(unsigned char *)dataTecGet(tid);
+        }
+        printf(D_00A50400, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, unitNoGet(tgt),
+               debugNameGet(calcUPGet(tgt)->charaId), (flag & 0x10) ? D_00A50430 : D_00A50438);
+        break;
+    case 43:
+        printf(D_00A50440, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+               calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, p[2]);
+        break;
+    default:
+        do {
+            printf(D_00A50468, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+                   calcUPGet(unit)->ap, p[0]);
+        } while (0);
+        break;
+    }
+}
+
 extern char D_00A5AA40[];
 extern const char D_00A50550[];
 extern const char D_00A50558[];
@@ -192,53 +315,7 @@ void debugBattle(int page)
 
 extern int unitTblGet(int side, BattleUnit ***table);
 
-extern int unitNoGet(ObjectTask *unit);
-
 extern char *debugNameGet(int charaId);
-
-/*
- * calcUPGet's per-unit parameter record, evidenced here by debugParaDisp's
- * own printf labels (include/ov01/calc.h's CalcUnitParam is this TU's own
- * independent, differently-scoped view of the same object: it already
- * evidences agility/moveKindId +0x0E-0x0F, flags +0x1C, charaId +0x38 and
- * turnBias/waitCount/waitCountBase +0x3E-0x42 from other functions).
- */
-typedef struct DebugUnitPara {
-    short maxHp;             /* +0x00: "HP=%d/%d" 2nd */
-    short maxEp;             /* +0x02: "EP=%d/%d" 2nd */
-    short str;               /* +0x04: "STR=%3d" */
-    short vit;               /* +0x06: "VIT=%3d" */
-    short eatk;              /* +0x08: "EATK=%3d" */
-    short edef;              /* +0x0A: "EDEF=%3d" */
-    signed char hit;         /* +0x0C: "HIT=%3d" */
-    signed char eva;         /* +0x0D: "EVA=%3d" */
-    signed char agility;     /* +0x0E: "AGL=%3d" */
-    signed char moveKindId;  /* +0x0F: "MVTYPE=%1d" */
-    unsigned char unmodeled_10[0x14 - 0x10];
-    signed char level;       /* +0x14: "LV=%d" */
-    unsigned char unmodeled_15[0x16 - 0x15];
-    signed char cRate;       /* +0x16: "C_RATE=%3d" */
-    unsigned char unmodeled_17[0x18 - 0x17];
-    unsigned short weak;     /* +0x18: "WEAK=%04X" */
-    unsigned short spec;     /* +0x1A: "SPEC=%04X" */
-    unsigned short flags;    /* +0x1C: "INFO=%04X" */
-    unsigned char unmodeled_1e[0x34 - 0x1E];
-    short hp;                /* +0x34: "HP=%d/%d" 1st */
-    short ep;                /* +0x36: "EP=%d/%d" 1st */
-    short charaId;           /* +0x38: debugNameGet's argument */
-    unsigned char unmodeled_3a[0x3C - 0x3A];
-    signed char bc;          /* +0x3C: "BC =%3d" */
-    signed char bp;          /* +0x3D: "BP = %3d" */
-    short turnBias;          /* +0x3E: "AGLPLUS=%3d" */
-    short waitCount;         /* +0x40: "WCT=%3d/%3d" 1st */
-    short waitCountBase;     /* +0x42: "WCT=%3d/%3d" 2nd */
-    unsigned char unmodeled_44[0x14C - 0x44];
-    unsigned short etherDis; /* +0x14C: "ETHERDIS=%04X" */
-    unsigned char unmodeled_14e[0x17C - 0x14E];
-    int wpnAtkAdj;           /* +0x17C: "WPNATKADJ=%3d" */
-} DebugUnitPara;
-
-extern DebugUnitPara *calcUPGet(ObjectTask *unit);
 
  /* "** UNIT PARA **\n" */
 extern const char D_00A50668[];
