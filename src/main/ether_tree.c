@@ -258,7 +258,44 @@ void sub2JoutoYGet(EtherTreeObjectData *object, float *out)
     *out = object->y;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subJoutoPosSet);
+extern int MenuEtherWhoCheck(int id);
+extern int func_A19578(unsigned short, unsigned short);
+
+void subJoutoPosSet(void)
+{
+    float *node = &EtherTreeSystem->nodeX;
+    unsigned short firstDataIndex;
+    EtherTreeObjectData *root;
+    EtherTreeObjectData *object;
+    EtherTreeObjectData *top;
+    float pos[4];
+    float baseX = 57.0f;
+    float stepX = 57.0f;
+    int count = 0;
+    int id = 1;
+
+    firstDataIndex = EtherTreeSystem->firstDataIndex;
+    root = EtherTreeObjectWorkGet();
+    top = EtherTreeObject;
+    *(EtherTreeObjectData **)EtherTreeSystem->unmodeled_54 = root;
+    object = root;
+    sub2JoutoYGet(top, pos);
+    pos[0] += 72.0f;
+    do {
+        if (firstDataIndex != (unsigned short)MenuEtherWhoCheck(id)
+            && ((int (*)(int, int))func_A19578)(firstDataIndex, id) != 0) {
+            object->flags |= 8;
+            object->id = id;
+            object->x = baseX + (float)(count % 4) * stepX;
+            object->y = pos[0] + (float)(count / 4) * 72.0f;
+            *(float *)object->unmodeled_28 = node[2];
+            count++;
+            object++;
+        }
+        id++;
+    } while (id < 0x50);
+    root->childCount = count;
+}
 
 extern int func_A19578(unsigned short, unsigned short);
 extern int MenuEtherSetCheck(unsigned short, unsigned short);
