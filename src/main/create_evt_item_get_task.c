@@ -75,6 +75,16 @@ extern const float D_004D7F7C;
 extern signed char printflg;
 extern const char D_004CA650[];
 
+typedef struct ItemBoxEntry {
+    signed char kind;
+    signed char pad1;
+    signed char level;
+    signed char pad3;
+    int special;
+} ItemBoxEntry;
+
+extern ItemBoxEntry ItemBoxTbl[];
+
 INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", taskItemGet);
 
 static void taskEvtItemGet(EventItemTask *task)
@@ -361,14 +371,6 @@ void InitSpecialSymbol(ItemMapUnit *unit)
     SetItemSymbolRsrc(unit);
 }
 
-typedef struct ItemBoxEntry {
-    signed char kind;
-    signed char pad1;
-    signed char level;
-    signed char pad3;
-    int special;
-} ItemBoxEntry;
-extern ItemBoxEntry ItemBoxTbl[];
 extern int uwares_tbl[];
 extern int xtxres_tbl[];
 #define SET_RSRC(n) \
