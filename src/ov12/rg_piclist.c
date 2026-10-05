@@ -537,7 +537,40 @@ void RgPicListWrite(RgPicList *pList, int handle)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", CreateRgPicListFromBinary);
+RgPicList *CreateRgPicListFromBinary(RgBxx *bxx, void *buffer)
+{
+    RgPicWord hdr[2];
+    RgPicList *list;
+    unsigned char *p = (unsigned char *)buffer;
+    unsigned int i;
+    RgPic *pic;
+    int n;
+    int sz;
+
+    list = CreateRgPicList(bxx);
+    hdr[0] = *(RgPicWord *)p;
+    p += 4;
+    *(RgPicWord *)&list->ofsX = *(RgPicWord *)p;
+    p += 4;
+    *(RgPicWord *)&list->ofsY = *(RgPicWord *)p;
+    p += 4;
+    hdr[1] = *(RgPicWord *)p;
+    p += 4;
+    sz = _BinarySizePicList();
+    n = sz - 0x11;
+    if (sz - 0x10 > 0) {
+        do {
+            p++;
+        } while (n-- > 0);
+    }
+    for (i = 0; i < *(unsigned int *)&hdr[0]; i++) {
+        pic = CreateRgPicFromBinary(bxx, p);
+        if (pic != 0)
+            list->pics[list->m_uNum++] = pic;
+        p += RgPicBinarySize();
+    }
+    return list;
+}
 
 typedef struct { char b[4]; } RgPicLW;
 typedef union { unsigned char b[0x408]; RgPicLW w[0x102]; unsigned int n[0x102]; } RgPicBuf;
