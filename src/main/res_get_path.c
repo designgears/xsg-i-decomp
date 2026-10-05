@@ -310,7 +310,28 @@ void GameResourceWorkReload(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceAlloc);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceRealloc);
+extern int GameResourceGetIndex(int id);
+
+int GameResourceRealloc(int resource, int size)
+{
+    int i = GameResourceGetIndex(resource);
+    int total;
+    u32 addr;
+    if (i < 0) {
+        return 0;
+    }
+    if (GameResource[i + 1].state == -1) {
+        total = GameResource[i].size;
+        size = (size + 0x3f) & ~0x3f;
+        total = total + GameResource[i + 1].size;
+        addr = GameResource[i].address;
+        GameResource[i].size = size;
+        GameResource[i + 1].address = addr + size;
+        GameResource[i + 1].size = total - size;
+        return resource;
+    }
+    return 0;
+}
 
 extern u32 archeader[];
 extern u8 arcno;
@@ -514,14 +535,14 @@ static char *command_player(int command, char *cursor, int mode)
 
 extern void GameResourceAlloc(int a, int b);
 
-extern void GameResourceRealloc(int a);
+extern int GameResourceRealloc(int resource, int size);
 
 static char *command_dummy(int command, char *cursor, int mode)
 {
     if (GameResource[command + 1].address == 0) {
         GameResourceAlloc(0, 0);
     } else {
-        GameResourceRealloc(GameResource[command].address);
+        ((int (*)())GameResourceRealloc)(GameResource[command].address);
     }
     return cursor;
 }
