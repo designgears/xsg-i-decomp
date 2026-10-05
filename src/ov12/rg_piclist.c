@@ -150,7 +150,43 @@ int RgPicBinarySize(void)
     return RG_PIC_BINARY_SIZE;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", CreateRgPicFromBinary);
+extern const char D_00A57348[];
+typedef union { RgPicName n; RgPicWord w[16]; } RgPicU;
+
+RgPic *CreateRgPicFromBinary(RgBxx *bxx, void *buffer)
+{
+    RgPic *pic;
+    RgPicU *dst;
+    RgPicWord *sp = (RgPicWord *)buffer;
+    int tex;
+
+    pic = RgHeapAlloc(InstanceOfRgHeap(), sizeof(RgPic), D_00A57320, 136);
+    if (bxx == 0)
+        assert_prog(D_00A57338, D_00A57320, 139);
+    if (buffer == 0)
+        assert_prog(D_00A57348, D_00A57320, 140);
+    dst = (RgPicU *)pic;
+    dst->n = ((RgPicU *)buffer)->n;
+    sp += 8;
+    *(RgPicWord *)&pic->x = *sp++;
+    *(RgPicWord *)&pic->y = *sp++;
+    *(RgPicWord *)&pic->alpha = *sp++;
+    *(RgPicWord *)&pic->dark = *sp++;
+    *(RgPicWord *)&pic->notDraw = *sp++;
+    tex = RgBxxGetPic((int)bxx, (int)pic);
+    pic->ofsY = 0;
+    pic->tex = (RgPicTexture *)tex;
+    pic->ofsX = 0;
+    pic->color.b = 0x80;
+    pic->color.g = 0x80;
+    pic->color.r = 0x80;
+    pic->color.a = 0x7f;
+    if (tex == 0) {
+        RgHeapFree(InstanceOfRgHeap(), pic, D_00A57320, 153);
+        pic = 0;
+    }
+    return pic;
+}
 
 RgPic *RgPicRead(int handle, RgBxx *bxx)
 {
