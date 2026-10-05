@@ -165,7 +165,111 @@ void ePrintTest(void)
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/endou_test", eMessageTest);
+typedef struct EMsgTestWork {
+    u8 unk0;
+    u8 mode;
+    u8 unk2[2];
+    short x;
+    short y;
+    int color;
+    u8 unkC[2];
+    short unkE;
+    u8 unk10[2];
+    u8 hex;
+    u8 unk13;
+    u8 unk14[4];
+    char *text;
+    u8 unk1C[0x34];
+} EMsgTestWork;
+typedef union EMsgTestPad {
+    struct {
+        u8 unk0[0x28];
+        u16 rep;
+        u16 trig;
+    } s;
+    PadDataButtonView v;
+} EMsgTestPad;
+extern struct { int unk0[8]; int r; int g; int b; int a; } ClearEnv;
+extern char *msg_45[];
+extern char text00_46[];
+extern const char D_004C2C70[];
+extern void WindowTexLoad(void *tex, int arg);
+extern void xglFontDebugHex(int x, int y, int value, int digits);
+extern void eMessageDraw(void *message);
+
+void eMessageTest(void)
+{
+    EMsgTestWork m0;
+    EMsgTestWork m1;
+    EMsgTestWork m2;
+    int idx;
+
+    idx = 0;
+    WindowTexLoad(0, 0);
+    endPrintInit();
+    eMessageSet(&m0, msg_45[0]);
+    eMessageSet(&m1, msg_45[0]);
+    m1.mode = 0x20;
+    eMessageSet(&m2, text00_46);
+    m2.unk1C[0] = 1;
+    eMessageTextChange(&m2, text00_46);
+    ((EMsgTestPad *)&PadData)->s.trig = 0;
+    m2.x = 0x40;
+    m2.y = 0x12C;
+    m2.color = 0xFFFFF0;
+    m2.mode = 0x24;
+    ClearEnv.g = 0x40;
+    ClearEnv.r = 0;
+    ClearEnv.b = 0;
+    ClearEnv.a = 0;
+    while ((((EMsgTestPad *)&PadData)->v.button_state & 0x08000100U) != 0x08000100U) {
+        xglFontDebugPrintf(0, 0, D_004C2C70);
+        if (((EMsgTestPad *)&PadData)->s.trig & 0x20) {
+            eMessageNextPage(&m2, 0);
+        }
+        if (((EMsgTestPad *)&PadData)->s.trig & 0x100) {
+            idx++;
+            if (idx >= 5) {
+                idx = 0;
+            }
+            m0.text = msg_45[idx];
+        }
+        if (((EMsgTestPad *)&PadData)->s.trig & 8) {
+            m0.mode = 0x22;
+            m1.mode = 0x22;
+            eMessageNextPage(&m2, 1);
+            m2.mode = 0x22;
+        }
+        if (((EMsgTestPad *)&PadData)->s.trig & 2) {
+            m0.mode = 0x70;
+            m1.mode = 0x70;
+            m2.mode = 0x70;
+        }
+        if (((EMsgTestPad *)&PadData)->s.rep & 4) {
+            m0.unkE--;
+        }
+        if (((EMsgTestPad *)&PadData)->s.rep & 1) {
+            m0.unkE++;
+        }
+        if (((EMsgTestPad *)&PadData)->s.rep & 0x1000) {
+            m0.unk13 += 0xFF;
+        }
+        if (((EMsgTestPad *)&PadData)->s.rep & 0x4000) {
+            m0.unk13++;
+        }
+        xglFontDebugHex(0, 0x10, m0.hex, 2);
+        m0.color = 0x1FFFFFF;
+        m1.color = 0x1FFFF00;
+        m0.x = 100;
+        m0.y = 100;
+        m1.x = 0xA4;
+        m1.y = 0xA4;
+        eMessageDraw(&m1);
+        eMessageMain(&m2);
+        endPrintExtFunc(0xFFFFFF, 100, 0);
+        xglSleep();
+    }
+}
 
 typedef struct BgTestRenderState {
     unsigned char unmodeled_00[0x14];
