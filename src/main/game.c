@@ -196,7 +196,18 @@ void Game_Data_Push(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/game", Game_Data_Pop);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", MenuGameDataPush);
+void MenuGameDataPush(void)
+{
+    extern GameActorCopy actor[];
+    GameActorCopy *src = actor;
+    u8 *gs = (u8 *)&GameLoopState;
+    short i;
+
+    for (i = 0; i < 0x40; i++) {
+        ((GameActorCopy *)(gs + 0x250))[i] = src[i];
+    }
+    GameStateSave();
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game", MenuGameDataPop);
 
