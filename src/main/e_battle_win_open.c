@@ -465,7 +465,79 @@ short WindowSPSelect(SPSel *w, int arg1) {
     return w->result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSet);
+typedef struct SPSetItem { char *name; int a; int b; } SPSetItem;
+typedef struct SPSetW {
+    unsigned char state;
+    char pad1[0x13];
+    unsigned char cols;
+    unsigned char rows;
+    char pad16[2];
+    int v18;
+    struct SPSetItem *items;
+    unsigned char b20;
+    unsigned char b21;
+    unsigned char b22;
+    unsigned char b23;
+    unsigned char b24;
+    unsigned char b25;
+    unsigned char b26;
+    char pad27;
+    short h28;
+    short count;
+} SPSetW;
+
+void WindowSPSet(SPSetW *w)
+{
+    SPSetItem *p = w->items;
+    int n = 0;
+    int t;
+    int q;
+
+    if (p == 0) {
+        w->b24 = 0;
+        w->v18 = 0;
+        w->b20 = 0;
+        w->b21 = 0;
+        w->h28 = 0;
+        return;
+    }
+    w->state = 0;
+    w->b26 = 2;
+    w->h28 = -1;
+    w->v18 = 0;
+    while ((p++)->name != 0) {
+        n++;
+    }
+    n--;
+    if (n != 0) {
+        w->count = n;
+        w->h28 = 0;
+        w->b24 = 0;
+        q = ((short)n - (signed char)w->cols * (signed char)w->rows + (signed char)w->cols - 1) / (signed char)w->cols;
+        w->b25 = q;
+        if ((signed char)q < 0) w->b25 = 0;
+        w->b20 = 0;
+        w->b21 = 0;
+        if (w->count < (signed char)w->cols) {
+            w->b22 = w->count;
+        } else {
+            w->b22 = w->cols;
+        }
+        if ((w->count + (signed char)w->cols - 1) / (signed char)w->cols < (signed char)w->rows) {
+            w->b23 = (w->count + (signed char)w->cols - 1) / (signed char)w->cols;
+        } else {
+            w->b23 = w->rows;
+        }
+        return;
+    }
+    w->b23 = 0;
+    w->b21 = 0;
+    w->b22 = 0;
+    w->b20 = 0;
+    w->b25 = 0;
+    w->b24 = 0;
+    w->count = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPItemChange);
 
