@@ -223,7 +223,51 @@ static int _ShotCommonIsReleased(RgShot *shot)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _InitShotCommonSub);
+extern const char D_00A53320[];
+extern RgShotEffect *CreateRgShotEffect(void);
+extern RgGeomBall *CreateRgGeomBall(float radius, float weight);
+extern RgGeom *RgGeomGroupCreateBall(void *pGroup, RgGeom *parent);
+extern void RgCharControlMethod(RgChar *pChar, void (*m)(RgChar *));
+extern void RgCharDispMethod(RgChar *pChar, void (*m)(RgChar *));
+extern void RgCharDestructMethod(RgChar *pChar, void (*m)(RgChar *));
+static void _ShotCommonHitBg(RgShot *shot, int bgObject, RgVector position);
+static void _ShotCommonHitRobot(RgShot *shot, int robot, RgVector position);
+
+static void _InitShotCommonSub(RgShot *shot, int id)
+{
+    if (id == 0) {
+        assert_prog(D_00A53320, D_00A532F8, 0xF2);
+    }
+    RgCharControlMethod((RgChar *)shot, (void (*)(RgChar *))_ShotCommonControl);
+    RgCharDispMethod((RgChar *)shot, (void (*)(RgChar *))_ShotCommonDisp);
+    RgCharDestructMethod((RgChar *)shot, (void (*)(RgChar *))_ShotCommonDestruct);
+    RgCharPassTimeMethod((RgChar *)shot, (void (*)(RgChar *, float))_ShotCommonPassTime);
+    shot->notifyHit = (void (*)(RgShot *, RgVector))_ShotCommonHit;
+    shot->hitRobot = _ShotCommonHitRobot;
+    shot->hitBg = _ShotCommonHitBg;
+    shot->isReleased = _ShotCommonIsReleased;
+    shot->hitHistory = 0;
+    shot->essence = 0;
+    shot->life = 0.0f;
+    shot->damage = 0.0f;
+    shot->hitRobotCount = 0;
+    shot->effect = CreateRgShotEffect();
+    if (id != 0) {
+        shot->geomTray = RgGeomGroupCreateBall((void *)id, (RgGeom *)shot);
+    } else {
+        shot->geomTray = (RgGeom *)CreateRgGeomBall(0.5f, 1.0f);
+    }
+    RgGeomBallSetRadius((RgGeomBall *)shot->geomTray, 0.5f);
+    RgGeomResetStatus(shot->geomTray, 0x10);
+    shot->soundDriver = 0;
+    shot->hideSoundId = 0;
+    shot->hitSoundId = 0;
+    shot->bgHitSoundId = 0;
+    shot->noLifeSoundId = 0;
+    shot->hitSoundVolume = 0x80;
+    shot->bgHitSoundVolume = 0x80;
+    shot->noLifeSoundVolume = 0x80;
+}
 
 static void _InitShotCommon(void *shot, void *essence, void *info, float speed)
 {
