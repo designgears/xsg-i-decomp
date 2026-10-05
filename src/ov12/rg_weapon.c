@@ -236,30 +236,6 @@ void _CommonDisp(RgWeapon *weapon)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitWeaponCommon);
-
-extern void DisposeXrgActor(XrgActor *actor);
-
-void _DestructWeaponCommon(RgWeapon *weapon)
-{
-    XrgActor *actor;
-
-    _ReleaseAttach(&weapon->shotAttach);
-    actor = weapon->actor;
-    if (actor != 0) {
-        DisposeXrgActor(actor);
-    }
-    if (weapon->lockOnEffector == 0) {
-        return;
-    }
-    if (weapon->robotId == 0) {
-        return;
-    }
-    XrgActorDisposeEffector(RgRobotGetActor(weapon->robotId), weapon->lockOnEffector);
-}
-
-extern void InitRgEquip(void *equip);
-extern void InitXrgActorEssence(void *ess, int id);
 typedef struct EssenceCommonView {
     int f_00;
     int f_04;
@@ -302,6 +278,130 @@ typedef struct EssenceCommonView {
     int f_3a4;
 } EssenceCommonView;
 
+extern const char D_00A53698[];
+extern XrgActor *CreateXrgActor(void *essence);
+extern void CopyRgEquip(void *dst, void *src);
+static inline float _NormAngle(float a)
+{
+    if (a > 3.1415927f) {
+        do {
+            a -= 6.2831855f;
+        } while (a > 3.1415927f);
+    }
+    if (a < -3.1415927f) {
+        do {
+            a += 6.2831855f;
+        } while (a < -3.1415927f);
+    }
+    return a;
+}
+
+void _InitWeaponCommon(void *weapon, void *essence, void *info)
+{
+    RgWeapon *w = (RgWeapon *)weapon;
+    EssenceCommonView *e = (EssenceCommonView *)essence;
+    int *in = (int *)info;
+    unsigned int type;
+    int i;
+    int j;
+    unsigned int mode;
+    int flags, robotId, u38, u0c, hasActor;
+    float weight;
+
+    type = in[1];
+    if (type >= 3) {
+        assert_prog(D_00A53698, D_00A53658, 0x149);
+    }
+    w->id = in[2];
+    ((union { int i; float f; } *)&w->shotNum)->f = e->f_14;
+    w->shotRequested = 0;
+    w->lockedOn = 0;
+    w->targeting = 0;
+    flags = e->f_04;
+    robotId = in[0];
+    u38 = e->f_10;
+    u0c = in[3];
+    weight = ((union { int i; float f; } *)&e->f_ac)->f;
+    hasActor = e->f_188;
+    w->controlFlags = flags;
+    w->robotId = robotId;
+    *(int *)w->unmodeled_38 = u38;
+    *(int *)w->unmodeled_0c = u0c;
+    *(int *)&w->dispose = (int)_CommonDispose;
+    *(int *)w->unmodeled_18 = (int)_CommonDisp;
+    ((union { int i; float f; } *)&w->weight)->f = weight;
+    w->ess = (int)essence;
+    *(int *)&w->shoot = 0;
+    *(int *)&w->passTime = 0;
+    *(int *)&w->shotStop = 0;
+    *(int *)&w->hitRobot = 0;
+    *(int *)&w->hitBG = 0;
+    *(int *)w->unmodeled_30 = 0;
+    *(int *)&w->setFree = 0;
+    w->shotMotionOffset = type;
+    if (hasActor != 0) {
+        w->actor = CreateXrgActor(e->actor0 + type * 0x88);
+    } else {
+        w->actor = 0;
+    }
+    _InitAttach(&w->shotAttach);
+    *(int *)w->unmodeled_64 = 0;
+    CopyRgEquip(&w->equip, e->equip);
+    *(int *)&w->equip.unmodeled_00[0x38] = e->f_a8;
+    w->lockOnEffector = 0;
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 6; j++) {
+            w->shotMotionTable[j][i] = e->table[j][i];
+            w->shotStartMotionTable[j][i] = e->tableA[j][i];
+            w->shotMotionTable[j + 12][i] = e->table[j + 12][i];
+        }
+    }
+    mode = in[1];
+    if (mode == 0) {
+        w->lockOnAngleMin = _NormAngle(e->f_08);
+        w->lockOnAngleMax = _NormAngle(e->f_0c);
+    } else if (mode == 1) {
+        w->lockOnAngleMin = _NormAngle(-e->f_0c);
+        w->lockOnAngleMax = _NormAngle(-e->f_08);
+    } else {
+        w->lockOnAngleMin = _NormAngle(e->f_08);
+        w->lockOnAngleMax = _NormAngle(e->f_0c);
+    }
+    *(void **)&w->equipped = 0;
+    w->robotHitSound = e->f_384;
+    *(void **)&w->lockOnStopped = 0;
+    *(void **)&w->sound = 0;
+    w->bgHitSound = e->f_388;
+    *(int *)w->unmodeled_1d4 = e->f_38c;
+    w->shotSound = e->f_380;
+    w->robotHitVolume = e->f_394;
+    ((int *)w->unmodeled_1e0)[0] = e->f_398;
+    ((int *)w->unmodeled_1e0)[1] = e->f_39c;
+    w->shotVolume = e->f_390;
+}
+
+extern void DisposeXrgActor(XrgActor *actor);
+
+void _DestructWeaponCommon(RgWeapon *weapon)
+{
+    XrgActor *actor;
+
+    _ReleaseAttach(&weapon->shotAttach);
+    actor = weapon->actor;
+    if (actor != 0) {
+        DisposeXrgActor(actor);
+    }
+    if (weapon->lockOnEffector == 0) {
+        return;
+    }
+    if (weapon->robotId == 0) {
+        return;
+    }
+    XrgActorDisposeEffector(RgRobotGetActor(weapon->robotId), weapon->lockOnEffector);
+}
+
+extern void InitRgEquip(void *equip);
+extern void InitXrgActorEssence(void *ess, int id);
 void _InitEssenceCommon(void *essence)
 {
     EssenceCommonView *e = (EssenceCommonView *)essence;
