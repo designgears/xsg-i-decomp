@@ -662,7 +662,54 @@ void TMENU_setItem(unsigned char *menu, int index, char *item)
         *(short *)(menu + 0xC) = w;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TMENU_addItem);
+void TMENU_addItem(unsigned char *menu, int text)
+{
+    char buf[1024];
+    char *dst;
+    char *src;
+    char *cur;
+    unsigned int n;
+    int w;
+    int i;
+    int *items;
+    int x, y;
+    int t;
+
+    MSG_convert((int *)buf, 0x400, text, -1);
+    cur = *(char **)(menu + 0x154);
+    n = menu[0x56];
+    w = *(short *)(menu + 0xC);
+    *(char * volatile *)&dst = cur;
+    *(char * volatile *)&src = buf;
+    do {
+        (*(char ***)(menu + 0x14C))[n] = cur;
+        n++;
+        t = MSG_copyln(&dst, &src, 0) + 0x38;
+        cur = dst + 1;
+        if (w < t)
+            w = t;
+        dst = cur;
+        *(char **)(menu + 0x154) = cur;
+    } while (src != 0);
+    n = 0;
+    for (i = 0; i < menu[0x140]; i++) {
+        if ((*(int **)(menu + 0x14C))[i] != 0)
+            n++;
+    }
+    menu[0x56] = n;
+    if (*(int *)(menu + 0x148) != 0) {
+        y = *(short *)(menu + 0x5A);
+        x = menu[0x141] * 3;
+        x += y * 3;
+        *(short *)(menu + 0xE) = x * 8 + 0x10;
+    } else {
+        x = *(short *)(menu + 0x5A) * 0x18 + 4;
+        x += menu[0x141] * 0x18;
+        *(short *)(menu + 0xE) = x;
+    }
+    if (*(short *)(menu + 0xC) < w)
+        *(short *)(menu + 0xC) = w;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TMENU_updateDefault);
 
