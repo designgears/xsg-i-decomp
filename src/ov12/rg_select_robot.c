@@ -266,7 +266,117 @@ static void _ActorPosUpdate(RgSelectRobot *pCont)
     *(float *)((char *)pCont + 0x154) = angle;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ActivateAct);
+extern const char D_00A56DD8[];
+extern const char D_00A56E50[];
+extern const char D_00A56E68[];
+extern const char D_00A56E80[];
+extern const char D_00A56E98[];
+static void _DumpHead();
+extern void *ACT_create(int type, int id);
+extern void ACT_allocMatrix(void *pXenoAct, int flags);
+extern void ACT_setModelWrapper(void *pXenoAct, int flags);
+extern void ACT_initMotion(void *pXenoAct);
+extern void ACT_initExMotion(void *pXenoAct, int useExtended, int weaponMotion);
+extern void ACT_setMotion2(void *pXenoAct, int motion, int param);
+extern void ACT_setArms(void *child, void *parent, int accID, int flags);
+extern int RgEquipMountPos(void *pEquip, int eType, int kind, const char *name);
+extern int RgEquipPosToJntID(int ePos);
+extern int XrgActorJntIDtoAccID(int jntID);
+extern void *InstanceOfRgBattleCommonData(void);
+extern int RgBattleCommonDataGetWeaponMot(void *battleCommonData);
+
+static void _ActivateAct(RgSelectRobot *pAct)
+{
+    char *p = (char *)pAct;
+    char *sub;
+    char *chk;
+    char *pNew;
+    char *equip;
+    int type;
+    int head0, head1, head2;
+    int exMot;
+    int mot;
+    unsigned int i;
+
+    if (pAct == 0) {
+        assert_prog(D_00A56DD8, D_00A56DA0, 0x144);
+    }
+    if (*(int *)p != 2) {
+        assert_prog(D_00A56E50, D_00A56DA0, 0x145);
+    }
+    if (*(unsigned int *)(p + 0x10C) < 3) {
+        assert_prog(D_00A56E68, D_00A56DA0, 0x146);
+    }
+    if (pAct->actorFlags != 0) {
+        assert_prog(D_00A56E80, D_00A56DA0, 0x147);
+    }
+    chk = *(char **)(p + 0x124);
+    if (chk != 0) {
+        if (*(int *)chk != 2 || *(int *)(chk + 4) == 0) {
+            return;
+        }
+    }
+    head1 = *(int *)(p + 0x110);
+    exMot = 0;
+    head0 = *(int *)(p + 0x114);
+    head2 = *(int *)(p + 0x118);
+    if (*(int *)(p + 0x10C) == 4) {
+        exMot = *(int *)(p + 0x11C);
+    }
+    _DumpHead(head0);
+    _DumpHead(head1);
+    _DumpHead(head2);
+    pNew = ACT_create(-1, 1);
+    pAct->actorFlags = (unsigned int *)pNew;
+    if (pNew == 0) {
+        assert_prog(D_00A56E98, D_00A56DA0, 0x15A);
+    }
+    for (i = 0; i < 11; i++) {
+        ((int *)(pNew + 0x8D0))[i] = 0;
+    }
+    *(int *)(pNew + 0x8D0) = head0;
+    *(int *)(pNew + 0x8D4) = head1;
+    *(int *)(pNew + 0x8D8) = head2;
+    ACT_allocMatrix(pNew, -1);
+    ACT_setModelWrapper(pNew, 0);
+    _select_light((StudioLight *)(pNew + 0x510));
+    *(int *)pNew |= 0x8800;
+    *(int *)(pNew + 0x9A0) |= 3;
+    *(long *)(pNew + 0x9D8) = 0x44;
+    *(int *)(pNew + 0x9C0) = 0;
+    ACT_initMotion(pNew);
+    if (exMot != 0) {
+        ACT_initExMotion(pNew, 0, exMot);
+        ACT_setMotion2(pNew, 0, 8);
+    }
+    pNew[0x90] = 7;
+    pNew[0x91] = 0x30;
+    sub = *(char **)(p + 0x124);
+    if (sub != 0) {
+        equip = *(char **)(p + 0x15C);
+        type = *(int *)(p + 0x160);
+        ACT_setArms(pNew, *(void **)(sub + 4),
+                    XrgActorJntIDtoAccID(RgEquipPosToJntID(RgEquipMountPos(
+                        equip + 0x70, type, *(int *)(sub + 0x120), equip + 0x330))),
+                    0);
+        if (*(unsigned int *)(sub + 0x120) < 6) {
+            mot = *(int *)(equip + (*(int *)(sub + 0x120) * 3 + type) * 4 + 0x140);
+            if (mot != -1) {
+                if (mot >= 0x800) {
+                    int wm = RgBattleCommonDataGetWeaponMot(InstanceOfRgBattleCommonData());
+                    if (wm != 0) {
+                        ACT_initExMotion(pNew, 0, wm);
+                        ACT_setMotion2(pNew, mot - 0x800, 8);
+                    }
+                }
+            }
+        }
+        if (*(void **)(p + 0x124) != 0) {
+            _ActorPosUpdate(*(RgSelectRobot **)(p + 0x124));
+        }
+    }
+    _ActorPosUpdate(pAct);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ReqAct);
 
