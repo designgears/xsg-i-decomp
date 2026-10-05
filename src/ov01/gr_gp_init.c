@@ -258,7 +258,38 @@ void grVramCopyFBtoFB(int source, int destination)
     grVramCopy(&params);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grVramCopy);
+#define GR_GIF_APPEND(packet, register_id, value)                     \
+    {                                                                 \
+        GrGifOpenTag *tags;                                           \
+        int *count;                                                   \
+        int idx;                                                      \
+        grGifOpenRegister(packet, register_id);                       \
+        count = &(packet)->count;                                     \
+        tags = (packet)->data;                                        \
+        idx = *count;                                                 \
+        tags[idx].control.bits = (value);                             \
+        idx++;                                                        \
+        *count = idx;                                                 \
+    }
+
+void grVramCopy(GrVramCopyParams *params)
+{
+    GrPacket packet;
+
+    grGpInit(&packet);
+    grGifAppendRegister(&packet, 0xE, 0x1000000000008004ULL);
+    GR_GIF_APPEND(&packet, 0x50,
+        (unsigned long long)params->source_base | ((unsigned long long)params->source_width << 16) | ((unsigned long long)0 << 24)
+        | ((unsigned long long)params->destination_base << 32) | ((unsigned long long)params->destination_width << 48) | ((unsigned long long)0 << 56));
+    GR_GIF_APPEND(&packet, 0x51,
+        (unsigned long long)params->source_x | ((unsigned long long)params->source_y << 16) | ((unsigned long long)0 << 24)
+        | ((unsigned long long)params->destination_x << 32) | ((unsigned long long)params->destination_y << 48) | ((unsigned long long)0 << 56));
+    GR_GIF_APPEND(&packet, 0x52,
+        (unsigned long long)params->width
+        | ((unsigned long long)params->height << 32));
+    grGifAppendRegister(&packet, 0x53, 2);
+    grPacketSend(&packet);
+}
 
 void grOpenF2(GrPacket *packet)
 {
