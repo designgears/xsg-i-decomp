@@ -1023,7 +1023,46 @@ void Java_xeno_Unit_signal__I(JThread *thread, UnitSignalCall *arguments,
 
 INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_start__ILjava_lang_Object_);
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_stop__);
+typedef struct UnitStopThread {
+    u8 pad00[0x24];
+    int flags; /* +0x24 */
+} UnitStopThread;
+extern UnitStopThread *JTHREAD_get(SceneObject object);
+
+void Java_xeno_Unit_stop__(JThread *thread, UnitObjectCall *arguments)
+{
+    JavaField *field;
+    u8 *object;
+    u8 *peer;
+    UnitStopThread *t;
+
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(u8 **)(object + field->offset);
+    t = JTHREAD_get(object);
+    if (t != 0) {
+        t->flags &= ~0x10;
+    }
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1F0, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x10);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1F8, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x14);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC200, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x18);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D8, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x20);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1E0, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x24);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1E8, -1), 0);
+    *(float *)(object + field->offset) = *(float *)(peer + 0x28);
+}
 
 void Java_xeno_Unit_validate__(void)
 {
