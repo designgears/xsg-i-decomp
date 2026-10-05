@@ -1704,7 +1704,25 @@ int RgRobotGetCharID(RgStatus *pRobot)
     return pRobot->body->charID;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", RgRobotIsInvalidAttack);
+static inline float _InvAtkDot(float *a, float *b)
+{
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+int RgRobotIsInvalidAttack(RgStatus *pRobot, RgVector direction)
+{
+    RgBody *body;
+
+    if (pRobot == 0) {
+        assert_prog(D_00A51BB0, D_00A51840, 4303);
+    }
+    body = pRobot->body;
+    if (body->shieldActive != 0
+        && !(_InvAtkDot(direction, (float *) &body->unmodeled_34[0xc]) < 0.0f)) {
+        return 1;
+    }
+    return 0;
+}
 
 float RgRobotGetDashTime(RgStatus *pRobot)
 {
