@@ -558,7 +558,7 @@ typedef struct CalcAccSkillView {
     unsigned short skillId;
 } CalcAccSkillView;
 
-int calcSkillInitSub(ObjectTask *unit, int skillId);
+void calcSkillInitSub(ObjectTask *unit, int skillId);
 
 int calcSkillInit(ObjectTask *unit)
 {
@@ -584,7 +584,105 @@ int calcSkillInit(ObjectTask *unit)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInitSub);
+/*
+ * dataSklGet's return record (src/ov01/data_unit_org_get.c, still asm), as
+ * far as calcSkillSub reads it: two halfword bit sets.
+ */
+typedef struct SkillData SkillData;
+
+struct SkillData {
+    u16 typeFlags;   /* +0x00: calcSkillSub's own mask test */
+    u16 levelFlags;  /* +0x02: calcSkillSub returns bits 0-6 of this field */
+};
+
+extern SkillData *dataSklGet(int skillId);
+
+typedef struct CalcSkillInitView {
+    u16 hp;            /* +0x00 */
+    u16 ep;            /* +0x02 */
+    u16 stat4;         /* +0x04 */
+    u16 stat6;         /* +0x06 */
+    u16 stat8;         /* +0x08 */
+    u16 statA;         /* +0x0A */
+    u8 statC;          /* +0x0C */
+    u8 statD;          /* +0x0D */
+    u8 statE;          /* +0x0E */
+} CalcSkillInitView;
+void calcStatProtectSet(ObjectTask *unit, int group, int mask);
+void calcStatSet(ObjectTask *unit, int group, int mask, int force);
+
+void calcSkillInitSub(ObjectTask *unit, int skillId)
+{
+    SkillData *skill;
+    CalcSkillInitView *up;
+    u16 type;
+    int lv;
+
+    skill = dataSklGet(skillId);
+    up = (CalcSkillInitView *)calcUPGet(unit);
+    type = skill->typeFlags;
+    if (type & 0x8000) {
+        lv = skill->levelFlags & 0x7F;
+        if (skill->levelFlags & 0x8000) {
+            up->stat4 += lv;
+            if ((short)up->stat4 >= 1000) {
+                up->stat4 = 999;
+            }
+        }
+        if (skill->levelFlags & 0x4000) {
+            up->stat6 += lv;
+            if ((short)up->stat6 >= 1000) {
+                up->stat6 = 999;
+            }
+        }
+        if (skill->levelFlags & 0x2000) {
+            up->statC += lv;
+            if ((signed char)up->statC >= 100) {
+                up->statC = 99;
+            }
+        }
+        if (skill->levelFlags & 0x1000) {
+            up->statD += lv;
+            if ((signed char)up->statD >= 100) {
+                up->statD = 99;
+            }
+        }
+        if (skill->levelFlags & 0x800) {
+            up->stat8 += lv;
+            if ((short)up->stat8 >= 1000) {
+                up->stat8 = 999;
+            }
+        }
+        if (skill->levelFlags & 0x400) {
+            up->statA += lv;
+            if ((short)up->statA >= 1000) {
+                up->statA = 999;
+            }
+        }
+        if (skill->levelFlags & 0x200) {
+            up->statE += lv;
+            if ((signed char)up->statE >= 100) {
+                up->statE = 99;
+            }
+        }
+        if (skill->levelFlags & 0x100) {
+            up->hp += (short)up->hp * lv / 100;
+            if ((short)up->hp >= 10000) {
+                up->hp = 9999;
+            }
+        }
+        if (skill->levelFlags & 0x80) {
+            up->ep += (short)up->ep * lv / 100;
+            if ((short)up->ep >= 100) {
+                up->ep = 99;
+            }
+        }
+    } else if (type & 0x800) {
+        calcStatProtectSet(unit, type & 0xFF, skill->levelFlags);
+    } else if (type & 0x400) {
+        calcStatSet(unit, type & 0xFF, skill->levelFlags, 1);
+    }
+}
 
 int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask);
 int calcSkill(ObjectTask *unit, int typeMask, int levelMask)
@@ -612,19 +710,6 @@ int calcSkill(ObjectTask *unit, int typeMask, int levelMask)
     }
     return total;
 }
-
-/*
- * dataSklGet's return record (src/ov01/data_unit_org_get.c, still asm), as
- * far as calcSkillSub reads it: two halfword bit sets.
- */
-typedef struct SkillData SkillData;
-
-struct SkillData {
-    u16 typeFlags;   /* +0x00: calcSkillSub's own mask test */
-    u16 levelFlags;  /* +0x02: calcSkillSub returns bits 0-6 of this field */
-};
-
-extern SkillData *dataSklGet(int skillId);
 
 int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask) {
     SkillData *skill;
