@@ -578,7 +578,34 @@ void EtherTreeRightTargetChange(int id, int index)
 
 extern void subEtherTreeRightMain(EtherTreeRightData *record);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subEtherTreeRightMain);
+void subEtherTreeRightMain(EtherTreeRightData *record)
+{
+    if (!(EtherTreeSystem->flags & 1))
+        return;
+    if (!(record->flags & 1))
+        return;
+
+    switch (record->mode) {
+    case 0:
+        break;
+    case 1:
+        record->counter += 8;
+        if (record->counter < 0x30)
+            break;
+        record->mode = 2;
+    case 2:
+        record->counter = 0x30;
+        break;
+    case 3:
+        record->counter -= 8;
+        if (record->counter <= 0) {
+            record->flags &= ~1;
+            record->mode = 0;
+            record->counter = 0;
+        }
+        break;
+    }
+}
 
 void EtherTreeRightMain(void)
 {
