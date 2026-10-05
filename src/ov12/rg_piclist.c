@@ -415,7 +415,40 @@ static int _BinarySizePicList(void)
     return RG_PIC_LIST_BINARY_SIZE;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicListWrite);
+typedef struct { char b[4]; } RgPicWLW;
+typedef union { unsigned char b[0x408]; RgPicWLW w[0x102]; unsigned int n[0x102]; } RgPicWBuf;
+
+void RgPicListWrite(RgPicList *pList, int handle)
+{
+    RgPicWBuf u;
+    unsigned int i;
+    unsigned char *p;
+    int n;
+    int sz;
+    int t;
+
+    if (InstanceOfRgDebugFlags()->flags[3] != 0) {
+        u.n[0x100] = 0;
+        if (pList == 0)
+            assert_prog(D_00A57390, D_00A57320, 452);
+        u.w[0] = *(RgPicWLW *)&pList->m_uNum;
+        u.w[1] = *(RgPicWLW *)&pList->ofsX;
+        u.w[2] = *(RgPicWLW *)&pList->ofsY;
+        u.w[3] = u.w[0x100];
+        p = u.b + 0x10;
+        sz = _BinarySizePicList();
+        n = sz - 0x11;
+        if (sz - 0x10 > 0) {
+            do {
+                *p++ = 0;
+            } while (n-- > 0);
+        }
+        i = 0;
+        XrgHostWrite(handle, u.b, _BinarySizePicList());
+        for (i = 0; i < pList->m_uNum; i++)
+            RgPicWrite(pList->pics[i], handle);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", CreateRgPicListFromBinary);
 
