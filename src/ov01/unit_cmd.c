@@ -683,7 +683,32 @@ int unitDeadSpecChk(ObjectTask *unit)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMot);
+int unitCmdMot(ObjectTask *unit)
+{
+    Actor *actor;
+    int *cmd;
+    int t;
+
+    actor = unit->work;
+    cmd = unitCmdPtrGet(unit);
+    if (actor->moveState == 0) {
+        unitMotSet(unit, cmd[1]);
+        actor->moveState++;
+    } else {
+        t = cmd[2];
+        if (t == 0) {
+            if (!((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000))
+                goto out;
+        } else if (t != actor->runFrameCounter) {
+            goto out;
+        }
+        unitMotStandSet(unit);
+        return unitCmdNext(unit);
+    }
+out:
+    unitMtdProc((UnitRecord *)unit);
+    return 0;
+}
 
 int tgtFindFirst(ObjectTask *, int *, int);
 
