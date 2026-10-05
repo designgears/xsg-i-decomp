@@ -152,7 +152,36 @@ int CheckCrossLine(const Vector4 *first_start, const Vector4 *first_end,
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/outer_product", CheckCrossCircle);
+int CheckCrossCircle(float radius, const Vector4 *start, const Vector4 *end, const Vector4 *point)
+{
+    Vector4 center;
+    Vector4 dir;
+    float half;
+    float dist;
+    float dx;
+    float dz;
+
+    dir.x = end->x - start->x;
+    dir.y = 0.0f;
+    dir.z = end->z - start->z;
+    dir.w = 1.0f;
+    half = __builtin_sqrtf(dir.x * dir.x + dir.z * dir.z) * 0.5f;
+    xglVectorNormal(&dir, &dir);
+    center.x = start->x + (end->x - start->x) * 0.5f;
+    center.z = start->z + (end->z - start->z) * 0.5f;
+    dx = point->x - center.x;
+    dz = point->z - center.z;
+    dist = dx * dir.x + dz * dir.z;
+    if (half + radius < __builtin_fabsf(dist)) {
+        return 0;
+    }
+    dx = point->x - (dist * dir.x + center.x);
+    dz = point->z - (dist * dir.z + center.z);
+    if (dx * dx + dz * dz < radius * radius) {
+        return 1;
+    }
+    return 0;
+}
 
 float CheckDist3D(const Vector4 *first, const Vector4 *second)
 {
