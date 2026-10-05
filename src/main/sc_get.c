@@ -52,7 +52,63 @@ static int scFindScriptData(int eftNo)
     return sefSearchMapperIndex(eftNo);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scCreateScript);
+extern int scCreateTask(int script_index, int task_index, int address, unsigned char *data);
+extern int **svGetScript(int eftNo);
+extern unsigned char D_004CC790[];
+
+int scCreateScript(unsigned char *data)
+{
+    short eftNo;
+    int idx;
+    int i;
+    int ret;
+    short *tbl;
+    short *hdr;
+    int base;
+    unsigned char *rec;
+    int **slot;
+
+    eftNo = *(short *)(data + 0x14);
+    idx = scFindScriptData(eftNo);
+    if (idx < 0) {
+        extern int tracePrint(unsigned char *fmt, unsigned int value);
+        tracePrint(D_004CC790, eftNo);
+        return idx;
+    }
+    i = 0;
+    base = (int)_scriptWork;
+    do {
+        hdr = (short *)((char *)(i * 0x450 + 0x440) + base);
+        tbl = *(short **)(hdr - 0x20);
+        if (tbl != 0 && hdr[5] == eftNo) {
+            ret = scCreateTask(i, -1, tbl[*tbl], data);
+            if (ret >= 0)
+                return ret | (i << 8);
+        }
+        i++;
+    } while (i < 16);
+    i = 0;
+    rec = _scriptWork;
+    do {
+        hdr = (short *)(rec + 0x440);
+        if (((int *)hdr)[-16] == 0) {
+            slot = svGetScript(eftNo);
+            if (slot == 0)
+                break;
+            tbl = (short *)*slot;
+            hdr[5] = eftNo;
+            hdr[2] = idx;
+            *(short **)(hdr - 0x20) = tbl;
+            ret = scCreateTask(i, 0, tbl[*tbl], data);
+            if (ret >= 0)
+                ret |= i << 8;
+            return ret;
+        }
+        i++;
+        rec += 0x450;
+    } while (i < 16);
+    return -1;
+}
 
 extern void sefDestroyScriptScheduler(int script_index);
 extern void *memset(void *dst, int val, unsigned int n);
