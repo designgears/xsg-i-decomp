@@ -800,7 +800,81 @@ static int stream_check(int stream_flags, SoundRingStatus *ring)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundStreamMain);
+typedef struct SoundStreamMainState {
+    unsigned char unmodeled_00[0x2c];
+    int read_position;
+    unsigned char type;
+    unsigned char unmodeled_31[2];
+    unsigned char segment_index;
+    int playback_buffer;
+} SoundStreamMainState;
+extern unsigned char count_3;
+extern char anim_4_004DC358[4];
+extern char D_004DC360[];
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+void SsdGetVagStreamStatusAll(void);
+int SsdGetResultParam(int *param);
+void SsdSetPcmStreamData(int address, int size);
+void SsdSetVagStreamDataMono(int channel, int address, int size);
+
+int xglSoundStreamMain(void)
+{
+    SoundStreamMainState *state = (SoundStreamMainState *) &SoundWork.effect_banks[16];
+    int param[8];
+    int result;
+    int ret;
+
+    if (state->type != 0) {
+        count_3++;
+        xglFontDebugPrintf(0xF4, 8, D_004DC360, anim_4_004DC358[(count_3 >> 3) & 3]);
+    }
+    ret = -1;
+    switch (state->type) {
+    case 0:
+        break;
+    case 1:
+        SsdGetPcmStreamStatus();
+        do {
+        } while (SsdGetResultValue(&result) < 0);
+        ret = stream_check(result, (SoundRingStatus *) state);
+        if (ret == -1) {
+            xglSoundStreamStop(0);
+        } else if (ret == 1) {
+            SsdSetPcmStreamData(state->playback_buffer + (state->segment_index << 12), 0x1000);
+            state->read_position = state->segment_index << 12;
+            state->segment_index = (state->segment_index + 1) & 3;
+        }
+        break;
+    case 2:
+        SsdGetVagStreamStatusStereo();
+        do {
+        } while (SsdGetResultValue(&result) < 0);
+        ret = stream_check(result, (SoundRingStatus *) state);
+        if (ret == -1) {
+            xglSoundStreamStop(0);
+        } else if (ret == 1) {
+            SsdSetVagStreamDataStereo(0, state->playback_buffer + (state->segment_index << 12), 0x1000);
+            state->read_position = state->segment_index << 12;
+            state->segment_index = (state->segment_index + 1) & 3;
+        }
+        break;
+    case 3:
+        SsdGetVagStreamStatusAll();
+        do {
+        } while (SsdGetResultParam(param) < 0);
+        result = param[4];
+        ret = stream_check(result, (SoundRingStatus *) state);
+        if (ret == -1) {
+            xglSoundStreamStop(0);
+        } else if (ret == 1) {
+            SsdSetVagStreamDataMono(0, state->playback_buffer + (state->segment_index << 12), 0x1000);
+            state->read_position = state->segment_index << 12;
+            state->segment_index = (state->segment_index + 1) & 3;
+        }
+        break;
+    }
+    return ret;
+}
 
 typedef struct SePacket {
     short command;
