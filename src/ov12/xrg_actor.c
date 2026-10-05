@@ -1111,7 +1111,43 @@ void InitXrgActorEssence(XrgActorEssence *pEss, int actorID)
     pEss->state = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorEssenceGetFileName);
+extern const char D_00A58B20[];
+
+int XrgActorEssenceGetFileName(XrgActorEssence *pEss, char *fileName)
+{
+    XenoDatEntry *pEntry;
+    int n;
+
+    if (pEss == 0) {
+        assert_prog(D_00A58B00, D_00A587E0, 0x51C);
+    }
+    pEntry = _GetXenoDatEntry(pEss->actorID);
+    if (pEntry == 0) {
+        return 0;
+    }
+    n = 0;
+    if (pEss->fileName[0] == 0) {
+        if (pEntry->unk[2] == 0) {
+            assert_prog(D_00A58B20, D_00A587E0, 0x526);
+        }
+        if (fileName != 0) {
+            n = 3;
+            strcat(strcpy(fileName, (char *)pEntry->unk[2]), D_00A58AB0);
+            strcat(strcpy(fileName + 0x40, (char *)pEntry->unk[2]), D_00A58AB8);
+            strcat(strcpy(fileName + 0x80, (char *)pEntry->unk[2]), D_00A58AC0);
+        }
+    } else if (fileName != 0) {
+        n = 3;
+        strcat(strcpy(fileName, pEss->fileName), D_00A58AB0);
+        strcat(strcpy(fileName + 0x40, pEss->fileName), D_00A58AB8);
+        strcat(strcpy(fileName + 0x80, pEss->fileName), D_00A58AC0);
+    }
+    if (pEntry->unk[1] != 0) {
+        strcpy(fileName + n * 0x40, (char *)pEntry->unk[1]);
+        n++;
+    }
+    return n;
+}
 
 extern RawJntData s_aRawJntData[12];
 
