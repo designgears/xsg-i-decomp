@@ -576,7 +576,29 @@ static void _ExitTargettingStatus(RgRobotStatus *status, RgBody *body)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitTargettingStatus);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInBreaking);
+extern void RgGeomRobotAddRotForce(RgGeomPoint *point, float force);
+
+static int _ExecCmdInBreaking(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result;
+    float delta;
+    int rotateSign;
+
+    result = _AllowDamageCmd(status, body, command);
+    if (command->type == 1) {
+        delta = *(float *) command;
+        if (delta > 0.0f) {
+            rotateSign = 1;
+        } else if (delta < 0.0f) {
+            rotateSign = -1;
+        } else {
+            rotateSign = 0;
+        }
+        RgGeomRobotAddRotForce(body->geometry, (float) rotateSign * body->spec->rotateForce * 0.1f);
+        body->flags |= 2;
+    }
+    return result;
+}
 
 static int _BreakingPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
 {
