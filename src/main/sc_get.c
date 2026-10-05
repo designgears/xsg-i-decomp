@@ -1156,7 +1156,41 @@ static int scEFFECT2Script(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scEFFECT3Script);
+extern int sefCreateScheduler2(int effect_no, int value2, int value3, int value4, int flags, int value5);
+
+static int scEFFECT3Script(ScriptTask *task)
+{
+    int num;
+    int address;
+    int address2;
+    int table;
+    int save34;
+    short save46;
+    int result;
+
+    num = scGetNumScript(task);
+    address = scGetAdrImmScript(task);
+    address2 = scGetAdrImmScript(task);
+    if (_nowEvent == 0) {
+        table = _nowScript;
+        save34 = *(int *)&task->unmodeled_20[0x14];
+        save46 = *(short *)&task->unmodeled_46[0];
+        *(int *)&task->unmodeled_20[0x14] = 0;
+        *(short *)&task->unmodeled_46[0] = 0;
+        result = sefCreateScheduler(address, &task->unmodeled_20[0x10], &task->unmodeled_20[0],
+            (int)((ScriptRecord *)(_scriptWork + table * 1104))->dataTable, -1);
+        *(int *)&task->unmodeled_20[0x14] = save34;
+        *(short *)&task->unmodeled_46[0] = save46;
+        if (result >= 0) {
+            scSetAmbient(task);
+            scFreezeCamera(task->effect_no);
+        }
+    }
+    task->effect_scheduler = sefCreateScheduler2(address2, (int)&task->unmodeled_20[0x10], (int)&task->unmodeled_20[0],
+        (int)((ScriptRecord *)(_scriptWork + _nowScript * 1104))->dataTable, num * _nowEvent, -1);
+    sefCreateBattleActorTbl(task->effect_no);
+    return 1;
+}
 
 extern const char D_004DBB48[];
 extern const char D_004CC898[];
