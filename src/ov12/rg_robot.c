@@ -413,7 +413,35 @@ INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _HissatuPassTime);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _HissatuExit);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitStatusHissatu);
+typedef struct RgMotionInfoDB RgMotionInfoDB;
+typedef struct RgMotionShotInfo RgMotionShotInfo;
+extern RgMotionInfoDB *InstanceOfRgMotionInfoDB(void);
+extern RgMotionShotInfo *RgMotionInfoDBGet(RgMotionInfoDB *db, int motionNo,
+                                           int charId);
+static int _HissatuPassTime(RgRobotStatus *status, RgBody *body,
+                            float deltaTime);
+static void _HissatuExit(RgRobotStatus *status, RgBody *body);
+static void _BodyPlayMotion(RgBody *body, int motion);
+
+static void _InitStatusHissatu(RgRobotStatus *status, RgBody *body)
+{
+    int motionNo = 0x4E;
+    RgMotionInfoDB *db = InstanceOfRgMotionInfoDB();
+    RgMotionShotInfo *info = RgMotionInfoDBGet(db, motionNo, body->charID);
+    _SetStatus(status, 0xA, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_ExecCmdInHissatu;
+    status->scratch0 = 0;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_HissatuPassTime;
+    status->exitMethod = (RgStatusExitFunc)_HissatuExit;
+    status->scratchTimer = 0.0f;
+    *(int *)&status->unmodeled_10[0] = 0;
+    *(int *)&status->unmodeled_10[4] = 1;
+    *(int *)&status->unmodeled_1c[0] = 0;
+    status->eSide = 1;
+    status->scratch1 = motionNo;
+    status->scratch2 = (int)info;
+    _BodyPlayMotion(body, motionNo);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInShield);
 
