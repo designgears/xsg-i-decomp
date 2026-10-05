@@ -477,7 +477,68 @@ static void _DestructAct(RgSelectRobot *pCont)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _JobAct);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _DrawAct);
+extern void XrgUnitMatrix(RgMatrix destination);
+extern void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle);
+
+static void _DrawAct(RgSelectRobot *pCont)
+{
+    char *p = (char *)pCont;
+    char *q;
+    char *r;
+    RgVector position;
+    RgMatrix matrix;
+    unsigned int idx[3];
+    unsigned int i;
+    unsigned int n;
+    unsigned int count;
+
+    if (pCont == 0) {
+        assert_prog(D_00A56DD8, D_00A56DA0, 0x28D);
+    }
+    if (pCont->displayModel != 0) {
+        _ActorPos(pCont, position);
+        XrgUnitMatrix(matrix);
+        XrgRotMatrixY(matrix, matrix, *(float *)(p + 0x154));
+        matrix[12] = position[0];
+        matrix[13] = position[1];
+        matrix[14] = position[2];
+        RgDispModelSetLocal(pCont->displayModel, matrix);
+        RgDispModelDisplay(pCont->displayModel);
+    }
+    if (pCont->hasActions != 0) {
+        n = 0;
+        r = p + 0x10;
+        for (i = 0; i < 3; i++) {
+            if (((int *)(p + 0x144))[i] != 0) {
+                idx[n++] = i;
+            } else {
+                RgSelectAction *a = ((RgSelectAction **)(r + 0x11C))[i];
+                unsigned int *fl = a->actorFlags;
+                if (*(int *)a == 2 && fl != 0) {
+                    *fl &= ~8;
+                }
+            }
+        }
+        count = ++*(unsigned int *)(p + 0x150);
+        if (n != 0) {
+            unsigned int sel = count / 10 % (n + 1);
+            for (i = 0; i < n; i++) {
+                RgSelectAction *a;
+                unsigned int *fl;
+                q = p + 0xC;
+                a = ((RgSelectAction **)(q + 0x120))[idx[i]];
+                fl = a->actorFlags;
+                if (*(int *)a == 2 && fl != 0) {
+                    if (sel == i) {
+                        *fl &= ~8;
+                    } else {
+                        *fl |= 8;
+                    }
+                }
+            }
+        }
+    }
+}
 
 extern RgHeap *InstanceOfRgHeapData(void);
 static void *_InitAct(RgSelectRobot *pCont, void *heap, int regionBytes, int count);
