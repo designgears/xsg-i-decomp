@@ -1119,7 +1119,42 @@ static int scEFFECTScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scEFFECT2Script);
+extern int srsGetEffect2Idx(int effectNo);
+static inline int scEff2GetAdr(ScriptTask *task, int idx)
+{
+    unsigned short value = scGetAdrIdx(task, idx);
+
+    if (value == 0) {
+        return 0;
+    }
+    return (int)((ScriptRecord *)(_scriptWork + _nowScript * 1104))->dataTable + value * 2;
+}
+
+static int scEFFECT2Script(ScriptTask *task)
+{
+    int count;
+    int idx;
+    int next;
+    int address;
+
+    address = 0;
+    count = scGetCmdScript(task);
+    idx = srsGetEffect2Idx(task->effect_no);
+    if ((unsigned short)(task->effect_no - 0xB54) < 0x63) {
+        idx = 1;
+    }
+    next = task->script_pc[task->branch_depth] + count;
+    if (idx < count) {
+        address = scEff2GetAdr(task, idx);
+    }
+    task->script_pc[task->branch_depth] = next;
+    if (address != 0) {
+        task->effect_scheduler = sefCreateScheduler(address, &task->unmodeled_20[0x10], &task->unmodeled_20[0],
+            (int)((ScriptRecord *)(_scriptWork + _nowScript * 1104))->dataTable, -1);
+        sefCreateBattleActorTbl(task->effect_no);
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sc_get", scEFFECT3Script);
 
