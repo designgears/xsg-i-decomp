@@ -1491,7 +1491,46 @@ int calcLineChk(ObjectTask *unit)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBackLineChk);
+int calcBackLineChk(ObjectTask *unit, int mode)
+{
+    ObjectTask **table;
+    ObjectTask *u;
+    int count;
+    int i;
+    short line;
+    short l;
+    unsigned flag;
+
+    line = dataPosLineGet(*(short *)((char *)calcUPGet(unit) + 0x44));
+    if (line == 0) {
+        return 1;
+    }
+    i = 0;
+    flag = *(unsigned *)unit->work & 0x40;
+    count = unitTblGet(flag != 0, &table);
+    for (; i < count; i++) {
+        u = table[i];
+        if (u == 0) continue;
+        if (*(unsigned *)u->work & 0x80) continue;
+        l = dataPosLineGet(*(short *)((char *)calcUPGet(u) + 0x44));
+        if (l == 0) continue;
+        if (line < l) {
+            switch (mode) {
+            case 0:
+                if (calcUPGet(table[i])->flags & 0x800) {
+                    return 0;
+                }
+                break;
+            case 1:
+                if (calcUPGet(table[i])->charaId == 6) {
+                    return 0;
+                }
+                break;
+            }
+        }
+    }
+    return 1;
+}
 
 int calcWpnEnableChk(ObjectTask *unit, int slot)
 {
