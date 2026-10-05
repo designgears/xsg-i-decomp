@@ -1799,7 +1799,38 @@ int calcDblActChk(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSameWpnChk);
+int calcSameWpnChk(ObjectTask *unit)
+{
+    CalcUnitParam *up;
+
+    up = calcUPGet(unit);
+    if (up->sefSetupParams[0] != 0) {
+        if (up->sefSetupParams[0] == up->sefSetupParams[1]) return 0;
+        if (up->sefSetupParams[0] == up->sefSetupParams[2]) return 0;
+        if (up->sefSetupParams[0] == 0x5B || up->sefSetupParams[0] == 0x70) {
+            if (up->sefSetupParams[1] == 0x5B || up->sefSetupParams[1] == 0x70) return 0;
+        }
+        if (up->sefSetupParams[0] == 0x5B || up->sefSetupParams[0] == 0x70) {
+            if (up->sefSetupParams[2] == 0x5B || up->sefSetupParams[2] == 0x70) return 0;
+        }
+        if (up->sefSetupParams[0] == 0x5C || up->sefSetupParams[0] == 0x71) {
+            if (up->sefSetupParams[1] == 0x5C || up->sefSetupParams[1] == 0x71) return 0;
+        }
+        if (up->sefSetupParams[0] == 0x5C || up->sefSetupParams[0] == 0x71) {
+            if (up->sefSetupParams[2] == 0x5C || up->sefSetupParams[2] == 0x71) return 0;
+        }
+    }
+    if (up->sefSetupParams[1] != 0) {
+        if (up->sefSetupParams[1] == up->sefSetupParams[2]) return 1;
+        if (up->sefSetupParams[1] == 0x5B || up->sefSetupParams[1] == 0x70) {
+            if (up->sefSetupParams[2] == 0x5B || up->sefSetupParams[2] == 0x70) return 1;
+        }
+        if (up->sefSetupParams[1] == 0x5C || up->sefSetupParams[1] == 0x71) {
+            if (up->sefSetupParams[2] == 0x5C || up->sefSetupParams[2] == 0x71) return 1;
+        }
+    }
+    return -1;
+}
 
 extern int calcTgtUnitTbl(int, int, int);
 extern int calcEtherDisableGet(ObjectTask *unit, int bit);
