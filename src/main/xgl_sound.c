@@ -205,7 +205,74 @@ void xglSoundSendEffect(void *swd, void *sed, int bank)
     xglSoundSendSed(sed, bank);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundLoadEffect);
+extern const char SoundEffectPath[5];
+extern const unsigned char ext_1[5];
+
+void xglSoundLoadEffect(const char *name, void *address, int bank)
+{
+    char path[256];
+    char *destination;
+    const char *source;
+    char *dst;
+    const char *src;
+    char c;
+
+    if (name == 0 || address == 0) {
+        xglSoundSendSwd(0, bank);
+        xglSoundSendSed(0, bank);
+        return;
+    }
+    destination = path;
+    src = SoundEffectPath;
+    while (*src != '\0') {
+        *destination = *src;
+        destination++;
+        src++;
+    }
+    *destination = (unsigned char) *name;
+    src = name;
+    while (((int) (signed char) *destination << 24) != 0) {
+        src++;
+        destination++;
+        *destination = (unsigned char) *src;
+    }
+    if (xglSoundLoadSwd(path, address) > 0) {
+        xglSoundSendSwd(address, bank);
+        do {
+        } while (SsdSpuDmaCompleted(0) != 0);
+    }
+    dst = path;
+    source = SoundDataPath;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = SoundEffectPath;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = name;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = (const char *) ext_1;
+    for (;;) {
+        *dst = (unsigned char) *source;
+        if (((int) (signed char) *dst << 24) == 0) {
+            break;
+        }
+        source++;
+        dst++;
+    }
+    if (xglCdReadFile(path, address, 0, 0) > 0) {
+        xglSoundSendSed(address, bank);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundLoadRequestSmd);
 
