@@ -397,7 +397,50 @@ void unitActdraw(Actor *actor)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitParaInit);
+extern void dataUnitInitSet(ObjectTask *unit, int charaId);
+extern int calcWct(ObjectTask *unit);
+extern int calcAttWpnChk(int weaponId);
+extern unsigned char *dataWpnGet(int index);
+
+void unitParaInit(ObjectTask *unit, int charaId, int flag)
+{
+    CalcUnitParam *up;
+    short *dst;
+    short *wp;
+    int wct;
+    int i;
+
+    i = 2;
+    dataUnitInitSet(unit, charaId);
+    up = calcUPGet(unit);
+    up->charaId = charaId;
+    dst = (short *)&up->unmodeled_6a[6];
+    wp = up->sefSetupParams;
+    wct = calcWct(unit);
+    up->unmodeled_3a[0] = 0;
+    up->waitCount = wct;
+    up->waitCountBase = wct;
+    up->turnBias = 0;
+    do {
+        if (*wp != 0 && dst[-3] != 0 && calcAttWpnChk(*wp) != 0) {
+            *dst = dataWpnGet(*wp)[0x10];
+        }
+        i--;
+        dst++;
+        wp++;
+    } while (i >= 0);
+    up->unmodeled_3a[3] = 0;
+    up->unmodeled_3a[1] = 3;
+    if (flag == 0) {
+        if (calcStatGet(unit, 7, 0x1000) == 0) {
+            up->unmodeled_3a[2] = 0;
+            return;
+        }
+        up->unmodeled_3a[2] = 1;
+    } else {
+        up->unmodeled_3a[2] = up->unmodeled_1e[3];
+    }
+}
 
 /*
  * plTbl's stride (8 bytes per entry, three entries) and its leading short are

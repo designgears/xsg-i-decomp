@@ -2737,6 +2737,28 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
      }
+    },
+    {
+     "range": [
+      "0x00a447a0",
+      "0x00a447b8"
+     ],
+     "generated": [
+      "0x00a447a0",
+      "0x00a447b4"
+     ],
+     "generated_by": [
+      "calcLinePos"
+     ],
+     "c_owned_symbols": [
+      "D_00A447A0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+     }
     }
    ]
   },
