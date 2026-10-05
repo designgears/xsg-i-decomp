@@ -129,7 +129,75 @@ static void Rotation(float *out, float *position, float *base, float *rotation)
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorManzai);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorMail);
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+extern LocalLightVector D_00A12230;
+
+void UmnProcuratorMail(void *task)
+{
+    unsigned char *t = (unsigned char *)task;
+    unsigned int *model;
+    float *a;
+    float *b;
+    float *c;
+    StudioCamera *cam;
+    LocalLightVector rot;
+    LocalLightVector pos;
+    int n;
+
+    if (t[0x11] != 0) {
+        model = *(unsigned int **)(t + 0x20);
+        a = (float *)((char *)model + 0xC0);
+        b = (float *)((char *)model + 0xD0);
+        c = (float *)((char *)model + 0xE0);
+        switch (t[0x13]) {
+        case 0:
+            t[0x13] = 1;
+            ((void (*)(unsigned int *, int))LocalLightSet)(model, 0);
+            cam = xglStudioGetCamera2(0);
+            memset(&rot, 0, 0x10);
+            rot.value.w = 1.0f;
+            pos = D_00A12230;
+            *(LocalLightVector *)&cam->position = pos;
+            *(LocalLightVector *)&cam->rotation = rot;
+            MenuModelUnitOpen(task, 2);
+        case 1:
+            n = 0;
+            c[0] += 0.01f;
+            if (c[0] >= 1.0f) {
+                c[0] = 1.0f;
+                n = 1;
+            }
+            c[1] = c[0];
+            c[2] = c[0];
+            a[0] += 0.02f;
+            if (a[0] >= 1.0f) {
+                a[0] = 1.0f;
+                n++;
+            }
+            a[1] -= 0.01f;
+            if (a[1] <= -0.3f) {
+                a[1] = -0.3f;
+                n++;
+            }
+            b[0] += 0.01f;
+            if (b[0] >= 0.0f) {
+                b[0] = 0.0f;
+                n++;
+            }
+            b[1] -= 0.01f;
+            if (b[1] <= -0.7853982f) {
+                b[1] = -0.7853982f;
+                n++;
+            }
+            if (n == 5) {
+                t[0x13] = 2;
+            }
+            break;
+        case 2:
+            break;
+        }
+    }
+}
 
 typedef void (*LLS2)(unsigned int *, int);
 
