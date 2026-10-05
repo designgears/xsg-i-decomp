@@ -1068,7 +1068,26 @@ int calcFrameEquipOrg(int charaId, int frameId)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDblActChk);
+extern int calcSameWpnChk(ObjectTask *unit);
+
+int calcDblActChk(ObjectTask *unit)
+{
+    CalcUnitParam *up;
+    int idx;
+
+    up = calcUPGet(unit);
+    idx = calcSameWpnChk(unit);
+    if (idx != -1 && (signed char)up->unmodeled_3a[0] == 6
+        && *(short *)((char *)dataWpnGet(up->sefSetupParams[idx]) + 0x18) != 0) {
+        if (calcAttWpnChk(up->sefSetupParams[idx]) != 0) {
+            if ((short)up->statActiveMask[idx - 30] <= 0) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSameWpnChk);
 
