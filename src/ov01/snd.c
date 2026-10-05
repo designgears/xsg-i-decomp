@@ -96,7 +96,115 @@ int dataSndStEdNum(SndStEdData *data, ObjectTask *unit)
     return candidate[rnd(count - 1)];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndStEdNumSub);
+extern int monsSetNoGet(void);
+extern int thinkMonsTblGet(int monsSetNo);
+extern int unitIdChk(int side, int id);
+extern int dataEtherLearnGet(int cid, int id);
+extern int calcStatGet(ObjectTask *unit, int category, int flag);
+extern int MenuScenarioNoGet(void);
+extern void *dataUnitInitGet(int id);
+extern int calcIdol2Chk(ObjectTask *unit);
+extern int unitTblGet(int side, ObjectTask ***table);
+typedef struct {
+    short id;
+    short unk2[3];
+} SndMonsEnt;
+
+int dataSndStEdNumSub(ObjectTask *unit, int condition)
+{
+    int ret;
+    SndMonsEnt *m;
+    ObjectTask **tbl;
+    ObjectTask **t;
+    int n;
+    int i;
+    int v;
+    int x;
+    int one;
+    void *d;
+
+    ret = 0;
+    m = (SndMonsEnt *)thinkMonsTblGet(monsSetNoGet());
+    switch (condition) {
+    case 0:
+        break;
+    case 2:
+        x = unitIdChk(0, 2);
+        goto chk;
+    case 3:
+        x = unitIdChk(0, 3);
+        goto chk;
+    case 5:
+        if (dataEtherLearnGet(6, 0x2B)) {
+            ret = 1;
+            break;
+        }
+        x = dataEtherLearnGet(6, 0x2E);
+        goto chk;
+    case 4:
+        if (calcStatGet(unit, 7, 2)) {
+            ret = 1;
+            break;
+        }
+        x = calcStatGet(unit, 7, 1);
+        goto chk;
+    case 6:
+        if (!unitIdChk(0, 2)) break;
+        if (MenuScenarioNoGet() < 10) break;
+        for (i = 0; m[i].id != 0; i++) {
+            d = dataUnitInitGet(m[i].id);
+            if (*(unsigned short *)((char *)d + 0x1C) & 0x2000) ret = 1;
+        }
+        return ret;
+    case 7:
+        x = calcIdol2Chk(unit);
+    chk:
+        if (!x) break;
+    case 1:
+        ret = 1;
+        break;
+    case 8:
+        n = unitTblGet(0, &tbl);
+        i = 0;
+        if (n > 0) {
+            t = tbl;
+            one = 0;
+            do {
+                if (*t != 0) {
+                    one = 1;
+                    if (*(int *)(*t)->work & 0x80) ret = one;
+                }
+                i++;
+                t++;
+            } while (i < n);
+            return ret;
+        }
+        break;
+    case 9:
+        for (i = 0; m[i].id != 0; i++) {
+            if ((unsigned short)m[i].id - 0x97U < 0x24) ret = 1;
+        }
+        return ret;
+    case 10:
+        for (i = 0; m[i].id != 0; i++) {
+            if (m[i].id == 0xA2) ret = 1;
+        }
+        return ret;
+    case 11:
+        for (i = 0; m[i].id != 0; i++) {
+            if (m[i].id == 0xAA) ret = 1;
+        }
+        return ret;
+    case 12:
+        for (i = 0; m[i].id != 0; i++) {
+            if (m[i].id == 0xAC) ret = 1;
+        }
+        return ret;
+    default:
+        break;
+    }
+    return ret;
+}
 
 extern SndStEdData btst[];
 extern SndStEdData bted[];
