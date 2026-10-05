@@ -583,7 +583,15 @@ int menuStatIconChk(int charaId, int iconSlot) {
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatIconPut);
+void menuStatIconPut(int packet, int x, int y, int charaId, int iconSlot)
+{
+    StatTblEnt *tbl = statTbl[charaId];
+    int icon = menuStatIconChk(charaId, iconSlot);
+
+    if (icon != -1) {
+        menuStatSprite(packet, x + 0x90, y + 0x32, 0x16, 0x18, tbl[icon].pad[0], tbl[icon].pad[1]);
+    }
+}
 
 /*
  * eBattleWinOpen2's own argument words (src/main/e_battle_win_open.c, still
