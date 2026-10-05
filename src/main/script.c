@@ -875,7 +875,99 @@ INCLUDE_ASM("asm/main/nonmatchings/script", sceneObserver);
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_light);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_vmSwitch);
+typedef struct DbVmMenu {
+    u8 unmodeled_00[0x14];
+    unsigned short state;
+    unsigned short mode;
+    u8 unmodeled_18[0x38];
+    int value;
+    signed char index;
+    signed char cancel;
+} DbVmMenu;
+typedef struct DbVmOwner {
+    u8 unmodeled_00[0xC];
+    unsigned short state_0c;
+    u8 unmodeled_0e[2];
+    u32 flags;
+    u8 unmodeled_14[0x29F60 - 0x14];
+    unsigned short state_29f60;
+} DbVmOwner;
+typedef struct DbVmTask {
+    XglTaskPrefix task;
+    u32 flags;
+    DbVmMenu *menu;
+    u8 unmodeled_18[4];
+    DbVmOwner *owner;
+} DbVmTask;
+typedef struct DbVmEvtTask {
+    XglTaskPrefix task;
+    int flags;
+    int object;
+    u8 unmodeled_18[4];
+    void *owner;
+} DbVmEvtTask;
+extern DbVmMenu *TMENU_create(int slot);
+extern void TMENU_setItem(DbVmMenu *menu, int index, char *text);
+extern void TWSYS_setGRPStatus(int group, int status);
+extern int DB_evtMonitor(XglTaskPrefix *task);
+extern int vmDebugMask;
+extern char *vmSwitchStr[];
+
+static void DB_vmSwitch(DbVmTask *task)
+{
+    DbVmMenu *menu = task->menu;
+
+    if (!(task->flags & 1)) {
+        int i = 0;
+        int bit = 1;
+        menu = TMENU_create(-1);
+        menu->value = 0;
+        menu->mode |= 0x10;
+        while (i < 8 && vmSwitchStr[i * 2] != 0) {
+            int on = (vmDebugMask & bit) != 0;
+            int k = i * 2;
+            i++;
+            TMENU_setItem(menu, -1, vmSwitchStr[k + on]);
+            bit = 1 << (i & 0x1f);
+        }
+        task->menu = menu;
+        task->flags |= 1;
+    }
+    if (menu->state == 0) {
+        int idx = menu->index;
+        int bit, on;
+        if (menu->cancel < 0) {
+            DbVmOwner *o = task->owner;
+            menu->state = 2;
+            o->flags &= ~1;
+            o->state_0c = o->state_29f60;
+            TWSYS_setGRPStatus(0, 0);
+            xglTaskRemove(&task->task);
+            return;
+        }
+        bit = 1 << (idx & 0x1f);
+        if (vmDebugMask & bit) {
+            on = 0;
+            vmDebugMask &= ~bit;
+        } else {
+            vmDebugMask |= bit;
+            on = 1;
+        }
+        TMENU_setItem(menu, idx, vmSwitchStr[idx * 2 + on]);
+        menu->state = 0xE;
+        if (idx == 4) {
+            XglTaskScheduler *scheduler = GameLoopState[2];
+            DbVmEvtTask *t = (DbVmEvtTask *)xglTaskEntryNext(
+                scheduler, DB_evtMonitor,
+                scheduler != 0 ? scheduler->active_tail : 0);
+            if (t != 0) {
+                t->owner = GameLoopState;
+                t->object = 0;
+                t->flags = 0;
+            }
+        }
+    }
+}
 
 typedef struct DbSsSlider {
     u8 unmodeled_00[0x14];
