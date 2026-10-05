@@ -698,7 +698,40 @@ static int _DropPassTime(RgRobotStatus *status, RgBody *body)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitDropStatus);
+typedef struct RgWeapon RgWeapon;
+extern int RgWeaponGetControlFlag(void *weapon);
+extern int RgWeaponIsAttachedShot(void *weapon);
+
+static int _InitDropStatus(RgStatus *st, RgBody *body, int motion, int eSide)
+{
+    RgRobotStatus *status = (RgRobotStatus *)st;
+    RgMotionShotInfo *info;
+    void *weapon;
+
+    info = RgMotionInfoDBGet(InstanceOfRgMotionInfoDB(), motion, body->charID);
+    weapon = body->weapon[eSide];
+    if (weapon == 0) {
+        goto z;
+    }
+    if (info == 0) {
+        return (int)info;
+    }
+    if ((RgWeaponGetControlFlag(weapon) & 7) == 4) {
+        return 0;
+    }
+    if (RgWeaponIsAttachedShot(body->weapon[eSide]) != 0) {
+z:
+        return 0;
+    }
+    _SetStatus(status, 9, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_ExecCmdInDrop;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_DropPassTime;
+    status->scratch0 = eSide;
+    status->scratch1 = (int)info;
+    status->scratch2 = 1;
+    _BodyPlayMotion(body, motion);
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _EntryCmdQueue);
 
