@@ -125,7 +125,32 @@ void UmnProcuratorTop(void *task)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorGoodBy);
+void UmnProcuratorGoodBy(void *task)
+{
+    unsigned char *t = (unsigned char *)task;
+    unsigned int *model;
+    float *a;
+    float *b;
+
+    if (t[0x11] != 0) {
+        model = *(unsigned int **)(t + 0x20);
+        a = (float *)((char *)model + 0xC0);
+        b = (float *)((char *)model + 0xD0);
+        switch (t[0x13]) {
+        case 0:
+            t[0x13] = 1;
+            ((LLS2)LocalLightSet)(model, 0);
+            MenuModelUnitOpen(task, 3);
+        case 1:
+            a[0] += 0.4f;
+            b[1] += 0.4f;
+            if (a[0x18] == 0.0f) {
+                t[0x10] = -1;
+            }
+            break;
+        }
+    }
+}
 
 static inline void UmnProcuratorSetGoodBy(void)
 {
