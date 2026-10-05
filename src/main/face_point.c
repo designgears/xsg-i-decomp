@@ -327,7 +327,27 @@ s32 check_culling_map(const char *name) {
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapSet);
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapCreate);
+extern float s_aCullingBase[9];
+
+void xglCullingMapCreate(void) {
+    float *b = s_aCullingBase;
+    CullingVolume *v = &s_inCulling.volumes[s_inCulling.count];
+    if (s_inCulling.count < 10) {
+        v->position.x = b[0];
+        v->position.y = b[1];
+        v->position.z = b[2];
+        v->position.w = 1.0f;
+        v->rotation.x = b[3];
+        v->rotation.y = b[4];
+        v->rotation.z = b[5];
+        v->scale.x = b[6];
+        v->scale.y = b[7];
+        v->scale.z = b[8];
+        v->scale.w = 1.0f;
+        culling_matrix((CullingVolumeView *)v);
+        s_inCulling.count++;
+    }
+}
 
 void xglCullingMapDisp(void)
 {
