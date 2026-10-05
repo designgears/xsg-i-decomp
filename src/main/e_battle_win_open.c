@@ -55,7 +55,62 @@ void eBattleWinClose3(void)
     BW3->secondary_state = 4;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinOpen4);
+extern void eMessageSet(void *message, int text);
+extern void eMessageTextChange(void *message, int text);
+typedef struct { unsigned short x; unsigned short p0; unsigned short y; unsigned short p1; char *z; int w; int t; } OpenArg4;
+typedef struct {
+    int active;
+    int page;
+    unsigned short x;
+    unsigned short y;
+    char *z;
+    short w;
+    short h;
+    int tag;
+    unsigned char state;
+    unsigned char ribbon;
+    unsigned char pad[0x19C - 0x1A];
+    char msg[1];
+    unsigned char mc;
+    unsigned char pad2[2];
+    short mx;
+    short my;
+    int mz;
+    unsigned char pad3[0x1B8 - 0x1A8];
+    unsigned char mf;
+} V4;
+#define V ((V4 *)BW4)
+
+void eBattleWinOpen4(OpenArg4 *a)
+{
+    V4 *w;
+    int tg;
+    char *z;
+    unsigned short x, y;
+    WindowDXSet(&BW4->window);
+    w = V;
+    tg = a->w;
+    x = a->x;
+    y = a->y;
+    z = a->z;
+    w->x = x;
+    w->y = y;
+    w->z = z;
+    w->w = 0x1D4;
+    w->h = 0x70;
+    w->tag = tg;
+    w->ribbon = 1;
+    eMessageSet(V->msg, a->t);
+    V->mf = 1;
+    eMessageTextChange(V->msg, a->t);
+    V->mz = (int)(V->z + 2);
+    V->mx = V->x + 3;
+    V->my = V->y + 3;
+    V->mc = 0x22;
+    V->state = 1;
+    V->active = 1;
+    V->page = 0;
+}
 
 extern int eMessageNextPage(void *message, int arg);
 extern PadPrefix PadData;
