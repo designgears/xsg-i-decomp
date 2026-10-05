@@ -1166,4 +1166,38 @@ INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffArmCombine);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorDisposeEffector);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorDebugDisp);
+extern const char D_00A58CB0[];
+extern const char D_00A58CD0[];
+extern const char D_00A58CF0[];
+extern double fptodp(float value);
+typedef struct XrgMotionState {
+    unsigned int flags;   /* 0x00 */
+    float time;           /* 0x04 */
+    float unk08;          /* 0x08 */
+    float start;          /* 0x0C */
+    float end;            /* 0x10 */
+    unsigned short unk14; /* 0x14 */
+    unsigned short next;  /* 0x16 */
+} XrgMotionState;
+
+void XrgActorDebugDisp(XrgActor *pActor)
+{
+    XenoAct *pXenoAct;
+    XrgMotionState *m;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x662);
+    }
+    pXenoAct = pActor->pXenoAct;
+    m = (XrgMotionState *)((char *)pXenoAct + 0x6F0);
+    if (pXenoAct != 0) {
+        XrgLog(D_00A58CB0, D_00A587E0, 0x666, pActor, pXenoAct);
+        {
+            const char *fmt = D_00A58CD0;
+            double t = fptodp(m->time);
+            double st = fptodp(m->start);
+            XrgLog(fmt, D_00A587E0, 0x667, t, st, fptodp(m->end));
+        }
+        XrgLog(D_00A58CF0, D_00A587E0, 0x668, m->flags, 0x1000, m->next);
+    }
+}
