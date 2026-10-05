@@ -383,7 +383,76 @@ void SCRIPT_execTouchto(void *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", createTalkTask);
+extern const char sig0_0[];
+extern const char sig1_1[];
+extern SceneClass *classJava_xeno_util_Window;
+typedef struct TalkTaskWin { int class_ref; char pad[0xC]; unsigned int flags; } TalkTaskWin;
+extern TalkTaskWin *TWIN_create2(int component_id);
+extern void TWIN_initCF(void *window);
+extern void Before_Talk(void *actor);
+extern void talktoObserver(ScriptObserverTask *task);
+typedef struct ScriptDbThreadSlot { SceneThread *thread; u8 pad[0x18]; } ScriptDbThreadSlot;
+extern ScriptDbThreadSlot D_004DEDF0[];
+
+void createTalkTask(void *actor, const char *method_name)
+{
+    SceneObject receiver;
+    SceneClass *scene_class;
+    SceneMethod *method;
+    ScriptObserverTask *task;
+
+    if (((GameLoopFlagsPrefix *)GameLoopState)->flags & 0x20)
+        return;
+    receiver = D_004DEDF0[currentScriptDB].thread->object;
+    scene_class = ((SceneObjectHeader *)receiver)->class_ref->scene_class;
+    method = findMethod(scene_class, loadConstString(method_name, -1),
+                        loadConstString(sig0_0, -1));
+    if (method != 0) {
+        XglTaskScheduler *scheduler = GameLoopState[2];
+        task = (ScriptObserverTask *)xglTaskEntryNext(
+            scheduler, (int (*)(XglTaskPrefix *))talktoObserver,
+            scheduler != 0 ? scheduler->active_tail : 0);
+        if (task != 0) {
+            task->state_flags = 0;
+            task->owner = (GameLoopFlagsPrefix *)GameLoopState;
+            task->object = 0;
+        }
+        task->argument2 = 0;
+        task->method_signature = sig0_0;
+    } else {
+        TalkTaskWin *win;
+        XglTaskScheduler *scheduler;
+
+        method = findMethod(scene_class, loadConstString(method_name, -1),
+                            loadConstString(sig1_1, -1));
+        if (method == 0)
+            return;
+        scheduler = GameLoopState[2];
+        task = (ScriptObserverTask *)xglTaskEntryNext(
+            scheduler, (int (*)(XglTaskPrefix *))talktoObserver,
+            scheduler != 0 ? scheduler->active_tail : 0);
+        if (task != 0) {
+            task->state_flags = 0;
+            task->owner = (GameLoopFlagsPrefix *)GameLoopState;
+            task->object = 0;
+        }
+        task->method_signature = sig1_1;
+        win = TWIN_create2(-1);
+        win->class_ref = (int)classJava_xeno_util_Window->instance_class_ref;
+        TWIN_initCF(win);
+        { unsigned int f = win->flags & ~0x40; f &= ~0x80; win->flags = f; }
+        task->argument2 = (int)win;
+    }
+    task->receiver = receiver;
+    task->method_name = method_name;
+    task->method = method;
+    task->object = actor;
+    Before_Talk(actor);
+    ((GameLoopFlagsPrefix *)GameLoopState)->flags |= 0x9000;
+    XTK_setWindowOwner((int)actor);
+    JNI_initThread(stageVM);
+    talktoObserver(task);
+}
 
 /*
  * Task body queued by createTalkTask: resolve the talk method on the
