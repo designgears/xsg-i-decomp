@@ -1162,7 +1162,19 @@ int calcDeadUnitNum(ObjectTask *unit, int flag)
     return n;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBattleChk);
+int calcBattleChk(ObjectTask *unit)
+{
+    if (unit != 0 && !(*(u32 *)unit->work & 0x80)
+        && calcStatGet(unit, 0, 0x2000) == 0 && calcStatGet(unit, 1, 0x2000) == 0
+        && calcStatGet(unit, 4, 0x2000) == 0 && calcStatGet(unit, 5, 0x4000) == 0) {
+        if (calcStatGet(unit, 5, 0x2000) == 0) {
+            goto ok;
+        }
+    }
+    return 0;
+ok:
+    return 1;
+}
 
 /*
  * Answers a target-selection flag word (cmdAtktbl, calcTgtUnitTbl and
