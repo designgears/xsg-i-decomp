@@ -2104,42 +2104,26 @@
     {
      "range": [
       "0x004d8420",
-      "0x004d842c"
-     ],
-     "generated": [
-      "0x004d8420",
-      "0x004d842c"
-     ],
-     "generated_by": [
-      "UNIT_rotX"
-     ],
-     "c_owned_symbols": [
-      "D_004D8420",
-      "D_004D8424",
-      "D_004D8428"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/unit.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8438",
       "0x004d844c"
      ],
      "generated": [
-      "0x004d8438",
+      "0x004d8420",
       "0x004d844c"
      ],
      "generated_by": [
       "Java_xeno_Unit_getRotate__",
       "Java_xeno_Unit_setRotate__",
+      "UNIT_rotX",
+      "UNIT_rotY",
       "UNIT_rotZ"
      ],
      "c_owned_symbols": [
+      "D_004D8420",
+      "D_004D8424",
+      "D_004D8428",
+      "D_004D842C",
+      "D_004D8430",
+      "D_004D8434",
       "D_004D8438",
       "D_004D843C",
       "D_004D8440",

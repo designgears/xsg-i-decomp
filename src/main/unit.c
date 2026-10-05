@@ -299,9 +299,217 @@ static void UNIT_rotX(int mode, JThread *thread, void *arguments_,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_rotY);
+typedef struct UnitRotYState {
+    void *target;
+    u8 pad04[0x14 - 0x04];
+    int frames;
+    u8 pad18[0x1c - 0x18];
+    u32 flags;
+    u8 pad20[0x34 - 0x20];
+    float angle;
+    u8 pad38[0x44 - 0x38];
+    float speed;
+} UnitRotYState;
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_rotZ);
+static void UNIT_rotY(int mode, JThread *thread, void *arguments_,
+                      u32 *failure_result)
+{
+    UnitRotCall *arguments = arguments_;
+    JavaField *field;
+    UnitPeer *peer;
+    float *rot_source;
+    UnitSequenceEntry *entry;
+    UnitRotYState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004D16F8, -1), 0);
+    rot_source = (*(u32 *)(object + field->offset) & 1)
+        ? (float *)((u8 *)peer + 0x20) : defaultOffset_0043C1D0;
+
+    entry = &unitSequence[peer->serial];
+    rot = (UnitRotYState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotateUnit;
+    entry->state |= 4;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~2;
+        rot->angle =
+            (arguments->second.f + rot_source[1]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~2;
+        rot->angle =
+            (arguments->first.f + rot_source[1]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off;
+            u8 *o;
+            field = lookupClassField(classJava_xeno_Chr,
+                                     loadConstString(D_004DC1D0, -1), 0);
+            off = field->offset;
+            o = ((UnitRotObjCall *)arguments)->other;
+            rot->frames = ((UnitRotObjCall *)arguments)->frames;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off;
+            u8 *o;
+            field = lookupClassField(classJava_xeno_Chr,
+                                     loadConstString(D_004DC1D0, -1), 0);
+            off = field->offset;
+            o = ((UnitRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        UnitRotWaitThread *t = (UnitRotWaitThread *)thread;
+        peer->flags |= 2;
+        if (t->state != 5 && !(t->flags & 0x40))
+            return;
+        if (t->flags & 0x40) {
+            t->wait_object = peer;
+            t->next = 6;
+            t->pc = t->pc2;
+            t->flags |= 4;
+        }
+        t->pc = t->pc2;
+        t->flags |= 1;
+    }
+}
+
+typedef struct UnitRotZState {
+    void *target;
+    u8 pad04[0x18 - 0x04];
+    int frames;
+    u32 flags;
+    u8 pad20[0x38 - 0x20];
+    float angle;
+    u8 pad3c[0x48 - 0x3c];
+    float speed;
+} UnitRotZState;
+
+static void UNIT_rotZ(int mode, JThread *thread, void *arguments_,
+                      u32 *failure_result)
+{
+    UnitRotCall *arguments = arguments_;
+    JavaField *field;
+    UnitPeer *peer;
+    float *rot_source;
+    UnitSequenceEntry *entry;
+    UnitRotZState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004D16F8, -1), 0);
+    rot_source = (float *)((u8 *)peer + 0x20);
+    if ((*(u32 *)(object + field->offset) & 1) == 0)
+        rot_source = defaultOffset_0043C1D0;
+
+    entry = &unitSequence[peer->serial];
+    rot = (UnitRotZState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotateUnit;
+    entry->state |= 8;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~4;
+        rot->angle =
+            (arguments->second.f + rot_source[2]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~4;
+        rot->angle =
+            (arguments->first.f + rot_source[2]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off = field->offset;
+            u8 *o = ((UnitRotObjCall *)arguments)->other;
+            rot->frames = ((UnitRotObjCall *)arguments)->frames;
+            rot->flags |= 4;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off = field->offset;
+            u8 *o = ((UnitRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        UnitRotWaitThread *t = (UnitRotWaitThread *)thread;
+        peer->flags |= 2;
+        if (t->state != 5 && !(t->flags & 0x40))
+            return;
+        if (t->flags & 0x40) {
+            t->wait_object = peer;
+            t->next = 6;
+            t->pc = t->pc2;
+            t->flags |= 4;
+        }
+        t->pc = t->pc2;
+        t->flags |= 1;
+    }
+}
 
 extern const char D_004DC1D8[];
 extern const char D_004DC1E0[];
