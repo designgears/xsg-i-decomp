@@ -184,7 +184,36 @@ static void resolveInstanceField(char *cls)
     *(int *)(cls + 0x38) = off;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", resolveConstants);
+typedef union RCSlot {
+    StringConstant *s;
+    unsigned short h;
+} RCSlot;
+typedef struct RCClass {
+    u8 pad[0x14];
+    RCSlot *pool;
+    u8 pad2[0x10];
+    unsigned short count;
+} RCClass;
+
+static int resolveConstants(RCClass *cls)
+{
+    int i = 0;
+    RCSlot *pool = cls->pool;
+    int n = cls->count;
+
+    if (n != 0) {
+        do {
+            u8 *tag = *(u8 **)pool + i;
+            if (*tag == 8) {
+                *tag = 0x18;
+                pool[i].s = (StringConstant *)Const2JavaString(pool[i].s);
+                n = cls->count;
+            }
+            i++;
+        } while (i < n);
+    }
+    return 1;
+}
 
 void getClassFromSignature(const char *signature);
 
