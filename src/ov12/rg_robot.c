@@ -1932,7 +1932,117 @@ static int _BodyDropWeapon(RgBody *body, int eType)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyEquipWeapon);
+extern void *RgWeaponGetEquip(void *weapon);
+extern int RgEquipMountPos(void *equip, int eSide, int charID, void *name);
+extern int RgEquipPosToJntID(int pos);
+extern void XrgActorDeriveMotion(void *actor, void *parent);
+extern void XrgActorAttachChild(void *parent, void *child, int jnt);
+extern int XrgActorGetAttachedJoint(void *actor);
+extern void XrgActorCheckPakaPaka(void *actor);
+extern void XrgLog(const char *, const char *, int, ...);
+extern void RgShotThreadMotOff(void *thread);
+extern int RgWeaponIsActiveLockOnSys(void *weapon);
+extern const char D_00A51AC8[];
+extern const char D_00A51AD0[];
+extern const char D_00A51AF8[];
+extern const char D_00A51B18[];
+extern const char D_00A51B28[];
+extern const char D_00A51B40[];
+
+static int _BodyEquipWeapon(RgBody *body, int eSide, int weaponID)
+{
+    int ret;
+    char *ess;
+    int pos;
+    int jnt;
+    void *other;
+    void *actor;
+    void *w;
+    float weight;
+
+    if (body == 0) {
+        assert_prog(D_00A51A68, D_00A51840, 0xBA9);
+    }
+    if ((unsigned int)eSide >= RG_EQUIP_TYPE_NUM) {
+        assert_prog(D_00A51A88, D_00A51840, 0xBAA);
+    }
+    ret = _BodyDropWeapon(body, eSide);
+    if (weaponID == 0) {
+        return ret;
+    }
+    ess = RgWeaponGetEss((void *)weaponID);
+    if (ess != 0) {
+        pos = RgEquipMountPos(RgWeaponGetEquip((void *)weaponID), eSide, body->charID, ess + 0x330);
+    } else {
+        pos = RgEquipMountPos(RgWeaponGetEquip((void *)weaponID), eSide, body->charID, (void *)D_00A51AC8);
+    }
+    body->weapon[eSide] = (void *)weaponID;
+    weight = RgGeomPointGetWeight(body->geometry);
+    RgGeomPointSetWeight(body->geometry, weight + RgWeaponGetWeight((void *)weaponID));
+    if (RgWeaponGetActor((void *)weaponID) != 0 && body->actor != 0) {
+        other = 0;
+        RgWeaponGetActor((void *)weaponID);
+        jnt = RgEquipPosToJntID(pos);
+        if (body->weapon[2] != 0) {
+            other = RgWeaponGetActor(body->weapon[2]);
+        }
+        if (pos == -1) {
+            assert_prog(D_00A51AD0, D_00A51840, 0xBE3);
+        }
+        actor = RgWeaponGetActor((void *)weaponID);
+        XrgActorDeriveMotion(actor, body->actor);
+        if (jnt == -1) {
+            assert_prog(D_00A51AF8, D_00A51840, 0xBEA);
+        }
+        XrgActorAttachChild(body->actor, actor, jnt);
+        if (eSide == 0 && other != 0) {
+            if (RgWeaponIsActiveLockOnSys((void *)weaponID) != 0) {
+                if (XrgActorGetAttachedJoint(other) == 4) {
+                    XrgActorCheckPakaPaka(other);
+                }
+            }
+        } else if (eSide == 1 && other != 0) {
+            if (RgWeaponIsActiveLockOnSys((void *)weaponID) != 0) {
+                if (XrgActorGetAttachedJoint(other) == 5) {
+                    XrgActorCheckPakaPaka(other);
+                }
+            }
+        } else if (eSide == 2) {
+            w = 0;
+            if (jnt == 4) {
+                w = body->weapon[0];
+            } else if (jnt == 5) {
+                w = body->weapon[1];
+            }
+            if (w != 0 && RgWeaponIsActiveLockOnSys(w) != 0 && (RgWeaponGetControlFlag(w) & 0x20)) {
+                XrgLog(D_00A51B18, D_00A51840, 0xC0E);
+                XrgActorCheckPakaPaka(actor);
+                XrgLog(D_00A51B28, D_00A51840, 0xC10);
+            } else {
+                XrgLog(D_00A51B40, D_00A51840, 0xC12);
+            }
+        }
+    }
+    if ((RgWeaponGetControlFlag((void *)weaponID) & 7) == 0) {
+        RgShotThreadInit(body->shotThread[eSide], (void *)weaponID, eSide, (int)body->actor);
+    } else {
+        RgShotThreadInit(body->shotThread[eSide], 0, -1, 0);
+    }
+    if (pos == 2 || pos == 5) {
+        RgWeaponDisposeLockon((void *)weaponID);
+        if (body->shotThread[eSide] != 0) {
+            RgShotThreadMotOff(body->shotThread[eSide]);
+        }
+    }
+    if ((unsigned int)(pos - 6) < 2) {
+        RgWeaponDisposeLockon((void *)weaponID);
+        if (body->shotThread[eSide] != 0) {
+            RgShotThreadMotOff(body->shotThread[eSide]);
+        }
+    }
+    _BodySetSound(body, (void *)body->landingSoundID);
+    return ret;
+}
 
 extern void DisposeRgWeapon(void *weapon);
 

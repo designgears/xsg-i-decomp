@@ -496,7 +496,7 @@ static void _InitBreakingStatus(RgStatus *status, RgBody *body);
 /* Returns the accepted entry, or 0 when the ring is full or the type invalid. */
 static RgCmd *_EntryCmdQueue(void *cmdQueue, int cmdType);
 
-static void _BodyEquipWeapon(RgBody *body, int eSide, int weaponID);
+static int _BodyEquipWeapon(RgBody *body, int eSide, int weaponID);
 
 static void _BodySetSpareWeapon(RgBody *body, int eSide, int weaponID);
 
