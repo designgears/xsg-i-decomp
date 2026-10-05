@@ -148,7 +148,27 @@ void Enemy_Command_Target(Actor *actor, int target)
     ENEMY_TARGET(work) = Get_ActorNumber(target);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Enemy_Command_LookAt);
+int Enemy_Command_LookAt(Actor *actor, int target)
+{
+    extern Actor actor_table[64] __asm__("actor");
+    Vector4 *pos;
+
+    switch (target) {
+    case -1:
+        Actor_LookAt_Release(actor, 2);
+        break;
+    case 100:
+        pos = (Vector4 *)((unsigned char *)GameLoopState[1] + 0x10);
+        Actor_LookAt_Set(actor, 2, pos);
+        *(s16 *)((unsigned char *)actor + 0x9EE) = *(unsigned char *)((unsigned char *)GameLoopState[1] + 0x80);
+        break;
+    default:
+        pos = (Vector4 *)((unsigned char *)actor_table + Get_ActorNumber(target) * 0xA70 + 0x10);
+        Actor_LookAt_Set(actor, 2, pos);
+        *(s16 *)((unsigned char *)actor + 0x9EE) = Get_ActorNumber(target);
+        break;
+    }
+}
 
 void Enemy_Command_Scale(Actor *actor, int scale_percent, int duration)
 {
