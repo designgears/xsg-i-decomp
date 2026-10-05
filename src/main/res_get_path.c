@@ -508,7 +508,18 @@ static void command_loadeffect_sub(int type, int effect_name, void *address)
     sefLoadEffectCfName((int)address, effect_name);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadeffect);
+static unsigned char *command_loadeffect(int command, unsigned char *cursor, int mode)
+{
+    char name[256];
+    char *p = name;
+
+    while (*cursor != ' ' && *cursor != '\t' && *cursor != '\n' && *cursor != '\r') {
+        *p++ = *cursor++;
+    }
+    *p = 0;
+    RES_loadFile(command, 6, (int)name, (int)command_loadeffect_sub);
+    return cursor;
+}
 
 /* RES_loadFile callback: (resource type, file name, resource address). */
 static int command_loadene_sub(int type, const char *name, void *address)
