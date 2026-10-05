@@ -1,0 +1,7 @@
+{
+ "_comment": "Extra ee-as options per C TU (<unit>/<tu>), read by tools/tu/ninja_main.py and ninja_ovl.py. -mswap-fix: ee-as-la29-vsqrt's sixth change (off by default); these TUs fill branch delay slots from macro expansions as the original objects do.",
+ "main/runtime": ["-mswap-fix"],
+ "main/camera": ["-mswap-fix"],
+ "main/script": ["-mswap-fix"],
+ "ov11/mini_g": ["-mswap-fix"]
+}
