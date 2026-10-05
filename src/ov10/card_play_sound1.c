@@ -120,7 +120,42 @@ u32 CardGraphicLoad(void) {
     return (u32) ~CardFread(0x0100C000, D_00A4BD00) >> 0x1F;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", CardTitleInit);
+extern void xglMatrixUnit(float (*matrix)[4]);
+extern char D_00A4BD10[];
+extern char D_00A4BD28[];
+extern char D_00A4BD40[];
+extern char D_00A4BD58[];
+extern char D_00A4BD70[];
+extern char D_00A4BD88[];
+
+void CardTitleInit(CardGameWork *work) {
+    int i;
+
+    for (i = 15; i >= 0; i--)
+        work->models[i].visible = 0;
+    work->models[0].visible = 1;
+    work->models[15].visible = 1;
+    xglMatrixUnit(work->models[4].matrix);
+    xglMatrixUnit(work->models[5].matrix);
+    xglMatrixUnit(work->models[15].matrix);
+    work->rotStageCooldown = 0;
+    *(float *)&work->unmodeled_70F4[4] = *(float *)&work->unmodeled_70F4[8] = *(float *)&work->unmodeled_70F4[0] = 0.0f;
+    work->models[14].model = (void *)0x01DA0000;
+    work->models[14].visible = 1;
+    work->models[14].texture = (void *)0x01DB5800;
+    work->unmodeled_70F0 = 0;
+    work->rotStageId = 0;
+    work->unmodeled_70F2[0] = 0;
+    xglMatrixUnit(work->models[14].matrix);
+    work->models[14].matrix[3][1] = -1.37f;
+    work->models[14].matrix[3][2] = 0.1f;
+    CardFread(0x01900000, D_00A4BD10);
+    CardFread(0x01901000, D_00A4BD28);
+    CardFread(0x01902000, D_00A4BD40);
+    CardFread(0x01A10050, D_00A4BD58);
+    CardFread(0x01A200A0, D_00A4BD70);
+    CardFread(0x01A300E0, D_00A4BD88);
+}
 
 void CMIBGInit(CardGameWork *work)
 {
