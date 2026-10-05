@@ -1572,7 +1572,31 @@ void Java_xeno_Chr_pixelAlphaPartsReset__(JThread *thread, ChrScaleCall *argumen
     peer->pixel_alpha_parts = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setMotNoUpdate__I);
+void Java_xeno_Chr_setMotNoUpdate__I(JThread *thread, ChrIntCall *arguments)
+{
+    JavaField *peer_field;
+    Actor *peer;
+    u8 *object;
+
+    object = arguments->object;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + peer_field->offset);
+    switch (arguments->value) {
+    case 0:
+        peer->flags &= ~0x400;
+        peer->render_flags &= ~0x100;
+        break;
+    case 1:
+        peer->flags |= 0x400;
+        peer->render_flags &= ~0x100;
+        break;
+    case 2:
+        peer->flags &= ~0x400;
+        peer->render_flags |= 0x100;
+        break;
+    }
+}
 
 void Java_xeno_Chr_setWeaponR__Lxeno_Chr_(JThread *thread, ChrWeaponCall *arguments)
 {
