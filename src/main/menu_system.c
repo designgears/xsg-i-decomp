@@ -5,11 +5,6 @@ extern void subMenuSystemMain(void);
 extern int MainMenuWorkEnd;
 extern void ChangeTopLevel(int level);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_system", MenuSystemPasMain);
-
-#include "shared.h"
-#include "main/party.h"
-#include "main/xgl_hdd.h"
 /* Offsets named here are touched by MenuSystemInfoMain, MenuSystemInitSet,
  * and the existing MenuSystem2 completion poll. */
 typedef struct MenuSystemWork {
@@ -29,7 +24,116 @@ typedef struct MenuSystemWork {
     unsigned char unmodeled_34;
     unsigned char hddActive;
 } MenuSystemWork;
+
 extern MenuSystemWork MenuWork;
+
+extern unsigned char *MenuSystemPas;
+extern char *msg00_0_0036DCF8[];
+extern void WindowDXSet(void *window);
+extern void WindowDXMain(void *window);
+extern void MoveSlide(short *value, short *destination, float speed);
+extern void eMessageSet(void *message, const char *text);
+extern void eMessageMain(void *message);
+extern void endPrintExtFunc(int kind, int id, void *data);
+typedef struct MenuSystemPasWork {
+    unsigned char state;
+    unsigned char pad01[3];
+    int color;
+    short x;
+    short y;
+    int previousColor;
+    short width;
+    short height;
+    unsigned char pad14[4];
+    signed char transition;
+    unsigned char pad19[0x19C - 0x19];
+    unsigned char message[4];
+    short slide;
+    short pad1A2;
+    int messageColor;
+    unsigned char pad1A8[0x334 - 0x1A8];
+    short printX;
+    short printY;
+    int printColor;
+    short printW;
+    short printH;
+} MenuSystemPasWork;
+
+void MenuSystemPasMain(void)
+{
+    MenuSystemPasWork *w = (MenuSystemPasWork *)MenuSystemPas;
+    short *win;
+    short target[8];
+    short dest[8];
+    unsigned char *m;
+    int c20, cB, c120;
+
+    switch (w->state) {
+    case 0:
+        win = &w->x;
+        w->color = 0xFFFFF0;
+        c20 = 0x20;
+        c120 = 0x120;
+        cB = 0xB;
+        WindowDXSet(win);
+        *win = -0x120;
+        w->previousColor = w->color;
+        w->y = 8;
+        w->width = 0x110;
+        w->height = 0x1E;
+        w->transition = 1;
+        WindowDXMain(win);
+        w->transition = 3;
+        eMessageSet(w->message, msg00_0_0036DCF8[0]);
+        m = (unsigned char *)w + 0x190;
+        m[0xD] = c20;
+        *(short *)(m + 0x10) = c120;
+        *(short *)(m + 0x12) = cB;
+        w->state = 2;
+        w->messageColor = w->color + 2;
+        break;
+    case 2:
+        win = &w->x;
+        break;
+    default:
+        return;
+    }
+    dest[0] = -0x10;
+    target[0] = 0x120;
+    switch (MenuWork.state) {
+    case 0x10:
+    case 0x20:
+    case 0x30:
+    case 0x40:
+    case 0x50:
+    case 0x60:
+    case 0x70:
+        target[0] = 0x10;
+        break;
+    default:
+        dest[0] = -0x120;
+        break;
+    }
+    MoveSlide(win, dest, 3.0f);
+    WindowDXMain(win);
+    if (w->transition == 3) {
+        w->printX = *win + 3;
+        w->printY = w->y + 3;
+        w->printW = w->width - 6;
+        w->printH = w->height - 6;
+        w->printColor = w->color;
+        endPrintExtFunc(w->color, 0x65, &w->printX);
+        MoveSlide(&w->slide, target, 5.0f);
+        if (w->slide < 0x100) {
+            eMessageMain(w->message);
+        }
+        endPrintExtFunc(w->color, 0x66, 0);
+    }
+}
+
+#include "shared.h"
+#include "main/party.h"
+#include "main/xgl_hdd.h"
 typedef struct MenuSystemPad {
     unsigned char unmodeled_00[0x56];
     unsigned char vibrationReset;
