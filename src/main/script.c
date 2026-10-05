@@ -1077,7 +1077,68 @@ static void DB_stageSelect(DbSsTask *task)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_memory);
+extern int sprintf(char *buf, const char *fmt, ...);
+extern unsigned int xheap_info(int *info);
+extern void drawRect2(float m[4][4], int mode);
+extern void drawBox2(float m[4][4], int mode);
+extern int heapInfo[];
+extern unsigned int heapUsed;
+extern char D_004C1EA0[];
+
+static void DB_memory(DbSsTask *task)
+{
+    char buf[0x100];
+    float m[4][4];
+    float scale[4];
+    float trans[4];
+    PadPrefix *pad = &PadData;
+    float f;
+
+    if (!(task->flags & 1)) {
+        task->flags |= 1;
+        heapUsed = xheap_info(heapInfo);
+    }
+    sprintf(buf, D_004C1EA0, heapUsed >> 10, 0x100);
+    xglFontDebugPrintf(0x10, 0x40, buf);
+    f = (float)heapUsed * 128.0f * 3.8146973e-06f;
+    scale[1] = 24.0f;
+    trans[0] = -64.0f;
+    trans[1] = 64.0f;
+    scale[0] = f;
+    scale[2] = 1.0f;
+    scale[3] = 1.0f;
+    trans[3] = 1.0f;
+    trans[2] = 0.0f;
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(trans);
+    xglMatrixStackScale(scale);
+    xglMatrixStackSave(m);
+    if (heapUsed < 0x2AAAA) {
+        drawRect2(m, 1);
+    } else {
+        drawRect2(m, 0);
+    }
+    scale[0] = 132.0f;
+    scale[1] = 28.0f;
+    trans[1] = 52.0f;
+    scale[2] = 1.0f;
+    scale[3] = 1.0f;
+    trans[3] = 1.0f;
+    trans[0] = 0.0f;
+    trans[2] = 0.0f;
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(trans);
+    xglMatrixStackScale(scale);
+    xglMatrixStackSave(m);
+    drawBox2(m, 6);
+    if (pad->half_2a & 0x40) {
+        DbSsOwner *o = task->owner;
+        o->flags &= ~1;
+        o->state_0c = o->state_29f60;
+        TWSYS_setGRPStatus(0, 0);
+        xglTaskRemove(&task->task);
+    }
+}
 
 typedef struct {
     u8 pad_00[0x10];
