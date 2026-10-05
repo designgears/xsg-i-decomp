@@ -2304,7 +2304,51 @@ void calcBezierSub(float t, CalcLinerVec **list, float *out, int idx)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSplineSub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHermiteSub);
+typedef struct CalcHermiteList {
+    CalcLinerVec *pts;
+    int count;
+    int pad8;
+    float tension;
+} CalcHermiteList;
+
+void calcHermiteSub(float t, CalcHermiteList *list, float *out, int idx)
+{
+    CalcLinerVec s[4];
+    float tt, ttt;
+    float a, b, c, d;
+    CalcLinerVec *v;
+    int i, prev, next;
+
+    tt = t * t;
+    ttt = tt * t;
+    s[0] = list->pts[idx];
+    s[1] = list->pts[idx + 1];
+    v = &s[2];
+    d = ttt - tt;
+    b = ttt * -2.0f + tt * 3.0f;
+    c = (ttt - 2.0f * tt) + t;
+    a = (2.0f * ttt - tt * 3.0f) + 1.0f;
+    for (i = 1; i >= 0; i--) {
+        if (idx == 0) {
+            prev = 0;
+            next = 1;
+        } else if (idx >= list->count - 1) {
+            prev = idx - 1;
+            next = idx;
+        } else {
+            prev = idx - 1;
+            next = idx + 1;
+        }
+        v->x = list->tension * (list->pts[next].x - list->pts[prev].x);
+        v->y = list->tension * (list->pts[next].y - list->pts[prev].y);
+        v->z = list->tension * (list->pts[next].z - list->pts[prev].z);
+        idx++;
+        v = &s[3];
+    }
+    out[0] = a * s[0].x + b * s[1].x + c * s[2].x + d * s[3].x;
+    out[1] = a * s[0].y + b * s[1].y + c * s[2].y + d * s[3].y;
+    out[2] = a * s[0].z + b * s[1].z + c * s[2].z + d * s[3].z;
+}
 
 void calcNormal(float *v)
 {
