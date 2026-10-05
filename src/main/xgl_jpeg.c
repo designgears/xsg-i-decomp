@@ -440,7 +440,83 @@ static short decode_sub(HEnt *p)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", HuffmanDecode);
+static void HuffmanDecode(float *out, int comp)
+{
+    HEnt *dc;
+    HEnt *ac;
+    float *q;
+    int *pred;
+    int v;
+    int k;
+    int s;
+    int m;
+    int m2;
+
+    if (comp != 0) {
+        if (comp >= 0) {
+            if (comp < 3) {
+                goto good;
+            }
+        }
+    }
+    dc = (HEnt *)((u8 *)sw + 0x370);
+    ac = (HEnt *)((u8 *)sw + 0x470);
+    q = (float *)((u8 *)sw + 0xD0);
+    goto join;
+good:
+    dc = (HEnt *)((u8 *)sw + 0x3F0);
+    ac = (HEnt *)((u8 *)sw + 0xC70);
+    q = (float *)((u8 *)sw + 0x1D0);
+join:
+    v = 0;
+    pred = (int *)((u8 *)sw + comp * 4 + 0x1590);
+    s = decode_sub(dc);
+    if (s != 0) {
+        if (GetBit() == 0) {
+            m = (1 << s) - 1;
+        } else {
+            m = 0;
+            v = 1;
+        }
+        for (s--; s > 0; s--) {
+            v = v * 2 + GetBit();
+        }
+        v -= m;
+    }
+    v += *pred;
+    *pred = v;
+    out[0] = I2F(v) * q[0];
+    k = 1;
+    do {
+        v = 0;
+        s = decode_sub(ac);
+        if (s != 0) {
+            while (s >= 16) {
+                out[ZigZag[k++]] = 0;
+                s -= 16;
+            }
+            if (s != 0) {
+                if (GetBit() == 0) {
+                    v = 0;
+                    m2 = (1 << s) - 1;
+                } else {
+                    m2 = 0;
+                    v = 1;
+                }
+                for (s--; s > 0; s--) {
+                    v = v * 2 + GetBit();
+                }
+                v -= m2;
+            }
+            out[ZigZag[k]] = I2F(v) * q[k];
+        } else {
+            while (k < 64) {
+                out[ZigZag[k++]] = 0;
+            }
+        }
+        k++;
+    } while (k < 64);
+}
 
 /*
  * Two-dimensional inverse DCT of one 8x8 block of floating-point coefficients,
