@@ -1050,7 +1050,46 @@ int subLine2_OpenType_1(EtherTreeLine2Data *line2)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Main);
+void EtherTreeLine2Main(void)
+{
+    EtherTreeLine2Data *line2 = EtherTreeLine2;
+    unsigned char flags;
+    int n;
+
+    if (!(EtherTreeSystem->flags & 1))
+        return;
+    flags = line2->flags;
+    if (!(flags & 1))
+        return;
+
+    switch (line2->mode) {
+    case 0:
+        break;
+    case 1:
+        n = line2->object->childCount;
+        if (n != 1) {
+            if (n < 2)
+                goto open;
+            if (n < 4)
+                goto type1;
+            goto open;
+        }
+        if (!subLine2_OpenType_0(line2))
+            break;
+    type1:
+        if (!subLine2_OpenType_1(line2))
+            break;
+    open:
+        line2->mode = 2;
+        break;
+    case 2:
+        break;
+    case 3:
+        line2->mode = 0;
+        line2->flags = flags & ~1;
+        break;
+    }
+}
 
 extern void endSpriteSet(unsigned char *data, int kind);
 typedef struct LampView {
