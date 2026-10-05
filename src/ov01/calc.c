@@ -83,11 +83,67 @@ typedef struct CalcSpline {
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCopyParaMake);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPara2Org);
+/*
+ * calcTotalParaMenuSub/calcSkillEquChkAll's (this TU) own fake unit: a
+ * stack-local ObjectTask/CalcActorRecord pair whose `work`/`up` chain
+ * (calcUPGet's own traversal, 0x00a11010..0x00a1101c) is pointed at a
+ * temporary CalcUnitParam-compatible record instead of a live battle unit,
+ * so the two functions can reuse calcSkillInit/calcWpnAtkGet/calcPhyDefGet/
+ * calcMagDefGet/calcSkillEquChk for a unit that has no ObjectTask.
+ * calcTotalParaMenuSub allocates 0x80/0x110 bytes for the pair
+ * (`addiu v0,sp,128`, sp+0x190 for the outer's own end), matching the
+ * ObjectTask/CalcActorRecord prefixes it actually writes through plus the
+ * task-specific payload xglTaskEntryNext callers leave unwritten here.
+ */
+typedef struct CalcScratchActor {
+    CalcActorRecord actor;      /* +0x00 */
+    unsigned char unmodeled_88[0x110 - 0x88];
+} CalcScratchActor;
+
+typedef struct CalcScratchUnit {
+    ObjectTask task;            /* +0x00 */
+    unsigned char unmodeled_14[0x80 - 0x14];
+} CalcScratchUnit;
 
 /* dataUnitOrgGet (src/ov01/data_unit_org_get.c, still asm), this TU's own
  * private view (see CalcCharParaData, src/ov01/calc.h). */
 extern CalcCharParaData *dataUnitOrgGet(int charaId);
+
+extern int unitTblGet(int type, ObjectTask ***table);
+
+void calcPara2OrgSub(ObjectTask *unit);
+
+void calcPara2Org(void)
+{
+    CalcScratchUnit fakeUnit;
+    CalcScratchActor fakeActor;
+    ObjectTask **table;
+    int count;
+    int i;
+
+    i = 0;
+    count = unitTblGet(0, &table);
+    if (count > 0) {
+        do {
+            if (table[i] != 0) {
+                calcPara2OrgSub(table[i]);
+                if (calcUPGet(table[i])->flags & 0x40) {
+                    fakeUnit.task.work = &fakeActor;
+                    fakeActor.actor.up = calcUPGet(table[i])->linkedUnit;
+                    fakeActor.actor.flags = 0;
+                    fakeActor.actor.up->currentEp = calcUPGet(table[i])->currentEp;
+                    calcPara2OrgSub(&fakeUnit.task);
+                } else if (calcUPGet(table[i])->linkedUnit != 0) {
+                    fakeUnit.task.work = &fakeActor;
+                    fakeActor.actor.up = calcUPGet(table[i])->linkedUnit;
+                    fakeActor.actor.flags = 0;
+                    calcPara2OrgSub(&fakeUnit.task);
+                }
+            }
+            i++;
+        } while (i < count);
+    }
+}
 
 void calcPara2OrgSub(ObjectTask *unit) {
     CalcUnitParam *param;
@@ -98,8 +154,6 @@ void calcPara2OrgSub(ObjectTask *unit) {
     origin->hp = param->currentHp;
     origin->ep = param->currentEp;
 }
-
-extern int unitTblGet(int type, ObjectTask ***table);
 
 void calcDeadReset(void)
 {
@@ -186,28 +240,6 @@ CalcCharParaData *calcTotalParaMenu(int charaId, int *attack, int *defense)
 {
     return calcTotalParaMenuSub(charaId, attack, defense, D_00A57CE8);
 }
-
-/*
- * calcTotalParaMenuSub/calcSkillEquChkAll's (this TU) own fake unit: a
- * stack-local ObjectTask/CalcActorRecord pair whose `work`/`up` chain
- * (calcUPGet's own traversal, 0x00a11010..0x00a1101c) is pointed at a
- * temporary CalcUnitParam-compatible record instead of a live battle unit,
- * so the two functions can reuse calcSkillInit/calcWpnAtkGet/calcPhyDefGet/
- * calcMagDefGet/calcSkillEquChk for a unit that has no ObjectTask.
- * calcTotalParaMenuSub allocates 0x80/0x110 bytes for the pair
- * (`addiu v0,sp,128`, sp+0x190 for the outer's own end), matching the
- * ObjectTask/CalcActorRecord prefixes it actually writes through plus the
- * task-specific payload xglTaskEntryNext callers leave unwritten here.
- */
-typedef struct CalcScratchActor {
-    CalcActorRecord actor;      /* +0x00 */
-    unsigned char unmodeled_88[0x110 - 0x88];
-} CalcScratchActor;
-
-typedef struct CalcScratchUnit {
-    ObjectTask task;            /* +0x00 */
-    unsigned char unmodeled_14[0x80 - 0x14];
-} CalcScratchUnit;
 
 /* calcCopyParaMake/calcSkillInit/calcWpnAtkGet/calcPhyDefGet/calcMagDefGet:
  * calcTotalParaMenuSub's own callees, still asm in this TU except
