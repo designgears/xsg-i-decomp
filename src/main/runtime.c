@@ -662,7 +662,41 @@ done:
     *result = v;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setPartyData__II);
+extern void GameCfPlayerLoadResource(int resource_set);
+
+void Java_xeno_util_Runtime_setPartyData__II(JThread *thread, unsigned int *arguments)
+{
+    unsigned int sel = arguments[0];
+    int type = sel >> 24;
+    char *p = getPartyDataOfs(sel);
+
+    switch (type) {
+    default:
+    case 0:
+        *(unsigned char *)p = *(unsigned char *)&arguments[1];
+        break;
+    case 1:
+        *(short *)p = *(unsigned short *)&arguments[1];
+        break;
+    case 2:
+        *(int *)p = arguments[1];
+        break;
+    case 3:
+        *(long *)p = (int)arguments[1];
+        break;
+    }
+    if (arguments[0] == 0x0100002C) {
+        char *pl = (char *)GameLoopState.player;
+        int saved = *(int *)(pl + 0x8D0);
+        if (*(short *)(pl + 0x86) != (int)arguments[1]) {
+            *(int *)(pl + 0x8D0) = 0;
+            xglSleep();
+            xglSleep();
+            *(int *)(pl + 0x8D0) = saved;
+            GameCfPlayerLoadResource(1);
+        }
+    }
+}
 
 /* The zero-terminated character-id table cid2bic searches, in the order the
    battle party uses (config/symbols/main.txt, 0x42 bytes). */
