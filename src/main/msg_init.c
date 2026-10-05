@@ -413,7 +413,46 @@ loop:
     return m;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MBUF_create);
+MsgBuffer *MBUF_create(int w, int n)
+{
+    int i;
+    int found;
+    char *buf;
+    MsgBuffer *m;
+
+    found = -1;
+    i = 0;
+    if (!(msg_buffer[0].count & 1)) {
+        found = 0;
+    } else {
+loop:
+        i++;
+        if (i < 8) {
+            m = (MsgBuffer *)((char *)(i * 2064) + (int)msg_buffer);
+            if (!(m->count & 1)) {
+                found = i;
+            } else {
+                goto loop;
+            }
+        }
+    }
+    if (found < 0) {
+        return 0;
+    }
+    m = (MsgBuffer *)((char *)(found * 2064) + (int)msg_buffer);
+    w = (w + 3) / 4 * 4;
+    buf = (char *)m->unmodeled_10;
+    m->count = 1;
+    m->size = 0;
+    m->unmodeled_08 = (int)buf;
+    m->data = buf + n * 4;
+    for (i = 0; i < n; i++) {
+        *(char *)m->data = 0;
+        ((void **)m->unmodeled_08)[i] = m->data;
+        m->data = (char *)m->data + w;
+    }
+    return m;
+}
 
 /*
  * MBUF_init/MBUF_create (not yet recovered) establish the rest of the mbuf
