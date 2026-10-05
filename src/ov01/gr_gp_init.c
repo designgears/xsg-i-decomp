@@ -557,7 +557,32 @@ void grGsRegSet(GrPacket *packet, unsigned long long register_id,
     grGifAppendRegister(packet, register_id, value);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grGsRegListSet);
+typedef struct GrGsRegListEntry {
+    int register_id;
+    int pad;
+    unsigned long long value;
+} GrGsRegListEntry;
+
+void grGsRegListSet(GrPacket *packet, GrGsRegListEntry *list)
+{
+    int start = packet->count;
+    int n = 0;
+    GrGifOpenTag *tags;
+    int *count;
+    int tag_index;
+
+    grGifAppendRegister(packet, 14, 0x1000000000008000ULL);
+    for (; list->register_id != -1; list++) {
+        grGifOpenRegister(packet, list->register_id);
+        count = &packet->count;
+        tags = packet->data;
+        tag_index = *count;
+        tags[tag_index++].control.bits = list->value;
+        *count = tag_index;
+        n++;
+    }
+    ((GrGifOpenTag *)packet->data)[start].control.bits |= n;
+}
 
 void GS_REG_SET(GrPacket *packet, long long register_id, long long control)
 {
