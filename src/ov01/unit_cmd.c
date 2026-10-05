@@ -726,7 +726,44 @@ int unitCmdGuard(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAgws);
+extern void calcStatResetAll(ObjectTask *unit);
+extern void sndSeTransPlay(int unit, int seId, int volume);
+extern void decoEffCall(ObjectTask *unit, int effectId);
+extern int sndSysSePlay(int soundId);
+
+int unitCmdAgws(ObjectTask *unit)
+{
+    int cmd[5];
+    int *p = (int *)unitCmdPtrGet(unit);
+    CalcUnitParam *up = calcUPGet(unit);
+    short cid;
+    int eff;
+    int se;
+
+    if (up->flags & 0x40) {
+        cid = up->linkedUnit->charaId;
+    } else {
+        cid = *(short *)up->unmodeled_54;
+    }
+    calcStatResetAll(unit);
+    cmd[0] = 0x2B;
+    cmd[1] = p[1];
+    cmd[2] = cid;
+    unitCmdSet(unit, cmd);
+    cmd[0] = 0x2D;
+    unitCmdSet(unit, cmd);
+    if (calcUPGet(unit)->flags & 0x40) {
+        eff = 0x67;
+        se = 0x20;
+    } else {
+        eff = 0x66;
+        se = 0x1F;
+        sndSeTransPlay((int)unit, 0x17, 3);
+    }
+    decoEffCall(unit, eff);
+    sndSysSePlay(se);
+    return unitCmdNext(unit);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdUnitChange);
 
