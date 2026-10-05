@@ -58,7 +58,55 @@ static void ConvertYUV2MCU(float *mcu, float *yuv, int mode) {
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", FFDCT);
+extern float ffdct_0[8][8];
+
+static void FFDCT(float *block)
+{
+    JpegWork *work;
+    int i, j;
+    float pA, pB, pC, pD, pE, pF, nD, nC, nB, nA, nF, nE;
+
+    work = sw;
+
+    pA = 1.387040019f;
+    pB = 1.175879955f;
+    pC = 0.7856950164f;
+    pD = 0.275898993f;
+    pE = 1.30656004f;
+    pF = 0.5411959887f;
+    nD = -0.275898993f;
+    nC = -0.7856950164f;
+    nB = -1.175879955f;
+    nA = -1.387040019f;
+    nF = -0.5411959887f;
+    nE = -1.30656004f;
+    for (i = 0; i < 8; i++) {
+
+        work->idct_block[i][0] = block[i * 8 + 0] + block[i * 8 + 1] + block[i * 8 + 2] + block[i * 8 + 3] + block[i * 8 + 4] + block[i * 8 + 5] + block[i * 8 + 6] + block[i * 8 + 7];
+        work->idct_block[i][1] = block[i * 8 + 0] * pA + block[i * 8 + 1] * pB + block[i * 8 + 2] * pC + block[i * 8 + 3] * pD
+               + block[i * 8 + 4] * nD + block[i * 8 + 5] * nC + block[i * 8 + 6] * nB + block[i * 8 + 7] * nA;
+        work->idct_block[i][2] = block[i * 8 + 0] * pE + block[i * 8 + 1] * pF + block[i * 8 + 2] * nF + block[i * 8 + 3] * nE
+               + block[i * 8 + 4] * nE + block[i * 8 + 5] * nF + block[i * 8 + 6] * pF + block[i * 8 + 7] * pE;
+        work->idct_block[i][3] = block[i * 8 + 0] * pB + block[i * 8 + 1] * nD + block[i * 8 + 2] * nA + block[i * 8 + 3] * nC
+               + block[i * 8 + 4] * pC + block[i * 8 + 5] * pA + block[i * 8 + 6] * pD + block[i * 8 + 7] * nB;
+        work->idct_block[i][4] = block[i * 8 + 0] - block[i * 8 + 1] - block[i * 8 + 2] + block[i * 8 + 3] + block[i * 8 + 4] - block[i * 8 + 5] - block[i * 8 + 6] + block[i * 8 + 7];
+        work->idct_block[i][5] = block[i * 8 + 0] * pC + block[i * 8 + 1] * nA + block[i * 8 + 2] * pD + block[i * 8 + 3] * pB
+               + block[i * 8 + 4] * nB + block[i * 8 + 5] * nD + block[i * 8 + 6] * pA + block[i * 8 + 7] * nC;
+        work->idct_block[i][6] = block[i * 8 + 0] * pF + block[i * 8 + 1] * nE + block[i * 8 + 2] * pE + block[i * 8 + 3] * nF
+               + block[i * 8 + 4] * nF + block[i * 8 + 5] * pE + block[i * 8 + 6] * nE + block[i * 8 + 7] * pF;
+        work->idct_block[i][7] = block[i * 8 + 0] * pD + block[i * 8 + 1] * nC + block[i * 8 + 2] * pB + block[i * 8 + 3] * nA
+               + block[i * 8 + 4] * pA + block[i * 8 + 5] * nB + block[i * 8 + 6] * pC + block[i * 8 + 7] * nD;
+    }
+
+    for (i = 0; i < 8; i++) {
+        block[i] = (work->idct_block[0][i] + work->idct_block[1][i] + work->idct_block[2][i] + work->idct_block[3][i] + work->idct_block[4][i] + work->idct_block[5][i] + work->idct_block[6][i] + work->idct_block[7][i]) * 0.125f;
+        for (j = 1; j < 8; j++) {
+            block[j * 8 + i] = (work->idct_block[0][i] * ffdct_0[j][0] + work->idct_block[1][i] * ffdct_0[j][1] + work->idct_block[2][i] * ffdct_0[j][2]
+                              + work->idct_block[3][i] * ffdct_0[j][3] + work->idct_block[4][i] * ffdct_0[j][4] + work->idct_block[5][i] * ffdct_0[j][5]
+                              + work->idct_block[6][i] * ffdct_0[j][6] + work->idct_block[7][i] * ffdct_0[j][7]) * 0.125f;
+        }
+    }
+}
 
 extern int F2I(float value);
 
