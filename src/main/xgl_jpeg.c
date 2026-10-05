@@ -47,7 +47,48 @@ static void Quantize(int *quantized, const float *coefficients, const float *rec
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", RebuildQuantizeTable);
+extern u8 LQTableOrg_1[];
+extern u8 CQTableOrg_2[];
+extern float I2F(int value);
+
+static void RebuildQuantizeTable(u8 *table, float *reciprocals, int chroma, int quality)
+{
+    u8 *org;
+    float q;
+    int i;
+    int v;
+
+    if (chroma == 0) {
+        org = LQTableOrg_1;
+    } else {
+        org = CQTableOrg_2;
+    }
+    q = (float)quality;
+    if (q <= 0.0f) {
+        q = 1.0f;
+    }
+    if (q > 100.0f) {
+        q = 100.0f;
+    }
+    if (q < 50.0f) {
+        q = 5000.0f / q;
+    } else {
+        q = 200.0f - (q + q);
+    }
+    i = 0;
+    do {
+        v = F2I((org[i] * q + 50.0f) * 0.01f);
+        if (v <= 0) {
+            v = 1;
+        }
+        if (v > 255) {
+            v = 255;
+        }
+        table[i] = v;
+        reciprocals[i] = 1.0f / I2F(v);
+        i++;
+    } while (i < 64);
+}
 
 typedef struct JpegPutBitsView {
     char pad[0x350];
