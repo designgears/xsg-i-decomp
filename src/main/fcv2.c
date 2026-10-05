@@ -52,7 +52,32 @@ void FCV_skipPack(FCVPack *pack, s32 keyCount)
     FCV_getPackVal2f(pack, keyCount, 0.0f);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV_getPackValue);
+static s32 FCV_getFKeyType(u32 keyIndex, u8 *types);
+static f32 FCV_getPackVal2s(FCVPack *pack, s32 keyCount, f32 frame);
+
+f32 FCV_getPackValue(FCVPack *pack, f32 frame)
+{
+    f32 ret;
+    u32 type;
+
+    type = FCV_getFKeyType(pack->key_index, pack->key_types);
+        switch (type) {
+        case 1:
+            ret = *pack->key_values++;
+            break;
+        case 0:
+            ret = 0.0f;
+            break;
+        case 3:
+            ret = FCV_getPackVal2s(pack, *pack->key_frames++, frame);
+            break;
+        default:
+            ret = 0.0f;
+            break;
+        }
+    pack->key_index++;
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV_getPackVal2f);
 
