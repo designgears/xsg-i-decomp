@@ -52,7 +52,11 @@ ASM_FORBIDDEN = re.compile(
 
 
 def run(cmd, cwd=None) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=cwd or ROOT, capture_output=True, text=True)
+    env = dict(os.environ)
+    if not env.get("XENO_TOOLCHAIN_ALLOW"):
+        # same accepted list as scripts/env.sh; without it ninja_main.py exits 1
+        env["XENO_TOOLCHAIN_ALLOW"] = "ee-as-la29-vsqrt,ee-as-2.9-plain,ps2dev-binutils,dvp-as-3eb45ea"
+    return subprocess.run(cmd, cwd=cwd or ROOT, capture_output=True, text=True, env=env)
 
 
 def tu_path(root: Path, unit: str, tu: str) -> Path:
@@ -132,13 +136,16 @@ def maybe_derive_carve(root: Path, unit: str, tu: str) -> dict | None:
 def _refresh_scripts(root: Path, unit: str) -> None:
     """Re-apply the unit's linker scripts so data-carve changes take effect."""
     if unit == "main":
-        run([sys.executable, "-B", str(root / "tools/tu/ninja_main.py"),
+        p = run([sys.executable, "-B", str(root / "tools/tu/ninja_main.py"),
              "--root", str(root), "--unit-dir", str(unit_dir(root, unit))])
     else:
-        run([sys.executable, "-B", str(root / "tools/tu/ninja_ovl.py"),
+        p = run([sys.executable, "-B", str(root / "tools/tu/ninja_ovl.py"),
              str(unit_dir(root, unit)), unit,
              "--manifest", str(unit_dir(root, unit) / "compile-manifest.json"),
              "--root", str(root)])
+    if p.returncode != 0:
+        print(f"integrate: linker-script refresh failed (rc={p.returncode}): "
+              f"{(p.stderr or p.stdout)[-800:]}", file=sys.stderr)
 
 
 def _green(verify: dict, unit: str) -> bool:
