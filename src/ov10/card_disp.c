@@ -195,7 +195,38 @@ void CardDispHelpSlide1(char mode, Matrix4 matrix)
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpSlide2);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpSlide3);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) Slide3Vec;
+extern const CardHelpPackedVector D_00A4E090;
+extern short list23_15[];
+extern short list24_16[];
+
+void CardDispHelpSlide3(char mode, Matrix4 matrix)
+{
+    Matrix4 transformed;
+    Slide3Vec translation;
+    Vector4 scale;
+    int idx;
+
+    translation = *(Slide3Vec *)&D_00A4E090;
+    scale.x = 0.7f;
+    scale.y = 0.7f;
+    scale.z = 1.0f;
+    scale.w = 1.0f;
+    switch (mode) {
+    case 23:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list23_15[idx], 1, 0);
+        break;
+    case 24:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list24_16[idx], 1, 0);
+        break;
+    }
+}
 
 void CardDispCtr(Matrix4 matrix)
 {
