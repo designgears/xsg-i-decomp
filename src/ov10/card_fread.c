@@ -2011,7 +2011,123 @@ void CardCountGeneration(s8 *gen, CardDefinition *def, CardPlaySide *side)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardPlayChkCondition);
+int CardPlayIdentityCheck(CardGameWork *work, CardHand *hand, u16 identity);
+
+s32 CardPlayChkCondition(CardDefinition *def, CardPlaySide *side, s32 id, CardGameWork *work)
+{
+    u8 buf[40];
+    int ok;
+    int i;
+    int j;
+    u8 c;
+    int n;
+    int cnt;
+    int mask;
+    s16 *idp;
+    s16 cid;
+    CardBoardSlot *slot;
+    u8 *p;
+    u8 *q;
+
+    ok = 0;
+    for (i = 0; i < 40; i++) {
+        buf[i] = 0;
+    }
+    mask = 0;
+    cnt = 0;
+    for (i = 0; i < 4; i++) {
+        if (def[id].unmodeled_04[i] != 0) {
+            cnt++;
+            mask |= def[id].unmodeled_04[i];
+        }
+    }
+    if (mask != 0) {
+        n = 0;
+        idp = &side->battle[0].battle.layers[0].cardId;
+        for (i = 3; i >= 0; i--) {
+            if (*idp >= 0) {
+                buf[n++] = def[*idp].flags;
+            }
+            idp += 0xDE;
+        }
+        slot = side->disposal;
+        for (i = 3; i >= 0; i--) {
+            cid = slot->battle.layers[0].cardId;
+            if (cid >= 0 && !(slot->battle.flags & 1)) {
+                buf[n++] = def[cid].flags;
+            }
+            slot++;
+        }
+        mask = 0;
+        for (i = 0; i < cnt; i++) {
+            for (j = 0; j < n; j++) {
+                if (def[id].unmodeled_04[i] & buf[j]) {
+                    buf[j] = 0;
+                    mask++;
+                    break;
+                }
+            }
+        }
+        if (mask >= cnt) {
+            ok = 1;
+        }
+    } else {
+        ok = 1;
+    }
+    if (!ok) {
+        return 2;
+    }
+    ok = 0;
+    for (i = 0; i < 40; i++) {
+        buf[i] = 0;
+    }
+    mask = 0;
+    cnt = 0;
+    for (i = 0; i < 4; i++) {
+        if (def[id].unmodeled_04[i + 8] != 0) {
+            cnt++;
+            mask |= def[id].unmodeled_04[i + 8];
+        }
+    }
+    if (mask != 0) {
+        n = 0;
+        idp = &side->battle[0].battle.layers[0].cardId;
+        for (i = 3; i >= 0; i--) {
+            if (*idp >= 0) {
+                buf[n++] = def[*idp].flags;
+            }
+            idp += 0xDE;
+        }
+        idp = &side->disposal[0].battle.layers[0].cardId;
+        for (i = 3; i >= 0; i--) {
+            if (*idp >= 0) {
+                buf[n++] = def[*idp].flags;
+            }
+            idp += 0xDE;
+        }
+        mask = 0;
+        for (i = 0; i < cnt; i++) {
+            for (j = 0; j < n; j++) {
+                if (def[id].unmodeled_04[i + 8] & buf[j]) {
+                    buf[j] = 0;
+                    mask++;
+                }
+            }
+        }
+        if (mask >= cnt) {
+            ok = 1;
+        }
+    } else {
+        ok = 1;
+    }
+    if (!ok) {
+        return 4;
+    }
+    if ((def[id].kind & 1) && CardPlayIdentityCheck(work, &side->hand, work->definitions[id].identity)) {
+        return 5;
+    }
+    return 0;
+}
 
 s32 CardChkAttackType(CardDefinition *definitions, CardPowerCard *card)
 {
