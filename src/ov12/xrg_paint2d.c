@@ -294,7 +294,30 @@ INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Geom2D);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Line3D);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _DrawNoTex);
+extern void sceVif1PkAddGsAD(XglPacket *packet, int reg, u64 value);
+extern void sceVif1PkAddGsPacked(XglPacket *packet, Quadword data);
+
+static void _DrawNoTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v)
+{
+    Quadword col;
+    unsigned int prim = 4;
+
+    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                         : : "r"(req->color), "r"(&col) : "memory");
+    if (req->alpha != 0) {
+        _openVifGifAD(pk);
+        sceVif1PkAddGsAD(pk, 0x42, req->alpha);
+        _closeVifGif((sceVif1Packet *)pk);
+        prim = 0x44;
+    }
+    _openVifGif(pk, prim, 5, 0x44441);
+    sceVif1PkAddGsPacked(pk, col);
+    sceVif1PkAddGsPacked(pk, v[0]);
+    sceVif1PkAddGsPacked(pk, v[1]);
+    sceVif1PkAddGsPacked(pk, v[2]);
+    sceVif1PkAddGsPacked(pk, v[3]);
+    _closeVifGif((sceVif1Packet *)pk);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _DrawWithTex);
 
