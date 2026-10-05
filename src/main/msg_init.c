@@ -166,7 +166,31 @@ void MSG_setArgs(Mif2Argument *args, int n, const char **argv)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", rubyFont);
+extern int rubyX1;
+extern int rubyX2;
+extern int rubyY;
+typedef struct RubyGlyph { char pad[8]; short x; short y; char pad2[12]; unsigned char flags; } RubyGlyph;
+
+static void rubyFont(RubyGlyph *g, unsigned int code)
+{
+    unsigned int kind = code & 0xF0000000;
+    g->flags |= 0x40;
+    switch (kind) {
+    case 0:
+        rubyX1 = g->x;
+        rubyY = g->y;
+        break;
+    case 0x10000000:
+        rubyX2 = g->x;
+        g->y -= 4;
+        g->x -= (rubyX2 - rubyX1) / 2 + (code & 0xFF) * 4;
+        break;
+    case 0x20000000:
+        g->x = rubyX2;
+        g->y += 4;
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_ruby);
 
