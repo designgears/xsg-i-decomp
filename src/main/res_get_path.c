@@ -532,7 +532,18 @@ static int command_loadene_sub(int type, const char *name, void *address)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadene);
+static unsigned char *command_loadene(int command, unsigned char *cursor, int mode)
+{
+    char name[256];
+    char *p = name;
+
+    while (*cursor != ' ' && *cursor != '\t' && *cursor != '\n' && *cursor != '\r') {
+        *p++ = *cursor++;
+    }
+    *p = 0;
+    RES_loadFile(command, 8, (int)name, (int)command_loadene_sub);
+    return cursor;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_script);
 
