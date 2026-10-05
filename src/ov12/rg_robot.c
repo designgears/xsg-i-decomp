@@ -655,7 +655,33 @@ static void _InitShieldStatus(RgRobotStatus *status, RgBody *body, int motion,
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInTargetting);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _TargettingPassTime);
+static int _TargettingPassTime(RgRobotStatus *status, RgBody *body)
+{
+    int result;
+    float elapsed;
+    float limit;
+
+    result = 0;
+    elapsed = status->elapsedTime;
+    if (_GetStatHomingThread(body->homingThread) == 1) {
+        result = 8;
+        body->flags |= 3;
+    }
+    limit = *(float *)&status->scratch2;
+    if (elapsed < limit) {
+        if (status->scratch0 == 0 && limit - elapsed < 0.2f) {
+            _BodyPlayMotion(body, 0x4B);
+            status->scratch0 = 1;
+        }
+    } else {
+        RgRobSubBreak(body->geometry, 0.3f, 0.3f);
+        status->exitMethod = 0;
+        _InitMovingStatus(status, body);
+        RgRobotEffectTermJet(body->effect);
+        RgRobotEffectSetJetInertia(body->effect, 1);
+    }
+    return result;
+}
 
 extern void RgRobotEffectSetJetInertia(RgRobotEffect *effect, int inertia);
 
