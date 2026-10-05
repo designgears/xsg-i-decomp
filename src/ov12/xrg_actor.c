@@ -146,7 +146,33 @@ void _SkeManiGet(SkeMani *mani, RgMatrix matrix)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _SkeManiSet);
+void _SkeManiSet(SkeMani *mani, RgMatrix matrix)
+{
+    XenoAct *pXenoAct;
+    RgMatrix *mats;
+    RgMatrix root;
+    int idx;
+    int i, j;
+
+    pXenoAct = mani->pXenoAct;
+    if (pXenoAct != 0) {
+        idx = mani->elementIndex;
+        mats = *(RgMatrix **)((char *)pXenoAct + 0x824);
+        if (pXenoAct->renderLevelFlag == 0) {
+            XrgCopyMatrix(root, mats[0]);
+            root[3] = 0.0f;
+            root[7] = 0.0f;
+            root[11] = 0.0f;
+            XrgInvMatrix(root, root);
+            XrgMulMatrix(matrix, root, matrix);
+        }
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < 4; j++) {
+                mats[idx][j * 4 + i] = matrix[j * 4 + i];
+            }
+        }
+    }
+}
 
 /*
  * The joint/skeleton data blob XenoAct.jointData points to: only the
