@@ -564,7 +564,64 @@ transform_column:
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", ConvertMCU2YUV);
+static void ConvertMCU2YUV(void) {
+    int mode = *(int *)((u8 *)sw + 0x360);
+    float *yuv = (float *)((u8 *)sw + 0x15A0);
+    float *mcu = (float *)((u8 *)sw + 0x25A0);
+    int i, j, k;
+    
+    switch (mode) {
+    case 0:
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                yuv[i * 64 + j * 4 + 0] = mcu[i * 8 + j];
+                yuv[i * 64 + j * 4 + 1] = mcu[i * 8 + j + 256];
+                yuv[i * 64 + j * 4 + 2] = mcu[i * 8 + j + 320];
+            }
+        }
+        break;
+    case 1:
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                float f, g;
+                yuv[i * 64 + j * 4] = mcu[i * 8 + j];
+                yuv[i * 64 + j * 4 + 32] = mcu[i * 8 + j + 64];
+                f = mcu[i * 8 + j + 256];
+                yuv[i * 64 + j * 8 + 5] = f;
+                yuv[i * 64 + j * 8 + 1] = f;
+                g = mcu[i * 8 + j + 320];
+                yuv[i * 64 + j * 8 + 6] = g;
+                yuv[i * 64 + j * 8 + 2] = g;
+            }
+        }
+        break;
+    case 2:
+    default:
+        i = 0;
+        k = 0;
+        for (; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                float f, g;
+                yuv[i * 64 + j * 4] = mcu[k + j];
+                yuv[i * 64 + j * 4 + 32] = mcu[k + j + 64];
+                yuv[i * 64 + j * 4 + 512] = mcu[k + j + 128];
+                yuv[i * 64 + j * 4 + 544] = mcu[k + j + 192];
+                f = mcu[k + j + 256];
+                yuv[i * 128 + j * 8 + 69] = f;
+                yuv[i * 128 + j * 8 + 65] = f;
+                yuv[i * 128 + j * 8 + 5] = f;
+                yuv[i * 128 + j * 8 + 1] = f;
+                g = mcu[k + j + 320];
+                yuv[i * 128 + j * 8 + 70] = g;
+                yuv[i * 128 + j * 8 + 66] = g;
+                yuv[i * 128 + j * 8 + 6] = g;
+                yuv[i * 128 + j * 8 + 2] = g;
+            }
+            k += 8;
+        }
+        break;
+    }
+}
 
 static void ConvertYUV2RGB(int w, int h) {
     int i, n;
