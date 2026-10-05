@@ -67,7 +67,43 @@ void CardEnemyMove(int side, CardGameWork *work) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_enemy", CardEnemySet);
+extern int CC_Kara_SetFase(int a0, u8 *a1);
+extern int CardPlayBattleCnt(CardPlaySide *side);
+
+void CardEnemySet(int side, CardGameWork *work) {
+    CardPlaySide *ownSide = side == 0 ? &work->player : &work->enemy;
+    CardBoardSlot *slot;
+    int i;
+    int one = 1;
+    int step = *(u16 *)work->command.unmodeled_0E;
+
+    switch (step) {
+    case 0:
+        if (CC_Kara_SetFase(side, (u8 *)work) == 0) {
+            u16 t = *(u16 *)work->command.unmodeled_0E + 1;
+            (&D_00A57E34)[1] = 15;
+            *(u16 *)work->command.unmodeled_0E = t;
+        }
+        break;
+    case 1:
+        if ((&D_00A57E34)[1] > 0) {
+            (&D_00A57E34)[1]--;
+        } else {
+            if (CardPlayBattleCnt(ownSide) != one) {
+                int id = 14;
+                slot = ownSide->battle;
+                for (i = 3; i >= 0; i--) {
+                    if (slot->battle.layers[0].cardId == id && (s8)slot->battle.layers[0].unmodeled_01 != 0) {
+                        slot->battle.layers[0].unmodeled_01 = 0;
+                    }
+                    slot++;
+                }
+            }
+            CGPNextTurnSub(work);
+        }
+        break;
+    }
+}
 
 /* CardPlayHandCnt (still assembler, ov10/tu002) counts the negative card ids
  * of one side's CardHand (include/ov10/cgp.h, owned by ov10/tu008). */
