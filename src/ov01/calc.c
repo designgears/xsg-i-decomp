@@ -2116,7 +2116,27 @@ void calcLinerSub(float t, CalcLinerVec **list, float *out, int idx)
     out[2] = s[0].z + (s[1].z - s[0].z) * t;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBezierSub);
+void calcBezierSub(float t, CalcLinerVec **list, float *out, int idx)
+{
+    CalcLinerVec s[4];
+    float u, uu, t3;
+    float a, b, c, d;
+
+    s[0] = (*list)[idx];
+    s[1] = (*list)[idx + 1];
+    s[2] = (*list)[idx + 2];
+    s[3] = (*list)[idx + 3];
+    u = 1.0f - t;
+    t3 = t * 3.0f;
+    uu = u * u;
+    a = uu * u;
+    b = t3 * uu;
+    c = t3 * t * u;
+    d = t * t * t;
+    out[0] = a * s[0].x + b * s[1].x + c * s[2].x + d * s[3].x;
+    out[1] = a * s[0].y + b * s[1].y + c * s[2].y + d * s[3].y;
+    out[2] = a * s[0].z + b * s[1].z + c * s[2].z + d * s[3].z;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSplineSub);
 
