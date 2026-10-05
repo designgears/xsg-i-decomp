@@ -2064,6 +2064,30 @@
    ".lit4": [
     {
      "range": [
+      "0x004d8420",
+      "0x004d842c"
+     ],
+     "generated": [
+      "0x004d8420",
+      "0x004d842c"
+     ],
+     "generated_by": [
+      "UNIT_rotX"
+     ],
+     "c_owned_symbols": [
+      "D_004D8420",
+      "D_004D8424",
+      "D_004D8428"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/unit.o"
+     }
+    },
+    {
+     "range": [
       "0x004d8444",
       "0x004d844c"
      ],

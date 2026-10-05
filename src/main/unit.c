@@ -168,7 +168,136 @@ void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCN
 
 INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_moveXZ);
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_rotX);
+extern int SEQ_rotateUnit();
+extern float defaultOffset_0043C1D0[];
+typedef struct UnitRotCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } first;
+    union { int i; float f; u8 *p; } second;
+    u8 wait;
+} UnitRotCall;
+typedef struct UnitRotState {
+    void *target;
+    u8 pad04[0x10 - 0x04];
+    int frames;
+    u8 pad14[0x1c - 0x14];
+    u32 flags;
+    u8 pad20[0x30 - 0x20];
+    float angle;
+    u8 pad34[0x40 - 0x34];
+    float speed;
+} UnitRotState;
+typedef struct UnitRotObjCall {
+    u8 *object;
+    int frames;
+    u8 *other;
+} UnitRotObjCall;
+typedef struct UnitRotObjCall2 {
+    u8 *object;
+    u8 *other;
+    float speed;
+} UnitRotObjCall2;
+typedef struct UnitRotWaitThread {
+    u8 pad00[0xc];
+    u8 state;
+    u8 next;
+    u8 pad0e[0x24 - 0xe];
+    u32 flags;
+    u8 pad28[0x30 - 0x28];
+    void *wait_object;
+    u8 pad34[0x3c - 0x34];
+    u16 pc;
+    u16 pc2;
+} UnitRotWaitThread;
+
+static void UNIT_rotX(int mode, JThread *thread, void *arguments_,
+                      u32 *failure_result)
+{
+    UnitRotCall *arguments = arguments_;
+    JavaField *field;
+    UnitPeer *peer;
+    float *rot_source;
+    UnitSequenceEntry *entry;
+    UnitRotState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004D16F8, -1), 0);
+    rot_source = (float *)((u8 *)peer + 0x20);
+    if ((*(u32 *)(object + field->offset) & 1) == 0)
+        rot_source = defaultOffset_0043C1D0;
+
+    entry = &unitSequence[peer->serial];
+    rot = (UnitRotState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotateUnit;
+    entry->state |= 2;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~1;
+        rot->angle =
+            (arguments->second.f + rot_source[0]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~1;
+        rot->angle =
+            (arguments->first.f + rot_source[0]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off = field->offset;
+            u8 *o = ((UnitRotObjCall *)arguments)->other;
+            rot->frames = ((UnitRotObjCall *)arguments)->frames;
+            rot->flags |= 1;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off = field->offset;
+            u8 *o = ((UnitRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 1;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        UnitRotWaitThread *t = (UnitRotWaitThread *)thread;
+        peer->flags |= 2;
+        if (t->state != 5 && !(t->flags & 0x40))
+            return;
+        if (t->flags & 0x40) {
+            t->wait_object = peer;
+            t->next = 6;
+            t->pc = t->pc2;
+            t->flags |= 4;
+        }
+        t->pc = t->pc2;
+        t->flags |= 1;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_rotY);
 
