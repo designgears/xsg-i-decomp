@@ -960,7 +960,81 @@ int DB_lightSave(DbLightSel *sel)
     return ret;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_scriptFileSelect);
+extern void *fileSelect;
+extern char D_004DA4A0[];
+extern char D_004DA4A8[];
+extern char *strrchr(const char *s, int c);
+extern int strncmp(const char *a, const char *b, unsigned int n);
+extern void SCRIPT_exec(void);
+extern void TWSYS_setGRPStatus(int group, int status);
+typedef struct DbSfsOwner {
+    u8 unmodeled_00[0xC];
+    unsigned short state_0c;
+    u8 unmodeled_0e[2];
+    u32 flags;
+    u8 unmodeled_14[0x29F60 - 0x14];
+    unsigned short state_29f60;
+} DbSfsOwner;
+typedef struct DbSfsTask {
+    XglTaskPrefix task;
+    u32 flags;
+    DbLightSel *sel;
+    u8 unmodeled_18[4];
+    DbSfsOwner *owner;
+} DbSfsTask;
+typedef struct {
+    u8 pad_00[0xC];
+    int callback;
+} DbSfsSel;
+
+static void DB_scriptFileSelect(DbSfsTask *task)
+{
+    DbLightSel *sel;
+    DbSfsOwner *owner;
+    char *path;
+    char *ext;
+    char *data;
+
+    if (!(task->flags & 1)) {
+        ((DbSfsSel *)fileSelect)->callback = 0;
+        task->sel = fileSelect;
+        task->flags |= 1;
+    }
+    sel = task->sel;
+    switch (xglCdFileSelect(sel)) {
+    case 1:
+        path = sel->selectedPath;
+        ext = strrchr(path, '.');
+        if (ext != 0) {
+            if (strncmp(ext, D_004DA4A0, 4) == 0) {
+                SCRIPT_load_DBG(path);
+                SCRIPT_exec();
+            } else if (strncmp(ext, D_004DA4A8, 3) == 0) {
+                RSRC_init(rcFile);
+                data = RSRC_loadFile2(rcFile, sel->path, path);
+                JS_exec(data, data + *RSRC_getItem(rcFile, data));
+                {
+                    DbSfsOwner *o = task->owner;
+                    o->flags &= ~1;
+                    o->state_0c = o->state_29f60;
+                }
+            }
+        }
+        task->owner->flags &= ~1;
+        TWSYS_setGRPStatus(0, 0);
+        xglTaskRemove(&task->task);
+        return;
+    case 2:
+        owner = task->owner;
+        owner->flags &= ~1;
+        owner->state_0c = owner->state_29f60;
+        TWSYS_setGRPStatus(0, 0);
+        xglTaskRemove(&task->task);
+        return;
+    case 0:
+        break;
+    }
+}
 
 typedef unsigned int DbWindQuad __attribute__((mode(TI)));
 extern char dbgWind[];
