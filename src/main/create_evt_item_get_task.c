@@ -275,7 +275,65 @@ void InitSpecialSymbol(ItemMapUnit *unit)
     SetItemSymbolRsrc(unit);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", SetItemSymbolRsrc);
+typedef struct ItemBoxEntry {
+    signed char kind;
+    signed char pad1;
+    signed char level;
+    signed char pad3;
+    int special;
+} ItemBoxEntry;
+extern ItemBoxEntry ItemBoxTbl[];
+extern int uwares_tbl[];
+extern int xtxres_tbl[];
+#define SET_RSRC(n) \
+    { int a = uwares_tbl[n]; int b = xtxres_tbl[n]; \
+    *(int *)((char *)unit + 0xE0) = a; \
+    *(int *)((char *)unit + 0xE4) = b; }
+
+void SetItemSymbolRsrc(ItemMapUnit *unit)
+{
+    int kind, level;
+    ItemUnitInfo *info = &unit->info;
+
+    if ((short)unit->serial != 0x7000) {
+        switch ((short)unit->serial) {
+        case 0x7009: SET_RSRC(8); break;
+        case 0x700A: SET_RSRC(9); break;
+        case 0x700B: SET_RSRC(10); break;
+        case 0x700C: SET_RSRC(11); break;
+        case 0x700D: SET_RSRC(12); break;
+        case 0x700E: SET_RSRC(13); break;
+        }
+    } else {
+        kind = ItemBoxTbl[(short)info->itemNo].kind;
+        level = ItemBoxTbl[(short)info->itemNo].level;
+        if (ItemBoxTbl[(short)info->itemNo].special != 0) {
+            unit->serial = 0x7009;
+            SET_RSRC(8);
+            return;
+        }
+        switch (kind) {
+        case 0:
+            if (level < 0xF) { SET_RSRC(9); }
+            else { SET_RSRC(10); }
+            break;
+        case 1:
+            if (level < 0x46) { SET_RSRC(11); }
+            else { SET_RSRC(12); }
+            break;
+        case 2:
+            SET_RSRC(12);
+            break;
+        case 3:
+            if (level < 0x80) { SET_RSRC(11); }
+            else { SET_RSRC(12); }
+            break;
+        case 10:
+            SET_RSRC(13);
+            break;
+        }
+    }
+}
 
 typedef struct ItemGetTask {
     XglTaskPrefix task;

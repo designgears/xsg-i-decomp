@@ -1316,7 +1316,7 @@
      ],
      "generated": [
       "0x004ca580",
-      "0x004ca5ac"
+      "0x004ca5b0"
      ],
      "generated_by": [
       "GetItemName"
@@ -1328,7 +1328,31 @@
       "evt_item_format_special",
       "evt_item_format_normal",
       "D_004CA568",
-      "D_004CA5D0",
+      "D_004CA5D0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+     }
+    },
+    {
+     "range": [
+      "0x004ca5f0",
+      "0x004ca640"
+     ],
+     "generated": [
+      "0x004ca5f0",
+      "0x004ca63c"
+     ],
+     "generated_by": [
+      "SetItemSymbolRsrc"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004CA5F0",
+      "jtbl_004CA610"
+     ],
+     "also_referenced_by_c": [
       "D_004CA650"
      ],
      "basis": {
