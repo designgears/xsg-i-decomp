@@ -17,7 +17,59 @@ void Java_xeno_Chr_getPlayer__(JThread *thread, ChrScaleCall *arguments)
     *(unsigned int *)(object + peer_field->offset) = GameLoopState[1];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPlayer__);
+extern unsigned char SaveData[];
+extern int GameResource[];
+extern const char D_004DC198[];
+extern int ACT_allocMatrix(char *actor, int count);
+extern void ACT_setModelWrapper(void *actor, int flags);
+extern void *ACT_create(int id, int code);
+extern int ACT_initMotion(void *peer);
+extern int ACT_setRelation(Actor *actor, Actor *parent, int rel, int id);
+extern void ACT_setHumanHand(Actor *actor, int hand);
+extern void ACT_setMotion(Actor *actor, unsigned int dataId);
+extern void *getPeer_Chr(void *obj);
+
+void Java_xeno_Chr_setPlayer__(JThread *thread, ChrScaleCall *arguments)
+{
+    JavaField *field;
+    u8 *object;
+    u8 *peer;
+    u8 *hand;
+    int id;
+
+    id = *(u16 *)(SaveData + 0x100A4);
+    object = arguments->object;
+    if (GameResource[1] == 0x12A000 && GameResource[7] == 9) {
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(D_004DC198, -1), 0);
+        *(int *)(object + field->offset) = id;
+        peer = getPeer_Chr(object);
+        *(int *)(peer + 0x8D0) = 0x01000000;
+        *(int *)(peer + 0x8D4) = 0x01070800;
+        *(int *)(peer + 0x8D8) = 0x010B1000;
+        *(int *)(peer + 0x8DC) = 0x010E7000;
+        ACT_allocMatrix(peer, 0xAA);
+        ACT_setModelWrapper(peer, 0);
+        hand = ACT_create(-2, id + 0x10000);
+        *(int *)(hand + 0x8D0) = 0x010B4000;
+        *(int *)(hand + 0x8D4) = 0;
+        *(int *)(hand + 0x8D8) = 0x010E6000;
+        ACT_allocMatrix(hand, 0x33);
+        ACT_setModelWrapper(hand, 0);
+        hand[0x90] = 0;
+        *(u32 *)hand &= ~0x20;
+        ACT_initMotion(hand);
+        ACT_setRelation((Actor *)hand, (Actor *)peer, 0x8200, 1);
+        ACT_setHumanHand((Actor *)peer, 0);
+        ACT_setMotion((Actor *)peer, 0x8000);
+    } else {
+        field = lookupClassField(classJava_xeno_Chr,
+                                 loadConstString(chr_peer_string, -1), 0);
+        peer = *(u8 **)(object + field->offset);
+    }
+    ((Actor *)peer)->update = 0;
+    GameLoopState[1] = (unsigned int)peer;
+}
 
 extern void SEQ_moveXZ(void);
 extern void SEQ_moveChr(void);
@@ -1377,7 +1429,54 @@ void Java_xeno_Chr_getScale__(JThread *thread, ChrScaleCall *arguments,
     ((union { void *p; float f; } *)failure_result)->p = &scale_0_007C0A40;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_scale__Lxeno_util_Spline_IZ);
+extern void SEQ_scaleSPL(void);
+
+void Java_xeno_Chr_scale__Lxeno_util_Spline_IZ(JThread *thread,
+                                               ChrSplCall *arguments,
+                                               u32 *failure_result)
+{
+    JavaField *peer_field;
+    u8 *object;
+    Actor *peer;
+    ChrMoveEntry *entry;
+    u8 *spline;
+    u8 *sargs;
+    int wait;
+
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + peer_field->offset);
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    sargs = (u8 *)entry + 0x1b8;
+    entry->mask = 0xE0;
+    entry->state_flags |= 0xE0;
+    lookupClassField(classJava_xeno_Chr,
+                     loadConstString(chr_algorithm_string, -1), 0);
+    spline = arguments->spline;
+    wait = arguments->wait;
+    *(void **)((u8 *)entry + 0x30) = SEQ_scaleSPL;
+    *(u8 **)sargs = spline;
+    *(u16 *)(sargs + 6) = *(u16 *)(spline + 8);
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
 
 static void CHR_sclX(int mode, JThread *thread, ChrScaleCall *arguments,
                      u32 *failure_result)
@@ -1843,7 +1942,44 @@ void Java_xeno_Chr_setMotionFlags__IZ(JThread *thread,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setFilter__I);
+extern void ACT_filterGuno(Actor *actor);
+extern void ACT_filterStealth(Actor *actor);
+
+void Java_xeno_Chr_setFilter__I(JThread *thread, ChrIntCall *arguments, int *result)
+{
+    JavaField *peer_field;
+    Actor *peer;
+    u8 *object;
+    void (*draw)(Actor *);
+    u32 flags;
+    int res;
+
+    object = arguments->object;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + peer_field->offset);
+    switch (arguments->value) {
+    case 0:
+        peer->draw = 0;
+        peer->flags &= ~0x800;
+        *result = -1;
+        return;
+    case 1:
+        peer->flags &= ~0x800;
+        *result = -1;
+        return;
+    case 2:
+        peer->flags &= ~0x800;
+        *(u32 *)&peer->draw = (u32)ACT_filterGuno;
+        *result = 4;
+        return;
+    case 3:
+        peer->flags &= ~0x800;
+        *(u32 *)&peer->draw = (u32)ACT_filterStealth;
+        *result = 4;
+        return;
+    }
+}
 
 void Java_xeno_Chr_setFilterParam__aF(JThread *thread,
                                       ChrFilterParamCall *arguments)
