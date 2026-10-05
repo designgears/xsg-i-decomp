@@ -149,7 +149,43 @@ static void GameCFSoundReload(void)
     GameCFSoundPurgeSub();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuPurge);
+extern u8 GameCFSoundMenuPurgeFlag;
+typedef struct GameSeqSlot { u16 a; u16 seq; } GameSeqSlot;
+extern GameSeqSlot SoundWork[];
+int SsdGetSeqPlayStatus(int sequence);
+int SsdGetResultValue(int *value);
+void xglSoundSequenceStop2(int channel);
+void EnemySound_StopAll(int clear);
+
+void GameCFSoundMenuPurge(int mode)
+{
+    int i;
+    int st;
+    int seq;
+    int ps;
+
+    if (mode == 1) {
+        GameCFSoundMenuPurgeFlag = 0;
+        xglSoundSendEffect(0, 0, 3);
+        for (i = 0; i < 8; i++) {
+            seq = SoundWork[i].seq;
+            if (seq != 0xFFFF) {
+                SsdGetSeqPlayStatus(seq);
+                while (SsdGetResultValue(&st) < 0) {
+                }
+                ps = (u16)st;
+                if (ps == 1) {
+                    GameCFSoundMenuPurgeFlag |= ps << i;
+                    xglSoundSequenceStop2(i);
+                }
+            }
+        }
+    }
+    EnemySound_StopAll(1);
+    for (i = 4; i < 8; i++) {
+        xglSoundSendEffect(0, 0, i + 4);
+    }
+}
 
 extern u8 GameCFSoundMenuPurgeFlag;
 extern int MenuDrillCall;
