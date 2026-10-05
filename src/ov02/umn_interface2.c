@@ -5,7 +5,49 @@
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_interface2", tskUmnBgCubeMain);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_interface2", UmnBgCubeInit);
+typedef struct { char pad[8]; void *unk8; } UmnTaskSched;
+typedef struct { char pad[0x10]; unsigned char unk10, unk11, unk12; char pad2; int unk14; int unk18; int unk1C; } UmnBgCubeTask;
+typedef struct { int unk0; int unk4; char pad[0x94-8]; float unk94; char pad2[0xA0-0x98]; float unkA0; float unkA4; float unkA8; char pad3[0xD0-0xAC]; float unkD0; float unkD4; float unkD8; } UmnCam;
+extern void tskUmnBgCubeMain(void *);
+extern int UmnBgCubeLex;
+extern int UmnBgCubeXtx;
+extern UmnTaskSched *task_xmx;
+extern UmnBgCubeTask *xglTaskEntryNext(UmnTaskSched *, void (*)(void *), void *);
+extern UmnCam *xglStudioGetCamera2(int);
+extern void xglCameraInit(UmnCam *);
+
+int UmnBgCubeInit(int arg0) {
+    UmnBgCubeTask *t;
+    UmnCam *cam;
+    int xtx, lex;
+    float z, fov;
+
+    arg0 = (arg0 + 0xF) & ~0xF;
+    t = xglTaskEntryNext(task_xmx, tskUmnBgCubeMain, task_xmx ? task_xmx->unk8 : 0);
+    t->unk1C = arg0;
+    arg0 += 0x80;
+    t->unk10 = 0;
+    t->unk11 = 0;
+    cam = xglStudioGetCamera2(0);
+    t->unk12 = 0;
+    xglCameraInit(cam);
+    cam->unkA0 = 0.0f;
+    xtx = UmnBgCubeXtx;
+    lex = UmnBgCubeLex;
+    cam->unkA4 = 0.0f;
+    cam->unkA8 = 0.0f;
+    cam->unkD0 = 0.0f;
+    cam->unkD4 = 0.0f;
+    z = 4.0f;
+    fov = 0.91593236f;
+    cam->unk0 = 1;
+    cam->unk4 = 1;
+    cam->unk94 = fov;
+    cam->unkD8 = z;
+    t->unk14 = xtx;
+    t->unk18 = lex;
+    return arg0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_interface2", DrawUmnInterface2);
 
