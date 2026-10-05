@@ -647,7 +647,34 @@ void InitXrgPaint2DRect(XrgPaint2DRect *rectangle, int mode)
     rectangle->angle = 0.0f;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", XrgPaint2DDrawRect);
+extern const char D_00A590D8[];
+
+void XrgPaint2DDrawRect(XrgPaint2D *paint, XrgPaint2DRect *rect)
+{
+    XrgPaint2DDrawReq *req;
+    XrgPaint2DDrawReq *prev;
+
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 0x3BA);
+    }
+    if ((unsigned int)paint->reqCount >= 0xFF) {
+        assert_prog(D_00A590D8, D_00A59058, 0x3BB);
+    }
+    req = paint->request;
+    *(int *)((char *)req + 8) = rect->mode;
+    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                         : : "r"(&rect->x), "r"((char *)req + 0x10) : "memory");
+    ((union { int i; float f; } *)((char *)req + 0x24))->f = rect->angle;
+    ((union { int i; float f; } *)((char *)req + 0x20))->f = rect->scale;
+    {
+        int n = paint->reqCount + 1;
+        prev = paint->request;
+        paint->reqCount = n;
+        paint->request = &(&paint->req)[n];
+    }
+    _InitReq(paint->request);
+    _DeriveInfoReq(paint->request, prev);
+}
 
 extern void XrgPaint2DDrawRect(XrgPaint2D *paint, XrgPaint2DRect *rect);
 
