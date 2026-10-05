@@ -239,4 +239,18 @@ void RgSimpleDBClear(RgSimpleDB *pDB)
     _ClearDB(pDB);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_simple_db", RgSimpleDBDump);
+extern const char D_00A532C0[];
+extern const char D_00A532D0[];
+
+void RgSimpleDBDump(RgSimpleDB *pDB)
+{
+    int i;
+
+    if (pDB == 0) {
+        assert_prog(D_00A531F0, D_00A53200, 218);
+    }
+    XrgLog(D_00A532C0, D_00A53200, 220, pDB);
+    for (i = 0; i < pDB->m_nNumOfData; i++) {
+        XrgLog(D_00A532C0 + 0x10, D_00A53200, 222, i, pDB->m_apName[i], pDB->m_apData[i]);
+    }
+}
