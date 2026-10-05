@@ -987,7 +987,68 @@ int subLine2_OpenType_0(EtherTreeLine2Data *line2)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subLine2_OpenType_1);
+typedef struct { EtherTreeLine2Corner c __attribute__((aligned(8))); } Line2QuadA;
+
+int subLine2_OpenType_1(EtherTreeLine2Data *line2)
+{
+    char *object = (char *)line2->object;
+    char *child;
+    float limit;
+
+    switch (line2->opened) {
+    case 0:
+        line2->opened = 1;
+        *(Line2Quad *)&line2->to[0] = *(Line2Quad *)(object + 0x20);
+        ((Line2CornerView *)&line2->from[0])->c = line2->to[0];
+    case 1:
+        line2->to[0].x += 4.0f;
+        limit = *(float *)(object + 0x20) + 19.0f + 9.5f;
+        if (line2->to[0].x < limit) {
+            return 0;
+        }
+        line2->to[0].x = limit;
+        *(Line2QuadA *)&line2->to[1] = *(Line2QuadA *)(object + 0x20);
+        line2->from[1] = line2->to[1];
+        line2->from[1].x += 28.5f;
+        line2->to[1].x += 28.5f;
+        line2->opened = 2;
+    case 2:
+        if (line2->selectedIndex == 0) {
+            char *c0 = object + 0xC;
+            line2->to[1].y -= 8.0f;
+            if (*(float *)(*(char **)(c0 + (line2->selectedIndex << 2)) + 0x24) < line2->to[1].y) {
+                return 0;
+            }
+        } else {
+            char *c1 = object + 0xC;
+            line2->to[1].y += 8.0f;
+            if (line2->to[1].y < *(float *)(*(char **)(c1 + (line2->selectedIndex << 2)) + 0x24)) {
+                return 0;
+            }
+        }
+        {
+            char *base = object + 0xC;
+            char *sel = *(char **)(base + (line2->selectedIndex << 2));
+            line2->to[1].y = *(float *)(sel + 0x24);
+            *(Line2QuadA *)&line2->to[2] = *(Line2QuadA *)(sel + 0x20);
+        }
+        line2->from[2] = line2->to[2];
+        line2->from[2].x -= 28.5f;
+        line2->to[2].x -= 28.5f;
+        line2->opened = 3;
+    case 3: {
+        char *list = object + 0xC;
+        line2->to[2].x += 4.0f;
+        child = *(char **)(list + (line2->selectedIndex << 2));
+        if (line2->to[2].x < *(float *)(child + 0x20)) {
+            return 0;
+        }
+        line2->to[2].x = *(float *)(child + 0x20);
+        return 1;
+    }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Main);
 
