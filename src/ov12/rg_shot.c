@@ -785,7 +785,39 @@ static void _BeamRelease(void *beam)
     lifetime_field->lifetime = -0.5f;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _InitBeam);
+static void *_InitBeam(void *beamp, void *essencep, void *infop)
+{
+    RgBeamShot *beam = (RgBeamShot *)beamp;
+    RgBeamEssence *essence = (RgBeamEssence *)essencep;
+    int *info = (int *)infop;
+    RgVector a;
+    RgVector b;
+    int i0, i1, i2, i3;
+    int *bw = (int *)beamp;
+
+    _InitShotCommon(beam, essence, info, essence->speed);
+    beam->common.notifyHit = _BeamHit;
+    beam->common.isReleased = _BeamIsReleased;
+    beam->common.release = (void (*)(RgShot *))_BeamRelease;
+    RgGeomBallSetRadius((RgGeomBall *)beam->common.geomTray, 1.0f);
+    XrgCopyVector(beam->origin, a);
+    XrgCopyVector(beam->direction, b);
+    beam->speed = essence->speed;
+    beam->length = 0.0f;
+    beam->lifetime = essence->duration;
+    beam->hit = 0;
+    beam->damageRate = beam->common.damage;
+    beam->common.damage = 0.0f;
+    RgCharPassTimeMethod((RgChar *)beam, (void (*)(RgChar *, float))_BeamPassTime);
+    i0 = info[0];
+    i1 = info[1];
+    i2 = info[2];
+    i3 = info[3];
+    ((void **)bw)[0x2C] = (void *)i0;
+    ((void **)bw)[0x2D] = (void *)i1;
+    ((void **)bw)[0x2E] = (void *)i2;
+    ((void **)bw)[0x2F] = (void *)i3;
+}
 
 static void *_CreateBeam(void *essence, void *info)
 {
