@@ -660,7 +660,52 @@ void Java_xeno_Camera_changeID__III(JavaEnvironment *environment, CameraChangeID
     GameCameraChangeID(arguments->id, arguments->id2, arguments->id3);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setFog__IFFFFIIII);
+typedef unsigned int CameraFogQuad __attribute__((mode(TI)));
+extern float I2F(int value);
+static inline void fog_cp(void *d, void *s)
+{
+    do {
+        *(volatile CameraFogQuad *)d = *(volatile CameraFogQuad *)s;
+    } while (0);
+}
+
+void Java_xeno_Camera_setFog__IFFFFIIII(JavaEnvironment *environment,
+                                        union { int i; float f; void *p; } *args)
+{
+    int id;
+    int start;
+    int end;
+    float v[8] __attribute__((aligned(16)));
+    CfCameraDefineEntry *p;
+    float *src;
+
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    v[3] = args[5].f;
+    v[4] = I2F(args[6].i);
+    v[5] = I2F(args[7].i);
+    v[6] = I2F(args[8].i);
+    v[7] = I2F(args[9].i);
+    p = &CfCameraDefine[start];
+    if (start < end) {
+        src = v;
+        for (; start < end; start++) {
+            fog_cp((char *)p + 0x60, src);
+            fog_cp((char *)p + 0x70, src + 4);
+            p++;
+        }
+    }
+}
 
 void Java_xeno_Camera_resetFog__I(JavaEnvironment *environment,
                                   union { int i; float f; void *p; } *args)
