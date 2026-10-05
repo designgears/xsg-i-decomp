@@ -537,7 +537,41 @@ int unitCmdFree(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAtk);
+typedef struct { int a; ObjectTask *b; int c, d; } AtkCmd;
+void unitCmdAtkSub(ObjectTask *unit, int *cmd);
+extern int calcTakeEpGet(ObjectTask *unit, int tec);
+extern void calcEp(ObjectTask *unit, int ep);
+extern void calcBp2Tid(ObjectTask *unit, int tec);
+extern void *dataSpecDataGet(int cid, int id);
+
+int unitCmdAtk(ObjectTask *unit)
+{
+    AtkCmd buf;
+    Actor *actor = unit->work;
+    AtkCmd *cmd = unitCmdPtrGet(unit);
+    unsigned short *spec;
+    int v;
+    int t;
+
+    if (actor->moveState == 0) {
+        v = cmd->b;
+        t = *(int *)&((Actor *)unit->work)->targetUnit;
+        buf.a = v;
+        buf.b = (ObjectTask *)t;
+        v = cmd->d;
+        buf.c = v;
+        buf.d = 1;
+        unitCmdAtkSub(unit, (int *)&buf);
+        calcEp(unit, -calcTakeEpGet(unit, buf.a));
+        calcBp2Tid(unit, buf.a);
+        spec = dataSpecDataGet(calcUPGet(unit)->charaId, buf.a);
+        if (spec != 0) {
+            spec[4] = spec[4] + 1;
+        }
+        actor->moveState++;
+    }
+    return 0;
+}
 
 extern void scenarioBatInit(void);
 extern void unitJobTypeAtk(ObjectTask *unit, int *cmd, char *tec, int type);
