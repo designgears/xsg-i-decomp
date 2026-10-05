@@ -741,7 +741,28 @@ void XrgActorSetLocal(XrgActor *pActor, const RgMatrix matrix)
     XrgCopyMatrix(pActor->local, matrix);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorSetLight);
+void XrgActorSetLight(XrgActor *pActor, RgVector *pLight)
+{
+    XenoAct *pXenoAct;
+    int i;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 1008);
+    }
+    pXenoAct = pActor->pXenoAct;
+    if (pXenoAct == 0) {
+        return;
+    }
+    if (pLight != 0) {
+        XrgCopyVector((float *)&pXenoAct->light.ambient_color, pLight[0]);
+        for (i = 0; i < 3; i++) {
+            XrgCopyVector((float *)&pXenoAct->light.lights[i].color, pLight[i + 4]);
+            XrgCopyVector((float *)&pXenoAct->light.lights[i].direction, pLight[i + 1]);
+        }
+        return;
+    }
+    xglLightSetDefault(&pXenoAct->light);
+}
 
 void XrgActorSetMotion(XrgActor *pActor, int motion)
 {
