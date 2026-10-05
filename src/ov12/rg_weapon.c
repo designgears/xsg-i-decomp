@@ -260,7 +260,53 @@ void _DestructWeaponCommon(RgWeapon *weapon)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitEssenceCommon);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _ShotTypeShot);
+extern const char D_00A536E0[];
+extern void _GetShotInfo(RgWeapon *weapon, RgWeaponShotRequest *info);
+extern void *CreateRgShotFromEssence(void *essence, void *info);
+extern void RgShotSetSoundDriver(RgShot *shot, int driver);
+extern void RgShotSetHitSound(RgShot *shot, int soundId, int volume);
+extern void RgShotSetBgHitSound(RgShot *shot, int soundId, int volume);
+extern void RgShotSetNoLifeSound(RgShot *shot, int soundId, int volume);
+extern void RgShotSetHideSound(RgShot *shot, int soundId);
+
+int _ShotTypeShot(RgWeapon *w)
+{
+    RgWeaponShotType *weapon = (RgWeaponShotType *)w;
+    RgWeaponShotRequest info;
+    RgShot *shot;
+    void *ess;
+    int ret;
+
+    if (weapon == 0) {
+        assert_prog(D_00A536E0, D_00A53658, 0x208);
+    }
+    if (weapon->cooldown > 0.0f) {
+        return 0;
+    }
+    if (_GetNumAttach(&weapon->common.shotAttach) == 0) {
+        _GetShotInfo(&weapon->common, &info);
+        ess = *(void **)weapon->common.unmodeled_38;
+        ret = 0;
+        if (ess != 0) {
+            shot = CreateRgShotFromEssence(ess, &info);
+            _AddShotAttach(&weapon->common.shotAttach, shot);
+            RgShotSetSoundDriver(shot, weapon->common.sound);
+            RgShotSetHitSound(shot, weapon->common.robotHitSound, weapon->common.robotHitVolume);
+            RgShotSetBgHitSound(shot, weapon->common.bgHitSound, *(int *)weapon->common.unmodeled_1e0);
+            RgShotSetNoLifeSound(shot, *(int *)weapon->common.unmodeled_1d4, *(int *)(weapon->common.unmodeled_1e0 + 4));
+            RgShotSetHideSound(shot, weapon->common.shotSound);
+            XrgSoundRingVol(weapon->common.sound, weapon->common.shotSound, weapon->common.shotVolume);
+            if (weapon->common.shotNum != 1e8f) {
+                weapon->common.shotNum = weapon->common.shotNum - 1.0f;
+            }
+            ret = 1;
+            weapon->cooldown = *(float *)weapon->unmodeled_1f0;
+        }
+    } else {
+        ret = 0;
+    }
+    return ret;
+}
 
 int _ShotTypeIsBusy(RgWeaponShotType *weapon)
 {
