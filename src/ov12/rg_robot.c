@@ -1036,7 +1036,70 @@ static void _DashExit(RgRobotStatus *status, RgBody *body)
     XrgSoundRingStopMoving(body->landingSoundID);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitDashStatus);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern const char D_00A519C0[];
+static int _DashPassTime();
+extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
+
+static int _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    RgRobotSpec *spec = body->spec;
+    int type;
+    float dash;  /* first branch only */
+    float limit;
+
+    if (!status) {
+        assert_prog(D_00A518F0, D_00A51840, 0x81E);
+    }
+    if (spec->type == 1) {
+        return 0;
+    }
+    if (spec->type != 0) if ((unsigned int)spec->type < 5) {
+        dash = body->dashTime;
+        limit = *(float *)&spec->unmodeled_30[0] * 0.2f;
+        if (dash < limit) {
+            return 0;
+        }
+        body->dashTime = dash - limit * 0.1f;
+    }
+    _StopAllShotThread(body);
+    _SetStatus(status, 5, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_DashExecCmd;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_DashPassTime;
+    status->exitMethod = (RgStatusExitFunc)_DashExit;
+    status->scratch0 = 0;
+    *(int *)&status->unmodeled_1c[4] = 0;
+    XrgCopyVector((float *)status->unmodeled_10, (float *)command);
+    *(int *)&status->unmodeled_1c[0x18] = 0;
+    type = spec->type;
+    switch ((unsigned int)type) {
+    case 0:
+    case 1:
+        *(int *)&status->unmodeled_1c[0x14] = 1;
+        *(float *)&status->unmodeled_1c[0xc] = body->dashTime;
+        *(int *)&status->unmodeled_1c[0x10] = 0;
+        break;
+    case 2:
+        *(int *)&status->unmodeled_1c[0x10] = 1;
+        *(float *)&status->unmodeled_1c[0xc] = body->dashTime < 0.5f ? body->dashTime : 0.5f;
+        *(int *)&status->unmodeled_1c[0x14] = 0;
+        break;
+    case 3:
+    case 4:
+        *(int *)&status->unmodeled_1c[0x10] = 1;
+        *(float *)&status->unmodeled_1c[0xc] = body->dashTime < 0.5f ? body->dashTime : 0.5f;
+        *(int *)&status->unmodeled_1c[0x18] = 1;
+        *(int *)&status->unmodeled_1c[0x14] = 0;
+        break;
+    default:
+        RgError(D_00A519C0, D_00A51840, 0x85D, type);
+        break;
+    }
+    RgRobotEffectStartJet(body->effect, *(float *)&spec->unmodeled_30[0]);
+    RgRobotEffectStartDash(body->effect, *(float *)&spec->unmodeled_30[0]);
+    XrgSoundRingMoving(body->landingSoundID, 1, 1e8f);
+    return 1;
+}
 
 static void _BodyPlayMotion(RgBody *body, int motion);
 
@@ -2026,7 +2089,7 @@ static int _ExecBreakCmd(RgStatus *status, RgBody *body, void *command)
     return 0x40;
 }
 
-static void _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _InitDashVRStatus();
 
 static int _ExecDashCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
