@@ -409,7 +409,24 @@ void MATRIX_scale4s(Matrix4 matrix, float x, float y, float z)
 
 INCLUDE_ASM("asm/main/nonmatchings/matrix_print", MATRIX_toQuat4);
 
-INCLUDE_ASM("asm/main/nonmatchings/matrix_print", QUAT_toAxis);
+extern long acos(double);
+extern float dptofp(long);
+extern float D_004D7D28;
+
+void QUAT_toAxis(float *q, float *axis)
+{
+    float angle;
+    float s;
+
+    angle = dptofp(acos(q[3]));
+    axis[3] = angle * -2.0f;
+    s = sinf(angle);
+    if (__builtin_fabsf(s) > D_004D7D28) {
+        axis[0] = q[0] / s;
+        axis[1] = q[1] / s;
+        axis[2] = q[2] / s;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/matrix_print", QUAT_toMatrix4);
 
