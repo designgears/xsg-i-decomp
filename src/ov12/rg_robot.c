@@ -496,7 +496,44 @@ static void _ShieldExit(RgRobotStatus *status, RgBody *body)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitShieldStatus);
+extern const char D_00A51940[];
+extern void RgWeaponStopLockon(void *weapon);
+static int _ExecCmdInShield(RgRobotStatus *status, int param, RgBody *body);
+static int _ShieldPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
+
+static void _InitShieldStatus(RgRobotStatus *status, RgBody *body, int motion,
+                              int timer, int arg)
+{
+    RgMotionShotInfo *info;
+    void *weapon;
+
+    info = RgMotionInfoDBGet(InstanceOfRgMotionInfoDB(), motion, body->charID);
+    if (info == 0) {
+        assert_prog(D_00A51940, D_00A51840, 0x65D);
+    }
+    _StopAllShotThread(body);
+    _SetStatus(status, 3, body);
+    *(int *)&status->scratchTimer = timer;
+    status->execCmdMethod = _ExecCmdInShield;
+    status->passTimeMethod = _ShieldPassTime;
+    status->exitMethod = _ShieldExit;
+    status->scratch1 = 1;
+    status->scratch2 = arg;
+    *(RgMotionShotInfo **)&status->unmodeled_10[0] = info;
+    *(int *)&status->scratch0 = 0;
+    *(int *)&status->unmodeled_10[4] = 0;
+    if (body->actor != 0) {
+        _BodyPlayMotion(body, motion);
+    }
+    weapon = body->weapon[0];
+    if (weapon != 0) {
+        RgWeaponStopLockon(weapon);
+    }
+    weapon = body->weapon[1];
+    if (weapon != 0) {
+        RgWeaponStopLockon(weapon);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInTargetting);
 
