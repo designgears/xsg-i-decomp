@@ -1117,7 +1117,24 @@ static int _BodyDropWeapon(RgBody *body, int eType)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyEquipWeapon);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodySetSpareWeapon);
+extern void DisposeRgWeapon(void *weapon);
+
+static void _BodySetSpareWeapon(RgBody *body, int eSide, int weaponID)
+{
+    int weapon;
+
+    if (body == 0) {
+        assert_prog(D_00A51A68, D_00A51840, 0xC3B);
+    }
+    if ((unsigned int)eSide >= RG_EQUIP_TYPE_NUM) {
+        assert_prog(D_00A51A88, D_00A51840, 0xC3C);
+    }
+    weapon = body->spareWeapon[eSide];
+    if (weapon != 0 && weapon != weaponID) {
+        DisposeRgWeapon((void *)weapon);
+    }
+    body->spareWeapon[eSide] = weaponID;
+}
 
 static void _BodySetAutoHomingEnv(RgBody *body, int autoHomingEnv)
 {
