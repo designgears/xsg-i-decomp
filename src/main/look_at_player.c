@@ -207,7 +207,43 @@ static short HitCheckActor(LookAtPlayerActor *self)
     return -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/look_at_player", NyuruActor);
+extern float D_004D7C3C;
+float Get_Angle(Vector4 *first, Vector4 *second);
+float xglSin(float a);
+float xglCos(float a);
+int HitCheckMapUnit(LookAtPlayerActor *a);
+#define ACT_VEL(a) ((Vector4 *)((a)->unmodeled_20 + 0x10))
+
+static int NyuruActor(LookAtPlayerActor *self, LookAtPlayerActor *other)
+{
+    float angle;
+    float r;
+    Vector4 t;
+    short hit;
+
+    angle = Get_Angle(&self->position, &other->position);
+    self->position.x -= ACT_VEL(self)->x;
+    self->position.z -= ACT_VEL(self)->z;
+    r = ACT_RADIUS(self) + ACT_RADIUS(other) + D_004D7C3C;
+    t.x = other->position.x - r * xglSin(angle);
+    t.z = other->position.z - r * xglCos(angle);
+    ACT_VEL(self)->x = t.x - self->position.x;
+    ACT_VEL(self)->z = t.z - self->position.z;
+    self->position.x += ACT_VEL(self)->x;
+    self->position.z += ACT_VEL(self)->z;
+    hit = HitCheckActor(self);
+    if (hit != -1) {
+        self->position.x -= ACT_VEL(self)->x;
+        self->position.z -= ACT_VEL(self)->z;
+        return 0;
+    }
+    if (HitCheckMapUnit(self) != hit) {
+        self->position.x -= ACT_VEL(self)->x;
+        self->position.z -= ACT_VEL(self)->z;
+        return 0;
+    }
+    return 1;
+}
 
 void PlayerLookAtAim(void)
 {
