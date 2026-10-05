@@ -498,7 +498,73 @@ static int _GrenadeEntryHistory(RgShot *shot, int bgObject)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _GrenadeBomPassTime);
+extern void RgShotEffectSetScale(RgShotEffect *pEff, float scale);
+extern void RgShotEffectSetYRot(RgShotEffect *pEff, float yRotation);
+extern void RgShotEffectSetTransparent(RgShotEffect *pEff, float transparent);
+extern void RgShotEffectSetAddAlpha(RgShotEffect *pEff);
+
+static void _GrenadeBomPassTime(RgShot *shot, float deltaTime)
+{
+    RgGrenadeShot *bom = (RgGrenadeShot *)shot;
+    float *f = (float *)shot;
+    RgGeom *geom;
+    float duration;
+    float time;
+    float t;
+    float radius;
+    float rot;
+    float alpha;
+    float half;
+    float limit;
+
+    if (shot == 0) {
+        assert_prog(D_00A53368, D_00A532F8, 0x21E);
+    }
+    geom = _CommonGetGeom(shot);
+    _ShotCommonPassTime(shot, deltaTime);
+    time = f[0x26] + deltaTime;
+    duration = bom->duration;
+    f[0x26] = time;
+    if (duration < time) {
+        RgGeomResetStatus(geom, 1);
+        shot->life = 0.0f;
+        return;
+    }
+    t = time + time;
+    t = t < 0.0f ? 0.0f : (duration < t ? duration : t);
+    limit = 0.9f;
+    half = 0.5f;
+    radius = (bom->explosionRadius * t) / duration;
+    RgGeomBallSetRadius((RgGeomBall *)geom, radius);
+    RgShotEffectSetScale(shot->effect, radius * 1.5f);
+    rot = f[0x28] + 0.19634955f;
+    while (rot > 3.1415927f) {
+        rot -= 6.2831855f;
+    }
+    while (rot < -3.1415927f) {
+        rot += 6.2831855f;
+    }
+    f[0x28] = rot;
+    RgShotEffectSetYRot(shot->effect, rot);
+    if ((float)bom->repeatCount > 0.0f) {
+        RgShotEffectSetAddAlpha(shot->effect);
+        RgShotEffectSetTransparent(shot->effect, 0.1f);
+        XrgSoundRingVol(shot->soundDriver, shot->hitSoundId, shot->hitSoundVolume);
+        return;
+    }
+    RgShotEffectSetAddAlpha(shot->effect);
+    if (f[0x26] + half > bom->duration) {
+        alpha = ((bom->duration - f[0x26]) / half) * limit;
+        if (alpha < 0.0f) {
+            alpha = 0.0f;
+        } else if (alpha > limit) {
+            alpha = 0.9f;
+        }
+        RgShotEffectSetTransparent(shot->effect, alpha);
+        return;
+    }
+    RgShotEffectSetTransparent(shot->effect, 0.9f);
+}
 
 /* Defined later in this TU (a local sibling still in asm). */
 static void _GrenadeSetBom(RgShot *shot);
