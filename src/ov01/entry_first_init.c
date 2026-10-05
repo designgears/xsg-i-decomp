@@ -1075,7 +1075,71 @@ void encEffObjDraw(EncEffDrawArg *arg)
     encEffAppend();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", encEffAppend);
+static inline void encQuad(FadeGpPacket *packet, int a, int b, int c, int d)
+{
+    int *count = &packet->count;
+    int idx;
+
+    ((FadeQuad *)packet->data)[packet->count].i[0] = a;
+    ((FadeQuad *)packet->data)[packet->count].i[1] = b;
+    ((FadeQuad *)packet->data)[packet->count].i[2] = c;
+    idx = *count;
+    ((FadeQuad *)packet->data)[idx].i[3] = d;
+    *count = idx + 1;
+}
+
+void encEffAppend(void)
+{
+    FadeGpPacket packet;
+    FadeGpPacket *p;
+    int *count;
+    int dispIdx;
+    int unused;
+    unsigned short fbp;
+    int i;
+    int idx;
+    int sx, sy;
+    int z = 0xFFFFFD;
+
+
+    grDBIdxGet(&dispIdx, &unused);
+    fbp = grFBAdrGet(dispIdx) << 5;
+    p = &packet;
+    grGpInit((EncPacket *)p);
+    GS_REG_SET(&packet, 0xE, 0x1000000000008005LL);
+    GS_REG_SET(&packet, 0x3F, 1);
+    GS_REG_SET(&packet, 6, (long long)fbp | 0x2000000664020000LL);
+    GS_REG_SET(&packet, 0x42, 0x44);
+    GS_REG_SET(&packet, 0x47, 0x30000);
+    GS_REG_SET(&packet, 0x14, 0);
+    for (i = 0; i < 2; i++) {
+        if (i == 0) {
+            sx = 1;
+            sy = 1;
+        } else {
+            sx = -1;
+            sy = -1;
+        }
+        ((FadeGifTag *)p->data)[p->count].register_id.bits = 0x513;
+        count = &p->count;
+        { int idx = *count;
+        ((FadeGifTag *)p->data)[idx].control.bits = 0x30AB400000008002ULL;
+        *count = idx + 1; }
+        ((FadeQuad *)p->data)[p->count].i[0] = 0;
+        { int idx = *count;
+        ((FadeQuad *)p->data)[idx].i[1] = 0;
+        *count = idx + 1; }
+        encQuad(p, 0x80, 0x80, 0x80, 0x80);
+        encQuad(p, sx * 16 + 0x7000, sy * 16 + 0x7200, z, 0);
+        ((FadeQuad *)p->data)[p->count].i[0] = 0x1FF0;
+        { int idx = *count;
+        ((FadeQuad *)p->data)[idx].i[1] = 0x1BF0;
+        *count = idx + 1; }
+        encQuad(p, 0x80, 0x80, 0x80, 0x80);
+        encQuad(p, sx * 16 + 0x9000, sy * 16 + 0x8E00, z, 0);
+    }
+    grPacketSend((EncPacket *)p);
+}
 
 typedef struct EncFrameBaseTable {
     unsigned short base[3];
