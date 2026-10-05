@@ -1071,7 +1071,61 @@ static void _DashVRExit(RgRobotStatus *status, RgBody *body)
     XrgSoundRingStopMoving(body->landingSoundID);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitDashVRStatus);
+extern float atan2f(float y, float x);
+extern float sinf(float x);
+extern float cosf(float x);
+extern float RgGeomRobotGetRotate(RgGeomPoint *point);
+extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern const char D_00A51A30[];
+static int _DashVRExecCmd();
+static int _DashVRPassTime();
+
+static int _InitDashVRStatus(RgRobotStatus *status, RgBody *body, RgCmd *command,
+                             int param1, int param2)
+{
+    RgRobotSpec *spec = body->spec;
+    float rot;
+    int type;
+
+    if (!status) {
+        assert_prog(D_00A518F0, D_00A51840, 0x94D);
+    }
+    _StopAllShotThread(body);
+    if (body->dashTime < *(float *)&spec->unmodeled_30[0] * 0.2f) {
+        return 0;
+    }
+    _SetStatus(status, 7, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_DashVRExecCmd;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_DashVRPassTime;
+    status->exitMethod = (RgStatusExitFunc)_DashVRExit;
+    *(int *)&status->scratch0 = 0;
+    *(float *)&status->scratch1 = atan2f(((float *)command)[0], ((float *)command)[2]);
+    status->scratch2 = 0;
+    rot = RgGeomRobotGetRotate(body->geometry);
+    *(float *)&status->unmodeled_10[0] = sinf(rot) * 50.0f;
+    *(int *)&status->unmodeled_10[4] = 0;
+    *(float *)&status->eSide = cosf(rot) * 50.0f;
+    type = spec->type;
+    switch ((unsigned int)type) {
+    case 3:
+        *(int *)&status->unmodeled_1c[8] = 1;
+        break;
+    case 4:
+    case 2:
+        *(int *)&status->unmodeled_1c[8] = 0;
+        break;
+    default:
+        RgError(D_00A51A30, D_00A51840, 0x971, type);
+        break;
+    }
+    RgRobotEffectStartJet(body->effect, *(float *)&spec->unmodeled_30[0]);
+    RgRobotEffectStartDash(body->effect, *(float *)&spec->unmodeled_30[0]);
+    RgGeomPointSetMaxXYSpd(body->geometry, _CalcMaxSpeed(body, *(float *)&spec->unmodeled_10[0]));
+    _BodyPlayMotion(body, 0x32);
+    XrgSoundRingMoving(body->landingSoundID, 1, 1e8f);
+    return 1;
+}
 
 static int _AllowDamageCmdNotVRDashHit(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _ExecDashCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
@@ -1988,7 +2042,7 @@ static int _ExecDashCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
         result = 4;
         break;
     case 1:
-        _InitDashVRStatus(status, body, command);
+        ((int (*)())_InitDashVRStatus)(status, body, command);
         result = 4;
         break;
     }
