@@ -312,7 +312,34 @@ int menuCritObj(ObjectTask *task)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuCritObjDraw);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuATBObjDraw);
+extern int selY;
+extern int selX;
+extern int mapH;
+void grGpInit(int packet);
+void grPacketSend(int packet);
+void menuEventTimerDisp(ObjectTask *task, int packet);
+void menuMapDisp(ObjectTask *task, int packet);
+void menuMapItemDisp(ObjectTask *task, int packet);
+void menuTgtLineDisp(ObjectTask *task, int packet);
+
+void menuATBObjDraw(ObjectTask *task)
+{
+    int packet[4];
+    int h;
+
+    grGpInit((int)packet);
+    selX = selY = 0;
+    menuEventTimerDisp(task, (int)packet);
+    menuMapDisp(task, (int)packet);
+    h = mapH;
+    if (h == 0x40) {
+        menuMapItemDisp(task, (int)packet);
+        if (mapH == h) {
+            menuTgtLineDisp(task, (int)packet);
+        }
+    }
+    grPacketSend((int)packet);
+}
 
 /*
  * The battle map's height-scan distance (data still asm-owned; original
