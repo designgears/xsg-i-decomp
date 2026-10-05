@@ -118,7 +118,50 @@ int CreateEvtItemGetTask(int item, int count)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", GetItemName);
+extern char deb_0[8];
+extern const char D_004CA568[];
+extern char **func_A2C5F8(int id);
+extern char **func_A2C6E8(int id);
+extern char **func_A2C738(int id);
+extern char **func_A2C698(int id);
+extern char *dataEvtItmNameGet(int index);
+
+char *GetItemName(int category, int id)
+{
+    char **p;
+    char *s;
+
+    if (id == 0) {
+        return deb_0;
+    }
+    switch (category) {
+    case 0:
+        p = func_A2C5F8(id);
+        goto tail;
+    case 1:
+        p = func_A2C6E8(id);
+        goto tail;
+    case 2:
+        p = func_A2C738(id);
+        goto tail;
+    case 3:
+        p = func_A2C698(id);
+    tail:
+        if (p != 0) {
+            return *p;
+        }
+        return deb_0;
+    case 10:
+        s = dataEvtItmNameGet(id);
+        if (s == 0) {
+            s = deb_0;
+        }
+        return s;
+    default:
+        printf(D_004CA568, category);
+        return 0;
+    }
+}
 
 char *dataEvtItmNameGet(int index)
 {
