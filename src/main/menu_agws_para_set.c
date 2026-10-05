@@ -448,7 +448,223 @@ void MenuAgwsListMake_Pilot(void)
     WindowSPSetSelect(window, &MenuKeepSelect[40]);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_agws_para_set", AgwsListMain);
+typedef struct AgwsListTag {
+    unsigned char unmodeled_00[4];
+    short x;
+    short y;
+    int color;
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char unmodeled_0f[0x20 - 0x0F];
+} AgwsListTag;
+typedef struct AgwsListWin {
+    unsigned char state;
+    unsigned char rowCount;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    int flags;
+    unsigned char columns;
+    unsigned char rows;
+    unsigned char unmodeled_16[0x1C - 0x16];
+    AgwsListRow *items;
+} AgwsListWin;
+typedef struct AgwsListView {
+    unsigned char state;
+    unsigned char mode;
+    unsigned char unk2;
+    unsigned char unk3;
+    int color;
+    AgwsListTag tag[8];
+    AgwsSprite sprite;
+    AgwsListWin window;
+} AgwsListView;
+extern unsigned char D_004DAF48[];
+void WindowSPSet(void *window);
+void WindowSPMain(void *window);
+int PartyAttackerCheck(int party_id);
+char *MenuTagTextGet(int index);
+int MenuAgwsPilotCheck(int id);
+
+void AgwsListMain(void)
+{
+    AgwsListView *work = (AgwsListView *)AgwsList;
+    short target;
+    int count;
+    AgwsListRow *rows;
+    int i;
+    short id;
+    unsigned char s;
+
+    switch (work->state) {
+    case 0:
+        work->window.x = 0x210;
+        work->color = 0xFFF000;
+        work->window.color = 0xFFF000;
+        work->window.flags = (int)D_004DAF48;
+        work->window.y = 0x40;
+        work->window.rowCount = 7;
+        work->window.rows = 0xB;
+        work->window.height = 0x10E;
+        work->window.state = 0;
+        work->window.items = 0;
+        WindowSPSet(&work->window);
+        work->mode = 1;
+        work->state = 2;
+        work->unk2 = 0;
+        /* fallthrough */
+    case 2:
+        work->mode = 0;
+        switch (MenuWork.state) {
+        case 0x44:
+            work->state = 10;
+            break;
+        case 0x46:
+            work->state = 20;
+            break;
+        case 0x62:
+            work->state = 30;
+            break;
+        case 0xC2:
+            work->state = 40;
+            break;
+        }
+        break;
+    case 10:
+    case 20:
+    case 30:
+    case 40:
+        if (work->state == 40) {
+            work->window.x = 0x210;
+            work->window.y = 0x80;
+            MenuAgwsListMake_Pilot();
+            work->mode = 2;
+            work->state = 41;
+        } else {
+            work->window.x = -0xF4;
+            if (work->state == 30) {
+                work->window.y = 0x7E;
+            } else {
+                work->window.y = 0x68;
+            }
+            work->mode = 1;
+            if (work->state == 20) {
+                work->state = 21;
+            } else {
+                work->state = 11;
+            }
+            switch (work->state) {
+            case 10:
+                MenuAgwsListMake_Wpn();
+                break;
+            case 20:
+                MenuAgwsListMake_Gun();
+                break;
+            case 30:
+                MenuAgwsListMake_Acc();
+                break;
+            }
+        }
+        work->window.state = 0x11;
+        /* fallthrough */
+    case 11:
+    case 13:
+    case 21:
+    case 41:
+    case 43:
+        target = 0x10;
+        switch (work->state) {
+        case 41:
+            target = 0x120;
+            break;
+        case 13:
+            target = -0xF4;
+            break;
+        case 43:
+            target = 0x210;
+            break;
+        }
+        MoveSlide(&work->window.x, &target, 3.0f);
+        if (work->window.x == target) {
+            switch (work->state) {
+            case 21:
+                work->state = 0x16;
+                break;
+            case 11:
+            case 41:
+                work->state = 0xC;
+                break;
+            case 13:
+            case 43:
+                work->state = 2;
+                break;
+            }
+        }
+        break;
+    case 12:
+    case 22:
+        switch (MenuWork.state) {
+        case 0x42:
+            work->state = 0xD;
+            break;
+        case 0x22:
+            work->state = 0x2B;
+            break;
+        case 0x40:
+            work->state = 0xD;
+            break;
+        case 0x46:
+            if (work->state == 0xC) {
+                work->state = 20;
+            }
+            break;
+        }
+        break;
+    }
+
+    if (work->mode != 0) {
+        WindowSPMain(&work->window);
+        if (work->mode == 2) {
+            AgwsMenuWork *menu = &MenuWork;
+            if (menu->listSelect >= 0) {
+                count = MenuSortCheck(0);
+                rows = MenuListGet(0);
+                for (i = 0; i < count; i++) {
+                    id = MenuSortGet(0, i);
+                    if (PartyAttackerCheck(id) != 0) {
+                        eTagFontSet(&work->tag[i], (int)MenuTagTextGet(1));
+                    } else {
+                        eTagFontSet(&work->tag[i], (int)MenuTagTextGet(2));
+                    }
+                    if ((signed char)rows[i].flag == 1) {
+                        work->tag[i].g = 0x40;
+                        work->tag[i].b = 0x40;
+                        work->tag[i].r = 0x40;
+                    } else {
+                        work->tag[i].g = 0x80;
+                        work->tag[i].b = 0x80;
+                        work->tag[i].r = 0x80;
+                    }
+                    work->tag[i].x = work->window.x + 0x6B;
+                    work->tag[i].color = work->window.color + 2;
+                    work->tag[i].y = work->window.y + i * 0x18 + 7;
+                    eTagFontMain(&work->tag[i]);
+                    if (id == MenuAgwsPilotCheck(MenuWork.chrNo)) {
+                        eSpriteSet(&work->sprite, 0x60A);
+                        work->sprite.x = work->window.x + work->window.width - 0x18;
+                        work->sprite.y = work->window.y + i * 0x18 + 3;
+                        work->sprite.work = work->window.color + 2;
+                        eSpriteMain(&work->sprite);
+                    }
+                }
+            }
+        }
+    }
+}
 
 void AgwsStatusMain(void)
 {
