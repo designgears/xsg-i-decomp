@@ -483,7 +483,33 @@ int calcAp(ObjectTask *unit, int delta)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHp);
+extern int printf(const char *format, ...);
+extern int plMutekiGet(void);
+extern int enMutekiGet(void);
+
+int calcHp(ObjectTask *unit, int delta)
+{
+    int hp;
+
+    if (!(*(unsigned int *)unit->work & 0x40)) {
+        if (plMutekiGet() != 0) {
+            printf("** PL MUTEKI\n");
+            return 1;
+        }
+    } else if (enMutekiGet() != 0) {
+        printf("** EN MUTEKI\n");
+        return 1;
+    }
+    hp = (short)calcUPGet(unit)->currentHp;
+    hp += delta;
+    if (hp < 0) {
+        hp = 0;
+    } else if (*(short *)calcUPGet(unit) < hp) {
+        hp = *(short *)calcUPGet(unit);
+    }
+    calcUPGet(unit)->currentHp = hp;
+    return hp != 0;
+}
 
 int calcEp(ObjectTask *unit, int delta)
 {
