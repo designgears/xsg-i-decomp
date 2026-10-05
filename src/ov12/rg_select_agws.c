@@ -1476,7 +1476,72 @@ static void _DispFloatArrow(XrgPaint2D *paint, FloatArrow *pDat)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetWepSelPicList);
+typedef struct { int v[3]; } WepSelPicTbl;
+typedef struct { int r, g, b, a; } __attribute__((aligned(8))) WepSelColor;
+extern const WepSelPicTbl D_00A56BE8;
+extern WepSelColor D_00A56C00;
+extern WepSelColor D_00A56C10;
+extern void *RgPicListGetPic(RgPicList *pList, int index);
+extern void RgPicSetAlpha(void *pic, int alpha);
+extern void RgPicSetDark(void *pic, int dark);
+extern void RgPicNotDraw(void *pic, int notDraw);
+extern void RgPicSetColor(void *pic, const WepSelColor *color);
+
+static void _SetWepSelPicList(RgPicList *pList, SelDat *pSelDat)
+{
+    WepSelPicTbl tbl = D_00A56BE8;
+    SelType *pSelType;
+    unsigned int i;
+    unsigned int cursor;
+    int type;
+    void *pic;
+
+    if (_GetModeSelectData(pSelDat) == 1) {
+        pSelType = &pSelDat->selType;
+        cursor = _GetCursorSelType(pSelType);
+        type = _GetTypeSelType(pSelType);
+        RgPicNotDraw(RgPicListGetPic(pList, 0x11), 1);
+        RgPicNotDraw(RgPicListGetPic(pList, 0x12), 1);
+        RgPicNotDraw(RgPicListGetPic(pList, 4), 1);
+        RgPicNotDraw(RgPicListGetPic(pList, 3), 1);
+        for (i = 0; i < 3; i++) {
+            WepSelColor on = D_00A56C00;
+            WepSelColor off = D_00A56C10;
+            pic = RgPicListGetPic(pList, tbl.v[i]);
+            RgPicSetDark(pic, 1);
+            if (_GetConfrictSelType(pSelType, i) != 0) {
+                RgPicSetColor(pic, &on);
+            } else {
+                RgPicSetColor(pic, &off);
+            }
+        }
+        RgPicSetDark(RgPicListGetPic(pList, 0x10), 1);
+        RgPicSetDark(RgPicListGetPic(pList, 0xF), 1);
+        pic = RgPicListGetPic(pList, 0xE);
+        RgPicSetAlpha(pic, 2);
+        switch (cursor) {
+        case 0:
+        case 1:
+        case 2:
+            RgPicSetDark(pic, 0);
+            break;
+        default:
+            RgPicSetDark(pic, 1);
+            break;
+        }
+        switch (cursor) {
+        case 0:
+        case 1:
+        case 2:
+            RgPicSetDark(RgPicListGetPic(pList, tbl.v[type]), 0);
+            break;
+        case 4:
+            RgPicSetDark(RgPicListGetPic(pList, 0x10), 0);
+            RgPicSetDark(RgPicListGetPic(pList, 0xF), 0);
+            break;
+        }
+    }
+}
 
 extern const char D_00A56C20[];
 
