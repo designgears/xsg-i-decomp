@@ -301,7 +301,19 @@ int getScriptFlag(SceneObject object)
     return *script_flags;
 }
 
+#define ACTOR_COUNT 64
+#define ACTOR_IN_USE_ID_OFFSET 0x86
+
 INCLUDE_ASM("asm/main/nonmatchings/game", checkTalk);
+
+typedef struct {
+    u32 flags;
+    u8 unmodeled_04[ACTOR_IN_USE_ID_OFFSET - 0x04];
+    short inUseId;
+    u8 unmodeled_88[0xA70 - (ACTOR_IN_USE_ID_OFFSET + 2)];
+} ActorHead;
+
+extern ActorHead actor[ACTOR_COUNT];
 
 INCLUDE_ASM("asm/main/nonmatchings/game", checkTouch);
 
@@ -356,17 +368,6 @@ INCLUDE_ASM("asm/main/nonmatchings/game", GameDispTag);
  * zero; the offsets between them are not evidenced by this TU and stay
  * unmodeled.
  */
-#define ACTOR_COUNT 64
-#define ACTOR_IN_USE_ID_OFFSET 0x86
-
-typedef struct {
-    u32 flags;
-    u8 unmodeled_04[ACTOR_IN_USE_ID_OFFSET - 0x04];
-    short inUseId;
-    u8 unmodeled_88[0xA70 - (ACTOR_IN_USE_ID_OFFSET + 2)];
-} ActorHead;
-
-extern ActorHead actor[ACTOR_COUNT];
 
 /* Defined in src/main/act_3.c (main/tu265), not yet published in
  * include/main/act_3.h. */
