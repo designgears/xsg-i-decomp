@@ -732,7 +732,30 @@ typedef struct EtherTreeLine2Data {
 
 typedef union { EtherTreeLine2Corner c; } Line2CornerView;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Set);
+void EtherTreeLine2Set(int id, int index)
+{
+    EtherTreeLine2Data *line2 = EtherTreeLine2;
+    EtherTreeLine2Corner *corner;
+    int i;
+
+    if (EtherTreeSystem->flags & 1 & 0xFF) {
+        line2->object = EtherTreeObjectGet(id);
+        i = 0;
+        if (line2->object->childCount != 0) {
+            corner = line2->to;
+            do {
+                ((Line2CornerView *)corner)->c = *(EtherTreeLine2Corner *)((char *)line2->object + 0x20);
+                corner[-3] = *corner;
+                corner++;
+                i++;
+            } while (i < line2->object->childCount);
+        }
+        line2->unmodeled_03[0] = index;
+        line2->mode = 0;
+        line2->flags |= 1;
+        line2->opened = 0;
+    }
+}
 
 void EtherTreeLine2ModeChange(int mode)
 {
