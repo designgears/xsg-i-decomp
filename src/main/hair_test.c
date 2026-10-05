@@ -187,7 +187,148 @@ static void PrintDisp(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/hair_test", HairTest);
+typedef struct HairTestPair {
+    u64 w[2];
+} HairTestPair;
+typedef struct HairTestPad {
+    unsigned char unmodeled_00[0x28];
+    union {
+        u64 all;
+        struct {
+            u16 held;
+            u16 trigger;
+            u16 repeat;
+        } h;
+    } buttons;
+    unsigned char unmodeled_30[0x36];
+    signed char stickX;
+    signed char stickY;
+} HairTestPad;
+extern HairTestPad PadData;
+extern void xglRenderClearFrame(void);
+extern void xglSleep(void);
+extern void ppNextStart(HairTestParticle *particle);
+extern void ppNextEnd(HairTestParticle *particle);
+extern double cos();
+extern double sin();
+extern float atan2f(float, float);
+extern float sqrtf(float);
+extern void ACT_setMotion(HairTestAct *actor, int motion);
+extern void ACT_updateMotion(HairTestAct *actor);
+extern void ACT_modelDraw(void *actor);
+
+void HairTest(void)
+{
+    float scale;
+    float vx, vz;
+    float nx, nz, dy;
+    int n;
+    unsigned short held;
+    int next;
+    float ang;
+    HairTestAct *act;
+    StudioCamera *cam;
+    double px, pz, dvx, dvz, t1, t2;
+
+    xglRenderClearFrame();
+    xglSleep();
+    InitTest();
+    if ((PadData.buttons.all & 0x08000100) != 0x08000100) {
+        scale = 0.0001f;
+        do {
+            ppNextStart(&cpos_00585200);
+            held = PadData.buttons.h.held;
+            if (held & 8) {
+                cpos_00585200.position.y += 0.01f;
+            }
+            if (held & 2) {
+                cpos_00585200.position.y -= 0.01f;
+            }
+            if (held & 1) {
+                lookY -= 0.02f;
+            }
+            if (held & 4) {
+                lookY += 0.02f;
+            }
+            vx = PadData.stickX;
+            vz = PadData.stickY;
+            vx *= scale;
+            vz *= scale;
+            px = cpos_00585200.position.x;
+            dvx = vx;
+            t1 = dvx * cos(-cry_004DC654);
+            dvz = vz;
+            t2 = dvz * sin(-cry_004DC654);
+            cpos_00585200.position.x = px + (t1 - t2);
+            pz = cpos_00585200.position.z;
+            t1 = dvz * cos(-cry_004DC654);
+            t2 = dvx * sin(-cry_004DC654);
+            cpos_00585200.position.z = pz + (t1 + t2);
+            ppNextEnd(&cpos_00585200);
+            nx = -cpos_00585200.position.x;
+            nz = -cpos_00585200.position.z;
+            dy = lookY - cpos_00585200.position.y;
+            cry_004DC654 = -atan2f(nx, cpos_00585200.position.z);
+            crx_004DC650 = atan2f(dy, __builtin_sqrtf(nx * nx + nz * nz));
+
+
+            cam = pCamera_004DC634;
+            *(HairTestVectorBlock *)&cam->position = *(HairTestVectorBlock *)&cpos_00585200.position;
+            cam->rotation.x = crx_004DC650;
+            cam->rotation.y = cry_004DC654;
+            cam->rotation.z = 0.0f;
+            if (pause != 0) {
+                if (!(PadData.buttons.h.trigger & 0x800)) {
+                    goto draw;
+                }
+                pause = 0;
+            } else if (PadData.buttons.h.trigger & 0x800) {
+                pause = 1;
+                goto draw;
+            }
+            if (PadData.buttons.h.repeat & 0x4000) {
+                listpos++;
+                if (((struct { void *id; int pad[3]; } *)list)[listpos].id == 0) {
+                    listpos = 0;
+                }
+            } else if (PadData.buttons.h.repeat & 0x1000) {
+                listpos--;
+                if (listpos < 0) {
+                    listpos = listnum - 1;
+                }
+            }
+            if (!(PadData.buttons.h.held & 0x80) && listnow != listpos) {
+                GameResourceInit(0x07000000, 0x06000000);
+                ACT_init();
+                pAct_004DC638 = (HairTestAct *)ACT_create(0, ((HairResourceEntry *)list)[listpos].resourceId);
+                ACT_loadResource((struct HairTestAct *)pAct_004DC638, ((HairResourceEntry *)list)[listpos].resourceId);
+                ACT_loadMotion((struct HairTestAct *)pAct_004DC638, ((HairResourceEntry *)list)[listpos].resourceId, 1);
+                listnow = listpos;
+            }
+            if (PadData.buttons.h.repeat & 0x2000) {
+                mot++;
+            }
+            if (PadData.buttons.h.repeat & 0x8000) {
+                mot--;
+            }
+            n = getNumFCV(pAct_004DC638->fcvHeader);
+            while (mot >= n) {
+                mot -= n;
+            }
+            while (mot < 0) {
+                mot += n;
+            }
+            act = pAct_004DC638;
+            ((struct { unsigned int a:3; unsigned int b:1; } *)((char *)act + 0x6F0))->b = 1;
+            ACT_setMotion(act, mot);
+            ACT_updateMotion(pAct_004DC638);
+draw:
+            ACT_modelDraw(pAct_004DC638);
+            PrintDisp();
+            xglSleep();
+        } while ((PadData.buttons.all & 0x08000100) != 0x08000100);
+    }
+}
 
 static u16 JNT_hairID(JntHairJoint *joint)
 {
