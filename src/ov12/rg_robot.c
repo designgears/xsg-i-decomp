@@ -1919,7 +1919,67 @@ static void _BodyAutoHomingPassTime(RgBody *body, float deltaTime)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyPassTime);
+extern void XrgSoundPassTime(void *sound, float dt);
+extern void RgRobotEffectPassTime(RgRobotEffect *effect, float time);
+extern void RgShotThreadPassTime(void *thread, float deltaTime);
+extern void XrgActorPassTime(void *pActor, float dt);
+extern void RgWeaponPassTime(void *weapon, float dt);
+extern int RgWeaponIsLockedOn(void *weapon);
+
+static int _BodyPassTime(RgRobotStatus *robotStatus, RgBody *body,
+                          float deltaTime)
+{
+    int result;
+    unsigned int i;
+    float dt;
+
+    result = 0;
+    dt = deltaTime;
+    if (!body) {
+        assert_prog(D_00A51A68, D_00A51840, 0xCBD);
+    }
+    *(float *)body->unmodeled_ac = *(float *)body->unmodeled_ac + dt;
+    XrgSoundPassTime((void *)body->landingSoundID, dt);
+    if (body->confuse > 0.0f) {
+        body->confuse = body->confuse - dt;
+    }
+    if (robotStatus->type != 7 && robotStatus->type != 5) {
+        body->rotate = RgGeomRobotGetRotate(body->geometry);
+    }
+    RgRobotEffectPassTime(body->effect, deltaTime);
+    if (body->weakHitMotion > 0.0f) {
+        result = 0x10;
+        dt = deltaTime * body->weakHitPower;
+        body->weakHitMotion = body->weakHitMotion - deltaTime;
+    }
+    result |= _StatusPassTime(robotStatus, body, dt);
+    for (i = 0; i < 3; i++) {
+        RgShotThreadPassTime(body->shotThread[i], dt);
+    }
+    _PassTimeHomingThread(body->homingThread, dt);
+    if (_GetStatHomingThread(body->homingThread) == 1) {
+        body->flags |= 1;
+    }
+    _BodyAutoHomingPassTime(body, dt);
+    _BodyGeomPassTime(body, dt);
+    if (body->actor) {
+        XrgActorPassTime(body->actor, dt);
+    }
+    for (i = 0; i < 3; i++) {
+        if (body->weapon[i]) {
+            RgWeaponPassTime(body->weapon[i], dt);
+            if (RgWeaponIsLockedOn(body->weapon[i])) {
+                result |= 2;
+            }
+        }
+    }
+    if (!_EyeGeomPassTime(body, dt) && *(float *)body->unmodeled_ac > 0.1f) {
+        result |= 1;
+    }
+    _AdvanceGeomPassTime(body, dt);
+    body->smoothSuppressed = 0;
+    return result;
+}
 
 extern void XrgActorSetLocal(void *actor, RgVector local[4]);
 extern void XrgActorDraw(void *actor);
