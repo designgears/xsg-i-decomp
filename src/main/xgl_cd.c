@@ -380,7 +380,130 @@ CdCompletionCallback *xglCdSetCallback(int callback_address)
     return old_callback;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdGetFilePosSub);
+extern unsigned char root_0[6];
+typedef struct CdPathPos {
+    unsigned char unmodeled_00;
+    unsigned char unmodeled_01;
+    unsigned char flag;
+    unsigned char unmodeled_03;
+    int data;
+    int unmodeled_08;
+    int lbn;
+    int size;
+    int alt;
+} CdPathPos;
+
+static int xglCdGetFilePosSub(CdPathPos *fp, signed char *arg1)
+{
+    char path[0x100];
+    char *ptrs[0x10];
+    char *root;
+    char *pathp;
+    unsigned char *src;
+    unsigned char *dst;
+    unsigned char b;
+    int data;
+    int i;
+
+    root = (char *)root_0;
+    pathp = path;
+    *pathp = *root;
+    src = (unsigned char *)fp->data + 1;
+    if (((unsigned int)*pathp << 24) != 0) {
+        do {
+            root++;
+            pathp++;
+            *pathp = *root;
+        } while (((unsigned int)*pathp << 24) != 0);
+    }
+
+    ptrs[0] = pathp;
+    i = 0;
+    b = *src;
+    if (b != 0) {
+        do {
+            int mode = b & 0x40;
+            data = b & 0x3f;
+            if ((b & 0x80) != 0) {
+                int dist = src[1];
+                src += 2;
+                data = (data + 0xfe) & 0xff;
+                i -= dist;
+                dst = (unsigned char *)ptrs[i];
+                if (data != 0) {
+                    do {
+                        *dst = *src;
+                        src++;
+                        data = (data + 0xff) & 0xff;
+                        dst++;
+                    } while (data != 0);
+                }
+                i++;
+                dst[0] = 0x5c;
+                dst[1] = 0;
+                ptrs[i] = (char *)(dst + 1);
+            } else {
+                data = (data + 0xff) & 0xff;
+                dst = (unsigned char *)ptrs[i];
+                src++;
+                if (data != 0) {
+                    do {
+                        *dst = *src;
+                        src++;
+                        data = (data + 0xff) & 0xff;
+                        dst++;
+                    } while (data != 0);
+                }
+                *dst = 0;
+
+                {
+                    int matched = 0;
+                    signed char *pa;
+                    signed char ca;
+                    signed char cp;
+                    pathp = path;
+                    pa = arg1;
+                    ca = *pa;
+                    cp = *pathp;
+                    for (;;) {
+                        if (ca != cp) {
+                            break;
+                        }
+                        if (ca == 0) {
+                            matched = 1;
+                            break;
+                        }
+                        pa++;
+                        pathp++;
+                        ca = *pa;
+                        cp = *pathp;
+                    }
+
+                    if (matched != 0) {
+                        int t;
+                        fp->lbn = (src[2] << 16) + (src[1] << 8) + src[0];
+                        t = (src[6] << 24) + (src[3] + ((src[4] << 8) + (src[5] << 16)));
+                        fp->flag = mode;
+                        fp->size = t;
+                        if (mode != 0) {
+                            fp->alt = (src[9] << 16) + (src[8] << 8) + src[7];
+                        } else {
+                            fp->alt = t;
+                        }
+                        return 1;
+                    }
+                }
+                src += 7;
+                if (mode != 0) {
+                    src += 3;
+                }
+            }
+            b = *src;
+        } while (b != 0);
+    }
+
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdGetFilePos);
 
