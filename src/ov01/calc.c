@@ -350,7 +350,23 @@ int calcAccEquChk(ObjectTask *unit, int id) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillEquChk);
+int calcSkillEquChk(ObjectTask *unit, int skillId) {
+    int i;
+    short acc;
+
+    for (i = 0; i < 3; i++) {
+        acc = calcUPGet(unit)->accessoryId[i];
+        if (acc != 0 && skillId == ((CalcAccSkillView *)dataAccGet(acc))->skillId) {
+            return 1;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (skillId == ((CalcSkillView *)calcUPGet(unit))->skillId[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /* calcSkillEquChk/unitTblGet: calcSkillEquChkAll's own callees, still asm
  * in this TU. calcSkillEquChk's second call below hands it the same fake
