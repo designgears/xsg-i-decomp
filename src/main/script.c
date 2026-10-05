@@ -942,7 +942,48 @@ void loadScriptCD(ScriptDbEntry *entry_, const char *path)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", loadScriptCD2);
+extern int RES_loadFile(int command, int callback, int resource_id, int flags);
+extern char *strrchr(const char *s, int c);
+extern void *memcpy(void *d, const void *s, unsigned int n);
+extern char D_004C1F78[] __attribute__((aligned(8)));
+
+int loadScriptCD2(ScriptDbEntry *entry_, const char *path)
+{
+    ScriptDbLoadView *entry = (ScriptDbLoadView *)entry_;
+    char buf[256];
+    int count;
+    int cls;
+    int ret;
+    char *p;
+
+    DebugMenuResourceSizeAdd = 0;
+    strcpy(buf, path);
+    ret = xglCdReadFile(buf, entry->script, 0, 1);
+    if (ret < 0) {
+        count = 0;
+        entry->count = 0;
+        *(char **)&entry->active = 0;
+        return ret;
+    }
+    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, &count);
+    p = strrchr(path, '\\');
+    if (p == 0) {
+        p = strrchr(path, '/');
+    }
+    __builtin_memcpy(buf, D_004C1F78, 9);
+    if (p != 0) {
+        strcat(buf, p + 1);
+    }
+    replacePathExt(buf, D_004DA4B0);
+    entry->fpk = (void *)RES_loadFile(-1, 5, (int)buf, 0);
+    ACT_initExMotion(0, 1, entry->fpk);
+    replacePathExt(buf, D_004DA4B8);
+    ret = RES_loadFile(-1, 5, (int)buf, 0);
+    entry->active = cls;
+    entry->arc = (void *)ret;
+    entry->count = count;
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", loadScript);
 
