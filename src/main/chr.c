@@ -1114,7 +1114,28 @@ void Java_xeno_Chr_setSortOffset__F(JThread *thread, ChrScaleCall *arguments)
     peer->sort_offset = arguments->first.floating;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPointLightCol__IFFF);
+typedef union ChrU { int i; float f; unsigned u; } ChrU;
+typedef struct ChrPLC { u8 *object; ChrU idx; ChrU r, g, b; } ChrPLC;
+typedef struct ChrPL { unsigned flags; u8 pad[0x96c]; struct { float c[4]; } l[3]; unsigned f9a0; } ChrPL;
+
+void Java_xeno_Chr_setPointLightCol__IFFF(JThread *thread, ChrPLC *args)
+{
+    JavaField *peer_field;
+    ChrPL *peer;
+    u8 *object;
+
+    object = args->object;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(ChrPL **)(object + peer_field->offset);
+    if (args->idx.u < 3) {
+        peer->flags |= 0x800;
+        peer->l[args->idx.u].c[0] = args->r.f;
+        peer->l[args->idx.u].c[1] = args->g.f;
+        peer->l[args->idx.u].c[2] = args->b.f;
+        peer->f9a0 |= 0x20;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPointLightPos__IFFF);
 
