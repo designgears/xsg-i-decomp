@@ -782,7 +782,42 @@ int dataMotNameGet(char *name, ObjectTask *unit, int motionId, int weaponId)
     return found;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataMotNameGetSub);
+extern char *motFile[];
+extern char *agwsName[];
+extern char *agwsLRName[];
+
+int dataMotNameGetSub(char *name, CalcUnitParam *up, int motionId, int weaponId)
+{
+    char *mot;
+    int lr;
+    int i;
+    int c;
+
+    if (motionId < 0x157) {
+        i = motionId;
+        if (motionId >= 0x12E) {
+            i = motionId - 0x2A;
+        }
+        mot = motFile[i - 1];
+        if (mot != 0) {
+            if (motionId >= 0x103 && (up->flags & 0x40)) {
+                c = up->charaId - 0x11;
+                if (motionId >= 0x12E) {
+                    lr = 2;
+                } else {
+                    lr = (signed char)up->unmodeled_54[weaponId + 6] < 0x20;
+                }
+                strcat(name, agwsName[c]);
+                strcat(name, mot);
+                strcat(name, agwsLRName[lr]);
+            } else {
+                strcat(name, mot);
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoad);
 
