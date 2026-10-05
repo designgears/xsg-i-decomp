@@ -389,7 +389,26 @@ INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuMapItemDispSub);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuSelLine);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuEventTimerDisp);
+void menuATBEnvMake(int packet);
+void menuEventTimerDispSub(ObjectTask *task, int packet);
+
+void menuEventTimerDisp(ObjectTask *task, int packet)
+{
+    void *work;
+    int x;
+    int y;
+
+    work = task->work;
+    x = (int)(*(float *)((char *)work + 0x90));
+    y = (int)(*(float *)((char *)work + 0x98));
+    menuATBEnvMake(packet);
+    menuEventTimerDispSub(task, packet);
+    y += 0x38;
+    x -= 0x18;
+    grOpenSpr(packet);
+    menuStatSprite(packet, x, y, 0x18, 0x4E, 0x80, 0x32);
+    grCloseSpr();
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuEventTimerDispSub);
 
