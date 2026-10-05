@@ -541,7 +541,30 @@ void unitCmdAtkSub(ObjectTask *unit, int *cmd)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitJobTypeAtk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAtkEnd);
+extern void unitMotSet(ObjectTask *unit, int motion);
+extern void unitWpnMotSet(ObjectTask *unit, int weaponIndex, int animGroup, int motion);
+extern void unitFaceMotSet(ObjectTask *unit, int motion);
+extern int unitMotGet(ObjectTask *unit);
+
+void unitCmdAtkEnd(ObjectTask *unit)
+{
+    int cmd[5];
+
+    unitCmdClear(unit);
+    if (unitMotGet(unit) == 0x20) {
+        cmd[0] = 0xD;
+        cmd[1] = 0x21;
+        cmd[2] = 0;
+        unitCmdSet(unit, cmd);
+        unitWpnMotSet(unit, dataDefWpnGet((UnitRecord *)unit), 0, 0x32);
+        if (calcUPGet(unit)->charaId == 7) {
+            unitWpnMotSet(unit, 1, 0, 0x32);
+        }
+    } else {
+        unitMotSet(unit, 1);
+    }
+    unitFaceMotSet(unit, 0x35);
+}
 
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
 
