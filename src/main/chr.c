@@ -1215,7 +1215,43 @@ void Java_xeno_Chr_childGetPeer__II(JThread *thread, ChrPeerCall *arguments,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPeer__Ljava_lang_Object_);
+extern void ACT_updateSequence(Actor *actor);
+typedef struct ChrSetPeerCall { u8 *object; u8 *peer; } ChrSetPeerCall;
+
+void Java_xeno_Chr_setPeer__Ljava_lang_Object_(JThread *thread,
+                                               ChrSetPeerCall *arguments)
+{
+    JavaField *peer_field;
+    u8 *peer;
+    u8 *object;
+    u8 *seq;
+    int offset;
+
+    peer = arguments->peer;
+    object = arguments->object;
+    if (peer != 0) {
+        peer_field = lookupClassField(classJava_xeno_Chr,
+                                      loadConstString(chr_peer_string, -1), 0);
+        offset = peer_field->offset;
+        *(void **)(peer + 4) = ACT_updateSequence;
+        *(short *)(peer + 0x88) = 0;
+        *(u8 **)(object + offset) = peer;
+        peer[0x81] = 0;
+        *(u8 **)(peer + 0x4c0) = object;
+        seq = actSequence + peer[0x80] * 0x260;
+        *(int *)(seq + 0) = 0;
+        *(int *)(seq + 4) = 0;
+        *(int *)(seq + 0xc) = 0;
+        *(int *)(seq + 0x14) = 0;
+        *(int *)(seq + 0x18) = 0;
+        *(int *)(seq + 0x1c) = 0;
+        *(int *)(seq + 0x20) = 0;
+        *(int *)(seq + 0x24) = 0;
+        *(int *)(seq + 0x28) = 0;
+        *(int *)(seq + 0x2c) = 0;
+        *(int *)(seq + 0x30) = 0;
+    }
+}
 
 void Java_xeno_Chr_dispRadar__Z(JThread *thread, ChrBoolCall *arguments)
 {
