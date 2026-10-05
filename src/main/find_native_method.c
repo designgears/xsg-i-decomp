@@ -268,7 +268,56 @@ void reloadClassEntry(void *heapBoundary)
     } while (bucketsRemaining >= 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", lookupClassEntry);
+typedef struct ClassKey {
+    u8 pad[4];
+    u16 hash;
+} ClassKey;
+typedef struct ClassEntryView {
+    ClassKey *key;
+    int arg;
+    void *resolvedClass;
+    struct ClassEntryView *next;
+} ClassEntryView;
+
+ClassEntry *lookupClassEntry(ClassKey *key, int arg)
+{
+    ClassEntryView **pool = (ClassEntryView **)classEntryPool;
+    ClassEntryView *e;
+    int idx;
+
+    if (pool == 0) {
+        int i;
+        ClassEntryView **p;
+        pool = xmalloc(0x800, 2);
+        classEntryPool = (ClassEntry **)pool;
+        i = 0x1FF;
+        p = &pool[0x1FF];
+        do {
+            i--;
+            *p = 0;
+            p--;
+        } while (i >= 0);
+    }
+    idx = key->hash & 0x1FF;
+    e = pool[idx];
+    for (; e != 0; e = e->next) {
+        if (key == e->key) {
+            if (arg == e->arg) {
+                break;
+            }
+        }
+    }
+    if (e != 0) {
+        return (ClassEntry *)e;
+    }
+    e = xmalloc(0x10, 2);
+    e->key = key;
+    e->arg = arg;
+    e->next = ((ClassEntryView **)classEntryPool)[idx];
+    e->resolvedClass = 0;
+    ((ClassEntryView **)classEntryPool)[idx] = e;
+    return (ClassEntry *)e;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", lookupArray);
 
