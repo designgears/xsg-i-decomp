@@ -713,7 +713,179 @@ void CardDispPhase(Matrix4 matrix, int kind)
     nmlModelEntry(cardlex_tbl[kind]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpCard);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) HelpCardVec;
+extern const CardHelpPackedVector D_00A4E1E0;
+extern const CardHelpPackedVector D_00A4E1F0;
+
+void CardDispHelpCard(char mode, Matrix4 matrix)
+{
+    HelpCardVec trans1;
+    HelpCardVec trans2;
+
+    ChangeCnt++;
+    trans1 = *(HelpCardVec *)&D_00A4E1E0;
+    trans2 = *(HelpCardVec *)&D_00A4E1F0;
+    switch (mode) {
+    case 0:
+        CardDispComm(matrix, 0);
+        break;
+    case 1:
+        CardDispCtr(matrix);
+        break;
+    case 3:
+        CardDispComm(matrix, 1);
+        break;
+    case 4:
+        CardDispComm(matrix, 1);
+        CardDispPhase(matrix, 2);
+        break;
+    case 6:
+        CardDispField(matrix, &trans1.x);
+        CardDispH1P2P(matrix, &trans1.x);
+        break;
+    case 7:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x10);
+        break;
+    case 8:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x16);
+        break;
+    case 9:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x13);
+        break;
+    case 10:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x15);
+        break;
+    case 11:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x18);
+        break;
+    case 12:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x17);
+        break;
+    case 13:
+        CardDispField(matrix, &trans1.x);
+        CardDispFieldPoint(matrix, &trans1.x, 0x11);
+        break;
+    case 14:
+        CardDispField(matrix, &trans1.x);
+        break;
+    case 2:
+    case 15:
+        CardDispHelpCurrySet(matrix);
+        break;
+    case 16:
+        CardDispHelpSlide1(mode, matrix);
+        CardDispField(matrix, &trans2.x);
+        CardDispFieldPoint(matrix, &trans2.x, 0x11);
+        CardDispFieldPoint(matrix, &trans2.x, 0x18);
+        break;
+    case 17:
+        CardDispHelpSlide1(mode, matrix);
+        CardDispField(matrix, &trans2.x);
+        CardDispShineCurry(matrix, &trans2.x);
+        break;
+    case 18:
+        CardDispHelpSlide1(mode, matrix);
+        CardDispField(matrix, &trans2.x);
+        CardDispFieldPoint(matrix, &trans2.x, 0x17);
+        break;
+    case 22:
+        CardDispHelpSlide2(mode, matrix);
+        CardDispAttr(matrix);
+        break;
+    case 23:
+        CardDispOnce(matrix, 7);
+        break;
+    case 24:
+        CardDispNazo(matrix);
+        CardDispOnce(matrix, 0x1D);
+        break;
+    case 29:
+        CardDispComm(matrix, 3);
+        break;
+    case 5:
+    case 30:
+    case 31:
+    case 32:
+        CardDispTurn(matrix);
+        break;
+    case 33:
+        CardDispTejyun(matrix, 0x1B);
+        break;
+    case 34:
+        CardDispTejyun(matrix, 0x1C);
+        break;
+    case 35:
+    case 36:
+    case 37:
+        CardDispTejyun(matrix, 0x1D);
+        break;
+    case 38:
+    case 39:
+        CardDispTejyun(matrix, 0x1E);
+        break;
+    case 40:
+        CardDispTejyun(matrix, 0x1F);
+        break;
+    case 41:
+    case 42:
+        CardDispTejyun(matrix, 0x20);
+        break;
+    case 43:
+        CardDispTejyun(matrix, 0x21);
+        break;
+    case 44:
+        CardDispGun(matrix);
+        break;
+    case 19:
+    case 20:
+    case 21:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 45:
+    case 46:
+        CardDispHelpSlide2(mode, matrix);
+        break;
+    case 47:
+        CardDispHelpSlide2(mode, matrix);
+        CardDispGuno(matrix);
+        break;
+    case 49:
+        CardDispComm(matrix, 6);
+        break;
+    case 50:
+        CardDispComm(matrix, 7);
+        break;
+    case 51:
+        CardDispComm(matrix, 8);
+        break;
+    case 52:
+        CardDispComm(matrix, 9);
+        break;
+    case 53:
+        CardDispComm(matrix, 10);
+        break;
+    case 54:
+        CardDispComm(matrix, 11);
+        break;
+    case 55:
+        CardDispComm(matrix, 0x19);
+        break;
+    case 56:
+        CardDispComm(matrix, 12);
+        break;
+    case 58:
+        CardDispComm(matrix, 0x1A);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardHelpProc);
 

@@ -3446,7 +3446,7 @@
      ],
      "generated": [
       "0x00a4e160",
-      "0x00a4e168"
+      "0x00a4e170"
      ],
      "generated_by": [
       "CardDispGun"
@@ -3461,8 +3461,32 @@
       "D_00A4E1A0",
       "D_00A4E1B0",
       "D_00A4E1C0",
-      "D_00A4E1D0"
+      "D_00A4E1D0",
+      "D_00A4E1E0",
+      "D_00A4E1F0"
      ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_disp.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a4e200",
+      "0x00a4e2f0"
+     ],
+     "generated": [
+      "0x00a4e200",
+      "0x00a4e2ec"
+     ],
+     "generated_by": [
+      "CardDispHelpCard"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A4E200"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
