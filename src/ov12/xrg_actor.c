@@ -379,7 +379,33 @@ void _SetMotionToXenoActorWithRgMotID(XrgActor *pActor, int rgMotID, int playbac
     ACT_setMotion2(pActor->pXenoAct, rgMotID, playbackParam, playbackParam);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _SetMotUseXenoActor);
+void _SetMotUseXenoActor(XrgActor *pActor, int motion)
+{
+    unsigned int playbackParam;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x233);
+    }
+    if (pActor->pXenoAct != 0) {
+        playbackParam = pActor->smoothPlay != 0;
+        pActor->smoothPlay = 0;
+        if (pActor->loopPlay != 0) {
+            playbackParam |= 8;
+        }
+        pActor->loopPlay = 0;
+        if (pActor->parent == 0) {
+            ACT_initMotion(pActor->pXenoAct);
+        }
+        _SetMotionToXenoActorWithRgMotID(pActor, motion, playbackParam);
+        pActor->motionID = motion;
+        if ((pActor->actorID == 2 && motion == 0x3F) || pActor->actorID == 3) {
+            pActor->motionComaStep = 1;
+        } else {
+            pActor->motionComaStep = 0;
+        }
+        pActor->motionComaStepAccum = 0.0f;
+    }
+}
 
 extern void ACT_allocMatrix(XenoAct *pXenoAct, int flags);
 extern void ACT_setArms(XenoAct *pChildXenoAct, XenoAct *pParentXenoAct,
