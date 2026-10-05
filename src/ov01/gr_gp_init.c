@@ -402,7 +402,59 @@ INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutF4);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutFT4);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutFT4STQ);
+/*
+ * grRotTransPers's output vertex: the screen-space X/Y grPutXxx (siblings,
+ * not decoded here) feed to the GS in 12.4 fixed point (the *16.0f below),
+ * the projected depth as a plain integer, and the out-of-frustum bit
+ * (0x8000) grRotTransPers itself copies from *clipFlags.
+ */
+typedef struct GrScreenVertex {
+    int x;      /* +0x00 */
+    int y;      /* +0x04 */
+    int z;      /* +0x08 */
+    int flags;  /* +0x0c */
+} GrScreenVertex;
+
+typedef struct GrFT4STQ {
+    Vector4 vertex[4];      /* +0x00 */
+    unsigned char col[4];   /* +0x40 */
+    float s[4];             /* +0x44 */
+    float t[4];             /* +0x54 */
+} GrFT4STQ;
+typedef union GrQuad {
+    float f[4];
+    int i[4];
+} GrQuad;
+float grRotTransPers(GrScreenVertex *vertex, const Matrix4 matrix,
+                     const Vector4 *point, int *clipFlags);
+
+void grPutFT4STQ(GrPacket *packet, GrFT4STQ *prim, const Matrix4 matrix)
+{
+    int clip;
+    int *count;
+    int i;
+    int idx;
+    float q;
+
+    clip = 0;
+    count = &packet->count;
+    for (i = 0; i < 4; i++) {
+        q = grRotTransPers((GrScreenVertex *)((GrQuad *)packet->data + packet->count + 2),
+                           matrix, &prim->vertex[i], &clip);
+        ((GrQuad *)packet->data)[packet->count].f[0] = prim->s[i] * q;
+        ((GrQuad *)packet->data)[packet->count].f[1] = prim->t[i] * q;
+        idx = *count;
+        ((GrQuad *)packet->data)[idx].f[2] = q;
+        idx++;
+        *count = idx;
+        ((GrQuad *)packet->data)[idx].i[0] = prim->col[0];
+        ((GrQuad *)packet->data)[*count].i[1] = prim->col[1];
+        ((GrQuad *)packet->data)[*count].i[2] = prim->col[2];
+        ((GrQuad *)packet->data)[*count].i[3] = prim->col[3];
+        *count += 2;
+    }
+    ft4STQNum += 4;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutSpr);
 
@@ -459,19 +511,6 @@ void grRotMatrix(Matrix *destination, Matrix *source, FloatVector3 *angles)
     xglMatrixStackRotZ(angles->z);
     xglMatrixStackSave((float (*)[4])destination);
 }
-
-/*
- * grRotTransPers's output vertex: the screen-space X/Y grPutXxx (siblings,
- * not decoded here) feed to the GS in 12.4 fixed point (the *16.0f below),
- * the projected depth as a plain integer, and the out-of-frustum bit
- * (0x8000) grRotTransPers itself copies from *clipFlags.
- */
-typedef struct GrScreenVertex {
-    int x;      /* +0x00 */
-    int y;      /* +0x04 */
-    int z;      /* +0x08 */
-    int flags;  /* +0x0c */
-} GrScreenVertex;
 
 extern void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix,
                             const Vector4 *vector);
