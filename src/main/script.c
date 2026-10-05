@@ -877,7 +877,113 @@ INCLUDE_ASM("asm/main/nonmatchings/script", DB_light);
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_vmSwitch);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_stageSelect);
+typedef struct DbSsSlider {
+    u8 unmodeled_00[0x14];
+    unsigned short state;
+    unsigned short mode;
+    u8 unmodeled_18[8];
+    float x;
+    float y;
+    u8 unmodeled_28[0x30];
+    int value;
+    u8 unmodeled_5c[4];
+    int max_value;
+} DbSsSlider;
+typedef struct DbSsOwner {
+    u8 unmodeled_00[0xC];
+    unsigned short state_0c;
+    u8 unmodeled_0e[2];
+    u32 flags;
+    u8 unmodeled_14[0x29F60 - 0x14];
+    unsigned short state_29f60;
+} DbSsOwner;
+typedef struct DbSsTask {
+    XglTaskPrefix task;
+    u32 flags;
+    DbSsSlider *slider;
+    u8 unmodeled_18[4];
+    DbSsOwner *owner;
+    int mode;
+    int map;
+    int entry;
+} DbSsTask;
+extern void *TSLIDER_create(int requestedSlot);
+extern char *MapGetName(int map_id);
+extern int MapGetNo(void);
+extern void LoadMap2(int map_id, int event_index);
+extern void TWSYS_setGRPStatus(int group, int status);
+extern char D_004C1E90[];
+
+static void DB_stageSelect(DbSsTask *task)
+{
+    DbSsSlider *slider;
+    char *name;
+
+    if (!(task->flags & 1)) {
+        task->flags |= 1;
+        slider = TSLIDER_create(-1);
+        slider->max_value = 2000;
+        slider->mode |= 0x10;
+        slider->x = 256.0f;
+        slider->y = 224.0f;
+        {
+            int no = MapGetNo();
+            task->slider = slider;
+            slider->value = no;
+        }
+        task->mode = 0;
+        task->entry = 0;
+    }
+    slider = task->slider;
+    switch (task->mode) {
+    case 0:
+        if (slider->value >= 0) {
+            name = MapGetName(slider->value);
+            if (name != 0) {
+                xglFontDebugPrintf(8, 0x20, name);
+            }
+        }
+        if (slider->state == 2) {
+            if (slider->value >= 0) {
+                task->mode = 1;
+                task->map = slider->value;
+                slider = TSLIDER_create(-1);
+                task->slider = slider;
+                slider->x = 256.0f;
+                slider->y = 224.0f;
+                slider->mode |= 0x10;
+                return;
+            }
+            {
+                DbSsOwner *o = task->owner;
+                o->flags &= ~1;
+                o->state_0c = o->state_29f60;
+            }
+            TWSYS_setGRPStatus(0, 0);
+            xglTaskRemove(&task->task);
+            return;
+        }
+        break;
+    case 1:
+        xglFontDebugPrintf(8, 0x20, D_004C1E90);
+        if (slider->state == 2) {
+            int v = slider->value;
+            if (v >= 0) {
+                task->entry = v;
+                LoadMap2(task->map, v);
+            }
+            {
+                DbSsOwner *o = task->owner;
+                o->flags &= ~1;
+                o->state_0c = o->state_29f60;
+            }
+            TWSYS_setGRPStatus(0, 0);
+            xglTaskRemove(&task->task);
+            return;
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_memory);
 
