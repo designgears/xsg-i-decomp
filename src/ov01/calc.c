@@ -1238,7 +1238,40 @@ int calcMoveChk(ObjectTask *unit, int id)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcAtkChk);
+extern short dataPosLineGet(int id);
+int calcA2Chk(ObjectTask *unit);
+int calcLineChk(ObjectTask *unit);
+
+int calcAtkChk(ObjectTask *a, ObjectTask *b, int id)
+{
+    int line;
+    int type;
+
+    line = dataPosLineGet(*(short *)((char *)calcUPGet(a) + 0x44));
+    type = *(unsigned char *)dataTecGet(id) & 3;
+    if (type == 0 && (calcUPGet(b)->flags & 0x100)) {
+        return 0;
+    }
+    if (calcStatGet(b, 1, 0x200) != 0) {
+        return 0;
+    }
+    if (!(*(unsigned *)a->work & 0x40)) {
+        if ((unsigned)line >= 2 && type != 2) {
+            return 0;
+        }
+    } else if (type != 2) {
+        if (calcLineChk(a) == 0) {
+            return 0;
+        }
+        if (calcA2Chk(b) == 0) {
+            return 0;
+        }
+    }
+    if (calcLineChk(b) == 0) {
+        return type == 2;
+    }
+    return 1;
+}
 
 int calcA2Chk(ObjectTask *unit)
 {
