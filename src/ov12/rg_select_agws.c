@@ -1354,7 +1354,70 @@ static void _InitDetermWin(WinInfo *pWinInfo, RgBxx *pBxx, int value0, int value
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DispDetermWindow);
+extern void XrgDispMainFont(int x, int y, const char *pszString, int bright);
+extern const char D_00A56B88[];
+extern const char D_00A56B90[];
+extern const char D_00A56B98[];
+extern const char D_00A56BA0[];
+extern const char D_00A56BA8[];
+typedef struct DetermPic {
+    char pad[0x34];
+    int w;
+    int h;
+} DetermPic;
+
+static void _DispDetermWindow(XrgPaint2D *paint, WinInfo *pWin, SelDat *pSelDat)
+{
+    int apCollects[RG_EQUIP_TYPE_NUM];
+    unsigned int i, j;
+    int x, y, x0, y0, mask, px;
+
+    x = pWin->m_nValue0;
+    y = pWin->m_nValue1;
+    px = x;
+    _disp_pic(paint, pWin->m_pTop[0], x, y);
+    x0 = x;
+    y0 = y;
+    x += ((DetermPic *)pWin->m_pTop[0])->w;
+    _disp_pic(paint, pWin->m_pTop[1], x, y);
+    x = px;
+    y += ((DetermPic *)pWin->m_pTop[1])->h;
+    for (i = 0; i < 8; i++) {
+        DetermPic *l = pWin->m_pSide[0];
+        DetermPic *c = pWin->m_pInner;
+        DetermPic *r = pWin->m_pSide[1];
+        _disp_pic(paint, l, x, y);
+        _disp_pic(paint, c, x + l->w, y);
+        _disp_pic(paint, r, x + l->w + c->w, y);
+        y += c->h;
+    }
+    _disp_pic(paint, pWin->m_pBtm[0], x, y);
+    x += ((DetermPic *)pWin->m_pBtm[0])->w;
+    _disp_pic(paint, pWin->m_pBtm[1], x, y);
+    _disp_pic(paint, pWin->m_pMaru, x0 + 0x119, y0 + 0x82);
+    _disp_pic(paint, pWin->m_pBatu, x0 + 0x119, y0 + 0x9A);
+    x = 0xB8;
+    y = 0xB7;
+    mask = _GetWepSelection(pSelDat, apCollects);
+    _GetSelectCharID(pSelDat);
+    for (j = 0; j < RG_EQUIP_TYPE_NUM; j++) {
+        switch (j) {
+        case 0:
+            XrgDispMainFont(x, y, D_00A56B88, 0);
+            break;
+        case 1:
+            XrgDispMainFont(x, y, D_00A56B90, 0);
+            break;
+        case 2:
+            XrgDispMainFont(x, y, D_00A56B98, 0);
+            break;
+        }
+        XrgDispMainFont(0xE8, y, (const char *)apCollects[j] + 0x350, mask & (1 << j));
+        y += 0x1A;
+    }
+    XrgDispMainFont(0x174, y + 0xC, D_00A56BA0, 0);
+    XrgDispMainFont(0x174, y + 0x24, D_00A56BA8, 0);
+}
 
 extern const char D_00A56BB0[]; /* "pDat->m_apPic[0] != NIL" */
 extern const char D_00A56BC8[]; /* "pDat->m_apPic[1] != NIL" */
