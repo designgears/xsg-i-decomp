@@ -987,7 +987,31 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcMoveChk);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcAtkChk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcA2Chk);
+int calcA2Chk(ObjectTask *unit)
+{
+    ObjectTask **table;
+    ObjectTask *u;
+    int count;
+    int i;
+    unsigned flag;
+
+    if (*(short *)((char *)calcUPGet(unit) + 0x44) == 8) {
+        i = 0;
+        flag = *(unsigned *)unit->work & 0x40;
+        count = unitTblGet(flag != 0, &table);
+        if (count > 0) {
+            do {
+                u = table[i];
+                i++;
+                if (u != 0 && !(*(unsigned *)u->work & 0x80)
+                    && (unsigned)(*(short *)((char *)calcUPGet(u) + 0x44) - 1) < 6) {
+                    return 0;
+                }
+            } while (i < count);
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLineChk);
 
