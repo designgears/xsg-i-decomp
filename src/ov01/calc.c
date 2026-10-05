@@ -1440,7 +1440,63 @@ int calcHitItem(ObjectTask *attacker, CalcHitItemArg *arg, CalcHitItemOut *out)
     return hit;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmgItem);
+extern void calcStatReset(ObjectTask *unit, int category, int mask, int unused);
+
+int calcDmgItem(ObjectTask *attacker, CalcHitItemArg *arg)
+{
+    unsigned char *itm;
+    unsigned short flags;
+    int dmg;
+
+    dmg = 0;
+    itm = dataItmGet(arg->itm);
+    flags = *(unsigned short *)(itm + 0xC);
+    if (flags & 1) {
+        int n = itm[10] * 25;
+
+        dmg = n * 2;
+        if (calcStatGet(arg->unit, 3, 0x80) != 0) {
+            dmg = n * 4;
+            calcStatReset(arg->unit, 3, 0x80, 0);
+        }
+        if (calcStatGet(arg->unit, 0, 8) != 0) {
+            dmg /= 2;
+        }
+        if (calcUPGet(arg->unit)->flags & 0x200) {
+            dmg = -dmg;
+        }
+        if (calcStatGet(arg->unit, 0, 0x10) != 0) {
+            dmg = -dmg;
+        }
+        if (itm[9] & 2) {
+            if (calcUPGet(arg->unit)->flags & 0x1000) {
+                dmg = 0;
+            }
+        }
+    } else if (flags & 2) {
+        int n = itm[10] * 5;
+
+        dmg = n * 2;
+        if (calcStatGet(arg->unit, 3, 0x80) != 0) {
+            dmg = n * 4;
+            calcStatReset(arg->unit, 3, 0x80, 0);
+        }
+        if (calcStatGet(arg->unit, 1, 0x40) != 0) {
+            dmg /= 2;
+        }
+    } else if (flags & 8) {
+        dmg = itm[10];
+        dmg = *(short *)calcUPGet(arg->unit) * dmg / 20;
+    } else if (flags & 0x2000) {
+        dmg = itm[10];
+        dmg = *(short *)calcUPGet(arg->unit) * dmg / 20;
+    } else if (flags & 0x100) {
+        if (itm[10] == 1) {
+            dmg = (short)calcUPGet(arg->unit)->currentHp - 1;
+        }
+    }
+    return dmg;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", tgtFindFirst);
 
