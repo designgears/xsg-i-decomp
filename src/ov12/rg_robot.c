@@ -1253,7 +1253,95 @@ static void _DashVRMainToFollow(RgRobotStatus *status, RgBody *body)
     _BodyPlayMotion(body, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashVRExecCmd);
+extern float atan2f(float y, float x);
+extern float sinf(float x);
+extern float cosf(float x);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+
+static int _DashVRExecCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    RgVector dir;
+    RgVector ofs;
+    void *weapon;
+    int result;
+    int sign;
+    int flag;
+    float rot;
+    float diff;
+    float f;
+    float r;
+    float c;
+    float d;
+
+    result = _AllowDamageCmdNotPetrify(status, body, command);
+    rot = *(float *)&status->scratch1;
+    if (command->type == 3) {
+        _InitTargettingStatus((RgStatus *)status, body, (void *)1);
+        return result | 0x100;
+    }
+    if (command->type == 1) {
+        f = ((float *)command)[0];
+        sign = 1;
+        if (!(f > 0.0f)) {
+            sign = -1;
+            if (!(f < 0.0f)) {
+                sign = 0;
+            }
+        }
+        r = *(volatile float *)&status->scratch1 + sign * 1.5707964f;
+        while (r > 3.1415927f) {
+            r -= 6.2831855f;
+        }
+        while (r < -3.1415927f) {
+            r += 6.2831855f;
+        }
+        rot = r;
+    }
+    if (command->type == 0) {
+        rot = atan2f(((float *)command)[0], ((float *)command)[2]);
+    }
+    if (command->type == 2) {
+        weapon = body->weapon[command->param];
+        if (weapon) {
+            flag = RgWeaponGetControlFlag(weapon) & 7;
+            if ((flag == 2 || flag == 4) && RgWeaponGetShotNum(weapon) > 0.0f) {
+                result = _ExecShotOrAttackCmd(status, body, command);
+                if (result != 0) {
+                    return result;
+                }
+            } else if (status->scratch0 == 0) {
+                _DashVRMainToFollow(status, body);
+            }
+        }
+    }
+    if (command->type == 0xC) {
+        dir[0] = sinf(*(float *)&status->scratch1);
+        dir[1] = 0.0f;
+        dir[2] = cosf(*(float *)&status->scratch1);
+        XrgScaleVector(ofs, (float *)command,
+                       -(dir[0] * ((float *)command)[0] + dir[1] * ((float *)command)[1] + dir[2] * ((float *)command)[2]));
+        XrgAddVector(dir, dir, ofs);
+        rot = atan2f(dir[0], dir[2]);
+        *(float *)&status->scratch1 = rot;
+    }
+    diff = rot - *(float *)&status->scratch1;
+    while (diff > 3.1415927f) {
+        diff -= 6.2831855f;
+    }
+    while (diff < -3.1415927f) {
+        diff += 6.2831855f;
+    }
+    d = diff / 0.2f;
+    c = -12.566371f;
+    if (!(d < c)) {
+        c = 12.566371f;
+        if (!(d > c)) {
+            c = d;
+        }
+    }
+    *(float *)&status->scratch2 += c;
+    return result;
+}
 
 extern void RgGeomRobotSetRotate(RgGeomPoint *point, float rot);
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
