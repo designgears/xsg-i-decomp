@@ -433,7 +433,82 @@ static void _AttackExit(RgRobotStatus *status, RgBody *body)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitAttackStatus);
+typedef struct RgMotionInfoDB RgMotionInfoDB;
+
+typedef struct RgMotionShotInfo RgMotionShotInfo;
+
+extern RgMotionInfoDB *InstanceOfRgMotionInfoDB(void);
+
+extern RgMotionShotInfo *RgMotionInfoDBGet(RgMotionInfoDB *db, int motionNo,
+                                           int charId);
+
+extern void RgWeaponStopLockon(void *weapon);
+
+extern int RgWeaponGetControlFlag(void *weapon);
+
+extern int RgMotionInfoGetActionInTime(int motion, int actionIndex,
+                                       float elapsedTime);
+
+static void _BodyPlayMotion(RgBody *body, int motion);
+
+extern const char D_00A51940[];
+
+static int _ExecCmdInAttack(RgRobotStatus *status, int param, RgBody *body);
+static int _AttackPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
+extern void RgWeaponPlayShotMotion(void *weapon);
+extern int RgWeaponIsTargetting(void *weapon);
+
+static RgRobotStatus *_InitAttackStatus(RgRobotStatus *status, RgBody *body,
+                                        int motion, int weapon, int side)
+{
+    RgMotionShotInfo *info;
+    int action;
+
+    info = RgMotionInfoDBGet(InstanceOfRgMotionInfoDB(), motion, body->charID);
+    if (info == 0) {
+        assert_prog(D_00A51940, D_00A51840, 0x3F1);
+    }
+    _StopAllShotThread(body);
+    if (body->actor == 0) {
+        return 0;
+    }
+    _SetStatus(status, 2, body);
+    status->execCmdMethod = _ExecCmdInAttack;
+    status->passTimeMethod = _AttackPassTime;
+    status->exitMethod = _AttackExit;
+    *(RgMotionShotInfo **)&status->scratchTimer = info;
+    status->scratch1 = weapon;
+    *(int *)&status->unmodeled_10[0] = 1;
+    *(int *)&status->unmodeled_10[4] = 1;
+    status->eSide = side;
+    switch (side) {
+    case 0:
+        status->scratch2 = (int)body->weapon[1];
+        break;
+    case 1:
+        status->scratch2 = (int)body->weapon[0];
+        break;
+    default:
+        status->scratch2 = 0;
+        break;
+    }
+    if (status->scratch2 != 0) {
+        RgWeaponStopLockon((void *)status->scratch2);
+    }
+    _BodyPlayMotion(body, motion);
+    if (weapon != 0) {
+        RgWeaponPlayShotMotion((void *)weapon);
+        if ((RgWeaponGetControlFlag((void *)weapon) & 0x18) == 8
+            && RgWeaponIsTargetting((void *)weapon) != 0) {
+            action = RgMotionInfoGetActionInTime((int)info, 0, 1e8f);
+            if (action != 0) {
+                _StartHomingThread(body->homingThread, body->geometry,
+                                   body->target, *(float *)(action + 4));
+            }
+        }
+    }
+    return status;
+}
 
 static int _AllowDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
 
@@ -471,16 +546,9 @@ static void _HissatuExit(RgRobotStatus *status, RgBody *body)
     RgRobotEffectTermJet(body->effect);
 }
 
-typedef struct RgMotionInfoDB RgMotionInfoDB;
-typedef struct RgMotionShotInfo RgMotionShotInfo;
-extern RgMotionInfoDB *InstanceOfRgMotionInfoDB(void);
-extern RgMotionShotInfo *RgMotionInfoDBGet(RgMotionInfoDB *db, int motionNo,
-                                           int charId);
 static int _HissatuPassTime(RgRobotStatus *status, RgBody *body,
                             float deltaTime);
 static void _HissatuExit(RgRobotStatus *status, RgBody *body);
-static void _BodyPlayMotion(RgBody *body, int motion);
-
 static void _InitStatusHissatu(RgRobotStatus *status, RgBody *body)
 {
     int motionNo = 0x4E;
@@ -521,8 +589,6 @@ static void _ShieldExit(RgRobotStatus *status, RgBody *body)
     }
 }
 
-extern const char D_00A51940[];
-extern void RgWeaponStopLockon(void *weapon);
 static int _ExecCmdInShield(RgRobotStatus *status, int param, RgBody *body);
 static int _ShieldPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
 
@@ -772,8 +838,6 @@ static int _ExecCmdInDrop(RgRobotStatus *status, RgBody *body, RgCmd *command)
     return mask;
 }
 
-extern int RgMotionInfoGetActionInTime(int motion, int actionIndex,
-                                       float elapsedTime);
 static void _InitMovingStatus(RgRobotStatus *status, RgBody *body);
 
 /*
@@ -804,7 +868,6 @@ static int _DropPassTime(RgRobotStatus *status, RgBody *body)
 }
 
 typedef struct RgWeapon RgWeapon;
-extern int RgWeaponGetControlFlag(void *weapon);
 extern int RgWeaponIsAttachedShot(void *weapon);
 
 static int _InitDropStatus(RgStatus *st, RgBody *body, int motion, int eSide)
