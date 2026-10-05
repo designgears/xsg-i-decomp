@@ -118,7 +118,32 @@ int RgPicGetHeight(RgPic *pic)
     return height;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicWrite);
+typedef struct { char b[0x20]; } RgPicName;
+typedef struct { char b[4]; } RgPicWord;
+
+void RgPicWrite(RgPic *pic, int handle)
+{
+    unsigned char buffer[0x400];
+    unsigned char *p;
+    int n;
+
+    if (InstanceOfRgDebugFlags()->flags[3] == 0)
+        return;
+    if (pic == 0)
+        assert_prog(D_00A57310, D_00A57320, 110);
+    *(RgPicWord *)(buffer + 0x20) = *(RgPicWord *)&pic->x;
+    *(RgPicWord *)(buffer + 0x24) = *(RgPicWord *)&pic->y;
+    *(RgPicWord *)(buffer + 0x28) = *(RgPicWord *)&pic->alpha;
+    *(RgPicWord *)(buffer + 0x2c) = *(RgPicWord *)&pic->dark;
+    *(RgPicWord *)(buffer + 0x30) = *(RgPicWord *)&pic->notDraw;
+    *(RgPicName *)buffer = *(RgPicName *)pic;
+    p = buffer + 0x34;
+    n = RG_PIC_BINARY_SIZE - 0x34 - 1;
+    do {
+        *p++ = 0;
+    } while (n-- > 0);
+    XrgHostWrite(handle, buffer, RG_PIC_BINARY_SIZE);
+}
 
 int RgPicBinarySize(void)
 {
