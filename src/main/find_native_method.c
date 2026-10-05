@@ -361,7 +361,42 @@ void getClassFromSignature(const char *signature)
     classFromSig(&cursor);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", allocStaticField);
+typedef struct SFField {
+    u8 pad[0xC];
+    int size;
+    int value;
+} SFField;
+
+static void allocStaticField(char *cls)
+{
+    int n;
+    SFField *f;
+    unsigned int total;
+    char *mem;
+    int sz;
+
+    n = *(unsigned short *)(cls + 0x32);
+    if (n != 0) {
+        f = *(SFField **)(cls + 0x1C);
+        total = 0;
+        while (--n >= 0) {
+            sz = (unsigned int)(f->size + 3) >> 2;
+            sz *= 4;
+            total += sz;
+            f->size = ((int)(total - 1) / sz) * sz;
+            f = (SFField *)((char *)f + 0x14);
+        }
+        mem = xmalloc(total, 10);
+        f = *(SFField **)(cls + 0x1C);
+        n = *(unsigned short *)(cls + 0x32);
+        while (--n >= 0) {
+            total = f->size;
+            f->size = f->value;
+            f->value = (int)(mem + total);
+            f = (SFField *)((char *)f + 0x14);
+        }
+    }
+}
 
 int sizeofDescripter(u8 **cursor);
 
