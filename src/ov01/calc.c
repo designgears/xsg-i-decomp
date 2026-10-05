@@ -1601,7 +1601,21 @@ void calcStatReset(ObjectTask *unit, int category, int mask, int unused)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatDefTurnGet);
+extern signed char turn_1[8][16];
+
+int calcStatDefTurnGet(ObjectTask *unit, int category, int mask)
+{
+    int turn;
+    int idx;
+
+    idx = calcStatBit2Idx(mask);
+    turn = turn_1[category][idx];
+    if (category == 7 && (mask & 3)) {
+        turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 2;
+        turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 4;
+    }
+    return turn;
+}
 
 /*
  * The inverse of calcStatIdx2Bit below: the index of statBit's lowest set bit
