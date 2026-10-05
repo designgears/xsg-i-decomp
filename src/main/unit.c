@@ -650,7 +650,58 @@ void Java_xeno_Unit_sclX__IFZ(JThread *thread, void *arguments,
     UNIT_sclX(0, thread, arguments, failure_result);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_sclY);
+static void UNIT_sclY(int mode, JThread *thread, void *arguments_,
+                      u32 *failure_result)
+{
+    UnitSclCall *arguments = arguments_;
+    JavaField *peer_field;
+    JavaField *algorithm_field;
+    UnitPeer *peer;
+    float *scale_source;
+    UnitSequenceEntry *entry;
+    u8 *scale;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Unit,
+                                  loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + peer_field->offset);
+    algorithm_field = lookupClassField(classJava_xeno_Unit,
+                                       loadConstString(D_004D16F8, -1), 0);
+    scale_source = &peer->scale_x;
+    if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
+        scale_source = defaultOffset_0043C1D0;
+
+    entry = &unitSequence[peer->serial];
+    *(void **)((u8 *)entry + 0x30) = SEQ_scaleUnit;
+    entry->state |= 0x40;
+    scale = (u8 *)entry + 0x1b8;
+
+    switch (mode) {
+    case 0:
+        *(int *)(scale + 0x14) = arguments->first.i;
+        *(float *)(scale + 0x34) = arguments->second.f + scale_source[1];
+        wait = arguments->wait;
+        break;
+    case 1:
+        *(int *)(scale + 0x14) = -1;
+        *(float *)(scale + 0x34) = arguments->first.f + scale_source[1];
+        *(float *)(scale + 0x44) = arguments->second.f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        unit_scale_wait((UnitScaleThread *)thread, peer);
+    }
+}
 
 void Java_xeno_Unit_sclY__FFZ(JThread *thread, void *arguments,
                               u32 *failure_result)
