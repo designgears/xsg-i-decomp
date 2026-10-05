@@ -151,7 +151,42 @@ static void GameCFSoundReload(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuPurge);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuReload);
+extern u8 GameCFSoundMenuPurgeFlag;
+extern int MenuDrillCall;
+extern int UmnSimulationNo;
+unsigned int GameResourceGetFreeAddr(void);
+void RES_GetMapEnvSeName(char *name);
+const char *RES_GetEnemySeName(int index);
+void xglSoundSequenceNormal2(int channel, int volume);
+
+void GameCFSoundMenuReload(void)
+{
+    char name[64];
+    int i = 0;
+    unsigned int addr;
+    const char *se;
+    int bank;
+
+    addr = GameResourceGetFreeAddr();
+    xglSoundSendSwd(0, -5);
+    xglSoundSendSmd2(0, 4);
+    RES_GetMapEnvSeName(name);
+    xglSoundLoadEffect(name, (void *)addr, 3);
+    do {
+        if (((GameCFSoundMenuPurgeFlag >> i) & 1) && UmnSimulationNo == 0 && MenuDrillCall == 0) {
+            xglSoundSequenceNormal2(i, 0x7F);
+        }
+        i++;
+    } while (i < 8);
+    i = 4;
+    while (1) {
+        se = RES_GetEnemySeName(i);
+        bank = i + 4;
+        i++;
+        if (se == 0 || *se == 0) break;
+        xglSoundLoadEffect(se, (void *)addr, bank);
+    }
+}
 
 void GameStateSave(void);
 void sefPushEffect(void);
