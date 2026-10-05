@@ -19,7 +19,113 @@ static int device_check_sync(void)
     return status;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/logo", hdd_check);
+extern int xglHddMount(void);
+extern int xglHddActivate(int state);
+typedef struct HddChkReq {
+    int card;
+    void *work;
+    int size;
+} HddChkReq;
+typedef struct HddMsgTbl {
+    char *p[3];
+} HddMsgTbl;
+extern int xglHddMcExist(HddChkReq *req);
+extern int xglHddMcCheck(HddChkReq *req);
+extern void xglFontPrint(int x, int y, int color, const char *text);
+extern void xglSoundEffectNormalDirect(int effect_id);
+extern PadPrefix PadData;
+extern char D_00A10D30[];
+extern char D_00A10E38[];
+extern char D_00A10E98[];
+extern HddMsgTbl D_00A11048;
+extern HddMsgTbl D_00A11148;
+extern char D_00A11158[];
+extern char D_00A11250[];
+extern char D_00A112F0[];
+extern char D_00A11338[];
+extern char carddata_0[];
+
+static int hdd_check(void)
+{
+    HddMsgTbl msgs;
+    HddMsgTbl infos;
+    HddChkReq req;
+    char *msg;
+    char *info;
+    int ret;
+    void *work;
+
+    ret = xglHddMount();
+    if (ret != -1) {
+        if (ret == -99)
+            return 1;
+        goto check5;
+    loop5:
+        device_check_sync();
+    check5:
+        if (ret == -5) {
+            xglFontPrint(0x10, 0x40, -1, D_00A10D30);
+            if (!(PadData.half_2a & 0x20))
+                goto loop5;
+            xglSoundEffectNormalDirect(1);
+        }
+        device_check_sync();
+        if (ret == -3) {
+            msg = D_00A10E38;
+            info = D_00A10E98;
+        } else {
+            work = WorkEnd;
+            msgs = D_00A11048;
+            infos = D_00A11148;
+            req.card = -1;
+            req.work = work;
+            if (xglHddMcExist(&req) > 0)
+                return 0;
+            req.size = 0x163B0;
+            req.work = carddata_0;
+            ret = xglHddMcCheck(&req);
+            if (ret == -1) {
+                for (;;) {
+                    xglFontPrint(0x10, 0x40, -1, D_00A11158);
+                    if (PadData.half_2a & 0x20)
+                        break;
+                    device_check_sync();
+                }
+                xglSoundEffectNormalDirect(1);
+                device_check_sync();
+                xglHddActivate(2);
+                return 1;
+            }
+            if (ret < -1) {
+                msg = msgs.p[-ret - 2];
+                info = infos.p[-ret - 2];
+            } else
+                return 0;
+        }
+        for (;;) {
+            xglFontPrint(0x10, 0x40, -1, msg);
+            xglFontPrintDirectOT(-1, D_00A11250);
+            if (PadData.half_2a & 0x20) {
+                xglSoundEffectNormalDirect(1);
+                break;
+            }
+            if (PadData.half_2a & 0x40) {
+                xglSoundEffectNormalDirect(2);
+                device_check_sync();
+                while (xglFontPrint(0x10, 0x40, -1, D_00A112F0),
+                       xglFontPrintDirectOT(-1, info),
+                       xglFontPrintDirectOT(-1, D_00A11338),
+                       !(PadData.half_2a & 0x20))
+                    device_check_sync();
+                xglSoundEffectNormalDirect(1);
+                break;
+            }
+            device_check_sync();
+        }
+        device_check_sync();
+    }
+    return 1;
+}
 
 extern int xglMcRequest(int port, int type, void *param, int *result);
 extern void xglFontPrint(int x, int y, int color, const char *text);
