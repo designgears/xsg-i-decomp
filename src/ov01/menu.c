@@ -823,7 +823,23 @@ void menuStatSprite2(int packet, int x, int y, int w, int h, int u0, int v0, int
     grPutSpr(packet, &spr, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSpriteRGB);
+void menuStatSpriteRGB(int packet, int x, int y, int w, int h, int u, int v, unsigned char *col)
+{
+    MenuSprPrim spr;
+
+    spr.z0 = 16777212.0f;
+    spr.x0 = x;
+    spr.y0 = y;
+    spr.x1 = x + w;
+    spr.y1 = y + h;
+    spr.z1 = 16777212.0f;
+    spr.u0 = u;
+    spr.v0 = v;
+    spr.u1 = u + w + 1;
+    spr.v1 = v + h + 1;
+    __builtin_memcpy(&spr.col, col, 4);
+    grPutSpr(packet, &spr, 0);
+}
 
 void menuStatSprite2RGB(int packet, int x, int y, int flip, int w, int u, int r, int u2, int g, unsigned char *col)
 {
