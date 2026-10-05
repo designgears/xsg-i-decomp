@@ -3,27 +3,36 @@
 
 INCLUDE_ASM("asm/main/nonmatchings/wind_test", InitTest_002D9430);
 
-INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveCamera);
-
 typedef struct {
     char pad0[0x28];
     unsigned short trg;
-    char pad2a[0x66 - 0x2A];
+    unsigned short lvl;
+    char pad2c[0x64 - 0x2C];
+    signed char rx;
+    signed char ry;
     signed char lx;
     signed char ly;
     char pad68[0xD0 - 0x68];
 } WindPad;
+
 extern WindPad PadData;
+
+extern float cry_004DC61C;
+
+extern double cos(double);
+
+extern double sin(double);
+
+extern void ppNextStart(void *);
+
+extern void ppNextEnd(void *);
+
+INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveCamera);
+
 extern float wpos[];
 extern float D_004D8228;
 extern float D_004D822C;
 extern volatile float D_004D8230;
-extern float cry_004DC61C;
-extern double cos(double);
-extern double sin(double);
-extern void ppNextStart(void *);
-extern void ppNextEnd(void *);
-
 static void MoveWind(void)
 {
     float x;
