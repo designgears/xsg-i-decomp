@@ -987,7 +987,51 @@ static void _BodySetTarget(RgBody *body, void *target)
     body->target = target;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyDropWeapon);
+extern const char D_00A51A88[];
+extern float RgWeaponGetWeight(void *weapon);
+extern void *RgWeaponGetActor(void *weapon);
+extern void XrgActorDettachChild(void *parent, void *child);
+extern void RgWeaponSetFree(void *weapon);
+extern void RgWeaponDisposeLockon(void *weapon);
+extern void RgWeaponSetdown(void *weapon);
+extern void *DisposeRgWeaponNotActor(void *weapon);
+extern void *CreateRgDropWeapon(void *actor);
+extern void RgShotThreadInit(void *thread, void *weapon, int a, int b);
+
+static int _BodyDropWeapon(RgBody *body, int eType)
+{
+    void *weapon;
+    RgGeomPoint *geometry;
+    void *actor;
+    void *child;
+    void *thread;
+
+    if (body == 0) {
+        assert_prog(D_00A51A68, D_00A51840, 2900);
+    }
+    if ((unsigned int)eType >= RG_EQUIP_TYPE_NUM) {
+        assert_prog(D_00A51A88, D_00A51840, 2901);
+    }
+    weapon = body->weapon[eType];
+    if (weapon != 0) {
+        geometry = body->geometry;
+        RgGeomPointSetWeight(geometry, RgGeomPointGetWeight(geometry) - RgWeaponGetWeight(weapon));
+        actor = body->actor;
+        child = RgWeaponGetActor(weapon);
+        if (actor != 0 && child != 0) {
+            XrgActorDettachChild(actor, child);
+        }
+        RgWeaponShotStop(weapon);
+        RgWeaponSetFree(weapon);
+        RgWeaponDisposeLockon(weapon);
+        RgWeaponSetdown(weapon);
+        CreateRgDropWeapon(DisposeRgWeaponNotActor(weapon));
+        *(int *)&body->weapon[eType] = 0;
+        thread = body->shotThread[eType];
+        RgShotThreadInit(thread, 0, -1, 0);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyEquipWeapon);
 
