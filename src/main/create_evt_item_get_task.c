@@ -184,7 +184,32 @@ static int Pow(int base, int exponent)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", HexToStr);
+extern char *strno[];
+extern char *strcat(char *, const char *);
+
+int HexToStr(int n, char *buf)
+{
+    int digits;
+    int i;
+
+    digits = 1;
+    if (n < 0)
+        return 1;
+    for (i = 1; i < 16; i++) {
+        if (n < Pow(10, i))
+            break;
+        digits++;
+    }
+    if (digits == 1) {
+        strcat(buf, strno[n % 10]);
+        return 1;
+    }
+    for (i = digits; i > 1; i--) {
+        strcat(buf, strno[(n / Pow(10, i - 1)) % 10]);
+    }
+    strcat(buf, strno[n % 10]);
+    return digits;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", InitItemBox);
 
