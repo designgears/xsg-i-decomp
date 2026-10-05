@@ -153,7 +153,46 @@ INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuPurge);
 
 INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuReload);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", Game_Data_Push);
+void GameStateSave(void);
+void sefPushEffect(void);
+typedef struct GDPSub { u8 pad[0x160]; u32 bits[32]; } GDPSub;
+typedef struct GameActorCopy { u64 w[0xA70 / 8]; } GameActorCopy;
+
+void Game_Data_Push(void)
+{
+    extern GameActorCopy actor[];
+    GameActorCopy *src = actor;
+    u8 *gs = (u8 *)&GameLoopState;
+    short i;
+    short k;
+    int j;
+    u8 *map;
+    u32 *bits;
+    int *tbl;
+    u8 *g2;
+    GameActorCopy *d;
+
+    for (i = 0; i < 0x40; i++) {
+        ((GameActorCopy *)(gs + 0x250))[i] = src[i];
+    }
+    GameCFSoundPurge();
+    GameStateSave();
+    sefPushEffect();
+    for (i = 0; i < 0x20; i++) {
+        u32 *w = (u32 *)&GameLoopState;
+        w[i + 0x59] = 0;
+    }
+    g2 = (u8 *)&GameLoopState;
+    map = *(u8 **)(*(u8 **)(g2 + 0x54) + 4);
+    tbl = (int *)(map + 0xB0);
+    for (i = 0; i < *(int *)(map + 0x44); i++) {
+        u8 *e = map + tbl[i];
+        if (*(u32 *)(e + 0x20) & 8) {
+            int id = *(int *)(e + 0x2c);
+            ((GDPSub *)((u32 *)&GameLoopState + 1))->bits[id / 32] |= 1 << id;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game", Game_Data_Pop);
 
