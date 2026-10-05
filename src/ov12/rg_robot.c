@@ -1092,7 +1092,41 @@ static void _AdvanceGeomPassTime(RgBody *body, float deltaTime)
     RgGeomPointMovePos((RgGeomPoint *) advanceGeom, position);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyAutoHomingPassTime);
+static void _BodyAutoHomingPassTime(RgBody *body, float deltaTime)
+{
+    char *spec;
+    RgGeomPoint *geometry;
+    unsigned int flags;
+    unsigned int i;
+    int off;
+    unsigned int mask;
+    float range;
+    char *rangeBase;
+    char *maskBase;
+
+    if (body == 0) {
+        assert_prog(D_00A51A68, D_00A51840, 0xC9E);
+    }
+    flags = body->flags;
+    spec = (char *)body->spec;
+    geometry = body->geometry;
+    if (flags & 2) {
+        body->flags = flags & ~2;
+        return;
+    }
+    i = 0;
+    maskBase = spec + 0x10;
+    rangeBase = spec + 0xC;
+    for (off = 0x30; i < 2; i++) {
+        range = *(float *)(rangeBase + off);
+        mask = *(unsigned int *)(maskBase + off);
+        off += 8;
+        if (range > 0.0f && mask != 0 && (body->autoHomingEnv & mask) == mask) {
+            RgRobSubHoming(geometry, (RgGeomPoint *)body->target, range, deltaTime);
+            body->flags |= 1;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodyPassTime);
 
