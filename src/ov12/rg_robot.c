@@ -613,7 +613,28 @@ static void _InitBreakingStatus(RgStatus *rs, RgBody *body)
     _BodyPlayMotion(body, 0x14);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashExecCmd);
+static int _InitDashVRStatus();
+
+static int _DashExecCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result;
+    RgVector dir;
+
+    result = _AllowDamageCmd(status, body, command);
+    if (*(int *)&status->unmodeled_1c[0x18] != 0 && command->type == 6) {
+        XrgCopyVector(dir, (float *)status->unmodeled_10);
+        if (_InitDashVRStatus(status, body, (RgCmd *)dir) != 0) {
+            result |= 4;
+        }
+    }
+    if (command->type == 2) {
+        result = _ExecShotOrAttackCmd(status, body, command);
+        if (result != 0) {
+            return result;
+        }
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashPassTime);
 
