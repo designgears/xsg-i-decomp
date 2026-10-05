@@ -790,18 +790,40 @@ INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuActCurPut);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSprite);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSprite2);
-
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSpriteRGB);
-
 typedef struct { unsigned char c[4]; } MenuSprCol;
+
 typedef struct {
     float x0, y0, z0, pad0;
     float x1, y1, z1, pad1;
     MenuSprCol col;
     short u0, u1, v0, v1;
 } MenuSprPrim;
+
 extern void grPutSpr(int packet, MenuSprPrim *spr, int flag);
+
+extern MenuSprCol D_00A46C10;
+
+void menuStatSprite2(int packet, int x, int y, int w, int h, int u0, int v0, int u1, int v1)
+{
+    MenuSprPrim spr;
+    union { MenuSprCol c; int i; } col;
+
+    col.c = D_00A46C10;
+    spr.u0 = u0;
+    spr.x0 = x;
+    spr.y0 = y;
+    spr.v0 = v0;
+    spr.z0 = 16777212.0f;
+    spr.x1 = x + w;
+    spr.y1 = y + h;
+    spr.z1 = 16777212.0f;
+    spr.u1 = u1;
+    spr.v1 = v1;
+    *(int *)&spr.col = col.i;
+    grPutSpr(packet, &spr, 0);
+}
+
+INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSpriteRGB);
 
 void menuStatSprite2RGB(int packet, int x, int y, int flip, int w, int u, int r, int u2, int g, unsigned char *col)
 {
