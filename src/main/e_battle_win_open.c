@@ -359,4 +359,30 @@ void WindowSPKeepSelectCheck(WindowSPKeepBuffer keep)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSetSelect);
+void WindowSPSetSelect(WindowSPCursor *cursor, WindowSPKeepBuffer keep)
+{
+    unsigned char k4;
+
+    if (WindowSPSelect((SPSel *)cursor, 0) < 0) return;
+    if (cursor->item_count == 0) {
+        memset(keep, 0, 5);
+        return;
+    }
+    if (cursor->item_count - 1 < keep[1]) {
+        keep[1] = cursor->item_count - 1;
+        if ((signed char)cursor->unmodeled_22[1] - 1 < keep[3]) {
+            keep[3] = (signed char)cursor->unmodeled_22[1] - 1;
+        }
+        if ((signed char)cursor->unmodeled_22[0] == 2) {
+            keep[2] = keep[1] & 1;
+        }
+        k4 = keep[4];
+        if ((signed char)cursor->unmodeled_25[0] < k4) {
+            keep[4] = k4 - 1;
+        }
+    }
+    cursor->selected_index = keep[1];
+    cursor->visible_top = keep[2];
+    cursor->visible_bottom = keep[3];
+    cursor->current_row = keep[4];
+}
