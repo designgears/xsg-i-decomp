@@ -419,7 +419,35 @@ INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicListWrite);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", CreateRgPicListFromBinary);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicListRead);
+typedef struct { char b[4]; } RgPicLW;
+typedef union { unsigned char b[0x408]; RgPicLW w[0x102]; unsigned int n[0x102]; } RgPicBuf;
+
+RgPicList *RgPicListRead(int handle, RgBxx *bxx)
+{
+    RgPicBuf u;
+    RgPicList *list;
+    unsigned int i;
+    RgPic *pic;
+
+    extern int XrgHostRead(int handle, void *buffer, int size);
+
+    if (InstanceOfRgDebugFlags()->flags[3] != 0) {
+        i = 0;
+        list = CreateRgPicList(bxx);
+        XrgHostRead(handle, u.b, _BinarySizePicList());
+        u.w[0x100] = u.w[0];
+        *(RgPicLW *)&list->ofsX = u.w[1];
+        *(RgPicLW *)&list->ofsY = u.w[2];
+        u.w[0x101] = u.w[3];
+        for (i = 0; i < u.n[0x100]; i++) {
+            pic = RgPicRead(handle, bxx);
+            if (pic != 0)
+                list->pics[list->m_uNum++] = pic;
+        }
+        return list;
+    }
+    return 0;
+}
 
 int RgPicListGetOfsX(RgPicList *pList)
 {
