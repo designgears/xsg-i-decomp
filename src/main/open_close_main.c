@@ -16,11 +16,8 @@ typedef struct OpenCloseCallbacks {
 /* Four original function pointers: open subtype 00/01, close 00/00. */
 extern OpenCloseCallbacks D_004C2FD0;
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", OpenSubType00);
-
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", CloseSubType00);
-
 extern void endPrintExtFunc(int work, int mode, void *descriptor);
+
 typedef struct OpenSub01Packet {
     short x;
     short y;
@@ -29,6 +26,7 @@ typedef struct OpenSub01Packet {
     short h;
     unsigned char r, g, b, a;
 } OpenSub01Packet;
+
 typedef struct OpenSub01Ctrl {
     unsigned char pad0[4];
     short x;
@@ -42,6 +40,66 @@ typedef struct OpenSub01Ctrl {
     unsigned char pad13;
     OpenSub01Packet packet[1];
 } OpenSub01Ctrl;
+
+extern const float D_004D7D40;
+extern const float D_004D7D44;
+extern const float D_004D7D48;
+extern float xglCos(float angle);
+extern float xglSin(float angle);
+
+static void OpenSubType00(OpenSub01Ctrl *c)
+{
+    OpenSub01Packet *p;
+    int i;
+    int t;
+    float ft;
+    float s;
+    float a;
+    int x0, x1, y0, y1;
+    int alpha;
+
+    p = c->packet;
+    t = 11 - c->frame;
+    ft = t;
+    alpha = t * 5 + 10;
+    for (i = 0; i < 3; i++) {
+        s = i;
+        a = ft * D_004D7D40;
+        x0 = (c->x + c->w / 2) - (c->w / 2) * xglCos(a);
+        x1 = (c->x + c->w / 2) + (c->w / 2) * xglCos(a);
+        a = ft * D_004D7D44;
+        x0 = x0 - (c->w / 2) * (s * D_004D7D48) * xglSin(a);
+        x1 = x1 + (c->w / 2) * (s * D_004D7D48) * xglSin(a);
+        a = ft * D_004D7D40;
+        y0 = (c->y + c->h / 2) - (c->h / 2) * xglCos(a);
+        y1 = (c->y + c->h / 2) + (c->h / 2) * xglCos(a);
+        a = ft * D_004D7D44;
+        y0 = y0 - (c->h / 2) * (s * D_004D7D48) * xglSin(a);
+        y1 = y1 + (c->h / 2) * (s * D_004D7D48) * xglSin(a);
+        p->w = x1 - x0;
+        p->work = c->work;
+        p->x = x0;
+        p->y = y0;
+        p->r = 0x80;
+        p->b = 0x80;
+        p->g = 0x80;
+        p->h = y1 - y0;
+        if (i == 0) {
+            p->a = 0x40;
+        } else {
+            p->a = alpha;
+        }
+        endPrintExtFunc(p->work, 9, p);
+        p++;
+    }
+    if (t == 0) {
+        c->phase = -1;
+    } else {
+        c->frame++;
+    }
+}
+
+INCLUDE_ASM("asm/main/nonmatchings/open_close_main", CloseSubType00);
 
 static void OpenSubType01(OpenSub01Ctrl *c)
 {
