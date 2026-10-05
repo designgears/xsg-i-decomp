@@ -165,7 +165,53 @@ INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSet);
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPItemChange);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSelectJump);
+typedef struct SPJ {
+    char pad0[0x14];
+    signed char mode;
+    signed char n;
+    char pad16[5];
+    int active;
+    char pad20[1];
+    signed char v21;
+    char pad22;
+    unsigned char v23;
+    signed char top;
+    char pad25[3];
+    short cur;
+} SPJ;
+
+void WindowSPSelectJump(SPJ *w, int sel) {
+    int cur, n, top;
+    if (w->active == 0) return;
+    cur = w->cur;
+    if (cur == sel) return;
+    if (w->mode != 1) return;
+    if (sel == 0) {
+        w->top = 0;
+        w->v21 = 0;
+        w->cur = 0;
+        return;
+    }
+    n = w->n;
+    if (cur - sel >= n) goto reset;
+    top = w->top;
+    if (sel - top >= n) {
+        int m = w->v23;
+        w->cur = sel;
+        w->top = sel - (unsigned char)w->n + 1;
+        w->v21 = m - 1;
+        return;
+    }
+    if (sel < top) {
+reset:
+        w->v21 = 0;
+        w->top = sel;
+        w->cur = sel;
+        return;
+    }
+    w->cur = sel;
+    w->v21 = sel - (unsigned char)w->top;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPMain);
 
