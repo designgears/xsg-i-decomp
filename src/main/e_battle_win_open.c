@@ -242,7 +242,163 @@ void WindowDXSet(WindowDX *window)
     window->color_r = 0x80;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowDXMain);
+void endSpriteSet(void *sprite, int a);
+void eTagFontSet(void *tag, int tag_word);
+void eTagFontMain(void *tag);
+void eRibbonSet(void *ribbon, int a);
+void eRibbonMain(void *ribbon);
+void OpenCloseMain(void *oc);
+typedef struct { short x; short y; int z; short w; short h; } DXRect;
+typedef struct DXWin DXWin;
+struct DXWin {
+    DXRect r;                     /* 0x00 */
+    int tag;                      /* 0x0C */
+    unsigned char state;          /* 0x10 */
+    unsigned char ribbon;         /* 0x11 */
+    unsigned char p12[2];
+    void (*cb)(DXWin *, void *);  /* 0x14 */
+    void *arg;                    /* 0x18 */
+    unsigned char p1c[4];
+    DXRect r20;                   /* 0x20 */
+    unsigned char p2c[0x10];
+    unsigned char oc[4];          /* 0x3C */
+    DXRect r40;                   /* 0x40 */
+    signed char oc4c;             /* 0x4C */
+    unsigned char oc4d;           /* 0x4D */
+    unsigned char p4e[0x32];
+    unsigned char font[4];        /* 0x80 */
+    short fx;                     /* 0x84 */
+    short fy;                     /* 0x86 */
+    int fz;                       /* 0x88 */
+    unsigned char fc[4];          /* 0x8C */
+    unsigned char p90[0x10];
+    DXRect rb;                    /* 0xA0 */
+    unsigned char pac[0x64];
+    DXRect rb2;                   /* 0x110 */
+    unsigned char p11c[0xC];
+    struct { unsigned char c[4]; unsigned char pad[8]; } col[6]; /* 0x128 */
+    unsigned char p170[0x10];
+    unsigned char sprite[0x10];   /* 0x180 */
+    short s190;                   /* 0x190 */
+};
+
+void WindowDXMain(DXWin *w)
+{
+    unsigned char st = w->state;
+    int s;
+
+    switch (st & 0xF) {
+    case 0:
+        break;
+    case 1:
+    case 0x11:
+        s = (signed char)st;
+        w->state = 0;
+        if (w->cb != 0) {
+            w->cb(w, w->arg);
+        }
+        w->r40.x = w->r.x;
+        w->r40.y = w->r.y;
+        w->r40.z = w->r.z;
+        w->r40.w = w->r.w;
+        w->r40.h = w->r.h;
+        w->s190 = 0x609;
+        w->state = s;
+        w->oc4c = 0;
+        w->oc4d = 0;
+        endSpriteSet(w->sprite, 0xFF);
+        eTagFontSet(w->font, w->tag);
+        eRibbonSet(&w->rb, 1);
+        eRibbonSet(&w->rb2, 1);
+        w->col[3].c[0] = 0x20;
+        w->col[2].c[0] = 0x20;
+        w->col[1].c[0] = 0x20;
+        w->col[0].c[0] = 0x20;
+        w->col[5].c[0] = 0x20;
+        w->col[4].c[0] = 0x20;
+        w->col[3].c[1] = 0xF;
+        w->col[2].c[1] = 0xF;
+        w->col[1].c[1] = 0xF;
+        w->col[0].c[1] = 0xF;
+        w->col[5].c[1] = 0x34;
+        w->col[4].c[1] = 0x34;
+        w->col[3].c[2] = 0xA;
+        w->col[2].c[2] = 0xA;
+        w->col[1].c[2] = 0xA;
+        w->col[0].c[2] = 0xA;
+        w->col[5].c[2] = 0x40;
+        w->col[4].c[2] = 0x40;
+        w->col[2].c[3] = 0x30;
+        w->col[0].c[3] = 0x30;
+        w->col[3].c[3] = 0x0;
+        w->col[1].c[3] = 0x0;
+        w->col[5].c[3] = 0x60;
+        w->col[4].c[3] = 0x60;
+        if (w->cb != 0) {
+            w->cb(w, w->arg);
+        }
+        w->state = 2;
+    case 2:
+        OpenCloseMain(w->oc);
+        if (w->oc4c >= 0) {
+            break;
+        }
+        w->state = 3;
+    case 3:
+        w->r20.x = w->r.x;
+        w->r20.y = w->r.y;
+        w->r20.w = w->r.w;
+        w->r20.h = w->r.h;
+        w->r20.z = w->r.z;
+        endPrintExtFunc(w->r.z, 1, &w->r20);
+        if (w->tag != 0) {
+            w->rb.x = w->r.x;
+            w->rb.y = w->r.y - 0xD;
+            w->rb.z = w->r.z;
+            w->rb.w = w->r.w - 2;
+            w->rb.h = 0xE;
+            eRibbonMain(&w->rb);
+            w->fx = w->r.x + 8;
+            w->fy = w->r.y - 0xE;
+            w->fz = w->r.z + 2;
+            w->fc[3] = 0x80;
+            w->fc[1] = 0x80;
+            w->fc[2] = 0x80;
+            w->fc[0] = 0x80;
+            eTagFontMain(w->font);
+        }
+        if (w->ribbon == 0) {
+            w->rb2.x = w->r20.x + 3;
+            w->rb2.y = w->r20.y + 3;
+            w->rb2.z = w->r20.z;
+            w->rb2.w = w->r20.w - 6;
+            w->rb2.h = w->r20.h - 6;
+            eRibbonMain(&w->rb2);
+        }
+        if (w->cb != 0) {
+            w->cb(w, w->arg);
+        }
+        break;
+    case 4:
+        w->oc4d = 0x10;
+        w->r40.x = w->r.x;
+        w->r40.y = w->r.y;
+        w->r40.z = w->r.z;
+        w->r40.w = w->r.w;
+        w->r40.h = w->r.h;
+        w->oc4c = 0;
+        if (w->cb != 0) {
+            w->cb(w, w->arg);
+        }
+        w->state = 5;
+    case 5:
+        OpenCloseMain(w->oc);
+        if (w->oc4c < 0) {
+            w->state = 0xFF;
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWModeExSet);
 
