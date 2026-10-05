@@ -581,7 +581,7 @@ static char *command_player(int command, char *cursor, int mode)
     return cursor;
 }
 
-extern void GameResourceAlloc(int a, int b);
+extern int GameResourceAlloc(int a, int b);
 
 extern int GameResourceRealloc(int resource, int size);
 
