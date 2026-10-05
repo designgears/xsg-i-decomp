@@ -1345,7 +1345,20 @@ void calcSplineInit(CalcSpline *spline, int start, int end, int duration)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSpline);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLinerSub);
+typedef struct CalcLinerVec {
+    float x, y, z, w;
+} CalcLinerVec;
+
+void calcLinerSub(float t, CalcLinerVec **list, float *out, int idx)
+{
+    CalcLinerVec s[2];
+
+    s[0] = (*list)[idx];
+    s[1] = (*list)[idx + 1];
+    out[0] = s[0].x + (s[1].x - s[0].x) * t;
+    out[1] = s[0].y + (s[1].y - s[0].y) * t;
+    out[2] = s[0].z + (s[1].z - s[0].z) * t;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBezierSub);
 
