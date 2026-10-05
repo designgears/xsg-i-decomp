@@ -294,7 +294,37 @@ void Java_xeno_Camera_transSPL__aFIII(JavaEnvironment *environment,
     CAMERA_transSPL(1, environment, request, result);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF);
+void Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF(JavaEnvironment *environment,
+                                                     union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    SceneObject object;
+    unsigned char *camera_bytes;
+    float v[3];
+
+    (void)environment;
+    camera = args[0].p;
+    object = args[1].p;
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    camera_bytes = (unsigned char *)camera;
+    xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_CONSTANT;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 1) {
+        *(int *)(camera_bytes + 0x4e4) =
+            *(int *)(object + lookupClassField(classJava_xeno_Chr,
+                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    } else if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 1) {
+        *(int *)(camera_bytes + 0x4e4) =
+            *(int *)(object + lookupClassField(classJava_xeno_Unit,
+                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    }
+    ((union { int i; float f; } *)(camera_bytes + 0x4e0))->i = 1;
+    *(float *)(camera_bytes + 0x4d0) = v[0];
+    *(float *)(camera_bytes + 0x4d4) = v[1];
+    *(float *)(camera_bytes + 0x4d8) = v[2];
+}
 
 static void CAMERA_viewSPL(int selection, JavaEnvironment *environment,
                            CameraSplineRequest *request, void *result)
