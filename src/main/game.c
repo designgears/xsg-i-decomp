@@ -315,7 +315,60 @@ typedef struct {
 
 extern ActorHead actor[ACTOR_COUNT];
 
-INCLUDE_ASM("asm/main/nonmatchings/game", checkTouch);
+extern float D_004D7B8C;
+typedef struct TouchActorView {
+    u8 pad00[0x10];
+    float x;
+    float y;
+    float z;
+    u8 pad1c[0x80 - 0x1c];
+    u8 group;
+    u8 pad81[0x9f8 - 0x81];
+    int active;
+} TouchActorView;
+
+static ActorHead *checkTouch(ActorHead *self)
+{
+    TouchActorView *me = (TouchActorView *)self;
+    float pos[4];
+    ActorHead *best;
+    float bestDist;
+    float dx, dz, d, lim, k;
+    int i;
+
+    best = 0;
+    pos[0] = me->x;
+    pos[1] = me->y;
+    pos[2] = me->z;
+    pos[3] = 0.25f;
+    bestDist = 65535.0f;
+    if (GameLoopState.flags & 0x400) return 0;
+    if (GameLoopState.flags & 0x1000) return 0;
+    if (GameLoopState.flags & 0x2000) return 0;
+    for (i = 0; i < ACTOR_COUNT; i++) {
+        ActorHead *a = &actor[i];
+        TouchActorView *v = (TouchActorView *)a;
+        if (__builtin_fabsf(v->y - me->y) > 2.0f) continue;
+        if (v->active == 0) continue;
+        if (!(getScriptFlag((SceneObject)a) & 0x20000)) continue;
+        if (a->inUseId == 0) continue;
+        if (v->group == me->group) continue;
+        dx = v->x;
+        dx -= pos[0];
+        dz = v->z;
+        dz -= pos[2];
+        k = D_004D7B8C;
+        d = __builtin_fabsf(pos[3] + k);
+        lim = dx * dx;
+        lim += dz * dz;
+        lim = __builtin_fabsf(lim);
+        if (lim < d && lim < bestDist) {
+            bestDist = lim;
+            best = a;
+        }
+    }
+    return best;
+}
 
 extern int CheckPointLine(const Vector4 *first, const Vector4 *second,
                           const Vector4 *point);

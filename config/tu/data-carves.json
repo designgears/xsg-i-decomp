@@ -298,6 +298,33 @@
    ]
   },
   "main/tu116": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7b88",
+      "0x004d7b8c"
+     ],
+     "generated": [
+      "0x004d7b88",
+      "0x004d7b8c"
+     ],
+     "generated_by": [
+      "checkTouch"
+     ],
+     "c_owned_symbols": [
+      "D_004D7B88"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7B8C",
+      "D_004D7BA0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
