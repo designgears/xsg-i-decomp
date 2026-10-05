@@ -193,7 +193,101 @@ void CardDispHelpSlide1(char mode, Matrix4 matrix)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpSlide2);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) Slide2Vec;
+extern const CardHelpPackedVector D_00A4E000;
+extern short list19_4[];
+extern short list20_5[];
+extern short list21_6[];
+extern short list22_7[];
+extern short list25_8[];
+extern short list26_9[];
+extern short list27_10[];
+extern short list28_11[];
+extern short list45_12[];
+extern short list46_13[];
+extern short list47_14[];
+
+void CardDispHelpSlide2(char mode, Matrix4 matrix)
+{
+    Matrix4 transformed;
+    Slide2Vec translation;
+    Vector4 scale;
+    int idx;
+
+    translation = *(Slide2Vec *)&D_00A4E000;
+    scale.x = 0.9f;
+    scale.z = 1.0f;
+    scale.y = 0.9f;
+    scale.w = 1.0f;
+    switch (mode) {
+    case 19:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list19_4[idx], 1, 0);
+        break;
+    case 20:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list20_5[idx], 1, 0);
+        break;
+    case 21:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list21_6[idx], 1, 0);
+        break;
+    case 22:
+        idx = (ChangeCnt = ChangeCnt % 384) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDispLight(transformed, list22_7[idx], 1, 0x10);
+        break;
+    case 25:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDispLight(transformed, list25_8[idx], 1, 8);
+        break;
+    case 26:
+        idx = (ChangeCnt = ChangeCnt % 384) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDispLight(transformed, list26_9[idx], 1, 2);
+        break;
+    case 27:
+        idx = (ChangeCnt = ChangeCnt % 384) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDispLight(transformed, list27_10[idx], 1, 4);
+        break;
+    case 28:
+        idx = (ChangeCnt = ChangeCnt % 256) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDispLight(transformed, list28_11[idx], 1, 0x40);
+        break;
+    case 45:
+        idx = (ChangeCnt = ChangeCnt % 384) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list45_12[idx], 1, 0);
+        break;
+    case 46:
+        idx = (ChangeCnt = ChangeCnt % 384) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list46_13[idx], 1, 0);
+        break;
+    case 47:
+        idx = (ChangeCnt = ChangeCnt % 256) / 64;
+        xglMatrixTrans(transformed, matrix, &translation.x);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list47_14[idx], 1, 0);
+        break;
+    }
+}
 
 typedef struct { float x, y, z, w; } __attribute__((aligned(16))) Slide3Vec;
 extern const CardHelpPackedVector D_00A4E090;

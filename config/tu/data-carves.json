@@ -3353,6 +3353,38 @@
    ".rodata": [
     {
      "range": [
+      "0x00a4e010",
+      "0x00a4e090"
+     ],
+     "generated": [
+      "0x00a4e010",
+      "0x00a4e088"
+     ],
+     "generated_by": [
+      "CardDispHelpSlide2"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A4E010"
+     ],
+     "also_referenced_by_c": [
+      "D_00A4E000",
+      "D_00A4E090",
+      "D_00A4E0A0",
+      "D_00A4E0B0",
+      "D_00A4E0C0",
+      "D_00A4E0D0",
+      "D_00A4E0E0",
+      "D_00A4E140",
+      "D_00A4E150"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_disp.o"
+     }
+    },
+    {
+     "range": [
       "0x00a4e160",
       "0x00a4e170"
      ],
@@ -3367,13 +3399,6 @@
       "D_00A4E160"
      ],
      "also_referenced_by_c": [
-      "D_00A4E0A0",
-      "D_00A4E0B0",
-      "D_00A4E0C0",
-      "D_00A4E0D0",
-      "D_00A4E0E0",
-      "D_00A4E140",
-      "D_00A4E150",
       "D_00A4E170",
       "D_00A4E180",
       "D_00A4E190",
