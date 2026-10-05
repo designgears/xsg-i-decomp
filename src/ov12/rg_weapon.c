@@ -1024,7 +1024,25 @@ void _EnergyPassTime(RgWeapon *w, float dt)
     weapon->requested = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitEnergyType);
+void _InitEnergyType(RgWeaponEnergyType *weapon, RgWeaponEnergyEssence *essence, RgWeaponCreateInfo *info)
+{
+    RgWeaponEnergyView *e = (RgWeaponEnergyView *)weapon;
+    RgWeapon *w = &weapon->common;
+
+    _InitWeaponCommon(w, essence, info);
+    e->charge = 0.0f;
+    e->shotDecay = *(float *)((char *)essence + 0x3B0);
+    w->shoot = (int (*)(RgWeapon *))_EnergyShot;
+    w->passTime = _EnergyPassTime;
+    *(int (**)(RgWeaponEnergyType *))w->unmodeled_30 = _EnergyIsBusy;
+    w->setFree = (void (*)(RgWeapon *))_EnergyFree;
+    e->chargeRate = *(float *)((char *)essence + 0x3B4);
+    *(volatile float *)&e->chargeMax = *(float *)((char *)essence + 0x3B8);
+    *(volatile int *)&e->active = 0;
+    e->dischargeRate = *(float *)((char *)essence + 0x3BC);
+    ((union { int i; float f; } *)&e->requested)->i = 0;
+    _InitWeaponCommonEffector((RgWeaponShotType *)weapon, ((int *)info)[0], ((int *)info)[1]);
+}
 
 RgWeaponEnergyType *_CreateWeaponEnergyType(RgWeaponEnergyEssence *pEss,
                                              RgWeaponCreateInfo *pInfo)
