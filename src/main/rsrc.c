@@ -72,7 +72,64 @@ void RSRC_setPrintParam(int index, int length)
     infoLength = length;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_info);
+extern char *normalSTR[][2];
+extern char *selectedSTR[][2];
+extern char *unselectedSTR[][2];
+extern char *markedSTR[][2];
+char *strcat(char *, const char *);
+void DB_pathGetShortPath(char *, char *, int);
+
+int RSRC_info(RsrcManager *manager, int mode)
+{
+    char buf0[128];
+    char buf1[128];
+    char path[128];
+    int doPath;
+    int start;
+    int i;
+    int end;
+    int count;
+    RsrcItem *item;
+
+    start = infoIndex;
+    if (start < 0) start = 0;
+    doPath = mode & 0xF;
+    if (infoLength < 0) {
+        end = count = manager->item_count;
+    } else {
+        count = manager->item_count;
+        end = start + infoLength;
+        if (count < end) end = count;
+    }
+    if (start < 0 || start >= count) start = 0;
+    i = start;
+    while (i < end) {
+        buf1[0] = 0;
+        buf0[0] = 0;
+        item = (RsrcItem *)manager->items + i;
+        i++;
+        if (item->flags & 2) {
+            strcat(buf0, selectedSTR[mode][0]);
+            strcat(buf1, selectedSTR[mode][1]);
+        } else {
+            strcat(buf0, unselectedSTR[mode][0]);
+            strcat(buf1, unselectedSTR[mode][1]);
+        }
+        if (item->flags & 1) {
+            strcat(buf0, markedSTR[mode][0]);
+            strcat(buf1, markedSTR[mode][1]);
+        } else {
+            strcat(buf0, normalSTR[mode][0]);
+            strcat(buf1, normalSTR[mode][1]);
+        }
+        if (item->unmodeled_00[4] == 1 && doPath) {
+            DB_pathGetShortPath(path, (char *)item->key, 0x16);
+        }
+    }
+    infoIndex = -1;
+    infoLength = -1;
+    return 0;
+}
 
 char *RSRC_getDefaultPath(void)
 {
