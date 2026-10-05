@@ -211,7 +211,93 @@ int HexToStr(int n, char *buf)
     return digits;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", InitItemBox);
+extern int uwares_tbl[];
+extern int xtxres_tbl[];
+extern const char D_004CA5B0[];
+extern void MAP_updateUnitItemBox();
+extern void MAP_drawUnitItemBox();
+#define IIB_RSRC(n) \
+    { int a = uwares_tbl[n]; int b = xtxres_tbl[n]; \
+    *(int *)((char *)unit + 0xE0) = a; \
+    *(int *)((char *)unit + 0xE4) = b; }
+
+void InitItemBox(ItemMapUnit *unit)
+{
+    ItemUnitInfo *info = &unit->info;
+    Matrix4 *mtx;
+    int m;
+    int i;
+    int *p;
+
+    switch ((short)unit->serial) {
+    case 0x7005:
+        IIB_RSRC(4);
+        info->seId = 6;
+        break;
+    case 0x7008:
+        IIB_RSRC(7);
+        info->seId = 0x39;
+        break;
+    default:
+        IIB_RSRC(4);
+        break;
+    }
+    m = *(int *)((char *)unit + 0xE0);
+    mtx = (Matrix4 *)(m + *(int *)(m + 0x50) + 0x40);
+    *(Matrix4 **)((char *)unit + 0x230) = mtx;
+    *(float *)((char *)unit + 0xC0) = (*mtx)[3][0];
+    *(float *)((char *)unit + 0xC4) = (*mtx)[3][1];
+    *(float *)((char *)unit + 0xC8) = (*mtx)[3][2];
+    *(float *)((char *)unit + 0xCC) = 1.0f;
+    xglMatrixStackUnit();
+    xglMatrixStackTrans((float *)((char *)unit + 0xC0));
+    xglMatrixStackSave(*(Matrix4 **)((char *)unit + 0x230));
+    if (info->rsrcIndex == -1) {
+        info->rsrcIndex = 2;
+    }
+    *(int *)((char *)info + 0x44) = 0;
+    unit->flags |= 4;
+    *(float *)((char *)unit + 0xB0) = 0.3f;
+    *(float *)((char *)unit + 0xB4) = 0.5f;
+    *(float *)((char *)unit + 0xB8) = 0.2f;
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(&unit->position.x);
+    xglMatrixStackRotX(unit->rotation.x);
+    xglMatrixStackRotY(unit->rotation.y);
+    xglMatrixStackRotZ(unit->rotation.z);
+    xglMatrixStackSave(unit->matrix);
+    unit->matrixPtr = &unit->matrix;
+    unit->update = (void (*)(ItemMapUnit *))MAP_updateUnitItemBox;
+    unit->draw = (void (*)(ItemMapUnit *))MAP_drawUnitItemBox;
+    unit->flags |= 0x10000;
+    unit->flags |= 0x8000000;
+    unit->actionNo = 0;
+    unit->sequenceNo = 0;
+    *(short *)((char *)unit + 0xAA) = 0;
+    unit->actionSub = 0;
+    if (info->unitNo != -1) {
+        ItemOwnerUnit *o = &MapUnit[info->unitNo];
+        *(long *)((char *)o + 0x10) = *(long *)&unit->position;
+        *(unsigned int *)o |= 4;
+        *(long *)((char *)o + 0x18) = *(long *)((char *)&unit->position + 8);
+    }
+    if (info->itemNo >= 602) {
+        unit->serial = (unsigned short)-1;
+        unit->update = 0;
+        unit->draw = 0;
+        printf(D_004CA5B0, (short)info->itemNo);
+        return;
+    }
+    if (xglFlagsGet1(0x79EC7 + (short)info->itemNo) == 1) {
+        unit->sequenceNo = 0x10;
+        unit->actionSub = 3;
+        for (i = 0; i < 3; i++) {
+            if (unit->effectCf[i] != 0) {
+                sefDeleteEffectCf(unit->effectCf[i]);
+            }
+        }
+    }
+}
 
 void InitItemSymbol(ItemMapUnit *unit)
 {

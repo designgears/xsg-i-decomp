@@ -1240,31 +1240,6 @@
    ]
   },
   "main/tu171": {
-   ".rodata": [
-    {
-     "range": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated_by": [
-      "MenuAgwsModelMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C7250"
-     ],
-     "also_referenced_by_c": [
-      "D_004C6F38",
-      "D_004C7190",
-      "D_004C71B0",
-      "D_004C71D0",
-      "D_004C7240"
-     ]
-    }
-   ],
    ".lit4": [
     {
      "range": [
@@ -1283,7 +1258,65 @@
       "D_004D7E58",
       "D_004D7E5C"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c6f50",
+      "0x004c7090"
+     ],
+     "generated": [
+      "0x004c6f50",
+      "0x004c7090"
+     ],
+     "generated_by": [
+      "AgwsListMain"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C6F50",
+      "jtbl_004C7000"
+     ],
+     "also_referenced_by_c": [
+      "D_004C6F38",
+      "D_004C7190",
+      "D_004C71B0",
+      "D_004C71D0",
+      "D_004C7240"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c7250",
+      "0x004c72d0"
+     ],
+     "generated": [
+      "0x004c7250",
+      "0x004c72d0"
+     ],
+     "generated_by": [
+      "MenuAgwsModelMain"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C7250"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+     }
     }
    ],
    ".sdata": [
@@ -1303,13 +1336,23 @@
       "D_004DAFD0"
      ],
      "also_referenced_by_c": [
+      "D_004DAF48",
+      "D_004DAF80",
+      "D_004DAF88",
+      "D_004DAF90",
       "D_004DAFE8",
       "AgwsPas",
+      "AgwsSelect",
       "AgwsList",
       "AgwsStatus",
       "AgwsFace",
       "AgwsSwitch"
-     ]
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+     }
     }
    ]
   },
@@ -1532,6 +1575,35 @@
    ]
   },
   "main/tu186": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7f58",
+      "0x004d7f60"
+     ],
+     "generated": [
+      "0x004d7f58",
+      "0x004d7f60"
+     ],
+     "generated_by": [
+      "InitItemBox"
+     ],
+     "c_owned_symbols": [
+      "D_004D7F58",
+      "D_004D7F5C"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7F60",
+      "D_004D7F64",
+      "D_004D7F7C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -1552,6 +1624,7 @@
       "evt_item_format_special",
       "evt_item_format_normal",
       "D_004CA568",
+      "D_004CA5B0",
       "D_004CA5D0"
      ],
      "basis": {
