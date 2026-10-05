@@ -393,16 +393,108 @@ int calcTakeEpGetMenu(int charaId, int etherId) {
     return calcTakeEpGet(&arg, dataEthGet(etherId)->tecId);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseEtherMenu);
-
-extern unsigned char *dataItmGet(int index);
-extern int PartyAllPartyGet(int *out, int mode);
-extern int calcUseItem(int mode, CalcTakeEpArg *arg, int itm);
 typedef struct CalcUseItemSub {
     unsigned char unmodeled_00[0xB0];
     short tbl[8]; /* +0xB0 (org/total +0xBC) */
 } CalcUseItemSub;
 
+typedef struct CalcHitDmgArg {
+    int unk0;
+    ObjectTask *unit;
+} CalcHitDmgArg;
+
+typedef struct CalcHitDmgOut {
+    int hit;
+    int dmg;
+    int unk8;
+    int unkC;
+    int unk10;
+    int unk14;
+    int unk18;
+} CalcHitDmgOut;
+
+extern unsigned short *dataTecGet(int tecId);
+
+extern int PartyAllPartyGet(int *out, int mode);
+int calcHitDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
+typedef struct CalcUseEtherHitArg {
+    int tecId;
+    CalcTakeEpArg *unit;
+    int etherId;
+    int type;
+} CalcUseEtherHitArg;
+
+int calcUseEtherMenu(int charaId, int target, int etherId)
+{
+    CalcTakeEpArg arg;
+    CalcTakeEpArg dst;
+    CalcTakeEpPara para;
+    CalcTakeEpPara dpara;
+    CalcUseEtherHitArg hit;
+    CalcHitDmgOut out;
+    int ids[8];
+    short save[8];
+    CalcCharParaData *org;
+    CalcCharParaData *tot;
+    short hp, ep;
+    CalcUseItemSub *pt;
+    unsigned char flag;
+    int *p;
+    int count;
+    int n;
+    int i;
+
+    arg.totalPara = &para;
+    para.totalPara = dataUnitOrgGet(charaId);
+    dst.totalPara = &dpara;
+    hit.tecId = dataEthGet(etherId)->tecId;
+    hit.type = 2;
+    hit.unit = &dst;
+    hit.etherId = etherId;
+    flag = ((unsigned char *)dataTecGet(dataEthGet(etherId)->tecId))[0];
+    if (flag & 0x10) {
+        p = ids;
+        count = PartyAllPartyGet(p, 0);
+    } else {
+        p = ids;
+        count = 1;
+        *p = target;
+    }
+    for (n = 0; n < count; n++) {
+        org = dataUnitOrgGet(p[n]);
+        tot = calcTotalParaMenu(p[n], 0, 0);
+        hp = org->maxHp;
+        ep = org->maxEp;
+        for (i = 0; i < 8; i++) {
+            save[i] = ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i];
+        }
+        pt = (CalcUseItemSub *)((char *)tot + 0xC);
+        org->maxHp = tot->maxHp;
+        org->maxEp = tot->maxEp;
+        for (i = 0; i < 8; i++) {
+            ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i] = pt->tbl[i];
+        }
+        dpara.totalPara = org;
+        calcHitDmg((ObjectTask *)&arg, (CalcHitDmgArg *)&hit, &out);
+        ((int (*)(ObjectTask *, ObjectTask *, int, int))calcHpDmg)((ObjectTask *)&arg, (ObjectTask *)&dst, out.hit, out.dmg);
+        org->maxHp = hp;
+        org->maxEp = ep;
+        for (i = 0; i < 8; i++) {
+            ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i] = save[i];
+        }
+    }
+    org = dataUnitOrgGet(charaId);
+    tot = calcTotalParaMenu(charaId, 0, 0);
+    ep = org->maxEp;
+    org->maxEp = tot->maxEp;
+    calcEp((ObjectTask *)&arg, -calcTakeEpGetMenu(charaId, etherId));
+    org->maxEp = ep;
+    return 1;
+}
+
+extern unsigned char *dataItmGet(int index);
+extern int PartyAllPartyGet(int *out, int mode);
+extern int calcUseItem(int mode, CalcTakeEpArg *arg, int itm);
 int calcUseItemMenu(int charaId, int itm)
 {
     CalcTakeEpArg arg;
@@ -728,7 +820,6 @@ reset:
     return 1;
 }
 
-extern unsigned short *dataTecGet(int tecId);
 extern int menuTimeGet(void);
 extern int printf(const char *format, ...);
 
@@ -1012,19 +1103,6 @@ int calcHitMotChk(ObjectTask *unit)
     return 0;
 }
 
-typedef struct CalcHitDmgArg {
-    int unk0;
-    ObjectTask *unit;
-} CalcHitDmgArg;
-typedef struct CalcHitDmgOut {
-    int hit;
-    int dmg;
-    int unk8;
-    int unkC;
-    int unk10;
-    int unk14;
-    int unk18;
-} CalcHitDmgOut;
 extern int calcHit(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
 extern int calcDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
 extern int plIchigekiGet(void);
