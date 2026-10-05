@@ -983,7 +983,31 @@ ObjectTask *tgtFindNext(void)
     return tgtTbl[tgtIdx++];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcMoveChk);
+extern char cur1[];
+
+int calcMoveChk(ObjectTask *unit, int id)
+{
+    short n;
+    int *p;
+    int i;
+
+    n = *(short *)((char *)calcUPGet(unit) + 0x44);
+    if (!(*(unsigned *)unit->work & 0x40)) {
+        if (!(calcUPGet(unit)->flags & 0x40)) {
+            p = (int *)(cur1 + 0x5C + n * 0x14);
+            i = 0;
+            do {
+                if (*p != -1 && *p == id) {
+                    return 1;
+                }
+                p++;
+                i++;
+            } while (i < 5);
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcAtkChk);
 
