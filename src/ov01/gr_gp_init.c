@@ -427,12 +427,6 @@ void grCloseSpr(void)
     tags[sprGpSave.count].control |= sprNum;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutF2);
-
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutF4);
-
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutFT4);
-
 /*
  * grRotTransPers's output vertex: the screen-space X/Y grPutXxx (siblings,
  * not decoded here) feed to the GS in 12.4 fixed point (the *16.0f below),
@@ -446,19 +440,72 @@ typedef struct GrScreenVertex {
     int flags;  /* +0x0c */
 } GrScreenVertex;
 
+typedef union GrQuad {
+    float f[4];
+    int i[4];
+} GrQuad;
+
+float grRotTransPers(GrScreenVertex *vertex, const Matrix4 matrix,
+                     const Vector4 *point, int *clipFlags);
+
+typedef struct GrF2 {
+    Vector4 vertex[2];      /* +0x00 */
+    unsigned char col[4];   /* +0x20 */
+} GrF2;
+
+void grPutF2(GrPacket *packet, GrF2 *prim, const Matrix4 matrix)
+{
+    int clip;
+    int *count;
+    int *count2;
+    int i;
+    int idx;
+    int last;
+    Vector4 *v;
+    Vector4 *w;
+
+    clip = 0;
+    count = &packet->count;
+    v = prim->vertex;
+    w = v;
+    for (i = 0; i < 2; i++) {
+        ((GrQuad *)packet->data)[packet->count].i[0] = prim->col[0];
+        ((GrQuad *)packet->data)[packet->count].i[1] = prim->col[1];
+        ((GrQuad *)packet->data)[packet->count].i[2] = prim->col[2];
+        count2 = &packet->count;
+        idx = *count2;
+        ((GrQuad *)packet->data)[idx].i[3] = prim->col[3];
+        idx++;
+        *count2 = idx;
+        if (matrix == 0) {
+            ((GrQuad *)packet->data)[idx].i[0] = (int)v->x * 16 + 0x7000;
+            ((GrQuad *)packet->data)[*count].i[1] = (int)v->y * 16 + 0x7200;
+            ((GrQuad *)packet->data)[*count].i[2] = (int)v->z;
+            last = *count;
+            ((GrQuad *)packet->data)[last].i[3] = 0;
+            last++;
+            *count = last;
+        } else {
+            *count = idx + 1;
+            grRotTransPers((GrScreenVertex *)((GrQuad *)packet->data + idx), matrix,
+                           w, &clip);
+        }
+        w++;
+        v++;
+    }
+    f2Num += 2;
+}
+
+INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutF4);
+
+INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutFT4);
+
 typedef struct GrFT4STQ {
     Vector4 vertex[4];      /* +0x00 */
     unsigned char col[4];   /* +0x40 */
     float s[4];             /* +0x44 */
     float t[4];             /* +0x54 */
 } GrFT4STQ;
-typedef union GrQuad {
-    float f[4];
-    int i[4];
-} GrQuad;
-float grRotTransPers(GrScreenVertex *vertex, const Matrix4 matrix,
-                     const Vector4 *point, int *clipFlags);
-
 void grPutFT4STQ(GrPacket *packet, GrFT4STQ *prim, const Matrix4 matrix)
 {
     int clip;
