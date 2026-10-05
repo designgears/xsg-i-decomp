@@ -44,7 +44,41 @@ extern void Get_MiddlePoint(const float *start, const float *following,
                             short point_index, short point_count,
                             float *result);
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Set_Motion);
+typedef struct DiscoveryPlayer {
+    unsigned char unmodeled_00[16];
+    unsigned long long position_words[2];
+    unsigned char unmodeled_20[0x9f0 - 0x20];
+    short disable_detection;
+} DiscoveryPlayer;
+
+typedef struct DiscoveryGameLoopState {
+    unsigned char unmodeled_00[4];
+    DiscoveryPlayer *player;
+    unsigned char unmodeled_08[8];
+} DiscoveryGameLoopState;
+
+extern DiscoveryGameLoopState GameLoopState;
+
+extern void ACT_setMotion2(void *actor, int a, int b);
+extern volatile float D_004D80FC;
+
+void Set_Motion(Actor *actor, int motion, int mode)
+{
+    unsigned char *e = enepc[ACTOR_NUMBER(actor)];
+
+    if (((int *)e)[0x37e0 / 4] & 0x100) {
+        int m = mode | 0x10000000;
+        ACT_setMotion2(actor, motion,
+                       ((void *)actor != (void *)GameLoopState.player) ? (m | 0x20) : m);
+        *(float *)((char *)actor + 0x744) = *(float *)(e + 0x3858);
+    } else {
+        ACT_setMotion2(actor, motion,
+                       ((void *)actor == (void *)GameLoopState.player) ? mode : (mode | 0x20));
+    }
+    if ((void *)actor != (void *)GameLoopState.player) {
+        *(float *)((char *)actor + 0x714) = D_004D80FC;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/set_motion", Sound_FootStep);
 
@@ -415,18 +449,6 @@ typedef struct EnemyDiscoveryState {
     unsigned char unmodeled_6e[0x37f0 - 0x6e];
     unsigned long long last_player_position_words[2];
 } EnemyDiscoveryState;
-typedef struct DiscoveryPlayer {
-    unsigned char unmodeled_00[16];
-    unsigned long long position_words[2];
-    unsigned char unmodeled_20[0x9f0 - 0x20];
-    short disable_detection;
-} DiscoveryPlayer;
-typedef struct DiscoveryGameLoopState {
-    unsigned char unmodeled_00[4];
-    DiscoveryPlayer *player;
-    unsigned char unmodeled_08[8];
-} DiscoveryGameLoopState;
-extern DiscoveryGameLoopState GameLoopState;
 extern signed char FLAG_FRAME_60;
 extern void Enemy_ActionReady(Actor *actor, int action);
 
