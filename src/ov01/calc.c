@@ -1760,7 +1760,50 @@ int calcItmEnableChk(int unit, int itm)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcTgtUnitTbl);
+int calcTrg2PE(ObjectTask *unit, int trgFlags);
+
+int calcTgtUnitTbl(int unit, int flag, int out)
+{
+    ObjectTask **table;
+    int count;
+    int i;
+    int n;
+
+    n = 0;
+    if (flag & 8) {
+        if (!(flag & 4) || !(calcUPGet((ObjectTask *)unit)->flags & 0x40)) {
+            if (out != 0) {
+                *(int *)out = unit;
+            }
+            n = 1;
+        }
+    } else {
+        i = 0;
+        count = unitTblGet(calcTrg2PE((ObjectTask *)unit, flag), &table);
+        if (count > 0) {
+            do {
+                if (table[i] != 0) {
+                    if (!(flag & 0x20)) {
+                        if (*(int *)table[i]->work & 0x80) {
+                            goto next;
+                        }
+                    } else if (!(*(int *)table[i]->work & 0x80)) {
+                        goto next;
+                    }
+                    if (!(flag & 4) || !(calcUPGet(table[i])->flags & 0x40)) {
+                        if (out != 0) {
+                            ((ObjectTask **)out)[n] = table[i];
+                        }
+                        n++;
+                    }
+                }
+            next:
+                i++;
+            } while (i < count);
+        }
+    }
+    return n;
+}
 
 int calcDeadUnitNum(ObjectTask *unit, int flag)
 {
