@@ -1523,7 +1523,32 @@ int unitCmdEscape(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdFadeIn);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdFadeOut);
+int unitCmdFadeOut(ObjectTask *unit)
+{
+    Actor *actor;
+    void *eff;
+
+    actor = unit->work;
+    switch (actor->moveState) {
+    case 0:
+        eff = *(void **)((char *)calcUPGet(unit) + 0x158);
+        if (eff != 0) {
+            *(int *)((char *)eff + 0xA8C) |= 0x100;
+        }
+        statEffOff(unit);
+        actor->movePhaseTimer = 0;
+        actor->moveState++;
+        break;
+    case 1:
+        if (unitTelOut(unit) != 0) {
+            actor->moveState++;
+        }
+        break;
+    case 2:
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 /*
  * unitMotSetEx is defined later in this TU, still asm; forward-declared for
