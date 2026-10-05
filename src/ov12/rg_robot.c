@@ -2006,7 +2006,50 @@ static int _ExecWeakDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *comman
     return 0x80;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DullFlagsPassTime);
+struct RgDullFlag;
+void RgDullFlagSetFlag(struct RgDullFlag *pDull);
+int RgDullFlagGet(struct RgDullFlag *pDull);
+void RgDullFlagPassTime(struct RgDullFlag *pDull, float fTime);
+extern int RgDrawViewIsPointInView(RgDrawView *view, RgPointVector *point, float margin);
+
+static void _DullFlagsPassTime(RgStatus *pRobot, float deltaTime)
+{
+    float position[4];
+    unsigned int statusFlags;
+    unsigned int commandMask;
+    int env;
+
+    statusFlags = pRobot->statusFlags;
+    commandMask = pRobot->acceptedCommandMask;
+    if (statusFlags & 1) {
+        RgDullFlagSetFlag((struct RgDullFlag *)&pRobot->unmodeled_14[0x0C]);
+    }
+    if (statusFlags & 2) {
+        RgDullFlagSetFlag((struct RgDullFlag *)&pRobot->unmodeled_14[0x1C]);
+    }
+    if (commandMask & 8) {
+        RgDullFlagSetFlag((struct RgDullFlag *)&pRobot->unmodeled_14[0x2C]);
+    }
+    RgDullFlagPassTime((struct RgDullFlag *)&pRobot->unmodeled_14[0x0C], deltaTime);
+    RgDullFlagPassTime((struct RgDullFlag *)&pRobot->unmodeled_14[0x1C], deltaTime);
+    RgDullFlagPassTime((struct RgDullFlag *)&pRobot->unmodeled_14[0x2C], deltaTime);
+    env = 0;
+    if (RgDullFlagGet((struct RgDullFlag *)&pRobot->unmodeled_14[0x2C])) {
+        env = 4;
+    }
+    if (RgDullFlagGet((struct RgDullFlag *)&pRobot->unmodeled_14[0x0C])) {
+        env |= 1;
+    }
+    if (RgDullFlagGet((struct RgDullFlag *)&pRobot->unmodeled_14[0x1C])) {
+        env |= 2;
+    }
+    if (_BodyGetTargetPos(pRobot->body, (RgPointVector *)position) && pRobot->drawView != 0) {
+        if (RgDrawViewIsPointInView(pRobot->drawView, (RgPointVector *)position, 0.0f)) {
+            env |= 8;
+        }
+    }
+    _BodySetAutoHomingEnv(pRobot->body, env);
+}
 
 extern int RgRobotIsDead(RgStatus *pRobot);
 static int _BodyExecCmd(RgRobotStatus *robotStatus, RgBody *body,
