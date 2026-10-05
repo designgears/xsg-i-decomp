@@ -475,7 +475,80 @@ static void _DestructAct(RgSelectRobot *pCont)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _JobAct);
+extern const char D_00A56EE0[];
+extern void ACT_dispose(void *actor);
+
+static void _JobAct(RgSelectRobot *pCont, float deltaTime)
+{
+    char *p = (char *)pCont;
+    char *names[4];
+    void *bufs[4];
+    unsigned int i;
+    unsigned int j;
+    int *chk;
+    char *act;
+    char *act3;
+    float f;
+
+    if (pCont == 0) {
+        assert_prog(D_00A56DD8, D_00A56DA0, 0x238);
+    }
+    switch (*(unsigned int *)p) {
+    case 0:
+        if (*(unsigned int *)(p + 0x10C) != 0) {
+            for (i = 0; i < *(unsigned int *)(p + 0x10C); i++) {
+                if (((void **)(p + 0x110))[i] == 0) {
+                    assert_prog(D_00A56EE0, D_00A56DA0, 0x240);
+                }
+                names[i] = p + 0xC + i * 0x40;
+                bufs[i] = ((void **)(p + 0x110))[i];
+            }
+            chk = *(int **)(p + 0x124);
+            if (chk == 0 || *chk == 2) {
+                if (_ReqLoad(names, bufs, *(unsigned int *)(p + 0x10C), pCont) != 0) {
+                    *(int *)p = 1;
+                }
+            }
+        }
+        break;
+    case 1:
+        if (_IsEndOfLoad() != 0) {
+            *(int *)p = 2;
+        }
+        break;
+    case 2:
+        act = (char *)pCont->actorFlags;
+        if (act == 0) {
+            if (*(unsigned int *)(p + 0x10C) != 0) {
+                _ActivateAct(pCont);
+            }
+        } else {
+            f = *(float *)(act + 0x9C0) + 0.2f;
+            if (f > 1.0f) {
+                f = 1.0f;
+                *(int *)(act + 0x9A0) &= ~1;
+            }
+            *(float *)(act + 0x9C0) = f;
+            _ActorPosUpdate(pCont);
+        }
+        break;
+    case 3:
+        act3 = (char *)pCont->actorFlags;
+        if (act3 != 0) {
+            if ((*(int *)(p + 8))-- <= 0) {
+                ACT_dispose(act3);
+                pCont->actorFlags = 0;
+                *(int *)p = 0;
+            }
+        }
+        break;
+    }
+    if (pCont->hasActions != 0) {
+        for (j = 0; j < 3; j++) {
+            _JobAct((RgSelectRobot *)pCont->actions[j], deltaTime);
+        }
+    }
+}
 
 extern void XrgUnitMatrix(RgMatrix destination);
 extern void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle);
