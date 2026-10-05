@@ -555,7 +555,69 @@ INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_update2);
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_draw2);
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_drawScene2);
+extern char D_004C1C60[];
+void EW_sprtSetCursorUV(unsigned char *widget, int kind, int index);
+
+void TWIN_drawScene2(TComponent *component)
+{
+    char *w = (char *)component;
+    char *a;
+    char *b;
+    int y;
+    int x;
+    int i;
+    unsigned short s;
+    char *t;
+
+    if ((unsigned short)(*(unsigned short *)(w + 0x14) + 0xFFFF) < 2) {
+        return;
+    }
+    a = *(char **)(w + 0xD4);
+    b = *(char **)(w + 0xD0);
+    *(int *)(a + 8) = 0xFFFFF1;
+    t = *(char **)(w + 0x17C);
+    *(int *)(b + 8) = 0xFFFFFF;
+    x = component->width + 16.0f;
+    y = component->height + 16.0f;
+    *(short *)(a + 6) = y;
+    *(short *)(a + 4) = x;
+    *(short *)(a + 0xC) = *(short *)(w + 0xC);
+    *(short *)(a + 0xE) = *(short *)(w + 0xE);
+    *(unsigned short *)a |= 0x4000;
+    *(short *)(b + 4) = x;
+    *(short *)(b + 6) = y;
+    *(short *)(b + 0xC) = *(short *)(w + 0xC);
+    *(short *)(b + 0xE) = *(short *)(w + 0xE);
+    *(unsigned short *)b |= 0x4000;
+    b = *(char **)(w + 0xD8);
+    *(short *)(b + 4) = x;
+    ((union { int i; float f; } *)(b + 8))->i = 0xFFFFFF;
+    *(short *)(b + 6) = *(unsigned short *)(w + 0x50) + y + 4;
+    *(short *)(b + 0xC) = *(short *)(w + 0xC);
+    *(short *)(b + 0xE) = *(short *)(w + 0xE);
+    ((union { short s; char *p; } *)(b + 0x24))->p = t;
+    *(short *)(b + 0x14) = *(unsigned char *)(w + 0x187);
+    ((union { short s; char *p; } *)(b + 0x1C))->p = w + 0x14C;
+    *(short *)(b + 0x12) = 0x1A;
+    *(volatile unsigned short *)b |= 0x4000;
+    ((volatile union { short s; char *p; } *)(b + 0x20))->p = D_004C1C60;
+    s = *(unsigned short *)(w + 0x14);
+    b = *(char **)(w + 0xE4);
+    if (s == 0xB || s == 8 || s == 0xC || s == 0x11) {
+        i = *(unsigned char *)(w + 0x185);
+        *(int *)(b + 8) = 0xFFFFFF;
+        y = i * *(short *)(w + 0xA6);
+        x = *(short *)(w + 0xC) / 2 + *(short *)(w + i * 2 + 0x14C) / 2;
+        x = (float)x + (component->width + 4.0f + 16.0f);
+        y = (float)y + (component->height + 12.0f + 16.0f);
+        *(short *)(b + 6) = y;
+        *(short *)(b + 4) = x;
+        EW_sprtSetCursorUV((unsigned char *)b, 3, *(int *)(w + 0xCC));
+        *(unsigned short *)b |= 0x4000;
+    } else {
+        *(unsigned short *)b &= 0xBFFF;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TMENU_init);
 

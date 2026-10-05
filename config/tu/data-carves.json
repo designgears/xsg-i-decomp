@@ -54,6 +54,35 @@
     }
    ]
   },
+  "main/tu098": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d87f4",
+      "0x004d8804"
+     ],
+     "generated": [
+      "0x004d87f4",
+      "0x004d8804"
+     ],
+     "generated_by": [
+      "xglSoundEffectPosID"
+     ],
+     "c_owned_symbols": [
+      "D_004D87F4",
+      "D_004D87F8",
+      "D_004D87FC",
+      "D_004D8800"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_sound.o"
+     }
+    }
+   ]
+  },
   "main/tu102": {
    ".lit4": [
     {
