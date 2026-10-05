@@ -757,7 +757,30 @@ void XrgActorAttachChild(XrgActor *pParent, XrgActor *pChild, int eJntID)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCheckPakaPaka);
+extern int _GetPakaPakaBaseJnt(int actorID, int attachID);
+extern const char D_00A58B88[];
+extern int XrgLog(const char *format, const char *source_file, int line, ...);
+extern const char *RgActorCharIDToName(int charID);
+
+int XrgActorCheckPakaPaka(XrgActor *pActor)
+{
+    XrgActor *pParent;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x4D8);
+    }
+    pParent = pActor->parent;
+    if (pParent != 0) {
+        pActor->pakaPakaJnt = _GetPakaPakaBaseJnt(pParent->actorID, pActor->attachID);
+        if (pActor->pakaPakaJnt >= 0) {
+            int id = pParent->actorID;
+            pActor->pakaPakaActive = 1;
+            XrgLog(D_00A58B88, D_00A587E0, 0x4E2, pActor,
+                   RgActorCharIDToName(id), pActor->attachID,
+                   pActor->pakaPakaJnt);
+        }
+    }
+}
 
 extern int RgVectorRemove(void *vector, void *element, const char *source_file,
                           int line);

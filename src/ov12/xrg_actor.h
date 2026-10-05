@@ -94,6 +94,7 @@ typedef struct XrgActor {
                                                    _InitSkeMani reads back through pXenoAct */
     int weaponMotionActive;                     /* 0x114 */
     int pakaPakaActive;                          /* 0x118 */
+    int pakaPakaJnt;                             /* 0x11C */
 } XrgActor;
 
 /*
