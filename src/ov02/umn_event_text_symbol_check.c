@@ -7,7 +7,35 @@
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextSymbolCheck);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextCharCheck);
+typedef struct {
+    unsigned char *str;
+    short len;
+    short code;
+} UmnEventTextCharEntry;
+typedef struct { UmnEventTextCharEntry e[2]; } UmnEventTextCharTbl;
+extern UmnEventTextCharTbl D_00A135D0;
+
+int UmnEventTextCharCheck(unsigned char **str)
+{
+    int i = 0;
+    UmnEventTextCharTbl tbl = D_00A135D0;
+    unsigned char *a = *str;
+    int j;
+
+    for (; i < 2; i++) {
+        unsigned char *b = tbl.e[i].str;
+        for (j = 0; j < tbl.e[i].len; j++) {
+            if (a[j] != b[j]) {
+                break;
+            }
+        }
+        if (j == tbl.e[i].len) {
+            *str += j;
+            return tbl.e[i].code;
+        }
+    }
+    return 0;
+}
 
 int UmnEventTextNumberGet(unsigned char **str, int mode)
 {
