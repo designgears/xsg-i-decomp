@@ -15,7 +15,31 @@ static void swapf(float *left, float *right)
     *right = value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/colli_test", CheckIntersect);
+static int CheckIntersect(CollisionPoint *a, CollisionPoint *b, CollisionPoint *c, CollisionPoint *d)
+{
+    float denom, t;
+    int neg;
+
+    denom = (d->x - c->x) * (b->z - a->z);
+    t = (b->x - a->x) * (d->z - c->z);
+    if (denom == t) {
+        return 0;
+    }
+    denom -= t;
+    if (denom < 0.0f) {
+        neg = 1;
+        denom = -denom;
+    } else {
+        neg = 0;
+    }
+    t = (c->z - a->z) * (b->x - a->x) - (c->x - a->x) * (b->z - a->z);
+    if (neg) t = -t;
+    if (t < 0.0f || denom < t) return 0;
+    t = (c->z - a->z) * (d->x - c->x) - (c->x - a->x) * (d->z - c->z);
+    if (neg) t = -t;
+    if (t < 0.0f || denom < t) return 0;
+    return 1;
+}
 
 static int GetIntersectionPointLineX(float *intersection, const float *line_start,
                                      const float *line_end, float x)
