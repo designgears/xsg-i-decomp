@@ -378,17 +378,19 @@
    ".rodata": [
     {
      "range": [
-      "0x004c1a90",
+      "0x004c1a20",
       "0x004c1b00"
      ],
      "generated": [
-      "0x004c1a90",
+      "0x004c1a20",
       "0x004c1af4"
      ],
      "generated_by": [
+      "_copyCTRLCode",
       "_skipCTRLCode"
      ],
      "c_owned_symbols": [
+      "jtbl_004C1A20",
       "jtbl_004C1A90"
      ],
      "also_referenced_by_c": [],

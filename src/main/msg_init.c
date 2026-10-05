@@ -463,7 +463,57 @@ void MBUF_dispose(int *mbuf)
     mbuf[0] = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", _copyCTRLCode);
+static void _copyCTRLCode(unsigned char **dstp, unsigned char **srcp)
+{
+    unsigned char *s = *srcp;
+    unsigned char *d = *dstp;
+    unsigned int c;
+
+    c = *s++;
+    *d++ = c;
+    switch (c) {
+    case 6: case 0xc: case 0xf:
+    copy3:
+        *d++ = *s++;
+    case 0x12:
+        *d++ = *s++;
+        goto copy1;
+    case 8:
+        c = *s++;
+        if (c & 1) {
+            *d++ = *s++;
+            *d++ = *s++;
+        }
+        if (c & 2) {
+            *d++ = *s++;
+            *d++ = *s++;
+        }
+        if (c & 4) {
+            goto copy3;
+        }
+        break;
+    case 0xe:
+    copy5:
+        *d++ = *s++;
+        *d++ = *s++;
+        goto copy3;
+    case 0x17:
+        *d++ = *s++;
+        *d++ = *s++;
+        goto copy5;
+    case 0x19:
+        if (*s) {
+            ctrlCodeFlags |= 1;
+        } else {
+            ctrlCodeFlags &= ~1;
+        }
+    case 1: case 2: case 3: case 4: case 5: case 0xd: case 0x18:
+    copy1:
+        *d++ = *s++;
+    }
+    *dstp = d;
+    *srcp = s;
+}
 
 static void _skipCTRLCode(unsigned char **pp)
 {
