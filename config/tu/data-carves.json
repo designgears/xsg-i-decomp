@@ -4126,7 +4126,7 @@
      ],
      "generated": [
       "0x00a56740",
-      "0x00a56754"
+      "0x00a56758"
      ],
      "generated_by": [
       "_EquipCurIDToEquipType"
@@ -4137,20 +4137,34 @@
      "also_referenced_by_c": [
       "D_00A56650",
       "D_00A56660",
+      "D_00A56678",
       "D_00A56698",
       "D_00A566A8",
       "D_00A566B8",
       "D_00A566D0",
       "D_00A566E8",
+      "D_00A56710",
       "D_00A56720",
       "D_00A56758",
       "D_00A56768",
+      "D_00A56788",
       "D_00A56798",
+      "D_00A567A8",
+      "D_00A567B8",
+      "D_00A567C8",
+      "D_00A567D8",
+      "D_00A567F0",
       "D_00A56838",
+      "D_00A56848",
+      "D_00A56878",
+      "D_00A56898",
       "D_00A568C0",
+      "D_00A568D0",
       "D_00A568E0",
       "D_00A568F0",
       "D_00A56928",
+      "D_00A56938",
+      "D_00A56948",
       "D_00A56968",
       "D_00A56978",
       "D_00A56988",
@@ -4173,8 +4187,38 @@
       "D_00A56B28",
       "D_00A56B48",
       "D_00A56B68",
+      "D_00A56B88",
+      "D_00A56B90",
+      "D_00A56B98",
+      "D_00A56BA0",
+      "D_00A56BA8",
       "D_00A56BB0",
       "D_00A56BC8",
+      "D_00A56BE0",
+      "D_00A56C20"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a56c30",
+      "0x00a56c48"
+     ],
+     "generated": [
+      "0x00a56c30",
+      "0x00a56c44"
+     ],
+     "generated_by": [
+      "_DispWepSelOverlaps"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A56C30"
+     ],
+     "also_referenced_by_c": [
       "D_00A56C48",
       "D_00A56C90",
       "D_00A56CA8",
@@ -4185,7 +4229,12 @@
       "D_00A56D00",
       "D_00A56D10",
       "D_00A56D20"
-     ]
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
+     }
     }
    ]
   },

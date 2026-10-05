@@ -1478,7 +1478,50 @@ static void _DispFloatArrow(XrgPaint2D *paint, FloatArrow *pDat)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetWepSelPicList);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DispWepSelOverlaps);
+extern const char D_00A56C20[];
+
+static void _DispWepSelOverlaps(XrgPaint2D *paint, RgBxx *pBxx, SelDat *pSelDat, int ofsX, int ofsY)
+{
+    WinInfo win;
+    FloatArrow arrow;
+    int type;
+
+    if (paint == 0) {
+        assert_prog(D_00A56C20, D_00A56660, 0x673);
+    }
+    if (pBxx == 0) {
+        assert_prog(D_00A56928, D_00A56660, 0x674);
+    }
+    if (pSelDat == 0) {
+        assert_prog(D_00A56838, D_00A56660, 0x675);
+    }
+    if (_GetModeSelectData(pSelDat) == 1) {
+        _InitFloatArrowHori(&arrow, pBxx);
+        type = _GetCursorSelType(&pSelDat->selType);
+        _SetFloatArrowPos(&arrow, 0x100, 0x67, 0x1CF, 0x68, 0x100, 0);
+        switch (type) {
+        case 0:
+            arrow.visibility_mask = 3;
+            break;
+        case 1:
+            arrow.visibility_mask = 3;
+            break;
+        case 2:
+            arrow.visibility_mask = 3;
+            break;
+        case 3:
+            _InitDetermWin(&win, pBxx, 0xA7 - ofsX, 0x90 - ofsY);
+            _DispDetermWindow(paint, &win, pSelDat);
+            arrow.visibility_mask = 0;
+            break;
+        case 4:
+            _SetFloatArrowPos(&arrow, 0x161, 0x19B, 0, 0, -ofsX, -ofsY);
+            arrow.visibility_mask = 1;
+            break;
+        }
+        _DispFloatArrow(paint, &arrow);
+    }
+}
 
 /*
  * Local helpers still unallocated in this TU. Their own definitions stay
