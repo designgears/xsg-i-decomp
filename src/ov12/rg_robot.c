@@ -392,7 +392,53 @@ static void _InitMovingStatus(RgRobotStatus *status, RgBody *body)
     status->scratch0 = -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInAttack);
+extern int RgMotionInfoGetActionInTime(int motion, int actionIndex,
+                                       float elapsedTime);
+extern void RgWeaponPlayMotion(void *weapon, int motion);
+static RgRobotStatus *_InitAttackStatus(RgRobotStatus *status, RgBody *body,
+                                        int motion, int weapon, int side);
+static int _IsBackWeaponReady(RgBody *body, unsigned int eType);
+
+static int _ExecCmdInAttack(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    RgRobotStatus *st;
+    int result;
+    int action;
+    int motion;
+    int info;
+    float time;
+
+    st = status;
+    result = _AllowDamageCmd(status, body, command);
+    time = status->elapsedTime;
+    info = *(int *)&status->scratchTimer;
+    if (result == 0 && command->type == 10) {
+        action = RgMotionInfoGetActionInTime(info, 1, time);
+        if (action == 0) {
+            return action;
+        }
+        motion = *(int *)(action + 0xC);
+        if (motion == -1) {
+            return 0;
+        }
+        if (status->scratch1 != command->param) {
+            return 0;
+        }
+        st = _InitAttackStatus(status, body, motion, status->scratch1,
+                               status->eSide);
+        if (st != 0) {
+            *(int *)&st->unmodeled_10[4] = 0;
+            RgWeaponPlayMotion((void *)command->param, *(int *)(action + 0x10));
+        }
+        result = 0x400;
+    }
+    if (command->type == 2 && st->eSide != command->type
+        && _IsBackWeaponReady(body, command->param) != 0
+        && *(int *)&st->unmodeled_10[0] != 0) {
+        result |= _ExecShotOrAttackCmd(status, body, command);
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _AttackPassTime);
 
@@ -453,7 +499,7 @@ static void _BodyPlayMotion(RgBody *body, int motion);
 
 extern const char D_00A51940[];
 
-static int _ExecCmdInAttack(RgRobotStatus *status, int param, RgBody *body);
+static int _ExecCmdInAttack();
 static int _AttackPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
 extern void RgWeaponPlayShotMotion(void *weapon);
 extern int RgWeaponIsTargetting(void *weapon);
