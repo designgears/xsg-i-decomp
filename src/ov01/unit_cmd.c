@@ -30,7 +30,34 @@ int unitTblGet(int side, UnitRecord ***table)
     return 8;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitTblSet);
+int unitTblSet(int side, ObjectTask *unit)
+{
+    int i;
+    int start;
+    int end;
+
+    if (side == 0) {
+        start = 0;
+        end = 3;
+    } else if (side == 1) {
+        end = 8;
+        start = 3;
+    } else {
+        return 0;
+    }
+    for (i = start; i < end; i++) {
+        if (((ObjectTask **)unitTbl)[i] == 0) {
+            ((ObjectTask **)unitTbl)[i] = unit;
+            if (i < 3) {
+                unitPlNum++;
+            } else {
+                unitEnNum++;
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int unitTblRemove(ObjectTask *unit)
 {
@@ -132,7 +159,7 @@ void unitPlFunc(ObjectTask *unit);
  * unitEnCreate's own use) and unitLoad is defined later in this file.
  */
 extern ObjectTask *unitCreate(s16 *pl, int side, ObjectTaskCallback func);
-extern void unitTblSet(int side, ObjectTask *unit);
+extern int unitTblSet(int side, ObjectTask *unit);
 void unitLoad(ObjectTask *unit, int mode);
 
 ObjectTask *unitPlCreate(s16 *pl)
@@ -168,7 +195,7 @@ ObjectTask *unitPlCreate(s16 *pl)
  * appear later in the file.
  */
 extern ObjectTask *unitCreate(s16 *pl, int side, ObjectTaskCallback func);
-extern void unitTblSet(int side, ObjectTask *unit);
+extern int unitTblSet(int side, ObjectTask *unit);
 void unitLoad(ObjectTask *unit, int mode);
 void unitEnFunc(ObjectTask *unit);
 
