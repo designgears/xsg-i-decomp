@@ -379,7 +379,57 @@ damage:
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _MovingPassTime);
+extern void RgGeomPointGetVel(RgGeomPoint *point, RgVector velocity);
+extern float RgGeomRobotGetRotVel(RgGeomPoint *geom);
+extern int RgRobSubGetAdvanceMot(RgGeomPoint *geom, int arg);
+extern int RgRobSubGetRollMotion(RgGeomPoint *geom);
+static void _BodyPlayMotion(RgBody *body, int motion);
+static void _BodyPlayMotionLoop(RgBody *body, int motion);
+
+static int _MovingPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
+{
+    RgRobotSpec *spec;
+    RgVector velocity;
+    float speed;
+    float rotVel;
+    int advance;
+    int roll;
+    int motion;
+    float t;
+
+    spec = body->spec;
+    RgGeomPointGetVel(body->geometry, velocity);
+    speed = __builtin_sqrtf(velocity[0] * velocity[0] + velocity[2] * velocity[2]);
+    rotVel = RgGeomRobotGetRotVel(body->geometry);
+    if (rotVel < 0.0f) {
+        rotVel = -rotVel;
+    }
+    advance = RgRobSubGetAdvanceMot(body->geometry, 0);
+    roll = RgRobSubGetRollMotion(body->geometry);
+    if (speed > 5.0f && advance != -1) {
+        motion = advance;
+    } else if (rotVel > 0.3926991f && roll != -1) {
+        motion = roll;
+    } else {
+        motion = 0;
+    }
+    if (motion != status->scratch0) {
+        status->scratch0 = motion;
+        if (motion == 0) {
+            _BodyPlayMotionLoop(body, 0);
+        } else {
+            _BodyPlayMotion(body, motion);
+        }
+    }
+    if (body->dashTime < *(float *)&spec->unmodeled_30[0]) {
+        t = body->dashTime + deltaTime;
+        body->dashTime = t;
+        if (*(float *)&spec->unmodeled_30[0] < t) {
+            body->dashTime = *(float *)&spec->unmodeled_30[0];
+        }
+    }
+    return 0;
+}
 
 static int _AllowAllCmdInMoving(RgRobotStatus *status, int param, RgBody *body);
 static int _MovingPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
