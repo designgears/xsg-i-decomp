@@ -258,7 +258,96 @@ void _DestructWeaponCommon(RgWeapon *weapon)
     XrgActorDisposeEffector(RgRobotGetActor(weapon->robotId), weapon->lockOnEffector);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitEssenceCommon);
+extern void InitRgEquip(void *equip);
+extern void InitXrgActorEssence(void *ess, int id);
+typedef struct EssenceCommonView {
+    int f_00;
+    int f_04;
+    float f_08;
+    float f_0c;
+    int f_10;
+    float f_14;
+    int f_18;
+    int f_1c;
+    int f_20;
+    int f_24;
+    unsigned char pad_28[0x40];
+    int f_68;
+    unsigned char pad_6c[4];
+    unsigned char equip[0x38];
+    int f_a8;
+    float f_ac;
+    int table[6][3];
+    int tableA[6][3];
+    int tableB[6][3];
+    int f_188;
+    unsigned char pad_18c[4];
+    unsigned char actor0[0x88];
+    unsigned char actor1[0x88];
+    unsigned char actor2[0x88];
+    unsigned char pad_328[8];
+    char f_330;
+    unsigned char pad_331[0x1f];
+    char f_350;
+    unsigned char pad_351[0x2f];
+    int f_380;
+    int f_384;
+    int f_388;
+    int f_38c;
+    int f_390;
+    int f_394;
+    int f_398;
+    int f_39c;
+    int f_3a0;
+    int f_3a4;
+} EssenceCommonView;
+
+void _InitEssenceCommon(void *essence)
+{
+    EssenceCommonView *e = (EssenceCommonView *)essence;
+    unsigned int i;
+    unsigned int j;
+
+    e->f_20 = 3;
+    e->f_08 = -0.3926991f;
+    e->f_0c = 1.1780972f;
+    e->f_14 = 50.0f;
+    e->f_00 = 0;
+    e->f_04 = 0;
+    e->f_10 = 0;
+    e->f_18 = 0;
+    e->f_1c = 0;
+    e->f_24 = 0;
+    e->f_68 = 0;
+    InitRgEquip(e->equip);
+    e->f_a8 = -1;
+    for (i = 0; i < 6; i++) {
+        e->table[i][0] = 0x27;
+        e->table[i][1] = 0x28;
+        e->table[i][2] = -1;
+        for (j = 0; j < 3; j++) {
+            e->tableA[i][j] = -1;
+            e->tableB[i][j] = -1;
+        }
+    }
+    e->f_188 = 1;
+    InitXrgActorEssence(e->actor0, -1);
+    InitXrgActorEssence(e->actor1, -1);
+    InitXrgActorEssence(e->actor2, -1);
+    e->f_ac = 1.0f;
+    e->f_350 = 0;
+    e->f_330 = 0;
+    e->f_380 = 0x15;
+    e->f_384 = 0x16;
+    e->f_388 = 0x16;
+    e->f_38c = 0;
+    e->f_390 = 1;
+    e->f_394 = 0x80;
+    e->f_398 = 0x80;
+    e->f_39c = 0x80;
+    e->f_3a0 = -1;
+    e->f_3a4 = 0;
+}
 
 extern const char D_00A536E0[];
 extern void _GetShotInfo(RgWeapon *weapon, RgWeaponShotRequest *info);
