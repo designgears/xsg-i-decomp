@@ -3087,6 +3087,39 @@
     }
    ]
   },
+  "ov02/tu008_00a04170": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a12090",
+      "0x00a120f0"
+     ],
+     "generated": [
+      "0x00a12090",
+      "0x00a120e8"
+     ],
+     "generated_by": [
+      "tskUmnManzaiWin"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A12090"
+     ],
+     "also_referenced_by_c": [
+      "D_00A12060",
+      "D_00A12070",
+      "D_00A12078",
+      "D_00A12080",
+      "D_00A120F0",
+      "D_00A12230"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_procurator.o"
+     }
+    }
+   ]
+  },
   "ov02/tu009_00a05738": {
    ".rodata": [
     {

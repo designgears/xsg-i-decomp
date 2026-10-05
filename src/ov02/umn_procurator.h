@@ -32,7 +32,7 @@ void UmnProcuratorManzai2(void *task);
 void UmnProcuratorMail(void *task);
 void UmnProcuratorTop(void *task);
 void UmnProcuratorGoodBy(void *task);
-void tskUmnManzaiWin(void *task);
+void tskUmnManzaiWin(void *task, void *work);
 
 /*
  * The xglMatrixStack* wrappers Rotation calls come from their definer,

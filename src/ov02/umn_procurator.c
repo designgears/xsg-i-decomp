@@ -76,7 +76,195 @@ int UmnManzaiInit(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", tskUmnManzaiWin);
+typedef struct ManzaiSlideTarget {
+    short v[2];
+} ManzaiSlideTarget;
+extern const ManzaiSlideTarget D_00A12070;
+extern const ManzaiSlideTarget D_00A12078;
+extern char D_00A12080[];
+typedef struct ManzaiWinElem {
+    short x;
+    short y;
+    int color;
+    struct {
+        unsigned char r;
+        unsigned char g;
+        unsigned char b;
+        unsigned char a;
+    } c;
+} ManzaiWinElem;
+typedef struct ManzaiWinMessage {
+    int head;
+    short x;
+    short y;
+    int color;
+    unsigned char pad_6c[0x10];
+    unsigned char mode;
+    unsigned char pad_7d[0x27];
+} ManzaiWinMessage;
+typedef struct ManzaiWinWork {
+    unsigned char state;
+    unsigned char index;
+    unsigned char active;
+    unsigned char pad_03;
+    short x;
+    short y;
+    short *text;
+    ManzaiWinElem elem[6];
+    int unk54;
+    int unk58;
+    int unk5C;
+    ManzaiWinMessage message;
+} ManzaiWinWork;
+typedef struct ManzaiTask {
+    unsigned char pad[0x10];
+    int state;
+} ManzaiTask;
+extern void MoveSlide(short *value, short *destination, float speed);
+extern void endPrintExtFunc(int kind, int id, void *data);
+extern void eMessageSet(void *message, const char *text);
+extern void eMessageMain(void *message);
+extern void eMessageModeChange(void *message, int mode);
+extern void eMessageTextChange(void *message, int text);
+
+void tskUmnManzaiWin(void *task_opaque, void *work_opaque)
+{
+    ManzaiTask *task = task_opaque;
+    ManzaiWinWork *w = work_opaque;
+    ManzaiSlideTarget t;
+    ManzaiSlideTarget t2;
+    unsigned int flag;
+    short old;
+    short old2;
+    int y;
+    short *p;
+    int i;
+    unsigned char mode;
+    unsigned char state;
+    short *text;
+
+    mode = UmnWork[1];
+    if (mode != 1) {
+        task->state = -1;
+        return;
+    }
+    if (task->state == 0) {
+        w->state = 0;
+        if (w->index == mode) {
+            w->x = 0;
+            w->y = 0x10;
+        } else {
+            w->x = 0x30;
+            w->y = 0x160;
+        }
+        for (i = 0; i < 6; i++) {
+            w->elem[i].color = 0xFFFFF0;
+            w->elem[i].c.b = 0;
+            w->elem[i].c.g = 0;
+            w->elem[i].c.r = 0;
+        }
+        w->elem[1].c.a = 0x20;
+        w->elem[3].c.a = 0x80;
+        w->elem[0].c.a = 0x20;
+        w->elem[2].c.a = 0x80;
+        w->elem[5].c.a = 0xFF;
+        w->elem[4].c.a = 0xFF;
+        w->unk58 = 0;
+        eMessageSet(&w->message, 0);
+        w->message.mode = 2;
+        w->active = 0;
+        w->message.color = 0xFFFFF2;
+        w->text = UmnManzaiText;
+        return;
+    }
+    switch (w->state) {
+    case 0:
+        w->state = 1;
+    case 1:
+        if ((UmnManzaiFlag & 0x30) == 0x30) {
+            if (*w->text == w->index) {
+                w->state = 10;
+            } else {
+                w->state = 2;
+            }
+        }
+    case 2:
+        flag = UmnManzaiFlag;
+        UmnManzaiFlag = flag & ~0x200;
+        if (flag & 8) {
+            text = UmnManzaiText;
+            if (*text == w->index) {
+                w->state = 10;
+                w->text = text;
+            } else {
+                w->state = 0x14;
+            }
+            UmnManzaiFlag |= 0x200;
+        }
+        if (UmnManzaiFlag & 0x40) {
+            w->state = 0x14;
+        }
+        break;
+    case 10:
+        if (w->active == 0) {
+            for (i = 0; i < 6; i++) {
+                if (w->index == 1) {
+                    w->elem[i].x = 0;
+                } else {
+                    w->elem[i].x = 0x200;
+                }
+                if (i & 1) {
+                    w->elem[i].y = w->y + 0x50;
+                } else {
+                    w->elem[i].y = w->y;
+                }
+            }
+        }
+        w->state = 11;
+        w->active = 1;
+    case 11:
+        t = D_00A12070;
+        old = w->elem[4].x;
+        MoveSlide(&w->elem[4].x, &t.v[w->index - 1], 3.0f);
+        w->elem[5].x = w->elem[4].x;
+        w->elem[3].x = w->elem[2].x = w->elem[2].x + (w->elem[4].x - old);
+        if (w->elem[4].x == t.v[w->index - 1]) {
+            w->state = 2;
+            eMessageTextChange(&w->message, ((int *)w->text)[1]);
+            eMessageModeChange(&w->message, 0x22);
+        }
+        break;
+    case 20:
+        w->state = 0x15;
+        eMessageModeChange(&w->message, 0x70);
+    case 21:
+        t2 = D_00A12078;
+        old2 = w->elem[4].x;
+        MoveSlide(&w->elem[4].x, &t2.v[w->index - 1], 3.0f);
+        w->elem[5].x = w->elem[4].x;
+        w->elem[3].x = w->elem[2].x = w->elem[2].x + (w->elem[4].x - old2);
+        if (w->elem[4].x == t2.v[w->index - 1]) {
+            if (UmnManzaiFlag & 0x40) {
+                task->state = -1;
+                return;
+            }
+            w->active = 0;
+            w->state = 2;
+        }
+        break;
+    }
+    if (w->active != 0) {
+        endPrintExtFunc(0, 3, &w->elem[0]);
+        if (w->index == 1) {
+            w->message.x = w->x + 0x16;
+        } else {
+            w->message.x = w->x + 2;
+        }
+        w->message.y = w->y + 4;
+        eMessageMain(&w->message);
+    }
+    xglFontDebugPrintf(0x80, w->index * 8 + 0x20, D_00A12080, w->state);
+}
 
 extern void xglLightIntensityAmbient(void *light, const Vector4 *intensity);
 extern void xglLightIntensityParallel(void *light, unsigned int index, const Vector4 *intensity);
