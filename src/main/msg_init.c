@@ -402,4 +402,50 @@ void MBUF_dispose(int *mbuf)
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", _copyCTRLCode);
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", _skipCTRLCode);
+static void _skipCTRLCode(unsigned char **pp)
+{
+    unsigned char *p = *pp;
+    unsigned f;
+    f = *p;
+    p++;
+
+    switch (f) {
+    case 8:
+        f = *p++;
+        if (f & 1)
+            p += 2;
+        if (f & 2)
+            p += 2;
+        if (!(f & 4))
+            break;
+    case 6:
+    case 12:
+    case 15:
+        p += 3;
+        break;
+    case 14:
+        p += 5;
+        break;
+    case 18:
+        p += 2;
+        break;
+    case 23:
+        p += 9;
+        break;
+    case 25:
+        if (*p != 0)
+            ctrlCodeFlags |= 1;
+        else
+            ctrlCodeFlags &= ~1;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 13:
+    case 24:
+        p++;
+        break;
+    }
+    *pp = p;
+}
