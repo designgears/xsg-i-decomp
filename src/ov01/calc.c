@@ -635,7 +635,35 @@ int calcCounter(ObjectTask *unit, int tecId)
     return rnd(100) < rate;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBoostChk);
+extern BattleUnit *actUnitGet(void);
+extern int *actStockGet(void);
+
+int calcBoostChk(ObjectTask *unit, int mode)
+{
+    if (unit != 0 && !(*(u64 *)unit->work & 0x480)
+        && actUnitGet() != (BattleUnit *)unit
+        && ((CalcActStock *)actStockGet())->slot[mode] == 0
+        && (short)calcUPGet(unit)->currentHp != 0) {
+        if ((calcUPGet(unit)->flags & 0x40) && calcAccEquChk(unit, 0x83) == 0) {
+            return 0;
+        }
+        if (mode == 1 && *((signed char *)calcUPGet(unit) + 0x3C) <= 0) {
+            return 0;
+        }
+        if (calcStatGet(unit, 1, 4) == 0) {
+            goto ok;
+        }
+    }
+    return 0;
+ok:
+    if (mode == 1) {
+        if (((CalcActorRecord *)unit->work)->flags & 0x10) {
+            return 0;
+        }
+        return 1;
+    }
+    return 1;
+}
 
 extern int *actStockGet(void);
 int calcBc(BattleUnit *unit, int delta);
