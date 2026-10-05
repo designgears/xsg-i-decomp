@@ -90,7 +90,28 @@ static void _draw_linear(int paintId, int picGroup, int picIndex, int x, int y)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", _draw_nontex);
+extern void XrgPaint2DColor(int paint, const RgPicColor *color);
+extern int s_nColor_0;
+typedef struct { RgPicColor c; } __attribute__((aligned(8))) RgPicColorA8;
+
+static void _draw_nontex(int paint, int x, int y, int width, int height)
+{
+    RgPicColorA8 tmp;
+    RgPicColorA8 color;
+
+    memset(&color, 0, sizeof(color));
+    color.c.r = s_nColor_0;
+    color.c.g = s_nColor_0;
+    color.c.b = s_nColor_0;
+    tmp = color;
+    s_nColor_0 += 8;
+    if (s_nColor_0 > 0x20) {
+        s_nColor_0 = 0;
+    }
+    XrgPaint2DColor(paint, &tmp.c);
+    XrgPaint2DAlpha(paint, 1);
+    XrgPaint2DDrawXYWH(paint, 0, x, y, width, height);
+}
 
 int RgPicGetWidth(RgPic *pic)
 {
