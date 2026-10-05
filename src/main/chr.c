@@ -1166,7 +1166,33 @@ void Java_xeno_Chr_touchto__Ljava_lang_String_(JThread *thread,
     peer->touch_message = arguments->message->value->message_id;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_childGetPeer__II);
+typedef struct ChrKids { u8 pad[0x900]; int count; u8 *kids[1]; } ChrKids;
+typedef struct ChrPeerCall { u8 *object; void *flag; } ChrPeerCall;
+
+void Java_xeno_Chr_childGetPeer__II(JThread *thread, ChrPeerCall *arguments,
+                                    void **result)
+{
+    JavaField *peer_field;
+    ChrKids *peer;
+    u8 *object;
+    int i;
+
+    object = arguments->object;
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(void **)(object + peer_field->offset);
+    *result = 0;
+    if (arguments->flag != (void *)0x01000000)
+        return;
+    {
+        for (i = 0; i < peer->count; i++) {
+            if (peer->kids[i][0x82] == 1) {
+                *result = peer->kids[i];
+                break;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setPeer__Ljava_lang_Object_);
 
