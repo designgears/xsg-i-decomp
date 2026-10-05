@@ -2,7 +2,41 @@
 #include "shared.h"
 #include "window_tex_load.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", WindowTexLoad);
+extern int MenuWinAddr;
+extern char Menu02Tex[];
+extern char *file_name_0[];
+extern void endPrintInit(void);
+
+int WindowTexLoad(void *window, unsigned int arg)
+{
+    int kind = arg & 0xFFFF;
+    unsigned int mode = arg >> 16;
+    int ret = 0;
+    char *name;
+
+    if (window != 0) {
+        MenuWinAddr = (int)window;
+        endPrintInit();
+    }
+    switch (kind) {
+    case 0:
+        ret = xglCdReadFile(file_name_0[0], (void *)MenuWinAddr, 0, 1);
+        break;
+    case 1:
+        if (mode == 0)
+            ret = xglCdReadFile(file_name_0[1], (void *)MenuWinAddr, 0, 1);
+        else
+            MenuLoadFile(file_name_0[1], (void *)MenuWinAddr);
+        break;
+    case 2:
+        if (mode == 0)
+            xglCdReadFile(file_name_0[2], Menu02Tex, 0, 1);
+        else
+            MenuLoadFile(file_name_0[2], Menu02Tex);
+        break;
+    }
+    return ret;
+}
 
 extern int MenuWinAddr;
 extern char Menu02Tex[];
