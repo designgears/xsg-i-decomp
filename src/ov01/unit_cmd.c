@@ -133,7 +133,31 @@ int unitLiveNumGet(int side)
     return n;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitLiveNumGet2);
+int unitLiveNumGet2(int side)
+{
+    ObjectTask **table;
+    int count;
+    int i = 0;
+    int n = 0;
+
+    count = unitTblGet(side, (UnitRecord ***)&table);
+    if (count > 0) {
+        do {
+            int off = i * 4;
+            ObjectTask *u = *(ObjectTask **)(off + (int)table);
+            i++;
+            if (u != 0) {
+                if (!(**(int **)((char *)u + 0x10) & 0x80)) {
+                    if (calcStatGet(u, 0, 0x2000) == 0) {
+                        if (calcStatGet(*(ObjectTask **)(off + (int)table), 4, 0x2000) == 0)
+                            n++;
+                    }
+                }
+            }
+        } while (i < count);
+    }
+    return n;
+}
 
 int unitCidGet(ObjectTask *unit)
 {
