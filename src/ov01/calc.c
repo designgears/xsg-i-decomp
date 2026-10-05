@@ -2309,7 +2309,66 @@ void calcStatResetAll(ObjectTask *unit) {
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcResult);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcResultSub);
+typedef struct CalcResPl {
+    int exp;        /* +0x00 */
+    int pad4[2];
+    int ep;         /* +0x0C */
+    int sp;         /* +0x10 */
+    int tp;         /* +0x14 */
+} CalcResPl;
+
+void calcResultSub(ObjectTask *unit, int *gain, int div, int *out)
+{
+    CalcResPl *pl;
+    int v;
+    int pct;
+
+    pl = (CalcResPl *)dataPlChaGet(calcUPGet(unit)->charaId);
+
+    v = gain[0] / div;
+    pct = calcSkill(unit, 0x1000, 0x4000);
+    if (pct > 0) {
+        v += v * pct / 100;
+    }
+    pl->exp += v;
+    if (pl->exp > 9999999) {
+        pl->exp = 9999999;
+    }
+    out[1] = v;
+
+    v = gain[1] / div;
+    pct = calcSkill(unit, 0x1000, 0x2000);
+    if (pct > 0) {
+        v += v * pct / 100;
+    }
+    pl->ep += v;
+    if (pl->ep > 9999) {
+        pl->ep = 9999;
+    }
+    out[2] = v;
+
+    v = gain[2] / div;
+    pct = calcSkill(unit, 0x1000, 0x1000);
+    if (pct > 0) {
+        v += v * pct / 100;
+    }
+    pl->sp += v;
+    if (pl->sp > 9999) {
+        pl->sp = 9999;
+    }
+    out[3] = v;
+
+    v = gain[3] / div;
+    pct = calcSkill(unit, 0x1000, 0x800);
+    if (pct > 0) {
+        v += v * pct / 100;
+    }
+    pl->tp += v;
+    if (pl->tp > 9999) {
+        pl->tp = 9999;
+    }
+    out[4] = v;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLvUp);
 
