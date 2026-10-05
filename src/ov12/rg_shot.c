@@ -542,7 +542,32 @@ static void _GrenadeHomingPassTime(RgGrenadeShot *bom, float deltaTime)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _InitGrenade);
+static void _GrenadeHitRobot(RgShot *shot, int robot, RgVector position);
+
+static void _InitGrenade(void *shotp, void *essencep, void *info)
+{
+    RgGrenadeShot *shot = (RgGrenadeShot *)shotp;
+    RgGrenadeEssence *essence = (RgGrenadeEssence *)essencep;
+    int *w = (int *)shotp;
+    float r;
+    float *f = (float *)shotp;
+
+    _InitHoming(shot, essence, info);
+    RgCharPassTimeMethod((RgChar *)shot,
+                         (void (*)(RgChar *, float))_GrenadeHomingPassTime);
+    shot->explosionRadius = essence->explosionRadius;
+    shot->proximity = essence->proximity;
+    shot->common.common.notifyHit = _GrenadeHomingHit;
+    shot->duration = essence->duration;
+    f[0x26] = 0.0f;
+    f[0x28] = 0.0f;
+    shot->common.common.hitRobot = _GrenadeHitRobot;
+    r = essence->repeatCount;
+    shot->common.common.hitBg = _GrenadeHitBg;
+    shot->common.common.hitHistory = (void (*)(void))_GrenadeShotZeroLife;
+    f[0x31] = 0.0f;
+    shot->repeatCount = (unsigned int)r;
+}
 
 static void *_CreateGrenade(void *essence, void *info)
 {
