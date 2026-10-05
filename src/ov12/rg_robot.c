@@ -569,7 +569,34 @@ static void _InitStatusHissatu(RgRobotStatus *status, RgBody *body)
     _BodyPlayMotion(body, motionNo);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInShield);
+extern void RgWeaponSubShotNum(void *weapon, float delta);
+static int _IsBackWeaponReady(RgBody *body, unsigned int eType);
+
+static int _ExecCmdInShield(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result;
+
+    result = _AllowDamageCmd(status, body, command);
+    if (result != 0) {
+        return result;
+    }
+    if (command->type == 2 && status->scratch2 == command->param && status->scratch0 != command->type) {
+        *(void **)&status->scratch1 = (void *)1;
+    }
+    if (command->type == 11) {
+        if (*(void **)&status->scratchTimer != 0) {
+            RgWeaponSubShotNum(*(void **)&status->scratchTimer, command->scratch0);
+        }
+        *(int *)&status->unmodeled_10[4] = 1;
+        result |= 0x400;
+        XrgCopyVector((float *)&status->unmodeled_1c[4], (float *)command);
+    }
+    if (command->type == 2 && status->scratch2 != command->type && status->scratch0 == 0
+        && _IsBackWeaponReady(body, command->param) != 0) {
+        result |= _ExecShotOrAttackCmd(status, body, command);
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ShieldPassTime);
 
@@ -589,7 +616,7 @@ static void _ShieldExit(RgRobotStatus *status, RgBody *body)
     }
 }
 
-static int _ExecCmdInShield(RgRobotStatus *status, int param, RgBody *body);
+static int _ExecCmdInShield();
 static int _ShieldPassTime(RgRobotStatus *status, RgBody *body, float deltaTime);
 
 static void _InitShieldStatus(RgRobotStatus *status, RgBody *body, int motion,
