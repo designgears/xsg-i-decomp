@@ -523,7 +523,81 @@ void *ANM_reset(AnmClock *clock, FpkFcvPack *pack)
     return entry;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/anm", ANM_update);
+void *ANM_update(AnmClock *clock)
+{
+    u32 flags = clock->flags;
+    float speed = clock->speed;
+    u16 key;
+    int n;
+    int size;
+
+    if (!(flags & 0x80000)) {
+        clock->frame += speed;
+    }
+    if (flags & ANM_WAITING) {
+        if (speed >= 0.0f) {
+            if (clock->frame > clock->loop_limit) {
+                clock->flags = flags & ~ANM_WAITING;
+            }
+        } else {
+            if (clock->frame < clock->loop_limit) {
+                clock->flags = flags & ~ANM_WAITING;
+            }
+        }
+    } else if (speed >= 0.0f) {
+        if (clock->frame > clock->forward_limit) {
+            if (flags & ANM_LOOP) {
+                clock->flags = flags | ANM_RESTART;
+                clock->frame = clock->reverse_limit;
+                if (clock->flags & ANM_RESET_BOUNDS) {
+                    clock->reverse_limit = clock->reset_low;
+                    clock->forward_limit = clock->reset_high;
+                    clock->frame = clock->reset_low;
+                }
+            } else {
+                clock->frame = clock->forward_limit;
+                clock->flags = flags | ANM_FINISHED;
+            }
+            if (clock->flags & 0x20000) {
+                size = PACK_getSize((FpkFcvPack *)clock->unmodeled_2c[2]);
+                key = *(u16 *)&clock->unmodeled_14[0];
+                n = key & 0xFF;
+                n++;
+                if (n >= size) {
+                    n = 0;
+                }
+                n |= key & 0x700;
+        *(u16 *)&clock->unmodeled_14[0] = n;
+                return ANM_reset(clock, (FpkFcvPack *)clock->unmodeled_2c[2]);
+            }
+        }
+    } else if (clock->frame < clock->reverse_limit) {
+        if (flags & ANM_LOOP) {
+            clock->flags = flags | ANM_RESTART;
+            clock->frame = clock->forward_limit;
+            if (clock->flags & ANM_RESET_BOUNDS) {
+                clock->forward_limit = clock->reset_high;
+                clock->reverse_limit = clock->reset_low;
+                clock->frame = clock->reset_high;
+            }
+        } else {
+            clock->frame = clock->reverse_limit;
+            clock->flags = flags | ANM_FINISHED;
+        }
+        if (clock->flags & 0x20000) {
+            size = PACK_getSize((FpkFcvPack *)clock->unmodeled_2c[2]);
+            key = *(u16 *)&clock->unmodeled_14[0];
+            n = key & 0xFF;
+            n++;
+            if (n >= size) {
+                n = 0;
+            }
+            n |= key & 0x700;
+        *(u16 *)&clock->unmodeled_14[0] = n;
+            return ANM_reset(clock, (FpkFcvPack *)clock->unmodeled_2c[2]);
+        }
+    }
+}
 
 void ANM_updateTime(AnmClock *clock, float elapsed)
 {
