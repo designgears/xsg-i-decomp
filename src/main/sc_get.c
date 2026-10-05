@@ -1081,7 +1081,30 @@ INCLUDE_ASM("asm/main/nonmatchings/sc_get", scEFFECT2Script);
 
 INCLUDE_ASM("asm/main/nonmatchings/sc_get", scEFFECT3Script);
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scMOVIEScript);
+extern const char D_004DBB48[];
+extern const char D_004CC898[];
+extern void func_A32FA8(char *);
+
+static int scMOVIEScript(ScriptTask *task)
+{
+    char buf[256];
+    char *string;
+    int length;
+
+    string = (char *)0;
+    if (task->script_pc[task->branch_depth] != 0) {
+        string = (char *)((int)((ScriptRecord *)(_scriptWork + _nowScript * 1104))->dataTable
+            + task->script_pc[task->branch_depth] * 2);
+    }
+    length = strlen(string);
+    length = (length & 1) ? length + 1 : length + 2;
+    task->script_pc[task->branch_depth] += length / 2;
+    if (_nowEvent == 0) {
+        sprintf(buf, D_004DBB48, D_004CC898, string);
+        func_A32FA8(buf);
+    }
+    return 1;
+}
 
 extern int scGetAdrImmScript(ScriptTask *task);
 extern int srsAnalyzeEftNo(short effectId, unsigned char *charId, int *effectCategory);
