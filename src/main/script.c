@@ -887,7 +887,60 @@ static void DB_wind(DbWindTask *task)
 
 INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_debugMenu);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", loadScriptCD);
+extern int DebugMenuResourceSizeAdd;
+extern char D_004C1F60[];
+extern char D_004DA4B0[];
+extern char D_004DA4B8[];
+extern char *MAP_getPath(void);
+extern char *strcat(char *dst, const char *src);
+extern int xglCdReadFile(const char *path, void *buf, int a, int b);
+extern int JNI_searchClasses(void *data, const char *names, int n, int *out);
+extern void ACT_initExMotion(void *actor, int n, void *data);
+typedef struct {
+    void *script;
+    void *fpk;
+    void *arc;
+    int active;
+    int pad_10[2];
+    int count;
+} ScriptDbLoadView;
+
+void loadScriptCD(ScriptDbEntry *entry_, const char *path)
+{
+    ScriptDbLoadView *entry = (ScriptDbLoadView *)entry_;
+    char buf[256];
+    int count;
+    int cls;
+    int size;
+
+    DebugMenuResourceSizeAdd = 0;
+    strcpy(buf, MAP_getPath());
+    strcat(buf, path);
+    if (xglCdReadFile(buf, entry->script, 0, 1) < 0) {
+        count = 0;
+        entry->count = 0;
+        *(char **)&entry->active = 0;
+        return;
+    }
+    {
+    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, &count);
+    replacePathExt(buf, D_004DA4B0);
+    size = xglCdReadFile(buf, entry->fpk, 0, 1);
+    if (size < 0) {
+        ACT_initExMotion(0, 1, 0);
+    } else {
+        DebugMenuResourceSizeAdd += size;
+        ACT_initExMotion(0, 1, entry->fpk);
+    }
+    replacePathExt(buf, D_004DA4B8);
+    size = xglCdReadFile(buf, entry->arc, 0, 1);
+    if (size >= 0) {
+        DebugMenuResourceSizeAdd += size;
+    }
+    entry->active = cls;
+    entry->count = count;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", loadScriptCD2);
 
