@@ -111,7 +111,29 @@ int SsdGetResultValue(int *value);
 
 void SsdStopEffectFileID(int file_id);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundSendSed);
+int SsdAddEffectData(void *sed);
+void SsdDisposeEffectData(int effect_bank);
+
+int xglSoundSendSed(void *sed, int bank)
+{
+    int result;
+    SoundEffectBankEntry *entry = &SoundWork.effect_banks[bank];
+
+    if (entry->file_handle != 0xFFFF) {
+        SsdStopEffectFileID(entry->file_handle);
+        while (SsdGetResultValue(&result) < 0);
+        SsdDisposeEffectData(entry->file_handle);
+        while (SsdGetResultValue(&result) < 0);
+    }
+    result = 0xFFFF;
+    if (sed == 0) goto end;
+    SsdAddEffectData(sed);
+    while (SsdGetResultValue(&result) < 0);
+    if (result >= 0) goto end;
+    result = 0xFFFF;
+end:
+    entry->file_handle = result;
+}
 
 extern const char SoundDataPath[];
 extern const unsigned char ext_0[5];
@@ -146,7 +168,7 @@ int xglSoundLoadSwd(const char *file_name, void *buffer)
 }
 
 extern int xglSoundSendSwd(void *swd, int bank);
-void xglSoundSendSed(void *sed, int bank);
+int xglSoundSendSed(void *sed, int bank);
 
 void xglSoundSendEffect(void *swd, void *sed, int bank)
 {
