@@ -68,7 +68,37 @@ static int _InitJetDefault(void *essence)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot_effect", _InitDashDefault);
+typedef struct { long long a; unsigned short b; unsigned char c; } DashTexName;
+extern DashTexName D_00A52368;
+
+static int _InitDashDefault(void *essence)
+{
+    char *buffer = essence;
+    DashTexName *t;
+    unsigned char c;
+    long long a;
+    unsigned short b;
+    InitRgParticleEffectEssence(buffer);
+    t = &D_00A52368;
+    b = t->b;
+    c = t->c;
+    a = t->a;
+    ((DashTexName *)buffer)->a = a;
+    ((DashTexName *)buffer)->b = b;
+    ((DashTexName *)buffer)->c = c;
+    *(int *)(buffer + 0x40) = 0x20;
+    *(float *)(buffer + 0x70) = 2.4f;
+    *(float *)(buffer + 0x50) = 0.56f;
+    *(float *)(buffer + 0x54) = 1.0f;
+    *(float *)(buffer + 0x60) = 5.6f;
+    *(float *)(buffer + 0x64) = -5.0f;
+    *(float *)(buffer + 0x74) = 91.9f;
+    *(float *)(buffer + 0x98) = 1.5f;
+    *(float *)(buffer + 0x94) = 1.5f;
+    *(float *)(buffer + 0x90) = 6.2831855f;
+    *(int *)(buffer + 0x9C) = 1;
+    return 1;
+}
 
 static void _InitEffect(RgRobotEffectItem *item)
 {
