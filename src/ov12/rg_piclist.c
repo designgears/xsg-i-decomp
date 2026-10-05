@@ -451,7 +451,40 @@ void DisposeRgPicDebug(RgPicDebug *pDebug)
     RgHeapFree(InstanceOfRgHeap(), pDebug, D_00A57320, 598);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicDebugEditPosition);
+typedef struct { unsigned char _p[0x28]; unsigned short held; unsigned short pressed; unsigned char _q[0xa0]; } PadD;
+extern PadD PadData;
+
+void RgPicDebugEditPosition(int *x, int *y)
+{
+    
+    int step;
+    int align;
+    int input;
+
+    input = PadData.held;
+    step = 1;
+    align = 0;
+    if (input & 0x4) {
+        step = 8;
+        align = 1;
+    }
+    if (input & 0x1000) {
+        *y -= step;
+    }
+    if (input & 0x4000) {
+        *y += step;
+    }
+    if (input & 0x8000) {
+        *x -= step;
+    }
+    if (input & 0x2000) {
+        *x += step;
+    }
+    if (align != 0) {
+        *x &= ~7;
+        *y &= ~7;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicDebugControl);
 
