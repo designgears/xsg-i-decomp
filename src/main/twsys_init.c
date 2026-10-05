@@ -508,7 +508,36 @@ void TMENU_addQuery(TMenu *menu, int messageId)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TMENU_setItem);
+int MSG_copyln(char **dst, char **src, int flag);
+
+void TMENU_setItem(unsigned char *menu, int index, char *item)
+{
+    char buf[1024];
+    char *src;
+    char *p;
+    int n;
+    int i;
+    int w;
+
+    n = menu[0x140];
+    if (index < 0) {
+        for (i = 0; i < n; i++) {
+            if ((*(int **)(menu + 0x14C))[i] == 0) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0)
+            return;
+        menu[0x56]++;
+    }
+    src = (*(char ***)(menu + 0x14C))[index] = item;
+    p = buf;
+    w = MSG_copyln(&p, &src, 0) + 0x38;
+    *(short *)(menu + 0xE) = *(short *)(menu + 0x5A) * 0x18 + 4;
+    if (*(short *)(menu + 0xC) < w)
+        *(short *)(menu + 0xC) = w;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TMENU_addItem);
 
