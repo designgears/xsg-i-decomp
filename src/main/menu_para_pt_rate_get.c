@@ -3669,7 +3669,41 @@ void CharPointMain(void)
         endPrintExtFunc(work->tagBase, 0, &work->panel.sprite.printX);
     }
 }
-INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuCharCameraSet);
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+extern void xglCameraInit(StudioCamera *camera);
+extern void *memset(void *, int, unsigned int);
+typedef struct { Vector4 v; } MenuCamVec1 __attribute__((aligned(8)));
+typedef struct { MenuCamVec1 v[2]; } MenuCamVec2;
+typedef struct { Vector4 v[2]; } MenuCamVec2B __attribute__((aligned(8)));
+extern MenuCamVec2B D_004C6580;
+extern MenuCamVec2 D_004C65A0;
+extern MenuCamVec2 D_004C65C0;
+extern MenuCamVec1 D_004C65E0;
+extern const float D_004D7E1C;
+extern MenuCamVec1 TairetuPos;
+extern MenuCamVec1 TairetuRot;
+
+void MenuCharCameraSet(void) {
+    MenuCamVec2B pos = D_004C6580;
+    MenuCamVec2 rot = D_004C65A0;
+    MenuCamVec2 trot;
+    MenuCamVec1 tpos;
+    MenuCamVec1 r;
+    StudioCamera *camera;
+
+    camera = xglStudioGetCamera2(0);
+    xglCameraInit(camera);
+    camera->rotation = rot.v[MenuWork.partyMode].v;
+    camera->position = pos.v[MenuWork.partyMode];
+    camera->state = 1;
+    trot = D_004C65C0;
+    TairetuRot.v = trot.v[MenuWork.partyMode].v;
+    tpos = D_004C65E0;
+    memset(&r, 0, sizeof(r));
+    r.v.x = D_004D7E1C;
+    TairetuPos = tpos;
+    TairetuRot = r;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuCharCameraMove);
 
