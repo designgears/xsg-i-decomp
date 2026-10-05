@@ -18,7 +18,29 @@ int Get_ActorNumber(int target)
     return -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Enemy_Command_Motion);
+extern void ACT_setMotion2(void *actor, int a, int b);
+extern float D_004D813C;
+
+void Enemy_Command_Motion(Actor *actor, int motion, char mode, int a3, int a4, int loop, int speed)
+{
+    unsigned char *p = (unsigned char *)actor;
+    int flags = 8;
+    float scale;
+    int none;
+    if (mode != 1) flags = 0;
+    if (loop == 0) flags |= 1;
+    ACT_setMotion2(actor, motion | 0x8000, flags);
+    scale = D_004D813C;
+    none = -1;
+    if (mode != 1) {
+        *(s16 *)(p + 0x706) = 0;
+        *(s16 *)(p + 0x712) = 9;
+    }
+    *(float *)(p + 0x6F8) = ((float)speed / 100.0f) * scale;
+    if (a3 != none) *(float *)(p + 0x6FC) = (float)a3 * scale;
+    if (a4 != none) *(float *)(p + 0x700) = (float)a4 * scale;
+    if (a3 != none) *(float *)(p + 0x6F4) = *(float *)(p + 0x6FC);
+}
 
 void Enemy_Command_Freeze(Actor *actor, int command)
 {
