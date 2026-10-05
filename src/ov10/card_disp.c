@@ -92,7 +92,48 @@ void CHPMenuInitSub(CHPTitleList *menu, CHPTitleList *title)
     CHPTitleInitSub(title, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardHelpFileLoad);
+extern char D_00A4DDB0[];
+extern char *D_00A4DF60[];
+extern const char D_00A4DFF0[];
+extern const char D_00A4DFF8[];
+typedef struct CardHelpNameList {
+    char *name[35];
+} CardHelpNameList;
+
+void CardHelpFileLoad(void)
+{
+    char path[64];
+    char file[128];
+    CardHelpNameList names;
+    u32 addr;
+    int size;
+    int i;
+
+    __builtin_memcpy(path, D_00A4DDB0, 20);
+    memset(path + 20, 0, 0x2C);
+    names = *(CardHelpNameList *)D_00A4DF60;
+    addr = 0x1720000;
+    for (i = 0; i < 64 && names.name[i] != 0; i++) {
+        memset(file, 0, 0x80);
+        strcpy(file, path);
+        strcat(file, names.name[i]);
+        strcat(file, D_00A4DFF0);
+        ((u32 *)cardlex_tbl)[i] = addr;
+        size = xglCdReadFile(file, (void *)addr, 0, 1);
+        if (size > 0) {
+            addr += size; addr = (addr + 15) & ~15;
+        }
+        memset(file, 0, 0x80);
+        strcpy(file, path);
+        strcat(file, names.name[i]);
+        strcat(file, D_00A4DFF8);
+        ((u32 *)cardxtx_tbl)[i] = addr;
+        size = xglCdReadFile(file, (void *)addr, 0, 1);
+        if (size > 0) {
+            addr += size; addr = (addr + 15) & ~15;
+        }
+    }
+}
 
 extern void nmlModelEntryCard(void *model);
 
