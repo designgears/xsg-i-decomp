@@ -832,7 +832,84 @@ INCLUDE_ASM("asm/main/nonmatchings/script", DB_stageSelect);
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_memory);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_lightSave);
+typedef struct {
+    u8 pad_00[0x10];
+    char path[0x10C];
+    char selectedPath[0x100];
+} DbLightSel;
+typedef struct {
+    u8 pad_00[0x2A];
+    u16 half_2a;
+    u16 half_2c;
+} DbLightPad;
+extern int xglCdFileSelect(void *sel);
+extern int lightFileNum;
+extern void *rcFile;
+extern void RSRC_init(void *rc);
+extern char *RSRC_loadFile2(void *rc, const char *dir, const char *name);
+extern int *RSRC_getItem(void *rc, char *data);
+extern void JS_exec(char *base, char *code);
+extern void DB_reset(int x, int y);
+extern void DB_println(const char *format, ...);
+extern int sprintf(char *buf, const char *fmt, ...);
+extern int sceOpen(const char *path, int flags, ...);
+extern int sceClose(int fd);
+extern void DB_lightWrite(int fd);
+extern char D_004C1EB0[];
+extern char D_004C1EC8[];
+extern char D_004C1EE0[];
+extern char D_004C1EF0[];
+
+int DB_lightSave(DbLightSel *sel)
+{
+    DbLightPad *pad = (DbLightPad *)&PadData;
+    char buf[512];
+    int ret;
+    int fd;
+    char *data;
+
+    switch (xglCdFileSelect(sel)) {
+    case 1:
+        RSRC_init(rcFile);
+        data = RSRC_loadFile2(rcFile, sel->path, sel->selectedPath);
+        JS_exec(data, data + *RSRC_getItem(rcFile, data));
+        ret = 0;
+        break;
+    case 2:
+        return 1;
+    case 0:
+    default:
+        if (pad->half_2c & 0x8000) {
+            lightFileNum--;
+        }
+        if (pad->half_2c & 0x2000) {
+            lightFileNum++;
+        }
+        if (lightFileNum < 0) {
+            lightFileNum = 99;
+        }
+        if (lightFileNum > 99) {
+            lightFileNum = 0;
+        }
+        DB_reset(0x20, 0xA0);
+        DB_println(D_004C1EB0);
+        DB_println(D_004C1EC8);
+        DB_println(D_004C1EE0, lightFileNum);
+        if (pad->half_2a & 0x80) {
+            sprintf(buf, D_004C1EF0, sel->path, sel->selectedPath, lightFileNum);
+            fd = sceOpen(buf, 0x602);
+            if (fd >= 0) {
+                DB_lightWrite(fd);
+                sceClose(fd);
+            }
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+        break;
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_scriptFileSelect);
 
