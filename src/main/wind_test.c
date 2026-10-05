@@ -53,7 +53,39 @@ static void MoveWind(void)
     ppNextEnd(wpos);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveWind2);
+extern float wvec[];
+extern float D_004D8234;
+extern float D_004D8238;
+extern volatile float D_004D823C;
+
+static void MoveWind2(void)
+{
+    float x;
+    float y;
+    float scale;
+
+    ppNextStart(wvec);
+    scale = D_004D8234;
+    if (PadData.trg & 1) {
+        wvec[1] -= D_004D8238;
+    }
+    if (PadData.trg & 4) {
+        wvec[1] += D_004D823C;
+    }
+    x = PadData.lx * scale;
+    y = PadData.ly * scale;
+    {
+        double p = wvec[0];
+        double dx = x;
+        double a = dx * cos(-cry_004DC61C);
+        double dy = y;
+        wvec[0] = p + (a - dy * sin(-cry_004DC61C));
+        p = wvec[2];
+        a = dy * cos(-cry_004DC61C);
+        wvec[2] = p + (a + dx * sin(-cry_004DC61C));
+    }
+    ppNextEnd(wvec);
+}
 
 extern signed char wtype;
 extern float shake;
