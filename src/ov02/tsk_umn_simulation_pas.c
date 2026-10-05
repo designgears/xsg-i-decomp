@@ -150,7 +150,116 @@ void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_simulation_pas", tskUmnSimulationInfo);
+typedef struct UmnSimInfoText {
+    short x;
+    short y;
+    unsigned char unmodeled_04[0x0C - 0x04];
+    char *text;
+} UmnSimInfoText;
+typedef struct UmnSimInfoWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    unsigned char unmodeled_0c[4];
+    unsigned char state;
+    unsigned char unmodeled_11[3];
+    void *callback;
+    void *callbackArg;
+    unsigned char unmodeled_1c[0x194 - 0x1C];
+} UmnSimInfoWindow;
+typedef struct UmnSimInfoStr {
+    long head;
+    short tail;
+} UmnSimInfoStr;
+typedef struct UmnSimInfoWork {
+    unsigned char state;
+    unsigned char opened;
+    unsigned char unmodeled_02[0x08 - 0x02];
+    int color;
+    UmnSimInfoWindow window;
+    UmnSimInfoText info;
+    unsigned char unmodeled_1b0[0x350 - 0x1B0];
+    union {
+        char buf[0x40];
+        UmnSimInfoStr head;
+    } str;
+} UmnSimInfoWork;
+extern void MenuInfoWindow(void);
+extern char D_00A13218;
+extern const char D_00A13220[] __attribute__((aligned(8)));
+extern char D_00A13230[];
+extern char *ListText[];
+extern char *strcat(char *, const char *);
+
+void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
+{
+    UmnSimInfoWork *work = arg;
+    unsigned char simulation_state = UmnWork.simulation_state;
+    short slideTarget;
+    UmnSimInfoText *info;
+    int tab;
+    char *buf;
+
+    if (simulation_state != 3) {
+        task->command = -1;
+        return;
+    }
+
+    switch (task->command) {
+    case 0:
+        work->color = 0x00FF0000;
+        work->str.buf[0] = D_00A13218;
+        work->opened = 0;
+        work->state = 0;
+        WindowDXSet(&work->window);
+        work->window.x = -16;
+        work->window.state = 0;
+        work->window.y = 480;
+        work->window.width = 544;
+        work->window.height = 54;
+        work->window.callbackArg = &work->info;
+        work->window.color = work->color;
+        work->info.x = 0;
+        work->window.callback = MenuInfoWindow;
+        work->window.state = 1;
+        work->info.y = 0;
+        work->info.text = 0;
+        WindowDXMain(&work->window);
+        work->window.state = simulation_state;
+        break;
+    case 2:
+        slideTarget = 386;
+        if (work->state != 0) {
+            if (work->state != 2) {
+                goto slide;
+            }
+        } else {
+            work->state = 2;
+            work->opened = 1;
+        }
+        tab = UmnWork.tab_state;
+        if (tab < 0x12) {
+            if (tab >= 0x10) {
+                if (UmnWork.list_index >= 0) {
+                    __builtin_memcpy(&work->str.head, D_00A13220, 10);
+                    strcat(work->str.buf, ListText[UmnWork.list_index]);
+                    strcat(work->str.buf, D_00A13230);
+                }
+            } else {
+                slideTarget = 512;
+            }
+        } else {
+            slideTarget = 512;
+        }
+    slide:
+        work->info.text = work->str.buf;
+        MoveSlide(&work->window.y, &slideTarget, 3.0f);
+        WindowDXMain(&work->window);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_simulation_pas", tskUmnSimulationList);
 
