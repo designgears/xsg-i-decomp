@@ -452,7 +452,60 @@ void _DumpHead(void) {
 
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _LoadXenoActorMdl);
+extern RgFileSys *InstanceOfRgFileSys(void);
+extern RgFileSysData *RgFileSysDup(RgFileSys *pSys, const char *pszName,
+                                   const char *pszRoot);
+extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName,
+                                    const char *pszRoot);
+extern char *strcpy(char *, const char *);
+extern char *strcat(char *, const char *);
+extern const char D_00A58A98[];
+extern const char D_00A58AB0[];
+extern const char D_00A58AB8[];
+extern const char D_00A58AC0[];
+
+void _LoadXenoActorMdl(XrgActor *pActor, const char *pszMdlName)
+{
+    char mdlName[128];
+    char dupName[128];
+    char jntName[128];
+    RgFileSysData *pMdlFile;
+    RgFileSysData *pJntFile;
+    RgFileSysData *pDupFile;
+    XenoAct *pXenoAct;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x2A9);
+    }
+    if (pszMdlName == 0) {
+        assert_prog(D_00A58A98, D_00A587E0, 0x2AA);
+    }
+    pXenoAct = pActor->pXenoAct;
+    if (pXenoAct == 0) {
+        assert_prog(D_00A587F8, D_00A587E0, 0x2AD);
+    }
+    strcat(strcpy(mdlName, pszMdlName), D_00A58AB0);
+    strcat(strcpy(dupName, pszMdlName), D_00A58AB8);
+    strcat(strcpy(jntName, pszMdlName), D_00A58AC0);
+    pMdlFile = RgFileSysRead(InstanceOfRgFileSys(), mdlName, 0);
+    pActor->resourceFiles[1] = pMdlFile;
+    pJntFile = RgFileSysRead(InstanceOfRgFileSys(), jntName, 0);
+    pActor->resourceFiles[3] = pJntFile;
+    pDupFile = RgFileSysDup(InstanceOfRgFileSys(), dupName, 0);
+    pActor->resourceFiles[2] = pDupFile;
+    if (pDupFile != 0) {
+        pXenoAct->dupFileData = pDupFile->data;
+        ((void (*)(RgFileSysData *))_DumpHead)(pDupFile);
+    }
+    if (pMdlFile != 0) {
+        pXenoAct->auxFileData = pMdlFile->data;
+        ((void (*)(RgFileSysData *))_DumpHead)(pMdlFile);
+    }
+    if (pJntFile != 0) {
+        pXenoAct->jointData = pJntFile->data;
+        ((void (*)(RgFileSysData *))_DumpHead)(pJntFile);
+    }
+}
 
 extern RgFileSys *InstanceOfRgFileSys(void);
 extern char *RgFileSysDataGetName(RgFileSysData *pFile);
