@@ -2,7 +2,92 @@
 #include "shared.h"
 #include "fcv2.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV_getValue);
+typedef struct FCVCurveKey {
+    f32 t;
+    f32 in;
+    f32 out;
+    f32 v;
+} FCVCurveKey;
+typedef struct FCVCurve {
+    u32 interp : 4;
+    u32 post : 4;
+    u32 pre : 4;
+    u32 : 20;
+    FCVCurveKey *keys;
+    u16 count;
+} FCVCurve;
+
+f32 FCV_getValue(FCVCurve *c, f32 t)
+{
+    FCVCurveKey *keys = c->keys;
+    FCVCurveKey *p;
+    f32 d, end;
+    f32 o, t1, t0, v0, v1, s, inv, s2, s3, h, m, q, a;
+    u32 mode;
+
+    f32 start = keys[0].t;
+
+    if (t < start) {
+        switch (c->pre) {
+        case 0:
+            return keys[0].v;
+        case 1:
+            d = keys[c->count - 1].t - start;
+            while (t < start) {
+                t += d;
+            }
+            break;
+        }
+    }
+    p = &keys[c->count - 1];
+    end = p->t;
+    if (end <= t) {
+        switch (c->post) {
+        case 0:
+            return p->v;
+        case 1:
+            d = end - c->keys->t;
+            while (end < t) {
+                t -= d;
+            }
+            break;
+        default:
+            return 0.0f;
+        }
+    }
+    p = keys + 1;
+    while (p->t <= t) {
+        if (t == p->t) {
+            return p->v;
+        }
+        p++;
+    }
+    t1 = p->t;
+    mode = c->interp;
+    v1 = p->v;
+    m = p->in;
+    p--;
+    t0 = p->t;
+    v0 = p->v;
+    o = p->out;
+    switch (mode) {
+    case 1:
+        return v0 + (v1 - v0) * (t - t0) / (t1 - t0);
+    case 0:
+        return v0;
+    case 2:
+        s = t - t0;
+        inv = 1.0f / (t1 - t0);
+        s2 = s * s;
+        s3 = s2 * s * (inv * inv);
+        a = s2 * 3.0f * (inv * inv);
+        q = s2 * inv;
+        h = (s3 + s3) * inv;
+        s3 = s3 - q;
+        return v0 * ((h - a) + 1.0f) + v1 * (a - h) + o * ((s3 - q) + s) + m * s3;
+    }
+    return 0.0f;
+}
 
 /*
  * FCVKeyData is the per-key-set source record FCV_resetPack reads: a packed
