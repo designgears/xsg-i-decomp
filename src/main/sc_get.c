@@ -211,7 +211,50 @@ void scExecEffect(void)
     sefExecScheduler();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scCreateTask);
+extern unsigned char D_004CC7E8[];
+extern unsigned char D_004CC800[];
+extern struct { long long a, b; } _zeroPos_0041E290;
+typedef struct { unsigned char b[32]; int w; } ScTaskCopy36;
+
+static int scCreateTask(int script_index, int task_index, int address, unsigned char *data)
+{
+    extern int tracePrint(unsigned char *fmt, unsigned int value);
+    ScriptTask *task;
+    short *hdr;
+    int i;
+    int *src;
+
+    if (task_index >= 8) {
+        tracePrint(D_004CC7E8, task_index);
+        return -1;
+    }
+    if (task_index < 0) {
+        for (i = 0; i < 8; i++) {
+            task = (ScriptTask *)((char *)(script_index * 0x450 + i * 128) + (int)_scriptWork);
+            if (!(task->flags & 1)) {
+                task_index = i;
+                break;
+            }
+        }
+    }
+    if (task_index >= 0) {
+        task = (ScriptTask *)((char *)(script_index * 0x450 + task_index * 128) + (int)_scriptWork);
+        hdr = (short *)((char *)(script_index * 0x450 + 0x440) + (int)_scriptWork);
+        task->flags = 1;
+        task->script_pc[task->branch_depth] = address;
+        src = (int *)data;
+        __builtin_memcpy((int *)task + 12, src, 36);
+        task->effect_scheduler = -1;
+        *(short *)task->unmodeled_58 = task_index;
+        *(long long *)((char *)task + 0x20) = _zeroPos_0041E290.a;
+        hdr[3] = task_index;
+        hdr[4]++;
+        *(long long *)((char *)task + 0x28) = _zeroPos_0041E290.b;
+    } else {
+        tracePrint(D_004CC800, script_index);
+    }
+    return task_index;
+}
 
 /*
  * Invalidate one task slot and decrement its owning script's active count.
