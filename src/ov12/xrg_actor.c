@@ -1253,7 +1253,46 @@ INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffConstraint);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffArmCombine);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorDisposeEffector);
+extern const char D_00A58C98[];
+
+void XrgActorDisposeEffector(XrgActor *pActor, void *effector)
+{
+    void *eff[2][4];
+    unsigned int num[2];
+    unsigned int i;
+    unsigned int j;
+    int cnt;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x63B);
+    }
+    for (i = 0; i < 2; i++) {
+        num[i] = (unsigned int)pActor->effectors[i];
+        for (j = 0; j < _EffNum((XrgEffSet *)((char *)pActor + 4), i); j++) {
+            eff[i][j] = _EffGet((XrgEffSet *)((char *)pActor + 4), i, j);
+        }
+    }
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < num[i]; j++) {
+            if (eff[i][j] == effector && effector != 0) {
+                DisposeRgMatricesEffector(effector);
+                eff[i][j] = 0;
+            }
+        }
+    }
+    for (i = 0; i < 2; i++) {
+        cnt = 0;
+        for (j = 0; j < num[i]; j++) {
+            if (eff[i][j] != 0) {
+                ((XrgEffSet *)((char *)pActor + 4))->eff[i][cnt++] = eff[i][j];
+            }
+        }
+        ((XrgEffSet *)((char *)pActor + 4))->num[i] = cnt;
+        if (cnt >= 4) {
+            RgError(D_00A58C98, D_00A587E0, 0x657, i, num[i]);
+        }
+    }
+}
 
 extern const char D_00A58CB0[];
 extern const char D_00A58CD0[];
