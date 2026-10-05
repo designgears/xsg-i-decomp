@@ -851,7 +851,59 @@ int calcHitMotChk(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitDmg);
+typedef struct CalcHitDmgArg {
+    int unk0;
+    ObjectTask *unit;
+} CalcHitDmgArg;
+typedef struct CalcHitDmgOut {
+    int hit;
+    int dmg;
+    int unk8;
+    int unkC;
+    int unk10;
+    int unk14;
+    int unk18;
+} CalcHitDmgOut;
+extern int calcHit(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
+extern int calcDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
+extern int plIchigekiGet(void);
+extern int cfEventGet(void);
+
+int calcHitDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out)
+{
+    unsigned char hit;
+    int r;
+    CalcUnitParam *up;
+
+    out->unkC = 8;
+    out->unk14 = 8;
+    out->unk10 = 0;
+    out->unk18 = 0;
+    r = calcHit(attacker, arg, out);
+    out->hit = r;
+    if ((unsigned char)r == 0) {
+        out->dmg = 0;
+        printf("** DMG: EVA \n");
+    } else {
+        out->dmg = calcDmg(attacker, arg, out);
+    }
+    if (!(*(unsigned *)attacker->work & 0x40) && (cfEventGet() & 1)
+        && (*(unsigned *)arg->unit->work & 0x40)) {
+        out->dmg = 0;
+        return 1;
+    }
+    hit = out->hit;
+    if (!(*(unsigned *)attacker->work & 0x40) && plIchigekiGet() != 0) {
+        if (hit < 2) {
+            out->hit = 1;
+            up = calcUPGet(arg->unit);
+            out->unk8 = 1;
+            out->dmg = *(short *)up->unmodeled_00;
+            printf("** PL ICHIGEKI\n");
+        }
+    }
+    return 1;
+}
 
 typedef struct CalcHitRateArg {
     int tecId;

@@ -2693,20 +2693,23 @@
     {
      "range": [
       "0x00a443b8",
-      "0x00a443f8"
+      "0x00a44418"
      ],
      "generated": [
       "0x00a443b8",
-      "0x00a443f8"
+      "0x00a44418"
      ],
      "generated_by": [
       "calcBp2Tid",
+      "calcHitDmg",
       "calcHp"
      ],
      "c_owned_symbols": [
       "D_00A443B8",
       "D_00A443C8",
-      "D_00A443D8"
+      "D_00A443D8",
+      "D_00A443F8",
+      "D_00A44408"
      ],
      "also_referenced_by_c": [],
      "basis": {
