@@ -855,7 +855,36 @@ RawJntData *_FindRawJntData(int id, int jntID)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _GetPakaPakaBaseJnt);
+extern const char D_00A58BE0[];
+extern const char D_00A58BE8[];
+
+int _GetPakaPakaBaseJnt(int actorID, int attachID)
+{
+    switch (actorID) {
+    case 0:
+        if (attachID == 4) {
+            return 0x35;
+        }
+        if (attachID == 5) {
+            return 0x43;
+        }
+        goto neg;
+    case 2:
+        switch (attachID) {
+        case 4:
+            XrgLog(D_00A58BE0, D_00A587E0, 0x5A8);
+            return 0x31;
+        case 5:
+            XrgLog(D_00A58BE8, D_00A587E0, 0x5AB);
+            return 0x40;
+        default:
+            return -1;
+        }
+    default:
+    neg:
+        return -1;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffConstraint);
 
