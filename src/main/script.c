@@ -1413,7 +1413,101 @@ static void DB_wind(DbWindTask *task)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_debugMenu);
+typedef struct DbMenuView {
+    u8 unmodeled_00[0x10];
+    u32 flags;
+    unsigned short state;
+    unsigned short mode;
+    u8 unmodeled_18[0x38];
+    int value;
+    signed char index;
+    signed char cancel;
+} DbMenuView;
+typedef struct DbMenuTask {
+    XglTaskPrefix task;
+    u32 flags;
+    DbMenuView *menu;
+    u8 unmodeled_18[4];
+    DbVmOwner *owner;
+} DbMenuTask;
+extern int DB_light(XglTaskPrefix *task);
+extern void initCursor();
+extern void TMENU_addItem(DbMenuView *menu, char *text);
+extern char D_004C1F00[];
+static inline void dbSpawn(void *func)
+{
+    XglTaskScheduler *scheduler = GameLoopState[2];
+    DbMenuTask *t = (DbMenuTask *)xglTaskEntryNext(
+        scheduler, (int (*)(XglTaskPrefix *))func,
+        scheduler != 0 ? scheduler->active_tail : 0);
+    if (t != 0) {
+        t->menu = 0;
+        t->owner = (DbVmOwner *)GameLoopState;
+        t->flags = 0;
+    }
+}
+
+void SCRIPT_debugMenu(DbMenuTask *task)
+{
+    DbMenuView *menu = task->menu;
+
+    if (!(task->flags & 1)) {
+        TWSYS_setGRPStatus(0, 3);
+        menu = (DbMenuView *)TMENU_create(-1);
+        menu->value = 0;
+        menu->mode |= 0x10;
+        TMENU_addItem(menu, D_004C1F00);
+        menu->flags &= ~0x40;
+        task->menu = menu;
+        task->flags |= 1;
+    }
+    if (menu->state != 0)
+        return;
+    menu->state = 2;
+    switch (menu->index) {
+    case 0:
+        dbSpawn(DB_scriptFileSelect);
+        break;
+    case 1:
+        dbSpawn(DB_stageSelect);
+        break;
+    case 2:
+        dbSpawn(DB_vmSwitch);
+        break;
+    case 3:
+        initCursor();
+        task->owner->state_0c = 7;
+        break;
+    case 4:
+        dbSpawn(DB_light);
+        break;
+    case 5: {
+        XglTaskScheduler *scheduler = GameLoopState[2];
+        DbMenuTask *t = (DbMenuTask *)xglTaskEntryNext(
+            scheduler, (int (*)(XglTaskPrefix *))DB_memory,
+            scheduler != 0 ? scheduler->active_tail : 0);
+        if (t != 0) {
+            t->flags = 0;
+            t->owner = (DbVmOwner *)GameLoopState;
+            t->menu = 0;
+        }
+        t->owner->state_29f60 = task->owner->state_29f60;
+        break;
+    }
+    case 6:
+        dbSpawn(DB_wind);
+        break;
+    default:
+        if (menu->cancel < 0) {
+            DbVmOwner *owner = task->owner;
+            owner->flags &= ~1;
+            owner->state_0c = owner->state_29f60;
+            TWSYS_setGRPStatus(0, 0);
+        }
+        break;
+    }
+    xglTaskRemove(&task->task);
+}
 
 extern int DebugMenuResourceSizeAdd;
 extern char D_004C1F60[];

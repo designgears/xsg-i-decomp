@@ -604,6 +604,45 @@
     }
    ]
   },
+  "main/tu148": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004c1f40",
+      "0x004c1f60"
+     ],
+     "generated": [
+      "0x004c1f40",
+      "0x004c1f5c"
+     ],
+     "generated_by": [
+      "SCRIPT_debugMenu"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C1F40"
+     ],
+     "also_referenced_by_c": [
+      "D_004C1D50",
+      "D_004C1D60",
+      "func_observer_debug_text",
+      "D_004C1E90",
+      "D_004C1EA0",
+      "D_004C1EB0",
+      "D_004C1EC8",
+      "D_004C1EE0",
+      "D_004C1EF0",
+      "D_004C1F00",
+      "D_004C1F60",
+      "D_004C1F78"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/script.o"
+     }
+    }
+   ]
+  },
   "main/tu158": {
    ".rodata": [
     {
@@ -2088,18 +2127,22 @@
     },
     {
      "range": [
-      "0x004d8444",
+      "0x004d8438",
       "0x004d844c"
      ],
      "generated": [
-      "0x004d8444",
+      "0x004d8438",
       "0x004d844c"
      ],
      "generated_by": [
       "Java_xeno_Unit_getRotate__",
-      "Java_xeno_Unit_setRotate__"
+      "Java_xeno_Unit_setRotate__",
+      "UNIT_rotZ"
      ],
      "c_owned_symbols": [
+      "D_004D8438",
+      "D_004D843C",
+      "D_004D8440",
       "D_004D8444",
       "D_004D8448"
      ],
