@@ -57,7 +57,38 @@ void eBattleWinClose3(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinOpen4);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinMain4);
+extern int eMessageNextPage(void *message, int arg);
+extern PadPrefix PadData;
+
+int eBattleWinMain4(void)
+{
+    BattleWindow4 *w;
+    int r;
+
+    if (*(int *)BW4 == 0) {
+        return 0;
+    }
+    endPrintExtFunc(0xFFFFFF, 0x64, 0);
+    WindowDXMain(&BW4->window);
+    switch ((signed char)BW4->window.state) {
+    case 3:
+        if (PadData.half_2a & 0x20) {
+            r = eMessageNextPage((char *)BW4 + 0x19C, 0);
+            w = BW4;
+            if (r == 0) {
+                w->page = 1;
+            }
+        }
+        eMessageMain((char *)BW4 + 0x19C);
+        return 2;
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+        return 1;
+    }
+    return 0;
+}
 
 void eBattleWinClose4(void)
 {
