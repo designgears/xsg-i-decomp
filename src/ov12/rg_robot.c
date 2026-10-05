@@ -281,7 +281,40 @@ static void _StatusDisp(RgRobotStatus *status, RgBody *body)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _AllowAllCmdInMoving);
+static int _ExecAccelarateCmd(RgStatus *status, RgBody *body, RgCmd *command);
+static int _ExecRotateCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecShotOrAttackCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecTargettingCmd(RgStatus *status, RgBody *body, RgCmd *command, void *target);
+static int _ExecBreakCmd(RgStatus *status, RgBody *body, void *command);
+static int _ExecDashCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecDashContinueCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecDropWeaponCmd(RgStatus *status, RgBody *body, RgCmd *command);
+static int _ExecDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecWeakDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command);
+
+static int _AllowAllCmdInMoving(RgRobotStatus *status, int param, RgBody *cmd)
+{
+    RgBody *body = (RgBody *)param;
+    RgCmd *command = (RgCmd *)cmd;
+    int result;
+
+    result = 0;
+    switch ((unsigned)command->type) {
+    case 0: result = _ExecAccelarateCmd((RgStatus *)status, body, command); break;
+    case 1: result = _ExecRotateCmd(status, body, command); break;
+    case 2: result = _ExecShotOrAttackCmd(status, body, command); break;
+    case 3: result = _ExecTargettingCmd((RgStatus *)status, body, command, (void *)1); break;
+    case 4: result = _ExecBreakCmd((RgStatus *)status, body, command); break;
+    case 5: result = _ExecDashCmd(status, body, command); break;
+    case 6: result = _ExecDashContinueCmd(status, body, command); break;
+    case 7: result = _ExecDropWeaponCmd((RgStatus *)status, body, command); break;
+    case 8: result = _ExecDamageCmd(status, body, command); break;
+    case 9: result = _ExecWeakDamageCmd(status, body, command); break;
+    case 14: result = _ExecHitByBody(status, body, command); break;
+    }
+    return result;
+}
 
 static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command);
 
