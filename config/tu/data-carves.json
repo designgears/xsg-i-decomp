@@ -2172,6 +2172,46 @@
     }
    ]
   },
+  "main/tu248": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d83f0",
+      "0x004d8418"
+     ],
+     "generated": [
+      "0x004d83f0",
+      "0x004d8418"
+     ],
+     "generated_by": [
+      "CHR_rotX",
+      "CHR_rotY",
+      "CHR_rotZ",
+      "Java_xeno_Chr_setRotate__"
+     ],
+     "c_owned_symbols": [
+      "D_004D83F0",
+      "D_004D83F4",
+      "D_004D83F8",
+      "D_004D83FC",
+      "D_004D8400",
+      "D_004D8404",
+      "D_004D8408",
+      "D_004D840C",
+      "D_004D8410",
+      "D_004D8414"
+     ],
+     "also_referenced_by_c": [
+      "D_004D841C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/chr.o"
+     }
+    }
+   ]
+  },
   "main/tu249": {
    ".lit4": [
     {
@@ -2307,6 +2347,38 @@
    ]
   },
   "main/tu259": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d850c",
+      "0x004d8518"
+     ],
+     "generated": [
+      "0x004d850c",
+      "0x004d8518"
+     ],
+     "generated_by": [
+      "FCV2_getVal"
+     ],
+     "c_owned_symbols": [
+      "D_004D850C",
+      "D_004D8510",
+      "D_004D8514"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8518",
+      "D_004D851C",
+      "D_004D8520",
+      "D_004D8524",
+      "D_004D8528"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/fcv2.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

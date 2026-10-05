@@ -318,9 +318,149 @@ static s32 FCV_getFKeyType(u32 keyIndex, u8 *types)
 
 INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getPackVal);
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getVal);
+typedef struct FCV2Key {
+    u16 type;
+    u16 frame;
+    f32 val;
+    f32 in;
+    f32 out;
+} FCV2Key;
+typedef union FCV2Out {
+    void *p;
+    f32 f;
+} FCV2Out;
+static inline FCV2Key *FCV2_nextKey(FCV2Key *k, s32 type)
+{
+    switch (type) {
+    case 1:
+        return (FCV2Key *)((char *)k + 0x10);
+    case 0:
+    case 2:
+    case 3:
+        return (FCV2Key *)((char *)k + 8);
+    }
+    return k;
+}
 
-static f32 FCV2_getVal(void *output, void *data, u16 key, f32 frame);
+static f32 FCV2_getVal(void *output, void *data, s32 key, f32 frame)
+{
+    s32 i;
+    FCV2Key *prev;
+    FCV2Key *p;
+    s32 type;
+    f32 *pv;
+    f32 t, t0, t1, v0, v1, o, m, s, inv, s2, s3, a, q, h;
+
+    prev = data;
+    type = prev->type;
+    switch (type) {
+    case 1:
+        p = (FCV2Key *)((char *)prev + 0x10);
+        break;
+    case 0:
+    case 2:
+    case 3:
+        p = (FCV2Key *)((char *)data + 8);
+        break;
+    default:
+        p = data;
+        break;
+    }
+    if (output != 0) {
+        *(void **)output = 0;
+    }
+    t = ((FCV2Key *)data)->frame * (1.0f / 30.0f);
+    if (frame <= t) {
+        if (__builtin_fabsf(frame - t) < (1.0f / 30.0f)) {
+            if (output != 0) {
+                *(void **)output = data;
+            }
+        }
+        return ((FCV2Key *)data)->val;
+    }
+    for (i = 1; i < key; i++) {
+        t = p->frame * (1.0f / 30.0f);
+        if (frame <= t) {
+            if (__builtin_fabsf(frame - t) < (1.0f / 30.0f)) {
+                if (output != 0) {
+                    ((FCV2Out *)output)->p = p;
+                }
+                return p->val;
+            }
+            break;
+        }
+        prev = p;
+        type = prev->type;
+        switch (type) {
+        case 0:
+        case 2:
+        case 3:
+            p = (FCV2Key *)((char *)p + 8);
+            break;
+        case 1:
+            p = (FCV2Key *)((char *)prev + 0x10);
+            break;
+        }
+    }
+    if (i == key) {
+        return prev->val;
+    }
+    t0 = prev->frame * (1.0f / 30.0f);
+    t1 = p->frame * (1.0f / 30.0f);
+    pv = &p->val;
+    switch (p->type) {
+    case 0:
+    case 2:
+        m = 0.0f;
+        v1 = pv[0];
+        break;
+    case 1:
+        v1 = pv[0];
+        m = pv[1];
+        break;
+    default:
+        m = 0.0f;
+        v1 = m;
+        break;
+    }
+    pv = &prev->val;
+    switch (type) {
+    case 0:
+    case 2:
+    case 3:
+        o = 0.0f;
+        v0 = pv[0];
+        break;
+    case 1:
+        v0 = pv[0];
+        o = pv[2];
+        break;
+    default:
+        o = 0.0f;
+        v0 = o;
+        break;
+    }
+    switch (type) {
+    case 3:
+        return v0;
+    case 0:
+        return v0 + (v1 - v0) * (frame - t0) / (t1 - t0);
+    case 1:
+    case 2:
+        s = frame - t0;
+        inv = 1.0f / (t1 - t0);
+        s2 = s * s;
+        s3 = s2 * s * (inv * inv);
+        a = s2 * 3.0f * (inv * inv);
+        q = s2 * inv;
+        h = (s3 + s3) * inv;
+        s3 = s3 - q;
+        return v0 * ((h - a) + 1.0f) + v1 * (a - h) + o * ((s3 - q) + s) + m * s3;
+    }
+    return 0.0f;
+}
+
+static f32 FCV2_getVal(void *output, void *data, s32 key, f32 frame);
 
 /*
  * FCV2Value is the curve FCV2_getValue samples: a cursor into its key table,
