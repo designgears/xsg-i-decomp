@@ -298,7 +298,58 @@ void MAP_drawUnitItemBox(UnitItemBox *box)
     xglMatrixStackSave(*box->saved_matrix);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", MAP_updateUnitItemSymbol);
+extern float D_004D7F60;
+extern float D_004D7F64;
+extern void UwamonoCommonFunc(void *unit);
+extern float CheckDist3D(Vector4 *a, Vector4 *b);
+extern void xglSoundEffectNormalID(int sound_id, int variant);
+extern int taskItemGet(XglTaskPrefix *task);
+typedef struct ItemGetTask {
+    XglTaskPrefix task;
+    int w10;
+    int w14;
+    unsigned char pad18[4];
+    ItemMapUnit *unit;
+    unsigned char pad20[6];
+    unsigned short itemNo;
+    unsigned char pad28[8];
+    unsigned char b30;
+} ItemGetTask;
+
+void MAP_updateUnitItemSymbol(ItemMapUnit *unit)
+{
+    XglTaskScheduler *scheduler;
+    ItemGetTask *task;
+    unsigned short itemNo;
+    ItemUnitInfo *info = &unit->info;
+
+    unit->rotation.y += D_004D7F60;
+    UwamonoCommonFunc(unit);
+    switch (unit->actionSub) {
+    case 0:
+        if (CheckDist3D((Vector4 *) (GameLoopState[1] + 0x10), &unit->position) < D_004D7F64
+            && !(GameLoopState[4] & 0x20000)) {
+            scheduler = (XglTaskScheduler *) GameLoopState[2];
+            task = (ItemGetTask *) xglTaskEntryNext(scheduler, taskItemGet,
+                scheduler != 0 ? scheduler->active_tail : 0);
+            itemNo = info->itemNo;
+            task->w10 = 0;
+            task->b30 = 0;
+            task->w14 = 0;
+            task->itemNo = itemNo;
+            task->unit = unit;
+            unit->actionSub = 1;
+            unit->flags |= 4;
+            xglSoundEffectNormalID(6, 0);
+            GameLoopState[4] |= 0x20000;
+        }
+        break;
+    case 1:
+        unit->update = 0;
+        unit->serial = -1;
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", MAP_updateUnitSpecialSymbol);
 
