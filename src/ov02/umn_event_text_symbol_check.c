@@ -78,7 +78,24 @@ void UmnEventTextGyouJump(unsigned char **str)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextMessageMake);
+void UmnEventTextMessageMake(unsigned char **str, unsigned char **out)
+{
+    int c;
+    while (**str != '<') {
+        if (**str == '\\') {
+            (*str)++;
+            c = UmnEventTextNumberGet(str, 0);
+            if (c == 0x1F) {
+                UmnEventTextGyouJump(str);
+            }
+            *(*out)++ = c;
+        } else {
+            *(*out)++ = *(*str)++;
+        }
+    }
+    *(*out)++ = 0;
+    *str += 6;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextMake);
 
