@@ -20,7 +20,62 @@ INCLUDE_ASM("asm/main/nonmatchings/open_close_main", OpenSubType00);
 
 INCLUDE_ASM("asm/main/nonmatchings/open_close_main", CloseSubType00);
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", OpenSubType01);
+extern void endPrintExtFunc(int work, int mode, void *descriptor);
+typedef struct OpenSub01Packet {
+    short x;
+    short y;
+    int work;
+    short w;
+    short h;
+    unsigned char r, g, b, a;
+} OpenSub01Packet;
+typedef struct OpenSub01Ctrl {
+    unsigned char pad0[4];
+    short x;
+    short y;
+    int work;
+    short w;
+    short h;
+    signed char phase;
+    unsigned char subtype;
+    unsigned char frame;
+    unsigned char pad13;
+    OpenSub01Packet packet[1];
+} OpenSub01Ctrl;
+
+static void OpenSubType01(OpenSub01Ctrl *c)
+{
+    OpenSub01Packet *p;
+    int i;
+    int half;
+    int top;
+    double mid;
+    double ext;
+    int bot;
+
+    for (i = 0; i < 1; i++) {
+        p = &c->packet[i];
+        p->x = c->x;
+        p->w = c->w;
+        half = c->h / 2;
+        mid = c->y + half;
+        top = mid - half * (c->frame / 7.0);
+        bot = mid + half * (c->frame / 7.0);
+        p->y = top;
+        p->h = bot - top;
+        p->work = c->work;
+        p->a = 0x40;
+        p->r = 0x80;
+        p->b = 0x80;
+        p->g = 0x80;
+        endPrintExtFunc(p->work, 9, p);
+    }
+    if (c->frame == 7) {
+        c->phase = -1;
+    } else {
+        c->frame++;
+    }
+}
 
 void OpenCloseMain(OpenCloseController *controller)
 {
