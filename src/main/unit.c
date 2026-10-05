@@ -733,7 +733,76 @@ void Java_xeno_Unit_move__Ljava_lang_Object_FZ(JThread *thread,
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", UNIT_motion);
+extern int SEQ_motionUnit();
+typedef struct UnitMotionState {
+    u8 pad00[0x08];
+    int motion;
+    u8 pad0c[0x10 - 0x0c];
+    u16 start;
+    u16 end;
+    u8 loop;
+    u8 pad15[0x18 - 0x15];
+    int frames;
+    float speed;
+} UnitMotionState;
+typedef union { int i; float f; u16 h; u8 b; } UnitMotionWord;
+
+void UNIT_motion(int mode, JThread *thread, void *arguments_,
+                 u32 *failure_result)
+{
+    UnitMotionWord *arguments = arguments_;
+    JavaField *field;
+    UnitPeer *peer;
+    UnitSequenceEntry *entry;
+    UnitMotionState *mot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = (u8 *)arguments[0].i;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    peer = *(UnitPeer **)(object + field->offset);
+    entry = &unitSequence[peer->serial];
+    mot = (UnitMotionState *)((u8 *)entry + 0x138);
+    *(void **)((u8 *)entry + 0x2c) = SEQ_motionUnit;
+    entry->state |= 0x10;
+
+    switch (mode) {
+    case 0:
+        mot->motion = arguments[1].i;
+        mot->frames = arguments[2].i;
+        mot->speed = arguments[3].f;
+        wait = arguments[4].b;
+        mot->start = -1;
+        mot->end = -1;
+        break;
+    case 1:
+        mot->motion = arguments[1].i;
+        mot->start = arguments[2].h;
+        mot->end = arguments[3].h;
+        mot->loop = arguments[4].b;
+        mot->frames = arguments[5].i;
+        mot->speed = arguments[6].f;
+        wait = arguments[7].b;
+        break;
+    }
+
+    if (wait == 1) {
+        UnitRotWaitThread *t = (UnitRotWaitThread *)thread;
+        peer->flags |= 2;
+        if (t->state != 5 && !(t->flags & 0x40))
+            return;
+        if (t->flags & 0x40) {
+            t->wait_object = peer;
+            t->next = 6;
+            t->pc = t->pc2;
+            t->flags |= 4;
+        }
+        t->pc = t->pc2;
+        t->flags |= 1;
+    }
+}
 
 /*
  * Motion mode zero (the short, two-int overload): forward thread/arguments/
