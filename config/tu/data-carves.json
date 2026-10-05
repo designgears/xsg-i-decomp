@@ -142,17 +142,21 @@
    ".rodata": [
     {
      "range": [
-      "0x004d3070",
+      "0x004d3030",
       "0x004d3090"
      ],
      "generated": [
-      "0x004d3070",
+      "0x004d3030",
       "0x004d3090"
      ],
      "generated_by": [
+      "nmlPacketAddGsFlush",
+      "nmlPacketAddGsFlushWide",
       "nmlPacketAddTransMicrocode"
      ],
      "c_owned_symbols": [
+      "jtbl_004D3030",
+      "jtbl_004D3050",
       "jtbl_004D3070"
      ],
      "also_referenced_by_c": [
@@ -370,6 +374,32 @@
     }
    ]
   },
+  "main/tu142": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004c1a90",
+      "0x004c1b00"
+     ],
+     "generated": [
+      "0x004c1a90",
+      "0x004c1af4"
+     ],
+     "generated_by": [
+      "_skipCTRLCode"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C1A90"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/msg_init.o"
+     }
+    }
+   ]
+  },
   "main/tu143": {
    ".rodata": [
     {
@@ -558,6 +588,28 @@
      ],
      "c_owned_symbols": [
       "jtbl_004C3970"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_battle_win_open.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c3a00",
+      "0x004c3a20"
+     ],
+     "generated": [
+      "0x004c3a00",
+      "0x004c3a14"
+     ],
+     "generated_by": [
+      "eBattleWinMain4"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C3A00"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -1246,6 +1298,38 @@
     }
    ]
   },
+  "main/tu186": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004ca580",
+      "0x004ca5b0"
+     ],
+     "generated": [
+      "0x004ca580",
+      "0x004ca5ac"
+     ],
+     "generated_by": [
+      "GetItemName"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004CA580"
+     ],
+     "also_referenced_by_c": [
+      "evt_item_format_special",
+      "evt_item_format_normal",
+      "D_004CA568",
+      "D_004CA5D0",
+      "D_004CA650"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+     }
+    }
+   ]
+  },
   "main/tu189": {
    ".lit4": [
     {
@@ -1813,50 +1897,61 @@
     }
    ]
   },
+  "main/tu267": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004d1eb0",
+      "0x004d20d0"
+     ],
+     "generated": [
+      "0x004d1eb0",
+      "0x004d20cc"
+     ],
+     "generated_by": [
+      "GetHairTypeSelection"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004D1EB0",
+      "jtbl_004D1F20",
+      "jtbl_004D1F90",
+      "jtbl_004D2040"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+     }
+    }
+   ]
+  },
   "ov01/tu002_00a00d60": {
    ".rodata": [
     {
      "range": [
       "0x00a43a60",
-      "0x00a43ab8"
+      "0x00a43ad8"
      ],
      "generated": [
       "0x00a43a60",
-      "0x00a43ab8"
+      "0x00a43ad8"
      ],
      "generated_by": [
+      "unitCmdTgtSet",
+      "unitCmdTurnSub",
       "unitDeadSpecChk"
      ],
      "c_owned_symbols": [
-      "jtbl_00A43A60"
-     ],
-     "also_referenced_by_c": [
-      "D_00A438F0",
-      "D_00A43968",
-      "D_00A43980"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/unit_cmd.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43ad0",
-      "0x00a43ad8"
-     ],
-     "generated": [
-      "0x00a43ad0",
-      "0x00a43ad8"
-     ],
-     "generated_by": [
-      "unitCmdTurnSub"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A43A60",
+      "D_00A43AB8",
       "D_00A43AD0"
      ],
      "also_referenced_by_c": [
+      "D_00A438F0",
+      "D_00A43940",
+      "D_00A43968",
+      "D_00A43980",
       "D_00A43BD8",
       "D_00A43BF8"
      ],
@@ -1864,6 +1959,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/unit_cmd.o"
+     }
+    }
+   ]
+  },
+  "ov01/tu004_00a10bb8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a44360",
+      "0x00a44388"
+     ],
+     "generated": [
+      "0x00a44360",
+      "0x00a44388"
+     ],
+     "generated_by": [
+      "calcHpDmg"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A44360"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
      }
     }
    ]
@@ -2968,6 +3089,48 @@
       "D_00A517C8",
       "D_00A517D8"
      ]
+    }
+   ]
+  },
+  "ov12/tu004_00a02510": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51900",
+      "0x00a51940"
+     ],
+     "generated": [
+      "0x00a51900",
+      "0x00a5193c"
+     ],
+     "generated_by": [
+      "_AllowAllCmdInMoving"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A51900"
+     ],
+     "also_referenced_by_c": [
+      "D_00A51830",
+      "D_00A51840",
+      "D_00A51858",
+      "D_00A518F0",
+      "D_00A51A58",
+      "D_00A51A68",
+      "D_00A51A78",
+      "D_00A51A88",
+      "D_00A51B48",
+      "D_00A51B58",
+      "D_00A51B78",
+      "D_00A51BA0",
+      "D_00A51BB0",
+      "D_00A51BC0",
+      "D_00A51BE0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_robot.o"
+     }
     }
    ]
   },
