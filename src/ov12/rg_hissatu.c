@@ -22,7 +22,29 @@ extern int RgWeaponIsNotBusy(RgWeapon *weapon);
 
 static int _IsSpecWep(RgWeapon *weapon, const char *weaponName);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_hissatu", _IsSpecWep);
+extern const char D_00A52660[];
+extern int strcasecmp(const char *left, const char *right);
+extern char *RgWeaponGetEss(RgWeapon *weapon);
+extern float RgWeaponGetShotNum(RgWeapon *weapon);
+
+static int _IsSpecWep(RgWeapon *weapon, const char *weaponName) {
+    char *ess;
+
+    if (weaponName == 0) {
+        assert_prog(D_00A52660, D_00A52670, 0x15);
+    }
+    if (weapon == 0) {
+        return 0;
+    }
+    ess = RgWeaponGetEss(weapon);
+    if (ess == 0 || strcasecmp(ess + 0x330, weaponName) != 0) {
+        return 0;
+    }
+    if (RgWeaponGetShotNum(weapon) <= 0.0f || RgWeaponIsNotBusy(weapon) == 0) {
+        return 0;
+    }
+    return 1;
+}
 
 extern int RgWeaponGetControlFlag(RgWeapon *weapon);
 
