@@ -99,7 +99,61 @@ static void OpenSubType00(OpenSub01Ctrl *c)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", CloseSubType00);
+extern const float D_004D7D4C;
+extern const float D_004D7D50;
+extern const float D_004D7D54;
+
+static void CloseSubType00(OpenSub01Ctrl *c)
+{
+    OpenSub01Packet *p;
+    int i;
+    int t;
+    float ft;
+    float s;
+    float a;
+    int x0, x1, y0, y1;
+    int alpha;
+
+    p = c->packet;
+    t = 11 - c->frame;
+    ft = t;
+    alpha = t * 5 + 10;
+    for (i = 0; i < 3; i++) {
+        s = i;
+        a = ft * D_004D7D4C;
+        x0 = (c->x + c->w / 2) - (c->w / 2) * xglSin(a);
+        x1 = (c->x + c->w / 2) + (c->w / 2) * xglSin(a);
+        a = ft * D_004D7D50;
+        x0 = x0 - (c->w / 2) * (s * D_004D7D54) * xglCos(a);
+        x1 = x1 + (c->w / 2) * (s * D_004D7D54) * xglCos(a);
+        a = ft * D_004D7D4C;
+        y0 = (c->y + c->h / 2) - (c->h / 2) * xglSin(a);
+        y1 = (c->y + c->h / 2) + (c->h / 2) * xglSin(a);
+        a = ft * D_004D7D50;
+        y0 = y0 - (c->h / 2) * (s * D_004D7D54) * xglCos(a);
+        y1 = y1 + (c->h / 2) * (s * D_004D7D54) * xglCos(a);
+        p->w = x1 - x0;
+        p->work = c->work;
+        p->x = x0;
+        p->y = y0;
+        p->r = 0x80;
+        p->b = 0x80;
+        p->g = 0x80;
+        p->h = y1 - y0;
+        if (i == 0) {
+            p->a = 0x40;
+        } else {
+            p->a = alpha;
+        }
+        endPrintExtFunc(p->work, 9, p);
+        p++;
+    }
+    if (t == 0) {
+        c->phase = -1;
+    } else {
+        c->frame++;
+    }
+}
 
 static void OpenSubType01(OpenSub01Ctrl *c)
 {
