@@ -220,7 +220,60 @@ void FCV2_setStep(f32 step)
     fcv2Step = __builtin_fabsf(step) * 0.5f;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_resetPack);
+extern f32 D_004D8518;
+extern f32 D_004D851C;
+extern f32 D_004D8520;
+extern f32 D_004D8524;
+typedef struct FCV2Curve {
+    u32 signature;
+    u16 type;
+    u16 count;
+    u16 start;
+    u16 end;
+    s16 scale;
+    u16 pad;
+    u32 data[1];
+} FCV2Curve;
+typedef struct FCV2PackState {
+    u32 cursor;
+    f32 a;
+    f32 b;
+    int value_c;
+    u8 pad[0x10];
+    f32 step;
+} FCV2PackState;
+
+void FCV2_resetPack(FcvAttribute *pack, FCV2Curve *curve)
+{
+    f32 a;
+    f32 b;
+    u32 *data;
+    s16 type;
+    u32 res;
+
+    if (curve != 0) {
+        if (curve->type >= 2) {
+            b = curve->scale * D_004D851C;
+            a = curve->count * D_004D8518 * D_004D851C;
+        } else {
+            b = 0.0f;
+            a = (curve->end - curve->start) * D_004D8520 * D_004D8524;
+        }
+        type = curve->type;
+        pack->value_c = 0;
+        if ((u16)type >= 2) {
+            data = curve->data;
+            FCV2_readAttribute(pack, data);
+            res = (u32)data + *data;
+        } else {
+            res = (u32)curve->data;
+        }
+        ((FCV2PackState *)pack)->cursor = res;
+        ((FCV2PackState *)pack)->a = a;
+        ((FCV2PackState *)pack)->b = b;
+        ((FCV2PackState *)pack)->step = fcv2Step;
+    }
+}
 
 typedef struct FCV2AttrHeader {
     u16 size;
