@@ -208,7 +208,38 @@ static void plane_from_points(const Vector4 *p0, const Vector4 *p1, const Vector
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", setup_occlusion);
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", check_occlusion);
+typedef struct CullingVolumePlanes {
+    Vector4 position;
+    Vector4 rotation;
+    Vector4 scale;
+    Vector4 normal;
+    float matrix[4][4];
+    float inverse[4][4];
+    Vector4 corners[4];
+    float planes[5][4];
+    float depth;
+} CullingVolumePlanes;
+
+s32 check_occlusion(CullingVolume *volume, s32 camera, s32 model)
+{
+    CullingVolumePlanes *v = (CullingVolumePlanes *)volume;
+    Vector4 p;
+    s32 result;
+
+    apply_point(&p, (const void *)(camera + 0x1B0), (const void *)model);
+    result = 0;
+    p.z = -p.z;
+    if (!((p.z - p.w) < v->depth)) {
+        if (!(-p.w < p.x * v->planes[0][0] + p.y * v->planes[0][1] + p.z * v->planes[0][2] + v->planes[0][3]) &&
+            !(-p.w < p.x * v->planes[1][0] + p.y * v->planes[1][1] + p.z * v->planes[1][2] + v->planes[1][3]) &&
+            !(-p.w < p.x * v->planes[2][0] + p.y * v->planes[2][1] + p.z * v->planes[2][2] + v->planes[2][3]) &&
+            !(-p.w < p.x * v->planes[3][0] + p.y * v->planes[3][1] + p.z * v->planes[3][2] + v->planes[3][3]) &&
+            !(-p.w < p.x * v->planes[4][0] + p.y * v->planes[4][1] + p.z * v->planes[4][2] + v->planes[4][3])) {
+            result = 1;
+        }
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingCheck);
 
