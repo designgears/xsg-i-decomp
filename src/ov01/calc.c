@@ -1397,7 +1397,59 @@ int futtobiChk(ObjectTask *unit, unsigned short *tec)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStat);
+extern void calcStatReset(ObjectTask *unit, int category, int mask, int unused);
+extern int calcRevHit(int hitMode);
+typedef struct CalcStatMainArg {
+    int tecId;
+    ObjectTask *unit;
+} CalcStatMainArg;
+
+int calcStat(int unused, CalcStatMainArg *arg, unsigned char *mode, int *val)
+{
+    unsigned char m;
+    int v;
+    int pct;
+    signed char *tec;
+
+    tec = (signed char *)dataTecGet(arg->tecId);
+    m = *mode;
+    if (tec[5] == 1 && calcStatGet(arg->unit, 0, 0x20) != 0) {
+        calcStatReset(arg->unit, 0, 0x20, 0);
+        *val *= 2;
+    }
+    if ((unsigned)(m - 1) < 2 && calcStatGet(arg->unit, 0, 0x10) != 0) {
+        *(int *)mode = calcRevHit(*(int *)mode);
+    }
+    if (m == 2 && calcStatGet(arg->unit, 0, 8) != 0) {
+        *val /= 2;
+    }
+    if (m == 4 && calcStatGet(arg->unit, 1, 0x40) != 0) {
+        *val /= 2;
+    }
+    if (m == 1 && calcStatGet(arg->unit, 7, 0x40) != 0) {
+        v = *val;
+        pct = v % 10 / 2 * 20;
+        if (v & 1) {
+            *val = v - v * pct / 100;
+        } else {
+            *val = v + v * pct / 100;
+        }
+    }
+    if (m == 3 && calcStatGet(arg->unit, 3, 2) != 0) {
+        *val = 0;
+    }
+    if (m == 1) {
+        if (calcBattleChk(arg->unit) == 0) {
+            ((CalcActorRecord *)arg->unit->work)->flags &= ~0x10;
+        }
+        calcStatReset(arg->unit, 1, 0x2000, 0);
+        calcStatReset(arg->unit, 5, 0x2000, 0);
+        if (calcStatGet(arg->unit, 5, 0x4000) != 0 && rnd(100) < 50) {
+            calcStatReset(arg->unit, 5, 0x4000, 0);
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatAtk);
 
