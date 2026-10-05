@@ -844,7 +844,32 @@ int RgWeaponIsNotBusy(void *weapon)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", RgWeaponGetRestUnit);
+extern const char D_00A537A8[];
+extern const char D_00A537B8[];
+extern void RgWarn(const char *fmt, const char *file, int line, ...);
+extern int RgWeaponGetEss(RgWeapon *weapon);
+extern RgWeaponShotEssence *RgWeaponEssCastToShot(RgWeaponEssenceCommon *ess);
+
+int RgWeaponGetRestUnit(RgWeapon *weapon)
+{
+    int ess;
+
+    if (weapon == 0) {
+        assert_prog(D_00A537A8, D_00A53658, 0x5B5);
+    }
+    ess = RgWeaponGetEss(weapon);
+    if (ess == 0) {
+        RgWarn(D_00A537B8, D_00A53658, 0x5BA, weapon, weapon->shotMotionOffset);
+        return 2;
+    }
+    if (*(float *)(ess + 0x14) == 1e8f) {
+        return 2;
+    }
+    if (RgWeaponEssCastToShot((RgWeaponEssenceCommon *) ess) != 0) {
+        return 0;
+    }
+    return RgWeaponEssCastToAttack(ess) != 0 ? 2 : 1;
+}
 
 int RgWeaponRobotShotMotion(RgWeapon *weapon, int eCharID)
 {
