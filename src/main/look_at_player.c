@@ -77,7 +77,70 @@ void LookAt_Player(LookAtPlayerActor *player_actor)
     Actor_LookAt_Release(player_actor, 1);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/look_at_player", Player_System_Init);
+extern u8 actSequence[];
+extern u8 enepc[];
+void UnduParamInit(void *p);
+void sefDeleteEffectCf(void *p);
+void Actor_LookAt_Init(LookAtPlayerActor *a);
+
+void Player_System_Init(LookAtPlayerActor *player_actor)
+{
+    u8 *p = (u8 *)player_actor;
+    unsigned int number;
+    int *seq;
+    int *ip;
+    int i;
+    int one;
+    u8 *cp;
+    u8 *gls;
+    u8 *ene;
+
+    number = player_actor->number;
+    *(void **)(p + 0x124) = (void *)0x70000;
+    p[0x81] = 0;
+    *(int *)(p + 0x4C0) = 0;
+    *(short *)(p + 0x88) = 0;
+    *(float *)(p + 0x6C) = 1.0f;
+    *(float *)(p + 0x68) = 1.0f;
+    *(float *)(p + 0x64) = 1.0f;
+    *(float *)(p + 0x60) = 1.0f;
+    seq = (int *)(actSequence + number * 0x260);
+    seq[0] = 0;
+    seq[1] = 0;
+    seq[3] = 0;
+    seq[5] = 0;
+    seq[6] = 0;
+    seq[7] = 0;
+    seq[8] = 0;
+    seq[9] = 0;
+    seq[10] = 0;
+    seq[11] = 0;
+    seq[0x30 / 4] = 0;
+    ene = enepc + number * 0x38B0;
+    UnduParamInit(p + 0x4C8);
+    *(short *)(p + 0x4D0) = 0x1910;
+    for (i = 7; i >= 0; i--) {
+        ((int *)(p + 0xA10))[i] = 0;
+    }
+    *(short *)(p + 0xA30) = -1;
+    *(short *)(p + 0xA32) = 0;
+    gls = (u8 *)&GameLoopState;
+    if (*(void **)(gls + 0x2A014) != 0) {
+        sefDeleteEffectCf(*(void **)(gls + 0x2A014));
+    }
+    ip = (int *)(gls + 0x29FC0);
+    one = 1;
+    cp = gls + 0x29FB0;
+    *(void **)(gls + 0x2A014) = 0;
+    *(short *)((u8 *)((PlayerLookAtState *)gls)->player_actor + 0x9F0) = 0;
+    *(short *)(ene + 0x3830) = 0;
+    for (i = 0; i < 16; i++) {
+        cp[-0x10] = 0;
+        *ip++ = 0;
+        *cp++ = one;
+    }
+    Actor_LookAt_Init(player_actor);
+}
 
 /* Player-movement speed thresholds and vector scaling rate GameCfPlayerMove
  * compares/applies each frame; GameCfPlayerMoveInit restores their defaults. */
