@@ -466,7 +466,43 @@ int dataSndSeRegLoad(ObjectTask *unit)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndSeRegLoad2);
+void dataSndSeRegLoad2(ObjectTask *unit)
+{
+    char name[16];
+    SndSeRegDat *record;
+    SndSeRegBank *bank;
+    char *dest;
+    int n;
+    int i;
+
+    dataSndSeNameGet(name, unit, 0);
+    if (name[0] == 0) {
+        return;
+    }
+    record = sndSeRegAdrGet(calcUPGet(unit)->charaId);
+    bank = &record->bank[0];
+    if (record == 0) {
+        return;
+    }
+    dest = bank->work.dest;
+    n = *(long *)dest / 2;
+    for (i = 0; i < n; i++) {
+        *(char **)&bank->unmodeled_0c[0] = dest + (int)((void **)dest)[i * 2 + 2];
+        *(char **)&bank->unmodeled_0c[4] = dest + (int)((void **)dest)[i * 2 + 3];
+        bank->work.seType = i + 1;
+        bank++;
+    }
+    if (calcUPGet(unit)->flags & 0x40) {
+        for (i = 2; i >= 0; i--) {
+            if (bank->work.seType != 0) {
+                dest = bank->work.dest;
+                *(char **)&bank->unmodeled_0c[0] = dest + ((int *)dest)[2];
+                *(char **)&bank->unmodeled_0c[4] = dest + ((int *)dest)[3];
+            }
+            bank++;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/snd", sndSeTrans);
 
