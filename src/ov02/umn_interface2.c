@@ -49,8 +49,6 @@ int UmnBgCubeInit(int arg0) {
     return arg0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_interface2", DrawUmnInterface2);
-
 /*
  * State reached through the global UmnInterface2 pointer; only the two
  * frame counters UmnInterface2Main touches are evidenced.
@@ -62,6 +60,69 @@ typedef struct UmnInterface2State {
     unsigned char color_b[3];
     unsigned char intensity_b; /* decremented by 2 each frame until zero */
 } UmnInterface2State;
+
+typedef struct { char pad[0x14]; unsigned short unk14; char pad2[0x5C - 0x16]; } UmnIf2Render;
+extern UmnIf2Render sRender;
+extern void sceVif1PkAddDirectDataN(void *packet, const void *data, int count);
+typedef struct {
+    void *packet;
+    char pad[0x2C];
+    unsigned long long q[10];
+} UmnIf2Context;
+
+static void DrawUmnInterface2(void *context, void *arg) {
+    UmnIf2Context *ctx = context;
+    UmnInterface2State *st = arg;
+    unsigned long long *q = ctx->q;
+    unsigned int *w;
+    int i;
+
+    q[0] = 0x1000000000000004;
+    q[1] = 0xE;
+    q[2] = 0;
+    q[3] = 0x3F;
+    q[4] = 0x44;
+    q[5] = 0x42;
+    q[6] = (sRender.unk14 << 5) | 0x24120000 | 0x2000000640000000;
+    q[7] = 6;
+    q[8] = 0x5000D;
+    q[9] = 0x47;
+    sceVif1PkAddDirectDataN(ctx->packet, q, 5);
+    {
+    int xs[6] = { 0x100, 0, 0x200, 0x200, 0, 0 };
+    int ys[6] = { 0xE0, 0, 0, 0x1C0, 0x1C0, 0 };
+    ((unsigned int *)q)[0] = 0x8006;
+    ((unsigned int *)q)[1] = 0x30AEC000;
+    ((unsigned int *)q)[2] = 0x531;
+    ((unsigned int *)q)[3] = 0;
+    w = (unsigned int *)&ctx->q[2];
+    for (i = 0; i < 6; i++) {
+        if (i == 0) {
+            w[0] = st->color_a[0];
+            w[1] = st->color_a[1];
+            w[2] = st->color_a[2];
+            w[3] = st->intensity_a;
+        } else {
+            w[0] = st->color_b[0];
+            w[1] = st->color_b[1];
+            w[2] = st->color_b[2];
+            w[3] = st->intensity_b;
+        }
+        w += 4;
+        w[0] = xs[i] << 4;
+        w[1] = ys[i] << 4;
+        w[3] = 0;
+        w[2] = 0;
+        w += 4;
+        w[0] = (xs[i] << 4) + 0x6FF8;
+        w[1] = (ys[i] << 4) + 0x71F8;
+        w[2] = st->base_color;
+        w[3] = 0;
+        w += 4;
+    }
+    }
+    sceVif1PkAddDirectDataN(ctx->packet, q, 0x13);
+}
 
 /* The font queue calls draw(context, arg) with the arg registered below;
  * the context record (read at +0x00 and +0x30) is not yet recovered. */
