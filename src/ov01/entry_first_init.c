@@ -22,7 +22,82 @@ void entryFirstInit(void) {
     mapNoSet(1);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", battleProc);
+extern const char D_00A465E0[];
+extern const char D_00A465F8[];
+extern const char D_00A46608[];
+extern int printf(const char *format, ...);
+extern int rnd(int n);
+extern int pauseFlag;
+extern int frameCnt;
+extern int sRender[];
+extern unsigned int GameLoopState[];
+typedef struct { unsigned char pad_00[0x2A]; unsigned short trg; unsigned char pad_2c[4]; unsigned short on; } BpPadView;
+extern BpPadView PadData;
+extern unsigned char battleSeqWk[];
+extern void objExec2(void);
+extern void xglRenderClearOn(void);
+extern int pauseProc(void);
+extern void thinkProcessExec(void);
+extern void objExec(void);
+extern void ACT_update(void);
+extern void sefExecEffect(void);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern void ACT_pauseUpdate(void);
+extern void nmlModelSendPauseSignal(int flag);
+extern int battleDisp(void);
+extern void GameSnapShotCheck(void);
+extern void xglSleep(void);
+extern void battleRetCodeSet(int code);
+extern void battleProcEnd(void);
+extern int sndMuStop(void);
+extern int entryPhase00(void);
+
+void battleProc(void) {
+    XglClock clk;
+    int mask;
+
+    printf(D_00A465E0);
+    xglClockRead(&clk);
+    clk.second = clk.second * 100;
+    while (--clk.second != 0xFF) {
+        rnd(0);
+    }
+    xglRenderClearOn();
+    sRender[15] = (int)objExec2;
+    pauseFlag = 0;
+    battleSeq = entryPhase00;
+    memset(battleSeqWk, 0, 0x20);
+    for (;;) {
+        mask = 0x10C;
+        if ((PadData.on & mask) == mask && (PadData.trg & 0x800)) {
+            GameLoopState[4] |= 0x10000000;
+            battleRetCodeSet(1);
+            battleProcEnd();
+            sndMuStop();
+            break;
+        }
+        if (pauseProc() != 0) {
+            if (battleSeq() == 0) {
+                goto end;
+            }
+            thinkProcessExec();
+            objExec();
+            ACT_update();
+            sefExecEffect();
+        } else {
+            xglFontDebugPrintf(0x6C, 0, D_00A465F8);
+            ACT_pauseUpdate();
+        }
+        nmlModelSendPauseSignal(pauseFlag);
+        battleDisp();
+        GameSnapShotCheck();
+        frameCnt++;
+        xglSleep();
+    }
+end:
+    battleSeq = entryPhase00;
+    printf(D_00A46608);
+}
 
 extern int pauseFlag;
 extern int sRender[];

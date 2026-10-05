@@ -2952,6 +2952,33 @@
     }
    ]
   },
+  "ov02/tu006_00a02d68": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a11ee0",
+      "0x00a11f10"
+     ],
+     "generated": [
+      "0x00a11ee0",
+      "0x00a11f10"
+     ],
+     "generated_by": [
+      "DrawUmnInterface2"
+     ],
+     "c_owned_symbols": [
+      "D_00A11EE0",
+      "D_00A11EF8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_interface2.o"
+     }
+    }
+   ]
+  },
   "ov02/tu009_00a05738": {
    ".rodata": [
     {
