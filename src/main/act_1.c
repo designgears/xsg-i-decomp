@@ -276,7 +276,7 @@ void ACT_dispose2(ActRecord *self, int quick)
 }
 
 extern void EXM_StepShakeWind(void);
-extern void ACT_info_00306090(void);
+static void ACT_info(void);
 extern void ACT_modelDraw(ActRecord *actor);
 
 /*
@@ -291,7 +291,7 @@ void ACT_draw(void)
 
     remaining = ACTOR_COUNT - 1;
     EXM_StepShakeWind();
-    ACT_info_00306090();
+    ACT_info();
     cursor = actor;
     do {
         if (cursor->inUseId != 0) {
@@ -354,4 +354,105 @@ void ACT_pauseUpdate(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/act_1", ACT_info_00306090);
+typedef struct { char pad[0x28]; unsigned short held; unsigned short pressed; unsigned short sh; } ActInfoPad;
+typedef struct { int on; int idx; int page; } ActInfoState;
+extern ActInfoPad PadData;
+extern ActInfoState actInfo;
+extern float D_004D8454;
+extern float D_004D8458;
+extern char D_004DC218[];
+extern char D_004DC220[];
+extern char D_004DC228[];
+extern char D_004D1708[];
+extern void DB_params(char *);
+extern void DB_println(const char *format, ...);
+typedef struct {
+    char pad[0x40];
+    int numParts;
+    char pad2[0x2c];
+    float max[4];
+    float min[4];
+    float center[4];
+} ActInfoMdl;
+
+static void ACT_info(void)
+{
+    ActRecord *a;
+    int i;
+    char *fmt;
+    float f;
+    ActInfoMdl *m;
+    ActInfoPad *pad = &PadData;
+    ActInfoState *st = &actInfo;
+
+    if (pad->held & 0x100) {
+        if (pad->pressed & 1) {
+            st->on ^= 1;
+        }
+    }
+    if (st->on & 1) {
+    if (pad->sh & 0x2000) st->idx++;
+    if (pad->sh & 0x8000) st->idx--;
+    if (pad->sh & 0x1000) st->page++;
+    if (pad->sh & 0x4000) st->page--;
+    if (st->idx < 0) st->idx = 0x3f;
+    if (st->idx >= 0x40) st->idx = 0;
+    if (st->page < 0) st->page = 2;
+    if (st->page >= 3) st->page = 0;
+    a = &actor[st->idx];
+    DB_reset(0x70, 0x20);
+    DB_params(D_004D1708);
+    DB_println("ACT[%02x] %04x", st->idx, a->inUseId);
+    do {
+    switch (st->page) {
+    case 0:
+        f = D_004D8454;
+        DB_println("FLAGS %08x", a->flags);
+        DB_println("     POS      ROT");
+        DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x10), (double)(*(float *)((char *)a + 0x50) / f * 180.0f));
+        DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x14), (double)(*(float *)((char *)a + 0x54) / f * 180.0f));
+        DB_println("%8.3f %8.3f", (double)*(float *)((char *)a + 0x18), (double)(*(float *)((char *)a + 0x58) / f * 180.0f));
+        DB_println("     SCL");
+        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x60));
+        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x64));
+        DB_println(D_004DC218, (double)*(float *)((char *)a + 0x68));
+        DB_println(D_004DC220);
+        DB_println("NO    %4d", *(unsigned short *)((char *)a + 0x704));
+        DB_println("FLAGS %08x", a->runtimeFlags);
+        DB_println("SPEED %8.3f", (double)(*(float *)((char *)a + 0x6f8) / D_004D8458));
+        break;
+    case 1:
+        for (i = 0; i < 11; i++) {
+            if (*(int *)((char *)a + 0x8d0 + i * 4) != 0) {
+                DB_println("RSRC[%d] %p", i, *(int *)((char *)a + 0x8d0 + i * 4));
+            }
+        }
+        m = *(ActInfoMdl **)((char *)a + 0x8d0);
+        if (m != 0) {
+            DB_println(D_004DC228);
+            DB_println("numParts %d", m->numParts);
+            DB_println("     MIN      MAX");
+            DB_println("%8.3f %8.3f", (double)m->min[0], (double)m->max[0]);
+            DB_println("%8.3f %8.3f", (double)m->min[1], (double)m->max[1]);
+            DB_println("%8.3f %8.3f", (double)m->min[2], (double)m->max[2]);
+            DB_println("  CENTER");
+            DB_println(D_004DC218, (double)m->center[0]);
+            DB_println(D_004DC218, (double)m->center[1]);
+            DB_println(D_004DC218, (double)m->center[2]);
+            DB_println(D_004DC218, (double)m->center[3]);
+        }
+        break;
+    case 2:
+        if (a->parent != 0) {
+            DB_println("PARENT %d", ((unsigned char *)a->parent)[0x80]);
+        }
+        if (*(int *)((char *)a + 0x900) > 0) {
+            for (i = 0; i < *(int *)((char *)a + 0x900); i++) {
+                DB_println("CHILD[%d] %d", i, (*(unsigned char **)((char *)a + 0x904 + i * 4))[0x80]);
+            }
+        }
+        break;
+    }
+    } while (0);
+    }
+}
