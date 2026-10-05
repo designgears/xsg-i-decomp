@@ -91,6 +91,8 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
     return returnedFlags;
 }
 
+extern struct { short pad0; short h; char pad[0x10]; unsigned short fbp; char pad16[0xA]; unsigned short zbp; } sRender;
+
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterGunosys);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterStealth);
@@ -205,8 +207,6 @@ void nmlFilterSetPacket(int *model, int count)
         }
     }
 }
-
-extern struct { short pad0; short h; char pad[0x10]; unsigned short fbp; char pad16[0xA]; unsigned short zbp; } sRender;
 
 void nmlPacketGsInit(void);
 
