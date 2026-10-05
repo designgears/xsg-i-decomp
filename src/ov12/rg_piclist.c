@@ -694,7 +694,83 @@ void RgPicDebugEditPosition(int *x, int *y)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicDebugControl);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", RgPicDebugDisp);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern int RgBxxGetPicID(RgBxx *pBxx, unsigned int id);
+extern const char D_00A57418[];
+extern const char D_00A57440[];
+extern const char D_00A57458[];
+extern const char D_00A57470[];
+extern const char D_00A57490[];
+extern const char D_00A574A0[];
+extern const char D_00A574B8[];
+extern const char D_00A574D0[];
+extern const char D_00A574E8[];
+extern const char D_00A57500[];
+extern const char D_00A57520[];
+
+void RgPicDebugDisp(RgPicDebug *pDebug, int paint)
+{
+    RgPic *pic;
+    RgPicTexture *tex;
+    int x;
+    int y;
+    unsigned int size;
+    int id;
+    char *name;
+    int ofsX;
+    int ofsY;
+
+    if (pDebug == 0)
+        assert_prog(D_00A573B8, D_00A57320, 812);
+    switch (pDebug->mode) {
+    case 1:
+        pic = RgPicListGetPic(pDebug->list, pDebug->index);
+        if (pic != 0) {
+            tex = RgPicGetTex(pic);
+            x = RgPicGetX(pic);
+            y = RgPicGetY(pic);
+            size = RgPicListGetSize(pDebug->list);
+            RgPicListDraw(pDebug->list, paint);
+            xglFontDebugPrintf(0, 8, D_00A57418);
+            xglFontDebugPrintf(0, 0x18, D_00A57440, pDebug->index, size);
+            name = RgPicGetName(pic);
+            xglFontDebugPrintf(0, 0x24, D_00A57458, name, x, y, RgPicGetAlpha(pic));
+            _draw_nontex(paint, x, y, tex->width, tex->height);
+        }
+        break;
+    case 0:
+        id = RgBxxGetPicID(pDebug->bxx, pDebug->picId);
+        if (id != 0) {
+            xglFontDebugPrintf(0, 8, D_00A57470);
+            xglFontDebugPrintf(0, 0x20, D_00A57490, pDebug->picId, id);
+            _draw_linear(paint, (int)pDebug->bxx, id, 0x40, 0x80);
+        }
+        break;
+    case 2:
+        pic = RgPicListGetPic(pDebug->list, pDebug->index);
+        xglFontDebugPrintf(0, 8, D_00A574A0);
+        if (pic != 0)
+            RgPicDraw(pic, paint);
+        break;
+    case 3:
+        xglFontDebugPrintf(0, 8, D_00A574B8);
+        xglFontDebugPrintf(0, 0x18, D_00A574D0);
+        break;
+    case 4:
+        xglFontDebugPrintf(0, 8, D_00A574E8);
+        xglFontDebugPrintf(0, 0x18, D_00A574D0);
+        break;
+    case 5:
+        do {
+            RgPicListDraw(pDebug->list, paint);
+            xglFontDebugPrintf(0, 8, D_00A57500);
+            ofsX = RgPicListGetOfsX(pDebug->list);
+            ofsY = RgPicListGetOfsY(pDebug->list);
+            xglFontDebugPrintf(0, 0x18, D_00A57520, ofsX, ofsY);
+        } while (0);
+        break;
+    }
+}
 
 void CreateRgPlacer2D(void)
 {
