@@ -801,4 +801,20 @@ INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuFontEnvMake);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatIconEnvMake);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuATBEnvPalSet);
+extern unsigned short dataXtxAdrGet(int index);
+
+void menuATBEnvPalSet(int packet, int palette)
+{
+    unsigned short tbp;
+    unsigned short cbp;
+
+    tbp = dataXtxAdrGet(4);
+    if (palette == 0) {
+        cbp = dataXtxAdrGet(5);
+    } else if (palette == 1) {
+        cbp = dataXtxAdrGet(7);
+    } else {
+        cbp = dataXtxAdrGet(10);
+    }
+    grGsRegSet(packet, 6, (unsigned long long)tbp | ((unsigned long long)cbp << 37) | 0x2000000629340000ULL);
+}
