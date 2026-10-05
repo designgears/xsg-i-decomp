@@ -1208,7 +1208,47 @@ WepSpEntry *dataTid2WepSp(int tid)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSp);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSp2);
+extern void ACT_setArms(void *actor, void *other, int acc_id, int flags);
+extern void ACT_allocMatrix(void *actor, int count);
+extern void ACT_setModelWrapper(void *actor, int flags);
+extern void ACT_updateDefault(void *actor);
+
+int dataFileLoadWepSp2(ObjectTask *unit, int tid)
+{
+    int slot;
+    void *parent;
+    short wid;
+    EquipActor *actor;
+
+    slot = 2;
+    if (dataTid2WepSp(tid) == 0) {
+        slot = 1;
+        if (((signed char *)dataTecGet(tid))[0x11] != 6) {
+            return 0;
+        }
+    }
+    parent = ((UnitEquipInfo *)unit)->motionTable;
+    wid = calcUPGet(unit)->sefSetupParams[slot];
+    actor = ((UnitEquipInfo *)unit)->equipActor[slot];
+    if (wid != 0) {
+        if (dataWidGet(wid) == 0x3000) {
+            return 1;
+        }
+        if (actor == 0) {
+            return 1;
+        }
+        if (actor->wpnMdl[1] == 0) {
+            dataPackWpnMdl2(actor);
+        }
+        if ((unsigned)(wid - 0xD) >= 4) {
+            ACT_setArms(actor, parent, *(signed char *)(slot + (int)calcUPGet(unit) + 0x5A), 0);
+        }
+        ACT_allocMatrix(actor, -1);
+        ACT_setModelWrapper(actor, 0);
+        *(void **)((char *)actor + 4) = (void *)ACT_updateDefault;
+    }
+    return 1;
+}
 
 extern void ACT_dispose(void *);
 
