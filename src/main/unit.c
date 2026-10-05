@@ -1298,13 +1298,89 @@ void Java_xeno_Unit_signal__I(JThread *thread, UnitSignalCall *arguments,
     peer->signal = arguments->value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_start__ILjava_lang_Object_);
-
 typedef struct UnitStopThread {
     u8 pad00[0x24];
     int flags; /* +0x24 */
 } UnitStopThread;
+
 extern UnitStopThread *JTHREAD_get(SceneObject object);
+
+extern void MAP_updateUnitDefault(void *);
+extern void MAP_updateUnitMPack(void *);
+extern void JTHREAD_defaultUnit(void);
+extern void *TYPE_Void;
+extern void *findMethod(void *scene_class, void *name, void *type);
+extern void JNI_initThread(void *vm);
+typedef struct UnitStartString {
+    int pad0;
+    int length;
+    char *bytes;
+} UnitStartString;
+typedef struct UnitStartStringObj {
+    int pad0;
+    UnitStartString *str;
+} UnitStartStringObj;
+typedef struct UnitStartCall {
+    u8 *object;
+    int mode;
+    UnitStartStringObj *name;
+} UnitStartCall;
+
+void Java_xeno_Unit_start__ILjava_lang_Object_(JThread *thread, UnitStartCall *arguments)
+{
+    JavaField *field;
+    u8 *object;
+    UnitPeer *peer;
+    int mode;
+    int *entry;
+    UnitStartString *name;
+    void *method;
+    void *cls;
+    UnitStopThread *t;
+
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    mode = arguments->mode;
+    peer = *(UnitPeer **)(object + field->offset);
+    entry = (int *)&unitSequence[peer->serial];
+    entry[3] = mode;
+    switch (mode) {
+    case 0:
+        ((UnitUpdateState *)peer)->update = MAP_updateUnitDefault;
+        break;
+    case 4:
+        entry[3] = mode;
+        entry[1] = 0;
+        UNIT_setUpdate(object, (UnitUpdateState *)peer);
+        return;
+    case 5:
+        entry[1] = 0;
+        entry[0] = 0;
+        ((UnitUpdateState *)peer)->update = MAP_updateUnitMPack;
+        break;
+    case 1:
+        entry[1] = 0;
+        name = arguments->name->str;
+        cls = **(void ***)object;
+        method = findMethod(cls, loadConstString(name->bytes, name->length), TYPE_Void);
+        entry[5] = (int)method;
+        t = JTHREAD_get(object);
+        if (t != 0) {
+            *(void **)((u8 *)t + 0x18) = method;
+            *(void **)((u8 *)t + 0x14) = JTHREAD_defaultUnit;
+            JNI_initThread(t);
+            t->flags |= 0x10;
+        }
+        entry[3] = mode;
+        entry[10] = 0;
+        entry[11] = 0;
+        entry[12] = 0;
+        entry[9] = 0;
+        UNIT_setUpdate(object, (UnitUpdateState *)peer);
+        return;
+    }
+}
 
 void Java_xeno_Unit_stop__(JThread *thread, UnitObjectCall *arguments)
 {
