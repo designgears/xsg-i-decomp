@@ -89,9 +89,6 @@ static int CheckInBox(const CollisionPoint *point, const CollisionPoint *lower,
 
 INCLUDE_ASM("asm/main/nonmatchings/colli_test", CheckBallBoxCollision);
 
-INCLUDE_ASM("asm/main/nonmatchings/colli_test", InitTest_002DBE88);
-
-#include "shared.h"
 typedef struct ParticleState {
     CollisionPoint position;
     CollisionPoint previous_position;
@@ -99,17 +96,32 @@ typedef struct ParticleState {
     float gravity;
     float damping;
 } ParticleState;
+
 extern void ppSetPos(ParticleState *particle, float x, float y, float z);
-extern int hit;
-extern int mode_004DB9D8;
-extern float radius;
-extern CollisionPoint box1;
-extern CollisionPoint box2;
-extern CollisionPoint box3;
-extern CollisionPoint box4;
-extern CollisionPoint hitpos;
+
 extern ParticleState pos1;
+
 extern ParticleState pos2;
+
+extern CollisionPoint box1;
+
+extern CollisionPoint box2;
+
+extern CollisionPoint box3;
+
+extern CollisionPoint box4;
+
+extern CollisionPoint hitpos;
+
+extern float radius;
+
+extern int hit;
+
+extern int mode_004DB9D8;
+
+INCLUDE_ASM("asm/main/nonmatchings/colli_test", InitTest_002DBE88);
+
+#include "shared.h"
 typedef struct BallBoxCollisionArgs {
     CollisionPoint *box_corner_a;
     CollisionPoint *box_corner_b;
