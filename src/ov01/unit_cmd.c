@@ -1406,7 +1406,86 @@ void unitCmdDirAdj(ObjectTask *unit, int cmdId, int flip)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdPosAdj);
+typedef struct AdjTbl {
+    int charaId;
+    float *tbl[4];
+} AdjTbl;
+typedef struct AdjVec {
+    float x, y, z, w;
+} __attribute__((aligned(16))) AdjVec;
+extern AdjTbl adjTblPl[];
+extern AdjTbl adjTblEn[];
+
+void unitCmdPosAdj(UnitRecord *unit)
+{
+    Actor *actor;
+    Actor *motion;
+    Vector4 *target;
+    AdjVec saved;
+    int mot;
+    AdjTbl *tbl;
+    AdjTbl *p;
+    float *adj;
+    float *f;
+    float step;
+    float distance;
+    int frame;
+    int i;
+    int idx;
+
+    idx = 0;
+    actor = unit->task.work;
+    motion = unit->motionActor;
+    target = &actor->cmdTarget;
+    frame = motion->motionFrame;
+    if (!(actor->flags & 0x40) && !(calcUPGet(&unit->task)->flags & 0x40) &&
+        (calcUPGet(&unit->task)->charaId < 0xBB || calcUPGet(&unit->task)->charaId >= 0xC3)) {
+        tbl = adjTblPl;
+        for (i = 0, p = tbl; p->charaId != 0; p++, i++) {
+            if (p->charaId == calcUPGet(&unit->task)->charaId) {
+                idx = i;
+                break;
+            }
+        }
+    } else {
+        tbl = adjTblEn;
+        for (i = 0, p = tbl; p->charaId != 0; p++, i++) {
+            if (p->charaId == calcUPGet(&unit->task)->charaId) {
+                idx = i;
+                break;
+            }
+        }
+    }
+    mot = unitMotGet(&unit->task);
+    if (mot == 13) {
+        adj = tbl[idx].tbl[0];
+    } else if (mot == 17 || mot == 15) {
+        adj = tbl[idx].tbl[1];
+    } else if (mot == 18) {
+        adj = tbl[idx].tbl[2];
+    } else if (mot == 22 || mot == 20) {
+        adj = tbl[idx].tbl[3];
+    } else {
+        return;
+    }
+    if (adj != 0) {
+        calcUPGet(&unit->task);
+        f = (float *)((char *)(frame * 4) + (int)adj);
+        step = *f;
+        if (frame != 0) {
+            step -= f[-1];
+        }
+        saved = *(AdjVec *)target;
+        distance = unitCmdLenGet(unit);
+        if (distance < step) {
+            step = distance;
+        }
+        unitCmdDivSet(unit, distance, step);
+        motion->position.x = target->x;
+        motion->position.z = target->z;
+        *(AdjVec *)target = saved;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdRun);
 
