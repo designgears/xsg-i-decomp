@@ -1223,7 +1223,44 @@ int unitCmdMoveChaWarp(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMoveChaJump2);
+extern float unitCmdLenGet(void *arg0);
+extern void unitCmdDivSet(UnitRecord *unit, float distance, float step);
+
+int unitCmdMoveChaJump2(UnitRecord *unit)
+{
+    Actor *actor;
+    float *saved;
+    float distance;
+    float step;
+    int n;
+
+    actor = unit->task.work;
+    n = 3;
+    unitCmdPtrGet(&unit->task);
+    saved = (float *)((char *)unit->task.work + 0xD4);
+    if (actor->moveState == 0) {
+        distance = unitCmdLenGet(unit);
+        *saved = distance / (float)n;
+        unitCmdDivSet(unit, distance, distance / (float)n);
+        unitCmdVASet(&unit->task, 3, 0);
+        actor->moveState++;
+    } else if (actor->moveState > n) {
+        unitCmdMoveNext(&unit->task, 0);
+    } else if (unitCmdJump(&unit->task, 3, 2, 0) != 0) {
+        actor->movePhase = 0;
+        unitCmdDstSet(&unit->task, 3, 0);
+        distance = unitCmdLenGet(unit);
+        if (actor->moveState == n) {
+            step = distance;
+        } else {
+            step = *saved;
+        }
+        unitCmdDivSet(unit, distance, step);
+        unitCmdVASet(&unit->task, 3, 0);
+        actor->moveState++;
+    }
+    return 0;
+}
 
 int unitCmdMoveChaHover2(ObjectTask *unit)
 {
