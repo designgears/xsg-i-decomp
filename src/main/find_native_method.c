@@ -422,7 +422,59 @@ ClassEntry *lookupClassEntry(ClassKey *key, int arg)
     return (ClassEntry *)e;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", lookupArray);
+extern struct SceneClass *classObject;
+extern struct SceneString *loadConstString2(const char *bytes, int length);
+extern char D_004DC050[];
+extern char D_004DC058[];
+extern char D_004DC060[];
+typedef struct ArrayClassView {
+    u8 pad00[4];
+    struct SceneString *name;
+    u16 flags;
+    u8 pad0A[2];
+    int key;
+    void *super;
+    u8 pad14[0x22];
+    u16 state;
+    u8 pad38[4];
+    ElementType *elementType;
+} ArrayClassView;
+
+ClassEntry *lookupArray(ElementType *elementType)
+{
+    char buf[1024];
+    struct SceneString *name;
+    ClassEntry *entry;
+    ArrayClassView *cls;
+    char *s;
+    struct SceneClass *obj;
+
+    if (elementType->flags & 0x100) {
+        sprintf(buf, D_004DC050, *(s8 *)((char *)elementType + 0x39));
+    } else {
+        s = *(char **)(*(char **)((char *)elementType + 4) + 8);
+        if (*s == '[') {
+            sprintf(buf, D_004DC058, s);
+        } else {
+            sprintf(buf, D_004DC060, s);
+        }
+    }
+    name = loadConstString2(buf, -1);
+    entry = lookupClassEntry(name, *(int *)((char *)elementType + 0xC));
+    if (entry->resolvedClass == 0) {
+        cls = (ArrayClassView *)newClass();
+        obj = classObject;
+        cls->flags = 0x411;
+        entry->resolvedClass = cls;
+        cls->name = name;
+        cls->key = *(int *)((char *)elementType + 0xC);
+        cls->state = 1;
+        cls->super = obj;
+        buildDispatchMethodTable((DClass *)cls);
+        cls->elementType = elementType;
+    }
+    return entry->resolvedClass;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", classFromSig);
 
