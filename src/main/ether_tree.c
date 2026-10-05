@@ -403,7 +403,40 @@ void EtherTreeWorkClear(void)
     memset(EtherTreeRight, 0, 0x80);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeObjectSet);
+extern char *func_A19210(int chrNo);
+extern float D_004D7E7C;
+
+void EtherTreeObjectSet(int chrNo)
+{
+    char *rec;
+    int i;
+    int j;
+
+    memset(EtherTreeObject, 0, 0x2300);
+    memset(EtherTreeLine, 0, 0x1900);
+    memset(EtherTreeLine2, 0, 0x140);
+    rec = func_A19210(chrNo);
+    for (i = 0; i < 16; i++) {
+        if (rec[0x28 + i] != 0)
+            break;
+    }
+    if (i == 16)
+        return;
+    EtherTreeSystem->flags |= 1;
+    EtherTreeSystem->firstDataIndex = chrNo;
+    EtherTreeObjectGetClear();
+    subParentChildSet();
+    subPosSet(EtherTreeObject);
+    subPosSet2(EtherTreeObject, 0);
+    subPosSet3();
+    subJoutoPosSet();
+    for (j = 0; j < 80; j++)
+        EtherTreeParaSet(&EtherTreeObject[j]);
+    EtherTreeLineSet();
+    EtherTreeTargetChange(*(unsigned char *)EtherTreeFirstDataGet(), 1);
+    EtherTreeSystem->nodeZ = D_004D7E7C;
+    EtherTreeSystem->scale = 1.0f;
+}
 
 void EtherTreeCenterSet(int axisMask, float x, float y)
 {
