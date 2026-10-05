@@ -435,7 +435,116 @@ static void _ActivateAct(RgSelectRobot *pAct)
     _ActorPosUpdate(pAct);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ReqAct);
+extern const char D_00A56EA8[];
+extern const char D_00A56EB8[];
+extern const char D_00A56ED0[];
+extern int strcmp(const char *left, const char *right);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern void ACT_resetParent(void *self, void *parent);
+extern unsigned int XrgActorEssenceGetFileName(void *essence, char (*names)[64]);
+
+static void _ReqAct(RgSelectRobot *pCont, void *essence, int *accessoryIDs,
+                    int *extra)
+{
+    char names[4][64];
+    unsigned int num;
+    unsigned int i;
+    unsigned int off;
+    unsigned int state;
+    unsigned int fv;
+    int changed = 0;
+    int id = -1;
+    unsigned int *flags;
+    char *sub;
+    RgSelectRobot *child;
+
+    if (pCont == 0) {
+        assert_prog(D_00A56DD8, D_00A56DA0, 0x1BF);
+    }
+    if (extra != 0) {
+        for (i = 0; i < 3; i++) {
+            ((int *)(pCont->unmodeled_00 + 0x144))[i] = extra[i];
+        }
+    }
+    if (essence != 0 && *(int *)essence != -1) {
+        id = *(int *)essence;
+        num = XrgActorEssenceGetFileName(essence, names);
+        i = 0;
+        goto check;
+    }
+    num = 0;
+    changed = 1;
+    for (i = 0; i < 4; i++) {
+        pCont->unmodeled_00[i * 64 + 0xC] = 0;
+    }
+    goto done;
+check:
+    if (i < num) {
+        off = i * 64;
+        i++;
+        if (strcmp((char *)pCont->unmodeled_00 + off + 0xC, (char *)names + off) == 0) {
+            goto check;
+        }
+        changed = 1;
+    }
+done:
+    if (changed == 0) {
+        if (pCont->hasActions != 0) {
+            if (accessoryIDs == 0) {
+                assert_prog(D_00A56EA8, D_00A56DA0, 0x1DF);
+            }
+            for (i = 0; i < 3; i++) {
+                _ReqAct((RgSelectRobot *)pCont->actions[i],
+                        (char *)accessoryIDs[i] + i * 0x88 + 0x190, 0, 0);
+                *(int *)((char *)pCont->actions[i] + 0x15C) = accessoryIDs[i];
+            }
+        }
+        return;
+    }
+    *(int *)(pCont->unmodeled_00 + 0x120) = id;
+    state = *(unsigned int *)pCont->unmodeled_00;
+    switch (state) {
+    case 2:
+        flags = pCont->actorFlags;
+        if (flags != 0) {
+            *(int *)(pCont->unmodeled_00 + 8) = 3;
+            sub = *(char **)(pCont->unmodeled_00 + 0x124);
+            fv = *flags;
+            *(unsigned int *)pCont->unmodeled_00 = 3;
+            *flags = (fv | 8) & ~0x20;
+            if (sub != 0) {
+                ACT_resetParent(flags, *(void **)(sub + 4));
+            }
+        } else {
+            *(unsigned int *)pCont->unmodeled_00 = 0;
+        }
+    case 0:
+    case 1:
+    case 3:
+        *(unsigned int *)(pCont->unmodeled_00 + 0x10C) = num;
+        for (i = 0; i < num; i++) {
+            strcpy((char *)pCont->unmodeled_00 + i * 64 + 0xC, names[i]);
+        }
+        if (*(unsigned int *)pCont->unmodeled_00 == 1) {
+            *(unsigned int *)pCont->unmodeled_00 = 0;
+        }
+        _KillLoadIfMe(pCont);
+        break;
+    default:
+        RgError(D_00A56EB8, D_00A56DA0, 0x209, state);
+        break;
+    }
+    if (pCont->hasActions != 0) {
+        for (i = 0; i < 3; i++) {
+            child = (RgSelectRobot *)pCont->actions[i];
+            _ReqAct(child, 0, 0, 0);
+            state = *(unsigned int *)child->unmodeled_00;
+            if (state - 1 < 2) {
+                RgError(D_00A56ED0, D_00A56DA0, 0x213, state);
+            }
+        }
+    }
+}
 
 extern const char D_00A56DD8[];
 extern void DisposeRgDispModel(RgDispModel *pDispModel);
