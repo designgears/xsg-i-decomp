@@ -1255,7 +1255,104 @@ static void _DashVRMainToFollow(RgRobotStatus *status, RgBody *body)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashVRExecCmd);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashVRPassTime);
+extern void RgGeomRobotSetRotate(RgGeomPoint *point, float rot);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+extern void RgRobSubTargetting(RgGeomPoint *geometry, struct RgPointVector *target, float speed, float dt);
+extern float sinf(float x);
+extern float cosf(float x);
+extern const char D_00A519F8[];
+extern const char D_00A51A18[];
+
+static int _DashVRPassTime(RgRobotStatus *status, RgBody *body, float dt)
+{
+    RgVector vel;
+    RgVector pos;
+    RgGeomPoint *geom;
+    int mask;
+    int done;
+    int result;
+    int roll;
+    int mode;
+    float maxSpd;
+    float rot;
+
+    done = 0;
+    result = 4;
+    geom = body->geometry;
+    mask = body->cmdMask;
+    maxSpd = _CalcMaxSpeed(body, *(float *)&body->spec->unmodeled_10[0]);
+    status->scratchTimer -= dt;
+    switch ((unsigned int)status->scratch0) {
+    case 0:
+        rot = *(float *)&status->scratch1 + *(float *)&status->scratch2 * dt;
+        while (rot > 3.1415927f) {
+            rot -= 6.2831855f;
+        }
+        while (rot < -3.1415927f) {
+            rot += 6.2831855f;
+        }
+        *(float *)&status->scratch1 = rot;
+        RgGeomRobotSetRotate(geom, rot);
+        *(float *)&status->scratch2 *= dt * 0.7f;
+        RgGeomPointGetVel(geom, vel);
+        vel[0] = sinf(*(float *)&status->scratch1) * maxSpd;
+        vel[2] = cosf(*(float *)&status->scratch1) * maxSpd;
+        RgGeomPointSetVel(geom, vel);
+        body->dashTime -= dt;
+        if (body->dashTime <= 0.0f) {
+            body->dashTime = 0.0f;
+            done = 1;
+        }
+        mode = *(int *)&status->unmodeled_1c[8];
+        switch (mode) {
+        case 0:
+            if (!(mask & 0x40)) {
+                done = 1;
+            }
+            break;
+        case 1:
+            if (mask & 0x10) {
+                done = 1;
+            }
+            break;
+        default:
+            RgError(D_00A519F8, D_00A51840, 0x900, mode);
+            break;
+        }
+        if (done) {
+            _DashVRMainToFollow(status, body);
+        }
+        result = 0x104;
+        break;
+    case 1:
+        RgRobotEffectTermJet(body->effect);
+        RgRobotEffectTermDash(body->effect);
+        if (status->scratchTimer < 0.0f) {
+            status->scratch0 = 2;
+            *(int *)&status->unmodeled_1c[4] = -1;
+            status->scratchTimer = 0.2f;
+        }
+    case 2:
+        if (status->scratchTimer < 0.0f) {
+            _InitMovingStatus(status, body);
+        } else {
+            __RgGeomPointGetPos(body->geometry, (struct RgPointVector *)pos, D_00A51840, 0x920);
+            XrgAddVector(pos, pos, (float *)status->unmodeled_10);
+            RgRobSubTargetting(body->geometry, (struct RgPointVector *)pos, 12.566371f, dt);
+            body->flags |= 3;
+        }
+        roll = RgRobSubGetRollMotion(body->geometry);
+        if (roll != *(int *)&status->unmodeled_1c[4]) {
+            *(int *)&status->unmodeled_1c[4] = roll;
+            _BodyPlayMotion(body, roll);
+        }
+        break;
+    default:
+        RgError(D_00A51A18, D_00A51840, 0x931, *(volatile int *)&status->scratch0);
+        break;
+    }
+    return result;
+}
 
 extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
 extern void RgRobotEffectTermJet(RgRobotEffect *effect);

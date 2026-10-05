@@ -4505,6 +4505,54 @@
     }
    ]
   },
+  "ov12/tu075_00a40008": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a57530",
+      "0x00a57550"
+     ],
+     "generated": [
+      "0x00a57530",
+      "0x00a57548"
+     ],
+     "generated_by": [
+      "RgPicDebugDisp"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A57530"
+     ],
+     "also_referenced_by_c": [
+      "D_00A57310",
+      "D_00A57320",
+      "D_00A57338",
+      "D_00A57348",
+      "D_00A57358",
+      "D_00A57368",
+      "D_00A57380",
+      "D_00A57390",
+      "D_00A573A0",
+      "D_00A573B8",
+      "D_00A57418",
+      "D_00A57440",
+      "D_00A57458",
+      "D_00A57470",
+      "D_00A57490",
+      "D_00A574A0",
+      "D_00A574B8",
+      "D_00A574D0",
+      "D_00A574E8",
+      "D_00A57500",
+      "D_00A57520"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+     }
+    }
+   ]
+  },
   "ov12/tu076_00a420e0": {
    ".rodata": [
     {
