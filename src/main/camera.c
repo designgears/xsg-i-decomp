@@ -690,7 +690,59 @@ void Java_xeno_Camera_getMode__(JavaEnvironment *environment, void *arguments, i
     *result = *GAME_LOOP_MODE;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFPedestal__IFFFFFFFF);
+extern const float D_004D83E8;
+
+void Java_xeno_Camera_setCFPedestal__IFFFFFFFF(JavaEnvironment *environment,
+                                               union { int i; float f; void *p; } *args)
+{
+    unsigned int id;
+    int start;
+    int end;
+    int mode;
+    float f;
+    unsigned char *state;
+    CfCameraDefineEntry *p;
+
+    (void)environment;
+    id = args[1].i;
+    if ((id & 0xff) == 0xff) {
+        start = 0;
+        end = 0x21;
+        mode = (id + 1) >> 28;
+    } else {
+        mode = id >> 28;
+        start = id;
+        end = id + 1;
+    }
+    p = &CfCameraDefine[start];
+    for (; start < end; start++) {
+        *(unsigned char *)p = 1;
+        if (mode < 3) {
+            if (mode >= 0) {
+                *(float *)((unsigned char *)p + 0x10) = args[2].f;
+                *(float *)((unsigned char *)p + 0x14) = args[3].f;
+                *(float *)((unsigned char *)p + 0x18) = args[4].f;
+            }
+        }
+        if (mode == 0 || mode == 4) {
+            *(float *)((unsigned char *)p + 0x1c) = args[5].f / 180.0f * D_004D83E8;
+        }
+        f = args[9].f;
+        *(float *)((unsigned char *)p + 0x2c) = f;
+        if (f == 2.0f) {
+            *(float *)((unsigned char *)p + 0x20) = args[6].f / 180.0f * D_004D83E8;
+            *(float *)((unsigned char *)p + 0x24) = args[7].f / 180.0f * D_004D83E8;
+            *(float *)((unsigned char *)p + 0x28) = args[8].f / 180.0f * D_004D83E8;
+        } else {
+            *(float *)((unsigned char *)p + 0x20) = args[6].f;
+            *(float *)((unsigned char *)p + 0x24) = args[7].f;
+            *(float *)((unsigned char *)p + 0x28) = args[8].f;
+        }
+        p++;
+    }
+    state = (unsigned char *)&GameLoopState;
+    state[0xc1] |= 0x40;
+}
 
 void Java_xeno_Camera_setCFPedestalHokan__II(JavaEnvironment *environment,
                                              union { int i; float f; void *p; } *args)
