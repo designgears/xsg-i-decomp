@@ -176,7 +176,231 @@ void AgwsPasMain(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_agws_para_set", AgwsInfoMain);
+typedef struct AgwsInfoWin {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    unsigned char unmodeled_0c[0x10 - 0x0C];
+    unsigned char state;
+    unsigned char unmodeled_11[0x14 - 0x11];
+    void *callback;
+    void *callbackArg;
+    unsigned char unmodeled_1c[0x198 - 0x1C];
+} AgwsInfoWin;
+typedef struct AgwsInfoWork {
+    unsigned char state;
+    unsigned char unk1;
+    unsigned char help;
+    unsigned char unk3;
+    int color;
+    AgwsInfoWin window;
+    short cb0;
+    short cb2;
+    unsigned char unmodeled_1a4[0x1AC - 0x1A4];
+    char *text;
+    unsigned char unmodeled_1b0[0x350 - 0x1B0];
+    char buf[0x100];
+} AgwsInfoWork;
+typedef struct AgwsInfoOrg {
+    unsigned char unmodeled_00[0x5A];
+    signed char mount[4];
+    unsigned short wpn[3];
+    short equip[3];
+    unsigned short arms[3];
+} AgwsInfoOrg;
+typedef union AgwsInfoAny { short s; void *p; } AgwsInfoAny;
+typedef struct AgwsInfoText {
+    int id;
+    char *name;
+} AgwsInfoText;
+extern AgwsInfoWork *AgwsInfo;
+extern char *msg00_1_0036D988[];
+extern char *msg01_2_0036D990[];
+extern char *msg02_3_0036D9A0[];
+extern char *msg03_4_0036D9B8[];
+extern char *msg04_5[];
+extern char *msg05_6[];
+extern char D_004DAF28[];
+extern char D_004DAF40[];
+extern unsigned char D_004DAF48[];
+void MenuInfoWindow(void);
+void eMessageCpy(char *dst, char *src);
+void eMessageCat(char *src);
+AgwsInfoText *MenuTextGet(int index);
+char *MenuCharNameGet(int id);
+int OptMntToWpnPos(int pos);
+
+void AgwsInfoMain(void)
+{
+    char *buf;
+    AgwsInfoWin *win;
+    AgwsInfoWork *work = AgwsInfo;
+    short target;
+    AgwsUnitOrg *org;
+    AgwsUnitOrg *org2;
+    AgwsListRow *row;
+    int a;
+    int b;
+    int id;
+    signed char sel;
+    short *cb;
+    char *q;
+
+    switch (work->state) {
+    case 0:
+        win = &work->window;
+        work->color = 0xFFFFF0;
+        buf = work->buf;
+        WindowDXSet(win);
+        win->x = -0x10;
+        work->window.y = 0x1E0;
+        work->window.width = 0x220;
+        work->window.height = 0x36;
+        work->window.state = 0;
+        work->window.callback = MenuInfoWindow;
+        cb = &work->cb0;
+        *cb = 0;
+        work->window.color = work->color;
+        work->window.state = 1;
+        ((AgwsInfoAny *)&work->window.callbackArg)->p = cb;
+        work->cb2 = 0;
+        ((AgwsInfoAny *)&work->text)->p = 0;
+        WindowDXMain(win);
+        work->window.state = 3;
+        work->state = 2;
+        work->help = 0;
+        memset(buf, 0, 0x100);
+        /* fallthrough */
+    case 2:
+        win = &work->window;
+        buf = work->buf;
+        break;
+    default:
+        return;
+    }
+
+    org = func_A191C0(MenuWork.chrNo);
+    target = 0x182;
+    if (work->help == 0) {
+        if (PadData.half_2a & 0x20)
+            work->help = 1;
+    } else if (*(unsigned short *)((char *)&PadData + 0x34) != 0) {
+        work->help = 0;
+    }
+
+    switch (MenuWork.state) {
+    case 0x10:
+        eMessageCpy(buf, msg00_1_0036D988[0]);
+        break;
+    case 0x22:
+        eMessageCpy(buf, msg01_2_0036D990[MenuWork.reserveCursor]);
+        break;
+    case 0x40:
+        if (MenuWork.weaponHand != 3) {
+            if (MenuWork.equipSlot == 0) {
+                q = (char *)org + 0xE;
+                if (*(short *)(q + MenuWork.weaponHand * 2 + 0x50) != 0) {
+                    eMessageCpy(buf, msg02_3_0036D9A0[OptMntToWpnPos(((AgwsInfoOrg *)org)->mount[MenuWork.weaponHand]) - 1]);
+                    eMessageCat(msg03_4_0036D9B8[0]);
+                    eMessageCat(MenuTextGet(*(unsigned short *)(q + MenuWork.weaponHand * 2 + 0x50) + 0x30000)->name);
+                } else if (MenuWork.reserveCursor == 0) {
+                    eMessageCpy(buf, msg03_4_0036D9B8[1]);
+                } else {
+                    eMessageCpy(buf, msg03_4_0036D9B8[2]);
+                }
+            } else {
+                eMessageCpy(buf, MenuTextGet(((unsigned short *)((char *)org + 0x6A))[MenuWork.weaponHand] + 0x40000)->name);
+                if (MenuWork.reserveCursor == 1 && work->help == MenuWork.reserveCursor)
+                    eMessageCpy(buf, msg03_4_0036D9B8[3]);
+            }
+        } else {
+            short s = ((AgwsInfoOrg *)org)->equip[MenuWork.equipSlot];
+            if (s != 0) {
+                eMessageCpy(buf, MenuTextGet((unsigned short)s + 0x50000)->name);
+            } else if (MenuWork.reserveCursor == 0) {
+                eMessageCpy(buf, msg03_4_0036D9B8[4]);
+            } else {
+                eMessageCpy(buf, msg03_4_0036D9B8[2]);
+            }
+        }
+        break;
+    case 0x42:
+        a = OptMntToWpnPos(((AgwsInfoOrg *)org)->mount[MenuWork.weaponHand]) - 1;
+        b = MenuWork.weaponSlot[MenuWork.selectedIndex] - 1;
+        if (a < 0) {
+            eMessageCpy(buf, msg04_5[3]);
+            eMessageCat(msg02_3_0036D9A0[b]);
+            eMessageCat(D_004DAF28);
+        } else if (a == b) {
+            eMessageCpy(buf, msg04_5[1]);
+            eMessageCat(msg02_3_0036D9A0[b]);
+            eMessageCat(D_004DAF40);
+            eMessageCat(msg04_5[0]);
+        } else {
+            eMessageCpy(buf, msg04_5[1]);
+            eMessageCat(msg02_3_0036D9A0[a]);
+            eMessageCat(msg04_5[2]);
+            eMessageCat(msg02_3_0036D9A0[b]);
+            eMessageCat(D_004DAF28);
+        }
+        break;
+    case 0x44:
+        if ((signed char)MenuWork.unmodeled_57[0] >= 0)
+            eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.unmodeled_57[0]))->name);
+        else
+            eMessageCpy(buf, (char *)D_004DAF48);
+        break;
+    case 0x46:
+        if ((signed char)MenuWork.unmodeled_57[1] >= 0)
+            eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.unmodeled_57[1]))->name);
+        else
+            eMessageCpy(buf, (char *)D_004DAF48);
+        break;
+    case 0x60:
+        if (MenuWork.weaponHand != 2) {
+            eMessageCpy(buf, msg01_2_0036D990[5]);
+            eMessageCat(msg01_2_0036D990[MenuWork.weaponHand + 2]);
+        } else {
+            eMessageCpy(buf, msg02_3_0036D9A0[0]);
+        }
+        break;
+    case 0x62:
+        if ((signed char)MenuWork.unmodeled_57[2] >= 0)
+            eMessageCpy(buf, MenuTextGet(MenuSortGet(0, (signed char)MenuWork.unmodeled_57[2]))->name);
+        else
+            eMessageCpy(buf, (char *)D_004DAF48);
+        break;
+    case 0xC2:
+        if (MenuWork.listSelect >= 0) {
+        row = &MenuListGet(0)[MenuWork.listSelect];
+        if ((signed char)row->flag == 1) {
+            org2 = func_A191C0((short)MenuSortAddrGet(0)[MenuWork.listSelect]);
+            eMessageCpy(buf, *(char **)row);
+            eMessageCat(msg05_6[2]);
+            eMessageCat(MenuCharNameGet(org2->agwsId));
+            eMessageCat(msg05_6[3]);
+        } else {
+            if ((signed char)row->equipped == 0)
+                eMessageCpy(buf, msg05_6[0]);
+            else
+                eMessageCpy(buf, msg05_6[1]);
+            eMessageCat(*(char **)row);
+            eMessageCat(msg05_6[4]);
+        }
+        } else {
+            eMessageCpy(buf, (char *)D_004DAF48);
+        }
+        break;
+    default:
+        target = 0x200;
+        break;
+    }
+    work->text = buf;
+    MoveSlide(&work->window.y, &target, 3.0f);
+    WindowDXMain(win);
+}
 
 typedef struct AgwsSelWindow {
     short x;
