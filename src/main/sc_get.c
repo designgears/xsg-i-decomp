@@ -1285,7 +1285,71 @@ out:
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scAnalyzeScriptCf);
+extern int **svGetScript(int eftNo);
+extern unsigned char D_004CC790[];
+static inline unsigned short scCfNormAdr(unsigned short *table)
+{
+    int value;
+    int raw;
+
+    raw = *table;
+    value = (short)raw & 0xFFFF;
+    if (raw == 0xFFFF || raw == -1) {
+        value = 0;
+    }
+    return value;
+}
+static inline unsigned short scCfNormAdr2(unsigned short *p)
+{
+    int value = *p;
+
+    if (value == 0xFFFF || value == -1) {
+        value = 0;
+    }
+    return value;
+}
+
+void *scAnalyzeScriptCf(int eftNo, int *out)
+{
+    int **slot;
+    char *data;
+    int value;
+    short type;
+    int idx;
+    void *ret;
+
+    idx = scFindScriptData(eftNo);
+    *out = 0;
+    if (idx < 0) {
+        tracePrint(D_004CC790, eftNo);
+        return 0;
+    }
+    slot = svGetScript(eftNo);
+    if (slot != 0) {
+        data = (char *)*slot;
+        if (data != 0) {
+            type = *(short *)(data + 0x10);
+            value = 0;
+            if (type == 0x3C) {
+                value = scCfNormAdr((unsigned short *)(data + 0x12));
+            } else if (type == 0x3D) {
+                idx = srsGetEffect2Idx(eftNo);
+                if (idx < *(short *)(data + 0x12)) {
+                    value = scCfNormAdr((unsigned short *)(data + idx * 2 + 0x14));
+                }
+            } else if (type == 0x3E) {
+                value = scCfNormAdr2((unsigned short *)(data + 0x14));
+            }
+            ret = 0;
+            if (value != 0) {
+                *out = value;
+                ret = data;
+            }
+            return ret;
+        }
+    }
+    return 0;
+}
 
 struct EventTask *scGetTaskAdr(int script_index, int task_index)
 {
