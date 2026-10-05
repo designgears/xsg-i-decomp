@@ -182,15 +182,456 @@ void Java_xeno_Chr_move__Ljava_lang_Object_FZ(JThread *thread,
     CHR_moveXZ(3, thread, arguments, failure_result);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_move__Lxeno_util_Spline_IZ);
+extern void SEQ_moveSPL(void);
+typedef struct ChrMoveSplCall {
+    u8 *object;
+    u8 *spline;
+    int pad;
+    u8 wait;
+} ChrMoveSplCall;
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ);
+void Java_xeno_Chr_move__Lxeno_util_Spline_IZ(JThread *thread,
+                                              ChrMoveSplCall *arguments,
+                                              u32 *failure_result)
+{
+    JavaField *peer_field;
+    u8 *object;
+    Actor *peer;
+    ChrMoveEntry *entry;
+    u8 *spline;
+    u8 *sargs;
+    int nf;
+    int wait;
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", CHR_rotX);
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + peer_field->offset);
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    sargs = (u8 *)entry + 0x38;
+    entry->mask = 1;
+    entry->state_flags |= 1;
+    lookupClassField(classJava_xeno_Chr,
+                     loadConstString(chr_algorithm_string, -1), 0);
+    spline = arguments->spline;
+    wait = arguments->wait;
+    nf = arguments->pad;
+    *(u16 *)(sargs + 8) = nf;
+    *(void **)((u8 *)entry + 0x24) = SEQ_moveSPL;
+    *(u8 **)sargs = spline;
+    *(u16 *)(sargs + 6) = *(u16 *)(spline + 8);
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", CHR_rotY);
+extern void SEQ_rotateSPL(void);
+typedef struct ChrSplCall {
+    u8 *object;
+    u8 *spline;
+    int pad;
+    u8 wait;
+} ChrSplCall;
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", CHR_rotZ);
+void Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ(JThread *thread,
+                                                ChrSplCall *arguments,
+                                                u32 *failure_result)
+{
+    JavaField *peer_field;
+    u8 *object;
+    Actor *peer;
+    ChrMoveEntry *entry;
+    u8 *spline;
+    u8 *sargs;
+    int nf;
+    int wait;
+
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + peer_field->offset);
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    sargs = (u8 *)entry + 0xb8;
+    entry->mask = 0xE;
+    entry->state_flags |= 0xE;
+    lookupClassField(classJava_xeno_Chr,
+                     loadConstString(chr_algorithm_string, -1), 0);
+    spline = arguments->spline;
+    wait = arguments->wait;
+    nf = arguments->pad;
+    *(u16 *)(sargs + 8) = nf;
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotateSPL;
+    *(u8 **)sargs = spline;
+    *(u16 *)(sargs + 6) = *(u16 *)(spline + 8);
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
+
+extern void SEQ_rotate(void);
+struct ChrRotCall {
+    u8 *object;
+    union { int i; float f; u8 *p; } first;
+    union { int i; float f; u8 *p; } second;
+    u8 wait;
+};
+typedef struct ChrRotState {
+    void *target;
+    u8 pad04[0x10 - 0x04];
+    int frames;
+    u8 pad14[0x1c - 0x14];
+    u32 flags;
+    u8 pad20[0x30 - 0x20];
+    float angle;
+    u8 pad34[0x40 - 0x34];
+    float speed;
+} ChrRotState;
+typedef struct ChrRotObjCall {
+    u8 *object;
+    int frames;
+    u8 *other;
+} ChrRotObjCall;
+typedef struct ChrRotObjCall2 {
+    u8 *object;
+    u8 *other;
+    float speed;
+} ChrRotObjCall2;
+
+static void CHR_rotX(int mode, JThread *thread, ChrRotCall *arguments,
+                     u32 *failure_result)
+{
+    JavaField *field;
+    Actor *peer;
+    float *rot_source;
+    ChrMoveEntry *entry;
+    ChrRotState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_algorithm_string, -1), 0);
+    rot_source = (float *)((u8 *)peer + 0x50);
+    if ((*(u32 *)(object + field->offset) & 1) == 0)
+        rot_source = defaultOffset;
+
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    rot = (ChrRotState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotate;
+    entry->state_flags |= 2;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~1;
+        rot->angle =
+            (arguments->second.f + rot_source[0]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~1;
+        rot->angle =
+            (arguments->first.f + rot_source[0]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off = field->offset;
+            u8 *o = ((ChrRotObjCall *)arguments)->other;
+            rot->frames = ((ChrRotObjCall *)arguments)->frames;
+            rot->flags |= 1;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off = field->offset;
+            u8 *o = ((ChrRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 1;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
+
+typedef struct ChrRotYState {
+    void *target;
+    u8 pad04[0x14 - 0x04];
+    int frames;
+    u8 pad18[0x1c - 0x18];
+    u32 flags;
+    u8 pad20[0x34 - 0x20];
+    float angle;
+    u8 pad38[0x44 - 0x38];
+    float speed;
+} ChrRotYState;
+
+static void CHR_rotY(int mode, JThread *thread, ChrRotCall *arguments,
+                     u32 *failure_result)
+{
+    JavaField *field;
+    Actor *peer;
+    float *rot_source;
+    ChrMoveEntry *entry;
+    ChrRotYState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_algorithm_string, -1), 0);
+    rot_source = (*(u32 *)(object + field->offset) & 1)
+        ? (float *)((u8 *)peer + 0x50) : defaultOffset;
+
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    rot = (ChrRotYState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotate;
+    entry->state_flags |= 4;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~2;
+        rot->angle =
+            (arguments->second.f + rot_source[1]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~2;
+        rot->angle =
+            (arguments->first.f + rot_source[1]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off;
+            u8 *o;
+            field = lookupClassField(classJava_xeno_Chr,
+                                     loadConstString(chr_peer_string, -1), 0);
+            off = field->offset;
+            o = ((ChrRotObjCall *)arguments)->other;
+            rot->frames = ((ChrRotObjCall *)arguments)->frames;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off;
+            u8 *o;
+            field = lookupClassField(classJava_xeno_Chr,
+                                     loadConstString(chr_peer_string, -1), 0);
+            off = field->offset;
+            o = ((ChrRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
+
+typedef struct ChrRotZState {
+    void *target;
+    u8 pad04[0x18 - 0x04];
+    int frames;
+    u32 flags;
+    u8 pad20[0x38 - 0x20];
+    float angle;
+    u8 pad3c[0x48 - 0x3c];
+    float speed;
+} ChrRotZState;
+
+static void CHR_rotZ(int mode, JThread *thread, ChrRotCall *arguments,
+                     u32 *failure_result)
+{
+    JavaField *field;
+    Actor *peer;
+    float *rot_source;
+    ChrMoveEntry *entry;
+    ChrRotZState *rot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + field->offset);
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_algorithm_string, -1), 0);
+    rot_source = (float *)((u8 *)peer + 0x50);
+    if ((*(u32 *)(object + field->offset) & 1) == 0)
+        rot_source = defaultOffset;
+
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    rot = (ChrRotZState *)((u8 *)entry + 0xb8);
+    *(void **)((u8 *)entry + 0x28) = SEQ_rotate;
+    entry->state_flags |= 8;
+
+    switch (mode) {
+    case 0:
+        rot->frames = arguments->first.i;
+        rot->flags &= ~4;
+        rot->angle =
+            (arguments->second.f + rot_source[2]) / 180.0f * 3.14159265f;
+        wait = arguments->wait;
+        break;
+    case 1:
+        rot->frames = -1;
+        rot->flags &= ~4;
+        rot->angle =
+            (arguments->first.f + rot_source[2]) / 180.0f * 3.14159265f;
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    case 2:
+        {
+            int off = field->offset;
+            u8 *o = ((ChrRotObjCall *)arguments)->other;
+            rot->frames = ((ChrRotObjCall *)arguments)->frames;
+            rot->flags |= 4;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        wait = arguments->wait;
+        break;
+    case 3:
+        {
+            int off = field->offset;
+            u8 *o = ((ChrRotObjCall2 *)arguments)->other;
+            rot->frames = -1;
+            rot->flags |= 2;
+            o += off;
+            o = *(u8 **)o;
+            rot->target = o;
+        }
+        rot->speed =
+            arguments->second.f / 180.0f * 3.14159265f / 30.0f;
+        wait = arguments->wait;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
 
 /*
  * CHR_rotX/CHR_rotY/CHR_rotZ are local to this file in the original (glabel
@@ -283,7 +724,118 @@ void Java_xeno_Chr_rotZ__Ljava_lang_Object_FZ(JThread *thread,
     CHR_rotZ(3, thread, arguments, failure_result);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_start__ILjava_lang_Object_);
+extern JThread *JTHREAD_get(void *object);
+extern void JTHREAD_defaultChr();
+extern void *findMethod(void *scene_class, void *name, void *type);
+extern void JNI_initThread(void *vm);
+extern void *TYPE_Void;
+extern int SCRIPT_methodClearGet(void);
+extern void ACT_updateDefault(Actor *actor);
+extern void ACT_updateSequence(Actor *actor);
+extern void ACT_updatePlayer(Actor *actor);
+extern void ACT_updateMPack(Actor *actor);
+typedef struct ChrStartString {
+    int pad0;
+    int length;
+    char *bytes;
+} ChrStartString;
+typedef struct ChrStartStringObj {
+    int pad0;
+    ChrStartString *str;
+} ChrStartStringObj;
+typedef struct ChrStartEntry {
+    u32 flags;
+    u32 state_flags;
+    u32 mask;
+    int mode;
+    u8 pad10[0x14 - 0x10];
+    void *method;
+    u8 pad18[0x24 - 0x18];
+    void *handler[4];
+} ChrStartEntry;
+typedef struct ChrStartCall {
+    u8 *object;
+    int mode;
+    ChrStartStringObj *name;
+} ChrStartCall;
+
+void Java_xeno_Chr_start__ILjava_lang_Object_(JThread *thread,
+                                              ChrStartCall *arguments,
+                                              u32 *failure_result)
+{
+    JavaField *field;
+    u8 *object;
+    Actor *peer;
+    int mode;
+    ChrStartEntry *entry;
+    ChrStartStringObj *name;
+    ChrStartString *str;
+    void *method;
+    void *cls;
+    JThread *t;
+
+    object = arguments->object;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    mode = arguments->mode;
+    peer = *(Actor **)(object + field->offset);
+    entry = (ChrStartEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    entry->mode = mode;
+    switch (mode) {
+    case 0:
+        peer->update = ACT_updateDefault;
+        break;
+    case 4:
+        entry->mode = 4;
+        peer->update = ACT_updateSequence;
+        entry->state_flags = 0;
+        break;
+    case 1:
+        name = arguments->name;
+        cls = (void *)*(u32 *)*(u32 *)object;
+        entry->state_flags = 0;
+        if (SCRIPT_methodClearGet()) {
+            peer->flags &= ~2;
+            entry->handler[0] = 0;
+            entry->handler[1] = 0;
+            entry->handler[2] = 0;
+            entry->flags = 0;
+            entry->handler[3] = 0;
+        }
+        str = name->str;
+        method = findMethod(cls, loadConstString(str->bytes, str->length),
+                            TYPE_Void);
+        entry->method = method;
+        t = JTHREAD_get(object);
+        if (t != 0) {
+            t->method = method;
+            t->reset = JTHREAD_defaultChr;
+            JNI_initThread(t);
+            t->flags |= 0x10;
+        }
+        entry->mode = 1;
+        peer->update = ACT_updateSequence;
+        entry->handler[1] = 0;
+        entry->handler[2] = 0;
+        entry->handler[3] = 0;
+        entry->handler[0] = 0;
+        break;
+    case 2:
+        entry->mode = 2;
+        peer->update = ACT_updatePlayer;
+        break;
+    case 5:
+        entry->state_flags = 0;
+        entry->flags = 0;
+        peer->update = ACT_updateMPack;
+        break;
+    }
+}
 
 /*
  * JTHREAD_get is local to jthread.c (still asm there) and only that TU
@@ -333,7 +885,87 @@ void Java_xeno_Chr_stop__(JThread *thread, ChrObjectCall *arguments,
     *(float *)(object + field->offset) = peer->rotation.z;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", CHR_motion);
+extern void SEQ_motion(void);
+typedef struct ChrMotionState {
+    u8 pad00[0x08];
+    int motion;
+    u8 pad0c[0x10 - 0x0c];
+    u16 start;
+    u16 end;
+    u8 loop;
+    u8 pad15[0x18 - 0x15];
+    int frames;
+    float speed;
+} ChrMotionState;
+typedef union { int i; float f; u16 h; u8 b; } ChrMotionWord;
+
+static void CHR_motion(int mode, JThread *thread, ChrMotionCall *arguments_,
+                       u32 *failure_result)
+{
+    ChrMotionWord *arguments = (ChrMotionWord *)arguments_;
+    JavaField *field;
+    Actor *peer;
+    ChrMoveEntry *entry;
+    ChrMotionState *mot;
+    u8 *object;
+    int wait;
+
+    wait = 0;
+    object = (u8 *)arguments[0].i;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    peer = *(Actor **)(object + field->offset);
+    entry = (ChrMoveEntry *)(actSequence +
+        ((u8 *)peer)[ACTOR_SLOT_NUMBER_OFFSET] * SEQUENCE_STRIDE);
+    mot = (ChrMotionState *)((u8 *)entry + 0x138);
+    *(void **)((u8 *)entry + 0x2c) = SEQ_motion;
+    entry->state_flags |= 0x10;
+
+    switch (mode) {
+    case 0:
+        if (arguments[1].i & 0xFF000000)
+            mot->motion = arguments[1].i;
+        else
+            mot->motion = arguments[1].i - 1;
+        mot->frames = arguments[2].i;
+        mot->speed = arguments[3].f;
+        wait = arguments[4].b;
+        mot->start = -1;
+        mot->end = -1;
+        mot->loop = 8;
+        break;
+    case 1:
+        if (arguments[1].i & 0xFF000000)
+            mot->motion = arguments[1].i;
+        else
+            mot->motion = arguments[1].i - 1;
+        mot->start = arguments[2].h;
+        mot->end = arguments[3].h;
+        mot->loop = arguments[4].b;
+        mot->frames = arguments[5].i;
+        mot->speed = arguments[6].f;
+        wait = arguments[7].b;
+        break;
+    }
+
+    if (wait == 1) {
+        peer->flags |= 2;
+        if (thread->kind != wait && (thread->flags & 0x40) == 0)
+            return;
+        if ((thread->flags & 0x40) != 0) {
+            thread->wait_target = peer;
+            thread->wait_kind = JTHREAD_WAIT_ACTOR;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+        }
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 1;
+    }
+}
 
 /*
  * CHR_motion is local to this file in the original (glabel ..., local); it
@@ -391,7 +1023,26 @@ void Java_xeno_Chr_getSignal__(JThread *thread, ChrObjectCall *arguments,
     *failure_result = peer->signal;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setRotate__);
+void Java_xeno_Chr_setRotate__(JThread *thread, ChrScaleCall *arguments)
+{
+    u8 *object;
+    JavaField *field;
+    float *rot;
+
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    rot = (float *)(*(u8 **)(object + field->offset) + 0x50);
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1B8, -1), 0);
+    rot[0] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1C0, -1), 0);
+    rot[1] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1C8, -1), 0);
+    rot[2] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+}
 
 /*
  * The state byte at Actor+0xa40, past this TU's recovered head above:
@@ -437,7 +1088,26 @@ void Java_xeno_Chr_setTranslate__(JThread *thread, ChrObjectCall *arguments)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_getRotate__);
+void Java_xeno_Chr_getRotate__(JThread *thread, ChrScaleCall *arguments)
+{
+    u8 *object;
+    JavaField *field;
+    float *rot;
+
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(chr_peer_string, -1), 0);
+    rot = (float *)(*(u8 **)(object + field->offset) + 0x50);
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1B8, -1), 0);
+    *(float *)(object + field->offset) = rot[0] / 3.1415927f * 180.0f;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1C0, -1), 0);
+    *(float *)(object + field->offset) = rot[1] / 3.1415927f * 180.0f;
+    field = lookupClassField(classJava_xeno_Chr,
+                             loadConstString(D_004DC1C8, -1), 0);
+    *(float *)(object + field->offset) = rot[2] / 3.1415927f * 180.0f;
+}
 
 void Java_xeno_Chr_getTranslate__(JThread *thread, ChrScaleCall *arguments,
                                   u32 *failure_result)
