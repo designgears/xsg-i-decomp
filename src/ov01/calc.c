@@ -1176,7 +1176,35 @@ int calcLineChk(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBackLineChk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcWpnEnableChk);
+int calcWpnEnableChk(ObjectTask *unit, int slot)
+{
+    WpnData *wpn;
+    CalcUnitParam *up;
+    short id;
+
+    up = calcUPGet(unit);
+    id = up->sefSetupParams[slot];
+    if (id == 0) {
+        return 0;
+    }
+    wpn = dataWpnGet(id);
+    dataTecGet(*(short *)((char *)wpn + 0x14));
+    if (calcAttWpnChk(id) != 0) {
+        if (((short *)up->unmodeled_6a)[slot] == 0) {
+            return 0;
+        }
+        if ((short)up->statActiveMask[slot - 30] <= 0) {
+            return 0;
+        }
+    }
+    if ((signed char)wpn->unmodeled_00[0xF] > (signed char)up->unmodeled_3a[0]) {
+        return 0;
+    }
+    if (calcTakeEpGet((CalcTakeEpArg *)unit, *(short *)((char *)wpn + 0x14)) > (short)up->currentEp) {
+        return 0;
+    }
+    return 1;
+}
 
 int calcWpnUse(ObjectTask *unit, int idx)
 {
