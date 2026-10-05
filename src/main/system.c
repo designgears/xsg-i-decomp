@@ -127,7 +127,59 @@ static char *getStrIndex(char *string, int length, int ch)
 
 INCLUDE_ASM("asm/main/nonmatchings/system", Java_xeno_vm_System_println__Ljava_lang_String_);
 
-INCLUDE_ASM("asm/main/nonmatchings/system", System_waitFor);
+extern void *classJava_xeno_Chr;
+extern void *classJava_xeno_Stage;
+extern void *classJava_xeno_util_Menu;
+extern void *classJava_xeno_util_Window;
+extern int JNI_isInstanceOf(void *object, void *target_class);
+extern JThread *JTHREAD_get(void *object);
+
+static void System_waitFor(JThread *thread, void *wait_target, int wait_kind, int wait_parameter)
+{
+    void *klass;
+    JThread *target;
+
+    if (JNI_isInstanceOf(wait_target, classJava_xeno_Chr) == 1) {
+        klass = classJava_xeno_Chr;
+    } else if (JNI_isInstanceOf(wait_target, classJava_xeno_Stage) == 1) {
+        klass = classJava_xeno_Stage;
+    } else if (JNI_isInstanceOf(wait_target, classJava_xeno_util_Menu) == 1) {
+        thread->wait_kind = 3;
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 4;
+        thread->wait_target = wait_target;
+        return;
+    } else if (JNI_isInstanceOf(wait_target, classJava_xeno_util_Window) == 1) {
+        thread->wait_kind = 3;
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 4;
+        thread->wait_target = wait_target;
+        return;
+    } else {
+        klass = 0;
+    }
+    if (klass == 0) {
+        return;
+    }
+    target = JTHREAD_get(wait_target);
+    switch (wait_kind) {
+    case 0:
+        if (target != thread) {
+            thread->wait_kind = 2;
+            thread->resume_frames = thread->frame_depth;
+            thread->flags |= 4;
+            thread->wait_target = target;
+        }
+        break;
+    case 5:
+        thread->wait_kind = wait_kind;
+        thread->resume_frames = thread->frame_depth;
+        thread->flags |= 4;
+        thread->wait_target = target;
+        thread->wait_parameter = wait_parameter;
+        break;
+    }
+}
 
 /*
  * The script VM's per-thread context, recovered as `JThread` in
