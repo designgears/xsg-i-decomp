@@ -858,7 +858,71 @@ int _EnergyShot(int p)
     return *(int *)(p + 0x1F0) == 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _EnergyPassTime);
+typedef struct RgWeaponEnergyView {
+    RgWeapon common;
+    int active;
+    int requested;
+    float charge;
+    float shotDecay;
+    float chargeRate;
+    float chargeMax;
+    float dischargeRate;
+} RgWeaponEnergyView;
+
+void _EnergyPassTime(RgWeapon *w, float dt)
+{
+    RgWeaponEnergyView *weapon = (RgWeaponEnergyView *)w;
+    RgWeaponShotRequest info;
+    RgShot *shot;
+    RgWeaponAttach *attach;
+    int idle;
+    int req;
+    float v;
+
+    idle = 1;
+    if (weapon->active != 0) {
+        _ReleaseAttach(&weapon->common.shotAttach);
+    } else {
+        attach = &weapon->common.shotAttach;
+        if (_GetNumAttach(attach) != 0) {
+            if (weapon->requested == 0) {
+                _ReleaseAttach(attach);
+            } else {
+                idle = 0;
+            }
+        } else if (weapon->requested != 0 && weapon->common.shotRequested != 0) {
+            _GetShotInfo(&weapon->common, &info);
+            shot = CreateRgShotFromEssence(*(void **)weapon->common.unmodeled_38, &info);
+            RgShotSetSoundDriver(shot, weapon->common.sound);
+            RgShotSetHitSound(shot, weapon->common.robotHitSound, weapon->common.robotHitVolume);
+            RgShotSetBgHitSound(shot, weapon->common.bgHitSound, *(int *)weapon->common.unmodeled_1e0);
+            RgShotSetNoLifeSound(shot, *(int *)weapon->common.unmodeled_1d4, *(int *)(weapon->common.unmodeled_1e0 + 4));
+            RgShotSetHideSound(shot, weapon->common.shotSound);
+            XrgSoundRingVol(weapon->common.sound, weapon->common.shotSound, weapon->common.shotVolume);
+            if (shot != 0 && RgShotIsReleased(shot) == 0) {
+                _AddShotAttach(attach, shot);
+            }
+            idle = 0;
+        }
+    }
+    if (idle == 0) {
+        if (weapon->common.shotNum != 1e8f) {
+            weapon->common.shotNum = weapon->common.shotNum - weapon->shotDecay * dt;
+        }
+        v = weapon->charge + weapon->chargeRate * dt;
+        weapon->charge = v;
+        if (weapon->chargeMax < v) {
+            weapon->active = 1;
+        }
+    } else {
+        weapon->charge = weapon->charge - weapon->dischargeRate * dt;
+        if (weapon->charge < 0.0f) {
+            weapon->charge = 0.0f;
+            weapon->active = 0;
+        }
+    }
+    weapon->requested = 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitEnergyType);
 
