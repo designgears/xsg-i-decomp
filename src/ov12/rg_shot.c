@@ -415,7 +415,44 @@ void InitRgHomingShotEssence(void *essence)
     typedEssence->delay = 0.3f;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _GrenadeEntryHistory);
+typedef struct {
+    unsigned char pad[0xA0];
+    int history[8];
+    unsigned int count;
+} RgGrenadeHistSub;
+typedef struct {
+    int head;
+    RgGrenadeHistSub sub;
+} RgGrenadeHistView;
+
+static int _GrenadeEntryHistory(RgShot *shot, int bgObject)
+{
+    RgGrenadeHistView *bom = (RgGrenadeHistView *)shot;
+    unsigned int i;
+
+    if (shot == 0) {
+        assert_prog(D_00A53368, D_00A532F8, 0x20A);
+    }
+    if (bgObject == 0) {
+        return 0;
+    }
+    if (bom->sub.count >= 8) {
+        return 0;
+    }
+    for (i = 0; i < bom->sub.count; i++) {
+        if (bom->sub.history[i] == bgObject) {
+            return 0;
+        }
+    }
+    {
+        RgGrenadeHistSub *sub = &bom->sub;
+        unsigned int *cnt = &sub->count;
+        unsigned int n = *cnt;
+        *cnt = n + 1;
+        sub->history[n] = bgObject;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _GrenadeBomPassTime);
 
