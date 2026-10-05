@@ -1428,7 +1428,26 @@ int unitCmdReadWait(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAgws2);
+extern void decoEffCall(ObjectTask *unit, int effectId);
+
+int unitCmdAgws2(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    unitCmdPtrGet(unit);
+    if (actor->moveState == 0) {
+        decoEffCall(unit, (calcUPGet(unit)->flags & 0x40) ? 0x67 : 0x66);
+        actor->moveState++;
+    } else if (actor->moveState == 1) {
+        unitMotStandSet(unit);
+        actor->movePhaseTimer = 0;
+        actor->moveState++;
+    } else if (unitTelIn(unit)) {
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdEscape);
 
