@@ -440,7 +440,51 @@ static int _ExecCmdInAttack(RgRobotStatus *status, RgBody *body, RgCmd *command)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _AttackPassTime);
+extern int RgWeaponGetControlFlag(void *weapon);
+extern int RgWeaponShot(void *weapon);
+extern void RgWeaponShotStop(void *weapon);
+extern int XrgActorIsEndOfMotion(void *actor);
+static void _BodyAdvanceForAttack(RgBody *body, float attackPower,
+                                  float attackFactor);
+
+static int _AttackPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
+{
+    void *weapon;
+    float elapsed;
+    int info;
+    int flag;
+
+    weapon = (void *)status->scratch1;
+    elapsed = status->elapsedTime;
+    info = *(int *)&status->scratchTimer;
+    if (weapon != 0) {
+        flag = RgWeaponGetControlFlag(weapon);
+    } else {
+        flag = 0;
+    }
+    if (RgMotionInfoGetActionInTime(info, 0, elapsed) != 0) {
+        if (weapon != 0) {
+            RgWeaponShot(weapon);
+        }
+        *(int *)&status->unmodeled_10[0] = 0;
+        _StopHomingThread(body->homingThread);
+    } else if (XrgActorIsEndOfMotion(body->actor) != 0) {
+        if (weapon != 0) {
+            RgWeaponShotStop(weapon);
+        }
+        _InitMovingStatus(status, body);
+    } else if (*(int *)&status->unmodeled_10[0] != 0) {
+        if (*(int *)&status->unmodeled_10[4] != 0 && (flag & 0x40)) {
+            _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+        }
+    } else {
+        if (weapon != 0) {
+            RgWeaponShotStop(weapon);
+        }
+        _StopHomingThread(body->homingThread);
+    }
+    return 0x20;
+}
 
 extern void RgWeaponShotStop(void *weapon);
 extern char *RgWeaponGetEss(void *weapon);
