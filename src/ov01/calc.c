@@ -1744,7 +1744,40 @@ int calcDblActChk(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSameWpnChk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcEthEnableChk);
+extern int calcTgtUnitTbl(int, int, int);
+extern int calcEtherDisableGet(ObjectTask *unit, int bit);
+
+int calcEthEnableChk(ObjectTask *unit, int id)
+{
+    int i;
+    int off;
+
+    if (calcTgtUnitTbl((int)unit, *(unsigned char *)dataTecGet(dataEthGet(id)->tecId), 0) == 0) {
+        return 0;
+    }
+    if ((short)calcUPGet(unit)->currentEp < calcTakeEpGet((CalcTakeEpArg *)unit, dataEthGet(id)->tecId)) {
+        return 0;
+    }
+    if (id == 3 && (cfEventGet() & 8)) {
+        return 0;
+    }
+    if ((calcStatGet(unit, 7, 2) && id == 0x2B)
+        || (!calcStatGet(unit, 7, 2) && (id == 0x2C || id == 0x2D))
+        || (calcStatGet(unit, 7, 1) && id == 0x2E)
+        || (!calcStatGet(unit, 7, 1) && (id == 0x2F || id == 0x30))) {
+        return 0;
+    }
+    i = 0;
+    off = 0x80;
+    do {
+        if (*(short *)((char *)calcUPGet(unit) + off + 0xE) == id && calcEtherDisableGet(unit, i)) {
+            return 0;
+        }
+        i++;
+        off += 2;
+    } while (i < 12);
+    return 1;
+}
 
 extern int calcTgtUnitTbl(int, int, int);
 extern int cfEventGet(void);
