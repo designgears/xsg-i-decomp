@@ -3117,6 +3117,38 @@
     }
    ]
   },
+  "ov02/tu011_00a0baf8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a13250",
+      "0x00a132f8"
+     ],
+     "generated": [
+      "0x00a13250",
+      "0x00a132f4"
+     ],
+     "generated_by": [
+      "tskUmnSimulationList"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A13250"
+     ],
+     "also_referenced_by_c": [
+      "D_00A13218",
+      "D_00A13220",
+      "D_00A13230",
+      "D_00A13238",
+      "D_00A132F8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    }
+   ]
+  },
   "ov02/tu013_00a0de20": {
    ".rodata": [
     {
