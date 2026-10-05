@@ -545,7 +545,33 @@ static unsigned char *command_loadene(int command, unsigned char *cursor, int mo
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_script);
+extern int SCRIPT_load2(const char *path);
+extern void SCRIPT_exec2(void);
+
+static unsigned char *command_script(int command, unsigned char *cursor, int mode)
+{
+    char name[256];
+    char *p = name;
+    const char *src = RES_getPath();
+
+    while ((*p = *src) != 0) {
+        src++;
+        p++;
+    }
+    while (*cursor != ' ' && *cursor != '\t' && *cursor != '\n' && *cursor != '\r') {
+        *p++ = *cursor++;
+    }
+    p[0] = '.';
+    p[1] = 'e';
+    p[2] = 'v';
+    p[3] = 't';
+    p[4] = 0;
+    if (!(GameLoopState.flags & 0x40)) {
+        SCRIPT_load2(name);
+        SCRIPT_exec2();
+    }
+    return cursor;
+}
 
 extern void GameCfPlayerLoadResource(int resource_set);
 
