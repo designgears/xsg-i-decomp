@@ -407,7 +407,91 @@ int WIN_checkActiveWindow(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_create2);
+void *MBUF_create2(void);
+unsigned char *EW_create(int parent, int kind);
+int EW_addComponent(unsigned char *ew, int slot, unsigned char *child);
+
+TComponent *TWIN_create2(int slotIndex)
+{
+    unsigned char *w;
+    unsigned char *mb;
+    unsigned char *ew;
+    unsigned char *c;
+    unsigned char *e;
+    int i;
+    int kind;
+
+    w = (unsigned char *)TWSYS_createComponent(slotIndex, 0);
+    if (w == 0) {
+        return 0;
+    }
+    mb = MBUF_create2();
+    if (mb == 0) {
+        return 0;
+    }
+    w[0x186] = 0x2D;
+    w[0x187] = 3;
+    *(float *)(w + 0x20) = 16.0f;
+    *(float *)(w + 0x24) = 305.0f;
+    *(short *)(w + 0x50) = 0;
+    TWIN_init2((TWindowInit2 *)w);
+    for (i = 7; i >= 0; i--) {
+        ((int *)(w + 0xD0))[i] = 0;
+    }
+    ew = EW_create(-1, 4);
+    *(unsigned char **)(ew + 0x14) = w + 0xD0;
+    *(short *)(ew + 0x10) = 8;
+    *(unsigned short *)ew |= 0x4000;
+    *(unsigned char **)(w + 0x54) = ew;
+    c = EW_create(-1, 10);
+    *(short *)(c + 0xC) = 0x10;
+    *(short *)(c + 0xE) = 0x10;
+    EW_addComponent(ew, 1, c);
+    e = *(unsigned char **)(w + 0xD4);
+    *(int *)(e + 0x14) = 0x808000;
+    *(int *)(e + 0x10) |= 0x100;
+    c = EW_create(-1, 9);
+    *(short *)(c + 0xC) = 0x10;
+    *(short *)(c + 0xE) = 0x10;
+    EW_addComponent(ew, 0, c);
+    c = EW_create(-1, 7);
+    *(int *)(c + 0x24) = *(int *)(w + 0x17C);
+    *(short *)(c + 0x14) = -1;
+    EW_addComponent(ew, 2, c);
+    c = EW_create(-1, 9);
+    *(short *)(c + 0xC) = 0x200;
+    *(short *)(c + 0xE) = 0x1C0;
+    *(short *)(c + 0x4) = 0;
+    *(short *)(c + 0x6) = 0;
+    *(int *)(c + 0x8) = 0;
+    EW_addComponent(ew, 3, c);
+    *(unsigned short *)c |= 0x4000;
+    c = EW_create(-1, 1);
+    EW_addComponent(ew, 4, c);
+    c = EW_create(-1, 5);
+    *(short *)(c + 0xC) = 0x10;
+    *(short *)(c + 0xE) = 0x10;
+    EW_addComponent(ew, 5, c);
+    *(unsigned char **)(w + 0x9C) = mb;
+    kind = *(unsigned short *)(w + 0x16) & 0xF;
+    *(int *)(w + 0xAC) = *(int *)(mb + 0xC);
+    *(short *)(w + 0xB8) = *(unsigned short *)(mb + 4);
+    *(int *)(w + 0xA0) = 0;
+    *(short *)(w + 0xB4) = 0;
+    *(short *)(w + 0xB6) = 0;
+    *(short *)(w + 0xBA) = 0;
+    *(short *)(w + 0xBC) = 0;
+    switch (kind) {
+    case 3:
+    default:
+        WIN_initCF((TWindow *)w);
+        break;
+    case 4:
+        WIN_initScene((TWindow *)w);
+        break;
+    }
+    return (TComponent *)w;
+}
 
 void EW_dispose(int handle);
 void MBUF_dispose(int handle);
