@@ -1432,7 +1432,31 @@ int calcCfEncount(int flags)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPartyStat);
+void calcPartyStat(int type, int mode)
+{
+    ObjectTask **table;
+    ObjectTask *u;
+    int count;
+    int i = 0;
+
+    count = unitTblGet(type, &table);
+    if (count > 0) {
+        do {
+            u = table[i];
+            i++;
+            if (u != 0) {
+                switch (mode) {
+                case 0:
+                    calcUPGet(u)->waitCount = 0;
+                    break;
+                case 1:
+                    calcUPGet(u)->unmodeled_3a[2]++;
+                    break;
+                }
+            }
+        } while (i < count);
+    }
+}
 
 int calcEtherDisableGet(ObjectTask *unit, int bit)
 {
