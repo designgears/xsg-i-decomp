@@ -991,7 +991,53 @@ INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subLine2_OpenType_1);
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Main);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", sub2ObjectLampDraw);
+extern void endSpriteSet(unsigned char *data, int kind);
+typedef struct LampView {
+    unsigned char pad00[0x30];
+    short x;
+    short y;
+    int z;
+    unsigned char pad38[0x0e];
+    unsigned short alpha;
+    unsigned short speed;
+    unsigned char pad4a[0x06];
+    short sx;
+    short sy;
+    int depth;
+    short w;
+    short h;
+    unsigned char pad5c[3];
+    unsigned char a;
+    unsigned short attr;
+} LampView;
+
+void sub2ObjectLampDraw(LampView *obj)
+{
+    EtherTreeSystemData *sys = EtherTreeSystem;
+    unsigned char *data = (unsigned char *)&obj->sx;
+    float *node = &sys->nodeX;
+    short v;
+    float scale, scale2;
+    short w;
+
+    v = obj->alpha += obj->speed;
+    if (v < 0) {
+        obj->speed = -obj->speed;
+        obj->alpha = 0;
+    } else if (v > 0x80) {
+        obj->alpha = 0x80;
+        obj->speed = -obj->speed;
+    }
+    obj->attr = 0x1203;
+    endSpriteSet(data, 0xFF);
+    obj->w = obj->w * node[3];
+    obj->h = obj->h * node[3];
+    obj->a = obj->alpha;
+    obj->depth = obj->z + 1;
+    *(short *)data = obj->x + node[3] * 27.0f - 2.0f;
+    obj->sy = obj->y + node[3] - 3.0f;
+    endPrintExtFunc(0, 2, data);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeObjectDraw);
 
