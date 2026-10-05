@@ -1399,7 +1399,81 @@ s32 CGPWeaponEquipChk(CardGameWork *work, s32 weaponId, s32 equipId)
     return allowed;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPDisposeWeaponSub);
+void CGPDisposeWeaponSub(s32 side, CardGameWork *work, CGPCursorPosition weapon, CGPCursorPosition target)
+{
+    s32 sel5;
+    s32 sel6;
+    CardPlaySide *hand;
+    CardLayerStack *stack;
+    s32 e;
+    s32 ban;
+    u16 eflags;
+    CardDefinition *defs;
+
+    sel5 = 5;
+    sel6 = 6;
+    hand = &work->player;
+    if (side != 0) {
+        hand = &work->enemy;
+        sel6 = 2;
+        sel5 = 4;
+    }
+
+    if (sel6 == target.zone || sel5 == target.zone) {
+        if (target.cardId >= 0) {
+            if (sel6 == target.zone) {
+                stack = &hand->disposal[target.index].battle;
+            } else {
+                stack = &hand->battle[target.index].battle;
+            }
+
+            if (weapon.cardId == 0x34) {
+                if (target.cardId == 0xB) {
+                    goto success;
+                }
+                goto fail_mid;
+            }
+
+            defs = work->definitions;
+            if ((defs[weapon.cardId].flags & 0x20) != 0) {
+                e = target.cardId;
+                if ((defs[e].flags & 8) != 0) {
+                    if (e == 4 || e == 0xB || e == 0x50) {
+                        goto fail_inner;
+                    }
+                    ban = 0x41;
+                    goto check_ban;
+                }
+            }
+
+            if ((defs[weapon.cardId].flags & 0x40) != 0) {
+                e = target.cardId;
+                eflags = defs[e].flags;
+                if (((eflags & 1) & 0xFFFF) != 0 || (eflags & 2) != 0) {
+                    if (e == 2 || e == 9) {
+                        goto fail_inner;
+                    }
+                    ban = 0xE;
+check_ban:
+                    if (e != ban) {
+success:
+                        CGPequipSub(work, (CardPlayHand *)hand, stack, weapon.index);
+                        xglSoundEffectNormalID(1, 0);
+                        work->command.phaseTimer = 1;
+                        return;
+                    }
+                }
+            }
+fail_inner:
+fail_mid:
+            xglSoundEffectNormalID(5, 0);
+            return;
+        }
+        goto fail_early;
+    }
+fail_early:
+    xglSoundEffectNormalID(5, 0);
+}
 
 /*
  * Board area the cursor currently points at. The ten areas follow the cursor's
