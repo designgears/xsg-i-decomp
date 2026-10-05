@@ -1119,7 +1119,35 @@ check_move:
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scParseScript);
+extern int (*_scFuncHandler[0x49])();
+
+static int scParseScript(ScriptTask *task)
+{
+    int count;
+    int ret;
+    int cmd;
+    unsigned short flags;
+
+    count = 0;
+    for (;;) {
+        cmd = scGetCmdScript(task);
+        ret = _scFuncHandler[cmd](task);
+        if (ret == 0) break;
+        flags = task->flags;
+        if (flags == 0) goto out;
+        if (flags & 4) goto out;
+        if (ret == 2) {
+            task->flags = flags | 0x10;
+            goto out;
+        }
+        if (++count > 2000) {
+            goto out;
+        }
+    }
+    scDeleteTask(_nowScript, _nowEvent);
+out:
+    return 1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sc_get", scAnalyzeScriptCf);
 
