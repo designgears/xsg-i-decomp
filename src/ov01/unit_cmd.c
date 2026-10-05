@@ -767,7 +767,33 @@ int unitCmdEva(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdDef);
+int unitCmdDef(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    switch (actor->moveState) {
+    case 0:
+        unitMotSet(unit, 0x1E);
+        actor->moveState++;
+        break;
+    case 1:
+        if ((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000) {
+            if (!(actor->flags & 0x800)) {
+                unitMotSet(unit, 0x1C);
+            }
+            actor->moveState++;
+        }
+        break;
+    default:
+        if ((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000) {
+            unitMotStandSet(unit);
+            return unitCmdNext(unit);
+        }
+        break;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdDead);
 
