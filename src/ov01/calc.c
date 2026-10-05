@@ -2528,7 +2528,57 @@ void calcSplineInit(CalcSpline *spline, int start, int end, int duration)
     spline->frame = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSpline);
+struct CalcLinerVec;
+struct CalcHermiteList;
+void calcLinerSub(float t, struct CalcLinerVec **list, float *out, int idx);
+void calcBezierSub(float t, struct CalcLinerVec **list, float *out, int idx);
+void calcSplineSub(float t, CalcSpline *spline, float *out, int idx);
+void calcHermiteSub(float t, struct CalcHermiteList *list, float *out, int idx);
+
+int calcSpline(CalcSpline *spline, float *out, int type)
+{
+    float frame;
+    float step;
+    int idx;
+    float *p;
+
+    switch (type) {
+    case 2:
+        frame = (float)spline->frame;
+        calcBezierSub(1.0f / (spline->duration - 1.0f) * frame, (struct CalcLinerVec **)spline, out, 0);
+        break;
+    case 1:
+        frame = (float)spline->frame;
+        step = (spline->duration - 1.0f) / (float)(spline->end - 3);
+        idx = (int)(frame / step);
+        calcSplineSub(1.0f / step * (frame - (float)idx * step), spline, out, idx);
+        break;
+    case 3:
+        frame = (float)spline->frame;
+        step = (spline->duration - 1.0f) / (float)(spline->end - 1);
+        idx = (int)(frame / step);
+        calcHermiteSub(1.0f / step * (frame - (float)idx * step), (struct CalcHermiteList *)spline, out, idx);
+        break;
+    case 0:
+    default:
+        frame = (float)spline->frame;
+        step = (spline->duration - 1.0f) / (float)(spline->end - 1);
+        idx = (int)(frame / step);
+        calcLinerSub(1.0f / step * (frame - (float)idx * step), (struct CalcLinerVec **)spline, out, idx);
+        break;
+    }
+    if (spline->duration <= frame) {
+        idx = spline->end - 1;
+        p = (float *)((idx << 4) + spline->start);
+        out[0] = p[0];
+        out[1] = p[1];
+        out[2] = p[2];
+        return 1;
+    }
+    frame += 1.0f;
+    spline->frame = frame;
+    return 0;
+}
 
 typedef struct CalcLinerVec {
     float x, y, z, w;
