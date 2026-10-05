@@ -1676,7 +1676,40 @@ static void _BodyDisp(RgRobotStatus *robotStatus, RgBody *body)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitBody);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DestructBody);
+extern void DisposeRgShotThread(void *thread);
+
+static void _DestructBody(RgBody *body)
+{
+    unsigned int i;
+
+    if (!body) {
+        assert_prog(D_00A51A68, D_00A51840, 0xD7E);
+    }
+    RgGeomFree(body->geometry);
+    if (body->eyeGeometry) {
+        RgGeomFree(body->eyeGeometry);
+    }
+    if (body->advanceGeometry) {
+        RgGeomFree(body->advanceGeometry);
+    }
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        if (body->weapon[i]) {
+            DisposeRgWeapon(body->weapon[i]);
+        }
+        if (body->spareWeapon[i]) {
+            DisposeRgWeapon((void *)body->spareWeapon[i]);
+        }
+        DisposeRgShotThread(body->shotThread[i]);
+    }
+    _DisposeHomingThread(body->homingThread);
+    DisposeRgRobotEffect(body->effect);
+    if (body->actor) {
+        DisposeXrgActor(body->actor);
+    }
+    if (body->landingSoundID) {
+        DisposeXrgSound((void *)body->landingSoundID);
+    }
+}
 
 static void _InitBody(RgBody *body);
 
