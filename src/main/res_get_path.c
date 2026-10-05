@@ -651,7 +651,43 @@ static void readreq(const char *name, void *buffer)
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceLoad);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSubMapSub);
+extern char *MAP_getPath(void);
+extern char dummy_3[];
+
+static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
+{
+    char path[256];
+    char *d = path;
+    char *s;
+    char *n;
+    char *r;
+    char *q;
+    int size;
+
+    q = MAP_getPath();
+    while (*q != 0) *d++ = *q++;
+    q = dir;
+    while (*q != 0) *d++ = *q++;
+    q = name;
+    if (*q != 0) {
+        do {
+            *d++ = *(unsigned char *)q++;
+        } while (*(unsigned char *)q != 0);
+    }
+    *d = 0;
+    size = xglCdGetFileSize(path);
+    if (size <= 0) {
+        char *e = path;
+        s = dummy_3;
+        while (*s != 0) *e++ = *s++;
+        s = name;
+        while (*s != 0) *e++ = *s++;
+        *e = 0;
+        size = xglCdGetFileSize(path);
+    }
+    readreq(path, buffer);
+    return size;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSubMap);
 
