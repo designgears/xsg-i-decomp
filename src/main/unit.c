@@ -602,7 +602,26 @@ void Java_xeno_Unit_setCollision__Z(JThread *thread, UnitBoolCall *arguments)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/unit", Java_xeno_Unit_setRotate__);
+void Java_xeno_Unit_setRotate__(JThread *thread, UnitObjectCall *arguments)
+{
+    u8 *object;
+    JavaField *field;
+    float *rot;
+
+    object = arguments->object;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D0, -1), 0);
+    rot = (float *)(*(u8 **)(object + field->offset) + 0x20);
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1D8, -1), 0);
+    rot[0] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1E0, -1), 0);
+    rot[1] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+    field = lookupClassField(classJava_xeno_Unit,
+                             loadConstString(D_004DC1E8, -1), 0);
+    rot[2] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
+}
 
 void Java_xeno_Unit_setTranslate__(JThread *thread, UnitObjectCall *arguments)
 {

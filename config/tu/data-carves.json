@@ -54,6 +54,33 @@
     }
    ]
   },
+  "main/tu097": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d87c8",
+      "0x004d87d0"
+     ],
+     "generated": [
+      "0x004d87c8",
+      "0x004d87d0"
+     ],
+     "generated_by": [
+      "RebuildQuantizeTable"
+     ],
+     "c_owned_symbols": [
+      "D_004D87C8",
+      "D_004D87CC"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_jpeg.o"
+     }
+    }
+   ]
+  },
   "main/tu098": {
    ".lit4": [
     {
@@ -1998,17 +2025,19 @@
     {
      "range": [
       "0x004d8444",
-      "0x004d8448"
+      "0x004d844c"
      ],
      "generated": [
       "0x004d8444",
-      "0x004d8448"
+      "0x004d844c"
      ],
      "generated_by": [
-      "Java_xeno_Unit_getRotate__"
+      "Java_xeno_Unit_getRotate__",
+      "Java_xeno_Unit_setRotate__"
      ],
      "c_owned_symbols": [
-      "D_004D8444"
+      "D_004D8444",
+      "D_004D8448"
      ],
      "also_referenced_by_c": [
       "D_004D844C"
