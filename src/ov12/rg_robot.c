@@ -1759,7 +1759,34 @@ static void _DestructRobot(RgStatus *pRobot)
     _DisposeCmdQueue(pRobot->cmdQueue);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitRobot);
+typedef struct RgDullFlag RgDullFlag;
+void InitRgDullFlag(RgDullFlag *pDull);
+void RgDullFlagSetDullTime(RgDullFlag *pDull, float fTime);
+
+static void _InitRobot(RgStatus *pRobot)
+{
+    RgRobotStatus *status;
+
+    if (pRobot == 0) {
+        assert_prog(D_00A51BB0, D_00A51840, 0xFA2);
+    }
+    pRobot->body = _CreateBody();
+    status = _CreateStatue();
+    pRobot->robotStatus = status;
+    _InitMovingStatus(status, pRobot->body);
+    pRobot->cmdQueue = _CreateCmdQueue();
+    pRobot->acceptedCommandMask = 0;
+    pRobot->statusFlags = 0;
+    InitRgDullFlag((RgDullFlag *)&pRobot->unmodeled_14[0x0C]);
+    InitRgDullFlag((RgDullFlag *)&pRobot->unmodeled_14[0x1C]);
+    InitRgDullFlag((RgDullFlag *)&pRobot->unmodeled_14[0x2C]);
+    RgDullFlagSetDullTime((RgDullFlag *)&pRobot->unmodeled_14[0x0C], 0.5f);
+    RgDullFlagSetDullTime((RgDullFlag *)&pRobot->unmodeled_14[0x1C], 0.5f);
+    RgDullFlagSetDullTime((RgDullFlag *)&pRobot->unmodeled_14[0x2C], 0.4f);
+    pRobot->drawView = 0;
+    *(int *)&pRobot->unmodeled_4c[0] = 0;
+    *(int *)&pRobot->unmodeled_4c[4] = 0;
+}
 
 static void _InitRobot(RgStatus *pRobot);
 
