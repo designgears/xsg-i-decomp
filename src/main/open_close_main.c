@@ -154,7 +154,77 @@ void OpenCloseMain(OpenCloseController *controller)
                     (controller->subtype & 15)](controller);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", eWindowMain);
+typedef struct EWinView {
+    unsigned short x; unsigned char p02[2];
+    unsigned short y; unsigned char p06[2];
+    int work;
+    unsigned short w; unsigned char p0e[2];
+    unsigned short h; unsigned char p12[6];
+    unsigned char mode;
+    unsigned char flag;
+    unsigned char visible;
+    unsigned char p1b;
+    OpenSub01Packet packet;
+    OpenSub01Ctrl ctrl;
+} EWinView;
+static inline void eWindowPacketSet(EWinView *w)
+{
+    w->packet.x = w->x;
+    w->packet.y = w->y;
+    w->packet.work = w->work;
+    w->packet.w = w->w;
+    w->packet.h = w->h;
+    w->packet.r = 0x80;
+    w->packet.b = 0x80;
+    w->packet.g = 0x80;
+    w->packet.a = 0x40;
+}
+
+void eWindowMain(EWinView *w)
+{
+    switch (w->mode) {
+    case 0:
+        w->mode = 1;
+        w->visible = 0;
+        break;
+    case 1:
+        break;
+    case 0x20:
+        eWindowPacketSet(w);
+        w->visible = 1;
+        w->mode = 0x20;
+    case 0x21:
+        w->mode = 0x50;
+        break;
+    case 0x22:
+        w->ctrl.x = w->x;
+        w->ctrl.y = w->y;
+        w->ctrl.work = w->work;
+        w->ctrl.w = w->w;
+        w->ctrl.h = w->h;
+        w->mode = 0x23;
+        w->ctrl.phase = 0;
+        w->ctrl.subtype = 0;
+    case 0x23:
+        OpenCloseMain((OpenCloseController *)&w->ctrl);
+        if (w->ctrl.phase < 0)
+            w->mode = 0x20;
+        break;
+    case 0x50:
+        w->mode = 0x51;
+        w->visible = 1;
+    case 0x51:
+        eWindowPacketSet(w);
+        break;
+    case 0xA0:
+        w->mode = 0xA1;
+        break;
+    case 0xA1:
+        break;
+    }
+    if (w->visible != 0)
+        endPrintExtFunc(w->packet.work, 1, &w->packet);
+}
 
 /*
  * Partial view of the object eWindowSet initialises. eWindowMain (still
