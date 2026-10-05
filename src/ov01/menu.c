@@ -773,7 +773,32 @@ INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSprite2);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSpriteRGB);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatSprite2RGB);
+typedef struct { unsigned char c[4]; } MenuSprCol;
+typedef struct {
+    float x0, y0, z0, pad0;
+    float x1, y1, z1, pad1;
+    MenuSprCol col;
+    short u0, u1, v0, v1;
+} MenuSprPrim;
+extern void grPutSpr(int packet, MenuSprPrim *spr, int flag);
+
+void menuStatSprite2RGB(int packet, int x, int y, int flip, int w, int u, int r, int u2, int g, unsigned char *col)
+{
+    MenuSprPrim spr;
+
+    spr.u0 = u;
+    spr.v0 = r;
+    spr.x0 = x;
+    spr.y0 = y;
+    spr.z0 = 16777212.0f;
+    spr.x1 = x + flip;
+    spr.y1 = y + w;
+    spr.z1 = 16777212.0f;
+    spr.u1 = u2;
+    spr.v1 = g;
+    __builtin_memcpy(&spr.col, col, 4);
+    grPutSpr(packet, &spr, 0);
+}
 
 /* dataXtxFileGet's record: only the texture id at +0x4 is read here. */
 extern int *dataXtxFileGet(int index);
