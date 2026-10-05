@@ -691,7 +691,64 @@ static void _FireKill(RgShot *shot)
     RgShotEffectStopAlive(shot->effect, typedShot->fadeTime);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _FirePassTime);
+extern void RgGeomSetStatus(RgGeom *geom, unsigned int flags);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern const char D_00A533B0[];
+
+static void _FirePassTime(RgChar *pChar, float deltaTime)
+{
+    RgShot *shot = (RgShot *)pChar;
+    RgFireShot *fire = (RgFireShot *)pChar;
+    char *f = (char *)pChar;
+    RgGeom *geom;
+    RgVector position;
+    RgVector direction;
+    unsigned int status;
+    float t;
+
+    if (pChar == 0) {
+        assert_prog(D_00A533A0, D_00A532F8, 0x33F);
+    }
+    geom = _CommonGetGeom(shot);
+    _ShotCommonPassTimeGeom(shot, deltaTime);
+    _ShotCommonPassTimeLife(shot, deltaTime);
+    status = fire->status;
+    switch (status) {
+    case 0:
+        RgGeomSetStatus(geom, 1);
+        fire->status = 1;
+    case 1:
+        shot->damage = *(float *)(f + 0xA8) * deltaTime;
+        if (_GetShotPosDir((RgShot *)(f + 0xC0), position, direction) != 0) {
+            XrgCopyVector((float *)(f + 0x80), position);
+            XrgNormalizeVector(direction, direction);
+            XrgScaleVector(direction, direction, *(float *)(f + 0xA0));
+            XrgAddVector((float *)(f + 0x90), position, direction);
+        } else {
+            _FireKill(shot);
+        }
+        t = *(float *)(f + 0xA4) - deltaTime;
+        *(float *)(f + 0xA4) = t;
+        if (t < 0.0f) {
+            _FireKill(shot);
+        }
+        break;
+    case 2:
+        RgGeomResetStatus(geom, 1);
+        fire->fadeTime -= deltaTime;
+        if (fire->fadeTime < 0.0f) {
+            RgCharFree(pChar);
+        }
+        break;
+    default:
+        RgError(D_00A533B0, D_00A532F8, 0x36C, status);
+        break;
+    }
+    RgGeomPointSetPos((RgGeomPoint *)geom, (float *)(f + 0x80));
+    RgGeomPointMovePos((RgGeomPoint *)geom, (float *)(f + 0x90));
+    RgShotEffectSetPos(shot->effect, (float *)(f + 0x80), (float *)(f + 0x90));
+    RgShotEffectPassTime(shot->effect, deltaTime);
+}
 
 static int _FireIsReleased(RgShot *shot)
 {
