@@ -46,7 +46,73 @@ struct EXM_WindState {
     u8 unmodeled_2c[4];
 };
 
-INCLUDE_ASM("asm/main/nonmatchings/exm_2", EXM_GetWindPower);
+extern float D_004D8770;
+extern float xglSin(float angle);
+extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
+extern void MATRIX_identity4s(float destination[4][4]);
+extern void MATRIX_rotY4s(Matrix4 matrix, float angle);
+extern void MATRIX_translate4s(Matrix4 matrix, float x, float y, float z);
+typedef struct { u64 a, b; } EXM_Q;
+
+void EXM_GetWindPower(float *out, char *obj, float *pos)
+{
+    union { Vector4 f; EXM_Q q; } u;
+    Matrix4 m;
+    float shake;
+    float c;
+    float s;
+    float scale;
+    char *p;
+    Vector4 *vp;
+
+    if (wind->mode == 0) goto plain;
+    {
+        wave = wave + D_004D8770;
+        shake = xglSin(wind->shake_rad - wave) * wave;
+        c = *(float *)(obj + 0x720);
+        s = *(float *)(obj + 0x740);
+        switch (wind->mode) {
+        default:
+        plain:
+            out[0] = pos[0];
+            return;
+        case 1:
+            scale = wind->direction.w * (shake * wind->shake_power + 1.0f);
+            u.q = *(EXM_Q *)&wind->direction;
+            vp = &u.f;
+            u.f.x *= scale;
+            u.f.y *= scale;
+            u.f.z *= scale;
+            break;
+        case 2:
+            u.f.x = *(float *)(obj + 0x750) + pos[0] * c + pos[2] * s - wind->direction.x;
+            u.f.y = *(float *)(obj + 0x754) + pos[1] - wind->direction.y;
+            u.f.z = *(float *)(obj + 0x758) + pos[2] * c - pos[0] * s - wind->direction.z;
+            xglVectorNormal(&u.f, &u.f);
+            vp = &u.f;
+            scale = wind->direction.w * (shake * wind->shake_power + 1.0f);
+            u.f.x *= scale;
+            u.f.y *= scale;
+            u.f.z *= scale;
+            break;
+        }
+        p = *(char **)(obj + 0x820);
+        {
+            float x = vp->x * c - vp->z * s;
+            float z = vp->z * c + vp->x * s;
+            if (p != 0) {
+                MATRIX_identity4s(m);
+                MATRIX_translate4s(m, x, 0.0f, z);
+                MATRIX_rotY4s(m, -*(float *)(p + 0x54));
+                x = m[3][0];
+                z = m[3][2];
+            }
+            out[0] = pos[0] + x;
+            out[1] = pos[1] + vp->y;
+            out[2] = pos[2] + z;
+        }
+    }
+}
 
 void EXM_ResetWind(void)
 {
