@@ -63,7 +63,113 @@ extern ActShadowCommand Head_9;
 extern ActShadowRenderState sRender;
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
 
-INCLUDE_ASM("asm/main/nonmatchings/act_3", Footstep);
+typedef struct {
+    unsigned char pad00[0x10];
+    float x, y, z;
+    unsigned char pad1c[0x80 - 0x1c];
+    unsigned char enemy_index;
+    unsigned char pad81[5];
+    unsigned short kind;
+    unsigned char pad88[0xb0 - 0x88];
+    short step_frame;
+    unsigned char padb2[0x6f0 - 0xb2];
+    unsigned int flags;
+    float frame;
+    unsigned char pad6f8[0x704 - 0x6f8];
+    unsigned short motion;
+} FootstepActor;
+typedef struct {
+    unsigned char pad00[8];
+    short mode;
+    unsigned char pad0a[0x18 - 0xa];
+    void *header;
+    unsigned char pad1c[4];
+    unsigned long long surface_flags;
+    unsigned char pad28[0x40 - 0x28];
+} FootstepUndu;
+extern struct { int pad0; FootstepActor *player; int pad8[4]; } GameLoopState;
+extern signed char enepc[][0x38B0];
+extern unsigned char SaveData[];
+extern unsigned char *D_00478CCC[];
+extern float D_004D85C8;
+extern int F2I(float);
+extern void UnduParamInit(void *);
+extern void *UnduDataGetHeader(int, int);
+extern void UnduCheck(float *, void *, void *);
+extern int RES_GetEnemySeBank(int);
+extern void xglSoundEffectNormalID(int, int);
+
+static void Footstep(FootstepActor *a)
+{
+    int old = a->step_frame;
+    int now;
+    unsigned char *tbl;
+    int id;
+    unsigned short m;
+    int b, t;
+
+    if ((unsigned int)(a->kind - 1) > 5) {
+        return;
+    }
+    if (a != GameLoopState.player && enepc[a->enemy_index][0x37A2] == 0) {
+        return;
+    }
+    m = a->motion;
+    a->step_frame = 99;
+    if (m != 1 && m != 3) {
+        return;
+    }
+    if (a->flags & 2) {
+        return;
+    }
+    id = 0;
+    tbl = D_00478CCC[*(unsigned short *)(SaveData + 0x100A4)];
+    if (m == 3) {
+        tbl += 2;
+    }
+    now = F2I(a->frame / D_004D85C8);
+    b = tbl[0];
+    t = old < b;
+    if ((t && now >= b) || (now < old && t)) {
+        id = 0x20001;
+        if (a->motion == 3) id = 0x20003;
+    }
+    b = tbl[1];
+    t = old < b;
+    if ((t && now >= b) || (now < old && t)) {
+        id = 0x20002;
+        if (a->motion == 3) id = 0x20004;
+    }
+    a->step_frame = now;
+    if (id != 0) {
+        if (a == GameLoopState.player) {
+            FootstepUndu u;
+            float pos[4];
+            unsigned int s;
+            UnduParamInit(&u);
+            u.header = UnduDataGetHeader(0x303, 0x8000);
+            u.mode = 0x810;
+            pos[0] = a->x;
+            pos[1] = a->y;
+            pos[2] = a->z;
+            UnduCheck(pos, 0, &u);
+            s = (int)(u.surface_flags & 0xFF00) - 0x2300;
+            if (s < 0x301) {
+                id += s >> 6;
+            }
+        } else {
+            int bank = RES_GetEnemySeBank((short)a->kind);
+            if (bank != -1) {
+                id = bank + (id & 0xFFFF);
+            } else {
+                id = 0;
+            }
+        }
+        if (id != 0) {
+            xglSoundEffectNormalID(id, 0);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawCircleShadow);
 
