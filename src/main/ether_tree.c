@@ -431,7 +431,50 @@ void EtherTreeCenterMove(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeRightSet);
+typedef struct EtherTreeRightPos { long a, b; } EtherTreeRightPos;
+typedef struct EtherTreeRightSetView {
+    unsigned char flags;
+    unsigned char mode;
+    unsigned char pad02[0x0e];
+    EtherTreeRightPos pos;
+    EtherTreeObjectData *object;
+    unsigned char pad24[0x08];
+    unsigned char col0[3];
+    signed char col0a;
+    int counter;
+    int size;
+    unsigned char col1[3];
+    unsigned char col1a;
+    unsigned char pad3c[4];
+} EtherTreeRightSetView;
+
+void EtherTreeRightSet(int id, int index)
+{
+    EtherTreeRightSetView *record = (EtherTreeRightSetView *)EtherTreeRight + index;
+    EtherTreeObjectData *object;
+
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
+
+    object = EtherTreeObjectGet(id);
+    record->object = object;
+    if (object == 0)
+        return;
+
+    record->mode = 0;
+    record->flags |= 1;
+    record->counter = 0;
+    record->pos.a = ((EtherTreeRightPos *)((char *)object + 0x20))->a;
+    *(volatile long *)&record->pos.b = ((EtherTreeRightPos *)((char *)object + 0x20))->b;
+    record->size = record->col0a = 0x20;
+    *(volatile unsigned char *)&record->col1[0] = 0x80;
+    *(volatile unsigned char *)&record->col1a = 0;
+    *(volatile unsigned char *)&record->col0[2] = 0x80;
+    *(volatile unsigned char *)&record->col0[1] = 0x80;
+    *(volatile unsigned char *)&record->col0[0] = 0x80;
+    *(volatile unsigned char *)&record->col1[2] = 0x80;
+    *(volatile unsigned char *)&record->col1[1] = 0x80;
+}
 
 /*
  * EtherTreeRight is a 2-entry array of "right panel" object-highlight slot
