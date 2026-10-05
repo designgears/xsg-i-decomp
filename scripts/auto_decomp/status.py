@@ -186,10 +186,10 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .hist i.z{opacity:.2}
 .axis{display:flex;justify-content:space-between;color:var(--dim);font-size:.68rem;margin-top:4px}
 .workers{display:grid;gap:10px}
-.w{background:var(--panel2);border-radius:12px;padding:12px;border-left:3px solid var(--ok)}
+.w{min-width:0;background:var(--panel2);border-radius:12px;padding:12px;border-left:3px solid var(--ok)}
 .w.s-warn{border-left-color:var(--warn)}.w.s-bad{border-left-color:var(--bad)}
 .w .t{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.w .fn{font-family:var(--mono);font-weight:650;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.w .fn{min-width:0;flex:1 1 auto;font-family:var(--mono);font-weight:650;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .w .loc{color:var(--dim);font-size:.75rem;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .w .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:.8rem}
 .w .stats b{display:block;font-weight:600}
@@ -213,7 +213,7 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .e{grid-template-columns:70px 120px 1fr}.e .m{grid-column:auto}.e .tm{order:-1;text-align:left}
 }
-@media (min-width:1100px){.workers{grid-template-columns:1fr 1fr}}
+@media (min-width:1100px){.workers{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 </style></head><body>
 <header><div class="hd"><h1>Xenosaga I decomp</h1><span class="live"><span class="dot" id="dot"></span><span id="upd">connecting…</span></span></div></header>
 <main>
