@@ -2693,44 +2693,27 @@
     {
      "range": [
       "0x00a443b8",
-      "0x00a44418"
+      "0x00a44498"
      ],
      "generated": [
       "0x00a443b8",
-      "0x00a44418"
+      "0x00a44498"
      ],
      "generated_by": [
       "calcBp2Tid",
+      "calcHit",
       "calcHitDmg",
-      "calcHp"
+      "calcHp",
+      "calcWpnAtkGet"
      ],
      "c_owned_symbols": [
       "D_00A443B8",
       "D_00A443C8",
       "D_00A443D8",
       "D_00A443F8",
-      "D_00A44408"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a44450",
-      "0x00a44498"
-     ],
-     "generated": [
-      "0x00a44450",
-      "0x00a44498"
-     ],
-     "generated_by": [
-      "calcWpnAtkGet"
-     ],
-     "c_owned_symbols": [
+      "D_00A44408",
+      "D_00A44418",
+      "jtbl_00A44430",
       "D_00A44450",
       "D_00A44478"
      ],

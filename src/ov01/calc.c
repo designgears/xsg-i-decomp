@@ -988,7 +988,59 @@ int calcHitParaGet(ObjectTask *unit) {
     return hitRate;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHit);
+int calcHit(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out)
+{
+    unsigned short *tec;
+    unsigned short attr;
+    int r;
+    int hr;
+
+    tec = dataTecGet(arg->unk0);
+    attr = tec[1];
+    switch (((signed char *)tec)[4]) {
+    case 0:
+        r = 0;
+        if (!(calcUPGet(arg->unit)->flags & 0x80)) {
+            hr = calcHitRate(attacker, (CalcHitRateArg *)arg);
+            r = (attr & 0x40) ? 3 : 1;
+            if (hr == 1) {
+                r |= 0x200;
+            } else if (hr == 2) {
+                r = 0;
+            }
+        }
+        break;
+    case 1:
+        r = (attr & 0x40) ? 4 : 2;
+        break;
+    case 2:
+        r = 0x802;
+        break;
+    case 3:
+        r = 5;
+        break;
+    case 4:
+        r = 6;
+        break;
+    case 5:
+        r = (attr & 0x40) ? 9 : 7;
+        if (calcHitRate(attacker, (CalcHitRateArg *)arg) == 1) {
+            r |= 0x200;
+        }
+        break;
+    case 6:
+        r = (attr & 0x40) ? 10 : 8;
+        if (calcHitRate(attacker, (CalcHitRateArg *)arg) == 1) {
+            r |= 0x200;
+        }
+        break;
+    default:
+        printf("** jobType err -> %d\n", arg->unk0);
+        r = 1;
+        break;
+    }
+    return r;
+}
 
 extern int calcAttWpnChk(int weaponId);
 extern unsigned char *dataAttGet(int index);
