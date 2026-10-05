@@ -2617,7 +2617,28 @@ void calcBezierSub(float t, CalcLinerVec **list, float *out, int idx)
     out[2] = a * s[0].z + b * s[1].z + c * s[2].z + d * s[3].z;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSplineSub);
+void calcSplineSub(float t, CalcSpline *spline, float *out, int idx)
+{
+    CalcLinerVec s[4];
+    float tt, ttt, tt3, t3;
+    float a, b, c, d;
+
+    tt = t * t;
+    tt3 = tt * 3.0f;
+    t3 = t * 3.0f;
+    ttt = tt * t;
+    s[0] = (*(CalcLinerVec **)spline)[idx];
+    s[1] = (*(CalcLinerVec **)spline)[idx + 1];
+    s[2] = (*(CalcLinerVec **)spline)[idx + 2];
+    s[3] = (*(CalcLinerVec **)spline)[idx + 3];
+    a = ((tt3 - ttt) - t3 + 1.0f) / 6.0;
+    b = (ttt * 3.0f - tt * 6.0f + 4.0f) / 6.0;
+    c = (ttt * -3.0f + tt3 + t3 + 1.0f) / 6.0;
+    d = ttt / 6.0;
+    out[0] = a * s[0].x + b * s[1].x + c * s[2].x + d * s[3].x;
+    out[1] = a * s[0].y + b * s[1].y + c * s[2].y + d * s[3].y;
+    out[2] = a * s[0].z + b * s[1].z + c * s[2].z + d * s[3].z;
+}
 
 typedef struct CalcHermiteList {
     CalcLinerVec *pts;
