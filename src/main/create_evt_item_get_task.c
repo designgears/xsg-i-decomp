@@ -295,7 +295,60 @@ extern void xglSoundEffectNormalID(int sound_id, int variant);
 
 extern int taskItemGet(XglTaskPrefix *task);
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", MAP_updateUnitItemBox);
+extern int ClearUwamonoEffect(void *unit);
+
+void MAP_updateUnitItemBox(void *arg)
+{
+    XglTaskScheduler *scheduler;
+    ItemGetTask *task;
+    ItemOwnerUnit *owner;
+    signed char signal;
+    int itemNo;
+    ItemMapUnit *unit = arg;
+    ItemUnitInfo *info = &unit->info;
+
+    unit->flags |= 4;
+    UwamonoCommonFunc(unit);
+    switch (unit->actionSub) {
+    case 0:
+        signal = info->signal;
+        if (signal == 1) {
+            unit->actionSub = signal;
+            xglSoundEffectNormalID(info->seId, 0);
+            ClearUwamonoEffect(unit);
+            return;
+        }
+        break;
+    case 1:
+        unit->sequenceNo++;
+        scheduler = (XglTaskScheduler *) GameLoopState[2];
+        task = (ItemGetTask *) xglTaskEntryNext(scheduler, taskItemGet,
+            scheduler != 0 ? scheduler->active_tail : 0);
+        itemNo = info->itemNo;
+        *(volatile unsigned char *) &task->b30 = 0;
+        *(volatile unsigned short *) &task->itemNo = itemNo;
+        task->w14 = 0;
+        task->unit = (ItemMapUnit *) unit;
+        task->w10 = 0;
+        unit->actionSub = 2;
+        if (info->unitNo != -1) {
+            owner = &MapUnit[info->unitNo];
+            owner->unmodeled_a6[0xFE] = 1;
+            *(long long *) &owner->unmodeled_00[0x10] = *(long long *) ((char *) unit + 0x10);
+            *(long long *) &owner->unmodeled_00[0x18] = *(long long *) ((char *) unit + 0x18);
+            return;
+        }
+        break;
+    case 2:
+        if (++unit->sequenceNo > 16) {
+            unit->actionSub = 3;
+        }
+        break;
+    case 3:
+        ClearUwamonoEffect(unit);
+        break;
+    }
+}
 
 extern void nmlModelEntry(int entry);
 extern void nmlModelSetClip(int clip);
