@@ -1711,6 +1711,39 @@
     }
    ]
   },
+  "main/tu213": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004cc880",
+      "0x004cc898"
+     ],
+     "generated": [
+      "0x004cc880",
+      "0x004cc898"
+     ],
+     "generated_by": [
+      "scBRAScript"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004CC880"
+     ],
+     "also_referenced_by_c": [
+      "D_004CC7B8",
+      "D_004CC818",
+      "D_004CC830",
+      "D_004CC850",
+      "D_004CC870",
+      "D_004CC898"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sc_get.o"
+     }
+    }
+   ]
+  },
   "main/tu221": {
    ".rodata": [
     {

@@ -539,7 +539,49 @@ static int scEXITScript(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scBRAScript);
+extern const char D_004CC870[];
+
+static int scBRAScript(ScriptTask *task)
+{
+    int a;
+    int op;
+    int b;
+    int adr;
+    int take;
+
+    take = 0;
+    a = scGetNumScript(task);
+    op = scGetCmdScript(task);
+    b = scGetNumScript(task);
+    adr = scGetAdrScript(task);
+    switch (op) {
+    case 0:
+        if (a == b) take = 1;
+        break;
+    case 1:
+        if (a != b) take = 1;
+        break;
+    case 2:
+        if (a > b) take = 1;
+        break;
+    case 3:
+        if (a >= b) take = 1;
+        break;
+    case 4:
+        if (a < b) take = 1;
+        break;
+    case 5:
+        if (a <= b) take = 1;
+        break;
+    default:
+        tracePrint((unsigned char *)D_004CC870, op);
+        break;
+    }
+    if (take) {
+        task->script_pc[task->branch_depth] = adr;
+    }
+    return 1;
+}
 
 static int scONGOSUB(ScriptTask *task)
 {
