@@ -970,7 +970,45 @@ void Java_xeno_util_Runtime_mailExec__I(JThread *thread, int *arguments,
     GameStateRestoreCameraLight();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_minigameExec__I);
+extern void Game_Data_Pop(void);
+extern void Game_Data_Push(void);
+extern void func_00A00070(void);
+extern void func_00A00338(void);
+extern void func_00A01EA8(void);
+extern void Vibration_Stop(void);
+extern void xglPadRead(void);
+extern void ACT_init(void);
+extern void xglCdLoadOverlay(int);
+extern void xglRenderClearDepth(void);
+
+void Java_xeno_util_Runtime_minigameExec__I(JThread *thread, int *arguments)
+{
+    GameLoopState.flags |= 0x04000000;
+    Vibration_Stop();
+    xglPadRead();
+    Game_Data_Push();
+    ACT_init();
+    switch (arguments[0]) {
+    case 12:
+        xglCdLoadOverlay(0xC);
+        func_00A01EA8();
+        break;
+    case 13:
+        xglCdLoadOverlay(0xA);
+        func_00A00338();
+        xglRenderClearDepth();
+        break;
+    case 14:
+        xglCdLoadOverlay(0xB);
+        func_00A00070();
+        break;
+    }
+    xglCdLoadOverlay(1);
+    ACT_init();
+    Game_Data_Pop();
+    GameCfPlayerLoadResource(1);
+    GameLoopState.flags &= 0xFBFFFFFF;
+}
 
 void Java_xeno_util_Runtime_setMenuLock__(JThread *thread, void *arguments,
                                           unsigned int *result)
