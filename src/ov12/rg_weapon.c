@@ -269,7 +269,31 @@ void _ShotTypePassTime(RgWeaponShotType *weapon, float dt)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitWeaponCommonEffector);
+extern const char D_00A53700[];
+extern int XrgActorCreateEffConstraint(XrgActor *actor, int kind, XrgActor *target);
+
+void _InitWeaponCommonEffector(RgWeaponShotType *weapon, int a, int b)
+{
+    RgWeapon *w = &weapon->common;
+    XrgActor *act;
+    XrgActor *tgt;
+
+    if (w == 0) {
+        assert_prog(D_00A536F0, D_00A53658, 0x25F);
+    }
+    if (a == 0) {
+        assert_prog(D_00A53700, D_00A53658, 0x260);
+    }
+    if ((w->controlFlags & 7) != 1 && !(w->controlFlags & 0x80)) {
+        act = RgRobotGetActor(a);
+        tgt = w->actor;
+        if (b == 0) {
+            w->lockOnEffector = XrgActorCreateEffConstraint(act, 0, tgt);
+        } else if (b == 1) {
+            w->lockOnEffector = XrgActorCreateEffConstraint(act, 1, tgt);
+        }
+    }
+}
 
 extern void _InitWeaponCommonEffector(RgWeaponShotType *weapon, int a, int b);
 extern int _ShotTypeShot(RgWeapon *weapon);
