@@ -599,7 +599,24 @@ int unitCmdMove(UnitRecord *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdGuard);
+extern void unitMotSet(ObjectTask *unit, int motion);
+
+int unitCmdGuard(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    unitCmdPtrGet(unit);
+    if (actor->moveState == 0) {
+        unitMotSet(unit, 0x1B);
+        ((Actor *)unit->work)->flags |= 0x800;
+        actor->moveState++;
+    } else if ((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000) {
+        unitMotStandSet(unit);
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAgws);
 
