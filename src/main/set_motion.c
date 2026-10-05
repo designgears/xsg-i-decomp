@@ -235,7 +235,24 @@ void After_Talk(Actor *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Check_EnemyFound);
+int Check_EnemyFound(void)
+{
+    short enemy_index;
+
+    for (enemy_index = 0; enemy_index < 16; enemy_index++) {
+        if (actor[enemy_index].active_state > 0 &&
+            actor[enemy_index].status != 1) {
+            unsigned char *e = enepc[enemy_index];
+            if (((int *)e)[0x37e0 / 4] & 1) {
+                signed char action = (signed char)enepc[enemy_index][0x48];
+                if (action == 6 || action == 10 || action == 5) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
 
 #define ENEMY_ACTION_STATE_OFFSET 0x48
 
