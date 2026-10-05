@@ -165,4 +165,74 @@ int RgSelectGetEnemyChar(void)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_subcon", RgSelectGetEnemyWeapons);
+extern void assert_prog(const char *expression, const char *source_file, int line);
+extern int rand(void);
+extern int RgEquipCheckConfrict(int *equipData, int slot);
+
+int RgSelectGetEnemyWeapons(int *apEss, int characterID)
+{
+    int list[3][128];
+    unsigned int num[3];
+    unsigned int start[3];
+    unsigned int sel[3];
+    int equip[3];
+    int n, mode, conflict;
+    unsigned int i, j, k, uNum;
+
+    if (apEss == 0)
+    {
+        assert_prog("apEss != NIL", "../rg_select_subcon.euc.c", 0x85);
+    }
+    for (i = 0; i < 3; i++)
+    {
+        mode = s_bIgnoreEventFlag == 0;
+        uNum = _get_all_weapons(0, characterID, i, mode);
+        if (uNum > 0x80)
+        {
+            assert_prog("uNum <= WEP_MAX", "../rg_select_subcon.euc.c", 0x90);
+        }
+        if (uNum == 0)
+        {
+            assert_prog("uNum > 0", "../rg_select_subcon.euc.c", 0x91);
+        }
+        num[i] = _get_all_weapons(list[i], characterID, i, mode);
+    }
+    for (i = 0; i < 3; i++)
+    {
+        if (num[i] == 0)
+        {
+            return 0;
+        }
+        start[i] = rand() % num[i];
+    }
+    for (i = 0; i < num[2]; i++)
+    {
+        sel[2] = (i + start[2]) % num[2];
+        for (k = 0; k < num[0]; k++)
+        {
+            sel[0] = (k + start[0]) % num[0];
+            for (j = 0; j < num[1]; j++)
+            {
+                sel[1] = (j + start[1]) % num[1];
+                for (n = 0; n < 3; n++)
+                {
+                    equip[n] = list[n][sel[n]] + 0x70;
+                }
+                conflict = 0;
+                for (n = 0; n < 3; n++)
+                {
+                    conflict |= RgEquipCheckConfrict(equip, n);
+                }
+                if (conflict == 0)
+                {
+                    for (n = 0; n < 3; n++)
+                    {
+                        apEss[n] = list[n][sel[n]];
+                    }
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}

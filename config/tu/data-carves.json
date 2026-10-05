@@ -4368,6 +4368,35 @@
     }
    ]
   },
+  "ov12/tu070_00a3c6a0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a56d38",
+      "0x00a56d90"
+     ],
+     "generated": [
+      "0x00a56d38",
+      "0x00a56d81"
+     ],
+     "generated_by": [
+      "RgSelectGetEnemyWeapons"
+     ],
+     "c_owned_symbols": [
+      "D_00A56D38",
+      "D_00A56D48",
+      "D_00A56D68",
+      "D_00A56D78"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_select_subcon.o"
+     }
+    }
+   ]
+  },
   "ov12/tu076_00a420e0": {
    ".rodata": [
     {
