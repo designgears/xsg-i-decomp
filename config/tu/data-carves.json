@@ -609,18 +609,20 @@
     },
     {
      "range": [
-      "0x004c3a00",
+      "0x004c39e0",
       "0x004c3a70"
      ],
      "generated": [
-      "0x004c3a00",
+      "0x004c39e0",
       "0x004c3a68"
      ],
      "generated_by": [
       "WindowDXMain",
+      "eBattleWinMain3",
       "eBattleWinMain4"
      ],
      "c_owned_symbols": [
+      "jtbl_004C39E0",
       "jtbl_004C3A00",
       "jtbl_004C3A20"
      ],

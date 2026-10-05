@@ -83,7 +83,44 @@ void eBattleWinClose2(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinOpen3);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinMain3);
+void eTagFontMain(void *tag);
+void eNumberMain(void *number);
+
+int eBattleWinMain3(void)
+{
+    int i;
+
+    if (*(int *)BW3 == 0) {
+        return 0;
+    }
+    endPrintExtFunc(0xFFFFFF, 0x64, 0);
+    WindowDXMain(&BW3->window);
+    WindowDXMain((char *)BW3 + 0x314);
+    switch ((signed char)BW3->window.state) {
+    case 3:
+        for (i = 0; i < 3; i++) {
+            eMessageMain((char *)BW3 + i * 0x44 + 0x198);
+        }
+        eTagFontMain((char *)BW3 + 0x264);
+        eNumberMain((char *)BW3 + 0x284);
+        for (i = 0; i < 4; i++) {
+            eMessageMain((char *)BW3 + i * 0x44 + 0x818);
+        }
+        for (i = 0; i < 5; i++) {
+            eTagFontMain((char *)BW3 + i * 0x20 + 0x4A8);
+        }
+        for (i = 0; i < 5; i++) {
+            eNumberMain((char *)BW3 + i * 0x90 + 0x548);
+        }
+        return 2;
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+        return 1;
+    }
+    return 0;
+}
 
 void eBattleWinClose3(void)
 {
