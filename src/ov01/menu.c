@@ -439,7 +439,28 @@ void menuEventTimerDisp(ObjectTask *task, int packet)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuEventTimerDispSub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuTimeSet);
+extern int rnd(int max);
+extern int eventTimer;
+extern int eventTimerX;
+extern float ETRotDist;
+
+void menuTimeSet(int time) {
+    int r;
+
+    eventTimer = time;
+    r = rnd(100);
+    if (r >= 0x60) {
+        eventTimerX = 10;
+    } else if (r >= 0x3D) {
+        eventTimerX = 4;
+    } else {
+        eventTimerX = 2;
+    }
+    ETRotDist = (float)eventTimer * 1.5707964f;
+    if (ETRotDist > 6.2831855f) {
+        ETRotDist = ETRotDist - 6.2831855f;
+    }
+}
 
 /* menuTimeSet (this TU, still asm) applies a new menu time setting. */
 void menuTimeSet(int time);
