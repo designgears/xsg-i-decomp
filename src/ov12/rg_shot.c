@@ -1062,7 +1062,45 @@ void RgShotHitBg(RgShot *shot, int bgObject, RgVector position)
         shot->notifyHit(shot, position);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _ShotCommonHitRobot);
+extern const char D_00A533F8[];
+extern const char D_00A53408[];
+extern void CreateRgHitEffectPosDir(RgVector position, RgVector direction, char *name1, char *name2);
+extern void RgRobotGiveDamage(int robot, RgVector direction, int flags, float damage);
+extern void RgRobotGiveWeakDamage(int robot, RgVector direction, float damage,
+                                  float weak0, float weak1, float weak2, float weak3);
+extern void RgRobotInvalidAttack(int robot, RgVector direction, float damage);
+extern int RgRobotIsInvalidAttack(int robot, RgVector direction);
+
+static void _ShotCommonHitRobot(RgShot *shot, int robot, RgVector position)
+{
+    RgVector direction;
+    RgVector robotPosition;
+    RgShotEssence *essence;
+
+    if (shot == 0)
+        assert_prog(D_00A532E8, D_00A532F8, 0x52C);
+    if (robot == 0)
+        assert_prog(D_00A533F8, D_00A532F8, 0x52D);
+    __RgGeomPointGetOldPos((RgGeomPoint *)_CommonGetGeom(shot), direction, D_00A532F8, 0x530);
+    __RgGeomPointGetPos(RgRobotGetGeom(robot), robotPosition, D_00A532F8, 0x531);
+    XrgSubVector(direction, direction, robotPosition);
+    if (RgRobotIsInvalidAttack(robot, direction) == 0) {
+        essence = shot->essence;
+
+        if (essence != 0 && ((float *)essence)[0x44] > 0.0f) {
+            RgRobotGiveWeakDamage(robot, direction, shot->damage, ((float *)essence)[0x44],
+                                  ((float *)essence)[0x45], ((float *)essence)[0x46],
+                                  ((float *)essence)[0x47]);
+        } else {
+            RgRobotGiveDamage(robot, direction, 1, shot->damage);
+        }
+        XrgSoundRingVol(shot->soundDriver, shot->hitSoundId, shot->hitSoundVolume);
+        CreateRgHitEffectPosDir(position, direction, shot->essence->hitEffectFile + 0x20, (char *)D_00A53408);
+    } else {
+        CreateRgHitEffectPosDir(position, direction, shot->essence->hitEffectFile, (char *)D_00A53380);
+        RgRobotInvalidAttack(robot, direction, shot->damage);
+    }
+}
 
 static void _ShotCommonHitBg(RgShot *shot, int bgObject, RgVector position)
 {
