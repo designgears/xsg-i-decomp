@@ -775,7 +775,47 @@ INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdFileSelect);
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdSifLoadModule);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdLoadOverlay);
+extern void FlushCache(int);
+extern int sceSifLoadElf(char *, void *);
+extern unsigned char loaded_overlay;
+extern unsigned char head_10[9];
+extern unsigned char tail_11[7];
+
+void xglCdLoadOverlay(int arg0)
+{
+    char tmp[16];
+    unsigned char path[0x100];
+    unsigned char *src;
+    unsigned char *dst;
+    unsigned char c;
+
+    if (arg0 != loaded_overlay) {
+        loaded_overlay = arg0;
+        src = head_10;
+        dst = path;
+        if (((unsigned int)(*dst = *src) << 24) != 0) {
+            do {
+                src++;
+                dst++;
+            } while (((unsigned int)(*dst = *src) << 24) != 0);
+        }
+        dst[0] = 'O';
+        dst[1] = 'V';
+        dst[2] = arg0 / 10 + '0';
+        dst[3] = arg0 % 10 + '0';
+        dst += 4;
+        src = tail_11;
+        while ((((unsigned int)(*dst = *src)) << 24) != 0) {
+            src++;
+            dst++;
+        }
+        FlushCache(0);
+        FlushCache(2);
+        sceSifLoadElf((char *)path, tmp);
+        FlushCache(0);
+        FlushCache(2);
+    }
+}
 
 static void xglCdArcInitSub0(const int *archive_entry, void *destination, int sectors)
 {
