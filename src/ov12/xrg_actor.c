@@ -102,7 +102,49 @@ XenoDatEntry *_GetXenoDatEntry(int id) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _SkeManiGet);
+/*
+ * The skeleton-manipulator record _InitSkeMani fills: a small get/set
+ * dispatch pair plus the joint data and element index it is bound to.
+ */
+typedef struct SkeMani {
+    void (*get)(struct SkeMani *mani, RgMatrix matrix); /* 0x00: joint matrix out */
+    void (*set)(struct SkeMani *mani, RgMatrix matrix); /* 0x04: joint matrix in */
+    XenoAct *pXenoAct;  /* 0x08: NULL when this manipulator has no joint data */
+    int elementIndex;    /* 0x0C: only set together with pXenoAct */
+} SkeMani;
+
+extern void XrgUnitMatrix(RgMatrix destination);
+extern void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right);
+
+void _SkeManiGet(SkeMani *mani, RgMatrix matrix)
+{
+    XenoAct *pXenoAct;
+    RgMatrix *mats;
+    RgMatrix root;
+
+    pXenoAct = mani->pXenoAct;
+    if (pXenoAct != 0) {
+        mats = *(RgMatrix **)((char *)pXenoAct + 0x824);
+        if (pXenoAct->renderLevelFlag != 0) {
+            XrgCopyMatrix(matrix, mats[mani->elementIndex]);
+            matrix[3] = 0.0f;
+            matrix[7] = 0.0f;
+            matrix[11] = 0.0f;
+        } else {
+            XrgCopyMatrix(matrix, mats[mani->elementIndex]);
+            XrgCopyMatrix(root, mats[0]);
+            matrix[3] = 0.0f;
+            matrix[7] = 0.0f;
+            matrix[11] = 0.0f;
+            root[3] = 0.0f;
+            root[7] = 0.0f;
+            root[11] = 0.0f;
+            XrgMulMatrix(matrix, root, matrix);
+        }
+    } else {
+        XrgUnitMatrix(matrix);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _SkeManiSet);
 
@@ -114,17 +156,6 @@ typedef struct SkeJointData {
     unsigned char unmodeled_00[6];
     unsigned short numElement; /* 0x06 */
 } SkeJointData;
-
-/*
- * The skeleton-manipulator record _InitSkeMani fills: a small get/set
- * dispatch pair plus the joint data and element index it is bound to.
- */
-typedef struct SkeMani {
-    void (*get)(struct SkeMani *mani, RgMatrix matrix); /* 0x00: joint matrix out */
-    void (*set)(struct SkeMani *mani, RgMatrix matrix); /* 0x04: joint matrix in */
-    XenoAct *pXenoAct;  /* 0x08: NULL when this manipulator has no joint data */
-    int elementIndex;    /* 0x0C: only set together with pXenoAct */
-} SkeMani;
 
 extern void RgWarn(const char *format, const char *source_file, int line, ...);
 extern void _SkeManiGet(SkeMani *mani, RgMatrix matrix);
