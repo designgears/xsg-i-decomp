@@ -685,7 +685,34 @@ int unitDeadSpecChk(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMot);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdTgtSet);
+int tgtFindFirst(ObjectTask *, int *, int);
+
+int unitCmdTgtSet(ObjectTask *unit)
+{
+    Actor *actor = unit->work;
+    int *cmd = unitCmdPtrGet(unit);
+    int buf[4];
+    int r = 0;
+    int t;
+
+    if (actor->moveState == 0) {
+        buf[0] = cmd[1];
+        t = cmd[2];
+        buf[2] = cmd[3];
+        buf[1] = t;
+        buf[3] = cmd[4];
+        r = tgtFindFirst(unit, buf, t);
+        if (r != 0) {
+            *(int *)((char *)unit->work + 0x80) = r;
+            return unitCmdNext(unit);
+        }
+        printf("\n** unitCmdTgtSet: err\n");
+        cmdListCansel((int)unit);
+        unitCmdClear(unit);
+        return unitCmdNext(unit);
+    }
+    return r;
+}
 
 extern int unitCmdTurnSub(ObjectTask *unit, int mode);
 
