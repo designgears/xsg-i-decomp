@@ -155,7 +155,81 @@ static int *findSuperMethod(int *key, char *clazz)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", buildDispatchMethodTable);
+extern void *NAME_Constructor;
+typedef struct DMethod {
+    u32 name;
+    int sig;
+    u8 pad08[8];
+    u16 flags;
+    s16 index;
+} DMethod;
+typedef struct DClass {
+    u8 pad00[0x10];
+    struct DClass *super;
+    u8 pad14[4];
+    void **dispatch;
+    u8 pad1C[4];
+    DMethod *methods;
+    u8 pad24[6];
+    u16 dispatchCount;
+    u16 methodCount;
+} DClass;
+
+static void buildDispatchMethodTable(DClass *cls)
+{
+    int n;
+    int k;
+    int *s;
+    u32 name;
+    void **table;
+    void **t;
+    void **src;
+    int j;
+    DClass *sup;
+    DMethod *m;
+    DMethod *m2;
+    int i;
+
+    if (cls->super != 0) {
+        cls->dispatchCount = cls->super->dispatchCount;
+    } else {
+        cls->dispatchCount = 0;
+    }
+    i = cls->methodCount;
+    m = cls->methods;
+    while (--i >= 0) {
+        if ((m->flags & 8) || *(int *)m == *(int *)&NAME_Constructor) {
+            m->index = -1;
+        } else {
+            s = findSuperMethod((int *)m, (char *)cls);
+            if (s != 0) {
+                m->index = ((DMethod *)s)->index;
+            } else {
+                m->index = cls->dispatchCount++;
+            }
+        }
+    }
+    table = xmalloc(cls->dispatchCount * 4 + 8, 0xF);
+    t = table + 1;
+    *(DClass **)table = cls;
+
+    cls->dispatch = table;
+    if (cls->super != 0) {
+        sup = cls->super;
+
+        src = sup->dispatch + 1;
+        for (j = 0; j < sup->dispatchCount; j++) {
+            t[j] = src[j];
+        }
+    }
+    i = cls->methodCount;
+    m = cls->methods;
+    while (--i >= 0) {
+        if (m->index >= 0) {
+            t[m->index] = m;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", resolveStaticField);
 
