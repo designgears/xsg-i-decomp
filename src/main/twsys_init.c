@@ -424,7 +424,67 @@ void TWIN_dispose(TComponent *window)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_popCF);
+int MSG_queuePop(void *q, char *src, int n);
+void MSG_queueReset(void *q, int n);
+char *strcpy(char *, const char *);
+
+void TWIN_popCF(char *w)
+{
+    void *q;
+    short c;
+    int v;
+
+    if ((*(unsigned int *)(w + 0x10) & 3) != 1) {
+        return;
+    }
+    if (*(short *)(w + 0xB6) <= 0) {
+        return;
+    }
+    q = w + 0xAC;
+    *(short *)(w + 0xC0) = *(short *)(w + 0xC) - 0x18;
+    *(unsigned char *)(w + 0x184) += MSG_queuePop(q, ((char **)*(int *)(w + 0x17C))[*(unsigned char *)(w + 0x185)] + *(unsigned char *)(w + 0x184), 2);
+    *(short *)(w + *(unsigned char *)(w + 0x185) * 2 + 0x14C) = *(short *)(w + 0xBC);
+    c = *(short *)(w + 0xBE);
+    if (c >= 0x80) {
+        switch (c) {
+        case 0x83:
+            *(short *)(w + 0x14) = 0xD;
+            *(short *)(w + 0x30) = *(short *)(w + 0xC8);
+            break;
+        case 0x84:
+            *(short *)(w + 0x14) = 2;
+            break;
+        case 0x81:
+            *(short *)(w + 0xBA) = 0;
+            *(short *)(w + 0x14) = 9;
+            *(short *)(w + 0xBC) = 0;
+            break;
+        case 0x80:
+            *(short *)(w + 0x14) = 8;
+            *(int *)(w + 0x120) = *(int *)(w + 0xC8);
+            break;
+        case 0x85:
+            strcpy(*(char **)(w + 0xA8), *(char **)(w + 0xC8));
+            break;
+        case 0x82:
+            break;
+        }
+    } else if (*(short *)(w + 0xBC) >= *(short *)(w + 0xC0) || c == 10) {
+        int n, i;
+        MSG_queueReset(q, 10);
+        i = *(unsigned char *)(w + 0x185);
+        n = *(unsigned char *)(w + 0x187) - 1;
+        if (i >= n && *(short *)(w + 0xA4) >= n) {
+            *(short *)(w + 0x14) = 0x11;
+        } else {
+            *(short *)(w + 0x14) = 10;
+        }
+    }
+    if (*(short *)(w + 0xB4) < *(short *)(w + 0xB6)) {
+        return;
+    }
+    MSG_queueReset(q, 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_popScene);
 

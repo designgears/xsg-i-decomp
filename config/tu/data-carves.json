@@ -407,13 +407,14 @@
     {
      "range": [
       "0x004c1b00",
-      "0x004c1b70"
+      "0x004c1b90"
      ],
      "generated": [
       "0x004c1b00",
-      "0x004c1b64"
+      "0x004c1b88"
      ],
      "generated_by": [
+      "TWIN_popCF",
       "TWSYS_draw",
       "TWSYS_update"
      ],
@@ -421,9 +422,15 @@
       "jtbl_004C1B00",
       "D_004C1B18",
       "D_004C1B30",
-      "jtbl_004C1B50"
+      "jtbl_004C1B50",
+      "jtbl_004C1B70"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/twsys_init.o"
+     }
     }
    ]
   },
@@ -1727,6 +1734,32 @@
     }
    ]
   },
+  "main/tu238": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004cd8b0",
+      "0x004cd8c8"
+     ],
+     "generated": [
+      "0x004cd8b0",
+      "0x004cd8c8"
+     ],
+     "generated_by": [
+      "Java_xeno_util_Runtime_mailFlag__I"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004CD8B0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/runtime.o"
+     }
+    }
+   ]
+  },
   "main/tu245": {
    ".lit4": [
     {
@@ -1801,6 +1834,46 @@
       "jtbl_004D15B0"
      ],
      "also_referenced_by_c": []
+    }
+   ]
+  },
+  "main/tu254": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004d1718",
+      "0x004d1800"
+     ],
+     "generated": [
+      "0x004d1718",
+      "0x004d17f5"
+     ],
+     "generated_by": [
+      "ACT_info_00306090"
+     ],
+     "c_owned_symbols": [
+      "D_004D1718",
+      "D_004D1728",
+      "D_004D1738",
+      "D_004D1750",
+      "D_004D1760",
+      "D_004D1770",
+      "D_004D1780",
+      "D_004D1790",
+      "D_004D17A0",
+      "D_004D17B0",
+      "D_004D17C8",
+      "D_004D17D8",
+      "D_004D17E8"
+     ],
+     "also_referenced_by_c": [
+      "D_004D1708"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/act_1.o"
+     }
     }
    ]
   },
