@@ -723,7 +723,28 @@ int calcMagDefGet(ObjectTask *unit)
     return magicDef;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPowLevGet);
+extern short *dataSpecDataGet(int chara, int id);
+extern char *dataPlChaGet(int chara);
+
+int calcPowLevGet(ObjectTask *unit, int id)
+{
+    int pow;
+    short *spec;
+
+    pow = ((unsigned char *)dataTecGet(id))[6];
+    if (((signed char *)dataTecGet(id))[0x11] == 2 && (*(unsigned *)unit->work & 0x40) == 0
+        && (calcUPGet(unit)->flags & 0x40) == 0
+        && (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+        spec = dataSpecDataGet(calcUPGet(unit)->charaId, id);
+        if (spec != 0) {
+            pow += spec[2];
+        }
+    }
+    if ((unsigned)(id - 0x262) < 2) {
+        pow += *(short *)(dataPlChaGet(calcUPGet(unit)->charaId) + 0x9A) / 5;
+    }
+    return pow;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPlusAglGet);
 
