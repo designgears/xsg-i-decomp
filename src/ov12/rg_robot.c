@@ -2322,7 +2322,51 @@ void DisposeRgRobot(RgStatus *pRobot)
     RgHeapFree(InstanceOfRgHeap(), pRobot, D_00A51840, 4051);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", RgRobotPassTime);
+extern float XrgRand(float lower, float upper);
+extern void CreateRgHitEffectPos(RgVector position, char *name1, char *name2);
+
+void RgRobotPassTime(RgStatus *pRobot, float deltaTime)
+{
+    RgVector pos;
+    float t;
+    int state;
+
+    if (pRobot == 0) {
+        assert_prog(D_00A51BB0, D_00A51840, 0xFDC);
+    }
+    _PassTimeRobot(pRobot, deltaTime);
+    if (pRobot->body->life <= 0.0f) {
+        if (pRobot->robotStatus->type != 1) {
+            _InitMovingStatus(pRobot->robotStatus, pRobot->body);
+        }
+    }
+    state = *(int *)&pRobot->unmodeled_4c[0];
+    t = *(float *)&pRobot->unmodeled_4c[4] - deltaTime;
+    *(float *)&pRobot->unmodeled_4c[4] = t;
+    if (state != 1) {
+        if (state == 0) {
+        if (pRobot->body->life <= 0.0f) {
+            *(int *)&pRobot->unmodeled_4c[0] = 1;
+            *(float *)&pRobot->unmodeled_4c[4] = 5.0f;
+        }
+        }
+    } else {
+        if (t < 0.0f) {
+            *(int *)&pRobot->unmodeled_4c[0] = 2;
+            return;
+        }
+        if (!((int)(t * 15.0f) & 1)) {
+            __RgGeomPointGetPos(pRobot->body->geometry, (struct RgPointVector *)pos, D_00A51840, 0xFF7);
+            pos[0] += XrgRand(-1.7f, 1.7f);
+            pos[1] += XrgRand(-1.0f, 3.5f);
+            pos[2] += XrgRand(-1.7f, 1.7f);
+            CreateRgHitEffectPos(pos, (char *)D_00A51BA0, (char *)D_00A51BA0);
+        }
+        if (!((int)(*(float *)&pRobot->unmodeled_4c[4] * 20.0f) & 1)) {
+            XrgSoundRing(pRobot->body->landingSoundID, 0x15);
+        }
+    }
+}
 
 static void _DispRobot(RgStatus *pRobot);
 
