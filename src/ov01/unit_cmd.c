@@ -1525,7 +1525,24 @@ int unitAgwsChk(int side)
     return n != 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitIdChk);
+int unitIdChk(int side, int id)
+{
+    ObjectTask **table;
+    int count;
+    int i = 0;
+    int hit = 0;
+
+    count = unitTblGet(side, (UnitRecord ***)&table);
+    while (i < count) {
+        ObjectTask *u = table[i];
+        i++;
+        if (u != 0) {
+            if (calcUPGet(u)->charaId == id)
+                hit++;
+        }
+    }
+    return hit != 0;
+}
 
 /* Defined later in this TU (a local sibling still in asm). */
 extern void unitDispOnOff(int flag);
