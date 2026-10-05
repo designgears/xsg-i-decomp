@@ -556,7 +556,7 @@ int sndSePlay(int unit, int id, int no)
     return 1;
 }
 
-extern int sndBankGet(void);
+extern int sndBankGet();
 extern void xglSoundEffectStopID(int sound_id, int flags);
 extern const char D_00A4E810[];
 
@@ -599,7 +599,42 @@ int sndConvRegNo(int id)
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", sndBankGet);
+int sndBankGet(ObjectTask *unit, int seType)
+{
+    int bank;
+    int i;
+
+    if ((unsigned int)(seType - 5) < 0x12
+        && !(*(unsigned int *)unit->work & 0x40)
+        && !(calcUPGet(unit)->flags & 0x40)
+        && (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+        bank = 2;
+    } else if (seType >= 0x1A || seType == 0x18 || seType == 0x19
+               || ((unsigned int)(seType - 3) < 5 && (*(unsigned int *)unit->work & 0x40))) {
+        bank = 2;
+    } else if (seType == 1) {
+        bank = 3;
+    } else if (seType == 2) {
+        bank = 4;
+        for (i = 0; i < 3; i++) {
+            if (dmgBankOffs[i] == calcUPGet(unit)->charaId) {
+                bank = i + 4;
+                break;
+            }
+        }
+        if (i < 3) {
+        } else for (i = 0; i < 3; i++) {
+            if (dmgBankOffs[i] == 0) {
+                bank += i;
+                dmgBankOffs[i] = calcUPGet(unit)->charaId;
+                break;
+            }
+        }
+    } else {
+        bank = 1;
+    }
+    return bank;
+}
 
 typedef struct {
     unsigned char unmodeled_00[0x10]; /* +0x00 */
