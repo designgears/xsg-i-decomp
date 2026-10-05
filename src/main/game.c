@@ -386,8 +386,6 @@ int getScriptFlag(SceneObject object)
 #define ACTOR_COUNT 64
 #define ACTOR_IN_USE_ID_OFFSET 0x86
 
-INCLUDE_ASM("asm/main/nonmatchings/game", checkTalk);
-
 typedef struct {
     u32 flags;
     u8 unmodeled_04[ACTOR_IN_USE_ID_OFFSET - 0x04];
@@ -397,7 +395,6 @@ typedef struct {
 
 extern ActorHead actor[ACTOR_COUNT];
 
-extern float D_004D7B8C;
 typedef struct TouchActorView {
     u8 pad00[0x10];
     float x;
@@ -409,6 +406,13 @@ typedef struct TouchActorView {
     int active;
 } TouchActorView;
 
+float nearDir(float from, float to);
+
+extern float atan2f(float y, float x);
+
+INCLUDE_ASM("asm/main/nonmatchings/game", checkTalk);
+
+extern float D_004D7B8C;
 static ActorHead *checkTouch(ActorHead *self)
 {
     TouchActorView *me = (TouchActorView *)self;
@@ -491,9 +495,6 @@ extern float D_004D7B90;
 extern float D_004D7B94;
 extern float D_004D7B98;
 extern u8 MapUnit[];
-extern float atan2f(float y, float x);
-float nearDir(float from, float to);
-
 static ItemBoxView *checkItemBox(u8 *self)
 {
     float pos[4];
