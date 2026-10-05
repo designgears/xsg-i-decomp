@@ -52,7 +52,74 @@ void UnduParamInit(UnduQuery *query)
     query->excludedAttributes = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheckSub);
+static float UnduCheckSub(UnduWork *work, int subOffset)
+{
+    unsigned char *base;
+    float *a, *b, *c, *p, *pos;
+    float x, z, ax, az, bx, bz, cx, cz;
+    unsigned short flags;
+    float lo, hi, t, hc;
+    int ok;
+    float hh;
+    float d1, d2, d3;
+    float xaz, xbz, xcz, bxz, axz, cxz;
+
+    pos = (float *)((char *)work + 0x80);
+    base = *(unsigned char **)((char *)work + 0x58);
+    a = (float *)(base + *(unsigned short *)(subOffset + 8));
+    b = (float *)(base + *(unsigned short *)(subOffset + 10));
+    x = pos[0];
+    az = a[2];
+    c = (float *)(base + *(unsigned short *)(subOffset + 12));
+    ax = a[0];
+    bz = b[2];
+    bx = b[0];
+    z = pos[2];
+    cz = c[2];
+    cx = c[0];
+    xaz = x * az;
+    xbz = x * bz;
+    xcz = x * cz;
+    bxz = bx * z;
+    axz = ax * z;
+    cxz = cx * z;
+    d1 = (((xaz + ax * bz + bxz) - xbz) - axz) - bx * az;
+    d2 = (((xbz + bx * cz + cxz) - xcz) - bxz) - cx * bz;
+    d3 = (((xcz + cx * az + axz) - xaz) - cxz) - ax * cz;
+    if (d1 <= 0.0f && d2 <= 0.0f && d3 <= 0.0f) {
+        p = (float *)(*(unsigned char **)((char *)work + 0x5c) + *(unsigned short *)(subOffset + 14));
+        flags = work->wallAttrHeader->flags;
+        t = ((*(float *)(subOffset + 4) - p[0] * x) - p[2] * z) / p[1];
+        if (flags & 0x400) {
+            float by, cy, t2;
+            ok = 0;
+            lo = a[1]; hi = lo;
+            by = b[1];
+            if (by < lo) lo = by;
+            cy = c[1];
+            if (cy < lo) lo = cy;
+            hh = work->heightHalf;
+            lo = lo + hh;
+            if (hi < by) hi = by;
+            if (hi < cy) hi = cy;
+            t2 = hi - hh;
+            hc = pos[1];
+            if (flags & 0x10) {
+                if (t2 < hc) {
+                    if (flags & 0x800) ok = 1;
+                    else if (hc < lo) ok = 1;
+                }
+            } else if (flags & 0x800) {
+                if (t2 < hc) ok = 1;
+            } else {
+                ok = 1;
+            }
+            if (!ok) return -1000.0f;
+        }
+        return t;
+    }
+    return -1000.0f;
+}
 
 extern float GameLoopState[];
 
