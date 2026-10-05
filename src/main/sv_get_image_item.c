@@ -803,7 +803,86 @@ static void svRotMatrixScale(void *dst, const void *src)
         : : "r"(dst), "r"(base), "r"(contrib), "r"(scale) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDrawModel);
+extern unsigned long long alphaTbl_2[];
+extern void nmlModelSetSortOffset(float offset);
+extern int nmlModelSetFogCancel(void);
+extern void nmlModelSetLight(void *colorMod, void *normal);
+extern void nmlModelSetSpecularOff(int disableSpecular);
+extern void nmlModelSetRenderStatus(int status);
+extern void nmlModelSetToumei(int enabled);
+extern void nmlModelSetAlpha(unsigned long long alpha);
+extern void nmlModelSetTexture(void *texture);
+extern void nmlModelSetClip(int clip);
+extern void nmlModelSetPlace(void *matrix);
+extern void nmlModelEntryEffect(void *effect);
+
+void svDrawModel(unsigned char *model, void *place)
+{
+    unsigned long long alpha;
+    unsigned char *material;
+    unsigned char light[4][16];
+    int a;
+    unsigned char *dst, *src;
+
+    if (model[0x162] == 0 && *(int *)(model + 0x14C) == 0x80) {
+        alpha = 0;
+    } else {
+        a = *(int *)(model + 0x14C);
+        alpha = alphaTbl_2[model[0x162]] | ((unsigned long long)a << 32);
+        nmlModelSetSortOffset(-5.0f);
+    }
+    nmlModelSetFogCancel();
+    __asm__ __volatile__("" : : "r"(model));
+    if (model[0x162] == 0) {
+        material = (unsigned char *)_defMatLcMod;
+    } else {
+        material = (unsigned char *)_defMatLc;
+    }
+    __asm__ __volatile__(
+        "lq $8, 0(%1)\n\t"
+        "lq $9, 16(%1)\n\t"
+        "lq $10, 32(%1)\n\t"
+        "lq $11, 48(%1)\n\t"
+        "sq $8, 0(%0)\n\t"
+        "sq $9, 16(%0)\n\t"
+        "sq $10, 32(%0)\n\t"
+        "sq $11, 48(%0)"
+        :
+        : "r"(light), "r"(material)
+        : "$8", "$9", "$10", "$11", "memory");
+    dst = light[3];
+    src = model + 0x140;
+    __asm__ __volatile__("" : : "r"(dst), "r"(src));
+    __asm__ __volatile__(
+        "mfc1 $8, %0\n\t"
+        "qmtc2.ni $8, $vf1"
+        :
+        : "f"(1.0f / 128.0f)
+        : "$8");
+    __asm__ __volatile__(
+        "lqc2 $vf2, 0(%1)\n\t"
+        "vitof0.xyzw $vf2, $vf2\n\t"
+        "vmulx.xyz $vf2, $vf2, $vf1x\n\t"
+        "sqc2 $vf2, 0(%0)"
+        :
+        : "r"(dst), "r"(src)
+        : "memory");
+    nmlModelSetLight(light, _defMatLn);
+    nmlModelSetSpecularOff(1);
+    if (*(int *)(model + 0x18C) & 1) {
+        nmlModelSetRenderStatus(0x100);
+    }
+    if (alpha != 0) {
+        nmlModelSetToumei(1);
+        nmlModelSetAlpha(alpha);
+    }
+    if (*(void **)(model + 0x174) != 0) {
+        nmlModelSetTexture(*(void **)(model + 0x174));
+    }
+    nmlModelSetClip(1);
+    nmlModelSetPlace(place);
+    nmlModelEntryEffect(*(void **)(model + 0x170));
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2);
 
