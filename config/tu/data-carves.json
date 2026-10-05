@@ -4295,6 +4295,39 @@
     }
    ]
   },
+  "ov12/tu081_00a48548": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a58d80",
+      "0x00a58e28"
+     ],
+     "generated": [
+      "0x00a58d80",
+      "0x00a58e24"
+     ],
+     "generated_by": [
+      "XrgBxxPs2Tex0"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A58D80"
+     ],
+     "also_referenced_by_c": [
+      "D_00A58D10",
+      "D_00A58D20",
+      "D_00A58D38",
+      "D_00A58D48",
+      "D_00A58D58",
+      "D_00A58D60"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/xrg_bxx_ps2.o"
+     }
+    }
+   ]
+  },
   "ov12/tu086_00a4a620": {
    ".rodata": [
     {
