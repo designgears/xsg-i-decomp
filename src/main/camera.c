@@ -526,17 +526,18 @@ void Java_xeno_Camera_start__ILjava_lang_Object_(JavaEnvironment *environment,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAngle__IFFFF);
-
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAnglePers__IFFFFF);
-
 typedef struct {
     unsigned char unmodeled_00[0x50];
     float hokan0; /* +0x50 */
     float hokan1; /* +0x54 */
     unsigned char unmodeled_58[0x48];
 } CfCameraDefineEntry;
+
 extern CfCameraDefineEntry CfCameraDefine[];
+
+INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAngle__IFFFF);
+
+INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAnglePers__IFFFFF);
 
 void Java_xeno_Camera_setCFHokan__IFF(JavaEnvironment *environment,
                                       union { int i; float f; void *p; } *args)
