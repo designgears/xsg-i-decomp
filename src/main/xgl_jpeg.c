@@ -18,7 +18,45 @@ typedef struct JpegWork {
 
 extern JpegWork *sw;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", ConvertYUV2MCU);
+static void ConvertYUV2MCU(float *mcu, float *yuv, int mode) {
+    int i, j;
+
+    switch (mode) {
+    case 0:
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                mcu[i * 8 + j] = yuv[i * 48 + j * 3] - 128.0f;
+                mcu[i * 8 + j + 256] = yuv[i * 48 + j * 3 + 1];
+                mcu[i * 8 + j + 320] = yuv[i * 48 + j * 3 + 2];
+            }
+        }
+        break;
+    case 1:
+        for (i = 0; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                mcu[i * 8 + j] = yuv[i * 48 + j * 3] - 128.0f;
+                mcu[i * 8 + j + 64] = yuv[i * 48 + j * 3 + 24] - 128.0f;
+                mcu[i * 8 + j + 256] = (yuv[i * 48 + j * 6 + 1] + yuv[i * 48 + j * 6 + 4]) * 0.5f;
+                mcu[i * 8 + j + 320] = (yuv[i * 48 + j * 6 + 2] + yuv[i * 48 + j * 6 + 5]) * 0.5f;
+            }
+        }
+        break;
+    case 2:
+    default:
+        i = 0;
+        for (; i < 8; i++) {
+            for (j = 0; j < 8; j++) {
+                mcu[i * 8 + j] = yuv[i * 48 + j * 3] - 128.0f;
+                mcu[i * 8 + j + 64] = yuv[i * 48 + j * 3 + 24] - 128.0f;
+                mcu[i * 8 + j + 128] = yuv[i * 48 + j * 3 + 384] - 128.0f;
+                mcu[i * 8 + j + 192] = yuv[i * 48 + j * 3 + 408] - 128.0f;
+                mcu[i * 8 + j + 256] = (yuv[i * 96 + j * 6 + 1] + yuv[i * 96 + j * 6 + 4] + yuv[i * 96 + j * 6 + 49] + yuv[i * 96 + j * 6 + 52]) * 0.25f;
+                mcu[i * 8 + j + 320] = (yuv[i * 96 + j * 6 + 2] + yuv[i * 96 + j * 6 + 5] + yuv[i * 96 + j * 6 + 50] + yuv[i * 96 + j * 6 + 53]) * 0.25f;
+            }
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", FFDCT);
 
