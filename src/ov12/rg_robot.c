@@ -2265,7 +2265,81 @@ static int _IsBackWeaponReady(RgBody *body, unsigned int eType)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecShotOrAttackCmd);
+extern int RgHissatuCheck(int charID, void **weapons);
+extern int RgWeaponIsNotBusy(void *weapon);
+extern int RgWeaponIsActiveLockOnSys(void *weapon);
+extern int RgWeaponRobotShotMotion(void *weapon, int charID);
+extern int RgShotThreadGetStatus(void *thread);
+typedef struct RgShotMotStartInfo {
+    int motion;
+    float time0;
+    float time1;
+} RgShotMotStartInfo;
+extern void RgShotThreadStart(void *thread, RgShotMotStartInfo *info);
+
+static int _ExecShotOrAttackCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    RgShotMotStartInfo info;
+    int side;
+    void *thread;
+    void *weapon;
+    int flag;
+    int type;
+    int motion;
+    RgMotionShotInfo *mi;
+    int action;
+
+    side = command->param;
+    weapon = body->weapon[side];
+    thread = body->shotThread[side];
+    if (side == 2 && RgHissatuCheck(body->charID, body->weapon) != 0) {
+        _InitStatusHissatu(status, body);
+        return 8;
+    }
+    if (weapon == 0) {
+        return 0;
+    }
+    if (RgWeaponGetShotNum(weapon) <= 0.0f) {
+        return _InitDropStatus((RgStatus *)status, body, _GetDropMotion(side), side) ? 0x200 : 0;
+    }
+    if (RgWeaponIsNotBusy(weapon) == 0 && RgWeaponIsActiveLockOnSys(weapon) == 0) {
+        return 0;
+    }
+    flag = RgWeaponGetControlFlag(weapon);
+    type = flag & 7;
+    motion = RgWeaponRobotShotMotion(weapon, body->charID);
+    mi = RgMotionInfoDBGet(InstanceOfRgMotionInfoDB(), motion, body->charID);
+    if (side == 2) {
+        RgShotThreadSleep(body->shotThread[0]);
+        RgShotThreadSleep(body->shotThread[1]);
+    }
+    if (type == 0 && RgShotThreadGetStatus(thread) != 5) {
+        action = RgMotionInfoGetActionInTime((int)mi, 0, 1e8f);
+        if ((flag & 0x20) || motion == -1) {
+            info.motion = -1;
+            info.time0 = 0.18f;
+            info.time1 = 0.4f;
+        } else {
+            info.motion = motion;
+            if (action == 0) {
+                info.time0 = 0.18f;
+                info.time1 = 0.4f;
+            } else {
+                info.time0 = *(float *)(action + 4);
+                info.time1 = *(float *)(action + 8);
+            }
+        }
+        RgShotThreadStart(thread, &info);
+        RgWeaponPlayShotMotion(weapon);
+        return 8;
+    }
+    if (type == 3) {
+        _InitShieldStatus(status, body, motion, (int)weapon, side);
+        return 0x20;
+    }
+    _InitAttackStatus(status, body, motion != -1 ? motion : 0, (int)weapon, side);
+    return 0x10;
+}
 
 static void _InitTargettingStatus(RgStatus *status, RgBody *body, void *target);
 
