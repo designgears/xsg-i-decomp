@@ -225,7 +225,37 @@ RgPic *RgPicRead(int handle, RgBxx *bxx)
     return CreateRgPicFromBinary(bxx, buffer);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_piclist", CreateRgPic);
+extern const char D_00A57368[];
+extern char *strcpy(char *, const char *);
+
+RgPic *CreateRgPic(RgBxx *bxx, const char *pszName)
+{
+    RgPic *pic;
+    int tex;
+
+    pic = RgHeapAlloc(InstanceOfRgHeap(), sizeof(RgPic), D_00A57320, 177);
+    if (bxx == 0)
+        assert_prog(D_00A57338, D_00A57320, 178);
+    if (pszName == 0)
+        assert_prog(D_00A57358, D_00A57320, 179);
+    tex = RgBxxGetPic((int)bxx, (int)pszName);
+    pic->tex = (RgPicTexture *)tex;
+    if (tex == 0)
+        assert_prog(D_00A57368, D_00A57320, 181);
+    pic->x = 0;
+    pic->y = 0;
+    pic->alpha = 2;
+    pic->dark = 0;
+    pic->notDraw = 0;
+    pic->ofsY = 0;
+    pic->ofsX = 0;
+    pic->color.b = 0x80;
+    pic->color.g = 0x80;
+    pic->color.r = 0x80;
+    pic->color.a = 0x7f;
+    strcpy(pic->name, pszName);
+    return pic;
+}
 
 void DisposeRgPic(RgPic *pic)
 {
