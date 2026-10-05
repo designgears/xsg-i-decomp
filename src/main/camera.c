@@ -208,7 +208,44 @@ void Java_xeno_Camera_create__I(JavaEnvironment *environment,
     *result = camera;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF);
+extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
+extern SceneString *loadConstString(const char *bytes, int length);
+extern JavaField *lookupClassField(void *class_object, void *name, int flags);
+extern void *classJava_xeno_Chr;
+extern const char D_004DC178[];
+
+void Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF(JavaEnvironment *environment,
+                                                      union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    SceneObject object;
+    unsigned char *camera_bytes;
+    float v[3];
+
+    (void)environment;
+    camera = args[0].p;
+    object = args[1].p;
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    camera_bytes = (unsigned char *)camera;
+    xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_CONSTANT;
+    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 1) {
+        *(int *)(camera_bytes + 0x44) =
+            *(int *)(object + lookupClassField(classJava_xeno_Chr,
+                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    } else if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 1) {
+        *(int *)(camera_bytes + 0x44) =
+            *(int *)(object + lookupClassField(classJava_xeno_Unit,
+                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    }
+done:
+    ((union { int i; float f; } *)(camera_bytes + 0x40))->i = 1;
+    *(float *)(camera_bytes + 0x30) = v[0];
+    *(float *)(camera_bytes + 0x34) = v[1];
+    *(float *)(camera_bytes + 0x38) = v[2];
+}
 
 static void CAMERA_transSPL(int selection, JavaEnvironment *environment,
                             CameraSplineRequest *request, void *result)
