@@ -786,7 +786,53 @@ void xglMatrixReverse(Matrix *destination, const Matrix *source)
     copyDestination->quadwords[3] = copiedRow;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMatrixInverse);
+void xglMatrixInverse(Matrix4 d, const Matrix4 s)
+{
+    float a00 = s[0][0];
+    float a11 = s[1][1];
+    float a22 = s[2][2];
+    float a12 = s[1][2];
+    float a21 = s[2][1];
+    float a20 = s[2][0];
+    float a10 = s[1][0];
+    float a01 = s[0][1];
+    float a02 = s[0][2];
+    float a30 = s[3][0];
+    float a31 = s[3][1];
+    float a32 = s[3][2];
+    float pad[16];
+    float c00, c01, c02, c10, c11, c12, c20, c21, c22, inv;
+
+    d[3][3] = 1.0f;
+    d[0][3] = 0.0f;
+    d[1][3] = 0.0f;
+    d[2][3] = 0.0f;
+    c00 = a11 * a22 - a12 * a21;
+    c01 = a21 * a02 - a22 * a01;
+    c02 = a01 * a12 - a02 * a11;
+    c10 = a12 * a20 - a10 * a22;
+    c11 = a22 * a00 - a20 * a02;
+    c12 = a02 * a10 - a00 * a12;
+    c20 = a10 * a21 - a11 * a20;
+    c21 = a20 * a01 - a21 * a00;
+    c22 = a00 * a11 - a01 * a10;
+    inv = a00 * c00 + a01 * c10;
+    inv += a02 * c20;
+    inv = 1.0f / inv;
+    d[0][0] = c00 * inv;
+    d[0][1] = c01 * inv;
+    d[0][2] = c02 * inv;
+    d[1][0] = c10 * inv;
+    d[1][1] = c11 * inv;
+    d[1][2] = c12 * inv;
+    d[2][0] = c20 * inv;
+    d[2][1] = c21 * inv;
+    d[2][2] = c22 * inv;
+    inv = -inv;
+    d[3][0] = (c00 * a30 + c10 * a31 + c20 * a32) * inv;
+    d[3][1] = (c01 * a30 + c11 * a31 + c21 * a32) * inv;
+    d[3][2] = (c02 * a30 + c12 * a31 + c22 * a32) * inv;
+}
 
 void xglMatrixScale(Matrix4 destination, const Matrix4 source,
                     const float scale[4])
