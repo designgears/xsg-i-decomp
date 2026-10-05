@@ -404,7 +404,33 @@ INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWModeExSet);
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWPosSet);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWDraw);
+void eCursolMain(void *cursol);
+void eNumberMain(void *number);
+
+void subMWDraw(char *w)
+{
+    unsigned char flags = w[1];
+    int i;
+
+    WindowDXMain(w + 0x2C);
+    if (flags & 1) {
+        for (i = 0; i < 3; i++) {
+            eCursolMain(w + 0x1C0 + i * 0x24);
+        }
+    }
+    endPrintExtFunc(*(int *)(w + 0x1730), 5, w + 0x172C);
+    if (flags & 2) {
+        for (i = 0; i < 0x18; i++) {
+            eMessageMain(w + 0x22C + i * 0x44);
+        }
+    }
+    if (*(short *)(w + 0x2A) != 0 && (flags & 4)) {
+        for (i = 0; i < 0x18; i++) {
+            eNumberMain(w + 0x88C + i * 0x90);
+        }
+    }
+    endPrintExtFunc(*(int *)(w + 0x1730), 6, 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWControlType00);
 
