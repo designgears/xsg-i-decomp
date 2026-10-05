@@ -274,7 +274,75 @@ void xglSoundLoadEffect(const char *name, void *address, int bank)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_sound", xglSoundLoadRequestSmd);
+extern const char SoundSequencePath[5];
+extern const unsigned char ext_2_004DC350[5];
+void xglSoundSequenceNormal2(int channel, int volume);
+
+void xglSoundLoadRequestSmd(const char *name, void *address)
+{
+    char path[256];
+    char *destination;
+    const char *source;
+    char *dst;
+    const char *src;
+
+    if (name == 0 || address == 0) {
+        xglSoundSendSwd(0, -1);
+        xglSoundSendSmd2(0, 0);
+        return;
+    }
+    destination = path;
+    src = SoundSequencePath;
+    while (*src != '\0') {
+        *destination = *src;
+        destination++;
+        src++;
+    }
+    *destination = (unsigned char) *name;
+    src = name;
+    while (((int) (signed char) *destination << 24) != 0) {
+        src++;
+        destination++;
+        *destination = (unsigned char) *src;
+    }
+    if (xglSoundLoadSwd(path, address) > 0) {
+        xglSoundSendSwd(address, -1);
+        do {
+        } while (SsdSpuDmaCompleted(0) != 0);
+    }
+    dst = path;
+    source = SoundDataPath;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = SoundSequencePath;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = name;
+    while (*source != '\0') {
+        *dst = *source;
+        dst++;
+        source++;
+    }
+    source = (const char *) ext_2_004DC350;
+    for (;;) {
+        *dst = (unsigned char) *source;
+        if (((int) (signed char) *dst << 24) == 0) {
+            break;
+        }
+        source++;
+        dst++;
+    }
+    if (xglCdReadFile(path, address, 0, 0) > 0) {
+        xglSoundSendSmd2(address, 0);
+    }
+    xglSoundSequenceNormal2(0, 0x7F);
+}
 
 extern struct SoundWork SoundWork;
 
