@@ -1581,7 +1581,32 @@ int unitCmdEscape(ObjectTask *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdFadeIn);
+int unitCmdFadeIn(ObjectTask *unit)
+{
+    Actor *actor;
+    void *eff;
+
+    actor = unit->work;
+    switch (actor->moveState) {
+    case 0:
+        actor->moveState = 1;
+        actor->movePhaseTimer = 0;
+        break;
+    case 1:
+        if (unitTelIn(unit) != 0) {
+            actor->moveState++;
+        }
+        break;
+    case 2:
+        eff = *(void **)((char *)calcUPGet(unit) + 0x158);
+        if (eff != 0) {
+            *(int *)((char *)eff + 0xA8C) &= ~0x100;
+        }
+        statEffOn(unit);
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 int unitCmdFadeOut(ObjectTask *unit)
 {
