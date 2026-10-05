@@ -11,7 +11,43 @@ void eBattleWinClose(void *window)
     BW->active = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinMain);
+short WindowSPSelect();
+void WindowSPMain();
+void WindowDXMain();
+void eMessageMain();
+void endPrintExtFunc();
+extern PadPrefix PadData;
+
+void eBattleWinMain(int *arg0)
+{
+    int sel = -1;
+    int mode = BW->unmodeled_00[1];
+    PadPrefix *pad = &PadData;
+    PadPrefix *pad2;
+    int key = *(unsigned short *)((char *)pad + 0x34);
+
+    if (mode != -1) {
+        if (mode >= -1) {
+            if (mode < 2) {
+                sel = WindowSPSelect(&BW->state, key);
+                if (sel >= 0) {
+                    int off = sel * 12;
+                    *(int *)&BW->unmodeled_1770[0x18EC - 0x1770] = *(int *)(*(int *)&BW->unmodeled_00[4] + off + 4);
+                }
+            }
+        }
+        pad2 = &PadData;
+        arg0[8] = sel;
+        arg0[7] = pad2->half_2a;
+        endPrintExtFunc(0, 100, 0);
+        WindowSPMain(&BW->state);
+        BW->unmodeled_09[0x3C] = 1;
+        WindowDXMain(&BW->window);
+        eMessageMain(&BW->unmodeled_1770[0x164]);
+    } else {
+        arg0[8] = mode;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinOpen2);
 
