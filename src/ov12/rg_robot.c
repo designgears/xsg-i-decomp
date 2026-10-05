@@ -444,7 +444,32 @@ static int _ExecCmdInHissatu(RgRobotStatus *status, RgBody *body, RgCmd *command
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _HissatuPassTime);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _HissatuExit);
+extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
+extern void RgRobotEffectTermJet(RgRobotEffect *effect);
+extern void RgRobotEffectTermDash(RgRobotEffect *effect);
+
+static void _HissatuExit(RgRobotStatus *status, RgBody *body)
+{
+    float maxSpd;
+    void *w0;
+    void *w1;
+
+    w0 = body->weapon[0];
+    w1 = body->weapon[1];
+    maxSpd = _CalcMaxSpeed(body, body->spec->baseSpeed);
+    if (w0) {
+        RgWeaponRestartLockon(w0);
+        RgWeaponShotStop(w0);
+    }
+    if (w1) {
+        RgWeaponRestartLockon(w1);
+        RgWeaponShotStop(w1);
+    }
+    _StopHomingThread(body->homingThread);
+    RgGeomPointSetMaxXYSpd(body->geometry, maxSpd);
+    RgRobotEffectTermDash(body->effect);
+    RgRobotEffectTermJet(body->effect);
+}
 
 typedef struct RgMotionInfoDB RgMotionInfoDB;
 typedef struct RgMotionShotInfo RgMotionShotInfo;
