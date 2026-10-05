@@ -79,7 +79,37 @@ void CardPlaySound4(void)
     xglSoundSequenceNormal2(0, 127);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", CardDataLoad);
+extern int CardFread(unsigned int mode, char *filename);
+extern char D_00A4BCC0[];
+extern char D_00A4BCD0[];
+extern char D_00A4BCF0[];
+extern unsigned char IDdata[];
+extern int printf(const char *, ...);
+
+int CardDataLoad(unsigned short *arg0) {
+    char buf[13];
+    int i;
+    unsigned char *p;
+    unsigned char *id;
+
+    if (CardFread(0x01000000, D_00A4BCC0) < 0) {
+        printf(D_00A4BCD0);
+        return 0;
+    }
+    *arg0 = *(unsigned short *)0x01000000;
+    for (i = 0, p = (unsigned char *)0x01000004; i < 12; i++) {
+        buf[i] = *p++;
+    }
+    buf[i] = 0;
+    id = IDdata;
+    for (i = 0, p = (unsigned char *)0x01000004; i < 12; i++) {
+        if (*p++ != *(unsigned char *)(i + (int)id)) {
+            printf(D_00A4BCF0);
+            return 0;
+        }
+    }
+    return 0x01000010;
+}
 
 typedef signed int s32;
 
