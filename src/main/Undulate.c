@@ -185,7 +185,44 @@ static int CheckWallAttr(UnduWork *work, const unsigned short *wallAttribute)
 
 INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheckSubCrossCheck);
 
-INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheckResultCheck);
+static float UnduCheckResultCheck(UnduWork *work, UnduQuery *query, float *pos)
+{
+    unsigned int flags;
+    int mode;
+    UnduWallAttributes *table;
+
+    flags = (unsigned short)query->attrMask & 0xEFFF;
+    query->attrMask = flags;
+    mode = flags & 7;
+    query->secondaryVertexOffset = ((unsigned char *)work)[0xA2] & 3;
+    query->resultHeight = work->bestHeight;
+    if (work->bestSubOffset != 0) {
+        table = work->wallAttributeTable;
+        query->queryFilter = query->queryFlags;
+        query->queryFlags = work->bestSubOffset;
+        if (table != 0) {
+            UnduWallAttributes *e = &table[*(unsigned short *)work->bestSubOffset];
+            UnduWallAttributes *d = (UnduWallAttributes *)&query->initializedState;
+            d->words[0] = e->words[0];
+            d->words[1] = e->words[1];
+        } else {
+            query->initializedState = *(unsigned short *)work->bestSubOffset;
+        }
+    } else {
+        query->queryFlags = 0;
+        query->initializedState = 0;
+        if (mode != 1) {
+            goto end;
+        }
+    }
+    if (*(int *)((char *)work + 0x90) != 0) {
+        pos[0] = *(float *)((char *)work + 0x80);
+        pos[1] = work->heightCenter;
+        pos[2] = *(float *)((char *)work + 0x88);
+    }
+end:
+    return work->bestHeight;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheck);
 
