@@ -536,6 +536,34 @@
     }
    ]
   },
+  "main/tu159": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004c2fe0",
+      "0x004c31b0"
+     ],
+     "generated": [
+      "0x004c2fe0",
+      "0x004c31a8"
+     ],
+     "generated_by": [
+      "eCursolMain"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C2FE0"
+     ],
+     "also_referenced_by_c": [
+      "D_004C2FD0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/open_close_main.o"
+     }
+    }
+   ]
+  },
   "main/tu160": {
    ".rodata": [
     {

@@ -266,7 +266,102 @@ void eWindowSet(EWindow *window)
     window->mode = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", eCursolMain);
+extern void endSpriteSet(void *sprite, int mode);
+typedef struct ECurSprite {
+    short x;            /* +0x10 */
+    short y;            /* +0x12 */
+    int work;           /* +0x14 */
+    short w;            /* +0x18 */
+    short h;            /* +0x1a */
+    unsigned char r, g, b, a; /* +0x1c */
+    short kind;         /* +0x20 */
+    unsigned char blink; /* +0x22 */
+    unsigned char p23;  /* +0x23 */
+} ECurSprite;
+typedef struct ECurView {
+    unsigned char state;
+    unsigned char active;
+    unsigned char timer;
+    unsigned char width;
+    unsigned short x;
+    unsigned short y;
+    int work;
+    unsigned char color[4];
+    ECurSprite spr;
+} ECurView;
+
+void eCursolMain(ECurView *c)
+{
+    unsigned char t;
+
+    switch (c->state) {
+    case 0:
+        c->active = 0;
+        c->state = 0;
+        break;
+    case 1:
+        break;
+    case 0x52:
+        break;
+    case 0x53:
+        break;
+    case 0x20:
+        c->active = 1;
+        c->state = 0x21;
+    case 0x21:
+        c->spr.x = c->x;
+        c->spr.y = c->y;
+        c->spr.kind = c->width;
+        c->state = 0x50;
+        break;
+    case 0x22:
+        c->active = 1;
+        c->timer = -4;
+        c->state = 0x23;
+    case 0x23:
+        t = c->timer;
+        c->spr.x = c->x;
+        c->spr.y = c->y - (signed char)t + 8;
+        c->spr.w = 0x18 - (signed char)t;
+        c->spr.h = (signed char)t * 2;
+        c->spr.kind = c->width;
+        if ((signed char)t == 8)
+            c->state = 0x50;
+        else
+            c->timer = t + 1;
+        break;
+    case 0x50:
+        c->active = 1;
+        c->state = 0x51;
+        c->timer = 0;
+    case 0x51:
+        c->spr.x = c->x;
+        c->spr.y = c->y;
+        c->spr.kind = c->width;
+        break;
+    case 0x70:
+        c->active = 0;
+        c->state = 0x71;
+        break;
+    case 0x71:
+        break;
+    }
+    if (c->active != 0) {
+        c->spr.r = c->color[0];
+        c->spr.g = c->color[1];
+        c->spr.b = c->color[2];
+        c->spr.a = c->color[3];
+        c->timer++;
+        c->spr.p23 = 0;
+        if (c->width == 0)
+            c->spr.blink = (c->timer >> 1) & 7;
+        else
+            c->spr.blink = (c->timer >> 2) & 3;
+        c->spr.work = c->work;
+        endSpriteSet(&c->spr, 1);
+        endPrintExtFunc(c->spr.work, 2, &c->spr);
+    }
+}
 
 void eCursolModeChange(unsigned char *mode, unsigned int next)
 {
