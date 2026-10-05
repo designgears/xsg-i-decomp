@@ -127,4 +127,28 @@ void UmnProcuratorTop(void *task)
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorGoodBy);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorSet);
+static inline void UmnProcuratorSetGoodBy(void)
+{
+    MenuModelExtFuncSet(UmnModelUkn, UmnProcuratorGoodBy, 0);
+}
+
+void UmnProcuratorSet(void)
+{
+    switch (UmnWork[1]) {
+    case 0:
+        if (UmnModelUkn == 0) {
+            MenuModelCreate(&UmnModelUkn, 0x1D);
+        }
+        MenuModelExtFuncSet(UmnModelUkn, UmnProcuratorTop, 0);
+        break;
+    case 1:
+        if (UmnModelUkn == 0) {
+            MenuModelCreate(&UmnModelUkn, 0x1D);
+        }
+        MenuModelExtFuncSet(UmnModelUkn, UmnProcuratorMail, 0);
+        break;
+    default:
+        UmnProcuratorSetGoodBy();
+        break;
+    }
+}
