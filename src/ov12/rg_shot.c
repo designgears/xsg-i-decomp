@@ -517,7 +517,34 @@ static void _GrenadeBomHit(RgShot *shot, RgVector position)
 {
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _GrenadeHitRobot);
+extern RgGeomPoint *RgRobotGetGeom(int robot);
+extern unsigned int RgRobotGetStatusFlags(int robot);
+extern void RgRobotSetConfuse(int robot, float confuse);
+extern void RgGeomPointAddForce(RgGeomPoint *point, RgVector force);
+
+static void _GrenadeHitRobot(RgShot *shot, int robot, RgVector position)
+{
+    RgGrenadeShot *bom = (RgGrenadeShot *)shot;
+    RgGeomPoint *geom;
+    RgVector robotPosition;
+    RgVector force;
+
+    if (_GrenadeEntryHistory(shot, robot) != 0) {
+        if ((float)bom->repeatCount <= 0.0f) {
+            _ShotCommonHitRobot(shot, robot, position);
+            geom = RgRobotGetGeom(robot);
+            __RgGeomPointGetPos(geom, robotPosition, D_00A532F8, 0x27E);
+            __RgGeomPointGetPos((RgGeomPoint *)_CommonGetGeom(shot), force, D_00A532F8, 0x27F);
+            XrgSubVector(force, robotPosition, force);
+            force[1] = 0.0f;
+            XrgNormalizeVector(force, force);
+            XrgScaleVector(force, force, 1500000.0f);
+            RgGeomPointAddForce(geom, force);
+        } else if (!(RgRobotGetStatusFlags(robot) & 0x80)) {
+            RgRobotSetConfuse(robot, (float)bom->repeatCount);
+        }
+    }
+}
 
 /* Defined later in this TU (a local sibling still in asm). */
 static void _ShotCommonHitBg(RgShot *shot, int bgObject, RgVector position);
