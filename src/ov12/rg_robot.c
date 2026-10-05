@@ -1718,7 +1718,63 @@ static void _BodyDisp(RgRobotStatus *robotStatus, RgBody *body)
     RgRobotEffectDisp(body->effect);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitBody);
+extern RgRobotSpec D_00A59920;
+extern void InitRgRobotSpec(RgRobotSpec *pSpec);
+extern void *CreateRgGeomRobot(void);
+extern void *CreateRgGeomBall(float radius, float weight);
+extern void *CreateRgShotThread(void);
+extern RgRobotEffect *CreateRgRobotEffect(void);
+typedef struct RgBodyEquip {
+    unsigned char unmodeled_00[0x70];
+    void *weapon[RG_EQUIP_TYPE_NUM];
+    void *spareWeapon[RG_EQUIP_TYPE_NUM];
+} RgBodyEquip;
+
+static void _InitBody(RgBody *body)
+{
+    unsigned int i;
+    RgRobotEffect *effect;
+
+    InitRgRobotSpec(&D_00A59920);
+    if (!body) {
+        assert_prog(D_00A51A68, D_00A51840, 0xD37);
+    }
+    body->spec = &D_00A59920;
+    body->flags = 0;
+    body->autoHomingEnv = 0;
+    body->cmdMask = 0;
+    body->prevCmdMask = 0;
+    body->charID = -1;
+    body->life = 100.0f;
+    body->lifeMax = 100.0f;
+    body->grounded = 1;
+    body->weakHitMotion = 0.0f;
+    body->weakHitPower = 1.0f;
+    body->weakHitAccum = 0.0f;
+    body->weakHitWindow = 0.0f;
+    body->shieldActive = 0;
+    body->target = 0;
+    body->actor = 0;
+    body->geometry = CreateRgGeomRobot();
+    body->eyeGeometry = CreateRgGeomBall(1.0f, 1.0f);
+    body->advanceGeometry = CreateRgGeomBall(0.3f, 0.3f);
+    RgGeomPointSetMaxXYSpd(body->geometry, _CalcMaxSpeed(body, body->spec->baseSpeed));
+    body->dashTime = *(float *)&body->spec->unmodeled_30;
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        body->weapon[i] = 0;
+        ((RgBodyEquip *)body)->spareWeapon[i] = 0;
+        body->shotThread[i] = CreateRgShotThread();
+    }
+    body->homingThread = _CreateHomingThread();
+    effect = CreateRgRobotEffect();
+    body->effect = effect;
+    RgRobotEffectSetGeom(effect, body->geometry);
+    body->motSmooth = 1;
+    body->smoothSuppressed = 1;
+    body->confuse = 0.0f;
+    body->landingSoundID = 0;
+    *(int *)body->unmodeled_ac = 0;
+}
 
 extern void DisposeRgShotThread(void *thread);
 
