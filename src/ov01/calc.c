@@ -1558,7 +1558,31 @@ int calcStatGet(ObjectTask *unit, int category, int flag) {
     return res;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatGetNorm);
+int calcStatGetNorm(ObjectTask *unit, int category, int flag) {
+    int res;
+
+    if ((category == 3 && (flag & 1)) || (category == 6 && (flag & 0x800))) {
+        ObjectTask **table;
+        int count = unitTblGet(0, &table);
+        int i;
+
+        res = 0;
+        for (i = 0; i < count; i++) {
+            ObjectTask *u = table[i];
+
+            if (u == 0) {
+                continue;
+            }
+            res = calcUPGet(u)->statActiveMask[category] & flag;
+            if (res != 0) {
+                break;
+            }
+        }
+    } else {
+        res = calcUPGet(unit)->statActiveMask[category] & flag;
+    }
+    return res;
+}
 
 int calcStatSetChk(ObjectTask *unit, unsigned int group, int mask, int force)
 {
