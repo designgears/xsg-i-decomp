@@ -41,7 +41,27 @@ void Java_xeno_util_Format_toString__C(JThread *thread, union { int i; short s; 
     *result = (int)str;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/format", Java_xeno_util_Format_toString__F);
+typedef struct { FormatString *string; } FormatTmpStringViewF;
+extern double fptodp(float value);
+extern char D_004DC0A0[];
+
+void Java_xeno_util_Format_toString__F(JThread *thread, union { int i; float f; void *p; } *args, int *result)
+{
+    FormatByteArray *arr;
+    char *buf;
+    char *fmt;
+
+    if (JAVA_tmpString == 0) {
+        JAVA_tmpString = newObject(classString);
+        JAVA_tmpString->value = newArray(classByte, 0xFF);
+    }
+    fmt = D_004DC0A0;
+    buf = (char *)JAVA_tmpString->value->data;
+    sprintf(buf, fmt, fptodp(args[0].f));
+    arr = JAVA_tmpString->value;
+    arr->length = strlen((char *)arr->data);
+    *result = (int)((FormatTmpStringViewF *)&JAVA_tmpString)->string;
+}
 
 void Java_xeno_util_Format_toString__I(JThread *thread, int *arguments,
                                        int *result)
