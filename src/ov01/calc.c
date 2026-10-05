@@ -1235,7 +1235,17 @@ int calcStatSetChk(ObjectTask *unit, unsigned int group, int mask, int force)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatSet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatReset);
+void calcStatReset(ObjectTask *unit, int category, int mask, int unused)
+{
+    CalcUnitParam *up = calcUPGet(unit);
+
+    if (unused == 0) {
+        up->statActiveMask[category] &= ~mask;
+        up->statTurnCount[category][calcStatBit2Idx(mask)] = 0;
+    } else {
+        *(u16 *)(up->unmodeled_bc + category * 2) &= ~mask;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatDefTurnGet);
 
