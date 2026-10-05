@@ -734,7 +734,34 @@ void dataLeaderReload(void)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataMotNameGetMenu);
+extern char *strcpy(char *destination, const char *source);
+extern char *strcat(char *destination, const char *source);
+extern int dataMotNameGetSub(char *name, CalcUnitParam *up, int motionId, int weaponId);
+extern char *motNameBase;
+extern char *motNameExt;
+
+int dataMotNameGetMenu(char *name, int unitOrgId, int weaponId)
+{
+    CalcUnitParam *up;
+    int found;
+
+    *name = 0;
+    up = (CalcUnitParam *)dataUnitOrgGet(unitOrgId);
+    if (up->sefSetupParams[weaponId] == 0) {
+        return 0;
+    }
+    found = *(short *)(dataTecGet(*(short *)(dataWpnGet(up->sefSetupParams[weaponId]) + 0x14)) + 0x14);
+    if (found == 0) {
+        return 0;
+    }
+    strcpy(name, motNameBase);
+    found = dataMotNameGetSub(name, up, found, weaponId);
+    strcat(name, motNameExt);
+    if (found == 0) {
+        *name = 0;
+    }
+    return found;
+}
 
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
