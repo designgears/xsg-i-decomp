@@ -663,7 +663,47 @@ static void _FireHitRobot(RgShot *shot, int robot, RgVector position)
     fire->alreadyHitRobot = 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _InitFire);
+extern void RgShotEffectSetParticleShootReverse(RgShotEffect *effect);
+static void _FirePassTime(RgChar *pChar, float deltaTime);
+
+static void *_InitFire(void *firep, void *essencep, void *infop)
+{
+    RgShot *shot = (RgShot *)firep;
+    RgFireShot *fire = (RgFireShot *)firep;
+    RgFireEssence *essence = (RgFireEssence *)essencep;
+    int *info = (int *)infop;
+    char *f = (char *)firep;
+    char *e = (char *)essencep;
+    int i0, i1, i2, i3;
+
+    _InitShotCommon(firep, essencep, infop, 0.0f);
+    shot->notifyHit = _FireHit;
+    shot->isReleased = _FireIsReleased;
+    shot->release = _FireRelease;
+    shot->hitRobot = _FireHitRobot;
+    RgGeomBallSetRadius((RgGeomBall *)shot->geomTray, 1.0f);
+    RgShotEffectSetParticleShootReverse(shot->effect);
+    XrgClearVector((float *)(f + 0x80));
+    XrgClearVector((float *)(f + 0x90));
+    fire->status = 0;
+    *(float *)(f + 0xA0) = essence->speed;
+    fire->quickFade = essence->trailingCount;
+    *(float *)(f + 0xA4) = essence->duration;
+    *(float *)(f + 0xA8) = shot->damage;
+    fire->robot = *(int *)(e + 0x12C);
+    shot->damage = 0.0f;
+    shot->life = 1e8f;
+    fire->alreadyHitRobot = 0;
+    RgCharPassTimeMethod((RgChar *)fire, _FirePassTime);
+    i0 = info[0];
+    i1 = info[1];
+    i2 = info[2];
+    i3 = info[3];
+    ((void **)f)[0x30] = (void *)i0;
+    ((void **)f)[0x31] = (void *)i1;
+    ((void **)f)[0x32] = (void *)i2;
+    ((void **)f)[0x33] = (void *)i3;
+}
 
 /* Defined earlier in this TU (a local sibling still in asm). */
 static void *_InitFire(void *fire, void *essence, void *info);
