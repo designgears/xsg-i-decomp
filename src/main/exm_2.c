@@ -144,7 +144,30 @@ void EXM_ClearWindStruct(void)
     wind = &_wind;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/exm_2", EXM_StepShakeWind);
+extern volatile float D_004D877C;
+extern float D_004D8780;
+
+void EXM_StepShakeWind(void) {
+    float r;
+
+    if (wind != 0) {
+        float k;
+        wind->shake_rad += wind->shake_time;
+        k = D_004D877C;
+        if (wind->shake_rad > k) {
+            wind->shake_rad -= k;
+        } else if (wind->shake_rad < 0.0f) {
+            wind->shake_rad += k;
+        }
+    }
+    r = waverad + 0.5f;
+    waverad = r;
+    if (r > D_004D8780) {
+        waverad = r - D_004D8780;
+    } else if (r < 0.0f) {
+        waverad = r + D_004D8780;
+    }
+}
 
 void EXM_SetShakeWind(float rad)
 {
