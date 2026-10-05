@@ -1489,4 +1489,18 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSplineSub);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHermiteSub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcNormal);
+void calcNormal(float *v)
+{
+    float r;
+
+    r = 1.0f / __builtin_sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (r == 0.0f) {
+        v[0] = 0.0f;
+        v[1] = 0.0f;
+        v[2] = 0.0f;
+    } else {
+        v[0] = v[0] * r;
+        v[1] = v[1] * r;
+        v[2] = v[2] * r;
+    }
+}
