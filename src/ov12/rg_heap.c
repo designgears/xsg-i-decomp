@@ -185,7 +185,24 @@ static struct RgHeapBlock *_SetHeapHead(void *pTop, u32 nBufSize)
     return pHead;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_heap", _MergeBlocks);
+static void _MergeBlocks(struct RgHeapBlock *pHead)
+{
+    struct RgHeapBlock *p;
+    struct RgHeapBlock *n;
+
+    p = pHead;
+    if (p == 0) {
+        return;
+    }
+    do {
+        while ((n = p->next, (struct RgHeapBlock *)((char *)p + p->size) == n)) {
+            p->next = n->next;
+            p->size += n->size;
+            n->next->pre = p;
+        }
+        p = p->next;
+    } while (p != pHead);
+}
 
 /*
  * ov12:0x00a59aa0 (0x10 bytes) and 0x00a5a2b0 (0x10 bytes) are the two
@@ -245,11 +262,200 @@ void InitRgHeap(RgHeap *pHeap, void *pTop, u32 nBufSize)
     pHeap->pHead = pHead;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_heap", RgHeapAlloc);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern char *strncpy(char *dst, const char *src, unsigned int n);
+extern const char D_00A52B68[];
+extern const char D_00A52B90[];
+extern const char D_00A52BA0[];
+extern const char D_00A52BB8[];
+extern const char D_00A52BE8[];
+extern const char D_00A52BF8[];
+extern const char D_00A52C30[];
+extern const char D_00A52C40[];
+extern const char D_00A52C80[];
+extern const char D_00A52C90[];
+extern const char D_00A52CD0[];
+extern const char D_00A52CF8[];
+extern const char D_00A52D08[];
+extern const char D_00A52D38[];
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_heap", RgHeapFree);
+void *RgHeapAlloc(RgHeap *pHeap, u32 nSize, const char *source_file, int line)
+{
+    struct RgHeapBlock *pHead;
+    struct RgHeapBlock *p;
+    struct RgHeapBlock *pBest;
+    struct RgHeapBlock *pNew;
+    u32 nBlockSize;
+    u32 nBestSize;
+    u32 sz;
+    void *pRet;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_heap", RgHeapIsInSelf);
+    if (nSize == 0) {
+        RgError(D_00A52B68, D_00A52A68, 217, source_file, line);
+    }
+    if (pHeap == 0) {
+        _Error(D_00A52B90, D_00A52BA0, 0, D_00A52A68, 218);
+    }
+    pHead = pHeap->pHead;
+    if (pHead == 0) {
+        RgError(D_00A52BB8, D_00A52A68, 223, source_file, line);
+        return 0;
+    }
+    nBlockSize = ((nSize + 15) & ~15) + 0x40;
+    pBest = 0;
+    nBestSize = 0;
+    p = pHead;
+    do {
+        sz = p->size;
+        if (sz >= nBlockSize) {
+            if (sz < nBestSize || nBestSize == 0) {
+                nBestSize = sz;
+                pBest = p;
+            }
+        }
+        p = p->next;
+    } while (p != pHead);
+    if (pBest == 0) {
+        if (pHeap == InstanceOfRgHeapData()) {
+            RgHeapDump_sub(pHeap, D_00A52BE8, D_00A52A68, 245);
+            RgError(D_00A52BF8, D_00A52A68, 246, nSize, source_file, line);
+        } else if (pHeap == InstanceOfRgHeap()) {
+            RgHeapDump_sub(pHeap, D_00A52C30, D_00A52A68, 248);
+            RgError(D_00A52C40, D_00A52A68, 249, nSize, source_file, line);
+        } else {
+            RgHeapDump_sub(pHeap, D_00A52C80, D_00A52A68, 251);
+            RgError(D_00A52C90, D_00A52A68, 252, nSize, source_file, line);
+        }
+        return 0;
+    }
+    if (nBestSize < nBlockSize) {
+        _Error(D_00A52CD0, D_00A52CF8, pHeap, D_00A52A68, 262);
+    }
+    if (nBestSize - nBlockSize > 0x40) {
+        pNew = (struct RgHeapBlock *)((char *)pBest + nBlockSize);
+        _SetHeapHead(pNew, nBestSize - nBlockSize);
+    } else {
+        nBlockSize = nBestSize;
+        pNew = 0;
+    }
+    if (pNew != 0) {
+        _InsertNext(pBest, pNew);
+    }
+    if (pBest == pHead) {
+        pHeap->pHead = pBest->next;
+    }
+    _Unlink(pBest);
+    _SetHeapHead(pBest, nBlockSize);
+    _MarkAlloc(pBest);
+    if (source_file != 0) {
+        strncpy(pBest->module, source_file, 31);
+        pBest->module[31] = 0;
+        pBest->line = line;
+    } else {
+        pBest->module[0] = 0;
+        pBest->line = 0;
+    }
+    _SetMagicString(pBest);
+    if (pHeap->pAlloc == 0) {
+        pHeap->pAlloc = pBest;
+        _Link(pBest, pBest, pBest);
+    } else {
+        _InsertNext(pHeap->pAlloc, pBest);
+    }
+    pRet = pBest + 1;
+    if ((u32)pRet & 0xF) {
+        _Error(D_00A52D08, D_00A52D38, pHeap, D_00A52A68, 304);
+    }
+    return pRet;
+}
+
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern const char D_00A52D50[];
+extern const char D_00A52D60[];
+extern const char D_00A52D80[];
+extern const char D_00A52D90[];
+extern const char D_00A52DD0[];
+extern const char D_00A52DF0[];
+extern const char D_00A52E28[];
+extern const char D_00A52E58[];
+
+void RgHeapFree(RgHeap *pHeap, void *pPtr, const char *source_file, int line)
+{
+    struct RgHeapBlock *pBlock;
+    struct RgHeapBlock *pAlloc;
+    struct RgHeapBlock *pNext;
+    struct RgHeapBlock *p;
+    struct RgHeapBlock *pHead;
+
+    pBlock = (struct RgHeapBlock *)pPtr - 1;
+    if (pHeap == 0) {
+        _Error(D_00A52B18, D_00A52D50, 0, D_00A52A68, 316);
+    }
+    if (pPtr == 0) {
+        RgError(D_00A52D60, D_00A52A68, 320, source_file, line);
+    }
+    if (!_IsAllocated(pBlock)) {
+        if (_IsCollectMagicString(pBlock)) {
+            RgHeapDump_sub(pHeap, D_00A52D80, D_00A52A68, 329);
+            RgError(D_00A52D90, D_00A52A68, 335, pPtr, source_file, line,
+                    pBlock->module, pBlock->line);
+        } else {
+            RgError(D_00A52DD0, D_00A52A68, 339, pPtr, source_file, line);
+        }
+    }
+    if (!_IsCollectMagicString(pBlock)) {
+        RgError(D_00A52DF0, D_00A52A68, 345, pPtr, source_file, line);
+    }
+    if (!RgHeapIsInSelf(pHeap, pBlock)) {
+        RgError(D_00A52E28, D_00A52A68, 350, pHeap, source_file, line);
+    }
+    pAlloc = pHeap->pAlloc;
+    pNext = pAlloc->next;
+    if (pNext == pAlloc) {
+        if (pBlock != pNext) {
+            RgError(D_00A52E58, D_00A52A68, 359);
+        }
+        pHeap->pAlloc = 0;
+    } else if (pAlloc == pBlock) {
+        _Unlink(pBlock);
+        pHeap->pAlloc = pNext;
+    } else {
+        _Unlink(pBlock);
+    }
+    _UnmarkAlloc(pBlock);
+    pHead = pHeap->pHead;
+    if (pHead == 0) {
+        pHeap->pHead = _SetHeapHead(pBlock, pBlock->size);
+    } else {
+        p = pHead;
+        _Link(pBlock, 0, 0);
+        do {
+            if (pBlock < p) {
+                _InsertPre(p, pBlock);
+                if (pBlock < pHeap->pHead) {
+                    pHeap->pHead = pBlock;
+                }
+                break;
+            }
+            p = p->next;
+        } while (p != pHeap->pHead);
+        if (pBlock->next == 0) {
+            _InsertPre(pHeap->pHead, pBlock);
+        }
+        _MergeBlocks(pHeap->pHead);
+    }
+}
+
+int RgHeapIsInSelf(RgHeap *pHeap, void *pPtr)
+{
+    if (pHeap == 0) {
+        assert_prog(D_00A52B18, D_00A52A68, 403);
+    }
+    if ((u32)pPtr >= (u32)pHeap->top && (u32)pPtr < (u32)pHeap->top + pHeap->size) {
+        return 1;
+    }
+    return 0;
+}
 
 int RgHeapIsInvalidMemory(RgHeap *pHeap, void *pPtr)
 {

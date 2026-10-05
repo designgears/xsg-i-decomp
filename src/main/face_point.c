@@ -34,11 +34,96 @@ typedef struct CullingMap {
     CullingVolume volumes[10];
     s32 count;
     s32 source;
+    s32 model;
 } CullingMap;
 
 extern CullingMap s_inCulling;
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", culling_matrix);
+typedef struct AVec4 { float v[4]; } __attribute__((aligned(16))) AVec4;
+extern void xglMatrixStackUnit(void);
+extern void xglMatrixStackTrans(const float translation[4]);
+extern void xglMatrixStackRotX(float angle);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackRotZ(float angle);
+extern void xglMatrixStackScale(const float scale[4]);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void xglMatrixStackInverse(void);
+extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
+extern const AVec4 D_004D4A10;
+extern const AVec4 D_004D4A20;
+extern const AVec4 D_004D4A30;
+extern const AVec4 D_004D4A40;
+extern const AVec4 D_004D4A50;
+typedef struct CullingVolumeView {
+    float position[4];
+    float rotation[4];
+    float scale[4];
+    Vector4 normal;
+    float matrix[4][4];
+    float inverse[4][4];
+    Vector4 corners[4];
+} CullingVolumeView;
+static inline void apply_point(void *destination, float (*matrix)[4], const void *vector)
+{
+    __asm__ __volatile__(
+        "lqc2 vf31, 0(%0)\n\t"
+        "lqc2 vf27, 0(%1)\n\t"
+        "lqc2 vf28, 16(%1)\n\t"
+        "lqc2 vf29, 32(%1)\n\t"
+        "lqc2 vf30, 48(%1)\n\t"
+        "vmulax.xyz ACC, vf27, vf31x\n\t"
+        "vmadday.xyz ACC, vf28, vf31y\n\t"
+        "vmaddaz.xyz ACC, vf29, vf31z\n\t"
+        "vmaddw.xyz vf31, vf30, vf0w\n\t"
+        "sqc2 vf31, 0(%2)\n\t"
+        :
+        : "r"(vector), "r"(matrix), "r"(destination)
+        : "memory"
+    );
+}
+
+static void culling_matrix(CullingVolumeView *volume)
+{
+    AVec4 axis;
+    AVec4 points[4];
+    float (*matrix)[4] = volume->matrix;
+    Vector4 *dst;
+
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(volume->position);
+    xglMatrixStackRotY(volume->rotation[1]);
+    xglMatrixStackRotX(volume->rotation[0]);
+    xglMatrixStackRotZ(volume->rotation[2]);
+    xglMatrixStackScale(volume->scale);
+    xglMatrixStackSave(matrix);
+    xglMatrixStackInverse();
+    xglMatrixStackSave(volume->inverse);
+    axis = D_004D4A10;
+    dst = &volume->normal;
+    __asm__ __volatile__(
+        "lqc2 vf31, 0(%0)\n\t"
+        "lqc2 vf27, 0(%1)\n\t"
+        "lqc2 vf28, 16(%1)\n\t"
+        "lqc2 vf29, 32(%1)\n\t"
+        "lqc2 vf30, 48(%1)\n\t"
+        "vmulax.xyz ACC, vf27, vf31x\n\t"
+        "vmadday.xyz ACC, vf28, vf31y\n\t"
+        "vmaddz.xyz vf31, vf29, vf31z\n\t"
+        "sqc2 vf31, 0(%2)\n\t"
+        :
+        : "r"(&axis), "r"(matrix), "r"(dst)
+        : "memory"
+    );
+    xglVectorNormal(dst, dst);
+    points[0] = D_004D4A20;
+    points[1] = D_004D4A30;
+    points[2] = D_004D4A40;
+    points[3] = D_004D4A50;
+    apply_point(&volume->corners[0], matrix, &points[0]);
+    apply_point(&volume->corners[1], matrix, &points[1]);
+    apply_point(&volume->corners[2], matrix, &points[2]);
+    apply_point(&volume->corners[3], matrix, &points[3]);
+}
 
 /* Empty in this build: the original body is a bare return. */
 static void culling_cell_disp(void)
@@ -95,7 +180,31 @@ void _FacePoint(Vector4 *destination, const Vector4 *lineStart, const Vector4 *l
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", _CheckLine);
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", plane_from_points);
+extern void xglVectorOuter(Vector4 *destination, const Vector4 *left, const Vector4 *right);
+extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
+
+static void plane_from_points(const Vector4 *p0, const Vector4 *p1, const Vector4 *p2, Vector4 *plane)
+{
+    Vector4 edge2;
+    Vector4 edge1;
+    Vector4 normal;
+
+    edge2.x = p1->x - p0->x;
+    edge2.y = p1->y - p0->y;
+    edge2.z = p1->z - p0->z;
+
+    edge1.x = p2->x - p0->x;
+    edge1.y = p2->y - p0->y;
+    edge1.z = p2->z - p0->z;
+
+    xglVectorOuter(&normal, &edge2, &edge1);
+    xglVectorNormal(&normal, &normal);
+
+    plane->x = normal.x;
+    plane->y = normal.y;
+    plane->z = normal.z;
+    plane->w = -(normal.x * p0->x + normal.y * p0->y + normal.z * p0->z);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", setup_occlusion);
 
@@ -119,7 +228,25 @@ void xglCullingCheckSeparateInit(s32 camera)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingCheckSeparate);
+s32 check_occlusion(CullingVolume *volume, s32 camera, s32 model);
+
+s32 xglCullingCheckSeparate(s32 camera, s32 model)
+{
+    s32 r = (u8)camera >> 8;
+    s32 i = r;
+
+    while (i < s_inCulling.count) {
+        s32 t = i * 0xB;
+        i++;
+        r = check_occlusion((CullingVolume *)((t << 5) + (int)s_inCulling.volumes), camera, model);
+        if (r != 0)
+            break;
+        t = 0;
+        goto next;
+next:;
+    }
+    return r;
+}
 
 /*
  * Declared as an incomplete array, not a scalar: cc1 -G8 would otherwise
@@ -134,7 +261,26 @@ s32 xglCullingExist(void) {
     return D_00969760[0];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapLastCheck);
+extern void nmlModelSetMapLastEntry(int model_id, int entry);
+
+void xglCullingMapLastCheck(void)
+{
+    s32 i;
+    s32 e;
+
+    if (s_inCulling.source == 0) {
+        return;
+    }
+    i = 0;
+loop:
+    if (i < 12) {
+        e = ((s32 *)s_inCulling.source)[i++];
+        if (e >= 0) {
+            nmlModelSetMapLastEntry(s_inCulling.model, e);
+            goto loop;
+        }
+    }
+}
 
 void xglCullingMapInit(void)
 {
@@ -183,7 +329,22 @@ INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapSet);
 
 INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapCreate);
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapDisp);
+void xglCullingMapDisp(void)
+{
+    CullingMap *m = &s_inCulling;
+    s32 n = m->count;
+    s32 i;
+    u8 *p;
+
+    if (n > 0) {
+        p = (u8 *)m + 0x20;
+        i = n;
+        do {
+            ((void (*)(void *))culling_cell_disp)(p);
+            p += 0x160;
+        } while (--i != 0);
+    }
+}
 
 void xglCullingIgnore(void)
 {

@@ -154,8 +154,125 @@ void GameSnapShotExecute(int quality, int flags) {
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_snap_shot", GameSnapShotSaveThumbnail);
+typedef struct {
+    unsigned char unmodeled_00[0x22];
+    unsigned short framebuffer_page;
+} GameSnapShotRenderState;
+extern GameSnapShotRenderState sRender;
+extern unsigned long long TestPrim_0_00366EA0[];
+extern void SyncDCache(void *start, void *end);
+extern int sceGsSyncPath(int mode, int timeout);
+extern void xglDmaDirectNormal(unsigned int channel, unsigned int address, unsigned int count);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_snap_shot", GameSnapShotSave);
+unsigned int GameSnapShotSaveThumbnail(int quality, unsigned int buffer) {
+    GameSnapShotJpegParams params;
 
-INCLUDE_ASM("asm/main/nonmatchings/game_snap_shot", GameSnapShotSaveFile);
+    TestPrim_0_00366EA0[8] = 0x801C0;
+    TestPrim_0_00366EA0[10] = 0x24020000 | (sRender.framebuffer_page << 5) |
+                              ((unsigned long long)0xc800 << 0x13);
+    SyncDCache(TestPrim_0_00366EA0, TestPrim_0_00366EA0 + 24);
+    sceGsSyncPath(0, 0);
+    xglDmaDirectNormal(2, (unsigned int) TestPrim_0_00366EA0, 12);
+    sceGsSyncPath(0, 0);
+    memset(&params, 0, 0x20);
+    params.output_buffer = buffer;
+    params.source_x = 0x3800;
+    params.source_y = 8;
+    params.width = 0x80;
+    params.height = 0x70;
+    params.destination_x = 0;
+    params.destination_y = 0;
+    if (quality < 0) {
+        params.quality.luma_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_LUMA].quality;
+        params.quality.cb_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_CB].quality;
+        params.quality.cr_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_CR].quality;
+    } else {
+        params.quality.luma_quality = quality;
+        params.quality.cb_quality = quality;
+        params.quality.cr_quality = 0;
+    }
+    xglJpegEncode(&params);
+    return params.output_size;
+}
+
+int GameSnapShotSave(int quality, unsigned char *buffer) {
+    GameSnapShotJpegParams params;
+    GameSnapShotMetadata metadata;
+    unsigned char *header;
+    unsigned int size;
+    unsigned long long display_origin;
+    unsigned int source_x;
+
+    header = buffer;
+    buffer[0] = 0xFF;
+    buffer[1] = 0xD8;
+    buffer[2] = 0xFF;
+    buffer[3] = 0xEE;
+    buffer += 6;
+    memset(&metadata, 0, SNAPSHOT_METADATA_SIZE);
+    xglClockRead(&metadata.clock_reading);
+    xglClockUInt2DayTime(&metadata.game_time, 0);
+    metadata.game_state_value = GameLoopState.game_state_value;
+    *(GameSnapShotMetadata *)buffer = metadata;
+    buffer += SNAPSHOT_METADATA_SIZE;
+    size = GameSnapShotSaveThumbnail(50, (unsigned int)buffer);
+    header[5] = size + 0xA4;
+    header[4] = (int)(size + 0xA4) >> 8;
+    buffer += size;
+    size += 0xA6;
+    memset(&params, 0, 0x20);
+    params.output_buffer = (unsigned int)buffer;
+    display_origin = DrawEnv.display_origin;
+    source_x = display_origin & 0x1ff;
+    params.source_x = source_x << 5;
+    params.source_y = (short) ((display_origin >> 16) & 0x3f);
+    params.width = SNAPSHOT_WIDTH;
+    params.height = SNAPSHOT_HEIGHT;
+    params.destination_x = 0;
+    params.destination_y = 0;
+    if (quality < 0) {
+        params.quality.luma_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_LUMA].quality;
+        params.quality.cb_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_CB].quality;
+        params.quality.cr_quality = quality_table[~quality].channel[SNAPSHOT_CHANNEL_CR].quality;
+    } else {
+        params.quality.luma_quality = quality;
+        params.quality.cb_quality = quality;
+        params.quality.cr_quality = 0;
+    }
+    printf(D_004C01C8, snapname, params.output_buffer);
+    printf(D_004C01E8, params.quality.luma_quality,
+           params.quality.cb_quality, params.quality.cr_quality);
+    xglJpegEncode(&params);
+    return size + params.output_size;
+}
+
+int GameSnapShotSaveFile(int number, void *buffer, unsigned int size) {
+    int descriptor;
+
+    if (number >= 0) {
+        snapnameno[3] = number % 10 + '0';
+        number /= 10;
+        snapnameno[2] = number % 10 + '0';
+        number /= 10;
+        snapnameno[1] = number % 10 + '0';
+        number /= 10;
+        snapnameno[0] = number % 10 + '0';
+    }
+    descriptor = sceOpen(snapname, SNAPSHOT_OPEN_FLAGS);
+    sceWrite(descriptor, buffer, size);
+    sceClose(descriptor);
+    number = (snapnameno[3] - '0') * 1000 + (snapnameno[2] - '0') * 100 +
+             (snapnameno[1] - '0') * 10 + (snapnameno[0] - '0');
+    if (snapnameno[3] == '9') {
+        if (snapnameno[2] == snapnameno[3]) {
+            snapnameno[1]++;
+            snapnameno[2] = '0';
+        } else {
+            snapnameno[2]++;
+        }
+        snapnameno[3] = '0';
+        return number;
+    }
+    snapnameno[3]++;
+    return number;
+}

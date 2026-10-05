@@ -210,7 +210,38 @@ void Java_xeno_Camera_create__I(JavaEnvironment *environment,
 
 INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", CAMERA_transSPL);
+static void CAMERA_transSPL(int selection, JavaEnvironment *environment,
+                            CameraSplineRequest *request, void *result)
+{
+    CameraWork *camera = request->camera;
+    unsigned int weight_mode = request->weight_mode;
+    unsigned char *camera_bytes = (unsigned char *)camera;
+    const JavaFloatArray *sample_array;
+
+    (void)environment;
+    (void)result;
+    sample_array = request->samples;
+    (void)xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_SPLINE;
+    camera->frame[CAMERA_CHANNEL_TRANSLATE] = 0;
+
+    switch (selection) {
+    case 0:
+        SPL_init((CameraSpline *)(camera_bytes + 0x30), weight_mode,
+                 sample_array->elements, sample_array->length >> 2, 3);
+        ((CameraSpline *)(camera_bytes + 0x30))->first_key =
+            (unsigned short)-1;
+        break;
+    case 1:
+        SPL_init((CameraSpline *)(camera_bytes + 0x30), weight_mode + 2,
+                 sample_array->elements, sample_array->length >> 2, 3);
+        ((CameraSpline *)(camera_bytes + 0x30))->first_key =
+            request->first_key;
+        ((CameraSpline *)(camera_bytes + 0x30))->last_key =
+            request->last_key;
+        break;
+    }
+}
 
 void Java_xeno_Camera_transSPL__aFI(JavaEnvironment *environment,
                                     CameraSplineRequest *request,
@@ -228,7 +259,38 @@ void Java_xeno_Camera_transSPL__aFIII(JavaEnvironment *environment,
 
 INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", CAMERA_viewSPL);
+static void CAMERA_viewSPL(int selection, JavaEnvironment *environment,
+                           CameraSplineRequest *request, void *result)
+{
+    CameraWork *camera = request->camera;
+    unsigned int weight_mode = request->weight_mode;
+    unsigned char *camera_bytes = (unsigned char *)camera;
+    const JavaFloatArray *sample_array;
+
+    (void)environment;
+    (void)result;
+    sample_array = request->samples;
+    (void)xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_SPLINE;
+    camera->frame[CAMERA_CHANNEL_VIEW] = 0;
+
+    switch (selection) {
+    case 0:
+        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+                 sample_array->elements, sample_array->length >> 2, 3);
+        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+            (unsigned short)-1;
+        break;
+    case 1:
+        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+                 sample_array->elements, sample_array->length >> 2, 3);
+        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+            request->first_key;
+        ((CameraSpline *)(camera_bytes + 0x4d0))->last_key =
+            request->last_key;
+        break;
+    }
+}
 
 void Java_xeno_Camera_viewSPL__aFI(JavaEnvironment *environment,
                                    CameraSplineRequest *request,
@@ -262,13 +324,65 @@ void Java_xeno_Camera_rollSPL__aFI(JavaEnvironment *environment,
     ((CameraSpline *)(camera_bytes + 0x970))->first_key = (unsigned short)-1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setRotate__FFF);
+extern void TCAMERA_setRotate(StudioCamera *camera, float pitchDegrees, float yawDegrees, float rollDegrees);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setRoll__F);
+void Java_xeno_Camera_setRotate__FFF(JavaEnvironment *environment,
+                                     union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    StudioCamera *studio_camera;
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setTranslate__FFF);
+    (void)environment;
+    camera = args[0].p;
+    studio_camera = xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_IDLE;
+    TCAMERA_setRotate(studio_camera, args[1].f, args[2].f, args[3].f);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setFov__F);
+extern void TCAMERA_setRoll(StudioCamera *camera, float degrees);
+
+void Java_xeno_Camera_setRoll__F(JavaEnvironment *environment,
+                                 union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    StudioCamera *studio_camera;
+
+    (void)environment;
+    camera = args[0].p;
+    studio_camera = xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_ROLL] = CAMERA_MODE_IDLE;
+    TCAMERA_setRoll(studio_camera, args[1].f);
+}
+
+extern void TCAMERA_setTranslate(StudioCamera *camera, float x, float y, float z);
+
+void Java_xeno_Camera_setTranslate__FFF(JavaEnvironment *environment,
+                                     union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    StudioCamera *studio_camera;
+
+    (void)environment;
+    camera = args[0].p;
+    studio_camera = xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_IDLE;
+    TCAMERA_setTranslate(studio_camera, args[1].f, args[2].f, args[3].f);
+}
+
+extern void TCAMERA_setFov(StudioCamera *camera, float degrees);
+
+void Java_xeno_Camera_setFov__F(JavaEnvironment *environment,
+                                 union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    StudioCamera *studio_camera;
+
+    (void)environment;
+    camera = args[0].p;
+    studio_camera = xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_FOV] = CAMERA_MODE_IDLE;
+    TCAMERA_setFov(studio_camera, args[1].f);
+}
 
 extern const float D_004D83D4;
 
@@ -289,7 +403,20 @@ void Java_xeno_Camera_getFov__(JavaEnvironment *environment,
               / D_004D83D4 * 180.0f;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setView__FFF);
+extern void TCAMERA_setView(StudioCamera *camera, float x, float y, float z);
+
+void Java_xeno_Camera_setView__FFF(JavaEnvironment *environment,
+                                     union { int i; float f; void *p; } *args)
+{
+    CameraWork *camera;
+    StudioCamera *studio_camera;
+
+    (void)environment;
+    camera = args[0].p;
+    studio_camera = xglStudioGetCamera2(camera->camera_id);
+    camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_IDLE;
+    TCAMERA_setView(studio_camera, args[1].f, args[2].f, args[3].f);
+}
 
 extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
 extern SceneString *loadConstString(const char *bytes, int length);
@@ -336,13 +463,146 @@ INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAngle__IFFFF);
 
 INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAnglePers__IFFFFF);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFHokan__IFF);
+typedef struct {
+    unsigned char unmodeled_00[0x50];
+    float hokan0; /* +0x50 */
+    float hokan1; /* +0x54 */
+    unsigned char unmodeled_58[0x48];
+} CfCameraDefineEntry;
+extern CfCameraDefineEntry CfCameraDefine[];
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFLock__IIFFF);
+void Java_xeno_Camera_setCFHokan__IFF(JavaEnvironment *environment,
+                                      union { int i; float f; void *p; } *args)
+{
+    int id;
+    int start;
+    int end;
+    float a;
+    float b;
+    unsigned char *state;
+    CfCameraDefineEntry *p;
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFOffset__IFFFIFIF);
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    a = args[2].f;
+    b = args[3].f;
+    p = &CfCameraDefine[start];
+    for (; start < end; start++) {
+        p->hokan0 = a;
+        p->hokan1 = b;
+        p++;
+    }
+    state = (unsigned char *)&GameLoopState;
+    state[0xc1] |= 0x40;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setMode__I);
+void Java_xeno_Camera_setCFLock__IIFFF(JavaEnvironment *environment,
+                                       union { int i; float f; void *p; } *args)
+{
+    int id;
+    int start;
+    int end;
+    int mode;
+    float x;
+    float y;
+    float z;
+    unsigned char *state;
+    CfCameraDefineEntry *p;
+
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    mode = args[2].i;
+    x = args[3].f;
+    y = args[4].f;
+    z = args[5].f;
+    p = &CfCameraDefine[start];
+    for (; start < end; start++) {
+        *(int *)((unsigned char *)p + 0x4c) = mode;
+        *(float *)((unsigned char *)p + 0x40) = x;
+        *(float *)((unsigned char *)p + 0x44) = y;
+        *(float *)((unsigned char *)p + 0x48) = z;
+        p++;
+    }
+    state = (unsigned char *)&GameLoopState;
+    state[0xc1] |= 0x40;
+}
+
+void Java_xeno_Camera_setCFOffset__IFFFIFIF(JavaEnvironment *environment,
+                                            union { int i; float f; void *p; short s; } *args)
+{
+    int id;
+    int start;
+    int end;
+    float v[3];
+    short a;
+    float b;
+    short c;
+    float d;
+    unsigned char *state;
+    CfCameraDefineEntry *p;
+
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    p = &CfCameraDefine[start];
+    a = args[5].s;
+    b = args[6].f;
+    c = args[7].s;
+    d = args[8].f;
+    for (; start < end; start++) {
+        *(unsigned char *)p = 0;
+        *(float *)((unsigned char *)p + 0x10) = v[0];
+        *(float *)((unsigned char *)p + 0x14) = v[1];
+        *(float *)((unsigned char *)p + 0x18) = v[2];
+        *(int *)((unsigned char *)p + 0x20) = a;
+        *(float *)((unsigned char *)p + 0x24) = b;
+        *(int *)((unsigned char *)p + 0x28) = c;
+        *(float *)((unsigned char *)p + 0x2c) = d;
+        p++;
+    }
+    state = (unsigned char *)&GameLoopState;
+    state[0xc1] |= 0x40;
+}
+
+typedef struct CameraSetModeArgs {
+    unsigned char unmodeled_00[4];
+    unsigned char mode;
+} CameraSetModeArgs;
+
+void Java_xeno_Camera_setMode__I(JavaEnvironment *environment,
+                                 CameraSetModeArgs *arguments)
+{
+    unsigned char *state;
+
+    (void)environment;
+    state = (unsigned char *)&GameLoopState;
+    state[0xc0] = arguments->mode;
+    state[0xc1] |= 0x40;
+    camera_change(0);
+}
 
 /*
  * The game loop mode byte, GameLoopState+0xc0. Java_xeno_Camera_getMode__
@@ -364,7 +624,35 @@ void Java_xeno_Camera_getMode__(JavaEnvironment *environment, void *arguments, i
 
 INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFPedestal__IFFFFFFFF);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFPedestalHokan__II);
+void Java_xeno_Camera_setCFPedestalHokan__II(JavaEnvironment *environment,
+                                             union { int i; float f; void *p; } *args)
+{
+    int id;
+    int start;
+    int end;
+    int on;
+    CfCameraDefineEntry *p;
+
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    on = args[2].i;
+    p = &CfCameraDefine[start];
+    for (; start < end; start++) {
+        if (on) {
+            ((unsigned char *)p)[1] |= 1;
+        } else {
+            ((unsigned char *)p)[1] &= 0xfe;
+        }
+        p++;
+    }
+}
 
 void Java_xeno_Camera_changeID__III(JavaEnvironment *environment, CameraChangeIDArgs *arguments)
 {
@@ -374,7 +662,30 @@ void Java_xeno_Camera_changeID__III(JavaEnvironment *environment, CameraChangeID
 
 INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setFog__IFFFFIIII);
 
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_resetFog__I);
+void Java_xeno_Camera_resetFog__I(JavaEnvironment *environment,
+                                  union { int i; float f; void *p; } *args)
+{
+    int id;
+    int start;
+    int end;
+    CfCameraDefineEntry *p;
+
+    (void)environment;
+    id = args[1].i;
+    if (id < 0) {
+        start = 0;
+        end = 0x21;
+    } else {
+        start = id;
+        end = id + 1;
+    }
+    p = &CfCameraDefine[start];
+    for (; start < end; start++) {
+        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)p + 0x60) : "memory");
+        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)p + 0x70) : "memory");
+        p++;
+    }
+}
 
 void Java_xeno_Camera_setClipRange__FF(JavaEnvironment *environment,
                                        CameraSetClipRangeArgs *arguments,

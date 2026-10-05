@@ -13,7 +13,7 @@ static int BCD2INT(unsigned char x);
 
 /* extract (below) is still INCLUDE_ASM; declare it so its callers do not see
  * an implicit declaration. */
-static void extract(void *destination, void *source, int byte_count);
+static int extract(void *destination, void *source, int byte_count);
 
 extern int sceCdStRead(int sectors, void *buffer, int mode, int *result);
 extern int sceRead(int descriptor, void *buffer, int bytes);
@@ -117,7 +117,18 @@ void xglCdPowerOffCB(void)
     LW[0x34] = 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", extract);
+extern void xglArxExtract(void *destination, void *source);
+
+static int extract(void *destination, void *source, int byte_count)
+{
+    if (((int *)source)[0] == 0x585241 && ((int *)source)[3] == 0) {
+        xglArxExtract(destination, source);
+    } else if (destination != source) {
+        for (; byte_count > 0; byte_count -= 4) {
+            *((int *)destination)++ = *((int *)source)++;
+        }
+    }
+}
 
 static int queue_next(void)
 {
@@ -378,7 +389,24 @@ int xglCdGetFileData(const char *path, CdFilePosition *file_position)
     return (xglCdGetFilePos(file_position, path, xglCdDummyCallback) != 0) ? 0 : -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdGetFileSize);
+int xglCdGetFileSize(const char *path)
+{
+    CdFilePosition pos;
+    int mode;
+
+    if (xglCdGetFilePos(&pos, path, xglCdDummyCallback) == 0) {
+        return -1;
+    }
+    if (pos.unmodeled_04[0x20] != 0) {
+        mode = pos.unmodeled_04[0x20];
+        if (mode >= 0) {
+            if (mode < 3) {
+                sceClose(*(int *)&pos.unmodeled_04[0x24]);
+            }
+        }
+    }
+    return *(int *)&pos.unmodeled_04[0x28];
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdReadFilePart);
 
@@ -545,7 +573,41 @@ void xglCdStreamParamInit(CdStreamParam *param)
     param->ring.buffer = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", FileSelectListReload);
+extern char listname_7[];
+typedef struct FileSelectList {
+    char pad0[0x10];
+    char path[0x100];
+    unsigned char *buffer;
+    unsigned int size;
+} FileSelectList;
+
+static void FileSelectListReload(FileSelectList *list)
+{
+    char name[256];
+    unsigned int i;
+    unsigned char *q;
+    unsigned char *p;
+    char *s;
+    char *d;
+    int fd;
+
+    q = list->buffer;
+    for (i = 0; i < list->size; i++)
+        *q++ = 0;
+    d = name;
+    for (s = list->path; *s != 0; s++)
+        *d++ = *s;
+    for (s = listname_7; *s != 0; s++)
+        *d++ = *s;
+    *d = 0;
+    fd = sceOpen(name, 1);
+    sceRead(fd, list->buffer, list->size);
+    sceClose(fd);
+    for (p = list->buffer; *p != 0; p++) {
+        if (*p == '\n')
+            *p = 0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", FileSelectSub);
 

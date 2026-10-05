@@ -74,11 +74,43 @@ void endPrintExtFuncPack(void (*func)(EndPrintContext *context, int param), int 
     entry->func = NULL;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintInfoSet);
+extern void xglPrimAddGifTagDirect(XglPacket *packet, const void *data, int count);
+static inline u64 *endSetReg(u64 *p, u64 data, u64 addr)
+{
+    p[0] = data;
+    p[1] = addr;
+    return p + 2;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endSpriteSet);
+static void endPrintInfoSet(EndPrintContext *context, int clut, int flag)
+{
+    u64 *p;
+    int n;
+    unsigned short f;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", subPrintSprite);
+    p = &context->scratch[2];
+    p = endSetReg(p, 0, 0x3F);
+    p = endSetReg(p, 0x44, 0x42);
+    p = endSetReg(p, 0x3FFFF0, 8);
+    n = 3;
+    f = flag & 1;
+    if (f) {
+        if (clut) {
+            p[0] = ((u64)((unsigned int)clut >> 6) << 37) | 0x2000000629343C00;
+        } else {
+            p[0] = 0x5DC00BC00;
+        }
+        n = 4;
+        p[1] = 6;
+        p += 2;
+    }
+    p = endSetReg(p, 0x5000D, 0x47);
+    n++;
+    p = context->scratch;
+    p[0] = n + 0x1000000000000000;
+    p[1] = 0xE;
+    xglPrimAddGifTagDirect(context->packet, p, n + 1);
+}
 
 /*
  * uv_clut: a fixed table of UV/CLUT entries; only the CLUT id at +0x04 of
@@ -90,6 +122,27 @@ typedef struct UvClutEntry {
 } UvClutEntry;
 
 extern UvClutEntry uv_clut[26];
+
+typedef struct { int pad; unsigned short u, v; } EndUvEnt;
+
+void endSpriteSet(unsigned char *data, int kind)
+{
+    int idx = data[0x10];
+    EndUvEnt *tbl = *(EndUvEnt **)uv_clut[data[0x11]].unmodeled_00;
+
+    if (kind & 1) {
+        *(unsigned short *)(data + 8) = tbl[idx].u;
+        *(unsigned short *)(data + 0xA) = tbl[idx].v;
+    }
+    if (kind & 2) {
+        data[0xC] = data[0xD] = data[0xE] = data[0xF] = 0x80;
+    }
+    if (kind & 4) {
+        data[0x13] = data[0x12] = 0;
+    }
+}
+
+INCLUDE_ASM("asm/main/nonmatchings/end_print", subPrintSprite);
 
 /*
  * The sprite descriptor subPrintSprite (still asm) draws; only the CLUT
@@ -249,7 +302,31 @@ static void DrawBackReset(DrawBackContext *context)
     sceVif1PkAddDirectDataN(context->packet, scratch, 4);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", ScreenClear);
+typedef union { u64 d; unsigned int w[2]; } ScU;
+typedef struct { unsigned int v[8]; } ScS;
+
+static void ScreenClear(DrawBackContext *context)
+{
+    ScU *scratch;
+
+    scratch = (ScU *)context->scratch;
+    ((u64*)scratch)[0] = ((u64)0x40AB4000 << 32) | 0x8001;
+    ((u64*)scratch)[1] = 0x551E;
+    ((u64*)scratch)[2] = 0x31001;
+    ((u64*)scratch)[3] = 0x47;
+    ((u64*)scratch)[4] = 0;
+    ((u64*)scratch)[5] = 0;
+    scratch = (ScU *)&context->scratch[6];
+    ((unsigned int *)scratch)[0] = 0x6FF8;
+    ((unsigned int *)scratch)[1] = 0x71F8;
+    ((unsigned int *)scratch)[4] = 0x8FF8;
+    ((unsigned int *)scratch)[5] = 0x8DF8;
+    ((unsigned int *)scratch)[2] = 0;
+    ((unsigned int *)scratch)[3] = 0;
+    ((unsigned int *)scratch)[6] = 0;
+    ((unsigned int *)scratch)[7] = 0;
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, 5);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/end_print", ZScissor);
 
@@ -259,7 +336,23 @@ INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintBackSprite2);
 
 INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintEtherLine);
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintExtFunc);
+extern int xglFontPrintExtFunc(unsigned int flags, void (*draw)(EndPrintContext *context, int param), int arg);
+extern void (*func_tbl_4[])(EndPrintContext *context, int param);
+extern void (*func_tbl2_5[])(EndPrintContext *context, int param);
+
+int endPrintExtFunc(unsigned int flags, int id, int param)
+{
+    if (id < 100) {
+        if (id < 18) {
+            endPrintExtFuncPack(func_tbl_4[id], param);
+        }
+    } else {
+        id -= 100;
+        if (id < 7) {
+            xglFontPrintExtFunc(flags, func_tbl2_5[id], param);
+        }
+    }
+}
 
 /* VIF1 direct-mode environment for endPrintDirectFrameCopy; only element 4
  * (the tag word written below) is touched here. */

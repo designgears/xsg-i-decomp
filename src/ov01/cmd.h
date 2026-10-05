@@ -321,7 +321,7 @@ typedef struct ThinkProcess {
  */
 extern short thinkRegNo(short pc);
 extern int thinkRegGet(int regIndex);
-extern void thinkRegSet(int regIndex, int value);
+extern void thinkRegSet(unsigned short regIndex, unsigned short value);
 extern int cmdNum(short pc);
 extern int cmdThinksetSub(ThinkProcess *proc);
 extern void cmdAtktblSortSub(ThinkProcess *proc);

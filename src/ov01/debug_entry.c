@@ -75,7 +75,105 @@ char *debugThinkRegName(int reg_code)
     return D_00A5AA40;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugThinkPrint);
+extern int printf(const char *format, ...);
+extern short thinkRegNo(short pc);
+extern short thinkRegGet(unsigned short regIndex);
+extern short cmdNum(short pc);
+extern char *thinkStrTbl[];
+extern char *thinkExpTbl[];
+extern const char D_00A50570[];
+extern const char D_00A50580[];
+extern const char D_00A50588[];
+extern const char D_00A505A0[];
+extern const char D_00A505A8[];
+extern const char D_00A505B0[];
+extern const char D_00A505C0[];
+extern const char D_00A505D0[];
+extern const char D_00A505D8[];
+extern const char D_00A505E8[];
+
+void debugThinkPrint(int cmd, short pc, short jmp)
+{
+    int r, a, b, c;
+    char *name;
+
+    printf(D_00A50570, pc, thinkStrTbl[cmd]);
+    switch (cmd) {
+    case 1:
+    case 2:
+        printf(D_00A50580, jmp);
+        break;
+    case 4:
+        pc += 2;
+        r = cmdNum(pc);
+        pc += 2;
+        b = cmdNum(pc);
+        c = cmdNum(pc + 2);
+        printf(D_00A50588, r, thinkExpTbl[b], c, jmp);
+        break;
+    case 5:
+    case 6:
+        a = cmdNum(pc + 2);
+        printf(D_00A505A0, a, jmp);
+        break;
+    case 7:
+        pc += 2;
+        r = thinkRegNo(pc);
+        a = cmdNum(pc + 2);
+        name = debugThinkRegName(r);
+        printf(D_00A505A8, name, a);
+        break;
+    case 8:
+    case 9:
+    case 18:
+    case 19:
+        pc += 2;
+        printf(D_00A505B0, debugThinkRegName(thinkRegNo(pc)), cmdNum(pc));
+        break;
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 20:
+        pc += 2;
+        r = thinkRegNo(pc);
+        pc += 2;
+        a = cmdNum(pc);
+        jmp = cmdNum(pc - 2);
+        name = debugThinkRegName(r);
+        printf(D_00A505C0, name, a, jmp);
+        break;
+    case 21:
+        a = cmdNum(pc + 2);
+        printf(D_00A505D0, a);
+        break;
+    case 22:
+        r = thinkRegNo(pc + 2);
+        jmp = thinkRegGet(r);
+        name = debugThinkRegName(r);
+        printf(D_00A505B0, name, jmp);
+        break;
+    case 23:
+    case 24:
+        pc += 2;
+        r = thinkRegNo(pc);
+        pc += 2;
+        a = cmdNum(pc);
+        b = cmdNum(pc + 2);
+        jmp = thinkRegGet(r);
+        name = debugThinkRegName(r);
+        printf(D_00A505D8, name, a, b, jmp);
+        break;
+    default:
+        printf(D_00A505E8);
+        r = 0;
+        break;
+    }
+}
 
 extern int debugStatDisp(void);
 extern int debugSpecDisp(void);
@@ -92,10 +190,10 @@ void debugBattle(int page)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugStatDisp);
-
 extern int unitTblGet(int side, BattleUnit ***table);
+
 extern int unitNoGet(ObjectTask *unit);
+
 extern char *debugNameGet(int charaId);
 
 /*
@@ -142,15 +240,76 @@ typedef struct DebugUnitPara {
 
 extern DebugUnitPara *calcUPGet(ObjectTask *unit);
 
-extern const char D_00A506C0[]; /* "** UNIT PARA **\n" */
-extern const char D_00A50668[]; /* "** %d) %s LV=%d HP=%d/%d EP=%d/%d\n" */
+ /* "** UNIT PARA **\n" */
+extern const char D_00A50668[];
+
+ /* " WCT=%3d/%3d AGLPLUS=%3d ETHERDIS=%04X WPNATKADJ=%3d\n" */
+extern int printf(const char *format, ...);
+
+extern const char D_00A50650[];
+extern const char D_00A50690[];
+extern const char D_00A50698[];
+extern const char D_00A505E8[];
+extern const char D_00A506A0[];
+extern const char D_00A506A8[];
+extern const char D_00A506B0[];
+extern const char D_00A506B8[];
+
+int debugStatDisp(void)
+{
+    BattleUnit **units;
+    DebugUnitPara *up;
+    unsigned char *base;
+    unsigned char *p;
+    int count;
+    int i;
+    int j;
+    int k;
+
+    count = unitTblGet(2, &units);
+    printf(D_00A50650);
+    for (i = 0; i < count; i++) {
+        if (units[i] != 0) {
+            up = calcUPGet((ObjectTask *)units[i]);
+            base = (unsigned char *)up + 0xC;
+            printf(D_00A50668, unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
+                   up->level, up->hp, up->maxHp, up->ep, up->maxEp);
+            printf(D_00A50690);
+            for (j = 0; j < 8; j++) {
+                printf(D_00A50698, ((unsigned short *)((unsigned char *)up + 0xAC))[j]);
+            }
+            printf(D_00A505E8);
+            printf(D_00A506A0);
+            for (j = 0; j < 8; j++) {
+                printf(D_00A50698, ((unsigned short *)(base + 0xB0))[j]);
+            }
+            printf(D_00A505E8);
+            printf(D_00A506A8);
+            for (j = 0; j < 8; j++) {
+                printf(D_00A50698, ((unsigned short *)((unsigned char *)up + 0x24))[j]);
+            }
+            printf(D_00A505E8);
+            printf(D_00A506B0);
+            for (j = 0; j < 8; j++) {
+                p = base + j * 16 + 0xC0;
+                for (k = 0; k < 16; k++) {
+                    if (*p != 0) {
+                        printf(D_00A506B8, *p);
+                    }
+                    p++;
+                }
+            }
+            printf(D_00A505E8);
+        }
+    }
+    return 1;
+}
+
+extern const char D_00A506C0[]; /* "** %d) %s LV=%d HP=%d/%d EP=%d/%d\n" */
 extern const char D_00A506D8[]; /* " STR=%3d VIT=%3d EATK=%3d EDEF=%3d HIT=%3d EVA=%3d\n" */
 extern const char D_00A50710[]; /* " AGL=%3d BC =%3d BP = %3d MVTYPE=%1d C_RATE=%3d\n" */
 extern const char D_00A50748[]; /* " WEAK=%04X SPEC=%04X INFO=%04X OBJSTAT=%04X\n" */
-extern const char D_00A50778[]; /* " WCT=%3d/%3d AGLPLUS=%3d ETHERDIS=%04X WPNATKADJ=%3d\n" */
-extern int printf(const char *format, ...);
-
-int debugParaDisp(void)
+extern const char D_00A50778[];int debugParaDisp(void)
 {
     BattleUnit **units;
     DebugUnitPara *up;
@@ -176,7 +335,43 @@ int debugParaDisp(void)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugSpecDisp);
+typedef struct DebugSpecSlot {
+    short id;
+    short spd;
+    short pow;
+    short agl;
+    short use;
+    short kill;
+} DebugSpecSlot;
+extern char *dataPlChaGet(int cid);
+extern const char D_00A507B0[];
+extern const char D_00A507C8[];
+
+int debugSpecDisp(void)
+{
+    BattleUnit **units;
+    DebugUnitPara *up;
+    DebugSpecSlot *sp;
+    int count;
+    int i;
+    int j;
+
+    count = unitTblGet(2, &units);
+    printf(D_00A507B0);
+    for (i = 0; i < count; i++) {
+        if (units[i] != 0 && !(*(int *)((ObjectTask *)units[i])->work & 0x40)) {
+            up = calcUPGet((ObjectTask *)units[i]);
+            sp = (DebugSpecSlot *)(dataPlChaGet(up->charaId) + 0x48);
+            printf(D_00A50668, unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
+                   up->level, up->hp, up->maxHp, up->ep, up->maxEp);
+            for (j = 0; j < 8; j++) {
+                printf(D_00A507C8, j, sp->id, sp->spd, sp->pow, sp->agl, sp->use, sp->kill);
+                sp++;
+            }
+        }
+    }
+    return 1;
+}
 
 extern int plMuteki; /* debug menu: player invincibility flag */
 
@@ -515,9 +710,64 @@ int configYadoya(void) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", valUD);
+int valUD(int *value, int min, int max, int step)
+{
+    int old;
+    int pad;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", valLR);
+    old = *value;
+    pad = ((u16 *)&PadData)[0x16];
+    if (pad & 0x4000) {
+        *value += step;
+        if (*value > max) {
+            *value = min;
+        }
+    } else if (pad & 0x1000) {
+        *value -= step;
+        if (*value < min) {
+            *value = max;
+        }
+    }
+    return *value != old;
+}
+
+typedef struct {
+    u8 pad_00[0x2C];
+    u16 trig;
+} PadLR;
+
+int valLR(int *value, int min, int max, int step)
+{
+    int old;
+    int pad;
+
+    old = *value;
+    if (((PadLR *)&PadData)->trig & 0x8) {
+        *value += step * 10;
+        if (*value > max) {
+            *value = min;
+        }
+    }
+    if (((PadLR *)&PadData)->trig & 0x4) {
+        *value -= step * 10;
+        if (*value < min) {
+            *value = max;
+        }
+    }
+    pad = ((PadLR *)&PadData)->trig;
+    if (pad & 0x2000) {
+        *value += step;
+        if (*value > max) {
+            *value = min;
+        }
+    } else if (pad & 0x8000) {
+        *value -= step;
+        if (*value < min) {
+            *value = max;
+        }
+    }
+    return *value != old;
+}
 
 extern int equipId;
 

@@ -177,8 +177,6 @@ extern void nmlModelSetZwrite(int enabled);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_model", MenuModelMemorySet);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_model", MenuModelMemoryGet);
-
 /*
  * Partial layout of the menu-model "memory" state buffer (main/tu165),
  * recovered from MenuModelMenuMotionCheck's own access: only the state code
@@ -200,20 +198,24 @@ typedef struct MenuModelMemoryStateBuffer {
 
 extern MenuModelMemoryStateBuffer MenuModelMemoryState;
 
+void *MenuModelMemoryGet(int arg0, int id) {
+    int i;
+    int off;
+    for (i = 0, off = 0; i < 16; i++) {
+        unsigned char *p = (unsigned char *)&MenuModelMemoryState + off;
+        if (p[0xC] == 0 && p[0xD] == id) {
+            return MenuModelMemoryState.unmodeled_0C + off;
+        }
+        off += 0x1C;
+    }
+    return 0;
+}
+
 void MenuModelMemoryInit(void *base, int size) {
     memset(&MenuModelMemoryState, 0, sizeof(MenuModelMemoryState));
     MenuModelMemoryState.base = base;
     MenuModelMemoryState.size = size;
     MenuModelMemoryState.state = -1;
-}
-
-INCLUDE_ASM("asm/main/nonmatchings/menu_model", MenuModelResourceInit);
-
-int MenuModelMenuMotionCheck(void) {
-    if ((MenuModelMemoryState.state >= 10) && ((MenuModelMemoryState.state < 13) || (MenuModelMemoryState.state == 20))) {
-        return 1;
-    }
-    return 0;
 }
 
 /*
@@ -245,6 +247,45 @@ typedef struct MenuModelResourceStateBuffer {
 } MenuModelResourceStateBuffer;
 
 extern MenuModelResourceStateBuffer MenuModelResourceState;
+
+typedef struct {
+    short id;
+    short pad;
+    int a;
+    int b;
+} MenuModelResEntry;
+typedef struct {
+    int count;
+    int unk4;
+    MenuModelResEntry entries[16];
+    int unkC8;
+} MenuModelResourceStateT;
+#define RS (*(MenuModelResourceStateT *)&MenuModelResourceState)
+
+void MenuModelResourceInit(void)
+{
+    MenuModelResourceStateT *s = &RS;
+    int off = 0;
+    int i = 15;
+    char *pa = (char *)&s->entries[0].a;
+    char *pb = (char *)&s->entries[0].b;
+    do {
+        *(int *)(pa + off) = 0;
+        ((MenuModelResourceStateT *)((char *)s + off))->entries[0].id = 0;
+        *(int *)(pb + off) = 0;
+        off += 0xC;
+    } while (--i >= 0);
+    s->unk4 = 0;
+    s->unkC8 = 0;
+    s->count = 0;
+}
+
+int MenuModelMenuMotionCheck(void) {
+    if ((MenuModelMemoryState.state >= 10) && ((MenuModelMemoryState.state < 13) || (MenuModelMemoryState.state == 20))) {
+        return 1;
+    }
+    return 0;
+}
 
 int MenuModelMenuMotionGet(void) {
     int handle;

@@ -102,6 +102,13 @@ static void _DisposeDriver(XrgParticleDriver *driver)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_particle", _Calc);
 
+typedef union XrgParticleRectQ {
+    Quadword q;
+    int i[4];
+} XrgParticleRectQ;
+
+extern RgDrawView *s_pCurView_00A511F4;
+
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_particle", _Disp_00A49318);
 
 extern RgHeap *InstanceOfRgHeap(void);
@@ -247,7 +254,70 @@ void XrgParticleDriverPassTime(XrgParticleDriver *pDrv, float elapsed)
     pDrv->m_uReqCalcNum = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_particle", _DrawDriver);
+extern const char D_00A58FE8[];
+extern const char D_00A58FF8[];
+extern RgDrawView *RgDrawStudioGetView(void *pStudio);
+extern void *RgBxxGetXtx(void *pBxx);
+extern void nmlModelDirectSendXtx(int modelId, void *data);
+extern long long XrgBxxPs2Tex0(void *texture);
+typedef struct XrgParticleDrawPicView {
+    unsigned char unmodeled_00[0x2C];
+    int u;
+    int v;
+    int w;
+    int h;
+    unsigned char unmodeled_3C[0x1C];
+    void *bxx;
+} XrgParticleDrawPicView;
+static void _Disp(struct XrgParticle *pPoints, int count, long long tex0,
+                  XrgParticleRectQ *rect);
+
+void _DrawDriver(XrgParticleDriver *driver, void *pStudio)
+{
+    XrgParticleRectQ rect[4];
+    RgDrawView *view;
+    XrgParticleDrawPicView *pic;
+    XrgParticleDispReq *req;
+    void *curBxx;
+    unsigned int i;
+    long long tex0;
+    int w, h;
+
+    curBxx = 0;
+    if (driver == 0) {
+        assert_prog(D_00A58F20, D_00A58F30, 459);
+    }
+    if (pStudio == 0) {
+        assert_prog(D_00A58FE8, D_00A58F30, 460);
+    }
+    view = RgDrawStudioGetView(pStudio);
+    if (view == 0) {
+        assert_prog(D_00A58FF8, D_00A58F30, 462);
+    }
+    s_pCurView_00A511F4 = view;
+    for (i = 0; i < driver->m_uReqDispNum; i++) {
+        req = &driver->dispReq[i];
+        pic = (XrgParticleDrawPicView *)req->pPic;
+        if (pic->bxx != curBxx) {
+            curBxx = pic->bxx;
+            nmlModelDirectSendXtx(view->projectionMode, RgBxxGetXtx(curBxx));
+        }
+        tex0 = XrgBxxPs2Tex0(pic);
+        rect[0].q = 0;
+        rect[0].i[0] = pic->u * 16 + 8;
+        rect[0].i[1] = pic->v * 16 + 8;
+        rect[1].q = rect[0].q;
+        rect[2].q = rect[0].q;
+        rect[3].q = rect[0].q;
+        w = pic->w * 16 - 16;
+        h = pic->h * 16 - 16;
+        rect[3].i[0] += w;
+        rect[1].i[0] += w;
+        rect[3].i[1] += h;
+        rect[2].i[1] += h;
+        _Disp(req->pPoints, req->count, tex0, rect);
+    }
+}
 
 static void _ClearReqDisp(XrgParticleDriver *driver)
 {
@@ -274,7 +344,38 @@ void XrgParticleDriverDisp(XrgParticleDriver *driver)
              (void (*)(XrgParticleDriver *, void *))_ClearReqDisp, 2, -2);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_particle", CreateArrayOfXrgParticle);
+extern RgHeap *InstanceOfRgHeapData(void);
+typedef union XrgParticleQ {
+    Quadword q;
+    float f[4];
+} XrgParticleQ;
+typedef struct XrgParticleView {
+    XrgParticleQ v[5];
+} XrgParticleView;
+
+XrgParticle *CreateArrayOfXrgParticle(unsigned int num)
+{
+    XrgParticleView *array;
+    XrgParticleView *p;
+    unsigned int i;
+
+    array = RgHeapAlloc(InstanceOfRgHeapData(), num * sizeof(XrgParticleView),
+                        D_00A58F30, 524);
+    if (array == 0) {
+        assert_prog(D_00A58FA0, D_00A58F30, 526);
+    }
+    p = array;
+    for (i = 0; i < num; i++) {
+        p->v[0].q = 0;
+        p->v[1].q = 0;
+        p->v[2].q = 0;
+        p->v[3].q = 0;
+        p->v[4].q = 0;
+        p->v[0].f[3] = 1.0f;
+        p++;
+    }
+    return (XrgParticle *)array;
+}
 
 extern RgHeap *InstanceOfRgHeapData(void);
 extern void RgHeapFree(RgHeap *heap, void *pointer, const char *source_file,

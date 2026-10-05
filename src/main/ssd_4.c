@@ -8,7 +8,31 @@
 extern int DIntr(void);
 extern int EIntr(void);
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_4", SsdInitMemoryManager);
+typedef struct { char pad[0x1C0]; void *first; unsigned end, size; } SsdMMWork;
+typedef struct { int next; void *end; char flag; char x; char pad[2]; unsigned tag; } SsdMMHead;
+
+void SsdInitMemoryManager(unsigned start, unsigned end)
+{
+    unsigned lo = start;
+    unsigned hi = end & ~0x3F;
+    SsdMMWork *w;
+    SsdMMHead *p;
+
+    if (lo & 0x3F) {
+        lo = (lo + 0x3F) & ~0x3F;
+        hi -= 0x40;
+    }
+    w = (SsdMMWork *)&RssdWork;
+    w->first = (void *)lo;
+    w->end = lo + hi;
+    w->size = hi;
+    p = (SsdMMHead *)lo;
+    p->flag = 0x81;
+    p->tag = 0x504F544D;
+    p->end = (void *)(lo + 0x40);
+    p->x = 0;
+    p->next = 0;
+}
 
 /*
  * iSsdNewMemoryPtr is this TU's own low-address block allocator (its body is
@@ -27,7 +51,47 @@ void *SsdNewMemoryPtr(int size, int tag)
     return ptr;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_4", iSsdNewMemoryPtr);
+extern void SsdClearMemory(void *buffer, int size);
+
+void *iSsdNewMemoryPtr(int size, int tag)
+{
+    SsdMemoryBlock *next;
+    SsdMemoryBlock *blk;
+    SsdMMHead *h;
+    char *buf;
+    int need;
+    int len;
+
+    need = ((size + 0x3F) & ~0x3F) + 0x40;
+    blk = RssdWork.first_block;
+    for (;;) {
+        next = blk->next;
+        if (next != 0) {
+            len = (int)next - blk->end;
+            if (len < need) {
+                blk = next;
+                continue;
+            }
+            goto found;
+        }
+        break;
+    }
+    len = (int)((SsdMMWork *)&RssdWork)->end - blk->end;
+    if (len < need)
+        return 0;
+found:
+    h = (SsdMMHead *)((blk->end + 0x3F) & ~0x3F);
+    buf = (char *)h + 0x40;
+    h->tag = tag;
+    h->flag = 2;
+    h->end = buf + size;
+    h->next = 0;
+    h->x = 0;
+    SsdClearMemory(buf, size);
+    ((SsdMemoryBlock *)h)->next = blk->next;
+    blk->next = (SsdMemoryBlock *)h;
+    return buf;
+}
 
 /*
  * iSsdNewMemoryPtr2 is this TU's own high-address block allocator (its body
@@ -62,7 +126,20 @@ void SsdDisposeMemoryPtr(void *ptr)
     EIntr();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_4", iSsdDisposeMemoryPtr);
+void iSsdDisposeMemoryPtr(void *ptr)
+{
+    void **blk = (void **)((char *)ptr - 0x40);
+    void **prev = (void **)RssdWork.first_block;
+    void **cur = *prev;
+
+    while (cur != blk) {
+        if (cur == 0)
+            return;
+        prev = cur;
+        cur = *cur;
+    }
+    *prev = *blk;
+}
 
 /*
  * Returns the payload size recorded in a sound-memory allocation header:
@@ -78,7 +155,36 @@ int SsdGetBlockMemorySize(void *ptr)
     return block->end - (int)block;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_4", SsdGetMemoryFreeSize);
+static inline int ssdTailSize(void *w, SsdMemoryBlock *b)
+{
+    return (*(int *)((char *)w + 0x1C4) - b->end) & ~0x3F;
+}
+
+int SsdGetMemoryFreeSize(void)
+{
+    SsdMemoryBlock *block;
+    SsdMemoryBlock *next;
+    SsdMemoryBlock *tmp;
+    int best = 0;
+    int size;
+
+    DIntr();
+    block = (SsdMemoryBlock *)RssdWork.first_block;
+    next = block->next;
+    if (next != 0) {
+        do {
+            size = ((int)next - block->end) & ~0x3F;
+            block = next;
+            tmp = block->next;
+            next = tmp;
+            if (best < size) best = size;
+        } while (tmp != 0);
+    }
+    size = ssdTailSize(&RssdWork, block);
+    if (best < size) best = size;
+    EIntr();
+    return best;
+}
 
 int SsdGetMemoryBlocks(void)
 {
@@ -100,7 +206,50 @@ int SsdGetMemoryBlocks(void)
     return count;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_4", SsdCopyMemory);
+void SsdCopyMemory(void *destination, void *source, int size)
+{
+    int *dst32 = destination;
+    unsigned int *src32 = source;
+    unsigned char *dst8;
+    unsigned char *src8;
+    long count;
+    long a, b, c, d;
+
+    count = size >> 4;
+    if (count != 0) {
+        do {
+            a = src32[0];
+            b = src32[1];
+            c = src32[2];
+            d = src32[3];
+            src32 += 4;
+            dst32[0] = a;
+            dst32[1] = b;
+            dst32[2] = c;
+            dst32[3] = d;
+            dst32 += 4;
+            count--;
+        } while (count != 0);
+    }
+
+    count = (size >> 2) & 3;
+    if (count != 0) {
+        do {
+            *dst32++ = *src32++;
+            count--;
+        } while (count != 0);
+    }
+
+    count = size & 3;
+    if (count != 0) {
+        src8 = (unsigned char *)src32;
+        dst8 = (unsigned char *)dst32;
+        do {
+            *dst8++ = *src8++;
+            count--;
+        } while (count != 0);
+    }
+}
 
 void SsdClearMemory(void *buffer, int size)
 {

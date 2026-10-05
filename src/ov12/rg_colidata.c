@@ -87,7 +87,69 @@ static void _AllocDataMemory(RgColiData *pData, int nCapa)
     pData->m_nTriangles = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_colidata", _CheckIntersectBall);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+static inline void _ColiApply(float *dst, float *mtx, float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf2,0(%2)\n\t"
+        "lqc2 $vf3,0(%1)\n\t"
+        "lqc2 $vf4,16(%1)\n\t"
+        "lqc2 $vf5,32(%1)\n\t"
+        "lqc2 $vf6,48(%1)\n\t"
+        "vmulax.xyzw ACCxyzw,$vf3xyzw,$vf2x\n\t"
+        "vmadday.xyzw ACCxyzw,$vf4xyzw,$vf2y\n\t"
+        "vmaddaz.xyzw ACCxyzw,$vf5xyzw,$vf2z\n\t"
+        "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
+        "sqc2 $vf2,0(%0)"
+        : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+}
+
+static int _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult)
+{
+    RgVector push;
+    RgVector local;
+    RgVector pos;
+    float *sum;
+    float *mtx;
+    float radius;
+    float d;
+    int ret;
+    int i;
+
+    if (pPoly->m_pTriangles == 0 || pPoly->m_nTriangles <= 0) {
+        return 0;
+    }
+    sum = (float *)pResult + 4;
+    XrgClearVector(sum);
+    *(int *)pResult = 0;
+    for (i = 0; i < pPoly->m_nTriangles; i++) {
+        mtx = pPoly->m_pTriangles[i].m_planeMatrix;
+        radius = ((float *)pArg)[4];
+        __asm__ __volatile__(
+            "lqc2 $vf31, 0(%1)\n\t"
+            "sqc2 $vf31, 0(%0)\n\t"
+            : : "r"(pos), "r"(pArg) : "memory");
+        pos[3] = 1.0f;
+        _ColiApply(local, mtx, pos);
+        if (local[3] < -radius || radius < local[3]) {
+            ret = -1;
+        } else if (local[0] >= 0.0f && local[1] >= 0.0f && local[2] >= 0.0f) {
+            ret = 1;
+            d = radius - local[3];
+            push[0] = mtx[3] * d;
+            push[1] = mtx[7] * d;
+            push[2] = mtx[11] * d;
+            push[3] = 0.0f;
+        } else {
+            ret = -2;
+        }
+        if (ret >= 0) {
+            XrgAddVector(sum, sum, push);
+            (*(int *)pResult)++;
+        }
+    }
+    return *(int *)pResult != 0;
+}
 
 static void _InitColiData(RgColiData *pData)
 {
@@ -156,7 +218,35 @@ RgColiData *CreateRgColiData(void)
     return pData;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_colidata", CreateRgColiDataQuadPrism);
+typedef struct { RgVector v[8]; } __attribute__((aligned(8))) QuadPrismVerts;
+typedef struct { int i[6][4]; } __attribute__((aligned(8))) QuadPrismIdx;
+extern const QuadPrismVerts D_00A55590;
+extern const QuadPrismIdx D_00A55610;
+void RgColiDataInitTriangles(RgColiData *pData, int nCapa);
+void RgColiDataAddTriangle(RgColiData *pData, void *pV0, void *pV1, void *pV2);
+
+RgColiData *CreateRgColiDataQuadPrism(float fWidth, float fHeight)
+{
+    RgColiData *pData;
+    QuadPrismVerts verts;
+    QuadPrismIdx idx;
+    int i;
+
+    pData = CreateRgColiData();
+    verts = D_00A55590;
+    idx = D_00A55610;
+    RgColiDataInitTriangles(pData, 12);
+    for (i = 0; i < 8; i++) {
+        verts.v[i][0] *= fWidth;
+        verts.v[i][1] *= fHeight;
+        verts.v[i][2] *= fWidth;
+    }
+    for (i = 0; i < 6; i++) {
+        RgColiDataAddTriangle(pData, verts.v[idx.i[i][0]], verts.v[idx.i[i][2]], verts.v[idx.i[i][1]]);
+        RgColiDataAddTriangle(pData, verts.v[idx.i[i][1]], verts.v[idx.i[i][2]], verts.v[idx.i[i][3]]);
+    }
+    return pData;
+}
 
 void DisposeRgColiData(RgColiData *pData)
 {

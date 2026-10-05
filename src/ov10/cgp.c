@@ -94,7 +94,7 @@ extern int CardPlayCntOpe(CardPlaySide *side, int opeId);
 extern float DisposePos1P[][3];
 extern float OperationPos1P[][3];
 
-extern void CGPDispErrorMessPlus(s8 side, u8 reason, s16 value);
+extern void CGPDispErrorMessPlus(s32 side, u16 reason, s32 value);
 extern s32 CGPCursor2Area(CardGameWork *work);
 extern void xglMatrixUnit(float matrix[4][4]);
 extern void xglMatrixTrans(Matrix4 destination, const Matrix4 source,
@@ -386,7 +386,26 @@ void CGPDispErrorMess3(CardGameWork *work, s32 reason)
     CGPDispErrorMessCore(work, reason, 230, 164, &layout);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPDispErrorMessPlus);
+extern void CardDisp(Matrix4 matrix, s16 card, s32 mode, s32 layer);
+
+void CGPDispErrorMessPlus(s32 side, u16 reason, s32 value)
+{
+    Matrix4 place;
+    float vec[4];
+
+    CGPDispErrorMess3((CardGameWork *) side, reason);
+    xglMatrixUnit(place);
+    vec[3] = 1.0f;
+    vec[0] = -1.5f;
+    vec[1] = 0.2f;
+    vec[2] = 0.3f;
+    xglMatrixTrans(place, (const float (*)[4]) place, vec);
+    vec[1] = 0.8f;
+    vec[0] = 0.8f;
+    vec[2] = 1.0f;
+    xglMatrixScale(place, (const float (*)[4]) place, vec);
+    CardDisp(place, (s16) value, 1, 5);
+}
 
 void CGPDispErrorMess(CardGameWork *work, s32 reason)
 {
@@ -790,7 +809,46 @@ void CardPlayDispInfo(CardGameWork *workAddress)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPChkFaseLock);
+int CGPChkFaseLock(CardGameWork *work)
+{
+    int ret = 1;
+
+    switch ((s16)work->command.phase) {
+    case 1:
+        if (work->flags & 0x40) {
+            ret = 0;
+        }
+        break;
+    case 8:
+        if (work->flags & 0x20) {
+            ret = 0;
+        }
+        break;
+    case 2:
+    case 3:
+    case 11:
+        if ((work->flags & 0x40) || (s16)work->command.phaseTimer >= 3) {
+            ret = 0;
+        }
+        break;
+    case 4:
+    case 9:
+    case 10:
+        if ((work->flags & 0x20) || (s16)work->command.phaseTimer >= 3) {
+            ret = 0;
+        }
+        break;
+    case 0:
+    case 5:
+    case 6:
+    case 7:
+    case 12:
+    case 13:
+        ret = 0;
+        break;
+    }
+    return ret;
+}
 
 /*
  * Register one effect of the card game. The first entry of the work area's
@@ -1076,7 +1134,50 @@ void CDEMatrixSub(float matrix[4][4])
 
 INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CardDispEffect);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPCheckTeMax);
+typedef struct {
+    s16 id;
+    s16 unmodeled_02;
+} CardTeMaxItem;
+typedef struct {
+    s16 state;
+    u8 kind;
+    u8 maxSelect;
+    u8 unmodeled_04;
+    u8 selected;
+    s16 x;
+    s16 y;
+    s16 lines;
+    s16 cursor;
+    u8 unmodeled_0E[2];
+    s16 messId;
+    s16 count;
+    CardTeMaxItem items[40];
+} CardTeMaxList;
+
+int CGPCheckTeMax(CardTeMaxList *list, CardHand *hand)
+{
+    int n;
+    int i;
+
+    n = CardPlayHandCnt(hand);
+    if (n >= 7) {
+    list->kind = 7;
+    list->maxSelect = 0xF;
+    list->x = 0x150;
+    list->y = 0x30;
+    list->lines = 0xE;
+    list->messId = 0xA;
+    list->state = 0;
+    list->selected = 0;
+    list->cursor = 0;
+    list->count = n;
+    for (i = 0; i < n; i++) {
+        list->items[i].id = hand->cards[i];
+    }
+    return -1;
+    }
+    return 0;
+}
 
 void CGPCommFinishSub(CGPCardDefSource *src, CardPlayHand *work, s32 index)
 {
@@ -1102,7 +1203,43 @@ void CGPCommFinishSub(CGPCardDefSource *src, CardPlayHand *work, s32 index)
 
 INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CardGameInit);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPNextTurnSub);
+extern u8 HelpPageList[];
+extern void CardCursorPassive(void *cursor);
+
+void CGPNextTurnSub(CardGameWork *work)
+{
+    work->infoPanelPhase = 0;
+    work->command.phase++;
+    if ((s16)work->command.phase >= 14) {
+        work->command.phase = 0;
+        work->command.turn++;
+        xglSoundEffectNormalID(0x20001, 0);
+    } else if ((s16)work->command.phase == 7) {
+        xglSoundEffectNormalID(0x20001, 0);
+    } else {
+        xglSoundEffectNormalID(6, 0);
+    }
+    *(u16 *)&work->command.unmodeled_20[2] = 45;
+    work->command.phaseTimer = 0;
+    *(u16 *)&work->command.unmodeled_20[0] = work->command.phase + 1;
+    work->command.step = 0;
+    work->unmodeled_59B8[1] = 0;
+    *(u16 *)work->command.unmodeled_0E = 0;
+    CardCursorPassive(&work->cursor);
+    work->cursor.controllingSide = -1;
+    work->cursorMoveStep[0] = 0;
+    work->cursorMoveStep[1] = 0;
+    CGPSetMessage(work, (s16)work->command.phase);
+    CGPSetInterruptMess(work, (s16)work->command.phase + 1);
+    work->unmodeled_59BF[0] = HelpPageList[(s16)work->command.phase];
+    {
+        float b = -20.0f;
+        float a = -0.9f;
+        *(float *)&work->unmodeled_70F4[0] = a;
+        *(float *)&work->unmodeled_70F4[4] = b;
+    }
+    work->command.slideDirection = 0;
+}
 
 /*
  * Swap a disposal slot's stack with a battle slot's and start the ten-frame
@@ -1189,7 +1326,33 @@ void CGPMoveDSBATTLEwork(CardMoveWork *disposal, CardMoveWork *battle)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPequipSub);
+void CGPequipSub(CardGameWork *work, CardPlayHand *hand, CardLayerStack *stack, s32 index)
+{
+    s32 i;
+    s32 n;
+
+    if (stack->layers[1].cardId >= 0) {
+        n = CardPlayJunkCnt(hand);
+        stack->power = work->definitions[stack->layers[0].cardId].basePower;
+        stack->powerLimit = work->definitions[stack->layers[0].cardId].basePower;
+        hand->junkPile[n] = stack->layers[1].cardId;
+    }
+    stack->layers[1].life = work->definitions[hand->cards[index]].operationDuration;
+    if (hand->cards[index] != 0x2C && hand->cards[index] != 0x2F && hand->cards[index] != 0x35) {
+        stack->power = work->definitions[hand->cards[index]].basePower;
+        stack->powerLimit = work->definitions[hand->cards[index]].basePower;
+    }
+    stack->layers[1].state = 0;
+    stack->layers[1].unmodeled_01 = 0;
+    stack->layers[1].boostCount = 0;
+    stack->layers[1].cardId = hand->cards[index];
+    for (i = 0; i < work->definitions[hand->cards[index]].reserveCost; i++) {
+        CardPlayCostCard(hand);
+    }
+    hand->unmodeled_00[0] -= work->definitions[hand->cards[index]].playCost;
+    hand->cards[index] = -1;
+    CardPlayCleanHand(hand);
+}
 
 /*
  * Whether one equipment card may be attached to one weapon card. Both cards

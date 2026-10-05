@@ -251,9 +251,100 @@ int xglHddMcLoad(void *save)
     return xglHddMcUmount();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_hdd", Judge_MakeNewFolder);
+extern int strcmp(const char *left, const char *right);
+extern char D_004DC378[];
+extern char D_004DC380[];
+extern char D_004DC388[];
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_hdd", Judge_MakeNewSavedata);
+static int Judge_MakeNewFolder(void)
+{
+    struct HddDirectoryEntry entry;
+    int descriptor;
+    int result;
+    int count;
+    int i;
+
+    count = 0;
+    result = sceDopen(D_004DC378);
+    if (result < 0)
+        return result;
+    descriptor = result;
+    for (i = 0; i < 0x400; i++) {
+        result = sceDread(descriptor, &entry);
+        if (result <= 0)
+            break;
+        if (strcmp(entry.name, D_004DC380) == 0 || strcmp(entry.name, D_004DC388) == 0)
+            continue;
+        if ((((struct HddIoStat *)&entry.stat)->mode & 0xF000) == 0x1000
+            && ((struct HddIoStat *)&entry.stat)->privateData[0] == 0xFFFF
+            && ((struct HddIoStat *)&entry.stat)->privateData[1] == 0xFFFF) {
+            count++;
+            if (count >= 0x100)
+                break;
+        }
+    }
+    {
+        int closed = sceDclose(descriptor);
+        if (result >= 0)
+            result = closed;
+    }
+    if (result < 0)
+        return result;
+    return count < 0x100;
+}
+
+extern unsigned int strlen(const char *string);
+extern char *strchr(const char *string, int c);
+
+int Judge_MakeNewSavedata(int descriptor, int card)
+{
+    struct HddDirectoryEntry entry;
+    int result;
+    int count;
+    int i;
+    char *prefix;
+    char *p;
+    int length;
+
+    result = 0;
+    count = 0;
+    prefix = (char *)xglMcSetFullPath(card, -1) + 1;
+    if (card < 0) {
+        p = prefix;
+        while (*p != 0)
+            p++;
+        p[-1] = 0;
+    }
+    length = strlen(prefix);
+    for (i = 0; i < 0x400; i++) {
+        result = sceDread(descriptor, &entry);
+        if (result <= 0)
+            break;
+        if (strcmp(entry.name, D_004DC380) == 0 || strcmp(entry.name, D_004DC388) == 0)
+            continue;
+        if (strncmp(entry.name, prefix, length) == 0)
+            continue;
+        if ((((struct HddIoStat *)&entry.stat)->mode & 0xF000) == 0x1000
+            && (((struct HddIoStat *)&entry.stat)->attributes & 0x4000) == 0)
+            continue;
+        if (strchr(entry.name, ':') != 0
+            && (((struct HddIoStat *)&entry.stat)->mode & 0xF000) == 0x2000)
+            continue;
+        if ((((struct HddIoStat *)&entry.stat)->mode & 0xF000) == 0x4000)
+            continue;
+        if (((struct HddIoStat *)&entry.stat)->privateData[0] == 0xFFFF
+            && ((struct HddIoStat *)&entry.stat)->privateData[1] == 0xFFFF)
+            count++;
+    }
+    {
+        int closed = sceDclose(descriptor);
+        if (result >= 0)
+            result = closed;
+    }
+    if (result < 0)
+        return result;
+    return count < 0x3FE;
+}
 
 static int xglHddMcCheckYourSaves(int card)
 {
@@ -361,7 +452,102 @@ static int create_file(int card, int slot, const void *data, int size)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_hdd", xglHddMcCreate);
+extern int sceIoctl2(int handle, int command, const void *input, unsigned int input_size,
+                     void *output, unsigned int output_size);
+extern int sceMkdir(const char *path, int mode);
+extern void xglMcWriteMapName(char *buffer, int slot);
+extern unsigned char tbl_1_004A8AE0[];
+extern char D_004DC390[];
+
+int xglHddMcCreate(struct HddCheckState *state)
+{
+    char path[256];
+    struct HddIoStat stat;
+    struct HddTransferInfo *transfer;
+    int descriptor;
+    int result;
+    int ret;
+
+    ret = -1;
+    xglHddMcUmount();
+    if (sceMount(hdd_mc_path, commonname, 4, 0, 0) < 0)
+        return -1;
+    make_fullpath(path, state->status, -1);
+    if (state->status >= 0 && (descriptor = sceDopen(path)) >= 0) {
+        if (sceDclose(descriptor) < 0) {
+            ret = -0x15;
+            goto end;
+        }
+    } else {
+        result = xglHddMcCheckCore(state);
+        if (result < 0) {
+            ret = -tbl_1_004A8AE0[~result];
+            goto end;
+        }
+        if (result == 1) {
+            if (xglHddMcUmount() < 0)
+                return -0x19;
+            descriptor = sceOpen(commonname, 3);
+            if (descriptor < 0)
+                return -0x10;
+            ret = 0;
+            if (sceIoctl2(descriptor, 0x6801, D_004DC390, 3, 0, 0) < 0)
+                ret = -0x11;
+            if (sceClose(descriptor) < 0)
+                ret = -0x12;
+            if (ret != 0)
+                return ret;
+            if (sceMount(hdd_mc_path, commonname, 4, 0, 0) < 0)
+                return -1;
+        }
+        descriptor = sceDopen(yoursaves);
+        if (descriptor < 0) {
+            if (sceMkdir(yoursaves, 0x1FF) < 0) {
+                ret = -0xA;
+                goto end;
+            }
+        } else if (sceDclose(descriptor) < 0) {
+            ret = -0xC;
+            goto end;
+        }
+        if (state->status < 0)
+            goto end;
+        descriptor = sceDopen(path);
+        if (descriptor < 0) {
+            ret = -0x13;
+            if (descriptor != -2)
+                goto end;
+        } else if (descriptor != -2) {
+            goto close;
+        }
+        if (sceMkdir(path, 0x1FF) < 0) {
+            ret = -0x14;
+            goto end;
+        }
+        stat.attributes = 0xC4A7;
+        if (sceChstat(path, &stat, 2) < 0) {
+            ret = -0x18;
+            goto end;
+        }
+        goto write;
+    close:
+        ret = -0x15;
+        if (sceDclose(descriptor) < 0)
+            goto end;
+    }
+write:
+    transfer = state->transfer;
+    ret = -0x16;
+    xglMcWriteMapName((char *)transfer + 0x40, state->status);
+    if (create_file(state->status, 1, (char *)transfer + 0x40, 0x3C4) >= 0) {
+        ret = -0x17;
+        if (create_file(state->status, 2, (char *)transfer + 0x440, transfer->end - transfer->begin) >= 0)
+            ret = 0;
+    }
+end:
+    xglHddMcUmount();
+    return ret;
+}
 
 int xglHddMcSave(const struct HddSaveRequest *save)
 {

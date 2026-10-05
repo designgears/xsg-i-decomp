@@ -172,11 +172,48 @@ typedef struct JntRootScratch {
     JntRootSlot scale;
 } JntRootScratch;
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", get_fcvpack);
+float FCV2_getPackValue();
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", get_fcvpack_fix);
+void get_fcvpack(float *out, float *def, unsigned char *element, int mask, float t)
+{
+    int i;
+    int one = 1;
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", get_fcvpack_flag);
+    for (i = 0; i < 3; i++) {
+        if (mask & (one << i)) {
+            out[i] = ((float (*)(void *, float))FCV2_getPackValue)(element + 4, t);
+        } else {
+            out[i] = *(float *)((char *)def + (i << 2));
+        }
+    }
+}
+
+void get_fcvpack_fix(float *out, unsigned char *element, int mask, float def, float t)
+{
+    int i;
+    int one = 1;
+
+    for (i = 0; i < 3; i++) {
+        if (mask & (one << i)) {
+            out[i] = ((float (*)(void *, float))FCV2_getPackValue)(element + 4, t);
+        } else {
+            out[i] = def;
+        }
+    }
+}
+
+float FCV2_getPackValue(void *pack);
+
+void get_fcvpack_flag(unsigned char *element, int enable)
+{
+    if (enable & 1) {
+        if (FCV2_getPackValue(element + 4) != 0.0f) {
+            *(int *)(element + 0x38) |= 1;
+        } else {
+            *(int *)(element + 0x38) &= ~1;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_getStaticVal);
 
@@ -268,7 +305,29 @@ INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_getVal2);
 
 INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_getVal_HOGE2);
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", liner_interpolate);
+static void liner_interpolate(float *a, float *b, float t)
+{
+    __asm__ __volatile__(
+        "mfc1 $3, %2\n"
+        "qmtc2.ni $3, $vf31\n"
+        "lqc2 $vf22, 0x30(%0)\n"
+        "lqc2 $vf23, 0x30(%1)\n"
+        "lqc2 $vf19, 0x0(%0)\n"
+        "lqc2 $vf20, 0x10(%0)\n"
+        "lqc2 $vf21, 0x20(%0)\n"
+        "vsub.xyz $vf24, $vf22, $vf23\n"
+        "vmove.w $vf19, $vf0\n"
+        "vmove.w $vf20, $vf0\n"
+        "vmove.w $vf21, $vf0\n"
+        "vmulx.xyz $vf24, $vf24, $vf31x\n"
+        "vadd.xyz $vf24, $vf24, $vf23\n"
+        "sqc2 $vf19, 0x0(%0)\n"
+        "sqc2 $vf20, 0x10(%0)\n"
+        "sqc2 $vf21, 0x20(%0)\n"
+        "sqc2 $vf24, 0x30(%0)\n"
+        "nop\n"
+        : : "r"(a), "r"(b), "f"(t) : "$3", "memory");
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_interpolate);
 
@@ -326,7 +385,45 @@ void *JNT_getAccessories(JntMoveResource *move)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_readAttribute);
+extern char dummyCntFree[];
+extern char dummyName[];
+char *strncpy(char *dst, const char *src, unsigned int n);
+typedef struct JntAttributeWork {
+    unsigned char unmodeled_000[0x7F0];
+    int name_hash;          /* 0x7F0 */
+    unsigned char unmodeled_7f4[0x14];
+    void *count_free;       /* 0x808 */
+    char *name;             /* 0x80C */
+} JntAttributeWork;
+
+void JNT_readAttribute(JntAttributeWork *work, unsigned int *attr)
+{
+    unsigned int accumulated = 4;
+    JntAccessoryRecord *record = (JntAccessoryRecord *)(attr + 1);
+
+    work->count_free = dummyCntFree;
+    work->name = dummyName;
+    dummyName[0] = 0;
+    do {
+        switch (record->type) {
+        case 5:
+            work->count_free = record + 1;
+            break;
+        case 1: {
+            int *data = (int *)(record + 1);
+            work->name_hash = data[0] * 31 + data[1];
+            strncpy(work->name, (char *)data, 8);
+            work->name[8] = 0;
+            break;
+        }
+        }
+        if (record->type == 0) {
+            break;
+        }
+        accumulated += record->size;
+        record = (JntAccessoryRecord *)((unsigned char *)record + record->size);
+    } while (accumulated < *attr);
+}
 
 /* JNT matrix-slot setters.
  *
@@ -378,7 +475,21 @@ INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setMDLMatrix);
 
 INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setModelMatrix);
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_getMoveElement);
+int JNT_getMoveElement(char *p)
+{
+    int i;
+    char *base = p + 0x10;
+    int n = *(unsigned short *)(p + 8);
+    char *e = base + *(int *)base;
+
+    for (i = 0; i < n; i++) {
+        if (*(unsigned short *)e != 1) {
+            return i - 1;
+        }
+        e += 0x40;
+    }
+    return 0;
+}
 
 void *JNT_getRootElement(void *joint)
 {
@@ -386,11 +497,85 @@ void *JNT_getRootElement(void *joint)
     return (unsigned char *)root_element_offset + *root_element_offset;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setModel);
+void JNT_setModel(void *matrix, unsigned char *model)
+{
+    unsigned char *scratch = (unsigned char *)0x70000000;
+    *(void **)(scratch + 0x34) = matrix;
+    *(void **)(scratch + 0x28) = model;
+    *(int *)(scratch + 0x7F0) = 0;
+    if (model == 0) {
+        *(void **)0x70000030 = 0;
+        return;
+    }
+    if (*(unsigned short *)(model + 4) >= 2) {
+        int *attr = (int *)(model + 0x10);
+        JNT_readAttribute((JntAttributeWork *)0x70000000, (unsigned int *)attr);
+        *(void **)0x70000030 = (unsigned char *)attr + *attr;
+        return;
+    }
+    *(void **)0x70000030 = model + 0x10;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setFCurve);
+void FCV2_resetPack(void *pack, void *fcurve);
+typedef struct JntFcvWork0 {
+    unsigned char unmodeled_00[0x38];
+    int flags;      /* 0x38 */
+    short count;    /* 0x3C */
+    unsigned char unmodeled_3e[0xE];
+    float scale0;   /* 0x4C */
+    unsigned char unmodeled_50[0xC];
+    float scale1;   /* 0x5C */
+    unsigned char unmodeled_60[0xC];
+    float scale2;   /* 0x6C */
+    unsigned char unmodeled_70[0x7A8];
+    void *ptr;      /* 0x818 */
+} JntFcvWork0;
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setFCurve2);
+void JNT_setFCurve(void *fcurve, int n)
+{
+    JntFcvWork0 *w = (JntFcvWork0 *)JNT_SCRATCH_BASE;
+    int flags = w->flags;
+    w->count = n;
+    w->scale0 = 1.0f;
+    w->flags = flags | 1;
+    w->scale1 = 1.0f;
+    w->scale2 = 1.0f;
+    if (fcurve == 0) {
+        w->flags = flags | 0x21;
+    } else {
+        FCV2_resetPack((unsigned char *)w + 4, fcurve);
+    }
+    w->ptr = (unsigned char *)w + 0x830;
+}
+
+float FCV2_getPackValue(void *pack);
+typedef struct JntFcvWork {
+    unsigned char unmodeled_00[0x38];
+    int flags;      /* 0x38 */
+    short count;    /* 0x3C */
+    unsigned char unmodeled_3e[0xE];
+    float scale0;   /* 0x4C */
+    unsigned char unmodeled_50[0xC];
+    float scale1;   /* 0x5C */
+    unsigned char unmodeled_60[0xC];
+    float scale2;   /* 0x6C */
+    unsigned char unmodeled_70[0x730];
+    void *buffer;   /* 0x7A0 */
+} JntFcvWork;
+
+void JNT_setFCurve2(void *fcurve, void *buf, int n)
+{
+  JntFcvWork *w = (JntFcvWork *) ((unsigned char *) 0x70000000);
+  int flags;
+  FCV2_resetPack(((unsigned char *) w) + 4, fcurve);
+  flags = w->flags;
+  w->buffer = buf;
+  w->count = n;
+  w->flags = flags | 1;
+  w->scale0 = 1.0f;
+  w->scale1 = 1.0f;
+  w->scale2 = 1.0f;
+}
 
 /* The original commits the output quadword before JR/NOP; form03's
  * unqualified member copy instead commits it in the return delay slot. */
@@ -432,7 +617,34 @@ JntRootStorage JNT_getRootScale(volatile JntRootSlot *destination)
     return value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_addConsumer);
+typedef struct JntConsumerList {
+    int count;
+    int ids[8];
+    void *funcs[8];
+    int flags[8];
+} JntConsumerList;
+
+int JNT_addConsumer(JntConsumerList *list, int id, void *func, int flags)
+{
+    int count = list->count;
+    int slot = -1;
+    int i;
+
+    for (i = 0; i < count; i++) {
+        if (list->ids[i] == id) {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0) {
+        slot = count;
+        list->count = slot + 1;
+    }
+    list->ids[slot] = id;
+    list->funcs[slot] = func;
+    list->flags[slot] = flags;
+    return 0;
+}
 
 /*
  * A joint producer: JNT_initProducer's own evidence is a consumer count, an
@@ -476,7 +688,20 @@ void *JNT_nextElement(void *element)
 
 INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_defaultConsumer);
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_resetHair);
+void JNT_resetHair(void)
+{
+    JntWork *work = (JntWork *)JNT_SCRATCH_BASE;
+    unsigned short *hdr = *(unsigned short **)((char *)work + 0x28);
+    JntStaticChannel *ch;
+    int end;
+
+    work->current_index = hdr[4];
+    end = hdr[4] + hdr[5];
+    ch = *(JntStaticChannel **)((char *)work + 0x30) + hdr[4];
+    while (((JntWork *)JNT_SCRATCH_BASE)->current_index < end) {
+        ch = JNT_getStaticVal2((JntWork *)JNT_SCRATCH_BASE, ch);
+    }
+}
 
 static int JNT_hairID(JntChannelWork *work)
 {

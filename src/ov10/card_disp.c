@@ -86,15 +86,112 @@ void CHPTitleInitSub(CHPTitleList *list, int category)
     list->limit = (s8)raw;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CHPMenuInitSub);
+void CHPMenuInitSub(CHPTitleList *menu, CHPTitleList *title)
+{
+    menu->x = 6; menu->y = 50; menu->rowHeight = 24; menu->cursor = 0; menu->flagA = 0; menu->flagB = 0; menu->flagC = 0; menu->scroll = 0; menu->count = 9; menu->step = 1; menu->limit = 7;
+    CHPTitleInitSub(title, 0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardHelpFileLoad);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CHPMenuBackDispSub);
+extern void nmlModelEntryCard(void *model);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpCurrySet);
+static void CHPMenuBackDispSub(Matrix4 matrix)
+{
+    Matrix4 transformed;
+    Vector4 translation;
+    float left = -1.4184f;
+    float zero = 0.0f;
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpSlide1);
+    translation.x = left;
+    translation.w = 1.0f;
+    translation.z = zero;
+    translation.y = zero;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    nmlModelSetTexture((const char *)0x01CB0000);
+    nmlModelSetPlace((const Vector4 *)transformed);
+    nmlModelSetRenderLevel(2);
+    nmlModelEntryCard((void *)0x01CA2B00);
+    translation.x = 1.4184f;
+    translation.z = zero;
+    translation.y = zero;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    nmlModelSetTexture((const char *)0x01CB0000);
+    nmlModelSetPlace((const Vector4 *)transformed);
+    nmlModelSetRenderLevel(2);
+    nmlModelEntryCard((void *)0x01CA1000);
+    translation.x = left;
+    translation.y = -1.832f;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    nmlModelSetTexture((const char *)0x01CC0050);
+    nmlModelSetPlace((const Vector4 *)transformed);
+    nmlModelSetRenderLevel(2);
+    nmlModelEntryCard((void *)0x01CA4000);
+}
+
+void CardDispHelpCurrySet(Matrix4 matrix)
+{
+    Matrix4 transformed;
+    Vector4 translation;
+    Vector4 scale;
+
+    translation.x = 1.5143f;
+    translation.y = 1.186f;
+    translation.z = 0.0f;
+    translation.w = 1.0f;
+    scale.x = 0.46f;
+    scale.y = 0.46f;
+    scale.z = 1.0f;
+    scale.w = 1.0f;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    xglMatrixScale(transformed, transformed, &scale.x);
+    CardDisp(transformed, 0, 1, 0);
+    translation.y = 0.215f;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    xglMatrixScale(transformed, transformed, &scale.x);
+    CardDisp(transformed, 0x54, 1, 0);
+    translation.y = -0.757f;
+    xglMatrixTrans(transformed, matrix, &translation.x);
+    xglMatrixScale(transformed, transformed, &scale.x);
+    CardDisp(transformed, 0x78, 1, 0);
+}
+
+extern short list16_0[];
+extern short list17_1[];
+extern short list18_2[];
+extern float trans_3[];
+
+void CardDispHelpSlide1(char mode, Matrix4 matrix)
+{
+    Matrix4 transformed;
+    Vector4 scale;
+    int idx;
+
+    scale.x = 0.368f;
+    scale.y = 0.368f;
+    scale.z = 1.0f;
+    scale.w = 1.0f;
+    switch (mode) {
+    case 16:
+        idx = (ChangeCnt = ChangeCnt % 256) / 64;
+        xglMatrixTrans(transformed, matrix, trans_3);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list16_0[idx], 1, 0);
+        break;
+    case 17:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, trans_3);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list17_1[idx], 1, 0);
+        break;
+    case 18:
+        idx = (ChangeCnt = ChangeCnt % 192) / 64;
+        xglMatrixTrans(transformed, matrix, trans_3);
+        xglMatrixScale(transformed, transformed, &scale.x);
+        CardDisp(transformed, list18_2[idx], 1, 0);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispHelpSlide2);
 
@@ -201,7 +298,25 @@ void CardDispFieldPoint(Matrix4 matrix, const float translation[4], int kind)
     nmlModelEntry(cardlex_tbl[kind]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispGun);
+extern const CardHelpPackedVector D_00A4E140;
+extern const CardHelpPackedVector D_00A4E150;
+
+void CardDispGun(Matrix4 matrix)
+{
+    Matrix4 transformed;
+    CardHelpPackedVector translation;
+    CardHelpPackedVector scale;
+
+    translation = D_00A4E140;
+    scale = D_00A4E150;
+    xglMatrixTrans(transformed, (const float (*)[4])matrix,
+                   (const float *)translation.words);
+    xglMatrixScale(transformed, (const float (*)[4])transformed,
+                   (const float *)scale.words);
+    CardDisp(transformed, 0x31, 1, 0);
+    transformed[3][1] -= 1.33;
+    CardDisp(transformed, 0x44, 1, 0);
+}
 
 void CardDispShineCurry(Matrix4 matrix, const float translation[4])
 {
@@ -289,7 +404,23 @@ void CardDispGuno(Matrix4 matrix)
     nmlModelEntry(0x01C88000);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardDispOnce);
+extern const CardHelpPackedVector D_00A4E1B0;
+
+void CardDispOnce(Matrix4 matrix, int card)
+{
+    Matrix4 transformed;
+    CardHelpPackedVector translation;
+    Vector4 scale;
+
+    translation = ((const union { CardHelpPackedVector v; } *)&D_00A4E1B0)->v;
+    scale.x = 0.9f;
+    scale.y = 0.9f;
+    scale.z = 1.0f;
+    scale.w = 1.0f;
+    xglMatrixTrans(transformed, matrix, (const float *)&translation);
+    xglMatrixScale(transformed, transformed, &scale.x);
+    CardDispLight(transformed, (s16)card, 1, 0x20);
+}
 
 void CardDispComm(Matrix4 matrix, int kind)
 {

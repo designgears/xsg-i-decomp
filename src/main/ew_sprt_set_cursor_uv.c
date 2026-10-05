@@ -78,7 +78,41 @@ typedef struct EwContainerWidget {
     unsigned char unmodeled_20[0x08];
 } EwContainerWidget;
 
-INCLUDE_ASM("asm/main/nonmatchings/ew_sprt_set_cursor_uv", EW_sprtSetCursorUV);
+void EW_sprtSetCursorUV(unsigned char *widget, int kind, int index)
+{
+    EwSpriteState *sprite;
+    int u;
+    int v;
+    int mask;
+    int shift;
+
+    sprite = (EwSpriteState *) (widget + 0x10);
+    mask = 3;
+    shift = 2;
+    u = 0x40;
+    v = 0xA0;
+    if (kind == 1)
+        goto done;
+    if (kind >= 2)
+    {
+        u = 0;
+        v = 0xB0;
+        if (kind == 2)
+            goto done;
+        if (kind == 3)
+            goto set;
+    }
+    u = 0;
+    v = 0xC0;
+    mask = 7;
+    shift = 1;
+    goto done;
+set:
+    u = 0x40;
+done:
+    sprite->v = v;
+    sprite->u = u + ((index >> shift) & mask) * 16;
+}
 
 static void frame_init(EwFrameState *frame)
 {

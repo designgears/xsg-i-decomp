@@ -108,9 +108,31 @@ void EXM_SetShakeTime(float time)
     wind->shake_time = time;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/exm_2", EXM_SetDirectionalWind);
+void EXM_SetDirectionalWind(Vector4 *dir)
+{
+    EXM_WindState *w;
 
-INCLUDE_ASM("asm/main/nonmatchings/exm_2", EXM_SetPointWind);
+    w = wind;
+    if (dir != 0) {
+        *(Vector4 *)&w->direction = *dir;
+    } else {
+        __asm__ volatile("");
+    }
+    w->mode = 1;
+}
+
+void EXM_SetPointWind(Vector4 *pos)
+{
+    EXM_WindState *w;
+
+    w = wind;
+    if (pos != 0) {
+        *(Vector4 *)&w->direction = *pos;
+    } else {
+        __asm__ volatile("");
+    }
+    w->mode = 2;
+}
 
 void EXM_SetWindStruct(EXM_WindState *state)
 {

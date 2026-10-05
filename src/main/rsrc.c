@@ -113,7 +113,32 @@ int RSRC_check(RsrcManager *manager, int size)
 
 INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_alloc);
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_searchFile);
+void *RSRC_searchFile(RsrcManager *manager, char *file_name)
+{
+  int index = 0;
+  u16 count = manager->item_count;
+  u32 name_len = strlen(file_name);
+  RsrcItem *item = manager->items;
+  if (count != 0)
+  {
+    char *fname = file_name + name_len;
+    (void) fname;
+    do
+    {
+      if (item->unmodeled_00[4] == 1)
+      {
+        if (strncmp((char *) item->key, file_name, name_len) == 0)
+        {
+          return item->data;
+        }
+      }
+      index++;
+      item++;
+    }
+    while (index < count);
+  }
+  return 0;
+}
 
 static int isLeave(RsrcItem *item)
 {
@@ -187,4 +212,39 @@ void *RSRC_loadFile(RsrcManager *manager, char *file_name)
     return RSRC_loadFile2(manager, rsrcDefaultPath, file_name);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_getDirtyItem);
+RsrcItem *RSRC_getDirtyItem(RsrcManager *manager, u32 min)
+{
+    u16 count = manager->item_count;
+    RsrcItem *item = manager->items;
+    int index;
+
+    if (min == 0) {
+        RsrcItem *best = 0;
+        min = -1;
+        if (count != 0) {
+            index = count;
+            do {
+                index--;
+                if (item->flags & 0x8000) {
+                    u32 v = *(u32 *)item;
+                    if (min >= v) {
+                        min = v;
+                        best = item;
+                    }
+                }
+                item++;
+            } while (index != 0);
+        }
+        return best;
+    }
+    index = 0;
+    if (count != 0) {
+        do {
+            if ((item->flags & 0x8000) && *(u32 *)item >= min)
+                return item;
+            index++;
+            item++;
+        } while (index < count);
+    }
+    return 0;
+}

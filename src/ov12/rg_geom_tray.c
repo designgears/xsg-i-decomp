@@ -272,4 +272,63 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     return hit_count;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_tray", RgGeomTrayCheckBall);
+extern const char D_00A55240[];
+extern const char D_00A55250[];
+static inline void RgGeomTrayApply(float *dst, float *mtx, float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf2,0(%2)\n\t"
+        "lqc2 $vf3,0(%1)\n\t"
+        "lqc2 $vf4,16(%1)\n\t"
+        "lqc2 $vf5,32(%1)\n\t"
+        "lqc2 $vf6,48(%1)\n\t"
+        "vmulax.xyzw ACCxyzw,$vf3xyzw,$vf2x\n\t"
+        "vmadday.xyzw ACCxyzw,$vf4xyzw,$vf2y\n\t"
+        "vmaddaz.xyzw ACCxyzw,$vf5xyzw,$vf2z\n\t"
+        "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
+        "sqc2 $vf2,0(%0)"
+        : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+}
+
+int RgGeomTrayCheckBall(void *pTray, float *pCheck, float *pResult)
+{
+    RgGeomTray *tray = pTray;
+    RgVector clipped;
+    RgVector contact;
+    RgVector start;
+    RgVector end;
+    float *normals;
+    unsigned int i;
+    RgVector pad;
+
+    if (pTray == 0) {
+        assert_prog(D_00A55218, D_00A55228, 0xE2);
+    }
+    if (pCheck == 0) {
+        assert_prog(D_00A55240, D_00A55228, 0xE3);
+    }
+    if (pResult == 0) {
+        assert_prog(D_00A55250, D_00A55228, 0xE4);
+    }
+    __asm__ __volatile__(
+        "lqc2 vf31, 0(%1)\n\t"
+        "sqc2 vf31, 0(%0)\n\t"
+        : : "r"(start), "r"(pCheck + 12) : "memory");
+    __asm__ __volatile__(
+        "lqc2 vf31, 0(%1)\n\t"
+        "sqc2 vf31, 0(%0)\n\t"
+        : : "r"(end), "r"(pCheck + 8) : "memory");
+    RgGeomTrayApply(start, (float *)tray->inverse_local, start);
+    RgGeomTrayApply(end, (float *)tray->inverse_local, end);
+    normals = pResult + 8;
+    ((int *)pResult)[20] = _CalcIntersect(clipped, contact, start, end,
+                                          (RgVector *)normals, tray->width,
+                                          tray->height, pCheck[28]);
+    RgGeomTrayApply(pResult, (float *)tray->local, contact);
+    RgGeomTrayApply(pResult + 4, (float *)tray->local, clipped);
+    for (i = 0; i < ((unsigned int *)pResult)[20]; i++) {
+        normals[i * 4 + 3] = 0.0f;
+        RgGeomTrayApply(normals + i * 4, (float *)tray->local, normals + i * 4);
+    }
+    return ((int *)pResult)[20] != 0;
+}

@@ -17,7 +17,33 @@ int MEfCheckWorkSize(const char *name, int size)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef", MEfCalcAngle);
+void *MEfCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
+{
+    Vector4 delta;
+    float length = 0.0f;
+
+    __asm__ __volatile__(
+        "lqc2 $vf1, 0(%1)\n\t"
+        "lqc2 $vf2, 0(%2)\n\t"
+        "vsub.xz $vf3, $vf2, $vf1\n\t"
+        "vmul.xz $vf4, $vf3, $vf3\n\t"
+        "vaddz.x $vf4, $vf4, $vf4z\n\t"
+        "vsqrt Q, $vf4x\n\t"
+        "vsub.y $vf3, $vf1, $vf2\n\t"
+        "sqc2 $vf3, 0(%3)\n\t"
+        "sqc2 $vf0, 0(%4)\n\t"
+        "vwaitq\n\t"
+        "vaddq.x $vf1, $vf0, Q\n\t"
+        "qmfc2.ni $8, $vf1\n\t"
+        "mtc1 $8, %0"
+        : "+f"(length)
+        : "r"(from), "r"(to), "r"(&delta), "r"(out)
+        : "memory", "$8"
+    );
+    out->x = srsAtan2(delta.y, length);
+    out->y = srsAtan2(delta.x, delta.z);
+    return out;
+}
 
 /*
  * MEfCalcAngleMatrix: recover the yaw/pitch pair of "matrix" from the
@@ -48,9 +74,97 @@ Vector4 *MEfCalcAngleMatrix(Vector4 *out, const Vector4 *matrix)
     return out;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef", MEfGetActorMatrix);
+extern const char D_00A512F0[];
+extern const char D_00A51318[];
+extern const char D_00A51340[];
+extern void *MMathRotateMatrixY(void *out, const void *matrix, float angle);
+extern int ACT_jointGetAccessories(void *actor, unsigned int id);
+static inline void MEfUnitMatrix(void *out)
+{
+    __asm__ __volatile__(
+        "vmr32.xyzw vf1, vf0\n\t"
+        "vmr32.xyzw vf2, vf1\n\t"
+        "vmr32.xyzw vf3, vf2\n\t"
+        "sqc2 vf0, 48(%0)\n\t"
+        "sqc2 vf1, 32(%0)\n\t"
+        "sqc2 vf2, 16(%0)\n\t"
+        "sqc2 vf3, 0(%0)\n\t"
+        :
+        : "r"(out)
+        : "memory"
+    );
+}
+static inline void MEfSetTrans(void *m, void *pos)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf1,0(%1)\n\t"
+        "vmove.w $vf1w,$vf0w\n\t"
+        "sqc2 $vf1,48(%0)\n\t"
+        :
+        : "r"(m), "r"(pos)
+        : "memory"
+    );
+}
+static inline void MEfCopyMatrix(void *d, void *src)
+{
+    __asm__ __volatile__(
+                "lq $8,0(%1)\n\t"
+                "lq $9,16(%1)\n\t"
+                "lq $10,32(%1)\n\t"
+                "lq $11,48(%1)\n\t"
+                "sq $8,0(%0)\n\t"
+                "sq $9,16(%0)\n\t"
+                "sq $10,32(%0)\n\t"
+                "sq $11,48(%0)\n\t"
+                :
+                : "r"(d), "r"(src)
+                : "$8", "$9", "$10", "$11", "memory"
+            );
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef", MEfGetActorCoord);
+void *MEfGetActorMatrix(void *destination, void *actor, u32 coordinate)
+{
+    int joint;
+
+    MEfUnitMatrix(destination);
+
+    if (actor == 0) {
+        MOutputDebugStringWarn(D_00A512F0);
+    } else if (coordinate == (u32)-1) {
+        MMathRotateMatrixY(destination, destination, *(float *)((char *)actor + 0x54));
+        MEfSetTrans(destination, (char *)actor + 0x10);
+    } else if (coordinate == (u32)-2) {
+        MMathRotateMatrixY(destination, destination, *(float *)((char *)actor + 0x54));
+        MEfSetTrans(destination, (char *)actor + 0x10);
+        ((float *)destination)[13] = 1.5f;
+    } else if (coordinate < 0x28) {
+        joint = ACT_jointGetAccessories(actor, coordinate);
+        if (joint < 0) {
+            MOutputDebugStringWarn(D_00A51318, coordinate);
+        } else {
+            MEfCopyMatrix(destination, (char *)(joint << 6) + *(int *)((char *)actor + 0x824));
+        }
+    } else {
+        MOutputDebugStringWarn(D_00A51340, coordinate);
+    }
+    return destination;
+}
+
+Vector4 *MEfGetActorCoord(Vector4 *dst, void *actor, u32 coord)
+{
+    Vector4 matrix[4];
+
+    MEfGetActorMatrix(matrix, actor, coord);
+    __asm__ __volatile__(
+        "lqc2 $vf1,48(%1)\n\t"
+        "vmove.w $vf1w,$vf0w\n\t"
+        "sqc2 $vf1,0(%0)\n\t"
+        :
+        : "r"(dst), "r"(matrix)
+        : "memory"
+    );
+    return dst;
+}
 
 /*
  * Optionally binds the entry's texture, applies its placement matrix, then

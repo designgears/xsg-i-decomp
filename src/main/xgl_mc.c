@@ -168,7 +168,72 @@ void xglMcWriteMapName(char *buffer, int slot)
     buffer[227] = value % 10 + 'O';
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", xglMcSetFullPath);
+extern char base_0_00491770[];
+extern char n_1[];
+extern char n_2[];
+extern char D_0093E0C0[];
+
+/*
+ * xglMcSetFullPath (main:0x0021fed8): builds "<base><card 2 digits>" in
+ * D_0093E0C0, then appends a suffix chosen by `path`: 0 repeats the
+ * prefix, -1 nothing, 1/2 the fixed names n_1/n_2, anything else is a
+ * string appended after a '/'.
+ */
+char *xglMcSetFullPath(int card, char *path)
+{
+    char *s;
+    char *d;
+    char *e;
+
+    s = base_0_00491770;
+    d = D_0093E0C0;
+    while ((*d = *s) != 0) {
+        s++;
+        d++;
+    }
+    if (card < 0) {
+        *d++ = '*';
+    } else {
+        d[1] = card % 10 + '0';
+        d[0] = card / 10 % 10 + '0';
+        d += 2;
+    }
+    switch ((int)path) {
+    case 0:
+        e = d;
+        for (s = D_0093E0C0; s != e; s++, d++) {
+            *d = *s;
+        }
+        *d = 0;
+        break;
+    case 1:
+        s = n_1;
+        while ((*d = *s) != 0) {
+            s++;
+            d++;
+        }
+        break;
+    case 2:
+        s = n_2;
+        while ((*d = *s) != 0) {
+            s++;
+            d++;
+        }
+        break;
+    case -1:
+        *d = 0;
+        break;
+    default:
+        *d++ = '/';
+        s = path;
+        while ((*d = *s) != 0) {
+            s++;
+            d++;
+        }
+        break;
+    }
+    return D_0093E0C0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", execute);
 

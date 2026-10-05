@@ -75,7 +75,27 @@ unsigned char TWSYS_getGRPStatus(int group)
     return groupStatus[group];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWSYS_createComponent);
+TComponent *TWSYS_createComponent(int slotIndex, int kindAndGroup)
+{
+    int i;
+    TComponent *c;
+
+    if (slotIndex < 0) {
+        for (i = 0; i < 4; i++) {
+            c = &tcomponent[i];
+            if (!(c->flags & 0x10)) {
+                slotIndex = i;
+                break;
+            }
+        }
+        if (slotIndex < 0) {
+            return 0;
+        }
+    }
+    c = &tcomponent[slotIndex];
+    c->kindAndGroup = (slotIndex << 8) | kindAndGroup;
+    return c;
+}
 
 void TMENU_updateDefault(TComponent *component);
 void TSLIDER_updateDefault(TComponent *component);
@@ -207,7 +227,18 @@ void STRING_h2zEUC(char *destination, const char *source)
     *destination = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", STRING_toUInt);
+extern char digits[];
+
+void STRING_toUInt(char *dst, int val, int shift)
+{
+    char buf[32];
+    int mask = (1 << shift) - 1;
+    int i = 32;
+    do {
+        buf[--i] = digits[val & mask];
+        val >>= shift;
+    } while (val != 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TW_setPos);
 
@@ -259,7 +290,70 @@ void WIN_initScene(TWindow *window)
     window->height = 0x56;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/twsys_init", TWIN_init2);
+typedef struct TWindowInit2 {
+    unsigned char pad_00[0x10];
+    int flags;                  /* +0x10 */
+    short state;                /* +0x14 */
+    unsigned short kindAndGroup;/* +0x16 */
+    unsigned char pad_18[0x32 - 0x18];
+    short closeState;           /* +0x32 */
+    unsigned char pad_34[0xA4 - 0x34];
+    short a4;                   /* +0xA4 */
+    short line_pitch;           /* +0xA6 */
+    char *a8;                   /* +0xA8 */
+    unsigned char pad_ac[0xF0 - 0xAC];
+    int f0;                     /* +0xF0 */
+    unsigned char pad_f4[0x108 - 0xF4];
+    int x108;                   /* +0x108 */
+    unsigned char pad_10c[0x17C - 0x10C];
+    char **lines;               /* +0x17C */
+    char *x180;                 /* +0x180 */
+    unsigned char x184;
+    unsigned char x185;
+    unsigned char layout_offset;
+    unsigned char line_count;   /* +0x187 */
+    char buf[1];                /* +0x188 */
+} TWindowInit2;
+
+void TWIN_init2(TWindowInit2 *window)
+{
+    int kind;
+    int i;
+    char *p;
+    int fl;
+
+    window->x108 = 0;
+    window->x185 = 0;
+    window->x184 = 0;
+    window->a4 = 0;
+    kind = window->kindAndGroup & 0xF;
+    switch (kind) {
+    case 3:
+    default:
+        WIN_initCF((TWindow *)window);
+        break;
+    case 4:
+        WIN_initScene((TWindow *)window);
+        break;
+    }
+    p = window->buf;
+    window->lines = (char **)p;
+    p += window->line_count * 4;
+    for (i = 0; i < window->line_count; i++) {
+        window->lines[i] = p;
+        *p = 0;
+        p += 0xC0;
+    }
+    window->a8 = p;
+    *p = 0;
+    p += 0x80;
+    window->x180 = p;
+    fl = 0x54;
+    window->state = 1;
+    window->flags = fl;
+    window->closeState = 0;
+    window->f0 = 0;
+}
 
 int WIN_checkActiveWindow(void)
 {

@@ -9,7 +9,17 @@ typedef struct MenuTecData {
 extern MenuTecData *MenuTecDataBuf;
 void *MenuTecDataGet(int chrNo);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecSaveDataGet);
+int PartyDataGet(void);
+typedef struct { char d[32]; } TecSave_t;
+
+int MenuTecSaveDataGet(int chrNo)
+{
+    unsigned short c = chrNo;
+    TecSave_t *p = (TecSave_t *)(PartyDataGet() + 0x3C);
+    if ((unsigned)(c - 1) >= 8)
+        return 0;
+    return (int)&p[c - 1];
+}
 
 void *MenuTecDataGet(int characterNo)
 {
@@ -22,13 +32,61 @@ void *MenuTecDataGet(int characterNo)
     return &records[characterIndex - 1];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", BitToTecNo);
+int BitToTecNo(int b)
+{
+    unsigned short bit = b;
+    if ((unsigned)(bit - 0x2D) < 8) return bit - 0x2D;
+    if ((unsigned)(bit - 0x35) < 7) return bit - 0x35;
+    if ((unsigned)(bit - 0x3C) < 8) return bit - 0x3C;
+    if ((unsigned)(bit - 0x44) < 8) return bit - 0x44;
+    if ((unsigned)(bit - 0x4C) < 7) return bit - 0x4C;
+    if ((unsigned)(bit - 0x53) < 8) return bit - 0x53;
+    if ((unsigned)(bit - 0x5B) < 8) return bit - 0x5B;
+    return -1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecNextTLevPointGet);
+int MenuTecNextTLevPointGet(int chrNo, int point)
+{
+    unsigned char *data = MenuTecDataGet(chrNo);
+    unsigned char *save = (unsigned char *)MenuTecSaveDataGet(chrNo);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecTLevLimitCheck);
+    if (point < 0)
+        return 0;
+    return ((unsigned short *)(data + 0x10))[point] + data[point + 8] * (save[point] + 1);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecTLevUp);
+int MenuTecTLevLimitCheck(int chrNo, int point)
+{
+    struct { unsigned char lv[0x18]; unsigned char max[0x18]; } *s;
+
+    s = (void *)MenuTecSaveDataGet(chrNo);
+    if (point < 0)
+        return 0;
+    return s->lv[point] < s->max[point];
+}
+
+void MenuTecTLevUp(int chrNo, int point)
+{
+    int maskedChrNo;
+    int saveData;
+    int *unit;
+    int *unitBase;
+    int points;
+    unsigned char *techLevel;
+
+    maskedChrNo = chrNo & 0xFFFF;
+    saveData = MenuTecSaveDataGet(maskedChrNo);
+    unit = func_A19210(maskedChrNo);
+
+    if (point >= 0) {
+        points = MenuTecNextTLevPointGet(chrNo, point);
+        unitBase = unit + 3;
+        techLevel = (unsigned char *)(saveData + point);
+        *techLevel = *techLevel + 1;
+        *(short *)((char *)unitBase + point * 12 + 64) = (short)(*techLevel * 3 - 3);
+        unitBase[0] -= points;
+    }
+}
 
 int MenuTecNextSpeedPointGet(int chrNo, int point)
 {
@@ -97,7 +155,21 @@ int MenuTecWaitLimitCheck(int chrNo, int point)
     return limitReached;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecWaitUp);
+void MenuTecWaitUp(int chrNo, int point)
+{
+    int maskedChrNo = chrNo & 0xFFFF;
+    int saveData = MenuTecSaveDataGet(chrNo);
+    int *unit = func_A19210(maskedChrNo);
+
+    if (point >= 0) {
+        int cost = MenuTecNextWaitPointGet(chrNo, point);
+        int idx = point + 0x10;
+        unsigned char *p = (unsigned char *)saveData + idx;
+        *p = *p - 1;
+        *(unsigned short *)((char *)unit + point * 0xC + 0x4E) = *p;
+        unit[3] -= cost;
+    }
+}
 
 typedef struct MenuWorkState {
     unsigned char unmodeled_00[0x40];
@@ -125,9 +197,35 @@ int MenuTecCharTLevUpCheck(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecCharSpeedUpCheck);
+int MenuTecCharSpeedUpCheck(void)
+{
+    int *characterData;
+    int nextPoint;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecCharWaitUpCheck);
+    if (MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+        characterData = func_A19210(MenuWork.characterNo);
+        nextPoint = MenuTecNextSpeedPointGet(MenuWork.characterNo, MenuWork.point);
+        if (characterData[3] >= nextPoint)
+            return 1;
+    }
+
+    return 0;
+}
+
+int MenuTecCharWaitUpCheck(void)
+{
+    int *characterData;
+    int nextPoint;
+
+    if (MenuTecWaitLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+        characterData = func_A19210(MenuWork.characterNo);
+        nextPoint = MenuTecNextWaitPointGet(MenuWork.characterNo, MenuWork.point);
+        if (characterData[3] >= nextPoint)
+            return 1;
+    }
+
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecPasMain);
 
@@ -151,7 +249,24 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_tec", subListChange_11);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecSetWinMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecSortSet00);
+extern int func_A197E8(int, int);
+
+void MenuTecSortSet00(void)
+{
+    int *addr = MenuSortAddrGet(0);
+    struct { short min; short max; } tbl[7] = {
+        { 0x2D, 0x34 }, { 0x35, 0x3B }, { 0x3C, 0x43 }, { 0x44, 0x4B },
+        { 0x4C, 0x52 }, { 0x53, 0x5A }, { 0x5B, 0x62 },
+    };
+    int i;
+
+    for (i = tbl[MenuWork.characterNo - 1].min; i <= tbl[MenuWork.characterNo - 1].max; i++) {
+        if (func_A197E8(MenuWork.characterNo, i) != 0) {
+            *addr++ = (i & 0xFFFF) + 0xA0000;
+        }
+    }
+    *addr = 0;
+}
 
 /* dataUnitOrgGet (ov01/data_unit_org_get.c VA 0x00a191c0, still INCLUDE_ASM
  * there and not yet linkable by that name): returns the running character's
@@ -206,10 +321,68 @@ int MenuTecTypeCheck(int chrNo, int bit)
     return ((unsigned char *)(MenuTecSaveDataGet(chrNo) + tecNo))[8] == 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecListMake00);
+typedef struct { int unk0; int unk4; char unk8; char pad[3]; } MenuTecRow;
+void *MenuListGet(int list);
+int *MenuSortAddrGet(int list);
+int MenuSortCheck(int list);
+void MenuListMake(int list, int mode);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecListMake00_2);
+void MenuTecListMake00(void) {
+    MenuTecRow *row = MenuListGet(0);
+    int *addr = MenuSortAddrGet(0);
+    int n = MenuSortCheck(0);
+    int i;
+    MenuListMake(0, 0);
+    for (i = 0; i < n; i++) {
+        row[i].unk4 = MenuTecEquipCheck(MenuWork.characterNo, *(short *)&addr[i]);
+        row[i].unk8 = 0;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecListMake01);
+extern unsigned char MenuTecTrgTbl00[];
+extern unsigned char MenuTecTrgTbl01[];
+
+void MenuTecListMake00_2(void) {
+    MenuTecRow *row = MenuListGet(0);
+    int *addr = MenuSortAddrGet(0);
+    int n = MenuSortCheck(0);
+    int i;
+    int mode = (signed char)MenuWork.unmodeled_00[0x31] < 2;
+    for (i = 0; i < n; i++) {
+        int type = MenuTecTypeCheck(MenuWork.characterNo, addr[i]);
+        if (mode == type || type == 1) {
+            unsigned char *tbl = (MenuWork.characterNo == 7) ? MenuTecTrgTbl01 : MenuTecTrgTbl00;
+            if (tbl[(signed char)MenuWork.unmodeled_00[0x31]] == MenuTecTrgCheck(addr[i])) {
+                row[i].unk8 = 0;
+            } else {
+                row[i].unk8 = 1;
+            }
+        } else {
+            row[i].unk8 = 1;
+        }
+    }
+}
+
+void MenuTecListMake01(void) {
+    MenuTecRow *row = MenuListGet(0);
+    int *addr = MenuSortAddrGet(0);
+    int n = MenuSortCheck(0);
+    int i;
+    signed char saveBit = MenuWork.unmodeled_41[2];
+    signed char savePoint = MenuWork.point;
+    MenuListMake(0, 0);
+    for (i = 0; i < n; i++) {
+        row[i].unk4 = MenuTecEquipCheck(MenuWork.characterNo, *(short *)&addr[i]);
+        MenuWork.unmodeled_41[2] = addr[i];
+        MenuWork.point = BitToTecNo((signed char)MenuWork.unmodeled_41[2]);
+        if (MenuTecCharTLevUpCheck() || MenuTecCharWaitUpCheck() || MenuTecCharSpeedUpCheck()) {
+            row[i].unk8 = 0;
+        } else {
+            row[i].unk8 = 1;
+        }
+    }
+    MenuWork.unmodeled_41[2] = saveBit;
+    MenuWork.point = savePoint;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTec);

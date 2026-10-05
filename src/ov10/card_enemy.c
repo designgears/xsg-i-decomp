@@ -38,7 +38,34 @@ void InitCpuDeck(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_enemy", CardEnemyMove);
+extern int CC_Kara_MoveFase(int side, CardGameWork *work);
+extern void CGPShuntPosSub(CardPlaySide *side);
+extern void CGPRecalcPosSub(CardPlaySide *side);
+extern s8 D_00A57E34;
+
+void CardEnemyMove(int side, CardGameWork *work) {
+    CardPlaySide *ownSide = side == 0 ? &work->player : &work->enemy;
+
+    switch (*(u16 *)work->command.unmodeled_0E) {
+    case 0:
+        CGPShuntPosSub(ownSide);
+        (*(u16 *)work->command.unmodeled_0E)++;
+    case 1:
+        if (CC_Kara_MoveFase(side, work) == 0) {
+            CGPRecalcPosSub(ownSide);
+            (*(u16 *)work->command.unmodeled_0E)++;
+            D_00A57E34 = 15;
+        }
+        break;
+    case 2:
+        if (D_00A57E34 > 0) {
+            D_00A57E34--;
+        } else {
+            CGPNextTurnSub(work);
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_enemy", CardEnemySet);
 

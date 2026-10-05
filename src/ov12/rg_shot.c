@@ -261,7 +261,23 @@ static void _InitShotCommon(void *shot, void *essence, void *info, float speed)
     XrgClearVector(position);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot", _InitRgShotEssence);
+static void _InitRgShotEssence(RgShotEssence *essence)
+{
+    essence->life = 0.0f;
+    essence->modelVariant[0] = 0;
+    essence->particleFile[0] = 0;
+    essence->texLineFile[0] = 0;
+    essence->texLineWidth = 1.0f;
+    essence->texLineHeight = 0.2f;
+    *(int *)&essence->texLineColor[8] = 0x80;
+    *(int *)&essence->texLineColor[4] = 0x80;
+    *(int *)&essence->texLineColor[0] = 0x80;
+    *(int *)&essence->texLineColor[12] = 0x7F;
+    essence->damage = 5.0f;
+    essence->hitEffectFile[0] = 0;
+    essence->hitEffectFile[0x20] = 0;
+    *(int *)((char *)essence + 0x110) = 0;
+}
 
 /* Defined earlier in this TU (a local sibling still in asm). */
 static void _InitShotCommon(void *shot, void *essence, void *info, float speed);

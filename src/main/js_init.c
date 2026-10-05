@@ -70,7 +70,20 @@ void JS_init(int heap, int primitiveCapacity, int classCapacity) {
     classes = RSRC_alloc(heap, classCapacity * 0x6C, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/js_init", JS_loadClass);
+typedef struct { int count; } JSCounterView;
+
+JSClassRecord *JS_loadClass(const char *name) {
+    JSClassRecord *class_record =
+        &((JSClassRecord *)classes)[((JSCounterView *)&numClass)->count++];
+    JSPrimitive *primitive_entry =
+        &(*(JSPrimitive **)&primitive)[((JSCounterView *)&numPrimitive)->count++];
+
+    class_record->name = name;
+    primitive_entry->type = 7;
+    *(JSClassRecord **)&primitive_entry->data = class_record;
+    *(const char **)&primitive_entry->key = name;
+    return class_record;
+}
 
 int JS_loadConstInteger(int value, int auxiliary) {
     JSPrimitive *primitive_table = primitive;

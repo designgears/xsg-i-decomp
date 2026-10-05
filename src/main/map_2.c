@@ -36,7 +36,52 @@ int MAP_loadUnitResource(MapUnitSlot *unit, int resource_id)
 
 INCLUDE_ASM("asm/main/nonmatchings/map_2", MAP_initUnit);
 
-INCLUDE_ASM("asm/main/nonmatchings/map_2", MAP_createUnit);
+void unit6003_update(MapUnitSlot *unit);
+
+MapUnitSlot *MAP_createUnit(int index, int type)
+{
+    MapUnitSlot *unit;
+    unsigned char *p;
+    int i;
+    int *w;
+    void (*fn)(MapUnitSlot *);
+
+    if (index < 0) {
+        for (i = 0; i < 64; i++) {
+            if (MapUnit[i].serial < 0) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            return 0;
+        }
+    }
+    unit = &MapUnit[index];
+    p = (unsigned char *)unit;
+    p[0xA0] = index;
+    unit->serial = type;
+    *(float *)(p + 0x30) = 1.0f;
+    *(float *)(p + 0x34) = 1.0f;
+    *(float *)(p + 0x38) = 1.0f;
+    *(float *)(p + 0x3C) = 1.0f;
+    *(float *)(p + 0x22C) = 1.0f;
+    *(int *)(p + 0x220) = 0;
+    *(int *)(p + 0x224) = 0;
+    *(int *)(p + 0x228) = 0;
+    *(int *)(p + 0xD0) = 0;
+    fn = type == 0x6025 ? unit6003_update : 0;
+    unit->update = 0;
+    *(int *)(p + 0x8) = 0;
+    p[0xA2] = 0;
+    unit->typeUpdate = fn;
+    w = (int *)(p + 0xF0);
+    for (i = 2; i >= 0; i--) {
+        *w = 0;
+        w--;
+    }
+    return unit;
+}
 
 #define NULL ((void *)0)
 

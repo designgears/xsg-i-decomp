@@ -40,7 +40,25 @@ int XrgEventGetLevel(void)
     return (xglFlagsGet1(0x12D) == 0) ? (usable != 0) : 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_event", XrgEventIsUsableEnemy);
+int XrgEventIsUsableEnemy(unsigned int id)
+{
+    int level;
+
+    level = XrgEventGetLevel();
+    switch (id) {
+    case 2:
+        return level > 0;
+    case 0:
+        return level >= 0;
+    case 5:
+        return level >= 0;
+    case 1:
+    case 3:
+    case 4:
+        return level >= 2;
+    }
+    return 0;
+}
 
 int XrgEventIsUsablePlayer(unsigned int character_index)
 {

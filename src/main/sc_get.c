@@ -18,7 +18,43 @@ static int scFindScriptData(int eftNo)
 
 INCLUDE_ASM("asm/main/nonmatchings/sc_get", scCreateScript);
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scDestroyScript);
+extern void sefDestroyScriptScheduler(int script_index);
+extern void *memset(void *dst, int val, unsigned int n);
+
+void scDestroyScript(int script_index)
+{
+    int base;
+    int offset;
+    int *data_ptr;
+    short *hdr;
+    unsigned char *task;
+    int task_index;
+
+    if (script_index < 0) {
+        return;
+    }
+    sefDestroyScriptScheduler(script_index);
+    base = (int)_scriptWork;
+    offset = script_index * 0x450;
+    data_ptr = (int *)((char *)(offset + 0x400) + base);
+    if (*data_ptr != 0) {
+        hdr = (short *)((char *)(offset + 0x440) + base);
+        *data_ptr = 0;
+        hdr[2] = -1;
+        hdr[4] = 0;
+        task = (unsigned char *)((char *)((script_index << 10) + ((script_index * 5) << 4)) + base);
+        hdr[3] = 0;
+        task_index = 0;
+        hdr[5] = 0;
+        do {
+            memset(task, 0, 0x80U);
+            *(short *)(task + 4) = (short)task_index;
+            task_index = task_index + 1;
+            *(short *)(task + 6) = (short)script_index;
+            task = task + 0x80;
+        } while (task_index < 8);
+    }
+}
 
 extern unsigned char D_004CC7B8[];
 extern int _nowScript;
@@ -127,7 +163,19 @@ static void scDeleteTask(int script_index, int task_index)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scDeleteTaskAll);
+static void scDeleteTaskAll(int event, int task_index)
+{
+    int i;
+    int j;
+
+    for (i = 0; i < 16; i++) {
+        if (event < 0 || i == event) {
+            for (j = 0; j < 8; j++) {
+                scDeleteTask(i, j);
+            }
+        }
+    }
+}
 
 extern int tracePrint(unsigned char *fmt, unsigned int value);
 extern unsigned char D_004CC818[];
@@ -180,7 +228,18 @@ void scSetReg(int reg, int value)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scGetCmdScript);
+int scGetCmdScript(ScriptTask *task)
+{
+    int pc = task->script_pc[task->branch_depth];
+    int depthU = (unsigned short)task->branch_depth;
+    short *p = 0;
+
+    if (pc != 0) {
+        p = (short *)(*(int *)(_scriptWork + _nowScript * 1104 + 0x400) + pc * 2);
+    }
+    task->script_pc[(short)depthU]++;
+    return *p;
+}
 
 extern int scGetCmdScript(ScriptTask *task);
 extern int scGetReg(int reg);
@@ -399,7 +458,22 @@ static int scGOScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scGOSUBScript);
+extern unsigned char D_004CC830[];
+
+static int scGOSUBScript(ScriptTask *task)
+{
+    int address = scGetAdrScript(task);
+    short depth = task->branch_depth;
+    int depthU = (unsigned short)task->branch_depth + 1;
+
+    if (depth < 3) {
+        task->branch_depth = depthU;
+        task->script_pc[(short)depthU] = address;
+    } else {
+        ((int (*)(unsigned char *))tracePrint)(D_004CC830);
+    }
+    return 1;
+}
 
 extern int tracePrint(unsigned char *fmt, unsigned int value);
 extern unsigned char D_004CC850[];
@@ -431,7 +505,21 @@ static int scEXITScript(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/sc_get", scBRAScript);
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scONGOSUB);
+static int scONGOSUB(ScriptTask *task)
+{
+    int index = scGetNumScript(task);
+    int count = scGetCmdScript(task);
+    int next = task->script_pc[task->branch_depth] + count;
+    int result;
+
+    if (index >= 0 && index < count) {
+        result = scGetAdrIdx(task, index);
+    } else {
+        result = next;
+    }
+    task->script_pc[task->branch_depth] = next;
+    return result;
+}
 
 /*
  * scONGOScript is the script VM's ONGO opcode wrapper.  scONGOSUB performs the
@@ -447,7 +535,18 @@ static int scONGOScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scONGOSUBScript);
+static int scONGOSUBScript(ScriptTask *task)
+{
+    int destination = scONGOSUB(task);
+    short depth = task->branch_depth;
+    int depthU = (unsigned short)task->branch_depth + 1;
+
+    if (depth < 3) {
+        task->branch_depth = depthU;
+        task->script_pc[(short)depthU] = destination;
+    }
+    return 1;
+}
 
 /*
  * scCreateTask (main:0x002ea028, still assembly in this TU) takes the
@@ -736,7 +835,26 @@ static int scR_NEGScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scRRNDScript);
+static int scRRNDScript(ScriptTask *task)
+{
+    int reg = scGetCmdScript(task);
+    int lo = scGetNumScript(task);
+    int hi = scGetNumScript(task);
+    int r;
+
+    if (hi < lo) {
+        r = hi;
+        hi = lo;
+        lo = r;
+    }
+    hi = (short)(hi - lo);
+    r = 0;
+    if (hi != 0) {
+        r = (short)(rand() % hi);
+    }
+    scSetReg(reg, r + lo);
+    return 1;
+}
 
 /*
  * scREVEScript is the script VM's REVE opcode handler: it stores the
@@ -821,7 +939,41 @@ static int scFADEONScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scFreezeCamera);
+extern void func_A31500(void *out, int kind);
+extern void func_A31920(int kind, float *params);
+extern void *memset(void *dst, int val, unsigned int n);
+typedef struct {
+    int a;
+    int b;
+} FreezeIds;
+extern int D_004DBB40[4];
+
+static void scFreezeCamera(int effect_no)
+{
+    float *new_var;
+    FreezeIds ids;
+    float params[44];
+    FreezeIds *new_var2;
+    int *p;
+    int i;
+
+    if ((unsigned int)(effect_no - 0x7D0) < 0x64u) {
+        float *ip;
+        ip = params;
+        ip = ip + 4;
+        new_var = params;
+        ids = *(new_var2 = (FreezeIds *)&D_004DBB40[0]);
+        p = &ids.a;
+        for (i = 1; i >= 0; i--) {
+            memset(new_var, 0, sizeof(params));
+            func_A31500(ip, *p);
+            params[0] = 0.0f;
+            params[28] = 0.0f;
+            func_A31920(*p, params);
+            p += 1;
+        }
+    }
+}
 
 extern void sdvSetAmbState(int state, int effect_no);
 extern void sdvSetAmbState2(int state, int effect_no);
@@ -859,8 +1011,8 @@ extern int scGetAdrImmScript(ScriptTask *task);
 extern int sefCreateScheduler(int address, void *taskField0x30, void *taskField0x20, int table, int taskIndex);
 extern void sefCreateBattleActorTbl(short effect_no);
 
-/* scFreezeCamera (still assembly in this TU) takes the task's effect_no. */
-extern void scFreezeCamera(short effect_no);
+/* scFreezeCamera is static; defined above its caller. */
+static void scFreezeCamera(int effect_no);
 
 /*
  * scEFFECTScript is the script VM's EFFECT opcode handler: a resolved address
@@ -923,7 +1075,24 @@ static int scMISSILEScript(ScriptTask *task)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scMISSILE3Script);
+static int scMISSILE3Script(ScriptTask *task)
+{
+    unsigned char charId;
+    int count;
+    int address;
+
+    count = scGetNumScript(task);
+    address = scGetAdrImmScript(task);
+    if (address != 0) {
+        task->missile_active = 1;
+        task->missile_adr = address;
+        task->flags |= 0x20;
+        task->missile_reset1 = 0;
+        task->missile_reset0 = -count * _nowEvent;
+        srsAnalyzeEftNo(task->effect_no, &charId, &_scMslCate);
+    }
+    return 1;
+}
 
 static int scDispatchScript(ScriptTask *task)
 {

@@ -35,7 +35,7 @@ typedef struct RgColiData {
 static void _DisposeColiData(RgColiData *pData);
 static void _InitTriangles(RgColiData *pData, int nCapa);
 static void _AddTriangle(RgColiData *pData, void *pV0, void *pV1, void *pV2);
-static void _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult);
+static int _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult);
 
 /* File-backed OV12 witnesses, this TU's own .rodata (scaffold-owned; kept
  * under their splat names, docs/naming.md "Scaffold-owned data keeps its

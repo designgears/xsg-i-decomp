@@ -8,7 +8,29 @@ typedef struct {
 
 extern void xglStudioGetCamera(StudioCamera **camera_out, int camera_index);
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", nearDir);
+float nearDir(float from, float to)
+{
+    float d;
+    float t;
+    int s;
+
+    d = to - from;
+    t = d * 0.31830987f;
+    s = (int)t;
+    if (__builtin_fabsf(t) >= 2.0f) {
+        s = -1;
+        if (!(t < 0.0f)) {
+            s = 1;
+        }
+        d -= (float)(int)t * 3.14159274f;
+        if ((int)t & 1) {
+            d += (float)s * 6.28318548f;
+        }
+    } else {
+        d -= (float)(s * 2) * 3.14159274f;
+    }
+    return d;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_scaleSPL);
 
@@ -116,11 +138,93 @@ void SEQ_moveSPL(Actor *actor)
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_moveChr);
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_setMotion);
+extern int mtnIDLE_0[4];
+typedef struct {
+    int unk00;
+    int unk04;
+    int motion;
+    short unk0c;
+    short unk0e;
+    unsigned short a;
+    unsigned short b;
+    char c;
+    unsigned char pad[3];
+    int d;
+    float e;
+} SetMotionTrack;
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_setPositionRAND);
+void SEQ_setMotion(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    SetMotionTrack *t;
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_setRotY2Player);
+    sequence->state_flags |= 0x10;
+    t = (SetMotionTrack *)((u8 *)sequence + 0x138);
+    t->motion = mtnIDLE_0[xglSRand() & 3];
+    t->d = 1;
+    t->e = 1.0f;
+    t->a = -1;
+    t->b = -1;
+    t->c = 8;
+}
+
+extern float D_004D84C4;
+
+void SEQ_setPositionRAND(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    u8 *track = (u8 *)sequence + 0x38;
+    float *p = (float *)((u8 *)sequence + 0x58);
+    float x, z;
+
+    *(float *)(track + 0x2c) = D_004D84C4;
+    sequence->state_flags |= 1;
+    *(int *)(track + 4) = -1;
+    p[0] = (float)(xglSRand() & 7) - 4.0f;
+    p[2] = (float)(xglSRand() & 7) - 4.0f;
+    x = p[0];
+    z = p[2];
+    if (__builtin_fabsf(x) < __builtin_fabsf(z)) {
+        p[0] = x + *(float *)((u8 *)sequence + 0x240);
+        p[2] = actor->position.z;
+    } else {
+        p[0] = actor->position.x;
+        p[2] = z + *(float *)((u8 *)sequence + 0x248);
+    }
+}
+
+extern void ACT_setMotion(Actor *actor, int motion);
+
+extern void *GameLoopState[];
+
+typedef struct {
+    void *target;
+    int unk04[4];
+    int count;
+    int unk18;
+    int flags;
+} RotY2PlayerTrack;
+
+extern void SEQ_rotate(Actor *actor);
+
+void SEQ_setRotY2Player(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    RotY2PlayerTrack *track = (RotY2PlayerTrack *)((u8 *)sequence + 0xb8);
+
+    sequence->handler[1] = SEQ_rotate;
+    sequence->state_flags |= 4;
+    track->target = GameLoopState[1];
+    track->count = 10;
+    track->flags |= 2;
+    ACT_setMotion(actor, 7);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_moveNPC_XZ);
 
@@ -172,7 +276,23 @@ void ACT_initSequenceAt(Actor *actor)
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_initSequence);
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_initVMObject);
+extern u8 actor[64 * 0xa70];
+
+void ACT_initVMObject(u8 *p)
+{
+    int i;
+    if (p == 0) {
+        for (i = 0; i < 64; i++) {
+            p = (u8 *)actor;
+            *(int *)p = 0x20;
+            p[0x90] = 1;
+            p[0x91] = 0x50;
+            *(int *)(p + 0x4C0) = 0;
+        }
+        return;
+    }
+    *(int *)(p + 0x4C0) = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_createChr);
 

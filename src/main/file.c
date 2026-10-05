@@ -205,7 +205,21 @@ void FileObjectJpegSet(void)
     } while (offset < 4);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/file", FileObjectJpegDecChange);
+void FileObjectJpegDecChange(int number)
+{
+    FileJpegSlotView *slot;
+    int i = 0;
+
+    while (i < 5) {
+        slot = (FileJpegSlotView *)(i * 0xe100 + (int)FileJpegDec);
+        i++;
+        if (slot->number == number) {
+            slot->number = -1;
+            FileJpegDecode(number);
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/file", FileObjectAllLoad);
 

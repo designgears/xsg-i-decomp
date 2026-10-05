@@ -14,7 +14,24 @@ extern void GameResourceReset(int reset_mode);
 extern void ACT_init(void);
 extern void CallMethod(const char *method_name);
 
-INCLUDE_ASM("asm/main/nonmatchings/disp_on", disptest);
+static int disptest(XglTaskPrefix *entry)
+{
+    DispSwitchTask *task = (DispSwitchTask *)entry;
+    GameLoopStateRecord *state = task->header.state;
+
+    if ((state->runtime_flags & 0x100u) == 0u)
+        return xglTaskRemove(entry);
+    task->delay--;
+    if (task->delay < 0) {
+        if (task->request != 0) {
+            if (task->request == 1)
+                state->runtime_flags &= ~2u;
+        } else {
+            state->runtime_flags |= 2u;
+        }
+        return xglTaskRemove(entry);
+    }
+}
 
 void DISP_on(int countdown)
 {
@@ -148,7 +165,21 @@ void LoadMapOnly(int map_id)
     task->request = MAP_LOAD_MAP_ONLY;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/disp_on", EventTimerTask);
+int EventTimerTask(XglTaskPrefix *entry)
+{
+    EventTimerWork *task = (EventTimerWork *)entry;
+    unsigned int flags = GameLoopState.runtime_flags;
+
+    if ((flags & 1u) == 0) {
+        if ((flags & 0x80000030u) != 0) {
+            return xglTaskRemove(entry);
+        }
+        if (--task->countdown == 0) {
+            CallMethod(task->method_reference);
+            xglTaskRemove(entry);
+        }
+    }
+}
 
 void setEventTimerTaskEntry(const char *method_reference, int countdown)
 {

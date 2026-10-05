@@ -55,7 +55,7 @@ static void _PolyVsRobot(unsigned int *pArg)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _BallVsTray);
 
-static void _BallVsTray(unsigned int *pArg);
+static int _BallVsTray(unsigned int *pArg);
 
 static void _TrayVsBall(void *pArg)
 {
@@ -215,4 +215,48 @@ void InitRgGeomColiArg(RgGeomColiArg *pArg)
     pArg->data[3] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", RgGeomCollisionJob);
+extern int RgGeomGetType(RgGeom *pGeom);
+typedef struct {
+    int unk0;
+    int unk4;
+    int flags;
+    int hit;
+} RgGeomColiHdr;
+typedef struct {
+    RgGeomColiHdr *geomA;
+    void *funcA;
+    RgGeomColiHdr *geomB;
+    void *funcB;
+} RgGeomColiJobArg;
+extern int (*s_apJobFuncTbl[])(RgGeomColiJobArg *);
+
+int RgGeomCollisionJob(RgGeomColiJobArg *pArg)
+{
+    int result = 0;
+    int typeA;
+    int typeB;
+    int (*func)(RgGeomColiJobArg *);
+
+    if (pArg == 0) {
+        assert_prog(D_00A55328, D_00A552F8, 480);
+    }
+    if (pArg->geomA == 0 || pArg->geomB == 0) {
+        return 0;
+    }
+    if (!(pArg->geomA->flags & pArg->geomB->flags & 1)) {
+        return 0;
+    }
+    typeA = RgGeomGetType((RgGeom *)pArg->geomA);
+    typeB = RgGeomGetType((RgGeom *)pArg->geomB);
+    if (typeA >= 0 && typeB >= 0) {
+        func = s_apJobFuncTbl[typeA * 6 + typeB];
+        if (func != 0) {
+            result = func(pArg);
+        }
+        if (result != 0) {
+            pArg->geomA->hit = 1;
+            pArg->geomB->hit = 1;
+        }
+    }
+    return result;
+}

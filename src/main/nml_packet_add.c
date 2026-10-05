@@ -4,7 +4,43 @@
 #include "nml_packet_add.h"
 #include "main/xgl_packet.h"
 
-extern u64 g_aGsTag[];
+/*
+ * GS A+D register entries: each one is a data doubleword followed by the
+ * register address doubleword. 32-bit register values are written as two
+ * words through the union.
+ */
+typedef union GsTagWord {
+    u64 d;
+    u32 w[2];
+} GsTagWord;
+
+extern GsTagWord g_aGsTag[];
+extern int g_nGsEntry;
+
+/*
+ * Public inline helpers: gcc 2.96 inlines them into the callers below and
+ * defers their out-of-line copies to the end of the object (after every other
+ * function), in definition order.
+ */
+inline void packet_gs_entry32(u32 reg, u32 hi, u32 lo)
+{
+    g_aGsTag[g_nGsEntry * 2 + 2].w[0] = lo;
+    g_aGsTag[g_nGsEntry * 2 + 2].w[1] = hi;
+    g_aGsTag[g_nGsEntry++ * 2 + 3].d = reg;
+}
+
+inline void packet_gs_entry64(u32 reg, u64 *data)
+{
+    g_aGsTag[g_nGsEntry * 2 + 2].d = *data;
+    g_aGsTag[g_nGsEntry++ * 2 + 3].d = reg;
+}
+
+inline void nmlPacketAddGsFba(u64 fba)
+{
+    g_aGsTag[g_nGsEntry * 2 + 2].d = fba;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 74;
+    g_nGsEntry++;
+}
 
 /* VIF command MSCAL: start the VU1 microprogram at immediate * 8. */
 #define VIF_CODE_MSCAL 0x14000000
@@ -225,7 +261,41 @@ static void _CurSetViewScaleTrans(const Vector4 *view_scale, const Vector4 *view
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", _CurRotTransPersClip_002365D0);
+static int _CurRotTransPersClip(Vector4 *destination, Vector4 *destination2, const Vector4 *vector, const Vector4 *vector2) {
+    int clip;
+    __asm__ __volatile__(
+        "ctc2.ni $0, $vi18\n\t"
+        "lqc2 $vf31, 0(%3)\n\t"
+        "lqc2 $vf20, 0(%4)\n\t"
+        "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
+        "vmadday.xyzw ACC, $vf28, $vf31y\n\t"
+        "vmaddaz.xyzw ACC, $vf29, $vf31z\n\t"
+        "vmaddw.xyzw $vf31, $vf30, $vf0w\n\t"
+        "vnop\n\t"
+        "vnop\n\t"
+        "vnop\n\t"
+        "vclipw.xyz $vf31xyz, $vf31w\n\t"
+        "vdiv Q, $vf0w, $vf31w\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyzw $vf31, $vf31, Q\n\t"
+        "vmulq.xyzw $vf20, $vf20, Q\n\t"
+        "vmulaw.xyzw ACC, $vf26, $vf0w\n\t"
+        "vmadd.xyzw $vf31, $vf31, $vf25\n\t"
+        "vftoi4.xyw $vf23, $vf31\n\t"
+        "vftoi0.z $vf23, $vf31\n\t"
+        "vsub.w $vf23, $vf23, $vf23\n\t"
+        "sqc2 $vf23, 0(%1)\n\t"
+        "sqc2 $vf20, 0(%2)\n\t"
+        "cfc2.ni $2, $vi18\n\t"
+        "nop\n\t"
+        "andi $2, $2, 0x3f\n\t"
+        "daddu %0, $2, $0"
+        : "=r"(clip)
+        : "r"(destination), "r"(destination2), "r"(vector), "r"(vector2)
+        : "$2", "memory"
+    );
+    return clip;
+}
 
 /*
  * _CurSetMatrix loads a 4x4 matrix into the VU0 macro-mode "current matrix"
@@ -250,15 +320,208 @@ INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFlush);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFlushWide);
 
+extern struct { char pad[8]; u16 zbp; } sRender;
+
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddReflectParam);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddTransMicrocodeInit);
+extern int D_004AE5A0[];
+extern u8 D_004AE5B0[];
+extern struct {
+    u8 _unmodeled_00[0x10];
+    u32 flags;
+} GameLoopState;
+typedef union NmlLightColor {
+    Quadword rows[4];
+    float m[4][4];
+} NmlLightColor;
+extern NmlLightColor s_inLc0;
+extern int s_nPixelTestType;
+extern int s_nModelParts;
+extern void *s_pCacheTexture;
+extern void *s_pMatrixCache;
+extern void *s_pModelCache;
+extern void *s_pLightLayout;
+extern float xglSin(float angle);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddTransMicrocode);
+void nmlPacketAddTransMicrocodeInit(void)
+{
+    float matrix[4][4];
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddScreen);
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkRef(s_pPacket, D_004AE5B0, D_004AE5A0[0], 0, 0, 0);
+    s_nProgType = 2;
+    s_nPixelTestType = -1;
+    s_pCacheTexture = 0;
+    s_pMatrixCache = 0;
+    s_pModelCache = 0;
+    s_nModelParts = 0;
+    s_pLightLayout = 0;
+    s_inReflRotX = xglSin(s_inReflRotY);
+    if (!(GameLoopState.flags & 1))
+        s_inReflRotY += 0.01f;
+    xglMatrixUnit(matrix);
+    sceVif1PkCnt(s_pPacket, 0);
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3EC, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, matrix, 3);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    s_nReflRotType = 1;
+    __asm__ __volatile__("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)"
+                         : : "r"(&s_inLc0) : "memory");
+    s_inLc0.m[3][3] = 1.0f;
+    s_inLc0.m[3][2] = 1.0f;
+    s_inLc0.m[3][1] = 1.0f;
+    s_inLc0.m[3][0] = 1.0f;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddPixelTestPacket);
+extern int D_004B0A40[];
+extern u8 D_004B0A50[];
+extern int D_004B19E0[];
+extern u8 D_004B19F0[];
+extern int D_004B54A0[];
+extern u8 D_004B54B0[];
+extern int D_004B6F70[];
+extern u8 D_004B6F80[];
+extern int D_004B9700[];
+extern u8 D_004B9710[];
+extern int D_004BD490[];
+extern u8 D_004BD4A0[];
+extern u8 s_aNormalTbl[];
+
+void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
+                                const NmlModelRenderState *model)
+{
+    u32 status;
+    int type;
+    int prog;
+
+    *(int *)&s_pPacket = (int)xglPacketGetCurrent();
+    status = model->render_status;
+    type = 2;
+    if (status & 0x8000) {
+        type = 6;
+    } else if (status & 0x800) {
+        type = 3;
+    } else if (status & 0x80000) {
+        type = 7;
+    } else {
+        if (status & 0x2001000) {
+            type = 5;
+            if (material->render_flags & 1)
+                type = 4;
+            else if ((*(u64 *)&material->material_flags & 0x10010) == 0x10)
+                type = 2;
+        } else if (material->render_flags & 1) {
+            type = 1;
+        }
+    }
+    switch (type) {
+    case 3:
+        prog = 3;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004B54B0, D_004B54A0[0], 0, 0, 0);
+        s_nProgType = prog;
+        sceVif1PkCnt(s_pPacket, 0);
+        sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkCloseUpkCode(s_pPacket);
+        return;
+    case 4:
+        prog = 4;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004B9710, D_004B9700[0], 0, 0, 0);
+        s_nProgType = prog;
+        return;
+    case 5:
+        prog = 5;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004B6F80, D_004B6F70[0], 0, 0, 0);
+        s_nProgType = prog;
+        sceVif1PkCnt(s_pPacket, 0);
+        sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkCloseUpkCode(s_pPacket);
+        return;
+    case 6:
+        prog = 6;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004B0A50, D_004B0A40[0], 0, 0, 0);
+        s_nProgType = prog;
+        return;
+    case 7:
+        prog = 7;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004BD4A0, D_004BD490[0], 0, 0, 0);
+        s_nProgType = prog;
+        return;
+    case 1:
+        prog = 1;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004B19F0, D_004B19E0[0], 0, 0, 0);
+        s_nProgType = prog;
+        return;
+    case 2:
+        prog = 2;
+        if (s_nProgType == prog)
+            return;
+        sceVif1PkRef(s_pPacket, D_004AE5B0, D_004AE5A0[0], 0, 0, 0);
+        s_nProgType = prog;
+        return;
+    }
+}
+
+void nmlPacketAddScreen(StudioCamera *camera)
+{
+    NmlPacketData128 offset;
+
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(&offset), "r"(&camera->screenOffset) : "$2", "memory");
+    ((float *)offset.words)[3] = 0.0f;
+    if ((((u16 *)&sRender)[13] << 5) != 0x3800)
+        ((float *)offset.words)[3] = 3.1415927f;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3C7, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128(s_pPacket, offset.quad);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3C6, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128(s_pPacket, *(Quadword *)&camera->screenScale);
+    sceVif1PkCloseUpkCode(s_pPacket);
+}
+
+void nmlPacketAddPixelTestPacket(int test_reg, u64 test1, u64 test, int zbuf_reg,
+                                 u64 test1_zbuf, u64 zbuf)
+{
+    struct {
+        u32 tag[4];
+        u64 data[4];
+    } packet;
+
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    packet.tag[0] = 0x8002;
+    packet.tag[1] = 0x10000000;
+    packet.tag[2] = 0xE;
+    packet.tag[3] = 0;
+    packet.data[0] = test;
+    packet.data[1] = test_reg;
+    packet.data[2] = zbuf;
+    packet.data[3] = zbuf_reg;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3FA, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, &packet, 3);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    packet.data[1] = test_reg;
+    packet.data[0] = test1;
+    packet.data[3] = zbuf_reg;
+    packet.data[2] = test1_zbuf;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3FD, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, &packet, 3);
+    sceVif1PkCloseUpkCode(s_pPacket);
+}
 
 void nmlPacketAddWaitMicrocode(void)
 {
@@ -267,13 +530,205 @@ void nmlPacketAddWaitMicrocode(void)
     sceVif1PkAddCode(s_pPacket, VIF_CODE_FLUSH);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddBlockMaterial);
+extern int s_nLightPara;
+
+void nmlPacketAddBlockMaterial(NmlMaterialRenderState *material, NmlModelRenderState *model,
+                               int keep_alpha, int viewport)
+{
+    struct {
+        int code;
+        float color;
+        int scaled;
+        int priority;
+    } param, *p;
+    union {
+        int i[4];
+        float f[4];
+    } fog;
+    float length;
+    union {
+        int i;
+        float f;
+    } scale;
+    u8 *proreal;
+    float alpha;
+    float base;
+    float color;
+    float ratio;
+
+    proreal = (u8 *)model->proreal;
+    if (model->proreal_override != 0)
+        proreal = (u8 *)model->proreal_override;
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    base = *(float *)((u8 *)material + 0xC4);
+    alpha = base * *(float *)((u8 *)model + 0x220);
+    ((union { float f; } *)((u8 *)material + 0xDC))->f = alpha;
+    scale.i = *(int *)(*(u8 **)((u8 *)model + 0x258) + *(int *)((u8 *)material + 0x2C) * 64 + 0x1C);
+    if (scale.i & 1)
+        *(float *)((u8 *)material + 0xDC) = alpha * scale.f;
+    if (keep_alpha != 0)
+        *(float *)((u8 *)material + 0xDC) = base;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3C8, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, (u8 *)material + 0xD0, 5);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    p = &param;
+    color = *(float *)((u8 *)model + 0x228);
+    if (viewport != *(int *)((u8 *)model + 0x27C))
+        color = ((float *)((u8 *)model + 0x300))[viewport];
+    if ((model->render_status & 0x100000) &&
+        (strstr(material->name, lenz_name) != 0 || strstr(material->name, eye_name) != 0))
+        color = *(float *)((u8 *)model + 0x2BC);
+    ratio = *(float *)((u8 *)model + 0x22C);
+    p->code = *(int *)((u8 *)material + 0xCC);
+    ((union { float f; } *)&param.color)->f = color;
+    p->scaled = 0;
+    if (ratio > 1.02f || ratio < 0.98f)
+        p->scaled = 1;
+    xglVectorLength(&length, (Vector4 *)(*(u8 **)((u8 *)model + 0x258) +
+                                         *(int *)((u8 *)material + 0x2C) * 64));
+    if (length > 1.02f || length < 0.98f)
+        p->scaled = 1;
+    if (material->render_flags & 1) {
+        xglVectorLength(&length, (Vector4 *)(*(u8 **)((u8 *)model + 0x258) +
+                                             *(u16 *)((u8 *)material + 0x32) * 64 - 64));
+        if (length > 1.02f || length < 0.98f)
+            p->scaled = 1;
+    }
+    p->priority = *(signed char *)((u8 *)material + 0x16F);
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3F0, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, &param, 1);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    fog.i[2] = 0;
+    if (*(u32 *)((u8 *)model + 0x230) & 1)
+        fog.f[2] = *(float *)((u8 *)model + 0x230);
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3F9, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128N(s_pPacket, &fog, 1);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    if (model->render_status & 0x800) {
+        sceVif1PkOpenUpkCode(s_pPacket, 0x3C9, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, proreal + 0x140, 1);
+        sceVif1PkCloseUpkCode(s_pPacket);
+    }
+    *(int *)&s_pLightLayout = (int)model;
+    s_nLightPara = material->material_flags & 0x20000;
+    sceVif1PkCnt(s_pPacket, 0);
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3D1, 0x6C, 1, 1);
+    if (model->render_status & 0x800) {
+        sceVif1PkAddUpkData128N(s_pPacket, proreal + 0xC0, 4);
+    } else if (model->render_status & 0x80000) {
+        *(float *)((u8 *)model + 0x3C) =
+            0x80 - (int)((float)*(int *)((u8 *)model + 0x270) * *(float *)((u8 *)model + 0x220) *
+                         model->fog_intensity[viewport]);
+        sceVif1PkAddUpkData128N(s_pPacket, model, 4);
+    } else {
+        sceVif1PkAddUpkData128N(s_pPacket, model, 4);
+    }
+    sceVif1PkCloseUpkCode(s_pPacket);
+    if (material->material_flags & 0x20000) {
+        sceVif1PkOpenUpkCode(s_pPacket, 0x3D1, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, &s_inLc0, 4);
+        sceVif1PkCloseUpkCode(s_pPacket);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketMakeCircleTexture);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketSendCircleTexture);
+typedef struct NmlGsLoadImage {
+    u64 giftag0[2];
+    u64 bitbltbuf[2];
+    u64 trxpos[2];
+    u64 trxreg[2];
+    u64 trxdir[2];
+    u64 giftag1[2];
+} NmlGsLoadImage;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketTextureTrans);
+extern int sceGsSetDefLoadImage(NmlGsLoadImage *lp, short dbp, short dbw, short dpsm,
+                                short x, short y, short w, short h);
+
+extern void sceVif1PkOpenDirectCode(XglPacket *packet, int mode);
+
+extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
+
+extern void sceVif1PkCloseDirectCode(XglPacket *packet);
+
+extern u8 *nmlPacketSetAttributeData16N(const void *data, u32 count);
+
+void nmlPacketSendCircleTexture(void *texture, void *clut)
+{
+    NmlGsLoadImage load;
+
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    sceVif1PkAddCode(s_pPacket, VIF_CODE_FLUSH);
+    sceGsSetDefLoadImage(&load, ((union { u16 h[16]; } *)&sRender)->h[13] << 5, 1, 0x13,
+                         0, 0, 0x40, 0x40);
+    load.giftag0[0] |= 0x8000;
+    sceVif1PkOpenDirectCode(s_pPacket, 0);
+    sceVif1PkAddDirectDataN(s_pPacket, &load, 5);
+    sceVif1PkCloseDirectCode(s_pPacket);
+    sceVif1PkRef(s_pPacket, texture, 0x102, 0, 0, 0);
+    sceVif1PkCnt(s_pPacket, 0);
+    sceGsSetDefLoadImage(&load, (((union { u16 h[16]; } *)&sRender)->h[13] << 5) + 0x80, 1, 0,
+                         0, 0, 0x10, 0x10);
+    load.giftag0[0] |= 0x8000;
+    sceVif1PkOpenDirectCode(s_pPacket, 0);
+    sceVif1PkAddDirectDataN(s_pPacket, &load, 5);
+    sceVif1PkCloseDirectCode(s_pPacket);
+    sceVif1PkRef(s_pPacket, nmlPacketSetAttributeData16N(clut, 0x42), 0x42, 0, 0, 0);
+}
+
+typedef struct NmlTextureImage {
+    int width;
+    int height;
+    int psm;
+    int bw;
+    int tbp;
+    int size;
+    u8 pad[0x28];
+    u8 data[0x10];
+} NmlTextureImage;
+typedef struct NmlTextureBlock {
+    int count;
+    u8 pad[0x2c];
+    int images[1];
+} NmlTextureBlock;
+static void nmlPacketTextureTrans(NmlModelRenderState *model)
+{
+    NmlGsLoadImage load;
+    u8 *texture;
+    int offset;
+    NmlTextureBlock *block;
+    NmlTextureImage *image;
+    int *images;
+    int i;
+    int dbp;
+
+    s_pPacket = xglPacketGetCurrent();
+    texture = *(u8 **)((u8 *)model + 0x254);
+    offset = *(int *)(texture + 0x6C);
+    if (offset == 0)
+        return;
+    block = (NmlTextureBlock *)(offset + (int)texture);
+    i = 0;
+    images = block->images;
+    if (block->count <= 0)
+        return;
+    do {
+        image = (NmlTextureImage *)(images[i] + (int)block);
+        sceVif1PkCnt(s_pPacket, 0);
+        sceVif1PkAddCode(s_pPacket, VIF_CODE_FLUSH);
+        dbp = (((union { u16 h[16]; } *)&sRender)->h[13] << 5) + image->tbp;
+        sceGsSetDefLoadImage(&load, dbp, image->bw,
+                             image->psm, 0, 0, image->width, image->height);
+        load.giftag0[0] |= 0x8000;
+        sceVif1PkOpenDirectCode(s_pPacket, 0);
+        sceVif1PkAddDirectDataN(s_pPacket, &load, 5);
+        sceVif1PkCloseDirectCode(s_pPacket);
+        sceVif1PkRef(s_pPacket, image->data, image->size / 16, 0, 0, 0);
+        i++;
+    } while (i < block->count);
+}
 
 /* The cached texture built by the (still asm) texture cache builder;
  * cleared to invalidate it, like s_pMatrixCache/s_pModelCache/
@@ -301,11 +756,253 @@ void nmlPacketClrModelCache(void)
     s_pLightLayout = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddTexture);
+extern void xglPacketTextureTrans(void *texture);
+static inline int packet_is_full(XglPacket *packet)
+{
+    int n = sceVif1PkSize(packet) * 0x10;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddParts);
+    return (unsigned)(n + (*(int *)&s_pPacket->limit - *(int *)&s_pPacket->cursor) + 0x10000)
+        > 0x200000U;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddTextureParam);
+int nmlPacketAddTexture(NmlModelRenderState *model)
+{
+    NmlProRealParam *proreal;
+    void *texture;
+    u32 offset;
+
+    proreal = model->proreal;
+    if (model->proreal_override != 0)
+        proreal = model->proreal_override;
+    s_pPacket = xglPacketGetCurrent();
+    if (packet_is_full(s_pPacket))
+        return 1;
+    if (model->render_status & 0x800) {
+        texture = *(void **)((u8 *)proreal + 0x1C0);
+        if (texture != 0 && s_pCacheTexture != texture) {
+            s_pCacheTexture = texture;
+            xglPacketTextureTrans(texture);
+        }
+    } else {
+        offset = *(u32 *)(*(u8 **)((u8 *)model + 0x254) + 0x6C);
+        if (offset - 1 < 0x7FFFFF) {
+            if (s_pCacheTexture != (void *)offset) {
+                nmlPacketTextureTrans(model);
+                s_pCacheTexture = *(void **)(*(u8 **)((u8 *)model + 0x254) + 0x6C);
+            }
+        } else {
+            texture = *(void **)((u8 *)model + 0x240);
+            if (texture != 0 && s_pCacheTexture != texture) {
+                s_pCacheTexture = texture;
+                xglPacketTextureTrans(*(void **)((u8 *)model + 0x240));
+            }
+        }
+    }
+    return packet_is_full(s_pPacket);
+}
+
+extern int memcmp(const void *left, const void *right, unsigned int count);
+extern void xglMatrixInverse(void *destination, void *source);
+extern void xglMatrixMul(void *destination, void *left, void *right);
+typedef union NmlPartsMatrix {
+    Quadword rows[4];
+    float m[4][4];
+} NmlPartsMatrix;
+static inline void parts_copy_matrix(void *dst, const void *src)
+{
+    __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\t"
+                         "lq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\t"
+                         "lq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\t"
+                         "lq $2,0x30(%1)\n\tsq $2,0x30(%0)"
+                         : : "r"(dst), "r"(src) : "$2", "memory");
+}
+
+int nmlPacketAddParts(u8 *parts, NmlModelRenderState *model, StudioCamera *camera)
+{
+    NmlPartsMatrix local;
+    NmlPartsMatrix light;
+    Vector4 trans;
+    float dirs[4][4];
+    NmlPartsMatrix world;
+    NmlPartsMatrix proj;
+    NmlPartsMatrix screen;
+    u16 *ids;
+    u8 *proreal;
+    u8 *data;
+    void *cache;
+    int changed;
+    u32 i;
+    int code;
+    int j;
+    u16 *upk_ids;
+    u8 *upk_base;
+    NmlPartsMatrix *src;
+    u8 *mats;
+
+    ids = (u16 *)(parts + 0x30);
+    proreal = (u8 *)model->proreal;
+    data = *(u8 **)((u8 *)model + 0x254);
+    if (model->proreal_override != 0)
+        proreal = (u8 *)model->proreal_override;
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    if (packet_is_full(s_pPacket))
+        return 1;
+    if (*(u32 *)(parts + 0x20) & 0x10) {
+        int *tab = (int *)(data + *(int *)(data + 0x60));
+        i = 0;
+        upk_base = data + tab[*(int *)(parts + 0xA0)] + 0x30;
+        upk_ids = (u16 *)(parts + *(int *)(parts + 0xA4));
+        if (*(u32 *)(parts + 0xA8) != 0) {
+            do {
+                sceVif1PkOpenUpkCode(s_pPacket, (u16)(*(u16 *)(parts + 0xAC) + i * 2), 0x6C, 1, 1);
+                sceVif1PkAddUpkData128N(s_pPacket, upk_base + upk_ids[i] * 32, 2);
+                i++;
+                sceVif1PkCloseUpkCode(s_pPacket);
+            } while (i < *(u32 *)(parts + 0xA8));
+        }
+    }
+    if (s_pModelLayout != model) {
+        s_pModelLayout = model;
+        s_pMatrixCache = 0;
+    }
+    if (s_nModelParts != *(int *)(parts + 0x2C)) {
+        s_nModelParts = *(int *)(parts + 0x2C);
+        s_pMatrixCache = 0;
+    }
+    cache = s_pMatrixCache;
+    if (cache != 0) {
+        j = memcmp(cache, ids, 0x3E);
+        cache = s_pMatrixCache;
+        if (j != 0)
+            cache = 0;
+    }
+    s_pMatrixCache = ids;
+    changed = cache == 0;
+    mats = *(u8 **)((u8 *)model + 0x258);
+    if (*ids != 0) {
+        code = 0x2DC;
+        do {
+            { int off = (*ids++ << 6) - 64; mats = mats + off; }
+            sceVif1PkOpenUpkCode(s_pPacket, (u16)code, 0x6C, 1, 1);
+            sceVif1PkAddUpkData128N(s_pPacket, mats, 4);
+            code += 4;
+            sceVif1PkCloseUpkCode(s_pPacket);
+            mats = *(u8 **)((u8 *)model + 0x258);
+        } while (*ids != 0);
+    }
+    if (changed) {
+        src = (NmlPartsMatrix *)(mats + ((*(u16 *)s_pMatrixCache << 6) - 64));
+        parts_copy_matrix(&local, src);
+        local.m[2][3] = local.m[1][3] = local.m[0][3] = 0.0f;
+        if (!(*(u32 *)(parts + 0x20) & 1) && !(*(u32 *)(parts + 0xC0) & 0x10))
+            xglMatrixInverse(&world, &local);
+        else
+            parts_copy_matrix(&world, &src[*(int *)(data + 0x40)]);
+        _CurMatrixSet(world.m);
+        _CurMatrixMul((const float (*)[4])((u8 *)model + 0xC0));
+        if (model->render_status & 0x800)
+            _CurMatrixMul33norm((Vector4 *)&light, (Vector4 *)(proreal + 0x80));
+        else
+            _CurMatrixMul33norm((Vector4 *)&light, (Vector4 *)((u8 *)model + 0x40));
+        _CurApplyMatrix(&trans, &camera->position);
+        if (model->render_status & 0x2001000) {
+            _CurApplyMatrix((Vector4 *)dirs[3], (Vector4 *)((u8 *)model + 0x100));
+            dirs[0][0] = dirs[3][0];
+            dirs[1][0] = dirs[3][1];
+            dirs[2][0] = dirs[3][2];
+            _CurApplyMatrix((Vector4 *)dirs[3], (Vector4 *)((u8 *)model + 0x110));
+            dirs[0][1] = dirs[3][0];
+            dirs[1][1] = dirs[3][1];
+            dirs[2][1] = dirs[3][2];
+            _CurApplyMatrix((Vector4 *)dirs[3], (Vector4 *)((u8 *)model + 0x120));
+            dirs[0][2] = dirs[3][0];
+            dirs[1][2] = dirs[3][1];
+            dirs[2][2] = dirs[3][2];
+            sceVif1PkOpenUpkCode(s_pPacket, 0x3F5, 0x6C, 1, 1);
+            sceVif1PkAddUpkData128N(s_pPacket, dirs, 4);
+            sceVif1PkCloseUpkCode(s_pPacket);
+            sceVif1PkOpenUpkCode(s_pPacket, 0x3E9, 0x6C, 1, 1);
+            sceVif1PkAddUpkData128N(s_pPacket, (u8 *)model + 0x140, 3);
+            sceVif1PkCloseUpkCode(s_pPacket);
+        }
+        if (model->render_status & 0x800) {
+            xglMatrixMul(&proj, proreal + 0x40, (u8 *)model + 0x80);
+            sceVif1PkOpenUpkCode(s_pPacket, 0x3EC, 0x6C, 1, 1);
+            sceVif1PkAddUpkData128N(s_pPacket, &proj, 4);
+            sceVif1PkCloseUpkCode(s_pPacket);
+            ((u64 *)&trans)[0] = ((u64 *)(proreal + 0x190))[0];
+            ((u64 *)&trans)[1] = ((u64 *)(proreal + 0x190))[1];
+        }
+        light.m[3][3] = 0.0f;
+        for (j = 0; j < 3; j++) {
+            float *tp = (float *)&trans;
+            light.m[j][3] = tp[j];
+            light.m[3][j] = tp[j];
+        }
+        if (model->render_status & 0x800)
+            __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(light.rows + 3), "r"(proreal + 0x160) : "$2", "memory");
+        sceVif1PkOpenUpkCode(s_pPacket, 0x3CD, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, &light, 4);
+        sceVif1PkCloseUpkCode(s_pPacket);
+    }
+    if (changed) {
+        if (model->render_status & 0x8000) {
+            _CurMatrixSet((const float (*)[4])((u8 *)model + 0x180));
+        } else {
+            _CurMatrixSet((const float (*)[4])camera->viewMatrix);
+            if (model->render_status & 0x80000)
+                _CurMatrixMul((const float (*)[4])((u8 *)model + 0x180));
+        }
+        if (model->render_status & 1) {
+            _CurMatrixMul((const float (*)[4])((u8 *)model + 0x80));
+            _CurMatrixMul(local.m);
+        } else {
+            _CurMatrixMul(local.m);
+        }
+        _CurMatrixGet(screen.m);
+        sceVif1PkOpenUpkCode(s_pPacket, 0x3C2, 0x6C, 1, 1);
+        sceVif1PkAddUpkData128N(s_pPacket, &screen, 4);
+        sceVif1PkCloseUpkCode(s_pPacket);
+    }
+    return packet_is_full(s_pPacket);
+}
+
+void nmlPacketAddTextureParam(NmlMaterialRenderState *material,
+                              NmlModelRenderState *model)
+{
+    u64 tex0;
+    NmlProRealParam *proreal;
+    u32 tbw;
+    u32 lo;
+    u32 hi;
+
+    proreal = model->proreal;
+    if (model->proreal_override != 0)
+        proreal = model->proreal_override;
+
+    /*
+     * Stored as a word: the render_status load below must stay after this
+     * store, which only an int-typed (aliasing) store keeps it.
+     */
+    *(u32 *)&s_pPacket = (u32)xglPacketGetCurrent();
+
+    if (model->render_status & 0x800) {
+        tex0 = 0x60;
+        packet_gs_entry32(0x3F, 0, 0);
+        packet_gs_entry64(6, (u64 *)((u8 *)proreal + 0x130));
+        packet_gs_entry64(0x14, &tex0);
+        packet_gs_entry64(8, (u64 *)((u8 *)proreal + 0x138));
+    } else if (material->material_flags & 1) {
+        tbw = ((u16 *)&sRender)[13];
+        lo = ((u32 *)material)[0x48] + (tbw << 5);
+        hi = ((u32 *)material)[0x49] + (tbw << 10);
+        packet_gs_entry32(0x3F, 0, 0);
+        packet_gs_entry32(6, hi, lo);
+        packet_gs_entry32(0x14, ((u32 *)material)[0x4B], ((u32 *)material)[0x4A]);
+        packet_gs_entry32(8, ((u32 *)material)[0x4D], ((u32 *)material)[0x4C]);
+    }
+}
 
 static int add_exec_prog(NmlMaterialRenderState *material, NmlModelRenderState *model,
                          int program_index)
@@ -591,7 +1288,13 @@ void nmlPacketAddExecProg(NmlMaterialRenderState *material,
     nmlPacketAddTransData(material);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddTransData);
+void nmlPacketAddTransData(NmlMaterialRenderState *material)
+{
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkRef(s_pPacket, (void *)(*(int *)((u8 *)material + 0x24) + (int)material),
+                 *(int *)((u8 *)material + 0x28) / 16, 0, 0, 0);
+    nmlPacketAddWaitMicrocode();
+}
 
 extern void *memcpy(void *destination, const void *source, unsigned int count);
 
@@ -616,7 +1319,19 @@ u8 *nmlPacketSetAttributeData(const void *data, u32 size)
     return *(u8 **)&s_pPacket->cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketSetAttributeData64);
+u8 *nmlPacketSetAttributeData64(const void *data)
+{
+    XglPacket *packet;
+    u8 *dst;
+
+    packet = xglPacketGetCurrent();
+    s_pPacket = packet;
+    *(u8 **)&packet->cursor -= 0x40;
+    dst = *(u8 **)&s_pPacket->cursor;
+    asm volatile("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\tlq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\tlq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\tlq $2,0x30(%1)\n\tsq $2,0x30(%0)"
+                 : : "r"(dst), "r"(data) : "$2", "memory");
+    return *(u8 **)&s_pPacket->cursor;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketSetAttributeData64N);
 
@@ -633,7 +1348,39 @@ u8 *nmlPacketSetAttributeAlloc16N(u32 count)
     return *(u8 **)&s_pPacket->cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGifTag);
+void nmlPacketAddGifTag(NmlMaterialRenderState *material, NmlModelRenderState *model,
+                        int alpha)
+{
+    NmlPacketData128 tag;
+    u32 fog;
+
+    fog = (model->render_status & 0x1000002) != 0;
+    if (model->render_status & 0x2000)
+        fog = 0;
+    s_pPacket = xglPacketGetCurrent();
+    sceVif1PkCnt(s_pPacket, 0);
+    tag.quad = *(Quadword *)((u8 *)material + 0xB0);
+    tag.words[1] |= (alpha << 21) | (fog << 20);
+    if (material->material_flags & 1)
+        tag.words[1] |= 0x80000;
+    else
+        tag.words[1] &= ~0x80000;
+    if (model->render_status & 0x8000)
+        tag.words[1] &= ~((alpha << 21) | 0x80000);
+    if (model->render_status & 0x800)
+        tag.words[1] |= 0x80000;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3F3, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128(s_pPacket, tag.quad);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    tag.words[1] = (tag.words[1] & ~0x80000) | 0x1200000;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3F4, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128(s_pPacket, tag.quad);
+    sceVif1PkCloseUpkCode(s_pPacket);
+    tag.words[1] = (tag.words[1] | 0x80000) & ~0x1000000;
+    sceVif1PkOpenUpkCode(s_pPacket, 0x3F2, 0x6C, 1, 1);
+    sceVif1PkAddUpkData128(s_pPacket, tag.quad);
+    sceVif1PkCloseUpkCode(s_pPacket);
+}
 
 void nmlPacketAddGifTagStandard(int eop, int count)
 {
@@ -669,7 +1416,20 @@ void nmlPacketAddFog(NmlModelRenderState *model, int viewport_index)
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddPixelControl);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketDirectData);
+int nmlPacketDirectData(void *arg0, int arg1) {
+    XglPacket *p;
+    int n, c, l;
+    p = xglPacketGetCurrent();
+    s_pPacket = p;
+    n = sceVif1PkSize(p) * 0x10;
+    c = *(int *)&s_pPacket->cursor;
+    l = *(int *)&s_pPacket->limit;
+    if ((unsigned)(n + (l - c) + 0x10000) > 0x200000U) {
+        return 1;
+    }
+    sceVif1PkRef(s_pPacket, arg0, arg1, 0, 0, 0);
+    return 0;
+}
 
 void nmlPacketSetCurrent(void)
 {
@@ -720,82 +1480,127 @@ void nmlPacketGsInit(void)
 
 void nmlPacketAddGsClamp(u64 clamp)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = clamp;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 8;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = clamp;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 8;
     g_nGsEntry++;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsPixeltest);
+void nmlPacketAddGsPixeltest(u32 test)
+{
+    packet_gs_entry32(0x47, 0, test);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsPixeltest1);
+void nmlPacketAddGsPixeltest1(u32 test)
+{
+    packet_gs_entry32(0x48, 0, test);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsZbuf);
+void nmlPacketAddGsZbuf(u64 mask)
+{
+    int idx = g_nGsEntry;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsZbuf1);
+    g_aGsTag[idx * 2 + 2].d = sRender.zbp | (mask << 32) | 0x1000000;
+    g_aGsTag[idx * 2 + 3].d = 0x4E;
+    g_nGsEntry = idx + 1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsTexture);
+void nmlPacketAddGsZbuf1(u64 mask)
+{
+    int idx = g_nGsEntry;
+
+    g_aGsTag[idx * 2 + 2].d = sRender.zbp | (mask << 32) | 0x1000000;
+    g_aGsTag[idx * 2 + 3].d = 0x4F;
+    g_nGsEntry = idx + 1;
+}
+
+void nmlPacketAddGsTexture(void)
+{
+    packet_gs_entry32(0x3F, 0, 0);
+}
 
 void nmlPacketAddGsAlpha(u64 alpha)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = alpha;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 66;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = alpha;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 66;
     g_nGsEntry++;
 }
 
 void nmlPacketAddGsAlpha1(u64 alpha)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = alpha;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 67;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = alpha;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 67;
     g_nGsEntry++;
 }
 
 void nmlPacketAddGsScissor(u64 scissor)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = scissor;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 64;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = scissor;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 64;
     g_nGsEntry++;
 }
 
 void nmlPacketAddGsScissor1(u64 scissor)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = scissor;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 65;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = scissor;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 65;
     g_nGsEntry++;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFBA);
+void nmlPacketAddGsFBA(int fba)
+{
+    packet_gs_entry32(0x4A, 0, fba != 0);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFBA1);
+void nmlPacketAddGsFBA1(int fba)
+{
+    packet_gs_entry32(0x4B, 0, fba != 0);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFogCol);
+void nmlPacketAddGsFogCol(float *color)
+{
+    packet_gs_entry32(0x3D, 0,
+        (u64)(u32)color[0] | ((u64)(u32)color[1] << 8) | ((u64)(u32)color[2] << 16));
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFrame);
+void nmlPacketAddGsFrame(u16 fbp, u64 mask)
+{
+    int idx = g_nGsEntry;
+    s16 *r = (s16 *)&sRender;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsFrame1);
+    g_aGsTag[idx * 2 + 2].d = fbp | (mask << 32) | (((u64)r[1] << 24) | ((u64)(r[2] / 64) << 16));
+    g_aGsTag[idx * 2 + 3].d = 0x4C;
+    g_nGsEntry = idx + 1;
+}
+
+void nmlPacketAddGsFrame1(u16 fbp, u64 mask)
+{
+    int idx = g_nGsEntry;
+    s16 *r = (s16 *)&sRender;
+
+    g_aGsTag[idx * 2 + 2].d = fbp | (mask << 32) | (((u64)r[1] << 24) | ((u64)(r[2] / 64) << 16));
+    g_aGsTag[idx * 2 + 3].d = 0x4D;
+    g_nGsEntry = idx + 1;
+}
 
 void nmlPacketAddGsPAbe(u64 pabe)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = pabe;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 73;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = pabe;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 73;
     g_nGsEntry++;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddGsPrmode);
+void nmlPacketAddGsPrmode(NmlMaterialRenderState *material)
+{
+    u64 prmode = 0x48;
+
+    if (material->material_flags & 1)
+        prmode = 0x58;
+    packet_gs_entry64(0x1B, &prmode);
+}
 
 void nmlPacketAddGsPrmodecont(u64 prmode_control)
 {
-    g_aGsTag[g_nGsEntry * 2 + 2] = prmode_control;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 26;
-    g_nGsEntry++;
-}
-
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", packet_gs_entry32);
-
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", packet_gs_entry64);
-
-void nmlPacketAddGsFba(u64 fba)
-{
-    g_aGsTag[g_nGsEntry * 2 + 2] = fba;
-    g_aGsTag[g_nGsEntry * 2 + 3] = 74;
+    g_aGsTag[g_nGsEntry * 2 + 2].d = prmode_control;
+    g_aGsTag[g_nGsEntry * 2 + 3].d = 26;
     g_nGsEntry++;
 }

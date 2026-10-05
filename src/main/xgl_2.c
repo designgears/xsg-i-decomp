@@ -9,25 +9,227 @@ extern void xglDmaDirectSrcChain(unsigned int channel, unsigned int address);
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglAtan2);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy64);
+void xglMemCopy64(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy64b);
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)\n\t"
+        "lq $2, 0x10(%1)\n\t"
+        "sq $2, 0x10(%0)\n\t"
+        "lq $2, 0x20(%1)\n\t"
+        "sq $2, 0x20(%0)\n\t"
+        "lq $2, 0x30(%1)\n\t"
+        "sq $2, 0x30(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, 0x40\n\t"
+        "addi %1, %1, 0x40\n\t"
+        "bne $0, %2, xglMemCopy64\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy16);
+void xglMemCopy64b(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy16b);
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)\n\t"
+        "lq $2, -0x10(%1)\n\t"
+        "sq $2, -0x10(%0)\n\t"
+        "lq $2, -0x20(%1)\n\t"
+        "sq $2, -0x20(%0)\n\t"
+        "lq $2, -0x30(%1)\n\t"
+        "sq $2, -0x30(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, -0x40\n\t"
+        "addi %1, %1, -0x40\n\t"
+        "bne $0, %2, xglMemCopy64b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy8);
+void xglMemCopy16(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy8b);
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, 0x10\n\t"
+        "addi %1, %1, 0x10\n\t"
+        "bne $0, %2, xglMemCopy16\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy4);
+void xglMemCopy16b(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy4b);
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, -0x10\n\t"
+        "addi %1, %1, -0x10\n\t"
+        "bne $0, %2, xglMemCopy16b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy2);
+void xglMemCopy8(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMemCopy2b);
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "ld $2, 0(%1)\n\t"
+        "sd $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, 0x8\n\t"
+        "addi %1, %1, 0x8\n\t"
+        "bne $0, %2, xglMemCopy8\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
+
+void xglMemCopy8b(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "ld $2, 0(%1)\n\t"
+        "sd $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, -0x8\n\t"
+        "addi %1, %1, -0x8\n\t"
+        "bne $0, %2, xglMemCopy8b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
+
+void xglMemCopy4(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lw $2, 0(%1)\n\t"
+        "sw $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, 0x4\n\t"
+        "addi %1, %1, 0x4\n\t"
+        "bne $0, %2, xglMemCopy4\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
+
+void xglMemCopy4b(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lw $2, 0(%1)\n\t"
+        "sw $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, -0x4\n\t"
+        "addi %1, %1, -0x4\n\t"
+        "bne $0, %2, xglMemCopy4b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
+
+void xglMemCopy2(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lh $2, 0(%1)\n\t"
+        "sh $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, 0x2\n\t"
+        "addi %1, %1, 0x2\n\t"
+        "bne $0, %2, xglMemCopy2\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
+
+void xglMemCopy2b(void *dst, void *src, int n)
+{
+    register void *r_dst asm("$4") = dst;
+    register void *r_src asm("$5") = src;
+    register int r_n asm("$6") = n;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lh $2, 0(%1)\n\t"
+        "sh $2, 0(%0)\n\t"
+        "addi %2, %2, -1\n\t"
+        "addi %0, %0, -0x2\n\t"
+        "addi %1, %1, -0x2\n\t"
+        "bne $0, %2, xglMemCopy2b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        :
+        : "$2", "memory");
+}
 
 void xglVectorDiv(Vector4 *destination, const Vector4 *numerator,
                   const Vector4 *divisor)
@@ -470,9 +672,49 @@ void xglRotTransPersN(Vector4 *destination, const Matrix4 matrix,
     xglMatrixStackPop(1);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMatrixUnit);
+extern float unit_0[16];
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMatrixUnit4s);
+/*
+ * Straight 64-byte copy of the identity matrix. gcc 2.96 allocates the
+ * pseudo holding unit_0's address to $2 and the loaded quadword to $3 for
+ * every pure-C spelling tried (quadword fields, explicit row temp, loop,
+ * volatile/non-volatile mixes), i.e. always the mirror image of the
+ * original; the register assignment is only reproducible from asm, matching
+ * how the neighbouring 64-byte copies are written.
+ */
+void xglMatrixUnit(float matrix[4][4])
+{
+    __asm__ __volatile__(
+        "lq $2, 0x0(%0)\n\t"
+        "sq $2, 0x0(%1)\n\t"
+        "lq $2, 0x10(%0)\n\t"
+        "sq $2, 0x10(%1)\n\t"
+        "lq $2, 0x20(%0)\n\t"
+        "sq $2, 0x20(%1)\n\t"
+        "lq $2, 0x30(%0)\n\t"
+        "sq $2, 0x30(%1)\n\t"
+        :
+        : "r"(unit_0), "r"(matrix)
+        : "$2", "memory");
+}
+
+extern float unit_1[16];
+
+void xglMatrixUnit4s(float matrix[4][4])
+{
+    __asm__ __volatile__(
+        "lq $2, 0x0(%0)\n\t"
+        "sq $2, 0x0(%1)\n\t"
+        "lq $2, 0x10(%0)\n\t"
+        "sq $2, 0x10(%1)\n\t"
+        "lq $2, 0x20(%0)\n\t"
+        "sq $2, 0x20(%1)\n\t"
+        "lq $2, 0x30(%0)\n\t"
+        "sq $2, 0x30(%1)\n\t"
+        :
+        : "r"(unit_1), "r"(matrix)
+        : "$2", "memory");
+}
 
 /*
  * Each destination row is right's row transformed by left: ACC accumulates
@@ -1363,7 +1605,22 @@ void xglFSrand(float seed)
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", F2I);
+int F2I(float value)
+{
+	int scratch;
+	int result;
+	float temp;
+
+	__asm__ __volatile__("mfc1 %0, %3\n\t"
+			     "nop\n\t"
+			     "mtc1 %0, %1\n\t"
+			     "nop\n\t"
+			     "cvt.w.s %1, %1\n\t"
+			     "mfc1 %2, %1"
+			     : "=&r"(scratch), "=&f"(temp), "=r"(result)
+			     : "f"(value));
+	return result;
+}
 
 float I2F(int value)
 {

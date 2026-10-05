@@ -57,7 +57,34 @@ void Java_xeno_Effect_setScale__FFF(JThread *thread, EffectVectorCall *arguments
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_getScale__);
+typedef struct EffectScaleVector {
+    int cls;
+    float f4;
+    float f8;
+    float fc;
+    float f10;
+} EffectScaleVector;
+extern EffectScaleVector scale_0_007C0A28;
+extern void *classJava_xeno_util_Vector4f;
+
+void Java_xeno_Effect_getScale__(JThread *thread, EffectCall *arguments, u32 *failure_result)
+{
+    unsigned char *object;
+    JavaField *field;
+    NativeEffectPeer *peer;
+
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        peer = *(NativeEffectPeer **)(object + field->offset);
+        scale_0_007C0A28.cls = *(int *)((char *)classJava_xeno_util_Vector4f + 0x18);
+        scale_0_007C0A28.fc = peer->scale_x;
+        scale_0_007C0A28.f8 = peer->scale_y;
+        scale_0_007C0A28.f4 = peer->scale_z;
+        scale_0_007C0A28.f10 = *(float *)((char *)peer + 0xac);
+        ((union { void *p; float f; } *)failure_result)->p = &scale_0_007C0A28;
+    }
+}
 
 void Java_xeno_Effect_getTranslate__(JThread *thread, EffectCall *arguments)
 {
@@ -121,7 +148,25 @@ void Java_xeno_Effect_getRotate__(JThread *thread, EffectCall *arguments)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_setRotate__);
+void Java_xeno_Effect_setRotate__(JThread *thread, EffectCall *arguments)
+{
+    unsigned char *object;
+    JavaField *field;
+    float *rotate;
+
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        rotate = (*(NativeEffectPeer **)(object + field->offset))->rotate;
+
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC160, -1), 0);
+        rotate[0] = (*(float *)(object + field->offset) / 180.0f) * 3.1415927f;
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC168, -1), 0);
+        rotate[1] = (*(float *)(object + field->offset) / 180.0f) * 3.1415927f;
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC170, -1), 0);
+        rotate[2] = (*(float *)(object + field->offset) / 180.0f) * 3.1415927f;
+    }
+}
 
 void Java_xeno_Effect_setCaster__Lxeno_Chr_(JThread *thread, EffectChrCall *arguments)
 {
@@ -234,7 +279,25 @@ void Java_xeno_Effect_getForceLoop__(JThread *thread, EffectCall *arguments, sig
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_setForceLoop__Z);
+void Java_xeno_Effect_setForceLoop__Z(JThread *thread, EffectBooleanCall *arguments)
+{
+    unsigned char *object;
+    JavaField *field;
+    unsigned char *peer;
+
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        peer = *(unsigned char **)(object + field->offset);
+        if (peer != 0) {
+            if (arguments->value == 1) {
+                *(int *)(peer + 0xA8C) |= 0x20;
+            } else {
+                *(int *)(peer + 0xA8C) &= ~0x20;
+            }
+        }
+    }
+}
 
 void Java_xeno_Effect_getClip__(JThread *thread, EffectCall *arguments, signed char *result)
 {
@@ -252,7 +315,25 @@ void Java_xeno_Effect_getClip__(JThread *thread, EffectCall *arguments, signed c
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_setClip__Z);
+void Java_xeno_Effect_setClip__Z(JThread *thread, EffectBooleanCall *arguments)
+{
+    unsigned char *object;
+    JavaField *field;
+    unsigned char *peer;
+
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        peer = *(unsigned char **)(object + field->offset);
+        if (peer != 0) {
+            if (arguments->value == 1) {
+                *(int *)(peer + 0xA8C) |= 0x10;
+            } else {
+                *(int *)(peer + 0xA8C) &= ~0x10;
+            }
+        }
+    }
+}
 
 void Java_xeno_Effect_clearEffect__(JThread *thread, EffectCall *arguments)
 {
@@ -270,6 +351,42 @@ void Java_xeno_Effect_clearEffect__(JThread *thread, EffectCall *arguments)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_setMotion__Z);
+void Java_xeno_Effect_setMotion__Z(JThread *thread, EffectBooleanCall *arguments)
+{
+    unsigned char *object;
+    JavaField *field;
+    unsigned char *peer;
 
-INCLUDE_ASM("asm/main/nonmatchings/effect", Java_xeno_Effect_noAttach__Z);
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        peer = *(unsigned char **)(object + field->offset);
+        if (peer != 0) {
+            if (arguments->value == 1) {
+                *(int *)(peer + 0xA8C) |= 0x80;
+            } else {
+                *(int *)(peer + 0xA8C) &= ~0x80;
+            }
+        }
+    }
+}
+
+void Java_xeno_Effect_noAttach__Z(JThread *thread, EffectBooleanCall *arguments)
+{
+    unsigned char *object;
+    JavaField *field;
+    unsigned char *peer;
+
+    object = arguments->object;
+    if (object != 0) {
+        field = lookupClassField(classJava_xeno_Effect, loadConstString(D_004DC140, -1), 0);
+        peer = *(unsigned char **)(object + field->offset);
+        if (peer != 0) {
+            if (arguments->value == 1) {
+                *(int *)(peer + 0xA8C) |= 0x400;
+            } else {
+                *(int *)(peer + 0xA8C) &= ~0x400;
+            }
+        }
+    }
+}

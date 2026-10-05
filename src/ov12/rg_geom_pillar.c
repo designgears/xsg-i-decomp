@@ -229,7 +229,194 @@ static int CheckInBox(const RgVector point, const RgVector lower,
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_pillar", CheckBallBoxCollision_00A2EB18);
+static int CheckIntersect(const RgVector from, const RgVector to, float *lower, float *upper);
+static inline void BoxCopy(float *dst, const float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf31, 0(%1)\n\t"
+        "sqc2 $vf31, 0(%0)\n\t"
+        : : "r"(dst), "r"(src) : "memory");
+}
+
+static int CheckBallBoxCollision(RgVector contact, RgVector *corners[4], int flag)
+{
+    RgVector lower;
+    RgVector upper;
+    RgVector pad;
+    float t;
+    unsigned int code;
+    int slope;
+    float *a;
+    float *b;
+
+    a = *corners[0];
+    b = *corners[1];
+    t = (*corners[2])[3];
+    if (a[0] > b[0]) {
+        upper[0] = a[0] + t;
+        lower[0] = b[0] - t;
+    } else {
+        upper[0] = b[0] + t;
+        lower[0] = a[0] - t;
+    }
+    if (a[2] > b[2]) {
+        upper[2] = a[2] + t;
+        lower[2] = b[2] - t;
+    } else {
+        upper[2] = b[2] + t;
+        lower[2] = a[2] - t;
+    }
+
+    if (CheckInBox(*corners[2], lower, upper)) {
+        if (contact != 0) {
+            BoxCopy(contact, *corners[2]);
+        }
+        return 1;
+    }
+    if (!CheckInBox(*corners[3], lower, upper)) {
+        if (!CheckIntersect(*corners[2], *corners[3], lower, upper)) {
+            swapf(lower, upper);
+            if (!CheckIntersect(*corners[2], *corners[3], lower, upper)) {
+                return 0;
+            }
+            swapf(lower, upper);
+        }
+    }
+
+    code = 0;
+    if ((*corners[2])[2] <= lower[2]) {
+        code = 1;
+    } else if (upper[2] <= (*corners[2])[2]) {
+        code = 2;
+    }
+    if ((*corners[2])[0] <= lower[0]) {
+        code |= 4;
+    } else if (upper[0] <= (*corners[2])[0]) {
+        code |= 8;
+    }
+
+    switch (code) {
+    case 1:
+        if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], lower[2])) {
+            return 0;
+        }
+        code |= 0x10;
+        break;
+    case 2:
+        if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], upper[2])) {
+            return 0;
+        }
+        code |= 0x10;
+        break;
+    case 4:
+        if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], lower[0])) {
+            return 0;
+        }
+        break;
+    case 8:
+        if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], upper[0])) {
+            return 0;
+        }
+        break;
+    case 5:
+        slope = CheckSlope(*corners[2], *corners[3], *corners[2], lower);
+
+        if (slope != -1) {
+            if (slope != 1) {
+                return 0;
+            }
+            if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], lower[2])) {
+                return 0;
+            }
+            code |= 0x10;
+        } else {
+            if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], lower[0])) {
+                return 0;
+            }
+        }
+        break;
+    case 6:
+        swapf(&lower[2], &upper[2]);
+        slope = CheckSlope(*corners[2], *corners[3], *corners[2], upper);
+
+        if (slope != -1) {
+            if (slope != 1) {
+                return 0;
+            }
+            if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], lower[0])) {
+                return 0;
+            }
+        } else {
+            if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], lower[2])) {
+                return 0;
+            }
+            code |= 0x10;
+        }
+        swapf(&lower[2], &upper[2]);
+        break;
+    case 9:
+        swapf(lower, upper);
+        slope = CheckSlope(*corners[2], *corners[3], *corners[2], lower);
+
+        if (slope != -1) {
+            if (slope != 1) {
+                return 0;
+            }
+            if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], lower[0])) {
+                return 0;
+            }
+        } else {
+            if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], lower[2])) {
+                return 0;
+            }
+            code |= 0x10;
+        }
+        swapf(lower, upper);
+        break;
+    case 10:
+        slope = CheckSlope(*corners[2], *corners[3], *corners[2], upper);
+
+        if (slope != -1) {
+            if (slope != 1) {
+                return 0;
+            }
+            if (!GetIntersectionPointLineZ(&t, *corners[2], *corners[3], upper[2])) {
+                return 0;
+            }
+            code |= 0x10;
+        } else {
+            if (!GetIntersectionPointLineX(&t, *corners[2], *corners[3], upper[0])) {
+                return 0;
+            }
+        }
+        break;
+    default:
+        return 0;
+    }
+
+    if (contact != 0) {
+        t -= 0.001f;
+        switch (flag) {
+        case 0:
+        default:
+            contact[0] = ((*corners[3])[0] - (*corners[2])[0]) * t + (*corners[2])[0];
+            contact[1] = ((*corners[3])[1] - (*corners[2])[1]) * t + (*corners[2])[1];
+            contact[2] = ((*corners[3])[2] - (*corners[2])[2]) * t + (*corners[2])[2];
+            break;
+        case 1:
+            if (code & 0x10) {
+                contact[0] = (*corners[3])[0];
+                contact[2] = ((*corners[3])[2] - (*corners[2])[2]) * t + (*corners[2])[2];
+            } else {
+                contact[0] = ((*corners[3])[0] - (*corners[2])[0]) * t + (*corners[2])[0];
+                contact[2] = (*corners[3])[2];
+            }
+            contact[1] = ((*corners[3])[1] - (*corners[2])[1]) * t + (*corners[2])[1];
+            break;
+        }
+    }
+    return 1;
+}
 
 int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
                           RgVector worldResults[3])
@@ -304,4 +491,235 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
     return hit;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_pillar", _CheckPillarBall);
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+static inline void PillarCopy(float *dst, const float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf31, 0(%1)\n\t"
+        "sqc2 $vf31, 0(%0)\n\t"
+        : : "r"(dst), "r"(src) : "memory");
+}
+static inline void PillarSub(float *dst, const float *a, const float *b)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf30, 0(%1)\n\t"
+        "lqc2 $vf31, 0(%2)\n\t"
+        "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+        "sqc2 $vf30, 0(%0)\n\t"
+        : : "r"(dst), "r"(a), "r"(b) : "memory");
+}
+static inline void PillarAdd(float *dst, const float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf30, 0(%0)\n\t"
+        "lqc2 $vf31, 0(%1)\n\t"
+        "vadd.xyzw $vf30, $vf30, $vf31\n\t"
+        "sqc2 $vf30, 0(%0)\n\t"
+        : : "r"(dst), "r"(src) : "memory");
+}
+
+static int _CheckPillarBall(const RgVector localPosition,
+                            RgVector localNormal,
+                            RgVector localContact,
+                            RgVector localCorrection,
+                            float halfWidth, float halfDepth, float radius)
+{
+    RgVector base;
+    RgVector offset0;
+    RgVector offset2;
+    RgVector offset6;
+    RgVector offset8;
+    int zone;
+    unsigned int side;
+    int hit;
+
+    hit = 0;
+    PillarCopy(localNormal, localPosition);
+    PillarCopy(localContact, localPosition);
+    PillarCopy(base, localPosition);
+    localCorrection[0] = localCorrection[1] = localCorrection[2] =
+        localCorrection[3] = 0.0f;
+
+    zone = 0;
+    if (!(localNormal[0] < -halfWidth)) {
+        zone = 2;
+        if (!(halfWidth < localNormal[0])) {
+            zone = 1;
+        }
+    }
+    if (!(localNormal[2] < -halfDepth)) {
+        if (halfDepth < localNormal[2]) {
+            zone += 6;
+        } else {
+            zone += 3;
+        }
+    }
+
+    switch (zone) {
+    case 1: {
+        float distance;
+
+        distance = -halfDepth - localNormal[2];
+        hit = distance < radius;
+        if (hit) {
+            localNormal[2] = localNormal[2] - (radius - distance);
+            localContact[2] = -halfDepth;
+            localCorrection[2] = -1.0f;
+        }
+        break;
+    }
+    case 3: {
+        float distance;
+
+        distance = -halfWidth - localNormal[0];
+        hit = distance < radius;
+        if (hit) {
+            localNormal[0] = localNormal[0] - (radius - distance);
+            localContact[0] = -halfWidth;
+            localCorrection[0] = -1.0f;
+        }
+        break;
+    }
+    case 5: {
+        float distance;
+
+        distance = localNormal[0] - halfWidth;
+        hit = distance < radius;
+        if (hit) {
+            localNormal[0] = localNormal[0] + (radius - distance);
+            localContact[0] = halfWidth;
+            localCorrection[0] = 1.0f;
+        }
+        break;
+    }
+    case 7: {
+        float distance;
+
+        distance = localNormal[2] - halfDepth;
+        hit = distance < radius;
+        if (hit) {
+            localNormal[2] = localNormal[2] + (radius - distance);
+            localContact[2] = halfDepth;
+            localCorrection[2] = 1.0f;
+        }
+        break;
+    }
+    case 0: {
+        float length;
+
+        base[0] = -halfWidth;
+        base[2] = -halfDepth;
+        PillarSub(offset0, localNormal, base);
+        offset0[1] = 0.0f;
+        length = XrgNormalizeVector(localCorrection, offset0);
+        if (length < radius) {
+            offset0[0] = localCorrection[0] * (radius - length);
+            offset0[1] = localCorrection[1] * (radius - length);
+            offset0[2] = localCorrection[2] * (radius - length);
+            offset0[3] = localCorrection[3] * (radius - length);
+            PillarAdd(localNormal, offset0);
+            hit = 1;
+        } else {
+            hit = 0;
+        }
+        PillarCopy(localContact, base);
+        break;
+    }
+    case 2: {
+        float length;
+
+        base[0] = halfWidth;
+        base[2] = -halfDepth;
+        PillarSub(offset2, localNormal, base);
+        offset2[1] = 0.0f;
+        length = XrgNormalizeVector(localCorrection, offset2);
+        if (length < radius) {
+            offset2[0] = localCorrection[0] * (radius - length);
+            offset2[1] = localCorrection[1] * (radius - length);
+            offset2[2] = localCorrection[2] * (radius - length);
+            offset2[3] = localCorrection[3] * (radius - length);
+            PillarAdd(localNormal, offset2);
+            hit = 1;
+        } else {
+            hit = 0;
+        }
+        PillarCopy(localContact, base);
+        break;
+    }
+    case 6: {
+        float length;
+
+        base[0] = -halfWidth;
+        base[2] = halfDepth;
+        PillarSub(offset6, localNormal, base);
+        offset6[1] = 0.0f;
+        length = XrgNormalizeVector(localCorrection, offset6);
+        if (length < radius) {
+            offset6[0] = localCorrection[0] * (radius - length);
+            offset6[1] = localCorrection[1] * (radius - length);
+            offset6[2] = localCorrection[2] * (radius - length);
+            offset6[3] = localCorrection[3] * (radius - length);
+            PillarAdd(localNormal, offset6);
+            hit = 1;
+        } else {
+            hit = 0;
+        }
+        PillarCopy(localContact, base);
+        break;
+    }
+    case 8: {
+        float length;
+
+        base[0] = halfWidth;
+        base[2] = halfDepth;
+        PillarSub(offset8, localNormal, base);
+        offset8[1] = 0.0f;
+        length = XrgNormalizeVector(localCorrection, offset8);
+        if (length < radius) {
+            offset8[0] = localCorrection[0] * (radius - length);
+            offset8[1] = localCorrection[1] * (radius - length);
+            offset8[2] = localCorrection[2] * (radius - length);
+            offset8[3] = localCorrection[3] * (radius - length);
+            PillarAdd(localNormal, offset8);
+            hit = 1;
+        } else {
+            hit = 0;
+        }
+        PillarCopy(localContact, base);
+        break;
+    }
+    case 4:
+        side = 0;
+        if (!(localNormal[2] <= -localNormal[0])) {
+            side = 1;
+        }
+        if (!(localNormal[2] <= localNormal[0])) {
+            side += 2;
+        }
+        hit = 1;
+        switch (side) {
+        case 0:
+            localNormal[2] = -halfDepth - radius;
+            localContact[2] = -halfDepth;
+            localCorrection[2] = -1.0f;
+            break;
+        case 1:
+            localNormal[0] = halfWidth + radius;
+            localContact[0] = halfWidth;
+            localCorrection[0] = 1.0f;
+            break;
+        case 2:
+            localNormal[0] = -halfWidth - radius;
+            localContact[0] = -halfWidth;
+            localCorrection[0] = -1.0f;
+            break;
+        case 3:
+            localNormal[2] = halfDepth + radius;
+            localContact[2] = halfDepth;
+            localCorrection[2] = 1.0f;
+            break;
+        }
+        break;
+    }
+    return hit;
+}

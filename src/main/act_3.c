@@ -69,9 +69,98 @@ INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawCircleShadow);
 
 INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawZeldaShadowSub);
 
-INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawZeldaShadow);
+extern float D_004D85EC;
+extern volatile float D_004D85F0;
+extern float D_004D85F4;
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+extern float atan2f(float y, float x);
+extern float sqrtf(float x);
+void DrawZeldaShadowSub(void *a, void *b);
 
-INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawDropShadowSubChk);
+static void DrawZeldaShadow(char *obj) {
+    int i;
+    float *dir;
+
+    float h = *(float *)(obj + 0x4DC);
+    if (!(h != -1000.0f)) {
+        *(float *)0x70000130 = *(float *)(obj + 0x14) + D_004D85EC;
+    } else {
+        *(float *)0x70000130 = h + D_004D85F0;
+    }
+    for (i = 0; i < 8; i++) {
+        if (xglStudioGetCamera2(i)->active == 1) {
+            break;
+        }
+    }
+    *(int *)0x7000013C = i;
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n\tsq $2, 0(%0)\n\t"
+        "lq $2, 16(%1)\n\tsq $2, 16(%0)\n\t"
+        "lq $2, 32(%1)\n\tsq $2, 32(%0)\n\t"
+        "lq $2, 48(%1)\n\tsq $2, 48(%0)"
+        : : "r"((void *)0x70000010), "r"(*(void **)(obj + 0x824)) : "$2", "memory");
+    dir = (float *)(obj + 0xA0);
+    *(float *)0x70000138 = __builtin_sqrtf(1.0f - dir[1] * dir[1]) * 0.5f;
+    if (*(float *)0x70000138 < D_004D85F4) {
+        *(float *)0x70000138 = D_004D85F4;
+    }
+    *(float *)0x70000134 = atan2f(-dir[0], -dir[2]);
+    DrawZeldaShadowSub((void *)0x70000000, *(char **)(obj + 0x824) + 0x780);
+    DrawZeldaShadowSub((void *)0x70000000, *(char **)(obj + 0x824) + 0x500);
+}
+
+typedef struct {
+    int x;
+    int y;
+    int z;
+    int valid;
+} DropShadowChkPoint;
+
+static int DrawDropShadowSubChk(ActDropShadowState *shadow, u8 *index, int base,
+                                int count)
+{
+    int i;
+    int sum;
+    u8 *status;
+    DropShadowBackEntry *entry;
+    DropShadowChkPoint *pts;
+    DropShadowChkPoint *p0;
+    DropShadowChkPoint *p1;
+    DropShadowChkPoint *p2;
+    DropShadowChkPoint *p3;
+
+    status = shadow->back_shadow_status;
+    entry = shadow->back_shadow_entries;
+    i = 0;
+    sum = 0;
+    if (count > 0) {
+        pts = (DropShadowChkPoint *)((char *)shadow + base * 16 + 0x9A0);
+        do {
+            p0 = &pts[index[0]];
+            p1 = &pts[index[1]];
+            p2 = &pts[index[2]];
+            p3 = &pts[index[3]];
+            index += 4;
+            if (p0->valid == 0 || p1->valid == 0 || p2->valid == 0 || p3->valid == 0) {
+                return 0;
+            }
+            entry->points[0] = (DropShadowSourcePoint *)p0;
+            entry->points[1] = (DropShadowSourcePoint *)p1;
+            entry->points[2] = (DropShadowSourcePoint *)p2;
+            entry->points[3] = (DropShadowSourcePoint *)p3;
+            entry++;
+            if ((float)(p2->x * p0->y + p0->x * p1->y + p1->x * p2->y
+                        - p2->x * p1->y - p0->x * p2->y - p1->x * p0->y) >= 0.0f) {
+                *status = 1;
+            } else {
+                *status = 2;
+            }
+            sum += *status++;
+            i++;
+        } while (i < count);
+    }
+    return sum;
+}
 
 static void DrawDropShadowSubBack(ActDropShadowState *shadow, int vertex_count,
                                   int draw_mode)
@@ -127,7 +216,78 @@ static void DrawDropShadowSubBack(ActDropShadowState *shadow, int vertex_count,
     } while (remaining != 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawDropShadowSubFront);
+extern float I2F(int value);
+typedef struct {
+    float u;
+    float v;
+    u32 unmodeled_08[2];
+    u32 x;
+    u32 y;
+    u32 z;
+    u32 w;
+} DropShadowFrontPoint;
+
+static void DrawDropShadowSubFront(ActDropShadowState *shadow, int vertex_count)
+{
+    int remaining;
+    u8 *status;
+    DropShadowBackEntry *entry;
+    DropShadowFrontPoint *pt;
+    float scale;
+
+    pt = (DropShadowFrontPoint *)shadow->back_shadow_packet.points;
+    shadow->back_shadow_packet.packet_tag_0c = 0x5100000C;
+    entry = shadow->back_shadow_entries;
+    shadow->back_shadow_packet.packet_header_14 = 0xB02A4000;
+    shadow->back_shadow_packet.packet_header_18 = 0x252521EE;
+    *(u32 *)shadow->back_shadow_packet.unmodeled_1c = 0x525;
+    shadow->back_shadow_packet.packet_header_20 =
+        (u64)((u8 *)shadow)[0x12BB] << 4 | 0x70009;
+    shadow->back_shadow_packet.draw_mode = ((u8 *)shadow)[0x12BB];
+    shadow->back_shadow_packet.packet_header_34 = 0;
+    shadow->back_shadow_packet.packet_state[0] = 0;
+    shadow->back_shadow_packet.packet_state[1] = 0;
+    shadow->back_shadow_packet.packet_state[2] = 0;
+    scale = 0.00012207031f;
+    pt[0].w = 0;
+    pt[1].w = 0;
+    pt[2].w = 0;
+    pt[3].w = 0;
+
+    if (vertex_count <= 0) {
+        return;
+    }
+
+    remaining = vertex_count;
+    status = shadow->back_shadow_status;
+    do {
+        if (*status++ == 2) {
+            pt[0].u = I2F(entry->points[0]->x - 0x6FF8) * scale;
+            pt[0].v = I2F(entry->points[0]->y - 0x71F7) * scale;
+            pt[0].x = entry->points[0]->x;
+            pt[0].y = entry->points[0]->y;
+            pt[0].z = entry->points[0]->z;
+            pt[1].u = I2F(entry->points[1]->x - 0x6FF8) * scale;
+            pt[1].v = I2F(entry->points[1]->y - 0x71F7) * scale;
+            pt[1].x = entry->points[1]->x;
+            pt[1].y = entry->points[1]->y;
+            pt[1].z = entry->points[1]->z;
+            pt[2].u = I2F(entry->points[2]->x - 0x6FF8) * scale;
+            pt[2].v = I2F(entry->points[2]->y - 0x71F7) * scale;
+            pt[2].x = entry->points[2]->x;
+            pt[2].y = entry->points[2]->y;
+            pt[2].z = entry->points[2]->z;
+            pt[3].u = I2F(entry->points[3]->x - 0x6FF8) * scale;
+            pt[3].v = I2F(entry->points[3]->y - 0x71F7) * scale;
+            pt[3].x = entry->points[3]->x;
+            pt[3].y = entry->points[3]->y;
+            pt[3].z = entry->points[3]->z;
+            nmlModelDirectSend(1, (u8 *)&shadow->back_shadow_packet, 13);
+        }
+        remaining--;
+        entry++;
+    } while (remaining != 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/act_3", DrawDropShadowSub);
 

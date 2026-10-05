@@ -336,7 +336,7 @@ INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuMapDisp);
  * until that TU publishes its header.
  */
 extern void grCloseSpr(void);
-extern void grGsRegSet(int packet, int reg, int value);
+extern void grGsRegSet(int packet, int reg, unsigned long long value);
 extern void grOpenSpr(int packet);
 
 void menuATBEnvPalSet(int packet, int palette);
@@ -519,7 +519,23 @@ void menuApBarPut(int packet, int x, int y, int amount)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuBpBarPut);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatIconChk);
+typedef struct StatTblEnt { int mask; int pad[2]; } StatTblEnt;
+extern StatTblEnt *statTbl[];
+
+int menuStatIconChk(int charaId, int iconSlot) {
+    StatTblEnt *p = statTbl[charaId];
+    int i;
+
+    if (p == 0 || iconSlot == 0) {
+        return -1;
+    }
+    for (i = 0; p[i].mask != 0; i++) {
+        if (p[i].mask & iconSlot) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatIconPut);
 
@@ -571,9 +587,34 @@ void menuStatNamePut(ObjectTask *task)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuKeyGuideDisp);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", keyGideDisp);
+typedef struct { int u, v, w, h; } KeyGideUV;
+extern KeyGideUV uvTbl[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuGuideFrameDisp);
+void keyGideDisp(int packet, int x, int y, int id)
+{
+    grOpenSpr(packet);
+    id--;
+    menuStatSprite(packet, x, y, uvTbl[id].w, uvTbl[id].h, uvTbl[id].u, uvTbl[id].v);
+    grCloseSpr();
+}
+
+typedef struct { unsigned char c[3][4]; } GuideFrameCol;
+extern GuideFrameCol D_00A468F0;
+void menuStatSprite2RGB(int packet, int x, int y, int flip, int w, int u, int r, int u2, int g, unsigned char *col);
+
+void menuGuideFrameDisp(int packet, int x, int y, int h, int sel)
+{
+    GuideFrameCol col;
+
+    col = D_00A468F0;
+    grGsRegSet(packet, 0x42, 0x2000000029ULL);
+    grOpenSpr(packet);
+    menuStatSprite2RGB(packet, x, y, h, 0xC, 0x84, 0xC4, 0xBC, 0xCF, col.c[sel]);
+    menuStatSprite2RGB(packet, x + h, y, h + 1, 0xC, 0xBC, 0xC4, 0x84, 0xCF, col.c[sel]);
+    menuStatSprite2RGB(packet, x, y + 0xC, h, 0xC, 0x84, 0xCF, 0xBC, 0xC4, col.c[sel]);
+    menuStatSprite2RGB(packet, x + h, y + 0xC, h + 1, 0xC, 0xBC, 0xCF, 0x84, 0xC4, col.c[sel]);
+    grCloseSpr();
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/menu", monsNameDisp);
 

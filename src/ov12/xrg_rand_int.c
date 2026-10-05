@@ -229,7 +229,34 @@ void XrgUnitMatrix(RgMatrix destination)
     } while (row >= 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgMulMatrix);
+void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right)
+{
+    register void *d __asm__("$4") = destination;
+    register void *m __asm__("$5") = left;
+    register void *s __asm__("$6") = right;
+
+    __asm__ __volatile__(
+        ".set noreorder\n\t"
+        "lqc2 vf4, 0x0(%2)\n\t"
+        "lqc2 vf5, 0x10(%2)\n\t"
+        "lqc2 vf6, 0x20(%2)\n\t"
+        "lqc2 vf7, 0x30(%2)\n\t"
+        "addiu $7, $0, 4\n"
+        "1:\n\t"
+        "lqc2 vf8, 0x0(%1)\n\t"
+        "vmulax.xyzw ACC, vf4, vf8x\n\t"
+        "vmadday.xyzw ACC, vf5, vf8y\n\t"
+        "vmaddaz.xyzw ACC, vf6, vf8z\n\t"
+        "vmaddw.xyzw vf9, vf7, vf8w\n\t"
+        "sqc2 vf9, 0x0(%0)\n\t"
+        "addi $7, $7, -1\n\t"
+        "addi %1, %1, 0x10\n\t"
+        "addi %0, %0, 0x10\n\t"
+        "bne $0, $7, 1b\n\t"
+        "nop\n\t"
+        ".set reorder"
+        : "+r"(d), "+r"(s) : "r"(m) : "$7", "memory");
+}
 
 void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector);
 
@@ -266,9 +293,40 @@ void XrgNegateVector(RgVector destination, RgVector source)
     destination[3] = source[3];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgRandVector);
+void XrgRotMatrixX(RgMatrix destination, RgMatrix source, float angle);
+void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgRandVectorRange);
+void XrgRandVector(RgVector destination)
+{
+    RgMatrix matrix;
+    float x;
+    float y;
+
+    x = (float) rand() * 4.656613e-10f;
+    y = (float) rand() * 4.656613e-10f;
+    x = x * 3.1415927f - 1.5707964f;
+    y = y * 6.2831855f - 3.1415927f;
+    XrgUnitMatrix(matrix);
+    XrgRotMatrixY(matrix, matrix, y);
+    XrgRotMatrixX(matrix, matrix, x);
+    XrgApplyVector(destination, matrix, XrgVectorZ());
+}
+
+void XrgRandVectorRange(RgVector destination, float xRange, float yRange)
+{
+    RgMatrix matrix;
+    float x;
+    float y;
+
+    x = (float) rand() * 4.656613e-10f;
+    y = (float) rand() * 4.656613e-10f;
+    x = x * xRange - xRange * 0.5f;
+    y = y * yRange - yRange * 0.5f;
+    XrgUnitMatrix(matrix);
+    XrgRotMatrixY(matrix, matrix, y);
+    XrgRotMatrixX(matrix, matrix, x);
+    XrgApplyVector(destination, matrix, XrgVectorZ());
+}
 
 /* ACC accumulates the transformed vector one row at a time: row 0 times x,
  * then rows 1-3 times y, z and the source vector's own w, the same shape as
@@ -378,13 +436,64 @@ void XrgCalcMatrixXtoZ(RgMatrix matrix, RgVector xAxis, RgVector zAxis)
     XrgOuterVector(matrix + 8, matrix, rowY);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgRotMatrixX);
+float sinf(float);
+float cosf(float);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgRotMatrixY);
+void XrgRotMatrixX(RgMatrix destination, RgMatrix source, float angle)
+{
+    float m[16];
+    float s = sinf(angle);
+    float c = cosf(angle);
+    XrgUnitMatrix(m);
+    m[9] = -s;
+    m[6] = s;
+    m[5] = c;
+    m[10] = c;
+    XrgMulMatrix(destination, source, m);
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgRotMatrixZ);
+void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle)
+{
+    float m[16];
+    float s = sinf(angle);
+    float c = cosf(angle);
+    XrgUnitMatrix(m);
+    m[2] = -s;
+    m[8] = s;
+    m[10] = c;
+    m[0] = c;
+    XrgMulMatrix(destination, source, m);
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgInvMatrix);
+void XrgRotMatrixZ(RgMatrix destination, RgMatrix source, float angle)
+{
+    float m[16];
+    float s = sinf(angle);
+    float c = cosf(angle);
+    XrgUnitMatrix(m);
+    m[4] = -s;
+    m[1] = s;
+    m[0] = c;
+    m[5] = c;
+    XrgMulMatrix(destination, source, m);
+}
+
+void XrgInvMatrix(RgMatrix destination, const RgMatrix source)
+{
+    float rot[16];
+    float trans[16];
+    int i, j;
+
+    XrgUnitMatrix(rot);
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++) {
+            rot[j * 4 + i] = source[i * 4 + j];
+        }
+    }
+    XrgUnitMatrix(trans);
+    XrgNegateVector(trans + 12, (float *)source + 12);
+    XrgMulMatrix(destination, rot, trans);
+}
 
 extern double atan2(double y, double x);
 
@@ -488,8 +597,89 @@ void XrgCalcPlane(RgVector plane, RgVector p0, RgVector p1, RgVector p2)
     plane[3] = -XrgInnerVector(plane, p0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgIsTriIntersectedByRay);
+int XrgIsTriIntersectedByRay(RgVector origin, RgVector dir, RgVector tri, float *t)
+{
+    RgVector e0;
+    RgVector e1;
+    RgVector e2;
+    RgVector n;
+    RgVector d;
+    float dn;
+    float r;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgQuantAngle);
+    XrgSubVector(e0, tri + 4, tri);
+    XrgSubVector(e1, tri + 8, tri + 4);
+    XrgSubVector(e2, tri, tri + 8);
+    XrgOuterVector(n, e0, dir);
+    XrgSubVector(d, origin, tri);
+    if (XrgInnerVector(d, n) <= -0.0001f) return 0;
+    XrgOuterVector(n, e1, dir);
+    XrgSubVector(d, origin, tri + 4);
+    if (XrgInnerVector(d, n) <= -0.0001f) return 0;
+    XrgOuterVector(n, e2, dir);
+    XrgSubVector(d, origin, tri + 8);
+    if (XrgInnerVector(d, n) <= -0.0001f) return 0;
+    XrgOuterVector(n, e0, e1);
+    n[3] = -XrgInnerVector(n, tri);
+    dn = XrgInnerVector(n, dir);
+    if (dn >= -0.0001f) return 0;
+    r = -(XrgInnerVector(n, origin) + n[3]) / dn;
+    *t = r;
+    if (r >= 0.0f && r < 1.0f) return 1;
+    return 0;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_rand_int", XrgQuantAngle4);
+int XrgQuantAngle(float a)
+{
+    while (a > 3.1415927f) {
+        a -= 6.2831855f;
+    }
+    while (a < -3.1415927f) {
+        a += 6.2831855f;
+    }
+    if (a >= -0.3926991f && a < 0.3926991f) {
+        return 0;
+    }
+    if (a >= 0.3926991f && a < 1.1780972f) {
+        return 1;
+    }
+    if (a >= 1.1780972f && a < 1.96349549f) {
+        return 2;
+    }
+    if (a >= 1.96349549f && a < 2.74889374f) {
+        return 3;
+    }
+    if (a >= 2.74889374f || a < -2.74889374f) {
+        return 4;
+    }
+    if (a >= -2.74889374f && a < -1.96349549f) {
+        return 5;
+    }
+    if (a >= -1.96349549f && a < -1.1780972f) {
+        return 6;
+    }
+    return 7;
+}
+
+int XrgQuantAngle4(float a)
+{
+    while (a > 3.1415927f) {
+        a -= 6.2831855f;
+    }
+    while (a < -3.1415927f) {
+        a += 6.2831855f;
+    }
+    if (a >= -0.7853982f && a < 0.7853982f) {
+        return 0;
+    }
+    if (a >= 0.7853982f && a < 2.3561945f) {
+        return 1;
+    }
+    if (a >= 2.3561945f || a < -2.3561945f) {
+        return 2;
+    }
+    if (a >= -2.3561945f && a < -0.7853982f) {
+        return 3;
+    }
+    return -1;
+}

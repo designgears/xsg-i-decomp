@@ -3,7 +3,50 @@
 
 extern void *memset(void *destination, int value, unsigned int count);
 
-INCLUDE_ASM("asm/main/nonmatchings/act_1", ACT_allocMatrix);
+extern void *RSRC_alloc(MatrixHeap *heap, int size, int tag);
+extern void ACT_resetMatrix(void *actor);
+
+int ACT_allocMatrix(char *actor, int count)
+{
+    int size64;
+    int size128;
+    char *mem;
+    char *p;
+    int extra;
+
+    if (count < 0) {
+        char *mdl = *(char **)(actor + 0x8D8);
+        count = 1;
+        if (mdl != 0) {
+            count = *(unsigned short *)(mdl + 6);
+        }
+    }
+    if (actMatrixHeap == 0) {
+        return -1;
+    }
+    if (count <= 0) {
+        return count;
+    }
+    size64 = count << 6;
+    size128 = count << 7;
+    extra = 0;
+    if (*(unsigned char *)(actor + 0x82) == 1) {
+        extra = size64;
+    }
+    mem = RSRC_alloc(actMatrixHeap, size128 + extra, (int)actor);
+    if (mem != 0) {
+        *(char **)(actor + 0x828) = mem + size64;
+        *(char **)(actor + 0x824) = mem;
+        if (*(unsigned char *)(actor + 0x82) == 1) {
+            p = mem + size128;
+            *(char **)(actor + 0x82C) = p;
+            *(char **)(actor + 0x830) = p + (count << 5);
+            memset(p, 0, size64);
+        }
+        ACT_resetMatrix(actor);
+    }
+    return count;
+}
 
 /*
  * RSRC_alloc is defined by another TU (src/main/rsrc.c, still unrecovered)
@@ -54,9 +97,135 @@ void ACT_matrixInit(void)
     memset(matrixHeapBlock, 0, 0x400);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/act_1", ACT_init);
+typedef unsigned int ActInitQuad __attribute__((mode(TI)));
+extern void UnduParamInit(void *p);
+extern void EXM_InitWind(void);
+extern void EXM_InitMovedHair(ActRecord *self);
+#define AF(T, a, off) (*(T *)((char *)(a) + (off)))
 
-INCLUDE_ASM("asm/main/nonmatchings/act_1", ACT_create);
+void ACT_init(void)
+{
+    ActRecord *a;
+    int i;
+    int n;
+
+    ACT_matrixInit();
+    for (n = 0; n < 0x40; n++) {
+        a = &actor[n];
+        a->flags = 0x20;
+        AF(int, a, 0x9a8) = 0x75;
+        AF(short, a, 0x84) = 0;
+        AF(int, a, 0x900) = 0;
+        a->inUseId = 0;
+        a->update = 0;
+        a->draw = 0;
+        a->parent = 0;
+        AF(float, a, 0x60) = 1.0f;
+        AF(float, a, 0x64) = 1.0f;
+        AF(float, a, 0x68) = 1.0f;
+        AF(float, a, 0x6c) = 1.0f;
+        AF(float, a, 0x1c) = 1.0f;
+        AF(float, a, 0x7c) = 1.0f;
+        AF(int, a, 0x3c) = 0;
+        AF(int, a, 0x4c) = 0;
+        AF(int, a, 0x9a0) = 0;
+        AF(int, a, 0x9a4) = 0;
+        AF(int, a, 0x9ac) = 0;
+        AF(int, a, 0x9d0) = 0;
+        AF(int, a, 0x9e0) = 0;
+        AF(int, a, 0x754) = 0;
+        AF(int, a, 0x758) = -1;
+        AF(char, a, 0x83) = 0;
+        AF(int, a, 0x698) = 0;
+        AF(int, a, 0x69c) = -1;
+        AF(short, a, 0x696) = 0;
+        for (i = 7; i >= 0; i--) {
+            ((char *)a + 0x6e0)[i] = 0;
+        }
+        for (i = 0; i < 3; i++) {
+            __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x970 + i * 16) : "memory");
+        }
+        for (i = 10; i >= 0; i--) {
+            ((int *)((char *)a + 0x8d0))[i] = 0;
+        }
+        for (i = 3; i >= 0; i--) {
+            ((int *)((char *)a + 0x904))[i] = 0;
+        }
+        UnduParamInit((char *)a + 0x4c8);
+        AF(short, a, 0x676) = 0;
+        AF(int, a, 0x678) = 0;
+        AF(short, a, 0x674) = 1;
+        AF(int, a, 0x67c) = 0;
+        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x640) : "memory");
+        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x650) : "memory");
+        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x660) : "memory");
+        AF(float, a, 0x66c) = 1.0f;
+        AF(float, a, 0x62c) = 1.0f;
+        AF(float, a, 0x670) = 1.0f;
+        AF(int, a, 0x690) = 0;
+        EXM_InitMovedHair(a);
+        AF(int, a, 0xa60) = 0;
+    }
+    EXM_InitWind();
+}
+
+extern float D_004D8450;
+extern void EXM_InitMovedHair(ActRecord *self);
+
+ActRecord *ACT_create(int id, int code)
+{
+    ActRecord *a;
+    int i;
+
+    if (id < 0) {
+        if (id == -1) {
+            for (i = 0; i < ACTOR_COUNT; i++) {
+                if (actor[i].inUseId == 0) {
+                    id = i;
+                    break;
+                }
+            }
+        } else if (id == -2) {
+            for (i = ACTOR_COUNT - 1; i >= 0; i--) {
+                if (actor[i].inUseId == 0) {
+                    id = i;
+                    break;
+                }
+            }
+        }
+        if (id < 0) {
+            return 0;
+        }
+    }
+    if ((unsigned int)id >= ACTOR_COUNT) {
+        return 0;
+    }
+    a = &actor[id];
+    a->unmodeled_0c[0x82 - 0x0c] = code >> 16;
+    a->flags = 0x20;
+    a->unmodeled_0c[0x80 - 0x0c] = id;
+    a->inUseId = code;
+    *(int *)&a->unmodeled_900[0] = 0;
+    *(float *)&a->unmodeled_0c[0x60 - 0x0c] = 1.0f;
+    *(float *)&a->unmodeled_0c[0x64 - 0x0c] = 1.0f;
+    *(float *)&a->unmodeled_0c[0x68 - 0x0c] = 1.0f;
+    *(float *)&a->unmodeled_0c[0x6c - 0x0c] = 1.0f;
+    a->parent = 0;
+    a->draw = 0;
+    if (!(code & 0xF000)) {
+        a->unmodeled_88[0x90 - 0x88] = 4;
+        a->unmodeled_88[0x91 - 0x88] = 0x10;
+    } else {
+        a->unmodeled_88[0x90 - 0x88] = 1;
+        a->unmodeled_88[0x91 - 0x88] = 0x50;
+    }
+    *(int *)&a->unmodeled_900[0x9f4 - 0x900] = 0;
+    *(float *)&a->unmodeled_900[0x9e8 - 0x900] = D_004D8450;
+    *(int *)&a->unmodeled_900[0x9f8 - 0x900] = 0;
+    EXM_InitMovedHair(a);
+    *(int *)&a->unmodeled_900[0xa60 - 0x900] = 0;
+    return a;
+}
 
 extern void RSRC_inactiveSource(MatrixHeap *heap, ActRecord *actor);
 extern void ACT_resetParent(ActRecord *self, ActRecord *parent);

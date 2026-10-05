@@ -157,17 +157,154 @@ void subParentChildSet(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subPosSet);
+int subPosSet(EtherTreeObjectData *node)
+{
+    EtherTreeObjectData *child;
+    int total = 0;
+    int i;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subPosSet2);
+    if (node->childCount == 0) {
+        total = 1;
+    } else {
+        for (i = 0; i < node->childCount; i++) {
+            child = node->children[i];
+            child->x = 57.0f;
+            *(float *)child->unmodeled_28 = *(float *)node->unmodeled_28 + 1.0f;
+            child->y = 0.0f;
+            switch (node->childCount) {
+            case 2:
+                if (i == 0) {
+                    child->y = -36.0f;
+                } else {
+                    child->y = 36.0f;
+                }
+                break;
+            case 3:
+                if (i == 0) {
+                    child->y = -72.0f;
+                } else if (i == 2) {
+                    child->y = 72.0f;
+                }
+                break;
+            }
+            total += subPosSet(child);
+        }
+    }
+    if (node->y < 0.0f) {
+        node->y -= (float)(total - 1) * 36.0f;
+    } else if (node->y > 0.0f) {
+        node->y += (float)(total - 1) * 36.0f;
+    }
+    if (EtherTreeSystem->firstDataIndex == 6 && (node->flags & 0x20)) {
+        node->children[2]->y += 36.0f;
+    }
+    return total;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subPosSet3);
+typedef struct PosSetPos {
+    float x;
+    float y;
+    float unk08[2];
+} __attribute__((aligned(8))) PosSetPos;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", sub2JoutoYGet);
+void subPosSet2(EtherTreeObjectData *node, PosSetPos *offset)
+{
+    PosSetPos pos;
+    int i;
+
+    if (node == 0) {
+        return;
+    }
+    pos = *(PosSetPos *)&node->x;
+    if (offset != 0) {
+        pos.x += offset->x;
+        pos.y += offset->y;
+    }
+    for (i = 0; i < node->childCount; i++) {
+        subPosSet2(node->children[i], &pos);
+    }
+    *(PosSetPos *)&node->x = pos;
+}
+
+static inline void subPosSet3Mid(EtherTreeObjectData *p, EtherTreeObjectData *a, EtherTreeObjectData *b)
+{
+    p->y = (b->y - a->y) * 0.5f + a->y;
+}
+
+void subPosSet3(void)
+{
+    int i;
+    EtherTreeObjectData *p;
+
+    for (i = 0; i < 80; i++) {
+        p = &EtherTreeObject[i];
+        switch (p->childCount) {
+        case 2:
+            subPosSet3Mid(p, p->children[0], p->children[1]);
+            break;
+        case 3:
+            subPosSet3Mid(p, p->children[0], p->children[2]);
+            break;
+        }
+    }
+}
+
+void sub2JoutoYGet(EtherTreeObjectData *object, float *out)
+{
+    if (object->childCount != 0) {
+        sub2JoutoYGet(object->children[object->childCount - 1], out);
+        return;
+    }
+    *out = object->y;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subJoutoPosSet);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeParaSet);
+extern int func_A19578(unsigned short, unsigned short);
+extern int MenuEtherSetCheck(unsigned short, unsigned short);
+extern signed char MenuEtherTypeGet(unsigned short);
+
+void EtherTreeParaSet(EtherTreeObjectData *object)
+{
+    unsigned short firstDataIndex;
+    unsigned char flags2;
+    int type;
+
+    firstDataIndex = EtherTreeSystem->firstDataIndex;
+    if (object->id == 0) {
+        return;
+    }
+    if (object->flags & 4) {
+        object->flags = object->flags | 8;
+    }
+    if (MenuEtherSetCheck(firstDataIndex, object->id) != 0) {
+        object->unmodeled_28[0x1D] = 1;
+        object->flags = object->flags | 2;
+        *(unsigned short *)&object->unmodeled_28[0x20] = 8;
+    } else {
+        object->flags = object->flags & 0xFD;
+    }
+    if (func_A19578(firstDataIndex, object->id) != 0) {
+        object->flags = (object->flags | 9) & 0xEF;
+    } else {
+        if (object->flags & 4) {
+            object->flags = object->flags | 0x10;
+        }
+    }
+    type = MenuEtherTypeGet(object->id);
+    switch (type) {
+    case 0:
+        object->unmodeled_19[1] = 0;
+        return;
+    case 1:
+    case 2:
+        object->unmodeled_19[1] = 1;
+        break;
+    default:
+        object->unmodeled_19[1] = 2;
+        break;
+    }
+}
 
 extern EtherTreeLineData *EtherTreeLine;
 
@@ -267,11 +404,34 @@ void subMoveSlide(float *position, float *target, float rate)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeCenterMove);
+extern float D_004D7E80;
+
+void EtherTreeCenterMove(void)
+{
+    EtherTreeSystemData *temp_16;
+    float *temp_14;
+    float *temp_15;
+    float *temp_17;
+    float *temp_18;
+    float temp_f20;
+    unsigned char temp_3;
+
+    temp_16 = EtherTreeSystem;
+    temp_14 = &temp_16->centerX;
+    temp_15 = &temp_16->targetCenterX;
+    temp_18 = &temp_16->nodeX;
+    temp_17 = &temp_16->targetNodeX;
+    temp_3 = temp_16->flags;
+    if ((temp_3 & 1 & 0xFF) && __builtin_expect(temp_3 & 2, 0)) {
+        temp_f20 = D_004D7E80;
+        subMoveSlide(temp_14, temp_15, temp_f20);
+        subMoveSlide(&temp_16->centerY, &temp_16->targetCenterY, temp_f20);
+        subMoveSlide(temp_18, temp_17, temp_f20);
+        subMoveSlide(&temp_16->nodeY, &temp_16->targetNodeY, temp_f20);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeRightSet);
-
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeRightModeChange);
 
 /*
  * EtherTreeRight is a 2-entry array of "right panel" object-highlight slot
@@ -295,6 +455,32 @@ typedef struct EtherTreeRightData {
     int counter;
     unsigned char unmodeled_34[0x0c];
 } EtherTreeRightData;
+
+void EtherTreeRightModeChange(int mode, int index)
+{
+    EtherTreeRightData *record = &EtherTreeRight[index];
+
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
+
+    if (!(unsigned char)(record->flags & 1))
+        return;
+
+    switch (record->mode) {
+    case 1:
+    case 2:
+        if (mode != 1 && mode != 2)
+            record->mode = mode;
+        break;
+    case 3:
+        if (mode != 3 && mode != 0)
+            record->mode = mode;
+        break;
+    case 0:
+        record->mode = mode;
+        break;
+    }
+}
 
 extern EtherTreeRightData *EtherTreeRight;
 extern EtherTreeObjectData *EtherTreeObjectGet(int id);
@@ -326,9 +512,58 @@ void EtherTreeRightMain(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subRightDraw);
+extern float D_004D7E84;
+extern void endPrintExtFunc(int kind, int id, void *data);
+typedef struct EtherTreeRightDrawView {
+    unsigned char unmodeled_00[0x10];
+    float x;
+    float y;
+    unsigned char unmodeled_18[0x08];
+    char *object;
+    short screenX;
+    short screenY;
+    unsigned int depth;
+} EtherTreeRightDrawView;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeRightDraw);
+void subRightDraw(EtherTreeRightData *record)
+{
+    EtherTreeRightDrawView *view = (EtherTreeRightDrawView *)record;
+    float rate = D_004D7E84;
+    EtherTreeSystemData *sys = EtherTreeSystem;
+    float *px = &view->x;
+    float *py = &view->y;
+    float *node;
+    float *center;
+
+    subMoveSlide(px, (float *)(view->object + 0x20), rate);
+    node = &sys->nodeX;
+    center = &sys->centerX;
+    subMoveSlide(py, (float *)(view->object + 0x24), rate);
+    view->screenX = *px + node[0] + center[0];
+    view->screenY = *py + node[1] + center[1];
+    view->depth = node[2] + 4.0f;
+    endPrintExtFunc(0, 0x11, &view->screenX);
+}
+
+extern void subRightDraw(EtherTreeRightData *record);
+
+void EtherTreeRightDraw(void)
+{
+    int i;
+    EtherTreeRightData *record;
+
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
+
+    for (i = 0; i < 2; i++) {
+        record = &EtherTreeRight[i];
+        if ((unsigned char)(record->flags & 1)) {
+            if (record->mode == 0)
+                continue;
+            subRightDraw(record);
+        }
+    }
+}
 
 /*
  * EtherTreeBlack is the fade-to-black slot: this unit provides the same
@@ -350,17 +585,56 @@ void EtherTreeBlackSet(void)
     EtherTreeBlack->counter = (EtherTreeBlack->mode = 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeBlackModeChange);
+void EtherTreeBlackModeChange(int mode)
+{
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
+
+    switch (EtherTreeBlack->mode) {
+    case 1:
+    case 2:
+        if (mode != 1 && mode != 2)
+            EtherTreeBlack->mode = mode;
+        break;
+    case 3:
+        if (mode != 3 && mode != 0)
+            EtherTreeBlack->mode = mode;
+        break;
+    case 0:
+        EtherTreeBlack->mode = mode;
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeBlackDraw);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeBlackMain);
+void EtherTreeBlackMain(void)
+{
+    EtherTreeBlackData *black = EtherTreeBlack;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Set);
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2ModeChange);
-
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2SelectChange);
+    switch (black->mode) {
+    case 1:
+        black->counter += 8;
+        if (black->counter >= 0x50) {
+            black->mode = 2;
+        case 2:
+            black->counter = 0x50;
+        }
+        break;
+    case 0:
+        return;
+    case 3:
+        black->counter -= 8;
+        if (black->counter <= 0) {
+            black->counter = 0;
+            black->mode = 0;
+        }
+        break;
+    }
+}
 
 /*
  * subLine2_DrawType_1 (this unit, main:0x002bb448) draws the block's three
@@ -401,14 +675,77 @@ typedef struct EtherTreeLine2Line {
  */
 typedef struct EtherTreeLine2Data {
     unsigned char flags;
-    unsigned char unmodeled_01[0x03];
+    unsigned char mode;
+    unsigned char opened;
+    unsigned char unmodeled_03[0x01];
     int selectedIndex;
     unsigned char unmodeled_08[0x08];
     EtherTreeLine2Corner from[3];
     EtherTreeLine2Corner to[3];
-    unsigned char unmodeled_70[0x10];
+    EtherTreeObjectData *object;
+    unsigned char unmodeled_74[0x0c];
     EtherTreeLine2Line line[3];
 } EtherTreeLine2Data;
+
+typedef union { EtherTreeLine2Corner c; } Line2CornerView;
+
+INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLine2Set);
+
+void EtherTreeLine2ModeChange(int mode)
+{
+    EtherTreeLine2Data *line2 = EtherTreeLine2;
+    EtherTreeLine2Corner *corner;
+    int i;
+
+    if (!(unsigned char)(EtherTreeSystem->flags & 1))
+        return;
+
+    if (!(unsigned char)(line2->flags & 1))
+        return;
+
+    switch (mode) {
+    case 1:
+    case 2:
+        if ((unsigned char)(line2->mode - 1) >= 2) {
+            line2->mode = mode;
+            if (line2->mode == 1) {
+                line2->opened = 0;
+                i = 0;
+                corner = line2->to;
+                for (; i < 3; i++) {
+                    ((Line2CornerView *)corner)->c = *(EtherTreeLine2Corner *)((char *)line2->object + 0x20);
+                    ((Line2CornerView *)&corner[-3])->c = *corner;
+                    corner++;
+                }
+            }
+        }
+        break;
+    case 3:
+        if (line2->mode != 3 && line2->mode != 0)
+            line2->mode = mode;
+        break;
+    case 0:
+        line2->mode = mode;
+        break;
+    }
+}
+
+void EtherTreeLine2ModeChange(int mode);
+
+void EtherTreeLine2SelectChange(int index)
+{
+    EtherTreeLine2Data *line2 = EtherTreeLine2;
+
+    if ((unsigned char)(EtherTreeSystem->flags & 1)) {
+        if ((unsigned char)(line2->flags & 1)) {
+            if (line2->selectedIndex != index) {
+                line2->selectedIndex = index;
+                EtherTreeLine2ModeChange(0);
+            }
+            EtherTreeLine2ModeChange(1);
+        }
+    }
+}
 
 extern void EtherTreeLineColorGet(unsigned char *color, int colorIndex);
 extern void endPrintExtFunc(int kind, int id, void *data);
@@ -461,7 +798,31 @@ void EtherTreeLine2Draw(void)
     subLine2_DrawType_1(line2);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subLine2_OpenType_0);
+typedef struct {
+    unsigned long long w[2];
+} Line2Quad;
+
+int subLine2_OpenType_0(EtherTreeLine2Data *line2)
+{
+    char *object = (char *)line2->object;
+    float limit;
+
+    switch (line2->opened) {
+    case 0:
+        *(Line2Quad *)&line2->to[0] = *(Line2Quad *)(object + 0x20);
+        ((Line2CornerView *)&line2->from[0])->c = line2->to[0];
+        line2->opened = 1;
+    case 1:
+        line2->to[0].x += 4.0f;
+        limit = *(float *)(*(char **)(object + 0xC) + 0x20);
+        if (line2->to[0].x < limit) {
+            return 0;
+        }
+        line2->to[0].x = limit;
+        return 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subLine2_OpenType_1);
 
@@ -477,13 +838,48 @@ void subTreeLineDraw_type_0(void)
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subTreeLineDraw_type_1);
+typedef struct TLNode { char pad0[0xC]; struct TLNode *child; char pad10[8]; unsigned char flags; char pad19[7]; long long p0; long long p1; } TLNode;
+typedef struct { TLNode *node; int pad[3]; long long a0; long long a1; int pad2[4]; long long b0; long long b1; } TLWork;
+void subTreeLineDraw(TLWork *w, int *arg);
+
+void subTreeLineDraw_type_1(TLWork *w)
+{
+    int arg[4];
+    TLNode *n = w->node;
+    TLNode *c = n->child;
+    w->a0 = n->p0;
+    w->a1 = n->p1;
+    w->b0 = c->p0;
+    w->b1 = c->p1;
+    if ((unsigned char)(c->flags & 1)) {
+        arg[0] = 2;
+    } else {
+        arg[0] = 1;
+    }
+    subTreeLineDraw(w, arg);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subTreeLineDraw_type_2);
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", subTreeLineDraw_type_3);
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeLineDraw);
+typedef struct { void (*f[4])(); } LineFnTbl;
+extern const LineFnTbl D_004C9AD0;
+
+void EtherTreeLineDraw(void)
+{
+    int line = (int)EtherTreeLine;
+    LineFnTbl table = D_004C9AD0;
+    EtherTreeLineData *p;
+    int i = 15;
+    p = (EtherTreeLineData *)line;
+    do {
+        if (p->object != 0)
+            table.f[p->object->childCount](p);
+        i--;
+        p++;
+    } while (i >= 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeCursolDraw);
 

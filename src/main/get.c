@@ -128,7 +128,24 @@ float Get_Angle(const Point4 *first, const Point4 *second)
     return atan2f(second->x - first->x, second->z - first->z);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/get", Check_Angle);
+int Check_Angle(float angle, float rangeStart, float rangeEnd)
+{
+    rangeStart = Get_Decimal_Surplus_for_Radius(rangeStart);
+    rangeEnd = Get_Decimal_Surplus_for_Radius(rangeEnd);
+    angle = Get_Decimal_Surplus_for_Radius(angle);
+
+    if (rangeStart <= rangeEnd) {
+        if (rangeStart <= angle && angle <= rangeEnd) {
+            return 1;
+        }
+        return 0;
+    } else {
+        if (rangeStart <= angle || angle <= rangeEnd) {
+            return 1;
+        }
+        return 0;
+    }
+}
 
 /* MARK: provisional extern block. The four words are _gp-relative .sdata
    witnesses at 0x004d81a8..0x004d81b4, not proven original declarations.

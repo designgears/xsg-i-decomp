@@ -21,13 +21,22 @@ INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderCopyDisp2Draw);
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderDrawFlipPk);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderVSyncCallback);
-
-extern void xglRenderVSyncCallback(void);
-extern void *sceGsSyncVCallback(void (*func)(void));
-extern signed char FLAG_FRAME_60;
 extern volatile int VSyncCount;
 
+int xglRenderVSyncCallback(void)
+{
+    VSyncCount++;
+    if (VSyncCount == 2) {
+        if ((*(volatile int *)0x10003020 & 0xC00) || (*(volatile int *)0x10003C00 & 3)) {
+            *(int *)((char *)&sRender + 0x54) = 1;
+        }
+    }
+    return 0;
+}
+
+extern int xglRenderVSyncCallback(void);
+extern void *sceGsSyncVCallback(void (*func)(void));
+extern signed char FLAG_FRAME_60;
 static void xglRenderSyncInit(void)
 {
     sceGsSyncVCallback(xglRenderVSyncCallback);
@@ -54,9 +63,41 @@ static void xglRenderSyncMove(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderDrawEnvInit);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderDrawEnvMove);
+typedef struct { u64 fbp:9; u64 rest:55; } GsBF;
+typedef struct { u8 pad0[0x10]; GsBF frame1; u8 padf[8]; GsBF zbuf1; u8 pad1[0x38]; GsBF frame2; u8 padg[8]; GsBF zbuf2; u8 pad2[0x80]; } GsDE;
+extern GsDE DrawEnv;
+extern int sceGsPutDrawEnv(void *env);
+typedef union { XglRenderState s; } XglRenderStateView;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderDispEnvInit);
+void xglRenderDrawEnvMove(void)
+{
+    XglRenderStateView *r = (XglRenderStateView *)&sRender;
+
+    DrawEnv.frame1.fbp = r->s.height;
+    DrawEnv.frame2.fbp = r->s.height;
+    DrawEnv.zbuf1.fbp = r->s.unk8;
+    DrawEnv.zbuf2.fbp = r->s.unk8;
+    SyncDCache(&DrawEnv, (u8 *)&DrawEnv + 0x100);
+    sceGsPutDrawEnv(&DrawEnv);
+}
+
+extern void sceGsSetDefDispEnv(void *disp, short psm, short w, short h, short dx, short dy);
+
+static void xglRenderDispEnvInit(void)
+{
+    u64 *d = (u64 *)&DispEnv;
+    char *r = (char *)&sRender;
+
+    sceGsSetDefDispEnv(&DispEnv, *(short *)(r + 2), *(short *)(r + 4),
+                       *(short *)(r + 6), 0, 0);
+    d[0] &= ~(u64)2;
+    d[0] &= ~(u64)0x40;
+    d[5] = d[2];
+    d[6] = d[3];
+    d[7] = 0;
+    d[8] = 0;
+    d[9] = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderDispEnvMove);
 
@@ -122,7 +163,26 @@ void xglRenderDispOn(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderInit);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_render", xglRenderFinalPacket);
+extern int nmlModelIsBackBufferRequest(void);
+
+static void xglRenderFinalPacket(void)
+{
+    XglPacket *packet = xglPacketGetCurrent();
+    XglRenderFadeCallback *cb;
+    int i;
+    char *base;
+
+    if (nmlModelIsBackBufferRequest() == 0) {
+        base = (char *)&sRender;
+        cb = (XglRenderFadeCallback *)(base + 0x24);
+        for (i = 7; i >= 0; i--) {
+            if (*cb != 0) {
+                (*cb)(packet);
+            }
+            cb++;
+        }
+    }
+}
 
 extern int s_nGblFadeInit;
 

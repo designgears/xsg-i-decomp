@@ -10,7 +10,40 @@
 
 extern int sndBankGet();
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", sndInit);
+typedef struct {
+    SndSeLoadWork work;             /* +0x00 */
+    unsigned char unmodeled_0c[8]; /* +0x0c */
+} SndSeRegBank;
+
+typedef struct {
+    int id;               /* +0x00 */
+    SndSeRegBank bank[5]; /* +0x04 */
+} SndSeRegDat;
+
+extern SndSeRegDat sndSeRegDat[6];
+
+/* ov01:0x00a2d1f8. Returns the address of sndSeDat (ov01:0x00a42d18, size
+ * 0x68), the base of loaded sound-effect bank metadata; only its address is
+ * evidenced by this allocation, not its internal layout. */
+extern unsigned char sndSeDat[0x68];
+
+void sndInit(void)
+{
+    int i;
+
+    for (i = 0; i < 6; i++) {
+        memset(&sndSeRegDat[i], 0, sizeof(SndSeRegDat));
+        if (i < 3) {
+            sndSeRegDat[i].bank[0].work.dest = (void *)(0x1914000 + i * 0x50000);
+        } else {
+            sndSeRegDat[i].bank[0].work.dest = (void *)(0x1905000 + i * 0x55000);
+        }
+    }
+    memset(sndSeDat, 0, 0x68);
+    *(int *)(sndSeDat + 8) = 0x1B4E000;
+    memset(&sndMuDat, 0, sizeof(SndMuData));
+    sndMuDat.smdNormal = (void *)0x1904000;
+}
 
 extern int dmgBankOffs[3];
 extern int dmgBankStat[3];
@@ -65,29 +98,46 @@ int dataSndStEdNum(SndStEdData *data, ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndStEdNumSub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndStEdNameGet);
+extern SndStEdData btst[];
+extern SndStEdData bted[];
+
+char *dataSndStEdNameGet(char *name, ObjectTask *unit, int type)
+{
+    SndStEdData *data;
+    SndStEdData *table;
+    char num[2];
+    SndStEdData **pdata;
+    short charaId;
+    int n;
+
+    charaId = calcUPGet(unit)->charaId;
+    num[0] = '0';
+    num[1] = '\0';
+    if (type == 0x18) {
+        table = btst;
+    } else {
+        table = bted;
+    }
+    if (table->unitId != 0) {
+        for (data = table; data->unitId != 0; data++) {
+            pdata = &data;
+            if ((*pdata)->unitId == charaId) {
+                n = ((int (*)(SndStEdData *, ObjectTask *, int))dataSndStEdNum)(*pdata, unit, type);
+                num[0] += n;
+                strcpy(name, (*pdata)->name);
+                strcat(name, num);
+            }
+        }
+    }
+    return name;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndSeNameGet);
-
-/* ov01:0x00a2d1f8. Returns the address of sndSeDat (ov01:0x00a42d18, size
- * 0x68), the base of loaded sound-effect bank metadata; only its address is
- * evidenced by this allocation, not its internal layout. */
-extern unsigned char sndSeDat[0x68];
 
 void *sndSeAdrGet(void)
 {
     return sndSeDat;
 }
-
-typedef struct {
-    SndSeLoadWork work;             /* +0x00 */
-    unsigned char unmodeled_0c[8]; /* +0x0c */
-} SndSeRegBank;
-typedef struct {
-    int id;               /* +0x00 */
-    SndSeRegBank bank[5]; /* +0x04 */
-} SndSeRegDat;
-extern SndSeRegDat sndSeRegDat[6];
 
 SndSeRegDat *sndSeRegAdrChk(int id)
 {
@@ -248,9 +298,57 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndSeLoad);
+extern const char D_00A4E6E8[];
+typedef struct {
+    int seType;
+    int pad4[2];
+    int a;
+    int b;
+} SndSeLoadDatWork;
+typedef struct {
+    int id;
+    SndSeLoadDatWork work;
+} SndSeLoadDat;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/snd", dataSndSeLoad2);
+int dataSndSeLoad(ObjectTask *unit, int seType)
+{
+    short charaId;
+    SndSeLoadDat *dat;
+    SndSeLoadDatWork *w;
+
+    charaId = calcUPGet(unit)->charaId;
+    dat = ((SndSeLoadDat *(*)(int))sndSeAdrGet)(charaId);
+    w = &dat->work;
+    if (dat->id == charaId && w->seType == seType) {
+        printf(D_00A4E6E8, charaId, seType);
+        return 1;
+    }
+    w->b = 0;
+    w->a = 0;
+    if (dataSndSeLoadSub(unit, seType, (SndSeLoadWork *)w) == 0) {
+        return 0;
+    }
+    dat->id = charaId;
+    return 1;
+}
+
+typedef struct {
+    int pad0;
+    char *base;
+    int pad8;
+    char *a;
+    char *b;
+} SndSeLoad2Work;
+
+void dataSndSeLoad2(ObjectTask *unit)
+{
+    SndSeLoad2Work *w;
+    w = (SndSeLoad2Work *)((char *)((void *(*)(int))sndSeAdrGet)(*(short *)((char *)calcUPGet(unit) + 0x38)) + 4);
+    if (w->a == 0 && w->b == 0) {
+        w->a = w->base + ((int *)w->base)[2];
+        w->b = w->base + ((int *)w->base)[3];
+    }
+}
 
 extern const char D_00A4E708[];
 

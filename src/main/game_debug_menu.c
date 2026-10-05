@@ -26,4 +26,47 @@ INCLUDE_ASM("asm/main/nonmatchings/game_debug_menu", PauseMenuPage2);
 
 INCLUDE_ASM("asm/main/nonmatchings/game_debug_menu", PauseMenuPage3);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_debug_menu", GameDebugMenu);
+extern unsigned char GameLoopState[];
+void PauseMenuPage2(void);
+void PauseMenuPage3(void);
+void PauseMenuPageUwamono(void);
+void PauseMenuPageEnemy(void);
+int PauseMenuPagePartyDebug(void);
+
+void GameDebugMenu(void)
+{
+    int d;
+
+    d = 0;
+    if (PadData.half_2a & 4) {
+        d = -1;
+    }
+    if (PadData.half_2a & 8) {
+        d = 1;
+    }
+    if (d != 0) {
+        GameLoopState[0x29F50] = (GameLoopState[0x29F50] + d + 6) % 6;
+        GameLoopState[0x29F51] = 0;
+    }
+    switch (GameLoopState[0x29F50]) {
+    case 0:
+        PauseMenuPage3();
+        break;
+    case 1:
+        PauseMenuPage0();
+        break;
+    case 2:
+        PauseMenuPage2();
+        break;
+    case 3:
+        PauseMenuPageUwamono();
+        break;
+    case 4:
+        PauseMenuPageEnemy();
+        break;
+    case 5:
+        if (PauseMenuPagePartyDebug()) {
+        }
+        break;
+    }
+}

@@ -303,7 +303,22 @@ void CCC03ExecSub(int side, CardGameWork *work, CardHand *hand, CardLayerStack *
     CardSetEffect(side, work, 0xC, amount, 0x2000D, position, card);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/ccu_038_exec_sub", CCC04ExecSub);
+void CCC04ExecSub(int side, CardGameWork *work, CardHand *hand)
+{
+    CardPlaySide *owner = (CardPlaySide *) hand;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        int cardId = owner->battle[i].battle.layers[0].cardId;
+        if (cardId >= 0 && !(CardDefinitionsFor(work)[cardId].flags & 4)) {
+            int life = owner->battle[i].battle.layers[0].life += 3;
+            if (CardDefinitionsFor(work)[cardId].operationDuration < life)
+                owner->battle[i].battle.layers[0].life = CardDefinitionsFor(work)[cardId].operationDuration;
+            CardSetEffect(side, work, 0xA, 0, 0, owner->battle[i].battle.position, 0);
+            CardSetEffect(side, work, 0xC, 3, 0x2000D, owner->battle[i].battle.position, &owner->battle[i].battle);
+        }
+    }
+}
 
 void CCC06ExecSub(int side, CardGameWork *work, CardHand *hand)
 {
@@ -421,7 +436,35 @@ s16 *CPCSearchCommWk(u16 side, CardGameWork *work) {
     return work->commandQueue[1][i];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/ccu_038_exec_sub", CPCPSwapDSBATTLE);
+typedef struct {
+    s16 id;
+    u8 a;
+    u8 pad3[2];
+    u8 b;
+    u8 pad6[2];
+    u16 c;
+} CPCPSwapDSEntry;
+typedef struct {
+    u8 head[4];
+    u8 pad4[2];
+    CPCPSwapDSEntry entry[40];
+} CPCPSwapDSWork;
+
+void CPCPSwapDSBATTLE(void *destination, void *source) {
+    CPCPSwapDSWork *d = (CPCPSwapDSWork *)destination;
+    CPCPSwapDSWork *s = (CPCPSwapDSWork *)source;
+    int i;
+
+    d->head[0] = s->head[0];
+    d->head[1] = s->head[1];
+    d->head[2] = s->head[2];
+    d->head[3] = s->head[3];
+    for (i = 0; i < 40; i++) {
+        d->entry[i].b = s->entry[i].b;
+        d->entry[i].a = s->entry[i].a;
+        d->entry[i].c = s->entry[i].c;
+    }
+}
 
 static inline int CardPlayerAiFlag(int flags) {
     return flags & 0x40;

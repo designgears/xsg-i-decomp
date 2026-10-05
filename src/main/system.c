@@ -69,9 +69,61 @@ void *Java_xeno_vm_System_arraycopy__Ljava_lang_Object_ILjava_lang_Object_II(
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/system", Java_xeno_vm_System_sleep__I);
+typedef struct JThread JThread;
+struct JThread {
+    unsigned int pad0;
+    struct JThread *previous;
+    struct JThread *next;
+    unsigned char kind;
+    unsigned char wait_kind;
+    unsigned short pad0e;
+    void *object;
+    void (*reset)(struct JThread *thread);
+    void *method;
+    unsigned int pad1c;
+    unsigned int pad20;
+    unsigned int flags;
+    unsigned int *stack;
+    void *frames;
+    void *wait_target;
+    int wait_parameter;
+    unsigned short stack_offset;
+    short stack_limit;
+    unsigned short resume_frames;
+    unsigned short frame_depth;
+    short frame_limit;
+};
 
-INCLUDE_ASM("asm/main/nonmatchings/system", getStrIndex_002F6210);
+void Java_xeno_vm_System_sleep__I(JThread *thread, union { int i; void *p; } *arguments, unsigned int *result)
+{
+    unsigned int flags = thread->flags;
+    int n;
+
+    if (flags & 4) {
+        return;
+    }
+    thread->flags = flags | 4;
+    thread->wait_target = 0;
+    thread->wait_kind = 1;
+    thread->resume_frames = thread->frame_depth;
+    n = arguments->i;
+    thread->wait_parameter = n < 0 ? 0 : n;
+}
+
+static char *getStrIndex(char *string, int length, int ch)
+{
+    int i;
+
+    for (i = 0; i < length; i++) {
+        if (string[i] == ch) {
+            return string + i;
+        }
+        if (string[i] == 0) {
+            return 0;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/system", Java_xeno_vm_System_println__Ljava_lang_String_);
 

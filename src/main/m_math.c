@@ -408,9 +408,68 @@ void MMathCalcDir(const Vector4 *from, const Vector4 *to)
     toX = to->x;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/m_math", MMathCalcAngle);
+Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
+{
+    Vector4 delta;
+    float length = 0.0f;
 
-INCLUDE_ASM("asm/main/nonmatchings/m_math", MMathCalcAngleCam);
+    __asm__ __volatile__(
+        "lui $8,%%hi(McMathUnitVector)\n\t"
+        "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
+        "movz %1,$8,%1\n\t"
+        "movz %2,$8,%2\n\t"
+        "lqc2 $vf1, 0(%1)\n\t"
+        "lqc2 $vf2, 0(%2)\n\t"
+        "vsub.xyz $vf3, $vf2, $vf1\n\t"
+        "vmul.xz $vf4, $vf3, $vf3\n\t"
+        "vaddz.x $vf4, $vf4, $vf4z\n\t"
+        "vsqrt Q, $vf4x\n\t"
+        "sqc2 $vf3, 0(%3)\n\t"
+        "sqc2 $vf0, 0(%4)\n\t"
+        "vwaitq\n\t"
+        "vaddq.x $vf1, $vf0, Q\n\t"
+        "qmfc2.ni $8, $vf1\n\t"
+        "mtc1 $8, %0"
+        : "+f"(length)
+        : "r"(from), "r"(to), "r"(&delta), "r"(out)
+        : "memory", "$8"
+    );
+    out->x = srsAtan2(delta.y, length);
+    out->y = srsAtan2(delta.x, delta.z);
+    return out;
+}
+
+Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
+{
+    Vector4 delta;
+    float length = 0.0f;
+
+    __asm__ __volatile__(
+        "lui $8,%%hi(McMathUnitVector)\n\t"
+        "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
+        "movz %1,$8,%1\n\t"
+        "movz %2,$8,%2\n\t"
+        "lqc2 $vf1, 0(%1)\n\t"
+        "lqc2 $vf2, 0(%2)\n\t"
+        "vsub.xyz $vf3, $vf1, $vf2\n\t"
+        "vmul.xz $vf4, $vf3, $vf3\n\t"
+        "vaddz.x $vf4, $vf4, $vf4z\n\t"
+        "vsqrt Q, $vf4x\n\t"
+        "vsub.y $vf3, $vf2, $vf1\n\t"
+        "sqc2 $vf3, 0(%3)\n\t"
+        "sqc2 $vf0, 0(%4)\n\t"
+        "vwaitq\n\t"
+        "vaddq.x $vf1, $vf0, Q\n\t"
+        "qmfc2.ni $8, $vf1\n\t"
+        "mtc1 $8, %0"
+        : "+f"(length), "+r"(from), "+r"(to)
+        : "r"(&delta), "r"(out)
+        : "memory", "$8"
+    );
+    out->x = srsAtan2(delta.y, length);
+    out->y = srsAtan2(delta.x, delta.z);
+    return out;
+}
 
 /*
  * MMathAddRotateVectorY: rotate "offset" about the Y axis by "angle" (VU0
@@ -614,9 +673,41 @@ Vector4 *MMathDivVectorS4(Vector4 *destination, const Vector4 *source, float sca
     return destination;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/m_math", MMathIsVectorEqual);
+short MMathIsVectorEqual(const Vector4 *first, const Vector4 *second)
+{
+    int result;
 
-INCLUDE_ASM("asm/main/nonmatchings/m_math", MMathIsVectorEqual4);
+    __asm__ __volatile__(
+        "lq $8, 0(%1)\n\t"
+        "lq $9, 0(%2)\n\t"
+        "pxor $10, $8, $9\n\t"
+        "addi %0, $0, 1\n\t"
+        "movn %0, $0, $10\n\t"
+        "pexew $10, $10\n\t"
+        "movn %0, $0, $10"
+        : "=r"(result)
+        : "r"(first), "r"(second)
+        : "$8", "$9", "$10");
+    return result;
+}
+
+short MMathIsVectorEqual4(const Vector4 *first, const Vector4 *second)
+{
+    int result;
+
+    __asm__ __volatile__(
+        "lq $8, 0(%1)\n\t"
+        "lq $9, 0(%2)\n\t"
+        "pxor $10, $8, $9\n\t"
+        "addi %0, $0, 1\n\t"
+        "movn %0, $0, $10\n\t"
+        "pcpyud $10, $10, $0\n\t"
+        "movn %0, $0, $10"
+        : "=r"(result)
+        : "r"(first), "r"(second)
+        : "$8", "$9", "$10");
+    return result;
+}
 
 /* MMathVectorDotProduct: xyz dot product, reduced through vf1's x lane. */
 float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second)
@@ -1154,4 +1245,57 @@ void MMathRotTransPers(Vector4 *destination, const StudioCamera *camera, const M
         : : "r"(point), "r"(matrix), "r"(&camera->screenScale), "r"(&camera->screenOffset), "r"(destination) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/m_math", MMathRotTransPersClip);
+/*
+ * MMathRotTransPersClip: MMathRotTransPers plus the VU0 near/far clip test.
+ * The transform and the screen scale/offset are the same as MMathRotTransPers;
+ * here the clip-flag register ($vi18) is cleared first, the perspective-
+ * divided point is run through vclipw, and the resulting flag word is masked
+ * to 0x8000 when any near/far bit is set and stored as the w component of the
+ * fixed-point result at *destination (which is how the caller detects a
+ * clipped point). There is no scalar code in the original at all, so the whole
+ * body is one VU0 asm block, as in MMathRotTransPers.
+ *
+ * The two GPR operands of that block (the cfc2 flag word and the 0x8000 mask)
+ * are `register` locals pinned to $2 and $9: the original object keeps the
+ * clip word in $2 and materialises the mask in $9, and an unpinned local is
+ * allocated to a different GPR ($4/$3 measured), which costs four words. The
+ * pin is the only thing that reproduces the original's own choice.
+ */
+void MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera, const Matrix4 *matrix, const Vector4 *point)
+{
+    register int flag asm("$2");
+    register int clipped asm("$9");
+
+    __asm__ __volatile__(
+        "lqc2 vf1, 0(%2)\n\t"
+        "lqc2 vf2, 0(%3)\n\t"
+        "lqc2 vf3, 16(%3)\n\t"
+        "lqc2 vf4, 32(%3)\n\t"
+        "lqc2 vf5, 48(%3)\n\t"
+        "vmulax.xyzw ACC, vf2, vf1x\n\t"
+        "vmadday.xyzw ACC, vf3, vf1y\n\t"
+        "vmaddaz.xyzw ACC, vf4, vf1z\n\t"
+        "vmaddw.xyzw vf1, vf5, vf1w\n\t"
+        "vdiv Q, vf0w, vf1w\n\t"
+        "ctc2 $0, $vi18\n\t"
+        "lqc2 vf2, 0(%4)\n\t"
+        "lqc2 vf3, 0(%5)\n\t"
+        "ori %1, $0, 0x8000\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyz vf4, vf1, Q\n\t"
+        "vclipw.xyz vf4xyz, vf0w\n\t"
+        "vmula.xyz ACC, vf4, vf2\n\t"
+        "vmaddw.xyz vf5, vf3, vf0w\n\t"
+        "vftoi4.xy vf1, vf5\n\t"
+        "vftoi0.z vf1, vf5\n\t"
+        "cfc2 %0, $vi18\n\t"
+        "nop\n\t"
+        "movn %0, %1, %0\n\t"
+        "qmtc2 %0, vf2\n\t"
+        "vmr32.w vf1, vf2\n\t"
+        "sqc2 vf1, 0(%6)\n\t"
+        "nop"
+        : "=r"(flag), "=&r"(clipped)
+        : "r"(point), "r"(matrix), "r"(&camera->screenScale), "r"(&camera->screenOffset), "r"(destination)
+        : "memory");
+}

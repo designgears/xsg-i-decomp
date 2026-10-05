@@ -138,20 +138,69 @@ void *newArray(ElementType *elementType, int length)
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", processClass);
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", findSuperMethod);
+static int *findSuperMethod(int *key, char *clazz)
+{
+    int i;
+    int *m;
+
+    while ((clazz = *(char **)(clazz + 0x10)) != 0) {
+        i = *(u16 *)(clazz + 0x2C);
+        m = *(int **)(clazz + 0x20);
+        while (--i >= 0) {
+            if (m[0] == key[0] && m[1] == key[1]) {
+                return m;
+            }
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", buildDispatchMethodTable);
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", resolveStaticField);
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", resolveInstanceField);
+static void resolveInstanceField(char *cls)
+{
+    int i;
+    int off;
+    int sz;
+    char *f;
+    int nstatic;
+
+    nstatic = *(unsigned short *)(cls + 0x32);
+    i = *(unsigned short *)(cls + 0x30) - nstatic - 1;
+    off = *(int *)(cls + 0x38);
+    f = *(char **)(cls + 0x1C) + nstatic * 0x14;
+    if (off == 0) {
+        off = 4;
+    }
+    for (; i >= 0; i--) {
+        sz = ((unsigned int)*(int *)(f + 0xC) + 3) >> 2 << 2;
+        off = (off + sz - 1) / sz * sz;
+        *(int *)(f + 0x10) = off;
+        off += sz;
+        f += 0x14;
+    }
+    *(int *)(cls + 0x38) = off;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", resolveConstants);
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", loadArray);
+void getClassFromSignature(const char *signature);
+
+void *loadArray(void *obj)
+{
+    void *cls;
+
+    cls = ((void *(*)(const char *))getClassFromSignature)(*(char **)((char *)obj + 8) + 1);
+    if (cls != 0) {
+        return lookupArray(cls);
+    }
+    return 0;
+}
 
 void *findClass(ClassEntry *entry);
-ClassEntry *lookupClassEntry(int classKey);
+ClassEntry *lookupClassEntry();
 int processClass(int classHandle, int state);
 
 int loadClass(int classKey, int skipLoad)
@@ -178,7 +227,22 @@ int loadClass(int classKey, int skipLoad)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", loadStaticClass);
+void loadStaticClass(void **arg0, s8 *arg1) {
+    ClassEntry *e;
+    void *c;
+
+    e = lookupClassEntry(loadConstString(arg1, -1), 0);
+    if (e->resolvedClass == 0) {
+        c = findClass(e);
+        if (c == 0) {
+            *arg0 = 0;
+            return;
+        }
+        e->resolvedClass = c;
+        *arg0 = c;
+    }
+    processClass((int) e->resolvedClass, 0xB);
+}
 
 void reloadClassEntry(void *heapBoundary)
 {
@@ -232,7 +296,20 @@ void methodDescripter(u8 *descriptor, s16 *paramSize, s16 *returnSize, s8 *retur
     *returnSize = (s16)sizeofDescripter(&cursor);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/find_native_method", sizeofDescripter);
+int sizeofDescripterType(u8 **cursor);
+
+static int sizeofDescripter(u8 **cursor)
+{
+    int n = 0;
+    int r;
+    for (;;) {
+        r = sizeofDescripterType(cursor);
+        if (r < 0) {
+            return n;
+        }
+        n += r;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/find_native_method", instanceOf);
 

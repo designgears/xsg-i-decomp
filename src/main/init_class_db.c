@@ -128,7 +128,57 @@ void addCode(DataBuffer *buffer, ClassDescriptor *class_info, SceneMethod *metho
 
 INCLUDE_ASM("asm/main/nonmatchings/init_class_db", addField);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_class_db", addMethod);
+extern void *NAME_Constructor;
+void methodDescripter(u8 *descriptor, short *paramSize, short *returnSize, signed char *returnType);
+typedef union AddMethodWord {
+    u32 w;
+    short h;
+    struct { u32 pad[2]; u8 *descriptor; } *p;
+} AddMethodWord;
+typedef struct AddMethodView {
+    u32 name;
+    AddMethodWord desc;
+    short param_size;
+    short return_size;
+    u32 owner;
+    u16 flags;
+    short slot;
+    void *code;
+    u16 max_stack;
+    u16 max_locals;
+    u16 code_length;
+} AddMethodView;
+
+SceneMethod *addMethod(ClassDescriptor *class_info, u16 method_info[3])
+{
+    AddMethodView *m;
+    AddMethodWord *pool;
+    u16 flags;
+    u32 name;
+    signed char ret[16];
+    u16 idx;
+    AddMethodWord desc;
+
+    idx = class_info->method_count;
+    class_info->method_count = idx + 1;
+    m = (AddMethodView *)((u8 *)class_info->methods + (idx << 5));
+    pool = (AddMethodWord *)class_info->constant_pool;
+    flags = method_info[0];
+    m->flags = flags;
+    name = pool[method_info[1]].w;
+    m->name = name;
+    desc = pool[method_info[2]];
+    m->owner = (u32)class_info;
+    m->desc = desc;
+    m->slot = -1;
+    m->max_stack = 0;
+    m->max_locals = 0;
+    if (name == (u32)NAME_Constructor) {
+        m->flags = flags | 0x800;
+    }
+    methodDescripter(m->desc.p->descriptor, &m->param_size, &m->return_size, ret);
+    return (SceneMethod *)m;
+}
 
 static void readFields(DataBuffer *buffer, ClassDescriptor *class_info)
 {

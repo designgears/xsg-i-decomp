@@ -1,7 +1,73 @@
 #include "common.h"
 #include "stage_2.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/stage_2", Java_xeno_Stage_start__ILjava_lang_Object_);
+extern SceneMethod *findMethod(SceneClass *scene_class, SceneString *name,
+                               void *signature_or_type);
+extern void *TYPE_Void;
+extern void JTHREAD_defaultStage();
+typedef struct StageStartStr {
+    u32 unmodeled_00;
+    int length;
+    const char *text;
+} StageStartStr;
+typedef struct StageStartArg {
+    u32 unmodeled_00;
+    StageStartStr *storage;
+} StageStartArg;
+typedef struct StageStartCall {
+    SceneObject object;
+    int mode;
+    StageStartArg *arg;
+} StageStartCall;
+typedef struct StageStartThread {
+    u8 unmodeled_00[0x14];
+    void *stage;
+    SceneMethod *method;
+    u8 unmodeled_1c[8];
+    unsigned int flags;
+} StageStartThread;
+
+void Java_xeno_Stage_start__ILjava_lang_Object_(StageThread *thread,
+                                                union { int i; float f; void *p; } *args,
+                                                u32 *failure_result)
+{
+    SceneClass *cls;
+    SceneObject object;
+    SceneObject peer;
+    StageStartStr *s;
+    JavaField *field;
+    StageStartArg *arg;
+    SceneMethod *method;
+    StageStartThread *peer_thread;
+
+    cls = classJava_xeno_Stage;
+    object = (SceneObject)args[0].p;
+    if (JNI_isInstanceOf(object, cls) == 0) {
+        *failure_result = 0;
+        return;
+    }
+    field = lookupClassField(cls, loadConstString(D_004DC208, -1), 0);
+    peer = *(SceneObject *)(object + field->offset);
+    if (args[1].i == 0) {
+        return;
+    }
+    if (args[1].i == 1) {
+        arg = (StageStartArg *)args[2].p;
+        *(int *)(peer + 0xc) = 0;
+        s = arg->storage;
+        cls = **(SceneClass ***)object;
+        method = findMethod(cls, loadConstString(s->text, s->length), TYPE_Void);
+        peer_thread = (StageStartThread *)JTHREAD_get(peer);
+        if (peer_thread != 0) {
+            peer_thread->stage = JTHREAD_defaultStage;
+            peer_thread->method = method;
+            peer_thread->flags |= 0x10;
+        }
+        if (peer_thread == (StageStartThread *)thread) {
+            peer_thread->flags |= 0x21;
+        }
+    }
+}
 
 void Java_xeno_Stage_stop__(StageThread *thread, StageObjectCall *arguments,
                             u32 *failure_result)

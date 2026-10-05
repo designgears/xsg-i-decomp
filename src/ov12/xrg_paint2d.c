@@ -81,7 +81,32 @@ static void _closeVifGif(sceVif1Packet *packet) {
     sceVif1PkCloseDirectHLCode(packet);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _InitReq);
+static void _Geom2D();
+static void _DrawNoTex();
+
+static void _InitReq(XrgPaint2DDrawReq *req)
+{
+    char *p = (char *)req;
+    Quadword z = 0;
+
+    *(void **)(p + 0x0) = _Geom2D;
+    req->draw = (void (*)(XrgPaint2D *, void *))_DrawNoTex;
+    *(int *)(p + 0x8) = 0;
+    *(Quadword *)(p + 0x10) = z;
+    *(Quadword *)(p + 0x20) = z;
+    *(Quadword *)(p + 0x30) = z;
+    *(Quadword *)(p + 0x50) = z;
+    *(Quadword *)(p + 0x60) = z;
+    req->color[3] = 0x7F;
+    req->color[2] = 0x7F;
+    req->color[1] = 0x7F;
+    req->alpha = 0;
+    req->tex0 = 0;
+    req->texture = 0;
+    req->offsetMode = 0;
+    req->color[0] = 0x7F;
+    req->uvMode = 0;
+}
 
 static void _DeriveInfoReq(XrgPaint2DDrawReq *dst, XrgPaint2DDrawReq *src)
 {
@@ -150,9 +175,118 @@ static void _CalcUV(XrgPaint2DVertex corners[4], const XrgIntRect *base,
     _CalcRectangle(corners, &rect, 0, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _CalcPosOnScreen);
+extern void *s_pCurView_00A51220;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _CalcPosOnScreenFloat);
+static int _CalcPosOnScreen(void *destination, const void *position, float *offsetWork)
+{
+    void *view;
+    void *view2;
+    void *offset;
+    void *addr;
+    int clip;
+    float x;
+    float scale;
+
+    __asm__ __volatile__(
+        "lui %0, %%hi(s_pCurView_00A51220)\n\t"
+        "addiu %0, %0, %%lo(s_pCurView_00A51220)\n\t"
+        "lw %3, 0(%0)\n\t"
+        "lqc2 $vf27, 0(%3)\n\t"
+        "lqc2 $vf28, 0x10(%3)\n\t"
+        "lqc2 $vf29, 0x20(%3)\n\t"
+        "lqc2 $vf30, 0x30(%3)\n\t"
+        "lw %2, 0(%0)\n\t"
+        "addiu %1, %2, 0x50\n\t"
+        "addiu %2, %2, 0x40\n\t"
+        "lqc2 $vf25, 0(%2)\n\t"
+        "lqc2 $vf26, 0(%1)\n\t"
+        "lw %3, 0(%0)\n\t"
+        "addiu %3, %3, 0x40\n\t"
+        "lqc2 $vf31, 0(%3)\n\t"
+        "sqc2 $vf31, 0(%4)"
+        : "=&r"(addr), "=&r"(offset), "=&r"(view2), "=&r"(view)
+        : "r"(offsetWork)
+        : "memory");
+
+    x = offsetWork[0];
+    __asm__ __volatile__("" : : "f"(x) : "$f0");
+    scale = 0.375f;
+    __asm__ __volatile__("" : "+f"(scale) : "f"(x));
+    offsetWork[0] = x * scale;
+    offsetWork[1] *= scale;
+
+    __asm__ __volatile__(
+        "ctc2.ni $0, $vi18\n\t"
+        "lqc2 $vf31, 0(%2)\n\t"
+        "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
+        "vmadday.xyzw ACC, $vf28, $vf31y\n\t"
+        "vmaddaz.xyzw ACC, $vf29, $vf31z\n\t"
+        "vmaddw.xyzw $vf31, $vf30, $vf0w\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vclipw.xyz $vf31xyz, $vf31w\n\t"
+        "vdiv Q, $vf0w, $vf31w\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyzw $vf31, $vf31, Q\n\t"
+        "vmulaw.xyzw ACC, $vf26, $vf0w\n\t"
+        "vmadd.xyzw $vf31, $vf31, $vf25\n\t"
+        "vftoi4.xyzw $vf20, $vf31\n\t"
+        "vsub.w $vf20, $vf20, $vf20\n\t"
+        "sqc2 $vf20, 0(%1)\n\t"
+        "cfc2.ni $2, $vi18\n\t"
+        "nop\n\t"
+        "andi $2, $2, 0x3f\n\t"
+        "daddu %0, $2, $0"
+        : "=r"(clip)
+        : "r"(destination), "r"(position)
+        : "$2", "memory");
+    return clip == 0;
+}
+
+extern void *s_pCurView_00A51220;
+
+static void _CalcPosOnScreenFloat(void *destination, const void *position)
+{
+    void *view;
+    void *view2;
+    void *offset;
+    void *addr;
+
+    __asm__ __volatile__(
+        "lui %1, %%hi(s_pCurView_00A51220)\n\t"
+        "addiu %1, %1, %%lo(s_pCurView_00A51220)\n\t"
+        "lw %3, 0(%1)\n\t"
+        "lqc2 $vf27, 0(%3)\n\t"
+        "lqc2 $vf28, 0x10(%3)\n\t"
+        "lqc2 $vf29, 0x20(%3)\n\t"
+        "lqc2 $vf30, 0x30(%3)\n\t"
+        "lw %2, 0(%1)\n\t"
+        "addiu %0, %2, 0x50\n\t"
+        "addiu %2, %2, 0x40\n\t"
+        "lqc2 $vf25, 0(%2)\n\t"
+        "lqc2 $vf26, 0(%0)\n\t"
+        "lqc2 $vf31, 0(%4)\n\t"
+        "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
+        "vmadday.xyzw ACC, $vf28, $vf31y\n\t"
+        "vmaddaz.xyzw ACC, $vf29, $vf31z\n\t"
+        "vmaddw.xyzw $vf31, $vf30, $vf0w\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vclipw.xyz $vf31xyz, $vf31w\n\t"
+        "vdiv Q, $vf0w, $vf31w\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyzw $vf31, $vf31, Q\n\t"
+        "vmulaw.xyzw ACC, $vf26, $vf0w\n\t"
+        "vmadd.xyzw $vf31, $vf31, $vf25\n\t"
+        "vsub.w $vf31, $vf31, $vf31\n\t"
+        "sqc2 $vf31, 0(%5)\n\t"
+        "nop\n\t"
+        : "=&r"(offset), "=&r"(addr), "=&r"(view2), "=&r"(view)
+        : "r"(position), "r"(destination)
+        : "memory");
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _CalcOffset);
 
@@ -164,7 +298,23 @@ INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _DrawNoTex);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _DrawWithTex);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _InitPaint);
+static void _InitPaint(XrgPaint2D *paint, const char *sourceFile, int line) {
+    XrgPaint2DDrawReq *req;
+    int id;
+
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 0x2BD);
+    }
+    strcpy((char *)paint + 0xD018, sourceFile);
+    id = -2;
+    *(int *)((char *)paint + 0xD058) = line;
+    paint->prio = 3;
+    paint->drawID = id;
+    req = &paint->req;
+    paint->request = req;
+    paint->reqCount = 0;
+    _InitReq(req);
+}
 
 static void _DestructPaint(XrgPaint2D *paint) {
     if (paint == 0) {
@@ -227,11 +377,44 @@ void XrgPaint2DSetDrawPrio(XrgPaint2D *paint, int prio) {
     paint->prio = prio;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", XrgPaint2DOffset2D);
+void XrgPaint2DOffset2D(XrgPaint2D *paint, int x, int y)
+{
+    XrgPaint2DDrawReq *req;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", XrgPaint2DOffset2DDot);
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 777);
+    }
+    req = paint->request;
+    req->offsetAnchor.i.x = x;
+    req->offsetMode = 1;
+    paint->request->offsetAnchor.i.y = y;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", XrgPaint2DOffsetCenter);
+void XrgPaint2DOffset2DDot(XrgPaint2D *paint, int u, int v)
+{
+    XrgPaint2DDrawReq *req;
+
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 786);
+    }
+    req = paint->request;
+    req->offsetAnchor.i.x = u * 0x10;
+    req->offsetMode = 1;
+    paint->request->offsetAnchor.i.y = v * 0x10;
+}
+
+void XrgPaint2DOffsetCenter(XrgPaint2D *paint)
+{
+    XrgPaint2DDrawReq *req;
+
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 795);
+    }
+    req = paint->request;
+    req->offsetAnchor.i.x = 0x1000;
+    req->offsetMode = 1;
+    paint->request->offsetAnchor.i.y = 0xE00;
+}
 
 void XrgPaint2DOffset3D(XrgPaint2D *paint, const XrgPaint2DOffset *anchor)
 {

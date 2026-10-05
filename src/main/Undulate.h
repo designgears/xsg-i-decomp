@@ -25,7 +25,13 @@ typedef struct UnduWork {
     unsigned char unmodeled_58[8];
     int subListOffset;      /* 0x60: byte offset of the first sub-primitive; entries are 0x18 bytes apart */
     UnduWallAttributes *wallAttributeTable;
-    unsigned char unmodeled_68[0x40];
+    unsigned char unmodeled_68[0x1c];
+    float heightCenter; /* +0x84 */
+    unsigned char unmodeled_88[0xc];
+    float heightHalf; /* +0x94 */
+    float bestHeight; /* +0x98 */
+    int bestSubOffset; /* +0x9c */
+    unsigned char unmodeled_a0[8];
     UnduWallAttributes wallAttributes;
     unsigned long long wallAttributeMask;
     unsigned long long wallAttributeValue;

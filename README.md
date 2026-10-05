@@ -52,7 +52,7 @@ are recorded there in full:
 | --- | --- | --- |
 | `ee-gcc2.96-realconv-lp7` | `cc1` for the game code (Monolith) and the C runtime (newlib/libgcc) | the published `ee-gcc2.96` archive, with twelve documented patches to `cc1` (six single bytes that restore the original decimal-literal rounding, two that restore the R5900 short-loop padding, and four multi-byte alias-analysis patches, fsv1 and fsv3: `%lo`-addressed global scalars and struct-field accesses may be reordered in either direction, and a non-small-data global's memory reference gets its type's alias set) |
 | `ee-gcc2.9-991111` | `cc1` for the SCE SDK libraries (Sony's own compiler; out of recovery scope, built from original assembly) | the published `ee-gcc2.9-991111` archive, unmodified |
-| `ee-as-la29-vsqrt` | assembler for every game and runtime object | GNU as 2.9-ee-991111 built from the pinned `ps2-ee-toolchain` commit with the recorded four-change diff (an overlap-safe `memmove`, the `vsqrt` opcode's bits 21-22, labels left before the hazard nops `append_insn` inserts, and `la` of a base register plus a 16-bit constant as one `addiu`) |
+| `ee-as-la29-vsqrt` | assembler for every game and runtime object | GNU as 2.9-ee-991111 built from the pinned `ps2-ee-toolchain` commit with the recorded five-change diff (an overlap-safe `memmove`, the `vsqrt` opcode's bits 21-22, labels left before the hazard nops `append_insn` inserts, `la` of a base register plus a 16-bit constant as one `addiu`, and an optional `-mswap-fix` flag, off by default, that lets `append_insn` fill delay slots after macro expansions; passed only to the TUs in `config/tu/as-flags.json`) |
 | `ee-as-2.9-plain` | assembler for the SCE SDK objects | the same commit, unpatched |
 | `ps2dev-binutils` | linker and objcopy of every image, and modern GAS for data objects and retail blobs | ps2dev binutils 2.45.1, the linker, objcopy and modern GAS |
 
@@ -125,8 +125,6 @@ Thanks to the developers and contributors of the projects on which this work rel
   [Rabbitizer](https://github.com/Decompollaborate/rabbitizer) for splitting and disassembly.
 - [m2c](https://github.com/matt-kempster/m2c) for first-pass decompilation of MIPS
   assembly into C.
-- [decomp-permuter](https://github.com/simonlindholm/decomp-permuter) for the bounded
-  mutation search over a compiled non-exact base.
 - [ps2dev/binutils-gdb](https://github.com/ps2dev/binutils-gdb) and
   [SSXModding/ps2-ee-toolchain](https://github.com/SSXModding/ps2-ee-toolchain) for EE toolchains.
 - [decomp.me's compiler collection](https://github.com/decompme/compilers) for historical compiler distributions.

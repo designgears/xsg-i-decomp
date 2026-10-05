@@ -54,10 +54,70 @@ void UnduParamInit(UnduQuery *query)
 
 INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheckSub);
 
-INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheckSubHeightCheck);
+extern float GameLoopState[];
+
+static int UnduCheckSubHeightCheck(UnduWork *work, int subOffset, float height)
+{
+    unsigned short flags;
+    unsigned int attr;
+    int result;
+    float low;
+    float high;
+
+    flags = work->wallAttrHeader->flags;
+    if (work->wallAttributeTable != 0) {
+        attr = work->wallAttributeTable[*(unsigned short *)subOffset].words[0];
+    } else {
+        attr = *(unsigned short *)subOffset;
+    }
+    if ((flags & 0x20) && ((attr & 0xe000) == 0x4000)) {
+        height = *(float *)((char *)GameLoopState + 0x5c + ((attr & 0x1f00) >> 6));
+    }
+    result = 0;
+    if (flags & 0x10) {
+        low = work->heightCenter;
+        high = work->heightHalf;
+        if ((low - high) < height) {
+            if (height < (low + high)) {
+                result = ((low + high) < work->bestHeight) ? 2 : 1;
+                goto done;
+            }
+        }
+        if (flags & 0x800) {
+            if (work->bestHeight == -1000.0f) {
+                result = 1;
+            } else if (height < low + high) {
+                result = 1;
+            } else if (height < work->bestHeight) {
+                result = 1;
+            }
+        }
+    } else if (flags & 0x800) {
+        if (height <= (work->heightCenter + work->heightHalf)) {
+            result = 1;
+        }
+    } else {
+        if (work->bestHeight == -1000.0f) {
+            result = 1;
+        } else if (height < (work->heightCenter + work->heightHalf)) {
+            result = 1;
+        } else if (height < work->bestHeight) {
+            result = 2;
+        }
+    }
+done:
+    if (result != 0) {
+        if (result == 2 || work->bestHeight < height) {
+            result = 2;
+            work->bestHeight = height;
+            work->bestSubOffset = subOffset;
+        }
+    }
+    return result;
+}
 
 static float UnduCheckSub(UnduWork *work, int subOffset);
-static void UnduCheckSubHeightCheck(UnduWork *work, int subOffset, float height);
+static int UnduCheckSubHeightCheck(UnduWork *work, int subOffset, float height);
 
 static void UnduCheckSubCheckAll(UnduWork *work) {
     int subOffset;

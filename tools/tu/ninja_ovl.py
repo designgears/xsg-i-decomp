@@ -199,7 +199,7 @@ def main():
         "# any header the TU includes, one created after configure too, recompiles it. The",
         "# unit and root directories stay the last two arguments (tools/tu_audit.py reads them).",
         "rule cc",
-        f"  command = XENO_TU_DEPFILE=$out.d $cc $in $out $ccdir $cas $gflag {unit_dir} {ROOT}",
+        f"  command = XENO_TU_DEPFILE=$out.d XENO_TU_ASFLAGS='$asx' $cc $in $out $ccdir $cas $gflag {unit_dir} {ROOT}",
         "  depfile = $out.d",
         "  deps = gcc",
         "  description = CC $in",
@@ -250,7 +250,8 @@ def main():
             lines += [f"build {compiled_obj}: cc {source} | {deps}",
                       f"  ccdir = {ROOT / t['compiler']['dir']}",
                       f"  cas = {ROOT / t['assembler']['path']}",
-                      f"  gflag = {t['flags'][1]}"]
+                      f"  gflag = {t['flags'][1]}",
+                      f"  asx = {' '.join(json.loads((ROOT / 'config/tu/as-flags.json').read_text()).get(unit + '/' + Path(rel).stem, []))}"]
             if split:
                 compile_input = ROOT / 'config/tu-build.json'
                 if not compile_input.is_file():

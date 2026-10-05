@@ -4,7 +4,29 @@
 
 extern char _loadEsdData[]; /* 0xC800-byte effect-name table. */ /* 0xC800-byte table (config/symbols/main.txt) */
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsGetEffect2Idx);
+extern signed char _srsEffect2IndexTbl[];
+
+int srsGetEffect2Idx(int effectNo)
+{
+    int r;
+
+    if ((u32) (effectNo - 0x259) < 0x75U) {
+        r = _srsEffect2IndexTbl[effectNo - 0x259];
+    } else if ((u32) (effectNo - 0xA28) < 0xCU) {
+        r = effectNo - 0xA28;
+    } else if ((u32) (effectNo - 0xA34) < 9U) {
+        r = effectNo - 0xA34;
+    } else if ((u32) (effectNo - 0xA5B) < 0xAU) {
+        r = effectNo - 0xA5B;
+    } else if ((u32) (effectNo - 0xA42) < 4U) {
+        r = effectNo - 0xA42;
+    } else if ((u32) (effectNo - 0xA46) < 7U) {
+        r = effectNo - 0xA46;
+    } else {
+        r = ((u32) (effectNo - 0xB54) < 0x63U) ? 0x64 : 0;
+    }
+    return r;
+}
 
 extern int srsGetEffect2Idx(int effectNo);
 
@@ -87,7 +109,34 @@ void srsSetViewPath(unsigned char *path)
     strcpy(srsViewPath, path);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsMakeFileName);
+extern char *strcat(char *destination, const char *source);
+typedef struct { char s[15]; } SrsPath15;
+typedef struct { char s[23]; } SrsPath23;
+typedef struct { char s[7]; } SrsPath7;
+extern SrsPath15 D_004CC680;
+extern SrsPath23 D_004CC690;
+extern char D_004DBB18[];
+
+static int srsMakeFileName(char *path, char *name)
+{
+    if (name == 0) {
+        path[0] = 0;
+        return 0;
+    }
+    if (srsLoadMode == 0) {
+        *(SrsPath15 *)path = D_004CC680;
+        strcat(path, name);
+    } else if (srsLoadMode == 1) {
+        *(SrsPath23 *)path = D_004CC690;
+        strcat(path, (char *)srsViewPath);
+        strcat(path, name);
+    } else if (srsLoadMode == 2) {
+        *(SrsPath7 *)path = *(SrsPath7 *)D_004DBB18;
+        strcat(path, (char *)srsViewPath);
+        strcat(path, name);
+    }
+    return 1;
+}
 
 void srsChangeSeparator(char *path)
 {
@@ -142,10 +191,6 @@ char *srsGetEffectName(int effectNo)
     return msg_0_00795120;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsGetWeaponEffectIdx);
-
-extern int srsGetWeaponEffectIdx(void);
-
 /*
  * One _weaponTbl row (8 bytes; the 0x168-byte symbol holds 45 rows).
  * srsEftNo2WeaponID reads weaponID at the row start; srsEftNoWeaponEffectID
@@ -159,12 +204,31 @@ typedef struct WeaponTblEntry {
 
 extern WeaponTblEntry _weaponTbl[];
 
+int srsGetWeaponEffectIdx(int id)
+{
+    int i;
+
+    if ((unsigned)(id - 0xB54) < 0x63) {
+        id -= 0x64;
+    }
+    if (id > 0) {
+        for (i = 0; i < 45; i++) {
+            if (id == ((short *)&_weaponTbl[i])[1] || id == ((short *)&_weaponTbl[i])[2] || id == ((short *)&_weaponTbl[i])[3]) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+extern int srsGetWeaponEffectIdx();
+
 short srsEftNoWeaponEffectID(void)
 {
     int index;
     short weaponEffectID;
 
-    index = srsGetWeaponEffectIdx();
+    index = ((int (*)())srsGetWeaponEffectIdx)();
     weaponEffectID = 0;
     if (index >= 0) {
         weaponEffectID = _weaponTbl[index].weaponEffectID;
@@ -191,7 +255,7 @@ short srsEftNo2WeaponID(void)
     int index;
     short weaponID;
 
-    index = srsGetWeaponEffectIdx();
+    index = ((int (*)())srsGetWeaponEffectIdx)();
     weaponID = 0;
     if (index >= 0) {
         weaponID = _weaponTbl[index].weaponID;

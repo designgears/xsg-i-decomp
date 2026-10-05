@@ -243,9 +243,73 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", battleCtrlJunk);
 
 extern int actStock;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", actStockInit);
+int actStockMaxGet(void);
+typedef struct {
+    int a[4];
+    int b[2];
+    int max;
+    int c;
+    int d;
+    int e;
+} ActStockView;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", actStockMaxGet);
+void actStockInit(void)
+{
+    int i;
+
+    ((ActStockView *)&actStock)->max = actStockMaxGet();
+    ((ActStockView *)&actStock)->c = 0;
+    ((ActStockView *)&actStock)->d = 0;
+    ((ActStockView *)&actStock)->e = 0;
+    for (i = 0; i < 4; i++)
+        ((ActStockView *)&actStock)->a[i] = 0;
+    for (i = 0; i < 2; i++)
+        ((ActStockView *)&actStock)->b[i] = 0;
+}
+
+extern int unitTblGet(int side, BattleUnit ***table);
+extern int calcBattleChk(ObjectTask *unit);
+
+int actStockMaxGet(void)
+{
+  BattleUnit **table;
+  int count;
+  int i;
+  int valid;
+  int is_small;
+  i = 0;
+  valid = 0;
+  count = unitTblGet(2, &table);
+  if (count > 0)
+  {
+    do
+    {
+      if (table[i] != 0)
+      {
+        if (calcBattleChk((ObjectTask *) table[i]) != 0)
+        {
+          valid++;
+        }
+      }
+      i++;
+    }
+    while (i < count);
+  }
+  is_small = valid < 5;
+  if (valid > 0)
+  {
+    if (((valid * 5) % 10) >= 5)
+    {
+      valid = (valid / 2) + 1;
+    }
+    else
+    {
+      valid = valid / 2;
+    }
+    ;
+  }
+  return (valid < 5) ? (valid) : (4);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", actStockMake);
 
@@ -342,15 +406,60 @@ void cmdListPtrGet(int **list, int **altList)
     *altList = &cmdList;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", cmdListSet);
+typedef struct { int w[5]; } CmdListBody;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", cmdListChange);
+typedef struct { int unit; CmdListBody body; } CmdListEntry;
+
+int fifoEdGet(void *fifo);
+void fifoPush(void *fifo);
+
+void cmdListSet(int unit, CmdListBody *body)
+{
+    int *fifo;
+    CmdListEntry *list;
+    CmdListEntry *e;
+
+    cmdListPtrGet(&fifo, (int **)&list);
+    e = (CmdListEntry *)((char *)(fifoEdGet(fifo) * sizeof(CmdListEntry)) + (int)list);
+    e->unit = unit;
+    e->body = *body;
+    fifoPush(fifo);
+}
+
+int fifoStGet(void *fifo);
+void cmdListChange(int unit, CmdListBody *body)
+{
+    int *fifo;
+    CmdListEntry *list;
+    CmdListEntry *e;
+
+    cmdListPtrGet(&fifo, (int **)&list);
+    e = (CmdListEntry *)((char *)(fifoStGet(fifo) * sizeof(CmdListEntry)) + (int)list);
+    e->unit = unit;
+    e->body = *body;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", convKey2unit);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", unitCmdListSet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", cmdListCansel);
+int fifoNumGet(void *fifo);
+void fifoPop(void *fifo);
+
+void cmdListCansel(int unit)
+{
+    int *fifo;
+    CmdListEntry *list;
+    CmdListEntry *e;
+
+    cmdListPtrGet(&fifo, (int **)&list);
+    while (fifoNumGet(fifo) != 0) {
+        e = (CmdListEntry *)((char *)(fifoStGet(fifo) * sizeof(CmdListEntry)) + (int)list);
+        if (e->unit != unit || e->body.w[0] == 8)
+            break;
+        fifoPop(fifo);
+    }
+}
 
 /*
  * Menu map-height toggle (ov01/tu009 src/ov01/menu.c, not yet published;
@@ -557,7 +666,20 @@ PlUnitEntry *plUnitTblGet(void) {
     return plTbl;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", plUnitTblSet);
+typedef struct PartySlotView {
+    unsigned char unmodeled_00[0x30];
+    PartyAttackSlot slot[3]; /* +0x30 */
+} PartySlotView;
+
+void plUnitTblSet(int idx, int partyId, int attackPosition)
+{
+    PartySlotView *party = (PartySlotView *)PartyDataGet();
+
+    party->slot[idx].partyId = partyId;
+    party->slot[idx].attackPosition = attackPosition;
+    plTbl[idx].partyId = partyId;
+    plTbl[idx].attackPosition = attackPosition;
+}
 
 /*
  * GameLoopState (config/symbols/main.txt, data still asm-owned) is a
@@ -654,7 +776,19 @@ BattleUnit *lastUnitGet(void)
     return pLastUnit;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", tgtUnitAdrGet);
+extern BattleUnit *pTgtUnit;
+extern BattleUnit *pTgtUnit2;
+ManWork *manWorkGet(void);
+
+BattleUnit **tgtUnitAdrGet(void)
+{
+    int n = *(int *)manWorkGet();
+    switch (n) {
+    case 6: case 7: case 9: case 10: case 11:
+        return &pTgtUnit2;
+    }
+    return &pTgtUnit;
+}
 
 BattleUnit *tgtUnitGet(void)
 {
@@ -671,7 +805,16 @@ ManWork *manWorkGet(void)
     return &manWk;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", menuChk);
+extern int menuOpenChkBat(void);
+extern int menuFlag;
+
+int menuChk(void)
+{
+    if (menuOpenChkBat() != 0) {
+        return 1;
+    }
+    return menuFlag == 1;
+}
 
 BatCtrl *batCtrlGet(void)
 {
@@ -708,7 +851,17 @@ int scenarioSrcSet(const ScenarioStep *source)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioDstSet);
+typedef struct ScenarioDstRec { int w[10]; } ScenarioDstRec;
+
+int scenarioDstSet(ScenarioDstRec *src)
+{
+    if (scenarioPtr.count >= 13) {
+        return 0;
+    }
+    ((ScenarioDstRec *)scenarioPtr.dest)[scenarioPtr.count] = *src;
+    scenarioPtr.count++;
+    return 1;
+}
 
 /*
  * The scenario source index (data still asm-owned, splat name kept); a
@@ -721,7 +874,15 @@ int scenarioSrcGet(void)
     return D_00A57B64;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioDstGet);
+unsigned char *scenarioDstGet(int offset)
+{
+    int i = scenarioPtr.index + offset;
+
+    if (i >= 13 || i >= scenarioPtr.count) {
+        return 0;
+    }
+    return scenarioPtr.dest + i * 40;
+}
 
 int scenarioBatNext(void)
 {
@@ -738,7 +899,23 @@ int scenarioBatNext(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioCam);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExec);
+extern void (*D_00A57B68)(int, unsigned char *);
+void scenarioBatEnd(void);
+
+int scenarioBatExec(void)
+{
+    unsigned char *dst = scenarioDstGet(0);
+    int src = ((int (*)(int))scenarioSrcGet)(0);
+
+    if (dst != 0) {
+        D_00A57B68(src, dst);
+        if (scenarioDstGet(0) != 0) {
+            return 0;
+        }
+    }
+    scenarioBatEnd();
+    return 1;
+}
 
 int sefCheckLoad(void);
 int dataCdSync(void);
@@ -758,9 +935,64 @@ int scenarioBatDataSync(int *sourceIndex)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", etehrCVGet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", hairWindOn);
+extern void EXM_SetDirectionalWind(Vector4 *dir);
+extern void EXM_SetShakePower(float power);
+extern void EXM_SetShakeTime(float time);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", hairWindOff);
+void hairWindOn(BattleUnit *unit)
+{
+    BattleUnit **table;
+    BattleUnit **p;
+    BattleUnit *u;
+    int count;
+    int n;
+    Vector4 dir;
+
+    dir.x = 0.0f;
+    dir.y = 1.0f;
+    dir.z = 0.0f;
+    dir.w = 0.03f;
+    EXM_SetDirectionalWind(&dir);
+    EXM_SetShakePower(1.0f);
+    EXM_SetShakeTime(0.75f);
+    n = unitTblGet(0, &table);
+    if (n > 0) {
+        count = n;
+        p = table;
+        do {
+            u = *p++;
+            if (u != 0 && u != unit) {
+                char *q = *(char **)((char *)u + 0x14);
+                *(int *)(q + 0x6F0) |= 0x100000;
+            }
+        } while (--count != 0);
+    }
+}
+
+extern void EXM_StopWind(void);
+
+void hairWindOff(BattleUnit *unit)
+{
+    BattleUnit **table;
+    BattleUnit **p;
+    BattleUnit *u;
+    int count;
+    int n;
+
+    EXM_StopWind();
+    n = unitTblGet(0, &table);
+    if (n > 0) {
+        count = n;
+        p = table;
+        do {
+            u = *p++;
+            if (u != 0 && u != unit) {
+                char *q = *(char **)((char *)u + 0x14);
+                *(int *)(q + 0x6F0) &= ~0x100000;
+            }
+        } while (--count != 0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExecPhase10);
 
@@ -772,7 +1004,36 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExecPhase30);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExecPhase40);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExecPhase50);
+typedef struct ScnExec50 {
+    BattleUnit *unit;
+    int kind;
+    int tec;
+    int itm;
+} ScnExec50;
+extern short *dataTecGet(int id);
+extern short *dataItmGet(int id);
+extern int sefIsFinishEffect(int id);
+extern void statEffOn(ObjectTask *unit);
+
+void scenarioBatExecPhase50(ScnExec50 *exec) {
+    int id;
+    CamEvent *ev;
+
+    if (exec->kind != 3) {
+        id = dataTecGet(exec->tec)[11];
+    } else {
+        id = dataItmGet(exec->itm)[8];
+    }
+    if (sefIsFinishEffect(id) != 0) {
+        ev = &D_00A57B80;
+        ev->type = 1;
+        ev->unit = exec->unit;
+        ev->param = exec->tec;
+        ((void (*)(CamEvent *))camEventExec)(ev);
+        statEffOn((ObjectTask *)exec->unit);
+        scenarioBatNext();
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", scenarioBatExecMain);
 
@@ -798,11 +1059,49 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProc);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukanFadeOut);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukanFadeIn);
+extern void unitCmdClear(ObjectTask *unit);
+extern void unitCmdSet(ObjectTask *unit, int *cmd);
+
+void syoukanFadeIn(BattleUnit *excludedUnit)
+{
+    int cmd[8];
+    BattleUnit **unitTable;
+    int count;
+    int i;
+
+    i = 0;
+    count = unitTblGet(0, &unitTable);
+    if (count > 0) {
+        do {
+            if (unitTable[i] != 0 && unitTable[i] != excludedUnit) {
+                cmd[0] = 0x2F;
+                unitCmdClear((ObjectTask *)unitTable[i]);
+                unitCmdSet((ObjectTask *)unitTable[i], cmd);
+            }
+            i++;
+        } while (i < count);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukan1Sub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukan2Sub);
+extern void unitCmdClear(ObjectTask *unit);
+extern void unitCmdSet(ObjectTask *unit, int *cmd);
+
+void syoukan2Sub(ObjectTask **arg0) {
+    int cmd[8];
+    unitCmdClear(*arg0);
+    cmd[0] = 0x2B;
+    cmd[1] = *(short *)((char *)calcUPGet(*arg0)->linkedUnit + 0x44);
+    cmd[2] = calcUPGet(*arg0)->linkedUnit->charaId;
+    unitCmdSet(*arg0, cmd);
+    cmd[0] = 0xD;
+    cmd[1] = 1;
+    cmd[2] = 1;
+    unitCmdSet(*arg0, cmd);
+    cmd[0] = 0x2F;
+    unitCmdSet(*arg0, cmd);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", specSyoukanProc);
 
@@ -1039,7 +1338,17 @@ void monsGainInit(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", monsGainSet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", itemGrpChk);
+int itemGrpChk(int grp, int id)
+{
+    switch (grp) {
+    case 0: if (id >= 0x49) return 0; break;
+    case 1: if (id >= 0x74) return 0; break;
+    case 2: if (id >= 0xB3) return 0; break;
+    case 3: if (id >= 0xB5) return 0; break;
+    default: return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", statEffProc);
 
@@ -1301,7 +1610,18 @@ int curSel(CursorObject *cursor, CursorSelectList *list, int nextMask, int prevM
     return list->curIdx;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", curGrpSel);
+int curGrpSel(void *cursor, int *grp, int maskA, int maskB) {
+    if ((dataPadRead(1) & maskA) || (dataPadRead(1) & maskB)) {
+        if (grp[0x58 / 4] == 0) {
+            grp[0x58 / 4] = 1;
+        } else {
+            grp[0x58 / 4] = 0;
+        }
+        sndSysSePlay(0xA);
+        return 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", curMove2Pos);
 

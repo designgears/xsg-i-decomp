@@ -130,7 +130,45 @@ static void _Destruct(RgBgObj *pObj)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_bgobj", _PassTime_00A12B90);
+void _PassTime(RgChar *pChar, float deltaTime)
+{
+    RgBgObj *pObj = (RgBgObj *)pChar;
+    unsigned int state;
+
+    if (pObj == 0) {
+        assert_prog(D_00A529B0, D_00A529C0, 136);
+    }
+    pObj->hideElapsed += deltaTime;
+    state = pObj->hideState;
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        if (pObj->hideElapsed > 0.3f) {
+            pObj->transparent = 0.0f;
+            state = 2;
+        } else {
+            pObj->transparent = (0.3f - pObj->hideElapsed) / 0.3f;
+        }
+        break;
+    case 2:
+        pObj->hideDuration -= deltaTime;
+        if (pObj->hideDuration < 0.0f) {
+            pObj->hideElapsed = 0.0f;
+            state = 3;
+        }
+        break;
+    case 3:
+        if (pObj->hideElapsed > 0.3f) {
+            pObj->transparent = -1.0f;
+            state = 0;
+        } else {
+            pObj->transparent = pObj->hideElapsed / 0.3f;
+        }
+        break;
+    }
+    pObj->hideState = state;
+}
 
 /*
  * InstanceOfRgDebugFlags()->flags[1] is one of the individual debug toggles

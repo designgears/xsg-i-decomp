@@ -126,4 +126,14 @@ INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureUnit2);
 
 INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureStart);
 
-INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureEnd);
+extern struct { int pad[4]; int flags; } GameLoopState;
+void tyaCaptureMain(int);
+unsigned short xglFontGetFlags(void);
+void xglFontSetFlags(int flags);
+
+void tyaCaptureEnd(void)
+{
+    tyaCaptureMain(1);
+    xglFontSetFlags((unsigned short)(xglFontGetFlags() | 3));
+    GameLoopState.flags &= 0xFAFFFFFF;
+}

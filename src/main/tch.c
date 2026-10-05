@@ -86,4 +86,32 @@ not_found:
     return -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/tch", TCH_getInfo);
+TchEntry *TCH_getInfo(TimeChart *chart, int index)
+{
+    int i;
+    int count;
+    TchEntry *entry;
+
+    if (chart->relocated == 0) {
+        getInfoAddr(chart);
+    }
+    if (index >= 0) {
+        count = chart->recordCount;
+        if (index < count) {
+            entry = chart->records;
+            i = 0;
+            goto cond;
+        loop:
+            if (index == i) {
+                return entry;
+            }
+            i++;
+            entry = (TchEntry *)((char *)entry + entry->wordCount * 4 + 8);
+        cond:
+            if (i < count) {
+                goto loop;
+            }
+        }
+    }
+    return 0;
+}

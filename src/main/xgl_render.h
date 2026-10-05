@@ -12,14 +12,26 @@
  * touches stay unmodeled.
  */
 typedef struct GsClearEnv {
-    unsigned char unmodeled_00[0x10];
+    u32 tag0;
+    u32 tag1;
+    u32 tag2;
+    u32 tag3;
     u64 target;
-    unsigned char unmodeled_18[0x08];
+    u64 prim;
     u32 color_r;
     u32 color_g;
     u32 color_b;
     u32 color_a;
-    unsigned char unmodeled_30[0x30];
+    u32 xy0;
+    u32 xy1;
+    u32 pad38;
+    u32 pad3c;
+    u32 xy2;
+    u32 xy3;
+    u32 pad48;
+    u32 pad4c;
+    u64 giftag;
+    u64 prim2;
 } GsClearEnv;
 
 /*
@@ -37,7 +49,12 @@ extern GsDispEnv DispEnv;
 typedef void (*XglRenderFadeCallback)(XglPacket *packet);
 
 typedef struct XglRenderState {
-    unsigned char unmodeled_00[0x10];
+    u16 unk0;                           /* +0x00 */
+    u16 psm;                            /* +0x02 */
+    u16 screen_w;                       /* +0x04 */
+    u16 screen_h;                       /* +0x06 */
+    u16 unk8;                          /* +0x08 */
+    unsigned char unmodeled_0a[6];
     u16 width;                         /* +0x10 */
     u16 height;                        /* +0x12 */
     unsigned char unmodeled_14[0x0c];

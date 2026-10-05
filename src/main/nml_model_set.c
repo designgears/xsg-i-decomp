@@ -10,7 +10,26 @@ extern unsigned char s_inMapHandle[];
 
 #define NML_RENDER_MAP_ENTRY 0x10000u
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", _VectorLengthSQ_0022DE28);
+static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
+{
+    float lengthSq;
+
+    __asm__ __volatile__(
+        "lqc2 $vf10,0(%1)\n\t"
+        "lqc2 $vf11,0(%2)\n\t"
+        "vsub.xyz vf10xyz,vf11xyz,vf10xyz\n\t"
+        "vmul.xyz vf10xyz,vf10xyz,vf10xyz\n\t"
+        "vaddz.x vf10x,vf10x,vf10z\n\t"
+        "vaddy.x vf10x,vf10x,vf10y\n\t"
+        "qmfc2 $2,$vf10\n\t"
+        "mtc1 $2,$f2\n\t"
+        "mtc1 $2,%0"
+        : "=f"(lengthSq)
+        : "r"(first), "r"(second)
+        : "$2", "memory"
+    );
+    return lengthSq;
+}
 
 /*
  * Loads the current model matrix's four rows into the resident VU0
@@ -48,7 +67,38 @@ static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTran
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", _CurRotTransPersClip_0022DE80);
+static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
+    int clip;
+    __asm__ __volatile__(
+        "ctc2.ni $0, $vi18\n\t"
+        "lqc2 $vf31, 0(%2)\n\t"
+        "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
+        "vmadday.xyzw ACC, $vf28, $vf31y\n\t"
+        "vmaddaz.xyzw ACC, $vf29, $vf31z\n\t"
+        "vmaddw.xyzw $vf31, $vf30, $vf0w\n\t"
+        "vnop\n\t"
+        "vnop\n\t"
+        "vnop\n\t"
+        "vclipw.xyz $vf31xyz, $vf31w\n\t"
+        "vdiv Q, $vf0w, $vf31w\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyzw $vf31, $vf31, Q\n\t"
+        "vmulaw.xyzw ACC, $vf26, $vf0w\n\t"
+        "vmadd.xyzw $vf31, $vf31, $vf25\n\t"
+        "vftoi4.xyw $vf23, $vf31\n\t"
+        "vftoi0.z $vf23, $vf31\n\t"
+        "vsub.w $vf23, $vf23, $vf23\n\t"
+        "sqc2 $vf23, 0(%1)\n\t"
+        "cfc2.ni $2, $vi18\n\t"
+        "nop\n\t"
+        "andi $2, $2, 0x3f\n\t"
+        "daddu %0, $2, $0"
+        : "=r"(clip)
+        : "r"(destination), "r"(vector)
+        : "$2", "memory"
+    );
+    return clip;
+}
 
 /*
  * Transforms one vector by the resident VU0 matrix (_CurSetMatrix above),
@@ -99,7 +149,61 @@ static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", _WeightToGlobalVec);
+/*
+ * Inverts the rigid part of the weight matrix (transposed 3x3 rotation and
+ * negated rotated translation), multiplies it by the given matrix with VU0
+ * and stores the resulting translation row.
+ */
+static void _WeightToGlobalVec(Vector4 *destination, float matrix[4][4], float weight[4][4])
+{
+    __asm__ __volatile__(
+        "lq $2, 0(%2)\n\t"
+        "lq $3, 16(%2)\n\t"
+        "lq $4, 32(%2)\n\t"
+        "lqc2 vf3, 48(%2)\n\t"
+        "qmfc2.ni $5, vf0\n\t"
+        "pextlw $6, $3, $2\n\t"
+        "pextuw $7, $3, $2\n\t"
+        "pextlw $8, $5, $4\n\t"
+        "pextuw $9, $5, $4\n\t"
+        "pcpyld $2, $8, $6\n\t"
+        "pcpyud $3, $6, $8\n\t"
+        "pcpyld $4, $9, $7\n\t"
+        "qmtc2.ni $2, vf5\n\t"
+        "qmtc2.ni $3, vf6\n\t"
+        "qmtc2.ni $4, vf7\n\t"
+        "vmulax.xyz ACC, vf5, vf3x\n\t"
+        "vmadday.xyz ACC, vf6, vf3y\n\t"
+        "vmaddz.xyz vf2, vf7, vf3z\n\t"
+        "vmove.w vf2, vf0\n\t"
+        "lqc2 vf27, 0(%1)\n\t"
+        "lqc2 vf28, 16(%1)\n\t"
+        "lqc2 vf29, 32(%1)\n\t"
+        "lqc2 vf30, 48(%1)\n\t"
+        "vsub.xyz vf2, vf0, vf2\n\t"
+        "vmulax.xyzw ACC, vf27, vf5x\n\t"
+        "vmadday.xyzw ACC, vf28, vf5y\n\t"
+        "vmaddaz.xyzw ACC, vf29, vf5z\n\t"
+        "vmaddw.xyzw vf5, vf30, vf5w\n\t"
+        "vmulax.xyzw ACC, vf27, vf6x\n\t"
+        "vmadday.xyzw ACC, vf28, vf6y\n\t"
+        "vmaddaz.xyzw ACC, vf29, vf6z\n\t"
+        "vmaddw.xyzw vf3, vf30, vf6w\n\t"
+        "vmulax.xyzw ACC, vf27, vf7x\n\t"
+        "vmadday.xyzw ACC, vf28, vf7y\n\t"
+        "vmaddaz.xyzw ACC, vf29, vf7z\n\t"
+        "vmaddw.xyzw vf4, vf30, vf7w\n\t"
+        "vmulax.xyzw ACC, vf27, vf2x\n\t"
+        "vmadday.xyzw ACC, vf28, vf2y\n\t"
+        "vmaddaz.xyzw ACC, vf29, vf2z\n\t"
+        "vmaddw.xyzw vf30, vf30, vf2w\n\t"
+        "sqc2 vf30, 0(%0)\n\t"
+        "nop"
+        :
+        : "r"(destination), "r"(matrix), "r"(weight)
+        : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9", "memory"
+    );
+}
 
 /* Stores componentwise minima in the first vector and maxima in the second. */
 static void _MinMaxSort(Vector4 *min, Vector4 *max) {
@@ -265,7 +369,30 @@ static void INIT_FADE_CONTROL(FadeControl *control)
     CONSTRUCT_FADE_CONTROL(control);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", CLEAR_MODEL_ENTRY);
+extern int s_nDispVisible;
+extern char s_aMatName[];
+extern char s_aTexName[];
+extern int s_nToumeiNum;
+extern int s_nShapeNum;
+
+static void CLEAR_MODEL_ENTRY(void)
+{
+    char *tex;
+    char *mat;
+    s_nDispVisible = -1;
+    tex = s_aTexName;
+    mat = s_aMatName;
+    *mat = 0;
+    *tex = 0;
+    s_nMapShadowParts = 0;
+    s_nShadowVec = 0;
+    s_nToumeiNum = 0;
+    s_fSortOffsetEntry = 0;
+    s_nParent = 0;
+    s_nClip = 0;
+    s_nShapeNum = 0;
+    s_nMapClip = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", CONSTRUCT_MODELSYSTEM);
 
@@ -278,7 +405,48 @@ static void INIT_MODELSYSTEM(void)
     CONSTRUCT_MODELSYSTEM();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", FLUSH_MODELSYSTEM);
+typedef int FlushQ __attribute__((mode(TI)));
+extern int s_nBlocks, s_nUseZwrite, s_nModel, s_nDirect, s_nBlocksAlpha, s_nBlocksAlphaLast, s_nAnotherStudio, s_nUseStealth, s_nUseGnosys, s_nMapAlphaEntry;
+extern void *xglStudioSelectGetActiveCamera(int studio_index);
+extern FlushQ s_inMainCameraPos;
+extern FlushQ s_inMainCameraAng;
+extern int s_nMainCameraWarp;
+
+static void FLUSH_MODELSYSTEM(void) {
+    char *cam;
+    FlushQ *pos;
+    FlushQ *ang;
+
+    s_nBlocks = 1;
+    s_nModel = 0;
+    s_nPacketSignal += 1;
+    s_nDirect = 0;
+    s_nBlocksAlpha = 0;
+    s_nBlocksAlphaLast = 0;
+    s_nAnotherStudio = 0;
+    s_nUseStealth = 0;
+    s_nUseGnosys = 0;
+    s_nUseZwrite = 0;
+    s_nUseBackBuffer = 0;
+    s_nMapAlphaEntry = 0;
+    s_nFrameLockOff = 0;
+    cam = xglStudioSelectGetActiveCamera(0);
+    if (cam != 0) {
+        __asm__ __volatile__(
+            "lq $2, 0(%1)\n"
+            "sq $2, 0(%0)\n"
+            :
+            : "r"(&s_inMainCameraPos), "r"(cam + 0xd0)
+            : "$2", "memory");
+        __asm__ __volatile__(
+            "lq $2, 0(%1)\n"
+            "sq $2, 0(%0)\n"
+            :
+            : "r"(&s_inMainCameraAng), "r"(cam + 0xa0)
+            : "$2", "memory");
+        s_nMainCameraWarp = 0;
+    }
+}
 
 void nmlModelSetBackBufferClear(void)
 {
@@ -405,7 +573,7 @@ extern NmlBackBufferOwnerView sRender;
 void nmlModelSetFadeInCancel(int frames);
 void nmlModelSetFadeOutCancel(int frames);
 void nmlModelSetBackBuffer(int modelId, int duration, int ownerIndex, int value);
-void nmlModelSetBackBufferToBattle(unsigned short ownerIndex);
+void nmlModelSetBackBufferToBattle(int ownerIndex);
 
 /*
  * The caller (GameMpeg2Play, main 0x00250c18) never inspects the result:
@@ -476,7 +644,25 @@ void nmlFadePacketWrite(NmlPacket packet)
     s_nFadeDoit = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", fade_set);
+static void fade_set(FadeControl *f, float *color, int level, int duration, int a4, int a5, int delay)
+{
+    union { int i; float f; } *p = (void *)f;
+    p[4].i = duration;
+    p[5].i = duration;
+    p[0].i = color[0] * 255.0f;
+    p[1].i = color[1] * 255.0f;
+    p[2].i = color[2] * 255.0f;
+    p[6].i = level;
+    p[7].i = a4;
+    p[8].i = a5;
+    p[11].i = delay;
+    p[3].i = 0;
+    p[9].i = 0;
+    if (duration < 0) {
+        p[4].i = -1;
+    }
+    *(void **)((char *)&sRender + 0x44) = nmlFadePacketWrite;
+}
 
 /*
  * D_0095DB90 is main:0x0095DB90, the same byte the FadeControl comment above
@@ -527,7 +713,21 @@ void nmlModelSetFadeOutCancel(int frames) {
     D_0095DB88[0] = (frames < 0) ? 0 : frames;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelFadeDoit);
+void nmlModelFadeDoit(void)
+{
+    if (s_inFadeIn.cancelFrames != 0) {
+        s_inFadeIn.cancelFrames--;
+    }
+    if (s_inFadeOut.cancelFrames != 0) {
+        s_inFadeOut.cancelFrames--;
+    }
+    if (s_inActiveFadeIn.cancelFrames != 0) {
+        s_inActiveFadeIn.cancelFrames--;
+    }
+    if (s_inActiveFadeOut.cancelFrames != 0) {
+        s_inActiveFadeOut.cancelFrames--;
+    }
+}
 
 void nmlModelSetFadeDoit(void)
 {
@@ -571,9 +771,38 @@ void nmlModelSetFadeOut(int duration, int mode) {
     fade_set(&s_inFadeOut, GameLoopState.color, GameLoopState.level, duration + 2, 0, mode, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetFadeIn);
+void nmlModelSetFadeIn(int duration, int mode)
+{
+    float *c = (float *)((char *)&GameLoopState + 0xA0);
+    union { int i; float f; } *g = (void *)((char *)c - 0xA0);
+    fade_set(&s_inFadeIn, c, g[0x5C / 4].i, duration, 1, mode, 0);
+    {
+        float z = 0.0f;
+        float t = 30.0f;
+        g[0x58 / 4].i = 0;
+        g[0xA8 / 4].f = z;
+        g[0xA4 / 4].f = z;
+        g[0xA0 / 4].f = z;
+        g[0xAC / 4].f = t;
+        g[0x5C / 4].i = 0;
+        g[0x98 / 4].f = z;
+        g[0x94 / 4].f = z;
+        g[0x90 / 4].f = z;
+        g[0x9C / 4].f = t;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetFadeInInterrupt);
+void nmlModelSetFadeInInterrupt(float r, float g, float b, int frames)
+{
+    int *rgba = (int *)s_inFadeIn.unmodeled_00;
+
+    rgba[0] = (int)(r * 255.0f);
+    rgba[1] = (int)(g * 255.0f);
+    rgba[2] = (int)(b * 255.0f);
+    rgba[3] = 0;
+    s_inFadeIn.duration = frames;
+    s_inFadeIn.frame = frames;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetActiveFadeOut);
 
@@ -612,9 +841,36 @@ void nmlModelGetGblPosition(Vector4 *position)
     position->w = 1.0f;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetBackBufferToBattle);
+void nmlModelSetBackBufferToBattle(int ownerIndex)
+{
+    int *p = s_inBackBuffer;
+    int one = 1;
+    p[6] = 0x28;
+    p[0] = one;
+    __asm__ __volatile__("" ::: "memory");
+    p[4] = ownerIndex;
+    p[5] = one;
+    p[8] = 0;
+    p[1] = 0;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetBackBufferToEventSkip);
+extern int D_0095DB70[];
+extern int D_0095DBB0[];
+extern int D_0095DBF0[];
+extern int D_0095DC30[];
+
+void nmlModelSetBackBufferToEventSkip(int ownerIndex)
+{
+    int *p = s_inBackBuffer;
+    int one = 1;
+    p[6] = 0x28;
+    p[0] = one;
+    __asm__ __volatile__("" ::: "memory");
+    p[4] = ownerIndex;
+    p[5] = one;
+    p[8] = 0;
+    p[1] = 0;
+}
 
 void nmlModelSetBackBuffer(int modelId, int duration, int ownerIndex, int value)
 {
@@ -654,15 +910,64 @@ void nmlModelSetSortOffset(float offset)
     s_fSortOffsetEntry = offset;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalPointLight);
+typedef int qword_t __attribute__((mode(TI)));
+extern qword_t s_inGblPointP[];
+extern int s_inGblPointC[];
+void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalPointLightCol);
+void nmlModelSetGlobalPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
+{
+    if (idx < 3) {
+        __asm__ __volatile__(
+            "lq $2, 0x0(%0)\n"
+            "sq $2, 0x0(%1)\n"
+            : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
+        xglVectorScaleXYZ(128.0f, (Vector4 *)&((qword_t *)s_inGblPointC)[idx], col);
+        s_inLayout.slots[0x250 / 4].i |= 0x2000000;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalPointLightPos);
+void nmlModelSetGlobalPointLightCol(unsigned int idx, Vector4 *col)
+{
+    if (idx < 3) {
+        xglVectorScaleXYZ(128.0f, (Vector4 *)&((qword_t *)s_inGblPointC)[idx], col);
+        s_inLayout.slots[0x250 / 4].i |= 0x2000000;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalPointLightReset);
+void nmlModelSetGlobalPointLightPos(unsigned int idx, qword_t *pos)
+{
+    if (idx < 3) {
+        __asm__ __volatile__(
+            "lq $2, 0x0(%0)\n"
+            "sq $2, 0x0(%1)\n"
+            : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
+        s_inLayout.slots[0x250 / 4].i |= 0x2000000;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetPointLight);
+void nmlModelSetGlobalPointLightReset(void)
+{
+    s_inLayout.slots[0x250 / 4].i &= ~0x2000000;
+    __asm__ __volatile__(
+        "sq $0, 0x0(%0)\n"
+        "sq $0, 0x10(%0)\n"
+        "sq $0, 0x20(%0)\n"
+        "sq $0, 0x30(%0)\n"
+        : : "r"(s_inGblPointC) : "memory");
+}
+
+void nmlModelSetPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
+{
+    if (idx < 3) {
+        __asm__ __volatile__(
+            "lq $2, 0x0(%0)\n"
+            "sq $2, 0x0(%1)\n"
+            : : "r"(pos), "r"(&((qword_t *)&s_inLayout.slots[0x100 / 4])[idx]) : "$2", "memory");
+        xglVectorScaleXYZ(128.0f, (Vector4 *)&((qword_t *)&s_inLayout.slots[0x140 / 4])[idx], col);
+        s_inLayout.slots[0x250 / 4].i |= 0x1000;
+    }
+}
 
 void nmlModelSetSpecularOff(int disableSpecular) {
     if (disableSpecular != 0) {
@@ -749,7 +1054,26 @@ void nmlModelSetToumeiParts(int partId, float alpha)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetFilter);
+void nmlModelSetFilter(int flags, float a, float b)
+{
+    s_inLayout.slots[0x234 / 4].i = flags;
+    if (a < 0.0f) {
+        a = 0.0f;
+    }
+    if (a > 128.0f) {
+        a = 128.0f;
+    }
+    s_inLayout.slots[0x1e0 / 4].f = a;
+    s_inLayout.slots[0x1e4 / 4].f = b;
+    if (flags & 2) {
+        s_nUseStealth = 1;
+        if (*(unsigned short *)((char *)&GameLoopState + 0xC) == 2) {
+            if (SCRIPT_getCfTime() < 2) {
+                s_nUseStealth = 0;
+            }
+        }
+    }
+}
 
 /* ACT_modelDrawSub supplies alpha as a signed word from its actor at +0x9a8. */
 void nmlModelSetPixelAlpha(int alpha)
@@ -763,9 +1087,35 @@ void nmlModelSetPixelAlpha(int alpha)
     s_inLayout.fields.pixelAlpha = alpha;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetPartsPixelAlpha);
+void nmlModelSetPartsPixelAlpha(int id, int alpha)
+{
+    LayoutSlot *s = s_inLayout.slots;
+    if (0 >= alpha)
+        alpha = 1;
+    if (alpha >= 0x80)
+        alpha = 0x7F;
+    if (s[0x2b4 / 4].i < 4) {
+        *(short *)&s[s[0x2b4 / 4].i + 0x2d0 / 4] = alpha;
+        *((short *)&s[s[0x2b4 / 4].i + 0x2d0 / 4] + 1) = id;
+        s[0x2b4 / 4].i++;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetScale);
+extern Vector4 s_inScale;
+
+void nmlModelSetScale(Vector4 *scale)
+{
+    __asm__ __volatile__(
+        "lq $2, 0(%0)\n"
+        "sq $2, 0(%1)\n"
+        :
+        : "r"(scale), "r"(&s_inScale)
+        : "$2", "memory");
+    if (s_inScale.x < s_inScale.y) s_inScale.x = s_inScale.y;
+    if (s_inScale.x < s_inScale.z) s_inScale.x = s_inScale.z;
+    if (s_inScale.x < 1.0f) s_inScale.x = 1.0f;
+    s_inLayout.slots[0x22c / 4].f = s_inScale.x;
+}
 
 void nmlModelSetClip(int clip)
 {
@@ -825,7 +1175,26 @@ void nmlModelSetToumei(int enabled)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetLight);
+static inline void _CopyMatrix(void *s, void *d)
+{
+    __asm__ __volatile__(
+        "lq $2, 0x0(%0)\n"
+        "sq $2, 0x0(%1)\n"
+        "lq $2, 0x10(%0)\n"
+        "sq $2, 0x10(%1)\n"
+        "lq $2, 0x20(%0)\n"
+        "sq $2, 0x20(%1)\n"
+        "lq $2, 0x30(%0)\n"
+        "sq $2, 0x30(%1)\n"
+        : : "r"(s), "r"(d) : "$2", "memory");
+}
+
+void nmlModelSetLight(void *normal, void *color)
+{
+    _CopyMatrix(normal, &s_inLayout.slots[0]);
+    _CopyMatrix(color, &s_inLayout.slots[0x40 / 4]);
+    s_inLayout.slots[0x250 / 4].i |= 0x10;
+}
 
 /*
  * Bounds and alignment a model texture pointer must satisfy: the pointer
@@ -868,15 +1237,74 @@ void nmlModelSetMatrix(void *matrix)
     *(void **)&s_inLayout.slots[0x23c / 4] = matrix;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetPlace);
+void xglMatrixInverse(void *dst, void *src);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetTexOffset);
+void nmlModelSetPlace(void *m)
+{
+    char *p = (char *)&s_inLayout + 0x80;
+    __asm__ __volatile__(
+        "lq $2, 0x0(%1)\n"
+        "sq $2, 0x0(%0)\n"
+        "lq $2, 0x10(%1)\n"
+        "sq $2, 0x10(%0)\n"
+        "lq $2, 0x20(%1)\n"
+        "sq $2, 0x20(%0)\n"
+        "lq $2, 0x30(%1)\n"
+        "sq $2, 0x30(%0)\n"
+        : : "r"(p), "r"(m) : "$2", "memory");
+    xglMatrixInverse(p + 0x40, m);
+    s_inLayout.slots[0x250 / 4].i |= 1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetMatOffset);
+typedef struct { char s[32]; } TexName32;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetMulColor);
+typedef union { TexName32 n; float f; } TexAlias;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetFogCol);
+typedef struct { float u, v; } TexOfs;
+
+extern TexOfs s_aTexOffset;
+
+void nmlModelSetTexOffset(TexAlias *name, float u, float v)
+{
+    *(TexName32 *)s_aTexName = name->n;
+    s_aTexName[31] = 0;
+    s_aTexOffset.u = u;
+    s_aTexOffset.v = v;
+}
+
+typedef struct { char s[32]; } MatName32;
+
+typedef int MulColor16 __attribute__((mode(TI)));
+
+extern MulColor16 s_inMulColor;
+
+void nmlModelSetMatOffset(MatName32 *name, MulColor16 *color)
+{
+    *(MatName32 *)s_aMatName = *name;
+    s_aMatName[31] = 0;
+    __asm__ __volatile__("lq $2, 0(%0)\n\tsq $2, 0(%1)" :: "r"(color), "r"(&s_inMulColor) : "$2", "memory");
+}
+
+void nmlModelSetMulColor(const float *color)
+{
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        :
+        : "r"(&s_inLayout.slots[0x200 / 4]), "r"(color)
+        : "$2", "memory");
+}
+
+void nmlModelSetFogCol(const float *color)
+{
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        :
+        : "r"(&s_inLayout.slots[0x1c0 / 4]), "r"(color)
+        : "$2", "memory");
+    s_inLayout.fields.render_status |= 0x2;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelFogPara);
 
@@ -893,13 +1321,54 @@ void nmlModelSetFogDist(float fogNear, float fogFar, float fogMin, float fogMax)
     s_inLayout.fields.render_status |= NML_RENDER_FOG;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalFogCol);
+void nmlModelSetGlobalFogCol(const float *color)
+{
+    extern Vector4 s_inGblFogCol;
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        :
+        : "r"(&s_inGblFogCol), "r"(color)
+        : "$2", "memory");
+    s_inLayout.fields.render_status |= 0x1000000;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelSetGlobalFogDist);
+void nmlModelSetGlobalFogDist(float fogNear, float fogFar, float fogMin, float fogMax)
+{
+    extern Vector4 s_inGblFogPara;
+    nmlModelFogPara((LayoutSlot *)&s_inGblFogPara, fogNear, fogFar, fogMin, fogMax);
+    s_inLayout.fields.render_status |= 0x1000000;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelGetFogPara);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelGetFogParaStudio);
+int nmlModelGetFogParaStudio(Vector4 *vector, int studioIndex) {
+    extern Vector4 s_inGblFogPara;
+    int result;
+    Vector4 *fogParams;
+    void *camera;
+    Vector4 dest;
+    float fogVal;
+
+    result = 0xFF;
+    fogParams = &s_inGblFogPara;
+    if (s_inLayout.fields.render_status & 2) {
+        fogParams = (Vector4 *)&s_inLayout.slots[0x1d0 / 4];
+    }
+    camera = xglStudioSelectGetActiveCamera(studioIndex);
+    if (camera != 0) {
+        _CurSetMatrix((float(*)[4])((char *)camera + 0x470));
+        _CurRotTransPersFog(&dest, vector, fogParams);
+        fogVal = dest.w;
+        if (fogVal >= 2147483648.0f) {
+            result = (int)(fogVal - 2147483648.0f);
+            result |= 0x80000000;
+        } else {
+            result = (int)fogVal;
+        }
+    }
+    return result;
+}
 
 int nmlModelSetGlobalFogReset(void) {
     int renderStatus = s_inLayout.fields.render_status & 0xfeffffff;
@@ -913,7 +1382,29 @@ int nmlModelSetFogCancel(void) {
     return renderStatus;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelInitPartsVisible);
+void nmlModelInitPartsVisible(NmlModel *model, int visible) {
+    int i;
+    int *offs;
+    int *base;
+
+    if (nmlModelLexDataCheck(model) == 0) {
+        base = model->blockOffsets;
+        i = 0;
+        if (model->blockCount > 0) {
+            offs = base;
+            do {
+                NmlModelBlock *block = (NmlModelBlock *)((char *)model + *offs);
+                offs++;
+                if (visible) {
+                    block->flags = block->flags & ~8;
+                } else {
+                    block->flags = block->flags | 8;
+                }
+                i++;
+            } while (i < model->blockCount);
+        }
+    }
+}
 
 void nmlModelSetMapEntry(void)
 {
@@ -1088,21 +1579,121 @@ static void set_group_status(LayoutStore *layout, u32 *status)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", AlphaGroupSortEntry);
+extern float D_00957944[];
+
+extern float s_fSortOffset;
+
+static void AlphaGroupSortEntry(Vector4 *pos)
+{
+    char *camera = xglStudioSelectGetActiveCamera(s_inLayout.slots[0x27c / 4].i);
+    float dist = 0.0f;
+    if (camera != 0) {
+        dist = _VectorLengthSQ((Vector4 *)(camera + 0xd0), pos);
+    }
+    D_00957944[s_nAlphaGroup * 4] = dist + s_fSortOffset;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", AlphaGroupLastEntry);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", AlphaGroupSort);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", is_shadow_map_parts);
+static int is_shadow_map_parts(void *m, int id)
+{
+    int n = *(int *)((char *)m + 0x278);
+    int ret = 0;
+    int i;
+    if (n != 0) {
+        for (i = 0; i < n; i++) {
+            if (((unsigned short *)((char *)m + 0x2E0))[i] == id) {
+                ret = 1;
+                break;
+            }
+        }
+    }
+    return ret;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", is_parts_transparency);
+extern int s_aToumeiId[];
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", is_block_last_entry);
+static int is_parts_transparency(void *p)
+{
+    int ret = 0;
+    int i;
+    for (i = 0; i < s_nToumeiNum; i++) {
+        if (s_aToumeiId[i] == *(int *)((char *)p + 0x2C)) {
+            ret = 1;
+            break;
+        }
+    }
+    return ret;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", parent_buf_entry);
+extern int D_0095DB70[];
+extern int D_0095DBB0[];
+extern int D_0095DBF0[];
+extern int D_0095DC30[];
+typedef int qword_t __attribute__((mode(TI)));
+extern qword_t s_inGblPointP[];
+extern int s_inGblPointC[];
+void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
+extern int s_aShapeId[32];
+extern float s_aShapeWeight[32];
+extern int s_aToumeiId[];
+extern float s_aToumei[];
+extern Vector4 s_inScale;
+void xglMatrixInverse(void *dst, void *src);
+extern int s_pMapLast;
+extern int s_aMapLast[];
+static int is_block_last_entry(void *m)
+{
+    int i;
+    int ret = 0;
+    for (i = 0; i < s_nMapLast; i++) {
+        if (*(int *)((char *)m + 0x2C) == s_aMapLast[i]) {
+            ret = 1;
+            break;
+        }
+    }
+    return ret;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", parent_buf_search);
+typedef struct {
+    char *model;
+    int pad[3];
+} ParentBufEntry;
+
+extern ParentBufEntry s_aParentBuf[];
+
+ParentBufEntry *parent_buf_entry(void)
+{
+    ParentBufEntry *e = 0;
+
+    if (s_nParentBuf < 0x200) {
+        int n;
+
+        e = &s_aParentBuf[s_nParentBuf];
+        *(int *)e = 0;
+        n = s_nParentBuf;
+        *(int *)((char *)&s_aParentBuf[n] + 8) = 0;
+        s_nParentBuf = n + 1;
+        *(int *)((char *)&s_aParentBuf[n] + 12) = 0;
+    }
+    return e;
+}
+
+static ParentBufEntry *parent_buf_search(int key)
+{
+    int i;
+    ParentBufEntry *result = 0;
+    for (i = s_nParentBuf - 1; i >= 0; i--) {
+        ParentBufEntry *e = &s_aParentBuf[i];
+        if (e->model != 0 && *(int *)(e->model + 0x254) == key && key != 0) {
+            result = e;
+            break;
+        }
+    }
+    return result;
+}
 
 /*
  * D_00956940 is the .bss circle-shadow ratio table: set_circle_shadow_ratio
@@ -1135,7 +1726,33 @@ INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcSample);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcEntryClip);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", deapth_for_studio);
+extern float tanf(float);
+
+static float deapth_for_studio(int studio, const Vector4 *vector, float size)
+{
+    float result;
+    float ret;
+    char *camera;
+    float (*mat)[4];
+    Vector4 *new_var;
+    int screen[4];
+
+    camera = xglStudioSelectGetActiveCamera(studio);
+    new_var = (Vector4 *)screen;
+    result = 0.0f;
+    __asm__ __volatile__("" : "+f"(result));
+    mat = (float (*)[4])(camera + 0x470);
+    __asm__ __volatile__("" : : "r"(mat));
+    ret = result;
+    if (camera != 0) {
+        _CurSetMatrix(mat);
+        _CurSetViewScaleTrans((const float *)(camera + 0x80), (const float *)(camera + 0x70));
+        _CurRotTransPersClip(new_var, vector);
+        __asm__ __volatile__("" : : "f"(result));
+        ret = ((float)screen[2] * size) / tanf(*(float *)(camera + 0x94) * 0.5f);
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcSpecularClip);
 
@@ -1233,7 +1850,17 @@ void nmlModelConstruct(void)
     s_inLayout.fields.render_status = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelInit);
+void nmlModelInit(void)
+{
+    INIT_MODELSYSTEM();
+    INIT_BACK_BUFFER();
+    INIT_ALPHA_GROUP();
+    INIT_PARENT_BUF();
+    INIT_MAP_HANDLE((int *)s_inMapHandle);
+    nmlModelClear();
+    s_inLayout.fields.render_status = 0;
+    D_0095BB44[0] = 30;
+}
 
 /* CLEAR_LAYOUT_MODEL and CLEAR_MODEL_ENTRY (near the top of this TU) are
  * still INCLUDE_ASM; declare them so this caller does not see an implicit

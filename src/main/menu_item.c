@@ -63,13 +63,163 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemStatusMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemStatusAgwsMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemListMake00);
+typedef struct MenuItemListRow {
+    const char *name;
+    int amount;
+    unsigned char flag;
+} MenuItemListRow;
+
+typedef struct MenuItemListWindow {
+    unsigned char unmodeled_00;
+    unsigned char row_count;
+    unsigned char unmodeled_02[0x0A];
+    short width;
+    short height;
+    const char *title;
+    unsigned char columns;
+    signed char rows;
+    unsigned char unmodeled_16[0x06];
+    MenuItemListRow *items;
+    unsigned char unmodeled_20[0x06];
+    unsigned char state;
+} MenuItemListWindow;
+
+typedef struct MenuItemListData {
+    unsigned char unmodeled_00[0x0C];
+    MenuItemListWindow window;
+} MenuItemListData;
+
+typedef struct MenuItemListMenuWork {
+    unsigned char unmodeled_00[0x32];
+    signed char menuCount;
+} MenuItemListMenuWork;
+
+extern MenuItemListData *MenuItemList;
+
+extern MenuItemListMenuWork MenuWork;
+
+extern unsigned char MenuKeepSelect[];
+
+extern void MenuSortSet(int list, int type, int order);
+
+extern void MenuSortChange(int list, int change);
+
+extern MenuItemListRow *MenuListMake(int list, int mode);
+
+extern MenuItemListRow *MenuListGet(int list);
+
+extern void WindowSPItemChange(MenuItemListWindow *window);
+
+extern void WindowSPSetSelect(MenuItemListWindow *window, unsigned char *saved_selection);
+
+extern const char D_004C4F50[];
+extern int *MenuSortAddrGet(int list);
+extern int MenuSortCheck(int list);
+
+void MenuItemListMake00(void)
+{
+  MenuItemListRow *row;
+  int *sort;
+  int n;
+  int r;
+  int i;
+
+  row = MenuListGet(0);
+  sort = MenuSortAddrGet(0);
+  MenuSortSet(0, 1, 0);
+  MenuSortChange(0, 0);
+  MenuSortChange(0, ((signed char *)&MenuWork)[0x31]);
+  MenuListMake(0, 0);
+  n = MenuSortCheck(0);
+  for (i = 0; i < n; i++) {
+    r = MenuItemUseCheck(sort[i]);
+    if (r != 0) {
+      if (r > 0) {
+        goto zero;
+      } else if (r == -1) {
+        row->flag = 1;
+        ((unsigned char *)row)[9] = 2;
+      } else {
+        goto zero;
+      }
+    } else {
+      row->flag = 1;
+      ((unsigned char *)row)[9] = 1;
+    }
+    goto next;
+  zero:
+    row->flag = 0;
+    ((unsigned char *)row)[9] = 0;
+  next:
+    row++;
+  }
+  MenuItemList->window.title = D_004C4F50;
+  MenuItemList->window.row_count = 7;
+  MenuItemList->window.columns = 1;
+  MenuItemList->window.rows = 0xB;
+  MenuItemList->window.width = 0xE0;
+  MenuItemList->window.height = (MenuItemList->window.rows * 0x18) + 6;
+  MenuItemList->window.items = MenuListGet(0);
+  WindowSPItemChange(&MenuItemList->window);
+  WindowSPSetSelect(&MenuItemList->window, MenuKeepSelect);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemListMake00_1);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemListMake01);
+extern const char D_004C4F60[];
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemListMake02);
+void MenuItemListMake01(unsigned int type)
+{
+  switch (type) {
+  case 0:
+    MenuSortSet(0, 4, -1);
+    break;
+  case 1:
+    MenuSortSet(0, 0x10, -1);
+    break;
+  case 2:
+    MenuSortSet(0, 8, -1);
+    break;
+  case 3:
+    MenuSortSet(0, 4, -2);
+    break;
+  case 4:
+    MenuSortSet(0, 0x10, -2);
+    break;
+  case 5:
+    MenuSortSet(0, 8, -2);
+    break;
+  }
+  MenuSortChange(0, 0);
+  MenuSortChange(0, ((signed char *)&MenuWork)[0x33 + type]);
+  MenuListMake(0, 0);
+  MenuItemList->window.title = D_004C4F60;
+  MenuItemList->window.row_count = 7;
+  MenuItemList->window.columns = 2;
+  MenuItemList->window.rows = 0xB;
+  MenuItemList->window.width = 0x1D4;
+  MenuItemList->window.height = (MenuItemList->window.rows * 0x18) + 6;
+  MenuItemList->window.items = MenuListGet(0);
+  WindowSPItemChange(&MenuItemList->window);
+  WindowSPSetSelect(&MenuItemList->window, &MenuKeepSelect[type * 5 + 10]);
+}
+
+void MenuItemListMake02(void)
+{
+  MenuSortSet(0, 2, 0);
+  MenuSortChange(0, 0);
+  MenuSortChange(0, MenuWork.menuCount);
+  MenuListMake(0, 0);
+  MenuItemList->window.title = &D_004C4F60;
+  MenuItemList->window.row_count = 7;
+  MenuItemList->window.columns = 2;
+  MenuItemList->window.rows = 0xB;
+  MenuItemList->window.width = 0x1D4;
+  MenuItemList->window.height = (MenuItemList->window.rows * 0x18) + 6;
+  MenuItemList->window.items = MenuListGet(0);
+  WindowSPItemChange(&MenuItemList->window);
+  WindowSPSetSelect(&MenuItemList->window, &MenuKeepSelect[5]);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemListMain);
 
@@ -79,7 +229,59 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemIconMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemExMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", subRoboPartsCheck);
+extern int xglFlagsGet(int bit_offset, int bit_count);
+
+int subRoboPartsCheck(int arg0)
+{
+    int var_16;
+    int flag;
+
+    var_16 = 0;
+    switch (arg0) {
+    case 1:
+        var_16 = 1;
+        if (xglFlagsGet(0xCE5, 1) != 0) {
+            var_16 = 0x41;
+        }
+        break;
+    case 2:
+        var_16 = 2;
+        if (xglFlagsGet(0xCE7, 1) != 0) {
+            var_16 = 0x82;
+        }
+        break;
+    case 9:
+        var_16 = 4;
+        if (xglFlagsGet(0xCE6, 1) != 0) {
+            var_16 = 0x10C;
+        }
+        break;
+    case 7:
+        var_16 = 8;
+        if (xglFlagsGet(0xCE6, 1) != 0) {
+            var_16 = 0x10C;
+        }
+        break;
+    case 8:
+        var_16 = 0x10;
+        if (xglFlagsGet(0xCE8, 1) != 0) {
+            var_16 = 0x230;
+        }
+        break;
+    case 3:
+        flag = xglFlagsGet(0xCE8, 1);
+        {
+            int hi = 0x230;
+            __asm__("xori %0, %0, 0" : "+r"(flag));
+            var_16 = 0x20;
+            if (flag) {
+                var_16 = hi;
+            }
+        }
+        break;
+    }
+    return var_16;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemSegmentMain);
 

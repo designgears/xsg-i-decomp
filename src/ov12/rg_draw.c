@@ -177,7 +177,25 @@ static void _CopyFog(RgFog *pDst, RgFog *pSrc)
     pDst->color[2] = pSrc->color[2];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_draw", _InitRgDrawView);
+static void _InitRgDrawView(RgDrawView *pView, RgDrawStudio *pParentStudio)
+{
+    if (pView == 0) {
+        assert_prog(D_00A54B08, D_00A54AF0, 169);
+    }
+    if (pParentStudio == 0) {
+        assert_prog(D_00A54B18, D_00A54AF0, 170);
+    }
+    XrgUnitMatrix(pView->viewMatrix);
+    XrgUnitVector(pView->axisX);
+    XrgUnitVector(pView->axisY);
+    pView->projectionMode = 0;
+    pView->clippingMode = 0;
+    pView->m_pParentStudio = pParentStudio;
+    pView->screenRect.x0 = 0;
+    pView->screenRect.y0 = 0;
+    pView->screenRect.x1 = 0x200;
+    pView->screenRect.y1 = 0x1C0;
+}
 
 static void _DestructRgDrawView(RgDrawView *pView)
 {
@@ -517,7 +535,47 @@ void RgDrawSetGlobalFog(RgDraw *pDraw, RgFog *pFog)
     _CopyFog(&pDraw->m_Fog, pFog);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_draw", RgDrawViewInit);
+extern const char D_00A54AD0[];
+
+void RgDrawViewInit(RgDrawView *pView)
+{
+    int screenIndex;
+    int cameraIndex;
+    StudioCamera *pCamera;
+
+    if (pView == 0) {
+        assert_prog(D_00A54B08, D_00A54AF0, 541);
+    }
+    screenIndex = pView->m_pParentStudio->m_ScreenIndex;
+    pCamera = 0;
+    if (screenIndex < 2) {
+        if (screenIndex >= 0) {
+            cameraIndex = 0;
+            switch (screenIndex) {
+            case 0:
+                cameraIndex = 0;
+                break;
+            case 1:
+                cameraIndex = 1;
+                break;
+            default:
+                RgError(D_00A54AD0, D_00A54AF0, 69, screenIndex);
+                break;
+            }
+            pCamera = xglStudioSelectGetActiveCamera(cameraIndex);
+        }
+    }
+    if (pCamera != 0) {
+        pCamera->state = 4;
+        *(float *)&pCamera->unmodeled_90[4] = 0.698132f;
+        pCamera->position.y = 0.0f;
+        pCamera->position.z = 0.0f;
+        pCamera->rotation.x = 0.0f;
+        pCamera->rotation.y = 0.0f;
+        pCamera->rotation.z = 0.0f;
+        pCamera->position.x = 0.0f;
+    }
+}
 
 /*
  * External file-backed witness of this allocation's own functions, not
@@ -649,7 +707,58 @@ void RgDrawViewSetRotateZ(RgDrawView *pView, float angle)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_draw", RgDrawViewIsPointInView);
+extern void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix,
+                            const Vector4 *vector);
+
+int RgDrawViewIsPointInView(RgDrawView *pView, const Vector4 *pPoint, float radius)
+{
+    int result;
+    int screenIndex;
+    int cameraIndex;
+    StudioCamera *pCamera;
+    Vector4 point;
+    Vector4 a;
+    Vector4 b;
+
+    result = 0;
+    if (pView == 0) {
+        assert_prog(D_00A54B08, D_00A54AF0, 0x25A);
+    }
+    screenIndex = pView->m_pParentStudio->m_ScreenIndex;
+    pCamera = 0;
+    radius = -radius;
+    if (screenIndex < 2) {
+        if (screenIndex >= 0) {
+            cameraIndex = 0;
+            switch (screenIndex) {
+            case 0:
+                cameraIndex = 0;
+                break;
+            case 1:
+                cameraIndex = 1;
+                break;
+            default:
+                RgError(D_00A54AD0, D_00A54AF0, 69, screenIndex);
+                break;
+            }
+            pCamera = xglStudioSelectGetActiveCamera(cameraIndex);
+        }
+    }
+    if (pCamera != 0) {
+        float (*m1)[4] = (float (*)[4])((char *)pCamera + 0x4F0);
+        float (*m2)[4] = (float (*)[4])((char *)pCamera + 0x530);
+        point.x = pPoint->x;
+        point.y = pPoint->y;
+        point.z = pPoint->z;
+        point.w = 1.0f;
+        xglVectorMulMat(&a, m1, &point);
+        xglVectorMulMat(&b, m2, &point);
+        if (a.x < radius && a.y < radius && b.x < radius && b.y < radius) {
+            result = 1;
+        }
+    }
+    return result;
+}
 
 void RgDrawViewGetScreenRect(RgDrawView *pView, RgRect *pRect)
 {
@@ -741,7 +850,46 @@ void RgDrawReq(RgDraw *pDraw, void *pObject,
     request->drawID = drawID;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_draw", _FadeShadow);
+extern void sceVif1PkInit(XglPacket *packet, u32 buffer_address);
+extern void sceVif1PkAddGsAD(XglPacket *packet, int reg, u64 value);
+extern void sceVif1PkAddGsPacked(XglPacket *packet, Quadword data);
+extern int sceVif1PkSize(XglPacket *packet);
+extern void nmlModelDirectSend(int mode, u8 *data, int count);
+typedef struct FadeShadowVerts {
+    GifTag v[4];
+} FadeShadowVerts;
+extern const FadeShadowVerts D_00A54C10;
+typedef union FadeShadowQuad {
+    int w[4];
+    Quadword quad;
+} FadeShadowQuad;
+
+static void _FadeShadow(int color, int mode)
+{
+    FadeShadowVerts verts;
+    FadeShadowQuad rgba;
+    u64 packet[4];
+
+    verts = D_00A54C10;
+    memset(&rgba, 0, 16);
+    rgba.w[3] = color;
+    sceVif1PkInit((XglPacket *)packet, 0x70000000);
+    _openVifGifAD((XglPacket *)packet);
+    sceVif1PkAddGsAD((XglPacket *)packet, 0x3F, 0);
+    sceVif1PkAddGsAD((XglPacket *)packet, 0x47, 0x31001);
+    sceVif1PkAddGsAD((XglPacket *)packet, 8, 0x3FC003FC000ULL);
+    sceVif1PkAddGsAD((XglPacket *)packet, 0x49, 0);
+    sceVif1PkAddGsAD((XglPacket *)packet, 0x42, 0x44);
+    _closeVifGif((XglPacket *)packet);
+    _openVifGif((XglPacket *)packet, 4, 5, 0x44441);
+    sceVif1PkAddGsPacked((XglPacket *)packet, rgba.quad);
+    sceVif1PkAddGsPacked((XglPacket *)packet, verts.v[0].quad);
+    sceVif1PkAddGsPacked((XglPacket *)packet, verts.v[1].quad);
+    sceVif1PkAddGsPacked((XglPacket *)packet, verts.v[2].quad);
+    sceVif1PkAddGsPacked((XglPacket *)packet, verts.v[3].quad);
+    _closeVifGif((XglPacket *)packet);
+    nmlModelDirectSend(mode, (u8 *)0x70000000, sceVif1PkSize((XglPacket *)packet));
+}
 
 void _DrawReqTerminate(RgDraw *pDraw)
 {

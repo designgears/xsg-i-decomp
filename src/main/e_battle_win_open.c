@@ -15,7 +15,30 @@ INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinOpen2);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", eBattleWinMain2);
+int eBattleWinMain2(void)
+{
+    BattleWindow2 *w = BW2;
+
+    if (*(int *)w == 0) {
+        return 0;
+    }
+    endPrintExtFunc(0xFFFFFF, 0x64, 0);
+    WindowDXMain(&BW2->window);
+    switch ((signed char)BW2->window.state) {
+    case 0:
+        *(int *)BW2 = 0;
+        return 0;
+    case 3:
+        eMessageMain((char *)BW2 + 0x19C);
+        return 2;
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+        return 1;
+    }
+    return 0;
+}
 
 void eBattleWinClose2(void)
 {
@@ -53,7 +76,29 @@ void eBattleWinInit(void)
     eBattleWinInit2(MenuWorkEndGet());
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowDXFlagChange);
+void WindowDXFlagChange(WindowDX *window, int flag)
+{
+    unsigned char s;
+    switch (flag) {
+    case 1:
+        s = window->state;
+        if ((unsigned char)(s + 1) < 2 || (signed char)s == 4 || (signed char)s == 5) {
+            window->state = 1;
+        }
+        break;
+    case 3:
+        window->state = flag;
+        break;
+    case 4:
+        if ((signed char)window->state == 3) {
+            window->state = flag;
+        }
+        break;
+    default:
+        window->state = flag;
+        break;
+    }
+}
 
 void WindowDXSet(WindowDX *window)
 {
@@ -87,7 +132,34 @@ INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWControlType00);
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWControlType01);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSelect);
+typedef struct SPSel {
+    unsigned char kind;
+    char pad1[0x13];
+    signed char mode;
+    char pad15[3];
+    int arg;
+    int active;
+    char pad20[8];
+    short result;
+    short flag;
+} SPSel;
+void subMWControlType00(void *, int);
+void subMWControlType01(void *, int);
+
+short WindowSPSelect(SPSel *w, int arg1) {
+    unsigned char k;
+    if (w == 0) return -1;
+    if (w->active == 0) return -1;
+    if (w->flag == 0) return -1;
+    k = w->kind;
+    if (w->kind != 3) return -1;
+    w->arg = arg1;
+    switch (w->mode) {
+    case 1: subMWControlType00(w, k); break;
+    case 2: subMWControlType01(w, k); break;
+    }
+    return w->result;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", WindowSPSet);
 

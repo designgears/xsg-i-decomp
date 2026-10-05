@@ -241,7 +241,45 @@ void DrillClearContainer(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_drill", SetContainerParam);
+typedef struct ContainerParam {
+    u8 kind;
+    u8 pad01[0xF];
+    struct CPVec { u64 w[2]; } pos;
+    u8 item;
+    u8 pad21[3];
+    int value;
+    u8 pad28[8];
+} ContainerParam;
+extern ContainerParam container[];
+extern void CreateUwamonoCommon(void *unit);
+extern void MAP_updateUnitTrap(void);
+
+void SetContainerParam(u8 *unit)
+{
+    u8 *ext = unit + 0x1A0;
+    int idx;
+    int v;
+
+    *(u32 *)unit = (*(u32 *)unit & ~4) | 0x200000;
+    if (*(int *)(ext + 0x44) == -1) {
+        *(int *)(ext + 0x44) = 0;
+    }
+    ext[0x2E] = 1;
+    v = *(int *)(ext + 0x40);
+    idx = *(s16 *)(unit + 0xA4) - 0x7014;
+    ext[0x2D] = container[idx].kind;
+    ext[0x32] = container[idx].item;
+    *(struct CPVec *)(unit + 0xB0) = container[idx].pos;
+    if (v == -1) {
+        *(int *)(ext + 0x40) = container[idx].value;
+    }
+    CreateUwamonoCommon(unit);
+    *(void **)(unit + 4) = MAP_updateUnitTrap;
+    *(void **)(unit + 0x80) = unit + 0x40;
+    if (*(s16 *)(ext + 0x30) == -1) {
+        *(s16 *)(ext + 0x30) = *(s16 *)(unit + 0xA4);
+    }
+}
 
 /*
  * Spawns an item unit (template 0x7000), gives it a "pending pickup" state
@@ -812,6 +850,52 @@ void DrillResetFlag(Drill *drill)
 
 INCLUDE_ASM("asm/main/nonmatchings/init_drill", DrillHitCheck);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_drill", HitCheckContainerPosSize);
+extern int HitCheckMapUnitPosAt(void *query, void *unit);
+typedef struct DrillHitSub {
+    unsigned char unmodeled_00[4];
+    signed char state;                /* +0x04 (record +0x1A4) */
+    unsigned char unmodeled_05[0x28];
+    signed char hit;                  /* +0x2D (record +0x1CD) */
+    unsigned char unmodeled_2e[0x132];
+} DrillHitSub;
+typedef struct DrillHitUnit {
+    u32 flags;
+    unsigned char unmodeled_04[0xA0];
+    short serial;
+    unsigned char unmodeled_a6[0xFA];
+    DrillHitSub sub;
+} DrillHitUnit;
+typedef struct DrillHitQuery {
+    unsigned char unmodeled_00[0x10];
+    Vector4 pos;
+    unsigned char unmodeled_20[0x9C8];
+    float size;
+    unsigned char unmodeled_9ec[0x84];
+} DrillHitQuery;
+
+int HitCheckContainerPosSize(Vector4 *pos, int except, float size)
+{
+    DrillHitQuery query;
+    int i;
+    int off;
+    char *base;
+    DrillHitSub *sub;
+
+    query.pos = *pos;
+    query.size = size;
+    for (i = 0, off = 0; i < 64; i++, off += 0x300) {
+        sub = &((DrillHitUnit *)MapUnit)[i].sub;
+        base = (char *)MapUnit;
+        if (((DrillHitUnit *)((char *)sub - 0x1A0))->serial != -1
+            && sub->state == 0
+            && i != except
+            && sub->hit != 0
+            && (((DrillHitUnit *)((char *)sub - 0x1A0))->flags & 0x10000)
+            && HitCheckMapUnitPosAt(&query, (char *)(off + (int)base)) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_drill", HitCheckEnemy);

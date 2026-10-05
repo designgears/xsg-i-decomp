@@ -80,7 +80,78 @@ static RgFileSysData *_FindFileObj(RgFileSys *pSys, RgFileSysData *pFile)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_filesys", _FindInPrepare);
+/*
+ * The out parameter _FindInPrepare (still INCLUDE_ASM) fills when it locates
+ * pszName inside the first prepared link archive: the archive's own record
+ * (to bump its reference count), the payload pointer RgLinkDataGet returned,
+ * and a size RgFileSysRead stores as-is into the new record.
+ */
+typedef struct RgFileSysLinkFound {
+    RgFileSysData *dupOf;
+    void *data;
+    unsigned int size;
+} RgFileSysLinkFound;
+
+extern const char D_00A559C0[];
+extern const char D_00A559D0[];
+extern const char D_00A559D8[];
+extern void InitRgLinkData(void *pLink, void *buf);
+extern int RgLinkDataMatchDataName(void *pLink, const char *name);
+extern void *RgLinkDataGet(void *pLink, const char *name);
+extern unsigned int RgLinkDataGetSize(void *pLink, const char *name);
+extern char *strcpy(char *destination, const char *source);
+extern void RgError(const char *message, const char *source_file, int line,
+                    ...);
+
+static int _FindInPrepare(RgFileSys *pSys, const char *pszFile,
+                          RgFileSysLinkFound *pFound)
+{
+    char name[0x80];
+    struct { void *buf; } link;
+    const char *p;
+    const char *sep;
+    RgFileSysData *pPrepare;
+    void *data;
+    unsigned int size;
+    unsigned int i;
+
+    if (pSys == 0) {
+        assert_prog(pSys_not_nil, rg_filesys_source_file, 114);
+    }
+    if (pszFile == 0) {
+        assert_prog(D_00A559C0, rg_filesys_source_file, 115);
+    }
+    sep = 0;
+    for (p = pszFile; *p != 0; p++) {
+        if (*p == '\\' || *p == '/') {
+            sep = p;
+        }
+    }
+    if (sep != 0) {
+        strcpy(name, sep + 1);
+    } else {
+        strcpy(name, pszFile);
+    }
+    for (i = 0; i < pSys->prepared_count; i++) {
+        pPrepare = pSys->prepared_files[i];
+        InitRgLinkData(&link, pPrepare->data);
+        if (RgLinkDataMatchDataName(&link, D_00A559D0) == 0) {
+            RgError(D_00A559D8, rg_filesys_source_file, 137, pPrepare->name);
+        }
+        data = RgLinkDataGet(&link, name);
+        size = RgLinkDataGetSize(&link, name);
+        if (data != 0 && size != 0) {
+            if (pFound != 0) {
+                pFound->dupOf = pPrepare;
+                pFound->data = data;
+                pFound->size = size;
+            }
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
 
 extern void *CreateRgVector(int capacity, const char *source_file, int line);
 
@@ -155,18 +226,6 @@ void RgFileSysClear(RgFileSys *pSys)
     }
     RgVectorClear(files);
 }
-
-/*
- * The out parameter _FindInPrepare (still INCLUDE_ASM) fills when it locates
- * pszName inside the first prepared link archive: the archive's own record
- * (to bump its reference count), the payload pointer RgLinkDataGet returned,
- * and a size RgFileSysRead stores as-is into the new record.
- */
-typedef struct RgFileSysLinkFound {
-    RgFileSysData *dupOf;
-    void *data;
-    unsigned int size;
-} RgFileSysLinkFound;
 
 extern int _FindInPrepare(RgFileSys *pSys, const char *pszFile,
                           RgFileSysLinkFound *pFound);

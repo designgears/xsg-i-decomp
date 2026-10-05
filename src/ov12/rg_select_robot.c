@@ -73,7 +73,31 @@ static void _KillLoadIfMe(void *owner)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ReqLoad);
+extern const char D_00A56DC0[];
+extern void *s_apBuf[4];
+extern char s_aszData[4][64];
+extern char *strcpy(char *, const char *);
+
+static int _ReqLoad(char **names, void **bufs, unsigned int uFileNum, void *who)
+{
+    unsigned int i;
+
+    if (uFileNum >= 5) {
+        assert_prog(D_00A56DC0, D_00A56DA0, 0x5E);
+    }
+    if (s_pWhoAreYou == who || s_pWhoAreYou == 0) {
+        _KillLoad();
+        for (i = 0; i < uFileNum; i++) {
+            strcpy(s_aszData[i], names[i]);
+            s_apBuf[i] = bufs[i];
+        }
+        s_uReqNum = uFileNum;
+        s_pWhoAreYou = who;
+        s_uOkNum = 0;
+        return 1;
+    }
+    return 0;
+}
 
 static int _IsEndOfLoad(void)
 {
@@ -182,7 +206,65 @@ static void _ActorPos(RgSelectRobot *pCont, RgVector position)
     XrgLinearIntpVector(position, s_aPos_1[1], s_aPos_1[0], pCont->screenPos);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ActorPosUpdate);
+typedef struct ActorPosView {
+    unsigned char pad00[0x10];
+    float pos[3];
+    unsigned char pad1c[0x34];
+    float f50;
+    float f54;
+    float f58;
+} ActorPosView;
+extern void ACT_updateMotion(void *actor);
+
+static void _ActorPosUpdate(RgSelectRobot *pCont)
+{
+    RgVector position;
+    ActorPosView *actor;
+    float angle;
+
+    if (pCont->actorFlags == 0) {
+        return;
+    }
+    if (*(int *)((char *)pCont + 0x124) != 0) {
+        return;
+    }
+    _ActorPos(pCont, position);
+    actor = (ActorPosView *)pCont->actorFlags;
+    actor->pos[0] = position[0];
+    actor->pos[1] = position[1];
+    actor->pos[2] = position[2];
+    actor->f50 = 0.0f;
+    actor->f54 = *(float *)((char *)pCont + 0x154);
+    actor->f58 = 0.0f;
+    ACT_updateMotion(actor);
+
+    angle = pCont->displayPosition - *(float *)((char *)pCont + 0x154);
+    if (angle > 3.1415927f) {
+        angle -= 6.2831855f;
+        while (angle > 3.1415927f) {
+            angle -= 6.2831855f;
+        }
+    }
+    if (angle < -3.1415927f) {
+        do {
+            angle += 6.2831855f;
+        } while (angle < -3.1415927f);
+    }
+    *(float *)((char *)pCont + 0x154) = *(float *)((char *)pCont + 0x154) + angle * 0.2f;
+    angle = *(float *)((char *)pCont + 0x154);
+    if (angle > 3.1415927f) {
+        angle -= 6.2831855f;
+        while (angle > 3.1415927f) {
+            angle -= 6.2831855f;
+        }
+    }
+    if (angle < -3.1415927f) {
+        do {
+            angle += 6.2831855f;
+        } while (angle < -3.1415927f);
+    }
+    *(float *)((char *)pCont + 0x154) = angle;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", _ActivateAct);
 
@@ -337,7 +419,28 @@ void RgSelectRobotPassTime(RgSelectRobot *pCont, float deltaTime)
     _JobAct(pCont, deltaTime);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_robot", RgSelectRobotDisp);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern void ACT_draw(void);
+static void _DrawAct(RgSelectRobot *pCont);
+extern const char D_00A56F08[];
+extern const char D_00A56F10[];
+
+void RgSelectRobotDisp(RgSelectRobot *pCont)
+{
+    unsigned int i;
+
+    if (pCont == 0) {
+        assert_prog(D_00A56EF8, D_00A56DA0, 0x33D);
+    }
+    xglFontDebugPrintf(0, 8, D_00A56F08, *(int *)pCont);
+    for (i = 0; i < 3; i++) {
+        RgSelectAction *a = pCont->actions[i];
+        xglFontDebugPrintf(0, i * 8 + 0x10, D_00A56F10, i, *(int *)a);
+    }
+    ACT_draw();
+    _DrawAct(pCont);
+    _JobLoad();
+}
 
 static void _DumpHead(void)
 {

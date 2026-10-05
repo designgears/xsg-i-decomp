@@ -118,7 +118,7 @@ void xglSoundEffectNormalID(int sound, int channel);
 void WindowDXSet(void *window);
 void WindowDXMain(void *window);
 void MenuInfoWindow(void *window, void *text);
-char *UmnPluginTextGet(signed char plugin_id);
+char *UmnPluginTextGet(unsigned int plugin_id);
 void MoveSlide(short *current, short *target, float rate);
 
 void tskUmnPluginPas(void *task_opaque, void *work_opaque)
@@ -253,9 +253,250 @@ void tskUmnPluginInfo(void *task_opaque, void *work_opaque)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_plugin_pas", tskUmnPluginList);
+extern const char D_00A13458[];
+extern const char D_00A13460[];
+void WindowSPSet(void *window);
+void WindowSPMain(void *window);
+void WindowSPItemChange(void *window);
+int WindowSPSelect(void *window, int pad);
+struct UmnPluginListItem {
+    const char *text;
+    int value;
+    unsigned char flag;
+};
+struct UmnPluginListWindow {
+    unsigned char type;
+    unsigned char mode;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    const char *title;
+    unsigned char rows;
+    unsigned char cols;
+    unsigned char unmodeled_16[6];
+    struct UmnPluginListItem *items;
+};
+struct UmnPluginListWork {
+    unsigned char state;
+    unsigned char opened;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int color;
+    struct UmnPluginListWindow window;
+    unsigned char unmodeled_2c[0x1718];
+    struct UmnPluginListItem item[17];
+};
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_plugin_pas", tskUmnPluginExWin);
+void tskUmnPluginList(void *task_opaque, void *work_opaque)
+{
+    struct UmnPluginTask *task = task_opaque;
+    struct UmnPluginListWork *work = work_opaque;
+    short target[2];
+
+    if (UmnWork.plugin_work_state != 4) {
+        task->state = -1;
+        return;
+    }
+    switch (task->state) {
+    case 0:
+        work->state = 0;
+        work->opened = 0;
+        work->x = 0x210;
+        work->y = 0x70;
+        work->color = 0xFF0000;
+        work->window.x = 0x210;
+        work->window.y = 0x70;
+        work->window.color = 0xFF0000;
+        work->window.mode = 3;
+        work->window.title = D_00A13458;
+        work->window.cols = 10;
+        work->window.rows = 1;
+        work->window.width = 400;
+        work->window.height = 0xF6;
+        work->window.items = 0;
+        WindowSPSet(&work->window);
+        break;
+    case 2:
+        switch (work->state) {
+        case 0:
+            work->opened = 0;
+            work->state = 10;
+        case 10:
+            if (UmnWork.plugin_mode == 0x11) {
+                work->opened = 1;
+                work->state = 20;
+            }
+            break;
+        case 20:
+            {
+                int i = 0;
+                for (; i < UmnWork.unlocked_plugin_count; i++) {
+                    work->item[i].text = UmnPluginTextGet(plugin_folder[i]);
+                    work->item[i].value = 0;
+                    work->item[i].flag = 0;
+                }
+                work->item[i].text = D_00A13450;
+                work->item[i + 1].text = 0;
+                work->window.items = work->item;
+                WindowSPItemChange(&work->window);
+                work->window.type = 0x11;
+                WindowSPMain(&work->window);
+                work->state = 30;
+            }
+        case 30:
+            target[0] = 0x38;
+            MoveSlide(&work->x, &target[0], 3.0f);
+            if (work->x == target[0]) {
+                work->state = 40;
+            }
+            break;
+        case 40:
+            {
+                int sel = WindowSPSelect(&work->window, ((unsigned short *)&PadData)[0x1A]);
+                if (sel >= 0) {
+                    UmnWork.selected_plugin_index = sel;
+                    UmnWork.selected_plugin_id = plugin_folder[UmnWork.selected_plugin_index];
+                }
+                if (UmnWork.plugin_mode != 0x11) {
+                    work->state = 50;
+                }
+            }
+            break;
+        case 50:
+            target[1] = 0x210;
+            MoveSlide(&work->x, &target[1], 3.0f);
+            if (work->x == target[1]) {
+                work->state = 0;
+            }
+            break;
+        }
+        break;
+    }
+    if (work->opened) {
+        work->window.x = work->x;
+        work->window.y = work->y;
+        work->window.color = work->color;
+        WindowSPMain(&work->window);
+    }
+    xglFontDebugPrintf(0, 0x10, D_00A13460, work->state);
+}
+
+extern char msg00_1_00A10C48[];
+void eNumberSet(void *number, int mode);
+void eNumberMain(void *number);
+void eTagFontSet(void *tag, void *text);
+void eTagFontMain(void *tag);
+void eRibbonSet(void *ribbon, int mode);
+void eRibbonMain(void *ribbon);
+struct UmnPluginExWinItem {
+    short slide_x;
+    short slide_y;
+    struct {
+        unsigned char unmodeled_00[4];
+        short x;
+        short y;
+        int value;
+        unsigned char unmodeled_0c[0x14];
+    } tag;
+    struct {
+        short x;
+        short y;
+        int color;
+        short width;
+        short height;
+        unsigned char unmodeled_0c[0x64];
+    } ribbon;
+    struct {
+        short x;
+        short y;
+        int value;
+        unsigned char unmodeled_08[6];
+        unsigned char mode;
+        unsigned char digits;
+        unsigned char unmodeled_10[4];
+        int value2;
+        unsigned char unmodeled_18[0x78];
+    } number;
+};
+struct UmnPluginExWinWork {
+    unsigned char state;
+    unsigned char opened;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int color;
+    struct UmnPluginExWinItem item[1];
+};
+
+void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
+{
+    struct UmnPluginTask *task = task_opaque;
+    struct UmnPluginExWinWork *work = work_opaque;
+
+    if (UmnWork.plugin_work_state != 4) {
+        task->state = -1;
+    } else {
+        switch (task->state) {
+        case 0:
+            {
+            int i;
+            work->x = 0x210;
+            work->y = 0x20;
+            work->color = 0x00FFFFF0;
+            for (i = 0; i < 1; i++) {
+                work->item[i].slide_x = -0x110;
+                work->item[i].slide_y = 0x30;
+                eRibbonSet(&work->item[i].ribbon, 3);
+                work->item[i].ribbon.width = 0x100;
+                work->item[i].ribbon.height = 0x18;
+                eTagFontSet(&work->item[i].tag, msg00_1_00A10C48);
+                eNumberSet(&work->item[i].number, 0);
+            }
+            }
+            work->state = 0;
+            work->opened = 0;
+            break;
+        case 2:
+            {
+                short slide_target[2];
+                int plugin_mode = UmnWork.plugin_mode;
+                int i;
+
+                slide_target[0] = -0x110;
+                if (plugin_mode < 18) {
+                    if (plugin_mode >= 16) {
+                        slide_target[0] = 0;
+                    }
+                }
+                i = 0;
+                do {
+                    MoveSlide(&work->item[i].slide_x, slide_target, 3.0f);
+                    work->item[i].ribbon.x = work->item[i].slide_x;
+                    work->item[i].ribbon.y = work->item[i].slide_y;
+                    work->item[i].ribbon.color = work->color;
+                    eRibbonMain(&work->item[i].ribbon);
+                    work->item[i].tag.x = work->item[i].slide_x + 0xBC;
+                    work->item[i].tag.y = work->item[i].slide_y + 4;
+                    work->item[i].tag.value = work->item[i].ribbon.color + 1;
+                    eTagFontMain(&work->item[i].tag);
+                    work->item[i].number.x = work->item[i].tag.x + 0x1E;
+                    work->item[i].number.y = work->item[i].tag.y;
+                    work->item[i].number.value = work->item[i].tag.value;
+                    work->item[i].number.mode = 3;
+                    work->item[i].number.value2 = UmnWork.selected_plugin_index + (UmnWork.unlocked_plugin_count << 16) + 1;
+                    work->item[i].number.digits = 2;
+                    eNumberMain(&work->item[i].number);
+                    i++;
+                } while (i < 1);
+            }
+            break;
+        }
+    }
+}
 
 void UmnPlugin(void)
 {

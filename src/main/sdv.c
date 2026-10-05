@@ -10,7 +10,17 @@ void sdvInitAmbient(void)
     _sdvAmbState = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvSaveAmbient);
+extern void *func_A2C3F8(void);
+
+void sdvSaveAmbient(void)
+{
+    void *light = xglStudioGetLight2();
+    void *rgb = func_A2C3F8();
+    __asm__ __volatile__("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(_sdvAmbient), "r"(light) : "$8", "memory");
+    __asm__ __volatile__("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(_sdvMapRgb), "r"(rgb) : "$8", "memory");
+    _sdvAmbFrame = 0;
+    _sdvAmbState = 0;
+}
 
 static void sdvSetAmbStateSub(int state, int effect_no, int force)
 {
@@ -326,7 +336,67 @@ void sdvScheduleCamera(SdvCameraTask *task)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvTransOffset);
+extern float D_004D836C;
+extern void *sefGetNowScheduler(void);
+extern void sefGetPosition(void *, void *, int);
+extern void MMathMulMatrix(void *, void *, void *);
+extern void MMathApplyMatrix(void *, void *, void *);
+extern void *xglStudioGetActiveCamera(void);
+extern int MMathRotTransPersClip(void *, void *, void *, void *);
+
+static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
+{
+    float pos[4];
+    float tmp[4];
+    float m[16];
+    float m2[16];
+    short type;
+    char *sched;
+    char *cam;
+
+    type = *(short *)(*(int *)((char *)mtx + 0x54) + 2);
+    if (type == 3) {
+        __asm__ __volatile__("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(out), "r"(src) : "$8", "memory");
+        out[0] += 0x100;
+        out[1] += 0xE0;
+        out[2] = arg3[1] << 16;
+        return 1;
+    }
+    sched = sefGetNowScheduler();
+    __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
+    tmp[2] *= D_004D836C;
+    tmp[3] = 1.0f;
+    sefGetPosition(pos, tmp, type);
+    if (*(int *)(sched + 0xA8C) & 2) {
+        MMathMulMatrix(m, mtx, sched + 0x40);
+        MMathApplyMatrix(pos, m, pos);
+    }
+    __asm__ __volatile__(
+        "lqc2 vf1, 0(%0)\n\t"
+        "vmove.w vf1, vf0\n\t"
+        "vmr32.xyzw vf2, vf0\n\t"
+        "vmr32.xyzw vf3, vf2\n\t"
+        "vmr32.xyzw vf4, vf3\n\t"
+        "sqc2 vf1, 0x30(%1)\n\t"
+        "sqc2 vf2, 0x20(%1)\n\t"
+        "sqc2 vf3, 0x10(%1)\n\t"
+        "sqc2 vf4, 0(%1)\n\tnop" : : "r"(pos), "r"(m) : "memory");
+    cam = xglStudioGetActiveCamera();
+    MMathMulMatrix(m2, cam + 0x470, m);
+    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(pos) : "memory");
+    if (MMathRotTransPersClip(out, cam, m2, pos) != 0) {
+        return 0;
+    }
+    out[0] = (out[0] >> 4) - 0x700;
+    out[1] = (out[1] >> 4) - 0x720;
+    if (arg3[1] != 0) {
+        out[2] += arg3[1];
+        if (out[2] > 0xF000) {
+            out[2] = 0xF000;
+        }
+    }
+    return 1;
+}
 
 void sdvInitSpecialWork(void)
 {
@@ -379,14 +449,62 @@ void sdvInitAlter(SdvAlter *alter)
     sefMemZero(alter, sizeof(*alter));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvCreateAlter);
+extern int serial_3;
+typedef struct { long long d[14]; } SdvAlterParam;
+typedef struct { int unk0; short unk4; short unk6; unsigned short active; short p2; unsigned short id; } SdvAlterTail;
+
+int sdvCreateAlter(SdvAlterParam *param)
+{
+    int i;
+    SdvAlterTail *t;
+    char *base = (char *)_sdvAlter;
+
+    t = (SdvAlterTail *)(base + 0x1270);
+    for (i = 0; i < 16; i++) {
+        if (t->active == 0) {
+            serial_3 = (serial_3 + 1) & 0xFF;
+            *(SdvAlterParam *)(base + i * 0x1280) = *param;
+            t->id = serial_3;
+            t->active = 1;
+            t->unk6 = 0;
+            t->unk0 = 0;
+            t->unk4 = 0;
+            return (serial_3 << 16) | i;
+        }
+        t = (SdvAlterTail *)((char *)t + 0x1280);
+    }
+    return -1;
+}
 
 void sdvDestroyAlter(SdvAlter *alter)
 {
     sefMemZero(alter, sizeof(*alter));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvKillAlter);
+typedef struct { int pad[2]; unsigned short active; short p2; short id; } SdvTail;
+
+void sdvKillAlter(int id)
+{
+    unsigned int idx;
+    char *base;
+    unsigned int off, toff;
+    SdvTail *t;
+    int key;
+
+    if (id >= 0) {
+    idx = id & 0xFFFF;
+    key = id >> 16;
+    base = (char *)_sdvAlter;
+    off = idx * sizeof(SdvAlter);
+    toff = off + 0x1270;
+    t = (SdvTail *)(base + toff);
+    if (t->active != 0) {
+        if (t->id == key) {
+            sdvDestroyAlter((SdvAlter *)(base + off));
+        }
+    }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvExecAlter);
 
@@ -424,4 +542,24 @@ unsigned short sdvExecAlters(void)
     return status;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sdv", sdvDrawAlters);
+extern char _packet[];
+void SGsInitEnv(void);
+void sdvDrawAlter(SdvAlter *a, void *pkt);
+typedef struct { char pad[0xE]; short kind; } SdvAlterSub;
+
+void sdvDrawAlters(int arg0)
+{
+    int n;
+    int i;
+
+    n = 0;
+    for (i = 0; i < 16; i++) {
+        if (_sdvAlter[i].active != 0 && ((SdvAlterSub *)&_sdvAlter[i].unmodeled_0000[0x60])->kind == arg0) {
+            n++;
+            if (n == 1) {
+                SGsInitEnv();
+            }
+            sdvDrawAlter(&_sdvAlter[i], _packet);
+        }
+    }
+}

@@ -147,7 +147,16 @@ float srsAtan2(float x, float y)
     return angle;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefRandf);
+static float sefRandf(void)
+{
+    extern int sefRandSeed;
+    extern const float sef_rand_unit_scale_literal;
+    int bits;
+
+    sefRandSeed = sefRandSeed * 0x41C64E6D + 0x3039;
+    bits = ((unsigned int)sefRandSeed >> 16) & 0x7FFF;
+    return (float)bits * sef_rand_unit_scale_literal;
+}
 
 /*
  * sefIsBossID (main:0x002e11e8): true when character_id falls in the boss ID
@@ -286,9 +295,36 @@ static void sevInitPtAllocator(void)
     } while (index >= 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sevAllocPtAllocator);
+typedef struct {
+    unsigned char records[1024][640];
+    short queue[1024];
+    int head;
+    int tail;
+} SefPtAllocTable;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sevFreePtAllocator);
+static int sevAllocPtAllocator(void)
+{
+    SefPtAllocTable *t = (SefPtAllocTable *)_ptAlloc;
+    int head = t->head;
+    int next = (head + 1) & 0x3FF;
+
+    if (next == t->tail) {
+        return -1;
+    }
+    t->head = next;
+    return t->queue[head];
+}
+
+static void sevFreePtAllocator(unsigned int handle)
+{
+    SefPtAllocTable *t = (SefPtAllocTable *)_ptAlloc;
+    int tail = t->tail;
+
+    if (handle < 0x400 && t->head != tail) {
+        t->queue[tail] = handle;
+        t->tail = (tail + 1) & 0x3FF;
+    }
+}
 
 static void sefProgressKey3(SefKey3 *keys, SefProgressState *state)
 {
@@ -388,7 +424,49 @@ static void sefLerpVectorA(void *keys, Vector4 *dest)
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefLerpVector);
+int sefLerpVector(SefKey5 *keys, SefProgressState *state)
+{
+    Vector4 *dest = (Vector4 *)((char *)state + 0x10);
+    SefKey5 *key;
+    float fraction;
+
+    key = keys + state->key_index;
+    if (key[1].end_frame == 1024) {
+        return 0;
+    }
+    key = sefProgressKey5(keys, state);
+    if (key->end_frame != key[1].end_frame) {
+        fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
+        __asm__ __volatile__(
+            "mfc1 $9, %2\n\t"
+            "qmtc2.ni $9, $vf3\n\t"
+            "ldl $8, 7(%0)\n\t"
+            "ldr $8, 0(%0)\n\t"
+            "ldl $9, 7(%1)\n\t"
+            "ldr $9, 0(%1)\n\t"
+            "dsrl $8, $8, 16\n\t"
+            "dsrl $9, $9, 16\n\t"
+            "pcgth $10, $0, $8\n\t"
+            "pcgth $11, $0, $9\n\t"
+            "pextlh $10, $10, $8\n\t"
+            "pextlh $11, $11, $9\n\t"
+            "qmtc2.ni $10, $vf1\n\t"
+            "qmtc2.ni $11, $vf2\n\t"
+            "vitof0.xyzw $vf1, $vf1\n\t"
+            "vitof0.xyzw $vf2, $vf2\n\t"
+            "vsub.xyz $vf2, $vf2, $vf1\n\t"
+            "vmulx.xyz $vf2, $vf2, $vf3x\n\t"
+            "vadd.xyz $vf2, $vf2, $vf1\n\t"
+            "sqc2 $vf2, 0(%3)"
+            :
+            : "r"(key), "r"(key + 1), "f"(fraction), "r"(dest)
+            : "$8", "$9", "$10", "$11", "memory");
+        dest->w = 1.0f;
+    } else {
+        sefLerpVectorA(key, dest);
+    }
+    return 1;
+}
 
 /*
  * sefLerpVectorSC (main:0x002e1908), re-treated from the accepted assembly
@@ -438,13 +516,110 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
     return status;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefLerpIVectorA);
+void sefLerpIVectorA(void *keys, Vector4 *dest)
+{
+    __asm__ __volatile__(
+        "ldl $9, 7(%0)\n\t"
+        "ldr $9, 0(%0)\n\t"
+        "pcgth $10, $0, $9\n\t"
+        "pextlh $10, $10, $9\n\t"
+        "sq $10, 0(%1)\n\t"
+        "nop"
+        :
+        : "r"(keys), "r"(dest)
+        : "$9", "$10", "memory"
+    );
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefLerpIVector);
+void sefLerpIVector(SefKey5 *keys, SefProgressState *state)
+{
+    Vector4 *dest = (Vector4 *)((char *)state + 0x10);
+    SefKey5 *key;
+    float fraction;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefLerpIVector2);
+    key = keys + state->key_index;
+    if (key[1].end_frame == 1024) {
+        return;
+    }
+    key = sefProgressKey5(keys, state);
+    if (key->end_frame != key[1].end_frame) {
+        fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
+        __asm__ __volatile__(
+            "ldl $8, 7(%0)\n\t"
+            "ldr $8, 0(%0)\n\t"
+            "ldl $9, 7(%1)\n\t"
+            "ldr $9, 0(%1)\n\t"
+            "mfc1 $10, %2\n\t"
+            "qmtc2.ni $10, $vf3\n\t"
+            "pcgth $10, $0, $8\n\t"
+            "pcgth $11, $0, $9\n\t"
+            "pextlh $10, $10, $8\n\t"
+            "pextlh $11, $11, $9\n\t"
+            "qmtc2.ni $10, $vf1\n\t"
+            "qmtc2.ni $11, $vf2\n\t"
+            "vitof0.xyzw $vf1, $vf1\n\t"
+            "vitof0.xyzw $vf2, $vf2\n\t"
+            "vsub.xyz $vf2, $vf2, $vf1\n\t"
+            "vmulx.xyz $vf2, $vf2, $vf3x\n\t"
+            "vadd.xyz $vf2, $vf2, $vf1\n\t"
+            "vftoi0.xyzw $vf2, $vf2\n\t"
+            "sqc2 $vf2, 0(%3)"
+            :
+            : "r"((char *)key + 2), "r"((char *)key + 12), "f"(fraction), "r"(dest)
+            : "$8", "$9", "$10", "$11", "memory");
+        return;
+    }
+    sefLerpIVectorA((char *)key + 2, dest);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefLerpFloat);
+#define SK(k, n) (((short *)(k))[n])
+
+void sefLerpIVector2(SefKey5 *keys, SefProgressState *state)
+{
+    union { int i; } *dest = (void *)((char *)state + 0x10);
+    SefKey5 *key;
+    int t;
+    int w;
+
+    key = keys + state->key_index;
+    if (key[1].end_frame != 1024
+        && (key = sefProgressKey5(keys, state), key->end_frame != key[1].end_frame)) {
+        t = ((state->frame - key->end_frame) << 16) / (key[1].end_frame - key->end_frame);
+        dest[0].i = ((SK(key, 6) - SK(key, 1)) * t >> 16) + SK(key, 1);
+        dest[1].i = ((SK(key, 7) - SK(key, 2)) * t >> 16) + SK(key, 2);
+        dest[2].i = ((SK(key, 8) - SK(key, 3)) * t >> 16) + SK(key, 3);
+        w = ((SK(key, 9) - SK(key, 4)) * t >> 16) + SK(key, 4);
+        w = -w;
+        dest[3].i = w;
+    } else {
+        dest[0].i = SK(key, 1);
+        dest[1].i = SK(key, 2);
+        dest[2].i = SK(key, 3);
+        dest[3].i = -SK(key, 4);
+    }
+}
+
+void sefLerpFloat(SefKey3 *keys, SefProgressState *state)
+{
+    SefKey3 *key;
+    int frame_delta;
+    int frame_offset;
+    float fraction;
+
+    key = (SefKey3 *)((char *)keys + state->key_index * 6);
+    if (((SefKey3 *)((char *)key + 6))->frame != 1024) {
+        sefProgressKey3(keys, state);
+        key = (SefKey3 *)((char *)keys + state->key_index * 6);
+        if (key->frame != ((SefKey3 *)((char *)key + 6))->frame) {
+            frame_delta = ((SefKey3 *)((char *)key + 6))->frame - key->frame;
+            frame_offset = state->frame - key->frame;
+            fraction = (float)frame_offset / (float)frame_delta;
+            *(float *)&state->value = ((float)(((SefKey3 *)((char *)key + 6))->value - key->value) * fraction + (float)key->value) * 0.01f;
+            return;
+        }
+    }
+    *(float *)&state->value = (float)key->value * 0.01f;
+}
 
 void sefLerpInt(SefKey3 *keys, SefProgressState *state)
 {
@@ -480,15 +655,206 @@ static void sefProgressInt(SefKey3 *keys, SefProgressState *state)
     state->value = ((SefKey3 *)((char *)keys + state->key_index * 6))->value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetMotionNullMatrix);
+extern int ACT_jointGetAccessories(void *actor, unsigned int id);
+static inline int sefMatrixHasOffset(unsigned char *source)
+{
+    return (*(int *)(source + 8) | *(long long *)source) != 0;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetNullPosition);
+/*
+ * sefGetMotionNullMatrix (main:0x002e1de0): copies the actor's accessory
+ * joint matrix (`id` + 8) into `matrix`; falls back to the actor's own
+ * rotation/translation/scale when there is no joint matrix or its
+ * translation row is zero. A null actor gives the identity matrix.
+ */
+void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int id)
+{
+    int joint;
+    int mats;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetWeaponPosition);
+    if (actor != 0) {
+        joint = ACT_jointGetAccessories(actor, id + 8);
+        if (joint >= 0) {
+            mats = *(int *)(actor + 0x824);
+            if (mats != 0) {
+                __asm__ __volatile__(
+                    "lq $8, 0(%0)\n\t"
+                    "lq $9, 16(%0)\n\t"
+                    "lq $10, 32(%0)\n\t"
+                    "lq $11, 48(%0)\n\t"
+                    "sq $8, 0(%1)\n\t"
+                    "sq $9, 16(%1)\n\t"
+                    "sq $10, 32(%1)\n\t"
+                    "sq $11, 48(%1)"
+                    :
+                    : "r"((joint << 6) + mats), "r"(matrix)
+                    : "$8", "$9", "$10", "$11", "memory");
+                if (sefMatrixHasOffset((unsigned char *)matrix + 0x30)) {
+                    return;
+                }
+            }
+        }
+        sefCalcRotTransSMatrix((Vector4 *)(actor + 0x50), (Vector4 *)(actor + 0x10),
+                               (Vector4 *)(actor + 0x60), matrix);
+        return;
+    }
+    /* Identity: rotate $vf0 = (0,0,0,1) one lane at a time, rows back to front. */
+    __asm__ __volatile__(
+        "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
+        "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
+        "vmr32.xyzw $vf3xyzw, $vf2xyzw\n\t"
+        "sqc2 $vf0, 48(%0)\n\t"
+        "sqc2 $vf1, 32(%0)\n\t"
+        "sqc2 $vf2, 16(%0)\n\t"
+        "sqc2 $vf3, 0(%0)"
+        :
+        : "r"(matrix)
+        : "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetPoint);
+extern int ACT_jointGetAccessories(void *actor, unsigned int id);
 
-extern void sefGetPoint(Vector4 *position, unsigned char *source);
+void sefGetNullPosition(SefQuadBlock *out, void *actor, unsigned int id, int flag)
+{
+    int joint;
+    int mats;
+
+    if (actor != 0 && id < 16) {
+        joint = ACT_jointGetAccessories(actor, id + 8);
+        mats = *(int *)((char *)actor + 0x824);
+        if (joint < 0 || mats == 0) {
+            ((float *)out)[1] = 20.0f;
+        } else {
+            __asm__ __volatile__(
+                "lq $8, 0(%0)\n\t"
+                "sq $8, 0(%1)"
+                :
+                : "r"((joint << 6) + mats + 0x30), "r"(out)
+                : "$8", "memory");
+        }
+    }
+}
+
+void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
+{
+    int joint;
+    int mats;
+
+    if (actor != 0 && id < 8) {
+        joint = ACT_jointGetAccessories(actor, id);
+        mats = *(int *)((char *)actor + 0x824);
+        if (joint < 0 || mats == 0) {
+            ((float *)out)[1] = 20.0f;
+        } else {
+            __asm__ __volatile__(
+                "lq $8, 0(%0)\n\t"
+                "sq $8, 0(%1)"
+                :
+                : "r"((joint << 6) + mats + 0x30), "r"(out)
+                : "$8", "memory");
+        }
+    }
+}
+
+extern int _parentLine;
+extern int _nowParentLocal;
+extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
+extern unsigned char D_00795100[];
+static inline short sefPointHasOffset(unsigned char *source)
+{
+    return (*(int *)(source + 8) | *(long long *)source) != 0;
+}
+static inline void sefLoadPointMatrix(Vector4 *dst, unsigned char *rows, Vector4 *position)
+{
+    __asm__ __volatile__(
+        "lq $8, 0(%0)\n\t"
+        "lq $9, 0x10(%0)\n\t"
+        "lq $10, 0x20(%0)\n\t"
+        "lq $11, 0(%1)\n\t"
+        "sq $8, 0(%2)\n\t"
+        "sq $9, 0x10(%2)\n\t"
+        "sq $10, 0x20(%2)\n\t"
+        "sq $11, 0x30(%2)"
+        : : "r"(rows), "r"(position), "r"(dst) : "$8", "$9", "$10", "$11", "memory");
+}
+
+void sefGetPoint(Vector4 *position, unsigned char *source, int target)
+{
+    Vector4 local[4] __attribute__((aligned(16)));
+    unsigned char *matrix;
+    unsigned char *battle;
+    short offset;
+
+    matrix = 0;
+    offset = sefPointHasOffset(source);
+    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(position) : "memory");
+    battle = _battleData;
+    if (*(int *)(battle + 0x224) & 2) {
+        if ((unsigned int)(target - 0x101) < 0x10) {
+            target += 0x700;
+        }
+    }
+    if (target == 0x211) {
+        target = (*(short *)(battle + 0xC) >= 2) ? 0x20F : 0x210;
+    }
+    if (target >= 4 && target != 0x800) {
+        if (target == 0x100) {
+            if (*(int *)battle != 0) {
+                matrix = battle + 0x80;
+            }
+        } else if (target == 0x200) {
+            if (*(int *)(battle + 4) != 0) {
+                matrix = battle + 0xC0;
+            }
+        } else if (target & 0x100) {
+            sefGetNullPosition((SefQuadBlock *)position, *(void **)battle, target - 0x101, 1);
+            sefLoadPointMatrix(local, battle + 0x80, position);
+            matrix = (unsigned char *)local;
+        } else if (target & 0x200) {
+            sefGetNullPosition((SefQuadBlock *)position, *(void **)(battle + 4), target - 0x201, 0);
+            sefLoadPointMatrix(local, battle + 0xC0, position);
+            matrix = (unsigned char *)local;
+        } else if (!(target & 0x1000)) {
+            if (target == 4) {
+                unsigned char *parent;
+
+                if (_parentLine >= 0 && _nowParentLocal >= 0) {
+                    parent = &_ptAlloc[_nowParentLocal * 640];
+                } else {
+                    parent = 0;
+                }
+                if (parent != 0) {
+                    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(parent + 0xC0), "r"(position) : "$8", "memory");
+                }
+            } else if (target & 0x400) {
+                sefGetWeaponPosition((SefQuadBlock *)position, *(void **)(battle + 8), target - 0x400);
+                sefLoadPointMatrix(local, battle + 0x80, position);
+                matrix = (unsigned char *)local;
+            } else if (target == 5) {
+                __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(D_00795100), "r"(position) : "$8", "memory");
+            } else if (target & 0x800) {
+                sefGetNullPosition((SefQuadBlock *)position, *(void **)battle, target - 0x801, 1);
+                MMathApplyMatrix(position, battle + 0x80, position);
+            }
+        }
+    }
+    if (matrix != 0) {
+        if (offset != 0) {
+            MMathApplyMatrix(position, matrix, (Vector4 *)source);
+        } else {
+            __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(matrix + 0x30), "r"(position) : "$8", "memory");
+        }
+    } else {
+        __asm__ __volatile__(
+            "lqc2 $vf1, 0(%0)\n\t"
+            "lqc2 $vf2, 0(%1)\n\t"
+            "vadd.xyz $vf1, $vf1, $vf2\n\t"
+            "sqc2 $vf1, 0(%0)"
+            : : "r"(position), "r"(source) : "memory");
+    }
+}
+
+extern void sefGetPoint(Vector4 *position, unsigned char *source, int target);
 extern unsigned char _zeroPos_004CBF00[];
 
 /*
@@ -496,13 +862,13 @@ extern unsigned char _zeroPos_004CBF00[];
  * from `source` (or the shared zero-position table when source is NULL),
  * then forces the resulting vector's W lane to 1.0f.
  */
-void sefGetPosition(Vector4 *position, unsigned char *source) {
+void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
     unsigned char *point = source;
 
     if (point == 0) {
         point = _zeroPos_004CBF00;
     }
-    sefGetPoint(position, point);
+    sefGetPoint(position, point, target);
     position->w = 1.0f;
 }
 
@@ -552,7 +918,48 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     pos->z = z_unit * radius;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetSpherePos);
+extern int sefRandSeed;
+
+static void sefGetSpherePos(Vector4 *pos, float radius)
+{
+    int vals[4];
+    unsigned int t2;
+    unsigned int t3;
+    unsigned int t5;
+    float half = 16384.0f;
+
+    t2 = (unsigned int)sefRandSeed * 0x41C64E6D + 0x3039;
+    vals[0] = (t2 >> 16) & 0x7FFF;
+    t3 = t2 * 0x41C64E6D + 0x3039;
+    vals[1] = (t3 >> 16) & 0x7FFF;
+    t5 = t3 * 0x41C64E6D + 0x3039;
+    sefRandSeed = (int)t5;
+    vals[2] = (t5 >> 16) & 0x7FFF;
+
+    __asm__ __volatile__(
+        "lqc2 $vf1, 0(%1)\n\t"
+        "mfc1 $2, %2\n\t"
+        "vitof0.xyzw $vf1, $vf1\n\t"
+        "qmtc2.ni $2, $vf2\n\t"
+        "vsubx.xyz $vf1, $vf1, $vf2x\n\t"
+        "vmul.xyz $vf2, $vf1, $vf1\n\t"
+        "vaddy.x $vf2, $vf2, $vf2y\n\t"
+        "vaddz.x $vf2, $vf2, $vf2z\n\t"
+        "vsqrt Q, $vf2x\n\t"
+        "vwaitq\n\t"
+        "vaddq.x $vf2, $vf0, Q\n\t"
+        "vdiv Q, $vf0w, $vf2x\n\t"
+        "vmove.w $vf2, $vf0\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyz $vf2, $vf1, Q\n\t"
+        "mfc1 $2, %3\n\t"
+        "qmtc2.ni $2, $vf1\n\t"
+        "vmulx.xyz $vf2, $vf2, $vf1x\n\t"
+        "sqc2 $vf2, 0(%0)\n\t"
+        :
+        : "r"(pos), "r"(vals), "f"(half), "f"(radius)
+        : "$2", "memory");
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetCubePosBtm);
 
@@ -579,7 +986,67 @@ INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetCubePos);
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetOfsRange);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetDirMatrix);
+static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
+{
+    Vector4 neg;
+    float angle[4];
+    float len;
+
+    __asm__ __volatile__(
+        "lqc2 $vf1, 0(%0)\n\t"
+        "vsub.xyz $vf2, $vf0, $vf1\n\t"
+        "vmul.xz $vf4, $vf2, $vf2\n\t"
+        "sqc2 $vf0, 0(%1)\n\t"
+        "vaddz.x $vf3, $vf4, $vf4z\n\t"
+        "vmove.y $vf2, $vf1\n\t"
+        "vsqrt Q, $vf3x\n\t"
+        "sqc2 $vf2, 0(%2)"
+        :
+        : "r"(dir), "r"(angle), "r"(&neg)
+        : "memory");
+    angle[1] = srsAtan2(neg.x, neg.z);
+    __asm__ __volatile__(
+        "vwaitq\n\t"
+        "vaddq.x $vf1, $vf0, Q\n\t"
+        "qmfc2.ni %0, $vf1"
+        : "=r"(len)
+        :
+        : "memory");
+    angle[0] = srsAtan2(neg.y, len);
+    __asm__ __volatile__(
+        "lqc2 $vf7, 0(%1)\n\t"
+        "vaddx.x $vf4, $vf0, $vf7x\n\t"
+        "vcallms 0xe8\n\t"
+        "vaddx.x $vf5, $vf0, $vf1x\n\t"
+        "vaddy.x $vf4, $vf0, $vf7y\n\t"
+        "vcallms 0xe8\n\t"
+        "vaddx.y $vf5, $vf0, $vf1x\n\t"
+        "vaddx.x $vf4, $vf0, $vf7x\n\t"
+        "vcallms 0x20\n\t"
+        "vaddx.x $vf6, $vf0, $vf1x\n\t"
+        "vaddy.x $vf4, $vf0, $vf7y\n\t"
+        "vcallms 0x20\n\t"
+        "vaddx.y $vf6, $vf0, $vf1x\n\t"
+        "vmove.xyzw $vf4, $vf0\n\t"
+        "vmr32.xyzw $vf3, $vf4\n\t"
+        "vmr32.xyzw $vf2, $vf3\n\t"
+        "vmr32.xyzw $vf1, $vf2\n\t"
+        "vmulay.xyzw ACC, $vf1, $vf5y\n\t"
+        "vmsuby.xyzw $vf7, $vf3, $vf6y\n\t"
+        "vmulay.xyzw ACC, $vf3, $vf5y\n\t"
+        "vmaddy.xyzw $vf3, $vf1, $vf6y\n\t"
+        "vmulax.xyzw ACC, $vf2, $vf5x\n\t"
+        "vmaddx.xyzw $vf8, $vf3, $vf6x\n\t"
+        "vmulax.xyzw ACC, $vf3, $vf5x\n\t"
+        "vmsubx.xyzw $vf3, $vf2, $vf6x\n\t"
+        "sqc2 $vf7, 0(%0)\n\t"
+        "sqc2 $vf8, 0x10(%0)\n\t"
+        "sqc2 $vf3, 0x20(%0)\n\t"
+        "sqc2 $vf4, 0x30(%0)"
+        :
+        : "r"(dest), "r"(angle)
+        : "memory");
+}
 
 /*
  * sefGetVecMatrix (main:0x002e2908): subtracts source vector B from source
@@ -671,9 +1138,150 @@ static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetSpeed);
+extern int _parentLine;
+extern int _nowParentLocal;
+extern void MMathSpecialVectorSub(Vector4 *destination, Vector4 *left, Vector4 *right, float scale);
+extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefMoveParticle);
+static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int frame)
+{
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 *velocity;
+    float speed;
+
+    speed = *(float *)(record + 0x270) + *(float *)(record + 0x150);
+    velocity = (Vector4 *)(record + 0x200);
+    if (speed == 0.0f) {
+        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(speed_out) : "memory");
+        return;
+    }
+    if (frame != 0 && type != 0) {
+        MMathSpecialVectorSub(&dir, velocity, velocity, (float)frame);
+    } else {
+        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(velocity), "r"(&dir) : "$8", "memory");
+    }
+    if (type >= 5) {
+        sefGetVecMatrix((Matrix4 *)record, (Vector4 *)(record + 0xD0), (Vector4 *)(record + 0xC0));
+        sefGetDirVector(&dir, &dir);
+    } else if (type == 4) {
+        unsigned char *parent;
+
+        if (_parentLine >= 0 && _nowParentLocal >= 0) {
+            parent = &_ptAlloc[_nowParentLocal * 640];
+        } else {
+            parent = 0;
+        }
+        if (parent != 0) {
+            sefGetDirMatrix((Matrix4 *)record, (Vector4 *)(parent + 0x120));
+            sefGetDirVector(&dir, &dir);
+        }
+    } else if (type == 3) {
+        speed *= 10.0f;
+        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&dir), "r"(&dir) : "$8", "memory");
+    } else if (type == 1) {
+        if (*(int *)_battleData != 0) {
+            MMathApplyMatrix(&dir, _battleData + 0x80, &dir);
+        }
+    }
+    __asm__ __volatile__(
+        "lqc2 $vf1, 0(%0)\n\t"
+        "mfc1 $8, %2\n\t"
+        "qmtc2.ni $8, $vf2\n\t"
+        "sqc2 $vf1, 0(%1)\n\t"
+        "vmulx.xyz $vf1, $vf1, $vf2x\n\t"
+        "sqc2 $vf1, 0(%3)"
+        :
+        : "r"(&dir), "r"(record + 0x120), "f"(speed), "r"(speed_out)
+        : "$8", "memory");
+}
+
+extern float _gravity;
+extern float _colision;
+extern float _height;
+
+void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
+{
+    Vector4 speed __attribute__((aligned(16)));
+    int target = **(short **)(line + 0x10);
+    unsigned char *battle;
+    float height;
+    float scale;
+
+    if (target == 0x211) {
+        unsigned char *b = _battleData;
+
+        target = (*(short *)(b + 0xC) >= 2) ? 0x20F : 0x210;
+    }
+    battle = _battleData;
+    if (*(int *)(battle + 0x22C) != 0) {
+        if ((unsigned int)(target - 0x101) < 0x10) {
+            target += 0x700;
+        }
+        if ((_nowScheduler->flags & 0x1400) == 0x1000) {
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "lq $9, 16(%1)\n\t"
+                "lq $10, 32(%1)\n\t"
+                "lq $11, 48(%1)\n\t"
+                "sq $8, 0(%0)\n\t"
+                "sq $9, 16(%0)\n\t"
+                "sq $10, 32(%0)\n\t"
+                "sq $11, 48(%0)"
+                :
+                : "r"(particle + 0x40), "r"(battle + 0x180)
+                : "$8", "$9", "$10", "$11", "memory");
+            *(float *)(particle + 0x154) = *(float *)(battle + 0x220);
+        }
+    }
+    if (*(signed char *)(particle + 0x163) == 0) {
+        sefGetSpeed(&speed, particle, target, frame);
+        __asm__ __volatile__(
+            "lqc2 $vf1, 0(%0)\n\t"
+            "lqc2 $vf2, 0(%1)\n\t"
+            "vadd.xyz $vf1, $vf1, $vf2\n\t"
+            "sqc2 $vf1, 0(%0)"
+            :
+            : "r"(particle + 0xC0), "r"(&speed)
+            : "memory");
+    }
+    *(float *)(particle + 0x114) -= _gravity;
+    __asm__ __volatile__(
+        "lqc2 $vf1, 0(%0)\n\t"
+        "lqc2 $vf2, 0(%1)\n\t"
+        "vadd.xyz $vf1, $vf1, $vf2\n\t"
+        "sqc2 $vf1, 0(%0)"
+        :
+        : "r"(particle + 0xC0), "r"(particle + 0x110)
+        : "memory");
+    if (_colision != 0.0f && *(float *)(particle + 0xC4) <= _height) {
+        if (*(signed char *)(particle + 0x163) == 0) {
+            __asm__ __volatile__(
+                "lqc2 $vf1, 0(%0)\n\t"
+                "lqc2 $vf2, 0(%1)\n\t"
+                "vadd.xyz $vf1, $vf1, $vf2\n\t"
+                "sqc2 $vf1, 0(%1)"
+                :
+                : "r"(&speed), "r"(particle + 0x110)
+                : "memory");
+        }
+        *(signed char *)(particle + 0x163) = 1;
+        height = _height;
+        scale = _colision;
+        *(float *)(particle + 0xC4) = height;
+        __asm__ __volatile__(
+            "lqc2 $vf1, 0(%0)\n\t"
+            "mfc1 $8, %1\n\t"
+            "qmtc2.ni $8, $vf2\n\t"
+            "vmulx.xyz $vf1, $vf1, $vf2x\n\t"
+            "sqc2 $vf1, 0(%0)"
+            :
+            : "r"(particle + 0x110), "f"(scale)
+            : "$8", "memory");
+        if (*(float *)(particle + 0x114) < 0.0f) {
+            *(float *)(particle + 0x114) = -*(float *)(particle + 0x114);
+        }
+    }
+}
 
 /*
  * sefCalcLocalMatrix (main:0x002e2d48), re-treated from the accepted assembly
@@ -939,7 +1547,7 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecLineLocalData);
 
-extern void sevFreePtAllocator(short handle);
+static void sevFreePtAllocator(unsigned int handle);
 
 #define SEF_LOCAL_DATA_PT_TABLE 0x600
 
@@ -966,9 +1574,42 @@ static int sefFreeLocalData(unsigned char *line_data, unsigned int index) {
     return offset;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefAllocLocalData);
+static int sefAllocLocalData(unsigned char *line)
+{
+    int i;
+    int end;
+    int alloc;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefDestroyLocalData);
+    i = *(short *)(line + 0x80E);
+    end = (i - 1) & 0xFF;
+    while (i != end) {
+        if (*(short *)(line + 0x600 + i * 2) < 0) {
+            break;
+        }
+        i = (i + 1) & 0xFF;
+    }
+    if (i == end) {
+        return -1;
+    }
+    alloc = sevAllocPtAllocator();
+    if (alloc < 0) {
+        return -1;
+    }
+    *(short *)(line + 0x600 + i * 2) = alloc;
+    *(short *)(line + 0x80E) = (i + 1) & 0xFF;
+    return i;
+}
+
+static void sefDestroyLocalData(unsigned char *line_data) {
+    short *p = (short *)(line_data + 0x600);
+    int i;
+
+    for (i = 0; i < 0x100; i++, p++) {
+        if (*p >= 0) {
+            sefFreeLocalData(line_data, i);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefInitLineData);
 
@@ -993,11 +1634,124 @@ static int sefAllocLineData(void)
     return -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefFreeLineData);
+typedef struct { unsigned char pad[0x812]; short used; unsigned char pad2[0xC]; } SefLineRec;
+
+static inline unsigned char *sefGetLineAdr_inl(int line_index)
+{
+    if (line_index < 0) {
+        return 0;
+    }
+    return &_lineData[line_index * 0x820];
+}
+
+static void sefFreeLineData(int index)
+{
+    if ((unsigned int)index < 0x80) {
+        sefDestroyLocalData(sefGetLineAdr_inl(index));
+        ((SefLineRec *)_lineData)[index].used = 0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefAnalyzeAnim);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefAnimate);
+extern int D_00794334[];
+typedef struct SefAnimKey {
+    short frame;
+    short unk2;
+    short unk4;
+    signed char next;
+    signed char unk7;
+} SefAnimKey;
+typedef struct SefAnimFrame {
+    long d[3];
+    int i;
+    short s[2];
+} SefAnimFrame;
+
+static int sefAnimate(unsigned char *effect, unsigned char *particle, int frame)
+{
+    int *current = (int *)(particle + 0x168);
+    int index = *current;
+    SefAnimKey *keys = *(SefAnimKey **)(effect + 0x1F0);
+    SefAnimKey *key = &keys[index];
+    int jumped;
+    int changed = 0;
+    int result;
+    int flags = D_00794334[0];
+    int next;
+    int n;
+    int i;
+    int end;
+    unsigned short keyframe;
+
+    jumped = 0;
+    result = 0;
+    if (frame < 0 || (flags & 1)) {
+        *(SefAnimFrame *)((unsigned char *)current + 8) = *(SefAnimFrame *)(effect + 0x1F8);
+        *current = 0;
+        *(unsigned short *)(particle + 0x160) = 0;
+        return 0;
+    }
+    if (key->frame == 0x400) {
+        return 0;
+    }
+    if (flags & 8) {
+        i = index;
+        end = 0x400;
+        goto test;
+    loop:
+        i++;
+        key = &keys[i];
+    test:
+        n = key->next;
+        if (key->frame == end) {
+            return 0;
+        }
+        if (n >= 0) {
+            if (key[1].frame == end) {
+                goto loop;
+            }
+            return 0;
+        }
+        *current = i;
+        jumped = 1;
+    }
+found:
+    if (jumped) {
+        result = 1;
+        changed = 1;
+        *current += 1;
+    } else if (frame >= *(short *)((unsigned char *)current + 0x22)) {
+        next = key->next;
+        if (next >= 0) {
+            *current = next;
+            result = 0x1000;
+            if (next == 0) {
+                *(unsigned short *)(particle + 0x160) = 0;
+            } else {
+                *(unsigned short *)(particle + 0x160) = *(unsigned short *)(effect + next * 32 + 0x1F2);
+            }
+        } else if (next == -1) {
+            if (key[1].frame != 0x400) {
+                result = 1;
+                *current += 1;
+            }
+
+        } else if (next == -2) {
+            result = 0;
+        } else {
+            if (key[1].frame == 0x400) {
+                return 0;
+            }
+        }
+        changed = 1;
+    }
+    if (changed) {
+        *(SefAnimFrame *)((unsigned char *)current + 8) = *(SefAnimFrame *)(effect + *current * 32 + 0x1F8);
+    }
+    *(unsigned short *)(particle + 0x160) += 1;
+    return result;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefCreateParticle);
 
@@ -1063,7 +1817,22 @@ static void sefDestroyEffectData(unsigned char *effect)
     effectData->owner = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefAllocEffectData);
+static unsigned char *sefAllocEffectData(signed char *effect)
+{
+    int n;
+    int idx = *(short *)(effect + 0x28);
+    if ((unsigned)idx >= 0x20)
+        return 0;
+    if (effect[idx] >= 0)
+        return 0;
+    n = sefAllocLineData();
+    if (n < 0)
+        return 0;
+    effect[idx] = n;
+    *(short *)(effect + 0x2a) = 1;
+    *(unsigned short *)(effect + 0x28) = *(unsigned short *)(effect + 0x28) + 1;
+    return &_lineData[n * 0x820];
+}
 
 /*
  * sefFreeEffectData (main:0x002e4b38): for a valid `index` (< 32) whose
@@ -1232,7 +2001,111 @@ float sefGetMatrixScale(float *matrix)
     return MMathCalcLength(matrix);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetParentMatrix);
+extern unsigned char D_00794290[];
+extern unsigned char D_00794190[];
+extern void MATRIX_convert4(float (*dst)[4], float (*src)[4]);
+extern void xglMatrixStackLoad(float matrix[4][4]);
+extern void xglMatrixStackMul(float matrix[4][4]);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void xglMatrixInverse(void *dst, void *src);
+static inline void sefCopyMatrix(void *dst, void *src)
+{
+    __asm__ __volatile__(
+        "lq $8, 0(%0)\n\t"
+        "lq $9, 16(%0)\n\t"
+        "lq $10, 32(%0)\n\t"
+        "lq $11, 48(%0)\n\t"
+        "sq $8, 0(%1)\n\t"
+        "sq $9, 16(%1)\n\t"
+        "sq $10, 32(%1)\n\t"
+        "sq $11, 48(%1)"
+        :
+        : "r"(src), "r"(dst)
+        : "$8", "$9", "$10", "$11", "memory");
+}
+
+void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *matrix)
+{
+    Matrix4 conv;
+    Matrix4 joint;
+    Matrix4 base;
+    int flags;
+    int inverse;
+    unsigned char *actor;
+    unsigned char *object;
+    unsigned char *parent;
+    unsigned char *node_owner;
+    int node;
+    int mats;
+
+    flags = scheduler->flags;
+    if (!(flags & 2)) {
+        return;
+    }
+    actor = *(unsigned char **)((unsigned char *)scheduler + 0x6BC);
+    inverse = 1;
+    if (actor != 0) {
+        if (flags & 0x80) {
+            sefGetMotionNullMatrix(matrix, actor, id);
+        } else {
+            sefCalcRotTransSMatrix((Vector4 *)(actor + 0x50), (Vector4 *)(actor + 0x10),
+                                   (Vector4 *)(actor + 0x60), matrix);
+        }
+        if (*(int *)(*(unsigned char **)((unsigned char *)scheduler + 0x6BC) + 0x8FC) != 0) {
+            MATRIX_convert4(conv, *(float (**)[4])(*(unsigned char **)((unsigned char *)scheduler + 0x6BC) + 0x824));
+            MMathMulMatrix(matrix, conv, matrix);
+        }
+        sefCopyMatrix(D_00794290, matrix);
+        *(float *)(D_00794290 + 0xA0) = sefGetMatrixScale((float *)D_00794290);
+    } else {
+        object = *(unsigned char **)((unsigned char *)scheduler + 0x6C4);
+        if (object != 0) {
+            sefCalcRotTransSMatrix((Vector4 *)(object + 0x20), (Vector4 *)(object + 0x10),
+                                   (Vector4 *)(object + 0x30), matrix);
+            node_owner = *(unsigned char **)((unsigned char *)scheduler + 0x6C4);
+            parent = *(unsigned char **)(node_owner + 0xFC);
+            if (parent != 0) {
+                node = *(int *)(node_owner + 0xF8);
+                mats = *(int *)(parent + 0x824);
+                if (node >= 0) {
+                    if (node & 0x8000) {
+                        sefCopyMatrix(joint, (void *)(((node & 0x7FFF) << 6) + mats));
+                        joint[0][3] = joint[1][3] = joint[2][3] = 0.0f;
+                        xglMatrixStackLoad(joint);
+                    } else {
+                        sefCopyMatrix(base, (void *)mats);
+                        sefCopyMatrix(joint, (void *)(((*(int *)(*(unsigned char **)((unsigned char *)scheduler + 0x6C4) + 0xF8) & 0x7FFF) << 6) + mats));
+                        base[0][3] = base[1][3] = base[2][3] = joint[0][3] = joint[1][3] = joint[2][3] = 0.0f;
+                        xglMatrixStackLoad(base);
+                        xglMatrixStackMul(joint);
+                    }
+                    xglMatrixStackMul(*matrix);
+                    xglMatrixStackSave(*matrix);
+                }
+            }
+            sefCopyMatrix(D_00794290, matrix);
+            *(float *)(D_00794290 + 0xA0) = sefGetMatrixScale((float *)D_00794290);
+        } else {
+                inverse = 0;
+                __asm__ __volatile__(
+                    "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
+                    "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
+                    "vmr32.xyzw $vf3xyzw, $vf2xyzw\n\t"
+                    "sqc2 $vf0, 48(%0)\n\t"
+                    "sqc2 $vf1, 32(%0)\n\t"
+                    "sqc2 $vf2, 16(%0)\n\t"
+                    "sqc2 $vf3, 0(%0)"
+                    :
+                    : "r"(matrix)
+                    : "memory");
+                sefCopyMatrix(D_00794290, matrix);
+                *(float *)(D_00794290 + 0xA0) = 1.0f;
+        }
+    }
+    if (inverse) {
+        xglMatrixInverse(D_00794190, matrix);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecScheduler);
 
@@ -1703,11 +2576,73 @@ void sefDrawEffect2D(void) {
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefCnvDeathEffectNo);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefCnvWaitEffectNo);
+static float sefRandf(void);
+extern int ACT_jointGetAccessories(void *actor, unsigned int id);
+typedef struct {
+    char pad[0x80];
+    int actor;
+    int pad84;
+    unsigned short hit;
+    char pad8a[6];
+} SefHitEnt;
+typedef struct {
+    char pad[0x80];
+    int actor;
+    char pad84[8];
+    unsigned short sig;
+    char pad8e[2];
+} SefSeEnt;
+extern unsigned short steftTbl[];
+int srsGetBossWaitEftNo(int no);
+
+static void sefCnvWaitEffectNo(char *p)
+{
+  unsigned long new_var;
+  unsigned short id;
+  if ((*((short *) (p + 0x14))) != 0x4001)
+  {
+    return;
+  }
+  id = *((unsigned short *) (p + 0x10));
+  new_var = 0xffff;
+  if (((unsigned) (id - 1)) < 0x10)
+  {
+    *((short *) (p + 0x14)) = steftTbl[(short) id];
+  }
+  else
+    if (((id - 0x97) & new_var) < 0x24)
+  {
+    *((short *) (p + 0x14)) = srsGetBossWaitEftNo((short) id);
+  }
+  else
+  {
+    *((short *) (p + 0x14)) = 0;
+  }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefDeleteEffectWait);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefCnvEtEffectNo);
+static int sefCnvEtEffectNo(int effect_no, int character_id)
+{
+    if ((unsigned)(effect_no - 0x7EB) < 3) {
+        if (character_id != 2) {
+            effect_no -= 3;
+        }
+    } else if ((unsigned)(effect_no - 0x7E8) < 3) {
+        if (character_id == 2) {
+            effect_no += 3;
+        }
+    } else if ((unsigned)(effect_no - 0x7F8) < 2) {
+        if (character_id != 1) {
+            effect_no -= 2;
+        }
+    } else if ((unsigned)(effect_no - 0x7F6) < 2) {
+        if (character_id == 1) {
+            effect_no += 2;
+        }
+    }
+    return effect_no;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefCreateEffect);
 
@@ -1831,7 +2766,29 @@ void sefRewindEffectCf(SchedulerState *scheduler)
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefClearEffectCf);
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefIsFinishEffect);
+int sefIsFinishEffect(int effect_no)
+{
+    int record_offset;
+    unsigned char *record;
+    int index;
+    int running;
+
+    running = 0;
+    if (func_A33248() != 0) {
+        return 0;
+    }
+    record_offset = 0xa70;
+    record = _scheduler + record_offset;
+    for (index = 0; index < 0x80; index++) {
+        if (*(int *)(record - 0x3c0) != 0
+            && (*(int *)(record + 0x1c) & 0x40) == 0
+            && (effect_no == 0 || *(short *)(record + 8) == effect_no)) {
+            running++;
+        }
+        record += 0xab0;
+    }
+    return running == 0;
+}
 
 /*
  * The fields of a 0xab0-byte _scheduler record sefIsFinishEffect2 reads,
@@ -2060,7 +3017,21 @@ void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefMergeMatrixPos);
+void sefMergeMatrixPos(Matrix4 dest, Matrix4 matrix, Vector4 *pos)
+{
+    __asm__ __volatile__(
+        "lq $8, 0(%1)\n\t"
+        "lq $9, 0x10(%1)\n\t"
+        "lq $10, 0x20(%1)\n\t"
+        "lq $11, 0(%2)\n\t"
+        "sq $8, 0(%0)\n\t"
+        "sq $9, 0x10(%0)\n\t"
+        "sq $10, 0x20(%0)\n\t"
+        "sq $11, 0x30(%0)\n\t"
+        :
+        : "r"(dest), "r"(matrix), "r"(pos)
+        : "$8", "$9", "$10", "$11", "memory");
+}
 
 /*
  * sefLerpVectorB (main:0x002e7f88), identical in shape to sefLerpIVectorB

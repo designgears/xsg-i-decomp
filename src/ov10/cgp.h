@@ -398,7 +398,7 @@ typedef struct CardPlayHand {
  * declared locally since their defining TU has not published a header yet.
  */
 extern void CardPlayCleanHand(CardPlayHand *work);
-extern void CardPlayCostCard(CardPlayHand *work);
+extern int CardPlayCostCard(CardPlayHand *work);
 extern int CardPlayJunkCnt(CardPlayHand *work);
 
 /*

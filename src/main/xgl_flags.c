@@ -11,7 +11,31 @@
 
 int xglFlagsSet(int bit_offset, int bit_count, int value);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_flags", xglFlagsSet);
+int xglFlagsSet(int bit_offset, int bit_count, int value)
+{
+    union XglPackedFlagWindow window;
+    int byte_index;
+    int shift;
+    long long mask;
+    int old;
+    int n;
+    int base;
+
+    shift = bit_offset & 7;
+    n = (bit_count + shift + 7) >> 3;
+    mask = (1 << bit_count) - 1;
+    base = bit_offset >> 3;
+    for (byte_index = 0; byte_index < n; byte_index++) {
+        window.bytes[byte_index] = SaveData[0x74 + base + byte_index];
+    }
+    old = (window.signed_value >> shift) & mask;
+    window.signed_value = (window.signed_value & ~(mask << shift))
+                        | ((value & mask) << shift);
+    for (byte_index = 0; byte_index < n; byte_index++) {
+        SaveData[0x74 + base + byte_index] = window.bytes[byte_index];
+    }
+    return old;
+}
 
 int xglFlagsSet1(int bit_offset, int value)
 {

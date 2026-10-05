@@ -70,7 +70,23 @@ void SsdSendFuncPacket(void *packets, int count)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_1", SsdSpuDirectRead);
+void SsdSpuDirectRead(unsigned char *dest, int spuAddr, int size)
+{
+    RssdRequest request;
+
+    SsdSpuDmaCompleted(1);
+    RssdWork.spu_write_ptr = dest;
+    RssdWork.spu_bytes_remaining = size;
+    RssdWork.flags = (RssdWork.flags | 4) & ~RSSD_FLAG_SUCCESS;
+    *(short *)&RssdWork._unmodeled_1d4[8] = 0;
+    request.arg[0].value = spuAddr;
+    request.arg[1].value = size;
+    if (RssdCallFunc(0x1B, &request, 0, 0) < 0) {
+        RssdWork.flags &= ~4;
+        printf("Raad spu direct read error !\n");
+    }
+    printf("Ssd spu read  SpuPtr=0x%08x  TransSize=0x%0x\n", spuAddr, size);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ssd_1", SsdAddWaveData);
 

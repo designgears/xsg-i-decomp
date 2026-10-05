@@ -478,7 +478,61 @@ static RgShotDbFireEssence *_ReadFire(RgReadText *pReader)
     return essence;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot_db", RgShotDBRead);
+extern const char D_00A535D8[];
+extern const char D_00A535E8[];
+extern const char D_00A53600[];
+extern const char D_00A53608[];
+extern const char D_00A53610[];
+extern const char D_00A53618[];
+extern const char D_00A53620[];
+extern const char D_00A53628[];
+extern RgReadText *CreateRgReadText(const char *pszName);
+extern void DisposeRgReadText(RgReadText *pReader);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+extern void RgSimpleDBEntry(RgSimpleDB *pDB, void *pDat, const char *pszName);
+
+void RgShotDBRead(RgSimpleDB *pDB, const char *pszDataBase)
+{
+    char szToken[0x100];
+    RgReadText *pReader;
+    void *pEssence;
+
+    if (pDB == 0) {
+        assert_prog(D_00A535D8, D_00A53470, 297);
+    }
+    if (pszDataBase == 0) {
+        assert_prog(D_00A535E8, D_00A53470, 298);
+    }
+    pReader = CreateRgReadText(pszDataBase);
+    if (pReader != 0) {
+    while (RgReadTextIsEOF(pReader) == 0) {
+        pEssence = 0;
+        RgReadTextGetString(pReader, szToken);
+        if (strcmp(szToken, D_00A53600) == 0) {
+            RgReadTextGetString(pReader, szToken);
+            pEssence = _ReadNormal(pReader);
+        } else if (strcmp(szToken, D_00A53608) == 0) {
+            RgReadTextGetString(pReader, szToken);
+            pEssence = _ReadHoming(pReader);
+        } else if (strcmp(szToken, D_00A53610) == 0) {
+            RgReadTextGetString(pReader, szToken);
+            pEssence = _ReadGrenade(pReader);
+        } else if (strcmp(szToken, D_00A53618) == 0) {
+            RgReadTextGetString(pReader, szToken);
+            pEssence = _ReadBeam(pReader);
+        } else if (strcmp(szToken, D_00A53620) == 0) {
+            RgReadTextGetString(pReader, szToken);
+            pEssence = _ReadFire(pReader);
+        } else {
+            RgError(D_00A53628, D_00A53470, 334, pszDataBase, szToken);
+        }
+        if (pEssence != 0) {
+            RgSimpleDBEntry(pDB, pEssence, szToken);
+        }
+    }
+    DisposeRgReadText(pReader);
+    }
+}
 
 /*
  * External file-backed witnesses, not candidate-emitted data: this window is

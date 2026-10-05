@@ -119,9 +119,65 @@ void Java_xeno_PlayControl_signal__I(JThread *thread,
     arguments->control->signal = arguments->value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/playcontrol", Java_xeno_PlayControl_init__II);
+typedef struct PlayControlInitIIArguments {
+    PlayControlHandle *control; /* +0x0 */
+    unsigned short cameraIndex; /* +0x4 */
+    unsigned short pad;
+    unsigned int flags;         /* +0x8 */
+} PlayControlInitIIArguments;
+typedef struct PlayControlInitHandle {
+    unsigned char unmodeled_00[0x2c];
+    unsigned int flags;          /* +0x2c */
+    unsigned short cameraIndex;  /* +0x30 */
+} PlayControlInitHandle;
+extern void PLAY_setup(PlayControlHandle *play);
+typedef union PlayControlInitWord {
+    int i;
+    unsigned short h;
+    void *p;
+} PlayControlInitWord;
 
-INCLUDE_ASM("asm/main/nonmatchings/playcontrol", Java_xeno_PlayControl_init__IIIIF);
+void Java_xeno_PlayControl_init__II(JThread *thread,
+                                    PlayControlInitWord *arguments)
+{
+    PlayControlInitHandle *play = (PlayControlInitHandle *)arguments[0].p;
+
+    play->cameraIndex = arguments[1].h;
+    play->flags = arguments[2].i;
+    PLAY_setup((PlayControlHandle *)play);
+}
+
+typedef union PlayControlInitFWord {
+    int i;
+    unsigned short h;
+    float f;
+    void *p;
+} PlayControlInitFWord;
+typedef struct PlayControlInitFHandle {
+    unsigned char unmodeled_00[0x2c];
+    unsigned int flags;          /* +0x2c */
+    unsigned short cameraIndex;  /* +0x30 */
+    float a;                     /* +0x34 */
+    float b;                     /* +0x38 */
+    float c;                     /* +0x3c */
+    float unk40;
+    float a2;                    /* +0x44 */
+} PlayControlInitFHandle;
+extern float D_004D83B8;
+
+void Java_xeno_PlayControl_init__IIIIF(JThread *thread,
+                                       PlayControlInitFWord *arguments)
+{
+    PlayControlInitFHandle *play = (PlayControlInitFHandle *)arguments[0].p;
+
+    play->cameraIndex = arguments[1].h;
+    play->flags = arguments[2].i;
+    PLAY_setup((PlayControlHandle *)play);
+    play->a = (float)arguments[3].i * D_004D83B8;
+    play->b = (float)arguments[4].i * D_004D83B8;
+    play->c = arguments[5].f * D_004D83B8;
+    play->a2 = play->a;
+}
 
 /* The call block of loadCamera__Ljava_lang_Object_ (java signature
    "(Ljava/lang/Object;)V"): the receiving PlayControl's native handle and

@@ -1251,9 +1251,13 @@ def split_leading_declarations(c_text):
     except ParseError:
         return [], text
     funcs = [k for k, item in enumerate(items) if item.kind == 'func']
-    if len(funcs) != 1 or any(item.kind not in ('comment',) for item in items[funcs[0] + 1:]):
+    # `static inline` helpers before the definition travel with it as lead items
+    # (an inlined helper of the original source: no symbol of its own).
+    helpers = [k for k in funcs[:-1] if _is_inline_def(text, items[k])]
+    if len(funcs) - len(helpers) != 1 or funcs[-1] in helpers \
+            or any(item.kind not in ('comment',) for item in items[funcs[-1] + 1:]):
         return [], text
-    k = funcs[0]
+    k = funcs[-1]
     start = items[k].start
     # comments directly attached above the definition stay with it
     j = k - 1
@@ -1261,16 +1265,40 @@ def split_leading_declarations(c_text):
             and text[items[j].end:start].count('\n') <= 1 and not text[items[j].end:start].strip():
         start = items[j].start
         j -= 1
-    lead = [item.text(text) for item in items[:j + 1] if item.kind in ('pp', 'decl', 'comment')]
+    lead = [item.text(text) for item in items[:j + 1]
+            if item.kind in ('pp', 'decl', 'comment') or (item.kind == 'func' and _is_inline_def(text, item))]
     return lead, text[start:]
 
 
-def _declared_in(tu, item_text):
-    """True when `item_text` (or a declaration of the same names) is already in the TU."""
+def _helper_name(item_text):
+    """Name of a static inline helper definition carried as a lead item, else None."""
+    try:
+        items = scan(item_text.strip())
+    except ParseError:
+        return None
+    funcs = [i for i in items if i.kind == 'func']
+    if len(funcs) == 1 and _is_inline_def(item_text.strip(), funcs[0]):
+        return funcs[0].name
+    return None
+
+
+def _is_inline_def(text, item):
+    if item.kind != 'func':
+        return False
+    head = lexical(text[item.start:text.index('{', item.start)])
+    return re.search(r'\b(?:inline|__inline|__inline__)\b', head) is not None
+
+
+def _declared_in(tu, item_text, before=None):
+    """True when `item_text` (or a declaration of the same names) is already in the TU
+    (with `before`: only declarations ending before that offset count, so a body
+    placed above the TU's own later declaration keeps the ones it needs)."""
     norm = _norm(item_text)
     keys = decl_keys(item_text)
     for item in scan(tu.text):
         if item.kind not in ('pp', 'decl'):
+            continue
+        if before is not None and item.end > before:
             continue
         other = item.text(tu.text)
         if _norm(other) == norm:
@@ -1305,7 +1333,12 @@ def to_c(tu, name, c_text, as_name=None, replace_accepted_asm=False, report=None
         if decl_keys(item) == {('ordinary', defined)}:
             skipped.append(item)                # the definition's own prototype
             continue
-        (skipped if _declared_in(tu, item) or any(_norm(item) == _norm(k) for k in kept)
+        helper = _helper_name(item)
+        if helper is not None:
+            (skipped if helper in tu.by_name or any(_helper_name(x) == helper for x in kept)
+             else kept).append(item)
+            continue
+        (skipped if _declared_in(tu, item, before=b.start) or any(_norm(item) == _norm(k) for k in kept)
          else kept).append(item)
     if report is not None:
         report['added_declarations'] = kept
@@ -1373,8 +1406,8 @@ def to_asm(tu, name, line=None, skeleton=None, asm_dir=None, allow_accepted=Fals
 
 
 def _check_same_layout(before, after, renames):
-    want = [renames.get(b.name, b.name) for b in before.blocks]
-    got = [b.name for b in after.blocks]
+    want = [renames.get(b.name, b.name) for b in before.blocks if getattr(b, 'role', None) != 'helper']
+    got = [b.name for b in after.blocks if getattr(b, 'role', None) != 'helper']
     if len(want) != len(got) or not all(same_function(w, g) for w, g in zip(want, got)):
         raise EditError(f'edit changed the function block layout: {want} -> {got}')
 

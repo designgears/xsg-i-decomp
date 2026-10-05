@@ -15,3 +15,5 @@ intervaltree==3.1.0
 sortedcontainers==2.4.0
 colorama==0.4.6
 tqdm==4.67.1
+# auto_decomp first drafts (scripts/auto_decomp/m2c_seed.py): MIPS -> C
+m2c @ git+https://github.com/matt-kempster/m2c.git@708d2d2cb2698f091a92492b328f73b24209f72d

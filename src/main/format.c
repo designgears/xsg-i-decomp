@@ -25,7 +25,21 @@ void Java_xeno_util_Format_toInt__Ljava_lang_String_(JThread *thread, void *argu
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/format", Java_xeno_util_Format_toString__C);
+extern int sprintf(char *buf, const char *fmt, ...);
+extern int strlen(const char *s);
+extern char D_004DC098[];
+
+void Java_xeno_util_Format_toString__C(JThread *thread, union { int i; short s; void *p; } *args, int *result)
+{
+    FormatByteArray *arr;
+    FormatString *str;
+    str = newObject(classString);
+    str->value = newArray(classByte, 0xFF);
+    sprintf((char *)str->value->data, D_004DC098, args[0].s);
+    arr = str->value;
+    arr->length = strlen((char *)arr->data);
+    *result = (int)str;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/format", Java_xeno_util_Format_toString__F);
 
@@ -49,4 +63,18 @@ void Java_xeno_util_Format_toString__I(JThread *thread, int *arguments,
     *result = (int)JAVA_tmpString;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/format", Java_xeno_util_Format_toString__Z);
+typedef struct { FormatString *string; } FormatTmpStringView;
+
+void Java_xeno_util_Format_toString__Z(JThread *thread, union { int i; unsigned char b; void *p; } *args, int *result)
+{
+    FormatByteArray *arr;
+
+    if (JAVA_tmpString == 0) {
+        JAVA_tmpString = newObject(classString);
+        JAVA_tmpString->value = newArray(classByte, 0xFF);
+    }
+    sprintf((char *)JAVA_tmpString->value->data, D_004DC098, args[0].b);
+    arr = JAVA_tmpString->value;
+    arr->length = strlen((char *)arr->data);
+    *result = (int)((FormatTmpStringView *)&JAVA_tmpString)->string;
+}

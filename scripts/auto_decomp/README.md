@@ -1,0 +1,86 @@
+# Autonomous matching decomp loop
+
+Keeps turning `INCLUDE_ASM` into matching C until the queue is empty, without
+breaking `ninja gate`. Built for many agents at once.
+
+## Pieces
+
+| Script | Role |
+|---|---|
+| `build_queue.py` | Refresh `build/auto_decomp/queue.json` (smallest first) |
+| `next.py` | Next N eligible candidates (on claim: rebuilds the prototype and instruction indexes when over an hour old, and starts a detached `../ghidra/refresh.sh` when the Ghidra export is over a day old); `--claim OWNER` leases them, `--per-tu` spreads them; reconciles lost matches; on claim seeds an m2c first draft (`<body>.m2c.c`, and the body if none exists) |
+| `callgraph.py` | Same-TU call graph of the INCLUDE_ASM functions for callee-first scheduling (see below); `--report`, `--key U/T/N`, `--order U/T` |
+| `m2c_seed.py` | m2c (mipsee-gcc-c) draft of one function, with the TU's declarations, data files and jump tables as context |
+| `fn_index.py` | `build/auto_decomp/fn_index.json`: every in-scope function's instructions from the original images. `next.py` uses it for cross-TU/overlay siblings (>= 0.9 similar, already matched) and holds back an exact copy of a function that is leased, until that one's C can be its sibling (`--report`: duplicate counts) |
+| `proto_index.py` | `build/auto_decomp/protos.json`: every TU's function prototypes made self-contained, so m2c drafts type callees from other TUs (rebuilt by `next.py --claim` when over an hour old); also writes `build/ghidra/types/` |
+| `../ghidra/export.sh` | Headless Ghidra (EE module): imports the originals with `config/symbols` and the project's own types, writes `build/ghidra/<unit>/<name>.c` with recovered struct layouts; `m2c_seed.py` copies it next to the draft as `<body>.ghidra.c`. Run after `proto_index.py`, ~2 min for all units |
+| `claims.py` | Leases under `build/auto_decomp/claims/` (60 min TTL, released by integrate) |
+| `try_fn.py` | **Lock-free** function-level check: compiles the TU with the body in a private scratch dir, diffs the function against its INCLUDE_ASM bytes (~0.5 s) |
+| `integrate.py` | try_fn precheck → global lock → unit green? → apply → rebuild → keep if identical else restore |
+| `pattern_decompile.py` / `run_patterns.py` | Heuristic leaf patterns |
+| `verify_unit.py` | Whole-file compare (+ main mapcheck) |
+| `state.py` | `state.json`, `loop.log`, and the global lock (`integrate.lock`) |
+| `status.py` | Live status page (`http://127.0.0.1:8787/`, read-only): overall/per-unit progress, loop rates, each worker's leases with tries/best score/idle time, recent events |
+| `clear_wip.py` | Reset work in progress (leases, try counters, scratch bodies, non-blocked failure records) while keeping every `.best.c` and the `blocked` markers; `--dry-run` first |
+| `with_lock.sh` | Run anything (e.g. `ninja gate`) under the same global lock |
+
+Workflow: `.grok/workflows/auto-decomp-batch.rhai` (args: `n`=12, `max_size`=128,
+`min_size`, `max_tries`=10, `patterns`=true). Several batches may run concurrently.
+
+## Agent loop
+
+```bash
+source scripts/env.sh
+python3 -B scripts/auto_decomp/next.py -n 1 --max-size 128 --claim me
+# write the body, then iterate (any number of agents in parallel):
+python3 -B scripts/auto_decomp/try_fn.py --unit main --tu menu_tec \
+  --name MenuTecNextSpeedPointGet --body build/auto_decomp/bodies/main/menu_tec/MenuTecNextSpeedPointGet.c
+# once it says "match": true:
+python3 -B scripts/auto_decomp/integrate.py --unit main --tu menu_tec \
+  --name MenuTecNextSpeedPointGet --body build/auto_decomp/bodies/main/menu_tec/MenuTecNextSpeedPointGet.c
+```
+
+## Callee-first scheduling
+
+This gcc 2.96 cc1 only marks a call nothrow when the callee is defined as C
+*earlier in the same TU*; otherwise reorg fills delay slots differently
+(`beqzl`/`bnel` vs plain branches). A caller whose same-TU callee above it is
+still `INCLUDE_ASM` plateaus at a one-word delay-slot diff and matches once the
+callee is C. `callgraph.py` reads the `jal` targets of every INCLUDE_ASM
+function's `.s` (jalr / other-TU / extern ignored) and records:
+
+- `blocked_by`: same-TU INCLUDE_ASM callees *above* the function (blocking).
+  Callees *below* the caller were invisible in the original too and never block.
+- `unblocks`: functions transitively waiting on it; `depth` (0 = leaf).
+
+`build_queue.py` copies these into `queue.json` and sorts a function that
+unblocks others as if it were up to 4x smaller (`size // (1 + min(unblocks, 3))`).
+`next.py` defers blocked candidates to a second pass used only when nothing
+unblocked is eligible; `--include-blocked` (or `--key`) lifts that. A blocked
+candidate it does return carries `blocked_by` and `blocked_by_note`: decompile
+the callee first (or accept a delay-slot-only plateau as expected, not a C bug).
+
+```bash
+python3 -B scripts/auto_decomp/callgraph.py --report          # counts, top unblockers, near-misses
+python3 -B scripts/auto_decomp/callgraph.py --order ov11/mini_g   # leaf-first order of one TU
+```
+
+The report's "near-miss" list (GIVEUP scores in `loop.log` and
+`bodies/*/*/*.best.json`, 0.85 <= score < 1, still blocked) are likely free wins
+once their `blocked_by` callees are C.
+
+## Invariants
+
+- Only `integrate.py` edits `src/`, always under the global lock and via
+  temp-file + rename, so lock-free readers never see a half-written TU.
+- Integrate never leaves a red gate: failures restore the exact pre-edit text and
+  rebuild. It refuses to run when the unit is already red (no false blame).
+- The source is the truth: `next.py` drops `matched` keys whose function is
+  `INCLUDE_ASM` again (logged `LOST`) and requeues them.
+- Inline asm with control flow or directives (`b*`, `j*`, `jr $31`, `.end`,
+  `.section`, ...) is refused: that is the original function pasted back, not C.
+  `--allow-asm-body` is the reviewed escape hatch.
+- Failures back off 30 min × attempts; 5 attempts retire a candidate.
+- New C literals/jumptables trigger `data_carve.py derive` inside integrate.
+- Manual builds while agents run: `scripts/auto_decomp/with_lock.sh ninja gate`.
+- `config/tu-build.json` / `config/tu/data-carves.json` stay gitignored; regenerate with `scripts/synthesize_public_manifests.py` after a full configure.

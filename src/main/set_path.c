@@ -45,19 +45,42 @@ void setPath(unsigned char *filename)
     srsSetViewPath(path_0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_path", initFileSelect);
-
 typedef struct CfSelectState {
-    unsigned char unmodeled_00[0x11c];
+    int unk0;
+    int unk4;
+    int unk8;
+    int unkC;
+    char path[0x100];
+    int filelistAddr;
+    int unk114;
+    int printfFn;
     /* +0x11c: the selected entry's path, filled by xglCdFileSelect and
      * handed to setPath() by execFileSelect; its extent past this offset
      * is unmodeled. */
     unsigned char selectedPath[1];
 } CfSelectState;
+
 extern CfSelectState cfs;
-extern void xglRenderClearFrame(void);
-extern void xglSleep(void);
+
 extern int xglCdFileSelect(CfSelectState *state);
+
+extern void xglRenderClearFrame(void);
+
+extern void xglSleep(void);
+
+extern int filelist;
+
+extern char *gridlexTop;
+
+extern char *gridxtxTop;
+
+extern char *hamalexTop;
+
+extern char *hamaxtxTop;
+
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+INCLUDE_ASM("asm/main/nonmatchings/set_path", initFileSelect);
 
 int execFileSelect(void)
 {
@@ -102,7 +125,6 @@ extern PadDataEffectLayout PadData;
 extern s16 _debugPause;
 extern char D_004DBA08[];
 extern void sefExecEffect(void);
-extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void func_A31438(void);
 extern void xglSoundStreamMain(void);
 
@@ -245,14 +267,50 @@ static void SCamTake(void)
     func_A318B8();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_path", SinitCamera);
+extern void xglStudioChange(int studio_index);
+extern void xglLightSetDefault(StudioLight *light);
+typedef struct SCam {
+    int p0[0xD0/4];
+    float f_d0, f_d4, f_d8, f_dc;
+    int p1[8];
+    float f_100, f_104;
+    int p2[6];
+    float f_120, f_124, f_128, f_12c;
+} SCam;
+extern void xglStudioGetCamera(SCam **, int);
+
+void SinitCamera(void) {
+    StudioLight *light;
+    SCam *cam;
+    SCam *c;
+    float one;
+    float d8;
+    float e = 1.4898003f;
+
+    xglStudioChange(0);
+    xglStudioGetCamera(&cam, 0);
+    c = cam;
+    one = 1.0f;
+    c->f_100 = e;
+    c->f_104 = 9.9308424f;
+    d8 = 4.87f;
+    c->f_120 = 0.0f;
+    c->f_124 = one;
+    c->f_128 = 0.0f;
+    c->f_12c = one;
+    c->f_dc = one;
+    c->f_d0 = 0.435f;
+    c->f_d4 = 2.0f;
+    c->f_d8 = d8;
+    xglStudioGetLight(&light);
+    xglLightSetDefault(light);
+}
 
 extern void PartyDataInit2(void);
 extern int dataItmBoxChk(int id);
 extern int dataItmBoxInc(int id);
 extern void func_A2F6A8(void);
 extern void func_A22668(void);
-extern int filelist;
 extern s16 loaded;
 
 static void sbattleDebug(void)
@@ -287,10 +345,6 @@ INCLUDE_ASM("asm/main/nonmatchings/set_path", seffectDebugBattle);
 extern void func_A1D1C0(int level);
 extern void func_A2C3A0(int level);
 extern int srsFileLoad(void *buffer, const char *name, int mode);
-extern char *gridlexTop;
-extern char *gridxtxTop;
-extern char *hamalexTop;
-extern char *hamaxtxTop;
 extern s16 loaded;
 extern char D_004CBDD8[];
 extern char D_004CBDE8[];

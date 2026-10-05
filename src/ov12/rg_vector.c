@@ -112,7 +112,28 @@ unsigned int RgVectorCapacity(RgVectorPrefix *vector)
     return vector->m_uCapa;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_vector", RgVectorRemove);
+int RgVectorRemove(RgVectorPrefix *vector, void *element, const char *file,
+                   int line)
+{
+    unsigned int index;
+    unsigned int j;
+    int removed;
+
+    removed = 0;
+    if (vector == 0)
+        _VecAssert(vector, rg_vector_not_null_message, file, line);
+    for (index = 0; index < vector->m_uSize;) {
+        if (vector->m_apList[index] == element) {
+            for (j = index; j < vector->m_uSize - 1; j++)
+                vector->m_apList[j] = vector->m_apList[j + 1];
+            vector->m_uSize--;
+            removed = 1;
+        } else {
+            index++;
+        }
+    }
+    return removed;
+}
 
 void RgVectorClear(RgVectorPrefix *vector)
 {

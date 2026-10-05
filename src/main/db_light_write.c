@@ -72,7 +72,21 @@ void *prevActor(int startIndex)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/db_light_write", nextActor);
+void *nextActor(int startIndex)
+{
+    typeof(&actor[0]) p;
+    if (startIndex < 64) {
+        startIndex *= sizeof(*p);
+        p = (typeof(p))((char *)actor + startIndex);
+        do {
+            if (p->inUseId != 0 && !(p->flags & 8)) {
+                return p;
+            }
+            p++;
+        } while ((int)p < (int)&actor[64]);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/db_light_write", updateCursorMode1);
 
@@ -101,7 +115,35 @@ void drawCursor(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/db_light_write", initCursor);
 
-INCLUDE_ASM("asm/main/nonmatchings/db_light_write", printM);
+extern const char D_004C2158[];
+extern double fptodp(float value);
+extern int sprintf(char *str, const char *format, ...);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+static void printM(int px, int py, float *m)
+{
+    char buf[0x100];
+    float *p;
+    int yy;
+    int i;
+    double dx, dy, dz, dw;
+
+    p = m + 3;
+    yy = py;
+    i = 0;
+loop:
+    i++;
+    dx = fptodp(p[-3]);
+    dy = fptodp(p[-2]);
+    dz = fptodp(p[-1]);
+    dw = fptodp(p[0]);
+    p += 4;
+    sprintf(buf, D_004C2158, dx, dy, dz, dw);
+    xglFontDebugPrintf(px, yy, buf);
+    yy += 8;
+    if (i < 4)
+        goto loop;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/db_light_write", MAP_serach);
 

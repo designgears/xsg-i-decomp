@@ -11,7 +11,7 @@ extern float MMathMakeRandom(void);
 extern float MMathMakeRandom2PI(void);
 extern float MMathCalcLengthXZ(Vector4 *vector);
 extern float MMathCalcLengthYZ(Vector4 *vector);
-extern void MMathCalcAngle(Vector4 *angles, Vector4 *from, Vector4 *to);
+extern Vector4 *MMathCalcAngle(Vector4 *angles, Vector4 *from, Vector4 *to);
 extern void MMathVectorInterpolation(Vector4 *destination, Vector4 *first,
                                      Vector4 *second, float parameter);
 extern void MMathRotateMatrixYX(Matrix4 matrix, int flags, Vector4 *angles);
@@ -117,7 +117,84 @@ typedef struct MspEffect {
     float twist[MSP02_TRAIL_SLOTS][MSP02_TRAIL_POINTS];            /* 0x2a0 */
 } MspEffect;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_msp_02", MEfCreate_MSP02);
+typedef struct Msp02GsParameter {
+    unsigned long primitive_tag;
+    unsigned char rest[8];
+} Msp02GsParameter;
+typedef struct Msp02CreationView {
+    unsigned char unmodeled_00[8];
+    unsigned int source_actor;      /* 0x08 */
+    unsigned int source_part;       /* 0x0C */
+    Vector4 source_offset;          /* 0x10 */
+    unsigned char unmodeled_20[4];
+    unsigned int coordinate_actor;  /* 0x24 */
+    unsigned int coordinate_part;   /* 0x28 */
+} Msp02CreationView;
+typedef struct Msp02Object {
+    unsigned char unmodeled_00[4];
+    void *process;
+    void *draw;
+    void *draw_packet;
+    void *lifetime;
+    unsigned char unmodeled_14[0x0C];
+    MspEffect work;
+} Msp02Object;
+extern void MEfGetActorMatrix(void *destination, u32 actor, u32 part);
+extern void MEfGetActorCoord(void *destination, u32 actor, u32 part);
+extern Vector4 *MEfCalcCircumXZ(void *destination, const void *center, float radius);
+extern Vector4 *MMathSubVectorDivS(void *destination, const void *first, const void *second, float divisor);
+extern void MGsGPInit(void *packet, void *address, int size);
+extern Msp02GsParameter *svGetPrmFromName(const char *name, Msp02GsParameter *output);
+extern void *memset(void *destination, int value, unsigned int size);
+extern const char D_00A51680[];
+extern const char D_00A51690[];
+static void fnMSP02_PR000(void *task, MspEffect *effect);
+static void fnMSP02_DM000(void *task, MspEffect *effect);
+extern void fnMSP02_DP000();
+static void fnMSP02_PO000(void *self, MspEffect *effect);
+static inline void msp02Copy(Vector4 *destination, Vector4 *source)
+{
+    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+                         : : "r"(destination), "r"(source)
+                         : "$8", "memory");
+}
+
+int MEfCreate_MSP02(Msp02Object *object)
+{
+    MspEffect *work = &object->work;
+    Msp02CreationView *creation = (Msp02CreationView *)work->creationParameters;
+    Msp02GsParameter parameter;
+    Vector4 actor_coordinate[1];
+    Vector4 actor_matrix[4];
+
+    work->frame = 0;
+    MEfGetActorMatrix(actor_matrix, creation->source_actor, creation->source_part);
+    MMathApplyMatrix(&work->spawnPoint, (void *)actor_matrix, &creation->source_offset);
+    MEfGetActorCoord(actor_coordinate, creation->coordinate_actor, creation->coordinate_part);
+    MEfCalcCircumXZ(&work->circumPoint, actor_coordinate, 1.0f);
+    msp02Copy(&work->position, &work->spawnPoint);
+    msp02Copy(&work->previousPosition, &work->spawnPoint);
+    MMathSubVectorDivS(&work->velocity, &work->circumPoint, &work->spawnPoint, 20.0f);
+    MMathCalcAngle(&work->rotation, (Vector4 *)0, &work->velocity);
+    msp02Copy(&work->target, &work->spawnPoint);
+    msp02Copy(&work->previousTarget, &work->spawnPoint);
+    MMathCalcAngle(&work->turn, 0, &work->velocity);
+    work->spread = 0.2f;
+    work->angle = MMathMakeRandom2PI();
+    MGsGPInit(work->drawPacket, 0, 0);
+    svGetPrmFromName(D_00A51680, &parameter);
+    *(unsigned long *)(work->drawPacket + 0x18) = parameter.primitive_tag;
+    svGetPrmFromName(D_00A51690, &parameter);
+    *(unsigned long *)(work->drawPacket + 0x20) = parameter.primitive_tag;
+    memset(work->active, 0, sizeof(work->active));
+    memset(work->points, 0, sizeof(work->points));
+    memset(work->twist, 0, sizeof(work->twist));
+    object->process = fnMSP02_PR000;
+    object->draw = fnMSP02_DM000;
+    object->draw_packet = fnMSP02_DP000;
+    object->lifetime = fnMSP02_PO000;
+    return 1;
+}
 
 /*
  * fnMSP02_PR000: per-frame update of the MSP02 effect: while the effect is younger than

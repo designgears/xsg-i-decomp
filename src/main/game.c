@@ -113,9 +113,41 @@ static void GameCFSoundPurgeSub(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundPurge);
+void xglSoundSendSwd(void *swd, int id);
+int xglSoundSendSmd2(void *smd, int id);
+void SsdResetSegmentAllocMode(int addr);
+void SsdSetSegmentAllocMode(int addr, int size);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundReload);
+static void GameCFSoundPurge(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        xglSoundSendSwd(0, -1 - i);
+        xglSoundSendSmd2(0, i);
+    }
+    xglSoundSendEffect(0, 0, 1);
+    GameCFSoundPurgeSub();
+    SsdResetSegmentAllocMode(0x70000);
+    SsdSetSegmentAllocMode(0xA8000, 0x10000);
+}
+
+void xglSoundLoadEffect(const char *bankName, void *buffer, int mode);
+
+static void GameCFSoundReload(void)
+{
+    int i;
+    void *end = (void *)(((int)WorkEnd + 0x3F) & ~0x3F);
+
+    for (i = 0; i < 8; i++) {
+        xglSoundSendSwd(0, -1 - i);
+        xglSoundSendSmd2(0, i);
+    }
+    SsdResetSegmentAllocMode(0xA8000);
+    SsdSetSegmentAllocMode(0x70000, 0x10000);
+    xglSoundLoadEffect("REGISTCF", end, 1);
+    GameCFSoundPurgeSub();
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game", GameCFSoundMenuPurge);
 
@@ -129,11 +161,50 @@ INCLUDE_ASM("asm/main/nonmatchings/game", MenuGameDataPush);
 
 INCLUDE_ASM("asm/main/nonmatchings/game", MenuGameDataPop);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameStateSaveCameraLight);
+typedef struct GameLightBackup { u64 w[0x1e]; } GameLightBackup;
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameStateRestoreCameraLight);
+void GameStateSaveCameraLight(void)
+{
+    GameLightBackup *dst = (GameLightBackup *)((u8 *)&GameLoopState + 0x29e50);
+    GameCameraStateSave();
+    *dst = *(GameLightBackup *)xglStudioGetLight2();
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/game", GameStateSave);
+extern void GameCameraStateRestore(void);
+extern void *xglStudioGetLight2(void);
+void GameStateRestoreCameraLight(void)
+{
+    GameCameraStateRestore();
+    *(GameLightBackup *)xglStudioGetLight2() = *(GameLightBackup *)((u8 *)&GameLoopState + 0x29e50);
+}
+
+extern void GameStateSaveCameraLight(void);
+static inline void GameQCopy(void *dst, void *src)
+{
+    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+}
+
+void GameStateSave(void)
+{
+    u8 *gs = (u8 *)&GameLoopState;
+    u8 *p;
+    GameLoopState.restoreKind = GameLoopState.kind;
+    GameLoopState.restoreKindDetail = GameLoopState.kindDetail;
+    p = *(u8 **)(gs + 4);
+    {
+        u32 a = *(u32 *)(p + 0);
+        u16 h = *(u16 *)(p + 0x84);
+        u32 b = *(u32 *)(p + 4);
+        *(u16 *)(gs + 0x1f4) = h;
+        *(u32 *)(gs + 0x1f0) = a;
+        *(u16 *)(gs + 0x1f6) = *(u16 *)(p + 0x86);
+        *(u32 *)(gs + 0x1f8) = b;
+    }
+    GameQCopy(gs + 0x200, p + 0x10);
+    GameQCopy(gs + 0x210, p + 0x50);
+    *(u16 *)(gs + 0x220) = *(u16 *)(gs + 0x50);
+    GameStateSaveCameraLight();
+}
 
 extern void GameStateRestoreCameraLight(void);
 extern void GameStateRestoreKoware(void);
@@ -195,7 +266,40 @@ INCLUDE_ASM("asm/main/nonmatchings/game", checkTalk);
 
 INCLUDE_ASM("asm/main/nonmatchings/game", checkTouch);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", checkItemBoxDir);
+extern int CheckPointLine(const Vector4 *first, const Vector4 *second,
+                          const Vector4 *point);
+typedef union AlignedVec {
+    Vector4 v;
+    u64 u[2];
+} AlignedVec;
+typedef struct ItemBoxView {
+    u8 _pad_00[0x10];
+    AlignedVec position;
+    u8 _pad_20[0x60];
+    Matrix4 *matrix;
+    u8 _pad_84[0x2c];
+    AlignedVec extent;
+} ItemBoxView;
+
+int checkItemBoxDir(u8 *actor, ItemBoxView *box)
+{
+    Vector4 v1;
+    Vector4 v2;
+    AlignedVec ext;
+    AlignedVec pos;
+    Matrix4 *mp;
+
+    pos = box->position;
+    ext = box->extent;
+    mp = box->matrix;
+    v1.x = pos.v.x - (ext.v.x * (*mp)[0][0] + ext.v.z * (*mp)[2][0]);
+    v1.y = pos.v.y;
+    v1.z = pos.v.z - (ext.v.x * (*mp)[0][2] + ext.v.z * (*mp)[2][2]);
+    v2.x = pos.v.x + (ext.v.z * (*mp)[0][2] + ext.v.x * (*mp)[2][2]);
+    v2.y = pos.v.y;
+    v2.z = pos.v.z - (ext.v.z * (*mp)[0][0] + ext.v.x * (*mp)[2][0]);
+    return CheckPointLine(&v1, &v2, (Vector4 *)(actor + 0x10)) == 2;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game", checkItemBox);
 
@@ -352,7 +456,30 @@ INCLUDE_ASM("asm/main/nonmatchings/game", GameModeCfMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/game", checkTalkPoint);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", actSequenceClear);
+extern u8 actSequence[0x9800];
+extern float D_004D7BA0;
+
+void actSequenceClear(u8 *actor) {
+    u32 *seq;
+    u32 *flags = (u32 *)actor;
+    float speed = D_004D7BA0;
+
+    *flags &= ~2;
+    *(float *)(actor + 0x6f8) = speed;
+    seq = (u32 *)(actSequence + actor[0x80] * 0x260u);
+    seq[0] = 0;
+    seq[1] = 0;
+    seq[3] = 0;
+    seq[0xc] = 0;
+    *(u32 *)(actor + 0x6f0) = 8;
+    seq[6] = 0;
+    seq[7] = 0;
+    seq[8] = 0;
+    seq[9] = 0;
+    seq[10] = 0;
+    seq[11] = 0;
+    seq[5] = 0;
+}
 
 void actTalkAfter(SceneObject object)
 {

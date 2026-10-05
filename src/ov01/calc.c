@@ -35,7 +35,7 @@ struct CalcCmdEntry {
                                      * is evidenced here. */
 };
 
-extern void calcAp(ObjectTask *unit, int ap);
+extern int calcAp(ObjectTask *unit, int ap);
 extern CalcCmdEntry *unitCmdPtrGet(ObjectTask *unit);
 extern void unitCmdSet(ObjectTask *unit, CalcCmdEntry *cmd);
 
@@ -210,7 +210,7 @@ typedef struct CalcTakeEpArg {
     unsigned char unmodeled_14[0x80 - 0x14];
 } CalcTakeEpArg;
 
-extern int calcTakeEpGet(CalcTakeEpArg *arg, short tecId);
+extern int calcTakeEpGet(CalcTakeEpArg *arg, int tecId);
 
 /* dataEthGet (src/ov01/data_unit_org_get.c, still asm), this TU's own
  * private view (see CalcEtherStatus, src/ov01/calc.h). */
@@ -235,7 +235,41 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInit);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillInitSub);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkill);
+int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask);
+typedef struct CalcSkillView {
+    unsigned char unmodeled_00[0xA6];
+    short skillId[3];
+} CalcSkillView;
+typedef struct CalcAccSkillView {
+    unsigned char unmodeled_00[0xE];
+    unsigned short skillId;
+} CalcAccSkillView;
+
+int calcSkill(ObjectTask *unit, int typeMask, int levelMask)
+{
+    int total;
+    int i;
+    int id;
+    short acc;
+
+    total = 0;
+    for (i = 0; i < 3; i++) {
+        acc = calcUPGet(unit)->accessoryId[i];
+        if (acc != 0) {
+            id = ((CalcAccSkillView *)dataAccGet(acc))->skillId;
+            if (id != 0) {
+                total += calcSkillSub(unit, id, typeMask, levelMask);
+            }
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        id = ((CalcSkillView *)calcUPGet(unit))->skillId[i];
+        if (id != 0) {
+            total += calcSkillSub(unit, id, typeMask, levelMask);
+        }
+    }
+    return total;
+}
 
 /*
  * dataSklGet's return record (src/ov01/data_unit_org_get.c, still asm), as
@@ -265,7 +299,21 @@ int calcSkillSub(ObjectTask *unit, int skillId, int typeMask, int levelMask) {
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcAccEquChk);
+int calcAccEquChk(ObjectTask *unit, int id) {
+    int i;
+    int off;
+
+    i = 0;
+    off = 0x60;
+    do {
+        if (id == *(short *)((char *)calcUPGet(unit) + off + 4)) {
+            return 1;
+        }
+        i++;
+        off += 2;
+    } while (i < 3);
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSkillEquChk);
 
@@ -312,7 +360,23 @@ int calcSkillEquChkAll(int skillId)
     return found;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcAp);
+int calcAp(ObjectTask *unit, int delta)
+{
+    int ap;
+
+    ap = *(signed char *)&calcUPGet(unit)->unmodeled_3a[0];
+    if (delta < 0 && ap < -delta)
+    {
+        return 0;
+    }
+    ap += delta;
+    if (ap > 6)
+    {
+        ap = 6;
+    }
+    calcUPGet(unit)->unmodeled_3a[0] = ap;
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHp);
 
@@ -334,18 +398,87 @@ int calcEp(ObjectTask *unit, int delta)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBp);
+int calcBp(ObjectTask *unit, int delta)
+{
+    CalcUnitParam *up;
+    signed char level;
+    signed char max;
+    unsigned char lv;
+    unsigned char mx;
+    int temp;
+
+    up = calcUPGet(unit);
+    level = up->unmodeled_3a[2];
+    max = up->unmodeled_3a[1];
+    lv = up->unmodeled_3a[2];
+    mx = up->unmodeled_3a[1];
+    if (level < max)
+    {
+        temp = up->unmodeled_3a[3] + delta;
+        up->unmodeled_3a[3] = temp;
+        if ((signed char)temp >= 50)
+        {
+            up->unmodeled_3a[3] = (signed char)temp % 50;
+            calcBc((BattleUnit *)unit, 1);
+            lv = up->unmodeled_3a[2];
+            mx = up->unmodeled_3a[1];
+        }
+        if ((lv << 24) >= (mx << 24))
+        {
+            goto reset;
+        }
+    }
+    else
+    {
+reset:
+        up->unmodeled_3a[3] = 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBp2Tid);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBc);
+int calcBc(BattleUnit *bu, int delta)
+{
+    ObjectTask *unit = (ObjectTask *)bu;
+    int bc;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcCounter);
+    bc = *((signed char *)calcUPGet(unit) + 0x3C);
+    bc += delta;
+    if (bc < 0)
+    {
+        bc = 0;
+    }
+    else if (*((signed char *)calcUPGet(unit) + 0x3B) < bc)
+    {
+        bc = *((signed char *)calcUPGet(unit) + 0x3B);
+    }
+    *((signed char *)calcUPGet(unit) + 0x3C) = bc;
+    return 1;
+}
+
+extern unsigned short *dataTecGet(int tecId);
+extern int calcSkill(ObjectTask *unit, int a, int b);
+
+int calcCounter(ObjectTask *unit, int tecId)
+{
+    int rate;
+
+    if (dataTecGet(tecId)[1] & 0x800) {
+        return 0;
+    }
+    rate = *((signed char *)calcUPGet(unit) + 0x16);
+    rate += calcSkill(unit, 0x4000, 0x4000);
+    if (rate > 100) {
+        rate = 100;
+    }
+    return rnd(100) < rate;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBoostChk);
 
 extern int *actStockGet(void);
-void calcBc(BattleUnit *unit, int delta);
+int calcBc(BattleUnit *unit, int delta);
 void decoEffCall(BattleUnit *unit, int effectId);
 int sndSysSePlay(int soundId);
 
@@ -362,7 +495,17 @@ int calcBoost(BattleUnit *unit, int mode) {
     return sndSysSePlay(9);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcIdol2Chk);
+int calcIdol2Chk(ObjectTask *unit)
+{
+    short v = *(short *)((char *)calcUPGet(unit) + 0x34);
+
+    if (!(((CalcActorRecord *)unit->work)->flags & 0x40)) {
+        if (v < *(short *)calcUPGet(unit) / 5) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int calcTuigekiChk(ObjectTask *unit)
 {
@@ -389,7 +532,21 @@ int calcSpecChk(ObjectTask *unit, int specId)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDItemChk);
+extern unsigned char *dataItmGet(int index);
+int dataItmBoxChk(int id);
+
+int calcDItemChk(ObjectTask *unit, int itm)
+{
+    if (((signed char *)calcUPGet(unit))[0x3A] >= 6
+        && !(dataItmGet(itm)[8] & 0x10)
+        && dataItmBoxChk(itm) >= 2) {
+        unsigned char f = dataItmGet(itm)[9] & 1;
+        if (f) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 void calcTurnStart(ObjectTask *unit)
 {
@@ -488,7 +645,23 @@ int calcWctDec(ObjectTask *unit)
     return wait;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitMotChk);
+extern int dataMtdRead(ObjectTask *unit, int n);
+
+int calcHitMotChk(ObjectTask *unit)
+{
+    int r;
+    if ((unsigned)(unitCmdPtrGet(unit)->selector - 1) >= 3) {
+        return 0;
+    }
+    r = dataMtdRead(unit, 1);
+    switch (r) {
+    case 0:
+        return 0;
+    case 1:
+        return r;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHitDmg);
 
@@ -510,7 +683,25 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcHit);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcWpnAtkGet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcPhyDefGet);
+int calcPhyDefGet(ObjectTask *unit) {
+    int res;
+    int i;
+
+    res = 0;
+    for (i = 0; i < 3; i++) {
+        short id = calcUPGet(unit)->accessoryId[i];
+        if (id != 0) {
+            res += ((CalcAccSkillView *)dataAccGet(id))->unmodeled_00[0xC];
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        short id = calcUPGet(unit)->sefSetupParams[i];
+        if (id != 0) {
+            res += *(short *)(((char *)dataWpnGet(id)) + 0x1C);
+        }
+    }
+    return res;
+}
 
 /* dataAccGet (src/ov01/data_unit_org_get.c, still asm), this TU's own
  * private view (see AccessoryData, src/ov01/calc.h). */
@@ -593,9 +784,37 @@ int calcAtrChg(ObjectTask *unit, int attribute) {
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcTakeEpGet);
+int calcTakeEpGet(CalcTakeEpArg *arg, int tecId)
+{
+    int ep;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSlotAChk);
+    ep = *((signed char *)dataTecGet(tecId) + 1);
+    ep = calcStatGet((ObjectTask *)arg, 1, 0x10) ? ep * 2 : ep;
+    if (calcStatGet((ObjectTask *)arg, 3, 0x200)) {
+        ep /= 2;
+    }
+    ep = calcStatGet((ObjectTask *)arg, 3, 0x40) ? ep * 2 : ep;
+    if (calcStatGet((ObjectTask *)arg, 7, 0x100) && calcSlotAChk((ObjectTask *)arg, tecId)) {
+        ep = 0;
+    }
+    return ep < 100 ? ep : 99;
+}
+
+int calcSlotAChk(ObjectTask *unit, int id) {
+    int i;
+    int off;
+
+    i = 0;
+    off = 0x80;
+    do {
+        if (*(short *)((char *)calcUPGet(unit) + off + 2) == id) {
+            return 1;
+        }
+        i++;
+        off += 2;
+    } while (i < 2);
+    return 0;
+}
 
 int calcAttWpnChk(int weaponId)
 {
@@ -608,7 +827,24 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmgItem);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", tgtFindFirst);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", tgtFindChk);
+typedef struct TgtFindCmd {
+    int id;
+    unsigned char unmodeled_04[8];
+    int kind;
+} TgtFindCmd;
+extern int calcAtkChk(ObjectTask *a, ObjectTask *b, int id);
+
+int tgtFindChk(ObjectTask *attacker, ObjectTask *target, TgtFindCmd *cmd)
+{
+    int ret;
+
+    if (cmd->kind != 3) {
+        ret = calcAtkChk(attacker, target, cmd->id);
+    } else {
+        ret = 1;
+    }
+    return ret;
+}
 
 /*
  * tgtFindFirst's own candidate table (this TU, still asm): tgtNum entries
@@ -640,7 +876,30 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBackLineChk);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcWpnEnableChk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcWpnUse);
+int calcWpnUse(ObjectTask *unit, int idx)
+{
+    CalcUnitParam *up;
+    short *p;
+    int w;
+
+    if (idx == -1 || idx >= 4) {
+        return 1;
+    }
+    up = calcUPGet(unit);
+    idx <<= 1;
+    w = *(short *)(idx + (int)up + 0x5E);
+    idx += 0x70;
+    if (calcAttWpnChk(w)) {
+        p = (short *)((char *)up + idx);
+        if (*p != 0xFF) {
+            (*p)--;
+        }
+        if (*p < 0) {
+            *p = 0;
+        }
+    }
+    return 1;
+}
 
 int calcWpnEquipOrg(int charaId, int slot, int weaponId, int hand) {
     CalcCharParaData *origin;
@@ -730,11 +989,40 @@ INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSameWpnChk);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcEthEnableChk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcItmEnableChk);
+extern int calcTgtUnitTbl(int, int, int);
+extern int cfEventGet(void);
+
+int calcItmEnableChk(int unit, int itm)
+{
+    if (calcTgtUnitTbl(unit, dataItmGet(itm)[8], 0) == 0) {
+        return 0;
+    }
+    if (itm == 0x10 && (cfEventGet() & 8)) {
+        return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcTgtUnitTbl);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDeadUnitNum);
+int calcDeadUnitNum(ObjectTask *unit, int flag)
+{
+    ObjectTask **table;
+    int count;
+    int i;
+    int n;
+
+    count = unitTblGet(calcTrg2PE(unit, flag), &table);
+    n = 0;
+    for (i = 0; i < count; i++) {
+        if (table[i] != 0) {
+            if (*(int *)table[i]->work & 0x80) {
+                n++;
+            }
+        }
+    }
+    return n;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcBattleChk);
 
@@ -801,11 +1089,64 @@ void calcStatProtectSet(ObjectTask *unit, int group, int mask)
     calcUPGet(unit)->statProtect[group] |= mask;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatGet);
+int calcStatGet(ObjectTask *unit, int category, int flag) {
+    int res;
+
+    if ((category == 3 && (flag & 1)) || (category == 6 && (flag & 0x800))) {
+        ObjectTask **table;
+        int count = unitTblGet(0, &table);
+        int i;
+
+        res = 0;
+        for (i = 0; i < count; i++) {
+            ObjectTask *u = table[i];
+
+            if (u == 0) {
+                continue;
+            }
+            res = calcUPGet(u)->statActiveMask[category] & flag;
+            if (res != 0) {
+                break;
+            }
+        }
+    } else {
+        CalcUnitParam *up;
+
+        res = calcUPGet(unit)->statActiveMask[category] & flag;
+        up = calcUPGet(unit);
+        res |= *(u16 *)(up->unmodeled_bc + category * 2) & flag;
+    }
+    return res;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatGetNorm);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatSetChk);
+int calcStatSetChk(ObjectTask *unit, unsigned int group, int mask, int force)
+{
+    unsigned short flags;
+
+    flags = calcUPGet(unit)->flags;
+    if (flags & 0x1000) {
+        if (group < 4) {
+            return 0;
+        }
+        if (!(flags & 8) && group == 5) {
+            return 0;
+        }
+    } else if (group - 4 < 3) {
+        return 0;
+    }
+    if (force != 0) {
+        return 1;
+    }
+    if (calcStatProtectGet(unit, group, mask) != 0) {
+        return 0;
+    }
+    if (calcStatGet(unit, 2, 0x2000) != 0 && group != 7) {
+        return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatSet);
 

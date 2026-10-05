@@ -49,9 +49,81 @@ static void Quantize(int *quantized, const float *coefficients, const float *rec
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", RebuildQuantizeTable);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", PutBits);
+typedef struct JpegPutBitsView {
+    char pad[0x350];
+    unsigned char *buffer;
+    int position;
+    signed char count;
+    unsigned char byte;
+} JpegPutBitsView;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", EncodeDc);
+static void PutBits(u16 code, int length)
+{
+    unsigned char *buffer = ((JpegPutBitsView *)sw)->buffer;
+    int bits = code;
+
+    if (length != 0) {
+        bits &= (1 << length) - 1;
+        while (length + ((JpegPutBitsView *)sw)->count >= 8) {
+            ((JpegPutBitsView *)sw)->byte |= bits >> (length + ((JpegPutBitsView *)sw)->count - 8);
+            buffer[((JpegPutBitsView *)sw)->position] = ((JpegPutBitsView *)sw)->byte;
+            if (((JpegPutBitsView *)sw)->byte == 0xFF) {
+                buffer[++((JpegPutBitsView *)sw)->position] = 0;
+            }
+            length = length + ((JpegPutBitsView *)sw)->count - 8;
+            ((JpegPutBitsView *)sw)->position++;
+            ((JpegPutBitsView *)sw)->count = 0;
+            ((JpegPutBitsView *)sw)->byte = 0;
+        }
+        if (length > 0) {
+            ((JpegPutBitsView *)sw)->byte |= bits << (8 - ((JpegPutBitsView *)sw)->count - length);
+            ((JpegPutBitsView *)sw)->count += length;
+        }
+    }
+}
+
+typedef struct JpegHuffCodeDc {
+    u16 code;
+    s16 length;
+} JpegHuffCodeDc;
+static void PutBits(u16 code, int length);
+
+static void EncodeDc(int value, JpegHuffCodeDc *table)
+{
+    int magnitude;
+    int negative;
+    int remaining;
+    int length;
+    u16 bits;
+
+    magnitude = value;
+    if (magnitude == 0) {
+        PutBits(table[0].code, table[0].length);
+        return;
+    }
+
+    negative = 0;
+    if (magnitude < 0) {
+        negative = 1;
+        magnitude = -magnitude;
+    }
+
+    remaining = magnitude;
+    length = 0;
+    while (remaining != 0) {
+        remaining >>= 1;
+        length++;
+    }
+
+    PutBits(table[length].code, table[length].length);
+
+    if (negative) {
+        bits = (u16) (~magnitude & 0xFFFF);
+    } else {
+        bits = (u16) (magnitude & 0xFFFF);
+    }
+    PutBits(bits, length);
+}
 
 /*
  * A Huffman code table entry: the variable-length bit pattern PutBits emits
@@ -106,7 +178,45 @@ static void EncodeAc(int value, int runIndex, JpegHuffCode *table)
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", HuffmanEncode);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", ExtractHuffmanTableSub);
+static void ExtractHuffmanTableSub(JpegHuffCode *table, u8 *data, int table_size)
+{
+    int code;
+    int length;
+    int count;
+    int i;
+    int temp;
+    u8 *counts;
+    u8 *symbols;
+    u8 symbol;
+    JpegHuffCode *entry;
+
+    memset(table, 0, table_size * 4);
+    symbols = data;
+    counts = data;
+    code = 0;
+    length = 1;
+    symbols += 0x10;
+    i = 0xF;
+    do {
+        count = *counts;
+        counts += 1;
+        if (count-- > 0) {
+            do {
+                symbol = *symbols;
+                symbols += 1;
+                temp = count;
+                count = count - 1;
+                entry = (JpegHuffCode *)((int)table + (symbol << 2));
+                entry->code = code;
+                code = (code + 1) & 0xFFFF;
+                entry->length = length;
+            } while (temp > 0);
+        }
+        i -= 1;
+        code = (code * 2) & 0xFFFE;
+        length = (s16)(length + 1);
+    } while (i >= 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", xglJpegEncode);
 
@@ -174,13 +284,131 @@ static u8 *DefineQuantizeTable(u8 *marker)
     return segment;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", StartOfFrame);
+typedef struct SofView {
+    u8 pad0[0x360];
+    int mode;
+    short height;
+    short width;
+    int pad368;
+    int size;
+} SofView;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", DefineHuffmanTable);
+static u8 *StartOfFrame(u8 *segment)
+{
+    SofView *v = (SofView *)sw;
+    int w;
+    int mode;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", GetBit);
+    v->width = segment[4] + (segment[3] << 8);
+    w = segment[6] + (segment[5] << 8);
+    v->height = w;
+    v->size = (short)w * 3;
+    switch (segment[9]) {
+    case 0x11:
+        v->mode = 0;
+        break;
+    case 0x21:
+        v->mode = 1;
+        break;
+    case 0x22:
+    default:
+        v->mode = 2;
+        break;
+    }
+    return segment + ((segment[0] << 8) + segment[1]);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", decode_sub);
+typedef struct { unsigned short code; short val; } DhtEnt;
+
+static u8 *DefineHuffmanTable(u8 *p)
+{
+    u8 *end = p + ((p[0] << 8) + p[1]);
+
+    for (p += 2; p < end; ) {
+        DhtEnt *t;
+        u8 *counts;
+        unsigned short code;
+        int i;
+
+        switch (*p) {
+        case 0:
+            t = (DhtEnt *)((u8 *)sw + 0x370);
+            break;
+        case 1:
+            t = (DhtEnt *)((u8 *)sw + 0x3F0);
+            break;
+        case 0x10:
+            t = (DhtEnt *)((u8 *)sw + 0x470);
+            break;
+        default:
+            t = (DhtEnt *)((u8 *)sw + 0xC70);
+            break;
+        }
+        p++;
+        code = 0;
+        counts = p;
+        p += 16;
+        for (i = 0; i < 16; i++) {
+            int n = *counts++;
+            while (n-- > 0) {
+                t->code = code;
+                code++;
+                t->val = *p++;
+                t++;
+            }
+            t->val = 0xFE;
+            t++;
+            code <<= 1;
+        }
+        t->val = 0xFF;
+    }
+    return p;
+}
+
+typedef struct { char pad[0x350]; unsigned char *ptr; int pad1; signed char cnt; unsigned char byte; char pad2[0x2e]; } JBits;
+#define S ((JBits *)sw)
+
+static int GetBit(void)
+{
+    JBits *w = S;
+    unsigned char c;
+    unsigned char *bp;
+
+    if (w->cnt == 0) {
+        c = *w->ptr;
+        if (c == 0xFF)
+            w->ptr++;
+        bp = &w->byte;
+        *bp = c;
+        w->ptr++;
+        S->cnt = 7;
+    } else {
+        w->cnt--;
+    }
+    return S->byte >> S->cnt & 1;
+}
+
+typedef struct { unsigned short code; short val; } HEnt;
+extern int GetBit();
+
+static short decode_sub(HEnt *p)
+{
+    int code = 0;
+
+    for (;;) {
+        code = code * 2 + GetBit();
+        if (p->val == 0xFE)
+            goto skip;
+    chk:
+        if (p->code == code)
+            return p->val;
+        p++;
+        if (p->val != 0xFE)
+            goto chk;
+    skip:
+        p++;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", HuffmanDecode);
 
@@ -308,7 +536,40 @@ transform_column:
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", ConvertMCU2YUV);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", ConvertYUV2RGB);
+static void ConvertYUV2RGB(int w, int h) {
+    int i, n;
+    unsigned int *dst = (unsigned int *)0x70003000;
+    for (i = 0; i < h; i++) {
+        float *src = (float *)((u8 *)sw + (i << 8) + 0x15A0);
+        if (w > 0) {
+        n = w;
+        do {
+            int v;
+            __asm__ __volatile__(
+                "lqc2 $vf10,0(%1)\n"
+                "vmulax.xyzw ACCxyzw,$vf21xyzw,$vf10x\n"
+                "vmadday.xyzw ACCxyzw,$vf22xyzw,$vf10y\n"
+                "vmaddaz.xyzw ACCxyzw,$vf23xyzw,$vf10z\n"
+                "vmaddw.xyzw $vf9xyzw,$vf24xyzw,$vf0w\n"
+                "qmfc2.ni $8,$vf25\n"
+                "vftoi0.xyzw $vf10xyzw,$vf9xyzw\n"
+                "qmfc2.ni $9,$vf26\n"
+                "qmfc2.ni %0,$vf10\n"
+                "pmaxw $3,%0,$8\n"
+                "pminw %0,$3,$9\n"
+                "ppach $3,$0,%0\n"
+                "ppacb %0,$0,$3\n"
+                "sw %0,0(%2)\n"
+                : "=&r"(v)
+                : "r"(src), "r"(dst)
+                : "$3", "$8", "$9", "memory");
+            n--;
+            src += 4;
+            dst++;
+        } while (n != 0);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", StartOfScan);
 

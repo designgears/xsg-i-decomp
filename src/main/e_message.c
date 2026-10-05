@@ -24,11 +24,74 @@ int eMessageHalfSpaseCheck(unsigned char *text)
     return half_spaces;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageNextGyou);
+extern int xglFontGetSPcodeSize(int code, unsigned char *text);
+
+char *eMessageNextGyou(char *text)
+{
+    int n;
+    int z = 0;
+
+    for (;;) {
+        char s;
+        unsigned int c;
+
+        s = text[z];
+        c = ((unsigned char *)text)[z];
+        if (s == 0 || s == '\n') {
+            break;
+        }
+        if (c - 1 < 0x19) {
+            text += xglFontGetSPcodeSize(((unsigned char *)text)[z], (unsigned char *)text) + 1;
+        } else if ((char)c == 0x1E) {
+            text += 2;
+        } else if ((char)c == 0x1F || c - 0x20 < 0x5F) {
+            text++;
+        } else {
+            n = eMessageHalfSpaseCheck((unsigned char *)text);
+            text = n ? text + n : text + 2;
+        }
+    }
+    return text;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageNextGyouMaxGet);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageNextWaitKeySearch);
+char *eMessageNextWaitKeySearch(char *text)
+{
+    int n;
+    int z = 0;
+    int c;
+    char s;
+    int t;
+
+    s = *text;
+    c = (unsigned char)*text;
+    goto check;
+body:
+    if ((unsigned int)(c - 1) < 0x19U) {
+        text += xglFontGetSPcodeSize(((unsigned char *)text)[z], (unsigned char *)text) + 1;
+    } else if ((char)c == 0x1E) {
+        text += 2;
+    } else if ((unsigned int)(c - 0x20) < 0x5FU) {
+        text++;
+    } else {
+        n = eMessageHalfSpaseCheck((unsigned char *)text);
+        text = n ? text + n : text + 2;
+    }
+    t = ((unsigned char *)text)[z];
+    c = t;
+    s = (char)t;
+check:
+    if (s == 0) {
+        goto out;
+    }
+    if (s != 0x1F) {
+        goto body;
+    }
+    text++;
+out:
+    return text;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageDrawType01);
 
@@ -53,9 +116,49 @@ void eMessageModeChange(EMessageParam *message, unsigned char mode)
     message->mode = mode;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageSet);
+extern void eCursolSet(void *cursol, signed char width);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageTextChange);
+void eMessageSet(EMessageParam *message, char *text)
+{
+    void *cursol = (unsigned char *)message + 0x20;
+
+    *(char **)((unsigned char *)message + 0x18) = text;
+    *(short *)((unsigned char *)message + 0x04) = 0;
+    *(short *)((unsigned char *)message + 0x06) = 0;
+    *(int *)((unsigned char *)message + 0x08) = 0;
+    ((unsigned char *)message)[0x10] = 0x80;
+    ((unsigned char *)message)[0x11] = 0x80;
+    ((unsigned char *)message)[0x12] = 0x80;
+    ((unsigned char *)message)[0x13] = 0x80;
+    ((unsigned char *)message)[0x00] = 1;
+    ((unsigned char *)message)[0x03] = 0xF0;
+    ((unsigned char *)message)[0x01] = 0;
+    ((unsigned char *)message)[0x02] = 0;
+    *(short *)((unsigned char *)message + 0x14) = 0;
+    *(short *)((unsigned char *)message + 0x16) = 0;
+    *(short *)((unsigned char *)message + 0x0C) = 0;
+    *(short *)((unsigned char *)message + 0x0E) = 0;
+    ((unsigned char *)message)[0x1D] = 0;
+    ((unsigned char *)message)[0x1C] = 0;
+    eCursolSet(cursol, 3);
+}
+
+extern char *eMessageNextWaitKeySearch(char *text);
+
+void eMessageTextChange(EMessageParam *message, char *text)
+{
+    char *p;
+
+    *(char **)((char *)message + 0x18) = text;
+    if (*((unsigned char *)message + 0x1C) != 0) {
+        *((unsigned char *)message + 0x1D) = 0;
+        *((unsigned char *)message + 0x1E) = 0;
+        p = text;
+        while (*(p = eMessageNextWaitKeySearch(p)) != 0) {
+            (*((unsigned char *)message + 0x1E))++;
+        }
+    }
+}
 
 typedef struct EMessagePageState {
     unsigned char flags;

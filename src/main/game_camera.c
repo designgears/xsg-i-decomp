@@ -72,11 +72,70 @@ static __inline__ float sqrtBuiltinBoundary(float sum_of_squares)
 
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", GameCameraReset);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", GameCameraStateSave);
+typedef struct { long long b[0x5F0 / 8]; } CamBlob;
+extern StudioCamera save_cam;
+extern unsigned char CfCameraDefine[];
+static inline void QCopy(void *dst, void *src)
+{
+    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+}
+
+void GameCameraStateSave(void) {
+    unsigned char *q;
+    StudioCamera *cam = xglStudioGetCamera2(0);
+    *(CamBlob *)&save_cam = *(CamBlob *)cam;
+    q = GameLoopState + 0x240;
+    QCopy(q, CfCameraDefine + 0x30);
+    q -= 0x240;
+    *(int *)(q + 0x230) = *(int *)(q + 0x28);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", GameCameraStateRestore);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", GameCameraChangeID);
+struct CameraArea;
+typedef struct CamQueryBlk {
+    int flags0;                         /* +0x00 */
+    int flags4;                         /* +0x04 */
+    short mode;                         /* +0x08 */
+    unsigned short result;              /* +0x0A */
+    unsigned char unmodeled_0c[0x14 - 0x0C];
+    float height;                       /* +0x14 */
+    struct CameraArea *area;            /* +0x18 */
+    unsigned char unmodeled_1c[0x40 - 0x1C];
+} CamQueryBlk;
+extern struct CamLookAtQuery CamLookAt;
+extern CamQueryBlk CamPos;
+extern void *UnduDataGetHeader(int, int);
+
+void GameCameraChangeID(int id, int id2, int id3)
+{
+    struct CameraArea *area;
+    int camera_id;
+    unsigned char *gls;
+    volatile CamQueryBlk *look;
+    volatile CamQueryBlk *pos;
+
+    camera_id = id;
+    gls = GameLoopState;
+    if (*(unsigned short *)(gls + 0xC4) != camera_id) {
+        area = (struct CameraArea *)UnduDataGetHeader(0x100, camera_id);
+        if (area == 0) {
+            camera_id = 0x8000;
+            area = (struct CameraArea *)UnduDataGetHeader(0x100, 0x8000);
+        }
+        gls[0xC1] |= 0x40;
+        *(unsigned short *)(gls + 0xC4) = camera_id;
+
+        look = (volatile CamQueryBlk *)&CamLookAt;
+        pos = &CamPos;
+        look->flags0 = 0;
+        pos->area = area;
+        pos->flags0 = 0;
+        look->area = area;
+        look->flags4 = 0;
+        pos->flags4 = 0;
+    }
+}
 
 /* MoveHokan (main:0x00246c60, 348 bytes): five-argument EE ABI. `unused` (a0)
  * is never read; `step` (f12) is the per-frame countdown decrement; `target`
@@ -207,13 +266,205 @@ static void GetCenter(Vector4 *center, const struct CameraCenterSource *source)
     center->w = 1.0f;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", GetCameraPos);
+extern void xglMatrixStackUnit(void);
+extern void xglMatrixStackTrans(const float translation[4]);
+extern void xglMatrixStackRotX(float angle);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackSave(float matrix[4][4]);
+typedef struct GetCameraPosWork {
+    unsigned char unmodeled_00[0x40];
+    float matrix[4][4]; /* +0x40 */
+    float offset[4];    /* +0x80 */
+} GetCameraPosWork;
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", GetNearestCenter);
+static void GetCameraPos(float *pos, float *center, float *angle)
+{
+    GetCameraPosWork *work = (GetCameraPosWork *)0x70000000;
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", CalcLookAt);
+    work->offset[0] = 0.0f;
+    work->offset[1] = 0.0f;
+    work->offset[2] = angle[3];
+    work->offset[3] = 1.0f;
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(center);
+    xglMatrixStackRotY(angle[1]);
+    xglMatrixStackRotX(angle[0]);
+    xglMatrixStackTrans((float *)0x70000080);
+    xglMatrixStackSave((float (*)[4])0x70000040);
+    pos[0] = work->matrix[3][0];
+    pos[1] = work->matrix[3][1];
+    pos[2] = work->matrix[3][2];
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", CalcCameraPos);
+typedef struct CameraAreaTri {
+    unsigned char unmodeled_00[0x8];
+    unsigned short vertex[3];
+    unsigned char unmodeled_0e[0x18 - 0xE];
+} CameraAreaTri;
+typedef struct CameraArea {
+    unsigned short triCount;
+    char *vertices;
+    unsigned char unmodeled_08[0xC - 0x8];
+    CameraAreaTri *tris;
+} CameraArea;
+
+static void GetNearestCenter(float *center, CameraArea *area, float *pos)
+{
+    char *vertices;
+    CameraAreaTri *nearest;
+    CameraAreaTri *tri;
+    float nearestDist;
+    float *a;
+    float *b;
+    float *c;
+    float dx;
+    float dz;
+    float dist;
+    int i;
+
+    vertices = area->vertices;
+    nearest = 0;
+    nearestDist = 1000000.0f;
+    tri = area->tris;
+    for (i = 0; i < area->triCount; i++) {
+        dx = (((float *)(vertices + tri->vertex[0]))[0] + ((float *)(vertices + tri->vertex[1]))[0] + ((float *)(vertices + tri->vertex[2]))[0]) * 0.33333334f - pos[0];
+        dz = (((float *)(vertices + tri->vertex[0]))[2] + ((float *)(vertices + tri->vertex[1]))[2] + ((float *)(vertices + tri->vertex[2]))[2]) * 0.33333334f - pos[2];
+        dist = dx * dx + dz * dz;
+        if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = tri;
+        }
+        tri++;
+    }
+    a = (float *)(vertices + nearest->vertex[0]);
+    b = (float *)(vertices + nearest->vertex[1]);
+    c = (float *)(vertices + nearest->vertex[2]);
+    center[0] = (a[0] + b[0] + c[0]) * 0.33333334f;
+    center[1] = (a[1] + b[1] + c[1]) * 0.33333334f;
+    center[2] = (a[2] + b[2] + c[2]) * 0.33333334f;
+}
+
+extern double sqrt(double x);
+typedef struct CamLookAtQuery {
+    int flags0;                         /* +0x00 */
+    int flags4;                         /* +0x04 */
+    short mode;                         /* +0x08 */
+    unsigned short result;              /* +0x0A */
+    unsigned char unmodeled_0c[0x14 - 0x0C];
+    float height;                       /* +0x14 */
+    CameraArea *area;                   /* +0x18 */
+    unsigned char unmodeled_1c[0x40 - 0x1C];
+} CamLookAtQuery;
+extern CamLookAtQuery CamLookAt;
+extern float CamLookAtPos[4];
+extern float UnduCheck(float *sample, void *output, CamLookAtQuery *query);
+typedef struct CalcLookAtCamera {
+    unsigned char unmodeled_00[0x20];
+    float center[4];                    /* +0x20 */
+    unsigned char unmodeled_30[0x80 - 0x30];
+    float step[4];                      /* +0x80 */
+    unsigned char unmodeled_90[0xB0 - 0x90];
+    float delta[4];                     /* +0xB0 */
+} CalcLookAtCamera;
+static __inline__ void CalcLookAtDelta(float *delta, float *center, float *pos)
+{
+    __asm__ __volatile__(
+        "lqc2 vf20, 0(%0)\n"
+        "lqc2 vf21, 0(%1)\n"
+        "vsub.xyzw vf20, vf20, vf21\n"
+        "sqc2 vf20, 0(%2)\n"
+        :
+        : "r" (center), "r" (pos), "r" (delta)
+        : "memory");
+}
+
+static void CalcLookAt(CalcLookAtCamera *camera)
+{
+    float *delta = camera->delta;
+    float *center = camera->center;
+    float scale;
+    int count;
+
+    CalcLookAtDelta(delta, center, CamLookAtPos);
+    CamLookAt.mode = 3;
+    UnduCheck(CamLookAtPos, delta, &CamLookAt);
+    if (CamLookAt.result & 3) {
+        CamLookAt.mode = 2;
+        CamLookAtPos[1] = camera->center[1];
+        CalcLookAtDelta(delta, center, CamLookAtPos);
+        UnduCheck(CamLookAtPos, delta, &CamLookAt);
+    }
+    if (CamLookAt.height == -1000.0f) {
+        GetNearestCenter(CamLookAtPos, CamLookAt.area, center);
+        CamLookAt.flags4 = 0;
+        CamLookAt.flags0 = 0;
+        UnduCheck(CamLookAtPos, 0, &CamLookAt);
+        CalcLookAtDelta(delta, center, CamLookAtPos);
+        CamLookAt.mode = 3;
+        UnduCheck(CamLookAtPos, delta, &CamLookAt);
+        if (GameLoopState[0xC0] == 3 || CamLookAt.height < CamLookAtPos[1]) {
+            CamLookAtPos[1] = CamLookAt.height;
+        }
+        if (camera->center[1] < CamLookAtPos[1]) {
+            CamLookAtPos[1] = camera->center[1];
+        }
+        CamLookAt.mode = 2;
+        CalcLookAtDelta(delta, center, CamLookAtPos);
+        scale = (float)sqrt(delta[0] * delta[0] + camera->delta[2] * camera->delta[2]);
+        scale = scale + scale;
+        if (10.0f < scale) {
+            scale = 10.0f;
+        }
+        if (scale < 1.0f) {
+            scale = 1.0f;
+        }
+        count = scale;
+        camera->step[0] = delta[0] / scale;
+        camera->step[2] = camera->delta[2] / scale;
+        camera->step[1] = camera->delta[1] / scale;
+        for (; count >= 0; count--) {
+            UnduCheck(CamLookAtPos, camera->step, &CamLookAt);
+        }
+    }
+}
+
+extern float CamPosPos[4];
+extern float D_004D7BC4;
+extern float D_004D7BC8;
+extern float D_004D7BCC;
+extern float D_004D7BD0;
+
+static void CalcCameraPos(unsigned char *camera)
+{
+    float *center = (float *)(camera + 0x30);
+    float z, x, lo;
+
+    CalcLookAtDelta((float *)(camera + 0xA0), center, CamPosPos);
+    UnduCheck(CamPosPos, camera + 0xA0, (CamLookAtQuery *)&CamPos);
+    if (CamPos.height != -1000.0f && !(CamPos.result & 3)) {
+        if (GameLoopState[0xC0] == 3 || CamPos.height < CamPosPos[1]) {
+            CamPosPos[1] = CamPos.height;
+        }
+    } else {
+        QCopy(CamPosPos, CamLookAtPos);
+        CamPos.flags4 = 0;
+        CamPos.flags0 = 0;
+        UnduCheck(CamPosPos, 0, (CamLookAtQuery *)&CamPos);
+        CalcLookAtDelta((float *)(camera + 0x90), center, CamPosPos);
+        if (-0.001f < *(float *)(camera + 0x90) && *(float *)(camera + 0x90) < 0.001f) {
+            *(float *)(camera + 0x90) = *(float *)(camera + 0x90) * 100.0f;
+        }
+        if (-0.001f < *(float *)(camera + 0x98) && *(float *)(camera + 0x98) < 0.001f) {
+            *(float *)(camera + 0x98) = *(float *)(camera + 0x98) * 100.0f;
+        }
+        CamPos.mode = 3;
+        UnduCheck(CamPosPos, camera + 0x90, (CamLookAtQuery *)&CamPos);
+        CamPos.mode = 2;
+        if (GameLoopState[0xC0] == 3 || CamPos.height < CamPosPos[1]) {
+            CamPosPos[1] = CamPos.height;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", CameraType0);
 

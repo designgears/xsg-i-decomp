@@ -15,7 +15,22 @@ void MSG_init(void)
     ctrlCodeFlags = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_print2);
+void MSG_convert(unsigned char *dst, int size, int a, int b);
+int MSG_queuePush(void *q, unsigned char *msg, int size, int n);
+
+void MSG_print2(unsigned char *p, int a, int b)
+{
+    unsigned char buf[0x400];
+
+    if (*(unsigned short *)(p + 0x16) == 4) {
+        buf[0] = 0x19;
+        buf[1] = 1;
+        MSG_convert(buf + 2, 0x3FE, a, b);
+    } else {
+        MSG_convert(buf, 0x400, a, b);
+    }
+    MSG_queuePush(p + 0xAC, buf, 0x400, -1);
+}
 
 void MSG_send(void)
 {
@@ -23,9 +38,45 @@ void MSG_send(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_getSize);
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_dump);
+void MSG_dump(unsigned char *p, int size)
+{
+    int i, j;
+    int c;
+    char buf[16];
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_queueReset);
+    for (i = 0; i < size / 16; i++) {
+        for (j = 0; j < 16; j++) {
+            c = p[j];
+            if (c < 0x20) {
+                buf[j] = '.';
+            } else {
+                buf[j] = c;
+            }
+        }
+        p += 16;
+    }
+}
+
+typedef struct { char pad[8]; short a; short b; short c; short d; short e; } MsgQueue_;
+
+void MSG_queueReset(MsgQueue_ *q, int mode)
+{
+    if (mode & 0x100) {
+        ctrlCodeFlags |= 1;
+    } else {
+        ctrlCodeFlags = 0;
+    }
+    mode &= 0xFF;
+    if (mode == 0) {
+        q->a = 0;
+        q->b = 0;
+        q->d = 0;
+        q->e = 0;
+    } else if (mode == 10) {
+        q->d = 0;
+        q->e = 0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_queueGetInfo);
 
@@ -35,7 +86,41 @@ INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_copyln);
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_queuePush);
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", matchBracket);
+unsigned char *matchBracket(unsigned char *p)
+{
+    int open = *p++;
+    int depth = 1;
+    int close;
+    int c;
+
+    switch (open) {
+    case '[':
+        close = ']';
+        break;
+    case '(':
+        close = ')';
+        break;
+    case '{':
+        close = '}';
+        break;
+    default:
+        return 0;
+    }
+    while ((c = *p++) != 0) {
+        if (c == open) {
+            depth++;
+        } else if (c == close) {
+            if (--depth <= 0) {
+                break;
+            }
+        }
+    }
+    p--;
+    if (*p == close) {
+        return p;
+    }
+    return 0;
+}
 
 /*
  * Placeholder entry of the `mfunc` control-code table (listed twice there).
@@ -53,25 +138,139 @@ char *MIF2_dummy(char *out, int argc)
     return out;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_setArgs);
+int PARSE_int(const char *s, int len, int base);
+
+void MSG_setArgs(Mif2Argument *args, int n, const char **argv)
+{
+    int i;
+    const char *s;
+    unsigned char c;
+    unsigned char c1;
+    for (i = 0; i < n; i++) {
+        s = argv[i];
+        c = s[0];
+        c1 = s[1];
+        if (c != '$') {
+            if ((unsigned)(c - '0') < 10 || (c == '-' && (unsigned)(c1 - '0') < 10)) {
+                args[i].type = 0;
+                if (c == '0' && c1 == 'x') {
+                    args[i].value.number = PARSE_int(s + 2, -1, 16);
+                } else {
+                    args[i].value.number = PARSE_int(s, -1, 10);
+                }
+            } else {
+                args[i].value.text = s;
+                args[i].type = 1;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", rubyFont);
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_ruby);
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_font);
+char *MIF2_font(char *out, int argc, int *args)
+{
+    unsigned char *s = (unsigned char *)args[1];
+    unsigned char c;
+    *out = 0x19;
+    *++out = 1;
+    for (;;) {
+        out++;
+        c = *s++;
+        if (c == 0x2F) break;
+        if (c == 0) break;
+        *out = c;
+    }
+    *out = 0x19;
+    *++out = 0;
+    *++out = 0;
+    return out;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_color);
+void MSG_convert(unsigned char *dst, int size, int a, int b);
+int MSG_queuePush(void *q, unsigned char *msg, int size, int n);
+char *MIF2_color(char *out, int argc, unsigned char *args)
+{
+    unsigned int code = *(unsigned int *)(args + 4);
+    char *end;
+    *out = (char)0xC;
+    *(out + 1) = (unsigned char)(code >> 16);
+    *(out + 2) = (unsigned char)(code >> 8);
+    *(out + 3) = (unsigned char)code;
+    end = out + 4;
+    *end = 0;
+    return end;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_label);
+char *MIF2_label(char *out, int argc, int *args)
+{
+    unsigned char *s = (unsigned char *)args[1];
+    *out++ = 0x2F;
+    *out++ = 0x5B;
+    *out++ = 0x85;
+    while ((*(unsigned char *)out++ = *s++) != 0);
+    *out++ = 0x5D;
+    *out = 0;
+    return out;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_clear);
+char *MIF2_clear(char *out, int argc)
+{
+    char *end;
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_close);
+    *out = 0x2F;
+    *(out + 1) = 0x5B;
+    *(out + 2) = (char)0x81;
+    *(out + 3) = 0x5D;
+    end = out + 4;
+    *end = 0;
+    return end;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_waitkey);
+char *MIF2_close(char *out, int argc)
+{
+    char *end;
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MIF2_wait);
+    *out = 0x2F;
+    *(out + 1) = 0x5B;
+    *(out + 2) = (char)0x84;
+    *(out + 3) = 0x5D;
+    end = out + 4;
+    *end = 0;
+    return end;
+}
+
+char *MIF2_waitkey(char *out, int argc, unsigned char *args)
+{
+    unsigned int code = *(unsigned int *)(args + 4);
+    char *end;
+
+    *out = 0x2F;
+    *(out + 1) = 0x5B;
+    *(out + 2) = (char)0x80;
+    *(out + 3) = (unsigned char)code;
+    *(out + 4) = 0x5D;
+    end = out + 5;
+    *end = 0;
+    return end;
+}
+
+char *MIF2_wait(char *out, int argc, unsigned char *args)
+{
+    unsigned int code = *(unsigned int *)(args + 4);
+    char *end;
+
+    *out = 0x2F;
+    *(out + 1) = 0x5B;
+    *(out + 2) = (char)0x83;
+    *(out + 3) = (unsigned char)code;
+    *(out + 4) = 0x5D;
+    end = out + 5;
+    *end = 0;
+    return end;
+}
 
 char *MIF2_gaiji(char *out, int argc, const Mif2Argument *args)
 {
@@ -138,7 +337,10 @@ INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_convert);
  */
 typedef struct MsgBuffer {
     int count;
-    unsigned char unmodeled_04[2064 - 4];
+    int size;
+    int unmodeled_08;
+    void *data;
+    unsigned char unmodeled_10[2064 - 16];
 } MsgBuffer;
 
 extern MsgBuffer msg_buffer[8];
@@ -154,7 +356,38 @@ void MBUF_init(void)
     } while (slot >= 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MBUF_create2);
+MsgBuffer *MBUF_create2(void)
+{
+    int slot;
+    int found;
+    MsgBuffer *m;
+    MsgBuffer *r;
+
+    found = -1;
+    slot = 0;
+    if (!(msg_buffer[0].count & 1)) {
+        found = 0;
+    } else {
+loop:
+        slot++;
+        if (slot < 8) {
+            m = (MsgBuffer *)((char *)(slot * 2064) + (int)msg_buffer);
+            if (!(m->count & 1)) {
+                found = slot;
+            } else {
+                goto loop;
+            }
+        }
+    }
+    if (found < 0) {
+        return 0;
+    }
+    m = (MsgBuffer *)((char *)(found * 2064) + (int)msg_buffer);
+    m->count = 1;
+    m->size = 0x800;
+    m->data = m->unmodeled_10;
+    return m;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/msg_init", MBUF_create);
 

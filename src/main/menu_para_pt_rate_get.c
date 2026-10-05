@@ -337,7 +337,28 @@ unsigned short MenuParaUpMaxGet(int statIndex)
     return max;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_para_pt_rate_get", MenuParaNextPointGet);
+int MenuParaNextPointGet(int chrNo, int statIndex, int count)
+{
+    int base = MenuParaPtBaseGet(chrNo, statIndex);
+    int rate = MenuParaPtRateGet(chrNo, statIndex);
+    unsigned short now = MenuParaPtNowGet(chrNo, statIndex);
+
+    switch (statIndex) {
+    default:
+        now += count;
+        break;
+    case 0:
+        now += count * 10;
+        break;
+    case 1:
+        now += count * 2;
+        break;
+    }
+    if (statIndex == 0) {
+        return base + rate * (unsigned short)(now / 10) / 99;
+    }
+    return base + rate * now / 99;
+}
 
 /* The shared character point pools used by parameter spending. */
 typedef struct CharPointData {

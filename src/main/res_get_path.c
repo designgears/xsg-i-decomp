@@ -116,13 +116,86 @@ const char *RES_GetEnemySeName(int index)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetMotBaseID);
+typedef struct {
+    char *name;
+    u16 ids[14];
+} CfMtnEntry;
+extern CfMtnEntry cfMtnList[];
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", convert_face);
+static int RES_GetMotBaseID(int id)
+{
+    CfMtnEntry *p;
+    u16 *q;
+    int base;
+    int ret;
+    int cur;
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", resource_typeid_translate);
+    id &= 0xffff;
+    for (p = cfMtnList; p->name != 0; p++) {
+        q = p->ids;
+        base = *q;
+        for (; *q != 0; q++) {
+            cur = *q;
+            ret = base;
+            if (cur == id)
+                return ret;
+        }
+    }
+    return 1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceSearch);
+typedef struct { unsigned short *tbl; unsigned short en; unsigned short key; } FaceEnt;
+extern FaceEnt faceTbl[];
+
+static int convert_face(int id)
+{
+    FaceEnt *e;
+    unsigned int idx = id;
+    unsigned int key = idx & 0x7F00;
+    unsigned short v;
+    idx &= 0xFFFF;
+
+    for (e = faceTbl; e->en != 0; e++) {
+        if (e->key == key) {
+            v = e->tbl[idx & 0xFF];
+            if (v != 0)
+                idx = v;
+            break;
+        }
+    }
+    return idx;
+}
+
+static int resource_typeid_translate(int arg0, int *arg1, int *arg2)
+{
+    int value;
+    int upper;
+
+    switch (*(unsigned short *)arg1) {
+    case 0:
+        value = *arg2;
+        upper = value & 0xFFFF0000;
+        if (upper == 0x10000) {
+            *arg2 = convert_face(value & 0xFFFF) + upper;
+            return 1;
+        }
+        break;
+    case 2:
+        if (*arg2 <= 0x02FFFFFF) {
+            *arg2 = RES_GetMotBaseID(*arg2);
+            return 1;
+        }
+        break;
+    case 3:
+        *arg1 = 2;
+        *arg2 = arg0 | 0x03000000;
+        return 1;
+    case 5:
+        *arg2 = arg0;
+        return 1;
+    }
+    return 0;
+}
 
 /*
  * The runtime resource-block table: up to 128 blocks carved out of the
@@ -142,6 +215,28 @@ typedef struct {
 
 extern GameResourceEntry GameResource[128];
 
+int GameResourceSearch(int type, int id)
+{
+    int i;
+    int a;
+    int b;
+
+    if (type == 5) {
+        return -1;
+    }
+    for (i = 0; i < 0x80; i++) {
+        a = type;
+        b = id;
+        resource_typeid_translate(i, &a, &b);
+        if (type == -1 || GameResource[i].state == a) {
+            if (id == -1 || GameResource[i].handle == b) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
 static int resource_get_free(void)
 {
     int index;
@@ -153,9 +248,36 @@ static int resource_get_free(void)
     return -1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceGetFreeAddr);
+unsigned int GameResourceGetFreeAddr(void)
+{
+    unsigned int a = GameResource[resource_get_free()].address;
+    if (a < 0x112A000) a = 0x112A000;
+    return a;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceWorkAlloc);
+extern u8 GameResourceWorkReloadLeader;
+
+extern u8 GameResourceWorkReloadTable[];
+
+int GameResourceWorkAlloc(int size)
+{
+    int *p;
+    int i;
+
+    GameResourceWorkReloadLeader = 0;
+    GameResourceWorkReloadTable[0] = 0;
+    p = &GameResource[0].address;
+    for (i = 0; i < 0x80; i++, p += 4) {
+        if (p[3] == -1) {
+            if (size < p[1])
+                return p[0];
+            goto fail;
+        }
+    }
+fail:
+    GameResourceWorkReloadTable[0] = 1;
+    return 0x112A000;
+}
 
 /*
  * The game loop's own record, as far as this TU reads it. Two spans are
@@ -172,7 +294,6 @@ typedef struct {
 } GameLoopStatePrefix;
 
 extern GameLoopStatePrefix GameLoopState;
-extern u8 GameResourceWorkReloadTable[];
 extern void ACT_init(void);
 extern void MapChangeFadeSet(void);
 extern void GameResourceLoad(int scene_id);
@@ -191,9 +312,54 @@ INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceAlloc);
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceRealloc);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", next_arc_size);
+extern u32 archeader[];
+extern u8 arcno;
+extern int xglArxExtract(void *destination, void *source);
+extern void *memcpy(void *destination, const void *source, unsigned int count);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", next_line);
+static int next_arc_size(void *address)
+{
+    u32 *src;
+    int size;
+
+    if (arcno == 0) {
+        u32 *s = arcfileaddr;
+        u32 *d = archeader;
+        int i;
+
+        for (i = *arcfileaddr >> 2; i >= 0; i--) {
+            *d++ = *s++;
+        }
+        src = (u32 *)((char *)arcfileaddr + ((archeader[0] + 0x40) & ~0x3F));
+        size = archeader[1];
+    } else {
+        size = archeader[arcno + 1] - archeader[arcno];
+        src = (u32 *)((char *)arcfileaddr + ((archeader[0] + 0x40) & ~0x3F) + archeader[arcno]);
+    }
+    arcno++;
+    if (size > 0) {
+        if (*src == 0x585241) {
+            size = xglArxExtract(address, src);
+        } else {
+            memcpy(address, src, size);
+        }
+    }
+    if (arcno >= archeader[0] >> 2) {
+        arcfileaddr = 0;
+    }
+    return size;
+}
+
+static u8 *next_line(u8 *cursor)
+{
+    do {
+        while (*cursor != '\n' && *cursor != '\r')
+            cursor++;
+        while (*cursor == ' ' || *cursor == '\t' || *cursor == '\n' || *cursor == '\r')
+            cursor++;
+    } while (*cursor == ';');
+    return cursor;
+}
 
 static u8 *skip_space(u8 *cursor)
 {
@@ -204,7 +370,20 @@ static u8 *skip_space(u8 *cursor)
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", search_key);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_reset);
+extern void GameResourceReset(int reset_mode);
+
+static unsigned char *command_reset(int command, unsigned char *cursor, int mode)
+{
+    int n = 0;
+
+    while ((unsigned char)(*cursor - '0') < 10) {
+        int c = *cursor++;
+        n *= 10;
+        n = n + c - '0';
+    }
+    GameResourceReset(n);
+    return cursor;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadmap);
 
@@ -270,9 +449,31 @@ u8 RES_GetFootStepNo(struct Actor *actor)
     return foot_step_no;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadtex);
+static unsigned char *command_loadtex(int command, unsigned char *cursor, int mode)
+{
+    int n = 0;
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadmovie);
+    while ((unsigned char)(*cursor - '0') < 10) {
+        int c = *cursor++;
+        n *= 10;
+        n = n + c - '0';
+    }
+    RES_loadFile(command, 11, n, 0);
+    return cursor;
+}
+
+static unsigned char *command_loadmovie(int command, unsigned char *cursor, int mode)
+{
+    int n = 0;
+
+    while ((unsigned char)(*cursor - '0') < 10) {
+        int c = *cursor++;
+        n *= 10;
+        n = n + c - '0';
+    }
+    RES_loadFile(command, 10, n, 0);
+    return cursor;
+}
 
 extern int sefLoadEffectCfName(int cf_id, int effect_name);
 extern int sefLoadMemoryEffectCfName(int cf_id, int effect_name, int buffer);
@@ -311,9 +512,37 @@ static char *command_player(int command, char *cursor, int mode)
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_dummy);
+extern void GameResourceAlloc(int a, int b);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetLeaderSeName);
+extern void GameResourceRealloc(int a);
+
+static char *command_dummy(int command, char *cursor, int mode)
+{
+    if (GameResource[command + 1].address == 0) {
+        GameResourceAlloc(0, 0);
+    } else {
+        GameResourceRealloc(GameResource[command].address);
+    }
+    return cursor;
+}
+
+extern unsigned char SaveData[];
+extern char foot_name[];
+extern char *tbl_1_00366470[];
+
+void RES_GetLeaderSeName(char *dst)
+{
+    char *src = tbl_1_00366470[*(u16 *)(SaveData + 0x100A4)];
+    dst[0] = src[0];
+    dst[1] = src[1];
+    dst[2] = '_';
+    dst += 3;
+    src = foot_name;
+    while ((*dst = *src) != 0) {
+        src++;
+        dst++;
+    }
+}
 
 extern char env_name[];
 
@@ -381,7 +610,18 @@ static char *command_disk(int command, char *cursor, int mode)
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_save);
+static unsigned char *command_save(int command, unsigned char *cursor, int mode)
+{
+    int n = 0;
+
+    while ((unsigned char)(*cursor - '0') < 10) {
+        int c = *cursor++;
+        n *= 10;
+        n = n + c - '0';
+    }
+    Intermission(n);
+    return cursor;
+}
 
 void GameResourcePreLoad(int scene_number)
 {
@@ -415,20 +655,135 @@ INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSubMapSub);
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSubMap);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetMotBaseName);
+extern void GameResourceReset(int reset_mode);
+char *RES_GetMotBaseName(u16 id)
+{
+  CfMtnEntry *p;
+  u16 *q;
+  char *ret;
+  int cur;
+  for (p = cfMtnList; p->name != 0; p++)
+  {
+    for (q = p->ids; (*q) != 0; q++)
+    {
+      cur = *q;
+      ;
+      if (cur == id)
+      {
+        return p->name;
+      }
+    }
+
+  }
+
+ do { } while (0);
+  return cfMtnList->name;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetMdlFileNameSub);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetMdlFileName);
+extern u8 ModelPath;
+void RES_GetMdlFileNameSub(char *name);
+
+void RES_GetMdlFileName(char *name)
+{
+    char buf[256];
+    char *src;
+    char *dst;
+    int done;
+
+    if (ModelPath == 0) {
+        RES_GetMdlFileNameSub(name);
+        return;
+    }
+    RES_GetMdlFileNameSub(buf);
+    src = buf;
+    dst = name;
+    done = 0;
+    for (; (*dst = *src) != 0; dst++, src++) {
+        if (*src == '\\') {
+            if (done == 0) {
+                done = 1;
+                dst[5] = '\\';
+                dst[1] = 't';
+                dst[2] = 'e';
+                dst[3] = 's';
+                dst[4] = 't';
+                dst += 5;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSub);
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFile);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceGetIndex);
+int GameResourceGetIndex(int id)
+{
+    int i;
+    int *p = (int *)&GameResource[0].address;
+    for (i = 0; i < 128; i++) {
+        int v = *p;
+        p += 4;
+        if (v == id) return i;
+        if (v == 0) break;
+    }
+    return -1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceDump);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern char D_004C01B0[];
+
+void GameResourceDump(int dump)
+{
+    GameResourceEntry *p;
+    GameResourceEntry *q;
+    int i;
+    int n;
+    int y;
+
+    if (dump != 0) {
+        i = 0x7F;
+        if (GameResource[i].address == 0) {
+            do {
+                i--;
+                if (GameResource[i].address != 0) break;
+            } while (i != 0);
+        }
+        i -= 0xE;
+
+        if (i < 0) i = 0;
+
+        for (n = 0; n < 16; n++) {
+            xglFontDebugPrintf(0x40, 0x40 + n * 8, D_004C01B0, i, GameResource[i].address, GameResource[i].size, GameResource[i].state, GameResource[i].handle);
+            i++;
+
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceReset);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceInit);
+extern void (*GameResourceReadFileCallback)(void);
+
+void GameResourceInit(u32 addr, int size)
+{
+    int i;
+    for (i = 0; i < 128; i++) {
+        GameResource[i].address = 0;
+        GameResource[i].size = 0;
+        GameResource[i].handle = 0;
+        GameResource[i].state = -1;
+    }
+    GameResource[0].address = addr;
+    GameResource[0].size = size;
+    GameResourceReset(0);
+    *(int *)0x01000000 = 0;
+    *(int *)0x01070800 = 0;
+    GameResourceReadFileCallback = default_callback;
+    *(int *)0x010B1000 = 0;
+    *(int *)0x010B4000 = 0;
+    *(int *)0x010E6000 = 0;
+    *(int *)0x010E7000 = 0;
+}

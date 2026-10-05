@@ -39,18 +39,73 @@ int MenuEquipStealMaskCheck(void)
     return xglFlagsGet(0x3F9, 1) != 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuScenarioNoGet);
+typedef struct {
+    int no;
+    int start;
+    int end;
+} ScenarioFlagRange;
+
+int MenuScenarioNoGet(void)
+{
+    ScenarioFlagRange tbl[5] = {
+        { 500, 500, 500 },
+        { 400, 400, 399 },
+        { 399, 399, 300 },
+        { 197, 197, 100 },
+        { 56, 56, 1 },
+    };
+    int i;
+    int flag;
+    int no;
+
+    for (i = 0; i < 5; i++) {
+        flag = tbl[i].start;
+        no = tbl[i].no;
+        for (; flag >= tbl[i].end; flag--, no--) {
+            if (xglFlagsGet(flag, 1) != 0) {
+                return no;
+            }
+        }
+    }
+    return no;
+}
 
 int MenuCursorKeepCheck(void)
 {
     return SaveData[0x44] == 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSegmentInfoTextGet);
+extern int map_ex_text;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSegmentMapNameGet);
+char *MenuSegmentInfoTextGet(int n)
+{
+    char *p = (char *)map_ex_text;
+    while (n >= 2) {
+        while (*p++);
+        n--;
+    }
+    return p;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSegmentItemNameGet);
+char *MenuSegmentMapNameGet(int n)
+{
+    char *p = (char *)map_ex_text + 0x540;
+    while (n >= 2) {
+        while (*p++);
+        n--;
+    }
+    return p;
+}
+
+char *MenuSegmentItemNameGet(int n)
+{
+    char *p = (char *)map_ex_text + 0x3C0;
+    while (n >= 2) {
+        while (*p++);
+        n--;
+    }
+    return p;
+}
 
 extern char f_name_0_0036D6C8[];
 extern int map_ex_text;
@@ -77,7 +132,25 @@ int MenuMapExTextLoad(int work, int mode)
     return next;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSaveMapNameGet);
+typedef struct { char pad[0x42]; short id; char pad2[2]; } SaveMapText;
+extern int save_map_text;
+
+SaveMapText *MenuSaveMapNameGet(int id)
+{
+  SaveMapText *p = (SaveMapText *) save_map_text;
+  SaveMapText **new_var;
+  SaveMapText *top = p;
+  int i;
+  for (i = 0; i < 37; i++, p++)
+  {
+    if (p->id == id)
+    {
+      return *(new_var = &p);
+    }
+  }
+
+  return top;
+}
 
 /*
  * MenuLoadFile is defined in src/main/window_tex_load.c; not yet published
@@ -161,25 +234,184 @@ char *MenuParaNameGet2(int index)
     return para_name2_5[index];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuCharNameGet);
+extern char *char_name_6[];
+extern char *char_name2_7[];
+
+char *MenuCharNameGet(int no)
+{
+    char *name = char_name_6[no];
+
+    if (no == 5 && MenuScenarioNoGet() < 0x6C) {
+        name = char_name2_7[0];
+    }
+    return name;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuTextGet);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuBoxChk);
+int dataItmBoxChk(int id);
+int dataWpnBoxChk(int weapon_id);
+int dataBltBoxChk(int bullet_id);
+int dataAccBoxChk(int accessory_id);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuBoxInc);
+int MenuBoxChk(int index)
+{
+    int ret = 0;
+    int id = index & 0xFFFF;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuBoxDec);
+    switch ((unsigned int)index >> 16) {
+    case 1:
+        ret = dataItmBoxChk(id);
+        break;
+    case 2:
+        ret = dataEvtBoxChk(id);
+        break;
+    case 3:
+        ret = dataWpnBoxChk(id);
+        break;
+    case 4:
+        ret = dataBltBoxChk(id);
+        break;
+    case 5:
+        ret = dataAccBoxChk(id);
+        break;
+    case 6:
+        ret = 0;
+        break;
+    }
+    return ret;
+}
+
+void dataItmBoxInc(int id);
+void dataEvtBoxInc(int id);
+void dataWpnBoxInc(int id);
+void dataBltBoxInc(int id);
+void dataAccBoxInc(int id);
+void PartyTakeAgwsOn(int id);
+
+int MenuBoxInc(int index)
+{
+    int ret = 0;
+    int id = index & 0xFFFF;
+
+    switch ((unsigned int)index >> 16) {
+    case 1:
+        dataItmBoxInc(id);
+        break;
+    case 2:
+        dataEvtBoxInc(id);
+        break;
+    case 3:
+        dataWpnBoxInc(id);
+        break;
+    case 4:
+        dataBltBoxInc(id);
+        break;
+    case 5:
+        dataAccBoxInc(id);
+        break;
+    case 6:
+        ret = -1;
+        break;
+    case 7:
+        PartyTakeAgwsOn(id);
+        break;
+    }
+    return ret;
+}
+
+void dataItmBoxDec(int id);
+void dataEvtBoxDec(int id);
+void dataWpnBoxDec(int id);
+void dataBltBoxDec(int id);
+void dataAccBoxDec(int id);
+
+int MenuBoxDec(int index)
+{
+    int ret = 0;
+    int id = index & 0xFFFF;
+
+    switch ((unsigned int)index >> 16) {
+    case 1:
+        dataItmBoxDec(id);
+        break;
+    case 2:
+        dataEvtBoxDec(id);
+        break;
+    case 3:
+        dataWpnBoxDec(id);
+        break;
+    case 4:
+        dataBltBoxDec(id);
+        break;
+    case 5:
+        dataAccBoxDec(id);
+        break;
+    case 6:
+        ret = -1;
+        break;
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuBoxMoneyGet);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSkillEquipCheck);
+int MenuSkillEquipCheck(short chrNo, short skillId)
+{
+    short *p = (short *)((char *)func_A191C0(chrNo) + 0xA6);
+    int i;
+    int id = skillId;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSkillEquip);
+    for (i = 0; i < 3; i++) {
+        int v = *p++;
+        if (v == id)
+            return i + 1;
+    }
+    return 0;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuRWeaponCheck);
+void MenuSkillEquip(short chrNo, short skillId, int slot)
+{
+    char *b = (char *)func_A191C0(chrNo);
+    short *p;
+    int i;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuRWeaponCheck2);
+    if (slot >= 0) {
+        *(short *)(b + slot * 2 + 0xA6) = skillId;
+        return;
+    }
+    for (i = 0; i < 3; i++) {
+        p = (short *)((char *)(i * 2) + (int)b + 0xA6);
+        if (*p == 0) {
+            *p = skillId;
+            break;
+        }
+    }
+}
+
+int MenuRWeaponCheck(int id, int chr)
+{
+    if (chr < 0x24) {
+        if (chr >= 0x20) {
+            switch (id) {
+            case 0x5B: id = 0x70; break;
+            case 0x5C: id = 0x71; break;
+            case 0x5E: id = 0x72; break;
+            }
+        }
+    }
+    return id;
+}
+
+int MenuRWeaponCheck2(int id)
+{
+    switch (id) {
+    case 0x70: id = 0x5B; break;
+    case 0x71: id = 0x5C; break;
+    case 0x72: id = 0x5E; break;
+    }
+    return id;
+}
 
 extern unsigned char opt_mnt_tbl[8][2];
 
@@ -195,7 +427,29 @@ unsigned char PosEquipToOptMnt(int posEquip)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", OptMntToPosEquip);
+int OptMntToPosEquip(int mountCode)
+{
+    int code = mountCode & 0xFF;
+    int i = 0;
+
+    if (((unsigned short *)opt_mnt_tbl)[i] == code) {
+        return 1 << i;
+    }
+    goto next;
+    for (;;) {
+        if (((unsigned short *)opt_mnt_tbl)[i] == code) {
+            break;
+        }
+next:
+        i++;
+        if (i >= 8) {
+            goto none;
+        }
+    }
+    return (1 << i) & 0xFF;
+none:
+    return 0;
+}
 
 int OptMntToPosEquip2(int mountCode)
 {
@@ -246,9 +500,52 @@ int OptMntToWpnPos(int mountCode)
     return weaponPos;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", WpnPosToOptMnt);
+int WpnPosToOptMnt(int arg0, int arg1)
+{
+    char *var_6;
+    int res;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuWpnMountIdChange);
+    var_6 = 0;
+    res = 0;
+    if (arg1 != 0) {
+        var_6 = (char *)func_A1A3D8(arg1);
+    }
+    switch (arg0) {
+    case 1:
+        if (var_6 != 0) {
+            res = (*(unsigned char *)(var_6 + 0xE) & 1) ? 0x20 : 0x21;
+        }
+        break;
+    case 2:
+        if (var_6 != 0) {
+            res = (*(unsigned char *)(var_6 + 0xE) & 0x10) ? 0x18 : 0x19;
+        }
+        break;
+    case 3:
+        res = 0x22;
+        break;
+    case 4:
+        res = 0x1A;
+        break;
+    case 5:
+        res = 0x23;
+        break;
+    case 6:
+        res = 0x1B;
+        break;
+    }
+    return res;
+}
+
+int MenuWpnMountIdChange(int arg0, int arg1)
+{
+    int tbl[8] = { 0x20, 0x18, 0x22, 0x1A, 0x23, 0x1B, 0x21, 0x19 };
+
+    if (arg1 < 2) {
+        return tbl[arg1 + 5];
+    }
+    return tbl[arg1 - 1];
+}
 
 int PosEquipToMntPos(void)
 {
@@ -268,7 +565,23 @@ static int wpnInfoGet(int weaponType)
     return (weaponType < 0x11) ? 0x4000 : 0x2000;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuWeaponEquipCheck);
+int MenuWeaponEquipCheck(int chr, int weaponId)
+{
+    unsigned short eq;
+    int info;
+    char *w;
+
+    if (chr == 0)
+        return 0;
+    eq = chrEquipGet(chr);
+    info = wpnInfoGet(chr);
+    if (weaponId == 0)
+        return 0;
+    w = (char *)func_A1A3D8(weaponId);
+    if ((*(short *)(w + 0xC) & info) == 0)
+        return 0;
+    return (*(unsigned short *)(w + 8) & eq) != 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuWeaponEquipPosCheck);
 
@@ -318,7 +631,20 @@ int MenuBulletCheck(int weaponId, int ammoId)
     return (dataAttGet(ammoId)->weaponId ^ weaponId) == 0 ? ammoId : 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuBulletCheck2);
+extern int func_A197E8(int, int);
+
+int MenuBulletCheck2(int weaponId, int kind)
+{
+    switch (kind) {
+    case 1:
+    case 6:
+        return 0;
+    case 3:
+        return func_A197E8(3, 0x3E) != 0;
+    default:
+        return MenuBulletCheck(weaponId, -1);
+    }
+}
 
 typedef struct PartEquipData PartEquipData;
 
@@ -353,7 +679,15 @@ int MenuEngineEquipCheck(int charId, int engineId)
     return (dataEngGet(engineId)->equipMask & chrEquipGet(charId)) != 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuAgwsPilotCheck);
+int MenuAgwsPilotCheck(int id)
+{
+    int i;
+    for (i = 1; i < 13; i++) {
+        if (*(short *)((char *)func_A191C0(i) + 0x54) == id)
+            return i;
+    }
+    return 0;
+}
 
 /*
  * dataUnitOrgGet's own 0x180-byte per-character record (ov01 VA 0x00a191c0,
@@ -407,7 +741,27 @@ int MenuAgwsWaglGet(int chrNo)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_1", MenuSortSubType05);
+static void MenuSortSubType05(int *first, int *second)
+{
+    const unsigned char *firstName = MenuTextGet(*first)->sortName;
+    const unsigned char *secondName = MenuTextGet(*second)->sortName;
+    unsigned char firstChar;
+    unsigned char secondChar;
+
+    for (;;) {
+        secondChar = *secondName++;
+        firstChar = *firstName++;
+        if (firstChar < secondChar) {
+            int savedIndex = *first;
+            *first = *second;
+            *second = savedIndex;
+            return;
+        }
+        if (firstChar != secondChar || firstChar == 0) {
+            return;
+        }
+    }
+}
 
 static void MenuSortSubType04(int *first, int *second)
 {

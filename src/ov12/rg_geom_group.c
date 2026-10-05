@@ -354,7 +354,64 @@ void InitRgGeomGroupColiArg(RgGameColiArg *pArg)
     pArg->unmodeled_10 = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_group", RgGeomGroupCollision);
+extern const char D_00A553B8[];
+typedef struct RgGeomColiArg {
+    unsigned int data[4];
+} RgGeomColiArg;
+extern void InitRgGeomColiArg(RgGeomColiArg *pArg);
+extern int RgGeomCollisionJob(RgGeomColiArg *pArg);
+
+void RgGeomGroupCollision(RgGameColiArg *pArg)
+{
+    void *vec1;
+    void *vec2;
+    unsigned int size1;
+    unsigned int size2;
+    unsigned int i;
+    unsigned int j;
+    int hits;
+    RgGeomColiArg arg;
+
+    hits = 0;
+    if (pArg == 0) {
+        assert_prog(D_00A553B8, D_00A55348, 348);
+    }
+    if (pArg->m_pGroup1 == 0) {
+        return;
+    }
+    if (pArg->m_pGroup2 == 0) {
+        return;
+    }
+    vec1 = pArg->m_pGroup1->m_pList;
+    vec2 = pArg->m_pGroup2->m_pList;
+    size1 = RgVectorSize(vec1);
+    size2 = RgVectorSize(vec2);
+    InitRgGeomColiArg(&arg);
+    arg.data[1] = pArg->unmodeled_04;
+    arg.data[3] = pArg->unmodeled_10;
+    for (j = 0; j < size2; j++) {
+        for (i = 0; i < size1; i++) {
+            arg.data[0] = (unsigned int)RgVectorIndex(vec1, i, D_00A55348, 367);
+            arg.data[2] = (unsigned int)RgVectorIndex(vec2, j, D_00A55348, 368);
+            if (RgGeomCollisionJob(&arg) != 0) {
+                hits++;
+            }
+        }
+    }
+    if (hits > 0) {
+        return;
+    }
+    if (pArg->unmodeled_08 != 0) {
+        for (j = 0; j < size1; j++) {
+            ((void (*)(void *, int))pArg->unmodeled_08)(RgVectorIndex(vec1, j, D_00A55348, 378), 0);
+        }
+    }
+    if (pArg->unmodeled_14 != 0) {
+        for (j = 0; j < size2; j++) {
+            ((void (*)(void *, int))pArg->unmodeled_14)(RgVectorIndex(vec2, j, D_00A55348, 382), 0);
+        }
+    }
+}
 
 void RgGeomGroupDebugDisp(RgGeomGroup *pGroup)
 {

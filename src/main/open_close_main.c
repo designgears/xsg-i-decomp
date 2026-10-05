@@ -85,7 +85,29 @@ void eWindowSet(EWindow *window)
 
 INCLUDE_ASM("asm/main/nonmatchings/open_close_main", eCursolMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/open_close_main", eCursolModeChange);
+void eCursolModeChange(unsigned char *mode, unsigned int next)
+{
+    unsigned char c;
+    switch (next) {
+    case 0 ... 0x1f:
+        break;
+    case 0x20:
+    case 0x21:
+        c = *mode;
+        if (c == 0x50) return;
+        if (c == 0x51) return;
+        if (c == 0x20) return;
+        if (c == 0x21) return;
+        break;
+    case 0x50:
+    case 0x51:
+        c = *mode;
+        if (c == 0x50) return;
+        if (c == 0x51) return;
+        break;
+    }
+    *mode = next;
+}
 
 /*
  * Partial view of the object eCursolSet initialises. eCursolMain (still

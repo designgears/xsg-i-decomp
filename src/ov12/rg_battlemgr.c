@@ -152,7 +152,35 @@ static RgPlayer *_GetInPlayerList(PlayerList *pList, RgRobot *robot)
     return players[slotIndex];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_battlemgr", _AddPlayerList);
+extern const char D_00A54D20[];
+extern const char D_00A54D30[];
+
+static void _AddPlayerList(PlayerList *pList, RgPlayer *pPlayer)
+{
+    RgPlayer **players;
+    RgPlayer **pSlot;
+    u32 i;
+
+    if (pList == 0) {
+        assert_prog(D_00A54CE8, D_00A54CC0, 0x8C);
+    }
+    if (pPlayer == 0) {
+        assert_prog(D_00A54D20, D_00A54CC0, 0x8D);
+    }
+    if ((u32)pList->count >= 2U) {
+        assert_prog(D_00A54D30, D_00A54CC0, 0x8E);
+    }
+    players = &pList->player1P;
+    pSlot = players;
+    for (i = 0; i < 2U; i++) {
+        if (*pSlot++ == pPlayer) {
+            return;
+        }
+    }
+    i = pList->count;
+    pList->count = i + 1;
+    *(RgPlayer **)((char *)players + (i << 2)) = pPlayer;
+}
 
 extern void DisposeRgPlayer(RgPlayer *pPlayer);
 
@@ -296,7 +324,25 @@ static RgCamera *_GetCameraBattleField(BattleField *pField, u32 index)
     return pField->camera[index];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_battlemgr", _ClearBattleField);
+static void _ClearBattleField(BattleField *pField) {
+    int i;
+
+    if (pField == 0) {
+        assert_prog(D_00A54D50, D_00A54CC0, 0x107);
+    }
+    for (i = 0; (u32)i < (u32)pField->count; i++) {
+        if (pField->camera[i] != 0) {
+            DisposeRgCamera(pField->camera[i]);
+            pField->camera[i] = 0;
+        }
+        if (pField->screenBall[i] != 0) {
+            RgGeomFree(pField->screenBall[i]);
+            pField->screenBall[i] = 0;
+        }
+    }
+    pField->count = 0;
+    RgDrawCreateDrawStudioFullScreen(InstanceOfRgDraw());
+}
 
 extern RgGeomGroup *CreateRgGeomGroup(void);
 extern RgDraw *InstanceOfRgDraw(void);
@@ -362,7 +408,37 @@ static void _DisposeBattleField(BattleField *pField)
     RgHeapFree(InstanceOfRgHeap(), pField, D_00A54CC0, 0x13B);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_battlemgr", _FullScreenBattleField);
+extern RgDrawStudio *RgDrawGetStudio(RgDraw *pDraw, int screenIndex);
+extern RgGeom *RgGeomGroupCreateBall(RgGeomGroup *pGroup, void *parent);
+extern void RgGeomBallSetRadius(void *ball, float radius);
+extern void RgCameraSetFarMode(RgCamera *pCamera, int enable);
+extern const char D_00A54D78[];
+
+static u32 _FullScreenBattleField(BattleField *pField)
+{
+    RgDrawStudio *studio;
+    RgCamera *camera;
+    RgGeom *screenBall;
+
+    if (pField == 0) {
+        assert_prog(D_00A54D50, D_00A54CC0, 0x145);
+    }
+    if (pField->count >= 2U) {
+        assert_prog(D_00A54D78, D_00A54CC0, 0x146);
+    }
+    _ClearBattleField(pField);
+    pField->count = 1;
+    RgDrawCreateDrawStudioFullScreen(InstanceOfRgDraw());
+    studio = RgDrawGetStudio(InstanceOfRgDraw(), 0);
+    pField->studio[0] = studio;
+    camera = _CreateBattleCamera(studio);
+    pField->camera[0] = camera;
+    screenBall = RgGeomGroupCreateBall(pField->geomGroup, camera);
+    pField->screenBall[0] = screenBall;
+    RgGeomBallSetRadius(screenBall, 1.5f);
+    RgCameraSetFarMode(camera, 0);
+    return 1;
+}
 
 #include "ov12/rg_camera.h"
 extern RgDispGameInfo *CreateRgDispGameInfo(int dispTex);
@@ -558,7 +634,35 @@ static void _DrawDispInfoOnePlayer(RgDispGameInfo *pInfo, RgPlayer **players,
     RgDispGameInfoDisplay(pInfo);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_battlemgr", _DrawDispInfo);
+extern void RgDispGameInfoSetStudio(RgDispGameInfo *pInfo, int studio);
+
+static void _DrawDispInfo(DispInfo *pInfo)
+{
+    u32 i;
+
+    if (pInfo == 0) {
+        assert_prog(D_00A54D98, D_00A54CC0, 0x207);
+    }
+    switch ((u32)pInfo->mode) {
+    case 0:
+    case 3:
+        RgDispGameInfoSetStudio(pInfo->gameInfo[0], 0);
+        RgDispGameInfoSetStudio(pInfo->gameInfo[1], 1);
+        for (i = 0; i < 2; i++) {
+            _DrawDispInfoOnePlayer(pInfo->gameInfo[i], pInfo->players, i, 1 - i);
+        }
+        break;
+    case 1:
+        RgDispGameInfoSetStudio(pInfo->gameInfo[0], -2);
+        _DrawDispInfoOnePlayer(pInfo->gameInfo[0], pInfo->players, 0, 1);
+        return;
+    case 2:
+        RgDispGameInfoSetStudio(pInfo->gameInfo[1], -2);
+        _DrawDispInfoOnePlayer(pInfo->gameInfo[1], pInfo->players, 1, 0);
+        break;
+    }
+    i = 0;
+}
 
 extern RgBattleCommonDataEnv *InstanceOfRgBattleCommonData(void);
 extern int RgBattleCommonDataGetDispTex(RgBattleCommonDataEnv *pEnv);

@@ -110,7 +110,44 @@ static void setWeightIndex(SplinePoint *points, int count)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_init2);
+void SPL_init2(SplineState *spline, int weight_mode, SplinePoint *samples,
+               int sample_count, unsigned int component_count)
+{
+    if ((spline->first_key & 0xF) != 8) {
+        weight_mode += 2;
+        switch (spline->first_key & 0xF0) {
+        case 0:
+            setWeightLen(samples, sample_count);
+            break;
+        case 0x20:
+            setWeightLen2(samples, sample_count);
+            break;
+        case 0x40:
+            setWeightTime(samples, sample_count, (float)(short)spline->last_key);
+            break;
+        case 0x30:
+            setWeightIndex(samples, sample_count);
+            break;
+        }
+    }
+    spline->first_key = spline->first_key & 0xF;
+    spline->samples = (const float *)samples;
+    spline->sample_count = sample_count;
+    spline->component_count = component_count;
+    spline->weight_mode = weight_mode;
+    switch (weight_mode) {
+    case 0:
+        return;
+    case 1:
+    case 3:
+        SPL_cardinalInit(spline);
+        break;
+    case 2:
+        return;
+    default:
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_cardinalInit);
 

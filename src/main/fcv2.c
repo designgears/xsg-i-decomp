@@ -118,7 +118,56 @@ f32 FCV2_getValueAndKey(s32 *key, FCV2Value *curve, f32 frame)
     return 0.0f;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_readAttribute);
+typedef struct FcvAttribute {
+    u32 unmodeled_0[3];
+    int value_c;
+    u16 key;
+    int attr;
+    u8 *time;
+    u16 *range;
+} FcvAttribute;
+
+void FCV2_readAttribute(FcvAttribute *attribute, u32 *data)
+{
+    u32 pos;
+    u16 *chunk;
+
+    attribute->attr = 0;
+    pos = 4;
+    attribute->time = 0;
+    chunk = (u16 *)(data + 1);
+    attribute->range = 0;
+    do {
+        switch (chunk[1]) {
+        case 1:
+            {
+                int *v = (int *)(chunk + 2);
+                attribute->value_c = v[0] * 31 + v[1];
+            }
+            break;
+        case 3:
+            attribute->attr = (int)(chunk + 2);
+            break;
+        case 2:
+            {
+                u8 *p = (u8 *)(chunk + 2);
+                if ((*p & 0x7F) == attribute->key) {
+                    if (*p & 0x80) {
+                        attribute->time = p;
+                    } else {
+                        attribute->range = (u16 *)p;
+                    }
+                }
+            }
+            break;
+        }
+        if (chunk[1] == 0) {
+            return;
+        }
+        pos += chunk[0];
+        chunk = (u16 *)((u8 *)chunk + chunk[0]);
+    } while (pos < *data);
+}
 
 typedef struct FCV2DataHeader {
     u32 signature;
@@ -148,10 +197,120 @@ void FCV2_setStep(f32 step)
 
 INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_resetPack);
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getPackAttribute);
+typedef struct FCV2AttrHeader {
+    u16 size;
+    u16 type;
+} FCV2AttrHeader;
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getPackValue);
+typedef struct FCV2AttrDefault {
+    unsigned char unmodeled_00[0x10];
+} FCV2AttrDefault;
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_getKey);
+extern FCV2AttrDefault defaultAttr;
 
-INCLUDE_ASM("asm/main/nonmatchings/fcv2", FCV2_dump);
+typedef struct FCV2Pack {
+    FCV2AttrHeader *cursor;
+} FCV2Pack;
+
+void *FCV2_getPackAttribute(FCV2Pack *pack)
+{
+    FCV2AttrHeader *attr = pack->cursor;
+    FCV2AttrHeader *result;
+
+    if (attr->type == 4) {
+        result = attr;
+        pack->cursor = (FCV2AttrHeader *)((u8 *)result + result->size + 4);
+    } else {
+        result = (FCV2AttrHeader *)&defaultAttr;
+    }
+    return result;
+}
+
+f32 FCV2_getPackVal(void **, unsigned char *, u16, void **);
+
+f32 FCV2_getPackValue(void **arg0) {
+    unsigned char *p = *arg0;
+    f32 r = 0.0f;
+
+    switch (*(u16 *)(p + 2) & 0xF) {
+    case 0:
+        *arg0 = p + 4;
+        break;
+    case 1:
+        r = *(f32 *)(p + 4);
+        *arg0 = p + 8;
+        break;
+    case 3:
+        r = FCV2_getPackVal(arg0, p + 4, *(u16 *)p, arg0);
+        break;
+    default:
+        *arg0 = p + 4;
+        r = 0.0f;
+        break;
+    }
+    return r;
+}
+
+extern f32 D_004D8528;
+
+u16 *FCV2_getKey(u16 *key, f32 time)
+{
+    int n;
+    int i;
+    u16 *ret;
+
+    ret = 0;
+    if ((key[1] & 0xF) == 3) {
+        n = key[0] - 1;
+        key += 2;
+        for (i = 0; i < n; i++) {
+            ret = key;
+            if (time <= key[1] * D_004D8528) {
+                return ret;
+            }
+            switch (key[0]) {
+            case 1:
+                key += 8;
+                break;
+            case 0:
+            case 2:
+            case 3:
+                key += 4;
+                break;
+            }
+        }
+        return key;
+    }
+    return ret;
+}
+
+f32 FCV2_getPackVal(void **, unsigned char *, u16, void **);
+
+void FCV2_dump(FCV2AttrHeader *hdr)
+{
+    s32 n;
+    s32 i;
+    u16 *p;
+
+    if (hdr->type != 3) {
+        return;
+    }
+    n = hdr->size;
+    p = (u16 *)(hdr + 1);
+    i = 0;
+    if (n == 0) {
+        return;
+    }
+    do {
+        switch (*p) {
+        case 1:
+            p += 8;
+            break;
+        case 0:
+        case 2:
+        case 3:
+            p += 4;
+            break;
+        }
+    } while (++i < n);
+}

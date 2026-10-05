@@ -101,14 +101,49 @@ void DisposeXrgSoundSystem(void)
     _LoadSequence(0, 0, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_sound", _LoadSeq);
+extern const char D_00A592A8[];
+extern const char D_00A592B0[];
+extern const char D_00A592B8[];
+extern const char D_00A592C0[];
+extern void xglSoundSequenceStop2(int channel);
 
-extern void _LoadSeq(void);
+void _LoadSeq(int seq)
+{
+    void *buf;
+
+    if (seq == s_eLoadedSeq) {
+        return;
+    }
+    buf = RgHeapAlloc(InstanceOfRgHeapData(), 0x200000, D_00A59288, 0x84);
+    s_bNowPlaying = 0;
+    xglSoundSequenceStop2(0);
+    switch (seq) {
+    case 0:
+        _LoadSequence(D_00A592A8, buf, 1);
+        s_eLoadedSeq = 0;
+        break;
+    case 1:
+        _LoadSequence(D_00A592B0, buf, 1);
+        s_eLoadedSeq = seq;
+        break;
+    case 2:
+        _LoadSequence(D_00A592B8, buf, 1);
+        s_eLoadedSeq = seq;
+        break;
+    case 3:
+        _LoadSequence(D_00A592C0, buf, 0);
+        s_eLoadedSeq = seq;
+        break;
+    }
+    RgHeapFree(InstanceOfRgHeapData(), buf, D_00A59288, 0x9D);
+}
+
+extern void _LoadSeq(int seq);
 extern void xglSoundSequenceNormal2(int channel, int volume);
 
 void XrgSoundSystemPlayBGM(void)
 {
-    _LoadSeq();
+    ((void (*)())_LoadSeq)();
     if (s_eLoadedSeq != -1 && s_bNowPlaying == 0) {
         xglSoundSequenceNormal2(0, 127);
         s_bNowPlaying = 1;

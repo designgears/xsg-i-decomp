@@ -95,7 +95,20 @@ void UmnObjectTaskCreate(UmnObjectTaskWorker worker, void *data) {
         task->zeroedOnCreate[i] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_object_task_main", UmnChangeTopLevel);
+typedef int umn_q __attribute__((mode(TI)));
+void UmnProcuratorSet(void);
+
+void UmnChangeTopLevel(int lvl)
+{
+    umn_q *p = (umn_q *)&UmnWork;
+    int i;
+    for (i = 1; i < 8; i++) {
+        p[i] = 0;
+    }
+    UmnWork.mode = lvl;
+    UmnWork.unmodeled_02[1] = 0;
+    UmnProcuratorSet();
+}
 
 /* UmnTextLoad is ov02:0x00a0f578 (src/ov02/umn_event_text_symbol_check.c). */
 extern int UmnTextLoad(int work, int mode);
@@ -233,4 +246,100 @@ void UmnMain(void) {
     GameCFSoundMenuReload();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tsk_umn_object_task_main", UmnMain2);
+typedef struct { unsigned char pad[0x10]; unsigned int flags; } UmnMain2LoopState;
+extern UmnMain2LoopState GameLoopState;
+typedef union UmnMain2LightVector {
+    double alignment;
+    Vector4 value;
+} UmnMain2LightVector;
+typedef struct UmnMain2LightTable {
+    UmnMain2LightVector ambient;
+    UmnMain2LightVector color[3];
+    UmnMain2LightVector direction[3];
+} UmnMain2LightTable;
+extern const UmnMain2LightTable D_00A11DF0;
+extern void MenuCfTaikiPush(void);
+extern void MenuCfTaikiPop(void);
+extern void MenuGameDataPush(void);
+extern void MenuGameDataPop(void);
+extern void xglStudioChange(int studio_index);
+extern void *xglStudioGetLight2(void);
+extern void xglLightIntensityAmbient(void *light, const Vector4 *intensity);
+extern void xglLightIntensityParallel(void *light, unsigned int index, const Vector4 *intensity);
+extern void xglLightDirection(void *light, unsigned int index, const Vector4 *direction);
+extern void *GameResourceWorkAlloc(int size);
+extern int MenuModelInit(int work_start);
+extern int MenuFontLoad(int load, int cb);
+extern void WindowTexLoad(int window_id, int texture_set);
+extern void VibrationEngine(void);
+extern void MenuLoadCancel(void);
+extern void GameResourceWorkReload(void);
+extern void GameCfPlayerLoadResource(int flag);
+
+void UmnMain2(int menu_id) {
+    UmnMain2LightTable table;
+    void *light;
+    void *mem;
+
+    endPrintDirectFrameCopy(xglPacketGetCurrent(), sRender.width << 5, sRender.height << 5);
+    xglSleep();
+    endPrintDirectFrameCopy(xglPacketGetCurrent(), sRender.height << 5, sRender.height2 << 5);
+    GameLoopState.flags |= 0x04000000;
+    MenuCfTaikiPush();
+    MenuGameDataPush();
+    GameCFSoundMenuPurge(0);
+    MenuLoadInit();
+    xglStudioChange(0);
+    light = xglStudioGetLight2();
+    table = D_00A11DF0;
+    xglLightIntensityAmbient(light, &table.ambient.value);
+    xglLightIntensityParallel(light, 0, &table.color[0].value);
+    xglLightDirection(light, 0, &table.direction[0].value);
+    xglLightIntensityParallel(light, 1, &table.color[1].value);
+    xglLightDirection(light, 1, &table.direction[1].value);
+    xglLightIntensityParallel(light, 2, &table.color[2].value);
+    xglLightDirection(light, 2, &table.direction[2].value);
+    memset((void *)(UmnMemory = (int)GameResourceWorkAlloc(0x480000)), 0, 0x480000);
+    UmnInit();
+    MenuLoadInit();
+    UmnWorkEnd = MenuModelInit(UmnWorkEnd);
+    MenuModelMemoryInit((void *)UmnMemory, 0x200000);
+    MenuModelMemorySet(0);
+    UmnModelUkn = 0;
+    UmnModelSon = 0;
+    UmnChangeTopLevel(1);
+    UmnFirstLoad();
+    MenuFontLoad(1, 0);
+    WindowTexLoad(0, 1);
+    WindowTexLoad(0, 2);
+    while (UmnModelUkn == 0 || ((unsigned char *)UmnModelUkn)[0x11] == 0) {
+        UmnInterface2Main();
+        MenuModelMain();
+        xglSleep();
+    }
+    while (UmnWork.mode == 1) {
+        GameSnapShotCheck();
+        UmnMail(menu_id);
+        UmnInterface2Main();
+        endPrintExtFunc(0, 0x64, 0);
+        xglTaskExecute((XglTaskScheduler *)task_xmx);
+        MenuModelMain();
+        xglTaskExecute((XglTaskScheduler *)umn_task);
+        VibrationEngine();
+        xglSleep();
+    }
+    MenuLoadCancel();
+    endPrintDirectFrameCopy(xglPacketGetCurrent(), sRender.width << 5, sRender.height << 5);
+    xglTaskExecute((XglTaskScheduler *)task_xmx);
+    xglTaskExecute((XglTaskScheduler *)umn_task);
+    MenuModelAllBreak();
+    xglSleep();
+    MenuCfTaikiPop();
+    MenuFontLoad(0, 0);
+    WindowTexLoad(0, 0);
+    GameResourceWorkReload();
+    GameCfPlayerLoadResource(1);
+    MenuGameDataPop();
+    GameCFSoundMenuReload();
+    GameLoopState.flags &= ~0x04000000;
+}

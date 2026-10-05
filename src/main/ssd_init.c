@@ -67,11 +67,81 @@ void RSsdSifRpcThread(void)
     sceSifRpcLoop(RssdWork.rpc_queue);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdInitIop);
+extern int sceSifBindRpc(void *cd, unsigned int request, unsigned int mode);
+extern int sceSifCheckStatRpc(void *cd);
+extern void *sceSifSetRpcQueue(void *qd, int thread_id);
+extern void sceSifRegisterRpc(void *sd, unsigned int command, void *func, void *buff, void *cfunc, void *cbuff, void *qd);
+extern int GetThreadId(void);
+extern int printf(const char *format, ...);
+extern const char D_004D4A60[];
+extern void RssdSifRpcServer();
+
+void RssdInitIop(void)
+{
+    RssdRequest request;
+    RssdWorkFlags *w;
+
+    if (sceSifBindRpc(&RssdWork._unmodeled_0a0[0x80], 0x900, 1) < 0)
+        return;
+    while (sceSifCheckStatRpc(&RssdWork._unmodeled_0a0[0x80]) != 0)
+        ;
+    w = &RssdWork;
+    if (*(int *)&w->_unmodeled_0a0[0xa4] == 0) {
+        printf(D_004D4A60, 0x900);
+        return;
+    }
+    w->flags = 1;
+    sceSifSetRpcQueue(w->rpc_queue, GetThreadId());
+    sceSifRegisterRpc(w->rpc_server, 0x901, RssdSifRpcServer,
+                      *(void **)&w->_unmodeled_038[0x6c], 0, 0, w->rpc_queue);
+    request.arg[0].value = *(int *)w->_unmodeled_00c;
+    RssdCallFunc(1, &request, 0, 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdSifRpcServer);
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdBusy);
+extern int SignalSema(int sema_id);
+typedef struct RssdWorkView {
+    int flags;
+    int pad4;
+    int a;
+    int pad0c;
+    unsigned short b;
+    short c;
+    void *d;
+    char pad18[0x1a0];
+    int sema;
+} RssdWorkView;
+typedef union RssdBusyReq {
+    struct {
+        int pad[4];
+        int a;
+        int pad14;
+        unsigned short b;
+        short c;
+        void *d;
+        } f;
+    char raw[0x20];
+} RssdBusyReq;
+#define W (*(RssdWorkView *)&RssdWork)
+
+void RssdBusy(RssdBusyReq *arg0)
+{
+    RssdBusyReq *req = arg0;
+    unsigned short b;
+    short c;
+    int d;
+
+    W.flags |= 2;
+    W.a = req->f.a;
+    c = req->f.c;
+    d = req->f.d;
+    b = req->f.b;
+    W.b = b;
+    W.c = c;
+    W.d = d;
+    SignalSema(W.sema);
+}
 
 /* SIF RPC middleware bulk memory copy. */
 extern void SsdCopyMemory(void *dst, void *src, int size);
@@ -133,7 +203,46 @@ void RssdBackNextWaveThread(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdCallFunc);
+extern int WaitSema(int sema_id);
+extern void FlushCache(int mode);
+extern int sceSifCallRpc(void *cd, unsigned int request, unsigned int mode, void *send, int ssize, void *receive, int rsize, void *end_func, void *end_param);
+extern const char D_004D4A80[];
+
+int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
+{
+    RssdRpcResponse *buf;
+    int total;
+    int ret;
+
+    WaitSema(RssdWork.sema_id);
+    if (data == 0)
+        size = 0;
+    RssdWork.flags |= 8;
+    RssdWork.response.error_code = -1;
+    buf = RssdWork.response_source;
+    if (request != 0)
+        *buf = *(RssdRpcResponse *)request;
+    total = ((size + 0xF) & ~0xF) + 0x20;
+    buf->error_code = command;
+    buf->_unmodeled_0c[0] = size;
+    if (total > 0x10020) {
+        printf(D_004D4A80);
+        RssdWork.flags &= ~8;
+        SignalSema(RssdWork.sema_id);
+        return -1;
+    }
+    if (size != 0)
+        SsdCopyMemory(buf + 1, data, size);
+    FlushCache(0);
+    ret = sceSifCallRpc(&RssdWork._unmodeled_0a0[0x80], command, 1, buf, total, buf, 0x20, RssdSifRpcCallback, &RssdWork);
+    if (ret < 0) {
+        RssdWork.flags &= ~8;
+        SignalSema(RssdWork.sema_id);
+    } else {
+        RssdFuncCallCompleted(1);
+    }
+    return ret;
+}
 
 /*
  * SIF RPC end callback for the RSSD work area: clears flag bit 3, copies the
@@ -168,7 +277,26 @@ void RssdSifRpcCallback(void)
     return;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdFuncCallCompleted);
+void RssdFuncCallCompleted(int status)
+{
+  int result;
+  int next;
+  long code;
+
+  do {
+    if (next) {
+      result = RssdGetCallCompletedCode();
+      next = result;
+      result = next;
+      code = result;
+    } else {
+      result = RssdGetCallCompletedCode();
+      next = result;
+      result = next;
+      code = result;
+    }
+  } while (status != 0 && (unsigned short)(code != 0));
+}
 
 /* Returns the bit RssdSifRpcCallback clears on RPC completion. */
 int RssdGetCallCompletedCode(void)
@@ -196,7 +324,20 @@ int SsdGetResultValue(int *value)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", SsdGetResultParam);
+int SsdGetResultParam(RssdRpcResponse *param)
+{
+    int result;
+
+    if (RssdWork.flags & 0x8) {
+        result = (RssdWork.flags & RSSD_FLAG_SUCCESS) ? -1 : -2;
+    } else if (RssdWork.response.error_code >= 0) {
+        result = (RssdWork.flags & RSSD_FLAG_SUCCESS) == 0;
+        *param = RssdWork.response;
+    } else {
+        result = -3;
+    }
+    return result;
+}
 
 void SsdSetServerCallback(void *callback, void *arg)
 {

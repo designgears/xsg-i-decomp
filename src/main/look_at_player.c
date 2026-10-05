@@ -116,7 +116,33 @@ void GameCfPlayerMoveInit(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/look_at_player", GameCfPlayerMove);
 
-INCLUDE_ASM("asm/main/nonmatchings/look_at_player", HitCheckActor);
+extern float D_004D7C34;
+extern float D_004D7C38;
+int CheckActorExist(void *actor);
+#define ACT_RADIUS(a) (*(float *)((a)->unmodeled_81 + (0x9e8 - 0x81)))
+
+static short HitCheckActor(LookAtPlayerActor *self)
+{
+    short i;
+    float min_r = D_004D7C34;
+    float max_dy = D_004D7C38;
+    float dx, dz;
+    char *base = (char *)actor;
+    float *p = (float *)(base + 0x9e0);
+    int off = 0;
+
+    for (i = 0; i < 64; i++, p += 0xa70 / 4, off += 0xa70) {
+        if (CheckActorExist((void *)(off + (int)base)) != 0 && self->number != i
+            && !(p[2] < min_r)
+            && !(max_dy < __builtin_fabsf(self->position.y - p[-0x9cc / 4]))) {
+            dx = self->position.x - p[-0x9d0 / 4];
+            dz = self->position.z - p[-0x9c8 / 4];
+            if (__builtin_sqrtf(dx * dx + dz * dz) <= ACT_RADIUS(self) + p[2])
+                return i;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/look_at_player", NyuruActor);
 

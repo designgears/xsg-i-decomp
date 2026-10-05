@@ -19,9 +19,9 @@
   "ee-gcc2.96-realconv-lp7": {
    "role": "cc1 of every GCC 2.96-family compile contract (game and runtime C)",
    "dir": "ee-gcc2.96-realconv-lp7-fsv3-v1/bin",
-   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv3",
+   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv3 + usecount",
    "files": {
-    "cc1": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625",
+    "cc1": "2bc2abcbc8d912a6ca553675659d9b5203723233499145b2c6313592c27b8af0",
     "cpp0": "f6f6b598f39649edfe171d6da8c7f91d07f2b87c2aeeffffbc5f566bfb1a39a9",
     "ee-gcc": "b8c284d16c9c0a0e8788e9522c46881e224ad01fa1c732aed43f821cc32f168b"
    },
@@ -42,7 +42,7 @@
      "Download the base archive and check its SHA-256.",
      "Extract lib/gcc-lib/ee/2.96-ee-001003-1/{cc1,cpp0} and bin/ee-gcc into <root>/ee-gcc2.96-realconv-lp7-fsv3-v1/bin/.",
      "cpp0 and ee-gcc are used unmodified.",
-     "Apply the patches below to cc1, in file-offset order (eight single-byte patches and four multi-byte patches: fsv1 and fsv3); the result must hash to the cc1 SHA-256 above."
+     "Apply the patches below to cc1, in file-offset order (nine single-byte patches and four multi-byte patches: fsv1 and fsv3); the result must hash to the cc1 SHA-256 above."
     ],
     "cc1_byte_patches": {
      "note": [
@@ -54,6 +54,9 @@
       "The two `lp7` patches raise the R5900 short-loop padding gate and loop",
       "bound in mips_r5900_lengthen_loops from 4 to 6, which reproduces the",
       "7-d padding ten original game objects carry.",
+      "The `usecount` patch turns the jne at 0x081ccf54 in mips_r5900_lengthen_loops",
+      "into a jmp so that USE insns count toward the loop distance, as the original",
+      "objects show (main/pdb/getStrIndex_002F5F30, system/getStrIndex_002F6210: 3 nops, not 4).",
       "The `fsv1` patch (user decision 2026-09-23, reports/cc1-fsv-clause1-losum.md)",
       "rewrites clause 1 of the alias-analysis helper fixed_scalar_and_varying_struct_p",
       "(cc1 0x080ee624) so that a LO_SUM address of the scalar mem1 counts as",
@@ -182,6 +185,14 @@
        "governs": "clause 2: a LO_SUM mem2_addr counts as non-varying (cmpb $0x90,(%eax))"
       },
       {
+       "group": "usecount",
+       "file_offset": 1593172,
+       "old": "0x75",
+       "new": "0xeb",
+       "function": "mips_r5900_lengthen_loops",
+       "governs": "jne -> jmp: count USE insns in mips_r5900_lengthen_loops"
+      },
+      {
        "group": "lp7",
        "file_offset": 1593246,
        "old": "0x04",
@@ -201,7 +212,8 @@
      "intermediate_hashes": {
       "realconv_only_cc1": "403fe76c8b2adc1a24c5d0491ac245a8100d57a8341c4d66956a38bd1ab4c754",
       "realconv_lp7_cc1": "50cca55fdbe84716787a64718911435ab0578d6751b90874bedbea3aa381c847",
-      "realconv_lp7_fsv1_cc1": "7abe318da59f6dc6595a7a65766098581d9169a0732786c70db85f688c47f3bf"
+      "realconv_lp7_fsv1_cc1": "7abe318da59f6dc6595a7a65766098581d9169a0732786c70db85f688c47f3bf",
+      "realconv_lp7_fsv3_cc1": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625"
      }
     },
     "license": "GPL-2.0-or-later (GCC).  The published binary ships without corresponding source; no 2.96-ee-001003 source tree is available, so this is a license reference, not corresponding-source proof.",
@@ -242,7 +254,7 @@
    "role": "assembler of every game and runtime object (the -G of the object is passed per object)",
    "path": "ee-legacy-binutils-la29-vsqrt-nolabel-laimm-v1/bin/ee-as",
    "version": "GNU assembler 2.9-ee-991111, locally patched: memmove + vsqrt + nolabel + laimm",
-   "sha256": "8c55ab9beeb4834c6cc0e841379b81930e329496f85893e8607d5b772c2b51ff",
+   "sha256": "5302d73c6a9ae8963cc4e5f1021b82189f26c2e8d597657d422b92ed8725ae43",
    "provenance": {
     "kind": "built_from_source_with_a_recorded_patch",
     "upstream": {
@@ -256,16 +268,17 @@
     },
     "rebuild": [
      "Check out the commit above (the `ee` binutils 2.9 tree it carries).",
-     "Apply `source_diff` below.",
+     "Apply `source_diff` below (its last three tc-mips.c hunks, the -mswap-fix option, apply after the first file's hunks).",
      "configure --target=ee --disable-nls --disable-shared, then build gas; install build/gas/as-new as ee-as (no strip).",
      "The build is not bit-reproducible across host compilers; the SHA-256 above is this project's build (host gcc 16.1.1).  A differently built ee-as that assembles the same bytes also reproduces the images, so the hash check can be relaxed with XENO_TOOLCHAIN_ALLOW=ee-as-la29-vsqrt (the build then says so)."
     ],
-    "source_diff": "--- a/gas/config/tc-mips.c\n+++ b/gas/config/tc-mips.c\n@@ -1624,7 +1624,6 @@\n \t  fragS *old_frag;\n \t  unsigned long old_frag_offset;\n \t  int i;\n-\t  struct insn_label_list *l;\n \n \t  old_frag = frag_now;\n \t  old_frag_offset = frag_now_fix ();\n@@ -1646,15 +1645,9 @@\n \t      frag_grow (40);\n \t    }\n \n-\t  for (l = insn_labels; l != NULL; l = l->next)\n-\t    {\n-\t      assert (S_GET_SEGMENT (l->label) == now_seg);\n-\t      l->label->sy_frag = frag_now;\n-\t      S_SET_VALUE (l->label, (valueT) frag_now_fix ());\n-\t      /* mips16 text labels are stored as odd.  */\n-\t      if (mips_opts.mips16)\n-\t\t++l->label->sy_value.X_add_number;\n-\t    }\n+\t  /* Leave any pending labels before the hazard nops (the\n+\t     original SCE assembler did not move them after the nops;\n+\t     mips_emit_delays still does).  */\n \n #ifndef NO_ECOFF_DEBUGGING\n \t  if (ECOFF_DEBUGGING)\n@@ -4144,6 +4137,25 @@\n \t  offset_expr.X_op = O_constant;\n \t}\n \n+      /* A base register plus a 16-bit immediate offset is a single\n+\t addiu (daddiu for dla or 64-bit addresses), as GNU as\n+\t 2.10-ee-001003-1 assembles it; backported from upstream\n+\t binutils 0c11417f (2002-08-09).  Every other case keeps the\n+\t expansion below.  */\n+      if (offset_expr.X_op == O_constant\n+\t  && breg != 0\n+\t  && offset_expr.X_add_number >= -0x8000\n+\t  && offset_expr.X_add_number < 0x8000)\n+\t{\n+\t  macro_build ((char *) NULL, &icnt, &offset_expr,\n+\t\t       ((dbl\n+\t\t\t || ! (bfd_arch_bits_per_address (stdoutput) == 32\n+\t\t\t       || mips_opts.isa < 3))\n+\t\t\t? \"daddiu\" : \"addiu\"),\n+\t\t       \"t,r,j\", treg, breg, (int) BFD_RELOC_LO16);\n+\t  return;\n+\t}\n+\n       if (treg == breg)\n \t{\n \t  tempreg = AT;\n@@ -11699,7 +11711,8 @@\n       fixptr = fragp->fr_literal + fragp->fr_fix;\n \n       if (new > 0)\n-\tmemcpy (fixptr - old, fixptr, new);\n+\t/* Expanded alternatives can overlap their final destination.  */\n+\tmemmove (fixptr - old, fixptr, new);\n \n       fragp->fr_fix += new - old;\n     }\n--- a/opcodes/mips-opc.c\n+++ b/opcodes/mips-opc.c\n@@ -242,7 +242,7 @@\n {\"vrxor\", \"X,8\",\t0x4a00043f, 0xff9f07ff,\t0, \t\tT5},\n {\"vsqd\",  \"&2K,(--4)K\",\t0x4a00037f, 0xfe0007ff,\t0, \t\tT5},\n {\"vsqi\",  \"&2K,(4++)K\",\t0x4a00037d, 0xfe0007ff,\t0, \t\tT5},\n-{\"vsqrt\", \"Q,7\",\t0x4a0003bd, 0xfe60ffff,\t0, \t\tT5},\n+{\"vsqrt\", \"Q,7\",\t0x4a2003bd, 0xfe60ffff,\t0, \t\tT5}, /* masked bits 21-22 are 01 */\n {\"vsub\",  \"&3K,2K,1K\",\t0x4a00002c, 0xfe00003f,\t0, \t\tT5},\n {\"vsubi\", \"&3K,2K,J\",\t0x4a000026, 0xfe1f003f,\t0, \t\tT5},\n {\"vsubq\", \"&3K,2K,Q\",\t0x4a000024, 0xfe1f003f,\t0, \t\tT5},\n",
+    "source_diff": "--- a/gas/config/tc-mips.c\n+++ b/gas/config/tc-mips.c\n@@ -1624,7 +1624,6 @@\n \t  fragS *old_frag;\n \t  unsigned long old_frag_offset;\n \t  int i;\n-\t  struct insn_label_list *l;\n \n \t  old_frag = frag_now;\n \t  old_frag_offset = frag_now_fix ();\n@@ -1646,15 +1645,9 @@\n \t      frag_grow (40);\n \t    }\n \n-\t  for (l = insn_labels; l != NULL; l = l->next)\n-\t    {\n-\t      assert (S_GET_SEGMENT (l->label) == now_seg);\n-\t      l->label->sy_frag = frag_now;\n-\t      S_SET_VALUE (l->label, (valueT) frag_now_fix ());\n-\t      /* mips16 text labels are stored as odd.  */\n-\t      if (mips_opts.mips16)\n-\t\t++l->label->sy_value.X_add_number;\n-\t    }\n+\t  /* Leave any pending labels before the hazard nops (the\n+\t     original SCE assembler did not move them after the nops;\n+\t     mips_emit_delays still does).  */\n \n #ifndef NO_ECOFF_DEBUGGING\n \t  if (ECOFF_DEBUGGING)\n@@ -4144,6 +4137,25 @@\n \t  offset_expr.X_op = O_constant;\n \t}\n \n+      /* A base register plus a 16-bit immediate offset is a single\n+\t addiu (daddiu for dla or 64-bit addresses), as GNU as\n+\t 2.10-ee-001003-1 assembles it; backported from upstream\n+\t binutils 0c11417f (2002-08-09).  Every other case keeps the\n+\t expansion below.  */\n+      if (offset_expr.X_op == O_constant\n+\t  && breg != 0\n+\t  && offset_expr.X_add_number >= -0x8000\n+\t  && offset_expr.X_add_number < 0x8000)\n+\t{\n+\t  macro_build ((char *) NULL, &icnt, &offset_expr,\n+\t\t       ((dbl\n+\t\t\t || ! (bfd_arch_bits_per_address (stdoutput) == 32\n+\t\t\t       || mips_opts.isa < 3))\n+\t\t\t? \"daddiu\" : \"addiu\"),\n+\t\t       \"t,r,j\", treg, breg, (int) BFD_RELOC_LO16);\n+\t  return;\n+\t}\n+\n       if (treg == breg)\n \t{\n \t  tempreg = AT;\n@@ -11699,7 +11711,8 @@\n       fixptr = fragp->fr_literal + fragp->fr_fix;\n \n       if (new > 0)\n-\tmemcpy (fixptr - old, fixptr, new);\n+\t/* Expanded alternatives can overlap their final destination.  */\n+\tmemmove (fixptr - old, fixptr, new);\n \n       fragp->fr_fix += new - old;\n     }\n--- a/opcodes/mips-opc.c\n+++ b/opcodes/mips-opc.c\n@@ -242,7 +242,7 @@\n {\"vrxor\", \"X,8\",\t0x4a00043f, 0xff9f07ff,\t0, \t\tT5},\n {\"vsqd\",  \"&2K,(--4)K\",\t0x4a00037f, 0xfe0007ff,\t0, \t\tT5},\n {\"vsqi\",  \"&2K,(4++)K\",\t0x4a00037d, 0xfe0007ff,\t0, \t\tT5},\n-{\"vsqrt\", \"Q,7\",\t0x4a0003bd, 0xfe60ffff,\t0, \t\tT5},\n+{\"vsqrt\", \"Q,7\",\t0x4a2003bd, 0xfe60ffff,\t0, \t\tT5}, /* masked bits 21-22 are 01 */\n {\"vsub\",  \"&3K,2K,1K\",\t0x4a00002c, 0xfe00003f,\t0, \t\tT5},\n {\"vsubi\", \"&3K,2K,J\",\t0x4a000026, 0xfe1f003f,\t0, \t\tT5},\n {\"vsubq\", \"&3K,2K,Q\",\t0x4a000024, 0xfe1f003f,\t0, \t\tT5},\n--- a/gas/config/tc-mips.c\n+++ b/gas/config/tc-mips.c\n@@ -365,6 +365,11 @@\n    equivalent to seeing no -g option at all.  */\n static int mips_debug = 0;\n \n+/* -mswap-fix: test INSN_SYNC with `&' instead of the upstream `&&'\n+   typo, so non-sync instructions may be moved into branch delay\n+   slots.  Off by default (default output is unchanged).  */\n+static int mips_swap_fix = 0;\n+\n /* The previous instruction.  */\n static struct mips_cl_insn prev_insn;\n \n@@ -2087,7 +2092,9 @@\n \t      || (mips_opts.mips16 && prev_insn_fixp)\n \t      /* If the previous instruction is a sync, sync.l, or \n \t\t sync.p, we can not swap. */\n-\t      || (prev_pinfo && INSN_SYNC))\n+\t      || (mips_swap_fix\n+\t\t  ? (prev_pinfo & INSN_SYNC) != 0\n+\t\t  : (prev_pinfo && INSN_SYNC)))\n \t    {\n \t      /* We could do even better for unconditional branches to\n \t\t portions of this object file; we could pick up the\n@@ -9222,6 +9229,8 @@\n   {\"no-m5400\", no_argument, NULL, OPTION_NO_M5400},\n \n #define OPTION_MABI (OPTION_MD_BASE + 38)\n+#define OPTION_MSWAP_FIX (OPTION_MD_BASE + 39)\n+  {\"mswap-fix\", no_argument, NULL, OPTION_MSWAP_FIX},\n   {\"mabi\", required_argument, NULL, OPTION_MABI},\n \n #define OPTION_CALL_SHARED (OPTION_MD_BASE + 7)\n@@ -9249,6 +9258,10 @@\n {\n   switch (c)\n     {\n+    case OPTION_MSWAP_FIX:\n+      mips_swap_fix = 1;\n+      break;\n+\n     case OPTION_TRAP:\n       mips_trap = 1;\n       break;\n",
     "patch_reasons": [
      "md_convert_frag copies an expanded alternative over its own destination; memcpy corrupts the overlap on a modern libc, memmove does not.  Behaviour only, not an encoding change.",
      "The vsqrt base opcode carries bits 21-22 = 01 in every original word, as GNU as 2.10-ee-001003-1 and ps2dev binutils encode it; the 2.9 table has 00 and assembles the wrong word silently.",
      "append_insn moved every label pending before an instruction to after the hazard nops it inserts; the original objects keep such labels before the nop (14 mtc1 sites, e.g. CardMainProc 0x00A085E8), so the loop is removed (mips_emit_delays unchanged; user decision 2026-09-24, reports/as-la29-vsqrt-nolabel.md). The build embeds its absolute source paths; the pinned hash is this project's build from .work/tu-migration/as-nolabel-adopt/build/src/tc-mips.c.",
-     "macro() case M_LA_AB expanded `la $t,CONST($b)` with a signed 16-bit CONST as `li; addu`; GNU as 2.10-ee-001003-1 (the archive of the project cc1) assembles it as one `addiu $t,$b,CONST` (daddiu for dla), through the opcode-table alias `la t,o(b)` that upstream binutils 0c11417f (2002-08-09) turned into this macro() shortcut. Backported for breg != 0 and in-range constants only; out-of-range constants keep li + addu, which is the only form the original objects contain (user decision 2026-09-25, reports/as-la-imm16.md). The build embeds its absolute source paths; the pinned hash is this project's build from .work/tu-migration/as-la-imm-adopt/build/src/tc-mips.c."
+     "macro() case M_LA_AB expanded `la $t,CONST($b)` with a signed 16-bit CONST as `li; addu`; GNU as 2.10-ee-001003-1 (the archive of the project cc1) assembles it as one `addiu $t,$b,CONST` (daddiu for dla), through the opcode-table alias `la t,o(b)` that upstream binutils 0c11417f (2002-08-09) turned into this macro() shortcut. Backported for breg != 0 and in-range constants only; out-of-range constants keep li + addu, which is the only form the original objects contain (user decision 2026-09-25, reports/as-la-imm16.md). The build embeds its absolute source paths; the pinned hash is this project's build from .work/tu-migration/as-la-imm-adopt/build/src/tc-mips.c.",
+     "optional -mswap-fix flag, off by default: append_insn tests the previous instruction with `prev_pinfo && INSN_SYNC` (an upstream typo that refuses every delay-slot swap after a macro expansion); with -mswap-fix it tests `prev_pinfo & INSN_SYNC`, as the original objects of main/runtime, main/camera and ov11/mini_g were assembled. Without the flag the output is unchanged for every object; the TUs that need it are listed in config/tu/as-flags.json."
     ],
     "license": "GPL-2.0-or-later (binutils)."
    }

@@ -21,9 +21,162 @@ static int device_check_sync(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov02/logo", hdd_check);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/logo", mc_check);
+extern int xglMcRequest(int port, int type, void *param, int *result);
+extern void xglFontPrint(int x, int y, int color, const char *text);
+extern void xglSoundEffectNormalDirect(int effect_id);
+extern PadPrefix PadData;
+extern char D_00A11358[];
+extern char D_00A113C8[];
+extern char D_00A113E8[];
+extern char D_00A11430[];
+extern char D_00A11478[];
+extern char D_00A114C8[];
+extern char D_00A11520[];
+typedef union McCheckStat {
+    int i;
+    s16 s[2];
+} McCheckStat;
+typedef struct McCheckReq {
+    int dir;
+    int pad;
+    int work;
+} McCheckReq;
 
-INCLUDE_ASM("asm/nonmatchings/ov02/logo", LogoFirst);
+static void mc_check(void)
+{
+    s16 st[2];
+    int free[2];
+    McCheckReq req;
+    int files[2];
+    s16 st2[2];
+    char *msg;
+    char *info;
+    int err;
+    int i;
+
+    i = 7;
+    do {
+        i--;
+        ((McCheckStat *)st)->i = device_check_sync();
+    } while (i >= 0);
+    free[0] = 0;
+    msg = 0;
+    free[1] = 0;
+    files[0] = 0;
+    files[1] = 0;
+    do {
+        xglMcRequest(0, 1, 0, &free[0]);
+        xglMcRequest(1, 1, 0, &free[1]);
+        req.dir = -1;
+        req.work = (int)WorkEnd;
+        xglMcRequest(0, 2, &req, &files[0]);
+        xglMcRequest(1, 2, &req, &files[1]);
+        do {
+            ((McCheckStat *)st)->i = device_check_sync();
+        } while (st[0] == 0xFF || st[0] == 0x80 || st[1] == 0xFF || st[1] == 0x80);
+        i = 7;
+        do {
+            i--;
+            ((McCheckStat *)st)->i = device_check_sync();
+        } while (i >= 0);
+        info = D_00A11358;
+        if (st[0] == 1 || st[0] == 2 || st[1] == 1 || st[1] == 2) {
+            goto ok;
+        }
+        msg = D_00A113C8;
+        goto print;
+    slot2:
+        if (st[1] == 1) {
+            if (files[1] > 0) {
+                goto none;
+            }
+            err |= 2;
+            if (free[1] >= 0xA5) {
+                goto none;
+            }
+        }
+        goto check;
+    ok:
+        err = 0;
+        if (st[0] != 2 && st[1] != 2) {
+            if (st[0] == 1) {
+                if (files[0] > 0 || free[0] >= 0xA5) {
+                    goto check;
+                }
+                err = 1;
+            }
+            goto slot2;
+        }
+    none:
+        err = 0;
+        check:
+            switch (err) {
+            case 0:
+                msg = 0;
+                break;
+            case 1:
+                msg = D_00A113E8;
+                break;
+            case 2:
+                msg = D_00A11430;
+                break;
+            case 3:
+                msg = D_00A11478;
+                break;
+            }
+    print:
+        while (msg != 0) {
+            xglFontPrint(0x10, 0x40, -1, msg);
+            if (info != 0) {
+                xglFontPrintDirectOT(-1, info);
+            }
+            xglFontPrintDirectOT(-1, D_00A114C8);
+            if (PadData.half_2a & 0x20) {
+                msg = 0;
+                xglSoundEffectNormalDirect(1);
+                break;
+            }
+            if (PadData.half_2a & 0x40) {
+                xglSoundEffectNormalDirect(2);
+                do {
+                    *(int *)st2 = device_check_sync();
+                    xglFontPrint(0x10, 0x40, -1, D_00A11520);
+                    if (PadData.half_2a & 0x40) {
+                        xglSoundEffectNormalDirect(1);
+                        break;
+                    }
+                } while (*(int *)st == *(int *)st2);
+                break;
+            }
+            *(int *)st2 = device_check_sync();
+            if (*(int *)st != *(int *)st2) {
+                break;
+            }
+        }
+    } while (msg != 0);
+    device_check_sync();
+}
+
+extern void xglRenderClearColor(u32 color);
+extern void xglRenderClearFrame(void);
+extern void xglRenderClearOff(void);
+extern int D_00A115A0;
+static int hdd_check(void);
+void Logo(void);
+
+void LogoFirst(void)
+{
+    xglRenderClearFrame();
+    xglRenderClearColor(0x80000000);
+    xglSleep();
+    xglRenderClearOff();
+    if (hdd_check())
+    {
+        mc_check();
+    }
+    xglFontPrintDirectOT(-1, &D_00A115A0);
+    Logo();
+}
 
 typedef struct LogoMovieInfo {
     u8 unmodeled_00[0x48];

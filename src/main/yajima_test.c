@@ -159,7 +159,45 @@ INCLUDE_ASM("asm/main/nonmatchings/yajima_test", FontTestP2);
 
 INCLUDE_ASM("asm/main/nonmatchings/yajima_test", FontTest);
 
-INCLUDE_ASM("asm/main/nonmatchings/yajima_test", UmlDispTestSub);
+typedef struct UmlTestEnv {
+    int pad[12];
+    int a0, a1, a2, a3;
+    int x0, y0, z0, w0;
+    int x1, y1, z1;
+} UmlTestEnv;
+extern UmlTestEnv TestEnv_42;
+typedef struct UmlTestArg {
+    char pad[8];
+    short x;
+    short y;
+    short w;
+    short h;
+    long z;
+} UmlTestArg;
+
+static void UmlDispTestSub(XglPacket **packet, UmlTestArg *a)
+{
+    UmlTestEnv *e = &TestEnv_42;
+    int x0, y0, x1, y1;
+    long z;
+
+    x1 = (a->x + a->w) * 16;
+    y1 = (a->y + a->h) * 16;
+    x0 = a->x * 16;
+    y0 = a->y * 16;
+    z = a->z - 1;
+    e->a2 = 0x20;
+    e->a3 = 0x80;
+    e->x0 = x0;
+    e->y0 = y0;
+    e->x1 = x1;
+    e->y1 = y1;
+    e->a0 = 0;
+    e->a1 = 0;
+    e->z0 = (int)z;
+    e->z1 = (int)z;
+    sceVif1PkAddDirectDataN(*packet, &TestEnv_42, 6);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/yajima_test", UmlDispTest);
 
@@ -439,7 +477,25 @@ static char *xtxdec_nextline(char *text)
     return (unsigned char)*text ? text : 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/yajima_test", xtxdec_getdec);
+static char *xtxdec_getdec(char *s, int *out)
+{
+    int n = 0;
+
+    while (*s == ' ' || *s == '\t') {
+        s++;
+    }
+    while ((unsigned char)(*s - '0') < 10) {
+        n = n * 10 + *s - '0';
+        s++;
+    }
+    if (out) {
+        *out = n;
+    }
+    while (*s != ',') {
+        s++;
+    }
+    return s + 1;
+}
 
 static void xtxdec_put4byte(LittleEndianWord *destination, int value)
 {

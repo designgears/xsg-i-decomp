@@ -2,7 +2,18 @@
 #include "shared.h"
 #include "matrix_print.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/matrix_print", MATRIX_print);
+extern int printf(const char *format, ...);
+extern char D_004C23D8[];
+
+void MATRIX_print(float m[4][4])
+{
+    int i;
+
+    for (i = 3; i >= 0; i--) {
+        printf(D_004C23D8, m[0][0], m[0][1], m[0][2], m[0][3]);
+        m++;
+    }
+}
 
 /*
  * The MATRIX initializer pair writes a four-by-four float storage block in

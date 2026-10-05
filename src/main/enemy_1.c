@@ -46,7 +46,22 @@ void Enemy_Damage_Explosion(EnemyActor *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_1", Enemy_Damage_Electric);
+void Enemy_Damage_Electric(EnemyActor *actor)
+{
+    EnemyWorkEntry *work = &enepc[actor->number];
+    int count = work->hit_count + 1;
+    short limit = work->hit_limit;
+
+    work->hit_count = count;
+    if ((short)count >= limit) {
+        u32 flags = actor->flags;
+
+        work->state_40.alert_level = 0;
+        actor->flags = flags & ~ACTOR_FLAG_AILMENT_ACTIVE;
+        Homing_Search(actor);
+        Enemy_ActionReady(actor, 2);
+    }
+}
 
 void Enemy_Damage_Seal(EnemyActor *actor)
 {
@@ -100,7 +115,64 @@ void Enemy_Found(EnemyActor *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_1", Enemy_Tentacle);
+extern float cosf(float angle);
+extern signed char FLAG_FRAME_60;
+extern unsigned char MapUnit[];
+void Debug_Mark(Vector4 *pos, void *model);
+int CrossCheckMapUnit(Vector4 *a, Vector4 *b);
+void SendBrokenSignal(void *unit);
+void Check_Encount(EnemyActor *actor, int enable, signed char command);
+
+void Enemy_Tentacle(EnemyActor *actor)
+{
+    EnemyWorkEntry *work = &enepc[actor->number];
+    Vector4 point;
+    Vector4 mark;
+    float dist;
+    float length;
+    float base;
+    float step;
+    float a;
+    short i;
+    int unit;
+    char *g;
+    short count;
+
+    if (*(short *)((char *)work + 6) <= (short)work->hit_count &&
+        (short)work->hit_count <= *(short *)((char *)work + 8)) {
+        dist = Get_Distance(&actor->position, &GameLoopState[1]->position);
+        length = actor->body_radius + ((*(float *)work - actor->body_radius) *
+                         (float)((short)work->hit_count - *(short *)((char *)work + 6))) /
+                        (float)(*(short *)((char *)work + 8) - *(short *)((char *)work + 6));
+        actor->target_angle = Get_Angle(&actor->position, &GameLoopState[1]->position);
+        if (FLAG_FRAME_60 != 0) {
+            for (i = 0; i < 64; i++) {
+                a = (float)i * 6.2831855f / 64.0f;
+                mark.x = actor->position.x + sinf(a) * length;
+                mark.y = actor->position.y + 1.0f;
+                mark.z = actor->position.z + cosf(a) * length;
+                mark.w = 1.0f;
+                Debug_Mark(&mark, AdrsEnemySphere);
+            }
+        }
+        Get_Point_By_AngleLength(&actor->position, &point, actor->angle, length);
+        unit = CrossCheckMapUnit(&actor->position, &point);
+        if (unit != -1) {
+            SendBrokenSignal(MapUnit + unit * 0x300);
+        }
+        if (*(short *)((char *)GameLoopState[1] + 0x9F0) == 0 && dist < length) {
+            Check_Encount(actor, 0, 0);
+        } else {
+            g = (char *)GameLoopState;
+            *(short *)(g + 0x29F94) = -1;
+        }
+    }
+    count = work->hit_count;
+    work->hit_count++;
+    if (count >= work->hit_limit) {
+        Enemy_ActionReady(actor, 1);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/enemy_1", Enemy_Chase);
 

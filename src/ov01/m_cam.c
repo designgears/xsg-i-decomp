@@ -60,13 +60,81 @@ void *MCamGetSysCam(void)
     return sysCam;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamGetCurrentBaseCoord);
+extern Vector4 D_00A5B200;
+extern Vector4 D_00A5B210;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamGetCurrentCoord);
+Vector4 *MCamGetCurrentBaseCoord(Vector4 *out, int type)
+{
+    Vector4 *src;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamGetCurrentAngle);
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    src = &D_00A5B200;
+    __asm__ __volatile__("" : "+r"(src));
+    if (type == 0) goto copy;
+    if (type != 1) goto end;
+    src = &D_00A5B210;
+copy:
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+end:
+    return out;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamGetCurrentEye);
+extern Vector4 D_00A5B230;
+extern Vector4 D_00A5B240;
+
+Vector4 *MCamGetCurrentCoord(Vector4 *out, int type)
+{
+    Vector4 *src;
+
+    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(out) : "memory");
+    src = &D_00A5B230;
+    __asm__ __volatile__("" : "+r"(src));
+    if (type == 0) goto copy;
+    if (type != 1) goto end;
+    src = &D_00A5B240;
+copy:
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+end:
+    out->w = 1.0f;
+    return out;
+}
+
+extern Vector4 D_00A5B200;
+extern Vector4 D_00A5B210;
+extern Vector4 D_00A5B230;
+extern Vector4 D_00A5B240;
+extern Vector4 D_00A5B1E0;
+extern Vector4 D_00A5B1F0;
+
+Vector4 *MCamGetCurrentAngle(Vector4 *out, int type)
+{
+    Vector4 *src;
+
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    src = &D_00A5B1E0;
+    __asm__ __volatile__("" : "+r"(src));
+    if (type == 0) goto copy;
+    if (type != 1) goto end;
+    src = &D_00A5B1F0;
+copy:
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+end:
+    return out;
+}
+
+extern Vector4 D_00A5B250;
+
+Vector4 *MCamGetCurrentEye(Vector4 *out)
+{
+    __asm__ __volatile__(
+        "lq $8,0(%1)\n\t"
+        "sq $8,0(%0)\n\t"
+        :
+        : "r"(out), "r"(&D_00A5B250)
+        : "$8", "memory"
+    );
+    return out;
+}
 
 float MCamGetLengthActor(int selector)
 {
@@ -125,20 +193,162 @@ int MCamReleaseControl(void)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamStoreParams);
+void MCamStoreParams(void)
+{
+    unsigned char *cam;
+    unsigned char *params;
+    float baseZ, baseX;
+
+    /* 12-byte ld/lw copies: the original's block-move template with 8-byte
+     * alignment, which cc1 only emits as move_by_pieces from C. */
+    __asm__ __volatile__(
+        "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
+        : : "r"(sysCamBuff + 0xD0), "r"(camParams + 0x1B0) : "$8", "$9", "memory");
+    __asm__ __volatile__(
+        "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
+        : : "r"(sysCamBuff + 0xA0), "r"(camParams + 0x1E0) : "$8", "$9", "memory");
+    cam = sysCamBuff;
+    params = camParams;
+    baseX = *(float *)(params + 0x1F0);
+    baseZ = *(float *)(params + 0x1F4);
+    *(float *)(cam + 0x94) = baseZ;
+    *(float *)(cam + 0xA8) = baseX;
+}
 
 int MCamIsActive(void)
 {
     return camFlags & CAM_FLAG_ACTIVE;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamSet);
+extern const char D_00A50F20[];
+extern float D_00A5B270;
+static void MCamExec_SetParams_Base(void);
+typedef struct MCamSetBlock {
+    long long v[14];
+} MCamSetBlock;
+typedef struct MCamSetTail {
+    long long v[6];
+} MCamSetTail;
+typedef struct MCamSetPoint {
+    MCamSetBlock base;
+    MCamSetTail tail;
+    float fA0;
+    float fA4;
+    unsigned char pad[8];
+} MCamSetPoint;
+typedef struct MCamSetParamsView {
+    MCamSetBlock p0;
+    MCamSetTail t0;
+    unsigned char pad_a0[0x10];
+    MCamSetBlock p1;
+    MCamSetTail t1;
+    unsigned char pad_150[0xA4];
+    float pers;
+} MCamSetParamsView;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamMove);
+void MCamSet(unsigned int point, MCamSetPoint *src)
+{
+    float f;
+    MCamSetParamsView *view;
+    switch (point) {
+    case 0:
+        ((MCamSetParamsView *)camParams)->p0 = src->base;
+        ((MCamSetParamsView *)camParams)->t0 = src->tail;
+        break;
+    case 1:
+        ((MCamSetParamsView *)camParams)->p1 = src->base;
+        ((MCamSetParamsView *)camParams)->t1 = src->tail;
+        break;
+    case 2:
+        D_00A5B270 = src->fA0;
+        break;
+    case 3:
+        view = (MCamSetParamsView *)camParams;
+        if (src->fA4 != 0.0f) {
+            f = src->fA4 * 0.017453292f;
+        } else {
+            f = 0.6981317f;
+        }
+        view->pers = f;
+        break;
+    default:
+        MOutputDebugStringWarn(D_00A50F20);
+        return;
+    }
+    MCamExec_SetParams_Base();
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamStopMove);
+struct MCamCoordRequest;
+struct MCamBankRequest;
+struct MCamMoveRequest;
+extern char D_00A50F38[];
+extern char D_00A50F60[];
+static void MCamMove_Coord(int which, struct MCamCoordRequest *req);
+static void MCamMove_Bank(struct MCamBankRequest *request);
+static void MCamMove_Pers(struct MCamMoveRequest *request);
+typedef struct {
+    unsigned char unmodeled_00[0xB8];
+    int frames;
+} MCamMoveFrames;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamIsMoving);
+void MCamMove(unsigned int point, struct MCamCoordRequest *req)
+{
+    if (((MCamMoveFrames *)req)->frames == 0) {
+        MOutputDebugStringWarn(D_00A50F38);
+        ((MCamMoveFrames *)req)->frames = 1;
+    }
+    switch (point) {
+    case 0:
+        MCamMove_Coord(0, req);
+        break;
+    case 1:
+        MCamMove_Coord(1, req);
+        break;
+    case 2:
+        MCamMove_Bank((struct MCamBankRequest *)req);
+        break;
+    case 3:
+        MCamMove_Pers((struct MCamMoveRequest *)req);
+        break;
+    default:
+        MOutputDebugStringWarn(D_00A50F60);
+        break;
+    }
+}
+
+extern char D_00A50F98[];
+
+void MCamStopMove(unsigned int type)
+{
+    int mask;
+    switch (type) {
+    case 0: mask = 0x100; break;
+    case 1: mask = 0x200; break;
+    case 2: mask = 0x400; break;
+    case 3: mask = 0x800; break;
+    default:
+        MOutputDebugStringWarn(D_00A50F98);
+        return;
+    }
+    camFlags &= ~mask;
+}
+
+extern const char D_00A50FB8[];
+
+int MCamIsMoving(unsigned int type)
+{
+    int mask;
+    switch (type) {
+    case 0: mask = 0x100; break;
+    case 1: mask = 0x200; break;
+    case 2: mask = 0x400; break;
+    case 3: mask = 0x800; break;
+    default:
+        MOutputDebugStringWarn(D_00A50FB8);
+        return 0;
+    }
+    return (camFlags & mask) != 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamShake);
 
@@ -147,11 +357,132 @@ int MCamIsShaking(void)
     return (camFlags >> CAM_SHAKE_BIT) & 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamGetActorCoord);
+extern void sefGetNullPosition(Vector4 *out, void *actor, unsigned int id, int flag);
+extern float fmodf(float x, float y);
+extern const char D_00A50FD8[];
+typedef struct MCamActorView {
+    unsigned char unmodeled_00[0x10];
+    Vector4 position;
+    unsigned char unmodeled_20[0x34];
+    float rotY;
+} MCamActorView;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamCalcBaseCoord);
+static Vector4 *MCamGetActorCoord(Vector4 *out, MCamActorView *actor, int null)
+{
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    if (actor == 0) {
+        MOutputDebugStringWarn(D_00A50FD8);
+        return out;
+    }
+    if (null == 0) {
+        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&actor->position), "r"(out) : "$8", "memory");
+    } else {
+        sefGetNullPosition(out, actor, null - 1, 0);
+    }
+    out->w = fmodf(actor->rotY + 3.1415927f, 6.283185f);
+    return out;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamCalcCoord);
+extern Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter);
+extern float MMathCalcDistXZ(const Vector4 *first, const Vector4 *second);
+extern float MMathCalcDir(const Vector4 *from, const Vector4 *to);
+static float MCamGetAtkRange(int id);
+static float MCamGetDefRange(int id);
+typedef struct MCamBaseParams {
+    unsigned int type;
+    unsigned char unmodeled_04[0xC];
+    Vector4 position;
+    MCamActorView *actor;
+    unsigned char unmodeled_24[4];
+    int null;
+    MCamActorView *actorA;
+    int idA;
+    int nullA;
+    MCamActorView *actorB;
+    int idB;
+    int nullB;
+    unsigned char unmodeled_44[0x28];
+    float ratio;
+} MCamBaseParams;
+
+static float MCamCalcBaseCoord(Vector4 *out, MCamBaseParams *params)
+{
+    Vector4 a;
+    Vector4 b;
+    float dist;
+    float t;
+
+    dist = 0.0f;
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    switch (params->type) {
+    case 0:
+        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&params->position), "r"(out) : "$8", "memory");
+        out->w = dist;
+        break;
+    case 1:
+        MCamGetActorCoord(out, params->actor, params->null);
+        break;
+    case 2:
+        MCamGetActorCoord(&a, params->actorA, params->nullA);
+        MCamGetActorCoord(&b, params->actorB, params->nullB);
+        MMathVectorInterpolation(out, &a, &b, params->ratio);
+        dist = MMathCalcDistXZ(&a, &b);
+        out->w = MMathCalcDir(&b, &a);
+        break;
+    case 3:
+        MCamGetActorCoord(&a, params->actorA, params->nullA);
+        MCamGetActorCoord(&b, params->actorB, params->nullB);
+        dist = MMathCalcDistXZ(&a, &b);
+        t = (dist + MCamGetAtkRange(params->idA) - MCamGetDefRange(params->idB)) * 0.5f;
+        if (dist == 0.0f || t == 0.0f) {
+            __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&a), "r"(out) : "$8", "memory");
+        } else {
+            MMathVectorInterpolation(out, &a, &b, t / dist);
+        }
+        out->w = MMathCalcDir(&b, &a);
+        break;
+    }
+    return dist;
+}
+
+extern Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vector4 *second);
+extern Vector4 *MMathCalcOffsetXYZ(Vector4 *destination, const Vector4 *first, const Vector4 *second);
+typedef struct MCamOffsetParams {
+    unsigned int type;
+    unsigned char unmodeled_04[0xC];
+    Vector4 offset;
+    float distance;
+    float angleA;
+    float angleB;
+    unsigned char unmodeled_2C[0x14];
+} MCamOffsetParams;
+typedef struct MCamCoordParams {
+    MCamBaseParams base;
+    MCamOffsetParams offset;
+} MCamCoordParams;
+
+static float MCamCalcCoord(Vector4 *out, MCamCoordParams *params)
+{
+    MCamOffsetParams *off = &params->offset;
+    float dist;
+    Vector4 v;
+
+    dist = MCamCalcBaseCoord(out, &params->base);
+    switch (off->type) {
+    case 0:
+        break;
+    case 1:
+        MMathCalcOffsetXYZ(out, out, &params->offset.offset);
+        break;
+    case 2:
+        v.x = off->angleA;
+        v.y = off->angleB;
+        v.w = off->distance;
+        MMathCalcOffset(out, out, &v);
+        break;
+    }
+    return dist;
+}
 
 static float MCamGetAtkRange(int id)
 {
@@ -179,15 +510,128 @@ INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamExec_Control);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamExec_SetParams);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamExec_SetParams_Base);
+extern Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to);
+
+static void MCamExec_SetParams_Base(void)
+{
+    char *base = (char *)&D_00A5B200 - 0x180;
+
+    *(float *)(base + 0x1A0) = MCamCalcBaseCoord((Vector4 *)(base + 0x180), (MCamBaseParams *)base);
+    *(float *)(base + 0x1A4) = MCamCalcBaseCoord((Vector4 *)(base + 0x190), (MCamBaseParams *)(base + 0xB0));
+    MCamCalcCoord((Vector4 *)(base + 0x1B0), (MCamCoordParams *)base);
+    MCamCalcCoord((Vector4 *)(base + 0x1C0), (MCamCoordParams *)(base + 0xB0));
+    MMathCalcAngleCam((Vector4 *)(base + 0x160), (Vector4 *)(base + 0x1B0), (Vector4 *)(base + 0x1C0));
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(base + 0x160), "r"(base + 0x1E0) : "$8", "memory");
+    *(float *)(base + 0x1E8) = *(float *)(base + 0x1F0);
+    MMathCalcAngleCam((Vector4 *)(base + 0x170), (Vector4 *)(base + 0x1C0), (Vector4 *)(base + 0x1B0));
+}
 
 static void MCamExec_DispParams(void)
 {
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamMove_Coord);
+enum MCamOffsetKind { MCAM_OFFSET_NONE, MCAM_OFFSET_XYZ, MCAM_OFFSET_ANGLE };
+typedef struct MCamInt3 {
+    int v[3];
+} MCamInt3;
+typedef struct MCamCoordSlot {
+    MCamCoordParams p __attribute__((aligned(16)));
+} MCamCoordSlot;
+typedef struct MCamCoordMove {
+    MCamCoordSlot from;
+    MCamCoordSlot to;
+    Vector4 other;
+    Vector4 start;
+    Vector4 end;
+    Vector4 current;
+    int extra[4];
+} MCamCoordMove;
+typedef struct MCamCoordRequest {
+    MCamCoordSlot params;
+    int extra[3];
+    short shake;
+} MCamCoordRequest;
+extern MCamCoordMove D_00A5B280;
+extern MCamCoordMove D_00A5B430;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamMove_Bank);
+static void MCamMove_Coord(int which, MCamCoordRequest *req)
+{
+    MCamCoordMove *m;
+    MCamCoordParams *other;
+    MCamCoordSlot *cur;
+    int moveFlag;
+    int shakeFlag;
+    short shake;
+
+    if (which == 0) {
+        moveFlag = 0x100;
+        m = &D_00A5B280;
+        shakeFlag = 0x2000;
+        other = (MCamCoordParams *)((char *)m - 0x150);
+        cur = (MCamCoordSlot *)((char *)m - 0x200);
+    } else {
+        moveFlag = 0x200;
+        m = &D_00A5B430;
+        shakeFlag = 0x4000;
+        other = (MCamCoordParams *)((char *)m - 0x3B0);
+        cur = (MCamCoordSlot *)((char *)m - 0x300);
+    }
+    m->from = *cur;
+    m->to = req->params;
+    MCamCalcCoord(&m->other, other);
+    MCamCalcCoord(&m->start, &m->from.p);
+    MCamCalcCoord(&m->end, &m->to.p);
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->start), "r"(&m->current) : "$8", "memory");
+    {
+        int z = req->extra[2];
+        int x = req->extra[0];
+        int y = req->extra[1];
+        m->extra[0] = x;
+        m->extra[1] = y;
+        m->extra[2] = z;
+        m->extra[3] = 0;
+    }
+    cur->p.base.type = 0;
+    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->current), "r"(&cur->p.base.position) : "$8", "memory");
+    shake = req->shake;
+    {
+        int *flags = &camFlags;
+        *(enum MCamOffsetKind *)&cur->p.offset.type = MCAM_OFFSET_NONE;
+        *flags |= moveFlag;
+        if (shake != 0) {
+            *flags |= shakeFlag;
+        }
+    }
+}
+
+extern char D_00A50F98[];
+extern MCamMoveState D_00A5B5E0;
+typedef struct MCamBankRequest {
+    unsigned char unmodeled_00[0xA0];
+    float bank;
+    unsigned char unmodeled_a4[0xB4 - 0xA4];
+    int mode;
+    int duration;
+} MCamBankRequest;
+
+static void MCamMove_Bank(MCamBankRequest *request)
+{
+  MCamMoveState *state = &D_00A5B5E0;
+  float start;
+  int mode;
+  int duration;
+  float bank;
+  start = *((float *) (((unsigned char *) state) - 0x370));
+  state->start = start;
+  duration = request->duration;
+  mode = request->mode;
+  bank = request->bank;
+  state->current = state->start;
+  camFlags |= 0x400;
+ do { state->mode = mode; state->duration = duration; } while (0);
+  (&D_00A5B5E0)->end = bank;
+  (&D_00A5B5E0)->elapsed = 0;
+}
 
 /*
  * MCamMoveProc_Pers (below) steps this move state every frame; this
@@ -317,7 +761,78 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     return ratio;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamMoveProc_Coord);
+extern Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to);
+extern float MMathCalcDist(const Vector4 *first, const Vector4 *second);
+extern float MMathCalcRotNear(float first, float second);
+static inline void MCamVecSub(Vector4 *dst, Vector4 *a, Vector4 *b)
+{
+    __asm__ __volatile__(
+        "lqc2 vf1,0(%1)\n\t"
+        "lqc2 vf2,0(%2)\n\t"
+        "vsub.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
+        "sqc2 vf1,0(%0)"
+        : : "r"(dst), "r"(a), "r"(b) : "memory");
+}
+static inline void MCamVecScale(Vector4 *dst, Vector4 *a, float t)
+{
+    __asm__ __volatile__(
+        "lqc2 vf1,0(%1)\n\t"
+        "mfc1 $8,%2\n\t"
+        "qmtc2.ni $8,vf2\n\t"
+        "vmulx.xyz vf1xyz,vf1xyz,vf2x\n\t"
+        "sqc2 vf1,0(%0)"
+        : : "r"(dst), "r"(a), "f"(t) : "$8", "memory");
+}
+static inline void MCamVecAdd(Vector4 *dst, Vector4 *a, Vector4 *b)
+{
+    __asm__ __volatile__(
+        "lqc2 vf1,0(%1)\n\t"
+        "lqc2 vf2,0(%2)\n\t"
+        "vadd.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
+        "sqc2 vf1,0(%0)"
+        : : "r"(dst), "r"(a), "r"(b) : "memory");
+}
+
+static int MCamMoveProc_Coord(MCamCoordMove *m)
+{
+    Vector4 step;
+    Vector4 origin;
+    Vector4 cur;
+    Vector4 tmp;
+    Vector4 offs;
+    float ratio;
+
+    ratio = MCamMoveProc_CalcRatio(m->extra[1], ++m->extra[3], m->extra[2]);
+    MCamCalcCoord(&cur, &m->to.p);
+    MCamVecSub(&tmp, &cur, &m->end);
+    MCamVecScale(&step, &tmp, ratio);
+    switch (m->extra[0]) {
+    case 0:
+        MMathVectorInterpolation(&cur, &m->start, &m->end, ratio);
+        MCamVecAdd(&m->current, &cur, &step);
+        break;
+    case 1:
+        __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&origin) : "memory");
+        __asm__ __volatile__(
+            "ld $8, 0(%0)\n\t"
+            "lw $9, 8(%0)\n\t"
+            "sd $8, 0(%1)\n\t"
+            "sw $9, 8(%1)"
+            : : "r"(&m->other), "r"(&origin) : "$8", "$9", "memory");
+        MMathCalcAngle(&cur, &origin, &m->start);
+        cur.w = MMathCalcDist(&origin, &m->start);
+        MMathCalcAngle(&tmp, &origin, &m->end);
+        tmp.w = MMathCalcDist(&origin, &m->end);
+        __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&offs) : "memory");
+        offs.x = cur.x + MMathCalcRotNear(cur.x, tmp.x) * ratio;
+        offs.y = cur.y + MMathCalcRotNear(cur.y, tmp.y) * ratio;
+        offs.w = cur.w + (tmp.w - cur.w) * ratio;
+        MMathCalcOffset(&cur, &origin, &offs);
+        MCamVecAdd(&m->current, &cur, &step);
+        break;
+    }
+    return (unsigned int)m->extra[3] < (unsigned int)m->extra[2];
+}
 
 static int MCamMoveProc_Bank(MCamMoveState *state)
 {

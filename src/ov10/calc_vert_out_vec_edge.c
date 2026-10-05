@@ -18,9 +18,121 @@ extern int CardMainInit(CardGameWork *work);
 extern int CardMainProc(CardGameWork *work);
 extern int printf(const char *format, ...);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/calc_vert_out_vec_edge", CalcVertOutVecEdge);
+typedef struct {
+    float pos[4];
+    float nrm[4];
+} CvVert;
 
-INCLUDE_ASM("asm/nonmatchings/ov10/calc_vert_out_vec_edge", yNewRenderInit);
+void CalcVertOutVecEdge(CvVert *vtx, int num, unsigned short *edge)
+{
+    CvVert *v = vtx;
+    int i;
+    int n;
+    int k;
+    CvVert *o;
+    float d[3];
+    float len;
+
+    if (num > 0) {
+        i = num;
+        do {
+            k = *edge++;
+            v->nrm[0] = v->nrm[1] = v->nrm[2] = 0.0f;
+            if (k != 0) {
+            n = k;
+            do {
+                o = (CvVert *)((*edge++ << 5) + (int)vtx);
+                d[0] = v->pos[0] - o->pos[0];
+                d[1] = v->pos[1] - o->pos[1];
+                d[2] = v->pos[2] - o->pos[2];
+                len = __builtin_sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+                v->nrm[0] += d[0] / len;
+                v->nrm[1] += d[1] / len;
+                v->nrm[2] += d[2] / len;
+            } while (--n != 0);
+            }
+            len = __builtin_sqrtf(v->nrm[0] * v->nrm[0] + v->nrm[1] * v->nrm[1] + v->nrm[2] * v->nrm[2]);
+            v->nrm[0] /= len;
+            v->nrm[1] /= len;
+            v->nrm[2] /= len;
+            v++;
+        } while (--i != 0);
+    }
+}
+
+typedef struct {
+    int pad[8];
+    int r, g, b, a;
+} YClearEnv;
+typedef struct {
+    int unk0;
+    int unk4;
+    int pad[2];
+    float mtx[4][4];
+} YModel;
+typedef struct StudioLight StudioLight;
+extern YClearEnv ClearEnv;
+extern YModel s_aModel[10];
+extern float s_fvInt[4];
+extern float s_fvPos[4];
+extern float s_inMulCol[4];
+extern float s_inMulColAdd[4];
+extern int s_nPause_00A42038;
+extern void xglStudioInit(void);
+extern void xglStudioChange(int studio_index);
+extern void xglStudioGetLight(StudioLight **light_out);
+extern void xglLightSetDefault(StudioLight *light);
+extern void xglStudioMainCameraInit(void);
+extern void xglMatrixUnit(float matrix[4][4]);
+
+void yNewRenderInit(void)
+{
+    StudioLight *light;
+    int i;
+    int off;
+    char *base;
+    char *mbase;
+    YModel *p;
+
+    ClearEnv.a = 0x80;
+    ClearEnv.g = 0;
+    ClearEnv.b = 0;
+    ClearEnv.r = 0;
+    xglStudioInit();
+    xglStudioChange(0);
+    xglStudioGetLight(&light);
+    xglLightSetDefault(light);
+    s_nPause_00A42038 = 0;
+    s_nDebMode = 0;
+    s_inMulCol[0] = 1.0f;
+    s_inMulCol[1] = 1.0f;
+    s_inMulCol[2] = 1.0f;
+    s_inMulCol[3] = 1.0f;
+    s_inMulColAdd[0] = 0.01f;
+    s_inMulColAdd[1] = 0.015f;
+    s_inMulColAdd[2] = 0.02f;
+    s_inMulColAdd[3] = 0;
+    s_fvPos[0] = 0;
+    s_fvPos[1] = 0;
+    s_fvPos[2] = 5.8f;
+    s_fvPos[3] = 1.0f;
+    s_fvInt[0] = 0;
+    s_fvInt[1] = 0;
+    s_fvInt[2] = 0;
+    s_fvInt[3] = 1.0f;
+    xglStudioMainCameraInit();
+    base = (char *)s_aModel;
+    mbase = base + 16;
+    off = 0;
+    i = 9;
+    do {
+        p = (YModel *)(off + (int)base);
+        p->unk0 = 0;
+        p->unk4 = 0;
+        xglMatrixUnit((float (*)[4])(off + (int)mbase));
+        off += 0x50;
+    } while (--i >= 0);
+}
 
 extern void yNewRenderInit(void);
 

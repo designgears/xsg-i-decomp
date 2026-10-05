@@ -15,7 +15,25 @@ typedef struct {
     XglPackedParallelLight parallel[3];
 } XglPackedLightSet;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_light", xglLightSetDefault);
+void xglLightIntensityAmbient(volatile XglPackedLightSet *lightSet, const XglLightQuadword *intensity);
+void xglLightIntensityParallel(XglPackedLightSet *lightSet, unsigned int index, const XglLightQuadword *intensity);
+void xglLightAngle(XglLightSet *lightSet, unsigned int index, const float *angle);
+extern XglLightQuadword asIntensity_0[4];
+extern float asDirection_1[4][4];
+
+void xglLightSetDefault(XglPackedLightSet *lightSet)
+{
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        if (i == 0) {
+            xglLightIntensityAmbient(lightSet, &asIntensity_0[0]);
+        } else {
+            xglLightIntensityParallel(lightSet, i - 1, &asIntensity_0[i]);
+            xglLightAngle((XglLightSet *)lightSet, i - 1, asDirection_1[i]);
+        }
+    }
+}
 
 /* Volatile preserves the quadword update observed by the VU light calculation. */
 void xglLightIntensityAmbient(volatile XglPackedLightSet *lightSet, const XglLightQuadword *intensity)
@@ -46,7 +64,22 @@ void xglLightDirection(XglLightSet *lightSet, unsigned int index, const Vector4 
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_light", xglLightAngle);
+void xglLightAngle(XglLightSet *lightSet, unsigned int index, const float *angle)
+{
+    float m[4][4];
+
+    if (index < 3U) {
+        xglMatrixStackUnit();
+        xglMatrixStackRotZ(angle[2]);
+        xglMatrixStackRotY(angle[1]);
+        xglMatrixStackRotX(angle[0]);
+        xglMatrixStackSave(m);
+        __asm__ __volatile__(
+            "lq $2, 0(%1)\n"
+            "sq $2, 0(%0)\n"
+            : : "r"((index << 5) + (unsigned int)lightSet + 32), "r"(&m[2]) : "$2", "memory");
+    }
+}
 
 /*
  * xglLightCalcMatrix (ee-vu-cop2): dispatches the VU0 macro-mode
@@ -89,4 +122,16 @@ void xglLightCalcMatrix(XglLightSet *lightSet)
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_light", xglLightInit);
+extern Vector4 sIntensity1_3;
+extern Vector4 sIntensity0_2;
+
+void xglLightInit(XglLightSet *lightSet)
+{
+    int i;
+
+    xglLightIntensityAmbient(lightSet, &sIntensity1_3);
+    for (i = 0; i < 3; i++) {
+        xglLightIntensityParallel(lightSet, i, &sIntensity0_2);
+        xglLightDirection(lightSet, i, &sIntensity1_3);
+    }
+}

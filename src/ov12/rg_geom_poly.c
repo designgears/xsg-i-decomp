@@ -141,4 +141,46 @@ int RgGeomPolyCheckBall(RgGeom *pPoly, float *pOrgArg, float *pResult)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_poly", RgGeomPolyCheckRay);
+extern int RgColiDataVsRay(RgColiData *pPoly, void *pArg, void *pResult);
+static inline void RgGeomPolyApply(float *dst, float *mtx, float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf2,0(%2)\n\t"
+        "lqc2 $vf3,0(%1)\n\t"
+        "lqc2 $vf4,16(%1)\n\t"
+        "lqc2 $vf5,32(%1)\n\t"
+        "lqc2 $vf6,48(%1)\n\t"
+        "vmulax.xyzw ACCxyzw,$vf3xyzw,$vf2x\n\t"
+        "vmadday.xyzw ACCxyzw,$vf4xyzw,$vf2y\n\t"
+        "vmaddaz.xyzw ACCxyzw,$vf5xyzw,$vf2z\n\t"
+        "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
+        "sqc2 $vf2,0(%0)"
+        : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+}
+
+int RgGeomPolyCheckRay(RgGeom *pPoly, float *pOrgArg, float *pResult)
+{
+    RgGeomPoly *poly = (RgGeomPoly *)pPoly;
+    RgVector ray[2];
+
+    if (pPoly == 0 || pOrgArg == 0 || pResult == 0) {
+        assert_prog(D_00A551E0, D_00A551B8, 134);
+    }
+
+    if (poly->coliData == 0) {
+        return 0;
+    }
+
+    pOrgArg[7] = 0.0f;
+    pOrgArg[3] = 1.0f;
+    RgGeomPolyApply(ray[0], poly->inverseLocal, pOrgArg);
+    RgGeomPolyApply(ray[1], poly->inverseLocal, pOrgArg + 4);
+
+    if (RgColiDataVsRay(poly->coliData, ray, pResult) == 0) {
+        return 0;
+    }
+
+    pResult[3] = 0.0f;
+    RgGeomPolyApply(pResult, poly->local, pResult);
+    return 1;
+}

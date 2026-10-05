@@ -215,7 +215,29 @@ void Enemy_Command_Encount(Actor *actor, signed char command)
     } while (0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Enemy_Command_Sac_Move);
+void Enemy_Command_Sac_Move(Actor *actor, int mode, float x, float z)
+{
+    unsigned char *work;
+
+    work = (unsigned char *)(enepc + actor->number);
+    if (mode == 0) {
+        *(float *)((char *)actor + 0x10) = x;
+        *(float *)((char *)actor + 0x18) = z;
+        *(short *)(work + 0x3820) = -1;
+        return;
+    }
+    *(int *)(work + 0x37E0) |= 0x10000;
+    *(float *)(work + 0x3800) = *(float *)((char *)actor + 0x10);
+    *(short *)(work + 0x3822) = mode;
+    *(float *)(work + 0x3804) = *(float *)((char *)actor + 0x14);
+    *(short *)(work + 0x3820) = 0;
+    *(float *)(work + 0x3808) = *(float *)((char *)actor + 0x18);
+    *(float *)(work + 0x380C) = *(float *)((char *)actor + 0x1C);
+    *(float *)(work + 0x3810) = x;
+    *(float *)(work + 0x3814) = *(float *)((char *)actor + 0x14);
+    *(float *)(work + 0x3818) = z;
+    *(float *)(work + 0x381C) = *(float *)((char *)actor + 0x1C);
+}
 
 void Enemy_Command_Sac_Turn(Actor *actor, int duration,
                             float angle_degrees, float angle_mode,
@@ -263,6 +285,15 @@ void Enemy_Command_Sac_Turn(Actor *actor, int duration,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Map_Command_Ladder);
+void Map_Command_Ladder(int idx, unsigned char a, int b, unsigned char c)
+{
+  int new_var;
+  unsigned char *p = ((unsigned char *) GameLoopState) + idx;
+  float *fp = ((float *) GameLoopState) + idx;
+  p[0x29F9F] = a;
+  *((float *) (((unsigned char *) fp) + 0x29FBC)) = ((float) b) / 100.0f;
+  new_var = 0x29FAF;
+  (((unsigned char *) GameLoopState) + idx)[new_var] = c;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Start_Enemy_Command);

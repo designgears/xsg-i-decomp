@@ -74,7 +74,10 @@ typedef struct {
                                               (enable), lw/sw at
                                               0x002f74e4..0x002f74ec
                                               (getGameState) */
-    unsigned char unmodeled_14[0x20 - 0x14];
+    unsigned char unmodeled_14[0x18 - 0x14];
+    int event_id;                         /* +0x18, lw at 0x002f86f4
+                                              (evsSetRetPoint) */
+    unsigned char unmodeled_1c[0x20 - 0x1C];
     unsigned int shoot_control;           /* +0x20, lw/ori/sw and lw/and/sw at
                                               0x002f78a0..0x002f78c8
                                               (setShootFlag, bit 0),
@@ -86,7 +89,10 @@ typedef struct {
                                               (setShootUwaCheck, bit 3) */
     unsigned char unmodeled_24[0x52 - 0x24];
     short entrance;                       /* +0x52, lh at 0x002f7424 */
-    unsigned char unmodeled_54[0xC1 - 0x54];
+    unsigned char unmodeled_54[0xA0 - 0x54];
+    float fade_color[3];                  /* +0xA0..0xA8, execBattle */
+    float fade_frames;                    /* +0xAC, execBattle */
+    unsigned char unmodeled_b0[0xC1 - 0xB0];
     unsigned char player_flags;           /* +0xC1, lbu/ori/sb at
                                               0x002f7448..0x002f7460
                                               (setPlayerControl, bit 0x20) */
@@ -121,7 +127,37 @@ typedef struct {
    evsExit: resume_frames takes frame_depth and flags gains bit 0x8
    (native-call block) and 0x1 (generic wait) (0x002f7388..0x002f739c). */
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_execBattle__II);
+extern int xglFontLoad(int type, int callback);
+extern void GameStateSave(void);
+extern void GameStateRestore(void);
+extern void func_00A0B728(int);
+extern void func_00A0B708(int);
+extern void func_A22668(void);
+extern void ACT_resourceInit(void);
+extern void ACT_initScene(void);
+extern void ACT_initMTNResource(void);
+extern void nmlModelSetFadeIn(int duration, int mode);
+extern void FX_ScreenMask(int unused, int color, int duration, int mode);
+
+void Java_xeno_util_Runtime_execBattle__II(void *env, int *arguments)
+{
+    xglFontLoad(1, 0);
+    GameStateSave();
+    func_00A0B728(arguments[0]);
+    func_00A0B708(arguments[1]);
+    func_A22668();
+    ACT_resourceInit();
+    ACT_initScene();
+    ACT_initMTNResource();
+    nmlModelSetFadeIn((int)GameLoopState.fade_frames, 0);
+    FX_ScreenMask(0,
+                  0x7F000000
+                      + ((int)(GameLoopState.fade_color[0] * 127.0f) << 16)
+                      + ((int)(GameLoopState.fade_color[1] * 127.0f) << 8)
+                      + (int)(GameLoopState.fade_color[2] * 127.0f),
+                  (int)GameLoopState.fade_frames, 3);
+    GameStateRestore();
+}
 
 /* The call block of a native taking two plain ints (java signature "(II)"). */
 typedef struct {
@@ -314,7 +350,21 @@ static void scriptReset_evsExit(void)
     GameLoopState.player->status_flags |= 0x1000;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_jumpCF__II);
+extern void (*jthreadResetFunc)(void);
+extern void SCRIPT_talkIgnoreSet(void);
+
+void Java_xeno_util_Runtime_jumpCF__II(RuntimeThreadState *thread, int *arguments)
+{
+    args_jump.destination = arguments[0];
+    *(void **)&args_jump.argument = (void *)arguments[1];
+    *(int *)&jthreadResetFunc = (int)scriptReset_jump;
+    SCRIPT_talkIgnoreSet();
+    {
+        unsigned int flags = thread->flags | 9;
+        thread->resume_frames = thread->frame_depth;
+        thread->flags = flags;
+    }
+}
 
 extern void (*jthreadResetFunc)(void);
 extern void SCRIPT_talkIgnoreSet(void);
@@ -487,7 +537,23 @@ void Java_xeno_util_Runtime_checkItem__II(JThread *thread, IntPairCall *argument
     *result = dataBoxChk(arguments->first, arguments->second);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_getItemName__II);
+extern char *GetItemName(int kind, int id);
+extern void *classString;
+extern void *classByte;
+extern void *newObject(void *clazz);
+extern void *newArray(void *clazz, int length);
+extern unsigned int strlen(const char *s);
+
+void Java_xeno_util_Runtime_getItemName__II(JThread *thread, int *arguments, int *result)
+{
+    char *name = GetItemName(arguments[0], arguments[1]);
+    int *string = newObject(classString);
+    int *array = newArray(classByte, 0xFF);
+    string[1] = (int)array;
+    array[2] = (int)name;
+    array[1] = strlen(name);
+    *result = (int)string;
+}
 
 extern int dataMoneyBoxInc(int amount);
 
@@ -570,7 +636,31 @@ default_party:
     return selected + offset;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_getPartyData__I);
+void Java_xeno_util_Runtime_getPartyData__I(JThread *thread, unsigned int *arguments, int *result)
+{
+    unsigned int sel = arguments[0];
+    int type = sel >> 24;
+    char *p = getPartyDataOfs(sel);
+    int v;
+
+    if (type != 1) {
+        if (type < 2) goto byte;
+        if (type == 2) goto word;
+        if (type == 3) {
+            v = *(int *)p;
+            goto done;
+        }
+byte:
+        v = *(unsigned char *)p;
+        goto done;
+    }
+    v = *(short *)p;
+    goto done;
+word:
+    v = *(int *)p;
+done:
+    *result = v;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setPartyData__II);
 
@@ -693,15 +783,130 @@ void Java_xeno_util_Runtime_battleChangeParty__I(JThread *thread, int *arguments
     PartyBattleChange(cid2bic(*arguments));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setIdLightCol__IIFFF);
+typedef struct { char pad[0xF0]; } GameIdLight_t;
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setIdLightDir__IIFFF);
+extern GameIdLight_t GameIdLight[];
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setIdLightVec__IIFFF);
+extern void xglLightIntensityAmbient(void *light, float *v);
+extern void xglLightIntensityParallel(void *light, int n, float *v);
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_setWindParam__IFFFF);
+void Java_xeno_util_Runtime_setIdLightCol__IIFFF(void *env, union { int i; float f; void *p; } *args)
+{
+    int id = args[0].i;
+    int n = args[1].i;
+    float v[4];
+    if (id > 0) id--;
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    v[3] = 1.0f;
+    if (n == 0)
+        xglLightIntensityAmbient(&GameIdLight[id], v);
+    else
+        xglLightIntensityParallel(&GameIdLight[id], n - 1, v);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_);
+extern void xglLightAngle(void *light, int n, float *v);
+
+void Java_xeno_util_Runtime_setIdLightDir__IIFFF(void *env, union { int i; float f; void *p; } *args)
+{
+    int id = args[0].i;
+    int n = args[1].i;
+    float v[4];
+    if (id > 0) id--;
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    v[3] = 1.0f;
+    if (n > 0)
+        xglLightAngle(&GameIdLight[id], n - 1, v);
+}
+
+extern void xglLightDirection(void *light, int n, float *v);
+
+void Java_xeno_util_Runtime_setIdLightVec__IIFFF(void *env, union { int i; float f; void *p; } *args)
+{
+    int id = args[0].i;
+    int n = args[1].i;
+    float v[4];
+    if (id > 0) id--;
+    v[0] = args[2].f;
+    v[1] = args[3].f;
+    v[2] = args[4].f;
+    v[3] = 1.0f;
+    if (n > 0)
+        xglLightDirection(&GameIdLight[id], n - 1, v);
+}
+
+extern void EXM_StopWind(void);
+extern void EXM_SetShakePower(float power);
+extern void EXM_SetShakeTime(float time);
+extern void EXM_SetDirectionalWind(float *dir);
+extern void EXM_SetPointWind(float *pos);
+
+void Java_xeno_util_Runtime_setWindParam__IFFFF(void *env, union { int i; float f; void *p; } *args)
+{
+    float v[4];
+    v[0] = args[1].f;
+    v[1] = args[2].f;
+    v[2] = args[3].f;
+    v[3] = args[4].f;
+    switch (args[0].i) {
+    case 0:
+        EXM_StopWind();
+        break;
+    case 1:
+        EXM_SetShakePower(v[0]);
+        EXM_SetShakeTime(v[1]);
+        break;
+    case 2:
+        EXM_SetDirectionalWind(v);
+        break;
+    case 3:
+        EXM_SetPointWind(v);
+        break;
+    }
+}
+
+extern int s_nMpeg2ReserveCrossFade;
+extern char base_1[];
+extern char ext_2_004DC078[5];
+extern int SCRIPT_fadeGet(void);
+extern int GameMpeg2Play(char *name, int mode);
+
+void Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_(JThread *thread,
+                                                      StringArgCall *arguments,
+                                                      unsigned int *result)
+{
+    char path[64];
+    char *dst = path;
+    char *src = base_1;
+    int mode;
+
+    while ((*dst = *src) != 0) {
+        src++;
+        dst++;
+    }
+    src = arguments->string->value->bytes;
+    while ((*dst = *src) != 0) {
+        src++;
+        dst++;
+    }
+    src = ext_2_004DC078;
+    while ((*dst = *src) != 0) {
+        src++;
+        dst++;
+    }
+    mode = 3;
+    if (SCRIPT_fadeGet()) {
+        mode = 2;
+    }
+    if (s_nMpeg2ReserveCrossFade) {
+        s_nMpeg2ReserveCrossFade = 0;
+        mode = 4;
+    }
+    GameMpeg2Play(path, mode);
+}
 
 extern void nmlModelSetMpeg2CrossFadeTime(int time);
 extern int s_nMpeg2ReserveCrossFade;
@@ -743,7 +948,11 @@ void Java_xeno_util_Runtime_setMenuLock__(JThread *thread, void *arguments,
     SCRIPT_sceneChangeTimeSet(62);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/runtime", Java_xeno_util_Runtime_evsSetRetPoint__);
+void Java_xeno_util_Runtime_evsSetRetPoint__(JThread *thread, void *arguments, unsigned int *result)
+{
+    GameLoopState.active_event_id = GameLoopState.event_id;
+    GameLoopState.saved_position = GameLoopState.player->position;
+}
 
 extern void (*jthreadResetFunc)(void);
 extern void scriptReset_evsExit(void);

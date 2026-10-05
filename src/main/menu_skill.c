@@ -108,13 +108,145 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillExMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillL1R1Main);
 
+extern struct { char pad[0x31]; signed char unk31; char pad32[0xE]; signed char unk40; } MenuWork;
+
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillSetListMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillCategoryMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillListChange00);
+typedef struct {
+    unsigned char pad0;
+    unsigned char unk1;
+    unsigned char pad2[10];
+    short unkC;
+    short unkE;
+    char *unk10;
+    unsigned char unk14;
+    unsigned char unk15;
+    unsigned char pad16[6];
+    void *unk1C;
+} MSLWindow;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillListChange01);
+typedef struct {
+    int unk0;
+    int unk4;
+    unsigned char pad8;
+    unsigned char unk9;
+    unsigned char padA[2];
+} MSLRow;
+
+extern unsigned char *MenuSkillList;
+
+extern unsigned char MenuKeepSelect[];
+
+extern int *MenuSortAddrGet(int);
+
+extern void *MenuListGet(int);
+
+extern void MenuSortSet(int, int, int);
+
+extern void *MenuListMake(int, int);
+
+extern int MenuSortCheck(int);
+
+extern void WindowSPItemChange(void *);
+
+extern void WindowSPSetSelect(void *, unsigned char *);
+
+extern int WindowSPSelect(void *, int);
+
+int SkillSetLvGet(int skill_id);
+
+typedef struct {
+    int unk0;
+    int unk4;
+    signed char unk8;
+    signed char unk9;
+    unsigned char padA[2];
+} MSL0Row;
+extern char D_004C9A18[];
+extern int *func_A19210(int);
+extern unsigned char *func_A1A548(int);
+extern int func_A19698(int, unsigned short);
+int SkillGetPtGet(int skill_id);
+int SkillCharSkillLvGet(int character_id);
+
+static void MenuSkillListChange00(void)
+{
+    int *sort = MenuSortAddrGet(0);
+    MSL0Row *row = MenuListGet(0);
+    MSLWindow *win = (MSLWindow *)(MenuSkillList + 0xC);
+    int *chr = func_A19210(MenuWork.unk40);
+    int i;
+    int count;
+
+    MenuSortSet(0, 0x10, MenuWork.unk31 + 0x100);
+    MenuListMake(0, 0);
+    count = MenuSortCheck(0);
+    for (i = 0; i < count; i++) {
+        short id = sort[i];
+        unsigned char *sk = func_A1A548(id);
+        int pt = SkillGetPtGet(id);
+        int lv = SkillCharSkillLvGet(MenuWork.unk40);
+        int slv;
+        row->unk4 = pt;
+        slv = SkillSetLvGet(id);
+        row->unk8 = 0;
+        row->unk9 = slv;
+        if (*(unsigned short *)(sk + 0xE) == 0)
+            row->unk8 = 1;
+        else if (func_A19698(MenuWork.unk40, *(unsigned short *)(sk + 0xE)) != 0)
+            row->unk8 = 1;
+        if (lv < row->unk9)
+            row->unk8 = 1;
+        if (chr[5] < pt)
+            row->unk8 = 1;
+        row++;
+    }
+    win->unk10 = D_004C9A18;
+    win->unk1 = 7;
+    win->unk14 = 1;
+    win->unk15 = 8;
+    win->unkC = 0x114;
+    win->unkE = 0xC6;
+    win->unk1C = MenuListGet(0);
+    WindowSPItemChange(win);
+    WindowSPSetSelect(win, &MenuKeepSelect[MenuWork.unk31 * 5]);
+    ((unsigned char *)win)[0x26] = 4;
+    WindowSPSelect(win, 0);
+}
+
+extern char D_004DB640[];
+extern int MenuSkillEquipCheck(int, int);
+static void MenuSkillListChange01(void)
+{
+    int *sort = MenuSortAddrGet(0);
+    MSLRow *row = MenuListGet(0);
+    MSLWindow *win = (MSLWindow *)(MenuSkillList + 0xC);
+    int count;
+    int i;
+
+    MenuSortSet(0, 0x40, MenuWork.unk40);
+    MenuListMake(0, 0);
+    count = MenuSortCheck(0);
+    for (i = 0; i < count; i++) {
+        row[i].unk4 = SkillSetLvGet(sort[i]);
+        if (MenuSkillEquipCheck(MenuWork.unk40, sort[i]))
+            row[i].unk9 = 1;
+        else
+            row[i].unk9 = 0;
+    }
+    win->unk10 = D_004DB640;
+    win->unk1 = 3;
+    win->unk14 = 1;
+    win->unk15 = 8;
+    win->unkC = 0x100;
+    win->unkE = 0xC6;
+    win->unk1C = MenuListGet(0);
+    WindowSPItemChange(win);
+    WindowSPSetSelect(win, &MenuKeepSelect[0x14]);
+    WindowSPSelect(win, 0);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillListMain);
 

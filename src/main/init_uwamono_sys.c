@@ -89,6 +89,8 @@ typedef struct MapPartsRoot {
 typedef struct UwamonoGameLoopState {
     unsigned char unmodeled_00[0x54];
     MapPartsRoot *partsRoot;          /* +0x54 */
+    unsigned char unmodeled_58[0xe4 - 0x58];
+    short slot[64];                   /* +0xe4 */
 } UwamonoGameLoopState;
 
 extern UwamonoGameLoopState GameLoopState;
@@ -229,9 +231,38 @@ INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", SetHideObject);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", GameStateRestoreKoware);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", SetMapUwamono);
+extern unsigned char MapUnit[];
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", ResetShootSys);
+void SetMapUwamono(void)
+{
+    struct { char pad[0xe4]; short slot[64]; } *g = (void *)&GameLoopState;
+    short *p = g->slot;
+    char *u = (char *)MapUnit;
+    int i = 0x3F;
+    do {
+        *p++ = -1;
+        if (*(int *)u & 0x10000) {
+            void (*f)(void *) = *(void (**)(void *))(u + 4);
+            if (f != 0) f(u);
+        }
+        u += 0x300;
+    } while (--i >= 0);
+    UnlockMapUnit();
+}
+
+void UnlockMapUnit(void);
+struct ShootSysView { char pad[0xe4]; short slot[64]; };
+
+void ResetShootSys(void)
+{
+    struct ShootSysView *g = (struct ShootSysView *)&GameLoopState;
+    short v = -1;
+    int i;
+    for (i = 63; i >= 0; i--) {
+        g->slot[i] = v;
+    }
+    UnlockMapUnit();
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CreateUwamono);
 
@@ -252,9 +283,24 @@ INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", MAP_updateUnitEnemy);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", MAP_updateUnitHide);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", MAP_updateUnitSaveSymbol);
+extern const float D_004D7EB4;
+extern int CheckDist3D(void *a, void *b);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", MAP_updateUnitShopSymbol);
+long MAP_updateUnitSaveSymbol(UwamonoMapUnit *unit)
+{
+    struct { int w0; char *player; int pad[4]; } *g = (void *)&GameLoopState;
+    unit->symbolPhase = unit->symbolPhase + D_004D7EB4;
+    return CheckDist3D(g->player + 0x10, (char *)unit + 0x10);
+}
+
+extern const float D_004D7EB8;
+
+long MAP_updateUnitShopSymbol(UwamonoMapUnit *unit)
+{
+    struct { int w0; char *player; int pad[4]; } *g = (void *)&GameLoopState;
+    unit->symbolPhase = unit->symbolPhase + D_004D7EB8;
+    return CheckDist3D(g->player + 0x10, (char *)unit + 0x10);
+}
 
 extern const float D_004D7EBC;
 
@@ -263,17 +309,165 @@ void MAP_updateUnitSymbol(UwamonoMapUnit *unit)
     unit->symbolPhase = unit->symbolPhase + D_004D7EBC;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", SetUwaWind);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) UwaWindVec;
+typedef struct {
+    unsigned char type;
+    char pad[0xf];
+    UwaWindVec pos;
+    float f20;
+    float f24;
+    int i28;
+} UwaWindState_;
+typedef struct {
+    char pad[0x10];
+    UwaWindVec pos;
+    char pad2[0xb4 - 0x20];
+    float height;
+} UwaWindSrc_;
+extern UwaWindState_ uwaWind;
+extern const float D_004D7EC0;
+extern const float D_004D7EC4;
+extern void EXM_SetWindStruct(void *state);
+
+void SetUwaWind(UwaWindSrc_ *unit)
+{
+    uwaWind.type = 2;
+    uwaWind.pos = unit->pos;
+    uwaWind.pos.y = uwaWind.pos.y + unit->height * 0.5f;
+    uwaWind.pos.w = D_004D7EC0;
+    uwaWind.f20 = D_004D7EC4;
+    uwaWind.f24 = 1.0f;
+    uwaWind.i28 = 0;
+    EXM_SetWindStruct(&uwaWind);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", UwamonoBrokenSe);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", DrawActiveCursol);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnit);
+extern int HitCheckMapUnitAt(void *pos, void *unit);
+typedef struct HitMapUnitSub {
+    unsigned char unmodeled_00[0x2D];
+    signed char hit;
+    unsigned char unmodeled_2e[0x132];
+} HitMapUnitSub;
+typedef struct HitMapUnit {
+    u32 flags;
+    unsigned char unmodeled_04[0xA0];
+    short serial;
+    unsigned char unmodeled_a6[0xFA];
+    HitMapUnitSub sub;
+} HitMapUnit;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitWithNyuru);
+int HitCheckMapUnit(void *pos)
+{
+    int i;
+    HitMapUnitSub *sub;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitReverse);
+    for (i = 0; i < 64; i++) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && !(((HitMapUnit *)MapUnit)[i].flags & 0x100000)
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckMapUnitAt(pos, &((HitMapUnit *)MapUnit)[i]) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int HitCheckNyuru(void *pos, void *unit);
+void NyuruCircle(void *pos, void *unit);
+void NyuruMatrix(void *pos, void *unit, int mode);
+typedef struct NyuruVec {
+    unsigned long long w[2];
+} NyuruVec;
+typedef struct NyuruQuery {
+    unsigned char unmodeled_00[0x10];
+    union {
+        NyuruVec v;
+        Vector4 f;
+    } pos;
+    unsigned char unmodeled_20[0x10];
+    union {
+        NyuruVec v;
+        Vector4 f;
+    } move;
+} NyuruQuery;
+
+int HitCheckMapUnitWithNyuru(NyuruQuery *q)
+{
+    int list[64];
+    NyuruVec savePos;
+    NyuruVec saveMove;
+    int i;
+    int n;
+    HitMapUnitSub *sub;
+    HitMapUnit *unit;
+
+    for (i = 63; i >= 0; i--) {
+        list[i] = -1;
+    }
+    n = 0;
+    for (i = 0; i < 64; i++) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && !(((HitMapUnit *)MapUnit)[i].flags & 0x100000)
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckMapUnitAt(q, &((HitMapUnit *)MapUnit)[i]) != 0) {
+            list[n++] = i;
+        }
+    }
+    if (n == 0) {
+        return 0;
+    }
+    if (n == 1) {
+        return HitCheckNyuru(q, &((HitMapUnit *)MapUnit)[list[0]]);
+    }
+    for (i = 0; list[i] != -1; i++) {
+        savePos = q->pos.v;
+        saveMove = q->move.v;
+        unit = &((HitMapUnit *)MapUnit)[list[i]];
+        switch (unit->sub.hit) {
+        case 1:
+            NyuruCircle(q, unit);
+            break;
+        case 2:
+            NyuruMatrix(q, unit, 1);
+            break;
+        }
+        if (HitCheckMapUnit(q) == -1) {
+            return 1;
+        }
+        q->pos.v = savePos;
+        q->move.v = saveMove;
+    }
+    q->pos.f.x -= q->move.f.x;
+    q->pos.f.z -= q->move.f.z;
+    q->move.f.x = 0.0f;
+    q->move.f.z = 0.0f;
+    return 0;
+}
+
+int HitCheckMapUnitReverse(void *pos)
+{
+    int i;
+    HitMapUnitSub *sub;
+
+    for (i = 64; i > 0; i--) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && !(((HitMapUnit *)MapUnit)[i].flags & 0x100000)
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckMapUnitAt(pos, &((HitMapUnit *)MapUnit)[i]) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 /*
  * HitCheckMapUnitPos (main:0x002c02f0): a thin tail call into
@@ -281,19 +475,125 @@ INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitReverse);
  * true `j`, no `jal`, so this function's own return value is whatever
  * HitCheckMapUnitPosSize returns).
  */
-extern void HitCheckMapUnitPosSize(int unit, float threshold);
+extern int HitCheckMapUnitPosSize(Vector4 *pos, float threshold);
 
-void HitCheckMapUnitPos(int unit) {
-    HitCheckMapUnitPosSize(unit, 0.0f);
+void HitCheckMapUnitPos(Vector4 *pos) {
+    HitCheckMapUnitPosSize(pos, 0.0f);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitPosSize);
+typedef struct HitMapQuery {
+    unsigned char unmodeled_00[0x10];
+    Vector4 pos;
+    unsigned char unmodeled_20[0x9C8];
+    float flag;
+    unsigned char unmodeled_9ec[0x84];
+} HitMapQuery;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitPosReverse);
+extern int HitCheckMapUnitPosAt(void *query, void *unit);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitAt);
+int HitCheckMapUnitPosSize(Vector4 *pos, float size)
+{
+    HitMapQuery query;
+    int i;
+    HitMapUnitSub *sub;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckMapUnitPosAt);
+    query.pos = *pos;
+    query.flag = size;
+    for (i = 0; i < 64; i++) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckMapUnitPosAt(&query, &((HitMapUnit *)MapUnit)[i]) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int HitCheckMapUnitPosReverse(Vector4 *pos)
+{
+    HitMapQuery query;
+    int i;
+    HitMapUnitSub *sub;
+
+    query.pos = *pos;
+    query.flag = 0.0f;
+    for (i = 64; i > 0; i--) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckMapUnitAt(&query, &((HitMapUnit *)MapUnit)[i]) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+extern float CheckDist2D(const Vector4 *first, const Vector4 *second);
+extern int HitCheckBox(void *query, void *unit);
+typedef struct HitAtUnit {
+    unsigned char unmodeled_00[0x10];
+    Vector4 pos;
+    unsigned char unmodeled_20[0x90];
+    float radius;                     /* +0xB0 */
+    float height;                     /* +0xB4 */
+    unsigned char unmodeled_b8[0xE8];
+    HitMapUnitSub sub;                /* +0x1A0 */
+} HitAtUnit;
+
+int HitCheckMapUnitAt(void *pos, void *unit)
+{
+    HitMapQuery *q = pos;
+    HitAtUnit *u = unit;
+    int ret = 0;
+    HitMapUnitSub *sub = &u->sub;
+
+    if (q->pos.y > u->pos.y + u->height * 0.9f) {
+        return ret;
+    }
+    if (q->pos.y < u->pos.y - 1.8f) {
+        return ret;
+    }
+    switch (sub->hit) {
+    case 1:
+        if (CheckDist2D(&q->pos, &u->pos) < q->flag + u->radius) {
+            return 1;
+        }
+        return 0;
+    case 2:
+        return HitCheckBox(q, u);
+    }
+    return ret;
+}
+
+extern int HitCheckBoxCorner(void *query, void *unit);
+
+int HitCheckMapUnitPosAt(void *pos, void *unit)
+{
+    HitMapQuery *q = pos;
+    HitAtUnit *u = unit;
+    int ret = 0;
+    HitMapUnitSub *sub = &u->sub;
+
+    if (q->pos.y > u->pos.y + u->height * 0.9f) {
+        return ret;
+    }
+    if (q->pos.y < u->pos.y - 1.8f) {
+        return ret;
+    }
+    switch (sub->hit) {
+    case 1:
+        if (CheckDist2D(&q->pos, &u->pos) < q->flag + u->radius) {
+            return 1;
+        }
+        return 0;
+    case 2:
+        return HitCheckBoxCorner(q, u);
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckBox);
 
@@ -313,11 +613,127 @@ INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", NyuruBox);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", NyuruCorner);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", ShootMapUnit);
+extern void AimMapUnit(void);
+extern void DispDebugUwamono(void);
+extern void DispCollUwamono(void);
+extern float Get_Angle(void *first, void *second);
+extern void *sefCreateEffectCf(int effect_id, void *position, int flags);
+extern void ACT_setMotion(void *actor, int motion);
+extern void xglSoundEffectNormalID(int sound_id, int variant);
+extern void Vibration_Set_Weak(int level);
+extern void Enemy_FindByEar(void *actor, void *pos);
+extern signed char dispflg;
+extern signed char collflg;
+extern signed char printflg;
+extern char D_004CA260[];
+extern struct { unsigned char pad[0x2A]; unsigned short trig; } PadData;
+typedef struct ShootActor {
+    unsigned char unmodeled_00[0x10];
+    Vector4 pos;
+    unsigned char unmodeled_20[0x4C8];
+    unsigned long long state;         /* +0x4E8 */
+    unsigned char unmodeled_4f0[0x200];
+    int actFlags;                     /* +0x6F0 */
+    float motionTime;                 /* +0x6F4 */
+    float motionSpeed;                /* +0x6F8 */
+    unsigned char unmodeled_6fc[8];
+    unsigned short motion;            /* +0x704 */
+    unsigned char unmodeled_706[0x2DE];
+    float angle;                      /* +0x9E4 */
+} ShootActor;
+typedef struct ShootEffect {
+    unsigned char unmodeled_00[0x6BC];
+    ShootActor *owner;                /* +0x6BC */
+    unsigned char unmodeled_6c0[0x3CC];
+    int flags;                        /* +0xA8C */
+} ShootEffect;
+typedef struct ShootLoopState {
+    int w0;
+    ShootActor *player;               /* +0x04 */
+    int pad[2];
+    int flags;                        /* +0x10 */
+    unsigned char unmodeled_14[0x29F2D];
+    signed char shootUnit;            /* +0x29F41 */
+} ShootLoopState;
+typedef struct ShootSub {
+    unsigned char unmodeled_00[4];
+    signed char found;
+} ShootSub;
+#define G (*(ShootLoopState *)&GameLoopState)
+
+void ShootMapUnit(void)
+{
+    ShootActor *actor = G.player;
+    ShootEffect *eff;
+    ShootSub *sub;
+    int no;
+    float limit;
+
+    if (actor->state & 0x0F000000) {
+        UnlockMapUnit();
+        return;
+    }
+    if (dispflg == 1) {
+        DispDebugUwamono();
+    }
+    if (collflg == 1) {
+        DispCollUwamono();
+    }
+    if (actor->motion != 14) {
+        if (!(G.flags & 0x8000)) {
+            AimMapUnit();
+            if ((PadData.trig & 0x80) && G.shootUnit != -1) {
+                actor->angle = Get_Angle(&actor->pos, MapUnit + 0x10 + G.shootUnit * 0x300);
+                eff = sefCreateEffectCf(0x2DE, 0, 0);
+                if (eff != 0) {
+                    eff->owner = actor;
+                    eff->flags &= ~0x400;
+                }
+                actor->motionSpeed = 0.033333335f;
+                G.flags |= 0xC000;
+                ACT_setMotion(actor, 14);
+                actor->actFlags &= ~8;
+                xglSoundEffectNormalID(0x10002, 0);
+            }
+        }
+        if (actor->motion != 14) {
+            return;
+        }
+    }
+    no = G.shootUnit;
+    sub = (ShootSub *)&((HitMapUnit *)MapUnit)[no].sub;
+    if (actor->motionTime > 0.2f && actor->motionTime < 0.36f) {
+        Vibration_Set_Weak(4);
+    }
+    if (actor->motionTime > 0.36f && sub->found == 0) {
+        if (printflg) {
+            printf(D_004CA260, G.shootUnit);
+        }
+        Enemy_FindByEar(actor, MapUnit + 0x10 + no * 0x300);
+        sub->found = 1;
+    }
+    if (actor->motionTime > 0.5f) {
+        G.shootUnit = -1;
+        G.flags = (G.flags & ~0x4000) & 0xFFFF7FFF;
+        actor->actFlags |= 8;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossPointUwamono);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossPointUwamonoAt);
+int CalcNearCrossPointCircle(void *a, void *b, char *c);
+void CalcNearCrossPointBox(void *a, void *b, char *c);
+
+int CrossPointUwamonoAt(void *a, void *b, char *c)
+{
+    switch (c[0x1CD]) {
+    case 1:
+        return CalcNearCrossPointCircle(a, b, c);
+    case 2:
+        CalcNearCrossPointBox(a, b, c);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CalcNearCrossPointCircle);
 
@@ -372,25 +788,190 @@ INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", UwamonoAreaCheck);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", AreaCheckBox);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckMapUnitAim);
+int CrossCheckMapUnitAt(float *a, float *b, char *unit);
+typedef struct AimUnitId {
+    unsigned char kind;
+    unsigned char pad[3];
+    short serial;
+} AimUnitId;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckMapUnit);
+int CrossCheckMapUnitAim(float *a, unsigned char *actor)
+{
+    int i;
+    int off;
+    AimUnitId *id;
+    HitMapUnitSub *sub;
+    char *unit;
+    char *base;
+
+    for (i = 0, off = 0; i < 64; i++, off += 0x300) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        base = (char *)MapUnit;
+        id = (AimUnitId *)((char *)&((HitMapUnit *)MapUnit)[i] + 0xA0);
+        if (id->serial == -1) continue;
+        if (id->serial == 0x7000) continue;
+        unit = (char *)(off + (int)base);
+        if (((HitMapUnit *)MapUnit)[i].flags & 0x100000) continue;
+        if (id->kind != actor[0xA0]
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && CrossCheckMapUnitAt(a, (float *)(actor + 0x10), unit) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int CrossCheckMapUnitAt(float *a, float *b, char *unit);
+
+int CrossCheckMapUnit(float *a, float *b)
+{
+    int i;
+    HitMapUnitSub *sub;
+
+    for (i = 0; i < 64; i++) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        if (((HitMapUnit *)MapUnit)[i].serial != -1
+            && !(((HitMapUnit *)MapUnit)[i].flags & 0x100000)
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && CrossCheckMapUnitAt(a, b, (char *)&((HitMapUnit *)MapUnit)[i]) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckActor);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckMapUnitAt);
+extern float D_004D7F1C;
+int CrossCheckMapUnitCircle(float *a, float *b, char *unit);
+int CrossCheckMapUnitBox(float *a, float *b, char *unit);
+
+int CrossCheckMapUnitAt(float *a, float *b, char *unit)
+{
+    int ret = 0;
+    char *ext = unit + 0x1A0;
+    if (__builtin_fabsf(a[1] - *(float *)(unit + 0x14)) > D_004D7F1C) {
+        return ret;
+    }
+    switch (ext[0x2D]) {
+    case 1:
+        return CrossCheckMapUnitCircle(a, b, unit);
+    case 2:
+        return CrossCheckMapUnitBox(a, b, unit);
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckMapUnitCircle);
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CrossCheckMapUnitBox);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", UnlockMapUnit);
+void UnlockMapUnit(void)
+{
+    unsigned char *p = MapUnit;
+    int *u;
+    int i = 0x3F;
+    p += 0xE8;
+    u = (int *)p;
+    do {
+        int a = u[1];
+        u[-0x3A] &= 0xFFFBFFFF;
+        if (a != 0) {
+            sefDeleteEffectCf(a);
+            u[1] = 0;
+        }
+        if (u[2] != 0) {
+            sefDeleteEffectCf(u[2]);
+            u[2] = 0;
+        }
+        u += 0xC0;
+    } while (--i >= 0);
+    *((signed char *)&GameLoopState + 0x29F41) = -1;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CheckNearMapUnit);
+typedef struct BrokenTimers {
+    unsigned char unmodeled_00[4];
+    signed char state;                /* +0x04 (record +0x1A4) */
+    unsigned char unmodeled_05[0x3f];
+    int brokenId;                     /* +0x44 (record +0x1E4) */
+} BrokenTimers;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CheckBrokenMapUnit);
+typedef struct BrokenMapUnit {
+    unsigned int flags;               /* +0x00 */
+    unsigned char unmodeled_04[0xa0];
+    short serial;                     /* +0xA4 */
+    unsigned char unmodeled_a6[0xfa];
+    BrokenTimers timers;              /* +0x1A0 */
+} BrokenMapUnit;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", AimHeightCheck);
+int CheckBrokenMapUnit(BrokenMapUnit *unit);
+extern float CheckCornerDist(Vector4 *pos, void *unit);
+typedef struct NearLoopState {
+    int w0;
+    ShootActor *player;               /* +0x04 */
+    unsigned char unmodeled_08[0x29F3C];
+    float nearDist;                   /* +0x29F44 */
+} NearLoopState;
+
+int CheckNearMapUnit(void)
+{
+    float best;
+    ShootActor *actor;
+    int found;
+    int i;
+
+    found = -1;
+    best = ((NearLoopState *)&GameLoopState)->nearDist + 1000.0f;
+    actor = ((NearLoopState *)&GameLoopState)->player;
+    for (i = 0; i < 64; i++) {
+        if ((CheckBrokenMapUnit((BrokenMapUnit *)&((HitMapUnit *)MapUnit)[i]) & 1)
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x40000)) {
+            float d = CheckCornerDist(&actor->pos, (BrokenMapUnit *)&((HitMapUnit *)MapUnit)[i]);
+            if (d < best) {
+                best = d;
+                found = i;
+            }
+        }
+    }
+    if (best < ((NearLoopState *)&GameLoopState)->nearDist) {
+        return found;
+    }
+    return -1;
+}
+
+int CheckBrokenMapUnit(BrokenMapUnit *unit)
+{
+    BrokenTimers *t = &unit->timers;
+
+    if (unit->serial == -1) {
+        return 0;
+    }
+    if (!(unit->flags & 0x10000)) {
+        return 0;
+    }
+    if (unit->flags & 4) {
+        return 0;
+    }
+    if (t->state == 1) {
+        return 0;
+    }
+    if (t->brokenId == -1) {
+        return 0;
+    }
+    return t->brokenId;
+}
+
+extern float D_004D7F24;
+
+int AimHeightCheck(char *unit)
+{
+    struct { int w0; char *player; int pad[6]; int flags; } *g = (void *)&GameLoopState;
+    char *p = g->player;
+    if (!(g->flags & 2)) return 1;
+    return __builtin_fabsf(*(float *)(p + 0x14) - *(float *)(unit + 0x14)) < D_004D7F24;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", AimMapUnit);
 
@@ -545,7 +1126,34 @@ void UwamonoBgmFadeOut(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", CheckUwamonoHeight);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckUwamono);
+int HitCheckUwamonoAt(unsigned char *actor, char *unit);
+
+int HitCheckUwamono(unsigned char *actor)
+{
+    int i;
+    int off;
+    AimUnitId *id;
+    HitMapUnitSub *sub;
+    char *unit;
+    char *base;
+
+    for (i = 0, off = 0; i < 64; i++, off += 0x300) {
+        sub = &((HitMapUnit *)MapUnit)[i].sub;
+        base = (char *)MapUnit;
+        id = (AimUnitId *)((char *)&((HitMapUnit *)MapUnit)[i] + 0xA0);
+        if (id->serial == -1) continue;
+        unit = (char *)(off + (int)base);
+        if (id->kind == actor[0xA0]) continue;
+        if (((HitMapUnit *)MapUnit)[i].flags & 0x20000) continue;
+        if (!(((HitMapUnit *)MapUnit)[i].flags & 0x100000)
+            && sub->hit != 0
+            && (((HitMapUnit *)MapUnit)[i].flags & 0x10000)
+            && HitCheckUwamonoAt(actor, unit) != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", HitCheckUwamonoAt);
 

@@ -39,7 +39,7 @@ fi
 "${T[@]}" "${ENV[@]}" "$CCDIR/ee-gcc" -B"$CCDIR/" -nostdinc -fno-builtin -S -O2 "$G" \
     "${OUT%.o}.i" -o "${OUT%.o}.s" || rc=$?
 if [ "$rc" -ne 0 ]; then step_failed "cc1 (ee-gcc -S)" "$rc"; exit "$rc"; fi
-( "${T[@]}" "${ENV[@]}" "$AS" -EL -m5900 -mabi=eabi "$G" -I . -I "$UNIT" -I "$ROOT" \
+( "${T[@]}" "${ENV[@]}" "$AS" -EL -m5900 -mabi=eabi "$G" $XENO_TU_ASFLAGS -I . -I "$UNIT" -I "$ROOT" \
         -o "$OUT" "${OUT%.o}.s" > "$OUT.asmsg" 2>&1 ) || rc=$?
 if [ "$rc" -ne 0 ] || [ -s "$OUT.asmsg" ]; then
     cat "$OUT.asmsg" 2>/dev/null

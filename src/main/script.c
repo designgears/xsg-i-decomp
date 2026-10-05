@@ -455,9 +455,53 @@ void talktoObserver(ScriptObserverTask *task)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", talkCancel);
+extern void TWIN_dispose(void *window);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_execEntered);
+typedef struct TalkWin { char pad[0x10]; unsigned int flags; short state; } TalkWin;
+
+void talkCancel(ScriptObserverTask *task) {
+    TalkWin *win;
+
+    actTalkAfter(task->object);
+    win = (TalkWin *)task->argument2;
+    win->flags = (win->flags | 0x80) & ~2;
+    ((GameLoopFlagsPrefix *)GameLoopState)->flags &= ~0x1000;
+    ((GameLoopFlagsPrefix *)GameLoopState)->flags &= ~0x8000;
+    ((GameLoopFlagsPrefix *)GameLoopState)->flags &= ~0x10000;
+    if (win != 0) {
+        win->state = 2;
+    }
+    TWIN_dispose(win);
+    xglTaskRemove(&task->task);
+}
+
+int attrObserver(XglTaskPrefix *task);
+
+void SCRIPT_execEntered(int arg)
+{
+    ScriptDbEntry *entry = &scriptDB[currentScriptDB];
+
+    if (entry->active != 0) {
+        SceneObject object = entry->thread->object;
+
+        if (!(((GameLoopFlagsPrefix *)GameLoopState)->flags & 0x400) &&
+            JNI_isInstanceOf(object, classJava_xeno_Stage) != 0) {
+            XglTaskScheduler *scheduler = GameLoopState[2];
+            ScriptObserverTask *task = (ScriptObserverTask *)xglTaskEntryNext(
+                scheduler, attrObserver,
+                scheduler != 0 ? scheduler->active_tail : 0);
+
+            if (task != 0) {
+                task->owner = (GameLoopFlagsPrefix *)GameLoopState;
+                task->state_flags = 0;
+                task->object = 0;
+            }
+            task->argument1 = arg;
+            task->object = object;
+            ((GameLoopFlagsPrefix *)GameLoopState)->flags |= 0x100000;
+        }
+    }
+}
 
 /*
  * Queue a funcObserver task that invokes the no-argument script method
@@ -654,11 +698,11 @@ int getEmptyVM(ScriptObserverTask *observer)
     return observer->vm_slot != -1;
 }
 
-extern int loadScriptCD(ScriptDbEntry *entry, const char *path);
+extern void loadScriptCD(ScriptDbEntry *entry, const char *path);
 
-int SCRIPT_load(const char *path)
+void SCRIPT_load(const char *path)
 {
-    return loadScriptCD(&scriptDB[(currentScriptDB + 1) & 1], path);
+    loadScriptCD(&scriptDB[(currentScriptDB + 1) & 1], path);
 }
 
 extern int loadScriptCD2(ScriptDbEntry *entry, const char *path);
@@ -668,7 +712,25 @@ int SCRIPT_load2(const char *path)
     return loadScriptCD2(&scriptDB[(currentScriptDB + 1) & 1], path);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_load_DBG);
+extern int xglFontLoad(int type, int callback);
+extern char *debugBasePath;
+extern int loadScript(ScriptDbEntry *entry, const char *base, const char *path);
+typedef struct { int pad; void *a; void *b; int rest[4]; } ScriptDbView;
+
+int SCRIPT_load_DBG(const char *path)
+{
+  ScriptDbView *db;
+  char **new_var;
+  xglFontLoad((double) 0, 0);
+  db = (ScriptDbView *) scriptDB;
+  db->a = (void *) 0x5000000;
+  db->b = (void *) 0x6100000;
+  db++;
+  db->a = (void *) 0x6500000;
+  db->b = (void *) 0x6900000;
+  new_var = &debugBasePath;
+  return loadScript(&scriptDB[(currentScriptDB + 1) & 1], *new_var, path);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", getStrIndex_00262160);
 
@@ -690,7 +752,73 @@ static char *replacePathExt(char *path, const char *ext)
 
 INCLUDE_ASM("asm/main/nonmatchings/script", attrObserver);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", PauseSkipCheck);
+extern struct {
+    u8 pad_00[0x58];
+    u8 pause;
+} sRender;
+extern int s_nScriptEventSkipEntry;
+extern void xglSoundEffectNormalDirect(int effect_id);
+extern void xglRenderCopyDisp2Draw(void);
+extern void GamePauseDispEvent(void);
+extern void PartyTimePauseStart(void);
+extern void PartyTimePauseEnd(void);
+extern void xglSoundStreamStop(int stream);
+extern void xglSoundStreamMute(void);
+typedef struct {
+    u8 pad_00[0x10];
+    u32 flags;
+    u8 pad_14[0x29F40 - 0x14];
+    u8 pause_wait;
+} PauseGameLoopView;
+
+static int PauseSkipCheck(void)
+{
+    PauseGameLoopView *gs = (PauseGameLoopView *)GameLoopState;
+    PadPrefix *pad;
+
+    if (gs->flags & 0x90000000) {
+        return 1;
+    }
+    if (gs->pause_wait == 0 && ((pad = &PadData)->half_2a & 0x800)) {
+        gs->pause_wait = 0x20;
+        xglSoundEffectNormalDirect(4);
+        sRender.pause = 1;
+        xglSleep();
+        xglRenderCopyDisp2Draw();
+        GamePauseDispEvent();
+        xglSleep();
+        GamePauseDispEvent();
+        xglSleep();
+        PartyTimePauseStart();
+        if (!(pad->half_2a & 0x10)) {
+            for (;;) {
+                if (gs->pause_wait != 0) {
+                    gs->pause_wait--;
+                    xglSleep();
+                    if (pad->half_2a & 0x10) break;
+                    continue;
+                }
+                if (((volatile PadPrefix *)pad)->half_2a & 0x800) break;
+                xglSleep();
+                if (pad->half_2a & 0x10) break;
+            }
+        }
+        PartyTimePauseEnd();
+        xglSoundEffectNormalDirect(4);
+        sRender.pause = 0;
+        ((PauseGameLoopView *)GameLoopState)->pause_wait = 0x20;
+        if (PadData.half_2a & 0x10) {
+            ((PauseGameLoopView *)GameLoopState)->pause_wait = 0x40;
+            if (s_nScriptFrameLockEntry == 0) {
+                s_nScriptEventSkipEntry = 1;
+            }
+            xglSoundStreamStop(0);
+            return 1;
+        }
+        xglSoundStreamMute();
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", sceneObserver2);
 
@@ -708,7 +836,54 @@ INCLUDE_ASM("asm/main/nonmatchings/script", DB_lightSave);
 
 INCLUDE_ASM("asm/main/nonmatchings/script", DB_scriptFileSelect);
 
-INCLUDE_ASM("asm/main/nonmatchings/script", DB_wind);
+typedef unsigned int DbWindQuad __attribute__((mode(TI)));
+extern char dbgWind[];
+extern void EXM_GetWindPara(void *para);
+extern void EXM_SetWindStruct(void *state);
+extern void EXM_ClearWindStruct(void);
+extern void EXM_SetWindPara(void *para);
+extern void updateWind(void *wind);
+extern void TWSYS_setGRPStatus(int group, int status);
+typedef struct DbWindGameState {
+    u8 unmodeled_00[0xC];
+    unsigned short state_0c;
+    u8 unmodeled_0e[2];
+    u32 flags;
+    u8 unmodeled_14[0x29F50 - 0x14];
+    DbWindQuad quad_29f50;
+    unsigned short state_29f60;
+} DbWindGameState;
+typedef struct DbWindTask {
+    XglTaskPrefix task;
+    u32 flags;
+    u8 unmodeled_14[8];
+    DbWindGameState *owner;
+} DbWindTask;
+
+static void DB_wind(DbWindTask *task)
+{
+    DbWindGameState *owner;
+    PadPrefix *pad = (PadPrefix *)((u8 *)&PadData + 0x68);
+
+    if (!(task->flags & 1)) {
+        task->flags |= 1;
+        EXM_GetWindPara(dbgWind);
+        EXM_SetWindStruct(dbgWind);
+        ((DbWindGameState *)GameLoopState)->flags &= ~1;
+        ((DbWindGameState *)GameLoopState)->quad_29f50 = 0;
+        ((DbWindGameState *)GameLoopState)->state_0c = ((DbWindGameState *)GameLoopState)->state_29f60;
+    }
+    updateWind(dbgWind);
+    if (pad->half_2a & 0x40) {
+        EXM_ClearWindStruct();
+        EXM_SetWindPara(dbgWind);
+        owner = task->owner;
+        owner->flags &= ~1;
+        owner->state_0c = owner->state_29f60;
+        TWSYS_setGRPStatus(0, 0);
+        xglTaskRemove(&task->task);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_debugMenu);
 

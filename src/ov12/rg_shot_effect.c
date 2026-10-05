@@ -327,4 +327,66 @@ void RgShotEffectPassTime(RgShotEffect *pEff, float time)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_shot_effect", RgShotEffectDisp);
+typedef struct ShotLine3D {
+    int mode;
+    unsigned char gap[12];
+    RgVector start;
+    RgVector end;
+    float width;
+} ShotLine3D;
+extern void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle);
+extern void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right);
+extern void RgDispModelSetLocal(RgDispModel *pDispModel, RgMatrix source);
+extern void RgDispModelSetTransparent(RgDispModel *pDispModel, float transparent);
+extern void RgDispModelDisplay(RgDispModel *pDispModel);
+extern void RgParticleEffectDisp(RgParticleEffect *particle);
+extern void *InstanceOfXrgPaint2D(void);
+extern void XrgPaint2DAlpha(void *paint, int blendMode);
+extern void XrgPaint2DUseTexture(void *paint, int texture);
+extern void InitXrgPaint2DLine3D(ShotLine3D *line, int mode, float width);
+extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
+extern void XrgScaleVectorXYZ(RgVector destination, RgVector source, float scale);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+extern void XrgPaint2DColor(void *paint, const int *color);
+extern void XrgPaint2DDrawLine(void *paint, ShotLine3D *line);
+
+void RgShotEffectDisp(RgShotEffect *pEff)
+{
+    RgMatrix local;
+    ShotLine3D line;
+    RgVector dir;
+    void *paint;
+
+    if (pEff == 0) {
+        assert_prog(D_00A53418, D_00A53428, 284);
+    }
+    if (pEff->dispModel != 0) {
+        XrgUnitMatrix(local);
+        local[0] = pEff->scale;
+        local[5] = pEff->scale;
+        local[10] = pEff->scale;
+        XrgRotMatrixY(local, local, pEff->yRotation);
+        XrgMulMatrix(local, pEff->matrix, local);
+        RgDispModelSetLocal(pEff->dispModel, local);
+        if (pEff->transparent < 1.0f) {
+            RgDispModelSetTransparent(pEff->dispModel, pEff->transparent);
+        }
+        RgDispModelDisplay(pEff->dispModel);
+    }
+    if (pEff->particleEffect != 0) {
+        RgParticleEffectDisp(pEff->particleEffect);
+    }
+    if (pEff->texLinePicId != 0) {
+        paint = InstanceOfXrgPaint2D();
+        XrgPaint2DAlpha(paint, 1);
+        XrgPaint2DUseTexture(paint, pEff->texLinePicId);
+        InitXrgPaint2DLine3D(&line, 1, pEff->texLineModelHeight);
+        __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                             : : "r"(pEff->endPos), "r"(line.start) : "memory");
+        XrgSubVector(dir, pEff->startPos, pEff->endPos);
+        XrgScaleVectorXYZ(dir, dir, pEff->texLineModelWidth);
+        XrgAddVector(line.end, line.start, dir);
+        XrgPaint2DColor(paint, pEff->texLineModelColor);
+        XrgPaint2DDrawLine(paint, &line);
+    }
+}

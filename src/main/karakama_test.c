@@ -278,7 +278,24 @@ void PrimTest(void)
     xglPrimAddGouraudStripN(packet, 3);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/karakama_test", SetMapUnitTest);
+extern void CreateUwamono(int id, float x, float y, float z, float w);
+extern const char D_004C9D80[];
+
+void SetMapUnitTest(void)
+{
+    printf(D_004C9D80);
+    CreateUwamono(0x7101, 10.0f, 0.0f, -14.0f, 0.0f);
+    CreateUwamono(0x7102, 8.22f, -1.0f, 38.41f, 0.0f);
+    CreateUwamono(0x7103, 8.22f, -1.0f, 44.47f, 0.0f);
+    CreateUwamono(0x7104, 6.97f, -1.0f, 53.46f, 0.0f);
+    CreateUwamono(0x7101, 0.19f, -1.0f, 45.12f, 0.0f);
+    CreateUwamono(0x7102, 11.0f, -0.34f, 67.74f, 0.0f);
+    CreateUwamono(0x7001, -12.0f, 2.0f, 18.0f, 0.0f);
+    CreateUwamono(0x7104, -12.0f, 4.0f, 18.0f, 0.0f);
+    CreateUwamono(0x7103, -12.0f, 6.0f, 18.0f, 0.0f);
+    CreateUwamono(0x7102, -12.0f, 8.0f, 18.0f, 0.0f);
+    CreateUwamono(0x7101, -12.0f, 10.0f, 18.0f, 0.0f);
+}
 
 void InitCf(void)
 {

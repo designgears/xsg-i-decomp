@@ -67,7 +67,34 @@ ObjectTask *objEntry2(void *argument, ObjectTaskCallback callback) {
     return task;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/obj", objEntrySub);
+extern ObjectWork *objWorkGet(void);
+extern char D_00A437E0[];
+
+ObjectTask *objEntrySub(void *manager, void *argument, int reverse) {
+
+    XglTaskScheduler *scheduler = manager;
+    XglTaskPrefix *entry;
+    XglTaskPrefix *allocated;
+    ObjectWork *work;
+
+    if (reverse == 0) {
+        entry = scheduler ? (XglTaskPrefix *)scheduler->active_tail : 0;
+        allocated = xglTaskEntryNext(scheduler,
+                                     (int (*)(XglTaskPrefix *))argument, entry);
+    } else {
+        entry = scheduler ? (XglTaskPrefix *)scheduler->active_head : 0;
+        allocated = xglTaskEntryPrev(scheduler,
+                                     (int (*)(XglTaskPrefix *))argument, entry);
+    }
+    work = objWorkGet();
+    if (allocated == 0 || work == 0) {
+        printf(D_00A437E0);
+        return 0;
+    }
+    ((ObjectTaskNode *)allocated)->exec = 0;
+    ((ObjectTask *)allocated)->work = work;
+    return (ObjectTask *)allocated;
+}
 
 void objEntryRev(void *argument) {
     objEntrySub(&taskMan, argument, 1);

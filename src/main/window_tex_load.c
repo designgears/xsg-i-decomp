@@ -4,7 +4,20 @@
 
 INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", WindowTexLoad);
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", WindowTexAddrGet);
+extern int MenuWinAddr;
+extern char Menu02Tex[];
+
+void *WindowTexAddrGet(int no)
+{
+    switch (no) {
+    case 0:
+    case 1:
+        return (void *)MenuWinAddr;
+    case 2:
+        return Menu02Tex;
+    }
+    return 0;
+}
 
 extern unsigned char MenuWorkEndTop[];
 
@@ -119,9 +132,41 @@ void MoveSlide2(short *current, short *target, short step)
     *target = target_position;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", menuCallback);
+static void menuCallback(int status)
+{
+    switch (status) {
+    case 1:
+        MenuLoadCount++;
+        break;
+    case 4:
+        MenuLoadCount--;
+        break;
+    case -1:
+        MenuLoadCount = -1;
+        break;
+    case -2:
+        MenuLoadCount = -2;
+        break;
+    case 0:
+    case 2:
+    case 3:
+    default:
+        break;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuFontLoad);
+extern int original_font_no_1;
+
+int MenuFontLoad(int load, int cb)
+{
+    void *f = 0;
+    if (cb) f = menuCallback;
+    if (load) {
+        original_font_no_1 = xglFontLoad(1, f);
+        return original_font_no_1;
+    }
+    return xglFontLoad(original_font_no_1, f);
+}
 
 /*
  * The fourth argument of xglCdReadFile is the completion-callback slot that
@@ -180,11 +225,46 @@ void MenuBibrationInit(void)
     MenuBibrationSet(0, 0, 0, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuBibrationMain);
+extern unsigned char PadData[][0x68];
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuCfTaikiPush);
+void MenuBibrationMain(void)
+{
+    if (MenuBibrationCount != 0) {
+        MenuBibrationCount--;
+        PadData[MenuBibrationPad][MenuBibrationAct + 0x50] = MenuBibrationSpeed;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuCfTaikiPop);
+extern int MenuCfTaiki[];
+extern struct {
+    char unmodeled_00[0x24];
+    int taiki[8];
+} sRenderTaikiPush __asm__("sRender");
+
+void MenuCfTaikiPush(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        MenuCfTaiki[i] = sRenderTaikiPush.taiki[i];
+        sRenderTaikiPush.taiki[i] = 0;
+    }
+}
+
+extern int MenuCfTaiki[];
+extern struct MenuCfTaikiRender {
+    char unmodeled_00[0x24];
+    int taiki[8];
+} sRenderTaiki __asm__("sRender");
+
+void MenuCfTaikiPop(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        sRenderTaiki.taiki[i] = MenuCfTaiki[i];
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuBgTaskInit);
 
@@ -220,7 +300,17 @@ void MenuBgTaskMain(void)
     MenuModelDirectSendZClear();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuBgTaskBreak);
+typedef struct { long long b[0x5F0 / 8]; } MenuBgCamBlob;
+extern char *MenuBgParam;
+extern int MenuBgCameraId;
+extern MenuBgCamBlob *MenuBgKeepCamera;
+
+void MenuBgTaskBreak(void)
+{
+    *(int *)(MenuBgParam + 0x828) = -1;
+    MenuBgTaskMain();
+    *(MenuBgCamBlob *)xglStudioGetCamera2(MenuBgCameraId) = *MenuBgKeepCamera;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuTairetuLoad);
 
@@ -303,7 +393,21 @@ void UmnkosmosSpecialInit(void)
     memset(UmnKosmosSpecialBox, 0, sizeof(UmnKosmosSpecialBox));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", UmnkosmosSpecialSet);
+void UmnkosmosSpecialSet(void)
+{
+    int i = 0;
+    short *p = (short *)UmnKosmosSpecialBox;
+    short v;
+
+    do {
+        if (i >= 4) break;
+        v = *p;
+        i++;
+        p++;
+        if (v == 0) break;
+        func_A19750(2, v);
+    } while (1);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", UmnInterface);
 
@@ -354,7 +458,12 @@ void UmnMailMain(int menuId)
     UmnkosmosSpecialSet();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", UmnMailBoxSet);
+void UmnMailBoxSet(int v)
+{
+    char *p = (char *)&SaveData[0x1025C];
+    int i;
+    for (i = 0; i < 128; i++) { if (p[i] == -1) { p[i] = v; break; } }
+}
 
 unsigned char *UmnMailDataGet(int box_id)
 {

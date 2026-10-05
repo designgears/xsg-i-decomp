@@ -19,7 +19,17 @@ void GAME_initLight(void)
     xglLightSetDefault(light);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_init_camera", STR_indexReverse);
+char *STR_indexReverse(char *string, int length, int ch)
+{
+    int i;
+
+    for (i = length - 1; i >= 0; i--) {
+        if (string[i] == ch) {
+            return string + i;
+        }
+    }
+    return 0;
+}
 
 extern unsigned int strlen(const char *string);
 extern char *strchr(const char *string, int character);

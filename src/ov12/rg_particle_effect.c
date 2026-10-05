@@ -72,7 +72,81 @@ static void _ReInitShoot(RgParticleShoot *shoot)
     XrgClearVector(shoot->force);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_particle_effect", _InitEffect_00A20C70);
+struct RgEffectEnv;
+struct RgBxx;
+extern struct RgEffectEnv *InstanceOfRgEffectEnv(void);
+extern struct RgBxx *RgEffectEnvGetBxx(struct RgEffectEnv *env);
+extern void *RgBxxGetPic(struct RgBxx *bxx, const char *picture_name);
+extern void RgError(const char *fmt, const char *source_file, int line, ...);
+extern XrgParticle *CreateArrayOfXrgParticle(unsigned int count);
+extern const char D_00A54308[];
+extern const char D_00A54318[];
+extern const char D_00A54338[];
+
+static void _InitEffect(RgParticleEffect *effect, RgParticleEffectEssence *essence,
+                        int context)
+{
+    RgParticleEffect *e;
+    unsigned int total;
+    unsigned int i;
+    char *particles;
+    int count;
+    struct RgBxx *bxx;
+    int repeat;
+    void *pic;
+
+    bxx = RgEffectEnvGetBxx(InstanceOfRgEffectEnv());
+    if (effect == 0) {
+        assert_prog(D_00A542C8, D_00A542D8, 0xF6);
+    }
+    if (essence == 0) {
+        assert_prog(D_00A542F8, D_00A542D8, 0xF7);
+    }
+    if (bxx == 0) {
+        assert_prog(D_00A54308, D_00A542D8, 0xF8);
+    }
+    effect->state = 1;
+    total = 0;
+    effect->shootActive = 1;
+    InitRgParticleEffectControlData(&effect->controlData);
+    for (i = 0; i < (unsigned int)context; i++) {
+        total += essence[i].particleCount;
+    }
+    *(unsigned int *)effect->unmodeled_08 = total;
+    effect->shootCount = context;
+    if (context == 0 || total == 0) {
+        effect->particles = 0;
+        return;
+    }
+    if (total > 0x1000) {
+        RgError(D_00A54318, D_00A542D8, 0x10B, total);
+    }
+    effect->particles = CreateArrayOfXrgParticle(total);
+    particles = (char *)effect->particles;
+    for (i = 0; i < (unsigned int)context; i++) {
+        e = (RgParticleEffect *)((char *)effect + i * sizeof(RgParticleShot));
+        count = essence->particleCount;
+        e->shots[0].dispArg0 = (int)particles;
+        e->shots[0].dispArg1 = count;
+        pic = RgBxxGetPic(bxx, essence->textureName);
+        e->shots[0].started = 0;
+        e->shots[0].life = essence->shotLife;
+        repeat = essence->repeat;
+        e->shots[0].dispArg2 = (int)pic;
+        e->shots[0].lifeMax = essence->shotLife;
+        e->shots[0].flags = 0;
+        e->shots[0].resist = essence->resist;
+        if (repeat != 0) {
+            e->shots[0].flags = 1;
+        }
+        if (e->shots[0].dispArg2 == 0) {
+            RgError(D_00A54338, D_00A542D8, 0x122, essence);
+        }
+        _InitShoot((RgParticleShoot *)e->shots[0].shoot, essence);
+        particles += essence->particleCount * 0x50;
+        essence++;
+    }
+}
 
 static void _DestructEffect(RgParticleEffect *effect)
 {
@@ -146,7 +220,16 @@ void RgParticleEffectEssenceSerialize(RgParticleEffectEssence *essence,
     *destination = *essence;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_particle_effect", RgParticleEffectEssenceResume);
+void RgParticleEffectEssenceResume(RgParticleEffectEssence *essence,
+                                   RgParticleEffectEssence *source)
+{
+    extern const char D_00A54368[];
+
+    if (essence == 0) {
+        assert_prog(D_00A54368, D_00A542D8, 375);
+    }
+    *essence = *source;
+}
 
 void RgParticleEffectSetShootLocal(RgParticleEffect *effect, RgMatrix local)
 {
@@ -257,7 +340,30 @@ void RgParticleEffectSetControlData(RgParticleEffect *effect, RgParticleEffectCo
     dst->value[2] = value2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_particle_effect", RgParticleEffectIsAlive);
+int RgParticleEffectIsAlive(RgParticleEffect *effect)
+{
+    unsigned int alive = 0;
+    unsigned int count;
+    unsigned int i;
+    float *life;
+
+    if (effect->state & RG_PARTICLE_EFFECT_STATE_LOCKED) {
+        return 0;
+    }
+    count = effect->shootCount;
+    i = 0;
+    if (i < count) {
+        life = &effect->shots[0].life;
+        do {
+            if (*life > 0.0f) {
+                alive++;
+            }
+            i++;
+            life = (float *)((char *)life + sizeof(RgParticleShot));
+        } while (i < effect->shootCount);
+    }
+    return alive >= count;
+}
 
 int RgParticleEffectIsActive(RgParticleEffect *effect)
 {

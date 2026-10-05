@@ -183,9 +183,45 @@ static void tyaUmlDispType3(TyaUmlDispParam *parameter)
                         tyaUmlDispType3Sub1, parameter);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", tyaUmlDispMain);
+extern TyaUmlImage image[8];
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", find_text);
+int tyaUmlDispMain(TyaUmlDispParam *parameter)
+{
+    if (parameter == 0) return -1;
+    if (parameter->resource_id < 0) {
+        memset(buffer, 0, 0x64);
+        memset(image, 0, 0x80);
+        tyaUmlDispType3(parameter);
+        return 0;
+    }
+    if (parameter->resource_id != parameter->loaded_resource_id) {
+        return tyaUmlDispLoad();
+    }
+    tyaUmlDispType3(parameter);
+    return 0;
+}
+
+extern int xglFlagsGet(int bit_offset, int bit_count);
+
+static char *find_text(char *p, int id)
+{
+    int size;
+
+loop:
+    size = *(int *)p;
+    if (size != 0) {
+        if (id == *(int *)(p + 4)) {
+            int flag = *(unsigned short *)(p + 0x14);
+            p += 0x68;
+            if (xglFlagsGet(flag, 1) == 0) p = 0;
+            return p;
+        } else {
+            p = p + size + 4;
+            goto loop;
+        }
+    }
+    return 0;
+}
 
 static int get_fileno(int target_id, int *file_index)
 {
@@ -209,9 +245,50 @@ static int get_fileno(int target_id, int *file_index)
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", get_indexno);
+static int get_indexno(int target_id)
+{
+    s16 *entry = base_tbl;
+    int index = 0;
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", get_selectno);
+    while (*entry != -2) {
+        s16 value = *entry;
+
+        if (value == -1) {
+            index++;
+        }
+        if (value != -1 && value != -3) {
+            if (value - 9000 == target_id) {
+                return index;
+            }
+        }
+        entry++;
+    }
+
+    return -1;
+}
+
+static int get_selectno(int n)
+{
+    s16 *entry = base_tbl;
+    int index = 0;
+
+    while (*entry != -2) {
+        s16 value = *entry;
+
+        if (value == -1) {
+            n--;
+        }
+        if (value != -1 && value != -3) {
+            if (n == 0) {
+                return index;
+            }
+            index++;
+        }
+        entry++;
+    }
+
+    return -1;
+}
 
 /* Parses db_fileno.txt into the base identifier table. */
 static void dbfileno_load(void)
@@ -252,7 +329,43 @@ done:
 
 INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", dbheader_load);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", disp_index);
+extern char *idx_7;
+extern char msg_8[];
+extern const char D_00A13400[];
+extern const char D_00A13410[];
+extern const char D_00A13418[];
+typedef struct DispIndexWork {
+    u8 unmodeled_00[8];
+    s16 x0;
+    s16 y0;
+    s16 x1;
+    s16 y1;
+    u64 color;
+    u8 unmodeled_18[0x3E];
+    s16 cursor;
+} DispIndexWork;
+
+static void disp_index(DispIndexWork *work, int value)
+{
+    int i;
+    int color;
+
+    color = (int)(work->color + 4);
+    xglFontPrint(work->x0 + work->x1 - 0x824, work->y0 + work->y1 - 0x71C, color, D_00A13400);
+    for (i = 0; i < 26; i++) {
+        if (i == work->cursor) {
+            xglFontPrintDirectOT(color, D_00A13410);
+        } else {
+            xglFontPrintDirectOT(color, D_00A13418);
+        }
+        xglFontPrintDirectOT(color, idx_7 + i * 2);
+        if (value != 0) {
+            msg_8[2] = value >> 8;
+            msg_8[3] = value;
+            xglFontPrintDirectOT(color, msg_8);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/tya_uml", tyaUmlDatabaseMain);
 

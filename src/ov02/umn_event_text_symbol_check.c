@@ -9,7 +9,31 @@ INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextSym
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextCharCheck);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextNumberGet);
+int UmnEventTextNumberGet(unsigned char **str, int mode)
+{
+  unsigned char value = 0;
+  unsigned char max;
+  unsigned char c;
+  char base;
+  unsigned int ci;
+  if (mode == 1)
+  {
+    max = '9';
+    base = 10;
+  }
+  else
+  {
+    max = '7';
+    base = 8;
+  }
+  while (((*(*str)) >= '0') && (max >= (*(*str))))
+  {
+    value *= base;
+    value += (*((*str)++)) - '0';
+  }
+
+  return value;
+}
 
 /* Advances *str past every consecutive newline. */
 void UmnEventTextGyouJump(unsigned char **str)

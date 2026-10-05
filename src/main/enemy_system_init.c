@@ -58,6 +58,21 @@ int Enemy_LoadPreset(void *buffer, const char *preset_name)
     return xglCdReadFile(path.bytes, buffer, 0, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/enemy_system_init", TM_Script_Spline_Add);
+typedef struct {
+    char pad0[0x80];
+    float spline[256][4];
+    short spline_num;
+    char pad1[0x38B0 - 0x1082];
+} EnePcSpline;
+extern EnePcSpline enepc[];
+
+void TM_Script_Spline_Add(int no, float x, float y, float z) {
+    int n = enepc[no].spline_num;
+    enepc[no].spline_num++;
+    enepc[no].spline[n][0] = x;
+    enepc[no].spline[n][1] = y;
+    enepc[no].spline[n][2] = z;
+    enepc[no].spline[n][3] = 1.0f;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/enemy_system_init", ACT_createEnemy);

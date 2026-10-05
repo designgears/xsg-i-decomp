@@ -46,7 +46,22 @@ static void _InitRgMotionShotInfo(RgMotionShotInfo *info, int motionNo)
     info->charId = -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_motion_info_db", _AddActionRgMotion);
+extern const char D_00A52490[];
+
+static RgMotionAction *_AddActionRgMotion(RgMotionShotInfo *pInfo, int actionNo, float startTime, float endTime)
+{
+    RgMotionAction *act;
+
+    if (pInfo->actionCount >= 4U) {
+        assert_prog(D_00A52490, D_00A52470, 65);
+    }
+    act = &pInfo->actions[pInfo->actionCount++];
+    act->actionNo = actionNo;
+    act->startTime = startTime;
+    act->endTime = endTime;
+    act->shiftMotionNo = -1;
+    return act;
+}
 
 static void _TableInit(RgMotionInfoDB *db)
 {
@@ -153,7 +168,7 @@ static void _TableFree(RgMotionInfoDB *db)
 }
 
 /* Same TU, not part of this allocation. */
-extern void _AddActionRgMotion(RgMotionShotInfo *, int, float, float);
+static RgMotionAction *_AddActionRgMotion(RgMotionShotInfo *, int, float, float);
 
 static void _InitDB(RgMotionInfoDB *db) {
     RgMotionShotInfo *info;
@@ -206,7 +221,129 @@ RgMotionInfoDB *InstanceOfRgMotionInfoDB(void)
     return db;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_motion_info_db", RgMotionInfoDBLoad);
+typedef struct RgReadText RgReadText;
+extern RgReadText *CreateRgReadText(const char *path);
+extern void DisposeRgReadText(RgReadText *pReader);
+extern void RgReadTextGetString(RgReadText *pReader, char *pszOut);
+extern float RgReadTextGetFloat(RgReadText *pReader);
+extern int RgReadTextIsEOF(RgReadText *pReader);
+extern void RgReadTextUnget(RgReadText *pReader, char *pszToken);
+extern int RgActorMotIDGetFromName(char *name);
+extern int RgActorNameToCharID(char *name);
+extern int strcasecmp(const char *a, const char *b);
+extern const char D_00A524F0[];
+extern const char D_00A52500[];
+extern const char D_00A52508[];
+extern const char D_00A52520[];
+extern const char D_00A52530[];
+extern const char D_00A52540[];
+extern const char D_00A52548[];
+extern const char D_00A52558[];
+extern const char D_00A52560[];
+extern const char D_00A52570[];
+extern const char D_00A52580[];
+extern const char D_00A52590[];
+RgMotionShotInfo *_TableGet(RgMotionInfoDB *db, int motionNo);
+static void _TableEntry(RgMotionInfoDB *db, RgMotionShotInfo *entry);
+
+void RgMotionInfoDBLoad(RgMotionInfoDB *db)
+{
+    char buf[128];
+    RgReadText *rt;
+    RgMotionShotInfo *info;
+    RgMotionShotInfo *ent;
+    RgMotionAction *act;
+    float s;
+    float e;
+    float a;
+    float b;
+    int motNo;
+
+    if (db == 0) {
+        assert_prog(D_00A524E0, D_00A52470, 239);
+    }
+    rt = CreateRgReadText(D_00A524F0);
+    if (rt == 0) {
+        return;
+    }
+    while (!RgReadTextIsEOF(rt)) {
+        RgReadTextGetString(rt, buf);
+        motNo = RgActorMotIDGetFromName(buf);
+        info = RgHeapAlloc(InstanceOfRgHeap(), 100, D_00A52470, 258);
+        _InitRgMotionShotInfo(info, motNo);
+        while (!RgReadTextIsEOF(rt)) {
+            RgReadTextGetString(rt, buf);
+            if (strcasecmp(buf, D_00A52500) == 0) {
+                s = RgReadTextGetFloat(rt);
+                e = RgReadTextGetFloat(rt);
+                if (!(s <= e)) {
+                    assert_prog(D_00A52508, D_00A52470, 271);
+                }
+                _AddActionRgMotion(info, 0, s, e);
+            } else if (strcasecmp(buf, D_00A52520) == 0) {
+                a = RgReadTextGetFloat(rt);
+                b = RgReadTextGetFloat(rt);
+                s = a / 30.0f;
+                e = b / 30.0f;
+                if (!(a <= b)) {
+                    assert_prog(D_00A52530, D_00A52470, 280);
+                }
+                _AddActionRgMotion(info, 0, s, e);
+            } else if (strcasecmp(buf, D_00A52540) == 0) {
+                act = _AddActionRgMotion(info, 2, 0.0f, RG_MOTION_ANY_TIME);
+                if (act == 0) {
+                    assert_prog(D_00A52548, D_00A52470, 286);
+                }
+                RgReadTextGetString(rt, buf);
+                act->shiftMotionNo = RgActorMotIDGetFromName(buf);
+                RgReadTextGetString(rt, buf);
+                act->weaponMotionNo = RgActorMotIDGetFromName(buf);
+            } else if (strcasecmp(buf, D_00A52558) == 0) {
+                act = _AddActionRgMotion(info, 3, 0.0f, RG_MOTION_ANY_TIME);
+                if (act == 0) {
+                    assert_prog(D_00A52548, D_00A52470, 296);
+                }
+                RgReadTextGetString(rt, buf);
+                act->shiftMotionNo = RgActorMotIDGetFromName(buf);
+                RgReadTextGetString(rt, buf);
+                act->weaponMotionNo = RgActorMotIDGetFromName(buf);
+            } else if (strcasecmp(buf, D_00A52560) == 0) {
+                s = RgReadTextGetFloat(rt);
+                e = RgReadTextGetFloat(rt);
+                act = _AddActionRgMotion(info, 1, s / 30.0f, e / 30.0f);
+                if (act == 0) {
+                    assert_prog(D_00A52548, D_00A52470, 311);
+                }
+                if (!(s <= e)) {
+                    assert_prog(D_00A52530, D_00A52470, 312);
+                }
+                RgReadTextGetString(rt, buf);
+                act->shiftMotionNo = RgActorMotIDGetFromName(buf);
+                RgReadTextGetString(rt, buf);
+                act->weaponMotionNo = RgActorMotIDGetFromName(buf);
+            } else if (strcasecmp(buf, D_00A52570) == 0) {
+                info->shotFlags |= 1;
+            } else if (strcasecmp(buf, D_00A52580) == 0) {
+                info->shotFlags |= 2;
+            } else if (strcasecmp(buf, D_00A52590) == 0) {
+                RgReadTextGetString(rt, buf);
+                info->charId = RgActorNameToCharID(buf);
+            } else {
+                RgReadTextUnget(rt, buf);
+                break;
+            }
+        }
+        ent = _TableGet(db, info->motionNo);
+        if (ent != 0) {
+            info->next = ent->next;
+            ent->next = info;
+        } else {
+            _TableEntry(db, info);
+            _TableSort(db);
+        }
+    }
+    DisposeRgReadText(rt);
+}
 
 void RgMotionInfoDBDispose(RgMotionInfoDB *db)
 {

@@ -15,7 +15,33 @@ INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_scaleUnit);
 
 INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_rotateUnitSPL);
 
-INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_scaleUnitSPL);
+extern void SPL_getValueXYZ(float *destination, void *spline, float frame);
+typedef struct {
+    void *spline;
+    short frame;
+    short end;
+} SeqSplTrack;
+
+void SEQ_scaleUnitSPL(MapUnitMotionRecord *unit)
+{
+    MapUnitGroupSequenceEntry *seq = &unitSequence[((unsigned char *)unit)[0xA0]];
+    SeqSplTrack *track = (SeqSplTrack *)((unsigned char *)seq + 0x1B8);
+    void *spline;
+    float v[4];
+
+    spline = track->spline;
+    if (!(seq->flags & 0xE0)) {
+        seq->flags |= 0xE0;
+        track->frame = 0;
+    }
+    SPL_getValueXYZ(v, spline, (float)track->frame);
+    unit->scale.x = v[0];
+    unit->scale.y = v[1];
+    unit->scale.z = v[2];
+    if (track->end < ++track->frame) {
+        seq->state &= ~0xE0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_moveUnitSPL);
 
@@ -137,7 +163,51 @@ void MAP_updateUnitDefault(MapUnitRecord *unit)
     xglMatrixStackSave(unit->matrix);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", MAP_initUnitSequance);
+typedef struct {
+    int a0, a4, a8, aC, a10, a14, a18, a1C, a20, a24, a28, a2C, a30;
+    char pad[0x260 - 0x34];
+} MAPIUS_Seq;
+typedef struct {
+    int f0;
+    void *f4;
+    char pad8[0xA1 - 8];
+    char fA1;
+    char padA2[6];
+    short fA8;
+    char padAA[0xD0 - 0xAA];
+    int fD0;
+    char padD4[0x300 - 0xD4];
+} MAPIUS_Unit;
+
+void MAP_initUnitSequance(void)
+{
+    MAPIUS_Unit *unit = (MAPIUS_Unit *)MapUnit;
+    MAPIUS_Seq *seq = (MAPIUS_Seq *)unitSequence;
+    int i;
+
+    for (i = 0; i < 64; i++) {
+        seq->a0 = 0;
+        seq->a4 = 0;
+        seq->aC = 0;
+        seq->a14 = 0;
+        seq->a18 = 0;
+        seq->a1C = 0;
+        seq->a20 = 0;
+        seq->a24 = 0;
+        seq->a28 = 0;
+        seq->a2C = 0;
+        seq->a30 = 0;
+        seq++;
+    }
+    for (i = 0; i < 64; i++) {
+        unit->fD0 = 0;
+        unit->f0 = 0;
+        unit->fA1 = 0;
+        unit->fA8 = 0;
+        unit->f4 = MAP_updateUnitDefault;
+        unit++;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", MAP_updateUnitPartsSequence);
 

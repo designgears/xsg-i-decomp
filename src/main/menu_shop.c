@@ -144,7 +144,38 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopSortSet);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_shop", subMenuShopEquipCheck);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopNoSaleCheck);
+extern char *func_A1A4E8(int item);
+extern char *func_A1A428(int item);
+extern char *func_A1A548(int item);
+
+int MenuShopNoSaleCheck(int item)
+{
+    unsigned int id = item & 0xFFFF;
+    int kind = (unsigned int)item >> 16;
+    unsigned short flags = 0;
+
+    if (id == 0) {
+        return 0;
+    }
+    switch (kind) {
+    case 1:
+        flags = *(unsigned short *)(func_A1A4E8(id) + 4);
+        break;
+    case 3:
+        flags = *(unsigned short *)((char *)((MenuShopWeapon *(*)(int))func_A1A3D8)(id) + 6);
+        break;
+    case 4:
+        flags = *(unsigned short *)(func_A1A428(id) + 0xA);
+        break;
+    case 5:
+        flags = *(unsigned short *)(func_A1A548(id) + 4);
+        break;
+    }
+    if (flags & 0x1000) {
+        return 1;
+    }
+    return 0;
+}
 
 void MenuShopListColorChange(int list, int kind)
 {

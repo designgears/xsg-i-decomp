@@ -54,7 +54,18 @@ extern float RgGeomPointGetWeight(RgGeomPoint *point);
 
 static void _InitHomingThread(RgHomingThread *thread);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitHomingThread);
+static void _InitHomingThread(RgHomingThread *thread)
+{
+    if (thread == 0) {
+        assert_prog(D_00A51830, D_00A51840, 73);
+    }
+    thread->geometry = 0;
+    thread->target = 0;
+    thread->actionTime = 0;
+    thread->sleepTime = 0;
+    *(float *)thread->unmodeled_10 = 12.566371f;
+    thread->state = 0;
+}
 
 static RgHomingThread *_CreateHomingThread(void)
 {
@@ -124,7 +135,32 @@ static float _GetSleepTimeHomingThread(RgHomingThread *thread)
     return sleepTime;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _PassTimeHomingThread);
+extern float RgRobSubHoming(RgGeomPoint *geometry, RgGeomPoint *targetGeometry,
+                            float speed, float turnRate);
+
+void _PassTimeHomingThread(RgHomingThread *thread, float deltaTime)
+{
+    float t;
+
+    if (thread == 0) {
+        assert_prog(D_00A51830, D_00A51840, 0x8D);
+    }
+    switch (thread->state) {
+    case 1:
+        t = thread->actionTime - deltaTime;
+        thread->actionTime = t;
+        if (t <= 0.0f) {
+            thread->actionTime = 0.0f;
+            thread->state = 2;
+        }
+        RgRobSubHoming(thread->geometry, (RgGeomPoint *)thread->target,
+                       *(float *)&thread->unmodeled_10[0], deltaTime);
+        return;
+    case 2:
+        thread->sleepTime = thread->sleepTime + deltaTime;
+        break;
+    }
+}
 
 static float _CalcMaxSpeed(RgBody *body, float baseSpeed)
 {
@@ -247,7 +283,26 @@ static void _StatusDisp(RgRobotStatus *status, RgBody *body)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _AllowAllCmdInMoving);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _AllowDamageCmd);
+static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command);
+
+static int _AllowDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result;
+
+    result = 0;
+    switch ((unsigned)command->type) {
+    case 8:
+        result = _ExecDamageCmd(status, body, command);
+        break;
+    case 9:
+        result = _ExecWeakDamageCmd(status, body, command);
+        break;
+    case 14:
+        result = _ExecHitByBody(status, body, command);
+        break;
+    }
+    return result;
+}
 
 static int _ExecDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _ExecWeakDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
@@ -386,7 +441,15 @@ INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecCmdInTargetting);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _TargettingPassTime);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExitTargettingStatus);
+extern void RgRobotEffectSetJetInertia(RgRobotEffect *effect, int inertia);
+
+static void _ExitTargettingStatus(RgRobotStatus *status, RgBody *body)
+{
+    int pad[4];
+    (void)status;
+    RgRobotEffectTermJet(body->effect);
+    RgRobotEffectSetJetInertia(body->effect, 1);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitTargettingStatus);
 
@@ -412,13 +475,42 @@ static void _BreakingExit(RgRobotStatus *status, RgBody *body)
     _BodyPlayMotion(body, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitBreakingStatus);
+static int _ExecCmdInBreaking();
+
+static void _InitBreakingStatus(RgStatus *rs, RgBody *body)
+{
+    RgRobotStatus *status = (RgRobotStatus *)rs;
+
+    _StopAllShotThread((int *)body);
+    _SetStatus(status, 8, body);
+    status->execCmdMethod = (RgStatusExecCmdFunc)_ExecCmdInBreaking;
+    status->passTimeMethod = (RgStatusPassTimeFunc)_BreakingPassTime;
+    status->exitMethod = (RgStatusExitFunc)_BreakingExit;
+    *(float *)status = 0.3f;
+    _BodyPlayMotion(body, 0x14);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashExecCmd);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashPassTime);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _DashExit);
+extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
+extern void RgRobotEffectTermJet(RgRobotEffect *effect);
+extern void RgRobotEffectTermDash(RgRobotEffect *effect);
+extern void XrgSoundRingStopMoving(int soundID);
+
+static void _DashExit(RgRobotStatus *status, RgBody *body)
+{
+    RgRobotSpec *spec = body->spec;
+
+    RgGeomPointSetMaxXYSpd(body->geometry, _CalcMaxSpeed(body, spec->baseSpeed));
+    RgRobotEffectTermJet(body->effect);
+    RgRobotEffectTermDash(body->effect);
+    if (*(int *)&status->unmodeled_1c[0x14] != 0) {
+        body->dashTime = *(float *)&spec->unmodeled_30[0];
+    }
+    XrgSoundRingStopMoving(body->landingSoundID);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _InitDashStatus);
 
@@ -736,7 +828,29 @@ static void _BodySetAdvanceGeom(RgBody *body, RgGeomPoint *advanceGeometry)
     body->advanceGeometry = advanceGeometry;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _BodySetSound);
+extern void DisposeXrgSound(void *sound);
+extern void RgWeaponSetSound(void *weapon, int sound);
+
+static void _BodySetSound(RgBody *body, void *soundDriver)
+{
+    unsigned int i;
+    void *w;
+
+    if (body->landingSoundID != 0 && body->landingSoundID != (int)soundDriver) {
+        DisposeXrgSound((void *)body->landingSoundID);
+    }
+    body->landingSoundID = (int)soundDriver;
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        w = body->weapon[i];
+        if (w != 0) {
+            RgWeaponSetSound(w, body->landingSoundID);
+        }
+        w = (void *)body->spareWeapon[i];
+        if (w != 0) {
+            RgWeaponSetSound(w, body->landingSoundID);
+        }
+    }
+}
 
 /*
  * CreateXrgActor's published parameter is `int actorID` (src/ov12/xrg_actor.c,
@@ -970,7 +1084,19 @@ static int _ExecRotateCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
     return 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _IsBackWeaponReady);
+extern const char D_00A51A88[];
+extern float RgWeaponGetShotNum(void *weapon);
+
+static int _IsBackWeaponReady(RgBody *body, unsigned int eType)
+{
+    if (eType >= RG_EQUIP_TYPE_NUM) {
+        assert_prog(D_00A51A88, D_00A51840, 3543);
+    }
+    if (eType != 2) return 0;
+    if (body->weapon[2] == 0) return 0;
+    if (RgWeaponGetShotNum(body->weapon[2]) <= 0.0f) return 0;
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecShotOrAttackCmd);
 
@@ -993,7 +1119,28 @@ static int _ExecBreakCmd(RgStatus *status, RgBody *body, void *command)
     return 0x40;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecDashCmd);
+static void _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command);
+static int _InitDashVRStatus();
+
+static int _ExecDashCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    int result = 0;
+
+    switch ((unsigned int)body->spec->type) {
+    case 0:
+    case 2:
+    case 3:
+    case 4:
+        _InitDashStatus(status, body, command);
+        result = 4;
+        break;
+    case 1:
+        _InitDashVRStatus(status, body, command);
+        result = 4;
+        break;
+    }
+    return result;
+}
 
 static int _InitDashVRStatus(RgRobotStatus *status, RgBody *body, RgCmd *command,
                              int param1, int param2);
@@ -1049,14 +1196,23 @@ static int _ExecDropWeaponCmd(RgStatus *status, RgBody *body,
                : 0x200;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _ExecDamageCmd);
+static void _InitDamageStatus(RgRobotStatus *status, RgBody *body,
+                              RgCmd *command, float p5, int flag, float p6);
+
+static int _ExecDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
+{
+    body->life -= command->scratch0;
+    if (body->life < 0.0f) {
+        body->life = 0.0f;
+    }
+    _InitDamageStatus(status, body, command, command->scratch0, command->scratch1, 0.0f);
+    return 0x80;
+}
 
 extern void CreateRgHitEffectPosDir(RgVector position, RgVector direction,
                                     char *name1, char *name2);
 extern void RgGeomPointAddForce(RgGeomPoint *point, RgVector force);
 extern float XrgNormalizeVector(RgVector destination, RgVector source);
-static void _InitDamageStatus(RgRobotStatus *status, RgBody *body,
-                              RgCmd *command, int flag, float p5, float p6);
 extern unsigned char D_00A51BA0[];
 
 static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command)
@@ -1072,7 +1228,7 @@ static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command)
     if (body->life < 0.0f) {
         body->life = 0.0f;
     }
-    _InitDamageStatus(status, body, command, 1, 0.0f, 0.5f);
+    _InitDamageStatus(status, body, command, 0.0f, 1, 0.5f);
     return 0x400;
 }
 
@@ -1093,7 +1249,7 @@ static int _ExecWeakDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *comman
     accum = body->weakHitAccum + command->scratch0;
     body->weakHitAccum = accum;
     if (*(float *) &command->scratch1 <= accum) {
-        _InitDamageStatus(status, body, command, 1, accum, 0.0f);
+        _InitDamageStatus(status, body, command, accum, 1, 0.0f);
         body->weakHitWindow = 0.0f;
         body->weakHitAccum = 0.0f;
     } else {
@@ -1394,7 +1550,16 @@ void *RgRobotGetSpec(RgStatus *pRobot)
     return pRobot->body->spec;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", RgRobotIsConfused);
+int RgRobotIsConfused(RgStatus *pRobot)
+{
+    if (pRobot == 0) {
+        assert_prog(D_00A51BB0, D_00A51840, 4337);
+    }
+    if (pRobot->body->confuse > 0.0f) {
+        return 1;
+    }
+    return 0;
+}
 
 int RgRobotIsAcceptedCommand(RgStatus *pRobot, int command)
 {
@@ -1425,7 +1590,18 @@ void RgRobotAccelarate(RgStatus *pRobot, RgVector velocity)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", RgRobotAccelarateRotate);
+void RgRobotAccelarateRotate(RgStatus *pRobot, float accel)
+{
+    RgCmd *command;
+
+    if (pRobot == 0) {
+        assert_prog(D_00A51BB0, D_00A51840, 0x111E);
+    }
+    command = _EntryCmdQueue(pRobot->cmdQueue, 1);
+    if (command != 0) {
+        *(float *) command = accel;
+    }
+}
 
 /*
  * ov12:0x00a51a88 contains the range expression

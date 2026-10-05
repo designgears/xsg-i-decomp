@@ -76,7 +76,53 @@ void RgFontSetDefaultColor(RgFont *pFont)
     pFont->color.a = 0x7F;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_font", RgFontPut);
+extern void XrgPaint2DUseTexture(void *paint, int texture);
+extern void XrgPaint2DAlpha(void *paint, int mode);
+extern void XrgPaint2DSetUVOffset(void *paint, int u, int v);
+extern void XrgPaint2DSetUVSize(void *paint, int width, int height);
+extern void XrgPaint2DColor(void *paint, const unsigned int *color);
+extern void XrgPaint2DDrawXYWH(void *paint, int mode, int x, int y,
+                               int width, int height);
+
+int RgFontPut(void *paint, RgFont *font, signed char character, int x, int y,
+              int draw)
+{
+    unsigned int i;
+    RgFontGlyph *glyph;
+    int advance;
+    int pic;
+    int u, v, h, w, yoff;
+
+    if (paint == 0)
+        assert_prog(D_00A56F70, D_00A56F20, 79);
+    if (font == 0)
+        assert_prog(D_00A56F60, D_00A56F20, 80);
+    for (i = 0; i < font->glyph_count; i++) {
+        glyph = &font->glyphs[i];
+        if (glyph->character == character) {
+            u = glyph->texture_u;
+            v = glyph->texture_v;
+            w = glyph->size.width;
+            h = glyph->size.height;
+            yoff = glyph->y_offset;
+            advance = glyph->advance;
+            if (character != ' ' && draw != 0) {
+                pic = font->picture;
+                if (pic == 0)
+                    assert_prog(D_00A56F50, D_00A56F20, 92);
+                XrgPaint2DUseTexture(paint, pic);
+                XrgPaint2DAlpha(paint, 0);
+                XrgPaint2DSetUVOffset(paint, u, v);
+                XrgPaint2DSetUVSize(paint, w, h);
+                XrgPaint2DColor(paint, (const unsigned int *)&font->color);
+                XrgPaint2DDrawXYWH(paint, 0, x, y + yoff, w, h);
+                advance += (advance < 1) * w;
+            }
+            return advance;
+        }
+    }
+    return 0;
+}
 
 int RgFontStr(void *paint, int font_id, const char *text, int x, int y,
               int right_align)

@@ -1,14 +1,84 @@
 #include "common.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontDebugMode);
+extern unsigned char FS[];
+extern unsigned long ModeEnv[];
+
+void xglFontDebugMode(int mode)
+{
+  unsigned long *new_var2;
+  if (mode >= 0)
+  {
+    unsigned int new_var;
+    FS[11] = mode;
+    new_var = 4;
+    new_var2 = ModeEnv;
+    (new_var2 + 16)[new_var] = ((unsigned long) FS[11]) | 0x50000;
+    (ModeEnv + 0)[new_var] = ((unsigned long) (FS[11] + 0x23)) | 0x50000;
+  }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontGetKanjiClutUV);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", set_ot);
+/*
+ * Each 4-byte slot of the font print-queue buffer at D_008811A0 (16 slots,
+ * scaffold-owned splat name): link is the byte offset, from this array's
+ * base, of the next queued record for this bucket (0 marks the bucket
+ * empty -- xglFontFlush follows it as a chain), and selfOffset is the
+ * slot's own byte offset within the array.
+ */
+typedef struct FontQueueSlot {
+    unsigned short link;
+    unsigned short selfOffset;
+} FontQueueSlot;
+
+extern FontQueueSlot D_008811A0[16];
+
+static void set_ot(int ot)
+{
+    unsigned char *header = (unsigned char *)D_008811A0 - 0x20;
+    FontQueueSlot *slot = (FontQueueSlot *)((unsigned char *)D_008811A0 + ((ot >> 22) & 0x3C));
+    unsigned short off = *(unsigned short *)(header + 0x1C) - (int)D_008811A0;
+    unsigned char *p = (unsigned char *)D_008811A0 + slot->selfOffset;
+    p[0] = off;
+    p[1] = off >> 8;
+    slot->selfOffset = off;
+    (*(unsigned char **)(header + 0x1C))[0] = 0;
+    (*(unsigned char **)(header + 0x1C))[1] = 0;
+    *(unsigned char **)(header + 0x1C) += 2;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", set_xyz);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontGetSPcodeSize);
+extern unsigned char spcode_0[];
+
+unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char *text)
+{
+    unsigned char size;
+
+    size = spcode_0[code];
+    if (size == 0xFF) {
+        switch (code) {
+        case 8: {
+            unsigned char tbl[8] = { 2, 2, 3, 2, 2, 0, 0, 0 };
+            unsigned char mask = text[1];
+            int i;
+
+            size = 1;
+            for (i = 0; i < 8; i++) {
+                if (mask & 1) {
+                    size += tbl[i];
+                }
+                mask >>= 1;
+            }
+            break;
+        }
+        case 0x15:
+            size = text[1] + 1;
+            break;
+        }
+    }
+    return size;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontPrintSub);
 
@@ -62,20 +132,6 @@ INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontDebugPrintf);
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontDebugHex);
 
 /*
- * Each 4-byte slot of the font print-queue buffer at D_008811A0 (16 slots,
- * scaffold-owned splat name): link is the byte offset, from this array's
- * base, of the next queued record for this bucket (0 marks the bucket
- * empty -- xglFontFlush follows it as a chain), and selfOffset is the
- * slot's own byte offset within the array.
- */
-typedef struct FontQueueSlot {
-    unsigned short link;
-    unsigned short selfOffset;
-} FontQueueSlot;
-
-extern FontQueueSlot D_008811A0[16];
-
-/*
  * buffer_reset also reaches two fields 0x20 bytes before the queue buffer:
  * a reset flag byte and the queue's free-cursor pointer. The header these
  * belong to is not otherwise evidenced within this allocation, so they are
@@ -122,7 +178,18 @@ static void xglFontFlushSubHex(int digit)
     xglFontFlushSub(digit << 7, 0x2F00, (6 << 8) | 8, 0x13);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontFlushSubCRLF);
+static void xglFontFlushSubCRLF(void)
+{
+    unsigned short *p = (unsigned short *)0x70000000;
+    unsigned char *fs = FS;
+    int h = *(unsigned short *)(fs + 0xC);
+    int y = p[5] + h;
+    p[5] = y;
+    p[4] = p[2];
+    if (fs[0xB] == 0) {
+        *(unsigned short *)0x7000000A = y + h;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontFlushCore);
 
@@ -224,6 +291,60 @@ void xglFontSetFlags(int flags)
     *(unsigned short *)D_00881188 = flags & 0xFFFD;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontLoad);
+extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
+extern char D_004D2448[];
+extern char D_004D2458[];
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontInitial);
+int xglFontLoad(int type, int callback)
+{
+  int old;
+  int mode;
+  old = FS[10];
+  FS[10] = type;
+  mode = 1;
+  if (callback == 0)
+  {
+    if (old)
+    {
+      mode = 0;
+      callback = 1;
+    }
+    else
+    {
+      mode = 0;
+      callback = 1;
+    }
+  }
+  if (type == 0)
+  {
+    xglCdReadFile(D_004D2448, *((void **) FS), mode, callback);
+  }
+  else
+  {
+    xglCdReadFile(D_004D2458, *((void **) FS), mode, callback);
+  }
+  return old;
+}
+
+extern unsigned char FontImage[];
+extern unsigned char WindowImage[];
+extern void WindowTexLoad(void *window, int texture_set);
+extern void buffer_reset(void);
+
+void xglFontInitial(void)
+{
+    unsigned char *fs = FS;
+    fs[10] = -1;
+    *(void **)fs = FontImage;
+    xglFontLoad(1, 0);
+    *(void **)(fs + 4) = WindowImage;
+    WindowTexLoad(WindowImage, 0);
+    buffer_reset();
+    *(short *)(fs + 8) = 9;
+    *(short *)(fs + 12) = 8;
+    fs[16] = 4;
+    fs[11] = 0;
+    fs[18] = 0;
+    fs[19] = 0;
+    *(short *)(fs + 14) = 0;
+}

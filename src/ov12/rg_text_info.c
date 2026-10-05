@@ -55,7 +55,24 @@ extern const char D_00A544E8[];
 extern const char D_00A54500[];
 extern const char D_00A54508[];
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_text_info", _FindEntry);
+struct RgTextInfoEntry *_FindEntry(struct RgTextInfoEntry *pParaList,
+                                   const char *pszName)
+{
+    struct RgTextInfoEntry *pEntry;
+
+    if (pParaList == 0) {
+        assert_prog(D_00A54480, D_00A54498, 0x16);
+    }
+    if (pszName == 0) {
+        assert_prog(D_00A544B0, D_00A54498, 0x17);
+    }
+    for (pEntry = pParaList; pEntry->type != 0xC; pEntry++) {
+        if (strcmp(pEntry->pszName, pszName) == 0) {
+            return pEntry;
+        }
+    }
+    return 0;
+}
 
 struct RgTextInfoEntry *_FindEntry(struct RgTextInfoEntry *pParaList,
                                    const char *pszName);

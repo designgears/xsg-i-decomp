@@ -41,7 +41,36 @@ int UmnManzaiInit(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", tskUmnManzaiWin);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", LocalLightSet);
+extern void xglLightIntensityAmbient(void *light, const Vector4 *intensity);
+extern void xglLightIntensityParallel(void *light, unsigned int index, const Vector4 *intensity);
+extern void xglLightDirection(void *light, unsigned int index, const Vector4 *direction);
+typedef union LocalLightVector {
+    double alignment; /* 8-byte alignment of the original block copy */
+    Vector4 value;
+} LocalLightVector;
+typedef struct LocalLightTable {
+    LocalLightVector ambient;
+    LocalLightVector color[3];
+    LocalLightVector direction[3];
+} LocalLightTable;
+extern const LocalLightTable D_00A120F0;
+
+static void LocalLightSet(unsigned int *model)
+{
+    LocalLightTable table;
+    void *light;
+
+    table = D_00A120F0;
+    light = (char *)model + 0x510;
+    xglLightIntensityAmbient(light, &table.ambient.value);
+    xglLightIntensityParallel(light, 0, &table.color[0].value);
+    xglLightDirection(light, 0, &table.direction[0].value);
+    xglLightIntensityParallel(light, 1, &table.color[1].value);
+    xglLightDirection(light, 1, &table.direction[1].value);
+    xglLightIntensityParallel(light, 2, &table.color[2].value);
+    xglLightDirection(light, 2, &table.direction[2].value);
+    *model |= 0x8000;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov02/umn_procurator", UmnProcuratorManzai2);
 

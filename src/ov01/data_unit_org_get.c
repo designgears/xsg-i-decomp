@@ -25,7 +25,20 @@ void *dataUnitOrgGet(int unitOrgId)
     return &orgData[unitOrgId - 1];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPlChaGet);
+extern const char D_00A456C8[];
+extern unsigned char plChaData[];
+
+PlCharacter *dataPlChaGet(int cid)
+{
+    unsigned char *base;
+
+    if (cid >= 0x21) {
+        printf(D_00A456C8, cid);
+        return 0;
+    }
+    base = plChaData - 0xA8;
+    return (PlCharacter *)(base + cid * 0xA8);
+}
 
 /*
  * D_426F48, D_426F50, D_426F54 and D_426F58 are byte offsets, from their own
@@ -195,13 +208,74 @@ void dataEtherTecSet(int selector)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEtherLearnSet);
+extern const char D_00A45730[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEtherLearnGet);
+void dataEtherLearnSet(int cid, int id, int selector)
+{
+    PlCharacter *pl;
+    int b;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataSkillLearnSet);
+    if (cid > 16) {
+        printf(D_00A45730, cid);
+        return;
+    }
+    if (id != 0) {
+        pl = dataPlChaGet(cid);
+        b = id - 1;
+        *(unsigned char *)((b / 8) + (int)pl + 0x28) |= (1 << (b % 8));
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataSkillLearnGet);
+extern const char D_00A45750[];
+
+int dataEtherLearnGet(int cid, int id)
+{
+    PlCharacter *pl;
+    int b;
+
+    if (cid > 16) {
+        printf(D_00A45750, cid);
+        return 0;
+    }
+    pl = dataPlChaGet(cid);
+    b = id - 1;
+    return *(signed char *)((b / 8) + (int)pl + 0x28) & (1 << (b % 8));
+}
+
+extern const char D_00A45770[];
+
+void dataSkillLearnSet(int cid, int id)
+{
+    PlCharacter *pl;
+    int b;
+
+    if (cid > 16) {
+        printf(D_00A45770, cid);
+        return;
+    }
+    if (id != 0) {
+        pl = dataPlChaGet(cid);
+        b = id - 1;
+        *(unsigned char *)((b / 8) + (int)pl + 0x38) |= (1 << (b % 8));
+    }
+}
+
+extern const char D_00A45790[];
+extern PlCharacter *dataPlChaGet(int cid);
+
+int dataSkillLearnGet(int cid, int id)
+{
+    PlCharacter *pl;
+    int b;
+
+    if (cid > 16) {
+        printf(D_00A45790, cid);
+        return 0;
+    }
+    pl = dataPlChaGet(cid);
+    b = id - 1;
+    return *(signed char *)((b / 8) + (int)pl + 0x38) & (1 << (b % 8));
+}
 
 typedef struct ThinkMapTable {
     unsigned char unmodeled_000[0x18C];
@@ -268,9 +342,45 @@ short dataSpecLearnGet(int cid, int specialId)
     return learned;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataSpecDataGet);
+void *dataSpecDataGet(int cid, int id)
+{
+    PlCharacter *pl;
+    int i;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataNormIdxGet);
+    if (cid >= 0x11) {
+        return 0;
+    }
+    if (id == 0) {
+        return 0;
+    }
+    pl = dataPlChaGet(cid);
+    for (i = 0; i < 8; i++) {
+        if (pl->special[i].id == id) {
+            return &pl->special[i];
+        }
+    }
+    return 0;
+}
+
+extern const char D_00A456C8[];
+extern unsigned char plChaData[];
+extern const char D_00A45790[];
+extern PlCharacter *dataPlChaGet(int cid);
+
+int dataNormIdxGet(ObjectTask *unit, int id)
+{
+    int i;
+    int off = 0x70;
+    int ret = -1;
+    for (i = 0; i < 6; i++) {
+        if (*(short *)((char *)calcUPGet(unit) + off + 6) == id) {
+            ret = i;
+            break;
+        }
+        off += 2;
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPlUnitInit);
 
@@ -362,27 +472,170 @@ short dataWidGet(unsigned int wid)
     return widChgTbl[wid];
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataTecGet);
+extern int D_426F4C;
+extern const char D_00A458C0[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataWpnGet);
+unsigned char *dataTecGet(int index)
+{
+    unsigned char *base;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataAttGet);
+    if (index <= 0) {
+        printf(D_00A458C0, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F4C - 0xC;
+    return base + D_426F4C + ((index * 3) << 3) - 0x18;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEthGet);
+extern const char D_00A458D8[];
+extern int D_426F5C;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataItmGet);
+unsigned char *dataWpnGet(int index)
+{
+    unsigned char *base;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataAccGet);
+    if (index <= 0) {
+        printf(D_00A458D8, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F5C - 0x1C;
+    return base + D_426F5C + (index << 5) - 0x20;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFrmGet);
+extern const char D_00A458F0[];
+extern int D_426F68;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEngGet);
+unsigned char *dataAttGet(int index)
+{
+    unsigned char *base;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataSklGet);
+    if (index <= 0) {
+        printf(D_00A458F0, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F68 - 0x28;
+    return base + D_426F68 + index * 14 - 0xE;
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataGainGet);
+extern const char D_00A45908[];
+extern int D_426F60;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoad);
+unsigned char *dataEthGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45908, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F60 - 0x20;
+    return base + D_426F60 + index * 12 - 0xC;
+}
+
+extern const char D_00A45920[];
+extern int D_426F64;
+
+unsigned char *dataItmGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45920, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F64 - 0x24;
+    return base + D_426F64 + index * 20 - 0x14;
+}
+
+extern int D_426F6C;
+extern const char D_00A45938[];
+
+unsigned char *dataAccGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45938, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F6C - 0x2C;
+    return base + D_426F6C + (index << 4) - 0x10;
+}
+
+extern const char D_00A45950[];
+extern int D_426F88;
+
+unsigned char *dataFrmGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45950, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F88 - 0x48;
+    return base + D_426F88 + (index << 4) - 0x10;
+}
+
+extern char D_00A45968[];
+extern int D_426F8C;
+
+unsigned char *dataEngGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45968, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F8C - 0x4C;
+    return base + D_426F8C + index * 12 - 0xC;
+}
+
+extern const char D_00A45980[];
+extern int D_426F70;
+
+unsigned char *dataSklGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45980, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F70 - 0x30;
+    return base + D_426F70 + (index << 3) - 0x8;
+}
+
+extern const char D_00A45998[];
+extern int D_426F74;
+
+unsigned char *dataGainGet(int index)
+{
+    unsigned char *base;
+
+    if (index <= 0) {
+        printf(D_00A45998, index);
+        return 0;
+    }
+    base = (unsigned char *)&D_426F74 - 0x34;
+    return base + D_426F74 + ((((index << 2) + index)) << 2) - 0x294;
+}
+
+extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
+extern char D_00A459B0[];
+extern char D_00A459C8[];
+
+int dataFileLoad(const char *name, void *dst)
+{
+    long size = xglCdReadFile(name, dst, 0, 0);
+    if (size < 0) {
+        printf(D_00A459B0, name);
+        return 0;
+    }
+    printf(D_00A459C8, name, (int)size);
+    return 1;
+}
 
 int dataCdSync(void)
 {
@@ -410,7 +663,20 @@ void dataNBreadCB(int result) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadNB);
+extern const char D_00A45A10[];
+extern const char D_00A45A28[];
+
+int dataFileLoadNB(const char *name, void *dst)
+{
+    long size = xglCdReadFile(name, dst, 1, (int)dataNBreadCB);
+    if (size < 0) {
+        printf(D_00A45A10, name);
+        return 0;
+    }
+    cdReqNum++;
+    printf(D_00A45A28, cdReqNum, name, dst);
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileInfoInit);
 
@@ -428,7 +694,15 @@ void dataLeaderCidReset(void) {
     leaderCid = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataLeaderReload);
+extern unsigned char *PartyDataGet(void);
+extern const char D_00A45AB0[];
+
+void dataLeaderReload(void)
+{
+    if (*(unsigned short *)(PartyDataGet() + 0x2C) != leaderCid) {
+        printf(D_00A45AB0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataMotNameGetMenu);
 
@@ -496,11 +770,46 @@ void *dataUnitFileGet(ObjectTask *unit, int charaId)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPackPcMdlNameGet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPackWpnMdlNameGet);
+typedef struct { int id; char *name; } PackWpnEnt;
+extern PackWpnEnt pcPack_1[];
+
+char *dataPackWpnMdlNameGet(int id)
+{
+    char *name = 0;
+    int i;
+    for (i = 0; pcPack_1[i].id != 0; i++) {
+        if (id == pcPack_1[i].id) {
+            name = pcPack_1[i].name;
+            break;
+        }
+    }
+    return name;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadMdl);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadFaceMdl);
+extern const char D_00A45E50[];
+
+int dataUnitFileLoadFaceMdl(void *task, int cid, void *info) {
+    char *p = (char *)info;
+    char *a;
+
+    if (cid != *(int *)(p + 0x10C)) {
+        *(int *)(p + 0x10C) = cid;
+        if (dataLeaderCidGet() == cid) {
+            *(int *)(p + 0x110) = 0x010B4000;
+            *(int *)(p + 0x128) = 0x010E6000;
+        }
+    } else {
+        printf(D_00A45E50, cid, *(int *)(p + 0x110));
+    }
+    a = dataChildActorCreate(cid);
+    *(int *)(a + 0x8D0) = *(int *)(p + 0x110);
+    *(void **)((char *)task + 0x2C) = a;
+    *(int *)(a + 0x8D4) = *(int *)(p + 0x14);
+    *(int *)(a + 0x8D8) = *(int *)(p + 0x128);
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadMot);
 
@@ -595,7 +904,25 @@ int dataUnitFileLoadMotSp2(UnitEquipInfo *unit, int motionId, int slot, int p3, 
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoad2);
+extern char D_00A45F58[];
+extern void dataUnitFileLoad2Sub(void *unit);
+extern int rnd(int max);
+extern void unitCmdSet(void *unit, int *cmd);
+
+void dataUnitFileLoad2(void *unit)
+{
+    int cmd[8];
+
+    printf(D_00A45F58, unit);
+    dataUnitFileLoad2Sub(unit);
+    cmd[0] = 0x25;
+    if (!(**(int **)((char *)unit + 0x10) & 0x40)) {
+        cmd[1] = 0;
+    } else {
+        cmd[1] = rnd(10);
+    }
+    unitCmdSet(unit, cmd);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoad2Sub);
 
@@ -623,7 +950,28 @@ void dataPackWpnMdl2(EquipActor *actor)
     actor->wpnMdl[2] = (unsigned char *)pack + offset;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataMotAdrSet);
+typedef struct MotionAdrEntry {
+    unsigned char unmodeled_00[8];
+    int data_offset;
+    int extra_offset;
+} MotionAdrEntry;
+
+void dataMotAdrSet(MotionAdrTable *table, int motionId)
+{
+    MotionAdrEntry *e;
+    int d;
+    int x;
+    int *slot;
+    int off = motionId << 2;
+
+    off += 0x8dc;
+    slot = (int *)((int)table + off);
+    e = (MotionAdrEntry *)*slot;
+    d = e->data_offset;
+    x = e->extra_offset;
+    *slot = (int)e + d;
+    ((int *)((motionId << 2) + (int)table))[0x40] = (int)e + x;
+}
 
 /*
  * dataFpkAdrGet resolves a packed file's data pointer: 8 bytes not
@@ -640,13 +988,56 @@ void *dataFpkAdrGet(FpkHeader *fpk)
     return (unsigned char *)fpk + fpk->data_offset;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataTid2WepSp);
+typedef struct WepSpEntry {
+    int tid;
+    int unk4;
+    int unk8;
+} WepSpEntry;
+
+extern WepSpEntry wepSpTbl[];
+
+WepSpEntry *dataTid2WepSp(int tid)
+{
+    int i;
+
+    for (i = 0; wepSpTbl[i].tid != 0; i++) {
+        if (wepSpTbl[i].tid == tid) {
+            return &wepSpTbl[i];
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSp);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSp2);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSpEnd);
+extern void ACT_dispose(void *);
+
+int dataFileLoadWepSpEnd(ObjectTask *unit, int tid) {
+    int slot;
+    void **pp;
+    int off;
+
+    slot = 2;
+    if (dataTid2WepSp(tid) == 0) {
+        slot = 1;
+        if (((signed char *)dataTecGet(tid))[0x11] != 6) {
+            return 0;
+        }
+    }
+    off = slot * 4 + 0x1C;
+    pp = (void **)((char *)unit + off);
+    if (*pp != 0) {
+        ACT_dispose(*pp);
+        *pp = 0;
+    }
+    if (slot == 2) {
+        calcUPGet(unit)->sefSetupParams[2] = 0;
+        calcUPGet(unit)->unmodeled_54[8] = 0;
+    }
+    return 1;
+}
 
 /* Callers pass the unit whose default weapon they want; the function
  * always returns 0 and ignores it. */
@@ -689,7 +1080,19 @@ unsigned short dataXtxAdrGet(int index)
     return value;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataXtxLoad);
+typedef struct { char *name; void *adr; } XtxLoadEnt;
+
+extern int dataFileLoadNB(const char *name, void *dst);
+
+void dataXtxLoad(void)
+{
+    int i = 0;
+
+    while (((XtxLoadEnt *)xtxFile)[i].name != 0) {
+        ((int (*)(void *, void *))dataFileLoadNB)(((XtxLoadEnt *)xtxFile)[i].name, ((XtxLoadEnt *)xtxFile)[i].adr);
+        i++;
+    }
+}
 
 extern int dataFileLoad(const char *name, void *dst);
 
@@ -708,7 +1111,16 @@ void *dataThinkAdrGet(void)
     return thinkBuf;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", thinkMapGet);
+int thinkMapGet(int id)
+{
+    int i;
+    for (i = 0; i < 100; i++) {
+        if (id == ((int *)&thinkMapTbl)[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 extern int thinkMapGet(int mapNo);
 extern char *strcpy(char *destination, const char *source);
@@ -739,7 +1151,17 @@ int dataThinkNameGet(char *name, int thinkNo)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataThinkDataSet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataThinkFileLoad);
+extern void thinkNoSet(int);
+
+int dataThinkFileLoad(int thinkNo)
+{
+    int no = thinkMapGet(thinkNo);
+    if (no == -1)
+        return 0;
+    dataThinkLoad(no);
+    thinkNoSet(no);
+    return 1;
+}
 
 extern char *thinkName;
 extern char *thinkNameBase;
@@ -785,8 +1207,6 @@ extern char *mapName;
 extern char *mapNameExt;
 extern const char D_00A46028[];
 extern const char D_00A46030[];
-extern void dataFileLoadNB(void *buffer, void *address);
-
 void dataMapLoad(int mapNo)
 {
     char path[256];
@@ -810,6 +1230,48 @@ void dataVPadModeSet(int mode)
     padData = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataVPadSet);
+extern u16 padConvTbl[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPadRead);
+void dataVPadSet(u16 pad)
+{
+    int i;
+    u16 r = 0;
+    for (i = 0; i < 14; i++) {
+        if ((pad >> i) & 1) {
+            r |= padConvTbl[i];
+        }
+    }
+    padData = r;
+}
+
+extern int D_426F4C;
+extern const char D_00A458C0[];
+extern const char D_00A458D8[];
+extern int D_426F5C;
+extern const char D_00A45980[];
+extern int D_426F70;
+typedef struct WpnLRFileInfo {
+    unsigned char unmodeled_00[0xA0];
+    int wpnId; /* +0xA0 */
+} WpnLRFileInfo;
+extern char D_00A45F58[];
+extern void dataUnitFileLoad2Sub(void *unit);
+extern int rnd(int max);
+extern void unitCmdSet(void *unit, int *cmd);
+extern void thinkNoSet(int);
+extern u16 padConvTbl[];
+extern unsigned short PadData[];
+
+unsigned short dataPadRead(int arg0) {
+    unsigned short r = 0;
+    if (padMode == 0) {
+        switch (arg0) {
+        case 0: r = PadData[0x18]; break;
+        case 1: r = PadData[0x19]; break;
+        case 2: r = PadData[0x1a]; break;
+        }
+    } else {
+        r = padData;
+    }
+    return r;
+}

@@ -2,11 +2,91 @@
 
 #include "mdl.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/mdl", MDL_setGroupVisible);
+typedef struct { int pad[12]; int name; int pad2[3]; } MdlGroup;
+static inline void MDL_setVisible_inl(MdlHandle *mdl, int idx, int on)
+{
+    int bit = 1 << (idx & 0x1f);
+    int i = idx >> 5;
+    if (on) {
+        mdl->visibleParts[i] |= bit;
+    } else {
+        mdl->visibleParts[i] &= ~bit;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/mdl", MDL_setNameVisible);
+int MDL_setGroupVisible(MdlHandle *model, int name, int on)
+{
+    MdlResource *resource;
+    int count;
+    int i;
+    int n;
 
-INCLUDE_ASM("asm/main/nonmatchings/mdl", MDL_setVisible);
+    if (model->entry == 0) {
+        return 0;
+    }
+    name = (((u32)name >> 24) | ((name << 8) & 0xFF0000)) | (((name >> 8) & 0xFF00) | (name << 24));
+    resource = (MdlResource *)model->entry;
+    count = resource->partCount;
+    n = 0;
+    for (i = 0; i < count; i++) {
+        if (((MdlGroup *)model->parts)[i].name == name) {
+            MDL_setVisible_inl(model, i, on);
+            n++;
+        }
+    }
+    return n;
+}
+
+typedef struct { int pad[14]; int name0; int name1; } MdlGroupN;
+#define MDL_BSWAP(x) ((((u32)(x) >> 24) | (((x) << 8) & 0xFF0000)) | ((((x) >> 8) & 0xFF00) | ((x) << 24)))
+
+int MDL_setNameVisible(MdlHandle *model, int *name, int on)
+{
+    MdlResource *resource;
+    MdlGroupN *parts;
+    int n0, n1, m0, m1;
+    int count;
+    int i;
+    int n;
+
+    resource = (MdlResource *)model->entry;
+    if (resource == 0 || (parts = (MdlGroupN *)model->parts) == 0) {
+        return 0;
+    }
+    n0 = name[0];
+    n1 = name[1];
+    i = 0;
+    m0 = name[2];
+    m1 = name[3];
+    n0 = MDL_BSWAP(n0);
+    n1 = MDL_BSWAP(n1);
+    m0 = MDL_BSWAP(m0);
+    m1 = MDL_BSWAP(m1);
+    count = resource->partCount;
+    n0 &= m0;
+    n1 &= m1;
+    n = 0;
+    for (; i < count; i++) {
+        if ((parts[i].name0 & m0) == n0 && (parts[i].name1 & m1) == n1) {
+            n++;
+            MDL_setVisible_inl(model, i, on);
+        }
+    }
+    return n;
+}
+
+typedef struct { int pad; int visible[1]; } MdlVis;
+
+void MDL_setVisible(MdlVis *mdl, int idx, int on)
+{
+    int bit = 1 << (idx & 0x1f);
+    int i = idx >> 5;
+    if (on) {
+        mdl->visible[i] |= bit;
+    } else {
+        mdl->visible[i] &= ~bit;
+    }
+}
 
 void MDL_create(MdlHandle *model, const MdlResource *resource)
 {

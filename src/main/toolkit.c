@@ -14,9 +14,192 @@
 #define JAVA_USHORT_FIELD(object, field) \
     (*(unsigned short *)((char *)(object) + (field)->offset))
 
-INCLUDE_ASM("asm/main/nonmatchings/toolkit", Java_xeno_util_Toolkit_getPeer__Ljava_lang_Object_);
+extern void *classJava_xeno_Enepc;
+extern void *classJava_xeno_Uwamono;
+void *getPeer_Unit(void *obj);
+void *getPeer_Chr(void *obj);
+static void *getPeer_Effect(void *obj);
+static void *getPeer_Stage(void *obj);
 
-INCLUDE_ASM("asm/main/nonmatchings/toolkit", getPeer_Unit);
+void Java_xeno_util_Toolkit_getPeer__Ljava_lang_Object_(void *env, union { int i; float f; void *p; } *args, int *result)
+{
+    void *obj = args[0].p;
+
+    if (JNI_isInstanceOf(obj, (SceneClass *)classJava_xeno_Chr) == 1) {
+        if (JNI_isInstanceOf(obj, (SceneClass *)classJava_xeno_Enepc) == 1) {
+            *result = (int)getPeer_Enepc(obj);
+        } else {
+            *result = (int)getPeer_Chr(obj);
+        }
+    } else if (JNI_isInstanceOf(obj, (SceneClass *)classJava_xeno_Unit) == 1) {
+        if (JNI_isInstanceOf(obj, (SceneClass *)classJava_xeno_Uwamono) == 1) {
+            *result = (int)getPeer_Uwamono(obj);
+        } else {
+            *result = (int)getPeer_Unit(obj);
+        }
+    } else if (JNI_isInstanceOf(obj, classJava_xeno_Effect) == 1) {
+        *result = (int)getPeer_Effect(obj);
+    } else if (JNI_isInstanceOf(obj, classJava_xeno_Stage) == 1) {
+        *result = (int)getPeer_Stage(obj);
+    } else {
+        *result = 0;
+    }
+}
+
+typedef int GpuXtkQword __attribute__((mode(TI)));
+typedef union GpuXtkMatrix {
+    GpuXtkQword q[4];
+    float m[4][4];
+} GpuXtkMatrix;
+typedef struct GpuXtkPeer {
+    unsigned char pad00[0x10];
+    float position_x;          /* +0x10 */
+    float position_y;          /* +0x14 */
+    float position_z;          /* +0x18 */
+    unsigned char pad1C[4];
+    float rotation_x;          /* +0x20 */
+    float rotation_y;          /* +0x24 */
+    float rotation_z;          /* +0x28 */
+    unsigned char pad2C[0x40 - 0x2C];
+    GpuXtkMatrix matrix;  /* +0x40 */
+    unsigned char pad80[0xA0 - 0x80];
+    unsigned char serial;      /* +0xA0 */
+    unsigned char padA1[3];
+    short node;                /* +0xA4 */
+    unsigned char padA6[0xD0 - 0xA6];
+    void *java_object;         /* +0xD0 */
+} GpuXtkPeer;
+typedef struct GpuXtkSeq {
+    unsigned char pad000[0x10];
+    unsigned short group;      /* +0x10 */
+    unsigned char pad012[0x240 - 0x12];
+    float pivot_x;             /* +0x240 */
+    float pivot_y;             /* +0x244 */
+    float pivot_z;             /* +0x248 */
+    unsigned char pad24C[0x260 - 0x24C];
+} GpuXtkSeq;
+typedef struct GpuXtkModel {
+    unsigned char pad00[0x50];
+    int node_offset;           /* +0x50 */
+} GpuXtkModel;
+typedef struct GpuXtkMap {
+    int pad0;
+    GpuXtkModel *model;   /* +0x04 */
+} GpuXtkMap;
+typedef struct GpuXtkLoopView {
+    unsigned char pad00[0x54];
+    GpuXtkMap *map;       /* +0x54 */
+} GpuXtkLoopView;
+extern GpuXtkLoopView GameLoopState;
+extern GpuXtkSeq unitSequence[64];
+extern unsigned short XTK_peerGroup[4];
+extern const float D_004D83A8;
+extern GpuXtkPeer *MAP_createUnitPeer(int identifier, int unit_id);
+
+static void *getPeer_Unit(void *java_unit)
+{
+    void *unit_class;
+    JavaField *field;
+    GpuXtkPeer *peer;
+    GpuXtkSeq *seq;
+    JavaThread *thread;
+    int unit_id;
+    int algorithm;
+    int mode;
+
+    unit_class = classJava_xeno_Unit;
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_id, -1), 0);
+    unit_id = TOOLKIT_JAVA_INT_FIELD(java_unit, field);
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_algorithm, -1), 0);
+    algorithm = TOOLKIT_JAVA_INT_FIELD(java_unit, field);
+
+    peer = MAP_createUnitPeer(-1, unit_id);
+    seq = &unitSequence[peer->serial];
+    seq->group = XTK_peerGroup[1];
+    thread = JNI_createThread(5, 4, 48);
+    thread->java_object = java_unit;
+    peer->java_object = java_unit;
+
+    mode = algorithm & 0xF00;
+    if (mode == 0x100) goto case_100;
+    if (mode <= 0x100) goto def;
+    if (mode != 0x300) goto def;
+    {
+        if (GameLoopState.map != 0) {
+            GpuXtkModel *model = GameLoopState.map->model;
+            if (model != 0) {
+                GpuXtkMatrix *dst = &peer->matrix;
+                GpuXtkMatrix *m = (GpuXtkMatrix *)((char *)model + model->node_offset + (peer->node << 6));
+                __asm__ __volatile__(
+                    "lq $2, 0(%1)\n\t"
+                    "sq $2, 0(%0)\n\t"
+                    "lq $2, 16(%1)\n\t"
+                    "sq $2, 16(%0)\n\t"
+                    "lq $2, 32(%1)\n\t"
+                    "sq $2, 32(%0)\n\t"
+                    "lq $2, 48(%1)\n\t"
+                    "sq $2, 48(%0)"
+                    :
+                    : "r"(dst), "r"(m)
+                    : "$2", "memory");
+                seq->pivot_x = peer->matrix.m[3][0];
+                seq->pivot_y = peer->matrix.m[3][1];
+                seq->pivot_z = peer->matrix.m[3][2];
+            }
+        }
+        goto write_position;
+    case_100:
+        if (GameLoopState.map != 0) {
+            GpuXtkModel *model = GameLoopState.map->model;
+            if (model != 0) {
+                GpuXtkMatrix *m = (GpuXtkMatrix *)((char *)model + model->node_offset);
+                peer->position_x = m[peer->node].m[3][0];
+                peer->position_y = m[peer->node].m[3][1];
+                peer->position_z = m[peer->node].m[3][2];
+            }
+        }
+    write_position:
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_px, -1), 0);
+        TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field) = peer->position_x;
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_py, -1), 0);
+        TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field) = peer->position_y;
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_pz, -1), 0);
+        TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field) = peer->position_z;
+        goto rotation;
+    def:
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_px, -1), 0);
+        peer->position_x = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_py, -1), 0);
+        peer->position_y = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+        field = lookupClassField(unit_class,
+                                 loadConstString(unit_field_pz, -1), 0);
+        peer->position_z = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+    }
+rotation:
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_rx, -1), 0);
+    peer->rotation_x = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_ry, -1), 0);
+    peer->rotation_y = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_rz, -1), 0);
+    peer->rotation_z = TOOLKIT_JAVA_FLOAT_FIELD(java_unit, field);
+    field = lookupClassField(unit_class,
+                             loadConstString(unit_field_peer, -1), 0);
+    TOOLKIT_JAVA_OBJECT_FIELD(java_unit, field) = peer;
+    peer->rotation_x = peer->rotation_x / 180.0f * D_004D83A8;
+    peer->rotation_y = peer->rotation_y / 180.0f * D_004D83A8;
+    peer->rotation_z = peer->rotation_z / 180.0f * D_004D83A8;
+    return peer;
+}
 
 void *getPeer_Enepc(void *java_character)
 {
@@ -153,7 +336,79 @@ void *getPeer_Uwamono(void *java_unit)
     return peer;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/toolkit", getPeer_Chr);
+extern u8 actSequence[0x9800];
+extern const float D_004D83B4;
+extern ToolkitEnemyPeer *ACT_createChr(int identifier, int chr_id);
+extern void ACT_updateNPC(ToolkitEnemyPeer *peer);
+
+void *getPeer_Chr(void *java_character)
+{
+    void *character_class;
+    JavaField *field;
+    ToolkitEnemyPeer *peer;
+    JavaThread *thread;
+    SceneObject light_object;
+    int chr_id;
+    int algorithm;
+
+    character_class = classJava_xeno_Chr;
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_id, -1), 0);
+    chr_id = JAVA_INT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_algorithm, -1), 0);
+    algorithm = JAVA_INT_FIELD(java_character, field);
+
+    peer = ACT_createChr(-1, chr_id);
+    ACT_initMotion(peer);
+    thread = JNI_createThread(1, 4, 48);
+    thread->java_object = java_character;
+    peer->java_object = java_character;
+
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_px, -1), 0);
+    peer->position_x = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_py, -1), 0);
+    peer->position_y = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_pz, -1), 0);
+    peer->position_z = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_rx, -1), 0);
+    peer->rotation_x = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_ry, -1), 0);
+    peer->rotation_y = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_rz, -1), 0);
+    peer->rotation_z = JAVA_FLOAT_FIELD(java_character, field);
+    field = lookupClassField(character_class,
+                             loadConstString(unit_field_peer, -1), 0);
+    JAVA_OBJECT_FIELD(java_character, field) = peer;
+
+    peer->rotation_x = peer->rotation_x / 180.0f * D_004D83B4;
+    peer->rotation_y = peer->rotation_y / 180.0f * D_004D83B4;
+    peer->rotation_z = peer->rotation_z / 180.0f * D_004D83B4;
+
+    if (algorithm & 0xF00) {
+        float *seq;
+        peer->update = ACT_updateNPC;
+        seq = (float *)(actSequence + peer->slot_number * 0x260);
+        seq[0x240 / 4] = peer->position_x;
+        seq[0x244 / 4] = peer->position_y;
+        seq[0x248 / 4] = peer->position_z;
+    }
+
+    field = lookupClassField(character_class,
+                             loadConstString(D_004DC118, -1), 0);
+    light_object = newObject(classJava_xeno_Light);
+    JAVA_OBJECT_FIELD(java_character, field) = light_object;
+    field = lookupClassField(classJava_xeno_Light,
+                             loadConstString(unit_field_peer, -1), 0);
+    JAVA_OBJECT_FIELD(light_object, field) = &peer->light_peer;
+    return peer;
+}
 
 static void *getPeer_Effect(void *java_effect)
 {

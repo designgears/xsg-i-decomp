@@ -120,7 +120,17 @@ int thinkProcessExecSub(ThinkProcess *proc)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", thinkInit);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", camInit);
+extern short *pCamSetTop;
+extern int mapNoGet(void);
+extern void *dataMapCameraAdrGet(int mapNo);
+
+void camInit(void)
+{
+    pCamTop = dataMapCameraAdrGet(mapNoGet());
+    thinkTopSet((int)pCamTop);
+    pCamSetTop = (short *)thinkAdrGet(*(short *)pCamTop);
+    camTblIdx = 0;
+}
 
 int thinkMonsTblNumGet(void)
 {
@@ -342,7 +352,18 @@ int thinkRegGet(int regIndex)
     return (short)value;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", thinkRegSet);
+void thinkRegSet(unsigned short r, unsigned short value)
+{
+    unsigned short flag = r;
+    int v = value & 0x7FFF;
+    r &= 0x3FFF;
+    if (flag & 0x4000) {
+        int a = thinkAdrGet(*(short *)(pContext + (r << 1)));
+        *(short *)a = v;
+    } else {
+        *(short *)(pContext + (r << 1)) = v;
+    }
+}
 
 int cmdReg(short pc)
 {
@@ -382,9 +403,40 @@ int cmdGo(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdGosub);
+extern const char D_00A461F8[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdReturn);
+int cmdGosub(ThinkProcess *proc)
+{
+    int ctx = pContext;
+
+    if (*(int *)(ctx + 0xA0) < 16) {
+        int *sp = (int *)(ctx + 0xA0);
+        *(short *)(ctx + *sp * 2 + 0x80) = (unsigned short)proc->pc + 2;
+        (*sp)++;
+    } else {
+        printf(D_00A461F8);
+        return 1;
+    }
+    proc->pc = cmdNum(proc->pc);
+    return 0;
+}
+
+extern const char D_00A46210[];
+
+int cmdReturn(ThinkProcess *proc)
+{
+    int ctx = pContext;
+
+    if (*(int *)(ctx + 0xA0) > 0) {
+        int sp = *(int *)(ctx + 0xA0) - 1;
+        *(int *)(ctx + 0xA0) = sp;
+        proc->pc = *(short *)(ctx + sp * 2 + 0x80);
+    } else {
+        printf(D_00A46210);
+        return 1;
+    }
+    return 0;
+}
 
 int cmdBra(ThinkProcess *proc)
 {
@@ -447,7 +499,23 @@ int cmdBra(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdOngo);
+extern const char D_00A46248[];
+
+int cmdOngo(ThinkProcess *proc)
+{
+    int n = cmdNum(proc->pc);
+    int v;
+
+    proc->pc = (unsigned short)proc->pc + 2;
+    v = cmdNum(proc->pc);
+    proc->pc = (unsigned short)proc->pc + 2;
+    if (v < n) {
+        printf(D_00A46248);
+        return 1;
+    }
+    proc->pc = cmdNum((short)(proc->pc + n * 2));
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdOngosub);
 
@@ -467,9 +535,54 @@ INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdRmath1);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdRmath2);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdRpush);
+extern const char D_00A462D0[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdRpop);
+int cmdRpush(ThinkProcess *proc)
+{
+    int v = cmdNum(proc->pc);
+    int ctx;
+
+    proc->pc = (unsigned short)proc->pc + 2;
+    ctx = pContext;
+    if (*(int *)(ctx + 0xE4) < 0x20) {
+        int *sp = (int *)(ctx + 0xE4);
+        *(short *)(ctx + *sp * 2 + 0xA4) = v;
+        (*sp)++;
+    } else {
+        printf(D_00A462D0);
+        return 1;
+    }
+    return 0;
+}
+
+typedef struct ThinkProcessChkSlot {
+    int dataTop;
+    unsigned char unmodeled[0x20];
+} ThinkProcessChkSlot;
+extern ThinkProcessChkSlot D_00A597AC[];
+extern const char D_00A462D0[];
+extern const char D_00A462E8[];
+
+int cmdRpop(ThinkProcess *proc)
+{
+    int regNo = thinkRegNo(proc->pc);
+    int ctx = pContext;
+    int sp = *(int *)(ctx + 0xE4);
+    int n;
+    int val;
+
+    proc->pc += 2;
+    n = sp - 1;
+    if (sp > 0) {
+        *(int *)(ctx + 0xE4) = n;
+        val = *(short *)(ctx + n * 2 + 0xA4);
+    } else {
+        printf(D_00A462E8);
+        return 1;
+    }
+    thinkRegSet(regNo & 0xFFFF, val & 0xFFFF);
+    return 0;
+}
 
 int cmdTblget(ThinkProcess *proc)
 {
@@ -507,7 +620,25 @@ int cmdRput(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdPrint);
+extern const char D_00A46318[];
+
+int cmdPrint(ThinkProcess *proc)
+{
+    char *s;
+    short n = 0;
+    int pc;
+
+    s = (char *)thinkAdrGet(proc->pc);
+    printf(D_00A46318, s);
+    while (s[n++] != 0) {
+    }
+    if (n & 1) {
+        n++;
+    }
+    pc = (unsigned short)proc->pc;
+    proc->pc = n + pc;
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdMemdump);
 
@@ -523,7 +654,20 @@ int cmdCmdputoff(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdMsgPos);
+extern int msgPosX;
+extern int msgPosY;
+static inline void rd(ThinkProcess *proc, int *dst)
+{
+    *dst = cmdNum(proc->pc);
+    proc->pc += 2;
+}
+
+int cmdMsgPos(ThinkProcess *proc)
+{
+    rd(proc, &msgPosX);
+    rd(proc, &msgPosY);
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdMsg);
 
@@ -728,7 +872,28 @@ int cmdUnitparaSet(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdUnitpara);
+extern void *cmdUnitparaSub(ObjectTask *unit, int category, short *size);
+
+int cmdUnitpara(ObjectTask *unit, int category, int value, int mode)
+{
+    short size[8];
+    short v = value;
+    void *p = cmdUnitparaSub(unit, (short)category, size);
+    int r;
+
+    if (size[0] == 1) {
+        r = *(char *)p;
+        if (mode == 1) {
+            *(char *)p = v;
+        }
+    } else {
+        r = *(short *)p;
+        if (mode == 1) {
+            *(short *)p = v;
+        }
+    }
+    return r;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdUnitparaSub);
 
@@ -872,7 +1037,34 @@ int cmdLightDir(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", mcamPtrGet);
+extern McamParams mcamView;
+extern McamParams mcamLookAt;
+extern McamParams mcamViewMove;
+extern McamParams mcamLookAtMove;
+
+McamParams *mcamPtrGet(void)
+{
+    McamParams *ret;
+
+    switch (camMode) {
+    case -1:
+        ret = &mcamViewMove;
+        break;
+    case -2:
+        ret = &mcamLookAtMove;
+        break;
+    case 0:
+        ret = &mcamView;
+        break;
+    case 1:
+        ret = &mcamLookAt;
+        break;
+    default:
+        ret = 0;
+        break;
+    }
+    return ret;
+}
 
 struct MpersParams;
 extern struct MpersParams mcamPers;
@@ -1015,7 +1207,21 @@ INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamMove);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamShake);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamCenterLength);
+extern float MCamGetLengthActor(int selector);
+extern const char D_00A465C0[];
+
+int cmdCamCenterLength(ThinkProcess *proc)
+{
+    int regNo = thinkRegNo(proc->pc);
+
+    proc->pc += 2;
+    if (camMode < 0) {
+        printf(D_00A465C0);
+        return 0;
+    }
+    thinkRegSet(regNo, (int)(MCamGetLengthActor(camMode) * 100.0f));
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamUnitHeight);
 
@@ -1087,9 +1293,37 @@ int cmdCamMoveStop(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdEvent);
+int cmdEvent(ThinkProcess *proc)
+{
+    ThinkProcess np;
+    int regNo = thinkRegNo(proc->pc);
+    int n;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdWaitEvent);
+    proc->pc += 2;
+    n = cmdNum(proc->pc);
+    proc->pc += 2;
+    np.dataTop = pDataTop;
+    np.pc = n;
+    np.context = pContext;
+    thinkRegSet(regNo & 0xFFFF, thinkProcessAdd(&np) & 0xFFFF);
+    return 0;
+}
+
+int cmdWaitEvent(ThinkProcess *proc)
+{
+    int result;
+
+    if (!proc->waitActive) {
+        proc->sortMode = cmdNum(proc->pc);
+        result = 2;
+    } else if (thinkProcessChk(proc->sortMode) != 0) {
+        result = 2;
+    } else {
+        proc->pc += 2;
+        result = 0;
+    }
+    return result;
+}
 
 int cmdWaitCnt(ThinkProcess *proc)
 {

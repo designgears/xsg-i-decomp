@@ -52,7 +52,29 @@ void *xheap_pop(void) {
     return freeBlock;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xheap", xheap_info);
+int xheap_info(int *totals) {
+    xheap_block *block;
+    int i;
+    int total;
+
+    for (i = 31; i >= 0; i--) {
+        totals[i] = 0;
+    }
+
+    total = 0;
+    block = heap_top;
+    while (block != 0) {
+        if (block->category != 0) {
+            int *category_total = (int *)(((block->category & 0x1f) << 2) + (int)totals);
+            int size = block->size_words << 2;
+
+            *category_total += size + 12;
+            total += size + 12;
+        }
+        block = block->next;
+    }
+    return total;
+}
 
 void infoMemory(void) {
     int totals[32];

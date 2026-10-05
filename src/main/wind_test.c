@@ -5,7 +5,53 @@ INCLUDE_ASM("asm/main/nonmatchings/wind_test", InitTest_002D9430);
 
 INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveCamera);
 
-INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveWind);
+typedef struct {
+    char pad0[0x28];
+    unsigned short trg;
+    char pad2a[0x66 - 0x2A];
+    signed char lx;
+    signed char ly;
+    char pad68[0xD0 - 0x68];
+} WindPad;
+extern WindPad PadData;
+extern float wpos[];
+extern float D_004D8228;
+extern float D_004D822C;
+extern volatile float D_004D8230;
+extern float cry_004DC61C;
+extern double cos(double);
+extern double sin(double);
+extern void ppNextStart(void *);
+extern void ppNextEnd(void *);
+
+static void MoveWind(void)
+{
+    float x;
+    float y;
+    float scale;
+
+    ppNextStart(wpos);
+    scale = D_004D8228;
+    if (PadData.trg & 1) {
+        wpos[1] -= D_004D822C;
+    }
+    if (PadData.trg & 4) {
+        wpos[1] += D_004D8230;
+    }
+    x = PadData.lx * scale;
+    y = PadData.ly * scale;
+    {
+        double p = wpos[0];
+        double dx = x;
+        double a = dx * cos(-cry_004DC61C);
+        double dy = y;
+        wpos[0] = p + (a - dy * sin(-cry_004DC61C));
+        p = wpos[2];
+        a = dy * cos(-cry_004DC61C);
+        wpos[2] = p + (a + dx * sin(-cry_004DC61C));
+    }
+    ppNextEnd(wpos);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/wind_test", MoveWind2);
 

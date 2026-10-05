@@ -82,12 +82,18 @@ typedef struct XrgActor {
                                                    declared here */
     struct XrgActor *parent;                  /* 0x068 */
     int attachID;                              /* 0x06C: -1 when not attached to a parent */
-    unsigned char unmodeled_070[0x104 - 0x070];
+    int actorID;                                 /* 0x070 */
+    unsigned char unmodeled_074[0xF4 - 0x074];
+    void *effectors[2];                           /* 0xF4: MatrixEffector slots cleared by
+                                                     _InitXenoActor and walked by
+                                                     XrgActorDisposeEffector / _PassTime */
+    unsigned char unmodeled_0fc[0x104 - 0x0FC];
     RgFileSysData *resourceFiles[4];            /* 0x104: per-index roles beyond the load/cache
                                                    bookkeeping _DupLoadXenoActor performs are not
                                                    evidenced; index 3 is the joint/skeleton file
                                                    _InitSkeMani reads back through pXenoAct */
     int weaponMotionActive;                     /* 0x114 */
+    int pakaPakaActive;                          /* 0x118 */
 } XrgActor;
 
 /*

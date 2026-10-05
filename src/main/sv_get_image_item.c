@@ -172,7 +172,16 @@ static void *svGetImageListItemSub(int type, unsigned int flags)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svGetImageListItem);
+void *svGetImageListItem(int type, unsigned int flags) {
+    int t;
+    if (flags & 0x100) t = 0;
+    else if (flags & 0x200) t = type;
+    else if (flags & 0x400) t = type;
+    else if (flags & 0x800) t = 15;
+    else if (flags & 0x1000) t = type;
+    else t = 14;
+    return svGetImageListItemSub(t, flags);
+}
 
 int strcmp(const char *, const char *);
 
@@ -199,7 +208,52 @@ static SvTypeListEntry *svGetResFromName(const char *name)
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svGetPrmFromName);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svLoadTexture);
+typedef struct TextureUploadRequest {
+    void *data;                     /* 0x00, texture pixel data source address */
+    unsigned char unmodeled_04[0x0E];
+    unsigned short basePointer;     /* 0x12, GS local texture destination base pointer */
+    unsigned short format;          /* 0x14, 8 => pixelFormat 0x13, else 0x14 */
+    unsigned short bufferWidthRaw;  /* 0x16, raw value, shifted >> 6 for bufferWidth */
+    unsigned short width;           /* 0x18, texture width */
+    unsigned short height;          /* 0x1A, texture height */
+} TextureUploadRequest;
+
+void svLoadTexture(TextureUploadRequest *tex)
+{
+    XglPacket *packet;
+    unsigned short basePointer;
+    unsigned short height;
+    unsigned short width;
+    unsigned short bufferWidthRaw;
+    void *data;
+    int product;
+    int qwc;
+
+    basePointer = tex->basePointer;
+    height = tex->height;
+    width = tex->width;
+    packet = xglPacketGetCurrent();
+
+    if (tex->format == 8) {
+        bufferWidthRaw = tex->bufferWidthRaw;
+        data = tex->data;
+        product = (int)bufferWidthRaw * (int)height;
+        if (product < 0) {
+            product += 15;
+        }
+        qwc = product >> 4;
+        sceVif1PkRefLoadImage(packet, basePointer, 0x13, bufferWidthRaw >> 6, data, qwc, 0, 0, width, height);
+    } else {
+        bufferWidthRaw = tex->bufferWidthRaw;
+        data = tex->data;
+        product = (int)bufferWidthRaw * (int)height;
+        if (product < 0) {
+            product += 15;
+        }
+        qwc = product >> 4;
+        sceVif1PkRefLoadImage(packet, basePointer, 0x14, bufferWidthRaw >> 6, data, qwc, 0, 0, width, height);
+    }
+}
 
 /*
  * Only `data`, `destAddress` and `format` are evidenced (svLoadClut's three
@@ -289,12 +343,6 @@ INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddImage);
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddClut);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddModel);
-
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddScript);
-
-int svImageListAlloc();
-
 /*
  * One svAddScript2 sub-record, at +0x1C of a 0x24-byte slot of the type
  * list's item array. Only the fields this function itself writes are
@@ -319,6 +367,62 @@ typedef struct SvScriptSlot {
     unsigned char unmodeled_1C[4];
     void *dataPtr;                        /* 0x20 */
 } SvScriptSlot;
+
+static int svAddModel(int typeListAddr, void *script)
+{
+  int index;
+  void *codePtr;
+  void *dataPtr;
+  void *slot;
+  SvScriptSlot *sub;
+
+  index = svImageListAlloc(typeListAddr);
+  codePtr = (unsigned char *) script + 0x40;
+  dataPtr = (unsigned char *) script + 0x14;
+  slot = (void *) (typeListAddr + (index * 0x24));
+  if (index < 0)
+  {
+    return -1;
+  }
+  sub = (SvScriptSlot *) ((unsigned char *) slot + 0x1C);
+  sub->kind = 6;
+  sub->dataPtr = dataPtr;
+  sub->codePtr = codePtr;
+  sub->id = (short) (*((u16 *) (((unsigned char *) script) + 0xA)) | 0x2000);
+  sub->active = 1;
+  sub->clearedB = 0;
+  sub->clearedA = 0;
+  return index;
+}
+
+static int svAddScript(int typeListAddr, void *script)
+{
+  int index;
+  void *codePtr;
+  void *dataPtr;
+  void *slot;
+  SvScriptSlot *sub;
+
+  index = svImageListAlloc(typeListAddr);
+  codePtr = (unsigned char *) script + 0x40;
+  dataPtr = (unsigned char *) script + 0x14;
+  slot = (void *) (typeListAddr + (index * 0x24));
+  if (index < 0)
+  {
+    return -1;
+  }
+  sub = (SvScriptSlot *) ((unsigned char *) slot + 0x1C);
+  sub->kind = 5;
+  sub->dataPtr = dataPtr;
+  sub->codePtr = codePtr;
+  sub->id = (short) *((u16 *) (((unsigned char *) script) + 0xA));
+  sub->active = 1;
+  sub->clearedB = 0;
+  sub->clearedA = 0;
+  return index;
+}
+
+int svImageListAlloc();
 
 static int svAddScript2(int typeListAddr, void *script)
 {
@@ -349,7 +453,25 @@ static int svAddScript2(int typeListAddr, void *script)
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAnalyzeChunk);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svInitImageMapper);
+extern int top_1[];
+extern int siz_0[];
+
+void svInitImageMapper(void) {
+    unsigned char *p = _imageMapper;
+    int i;
+    memset(p, 0, 0x5A5A0);
+    p += 0x10;
+    for (i = 0; i < 0x28; i++) {
+        int t = top_1[i];
+        *(int *)(p - 0xC) = t;
+        *(int *)(p - 4) = t;
+        *(int *)(p - 8) = siz_0[i];
+        *(short *)(p + 4) = 0;
+        *(short *)p = 0;
+        *(short *)(p + 2) = 0;
+        p += 0x241C;
+    }
+}
 
 static void svInitRefImage(void)
 {
@@ -404,9 +526,37 @@ void svDeleteImageMapper(int type)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDeleteImageMapperID);
+void svDeleteImageMapperID(int id)
+{
+    int i;
+    unsigned char *base = _imageMapper;
+    int off = 2 * 0x241C;
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDeleteImageMapperData);
+    for (i = 2; i < 14; i++) {
+        short *dim = (short *) (base + i * 0x241C + 0x10);
+        if (dim[0] == id) {
+            svImageListDestroy((SvTypeList *) (off + (int) base));
+            return;
+        }
+        off += 0x241C;
+    }
+}
+
+void svDeleteImageMapperData(int id)
+{
+    int i;
+    unsigned char *base = _imageMapper;
+    int off = 2 * 0x241C;
+
+    for (i = 2; i < 14; i++) {
+        short *dim = (short *) (base + i * 0x241C + 0x10);
+        if (dim[1] == id) {
+            svImageListDestroy((SvTypeList *) (off + (int) base));
+            return;
+        }
+        off += 0x241C;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svFileLoadScript);
 
@@ -452,9 +602,114 @@ void SGsSendPacket(SGsPacketReset *packet)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", SGsTexFlush);
+/*
+ * One 128-bit GIF packet record. The SGs* writers fill it as a whole
+ * quadword (sq), as two doublewords (sd at 0x0/0x8: a register value and
+ * its A+D address) or as four words (sw, SGsAddGifXYZ2).
+ */
+typedef union SGsGifRecord {
+    Quadword quad;
+    unsigned long long dword[2];
+    int word[4];
+    unsigned short halfword[8];
+    float floatValue[4];
+} SGsGifRecord;
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", SGsInitEnv);
+typedef struct SGsPacket {
+    int count;              /* 0x0 */
+    int tagIndex;           /* 0x4 */
+    int loopCount;          /* 0x8 */
+    SGsGifRecord *base;     /* 0xC, starts at the scratchpad (0x70000000) */
+} SGsPacket;
+
+extern SGsPacket _packet;
+static inline void SGsInitGifPacket_i(SGsPacket *packet)
+{
+    packet->tagIndex = 0;
+    packet->loopCount = 1;
+    packet->base = (SGsGifRecord *)0x70000000;
+    packet->count = 0;
+}
+static inline void SGsAddReg_i(SGsPacket *packet, unsigned long long reg, unsigned long long value)
+{
+    packet->base[packet->count].dword[0] = value;
+    packet->base[packet->count].dword[1] = reg;
+    packet->count++;
+}
+
+void SGsTexFlush(void)
+{
+    SGsInitGifPacket_i(&_packet);
+    SGsAddReg_i(&_packet, 0xE, 0x1000000000008001ULL);
+    SGsAddReg_i(&_packet, 0x3F, 1);
+    SGsSendPacket((SGsPacketReset *)&_packet);
+}
+
+extern void *xglStudioGetLight2(void);
+extern void xglLightCalcMatrix(void *lightSet);
+typedef struct SGsLightBackup {
+    unsigned long long w[0x1e];
+} SGsLightBackup;
+extern SGsLightBackup _defLight;
+extern Quadword _defMatLcMod[];
+extern Quadword _defMatLc[];
+extern Quadword _defMatLn[];
+static inline void SGsCopyMat4(void *dst, void *src)
+{
+    __asm__ __volatile__(
+        "lq $8, 0(%1)\n\t"
+        "lq $9, 16(%1)\n\t"
+        "lq $10, 32(%1)\n\t"
+        "lq $11, 48(%1)\n\t"
+        "sq $8, 0(%0)\n\t"
+        "sq $9, 16(%0)\n\t"
+        "sq $10, 32(%0)\n\t"
+        "sq $11, 48(%0)"
+        :
+        : "r"(dst), "r"(src)
+        : "$8", "$9", "$10", "$11", "memory");
+}
+
+void SGsInitEnv(void)
+{
+    void *lightSet;
+    int *row;
+    int *p;
+    int i;
+    int j;
+
+    SGsInitGifPacket_i(&_packet);
+    SGsAddReg_i(&_packet, 0xE, 0x1000000000008001ULL);
+    SGsAddReg_i(&_packet, 0x3F, 1);
+    SGsAddReg_i(&_packet, 0xE, 0x1000000000008004ULL);
+    SGsAddReg_i(&_packet, 0x47, 0x5000D);
+    SGsAddReg_i(&_packet, 0x14, 0x60);
+    SGsAddReg_i(&_packet, 8, 5);
+    SGsAddReg_i(&_packet, 0x4E, 0x131000000);
+    SGsSendPacket((SGsPacketReset *)&_packet);
+
+    lightSet = xglStudioGetLight2();
+    _defLight = *(SGsLightBackup *)lightSet;
+    xglLightCalcMatrix(lightSet);
+
+    SGsCopyMat4(_defMatLcMod, (unsigned char *)lightSet + 0xB0);
+    SGsCopyMat4(_defMatLc, (unsigned char *)lightSet + 0xB0);
+    SGsCopyMat4(_defMatLn, (unsigned char *)lightSet + 0x70);
+
+    row = (int *)_defMatLc;
+    i = 0;
+    do {
+        j = 2;
+        p = row + 2;
+        do {
+            j--;
+            *p = 0;
+            p--;
+        } while (j >= 0);
+        i++;
+        row += 4;
+    } while (i < 3);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", SGsSetZTestEnv);
 
@@ -683,26 +938,6 @@ INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDrawScheduler3D);
  * OR-ed, unshifted, into that tag's low (NLOOP) bits by SGsCloseGifPacket;
  * both functions here leave it at 1.
  */
-
-/*
- * One 128-bit GIF packet record. The SGs* writers fill it as a whole
- * quadword (sq), as two doublewords (sd at 0x0/0x8: a register value and
- * its A+D address) or as four words (sw, SGsAddGifXYZ2).
- */
-typedef union SGsGifRecord {
-    Quadword quad;
-    unsigned long long dword[2];
-    int word[4];
-    unsigned short halfword[8];
-    float floatValue[4];
-} SGsGifRecord;
-
-typedef struct SGsPacket {
-    int count;              /* 0x0 */
-    int tagIndex;           /* 0x4 */
-    int loopCount;          /* 0x8 */
-    SGsGifRecord *base;     /* 0xC, starts at the scratchpad (0x70000000) */
-} SGsPacket;
 
 void SGsInitGifPacket(SGsPacket *packet)
 {

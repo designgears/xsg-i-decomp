@@ -160,9 +160,54 @@ static int _GetSelectCursor(SelChar *pSelChar)
     return pSelChar->cursor;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetSelectableSelectChar);
+static void _SetSelectableSelectChar(SelChar *pSelChar, unsigned int charIDMask)
+{
+    unsigned int i;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetCharSelectChar);
+    if (pSelChar == 0) {
+        assert_prog(D_00A56650, D_00A56660, 0xE7);
+    }
+    pSelChar->selectableMask = 0;
+    for (i = 0; i < 6; i++) {
+        if (charIDMask & (1 << i)) {
+            pSelChar->selectableMask |= 1 << _CharIDToCharCursor(i);
+        }
+    }
+    pSelChar->selectableMask |= 0x40;
+    if (!(pSelChar->selectableMask & (1 << pSelChar->cursor))) {
+        for (i = 0; i < 7; i++) {
+            if (pSelChar->selectableMask & (1 << i)) {
+                pSelChar->cursor = i;
+                break;
+            }
+        }
+    }
+}
+
+extern const char D_00A56678[];
+
+static void _SetCharSelectChar(SelChar *pSelChar, int charID)
+{
+    int cursor;
+    unsigned int i;
+
+    if (pSelChar == 0) {
+        assert_prog(D_00A56650, D_00A56660, 0xFE);
+    }
+    if (charID == -1) {
+        assert_prog(D_00A56678, D_00A56660, 0xFF);
+    }
+    cursor = _CharIDToCharCursor(charID);
+    if (pSelChar->selectableMask & (1 << cursor)) {
+        pSelChar->cursor = cursor;
+    } else {
+        for (i = 0; i < 7; i++) {
+            if (pSelChar->selectableMask & (1 << i)) {
+                pSelChar->cursor = i;
+            }
+        }
+    }
+}
 
 static int _IsExistItemUpper(SelChar *pSelChar)
 {
@@ -183,9 +228,61 @@ static int _IsExistItemLower(SelChar *pSelChar)
     return (pSelChar->selectableMask & ~((cursorBit - 1) | cursorBit)) != 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _GetSelectableSelectChar);
+static int _GetSelectableSelectChar(SelChar *pSelChar)
+{
+    int var_18;
+    unsigned int var_16;
+    int cursor;
+    int cursorBit;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _PassTimeSelectChar);
+    if (pSelChar == 0) {
+        assert_prog(D_00A56650, D_00A56660, 0x126);
+    }
+    var_18 = 0;
+    for (var_16 = 0; var_16 < 6; var_16++) {
+        cursor = _CharIDToCharCursor(var_16);
+        cursorBit = 1 << cursor;
+        if (pSelChar->selectableMask & cursorBit) {
+            var_18 |= 1 << var_16;
+        }
+    }
+    return var_18;
+}
+
+extern int XrgPadIsUp(void);
+extern int XrgPadIsDown(void);
+extern void XrgSoundSystemCursor(void);
+
+static void _PassTimeSelectChar(SelChar *pSelChar, float deltaTime)
+{
+    int cursor;
+    int old;
+    int dir;
+
+    if (pSelChar == 0) {
+        assert_prog(D_00A56650, D_00A56660, 0x133);
+    }
+    cursor = pSelChar->cursor;
+    old = cursor;
+    if (XrgPadIsUp()) {
+        dir = -1;
+    } else {
+        dir = XrgPadIsDown() != 0;
+    }
+    if (dir != 0) {
+        do {
+            cursor += dir;
+            if ((unsigned)cursor >= 7) {
+                cursor = pSelChar->cursor;
+                break;
+            }
+        } while (!(pSelChar->selectableMask & (1 << cursor)));
+    }
+    pSelChar->cursor = cursor;
+    if (cursor != old) {
+        XrgSoundSystemCursor();
+    }
+}
 
 extern const char D_00A56698[]; /* "pSelWep != NIL" */
 
@@ -286,7 +383,28 @@ static void _SetCursorSelWep(SelWep *pSelWep, int nCur)
     pSelWep->cursor = nCur;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetCursorByNameSelWep);
+extern int strcmp(const char *a, const char *b);
+extern const char D_00A56710[];
+
+static int _SetCursorByNameSelWep(SelWep *pSelWep, const char *pszName)
+{
+    unsigned int i;
+
+    if (pSelWep == 0) {
+        assert_prog(D_00A56698, D_00A56660, 0x191);
+    }
+    if (pszName == 0) {
+        assert_prog(D_00A56710, D_00A56660, 0x192);
+    }
+    pSelWep->cursor = 0;
+    for (i = 0; i < pSelWep->m_uSize; i++) {
+        if (strcmp((const char *)(pSelWep->list[i] + 0x330), pszName) == 0) {
+            pSelWep->cursor = i;
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /*
  * Name field offset within an unrecovered weapon-essence record; only this
@@ -504,7 +622,22 @@ static void _GetAllSelType(SelType *pSelType, int *out)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _GetAllNameOnCursorSelType);
+extern const char D_00A56788[];
+
+static void _GetAllNameOnCursorSelType(SelType *pSelType, char *names)
+{
+    unsigned int i;
+
+    if (pSelType == 0) {
+        assert_prog(D_00A56758, D_00A56660, 0x25C);
+    }
+    if (names == 0) {
+        assert_prog(D_00A56788, D_00A56660, 0x25D);
+    }
+    for (i = 0; i < 3; i++) {
+        _GetNameOnCursorSelWep(&pSelType->wepList[i], names + i * 32);
+    }
+}
 
 static void _CheckConfrictSelType(SelType *pSelType)
 {
@@ -519,7 +652,23 @@ static void _CheckConfrictSelType(SelType *pSelType)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetAllCursorByNameSelType);
+extern const char D_00A56788[];
+
+static void _SetAllCursorByNameSelType(SelType *pSelType, char *aszName)
+{
+    unsigned int i;
+
+    if (pSelType == 0) {
+        assert_prog(D_00A56758, D_00A56660, 0x272);
+    }
+    if (aszName == 0) {
+        assert_prog(D_00A56788, D_00A56660, 0x273);
+    }
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        _SetCursorByNameSelWep(&pSelType->wepList[i], aszName + i * 0x20);
+    }
+    _CheckConfrictSelType(pSelType);
+}
 
 /*
  * ov12:0x00a568f0 "_GetSelectChar(&pSel->m_inChar) != RG_ACTOR_CHAR_NOP"
@@ -544,13 +693,114 @@ static void _InitSelType(SelType *pSelType)
     pSelType->charID = RG_ACTOR_CHAR_NOP;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _InitByCharSelType);
+static void _InitByCharSelType(SelType *pSelType, int charID)
+{
+    unsigned int i;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _PassTimeSelType);
+    if (pSelType == 0) {
+        assert_prog(D_00A56758, D_00A56660, 0x293);
+    }
+    _InitSelType(pSelType);
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        _InitCharTypeSelWep(&pSelType->wepList[i], charID, i);
+    }
+    pSelType->charID = charID;
+    _CheckConfrictSelType(pSelType);
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DetachWeaponIfConfrictSelType);
+extern int XrgPadIsLeft(void);
+extern int XrgPadIsRight(void);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _InitWepListDisp);
+static void _PassTimeSelType(SelType *pSelType, float deltaTime)
+{
+    int old;
+    int cursor;
+    int eType;
+
+    if (pSelType == 0) {
+        assert_prog(D_00A56758, D_00A56660, 0x2A3);
+    }
+    old = pSelType->cursor;
+    cursor = old;
+    eType = _EquipCurIDToEquipType(old);
+    if (eType != RG_EQUIP_TYPE_INVALID) {
+        ((void (*)(SelWep *, float))_PassTimeSelWep)(&pSelType->wepList[eType], deltaTime);
+    }
+    if (old != 3) {
+        if (XrgPadIsLeft() && old != 0) {
+            cursor = old - 1;
+            if (cursor == 3) {
+                cursor = 2;
+            }
+        }
+        if (XrgPadIsRight() && (unsigned)cursor < 4) {
+            cursor++;
+            if (cursor == 3) {
+                cursor = 4;
+            }
+        }
+    }
+    _SetSelTypeCursor(pSelType, cursor);
+    if (pSelType->cursor != old) {
+        XrgSoundSystemCursor();
+    }
+    _CheckConfrictSelType(pSelType);
+}
+
+static int _DetachWeaponIfConfrictSelType(SelType *pSelType)
+{
+    int type;
+    unsigned int conf;
+    int i;
+
+    if (pSelType == 0) {
+        assert_prog(D_00A56758, D_00A56660, 0x2CA);
+    }
+    type = _EquipCurIDToEquipType(pSelType->cursor);
+    if (type != -1) {
+        conf = pSelType->confrict[type];
+        if (conf != 0) {
+            for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+                if (conf & (1 << i) & ~0) {
+                    _SetCursorSelWep(&pSelType->wepList[i], 0);
+                }
+            }
+            _CheckConfrictSelType(pSelType);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+extern const char D_00A56798[];
+extern void *RgBxxGetPic(RgBxx *pBxx, const char *pszName);
+extern const char D_00A567A8[];
+extern const char D_00A567B8[];
+extern const char D_00A567C8[];
+extern const char D_00A567D8[];
+extern const char D_00A567F0[];
+
+static void _InitWepListDisp(WepListDisp *pDisp, int equipType)
+{
+    void *pTex;
+
+    if (pDisp == 0) {
+        assert_prog(D_00A56798, D_00A56660, 0x2EC);
+    }
+    pTex = RgBxxGetPic((RgBxx *)equipType, D_00A567A8);
+    if (pTex == 0) {
+        assert_prog(D_00A567B8, D_00A56660, 0x2EF);
+    }
+    pDisp->font = _CreateSelectWepFont((int)pTex);
+    *(void **)&pDisp->unmodeled_00c[0] = RgBxxGetPic((RgBxx *)equipType, D_00A567C8);
+    *(void **)&pDisp->unmodeled_00c[4] = RgBxxGetPic((RgBxx *)equipType, D_00A567D8);
+    *(void **)&pDisp->unmodeled_00c[8] = RgBxxGetPic((RgBxx *)equipType, D_00A567F0);
+    *(int *)&pDisp->unmodeled_00c[12] = 0x238;
+    *(int *)&pDisp->unmodeled_00c[16] = 0xA8;
+    pDisp->topIndex = 0;
+    pDisp->pSelType = 0;
+    pDisp->pSelWep = 0;
+}
 
 extern RgHeap *InstanceOfRgHeap(void);
 extern void *RgHeapAlloc(void *heap, unsigned int size,
@@ -625,7 +875,7 @@ extern void InitRgSelectAGWSData(int *confrict);
  * _CheckConfrictSelType (ov12:0x00a39280, also unallocated), so its return
  * type follows that unresolved callee. This call's own result is unused.
  */
-static int _InitByCharSelType(SelType *pSelType, int charID);
+static void _InitByCharSelType(SelType *pSelType, int charID);
 
 static void _InitSelectData(SelDat *pSelDat)
 {
@@ -645,7 +895,29 @@ static void _InitSelectData(SelDat *pSelDat)
     InitRgSelectAGWSData(&pSelType->confrict[3]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DumpSelect__);
+extern void XrgLog(const char *format, const char *source_file, int line, ...);
+extern const char D_00A56848[];
+extern const char D_00A56878[];
+extern const char D_00A56898[];
+typedef struct SelDump {
+    int cursor;
+    unsigned int selectableMask;
+    char name[6][3][32];
+} SelDump;
+
+static void _DumpSelect__(SelDump *p, int a, int b)
+{
+    unsigned int i;
+    unsigned int j;
+
+    XrgLog(D_00A56848, D_00A56660, 0x3DD, a, b);
+    XrgLog(D_00A56878, D_00A56660, 0x3DE, p->cursor, p->selectableMask);
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 3; j++) {
+            XrgLog(D_00A56898, D_00A56660, 0x3E1, i, j, p->name[i][j]);
+        }
+    }
+}
 
 extern const char D_00A568C0[]; /* "pData != NIL" */
 
@@ -743,11 +1015,55 @@ static void _LoadCharSelectData(SelDat *pSelDat, int *pData)
     _SetSelectableSelectChar(&pSelDat->selChar, pData[1]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _LoadWepSelectData);
+static void _LoadWepSelectData(SelDat *pSel, int *pData)
+{
+    SelType *pSelType;
+    int charID;
+    char *namePtr;
+    void (*func)(SelType *, char *);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _GetBaseSelectData);
+    pSelType = &pSel->selType;
+    if (pSel == 0) {
+        assert_prog(D_00A56838, D_00A56660, 0x40E);
+    }
+    if (pData == 0) {
+        assert_prog(D_00A568C0, D_00A56660, 0x40F);
+    }
+    charID = _GetSelectChar(&pSel->selChar);
+    _InitByCharSelType(pSelType, charID);
+    if ((unsigned int)charID < RG_ACTOR_CHAR_NUM) {
+        namePtr = (char *)pData + charID * 0x60 + 8;
+        func = _SetAllCursorByNameSelType;
+        func(pSelType, namePtr);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetBaseSelectData);
+extern const char D_00A568D0[];
+typedef struct { long long d[0x49]; } BaseSelData;
+
+static void _GetBaseSelectData(SelDat *pSelDat, void *pResult)
+{
+    if (pSelDat == 0) {
+        assert_prog(D_00A56838, D_00A56660, 0x422);
+    }
+    if (pResult == 0) {
+        assert_prog(D_00A568D0, D_00A56660, 0x423);
+    }
+    *(BaseSelData *)pResult = *(BaseSelData *)((char *)pSelDat + 0x660);
+}
+
+static void _SetBaseSelectData(SelDat *pSelDat, void *pData)
+{
+    if (pSelDat == 0) {
+        assert_prog(D_00A56838, D_00A56660, 0x42C);
+    }
+    if (pData == 0) {
+        assert_prog(D_00A568C0, D_00A56660, 0x42D);
+    }
+    *(BaseSelData *)((char *)pSelDat + 0x660) = *(BaseSelData *)pData;
+    _LoadCharSelectData(pSelDat, pData);
+    _LoadWepSelectData(pSelDat, pData);
+}
 
 static int _GetModeSelectData(SelDat *pSelDat)
 {
@@ -906,9 +1222,57 @@ static void _GetSelectWeps(SelDat *pSel, int *essences, int *confricts)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _GetWepSelection);
+static int _GetWepSelection(SelDat *pSelDat, int *apCollects)
+{
+    SelType *pSelType;
+    SelWep *pSelWep;
+    int *pEssList;
+    unsigned int i;
+    int mask;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DrawPlayerMode);
+    pSelType = &pSelDat->selType;
+    mask = 0;
+    for (i = 0; i < RG_EQUIP_TYPE_NUM; i++) {
+        pSelWep = _GetSelWepSelType(pSelType, i);
+        if (pSelWep == 0) {
+            assert_prog(D_00A56698, D_00A56660, 0x4C0);
+        }
+        pEssList = _GetEssListSelWep(pSelWep);
+        if (_GetConfrictSelType(pSelType, i) != 0) {
+            mask |= 1 << i;
+            *apCollects = *pEssList;
+        } else {
+            *apCollects = _GetEssSelWep(pSelWep);
+        }
+        apCollects++;
+    }
+    return mask;
+}
+
+extern const char D_00A56928[];
+extern const char D_00A56938[];
+extern const char D_00A56948[];
+extern void *RgBxxGetPic(RgBxx *pBxx, const char *pszName);
+
+static void _DrawPlayerMode(XrgPaint2D *paint, RgBxx *pBxx, int playerMode)
+{
+    void *pic = 0;
+
+    if (pBxx == 0) {
+        assert_prog(D_00A56928, D_00A56660, 0x4D4);
+    }
+    switch (playerMode) {
+    case 0:
+        pic = RgBxxGetPic(pBxx, D_00A56938);
+        break;
+    case 1:
+        pic = RgBxxGetPic(pBxx, D_00A56948);
+        break;
+    }
+    if (pic != 0) {
+        _disp_pic_pl(paint, pic, 4, 0x2C, playerMode);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetCharSelDisp);
 
@@ -1029,7 +1393,25 @@ static void _SetFloatArrowPos(FloatArrow *arrow, int first_x, int first_y,
     arrow->y1 = second_y + offset_y;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DispFloatArrow);
+typedef struct { int v[2]; } FloatArrowDir;
+extern const FloatArrowDir D_00A56BE0;
+
+static void _DispFloatArrow(XrgPaint2D *paint, FloatArrow *pDat)
+{
+    FloatArrowDir dir = D_00A56BE0;
+    unsigned int i;
+    void *pic;
+
+    for (i = 0; i < 2; i++) {
+        if (pDat->visibility_mask & (1 << i)) {
+            pic = (&pDat->pic0)[i];
+            if (pic != 0) {
+                _disp_pic(paint, pic,
+                          (&pDat->x0)[i] + dir.v[i] * _SinGet(4), (&pDat->y0)[i]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetWepSelPicList);
 

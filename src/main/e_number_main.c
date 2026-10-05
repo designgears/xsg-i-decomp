@@ -98,7 +98,114 @@ void eSpriteSet(ESprite *sprite, short spriteId)
     sprite->spriteId = spriteId;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_number_main", eRibbonMain);
+typedef struct ERibbonPart {
+    short x;
+    short y;
+    int work;
+    signed char color[4];
+} ERibbonPart;
+
+typedef struct ERibbon {
+    short x;
+    short y;
+    int work;
+    short w;
+    short h;
+    u8 mode;
+    u8 unk0d;
+    u8 unk0e;
+    u8 type;
+    ERibbonPart part[6];
+    u8 unmodeled_058[4];
+    int unk5c;
+} ERibbon;
+
+void eRibbonMain(ERibbon *r)
+{
+    u16 x;
+    int v;
+    u16 y, w, px;
+    int yh, xw, half;
+    int work;
+    u8 d;
+
+    switch (r->mode) {
+    case 0x20:
+        x = r->x;
+        r->part[0].x = x;
+        r->part[1].x = x;
+        r->part[0].y = r->y;
+        r->part[2].y = r->y;
+        r->part[1].y = r->y + r->h;
+        r->part[0].work = r->work;
+        r->part[2].work = r->work;
+        r->part[3].y = r->y + r->h;
+        r->part[3].work = r->work;
+        r->unk0e = 1;
+        r->mode = 0x21;
+        r->unk0d = 0;
+        goto anim;
+    case 0x21:
+        x = r->x;
+    anim:
+        d = r->unk0d;
+        r->unk0d = d + 1;
+        v = (short)x + r->w * (d * 0.125f);
+        r->part[2].x = v;
+        r->part[3].x = v;
+        if ((u8)(d + 1) >= 9) {
+            r->mode = 0xF0;
+        }
+        break;
+    case 0xF:
+    case 0xF0:
+    case 0xFF:
+        break;
+    case 0x2E:
+        r->mode = 0x2F;
+    case 0:
+    case 0x2F:
+        r->mode = 0x50;
+        break;
+    case 0x50:
+        r->mode = 0x51;
+        r->unk0e = 1;
+    case 0x51:
+        if (r->type == 0) {
+            r->part[0].x = r->x;
+            r->part[3].x = r->x + r->w / 2;
+            r->part[5].x = r->x + r->w;
+            r->part[4].x = r->x + r->w;
+            r->part[1].x = r->x;
+            r->part[2].x = r->x + r->w / 2;
+        } else {
+            r->part[1].x = r->x;
+            r->part[0].x = r->x;
+            half = r->w / 10;
+            r->part[3].x = r->x + half;
+            r->part[5].x = r->x + r->w;
+            r->part[4].x = r->x + r->w;
+            r->part[2].x = r->x + half;
+        }
+        r->part[2].y = r->y;
+        r->part[0].y = r->y;
+        r->part[5].y = r->y + r->h;
+        r->part[3].y = r->y + r->h;
+        r->part[5].work = r->work;
+        r->part[4].work = r->work;
+        r->part[3].work = r->work;
+        r->part[2].work = r->work;
+        r->part[1].work = r->work;
+        r->part[4].y = r->y;
+        r->part[1].y = r->y + r->h;
+        r->part[0].work = r->work;
+        r->unk5c = 0;
+        break;
+    }
+    if (r->unk0e != 0) {
+        endPrintExtFunc(r->part[0].work, 3, r->part);
+    }
+}
 
 /*
  * Partial view of the object eRibbonModeChange writes, limited to the mode
@@ -114,11 +221,114 @@ void eRibbonModeChange(ERibbonEntry *entry, signed char mode)
     entry->mode = mode;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_number_main", eRibbonSet);
+void eRibbonSet(ERibbon *r, int type)
+{
+    int i;
+    ERibbonPart *p;
+
+    r->type = type;
+    r->mode = 0x50;
+    r->x = 0;
+    r->y = 0;
+    r->work = 0;
+    r->unk0d = 0;
+    r->unk0e = 0;
+    switch (r->type) {
+    case 3:
+        p = r->part;
+        for (i = 0; i < 6; i++, p++) {
+            if (i & 1) {
+                p->color[0] = 0;
+                p->color[1] = 0x20;
+                p->color[2] = 0x34;
+            } else {
+                p->color[0] = 0x60;
+                p->color[1] = 0x40;
+                p->color[2] = -128;
+            }
+            p->color[3] = 0x30;
+        }
+        break;
+    case 0:
+        r->part[3].color[2] = 0;
+        r->part[2].color[2] = 0;
+        r->part[1].color[2] = 0;
+        r->part[0].color[2] = 0;
+        r->part[3].color[1] = 0;
+        r->part[2].color[1] = 0;
+        r->part[1].color[1] = 0;
+        r->part[0].color[1] = 0;
+        r->part[3].color[0] = 0;
+        r->part[2].color[0] = 0;
+        r->part[1].color[0] = 0;
+        r->part[0].color[0] = 0;
+        r->part[3].color[3] = -128;
+        r->part[2].color[3] = -128;
+        r->part[1].color[3] = -128;
+        r->part[0].color[3] = -128;
+        break;
+    case 1:
+    case 2:
+        if (type == 1) {
+            r->part[0].color[3] = 0;
+            r->part[1].color[3] = 0;
+            r->part[2].color[3] = -128;
+            r->part[3].color[3] = -128;
+            r->part[4].color[3] = 0;
+            r->part[5].color[3] = 0;
+        } else {
+            r->part[3].color[3] = 0x40;
+            r->part[2].color[3] = 0x70;
+            r->part[0].color[3] = 0x78;
+            r->part[1].color[3] = 0;
+        }
+        r->part[3].color[0] = 0x20;
+        r->part[2].color[0] = 0x20;
+        r->part[1].color[0] = 0x20;
+        r->part[0].color[0] = 0x20;
+        r->part[5].color[0] = 0;
+        r->part[4].color[0] = 0;
+        r->part[3].color[1] = 0x34;
+        r->part[2].color[1] = 0x34;
+        r->part[1].color[1] = 0x34;
+        r->part[0].color[1] = 0x34;
+        r->part[5].color[1] = 0x20;
+        r->part[4].color[1] = 0x20;
+        r->part[3].color[2] = 0x34;
+        r->part[2].color[2] = 0x34;
+        r->part[1].color[2] = 0x34;
+        r->part[0].color[2] = 0x34;
+        r->part[5].color[2] = 0x34;
+        r->part[4].color[2] = 0x34;
+        r->part[0].color[3] = 0;
+        r->part[1].color[3] = 0;
+        r->part[2].color[3] = -128;
+        r->part[3].color[3] = -128;
+        r->part[4].color[3] = -128;
+        r->part[5].color[3] = -128;
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_number_main", eLineMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/e_number_main", eLineSet);
+void eLineSet(unsigned char *p)
+{
+    int i;
+    unsigned char *q;
+
+    p[3] = 7;
+    i = 0;
+    p[0] = 0;
+    q = p + 4;
+    for (; i < 5; i++) {
+        q[i] = p[3];
+        p[i * 16 + 0x1A] = 0xFF;
+        p[i * 16 + 0x19] = 0xFF;
+        p[i * 16 + 0x18] = 0xFF;
+        p[i * 16 + 0x1B] = 0x80;
+    }
+}
 
 /* The source color quad is copied into the descriptor with its two middle
  * channels exchanged; the value word controls whether the descriptor is sent. */

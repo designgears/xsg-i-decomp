@@ -40,6 +40,24 @@ static u32 getbit1(ArxBitReader *reader)
     return bit;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_timer0", getbits);
+static u32 getbits(ArxBitReader *reader, u32 n)
+{
+    u32 result = 0;
+    u32 bc = reader->bit_count;
+    u32 v;
+
+    if (bc < n) {
+        n -= bc;
+        result = reader->value >> (32 - bc);
+        reader->value = *reader->data++;
+        reader->bit_count = 32;
+        bc = 32;
+    }
+    v = reader->value;
+    result = (result << n) | (v >> (32 - n));
+    reader->bit_count = bc - n;
+    reader->value = v << n;
+    return result;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_timer0", xglArxExtract);

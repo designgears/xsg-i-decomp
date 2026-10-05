@@ -10,11 +10,69 @@ INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraScreenInit);
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraTravelInit);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraTravelReset);
+extern float sShootAngleA_10[4];
+extern float sShootPlaceA_11[4];
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraTravelFocus);
+static void xglCameraTravelReset(StudioCamera *camera)
+{
+    *(int *)((char *)camera + 0xC) = 0;
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)"
+        :
+        : "r"((char *)camera + 0x30), "r"(sShootAngleA_10)
+        : "$2", "memory");
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)"
+        :
+        : "r"((char *)camera + 0x60), "r"(sShootPlaceA_11)
+        : "$2", "memory");
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraTravelScale);
+typedef struct CameraPadView {
+    u8 unmodeled_00[0x90];
+    union { u16 v; } trigger;
+    union { u16 v; } hold;
+    u8 unmodeled_94[0x3C];
+} CameraPadView;
+extern CameraPadView PadData;
+
+static void xglCameraTravelFocus(float *focus)
+{
+    if ((PadData.hold.v & 0x20) && focus[0] < 9.0f) {
+        focus[0] += 1.0f;
+    }
+    if ((PadData.hold.v & 0x80) && focus[0] > 1.0f) {
+        focus[0] -= 1.0f;
+    }
+    if (PadData.trigger.v & 0x8) {
+        focus[3] = 0.0011170107f;
+    }
+    if (PadData.trigger.v & 0x2) {
+        focus[3] = -0.0011170107f;
+    }
+}
+
+extern float D_004D8868;
+extern float D_004D886C;
+void xglVectorScaleXYZ(Vector4 *destination, const Vector4 *source, float scale);
+
+static void xglCameraTravelScale(float *focus)
+{
+	float scale;
+
+	if (PadData.trigger.v & 0x40) {
+		focus[3] *= 4.0f;
+		xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x30), (Vector4 *)((char *)focus + 0x30), 4.0f);
+		xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x60), (Vector4 *)((char *)focus + 0x60), 4.0f);
+	}
+
+	scale = (focus[0] - 5.0f) * D_004D8868 + 1.0f;
+	focus[3] *= scale;
+	xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x30), (Vector4 *)((char *)focus + 0x30), scale);
+	xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x60), (Vector4 *)((char *)focus + 0x60), (focus[0] - 5.0f) * D_004D886C + 1.0f);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_camera", xglCameraTravelManual);
 

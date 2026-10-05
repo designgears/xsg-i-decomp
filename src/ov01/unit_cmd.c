@@ -79,7 +79,32 @@ int unitNumGet(int side)
     return count;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitLiveNumGet);
+int unitLiveNumGet(int side)
+{
+    UnitRecord **table;
+    int count;
+    int remaining;
+    int n;
+    UnitRecord **cur;
+    UnitRecord *unit;
+
+    count = unitTblGet(side, &table);
+    n = 0;
+    if (count > 0) {
+        cur = table;
+        remaining = count;
+        do {
+            unit = *cur;
+            cur++;
+            if (unit != 0) {
+                if (!(**(int **)((char *)unit + 0x10) & 0x80)) {
+                    n++;
+                }
+            }
+        } while (--remaining != 0);
+    }
+    return n;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitLiveNumGet2);
 
@@ -96,7 +121,7 @@ int unitCidGet(ObjectTask *unit)
     return cid;
 }
 
-extern int unitAgwsPilotGet(s16 charaId);
+extern int unitAgwsPilotGet(int charaId);
 extern const char D_00A438F0[];
 extern int printf(const char *format, ...);
 void unitPlFunc(ObjectTask *unit);
@@ -159,13 +184,126 @@ ObjectTask *unitEnCreate(s16 *pl)
     return unit;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitAgwsPilotGet);
+typedef struct {
+    unsigned char unmodeled_00[0x54];
+    short agwsId; /* +0x54 */
+} UnitAgwsOrg;
+extern UnitAgwsOrg *dataUnitOrgGet(int charaId);
+
+int unitAgwsPilotGet(int charaId)
+{
+    int i;
+    int ok;
+
+    ok = (unsigned)(charaId - 0x11) < 0x10;
+    i = 1;
+    if (!ok) {
+        return 0;
+    }
+    do {
+        if (dataUnitOrgGet(i)->agwsId == charaId) {
+            return i;
+        }
+        i++;
+        ok = i < 0x11;
+    } while (ok);
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCreate);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitRemoveActor);
+extern void ACT_dispose(void *self);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitRemove);
+void unitRemoveActor(UnitRecord *unit)
+{
+    Actor *motion;
+    Actor *a;
+    int i;
+
+    a = *(Actor **)((char *)unit + 0x2C);
+    motion = unit->motionActor;
+    if (a != 0) {
+        ACT_dispose(a);
+    }
+    for (i = 0; i < 3; i++) {
+        a = *(Actor **)(((i & 3) << 2) + (int)unit + 0x1c);
+        if (a != 0) {
+            ACT_dispose(a);
+        }
+    }
+    ACT_dispose(motion);
+}
+
+extern void objRemove(ObjectTask *task);
+extern char D_00A43940[];
+extern void sefReleaseID(int id);
+extern int sndSeRegRemove(int id);
+extern void sefDeleteEffect2(void *p);
+extern void sefDeleteEffectWait(int id);
+typedef struct {
+    void *p[8];
+} UnitRemoveEff;
+
+void unitRemove(UnitRecord *unit, int mode)
+{
+    Actor *actor;
+    short cid;
+    int flag;
+    void *eff;
+    UnitRemoveEff effs;
+    UnitRecord **table;
+    UnitRecord *u;
+    int count;
+    int i;
+    int n;
+
+    actor = unit->motionActor;
+    printf(D_00A43940, calcUPGet(&unit->task)->charaId, unit, actor, calcUPGet(&unit->task), unit->task.work);
+    unit->motionActor->flags |= 8;
+    cid = calcUPGet(&unit->task)->charaId;
+    flag = *(unsigned int *)unit->task.work & 0x40;
+    eff = *(void **)((char *)calcUPGet(&unit->task) + 0x158);
+    effs = *(UnitRemoveEff *)calcUPGet(&unit->task)->statEffUnits;
+    if ((*(unsigned int *)unit->task.work & 0x40) ||
+        (calcUPGet(&unit->task)->charaId >= 0xBB && calcUPGet(&unit->task)->charaId < 0xC3)) {
+        calcUPGet(&unit->task)->charaId = 0;
+    }
+    unitRemoveActor(unit);
+    objRemove(&unit->task);
+    if (mode == 1) {
+        return;
+    }
+    n = 0;
+    if (flag) {
+        count = unitTblGet(2, &table);
+        for (i = 0; i < count; i++) {
+            u = table[i];
+            if (u != 0 && !(*(unsigned int *)u->task.work & 0x80)) {
+                if (calcUPGet(&u->task)->charaId == cid) {
+                    n++;
+                }
+            }
+        }
+        if (n == 0) {
+            sefReleaseID(cid);
+            sndSeRegRemove(cid);
+            if (eff != 0) {
+                sefDeleteEffect2(eff);
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            if (effs.p[i] != 0) {
+                sefDeleteEffect2(effs.p[i]);
+            }
+        }
+    } else {
+        sefReleaseID(cid);
+        sndSeRegRemove(cid);
+        if (eff != 0) {
+            sefDeleteEffectWait(cid);
+        }
+    }
+}
 
 void unitLoad(ObjectTask *unit, int mode)
 {
@@ -229,9 +367,34 @@ void unitPlInit(short *plTbl)
     } while (count >= 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitEnInit);
+extern char D_00A43968[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitClipSet);
+void unitEnInit(s16 *tbl)
+{
+    int i;
+
+    for (i = 0; *tbl != 0; tbl += 4) {
+        if (i >= 5) {
+            printf(D_00A43968);
+            break;
+        }
+        i++;
+        unitEnCreate(tbl);
+    }
+}
+
+void unitClipSet(ObjectTask *unit)
+{
+    char *w = *(char **)((char *)unit + 0x14);
+
+    if (calcUPGet(unit)->charaId == 0xB4) {
+        *(int *)(w + 0x9A0) |= 0x200;
+    } else if (**(int **)((char *)unit + 0x10) & 8) {
+        *(int *)(w + 0x9A0) |= 0x200;
+    } else {
+        *(int *)(w + 0x9A0) &= ~0x200;
+    }
+}
 
 void unitPlFunc(ObjectTask *unit)
 {
@@ -282,9 +445,37 @@ int unitCmdNext(ObjectTask *unit)
     return objCmdNext(unit);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdSet);
+typedef struct { int w[5]; } UnitCmd;
+extern void *objCmdPush(ObjectTask *task);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdExec);
+void unitCmdSet(ObjectTask *unit, int *cmd)
+{
+    int *work = (int *)unit->work;
+    UnitCmd *p = objCmdPush(unit);
+
+    work[0x70 / 4] = 0;
+    work[0x74 / 4] = 0;
+    *p = *(UnitCmd *)cmd;
+    if (p->w[0] != 0) {
+        work[0] |= 2;
+    }
+}
+
+extern void debugCmdPrint(ObjectTask *, int);
+extern int (*unitCmdTbl[])(ObjectTask *, int);
+
+void unitCmdExec(ObjectTask *unit)
+{
+    int *work = (int *)unit->work;
+    int *p = (int *)unitCmdPtrGet(unit);
+
+    if (work[0x70 / 4] == 0 && *p != 0 && *p != 7) {
+        debugCmdPrint(unit, *p);
+    }
+    if (unitCmdTbl[*p](unit, *p) == 0) {
+        work[0x70 / 4]++;
+    }
+}
 
 int unitCmdFree(ObjectTask *unit)
 {
@@ -297,17 +488,75 @@ int unitCmdFree(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAtk);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAtkSub);
+extern void scenarioBatInit(void);
+extern void unitJobTypeAtk(ObjectTask *unit, int *cmd, char *tec, int type);
+extern char D_00A43980[];
+
+void unitCmdAtkSub(ObjectTask *unit, int *cmd)
+{
+    char *tec;
+    char type;
+
+    scenarioBatInit();
+    tec = (char *)dataTecGet(*cmd);
+    type = tec[4];
+    if (type < 8) {
+        if (type >= 0) {
+            unitJobTypeAtk(unit, cmd, tec, type);
+            return;
+        }
+    }
+    printf(D_00A43980, (char)(unsigned char)tec[4], *cmd);
+    for (;;) {
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitJobTypeAtk);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAtkEnd);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdDeadSet);
+extern void unitCmdSet(ObjectTask *unit, int *cmd);
+
+int unitCmdDeadSet(ObjectTask *unit)
+{
+    int cmd[5];
+
+    if (unit == 0 || (((Actor *)unit->work)->flags & 0x80)) {
+        return 0;
+    }
+    if ((s16)calcUPGet(unit)->currentHp != 0) {
+        return 0;
+    }
+    cmd[0] = 0xC;
+    unitCmdSet(unit, cmd);
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdEther);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdItem);
+typedef struct { int a, b, c, d; } ItemCmd;
+extern void unitCmdItemSub(ObjectTask *unit, ItemCmd *buf);
+
+int unitCmdItem(ObjectTask *unit)
+{
+    ItemCmd buf;
+    Actor *actor = unit->work;
+    ItemCmd *cmd = unitCmdPtrGet(unit);
+    int v;
+
+    if (actor->moveState == 0) {
+        v = cmd->b;
+        buf.a = v;
+        buf.b = (int)((Actor *)unit->work)->targetUnit;
+        v = cmd->d;
+        buf.c = v;
+        buf.d = 3;
+        unitCmdItemSub(unit, &buf);
+        actor->moveState++;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdItemSub);
 
@@ -376,7 +625,22 @@ int unitCmdEnd(ObjectTask *unit)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdDmg);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdEva);
+extern void unitMotSet(ObjectTask *unit, int motion);
+
+int unitCmdEva(ObjectTask *unit)
+{
+    Actor *actor;
+
+    actor = unit->work;
+    if (actor->moveState == 0) {
+        unitMotSet(unit, 0x1A);
+        actor->moveState++;
+    } else if ((*(Actor **)((char *)unit + 0x14))->moveFlags & 0x1000) {
+        unitMotStandSet(unit);
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdDef);
 
@@ -406,11 +670,205 @@ INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMot);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdTgtSet);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdTurn);
+extern int unitCmdTurnSub(ObjectTask *unit, int mode);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdTurnSub);
+void unitCmdTurn(ObjectTask *unit)
+{
+    Actor *actor;
+    Actor *w;
+    int *cmd;
+    Vector4 *tgt;
+    struct { UnitRecord **p; } tb;
+    UnitRecord *u;
+    UnitRecord **cur;
+    Actor *m;
+    int count;
+    int i;
+    int n;
+    int idx;
+    float f;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdTurnSubInit);
+    actor = unit->work;
+    cmd = unitCmdPtrGet(unit);
+    w = unit->work;
+    tgt = (Vector4 *)&w->motionFrame;
+    if (actor->moveState == 0) {
+        if (cmd[0] == 15) {
+            if (unit == w->targetUnit) {
+                unitCmdNext(unit);
+                return;
+            }
+            m = ((UnitRecord *)w->targetUnit)->motionActor;
+            idx = 0;
+            tgt->x = m->position.x;
+            tgt->z = m->position.z;
+        } else if (cmd[0] == 16) {
+            idx = cmd[1];
+            tgt->x = dataPosTblGet(idx)->x;
+            tgt->z = dataPosTblGet(idx)->z;
+        } else {
+            n = 0;
+            idx = 0;
+            tgt->x = tgt->z = 0.0f;
+            count = unitTblGet((((int)w->flags >> 6) ^ 1) & 1, &tb.p);
+            for (i = 0; i < count; i++) {
+                u = tb.p[i];
+                if (u != 0) {
+                    n++;
+                    tgt->x += u->motionActor->position.x;
+                    tgt->z += u->motionActor->position.z;
+                }
+            }
+            if (n > 0) {
+                f = n;
+                tgt->x = tgt->x / f;
+                tgt->z = tgt->z / f;
+            }
+        }
+        if (idx < 0) {
+            tgt->x = -tgt->x;
+        }
+        actor->movePhaseTimer = 0;
+        actor->moveState++;
+    }
+    if (unitCmdTurnSub(unit, 0) != 0) {
+        unitCmdNext(unit);
+    }
+}
+
+extern void unitSetInterp(void *unit);
+extern void unitSetInterpTime(ObjectTask *unit, float time);
+
+int unitCmdTurnSub(ObjectTask *unit, int mode)
+{
+    Actor *actor;
+    Actor *m;
+    CalcUnitParam *param;
+    Vector4 *dst;
+    Vector4 *tgt;
+    float rate;
+    float d;
+    float nd;
+    int done;
+
+    done = 0;
+    rate = 0.0f;
+    actor = unit->work;
+    m = ((UnitRecord *)unit)->motionActor;
+    param = calcUPGet(unit);
+    tgt = (Vector4 *)&((Actor *)unit->work)->motionFrame;
+    dst = (Vector4 *)((char *)((Actor *)unit->work) + 0xB0);
+    if (actor->movePhaseTimer == 0) {
+        if (tgt->x == m->position.x && tgt->z == m->position.z) {
+            dst->y = *(float *)((char *)param + 0x4C);
+        } else {
+            dst->y = atan2f(tgt->x - m->position.x, tgt->z - m->position.z);
+        }
+        if (dst->y < 0.0f) {
+            dst->y += 6.2831855f;
+        }
+        tgt->y = dst->y - m->rotation.y;
+        if (tgt->y == 0.0f) {
+            return 1;
+        }
+        if (mode == 0) {
+            if ((signed char)calcUPGet(unit)->unmodeled_14[1] >= 2 &&
+                (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+                rate = 16.0f;
+            } else {
+                rate = 5.0f;
+            }
+        } else {
+            if ((signed char)calcUPGet(unit)->unmodeled_14[1] >= 2 &&
+                (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3)) {
+                rate = 10.0f;
+            } else {
+                rate = 5.0f;
+            }
+        }
+        if (tgt->y < 0.0f) {
+            nd = -tgt->y;
+            if (nd > 3.1415927f) {
+                goto wrap;
+            }
+        } else if (tgt->y > 3.1415927f) {
+        wrap:
+            if (tgt->y < 0.0f) {
+                tgt->y = tgt->y + 6.2831855f;
+                dst->y = dst->y + 6.2831855f;
+            } else {
+                tgt->y = tgt->y - 6.2831855f;
+                dst->y = dst->y + 6.2831854820251465;
+            }
+        }
+        tgt->y = tgt->y / rate;
+        if (mode == 0) {
+            if (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3) {
+                unitSetInterp(unit);
+                unitSetInterpTime(unit, rate * 0.033333335f);
+            }
+            d = m->rotation.y - dst->y;
+            if (d < 0.0f) {
+                d = -d;
+                if (d > 0.000001f) {
+                    goto mot;
+                }
+            } else if (d > 0.000001f) {
+            mot:
+                if ((signed char)calcUPGet(unit)->unmodeled_14[1] >= 2) {
+                    unitMotSet(unit, 0x17);
+                }
+            }
+        }
+        actor->movePhaseTimer++;
+    } else {
+        if (m->rotation.y != dst->y) {
+            d = m->rotation.y + tgt->y;
+            m->rotation.y = d;
+            if ((tgt->y > 0.0f && dst->y < m->rotation.y) ||
+                (tgt->y < 0.0f && m->rotation.y < dst->y)) {
+                goto snap;
+            }
+            d = m->rotation.y - dst->y;
+            if (d < 0.0f) {
+                d = -d;
+                if (d <= 0.000001f) {
+                    goto snap;
+                }
+            } else if (d <= 0.000001f) {
+            snap:
+                m->rotation.y = dst->y;
+                goto set;
+            }
+        } else {
+        set:
+            done = 1;
+        }
+        if (mode == 0 && done) {
+            unitSetInterpTime(unit, 0.26666668f);
+        }
+    }
+    return done;
+}
+
+typedef struct { int x, y, z, w; } __attribute__((aligned(16))) TurnVec;
+#define TURN_WORK(u) ((Actor *)((int *)(u))[4])
+
+void unitCmdTurnSubInit(UnitRecord *unit, int mode)
+{
+    Actor *m = unit->motionActor;
+    float dx, dz;
+
+    TURN_WORK(unit)->movePhaseTimer = 0;
+    *(TurnVec *)&TURN_WORK(unit)->motionFrame = *(TurnVec *)&TURN_WORK(unit)->cmdTarget;
+    if (mode == 1) {
+        Actor *a = TURN_WORK(unit);
+        dx = ((Vector4 *)&a->motionFrame)->x - m->position.x;
+        dz = ((Vector4 *)&a->motionFrame)->z - m->position.z;
+        ((Vector4 *)&a->motionFrame)->x = m->position.x - dx;
+        ((Vector4 *)&a->motionFrame)->z = m->position.z - dz;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMoveCha);
 
@@ -699,7 +1157,17 @@ float unitCmdDirSet(UnitRecord *unit)
     return motionActor->rotation.y;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdLenGet);
+float unitCmdLenGet(void *arg0) {
+    char *a = *(char **)((char *)arg0 + 0x10);
+    char *b = *(char **)((char *)arg0 + 0x14);
+    float *p = (float *)(a + 0x90);
+    float dx = p[0] - *(float *)(b + 0x10);
+    float dz;
+    if (dx < 0.0f) dx = -dx;
+    dz = p[2] - *(float *)(b + 0x18);
+    if (dz < 0.0f) dz = -dz;
+    return __builtin_sqrtf(dx * dx + dz * dz);
+}
 
 void unitCmdDivSet(UnitRecord *unit, float distance, float step)
 {
@@ -716,9 +1184,42 @@ INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdVASet);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdMoveCalc);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitTelIn);
+int unitTelIn(ObjectTask *unit)
+{
+    Actor *actor = unit->work;
+    Actor *m = ((UnitRecord *)unit)->motionActor;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitTelOut);
+    if (actor->movePhaseTimer == 0) {
+        *(Actor **)&m->transparency = 0;
+        ((UnitRecord *)unit)->motionActor->flags &= ~8;
+        actor->movePhaseTimer++;
+    } else {
+        m->transparency += m->posSnapX;
+        if (m->transparency >= 1.0f) {
+            m->transparency = 1.0f;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int unitTelOut(ObjectTask *unit)
+{
+    Actor *actor = unit->work;
+    Actor *m = ((UnitRecord *)unit)->motionActor;
+
+    if (actor->movePhaseTimer == 0) {
+        actor->movePhaseTimer = 1;
+    } else {
+        m->transparency -= m->posSnapX;
+        if (m->transparency <= 0.0f) {
+            ((union { float f; Actor *p; } *)&m->transparency)->f = 0.0f;
+            ((UnitRecord *)unit)->motionActor->flags |= 8;
+            return 1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdBtst);
 
@@ -792,7 +1293,26 @@ void unitCmdStat(ObjectTask *unit)
     unitCmdNext(unit);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdReadWait);
+extern int dataCdSync(void);
+extern void dataUnitFileLoad2Sub(void *unit);
+
+int unitCmdReadWait(ObjectTask *unit)
+{
+    Actor *actor;
+    UnitCmdRecEntry *cmd;
+
+    actor = unit->work;
+    cmd = unitCmdPtrGet(unit);
+    if (actor->moveState == 0) {
+        if (cmd->flag >= dataCdSync()) {
+            dataUnitFileLoad2Sub(unit);
+            actor->moveState++;
+        }
+    } else {
+        return unitCmdNext(unit);
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdAgws2);
 
@@ -848,14 +1368,44 @@ void unitWpnMotSet(ObjectTask *unit, int weaponIndex, int animGroup, int motion)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitFaceMotSet);
+void unitFaceMotSet(ObjectTask *unit, int motion)
+{
+    Actor *actor = *(Actor **)((char *)unit + 0x2C);
+    int flags = 0;
+
+    if ((unsigned int)(motion - 0x3A) >= 2U) {
+        flags = 8;
+    }
+    if (actor != 0 && ACT_animGetData(actor, motion - 1) != 0) {
+        ACT_setMotion2(actor, motion - 1, flags);
+    }
+}
 
 int unitMotGet(ObjectTask *unit)
 {
     return ((UnitRecord *)unit)->motionActor->motion + 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitMotStandSet);
+void unitMotStandSet(ObjectTask *unit)
+{
+    int motion;
+
+    if (*(int *)unit->work & 0x800) {
+        motion = 0x1D;
+        goto done;
+    }
+    if (calcIdol2Chk(unit) == 0) goto one;
+    if (!(*(int *)unit->work & 8)) goto two;
+    if (unitMotGet(unit) == 0x1C) goto two;
+    if (unitMotGet(unit) != 0x23) goto one;
+two:
+    motion = 2;
+    goto done;
+one:
+    motion = 1;
+done:
+    unitMotSet(unit, motion);
+}
 
 int unitNoGet(ObjectTask *unit)
 {
@@ -923,11 +1473,57 @@ void unitDispOn(int side)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitDispOff);
+void unitDispOff(int side)
+{
+    UnitRecord **table;
+    int count;
+    UnitRecord **cur;
+    int remaining;
+    UnitRecord *unit;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitColiGet);
+    count = unitTblGet(side, &table);
+    if (count > 0) {
+        cur = table;
+        remaining = count;
+        do {
+            unit = *cur;
+            cur++;
+            if (unit != 0) {
+                unit->motionActor->flags |= 8;
+            }
+        } while (--remaining != 0);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitAgwsChk);
+float unitColiGet(ObjectTask *unit, ObjectTask *targetUnit)
+{
+    float a = calcUPGet(unit)->coliMove;
+    return (a + calcUPGet(targetUnit)->coliTarget) / 100.0f;
+}
+
+int unitAgwsChk(int side)
+{
+    UnitRecord **table;
+    int count;
+    int i;
+    int n;
+
+    n = 0;
+    i = 0;
+    count = unitTblGet(side, &table);
+    if (count > 0) {
+        do {
+            UnitRecord *unit = table[i];
+            i++;
+            if (unit != 0) {
+                if (calcUPGet((ObjectTask *)unit)->flags & 0x40) {
+                    n++;
+                }
+            }
+        } while (i < count);
+    }
+    return n != 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitIdChk);
 
