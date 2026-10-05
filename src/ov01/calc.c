@@ -323,7 +323,64 @@ int calcTakeEpGetMenu(int charaId, int etherId) {
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseEtherMenu);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseItemMenu);
+extern unsigned char *dataItmGet(int index);
+extern int PartyAllPartyGet(int *out, int mode);
+extern int calcUseItem(int mode, CalcTakeEpArg *arg, int itm);
+typedef struct CalcUseItemSub {
+    unsigned char unmodeled_00[0xB0];
+    short tbl[8]; /* +0xB0 (org/total +0xBC) */
+} CalcUseItemSub;
+
+int calcUseItemMenu(int charaId, int itm)
+{
+    CalcTakeEpArg arg;
+    CalcTakeEpPara para;
+    int ids[8];
+    short save[8];
+    CalcCharParaData *org;
+    CalcCharParaData *tot;
+    short hp, ep;
+    CalcUseItemSub *pt;
+    unsigned char flag;
+    int *p;
+    int count;
+    int n;
+    int i;
+
+    arg.totalPara = &para;
+    flag = dataItmGet(itm)[8];
+    if (flag & 0x10) {
+        p = ids;
+        count = PartyAllPartyGet(p, 0);
+    } else {
+        p = ids;
+        count = 1;
+        *p = charaId;
+    }
+    for (n = 0; n < count; n++) {
+        org = dataUnitOrgGet(p[n]);
+        tot = calcTotalParaMenu(p[n], 0, 0);
+        hp = org->maxHp;
+        ep = org->maxEp;
+        for (i = 0; i < 8; i++) {
+            save[i] = ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i];
+        }
+        pt = (CalcUseItemSub *)((char *)tot + 0xC);
+        org->maxHp = tot->maxHp;
+        org->maxEp = tot->maxEp;
+        for (i = 0; i < 8; i++) {
+            ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i] = pt->tbl[i];
+        }
+        para.totalPara = org;
+        calcUseItem(0, &arg, itm);
+        org->maxHp = hp;
+        org->maxEp = ep;
+        for (i = 0; i < 8; i++) {
+            ((CalcUseItemSub *)((char *)org + 0xC))->tbl[i] = save[i];
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseItem);
 
