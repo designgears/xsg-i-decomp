@@ -43,6 +43,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -2148,6 +2149,12 @@ def integrate(unit, tu, name, body: Path, skip_try: bool = False) -> tuple[bool,
     return '"matched": true' in out, out[-2000:]
 
 
+# Families that change what the code means (a comparison, a constant, the return
+# type): a higher score on a near-miss is no evidence the edit is right, so their
+# edits are only ever kept when they make the function match.
+SEMANTIC = {"cmp_fix", "const_fix", "void_ret"}
+
+
 def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None) -> dict:
     unit, tu, name = c["unit"], c["tu"], c["name"]
     k = c["key"]
@@ -2222,8 +2229,9 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
             for f in fams:
                 d = delta.setdefault(f, {"attempts": 1, "improvements": 0, "matches": 0, "compiles": 0})
                 d["compiles"] += sum(1 for c in cands if c[0] == f)
-            bi = max(range(len(cands)), key=lambda j: rank(rs[j]))
-            if rank(rs[bi]) > rank(cur_r):
+            ok_j = [j for j in range(len(cands)) if cands[j][0] not in SEMANTIC or is_match(rs[j])]
+            bi = max(ok_j, key=lambda j: rank(rs[j])) if ok_j else None
+            if bi is not None and rank(rs[bi]) > rank(cur_r):
                 won = (cands[bi], rs[bi])
                 break
         if won:
@@ -2242,6 +2250,7 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
         res["error"] = "inline asm (refused)"
         return res
     if rank(cur_r) > rank(base):
+        shutil.copyfile(best_c, best_c.with_name(f"{name}.best.prev.c"))   # undo point
         best_c.write_text(cur)
         rec = {"score": cur_r["score"], "differing_words": cur_r.get("differing_words"),
                "target_insns": cur_r.get("target_insns"), "by": "sweep",
