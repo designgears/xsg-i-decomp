@@ -31,7 +31,10 @@ Before the permuter (cheapest first):
       assembler   only delay-slot moves of la/li macro halves (lui/addiu/ori)
                   and the TU has no -mswap-fix in config/tu/as-flags.json ->
                   skipped, listed by --triage-report (as-flags is never edited)
-      permute     anything else
+      permute     anything else; a diff that is only a branch-likely bit
+                  flip (bnez vs bnezl) is tagged "branch_likely": the sweep's
+                  fallthrough_label family covers it and the permuter runs
+                  with --profile branch_likely (label/goto/condition weights)
   * sweep first: a body trick_sweep has not run on (.best.json "by"=="sweep"
     or a sweep_marks.json sha1 / loop.log "done" line) is swept inline under
     the same lease; the permuter only runs if that did not match.
@@ -86,7 +89,7 @@ def best_json(body: Path) -> dict:
         return {}
 
 
-TRIAGE_VERSION = 2      # bump when classification rules change (invalidates the cache)
+TRIAGE_VERSION = 3      # bump when classification rules change (invalidates the cache)
 TRIAGE = ROOT / "build/auto_decomp/triage.json"
 AS_FLAGS = ROOT / "config/tu/as-flags.json"
 BRANCH = re.compile(r"^(b|bal|j|jr|jal|jalr|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bgezal|bltzal|bc1t|bc1f)l?$")
@@ -164,6 +167,32 @@ def classify_diff(rows: list[str]) -> tuple[str, list[str]]:
     return "delay", moved
 
 
+def branch_likely_only(rows: list[str]) -> bool:
+    """Every differing row is the same branch with only the likely bit flipped
+    (bnez vs bnezl, same operands): reorg's annul choice, decided by the
+    label / jump layout at the fall-through."""
+    if not rows or "   CANDIDATE" not in rows[0]:
+        return False
+    w = rows[0].index("   CANDIDATE")
+    side = lambda x: x.split(":", 1)[1].strip() if ":" in x else ""  # noqa: E731
+    n = 0
+    for r in rows[1:]:
+        if r.startswith("... ("):
+            return False
+        if r[w + 1:w + 2] == " ":
+            continue
+        a, b = side(r[:w]), side(r[w + 3:])
+        if not a or not b:
+            return False
+        ma, mb = a.split()[0], b.split()[0]
+        if not (BRANCH.match(ma) and BRANCH.match(mb)) or ma == mb or ma.rstrip("l") != mb.rstrip("l"):
+            return False
+        if _norm(a)[1] != _norm(b)[1]:
+            return False
+        n += 1
+    return n > 0
+
+
 def triage(c: dict, body: Path) -> dict:
     """Cached classification of C's remaining diff (see module doc)."""
     k = c["key"]
@@ -201,6 +230,8 @@ def triage(c: dict, body: Path) -> dict:
     else:
         kind, moved = classify_diff(r.get("diff") or [])
         e["moved"] = moved
+        if branch_likely_only(r.get("diff") or []):
+            e["tag"] = "branch_likely"   # trick_sweep fallthrough_label; permuter label/goto weights
         e["blocked_by"] = blocked
         if kind in ("delay", "macro") and blocked:
             e["cat"], e["why"] = "callee", "blocked_by " + ",".join(b.rsplit("/", 1)[1] for b in blocked)
@@ -208,7 +239,7 @@ def triage(c: dict, body: Path) -> dict:
             e["cat"], e["why"] = "assembler", "-mswap-fix candidate for " + f"{c['unit']}/{c['tu']}"
         else:
             e["cat"] = "permute"
-            e["why"] = kind
+            e["why"] = kind + (" branch_likely" if e.get("tag") else "")
     with locked():   # state lock serializes cache writers
         try:
             cache = json.loads(TRIAGE.read_text())
@@ -343,7 +374,8 @@ def run_one(c: dict, minutes: float, jobs: int) -> dict:
             return {"key": c["key"], "ok": True, "stage": "sweep", "best": sw.get("end")}
         p = subprocess.run([sys.executable, "-B", str(HERE / "permute_fn.py"), "--unit", c["unit"],
                             "--tu", c["tu"], "--name", c["name"], "--body", str(c["body"]),
-                            "--minutes", str(minutes), "-j", str(jobs)],
+                            "--minutes", str(minutes), "-j", str(jobs)]
+                           + (["--profile", c["tag"]] if c.get("tag") == "branch_likely" else []),
                            capture_output=True, text=True, cwd=ROOT)
         try:
             r = json.loads(p.stdout)

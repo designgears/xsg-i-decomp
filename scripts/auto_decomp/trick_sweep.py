@@ -11,7 +11,16 @@ decomp-match-fixes memory):
   adjacent statement swap, commutative operand swap, (int) cast on an addend,
   `x = (a) op b` <-> `x = a; x op= b`, `x |= K` through a temp,
   if-return <-> ternary, if/else swap (negated), for -> while / do-while,
-  early return -> single exit goto, `!x` <-> `x == 0`.
+  early return -> single exit goto, `!x` <-> `x == 0`,
+  dup_tail_store (store after an if/else chain copied into every branch, and
+  the reverse), fallthrough_label (`goto L; L: return K;`, return before a
+  fallen-into label, drop goto-to-next-line, `goto end` for equal constant
+  returns: branch-likely annul bit), div_hoist (adjacent array stores of / %
+  values: temps / swapped order, trap_if scheduling), regalloc_tie (only when
+  the diff is register-only: the body is compiled with -dl, the .lreg allocno
+  table gives priorities floor_log2(refs)*refs/live; near-tied globals are
+  mapped to C variables and statements are moved 1-4 lines across their
+  live ranges).
 
 Each round evaluates the single transforms of the current best with
 try_fn.try_function (in-process, no try budget) family by family (family = the
@@ -483,19 +492,347 @@ def t_not(fn):
         yield "ne0->bare", head + inner[:m.start()] + f"({m.group(1)})" + inner[m.end():] + tail
 
 
+# ---- if/else chains (dup_tail_store) --------------------------------------
+
+def _if_chains(inner: str):
+    """Braced if / else if / else chains: (start, end, [(open, close)], has_else)."""
+    for m in re.finditer(r"\bif\s*\(", inner):
+        if re.search(r"\belse\s*$", inner[:m.start()]):
+            continue                      # an `else if` inside a chain
+        cp = match_brace(inner, m.end() - 1)
+        if cp < 0:
+            continue
+        mm = re.match(r"\s*\{", inner[cp + 1:])
+        if not mm:
+            continue
+        o = cp + 1 + mm.end() - 1
+        c = match_brace(inner, o)
+        if c < 0:
+            continue
+        brs, has_else, end = [(o, c)], False, c
+        while True:
+            me = re.match(r"\s*else\s+if\s*\(", inner[end + 1:])
+            if me:
+                p = end + 1 + me.end() - 1
+                cp = match_brace(inner, p)
+                mm = re.match(r"\s*\{", inner[cp + 1:]) if cp > 0 else None
+                if not mm:
+                    brs = None
+                    break
+                o = cp + 1 + mm.end() - 1
+                c = match_brace(inner, o)
+                if c < 0:
+                    brs = None
+                    break
+                brs.append((o, c))
+                end = c
+                continue
+            me = re.match(r"\s*else\s*\{", inner[end + 1:])
+            if me:
+                o = end + 1 + me.end() - 1
+                c = match_brace(inner, o)
+                if c < 0:
+                    brs = None
+                    break
+                brs.append((o, c))
+                has_else, end = True, c
+            break
+        if brs:
+            ls = inner.rfind("\n", 0, m.start()) + 1
+            yield ls, end, brs, has_else, inner[ls:m.start()]
+
+
+def _branch_tail(inner: str, o: int, c: int):
+    """(start, end, text) of the last statement line of branch (o, c), or None."""
+    body = inner[o + 1:c].rstrip()
+    if not body.strip():
+        return None
+    ls = body.rfind("\n") + 1
+    ln = body[ls:]
+    if not _simple_stmt(ln):
+        return None
+    return o + 1 + ls, o + 1 + len(body), ln.strip()
+
+
+def t_dup_tail_store(fn):
+    """A store right after an if/else chain -> the end of every branch (gcc
+    cross-jumps the identical tails after scheduling, so the store becomes the
+    first insn at the join label), and the reverse: identical branch-tail
+    stores hoisted after the chain."""
+    head, inner, tail = _split_fn(fn)
+    for ls, end, brs, has_else, ind in _if_chains(inner):
+        after = inner[end + 1:]
+        m = re.match(r"[ \t]*\n([ \t]*)([^\n]*)\n", after)
+        if m and _simple_stmt(m.group(2)) and "=" in m.group(2):
+            st = m.group(2).strip()
+            # rebuild with insertions (positions are in `inner`, insert back-to-front)
+            out = inner[:end + 1]
+            for o, c in reversed(brs):
+                bi = inner.rfind("\n", 0, c) + 1
+                pre = inner[bi:c]
+                bind = pre if not pre.strip() else ind
+                out = out[:c].rstrip() + f"\n{bind}    {st}\n{bind}" + out[c:]
+            if not has_else:
+                out += f" else {{\n{ind}    {st}\n{ind}}}"
+            rest = after[m.end() - 1:]
+            yield f"dup_tail_store:{st[:24]}", head + out + rest + tail
+        if has_else and len(brs) >= 2:
+            tails = [_branch_tail(inner, o, c) for o, c in brs]
+            if all(tails) and len({t[2] for t in tails}) == 1 and "=" in tails[0][2]:
+                st = tails[0][2]
+                out, shift = inner, 0
+                for ts, te, _ in reversed(tails):
+                    cut = out.rfind("\n", 0, ts)
+                    out = out[:cut] + out[te:]
+                    shift += te - cut
+                endpos = end - shift
+                out = out[:endpos + 1] + f"\n{ind}{st}" + out[endpos + 1:]
+                yield f"dup_tail_store:rev:{st[:24]}", head + out + tail
+
+
+# ---- branch-likely / fall-through label ------------------------------------
+
+def t_fallthrough_label(fn):
+    """Reorg's annul (branch-likely) choice depends on a label / jump at the
+    fall-through: add `goto L; L:` before a constant return, drop a goto that
+    only jumps to the next line, or return before a label that is fallen into."""
+    head, inner, tail = _split_fn(fn)
+    n = 0
+    for m in re.finditer(r"\breturn\s+(-?(?:0x[0-9a-fA-F]+|\d+)|\w+)\s*;", inner):
+        n += 1
+        if n > 12:
+            break
+        new = inner[:m.start()] + f"{{ goto _sw_ft{n}; _sw_ft{n}: {m.group(0)} }}" + inner[m.end():]
+        yield f"fallthrough_label:goto-return{n}", head + new + tail
+        p = re.search(r"(\n[ \t]*)(\w+):[ \t]*\n[ \t]*$", inner[:m.start()])
+        if p and p.group(2) not in ("default",):
+            new = inner[:p.start()] + f"{p.group(1)}{m.group(0)}" + inner[p.start():]
+            yield f"fallthrough_label:return-before-{p.group(2)}", head + new + tail
+    for m in re.finditer(r"\bgoto\s+(\w+)\s*;\s*\n(\s*)\1\s*:", inner):
+        new = inner[:m.start()] + inner[inner.index("\n", m.start()) + 1:]
+        yield f"fallthrough_label:drop-goto-{m.group(1)}", head + new + tail
+    # value-return through a variable: `ret = K; goto end;`
+    rets = list(re.finditer(r"\breturn\s+(-?(?:0x[0-9a-fA-F]+|\d+))\s*;", inner))
+    if len(rets) >= 2:
+        hdr = head[:head.index("{")]
+        nm = re.search(r"(\w+)\s*\(", hdr)
+        rtype = re.sub(r"\b(static|inline)\b", "", hdr[:nm.start()]).strip() if nm else ""
+        if rtype and rtype != "void":
+            last = rets[-1]
+            new = inner[:last.start()] + "_sw_end:\n    " + inner[last.start():]
+            for r in reversed(rets[:-1]):
+                if r.group(1) == last.group(1):
+                    new = new[:r.start()] + "goto _sw_end;" + new[r.end():]
+            yield "fallthrough_label:goto-end", head + new + tail
+
+
+# ---- trap_if scheduling (div_hoist) ----------------------------------------
+
+_STORE = re.compile(r"^(?P<ind>[ \t]*)(?P<lhs>[\w.>\-]+\s*\[[^\]]+\])\s*=\s*(?P<rhs>[^;]+);\s*$")
+
+
+def t_div_hoist(fn):
+    """Two adjacent array stores whose values divide (/ %): sched2 order follows
+    the trap_if (div-by-zero) anti-deps on the earlier store. Hoist the later
+    value into a temp before the earlier store, both into temps (in order), or
+    swap the stores keeping the earlier value in a temp."""
+    head, inner, tail = _split_fn(fn)
+    lines = inner.split("\n")
+    for i in range(len(lines) - 1):
+        a, b = _STORE.match(lines[i]), _STORE.match(lines[i + 1])
+        if not a or not b or a["ind"] != b["ind"]:
+            continue
+        if not re.search(r"[/%]", a["rhs"] + b["rhs"]):
+            continue
+        base = lambda x: re.match(r"[\w]+", x).group(0)  # noqa: E731
+        if base(a["lhs"]) in b["rhs"] or base(b["lhs"]) in a["rhs"]:
+            continue
+        ind, A, B = a["ind"], a["rhs"].strip(), b["rhs"].strip()
+        var = [
+            ("later", [f"{ind}{{", f"{ind}    __typeof__({B}) _dh1 = {B};",
+                       f"{ind}    {a['lhs']} = {A};", f"{ind}    {b['lhs']} = _dh1;", f"{ind}}}"]),
+            ("both", [f"{ind}{{", f"{ind}    __typeof__({A}) _dh0 = {A};", f"{ind}    __typeof__({B}) _dh1 = {B};",
+                      f"{ind}    {a['lhs']} = _dh0;", f"{ind}    {b['lhs']} = _dh1;", f"{ind}}}"]),
+            ("swap", [f"{ind}{{", f"{ind}    __typeof__({A}) _dh0 = {A};",
+                      f"{ind}    {b['lhs']} = {B};", f"{ind}    {a['lhs']} = _dh0;", f"{ind}}}"]),
+            ("swap-plain", [f"{ind}{b['lhs']} = {B};", f"{ind}{a['lhs']} = {A};"]),
+        ]
+        for lab, rep in var:
+            nl = lines[:i] + rep + lines[i + 2:]
+            yield f"div_hoist:{lab}:L{i}", head + "\n".join(nl) + tail
+
+
+# ---- register-allocation near-tie (regalloc_tie) ---------------------------
+
+def _uses(s: str) -> set[str]:
+    return set(re.findall(r"\b[A-Za-z_]\w*\b", s))
+
+
+def t_regalloc_tie(fn, ctx=None):
+    """Statement moves that lengthen / shorten the live range of a value in a
+    near-tied global-alloc priority pair (gcc: floor_log2(refs)*refs/live).
+    Only generated when ctx["ties"] names the tied variables (see
+    regalloc_ties); moves a simple statement 1-4 lines up/down across
+    independent simple statements when it or a crossed line mentions one."""
+    tied = set((ctx or {}).get("tie_vars") or [])
+    if not tied:
+        return
+    head, inner, tail = _split_fn(fn)
+    lines = inner.split("\n")
+    calls = lambda s: bool(re.search(r"\w\s*\(", s))  # noqa: E731
+    for i, s in enumerate(lines):
+        if not _simple_stmt(s):
+            continue
+        ind = len(s) - len(s.lstrip())
+        ws, us = _writes(s), _uses(s)
+        for d in (-4, -3, -2, -1, 1, 2, 3, 4):
+            j = i + d
+            if j < 0 or j >= len(lines):
+                continue
+            rng = lines[j:i] if d < 0 else lines[i + 1:j + 1]
+            ok = True
+            for x in rng:
+                if not _simple_stmt(x) or len(x) - len(x.lstrip()) != ind:
+                    ok = False
+                    break
+                if ws & _uses(x) or _writes(x) & us or (calls(s) and calls(x)):
+                    ok = False
+                    break
+            if not ok:
+                continue
+            hit = (us | set().union(*(_uses(x) for x in rng))) & tied
+            if not hit:
+                continue
+            nl = lines[:]
+            del nl[i]
+            nl.insert(j, s)
+            yield f"regalloc_tie:{sorted(hit)[0]}:L{i}->L{j}", head + "\n".join(nl) + tail
+
+
+_LREG = re.compile(r"^Register (\d+) used (\d+) times across (\d+) insns(.*)$", re.M)
+
+
+def _cc1_cmd(unit: str, tu: str):
+    """(ee-gcc path, cc1 flags) of the TU's compile edge."""
+    import try_fn
+    ud, g, rule, e = try_fn.compile_edge(unit, tu)
+    sc = dict(g)
+    sc.update({a: try_fn.expand(b, g) for a, b in e["vars"].items()})
+    sc.update({"in": "IN.c", "out": "OUT.o", "overlay": "OV"})
+    cmd = try_fn.expand(rule["command"], sc)
+    m = re.search(r"cc_tu\.sh\s+\S+\s+\S+\s+(\S+)\s+\S+\s+(-G\d+)", cmd)
+    if m:
+        return f"{m.group(1)}/ee-gcc", ["-B" + m.group(1) + "/", "-nostdinc", "-fno-builtin", "-O2", m.group(2)]
+    m = re.search(r"(\S+/ee-gcc)\s+(-B\S+)\s+-nostdinc\s+-fno-builtin\s+-S\s+(.*?)\s+\S+\.i\s+-o", cmd)
+    if m:
+        return m.group(1), [m.group(2), "-nostdinc", "-fno-builtin"] + m.group(3).split()
+    raise ValueError("no cc1 step in compile command")
+
+
+def _floor_log2(n: int) -> int:
+    return max(n, 1).bit_length() - 1
+
+
+def regalloc_ties(unit: str, tu: str, name: str, text: str, tol: float = 0.15) -> dict:
+    """Compile TEXT (the body) with -dl, read NAME's .lreg allocno table and
+    return {"regs": [...], "ties": [[a, b, pa, pb]...], "tie_vars": [...]}.
+    Pseudos of user variables are mapped to params + scalar locals in
+    declaration order (gcc numbers them that way); global (multi-block)
+    pseudos with priorities within TOL are near-ties."""
+    import shutil
+    import try_fn
+    fd, p = tempfile.mkstemp(prefix=f"ra_{name}_", suffix=".c")
+    os.write(fd, text.encode())
+    os.close(fd)
+    out: dict = {"regs": [], "ties": [], "tie_vars": []}
+    try:
+        r = try_fn.try_function(unit, tu, name, Path(p), keep=True, diff_limit=0)
+        scratch = Path(r.get("scratch", ""))
+        try:
+            ii = [x for x in (scratch / "cand").glob("*.i")]
+            if not ii:
+                out["error"] = "no .i"
+                return out
+            gcc, flags = _cc1_cmd(unit, tu)
+            with tempfile.TemporaryDirectory(prefix="ra_") as td:
+                shutil.copyfile(ii[0], Path(td) / "x.i")
+                subprocess.run([gcc, *flags, "-S", "-dl", "x.i", "-o", "x.s"], cwd=td,
+                               capture_output=True, text=True, timeout=60)
+                dumps = list(Path(td).glob("x.i.*lreg"))
+                if not dumps:
+                    out["error"] = "no .lreg dump"
+                    return out
+                d = dumps[0].read_text(errors="replace")
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+    finally:
+        os.unlink(p)
+    m = re.search(r"^;; Function " + re.escape(name) + r"\s*$", d, re.M)
+    if not m:
+        out["error"] = "function not in dump"
+        return out
+    nx = re.search(r"^;; Function ", d[m.end():], re.M)
+    sec = d[m.end():m.end() + nx.start()] if nx else d[m.end():]
+    regs = []
+    for g in _LREG.finditer(sec):
+        n, refs, live, rest = int(g[1]), int(g[2]), int(g[3]), g[4]
+        regs.append({"reg": n, "refs": refs, "live": live, "user": "user var" in rest,
+                     "global": "in block" not in rest,
+                     "prio": round(_floor_log2(refs) * refs / max(live, 1), 4)})
+    # pseudo -> variable name (params + scalar locals, declaration order)
+    loc = find_function(text, name)
+    names: list[str] = []
+    if loc:
+        s, b, e = loc
+        fn = text[s:e + 1]
+        hdr = fn[:fn.index("{")]
+        pm = re.search(r"\((.*)\)\s*$", hdr, re.S)
+        for prm in split_top(pm.group(1)) if pm else []:
+            mm = re.search(r"(\w+)\s*(\[[^\]]*\])?\s*$", prm.strip())
+            if mm and prm.strip() != "void":
+                names.append(mm.group(1))
+        _, inner, _ = _split_fn(fn)
+        items, _, _ = _decl_block(inner)
+        for ty, dcl in items:
+            nm = decl_name(dcl)
+            if "[" in dcl.split("=")[0] or re.search(r"(?:[=(,!?:]|\breturn)\s*&\s*" + nm + r"\b(?!\s*(?:\[|\.|->))", inner):
+                continue
+            if re.match(r"(struct|union)\b", ty) and not dcl.lstrip().startswith("*"):
+                continue
+            names.append(nm)
+    users = [x for x in regs if x["user"]]
+    mapped = len(users) == len(names)
+    for x, nm in zip(users, names):
+        x["var"] = nm
+    out["mapped"] = mapped
+    out["regs"] = regs
+    gl = sorted((x for x in regs if x["global"] and x["prio"] > 0), key=lambda x: -x["prio"])
+    for a, b in zip(gl, gl[1:]):
+        if a["prio"] - b["prio"] <= tol * a["prio"]:
+            out["ties"].append([a["reg"], b["reg"], a["prio"], b["prio"]])
+            for x in (a, b):
+                if x.get("var"):
+                    out["tie_vars"].append(x["var"])
+    out["tie_vars"] = sorted(set(out["tie_vars"]))
+    if not out["tie_vars"] and out["ties"]:
+        out["tie_vars"] = names           # unmapped tie: let every variable move
+    return out
+
 TRANSFORMS = [t_decls, t_rename_swap, t_stmt_swap, t_commute, t_split, t_ternary,
-              t_ifelse, t_loops, t_single_exit, t_not]
+              t_ifelse, t_loops, t_single_exit, t_not, t_dup_tail_store, t_fallthrough_label,
+              t_div_hoist]
+CTX_TRANSFORMS = [t_regalloc_tie]      # need analysis context (regalloc_ties)
 
 
-def candidates(text: str, name: str):
+def candidates(text: str, name: str, ctx: dict | None = None):
     loc = find_function(text, name)
     if not loc:
         return
     s, b, e = loc
     fn = text[s:e + 1]
-    for t in TRANSFORMS:
+    for t in TRANSFORMS + CTX_TRANSFORMS:
         try:
-            for lab, nf in t(fn):
+            for lab, nf in (t(fn, ctx) if t in CTX_TRANSFORMS else t(fn)):
                 if nf != fn:
                     yield lab, text[:s] + nf + text[e + 1:]
         except (ValueError, AttributeError, IndexError, re.error):
@@ -508,7 +845,16 @@ MARKS = ROOT / "build/auto_decomp/sweep_marks.json"
 FAMILIES = ["declswap", "declreverse", "type", "ptype", "volatile", "rename", "stmtswap", "commute",
             "intcast", "split", "join", "temp", "ternary", "unternary", "ifswap", "for->while",
             "for->dowhile", "for->dowhile-nocheck", "for->goto-test", "while->for", "while->dowhile",
-            "single-exit", "not->eq0", "eq0->not", "ne0->bare"]
+            "single-exit", "not->eq0", "eq0->not", "ne0->bare", "dup_tail_store", "fallthrough_label",
+            "div_hoist", "regalloc_tie"]
+
+
+# Proven by hand before they were automated (DrawRadarInfo matched with both):
+# start them ahead of the catalogue; their real record takes over as it grows.
+PRIORS = {
+    "dup_tail_store": {"attempts": 10, "improvements": 1, "matches": 1, "compiles": 0},
+    "regalloc_tie": {"attempts": 10, "improvements": 1, "matches": 1, "compiles": 0},
+}
 
 
 def family(label: str) -> str:
@@ -543,6 +889,8 @@ def _seed_stats() -> dict:
             f["improvements"] += 1
     for f in st.values():
         f["attempts"] = max(done, f["improvements"])
+    for f, v in PRIORS.items():
+        st[f] = dict(v)
     return st
 
 
@@ -564,7 +912,13 @@ def _locked_json(path: Path, update):
 
 
 def load_stats() -> dict:
-    return _locked_json(STATS, lambda o: o if isinstance(o, dict) and o else _seed_stats())
+    def up(o):
+        if not (isinstance(o, dict) and o):
+            return _seed_stats()
+        for f, v in PRIORS.items():          # families added after the file was seeded
+            o.setdefault(f, dict(v))
+        return o
+    return _locked_json(STATS, up)
 
 
 def add_stats(delta: dict) -> None:
@@ -655,7 +1009,14 @@ def evaluate(args):
     finally:
         os.unlink(p)
     return {k: r.get(k) for k in ("ok", "match", "bytes_match", "link_check", "match_after_link", "score",
-                                  "differing_words", "target_insns", "stage")}
+                                  "differing_words", "target_insns", "candidate_insns",
+                                  "opcode_score", "stage")}
+
+
+def register_only(r) -> bool:
+    """Same length, (near-)identical opcode sequence: the diff is registers."""
+    return bool(r and r.get("ok") and not is_match(r) and r.get("opcode_score") is not None
+                and r["opcode_score"] >= 0.99 and r.get("target_insns") == r.get("candidate_insns"))
 
 
 def rank(r):
@@ -695,7 +1056,18 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
     batch_min = max(2, getattr(pool, "_max_workers", 3))
     while used < budget and not is_match(cur_r):
         by_fam: dict[str, list] = {}
-        for lab, nt in candidates(cur, name):
+        ctx = None
+        if register_only(cur_r):        # s-reg rotation: diagnose the global-alloc tie
+            try:
+                ctx = pool.submit(regalloc_ties, unit, tu, name, cur).result()
+                used += 1
+                if ctx.get("ties"):
+                    res.setdefault("regalloc", []).append(
+                        {"ties": ctx["ties"][:4], "vars": ctx["tie_vars"], "mapped": ctx.get("mapped")})
+            except Exception as ex:  # noqa: BLE001
+                ctx = None
+                res["regalloc_error"] = str(ex)[:200]
+        for lab, nt in candidates(cur, name, ctx):
             h = hashlib.sha1(nt.encode()).hexdigest()
             if h in seen:
                 continue

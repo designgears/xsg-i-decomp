@@ -56,6 +56,14 @@ WEIGHTS = {
     "perm_compound_assignment": 10, "perm_duplicate_assignment": 10,
 }
 
+# --profile: extra weights for a diff class tagged by permute_queue triage.
+# branch_likely: a lone b<cond> vs b<cond>l flip whose annul choice reorg makes
+# from the label/jump layout at the fall-through -> label/goto/condition edits.
+PROFILES = {
+    "branch_likely": {"perm_ins_block": 120, "perm_condition": 100, "perm_var_cond_block": 60,
+                      "perm_empty_stmt": 40, "perm_reorder_stmts": 40},
+}
+
 
 def c_name_of(body_text: str, name: str) -> str:
     m = re.match(r"(.+)_[0-9A-Fa-f]{8}$", name)
@@ -120,7 +128,7 @@ def text_of(obj: Path, cname: str) -> str:
     return "\n".join(l for l in p.stdout.splitlines() if l.startswith(" ") or l.startswith("\t"))
 
 
-def setup(unit: str, tu: str, name: str, body: Path) -> tuple[Path, str]:
+def setup(unit: str, tu: str, name: str, body: Path, profile: str | None = None) -> tuple[Path, str]:
     t = try_fn.try_function(unit, tu, name, body, keep=True)
     scratch = Path(t["scratch"])
     try:
@@ -152,7 +160,8 @@ def setup(unit: str, tu: str, name: str, body: Path) -> tuple[Path, str]:
         (d / "settings.toml").write_text(
             f'func_name = "{cname}"\ncompiler_type = "gcc"\n'
             f'objdump_command = "{try_fn.OBJDUMP} -drz --disassemble={cname}"\n'
-            "\n[weight_overrides]\n" + "".join(f"{k} = {v}\n" for k, v in WEIGHTS.items()))
+            "\n[weight_overrides]\n" + "".join(f"{k} = {v}\n" for k, v in
+                                               {**WEIGHTS, **PROFILES.get(profile or "", {})}.items()))
         return d, cname
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
@@ -264,12 +273,13 @@ def main() -> int:
     ap.add_argument("--stall", type=float, default=3,
                     help="minutes without a new best (after beating the base) before rebasing")
     ap.add_argument("--no-integrate", action="store_true")
+    ap.add_argument("--profile", choices=sorted(PROFILES), help="extra weights for a triage tag")
     a = ap.parse_args()
     key = f"{a.unit}/{a.tu}/{a.name}"
     report: dict = {"key": key}
     body = a.body.resolve()
     try:
-        d, cname = setup(a.unit, a.tu, a.name, body)
+        d, cname = setup(a.unit, a.tu, a.name, body, a.profile)
     except (try_fn.TryError, FileNotFoundError, ValueError) as e:
         report.update(ok=False, stage="setup", error=str(e))
         print(json.dumps(report, indent=1))
