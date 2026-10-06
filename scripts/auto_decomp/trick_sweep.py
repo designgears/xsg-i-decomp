@@ -1558,7 +1558,7 @@ def evaluate(args):
     os.write(fd, text.encode())
     os.close(fd)
     try:
-        r = try_fn.try_function(unit, tu, name, Path(p), diff_limit=400)
+        r = try_fn.try_function(unit, tu, name, Path(p), diff_limit=100000)
     except Exception as ex:  # noqa: BLE001
         return {"ok": False, "error": str(ex)[:300]}
     finally:
