@@ -1442,6 +1442,10 @@ def const_pairs(rows) -> list[tuple[int, int]]:
     for i, (a, m, b) in enumerate(dr):
         if m != "|" or not a or not b:
             continue
+        # only locally aligned rows: an insertion / deletion nearby means the
+        # pairing is a scheduling artefact, not a wrong constant
+        if any(x[1] in "<>" for x in dr[max(0, i - 4):i + 5]):
+            continue
         ma, oa, ra = _insn_ops(a)
         mb, ob, rb = _insn_ops(b)
         if ma != mb or ra or rb or len(oa) != len(ob) or not oa:
