@@ -9,6 +9,7 @@ Serves one page that refreshes itself every 2 s from /api/status:
   - workers: active leases (build/auto_decomp/claims) grouped by owner, with
     try_fn runs used (tries/), best score (bodies/*.best.json), lease age and
     the time since the body, a variant or the try counter last changed;
+  - running permuter processes (permute_fn.py);
   - the latest loop.log events.
 It only reads files the loop writes; it never takes a lock.
 """
@@ -73,6 +74,24 @@ def parse_ts(s: str) -> float | None:
         return None
 
 
+def permuters() -> list[dict]:
+    out = []
+    try:
+        ps = subprocess.run(["ps", "-eo", "pid,etimes,args"], capture_output=True, text=True).stdout
+    except OSError:
+        return out
+    # one permute_fn.py per job (permuter.py and its worker processes hang off it)
+    for line in ps.splitlines()[1:]:
+        pid, et, args = (line.strip().split(None, 2) + ["", ""])[:3]
+        argv = args.split()
+        if not any(a.endswith("permute_fn.py") for a in argv[:3]):
+            continue
+        opt = {argv[i]: argv[i + 1] for i in range(len(argv) - 1) if argv[i].startswith("--")}
+        key = "/".join(opt.get(f"--{x}", "?") for x in ("unit", "tu", "name"))
+        out.append({"pid": int(pid), "secs": int(et), "key": key})
+    return out
+
+
 def status() -> dict:
     now = time.time()
     queue = read_json(AD / "queue.json", {}) or {}
@@ -124,6 +143,12 @@ def status() -> dict:
         kind, _, msg = rest.partition(" ")
         events.append({"t": parse_ts(ts), "kind": kind, "msg": msg})
 
+    perms = permuters()
+    for w in workers.values():                   # a permuter lease: no try_fn budget in play
+        for l in w:
+            p = next((p for p in perms if p["key"] == l["key"]), None)
+            if p is not None:
+                l["permuter"] = p["secs"]
     ghidra = AD.parent / "ghidra/.stamp"
     return {
         "now": now,
@@ -134,6 +159,7 @@ def status() -> dict:
         "match_1h": m1, "match_24h": m24, "giveup_24h": g24, "hourly": hourly,
         "workers": [{"owner": o, "leases": sorted(v, key=lambda x: x["age"])} for o, v in sorted(workers.items())],
         "events": events,
+        "permuters": perms,
         "ghidra_age": now - ghidra.stat().st_mtime if ghidra.is_file() else None,
         "try_budget": TRY_BUDGET,
     }
@@ -240,7 +266,7 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dur=s=>s==null?'–':s<60?Math.round(s)+'s':s<3600?Math.round(s/60)+'m':(s/3600).toFixed(1)+'h';
-const KC={MATCH:'ok',GIVEUP:'warn',FAIL:'bad',LOST:'bad'};
+const KC={MATCH:'ok',GIVEUP:'warn',FAIL:'bad',LOST:'bad',PERMUTE:'dim'};
 let last=0,filt='',data=null;
 const when=t=>{if(!t)return'';const d=new Date(t*1000),n=new Date();const tm=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   return d.toDateString()===n.toDateString()?tm:d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+tm};
@@ -263,11 +289,11 @@ async function tick(){
     }
     $('m1').textContent=d.match_1h;$('m24').textContent=d.match_24h;$('g24').textContent=d.giveup_24h;$('q').textContent=d.queue.toLocaleString();
     const mx=Math.max(1,...d.hourly);$('hist').innerHTML=d.hourly.map((v,i)=>`<i class="${v?'':'z'}" style="height:${100*v/mx}%" title="${v} match${v==1?'':'es'}, ${23-i}h ago"></i>`).join('');
-    $('aux').textContent=`ghidra ${dur(d.ghidra_age)} old`;
+    $('aux').textContent=`${d.permuters.length} permuter${d.permuters.length==1?'':'s'} · ghidra ${dur(d.ghidra_age)} old`;
     const cards=[];let n=0;
     for(const w of d.workers)for(const l of w.leases){n++;
       const idle=l.edited;
-      const st=l.ttl<300?['expiring','bad']:idle!=null&&idle>600?['idle','warn']:['working','ok'];
+      const st=l.permuter!=null?['permuting','ok']:l.ttl<300?['expiring','bad']:idle!=null&&idle>600?['idle','warn']:['working','ok'];
       const tp=Math.min(100,100*l.tries/d.try_budget);
       cards.push(`<div class="w s-${st[1]}"><div class="t"><span class="fn" title="${esc(l.key)}">${esc(l.name)}</span><span class="chip ${st[1]}">${st[0]}</span></div>
         <div class="loc">${esc(w.owner)} · ${esc(l.unit)}/${esc(l.tu)}${l.size?` · ${l.size}B`:''}</div>

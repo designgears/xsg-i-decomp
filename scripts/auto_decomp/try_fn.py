@@ -375,6 +375,26 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
             shutil.rmtree(scratch, ignore_errors=True)
 
 
+def compile_file(unit: str, tu: str, c_path: Path, out: Path) -> tuple[bool, str]:
+    """Compile an arbitrary (possibly preprocessed) C file with TU's exact
+    compile command into `out` (used as the permuter's compile.sh)."""
+    unit_dir, g, rule, edge = compile_edge(unit, tu)
+    scratch_rel = Path("try") / f"cf.{tu}.{os.getpid()}"
+    scratch = unit_dir / scratch_rel
+    shutil.rmtree(scratch, ignore_errors=True)
+    scratch.mkdir(parents=True)
+    try:
+        src = scratch / f"{tu}.c"
+        shutil.copyfile(c_path, src)
+        out_rel = str(scratch_rel / f"{tu}.o")
+        ok, log = run_compile(unit_dir, g, rule, edge, src, out_rel, str(scratch_rel / "cinc"))
+        if ok:
+            shutil.copyfile(unit_dir / out_rel, out)
+        return ok, log
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
 TRY_BUDGET = 60
 
 
@@ -399,6 +419,17 @@ TRIES_DIR = Path(__file__).resolve().parents[2] / "build/auto_decomp/tries"
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--compile-file":
+        cp = argparse.ArgumentParser()
+        cp.add_argument("--compile-file", type=Path, required=True)
+        cp.add_argument("--unit", required=True)
+        cp.add_argument("--tu", required=True)
+        cp.add_argument("-o", type=Path, required=True)
+        c = cp.parse_args()
+        ok, log = compile_file(c.unit, c.tu, c.compile_file.resolve(), c.o.resolve())
+        if not ok:
+            sys.stderr.write(log[-3000:])
+        return 0 if ok else 1
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--unit", required=True)
     ap.add_argument("--tu", required=True)
@@ -410,7 +441,7 @@ def main() -> int:
     ap.add_argument("--json-out", type=Path)
     a = ap.parse_args()
     # Per-lease budget: agents get TRY_BUDGET runs per function (next.py --claim
-    # resets the counter).
+    # resets the counter). Brute-force sweeps belong to the permuter stage.
     budget = int(os.environ.get("TRY_FN_BUDGET", TRY_BUDGET))
     cnt = TRIES_DIR / f"{a.unit}__{a.tu}__{a.name}"
     n = int(cnt.read_text()) if cnt.is_file() else 0

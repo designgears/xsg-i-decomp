@@ -20,8 +20,8 @@ breaking `ninja gate`. Built for many agents at once.
 | `pattern_decompile.py` / `run_patterns.py` | Heuristic leaf patterns |
 | `verify_unit.py` | Whole-file compare (+ main mapcheck) |
 | `state.py` | `state.json`, `loop.log`, and the global lock (`integrate.lock`) |
-| `status.py` | Live status page (`http://127.0.0.1:8787/`, read-only): overall/per-unit progress, loop rates, each worker's leases with tries/best score/idle time, recent events |
-| `clear_wip.py` | Reset work in progress (leases, try counters, scratch bodies, non-blocked failure records) while keeping every `.best.c` and the `blocked` markers; `--dry-run` first |
+| `status.py` | Live status page (`http://127.0.0.1:8787/`, read-only): overall/per-unit progress, loop rates, each worker's leases with tries/best score/idle time, permuters, recent events |
+| `clear_wip.py` | Reset work in progress (leases, try counters, permuter work, scratch bodies, non-blocked failure records) while keeping every `.best.c` and the `blocked` markers; `--dry-run` first |
 | `with_lock.sh` | Run anything (e.g. `ninja gate`) under the same global lock |
 
 Workflow: `.grok/workflows/auto-decomp-batch.rhai` (args: `n`=12, `max_size`=128,
