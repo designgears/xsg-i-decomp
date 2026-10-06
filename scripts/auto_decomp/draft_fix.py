@@ -21,6 +21,24 @@ body lines and fixed deterministically:
     offset (default int);
   * calls with too many / too few arguments are trimmed (m2c's
     `/* extra? */` args first) or padded with 0 against the prototype.
+  * functions used as values (fn-pointer tables) get a prototype, not a data
+    extern (type:func in the symbol file); a table entry naming an undeclared
+    function never gets the whole table dropped;
+  * a global we could only size-guess (`extern int/char[N] v`) is retyped when
+    it is used with `->`/`.`: the draft's own dropped declaration is restored
+    (after imported T__df types), else the TU's later `extern T v;` becomes a
+    block-scope extern (gcc 2.96 accepts that against later file-scope ones);
+    our prelude externs that clash with a later TU declaration move into the
+    using functions the same way;
+  * undeclared stack temps used as `spXX[i]` are declared as int arrays sized
+    by the gap to the next m2c stack slot (default 16 words); other scalar
+    locals indexed with [] become `((T *)&v)[i]`;
+  * `called object is not a function` on `tbl[i](...)` / `p->f(...)` ->
+    `((int (*)())tbl[i])(...)`;
+  * gcc error lines are mapped to the body line with identical text (comments
+    ignored) when the diff mapping drifts (big multi-item drafts);
+  * past --max-iter rounds it keeps going (up to 4x) while the error count
+    still falls.
 
 Real statements are never deleted or commented out. Output goes to
 <body>.fixed.c; --write also replaces the body when the current body does
@@ -125,12 +143,23 @@ def parse_errors(log: str, body: list[str], cand: list[str] | None) -> tuple[lis
     if cand is None:
         return [(None, log.strip()[-500:])], []
     m = map_lines(body, cand)
+    key = lambda l: " ".join(re.sub(r"/\*.*?\*/", " ", l).split())  # noqa: E731
+    where: dict[str, list[int]] = {}
+    for i, l in enumerate(body):
+        if len(key(l)) > 3:
+            where.setdefault(key(l), []).append(i)
     errs, warns = [], []
     for l in log.splitlines():
         e = _ERR.match(l.strip())
         if not e or not e["file"].endswith(".c"):
             continue
-        idx = m.get(int(e["line"]) - 1)
+        ci = int(e["line"]) - 1
+        idx = m.get(ci)
+        # the diff mapping can drift on big drafts (tu_edit moves/drops parts):
+        # prefer the body line with the identical text, nearest the diff guess
+        hits = where.get(key(cand[ci])) if 0 <= ci < len(cand) else None
+        if hits and idx is not None and idx not in hits:
+            idx = min(hits, key=lambda h: abs(h - idx))
         msg = e["msg"]
         (warns if msg.startswith("warning:") else errs).append((idx, msg))
     if not errs and "error" in log.lower() and not log.strip().endswith(".o"):
@@ -150,8 +179,14 @@ class Ctx:
             self.protos = json.loads(PROTOS.read_text())
         except (OSError, ValueError):
             self.protos = {}
+        self.funcs: set[str] = set()
         self.sizes = self._sizes()
         self.asm = self._asm()
+        self.tried: set = set()          # one-shot fixes, persistent across rounds
+        try:
+            self.tu_src = (ROOT / "src" / unit / f"{tu}.c").read_text(errors="replace")
+        except OSError:
+            self.tu_src = ""
 
     def _decls(self) -> str:
         try:
@@ -170,9 +205,15 @@ class Ctx:
             if not f.is_file():
                 continue
             for l in f.read_text(errors="replace").splitlines():
-                m = re.match(r"\s*(\w+)\s*=\s*0x[0-9A-Fa-f]+;.*?(type:(\w+))?.*?size:(0x[0-9A-Fa-f]+|\d+)", l)
-                if m and m.group(3) != "func":
-                    out[m.group(1)] = int(m.group(4), 0)
+                m = re.match(r"\s*(\w+)\s*=\s*0x[0-9A-Fa-f]+;", l)
+                if not m:
+                    continue
+                if re.search(r"\btype:func\b", l):
+                    self.funcs.add(m.group(1))
+                    continue
+                sz = re.search(r"\bsize:(0x[0-9A-Fa-f]+|\d+)", l)
+                if sz:
+                    out[m.group(1)] = int(sz.group(1), 0)
         return out
 
     def _asm(self) -> str:
@@ -565,6 +606,109 @@ def cast_derefs(line: str, lines: list[str], idx: int) -> str:
     return new
 
 
+def item_head(lines: list[str], idx: int) -> int:
+    """First line of the top-level item containing idx (before the first function)."""
+    if idx < first_func(lines):
+        while idx > 0 and (lines[idx][:1].isspace() or lines[idx].startswith("}")):
+            idx -= 1
+    return idx
+
+
+def func_end(lines: list[str], fo: int) -> int:
+    depth = 0
+    for k in range(fo, len(lines)):
+        code = re.sub(r"/\*.*?\*/|\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*'", "", lines[k])
+        depth += code.count("{") - code.count("}")
+        if depth == 0 and "{" in "".join(lines[fo:k + 1]):
+            return k
+    return len(lines) - 1
+
+
+def stack_words(lines: list[str], fo: int, v: str) -> int:
+    """Element count for stack temp `spXX` used as an array: gap to the next
+    stack slot m2c named in this function, in words (default 16, a matrix)."""
+    m = re.match(r"^sp([0-9A-Fa-f]*)$", v)
+    if not m:
+        return 16
+    off = int(m.group(1) or "0", 16)
+    text = "\n".join(lines[fo:func_end(lines, fo) + 1])
+    offs = {int(o, 16) for o in re.findall(r"\bsp([0-9A-Fa-f]+)\b", text)}
+    nxt = [o for o in offs if o > off]
+    if not nxt:
+        return 16
+    return max(1, min(64, (min(nxt) - off) // 4))
+
+
+def scalar_local(lines: list[str], fo: int, idx: int, v: str) -> tuple[int, str] | None:
+    """(line, type) of a plain non-pointer, non-array local declaration of v."""
+    for k in range(fo + 1, min(idx, len(lines))):
+        l = lines[k]
+        if l.lstrip().startswith("/*"):
+            continue
+        m = re.match(rf"^\s+((?:unsigned\s+|signed\s+|const\s+|volatile\s+)*[A-Za-z_]\w*(?:\s+(?:int|char|long))?)\s+{re.escape(v)}\s*;", l)
+        if m and m.group(1).split()[-1] not in ("return", "goto", "case"):
+            return k, m.group(1)
+    return None
+
+
+def later_tu_decl(ctx: Ctx, v: str) -> str | None:
+    """`extern T v;` as the TU itself declares v (after this function)."""
+    m = re.search(rf"^[ \t]*extern\s+((?:const\s+|volatile\s+|unsigned\s+|signed\s+|struct\s+|union\s+)*[A-Za-z_]\w*)"
+                  rf"\s*(\**)\s*\b{re.escape(v)}\s*((?:\[[^\]]*\])*)\s*;", ctx.tu_src, re.M)
+    if not m:
+        return None
+    return f"extern {m.group(1)} {m.group(2)}{v}{m.group(3)};"
+
+
+def restore_draft_decl(lines: list[str], v: str) -> bool:
+    """Un-comment a one-line draft declaration of v dropped earlier (typically
+    for a type that has since been imported as T__df)."""
+    aliases = set(re.findall(r"\b(\w+)__df\b", "\n".join(lines)))
+    for i, l in enumerate(lines):
+        m = re.match(r"^/\* (.*) \*/ " + re.escape(TAG) + r"$", l)
+        if not m or TAG in m.group(1):
+            continue
+        inner = m.group(1).replace("* /", "*/")
+        if not re.search(rf"\b{re.escape(v)}\b", inner) or not inner.rstrip().endswith(";") \
+                or "{" in inner or inner[:1].isspace() or "(" in inner:
+            continue
+        for t in aliases:
+            inner = re.sub(rf"\b{t}\b(?!__df)", f"{t}__df", inner)
+        del lines[i]                      # re-insert after the prelude (imported types)
+        lines.insert(prelude_end(lines), inner)
+        return True
+    return False
+
+
+def retype_global(lines: list[str], v: str, idx: int | None, ctx: Ctx, notes: list[str]) -> bool:
+    """Give global v a real type instead of our size-guessed extern: the
+    draft's own (dropped) declaration, else the TU's later declaration as a
+    block-scope extern. One shot per symbol and kind."""
+    ours = [k for k, l in enumerate(lines) if TAG in l and re.match(rf"^\s*extern\s+(?:int|char|short|long long)\s+{re.escape(v)}\b", l)]
+    if ("restore", v) not in ctx.tried:
+        ctx.tried.add(("restore", v))
+        n = len(lines)
+        for k in ours:
+            lines[k] = comment_out(lines[k])
+        if restore_draft_decl(lines, v):
+            notes.append(f"restored draft decl of {v}")
+            return True
+        for k in ours:
+            lines[k] = lines[k][3:].split(" */ " + TAG)[0].replace("* /", "*/")
+        assert len(lines) == n
+    d = later_tu_decl(ctx, v)
+    if d and idx is not None and ("bs", v) not in ctx.tried:
+        fo = func_open(lines, idx)
+        if fo is not None and fo < idx:
+            ctx.tried.add(("bs", v))
+            for k in ours:
+                lines[k] = comment_out(lines[k])
+            lines.insert(fo + 1, f"    {d} {TAG}")
+            notes.append(f"block-scope {d}")
+            return True
+    return False
+
+
 def apply_fixes(lines: list[str], errs: list, warns: list, ctx: Ctx, notes: list[str]) -> bool:
     changed = False
     done_lines = set()
@@ -596,6 +740,10 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
             pending.append(d)
             changed = True
 
+    # top-level items with an undeclared name in them: fix the name, keep the item
+    protect = {item_head(lines, i) for i, mm in errs
+               if i is not None and i < len(lines) and "undeclared here" in mm}
+
     for idx, msg in errs + warns:
         mt = re.search(r"parse error before [\"`](\w+)[\"']", msg)
         if idx is None and mt:
@@ -620,11 +768,25 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                                               for l in lines[fo + 1:fo + 400] if TAG not in l):
                         continue          # declared already; the error is a cascade
                     if fo is not None and f"    int {v}; {TAG}" not in lines[fo + 1:fo + 200]:
-                        lines.insert(fo + 1, f"    int {v}; {TAG}")
+                        body_txt = "\n".join(lines[fo:func_end(lines, fo) + 1])
+                        if re.search(rf"\b{v}\s*\[", body_txt) and not re.search(
+                                rf"(?<![&\w])\b{v}\b(?!\s*\[)", body_txt):
+                            lines.insert(fo + 1, f"    int {v}[{stack_words(lines, fo, v)}]; {TAG}")
+                        else:
+                            lines.insert(fo + 1, f"    int {v}; {TAG}")
                         done_lines.add(("u", v))
                         note(f"local {v}")
                         return True       # indices shifted: recompile
                 continue
+            if v in ctx.funcs or (v in ctx.protos and v not in ctx.sizes):
+                if ("p", v) not in done_lines:
+                    pending.append(ctx.protos.get(v) or f"int {v}();")
+                    done_lines.add(("p", v))
+                    note(f"proto {v} (function used as a value)")
+                    changed = True
+                continue
+            if retype_global(lines, v, idx, ctx, notes):
+                return True
             size = ctx.sizes.get(v)
             decl = {1: f"extern char {v};", 2: f"extern short {v};", 4: f"extern int {v};",
                     8: f"extern long long {v};"}.get(size, f"extern char {v}[{size}];" if size else f"extern int {v};")
@@ -643,6 +805,29 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                 note(f"proto {f}")
                 changed = True
             continue
+        mc = re.search(r"conflicting types for `(\w+)'|`(\w+)' redeclared as different kind of symbol|"
+                       r"previous declaration of `(\w+)'", msg)
+        if mc and (idx is None or idx >= len(lines) or TAG in lines[idx]):
+            sym = mc.group(1) or mc.group(2) or mc.group(3)
+            k = next((k for k, l in enumerate(lines) if TAG in l and l.startswith("extern ")
+                      and re.search(rf"\b{sym}\b", l)), None)
+            if k is not None and ("mv", sym) not in ctx.tried:
+                # our file-scope extern clashes with a later TU declaration:
+                # a block-scope extern in each function using it does not
+                ctx.tried.add(("mv", sym))
+                decl = lines[k].replace(TAG, "").strip()
+                lines[k] = comment_out(lines[k])
+                ff = first_func(lines)
+                opens = []
+                for j in range(ff, len(lines)):
+                    if TAG not in lines[j] and re.search(rf"\b{sym}\b", lines[j]):
+                        fo = func_open(lines, j)
+                        if fo is not None and fo not in opens:
+                            opens.append(fo)
+                for fo in sorted(opens, reverse=True):
+                    lines.insert(fo + 1, f"    {decl} {TAG}")
+                note(f"block-scope {decl}")
+                return True
         if msg.startswith("warning:") or idx is None or idx >= len(lines):
             continue
         line = lines[idx]
@@ -661,6 +846,13 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                         lines[i] = re.sub(rf"\b{t}\b", f"{t}__df", l)
                 lines.insert(idx, f"{sub} {TAG}")
                 note(f"type {t} copied as {t}__df")
+                return True
+        me = re.match(r"^\s+extern\s+(?:struct\s+|union\s+)?([A-Za-z_]\w*)\s*\**\s*\w+\s*(?:\[[^\]]*\])*\s*;", line)
+        if TAG in line and me and ("parse error" in msg or "syntax error" in msg) \
+                and ("ty", me.group(1)) not in ctx.tried:
+            # our block-scope extern names a type the TU defines only later
+            ctx.tried.add(("ty", me.group(1)))
+            if fix_type_name(me.group(1), lines, ctx, pending, notes):
                 return True
         if TAG in line and not line.lstrip().startswith("/*") and not line.lstrip().startswith("int "):
             mm = re.search(r"\b(\w+)\s*\(", line)
@@ -695,7 +887,7 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                 changed = True
             continue
         if msg.startswith("parse error") and idx < first_func(lines) and TAG not in line \
-                and not line[0].isspace() and not line.startswith(("/*", "#")):
+                and not line[0].isspace() and not line.startswith(("/*", "#")) and idx not in protect:
             comment_item(lines, idx)       # draft data/extern decl with an unknown type
             note(f"dropped draft decl: {line.strip()[:50]}")
             return True
@@ -729,11 +921,38 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                 k -= 1
             idx, line = k, lines[k]
         if idx < first_func(lines) and TAG not in line and line and not line[0].isspace() \
+                and idx not in protect \
                 and not line.startswith(("/*", "#")) and ("error" in msg or "not constant" in msg or "parse" in msg
                                                           or "initializ" in msg or "storage size" in msg):
             comment_item(lines, idx)       # draft data definition the TU cannot take as is
             note(f"dropped draft decl: {line.strip()[:50]}")
             return True
+        if "subscripted value is neither array nor pointer" in msg:
+            fo = func_open(lines, idx)
+            if fo is None:
+                continue
+            for v in dict.fromkeys(re.findall(r"(?<![\w.>])([A-Za-z_]\w*)\s*\[", line)):
+                sl = scalar_local(lines, fo, idx, v)
+                if sl is None:
+                    continue
+                k, t = sl
+                body_txt = "\n".join(lines[fo:func_end(lines, fo) + 1])
+                if TAG in lines[k] and not re.search(rf"(?<![&\w])\b{v}\b(?!\s*\[)", body_txt):
+                    lines[k] = f"    {t} {v}[{stack_words(lines, fo, v)}]; {TAG}"
+                    note(f"stack {v} -> array")
+                else:
+                    lines[idx] = line = re.sub(rf"(?<![\w.>])\b{v}\s*\[", f"(({t} *)&{v})[", line)
+                    note(f"scalar {v} indexed via cast")
+                changed = True
+            continue
+        if "called object is not a function" in msg:
+            new = re.sub(r"(?<![\w)\]])([A-Za-z_]\w*(?:\s*(?:->|\.)\s*\w+|\s*\[[^\[\]]*\])+)\s*\(",
+                         r"((int (*)())\1)(", line, count=1)
+            if new != line:
+                lines[idx] = new
+                note("call through function-pointer cast")
+                changed = True
+            continue
         if "invalid type argument of `unary *'" in msg:
             new = cast_derefs(line, lines, idx)
             if new != line:
@@ -742,6 +961,13 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                 changed = True
             continue
         m = re.search(r"(?:has no member named|request for member) `(\w+)'", msg)
+        bases = re.findall(r"(?<![\w.>])([A-Za-z_]\w*)\s*->", line) if "`->'" in msg else \
+            (re.findall(rf"(?<![\w.>])([A-Za-z_]\w*)\s*\.\s*{m.group(1)}\b", line) if m and "request for" in msg else [])
+        for v in bases:
+            # a global we declared from its size only: give it its real type
+            if any(TAG in l and re.match(rf"^\s*extern\s+(?:int|char|short|long long)\s+{re.escape(v)}\b", l) for l in lines) \
+                    and retype_global(lines, v, idx, ctx, notes):
+                return True
         if m:
             new = rewrite_member(line, m.group(1), ctx)
             if new != line:
@@ -814,18 +1040,26 @@ def fix(unit: str, tu: str, name: str, text: str, max_iter: int = 30, deadline: 
     notes: list[str] = []
     errs0 = None
     res = {"ok": False}
-    for it in range(max_iter):
+    hist: list[int] = []
+    it = -1
+    while True:
+        it += 1
+        if it >= max_iter:
+            # past the cap: keep going (up to 4x) only while the error count still falls
+            if it >= 4 * max_iter or len(hist) < 6 or min(hist[-5:]) >= min(hist[:-5]):
+                break
         ok, clog, cand = compile_body(unit, tu, name, "\n".join(lines) + "\n")
         errs, warns = parse_errors(clog, lines, cand) if not ok else ([], [])
         if errs0 is None:
             errs0 = len(errs)
+        hist.append(len(errs))
         log(f"iter {it}: ok={ok} errors={len(errs)}")
         res = {"ok": ok, "iterations": it + 1, "errors": len(errs), "initial_errors": errs0,
                "remaining": [(None if i is None else i + 1, m) for i, m in errs[:15]]}
         if ok:
             # still worth injecting prototypes for implicitly declared callees
             pw = [w for w in warns if "implicit declaration" in w[1]]
-            if pw and it + 1 < max_iter:
+            if pw and it + 1 < 4 * max_iter:
                 trial = list(lines)
                 if apply_fixes(trial, [], pw, ctx, notes):
                     ok2, _, _ = compile_body(unit, tu, name, "\n".join(trial) + "\n")
