@@ -17,7 +17,7 @@ breaking `ninja gate`. Built for many agents at once.
 | `claims.py` | Leases under `build/auto_decomp/claims/` (60 min TTL, released by integrate) |
 | `try_fn.py` | **Lock-free** function-level check: compiles the TU with the body in a private scratch dir, diffs the function against its INCLUDE_ASM bytes (~0.5 s) |
 | `permute_fn.py` | [decomp-permuter](https://github.com/simonlindholm/decomp-permuter) (cloned to `.work/decomp-permuter`) on one near-miss body: direct cc1+as `compile.sh` (checked against `try_fn.py --compile-file`), weights tuned for register/scheduling plateaus, `-j` = cores-2, rebases on its best output after `--stall` minutes without progress, saves every try_fn-confirmed improvement as `.best.c`, stops and integrates as soon as try_fn matches |
-| `permute_queue.py` | Runs `permute_fn.py` over the best near-misses (`state.json` + `.best.json`, default >= 0.9), one lease (owner `permuter`) each, at most `--rounds` runs per function; skips VU0/sync asm, inline-asm bodies and cc1 ICEs |
+| `permute_queue.py` | Runs `permute_fn.py` over near-misses (`state.json` + `.best.json`), fewest differing words first, one lease (owner `permuter`) each, at most `--rounds` runs per function; skips VU0/sync asm, inline-asm bodies and cc1 ICEs. **Repo rule:** `--min-score 0.85` (ratio) AND `--max-diff 25` (differing instruction words, so a big function at 0.85, i.e. hundreds of wrong words, is left to agents). Defaults: 4 jobs x `-j 3`, 5 min, 1 round |
 | `integrate.py` | try_fn precheck → global lock → unit green? → apply → rebuild → keep if identical else restore |
 | `pattern_decompile.py` / `run_patterns.py` | Heuristic leaf patterns |
 | `verify_unit.py` | Whole-file compare (+ main mapcheck) |

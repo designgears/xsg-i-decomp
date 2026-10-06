@@ -402,7 +402,7 @@ def compile_file(unit: str, tu: str, c_path: Path, out: Path) -> tuple[bool, str
 TRY_BUDGET = 60
 
 
-def _track_best(body: Path, score) -> None:
+def _track_best(body: Path, score, report: dict | None = None) -> None:
     """Keep the best-scoring body of a function as <name>.best.c (+ .best.json
     with its score) so a later worse edit can't lose it; integrate --give-up
     restores it."""
@@ -418,7 +418,11 @@ def _track_best(body: Path, score) -> None:
         prev = -1
     if score > prev:
         shutil.copyfile(body, body.with_name(stem + ".best.c"))
-        side.write_text(json.dumps({"score": score}) + "\n")
+        rec = {"score": score}
+        for k in ("differing_words", "target_insns"):   # permute_queue's --max-diff gate
+            if report and report.get(k) is not None:
+                rec[k] = report[k]
+        side.write_text(json.dumps(rec) + "\n")
 TRIES_DIR = Path(__file__).resolve().parents[2] / "build/auto_decomp/tries"
 
 
@@ -460,7 +464,7 @@ def main() -> int:
         report = try_function(a.unit, a.tu, a.name, a.body.resolve(), a.keep, a.diff_limit)
     except TryError as e:
         report = {"ok": False, "match": False, "stage": "setup", "error": str(e)}
-    _track_best(a.body.resolve(), report.get("score"))
+    _track_best(a.body.resolve(), report.get("score"), report)
     diff = report.pop("diff", None)
     if diff and not a.no_diff:
         sys.stderr.write("\n".join(diff) + "\n")

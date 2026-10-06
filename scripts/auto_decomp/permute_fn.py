@@ -294,7 +294,8 @@ def main() -> int:
             return False
         if t.get("score") is not None and t["score"] > prev:
             shutil.copyfile(cand, body.with_name(f"{a.name}.best.c"))
-            best_side.write_text(json.dumps({"score": t["score"], "by": "permuter"}) + "\n")
+            best_side.write_text(json.dumps({"score": t["score"], "differing_words": t.get("differing_words"),
+                                             "target_insns": t.get("target_insns"), "by": "permuter"}) + "\n")
             report.setdefault("saved_best", []).append(t["score"])
         if t.get("match"):
             report["matched_source"] = str(cand)
