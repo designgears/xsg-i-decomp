@@ -21,6 +21,13 @@ word is a false %lo relocation: splat symbolized a plain immediate (target
 `addiu t0,t0,16`). The linked bytes are identical; hand it to
 `integrate.py --skip-try` (its whole-file gate is the real check).
 
+It is also set when the remaining slots are "lit_literal": [...]: the target
+loads a .lit4/.lit8 constant through a GPREL16 reloc to its data symbol
+(D_xxx of a *.lit4.s / *.lit8.s file), the candidate writes the same value as
+a float/double literal (LITERAL reloc to .lit4). That is how such constants
+must be written (an extern load changes sched1's order); the carve places the
+literal at D_xxx, so again: `integrate.py --skip-try`.
+
 Prints a JSON report; with --diff (default on) also prints a side-by-side
 instruction diff to stderr. Exit 0 = match, 1 = mismatch, 2 = error.
 """
@@ -257,21 +264,29 @@ def tu_edit(*args: str) -> subprocess.CompletedProcess:
                           capture_output=True, text=True, cwd=ROOT)
 
 
-def make_src_dir(scratch: Path, unit: str, tu: str, text: str) -> Path:
+def make_src_dir(scratch: Path, unit: str, tu: str, text: str, overrides: dict | None = None) -> Path:
     """A src/<unit> look-alike: symlinks to every sibling, own copy of the TU,
-    so quoted includes resolve exactly as for the real file."""
+    so quoted includes resolve exactly as for the real file. OVERRIDES
+    {file name: text} replaces siblings (e.g. a header with a flipped
+    prototype)."""
     real = ROOT / "src" / unit
     d = scratch / "src"
     d.mkdir(parents=True, exist_ok=True)
     for p in real.iterdir():
         if p.name != f"{tu}.c":
-            (d / p.name).symlink_to(p.resolve())
+            if overrides and p.name in overrides:
+                (d / p.name).write_text(overrides[p.name])
+            else:
+                (d / p.name).symlink_to(p.resolve())
     (d / f"{tu}.c").write_text(text)
     return d / f"{tu}.c"
 
 
 def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
-                 diff_limit: int = 200) -> dict:
+                 diff_limit: int = 200, overrides: dict | None = None) -> dict:
+    """OVERRIDES {file name in src/<unit>: text} evaluates against patched
+    sources (the TU itself under "<tu>.c"): e.g. trick_sweep's void_ret family
+    with a flipped forward declaration. Nothing under src/ is written."""
     src = ROOT / "src" / unit / f"{tu}.c"
     if not src.is_file():
         raise TryError(f"missing {src}")
@@ -282,9 +297,13 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
     scratch.mkdir(parents=True)
     report: dict = {"key": f"{unit}/{tu}/{name}", "scratch": str(scratch)}
     try:
-        cur = src.read_text()
+        cur = (overrides or {}).get(f"{tu}.c") or src.read_text()
+        tsrc = src
+        if overrides and f"{tu}.c" in overrides:
+            tsrc = scratch / f"{tu}.c"
+            tsrc.write_text(cur)
         # base: NAME as INCLUDE_ASM (revert it if the current TU already has C)
-        lst = tu_edit("list", str(src), "--json", "--unit-dir", str(unit_dir))
+        lst = tu_edit("list", str(tsrc), "--json", "--unit-dir", str(unit_dir))
         base_text = cur
         try:
             blocks = json.loads(lst.stdout)
@@ -294,11 +313,11 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
         except (json.JSONDecodeError, AttributeError):
             state = None
         if state == "c":
-            p = tu_edit("to-asm", str(src), name, "--unit-dir", str(unit_dir))
+            p = tu_edit("to-asm", str(tsrc), name, "--unit-dir", str(unit_dir))
             if p.returncode != 0:
                 raise TryError(f"tu_edit to-asm failed: {(p.stdout + p.stderr)[-1500:]}")
             base_text = p.stdout
-        p = tu_edit("to-c", str(src), name, "--body", str(body), "--unit-dir", str(unit_dir))
+        p = tu_edit("to-c", str(tsrc), name, "--body", str(body), "--unit-dir", str(unit_dir))
         if p.returncode != 0:
             report.update(ok=False, match=False, stage="tu_edit",
                           error=(p.stdout + p.stderr)[-3000:])
@@ -308,7 +327,7 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
         results = {}
         for tag, text in (("base", base_text), ("cand", cand_text)):
             tdir = scratch / tag
-            src_copy = make_src_dir(tdir, unit, tu, text)
+            src_copy = make_src_dir(tdir, unit, tu, text, overrides)
             out_rel = str(scratch_rel / tag / f"{tu}.o")
             ok, log = run_compile(unit_dir, g, rule, edge, src_copy, out_rel,
                                   str(scratch_rel / tag / "cinc"))
@@ -350,21 +369,27 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
                 for o in diff_offs)
         # False %lo relocations (splat symbolized a plain immediate): every
         # differing word is one -> identical after linking.
+        # .lit4/.lit8 constants: target GPREL16 -> D_xxx (a symbol of a
+        # *.lit4.s / *.lit8.s data file), ours LITERAL -> .lit4 (a float
+        # literal). Identical after linking when the carve puts the literal at
+        # D_xxx (integrate's whole-file gate checks): match_after_link.
         flo: list[dict] = []
-        if not bytes_match and len(wa) == len(wb):
+        lit = lit_slots(unit, base, cand) if len(wa) == len(wb) else []
+        lset = {int(x["off"], 16) for x in lit}
+        match_after_link = False
+        if len(wa) == len(wb) and (not bytes_match or (lit and not relocs_match)):
             doffs = [i * 4 for i in range(len(wa)) if wa[i] != wb[i]]
             flo = false_lo16(unit, base, cand, doffs)
-            fset = {int(f["off"], 16) for f in flo}
+            fset = {int(f["off"], 16) for f in flo} | lset
             others_ok = ([(o, t) for o, t, _ in base["relocs"] if o not in fset]
-                         == [(o, t) for o, t, _ in cand["relocs"]])
-            match_after_link = bool(flo) and len(flo) == len(doffs) and others_ok
-        else:
-            match_after_link = False
+                         == [(o, t) for o, t, _ in cand["relocs"] if o not in lset])
+            match_after_link = bool(flo or lit) and all(o in fset for o in doffs) and others_ok
         report.update(
             ok=True,
             match=bytes_match and relocs_match,
             match_after_link=match_after_link,
             false_lo16=flo,
+            lit_literal=lit,
             link_check=link_check,
             bytes_match=bytes_match,
             relocs_match=relocs_match,
@@ -482,6 +507,69 @@ def false_lo16(unit: str, base: dict, cand: dict, offs: list[int]) -> list[dict]
         if (((lui[1] & 0xFFFF) << 16) + sext) & 0xFFFFFFFF != addr & 0xFFFFFFFF:
             continue
         out.append({"off": hex(o), "sym": r[1], "imm": n, "lui_off": hex(lui[0])})
+    return out
+
+
+_LITSYMS: dict[str, dict] = {}
+
+
+def lit_symbols(unit: str) -> dict[str, dict]:
+    """name -> {"section": ".lit4"/".lit8", "kind": "float"/"double", "bits": int}
+    for every symbol of the unit's *.lit4.s / *.lit8.s data files (splat data
+    under build/<unit>/asm and carved ones under build/<unit>/carve)."""
+    if unit not in _LITSYMS:
+        d: dict[str, dict] = {}
+        files = []
+        for sub in ("asm", "carve"):
+            base = ROOT / "build" / unit / sub
+            if base.is_dir():
+                files += list(base.rglob("*.lit4.s")) + list(base.rglob("*.lit8.s"))
+        word = re.compile(r"/\*\s*\S+\s+\S+\s+([0-9A-Fa-f]{8}(?:[0-9A-Fa-f]{8})?)\s*\*/\s*\.(float|double|word)")
+        for f in files:
+            sec = ".lit8" if f.name.endswith(".lit8.s") else ".lit4"
+            cur = None
+            for ln in f.read_text(errors="replace").splitlines():
+                m = re.match(r"\s*dlabel\s+(\w+)", ln)
+                if m:
+                    cur = m.group(1)
+                    continue
+                m = word.search(ln)
+                if m and cur:
+                    raw = bytes.fromhex(m.group(1))
+                    kind = "double" if sec == ".lit8" or m.group(2) == "double" else "float"
+                    if kind == "double" and len(raw) == 4:
+                        prev = d.get(cur)
+                        if prev and prev.get("half") is not None:   # .word pair
+                            raw = prev.pop("half") + raw
+                        else:
+                            d[cur] = {"section": sec, "kind": kind, "half": raw}
+                            continue
+                    d[cur] = {"section": sec, "kind": kind, "bits": int.from_bytes(raw, "little")}
+                    cur = None
+        _LITSYMS[unit] = {k: v for k, v in d.items() if "bits" in v}
+    return _LITSYMS[unit]
+
+
+def lit_slots(unit: str, base: dict, cand: dict) -> list[dict]:
+    """Offsets where the target relocates GPREL16 against a .lit4/.lit8 data
+    symbol and the candidate LITERAL (or GPREL16) against the .lit4/.lit8
+    section, same opcode and registers."""
+    syms = None
+    crel = {o: (t, n) for o, t, n in cand["relocs"]}
+    out = []
+    for o, t, n in base["relocs"]:
+        c = crel.get(o)
+        if t != 7 or not c or c[0] not in (7, 8) or c[1] not in (".lit4", ".lit8"):
+            continue
+        if syms is None:
+            syms = lit_symbols(unit)
+        if n not in syms and n not in (".lit4", ".lit8"):
+            continue
+        a = int.from_bytes(base["bytes"][o:o + 4], "little")
+        b = int.from_bytes(cand["bytes"][o:o + 4], "little")
+        if (a >> 16) != (b >> 16):
+            continue
+        out.append({"off": hex(o), "sym": n, "imm": b & 0xFFFF})
     return out
 
 

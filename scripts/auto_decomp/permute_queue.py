@@ -40,7 +40,14 @@ Before the permuter (cheapest first):
                   comparison is wrong), sched_weight (one store moved: sched1
                   register-weight tie), de_ifcvt (move next to movz/movn:
                   early if-conversion), loop_live (address/constant inits
-                  reordered: loop-preheader tie); the sweep runs the matching
+                  reordered: loop-preheader tie), const_fix (same insn,
+                  different immediate: constant copied from a sibling),
+                  zext_form (target keeps andi 0xffff + sltiu); text-gated
+                  (trick_sweep.text_shape): void_ret (int falling off its end
+                  whose target returns nothing, or the reverse), lit_inline
+                  (extern of a .lit4/.lit8 data symbol: use the literal; a
+                  match then shows as try_fn lit_literal / match_after_link
+                  -> integrate --skip-try); the sweep runs the matching
                   ctx family first-class
   * sweep first: a body trick_sweep has not run on (.best.json "by"=="sweep"
     or a sweep_marks.json sha1 / loop.log "done" line) is swept inline under
@@ -96,7 +103,7 @@ def best_json(body: Path) -> dict:
         return {}
 
 
-TRIAGE_VERSION = 4      # bump when classification rules change (invalidates the cache)
+TRIAGE_VERSION = 5      # bump when classification rules change (invalidates the cache)
 TRIAGE = ROOT / "build/auto_decomp/triage.json"
 AS_FLAGS = ROOT / "config/tu/as-flags.json"
 BRANCH = re.compile(r"^(b|bal|j|jr|jal|jalr|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bgezal|bltzal|bc1t|bc1f)l?$")
@@ -229,7 +236,8 @@ def triage(c: dict, body: Path) -> dict:
         e["cat"] = "match"
         if not r.get("match"):
             e["link"] = True             # integrate with --skip-try (whole-file gate decides)
-            e["why"] = ("false %lo reloc " + ",".join(f["sym"] for f in r.get("false_lo16") or [])
+            e["why"] = ("false %lo reloc / lit literal " + ",".join(f["sym"] for f in (r.get("false_lo16") or [])
+                                                                    + (r.get("lit_literal") or []))
                         if r.get("match_after_link") else "absolute-vs-symbol slots")
     elif r.get("bytes_match"):
         e["cat"] = "reloc-only"
@@ -239,7 +247,13 @@ def triage(c: dict, body: Path) -> dict:
         e["moved"] = moved
         if branch_likely_only(r.get("diff") or []):
             e["tag"] = "branch_likely"   # trick_sweep fallthrough_label; permuter label/goto weights
-        shape = trick_sweep.diff_shape(r.get("diff") or [])
+        shape = dict.fromkeys(trick_sweep.diff_shape(r.get("diff") or []))
+        try:
+            for t in trick_sweep.text_shape(body.read_text(errors="replace"), c["name"], c["unit"],
+                                            r.get("diff") or [], c["tu"]):
+                shape[t] = None
+        except Exception:  # noqa: BLE001
+            pass
         if shape:                        # mechanism tags (trick_sweep ctx families, WORKER_LESSONS.md)
             e["mech"] = sorted(shape)
             e.setdefault("tag", sorted(shape)[0])

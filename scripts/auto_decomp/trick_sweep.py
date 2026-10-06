@@ -935,8 +935,16 @@ def diff_shape(rows) -> dict:
       cmp_fix      branch condition differs (bgez vs blez, not an inversion)
       sched_weight one store moved, nothing else (sched1 register-weight tie)
       de_ifcvt     a move next to movz/movn (early if-conversion: sched2 luid tie)
-      loop_live    only address/constant inits reordered (loop-preheader tie)"""
+      loop_live    only address/constant inits reordered (loop-preheader tie)
+      const_fix    same insn, different immediate (wrong constant copied from a sibling)
+      zext_form    target keeps andi 0xffff + sltiu that our compare lost"""
     tags: dict = {}
+    cp = const_pairs(rows)
+    if cp:
+        tags["const_fix"] = cp
+    zx = zext_shape(rows)
+    if zx:
+        tags["zext_form"] = zx
     cm = cmp_mismatch(rows)
     if cm:
         tags["cmp_fix"] = cm
@@ -949,6 +957,21 @@ def diff_shape(rows) -> dict:
             tags["sched_weight"] = mv
         elif all(_mn(x) in ("addiu", "addu", "move", "li", "lui", "ori", "daddu", "sll") for x in mv):
             tags["loop_live"] = mv
+    return tags
+
+
+def text_shape(text: str, name: str, unit: str, rows, tu: str = "") -> list[str]:
+    """Text-gated mechanism tags: void_ret (int falling off its end and the
+    target's last block writes no v0, or the reverse) and lit_inline (an
+    extern of a .lit4/.lit8 data symbol)."""
+    tags = []
+    ctx = {"rows": rows, "unit": unit, "tu": tu, "patches": {}}
+    for f, t in (("void_ret", t_void_ret), ("lit_inline", t_lit_inline)):
+        try:
+            if next(iter(t(text, name, dict(ctx))), None):
+                tags.append(f)
+        except Exception:  # noqa: BLE001
+            pass
     return tags
 
 
@@ -1346,6 +1369,483 @@ def t_loop_live(fn, ctx=None):
             yield f"loop_live:countdown:{i}", head + pre + f"{{ int cnt_ = {n} - {i};\n{ind}{nl}\n{ind}}}" + after + tail
 
 
+# ---- third-round mechanisms: const_fix, void_ret, lit_inline, zext_form ------
+# TEXT transforms: (text, name, ctx) -> (label, whole new text). ctx carries
+# "rows" (the try_fn diff), "unit", "tu" and a "patches" dict the void_ret
+# family fills with source patches (forward declarations) keyed by the sha1 of
+# the candidate text.
+
+_IMM_MN = {"lui", "ori", "addiu", "daddiu", "li", "andi", "xori", "slti", "sltiu"}
+_MEM_MN = re.compile(r"^(lb|lbu|lh|lhu|lw|lwu|ld|lq|lwc1|ldc1|sb|sh|sw|sd|sq|swc1|sdc1)$")
+_LIT_RE = re.compile(r"(?<![\w.])(0[xX][0-9a-fA-F]+|\d+)([uUlL]*)(?![\w.])")
+
+
+def _insn_ops(insn: str):
+    """(mnemonic, [operands], has_reloc)"""
+    rel = "[" in insn
+    insn = re.sub(r"\s*\[.*$", "", insn).strip()
+    p = insn.split(None, 1)
+    if not p:
+        return "", [], rel
+    return p[0], [o.strip() for o in (p[1].split(",") if len(p) > 1 else [])], rel
+
+
+def _ival(x: str):
+    try:
+        return int(x, 0)
+    except ValueError:
+        return None
+
+
+def _full_const(col: list[str], i: int):
+    """Value built by the lui at col[i] (+ the addiu/ori consuming it within 8
+    insns), or by the addiu/ori at col[i] fed by a lui up to 8 insns back."""
+    mn, ops, rel = _insn_ops(col[i])
+    if rel:
+        return None
+    if mn == "lui" and len(ops) == 2:
+        hi = _ival(ops[1])
+        if hi is None:
+            return None
+        for j in range(i + 1, min(len(col), i + 9)):
+            m2, o2, r2 = _insn_ops(col[j])
+            if m2 in ("addiu", "ori") and len(o2) == 3 and o2[1] == ops[0] and not r2:
+                lo = _ival(o2[2])
+                if lo is None:
+                    return None
+                return ((hi << 16) + lo if m2 == "addiu" else (hi << 16) | lo) & 0xFFFFFFFF
+            if o2 and o2[0] == ops[0]:
+                break
+        return (hi << 16) & 0xFFFFFFFF
+    if mn in ("addiu", "ori") and len(ops) == 3:
+        lo = _ival(ops[2])
+        for j in range(i - 1, max(-1, i - 9), -1):
+            m2, o2, r2 = _insn_ops(col[j])
+            if m2 == "lui" and o2 and o2[0] == ops[1] and not r2:
+                hi = _ival(o2[1])
+                if hi is None or lo is None:
+                    return None
+                return ((hi << 16) + lo if mn == "addiu" else (hi << 16) | lo) & 0xFFFFFFFF
+            if o2 and o2[0] == ops[1]:
+                break
+    return None
+
+
+def const_pairs(rows) -> list[tuple[int, int]]:
+    """(candidate value, target value) for aligned rows that differ only in
+    an immediate (lui/ori/addiu/li/andi/slti(u)) or a load/store offset;
+    lui+ori / lui+addiu pairs give the full 32-bit constant."""
+    dr = diff_rows(rows)
+    ta = [a for a, _, _ in dr]
+    cb = [b for _, _, b in dr]
+    out: list[tuple[int, int]] = []
+    for i, (a, m, b) in enumerate(dr):
+        if m != "|" or not a or not b:
+            continue
+        ma, oa, ra = _insn_ops(a)
+        mb, ob, rb = _insn_ops(b)
+        if ma != mb or ra or rb or len(oa) != len(ob) or not oa:
+            continue
+        if ma in _IMM_MN and oa[:-1] == ob[:-1]:
+            va, vb = _ival(oa[-1]), _ival(ob[-1])
+            if va is None or vb is None or va == vb:
+                continue
+            fa, fb = _full_const(ta, i), _full_const(cb, i)
+            if fa is not None and fb is not None and fa != fb:
+                out.append((fb, fa))
+            if ma == "lui":
+                out.append(((vb << 16) & 0xFFFFFFFF, (va << 16) & 0xFFFFFFFF))
+            else:
+                out.append((vb, va))
+                out.append((-vb, -va))
+        elif _MEM_MN.match(ma) and oa[0] == ob[0] and len(oa) == 2:
+            pa = re.fullmatch(r"(-?\d+)\((\w+)\)", oa[1])
+            pb = re.fullmatch(r"(-?\d+)\((\w+)\)", ob[1])
+            if pa and pb and pa.group(2) == pb.group(2) and pa.group(1) != pb.group(1):
+                out.append((int(pb.group(1)), int(pa.group(1))))
+    seen, res = set(), []
+    for p in out:
+        if p not in seen and p[0] != p[1]:
+            seen.add(p)
+            res.append(p)
+    return res
+
+
+def _fmt_like(orig: str, v: int, suf: str) -> str:
+    """V written like ORIG (hex / decimal, digit case) with suffix SUF."""
+    if not orig.lower().startswith("0x"):
+        return str(v) + suf
+    h = format(abs(v), "X" if any(c.isupper() for c in orig[2:]) else "x")
+    return ("-" if v < 0 else "") + orig[:2] + h + suf
+
+
+def t_const_fix(text, name, ctx=None):
+    """Body copied from a sibling kept the sibling's constant (subPrintRibbon:
+    0x20654000 vs 0x20A64000): every C literal equal to the candidate's value
+    of a differing immediate is replaced by the target's value (each
+    occurrence, then all of them)."""
+    pairs = (ctx or {}).get("const")
+    if not pairs:
+        return
+    loc = find_function(text, name)
+    lo, hi = (0, len(text)) if not loc else (0, loc[2] + 1)
+    lits = [(m.start(1), m.end(2), m.group(1), m.group(2)) for m in _LIT_RE.finditer(text, lo, hi)]
+    n = 0
+    for cv, tv in pairs:
+        hits = []
+        for s, e, lit, suf in lits:
+            v = int(lit, 0)
+            if v == cv:
+                nv = tv
+            elif v == cv & 0xFFFFFFFF:           # unsigned spelling of a negative value
+                nv = tv & 0xFFFFFFFF
+            else:
+                continue
+            hits.append((s, e, _fmt_like(lit, nv, suf)))
+        for s, e, rep in hits:
+            n += 1
+            yield f"const_fix:{text[s:e]}->{rep}", text[:s] + rep + text[e:]
+        if len(hits) > 1:
+            t2 = text
+            for s, e, rep in sorted(hits, reverse=True):
+                t2 = t2[:s] + rep + t2[e:]
+            yield f"const_fix:all{hex(cv)}->{hex(tv)}", t2
+        if n > 60:
+            return
+
+
+# void_ret ------------------------------------------------------------------
+
+_V0W = re.compile(r"^(?!s[bhwdq]\b|swc1|sdc1|b|j|jr|jal|nop|mt|ctc)\w+\s+v0\b")
+
+
+def _last_block_sets_v0(col: list[str]) -> bool | None:
+    """Is v0 live out of the final block (written after the last call /
+    branch and not read again before `jr ra` + delay slot)? A function that
+    only uses v0 as a scratch register returns no value. None when there is
+    no jr ra."""
+    idx = [i for i, x in enumerate(col) if re.match(r"jr\s+ra\b", x)]
+    if not idx:
+        return None
+    j = idx[-1]
+    blk = []
+    for i in range(j - 1, -1, -1):
+        mn = _mn(col[i])
+        if BRANCH_RE.match(mn) or mn in ("j", "jal", "jalr", "jr"):
+            break
+        blk.append(col[i])
+    blk = blk[::-1] + ([col[j + 1]] if j + 1 < len(col) else [])
+    live = False
+    for x in blk:
+        mn, ops, _ = _insn_ops(x)
+        if any(re.search(r"\bv0\b", o) for o in (ops[1:] if not STORE_RE.match(mn) else ops)):
+            live = False                   # read: the write was a scratch use
+        if _V0W.match(x):
+            live = True
+    return live
+
+
+def _fn_rettype(fn: str, name: str) -> str | None:
+    hdr = fn[:fn.index("{")]
+    m = re.search(r"\b" + re.escape(name) + r"\s*\(", hdr)
+    return hdr[:m.start()].strip() if m else None
+
+
+def _decl_patches(unit: str, tu: str, name: str, old_t: str, new_t: str) -> list | None:
+    """Forward declarations of NAME with return type OLD_T in the TU and the
+    src/<unit> headers it includes: [(relpath, old line, new line)];
+    None when one lives where it cannot be evaluated (include/)."""
+    src = ROOT / "src" / unit / f"{tu}.c"
+    try:
+        tu_text = src.read_text()
+    except OSError:
+        return []
+    files = [src]
+    for inc in re.findall(r'^\s*#\s*include\s+"([^"]+)"', tu_text, re.M):
+        p = (src.parent / inc).resolve()
+        if p.is_file():
+            files.append(p)
+        elif (ROOT / "include" / inc).is_file() and name in (ROOT / "include" / inc).read_text(errors="replace"):
+            return None
+    out = []
+    dre = re.compile(r"^([^\n;{}()#=]*?)\b" + re.escape(name) + r"\s*\(([^;{}]*)\)\s*;", re.M)
+    for f in files:
+        for m in dre.finditer(f.read_text(errors="replace")):
+            rt = m.group(1).strip()
+            words = rt.split()
+            if not words or "return" in words:
+                continue
+            core = " ".join(w for w in words if w not in ("static", "extern", "inline"))
+            if core.replace(" ", "") != old_t.replace(" ", "").replace("static", "").replace("extern", ""):
+                continue
+            old = m.group(0)
+            new = old.replace(rt, rt.replace(core, new_t) if core in rt else rt, 1)
+            out.append((str(f.relative_to(ROOT)), old, new))
+    return out
+
+
+def t_void_ret(text, name, ctx=None):
+    """An int function falling off its end (no `return <expr>`) gets a
+    clobber/use of v0 that reorders the last block in sched2
+    (_SetVersion3Extent): flip it to void when the target's last block writes
+    no v0. Reverse: a void function whose target sets v0 at the end becomes
+    int returning the last call / assigned value. Conflicting forward
+    declarations are flipped too (evaluated through try_fn overrides, applied
+    with verified_edit before integrating)."""
+    ctx = ctx or {}
+    rows = ctx.get("rows")
+    loc = find_function(text, name)
+    if not rows or not loc:
+        return
+    s, b, e = loc
+    fn = text[s:e + 1]
+    rt = _fn_rettype(fn, name)
+    if rt is None:
+        return
+    dr = diff_rows(rows)
+    if not any(m != " " for _, m, _ in dr):
+        return
+    tv0 = _last_block_sets_v0([a for a, _, _ in dr if a])
+    cv0 = _last_block_sets_v0([c for _, _, c in dr if c])
+    core = " ".join(w for w in rt.split() if w not in ("static", "extern", "inline"))
+    _, inner, _ = _split_fn(fn)
+    outs = []
+    if core in ("int", "s32", "unsigned int", "u32", "short", "char", "long") and \
+            not re.search(r"\breturn\s+[^;\s]", inner) and tv0 is False:
+        nf = fn[:fn.index(rt)] + rt.replace(core, "void") + fn[fn.index(rt) + len(rt):]
+        outs.append(("void_ret:int->void", nf, core, "void"))
+    elif core == "void" and tv0 and not cv0:
+        nrt = rt.replace("void", "int")
+        base = fn[:fn.index(rt)] + nrt + fn[fn.index(rt) + len(rt):]
+        bi = base.rindex("}")
+        lines = base[:bi].rstrip().splitlines()
+        last = lines[-1] if lines else ""
+        m1 = re.match(r"(\s*)([A-Za-z_]\w*)\s*=[^=].*;\s*$", last)
+        m2 = re.match(r"(\s*)([A-Za-z_]\w*\s*\(.*\)\s*;)\s*$", last)
+        if m1:
+            outs.append(("void_ret:void->int:ret-" + m1.group(2), base[:bi].rstrip() + f"\n{m1.group(1)}return {m1.group(2)};\n}}", "void", "int"))
+        if m2 and not m2.group(2).startswith(("if", "while", "for", "switch", "return")):
+            nb = "\n".join(lines[:-1] + [f"{m2.group(1)}return {m2.group(2)}"])
+            outs.append(("void_ret:void->int:retcall", nb + "\n}", "void", "int"))
+    pat = ctx.setdefault("patches", {})
+    for lab, nf, ot, nt in outs:
+        new = text[:s] + nf + text[e + 1:]
+        # forward declarations inside the body text itself
+        new = re.sub(r"^([^\n;{}()#=]*?)\b" + re.escape(ot) + r"(\s+\**\s*" + re.escape(name) + r"\s*\([^;{}]*\)\s*;)",
+                     lambda m: m.group(1) + nt + m.group(2), new, flags=re.M)
+        pp = _decl_patches(ctx.get("unit", ""), ctx.get("tu", ""), name, ot, nt) if ctx.get("unit") else []
+        if pp is None:
+            continue
+        if pp:
+            pat[body_sha(new)] = pp
+        yield lab, new
+
+
+# lit_inline ----------------------------------------------------------------
+
+def lit_literal(info: dict, as_double: bool = False) -> str | None:
+    """Shortest decimal literal that rounds exactly to the data word."""
+    import struct
+    if info["kind"] == "float":
+        raw = info["bits"].to_bytes(4, "little")
+        v = struct.unpack("<f", raw)[0]
+        if v != v or v in (float("inf"), float("-inf")):
+            return None
+        for p in range(1, 10):
+            s = f"{v:.{p}g}"
+            if struct.pack("<f", float(s)) == raw:
+                break
+        suf = "f"
+    else:
+        raw = info["bits"].to_bytes(8, "little")
+        v = struct.unpack("<d", raw)[0]
+        if v != v or v in (float("inf"), float("-inf")):
+            return None
+        for p in range(1, 18):
+            s = f"{v:.{p}g}"
+            if struct.pack("<d", float(s)) == raw:
+                break
+        suf = ""
+    if "e" not in s and "." not in s:
+        s += ".0"
+    elif "e" in s and "." not in s.split("e")[0]:
+        s = s.replace("e", ".0e")
+    s += suf
+    return f"({s})" if s.startswith("-") else s
+
+
+def t_lit_inline(text, name, ctx=None):
+    """`extern float D_xxx` for a value living in .lit4/.lit8 (a symbol of a
+    *.lit4.s / *.lit8.s data file) -> the float/double literal (checkTalk):
+    an extern load is a pseudo SET (+1 register weight) and changes sched1's
+    order; a const_double does not. Matches show up as try_fn
+    match_after_link (lit_literal) -> integrate --skip-try."""
+    ctx = ctx or {}
+    unit = ctx.get("unit")
+    loc = find_function(text, name)
+    if not unit or not loc:
+        return
+    import try_fn
+    syms = try_fn.lit_symbols(unit)
+    if not syms:
+        return
+    s, b, e = loc
+    fn = text[s:e + 1]
+    used = [x for x in dict.fromkeys(re.findall(r"\bD_[0-9A-Fa-f]{8}\b", fn)) if x in syms]
+    if not used:
+        return
+    try:
+        tu_text = (ROOT / "src" / unit / f"{ctx.get('tu')}.c").read_text(errors="replace")
+    except OSError:
+        tu_text = ""
+    reps = {}
+    for x in used:
+        m = re.search(r"^\s*extern\s+(?:const\s+)?(float|double)\s+" + x + r"\s*;", text + "\n" + tu_text, re.M)
+        if not m:
+            continue
+        if re.search(r"&\s*" + x + r"\b|\b" + x + r"\s*(=[^=]|\+\+|--|\[)", fn):
+            continue
+        lit = lit_literal(syms[x])
+        if lit:
+            reps[x] = lit
+
+    def apply(keys):
+        nf = fn
+        for x in keys:
+            nf = re.sub(r"\b" + x + r"\b", reps[x], nf)
+        new = text[:s] + nf + text[e + 1:]
+        for x in keys:
+            if not re.search(r"\b" + x + r"\b", new.replace(f"extern float {x};", "").replace(f"extern double {x};", "")):
+                new = re.sub(r"^\s*extern\s+(?:const\s+)?(?:float|double)\s+" + x + r"\s*;[ \t]*\n", "", new, flags=re.M)
+        return new
+    if not reps:
+        return
+    yield "lit_inline:all", apply(list(reps))
+    if len(reps) > 1:
+        for x in reps:
+            yield f"lit_inline:{x}", apply([x])
+
+
+# zext_form -----------------------------------------------------------------
+
+def zext_shape(rows) -> list[dict]:
+    """Target `andi x,x,0xffff` followed by `sltiu y,x,N` inside the differing
+    region (we compare without the zero-extend: slti / no andi)."""
+    dr = diff_rows(rows)
+    out = []
+    for i, (a, m, b) in enumerate(dr):
+        ma, oa, _ = _insn_ops(a)
+        if ma != "andi" or len(oa) != 3 or _ival(oa[2]) != 0xFFFF:
+            continue
+        near = dr[max(0, i - 3):i + 4]
+        if all(mm == " " for _, mm, _ in near):
+            continue
+        for j in range(i + 1, min(len(dr), i + 4)):
+            mj, oj, _ = _insn_ops(dr[j][0])
+            if mj == "sltiu" and len(oj) == 3 and oj[1] == oa[0]:
+                c = None
+                for k in range(i - 1, max(-1, i - 4), -1):
+                    mk, ok, _ = _insn_ops(dr[k][0])
+                    if mk == "addiu" and ok and ok[0] == oa[1]:
+                        c = _ival(ok[2])
+                        break
+                out.append({"N": _ival(oj[2]), "C": c})
+                break
+    return out
+
+
+def _operand_start(s: str, i: int) -> int:
+    """start of the operand ending just before i (balanced, stops at ( && || ! ,)."""
+    depth = 0
+    j = i - 1
+    while j >= 0:
+        c = s[j]
+        if c in ")]":
+            depth += 1
+        elif c in "([":
+            if depth == 0:
+                break
+            depth -= 1
+        elif depth == 0 and (c in ",!?:" or s[max(0, j - 1):j + 1] in ("&&", "||")):
+            break
+        j -= 1
+    return j + 1
+
+
+_ZFORMS = [
+    ("stmtexpr", "({{ unsigned short _z = ({E}); _z; }})"),
+    ("andmask", "(({E}) & 0xFFFF)"),
+    ("uandmask", "(unsigned int)(({E}) & 0xFFFF)"),
+    ("intcast", "(int)(unsigned short)({E})"),
+    ("ucast", "(unsigned short)({E})"),
+    ("union", "({{ union {{ short s; unsigned short u; }} _z; _z.s = ({E}); _z.u; }})"),
+    ("vol", "({{ volatile unsigned short _z = ({E}); _z; }})"),
+    ("twice", "({{ unsigned short _z = ({E}); _z = _z; _z; }})"),
+    ("bitf", "({{ struct {{ unsigned int v : 16; }} _z; _z.v = ({E}); _z.v; }})"),
+]
+
+
+def t_zext_form(text, name, ctx=None):
+    """Target keeps `addiu; andi 0xffff; sltiu` where every simple C form
+    loses the zero-extend or the unsigned compare (InitMapTrap): rewrite the
+    compared value into forms that stop combine from eliding the andi (temp,
+    union, bitfield, masked twice). Pre-screened with snippet.py: only forms
+    whose standalone asm keeps andi+sltu are compiled for real."""
+    ctx = ctx or {}
+    zs = ctx.get("zext")
+    loc = find_function(text, name)
+    if not zs or not loc:
+        return
+    s0, b0, e0 = loc
+    fn = text[s0:e0 + 1]
+    head, inner, tail = _split_fn(fn)
+    Ns = {z["N"] for z in zs if z.get("N") is not None}
+    Cs = {z["C"] for z in zs if z.get("C") is not None}
+    ok_forms = None
+    try:
+        import snippet
+        ok_forms = []
+        c = abs(next(iter(Cs))) if Cs else 1
+        n = next(iter(Ns)) if Ns else 8
+        for lab, f in _ZFORMS:
+            code = ("extern void g(void); void f(short x){ if (" + f.format(E=f"x - {c}") + f" < {n}) g(); }}")
+            try:
+                ins = snippet.compile_snippet(ctx["unit"], ctx["tu"], code)
+                if snippet.has_seq(ins, [r"^andi .*0xffff", r"^sltu"]):
+                    ok_forms.append(lab)
+            except Exception:  # noqa: BLE001
+                ok_forms.append(lab)
+    except Exception:  # noqa: BLE001
+        ok_forms = None
+    out = []
+    for s, e in sorted(set(_cond_spans(inner))):
+        cond = inner[s:e]
+        for m in _REL.finditer(cond):
+            op = m.group(1)
+            b1 = m.end()
+            while b1 < len(cond) and cond[b1] == " ":
+                b1 += 1
+            b2 = _operand_end(cond, b1)
+            rk = _ival(re.sub(r"[uUlL()\s]", "", cond[b1:b2]))
+            if rk is None or not ({rk, rk + 1} & Ns or not Ns):
+                continue
+            a0 = _operand_start(cond, m.start())
+            lhs = cond[a0:m.start()].strip()
+            if not lhs:
+                continue
+            E = re.sub(r"^\(\s*(?:unsigned\s+short|u16|short|s16|signed\s+short)\s*\)\s*", "", lhs)
+            for lab, f in _ZFORMS:
+                if ok_forms is not None and lab not in ok_forms:
+                    continue
+                ncond = cond[:a0] + (" " if a0 and cond[a0 - 1] not in "( " else "") + f.format(E=E) + " " + cond[m.start():]
+                out.append((f"zext_form:{lab}", head + inner[:s] + ncond + inner[e:] + tail))
+    for lab, nf in out[:60]:
+        yield lab, text[:s0] + nf + text[e0 + 1:]
+
+
+TEXT_TRANSFORMS = [t_const_fix, t_void_ret, t_lit_inline, t_zext_form]   # (text, name, ctx) -> whole text
+
+
 TRANSFORMS = [t_decls, t_rename_swap, t_stmt_swap, t_commute, t_split, t_ternary,
               t_ifelse, t_loops, t_single_exit, t_not, t_dup_tail_store, t_fallthrough_label,
               t_div_hoist]
@@ -1365,6 +1865,13 @@ def candidates(text: str, name: str, ctx: dict | None = None):
                     yield lab, text[:s] + nf + text[e + 1:]
         except (ValueError, AttributeError, IndexError, re.error):
             continue
+    for t in TEXT_TRANSFORMS:
+        try:
+            for lab, nt in t(text, name, ctx):
+                if nt != text:
+                    yield lab, nt
+        except (ValueError, AttributeError, IndexError, KeyError, re.error):
+            continue
 
 # ---------------------------------------------------------------- learned order
 
@@ -1374,7 +1881,8 @@ FAMILIES = ["declswap", "declreverse", "type", "ptype", "volatile", "rename", "s
             "intcast", "split", "join", "temp", "ternary", "unternary", "ifswap", "for->while",
             "for->dowhile", "for->dowhile-nocheck", "for->goto-test", "while->for", "while->dowhile",
             "single-exit", "not->eq0", "eq0->not", "ne0->bare", "dup_tail_store", "fallthrough_label",
-            "div_hoist", "regalloc_tie", "cmp_fix", "sched_weight", "de_ifcvt", "loop_live"]
+            "div_hoist", "regalloc_tie", "cmp_fix", "sched_weight", "de_ifcvt", "loop_live",
+            "const_fix", "void_ret", "lit_inline", "zext_form"]
 
 
 # Proven by hand before they were automated (DrawRadarInfo matched with both):
@@ -1389,6 +1897,11 @@ PRIORS = {
     "sched_weight": {"attempts": 10, "improvements": 1, "matches": 0, "compiles": 0},
     "de_ifcvt": {"attempts": 10, "improvements": 1, "matches": 0, "compiles": 0},
     "loop_live": {"attempts": 20, "improvements": 1, "matches": 0, "compiles": 0},
+    # third round (WORKER_LESSONS.md): proven by hand, ctx/text-gated -> strong priors
+    "const_fix": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},    # subPrintRibbon
+    "void_ret": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},     # _SetVersion3Extent
+    "lit_inline": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},   # checkTalk
+    "zext_form": {"attempts": 30, "improvements": 1, "matches": 0, "compiles": 0},   # speculative
 }
 
 
@@ -1551,14 +2064,52 @@ def _init():
         pass
 
 
+def _overrides(unit: str, patch) -> dict | None:
+    """[(relpath, old, new)] -> try_fn overrides {file name: patched text}
+    (files under src/<unit>/ only)."""
+    if not patch:
+        return None
+    ov: dict = {}
+    for rel, old, new in patch:
+        p = ROOT / rel
+        if p.parent != ROOT / "src" / unit:
+            return None
+        t = ov.get(p.name) or p.read_text()
+        if old not in t:
+            return None
+        ov[p.name] = t.replace(old, new, 1)
+    return ov
+
+
+def apply_patch(unit: str, tu: str, patch) -> tuple[bool, str]:
+    """Apply forward-declaration patches with verified_edit (byte-identical gate)."""
+    by: dict = {}
+    for rel, old, new in patch:
+        by.setdefault(rel, []).append((old, new))
+    for rel, reps in by.items():
+        cmd = [sys.executable, "-B", str(HERE / "verified_edit.py"), "--unit", unit, "--tu", tu]
+        if rel != f"src/{unit}/{tu}.c":
+            cmd += ["--file", rel]
+        for o, n in reps:
+            cmd += ["--replace", o, n]
+        p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+        if p.returncode != 0:
+            return False, (p.stdout + p.stderr)[-800:]
+    return True, ""
+
+
 def evaluate(args):
-    unit, tu, name, text = args
+    unit, tu, name, text = args[:4]
+    patch = args[4] if len(args) > 4 else None
     import try_fn
     fd, p = tempfile.mkstemp(prefix=f"sweep_{name}_", suffix=".c")
     os.write(fd, text.encode())
     os.close(fd)
     try:
-        r = try_fn.try_function(unit, tu, name, Path(p), diff_limit=100000)
+        ov = _overrides(unit, patch)
+        if patch and ov is None:
+            return {"ok": False, "error": "patch not applicable"}
+        r = try_fn.try_function(unit, tu, name, Path(p), diff_limit=100000, overrides=ov)
     except Exception as ex:  # noqa: BLE001
         return {"ok": False, "error": str(ex)[:300]}
     finally:
@@ -1607,6 +2158,7 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
         res["error"] = "baseline does not compile"
         return res
     cur, cur_r = text, base
+    cur_patch: list = []
     seen = {hashlib.sha1(text.encode()).hexdigest()}
     # families already run to a local optimum on this exact text: only the
     # new ones get a first round (all of them again after any improvement)
@@ -1615,11 +2167,11 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
     while used < budget and not is_match(cur_r):
         by_fam: dict[str, list] = {}
         skip_fams = done_fams if cur == text else set()
-        ctx = {}
+        ctx = {"rows": cur_r.get("diff") or [], "unit": unit, "tu": tu, "patches": {}}
         shape = diff_shape(cur_r.get("diff") or [])
-        for f in ("cmp_fix", "sched_weight", "de_ifcvt", "loop_live"):
+        for f in ("cmp_fix", "sched_weight", "de_ifcvt", "loop_live", "const_fix", "zext_form"):
             if f in shape and f not in skip_fams and (not only_fams or f in only_fams):
-                ctx["cmp" if f == "cmp_fix" else f] = shape[f]
+                ctx[{"cmp_fix": "cmp", "const_fix": "const", "zext_form": "zext"}.get(f, f)] = shape[f]
                 res.setdefault("shape", {})[f] = shape[f][:3]
         if ("sched_weight" in ctx or "de_ifcvt" in ctx) and "sched_diag" not in res:
             try:                           # informational: equal-priority sched1 decisions
@@ -1646,7 +2198,7 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
             seen.add(h)
             if family(lab) in skip_fams or (only_fams and family(lab) not in only_fams):
                 continue
-            by_fam.setdefault(family(lab), []).append((lab, nt))
+            by_fam.setdefault(family(lab), []).append((lab, nt, cur_patch + ctx["patches"].get(body_sha(nt), [])))
         if not by_fam:
             break
         order = family_order(load_stats(), by_fam)
@@ -1657,10 +2209,10 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
             fams, cands = [], []          # fill a batch to keep the pool busy
             while i < len(order) and len(cands) < batch_min:
                 fams.append(order[i])
-                cands += [(order[i], lab, nt) for lab, nt in by_fam[order[i]]]
+                cands += [(order[i], lab, nt, pt) for lab, nt, pt in by_fam[order[i]]]
                 i += 1
             cands = cands[:budget - used]
-            rs = list(pool.map(evaluate, [(unit, tu, name, nt) for _, _, nt in cands]))
+            rs = list(pool.map(evaluate, [(unit, tu, name, nt, pt) for _, _, nt, pt in cands]))
             used += len(cands)
             res["cc_fail"] = res.get("cc_fail", 0) + sum(1 for r in rs if not r.get("ok"))
             for f in fams:
@@ -1671,14 +2223,14 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
                 won = (cands[bi], rs[bi])
                 break
         if won:
-            (f, lab, nt), r = won
+            (f, lab, nt, pt), r = won
             delta[f]["improvements"] += 1
             if is_match(r):
                 delta[f]["matches"] += 1
         add_stats(delta)
         if not won:
             break
-        cur, cur_r = nt, r
+        cur, cur_r, cur_patch = nt, r, pt
         res["applied"].append(f"{lab}={r['score']}")
         state.log(f"SWEEP {k} {lab} -> {r['score']} ({r.get('differing_words')}w)")
     res.update(compiles=used, end=cur_r.get("score"), diff=cur_r.get("differing_words"))
@@ -1690,12 +2242,22 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
         rec = {"score": cur_r["score"], "differing_words": cur_r.get("differing_words"),
                "target_insns": cur_r.get("target_insns"), "by": "sweep",
                "transforms": res["applied"]}
+        if cur_patch:
+            rec["src_patch"] = cur_patch       # forward declarations the body needs (void_ret)
         best_c.with_name(f"{name}.best.json").write_text(json.dumps(rec) + "\n")
     if (used < budget or is_match(cur_r)) and not only_fams:   # ran to a local optimum, not out of budget
         mark_swept(k, cur if rank(cur_r) > rank(base) else text)
+    if is_match(cur_r) and cur_patch:
+        ok, out = apply_patch(unit, tu, cur_patch)
+        res["proto_flip"] = {"patch": cur_patch, "ok": ok}
+        state.log(f"SWEEP {k} proto flip ok={ok} {cur_patch}")
+        if not ok:
+            res["proto_flip"]["tail"] = out
+            cur_r = dict(cur_r, match=False, bytes_match=False, link_check=False, match_after_link=False)
     if is_match(cur_r):
         ok, out = integrate(unit, tu, name, best_c,
-                            skip_try=not cur_r.get("match") and not cur_r.get("bytes_match"))
+                            skip_try=not cur_r.get("match") and (not cur_r.get("bytes_match")
+                                                                 or bool(cur_r.get("match_after_link"))))
         res["matched"] = ok
         if not ok:
             res["integrate_tail"] = out[-600:]
