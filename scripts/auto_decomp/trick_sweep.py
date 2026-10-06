@@ -2131,9 +2131,11 @@ def register_only(r) -> bool:
 
 
 def rank(r):
+    # a match (incl. match_after_link: lit/false-lo16 relocs only) beats any score:
+    # it often has the same pre-link score as the non-matching body it replaces
     if not r or not r.get("ok"):
-        return (-1, 0)
-    return (r["score"], -(r.get("differing_words") or 0))
+        return (0, -1, 0)
+    return (1 if is_match(r) else 0, r["score"], -(r.get("differing_words") or 0))
 
 
 def is_match(r):
