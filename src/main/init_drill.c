@@ -850,7 +850,58 @@ void DrillResetFlag(Drill *drill)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_drill", DrillHitCheck);
+int HitCheckContainerPosSize(Vector4 *pos, int except, float size);
+void HitCheckEnemy(DrillVector *pos, float size);
+typedef struct DrillHitSub2 {
+    unsigned char unmodeled_00[4];
+    signed char state;
+    unsigned char unmodeled_05[0x15b];
+} DrillHitSub2;
+typedef struct DrillHitUnit2 {
+    u32 flags;
+    unsigned char unmodeled_04[0xA0];
+    u16 serial;
+    unsigned char unmodeled_a6[0xFA];
+    DrillHitSub2 sub;
+} DrillHitUnit2;
+
+void DrillHitCheck(Drill *drill)
+{
+  DrillSave *save = &drill->save;
+  int i;
+  u16 serial;
+  unsigned long new_var;
+  DrillHitSub2 *sub;
+  i = HitCheckContainerPosSize(&drill->position.vector, drill->unmodeled_084[0x1c], *((float *) (&save->unmodeled_24[0])));
+  ;
+  if (i != (-1))
+  {
+    ((DrillHitSub2 *) ((((char *) MapUnit) + 0x1a0) + (i * 0x300)))->state = 1;
+    save->hitCount++;
+    serial = MapUnit[i].serial;
+    if (((u32) (serial - 0x7014)) < 4)
+    {
+      sefCreateEffectCf(0x6d8, 0, 0);
+      if (1)
+      {
+      }
+      return;
+    }
+    new_var = (serial + (-0x7018)) & 0xffff;
+    if (new_var < 0xc)
+    {
+      sefCreateEffectCf(0x6d9, 0, 0);
+      return;
+    }
+    new_var = 4;
+    if (((serial - 0x7024) & 0xffff) < new_var)
+    {
+      sefCreateEffectCf(0x6da, 0, 0);
+    }
+    return;
+  }
+  HitCheckEnemy(&drill->position, *((float *) (&save->unmodeled_24[0])));
+}
 
 extern int HitCheckMapUnitPosAt(void *query, void *unit);
 typedef struct DrillHitSub {

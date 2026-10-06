@@ -1564,7 +1564,59 @@ void nmlPacketAddReflRot(const NmlMaterialRenderState *material,
     s_nReflRotType = type;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddScreenClear);
+void nmlPacketAddGsFlushWide(void);
+typedef struct GsAdEntry {
+    u64 data;
+    u64 reg;
+} GsAdEntry;
+static inline void set_ad(GsTagWord *p, u64 data, u64 reg)
+{
+    p[0].d = data;
+    p[1].d = reg;
+}
+
+void nmlPacketAddScreenClear(void)
+{
+    GsTagWord *ad0;
+    GsTagWord *ad1;
+    GsTagWord *ad2;
+    GsTagWord *ad3;
+    GsTagWord *ad4;
+    GsTagWord *ad5;
+    GsTagWord *ad6;
+    GsTagWord *ad7;
+    GsAdEntry *ad;
+    s16 *r = (s16 *)&sRender;
+    int i;
+    u32 zbuf;
+
+    zbuf = sRender.zbp | 0x1000000;
+    ad0 = (GsTagWord *)0x70000000;
+    set_ad(ad0, 0, 0x4A);
+    ad1 = (GsTagWord *)0x70000010;
+    set_ad(ad1, zbuf, 0x4E);
+    ad2 = (GsTagWord *)0x70000020;
+    set_ad(ad2, 0x30000, 0x47);
+    ad3 = (GsTagWord *)0x70000030;
+    set_ad(ad3, ((u16 *)r)[16] | ((u64)(r[2] / 64) << 16) | ((u64)r[1] << 24), 0x4C);
+    ad4 = (GsTagWord *)0x70000040;
+    set_ad(ad4, 0x3F80000000000000, 1);
+    ad5 = (GsTagWord *)0x70000050;
+    set_ad(ad5, 6, 0);
+    ad6 = (GsTagWord *)0x70000060;
+    set_ad(ad6, ((u64)(0x800 - r[2]) << 4) | ((u64)(0x800 - r[3]) << 20), 4);
+    ad7 = (GsTagWord *)0x70000070;
+    set_ad(ad7, ((u64)(r[2] + 0x800) << 4) | ((u64)(r[3] + 0x800) << 20), 4);
+
+    g_nGsEntry = 0;
+    ad = (GsAdEntry *)0x70000000;
+    i = 7;
+    do {
+        packet_gs_entry64((u32)ad->reg, &ad->data);
+        ad++;
+    } while (--i >= 0);
+    nmlPacketAddGsFlushWide();
+}
 
 extern int g_nGsEntry;
 
