@@ -42,7 +42,10 @@ Before the permuter (cheapest first):
                   early if-conversion), loop_live (address/constant inits
                   reordered: loop-preheader tie), const_fix (same insn,
                   different immediate: constant copied from a sibling),
-                  zext_form (target keeps andi 0xffff + sltiu); text-gated
+                  zext_form (target keeps andi 0xffff + sltiu), field_alias
+                  (reorder of a struct store vs a same-width global load),
+                  volatile_mask (epilogue ld sN moved among stores),
+                  loop_form (move; bnez; andi loop bottom); text-gated
                   (trick_sweep.text_shape): void_ret (int falling off its end
                   whose target returns nothing, or the reverse), lit_inline
                   (extern of a .lit4/.lit8 data symbol: use the literal; a

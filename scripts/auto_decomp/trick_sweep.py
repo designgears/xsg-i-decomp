@@ -938,7 +938,10 @@ def diff_shape(rows) -> dict:
       de_ifcvt     a move next to movz/movn (early if-conversion: sched2 luid tie)
       loop_live    only address/constant inits reordered (loop-preheader tie)
       const_fix    same insn, different immediate (wrong constant copied from a sibling)
-      zext_form    target keeps andi 0xffff + sltiu that our compare lost"""
+      zext_form    target keeps andi 0xffff + sltiu that our compare lost
+      field_alias  pure reorder moving a non-sp sw/sh/sb + a same-width global load
+      volatile_mask only an epilogue ld sN/ra moved among a run of stores
+      loop_form    target `move; b(n)ez; andi` loop bottom where we have `andi; b(n)ez`"""
     tags: dict = {}
     cp = const_pairs(rows)
     if cp:
@@ -946,6 +949,11 @@ def diff_shape(rows) -> dict:
     zx = zext_shape(rows)
     if zx:
         tags["zext_form"] = zx
+    for f, g in (("field_alias", field_alias_shape), ("volatile_mask", volatile_mask_shape),
+                 ("loop_form", loop_form_shape)):
+        v = g(rows)
+        if v:
+            tags[f] = v
     cm = cmp_mismatch(rows)
     if cm:
         tags["cmp_fix"] = cm
@@ -1848,13 +1856,263 @@ def t_zext_form(text, name, ctx=None):
         yield lab, text[:s0] + nf + text[e0 + 1:]
 
 
+# ---- fourth round: field_alias / volatile_mask / loop_form -----------------
+
+_LOAD_W = {"sw": "lw", "sh": "lh", "sb": "lb", "sd": "ld"}
+
+
+def field_alias_shape(rows) -> list[str]:
+    """Pure reorder inside the diff that moves a sw/sh/sb through a non-sp
+    base while the function also loads a global (relocated load) of the same
+    width (cmdCamLock: int field stores aliasing `int camMode`)."""
+    mv = moved_insns(rows)
+    if not mv:
+        return []
+    st = []
+    for x in mv:
+        m, ops, _ = _insn_ops(x)
+        if m in ("sw", "sh", "sb") and ops and not re.search(r"\((sp|fp)\)", x):
+            st.append(m)
+    if not st:
+        return []
+    tcol = [a for a, _, _ in diff_rows(rows) if a]
+    out = []
+    for m in dict.fromkeys(st):
+        ld = _LOAD_W[m]
+        if any(re.match(rf"^{ld}u?\s", a) and "[" in a for a in tcol):
+            out.append(m)
+    return out
+
+
+def volatile_mask_shape(rows) -> list[str]:
+    """Only an epilogue restore (ld/lw sN|ra|fp off sp) moved, inside a run of
+    stores (xglRenderClearEnvInit: volatile stores chained by output deps let
+    the independent `ld s1` jump between them)."""
+    mv = moved_insns(rows)
+    if not mv or len(mv) != 1 or not re.match(r"^(ld|lw|lq)\s+(s\d|ra|fp),-?\d+\(sp\)", mv[0]):
+        return []
+    win = diff_window(rows, pad=3)
+    if sum(1 for x in win if STORE_RE.match(_mn(x)) and "(sp)" not in x) < 2:
+        return []
+    return mv
+
+
+def loop_form_shape(rows) -> list[dict]:
+    """Target loop bottom `move rX,rY; b(n)ez rX; andi rX,rX,mask` (the exit
+    test duplicated by jump.c after a while loop is rotated) where we have
+    `andi; b(n)ez` (UmlTest)."""
+    dr = diff_rows(rows)
+    out = []
+    for i in range(len(dr) - 2):
+        a0, a1, a2 = dr[i][0], dr[i + 1][0], dr[i + 2][0]
+        m0, o0, _ = _insn_ops(a0)
+        m1, o1, _ = _insn_ops(a1)
+        m2, o2, _ = _insn_ops(a2)
+        if (m0 == "move" and m1 in ("bnez", "beqz", "bnezl", "beqzl") and m2 == "andi" and len(o0) == 2
+                and o1 and o1[0] == o0[0] and len(o2) == 3 and o2[0] == o2[1] == o0[0]
+                and any(m != " " for _, m, _ in dr[i:i + 3])):
+            near = [c for _, _, c in dr[max(0, i - 1):i + 3] if c]
+            if any(_mn(c) == "andi" for c in near):
+                out.append({"reg": o0[0], "mask": o2[2]})
+    return out
+
+
+def _stmt_lhs(ln: str):
+    """(indent, lhs, rhs) of a plain `lhs = rhs;` statement, else None."""
+    m = re.match(r"^(\s*)([^=;{}]+?)\s*(?<![=!<>+\-*/|&^%])=(?!=)\s*(.+?);\s*$", ln)
+    if not m or not _simple_stmt(ln):
+        return None
+    return m.group(1), m.group(2).strip(), m.group(3).strip()
+
+
+def t_field_alias(fn, ctx=None):
+    """Struct field stores scheduled too early because an int store may alias
+    a global int loaded right after (sched2 memory dep store -> global load ->
+    call): store the field through a type out of int's alias set, one field
+    at a time then in pairs. Two spellings: a cast lvalue `*(void **)&lhs`
+    and a one-field local view struct (keeps MEM_IN_STRUCT_P)."""
+    fa = (ctx or {}).get("field_alias")
+    if not fa or "sw" not in fa:
+        return
+    head, inner, tail = _split_fn(fn)
+    lines = inner.split("\n")
+    idx = []
+    for i, ln in enumerate(lines):
+        p = _stmt_lhs(ln)
+        if p and re.search(r"->|\.\s*[A-Za-z_]", p[1]) and not p[1].startswith("*") \
+                and not re.search(r"\b(float|double)\b|\d\.\d|\d+\.\d*f\b", p[2]):
+            idx.append(i)
+    forms = [("cast", "{i}*(void **)&({l}) = (void *)({r});"),
+             ("view", "{i}((struct {{ void *v; }} *)&({l}))->v = (void *)({r});")]
+    sets = [[i] for i in idx] + [[a, b] for k, a in enumerate(idx) for b in idx[k + 1:]][:40]
+    if len(idx) > 2:
+        sets.append(idx)
+    for fl, f in forms:
+        for s in sets:
+            nl = list(lines)
+            for i in s:
+                ind, l, r = _stmt_lhs(nl[i])
+                nl[i] = f.format(i=ind, l=l, r=r)
+            yield f"field_alias:{fl}:" + "+".join(str(i) for i in s), head + "\n".join(nl) + tail
+
+
+def _ptr_base_type(fn: str, var: str) -> str | None:
+    m = re.search(r"(?:^|[;{(,\n])\s*((?:const\s+|volatile\s+|struct\s+|unsigned\s+|signed\s+)*\w+)\s*"
+                  r"((?:volatile\s+)?)\*\s*(?:volatile\s+)?" + re.escape(var) + r"\s*[;,=)]", fn)
+    if not m:
+        return None
+    t = re.sub(r"\bvolatile\s+", "", m.group(1)).strip()
+    return t
+
+
+def t_volatile_mask(fn, ctx=None):
+    """Per-store volatile mask over the trailing run of k <= 8 stores: sched2's
+    rank_for_schedule prefers an insn independent of the last one scheduled
+    over one with an output/anti dep, so which stores are volatile decides
+    where the epilogue `ld sN` lands. Masks with two consecutive volatile
+    stores are pruned; each kept mask is also tried with one adjacent swap."""
+    if not (ctx or {}).get("volatile_mask"):
+        return
+    head, inner, tail = _split_fn(fn)
+    lines = inner.split("\n")
+    j = len(lines) - 1
+    while j >= 0 and (not lines[j].strip() or re.match(r"\s*return\s*;", lines[j])):
+        j -= 1
+    run = []
+    while j >= 0 and len(run) < 8:
+        p = _stmt_lhs(lines[j])
+        if not p:
+            break
+        m = re.match(r"^(\w+)\s*(->|\.)\s*(.+)$", p[1])
+        if not m:
+            break
+        run.insert(0, (j, p, m))
+        j -= 1
+    if len(run) < 2:
+        return
+    def form(p, m, vol):
+        ind, l, r = p
+        b, op, rest = m.groups()
+        if op == "->":
+            t = _ptr_base_type(fn, b)
+            ty = t if t else f"__typeof__(*{b})"
+            return f"{ind}(({'volatile ' if vol else ''}{ty} *){b})->{rest} = {r};"
+        return f"{ind}(({'volatile ' if vol else ''}__typeof__({b}) *)&{b})->{rest} = {r};"
+    k = len(run)
+    masks = [mk for mk in range(1 << k) if not (mk & (mk >> 1))]
+    outs = []
+    for mk in masks:
+        nl = list(lines)
+        for q, (i, p, m) in enumerate(run):
+            nl[i] = form(p, m, bool(mk >> q & 1))
+        outs.append((f"volatile_mask:{mk:0{k}b}", nl))
+    for lab, nl in outs:
+        yield lab, head + "\n".join(nl) + tail
+    for lab, nl in outs:
+        for q in range(k - 1):
+            a, b = run[q][0], run[q + 1][0]
+            sl = list(nl)
+            sl[a], sl[b] = sl[b], sl[a]
+            yield f"{lab}:swap{q}", head + "\n".join(sl) + tail
+
+
+def _paren_after(s: str, i: int):
+    """(inner, end) of the balanced (...) starting at or after s[i]."""
+    o = s.index("(", i)
+    c = match_brace(s, o)
+    return s[o + 1:c], c
+
+
+def t_loop_form(fn, ctx=None):
+    """`goto L; do { B1 L: B2 } while (C);` -> rotated while forms so jump.c
+    duplicates the exit test at the loop bottom (UmlTest: target keeps
+    `move; bnez; andi` where the goto-entered do-while folds the zero-extend):
+    `B2; while (C) {B1 B2}`, `for (B2; C; B2) {B1}`, `while ((B2, C)) {B1}`,
+    and the while form with an extra label / goto inside the body (stops
+    loop.c invariant hoisting). `for(;;){ B2 if (!(C)) break; B1 }` likewise."""
+    if not (ctx or {}).get("loop_form"):
+        return
+    head, inner, tail = _split_fn(fn)
+    for m in re.finditer(r"\bgoto\s+(\w+)\s*;\s*do\s*\{", inner):
+        lab = m.group(1)
+        ob = m.end() - 1
+        cb = match_brace(inner, ob)
+        if cb < 0:
+            continue
+        wm = re.match(r"\s*while\s*", inner[cb + 1:])
+        if not wm:
+            continue
+        cond, ce = _paren_after(inner, cb + 1 + wm.end())
+        sm = re.match(r"\s*;", inner[ce + 1:])
+        if not sm:
+            continue
+        end = ce + 1 + sm.end()
+        body = inner[ob + 1:cb]
+        lm = None
+        for mm in re.finditer(r"(?m)^\s*" + re.escape(lab) + r"\s*:\s*;?", body):
+            pre = body[:mm.start()]
+            if pre.count("{") == pre.count("}"):
+                lm = mm
+        if not lm:
+            continue
+        b1 = body[:lm.start()].rstrip()
+        b2 = body[lm.end():].strip()
+        b2s = [x.strip() for x in b2.split(";") if x.strip()]
+        if any("{" in x or "}" in x or re.match(r"(if|for|while|return|goto|break|continue)\b", x) for x in b2s):
+            continue
+        b2txt = "".join(x + "; " for x in b2s)
+        comma = ", ".join(b2s)
+        pre_s, post_s = inner[:m.start()], inner[end:]
+        ind = re.search(r"[ \t]*$", pre_s).group(0)
+        vs = [("while", f"{b2txt}while ({cond}) {{{b1}\n{ind}  {b2txt}\n{ind}}}"),
+              ("while-label", f"{b2txt}while ({cond}) {{\n{ind}  {lab}_top: ;{b1}\n{ind}  {b2txt}\n{ind}}}"),
+              ("while-goto", f"{b2txt}while ({cond}) {{{b1}\n{ind}  goto {lab}_next;\n{ind}  {lab}_next:\n{ind}  {b2txt}\n{ind}}}"),
+              ("while-midlabel", f"{b2txt}while ({cond}) {{{b1}\n{ind}  {lab}: ;\n{ind}  {b2txt}\n{ind}}}"),
+              ("for", f"for ({comma}; {cond}; {comma}) {{{b1}\n{ind}}}"),
+              ("goto-for1", f"goto {lab}; for (;;) {{{b1}\n{ind}  {lab}: ; {b2txt}if (!({cond})) break;\n{ind}}}"),
+              ("if-do", f"{b2txt}if ({cond}) do {{{b1}\n{ind}  {b2txt}\n{ind}}} while ({cond});"),
+              ("for1", f"for (;;) {{ {b2txt}if (!({cond})) break;{b1}\n{ind}}}")]
+        if b2s:
+            vs.append(("while-comma", f"while (({comma}, ({cond}))) {{{b1}\n{ind}}}"))
+            vs.append(("for-nostep", f"for ({comma}; {cond};) {{{b1}\n{ind}  {b2txt}\n{ind}}}"))
+        else:
+            vs.append(("for-empty", f"for (; {cond};) {{{b1}\n{ind}}}"))
+        for vl, v in vs:
+            yield f"loop_form:{vl}", head + pre_s + v + post_s + tail
+    # for(;;) { B2 if (!(C)) break; B1 }
+    for m in re.finditer(r"\b(?:for\s*\(\s*;\s*;\s*\)|while\s*\(\s*1\s*\))\s*\{", inner):
+        ob = m.end() - 1
+        cb = match_brace(inner, ob)
+        if cb < 0:
+            continue
+        body = inner[ob + 1:cb]
+        bm = re.search(r"\bif\s*\(\s*!\s*", body)
+        if not bm:
+            continue
+        try:
+            nc, ne = _paren_after(body, bm.start() + 2)
+        except ValueError:
+            continue
+        cond = re.sub(r"^\s*!\s*", "", nc).strip()
+        rest = body[ne + 1:]
+        rm = re.match(r"\s*(?:\{\s*break\s*;\s*\}|break\s*;)", rest)
+        pre = body[:bm.start()]
+        if not rm or pre.count("{") != pre.count("}") or re.search(r"\b(if|for|while|do)\b", pre):
+            continue
+        b2 = pre.strip()
+        b1 = rest[rm.end():].rstrip()
+        yield "loop_form:for1->while", head + inner[:m.start()] + \
+            f"{b2} while ({cond}) {{{b1}\n {b2}\n}}" + inner[cb + 1:] + tail
+
+
 TEXT_TRANSFORMS = [t_const_fix, t_void_ret, t_lit_inline, t_zext_form]   # (text, name, ctx) -> whole text
 
 
 TRANSFORMS = [t_decls, t_rename_swap, t_stmt_swap, t_commute, t_split, t_ternary,
               t_ifelse, t_loops, t_single_exit, t_not, t_dup_tail_store, t_fallthrough_label,
               t_div_hoist]
-CTX_TRANSFORMS = [t_regalloc_tie, t_cmp_fix, t_sched_weight, t_de_ifcvt, t_loop_live]  # need ctx (diff shape / dumps)
+CTX_TRANSFORMS = [t_regalloc_tie, t_cmp_fix, t_sched_weight, t_de_ifcvt, t_loop_live,
+                  t_field_alias, t_volatile_mask, t_loop_form]  # need ctx (diff shape / dumps)
 
 
 def candidates(text: str, name: str, ctx: dict | None = None):
@@ -1887,7 +2145,8 @@ FAMILIES = ["declswap", "declreverse", "type", "ptype", "volatile", "rename", "s
             "for->dowhile", "for->dowhile-nocheck", "for->goto-test", "while->for", "while->dowhile",
             "single-exit", "not->eq0", "eq0->not", "ne0->bare", "dup_tail_store", "fallthrough_label",
             "div_hoist", "regalloc_tie", "cmp_fix", "sched_weight", "de_ifcvt", "loop_live",
-            "const_fix", "void_ret", "lit_inline", "zext_form"]
+            "const_fix", "void_ret", "lit_inline", "zext_form", "field_alias", "volatile_mask",
+            "loop_form"]
 
 
 # Proven by hand before they were automated (DrawRadarInfo matched with both):
@@ -1907,6 +2166,10 @@ PRIORS = {
     "void_ret": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},     # _SetVersion3Extent
     "lit_inline": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},   # checkTalk
     "zext_form": {"attempts": 30, "improvements": 1, "matches": 0, "compiles": 0},   # speculative
+    # fourth round: field_alias proven by hand (cmdCamLock); the other two mechanism-confirmed
+    "field_alias": {"attempts": 2, "improvements": 2, "matches": 1, "compiles": 0},
+    "volatile_mask": {"attempts": 20, "improvements": 1, "matches": 0, "compiles": 0},  # xglRenderClearEnvInit
+    "loop_form": {"attempts": 20, "improvements": 1, "matches": 0, "compiles": 0},      # UmlTest
 }
 
 
@@ -2182,7 +2445,8 @@ def sweep_one(c: dict, pool, budget: int, only_new: bool = True, only_fams=None)
         skip_fams = done_fams if cur == text else set()
         ctx = {"rows": cur_r.get("diff") or [], "unit": unit, "tu": tu, "patches": {}}
         shape = diff_shape(cur_r.get("diff") or [])
-        for f in ("cmp_fix", "sched_weight", "de_ifcvt", "loop_live", "const_fix", "zext_form"):
+        for f in ("cmp_fix", "sched_weight", "de_ifcvt", "loop_live", "const_fix", "zext_form",
+                  "field_alias", "volatile_mask", "loop_form"):
             if f in shape and f not in skip_fams and (not only_fams or f in only_fams):
                 ctx[{"cmp_fix": "cmp", "const_fix": "const", "zext_form": "zext"}.get(f, f)] = shape[f]
                 res.setdefault("shape", {})[f] = shape[f][:3]
