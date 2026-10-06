@@ -231,6 +231,12 @@ def seed(unit: str, tu: str, name: str, asm: Path, body: Path, write_body: bool)
     if write_body and not body.exists():
         body.write_text(head + d["c"])
         res["seeded_body"] = True
+        try:   # make the fresh draft compile (draft_fix.py; bounded, never fatal)
+            import draft_fix
+            fx = draft_fix.run(unit, tu, name, body, write=True, timeout=60)
+            res["draft_fix"] = {k: fx.get(k) for k in ("ok", "errors", "initial_errors", "score", "skipped")}
+        except Exception as e:  # noqa: BLE001
+            res["draft_fix"] = {"error": str(e)[-200:]}
     return res
 
 

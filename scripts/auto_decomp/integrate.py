@@ -283,6 +283,11 @@ def integrate(root: Path, unit: str, tu: str, name: str, body: Path,
             state["last_success"] = {"key": k, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             save_state(state)
             log(f"MATCH {k}")
+            if os.environ.get("AUTO_RETRY") != "0":   # free re-tries of unblocked near-misses
+                subprocess.Popen([sys.executable, "-B", str(Path(__file__).with_name("retry_best.py")),
+                                  "--after", k], cwd=root, start_new_session=True,
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
             return {**report, "ok": True, "matched": True}
 
         _atomic_write(src, original)
