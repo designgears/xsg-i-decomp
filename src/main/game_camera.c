@@ -90,6 +90,8 @@ void GameCameraStateSave(void) {
     *(int *)(q + 0x230) = *(int *)(q + 0x28);
 }
 
+extern float HokanNow[4];
+
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", GameCameraStateRestore);
 
 struct CameraArea;
@@ -468,7 +470,67 @@ static void CalcCameraPos(unsigned char *camera)
 
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", CameraType0);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_camera", CameraType1Core);
+extern float D_004D7BF0;
+typedef struct CameraType1CoreCam {
+    unsigned char unmodeled_00[0x30];
+    float angle[4];  /* +0x30 */
+    float adjust[3]; /* +0x40 */
+    int flags;       /* +0x4C */
+} CameraType1CoreCam;
+typedef struct CameraType1CoreState {
+    unsigned char unmodeled_00[0x40];
+    float vec40[2];                          /* +0x40 */
+    float f48;                               /* +0x48 */
+    unsigned char unmodeled_4c[0x90 - 0x4c]; /* +0x4C */
+    float vec90[2];                          /* +0x90 */
+    float f98;                               /* +0x98 */
+} CameraType1CoreState;
+typedef struct CT1Scr { void *a; int b; void *c; Vector4 *st; } CT1Scr;
+#define st2 st
+
+static void CameraType1Core(void)
+{
+    unsigned char *scratch = (unsigned char *)0x70000000;
+
+    GetCenter((Vector4 *)0x70000020, *(void **)(scratch + 8));
+    if (((CameraType1CoreCam *)*(void **)0x70000000)->flags != 0) {
+        if (((CameraType1CoreCam *)*(void **)0x70000000)->flags & 1) {
+            *(float *)0x70000020 = ((CameraType1CoreCam *)*(void **)0x70000000)->adjust[0];
+        }
+        if (((CameraType1CoreCam *)*(void **)0x70000000)->flags & 2) {
+            *(float *)0x70000024 = ((CameraType1CoreCam *)*(void **)0x70000000)->adjust[1];
+        }
+        if (((CameraType1CoreCam *)*(void **)0x70000000)->flags & 4) {
+            *(float *)0x70000028 = ((CameraType1CoreCam *)*(void **)0x70000000)->adjust[2];
+        }
+    }
+    CalcLookAt((CalcLookAtCamera *)0x70000000);
+    GetCameraPos((float *)0x70000030, CamLookAtPos,
+                 ((CameraType1CoreCam *)*(void **)scratch)->angle);
+    if (((CameraType1CoreCam *)*(void **)scratch)->flags != 0) {
+        if (((CameraType1CoreCam *)*(void **)scratch)->flags & 1) {
+            *(float *)0x70000030 = ((CameraType1CoreCam *)*(void **)scratch)->adjust[0];
+        }
+        if (((CameraType1CoreCam *)*(void **)scratch)->flags & 2) {
+            *(float *)0x70000034 = ((CameraType1CoreCam *)*(void **)scratch)->adjust[1];
+        }
+        if (((CameraType1CoreCam *)*(void **)scratch)->flags & 4) {
+            *(float *)0x70000038 = ((CameraType1CoreCam *)*(void **)scratch)->adjust[2];
+        }
+    }
+    CalcCameraPos((unsigned char *)0x70000000);
+    MoveHokan((void *)0x70000000, HokanNow[1], (Vector4 *)CamLookAtPos,
+              (Vector4 *)((unsigned char *)((CT1Scr *)scratch)->st + 0x90),
+              (float *)((unsigned char *)HokanNow + 0xC));
+    MoveHokan((void *)0x70000000, HokanNow[0], (Vector4 *)CamPosPos,
+              (Vector4 *)((unsigned char *)((CT1Scr *)scratch)->st + 0x40),
+              (float *)((unsigned char *)HokanNow + 8));
+    if (((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0 <
+        ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98) {
+        ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98 =
+            ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game_camera", CameraType1);
 

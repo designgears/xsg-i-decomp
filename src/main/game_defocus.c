@@ -47,7 +47,81 @@ static u64 GetTex0(int type, int tex_cc)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_defocus", DefocusMainType01);
+extern void sceVif1PkCnt(XglPacket *packet, int count);
+extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
+extern u64 Head_0[12];
+typedef struct {
+    u32 header[3];
+    u32 gif_tag;
+    u32 vif_command;
+    u32 gs_registers;
+    u32 register_count;
+    u32 header_padding;
+    u32 red;
+    u32 green;
+    u32 blue;
+    u32 alpha;
+    u32 u0;
+    u32 v0;
+    u32 pad38[2];
+    u32 left;
+    u32 top;
+    u32 z0;
+    u32 flags0;
+    u32 u1;
+    u32 v1;
+    u32 pad58[2];
+    u32 right;
+    u32 bottom;
+    u32 z1;
+    u32 flags1;
+} DefocusType01Packet;
+
+static void DefocusMainType01(DefocusLayer *layer, XglPacket *packet)
+{
+    int i;
+    int z;
+    u8 *color;
+    DefocusType01Packet *draw;
+
+    i = 0;
+    draw = (DefocusType01Packet *)0x70000000;
+    Head_0[10] = GetTex0(layer->parameters[0], 0);
+    draw->gif_tag = 0x51000006;
+    draw->vif_command = 0x8001;
+    draw->gs_registers = 0x50AB4000;
+    draw->register_count = 0x53531;
+    draw->header[0] = 0;
+    draw->header[1] = 0;
+    draw->header[2] = 0;
+    draw->header_padding = 0;
+    color = (u8 *)&layer->parameters[3];
+    draw->red = color[0];
+    draw->green = color[1];
+    draw->blue = color[2];
+    draw->alpha = color[3];
+    draw->u1 = 0x2000;
+    draw->u0 = 0;
+    draw->left = (layer->parameters[4] << 4) + 0x6FF8;
+    draw->right = ((layer->parameters[4] + layer->parameters[6]) << 4) + 0x8FF8;
+    draw->v1 = 0x1C00;
+    draw->v0 = 0;
+    draw->top = (layer->parameters[5] << 4) + 0x71F7;
+    draw->bottom = ((layer->parameters[5] + layer->parameters[7]) << 4) + 0x8DF7;
+    z = layer->parameters[2];
+    draw->z1 = z;
+    draw->z0 = z;
+    draw->flags1 = 0;
+    draw->flags0 = 0;
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkAddDataN(packet, Head_0, 0x18);
+    if (layer->parameters[1] != 0) {
+        do {
+            i++;
+            sceVif1PkAddDataN(packet, (void *)0x70000000, 0x1C);
+        } while ((u32)i < (u32)layer->parameters[1]);
+    }
+}
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
 extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
@@ -323,15 +397,17 @@ INCLUDE_ASM("asm/main/nonmatchings/game_defocus", DefocusMainType07);
 
 INCLUDE_ASM("asm/main/nonmatchings/game_defocus", DefocusMainType08);
 
-INCLUDE_ASM("asm/main/nonmatchings/game_defocus", DefocusMainType09);
-
 typedef struct {
     u64 flags;
     u8 unmodeled_08[0x40];
     u64 unk48;
 } DefocusDispEnv;
+
 extern DefocusDispEnv DispEnv;
+
 extern int ScanLineInterpolate;
+
+INCLUDE_ASM("asm/main/nonmatchings/game_defocus", DefocusMainType09);
 
 static void DefocusMainType09Final(DefocusLayer *layer)
 {

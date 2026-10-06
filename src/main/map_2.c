@@ -34,7 +34,112 @@ int MAP_loadUnitResource(MapUnitSlot *unit, int resource_id)
     return MDL_create(&unit->model_state, model);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/map_2", MAP_initUnit);
+typedef struct MapUnitInitView {
+    int flags;          /* 0x00 */
+    void *update;       /* 0x04 */
+    int unk8;           /* 0x08 */
+    void *typeUpdate;   /* 0x0C */
+    int unk10;
+    int unk14;
+    int unk18;
+    float unk1C;
+    char pad20[0x10];
+    float unk30;
+    float unk34;
+    float unk38;
+    float unk3C;
+    char pad40[0x64];
+    short serial;       /* 0xA4 */
+    short unkA6;
+    char padA8[0x28];
+    int unkD0;
+    void *resource_model;
+    float unkD8[2];
+    void *model;
+    int resource_status;
+    float unkE8[3];
+    char padF4[8];
+    int unkFC;
+    char pad100[0x120];
+    int unk220;
+    int unk224;
+    int unk228;
+    float unk22C;
+    int pad230;
+    int unk234;
+    int unk238;
+    float unk23C;
+    void *model_state;
+    char pad244[0x9C];
+    int unk2E0;
+    int unk2E4;
+    int unk2E8;
+    int unk2EC;
+    char pad2F0[0x10];
+} MapUnitInitView;
+
+void MAP_initUnit(void)
+{
+    MapUnitInitView *unit = (MapUnitInitView *)MapUnit;
+    int i;
+    int j;
+    float *w;
+    char *p8;
+
+    for (i = 0; i < 0x40; i++, unit++) {
+        unit->flags = 0;
+        unit->serial = -1;
+        unit->update = 0;
+        unit->unk8 = 0;
+        p8 = (char *)&unit->unk8;
+        unit->typeUpdate = 0;
+        unit->resource_model = 0;
+        unit->unkD0 = 0;
+        unit->unk30 = 1.0f;
+        unit->unk34 = 1.0f;
+        unit->unk38 = 1.0f;
+        unit->unk3C = 1.0f;
+        unit->unk10 = 0;
+        unit->unk14 = 0;
+        unit->unk18 = 0;
+        unit->unk1C = 1.0f;
+        unit->unk220 = 0;
+        unit->unk224 = 0;
+        unit->unk228 = 0;
+        unit->unk22C = 1.0f;
+        unit->unk2E4 = 0;
+        unit->unk2E8 = 0;
+        unit->unk234 = 0;
+        unit->unk238 = 0x10;
+        unit->unk2E0 = 0;
+        unit->unk23C = 0.5f;
+        unit->unk2EC = 0;
+        unit->unkA6 = 0;
+        j = 1; w = &unit->unkD8[1];
+        goto L1;
+        while (j >= 0) {
+        L1:
+            *w-- = 0;
+            j--;
+        }
+        j = 1; w = (float *)&unit->resource_status;
+        goto L2;
+        while (j >= 0) {
+        L2:
+            *w-- = 0;
+            j--;
+        }
+        w = (float *)(p8 + 0xE8); j = 2;
+        goto L3;
+        while (j >= 0) {
+        L3:
+            *w-- = 0;
+            j--;
+        }
+        unit->unkFC = 0;
+        unit->model_state = 0;
+    }
+}
 
 void unit6003_update(MapUnitSlot *unit);
 

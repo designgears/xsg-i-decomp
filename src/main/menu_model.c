@@ -319,7 +319,65 @@ void MenuModelResourceCancel(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_model", MenuModelResourceCancel3);
+typedef struct {
+    unsigned char unmodeled_00[0xC];
+    unsigned char used; /* +0xC */
+    unsigned char unmodeled_0D;
+    unsigned short id; /* +0xE */
+    unsigned char unmodeled_10[0xC];
+} MenuModelMemEntryView;
+
+void MenuModelResourceCancel3(MenuModelUnit *unit)
+{
+    int ids[4];
+    int n;
+    int i;
+    int k;
+    int j;
+    int j2;
+
+    if (unit == 0) {
+        return;
+    }
+    ids[0] = *(unsigned short *)(unit->unmodeled_18 + 2);
+    n = 1;
+    for (j = 0; j < 3; j++) {
+        if (unit->weapon[j] != 0) {
+            ids[n++] = *(unsigned short *)((char *)unit->weapon[j] + 0x1A);
+        }
+    }
+    for (i = 0; i < n; i++) {
+        int id = ids[i];
+                for (j = 1; j < 16; j++) {
+            if ((unsigned short)RS.entries[j].id == id) {
+                RS.entries[j].id = 0;
+                if (RS.entries[j].a != 0) {
+                    *(int *)RS.entries[j].a = -1;
+                }
+                RS.entries[j].a = 0;
+                RS.entries[j].b = 0;
+            }
+        }
+    }
+    if (unit->unusedByCreateInit3 == 0) {
+        MenuModelMemEntryView *mem = (MenuModelMemEntryView *)&MenuModelMemoryState;
+        j = 0;
+        do {
+            if (unit->weapon[j] != 0) {
+                i = 0;
+                do {
+                    if (mem[i].id == *(unsigned short *)((char *)unit->weapon[j] + 0x1A)) {
+                        mem[i].used = 0;
+                        mem[i].id = 0;
+                        break;
+                    }
+                    i++;
+                } while (i < 16);
+            }
+            j++;
+        } while (j < 3);
+    }
+}
 
 void MenuModelResourceCancel2(MenuModelUnit *unit)
 {

@@ -1741,7 +1741,102 @@ int calcCrit(ObjectTask *self, CalcCritArg *arg, unsigned int *out, int *dmg)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcSpec);
+int calcSpec(ObjectTask *self, CalcHitDmgArg *arg, int *mode, int *dmg)
+{
+    int kind;
+    int sub;
+    int ret;
+    unsigned char *tec;
+    unsigned short flags;
+    unsigned short up1a;
+    int def;
+    int atk;
+    int pct;
+
+    ret = 0;
+    tec = (unsigned char *)dataTecGet(arg->unk0);
+    flags = *(unsigned short *)((char *)calcUPGet(arg->unit) + 0x1C);
+    up1a = *(unsigned short *)((char *)calcUPGet(arg->unit) + 0x1A);
+    kind = *mode & 0xFF;
+    sub = (*mode >> 8) & 0xFF;
+    if (flags & 0x200) {
+        *mode = calcRevHit(*mode);
+    }
+    if (kind != 1 && kind != 3) {
+        return 0;
+    }
+    if ((flags & 0x4000) && tec[8] == 2 || (flags & 0x2000) && tec[9] == 2
+        || (flags & 0x1000) && tec[10] == 2) {
+        printf("** Spec: effect(info)\n");
+        *dmg = *dmg / 2;
+    }
+    def = up1a;
+    atk = calcAtrChg(self, *(unsigned short *)(tec + 0x12)) & 0x1F;
+    if (calcStatGet(arg->unit, 6, 0x1F) != 0) {
+        def = def | calcStatGet(arg->unit, 6, 0x1F) | 0x2100;
+    }
+    if (def & atk) {
+        printf("** Spec: atk=%X def=%X\n", atk, def);
+        if (def & 0x4000) {
+            printf("** Spec: effect(ABSB)\n");
+            if (!(def & 0x800)) {
+                if (def & 0x400) {
+                    *dmg = *dmg / 4;
+                } else if (def & 0x200) {
+                    *dmg = *dmg / 2;
+                } else if (def & 0x100) {
+                    *dmg = *dmg / 4 * 3;
+                } else {
+                    printf("** calcSpec err SPEC_ABSB\n");
+                }
+            }
+            sub |= 0x10;
+            if (kind == 1) {
+                *mode = (*mode & 0xFF00) | 2;
+                goto done;
+            }
+            ret = 1;
+            if (kind == 3) {
+                *mode = (*mode & 0xFF00) | 4;
+            }
+        } else if (def & 0x2000) {
+            printf("** Spec: effect(DEF)\n");
+            if (def & 0x800) {
+                *dmg = 0;
+            } else if (def & 0x400) {
+                *dmg = *dmg / 4;
+            } else if (def & 0x200) {
+                *dmg = *dmg / 2;
+            } else if (def & 0x100) {
+                *dmg = *dmg / 4 * 3;
+            } else {
+                printf("** calcSpec err SPEC_DEF\n");
+            }
+            sub |= 0x20;
+done:
+            ret = 1;
+        } else {
+            goto done;
+        }
+    }
+    *mode |= sub << 8;
+    pct = calcSkill(arg->unit, 0x2000, 0x8000);
+    if (pct != 0) {
+        ret = 1;
+        *dmg = *dmg - *dmg * pct / 100;
+        printf("** Spec: skill(ALL)\n");
+    }
+    pct = calcSkill(arg->unit, 0x2000, atk << 8);
+    if (pct != 0) {
+        ret = 1;
+        *dmg = *dmg - *dmg * pct / 100;
+        printf("** Spec: skill(%X)\n", atk);
+    }
+    if (*dmg < 0) {
+        *dmg = 0;
+    }
+    return ret;
+}
 
 int calcLinePos(int unused, CalcStatClrArg *arg, unsigned char *mode, int *val)
 {

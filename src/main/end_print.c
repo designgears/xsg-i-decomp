@@ -164,9 +164,80 @@ static void PrintSprite00(EndPrintContext *context, PrintSpriteInfo *sprite)
 
 INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintSprite01);
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintPoint);
+typedef struct PrintPointInfo {
+    short x;
+    short y;
+    unsigned int z;
+    unsigned char r, g, b, a;
+} PrintPointInfo;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", subPrintLine);
+static void PrintPoint(EndPrintContext *context, PrintPointInfo *pt)
+{
+    int *p;
+
+    p = (int *)context->scratch;
+    endPrintInfoSet(context, 0, 0);
+    p[0] = 0x8001;
+    p[1] = 0x20204000;
+    p[2] = 0x51;
+    p[3] = 0;
+    p = (int *)&context->scratch[2];
+    p[0] = pt->r;
+    p[1] = pt->g;
+    p[2] = pt->b;
+    p[3] = pt->a;
+    p = (int *)&context->scratch[4];
+    p[0] = pt->x * 16 + 0x6FF8;
+    p[1] = pt->y * 16 + 0x71F8;
+    p[2] = pt->z & 0xFFFFFF;
+    p[3] = 0;
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, 3);
+}
+
+static void subPrintLine(EndPrintContext *context, int line) {
+    int *p;
+    int n;
+    int count;
+    int q;
+    int r;
+    int w;
+
+    n = 0;
+    p = (int *)context->scratch;
+    w = line + 0xC;
+    if (*(int *)(line + 4) != 0) {
+        do {
+            r = w + 4;
+            w += 0xC;
+            n += 1;
+        } while (*(int *)r != 0);
+    }
+    p[0] = n + 0x8000;
+    p[1] = 0x20654000;
+    count = 1;
+    q = line;
+    p[2] = 0x51;
+    p[3] = 0;
+    p += 4;
+    if (n > 0) {
+        do {
+            n -= 1;
+            count += 2;
+            p[0] = *(unsigned char *)(q + 8);
+            p[1] = *(unsigned char *)(q + 9);
+            p[2] = *(unsigned char *)(q + 0xA);
+            p[3] = *(unsigned char *)(q + 0xB);
+            p += 4;
+            p[0] = (*(short *)q * 0x10) + 0x6FF8;
+            p[1] = (*(short *)(q + 2) * 0x10) + 0x71F8;
+            q += 0xC;
+            p[2] = *(int *)(line + 4) & 0xFFFFFF;
+            p[3] = 0;
+            p += 4;
+        } while (n > 0);
+    }
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, count);
+}
 
 extern void subPrintLine(EndPrintContext *context, int line);
 

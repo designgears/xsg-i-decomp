@@ -214,4 +214,69 @@ void eMessageCpy(char *dst, char *src)
     eMessageCat(src);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_message", eMessageCat);
+void eMessageCat(char *src)
+{
+  unsigned long new_var;
+  char *dst = MessageCpyEnd;
+  int n;
+  int i;
+  int z = 0;
+  if (src == 0)
+  {
+    return;
+  }
+  for (;;)
+  {
+    char s = src[z];
+    unsigned char c = ((unsigned char *) src)[z];
+    if (s == 0)
+    {
+      break;
+    }
+    if (((unsigned int) (c - 1)) < 0x19)
+    {
+      n = xglFontGetSPcodeSize(((unsigned char *) src)[z], (unsigned char *) src) + 1;
+      for (i = 0; i < n; i++)
+      {
+        *(dst++) = *(src++);
+      }
+
+    }
+    else
+    {
+      c = ((unsigned char *) src)[z];
+      if (src[z] == 0x1E)
+      {
+        *(dst++) = c;
+        src++;
+        *(dst++) = *(src++);
+      }
+      else
+        if ((src[z] == 0x1F) || (((unsigned char) (new_var = c - 0x20)) < 0x5F))
+      {
+        *(dst++) = c;
+        src++;
+      }
+      else
+      {
+        n = eMessageHalfSpaseCheck((unsigned char *) src);
+        if (n != 0)
+        {
+          for (i = 0; i < n; i++)
+          {
+            *(dst++) = *(src++);
+          }
+
+        }
+        else
+        {
+          *(dst++) = *(src++);
+          *(dst++) = *(src++);
+        }
+      }
+    }
+  }
+
+  *dst = 0;
+  MessageCpyEnd = dst;
+}

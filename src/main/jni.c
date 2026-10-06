@@ -126,7 +126,41 @@ void JNI_catchException(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jni", JNI_createThread);
+extern void *xmalloc(int size, int type);
+extern JThread *jthreadCurrent;
+extern JThread *jthreadTop;
+
+JThread *JNI_createThread(int kind, int stack_words, int frame_words)
+{
+  JThread *thread;
+  int size = stack_words * 0x18;
+  char *frames;
+  thread = xmalloc(((frame_words * 4) + size) + 0x44, 8);
+  frames = ((char *) thread) + 0x44;
+  thread->kind = kind;
+  thread->frame_limit = stack_words;
+  thread->stack_limit = frame_words;
+  thread->flags = 0;
+  thread->frame_depth = 0;
+  thread->frames = frames;
+  thread->stack_offset = 0;
+  thread->stack = (u32 *) ((frames + size) + 0x18);
+  if (jthreadTop != 0)
+  {
+    goto else_branch;
+  }
+  jthreadTop = thread;
+  jthreadCurrent = thread;
+  thread->previous = 0;
+  return thread;
+  else_branch:
+  jthreadCurrent->next = thread;
+
+  thread->previous = jthreadCurrent;
+  thread->next = 0;
+  jthreadCurrent = thread;
+  return thread;
+}
 
 void JNI_threadException(void)
 {

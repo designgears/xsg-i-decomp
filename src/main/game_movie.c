@@ -1,6 +1,40 @@
 #include "common.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/game_movie", GameMovieMain);
+typedef struct GameMovieMovieInfo {
+    unsigned char pad_00[0x40];
+    short state;
+    unsigned char pad_42[4];
+    unsigned short frame;
+    unsigned char pad_48[0x83];
+    unsigned char threshold0;
+} GameMovieMovieInfo;
+typedef struct { unsigned char pad[0x10]; int flags; } GameMovieLoopState;
+typedef struct { unsigned char pad[0x14]; unsigned short packetControl; } GameMovieRender;
+typedef struct { unsigned char pad[0x40]; unsigned long long w40; unsigned char pad48[0x28]; unsigned long long w70; } GameMovieEnv;
+extern struct MovieInfo mi;
+#define MI (*(GameMovieMovieInfo *)&mi)
+extern GameMovieLoopState GameLoopState;
+extern GameMovieRender sRender;
+extern GameMovieEnv TestEnv_0_00367980;
+extern unsigned char GameMovieAlpha;
+extern unsigned short GameMovieFrame;
+extern unsigned char GameMovieTransparent;
+extern void xglMoviePlay(void *m);
+extern void nmlModelDirectSend(int a, void *p, int n);
+
+void GameMovieMain(void)
+{
+    if (MI.state != 0) {
+        if (!(GameLoopState.flags & 1)) {
+            MI.threshold0 = GameMovieTransparent;
+            xglMoviePlay(&mi);
+        }
+        GameMovieFrame = MI.frame;
+        TestEnv_0_00367980.w70 = ((unsigned long long)GameMovieAlpha << 32) | 0x64;
+        TestEnv_0_00367980.w40 = (0x24020000 | (sRender.packetControl << 5)) | 0x2000000640000000ULL;
+        nmlModelDirectSend(5, &TestEnv_0_00367980, 0xD);
+    }
+}
 
 /* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
 extern int xglMovieClose(void *movie);

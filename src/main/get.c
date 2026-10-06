@@ -84,7 +84,44 @@ INCLUDE_ASM("asm/main/nonmatchings/get", Check_Wall);
 
 INCLUDE_ASM("asm/main/nonmatchings/get", Check_Octpus);
 
-INCLUDE_ASM("asm/main/nonmatchings/get", Get_WallSpace);
+extern float D_004D81A0;
+extern float D_004D81A4;
+
+float Get_WallSpace(int unused, char *map, short n, float angle)
+{
+  short new_var;
+  short half = n / 2;
+  short i = 0;
+  short result = 0;
+  short pos = (angle / (D_004D81A0 / n)) + half;
+  int lo;
+  int hi;
+  if (half > 0)
+  {
+    new_var = half;
+    lo = pos + new_var;
+    hi = (pos + n) + new_var;
+    do
+    {
+      if (map[lo % n] == 0)
+      {
+        result = lo % n;
+        break;
+      }
+      lo++;
+      half = 0;
+      if (map[hi % n] == half)
+      {
+        result = hi % n;
+        break;
+      }
+      hi--;
+      i++;
+    }
+    while (i < new_var);
+  }
+  return result * (D_004D81A4 / n);
+}
 
 void Get_One_Step(float length, const Point4 *source,
                   const Point4 *destination, Point4 *output)

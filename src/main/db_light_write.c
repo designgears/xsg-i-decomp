@@ -6,7 +6,66 @@ INCLUDE_ASM("asm/main/nonmatchings/db_light_write", DB_lightWrite);
 
 INCLUDE_ASM("asm/main/nonmatchings/db_light_write", drawRect2);
 
-INCLUDE_ASM("asm/main/nonmatchings/db_light_write", drawBox2);
+typedef struct TransformParams {
+    Matrix4 matrix;
+    Matrix4 world;
+    Vector4 screenScale;
+    Vector4 screenOffset;
+    Matrix4 *local;
+} TransformParams;
+extern void xglMatrixStackUnit(void);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void transformVector(Vector4 *destination, const Vector4 *vectors, int count,
+                            TransformParams *params);
+extern void xglPrimAddGifTagDirect(void *packet, const void *data, int count);
+typedef struct { unsigned char r, g, b, a; } DbColor;
+extern DbColor col[14];
+extern Vector4 vBox[5];
+#define SPR_PARAMS ((TransformParams *)0x70000400)
+
+void drawBox2(Matrix4 *m, int mode)
+{
+    StudioCamera *camera;
+    unsigned int *packet;
+    Vector4 *v;
+    int i;
+
+    char *spr = (char *)0x70000000;
+
+    mode = mode * 2;
+
+        xglStudioGetCamera(&camera, 0);
+    xglMatrixStackUnit();
+    xglMatrixStackSave(SPR_PARAMS->world);
+    SPR_PARAMS->screenOffset = camera->screenOffset;
+    ((TransformParams *)(spr + 0x400))->screenScale.x = 1.0f;
+    ((TransformParams *)(spr + 0x400))->screenScale.y = -1.0f;
+    ((TransformParams *)(spr + 0x400))->screenScale.z = 1.0f;
+    ((TransformParams *)(spr + 0x400))->screenScale.w = 1.0f;
+    ((TransformParams *)(spr + 0x400))->local = m;
+    transformVector((Vector4 *)0x700004E0, vBox, 5, SPR_PARAMS);
+    packet = (unsigned int *)0x70000000;
+    packet[0] = 0x8005;
+    packet[1] = 0x20054000;
+    packet[2] = -0xAF;
+    packet[3] = 0;
+    packet += 4;
+    v = (Vector4 *)0x700004E0;
+    for (i = 0; i < 5; i++) {
+        packet[0] = col[mode + 1].r;
+        packet[1] = col[mode + 1].g;
+        packet[2] = col[mode + 1].b;
+        packet[3] = col[mode + 1].a;
+        packet += 4;
+        packet[0] = v->x * 16.0f;
+        packet[1] = v->y * 16.0f;
+        packet[2] = -1;
+        packet[3] = 0;
+        packet += 4;
+        v++;
+    }
+    xglPrimAddGifTagDirect(0, (void *)0x70000000, 0xB);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/db_light_write", drawCircle2);
 

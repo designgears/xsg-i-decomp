@@ -103,7 +103,54 @@ static void DrawBack(int alpha)
     sceVif1PkRef(xglPacketGetCurrent(), TestEnv_3_00369D70, 10, 0, 0, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_over", copyframe);
+extern int sceVif1PkCloseDirectHLCode(XglPacket *packet);
+extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
+extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
+typedef struct {
+    u8 unmodeled_00[0x10];
+    u16 width;
+    u16 page_a;
+    u16 page_b;
+} CopyFrameRenderView;
+
+static int copyframe(void)
+{
+    XglPacket *packet;
+    u64 *spr;
+    u64 base;
+    int w, pa, pb;
+
+    packet = xglPacketGetCurrent();
+    spr = (u64 *)0x70000000;
+    w = ((CopyFrameRenderView *)&sRender)->width;
+    pa = ((CopyFrameRenderView *)&sRender)->page_a;
+    pb = ((CopyFrameRenderView *)&sRender)->page_b;
+    base = 0x80000 | (w << 5);
+    spr[0] = 0;
+    spr[1] = 0x51000009;
+    spr[2] = ((u64)0x10000000 << 32) | 0x8008;
+    spr[3] = 0xE;
+    spr[4] = base | ((u64)pa << 37) | ((u64)0x8000 << 36);
+    spr[5] = 0x50;
+    spr[6] = 0;
+    spr[7] = 0x51;
+    spr[8] = ((u64)0x1C0 << 32) | 0x200;
+    spr[9] = 0x52;
+    spr[10] = 2;
+    spr[11] = 0x53;
+    spr[12] = 0;
+    spr[13] = 0x3F;
+    spr[14] = base | ((u64)pb << 37) | ((u64)0x8000 << 36);
+    spr[15] = 0x50;
+    spr[16] = 2;
+    spr[17] = 0x53;
+    spr[18] = 0;
+    spr[19] = 0x3F;
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkOpenDirectHLCode(packet, 0);
+    sceVif1PkAddDirectDataN(packet, (void *)0x70000000, 10);
+    return sceVif1PkCloseDirectHLCode(packet);
+}
 
 static void redraw_frame(void *framebuffer) {
     xglSleep();

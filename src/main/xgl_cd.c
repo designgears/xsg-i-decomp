@@ -773,7 +773,44 @@ INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", FileSelectSub);
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdFileSelect);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdSifLoadModule);
+extern int sceSifLoadModule(const char *filename, int args, const char *argp);
+extern char head_8[13];
+extern char tail_9[7];
+
+void xglCdSifLoadModule(char *name, char *argp) {
+    char buf[256];
+    char *s;
+    char *d;
+    char *p;
+    int len;
+
+    d = buf;
+    for (s = head_8; (*d = *s) != 0; s++, d++) {
+    }
+    for (s = name; *s != 0; s++, d++) {
+        if (*s < 'a') {
+            *d = *s;
+        } else {
+            *d = *s - 0x20;
+        }
+    }
+    for (s = tail_9; (*d = *s) != 0; s++, d++) {
+    }
+    len = 0;
+    if (argp != 0) {
+        p = argp;
+        len = 1;
+        if (p[0] != 0 || p[1] != 0) {
+            do {
+                do {
+                    p++;
+                    len++;
+                } while (*p != 0);
+            } while (p[1] != 0);
+        }
+    }
+    sceSifLoadModule(buf, len, argp);
+}
 
 extern void FlushCache(int);
 extern int sceSifLoadElf(char *, void *);
@@ -922,7 +959,63 @@ static unsigned char *xglCdArcInitSub2(unsigned char *archive_data)
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdArcInit);
+extern const char D_004D24A8[];
+extern const char D_004D24C0[];
+extern const char D_004D2468[];
+extern const char D_004D2478[];
+extern const char D_004D2488[];
+extern CdArchiveEntry D_0093DC58;
+extern CdArchiveEntry D_0093DC70;
+
+static void xglCdArcInit(void)
+{
+    u8 *base = WorkEnd;
+    int count = 0;
+    int fd;
+    CdArchiveEntry *e;
+    u8 *p;
+
+    while (xglHddActivate(-1) != 0 && (fd = sceOpen(D_004D24A8, 1)) >= 0) {
+        ArcHeader[0] = 2;
+        *(u8 **)(ArcHeader + 4) = base;
+        *(int *)(ArcHeader + 8) = 0;
+        sceRead(fd, base, 0x800);
+        count = base[0];
+        sceRead(fd, base + 0x800, (count << 11) - 0x800);
+        sceClose(fd);
+        break;
+    }
+    if (count == 0) {
+        if (xglCdArcInitSub1((CdArchiveEntry *)ArcHeader, D_004D24C0, base) == 0)
+            return;
+        xglHddActivate(0x100);
+    }
+    if (LW[0x33] != 0) {
+        unsigned char *(*sub2)(unsigned char *) = xglCdArcInitSub2;
+        base = sub2(base);
+        while (xglCdArcInitSub1(&D_0093DC58, D_004D2468, base) <= 0)
+            ;
+        base = xglCdArcInitSub2(base);
+        LW[0x32] = 1;
+        while (xglCdArcInitSub1(&D_0093DC70, D_004D2478, base) <= 0)
+            ;
+        LW[0x32] = 0;
+        p = xglCdArcInitSub2(base);
+        base += ((int)(p - base) + 0x7FF) & -0x800;
+    } else {
+        while ((base += 0x2D000, xglCdArcInitSub1(&D_0093DC58, D_004D2468, base) <= 0) &&
+               xglCdArcInitSub1(&D_0093DC58, D_004D2478, base) <= 0) {
+            if (xglCdArcInitSub1(&D_0093DC58, D_004D2488, base) <= 0) {
+                D_0093DC58.state = -1;
+                base[0] = 0;
+                base[1] = 0;
+            }
+            break;
+        }
+        base += 0x2000;
+    }
+    WorkEnd = base;
+}
 
 /*
  * ArcHeader is a four-entry table of 0x18-byte archive records (xglCdInitial
@@ -944,4 +1037,40 @@ void xglCdArcCheck(void)
     WorkEnd = saved_work_end;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdInitial);
+extern int sceCdReadDvdDualInfo(int *on_dual);
+extern const char D_004D24D0[];
+extern u8 system_cnf[];
+
+void xglCdInitial(void)
+{
+    int dual;
+    u8 *src;
+    u8 *dst;
+    int i;
+
+    LW[0x31] = 0;
+    LW[0x32] = 0;
+    LW[0x33] = 0;
+    LW[0x34] = 0;
+    LW[0x1C] = 0;
+    LW[0x1D] = 0;
+    sceCdInit(0);
+    sceCdMmode(2);
+    xglCdReset();
+    dual = 0;
+    sceCdReadDvdDualInfo(&dual);
+    LW[0x33] = dual;
+    loaded_overlay = 2;
+    ArcHeader[0] = -1;
+    ArcHeader[0x18] = -1;
+    ArcHeader[0x30] = -1;
+    ArcHeader[0x48] = -1;
+    src = WorkEnd;
+    dst = system_cnf;
+    xglCdReadFile(D_004D24D0, src, 0, 1);
+    for (i = 0x4F; i >= 0; i--)
+        *dst++ = *src++;
+    xglHddActivate(0x100);
+    xglHddMount();
+    xglCdArcInit();
+}

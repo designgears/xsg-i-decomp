@@ -239,7 +239,24 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", battleCtrl);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", battleCtrlConfusion);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", battleCtrlJunk);
+typedef struct MsgText {
+    signed char text[0x23];
+} MsgText;
+extern MsgText msgWork;
+extern const MsgText D_00A43CE8;
+void battleMsg(int msgId);
+void unitCmdListSet(ObjectTask *unit, int *cmd);
+
+int battleCtrlJunk(ObjectTask *unit)
+{
+    int cmd[8];
+
+    msgWork = D_00A43CE8;
+    battleMsg((int)&msgWork);
+    cmd[0] = 8;
+    unitCmdListSet(unit, cmd);
+    return 0;
+}
 
 extern int actStock;
 
@@ -500,7 +517,46 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", keyCmdChk);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", keyCmd2tid);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", keyCmd2wno);
+extern int calcSameWpnChk(ObjectTask *unit);
+
+int keyCmd2wno(ObjectTask *unit, int key)
+{
+    CalcUnitParam *up;
+    int res = -1;
+
+    up = calcUPGet(unit);
+    if (!(up->flags & 0x40)) {
+        res = key == 7;
+    } else {
+        switch (key) {
+        case 1:
+        case 3:
+        case 6:
+        case 8:
+            res = 0;
+            break;
+        case 2:
+        case 4:
+        case 5:
+        case 9:
+            res = 1;
+            break;
+        case 7:
+        case 10:
+        case 11:
+        case 12:
+            res = 2;
+            break;
+        case 19:
+            res = calcSameWpnChk(unit);
+            break;
+        }
+    }
+    if (res != -1 && calcUPGet(unit)->sefSetupParams[res] == 0) {
+        res = -1;
+    }
+    return res;
+}
 
 /*
  * Buffered battle-input queue (data still asm-owned; original ELF symbol names):
@@ -933,7 +989,44 @@ int scenarioBatDataSync(int *sourceIndex)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", etehrCVGet);
+int etehrCVGet(int *arg0) {
+    short charaId;
+    int result = 4;
+    unsigned int val_8;
+
+    charaId = calcUPGet((ObjectTask *)arg0[0])->charaId;
+
+    switch (charaId) {
+        case 3: {
+            unsigned int tmp = (unsigned int)arg0[2] - 0x236;
+            if (tmp < 4U) {
+                result = 5;
+            }
+            break;
+        }
+        case 6: {
+            unsigned int tmp = (unsigned int)arg0[2];
+            switch (tmp) {
+                case 596:
+                    result = 5;
+                    break;
+                case 599:
+                    result = 6;
+                    break;
+            }
+            break;
+        }
+        case 7: {
+            unsigned int tmp = (unsigned int)arg0[2] - 0x262;
+            if (tmp < 2U) {
+                result = 5;
+            }
+            break;
+        }
+    }
+
+    return result;
+}
 
 extern void EXM_SetDirectionalWind(Vector4 *dir);
 extern void EXM_SetShakePower(float power);
@@ -1057,7 +1150,29 @@ INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProcInit);
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProc);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukanFadeOut);
+extern void unitCmdClear(ObjectTask *unit);
+extern void unitCmdSet(ObjectTask *unit, int *cmd);
+
+void syoukanFadeOut(BattleUnit *excludedUnit)
+{
+    int cmd[8];
+    BattleUnit **unitTable;
+    int count;
+    int i;
+
+    i = 0;
+    count = unitTblGet(0, &unitTable);
+    if (count > 0) {
+        do {
+            if (unitTable[i] != 0 && unitTable[i] != excludedUnit) {
+                cmd[0] = 0x30;
+                unitCmdClear((ObjectTask *)unitTable[i]);
+                unitCmdSet((ObjectTask *)unitTable[i], cmd);
+            }
+            i++;
+        } while (i < count);
+    }
+}
 
 extern void unitCmdClear(ObjectTask *unit);
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
@@ -1083,7 +1198,35 @@ void syoukanFadeIn(BattleUnit *excludedUnit)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", syoukan1Sub);
+typedef struct {
+    ObjectTask *unit;                     /* +0x00 */
+    unsigned char unmodeled_04[0x8 - 0x4];
+    int tecId;                            /* +0x08 */
+} SyoukanRec;
+
+void syoukan1Sub(SyoukanRec *rec, int arg1, int arg2)
+{
+    int cmd[8];
+
+    unitCmdClear(rec->unit);
+    cmd[0] = 0x2B;
+    cmd[1] = 8;
+    cmd[2] = arg2;
+    unitCmdSet(rec->unit, cmd);
+    if (*(unsigned char *)dataTecGet(rec->tecId) & 0x10) {
+        cmd[0] = 0x2C;
+    } else {
+        cmd[0] = 0xF;
+    }
+    unitCmdSet(rec->unit, cmd);
+    cmd[0] = 0x25;
+    cmd[1] = 0;
+    unitCmdSet(rec->unit, cmd);
+    cmd[0] = 0xD;
+    cmd[1] = 7;
+    cmd[2] = 0;
+    unitCmdSet(rec->unit, cmd);
+}
 
 extern void unitCmdClear(ObjectTask *unit);
 extern void unitCmdSet(ObjectTask *unit, int *cmd);

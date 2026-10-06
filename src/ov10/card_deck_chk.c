@@ -488,4 +488,206 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
     return ret;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_deck_chk", CardLoadDeckProc2);
+extern CsdList *D_00A57844;
+extern int ActiveCursol_6;
+extern char D_00A4DB10[];
+extern u8 *EnemyDeckLst[48];
+
+int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
+{
+    float trans[4];
+    float mat[4][4];
+    float trans2[4];
+    float scale[4];
+    int ret;
+    int disp;
+
+    ((u8 *)work)[0x59BF] = 0x3A;
+    if (ActiveCursol_6 != 0) {
+        D_00A57844 = list;
+        cursor->cursor |= 0x80;
+        list->cursor &= 0x7F;
+    } else {
+        D_00A57844 = cursor;
+        cursor->cursor &= 0x7F;
+        list->cursor |= 0x80;
+    }
+    ret = 0;
+    switch (*(s16 *)((u8 *)work + 0x5AC6)) {
+    case 0:
+        disp = 0;
+        if ((PadData.held & 0x10) && exiting == 0 && ActiveCursol_6 != 0) {
+            short no;
+            disp = 1;
+            D_00A57844 = list;
+            trans[0] = -1.15f;
+            trans[1] = 0.45f;
+            trans[2] = 0.2f;
+            trans[3] = 1.0f;
+            xglMatrixUnit(mat);
+            xglMatrixTrans(mat, mat, trans);
+            no = D_00A57844->entries[D_00A57844->top + D_00A57844->cursor].id;
+            CardDisp(mat, no, work->owned[no] != 0, 1);
+        }
+        if (disp == 0 || ActiveCursol_6 == 0) {
+            CardDeckListDisp(cursor);
+        }
+        CardDeckDisp(list, work->definitions);
+        if (ActiveCursol_6 == 0) {
+            if (exiting == 0 && disp == 0) {
+                if (title != 0) {
+                    xglFontPrint(0, 0, 0, D_00A4DA68);
+                    xglFontPrint(0x18, 0x138, 0xFFF0, title);
+                }
+                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
+                xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DB10);
+                xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+                if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
+                    xglSoundEffectNormalID(1, 0);
+                    (*(s16 *)((u8 *)work + 0x5AC6))++;
+                } else if (*(u16 *)((u8 *)work + 0x5AD2) & 0x40) {
+                    xglSoundEffectNormalID(2, 0);
+                    ret = -1;
+                }
+            }
+        } else {
+            int no;
+            trans2[0] = 0.0f;
+            trans2[1] = -0.3932f;
+            trans2[2] = 0.1f;
+            trans2[3] = 1.0f;
+            scale[1] = 0.335f;
+            scale[0] = 0.335f;
+            scale[3] = 1.0f;
+            scale[2] = 1.0f;
+            xglMatrixUnit(mat);
+            xglMatrixTrans(mat, mat, trans2);
+            xglMatrixScale(mat, mat, scale);
+            no = D_00A57844->entries[D_00A57844->top + D_00A57844->cursor].id;
+            CardDisp(mat, no, work->owned[no] != 0, exiting == 0);
+        }
+        if (exiting == 0) {
+            if (PadData.trig & 0x1000) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A57844->mode = -1;
+            } else if (PadData.trig & 0x4000) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A57844->mode = 1;
+            }
+            if (PadData.trig & 0x2000) {
+                xglSoundEffectNormalID(3, 0);
+                if (CardGetDeckAllCnt(list) != 0) {
+                    ActiveCursol_6 = 1;
+                    cursor->cursor |= 0x80;
+                    list->cursor &= 0x7F;
+                }
+            } else if (PadData.trig & 0x8000) {
+                xglSoundEffectNormalID(3, 0);
+                ActiveCursol_6 = 0;
+                cursor->cursor &= 0x7F;
+                list->cursor |= 0x80;
+            }
+        }
+        if (list->mode != 0) {
+          if (list->mode == -1 || list->mode == 1) {
+            if (list->mode < 0) {
+                if (list->top > 0) {
+                    if (list->cursor < 2) {
+                        list->top--;
+                    } else {
+                        list->cursor--;
+                        if (list->cursor < 0) {
+                            list->cursor = 0;
+                        }
+                    }
+                } else if (list->cursor > 0) {
+                    list->cursor--;
+                }
+            } else {
+                if (list->top + list->rows < list->count) {
+                    if (list->cursor >= list->rows - 2) { list->top++; } else {
+                        list->cursor++;
+                    }
+                } else if (list->cursor < list->rows - 1 && list->cursor < list->count - 1
+                           && list->cursor < list->columns) {
+                    list->cursor++;
+                }
+            }
+          }
+            list->mode = 0;
+        }
+        if (cursor->mode != 0) {
+            cursor->count = 5;
+            if (cursor->mode == -1 || cursor->mode == 1) {
+                int i;
+                int j;
+                int k;
+                int prev;
+
+                if (cursor->mode < 0) {
+                    if (cursor->top > 0) {
+                        if (cursor->cursor < 2) {
+                            cursor->top--;
+                        } else {
+                            cursor->cursor--;
+                            if (cursor->cursor < 0) {
+                                cursor->cursor = 0;
+                            }
+                        }
+                    } else if (cursor->cursor > 0) {
+                        cursor->cursor--;
+                    }
+                } else {
+                    if (cursor->top + cursor->rows < 5) {
+                        if (cursor->cursor >= cursor->rows - 2) { cursor->top++; } else {
+                            cursor->cursor++;
+                        }
+                    } else if (cursor->cursor < cursor->rows - 1 && cursor->cursor < 4) {
+                        cursor->cursor++;
+                    }
+                }
+                prev = -1;
+                j = -1;
+                k = cursor->top + (cursor->cursor & 0x7F);
+                for (i = 0; i < 40; i++) {
+                    if (prev != EnemyDeckLst[k][i]) {
+                        j++;
+                        list->entries[j].id = EnemyDeckLst[k][i];
+                        list->entries[j].n = 1;
+                    } else {
+                        list->entries[j].n++;
+                    }
+                    prev = EnemyDeckLst[k][i];
+                }
+                list->cursor = 0x80;
+                list->count = j + 1;
+                list->top = 0;
+            }
+            cursor->mode = 0;
+        }
+        if (list->count - 1 < list->cursor) {
+            list->cursor = list->count - 1;
+        }
+        break;
+    case 1:
+        CardDeckListDisp(cursor);
+        CardDeckDisp(list, work->definitions);
+        if (exiting == 0) {
+            xglFontPrint(0, 0, 0, D_00A4DA68);
+            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
+            xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
+            xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+            if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
+                xglSoundEffectNormalID(1, 0);
+                ret = (cursor->cursor & 0x7F) + 1;
+            } else if (*(u16 *)((u8 *)work + 0x5AD2) & 0x40) {
+                xglSoundEffectNormalID(2, 0);
+                (*(s16 *)((u8 *)work + 0x5AC6))--;
+            }
+        }
+        break;
+    }
+    return ret;
+}

@@ -294,14 +294,31 @@ void svLoadClut(ClutUploadRequest *clut)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svLoadImageList);
+typedef struct { char pad0[0x1C]; struct { char pad[8]; int used; s16 type; char pad2[0x24-0xE]; } e[256]; } SvImgList_;
 
-s16 svLoadImageList(void *);
+int svLoadImageList(void *arg0) {
+    SvImgList_ *l = arg0;
+    int i;
+    int cnt = 0;
+    for (i = 0; i < 256; i++) {
+        if (l->e[i].used != 0) {
+            if (l->e[i].type == 4) {
+                cnt++;
+                svLoadTexture((TextureUploadRequest *)&l->e[i]);
+            } else if (l->e[i].type == 3) {
+                svLoadClut((ClutUploadRequest *)&l->e[i]);
+            }
+        }
+    }
+    return cnt;
+}
 
-s16 svLoadMapperList(void)
+int svLoadImageList(void *);
+
+int svLoadMapperList(void)
 {
-  s16 ret;
-  s16 loadResult;
+  int ret;
+  int loadResult;
   int reverseIndex;
   int typeOffset;
 

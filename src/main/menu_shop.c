@@ -140,7 +140,83 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_shop", ListMake_3);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopSelect);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopSortSet);
+typedef struct MenuShopSortTab {
+    short *list;
+    int high;
+    int count;
+} MenuShopSortTab;
+typedef struct MenuShopSortTabs {
+    MenuShopSortTab e[11];
+} MenuShopSortTabs;
+extern const MenuShopSortTabs D_004C7738;
+
+void MenuShopSortSet(int list, int type, int order, int option)
+{
+  int *new_var;
+  MenuShopSortTabs tabs;
+  int *sorted = ((int *(*)(int)) MenuSortAddrGet)(list);
+  int *hp;
+  int *countp;
+  short *p;
+  int n;
+  char *high_base;
+  char *count_base;
+  tabs = D_004C7738;
+  if (type == 0x12)
+  {
+    type = 9;
+  }
+  if (type == 0x13)
+  {
+    type = 0xA;
+    if (MenuScenarioNo && MenuScenarioNo)
+    {
+    }
+  }
+  if (type == 8)
+  {
+    if (MenuScenarioNo >= 0x73)
+    {
+      sorted[0] = 0x20035;
+      sorted++;
+      sorted[0] = 0x20036;
+      sorted++;
+    }
+    if (MenuScenarioNo >= 0x12D)
+    {
+      sorted[0] = 0x20037;
+      sorted++;
+    }
+  }
+  else
+  {
+    count_base = (char *) (&tabs.e[0].count);
+    ;
+    new_var = (int *) ((type * 12) + count_base);
+    if ((*new_var) > (n = 0))
+    {
+      n = 0;
+      p = tabs.e[type].list;
+      high_base = (char *) (&tabs.e[0].high);
+      hp = (int *) (high_base + (type * 12));
+      do
+      {
+        short id = *(p++);
+        if (id == 0)
+        {
+          break;
+        }
+        n++;
+        *(sorted++) = (id & 0xFFFF) + ((*hp) << 16);
+      }
+      while (n < (*((int *) (count_base + (type * 12)))));
+    }
+    if (tabs.e)
+    {
+    }
+  }
+  sorted[0] = 0;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_shop", subMenuShopEquipCheck);
 

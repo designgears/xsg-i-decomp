@@ -469,7 +469,61 @@ void subMWDraw(char *w)
     endPrintExtFunc(*(int *)(w + 0x1730), 6, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWControlType00);
+typedef struct MWCtl00 {
+    char pad0[0x18];
+    int key;
+    char pad1c[5];
+    signed char cur;
+    char pad22;
+    signed char rows;
+    signed char top;
+    unsigned char topmax;
+    char pad26[2];
+    unsigned short pos;
+    short num;
+} MWCtl00;
+extern void xglSoundEffectNormalID(int, int);
+
+void subMWControlType00(void *p, int k) {
+    MWCtl00 *w = p;
+    unsigned short old;
+
+    if (w->num < 2) return;
+    if (w->key & 0x1000) {
+        old = w->pos;
+        if ((short)(w->pos = (short)old - 1) < 0) {
+            if (*(unsigned short *)((char *)&PadData + 0x32) & 0x1000) {
+                w->pos = w->num - 1;
+                w->cur = w->rows - 1;
+                w->top = w->topmax;
+                xglSoundEffectNormalID(3, 0);
+            } else {
+                w->pos = old;
+            }
+        } else {
+            if (w->cur == 0) w->top = w->top - 1;
+            else w->cur--;
+            xglSoundEffectNormalID(3, 0);
+        }
+    }
+    if (w->key & 0x4000) {
+        old = w->pos;
+        if ((short)++w->pos > w->num - 1) {
+            if (*(unsigned short *)((char *)&PadData + 0x32) & 0x4000) {
+                w->pos = 0;
+                w->cur = 0;
+                w->top = 0;
+                xglSoundEffectNormalID(3, 0);
+            } else {
+                w->pos = old;
+            }
+        } else {
+        if (w->cur == w->rows - 1) w->top++;
+        else w->cur++;
+        xglSoundEffectNormalID(3, 0);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/e_battle_win_open", subMWControlType01);
 

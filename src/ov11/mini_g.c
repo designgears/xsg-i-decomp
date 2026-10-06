@@ -716,6 +716,15 @@ static void SlRateTableDraw(void)
     }
 }
 
+typedef struct {
+    short reel[3];
+    short pay;
+    short mult;
+    short flag;
+} SlPrize;
+
+extern SlPrize D_00A0DD8A[];
+
 INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", SlResultDraw);
 
 typedef struct { int w[4]; } SlModeRect;
@@ -909,13 +918,6 @@ static void SlCoinEntry(void)
     }
 }
 
-typedef struct {
-    short reel[3];
-    short pay;
-    short mult;
-    short flag;
-} SlPrize;
-extern SlPrize D_00A0DD8A[];
 extern short D_00A0DD6A;
 
 static void SlPrizeCheck(int line)
@@ -1349,7 +1351,77 @@ int SlPrizeEffect(int arg0)
 
 INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", SlChangeRealEffect);
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", SlEvent);
+extern int busy_35;
+extern int D_00A0DDD0;
+int SlChangeRealEffect(int arg0);
+typedef struct {
+    char pad0[0x4A];
+    short h4A;
+    short pad4C;
+    short h4E;
+    char pad50[0xAC - 0x50];
+    int wAC;
+    int wB0;
+} SlEventWork;
+
+static int SlEvent(int arg0)
+{
+    SlEventWork *g;
+
+    if (busy_35 == 0 && arg0 == 0) {
+        return 0;
+    }
+    switch (arg0) {
+    case 1:
+        if (SlPrizeEffect(arg0) != 0) {
+            return 1;
+        }
+        D_00A0DDD0 = 6;
+        break;
+    case 2:
+        if (SlPrizeEffect(arg0) == 0) {
+            int *w = Gwork;
+            ((short *)w)[0x25] = 1;
+            w[0x2C] = 0;
+            ((short *)w)[0x27] = RES_GetBonusTime();
+            RES_SoundEffect(0x2B);
+        }
+        break;
+    case 3:
+        if (SlPrizeEffect(arg0) != 0) {
+            return 1;
+        }
+        g = (SlEventWork *)Gwork;
+        g->wAC = 1;
+        g->wB0 = 0;
+        RES_SoundEffect(0x2C);
+        break;
+    case 4:
+        if (SlPrizeEffect(arg0) != 0) {
+            return 1;
+        }
+        D_00A0DDD0 = 5;
+        break;
+    case 5:
+        D_00A0DDD0 = 0;
+        break;
+    case 6:
+        if (SlChangeRealEffect(1) != 0) {
+            return 1;
+        }
+        D_00A0DDD0 = 0;
+        RES_SoundEffect(0x2A);
+        break;
+    case 7:
+        if (SlChangeRealEffect(0) != 0) {
+            return 1;
+        }
+        D_00A0DDD0 = 0;
+        RES_SoundEffect(0x2D);
+        break;
+    }
+    return 1;
+}
 
 extern void xglPacketTextureTrans(void *buffer);
 typedef struct { int w[7]; } SlHelpSprite;

@@ -35,17 +35,6 @@ static void tyaCaptureNull(void)
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureActor);
-
-/*
- * The engine's actor record (`actor`, 64-entry array at main 0x0043c1e0,
- * 0xa70-byte stride; fuller evidence in src/main/near_dir.h,
- * src/main/enemy_2.h, src/main/set_motion.h and src/main/db_light_write.h,
- * which names the same two fields for the same reason). tyaCaptureShadow
- * only reads +0x00 flags (bits 0x8 and 0x20) and +0x86, the in-use id
- * ACT_create writes and ACT_update skips a slot on when it is zero; the
- * offsets between them are not evidenced by this TU and stay unmodeled.
- */
 #define ACTOR_COUNT 64
 #define ACTOR_IN_USE_ID_OFFSET 0x86
 
@@ -63,6 +52,56 @@ extern ActorHead actor[ACTOR_COUNT];
  * index, so only the one actor or map unit the current capture pass wants
  * is drawn. */
 extern u16 layer;
+
+extern char ACT_filterGuno[];
+extern int alpha;
+extern int transparency;
+int F2I(float f);
+void ACT_modelDraw(ActorHead *unit);
+
+static void tyaCaptureActor(void)
+{
+    int i;
+    ActorHead *unit;
+    u8 *p;
+    float f;
+
+    unit = actor;
+    i = 0;
+    for (; i < ACTOR_COUNT; i++, unit++) {
+        if (unit->inUseId != 0 && !(unit->flags & 8) &&
+            (layer == i + 0x200 ||
+             ((p = *(u8 **)((u8 *)unit + 0x8FC)) != 0 && layer == p[0x80] + 0x200))) {
+            u8 *q;
+            if (*(void **)((u8 *)unit + 8) == ACT_filterGuno) {
+                alpha = 1;
+                f = *(float *)((u8 *)unit + 0x920);
+                f *= 128.0f;
+                goto conv;
+            }
+            q = (u8 *)unit + 0x920;
+            if (*(int *)(q + 0x80) & 1) {
+                f = *(float *)(q + 0xA0);
+                alpha = *(int *)(q + 0xB8);
+            conv:
+                transparency = F2I(f);
+            } else {
+                alpha = 0;
+            }
+            ACT_modelDraw(unit);
+        }
+    }
+}
+
+/*
+ * The engine's actor record (`actor`, 64-entry array at main 0x0043c1e0,
+ * 0xa70-byte stride; fuller evidence in src/main/near_dir.h,
+ * src/main/enemy_2.h, src/main/set_motion.h and src/main/db_light_write.h,
+ * which names the same two fields for the same reason). tyaCaptureShadow
+ * only reads +0x00 flags (bits 0x8 and 0x20) and +0x86, the in-use id
+ * ACT_create writes and ACT_update skips a slot on when it is zero; the
+ * offsets between them are not evidenced by this TU and stay unmodeled.
+ */
 
 /* Defined in src/main/act_3.c (main/tu265), not yet published in
  * include/main/act_3.h. */
@@ -122,7 +161,26 @@ static void tyaCaptureUnit(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureUnit2);
+static void tyaCaptureUnit2(void)
+{
+    int i;
+    ActorHead *unit;
+    ActorHead *found;
+    MapUnitHead *mu;
+
+    found = (ActorHead *)-1;
+    for (i = 0, unit = actor; i < ACTOR_COUNT; i++, unit++) {
+        if (unit->inUseId != 0 && !(unit->flags & 8) && layer == i + 0x200) {
+            found = unit;
+            break;
+        }
+    }
+    for (i = MAP_UNIT_COUNT - 1, mu = MapUnit; i >= 0; i--, mu++) {
+        if (mu->serial >= 0 && *(ActorHead **)((u8 *)mu + 0xFC) == found) {
+            MAP_drawUnitAt(mu);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/tya", tyaCaptureStart);
 

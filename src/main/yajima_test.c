@@ -155,7 +155,55 @@ static void FontTestLine(int xIndex, int yIndex, int width)
   nmlModelDirectSend(1, (u8 *) TestEnv_34, 6);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/yajima_test", FontTestP2);
+extern char D_004C08D0[];
+extern char test0_37[];
+extern char test1_38[];
+extern char test2_39[];
+extern char test3_40[];
+extern char test4_41[];
+extern int width_35;
+extern char D_004D9F78[];
+extern char D_004D9F88[];
+extern char D_004C08E0[];
+extern char test_36[6];
+extern void FontTestLine(int xIndex, int yIndex, int width);
+extern int xglFontGetStringWidth(const void *data);
+extern int xglFontGetProportionalSize(int index);
+
+static void FontTestP2(void) {
+    int i;
+    unsigned int temp;
+
+    xglFontDebugPrintf(8, 8, D_004D9F78, width_35);
+    if (PadData.halfwords[0x4A] & 0x2000) {
+        width_35 += 1;
+    }
+    if (PadData.halfwords[0x4A] & 0x8000) {
+        width_35 -= 1;
+    }
+    xglFontPrint(0x40, 0x60, 0xFFFFFF, D_004C08D0);
+    test_36[3] = (signed char) ((int) width_35 >> 8);
+    test_36[4] = (unsigned char) width_35;
+    xglFontPrintDirect((void *)test_36);
+    FontTestLine(0x40, 0x5E, width_35);
+    xglFontPrint(0x40, 0x60, 0xFFFFFF, test0_37);
+    FontTestLine(0x40, 0x60, xglFontGetStringWidth(test0_37));
+    xglFontPrint(0x40, 0x100, 0xFFFFFF, test1_38);
+    FontTestLine(0x40, 0x100, xglFontGetStringWidth(test1_38));
+    xglFontPrint(0x40, 0x120, 0xFFFFFF, test2_39);
+    FontTestLine(0x40, 0x120, xglFontGetStringWidth(test2_39));
+    xglFontPrint(0x40, 0x140, 0xFFFFFF, test3_40);
+    FontTestLine(0x40, 0x140, xglFontGetStringWidth(test3_40));
+    xglFontPrint(0x40, 0x160, 0xFFFFFF, test4_41);
+    FontTestLine(0x40, 0x160, xglFontGetStringWidth(test4_41));
+    xglFontPrint(0x40, 0x60, 0xFFFFFF, D_004D9F88);
+    if (PadData.halfwords[0x15] & 0x20) {
+        for (i = 0; i < 0x40; i++) {
+            temp = xglFontGetProportionalSize(i);
+            printf((char *)D_004C08E0, i, temp);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/yajima_test", FontTest);
 

@@ -103,7 +103,47 @@ void MenuKeepSelectReset(void)
 
 INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuSelectMove);
 
-INCLUDE_ASM("asm/main/nonmatchings/window_tex_load", MenuSelectMove2);
+extern void xglSoundEffectNormalID(int, int);
+extern unsigned char PadData[][0x68];
+
+int MenuSelectMove2(int arg0, int arg1) {
+    unsigned short pad_val;
+    int var_6 = 0;
+
+    if (arg1 < 2) {
+        return arg0;
+    }
+
+    pad_val = *(unsigned short *)&PadData[0][0x34];
+    switch (pad_val) {
+    case 0x1000:
+        var_6 = -2;
+        break;
+    case 0x8000:
+        var_6 = -1;
+        break;
+    case 0x4000:
+        var_6 = 2;
+        break;
+    case 0x2000:
+        var_6 = 1;
+        break;
+    }
+
+    if (var_6 != 0) {
+        int temp_2 = arg1 - 1;
+        arg0 = arg0 + var_6;
+        if (arg0 < 0) {
+            arg0 = temp_2;
+        }
+        if (temp_2 < arg0) {
+            arg0 = 0;
+        }
+        xglSoundEffectNormalID(3, 0);
+    }
+
+    return arg0;
+}
 
 /*
  * Advance a signed 16-bit position toward its signed 16-bit target.  The

@@ -603,7 +603,221 @@ static int xglHddInstallReadCB(int event, int value)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_hdd", xglHddInstall);
+extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
+extern int xglCdReadFilePart(const char *name, void *buffer, int mode,
+                             void *callback, int offset, int length);
+extern int xglCdGetFileSize(const char *name);
+extern int sceFormat(char *device, char *block_device, void *argument, int argument_size);
+extern char D_004D26C8[];
+extern char D_004D26D8[];
+extern char D_004DC3A0[];
+extern char D_004DC3A8[];
+extern char dvdname_2[];
+extern char hddname[];
+
+int xglHddInstall(int (*callback)(int, int, int), int param)
+{
+  HddInstallCBParam ctx;
+  char path[256];
+  int format_arg[4];
+  int result;
+  int code;
+  int fd;
+  int fd2;
+  int size;
+  int base;
+  int offset;
+  int chunk;
+  unsigned char *dst;
+  int i;
+  if (callback == 0)
+  {
+    callback = xglHddDummyCB;
+  }
+  HddInstallCBparam = &ctx;
+  ctx.callback = callback;
+  ctx.param = param;
+  ctx.status = 0;
+  callback(0, 0, param);
+  if (xglCdReadFile(D_004D26C8, (void *) 0x1000000, 0, 1) < 0)
+  {
+    callback(-1, 0, param);
+    return -1;
+  }
+  {
+    int k;
+    unsigned char *src = (unsigned char *) system_cnf;
+    for (k = 0, dst = (unsigned char *) 0x1000200; k < 0x50; k++)
+    {
+      *(dst++) = src[k];
+    }
+
+  }
+  size = (((*((int *) 0x1000028)) + (*((int *) 0x100002C))) + 0x1FF) & (~0x1FF);
+  callback(1, 0, param);
+  sprintf(path, D_004D26D8, partitionname);
+  fd = sceOpen(path, 0x203);
+  if (fd < 0)
+  {
+    callback(-2, fd, param);
+    return -1;
+  }
+  callback(2, 0, param);
+  result = sceWrite(fd, (void *) 0x1000000, size);
+  if (result < 0)
+  {
+    callback(-3, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  size = 0x80000;
+  i = 1;
+  do
+  {
+    callback(3, i++, param);
+    result = sceIoctl2(fd, 0x6801, D_004DC3A0, 5, 0, 0);
+    if (result < 0)
+    {
+      callback(-4, result, param);
+      xglHddUninstall();
+      return -1;
+    }
+    size += 0x80000;
+  }
+  while (size < 0x380000);
+  result = sceClose(fd);
+  if (result < 0)
+  {
+    callback(-5, result, param);
+    return -1;
+  }
+  callback(4, 0, param);
+  format_arg[0] = 0x2000;
+  result = sceFormat(D_004DC3A8, partitionname, format_arg, 4);
+  if (result < 0)
+  {
+    callback(-6, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(5, 0, param);
+  result = sceMount((char *) mount_device, partitionname, 4, 0, 0);
+  if (result < 0)
+  {
+    callback(-7, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(6, 0, param);
+  fd2 = sceOpen(hddname, 0x602, 0x1B6);
+  if (fd2 < 0)
+  {
+    result = fd2;
+    callback(-8, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  base = 0;
+  dvdname_2[10] = '0';
+  while ((size = xglCdGetFileSize(dvdname_2)) >= 0)
+  {
+    base += (size + 0xFFFFFF) / 0x1000000;
+    dvdname_2[10]++;
+  }
+
+  base <<= 16;
+  dvdname_2[10] = '0';
+  while ((size = xglCdGetFileSize(dvdname_2)) >= 0)
+  {
+    for (offset = 0; offset < size;)
+    {
+      chunk = size - offset;
+      if (chunk > 0x1000000)
+      {
+        chunk = 0x1000000;
+      }
+      ctx.base = base++;
+      xglCdReadFilePart(dvdname_2, (void *) 0x1000000, 2, xglHddInstallReadCB, offset, chunk);
+      offset += chunk;
+      if (ctx.status != 0)
+      {
+        sceClose(fd2);
+        if (xglHddCheck() == 0)
+        {
+          xglHddUninstall();
+          return 1;
+        }
+        return (ctx.status == 1) ? (1) : (-1);
+      }
+      result = sceWrite(fd2, (void *) 0x1000000, chunk);
+      if (result != chunk)
+      {
+        callback(-9, result, param);
+        sceClose(fd2);
+        if (xglHddCheck() == 0)
+        {
+          xglHddUninstall();
+        }
+        return -1;
+      }
+    }
+
+    dvdname_2[10]++;
+  }
+
+  result = sceClose(fd2);
+  if (result < 0)
+  {
+    callback(-10, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(7, 0, param);
+  fd2 = sceOpen((char *) hddcheck, 0x602, 0x1B6);
+  if (fd2 < 0)
+  {
+    result = fd2;
+    callback(-11, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(7, 1, param);
+  xglCdGetFileData((char *) cd_filename, (void *) 0x1000000);
+  result = sceWrite(fd2, (void *) 0x1000000, 0x200);
+  if (result != 0x200)
+  {
+    callback(-12, result, param);
+    sceClose(fd2);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(7, 2, param);
+  result = sceClose(fd2);
+  if (result < 0)
+  {
+    callback(-13, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(7, 3, param);
+  result = sceUmount((char *) mount_device);
+  if (result < 0)
+  {
+    callback(-14, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(7, 4, param);
+  result = sceMount((char *) mount_device, partitionname, 5, 0, 0);
+  if (result < 0)
+  {
+    callback(-15, result, param);
+    xglHddUninstall();
+    return -1;
+  }
+  callback(8, 0, param);
+  return 0;
+}
 
 int xglHddActivate(int state)
 {

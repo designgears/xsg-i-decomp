@@ -634,7 +634,66 @@ void grPutFT4STQ(GrPacket *packet, GrFT4STQ *prim, const Matrix4 matrix)
     ft4STQNum += 4;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/gr_gp_init", grPutSpr);
+typedef struct GrSpr {
+    Vector4 vertex[2];      /* +0x00 */
+    unsigned char col[4];   /* +0x20 */
+    short u[2];             /* +0x24 */
+    short v[2];             /* +0x28 */
+} GrSpr;
+
+void grPutSpr(GrPacket *packet, GrSpr *prim, int flag)
+{
+  Vector4 *v;
+  int *count;
+  int **new_var;
+  int *count2;
+  int i;
+  int n;
+  int idx;
+  count = &packet->count;
+  for (i = 0; i < 2; i++)
+  {
+    ((GrQuad *) packet->data)[packet->count].i[0] = prim->u[i] * 16;
+    count2 = &packet->count;
+    n = *count2;
+    ((GrQuad *) packet->data)[n].i[1] = prim->v[i] * 16;
+    n++;
+    *count2 = n;
+    ((GrQuad *) packet->data)[n].i[0] = prim->col[0];
+    ((GrQuad *) packet->data)[*count2].i[1] = prim->col[1];
+    ((GrQuad *) packet->data)[*count2].i[2] = prim->col[2];
+    idx = *count2;
+    ((GrQuad *) packet->data)[idx].i[3] = prim->col[3];
+    idx++;
+    new_var = &count2;
+    *(*new_var) = idx;
+    v = &prim->vertex[i];
+    if (flag == 0)
+    {
+      int last;
+      ((GrQuad *) packet->data)[idx].i[0] = (((int) v->x) * 16) + 0x7000;
+      ((GrQuad *) packet->data)[*count].i[1] = (((int) v->y) * 16) + 0x7200;
+      ((GrQuad *) packet->data)[*count].i[2] = (int) v->z;
+      last = *count;
+      ((GrQuad *) packet->data)[last].i[3] = 0;
+      last++;
+      *count = last;
+    }
+    else
+    {
+      int last;
+      ((GrQuad *) packet->data)[idx].i[0] = (int) v->x;
+      ((GrQuad *) packet->data)[*count].i[1] = (int) v->y;
+      ((GrQuad *) packet->data)[*count].i[2] = (int) v->z;
+      last = *count;
+      ((GrQuad *) packet->data)[last].i[3] = 0;
+      last++;
+      *count = last;
+    }
+  }
+
+  sprNum += 2;
+}
 
 void grPacketSend(GrPacket *packet)
 {

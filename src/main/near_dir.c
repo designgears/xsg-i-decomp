@@ -32,11 +32,345 @@ float nearDir(float from, float to)
     return d;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_scaleSPL);
+u8 actSequence[0x9800] = {0};
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_scale);
+void SEQ_scaleSPL(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    SplineTrack *track = (SplineTrack *)((u8 *)sequence + 0x1b8);
+    void *spline = track->spline;
+    float sample[3];
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_rotate);
+    if ((sequence->flags & 0xe0) == 0) {
+        sequence->flags |= 0xe0;
+        track->frame = 0;
+    }
+
+    SPL_getValueXYZ(sample, spline, (float)track->frame);
+
+    actor->scale.x = sample[0];
+    actor->scale.y = sample[1];
+    actor->scale.z = sample[2];
+
+    track->frame++;
+    if (track->last_frame < (short)track->frame)
+        sequence->state_flags &= ~0xe0;
+}
+
+typedef struct {
+    void *spline;
+    u8 unmodeled_04[0x10 - 0x04];
+    int frames[3];
+    u8 unmodeled_1c[0x20 - 0x1c];
+    Vector4 start;
+    Vector4 target;
+    Vector4 delta;
+} ScaleTrack;
+
+void SEQ_scale(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    Vector4 *scale = &actor->scale;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    ScaleTrack *track = (ScaleTrack *)((u8 *)sequence + 0x1b8);
+    Vector4 *start = &track->start;
+    Vector4 *target = &track->target;
+    Vector4 *delta = &track->delta;
+    float px;
+    float py;
+    float pz;
+    u32 state_flags;
+    u32 keep;
+    Vector4 diff;
+
+    if ((sequence->flags & 0x20u) == 0) {
+        state_flags = sequence->state_flags;
+
+        if (state_flags & 0x20u) {
+            int frames;
+
+            px = scale->x;
+            start->x = px;
+            frames = track->frames[0];
+
+            if (frames > 0) {
+                float step = 1.0f / (float)frames;
+
+                delta->x = (target->x - px) * step;
+            }
+
+            sequence->flags |= 0x20u;
+            *(u32 *)((u8 *)sequence + 0x34) = 0;
+        } else {
+            delta->x = 0.0f;
+            sequence->flags |= 0x20u;
+        }
+    } else {
+        state_flags = sequence->state_flags;
+    }
+
+    if ((sequence->flags & 0x40u) == 0) {
+        if (state_flags & 0x40u) {
+            int frames;
+
+            py = scale->y;
+            start->y = py;
+            frames = track->frames[1];
+
+            if (frames > 0) {
+                float step = 1.0f / (float)frames;
+
+                delta->y = (target->y - py) * step;
+            }
+
+            sequence->flags |= 0x40u;
+            *(u32 *)((u8 *)sequence + 0x34) = 0;
+        } else {
+            delta->y = 0.0f;
+            sequence->flags |= 0x40u;
+        }
+    }
+
+    if ((sequence->flags & 0x80u) == 0) {
+        state_flags = sequence->state_flags;
+
+        if (state_flags & 0x80u) {
+            int frames;
+
+            pz = scale->z;
+            start->z = pz;
+            frames = track->frames[2];
+
+            if (frames > 0) {
+                float step = 1.0f / (float)frames;
+
+                delta->z = (target->z - pz) * step;
+            }
+
+            sequence->flags |= 0x80u;
+            *(u32 *)((u8 *)sequence + 0x34) = 0;
+        } else {
+            delta->z = 0.0f;
+            sequence->flags |= 0x80u;
+        }
+    }
+
+    if (state_flags & 0x20u) {
+        diff.x = __builtin_fabsf(target->x - scale->x);
+
+        if (diff.x <= __builtin_fabsf(delta->x)) {
+            scale->x = target->x;
+            keep = state_flags & ~0x20u;
+            sequence->state_flags = keep;
+            state_flags = keep;
+        } else {
+            scale->x = scale->x + delta->x;
+        }
+    }
+
+    if (state_flags & 0x40u) {
+        diff.y = __builtin_fabsf(target->y - scale->y);
+
+        if (diff.y <= __builtin_fabsf(delta->y)) {
+            scale->y = target->y;
+            keep = state_flags & ~0x40u;
+            sequence->state_flags = keep;
+            state_flags = keep;
+        } else {
+            scale->y = scale->y + delta->y;
+        }
+    }
+
+    if (state_flags & 0x80u) {
+        diff.z = __builtin_fabsf(target->z - scale->z);
+
+        if (diff.z <= __builtin_fabsf(delta->z)) {
+            scale->z = target->z;
+            keep = state_flags & ~0x80u;
+            sequence->state_flags = keep;
+            state_flags = keep;
+        } else {
+            scale->z = scale->z + delta->z;
+        }
+    }
+}
+
+void SEQ_rotate(Actor *actor) {
+    Vector4 *rotation = &actor->rotation;
+    Vector4 *position = &actor->position;
+    u8 *temp_16;
+    u8 *temp_17;
+    u8 *temp_19;
+    u8 *temp_21;
+    u8 *temp_22;
+    u8 *temp_23;
+    float temp_f2;
+    float temp_f2_2;
+    float temp_f2_3;
+    float temp_near;
+    int temp_2;
+    int temp_2_2;
+    int temp_2_3;
+    int temp_3;
+    u32 var_3;
+    u32 var_4;
+    u32 var_2;
+    u32 var_2_2;
+    u32 var_2_3;
+    u32 var_2_4;
+    u32 var_2_5;
+    u32 var_2_6;
+    u32 var_2_7;
+    u32 var_4_2;
+    volatile float dbg_x;
+    volatile float dbg_y;
+    volatile float dbg_z;
+
+    SequenceState *sequence;
+
+    temp_16 = actSequence + (actor->number * 0x260);
+    sequence = (SequenceState *)temp_16;
+    var_3 = sequence->flags;
+    temp_21 = temp_16 + 0xB8;
+    temp_23 = temp_16 + 0xD8;
+    temp_17 = temp_16 + 0xE8;
+    temp_22 = temp_16 + 0xF8;
+    temp_19 = (u8 *)*(u32 *)(temp_16 + 0xB8);
+    if (!(var_3 & 2)) {
+        var_4 = sequence->state_flags;
+        if (var_4 & 2) {
+            *(float *)temp_23 = (float)rotation->x;
+            if (*(u32 *)(temp_21 + 0x1C) & 1) {
+                *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x14) - position->y, *(float *)(temp_19 + 0x18) - position->z);
+            }
+            temp_2 = *(int *)(temp_21 + 0x10);
+            if (temp_2 > 0) {
+                float step = 1.0f / (float)temp_2;
+                *(float *)temp_22 = nearDir(*(float *)temp_23, *(float *)temp_17) * step;
+            }
+            *(u32 *)(temp_16 + 0x34) = 0;
+            sequence->flags |= 2;
+            var_2 = sequence->flags;
+            var_4 = sequence->state_flags;
+        } else {
+            *(float *)temp_22 = 0.0f;
+            sequence->flags |= 2;
+            var_2 = sequence->flags;
+        }
+        var_3 = var_2;
+    } else {
+        var_4 = sequence->state_flags;
+    }
+    if (!(var_3 & 4)) {
+        if (var_4 & 4) {
+            *(float *)(temp_23 + 0x4) = (float)rotation->y;
+            if (*(u32 *)(temp_21 + 0x1C) & 2) {
+                *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x10) - position->x, *(float *)(temp_19 + 0x18) - position->z);
+            }
+            temp_2_2 = *(int *)(temp_21 + 0x14);
+            if (temp_2_2 > 0) {
+                float step = 1.0f / (float)temp_2_2;
+                *(float *)(temp_22 + 0x4) = nearDir(*(float *)(temp_23 + 0x4), *(float *)(temp_17 + 0x4)) * step;
+            }
+            *(u32 *)(temp_16 + 0x34) = 0;
+            sequence->flags |= 4;
+            var_2_3 = sequence->flags;
+            var_4 = sequence->state_flags;
+        } else {
+            var_2_3 = var_3 | 4;
+            sequence->flags = var_2_3;
+            *(float *)(temp_22 + 0x4) = 0.0f;
+        }
+        var_3 = var_2_3;
+    }
+    var_2_2 = var_3 & 8;
+    if (var_2_2 == 0) {
+        if (var_4 & 8) {
+            *(float *)(temp_23 + 0x8) = (float)rotation->z;
+            if (*(u32 *)(temp_21 + 0x1C) & 4) {
+                *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x10) - position->x, *(float *)(temp_19 + 0x14) - position->y);
+            }
+            temp_2_3 = *(int *)(temp_21 + 0x18);
+            if (temp_2_3 > 0) {
+                float step = 1.0f / (float)temp_2_3;
+                *(float *)(temp_22 + 0x8) = nearDir(*(float *)(temp_23 + 0x8), *(float *)(temp_17 + 0x8)) * step;
+            }
+            *(u32 *)(temp_16 + 0x34) = 0;
+            sequence->flags |= 8;
+            var_2_5 = sequence->flags;
+            var_4 = sequence->state_flags;
+        } else {
+            var_2_5 = var_3 | 8;
+            sequence->flags = var_2_5;
+            *(float *)(temp_22 + 0x8) = 0.0f;
+        }
+    }
+    var_2_4 = sequence->state_flags & 2;
+    if (var_2_4 != 0) {
+        if (*(u32 *)(temp_21 + 0x1C) & 1) {
+            *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x14) - position->y, *(float *)(temp_19 + 0x18) - position->z);
+        }
+        temp_near = nearDir(*(float *)temp_17, rotation->x);
+        temp_f2 = *(float *)temp_22;
+        dbg_x = __builtin_fabsf(temp_near);
+        if (dbg_x <= __builtin_fabsf(temp_f2)) {
+            var_4 = sequence->state_flags & ~2;
+            rotation->x = *(float *)temp_17;
+            sequence->state_flags = var_4;
+            if (!(var_4 & ~0x10)) {
+                sequence->state_flags = 0;
+                var_4 = 0;
+            }
+        } else {
+            var_4 = sequence->state_flags;
+            rotation->x += temp_f2;
+        }
+    }
+    var_2_6 = var_4 & 4;
+    if (var_2_6 != 0) {
+        if (*(u32 *)(temp_21 + 0x1C) & 2) {
+            *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x10) - position->x, *(float *)(temp_19 + 0x18) - position->z);
+        }
+        temp_near = nearDir(*(float *)(temp_17 + 0x4), rotation->y);
+        temp_f2_2 = *(float *)(temp_22 + 0x4);
+        dbg_y = __builtin_fabsf(temp_near);
+        if (dbg_y <= __builtin_fabsf(temp_f2_2)) {
+            var_4_2 = sequence->state_flags & ~4;
+            rotation->y = *(float *)(temp_17 + 0x4);
+            sequence->state_flags = var_4_2;
+            if (!(var_4_2 & ~0x10)) {
+                sequence->state_flags = 0;
+                var_4_2 = 0;
+            }
+        } else {
+            var_4_2 = sequence->state_flags;
+            rotation->y += temp_f2_2;
+        }
+        var_4 = var_4_2;
+    }
+    var_2_7 = var_4 & 8;
+    if (var_2_7 != 0) {
+        if (*(u32 *)(temp_21 + 0x1C) & 4) {
+            *(float *)(temp_17 + 0x4) = xglAtan2(*(float *)(temp_19 + 0x10) - position->x, *(float *)(temp_19 + 0x14) - position->y);
+        }
+        temp_near = nearDir(*(float *)(temp_17 + 0x8), rotation->z);
+        temp_f2_3 = *(float *)(temp_22 + 0x8);
+        dbg_z = __builtin_fabsf(temp_near);
+        if (dbg_z <= __builtin_fabsf(temp_f2_3)) {
+            temp_3 = sequence->state_flags & ~8;
+            rotation->z = *(float *)(temp_17 + 0x8);
+            sequence->state_flags = temp_3;
+            if (!(temp_3 & ~0x10)) {
+                sequence->state_flags = 0;
+            }
+        } else {
+            rotation->z += temp_f2_3;
+        }
+    }
+}
 
 void SEQ_rotateSPL(Actor *actor)
 {
@@ -136,7 +470,98 @@ void SEQ_moveSPL(Actor *actor)
         sequence->state_flags &= ~0x1u;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_moveChr);
+extern void ACT_setMotion(Actor *actor, int motion);
+extern float xglSin(float angle);
+extern float xglCos(float angle);
+extern float D_004D84C0;
+typedef struct {
+    void *spline;
+    int frames;
+    u8 unmodeled_08[0x08];
+    Vector4 start;
+    u8 unmodeled_20[0x0C];
+    float dist;
+} MoveChrTrack;
+
+void SEQ_moveChr(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    Vector4 *position = &actor->position;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    MoveChrTrack *track = (MoveChrTrack *)((u8 *)sequence + 0x38);
+    Vector4 *start = (Vector4 *)((u8 *)sequence + 0x48);
+    float *dist = &track->dist;
+    Vector4 *target = (Vector4 *)((u8 *)track->spline + 0x10);
+    Vector4 *rotation = &actor->rotation;
+    Vector4 delta;
+    Vector4 disp;
+    float angle;
+    float px;
+    float pz;
+    u32 keep;
+    int frames;
+
+    if ((sequence->flags & 0x1u) == 0) {
+        sequence->flags |= 0x1u;
+        px = position->x;
+        start->x = px;
+        frames = track->frames;
+        start->y = position->y;
+        pz = position->z;
+        start->z = pz;
+
+        if (frames > 0) {
+            float step = 1.0f / (float)frames;
+
+            delta.x = (target->x - px) * step;
+            delta.z = (target->z - pz) * step;
+            delta.y = 0.0f;
+            xglVectorLength(dist, &delta);
+        }
+
+        xglAtan2(target->x - position->x, target->z - position->z);
+        *(u32 *)((u8 *)sequence + 0x34) = 0;
+    }
+
+    angle = xglAtan2(target->x - position->x, target->z - position->z);
+
+    if ((sequence->state_flags & 0x4u) == 0) {
+        rotation->y = angle;
+    }
+
+    disp.x = target->x - position->x;
+    disp.z = target->z - position->z;
+    disp.w = disp.x * disp.x + disp.z * disp.z;
+    disp.w = __builtin_sqrtf(disp.w);
+
+    if (disp.w < __builtin_sqrtf((*dist + 0.5f) * (*dist + 0.5f))) {
+        keep = sequence->state_flags & ~1u;
+        sequence->state_flags = keep;
+        if ((keep & ~0x10u) == 0) {
+            sequence->state_flags = 0;
+        }
+    } else {
+        position->x = position->x + xglSin(angle) * *dist;
+        position->z = position->z + xglCos(angle) * *dist;
+
+        if ((sequence->state_flags & 0x10u) == 0) {
+            u32 *move_flags = (u32 *)(actor_bytes + 0x6f0);
+
+            if ((*move_flags & 0x8u) == 0) {
+                *move_flags |= 0x8u;
+            }
+
+            if (*dist <= D_004D84C0) {
+                ACT_setMotion(actor, 1);
+            } else {
+                ACT_setMotion(actor, 3);
+            }
+        }
+
+        *(u32 *)((u8 *)sequence + 0x34) += 1;
+    }
+}
 
 extern int mtnIDLE_0[4];
 typedef struct {
@@ -226,11 +651,244 @@ void SEQ_setRotY2Player(Actor *actor)
     ACT_setMotion(actor, 7);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_moveNPC_XZ);
+extern float D_004D84C8;
+extern float D_004D84CC;
+extern float xglSin(float angle);
+extern float xglCos(float angle);
+typedef struct {
+    void *spline;
+    int frames;
+    u8 unmodeled_08[0x08];
+    Vector4 start;
+    Vector4 target;
+} MoveNPCXZTrack;
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_moveXZ);
+void SEQ_moveNPC_XZ(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    Vector4 *position = &actor->position;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    MoveNPCXZTrack *track = (MoveNPCXZTrack *)((u8 *)sequence + 0x38);
+    Vector4 *start = (Vector4 *)((u8 *)sequence + 0x48);
+    Vector4 *target = (Vector4 *)((u8 *)sequence + 0x58);
+    float *dist = &target->w;
+    Vector4 *rotation = &actor->rotation;
+    Vector4 delta;
+    Vector4 disp;
+    float angle;
+    float px;
+    float pz;
+    u32 keep;
+    int frames;
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", SEQ_motion);
+    if ((sequence->flags & 0x1u) == 0) {
+        sequence->flags |= 0x1u;
+        px = position->x;
+        start->x = px;
+        frames = track->frames;
+        start->y = position->y;
+        pz = position->z;
+        start->z = pz;
+
+        if (frames > 0) {
+            float step = 1.0f / (float)frames;
+
+            delta.x = (target->x - px) * step;
+            delta.y = 0.0f;
+            delta.z = (target->z - pz) * step;
+            xglVectorLength(dist, &delta);
+            xglAtan2(target->x - position->x, target->z - position->z);
+        }
+        *(u32 *)((u8 *)sequence + 0x34) = 0;
+    }
+
+    angle = xglAtan2(target->x - position->x, target->z - position->z);
+
+    if ((sequence->state_flags & 0x4u) == 0) {
+        rotation->y = rotation->y + nearDir(rotation->y, angle) * D_004D84C8;
+    }
+
+    if ((sequence->state_flags & 0x10u) == 0) {
+        u32 *move_flags = (u32 *)(actor_bytes + 0x6f0);
+
+        if ((*move_flags & 0x8u) == 0) {
+            *move_flags |= 0x8u;
+        }
+
+        if (*dist <= D_004D84CC) {
+            ACT_setMotion(actor, 2);
+        } else {
+            ACT_setMotion(actor, 4);
+        }
+    }
+
+    disp.x = target->x - position->x;
+    disp.z = target->z - position->z;
+    disp.w = disp.x * disp.x + disp.z * disp.z;
+    disp.w = __builtin_sqrtf(disp.w);
+
+    if (disp.w <= __builtin_sqrtf(*dist * *dist)) {
+        keep = sequence->state_flags & ~1u;
+        sequence->state_flags = keep;
+        if ((keep & ~0x10u) == 0) {
+            sequence->state_flags = 0;
+        }
+    }
+
+    position->x = position->x + xglSin(angle) * *dist;
+    position->z = position->z + xglCos(angle) * *dist;
+    *(u32 *)((u8 *)sequence + 0x34) += 1;
+}
+
+extern float D_004D84D0;
+extern float xglSin(float angle);
+extern float xglCos(float angle);
+typedef struct {
+    void *spline;
+    int frames;
+    u8 unmodeled_08[0x08];
+    Vector4 start;
+    Vector4 target;
+} MoveXZTrack;
+
+void SEQ_moveXZ(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    Vector4 *position = &actor->position;
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    MoveXZTrack *track = (MoveXZTrack *)((u8 *)sequence + 0x38);
+    Vector4 *start = (Vector4 *)((u8 *)sequence + 0x48);
+    Vector4 *target = (Vector4 *)((u8 *)sequence + 0x58);
+    float *dist = &target->w;
+    Vector4 *rotation = &actor->rotation;
+    Vector4 delta;
+    Vector4 disp;
+    float angle;
+    float px;
+    float pz;
+    u32 keep;
+    int frames;
+
+    if ((sequence->flags & 0x1u) == 0) {
+        sequence->flags |= 0x1u;
+        px = position->x;
+        start->x = px;
+        frames = track->frames;
+        start->y = position->y;
+        pz = position->z;
+        start->z = pz;
+
+        if (frames > 0) {
+            float step = 1.0f / (float)frames;
+
+            delta.x = (target->x - px) * step;
+            delta.y = 0.0f;
+            delta.z = (target->z - pz) * step;
+            xglVectorLength(dist, &delta);
+            xglAtan2(target->x - position->x, target->z - position->z);
+        }
+        *(u32 *)((u8 *)sequence + 0x34) = 0;
+    }
+
+    angle = xglAtan2(target->x - position->x, target->z - position->z);
+
+    if ((sequence->state_flags & 0x4u) == 0) {
+        rotation->y = rotation->y + nearDir(rotation->y, angle) * D_004D84D0;
+    }
+
+    if ((sequence->state_flags & 0x10u) == 0) {
+        u32 *move_flags = (u32 *)(actor_bytes + 0x6f0);
+
+        if ((*move_flags & 0x8u) == 0) {
+            *move_flags |= 0x8u;
+        }
+    }
+
+    disp.x = target->x - position->x;
+    disp.z = target->z - position->z;
+    disp.w = disp.x * disp.x + disp.z * disp.z;
+    disp.w = __builtin_sqrtf(disp.w);
+
+    if (disp.w <= __builtin_sqrtf(*dist * *dist)) {
+        keep = sequence->state_flags & ~1u;
+        sequence->state_flags = keep;
+        if ((keep & ~0x10u) == 0) {
+            sequence->state_flags = 0;
+        }
+    }
+
+    position->x = position->x + xglSin(angle) * *dist;
+    position->z = position->z + xglCos(angle) * *dist;
+    *(u32 *)((u8 *)sequence + 0x34) += 1;
+}
+
+extern float D_004D84D4;
+extern void ACT_setMotion2(void *actor, int motion, int flags);
+typedef struct {
+    float accumulated;
+    u32 unk04;
+    int motion;
+    short unk0c;
+    short unk0e;
+    short frame_from;
+    short frame_to;
+    u8 mode;
+    u8 unmodeled_15[3];
+    u32 flags;
+    float speed;
+} MotionTrack;
+typedef struct {
+    u32 flags;
+    float motion_time;
+    float speed;
+    float f6fc;
+    float f700;
+    u8 unmodeled_14[0x24 - 0x14];
+    float f714;
+} ActorMotion;
+
+void SEQ_motion(Actor *actor)
+{
+    u8 *actor_bytes = (u8 *)actor;
+    ActorMotion *motion = (ActorMotion *)(actor_bytes + 0x6f0);
+    SequenceState *sequence =
+        (SequenceState *)(actSequence + actor_bytes[0x80] * 0x260u);
+    MotionTrack *track = (MotionTrack *)((u8 *)sequence + 0x138);
+
+    if ((sequence->flags & 0x10u) == 0) {
+        float scale = D_004D84D4;
+        u32 flags;
+
+        sequence->flags |= 0x10u;
+        motion->flags |= 1u;
+        motion->f714 = (float)track->mode * scale;
+        motion->flags &= ~1u;
+        flags = track->flags | 0x20000000u;
+        track->flags = flags;
+        motion->speed = track->speed * scale;
+        ACT_setMotion2(actor, track->motion, flags);
+        if (track->frame_from >= 0) {
+            float lo = (float)track->frame_from * scale;
+            float hi = (float)track->frame_to * scale;
+
+            motion->f6fc = lo;
+            motion->f700 = hi;
+            if (motion->speed < 0.0f) {
+                motion->motion_time = hi;
+            } else {
+                motion->motion_time = lo;
+            }
+        }
+    }
+    if ((sequence->state_flags & ~0x10u) == 0) {
+        if ((motion->flags & 0x1000u) != 0) {
+            sequence->state_flags = 0;
+        }
+    }
+    track->accumulated = track->accumulated + motion->speed;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_updateSequence);
 
@@ -296,7 +954,39 @@ void ACT_initVMObject(u8 *p)
 
 INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_createChr);
 
-INCLUDE_ASM("asm/main/nonmatchings/near_dir", ACT_createNPC);
+extern Actor *ACT_create(void);
+extern void ACT_updateNPC();
+extern void UnduParamInit(void *undulation);
+static inline void ACT_initSequenceAt_i(Actor *actor)
+{
+    SequenceState *sequence = (SequenceState *)(actSequence + actor->number * 0x260u);
+    sequence->flags = 0;
+    sequence->state_flags = 0;
+    sequence->cleared_on_init = 0;
+    sequence->cleared_on_init_run[0] = 0;
+    sequence->cleared_on_init_run[1] = 0;
+    sequence->cleared_on_init_run[2] = 0;
+    sequence->cleared_on_init_run[3] = 0;
+    sequence->handler[0] = 0;
+    sequence->handler[1] = 0;
+    sequence->handler[2] = 0;
+    sequence->handler[3] = 0;
+}
+
+Actor *ACT_createNPC(void)
+{
+    Actor *a = ACT_create();
+
+    if (a) {
+        UnduParamInit(&a->undulation);
+        a->update = ACT_updateNPC;
+        *(u8 *)((u8 *)a + 0x81) = 0;
+        *(u32 *)((u8 *)a + 0x4c0) = 0;
+        *(short *)((u8 *)a + 0x88) = 0;
+        ACT_initSequenceAt_i(a);
+    }
+    return a;
+}
 
 void ACT_info(void)
 {

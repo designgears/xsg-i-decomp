@@ -1574,7 +1574,93 @@ int _GetDefShotPosDir(RgWeaponShotRequest *info, RgVector position, RgVector dir
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _GetDefShotPosDirFunc);
+typedef struct DefShotEss {
+    unsigned char unk00[0x18];
+    float rotX;
+    float rotY;
+    int dirType;
+    unsigned int jointNum;
+    int joints[1];
+} DefShotEss;
+extern void XrgCopyMatrix(RgMatrix destination, const RgMatrix source);
+extern void XrgNegateVector(RgVector destination, RgVector source);
+extern float XrgLengthVector(RgVector vector);
+extern float *XrgVectorY(void);
+extern void XrgCalcMatrixZtoY(RgMatrix destination, RgVector first, RgVector second);
+extern void XrgRotMatrixY(RgMatrix destination, RgMatrix source, float angle);
+extern void XrgRotMatrixX(RgMatrix destination, RgMatrix source, float angle);
+
+int _GetDefShotPosDirFunc(RgWeapon *weapon, RgVector position, RgVector direction)
+{
+  RgMatrix joint;
+  int new_var;
+  RgMatrix local;
+  RgVector dir;
+  float len;
+  int found;
+  int robotId;
+  DefShotEss *ess;
+  XrgActor *actor;
+  int jointNo;
+  unsigned int n;
+  found = 0;
+  robotId = weapon->robotId;
+  ess = (DefShotEss *) weapon->ess;
+  if (robotId == 0)
+  {
+    assert_prog(D_00A53808, D_00A53658, 0x764);
+  }
+  RgGeomRobotCalcLocal(RgRobotGetGeom(robotId), local);
+  actor = weapon->actor;
+  if (actor == 0)
+  {
+    XrgCopyMatrix(joint, local);
+  }
+  else
+  {
+    jointNo = 8;
+    if (ess->jointNum != 0)
+    {
+      n = *((unsigned int *) weapon->unmodeled_64);
+      *((unsigned int *) weapon->unmodeled_64) = n + 1;
+      new_var = ess->joints[n];
+ do { jointNo = new_var; if ((n + 1) >= ess->jointNum) { *((unsigned int *) weapon->unmodeled_64) = 0; } } while (0);
+    }
+    found = XrgActorGetJointLocal(actor, jointNo, joint);
+    if (found == 0)
+    {
+      XrgCopyMatrix(joint, local);
+    }
+  }
+  XrgCopyVector(position, &joint[12]);
+  if ((ess->dirType != 3) && (found != 0))
+  {
+    XrgAddVector(direction, position, &joint[ess->dirType * 4]);
+  }
+  else
+    if (weapon->lockedOn != 0)
+  {
+    XrgCopyVector(direction, weapon->targetPosition);
+  }
+  else
+  {
+    XrgNegateVector(direction, &local[8]);
+    XrgAddVector(direction, direction, position);
+  }
+  if (weapon->lockedOn == 0)
+  {
+    if ((ess->rotX != 0.0f) || (ess->rotY != 0.0f))
+    {
+      XrgSubVector(dir, direction, position);
+      len = XrgLengthVector(dir);
+      XrgCalcMatrixZtoY(joint, dir, XrgVectorY());
+      XrgRotMatrixY(joint, joint, ess->rotY);
+      XrgRotMatrixX(joint, joint, ess->rotX);
+      XrgScaleVector(dir, &joint[8], len);
+      XrgAddVector(direction, position, dir);
+    }
+  }
+}
 
 void _GetShotInfo(RgWeapon *weapon, RgWeaponShotRequest *info)
 {

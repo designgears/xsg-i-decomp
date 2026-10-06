@@ -227,7 +227,76 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemSelectMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemIconMain);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemExMain);
+typedef struct MenuItemExWork {
+    unsigned char state;
+    unsigned char pad1[3];
+    int color;
+    unsigned char message[1];
+    unsigned char mode;
+    unsigned char pad2[2];
+    short x;
+    short y;
+    int color2;
+} MenuItemExWork;
+extern MenuItemExWork *MenuItemEx;
+extern char *msg00_4_0036D6B8[];
+extern void eMessageSet(void *message, const char *text);
+extern void eMessageMain(void *message);
+extern void MoveSlide(short *value, short *destination, float speed);
+
+void MenuItemExMain(void)
+{
+  MenuItemExWork *ex = MenuItemEx;
+  int *col = &ex->color2;
+  short target[8];
+  unsigned char *p;
+  unsigned char c;
+  MenuItemExWork **new_var;
+  unsigned char *mw;
+  short x;
+  short y;
+  unsigned char m;
+  switch (ex->state)
+  {
+    case 0:
+      ex->color = 0xFFFFF8;
+      x = 0x220;
+      y = 0x159;
+      m = 0x20;
+      eMessageSet(ex->message, msg00_4_0036D6B8[0]);
+      ex->x = x;
+      (*(new_var = &ex))->y = y;
+      *col = ex->color;
+      ex->mode = m;
+      ex->state = 2;
+
+    case 2:
+      target[0] = 0x220;
+      mw = (unsigned char *) (&MenuWork);
+      if (mw[3] == 0x20)
+    {
+      target[0] = 400;
+      p = ((unsigned char *) msg00_4_0036D6B8[0]) + 1;
+      if ((*((int *) (mw + 0x50))) >= 0)
+      {
+        p[2] = 0x80;
+        p[1] = 0x80;
+        p[0] = 0x80;
+      }
+      else
+      {
+        p[2] = 0x40;
+        p[1] = 0x40;
+        p[0] = 0x40;
+      }
+    }
+      MoveSlide(&ex->x, target, 3.0f);
+      eMessageMain(ex->message);
+      break;
+
+  }
+
+}
 
 extern int xglFlagsGet(int bit_offset, int bit_count);
 

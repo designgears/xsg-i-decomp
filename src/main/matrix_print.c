@@ -220,7 +220,33 @@ void MATRIX_convert4MulMatrixRev(Matrix4 destination, Matrix4 matrix, Matrix4 ot
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/matrix_print", MATRIX_mul3x4);
+static void MATRIX_mul3x4(Matrix4 destination, Matrix4 source, Matrix4 rotation)
+{
+    f32 v[4];
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        v[0] = source[0][i];
+        v[1] = source[1][i];
+        v[2] = source[2][i];
+        v[3] = source[3][i];
+
+        destination[0][i] = v[0] * rotation[0][0] + v[1] * rotation[0][1] + v[2] * rotation[0][2];
+        destination[1][i] = v[0] * rotation[1][0] + v[1] * rotation[1][1] + v[2] * rotation[1][2];
+        destination[2][i] = v[0] * rotation[2][0] + v[1] * rotation[2][1] + v[2] * rotation[2][2];
+        destination[3][i] = v[0] * rotation[3][0] + v[1] * rotation[3][1] + v[2] * rotation[3][2] + v[3];
+    }
+
+    {
+        float zero = 0.0f;
+        float one = 1.0f;
+
+        destination[3][3] = one;
+        destination[2][3] = zero;
+        destination[1][3] = zero;
+        destination[0][3] = zero;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/matrix_print", MATRIX_mul4sx3);
 

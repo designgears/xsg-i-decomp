@@ -49,7 +49,59 @@ INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_moveUnitChr);
 
 INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_moveUnitXZ);
 
-INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_motionUnit);
+extern void MAP_setUnitMotion(MapUnitMotionRecord *unit, int motionId);
+extern float D_004D878C;
+extern float D_004D8790;
+typedef struct {
+    int pad0[2];
+    int motion;
+    int pad1;
+    short start;
+    short end;
+    int pad2;
+    int flags;
+    float speed;
+} SeqMotionTrack;
+typedef struct {
+    int flags;
+    float time;
+    float speed;
+    float start;
+    float end;
+} SeqMotionUnit;
+
+void SEQ_motionUnit(MapUnitMotionRecord *unit)
+{
+  MapUnitGroupSequenceEntry *seq = &unitSequence[((unsigned char *) unit)[0xA0]];
+  SeqMotionUnit *u = (SeqMotionUnit *) (((unsigned char *) unit) + 0x100);
+  SeqMotionTrack *track = (SeqMotionTrack *) (((unsigned char *) seq) + 0x138);
+  float k;
+  int new_var;
+  if (!(seq->flags & 0x10))
+  {
+    seq->flags |= 0x10;
+    MAP_setUnitMotion(unit, track->motion);
+    k = D_004D878C;
+    new_var = (!D_004D8790) && (!D_004D8790);
+    u->flags = track->flags;
+    if (track->start >= 0)
+    {
+      u->time = (u->start = track->start * k);
+      u->end = track->end * k;
+    }
+    if (new_var && (!D_004D8790))
+    {
+    }
+    u->speed = track->speed * D_004D8790;
+  }
+  if (!(seq->state & (~0x10)))
+  {
+    if (u->flags & 0x1000)
+    {
+      seq->state = 0;
+    }
+  }
+}
 
 /* Still asm; declared here until its own TU is published. */
 extern void ANM_resetDefault(MapUnitAnmState *anim, int param);

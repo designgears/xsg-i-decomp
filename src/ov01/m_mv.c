@@ -66,7 +66,7 @@ typedef struct MvPlayOptions {
     int frame_height;
 } MvPlayOptions;
 
-int MMvPlay2(MvPlayOptions options);
+int MMvPlay2(MvPlayOptions *options);
 
 int MMvInit(void)
 {
@@ -105,7 +105,7 @@ int MMvPlay(const char *filename)
 
     options.flags = 2;
     options.filename = filename;
-    return MMvPlay2(options);
+    return MMvPlay2(&options);
 }
 
 INCLUDE_ASM("asm/nonmatchings/ov01/m_mv", MMvPlay2);

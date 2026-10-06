@@ -215,7 +215,27 @@ signed char GetUwamonoSignal(UwamonoMapUnit *unit)
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", InitUwamono);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", InitMapParts);
+extern void InitMapKoware(void *p);
+extern void InitMapDoor(void *p);
+extern void InitDrill(void *p);
+
+void InitMapParts(char *unit) {
+    *(int *)(unit + 0xE0) = 0;
+    switch (*(short *)(unit + 0x1A0)) {
+    case 2:
+        InitMapKoware(unit);
+        return;
+    case 1:
+        InitMapDoor(unit);
+        return;
+    case 20:
+        InitDrill(unit);
+        return;
+    default:
+        printf("Illegal Parts Type %d\n", *(short *)(unit + 0x1A0));
+        *(int *)(unit + 4) = 0;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", InitMapKoware);
 
@@ -341,7 +361,30 @@ void SetUwaWind(UwaWindSrc_ *unit)
     EXM_SetWindStruct(&uwaWind);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", UwamonoBrokenSe);
+void UwamonoBrokenSe(char *unit)
+{
+    char *ext = unit + 0x1A0;
+    int variant = *(unsigned char *)(unit + 0xA0) + 1;
+
+    if (*(int *)(ext + 0x34) != -1) {
+        xglSoundEffectNormalID(*(int *)(ext + 0x34), variant);
+        return;
+    }
+    switch (*(signed char *)(ext + 0x32)) {
+    case 0:
+        xglSoundEffectNormalID(0x10003, variant);
+        break;
+    case 1:
+        xglSoundEffectNormalID(0x10006, variant);
+        break;
+    case 2:
+        xglSoundEffectNormalID(0x10007, variant);
+        break;
+    default:
+        xglSoundEffectNormalID(0x10003, variant);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/init_uwamono_sys", DrawActiveCursol);
 

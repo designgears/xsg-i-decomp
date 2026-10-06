@@ -102,13 +102,13 @@ INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillInfoMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillStatusMain);
 
+extern struct { char pad[0x31]; signed char unk31; char pad32[0xE]; signed char unk40; } MenuWork;
+
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillMenuMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillExMain);
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillL1R1Main);
-
-extern struct { char pad[0x31]; signed char unk31; char pad32[0xE]; signed char unk40; } MenuWork;
 
 INCLUDE_ASM("asm/main/nonmatchings/menu_skill", MenuSkillSetListMain);
 

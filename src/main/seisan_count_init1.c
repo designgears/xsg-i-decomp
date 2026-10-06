@@ -76,13 +76,127 @@ void tskTskMain2(TskObject *task)
 
 INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", SeisanTimeEx);
 
-INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", tskSeisanButton);
+extern char *msg00_1_0036DAC8[];
+void MoveSlide(short *current, short *target, float rate);
+void eSpriteSet(void *sprite, short spriteId);
+void eSpriteMain(void *sprite);
+void eMessageSet(void *message, const char *text);
+void eMessageMain(void *message);
+typedef struct SeisanButtonData {
+    unsigned char unk00[4];
+    int color;              /* +0x04 */
+    unsigned char msg[1];   /* +0x08 */
+    unsigned char msgAttr;  /* +0x09 */
+    unsigned char unk0A[2];
+    short msgX;             /* +0x0C */
+    short msgY;             /* +0x0E */
+    int msgColor;           /* +0x10 */
+    unsigned char unk14[0xC];
+    char *msgText;          /* +0x20 */
+    unsigned char unk24[0x28];
+    unsigned char sprite[4]; /* +0x4C */
+    short x;                /* +0x50 */
+    short y;                /* +0x52 */
+    int sprColor;           /* +0x54 */
+} SeisanButtonData;
+
+static void tskSeisanButton(TskObject *task, SeisanButtonData *w)
+{
+    short target[8];
+    unsigned char *sw;
+    int flag;
+
+    switch (task->state) {
+    case 0:
+        w->color = 0xFFFFF0;
+        eSpriteSet(w->sprite, 0x200);
+        w->x = -0x70;
+        w->y = 0x1A4;
+        w->sprColor = w->color;
+        eMessageSet(w->msg, msg00_1_0036DAC8[0]);
+        w->msgAttr = 0x20;
+        w->msgX = w->x + 0x14;
+        w->msgY = w->y;
+        w->msgColor = w->color;
+        break;
+    case 2:
+        sw = SeisanWork;
+        flag = sw[2] & 4;
+        target[0] = 0x180;
+        if (flag) {
+            w->msgText = msg00_1_0036DAC8[1];
+        }
+        if (sw[1] == 0xF0) {
+            target[0] = 0x220;
+        }
+        MoveSlide(&w->x, target, 3.0f);
+        eSpriteMain(w->sprite);
+        w->msgX = w->x + 0x14;
+        w->msgY = w->y;
+        eMessageMain(w->msg);
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", tskSeisanItem);
 
 INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", tskSeisanStatus);
 
-INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", SeisanFadeMain);
+extern unsigned char *SeisanFade;
+
+void SeisanFadeMain(void)
+{
+    unsigned char *pFade;
+    unsigned char *temp_2;
+    unsigned char *temp_3;
+    u32 *temp_3_2;
+    u32 temp_const;
+    int var_4;
+    int var_5;
+    int temp_2_2;
+
+    pFade = SeisanFade;
+    switch (pFade[0]) {
+    case 0:
+        pFade[1] = 0;
+        temp_3 = pFade + 8;
+        temp_const = 0xFFFFFF;
+        var_4 = 0;
+        var_5 = 3;
+        do {
+            temp_2 = pFade + var_4;
+            temp_3_2 = (u32 *)(temp_3 + var_4);
+            var_5 -= 1;
+            temp_2[0xF] = 0;
+            temp_2[0xE] = 0;
+            var_4 += 0xC;
+            temp_2[0xD] = 0;
+            temp_2[0xC] = 0;
+            *temp_3_2 = temp_const;
+        } while (var_5 >= 0);
+        *(u16 *)(pFade + 4) = 0;
+        *(u16 *)(pFade + 6) = 0;
+        *(u16 *)(pFade + 0x10) = 0;
+        *(u16 *)(pFade + 0x12) = 0x1C0;
+        *(u16 *)(pFade + 0x1C) = 0x200;
+        *(u16 *)(pFade + 0x1E) = 0;
+        *(u16 *)(pFade + 0x28) = 0x200;
+        *(u16 *)(pFade + 0x2A) = 0x1C0;
+        pFade[0] = 2;
+        *(u32 *)(pFade + 0x38) = 0;
+        /* fallthrough */
+    case 2:
+        if (SeisanWork[1] == 0xF0) {
+            temp_2_2 = (0x10 - SeisanWork[5]) * 8;
+            pFade[0x33] = temp_2_2;
+            pFade[0x27] = temp_2_2;
+            pFade[0x1B] = temp_2_2;
+            pFade[0xF] = temp_2_2;
+        }
+        if (((int (*)(unsigned int, int, void *))endPrintExtFunc)(0x02FFFFFF, 3, pFade + 4)) {}
+        break;
+    }
+}
 
 int subSeisanHissatuCheck00(unsigned char *seisan_work)
 {

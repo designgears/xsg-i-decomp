@@ -11,7 +11,96 @@ int sceMcWrite(int fd, const void *buffer, int size);
 int sceMcSync(int mode, int *command, int *result);
 int sceMcGetInfo(int port, int slot, int *type, int *free, int *format);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", xglMcRequest);
+typedef struct
+{
+    int a;
+    unsigned char *name;
+    int b;
+    int c;
+} XglMcParam;
+typedef struct
+{
+    short port;
+    short type;
+    int *result;
+    int a;
+    int b;
+    int c;
+    unsigned char name[0x6C];
+} XglMcQueue;
+extern XglMcQueue queue[];
+
+int xglMcRequest(int port, int type, XglMcParam *param, int *result)
+{
+    XglMcQueue *q;
+    unsigned char *src;
+    char *dst;
+    int i;
+    unsigned char *nm;
+    short c;
+    int a;
+    int b;
+    unsigned char end;
+
+    end = queue_end;
+    *result = 0;
+    q = &queue[end];
+    q->port = port;
+    q->result = result;
+    q->type = type;
+    switch (type)
+    {
+    case 1:
+    case 9:
+    case 10:
+        break;
+    case 2:
+    case 4:
+    case 6:
+    case 8:
+        a = param->a;
+        b = param->b;
+        q->a = a;
+        q->b = b;
+        q->c = param->c;
+        break;
+    case 3:
+    case 5:
+    case 7:
+        a = param->a;
+        b = param->b;
+        q->a = a;
+        q->b = b;
+        nm = param->name;
+        q->c = param->c;
+        if (nm == 0)
+        {
+            *(int *)q->name = 0;
+        }
+        else
+        {
+            src = nm;
+            dst = (unsigned char *)q->name;
+            i = 0;
+            if (((unsigned int)(*dst = *src) << 24) != 0)
+            {
+                for (;;)
+                {
+                    i++;
+                    src++;
+                    dst++;
+                    if (i >= 0x6C)
+                        break;
+                    if (((unsigned int)(*dst = *src) << 24) == 0)
+                        break;
+                }
+            }
+        }
+        break;
+    }
+    queue_end = (end + 1) & 7;
+    return 0;
+}
 
 /*
  * The word xglMcGetState reports lives at mw+4; mw+0 is the byte the request

@@ -408,9 +408,12 @@ static void INIT_MODELSYSTEM(void)
 typedef int FlushQ __attribute__((mode(TI)));
 extern int s_nBlocks, s_nUseZwrite, s_nModel, s_nDirect, s_nBlocksAlpha, s_nBlocksAlphaLast, s_nAnotherStudio, s_nUseStealth, s_nUseGnosys, s_nMapAlphaEntry;
 extern void *xglStudioSelectGetActiveCamera(int studio_index);
+extern float xglPointLength(const void *point1, const void *point2);
 extern FlushQ s_inMainCameraPos;
 extern FlushQ s_inMainCameraAng;
 extern int s_nMainCameraWarp;
+extern float D_004D88D8;
+extern float D_004D88DC;
 
 static void FLUSH_MODELSYSTEM(void) {
     char *cam;

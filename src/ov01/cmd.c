@@ -38,7 +38,24 @@ int thinkAdrGet(short offset)
     return pDataTop + (unsigned int)offset / 2 * 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", thinkProcessAdd);
+extern const char D_00A46050[];
+
+int thinkProcessAdd(ThinkProcess *proc)
+{
+    ThinkProcess *p = (ThinkProcess *)processBuf;
+    int i;
+
+    for (i = 0; i < 16; i++) {
+        if (p->dataTop == 0) {
+            proc->waitActive = 0;
+            *p = *proc;
+            return i + 1;
+        }
+        p = (ThinkProcess *)((unsigned char *)p + 0x24);
+    }
+    printf(D_00A46050);
+    return 0;
+}
 
 int thinkProcessDel(int *slot)
 {
@@ -1150,7 +1167,38 @@ int cmdCamBankMoveMode(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamLock);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamCopy);
+extern Vector4 *MCamGetCurrentCoord(Vector4 *out, int type);
+typedef struct {
+    int mode;
+    int pad4[3];
+    Vector4 pos;
+} McamCopyView;
+
+int cmdCamCopy(void)
+{
+    Vector4 v;
+    McamCopyView *cam;
+    int type;
+
+    type = 0;
+    if (camMode != 1) {
+        type = 1;
+        if (camMode != 0) {
+            printf("** CamCopy err **\n");
+            return 0;
+        }
+    }
+    MCamGetCurrentCoord(&v, type);
+    cam = (McamCopyView *)mcamPtrGet();
+    cam->pos.x = v.x;
+    cam->mode = 0;
+    ((McamParams *)cam)->offsEnabled = 0;
+    cam->pos.y = v.y;
+    cam->pos.z = v.z;
+    cam->pos.w = 1.0f;
+    myMCamSet(camMode, cam);
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamSetPos);
 
@@ -1223,7 +1271,21 @@ int cmdCamCenterLength(ThinkProcess *proc)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamUnitHeight);
+extern void sefGetNullPosition(float *out, void *obj, int idx, int flag);
+
+int cmdCamUnitHeight(ThinkProcess *proc)
+{
+    float pos[4];
+    short r = thinkRegNo(proc->pc);
+    short u;
+
+    proc->pc = (unsigned short)proc->pc + 2;
+    u = unitNoChk(cmdNum(proc->pc));
+    proc->pc = (unsigned short)proc->pc + 2;
+    sefGetNullPosition(pos, *(void **)((char *)unitPtrGet(u) + 0x14), 13, 0);
+    thinkRegSet(r, (int)(pos[1] * 100.0f));
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamCoordGet);
 

@@ -85,7 +85,154 @@ typedef struct ItemBoxEntry {
 
 extern ItemBoxEntry ItemBoxTbl[];
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", taskItemGet);
+extern char *strno[];
+extern const char D_004CA4D0[];
+extern const char D_004CA508[];
+extern const char D_004CA520[];
+extern const char D_004CA530[];
+extern const char D_004CA550[];
+extern char D_004DB780[];
+extern int xglFlagsSet1(int bit_offset, int value);
+extern int dataMoneyBoxInc(int amount);
+extern void CallMethod_I(const char *, int);
+typedef struct ItemGetTaskView {
+    XglTaskPrefix task;
+    unsigned char unk10[8];
+    char *name;
+    unsigned char *owner;
+    ItemGetWindow *window;
+    signed char kind;
+    unsigned char unk25;
+    short itemNo;
+    signed char level;
+    unsigned char unk29;
+    unsigned char unk2a[2];
+    int special;
+    signed char started;
+} ItemGetTaskView;
+
+static int taskItemGet(XglTaskPrefix *t)
+{
+    ItemGetTaskView *task;
+    char message[64];
+    int id;
+    int no;
+    ItemBoxEntry *e;
+    unsigned char *b;
+    int count;
+    char *name;
+    int *new_var2;
+    unsigned char *o;
+    int method;
+    signed char unit;
+    ItemGetWindow *w;
+    signed char lvl;
+    unsigned char *new_var;
+  task = (ItemGetTaskView *) t;
+  GameLoopState[0x1c / (sizeof(unsigned int))] = 0;
+  if (0 == task->started)
+  {
+    memset(message, 0, 64);
+    new_var = (unsigned char *) ItemBoxTbl;
+    no = task->itemNo;
+    method = no * 8;
+    b = new_var + method;
+    new_var2 = (int *) ((((unsigned char *) ItemBoxTbl) + method) + 4);
+    task->kind = b[0];
+    id = b[1];
+    task->level = b[2];
+    task->unk29 = b[3];
+    task->special = *new_var2;
+    xglFlagsSet1(no - -0x79EC7, 1);
+    task->started = 1;
+    if (task->special != 0)
+    {
+      sprintf(message, D_004CA4D0, task->special);
+      dataMoneyBoxInc(task->special);
+    }
+    else
+    {
+      lvl = task->level;
+      if (lvl == 1)
+      {
+        char *n1 = GetItemName(task->kind, id);
+        task->name = n1;
+        if (task->kind == 10)
+        {
+          sprintf(message, evt_item_format_special, n1);
+        }
+        else
+        {
+          sprintf(message, evt_item_format_normal, n1);
+        }
+        dataBoxInc(task->kind, id);
+      }
+      else
+      {
+        count = lvl;
+        if (((!task->kind) && (!task->kind)) && (!task->kind))
+        {
+        }
+        if (count >= 100)
+        {
+          count = 99;
+        }
+        name = GetItemName(task->kind, id);
+        task->name = name;
+        if (task->level < 10)
+        {
+          if (task->kind == 10)
+          {
+            sprintf(message, D_004CA508, strno[count], name);
+          }
+          else
+          {
+            sprintf(message, D_004CA520, strno[count], name);
+          }
+        }
+        else
+          if (task->kind == 10)
+        {
+          sprintf(message, D_004CA530, strno[count / 10], strno[count % 10], name);
+        }
+        else
+        {
+          sprintf(message, D_004CA550, strno[count / 10], strno[count % 10], name);
+        }
+        if (count > 0)
+        {
+          do
+          {
+            count--;
+            dataBoxInc(task->kind, id);
+          }
+          while (count != 0);
+        }
+      }
+    }
+    task->window = createItemGetWin(message);
+    GameLoopState[0x10 / (sizeof(unsigned int))] |= 0x20000;
+  }
+  if (2 != task->window->state)
+  {
+    return (int) task->window;
+  }
+  {
+    o = task->owner + 0x1a0;
+    method = *((short *) (o + 0x30));
+    GameLoopState[0x10 / (sizeof(unsigned int))] &= 0xfffdffffu;
+    if (method != (-1))
+    {
+      CallMethod_I(D_004DB780, method);
+    }
+    unit = o[5];
+    if (unit != (-1))
+    {
+      ((unsigned char *) (&MapUnit[unit]))[0xa2] = 5;
+    }
+    return xglTaskWaitRemove(&task->task);
+  }
+}
 
 static void taskEvtItemGet(EventItemTask *task)
 {

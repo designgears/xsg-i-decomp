@@ -47,7 +47,34 @@ static void set_ot(int ot)
     *(unsigned char **)(header + 0x1C) += 2;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", set_xyz);
+static void set_xyz(int x, int y, int z)
+{
+    set_ot(z);
+    if ((unsigned int)x >= 0x300 || y < 0 || y >= 0x200) {
+        unsigned char *p = ((struct { unsigned char pad[0x1C]; unsigned char *cur; } *)FS)->cur;
+        p[0] = 8;
+        p[1] = 7;
+        p[2] = x >> 8;
+        p[3] = x;
+        p[4] = y >> 8;
+        p[5] = y;
+        p[6] = z >> 16;
+        p[7] = z >> 8;
+        p[8] = z;
+        ((struct { unsigned char pad[0x1C]; unsigned char *cur; } *)FS)->cur += 9;
+    } else {
+        unsigned char *p = ((struct { unsigned char pad[0x1C]; unsigned char *cur; } *)FS)->cur;
+        p[0] = (x >> 8) + 1;
+        p[1] = x;
+        p[2] = (y >> 8) + 4;
+        p[3] = y;
+        p[4] = 6;
+        p[5] = z >> 16;
+        p[6] = z >> 8;
+        p[7] = z;
+        ((struct { unsigned char pad[0x1C]; unsigned char *cur; } *)FS)->cur += 8;
+    }
+}
 
 extern unsigned char spcode_0[];
 
@@ -125,11 +152,61 @@ void xglFontPrintDirectOT(int ot, const char *text)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontPrintExtFunc);
+void xglFontPrintExtFunc(unsigned int ot, unsigned int x, unsigned int y)
+{
+    unsigned char *fs = FS;
+    unsigned char *p;
+
+    if (*(unsigned short *)(fs + 8) & 1 & 0xFFFF) {
+        set_ot(ot);
+        p = *(unsigned char **)(fs + 0x1C);
+        p[0] = 0x17;
+        p[1] = x >> 16;
+        p[2] = x >> 8;
+        p[3] = x;
+        p[4] = y >> 24;
+        p[5] = y >> 16;
+        p[6] = y >> 8;
+        p[7] = y;
+        p[8] = 0;
+        *(unsigned char **)(fs + 0x1C) += 9;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontDebugPrintf);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontDebugHex);
+/* Queues one "print N hex digits of value" record into the font print queue
+ * (record byte 0 = 0xB, byte 1 = 0x10) and positions the cursor first. */
+void xglFontDebugHex(int x, int y, unsigned int value, int digits)
+{
+    struct State {
+        unsigned char unmodeled_00[8];
+        unsigned short flags;
+        unsigned char unmodeled_0A[1];
+        unsigned char double_size;
+        unsigned char unmodeled_0C[0x10];
+        unsigned char *cur;
+    } *fs = (void *)FS;
+    unsigned char *p;
+
+    if ((fs->flags & 3) == 3 && digits != 0) {
+        if (fs->double_size == 0) {
+            x <<= 1;
+            y <<= 1;
+        }
+        set_xyz(x, y, -1);
+        p = fs->cur;
+        p[0] = 0xB;
+        p[1] = 0x10;
+        p[2] = digits - 1;
+        p[3] = value >> 24;
+        p[4] = value >> 16;
+        p[5] = value >> 8;
+        p[6] = value;
+        p[7] = 0;
+        fs->cur += 8;
+    }
+}
 
 /*
  * buffer_reset also reaches two fields 0x20 bytes before the queue buffer:
@@ -251,7 +328,33 @@ static unsigned int hex2val(signed char digit)
     return digit_value;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontAscii2Euc);
+extern unsigned char KanjiClutEnv[];
+extern unsigned char ascii2euc[];
+
+unsigned short xglFontAscii2Euc(char code, char **textp)
+{
+    unsigned short ret;
+    char *p;
+
+    ret = 0xA1A1;
+    if (code >= 0x20) {
+        if (code == 0x23 && textp != 0) {
+            p = *textp;
+            if (p[1] == code) {
+                p++;
+                ret = *(unsigned short *)(ascii2euc + 6);
+            } else {
+                ret = (hex2val(p[1]) << 4) + hex2val(p[2]) + 0x20;
+                p += 2;
+                ret = (((ret / 0x5E) & 0xFF) << 8) + (ret % 0x5E) - 0x2F5F;
+            }
+            *textp = p;
+        } else {
+            ret = *(unsigned short *)(KanjiClutEnv + 0xB0 + code * 2);
+        }
+    }
+    return ret;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontReloadTexture);
 

@@ -6,16 +6,88 @@ extern float D_004D7F8C;
 extern float xglSin(float angle);
 extern float xglCos(float angle);
 
-INCLUDE_ASM("asm/main/nonmatchings/pause_menu_page_uwamono", PauseMenuPageUwamono);
+extern struct { char pad[0x2A]; unsigned short trg; unsigned short btn; } PadData;
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+extern int debmode;
+
 extern char D_004CA788[];
+
+extern char D_004CA7A0[];
+
+extern void DebDispEvtItem(void);
+extern void DebDispItemBox(void);
+extern void UnlockMapUnit(void);
+extern struct { char pad[0x20]; int flags; } GameLoopState;
+extern int cursol_0;
+extern char lineflg, dispflg, printflg, collflg;
+extern char D_004CA680[], D_004DB798[], D_004CA698[], D_004CA6B0[], D_004CA6C8[], D_004CA6E0[];
+extern char D_004CA6F8[], D_004CA710[], D_004CA728[], D_004CA740[], D_004CA758[], D_004CA770[];
+
+void PauseMenuPageUwamono(void) {
+    int c;
+
+    if (debmode == 1) {
+        DebDispEvtItem();
+        return;
+    }
+    if (debmode == 2) {
+        DebDispItemBox();
+        return;
+    }
+    xglFontDebugPrintf(0x10, 0x10, D_004CA680);
+    xglFontDebugPrintf(0x30, cursol_0 * 0x10 + 0x20, D_004DB798);
+    if (lineflg) xglFontDebugPrintf(0x40, 0x20, D_004CA698);
+    else xglFontDebugPrintf(0x40, 0x20, D_004CA6B0);
+    if (dispflg) xglFontDebugPrintf(0x40, 0x30, D_004CA6C8);
+    else xglFontDebugPrintf(0x40, 0x30, D_004CA6E0);
+    if (printflg) xglFontDebugPrintf(0x40, 0x40, D_004CA6F8);
+    else xglFontDebugPrintf(0x40, 0x40, D_004CA710);
+    if (collflg) xglFontDebugPrintf(0x40, 0x50, D_004CA728);
+    else xglFontDebugPrintf(0x40, 0x50, D_004CA740);
+    if (GameLoopState.flags & 1) xglFontDebugPrintf(0x40, 0x60, D_004CA758);
+    else xglFontDebugPrintf(0x40, 0x60, D_004CA770);
+    xglFontDebugPrintf(0x40, 0x70, D_004CA788);
+    xglFontDebugPrintf(0x40, 0x80, D_004CA7A0);
+    if (PadData.trg & 0x1000) {
+        cursol_0--;
+        if (cursol_0 < 0) cursol_0 = 6;
+    }
+    if (PadData.trg & 0x4000) {
+        cursol_0++;
+        cursol_0 = cursol_0 % 7;
+    }
+    c = cursol_0;
+    if (c == 5 && (PadData.trg & 0x20)) debmode = 1;
+    if (c == 6 && (PadData.trg & 0x20)) debmode = 2;
+    if (PadData.trg & 0x2000) {
+        switch (c) {
+        case 0: lineflg = 1; break;
+        case 1: dispflg = 1; break;
+        case 2: printflg = 1; break;
+        case 3: collflg = 1; break;
+        case 4: GameLoopState.flags |= 1; break;
+        }
+    }
+    if (PadData.trg & 0x8000) {
+        switch (c) {
+        case 0: lineflg = 0; break;
+        case 1: dispflg = 0; break;
+        case 2: printflg = 0; break;
+        case 3: collflg = 0; break;
+        case 4:
+            UnlockMapUnit();
+            GameLoopState.flags &= ~1;
+            break;
+        }
+    }
+}
+
 extern char D_004CA7E8[];
 extern char D_004CA7F8[];
 extern char D_004DB7A0[];
 extern char EvtItemTbl[][0x80];
-extern struct { char pad[0x2A]; unsigned short trg; unsigned short btn; } PadData;
-extern int debmode;
 extern int page_1;
 
 void DebDispEvtItem(void)
@@ -56,7 +128,6 @@ extern void *memset(void *, int, unsigned int);
 typedef struct { signed char kind; unsigned char id; signed char c; signed char d; int e; } ItemBoxEnt;
 extern ItemBoxEnt ItemBoxTbl[];
 extern int page_2;
-extern char D_004CA7A0[];
 extern char D_004CA808[];
 extern char D_004DB7A8[];
 extern char D_004DB7B0[];

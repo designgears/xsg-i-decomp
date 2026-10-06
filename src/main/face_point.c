@@ -241,7 +241,29 @@ s32 check_occlusion(CullingVolume *volume, s32 camera, s32 model)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingCheck);
+void setup_occlusion(CullingVolume *volume, s32 camera);
+s32 check_occlusion(CullingVolume *volume, s32 camera, s32 model);
+
+s32 xglCullingCheck(s32 camera, s32 model)
+{
+  s32 r = 0;
+  s32 i;
+  if (s_nIgnoreCulling == 0)
+  {
+    i = 0;
+    for (i = 0; i < s_inCulling.count; i++)
+    {
+      setup_occlusion(&s_inCulling.volumes[i], camera);
+      r = check_occlusion(&s_inCulling.volumes[i], camera, model);
+      if (r != 0)
+      {
+        break;
+      }
+    }
+
+  }
+  return r;
+}
 
 void setup_occlusion(CullingVolume *volume, s32 camera);
 

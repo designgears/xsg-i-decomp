@@ -743,7 +743,63 @@ INCLUDE_ASM("asm/nonmatchings/ov10/battle_area_check_enemy", CheckTotugekiComman
 
 INCLUDE_ASM("asm/nonmatchings/ov10/battle_area_check_enemy", CheckKonranCommand);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/battle_area_check_enemy", CheckCurryCommand);
+s32 TodomeHyouka(s32 side, CardGameWork *work, s32 a2, s32 a3, s32 *life, s32 *attack);
+s32 GetFriendAttack(s32 side, CardGameWork *work, s32 *life, s32 *attack);
+
+s32 CheckCurryCommand(s32 side, CardGameWork *work)
+{
+  CardPlaySide *ownSide = &work->player;
+  s32 life[4];
+  s32 attack[4];
+  s32 i;
+  s32 j;
+  s32 before = 0;
+  s32 best;
+  s32 cur;
+  s32 found = -1;
+  i = 0;
+  if (side)
+  {
+    ownSide = &work->enemy;
+  }
+  if (((*((s16 *) (&work->command.phase))) == 2) || ((*((s16 *) (&work->command.phase))) == 9))
+  {
+    return -1;
+  }
+  GetFriendAttack(side == 0, work, life, attack);
+  for (i = before; i < 4; i++)
+  {
+    attack[i] &= ~0x10000;
+  }
+
+  before = TodomeHyouka(side == 0, work, 0, 0, life, attack);
+  best = before;
+  for (i = 0; i < 4; i++)
+  {
+    if (((ownSide->battle[i].battle.layers[0].cardId >= 0) && ((work->definitions[ownSide->battle[i].battle.layers[0].cardId].operationDuration - ownSide->battle[i].battle.layers[0].life) >= 2)) && (work->definitions[ownSide->battle[i].battle.layers[0].cardId].flags != 4))
+    {
+      GetFriendAttack(side == 0, work, life, attack);
+      for (j = 0; j < 4; j++)
+      {
+        attack[j] &= 0xF0FFFF;
+      }
+
+      life[i] = work->definitions[ownSide->battle[i].battle.layers[0].cardId].operationDuration;
+      cur = TodomeHyouka(side == 0, work, 0, 0, life, attack);
+      if (cur < best)
+      {
+        best = cur;
+        found = i | 0xF0000;
+      }
+    }
+  }
+
+  if ((best + 15) <= before)
+  {
+    return found;
+  }
+  return -1;
+}
 
 s32 TodomeHyouka(s32 side, CardGameWork *work, s32 a2, s32 a3, s32 *life, s32 *attack);
 s32 GetFriendAttack(s32 side, CardGameWork *work, s32 *life, s32 *attack);

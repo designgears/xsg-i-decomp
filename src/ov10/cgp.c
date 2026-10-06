@@ -2087,7 +2087,58 @@ s32 CGPBattleAttackEffect(s32 side, CardGameWork *work, s32 effect,
     return effect;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPBattleDiffenceEffect);
+s32 CGPBattleDiffenceEffect(s32 side, CardGameWork *work, s32 power, CardLayerStackView *defender, CardLayerStackView *attacker)
+{
+  CardDefinition *defs;
+  s16 *p;
+  s16 cnt;
+  s16 i;
+  s16 id;
+  s16 j;
+  id = CardPlayCntOpe((side == 0) ? (&work->enemy) : (&work->player), 0x7A);
+  cnt = id;
+  j = defender->layers[0].cardId;
+  defs = work->definitions;
+  if (defs[j].flags & 8)
+  {
+    for (i = 0; i < cnt; i++)
+    {
+      power--;
+    }
+
+  }
+  p = &defender->layers[0].cardId;
+  for (i = 0; i < 40; i++, p += 5)
+  {
+    id = *p;
+    if (id < 0)
+    {
+      continue;
+    }
+    switch (id)
+    {
+      case 7:
+        if (attacker->layers[0].cardId < 0)
+      {
+        break;
+      }
+        if (!(defs[attacker->layers[0].cardId].flags & 2))
+      {
+        break;
+      }
+
+      case 0x2C:
+
+      case 0x2F:
+        power--;
+        break;
+
+    }
+
+  }
+
+  return (power >= 0) ? (power) : (0);
+}
 
 /*
  * What a destroyed card leaves behind. The card survives with one life left

@@ -28,7 +28,150 @@ extern void *RgWeaponEssCastToShield(RgWeaponEssence *essence);
 extern int RgWeaponIsLockedOn(RgWeapon *weapon);
 extern int RgWeaponIsTargetting(RgWeapon *weapon);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_enemy", _dbgThinkTool);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern void xglSleep(void);
+extern int csr_0;
+extern int D_00A599D8;
+extern const char D_00A51C60[];
+extern const char D_00A51C68[];
+extern const char D_00A51C70[];
+extern const char D_00A51C78[];
+extern const char D_00A51C80[];
+extern const char D_00A51C88[];
+extern const char D_00A51C90[];
+extern const char D_00A51CA0[];
+extern const char D_00A51CB0[];
+extern const char D_00A51CC0[];
+extern const char D_00A51CD0[];
+extern const char D_00A51CE0[];
+extern const char D_00A51CF0[];
+extern const char D_00A51D08[];
+extern const char D_00A51D18[];
+extern const char D_00A51D28[];
+extern const char D_00A51D38[];
+extern const char D_00A51D48[];
+extern const char D_00A51D70[];
+extern const char D_00A51D88[];
+
+static void _dbgThinkTool(unsigned int *pEnemyType)
+{
+  unsigned int bEnd;
+  int pad;
+  unsigned int pad2;
+  unsigned int type;
+  int bStart;
+  bStart = _GetPadEdge() & 0x100;
+  bEnd = 0;
+  while ((!(bEnd = (bStart) ? (1) : (bEnd))) || (!(_GetPadRelease() & 0x100)))
+  {
+    pad = _GetPadEdge();
+    if (pad & 0xA000)
+    {
+      if (csr_0 == 12)
+      {
+        if (pad & 0x8000)
+        {
+          *pEnemyType = (*pEnemyType) & 3;
+        }
+        else
+        {
+          *pEnemyType |= ~3;
+        }
+      }
+      else
+        if (csr_0 != 0)
+      {
+        *pEnemyType ^= 1 << (csr_0 + 1);
+      }
+      else
+      {
+        type = *pEnemyType;
+        if (pad & 0x8000)
+        {
+          *pEnemyType = (((type & 3) - 1) & 3) | (type & (~3));
+        }
+        else
+        {
+          *pEnemyType = (((type & 3) + 1) & 3) | (type & (~3));
+        }
+      }
+    }
+    if ((_GetPadEdge() & 0x20) && (csr_0 == 12))
+    {
+      for (D_00A599D8 = 1; D_00A599D8 < 12; D_00A599D8++)
+      {
+        *pEnemyType ^= 1 << (D_00A599D8 + 1);
+      }
+
+    }
+    pad2 = _GetPadEdge();
+    if (pad2 & 0x1000)
+    {
+      csr_0--;
+    }
+    if (pad2 & 0x4000)
+    {
+      csr_0++;
+    }
+    while (csr_0 < 0)
+    {
+      csr_0 += 13;
+    }
+
+    csr_0 %= 13;
+    for (D_00A599D8 = 1; D_00A599D8 < 12; D_00A599D8++)
+    {
+      if ((((int) (*pEnemyType)) >> (D_00A599D8 + 1)) & 1)
+      {
+        xglFontDebugPrintf(40, (D_00A599D8 * 12) + 12, D_00A51C60);
+      }
+      else
+      {
+        xglFontDebugPrintf(40, (D_00A599D8 * 12) + 12, D_00A51C68);
+      }
+    }
+
+    switch ((int) ((*pEnemyType) & 3))
+    {
+      case 0:
+        xglFontDebugPrintf(96, 12, D_00A51C70);
+        break;
+
+      case 1:
+        xglFontDebugPrintf(96, 12, D_00A51C78);
+        break;
+
+      case 2:
+        xglFontDebugPrintf(96, 12, D_00A51C80);
+        break;
+
+      case 3:
+        xglFontDebugPrintf(96, 12, D_00A51C88);
+        break;
+
+    }
+
+    xglFontDebugPrintf(40, 12, D_00A51C90);
+    xglFontDebugPrintf(80, 24, D_00A51CA0);
+    xglFontDebugPrintf(80, 36, D_00A51CB0);
+    xglFontDebugPrintf(80, 48, D_00A51CC0);
+    xglFontDebugPrintf(80, 60, D_00A51CD0);
+    xglFontDebugPrintf(80, 72, D_00A51CE0);
+    xglFontDebugPrintf(80, 84, D_00A51CF0);
+    xglFontDebugPrintf(80, 96, D_00A51D08);
+    xglFontDebugPrintf(80, 108, D_00A51D18);
+    xglFontDebugPrintf(80, 120, D_00A51D28);
+    xglFontDebugPrintf(80, 132, D_00A51D38);
+    xglFontDebugPrintf(80, 144, D_00A51D48);
+    xglFontDebugPrintf(80, 156, D_00A51D70);
+    if (((!D_00A51CC0) && (!D_00A51CC0)) && (!D_00A51CC0))
+    {
+    }
+    xglFontDebugPrintf(20, (csr_0 * 12) + 12, D_00A51D88);
+    xglSleep();
+  }
+
+}
 
 static unsigned int _GetWeaponTypeFlag(RgWeapon *weapon, int side, int wait)
 {
