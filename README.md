@@ -30,6 +30,11 @@ Recovered 4,620 of 7,645 in-scope game function(s) (60.432%).
 
 ## Building
 
+The historical compilers are 32-bit Linux executables. On 64-bit Ubuntu,
+install `libc6-i386` and `python3-venv`. On Windows, use WSL and keep the
+checkout and build on a Linux filesystem: the old compilers cannot read some
+Windows filesystem metadata and report `Value too large for defined data type`.
+
 You need three things the repository does not contain: your own copy of the
 game, the original toolchain, and a Python environment for the disassembler.
 
