@@ -182,8 +182,8 @@ def integrate(root: Path, unit: str, tu: str, name: str, body: Path,
             t = {"ok": False, "match": False, "stage": "setup", "error": str(e)}
         report["try"] = {x: t.get(x) for x in ("ok", "match", "stage", "score", "opcode_score",
                                                "differing_words", "new_data_sections", "error",
-                                               "link_check")}
-        if not t.get("match") and t.get("link_check") and not give_up:
+                                               "link_check", "match_after_link", "false_lo16")}
+        if not t.get("match") and (t.get("link_check") or t.get("match_after_link")) and not give_up:
             report["link_check"] = True        # absolute-vs-symbol only: let the gate decide
         elif not t.get("match"):
             report["try_diff"] = t.get("diff")

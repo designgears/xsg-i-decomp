@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Retry saved near-miss bodies (bodies/<unit>/<tu>/<name>.best.c) unchanged.
 
+A try report with "match_after_link" (false %lo relocation, see try_fn) or
+"link_check" counts as a match and is integrated with --skip-try.
+
 A body that plateaued may match once something else changed (a same-TU callee
 became C, a prototype/type changed, a hoist). No AI involved: each target is
 re-scored with try_fn.try_function (object-level, lock-free); a match is handed
@@ -45,9 +48,10 @@ def best_score(k: str) -> float:
 
 
 def pending() -> dict[str, dict]:
-    """Live INCLUDE_ASM functions (src/ scan) minus already-matched keys."""
-    matched = set(load_state().get("matched", []))
-    return {k: v for k, v in callgraph.build(ROOT).items() if k not in matched}
+    """Live INCLUDE_ASM functions (src/ scan). src/ is the truth: a key that
+    state.json lists as matched but is INCLUDE_ASM again (lost / reverted
+    integration) is pending too (next.py reconcile requeues those)."""
+    return dict(callgraph.build(ROOT))
 
 
 def callers_of(fns: dict, k: str) -> list[str]:
@@ -79,13 +83,14 @@ def select(fns: dict, a, after: str | None) -> list[str]:
     return sorted(ks, key=lambda k: -best_score(k))
 
 
-def run_integrate(k: str, best: Path) -> dict:
+def run_integrate(k: str, best: Path, skip_try: bool = False) -> dict:
     u, t, n = k.split("/")
     body = best.with_name(f"{n}.retry.c")
     shutil.copyfile(best, body)
     env = dict(os.environ, AUTO_RETRY="0")
     p = subprocess.run([sys.executable, "-B", str(Path(__file__).with_name("integrate.py")),
-                        "--unit", u, "--tu", t, "--name", n, "--body", str(body)],
+                        "--unit", u, "--tu", t, "--name", n, "--body", str(body)]
+                       + (["--skip-try"] if skip_try else []),
                        cwd=ROOT, env=env, capture_output=True, text=True)
     try:
         return json.loads(p.stdout)
@@ -115,8 +120,12 @@ def process(fns: dict, keys: list[str], a, depth: int, seen: set, results: list)
             results.append({"key": k, "error": str(e)[:300]})
             log(f"RETRY {k} error={str(e)[:120]}")
             continue
-        score, match = rep.get("score"), bool(rep.get("match"))
+        link = try_fn.is_link_match(rep)       # false %lo / absolute-vs-symbol only
+        score, match = rep.get("score"), bool(rep.get("match")) or link
         r = {"key": k, "prev": prev, "score": score, "match": match}
+        if link:
+            r["match_after_link"] = True
+            r["false_lo16"] = rep.get("false_lo16") or []
         if not match and score is not None and score > prev and not a.dry_run:
             rec = {"score": score}
             for f in ("differing_words", "target_insns"):
@@ -125,7 +134,7 @@ def process(fns: dict, keys: list[str], a, depth: int, seen: set, results: list)
             best.with_suffix(".json").write_text(json.dumps(rec) + "\n")
             r["improved"] = True
         if match and not a.dry_run:
-            ir = run_integrate(k, best)
+            ir = run_integrate(k, best, skip_try=link)
             r["integrated"] = bool(ir.get("matched"))
             if not ir.get("matched"):
                 r["integrate_error"] = str(ir.get("error") or ir.get("refused") or "not green")[:300]

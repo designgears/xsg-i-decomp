@@ -654,7 +654,7 @@ def evaluate(args):
         return {"ok": False, "error": str(ex)[:300]}
     finally:
         os.unlink(p)
-    return {k: r.get(k) for k in ("ok", "match", "bytes_match", "link_check", "score",
+    return {k: r.get(k) for k in ("ok", "match", "bytes_match", "link_check", "match_after_link", "score",
                                   "differing_words", "target_insns", "stage")}
 
 
@@ -665,12 +665,14 @@ def rank(r):
 
 
 def is_match(r):
-    return bool(r and r.get("ok") and (r.get("match") or r.get("bytes_match") or r.get("link_check")))
+    return bool(r and r.get("ok") and (r.get("match") or r.get("bytes_match") or r.get("link_check")
+                                       or r.get("match_after_link")))
 
 
-def integrate(unit, tu, name, body: Path) -> tuple[bool, str]:
+def integrate(unit, tu, name, body: Path, skip_try: bool = False) -> tuple[bool, str]:
     p = subprocess.run([sys.executable, str(HERE / "integrate.py"), "--unit", unit, "--tu", tu,
-                        "--name", name, "--body", str(body)], cwd=ROOT, capture_output=True, text=True)
+                        "--name", name, "--body", str(body)] + (["--skip-try"] if skip_try else []),
+                       cwd=ROOT, capture_output=True, text=True)
     out = p.stdout + p.stderr
     return '"matched": true' in out, out[-2000:]
 
@@ -746,7 +748,8 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
     if used < budget or is_match(cur_r):   # ran to a local optimum, not out of budget
         mark_swept(k, cur if rank(cur_r) > rank(base) else text)
     if is_match(cur_r):
-        ok, out = integrate(unit, tu, name, best_c)
+        ok, out = integrate(unit, tu, name, best_c,
+                            skip_try=not cur_r.get("match") and not cur_r.get("bytes_match"))
         res["matched"] = ok
         if not ok:
             res["integrate_tail"] = out[-600:]

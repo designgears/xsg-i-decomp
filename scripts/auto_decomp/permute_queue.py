@@ -19,7 +19,9 @@ polling for new near-misses every 2 minutes.
 Before the permuter (cheapest first):
   * triage: one try_fn.try_function on the best body classifies the remaining
     diff (cached in build/auto_decomp/triage.json, keyed by the body's mtime):
-      match       already matches -> integrate.py
+      match       already matches, or only false %lo relocations /
+                  absolute-vs-symbol slots differ (try_fn match_after_link /
+                  link_check) -> integrate.py (--skip-try for the latter)
       reloc-only  bytes match, only relocation names differ -> integrate.py
                   (the data carve often passes it), never permuted
       callee      has same-TU INCLUDE_ASM callees above it (callgraph
@@ -84,6 +86,7 @@ def best_json(body: Path) -> dict:
         return {}
 
 
+TRIAGE_VERSION = 2      # bump when classification rules change (invalidates the cache)
 TRIAGE = ROOT / "build/auto_decomp/triage.json"
 AS_FLAGS = ROOT / "config/tu/as-flags.json"
 BRANCH = re.compile(r"^(b|bal|j|jr|jal|jalr|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bgezal|bltzal|bc1t|bc1f)l?$")
@@ -170,14 +173,14 @@ def triage(c: dict, body: Path) -> dict:
     except (OSError, ValueError):
         cache = {}
     e = cache.get(k)
-    if e and e.get("mtime") == mt and e.get("body") == str(body):
+    if e and e.get("mtime") == mt and e.get("body") == str(body) and e.get("v") == TRIAGE_VERSION:
         return e
     import try_fn
     try:
         r = try_fn.try_function(c["unit"], c["tu"], c["name"], body, diff_limit=100000)
     except Exception as ex:  # noqa: BLE001
         r = {"ok": False, "error": str(ex)[:200]}
-    e = {"mtime": mt, "body": str(body), "score": r.get("score"), "words": r.get("differing_words")}
+    e = {"v": TRIAGE_VERSION, "mtime": mt, "body": str(body), "score": r.get("score"), "words": r.get("differing_words")}
     blocked = (_cg().get(k) or {}).get("blocked_by") or []
     try:
         flags = json.loads(AS_FLAGS.read_text())
@@ -186,8 +189,12 @@ def triage(c: dict, body: Path) -> dict:
     if not r.get("ok"):
         e["cat"] = "permute"
         e["why"] = f"try failed: {r.get('stage')}"
-    elif r.get("match") or r.get("link_check"):
+    elif r.get("match") or try_fn.is_link_match(r):
         e["cat"] = "match"
+        if not r.get("match"):
+            e["link"] = True             # integrate with --skip-try (whole-file gate decides)
+            e["why"] = ("false %lo reloc " + ",".join(f["sym"] for f in r.get("false_lo16") or [])
+                        if r.get("match_after_link") else "absolute-vs-symbol slots")
     elif r.get("bytes_match"):
         e["cat"] = "reloc-only"
         e["why"] = json.dumps(r.get("reloc_symbol_diffs", [])[:3])
@@ -260,6 +267,8 @@ def pick(min_score: float, rounds: int, limit: int, max_diff: int | None = None)
     for r in ranked:
         t = triage(r, r["body"])
         r["cat"] = t["cat"]
+        r["link"] = bool(t.get("link"))
+        r["tag"] = t.get("tag")
         if t["cat"] in ("callee", "assembler"):
             continue
         if t["cat"] in ("match", "reloc-only") and r["integrate_tried"]:
@@ -294,7 +303,8 @@ def triage_report(min_score: float, rounds: int, max_diff: int | None, as_json: 
 
 def _integrate(c: dict) -> dict:
     p = subprocess.run([sys.executable, "-B", str(HERE / "integrate.py"), "--unit", c["unit"], "--tu", c["tu"],
-                        "--name", c["name"], "--body", str(c["body"])], capture_output=True, text=True, cwd=ROOT)
+                        "--name", c["name"], "--body", str(c["body"])] + (["--skip-try"] if c.get("link") else []),
+                       capture_output=True, text=True, cwd=ROOT)
     ok = '"matched": true' in p.stdout + p.stderr
     with locked():
         s = load_state()

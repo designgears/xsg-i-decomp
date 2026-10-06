@@ -15,6 +15,12 @@ src/ or the unit's real build outputs is touched, so any number of agents can
 run this at once. Iterate here until "match": true, then call integrate.py
 once for the whole-file gate.
 
+"match_after_link": true (with "false_lo16": [...]) means every differing
+word is a false %lo relocation: splat symbolized a plain immediate (target
+`addiu t0,t0,%lo(D_70000010)` fed by a reloc-free `lui t0,0x7000`, ours
+`addiu t0,t0,16`). The linked bytes are identical; hand it to
+`integrate.py --skip-try` (its whole-file gate is the real check).
+
 Prints a JSON report; with --diff (default on) also prints a side-by-side
 instruction diff to stderr. Exit 0 = match, 1 = mismatch, 2 = error.
 """
@@ -342,9 +348,23 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
             link_check = bool(diff_offs) and all(
                 ((o in cand_rel_offs and o not in base_rel_offs) or o in alias_offs) and same_op(o // 4)
                 for o in diff_offs)
+        # False %lo relocations (splat symbolized a plain immediate): every
+        # differing word is one -> identical after linking.
+        flo: list[dict] = []
+        if not bytes_match and len(wa) == len(wb):
+            doffs = [i * 4 for i in range(len(wa)) if wa[i] != wb[i]]
+            flo = false_lo16(unit, base, cand, doffs)
+            fset = {int(f["off"], 16) for f in flo}
+            others_ok = ([(o, t) for o, t, _ in base["relocs"] if o not in fset]
+                         == [(o, t) for o, t, _ in cand["relocs"]])
+            match_after_link = bool(flo) and len(flo) == len(doffs) and others_ok
+        else:
+            match_after_link = False
         report.update(
             ok=True,
             match=bytes_match and relocs_match,
+            match_after_link=match_after_link,
+            false_lo16=flo,
             link_check=link_check,
             bytes_match=bytes_match,
             relocs_match=relocs_match,
@@ -397,6 +417,72 @@ def compile_file(unit: str, tu: str, c_path: Path, out: Path) -> tuple[bool, str
         return ok, log
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
+
+
+_SYMADDR: dict[str, dict[str, int]] = {}
+_SYMLINE = re.compile(r"^\s*(\w+)\s*=\s*(0x[0-9A-Fa-f]+|\d+)\s*;")
+
+
+def symbol_addresses(unit: str) -> dict[str, int]:
+    """name -> address from config/symbols/<unit>.txt and build/<unit>/undefined_syms_auto.txt."""
+    if unit not in _SYMADDR:
+        d: dict[str, int] = {}
+        for p in (ROOT / "build" / unit / "undefined_syms_auto.txt", ROOT / "config/symbols" / f"{unit}.txt"):
+            try:
+                for ln in p.read_text(errors="replace").splitlines():
+                    m = _SYMLINE.match(ln)
+                    if m:
+                        d[m.group(1)] = int(m.group(2), 0)
+            except OSError:
+                pass
+        _SYMADDR[unit] = d
+    return _SYMADDR[unit]
+
+
+def sym_address(unit: str, name: str) -> int | None:
+    a = symbol_addresses(unit).get(name)
+    if a is None:
+        m = re.fullmatch(r"D_([0-9A-Fa-f]{1,8})", name)
+        a = int(m.group(1), 16) if m else None
+    return a
+
+
+def false_lo16(unit: str, base: dict, cand: dict, offs: list[int]) -> list[dict]:
+    """Differing words (byte offsets OFFS) where splat symbolized a plain
+    immediate: target slot has R_MIPS_LO16 -> sym (addend 0), candidate is the
+    same opcode/regs with immediate N == sym & 0xFFFF, no reloc there, and the
+    target's feeding `lui` of that register carries NO HI16 reloc and
+    lui<<16 + N == sym address. Linked bytes are then identical."""
+    wa, wb = base["bytes"], cand["bytes"]
+    brel = {o: (t, n) for o, t, n in base["relocs"]}
+    crel = {o for o, _, _ in cand["relocs"]}
+    out = []
+    for o in offs:
+        if o + 4 > len(wa) or o + 4 > len(wb):
+            return []
+        a = int.from_bytes(wa[o:o + 4], "little")
+        b = int.from_bytes(wb[o:o + 4], "little")
+        r = brel.get(o)
+        if not r or r[0] != 6 or o in crel or (a >> 16) != (b >> 16) or (a & 0xFFFF) != 0:
+            continue
+        addr = sym_address(unit, r[1])
+        n = b & 0xFFFF
+        if addr is None or n != (addr & 0xFFFF):
+            continue
+        rs = (a >> 21) & 31
+        lui = None
+        for q in range(o - 4, -4, -4):
+            w = int.from_bytes(wa[q:q + 4], "little")
+            if (w >> 26) == 0x0F and ((w >> 16) & 31) == rs:
+                lui = (q, w)
+                break
+        if lui is None or lui[0] in brel:
+            continue
+        sext = n - 0x10000 if n & 0x8000 else n
+        if (((lui[1] & 0xFFFF) << 16) + sext) & 0xFFFFFFFF != addr & 0xFFFFFFFF:
+            continue
+        out.append({"off": hex(o), "sym": r[1], "imm": n, "lui_off": hex(lui[0])})
+    return out
 
 
 TRY_BUDGET = 60
@@ -480,6 +566,13 @@ def main() -> int:
             return 2
         return 1
     return 0 if report["match"] else 1
+
+
+def is_link_match(r: dict | None) -> bool:
+    """try report that only the whole-file gate can settle (call integrate.py
+    --skip-try): false %lo relocations or absolute-vs-symbol slots."""
+    return bool(r and r.get("ok") and not r.get("match")
+                and (r.get("match_after_link") or r.get("link_check")))
 
 
 if __name__ == "__main__":
