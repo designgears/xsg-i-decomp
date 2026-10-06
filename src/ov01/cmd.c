@@ -1165,7 +1165,35 @@ int cmdCamBankMoveMode(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/cmd", cmdCamLock);
+extern const char D_00A46590[];
+typedef struct {
+    void *mode;
+    int pad4[3];
+    Vector4 pos;
+    unsigned char pad20[0x70 - 0x20];
+    void *offsEnabled;
+} CamLockView;
+
+int cmdCamLock(void)
+{
+    Vector4 v;
+    CamLockView *cam;
+
+    if (camMode < 0) {
+        printf(D_00A46590, camMode);
+        return 0;
+    }
+    MCamGetCurrentCoord(&v);
+    cam = (CamLockView *)mcamPtrGet();
+    cam->pos.x = v.x;
+    cam->mode = 0;
+    cam->offsEnabled = 0;
+    cam->pos.y = v.y;
+    cam->pos.z = v.z;
+    cam->pos.w = 1.0f;
+    myMCamSet(camMode, cam);
+    return 0;
+}
 
 extern Vector4 *MCamGetCurrentCoord(Vector4 *out, int type);
 typedef struct {
