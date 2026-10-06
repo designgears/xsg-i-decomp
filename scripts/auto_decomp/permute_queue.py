@@ -34,7 +34,14 @@ Before the permuter (cheapest first):
       permute     anything else; a diff that is only a branch-likely bit
                   flip (bnez vs bnezl) is tagged "branch_likely": the sweep's
                   fallthrough_label family covers it and the permuter runs
-                  with --profile branch_likely (label/goto/condition weights)
+                  with --profile branch_likely (label/goto/condition weights).
+                  Mechanism tags ("mech", from trick_sweep.diff_shape):
+                  cmp_fix (branch condition differs, not an inversion: the C
+                  comparison is wrong), sched_weight (one store moved: sched1
+                  register-weight tie), de_ifcvt (move next to movz/movn:
+                  early if-conversion), loop_live (address/constant inits
+                  reordered: loop-preheader tie); the sweep runs the matching
+                  ctx family first-class
   * sweep first: a body trick_sweep has not run on (.best.json "by"=="sweep"
     or a sweep_marks.json sha1 / loop.log "done" line) is swept inline under
     the same lease; the permuter only runs if that did not match.
@@ -89,7 +96,7 @@ def best_json(body: Path) -> dict:
         return {}
 
 
-TRIAGE_VERSION = 3      # bump when classification rules change (invalidates the cache)
+TRIAGE_VERSION = 4      # bump when classification rules change (invalidates the cache)
 TRIAGE = ROOT / "build/auto_decomp/triage.json"
 AS_FLAGS = ROOT / "config/tu/as-flags.json"
 BRANCH = re.compile(r"^(b|bal|j|jr|jal|jalr|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bgezal|bltzal|bc1t|bc1f)l?$")
@@ -232,6 +239,10 @@ def triage(c: dict, body: Path) -> dict:
         e["moved"] = moved
         if branch_likely_only(r.get("diff") or []):
             e["tag"] = "branch_likely"   # trick_sweep fallthrough_label; permuter label/goto weights
+        shape = trick_sweep.diff_shape(r.get("diff") or [])
+        if shape:                        # mechanism tags (trick_sweep ctx families, WORKER_LESSONS.md)
+            e["mech"] = sorted(shape)
+            e.setdefault("tag", sorted(shape)[0])
         e["blocked_by"] = blocked
         if kind in ("delay", "macro") and blocked:
             e["cat"], e["why"] = "callee", "blocked_by " + ",".join(b.rsplit("/", 1)[1] for b in blocked)
@@ -239,7 +250,8 @@ def triage(c: dict, body: Path) -> dict:
             e["cat"], e["why"] = "assembler", "-mswap-fix candidate for " + f"{c['unit']}/{c['tu']}"
         else:
             e["cat"] = "permute"
-            e["why"] = kind + (" branch_likely" if e.get("tag") else "")
+            e["why"] = kind + "".join(" " + x for x in (["branch_likely"] if e.get("tag") == "branch_likely" else [])
+                                      + e.get("mech", []))
     with locked():   # state lock serializes cache writers
         try:
             cache = json.loads(TRIAGE.read_text())
@@ -300,6 +312,7 @@ def pick(min_score: float, rounds: int, limit: int, max_diff: int | None = None)
         r["cat"] = t["cat"]
         r["link"] = bool(t.get("link"))
         r["tag"] = t.get("tag")
+        r["mech"] = t.get("mech") or []
         if t["cat"] in ("callee", "assembler"):
             continue
         if t["cat"] in ("match", "reloc-only") and r["integrate_tried"]:
@@ -317,11 +330,18 @@ def triage_report(min_score: float, rounds: int, max_diff: int | None, as_json: 
         t = triage(r, r["body"])
         by.setdefault(t["cat"], []).append({"key": r["key"], "score": r["score"], "diff": r["diff"],
                                             "runs": r["runs"], "why": t.get("why"),
-                                            "moved": t.get("moved")})
+                                            "moved": t.get("moved"), "mech": t.get("mech")})
     if as_json:
         print(json.dumps(by, indent=1))
         return 0
     print(f"pool {len(rs)}: " + ", ".join(f"{k} {len(v)}" for k, v in sorted(by.items())))
+    mech: dict[str, int] = {}
+    for v in by.values():
+        for e in v:
+            for m in e.get("mech") or []:
+                mech[m] = mech.get(m, 0) + 1
+    if mech:
+        print("mechanisms: " + ", ".join(f"{k} {n}" for k, n in sorted(mech.items())))
     for cat in ("match", "reloc-only", "assembler", "callee", "permute"):
         if cat not in by:
             continue
