@@ -16,7 +16,7 @@ typedef struct JpegWork {
     float idct_stage[8];
 } JpegWork;
 
-extern JpegWork *sw;
+static JpegWork *sw = (JpegWork *)0x70000000;
 
 static void ConvertYUV2MCU(float *mcu, float *yuv, int mode) {
     int i, j;

@@ -2,6 +2,11 @@
 
 #include "enemy_2.h"
 
+#define D_004D8140 0.03333333507f
+#define sac_turn_pi 3.141592741f
+#define sac_turn_two_pi_subtract 6.283185482f
+#define sac_turn_two_pi_add 6.283185482f
+
 int Get_ActorNumber(int target)
 {
     unsigned char *base;
@@ -339,3 +344,4 @@ void Map_Command_Ladder(int idx, unsigned char a, int b, unsigned char c)
 }
 
 INCLUDE_ASM("asm/main/nonmatchings/enemy_2", Start_Enemy_Command);
+#include "common.h"
