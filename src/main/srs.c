@@ -152,7 +152,76 @@ void srsChangeSeparator(char *path)
 
 INCLUDE_ASM("asm/main/nonmatchings/srs", srsGetFileLen);
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", fileLoad);
+extern int xglCdGetFileSize(const char *name);
+extern int sceOpen(const char *path, int flags, ...);
+extern int sceLseek(int fd, int offset, int whence);
+extern int sceRead(int fd, void *buf, int size);
+extern int sceClose(int fd);
+extern void sresDataMapping(void);
+extern void srsCdReadCallback(int code);
+extern int func_00A103C8(char *archive, void *buffer);
+
+static int fileLoad(void *buffer, const char *name, int mode)
+{
+  char path[256];
+  int ret = 0;
+  int nread;
+  int fd;
+  if (srsMakeFileName(path, name) == 0)
+  {
+    return -1;
+  }
+  if (srsLoadMode == 0)
+  {
+    srsChangeSeparator(path);
+    ret = xglCdGetFileSize(path);
+    if (ret <= 0)
+    {
+      return -1;
+    }
+    _nRead++;
+    nread = xglCdReadFile(path, buffer, mode, (int) srsCdReadCallback);
+    if (nread > 0)
+    {
+      if (mode == 0)
+      {
+        ret = nread;
+        _nRead--;
+        if (_nRead < 0)
+        {
+          _nRead = 0;
+        }
+        else
+        {
+        }
+      }
+    }
+  }
+  else
+    if (srsLoadMode == 1)
+  {
+    fd = sceOpen(path, 1);
+    if (fd < 0)
+    {
+      return -1;
+    }
+    ret = sceLseek(fd, 0, 2);
+    sceLseek(fd, 0, 0);
+    ret = sceRead(fd, buffer, ret);
+    sceClose(fd);
+    sresDataMapping();
+  }
+  else
+    if (srsLoadMode == 2)
+  {
+    ret = func_00A103C8(&path[5], buffer);
+    if (ret > 0)
+    {
+      sresDataMapping();
+    }
+  }
+  return ret;
+}
 
 char *srsGetEffectData(int index)
 {
