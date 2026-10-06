@@ -13,9 +13,17 @@ decomp-match-fixes memory):
   if-return <-> ternary, if/else swap (negated), for -> while / do-while,
   early return -> single exit goto, `!x` <-> `x == 0`.
 
-Each round evaluates every single transform of the current best with
-try_fn.try_function (in-process, no try budget), keeps the best improvement,
-and repeats until no gain or --budget compiles. Improvements go to
+Each round evaluates the single transforms of the current best with
+try_fn.try_function (in-process, no try budget) family by family (family = the
+label prefix: type, stmtswap, volatile, ...) in LEARNED order: families with
+the best historical improvement rate first (ties: fewer compiles per attempt),
+families that never helped last. The first batch that improves wins the round
+(the rest of the round is skipped); repeat until no gain or --budget compiles.
+Per-family attempts / improvements / matches / compiles live in
+build/auto_decomp/trick_stats.json (seeded from the SWEEP lines of loop.log on
+first use, updated as it runs; --stats prints them). After a sweep the sha1 of
+the final best.c is recorded in build/auto_decomp/sweep_marks.json so
+permute_queue knows the body was swept. Improvements go to
 .best.c/.best.json ("by": "sweep"); a match is integrated via integrate.py.
 Functions are leased as owner "sweep" while worked on.
 """
@@ -29,6 +37,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
+import fcntl
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -491,6 +501,137 @@ def candidates(text: str, name: str):
         except (ValueError, AttributeError, IndexError, re.error):
             continue
 
+# ---------------------------------------------------------------- learned order
+
+STATS = ROOT / "build/auto_decomp/trick_stats.json"
+MARKS = ROOT / "build/auto_decomp/sweep_marks.json"
+FAMILIES = ["declswap", "declreverse", "type", "ptype", "volatile", "rename", "stmtswap", "commute",
+            "intcast", "split", "join", "temp", "ternary", "unternary", "ifswap", "for->while",
+            "for->dowhile", "for->dowhile-nocheck", "for->goto-test", "while->for", "while->dowhile",
+            "single-exit", "not->eq0", "eq0->not", "ne0->bare"]
+
+
+def family(label: str) -> str:
+    return label.split(":", 1)[0]
+
+
+def _seed_stats() -> dict:
+    """Seed from loop.log: every finished sweep counts as one attempt of every
+    family (each round tried all of them); each applied step is an improvement;
+    a matched sweep credits the family of its last step."""
+    st = {f: {"attempts": 0, "improvements": 0, "matches": 0, "compiles": 0} for f in FAMILIES}
+    try:
+        lines = state.LOG_PATH.read_text(errors="replace").splitlines()
+    except OSError:
+        lines = []
+    done = 0
+    step = re.compile(r" SWEEP \S+ (\S+) -> [\d.]+ ")
+    for ln in lines:
+        if " SWEEP " not in ln:
+            continue
+        m = re.search(r" SWEEP \S+ done .* matched=(\w+) compiles=(\d+) ?(.*)$", ln)
+        if m:
+            done += 1
+            steps = m.group(3).split()
+            if m.group(1) == "True" and steps:
+                st.setdefault(family(steps[-1].rsplit("=", 1)[0]),
+                              {"attempts": 0, "improvements": 0, "matches": 0, "compiles": 0})["matches"] += 1
+            continue
+        m = step.search(ln)
+        if m:
+            f = st.setdefault(family(m.group(1)), {"attempts": 0, "improvements": 0, "matches": 0, "compiles": 0})
+            f["improvements"] += 1
+    for f in st.values():
+        f["attempts"] = max(done, f["improvements"])
+    return st
+
+
+def _locked_json(path: Path, update):
+    """Read-modify-write PATH under an exclusive lock; update(obj) -> obj."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path.with_suffix(".lock"), "w") as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        try:
+            obj = json.loads(path.read_text())
+        except (OSError, ValueError):
+            obj = None
+        obj = update(obj)
+        if obj is not None:
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(obj, indent=1, sort_keys=True) + "\n")
+            os.replace(tmp, path)
+        return obj
+
+
+def load_stats() -> dict:
+    return _locked_json(STATS, lambda o: o if isinstance(o, dict) and o else _seed_stats())
+
+
+def add_stats(delta: dict) -> None:
+    def up(o):
+        o = o if isinstance(o, dict) and o else _seed_stats()
+        for f, d in delta.items():
+            e = o.setdefault(f, {"attempts": 0, "improvements": 0, "matches": 0, "compiles": 0})
+            for k, v in d.items():
+                e[k] = e.get(k, 0) + v
+        return o
+    _locked_json(STATS, up)
+
+
+def family_order(stats: dict, fams) -> list[str]:
+    """Best improvement rate first; never-tried families get a small explore
+    rate (ahead of never-helped ones); ties: fewer compiles per attempt."""
+    def k(f):
+        e = stats.get(f) or {}
+        a = e.get("attempts", 0)
+        rate = (e.get("improvements", 0) + 2 * e.get("matches", 0)) / a if a else 0.005
+        cost = e.get("compiles", 0) / a if a else 0
+        return (-rate, cost, f)
+    return sorted(fams, key=k)
+
+
+def body_sha(text: str) -> str:
+    return hashlib.sha1(text.encode()).hexdigest()
+
+
+def mark_swept(k: str, text: str) -> None:
+    def up(o):
+        o = o if isinstance(o, dict) else {}
+        o[k] = {"sha1": body_sha(text), "t": int(time.time())}
+        return o
+    _locked_json(MARKS, up)
+
+
+def is_swept(k: str, best_c: Path) -> bool:
+    """True when trick_sweep already ran on BEST_C's current text."""
+    try:
+        text = best_c.read_text()
+        j = json.loads(best_c.with_name(best_c.stem.replace(".best", "") + ".best.json").read_text())
+    except (OSError, ValueError):
+        j = {}
+        text = None
+    if text is None:
+        return False
+    if j.get("by") == "sweep":
+        return True
+    try:
+        m = json.loads(MARKS.read_text()).get(k) or {}
+    except (OSError, ValueError):
+        m = {}
+    if m.get("sha1") == body_sha(text):
+        return True
+    # sweeps from before the marks file: a "done" log line newer than best.c
+    try:
+        mt = best_c.stat().st_mtime
+        for ln in state.LOG_PATH.read_text(errors="replace").splitlines():
+            if f" SWEEP {k} done " in ln:
+                ts = time.mktime(time.strptime(ln.split()[0], "%Y-%m-%dT%H:%M:%SZ")) - time.timezone
+                if ts + 1 >= mt:
+                    return True
+    except (OSError, ValueError):
+        pass
+    return False
+
 # ---------------------------------------------------------------- evaluation
 
 
@@ -549,26 +690,49 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
         return res
     cur, cur_r = text, base
     seen = {hashlib.sha1(text.encode()).hexdigest()}
+    batch_min = max(2, getattr(pool, "_max_workers", 3))
     while used < budget and not is_match(cur_r):
-        cands = []
+        by_fam: dict[str, list] = {}
         for lab, nt in candidates(cur, name):
             h = hashlib.sha1(nt.encode()).hexdigest()
             if h in seen:
                 continue
             seen.add(h)
-            cands.append((lab, nt))
-        cands = cands[:budget - used]
-        if not cands:
+            by_fam.setdefault(family(lab), []).append((lab, nt))
+        if not by_fam:
             break
-        rs = list(pool.map(evaluate, [(unit, tu, name, nt) for _, nt in cands]))
-        used += len(cands)
-        res["cc_fail"] = res.get("cc_fail", 0) + sum(1 for r in rs if not r.get("ok"))
-        bi = max(range(len(cands)), key=lambda i: rank(rs[i]))
-        if rank(rs[bi]) <= rank(cur_r):
+        order = family_order(load_stats(), by_fam)
+        delta: dict = {}
+        won = None
+        i = 0
+        while i < len(order) and used < budget:
+            fams, cands = [], []          # fill a batch to keep the pool busy
+            while i < len(order) and len(cands) < batch_min:
+                fams.append(order[i])
+                cands += [(order[i], lab, nt) for lab, nt in by_fam[order[i]]]
+                i += 1
+            cands = cands[:budget - used]
+            rs = list(pool.map(evaluate, [(unit, tu, name, nt) for _, _, nt in cands]))
+            used += len(cands)
+            res["cc_fail"] = res.get("cc_fail", 0) + sum(1 for r in rs if not r.get("ok"))
+            for f in fams:
+                d = delta.setdefault(f, {"attempts": 1, "improvements": 0, "matches": 0, "compiles": 0})
+                d["compiles"] += sum(1 for c in cands if c[0] == f)
+            bi = max(range(len(cands)), key=lambda j: rank(rs[j]))
+            if rank(rs[bi]) > rank(cur_r):
+                won = (cands[bi], rs[bi])
+                break
+        if won:
+            (f, lab, nt), r = won
+            delta[f]["improvements"] += 1
+            if is_match(r):
+                delta[f]["matches"] += 1
+        add_stats(delta)
+        if not won:
             break
-        cur, cur_r = cands[bi][1], rs[bi]
-        res["applied"].append(f"{cands[bi][0]}={rs[bi]['score']}")
-        state.log(f"SWEEP {k} {cands[bi][0]} -> {rs[bi]['score']} ({rs[bi].get('differing_words')}w)")
+        cur, cur_r = nt, r
+        res["applied"].append(f"{lab}={r['score']}")
+        state.log(f"SWEEP {k} {lab} -> {r['score']} ({r.get('differing_words')}w)")
     res.update(compiles=used, end=cur_r.get("score"), diff=cur_r.get("differing_words"))
     if ASM_RE.search(cur):
         res["error"] = "inline asm (refused)"
@@ -579,6 +743,8 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
                "target_insns": cur_r.get("target_insns"), "by": "sweep",
                "transforms": res["applied"]}
         best_c.with_name(f"{name}.best.json").write_text(json.dumps(rec) + "\n")
+    if used < budget or is_match(cur_r):   # ran to a local optimum, not out of budget
+        mark_swept(k, cur if rank(cur_r) > rank(base) else text)
     if is_match(cur_r):
         ok, out = integrate(unit, tu, name, best_c)
         res["matched"] = ok
@@ -631,7 +797,13 @@ def main() -> int:
     ap.add_argument("--budget", type=int, default=300)
     ap.add_argument("--jobs", type=int, default=3)
     ap.add_argument("--list", action="store_true", help="only print the pool")
+    ap.add_argument("--stats", action="store_true", help="print per-family stats in try order")
     a = ap.parse_args()
+    if a.stats:
+        st = load_stats()
+        for f in family_order(st, st):
+            print(f"{f:22} {st[f]}")
+        return 0
     todo = pick(a.min_score, a.max_diff, a.limit, a.key)
     if a.list:
         for c in todo:
