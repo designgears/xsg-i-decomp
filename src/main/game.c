@@ -410,7 +410,52 @@ float nearDir(float from, float to);
 
 extern float atan2f(float y, float x);
 
-INCLUDE_ASM("asm/main/nonmatchings/game", checkTalk);
+extern int UseVMFlag;
+int XTK_getWindowOwner(void);
+
+static ActorHead *checkTalk(ActorHead *self)
+{
+    TouchActorView *me = (TouchActorView *)self;
+    float pos[4];
+    ActorHead *best;
+    float bestDist;
+    float dx, dz, d, lim, k;
+    int i;
+
+    best = 0;
+    pos[0] = me->x;
+    pos[1] = me->y;
+    pos[2] = me->z;
+    bestDist = 65535.0f;
+    pos[3] = 0.25f;
+    if (GameLoopState.flags & 0x400) return 0;
+    if (GameLoopState.flags & 0x2000) return 0;
+    if (GameLoopState.flags & 0x1000) return 0;
+    if (UseVMFlag != 0) return 0;
+    if (XTK_getWindowOwner() != 0) return 0;
+    for (i = 0; i < ACTOR_COUNT; i++) {
+        ActorHead *a = &actor[i];
+        TouchActorView *v = (TouchActorView *)a;
+        if (__builtin_fabsf(v->y - me->y) > 2.0f) continue;
+        if (*(int *)((u8 *)a + 0x9F4) == 0) continue;
+        if (!(getScriptFlag((SceneObject)a) & 0x10000)) continue;
+        if (a->inUseId == 0) continue;
+        if (v->group == me->group) continue;
+        dx = v->x - pos[0];
+        dz = v->z - pos[2];
+        k = 1.0f;
+        d = __builtin_fabsf(pos[3] + k);
+        lim = dx * dx + dz * dz;
+        lim = __builtin_fabsf(lim);
+        if (!(lim < d)) continue;
+        if (!(__builtin_fabsf(nearDir(atan2f(dx, dz), *(float *)((u8 *)self + 0x54))) < 1.04719758f)) continue;
+        if (lim < bestDist) {
+            bestDist = lim;
+            best = a;
+        }
+    }
+    return best;
+}
 
 extern float D_004D7B8C;
 static ActorHead *checkTouch(ActorHead *self)
