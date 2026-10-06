@@ -1299,7 +1299,90 @@ s32 CheckTeppekiCommand(s32 side, CardGameWork *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/battle_area_check_enemy", CheckSensiCommand);
+extern s32 CardPlaySuteCnt(CardPlaySide *side);
+
+s32 CheckSensiCommand(s32 side, CardGameWork *work)
+{
+  CardPlaySide *sideData = &work->player;
+  s32 i;
+  s32 found;
+  s32 best;
+  s32 value;
+  if (side)
+  {
+    sideData = &work->enemy;
+  }
+  if (side)
+  {
+    if (value)
+    {
+      i = 0;
+      best = 80;
+    }
+    else
+    {
+      i = 0;
+      best = 80;
+    }
+  }
+  else
+  {
+    i = 0;
+  }
+  found = -1;
+  best = 80;
+  if (CardPlaySuteCnt(sideData) < 8)
+  {
+    return -1;
+  }
+  if (CardPlayYamaCnt(sideData) >= 11)
+  {
+    return -1;
+  }
+  switch (*((s16 *) (&work->command.phase)))
+  {
+    case 2:
+
+    case 9:
+      return -1;
+
+  }
+
+  goto test;
+  loop:
+  if (sideData->disposal[i].battle.layers[0].cardId >= 0)
+  {
+    value = GetPrice(&sideData->disposal[i].battle);
+    if (value < best)
+    {
+      best = value;
+      found = i;
+    }
+  }
+
+  i++;
+  test:
+  if (i < 4)
+  {
+    goto loop;
+  }
+
+  for (i = 0; i < 4; i++)
+  {
+    if (sideData->battle[i].battle.layers[0].cardId >= 0)
+    {
+      value = GetShoukin(&sideData->battle[i].battle);
+      if (value < best)
+      {
+        best = value;
+        found = i;
+        found = found | 0xF0000;
+      }
+    }
+  }
+
+  return found;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov10/battle_area_check_enemy", SensiEvent);
 

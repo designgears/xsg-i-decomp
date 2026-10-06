@@ -4358,6 +4358,35 @@
     }
    ]
   },
+  "main/tu270": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8784",
+      "0x004d8788"
+     ],
+     "generated": [
+      "0x004d8784",
+      "0x004d8788"
+     ],
+     "generated_by": [
+      "MAP_createUnitPeer"
+     ],
+     "c_owned_symbols": [
+      "D_004D8784"
+     ],
+     "also_referenced_by_c": [
+      "D_004D878C",
+      "D_004D8790"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/map_create_unit_peer.o"
+     }
+    }
+   ]
+  },
   "ov01/tu002_00a00d60": {
    ".rodata": [
     {

@@ -3,7 +3,55 @@
 #include "main/xgl_2.h"
 #include "map_create_unit_peer.h"
 
-INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", MAP_createUnitPeer);
+extern void *MAP_createUnit(int a0, int a1);
+#define U8(p, o) (*(unsigned char *)((unsigned char *)(p) + (o)))
+#define S16(p, o) (*(short *)((unsigned char *)(p) + (o)))
+#define S32(p, o) (*(int *)((unsigned char *)(p) + (o)))
+#define F32(p, o) (*(float *)((unsigned char *)(p) + (o)))
+
+void *MAP_createUnitPeer(int a0, int type)
+{
+    MapUnitRecord *u;
+    MapUnitGroupSequenceEntry *s;
+
+    u = (MapUnitRecord *)MAP_createUnit(a0, type);
+    if (u != 0) {
+        F32(u, 0x108) = 0.033333335f;
+        S16(u, 0x118) = 0x1FF;
+        U8(u, 0xA1) = 0;
+        F32(u, 0x3C) = 1.0f;
+        F32(u, 0x38) = 1.0f;
+        F32(u, 0x34) = 1.0f;
+        s = (MapUnitGroupSequenceEntry *)((unsigned char *)unitSequence + u->serial * sizeof(MapUnitGroupSequenceEntry));
+        F32(u, 0x30) = 1.0f;
+        F32(u, 0xD0) = 0.0f;
+        S16(u, 0xA8) = 0;
+        if (type != 0x6025) {
+            S32(u, 0x4) = 0;
+        }
+        S32(s, 0x30) = 0;
+        S32(s, 0x0) = 0;
+        S32(s, 0x4) = 0;
+        S32(s, 0x240) = 0;
+        S32(s, 0x244) = 0;
+        S32(s, 0x248) = 0;
+        F32(s, 0x24C) = 1.0f;
+        F32(s, 0x250) = 1.0f;
+        S32(s, 0x254) = 0;
+        S32(s, 0x258) = 0;
+        S32(s, 0xC) = 0;
+        S16(s, 0x10) = -1;
+        S32(s, 0x14) = 0;
+        S32(s, 0x18) = 0;
+        S32(s, 0x1C) = 0;
+        S32(s, 0x20) = 0;
+        S32(s, 0x24) = 0;
+        S32(s, 0x28) = 0;
+        S32(s, 0x2C) = 0;
+        F32(s, 0x25C) = 1.0f;
+    }
+    return u;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/map_create_unit_peer", SEQ_rotYCNSUnitChr);
 
