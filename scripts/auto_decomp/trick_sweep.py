@@ -806,7 +806,7 @@ def regalloc_ties(unit: str, tu: str, name: str, text: str, tol: float = 0.15) -
         x["var"] = nm
     out["mapped"] = mapped
     out["regs"] = regs
-    gl = sorted((x for x in regs if x["global"] and x["prio"] > 0), key=lambda x: -x["prio"])
+    gl = sorted((x for x in regs if x["global"] and x["prio"] > 0 and x["live"] >= 8), key=lambda x: -x["prio"])
     for a, b in zip(gl, gl[1:]):
         if a["prio"] - b["prio"] <= tol * a["prio"]:
             out["ties"].append([a["reg"], b["reg"], a["prio"], b["prio"]])
@@ -948,16 +948,36 @@ def body_sha(text: str) -> str:
     return hashlib.sha1(text.encode()).hexdigest()
 
 
+# Families a sweep without a "fams" record (older marks, by=="sweep", loop.log
+# "done" lines) is known to have covered.
+LEGACY_FAMILIES = FAMILIES[:FAMILIES.index("dup_tail_store")]
+
+
 def mark_swept(k: str, text: str) -> None:
     def up(o):
         o = o if isinstance(o, dict) else {}
-        o[k] = {"sha1": body_sha(text), "t": int(time.time())}
+        o[k] = {"sha1": body_sha(text), "t": int(time.time()), "fams": FAMILIES}
         return o
     _locked_json(MARKS, up)
 
 
+def swept_families(k: str, best_c: Path) -> set[str]:
+    """Families trick_sweep already ran (to a local optimum) on BEST_C's text."""
+    try:
+        m = json.loads(MARKS.read_text()).get(k) or {}
+        if m.get("sha1") == body_sha(best_c.read_text()):
+            return set(m.get("fams") or LEGACY_FAMILIES)
+    except (OSError, ValueError):
+        pass
+    return set(LEGACY_FAMILIES) if _legacy_swept(k, best_c) else set()
+
+
 def is_swept(k: str, best_c: Path) -> bool:
-    """True when trick_sweep already ran on BEST_C's current text."""
+    """True when trick_sweep already ran every current family on BEST_C's text."""
+    return not (set(FAMILIES) - swept_families(k, best_c))
+
+
+def _legacy_swept(k: str, best_c: Path) -> bool:
     try:
         text = best_c.read_text()
         j = json.loads(best_c.with_name(best_c.stem.replace(".best", "") + ".best.json").read_text())
@@ -1016,7 +1036,7 @@ def evaluate(args):
 def register_only(r) -> bool:
     """Same length, (near-)identical opcode sequence: the diff is registers."""
     return bool(r and r.get("ok") and not is_match(r) and r.get("opcode_score") is not None
-                and r["opcode_score"] >= 0.99 and r.get("target_insns") == r.get("candidate_insns"))
+                and r["opcode_score"] >= 1.0 and r.get("target_insns") == r.get("candidate_insns"))
 
 
 def rank(r):
@@ -1038,7 +1058,7 @@ def integrate(unit, tu, name, body: Path, skip_try: bool = False) -> tuple[bool,
     return '"matched": true' in out, out[-2000:]
 
 
-def sweep_one(c: dict, pool, budget: int) -> dict:
+def sweep_one(c: dict, pool, budget: int, only_new: bool = True) -> dict:
     unit, tu, name = c["unit"], c["tu"], c["name"]
     k = c["key"]
     best_c = BODIES / unit / tu / f"{name}.best.c"
@@ -1053,11 +1073,15 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
         return res
     cur, cur_r = text, base
     seen = {hashlib.sha1(text.encode()).hexdigest()}
+    # families already run to a local optimum on this exact text: only the
+    # new ones get a first round (all of them again after any improvement)
+    done_fams = swept_families(k, best_c) if only_new else set()
     batch_min = max(2, getattr(pool, "_max_workers", 3))
     while used < budget and not is_match(cur_r):
         by_fam: dict[str, list] = {}
+        skip_fams = done_fams if cur == text else set()
         ctx = None
-        if register_only(cur_r):        # s-reg rotation: diagnose the global-alloc tie
+        if register_only(cur_r) and "regalloc_tie" not in skip_fams:        # s-reg rotation: diagnose the global-alloc tie
             try:
                 ctx = pool.submit(regalloc_ties, unit, tu, name, cur).result()
                 used += 1
@@ -1072,6 +1096,8 @@ def sweep_one(c: dict, pool, budget: int) -> dict:
             if h in seen:
                 continue
             seen.add(h)
+            if family(lab) in skip_fams:
+                continue
             by_fam.setdefault(family(lab), []).append((lab, nt))
         if not by_fam:
             break
@@ -1155,8 +1181,8 @@ def pick(min_score, max_diff, limit, only=None):
             continue
         if ASM_RE.search(bc.read_text(errors="replace")):
             continue
-        if j.get("by") == "sweep" and not only:
-            continue   # already swept to a local optimum
+        if not only and is_swept(k, bc):
+            continue   # every current family already swept to a local optimum
         out.append({"key": k, "unit": c["unit"], "tu": c["tu"], "name": c["name"],
                     "score": sc, "diff": diff})
     out.sort(key=lambda r: (r["diff"], -r["score"]))
