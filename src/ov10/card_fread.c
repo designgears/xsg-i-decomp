@@ -2550,7 +2550,156 @@ void CardPlayDispJunk(int unused, CardPlaySide *hand, float (*place)[4])
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardPlayDispDispose);
+extern float CardStackPos[3];
+extern float DisposeHP10pos[4][2];
+extern float DisposeHP01pos[4][3];
+typedef struct {
+    float shunt[3];
+    u8 flags;
+    u8 moveFrames;
+    u8 pad0E[10];
+    s8 hp;
+    u8 pad19;
+    s16 cardId;
+    u8 pad1C[8];
+    s16 cardId1;
+    u8 pad26[0x1A4 - 0x26];
+    float position[3];
+    float step[3];
+} DispSlotView;
+typedef struct { u8 pad[0x880]; DispSlotView d[4]; } DispSideView;
+#define DV(s) (((DispSideView *)(s))->d)
+
+void CardPlayDispDispose(int unused, CardPlaySide *side, float (*place)[4])
+{
+  float mat[4][4];
+  float trans[4];
+  float scale[4];
+  float scale2[4];
+  int i;
+  int v;
+  void *model;
+  DispSlotView *sl;
+  float z;
+  float y;
+  trans[3] = 1.0f;
+  scale[1] = 0.175f;
+  scale[3] = 1.0f;
+  scale[2] = 1.0f;
+  scale2[1] = 0.50704229f;
+  scale2[3] = 1.0f;
+  scale2[0] = 0.50704229f;
+  scale[0] = 0.175f;
+  scale2[2] = 1.0f;
+  for (i = 0; i < 4; i++)
+  {
+    sl = &((DispSideView *) side)->d[i];
+    if ((&((DispSideView *) side)->d[i])->cardId >= 0)
+    {
+      if ((&((DispSideView *) side)->d[i])->moveFrames != 0)
+      {
+        (&((DispSideView *) side)->d[i])->moveFrames--;
+        if ((&((DispSideView *) side)->d[i])->moveFrames == 0)
+        {
+          xglSoundEffectNormalID(0x2000F, 0);
+        }
+        ((DispSideView *) side)->d[i].position[0] += (&((DispSideView *) side)->d[i])->step[0];
+        ((DispSideView *) side)->d[i].position[1] += (&((DispSideView *) side)->d[i])->step[1];
+        ((DispSideView *) side)->d[i].position[2] += (&((DispSideView *) side)->d[i])->step[2];
+      }
+      else
+      {
+        ((DispSideView *) side)->d[i].position[0] = DisposePos1P[i][0];
+        ((DispSideView *) side)->d[i].position[1] = DisposePos1P[i][1];
+        ((DispSideView *) side)->d[i].position[2] = DisposePos1P[i][2];
+      }
+      trans[0] = ((DispSideView *) side)->d[i].position[0];
+      trans[1] = ((DispSideView *) side)->d[i].position[1];
+      trans[2] = ((DispSideView *) side)->d[i].position[2];
+      xglMatrixTrans(mat, place, trans);
+      xglMatrixScale(mat, mat, scale);
+      CardDispCard(mat, (&((DispSideView *) side)->d[i])->cardId & 0xF0FF, 1);
+      nmlModelSetPlace(mat);
+      nmlModelSetTexture((char *) 0x01717600);
+      nmlModelEntryCard((void *) 0x01716600);
+      if ((&((DispSideView *) side)->d[i])->cardId1 >= 0)
+      {
+        trans[0] = CardStackPos[0];
+        trans[1] = CardStackPos[1];
+        trans[2] = CardStackPos[2];
+        xglMatrixTrans(mat, mat, trans);
+        xglMatrixScale(mat, mat, scale2);
+        CardDispCard(mat, sl->cardId1 & 0xF0FF, 1);
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture((char *) 0x01717600);
+        nmlModelEntryCard((void *) 0x01716600);
+      }
+      if (sl->moveFrames == 0)
+      {
+        if (sl->flags & 1)
+        {
+          trans[0] = DisposePos1P[i][0];
+          trans[1] = DisposePos1P[i][1];
+          trans[2] = 0.01f;
+          xglMatrixTrans(mat, place, trans);
+          nmlModelSetPlace(mat);
+          nmlModelSetTexture((char *) 0x01F70200);
+          nmlModelEntryCard((void *) 0x01900400);
+        }
+        if (sl->flags & 2)
+        {
+          trans[0] = DisposePos1P[i][0];
+          trans[1] = DisposePos1P[i][1];
+          trans[2] = 0.01f;
+          xglMatrixTrans(mat, place, trans);
+          nmlModelSetPlace(mat);
+          nmlModelSetTexture((char *) 0x01F70200);
+          nmlModelEntryCard((void *) 0x01900C00);
+        }
+        if (sl->hp < 0)
+        {
+          sl->hp = 0;
+        }
+        v = sl->hp / 10;
+        if (v != 0)
+        {
+          model = (void *) (0x01C80000 + (v << 10));
+          z = DisposeHP10pos[i][0];
+          y = DisposeHP10pos[i][1];
+          trans[0] = z;
+          trans[1] = y;
+          trans[2] = 0.05f;
+          xglMatrixTrans(mat, place, trans);
+          nmlModelSetPlace(mat);
+          nmlModelSetTexture((char *) 0x01C91000);
+          nmlModelEntryCard(model);
+        }
+        v = sl->hp % 10;
+        model = (void *) (0x01C80000 + (v << 10));
+        trans[0] = DisposeHP01pos[i][0];
+        trans[1] = DisposeHP01pos[i][1];
+        z = 0.05f;
+        trans[2] = z;
+        xglMatrixTrans(mat, place, trans);
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture((char *) 0x01C91000);
+        nmlModelEntryCard(model);
+      }
+    }
+    else
+    {
+      sl->flags = 0;
+      sl->moveFrames = 0;
+      ((DispSideView *) side)->d[i].position[0] = DisposePos1P[i][0];
+      ((DispSideView *) side)->d[i].position[1] = DisposePos1P[i][1];
+      ((DispSideView *) side)->d[i].position[2] = DisposePos1P[i][2];
+      sl->step[0] = 0.0f;
+      sl->step[1] = 0.0f;
+      sl->step[2] = 0.0f;
+    }
+  }
+
+}
 
 extern float OperationPos1P[][3];
 

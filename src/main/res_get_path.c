@@ -418,7 +418,94 @@ static unsigned char *command_reset(int command, unsigned char *cursor, int mode
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadmap);
+typedef struct {
+    char **names;
+    int count;
+} LoadMapNameBlock;
+extern LoadMapNameBlock maptbl[];
+extern void MapReset(void);
+typedef struct {
+    u8 pad[0x50];
+    short map_id;
+    short pad52;
+    int map_res;
+} LoadMapLoopView;
+
+static unsigned char *command_loadmap(int command, unsigned char *cursor, int mode)
+{
+  int keep = 0;
+  LoadMapNameBlock *tbl;
+  int id;
+  int i;
+  int r;
+  char *s;
+  char *c;
+  unsigned short new_var;
+  new_var = '-';
+  if ((*cursor) == new_var)
+  {
+    if (tbl || s)
+    {
+      cursor++;
+      keep = 1;
+    }
+    else
+    {
+      cursor++;
+      keep = 1;
+    }
+  }
+  tbl = maptbl;
+  id = 0;
+  do
+  {
+    for (; tbl->names != 0; tbl++, id += 100)
+    {
+      char **pp = tbl->names;
+      for (i = 0; i < tbl->count; i++, pp++)
+      {
+        s = *pp;
+        c = (char *) cursor;
+        for (;;)
+        {
+          if ((*s) == 0)
+          {
+            if (((((*c) == ' ') || ((*c) == '\t')) || ((*c) == '\n')) || ((*c) == '\r'))
+            {
+              cursor = (unsigned char *) c;
+              id += i;
+              goto found;
+            }
+          }
+          if ((*(c++)) != (*(s++)))
+          {
+            break;
+          }
+        }
+
+        if (!i)
+        {
+        }
+      }
+
+    }
+
+    if (id >= 0x71E)
+    {
+      id = 0;
+    }
+    found:
+    r = RES_loadFile(command, 1, id, 0);
+
+  }
+  while (0);
+  if (keep == 0)
+  {
+    LoadMapLoopView *g = (LoadMapLoopView *) (&GameLoopState);
+ do { g->map_res = r; g->map_id = id; MapChangeFadeSet(); MapReset(); } while (0);
+  }
+  return cursor;
+}
 
 extern int RES_loadFile(int command, int callback, int resource_id, int flags);
 static char *search_key(char *cursor, u8 *table, int *id);
