@@ -8,6 +8,9 @@
 #include "ov12/rg_draw.h"
 #include "rg_select_agws.h"
 
+/* Player highlight colour record (upstream recovery of s_aPlayerCol). */
+typedef struct XrgPlayerColor { int r; int g; int b; int a; } XrgPlayerColor;
+
 /*
  * The 2D paint context (defined by ov12/tu086 xrg_paint2d.c); this TU only
  * forwards the pointer to the XrgPaint2D* calls, matching src/ov12/

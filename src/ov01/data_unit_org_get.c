@@ -20,6 +20,14 @@ typedef struct BattleDataHeader {
     int defaultEquipmentOffset; /* +0x44 */
 } BattleDataHeader;
 
+/* Fixed-size records the data*Get accessors index (upstream recovery). */
+typedef struct NormalInitRecord { unsigned char opaque[0x0C]; } NormalInitRecord;
+typedef struct SpecialInitRecord { unsigned char opaque[0x0C]; } SpecialInitRecord;
+typedef struct EtherInitRecord { unsigned char opaque[0x18]; } EtherInitRecord;
+typedef struct ParameterRecord { unsigned char opaque[0x20]; } ParameterRecord;
+typedef struct DefaultEquipmentRecord { unsigned char opaque[0x20]; } DefaultEquipmentRecord;
+typedef struct SpecialTableRecord { unsigned char opaque[0x20]; } SpecialTableRecord;
+
 
 /*
  * orgData is a 33-entry table of 0x180-byte unit-origin records; callers
