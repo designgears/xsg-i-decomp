@@ -253,13 +253,43 @@ static void _SettingVersion3(void)
 {
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _SetVersion3Extent);
+extern int (*s_apConditionTbl_0[10])(int);
+#define CAMF(c, o) (*(float *)((unsigned char *)(c) + (o)))
+#define CAMI(c, o) (*(int *)((unsigned char *)(c) + (o)))
+
+static void _SetVersion3Extent(RgCamera *camera)
+{
+  int i;
+  XrgClearVector((float *) (((unsigned char *) camera) + 0x60));
+  camera->farDistance = 12.0f;
+  *((float *) (((unsigned char *) camera) + 0x74)) = 1.0f;
+  *((float *) (((unsigned char *) camera) + 0x78)) = 1.0f;
+  *((float *) (((unsigned char *) camera) + 0x7C)) = 0.5f;
+  *((int *) (((unsigned char *) camera) + 0x14C)) = -1;
+  *((float *) (((unsigned char *) camera) + 0x90)) = 0.7853982f;
+  *((int *) (((unsigned char *) camera) + 0xA0)) = 0;
+  *((int *) (((unsigned char *) camera) + 0x140)) = 0;
+  *((float *) (((unsigned char *) camera) + 0x94)) = (*((float *) (((unsigned char *) camera) + 0x8C)) = 10.0f);
+  *((float *) (((unsigned char *) camera) + 0x9C)) = 0.3f;
+  *((int *) (((unsigned char *) camera) + 0x98)) = 0;
+  for (i = 0; i < 10; i++)
+  {
+    _InitVer3Timer(((RgVer3Timer *) (((unsigned char *) camera) + 0xB0)) + i, s_apConditionTbl_0[i], 0.5f);
+  }
+
+  *((int *) (((unsigned char *) camera) + 0x144)) = 0;
+  *((int *) (((unsigned char *) camera) + 0x148)) = 0;
+  *((int *) (((unsigned char *) camera) + 0x134)) = 3;
+  *((int *) (((unsigned char *) camera) + 0x138)) = 0;
+  *((int *) (((unsigned char *) camera) + 0x130)) = 5;
+  *((int *) (((unsigned char *) camera) + 0x13C)) = 3;
+  }
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _LoadVersion3);
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _PassTimeVersion3);
 
-static int _SetVersion3Extent(RgCamera *camera);
+static void _SetVersion3Extent(RgCamera *camera);
 static void _LoadVersion3(RgCamera *camera, void *reader);
 
 static void _InitVersion3(RgCamera *camera, RgDrawStudio *studio)

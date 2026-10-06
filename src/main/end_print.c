@@ -251,7 +251,50 @@ INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintLine2);
 
 INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintDirectRibbon);
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", subPrintRibbon);
+static void subPrintRibbon(EndPrintContext *context, int line) {
+    int *p;
+    int n;
+    int count;
+    int q;
+    int r;
+    int w;
+
+    n = 0;
+    p = (int *)context->scratch;
+    w = line + 0xC;
+    if (*(int *)(line + 4) != 0) {
+        do {
+            r = w + 4;
+            w += 0xC;
+            n += 1;
+        } while (*(int *)r != 0);
+    }
+    p[0] = n + 0x8000;
+    p[1] = 0x20A64000;
+    count = 1;
+    q = line;
+    p[2] = 0x51;
+    p[3] = 0;
+    p += 4;
+    if (n > 0) {
+        do {
+            n -= 1;
+            count += 2;
+            p[0] = *(unsigned char *)(q + 8);
+            p[1] = *(unsigned char *)(q + 9);
+            p[2] = *(unsigned char *)(q + 0xA);
+            p[3] = *(unsigned char *)(q + 0xB);
+            p += 4;
+            p[0] = (*(short *)q * 0x10) + 0x6FF8;
+            p[1] = (*(short *)(q + 2) * 0x10) + 0x71F8;
+            q += 0xC;
+            p[2] = *(int *)(line + 4) & 0xFFFFFF;
+            p[3] = 0;
+            p += 4;
+        } while (n > 0);
+    }
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, count);
+}
 
 extern void subPrintRibbon(EndPrintContext *context, int ribbon);
 
