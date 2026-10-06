@@ -3287,20 +3287,18 @@
    ".rodata": [
     {
      "range": [
-      "0x004ccc20",
+      "0x004cca70",
       "0x004ccc50"
      ],
      "generated": [
-      "0x004ccc20",
+      "0x004cca70",
       "0x004ccc50"
      ],
      "generated_by": [
+      "JNI_loadNativeClass",
       "skipConstantPool"
      ],
      "c_owned_symbols": [
-      "jtbl_004CCC20"
-     ],
-     "also_referenced_by_c": [
       "D_004CCA70",
       "D_004CCA80",
       "D_004CCA98",
@@ -3322,8 +3320,15 @@
       "D_004CCBD0",
       "D_004CCBE0",
       "D_004CCBF0",
-      "D_004CCC08"
-     ]
+      "D_004CCC08",
+      "jtbl_004CCC20"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/jni.o"
+     }
     }
    ]
   },
