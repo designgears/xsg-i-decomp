@@ -857,3 +857,21 @@ static int MCamMoveProc_Pers(MCamMoveState *state)
 }
 
 INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamShakeProc);
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/*
+ * MCamInit clears this complete 0x5B0-byte camera-parameter store. The
+ * recovered float and perspective-move views are interior fields; the other
+ * bytes remain part of the live store but their individual meanings are not
+ * recovered yet.
+ */
+typedef struct MCamParameterStorage {
+    unsigned char unmodeled_000[0x1A0];
+    float actorLength[2];
+    unsigned char unmodeled_1A8[0x4C];
+    float perspectiveStart;
+    unsigned char unmodeled_1F8[0x380];
+    MCamMoveState perspectiveMove;
+    unsigned char unmodeled_590[0x20];
+} MCamParameterStorage;
+

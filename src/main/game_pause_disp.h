@@ -65,4 +65,39 @@ extern void xglFontPrintExtFunc(unsigned int flags,
                                 void *context);
 extern void xglFontSetFlags(int flags);
 
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef union GifCommandData {
+    u64 value;
+    struct {
+        u32 low;
+        u32 high;
+    } words;
+} GifCommandData;
+
+typedef struct GifAdCommand {
+    GifCommandData data;
+    u32 register_address;
+    u32 unused;
+} GifAdCommand;
+
+typedef struct GifTag {
+    u32 control_low;
+    u32 control_high;
+    u32 registers_low;
+    u32 registers_high;
+} GifTag;
+
+typedef struct PauseShadowCommand {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+    GifAdCommand set_shadow_context;
+    GifAdCommand set_shadow_environment;
+    GifAdCommand set_shadow_test;
+    GifAdCommand set_shadow_alpha;
+    GifAdCommand set_shadow_color;
+} PauseShadowCommand;
+
 #endif /* SRC_MAIN_GAME_PAUSE_DISP_H */

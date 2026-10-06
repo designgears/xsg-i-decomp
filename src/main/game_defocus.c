@@ -1,6 +1,26 @@
 #include "common.h"
 #include "shared.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Partial model of the fixed packet template; unknown words stay explicit. */
+typedef struct DefocusSolidPacketHeader {
+    u8 unmodeled_00[0x0c];
+    u32 packet_tag_0c;
+    u32 vu_memory_address_10;
+    u32 packet_header_14;
+    u32 packet_header_18;
+    u32 unmodeled_1c;
+    u32 packet_header_20;
+    u32 unmodeled_24;
+    u32 packet_header_28;
+    u32 unmodeled_2c;
+    u32 packet_header_30;
+    u32 unmodeled_34;
+    u32 packet_header_38;
+    u32 unmodeled_3c;
+} DefocusSolidPacketHeader;
+
+
 #define NULL ((void *)0)
 
 typedef struct {

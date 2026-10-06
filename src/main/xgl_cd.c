@@ -4,6 +4,14 @@
 #include "main/xgl_thread.h"
 #include "xgl_cd.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Four 0x18-byte archive slots; the initialization helper models each prefix. */
+typedef union CdArchiveStorage {
+    CdArchiveEntry entry;
+    unsigned char bytes[0x18];
+} CdArchiveStorage;
+
+
 /*
  * File-local functions (LOCAL in the original symbol table) that the shared
  * header declares `extern`: declare them static first so their static

@@ -352,3 +352,10 @@ int MenuSystem2(void)
     endPrintExtFunc(0, 100, 0);
     return MenuWork.state != 0xFF;
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef union MenuSystemMessageStorage {
+    MenuSystemMessageTable table;
+    unsigned int words[8];
+} MenuSystemMessageStorage;
+

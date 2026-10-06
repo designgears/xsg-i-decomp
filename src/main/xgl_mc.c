@@ -2,6 +2,24 @@
 #include "shared.h"
 #include "xgl_mc.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The state machine uses both a word and per-slot halfwords at offset 4. */
+typedef struct McRequestState {
+    unsigned char phase;
+    unsigned char unmodeled_01[3];
+    union {
+        int combined;
+        short slots[2];
+    } status;
+} McRequestState;
+
+/* Fields beyond this partial view remain in the complete retail workspace. */
+typedef union McRequestStorage {
+    McRequestState state;
+    unsigned char bytes[0x20];
+} McRequestStorage;
+
+
 extern unsigned char D_0093E120[];
 
 int sceMcOpen(int port, int slot, const char *name, int mode);

@@ -2,6 +2,14 @@
 #include "shared.h"
 #include "main/party.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Runtime native lookup pairs: method signature followed by its entry point. */
+typedef struct RuntimeNativeBinding {
+    const char *signature;
+    void (*entry)();
+} RuntimeNativeBinding;
+
+
 /*
  * The script VM's per-thread context, recovered as `JThread` in
  * src/main/chr.h (main's chr TU). Every Java native receives

@@ -232,4 +232,13 @@ extern void SPL_getValueXYZ(float *destination, void *spline, float frame);
 extern float xglAtan2(float x, float y);
 extern void xglVectorLength(float *destination, const Vector4 *vector);
 
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Each actor owns one 0x260-byte sequence record. The recovered head and
+ * byte storage share that allocation; the unmodeled tracks retain their extent. */
+typedef union ActSequenceEntry {
+    SequenceState state;
+    u8 bytes[0x260];
+} ActSequenceEntry;
+
 #endif

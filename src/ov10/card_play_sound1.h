@@ -171,4 +171,13 @@ extern void dataEvtBoxInc(int event);
 extern int sprintf(char *buffer, const char *format, ...);
 extern void *memset(void *buffer, int value, unsigned int size);
 
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The original eight-byte item contains a five-byte font code and its
+ * three zero tail bytes. */
+typedef struct CardFontCodeRecord {
+    CardFontCode5 code;
+    char trailing[3];
+} CardFontCodeRecord;
+
 #endif

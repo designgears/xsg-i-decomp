@@ -4,6 +4,15 @@
 #include "common.h"
 #include "rg_bxx.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct RgBxxMessageBlock {
+    char linkRequired[24];
+    char pictureSize[24];
+    char headerSize[28];
+    char empty[4];
+} RgBxxMessageBlock;
+
+
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 extern void RgError(const char *message, const char *source_file, int line,

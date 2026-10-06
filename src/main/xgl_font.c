@@ -451,3 +451,25 @@ void xglFontInitial(void)
     fs[19] = 0;
     *(short *)(fs + 14) = 0;
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The partial state view shares the complete 0x20-byte retail allocation. */
+typedef union FontStateStorage {
+    struct FontState state;
+    unsigned char bytes[0x20];
+} FontStateStorage;
+
+typedef union FontPrintQueueStorage {
+    unsigned long long alignment;
+    FontQueueSlot slots[16];
+    unsigned char bytes[0x2860];
+} FontPrintQueueStorage;
+
+/* xglFontInitial supplies this file-read buffer to xglFontLoad.
+ * The recovered FontImage view names its proportional-width table. The
+ * complete retail capacity also includes bytes beyond that partial view. */
+typedef union FontImageStorage {
+    struct FontImage image;
+    unsigned char bytes[0x78800];
+} FontImageStorage;
+

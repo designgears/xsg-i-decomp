@@ -15,6 +15,18 @@ extern u32 *arcfileaddr;
 extern void *AdrsEnemyPreset;
 #include "main/xgl_thread.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* search_key walks this object in 12-byte records: it compares the first
+ * string with the requested key and walks the string-pointer list at +4.
+ * The third pointer is present in every record but is not read by the
+ * recovered caller, so its role remains intentionally unnamed. */
+typedef struct ResourceKeyEntry {
+    const char *key;
+    const void *aliases;
+    const void *unmodeled_08;
+} ResourceKeyEntry;
+
+
 typedef struct {
     u16 id;
     u8 type;

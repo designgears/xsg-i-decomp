@@ -3,6 +3,13 @@
 #include "main/xgl_task.h"
 #include "menu_shop.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct ShopDataTail {
+    unsigned short count;
+    unsigned char unmodeled_02[6];
+} ShopDataTail;
+
+
 typedef struct ShopDataCategory {
     unsigned short count;
     unsigned char unmodeled_02[38];

@@ -180,4 +180,43 @@ extern HddInstallCBParam *HddInstallCBparam;
 
 extern int xglCdReadCancel(void);
 
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The fixed six-qword VIF-to-GIF packet used by the HDD error screen. */
+typedef struct HddGifTag {
+    u32 low_word;
+    u32 high_word;
+    u64 registers;
+} HddGifTag;
+
+typedef struct HddGsAdRegister {
+    u64 value;
+    u64 address;
+} HddGsAdRegister;
+
+typedef struct HddGsRgbaq {
+    u32 red;
+    u32 green;
+    u32 blue;
+    u32 alpha;
+} HddGsRgbaq;
+
+typedef struct HddGsXyz2 {
+    u32 x;
+    u32 y;
+    u32 z;
+    u32 : 32;
+} HddGsXyz2;
+
+typedef struct HddErrorPacket {
+    u32 vif_nop_00;
+    u32 vif_nop_04;
+    u32 vif_nop_08;
+    u32 vif_direct;
+    HddGifTag gif_tag;
+    HddGsAdRegister ad_register;
+    HddGsRgbaq color;
+    HddGsXyz2 corners[2];
+} HddErrorPacket;
+
 #endif /* SRC_MAIN_XGL_HDD_H */

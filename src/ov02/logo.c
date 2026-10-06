@@ -5,6 +5,44 @@
 #include "shared.h"
 #include "main/xgl_thread.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct LogoGifTag {
+    u32 control_low;
+    u32 control_high;
+    u32 registers_low;
+    u32 registers_high;
+} LogoGifTag;
+
+typedef struct LogoGifAdCommand {
+    u64 value;
+    u32 register_address;
+    u32 unused;
+} LogoGifAdCommand;
+
+typedef struct LogoGifRgbaq {
+    u32 red;
+    u32 green;
+    u32 blue;
+    u32 alpha;
+} LogoGifRgbaq;
+
+typedef struct LogoGifUv {
+    u32 u;
+    u32 v;
+    u32 unused_08;
+    u32 unused_0c;
+} LogoGifUv;
+
+typedef struct LogoGifXyz2 {
+    u16 x;
+    u16 unused_x;
+    u16 y;
+    u16 unused_y;
+    u32 z;
+    u32 unused;
+} LogoGifXyz2;
+
+
 extern int xglMcMain(void);
 extern void xglFontPrintDirectOT(int color, void *param);
 extern int D_00A10D28;

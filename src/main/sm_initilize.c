@@ -159,3 +159,11 @@ void smPrintInfo(void)
         } while (cell != 0);
     }
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The six modeled statistics occupy the prefix of a 32-byte retail slot. */
+typedef union SmMemInfoStorage {
+    SmMemInfo info;
+    unsigned char bytes[0x20];
+} SmMemInfoStorage;
+

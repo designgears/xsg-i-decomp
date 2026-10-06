@@ -353,6 +353,17 @@ INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _PassTime_00A45D30);
 
 #include "ov12/rg_debug_flags.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Each record begins with its actor/joint key, followed by the original
+ * signed joint-remapping payload. The payload uses -1 as its list terminator.
+ */
+typedef struct XrgRawJntData {
+    int id;
+    int jntID;
+    int jointMap[34];
+} XrgRawJntData;
+
+
 extern RgDebugFlags *InstanceOfRgDebugFlags(void);
 extern void nmlModelSetFogCol(float *);
 extern void nmlModelSetFogDist(float, float, float, float);

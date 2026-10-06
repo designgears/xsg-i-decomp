@@ -3,6 +3,19 @@
 #include "main/xgl_sound.h"
 #include "main/xgl_studio.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct GifAdEntry {
+    u64 value;
+    u64 register_address;
+} GifAdEntry;
+
+typedef struct TexTestPacket {
+    u64 gif_control;
+    u64 register_descriptors;
+    GifAdEntry registers[4];
+} TexTestPacket;
+
+
 typedef struct CfActor {
     u32 flags;
     u8 unmodeled_04[12];

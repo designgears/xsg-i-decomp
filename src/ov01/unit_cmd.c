@@ -5,6 +5,14 @@
 #include "shared.h"
 #include "unit_cmd.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* The same eight unit pointers have full-record and scheduler-prefix views. */
+typedef union UnitTableStorage {
+    UnitRecord *records[8];
+    ObjectTask *tasks[8];
+} UnitTableStorage;
+
+
 extern unsigned char unitTbl[0x20];
 extern int unitPlNum;
 extern int unitEnNum;

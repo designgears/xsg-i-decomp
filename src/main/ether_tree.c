@@ -1,6 +1,13 @@
 #include "common.h"
 #include "ether_tree.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct EtherTreeFirstDataEntry {
+    unsigned char childIds[3];
+    unsigned char unmodeled_03;
+} EtherTreeFirstDataEntry;
+
+
 /*
  * EtherTreeObject points at a table of 80 tree-object records of 0x70 bytes
  * (EtherTreeObjectSet clears 0x2300 bytes of it; EtherTreeObjectGet matches a

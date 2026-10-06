@@ -2175,3 +2175,10 @@ s32 CardMainProc(CardGameWork *work) {
     }
     return 1;
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+union CardSoundPathStorage {
+    char bytes[40];
+    struct CardSoundPath path;
+};
+

@@ -2,6 +2,14 @@
 #include "shared.h"
 #include "tslider_create.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct TsliderLiteralPool {
+    char close_command[24];
+    char script_root[28];
+    char trailing_empty_string[4];
+} TsliderLiteralPool;
+
+
 TwinWindow2 *TSLIDER_create(int requestedSlot)
 {
     TwinWindow2 *window;

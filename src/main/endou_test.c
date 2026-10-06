@@ -2,6 +2,53 @@
 #include "shared.h"
 #include "endou_test.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct GifPackedTag {
+    unsigned int loop_count_and_eop;
+    unsigned int primitive_flags_and_register_count;
+    u64 register_descriptors;
+} GifPackedTag;
+
+typedef struct GifAdWrite {
+    u64 value;
+    u64 register_id;
+} GifAdWrite;
+
+typedef struct GifPackedRgbaq {
+    unsigned int red;
+    unsigned int green;
+    unsigned int blue;
+    unsigned int alpha;
+} GifPackedRgbaq;
+
+typedef struct GifUv {
+    unsigned int u;
+    unsigned int v;
+    unsigned int q;
+    unsigned int reserved;
+} GifUv;
+
+typedef struct GifXyz2 {
+    unsigned int x;
+    unsigned int y;
+    unsigned int z;
+    unsigned int fog;
+} GifXyz2;
+
+typedef struct WinTexEnvironment {
+    unsigned int vif_nop_before_flush;
+    unsigned int vif_nop_before_direct;
+    unsigned int vif_flushe;
+    unsigned int vif_directhl_six_quadwords;
+    GifPackedTag gif_tag;
+    GifAdWrite texture_flush;
+    GifAdWrite bitblt_buffer;
+    GifAdWrite transfer_position;
+    GifAdWrite transfer_region;
+    GifAdWrite transfer_direction;
+} WinTexEnvironment;
+
+
 extern void xglSleep(void);
 
 INCLUDE_ASM("asm/main/nonmatchings/endou_test", EndouTest);

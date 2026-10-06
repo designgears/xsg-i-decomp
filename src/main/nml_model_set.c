@@ -2,6 +2,30 @@
 #include "shared.h"
 #include "nml_model_set.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/*
+ * The renderer passes this 0x1e0-byte block to nmlPacketSetAttributeData16N
+ * with count 0x1e, so the copied extent is established.  ProjectMap and
+ * ProjectCircle access the listed float slots; nmlModelClear clears the word
+ * at +0x1c0.  Other bytes remain unnamed because their roles are not shown
+ * by this TU's C callers.
+ */
+typedef struct NmlProRealState {
+    unsigned char unmodeled_000[0x190];
+    float unmodeled_190[4];
+    float value_1a0;
+    float value_1a4;
+    float value_1a8;
+    float unmodeled_1ac;
+    float unmodeled_1b0;
+    float unmodeled_1b4;
+    float value_1b8;
+    float unmodeled_1bc;
+    int projection_entry;
+    unsigned char unmodeled_1c4[0x1e0 - 0x1c4];
+} NmlProRealState;
+
+
 extern int s_nClip;
 extern int s_nMapShadowParts;
 extern Vector4 s_inGblPos;

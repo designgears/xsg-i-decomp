@@ -2,6 +2,15 @@
 #include "shared.h"
 #include "main/xgl_task.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* Weapon slot per party character (chrNo 1..7), indexing calcTotalParaMenu's
+ * attack words. */
+typedef struct MenuParameterLookupTables {
+    unsigned char slot[8];
+    signed char point[8];
+} MenuParameterLookupTables;
+
+
 /*
  * The menu work block (window_tex_load's MenuWork data, 0x80 bytes). Only the
  * members tskCharSpotLight reads are modelled.

@@ -5,6 +5,22 @@
 #include "data_unit_org_get.h"
 #include "ov01/calc.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct BattleDataHeader {
+    unsigned char unmodeled_00[8];
+    int unitInitOffset; /* +0x08 */
+    unsigned char unmodeled_0c[4];
+    int normalInitOffset; /* +0x10 */
+    int specialInitOffset; /* +0x14 */
+    int etherInitOffset; /* +0x18 */
+    unsigned char unmodeled_1c[0x38 - 0x1C];
+    int experienceOffset; /* +0x38 */
+    int parameterOffset; /* +0x3C */
+    int specialTableOffset; /* +0x40 */
+    int defaultEquipmentOffset; /* +0x44 */
+} BattleDataHeader;
+
+
 /*
  * orgData is a 33-entry table of 0x180-byte unit-origin records; callers
  * pass a one-based index, so dataUnitOrgGet returns orgData[id - 1].

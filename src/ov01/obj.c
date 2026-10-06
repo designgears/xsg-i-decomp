@@ -7,6 +7,14 @@
 #include "ov01/obj.h"
 #include "obj.h"
 
+/* Types recovered upstream (origin/master); kept for reference. */
+/* objInit clears fifty 0x80-byte slots. ObjectTaskNode models each prefix. */
+typedef union ObjectTaskStorage {
+    ObjectTaskNode node;
+    unsigned char bytes[0x80];
+} ObjectTaskStorage;
+
+
 extern unsigned char taskBuf[];
 extern void *memset(void *destination, int value, unsigned int size);
 extern void *xglTaskInitial(void *manager, int capacity, int flags);

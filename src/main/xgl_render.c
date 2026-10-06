@@ -297,3 +297,52 @@ void xglRenderEntry(void)
         xglSleep();
     }
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef union GifCommandData {
+    u64 value;
+    struct {
+        u32 low;
+        u32 high;
+    } words;
+} GifCommandData;
+
+typedef struct GifTag {
+    u32 control_low;
+    u32 control_high;
+    u32 registers_low;
+    u32 registers_high;
+} GifTag;
+
+typedef struct GifAdCommand {
+    GifCommandData data;
+    u32 register_address;
+    u32 unused;
+} GifAdCommand;
+
+typedef struct GifRgbaq {
+    GifCommandData red_green;
+    u32 blue;
+    u32 alpha;
+} GifRgbaq;
+
+typedef struct GifXyz2 {
+    u16 x;
+    u16 unused_x;
+    u16 y;
+    u16 unused_y;
+    u32 z;
+    u32 unused;
+} GifXyz2;
+
+typedef struct TestEnvironmentPacket {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+    GifAdCommand primitive;
+    GifRgbaq color;
+    GifXyz2 top_left;
+    GifXyz2 bottom_right;
+} TestEnvironmentPacket;
+

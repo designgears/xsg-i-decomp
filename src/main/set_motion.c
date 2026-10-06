@@ -826,3 +826,16 @@ void Actor_LookAt_Init(Actor *actor)
     *ACTOR_LOOKAT_TARGET(actor) = -1;
     *ENEMY_LOOKAT_POINT(enepc[ACTOR_NUMBER(actor)]) = 0;
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef struct UnduTestStorage {
+    int queryFlags;
+    unsigned char unmodeled_04[4];
+    short attrMask;
+    unsigned char unmodeled_0a[0x0e];
+    LayoutHeader *header;
+    unsigned char unmodeled_1c[4];
+    long long attribute;
+    unsigned char unmodeled_028[0x18];
+} UnduTestStorage;
+

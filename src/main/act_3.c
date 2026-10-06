@@ -425,3 +425,50 @@ INCLUDE_ASM("asm/main/nonmatchings/act_3", ACT_DrawShadow);
 void ACT_DrawShadowInit(void)
 {
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef union {
+    u64 value;
+    struct {
+        u32 low;
+        u32 high;
+    } words;
+} GifCommandData;
+
+typedef struct {
+    GifCommandData data;
+    u32 register_address;
+    u32 unused;
+} GifAdCommand;
+
+typedef struct {
+    u32 control_low;
+    u32 control_high;
+    u32 registers_low;
+    u32 registers_high;
+} GifTag;
+
+typedef struct {
+    GifCommandData low_color;
+    u32 blue_and_unused;
+    u32 alpha_and_unused;
+} GifRgbaq;
+
+typedef struct {
+    u16 x;
+    u16 unused_x;
+    u16 y;
+    u16 unused_y;
+    u32 z;
+    u32 unused;
+} GifXyz2;
+
+/* The final direct packet has one packed A+D register write. */
+typedef struct {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+    GifAdCommand set_shadow_register;
+} ActShadowEndPacket;
+

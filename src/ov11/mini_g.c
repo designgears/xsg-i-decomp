@@ -3791,3 +3791,9 @@ void MiniG_Init(void)
 }
 
 INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", MiniG_Main);
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef unsigned int CasinoSpriteWords[7];
+
+typedef unsigned int CasinoRectWords[4];
+

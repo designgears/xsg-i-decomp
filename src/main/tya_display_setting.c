@@ -160,3 +160,52 @@ void tyaDisplaySetting(u8 *buf)
     }
     xglSleep();
 }
+
+/* Types recovered upstream (origin/master); kept for reference. */
+typedef union {
+    u64 value;
+    struct {
+        u32 low;
+        u32 high;
+    } words;
+} GifRegisterData;
+
+typedef struct {
+    u32 control_low;
+    u32 control_high;
+    u32 registers_low;
+    u32 registers_high;
+} GifTag;
+
+typedef struct {
+    GifRegisterData data;
+    u32 register_address;
+    u32 unused;
+} GifAdCommand;
+
+typedef struct {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+    GifAdCommand set_pmode;
+    GifAdCommand set_smode2;
+    GifAdCommand set_dispfb2;
+    GifAdCommand set_display2;
+} TestEnvironmentPacket;
+
+typedef struct {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+} TransferEnvironmentPacket;
+
+typedef struct {
+    u64 dma_tag;
+    u32 vif_nop;
+    u32 vif_direct;
+    GifTag gif_tag;
+    GifAdCommand finish;
+} FlushEnvironmentPacket;
+
