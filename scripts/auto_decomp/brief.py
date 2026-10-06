@@ -121,6 +121,11 @@ TIME: there is NO time limit for you to track — never stop because of time, ne
 FINAL MESSAGE: matched yes/no, best score, the integrate output (if any), the remaining diff in one line, and the variants you tried that did NOT help (so the next worker skips them)."""]
     if notes.is_file():
         parts.append(f"EARLIER WORKERS' NOTES ({notes.name}) — read before anything else:\n{notes.read_text().strip()}")
+    up = R / "build/upstream_ref/src" / unit / f"{tu}.c"
+    if up.is_file() and up.read_bytes() != (R / "src" / unit / f"{tu}.c").read_bytes():
+        parts.append(f"UPSTREAM REFERENCE (read-only, never copy wholesale): {up} is upstream's copy of this TU. "
+                     "It has recovered typed data (struct layouts, tables, statics) we may lack: grep it for the "
+                     "globals your function touches and borrow their types into your body file.")
     parts.append("CURRENT STATE (precomputed, did not use your budget):\n" + current(unit, tu, name, bdir))
     sib = sibling_c(unit, tu, name)
     if sib:
