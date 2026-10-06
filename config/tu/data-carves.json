@@ -518,21 +518,27 @@
    ".lit4": [
     {
      "range": [
-      "0x004d7b88",
+      "0x004d7b80",
       "0x004d7b8c"
      ],
      "generated": [
-      "0x004d7b88",
+      "0x004d7b80",
       "0x004d7b8c"
      ],
      "generated_by": [
+      "checkTalk",
       "checkTouch"
      ],
      "c_owned_symbols": [
+      "D_004D7B80",
+      "D_004D7B84",
       "D_004D7B88"
      ],
      "also_referenced_by_c": [
       "D_004D7B8C",
+      "D_004D7B90",
+      "D_004D7B94",
+      "D_004D7B98",
       "D_004D7BA0"
      ],
      "basis": {
