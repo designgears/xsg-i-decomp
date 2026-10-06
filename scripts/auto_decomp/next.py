@@ -234,9 +234,15 @@ def refresh_ghidra(root: Path, max_age_s: int = 86400) -> None:
 def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | None,
              per_tu: int | None = None, claim_owner: str | None = None,
              ttl_s: int = claims.DEFAULT_TTL_S, min_size: int = 0,
-             keys: set[str] | None = None, include_blocked: bool = False) -> list[dict]:
+             keys: set[str] | None = None, include_blocked: bool = False,
+             claim_model: str | None = None, near_miss: float | None = None,
+             untouched: bool = False) -> list[dict]:
     """keys: only these candidates, ignoring size limits, attempt caps and back-off
-    (a deliberate retry); blocked and genuine-asm ones are still skipped."""
+    (a deliberate retry); blocked and genuine-asm ones are still skipped.
+    near_miss: only candidates whose best score (failure record or the agents'
+    bodies/<name>.best.json) is >= near_miss, best first, ignoring size limits,
+    attempt caps and back-off. untouched: only candidates nobody has tried yet
+    (no failure record, try counter or saved best)."""
     q = refresh_queue(root)
     reconcile(q)
     state = load_state()
@@ -245,32 +251,52 @@ def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | Non
     out, per = [], {}
     pending = {key(c["unit"], c["tu"], c["name"]) for c in q["candidates"]}
     fx = load_fn_index(root)
+    def best_of(c: dict) -> float:
+        f = failed.get(key(c["unit"], c["tu"], c["name"])) or {}
+        try:
+            b = json.loads((root / "build/auto_decomp/bodies" / c["unit"] / c["tu"]
+                            / f"{c['name']}.best.json").read_text()).get("score") or 0
+        except (OSError, ValueError):
+            b = 0
+        return max(f.get("best_score") or 0, b)
+
+    cands = q["candidates"]
+    if near_miss is not None:
+        scored = [(best_of(c), c) for c in cands]
+        cands = [c for sc, c in sorted(scored, key=lambda x: -x[0]) if near_miss <= sc < 1]
+    if untouched:
+        tries = root / "build/auto_decomp/tries"
+        bodies = root / "build/auto_decomp/bodies"
+        cands = [c for c in cands if key(c["unit"], c["tu"], c["name"]) not in failed
+                 and not (tries / f"{c['unit']}__{c['tu']}__{c['name']}").exists()
+                 and not (bodies / c["unit"] / c["tu"] / f"{c['name']}.best.json").exists()]
+    free = keys is not None or near_miss is not None   # no size/attempt/back-off limits
     with claims.locked():
         taken = claims.active(now)
         busy = set(taken)
         # callee-first: candidates blocked by a same-TU asm callee above them
         # (callgraph.py) are deferred to a second pass, used only when nothing
         # else is eligible; --include-blocked / --key lift the deferral.
-        lift = include_blocked or keys is not None
+        lift = include_blocked or free
         for deferred_pass in (False, True):
-            for c in q["candidates"]:
+            for c in cands:
                 if bool(c.get("blocked_by")) != deferred_pass and not lift:
                     continue
                 if units and c["unit"] not in units:
                     continue
                 if keys is not None and key(c["unit"], c["tu"], c["name"]) not in keys:
                     continue
-                if keys is None and (c["size"] < min_size or (max_size is not None and c["size"] > max_size)):
+                if not free and (c["size"] < min_size or (max_size is not None and c["size"] > max_size)):
                     continue
                 k = key(c["unit"], c["tu"], c["name"])
                 if k in taken or not c.get("asm"):
                     continue
                 f = failed.get(k)
-                if keys is None and f and f.get("attempts", 0) >= MAX_ATTEMPTS:
+                if not free and f and f.get("attempts", 0) >= MAX_ATTEMPTS:
                     continue
                 if f and f.get("blocked"):           # needs a toolchain/compiler decision
                     continue
-                if keys is None and f and f.get("next_eligible") and f["next_eligible"] > now:
+                if not free and f and f.get("next_eligible") and f["next_eligible"] > now:
                     continue
                 if genuine_asm(root, c):
                     continue
@@ -292,7 +318,7 @@ def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | Non
                 if sib:
                     c["sibling"] = sib
                 if claim_owner:
-                    claims.take(k, claim_owner, ttl_s)
+                    claims.take(k, claim_owner, ttl_s, claim_model)
                     (root / "build/auto_decomp/tries" / f"{c['unit']}__{c['tu']}__{c['name']}").unlink(missing_ok=True)
                 out.append(c)
                 busy.add(k)
@@ -332,11 +358,18 @@ def main() -> int:
     ap.add_argument("--include-blocked", action="store_true",
                     help="do not defer candidates whose same-TU callee above them is still INCLUDE_ASM")
     ap.add_argument("--claim", metavar="OWNER", help="lease the returned candidates to OWNER")
+    ap.add_argument("--model", help="model the leasing worker runs on (stored in the claim, shown by status.py)")
     ap.add_argument("--ttl-min", type=int, default=claims.DEFAULT_TTL_S // 60)
+    ap.add_argument("--near-miss", type=float, metavar="SCORE",
+                    help="only functions already scored >= SCORE (failure record or .best.json), best first; "
+                         "ignores size limits, attempt caps and back-off")
+    ap.add_argument("--untouched", action="store_true",
+                    help="only functions nobody has tried (no failure record, try counter or .best.json)")
     a = ap.parse_args()
     units = set(a.unit) if a.unit else None
     items = eligible(a.root, a.n, a.max_size, units, a.per_tu or None, a.claim,
-                     a.ttl_min * 60, a.min_size, set(a.key) if a.key else None, a.include_blocked)
+                     a.ttl_min * 60, a.min_size, set(a.key) if a.key else None, a.include_blocked,
+                     a.model, a.near_miss, a.untouched)
     q = json.loads(QUEUE_PATH.read_text())
     print(json.dumps({"count": len(items), "queue_total": q["total"],
                       "buckets": q["by_size_bucket"], "candidates": items}, indent=1))

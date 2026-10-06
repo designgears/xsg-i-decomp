@@ -365,10 +365,14 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
                              for l in ls]  # noqa: E731
             report["opcode_score"] = round(difflib.SequenceMatcher(None, op(da), op(db), autojunk=False).ratio(), 4)
             report["diff"] = side_by_side(da, db, diff_limit)
-        if sym_diffs:
+        if sym_diffs and report["bytes_match"]:
             report["note"] = ("bytes/relocation types match but some relocations name different "
                               "symbols; integrate's whole-file gate decides (usually fine when "
                               "the names alias the same address)")
+        elif sym_diffs:
+            report["note"] = ("some relocations name different symbols (jtbl_*/D_* vs .rodata: "
+                              "integrate's data carve handles those), but the code itself still "
+                              "differs in differing_words places: fix those first")
         return report
     finally:
         if not keep:

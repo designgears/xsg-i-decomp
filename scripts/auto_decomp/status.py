@@ -117,6 +117,7 @@ def status() -> dict:
                 pass
         edited = now - max(mts) if mts else None
         workers[c.get("owner", "?")].append({
+            "model": c.get("model") or "?",  # passed via next.py --model / claims.take(model=)
             "key": k, "unit": unit, "tu": tu, "name": name, "size": sizes.get(k),
             "age": now - c["at"], "ttl": c["expires"] - now, "tries": tries if isinstance(tries, int) else 0,
             "best": best, "edited": edited,
@@ -202,26 +203,32 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .kpi{background:var(--panel2);border-radius:10px;padding:10px 12px}
 .kpi .v{font-size:1.5rem;font-weight:650;line-height:1.15}
 .kpi .l{color:var(--dim);font-size:.72rem}
-.units{display:grid;gap:12px}
-.u .top{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:5px;gap:8px}
+.units{display:grid;gap:4px 18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.u{display:grid;grid-template-columns:4.4rem 1fr 3.4rem;align-items:center;gap:2px 10px;padding:4px 0;font-size:.82rem}
 .u .n{font-family:var(--mono);font-weight:600}
-.u .p{color:var(--dim)}
+.u .bar{height:6px}
+.u .p{text-align:right;font-weight:600}
+.u .c{grid-column:2/-1;color:var(--dim);font-size:.7rem;margin-top:-1px}
 .u.off{opacity:.45}
+@media (min-width:480px){.units{grid-template-columns:1fr 1fr}}
 .hist{display:flex;align-items:flex-end;gap:2px;height:72px;margin-top:14px}
 .hist i{flex:1;background:var(--acc);opacity:.85;border-radius:3px 3px 0 0;min-height:2px}
 .hist i.z{opacity:.2}
 .axis{display:flex;justify-content:space-between;color:var(--dim);font-size:.68rem;margin-top:4px}
-.workers{display:grid;gap:10px}
-.w{min-width:0;background:var(--panel2);border-radius:12px;padding:12px;border-left:3px solid var(--ok)}
+.workers{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+.w{min-width:0;background:var(--panel2);border-radius:9px;padding:7px 10px;border-left:3px solid var(--ok)}
 .w.s-warn{border-left-color:var(--warn)}.w.s-bad{border-left-color:var(--bad)}
-.w .t{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.w .t{display:flex;align-items:center;gap:6px}
 .w .fn{min-width:0;flex:1 1 auto;font-family:var(--mono);font-weight:650;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .w .loc{color:var(--dim);font-size:.75rem;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.w .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:.8rem}
-.w .stats b{display:block;font-weight:600}
-.w .stats span{color:var(--dim);font-size:.68rem}
-.w .bar{height:5px;margin-top:10px}
-.chip{font-size:.68rem;padding:2px 9px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.w .md{font-size:.66rem;padding:1px 7px;border-radius:99px;background:var(--panel);color:var(--acc);white-space:nowrap;flex:none}
+.w .md.local{color:var(--warn)}
+.w .sub2{display:flex;justify-content:space-between;gap:8px;margin-top:3px;font-size:.72rem;color:var(--dim)}
+.w .sub2 .loc{flex:1 1 auto;min-width:0}
+.w .stats{white-space:nowrap;font-variant-numeric:tabular-nums}
+.w .stats b{color:var(--fg);font-weight:600}
+.w .bar{height:3px;margin-top:5px}
+.chip{font-size:.64rem;padding:1px 7px;flex:none;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
 .ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.dim{color:var(--dim)}
 .filters{display:flex;gap:6px;flex-wrap:wrap}
 .filters button{font:inherit;font-size:.72rem;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);color:var(--dim);cursor:pointer;text-transform:none;letter-spacing:0}
@@ -235,17 +242,17 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .empty{color:var(--dim);padding:18px 0;text-align:center;font-size:.85rem}
 @media (min-width:720px){
   main{padding:20px;gap:16px;grid-template-columns:repeat(12,1fr)}
-  .hero{grid-column:span 7}.loop{grid-column:span 5}.unitsc{grid-column:span 5}.wk{grid-column:span 7}.evc{grid-column:span 12}
+  .hero{grid-column:span 7}.loop{grid-column:span 5}.wk{grid-column:span 12}.evc{grid-column:span 12}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .e{grid-template-columns:70px 120px 1fr}.e .m{grid-column:auto}.e .tm{order:-1;text-align:left}
 }
-@media (min-width:1100px){.workers{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 </style></head><body>
 <header><div class="hd"><h1>Xenosaga I decomp</h1><span class="live"><span class="dot" id="dot"></span><span id="upd">connecting…</span></span></div></header>
 <main>
   <section class="card hero"><h2>Overall progress</h2>
     <div class="row"><div class="big num" id="pct">–</div><div class="sub num" id="frac"></div></div>
     <div class="bar"><i id="pbar" style="width:0"></i></div>
+    <div class="units" id="units"></div>
   </section>
   <section class="card loop"><h2>Loop <span class="c" id="aux"></span></h2>
     <div class="kpis">
@@ -257,7 +264,6 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
     <div class="hist" id="hist"></div><div class="axis"><span>24h ago</span><span>12h</span><span>now</span></div>
   </section>
   <section class="card wk"><h2>Workers <span class="c" id="wc"></span></h2><div class="workers" id="workers"></div></section>
-  <section class="card unitsc"><h2>Units</h2><div class="units" id="units"></div></section>
   <section class="card evc"><h2>Recent events
     <span class="filters" id="filters"><button data-k="" class="on">All</button><button data-k="MATCH">Match</button><button data-k="GIVEUP">Give-up</button><button data-k="FAIL">Fail</button></span></h2>
     <div class="ev" id="events"></div></section>
@@ -280,12 +286,14 @@ async function tick(){
     const d=data=await (await fetch('api/status',{cache:'no-store'})).json(); last=Date.now();
     if(d.units){
       let f=0,t=0;
-      $('units').innerHTML=d.units.map(u=>{f+=u.functions;t+=u.functions_total;const p=100*u.functions/u.functions_total;
+      const pc=u=>u.functions_total?100*u.functions/u.functions_total:0,off=u=>u.gate==='not built'?' off':'';
+      for(const u of d.units){f+=u.functions;t+=u.functions_total}
+      $('pbar').style.width=(100*f/t)+'%';
+      $('units').innerHTML=d.units.map(u=>{const p=pc(u);
         const g=u.gate==='passing'?'':u.gate==='not built'?' · not built':` · <span class="bad">gate ${esc(u.gate)}</span>`;
-        return `<div class="u${u.gate==='not built'?' off':''}"><div class="top"><span class="n">${esc(u.unit)}</span><span class="p num">${u.functions}/${u.functions_total} · ${p.toFixed(1)}%${g}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join('');
+        return `<div class="u${off(u)}"><span class="n">${esc(u.unit)}</span><div class="bar"><i style="width:${p}%"></i></div><span class="p num">${p.toFixed(1)}%</span><span class="c num">${u.functions.toLocaleString()}/${u.functions_total.toLocaleString()}${g}</span></div>`}).join('');
       $('pct').textContent=(100*f/t).toFixed(2)+'%';
       $('frac').innerHTML=`${f.toLocaleString()} / ${t.toLocaleString()} functions<br>${(t-f).toLocaleString()} to go`;
-      $('pbar').style.width=(100*f/t)+'%';
     }
     $('m1').textContent=d.match_1h;$('m24').textContent=d.match_24h;$('g24').textContent=d.giveup_24h;$('q').textContent=d.queue.toLocaleString();
     const mx=Math.max(1,...d.hourly);$('hist').innerHTML=d.hourly.map((v,i)=>`<i class="${v?'':'z'}" style="height:${100*v/mx}%" title="${v} match${v==1?'':'es'}, ${23-i}h ago"></i>`).join('');
@@ -295,9 +303,9 @@ async function tick(){
       const idle=l.edited;
       const st=l.permuter!=null?['permuting','ok']:l.ttl<300?['expiring','bad']:idle!=null&&idle>600?['idle','warn']:['working','ok'];
       const tp=Math.min(100,100*l.tries/d.try_budget);
-      cards.push(`<div class="w s-${st[1]}"><div class="t"><span class="fn" title="${esc(l.key)}">${esc(l.name)}</span><span class="chip ${st[1]}">${st[0]}</span></div>
-        <div class="loc">${esc(w.owner)} · ${esc(l.unit)}/${esc(l.tu)}${l.size?` · ${l.size}B`:''}</div>
-        <div class="stats num"><div><b>${l.best==null?'–':(+l.best).toFixed(3)}</b><span>best</span></div><div><b>${l.tries}/${d.try_budget}</b><span>tries</span></div><div><b>${dur(l.age)}</b><span>leased</span></div><div><b>${dur(idle)}</b><span>idle</span></div></div>
+      const loc='';
+      cards.push(`<div class="w s-${st[1]}"><div class="t"><span class="fn" title="${esc(l.key)}">${esc(l.name)}</span><span class="md${loc}">${esc(l.model)}</span><span class="chip ${st[1]}">${st[0]}</span></div>
+        <div class="sub2"><span class="loc">${esc(w.owner)} · ${esc(l.unit)}/${esc(l.tu)}${l.size?` · ${l.size}B`:''}</span><span class="stats"><b>${l.best==null?'–':(+l.best).toFixed(3)}</b> · ${l.tries}/${d.try_budget} · ${dur(l.age)} · idle ${dur(idle)}</span></div>
         <div class="bar"><i style="width:${l.best==null?0:100*l.best}%"></i></div></div>`)}
     $('wc').textContent=n?`${n} active`:'';
     $('workers').innerHTML=cards.length?cards.join(''):'<div class="empty">No active leases.</div>';

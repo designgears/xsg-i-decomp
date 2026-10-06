@@ -54,11 +54,13 @@ def active(now: float | None = None) -> dict[str, dict]:
     return out
 
 
-def take(k: str, owner: str, ttl_s: int = DEFAULT_TTL_S) -> dict:
+def take(k: str, owner: str, ttl_s: int = DEFAULT_TTL_S, model: str | None = None) -> dict:
     """Caller holds locked() and has checked active()."""
     CLAIMS_DIR.mkdir(parents=True, exist_ok=True)
     now = time.time()
     c = {"key": k, "owner": owner, "at": now, "expires": now + ttl_s}
+    if model:
+        c["model"] = model  # shown by status.py; set by whoever launches the worker
     _path(k).write_text(json.dumps(c) + "\n")
     return c
 
