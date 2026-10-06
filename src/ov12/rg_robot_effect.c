@@ -6,18 +6,6 @@
 #include "rg_robot_effect.h"
 #include "ov12/xrg_rand_int.h"
 
-/*
- * ov12:0x00a52378, "pGenerator != NIL && pFunc != NIL"
- * ov12:0x00a523a0, "../rg_robot_effect.euc.c"
- * ov12:0x00a523e0, "pRobEff != NIL"
- * All three strings are scaffold .rodata (config/tu-build.json data_ownership
- * .rodata: owner asm) with no config/symbols/ov12.txt entry, so they keep
- * their splat names.
- */
-extern const char D_00A52378[];
-extern const char D_00A523A0[];
-extern const char D_00A523E0[];
-
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 extern char *strcpy(char *destination, const char *source);
@@ -134,7 +122,8 @@ static void _SetShootLocalGenEffect(RgRobotEffectItem *item,
                                     RgRobotEffectShootLocalFunc func)
 {
     if (generator == 0 || func == 0) {
-        assert_prog(D_00A52378, D_00A523A0, 113);
+        assert_prog("pGenerator != NIL && pFunc != NIL",
+                    "../rg_robot_effect.euc.c", 113);
     }
     item->shoot_generator = generator;
     item->shoot_func = func;
@@ -146,11 +135,6 @@ typedef struct RgParticleEffectEssence RgParticleEffectEssence;
 extern RgParticleEffect *CreateRgParticleEffect(RgParticleEffectEssence *essence,
                                                 int count);
 
-/* ov12:0x00a0e25c, "../rg_robot_effect.euc.c" (D_00A523A0), no
- * config/symbols/ov12.txt entry: scaffold .rodata like the other assert
- * strings above. */
-extern const char D_00A523C0[];
-
 static void _AddEffect(RgRobotEffectItem *item, RgParticleEffectEssence *essence,
                        int count)
 {
@@ -158,7 +142,8 @@ static void _AddEffect(RgRobotEffectItem *item, RgParticleEffectEssence *essence
     int index;
 
     if ((u32) item->particle_count >= 2) {
-        assert_prog(D_00A523C0, D_00A523A0, 122);
+        assert_prog("pEff->m_uPtclNum < EFF_MAX",
+                    "../rg_robot_effect.euc.c", 122);
     }
     particle = CreateRgParticleEffect(essence, count);
     index = item->particle_count;
@@ -239,7 +224,7 @@ void _InitRobEff(RgRobotEffect *effect) {
 
     jet = &effect->jet;
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 218);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 218);
     }
     effect->actor = 0;
     effect->geom = 0;
@@ -253,7 +238,7 @@ void _InitRobEff(RgRobotEffect *effect) {
 static void _DestructRobEff(RgRobotEffect *effect)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 230);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 230);
     }
     _ClearEffect(&effect->jet);
     _ClearEffect(&effect->dash);
@@ -308,7 +293,7 @@ RgRobotEffect *CreateRgRobotEffect(void)
     RgRobotEffect *effect;
 
     effect = RgHeapAlloc(InstanceOfRgHeap(), sizeof(RgRobotEffect),
-                         D_00A523A0, 284);
+                         "../rg_robot_effect.euc.c", 284);
     _InitRobEff(effect);
     return effect;
 }
@@ -316,16 +301,16 @@ RgRobotEffect *CreateRgRobotEffect(void)
 void DisposeRgRobotEffect(RgRobotEffect *effect)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 292);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 292);
     }
     _DestructRobEff(effect);
-    RgHeapFree(InstanceOfRgHeap(), effect, D_00A523A0, 294);
+    RgHeapFree(InstanceOfRgHeap(), effect, "../rg_robot_effect.euc.c", 294);
 }
 
 void RgRobotEffectSetActor(RgRobotEffect *effect, void *actor)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 304);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 304);
     }
     effect->actor = actor;
 }
@@ -333,7 +318,7 @@ void RgRobotEffectSetActor(RgRobotEffect *effect, void *actor)
 void RgRobotEffectSetGeom(RgRobotEffect *effect, RgGeomPoint *geom)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 311);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 311);
     }
     effect->geom = geom;
 }
@@ -341,7 +326,7 @@ void RgRobotEffectSetGeom(RgRobotEffect *effect, RgGeomPoint *geom)
 void RgRobotEffectSetJetPtclName(RgRobotEffect *effect, const char *name)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 319);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 319);
     }
     strcpy(effect->jet.ptcl_name, name);
 }
@@ -349,14 +334,14 @@ void RgRobotEffectSetJetPtclName(RgRobotEffect *effect, const char *name)
 void RgRobotEffectSetDashPtclName(RgRobotEffect *effect, const char *name)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 327);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 327);
     }
     strcpy(effect->dash.ptcl_name, name);
 }
 
 void RgRobotEffectSetJetInertia(RgRobotEffect *effect, int inertia) {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 335);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 335);
     }
     _SetInertiaEffect(&effect->jet, inertia);
 }
@@ -390,7 +375,7 @@ void RgRobotEffectStartJet(RgRobotEffect *effect, float stopTime) {
     u32 i;
 
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 356);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 356);
     }
     jet = &effect->jet;
     if (effect->actor != 0) {
@@ -421,7 +406,7 @@ void RgRobotEffectStartJet(RgRobotEffect *effect, float stopTime) {
 void RgRobotEffectTermJet(RgRobotEffect *effect)
 {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 387);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 387);
     }
     if (effect->actor != 0) {
         _StopEffect(&effect->jet);
@@ -441,7 +426,7 @@ void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime) {
 
     dash = &effect->dash;
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 402);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 402);
     }
     if (effect->actor != 0) {
         _ClearEffect(dash);
@@ -459,7 +444,7 @@ void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime) {
 
 void RgRobotEffectTermDash(RgRobotEffect *effect) {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 427);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 427);
     }
     if (effect->actor != 0) {
         _StopEffect(&effect->dash);
@@ -470,7 +455,7 @@ void _PassTimeEffect(RgRobotEffectItem *item, float time);
 
 void RgRobotEffectPassTime(RgRobotEffect *effect, float time) {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 441);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 441);
     }
     if (effect->actor != 0) {
         _PassTimeEffect(&effect->jet, time);
@@ -482,7 +467,7 @@ void _DispEffect(RgRobotEffectItem *item);
 
 void RgRobotEffectDisp(RgRobotEffect *effect) {
     if (effect == 0) {
-        assert_prog(D_00A523E0, D_00A523A0, 453);
+        assert_prog("pRobEff != NIL", "../rg_robot_effect.euc.c", 453);
     }
     if (effect->actor == 0) {
         return;

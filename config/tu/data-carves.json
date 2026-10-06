@@ -3171,6 +3171,59 @@
     }
    ]
   },
+  "ov01/tu016_00a31348": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4368c",
+      "0x00a43690"
+     ],
+     "generated": [
+      "0x00a4368c",
+      "0x00a43690"
+     ],
+     "generated_by": [
+      "MBattleCreate",
+      "MBattleInit",
+      "MBattleIsInPause",
+      "MBattlePause"
+     ],
+     "c_owned_symbols": [
+      "batFlags"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_battle.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a50ea8",
+      "0x00a50ec8"
+     ],
+     "generated": [
+      "0x00a50ea8",
+      "0x00a50ec8"
+     ],
+     "generated_by": [
+      "MBattleInit"
+     ],
+     "c_owned_symbols": [
+      "D_00A50EA8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_battle.o"
+     }
+    }
+   ]
+  },
   "ov01/tu020_00a332e0": {
    ".rodata": [
     {
@@ -3219,30 +3272,70 @@
     }
    ]
   },
+  "ov01/tu022_00a337a0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a512b0",
+      "0x00a51380"
+     ],
+     "generated": [
+      "0x00a512b0",
+      "0x00a51380"
+     ],
+     "generated_by": [
+      "MEfCheckWorkSize",
+      "MEfGetActorMatrix",
+      "MEfMake4Vertex2"
+     ],
+     "c_owned_symbols": [
+      "D_00A512B0",
+      "D_00A512F0",
+      "D_00A51318",
+      "D_00A51340",
+      "mefVertex2CornerTable"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef.o"
+     }
+    }
+   ]
+  },
   "ov02/tu005_00a023a8": {
    ".rodata": [
     {
      "range": [
-      "0x00a11dd0",
+      "0x00a11d40",
       "0x00a11df0"
      ],
      "generated": [
-      "0x00a11dd0",
+      "0x00a11d40",
       "0x00a11de4"
      ],
      "generated_by": [
+      "UmnFirstLoad",
+      "UmnInit",
       "UmnMain"
      ],
      "c_owned_symbols": [
-      "jtbl_00A11DD0"
-     ],
-     "also_referenced_by_c": [
       "D_00A11D40",
       "D_00A11D58",
       "D_00A11D70",
       "D_00A11D90",
-      "D_00A11DB0"
-     ]
+      "D_00A11DB0",
+      "jtbl_00A11DD0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A11DF0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_object_task_main.o"
+     }
     }
    ]
   },
@@ -3738,6 +3831,58 @@
     }
    ]
   },
+  "ov10/tu004_00a19a20": {
+   ".data": [
+    {
+     "range": [
+      "0x00a437c0",
+      "0x00a437d4"
+     ],
+     "generated": [
+      "0x00a437c0",
+      "0x00a437d4"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "ZenkakuListA"
+     ],
+     "also_referenced_by_c": [
+      "ActiveCursol_2",
+      "ActiveCursol_4",
+      "ActiveCursol_6"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_deck_chk.o"
+     }
+    }
+   ]
+  },
+  "ov10/tu005_00a1c1b8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43aa0",
+      "0x00a43aa7"
+     ],
+     "generated": [
+      "0x00a43aa0",
+      "0x00a43aa7"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "TitleMaxList"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
+     }
+    }
+   ]
+  },
   "ov10/tu006_00a1e5d8": {
    ".rodata": [
     {
@@ -3986,6 +4131,33 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/battle_area_check_enemy.o"
+     }
+    }
+   ]
+  },
+  "ov11/tu000_00a00000": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a0bb10",
+      "0x00a0bb30"
+     ],
+     "generated": [
+      "0x00a0bb10",
+      "0x00a0bb2d"
+     ],
+     "generated_by": [
+      "TanakaTest"
+     ],
+     "c_owned_symbols": [
+      "D_00A0BB10",
+      "D_00A0BB20"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov11/build/scaffold/src/ov11/tanaka_test.o"
      }
     }
    ]
@@ -4288,6 +4460,32 @@
     }
    ]
   },
+  "ov12/tu000_00a00000": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51430",
+      "0x00a51440"
+     ],
+     "generated": [
+      "0x00a51430",
+      "0x00a51440"
+     ],
+     "generated_by": [
+      "NisimoriTest"
+     ],
+     "c_owned_symbols": [
+      "D_00A51430"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/nisimori_test.o"
+     }
+    }
+   ]
+  },
   "ov12/tu001_00a00088": {
    ".rodata": [
     {
@@ -4352,6 +4550,44 @@
       "D_00A517C8",
       "D_00A517D8"
      ]
+    }
+   ]
+  },
+  "ov12/tu002_00a01ff8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51808",
+      "0x00a51830"
+     ],
+     "generated": [
+      "0x00a51808",
+      "0x00a5182d"
+     ],
+     "generated_by": [
+      "InitRgChar",
+      "RgCharAlloc",
+      "RgCharControl",
+      "RgCharControlMethod",
+      "RgCharDestructMethod",
+      "RgCharDisp",
+      "RgCharDispMethod",
+      "RgCharFree",
+      "RgCharGetType",
+      "RgCharPassTime",
+      "RgCharPassTimeMethod",
+      "RgCharSetType"
+     ],
+     "c_owned_symbols": [
+      "D_00A51808",
+      "D_00A51820"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_char.o"
+     }
     }
    ]
   },
@@ -4446,29 +4682,152 @@
     }
    ]
   },
+  "ov12/tu005_00a09480": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51c20",
+      "0x00a51c60"
+     ],
+     "generated": [
+      "0x00a51c20",
+      "0x00a51c5c"
+     ],
+     "generated_by": [
+      "CreateRgRobotControlInput",
+      "CreateRgRobotControlNul",
+      "DisposeRgRobotControl",
+      "InitRgRobotControlCommon",
+      "RgRobotControlJob",
+      "RgRobotControlSetRobot",
+      "_DestructControlInput",
+      "_InitControlInput"
+     ],
+     "c_owned_symbols": [
+      "D_00A51C20",
+      "D_00A51C30",
+      "D_00A51C50"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_control.o"
+     }
+    }
+   ]
+  },
   "ov12/tu006_00a09ba0": {
    ".rodata": [
     {
      "range": [
-      "0x00a51db0",
-      "0x00a51dd0"
+      "0x00a51d90",
+      "0x00a51e08"
      ],
      "generated": [
-      "0x00a51db0",
-      "0x00a51dcc"
+      "0x00a51d90",
+      "0x00a51e03"
      ],
      "generated_by": [
+      "CreateRgEnemyControl",
+      "_DestructEnemy",
+      "_InitEnemy",
       "_JobEnemy"
      ],
      "c_owned_symbols": [
-      "jtbl_00A51DB0"
-     ],
-     "also_referenced_by_c": [
       "D_00A51D90",
+      "jtbl_00A51DB0",
       "D_00A51DD0",
       "D_00A51DE0",
       "D_00A51DF0"
-     ]
+     ],
+     "also_referenced_by_c": [
+      "D_00A51C60",
+      "D_00A51C68",
+      "D_00A51C70",
+      "D_00A51C78",
+      "D_00A51C80",
+      "D_00A51C88",
+      "D_00A51C90",
+      "D_00A51CA0",
+      "D_00A51CB0",
+      "D_00A51CC0",
+      "D_00A51CD0",
+      "D_00A51CE0",
+      "D_00A51CF0",
+      "D_00A51D08",
+      "D_00A51D18",
+      "D_00A51D28",
+      "D_00A51D38",
+      "D_00A51D48",
+      "D_00A51D70",
+      "D_00A51D88"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_enemy.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu007_00a0cbc8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f5a0",
+      "0x00a4f5e0"
+     ],
+     "generated": [
+      "0x00a4f5a0",
+      "0x00a4f5e0"
+     ],
+     "generated_by": [
+      "RgRobSubGetAdvanceMot"
+     ],
+     "c_owned_symbols": [
+      "s_aeAdvMotID_0",
+      "s_aeDashMotID_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_subcon.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51e08",
+      "0x00a51e68"
+     ],
+     "generated": [
+      "0x00a51e08",
+      "0x00a51e68"
+     ],
+     "generated_by": [
+      "RgRobSubAcceralate",
+      "RgRobSubBreak",
+      "RgRobSubDirTo",
+      "RgRobSubGetAdvanceMot",
+      "RgRobSubGetDamageMotion",
+      "RgRobSubHoming",
+      "RgRobSubTargetting"
+     ],
+     "c_owned_symbols": [
+      "D_00A51E08",
+      "D_00A51E18",
+      "D_00A51E38",
+      "D_00A51E50"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_subcon.o"
+     }
     }
    ]
   },
@@ -4508,6 +4867,238 @@
     }
    ]
   },
+  "ov12/tu010_00a0df70": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a52378",
+      "0x00a523f0"
+     ],
+     "generated": [
+      "0x00a52378",
+      "0x00a523ef"
+     ],
+     "generated_by": [
+      "CreateRgRobotEffect",
+      "DisposeRgRobotEffect",
+      "RgRobotEffectDisp",
+      "RgRobotEffectPassTime",
+      "RgRobotEffectSetActor",
+      "RgRobotEffectSetDashPtclName",
+      "RgRobotEffectSetGeom",
+      "RgRobotEffectSetJetInertia",
+      "RgRobotEffectSetJetPtclName",
+      "RgRobotEffectStartDash",
+      "RgRobotEffectStartJet",
+      "RgRobotEffectTermDash",
+      "RgRobotEffectTermJet",
+      "_AddEffect",
+      "_DestructRobEff",
+      "_InitRobEff",
+      "_SetShootLocalGenEffect"
+     ],
+     "c_owned_symbols": [
+      "D_00A52378",
+      "D_00A523A0",
+      "D_00A523C0",
+      "D_00A523E0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A52358",
+      "D_00A52368"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_effect.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu011_00a0ece8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a523f0",
+      "0x00a52438"
+     ],
+     "generated": [
+      "0x00a523f0",
+      "0x00a52436"
+     ],
+     "generated_by": [
+      "CreateRgShotThread",
+      "DisposeRgShotThread",
+      "RgShotThreadGetStatus",
+      "RgShotThreadMotOff",
+      "RgShotThreadPassTime",
+      "RgShotThreadSleep",
+      "RgShotThreadStart",
+      "_InitShotThread",
+      "_SetShotThread"
+     ],
+     "c_owned_symbols": [
+      "D_00A523F0",
+      "D_00A52400",
+      "D_00A52418"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot_thread.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu012_00a0f340": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a52438",
+      "0x00a52460"
+     ],
+     "generated": [
+      "0x00a52438",
+      "0x00a52460"
+     ],
+     "generated_by": [
+      "InstanceOfRgDebugFlags",
+      "_DestructRgDebugFlags",
+      "_InitRgDebugFlags",
+      "_WrapperDestruct_00A0F3D8"
+     ],
+     "c_owned_symbols": [
+      "D_00A52438",
+      "D_00A52448"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_debug_flags.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu013_00a0f490": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a52460",
+      "0x00a52490"
+     ],
+     "generated": [
+      "0x00a52460",
+      "0x00a52490"
+     ],
+     "generated_by": [
+      "InstanceOfRgMotionInfoDB",
+      "RgMotionInfoDBDispose",
+      "RgMotionInfoDBDump",
+      "RgMotionInfoDBGet",
+      "RgMotionInfoDBIsDefaultData",
+      "RgMotionInfoDBLoad",
+      "RgMotionInfoGetActionInTime",
+      "RgMotionInfoIsAfter",
+      "RgMotionInfoIsBefore",
+      "_AddActionRgMotion",
+      "_DestructDB",
+      "_InitDB_00A0F828",
+      "_InitRgMotionShotInfo",
+      "_TableEntry",
+      "_TableFree",
+      "_WrapperDestruct_00A0F8E8"
+     ],
+     "c_owned_symbols": [
+      "D_00A52460",
+      "D_00A52470"
+     ],
+     "also_referenced_by_c": [
+      "D_00A52490"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_motion_info_db.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a524c0",
+      "0x00a524f0"
+     ],
+     "generated": [
+      "0x00a524c0",
+      "0x00a524f0"
+     ],
+     "generated_by": [
+      "RgMotionInfoDBDispose",
+      "RgMotionInfoDBDump",
+      "RgMotionInfoDBGet",
+      "RgMotionInfoDBIsDefaultData",
+      "RgMotionInfoDBLoad",
+      "_DestructDB",
+      "_InitDB_00A0F828",
+      "_TableEntry"
+     ],
+     "c_owned_symbols": [
+      "D_00A524C0",
+      "D_00A524E0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A524F0",
+      "D_00A52500",
+      "D_00A52508",
+      "D_00A52520",
+      "D_00A52530",
+      "D_00A52540",
+      "D_00A52548",
+      "D_00A52558",
+      "D_00A52560",
+      "D_00A52570",
+      "D_00A52580",
+      "D_00A52590"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_motion_info_db.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a52598",
+      "0x00a52660"
+     ],
+     "generated": [
+      "0x00a52598",
+      "0x00a52660"
+     ],
+     "generated_by": [
+      "RgMotionInfoDBDump",
+      "RgMotionInfoGetActionInTime",
+      "RgMotionInfoIsAfter",
+      "RgMotionInfoIsBefore"
+     ],
+     "c_owned_symbols": [
+      "D_00A52598",
+      "D_00A525A8",
+      "D_00A525D8",
+      "D_00A525F0",
+      "D_00A52608",
+      "D_00A52618",
+      "D_00A52630"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_motion_info_db.o"
+     }
+    }
+   ]
+  },
   "ov12/tu014_00a10318": {
    ".rodata": [
     {
@@ -4541,27 +5132,744 @@
     }
    ]
   },
+  "ov12/tu015_00a10618": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a526f8",
+      "0x00a52750"
+     ],
+     "generated": [
+      "0x00a526f8",
+      "0x00a52750"
+     ],
+     "generated_by": [
+      "CreateRgPlayer",
+      "DisposeRgPlayer",
+      "InitRgPlayerEssence",
+      "RgPlayerGetAdvGeoms",
+      "RgPlayerGetAtkGeoms",
+      "RgPlayerGetBodyGeoms",
+      "RgPlayerGetEyeGeoms",
+      "RgPlayerGetRobot",
+      "RgPlayerGetShotGeoms",
+      "RgPlayerSetControl",
+      "RgPlayerSetLightCost",
+      "RgPlayerSetTraceCamera",
+      "_InitRgPlayer",
+      "_PlayerSetFromEssence"
+     ],
+     "c_owned_symbols": [
+      "D_00A526F8",
+      "D_00A52708",
+      "D_00A52720",
+      "D_00A52740"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_player.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu017_00a129c8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f638",
+      "0x00a4f63c"
+     ],
+     "generated": [
+      "0x00a4f638",
+      "0x00a4f63c"
+     ],
+     "generated_by": [
+      "StaticRgBgObjGetBlight",
+      "StaticRgBgObjSetBlight"
+     ],
+     "c_owned_symbols": [
+      "s_fBgObjBlight"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_bgobj.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a529b0",
+      "0x00a529e8"
+     ],
+     "generated": [
+      "0x00a529b0",
+      "0x00a529e8"
+     ],
+     "generated_by": [
+      "CreateRgBgObj",
+      "RgBgObjEnableBodyAttack",
+      "RgBgObjGetDispModel",
+      "RgBgObjIgnoreHide",
+      "RgBgObjNotUseGeomLocal",
+      "RgBgObjSetHardness",
+      "RgBgObjSetHide",
+      "RgBgObjSetLocal",
+      "RgBgObjTryToBodyAttack",
+      "RgBgObjTryToBreak",
+      "_Destruct_00A12B28",
+      "_Draw",
+      "_InitRgBgObj",
+      "_PassTime_00A12B90"
+     ],
+     "c_owned_symbols": [
+      "D_00A529B0",
+      "D_00A529C0",
+      "D_00A529D8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_bgobj.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu018_00a13200": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a529e8",
+      "0x00a52a40"
+     ],
+     "generated": [
+      "0x00a529e8",
+      "0x00a52a40"
+     ],
+     "generated_by": [
+      "assert_prog"
+     ],
+     "c_owned_symbols": [
+      "D_00A529E8",
+      "D_00A52A20"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/assert_prog.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu021_00a143e0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53088",
+      "0x00a531f0"
+     ],
+     "generated": [
+      "0x00a53088",
+      "0x00a531ea"
+     ],
+     "generated_by": [
+      "InitRgCharMgr",
+      "InstanceOfRgCharMgr",
+      "RgCharMgrDump",
+      "RgCharMgrEntry",
+      "RgCharMgrFree",
+      "RgCharMgrGC",
+      "RgCharMgrIsFullOfBuffer",
+      "RgCharMgrSearch",
+      "_DeletePtr",
+      "_DestructCharMgr",
+      "_DisposeCharMgr",
+      "_EntryPtr",
+      "_RgCharMgrCallControl",
+      "_RgCharMgrCallDisp",
+      "_RgCharMgrCallPassTime"
+     ],
+     "c_owned_symbols": [
+      "D_00A53088",
+      "D_00A530B8",
+      "D_00A530D0",
+      "D_00A530E8",
+      "D_00A530F8",
+      "D_00A53108",
+      "D_00A53118",
+      "D_00A53138",
+      "D_00A53148",
+      "D_00A53158",
+      "D_00A53178",
+      "D_00A531A8",
+      "D_00A531C0",
+      "D_00A531D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_charmgr.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu023_00a15600": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a532e8",
+      "0x00a53320"
+     ],
+     "generated": [
+      "0x00a532e8",
+      "0x00a53320"
+     ],
+     "generated_by": [
+      "CreateRgShotFromEssence",
+      "InitRgBeamEssence",
+      "InitRgFireEssence",
+      "InitRgHomingShotEssence",
+      "InitRgNormalShotEssence",
+      "RgShotGetDamage",
+      "RgShotGetHitRobNum",
+      "RgShotHitBg",
+      "RgShotHitRobot",
+      "RgShotIsReleased",
+      "RgShotRelease",
+      "RgShotSetBgHitSound",
+      "RgShotSetHideSound",
+      "RgShotSetHitSound",
+      "RgShotSetNoLifeSound",
+      "RgShotSetSoundDriver",
+      "_BeamHit",
+      "_BeamIsReleased",
+      "_BeamPassTime",
+      "_CommonGetGeom",
+      "_CreateBeam",
+      "_CreateFire",
+      "_CreateGrenade",
+      "_CreateHoming",
+      "_CreateRgNormalShot",
+      "_FireIsReleased",
+      "_FireKill",
+      "_FirePassTime",
+      "_FireRelease",
+      "_GrenadeBomPassTime",
+      "_GrenadeEntryHistory",
+      "_GrenadeHitRobot",
+      "_GrenadeHomingPassTime",
+      "_GrenadeSetBom",
+      "_HomingPassTime",
+      "_InitShotCommon",
+      "_InitShotCommonSub",
+      "_ShotCommonHitBg",
+      "_ShotCommonHitRobot",
+      "_ShotCommonPassTimeEffect"
+     ],
+     "c_owned_symbols": [
+      "D_00A532E8",
+      "D_00A532F8",
+      "D_00A53310"
+     ],
+     "also_referenced_by_c": [
+      "D_00A53320"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53338",
+      "0x00a533b0"
+     ],
+     "generated": [
+      "0x00a53338",
+      "0x00a533b0"
+     ],
+     "generated_by": [
+      "CreateRgShotFromEssence",
+      "InitRgBeamEssence",
+      "InitRgFireEssence",
+      "InitRgHomingShotEssence",
+      "InitRgNormalShotEssence",
+      "_CreateBeam",
+      "_CreateFire",
+      "_CreateGrenade",
+      "_CreateHoming",
+      "_FireIsReleased",
+      "_FireKill",
+      "_FirePassTime",
+      "_FireRelease",
+      "_GrenadeBomPassTime",
+      "_GrenadeEntryHistory",
+      "_GrenadeHomingPassTime",
+      "_GrenadeSetBom",
+      "_InitShotCommon",
+      "_ShotCommonHitBg",
+      "_ShotCommonHitRobot"
+     ],
+     "c_owned_symbols": [
+      "D_00A53338",
+      "D_00A53348",
+      "D_00A53358",
+      "D_00A53368",
+      "D_00A53378",
+      "D_00A53380",
+      "D_00A53390",
+      "D_00A533A0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A533B0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a533c8",
+      "0x00a533f8"
+     ],
+     "generated": [
+      "0x00a533c8",
+      "0x00a533f8"
+     ],
+     "generated_by": [
+      "RgShotHitBg",
+      "RgShotHitRobot",
+      "_BeamHit",
+      "_BeamIsReleased",
+      "_BeamPassTime",
+      "_ShotCommonHitBg"
+     ],
+     "c_owned_symbols": [
+      "D_00A533C8",
+      "D_00A533D8",
+      "D_00A533E8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A533F8",
+      "D_00A53408"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu024_00a17c90": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53418",
+      "0x00a53450"
+     ],
+     "generated": [
+      "0x00a53418",
+      "0x00a53450"
+     ],
+     "generated_by": [
+      "CreateRgShotEffect",
+      "DisposeRgShotEffect",
+      "RgShotEffectDisp",
+      "RgShotEffectGetPtclEffect",
+      "RgShotEffectPassTime",
+      "RgShotEffectSetAddAlpha",
+      "RgShotEffectSetModel",
+      "RgShotEffectSetParticle",
+      "RgShotEffectSetParticleShootReverse",
+      "RgShotEffectSetPos",
+      "RgShotEffectSetScale",
+      "RgShotEffectSetTexLine",
+      "RgShotEffectSetTexLineModelColor",
+      "RgShotEffectSetTexLineModelSize",
+      "RgShotEffectSetTransparent",
+      "RgShotEffectSetYRot",
+      "RgShotEffectStopAlive",
+      "_InitEffect_00A17C90"
+     ],
+     "c_owned_symbols": [
+      "D_00A53418",
+      "D_00A53428",
+      "D_00A53440"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot_effect.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu025_00a18668": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53450",
+      "0x00a535e8"
+     ],
+     "generated": [
+      "0x00a53450",
+      "0x00a535e8"
+     ],
+     "generated_by": [
+      "RgShotDBClear",
+      "RgShotDBRead",
+      "_ReadBeam",
+      "_ReadCommon_00A18730",
+      "_ReadFire",
+      "_ReadGrenade",
+      "_ReadHoming",
+      "_ReadHomingMain",
+      "_ReadNormal"
+     ],
+     "c_owned_symbols": [
+      "D_00A53450",
+      "D_00A53458",
+      "D_00A53470",
+      "D_00A53488",
+      "D_00A53490",
+      "D_00A53498",
+      "D_00A534A0",
+      "D_00A534B0",
+      "D_00A534C0",
+      "D_00A534D0",
+      "D_00A534D8",
+      "D_00A534E0",
+      "D_00A534F0",
+      "D_00A53500",
+      "D_00A53510",
+      "D_00A53520",
+      "D_00A53530",
+      "D_00A53538",
+      "D_00A53548",
+      "D_00A53550",
+      "D_00A53560",
+      "D_00A53568",
+      "D_00A53578",
+      "D_00A53588",
+      "D_00A53598",
+      "D_00A535A0",
+      "D_00A535B0",
+      "D_00A535B8",
+      "D_00A535C8",
+      "D_00A535D8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A535E8",
+      "D_00A53600",
+      "D_00A53608",
+      "D_00A53610",
+      "D_00A53618",
+      "D_00A53620",
+      "D_00A53628"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shot_db.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu026_00a19388": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53648",
+      "0x00a53670"
+     ],
+     "generated": [
+      "0x00a53648",
+      "0x00a53670"
+     ],
+     "generated_by": [
+      "CreateRgWeaponFromEssence",
+      "DisposeRgWeapon",
+      "DisposeRgWeaponNotActor",
+      "InitRgWeaponAttackEssence",
+      "InitRgWeaponEnergyEssence",
+      "InitRgWeaponShieldEssence",
+      "InitRgWeaponShotEssence",
+      "InitRgWeaponUnArmedEssence",
+      "RgWeaponDisp",
+      "RgWeaponDisposeLockon",
+      "RgWeaponGetActor",
+      "RgWeaponGetAttachedShot",
+      "RgWeaponGetControlFlag",
+      "RgWeaponGetEquip",
+      "RgWeaponGetEss",
+      "RgWeaponGetRestUnit",
+      "RgWeaponGetShotNum",
+      "RgWeaponGetWeight",
+      "RgWeaponHitBG",
+      "RgWeaponHitRobot",
+      "RgWeaponIsActiveLockOnSys",
+      "RgWeaponIsAttachedShot",
+      "RgWeaponIsLockedOn",
+      "RgWeaponIsNotBusy",
+      "RgWeaponIsTargetting",
+      "RgWeaponPassTime",
+      "RgWeaponPlayMotion",
+      "RgWeaponPlayShotMotion",
+      "RgWeaponRestartLockon",
+      "RgWeaponRobotShotMotion",
+      "RgWeaponSetFree",
+      "RgWeaponSetSound",
+      "RgWeaponSetdown",
+      "RgWeaponSetup",
+      "RgWeaponShot",
+      "RgWeaponShotStop",
+      "RgWeaponStopLockon",
+      "RgWeaponSubShotNum",
+      "_AddShotAttach",
+      "_CheckAttach",
+      "_CheckLockOn",
+      "_CommonDisp",
+      "_CreateWeaponAttackType",
+      "_CreateWeaponEnergyType",
+      "_CreateWeaponShieldType",
+      "_CreateWeaponShotType",
+      "_CreateWeaponUnArmedType",
+      "_EnergyFree",
+      "_EnergyIsBusy",
+      "_GetAllAttach",
+      "_GetDefShotPosDir",
+      "_GetDefShotPosDirFunc",
+      "_GetNumAttach",
+      "_GetParentCharID",
+      "_GetShotInfo",
+      "_HitRobotAttackType",
+      "_InitAttach",
+      "_InitWeaponCommon",
+      "_InitWeaponCommonEffector",
+      "_PlayShotMotion",
+      "_ReleaseAttach",
+      "_ShotAttackType",
+      "_ShotShieldType",
+      "_ShotStopAttackType",
+      "_ShotStopShieldType",
+      "_ShotTypeFree",
+      "_ShotTypeIsBusy",
+      "_ShotTypeShot"
+     ],
+     "c_owned_symbols": [
+      "D_00A53648",
+      "D_00A53658"
+     ],
+     "also_referenced_by_c": [
+      "D_00A53670",
+      "D_00A53698",
+      "D_00A536E0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a536f0",
+      "0x00a53700"
+     ],
+     "generated": [
+      "0x00a536f0",
+      "0x00a53700"
+     ],
+     "generated_by": [
+      "DisposeRgWeapon",
+      "DisposeRgWeaponNotActor",
+      "RgWeaponDisp",
+      "RgWeaponDisposeLockon",
+      "RgWeaponGetActor",
+      "RgWeaponGetAttachedShot",
+      "RgWeaponGetControlFlag",
+      "RgWeaponGetEquip",
+      "RgWeaponGetEss",
+      "RgWeaponGetShotNum",
+      "RgWeaponGetWeight",
+      "RgWeaponHitBG",
+      "RgWeaponHitRobot",
+      "RgWeaponIsActiveLockOnSys",
+      "RgWeaponIsAttachedShot",
+      "RgWeaponIsLockedOn",
+      "RgWeaponIsNotBusy",
+      "RgWeaponIsTargetting",
+      "RgWeaponPassTime",
+      "RgWeaponPlayMotion",
+      "RgWeaponPlayShotMotion",
+      "RgWeaponRestartLockon",
+      "RgWeaponRobotShotMotion",
+      "RgWeaponSetFree",
+      "RgWeaponSetSound",
+      "RgWeaponSetdown",
+      "RgWeaponSetup",
+      "RgWeaponShot",
+      "RgWeaponShotStop",
+      "RgWeaponStopLockon",
+      "RgWeaponSubShotNum",
+      "_CheckLockOn",
+      "_CreateWeaponAttackType",
+      "_CreateWeaponEnergyType",
+      "_CreateWeaponShieldType",
+      "_CreateWeaponShotType",
+      "_CreateWeaponUnArmedType",
+      "_EnergyFree",
+      "_EnergyIsBusy",
+      "_GetDefShotPosDir",
+      "_GetParentCharID",
+      "_HitRobotAttackType",
+      "_InitWeaponCommonEffector",
+      "_PlayShotMotion",
+      "_ShotAttackType",
+      "_ShotShieldType",
+      "_ShotStopAttackType",
+      "_ShotStopShieldType",
+      "_ShotTypeFree",
+      "_ShotTypeIsBusy"
+     ],
+     "c_owned_symbols": [
+      "D_00A536F0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A53700"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53710",
+      "0x00a53750"
+     ],
+     "generated": [
+      "0x00a53710",
+      "0x00a53750"
+     ],
+     "generated_by": [
+      "InitRgWeaponAttackEssence",
+      "InitRgWeaponEnergyEssence",
+      "InitRgWeaponShieldEssence",
+      "InitRgWeaponShotEssence",
+      "InitRgWeaponUnArmedEssence",
+      "_CreateWeaponAttackType",
+      "_CreateWeaponEnergyType",
+      "_CreateWeaponShieldType",
+      "_CreateWeaponShotType",
+      "_CreateWeaponUnArmedType",
+      "_HitRobotAttackType"
+     ],
+     "c_owned_symbols": [
+      "D_00A53710",
+      "D_00A53720",
+      "D_00A53730",
+      "D_00A53740"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53768",
+      "0x00a537a8"
+     ],
+     "generated": [
+      "0x00a53768",
+      "0x00a537a8"
+     ],
+     "generated_by": [
+      "CreateRgWeaponFromEssence"
+     ],
+     "c_owned_symbols": [
+      "D_00A53768",
+      "D_00A53788"
+     ],
+     "also_referenced_by_c": [
+      "D_00A537A8",
+      "D_00A537B8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a537d8",
+      "0x00a53818"
+     ],
+     "generated": [
+      "0x00a537d8",
+      "0x00a53818"
+     ],
+     "generated_by": [
+      "RgWeaponRobotShotMotion",
+      "_GetDefShotPosDirFunc",
+      "_GetShotInfo"
+     ],
+     "c_owned_symbols": [
+      "D_00A537D8",
+      "D_00A53808"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon.o"
+     }
+    }
+   ]
+  },
   "ov12/tu027_00a1c7d8": {
    ".rodata": [
     {
      "range": [
-      "0x00a53c48",
-      "0x00a53c80"
+      "0x00a53818",
+      "0x00a538c8"
      ],
      "generated": [
-      "0x00a53c48",
-      "0x00a53c7b"
+      "0x00a53818",
+      "0x00a538c8"
      ],
      "generated_by": [
-      "_ReadEnergyType"
+      "RgWeaponDBClear",
+      "RgWeaponDBGetIndex",
+      "RgWeaponDBGetSize",
+      "RgWeaponDBRead",
+      "_IsOnChar",
+      "_ReadAttackType",
+      "_ReadEnergyType",
+      "_ReadEquipBitMask",
+      "_ReadEquipType",
+      "_ReadShieldType",
+      "_ReadShotType",
+      "_ReadUnArmedType"
      ],
      "c_owned_symbols": [
-      "D_00A53C48",
-      "D_00A53C58",
-      "D_00A53C60",
-      "D_00A53C70"
-     ],
-     "also_referenced_by_c": [
       "D_00A53818",
       "D_00A53828",
       "D_00A53840",
@@ -4570,11 +5878,41 @@
       "D_00A53858",
       "D_00A53870",
       "D_00A53888",
-      "D_00A538A8",
+      "D_00A538A8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon_db.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53c20",
+      "0x00a53cf0"
+     ],
+     "generated": [
+      "0x00a53c20",
+      "0x00a53cea"
+     ],
+     "generated_by": [
+      "RgWeaponDBRead",
+      "_ReadAttackType",
+      "_ReadEnergyType",
+      "_ReadShieldType",
+      "_ReadShotType",
+      "_ReadUnArmedType"
+     ],
+     "c_owned_symbols": [
       "D_00A53C20",
       "D_00A53C30",
       "D_00A53C38",
       "D_00A53C40",
+      "D_00A53C48",
+      "D_00A53C58",
+      "D_00A53C60",
+      "D_00A53C70",
       "D_00A53C80",
       "D_00A53C98",
       "D_00A53CA8",
@@ -4582,7 +5920,458 @@
       "D_00A53CB8",
       "D_00A53CC0",
       "D_00A53CD0"
-     ]
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon_db.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu028_00a1e618": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53cf0",
+      "0x00a53d18"
+     ],
+     "generated": [
+      "0x00a53cf0",
+      "0x00a53d18"
+     ],
+     "generated_by": [
+      "_Destruct_00A1E750",
+      "_Disp_00A1E6F0",
+      "_InitDrop",
+      "_PassTime_00A1E618"
+     ],
+     "c_owned_symbols": [
+      "D_00A53CF0",
+      "D_00A53D00"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_drop_weapon.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu029_00a1e880": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53d18",
+      "0x00a53e10"
+     ],
+     "generated": [
+      "0x00a53d18",
+      "0x00a53e10"
+     ],
+     "generated_by": [
+      "CreateRgShotMotCont",
+      "DisposeRgShotMotCont",
+      "RgShotMotContIsActive",
+      "RgShotMotContIsEndOfShadowMotion",
+      "RgShotMotContPassTime",
+      "RgShotMotContPlay",
+      "RgShotMotContSetFrame",
+      "RgShotMotContStop",
+      "_CreateMatEffector",
+      "_DestructCont",
+      "_InitCont"
+     ],
+     "c_owned_symbols": [
+      "D_00A53D18",
+      "D_00A53D30",
+      "D_00A53D50",
+      "D_00A53D98",
+      "D_00A53DB8",
+      "D_00A53DD0",
+      "D_00A53DE0",
+      "D_00A53DF8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_shotmot_control.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu030_00a1eea0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f688",
+      "0x00a4f6a8"
+     ],
+     "generated": [
+      "0x00a4f688",
+      "0x00a4f6a8"
+     ],
+     "generated_by": [
+      "RgEquipPosToJntID"
+     ],
+     "c_owned_symbols": [
+      "s_aePosToJntID"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_equip_type.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a53e10",
+      "0x00a53ea8"
+     ],
+     "generated": [
+      "0x00a53e10",
+      "0x00a53ea8"
+     ],
+     "generated_by": [
+      "InitRgEquip",
+      "RgEquipIsEquipable",
+      "RgEquipMountPos",
+      "RgEquipPosToJntID",
+      "RgEquipTypeString",
+      "_GetMountData"
+     ],
+     "c_owned_symbols": [
+      "D_00A53E10",
+      "D_00A53E80",
+      "D_00A53E98"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_equip_type.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53ec8",
+      "0x00a53f08"
+     ],
+     "generated": [
+      "0x00a53ec8",
+      "0x00a53f08"
+     ],
+     "generated_by": [
+      "RgEquipMountPos",
+      "RgEquipTypeString"
+     ],
+     "c_owned_symbols": [
+      "D_00A53EC8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_equip_type.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a53f90",
+      "0x00a53fb0"
+     ],
+     "generated": [
+      "0x00a53f90",
+      "0x00a53fac"
+     ],
+     "generated_by": [
+      "RgEquipTypeString"
+     ],
+     "c_owned_symbols": [
+      "D_00A53F90",
+      "D_00A53F98",
+      "D_00A53FA0",
+      "D_00A53FA8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A53FB0",
+      "D_00A53FB8",
+      "D_00A53FC0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_equip_type.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu031_00a1f7e0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54070",
+      "0x00a540c8"
+     ],
+     "generated": [
+      "0x00a54070",
+      "0x00a540c7"
+     ],
+     "generated_by": [
+      "InitRgDullFlag",
+      "RgDullFlagGet",
+      "RgDullFlagPassTime",
+      "RgDullFlagResetFlag",
+      "RgDullFlagSetDullTime",
+      "RgDullFlagSetFlag"
+     ],
+     "c_owned_symbols": [
+      "D_00A54070",
+      "D_00A54080",
+      "D_00A54098",
+      "D_00A540B0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_dull_flag.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu033_00a1fbd8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a540c8",
+      "0x00a54158"
+     ],
+     "generated": [
+      "0x00a540c8",
+      "0x00a54157"
+     ],
+     "generated_by": [
+      "InstanceOfRgEffectEnv",
+      "RgEffectEnvDisposeData",
+      "RgEffectEnvGetBxx",
+      "RgEffectEnvGetParticleData",
+      "RgEffectEnvGetShotMdl",
+      "RgEffectEnvLoadData",
+      "_DestructEnv_00A1FC20",
+      "_InitEnv_00A1FBD8",
+      "_WrapperDestruct_00A1FCA8"
+     ],
+     "c_owned_symbols": [
+      "D_00A540C8",
+      "D_00A540D8",
+      "D_00A540F0",
+      "D_00A54100",
+      "D_00A54110",
+      "D_00A54128",
+      "D_00A54138",
+      "D_00A54148"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_effect_env.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu035_00a20718": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a542c8",
+      "0x00a54308"
+     ],
+     "generated": [
+      "0x00a542c8",
+      "0x00a54308"
+     ],
+     "generated_by": [
+      "CreateRgParticleEffect",
+      "DisposeRgParticleEffect",
+      "InitRgParticleEffectControlData",
+      "InitRgParticleEffectEssence",
+      "RgParticleEffectDisp",
+      "RgParticleEffectEssenceResume",
+      "RgParticleEffectEssenceSerialize",
+      "RgParticleEffectIsActive",
+      "RgParticleEffectPassTime",
+      "RgParticleEffectSetActive",
+      "RgParticleEffectSetControlData",
+      "RgParticleEffectSetShootInertia",
+      "RgParticleEffectSetShootLocal",
+      "RgParticleEffectStopAlive",
+      "RgParticleEffectStopShoot",
+      "_DestructEffect_00A20E90",
+      "_DestructPtclChar",
+      "_DispPtclChar",
+      "_InitEffect_00A20C70",
+      "_InitPtclChar",
+      "_PassTimePtclChar"
+     ],
+     "c_owned_symbols": [
+      "D_00A542C8",
+      "D_00A542D8",
+      "D_00A542F8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54308",
+      "D_00A54318",
+      "D_00A54338"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_particle_effect.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54368",
+      "0x00a543a8"
+     ],
+     "generated": [
+      "0x00a54368",
+      "0x00a543a8"
+     ],
+     "generated_by": [
+      "InitRgParticleEffectControlData",
+      "InitRgParticleEffectEssence",
+      "RgParticleEffectEssenceResume",
+      "RgParticleEffectEssenceSerialize",
+      "RgParticleEffectSetControlData",
+      "_DestructPtclChar",
+      "_DispPtclChar",
+      "_InitPtclChar",
+      "_PassTimePtclChar"
+     ],
+     "c_owned_symbols": [
+      "D_00A54368",
+      "D_00A54378",
+      "D_00A54388",
+      "D_00A54398"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_particle_effect.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu036_00a21c58": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a543a8",
+      "0x00a543d0"
+     ],
+     "generated": [
+      "0x00a543a8",
+      "0x00a543d0"
+     ],
+     "generated_by": [
+      "CreateRgReadText",
+      "DisposeRgReadText",
+      "RgReadTextFindParagraph",
+      "RgReadTextGetBool",
+      "RgReadTextGetFloat",
+      "RgReadTextGetInt",
+      "RgReadTextGetString",
+      "RgReadTextIsEOF",
+      "RgReadTextIsOnDelimitor",
+      "RgReadTextNextParagraph",
+      "RgReadTextRewind",
+      "RgReadTextUnget",
+      "_DisposeReader",
+      "_GetBool",
+      "_GetFloat",
+      "_GetInt",
+      "_GetString",
+      "_InitReader",
+      "_SetCurrent"
+     ],
+     "c_owned_symbols": [
+      "D_00A543A8",
+      "D_00A543B8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A543D0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_read_text.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a543e0",
+      "0x00a54428"
+     ],
+     "generated": [
+      "0x00a543e0",
+      "0x00a54428"
+     ],
+     "generated_by": [
+      "_GetBool",
+      "_GetFloat",
+      "_GetInt",
+      "_GetString",
+      "_SetCurrent"
+     ],
+     "c_owned_symbols": [
+      "D_00A543E0",
+      "D_00A54418"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54428"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_read_text.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54438",
+      "0x00a54480"
+     ],
+     "generated": [
+      "0x00a54438",
+      "0x00a54480"
+     ],
+     "generated_by": [
+      "RgReadTextNextParagraph",
+      "RgReadTextUnget",
+      "_GetBool"
+     ],
+     "c_owned_symbols": [
+      "D_00A54438",
+      "D_00A54440",
+      "D_00A54448",
+      "D_00A54460"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_read_text.o"
+     }
     }
    ]
   },
@@ -4590,28 +6379,1107 @@
    ".rodata": [
     {
      "range": [
-      "0x00a54530",
+      "0x00a54480",
       "0x00a54560"
      ],
      "generated": [
-      "0x00a54530",
+      "0x00a54480",
       "0x00a54560"
      ],
      "generated_by": [
-      "RgTextInfoRead"
+      "RgTextInfoRead",
+      "_FindEntry"
      ],
      "c_owned_symbols": [
-      "jtbl_00A54530"
-     ],
-     "also_referenced_by_c": [
       "D_00A54480",
       "D_00A54498",
+      "D_00A544B0",
       "D_00A544C0",
       "D_00A544D8",
       "D_00A544E8",
       "D_00A54500",
-      "D_00A54508"
-     ]
+      "D_00A54508",
+      "jtbl_00A54530"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_text_info.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu038_00a22a78": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54560",
+      "0x00a545a8"
+     ],
+     "generated": [
+      "0x00a54560",
+      "0x00a545a8"
+     ],
+     "generated_by": [
+      "CreateRgDispGameInfo",
+      "DisposeRgDispGameInfo",
+      "RgDispGameInfoDisplay",
+      "RgDispGameInfoPassTime",
+      "RgDispGameInfoSetHostRobot",
+      "RgDispGameInfoSetStudio",
+      "RgDispGameInfoSetSubRobot",
+      "_DisposeInfo",
+      "_InitInfo",
+      "_PassTimeInfo",
+      "_SetHostRobot",
+      "_SetSubRobot",
+      "_paint_one_texture_alpha",
+      "_paint_set_tex_alpha"
+     ],
+     "c_owned_symbols": [
+      "D_00A54560",
+      "D_00A54570",
+      "D_00A54590"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_gameinfo.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu039_00a239d0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54608",
+      "0x00a54640"
+     ],
+     "generated": [
+      "0x00a54608",
+      "0x00a5463e"
+     ],
+     "generated_by": [
+      "CreateRgGauge",
+      "DisposeRgGauge",
+      "RgGaugeDraw",
+      "RgGaugeGetDisp",
+      "RgGaugeGetMax",
+      "RgGaugeGetValue",
+      "RgGaugePassTime",
+      "RgGaugeSetActivity",
+      "RgGaugeSetValue",
+      "_DestructGauge",
+      "_InitGauge"
+     ],
+     "c_owned_symbols": [
+      "D_00A54608",
+      "D_00A54618",
+      "D_00A54630"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_gauge.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu040_00a23e48": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54640",
+      "0x00a54678"
+     ],
+     "generated": [
+      "0x00a54640",
+      "0x00a54676"
+     ],
+     "generated_by": [
+      "CreateRgGaugeDisp",
+      "DisposeRgGaugeDisp",
+      "RgGaugeDispDraw",
+      "RgGaugeDispIsDrawable",
+      "RgGaugeDispSetAlpha",
+      "RgGaugeDispSetBarUVWH",
+      "RgGaugeDispSetOrder",
+      "RgGaugeDispSetPos",
+      "RgGaugeDispSetRestUVWH",
+      "RgGaugeDispSetTex",
+      "RgGaugeDispSetValue",
+      "_CheckDatas",
+      "_DestructDisp_00A23F80",
+      "_InitDisp_00A23EE0"
+     ],
+     "c_owned_symbols": [
+      "D_00A54640",
+      "D_00A54650",
+      "D_00A54668"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_gauge_disp.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu041_00a245d8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4faf0",
+      "0x00a4fb14"
+     ],
+     "generated": [
+      "0x00a4faf0",
+      "0x00a4fb14"
+     ],
+     "generated_by": [
+      "_DispWepDisp"
+     ],
+     "c_owned_symbols": [
+      "s_anTextPos_0",
+      "s_abOrder_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_wpn1p.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54678",
+      "0x00a54770"
+     ],
+     "generated": [
+      "0x00a54678",
+      "0x00a5476d"
+     ],
+     "generated_by": [
+      "CreateRgDispWpn1P",
+      "DisposeRgDispWpn1P",
+      "RgDispWpn1PDisp",
+      "RgDispWpn1PPassTime",
+      "RgDispWpn1PSetRobot",
+      "_DestructDisp_00A24D68",
+      "_DispWepDisp",
+      "_InitDisp_00A24BC0",
+      "_InitWepDisp",
+      "_SetWepDisp",
+      "_UpdateWepDisp"
+     ],
+     "c_owned_symbols": [
+      "D_00A54678",
+      "D_00A54688",
+      "D_00A546A0",
+      "D_00A546B0",
+      "D_00A546C0",
+      "D_00A546D0",
+      "D_00A546E0",
+      "D_00A546F0",
+      "D_00A54700",
+      "D_00A54718",
+      "D_00A54720",
+      "D_00A54730",
+      "D_00A54740",
+      "D_00A54750",
+      "D_00A54760"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_wpn1p.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu042_00a251a8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4fb18",
+      "0x00a4fb24"
+     ],
+     "generated": [
+      "0x00a4fb18",
+      "0x00a4fb24"
+     ],
+     "generated_by": [
+      "_DispWep"
+     ],
+     "c_owned_symbols": [
+      "anYPos_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_wpn2p.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54770",
+      "0x00a54810"
+     ],
+     "generated": [
+      "0x00a54770",
+      "0x00a5480c"
+     ],
+     "generated_by": [
+      "CreateRgDispWpn2P",
+      "DisposeRgDispWpn2P",
+      "RgDispWpn2PDisp",
+      "RgDispWpn2PPassTime",
+      "RgDispWpn2PSetRobot",
+      "_DestructDisp_00A25AC8",
+      "_DestructRobInfo",
+      "_DestructWep",
+      "_DispRobInfo",
+      "_DispWep",
+      "_InitDisp_00A25A30",
+      "_InitRobInfo",
+      "_InitWep",
+      "_PassTimeRobInfo",
+      "_SetRobInfo",
+      "_SetWep",
+      "_UpdateWep"
+     ],
+     "c_owned_symbols": [
+      "D_00A54770",
+      "D_00A54780",
+      "D_00A54798",
+      "D_00A547A0",
+      "D_00A547B0",
+      "D_00A547C0",
+      "D_00A547D0",
+      "D_00A547E0",
+      "D_00A547F0",
+      "D_00A54800"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_wpn2p.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu043_00a25d30": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4fb30",
+      "0x00a4fbf0"
+     ],
+     "generated": [
+      "0x00a4fb30",
+      "0x00a4fbf0"
+     ],
+     "generated_by": [
+      "_GetAgwsNameUVWH"
+     ],
+     "c_owned_symbols": [
+      "s_aCharIDToUVWH_0"
+     ],
+     "also_referenced_by_c": [
+      "s_anPos_1"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_life.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54810",
+      "0x00a54848"
+     ],
+     "generated": [
+      "0x00a54810",
+      "0x00a54848"
+     ],
+     "generated_by": [
+      "CreateRgDispLife",
+      "DisposeRgDispLife",
+      "RgDispLifeDisp",
+      "RgDispLifePassTime",
+      "RgDispLifeSetRobot",
+      "RgDispLifeSetTimer",
+      "RgDispLifeSetVsMode",
+      "RgDispLifeSetWin",
+      "_DestructDisp_00A26190",
+      "_DispAgwsName",
+      "_InitDisp_00A25E58"
+     ],
+     "c_owned_symbols": [
+      "D_00A54810",
+      "D_00A54820",
+      "D_00A54838"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54848",
+      "D_00A54858"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_life.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54870",
+      "0x00a54890"
+     ],
+     "generated": [
+      "0x00a54870",
+      "0x00a54890"
+     ],
+     "generated_by": [
+      "RgDispLifeSetVsMode",
+      "_InitDisp_00A25E58"
+     ],
+     "c_owned_symbols": [
+      "D_00A54870",
+      "D_00A54880"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54890",
+      "D_00A548A0",
+      "D_00A548B0",
+      "D_00A548C0",
+      "D_00A548D0",
+      "D_00A548E0",
+      "D_00A548F0",
+      "D_00A54900",
+      "D_00A54910",
+      "D_00A54920",
+      "D_00A54930",
+      "D_00A54940"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_life.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54950",
+      "0x00a54970"
+     ],
+     "generated": [
+      "0x00a54950",
+      "0x00a5496d"
+     ],
+     "generated_by": [
+      "RgDispLifeSetVsMode"
+     ],
+     "c_owned_symbols": [
+      "D_00A54950",
+      "D_00A54960"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp_life.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu044_00a26a00": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4fc00",
+      "0x00a50080"
+     ],
+     "generated": [
+      "0x00a4fc00",
+      "0x00a50080"
+     ],
+     "generated_by": [
+      "RgDispWpnDat_GetNameUVWH"
+     ],
+     "c_owned_symbols": [
+      "s_aWepPicTbl_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54970",
+      "0x00a54ac0"
+     ],
+     "generated": [
+      "0x00a54970",
+      "0x00a54ab5"
+     ],
+     "generated_by": [
+      "RgDispWpnDat_CreateRestNumStr",
+      "RgDispWpnDat_CreateSpeedStr",
+      "RgDispWpnDat_GetNameUVWH"
+     ],
+     "c_owned_symbols": [
+      "D_00A54970",
+      "D_00A54978",
+      "D_00A54980",
+      "D_00A54988",
+      "D_00A54990",
+      "D_00A54998",
+      "D_00A549A0",
+      "D_00A549A8",
+      "D_00A549B8",
+      "D_00A549C0",
+      "D_00A549C8",
+      "D_00A549D0",
+      "D_00A549D8",
+      "D_00A549E0",
+      "D_00A549E8",
+      "D_00A549F0",
+      "D_00A549F8",
+      "D_00A54A00",
+      "D_00A54A10",
+      "D_00A54A18",
+      "D_00A54A20",
+      "D_00A54A28",
+      "D_00A54A30",
+      "D_00A54A38",
+      "D_00A54A40",
+      "D_00A54A48",
+      "D_00A54A50",
+      "D_00A54A58",
+      "D_00A54A60",
+      "D_00A54A68",
+      "D_00A54A70",
+      "D_00A54A78",
+      "D_00A54A80",
+      "D_00A54A88",
+      "D_00A54A90",
+      "D_00A54A98",
+      "D_00A54AA0",
+      "D_00A54AA8",
+      "D_00A54AB0"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A54980": "s_aWepPicTbl_0",
+      "D_00A54988": "s_aWepPicTbl_0",
+      "D_00A54990": "s_aWepPicTbl_0",
+      "D_00A54998": "s_aWepPicTbl_0",
+      "D_00A549A0": "s_aWepPicTbl_0",
+      "D_00A549A8": "s_aWepPicTbl_0",
+      "D_00A549B8": "s_aWepPicTbl_0",
+      "D_00A549C0": "s_aWepPicTbl_0",
+      "D_00A549C8": "s_aWepPicTbl_0",
+      "D_00A549D0": "s_aWepPicTbl_0",
+      "D_00A549D8": "s_aWepPicTbl_0",
+      "D_00A549E0": "s_aWepPicTbl_0",
+      "D_00A549E8": "s_aWepPicTbl_0",
+      "D_00A549F0": "s_aWepPicTbl_0",
+      "D_00A549F8": "s_aWepPicTbl_0",
+      "D_00A54A00": "s_aWepPicTbl_0",
+      "D_00A54A10": "s_aWepPicTbl_0",
+      "D_00A54A18": "s_aWepPicTbl_0",
+      "D_00A54A20": "s_aWepPicTbl_0",
+      "D_00A54A28": "s_aWepPicTbl_0",
+      "D_00A54A30": "s_aWepPicTbl_0",
+      "D_00A54A38": "s_aWepPicTbl_0",
+      "D_00A54A40": "s_aWepPicTbl_0",
+      "D_00A54A48": "s_aWepPicTbl_0",
+      "D_00A54A50": "s_aWepPicTbl_0",
+      "D_00A54A58": "s_aWepPicTbl_0",
+      "D_00A54A60": "s_aWepPicTbl_0",
+      "D_00A54A68": "s_aWepPicTbl_0",
+      "D_00A54A70": "s_aWepPicTbl_0",
+      "D_00A54A78": "s_aWepPicTbl_0",
+      "D_00A54A80": "s_aWepPicTbl_0",
+      "D_00A54A88": "s_aWepPicTbl_0",
+      "D_00A54A90": "s_aWepPicTbl_0",
+      "D_00A54A98": "s_aWepPicTbl_0",
+      "D_00A54AA0": "s_aWepPicTbl_0",
+      "D_00A54AA8": "s_aWepPicTbl_0"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_disp.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu045_00a26c78": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50080",
+      "0x00a50090"
+     ],
+     "generated": [
+      "0x00a50080",
+      "0x00a50090"
+     ],
+     "generated_by": [
+      "_FullScreenStudio"
+     ],
+     "c_owned_symbols": [
+      "s_aView_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_draw.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54ac0",
+      "0x00a54c10"
+     ],
+     "generated": [
+      "0x00a54ac0",
+      "0x00a54c10"
+     ],
+     "generated_by": [
+      "InstanceOfRgDraw",
+      "RgDrawCreateDrawStudioDouble",
+      "RgDrawCreateDrawStudioFullScreen",
+      "RgDrawFadeIn",
+      "RgDrawFadeOut",
+      "RgDrawGetGlobalFog",
+      "RgDrawGetStudio",
+      "RgDrawJob",
+      "RgDrawReq",
+      "RgDrawSetGlobalFog",
+      "RgDrawStudioGetView",
+      "RgDrawViewGetScreenRect",
+      "RgDrawViewInit",
+      "RgDrawViewIsPointInView",
+      "RgDrawViewSetPosition",
+      "RgDrawViewSetRotateX",
+      "RgDrawViewSetRotateY",
+      "RgDrawViewSetRotateZ",
+      "_ClearStudioList",
+      "_CreateRgDrawStudio",
+      "_CreateRgDrawView",
+      "_DestructDraw",
+      "_DestructRgDrawStudio",
+      "_DestructRgDrawView",
+      "_DisposeRgDrawStudio",
+      "_DisposeRgDrawView",
+      "_DoubleScreenStudio",
+      "_DrawMain",
+      "_FullScreenStudio",
+      "_GetViewRgDrawStudio",
+      "_InitDraw",
+      "_InitRgDrawStudio",
+      "_InitRgDrawView",
+      "_InitStudioList",
+      "_SetScreenSplitMode",
+      "_WrapperDestruct_00A27700",
+      "_openVifGifAD_00A26CF0"
+     ],
+     "c_owned_symbols": [
+      "D_00A54AC0",
+      "D_00A54AD0",
+      "D_00A54AF0",
+      "D_00A54B08",
+      "D_00A54B18",
+      "D_00A54B30",
+      "D_00A54B40",
+      "D_00A54B58",
+      "D_00A54B68",
+      "D_00A54B80",
+      "D_00A54B90",
+      "D_00A54BB0",
+      "D_00A54BC8",
+      "D_00A54BE8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54C10"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_draw.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54c50",
+      "0x00a54c68"
+     ],
+     "generated": [
+      "0x00a54c50",
+      "0x00a54c68"
+     ],
+     "generated_by": [
+      "_DrawMain"
+     ],
+     "c_owned_symbols": [
+      "D_00A54C50"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_draw.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu046_00a285e0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54c68",
+      "0x00a54ca0"
+     ],
+     "generated": [
+      "0x00a54c68",
+      "0x00a54c9c"
+     ],
+     "generated_by": [
+      "InitRgLight",
+      "InstanceOfGlobalLight",
+      "RgLightCopy",
+      "_DisposeGlobalLight"
+     ],
+     "c_owned_symbols": [
+      "D_00A54C68",
+      "D_00A54C78",
+      "D_00A54C90"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_light.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu047_00a28858": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54ca0",
+      "0x00a54d20"
+     ],
+     "generated": [
+      "0x00a54ca0",
+      "0x00a54d20"
+     ],
+     "generated_by": [
+      "CreateRgBattleMgr",
+      "DisposeRgBattleMgr",
+      "RgBattleMgrActivateTimer",
+      "RgBattleMgrControl",
+      "RgBattleMgrDisp",
+      "RgBattleMgrGetDispLife",
+      "RgBattleMgrGetMode",
+      "RgBattleMgrGetPlayTime",
+      "RgBattleMgrGetPlayerDamage",
+      "RgBattleMgrGetResult",
+      "RgBattleMgrInitBattle",
+      "RgBattleMgrPassTime",
+      "RgBattleMgrSetPlayerControl",
+      "_AddPlayerList",
+      "_BattleMgrActivateTime",
+      "_BattleMgrPlayerControl",
+      "_ClearBattleField",
+      "_ClearPlayerList",
+      "_ControlBattle",
+      "_ControlPlayerList",
+      "_CreateBattleCamera",
+      "_CreateBattleField",
+      "_CreateDispInfo",
+      "_CreatePlayerList",
+      "_DestructBattleField",
+      "_DestructDispInfo",
+      "_DispBattle",
+      "_DispPlayerList",
+      "_DisposeBattleField",
+      "_DisposeBattleMgr",
+      "_DisposeDispInfo",
+      "_DisposePlayerList",
+      "_DoubleScreenBattleField",
+      "_DrawDispInfo",
+      "_DrawDispInfoOnePlayer",
+      "_FullScreenBattleField",
+      "_GetBigLifePlayer",
+      "_GetCameraBattleField",
+      "_GetDeadList",
+      "_GetGeomGroupBattleField",
+      "_GetInPlayerList",
+      "_GetNumOfPlayerList",
+      "_GetStudioBattleField",
+      "_InitBattleField",
+      "_InitBattleMgr",
+      "_InitDispInfo",
+      "_InitPlayerList",
+      "_PassTimeBattle",
+      "_PassTimeBattleField",
+      "_PassTimePlayerList",
+      "_SetDispInfo"
+     ],
+     "c_owned_symbols": [
+      "D_00A54CA0",
+      "D_00A54CB0",
+      "D_00A54CC0",
+      "D_00A54CD8",
+      "D_00A54CE0",
+      "D_00A54CE8",
+      "D_00A54CF8",
+      "D_00A54D08"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54D20",
+      "D_00A54D30"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_battlemgr.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a54d50",
+      "0x00a54e18"
+     ],
+     "generated": [
+      "0x00a54d50",
+      "0x00a54e18"
+     ],
+     "generated_by": [
+      "CreateRgBattleMgr",
+      "DisposeRgBattleMgr",
+      "RgBattleMgrActivateTimer",
+      "RgBattleMgrControl",
+      "RgBattleMgrDisp",
+      "RgBattleMgrGetDispLife",
+      "RgBattleMgrGetMode",
+      "RgBattleMgrGetPlayTime",
+      "RgBattleMgrGetPlayerDamage",
+      "RgBattleMgrGetResult",
+      "RgBattleMgrInitBattle",
+      "RgBattleMgrPassTime",
+      "RgBattleMgrSetPlayerControl",
+      "_BattleMgrActivateTime",
+      "_BattleMgrPlayerControl",
+      "_ClearBattleField",
+      "_ControlBattle",
+      "_DestructBattleField",
+      "_DestructDispInfo",
+      "_DispBattle",
+      "_DisposeBattleField",
+      "_DisposeBattleMgr",
+      "_DisposeDispInfo",
+      "_DoubleScreenBattleField",
+      "_DrawDispInfo",
+      "_DrawDispInfoOnePlayer",
+      "_FullScreenBattleField",
+      "_GetCameraBattleField",
+      "_GetGeomGroupBattleField",
+      "_GetStudioBattleField",
+      "_InitBattleField",
+      "_InitBattleMgr",
+      "_InitDispInfo",
+      "_PassTimeBattle",
+      "_PassTimeBattleField",
+      "_SetDispInfo"
+     ],
+     "c_owned_symbols": [
+      "D_00A54D50",
+      "D_00A54D60",
+      "D_00A54D78",
+      "D_00A54D98",
+      "D_00A54DA8",
+      "D_00A54DB8",
+      "D_00A54DD0",
+      "D_00A54DE8",
+      "D_00A54DF8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_battlemgr.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu050_00a2b5e8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a54f40",
+      "0x00a550c8"
+     ],
+     "generated": [
+      "0x00a54f40",
+      "0x00a550c8"
+     ],
+     "generated_by": [
+      "CreateRgVector",
+      "DisposeRgVector",
+      "RgVectorAssign",
+      "RgVectorCapacity",
+      "RgVectorClear",
+      "RgVectorDump",
+      "RgVectorDup",
+      "RgVectorFind_sub",
+      "RgVectorGetArray",
+      "RgVectorIndex",
+      "RgVectorPush",
+      "RgVectorRemove",
+      "RgVectorResize",
+      "RgVectorSize",
+      "_InitRgVector",
+      "_VecAssert"
+     ],
+     "c_owned_symbols": [
+      "D_00A54F40",
+      "D_00A54F68",
+      "rg_vector_not_null_message",
+      "D_00A54F90",
+      "D_00A54FA8",
+      "D_00A54FB8",
+      "D_00A54FD8",
+      "D_00A54FE8",
+      "rg_vector_index_message",
+      "D_00A55030",
+      "D_00A55060",
+      "D_00A55090",
+      "D_00A550B8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_vector.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu051_00a2be48": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a550c8",
+      "0x00a550f0"
+     ],
+     "generated": [
+      "0x00a550c8",
+      "0x00a550e9"
+     ],
+     "generated_by": [
+      "RgGeomFree",
+      "RgGeomGetEventFlag",
+      "RgGeomGetParent",
+      "RgGeomGetStatus",
+      "RgGeomGetType",
+      "RgGeomInit",
+      "RgGeomPassTime",
+      "RgGeomResetStatus",
+      "RgGeomSetDestructMethod",
+      "RgGeomSetParent",
+      "RgGeomSetPassTimeMeshod",
+      "RgGeomSetStatus",
+      "RgGeomSetType"
+     ],
+     "c_owned_symbols": [
+      "D_00A550C8",
+      "D_00A550D8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu052_00a2c288": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a550f0",
+      "0x00a55148"
+     ],
+     "generated": [
+      "0x00a550f0",
+      "0x00a55148"
+     ],
+     "generated_by": [
+      "CreateRgGeomPoint",
+      "InitRgGeomPoint",
+      "RgGeomPointAddForce",
+      "RgGeomPointGetMoveResist",
+      "RgGeomPointGetSpeed",
+      "RgGeomPointGetVel",
+      "RgGeomPointGetWeight",
+      "RgGeomPointMovePos",
+      "RgGeomPointPassTime",
+      "RgGeomPointResetPos",
+      "RgGeomPointSetMaxXYSpd",
+      "RgGeomPointSetMoveResist",
+      "RgGeomPointSetPos",
+      "RgGeomPointSetVel",
+      "RgGeomPointSetWeight",
+      "__RgGeomPointGetOldPos",
+      "__RgGeomPointGetPos"
+     ],
+     "c_owned_symbols": [
+      "rg_point_assert_expression",
+      "D_00A55100",
+      "D_00A55118",
+      "D_00A55138"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_point.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu053_00a2ca28": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55148",
+      "0x00a55170"
+     ],
+     "generated": [
+      "0x00a55148",
+      "0x00a55170"
+     ],
+     "generated_by": [
+      "CreateRgGeomBall",
+      "InitRgGeomBall",
+      "RgGeomBallGetRadius",
+      "RgGeomBallPassTime",
+      "RgGeomBallSetRadius"
+     ],
+     "c_owned_symbols": [
+      "D_00A55148",
+      "D_00A55158"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_ball.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu054_00a2d290": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55170",
+      "0x00a551a8"
+     ],
+     "generated": [
+      "0x00a55170",
+      "0x00a551a6"
+     ],
+     "generated_by": [
+      "CreateRgGeomRobot",
+      "InitRgGeomRobot",
+      "RgGeomRobotAddRotForce",
+      "RgGeomRobotCalcLocal",
+      "RgGeomRobotGetRotForce",
+      "RgGeomRobotGetRotVel",
+      "RgGeomRobotGetRotate",
+      "RgGeomRobotPassTime",
+      "RgGeomRobotSetMaxRotVel",
+      "RgGeomRobotSetRotResist",
+      "RgGeomRobotSetRotVel",
+      "RgGeomRobotSetRotate",
+      "_InitRgGeomRobot"
+     ],
+     "c_owned_symbols": [
+      "D_00A55170",
+      "D_00A55180",
+      "D_00A55198"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_robot.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu055_00a2d900": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a551a8",
+      "0x00a55218"
+     ],
+     "generated": [
+      "0x00a551a8",
+      "0x00a55218"
+     ],
+     "generated_by": [
+      "CreateRgGeomPoly",
+      "InitRgGeomPoly",
+      "RgGeomPolyCheckBall",
+      "RgGeomPolyCheckRay",
+      "RgGeomPolyGetData",
+      "RgGeomPolySetColiData",
+      "_InitRgGeomPoly"
+     ],
+     "c_owned_symbols": [
+      "D_00A551A8",
+      "D_00A551B8",
+      "D_00A551D0",
+      "D_00A551E0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_poly.o"
+     }
     }
    ]
   },
@@ -4642,6 +7510,781 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_geom_pillar.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu058_00a2f650": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a552f8",
+      "0x00a55318"
+     ],
+     "generated": [
+      "0x00a552f8",
+      "0x00a55318"
+     ],
+     "generated_by": [
+      "InitRgGeomColiArg",
+      "RgGeomCollisionJob"
+     ],
+     "c_owned_symbols": [
+      "D_00A552F8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_collision.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a55328",
+      "0x00a55338"
+     ],
+     "generated": [
+      "0x00a55328",
+      "0x00a55338"
+     ],
+     "generated_by": [
+      "InitRgGeomColiArg",
+      "RgGeomCollisionJob"
+     ],
+     "c_owned_symbols": [
+      "D_00A55328"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_collision.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu059_00a303a8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55338",
+      "0x00a553b8"
+     ],
+     "generated": [
+      "0x00a55338",
+      "0x00a553b5"
+     ],
+     "generated_by": [
+      "CreateRgGeomGroup",
+      "DisposeRgGeomGroup",
+      "RgGeomGroupAddElm",
+      "RgGeomGroupCollision",
+      "RgGeomGroupCreateBall",
+      "RgGeomGroupCreatePiller",
+      "RgGeomGroupCreatePoint",
+      "RgGeomGroupCreatePoly",
+      "RgGeomGroupCreateRobot",
+      "RgGeomGroupCreateTray",
+      "RgGeomGroupDebugDisp",
+      "RgGeomGroupDisposeElm",
+      "RgGeomGroupRemoveElm",
+      "_CreateBallWithGroup",
+      "_CreatePillarWithGroup",
+      "_CreatePointWithGroup",
+      "_CreatePolyWithGroup",
+      "_CreateRobotWithGroup",
+      "_CreateTrayWithGroup",
+      "_DestructBallMadeByGroup",
+      "_DestructPillarMadeByGroup",
+      "_DestructPointMadeByGroup",
+      "_DestructPolyMadeByGroup",
+      "_DestructRobotMadeByGroup",
+      "_DestructTrayMadeByGroup",
+      "_DisposeGroup",
+      "_InitGroup"
+     ],
+     "c_owned_symbols": [
+      "D_00A55338",
+      "D_00A55348",
+      "D_00A55360",
+      "D_00A55380",
+      "D_00A553A8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A553B8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_group.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu060_00a31150": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a553c8",
+      "0x00a55448"
+     ],
+     "generated": [
+      "0x00a553c8",
+      "0x00a55448"
+     ],
+     "generated_by": [
+      "CreateRgGameCollision",
+      "DisposeRgGameCollision",
+      "RgGameCollisionAdd",
+      "RgGameCollisionClear",
+      "RgGameCollisionJob",
+      "_AddCheck",
+      "_ClearCheck",
+      "_CreateColiArg",
+      "_DisposeColiArg",
+      "_DisposeGameCollision",
+      "_InitGameCollision",
+      "_JobCheck"
+     ],
+     "c_owned_symbols": [
+      "D_00A553C8",
+      "D_00A553E8",
+      "D_00A553F8",
+      "D_00A55420",
+      "D_00A55430"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_game_collision.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu061_00a31768": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55448",
+      "0x00a554f0"
+     ],
+     "generated": [
+      "0x00a55448",
+      "0x00a554e7"
+     ],
+     "generated_by": [
+      "RgError",
+      "RgWarn"
+     ],
+     "c_owned_symbols": [
+      "D_00A55448",
+      "D_00A55478",
+      "D_00A55490",
+      "D_00A554A8",
+      "D_00A554C0",
+      "D_00A554D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_error.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu062_00a31970": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a554f0",
+      "0x00a55590"
+     ],
+     "generated": [
+      "0x00a554f0",
+      "0x00a55590"
+     ],
+     "generated_by": [
+      "CreateRgColiData",
+      "DisposeRgColiData",
+      "RgColiDataAddTriangle",
+      "RgColiDataInitTriangles",
+      "RgColiDataVsBall",
+      "_AddTriangle",
+      "_AllocDataMemory",
+      "_DisposeColiData",
+      "_InitColiData",
+      "_InitTriangles"
+     ],
+     "c_owned_symbols": [
+      "D_00A554F0",
+      "D_00A55500",
+      "D_00A55518",
+      "D_00A55528",
+      "D_00A55548",
+      "D_00A55560"
+     ],
+     "also_referenced_by_c": [
+      "D_00A55590",
+      "D_00A55610"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_colidata.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a55670",
+      "0x00a556a0"
+     ],
+     "generated": [
+      "0x00a55670",
+      "0x00a5569e"
+     ],
+     "generated_by": [
+      "RgColiDataVsBall"
+     ],
+     "c_owned_symbols": [
+      "D_00A55670"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_colidata.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu063_00a32688": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a556c0",
+      "0x00a55738"
+     ],
+     "generated": [
+      "0x00a556c0",
+      "0x00a55738"
+     ],
+     "generated_by": [
+      "InitRgLinkData",
+      "RgLinkDataFindExt",
+      "RgLinkDataGet",
+      "RgLinkDataGetIndex",
+      "RgLinkDataGetName",
+      "RgLinkDataGetSize",
+      "RgLinkDataNumOfData",
+      "RgLinkDataTime"
+     ],
+     "c_owned_symbols": [
+      "D_00A556C0",
+      "D_00A556D0",
+      "D_00A556E8",
+      "D_00A556F8",
+      "D_00A55708",
+      "D_00A55728"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_linkdata.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu064_00a32c48": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55738",
+      "0x00a55988"
+     ],
+     "generated": [
+      "0x00a55738",
+      "0x00a55988"
+     ],
+     "generated_by": [
+      "CreateRgBgBuilder",
+      "DisposeRgBgBuilder",
+      "RgBgBuilderBuildFromText",
+      "RgBgBuilderGetLight",
+      "RgBgBuilderGetLoadData",
+      "_CreateColi",
+      "_EntryColi",
+      "_ReadBgData",
+      "_SetBgObjAttr"
+     ],
+     "c_owned_symbols": [
+      "D_00A55738",
+      "D_00A55748",
+      "D_00A55760",
+      "D_00A55770",
+      "D_00A55780",
+      "D_00A55798",
+      "D_00A557A8",
+      "D_00A557B8",
+      "D_00A557C0",
+      "D_00A557E0",
+      "D_00A557F0",
+      "D_00A55810",
+      "D_00A55818",
+      "D_00A55830",
+      "D_00A55838",
+      "D_00A55840",
+      "D_00A55860",
+      "D_00A55888",
+      "D_00A55898",
+      "D_00A558A0",
+      "D_00A558B8",
+      "D_00A558C0",
+      "D_00A558C8",
+      "D_00A558D0",
+      "D_00A558D8",
+      "D_00A558E0",
+      "D_00A558F8",
+      "D_00A55900",
+      "D_00A55908",
+      "D_00A55910",
+      "D_00A55918",
+      "D_00A55920",
+      "D_00A55938",
+      "D_00A55940",
+      "D_00A55948",
+      "D_00A55950",
+      "D_00A55968",
+      "D_00A55978"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_bg_builder.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu065_00a33bf8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55988",
+      "0x00a559c0"
+     ],
+     "generated": [
+      "0x00a55988",
+      "0x00a559c0"
+     ],
+     "generated_by": [
+      "DisposeRgFileSysData_sub",
+      "InstanceOfRgFileSys",
+      "RgFileSysClear",
+      "RgFileSysDataGetName",
+      "RgFileSysDisposePrepares",
+      "RgFileSysDump",
+      "RgFileSysDup",
+      "RgFileSysOnMemory",
+      "RgFileSysPrepareFile",
+      "RgFileSysRead",
+      "_AllocFile",
+      "_FindFile",
+      "_FindFileObj",
+      "_FindInPrepare",
+      "_InitFileSys",
+      "_WrapperDestruct_00A33FB0"
+     ],
+     "c_owned_symbols": [
+      "rg_filesys_source_file",
+      "pSys_not_nil",
+      "D_00A559B0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A559C0",
+      "D_00A559D0",
+      "D_00A559D8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_filesys.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a559f0",
+      "0x00a55c48"
+     ],
+     "generated": [
+      "0x00a559f0",
+      "0x00a55c48"
+     ],
+     "generated_by": [
+      "DisposeRgFileSysData_sub",
+      "RgFileSysClear",
+      "RgFileSysDataGetName",
+      "RgFileSysDisposePrepares",
+      "RgFileSysDump",
+      "RgFileSysDup",
+      "RgFileSysOnMemory",
+      "RgFileSysPrepareFile",
+      "RgFileSysRead"
+     ],
+     "c_owned_symbols": [
+      "D_00A559F0",
+      "D_00A55A10",
+      "D_00A55A30",
+      "D_00A55A40",
+      "D_00A55A68",
+      "D_00A55A78",
+      "prepare_count_check",
+      "D_00A55AC0",
+      "D_00A55AD0",
+      "D_00A55AF0",
+      "D_00A55B10",
+      "D_00A55B20",
+      "D_00A55B50",
+      "D_00A55B78",
+      "D_00A55B90",
+      "D_00A55BA8",
+      "D_00A55BD0",
+      "D_00A55C00",
+      "D_00A55C18",
+      "D_00A55C28",
+      "D_00A55C38"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_filesys.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu066_00a34c68": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a55c48",
+      "0x00a564e0"
+     ],
+     "generated": [
+      "0x00a55c48",
+      "0x00a564d9"
+     ],
+     "generated_by": [
+      "RgActorMotIDGetFromName"
+     ],
+     "c_owned_symbols": [
+      "D_00A55C48",
+      "D_00A55C58",
+      "D_00A55C70",
+      "D_00A55C78",
+      "D_00A55C80",
+      "D_00A55C88",
+      "D_00A55C90",
+      "D_00A55C98",
+      "D_00A55CA0",
+      "D_00A55CA8",
+      "D_00A55CB0",
+      "D_00A55CB8",
+      "D_00A55CC0",
+      "D_00A55CC8",
+      "D_00A55CD0",
+      "D_00A55CD8",
+      "D_00A55CE0",
+      "D_00A55CE8",
+      "D_00A55CF0",
+      "D_00A55CF8",
+      "D_00A55D00",
+      "D_00A55D08",
+      "D_00A55D10",
+      "D_00A55D20",
+      "D_00A55D28",
+      "D_00A55D40",
+      "D_00A55D58",
+      "D_00A55D68",
+      "D_00A55D78",
+      "D_00A55D88",
+      "D_00A55D98",
+      "D_00A55DA8",
+      "D_00A55DB8",
+      "D_00A55DC8",
+      "D_00A55DD8",
+      "D_00A55DE8",
+      "D_00A55DF8",
+      "D_00A55E08",
+      "D_00A55E18",
+      "D_00A55E28",
+      "D_00A55E38",
+      "D_00A55E48",
+      "D_00A55E58",
+      "D_00A55E68",
+      "D_00A55E70",
+      "D_00A55E88",
+      "D_00A55E90",
+      "D_00A55E98",
+      "D_00A55EA0",
+      "D_00A55EA8",
+      "D_00A55EB0",
+      "D_00A55EB8",
+      "D_00A55EC0",
+      "D_00A55EC8",
+      "D_00A55ED0",
+      "D_00A55ED8",
+      "D_00A55EE0",
+      "D_00A55EE8",
+      "D_00A55EF0",
+      "D_00A55EF8",
+      "D_00A55F00",
+      "D_00A55F08",
+      "D_00A55F10",
+      "D_00A55F18",
+      "D_00A55F20",
+      "D_00A55F28",
+      "D_00A55F30",
+      "D_00A55F38",
+      "D_00A55F40",
+      "D_00A55F48",
+      "D_00A55F50",
+      "D_00A55F58",
+      "D_00A55F60",
+      "D_00A55F68",
+      "D_00A55F70",
+      "D_00A55F78",
+      "D_00A55F80",
+      "D_00A55F88",
+      "D_00A55F90",
+      "D_00A55F98",
+      "D_00A55FA0",
+      "D_00A55FA8",
+      "D_00A55FB0",
+      "D_00A55FB8",
+      "D_00A55FC0",
+      "D_00A55FC8",
+      "D_00A55FD0",
+      "D_00A55FD8",
+      "D_00A55FE0",
+      "D_00A55FE8",
+      "D_00A55FF0",
+      "D_00A55FF8",
+      "D_00A56000",
+      "D_00A56008",
+      "D_00A56010",
+      "D_00A56018",
+      "D_00A56020",
+      "D_00A56028",
+      "D_00A56030",
+      "D_00A56038",
+      "D_00A56040",
+      "D_00A56048",
+      "D_00A56050",
+      "D_00A56058",
+      "D_00A56060",
+      "D_00A56068",
+      "D_00A56070",
+      "D_00A56078",
+      "D_00A56080",
+      "D_00A56088",
+      "D_00A56090",
+      "D_00A56098",
+      "D_00A560A0",
+      "D_00A560A8",
+      "D_00A560B0",
+      "D_00A560B8",
+      "D_00A560C0",
+      "D_00A560C8",
+      "D_00A560D0",
+      "D_00A560D8",
+      "D_00A560E0",
+      "D_00A560E8",
+      "D_00A560F0",
+      "D_00A560F8",
+      "D_00A56100",
+      "D_00A56108",
+      "D_00A56110",
+      "D_00A56118",
+      "D_00A56120",
+      "D_00A56128",
+      "D_00A56130",
+      "D_00A56138",
+      "D_00A56140",
+      "D_00A56148",
+      "D_00A56150",
+      "D_00A56158",
+      "D_00A56160",
+      "D_00A56168",
+      "D_00A56170",
+      "D_00A56178",
+      "D_00A56180",
+      "D_00A56188",
+      "D_00A56190",
+      "D_00A56198",
+      "D_00A561A0",
+      "D_00A561A8",
+      "D_00A561B0",
+      "D_00A561B8",
+      "D_00A561C0",
+      "D_00A561C8",
+      "D_00A561D0",
+      "D_00A561D8",
+      "D_00A561E0",
+      "D_00A561E8",
+      "D_00A561F0",
+      "D_00A561F8",
+      "D_00A56200",
+      "D_00A56208",
+      "D_00A56210",
+      "D_00A56218",
+      "D_00A56220",
+      "D_00A56228",
+      "D_00A56230",
+      "D_00A56238",
+      "D_00A56240",
+      "D_00A56248",
+      "D_00A56250",
+      "D_00A56258",
+      "D_00A56260",
+      "D_00A56268",
+      "D_00A56270",
+      "D_00A56278",
+      "D_00A56280",
+      "D_00A56288",
+      "D_00A56290",
+      "D_00A56298",
+      "D_00A562A0",
+      "D_00A562A8",
+      "D_00A562B0",
+      "D_00A562B8",
+      "D_00A562C0",
+      "D_00A562C8",
+      "D_00A562D0",
+      "D_00A562D8",
+      "D_00A562E0",
+      "D_00A562E8",
+      "D_00A562F0",
+      "D_00A562F8",
+      "D_00A56300",
+      "D_00A56308",
+      "D_00A56310",
+      "D_00A56318",
+      "D_00A56320",
+      "D_00A56328",
+      "D_00A56330",
+      "D_00A56338",
+      "D_00A56340",
+      "D_00A56348",
+      "D_00A56350",
+      "D_00A56358",
+      "D_00A56360",
+      "D_00A56368",
+      "D_00A56370",
+      "D_00A56378",
+      "D_00A56380",
+      "D_00A56388",
+      "D_00A56390",
+      "D_00A56398",
+      "D_00A563A0",
+      "D_00A563A8",
+      "D_00A563B0",
+      "D_00A563B8",
+      "D_00A563C0",
+      "D_00A563C8",
+      "D_00A563D0",
+      "D_00A563D8",
+      "D_00A563E0",
+      "D_00A563E8",
+      "D_00A563F0",
+      "D_00A563F8",
+      "D_00A56400",
+      "D_00A56408",
+      "D_00A56410",
+      "D_00A56418",
+      "D_00A56420",
+      "D_00A56428",
+      "D_00A56430",
+      "D_00A56438",
+      "D_00A56440",
+      "D_00A56448",
+      "D_00A56450",
+      "D_00A56458",
+      "D_00A56460",
+      "D_00A56468",
+      "D_00A56470",
+      "D_00A56478",
+      "D_00A56480",
+      "D_00A56488",
+      "D_00A56490",
+      "D_00A56498",
+      "D_00A564A0",
+      "D_00A564A8",
+      "D_00A564B0",
+      "D_00A564B8",
+      "D_00A564C0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_actor_motid.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu067_00a368e8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a564e0",
+      "0x00a565d8"
+     ],
+     "generated": [
+      "0x00a564e0",
+      "0x00a565d8"
+     ],
+     "generated_by": [
+      "RgActorCharIDToName",
+      "RgActorNameToCharID"
+     ],
+     "c_owned_symbols": [
+      "D_00A564E0",
+      "D_00A564F0",
+      "D_00A56510",
+      "D_00A56518",
+      "D_00A56520",
+      "D_00A56528",
+      "D_00A56530",
+      "D_00A56538",
+      "D_00A56540",
+      "D_00A56548",
+      "D_00A56550",
+      "D_00A56558",
+      "D_00A56560",
+      "D_00A56568",
+      "D_00A56570",
+      "D_00A56578",
+      "D_00A56580",
+      "D_00A56588",
+      "D_00A56590",
+      "D_00A56598",
+      "D_00A565A0",
+      "D_00A565A8",
+      "D_00A565B0",
+      "D_00A565B8",
+      "D_00A565C0",
+      "D_00A565C8",
+      "D_00A565D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_actor_charid.o"
      }
     }
    ]
@@ -4768,6 +8411,35 @@
    ]
   },
   "ov12/tu070_00a3c6a0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50470",
+      "0x00a50474"
+     ],
+     "generated": [
+      "0x00a50470",
+      "0x00a50474"
+     ],
+     "generated_by": [
+      "RgSelectGetEnemyChar",
+      "RgSelectGetEnemyChars",
+      "RgSelectGetEnemyWeapons",
+      "RgSelectGetPlayerChars",
+      "RgSelectIgnoreEventFlag",
+      "RgSelectWeapons"
+     ],
+     "c_owned_symbols": [
+      "s_bIgnoreEventFlag"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_select_subcon.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -4791,7 +8463,138 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_select_subcon.o"
+      "object": "build/ov12/build/scaffold/src/ov12/rg_select_subcon.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu072_00a3e518": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a56f20",
+      "0x00a56f90"
+     ],
+     "generated": [
+      "0x00a56f20",
+      "0x00a56f8e"
+     ],
+     "generated_by": [
+      "CreateRgFont",
+      "DisposeRgFont",
+      "RgFontPut",
+      "RgFontSetColor",
+      "RgFontSetDefaultColor",
+      "RgFontStr"
+     ],
+     "c_owned_symbols": [
+      "D_00A56F20",
+      "D_00A56F38",
+      "D_00A56F50",
+      "D_00A56F60",
+      "D_00A56F70",
+      "D_00A56F80"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_font.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu074_00a3f230": {
+   ".data": [
+    {
+     "range": [
+      "0x00a504f0",
+      "0x00a50508"
+     ],
+     "generated": [
+      "0x00a504f0",
+      "0x00a50508"
+     ],
+     "generated_by": [
+      "RgTitleDisp",
+      "_disp_add",
+      "_disp_add_blight",
+      "_disp_blight",
+      "_disp_linear",
+      "_disp_normal"
+     ],
+     "c_owned_symbols": [
+      "s_aCol",
+      "s_fRot_0",
+      "s_nID_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_title.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a57118",
+      "0x00a57310"
+     ],
+     "generated": [
+      "0x00a57118",
+      "0x00a5730b"
+     ],
+     "generated_by": [
+      "CreateRgTitle",
+      "DisposeRgTitle",
+      "RgTitleDisp",
+      "RgTitleGetResult",
+      "RgTitlePassTime",
+      "_DestructTitle",
+      "_InitTitle",
+      "_disp_add",
+      "_disp_add_blight",
+      "_disp_linear",
+      "_disp_normal"
+     ],
+     "c_owned_symbols": [
+      "D_00A57118",
+      "D_00A57128",
+      "D_00A57140",
+      "D_00A57150",
+      "D_00A57160",
+      "D_00A57170",
+      "D_00A57188",
+      "D_00A571A0",
+      "D_00A571B0",
+      "D_00A571C0",
+      "D_00A571D0",
+      "D_00A571E0",
+      "D_00A571F0",
+      "D_00A57200",
+      "D_00A57208",
+      "D_00A57218",
+      "D_00A57228",
+      "D_00A57238",
+      "D_00A57248",
+      "D_00A57258",
+      "D_00A57268",
+      "D_00A57278",
+      "D_00A57288",
+      "D_00A57298",
+      "D_00A572A8",
+      "D_00A572B8",
+      "D_00A572C8",
+      "D_00A572D8",
+      "D_00A572F0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_title.o"
      }
     }
    ]
@@ -4800,30 +8603,128 @@
    ".rodata": [
     {
      "range": [
-      "0x00a57530",
-      "0x00a57550"
+      "0x00a57310",
+      "0x00a57348"
      ],
      "generated": [
-      "0x00a57530",
-      "0x00a57548"
+      "0x00a57310",
+      "0x00a57348"
      ],
      "generated_by": [
-      "RgPicDebugDisp"
+      "CreateRgPic",
+      "CreateRgPicDebug",
+      "CreateRgPicFromBinary",
+      "CreateRgPicList",
+      "DisposeRgPic",
+      "DisposeRgPicDebug",
+      "DisposeRgPicList",
+      "RgPicDebugControl",
+      "RgPicDebugDisp",
+      "RgPicDraw",
+      "RgPicGetAlpha",
+      "RgPicGetHeight",
+      "RgPicGetName",
+      "RgPicGetTex",
+      "RgPicGetWidth",
+      "RgPicGetX",
+      "RgPicGetY",
+      "RgPicListAddPic",
+      "RgPicListDelPic",
+      "RgPicListDraw",
+      "RgPicListGetOfsX",
+      "RgPicListGetOfsY",
+      "RgPicListGetPic",
+      "RgPicListGetSize",
+      "RgPicListMoveAllPic",
+      "RgPicListSetDrawEnable",
+      "RgPicListSetOffset",
+      "RgPicListWrite",
+      "RgPicMove",
+      "RgPicNotDraw",
+      "RgPicRead",
+      "RgPicSetAlpha",
+      "RgPicSetColor",
+      "RgPicSetDark",
+      "RgPicSetOfsXY",
+      "RgPicSetPos",
+      "RgPicWrite"
      ],
      "c_owned_symbols": [
-      "jtbl_00A57530"
-     ],
-     "also_referenced_by_c": [
       "D_00A57310",
       "D_00A57320",
-      "D_00A57338",
-      "D_00A57348",
-      "D_00A57358",
-      "D_00A57368",
+      "D_00A57338"
+     ],
+     "also_referenced_by_c": [
+      "D_00A57348"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a57358",
+      "0x00a57368"
+     ],
+     "generated": [
+      "0x00a57358",
+      "0x00a57368"
+     ],
+     "generated_by": [
+      "CreateRgPic",
+      "RgPicListAddPic"
+     ],
+     "c_owned_symbols": [
+      "D_00A57358"
+     ],
+     "also_referenced_by_c": [
+      "D_00A57368"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a57380",
+      "0x00a573c8"
+     ],
+     "generated": [
+      "0x00a57380",
+      "0x00a573c8"
+     ],
+     "generated_by": [
+      "DisposeRgPicDebug",
+      "DisposeRgPicList",
+      "RgPicDebugControl",
+      "RgPicDebugDisp",
+      "RgPicDraw",
+      "RgPicListAddPic",
+      "RgPicListDelPic",
+      "RgPicListDraw",
+      "RgPicListGetOfsX",
+      "RgPicListGetOfsY",
+      "RgPicListGetPic",
+      "RgPicListGetSize",
+      "RgPicListMoveAllPic",
+      "RgPicListSetDrawEnable",
+      "RgPicListSetOffset",
+      "RgPicListWrite"
+     ],
+     "c_owned_symbols": [
       "D_00A57380",
       "D_00A57390",
       "D_00A573A0",
-      "D_00A573B8",
+      "D_00A573B8"
+     ],
+     "also_referenced_by_c": [
+      "D_00A573C8",
+      "D_00A573E0",
+      "D_00A573F8",
       "D_00A57418",
       "D_00A57440",
       "D_00A57458",
@@ -4839,7 +8740,29 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a57530",
+      "0x00a57550"
+     ],
+     "generated": [
+      "0x00a57530",
+      "0x00a57548"
+     ],
+     "generated_by": [
+      "RgPicDebugDisp"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A57530"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
      }
     }
    ]
@@ -4874,35 +8797,186 @@
     }
    ]
   },
+  "ov12/tu077_00a434b8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50860",
+      "0x00a50898"
+     ],
+     "generated": [
+      "0x00a50860",
+      "0x00a50898"
+     ],
+     "generated_by": [
+      "RgAnnounceDispInit"
+     ],
+     "c_owned_symbols": [
+      "s_apFuncs_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_announce.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a57bb0",
+      "0x00a57bd8"
+     ],
+     "generated": [
+      "0x00a57bb0",
+      "0x00a57bd8"
+     ],
+     "generated_by": [
+      "CreateRgAnnounce",
+      "DisposeRgAnnounce",
+      "RgAnnounceDispInit",
+      "RgAnnounceDispOff",
+      "RgAnnouncePassTime",
+      "RgAnnounceSetGameClear",
+      "RgAnnounceSetStageClear",
+      "_DestructAnn"
+     ],
+     "c_owned_symbols": [
+      "D_00A57BB0",
+      "D_00A57BC0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_announce.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a586b0",
+      "0x00a58720"
+     ],
+     "generated": [
+      "0x00a586b0",
+      "0x00a5871e"
+     ],
+     "generated_by": [
+      "RgAnnounceSetGameClear",
+      "_damage_disp",
+      "_damage_disp_title",
+      "_time_disp_title"
+     ],
+     "c_owned_symbols": [
+      "D_00A586B0",
+      "D_00A586C0",
+      "D_00A586D0",
+      "D_00A586D8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_announce.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu078_00a44f08": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a58720",
+      "0x00a58750"
+     ],
+     "generated": [
+      "0x00a58720",
+      "0x00a5874e"
+     ],
+     "generated_by": [
+      "DisposeRgDispModel",
+      "InitRgDispModel",
+      "RgDispModelDisplay"
+     ],
+     "c_owned_symbols": [
+      "D_00A58720",
+      "D_00A58738"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_dispmodel.o"
+     }
+    }
+   ]
+  },
   "ov12/tu079_00a45120": {
    ".rodata": [
     {
      "range": [
-      "0x00a587a0",
+      "0x00a58750",
       "0x00a587b0"
      ],
      "generated": [
-      "0x00a587a0",
+      "0x00a58750",
       "0x00a587ad"
      ],
      "generated_by": [
-      "CreateXrgDispModelImpl"
+      "CreateXrgDispModelImpl",
+      "_DestructRgDispModelImpl",
+      "_Disp_00A45120",
+      "_InitRgDispModelImpl"
      ],
      "c_owned_symbols": [
-      "D_00A587A0",
-      "D_00A587A8"
-     ],
-     "also_referenced_by_c": [
       "D_00A58750",
       "D_00A58760",
       "D_00A58780",
-      "D_00A58790"
-     ]
+      "D_00A58790",
+      "D_00A587A0",
+      "D_00A587A8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_dispmodel_impl.o"
+     }
     }
    ]
   },
   "ov12/tu081_00a48548": {
    ".rodata": [
+    {
+     "range": [
+      "0x00a58d10",
+      "0x00a58d38"
+     ],
+     "generated": [
+      "0x00a58d10",
+      "0x00a58d38"
+     ],
+     "generated_by": [
+      "XrgBxxPs2Tex0",
+      "_Log2"
+     ],
+     "c_owned_symbols": [
+      "D_00A58D10",
+      "D_00A58D20"
+     ],
+     "also_referenced_by_c": [
+      "D_00A58D38",
+      "D_00A58D48",
+      "D_00A58D58",
+      "D_00A58D60"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_bxx_ps2.o"
+     }
+    },
     {
      "range": [
       "0x00a58d80",
@@ -4918,18 +8992,136 @@
      "c_owned_symbols": [
       "jtbl_00A58D80"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_bxx_ps2.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu082_00a487c0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a58e28",
+      "0x00a58e70"
+     ],
+     "generated": [
+      "0x00a58e28",
+      "0x00a58e69"
+     ],
+     "generated_by": [
+      "_GetLocalPath",
+      "_RootName"
+     ],
+     "c_owned_symbols": [
+      "D_00A58E28",
+      "root_name_name_check",
+      "root_name_source_file",
+      "root_name_result_check"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_cdread.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu084_00a48c08": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a58f10",
+      "0x00a58f50"
+     ],
+     "generated": [
+      "0x00a58f10",
+      "0x00a58f48"
+     ],
+     "generated_by": [
+      "CreateArrayOfXrgParticle",
+      "CreateXrgParticleDriver",
+      "DisposeArrayOfXrgParticle",
+      "DisposeXrgParticleDriver",
+      "XrgParticleDriverDisp",
+      "XrgParticleDriverDispReq",
+      "XrgParticleDriverPassTime",
+      "XrgParticleDriverPassTimeReq",
+      "XrgParticleDriverSet",
+      "_ClearReqDisp",
+      "_DisposeDriver",
+      "_DrawDriver",
+      "_InitDriver",
+      "_openVifGifAD_00A48C80"
+     ],
+     "c_owned_symbols": [
+      "D_00A58F10",
+      "D_00A58F20",
+      "D_00A58F30"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a58f78",
+      "0x00a58fe8"
+     ],
+     "generated": [
+      "0x00a58f78",
+      "0x00a58fe8"
+     ],
+     "generated_by": [
+      "CreateArrayOfXrgParticle",
+      "XrgParticleDriverDispReq",
+      "XrgParticleDriverPassTimeReq"
+     ],
+     "c_owned_symbols": [
+      "D_00A58F78",
+      "D_00A58FA0",
+      "D_00A58FB0",
+      "D_00A58FD8"
+     ],
      "also_referenced_by_c": [
-      "D_00A58D10",
-      "D_00A58D20",
-      "D_00A58D38",
-      "D_00A58D48",
-      "D_00A58D58",
-      "D_00A58D60"
+      "D_00A58FE8",
+      "D_00A58FF8"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/xrg_bxx_ps2.o"
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a59008",
+      "0x00a59030"
+     ],
+     "generated": [
+      "0x00a59008",
+      "0x00a59026"
+     ],
+     "generated_by": [
+      "DisposeArrayOfXrgParticle",
+      "XrgParticleDriverDisp"
+     ],
+     "c_owned_symbols": [
+      "D_00A59008",
+      "D_00A59018"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
      }
     }
    ]
@@ -4938,30 +9130,344 @@
    ".rodata": [
     {
      "range": [
-      "0x00a590b0",
-      "0x00a590c8"
+      "0x00a59030",
+      "0x00a59040"
      ],
      "generated": [
-      "0x00a590b0",
-      "0x00a590c8"
+      "0x00a59030",
+      "0x00a59040"
      ],
      "generated_by": [
-      "XrgPaint2DAlpha"
+      "_openVifGifAD_00A4A698"
      ],
      "c_owned_symbols": [
-      "jtbl_00A590B0"
+      "D_00A59030"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_paint2d.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a59058",
+      "0x00a59070"
+     ],
+     "generated": [
+      "0x00a59058",
+      "0x00a59070"
+     ],
+     "generated_by": [
+      "CreateXrgPaint2D_sub",
+      "DisposeXrgPaint2D_sub",
+      "InstanceOfXrgPaint2D",
+      "XrgPaint2DAlpha",
+      "XrgPaint2DColor",
+      "XrgPaint2DDrawRect",
+      "XrgPaint2DFlush",
+      "XrgPaint2DOffset2D",
+      "XrgPaint2DOffset2DDot",
+      "XrgPaint2DOffset3D",
+      "XrgPaint2DOffset3DForce",
+      "XrgPaint2DOffsetCenter",
+      "XrgPaint2DOffsetResult",
+      "XrgPaint2DSetDrawID",
+      "XrgPaint2DSetDrawPrio",
+      "XrgPaint2DSetUVOffset",
+      "XrgPaint2DSetUVSize",
+      "XrgPaint2DUseTexture",
+      "_DestructPaint",
+      "_InitPaint",
+      "_Paint2DClearReq",
+      "_WrapperDestruct_00A4B910"
+     ],
+     "c_owned_symbols": [
+      "D_00A59058"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_paint2d.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a59098",
+      "0x00a590d8"
+     ],
+     "generated": [
+      "0x00a59098",
+      "0x00a590d8"
+     ],
+     "generated_by": [
+      "DisposeXrgPaint2D_sub",
+      "XrgPaint2DAlpha",
+      "XrgPaint2DColor",
+      "XrgPaint2DDrawRect",
+      "XrgPaint2DFlush",
+      "XrgPaint2DOffset2D",
+      "XrgPaint2DOffset2DDot",
+      "XrgPaint2DOffset3D",
+      "XrgPaint2DOffset3DForce",
+      "XrgPaint2DOffsetCenter",
+      "XrgPaint2DOffsetResult",
+      "XrgPaint2DSetDrawID",
+      "XrgPaint2DSetDrawPrio",
+      "XrgPaint2DSetUVOffset",
+      "XrgPaint2DSetUVSize",
+      "XrgPaint2DUseTexture",
+      "_DestructPaint",
+      "_InitPaint",
+      "_Paint2DClearReq"
+     ],
+     "c_owned_symbols": [
+      "D_00A59098",
+      "jtbl_00A590B0",
+      "D_00A590C8"
      ],
      "also_referenced_by_c": [
-      "D_00A59030",
-      "D_00A59058",
-      "D_00A59098",
-      "D_00A590C8"
-     ]
+      "D_00A590D8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_paint2d.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu087_00a4c840": {
+   ".data": [
+    {
+     "range": [
+      "0x00a51230",
+      "0x00a51290"
+     ],
+     "generated": [
+      "0x00a51230",
+      "0x00a51290"
+     ],
+     "generated_by": [
+      "_SetDefaultLight"
+     ],
+     "c_owned_symbols": [
+      "ainLight_0",
+      "ainLightCol_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_sysinit.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a59108",
+      "0x00a591e8"
+     ],
+     "generated": [
+      "0x00a59108",
+      "0x00a591e8"
+     ],
+     "generated_by": [
+      "XrgSystemDispose",
+      "XrgSystemInit"
+     ],
+     "c_owned_symbols": [
+      "xrg_system_init_log_1",
+      "xrg_system_init_source_file",
+      "xrg_system_init_log_2",
+      "xrg_system_init_log_3",
+      "xrg_system_init_log_4",
+      "xrg_system_init_log_5",
+      "xrg_system_init_log_6",
+      "xrg_system_init_log_7",
+      "xrg_system_init_log_8",
+      "D_00A591C0",
+      "D_00A591D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_sysinit.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu091_00a4e340": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a591e8",
+      "0x00a59218"
+     ],
+     "generated": [
+      "0x00a591e8",
+      "0x00a59218"
+     ],
+     "generated_by": [
+      "XrgHostClose",
+      "XrgHostCreateOpen",
+      "XrgHostRead",
+      "XrgHostReadOpen",
+      "XrgHostSeekLast",
+      "XrgHostSeekTop",
+      "XrgHostWrite"
+     ],
+     "c_owned_symbols": [
+      "xrg_host_unsupported_message",
+      "xrg_host_source_file"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_hostfile.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu092_00a4e488": {
+   ".data": [
+    {
+     "range": [
+      "0x00a512d0",
+      "0x00a512d4"
+     ],
+     "generated": [
+      "0x00a512d0",
+      "0x00a512d4"
+     ],
+     "generated_by": [
+      "XrgPadIsBatu",
+      "XrgPadIsDown",
+      "XrgPadIsL12",
+      "XrgPadIsLR",
+      "XrgPadIsLeft",
+      "XrgPadIsMaru",
+      "XrgPadIsR12",
+      "XrgPadIsRight",
+      "XrgPadIsSankaku",
+      "XrgPadIsSelect",
+      "XrgPadIsSelectLevelLR",
+      "XrgPadIsShikaku",
+      "XrgPadIsStart",
+      "XrgPadIsUp",
+      "XrgPadSetID"
+     ],
+     "c_owned_symbols": [
+      "s_nPadID"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_pad.o"
+     }
+    }
+   ]
+  },
+  "ov12/tu093_00a4e780": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a59218",
+      "0x00a59250"
+     ],
+     "generated": [
+      "0x00a59218",
+      "0x00a59250"
+     ],
+     "generated_by": [
+      "XrgDispMainFont"
+     ],
+     "c_owned_symbols": [
+      "D_00A59218",
+      "D_00A59230"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_main_font.o"
+     }
     }
    ]
   },
   "ov12/tu094_00a4e8f0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a512d4",
+      "0x00a512dc"
+     ],
+     "generated": [
+      "0x00a512d4",
+      "0x00a512dc"
+     ],
+     "generated_by": [
+      "InitXrgSoundSystem",
+      "XrgSoundSystemDisposeSequence",
+      "XrgSoundSystemPlayBGM",
+      "XrgSoundSystemStopSequence",
+      "_LoadSeq"
+     ],
+     "c_owned_symbols": [
+      "s_eLoadedSeq",
+      "s_bNowPlaying"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_sound.o"
+     }
+    }
+   ],
    ".rodata": [
+    {
+     "range": [
+      "0x00a59250",
+      "0x00a592a8"
+     ],
+     "generated": [
+      "0x00a59250",
+      "0x00a592a8"
+     ],
+     "generated_by": [
+      "CreateXrgSound",
+      "DisposeXrgSound",
+      "InitXrgSoundSystem",
+      "_LoadSeq",
+      "_LoadSequence"
+     ],
+     "c_owned_symbols": [
+      "D_00A59250",
+      "D_00A59268",
+      "D_00A59270",
+      "D_00A59280",
+      "D_00A59288",
+      "D_00A592A0"
+     ],
+     "also_referenced_by_c": [
+      "D_00A592A8",
+      "D_00A592B0",
+      "D_00A592B8",
+      "D_00A592C0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_sound.o"
+     }
+    },
     {
      "range": [
       "0x00a592d0",
@@ -4977,27 +9483,53 @@
      "c_owned_symbols": [
       "jtbl_00A592D0"
      ],
-     "also_referenced_by_c": [
-      "D_00A59250",
-      "D_00A59268",
-      "D_00A59270",
-      "D_00A59280",
-      "D_00A59288",
-      "D_00A592A0"
-     ]
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_sound.o"
+     }
     }
    ]
   },
   "ov12/tu095_00a4f280": {
+   ".data": [
+    {
+     "range": [
+      "0x00a512e0",
+      "0x00a51430"
+     ],
+     "generated": [
+      "0x00a512e0",
+      "0x00a51430"
+     ],
+     "generated_by": [
+      "XrgEventGetLevel",
+      "XrgEventIsUsableWeapon",
+      "XrgSetEventLevel"
+     ],
+     "c_owned_symbols": [
+      "s_bSetEventLevel",
+      "s_eEventLevel",
+      "s_aWepTbl_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_event.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x00a592f0",
-      "0x00a59328"
+      "0x00a59490"
      ],
      "generated": [
       "0x00a592f0",
-      "0x00a59328"
+      "0x00a59490"
      ],
      "generated_by": [
       "XrgEventIsUsableEnemy",
@@ -5005,13 +9537,54 @@
      ],
      "c_owned_symbols": [
       "jtbl_00A592F0",
-      "jtbl_00A59310"
+      "jtbl_00A59310",
+      "D_00A59328",
+      "D_00A59330",
+      "D_00A59338",
+      "D_00A59340",
+      "D_00A59348",
+      "D_00A59350",
+      "D_00A59358",
+      "D_00A59360",
+      "D_00A59370",
+      "D_00A59378",
+      "D_00A59388",
+      "D_00A59390",
+      "D_00A59398",
+      "D_00A593A0",
+      "D_00A593A8",
+      "D_00A593B0",
+      "D_00A593B8",
+      "D_00A593C0",
+      "D_00A593C8",
+      "D_00A593D0",
+      "D_00A593E0",
+      "D_00A593F0",
+      "D_00A593F8",
+      "D_00A59400",
+      "D_00A59408",
+      "D_00A59410",
+      "D_00A59418",
+      "D_00A59420",
+      "D_00A59428",
+      "D_00A59430",
+      "D_00A59438",
+      "D_00A59440",
+      "D_00A59448",
+      "D_00A59450",
+      "D_00A59458",
+      "D_00A59460",
+      "D_00A59468",
+      "D_00A59470",
+      "D_00A59478",
+      "D_00A59480",
+      "D_00A59488"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/xrg_event.o"
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_event.o"
      }
     }
    ]

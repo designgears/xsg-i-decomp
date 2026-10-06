@@ -3,6 +3,8 @@
  */
 #include "common.h"
 
+unsigned char TitleMaxList[7] = {6, 9, 14, 9, 3, 5, 6};
+
 INCLUDE_ASM("asm/nonmatchings/ov10/card_view_proc", CardViewProc);
 
 extern void xglMatrixScale(float (*dst)[4], float (*src)[4], float *v);
