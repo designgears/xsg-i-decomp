@@ -789,8 +789,24 @@ class TU:
                              + ('' if self.unit_dir else ' (pass unit_dir/--unit-dir to resolve functions '
                                                          'defined by a shared included .s)'))
         order = [b.key for b in self.blocks if b.role == 'function']
-        if [n for n in functions if n not in self.covered] != order:
-            raise ParseError(f'function blocks are not in original order: {order}')
+        want = [n for n in functions if n not in self.covered]
+        if want != order:
+            # gcc 2.96 defers public (non-static) inline definitions to the end of
+            # the object, in definition order: such a block may sit anywhere in the
+            # source as long as those functions close the original order.
+            late = [b.key for b in self.blocks if b.role == 'function' and b.state == 'c'
+                    and self._public_inline(b)]
+            rest = [n for n in order if n not in late]
+            if not late or want != rest + late:
+                raise ParseError(f'function blocks are not in original order: {order}')
+
+    def _public_inline(self, b):
+        """A C block defined `inline` without `static` (emitted after every other function)."""
+        text = self.text[b.core_start:b.core_end]
+        brace = text.find('{')
+        head = lexical(text[:brace]) if brace >= 0 else ''
+        return (re.search(r'\b(?:inline|__inline|__inline__)\b', head) is not None
+                and re.search(r'\bstatic\b', head) is None)
 
     # -- views ---------------------------------------------------------------
     def block(self, name):
