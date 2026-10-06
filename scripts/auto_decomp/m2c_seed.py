@@ -198,6 +198,16 @@ def draft(unit: str, tu: str, asm: Path, scratch: Path) -> dict:
     return {"ok": False, "c": "", "context": None, "error": err}
 
 
+_ZERO_INIT = re.compile(r"(=\s*\{)(\s*0,)+\s*0?,?\s*(\};)")
+
+
+def collapse_zero_inits(text: str) -> str:
+    """m2c writes data definitions one element per line; an all-zero array
+    (e.g. a 0x9800-byte table) becomes tens of thousands of `0,` lines that an
+    agent then carries into the TU. `= {0}` produces the same bytes."""
+    return _ZERO_INIT.sub(r"\1 0 \3", text)
+
+
 def seed(unit: str, tu: str, name: str, asm: Path, body: Path, write_body: bool) -> dict:
     with tempfile.TemporaryDirectory(prefix="m2c_") as td:
         d = draft(unit, tu, asm, Path(td))
@@ -216,6 +226,7 @@ def seed(unit: str, tu: str, name: str, asm: Path, body: Path, write_body: bool)
     side.parent.mkdir(parents=True, exist_ok=True)
     head = (f"/* m2c draft ({TARGET}, context={d['context']}{', PARTIAL' if d.get('partial') else ''}): "
             "rework into matching C */\n")
+    d["c"] = collapse_zero_inits(d["c"])
     side.write_text(head + d["c"])
     if write_body and not body.exists():
         body.write_text(head + d["c"])
