@@ -52,7 +52,8 @@ extern void subSeisanMain(void);
  * recovers dataPlChaGet itself.
  */
 typedef struct SeisanCharRecord {
-    unsigned char unmodeled_00[4];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    int experience;
     int nextExp;                    /* +0x04 */
 } SeisanCharRecord;
 
@@ -64,8 +65,24 @@ extern SeisanCharRecord *func_A19210(int chrNo);
  * consecutive words at +0x70 (addiu 0x0029f46c, sw 0x0029f484) with each
  * character's dataPlChaGet(chrNo)->nextExp, for chrNo 1..12.
  */
+/* fork type needed by SeisanCountData (derwetterfrosch) */
+typedef struct SeisanCountTarget {
+    int level;
+    int hp;
+    int ep;
+    int nextExp;
+    int experience;
+    int techPoints;
+    int skillPoints;
+    int specialPoints;
+} SeisanCountTarget;
+
 typedef struct SeisanCountData {
-    unsigned char unmodeled_00[0x70];
+    int state;                      /* +0x00: selected by subSeisanMain */
+    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    SeisanCountTarget targets[3];
+    unsigned char unmodeled_64[0x4];
+    long countedMoney;
     int nextExp[12];                /* +0x70: character 1..12's next_exp, set by SeisanCountInit1 */
     unsigned char unmodeled_A0[0x10];
 } SeisanCountData;
@@ -82,7 +99,16 @@ extern SeisanCountData SeisanCN;
  */
 typedef struct SeisanHissatuEntry {
     int count;                      /* +0x00 */
-    unsigned char unmodeled_04[0x38];
+    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    int experience;
+    int techPoints;
+    int skillPoints;
+    int specialPoints;
+    int level;
+    int hp;
+    int ep;
+    int learnedIds[6];
+    unsigned char unmodeled_38[0x4];
 } SeisanHissatuEntry;
 
 typedef struct SeisanResultData {
@@ -121,5 +147,46 @@ extern XglTaskScheduler *SeisanBgTask;
 extern XglTaskScheduler *SeisanTask;
 
 extern void SeisanFadeMain(void);
+
+/* Original shared pad prefix and interfaces used by the recovered callbacks. */
+extern PadPrefix PadData;
+extern void MoveSlide(short *current, short *target, float rate);
+extern void eSpriteSet(void *sprite, short spriteId);
+extern void eSpriteMain(void *sprite);
+extern void eMessageSet(void *message, const char *text);
+extern void eMessageMain(void *message);
+extern void MenuBgTaskBreak(void);
+extern void SeisanCountMain(int mode);
+
+/*
+ * Partial prompt-button layout used by tskSeisanButton. Its original
+ * instructions pass the message object at +0x08 and sprite at +0x4c; the
+ * named fields below match the byte/halfword/word accesses in that function.
+ */
+typedef struct SeisanButtonMessage {
+    unsigned char unmodeled_00;
+    unsigned char mode;             /* +0x01 */
+    unsigned char unmodeled_0a[2];
+    short x;                        /* +0x04 */
+    short y;                        /* +0x06 */
+    int color;                      /* +0x08 */
+    unsigned char unmodeled_0c[0x18 - 0x0c];
+    const char *text;               /* +0x18 */
+    unsigned char unmodeled_1c[0x28];
+} SeisanButtonMessage;
+
+typedef struct SeisanButtonSprite {
+    unsigned char unmodeled_00[4];
+    short x;                        /* +0x04 */
+    short y;                        /* +0x06 */
+    int color;                      /* +0x08 */
+} SeisanButtonSprite;
+
+typedef struct SeisanButtonWork {
+    unsigned char unmodeled_00[4];
+    int color;                      /* +0x04 */
+    SeisanButtonMessage message;    /* +0x08 */
+    SeisanButtonSprite sprite;      /* +0x4c */
+} SeisanButtonWork;
 
 #endif /* SRC_MAIN_SEISAN_COUNT_INIT1_H */

@@ -9,17 +9,40 @@ typedef struct MenuShopWorkData MenuShopWorkData;
 
 struct MenuShopWorkData {
     unsigned char state;
-    unsigned char unmodeled_01[5];
+    unsigned char unmodeled_01[0]; /* +0x1: zero-length alias of the former padding member, kept for saved bodies */
+    unsigned char stateFlags;
+    unsigned char nextState;
+    unsigned char waitFrames;
+    unsigned char unmodeled_04[2];
     unsigned short categoryMask;
     unsigned char unmodeled_08[8];
     unsigned char mode;
     unsigned char category;
-    unsigned char unmodeled_12[5];
+    unsigned char unmodeled_12[0]; /* +0x12: zero-length alias of the former padding member, kept for saved bodies */
+    signed char quantity;
+    unsigned char quantityAction;
+    unsigned char quantityLimit;
+    unsigned char canEquip;
+    unsigned char sortOption;
     unsigned char noCategories;
     unsigned char unmodeled_18[8];
     int listIndex;
-    unsigned char unmodeled_24[0x24];
+    unsigned char unmodeled_24[0]; /* +0x24: zero-length alias of the former padding member, kept for saved bodies */
+    int itemId;
+    int modelId;
+    unsigned int modelPending;
+    long long availableMoney;
+    unsigned char unmodeled_38[8];
+    short unitId;
+    short equipmentId;
+    signed char equipmentStatus;
+    signed char unitCount;
+    unsigned char unmodeled_46;
+    signed char unitSelection;
     signed char sort_mode_selector;
+    unsigned char unmodeled_49[7];
+    /* PartyAgwsGet emits at most six IDs; the core stores their low halfwords. */
+    short unitIds[6];
 };
 
 extern MenuShopWorkData *MenuShopWork;

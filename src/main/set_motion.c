@@ -1,4 +1,5 @@
 #include "common.h"
+
 #include "set_motion.h"
 
 typedef union AlignedHomingPosition {
@@ -6,15 +7,18 @@ typedef union AlignedHomingPosition {
     float elements[4];
     unsigned long long alignment[2];
 } AlignedHomingPosition;
+
 typedef struct EnemyDetectHead {
     unsigned char unmodeled_00[0x10];
     AlignedHomingPosition position;
     unsigned char unmodeled_20[0x70 - 0x20];
 } EnemyDetectHead;
+
 typedef struct ActorHearing {
     unsigned char unmodeled_00[0x68];
     float radius;
 } ActorHearing;
+
 typedef struct EnemyDetectActor {
     EnemyDetectHead head;
     unsigned char unmodeled_70[0x10];
@@ -30,60 +34,31 @@ typedef struct EnemyDetectActor {
     float head_position[4];
     unsigned char unmodeled_640[0xa70 - 0x640];
 } EnemyDetectActor;
+
 extern EnemyDetectActor actor[64];
+
 extern void EnemySound_Stop(Actor *actor, signed char which);
+
 extern void xglSoundEffectStopDirect(int sound_id);
+
 extern float Get_Distance3D(const Vector4 *origin, const Vector4 *target);
+
 extern PadPrefix PadData;
+
 extern void Check_Discovery(Actor *enemy);
 
 extern EnemyStateBlock enepc[16];
 
 extern void BSpline_Init(float *points, const float *origin, float angle);
+
 extern void Get_MiddlePoint(const float *start, const float *following,
                             short point_index, short point_count,
                             float *result);
 
-typedef struct DiscoveryPlayer {
-    unsigned char unmodeled_00[16];
-    unsigned long long position_words[2];
-    unsigned char unmodeled_20[0x9f0 - 0x20];
-    short disable_detection;
-} DiscoveryPlayer;
-
-typedef struct DiscoveryGameLoopState {
-    unsigned char unmodeled_00[4];
-    DiscoveryPlayer *player;
-    unsigned char unmodeled_08[8];
-} DiscoveryGameLoopState;
-
-extern DiscoveryGameLoopState GameLoopState;
-
-extern void ACT_setMotion2(void *actor, int a, int b);
-extern volatile float D_004D80FC;
-
-void Set_Motion(Actor *actor, int motion, int mode)
-{
-    unsigned char *e = enepc[ACTOR_NUMBER(actor)];
-
-    if (((int *)e)[0x37e0 / 4] & 0x100) {
-        int m = mode | 0x10000000;
-        ACT_setMotion2(actor, motion,
-                       ((void *)actor != (void *)GameLoopState.player) ? (m | 0x20) : m);
-        *(float *)((char *)actor + 0x744) = *(float *)(e + 0x3858);
-    } else {
-        ACT_setMotion2(actor, motion,
-                       ((void *)actor == (void *)GameLoopState.player) ? mode : (mode | 0x20));
-    }
-    if ((void *)actor != (void *)GameLoopState.player) {
-        *(float *)((char *)actor + 0x714) = D_004D80FC;
-    }
-}
-
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Sound_FootStep);
-
 extern int RES_GetEnemySeBank(int sound_id);
+
 extern int RES_GetEnemySeType(int sound_id);
+
 extern void xglSoundEffectPosID();
 
 /*
@@ -94,6 +69,399 @@ extern void xglSoundEffectPosID();
  * 0x002d06d8, 0x002d0710, 0x002d0744); when it is 0 and sound_index is 2 or
  * 4, a bank whose RES_GetEnemySeType is 1 is skipped entirely.
  */
+
+extern void xglSoundEffectStopID(int sound_id, int flags);
+
+extern void SsdFadeoutEffect(int effect_id, int source_id, int fade_time);
+
+/*
+ * A TU-local view of main/xgl_sound.c's struct SoundWork (main:0x004a8140),
+ * not yet reachable through a shared header. effect_banks starts at +0x20
+ * and each entry's low halfword is its handle (main/xgl_sound.c's
+ * SoundEffectBankEntry.handle), the same field xglSoundEffectStopDirect
+ * reads (main:0x00226720).
+ */
+
+typedef struct SetMotionSoundWork
+{
+    unsigned char unmodeled_00[0x20];
+    struct
+    {
+        unsigned short handle;
+        unsigned short file_handle;
+    } effect_banks[32];
+} SetMotionSoundWork;
+
+extern SetMotionSoundWork SoundWork;
+
+typedef struct ActorTalkControls {
+    unsigned char unmodeled_00[0x64];
+    unsigned int talk_flags;
+} ActorTalkControls;
+
+typedef struct ActorTalk {
+    ActorHead head;
+    unsigned char unmodeled_70[0xc0 - sizeof(ActorHead)];
+    ActorTalkControls controls;
+    unsigned char unmodeled_128[0x704 - 0x128];
+    unsigned short saved_talk_motion;
+    unsigned short motion_progress;
+    unsigned char unmodeled_708[0x712 - 0x708];
+    unsigned short talk_state;
+    unsigned char unmodeled_714[0x9e4 - 0x714];
+    float target_angle;
+} ActorTalk;
+
+extern void Set_Motion(Actor *actor, int motion, unsigned int mode);
+
+extern void Enemy_Command_LookAt(Actor *actor, int target);
+
+extern void Enemy_Command_Freeze(Actor *actor, int frozen);
+
+typedef struct EnemyTalkState {
+    unsigned char unmodeled_00[0x37a8];
+    int saved_motion;
+} EnemyTalkState;
+
+#define ENEMY_ACTION_STATE_OFFSET 0x48
+
+#define ENEMY_ELECTRIC_STATUS_OFFSET 0x6a
+
+typedef struct EnemyEarState {
+    unsigned char unmodeled_00[0x37a2];
+    signed char ear_disabled;
+    unsigned char unmodeled_37a3[0x38ac - 0x37a3];
+    short discovery_count;
+} EnemyEarState;
+
+/* This flag is a signed byte in the original enemy-work record. */
+
+#define ENEMY_EAR_DISABLED_OFFSET 0x37a2
+
+typedef struct EnemyScriptState {
+    unsigned char unmodeled_00[0x37e0];
+    unsigned int action_flags;
+    unsigned char unmodeled_37e4[0x3800 - 0x37e4];
+    float movement_points[2][4];
+    short movement_step;
+    short movement_duration;
+    float start_angle;
+    float end_angle;
+    short turn_step;
+    short turn_duration;
+} EnemyScriptState;
+
+typedef struct LayoutHeader LayoutHeader;
+
+typedef struct BeltUndulation {
+    unsigned char unmodeled_00[0x18];
+    LayoutHeader *header;
+    unsigned char unmodeled_1c[4];
+    unsigned long long surface_flags;
+    unsigned char unmodeled_028[0x18];
+} BeltUndulation;
+
+/* The original scratch blocks are 0x40 bytes; only this prefix is modeled. */
+
+extern BeltUndulation UnduTemp;
+
+
+typedef struct UnduTestStorage {
+    int queryFlags;
+    unsigned char unmodeled_04[4];
+    short attrMask;
+    unsigned char unmodeled_0a[0x0e];
+    LayoutHeader *header;
+    unsigned char unmodeled_1c[4];
+    long long attribute;
+    unsigned char unmodeled_028[0x18];
+} UnduTestStorage;
+
+extern UnduTestStorage UnduTest;
+
+
+extern unsigned char idx_0[16];
+
+
+extern float vec_1[9][2];
+
+
+extern float rate_2_003B2008[4];
+
+
+extern void UnduParamInit(BeltUndulation *param);
+
+extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
+
+extern void UnduCheck(const Vector4 *position, void *exclude, BeltUndulation *param);
+
+typedef struct EnemyDiscoveryState {
+    unsigned char unmodeled_00[0x48];
+    unsigned char detection_state;
+    unsigned char unmodeled_49;
+    unsigned char action_state;
+    unsigned char unmodeled_4b[0x6c - 0x4b];
+    short discovery_count;
+    unsigned char unmodeled_6e[0x37f0 - 0x6e];
+    unsigned long long last_player_position_words[2];
+} EnemyDiscoveryState;
+
+typedef struct DiscoveryPlayer {
+    unsigned char unmodeled_00[16];
+    unsigned long long position_words[2];
+    unsigned char unmodeled_020[0x54 - 0x20];
+    float yaw; /* +0x54 */
+    unsigned char unmodeled_058[0x9f0 - 0x58];
+    short disable_detection;
+} DiscoveryPlayer;
+
+typedef struct EncountParams {
+    unsigned char unmodeled_00[0x50];
+    short monster_set_numbers[8];
+    unsigned char unmodeled_60[0xc];
+    unsigned int encounter_event : 8;
+} EncountParams;
+
+typedef struct EncountActor EncountActor;
+
+typedef struct EncountRecord {
+    short monster_set_number;
+    unsigned char unmodeled_02[2];
+    short encounter_side;
+    unsigned char trigger_flags;
+    unsigned char event_flags;
+    short entry_value;
+    unsigned char unmodeled_0a[2];
+    EncountActor *enemy;
+} EncountRecord;
+
+typedef struct DiscoveryGameLoopState {
+    unsigned char unmodeled_00[4];
+    DiscoveryPlayer *player;
+    unsigned char unmodeled_08[8];
+    unsigned int pause_flags; /* +0x10 */
+    unsigned char unmodeled_14[8]; /* +0x14 */
+    unsigned int event_flags; /* +0x1c */
+    unsigned char unmodeled_20[0x29f90 - 0x20]; /* +0x20 */
+    EncountRecord encount; /* +0x29f90 */
+} DiscoveryGameLoopState;
+
+extern DiscoveryGameLoopState GameLoopState;
+
+extern signed char FLAG_FRAME_60;
+
+extern void Enemy_ActionReady(Actor *actor, int action);
+
+typedef struct PlayerHistoryActor {
+    ActorHead head;
+    unsigned char unmodeled_70[0x9e8 - sizeof(ActorHead)];
+    float interaction_radius;
+} PlayerHistoryActor;
+
+extern float PlayHis[64][4];
+
+
+extern float BackPos[4];
+
+
+extern float LocaterAngle[16];
+
+
+extern short PhCunt[1];
+
+extern int Check_Straight_ID(float heading, float *previous,
+                             unsigned char *enemy_state, int limit,
+                             float *result, int stride);
+
+typedef struct EnemyHomingState {
+    unsigned char unmodeled_00[0x30a0];
+    float positions[64][4];
+    short neighbours[64][4];
+    short neighbour_count[64];
+    short linked_target[64];
+    unsigned short position_count;
+} EnemyHomingState;
+
+extern void Homing_Add(int actor_index, float x, float y, float z,
+                       short target_index);
+
+typedef struct EnemyShadowState {
+    unsigned char unmodeled_00[0x38aa];
+    short casts_shadow;
+} EnemyShadowState;
+
+typedef struct ActorShadow {
+    ActorHead head;
+    unsigned char unmodeled_70[0xa0 - sizeof(ActorHead)];
+    Vector4 shadow_offset;
+} ActorShadow;
+
+extern float Get_Distance(const Vector4 *source, const Vector4 *destination);
+
+
+
+extern const float D_004D8138;
+
+#define D_004D8138 5000.0f
+
+typedef struct ActorFan {
+    ActorHead head;
+    unsigned char unmodeled_70[0x9e8 - sizeof(ActorHead)];
+    float interaction_radius;
+} ActorFan;
+
+extern int Check_InsideFan(const Vector4 *origin, const Vector4 *target,
+                           int flag, float facing, float min_degrees,
+                           float max_degrees, float radius);
+
+typedef struct EnemyLookatState {
+    unsigned char unmodeled_00[0x0c];
+    float target_height;
+    unsigned char unmodeled_10[0x386c - 0x10];
+    float *lookat_point;
+    unsigned char unmodeled_3870[0x3890 - 0x3870];
+    Vector4 point;
+} EnemyLookatState;
+
+extern void ACT_setMotion2(Actor *actor, int motion, int flags);
+
+extern int RES_GetEnemySeFoot(int sound_id);
+
+extern int F2I(float value);
+
+extern void EnemySound(Actor *actor, short sound_index, signed char play,
+                       signed char ignore_se_type);
+
+extern unsigned char FootStep[0x180];
+
+
+/*
+ * Sound_FootStep and Enemy_ActionReady always pass 1 for `play`; when it is
+ * not 1 the positional call below is skipped and the function has no other
+ * effect. `ignore_se_type` is 0 at Enemy_ActionReady's one sound_index == 1
+ * call and 1 everywhere else (main:0x002d3930, 0x002d396c, 0x002d3a84,
+ * 0x002d06d8, 0x002d0710, 0x002d0744); when it is 0 and sound_index is 2 or
+ * 4, a bank whose RES_GetEnemySeType is 1 is skipped entirely.
+ */
+
+/*
+ * A TU-local view of main/xgl_sound.c's struct SoundWork (main:0x004a8140),
+ * not yet reachable through a shared header. effect_banks starts at +0x20
+ * and each entry's low halfword is its handle (main/xgl_sound.c's
+ * SoundEffectBankEntry.handle), the same field xglSoundEffectStopDirect
+ * reads (main:0x00226720).
+ */
+
+/* This flag is a signed byte in the original enemy-work record. */
+
+/* The original scratch blocks are 0x40 bytes; only this prefix is modeled. */
+
+void Set_Motion(Actor *actor, int motion, unsigned int mode)
+{
+    Actor *motion_actor = actor;
+    unsigned char *enemy_entry = enepc[ACTOR_NUMBER(actor)];
+    unsigned int flags;
+    unsigned int motion_mode;
+    unsigned int enemy_mode;
+    int is_enemy_actor;
+
+    if ((*ENEMY_JAVA_REACTION(enemy_entry) & 0x100) != 0) {
+        motion_mode = mode | 0x10000000;
+        enemy_mode = motion_mode | 0x20;
+        if (motion_actor != (Actor *)GameLoopState.player) {
+            motion_mode = enemy_mode;
+        }
+        ACT_setMotion2(actor, motion, motion_mode);
+        motion_actor->copied_motion_parameter =
+            *ENEMY_MOTION_PARAMETER(enemy_entry);
+    } else {
+        flags = mode | 0x20;
+        if (motion_actor == (Actor *)GameLoopState.player) {
+            flags = mode;
+        }
+        ACT_setMotion2(actor, motion, flags);
+    }
+    is_enemy_actor = actor != (Actor *)GameLoopState.player;
+    if (is_enemy_actor) {
+        motion_actor->motion_parameter = 0.53333336f;
+    }
+}
+
+void Sound_FootStep(Actor *actor)
+{
+    unsigned char *enemy_entry = enepc[ACTOR_NUMBER(actor)];
+    const unsigned char *thresholds;
+    short foot_step_index;
+    unsigned short motion;
+    short previous_step;
+    int current_step;
+    int sound_index;
+    int second_step;
+
+    motion = actor->motion_id;
+    second_step = 0;
+    if (motion != 1 && motion != 3) {
+        return;
+    }
+    if ((actor->movement_flags & 2) != 0) {
+        return;
+    }
+
+    foot_step_index =
+        (short)RES_GetEnemySeFoot(*ACTOR_SOUND_EFFECT_ID(actor));
+    sound_index = 0;
+    thresholds = &FootStep[foot_step_index * 4];
+    if (actor->motion_id == 3) {
+        thresholds += 2;
+    }
+    previous_step = actor->last_step_distance;
+    current_step = F2I(actor->movement_distance / 0.033333335f);
+
+    if ((previous_step < (short)thresholds[0] &&
+         (short)thresholds[0] <= current_step) ||
+        (current_step < previous_step &&
+         previous_step < (short)thresholds[0])) {
+        sound_index = 0x20001;
+        if (actor->motion_id == 3) {
+            sound_index = 0x20003;
+        }
+        second_step = 0;
+    }
+
+    if ((previous_step < (short)thresholds[1] &&
+         (short)thresholds[1] <= current_step) ||
+        (current_step < previous_step &&
+         previous_step < (short)thresholds[1])) {
+        sound_index = 0x20002;
+        if (actor->motion_id == 3) {
+            sound_index = 0x20004;
+        }
+        second_step = 1;
+    }
+    actor->last_step_distance = current_step;
+    if (sound_index == 0) {
+        return;
+    }
+
+    if (actor->motion_id == 1 &&
+        (signed char)enemy_entry[ENEMY_ACTION_STATE_OFFSET] == 4) {
+        int sound_number = 3;
+        if (!second_step) {
+            sound_number = 2;
+        }
+        EnemySound(actor, sound_number, 1, 1);
+    }
+    if (actor->motion_id == 3) {
+        if ((signed char)enemy_entry[ENEMY_ACTION_STATE_OFFSET] == 4) {
+            EnemySound(actor, second_step ? 5 : 4, 1, 1);
+        }
+        if (actor->motion_id == 3 &&
+            (signed char)enemy_entry[ENEMY_ACTION_STATE_OFFSET] == 6) {
+            EnemySound(actor, second_step ? 5 : 4, 1, 1);
+        }
+    }
+}
+
 void EnemySound(Actor *actor, short sound_index, signed char play,
                  signed char ignore_se_type)
 {
@@ -115,9 +483,6 @@ void EnemySound(Actor *actor, short sound_index, signed char play,
                              ACTOR_NUMBER(actor) + 1);
     }
 }
-
-extern int RES_GetEnemySeBank(int sound_id);
-extern void xglSoundEffectStopID(int sound_id, int flags);
 
 void EnemySoundEnd(Actor *actor, short sound_offset)
 {
@@ -145,28 +510,6 @@ void EnemySound_StopAll(signed char which)
     xglSoundEffectStopDirect(0x10009);
     xglSoundEffectStopDirect(0x1000b);
 }
-
-extern void SsdFadeoutEffect(int effect_id, int source_id, int fade_time);
-extern void xglSoundEffectStopDirect(int sound_id);
-
-/*
- * A TU-local view of main/xgl_sound.c's struct SoundWork (main:0x004a8140),
- * not yet reachable through a shared header. effect_banks starts at +0x20
- * and each entry's low halfword is its handle (main/xgl_sound.c's
- * SoundEffectBankEntry.handle), the same field xglSoundEffectStopDirect
- * reads (main:0x00226720).
- */
-typedef struct SetMotionSoundWork
-{
-    unsigned char unmodeled_00[0x20];
-    struct
-    {
-        unsigned short handle;
-        unsigned short file_handle;
-    } effect_banks[32];
-} SetMotionSoundWork;
-
-extern SetMotionSoundWork SoundWork;
 
 void EnemySound_Stop(Actor *actor, signed char which)
 {
@@ -203,30 +546,6 @@ short Get_DefaultMotion(Actor *actor, short motion_number)
     return motion_table[motion_number];
 }
 
-typedef struct ActorTalkControls {
-    unsigned char unmodeled_00[0x64];
-    unsigned int talk_flags;
-} ActorTalkControls;
-typedef struct ActorTalk {
-    Actor head;
-    unsigned char unmodeled_70[0xc0 - sizeof(Actor)];
-    ActorTalkControls controls;
-    unsigned char unmodeled_128[0x704 - 0x128];
-    unsigned short saved_talk_motion;
-    unsigned short motion_progress;
-    unsigned char unmodeled_708[0x712 - 0x708];
-    unsigned short talk_state;
-    unsigned char unmodeled_714[0x9e4 - 0x714];
-    float target_angle;
-} ActorTalk;
-extern void Set_Motion(Actor *actor, int motion, int mode);
-extern void Enemy_Command_LookAt(Actor *actor, int target);
-extern void Enemy_Command_Freeze(Actor *actor, int frozen);
-typedef struct EnemyTalkState {
-    unsigned char unmodeled_00[0x37a8];
-    int saved_motion;
-} EnemyTalkState;
-
 void Before_Talk(Actor *actor)
 {
     ActorTalk *talk_actor = (ActorTalk *)actor;
@@ -262,33 +581,31 @@ void After_Talk(Actor *actor)
     if (controls->talk_flags & 4) {
         Enemy_Command_LookAt(actor, -1);
     }
-    if (controls->talk_flags & 0x10) {
-        do {
-            Enemy_Command_Freeze(actor, 0);
-        } while (0);
-    }
+    do {
+        if (!(controls->talk_flags & 0x10))
+            break;
+        Enemy_Command_Freeze(actor, 0);
+    } while (0);
 }
 
 int Check_EnemyFound(void)
 {
+    int reaction_offset;
     short enemy_index;
 
     for (enemy_index = 0; enemy_index < 16; enemy_index++) {
+        reaction_offset = ENEMY_JAVA_REACTION_OFFSET;
         if (actor[enemy_index].active_state > 0 &&
-            actor[enemy_index].status != 1) {
-            unsigned char *e = enepc[enemy_index];
-            if (((int *)e)[0x37e0 / 4] & 1) {
-                signed char action = (signed char)enepc[enemy_index][0x48];
-                if (action == 6 || action == 10 || action == 5) {
-                    return 1;
-                }
-            }
+            actor[enemy_index].status != 1 &&
+            (ENEMY_JAVA_REACTION_AT(enepc[enemy_index], reaction_offset)->value & 1) &&
+            ((signed char)enepc[enemy_index][0x48] == 6 ||
+             (signed char)enepc[enemy_index][0x48] == 10 ||
+             (signed char)enepc[enemy_index][0x48] == 5)) {
+            return 1;
         }
     }
     return 0;
 }
-
-#define ENEMY_ACTION_STATE_OFFSET 0x48
 
 int Check_EnemyBurn(void)
 {
@@ -306,8 +623,6 @@ int Check_EnemyBurn(void)
     return 0;
 }
 
-#define ENEMY_ELECTRIC_STATUS_OFFSET 0x6a
-
 int Check_EnemyElec(void)
 {
     short enemy_index;
@@ -322,18 +637,6 @@ int Check_EnemyElec(void)
     }
     return 0;
 }
-
-
-
-typedef struct EnemyEarState {
-    unsigned char unmodeled_00[0x37a2];
-    signed char ear_disabled;
-    unsigned char unmodeled_37a3[0x38ac - 0x37a3];
-    short discovery_count;
-} EnemyEarState;
-
-/* This flag is a signed byte in the original enemy-work record. */
-#define ENEMY_EAR_DISABLED_OFFSET 0x37a2
 
 void Enemy_FindByEar(Actor *enemy, const Vector4 *sound_position)
 {
@@ -356,19 +659,6 @@ void Enemy_FindByEar(Actor *enemy, const Vector4 *sound_position)
         }
     }
 }
-
-typedef struct EnemyScriptState {
-    unsigned char unmodeled_00[0x37e0];
-    unsigned int action_flags;
-    unsigned char unmodeled_37e4[0x3800 - 0x37e4];
-    float movement_points[2][4];
-    short movement_step;
-    short movement_duration;
-    float start_angle;
-    float end_angle;
-    short turn_step;
-    short turn_duration;
-} EnemyScriptState;
 
 void Script_Action(Actor *actor)
 {
@@ -400,22 +690,6 @@ void Script_Action(Actor *actor)
     }
 }
 
-typedef struct LayoutHeader LayoutHeader;
-
-typedef struct BeltUndulation {
-    unsigned char unmodeled_00[0x18];
-    LayoutHeader *header;
-    unsigned char unmodeled_1c[4];
-    unsigned long long surface_flags;
-} BeltUndulation;
-extern BeltUndulation UnduTemp;
-extern unsigned char idx_0[16];
-extern float vec_1[9][2];
-extern float rate_2_003B2008[4];
-extern void UnduParamInit(BeltUndulation *param);
-extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
-extern void UnduCheck(const Vector4 *position, void *exclude, BeltUndulation *param);
-
 void Move_BeltConveyer(Actor *actor)
 {
     unsigned long long flags;
@@ -438,19 +712,6 @@ void Move_BeltConveyer(Actor *actor)
         }
     }
 }
-
-typedef struct EnemyDiscoveryState {
-    unsigned char unmodeled_00[0x48];
-    unsigned char detection_state;
-    unsigned char unmodeled_49;
-    unsigned char action_state;
-    unsigned char unmodeled_4b[0x6c - 0x4b];
-    short discovery_count;
-    unsigned char unmodeled_6e[0x37f0 - 0x6e];
-    unsigned long long last_player_position_words[2];
-} EnemyDiscoveryState;
-extern signed char FLAG_FRAME_60;
-extern void Enemy_ActionReady(Actor *actor, int action);
 
 void Check_Discovery(Actor *enemy)
 {
@@ -515,9 +776,211 @@ void Check_Discovery(Actor *enemy)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Check_Encount);
+typedef struct Point4 { float x, y, z, w; } Point4;
+float Get_Angle_Relative(const Point4 *first, const Point4 *second, float reference);
+int Check_Angle(float angle, float rangeStart, float rangeEnd);
+int Get_Rnd(int min, int max);
+typedef struct EnemyEncountState {
+    unsigned char unmodeled_00[0x68];
+    signed char encounter_side;
+    signed char encounter_value;
+    unsigned char encounter_options;
+    unsigned char unmodeled_6b[0x37e0 - 0x6b];
+    unsigned int action_flags;
+} EnemyEncountState;
+struct EncountActor {
+    ActorHead head;
+    unsigned char unmodeled_70[0x10];
+    unsigned char number;
+    unsigned char unmodeled_81[0xc0 - 0x81];
+    EncountParams params;
+};
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Enemy_After_Battle);
+void Check_Encount(EncountActor *enemy, signed char enable, signed char command)
+{
+    short facing[2];
+    unsigned char sides[9] = {0, 3, 4, 1, 3, 4, 2, 3, 4};
+    EnemyEncountState *state = (EnemyEncountState *)enepc[enemy->number];
+    EncountParams *params = &enemy->params;
+    short i;
+    short count = 0;
+    float angle;
+    unsigned short monster_set;
+    unsigned char entry_value;
+    int options;
+
+    if (!enable) {
+        if (!(state->action_flags & 1)) {
+            return;
+        }
+        if (GameLoopState.pause_flags & 0x108000) {
+            return;
+        }
+        angle = Get_Angle_Relative((const Point4 *)GameLoopState.player->position_words,
+                                   (const Point4 *)&enemy->head.position,
+                                   GameLoopState.player->yaw);
+        for (;;) {
+            if (Check_Angle(angle, -1.2217306f, 1.2217306f) == 1) {
+                facing[0] = 0;
+                break;
+            }
+            if (Check_Angle(angle, 1.2217306f, 2.6179938f) == 1) {
+                facing[0] = 1;
+                break;
+            }
+            if (Check_Angle(angle, -2.6179938f, 1.2217306f) == 1) {
+                facing[0] = 1;
+            } else {
+                facing[0] = 2;
+            }
+            break;
+        }
+        angle = Get_Angle_Relative((const Point4 *)&enemy->head.position,
+                                   (const Point4 *)GameLoopState.player->position_words,
+                                   enemy->head.rotation.y);
+        for (;;) {
+            if (Check_Angle(angle, -1.2217306f, 1.2217306f) == 1) {
+                facing[1] = 0;
+                break;
+            }
+            if (Check_Angle(angle, 1.2217306f, 2.6179938f) == 1) {
+                facing[1] = 1;
+                break;
+            }
+            if (Check_Angle(angle, -2.6179938f, 1.2217306f) == 1) {
+                facing[1] = 1;
+            } else {
+                facing[1] = 2;
+            }
+            break;
+        }
+        state->encounter_side = sides[facing[1] + facing[0] * 3];
+        GameLoopState.encount.encounter_side = state->encounter_side;
+    } else {
+        GameLoopState.encount.encounter_side = command;
+    }
+    for (i = 0; i < 8; i++) {
+        if (params->monster_set_numbers[i] != -1) {
+            count++;
+        }
+    }
+    monster_set = params->monster_set_numbers[Get_Rnd(0, count - 1)];
+    GameLoopState.encount.monster_set_number = monster_set;
+    entry_value = state->encounter_value;
+    GameLoopState.encount.entry_value = (signed char)entry_value;
+    options = state->encounter_options;
+    GameLoopState.event_flags |= 1;
+    GameLoopState.encount.event_flags = params->encounter_event;
+    GameLoopState.encount.enemy = enemy;
+    GameLoopState.encount.trigger_flags = 0;
+    if (options & 1) {
+        GameLoopState.encount.trigger_flags = 2;
+    }
+    if (options & 2) {
+        GameLoopState.encount.trigger_flags |= 1;
+    }
+    if (options & 4) {
+        GameLoopState.encount.trigger_flags |= 4;
+    }
+}
+
+extern int Get_ActorNumber(int id);
+extern void Homing_Search(void *actor);
+typedef struct EnemyAfterBattleLoop {
+    unsigned char unmodeled_00[0x29F9C];
+    unsigned char *player;
+} EnemyAfterBattleLoop;
+typedef struct EnemyAB40 {
+    short w0;
+    unsigned char pad2[6];
+    signed char act;
+    unsigned char pad9[5];
+    short we;
+} EnemyAB40;
+typedef struct EnemyAB {
+    unsigned char pad0[0x40];
+    EnemyAB40 s40;
+    short f50[2];
+    unsigned char pad54[0x2C];
+    float bs[4];
+    unsigned char pad90[0x37E0 - 0x90];
+    unsigned int flags;
+    unsigned char pad37e4[0x38B0 - 0x37E4];
+} EnemyAB;
+static inline unsigned char *eab_player(EnemyAfterBattleLoop *g)
+{
+    return g->player;
+}
+
+void Enemy_After_Battle(int mode)
+{
+  short i;
+  unsigned short new_var;
+  short *ids;
+  char *h;
+  int off;
+  off = eab_player((EnemyAfterBattleLoop *) (&GameLoopState))[0x80];
+  h = (char *) (&actor[off].hearing);
+  if (mode == 1)
+  {
+    if ((*((short *) (h + 0x220))) != (-2))
+    {
+      actor[off].active_state = 0;
+    }
+    ids = (short *) (h + 0x220);
+    i = 0;
+    do
+    {
+      do
+      {
+        if (((*ids) >= 0) && (actor[Get_ActorNumber(*ids)].active_state != 0))
+        {
+          actor[Get_ActorNumber(*ids)].active_state = 0;
+        }
+        i++;
+        ids++;
+      }
+      while (i < 4);
+    }
+    while (0);
+  }
+  else
+  {
+    *((short *) (&actor[eab_player((EnemyAfterBattleLoop *) (&GameLoopState))[0x80]].unmodeled_640[0x696 - 0x640])) = 0x10;
+  }
+  i = 0;
+  do
+  {
+    if (((actor[i].active_state > 0) && (actor[i].status != 1)) && (((EnemyAB *) enepc[i])->flags & 1))
+    {
+      short *p50 = (short *) ((char *) (i * (int) sizeof(EnemyAB) + 0x50) + (int) (char *) enepc);
+      EnemyAB40 *p40;
+      if (p50[0] != 0)
+      {
+        p50[0] = 1;
+      }
+      p40 = (EnemyAB40 *) ((char *) (i * (int) sizeof(EnemyAB) + 0x40) + (int) (char *) enepc);
+      if (p40->act == 7)
+      {
+        p40->we = 0;
+      }
+      new_var = 0x9E4;
+      if (p50[1] != 0)
+      {
+        p50[1] = 1;
+      }
+      if (p40->act == 6)
+      {
+        p40->w0 = 0;
+        BSpline_Init(((EnemyAB *) enepc[i])->bs, actor[i].head.position.elements, *((float *) (((char *) (&actor[i])) + new_var)));
+        Enemy_ActionReady((Actor *) (&actor[i]), 2);
+        Homing_Search(&actor[i]);
+      }
+    }
+    i++;
+  }
+  while (i < 16);
+}
 
 void Set_Spline_By_Route(Actor *actor, short route_offset)
 {
@@ -564,23 +1027,11 @@ void Set_Spline_By_Random(Actor *actor)
     state = enepc[actor_bytes[0x80]];
     spline_points = ENEMY_SPLINE_POINTS(state);
     BSpline_Init(spline_points[0], &actor->position.x,
-                 *(float *)((unsigned char *)actor + ACTOR_TARGET_ANGLE_OFFSET));
+                 ((ActorTalk *)actor)->target_angle);
     ENEMY_SPLINE_POINT_COUNT(state) = 4;
     ENEMY_SPLINE_FAST_POINTS(state) = 1;
     ENEMY_SPLINE_PARAMETER(state) = 0;
 }
-
-typedef struct PlayerHistoryActor {
-    Actor head;
-    unsigned char unmodeled_70[0x9e8 - sizeof(Actor)];
-    float interaction_radius;
-} PlayerHistoryActor;
-extern float PlayHis[64][4];
-extern float BackPos[4];
-extern short PhCunt[1];
-extern int Check_Straight_ID(float heading, float *previous,
-                             unsigned char *enemy_state, int limit,
-                             float *result, int stride);
 
 void Set_PlayerHistory(Actor *actor)
 {
@@ -598,16 +1049,173 @@ void Set_PlayerHistory(Actor *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Homing_Search);
-
-typedef struct EnemyHomingState {
+typedef union AlignedHomingPositionHS {
+    Vector4 coordinates;
+    float elements[4];
+    unsigned long long alignment[2];
+} AlignedHomingPositionHS;
+typedef struct EnemyDetectHeadHS {
+    unsigned int flags;
+    unsigned char unmodeled_04[0x10 - 4];
+    AlignedHomingPositionHS position;
+    unsigned char unmodeled_20[0x70 - 0x20];
+} EnemyDetectHeadHS;
+typedef struct ActorHearingHS {
+    unsigned char unmodeled_00[0x68];
+    float radius;
+    unsigned char unmodeled_6c[0x220 - 0x6c]; /* +0x6c */
+    short linked_actors[4]; /* +0x220 */
+} ActorHearingHS;
+typedef struct EnemyDetectActorHS {
+    EnemyDetectHeadHS head;
+    unsigned char unmodeled_70[0x10];
+    unsigned char slot_number;
+    unsigned char unmodeled_81;
+    unsigned char status;
+    unsigned char has_head_position;
+    unsigned char unmodeled_84[2];
+    short active_state;
+    unsigned char unmodeled_88[0xc0 - 0x88];
+    ActorHearingHS hearing;
+    unsigned char unmodeled_2e8[0x630 - 0x2e8];
+    float head_position[4];
+    unsigned char unmodeled_640[0x696 - 0x640];
+    short battle_state;
+    unsigned char unmodeled_698[0x9e4 - 0x698];
+    float target_angle;
+    float interaction_radius;
+    unsigned char unmodeled_9ec[0xa70 - 0x9ec];
+} EnemyDetectActorHS;
+typedef struct EnemyHomingSearchStateHS {
     unsigned char unmodeled_00[0x30a0];
     float positions[64][4];
     short neighbours[64][4];
     short neighbour_count[64];
     short linked_target[64];
-    unsigned short position_count;
-} EnemyHomingState;
+    short position_count;
+} EnemyHomingSearchStateHS;
+extern float Get_Angle(const Vector4 *first, const Vector4 *second);
+#define ENEMY_SPLINE_VECTORS(entry) \
+    ((Vector4 *)((unsigned char *)(entry) + ENEMY_SPLINE_POINTS_OFFSET))
+extern float sinf(float angle);
+extern float cosf(float angle);
+extern void TM_Script_Spline_Add(int number, float x, float y, float z);
+
+void Homing_Search(void *enemy_arg)
+{
+    EnemyDetectActorHS *enemy = (EnemyDetectActorHS *)enemy_arg;
+    EnemyHomingSearchStateHS *state = (EnemyHomingSearchStateHS *)enepc[enemy->slot_number];
+    float distances[64];
+    short order[64];
+    float result[4];
+    short i;
+    short j;
+    short parent = 0;
+    short path_length;
+    int steps_walked;
+    float closest;
+    float previous_x;
+    float previous_y;
+    float previous_z;
+    float heading;
+    float angle;
+    short *order_base;
+
+    ((EnemyEarState *)state)->discovery_count = 60;
+    if (state->position_count > 0) {
+        for (i = 0; i < state->position_count; i++) {
+            distances[i] = Get_Distance(&enemy->head.position.coordinates, (Vector4 *)state->positions[i]);
+        }
+        for (i = 0; i < state->position_count; i++) {
+            closest = 1000.0f;
+            path_length = -1;
+            for (j = 0; j < state->position_count; j++) {
+                if (distances[j] < closest && 0.0f < distances[j]) {
+                    closest = distances[j];
+                    path_length = j;
+                }
+            }
+            distances[path_length] = 0.0f;
+            order[i] = path_length;
+        }
+        for (i = 0; i < state->position_count; i++) {
+            if (Check_Straight_ID(enemy->interaction_radius, enemy->head.position.elements,
+                                  state->positions[order[i]], 32, result, 772) == 32) {
+                parent = order[i];
+                break;
+            }
+        }
+        order_base = order;
+        order_base[0] = parent;
+        steps_walked = 0;
+        path_length = 1;
+        if (parent != 0) {
+            for (;;) {
+                for (i = 0; i < state->neighbour_count[parent]; i++) {
+                    if (state->neighbours[parent][i] < parent) {
+                        parent = state->neighbours[parent][i];
+                    }
+                }
+                steps_walked++;
+                if (parent == 0) {
+                    order[path_length++] = 0;
+                    break;
+                }
+                if (steps_walked > 0xfffe) {
+                    break;
+                }
+                order[path_length++] = parent;
+            }
+        }
+        heading = Get_Angle(&enemy->head.position.coordinates, (Vector4 *)state->positions[order[i]]);
+        enemy->target_angle = heading;
+        BSpline_Init(ENEMY_SPLINE_POINTS(state)[0], enemy->head.position.elements, heading);
+        ENEMY_SPLINE_POINT_COUNT(state) = 3;
+        ENEMY_SPLINE_PARAMETER(state) = 16;
+        previous_x = enemy->head.position.elements[0];
+        previous_y = enemy->head.position.elements[1];
+        previous_z = enemy->head.position.elements[2];
+        for (i = 0; i < path_length; i++) {
+            float x = state->positions[order[i]][0];
+            float y = state->positions[order[i]][1];
+            float z = state->positions[order[i]][2];
+            short steps = (short)(__builtin_sqrtf((previous_x - x) * (previous_x - x) +
+                                                  (previous_z - z) * (previous_z - z)) / 5.0f);
+
+            if (steps != 0) {
+                steps++;
+                for (j = 0; j < steps; j++) {
+                    TM_Script_Spline_Add(enemy->slot_number,
+                                         previous_x + (x - previous_x) * (j + 1) / steps,
+                                         previous_y + (y - previous_y) * (j + 1) / steps,
+                                         previous_z + (z - previous_z) * (j + 1) / steps);
+                }
+            } else {
+                TM_Script_Spline_Add(enemy->slot_number, x, y, z);
+            }
+            previous_x = x;
+            previous_y = y;
+            previous_z = z;
+        }
+        angle = Get_Angle(&ENEMY_SPLINE_VECTORS(state)[ENEMY_SPLINE_POINT_COUNT(state) - 2],
+                          &ENEMY_SPLINE_VECTORS(state)[ENEMY_SPLINE_POINT_COUNT(state) - 1]);
+        for (i = 0; i < 2; i++) {
+            short last = order[path_length - 1];
+            int x_offset = 0x30a0 + last * 16;
+            float *x_pointer = (float *)((char *)state + x_offset);
+            float tail_x = *x_pointer + sinf(angle) * 0.005f * i;
+            short tail = order[path_length - 1];
+            int z_offset = 0x30a8 + tail * 16;
+            float *z_pointer = (float *)((char *)state + z_offset);
+            float tail_z = *z_pointer + cosf(angle) * 0.005f * i;
+
+            TM_Script_Spline_Add(enemy->slot_number, tail_x,
+                                 state->positions[order[path_length - 1]][1], tail_z);
+        }
+        enemy->head.flags |= 0x80000000;
+        Enemy_ActionReady((Actor *)enemy, 4);
+    }
+}
 
 void Homing_Add(int actor_index, float x, float y, float z, short target_index)
 {
@@ -629,9 +1237,6 @@ void Homing_Add(int actor_index, float x, float y, float z, short target_index)
     }
     state->position_count++;
 }
-
-extern void Homing_Add(int actor_index, float x, float y, float z,
-                       short target_index);
 
 void Refresh_Homing(Actor *actor)
 {
@@ -664,25 +1269,172 @@ void Refresh_Homing(Actor *actor)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/set_motion", Disp_Homing);
+extern short DebugActor;
+extern short SelNum;
+extern short Times;
+extern void *AdrsEnemyExclamation;
+extern void *AdrsEnemyQuestion;
+extern void *AdrsEnemySphere;
+extern void *AdrsEnemySquare;
+void Refresh_Homing(Actor *actor);
+void Debug_Mark(const Vector4 *position, int entry);
+typedef struct SetMotionPadDH {
+    unsigned char pad_00[0x28];
+    unsigned short half_28;
+    unsigned short half_2a;
+    unsigned char unmodeled_2c[0x43 - 0x2c];
+    unsigned char analog_level;
+} SetMotionPadDH;
+typedef union HomingPositionRecordDH {
+    Vector4 coordinates;
+    float elements[4];
+} HomingPositionRecordDH;
+typedef struct EnemyHomingDebugStateDH {
+    unsigned char unmodeled_00[0x30a0];
+    HomingPositionRecordDH positions[64];
+    short neighbours[64][4];
+    short neighbour_count[64];
+    short linked_target[64];
+    short position_count;
+} EnemyHomingDebugStateDH;
 
-typedef struct EnemyShadowState {
-    unsigned char unmodeled_00[0x38aa];
-    short casts_shadow;
-} EnemyShadowState;
-typedef struct ActorShadow {
-    Actor head;
-    unsigned char unmodeled_70[0xa0 - sizeof(Actor)];
-    Vector4 shadow_offset;
-} ActorShadow;
-extern float Get_Distance(const Vector4 *source, const Vector4 *destination);
-extern const float D_004D8134;
-extern const float D_004D8138;
+void Disp_Homing(void)
+{
+    EnemyDetectActor *debug_actor = &actor[DebugActor];
+    EnemyHomingDebugStateDH *state = (EnemyHomingDebugStateDH *)enepc[debug_actor->slot_number];
+    short nearest = -1;
+    float nearest_distance;
+    short d;
+    short i;
+    short k;
+
+    if (ACTOR_NUMBER(GameLoopState.player) != DebugActor) {
+        nearest_distance = 1000.0f;
+        for (i = 0; i < state->position_count; i++) {
+            float distance = Get_Distance(&((ActorHead *)GameLoopState.player)->position, &state->positions[i].coordinates);
+
+            if (distance < nearest_distance) {
+                nearest_distance = distance;
+                nearest = i;
+            }
+        }
+        if (PadData.half_2a & 0x8) {
+            SelNum = -1;
+        }
+        if (PadData.half_2a & 0x80) {
+            if (SelNum == nearest) {
+                SelNum = -1;
+            } else if (SelNum != -1) {
+                state->linked_target[SelNum] = nearest;
+                Refresh_Homing((Actor *)debug_actor);
+            } else {
+                SelNum = nearest;
+            }
+        }
+        if (((SetMotionPadDH *)&PadData)->analog_level == 255) {
+            state->positions[SelNum].coordinates = ((ActorHead *)GameLoopState.player)->position;
+        }
+        if ((PadData.half_2a & 0x40) && SelNum != -1) {
+            for (i = SelNum; i < state->position_count - 1; i++) {
+                for (k = 0; k < 4; k++) {
+                    state->neighbours[i][k] = state->neighbours[i + 1][k];
+                }
+                state->neighbour_count[i] = state->neighbour_count[i + 1];
+                state->linked_target[i] = state->linked_target[i + 1];
+                state->positions[i] = state->positions[i + 1];
+            }
+            state->position_count--;
+            for (d = 0; d < state->position_count; d++) {
+                short kept = 0;
+
+                for (k = 0; k < state->neighbour_count[d]; k++) {
+                    if (SelNum != state->neighbours[d][k]) {
+                        if (SelNum < state->neighbours[d][k]) {
+                            state->neighbours[d][kept++] = state->neighbours[d][k] - 1;
+                        } else {
+                            state->neighbours[d][kept++] = state->neighbours[d][k];
+                        }
+                    }
+                }
+                state->neighbour_count[d] = kept;
+                if (SelNum == state->linked_target[d]) {
+                    state->linked_target[d] = -1;
+                }
+                if (SelNum < state->linked_target[d]) {
+                    state->linked_target[d]--;
+                }
+            }
+            SelNum = -1;
+        }
+        if ((PadData.half_2a & 0x20) && SelNum != -1) {
+            for (d = state->position_count; d > SelNum; d--) {
+                for (k = 0; k < 4; k++) {
+                    state->neighbours[d][k] = state->neighbours[d - 1][k];
+                }
+                state->neighbour_count[d] = state->neighbour_count[d - 1];
+                state->linked_target[d] = state->linked_target[d - 1];
+                state->positions[d] = state->positions[d - 1];
+            }
+            state->position_count = state->position_count + 1;
+            state->positions[SelNum].coordinates = ((ActorHead *)GameLoopState.player)->position;
+            state->linked_target[SelNum] = -1;
+            state->neighbour_count[SelNum] = 0;
+            for (i = 0; i < state->position_count; i++) {
+                for (k = 0; k < state->neighbour_count[i]; k++) {
+                    if (state->neighbours[i][k] >= SelNum) {
+                        state->neighbours[i][k]++;
+                    }
+                }
+                if (state->linked_target[i] >= SelNum) {
+                    state->linked_target[i]++;
+                }
+            }
+        }
+        if (PadData.half_2a & 0x4) {
+            for (d = 0; d < state->position_count; d++) {
+                for (k = 0; k < state->neighbour_count[d]; k++) {
+                }
+            }
+        }
+        for (d = 0; d < state->position_count; d++) {
+            if (d == SelNum) {
+                Debug_Mark(&state->positions[d].coordinates, (int)AdrsEnemyExclamation);
+            } else if (d == nearest) {
+                Debug_Mark(&state->positions[d].coordinates, (int)AdrsEnemyQuestion);
+            } else if (state->linked_target[d] == -1) {
+                Debug_Mark(&state->positions[d].coordinates, (int)AdrsEnemySquare);
+            } else {
+                Debug_Mark(&state->positions[d].coordinates, (int)AdrsEnemySphere);
+            }
+        }
+        for (d = 0; d < state->position_count; d++) {
+            for (k = 0; k < state->neighbour_count[d]; k++) {
+                float point[3];
+                short from;
+                short to;
+
+                if (d < state->neighbours[d][k]) {
+                    to = state->neighbours[d][k];
+                    from = d;
+                } else {
+                    to = d;
+                    from = state->neighbours[d][k];
+                }
+
+                point[0] = state->positions[to].elements[0] + (state->positions[from].elements[0] - state->positions[to].elements[0]) * Times * 0.015625f;
+                point[1] = state->positions[to].elements[1] + (state->positions[from].elements[1] - state->positions[to].elements[1]) * Times * 0.015625f;
+                point[2] = state->positions[to].elements[2] + (state->positions[from].elements[2] - state->positions[to].elements[2]) * Times * 0.015625f;
+                Debug_Mark((const Vector4 *)point, (int)AdrsEnemySphere);
+            }
+        }
+        Times = (short)((Times + 1) % 64);
+    }
+}
 
 void Set_Shadow(Actor *reference_actor)
 {
     float nearest_y;
-    float nearest_distance = D_004D8134;
+    float nearest_distance = 5000.0f;
     AlignedHomingPosition nearest_position;
     short actor_index;
 
@@ -711,16 +1463,6 @@ void Set_Shadow(Actor *reference_actor)
     }
 }
 
-typedef struct ActorFan {
-    Actor head;
-    unsigned char unmodeled_70[0x9e8 - sizeof(Actor)];
-    float interaction_radius;
-} ActorFan;
-extern int Check_InsideFan(const Vector4 *origin, const Vector4 *target,
-                           int flag, float facing, float min_degrees,
-                           float max_degrees, float radius);
-extern float Get_Distance3D(const Vector4 *origin, const Vector4 *target);
-
 int Get_MostNear_Actor(Actor *reference_actor)
 {
     float nearest_distance = 5.0f;
@@ -745,15 +1487,6 @@ int Get_MostNear_Actor(Actor *reference_actor)
     }
     return nearest_index;
 }
-
-typedef struct EnemyLookatState {
-    unsigned char unmodeled_00[0x0c];
-    float target_height;
-    unsigned char unmodeled_10[0x386c - 0x10];
-    float *lookat_point;
-    unsigned char unmodeled_3870[0x3890 - 0x3870];
-    Vector4 point;
-} EnemyLookatState;
 
 void Actor_LookAt(Actor *viewer)
 {
@@ -826,16 +1559,3 @@ void Actor_LookAt_Init(Actor *actor)
     *ACTOR_LOOKAT_TARGET(actor) = -1;
     *ENEMY_LOOKAT_POINT(enepc[ACTOR_NUMBER(actor)]) = 0;
 }
-
-/* Types recovered upstream (origin/master); kept for reference. */
-typedef struct UnduTestStorage {
-    int queryFlags;
-    unsigned char unmodeled_04[4];
-    short attrMask;
-    unsigned char unmodeled_0a[0x0e];
-    LayoutHeader *header;
-    unsigned char unmodeled_1c[4];
-    long long attribute;
-    unsigned char unmodeled_028[0x18];
-} UnduTestStorage;
-

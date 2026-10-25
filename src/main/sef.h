@@ -51,7 +51,8 @@ typedef struct ScriptBinding {
  * xglSoundEffectStopID, cleared once stopped.
  */
 struct SchedulerState {
-    unsigned char unmodeled_0[0xb0];
+    unsigned char unmodeled_0[0x80];
+    Vector4 vectors[3];
     unsigned char effects[32][0x30];
     int inUse;                       /* +0x6b0 */
     unsigned char unmodeled_6b4[0x6e0 - 0x6b4];

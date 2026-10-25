@@ -121,6 +121,8 @@ struct UnitRecord {
     Actor *motionActor;                /* +0x14 */
     unsigned char unmodeled_018[0x1c - 0x18]; /* +0x18..+0x1b */
     Actor *wpnActor[4];                /* +0x1c */
+    Actor *subActor;                   /* +0x2c: unitRemoveActor disposes it
+                                         * first when it is set */
 };
 
 /* Its first parameter is already Actor-typed (src/main/act_2.c). */

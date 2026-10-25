@@ -8,13 +8,57 @@
  * (docs/naming.md).
  */
 typedef struct JntHairDescriptor {
-    unsigned char unmodeled_00[8];
+    unsigned char unmodeled_00[6];
+    unsigned short channelCount;
     u16 hairID;
+    unsigned short extraMotionCount;
+    unsigned short secondaryCount;
+    unsigned short staticCount;
 } JntHairDescriptor;
 
+typedef unsigned int JntQuadword __attribute__((mode(TI)));
+
+typedef union Matrix {
+    float elements[16];
+    JntQuadword quadwords[4];
+} Matrix;
+
+typedef struct JointChannel {
+    unsigned short type;
+    unsigned char unmodeled_02[12];
+    unsigned short matrixIndex;
+    Vector4 translation;
+    Vector4 rotation;
+    unsigned char unmodeled_30[16];
+} JointChannel;
+
+struct Actor;
 typedef struct JntHairJoint {
-    unsigned char unmodeled_00[0x28];
+    void *producer;
+    unsigned char unmodeled_04[12];
+    unsigned int attributeKey;
+    unsigned char unmodeled_14[20];
     JntHairDescriptor *hairDescriptor;
+    int currentIndex;
+    unsigned char unmodeled_30[8];
+    unsigned int flags;
+    unsigned char unmodeled_3c[4];
+    Vector4 rootTranslation;
+    unsigned char unmodeled_50[0x720 - 0x50];
+    Matrix rootMatrix;
+    unsigned char unmodeled_760[0x7a0 - 0x760];
+    Matrix *matrixBuffer;
+    unsigned char unmodeled_7a4[0x7f0 - 0x7a4];
+    unsigned int previousAttributeKey;
+    unsigned int attributeDifference;
+    unsigned char unmodeled_7f8[4];
+    float currentFrame;
+    unsigned char unmodeled_800[16];
+    int animationFlags;
+    float clipRadius;
+    unsigned char unmodeled_818[4];
+    int channelStartIndex;
+    struct Actor *owner;
 } JntHairJoint;
 
 /*
@@ -94,7 +138,7 @@ extern void ACT_loadResource(struct HairTestAct *actor, int resourceId);
 extern void ACT_allocMatrix(struct HairTestAct *actor, int matrixCount);
 extern void ACT_setModelWrapper(struct HairTestAct *actor, int flags);
 extern struct HairTestAct *ACT_create(int actorIndex, int resourceId);
-extern void __JNT_computeMatrix(void *joint, void *matrix);
+extern JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int consumerArgument);
 extern void JNT_addConsumer(void *joint, int consumerIndex,
                             void (*computeMatrix)(void *, void *), int flags);
 
@@ -149,7 +193,7 @@ static void InitTest(void)
     ((HairTestActInitial *)pAct_004DC638)->rotation = initialRotationAndScale[0];
     ((HairTestActInitial *)pAct_004DC638)->scale = initialRotationAndScale[1];
     JNT_addConsumer(&((HairTestActInitial *)pAct_004DC638)->jointMatrix,
-                    0, __JNT_computeMatrix, 0);
+                    0, (void (*)(void *, void *))__JNT_computeMatrix, 0);
     mot = 0;
     pause = 0;
 }
@@ -335,7 +379,475 @@ static u16 JNT_hairID(JntHairJoint *joint)
     return joint->hairDescriptor->hairID;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/hair_test", __JNT_computeMatrix);
+typedef struct Actor {
+    unsigned char unmodeled_000[16];
+    Vector4 position;
+    unsigned char unmodeled_020[0x50 - 0x20];
+    Vector4 rotation;
+    unsigned char unmodeled_060[0x6f0 - 0x60];
+    unsigned int motionFlags;
+    unsigned char unmodeled_6f4[0x30];
+    FpkFcvHeader *fcvHeader;
+    unsigned char unmodeled_728[0xa40 - 0x728];
+    unsigned char movedHairMode;
+    unsigned char unmodeled_a41[3];
+    float movedHairDelay;
+    unsigned char unmodeled_a48[8];
+    Vector4 movedHairSway;
+} Actor;
+extern JointChannel *JNT_getVal(JntHairJoint *, JointChannel *, float);
+extern JointChannel *JNT_getVal_staticChain(JntHairJoint *, JointChannel *, float);
+extern JointChannel *JNT_getStaticVal(JntHairJoint *, JointChannel *);
+extern JointChannel *JNT_getStaticVal2(JntHairJoint *, JointChannel *);
+extern JointChannel *JNT_getVal2(JntHairJoint *, JointChannel *, float);
+extern JointChannel *JNT_constructMatrix(JntHairJoint *, JointChannel *);
+extern JointChannel *JNT_interpolate(JntHairJoint *, JointChannel *);
+extern JointChannel *EXM_CalcExMotion(JntHairJoint *, JointChannel *);
+extern void EXM_PresetHair(JntHairJoint *);
+extern void JNT_setInterrupt(JntHairJoint *, void *);
+extern void MATRIX_convert4(Matrix *, Matrix *);
+extern void xglMatrixUnit4s(Matrix *);
+extern void xglMatrixMul(Matrix *, Matrix *, Matrix *);
+extern float xglCos(float angle);
+extern int nmlModelCalcClip(Vector4 *);
+extern void xglVectorLength(float *destination, const Vector4 *vector);
+
+JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int consumerArgument)
+{
+    Matrix savedRoot;
+    Matrix rootBasis;
+    Matrix clipJoint;
+    Matrix clipMatrix;
+    Vector4 clipSphere;
+    Matrix composedMatrix;
+    Matrix convertedJoint;
+    Matrix chainRootBasis;
+    Matrix chainClipJoint;
+    Vector4 chainClipSphere;
+    Matrix chainConvertedJoint;
+    float movementLength;
+    Matrix *rootMatrix;
+    Matrix *rootDestination;
+    JointChannel *cursor;
+    int limit;
+    int index;
+    int matrixIndex;
+    Matrix *matrixBase;
+    int transformTail;
+    int animationState;
+    float frame;
+
+    if (first == 0) {
+        return 0;
+    }
+    if ((joint->flags & 0x20) != 0) {
+        return 0;
+    }
+    cursor = first;
+    joint->flags |= 0x18;
+    rootMatrix = &joint->rootMatrix;
+    frame = joint->currentFrame;
+    {
+        Matrix *rootSource = joint->matrixBuffer;
+        __asm__ __volatile__(
+            "lq $2,0(%1)\n\t"
+            "sq $2,0(%0)\n\t"
+            "lq $2,16(%1)\n\t"
+            "sq $2,16(%0)\n\t"
+            "lq $2,32(%1)\n\t"
+            "sq $2,32(%0)\n\t"
+            "lq $2,48(%1)\n\t"
+            "sq $2,48(%0)"
+            :
+            : "r"(rootMatrix), "r"(rootSource)
+            : "$2", "memory"
+        );
+    }
+    {
+        matrixBase = joint->matrixBuffer;
+        __asm__ __volatile__(
+            "lq $2,0(%1)\n\t"
+            "sq $2,0(%0)\n\t"
+            "lq $2,16(%1)\n\t"
+            "sq $2,16(%0)\n\t"
+            "lq $2,32(%1)\n\t"
+            "sq $2,32(%0)\n\t"
+            "lq $2,48(%1)\n\t"
+            "sq $2,48(%0)"
+            :
+            : "r"(&savedRoot), "r"(matrixBase)
+            : "$2", "memory"
+        );
+    }
+    xglMatrixUnit4s(joint->matrixBuffer);
+
+    if (joint->owner != 0 && joint->owner->movedHairMode != 0) {
+        struct Actor *owner = joint->owner;
+        float movementFacing;
+        owner->movedHairSway.x -= owner->position.x;
+        owner->movedHairSway.y -= owner->position.y;
+        owner->movedHairSway.z -= owner->position.z;
+        xglVectorLength(&movementLength, &owner->movedHairSway);
+        movementFacing = -xglCos(owner->rotation.y -
+                         atan2f(owner->movedHairSway.x, owner->movedHairSway.z));
+        if (movementFacing < 0.0f) {
+            movementFacing = 0.0f;
+        }
+        owner->movedHairSway.w = movementLength * movementFacing *
+                               owner->movedHairDelay * 0.3f +
+                               owner->movedHairSway.w * 0.7f;
+    }
+
+    joint->channelStartIndex = -1;
+    joint->attributeDifference = joint->attributeKey - joint->previousAttributeKey;
+    if (joint->attributeDifference == 0) {
+        limit = JNT_hairID(joint);
+        while (joint->currentIndex < limit) {
+            cursor = JNT_getVal(joint, cursor, frame);
+            if ((joint->flags & 4) != 0) {
+                break;
+            }
+            if (joint->channelStartIndex >= 0) {
+                break;
+            }
+        }
+        if ((joint->flags & 4) != 0) {
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getStaticVal(joint, cursor);
+            }
+        } else if (joint->channelStartIndex >= 0) {
+            Matrix *clipTarget;
+            limit = joint->currentIndex;
+            joint->currentIndex = 1;
+            cursor = first + 1;
+            while (joint->currentIndex < limit) {
+                cursor = JNT_constructMatrix(joint, cursor);
+            }
+            clipTarget = &joint->matrixBuffer[joint->channelStartIndex];
+            clipSphere.x = clipSphere.y = clipSphere.z = 0.0f;
+            if (joint->clipRadius <= 0.0f) {
+                clipSphere.w = 2.0f;
+            } else {
+                clipSphere.w = joint->clipRadius;
+            }
+            MATRIX_convert4(&rootBasis, rootMatrix);
+            rootBasis.elements[12] = 0.0f;
+            rootBasis.elements[13] = 0.0f;
+            rootBasis.elements[14] = 0.0f;
+            MATRIX_convert4(&clipJoint, clipTarget);
+            xglMatrixMul(&clipMatrix, &rootBasis, &clipJoint);
+            joint->rootTranslation.x = clipMatrix.elements[12];
+            joint->rootTranslation.y = clipMatrix.elements[13];
+            joint->rootTranslation.z = clipMatrix.elements[14];
+            clipMatrix.elements[12] += joint->rootMatrix.elements[12];
+            clipMatrix.elements[13] += joint->rootMatrix.elements[13];
+            clipMatrix.elements[14] += joint->rootMatrix.elements[14];
+            clipSphere.x = clipMatrix.elements[12];
+            clipSphere.y = clipMatrix.elements[13];
+            clipSphere.z = clipMatrix.elements[14];
+            {
+                int clipped = nmlModelCalcClip(&clipSphere);
+                if (clipped || (joint->flags & 0x200)) {
+                    if ((joint->flags & 0x100) == 0) {
+                        joint->flags |= 0x40;
+                        if ((joint->animationFlags & 0x10000000) || (joint->flags & 0x200)) {
+                            joint->flags |= 4;
+                            return 0;
+                        }
+                    }
+                }
+            }
+            limit = JNT_hairID(joint);
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getVal(joint, cursor, frame);
+                if ((joint->flags & 4) != 0) {
+                    break;
+                }
+            }
+            if ((joint->flags & 4) != 0) {
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_getStaticVal(joint, cursor);
+                }
+            }
+        }
+        JNT_setInterrupt(joint, joint->producer);
+        limit = joint->currentIndex;
+        joint->currentIndex = joint->channelStartIndex + 1;
+        cursor = first + joint->channelStartIndex + 1;
+        while (joint->currentIndex < limit) {
+            cursor = JNT_constructMatrix(joint, cursor);
+        }
+        {
+            Matrix *rootRestore = joint->matrixBuffer;
+            __asm__ __volatile__(
+                "lq $2,0(%1)\n\t"
+                "sq $2,0(%0)\n\t"
+                "lq $2,16(%1)\n\t"
+                "sq $2,16(%0)\n\t"
+                "lq $2,32(%1)\n\t"
+                "sq $2,32(%0)\n\t"
+                "lq $2,48(%1)\n\t"
+                "sq $2,48(%0)"
+                :
+                : "r"(rootRestore), "r"(&savedRoot)
+                : "$2", "memory"
+            );
+        }
+        animationState = joint->animationFlags;
+        if (animationState < 0) {
+            limit = joint->hairDescriptor->hairID + joint->hairDescriptor->extraMotionCount;
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getVal2(joint, cursor, frame);
+                if ((joint->flags & 4) != 0) {
+                    break;
+                }
+            }
+            if ((joint->flags & 2) != 0) {
+                cursor = first;
+                cursor++;
+                joint->currentIndex = 1;
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_interpolate(joint, cursor);
+                }
+            }
+        } else {
+            if ((joint->flags & 2) != 0) {
+                cursor = first + 1;
+                joint->currentIndex = 1;
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_interpolate(joint, cursor);
+                }
+                index = joint->currentIndex;
+                limit = joint->hairDescriptor->hairID + joint->hairDescriptor->extraMotionCount;
+                first = cursor;
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_interpolate(joint, cursor);
+                }
+                joint->currentIndex = index;
+                cursor = first;
+            }
+            EXM_PresetHair(joint);
+            limit = joint->hairDescriptor->hairID + joint->hairDescriptor->extraMotionCount;
+            while (joint->currentIndex < limit) {
+                cursor = EXM_CalcExMotion(joint, cursor);
+            }
+        }
+        limit = joint->hairDescriptor->hairID;
+        limit += joint->hairDescriptor->extraMotionCount;
+        limit += joint->hairDescriptor->secondaryCount;
+        if ((joint->flags & 4) != 0) {
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getStaticVal2(joint, cursor);
+            }
+        } else {
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getVal2(joint, cursor, frame);
+                if ((joint->flags & 4) != 0) {
+                    break;
+                }
+            }
+            if ((joint->flags & 4) != 0) {
+                joint->flags &= ~4;
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_getStaticVal2(joint, cursor);
+                }
+            }
+        }
+        index = joint->currentIndex;
+        limit = joint->hairDescriptor->channelCount;
+        transformTail = index < limit;
+        while (joint->currentIndex < limit) {
+            cursor = JNT_getStaticVal2(joint, cursor);
+        }
+        joint->currentIndex = index;
+        MATRIX_convert4(&savedRoot, &savedRoot);
+        joint->currentIndex = index;
+        if (transformTail) {
+            Matrix *convertedSource = &convertedJoint;
+            Matrix *composedSource = &composedMatrix;
+            do {
+                MATRIX_convert4(convertedSource, &joint->matrixBuffer[joint->currentIndex]);
+                xglMatrixMul(composedSource, &savedRoot, convertedSource);
+                {
+                    matrixIndex = joint->currentIndex;
+                    matrixBase = joint->matrixBuffer;
+                    __asm__ __volatile__(
+                        "lq $2,0(%0)\n\t"
+                        "sq $2,0(%1)\n\t"
+                        "lq $2,16(%0)\n\t"
+                        "sq $2,16(%1)\n\t"
+                        "lq $2,32(%0)\n\t"
+                        "sq $2,32(%1)\n\t"
+                        "lq $2,48(%0)\n\t"
+                        "sq $2,48(%1)"
+                        :
+                        : "r"(composedSource), "r"((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase))
+                        : "$2", "memory"
+                    );
+                }
+                index = joint->currentIndex + 1;
+                joint->currentIndex = index;
+            } while (index < limit);
+        }
+    } else {
+        limit = JNT_hairID(joint);
+        while (joint->currentIndex < limit) {
+            cursor = JNT_getVal_staticChain(joint, cursor, frame);
+            if ((joint->flags & 4) != 0) {
+                break;
+            }
+            if (joint->channelStartIndex >= 0) {
+                break;
+            }
+        }
+        if ((joint->flags & 4) != 0) {
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getStaticVal(joint, cursor);
+            }
+        } else if (joint->channelStartIndex >= 0) {
+            Matrix *clipTarget;
+            limit = joint->currentIndex;
+            cursor = first;
+            joint->currentIndex = 0;
+            while (joint->currentIndex < limit) {
+                cursor = JNT_constructMatrix(joint, cursor);
+            }
+            clipTarget = &joint->matrixBuffer[joint->channelStartIndex];
+            chainClipSphere.x = chainClipSphere.y = chainClipSphere.z = 0.0f;
+            if (joint->clipRadius <= 0.0f) {
+                chainClipSphere.w = 2.0f;
+            } else {
+                chainClipSphere.w = joint->clipRadius;
+            }
+            MATRIX_convert4(&chainRootBasis, rootMatrix);
+            chainRootBasis.elements[12] = 0.0f;
+            chainRootBasis.elements[13] = 0.0f;
+            chainRootBasis.elements[14] = 0.0f;
+            MATRIX_convert4(&chainClipJoint, clipTarget);
+            xglMatrixMul(&convertedJoint, &chainRootBasis, &chainClipJoint);
+            joint->rootTranslation.x = convertedJoint.elements[12];
+            joint->rootTranslation.y = convertedJoint.elements[13];
+            joint->rootTranslation.z = convertedJoint.elements[14];
+            convertedJoint.elements[12] += joint->rootMatrix.elements[12];
+            convertedJoint.elements[13] += joint->rootMatrix.elements[13];
+            convertedJoint.elements[14] += joint->rootMatrix.elements[14];
+            chainClipSphere.x = convertedJoint.elements[12];
+            chainClipSphere.y = convertedJoint.elements[13];
+            chainClipSphere.z = convertedJoint.elements[14];
+            if (nmlModelCalcClip(&chainClipSphere)) {
+                joint->flags |= 0x40;
+                if ((joint->animationFlags & 0x10000000) || (joint->flags & 0x200)) {
+                    joint->flags |= 4;
+                    return 0;
+                }
+            }
+            limit = JNT_hairID(joint);
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getVal_staticChain(joint, cursor, frame);
+                if ((joint->flags & 4) != 0) {
+                    break;
+                }
+            }
+            if ((joint->flags & 4) != 0) {
+                while (joint->currentIndex < limit) {
+                    cursor = JNT_getStaticVal(joint, cursor);
+                }
+            }
+        }
+        JNT_setInterrupt(joint, joint->producer);
+        limit = joint->currentIndex;
+        joint->currentIndex = joint->channelStartIndex + 1;
+        cursor = first + joint->channelStartIndex + 1;
+        while (joint->currentIndex < limit) {
+            cursor = JNT_constructMatrix(joint, cursor);
+        }
+        if ((joint->flags & 2) != 0) {
+            cursor = first + 1;
+            joint->currentIndex = 1;
+            while (joint->currentIndex < limit) {
+                cursor = JNT_interpolate(joint, cursor);
+            }
+            index = joint->currentIndex;
+            limit = joint->hairDescriptor->hairID + joint->hairDescriptor->extraMotionCount;
+            first = cursor;
+            while (joint->currentIndex < limit) {
+                cursor = JNT_interpolate(joint, cursor);
+            }
+            joint->currentIndex = index;
+            cursor = first;
+        }
+        EXM_PresetHair(joint);
+        limit = joint->hairDescriptor->hairID + joint->hairDescriptor->extraMotionCount;
+        while (joint->currentIndex < limit) {
+            cursor = EXM_CalcExMotion(joint, cursor);
+        }
+        limit += joint->hairDescriptor->secondaryCount;
+        while (joint->currentIndex < limit) {
+            cursor = JNT_getStaticVal2(joint, cursor);
+        }
+        index = joint->currentIndex;
+        limit += joint->hairDescriptor->staticCount;
+        transformTail = index < limit;
+        if (transformTail) {
+            while (joint->currentIndex < limit) {
+                cursor = JNT_getStaticVal2(joint, cursor);
+            }
+            rootDestination = joint->matrixBuffer;
+        } else {
+            rootDestination = joint->matrixBuffer;
+        }
+        {
+            __asm__ __volatile__(
+                "lq $2,0(%1)\n\t"
+                "sq $2,0(%0)\n\t"
+                "lq $2,16(%1)\n\t"
+                "sq $2,16(%0)\n\t"
+                "lq $2,32(%1)\n\t"
+                "sq $2,32(%0)\n\t"
+                "lq $2,48(%1)\n\t"
+                "sq $2,48(%0)"
+                :
+                : "r"(rootDestination), "r"(&savedRoot)
+                : "$2", "memory"
+            );
+        }
+        MATRIX_convert4(&savedRoot, &savedRoot);
+        joint->currentIndex = index;
+        if (transformTail) {
+            Matrix *convertedSource = &chainConvertedJoint;
+            Matrix *composedSource = &composedMatrix;
+            do {
+                MATRIX_convert4(convertedSource, &joint->matrixBuffer[joint->currentIndex]);
+                xglMatrixMul(composedSource, &savedRoot, convertedSource);
+                {
+                    matrixIndex = joint->currentIndex;
+                    matrixBase = joint->matrixBuffer;
+                    __asm__ __volatile__(
+                        "lq $2,0(%0)\n\t"
+                        "sq $2,0(%1)\n\t"
+                        "lq $2,16(%0)\n\t"
+                        "sq $2,16(%1)\n\t"
+                        "lq $2,32(%0)\n\t"
+                        "sq $2,32(%1)\n\t"
+                        "lq $2,48(%0)\n\t"
+                        "sq $2,48(%1)"
+                        :
+                        : "r"(composedSource), "r"((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase))
+                        : "$2", "memory"
+                    );
+                }
+                index = joint->currentIndex + 1;
+                joint->currentIndex = index;
+            } while (index < limit);
+        }
+    }
+    if (joint->owner != 0 && joint->owner->movedHairMode != 0) {
+        joint->owner->movedHairSway.x = joint->owner->position.x;
+        joint->owner->movedHairSway.y = joint->owner->position.y;
+        joint->owner->movedHairSway.z = joint->owner->position.z;
+    }
+    return cursor;
+}
 
 static int getNumFCV(FpkFcvHeader *header)
 {

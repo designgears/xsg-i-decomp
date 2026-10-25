@@ -1,7 +1,7 @@
 # Xenosaga Episode I
-[![Code](https://decomp.dev/OpokXeno/xsg-i-decomp.svg?mode=shield&label=Code)](https://decomp.dev/OpokXeno/xsg-i-decomp)
-[![Functions](https://decomp.dev/OpokXeno/xsg-i-decomp.svg?mode=shield&measure=functions&label=Functions)](https://decomp.dev/OpokXeno/xsg-i-decomp)
-[![Linked](https://decomp.dev/OpokXeno/xsg-i-decomp.svg?mode=shield&measure=complete_code&label=Linked)](https://decomp.dev/OpokXeno/xsg-i-decomp)
+[![Code](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&label=Code)](https://bytematch.dev/designgears/xsg-i-decomp)
+[![Functions](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=functions&label=Functions)](https://bytematch.dev/designgears/xsg-i-decomp)
+[![Linked](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=complete_code&label=Linked)](https://bytematch.dev/designgears/xsg-i-decomp)
 
 > This project is developed with AI assistance.
 
@@ -13,20 +13,32 @@ The Sony SDK and public libraries do not need to be recovered.
 
 ## Progress
 
-Recovered 4,620 of 7,645 in-scope game function(s) (60.432%).
+<!-- coverage-report:begin -->
+Recovered 7,006 of 7,645 in-scope game function(s) (91.642%).
+
+- `exact_c` (pure C): 6,598 function(s)
+- `exact_c_with_asm`: 403 function(s)
+- `exact_asm`: 5 function(s)
+- `exact_vu_microcode`: no accepted VU microprogram
+- empty-body functions: 0 of the counted function(s) are 8-byte `jr ra; nop` bodies
+- These counts come from the tracked object tables, the tracked symbol
+  tables and the published source. This tree cannot check that each
+  counted function matches its accepted record under its recorded
+  contract, independently reviewed: config/units and config/vu-build.json are not tracked.
+<!-- coverage-report:end -->
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
-| NTSC-U | `SLUS_204.69` | 2,216 / 3,671 | 60.365% |
-| NTSC-U | `OV01.OVL` | 611 / 1,081 | 56.522% |
-| NTSC-U | `OV02.OVL` | 53 / 110 | 48.182% |
-| NTSC-U | `OV10.OVL` | 155 / 361 | 42.936% |
-| NTSC-U | `OV11.OVL` | 60 / 139 | 43.165% |
-| NTSC-U | `OV12.OVL` | 1,525 / 1,788 | 85.291% |
+| NTSC-U | `SLUS_204.69` | 3,580 / 3,671 | 97.521% |
+| NTSC-U | `OV01.OVL` | 1,053 / 1,081 | 97.410% |
+| NTSC-U | `OV02.OVL` | 108 / 110 | 98.182% |
+| NTSC-U | `OV10.OVL` | 357 / 361 | 98.892% |
+| NTSC-U | `OV11.OVL` | 137 / 139 | 98.561% |
+| NTSC-U | `OV12.OVL` | 1,771 / 1,788 | 99.049% |
 | NTSC-U | `SSD.IRX` | 0 / 442 | 0.000% |
 | NTSC-U | `RSSD.IRX` | 0 / 53 | 0.000% |
 
-[![Progress map](https://decomp.dev/OpokXeno/xsg-i-decomp.svg?w=950&h=475)](https://decomp.dev/OpokXeno/xsg-i-decomp)
+[![Progress map](https://bytematch.dev/designgears/xsg-i-decomp.svg?w=950&h=475)](https://bytematch.dev/designgears/xsg-i-decomp)
 
 ## Building
 

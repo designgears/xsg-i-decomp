@@ -53,8 +53,13 @@ typedef struct PlSpecialSlot {
  * this TU claims. The table is indexed by specialId - dataSpecBaseGet(cid)
  * with no bound this TU claims, so it keeps a one-slot declared length.
  */
+/* fork type needed by PlCharacter (derwetterfrosch) */
+#define PL_SPECIAL_SLOT_COUNT 8
+
 typedef struct PlCharacter {
-    unsigned char unmodeled_0[0x48];
+    unsigned char unmodeled_0[0x28];
+    signed char learnedEther[0x10];
+    signed char learnedSkill[0x10];
     PlSpecialSlot special[1]; /* +0x48, indexed dynamically */
 } PlCharacter;
 
@@ -70,6 +75,12 @@ extern const char D_00A457B0[];
 /* The six unit-file records are selected by dataUnitFileGet. */
 typedef struct UnitFileInfo {
     int charaId;
+    /* Fork (derwetterfrosch) map, NOT applied: naming these perturbs
+     * dataXtxFileGet codegen (verified 2026-10-19):
+     *   +0x04 int modelCharaId  +0x08 void *modelAdr  +0x0C int modelSize
+     *   +0x14 void *animationAdr  +0x18 int animationSize
+     *   +0x20 void *textureAdr  +0x24 int textureSize  +0x10C int faceCharaId
+     *   +0x110 void *faceModelAdr  +0x128 void *faceTextureAdr */
     unsigned char unmodeled_4[0x12c];
 } UnitFileInfo;
 

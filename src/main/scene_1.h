@@ -99,7 +99,7 @@ struct SceneWindow {
 
 void SCENE_instance(SceneVm *vm, SceneObject scene_object);
 
-extern void *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Chr;
 
 extern JavaField *lookupClassField(void *class_object, void *name, int flags);
 

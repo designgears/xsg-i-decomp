@@ -25,7 +25,7 @@ extern JavaField *lookupClassField(void *class_object, void *name, int flags);
 extern short GameMovieFrame;
 extern unsigned char GameMovieTransparent;
 extern unsigned char GameMovieAlpha;
-extern void *classJava_xeno_Movie;
+extern SceneClass *classJava_xeno_Movie;
 
 extern void GameMoviePlay(char *path);
 

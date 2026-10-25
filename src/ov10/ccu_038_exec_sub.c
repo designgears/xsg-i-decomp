@@ -413,7 +413,480 @@ void CCC38ExecSub(int side, CardGameWork *work, CardPlaySide *owner,
     CardCursorPassive(CardCursorFor(work));
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/ccu_038_exec_sub", CardPlayCommandCondition);
+enum CardCommandCondition {
+    CARD_COND_NOT_MET_82 = 82,  /* 0x00a141a0 */
+    CARD_COND_OWN_FLAG2_CARD_83 = 83,  /* 0x00a13688 */
+    CARD_COND_OWN_CARD_NOT_FLAG4_84 = 84,  /* 0x00a13750 */
+    CARD_COND_OWN_CARD_NOT_FLAG4_85 = 85,  /* 0x00a13750 */
+    CARD_COND_ALWAYS_MET_86 = 86,  /* 0x00a1439c */
+    CARD_COND_OWN_ANY_CARD_87 = 87,  /* 0x00a137e8 */
+    CARD_COND_OTHER_BATTLE_EMPTY_DISPOSAL_88 = 88,  /* 0x00a13950 */
+    CARD_COND_OTHER_BATTLE_EMPTY_DISPOSAL_89 = 89,  /* 0x00a13950 */
+    CARD_COND_OTHER_BATTLE_CARD_90 = 90,  /* 0x00a13908 */
+    CARD_COND_OTHER_BATTLE_CARD_91 = 91,  /* 0x00a13908 */
+    CARD_COND_OWN_BATTLE_BYTE13_92 = 92,  /* 0x00a139f0 */
+    CARD_COND_ALWAYS_MET_93 = 93,  /* 0x00a1439c */
+    CARD_COND_ALWAYS_MET_94 = 94,  /* 0x00a1439c */
+    CARD_COND_ALWAYS_MET_95 = 95,  /* 0x00a1439c */
+    CARD_COND_OTHER_OPERATION_96 = 96,  /* 0x00a13a70 */
+    CARD_COND_OTHER_FLAG1_CARD_OR_OPERATION_97 = 97,  /* 0x00a13ab0 */
+    CARD_COND_OTHER_DISPOSAL_FLAG2_DEF4_98 = 98,  /* 0x00a13b70 */
+    CARD_COND_OTHER_DISPOSAL_DEF_FLAG1_99 = 99,  /* 0x00a13c08 */
+    CARD_COND_ALWAYS_MET_100 = 100,  /* 0x00a1439c */
+    CARD_COND_OWN_BATTLE_DEF_FLAG2_101 = 101,  /* 0x00a13c70 */
+    CARD_COND_ANY_SLOT_CARD_102 = 102,  /* 0x00a13d88 */
+    CARD_COND_OTHER_TWO_LAYERS_103 = 103,  /* 0x00a13e60 */
+    CARD_COND_TWO_LAYERS_OWN_OR_OTHER_104 = 104,  /* 0x00a13fb0 */
+    CARD_COND_JUNK_FLAGS_105 = 105,  /* 0x00a140d0 */
+    CARD_COND_TWO_JUNK_FLAG1_106 = 106,  /* 0x00a14140 */
+    CARD_COND_OWN_BATTLE_NOT_CHKSUB_107 = 107,  /* 0x00a141a8 */
+    CARD_COND_LAST_JUNK_KIND4_108 = 108,  /* 0x00a14228 */
+    CARD_COND_OWN_SLOT_CARD_109 = 109,  /* 0x00a13f20 */
+    CARD_COND_ANY_SLOT_CARD_110 = 110,  /* 0x00a13d88 */
+    CARD_COND_OTHER_DISPOSAL_CARD_111 = 111,  /* 0x00a13878 */
+    CARD_COND_OWN_SLOT_CARD_112 = 112,  /* 0x00a13f20 */
+    CARD_COND_OPERATIONS_OR_CARDS_113 = 113,  /* 0x00a13cf8 */
+    CARD_COND_OTHER_BATTLE_CARD_114 = 114,  /* 0x00a13908 */
+    CARD_COND_ANY_SLOT_CARD_115 = 115,  /* 0x00a13d88 */
+    CARD_COND_NOT_MET_116 = 116,  /* 0x00a141a0 */
+    CARD_COND_OWN_FLAG2_CARD_117 = 117,  /* 0x00a13688 */
+    CARD_COND_JUNK_IDENTITY_OWN_FLAG1_118 = 118,  /* 0x00a14278 */
+    CARD_COND_OTHER_DISPOSAL_CARD_119 = 119  /* 0x00a14350 */
+};
+enum CardCommandConditionPhase {
+    CARD_COND_PHASE_SIDE0 = 2,
+    CARD_COND_PHASE_SIDE1 = 9
+};
+enum CardCommandConditionResult {
+    CARD_CONDITION_MET = 0,
+    CARD_CONDITION_UNMET = 0xD,
+    CARD_CONDITION_WRONG_PHASE = 0xB,
+    CARD_CONDITION_OTHER_DISPOSAL_FULL = 1
+};
+
+s32 CardPlayCommandCondition(u16 side, u16 command, CardGameWork *work) {
+    CardPlaySide *own = CardPlayerSide(work);
+    CardPlaySide *other = CardEnemySide(work);
+    int met = 0;
+    int junkCount;
+    int outcome;
+    int result = CARD_CONDITION_MET;
+    int i;
+
+    if (side) {
+        own = CardEnemySide(work);
+        other = CardPlayerSide(work);
+    }
+
+    switch (command) {
+    case CARD_COND_NOT_MET_82:
+    case CARD_COND_NOT_MET_116:
+        result = CARD_CONDITION_UNMET;
+        goto done;
+
+    do {
+    case CARD_COND_OWN_FLAG2_CARD_83:
+    case CARD_COND_OWN_FLAG2_CARD_117:
+        for (i = 0; i < 4; i++) {
+            if (own->disposal[i].battle.layers[0].cardId >= 0 && (own->disposal[i].battle.flags & 2)) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0 && (own->battle[i].battle.flags & 2)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OWN_CARD_NOT_FLAG4_84:
+    case CARD_COND_OWN_CARD_NOT_FLAG4_85:
+        for (i = 0; i < 4; i++) {
+            if (own->disposal[i].battle.layers[0].cardId >= 0 && !(work->definitions[own->disposal[i].battle.layers[0].cardId].flags & 4)) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0 && !(work->definitions[own->battle[i].battle.layers[0].cardId].flags & 4)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OWN_ANY_CARD_87:
+        for (i = 0; i < 4; i++) {
+            if (own->disposal[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_DISPOSAL_CARD_111:
+        for (i = 0; i < 4; i++) {
+            if (other->disposal[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (other->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_BATTLE_CARD_90:
+    case CARD_COND_OTHER_BATTLE_CARD_91:
+    case CARD_COND_OTHER_BATTLE_CARD_114:
+        for (i = 0; i < 4; i++) {
+            if (other->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_BATTLE_EMPTY_DISPOSAL_88:
+    case CARD_COND_OTHER_BATTLE_EMPTY_DISPOSAL_89:
+        met = 0; /* already 0 here, but the store is in the original */
+        for (i = 0; i < 4; i++) {
+            if (other->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        if (!met)
+            break;
+        met = 0;
+        for (i = 0; i < 4; i++) {
+            if (other->disposal[i].battle.layers[0].cardId < 0) {
+                met = 1;
+                break;
+            }
+        }
+        if (!met)
+            result = CARD_CONDITION_OTHER_DISPOSAL_FULL;
+        goto done;
+
+    case CARD_COND_OWN_BATTLE_BYTE13_92:
+        /* The phase is read with lh (signed halfword), hence the s16 casts;
+         * dropping them selects lhu and moves the jump-table targets. */
+        if (side == 0) {
+            if ((s16)work->command.phase != CARD_COND_PHASE_SIDE0)
+                result = CARD_CONDITION_WRONG_PHASE;
+        } else
+            result = (s16)work->command.phase == CARD_COND_PHASE_SIDE1 ? CARD_CONDITION_MET : CARD_CONDITION_WRONG_PHASE;
+        if (result)
+            return result;
+        /* 0x00a139f8: lbu reads the card definition byte at +0x13 and compares it
+         * with 1; the field has no name yet, so the unmodeled span is read here. */
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0 && work->definitions[own->battle[i].battle.layers[0].cardId].unmodeled_13 == 1) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_OPERATION_96:
+        for (i = 0; i < 4; i++) {
+            if (other->operations[i] >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_FLAG1_CARD_OR_OPERATION_97:
+        for (i = 0; i < 4; i++) {
+            if (other->disposal[i].battle.layers[0].cardId >= 0 && (other->disposal[i].battle.flags & 1)) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (other->operations[i] >= 0 && (other->operationFlags[i] & 1)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_DISPOSAL_FLAG2_DEF4_98:
+        for (i = 0; i < 4; i++) {
+            /* The disposal flag is read at 0x00a13b84 (lbu v0,1788(a1)) from the same base
+             * register as the battle[i] slot, i.e. as the slot four entries past
+             * battle[i]; that is disposal[i] because CardPlaySide stores disposal[4]
+             * right after battle[4]. Writing it as
+             * other->disposal[i].battle.flags shrinks the function by 16 bytes and
+             * shifts every branch target after this case. */
+            CardBoardSlot *battleRow = &other->battle[i];
+            s16 id = other->disposal[i].battle.layers[0].cardId;
+            if (id >= 0 && (battleRow[4].battle.flags & 2) && (work->definitions[id].flags & 4)) {
+                met = 1;
+                break;
+            }
+            id = other->battle[i].battle.layers[0].cardId;
+            if (id >= 0 && (other->battle[i].battle.flags & 2) && (work->definitions[id].flags & 4)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_DISPOSAL_DEF_FLAG1_99:
+        for (i = 0; i < 4; i++) {
+            s16 id = other->disposal[i].battle.layers[0].cardId;
+            if (id >= 0 && (other->disposal[i].battle.flags & 1) && (work->definitions[id].flags & 1)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    } while (0);
+    if (!met)
+        result = CARD_CONDITION_UNMET;
+    break;
+
+    do {
+    case CARD_COND_OWN_BATTLE_DEF_FLAG2_101:
+        if (side == 0) {
+            if ((s16)work->command.phase != CARD_COND_PHASE_SIDE0)
+                result = CARD_CONDITION_WRONG_PHASE;
+        } else
+            result = (s16)work->command.phase == CARD_COND_PHASE_SIDE1 ? CARD_CONDITION_MET : CARD_CONDITION_WRONG_PHASE;
+        if (result)
+            return result;
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0 && (work->definitions[own->battle[i].battle.layers[0].cardId].flags & 2)) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OPERATIONS_OR_CARDS_113:
+        if (side == 0) {
+            if ((s16)work->command.phase != CARD_COND_PHASE_SIDE0)
+                result = CARD_CONDITION_WRONG_PHASE;
+        } else
+            result = (s16)work->command.phase == CARD_COND_PHASE_SIDE1 ? CARD_CONDITION_MET : CARD_CONDITION_WRONG_PHASE;
+        if (result)
+            return result;
+        for (i = 0; i < 4; i++) {
+            if (own->operations[i] >= 0) {
+                met = 1;
+                break;
+            }
+            if (other->operations[i] >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        /* falls through into the shared 102/110/115 scan */
+
+    case CARD_COND_ANY_SLOT_CARD_102:
+    case CARD_COND_ANY_SLOT_CARD_110:
+    case CARD_COND_ANY_SLOT_CARD_115:
+        for (i = 0; i < 4; i++) {
+            s16 id = own->disposal[i].battle.layers[0].cardId;
+            if (id >= 0) {
+                met = 1;
+                break;
+            }
+            if (other->disposal[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            s16 id = own->battle[i].battle.layers[0].cardId;
+            if (id >= 0) {
+                met = 1;
+                break;
+            }
+            if (other->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OTHER_TWO_LAYERS_103:
+        for (i = 0; i < 4; i++) {
+            if (other->disposal[i].battle.layers[0].cardId >= 0 && other->disposal[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        if (met)
+            break;
+        for (i = 0; i < 4; i++) {
+            if (other->battle[i].battle.layers[0].cardId >= 0 && other->battle[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_OWN_SLOT_CARD_109:
+    case CARD_COND_OWN_SLOT_CARD_112:
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->disposal[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    case CARD_COND_TWO_LAYERS_OWN_OR_OTHER_104:
+        for (i = 0; i < 4; i++) {
+            s16 id = own->disposal[i].battle.layers[0].cardId;
+            if (id >= 0 && own->disposal[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+            if (other->disposal[i].battle.layers[0].cardId >= 0 && other->disposal[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            s16 id = own->battle[i].battle.layers[0].cardId;
+            if (id >= 0 && own->battle[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+            if (other->battle[i].battle.layers[0].cardId >= 0 && other->battle[i].battle.layers[1].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+
+    } while (0);
+    if (!met)
+        result = CARD_CONDITION_UNMET;
+    break;
+
+    do {
+    case CARD_COND_JUNK_FLAGS_105: {
+        junkCount = CardPlayJunkCnt(&own->hand);
+        for (i = 0; i < junkCount; i++) {
+            if (work->definitions[own->junk[i]].flags & 0x68) {
+                met = 1;
+                break;
+            }
+        }
+        break;
+    }
+
+    case CARD_COND_TWO_JUNK_FLAG1_106: {
+        junkCount = CardPlayJunkCnt(&own->hand);
+        met = 0;
+        for (i = 0; i < junkCount; i++) {
+            if (work->definitions[own->junk[i]].flags & 1)
+                met++;
+        }
+        if (met < 2)
+            result = CARD_CONDITION_UNMET;
+        goto done;
+    }
+
+    case CARD_COND_OWN_BATTLE_NOT_CHKSUB_107:
+        if (side == 0) {
+            if ((s16)work->command.phase != CARD_COND_PHASE_SIDE0) {
+                met = 1;
+                result = CARD_CONDITION_WRONG_PHASE;
+            }
+        } else {
+            if ((s16)work->command.phase != CARD_COND_PHASE_SIDE1) {
+                met = 1;
+                result = CARD_CONDITION_WRONG_PHASE;
+            }
+        }
+        if (result == CARD_CONDITION_MET) {
+            for (i = 0; i < 4; i++) {
+                if (own->battle[i].battle.layers[0].cardId >= 0 && CCC107ChkSub(&own->battle[i].battle) == 0) {
+                    met = 1;
+                    break;
+                }
+            }
+            /* Assigned through a temporary: `result = met ? result : ...` merges
+             * two arms and moves the case 107 tail. */
+            outcome = met ? result : CARD_CONDITION_UNMET;
+            result = outcome;
+        }
+        break;
+
+    case CARD_COND_LAST_JUNK_KIND4_108: {
+        junkCount = CardPlayJunkCnt(&own->hand) - 1;
+        if (junkCount < 0)
+            break;
+        if (work->definitions[own->junk[junkCount]].kind & 4)
+            met = 1;
+        break;
+    }
+
+    } while (0);
+    if (!met)
+        result = CARD_CONDITION_UNMET;
+    break;
+
+    case CARD_COND_JUNK_IDENTITY_OWN_FLAG1_118: {
+        junkCount = CardPlayJunkCnt(&own->hand);
+        for (i = 0; i < junkCount; i++) {
+            if ((work->definitions[own->junk[i]].flags & 1) && CardPlayIdentityCheck(work, &own->hand, work->definitions[own->junk[i]].identity) == 0) {
+                met = 1;
+                break;
+            }
+        }
+        if (met) {
+            for (i = 0; i < 4; i++) {
+                if (own->battle[i].battle.layers[0].cardId >= 0 && (work->definitions[own->battle[i].battle.layers[0].cardId].flags & 1)) {
+                    met = 2;
+                    break;
+                }
+            }
+        }
+        if (met != 2)
+            result = CARD_CONDITION_UNMET;
+        break;
+    }
+
+    case CARD_COND_OTHER_DISPOSAL_CARD_119:
+        for (i = 0; i < 4; i++) {
+            if (other->disposal[i].battle.layers[0].cardId >= 0) {
+                met = 1;
+                break;
+            }
+        }
+        result = met ? CARD_CONDITION_MET : CARD_CONDITION_UNMET;
+        break;
+
+    }
+done:
+    return result;
+}
 
 s16 *CPCSearchCommWk(u16 side, CardGameWork *work) {
     int i;
@@ -3042,7 +3515,54 @@ void CardPlayCommandBattleExecute(s16 side, s16 commandId, CardGameWork *work) {
     } while (checked < 40);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/ccu_038_exec_sub", CardPlayCommandExecute);
+int CardPlayCommandExecute(s16 phase, CardGameWork *work)
+{
+  s16 *mine;
+  s16 *theirs;
+  int off0;
+  int i = 0;
+  int new_var;
+  char *base = ((char *) work) + 12;
+  int new_var2;
+  do
+  {
+    off0 = (i * 8) + 0x1D0;
+    mine = (s16 *) (base + off0);
+    if (mine[0] == phase)
+    {
+      work->command.commandIndex = 1;
+      if (CardPlayCommandPlay(0, work->commandQueue[0][i][1], work, work->commandQueue[0][i][2], work->commandQueue[0][i][3]) != 0)
+      {
+        CGPSetPermanentMess(work, 0);
+        work->command.commandIndex = 0;
+        work->command.step = 0;
+        mine[0] = -1;
+        work->commandQueue[0][i][2] = -1;
+        work->commandQueue[0][i][3] = -1;
+      }
+      break;
+    }
+    theirs = (s16 *) (base + ((i * 8) + (new_var2 = 0x310)));
+    if (theirs[0] == phase)
+    {
+      work->command.commandIndex = 1;
+      if (CardPlayCommandPlay(1, work->commandQueue[1][i][1], work, work->commandQueue[1][i][2], work->commandQueue[1][i][3]) != 0)
+      {
+        CGPSetPermanentMess(work, 0);
+        work->command.step = (work->command.commandIndex = 0);
+        theirs[0] = -1;
+        work->commandQueue[1][new_var = i][2] = -1;
+        work->commandQueue[1][new_var][3] = -1;
+      }
+      break;
+    }
+    mine = theirs;
+    theirs = 0;
+    i++;
+  }
+  while (i < 40);
+  return 1;
+}
 
 int CardPlayCommandCheck(s16 command, s16 *queue) {
     int i;

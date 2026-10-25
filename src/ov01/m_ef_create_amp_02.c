@@ -124,7 +124,79 @@ int MEfCreate_AMP02(Amp02Object *object)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_amp_02", fnAMP02_PR000);
+extern float MMathCalcLengthXZ(const void *vector);
+extern float tanf(float value);
+extern Vector4 *MMathVectorInterpolation(Vector4 *destination, const void *first, const void *second, float parameter);
+extern float MMathMakeRandom(void);
+extern float MMathMakeRandom2PI(void);
+extern void *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
+extern void MMathRotateMatrixYX(Vector4 *destination, const Vector4 *source, const Vector4 *angles);
+
+static void fnAMP02_PR000(void *self, void *arg)
+{
+    Amp02InitState *work = (Amp02InitState *)arg;
+    Vector4 angles;
+    Vector4 offset;
+    Vector4 matrix[4];
+    int i;
+    int j;
+    int off;
+    int z;
+
+    if (work->frame < 30) {
+        __asm__ __volatile__("lq $8, 0(%1)\n\t"
+                             "sq $8, 0(%0)"
+                             :
+                             : "r"(&work->previous_position), "r"(&work->position)
+                             : "$8", "memory");
+        __asm__ __volatile__("lqc2 vf1, 0(%0)\n\t"
+                             "lqc2 vf2, 0(%1)\n\t"
+                             "vadd.xyz vf1, vf1, vf2\n\t"
+                             "sqc2 vf1, 0(%0)\n\tnop"
+                             :
+                             : "r"(&work->position), "r"(&work->velocity)
+                             : "memory");
+        ((Vector4 *)&work->position)->y += MMathCalcLengthXZ(&work->velocity) * tanf(work->facing.x);
+        work->facing.x += work->target_packet.target_x;
+    }
+    i = 8;
+    off = 0x80;
+    do {
+        work->target_packet.active[i + 1] = work->target_packet.active[i];
+        for (j = 0; j < 1; j++) {
+            __asm__ __volatile__("lq $8, 0(%1)\n\t"
+                                 "sq $8, 0(%0)"
+                                 :
+                                 : "r"((char *)(off + (int)work + 0x130 + j * 16)), "r"((char *)(off + (int)work + 0x120 + j * 16))
+                                 : "$8", "memory");
+            work->target_packet.twist[(i + 1) + j] = work->target_packet.twist[i + j];
+        }
+        off -= 0x10;
+        i--;
+    } while (i >= 0);
+    work->target_packet.active[0] = 0;
+    for (j = 0; j < 1; j++) {
+        __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&work->target_packet.points[j]) : "memory");
+    }
+    z = 0;
+    if (work->frame < 30) {
+        MEfCalcAngle(&angles, (Vector4 *)&work->previous_position, (Vector4 *)&work->position);
+        work->target_packet.active[0] = 1;
+        for (j = 0; j < 1; j++) {
+            MMathVectorInterpolation(&offset, &work->position, &work->previous_position,
+                                     (float)z);
+            MMathRotateMatrixYX(matrix, 0, &work->facing);
+            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
+            __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
+            __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+            __asm__ __volatile__("sqc2 vf0, 0(%0)\n\tnop" : : "r"(&offset) : "memory");
+            offset.x = MMathMakeRandom() * 0.06f - 0.03f;
+            offset.y = MMathMakeRandom() * 0.06f - 0.03f;
+            MMathApplyMatrix(&work->target_packet.points[j], matrix, &offset);
+            work->target_packet.twist[j] = MMathMakeRandom2PI();
+        }
+    }
+}
 
 extern void *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
 extern void MMathRotateMatrixYX(Vector4 *destination, const Vector4 *source, const Vector4 *angles);

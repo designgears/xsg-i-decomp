@@ -736,7 +736,44 @@ void _HitRobotAttackType(RgWeaponAttackType *weapon, int robotId, int damage)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_weapon", _InitWeaponAttack);
+extern const char D_00A53750[];
+extern void *RgGeomGroupCreateBall(void *pGroup, void *parent);
+extern void *CreateRgGeomBall(float radius, float weight);
+extern void RgGeomBallSetRadius(void *ball, float radius);
+
+void _InitWeaponAttack(RgWeaponAttackType *weapon, RgWeaponAttackEssence *essence, RgWeaponCreateInfo *info)
+{
+    void *group;
+
+    _InitWeaponCommon(weapon, essence, info);
+    weapon->followJoint = *(int *)((char *)essence + 0x3B0);
+    weapon->common.shotNum = 1.0f;
+    group = (void *)*(int *)((char *)info + 0xC);
+    weapon->common.passTime = (void (*)(RgWeapon *, float))_PassTimeAttackType;
+    weapon->common.dispose = (void (*)(RgWeapon *))_DestructAttackType;
+    weapon->common.shoot = (int (*)(RgWeapon *))_ShotAttackType;
+    weapon->common.shotStop = (void (*)(RgWeapon *))_ShotStopAttackType;
+    weapon->common.hitRobot = (void (*)(RgWeapon *, int, int))_HitRobotAttackType;
+    weapon->common.hitBG = (void (*)(RgWeapon *, int, int))_HitBgAttackType;
+    *(void **)weapon->unmodeled_1f4 = (void *)*(int *)((char *)essence + 0x3B4);
+    weapon->damage = *(float *)((char *)essence + 0x3B8);
+    weapon->followActor = weapon->common.actor;
+    *(void **)&weapon->active = (void *)1;
+    *(void **)&weapon->common.lockedOn = 0;
+    *(void **)&weapon->common.targeting = 0;
+    *(void **)weapon->common.unmodeled_38 = 0;
+    *(void **)&weapon->shotSoundPlaying = 0;
+    if (group != 0) {
+        weapon->geom = (int)RgGeomGroupCreateBall(group, weapon);
+    } else {
+        weapon->geom = (int)CreateRgGeomBall(1.5f, 1.0f);
+    }
+    if (weapon->geom == 0) {
+        assert_prog(D_00A53750, D_00A53658, 0x370);
+    }
+    RgGeomBallSetRadius((void *)weapon->geom, 1.5f);
+    RgGeomResetStatus(weapon->geom, 1);
+}
 
 RgWeaponAttackType *_CreateWeaponAttackType(RgWeaponAttackEssence *pEss,
                                              RgWeaponCreateInfo *pInfo)

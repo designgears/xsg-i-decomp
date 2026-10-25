@@ -17,7 +17,8 @@
  */
 typedef struct MenuTextEntry {
     const char *name;
-    unsigned char unmodeled_04[4];
+    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    const unsigned char *auxiliary;
     const unsigned char *sortName;
 } MenuTextEntry;
 

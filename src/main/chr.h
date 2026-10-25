@@ -683,13 +683,13 @@ extern void ACT_resetArms(Actor *actor, Actor *other, int acc_id);
  * both other accepted call sites use. */
 extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
 
-extern void *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Chr;
 /* Verbatim the canonical spelling of include/shared.h (see JavaField above
  * for why chr.h does not include shared.h itself):
  * Java_xeno_Chr_look_unit__Ljava_lang_Object_ looks its target's own peer
  * field up on xeno.Unit's class, not xeno.Chr's (lw a0,-13252(gp) at
  * 0x00300b5c). */
-extern void *classJava_xeno_Unit;
+extern SceneClass *classJava_xeno_Unit;
 extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
 extern SceneString *loadConstString(const char *bytes, int length);
 extern JavaField *lookupClassField(void *class_object, void *name, int flags);

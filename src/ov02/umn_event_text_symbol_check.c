@@ -5,7 +5,50 @@
 #include "shared.h"
 #include "umn_event_text_symbol_check.h"
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextSymbolCheck);
+typedef struct {
+    unsigned char *str;
+    short len;
+    short code;
+} UmnEventTextSymEntry;
+typedef struct { UmnEventTextSymEntry e[7]; } UmnEventTextSymTbl;
+typedef struct { unsigned char raw[56]; } UmnEventTextSymRaw;
+extern UmnEventTextSymTbl D_00A13588;
+
+int UmnEventTextSymbolCheck(unsigned char **str)
+{
+  if ((*(*str)) == '<')
+  {
+    int i = 0;
+    UmnEventTextSymRaw rawtbl;
+    UmnEventTextSymEntry *ent;
+    unsigned char *a;
+    int j;
+    rawtbl = *(UmnEventTextSymRaw *)&D_00A13588;
+    *str = (int) ((*str) + 1);
+    a = *str;
+    ent = (UmnEventTextSymEntry *)rawtbl.raw;
+    for (; i < 7; i++)
+    {
+      unsigned char *b = ent[i].str;
+      a = *str;
+      for (j = 0; j < ent[i].len; j++)
+      {
+        if (a[j] != b[j])
+        {
+          break;
+        }
+      }
+
+      if (j == ent[i].len)
+      {
+        *str = (*str) + (j + 1);
+        return ent[i].code;
+      }
+    }
+
+  }
+  return 0;
+}
 
 typedef struct {
     unsigned char *str;
@@ -97,7 +140,113 @@ void UmnEventTextMessageMake(unsigned char **str, unsigned char **out)
     *str += 6;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_event_text_symbol_check", UmnEventTextMake);
+extern int xglCdGetFileSize(const char *name);
+extern char *eMessageNextWaitKeySearch(char *text);
+extern char D_00A135E0[];
+extern int UmnEventTextMakeWork;
+extern unsigned int uet_file_end;
+typedef struct UmnEventTextRec {
+    short code;
+    unsigned char wait;
+    unsigned char num;
+    unsigned char *msg;
+} UmnEventTextRec;
+
+int UmnEventTextMake(int arg0)
+{
+    char path[21];
+    unsigned int buf;
+    unsigned int sp20;
+    unsigned int sp24;
+    unsigned char *sp28;
+    unsigned char *msg;
+    unsigned char *q;
+    char *tb;
+    int size;
+    int count;
+    int idx;
+    int t;
+    UmnEventTextRec *rec;
+
+    __builtin_memcpy(path, D_00A135E0, 21);
+    path[14] = (arg0 / 10) + '0';
+    path[15] = (arg0 % 10) + '0';
+    buf = (UmnEventTextMakeWork + 0xF) & ~0xF;
+    size = xglCdGetFileSize(path);
+    if (size < 0) {
+        return -1;
+    }
+    xglCdReadFile(path, (void *)buf, 0, 1);
+    sp24 = buf;
+    sp28 = (unsigned char *)uet_text_buf;
+    tb = uet_text_buf;
+    uet_file_end = buf + size;
+    count = 0;
+    sp20 = buf;
+    if (buf < uet_file_end) {
+        do {
+            switch (UmnEventTextSymbolCheck((unsigned char **)&sp20)) {
+            case 6:
+                do {
+                    sp20 += 1;
+                } while (UmnEventTextSymbolCheck((unsigned char **)&sp20) != 7);
+                break;
+            case 1:
+                count = count + 1;
+                break;
+            }
+            sp20 = sp20 + 1;
+        } while (sp20 < uet_file_end);
+    }
+    q = sp28 + 4;
+    ((UmnEventTextRecordBuf *)sp28)->cur = 0;
+    ((UmnEventTextRecordBuf *)sp28)->count = count;
+    sp28 = q + count * 8;
+    idx = 0;
+    UmnEventTextGyouJump((unsigned char **)&sp24);
+    while (sp24 < uet_file_end) {
+        rec = (UmnEventTextRec *)(tb + idx * 8 + 4);
+        t = UmnEventTextSymbolCheck((unsigned char **)&sp24);
+        switch (t) {
+        case 6:
+            do {
+                sp24 += 1;
+            } while (UmnEventTextSymbolCheck((unsigned char **)&sp24) != 7);
+            break;
+        case 0:
+            return -1;
+        case 1:
+            UmnEventTextNumberGet((unsigned char **)&sp24, 1);
+            rec->wait = 0;
+            rec->num = 0;
+            rec->code = 0;
+            rec->msg = 0;
+            break;
+        case 2:
+            rec->code = (short)UmnEventTextCharCheck((unsigned char **)&sp24);
+            break;
+        case 4:
+            rec->num = UmnEventTextNumberGet((unsigned char **)&sp24, 1);
+            break;
+        case 3:
+            msg = sp28;
+            rec->msg = msg;
+            UmnEventTextGyouJump((unsigned char **)&sp24);
+            UmnEventTextMessageMake((unsigned char **)&sp24, (unsigned char **)&sp28);
+            while (msg[0] != 0) {
+                msg = (unsigned char *)eMessageNextWaitKeySearch((char *)msg);
+                rec->wait++;
+            }
+            break;
+        case 5:
+            idx += 1;
+            break;
+        }
+        UmnEventTextGyouJump((unsigned char **)&sp24);
+    }
+    uet_flag = 1;
+    return 0;
+}
 
 /*
  * uet_text_buf holds a signed record count followed by 8-byte records;

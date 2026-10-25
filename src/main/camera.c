@@ -1,40 +1,234 @@
 #include "common.h"
+
 #include "shared.h"
+#include "main/jni.h"
+
 #include "camera.h"
+
+/* TCAMERA setters are defined in tcamera.c. Their callers
+ * pass the studio camera in a0 and scalar/xyz floats in f12/f13/f14. */
+typedef struct TCamera TCamera;
+extern void TCAMERA_setRotate(TCamera *camera, float x, float y, float z);
+extern void TCAMERA_setRoll(TCamera *camera, float roll);
+extern void TCAMERA_setTranslate(TCamera *camera, float x, float y, float z);
+extern void TCAMERA_setFov(TCamera *camera, float fov);
+extern void TCAMERA_setView(TCamera *camera, float x, float y, float z);
+
+/* Native argument records use the four-byte VM slots described by camera.h.
+ * Each field below has the Java descriptor's type and the original load offset. */
+typedef struct CameraConstantArgs {
+    CameraWork *camera;
+    SceneObject peer;
+    float x, y, z;
+} CameraConstantArgs;
+typedef struct CameraVector3Args {
+    CameraWork *camera;
+    float x, y, z;
+} CameraVector3Args;
+typedef struct CameraScalarArgs {
+    CameraWork *camera;
+    float value;
+} CameraScalarArgs;
+typedef struct CameraCFAngleArgs {
+    unsigned char unmodeled_00[4];
+    int camera_index;
+    float degrees[3];
+    float angle_w;
+} CameraCFAngleArgs;
+typedef struct CameraCFAnglePersArgs {
+    unsigned char unmodeled_00[4];
+    int camera_index;
+    float degrees[3];
+    float angle_w;
+    float perspective;
+} CameraCFAnglePersArgs;
+typedef struct CameraCFHokanArgs {
+    unsigned char unmodeled_00[4];
+    int camera_index;
+    float interpolation[2];
+} CameraCFHokanArgs;
+typedef struct CameraCFLockArgs {
+    unsigned char unmodeled_00[4];
+    int camera_index;
+    int lock_mode;
+    float lock_position[3];
+} CameraCFLockArgs;
+typedef struct CameraSetModeArgs {
+    CameraWork *camera;
+    unsigned char mode;
+    unsigned char unmodeled_05[3];
+} CameraSetModeArgs;
+typedef struct CameraCFPedestalArgs {
+    unsigned char unmodeled_00[4];
+    unsigned int selector;
+    float offset[3];
+    float perspective;
+    float angles[3];
+    float scale;
+} CameraCFPedestalArgs;
+typedef struct CameraCFPedestalHokanArgs {
+    unsigned char unmodeled_00[4];
+    int camera_index;
+    int interpolate;
+} CameraCFPedestalHokanArgs;
+
+/* Channel mode selects the interpretation of the payload at +0x30/+0x4d0.
+ * Constant handlers read/write xyz +0, reference mode +0x10, position +0x14.
+ * Spline handlers use CameraSpline at the same channel addresses. */
+typedef struct CameraConstantChannel {
+    float offset[3];
+    unsigned char unmodeled_0c[4];
+    int reference_mode;
+    Vector4 *reference_position;
+} CameraConstantChannel;
+typedef union CameraChannelPayload {
+    CameraConstantChannel constant;
+    CameraSpline spline;
+} CameraChannelPayload;
+typedef struct CameraAnimationWork {
+    CameraWork head;
+    unsigned char unmodeled_2c[4];
+    CameraChannelPayload translate; /* +0x30 */
+    unsigned char unmodeled_48[0x4d0 - 0x48];
+    CameraChannelPayload view;      /* +0x4d0 */
+} CameraAnimationWork;
+
+/* The Java object header and native tail belong to the same 0x12c0 record.
+ * Only their readers/writers' fields are modeled; payload bytes stay opaque. */
+typedef struct CameraObjectWork {
+    SceneObjectHeader object_header;  /* +0x00 */
+    int camera_id;                    /* +0x04 */
+    unsigned char unmodeled_08[4];
+    int mode[4];                      /* +0x0c */
+    int frame[4];                     /* +0x1c */
+    unsigned char unmodeled_2c[0x12b0 - 0x2c];
+    struct Actor *peer;               /* +0x12b0 */
+    float fov_scale;                  /* +0x12b4 */
+} CameraObjectWork;
+
+typedef struct StudioCameraOptics {
+    u32 active;
+    u32 state;
+    u8 unmodeled_08[0x18];
+    float nearClip;
+    float farClip;
+    u8 unmodeled_28[0x48];
+    Vector4 screenOffset;
+    Vector4 screenScale;
+    u8 unmodeled_90[4];
+    float fov;                       /* +0x94 */
+} StudioCameraOptics;
 
 /*
  * getRotateX__/getRotateY__/getRotateZ__ each keep their own .lit4 copy of
  * the radian-to-degree divisor (bits 0x40490fdb, pi); the scaffold still
  * owns the pool and did not merge the three entries.
  */
-extern const float D_004D83C4;
+
+/*
+ * The game loop's own record, as far as this unit reads it: only the
+ * halfword camera_change latches the matched studio camera index into,
+ * at +0xc8 (sh at 0x002fb5e0). Nothing before it is read or written here.
+ */
+
+typedef struct {
+    unsigned char unmodeled_00[0xc0];
+    unsigned char cameraMode; /* +0xc0 */
+    unsigned char hokanFlags; /* +0xc1 */
+    unsigned char unmodeled_c2[6];
+    short activeCameraIndex; /* +0xc8 */
+} CameraLoopState;
+
+extern CameraLoopState GameLoopState;
+
+/* This TU's own .lit4 copy of the fov-scale seed 1.2, stored at CameraWork
+ * +0x12b4 (docs above CameraWork). */
+
+/* The engine's camera table (main:0x00465e10, size 0x9600 = 8 * 0x12c0):
+ * TCAMERA_get (still asm, src/main/tcamera.c) indexes it the same way. */
+
+extern unsigned char tcamera[];
+
+/*
+ * The studio camera's field-of-view scalar, at +0x94 inside StudioCamera's
+ * unmodeled_90 span (include/shared.h): that struct is shared with other
+ * TUs and not owned here, so the offset is named rather than completing the
+ * shared layout. TCAMERA_setFov (src/main/tcamera.c) evidences the same
+ * offset on the same record through its own local view.
+ */
+
+enum CameraPayloadOffset {
+    CAMERA_TRANSLATE_PAYLOAD_OFFSET = 0x30,
+    CAMERA_VIEW_PAYLOAD_OFFSET = 0x4d0,
+    CAMERA_ROLL_PAYLOAD_OFFSET = 0x970,
+    CAMERA_FOV_PAYLOAD_OFFSET = 0xe10,
+    CAMERA_PEER_OFFSET = 0x12b0,
+    CAMERA_FOV_SCALE_OFFSET = 0x12b4,
+    CAMERA_CLASS_REFERENCE_OFFSET = 0x18,
+    CAMERA_STUDIO_FOV_OFFSET = 0x94
+};
+
+#define CAMERA_STUDIO_FOV(studio_camera) (((const StudioCameraOptics *)(studio_camera))->fov)
+
+extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
+
+extern SceneString *loadConstString(const char *bytes, int length);
+
+extern JavaField *lookupClassField(void *class_object, void *name, int flags);
+
+const char D_004DC178[];
+
+/* Keep the field name data after Java_xeno_Camera_start's external use. */
+
+/*
+ * The game loop mode byte, GameLoopState+0xc0. Java_xeno_Camera_getMode__
+ * copies it to its caller unchanged (lbu/sw at main:0x002fc5d4/0x002fc5dc).
+ * CameraLoopState (above, owned by camera_change's own allocation) stops
+ * short of +0xc0, so the byte is reached through GameLoopState's own address
+ * rather than growing that struct.
+ */
+
+#define GAME_LOOP_MODE_OFFSET 0xc0
+
+#define GAME_LOOP_MODE ((unsigned char *)((unsigned char *)&GameLoopState + GAME_LOOP_MODE_OFFSET))
+
+#include "act_2.h"
+
+/* Runtime Java fields occupy one EE VM value word. The descriptor
+ * supplies its byte offset; its declared Java/native kind selects
+ * the integer, floating or reference representation below. No fixed
+ * Java-object field positions are assumed. */
+typedef union CameraFieldValue {
+    Actor * actor;
+    float floating;
+    u32 bits;
+    void * native_pointer;
+} CameraFieldValue;
+
+extern float I2F(int value);
 
 void Java_xeno_Camera_getRotateX__(JavaEnvironment *environment,
                                    CameraGetterArgs *arguments, float *result)
 {
     (void)environment;
     *result = xglStudioGetCamera2(arguments->camera->camera_id)->rotation.x
-              / D_004D83C4 * 180.0f;
+              / 3.1415927f * 180.0f;
 }
-
-extern const float D_004D83C8;
 
 void Java_xeno_Camera_getRotateY__(JavaEnvironment *environment,
                                    CameraGetterArgs *arguments, float *result)
 {
     (void)environment;
     *result = xglStudioGetCamera2(arguments->camera->camera_id)->rotation.y
-              / D_004D83C8 * 180.0f;
+              / 3.1415927f * 180.0f;
 }
-
-extern const float D_004D83CC;
 
 void Java_xeno_Camera_getRotateZ__(JavaEnvironment *environment,
                                    CameraGetterArgs *arguments, float *result)
 {
     (void)environment;
     *result = xglStudioGetCamera2(arguments->camera->camera_id)->rotation.z
-              / D_004D83CC * 180.0f;
+              / 3.1415927f * 180.0f;
 }
 
 void Java_xeno_Camera_getTranslateX__(JavaEnvironment *environment,
@@ -71,22 +265,10 @@ void Java_xeno_Camera_fovSPL__aFI(JavaEnvironment *environment,
     (void)xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_FOV] = CAMERA_MODE_SPLINE;
     camera->frame[CAMERA_CHANNEL_FOV] = 0;
-    SPL_init((CameraSpline *)(camera_bytes + 0xe10), weight_mode,
+    SPL_init((CameraSpline *)(camera_bytes + CAMERA_FOV_PAYLOAD_OFFSET), weight_mode,
              sample_array->elements, sample_array->length >> 1, 1);
-    ((CameraSpline *)(camera_bytes + 0xe10))->first_key = (unsigned short)-1;
+    ((CameraSpline *)(camera_bytes + CAMERA_FOV_PAYLOAD_OFFSET))->first_key = (unsigned short)-1;
 }
-
-/*
- * The game loop's own record, as far as this unit reads it: only the
- * halfword camera_change latches the matched studio camera index into,
- * at +0xc8 (sh at 0x002fb5e0). Nothing before it is read or written here.
- */
-typedef struct {
-    unsigned char unmodeled_00[0xc8];
-    short activeCameraIndex; /* +0xc8 */
-} CameraLoopState;
-
-extern CameraLoopState GameLoopState;
 
 static void camera_change(int camera_id)
 {
@@ -111,7 +293,7 @@ void Java_xeno_Camera_change__(JavaEnvironment *environment, CameraGetterArgs *a
 }
 
 static void CAMERA_rotateSPL(int selection, JavaEnvironment *environment,
-                             CameraSplineRequest *request)
+                             CameraSplineRequest *request, void *result)
 {
     CameraWork *camera = request->camera;
     unsigned int weight_mode = request->weight_mode;
@@ -119,6 +301,7 @@ static void CAMERA_rotateSPL(int selection, JavaEnvironment *environment,
     const JavaFloatArray *sample_array;
 
     (void)environment;
+    (void)result;
     sample_array = request->samples;
     (void)xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_ROTATE_SPLINE;
@@ -133,17 +316,17 @@ static void CAMERA_rotateSPL(int selection, JavaEnvironment *environment,
      * in src/main/spl.h -- so the array's float count >> 2 is its key count. */
     switch (selection) {
     case 0:
-        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+        SPL_init((CameraSpline *)(camera_bytes + CAMERA_VIEW_PAYLOAD_OFFSET), weight_mode,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+        ((CameraSpline *)(camera_bytes + CAMERA_VIEW_PAYLOAD_OFFSET))->first_key =
             (unsigned short)-1;
         break;
     case 1:
-        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+        SPL_init((CameraSpline *)(camera_bytes + CAMERA_VIEW_PAYLOAD_OFFSET), weight_mode,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+        ((CameraSpline *)(camera_bytes + CAMERA_VIEW_PAYLOAD_OFFSET))->first_key =
             request->first_key;
-        ((CameraSpline *)(camera_bytes + 0x4d0))->last_key =
+        ((CameraSpline *)(camera_bytes + CAMERA_VIEW_PAYLOAD_OFFSET))->last_key =
             request->last_key;
         break;
     }
@@ -155,8 +338,7 @@ void Java_xeno_Camera_rotateSPL__aFI(JavaEnvironment *environment,
 {
     /* The VM supplies a result slot as the helper's fourth ABI argument, even
      * though CAMERA_rotateSPL does not read it. */
-    ((void (*)(int, JavaEnvironment *, CameraSplineRequest *, void *))CAMERA_rotateSPL)(
-        0, environment, arguments, result);
+    CAMERA_rotateSPL(0, environment, arguments, result);
 }
 
 void Java_xeno_Camera_rotateSPL__aFIII(JavaEnvironment *environment,
@@ -164,8 +346,7 @@ void Java_xeno_Camera_rotateSPL__aFIII(JavaEnvironment *environment,
                                        void *result)
 {
     /* Keep forwarding the VM's unused result slot in the original ABI slot. */
-    ((void (*)(int, JavaEnvironment *, CameraSplineRequest *, void *))CAMERA_rotateSPL)(
-        1, environment, arguments, result);
+    CAMERA_rotateSPL(1, environment, arguments, result);
 }
 
 void Java_xeno_Camera_setActive__Z(JavaEnvironment *environment,
@@ -176,83 +357,83 @@ void Java_xeno_Camera_setActive__Z(JavaEnvironment *environment,
     xglStudioGetCamera2(arguments->camera->camera_id)->active = arguments->active;
 }
 
-/* This TU's own .lit4 copy of the fov-scale seed 1.2, stored at CameraWork
- * +0x12b4 (docs above CameraWork). */
-extern const float D_004D83D0;
-extern void *classJava_xeno_Camera;
-/* The engine's camera table (main:0x00465e10, size 0x9600 = 8 * 0x12c0):
- * TCAMERA_get (still asm, src/main/tcamera.c) indexes it the same way. */
-extern unsigned char tcamera[];
-
 void Java_xeno_Camera_create__I(JavaEnvironment *environment,
                                 CameraCreateArgs *arguments, CameraWork **result)
 {
     int camera_id = arguments->camera_id;
     unsigned char *camera_bytes = tcamera + camera_id * 0x12c0;
     CameraWork *camera = (CameraWork *)camera_bytes;
+    CameraObjectWork *camera_object = (void *)camera;
+    SceneClass *camera_class = classJava_xeno_Camera;
 
     (void)environment;
-    /* CameraWork stops at +0x2c (docs above CameraWork); +0x12b4 is beyond
-     * that partial extent, so the fov-scale seed is stored through the byte
-     * pointer rather than a struct member. */
-    *(float *)(camera_bytes + 0x12b4) = D_004D83D0;
-    /* CameraWork's own +0x00 word: filled from +0x18 of the loaded class
-     * record (docs above CameraWork); its meaning is not recovered, so it
-     * is stored through the byte pointer rather than the anonymous
-     * bitfield, which no C expression can name. classJava_xeno_Camera's own
-     * +0x18 is a JVM class-record field this TU does not model either. */
-    *(unsigned int *)camera_bytes =
-        *(unsigned int *)((unsigned char *)classJava_xeno_Camera + 0x18);
+    /* Seed the native camera's field-of-view scale and Java class reference. */
+    camera_object->fov_scale = 1.2f;
+    camera_object->object_header.class_ref = camera_class->instance_class_ref;
     camera->camera_id = camera_id;
     xglStudioGetCamera2(camera_id);
     *result = camera;
 }
 
-extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
-extern SceneString *loadConstString(const char *bytes, int length);
-extern JavaField *lookupClassField(void *class_object, void *name, int flags);
-extern void *classJava_xeno_Chr;
-extern const char D_004DC178[];
-
 void Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF(JavaEnvironment *environment,
-                                                      union { int i; float f; void *p; } *args)
+                                                       VMSlot *arguments,
+                                                       void *result)
 {
     CameraWork *camera;
-    SceneObject object;
-    unsigned char *camera_bytes;
-    float v[3];
+    SceneObject peer;
+    int camera_id;
+    float value[3];
+    JavaField *peer_field;
+    /* JavaField supplies the runtime offset of the word-aligned actor pointer. */
+    Actor *actor;
+    CameraAnimationWork *animation;
 
     (void)environment;
-    camera = args[0].p;
-    object = args[1].p;
-    v[0] = args[2].f;
-    v[1] = args[3].f;
-    v[2] = args[4].f;
-    camera_bytes = (unsigned char *)camera;
-    xglStudioGetCamera2(camera->camera_id);
+    (void)result;
+    camera = arguments[0].ref;
+    animation = (void *)camera;
+    camera_id = camera->camera_id;
+    peer = arguments[1].ref;
+    value[0] = arguments[2].f;
+    value[1] = arguments[3].f;
+    value[2] = arguments[4].f;
+    xglStudioGetCamera2(camera_id);
     camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_CONSTANT;
-    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 1) {
-        *(int *)(camera_bytes + 0x44) =
-            *(int *)(object + lookupClassField(classJava_xeno_Chr,
-                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
-    } else if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 1) {
-        *(int *)(camera_bytes + 0x44) =
-            *(int *)(object + lookupClassField(classJava_xeno_Unit,
-                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    if (JNI_isInstanceOf(peer, classJava_xeno_Chr) == 1) {
+        peer_field = lookupClassField(classJava_xeno_Chr,
+                                      loadConstString(D_004DC178, -1), 0);
+        actor = *(Actor **)(peer + peer_field->offset);
+        animation->translate.constant.reference_position = &actor->position;
+    } else if (JNI_isInstanceOf(peer, classJava_xeno_Unit) == 1) {
+        peer_field = lookupClassField(classJava_xeno_Unit,
+                                      loadConstString(D_004DC178, -1), 0);
+        actor = *(Actor **)(peer + peer_field->offset);
+        animation->translate.constant.reference_position = &actor->position;
     }
-done:
-    ((union { int i; float f; } *)(camera_bytes + 0x40))->i = 1;
-    *(float *)(camera_bytes + 0x30) = v[0];
-    *(float *)(camera_bytes + 0x34) = v[1];
-    *(float *)(camera_bytes + 0x38) = v[2];
+    animation->translate.constant.reference_mode = 1;
+    {
+        float component;
+        component = value[0];
+        animation->translate.constant.offset[0] = component;
+    }
+    {
+        float component;
+        component = value[1];
+        animation->translate.constant.offset[1] = component;
+    }
+    {
+        float component;
+        component = value[2];
+        animation->translate.constant.offset[2] = component;
+    }
 }
 
 static void CAMERA_transSPL(int selection, JavaEnvironment *environment,
                             CameraSplineRequest *request, void *result)
 {
     CameraWork *camera = request->camera;
+    CameraAnimationWork *animation = (void *)camera;
     unsigned int weight_mode = request->weight_mode;
-    unsigned char *camera_bytes = (unsigned char *)camera;
     const JavaFloatArray *sample_array;
 
     (void)environment;
@@ -261,20 +442,19 @@ static void CAMERA_transSPL(int selection, JavaEnvironment *environment,
     (void)xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_SPLINE;
     camera->frame[CAMERA_CHANNEL_TRANSLATE] = 0;
-
     switch (selection) {
     case 0:
-        SPL_init((CameraSpline *)(camera_bytes + 0x30), weight_mode,
+        SPL_init(&animation->translate.spline, weight_mode,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x30))->first_key =
+        animation->translate.spline.first_key =
             (unsigned short)-1;
         break;
     case 1:
-        SPL_init((CameraSpline *)(camera_bytes + 0x30), weight_mode + 2,
+        SPL_init(&animation->translate.spline, weight_mode + 2,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x30))->first_key =
+        animation->translate.spline.first_key =
             request->first_key;
-        ((CameraSpline *)(camera_bytes + 0x30))->last_key =
+        animation->translate.spline.last_key =
             request->last_key;
         break;
     }
@@ -295,43 +475,64 @@ void Java_xeno_Camera_transSPL__aFIII(JavaEnvironment *environment,
 }
 
 void Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF(JavaEnvironment *environment,
-                                                     union { int i; float f; void *p; } *args)
+                                                      VMSlot *arguments,
+                                                      void *result)
 {
     CameraWork *camera;
-    SceneObject object;
-    unsigned char *camera_bytes;
-    float v[3];
+    SceneObject peer;
+    int camera_id;
+    float value[3];
+    JavaField *peer_field;
+    /* JavaField supplies the runtime offset of the word-aligned actor pointer. */
+    Actor *actor;
+    CameraAnimationWork *animation;
 
     (void)environment;
-    camera = args[0].p;
-    object = args[1].p;
-    v[0] = args[2].f;
-    v[1] = args[3].f;
-    v[2] = args[4].f;
-    camera_bytes = (unsigned char *)camera;
-    xglStudioGetCamera2(camera->camera_id);
+    (void)result;
+    camera = arguments[0].ref;
+    animation = (void *)camera;
+    camera_id = camera->camera_id;
+    peer = arguments[1].ref;
+    value[0] = arguments[2].f;
+    value[1] = arguments[3].f;
+    value[2] = arguments[4].f;
+    xglStudioGetCamera2(camera_id);
     camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_CONSTANT;
-    if (JNI_isInstanceOf(object, classJava_xeno_Chr) == 1) {
-        *(int *)(camera_bytes + 0x4e4) =
-            *(int *)(object + lookupClassField(classJava_xeno_Chr,
-                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
-    } else if (JNI_isInstanceOf(object, classJava_xeno_Unit) == 1) {
-        *(int *)(camera_bytes + 0x4e4) =
-            *(int *)(object + lookupClassField(classJava_xeno_Unit,
-                         loadConstString(D_004DC178, -1), 0)->offset) + 0x10;
+    if (JNI_isInstanceOf(peer, classJava_xeno_Chr) == 1) {
+        peer_field = lookupClassField(classJava_xeno_Chr,
+                                      loadConstString(D_004DC178, -1), 0);
+        actor = *(Actor **)(peer + peer_field->offset);
+        animation->view.constant.reference_position = &actor->position;
+    } else if (JNI_isInstanceOf(peer, classJava_xeno_Unit) == 1) {
+        peer_field = lookupClassField(classJava_xeno_Unit,
+                                      loadConstString(D_004DC178, -1), 0);
+        actor = *(Actor **)(peer + peer_field->offset);
+        animation->view.constant.reference_position = &actor->position;
     }
-    ((union { int i; float f; } *)(camera_bytes + 0x4e0))->i = 1;
-    *(float *)(camera_bytes + 0x4d0) = v[0];
-    *(float *)(camera_bytes + 0x4d4) = v[1];
-    *(float *)(camera_bytes + 0x4d8) = v[2];
+    animation->view.constant.reference_mode = 1;
+    {
+        float component;
+        component = value[0];
+        animation->view.constant.offset[0] = component;
+    }
+    {
+        float component;
+        component = value[1];
+        animation->view.constant.offset[1] = component;
+    }
+    {
+        float component;
+        component = value[2];
+        animation->view.constant.offset[2] = component;
+    }
 }
 
 static void CAMERA_viewSPL(int selection, JavaEnvironment *environment,
                            CameraSplineRequest *request, void *result)
 {
     CameraWork *camera = request->camera;
+    CameraAnimationWork *animation = (void *)camera;
     unsigned int weight_mode = request->weight_mode;
-    unsigned char *camera_bytes = (unsigned char *)camera;
     const JavaFloatArray *sample_array;
 
     (void)environment;
@@ -340,20 +541,19 @@ static void CAMERA_viewSPL(int selection, JavaEnvironment *environment,
     (void)xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_SPLINE;
     camera->frame[CAMERA_CHANNEL_VIEW] = 0;
-
     switch (selection) {
     case 0:
-        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+        SPL_init(&animation->view.spline, weight_mode,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+        animation->view.spline.first_key =
             (unsigned short)-1;
         break;
     case 1:
-        SPL_init((CameraSpline *)(camera_bytes + 0x4d0), weight_mode,
+        SPL_init(&animation->view.spline, weight_mode,
                  sample_array->elements, sample_array->length >> 2, 3);
-        ((CameraSpline *)(camera_bytes + 0x4d0))->first_key =
+        animation->view.spline.first_key =
             request->first_key;
-        ((CameraSpline *)(camera_bytes + 0x4d0))->last_key =
+        animation->view.spline.last_key =
             request->last_key;
         break;
     }
@@ -386,122 +586,115 @@ void Java_xeno_Camera_rollSPL__aFI(JavaEnvironment *environment,
     (void)xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_ROLL] = CAMERA_MODE_SPLINE;
     camera->frame[CAMERA_CHANNEL_ROLL] = 0;
-    SPL_init((CameraSpline *)(camera_bytes + 0x970), weight_mode,
+    SPL_init((CameraSpline *)(camera_bytes + CAMERA_ROLL_PAYLOAD_OFFSET), weight_mode,
              sample_array->elements, sample_array->length >> 1, 1);
-    ((CameraSpline *)(camera_bytes + 0x970))->first_key = (unsigned short)-1;
+    ((CameraSpline *)(camera_bytes + CAMERA_ROLL_PAYLOAD_OFFSET))->first_key = (unsigned short)-1;
 }
 
-extern void TCAMERA_setRotate(StudioCamera *camera, float pitchDegrees, float yawDegrees, float rollDegrees);
-
-void Java_xeno_Camera_setRotate__FFF(JavaEnvironment *environment,
-                                     union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setRotate__FFF(JavaEnvironment *environment, VMSlot *arguments)
 {
-    CameraWork *camera;
+    CameraWork *camera = arguments[0].ref;
     StudioCamera *studio_camera;
 
     (void)environment;
-    camera = args[0].p;
     studio_camera = xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_IDLE;
-    TCAMERA_setRotate(studio_camera, args[1].f, args[2].f, args[3].f);
+    {
+        float x;
+        float y;
+        float z;
+        x = arguments[1].f;
+        y = arguments[2].f;
+        z = arguments[3].f;
+        TCAMERA_setRotate((void *)studio_camera, x, y, z);
+    }
 }
 
-extern void TCAMERA_setRoll(StudioCamera *camera, float degrees);
-
-void Java_xeno_Camera_setRoll__F(JavaEnvironment *environment,
-                                 union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setRoll__F(JavaEnvironment *environment, VMSlot *arguments)
 {
-    CameraWork *camera;
+    CameraWork *camera = arguments[0].ref;
     StudioCamera *studio_camera;
 
     (void)environment;
-    camera = args[0].p;
     studio_camera = xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_ROLL] = CAMERA_MODE_IDLE;
-    TCAMERA_setRoll(studio_camera, args[1].f);
+    {
+        float value;
+        value = arguments[1].f;
+        TCAMERA_setRoll((void *)studio_camera, value);
+    }
 }
 
-extern void TCAMERA_setTranslate(StudioCamera *camera, float x, float y, float z);
-
-void Java_xeno_Camera_setTranslate__FFF(JavaEnvironment *environment,
-                                     union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setTranslate__FFF(JavaEnvironment *environment, VMSlot *arguments)
 {
-    CameraWork *camera;
+    CameraWork *camera = arguments[0].ref;
     StudioCamera *studio_camera;
 
     (void)environment;
-    camera = args[0].p;
     studio_camera = xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_TRANSLATE] = CAMERA_MODE_IDLE;
-    TCAMERA_setTranslate(studio_camera, args[1].f, args[2].f, args[3].f);
+    {
+        float x;
+        float y;
+        float z;
+        x = arguments[1].f;
+        y = arguments[2].f;
+        z = arguments[3].f;
+        TCAMERA_setTranslate((void *)studio_camera, x, y, z);
+    }
 }
 
-extern void TCAMERA_setFov(StudioCamera *camera, float degrees);
-
-void Java_xeno_Camera_setFov__F(JavaEnvironment *environment,
-                                 union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setFov__F(JavaEnvironment *environment, VMSlot *arguments)
 {
-    CameraWork *camera;
+    CameraWork *camera = arguments[0].ref;
     StudioCamera *studio_camera;
 
     (void)environment;
-    camera = args[0].p;
     studio_camera = xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_FOV] = CAMERA_MODE_IDLE;
-    TCAMERA_setFov(studio_camera, args[1].f);
+    {
+        float value;
+        value = arguments[1].f;
+        TCAMERA_setFov((void *)studio_camera, value);
+    }
 }
-
-extern const float D_004D83D4;
-
-/*
- * The studio camera's field-of-view scalar, at +0x94 inside StudioCamera's
- * unmodeled_90 span (include/shared.h): that struct is shared with other
- * TUs and not owned here, so the offset is named rather than completing the
- * shared layout. TCAMERA_setFov (src/main/tcamera.c) evidences the same
- * offset on the same record through its own local view.
- */
-#define CAMERA_STUDIO_FOV(studio_camera) (*(const float *)((const unsigned char *)(studio_camera) + 0x94))
 
 void Java_xeno_Camera_getFov__(JavaEnvironment *environment,
                                CameraGetterArgs *arguments, float *result)
 {
     (void)environment;
     *result = CAMERA_STUDIO_FOV(xglStudioGetCamera2(arguments->camera->camera_id))
-              / D_004D83D4 * 180.0f;
+              / 3.1415927f * 180.0f;
 }
 
-extern void TCAMERA_setView(StudioCamera *camera, float x, float y, float z);
-
-void Java_xeno_Camera_setView__FFF(JavaEnvironment *environment,
-                                     union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setView__FFF(JavaEnvironment *environment, VMSlot *arguments)
 {
-    CameraWork *camera;
+    CameraWork *camera = arguments[0].ref;
     StudioCamera *studio_camera;
 
     (void)environment;
-    camera = args[0].p;
     studio_camera = xglStudioGetCamera2(camera->camera_id);
     camera->mode[CAMERA_CHANNEL_VIEW] = CAMERA_MODE_IDLE;
-    TCAMERA_setView(studio_camera, args[1].f, args[2].f, args[3].f);
+    {
+        float x;
+        float y;
+        float z;
+        x = arguments[1].f;
+        y = arguments[2].f;
+        z = arguments[3].f;
+        TCAMERA_setView((void *)studio_camera, x, y, z);
+    }
 }
-
-extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);
-extern SceneString *loadConstString(const char *bytes, int length);
-extern JavaField *lookupClassField(void *class_object, void *name, int flags);
-extern void *classJava_xeno_Chr;
-/* This TU's own copy of the field name string "peer" (the scaffold still
- * owns the literal pool, so it is a separate address from chr.c's
- * chr_peer_string). */
-extern const char D_004DC178[];
 
 void Java_xeno_Camera_start__ILjava_lang_Object_(JavaEnvironment *environment,
                                                  CameraStartArgs *arguments,
                                                  void *result)
 {
+    CameraFieldValue *field_value;
     CameraWork *camera = arguments->camera;
     int state = arguments->state;
     SceneObject peer = arguments->peer;
-    unsigned char *camera_bytes = (unsigned char *)camera;
+    CameraObjectWork *camera_object = (void *)camera;
     JavaField *peer_field;
 
     (void)environment;
@@ -515,173 +708,246 @@ void Java_xeno_Camera_start__ILjava_lang_Object_(JavaEnvironment *environment,
                 /* `peer` is a field of the Java class xeno.Chr, so its
                  * position inside the object is the offset the JVM hands
                  * back at run time, exactly as CHR_sclX (src/main/chr.c)
-                 * reads its own peer field. CameraWork stops at +0x2c (docs
-                 * above CameraWork); +0x12b0 is beyond that partial extent. */
-                *(int *)(camera_bytes + 0x12b0) =
-                    *(int *)(peer + peer_field->offset);
+                 * reads its own peer field. CameraObjectWork names the
+                 * native camera's destination peer slot. */
+                field_value = (void *)(peer + peer_field->offset);
+                camera_object->peer =
+                    field_value->actor;
             }
         } else {
-            *(int *)(camera_bytes + 0x12b0) = 0;
+            camera_object->peer = 0;
         }
     }
 }
 
-typedef struct {
-    unsigned char unmodeled_00[0x50];
-    float hokan0; /* +0x50 */
-    float hokan1; /* +0x54 */
-    unsigned char unmodeled_58[0x48];
-} CfCameraDefineEntry;
-
-extern CfCameraDefineEntry CfCameraDefine[];
-
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAngle__IFFFF);
-
-INCLUDE_ASM("asm/main/nonmatchings/camera", Java_xeno_Camera_setCFAnglePers__IFFFFF);
-
-void Java_xeno_Camera_setCFHokan__IFF(JavaEnvironment *environment,
-                                      union { int i; float f; void *p; } *args)
+void Java_xeno_Camera_setCFAngle__IFFFF(JavaEnvironment *environment,
+                                        CameraCFAngleArgs *arguments)
 {
-    int id;
-    int start;
-    int end;
-    float a;
-    float b;
-    unsigned char *state;
-    CfCameraDefineEntry *p;
+    CfCameraDefinition *definition;
+    float angles[4];
+    float full_turn;
+    int index;
+    int last;
 
     (void)environment;
-    id = args[1].i;
-    if (id < 0) {
-        start = 0;
-        end = 0x21;
+    if (arguments->camera_index < 0) {
+        index = 0;
+        last = 33;
     } else {
-        start = id;
-        end = id + 1;
+        index = arguments->camera_index;
+        last = index + 1;
     }
-    a = args[2].f;
-    b = args[3].f;
-    p = &CfCameraDefine[start];
-    for (; start < end; start++) {
-        p->hokan0 = a;
-        p->hokan1 = b;
-        p++;
+    definition = &CfCameraDefine[index];
+    full_turn = 6.2831855f;
+    angles[0] = arguments->degrees[0] / 180.0f * 3.1415927f;
+    angles[1] = arguments->degrees[1] / 180.0f * 3.1415927f;
+    angles[2] = arguments->degrees[2] / 180.0f * 3.1415927f;
+    angles[3] = arguments->angle_w;
+    while (angles[0] < 0.0f) {
+        angles[0] += full_turn;
     }
-    state = (unsigned char *)&GameLoopState;
-    state[0xc1] |= 0x40;
+    while (angles[0] > full_turn) {
+        angles[0] -= full_turn;
+    }
+    while (angles[1] < 0.0f) {
+        angles[1] += full_turn;
+    }
+    while (angles[1] > full_turn) {
+        angles[1] -= full_turn;
+    }
+    while (angles[2] < 0.0f) {
+        angles[2] += full_turn;
+    }
+    while (angles[2] > full_turn) {
+        angles[2] -= full_turn;
+    }
+    for (; index < last; index++) {
+        float *source = angles;
+
+        definition->pedestal_mode = 0;
+        __asm__ __volatile__("lq $2, 0(%1)\n"
+                             "sq $2, 0(%0)\n"
+                             :
+                             : "r" (definition->angles), "r" (source)
+                             : "$2", "memory");
+        definition->current_yaw = definition->angles[1];
+        definition++;
+    }
+    GameLoopState.hokanFlags |= 0x40;
+}
+
+void Java_xeno_Camera_setCFAnglePers__IFFFFF(JavaEnvironment *environment,
+                                             CameraCFAnglePersArgs *arguments)
+{
+    CfCameraDefinition *definition;
+    float angles[4];
+    float perspective;
+    float full_turn;
+    int index;
+    int last;
+
+    (void)environment;
+    if (arguments->camera_index < 0) {
+        index = 0;
+        last = 33;
+    } else {
+        index = arguments->camera_index;
+        last = index + 1;
+    }
+    definition = &CfCameraDefine[index];
+    full_turn = 6.2831855f;
+    angles[0] = arguments->degrees[0] / 180.0f * 3.1415927f;
+    angles[1] = arguments->degrees[1] / 180.0f * 3.1415927f;
+    angles[2] = arguments->degrees[2] / 180.0f * 3.1415927f;
+    angles[3] = arguments->angle_w;
+    perspective = arguments->perspective / 180.0f * 3.1415927f;
+    while (angles[0] < 0.0f) {
+        angles[0] += full_turn;
+    }
+    while (angles[0] > full_turn) {
+        angles[0] -= full_turn;
+    }
+    while (angles[1] < 0.0f) {
+        angles[1] += full_turn;
+    }
+    while (angles[1] > full_turn) {
+        angles[1] -= full_turn;
+    }
+    while (angles[2] < 0.0f) {
+        angles[2] += full_turn;
+    }
+    while (angles[2] > full_turn) {
+        angles[2] -= full_turn;
+    }
+    for (; index < last; index++) {
+        float *source = angles;
+
+        definition->pedestal_mode = 0;
+        __asm__ __volatile__("lq $2, 0(%1)\n"
+                             "sq $2, 0(%0)\n"
+                             :
+                             : "r" (definition->angles), "r" (source)
+                             : "$2", "memory");
+        definition->perspective = perspective;
+        definition->current_yaw = definition->angles[1];
+        definition++;
+    }
+    GameLoopState.hokanFlags |= 0x40;
+}
+
+void Java_xeno_Camera_setCFHokan__IFF(JavaEnvironment *environment,
+                                      CameraCFHokanArgs *arguments)
+{
+    CfCameraDefinition *definition;
+    float yaw_frames;
+    float pitch_frames;
+    int index;
+    int last;
+
+    (void)environment;
+    if (arguments->camera_index < 0) {
+        index = 0;
+        last = 33;
+    } else {
+        index = arguments->camera_index;
+        last = index + 1;
+    }
+    yaw_frames = arguments->interpolation[0];
+    pitch_frames = arguments->interpolation[1];
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        definition->interpolation[0] = yaw_frames;
+        definition->interpolation[1] = pitch_frames;
+        definition++;
+    }
+    GameLoopState.hokanFlags |= 0x40;
 }
 
 void Java_xeno_Camera_setCFLock__IIFFF(JavaEnvironment *environment,
-                                       union { int i; float f; void *p; } *args)
+                                       CameraCFLockArgs *arguments)
 {
-    int id;
-    int start;
-    int end;
-    int mode;
+    CfCameraDefinition *definition;
+    int lock_mode;
     float x;
     float y;
     float z;
-    unsigned char *state;
-    CfCameraDefineEntry *p;
+    int index;
+    int last;
 
     (void)environment;
-    id = args[1].i;
-    if (id < 0) {
-        start = 0;
-        end = 0x21;
+    if (arguments->camera_index < 0) {
+        index = 0;
+        last = 33;
     } else {
-        start = id;
-        end = id + 1;
+        index = arguments->camera_index;
+        last = index + 1;
     }
-    mode = args[2].i;
-    x = args[3].f;
-    y = args[4].f;
-    z = args[5].f;
-    p = &CfCameraDefine[start];
-    for (; start < end; start++) {
-        *(int *)((unsigned char *)p + 0x4c) = mode;
-        *(float *)((unsigned char *)p + 0x40) = x;
-        *(float *)((unsigned char *)p + 0x44) = y;
-        *(float *)((unsigned char *)p + 0x48) = z;
-        p++;
+    lock_mode = arguments->lock_mode;
+    x = arguments->lock_position[0];
+    y = arguments->lock_position[1];
+    z = arguments->lock_position[2];
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        definition->lock_mode = lock_mode;
+        definition->lock_position[0] = x;
+        definition->lock_position[1] = y;
+        definition->lock_position[2] = z;
+        definition++;
     }
-    state = (unsigned char *)&GameLoopState;
-    state[0xc1] |= 0x40;
+    GameLoopState.hokanFlags |= 0x40;
 }
 
-void Java_xeno_Camera_setCFOffset__IFFFIFIF(JavaEnvironment *environment,
-                                            union { int i; float f; void *p; short s; } *args)
+void Java_xeno_Camera_setCFOffset__IFFFIFIF(VMThread *thread,
+                                            VMSlot *arguments, VMSlot *result)
 {
-    int id;
-    int start;
-    int end;
-    float v[3];
-    short a;
-    float b;
-    short c;
-    float d;
-    unsigned char *state;
-    CfCameraDefineEntry *p;
+    CfCameraDefinition *definition;
+    CameraVector3 offset;
+    short first_mode;
+    float first_value;
+    short second_mode;
+    float second_value;
+    int index;
+    int last;
 
-    (void)environment;
-    id = args[1].i;
-    if (id < 0) {
-        start = 0;
-        end = 0x21;
+    (void)thread;
+    (void)result;
+    if (arguments[1].i < 0) {
+        index = 0;
+        last = 33;
     } else {
-        start = id;
-        end = id + 1;
+        index = arguments[1].i;
+        last = index + 1;
     }
-    v[0] = args[2].f;
-    v[1] = args[3].f;
-    v[2] = args[4].f;
-    p = &CfCameraDefine[start];
-    a = args[5].s;
-    b = args[6].f;
-    c = args[7].s;
-    d = args[8].f;
-    for (; start < end; start++) {
-        *(unsigned char *)p = 0;
-        *(float *)((unsigned char *)p + 0x10) = v[0];
-        *(float *)((unsigned char *)p + 0x14) = v[1];
-        *(float *)((unsigned char *)p + 0x18) = v[2];
-        *(int *)((unsigned char *)p + 0x20) = a;
-        *(float *)((unsigned char *)p + 0x24) = b;
-        *(int *)((unsigned char *)p + 0x28) = c;
-        *(float *)((unsigned char *)p + 0x2c) = d;
-        p++;
+    offset.x = arguments[2].f;
+    offset.y = arguments[3].f;
+    offset.z = arguments[4].f;
+    first_mode = arguments[5].i;
+    first_value = arguments[6].f;
+    second_mode = arguments[7].i;
+    second_value = arguments[8].f;
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        definition->pedestal_mode = 0;
+        definition->offset[0] = offset.x;
+        definition->offset[1] = offset.y;
+        definition->offset[2] = offset.z;
+        definition->parameters.offset.first_mode = first_mode;
+        definition->parameters.offset.first_value = first_value;
+        definition->parameters.offset.second_mode = second_mode;
+        definition->parameters.offset.second_value = second_value;
+        definition++;
     }
-    state = (unsigned char *)&GameLoopState;
-    state[0xc1] |= 0x40;
+    GameLoopState.hokanFlags |= 0x40;
 }
-
-typedef struct CameraSetModeArgs {
-    unsigned char unmodeled_00[4];
-    unsigned char mode;
-} CameraSetModeArgs;
 
 void Java_xeno_Camera_setMode__I(JavaEnvironment *environment,
                                  CameraSetModeArgs *arguments)
 {
-    unsigned char *state;
-
     (void)environment;
-    state = (unsigned char *)&GameLoopState;
-    state[0xc0] = arguments->mode;
-    state[0xc1] |= 0x40;
+    GameLoopState.cameraMode = arguments->mode;
+    GameLoopState.hokanFlags |= 0x40;
     camera_change(0);
 }
-
-/*
- * The game loop mode byte, GameLoopState+0xc0. Java_xeno_Camera_getMode__
- * copies it to its caller unchanged (lbu/sw at main:0x002fc5d4/0x002fc5dc).
- * CameraLoopState (above, owned by camera_change's own allocation) stops
- * short of +0xc0, so the byte is reached through GameLoopState's own address
- * rather than growing that struct.
- */
-#define GAME_LOOP_MODE_OFFSET 0xc0
-
-#define GAME_LOOP_MODE ((unsigned char *)((unsigned char *)&GameLoopState + GAME_LOOP_MODE_OFFSET))
 
 void Java_xeno_Camera_getMode__(JavaEnvironment *environment, void *arguments, int *result)
 {
@@ -690,87 +956,80 @@ void Java_xeno_Camera_getMode__(JavaEnvironment *environment, void *arguments, i
     *result = *GAME_LOOP_MODE;
 }
 
-extern const float D_004D83E8;
-
 void Java_xeno_Camera_setCFPedestal__IFFFFFFFF(JavaEnvironment *environment,
-                                               union { int i; float f; void *p; } *args)
+                                               CameraCFPedestalArgs *arguments)
 {
-    unsigned int id;
-    int start;
-    int end;
+    CfCameraDefinition *definition;
+    unsigned int selector = arguments->selector;
     int mode;
-    float f;
-    unsigned char *state;
-    CfCameraDefineEntry *p;
+    float scale;
+    int index;
+    int last;
 
     (void)environment;
-    id = args[1].i;
-    if ((id & 0xff) == 0xff) {
-        start = 0;
-        end = 0x21;
-        mode = (id + 1) >> 28;
+    if ((selector & 0xff) == 0xff) {
+        index = 0;
+        last = 33;
+        mode = (selector + 1) >> 28;
     } else {
-        mode = id >> 28;
-        start = id;
-        end = id + 1;
+        mode = selector >> 28;
+        index = selector;
+        last = index + 1;
     }
-    p = &CfCameraDefine[start];
-    for (; start < end; start++) {
-        *(unsigned char *)p = 1;
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        definition->pedestal_mode = 1;
         if (mode < 3) {
             if (mode >= 0) {
-                *(float *)((unsigned char *)p + 0x10) = args[2].f;
-                *(float *)((unsigned char *)p + 0x14) = args[3].f;
-                *(float *)((unsigned char *)p + 0x18) = args[4].f;
+                definition->offset[0] = arguments->offset[0];
+                definition->offset[1] = arguments->offset[1];
+                definition->offset[2] = arguments->offset[2];
             }
         }
         if (mode == 0 || mode == 4) {
-            *(float *)((unsigned char *)p + 0x1c) = args[5].f / 180.0f * D_004D83E8;
+            definition->perspective = arguments->perspective / 180.0f * 3.1415927f;
         }
-        f = args[9].f;
-        *(float *)((unsigned char *)p + 0x2c) = f;
-        if (f == 2.0f) {
-            *(float *)((unsigned char *)p + 0x20) = args[6].f / 180.0f * D_004D83E8;
-            *(float *)((unsigned char *)p + 0x24) = args[7].f / 180.0f * D_004D83E8;
-            *(float *)((unsigned char *)p + 0x28) = args[8].f / 180.0f * D_004D83E8;
+        scale = arguments->scale;
+        definition->parameters.pedestal[3] = scale;
+        if (scale == 2.0f) {
+            definition->parameters.pedestal[0] = arguments->angles[0] / 180.0f * 3.1415927f;
+            definition->parameters.pedestal[1] = arguments->angles[1] / 180.0f * 3.1415927f;
+            definition->parameters.pedestal[2] = arguments->angles[2] / 180.0f * 3.1415927f;
         } else {
-            *(float *)((unsigned char *)p + 0x20) = args[6].f;
-            *(float *)((unsigned char *)p + 0x24) = args[7].f;
-            *(float *)((unsigned char *)p + 0x28) = args[8].f;
+            definition->parameters.pedestal[0] = arguments->angles[0];
+            definition->parameters.pedestal[1] = arguments->angles[1];
+            definition->parameters.pedestal[2] = arguments->angles[2];
         }
-        p++;
+        definition++;
     }
-    state = (unsigned char *)&GameLoopState;
-    state[0xc1] |= 0x40;
+    GameLoopState.hokanFlags |= 0x40;
 }
 
 void Java_xeno_Camera_setCFPedestalHokan__II(JavaEnvironment *environment,
-                                             union { int i; float f; void *p; } *args)
+                                             CameraCFPedestalHokanArgs *arguments)
 {
-    int id;
-    int start;
-    int end;
-    int on;
-    CfCameraDefineEntry *p;
+    CfCameraDefinition *definition;
+    int index;
+    int last;
+    int interpolate;
 
     (void)environment;
-    id = args[1].i;
-    if (id < 0) {
-        start = 0;
-        end = 0x21;
+    if (arguments->camera_index < 0) {
+        index = 0;
+        last = 33;
     } else {
-        start = id;
-        end = id + 1;
+        index = arguments->camera_index;
+        last = index + 1;
     }
-    on = args[2].i;
-    p = &CfCameraDefine[start];
-    for (; start < end; start++) {
-        if (on) {
-            ((unsigned char *)p)[1] |= 1;
+    interpolate = arguments->interpolate;
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        if (interpolate != 0) {
+            definition->pedestal_interpolation |= 1;
         } else {
-            ((unsigned char *)p)[1] &= 0xfe;
+            definition->pedestal_interpolation &= 0xfe;
         }
-        p++;
+        definition++;
     }
 }
 
@@ -780,50 +1039,48 @@ void Java_xeno_Camera_changeID__III(JavaEnvironment *environment, CameraChangeID
     GameCameraChangeID(arguments->id, arguments->id2, arguments->id3);
 }
 
-typedef unsigned int CameraFogQuad __attribute__((mode(TI)));
-extern float I2F(int value);
-static inline void fog_cp(void *d, void *s)
+void Java_xeno_Camera_setFog__IFFFFIIII(VMThread *thread,
+                                        VMSlot *arguments, VMSlot *result)
 {
-    do {
-        *(volatile CameraFogQuad *)d = *(volatile CameraFogQuad *)s;
-    } while (0);
-}
+    CfCameraDefinition *definition;
+    float fog_parameters[4];
+    float fog_color[4];
+    int index;
+    int last;
 
-void Java_xeno_Camera_setFog__IFFFFIIII(JavaEnvironment *environment,
-                                        union { int i; float f; void *p; } *args)
-{
-    int id;
-    int start;
-    int end;
-    float v[8] __attribute__((aligned(16)));
-    CfCameraDefineEntry *p;
-    float *src;
-
-    (void)environment;
-    id = args[1].i;
-    if (id < 0) {
-        start = 0;
-        end = 0x21;
+    (void)thread;
+    (void)result;
+    if (arguments[1].i < 0) {
+        index = 0;
+        last = 33;
     } else {
-        start = id;
-        end = id + 1;
+        index = arguments[1].i;
+        last = index + 1;
     }
-    v[0] = args[2].f;
-    v[1] = args[3].f;
-    v[2] = args[4].f;
-    v[3] = args[5].f;
-    v[4] = I2F(args[6].i);
-    v[5] = I2F(args[7].i);
-    v[6] = I2F(args[8].i);
-    v[7] = I2F(args[9].i);
-    p = &CfCameraDefine[start];
-    if (start < end) {
-        src = v;
-        for (; start < end; start++) {
-            fog_cp((char *)p + 0x60, src);
-            fog_cp((char *)p + 0x70, src + 4);
-            p++;
-        }
+    fog_parameters[0] = arguments[2].f;
+    fog_parameters[1] = arguments[3].f;
+    fog_parameters[2] = arguments[4].f;
+    fog_parameters[3] = arguments[5].f;
+    fog_color[0] = I2F(arguments[6].i);
+    fog_color[1] = I2F(arguments[7].i);
+    fog_color[2] = I2F(arguments[8].i);
+    fog_color[3] = I2F(arguments[9].i);
+    definition = &CfCameraDefine[index];
+    for (; index < last; index++) {
+        float *source_parameters = fog_parameters;
+        float *source_color = fog_color;
+
+        __asm__ __volatile__("lq $2, 0(%1)\n"
+                             "sq $2, 0(%0)\n"
+                             :
+                             : "r" (definition->fog_parameters), "r" (source_parameters)
+                             : "$2", "memory");
+        __asm__ __volatile__("lq $2, 0(%1)\n"
+                             "sq $2, 0(%0)\n"
+                             :
+                             : "r" (definition->fog_color), "r" (source_color)
+                             : "$2", "memory");
+        definition++;
     }
 }
 
@@ -833,7 +1090,7 @@ void Java_xeno_Camera_resetFog__I(JavaEnvironment *environment,
     int id;
     int start;
     int end;
-    CfCameraDefineEntry *p;
+    CfCameraDefinition *p;
 
     (void)environment;
     id = args[1].i;
@@ -863,3 +1120,5 @@ void Java_xeno_Camera_setClipRange__FF(JavaEnvironment *environment,
     studio_camera->nearClip = arguments->nearClip;
     studio_camera->farClip = arguments->farClip;
 }
+
+const char D_004DC178[8] = "peer";

@@ -179,6 +179,33 @@ void MCamDumpDisabled(short disable)
     }
 }
 
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct MCamShakeState {
+    unsigned char unmodeled_00[0x4];
+    float amplitude;
+    float decayStep;
+    float offset;
+    float phase;
+    float phaseStep;
+    unsigned int holdFrames;
+    unsigned int decayFrames;
+} MCamShakeState;
+
+typedef struct MCamCoordOffset {
+    unsigned int mode;
+    unsigned char unmodeled_04[0xC];
+    Vector4 offset;
+    float distance;
+    float pitch;
+    float yaw;
+    unsigned char unmodeled_2C[0x14];
+} MCamCoordOffset;
+
+typedef struct MCamPointParams {
+    unsigned char unmodeled_00[0x70];
+    MCamCoordOffset coordOffset;
+} MCamPointParams;
+
 INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamTakeControl);
 
 int MCamReleaseControl(void)
@@ -350,7 +377,62 @@ int MCamIsMoving(unsigned int type)
     return (camFlags & mask) != 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamShake);
+typedef struct MCamShakeBlock {
+    unsigned char unk_00[4];
+    float unk4;
+    float unk8;
+    float unkC;
+    float unk10;
+    float unk14;
+    int unk18;
+    int unk1C;
+} MCamShakeBlock;
+
+extern MCamShakeBlock D_00A5B610;
+
+void MCamShake(int arg0, int arg1, int arg2, int arg3, int arg4)
+{
+    MCamShakeBlock *blk = &D_00A5B610;
+    float f2;
+    float f1;
+    float f1b;
+
+    if (arg1 == 0) {
+        camFlags &= ~0x1000;
+        return;
+    }
+    *(int *)blk = arg0;
+    if (arg1 >= 0) {
+        f2 = (float)arg1;
+    } else {
+        f2 = (float)(unsigned int)arg1;
+    }
+    blk->unk8 = 0.0f;
+    blk->unkC = 0.0f;
+    blk->unk10 = 0.0f;
+    blk->unk4 = f2 * 0.017453292f * 0.5f;
+    if (arg2 != 0) {
+        if (arg2 >= 0) {
+            f1 = (float)arg2;
+        } else {
+            f1 = (float)(unsigned int)arg2;
+        }
+        blk->unk14 = 1.5707964f / f1;
+    } else {
+        blk->unk14 = 0.0f;
+    }
+    blk->unk18 = arg3;
+    blk->unk1C = arg4;
+    if (arg4 != 0) {
+        if (arg4 >= 0) {
+            f1b = (float)arg4;
+        } else {
+            f1b = (float)(unsigned int)arg4;
+        }
+        blk->unk8 = blk->unk4 / f1b;
+    }
+    camFlags |= 0x1000;
+}
 
 int MCamIsShaking(void)
 {
@@ -506,9 +588,125 @@ static float MCamGetDefRange(int id)
     return (float)unit->defRange / 100.0f;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamExec_Control);
+typedef struct MCamCoordSlot {
+    MCamCoordParams p __attribute__((aligned(16)));
+} MCamCoordSlot;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamExec_SetParams);
+typedef struct MCamCoordMove {
+    MCamCoordSlot from;
+    MCamCoordSlot to;
+    Vector4 other;
+    Vector4 start;
+    Vector4 end;
+    Vector4 current;
+    int extra[4];
+} MCamCoordMove;
+
+extern MCamCoordMove D_00A5B280;
+extern MCamCoordMove D_00A5B430;
+extern MCamMoveState D_00A5B5E0;
+extern MCamMoveState D_00A5B5F8;
+static int MCamMoveProc_Coord(MCamCoordMove *m);
+static int MCamMoveProc_Bank(MCamMoveState *state);
+static int MCamMoveProc_Pers(MCamMoveState *state);
+static void MCamShakeProc(void);
+static inline void mcam_quad_copy(void *dst, const void *src)
+{
+    __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(dst), "r"(src) : "$8", "memory");
+}
+
+static void MCamExec_Control(void)
+{
+    if (camFlags & 0x100) {
+        if (MCamMoveProc_Coord(&D_00A5B280) != 0) {
+            unsigned char *cp = (unsigned char *)&D_00A5B280 - 0x200;
+            *(long long *)(cp + 0x10) = *(long long *)(cp + 0x390);
+            *(long long *)(cp + 0x18) = *(long long *)(cp + 0x398);
+        } else {
+            MCamSet(0, (MCamSetPoint *)((unsigned char *)&D_00A5B280 + 0xB0));
+            if (camFlags & 0x2000) {
+                unsigned char *cp = (unsigned char *)&D_00A5B280 - 0x200;
+                *(int *)(cp + 0x0) = 0;
+                mcam_quad_copy((unsigned char *)&D_00A5B280 - 0x1F0, (unsigned char *)&D_00A5B280 - 0x50);
+                *(int *)(cp + 0x70) = 0;
+            }
+            camFlags &= ~0x2100;
+        }
+    }
+    if (camFlags & 0x200) {
+        if (MCamMoveProc_Coord(&D_00A5B430) != 0) {
+            unsigned char *cp = (unsigned char *)&D_00A5B430 - 0x3B0;
+            *(long long *)(cp + 0xC0) = *(long long *)(cp + 0x540);
+            *(long long *)(cp + 0xC8) = *(long long *)(cp + 0x548);
+        } else {
+            MCamSet(1, (MCamSetPoint *)((unsigned char *)&D_00A5B430 + 0xB0));
+            if (camFlags & 0x4000) {
+                unsigned char *cp = (unsigned char *)&D_00A5B430 - 0x3B0;
+                *(int *)(cp + 0xB0) = 0;
+                mcam_quad_copy((unsigned char *)&D_00A5B430 - 0x2F0, (unsigned char *)&D_00A5B430 - 0x1F0);
+                *(int *)(cp + 0x120) = 0;
+            }
+            camFlags &= ~0x4200;
+        }
+    }
+    if (camFlags & 0x400) {
+        unsigned char *cp;
+        if (MCamMoveProc_Bank(&D_00A5B5E0) == 0) {
+            camFlags &= ~0x400;
+        }
+        cp = (unsigned char *)&D_00A5B5E0 - 0x560;
+        *(float *)(cp + 0x1F0) = *(float *)(cp + 0x574);
+    }
+    if (camFlags & 0x800) {
+        unsigned char *cp;
+        if (MCamMoveProc_Pers(&D_00A5B5F8) == 0) {
+            camFlags &= ~0x800;
+        }
+        cp = (unsigned char *)&D_00A5B5F8 - 0x578;
+        *(float *)(cp + 0x1F4) = *(float *)(cp + 0x58C);
+    }
+    if (camFlags & 0x1000) {
+        MCamShakeProc();
+    }
+}
+
+extern Vector4 *MMathCalcDirVector(Vector4 *out, Vector4 *from, Vector4 *to);
+static inline void mcam_copy_vec3(void *dst, const void *src)
+{
+    __asm__ __volatile__("ld $8,0(%1)\n\t"
+                         "lw $9,8(%1)\n\t"
+                         "sd $8,0(%0)\n\t"
+                         "sw $9,8(%0)"
+                         : : "r"(dst), "r"(src) : "$8", "$9", "memory");
+}
+
+static void MCamExec_SetParams(void)
+{
+    float v[3];
+    char *base = (char *)&D_00A5B250;
+    char *p;
+    int flags;
+
+    MCamExec_SetParams_Base();
+    MMathCalcDirVector((Vector4 *)base, (Vector4 *)(base - 0x20), (Vector4 *)(base - 0x10));
+    mcam_copy_vec3(v, base + 0x10);
+    if (camFlags & 0x1000) {
+        p = base - 0x1D0;
+        flags = *(int *)(p + 0x590);
+        if (flags & 1) {
+            v[0] += *(float *)(p + 0x59C);
+        }
+        if (flags & 0x10) {
+            v[1] += *(float *)(p + 0x59C);
+        }
+        if (flags & 0x100) {
+            v[2] += *(float *)(p + 0x59C);
+        }
+    }
+    mcam_copy_vec3((char *)sysCam + 0xD0, &D_00A5B230);
+    mcam_copy_vec3((char *)sysCam + 0xA0, v);
+    *(float *)((char *)sysCam + 0x94) = *(float *)((char *)&D_00A5B230 + 0x44);
+}
 
 extern Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to);
 
@@ -534,18 +732,6 @@ enum MCamOffsetKind { MCAM_OFFSET_NONE, MCAM_OFFSET_XYZ, MCAM_OFFSET_ANGLE };
 typedef struct MCamInt3 {
     int v[3];
 } MCamInt3;
-typedef struct MCamCoordSlot {
-    MCamCoordParams p __attribute__((aligned(16)));
-} MCamCoordSlot;
-typedef struct MCamCoordMove {
-    MCamCoordSlot from;
-    MCamCoordSlot to;
-    Vector4 other;
-    Vector4 start;
-    Vector4 end;
-    Vector4 current;
-    int extra[4];
-} MCamCoordMove;
 typedef struct MCamCoordRequest {
     MCamCoordSlot params;
     int extra[3];
@@ -856,7 +1042,48 @@ static int MCamMoveProc_Pers(MCamMoveState *state)
     return state->elapsed < state->duration;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamShakeProc);
+extern float sinf(float x);
+
+static void MCamShakeProc(void)
+{
+    float v;
+    float d;
+    float phase;
+
+    if (D_00A5B610.unk18 != 0) {
+        D_00A5B610.unk18 = D_00A5B610.unk18 - 1;
+        if (D_00A5B610.unk14 != 0.0f) {
+            phase = fmodf(D_00A5B610.unk10 + D_00A5B610.unk14, 6.283185f);
+            D_00A5B610.unk10 = phase;
+            D_00A5B610.unkC = D_00A5B610.unk4 * sinf(phase);
+            return;
+        }
+        v = D_00A5B610.unk4;
+        if (!(D_00A5B610.unkC < 0.0f)) {
+            v = -v;
+        }
+        D_00A5B610.unkC = v;
+        return;
+    } else if (D_00A5B610.unk1C != 0) {
+        d = D_00A5B610.unk4 - D_00A5B610.unk8;
+        D_00A5B610.unk1C = D_00A5B610.unk1C - 1;
+        D_00A5B610.unk4 = d;
+        if (D_00A5B610.unk14 != 0.0f) {
+            phase = fmodf(D_00A5B610.unk10 + D_00A5B610.unk14, 6.283185f);
+            D_00A5B610.unk10 = phase;
+            D_00A5B610.unkC = D_00A5B610.unk4 * sinf(phase);
+            return;
+        }
+        v = d;
+        if (!(D_00A5B610.unkC < 0.0f)) {
+            v = -v;
+        }
+        D_00A5B610.unkC = v;
+        return;
+    }
+    D_00A5B610.unkC = 0.0f;
+    camFlags &= ~0x1000;
+}
 
 /* Types recovered upstream (origin/master); kept for reference. */
 /*

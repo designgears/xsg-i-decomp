@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "_doc": "Shared type registry (tools/header_types.py, docs/header-canon.md 'One definition per shared type'). Each entry names the one file that defines a struct/union/typedef other TUs read: the owner TU's own header (published as include/<unit>/<tu>.h by tools/header_harvest.py) or include/shared.h. Other TUs include the owner's generated header and never restate the type; a missing member is proposed with `header_types.py propose` (header-type-proposal/1: an additive, size-preserving replacement of a padding run), reviewed, and applied by the integrator with `header_types.py apply`. `header_types.py restated` lists the types still restated by several TUs (Actor, RgGeom, ...), which need an owner decision here before their copies are removed.",
+  "types": {
+    "XglPacket": {
+      "owner": "main/tu103",
+      "file": "src/main/xgl_packet.h",
+      "units": [
+        "main",
+        "ov01",
+        "ov12"
+      ],
+      "evidence": [
+        "main/tu103 xgl_packet.c defines xglPacketInit/xglPacketMove/xglPacketSend, which build and walk the 0x28-byte object (main 0x0022c458-0x0022c548)",
+        "include/main/xgl_packet.h (harvested from the owner) already carries the body; header-canon r2 p20b"
+      ]
+    },
+    "CalcUnitParam": {
+      "owner": "ov01/tu004",
+      "file": "src/ov01/calc.h",
+      "units": [
+        "ov01"
+      ],
+      "evidence": [
+        "header-canon r2 p03: calcUPGet is defined by ov01/tu004 calc.c; include/ov01/calc.h publishes the body"
+      ]
+    },
+    "CardGameWork": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "header-canon r2 t01: config/header-exports.json exports CardGameWork from ov10/tu008 (include/ov10/cgp.h)"
+      ]
+    },
+    "CardHand": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork embeds two of them (playerHand +0x45C, enemyHand +0x2F08; ov10 0x00a32774/0x00a32778 CardEnemyCommandRequest), so the owner of CardGameWork owns the record; ov10/tu009 card_enemy.c no longer restates it (unblock-bulk-prep-20260919)",
+        "CardPlayHandCnt 0x00a0c6f8: `addiu $4,$4,0x8`, then 40 `lh` of consecutive shorts: cards[40] at +0x08"
+      ]
+    },
+    "RgGameColiArg": {
+      "owner": "ov12/tu060",
+      "file": "src/ov12/rg_game_collision.h",
+      "units": [
+        "ov12"
+      ],
+      "evidence": [
+        "ov12/tu060 _CreateColiArg allocates sizeof(RgGameColiArg) and copies its six words; config/header-exports.json exports it to include/ov12/rg_game_collision.h for ov12/tu059 InitRgGeomGroupColiArg (unblock-bulk-prep-20260919)"
+      ]
+    },
+    "CardDefinition": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.definitions (+0x08) points at the table; CardPlayCommandPlay (ov10 0x00a144f8) indexes it by card id with a 0x24 stride (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardBattleLayer": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardLayerStack.layers[40] (10-byte stride, card id s16 at +0x06); CCC26ExecSub (+0x02 increment) and CCC38ExecSub (+0x03 s8 life) in ov10/tu003 (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardLayerStack": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardBoardSlot.battle (+0x0C, 0x1A8 bytes, position float[4] at +0x198); passed to CardSetEffect/CCC107ChkSub by ov10/tu003 (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardBoardSlot": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardPlaySide.battle[4]/disposal[4] at +0x190/+0x880, 0x1BC stride (CardPlayCommandPlay `operand*444`) (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardPlaySide": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.player (+0x45C) and enemy (+0x2F08), 0x2AAC apart; starts with the CardHand record (CardEnemyCommandRequest 0x00a32774/0x00a32778) (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardCommandInput": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardCommandControl.input[2] at work +0x5AD0/+0x5AD8 (CardPlayCommandPlay `lhu 0x5AD0`) (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardCommandControl": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.command at +0x5AC0 (0x30 bytes up to errorMessCode +0x5AF0); step at +0x5AC6 (CardPlayCommandPlay) (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardCursorControl": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.cursor at +0x5B50, passed to CardCursorActive/CardCursorPassive by ov10/tu003 (shared-model-ov10-cardgamework-20260923)"
+      ]
+    },
+    "CardSaveData": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.save (+0x0C) points at it: CGPRotStageSub (ov10/tu008, 0x00a2a698 `lw $3,0xC($4)` / `lbu $2,0($3)` / `andi $2,$2,0x10`) and CardMainProc (ov10/tu001: flags +0x00, background +0x01, stored deck +0x2C) read it with byte accesses (shared-model-ov10-cardmain-20260924)"
+      ]
+    },
+    "CardModelEntry": {
+      "owner": "ov10/tu008",
+      "file": "src/ov10/cgp.h",
+      "units": [
+        "ov10"
+      ],
+      "evidence": [
+        "CardGameWork.models[16] at +0x6BF0, 0x50-byte stride (CardMainProc, ov10/tu001: 0x00a04dc0 `addiu $2,$2,-80`, draw loop 0x00a083a0 `addiu $16,$30,0x6BF0` / 0x00a0839c `addiu $18,$30,0x6C00`) (shared-model-ov10-cardmain-20260924)"
+      ]
+    },
+    "RgWeaponEssence": {
+      "owner": "ov12/tu027",
+      "file": "src/ov12/rg_weapon_db.c",
+      "units": [
+        "ov12"
+      ],
+      "evidence": [
+        "the weapon database builds every weapon essence and its _ReadCommon (ov12:0x00a1cd08, ov12/tu027) fills the shared prefix: shotEssence +0x10 from the \"shot\" key (RgShotDBGetEssence result, sw $2,0x10 at 0x00a1d130), capacity +0x14 from \"num\"/\"energy\"/\"hardness\" (swc1 0x14 at 0x00a1d02c/0x00a1d048); ov12/tu026 _InitWeaponCommon copies +0x10 to weapon+0x38 (0x00a198ec/0x00a19904), which CreateRgShotFromEssence receives (0x00a1a0ec, 0x00a1b0dc)",
+        "readers: ov12/tu044 RgDispWpnDat_CreateRestNumStr (capacity; previously restated in src/ov12/rg_disp.h), ov12/tu006 _JobEnemy (capacity 0x00a0c89c/0x00a0c8c4, shotEssence 0x00a0c918) (shared-model-ov12-weapon-essence-20260925)"
+      ]
+    },
+    "RgShotEssence": {
+      "owner": "ov12/tu023",
+      "file": "src/ov12/rg_shot.h",
+      "units": [
+        "ov12"
+      ],
+      "evidence": [
+        "ov12/tu023 _InitRgShotEssence (0x00a15c9c) initializes and _InitShotCommon reads the prefix every shot kind embeds as `common`; config/header-exports.json exports it to include/ov12/rg_shot.h, where RgHomingShotEssence already embeds it; RgWeaponEssence.shotEssence (ov12/tu027) points at it (shared-model-ov12-weapon-essence-20260925)"
+      ]
+    },
+    "RgNormalShotEssence": {
+      "owner": "ov12/tu023",
+      "file": "src/ov12/rg_shot.h",
+      "units": [
+        "ov12"
+      ],
+      "evidence": [
+        "ov12/tu023 InitRgNormalShotEssence (0x00a15d28, swc1 0x120) and _CreateRgNormalShot read/write speed at +0x120; exported for ov12/tu006 _JobEnemy, which reads the weapon's shot speed (lwc1 0x120 at 0x00a0c92c) (shared-model-ov12-weapon-essence-20260925)"
+      ]
+    },
+    "SrsMemRes": {
+      "owner": "main/tu212",
+      "file": "src/main/srs.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "Current exact defining TU context provides the complete type needed by build02 consumer"
+      ]
+    },
+    "SequenceState": {
+      "owner": "main/tu257",
+      "file": "src/main/near_dir.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "Current exact defining TU context provides the complete type needed by build02 consumer"
+      ]
+    },
+    "ActSequenceEntry": {
+      "owner": "main/tu257",
+      "file": "src/main/near_dir.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "Current exact defining TU context provides the complete type needed by build02 consumer"
+      ]
+    },
+    "VMSlot": {
+      "owner": "main/tu226",
+      "file": "src/main/init_vm.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/init_vm.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "MsgQueue": {
+      "owner": "main/tu142",
+      "file": "src/main/msg_init.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/msg_init.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "MsgBuffer": {
+      "owner": "main/tu142",
+      "file": "src/main/msg_init.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/msg_init.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwWidget": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwContainerState": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwContainerWidget": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwMaskState": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwMaskWidget": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "EwLabelWidget": {
+      "owner": "main/tu155",
+      "file": "src/main/ew_sprt_set_cursor_uv.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/ew_sprt_set_cursor_uv.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "Matrix": {
+      "owner": "main/tu100",
+      "file": "src/main/xgl_2.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/xgl_2.h already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "SceneStringStorage": {
+      "owner": "main/tu139",
+      "file": "src/main/scene_1.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/scene_1.h already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "ECursol": {
+      "owner": "main/tu159",
+      "file": "src/main/open_close_main.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/open_close_main.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "GsTag": {
+      "owner": "main/tu107",
+      "file": "src/main/nml_packet_add.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "src/main/nml_packet_add.c already defines this full original type view",
+        "express368 declaration transport: removed consumer copies are token-identical; original owner fields remain unchanged"
+      ]
+    },
+    "JThread": {
+      "owner": "main/tu221",
+      "file": "src/main/jni.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "JNI owner defines the0x44 thread object; previous/next4/8 flags24 stack28 frames2c wait_target30",
+        "struct_interfaces jthread-01 proposal calibrates tagged wait_target union and21 chr/unit pointer selectors"
+      ]
+    },
+    "RssdRequest": {
+      "owner": "main/tu110",
+      "file": "src/main/ssd_init.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "Current exact defining TU context provides the complete type needed by build02 consumer"
+      ]
+    },
+    "EnemyWorkEntry": {
+      "owner": "main/tu191",
+      "file": "src/main/enemy_1.h",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        "Current exact defining TU context provides the complete type needed by build02 consumer"
+      ]
+    }
+  }
+}

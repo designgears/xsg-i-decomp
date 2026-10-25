@@ -81,7 +81,7 @@ typedef struct JThreadStageObject {
  * src/main/toolkit.h). This TU only ever passes it to lookupClassField, so
  * it is restated verbatim with those TUs' spelling.
  */
-extern void *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Chr;
 
 /*
  * lookupClassField/loadConstString/JNI_callMethod are the runtime's

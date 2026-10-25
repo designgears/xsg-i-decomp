@@ -5,6 +5,19 @@
 #include "shared.h"
 #include "res.h"
 #include "mini_g.h"
+extern unsigned short PadData[];
+extern unsigned short PadData[];
+extern unsigned short PadData[];
+extern unsigned short PadData[];
+extern unsigned char BG_Rect[0x10];
+extern int D_00A0DD14;
+extern char ViewSamTex[];
+extern int D_00A0DEE8[];
+extern const char D_00A0C4A0[];
+extern const char D_00A0C4B0[];
+extern const char D_00A0C638[];
+extern const char D_00A0C640[];
+extern const char D_00A0C650[];
 
 /* xglCdReadFile is main:0x0021e310 (src/main/xgl_cd.c); every call below
  * passes it an asset path string and a fixed EE main RAM staging address. */
@@ -498,7 +511,7 @@ typedef struct { short x, y; } PayPos;
 typedef struct { PayPos p[5]; } PayPrintPos;
 extern const PayPrintPos D_00A0BC20;
 
-static void pay_print(void)
+static void pay_print(XglPacket *pkt)
 {
     PayPrintPos t;
     int i;
@@ -516,7 +529,7 @@ static void pay_print(void)
 static void decprint(int value, int digits, int x, int y);
 extern short D_00A0DD74;
 
-static void total_pay_print(void)
+static void total_pay_print(XglPacket *pkt)
 {
     decprint(D_00A0DD74, 3, 0x1DC, 0x1B);
 }
@@ -725,7 +738,111 @@ typedef struct {
 
 extern SlPrize D_00A0DD8A[];
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", SlResultDraw);
+typedef struct {
+    char pad0[0x48];
+    short row;
+    char pad1[0x56 - 0x4A];
+    short bet[5];
+    short win[5];
+    SlPrize line[5];
+    char pad2[0xA8 - 0xA6];
+    int total;
+    char pad3[0xB0 - 0xAC];
+    int effect;
+} SlLineGwork;
+
+typedef struct { int w[4]; } SlResultRect;
+extern const SlResultRect D_00A0BC98;
+extern unsigned char Pic_13[][0x1C];
+extern unsigned char Total_14[0x1C];
+extern unsigned char linetex_15[0x1C];
+extern int linerect_16[9][4];
+
+static void SlResultDraw(void)
+{
+    int f[9];
+
+    SlResultRect rect;
+    int sum;
+    int off;
+    int i;
+    int j;
+    int x;
+    int y;
+    short *p;
+    short *q;
+    short *g;
+    int v;
+    int *fp;
+    int *rp;
+    int *zp;
+    short *w;
+
+    rect.w[3] = 0x10;
+    y = 0x125;
+    SetDrawStatus(3, 0);
+    sum = 0;
+    for (i = 0; i < 5; i++) {
+        p = (short *)&D_00A0DD8A[i];
+        if (p[3] != 0) {
+            rect.w[2] = 0x1C;
+            x = 0x21;
+            q = p;
+            for (j = 2; j >= 0; j--) {
+                rect.w[0] = x;
+                rect.w[1] = y;
+                x += 0x1C;
+                MakeSprite(Pic_13[*q++], &rect);
+            }
+            SlDecPrintSmall(0xAF, y, 0xC, p[3]);
+            SlDecPrintSmall(0x8B, y, 0xC, ((SlLineGwork *)Gwork)->bet[i]);
+            v = p[3] * ((SlLineGwork *)Gwork)->bet[i];
+            sum += v;
+            if (p[4] != 0) {
+                rect.w[0] = 0xC5;
+                rect.w[3] = 0x10;
+                rect.w[1] = y;
+                switch (p[4]) {
+                case 1:
+                    rect.w[2] = 0x60;
+                    MakeSprite(OptionText[1], &rect);
+                    break;
+                case 2:
+                    rect.w[2] = 0x68;
+                    MakeSprite(OptionText[2], &rect);
+                    break;
+                case 3:
+                    rect.w[2] = 0x50;
+                    MakeSprite(OptionText[0], &rect);
+                    break;
+                }
+            } else {
+                SlDecPrintSmall(0x119, y, 0xC, v);
+            }
+            y += 0x14;
+        }
+    }
+    rect = D_00A0BC98;
+    MakeSprite(Total_14, &rect);
+    SlDecPrintSmall(0x119, 0x19D, 0xC, sum);
+    zp = &f[8];
+    for (i = 8; i >= 0; i--) {
+        *zp-- = 0;
+    }
+    w = (short *)Gwork;
+    if (w[0x38] != 0) { f[0] = 1; f[4] = 1; f[8] = 1; }
+    if (w[0x3E] != 0) { f[0] = 1; f[3] = 1; f[6] = 1; }
+    if (w[0x44] != 0) { f[1] = 1; f[4] = 1; f[7] = 1; }
+    if (w[0x4A] != 0) { f[2] = 1; f[5] = 1; f[8] = 1; }
+    if (w[0x50] != 0) { f[2] = 1; f[4] = 1; f[6] = 1; }
+    SetDrawStatus(0, 0);
+    for (i = 0; i < 9; i++) {
+        if (f[i] != 0) {
+            MakeSprite(linetex_15, linerect_16[i]);
+        }
+    }
+    SetDrawStatus(3, 0);
+}
 
 typedef struct { int w[4]; } SlModeRect;
 extern const SlModeRect D_00A0BCA8;
@@ -786,10 +903,9 @@ static void SlGuidPrint(int index)
     seq_21 %= 10;
 }
 
-extern unsigned short PadData[];
 extern int D_00A0DD5C;
 
-static void point_control(void)
+static void point_control(XglPacket *pkt)
 {
     switch (check_mode()) {
     case 0:
@@ -825,7 +941,7 @@ static void SetTest(int value);
 extern unsigned char BoxSpr[0x1C];
 extern unsigned char BoxRect[0x10];
 
-static void SlBgDraw(void)
+static void SlBgDraw(XglPacket *pkt)
 {
     SetDrawStatus(3, 0);
     SetTest(0x5000D);
@@ -1002,19 +1118,6 @@ extern SlPat pat_22[15];
 extern const char D_00A0BD10[];
 extern const char D_00A0BD28[];
 extern const char D_00A0BD40[];
-typedef struct {
-    char pad0[0x48];
-    short row;
-    char pad1[0x56 - 0x4A];
-    short bet[5];
-    short win[5];
-    SlPrize line[5];
-    char pad2[0xA8 - 0xA6];
-    int total;
-    char pad3[0xB0 - 0xAC];
-    int effect;
-} SlLineGwork;
-
 static void SlLineCheck(void)
 {
     int i;
@@ -1085,7 +1188,6 @@ static int check_real(void)
     return D_00A0DDC8 != 0;
 }
 
-extern unsigned short PadData[];
 static void GameModeChange(int mode);
 extern int inter_23;
 
@@ -1349,7 +1451,124 @@ int SlPrizeEffect(int arg0)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", SlChangeRealEffect);
+typedef struct { int on; int wait; int h; } SlRealEff;
+extern SlRealEff D_00A0DC68[3];
+extern SlRealEff *D_00A0DC8C;
+extern int D_00A0DC90;
+extern short D_00A0DD68;
+typedef struct { int a; int y; int b; int h; int c[3]; } SlEffTex;
+extern SlEffTex tex_30;
+extern int mode_33;
+typedef struct { int x, y, w, h; } SlCrRect;
+
+static int SlChangeRealEffect(int arg0)
+{
+    SlCrRect rect;
+    int i;
+    int cnt;
+    short r;
+
+    switch (mode_33) {
+    case 0:
+        for (i = 0; i < 3; i++) {
+            D_00A0DC8C = &D_00A0DC68[i];
+            D_00A0DC8C->wait = i * 4;
+            D_00A0DC8C->on = 0;
+            D_00A0DC8C->h = 0;
+        }
+        mode_33 = 1;
+        return 1;
+    case 1:
+        cnt = 0;
+        for (i = 0; i < 3; i++) {
+            D_00A0DC8C = &D_00A0DC68[i];
+            if (D_00A0DC8C->on == 0) {
+                if (D_00A0DC8C->wait == 0) {
+                    D_00A0DC8C->on = 1;
+                } else {
+                    D_00A0DC8C->wait--;
+                }
+            } else {
+                if (D_00A0DC8C->h < 0xC4) {
+                    D_00A0DC8C->h += 0x20;
+                }
+                if (D_00A0DC8C->h > 0xC4) {
+                    D_00A0DC8C->h = 0xC4;
+                    RES_SoundEffect(0x29);
+                }
+                if (D_00A0DC8C->h == 0xC4) {
+                    cnt++;
+                }
+                tex_30.h = D_00A0DC8C->h;
+                tex_30.y = 0x1D0 - D_00A0DC8C->h;
+                rect = (SlCrRect){ i * 0x78 + 0x50, 0x32, 0x70, D_00A0DC8C->h };
+                MakeSprite(&tex_30, &rect);
+            }
+        }
+        if (cnt == 3) {
+            mode_33 = 2;
+            D_00A0DC90 = 0;
+            RES_SoundEffect(0x29);
+        }
+        return 1;
+    case 2:
+        for (i = 0; i < 3; i++) {
+            tex_30.h = 0xC4;
+            tex_30.y = 0x10C;
+            rect.x = i * 0x78 + 0x50;
+            rect.y = 0x32;
+            rect.w = 0x70;
+            rect.h = 0xC4;
+            MakeSprite(&tex_30, &rect);
+        }
+        if (++D_00A0DC90 >= 0x1F) {
+            if (arg0 == 0) {
+                D_00A0DD68 = 0;
+            } else {
+                short *g = (short *)Gwork;
+                do {
+                    r = (unsigned int)xglSRand() % 5 + 1;
+                } while (r == g[0x48 / 2]);
+                g[0x48 / 2] = r;
+            }
+            mode_33 = 3;
+        }
+        break;
+    case 3:
+        cnt = 0;
+        for (i = 0; i < 3; i++) {
+            D_00A0DC8C = &D_00A0DC68[i];
+            D_00A0DC8C->h -= 0x10;
+            if (D_00A0DC8C->h < 0) {
+                D_00A0DC8C->h = 0;
+                cnt++;
+            }
+            tex_30.h = D_00A0DC8C->h;
+            tex_30.y = 0x1D0 - D_00A0DC8C->h;
+            rect = (SlCrRect){ i * 0x78 + 0x50, 0x32, 0x70, D_00A0DC8C->h };
+            MakeSprite(&tex_30, &rect);
+        }
+        if (cnt == 3) {
+            mode_33 = 4;
+        }
+        return 1;
+    case 4:
+        if (arg0 == 0) {
+            short *g = (short *)Gwork;
+            g[0x4A / 2] = 0;
+            g[0x4C / 2] = 0;
+            g[0x48 / 2] = 0;
+        } else {
+            int t = RES_GetBonusTime();
+            short *g = (short *)Gwork;
+            g[0x4E / 2] = t;
+            g[0x4C / 2] = 1;
+        }
+        mode_33 = 0;
+        return 0;
+    }
+    return 1;
+}
 
 extern int busy_35;
 extern int D_00A0DDD0;
@@ -1442,7 +1661,36 @@ static void SlHelpMode(void)
     MakeSprite(&sprite, &rect);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", slot_main);
+static void slot_main(void) {
+    Pkt = xglPacketGetCurrent();
+    xglPacketTextureTrans((void *)0x01089000);
+    SetRegAD(Pkt, 0x3F, 0);
+    SlRealDraw();
+    SlCashPrint();
+    ((void (*)(void *))pay_print)(Pkt);
+    ((void (*)(void *))total_pay_print)(Pkt);
+    xglPacketTextureTrans((void *)0x01008000);
+    SetRegAD(Pkt, 0x3F, 0);
+    ((void (*)(void *))SlBgDraw)(Pkt);
+    xglPacketTextureTrans((void *)0x01089000);
+    SetRegAD(Pkt, 0x3F, 0);
+    SpinBtnPrint();
+    SlStopBtnPrint();
+    SlModePrint();
+    ((void (*)(void *))point_control)(Pkt);
+    SlPayWindowPrint();
+    if (Gwork[0x50 / 4] != 2) {
+        SlRateTableDraw();
+    } else {
+        SlResultDraw();
+    }
+    if (SlEvent(Gwork[0xB0 / 4]) == 0) {
+        slot_key();
+    }
+    if (Gwork[0x44 / 4] == 1) {
+        SlHelpMode();
+    }
+}
 
 /* ov11:0x00a034d8. Loads the five slot-machine texture resources into their
  * fixed rendering buffers through the resource loader. */
@@ -1731,6 +1979,8 @@ static NgRealShape get_ngreal_shape(int reel, int pos)
     return NgReal_Tex_48[ng_realtbl[reel][pos]];
 }
 
+
+extern NgRealShape get_ngreal_shape(int reel, int pos);
 typedef struct { short x, y; } NgPanelPos;
 extern NgPanelPos NgReal_49[9];
 
@@ -1767,6 +2017,7 @@ static void DrawNgPanel(int index, int pos, int reel)
     s.w[0] = s.w[0] - r + 24;
     MakeSprite(&s, rect);
 }
+
 
 typedef struct {
     short reel;
@@ -1915,7 +2166,6 @@ static void NgGame_Key(void)
     }
 }
 
-extern unsigned short PadData[];
 extern int se_51;
 static void GameModeChange(int mode);
 
@@ -2287,7 +2537,48 @@ static int PoCardDrawAnime(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", PoBonusCardAnime);
+extern int status_77;
+extern unsigned char tex_76[];
+extern PoCardRectS D_00A0DD00;
+extern int D_00A0DD10;
+typedef struct { char pad[0x176]; short hand[17]; short flag[5]; } PoBonusWork;
+typedef struct { PoCardRectS r[5]; } CardPosWork;
+
+static int PoBonusCardAnime(void)
+{
+    int i;
+
+    xglPacketTextureTrans((void *)0x0128D000);
+    SetRegAD(Pkt, 0x3F, 0);
+    i = Gwork[0x194 / 4];
+    switch (status_77) {
+    case 0:
+        status_77 = 1;
+        *(PoCardAnimeRect *)&D_00A0DD00 = *(PoCardAnimeRect *)CardPos[i];
+        D_00A0DD00.y -= 0xA0;
+    case 1:
+        MakeSprite(tex_76, &D_00A0DD00);
+        D_00A0DD00.y += 0x20;
+        if (D_00A0DD00.y == 5) {
+            RES_SoundEffect(0x3D);
+        }
+        if (D_00A0DD00.y >= ((CardPosWork *)CardPos)->r[i].y) {
+            status_77 = 2;
+            D_00A0DD10 = 4;
+        }
+        break;
+    case 2:
+        MakeSprite(tex_76, &D_00A0DD00);
+        if (--D_00A0DD10 == 0) {
+            status_77 = 0;
+            ((PoBonusWork *)Gwork)->hand[i] = 0x35;
+            ((PoBonusWork *)Gwork)->flag[i] = 1;
+            return 1;
+        }
+        break;
+    }
+    return 0;
+}
 
 /* ov11:0x00a05358. Emits the single fixed poker payout table sprite.
  * MakeSprite is a LOCAL asm sibling. */
@@ -2446,7 +2737,6 @@ static void PoSelectMarkDraw(void)
     MakeSprite(PoSelecterTex[1], PoSelecterPos[5]);
 }
 
-extern unsigned short PadData[];
 extern int cur_92;
 extern int mode_93;
 extern short chgpos_95[2];
@@ -3040,7 +3330,371 @@ static void PokerReadyMes(void)
     PoWindowMessage(readyMessage.text[D_00A0DD2C], readyWidth.width[D_00A0DD2C]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", PokerMain);
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+struct PokerDealWork {
+    unsigned char unmodeled_000[0x10C];
+    short card_used[53];
+    short hand_cards[5];
+    unsigned char unmodeled_180[0x18];
+    short replace_selected[5];
+};
+
+union CasinoWork {
+    int words[148];
+    struct PokerDealWork poker_deal;
+};
+
+enum PokerSeq {
+    POKER_SEQ_READY = 0,         /* stake check, "Play N coins" dialog */
+    POKER_SEQ_NO_COINS = 1,      /* "There are no more coins." */
+    POKER_SEQ_BET = 2,           /* move the stake into the pot */
+    POKER_SEQ_DEAL = 3,          /* deal animation (PoCardDrawAnime) */
+    POKER_SEQ_DRAW_HAND = 4,     /* fill the hand (PoShuffleCard) */
+    POKER_SEQ_SELECT = 5,        /* choose the cards to replace (PoKey) */
+    POKER_SEQ_REPLACE = 6,       /* replace them (PoShuffleCard) */
+    POKER_SEQ_SCORE = 7,         /* score the hand (PoCardCheck) */
+    POKER_SEQ_CONTINUE = 8,      /* "Continue game?" */
+    POKER_SEQ_WIN = 9,           /* goes straight on to 11 */
+    POKER_SEQ_DOUBLE_UP = 11,    /* "Double or nothing?" */
+    POKER_SEQ_BONUS_START = 12,  /* reset the hand (every card set to 0x36) */
+    POKER_SEQ_BONUS_DEAL = 13,   /* slide in the next card (PoBonusCardAnime) */
+    POKER_SEQ_BONUS_DRAW = 14,   /* give it a value (PoShuffleCard) */
+    POKER_SEQ_BONUS_JUDGE = 15,  /* compare it with the previous card */
+    POKER_SEQ_BONUS_LOST = 16,   /* wrong guess: wait for circle */
+    POKER_SEQ_BONUS_GUESS = 17,  /* three-choice dialog: guess or collect */
+    POKER_SEQ_PAYOUT = 18        /* pay the pot out */
+};
+struct PokerCardsU {
+    short used[53];
+    short hand[5];
+};
+struct PokerDealWorkU {
+    unsigned char unmodeled_000[0xC];
+    /* 0x0C: the bet level chosen in the menu (see MiniGModeWork). */
+    int level;
+    unsigned char unmodeled_010[0xFC];
+    struct PokerCardsU cards;
+    unsigned char unmodeled_180[0x4];
+    /* 0x184: nonzero hides the rate table PokerMain draws every frame. */
+    int rates_hidden;
+    /* 0x188: PokerMain's sequence state, an enum PokerSeq value (stored by
+     * PoSeqChange). */
+    int seq;
+    unsigned char unmodeled_18c[0x4];
+    /* 0x190: set by PoCardFlip once all five cards have stayed selected
+     * for 32 frames, cleared otherwise. Not sure of the game meaning;
+     * PoInitWork's notes call it the bonus mode. */
+    int bonus_mode;
+    /* 0x194: index of the bonus card PoBonusCardAnime deals next. */
+    int bonus_round;
+    short replace_selected[5];
+    short sorted_hand[5];
+    unsigned char unmodeled_1ac[0x4];
+    /* 0x1B0: hand category from PoCardCheck (0 = no win). */
+    int hand_rank;
+    /* 0x1B4: the bonus game's guess: 0 = the next card is not lower than
+     * the previous one, 1 = it is lower (a tie wins either way). */
+    int guess;
+    /* 0x1B8: coins at stake: the bet, then the winnings. */
+    int pot;
+    /* 0x1BC: 1 while a round is in progress (PokerMain then shows the pot
+     * instead of the coin balance). */
+    int in_round;
+};
+union CasinoWorkU {
+    int words[148];
+    struct PokerDealWorkU poker_deal;
+};
+extern union CasinoWorkU GworkU __asm__("Gwork");
+extern int init_99;
+extern int PokerCoinRate[4];
+#define CASINO_MENU 0
+#define PAD_CIRCLE 0x0020
+extern int PokerRate[10];
+extern const char D_00A0C1D8[];
+extern const char D_00A0C1F8[];
+extern const char D_00A0C208[];
+#define POKER_TABLE2_TEX_BUFFER 0x013CF800
+
+static void PokerMain(void)
+{
+    int sel;
+    int step;
+    int coins;
+    int i;
+    int previous_rank;
+    int current_rank;
+
+    Pkt = xglPacketGetCurrent();
+    PoBgDraw();
+    xglPacketTextureTrans((void *)POKER_TABLE2_TEX_BUFFER);
+    SetRegAD(Pkt, 0x3F, 0);
+    switch (GworkU.poker_deal.seq) {
+    case POKER_SEQ_READY:
+        GworkU.poker_deal.rates_hidden = 0;
+        GworkU.poker_deal.in_round = 0;
+        if (((struct CasinoSaveWork *)SaveWork)->coin_balance < PokerCoinRate[GworkU.poker_deal.level]) {
+            PoSeqChange(POKER_SEQ_NO_COINS);
+            break;
+        }
+        PokerReadyMes();
+        sel = PoDialog(0);
+        if (init_99 != 0) {
+            PoCardDraw();
+        }
+        if (sel == 0) {
+            break;
+        }
+        if (sel == 1) {
+            init_99 = sel;
+            PoSeqChange(POKER_SEQ_BET);
+            GworkU.poker_deal.pot = 0;
+            PoResetCard();
+            break;
+        }
+        GameModeChange(CASINO_MENU);
+        init_99 = 0;
+        RES_SoundEffect(0x35);
+        break;
+    case POKER_SEQ_NO_COINS:
+        if (init_99 != 0) {
+            PoCardDraw();
+            xglPacketTextureTrans((void *)POKER_TABLE2_TEX_BUFFER);
+            SetRegAD(Pkt, 0x3F, 0);
+        }
+        PoWindowMessage(D_00A0C1D8, 0x18);
+        if (PadData[0x2A / 2] != 0) {
+            GameModeChange(CASINO_MENU);
+            init_99 = 0;
+            RES_SoundEffect(0x35);
+        }
+        break;
+    case POKER_SEQ_BET:
+        if (GworkU.poker_deal.pot == PokerCoinRate[GworkU.poker_deal.level]) {
+            GworkU.poker_deal.in_round = 1;
+            PoSeqChange(POKER_SEQ_DEAL);
+            break;
+        }
+        switch (GworkU.poker_deal.level) {
+        case 2:
+            step = 5;
+            break;
+        case 3:
+            step = 10;
+            break;
+        default:
+            step = 1;
+            break;
+        }
+        ((struct CasinoSaveWork *)SaveWork)->coin_balance -= step;
+        GworkU.poker_deal.pot += step;
+        break;
+    case POKER_SEQ_DEAL:
+        GworkU.poker_deal.rates_hidden = 0;
+        if (PoCardDrawAnime() != 0) {
+            PoSeqChange(POKER_SEQ_DRAW_HAND);
+        }
+        break;
+    case POKER_SEQ_DRAW_HAND:
+        if (PoShuffleCard() == 1) {
+            for (i = 0; i < 5; i++) {
+                GworkU.poker_deal.replace_selected[i] = 1;
+            }
+            PoSeqChange(POKER_SEQ_SELECT);
+        }
+        PoCardDraw();
+        break;
+    case POKER_SEQ_SELECT:
+        PoCardDraw();
+        PoSelectMarkDraw();
+        if (PoKey() == 1) {
+            PoSeqChange(POKER_SEQ_REPLACE);
+            PoCardFlip();
+        }
+        break;
+    case POKER_SEQ_REPLACE:
+        if (PoShuffleCard() == 1) {
+            PoSeqChange(POKER_SEQ_SCORE);
+        }
+        PoCardDraw();
+        break;
+    case POKER_SEQ_SCORE:
+        GworkU.poker_deal.hand_rank = PoCardCheck();
+        if (GworkU.poker_deal.hand_rank > 0) {
+            GworkU.poker_deal.pot *= PokerRate[GworkU.poker_deal.hand_rank];
+            PoSeqChange(POKER_SEQ_WIN);
+        } else {
+            PoSeqChange(POKER_SEQ_READY);
+        }
+        PoCardDraw();
+        break;
+    case POKER_SEQ_CONTINUE:
+        GworkU.poker_deal.rates_hidden = 1;
+        PoWindowMessage(D_00A0C1F8, 10);
+        sel = PoDialog(0);
+        if (sel != 0) {
+            if (sel == 1) {
+                PoSeqChange(POKER_SEQ_DEAL);
+                PoResetCard();
+                break;
+            }
+            GameModeChange(CASINO_MENU);
+            init_99 = 0;
+        }
+        PoCardDraw();
+        break;
+    case POKER_SEQ_WIN:
+        PoSeqChange(POKER_SEQ_DOUBLE_UP);
+        /* fall through */
+    case POKER_SEQ_DOUBLE_UP:
+        GworkU.poker_deal.bonus_round = 0;
+        GworkU.poker_deal.rates_hidden = 1;
+        PoRateTableDraw();
+        PoResultLamp(GworkU.poker_deal.hand_rank - 1);
+        PoWindowMessage(D_00A0C208, 0x11);
+        sel = PoDialog(0);
+        if (sel != 0) {
+            if (sel == 1) {
+                PoSeqChange(POKER_SEQ_BONUS_START);
+                break;
+            }
+            RES_SoundEffect(0x3B);
+            PoSeqChange(POKER_SEQ_PAYOUT);
+        }
+        PoCardDraw();
+        break;
+    case POKER_SEQ_BONUS_START:
+        PoResetCard();
+        for (i = 0; i < 5; i++) {
+            GworkU.poker_deal.cards.hand[i] = 0x36;
+            GworkU.poker_deal.replace_selected[i] = 0;
+        }
+        PoSeqChange(POKER_SEQ_BONUS_DEAL);
+        /* fall through */
+    case POKER_SEQ_BONUS_DEAL:
+        if (PoBonusCardAnime() == 1) {
+            PoSeqChange(POKER_SEQ_BONUS_DRAW);
+        }
+        PoCardDraw();
+        PoBonusBGDraw();
+        break;
+    case POKER_SEQ_BONUS_DRAW:
+        if (PoShuffleCard() == 1) {
+            PoSeqChange(POKER_SEQ_BONUS_JUDGE);
+        }
+        PoBonusBGDraw();
+        PoCardDraw();
+        break;
+    case POKER_SEQ_BONUS_JUDGE:
+        if (GworkU.poker_deal.bonus_round == 0) {
+            GworkU.poker_deal.bonus_round = 1;
+            PoSeqChange(POKER_SEQ_BONUS_GUESS);
+        } else {
+            previous_rank = GworkU.poker_deal.cards.hand[GworkU.poker_deal.bonus_round - 1];
+            previous_rank -= PoGetBase(PoGetMark(previous_rank));
+            current_rank = GworkU.poker_deal.cards.hand[GworkU.poker_deal.bonus_round];
+            current_rank -= PoGetBase(PoGetMark(current_rank));
+            if ((current_rank < previous_rank) == GworkU.poker_deal.guess
+                || previous_rank == current_rank) {
+                RES_SoundEffect(0x38);
+                GworkU.poker_deal.bonus_round++;
+                GworkU.poker_deal.pot *= 2;
+                if (GworkU.poker_deal.bonus_round != 5) {
+                    PoSeqChange(POKER_SEQ_BONUS_GUESS);
+                } else {
+                    PoSeqChange(POKER_SEQ_PAYOUT);
+                }
+            } else {
+                GworkU.poker_deal.bonus_round = 0;
+                GworkU.poker_deal.pot = 0;
+                RES_SoundEffect(0x3A);
+                PoSeqChange(POKER_SEQ_BONUS_LOST);
+            }
+        }
+        PoBonusBGDraw();
+        PoCardDraw();
+        break;
+    case POKER_SEQ_BONUS_LOST:
+        PoBonusBGDraw();
+        PoCardDraw();
+        if (PadData[0x2A / 2] & PAD_CIRCLE) {
+            PoSeqChange(POKER_SEQ_READY);
+        }
+        break;
+    case POKER_SEQ_BONUS_GUESS:
+        PoBonusBGDraw();
+        PoCardDraw();
+        sel = PoDialog(1);
+        if (sel != 0) {
+            if (sel == 3 || sel == -1) {
+                PoSeqChange(POKER_SEQ_PAYOUT);
+                RES_SoundEffect(0x3B);
+                break;
+            }
+            if (sel == 1) {
+                GworkU.poker_deal.guess = 0;
+            } else {
+                GworkU.poker_deal.guess = 1;
+            }
+            PoSeqChange(POKER_SEQ_BONUS_DEAL);
+        }
+        break;
+    case POKER_SEQ_PAYOUT:
+        if (GworkU.poker_deal.bonus_round != 0) {
+            PoBonusBGDraw();
+        } else {
+            PoRateTableDraw();
+            PoResultLamp(GworkU.poker_deal.hand_rank - 1);
+        }
+        PoCardDraw();
+        if (PadData[0x2A / 2] & PAD_CIRCLE) {
+            AddCoin(GworkU.poker_deal.pot);
+            PoSeqChange(POKER_SEQ_READY);
+            GworkU.poker_deal.in_round = 0;
+            RES_SoundEffectStop(0x3B);
+            break;
+        }
+        coins = 1;
+        switch (GworkU.poker_deal.level) {
+        case 1:
+            coins = 1;
+            break;
+        case 2:
+            coins = 5;
+            break;
+        case 3:
+            coins = 10;
+            break;
+        case 4:
+            coins = 100;
+            break;
+        }
+        if (GworkU.poker_deal.pot >= coins) {
+            GworkU.poker_deal.pot -= coins;
+            AddCoin(coins);
+        } else {
+            AddCoin(GworkU.poker_deal.pot);
+            GworkU.poker_deal.pot = 0;
+        }
+        if (GworkU.poker_deal.pot == 0) {
+            GworkU.poker_deal.in_round = 0;
+            RES_SoundEffectStop(0x3B);
+            PoSeqChange(POKER_SEQ_READY);
+        }
+        break;
+    }
+    SetDrawStatus(3, 0);
+    xglPacketTextureTrans((void *)POKER_TABLE2_TEX_BUFFER);
+    SetRegAD(Pkt, 0x3F, 0);
+    if (GworkU.poker_deal.rates_hidden == 0) {
+        PoRateTableDraw();
+    }
+    if (GworkU.poker_deal.in_round == 0) {
+        PoMoneyPrint(0, ((struct CasinoSaveWork *)SaveWork)->coin_balance);
+    } else {
+        PoMoneyPrint(1, GworkU.poker_deal.pot);
+    }
+}
 
 /* ov11:0x00a06c08. Resets five Gwork work-state words used by the poker
  * minigame: its only caller, GameModeChange, uses it to clear the main
@@ -3460,7 +4114,148 @@ static void UtlCurPrint(int x, int y)
     anm_107++;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", coin_main);
+extern int cur_108;
+extern short curpt_109[][2];
+extern unsigned char BG_Tex[0x1C];
+extern const char D_00A0C350[];
+extern const char D_00A0C358[];
+extern const char D_00A0C368[];
+extern const char D_00A0C370[];
+extern const char D_00A0C378[];
+extern const char D_00A0C380[];
+extern const char D_00A0C388[];
+extern int dataMoneyBoxDec(int amount);
+extern int dataMoneyBoxChk(void);
+
+static void coin_main(void)
+{
+  short (*new_var)[][2];
+  int flag;
+  u64 pad64;
+  Pkt = xglPacketGetCurrent();
+  xglPacketTextureTrans((void *) 0x011CB800);
+  SetRegAD(Pkt, 0x3F, 0);
+  SetDrawStatus(3, 0);
+  MakeSprite(BG_Tex, BG_Rect);
+  xglFontPrint(0, 0, 0xFF00, D_00A0C350);
+  xglFontPrint(0xD2, 0x20, 0xFF00, D_00A0C358);
+  xglFontPrint(0, 0, 0xFF00, D_00A0C368);
+  flag = 0;
+  xglFontPrint(flag, 0, 0xFF00, D_00A0C370);
+  xglFontPrint(0x104, 0x40, 0xFF00, RES_Coin_Info(0));
+  xglFontPrint(0x104, 0x58, 0xFF00, RES_Coin_Info(1));
+  xglFontPrint(0x104, 0x70, 0xFF00, RES_Coin_Info(2));
+  xglFontPrint(0x104, 0x88, 0xFF00, RES_Coin_Info(3));
+  xglFontPrint(0, 0, 0, D_00A0C378);
+  xglFontPrint(0x19A, 0xD0, 0xFF00, D_00A0C380);
+  xglFontPrint(0, 0, 0xFF00, D_00A0C388);
+  if (PadData[0x2C / 2] & 0x1000)
+  {
+    RES_SoundEffect(0xE);
+    cur_108--;
+  }
+  if (PadData[0x2C / 2] & 0x4000)
+  {
+    RES_SoundEffect(0xF);
+    cur_108++;
+  }
+  if (cur_108 < 0)
+  {
+    cur_108 = 4;
+  }
+  if (cur_108 > 4)
+  {
+    cur_108 = 0;
+  }
+  ;
+  if ((PadData[0x2A / 2] & 0x40) != 0)
+  {
+    flag = 1;
+  }
+  pad64 = *((u64 *) (((char *) PadData) + 0x28));
+  if (pad64 & 0x800200000ULL)
+  {
+    switch (cur_108)
+    {
+      case 0:
+        if (dataMoneyBoxDec(RES_Coin_Rate(0)) == 1)
+      {
+        if ((*((int *) (SaveWork + 0x50))) <= 0x98967E)
+        {
+          AddCoin(10);
+          RES_SoundEffect(0x10);
+          break;
+        }
+        dataMoneyBoxInc(RES_Coin_Rate(0));
+      }
+        RES_SoundEffect(0x11);
+        break;
+
+      case 1:
+        if (dataMoneyBoxDec(RES_Coin_Rate(1)) == 1)
+      {
+        if ((*((int *) (SaveWork + 0x50))) <= 0x98967E)
+        {
+          AddCoin(100);
+          RES_SoundEffect(0x10);
+          break;
+        }
+        dataMoneyBoxInc(RES_Coin_Rate(1));
+      }
+        RES_SoundEffect(0x11);
+        break;
+
+      case 2:
+        if (dataMoneyBoxDec(RES_Coin_Rate(2)) == 1)
+      {
+        if ((*((int *) (SaveWork + 0x50))) <= 0x98967E)
+        {
+          AddCoin(0x1F4);
+          RES_SoundEffect(0x10);
+          break;
+        }
+        dataMoneyBoxInc(RES_Coin_Rate(2));
+      }
+        RES_SoundEffect(0x11);
+        break;
+
+      case 3:
+        if (dataMoneyBoxDec(RES_Coin_Rate(3)) == 1)
+      {
+        if ((*((int *) (SaveWork + 0x50))) <= 0x98967E)
+        {
+          AddCoin(0x3E8);
+          RES_SoundEffect(0x10);
+          break;
+        }
+        dataMoneyBoxInc(RES_Coin_Rate(3));
+      }
+        RES_SoundEffect(0x11);
+        break;
+
+      default:
+        if (PadData[0x2A / 2] & 0x20)
+      {
+        flag = 1;
+      }
+        break;
+
+    }
+
+  }
+  UtlCurPrint(curpt_109[cur_108][0], (*(new_var = &curpt_109))[cur_108][1]);
+  xglPacketTextureTrans((void *) 0x0118B000);
+  SetRegAD(Pkt, 0x3F, 0);
+  SetDrawStatus(6, 0x60);
+  DecPrint2(dataMoneyBoxChk(), -1, 0xE6, 0x104, 0);
+  DecPrint2(((struct CasinoSaveWork *) SaveWork)->coin_balance, -1, 0x1D4, 0x104, 0);
+  if (flag == 1)
+  {
+    cur_108 = 0;
+    GameModeChange(0);
+    RES_SoundEffect(0x12);
+  }
+}
 
 /* ov11:0x00a07c38. Loads the casino coin-exchange minigame's background and
  * exchange textures (D_00A0BE40 is the same "base.xtx" path init_test_mode
@@ -3635,7 +4430,87 @@ static int VW_ViewModeInit(int no)
 
 INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", VW_ViewMode);
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", VW_SamMode);
+
+static int VW_SamMode(int enable)
+{
+    int i;
+    int *p;
+    int *base;
+    int y;
+    int var;
+    int *c;
+    static int sam_rect[4] __asm__("sam_rect.117") = { 0x20, 0x47, 0x100, 0xA8 };
+    static int back_tex[7] __asm__("back_tex.118") = { 0, 0, 0x200, 0x1C0, 0, 0x3F4, 0 };
+    static int cur __asm__("cur.119") = 0;
+    static int ofs __asm__("ofs.120") = 0;
+    static int init __asm__("init.121") = 0;
+
+    if (enable == 0) {
+        c = &cur;
+        ofs = 0;
+        init = 0;
+        *c = 0;
+        return 0;
+    }
+    if (init == 0) {
+        init = 1;
+        D_00A0DD14 = VW_SamlistInit();
+    }
+    y = 0x14;
+    xglPacketTextureTrans((void *)0x0124C800);
+    SetRegAD(Pkt, 0x3F, 0);
+    i = 0;
+    SetDrawStatus(3, 0);
+    MakeSprite(back_tex, BG_Rect);
+    if (D_00A0DD14 > 0) {
+        base = Gwork;
+        p = base + 114;
+        do {
+            if (i >= ofs && !((ofs + 7) < i)) {
+                xglFontPrint(0, 0, 0, D_00A0C4A0);
+                xglFontPrint(0, 0, 0, D_00A0C4B0);
+                xglFontPrint(0x154, y * 2, 0xFF00, Cajino_GetTitle(*p));
+                y += 0xC;
+            }
+            i++;
+            p++;
+        } while (i < D_00A0DD14);
+        if (D_00A0DD14 > 0) {
+            xglFontPrint(0x140, (cur * 0x18) + 0x2E, 0xFF00, D_00A0C638);
+        }
+    }
+    if (PadData[0x2C / 2] & 0x1000) {
+        RES_SoundEffect(0x18);
+        if (cur != 0) {
+            cur--;
+        } else if (ofs > 0) {
+            ofs--;
+        }
+    }
+    if (PadData[0x2C / 2] & 0x4000) {
+        RES_SoundEffect(0x19);
+        if (cur == 7) {
+            if ((ofs + cur) < (D_00A0DD14 - 1)) {
+                ofs += 1;
+            }
+        } else if (cur < (D_00A0DD14 - 1)) {
+            cur += 1;
+        }
+    }
+    var = -1;
+    if (D_00A0DD14 > 0) {
+        var = D_00A0DEE8[ofs + cur];
+        xglFontPrint(0, 0, 0, D_00A0C4A0);
+        xglFontPrint(0, 0, 0, D_00A0C640);
+        xglFontPrint(0x1C, 0x100, 0xFF00, Cajino_GetTitle(var));
+        xglFontPrint(0, 0, 0, D_00A0C650);
+        xglFontPrint(0x46, 0x118, 0xFF00, Cajino_GetInfo(var));
+        xglPacketTextureTrans((void *)0x01410000);
+        SetRegAD(Pkt, 0x3F, 0);
+        MakeSprite(&ViewSamTex[var * 28], sam_rect);
+    }
+    return var;
+}
 
 static int VW_ViewMode(int index);
 static int VW_SamMode(int enable);
@@ -3790,7 +4665,78 @@ void MiniG_Init(void)
     InitWork();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", MiniG_Main);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern const char D_00A0C6E0[];
+extern const char D_00A0C6F0[];
+
+int MiniG_Main(void)
+{
+    unsigned char *w;
+    unsigned char *t = (unsigned char *)&Gwork;
+
+    switch (*(int *)(t + 8)) {
+    case 0:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x240) == 0) {
+            init_menu_mode();
+            *(short *)(w + 0x240) = 1;
+        }
+        if (menu_mode() != 0) {
+            return 1;
+        }
+        break;
+    case 1:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x242) == 0) {
+            init_slot();
+            *(short *)(w + 0x242) = 1;
+        }
+        slot_main();
+        break;
+    case 2:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x244) == 0) {
+            PokerInit();
+            *(short *)(w + 0x244) = 1;
+        }
+        PokerMain();
+        break;
+    case 3:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x246) == 0) {
+            init_coin();
+            *(short *)(w + 0x246) = 1;
+        }
+        coin_main();
+        break;
+    case 4:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x248) == 0) {
+            init_shop();
+            *(short *)(w + 0x248) = 1;
+        }
+        shop_main();
+        break;
+    case 5:
+        w = (unsigned char *)Gwork;
+        if (*(short *)(w + 0x24A) == 0) {
+            VW_Init();
+            *(short *)(w + 0x24A) = 1;
+        }
+        VW_Main();
+        break;
+    case 6:
+        NineGameMain();
+        break;
+    case 7:
+        test_mode();
+        break;
+    default:
+        return 0;
+    }
+    xglFontDebugPrintf(4, 0, D_00A0C6E0, D_00A0C6F0);
+    return 0;
+}
 
 /* Types recovered upstream (origin/master); kept for reference. */
 typedef unsigned int CasinoSpriteWords[7];

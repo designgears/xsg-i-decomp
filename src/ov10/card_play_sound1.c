@@ -170,7 +170,546 @@ void CMIBGInit(CardGameWork *work)
     CardFread(0x01FB0300, filename);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", CardMainInit);
+extern u8 CardInitialDataPack[];
+extern u16 CardCommandPlay[];
+extern u8 D_4A6840[];
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) CardMainVec;
+typedef int Q16 __attribute__((mode(TI)));
+typedef struct { u8 pad[0x5BB0]; u32 a[4]; u32 b[4]; } CardMainSub;
+extern float s_asIntensity[4][4];
+extern float s_asDirection[4][4];
+extern char D_00A4BDB0[];
+extern char D_00A4BDD0[];
+extern char D_00A4BDF0[];
+extern char D_00A4BE08[];
+extern char D_00A4BE20[];
+extern char D_00A4BE38[];
+extern char D_00A4BE50[];
+extern char D_00A4BE68[];
+extern char D_00A4BE80[];
+extern char D_00A4BE98[];
+extern char D_00A4BEB0[];
+extern char D_00A4BEC8[];
+extern char D_00A4BEE0[];
+extern char D_00A4BEF8[];
+extern char D_00A4BF10[];
+extern char D_00A4BF20[];
+extern char D_00A4BF38[];
+extern char D_00A4BF50[];
+extern char D_00A4BF68[];
+extern char D_00A4BF80[];
+extern char D_00A4BF90[];
+extern char D_00A4BFA0[];
+extern char D_00A4BFB0[];
+extern char D_00A4BFC0[];
+extern char D_00A4BFD8[];
+extern char D_00A4BFE8[];
+extern char D_00A4C000[];
+extern char D_00A4C018[];
+extern char D_00A4C030[];
+extern char D_00A4C048[];
+extern char D_00A4C060[];
+extern char D_00A4C078[];
+extern char D_00A4C090[];
+extern char D_00A4C0A8[];
+extern char D_00A4C0C0[];
+extern char D_00A4C0D8[];
+extern char D_00A4C0F0[];
+extern char D_00A4C100[];
+extern char D_00A4C110[];
+extern char D_00A4C120[];
+extern char D_00A4C130[];
+extern char D_00A4C140[];
+extern char D_00A4C150[];
+extern char D_00A4C160[];
+extern char D_00A4C170[];
+extern char D_00A4C180[];
+extern char D_00A4C190[];
+extern char D_00A4C1A0[];
+extern char D_00A4C1B0[];
+extern char D_00A4C1C0[];
+extern char D_00A4C1D0[];
+extern char D_00A4C1E0[];
+extern char D_00A4C1F8[];
+extern char D_00A4C210[];
+extern char D_00A4C218[];
+extern char D_00A4C220[];
+extern char D_00A4C228[];
+extern char D_00A4C230[];
+extern char D_00A4C238[];
+extern char D_00A4C240[];
+extern char D_00A4C248[];
+extern char D_00A4C250[];
+extern char D_00A4C258[];
+extern char D_00A4C260[];
+extern char D_00A4C268[];
+extern char D_00A4C270[];
+extern char D_00A4C278[];
+extern char D_00A4C280[];
+extern char D_00A4C288[];
+extern char D_00A4C290[];
+extern char D_00A4C298[];
+extern char D_00A4C2A0[];
+extern char D_00A4C2A8[];
+extern char D_00A4C2B0[];
+extern char D_00A4C2C0[];
+extern char D_00A4C2D0[];
+extern char D_00A4C2E0[];
+extern char D_00A4C2F0[];
+extern char D_00A4C300[];
+extern char D_00A4C310[];
+extern char D_00A4C320[];
+extern char D_00A4C330[];
+extern char D_00A4C340[];
+extern char D_00A4C350[];
+extern char D_00A4C360[];
+extern char D_00A4C370[];
+extern char D_00A4C380[];
+extern char D_00A4C390[];
+extern char D_00A4C3A0[];
+extern char D_00A4C3B0[];
+extern char D_00A4C3C0[];
+extern char D_00A4C3D0[];
+extern char D_00A4C3E0[];
+extern char D_00A4C3F0[];
+extern char D_00A4C400[];
+extern char D_00A4C408[];
+extern char D_00A4C410[];
+extern char D_00A4C418[];
+extern char D_00A4C420[];
+extern char D_00A4C428[];
+extern char D_00A4C430[];
+extern char D_00A4C438[];
+extern char D_00A4C440[];
+extern char D_00A4C448[];
+extern char D_00A4C450[];
+extern char D_00A4C458[];
+extern char D_00A4C460[];
+extern char D_00A4C468[];
+extern char D_00A4C470[];
+extern char D_00A4C478[];
+extern char D_00A4C480[];
+extern char D_00A4C488[];
+extern char D_00A4C490[];
+extern char D_00A4C498[];
+extern char D_00A4C4A0[];
+extern char D_00A4C4B0[];
+extern char D_00A4C4C0[];
+extern char D_00A4C4D0[];
+extern char D_00A4C4E0[];
+extern char D_00A4C4F0[];
+extern char D_00A4C500[];
+extern char D_00A4C510[];
+extern char D_00A4C520[];
+extern char D_00A4C530[];
+extern char D_00A4C540[];
+extern char D_00A4C550[];
+extern char D_00A4C560[];
+extern char D_00A4C570[];
+extern char D_00A4C580[];
+extern char D_00A4C590[];
+extern char D_00A4C5A0[];
+extern char D_00A4C5B8[];
+extern char D_00A4C5D0[];
+extern char D_00A4C5E8[];
+extern char D_00A4C600[];
+extern char D_00A4C618[];
+extern char D_00A4C630[];
+extern char D_00A4C648[];
+extern char D_00A4C660[];
+extern char D_00A4C678[];
+extern char D_00A4C690[];
+extern char D_00A4C6A0[];
+extern char D_00A4C6B8[];
+extern char D_00A4C6D0[];
+extern char D_00A4C6E8[];
+extern char D_00A4C700[];
+extern char D_00A4C718[];
+extern char D_00A4C730[];
+extern char D_00A4C748[];
+extern int CardAddList(void *o, int idx);
+extern void xglMatrixScale(float (*dst)[4], float (*src)[4], float *scale);
+extern void CardHelpFileLoad(void);
+extern void InitCpuDeck(void);
+extern void xglLightIntensityParallel(void *light, int no, void *color);
+extern void xglLightAngle(void *light, int no, void *dir);
+static inline void CardMainQCopy(void *s, void *d)
+{
+  do
+  {
+    volatile Q16 *sp = (volatile Q16 *) s;
+    volatile Q16 *dp = (volatile Q16 *) d;
+    *dp = *sp;
+  }
+  while (0);
+}
+
+s32 CardMainInit(CardGameWork *work)
+{
+  char filename[32];
+  float scale[4];
+  CardGameWork *new_var;
+  StudioLight *light;
+  CardMainVec campos __attribute__((aligned(16)));
+  CardSaveData *save;
+  float (*mat)[4];
+  int i;
+  int j;
+  int sum;
+  u8 b;
+  int defs;
+  CardModelEntry *entry;
+  CardMainSub *psave;
+  u8 *bits;
+  save = (CardSaveData *) D_4A6840;
+  work->save = save;
+  if (!((1 & save->flags) & 0xFF))
+  {
+    save->flags |= 1;
+    sum = 0;
+    i = 0;
+    work->save->flags |= 0x20;
+    do
+    {
+      b = CardInitialDataPack[i];
+      *((u8 *) ((((char *) i) + ((int) work->save)) + 0x2C)) = b;
+      sum = (sum + b) & 0xFF;
+      *((u8 *) ((((char *) i) + ((int) work->save)) + 0x56)) = b;
+      *((u8 *) ((((char *) i) + ((int) work->save)) + 0x80)) = b;
+      *((u8 *) ((((char *) i) + ((int) work->save)) + 0xAA)) = b;
+      *((u8 *) ((((char *) i) + ((int) work->save)) + 0xD4)) = b;
+      i++;
+      CardAddList(work, b);
+    }
+    while (i < 0x28);
+    sum = (~sum) & 0xFF;
+    *((u16 *) (((u8 *) work->save) + 0x2A)) = sum;
+    *((u16 *) (((u8 *) work->save) + 0x54)) = sum;
+    *((u16 *) (((u8 *) work->save) + 0x7E)) = sum;
+    *((u16 *) (((u8 *) work->save) + 0xA8)) = sum;
+    *((u16 *) (((u8 *) work->save) + 0xD2)) = sum;
+  }
+  {
+    i = 0;
+    bits = &work->save->unmodeled_02[2];
+    for (i = 0; i < 150; i++)
+    {
+      ((u16 *) work->ownedCount)[i] = (bits[i / 4] >> ((i % 4) * 2)) & 3;
+    }
+
+  }
+  if (work->save->background >= 6)
+  {
+    work->save->background = 0;
+  }
+  psave = (CardMainSub *) (&work->save);
+  psave = (CardMainSub *) (&work->save);
+  for (i = 0; i < 40; i++)
+  {
+    work->playerDeck[i] = 0xFF;
+    work->enemyDeck[i] = 0xFF;
+  }
+
+  mat = work->models[0].matrix;
+  entry = work->models;
+  i = 0xF;
+  do
+  {
+    float (*cur)[4] = mat;
+    entry->visible = 0;
+    entry->model = 0;
+    i--;
+    entry->texture = 0;
+    entry++;
+    mat = (float (*)[4]) (((char *) cur) + 0x50);
+    xglMatrixUnit(cur);
+  }
+  while (i >= 0);
+  work->cursor.selectionMode = 0;
+  work->cursorZone = 0;
+  work->cursorIndex = 0;
+  work->highlightX = (work->highlightY = (work->highlightScaleX = (work->highlightScaleY = 1.0f)));
+  work->cursorPos[0] = (work->cursorPos[1] = (work->cursorPos[2] = 0.0f));
+  work->commandIds = CardCommandPlay;
+  *((float *) (&work->unmodeled_5B7C[0])) = 1.0f;
+  {
+    u32 *zp = psave->b;
+    i = 3;
+    do
+    {
+      i--;
+      zp[-4] = 0;
+      *zp = 0;
+      zp++;
+    }
+    while (i >= 0);
+  }
+  work->unmodeled_7105[0] = 0;
+  work->unmodeled_70F0 = 0;
+  work->rotStageCooldown = 0;
+  work->unmodeled_70F2[0] = 0;
+  work->rotStageId = 0;
+  work->fase = 0;
+  defs = CardDataLoad((u16 *) &work->cardCount);
+  work->definitions = (CardDefinition *) defs;
+  if (defs == 0)
+  {
+    printf(D_00A4BDB0);
+    return 0;
+  }
+  if (((u32 (*)(int, int)) CardGraphicLoad)(defs, *((u16 *) &work->cardCount)) == 0)
+  {
+    printf(D_00A4BDD0);
+    return 0;
+  }
+  CardFread(0x01D00000, D_00A4BDF0);
+  CardFread(0x01D00510, D_00A4BE08);
+  CardFread(0x01D00A20, D_00A4BE20);
+  CardFread(0x01D00F30, D_00A4BE38);
+  CardFread(0x01D01440, D_00A4BE50);
+  CardFread(0x01D01950, D_00A4BE68);
+  CardFread(0x01D02000, D_00A4BE80);
+  CardFread(0x01D02510, D_00A4BE98);
+  CardFread(0x01D02A20, D_00A4BEB0);
+  CardFread(0x01D02F30, D_00A4BEC8);
+  CardFread(0x01D03440, D_00A4BEE0);
+  CardFread(0x01D03950, D_00A4BEF8);
+  CardFread(0x01D06000, D_00A4BF10);
+  CardFread(0x01D08000, D_00A4BF20);
+  CardFread(0x01D0C000, D_00A4BF38);
+  CardFread(0x01D10000, D_00A4BF50);
+  CardFread(0x01D12000, D_00A4BF68);
+  CardFread(0x01D14000, D_00A4BF80);
+  CardFread(0x01D18000, D_00A4BF90);
+  CardFread(0x01D1C000, D_00A4BFA0);
+  CardFread(0x01D20000, D_00A4BFB0);
+  CardFread(0x01D60000, D_00A4BFC0);
+  CardFread(0x01D80000, D_00A4BFD8);
+  *((u32 *) (((char *) work) + 0x5BBC)) = 0x01D00000;
+  *((u32 *) (((char *) work) + 0x5BC0)) = 0x01D02000;
+  *((u32 *) (((char *) work) + 0x5BC4)) = 0x01D08000;
+  *((u32 *) (((char *) work) + 0x5BCC)) = 0x01D20000;
+  *((u32 *) (((char *) work) + 0x5BD0)) = 0x01D20000;
+  *((u32 *) (((char *) work) + 0x5BD4)) = 0x01D60000;
+  CardFread(0x01DA0000, D_00A4BFE8);
+  CardFread(0x01DA2B00, D_00A4C000);
+  CardFread(0x01DA5600, D_00A4C018);
+  CardFread(0x01DA8100, D_00A4C030);
+  CardFread(0x01DAAC00, D_00A4C048);
+  CardFread(0x01DAD700, D_00A4C060);
+  CardFread(0x01DB0200, D_00A4C078);
+  CardFread(0x01DB2D00, D_00A4C090);
+  CardFread(0x01DB5800, D_00A4C0A8);
+  CardFread(0x01DDF800, D_00A4C0C0);
+  CardFread(0x01DDFC00, D_00A4C0D8);
+  CardFread(0x016E0000, D_00A4C0F0);
+  CardFread(0x016F8100, D_00A4C100);
+  CardFread(0x016F8500, D_00A4C110);
+  CardFread(0x016F8900, D_00A4C120);
+  CardFread(0x016FD440, D_00A4C130);
+  CardFread(0x01701F80, D_00A4C140);
+  CardFread(0x01706AC0, D_00A4C150);
+  CardFread(0x0170B600, D_00A4C160);
+  CardFread(0x0170D600, D_00A4C170);
+  CardFread(0x0170F600, D_00A4C180);
+  CardFread(0x01713600, D_00A4C190);
+  CardFread(0x01714600, D_00A4C1A0);
+  CardFread(0x01715600, D_00A4C1B0);
+  CardFread(0x01716600, D_00A4C1C0);
+  CardFread(0x01717600, D_00A4C1D0);
+  CardFread(0x01C73000, D_00A4C1E0);
+  CardFread(0x01C74000, D_00A4C1F8);
+  CardFread(0x01C80000, D_00A4C210);
+  CardFread(0x01C80400, D_00A4C218);
+  CardFread(0x01C80800, D_00A4C220);
+  CardFread(0x01C80C00, D_00A4C228);
+  CardFread(0x01C81000, D_00A4C230);
+  CardFread(0x01C81400, D_00A4C238);
+  CardFread(0x01C81800, D_00A4C240);
+  CardFread(0x01C81C00, D_00A4C248);
+  CardFread(0x01C82000, D_00A4C250);
+  CardFread(0x01C82400, D_00A4C258);
+  CardFread(0x01C82800, D_00A4C260);
+  CardFread(0x01C82C00, D_00A4C268);
+  CardFread(0x01C83000, D_00A4C270);
+  CardFread(0x01C83400, D_00A4C278);
+  CardFread(0x01C83800, D_00A4C280);
+  CardFread(0x01C83C00, D_00A4C288);
+  CardFread(0x01C84000, D_00A4C290);
+  CardFread(0x01C84400, D_00A4C298);
+  CardFread(0x01C84800, D_00A4C2A0);
+  CardFread(0x01C84C00, D_00A4C2A8);
+  CardFread(0x01C85000, D_00A4C2B0);
+  CardFread(0x01C85400, D_00A4C2C0);
+  CardFread(0x01C85800, D_00A4C2D0);
+  CardFread(0x01C85C00, D_00A4C2E0);
+  CardFread(0x01C86000, D_00A4C2F0);
+  CardFread(0x01C86400, D_00A4C300);
+  CardFread(0x01C86800, D_00A4C310);
+  CardFread(0x01C86C00, D_00A4C320);
+  CardFread(0x01C87000, D_00A4C330);
+  CardFread(0x01C87400, D_00A4C340);
+  CardFread(0x01C87800, D_00A4C350);
+  CardFread(0x01C87C00, D_00A4C360);
+  CardFread(0x01C88000, D_00A4C370);
+  new_var = work;
+  CardFread(0x01C88400, D_00A4C380);
+  CardFread(0x01C88800, D_00A4C390);
+  CardFread(0x01C88C00, D_00A4C3A0);
+  CardFread(0x01C89000, D_00A4C3B0);
+  CardFread(0x01C89400, D_00A4C3C0);
+  CardFread(0x01C89800, D_00A4C3D0);
+  CardFread(0x01C89C00, D_00A4C3E0);
+  CardFread(0x01C8A000, D_00A4C3F0);
+  CardFread(0x01C8A400, D_00A4C400);
+  CardFread(0x01C8A800, D_00A4C408);
+  CardFread(0x01C8AC00, D_00A4C410);
+  CardFread(0x01C8B000, D_00A4C418);
+  CardFread(0x01C8B400, D_00A4C420);
+  CardFread(0x01C8B800, D_00A4C428);
+  CardFread(0x01C8BC00, D_00A4C430);
+  CardFread(0x01C8C000, D_00A4C438);
+  CardFread(0x01C8C400, D_00A4C440);
+  CardFread(0x01C8C800, D_00A4C448);
+  CardFread(0x01C8CC00, D_00A4C450);
+  CardFread(0x01C8D000, D_00A4C458);
+  CardFread(0x01C8D400, D_00A4C460);
+  CardFread(0x01C8D800, D_00A4C468);
+  CardFread(0x01C8DC00, D_00A4C470);
+  CardFread(0x01C8E000, D_00A4C478);
+  CardFread(0x01C8E400, D_00A4C480);
+  CardFread(0x01C8E800, D_00A4C488);
+  CardFread(0x01C8EC00, D_00A4C490);
+  CardFread(0x01C8F000, D_00A4C498);
+  CardFread(0x01C8F400, D_00A4C4A0);
+  CardFread(0x01C8F800, D_00A4C4B0);
+  CardFread(0x01C8FD10, D_00A4C4C0);
+  CardFread(0x01C90220, D_00A4C4D0);
+  CardFread(0x01C90730, D_00A4C4E0);
+  CardFread(0x01C91000, D_00A4C4F0);
+  CardFread(0x01C94050, D_00A4C500);
+  CardFread(0x01C990A0, D_00A4C510);
+  CardFread(0x01C9BB70, D_00A4C520);
+  CardFread(0x01CA1000, D_00A4C530);
+  CardFread(0x01CA1C00, D_00A4C540);
+  CardFread(0x01CA2B00, D_00A4C550);
+  CardFread(0x01CA4000, D_00A4C560);
+  CardFread(0x01CA6000, D_00A4C570);
+  CardFread(0x01CB0000, D_00A4C580);
+  CardFread(0x01CC0050, D_00A4C590);
+  CardFread(0x01930000, D_00A4C5A0);
+  CardFread(0x01931800, D_00A4C5B8);
+  CardFread(0x01933000, D_00A4C5D0);
+  CardFread(0x01934800, D_00A4C5E8);
+  CardFread(0x01936000, D_00A4C600);
+  CardFread(0x01937800, D_00A4C618);
+  CardFread(0x01DE0000, D_00A4C630);
+  CardFread(0x01DF0400, D_00A4C648);
+  CardFread(0x01DF6000, D_00A4C660);
+  CardFread(0x01E00000, D_00A4C678);
+  CardFread(0x01E10000, D_00A4C690);
+  CardFread(0x01E20000, D_00A4C6A0);
+  CardFread(0x01E30000, D_00A4C6B8);
+  CardFread(0x01E38000, D_00A4C6D0);
+  strcpy(filename, BGFileNameList[new_var->save->background]);
+  strcat(filename, D_00A4BDA0);
+  CardFread(0x01E40000, filename);
+  CardFread(0x01EF0000, D_00A4C6E8);
+  CardFread(0x01F30100, D_00A4C700);
+  CardFread(0x01996000, D_00A4C718);
+  CardFread(0x0199A000, D_00A4C730);
+  CardFread(0x01F70200, D_00A4C748);
+  strcpy(filename, BGFileNameList[work->save->background]);
+  strcat(filename, D_00A4BDA8);
+  CardFread(0x01FB0300, filename);
+  work->models[0].model = (void *) 0x01DE0000;
+  new_var->models[0].texture = (void *) 0x01EF0000;
+  new_var->models[1].model = (void *) 0x01DF0400;
+  work->models[1].texture = (void *) 0x01F30100;
+  work->models[2].model = (void *) 0x01DF6000;
+  work->models[2].texture = (void *) 0x01F30100;
+  work->models[3].model = (void *) 0x01E00000;
+  work->models[3].texture = (void *) 0x01F30100;
+  new_var->models[4].model = (void *) 0x01E10000;
+  new_var->models[4].texture = (void *) 0x01F70200;
+  if (new_var->save->flags & 0x20)
+  {
+    new_var->models[7].texture = (void *) 0x01F70200;
+    work->models[7].model = (void *) 0x01E20000;
+    do
+    {
+    }
+    while (0);
+    new_var->models[5].model = (void *) 0x01E20000;
+    new_var->models[5].texture = (void *) 0x01F70200;
+  }
+  else
+  {
+ do { new_var->models[7].model = (void *) 0x01996000; work->models[7].texture = (void *) 0x0199A000; } while (0);
+    work->models[5].model = (void *) 0x01996000;
+    new_var->models[5].texture = (void *) 0x0199A000;
+  }
+  new_var->models[6].model = (void *) 0x01E10000;
+  if (!work->save)
+  {
+  }
+  work->models[6].texture = (void *) 0x01F70200;
+  new_var->models[15].model = (void *) 0x01E40000;
+  new_var->models[15].texture = (void *) 0x01FB0300;
+  for (i = 0; i < 16; i++)
+  {
+    xglMatrixUnit(new_var->models[i].matrix);
+  }
+
+  work->models[0].matrix[3][1] = 1.4728f;
+  scale[0] = 1.13f;
+  scale[3] = 1.0f;
+  scale[2] = 1.0f;
+  scale[1] = 1.0f;
+  xglMatrixScale(work->models[1].matrix, new_var->models[1].matrix, scale);
+  xglMatrixScale(new_var->models[2].matrix, work->models[2].matrix, scale);
+  xglMatrixScale(work->models[3].matrix, work->models[3].matrix, scale);
+  CardHelpFileLoad();
+  InitCpuDeck();
+  CardTitleInit(new_var);
+  campos.x = 0.0f;
+  campos.y = 0.0f;
+  campos.z = 5.8f;
+  campos.w = 1.0f;
+  save = (CardSaveData *) (&xglStudioSelectGetActiveCamera(0)->position);
+  CardMainQCopy(&campos, save);
+  j = 0;
+  xglStudioGetLight(&light);
+  work->fadeOutTimer = 0;
+  new_var->modelFadeInTimer = 0;
+  new_var->unmodeled_710A[0] = 0x80;
+  new_var->fadeOutColor[0] = 0x80;
+  new_var->unmodeled_710A[1] = 0x80;
+  work->fadeOutColor[1] = 0x80;
+  work->unmodeled_710A[2] = 0x80;
+  work->fadeOutColor[2] = 0x80;
+  work->unmodeled_710A[3] = 0x80;
+  new_var->fadeOutColor[3] = 0x80;
+  do
+  {
+    if (j == 0)
+    {
+      work->modelColor[0][0] = (work->modelColorTarget[0][0] = s_asIntensity[0][0]);
+      new_var->modelColor[0][1] = (work->modelColorTarget[0][1] = s_asIntensity[0][1]);
+      new_var->modelColor[0][2] = (new_var->modelColorTarget[0][2] = s_asIntensity[0][2]);
+      work->modelColor[0][3] = (work->modelColorTarget[0][3] = s_asIntensity[0][3]);
+      xglLightIntensityAmbient(light, s_asIntensity);
+    }
+    else
+    {
+      xglLightIntensityParallel(light, j - 1, &s_asIntensity[j]);
+      xglLightAngle(light, j - 1, s_asDirection[j]);
+    }
+    j++;
+  }
+  while (j < 4);
+  return 1;
+}
 
 void CardMainItemGetSub(int *prizes, int round)
 {
@@ -229,7 +768,7 @@ void CardMainAddItemSub(CardGameWork *work, int *prizes)
     if (prizes[3] != 0) {
         dataAccBoxInc(0x8E);
     }
-    dst = (u16 *)work->unmodeled_0010;
+    dst = (u16 *)work->ownedCount;
     bits = &work->save->unmodeled_02[2];
     for (i = 0; i < 150; i++) {
         int t = bits[i / 4];
@@ -239,9 +778,631 @@ void CardMainAddItemSub(CardGameWork *work, int *prizes)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", NewCMPGameModeExit);
+extern char D_00A4C778[];
+extern char D_00A4C798[];
+extern char D_00A4C7A8[];
+extern char D_00A4C7B8[];
+extern char D_00A4C7D8[];
+extern char D_00A4C7E8[];
+extern char D_00A4C7F8[];
+extern char D_00A4C808[];
+extern char D_00A4C818[];
+extern char D_00A4C830[];
+extern char D_00A4C848[];
+extern char D_00A4C858[];
+extern char D_00A4C788[];
+extern char D_00A4C870[];
+extern float atColor[4][4];
+extern float auColor[4][4];
+extern char *CardPlayTMessList[];
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_play_sound1", CaedGameWinMode);
+s32 NewCMPGameModeExit(int arg0, void *arg1)
+{
+    float matrix[4][4];
+    float placement[4][4];
+    float position[4];
+    float scale[4];
+    unsigned short flags;
+    s32 ret;
+    char *text;
+    float zero;
+
+    ret = 0;
+    flags = *(unsigned short *)((char *)arg1 + 0x5AD6);
+    if (arg0 != 0) {
+        flags = *(unsigned short *)((char *)arg1 + 0x5ADE);
+    }
+    xglFontDebugPrintf(0x18, 0xA, "Build:Nov 24 2002 11:02:50");
+    zero = 0.0f;
+    position[1] = zero;
+    position[0] = zero;
+    position[2] = 1.01f;
+    position[3] = 1.0f;
+    scale[1] = 0.8f;
+    scale[0] = 0.8f;
+    scale[3] = 1.0f;
+    scale[2] = 1.0f;
+    xglMatrixUnit(matrix);
+
+    if (flags & 0x1000) {
+        if (*(short *)((char *)arg1 + 0x5AE6) < 0) {
+            if (*(short *)((char *)arg1 + 0x5AE4) > 0) {
+                *(short *)((char *)arg1 + 0x5AE4) = *(short *)((char *)arg1 + 0x5AE4) - 1;
+                xglSoundEffectNormalID(3, 0);
+            }
+        } else if (*(short *)((char *)arg1 + 0x5AE6) > 0) {
+            *(short *)((char *)arg1 + 0x5AE6) = *(short *)((char *)arg1 + 0x5AE6) - 1;
+            xglSoundEffectNormalID(3, 0);
+        }
+    } else if (flags & 0x4000) {
+        if (*(short *)((char *)arg1 + 0x5AE6) < 0) {
+            if (*(short *)((char *)arg1 + 0x5AE4) < 3) {
+                *(short *)((char *)arg1 + 0x5AE4) = *(short *)((char *)arg1 + 0x5AE4) + 1;
+                xglSoundEffectNormalID(3, 0);
+            }
+        } else if (*(short *)((char *)arg1 + 0x5AE6) < 3) {
+            *(short *)((char *)arg1 + 0x5AE6) = *(short *)((char *)arg1 + 0x5AE6) + 1;
+            xglSoundEffectNormalID(3, 0);
+        }
+    }
+    if (flags & 0x800) {
+        xglSoundEffectNormalID(2, 0);
+        ret = -1;
+    }
+    if (flags & 0x40) {
+        if (*(short *)((char *)arg1 + 0x5AE6) < 0) {
+            *(short *)((char *)arg1 + 0x5AE4) = 0;
+            ret = -1;
+            xglSoundEffectNormalID(2, 0);
+        } else {
+            *(short *)((char *)arg1 + 0x5AE6) = -1;
+            xglSoundEffectNormalID(2, 0);
+        }
+    } else if (flags & 0x20) {
+        if (*(short *)((char *)arg1 + 0x5AE6) < 0) {
+            switch (*(short *)((char *)arg1 + 0x5AE4)) {
+            case 0:
+                *((unsigned char *)arg1 + 0x7109) = 0x80;
+                xglSoundEffectNormalID(1, 0);
+                *((unsigned char *)arg1 + 0x59BC) = 0x30;
+                *((char *)arg1 + 0x59BD) = arg0;
+                break;
+            case 2:
+                ret = 1;
+                *((unsigned char *)arg1 + 0x7109) = 0x80;
+                break;
+            case 1:
+                xglSoundEffectNormalID(1, 0);
+                *(short *)((char *)arg1 + 0x5AE6) = 0;
+                break;
+            case 3:
+                *((unsigned char *)arg1 + 0x7109) = 0x80;
+                xglSoundEffectNormalID(1, 0);
+                *((unsigned char *)arg1 + 0x7104) = 0x10;
+                *(unsigned short *)((char *)arg1 + 0x7102) = 10;
+                *(unsigned short *)((char *)arg1 + 0x59B4) = 0;
+                break;
+            }
+        } else {
+            switch (*(short *)((char *)arg1 + 0x5AE6)) {
+            case 0:
+                {
+                    unsigned char *q = *(unsigned char **)((char *)arg1 + 0xC);
+                    unsigned char v = *q;
+                    *q = (v & 0xF7) | ((v + 8) & 8);
+                }
+                xglSoundEffectNormalID(1, 0);
+                break;
+            case 1:
+                {
+                    unsigned char *q = *(unsigned char **)((char *)arg1 + 0xC);
+                    unsigned char v = *q;
+                    *q = (v & 0xFB) | ((v + 4) & 4);
+                }
+                xglSoundEffectNormalID(1, 0);
+                break;
+            case 2:
+                {
+                    unsigned char *q = *(unsigned char **)((char *)arg1 + 0xC);
+                    unsigned char v = *q;
+                    *q = (v & 0xFD) | ((v + 2) & 2);
+                }
+                xglSoundEffectNormalID(1, 0);
+                break;
+            case 3:
+                {
+                    unsigned char *q = *(unsigned char **)((char *)arg1 + 0xC);
+                    unsigned char v = *q;
+                    *q = (v & 0xEF) | ((v + 0x10) & 0x10);
+                }
+                xglSoundEffectNormalID(1, 0);
+                break;
+            }
+        }
+    }
+
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C778);
+    if (*(short *)((char *)arg1 + 0x5AE4) == 0) {
+        nmlModelSetLight(atColor, asDir);
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C780.text);
+    } else {
+        nmlModelSetLight(auColor, asDir);
+    }
+    xglFontPrint(0, 0, 0, D_00A4C788);
+    xglFontPrint(0xE2, 0x8A, 0xFFF0, D_00A4C790);
+    position[1] = 0.58869994f;
+    xglMatrixTrans(placement, matrix, position);
+    xglMatrixScale(placement, placement, scale);
+    nmlModelSetPlace(placement);
+    nmlModelSetTexture((void *) 0x0170F600);
+    nmlModelEntryCard((void *) 0x0170B600);
+
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C778);
+    if (*(short *)((char *)arg1 + 0x5AE4) == 2) {
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C780.text);
+        nmlModelSetLight(atColor, asDir);
+    } else {
+        nmlModelSetLight(auColor, asDir);
+    }
+    xglFontPrint(0, 0, 0, D_00A4C788);
+    xglFontPrint(0xD8, 0xAF, 0xFFF0, D_00A4C798);
+    position[1] = 0.0098f;
+    xglMatrixTrans(placement, matrix, position);
+    xglMatrixScale(placement, placement, scale);
+    nmlModelSetPlace(placement);
+    nmlModelSetTexture((void *) 0x0170F600);
+    nmlModelEntryCard((void *) 0x0170B600);
+
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C778);
+    if (*(short *)((char *)arg1 + 0x5AE4) == 1) {
+        nmlModelSetLight(atColor, asDir);
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C780.text);
+    } else {
+        nmlModelSetLight(auColor, asDir);
+    }
+    xglFontPrint(0, 0, 0, D_00A4C788);
+    xglFontPrint(0xC4, 0xD5, 0xFFF0, D_00A4C7A8);
+    position[1] = 0.3f;
+    xglMatrixTrans(placement, matrix, position);
+    xglMatrixScale(placement, placement, scale);
+    nmlModelSetPlace(placement);
+    nmlModelSetTexture((void *) 0x0170F600);
+    nmlModelEntryCard((void *) 0x0170B600);
+
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C778);
+    if (*(short *)((char *)arg1 + 0x5AE4) == 3) {
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C780.text);
+        nmlModelSetLight(atColor, asDir);
+    } else {
+        nmlModelSetLight(auColor, asDir);
+    }
+    xglFontPrint(0, 0, 0, D_00A4C788);
+    xglFontPrint(0xCE, 0xFB, 0xFFF0, D_00A4C7B8);
+    position[1] = -0.2792f;
+    xglMatrixTrans(placement, matrix, position);
+    xglMatrixScale(placement, placement, scale);
+    nmlModelSetPlace(placement);
+    nmlModelSetTexture((void *) 0x0170F600);
+    nmlModelEntryCard((void *) 0x0170B600);
+
+    if (*(short *)((char *)arg1 + 0x5AE6) >= 0) {
+        position[0] = 1.4374f;
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C7C8.text);
+        if (*(short *)((char *)arg1 + 0x5AE6) == 0) {
+            xglFontPrint(0, 0, 0xFFF0, D_00A4C7D0.text);
+            nmlModelSetLight(asColor, asDir);
+        }
+        xglFontPrint(0, 0, 0, D_00A4C788);
+        if (*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 8) {
+            xglFontPrint(0x168, 0x9B, 0xFFF0, D_00A4C7D8);
+        } else {
+            xglFontPrint(0x168, 0x9B, 0xFFF0, D_00A4C7E8);
+        }
+        position[1] = 0.4415f;
+        xglMatrixTrans(placement, matrix, position);
+        xglMatrixScale(placement, placement, scale);
+        nmlModelSetPlace(placement);
+        nmlModelSetTexture((void *) 0x0170F600);
+        nmlModelEntryCard((void *) 0x0170D600);
+
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C7C8.text);
+        if (*(short *)((char *)arg1 + 0x5AE6) == 1) {
+            xglFontPrint(0, 0, 0xFFF0, D_00A4C7D0.text);
+            nmlModelSetLight(asColor, asDir);
+        }
+        xglFontPrint(0, 0, 0, D_00A4C788);
+        if (*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 4) {
+            xglFontPrint(0x168, 0xC1, 0xFFF0, D_00A4C7F8);
+        } else {
+            xglFontPrint(0x168, 0xC1, 0xFFF0, D_00A4C808);
+        }
+        position[1] = 0.1509f;
+        xglMatrixTrans(placement, matrix, position);
+        xglMatrixScale(placement, placement, scale);
+        nmlModelSetPlace(placement);
+        nmlModelSetTexture((void *) 0x0170F600);
+        nmlModelEntryCard((void *) 0x0170D600);
+
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C7C8.text);
+        if (*(short *)((char *)arg1 + 0x5AE6) == 2) {
+            xglFontPrint(0, 0, 0xFFF0, D_00A4C7D0.text);
+            nmlModelSetLight(asColor, asDir);
+        }
+        xglFontPrint(0, 0, 0, D_00A4C788);
+        if (!(*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 2)) {
+            xglFontPrint(0x155, 0xE6, 0xFFF0, D_00A4C818);
+        } else {
+            xglFontPrint(0x155, 0xE6, 0xFFF0, D_00A4C830);
+        }
+        position[1] = -0.1376f;
+        xglMatrixTrans(placement, matrix, position);
+        xglMatrixScale(placement, placement, scale);
+        nmlModelSetPlace(placement);
+        nmlModelSetTexture((void *) 0x0170F600);
+        nmlModelEntryCard((void *) 0x0170D600);
+
+        xglFontPrint(0, 0, 0xFFF0, D_00A4C7C8.text);
+        if (*(short *)((char *)arg1 + 0x5AE6) == 3) {
+            xglFontPrint(0, 0, 0xFFF0, D_00A4C7D0.text);
+            nmlModelSetLight(asColor, asDir);
+        }
+        xglFontPrint(0, 0, 0, D_00A4C788);
+        if (!(*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 0x10)) {
+            xglFontPrint(0x168, 0x109, 0xFFF0, D_00A4C848);
+        } else {
+            xglFontPrint(0x168, 0x109, 0xFFF0, D_00A4C858);
+        }
+        position[1] = -0.40780002f;
+        xglMatrixTrans(placement, matrix, position);
+        xglMatrixScale(placement, placement, scale);
+        nmlModelSetPlace(placement);
+        nmlModelSetTexture((void *) 0x0170F600);
+        nmlModelEntryCard((void *) 0x0170D600);
+    }
+
+    xglMatrixUnit(matrix);
+    position[1] = -1.2f;
+    position[0] = zero;
+    position[2] = 1.01f;
+    scale[1] = 0.85f;
+    scale[0] = 0.85f;
+    xglMatrixUnit(matrix);
+    xglMatrixTrans(matrix, matrix, position);
+    xglMatrixScale(matrix, matrix, scale);
+    nmlModelSetPlace(matrix);
+    nmlModelSetTexture((void *) 0x01DB5800);
+    nmlModelEntryCard((void *) 0x01DA0000);
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C868);
+    if (*(short *)((char *)arg1 + 0x5AE6) < 0) {
+        text = CardPlayTMessList[0x46 + *(short *)((char *)arg1 + 0x5AE4)];
+    } else {
+        text = CardPlayTMessList[0x4B + *(short *)((char *)arg1 + 0x5AE6)];
+    }
+    CardDispTxtSub(0x18, 0x142, text, 0x17);
+    xglFontPrint(0, 0, 0xFFF0, D_00A4C870);
+    {
+        float zero0 = 0.0f;
+        float one0 = 1.0f;
+
+        position[1] = zero0;
+        position[0] = zero0;
+        position[3] = one0;
+        position[2] = one0;
+    }
+    xglMatrixUnit(matrix);
+    xglMatrixTrans(matrix, matrix, position);
+    nmlModelSetPlace(matrix);
+    nmlModelEntryCard((void *) 0x01D06000);
+    return ret;
+}
+
+extern u8 D_00A56F10;
+extern void nmlModelSetToumei(int enabled);
+extern void nmlModelSetAlpha(unsigned int alpha);
+extern void nmlModelEntry(int entry);
+extern int CardPlayYamaCnt(void *side);
+extern void CGPRefreshFieldHP(CardGameWork *work);
+static inline void CaedMtxScaleI(float matrix[4][4], float *scale, float x, float y, float z, float w)
+{
+    xglMatrixUnit(matrix);
+    scale[1] = y;
+    scale[0] = x;
+    scale[3] = w;
+    scale[2] = z;
+}
+static inline void CaedMtxScaleS(float matrix[4][4], float *scale)
+{
+    xglMatrixUnit(matrix);
+    scale[1] = (float)D_00A56F10 * 0.055555556f + 0.0f;
+    scale[0] = (float)D_00A56F10 * 0.055555556f + 0.0f;
+    scale[3] = 1.0f;
+    scale[2] = 1.0f;
+}
+#define CaedMtxScaleV(matrix, scale, x, y, z, w) \
+    (CaedMtxScaleI(matrix, scale, x, y, z, w), v = scale, xglMatrixScale(matrix, matrix, v))
+static inline void CaedMtxScale(float matrix[4][4], float *scale, float x, float y, float z, float w)
+{
+    xglMatrixUnit(matrix);
+    scale[1] = y;
+    scale[0] = x;
+    scale[3] = w;
+    scale[2] = z;
+    xglMatrixScale(matrix, matrix, scale);
+}
+#define CaedMtxScaleK(matrix, scale, x, y, z, w) \
+    (xglMatrixUnit(matrix), scale[1] = y, scale[0] = x, scale[3] = w, scale[2] = z, xglMatrixScale(matrix, matrix, scale))
+#define SCL ((float)D_00A56F10 * 0.44444445f + 1.0f)
+static inline void CaedMtxDraw(float matrix[4][4], void *tex, int model)
+{
+    nmlModelSetPlace(matrix);
+    nmlModelSetTexture(tex);
+    nmlModelSetToumei(1);
+    nmlModelSetAlpha(0x48U);
+    nmlModelEntry(model);
+}
+static inline void CaedMtxDrawT(void *tex, int model)
+{
+    nmlModelSetTexture(tex);
+    nmlModelSetToumei(1);
+    nmlModelSetAlpha(0x48U);
+    nmlModelEntry(model);
+}
+static inline void CaedMtxDrawD(float matrix[4][4], int model)
+{
+    nmlModelSetPlace(matrix);
+    nmlModelSetTexture((void *)(((D_00A56F10 & 1) * 0x3680) + 0x01960000));
+    nmlModelSetToumei(1);
+    nmlModelSetAlpha(0x48U);
+    nmlModelEntry(model);
+}
+
+void CaedGameWinMode(s32 arg0, void *arg1, s32 arg2)
+{
+    float matrix[4][4];
+    float scale[4];
+    s32 a2 = arg2;
+    CardGameWork *work = arg1;
+    u16 temp_5 = (u16)work->command.step;
+    s16 temp_3 = work->command.step;
+
+    switch (temp_3) {
+    case 0:
+        work->command.step = (s16)(temp_5 + 1);
+        D_00A56F10 = 0x19;
+        return;
+    case 1: {
+        unsigned char *tp = &D_00A56F10;
+
+        if (*tp != 0) {
+            *tp = *tp - 1;
+            return;
+        }
+        if (work->command.slideDirection != 0) {
+            work->command.slideDirection = 0;
+            work->command.slideTimer = 10;
+        }
+        work->mess = 0;
+        work->interruptMess = 0;
+        work->permanentMess = 0;
+        work->player.hand.unmodeled_04[0] = CardPlayYamaCnt(&work->player.hand);
+        work->enemy.hand.unmodeled_04[0] = CardPlayYamaCnt(&work->enemy.hand);
+        CGPRefreshFieldHP(work);
+        *tp = 0x11;
+        switch (arg0) {
+        case 0:
+            if (a2 == 5) {
+                CardPlaySound4();
+            } else {
+                CardPlaySound3();
+            }
+            work->command.step = 2;
+            break;
+        case 1:
+            CardPlaySound3();
+            work->command.step = 10;
+            break;
+        case 2:
+            CardPlaySound3();
+            work->command.step = 0x14;
+            break;
+        case 3:
+            work->command.step = 0x1E;
+            break;
+        default:
+            work->command.step = 0x28;
+            break;
+        }
+        return;
+    }
+    case 2:
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = (s16)(temp_5 + 1);
+        return;
+    case 3:
+        CaedMtxScale(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 4: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, 1.0f, 1.0f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950F30);
+        if (D_00A56F10 == 0) {
+            D_00A56F10 = 0x11;
+            work->command.step = work->command.step + 1;
+            return;
+        }
+        D_00A56F10 = D_00A56F10 - 1;
+        return;
+    }
+    case 5:
+        CaedMtxScaleK(matrix, scale, 1.0f, 1.0f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950F30);
+        return;
+    case 10:
+        CaedMtxScale(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 11: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950510);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    }
+    case 12:
+        CaedMtxScaleK(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950510);
+        return;
+    case 20:
+        CaedMtxScale(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 21: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950A20);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    }
+    case 22:
+        CaedMtxScaleK(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951E60);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950A20);
+        return;
+    case 30:
+        CaedMtxScale(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950000);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 31: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950000);
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951440);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    }
+    case 32: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950000);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951440);
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951950);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    }
+    case 33:
+        CaedMtxScaleK(matrix, scale, 0.9f, 0.9f, 1.0f, 1.0f);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01950000);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951440);
+        CaedMtxDraw(matrix, (void *)0x01952D90, 0x01951950);
+        return;
+    case 40:
+        CaedMtxScale(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        CaedMtxDrawD(matrix, 0x01952880);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 41:
+        CaedMtxScaleK(matrix, scale, 1.0f, 1.0f, 1.0f, 1.0f);
+        CaedMtxDrawD(matrix, 0x01952880);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    case 42: {
+        float *v;
+        CaedMtxScaleV(matrix, scale, SCL, SCL, 1.0f, 1.0f);
+        nmlModelSetPlace(matrix);
+        CaedMtxDrawT((void *)(((D_00A56F10 & 1) * 0x3680) + 0x01960000), 0x01952370);
+        CaedMtxScaleS(matrix, scale);
+        v = scale;
+        xglMatrixScale(matrix, matrix, v);
+        nmlModelSetPlace(matrix);
+        CaedMtxDrawT((void *)(((D_00A56F10 & 1) * 0x3680) + 0x01960000), 0x01952880);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+            return;
+        }
+        D_00A56F10 = 0x11;
+        work->command.step = work->command.step + 1;
+        return;
+    }
+    case 43:
+        CaedMtxScaleK(matrix, scale, 1.0f, 1.0f, 1.0f, 1.0f);
+        CaedMtxDrawD(matrix, 0x01952370);
+        if (D_00A56F10 != 0) {
+            D_00A56F10 = D_00A56F10 - 1;
+        } else {
+            D_00A56F10 = 0x11;
+        }
+        return;
+    }
+}
 
 extern char D_00A4C788[];
 

@@ -153,7 +153,145 @@ static void fnECM02_PR000(void *self, void *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_ecm_02", fnECM02_DP000);
+typedef unsigned int ECM02Quad __attribute__((mode(TI)));
+typedef union ECM02QW {
+    ECM02Quad q;
+    unsigned long ul[2];
+    unsigned short us[8];
+    unsigned int ui[4];
+    unsigned char uc[16];
+    volatile unsigned long vul[2];
+    volatile unsigned char vuc[16];
+} ECM02QW;
+typedef struct ECM02GPacket {
+    void *data;
+    int capacity;
+    ECM02QW *current;
+    int count;
+    int auxCount;
+} ECM02GPacket;
+typedef struct ECM02CamView {
+    void *screen;
+    void *matrix;
+} ECM02CamView;
+typedef struct ECM02Draw {
+    unsigned char unmodeled_00[0x90];
+    ECM02QW color;              /* +0x90 */
+    short visible[21];          /* +0xA0 */
+    unsigned char unmodeled_ca[0xCC - 0xCA];
+    float radius[21];           /* +0xCC */
+    float angle[21];            /* +0x120 */
+    ECM02GPacket packet;        /* +0x174 */
+} ECM02Draw;
+extern ECM02CamView mefCamParams;
+extern int MMathRotTransPersClip(ECM02QW *destination, const void *screen, const void *matrix, ECM02QW *point);
+extern void MGsGPTerm(void *packet);
+static inline void ecm02Flush(ECM02GPacket *pk, int nreg)
+{
+    int m = pk->auxCount * nreg + 1;
+
+    pk->current->us[0] |= nreg;
+    pk->current += m;
+    pk->count += m;
+}
+static inline ECM02QW *ecm02Begin(ECM02GPacket *gp, unsigned long tag, unsigned long regs, int aux)
+{
+    ECM02QW *t = gp->current;
+    ECM02QW *r = t + 1;
+
+    t[0].ul[1] = regs;
+    t[0].ul[0] = tag | ((unsigned long)aux << 60);
+    gp->auxCount = aux;
+    return r;
+}
+
+static void fnECM02_DP000(void *self, void *work)
+{
+    ECM02Draw *draw = (ECM02Draw *)work;
+    ECM02QW col0;
+    ECM02QW col1;
+    ECM02QW pos0;
+    ECM02QW pos1;
+    ECM02QW out0;
+    ECM02QW out1;
+    void *screen;
+    void *matrix;
+    int n;
+    int j;
+    ECM02GPacket *pk;
+    ECM02QW *q;
+    ECM02QW *a1;
+    ECM02QW *a2;
+    ECM02QW *a3;
+    ECM02QW *dst;
+    int clip;
+    int i;
+    float ofs;
+
+    screen = mefCamParams.screen;
+    matrix = mefCamParams.matrix;
+    pk = &draw->packet;
+    MGsGPInit((ECM02Packet *)pk, 0, 0);
+    q = pk->current;
+    q[0].vul[0] = 0x1000000000008000;
+    q[0].vul[1] = 0xE;
+    pk->auxCount = 1;
+    a1 = q + 1;
+    a2 = q + 2;
+    a3 = q + 3;
+    a1->vuc[8] = 0x47;
+    a1->vul[0] = 0x5000D;
+    a2->vuc[8] = 0x4E;
+    a2->vul[0] = 0x131000000;
+    a3->vuc[8] = 0x42;
+    a3->vul[0] = 0x48;
+    ecm02Flush(pk, 3);
+
+    for (j = -1; j < 2; j += 2) {
+        clip = 0;
+        n = 0;
+        dst = ecm02Begin(&draw->packet, 0x0026400000008000, 0x5151, 4);
+        for (i = 0; i < 20; i++) {
+            if (draw->visible[i] != 0) {
+                col1.q = col0.q = draw->color.q;
+                col1.ui[3] = 0x20;
+                if (i >= 10) {
+                    col0.ui[3] = col0.ui[3] * (20 - i) / 10;
+                    col1.ui[3] = col1.ui[3] * (20 - i) / 10;
+                }
+                if (i != 0 && i != 19) {
+                    ofs = (float)j * 0.15f;
+                } else {
+                    ofs = 0.0f;
+                }
+                makeCoord(&pos0, draw->radius[i], draw->angle[i], work);
+                makeCoord(&pos1, draw->radius[i] + ofs, draw->angle[i], work);
+                if (MMathRotTransPersClip(&out0, screen, matrix, &pos0)) {
+                    clip = 2;
+                } else if (clip != 0) {
+                    clip--;
+                    out0.ui[3] = 0x8000;
+                }
+                if (MMathRotTransPersClip(&out1, screen, matrix, &pos1)) {
+                    clip = 2;
+                } else if (clip != 0) {
+                    clip--;
+                    out1.ui[3] = 0x8000;
+                }
+                n++;
+                dst[0].q = col0.q;
+                dst[1].q = out0.q;
+                dst[2].q = col1.q;
+                dst[3].q = out1.q;
+                dst += 4;
+            }
+        }
+        if (n > 0) {
+            ecm02Flush(pk, n);
+        }
+    }
+    MGsGPTerm(pk);
+}
 
 extern void sefHitEffect(void);
 extern void MEfObjDestroy(void *self);

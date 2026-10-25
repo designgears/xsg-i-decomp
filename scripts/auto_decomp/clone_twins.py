@@ -327,11 +327,22 @@ def attempt(c: dict, twins: list[dict], dry: bool) -> dict:
     if best:
         r, cand = best
         res["best_score"] = r.get("score")
-        if (r.get("score") or 0) > best_score(stem):
+        side = stem.with_name(n + ".best.json")
+        better, sus = False, []
+        if (r.get("score") or 0) > best_score(stem) - try_fn.SUSPECT_MARGIN:
+            import tempfile
+            fd, tmp = tempfile.mkstemp(prefix=f"clone_{n}_", suffix=".c")
+            os.close(fd)
+            try:                       # fold11: suspect-aware (SUSPECT_MARGIN)
+                Path(tmp).write_text(cand)
+                better, sus = try_fn.prefer_over_best(u, t, n, Path(tmp), r.get("score"), r, side)
+            except (try_fn.TryError, OSError):
+                better = False
+            finally:
+                os.unlink(tmp)
+        if better:
             stem.with_name(n + ".best.c").write_text(cand)
-            stem.with_name(n + ".best.json").write_text(json.dumps(
-                {"score": r.get("score"), "differing_words": r.get("differing_words"),
-                 "target_insns": r.get("target_insns"), "by": OWNER}) + "\n")
+            side.write_text(json.dumps(try_fn.best_record(r.get("score"), r, sus, by=OWNER)) + "\n")
             res["improved"] = True
     return res
 

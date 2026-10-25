@@ -657,7 +657,237 @@ static int _ExecCmdInHissatu(RgRobotStatus *status, RgBody *body, RgCmd *command
     return _AllowDamageCmd(status, body, command);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot", _HissatuPassTime);
+extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
+extern unsigned int RgWeaponGetAttachedShot(void *weapon, void **shots);
+extern int RgShotGetHitRobNum(void *shot);
+extern void RgRobotEffectStartJet(RgRobotEffect *effect, float stopTime);
+extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
+extern void RgWeaponSetFree(void *weapon);
+
+static int _HissatuPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
+{
+    void *shots[16];
+    int result;
+    int action;
+    RgRobotSpec *spec;
+    int motion;
+    float elapsed;
+    float maxSpd;
+    float dashSpd;
+    void *w0;
+    void *w1;
+    unsigned int n;
+    unsigned int sel;
+    unsigned int i;
+    int hit;
+    RgMotionShotInfo *info;
+    void *thread;
+
+    spec = body->spec;
+    motion = status->scratch2;
+    result = 0;
+    elapsed = status->elapsedTime;
+    maxSpd = _CalcMaxSpeed(body, spec->baseSpeed);
+    dashSpd = _CalcMaxSpeed(body, *(float *)&spec->unmodeled_10[0]);
+    w0 = body->weapon[0];
+    w1 = body->weapon[1];
+    if (body->actor == 0 || XrgActorIsEndOfMotion(body->actor) != 0) {
+        _InitMovingStatus(status, body);
+        return 0;
+    }
+    if (motion == 0) {
+        return 0x200;
+    }
+    action = RgMotionInfoGetActionInTime(motion, 0, elapsed);
+    if (action != *(int *)&status->scratchTimer && action != 0) {
+        *(int *)&status->scratchTimer = action;
+        *(int *)&status->unmodeled_10[4] = 0;
+        status->scratch0++;
+    }
+    switch ((unsigned int)body->charID) {
+    case 0:
+        if (*(int *)&status->unmodeled_10[4] != 0) {
+            _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+            RgGeomPointSetMaxXYSpd(body->geometry, dashSpd * 1.5f);
+            if (*(int *)&status->unmodeled_1c[0] == 0) {
+                RgRobotEffectStartDash(body->effect, 0.5f);
+                *(int *)&status->unmodeled_1c[0] = 1;
+            }
+        } else {
+            RgGeomPointSetMaxXYSpd(body->geometry, maxSpd);
+        }
+        if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+            RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+            body->flags |= 1;
+        }
+        if (action != 0) {
+            switch (status->scratch0) {
+            case 1:
+                result = 0x400;
+                break;
+            case 2:
+                RgWeaponShot(w1);
+                break;
+            }
+        } else {
+            RgWeaponShotStop(w1);
+        }
+        break;
+    case 2:
+        RgWeaponStopLockon(w1);
+        RgWeaponStopLockon(w0);
+        if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+            RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+            body->flags |= 1;
+        }
+        if (action != 0) {
+            sel = *(unsigned int *)&status->unmodeled_10[0] & 3;
+            if (sel == 0) {
+                RgWeaponShot(w1);
+            } else if (sel == 2) {
+                RgWeaponShot(w0);
+            }
+            RgWeaponSetFree(w1);
+            RgWeaponSetFree(w0);
+            (*(int *)&status->unmodeled_10[0])++;
+        } else {
+            RgWeaponShotStop(w0);
+            RgWeaponShotStop(w1);
+        }
+        break;
+    case 4:
+        if (status->eSide != 0) {
+            thread = body->shotThread[1];
+            if (w1 != 0 && thread != 0) {
+                RgShotThreadSleep(thread);
+                RgWeaponShotStop(w1);
+            }
+        }
+        if (*(int *)&status->unmodeled_10[4] != 0) {
+            _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+            if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+                RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+                body->flags |= 1;
+            }
+        } else {
+            n = RgWeaponGetAttachedShot(w0, shots);
+            hit = 0;
+            for (i = 0; i < n; i++) {
+                if (RgShotGetHitRobNum(shots[i]) != 0) {
+                    hit = 1;
+                }
+            }
+            if (status->scratch1 == 0x4E && hit != 0) {
+                info = RgMotionInfoDBGet(InstanceOfRgMotionInfoDB(), 0x4F, body->charID);
+                if (info != 0) {
+                    status->scratch2 = (int)info;
+                    status->scratch1 = 0x4F;
+                    status->elapsedTime = 0.0f;
+                    _BodyPlayMotion(body, 0x4F);
+                }
+            }
+        }
+        if (action != 0) {
+            switch ((unsigned int)status->scratch0) {
+            case 1:
+                RgWeaponShot(w0);
+                break;
+            case 2:
+            case 3:
+            case 4:
+                RgWeaponShot(w1);
+                RgWeaponSetFree(w1);
+                break;
+            case 5:
+                result = 0x400;
+                break;
+            }
+        } else {
+            RgWeaponShotStop(w0);
+            RgWeaponShotStop(w1);
+            RgWeaponSetFree(w1);
+        }
+        break;
+    case 5:
+        if (status->eSide != 0) {
+            if (w1 != 0) {
+                RgWeaponPlayMotion(w1, 0x854);
+            }
+            if (w0 != 0) {
+                RgWeaponStopLockon(w0);
+            }
+        }
+        if (*(int *)&status->unmodeled_10[4] != 0) {
+            _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+            if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+                RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+                body->flags |= 1;
+            }
+        }
+        if (action != 0) {
+            switch ((unsigned int)status->scratch0) {
+            case 1:
+            case 2:
+                RgWeaponShot(w1);
+                break;
+            case 3:
+                RgWeaponShot(w0);
+                break;
+            }
+        } else {
+            RgWeaponShotStop(w0);
+            RgWeaponShotStop(w1);
+            if (status->scratch0 == 2) {
+                RgWeaponRestartLockon(w0);
+            }
+        }
+        break;
+    case 3:
+        _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+        RgGeomPointSetMaxXYSpd(body->geometry, dashSpd);
+        if (*(int *)&status->unmodeled_1c[0] == 0) {
+            RgRobotEffectStartDash(body->effect, 0.8f);
+            RgRobotEffectStartJet(body->effect, 0.8f);
+            *(int *)&status->unmodeled_1c[0] = 1;
+        }
+        if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+            RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+            body->flags |= 1;
+        }
+        if (action != 0) {
+            result = 0x400;
+        }
+        break;
+    case 1:
+        _BodyAdvanceForAttack(body, deltaTime, 1.0f);
+        if (*(int *)&status->unmodeled_10[4] != 0) {
+            if (RgWeaponIsTargetting(w0) != 0 || RgWeaponIsTargetting(w1) != 0) {
+                RgRobSubHoming(body->geometry, (RgGeomPoint *)body->target, 12.566371f, deltaTime);
+                body->flags |= 1;
+            }
+        }
+        if (action != 0) {
+            switch ((unsigned int)status->scratch0) {
+            case 1:
+                RgWeaponShot(w0);
+                break;
+            case 2:
+                RgWeaponShot(w1);
+                break;
+            case 3:
+                RgWeaponShot(w0);
+                RgWeaponShot(w1);
+                break;
+            }
+        } else {
+            RgWeaponShotStop(w0);
+            RgWeaponShotStop(w1);
+        }
+        break;
+    }
+    status->eSide = 0;
+    return result | 0x200;
+}
 
 extern void RgGeomPointSetMaxXYSpd(RgGeomPoint *point, float maxSpeed);
 extern void RgRobotEffectTermJet(RgRobotEffect *effect);

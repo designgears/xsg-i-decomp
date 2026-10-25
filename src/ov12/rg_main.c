@@ -22,7 +22,57 @@ static int _IsEndOfMode(void)
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_main", _DoAnyOnePausing);
+static int _DoAnyOnePausing(int arg0)
+{
+  unsigned char new_var;
+  if (arg0 == 1)
+  {
+    goto L_case1;
+  }
+  if (new_var = arg0 == 0)
+  {
+    goto L_case0;
+  }
+  if (arg0 == 2)
+  {
+    goto L_case2;
+  }
+  if (arg0 != 3)
+  {
+    goto L_ret_neg1;
+  }
+  goto L_case3;
+  L_case1:
+  L_case0:
+  if (PadData[0].prefix.half_2a & 0x800)
+  {
+    return 0;
+  }
+
+
+  goto L_ret_neg1;
+  L_case2:
+  if (PadData[1].prefix.half_2a & 0x800)
+  {
+    return 1;
+  }
+
+  goto L_ret_neg1;
+  L_case3:
+  if (PadData[0].prefix.half_2a & 0x800)
+  {
+    return 0;
+  }
+
+  if (PadData[1].prefix.half_2a & 0x800)
+  {
+    return 1;
+  }
+  goto L_ret_neg1;
+  L_ret_neg1:
+  return -1;
+
+}
 
 static int _IsEndOfPause(int controller)
 {
@@ -44,7 +94,65 @@ static void _EndOfFrame(void)
     XrgSleep();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_main", _GetStageData);
+typedef struct {
+    char pad0[0x40];
+    float pos[4];
+    float dir[4];
+    char pad60[0x240 - 0x60];
+    long long bgName[2];
+} StageInitDat;
+
+static void _GetStageData(int stageId, void *data)
+{
+    StageInitDat *pInitDat = data;
+    char *p[2];
+
+    if (data == 0) {
+        assert_prog("pInitDat != NIL", "../rg_main.euc.c", 123);
+    }
+    p[1] = (char *)data + 0x120;
+    p[0] = (char *)data;
+    switch (stageId) {
+    case 0:
+        __builtin_strcpy((char *)pInitDat->bgName, "BG_TOWN");
+        XrgSetVectorXYZ((float *)(p[0] + 0x40), 0.0f, 1.5f, -80.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x40), 0.0f, 1.5f, 80.0f);
+        XrgSetVectorXYZ((float *)(p[0] + 0x50), 0.0f, 0.0f, 1.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x50), 0.0f, 0.0f, -1.0f);
+        break;
+    case 1:
+        __builtin_strcpy((char *)pInitDat->bgName, "BG_AIRCAR");
+        XrgSetVectorXYZ((float *)(p[0] + 0x40), 0.0f, 1.5f, -97.5f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x40), 0.0f, 1.5f, 68.0f);
+        XrgSetVectorXYZ((float *)(p[0] + 0x50), 0.0f, 0.0f, 1.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x50), 0.0f, 0.0f, -1.0f);
+        break;
+    case 2:
+        __builtin_strcpy((char *)pInitDat->bgName, "BG_COL");
+        XrgSetVectorXYZ((float *)(p[0] + 0x40), 0.0f, 1.5f, -10.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x40), 0.0f, 1.5f, 10.0f);
+        XrgSetVectorXYZ((float *)(p[0] + 0x50), 0.0f, 0.0f, 1.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x50), 0.0f, 0.0f, -1.0f);
+        break;
+    case 3:
+        __builtin_strcpy((char *)pInitDat->bgName, "BG_BLOCK");
+        XrgSetVectorXYZ((float *)(p[0] + 0x40), -90.0f, 1.5f, -80.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x40), 90.0f, 1.5f, 80.0f);
+        XrgSetVectorXYZ((float *)(p[0] + 0x50), 0.0f, 0.0f, 1.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x50), 0.0f, 0.0f, -1.0f);
+        break;
+    case 4:
+        __builtin_strcpy((char *)pInitDat->bgName, "BG_VS1");
+        XrgSetVectorXYZ((float *)(p[0] + 0x40), 0.0f, 1.5f, -10.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x40), 0.0f, 1.5f, 10.0f);
+        XrgSetVectorXYZ((float *)(p[0] + 0x50), 0.0f, 0.0f, 1.0f);
+        XrgSetVectorXYZ((float *)(p[1] + 0x50), 0.0f, 0.0f, -1.0f);
+        break;
+    default:
+        RgError("unknown stage ID %d", "../rg_main.euc.c", 163, stageId);
+        break;
+    }
+}
 
 /*
  * ov12:0x00a514d8 contains the format string "over stage-serial ID for
@@ -569,7 +677,220 @@ static void _disp_hardmode(void)
     RgFontStr(InstanceOfXrgPaint2D(), weaponFont, D_00A51658, 8, 0x64, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_main", _OneBattle);
+extern const char D_00A51668[];
+extern void RgBattleMgrSetPlayerControl(RgBattleMgr *battle, int control);
+void RgAnnounceDispInitTime(RgAnnounce *pAnn, int kind, float duration);
+void RgBattleMgrPassTime(RgBattleMgr *battle, float dt);
+void RgAnnouncePassTime(RgAnnounce *pAnn, float dt);
+void RgAnnounceSetStageClear(RgAnnounce *pAnn, int time, float damage);
+void RgBattleMgrControl(RgBattleMgr *battle);
+void RgBattleMgrDisp(RgBattleMgr *battle);
+void RgAnnounceDisp(RgAnnounce *pAnn);
+int RgBattleMgrGetResult(RgBattleMgr *battle);
+int RgBattleMgrGetMode(RgBattleMgr *battle);
+void RgBattleMgrActivateTimer(RgBattleMgr *battle, int which);
+void RgBattleMgrInitBattle(RgBattleMgr *battle, int init);
+RgDispLife *RgBattleMgrGetDispLife(RgBattleMgr *battle);
+static inline void _dispInitHelper7(RgAnnounce *ann, unsigned int kind)
+{
+    RgAnnounceDispInit(ann, kind);
+}
+
+static int _OneBattle(RgBattleMgr *battle, RgBattleInit *init, RgGameInfo *info, int difficulty)
+{
+    int sp0;
+    int sp4;
+    int sp8;
+    RgAnnounce *temp_19;
+    unsigned int nFour;
+    RgDispLife *temp_2_2;
+    float temp_f0;
+    float temp_f2t;
+    float var_f21;
+    unsigned int temp_16;
+    int temp_16_2;
+    unsigned int temp_21;
+    int temp_2;
+    int temp_2_3;
+    int temp_3;
+    int var_22;
+    unsigned int var_17;
+
+    sp4 = 0;
+    sp8 = -1;
+    nFour = 4;
+    if (battle == (RgBattleMgr *)0) {
+        assert_prog(D_00A51668, D_00A51450, 0x2F3);
+    }
+    var_17 = 0;
+    temp_19 = CreateRgAnnounce();
+    RgBattleMgrInitBattle(battle, (int)init);
+    temp_2_2 = RgBattleMgrGetDispLife(battle);
+    var_f21 = 1.0f;
+    _GameInfoSetDispLife(info, temp_2_2, -1);
+    var_22 = 0;
+    temp_21 = RgBattleMgrGetMode(battle);
+    while ((temp_2 = _IsEndOfMode()) == 0 && var_17 != 9) {
+        temp_f0 = RgGetFrameTime();
+        var_f21 -= temp_f0;
+        sp0 = 1;
+        switch (var_17) {
+        case 0:
+            var_17 = 1;
+            _AnnSetRound(temp_19, (u32) info->activePlayer);
+            /* fallthrough */
+        case 1:
+            if (var_f21 < 0.0f) {
+                var_f21 = 1.5f;
+                var_17 = 2;
+                RgAnnounceDispInit(temp_19, 3);
+            }
+            break;
+        case 2:
+            if (var_f21 < 0.0f) {
+                var_17 = 3;
+                RgAnnounceDispInitTime(temp_19, 4, 0.5f);
+                RgBattleMgrSetPlayerControl(battle, 1);
+            }
+            break;
+        case 3:
+            var_22 = RgBattleMgrGetResult(battle);
+            temp_2_3 = _DoAnyOnePausing(temp_21);
+            sp8 = temp_2_3;
+            var_17 = (temp_2_3 >= 0) ? 4U : var_17;
+            if (var_22 != 0) {
+                RgBattleMgrActivateTimer(battle, 0);
+                var_f21 = 3.0f;
+                var_17 = 5;
+                switch (var_22 & 3) {
+                case 1:
+                    _GameInfoEndOfBattle(info, 0, battle);
+                    _GameInfoSetDispLife(info, temp_2_2, 0);
+                    break;
+                default:
+                    _GameInfoEndOfBattle(info, -1, battle);
+                    break;
+                case 2:
+                    _GameInfoEndOfBattle(info, 1, battle);
+                    _GameInfoSetDispLife(info, temp_2_2, 1);
+                    break;
+                }
+            }
+            break;
+        case 5:
+            _AnnSetResult(temp_19, var_22, RgBattleMgrGetMode(battle), var_f21);
+            if (!(var_f21 >= 0.0f)) {
+                RgBattleMgrSetPlayerControl(battle, 0);
+                temp_16 = var_22 & 3;
+                switch (temp_21) {
+                case 1: {
+                    if (temp_21 == temp_16 && _GameInfoIsPlayerGetGame(info, 0) != 0) {
+                        var_17 = 7;
+                        temp_16_2 = _GameInfoGetCurrentPlayTime(info);
+                        /* playtime */
+                        temp_f2t = _GameInfoGetCurrentDamage(info);
+                        /* damage */
+                        var_f21 = 5.0f;
+                        RgAnnounceDispInit(temp_19, 0xA);
+                        RgAnnounceSetStageClear(temp_19, temp_16_2, temp_f2t);
+                    } else {
+                        if (temp_16 == 2 && _GameInfoIsPlayerGetGame(info, 1) != 0) {
+                            var_f21 = 4.0f;
+                            var_17 = 6;
+                            RgAnnounceDispInit(temp_19, 8);
+                        } else {
+                            var_17 = 9;
+                        }
+                    }
+                }
+                break;
+                case 0:
+                    var_17 = 9;
+                    /* fallthrough */
+                case 2:
+                    var_17 = 9;
+                    /* fallthrough */
+                default:
+                    var_17 = 9;
+                    break;
+                case 3:
+                    if (_GameInfoIsEndOfGame(info) != 0) {
+                        RgAnnounceDispInit(temp_19, 8);
+                        var_f21 = 4.0f;
+                        var_17 = 6;
+                    } else {
+                        var_17 = 9;
+                    }
+                    break;
+                }
+            }
+            break;
+        case 6:
+            if (var_f21 <= 0.0f) {
+                var_17 = 9;
+            }
+            XrgPadSetID(0);
+            var_17 = (XrgPadIsStart() != 0) ? 9U : var_17;
+            XrgPadSetID(1);
+            if (XrgPadIsStart() != 0) {
+                var_17 = 9;
+            }
+            break;
+        case 7:
+            XrgPadSetID(0);
+            if ((var_f21 <= 0.0f) || (XrgPadIsStart() != 0)) {
+                if (_GameInfoGetStage(info) == 3) {
+                    var_f21 = 60.0f;
+                    var_17 = 8U;
+                    RgAnnounceDispInit(temp_19, 0xB);
+                    RgAnnounceSetGameClear(temp_19, (u32 *) &info->playTime[0], &info->damage[0], (u32) nFour);
+                } else {
+                    var_17 = 9;
+                }
+            }
+            if (difficulty != 0) {
+                _disp_hardmode();
+            }
+            break;
+        case 8:
+            XrgPadSetID(0);
+            if (XrgPadIsStart() != 0) {
+                var_17 = 9;
+            } else if (var_f21 <= 0.0f) {
+                var_17 = 9;
+            }
+            if (difficulty != 0) {
+                _disp_hardmode();
+            }
+            break;
+        case 4:
+            sp0 = 0;
+            var_17 = (_IsEndOfPause(sp8) != 0) ? 3U : var_17;
+            break;
+        }
+        if (sp0 != 0) {
+            RgBattleMgrControl(battle);
+
+            RgBattleMgrPassTime(battle, temp_f0);
+            RgAnnouncePassTime(temp_19, temp_f0);
+        }
+        if (sp4 != 0) {
+            RgBattleMgrDisp(battle);
+        } else {
+            sp4 = 1;
+        }
+        RgAnnounceDisp(temp_19);
+        if (var_17 == 4) {
+            _DispPause();
+        }
+        _EndOfFrame();
+    }
+    XrgSleep();
+    XrgSleep();
+    XrgSoundSystemStop();
+    DisposeRgAnnounce(temp_19);
+    return temp_2;
+}
 
 static void _GetEnemyChar(RgBattleNames *names, int player);
 static int _GetHardEnemyChar(RgBattleNames *names, int player,

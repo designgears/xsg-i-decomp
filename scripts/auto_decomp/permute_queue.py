@@ -2,7 +2,8 @@
 """Permuter stage: drain near-miss failures through permute_fn.py.
 
     python3 -B scripts/auto_decomp/permute_queue.py [--min-score 0.85] [--max-diff 25]
-        [--minutes 5] [--parallel 4] [-j 3] [--rounds 1] [--once]
+        [--min-p 0.004] [--minutes 3] [--stall 1] [--no-gain 2.5] [--extend 2]
+        [--sweep-budget 300] [--parallel 5] [-j 3] [--rounds 4] [--once]
 
 Picks functions that are still INCLUDE_ASM, have a saved body and a best score
 (state.json failure record or bodies/*.best.json) >= --min-score AND at most
@@ -13,8 +14,17 @@ The word count comes from .best.json (try_fn records it) or is estimated as
 (1 - score) * size / 4. Past runs: ~24% matched from 0.8-0.9, ~10% below 0.8.
 skipping diffs no permutation can fix (VU0/sync asm, inline asm, cc1 ICE); leases each (owner
 "permuter") so agents leave it alone, permutes it, integrates on a match.
-Each function gets at most --rounds permuter runs. Without --once it keeps
-polling for new near-misses every 2 minutes.
+Each body gets at most --rounds permuter runs (a body changed since its last
+run, by an agent or the sweep, counts from 0 again: state.json permute_sha /
+permute_runs_body). Slots are refilled the moment a run ends (no batch
+barrier: a 40 s match no longer idles its cores until the slowest job of the
+batch finishes). Without --once it keeps polling for new near-misses every
+2 minutes.
+
+Budget (measured on 570 runs / 42 matches): most matches come within ~2 min,
+the rest right after a rebase, and 55% of failed runs never beat their base, so
+permute_fn runs --minutes 3 with --stall 1 (rebase sooner), --no-gain 2.5 (stop
+a run that never beat its base) and --extend 2 (once, if still improving).
 
 Before the permuter (cheapest first):
   * triage: one try_fn.try_function on the best body classifies the remaining
@@ -30,7 +40,12 @@ Before the permuter (cheapest first):
                   matches
       assembler   only delay-slot moves of la/li macro halves (lui/addiu/ori)
                   and the TU has no -mswap-fix in config/tu/as-flags.json ->
-                  skipped, listed by --triage-report (as-flags is never edited)
+                  reported separately; evaluate a per-TU -mswap-fix candidate
+                  and keep the flag only after whole-unit integration verifies it
+      suspect     (permute entries, fold9) try_fn.semantic_suspect found a tell
+                  that the seed computes something else (store width, stored
+                  zero vs value, byte-vs-element addend, constant, missing
+                  logic): picked only after every non-suspect candidate
       permute     anything else; a diff that is only a branch-likely bit
                   flip (bnez vs bnezl) is tagged "branch_likely": the sweep's
                   fallthrough_label family covers it and the permuter runs
@@ -50,12 +65,20 @@ Before the permuter (cheapest first):
                   whose target returns nothing, or the reverse), lit_inline
                   (extern of a .lit4/.lit8 data symbol: use the literal; a
                   match then shows as try_fn lit_literal / match_after_link
-                  -> integrate --skip-try); the sweep runs the matching
-                  ctx family first-class
+                  -> integrate --skip-try); seventh round: diff tags
+                  float_cmp_neg / unsized_extern / aligned_local, text tags
+                  field_reread / ptr_index / bit_split / early_return; the
+                  sweep runs the matching ctx family first-class. --profile
+                  (odd runs of a body only; never const_rev, see
+                  AUTO_PROFILE_SKIP): the triage tag, else the first
+                  diff-gated mech tag with a permute_fn profile, text-gated
+                  tags last
   * sweep first: a body trick_sweep has not run on (.best.json "by"=="sweep"
     or a sweep_marks.json sha1 / loop.log "done" line) is swept inline under
     the same lease; the permuter only runs if that did not match.
-  * order: fewest prior permuter rounds first, then fewest differing words.
+  * order: highest expected per-run match rate first (expected_yield: by
+    differing words, decayed by prior runs on the same body; see
+    YIELD_BY_WORDS), below --min-p skipped (>= 40 words never matched).
 
     permute_queue.py --triage-report [--json]   classify the pool, print counts
 """
@@ -87,6 +110,12 @@ UNPERMUTABLE_ASM = re.compile(r"\b(lqc2|sqc2|qmtc2|qmfc2|vcallms|sync|v[a-z]+\.[
 
 
 def unpermutable(c: dict, body: Path, f: dict) -> str | None:
+    if c.get("nested"):
+        return "GCC nested function"
+    if c.get("asm_blocked"):
+        return "vu0/sync/break asm"
+    if c.get("ice"):
+        return "cc1 ICE"
     try:
         if UNPERMUTABLE_ASM.search((ROOT / c["asm"]).read_text()):
             return "vu0/sync/break asm"
@@ -106,7 +135,7 @@ def best_json(body: Path) -> dict:
         return {}
 
 
-TRIAGE_VERSION = 5      # bump when classification rules change (invalidates the cache)
+TRIAGE_VERSION = 13     # bump when classification rules change (invalidates the cache); 13: fold15 loop-pointer / guarded-store tells; 12: fold14 implicit-decl suspect tell; 9: fold10 call-count suspect tell + new mech tags; 10: fold11 uninit suspect tell; 11: fold12 shadowed-param + call-result tells
 TRIAGE = ROOT / "build/auto_decomp/triage.json"
 AS_FLAGS = ROOT / "config/tu/as-flags.json"
 BRANCH = re.compile(r"^(b|bal|j|jr|jal|jalr|beq|bne|beqz|bnez|bgez|bgtz|blez|bltz|bgezal|bltzal|bc1t|bc1f)l?$")
@@ -223,10 +252,13 @@ def triage(c: dict, body: Path) -> dict:
         return e
     import try_fn
     try:
-        r = try_fn.try_function(c["unit"], c["tu"], c["name"], body, diff_limit=100000)
+        r = try_fn.try_function(c["unit"], c["tu"], c["name"], body, diff_limit=100000, uninit=True)
     except Exception as ex:  # noqa: BLE001
         r = {"ok": False, "error": str(ex)[:200]}
-    e = {"v": TRIAGE_VERSION, "mtime": mt, "body": str(body), "score": r.get("score"), "words": r.get("differing_words")}
+    e = {"v": TRIAGE_VERSION, "mtime": mt, "body": str(body), "score": r.get("score"),
+         # words still wrong after discounting link-resolved slots (try_fn false_lo16 /
+         # lit_literal / abs_reloc): GameCameraReset 8 -> 2
+         "words": r.get("unresolved_words") if r.get("unresolved_words") is not None else r.get("differing_words")}
     blocked = (_cg().get(k) or {}).get("blocked_by") or []
     try:
         flags = json.loads(AS_FLAGS.read_text())
@@ -248,6 +280,8 @@ def triage(c: dict, body: Path) -> dict:
     else:
         kind, moved = classify_diff(r.get("diff") or [])
         e["moved"] = moved
+        if r.get("suspect"):             # fold9: try_fn.semantic_suspect (wrong-logic seed)
+            e["suspect"] = r["suspect"][:4]
         if branch_likely_only(r.get("diff") or []):
             e["tag"] = "branch_likely"   # trick_sweep fallthrough_label; permuter label/goto weights
         shape = dict.fromkeys(trick_sweep.diff_shape(r.get("diff") or []))
@@ -260,6 +294,8 @@ def triage(c: dict, body: Path) -> dict:
         if shape:                        # mechanism tags (trick_sweep ctx families, WORKER_LESSONS.md)
             e["mech"] = sorted(shape)
             e.setdefault("tag", sorted(shape)[0])
+        elif kind == "reorder":
+            e["tag"] = "sched_order"    # g21: changing init order fixed schedule but rotated pointer regs
         e["blocked_by"] = blocked
         if kind in ("delay", "macro") and blocked:
             e["cat"], e["why"] = "callee", "blocked_by " + ",".join(b.rsplit("/", 1)[1] for b in blocked)
@@ -282,8 +318,33 @@ def triage(c: dict, body: Path) -> dict:
     return e
 
 
-def pool(min_score: float, rounds: int, max_diff: int | None) -> list[dict]:
-    """Unclaimed near-miss candidates passing the score / diff / permutability gates."""
+def body_sha(body: Path) -> str:
+    import hashlib
+    try:
+        return hashlib.sha1(body.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+# Measured per-run match rate of permute_fn (loop.log PERMUTE lines through
+# 2026-10-06, 570 runs, 42 matches) by differing words: first run 0.21 (<3),
+# 0.15 (<8), 0.03 (<15), 0.06 (<25), 0/77 (>=25); second run about half of
+# that, third and later 3/110. Score alone predicts little once words are known.
+YIELD_BY_WORDS = ((3, 0.20), (8, 0.15), (15, 0.035), (25, 0.04), (40, 0.006))
+YIELD_FLOOR = 0.002
+
+
+def expected_yield(words: int | None, runs: int) -> float:
+    """Estimated chance that one permute_fn run matches (see YIELD_BY_WORDS)."""
+    w = 99 if words is None else words
+    p = next((v for lim, v in YIELD_BY_WORDS if w < lim), YIELD_FLOOR)
+    return p if runs <= 0 else p * 0.5 * 0.3 ** (runs - 1)
+
+
+def pool(min_score: float, rounds: int, max_diff: int | None, min_p: float = 0.0) -> list[dict]:
+    """Unclaimed near-miss candidates passing the score / diff / permutability /
+    expected-yield gates. "runs" counts permuter runs on the current body: a
+    body changed since the last run (by an agent or the sweep) starts at 0."""
     cands = build_queue(ROOT)["candidates"]
     state = load_state()
     with claims.locked():
@@ -294,13 +355,15 @@ def pool(min_score: float, rounds: int, max_diff: int | None) -> list[dict]:
         if k in taken:
             continue
         f = state["failed"].get(k) or {}
-        runs = f.get("permute_runs", 0)
-        if runs >= rounds:
-            continue
         body = ROOT / "build/auto_decomp/bodies" / c["unit"] / c["tu"] / f"{c['name']}.c"
         if body.with_name(f"{c['name']}.best.c").is_file():
             body = body.with_name(f"{c['name']}.best.c")
         if not body.is_file():
+            continue
+        runs = f.get("permute_runs", 0)
+        if f.get("permute_sha"):
+            runs = f.get("permute_runs_body", runs) if f["permute_sha"] == body_sha(body) else 0
+        if runs >= rounds:
             continue
         bj = best_json(ROOT / "build/auto_decomp/bodies" / c["unit"] / c["tu"] / f"{c['name']}.c")
         sc = max(f.get("best_score") or 0, float(bj.get("score") or 0))
@@ -311,33 +374,50 @@ def pool(min_score: float, rounds: int, max_diff: int | None) -> list[dict]:
             diff = round((1 - sc) * (c.get("size") or 0) / 4)
         if max_diff is not None and diff > max_diff:
             continue
+        p = expected_yield(diff, runs)
+        if p < min_p:
+            continue
         if unpermutable(c, body, f):
             continue
         out.append({"key": k, "unit": c["unit"], "tu": c["tu"], "name": c["name"], "body": body,
-                    "score": sc, "diff": diff, "runs": runs,
+                    "score": sc, "diff": diff, "runs": runs, "p": p,
                     "integrate_tried": f.get("triage_integrate") == body.stat().st_mtime})
     return out
 
 
-def pick(min_score: float, rounds: int, limit: int, max_diff: int | None = None) -> list[dict]:
+def pick(min_score: float, rounds: int, limit: int, max_diff: int | None = None,
+         min_p: float = 0.0, exclude=()) -> list[dict]:
     """Up to LIMIT candidates: triaged (callee / assembler skipped, reloc-only and
-    match go to integrate once), fewest prior rounds first, then fewest words."""
-    ranked = sorted(pool(min_score, rounds, max_diff), key=lambda r: (r["runs"], r["diff"], -r["score"]))
-    out = []
+    match go to integrate once, ahead of everything), then highest expected
+    yield per run first (fewest differing words, fewest prior runs)."""
+    ranked = sorted((r for r in pool(min_score, rounds, max_diff, min_p) if r["key"] not in exclude),
+                    key=lambda r: (-r["p"], r["diff"], -r["score"]))
+    out, cheap, sus = [], [], []
     for r in ranked:
         t = triage(r, r["body"])
         r["cat"] = t["cat"]
         r["link"] = bool(t.get("link"))
         r["tag"] = t.get("tag")
         r["mech"] = t.get("mech") or []
+        r["suspect"] = t.get("suspect") or []
         if t["cat"] in ("callee", "assembler"):
             continue
-        if t["cat"] in ("match", "reloc-only") and r["integrate_tried"]:
+        if str(t.get("why") or "").startswith("try failed"):
+            continue                     # body does not compile: nothing to permute until it changes
+        if t["cat"] in ("match", "reloc-only"):
+            if not r["integrate_tried"]:
+                cheap.append(r)
+            continue
+        if r["suspect"]:
+            # fold9: a seed that likely computes the wrong thing (store width,
+            # byte-vs-element addend, ...) cannot permute into a match: run it
+            # only when nothing else is left (a worker should rewrite it)
+            sus.append(r)
             continue
         out.append(r)
         if len(out) >= limit:
             break
-    return out
+    return (cheap + out + sus)[:limit]
 
 
 def triage_report(min_score: float, rounds: int, max_diff: int | None, as_json: bool) -> int:
@@ -347,7 +427,8 @@ def triage_report(min_score: float, rounds: int, max_diff: int | None, as_json: 
         t = triage(r, r["body"])
         by.setdefault(t["cat"], []).append({"key": r["key"], "score": r["score"], "diff": r["diff"],
                                             "runs": r["runs"], "why": t.get("why"),
-                                            "moved": t.get("moved"), "mech": t.get("mech")})
+                                            "moved": t.get("moved"), "mech": t.get("mech"),
+                                            "suspect": t.get("suspect")})
     if as_json:
         print(json.dumps(by, indent=1))
         return 0
@@ -365,15 +446,42 @@ def triage_report(min_score: float, rounds: int, max_diff: int | None, as_json: 
         print(f"\n== {cat} ({len(by[cat])})")
         for e in by[cat]:
             print(f"  {e['score']:.4f} {e['diff']:3}w r{e['runs']} {e['key']}  {e['why'] or ''}"
-                  + (f"  moved={e['moved']}" if cat == "assembler" else ""))
+                  + (f"  moved={e['moved']}" if cat == "assembler" else "")
+                  + (f"  SUSPECT: {e['suspect'][0]}" if e.get("suspect") else ""))
     return 0
+
+
+# const_rev's diff shape (a differing store whose source register is stored
+# twice nearby) fires on ~half of all bodies (104 of 221 triaged); permuter runs
+# with its weights matched 1 of 103 vs 5 of 27 with the default weights over
+# the same period (2026-10-06), so it is never picked automatically.
+AUTO_PROFILE_SKIP = {"const_rev"}
+
+
+def _profile(c: dict) -> str | None:
+    """permute_fn --profile for the triage tag / first mechanism tag that has one.
+    Only on odd runs of a body: the first run (and every other one) uses the
+    default weights, which produced nearly all permuter matches."""
+    from permute_fn import PROFILES
+    if c.get("runs", 0) % 2 == 0:
+        return None
+    text_tags = {"void_ret", "lit_inline", "ret_local", "copy_inline", "field_reread", "ptr_index",
+                 "bit_split", "early_return"}        # broad text patterns: only when no diff tag has one
+    mech = list(c.get("mech") or [])
+    alias = {"loop_live": "const_place"}   # 2026-10-18 build_mipmap: constant/address init order
+    for t in [c.get("tag")] + [m for m in mech if m not in text_tags] + [m for m in mech if m in text_tags]:
+        t = alias.get(t, t)
+        if t in PROFILES and t not in AUTO_PROFILE_SKIP:
+            return t
+    return None
 
 
 def _integrate(c: dict) -> dict:
     p = subprocess.run([sys.executable, "-B", str(HERE / "integrate.py"), "--unit", c["unit"], "--tu", c["tu"],
                         "--name", c["name"], "--body", str(c["body"])] + (["--skip-try"] if c.get("link") else []),
                        capture_output=True, text=True, cwd=ROOT)
-    ok = '"matched": true' in p.stdout + p.stderr
+    ok = ('"matched": true' in p.stdout + p.stderr
+          or '"already_matched": true' in p.stdout + p.stderr)
     with locked():
         s = load_state()
         if not ok:
@@ -384,7 +492,7 @@ def _integrate(c: dict) -> dict:
             "error": "" if ok else (p.stdout + p.stderr)[-200:]}
 
 
-def _sweep(c: dict, jobs: int) -> dict | None:
+def _sweep(c: dict, jobs: int, budget: int = 300) -> dict | None:
     """trick_sweep on the current best body if it was never swept (lease held)."""
     best_c = ROOT / "build/auto_decomp/bodies" / c["unit"] / c["tu"] / f"{c['name']}.best.c"
     if not best_c.is_file() or not best_c.with_name(f"{c['name']}.best.json").is_file():
@@ -393,12 +501,13 @@ def _sweep(c: dict, jobs: int) -> dict | None:
         return None
     from concurrent.futures import ProcessPoolExecutor
     with ProcessPoolExecutor(max_workers=max(1, min(jobs, 3)), initializer=trick_sweep._init) as pp:
-        r = trick_sweep.sweep_one(c, pp, 300)
+        r = trick_sweep.sweep_one(c, pp, budget)
     log(f"PERMUTE {c['key']} pre-sweep {r.get('start')} -> {r.get('end')} matched={r.get('matched')}")
     return r
 
 
-def run_one(c: dict, minutes: float, jobs: int) -> dict:
+def run_one(c: dict, minutes: float, jobs: int, sweep_budget: int = 300, extra: list | None = None) -> dict:
+    t0 = time.time()
     with claims.locked():
         if c["key"] in claims.active():
             return {"key": c["key"], "skipped": "claimed"}
@@ -406,13 +515,14 @@ def run_one(c: dict, minutes: float, jobs: int) -> dict:
     try:
         if c.get("cat") in ("match", "reloc-only"):
             return _integrate(c)
-        sw = _sweep(c, jobs)
+        sw = _sweep(c, jobs, sweep_budget) if sweep_budget > 0 else None
         if sw and sw.get("matched"):
             return {"key": c["key"], "ok": True, "stage": "sweep", "best": sw.get("end")}
+        sha_before = body_sha(c["body"])
         p = subprocess.run([sys.executable, "-B", str(HERE / "permute_fn.py"), "--unit", c["unit"],
                             "--tu", c["tu"], "--name", c["name"], "--body", str(c["body"]),
-                            "--minutes", str(minutes), "-j", str(jobs)]
-                           + (["--profile", c["tag"]] if c.get("tag") == "branch_likely" else []),
+                            "--minutes", str(minutes), "-j", str(jobs)] + list(extra or [])
+                           + (["--profile", prof] if (prof := _profile(c)) else []),
                            capture_output=True, text=True, cwd=ROOT)
         try:
             r = json.loads(p.stdout)
@@ -425,11 +535,19 @@ def run_one(c: dict, minutes: float, jobs: int) -> dict:
         if not r.get("ok"):                       # count runs for .best.json-only picks too
             f = s["failed"].setdefault(c["key"], {"attempts": 0})
             f["permute_runs"] = f.get("permute_runs", 0) + 1
+            # same body as after the last run (or no sha recorded yet: legacy count) -> continue counting
+            same = f.get("permute_sha") in (None, sha_before)
+            f["permute_runs_body"] = (f.get("permute_runs_body", f["permute_runs"] - 1) + 1) if same else 1
+            f["permute_sha"] = body_sha(c["body"])  # after the run (permuter improvements included)
             f["permute_last"] = {"stage": r.get("stage"), "best": r.get("best_permuter_score"),
                                  "error": (r.get("error") or "")[-300:]}
             save_state(s)
-    log(f"PERMUTE {c['key']} ok={r.get('ok')} stage={r.get('stage')} best={r.get('best_permuter_score')}")
-    return {"key": c["key"], "ok": r.get("ok"), "stage": r.get("stage"),
+    segs = r.get("segments") or []
+    why = segs[-1].get("why") if segs else None
+    secs = round(time.time() - t0)
+    log(f"PERMUTE {c['key']} ok={r.get('ok')} stage={r.get('stage')} best={r.get('best_permuter_score')}"
+        f" secs={secs} why={why} segs={len(segs)} w={c.get('diff')} p={c.get('p', 0):.3f}")
+    return {"key": c["key"], "ok": r.get("ok"), "stage": r.get("stage"), "secs": secs, "why": why,
             "best": r.get("best_permuter_score"), "error": (r.get("error") or "")[-200:]}
 
 
@@ -438,27 +556,47 @@ def main() -> int:
     ap.add_argument("--min-score", type=float, default=0.85, help="minimum best score (ratio, 0-1)")
     ap.add_argument("--max-diff", type=int, default=25,
                     help="maximum differing instruction words (0 = no limit)")
-    ap.add_argument("--minutes", type=float, default=5)
+    ap.add_argument("--min-p", type=float, default=0.004,
+                    help="minimum expected per-run match rate (expected_yield of words and prior runs)")
+    ap.add_argument("--minutes", type=float, default=3, help="permute_fn budget per run")
+    ap.add_argument("--stall", type=float, default=1, help="permute_fn --stall")
+    ap.add_argument("--no-gain", type=float, default=2.5, help="permute_fn --no-gain")
+    ap.add_argument("--extend", type=float, default=2, help="permute_fn --extend")
+    ap.add_argument("--sweep-budget", type=int, default=300,
+                    help="compiles for the inline trick_sweep of an unswept body (0 = no sweep)")
     ap.add_argument("--parallel", type=int, default=4)
     ap.add_argument("-j", type=int, default=3, help="permuter threads per job")
-    ap.add_argument("--rounds", type=int, default=1)
-    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--rounds", type=int, default=4, help="max permuter runs per body (version)")
+    ap.add_argument("--once", action="store_true", help="drain the current pool, then exit")
     ap.add_argument("--triage-report", action="store_true",
                     help="classify the near-miss pool (all rounds), print counts and lists, exit")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     if a.triage_report:
         return triage_report(a.min_score, a.rounds, a.max_diff or None, a.json)
-    while True:
-        batch = pick(a.min_score, a.rounds, a.parallel, a.max_diff or None)
-        if not batch:
-            if a.once:
-                break
-            time.sleep(120)
-            continue
-        with ThreadPoolExecutor(a.parallel) as ex:
-            for r in ex.map(lambda c: run_one(c, a.minutes, a.j), batch):
-                print(json.dumps(r), flush=True)
+    extra = ["--stall", str(a.stall), "--no-gain", str(a.no_gain), "--extend", str(a.extend)]
+    from concurrent.futures import FIRST_COMPLETED, wait
+    running: dict = {}                 # future -> key; a freed slot is refilled at once
+    with ThreadPoolExecutor(a.parallel) as ex:
+        while True:
+            free = a.parallel - len(running)
+            batch = pick(a.min_score, a.rounds, free, a.max_diff or None, a.min_p,
+                         exclude=set(running.values())) if free > 0 else []
+            for c in batch:
+                running[ex.submit(run_one, c, a.minutes, a.j, a.sweep_budget, extra)] = c["key"]
+            if not running:
+                if a.once:
+                    break
+                time.sleep(120)
+                continue
+            done, _ = wait(list(running), timeout=None if len(running) >= a.parallel else 120,
+                           return_when=FIRST_COMPLETED)
+            for fu in done:
+                running.pop(fu)
+                try:
+                    print(json.dumps(fu.result()), flush=True)
+                except Exception as e:  # noqa: BLE001
+                    print(json.dumps({"error": repr(e)[:300]}), flush=True)
     return 0
 
 

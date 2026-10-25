@@ -1,0 +1,682 @@
+{
+  "schema_version": 1,
+  "comment": "Declarations a published TU publishes in its include/<unit>/<tu>.h before any published consumer uses them. Read by tools/header_harvest.py (published_exports); see docs/header-canon.md. An export never changes a spelling: it only counts as one more consumer of the owner's own declaration.",
+  "exports": [
+    {
+      "tu": "ov10/tu008",
+      "names": [
+        "CardGameWork"
+      ],
+      "reason": "ov10/tu008 (src/ov10/cgp.c) owns the card game work area and declares CardGameWork in src/ov10/cgp.h. ov10/tu002 card_fread, tu003 and tu009 need its members, but none of them has published source yet, so the harvest has no consumer and include/ov10/cgp.h did not exist; their reworks include \"ov10/cgp.h\" instead of restating the type (review-bulk-r38 stage-04, orchestration notes FOLLOW-UP header-canon CardGameWork).",
+      "consumers": [
+        "ov10/tu002",
+        "ov10/tu003",
+        "ov10/tu009"
+      ]
+    },
+    {
+      "tu": "main/tu103",
+      "names": [
+        "XglPacket"
+      ],
+      "reason": "main/tu103 (src/main/xgl_packet.c) owns the VIF1 packet builder and completes struct XglPacket in src/main/xgl_packet.h; the accepted pool only forward-declares it (typedef struct XglPacket XglPacket; in include/shared.h). main/tu107 nmlPacketSetAttributeData/nmlPacketSetAttributeAlloc16N read and write XglPacket.cursor (+0x24) and were held until the owner publishes the body (review-bulk-r47 stage main/tu107, orchestration notes 'XglPacket owner layout'). A dereference is not an identifier the harvest can see, so the body is exported explicitly.",
+      "consumers": [
+        "main/tu107"
+      ]
+    },
+    {
+      "tu": "ov12/tu060",
+      "names": [
+        "RgGameColiArg"
+      ],
+      "reason": "ov12/tu060 (src/ov12/rg_game_collision.c) owns the queued collision-check argument and declares RgGameColiArg (0x18 bytes: _CreateColiArg allocates sizeof(RgGameColiArg) and copies six words) in src/ov12/rg_game_collision.h. ov12/tu059 InitRgGeomGroupColiArg (0x00a30f08, still INCLUDE_ASM; validated bulk base) clears exactly those six words of the RgGameColiArg _CreateColiArg passes it, and review-bulk-r80 asked for RgGameColiArg * instead of a raw pointer, but tu059 has no published use of the type yet, so include/ov12/rg_game_collision.h did not exist (unblock-bulk-prep-20260919).",
+      "consumers": [
+        "ov12/tu059"
+      ]
+    },
+    {
+      "tu": "main/tu104",
+      "names": [
+        "xglStudioGetCamera2"
+      ],
+      "reason": "main/tu104 (src/main/xgl_studio.c) defines xglStudioGetCamera2 in C and declares it in its prelude as `extern StudioCamera *xglStudioGetCamera2(int camera_index);`, the spelling of the core decision in config/header-canon.json. Its published callers main/tu246 (src/main/camera.c through src/main/camera.h), main/tu116 (src/main/game.c) and main/tu100 (src/main/xgl_2.c) each redeclare the same prototype, so no TU uses the name undeclared and the layout never homed it in include/main/xgl_studio.h (the report's `math` entry is only the retired math view, withheld for StudioCamera, which include/shared.h now provides). Exported so those callers can include the definer's header instead of restating it (user-direct-fixes-20260919). Drop once a published caller uses the name without its own declaration.",
+      "consumers": [
+        "main/tu246",
+        "main/tu116",
+        "main/tu100"
+      ]
+    },
+    {
+      "tu": "ov12/tu065",
+      "names": [
+        "RgFileSysDataGetName"
+      ],
+      "reason": "ov12/tu065 (src/ov12/rg_filesys.c) defines RgFileSysDataGetName in C (published exact, ov12:0x00a34aa8) and declares it in src/ov12/rg_filesys.h with its definition's spelling. ov12/tu080 src/ov12/xrg_actor.c _DupLoadXenoActor calls it and redeclares the same prototype locally, so the layout had no undeclared consumer and include/ov12/rg_filesys.h did not exist. Exported so callers include the definer's header instead of restating it (user-direct-fixes-20260919). RgFileSysRead is still INCLUDE_ASM and is recorded in config/header-callees.json instead.",
+      "consumers": [
+        "ov12/tu080"
+      ]
+    },
+    {
+      "tu": "ov01/tu003",
+      "names": [
+        "transWepIn",
+        "transWepOut"
+      ],
+      "reason": "ov01/tu003 (src/ov01/battle_init.c) defines transWepIn/transWepOut in C on its own BattleUnit record and declares both in its prelude with the definition's spelling. ov01/tu002 src/ov01/unit_cmd.h restates them on its UnitRecord view, a TU-local divergence (docs/header-canon.md): that TU keeps its own declarations and does not include include/ov01/battle_init.h, so the definition wins in the definer's header and the umbrella withholds them (user-direct-fixes-20260919).",
+      "consumers": [
+        "ov01/tu002"
+      ]
+    },
+    {
+      "tu": "ov01/tu005",
+      "names": [
+        "dataDefWpnGet"
+      ],
+      "reason": "ov01/tu005 (src/ov01/data_unit_org_get.c) defines dataDefWpnGet in C as `int dataDefWpnGet(void *unit)` (it ignores the argument and returns 0) and declares it in src/ov01/data_unit_org_get.h with that spelling. ov01/tu002 (UnitRecord *) and ov01/tu003 (BattleUnit *) restate it on their own unit views, TU-local divergences that neither includes include/ov01/data_unit_org_get.h, so the definition wins in the definer's header and the umbrella withholds it (user-direct-fixes-20260919). dataMtdRead is still INCLUDE_ASM and has two incompatible caller spellings, so it is not registered.",
+      "consumers": [
+        "ov01/tu002",
+        "ov01/tu003"
+      ]
+    },
+    {
+      "tu": "ov12/tu023",
+      "names": [
+        "RgShotEssence",
+        "RgNormalShotEssence"
+      ],
+      "reason": "ov12/tu023 (src/ov12/rg_shot.c) owns the shot essences and completes RgShotEssence (the prefix every shot kind shares: _InitShotCommon/_InitRgShotEssence) and RgNormalShotEssence (speed at +0x120, _CreateRgNormalShot/InitRgNormalShotEssence) in src/ov12/rg_shot.h. RgWeaponEssence.shotEssence (ov12/tu027, +0x10, stored by _ReadCommon at ov12:0x00a1d130) points at a shot-database entry, and ov12/tu006 _JobEnemy (ov12:0x00a0c918..0x00a0c92c) reads that entry's life (+0x08) and speed (+0x120) to estimate the shot's reach. tu006 has no published use of either type yet, so include/ov12/rg_shot.h carried RgHomingShotEssence without the RgShotEssence body it embeds and did not carry RgNormalShotEssence (shared-model-ov12-weapon-essence-20260925, user-authorized 2026-09-25).",
+      "consumers": [
+        "ov12/tu006"
+      ]
+    },
+    {
+      "tu": "ov12/tu054",
+      "names": [
+        "RgGeomRobotSetDir"
+      ],
+      "reason": "ov12/tu054 (src/ov12/rg_geom_robot.c) defines `void RgGeomRobotSetDir(RgGeom *geom, RgVector direction)` at its mapped C function. The proposed defining-TU owner header src/ov12/rg_geom_robot.h contains that exact prototype. The retained ov12/tu015 candidate imports ov12/rg_geom_robot.h and calls RgGeomRobotSetDir, so the generated defining-TU header must export the provider declaration instead of requiring a block-scope declaration.",
+      "consumers": [
+        "ov12/tu015"
+      ]
+    },
+    {
+      "tu": "main/tu257",
+      "names": [
+        "SequenceState",
+        "ActSequenceEntry",
+        "actSequence"
+      ],
+      "consumers": [
+        "main/tu248"
+      ],
+      "reason": "Publish the defining TU types and storage declarations used by the unified DATA consumers."
+    },
+    {
+      "tu": "main/tu212",
+      "names": [
+        "SrsMemRes",
+        "_srsMemRes"
+      ],
+      "consumers": [
+        "main/tu211"
+      ],
+      "reason": "Publish the defining TU types and storage declarations used by the unified DATA consumers."
+    },
+    {
+      "tu": "main/tu226",
+      "names": [
+        "VMSlot"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu246",
+        "main/tu238",
+        "main/tu231"
+      ],
+      "source_owner": {
+        "path": "src/main/init_vm.h",
+        "sha256": "593233ecb874aca73a045db0aa34c6db2ac38385608c036829fad75436f4a3ce",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "VMSlot"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "schema": "unchanged-entity-owner-refresh/1",
+          "before_source_sha256": "452aef479c093d86b376304a508e0339b49c8ad41ddfaa6bbfe542229b0a9d7c",
+          "before_export_sha256": "60297ada0b925f1670ed0ddc28d18aea9b3931cb7b94f0769e9a597299019aba",
+          "report_path": ".work/reviews/express-20261011/declaration-cleanup/context-12.json",
+          "source_composition_manifest": "declaration-cleanup/context-12.json"
+        },
+        {
+          "schema": "unchanged-entity-owner-refresh/1",
+          "before_source_sha256": "ce96a7c22fe08b30bea20f086a956180af3e0ff1c89d1d9bd2929df5436d2993",
+          "before_export_sha256": "7ad6610c1271b2672087885615115021cb66a7c5dc5c5b077da606146757efdb",
+          "report_path": ".work/reviews/express-20261011/declaration-cleanup/context-13.json",
+          "source_composition_manifest": "declaration-cleanup/context-13.json"
+        }
+      ]
+    },
+    {
+      "tu": "main/tu142",
+      "names": [
+        "MsgQueue",
+        "MsgBuffer"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu143"
+      ],
+      "source_owner": {
+        "path": "src/main/msg_init.h",
+        "sha256": "3e47eb1b2f1b2177c7d7b9220055dd0ac6091c2376a3ccb2b7dc1ad754c6e7f5",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "MsgQueue"
+          },
+          {
+            "namespace": "type",
+            "name": "MsgBuffer"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu155",
+      "names": [
+        "EwWidget",
+        "EwContainerState",
+        "EwContainerWidget",
+        "EwMaskState",
+        "EwMaskWidget",
+        "EwLabelWidget"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu143"
+      ],
+      "source_owner": {
+        "path": "src/main/ew_sprt_set_cursor_uv.h",
+        "sha256": "5371a0d53d0e6b704524510297c77f2df4666d3bfd184d368709181f59cdabc5",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "EwWidget"
+          },
+          {
+            "namespace": "type",
+            "name": "EwContainerState"
+          },
+          {
+            "namespace": "type",
+            "name": "EwContainerWidget"
+          },
+          {
+            "namespace": "type",
+            "name": "EwMaskState"
+          },
+          {
+            "namespace": "type",
+            "name": "EwMaskWidget"
+          },
+          {
+            "namespace": "type",
+            "name": "EwLabelWidget"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu100",
+      "names": [
+        "Matrix",
+        "XglQuadword"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu265",
+        "main/tu205"
+      ],
+      "source_owner": {
+        "path": "src/main/xgl_2.h",
+        "sha256": "bf08b830f423830bd0764be5bb614822a68869ce8967e16b45540ba0170babd7",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "Matrix"
+          },
+          {
+            "namespace": "type",
+            "name": "XglQuadword"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu139",
+      "names": [
+        "SceneStringStorage"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu231"
+      ]
+    },
+    {
+      "tu": "main/tu159",
+      "names": [
+        "ECursol"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu163"
+      ],
+      "source_owner": {
+        "path": "src/main/open_close_main.h",
+        "sha256": "e9cf7f346e5a1ba24adec8e4a341ddb41c095d5c4b4caae7bd438e38e0e7a801",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "ECursol"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu107",
+      "names": [
+        "GsTag"
+      ],
+      "reason": "express368 exact shared type transport: defining owner provides complete types to current callers; no type restatement",
+      "consumers": [
+        "main/tu108"
+      ],
+      "source_owner": {
+        "path": "src/main/nml_packet_add.h",
+        "sha256": "e2f9c7a067f094a58c1cc8b3a8521d65d8f692f0f49940834ff1dc852180e6b4",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "GsTag"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu221",
+      "names": [
+        "JThread"
+      ],
+      "reason": "express368 canonical JNI thread type transport: current Chr, Unit and System consume one complete owner definition",
+      "consumers": [
+        "main/tu248",
+        "main/tu249",
+        "main/tu231"
+      ],
+      "source_owner": {
+        "path": "src/main/jni.h",
+        "sha256": "2f2f1b82f82c6c1b4bec2d5a5d9d13c93417f5956c83757c516bd3e8b19c81d8",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "JThread"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "schema": "unchanged-entity-owner-refresh/1",
+          "before_source_sha256": "7ac2cfb444cf818ff9fc04271679e0c55c5ead0c5395e15ae25efea4ba0fe384",
+          "before_export_sha256": "60297ada0b925f1670ed0ddc28d18aea9b3931cb7b94f0769e9a597299019aba",
+          "report_path": ".work/reviews/express-20261011/declaration-cleanup/context-12.json",
+          "source_composition_manifest": "declaration-cleanup/context-12.json"
+        }
+      ]
+    },
+    {
+      "tu": "main/tu212",
+      "names": [
+        "SrsMemRes"
+      ],
+      "consumers": [
+        "main/tu210",
+        "main/tu213"
+      ],
+      "reason": "Build02 accurate complete-type defining-owner transport",
+      "source_owner": {
+        "path": "src/main/srs.h",
+        "sha256": "e8263b8971de7fda5c32d7c7551a261f3644f57b16373c3ef8c901376339eb65",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "SrsMemRes"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "schema": "unchanged-entity-owner-refresh/1",
+          "before_source_sha256": "21106c46df6f34aede2a4b7356e5ebb347816bed0b2545deb5f736d47c2738cd",
+          "before_export_sha256": "40e175c80f73bac9d3a7ccfb7086e55334e32765965e4a7b4cf4748db254c2bd",
+          "report_path": ".work/reviews/express-20261011/header-metadata/receipts10/report.json",
+          "source_composition_manifest": "declaration-cleanup/context-09.json"
+        },
+        {
+          "schema": "unchanged-entity-owner-refresh/1",
+          "before_source_sha256": "b3ad88baeb444dbff5a9ed91b92a1358fdf891d585d3164fff19e2f92e229afb",
+          "before_export_sha256": "e54115563af399511bda84cb45490de91b2b38bf7ab42476bb75406ae2002c7f",
+          "report_path": ".work/reviews/express-20261011/declaration-cleanup/context-11.json",
+          "source_composition_manifest": "declaration-cleanup/context-11.json"
+        }
+      ]
+    },
+    {
+      "tu": "main/tu110",
+      "names": [
+        "RssdRequest"
+      ],
+      "consumers": [
+        "main/tu114"
+      ],
+      "reason": "Build02 accurate complete-type defining-owner transport",
+      "source_owner": {
+        "path": "src/main/ssd_init.h",
+        "sha256": "4b3d5e46bbe646d474741e7929ea9ef6d39a0ba4a3bec4a63c86091d0680853c",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "RssdRequest"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "operation": "context16-unmodified-named-entity",
+          "prior_source_owner": {
+            "path": "src/main/ssd_init.h",
+            "sha256": "5ca5a851621c1511c48057da84f26c90f8957356b2dc6c706c0f679894795319",
+            "declarations": [
+              {
+                "namespace": "type",
+                "name": "RssdRequest"
+              }
+            ]
+          },
+          "receipt": ".work/reviews/express-20261011/declaration-cleanup/context-16.json",
+          "receipt_sha256": "cfc3ddde2e8646841960202a60f5a85bd781d6feb08182bf9d6cf5df136397be",
+          "unchanged_preprocessing_context": true
+        }
+      ]
+    },
+    {
+      "tu": "main/tu191",
+      "names": [
+        "EnemyWorkEntry",
+        "EnemyEscapeTarget"
+      ],
+      "consumers": [
+        "main/tu199"
+      ],
+      "reason": "Build02 accurate complete-type defining-owner transport",
+      "source_owner": {
+        "path": "src/main/enemy_1.h",
+        "sha256": "ea2c01f7cc10463a6f5cd8d5883a7c9e8ce8d60f7d0764a39a71e0b2572a5a1b",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "EnemyWorkEntry"
+          },
+          {
+            "namespace": "type",
+            "name": "EnemyEscapeTarget"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "operation": "explicit-nested-owner-type-export",
+          "prior_export": {
+            "tu": "main/tu191",
+            "names": [
+              "EnemyWorkEntry"
+            ],
+            "consumers": [
+              "main/tu199"
+            ],
+            "reason": "Build02 accurate complete-type defining-owner transport",
+            "source_owner": {
+              "path": "src/main/enemy_1.h",
+              "sha256": "ea2c01f7cc10463a6f5cd8d5883a7c9e8ce8d60f7d0764a39a71e0b2572a5a1b",
+              "declarations": [
+                {
+                  "namespace": "type",
+                  "name": "EnemyWorkEntry"
+                }
+              ]
+            }
+          },
+          "reason": "Existing nested EnemyEscapeTarget needs EnemyVector4 before EnemyWorkEntry; single-pass implicit completion withheld the target.",
+          "source_receipt": ".work/reviews/express-20261011/declaration-cleanup/context-03.json",
+          "authored_header_receipt": ".work/module-workers/tu-slus-20469-412d448de315-main-tu191-enemy-1-002cb278-0d99803502c2-matching-06da611d2feb6c60/attempt-06da611d2feb6c60/result.json",
+          "authored_header_sha256": "50a29f89114f4b1223aa9692929379d5475e5a23b53826cd541cacad3cf0d07a"
+        }
+      ]
+    },
+    {
+      "tu": "main/tu257",
+      "names": [
+        "SequenceState"
+      ],
+      "consumers": [
+        "main/tu121"
+      ],
+      "reason": "Build02 accurate complete-type defining-owner transport",
+      "source_owner": {
+        "path": "src/main/near_dir.h",
+        "sha256": "318909740b4a994bd7d7647dd7e390e28ffdbe4591fd0c19aa4c90d28c244d4a",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "SequenceState"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu257",
+      "names": [
+        "ActSequenceEntry"
+      ],
+      "consumers": [
+        "main/tu121"
+      ],
+      "reason": "Build02 accurate complete-type defining-owner transport",
+      "source_owner": {
+        "path": "src/main/near_dir.h",
+        "sha256": "318909740b4a994bd7d7647dd7e390e28ffdbe4591fd0c19aa4c90d28c244d4a",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "ActSequenceEntry"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu162",
+      "names": [
+        "MenuSelectWindow"
+      ],
+      "consumers": [
+        "main/tu167"
+      ],
+      "reason": "Precise defining-owner int callback with original status-window/panel tags; FilePassWindow.draw assignment is cast-free"
+    },
+    {
+      "tu": "main/tu162",
+      "names": [
+        "MenuStatusDisp"
+      ],
+      "consumers": [
+        "main/tu175"
+      ],
+      "reason": "Selected MenuTec Status body uses the actual two-parameter void status-window callback at unchanged function-pointer slot"
+    },
+    {
+      "tu": "main/tu212",
+      "names": [
+        "SrsResourceType"
+      ],
+      "consumers": [
+        "main/tu210",
+        "main/tu211",
+        "main/tu213"
+      ],
+      "reason": "The existing SrsMemRes tables require the exact SRS_RES_COUNT enum constant; publish the unchanged resource-slot enumerators with their defining TU.",
+      "source_owner": {
+        "path": "src/main/srs.h",
+        "sha256": "e8263b8971de7fda5c32d7c7551a261f3644f57b16373c3ef8c901376339eb65",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "SrsResourceType"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu227",
+      "names": [
+        "JavaClass",
+        "s8"
+      ],
+      "consumers": [
+        "main/tu226",
+        "main/tu221"
+      ],
+      "reason": "Exact original VM aliases supplied by their one remaining source owner; the full class record and primitive element metadata use these names."
+    },
+    {
+      "tu": "main/tu089",
+      "names": [
+        "XglPadRecord"
+      ],
+      "consumers": [
+        "main/tu088"
+      ],
+      "reason": "Existing pad record source owner; provide the unchanged partial0x68 record to accepted C PadData owner88. Foreign partial field views remain local.",
+      "source_owner": {
+        "path": "src/main/xgl_pad.h",
+        "sha256": "5674d81b6c4111114f7d5626024e61273b4d0910b704056c09488dfa8f32e479",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "XglPadRecord"
+          }
+        ]
+      }
+    },
+    {
+      "tu": "main/tu201",
+      "names": [
+        "Point4",
+        "Vector3"
+      ],
+      "consumers": [
+        "main/tu121",
+        "main/tu149"
+      ],
+      "reason": "Selected/touched callers need the existing get owner point/vector types; preserve retired/promoted pool receipts via explicit owner migrations.",
+      "source_owner": {
+        "path": "src/main/get.c",
+        "sha256": "032d093d505cee7cd6d2dfa94d9c32bfc4ddb6b652f04647f18564fa6df3482b",
+        "declarations": [
+          {
+            "namespace": "type",
+            "name": "Point4"
+          },
+          {
+            "namespace": "type",
+            "name": "Vector3"
+          }
+        ]
+      },
+      "owner_receipt_history": [
+        {
+          "operation": "collision19-explicit-defining-owner-import",
+          "prior_source_owner": {
+            "path": "src/main/get.c",
+            "sha256": "b5cd6a6c16e880883b4baa7e298ce979226a45ef3a32b1909f716622cbe92e80",
+            "declarations": [
+              {
+                "namespace": "type",
+                "name": "Point4"
+              },
+              {
+                "namespace": "type",
+                "name": "Vector3"
+              }
+            ]
+          },
+          "reason": "Same exact source-owned Point4 and Vector3 entities; only required owner header import changes preprocessing context."
+        },
+        {
+          "operation": "messages28-exact-late-forward",
+          "prior_source_owner": {
+            "path": "src/main/get.c",
+            "sha256": "b596ec46a6d1e0d6434bae7ae3a512287e8f7e2a00ff9e66645a4383149b1a9b",
+            "declarations": [
+              {
+                "namespace": "type",
+                "name": "Point4"
+              },
+              {
+                "namespace": "type",
+                "name": "Vector3"
+              }
+            ]
+          },
+          "report_path": ".work/reviews/express-20261011/declaration-cleanup/messages-28/report.json",
+          "report_sha256": "32d8e7257017e7f44facab5ffd73e0d2083144c4def734727d55cf74ca2ed1b6",
+          "patch_path": ".work/reviews/express-20261011/declaration-cleanup/messages-28/proposal.patch",
+          "patch_sha256": "afdd8ffdc10de698a40c1737fe44ca47664ee7186740e7a9a4eee0ed7f990087",
+          "unchanged_named_entities_and_preprocessing_context": true
+        }
+      ]
+    },
+    {
+      "tu": "main/tu162",
+      "names": [
+        "MenuInfoWindow"
+      ],
+      "consumers": [
+        "main/tu168"
+      ],
+      "reason": "Actual defining-owner callback remains visible at original WindowDX heterogeneous registration boundary; no signature/body recovery"
+    },
+    {
+      "tu": "main/tu162",
+      "names": [
+        "MenuPasWindow"
+      ],
+      "consumers": [
+        "main/tu168"
+      ],
+      "reason": "Actual defining-owner callback remains visible at original WindowDX heterogeneous registration boundary; no signature/body recovery"
+    },
+    {
+      "tu": "main/tu262",
+      "names": [
+        "JC_copyChain"
+      ],
+      "consumers": [
+        "main/tu255"
+      ],
+      "reason": "Actual defining-owner callback signature visible across original ACT/JNT attachment registration ABI; no owner body or data change"
+    }
+  ]
+}

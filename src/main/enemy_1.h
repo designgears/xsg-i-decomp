@@ -4,6 +4,7 @@
 #include "common.h"
 #include "shared.h"
 
+
 typedef struct EnemyActor {
     u32 flags;
     unsigned char unmodeled_04[0x0c];
@@ -16,7 +17,9 @@ typedef struct EnemyActor {
     unsigned char kind;
     unsigned char unmodeled_83[3];
     short sound_effect_id;
-    unsigned char unmodeled_88[0x670];
+    unsigned char unmodeled_88[0x38];
+    EnemyParams params;             /* +0xc0 */
+    unsigned char unmodeled_130[0x6f8 - 0x130];
     float speed;
     unsigned char unmodeled_6fc[0x2e8];
     float target_angle;
@@ -31,11 +34,18 @@ typedef union EnemyWorkState40 {
 
 typedef struct EnemyEscapeTarget {
     Vector4 position;
-    unsigned char unmodeled_10[0x10];
+    unsigned char unmodeled_10[0]; /* +0x10: zero-length alias of the former padding member, kept for saved bodies */
+    float scale;
+    float scale_from;
+    float scale_to;
+    short scale_frame;
+    short scale_frame_count;
 } EnemyEscapeTarget;
 
 typedef struct EnemyWorkEntry {
-    unsigned char unmodeled_000[0x10];
+    unsigned char unmodeled_000[0x0a];
+    short wall_attribute;           /* +0x0a */
+    unsigned char unmodeled_00c[0x04];
     float goback_x;
     unsigned char unmodeled_014[4];
     float goback_z;
@@ -43,24 +53,37 @@ typedef struct EnemyWorkEntry {
     Vector4 step_limit;
     unsigned char unmodeled_030[0x10];
     EnemyWorkState40 state_40;
-    unsigned char unmodeled_042[2];
+    short fast_point_count;         /* +0x42 */
     unsigned short hit_count;
     short hit_limit;
     unsigned char unmodeled_048[2];
     unsigned char pause_kind;
     unsigned char unmodeled_04b[3];
     unsigned short stiff_timer;
-    unsigned char unmodeled_050[0x1a];
+    short effect_timer[2];
+    signed char route_marks[2][8];  /* +0x54 */
+    short route_cursor[2];          /* +0x64 */
+    unsigned char unmodeled_068[2];
     unsigned char stiff_flag;
     unsigned char unmodeled_06b[5];
     int map_index;
     short mark;
     short mark_timer;
     unsigned char unmodeled_078[8];
-    Vector4 spline_points[256];
+    union {
+        Vector4 spline_points[256];
+        float spline_coordinates[256][4];
+    };
     short spline_point_count;
-    unsigned char unmodeled_1082[0x100e];
-    short unique_pattern_step[512][4];
+    unsigned char unmodeled_1082[0xe];
+    Vector4 route_points[256];      /* +0x1090 */
+    union {
+        short unique_pattern_step[512][4];
+        struct {
+            short action_motion_table[256][4]; /* +0x2090 */
+            short motion_id_table[256][4];
+        };
+    };
     short unique_pattern;
     unsigned short unique_step;
     unsigned char unmodeled_3094[0x72c];
@@ -94,7 +117,7 @@ extern void *AdrsEnemyQuestion;
 extern void *AdrsEnemySphere;
 
 float Get_Angle(const Vector4 *from, const Vector4 *to);
-unsigned char TM_Enemy_Move_Step(unsigned char actor_number,
+unsigned char TM_Enemy_Move_Step(int actor_number,
                                  Vector4 *step_limit, float goback_x);
 float Get_Distance(const Vector4 *from, const Vector4 *to);
 float Get_Height(const Vector4 *position, int map_index, int attr_mask);

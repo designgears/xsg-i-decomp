@@ -1,0 +1,516 @@
+{
+  "schema_version": 1,
+  "_doc": "Canonical prototypes of callees that no published TU defines in C yet (still INCLUDE_ASM/ACCEPTED_ASM, or SDK). tools/header_harvest.py lint holds a local extern of a registered name, in a file of one of the entry's units, to `text` (docs/header-canon.md, 'Callees that are still assembly'). Seeded 2026-09-19 by `header_harvest.py callees --candidates` from names that at least two published TUs of one unit declare identically and no TU declares otherwise; an entry becomes obsolete once its definer is published in C.",
+  "callees": {
+    "CreateRgFont": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu034, ov12/tu069",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int CreateRgFont(void *table, int glyphCount, int pic);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "CreateRgVector": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu059, ov12/tu060",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void *CreateRgVector(int capacity, const char *source_file, int line);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "DisposeRgParticleEffect": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu024, ov12/tu035",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void DisposeRgParticleEffect(RgParticleEffect *particleEffect);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "DisposeRgReadText": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu001, ov12/tu047",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "void DisposeRgReadText(RgReadText *text);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "FlushCache": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu088, main/tu130",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void FlushCache(int mode);",
+      "units": [
+        "main"
+      ]
+    },
+    "Get_MiddlePoint": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu193, main/tu201",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void Get_MiddlePoint(const float *start, const float *following,\n                            short point_index, short point_count,\n                            float *result);",
+      "units": [
+        "main"
+      ]
+    },
+    "InstanceOfRgCharMgr": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu002, ov12/tu021",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern RgCharMgr *InstanceOfRgCharMgr(void);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "InstanceOfRgDraw": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu001, ov12/tu079, ov12/tu086",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "RgDraw *InstanceOfRgDraw(void);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "InstanceOfRgEffectEnv": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu001, ov12/tu024",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "RgEffectEnv *InstanceOfRgEffectEnv(void);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "MEfObjDestroy": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu023, ov01/tu025, ov01/tu030, ov01/tu033",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void MEfObjDestroy(void *self);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "MMathMakeRandom": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu022, ov01/tu028",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern float MMathMakeRandom(void);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "MOutputDebugStringWarn": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu016, ov01/tu017, ov01/tu022",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void MOutputDebugStringWarn(const char *format, ...);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "MenuWorkEndGet": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu166, main/tu177",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "void *MenuWorkEndGet(void);",
+      "units": [
+        "main"
+      ]
+    },
+    "PauseMenu": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu116, main/tu117",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void PauseMenu(void);",
+      "units": [
+        "main"
+      ]
+    },
+    "RgBgObjTryToBreak": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu023, ov12/tu026",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int RgBgObjTryToBreak(int bgObject, float damage);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "RgFileSysRead": {
+      "confidence": "high",
+      "evidence": [
+        "ov12/tu065 src/ov12/rg_filesys.c: RgFileSysRead (ov12:0x00a34190, 0x28c bytes) is INCLUDE_ASM, so no generated header states its prototype; the owner's own src/ov12/rg_filesys.h declares `extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName, const char *pszRoot);` and RgFileSysPrepareFile (published C, same TU) calls it with that prototype",
+        "identical typedef spelling in ov12/tu065, ov12/tu069 (rg_select_agws.c), ov12/tu080 (xrg_actor.c); the accepted pool (retired record io-ov12-00a34518) states the same text",
+        "ov12/tu033 (rg_effect_env.c) and ov12/tu073 (rg_bxx.c) spell `struct RgFileSysData *RgFileSysRead(struct RgFileSys *, ...)`: the tags the include/shared.h typedefs RgFileSysData/RgFileSys name, i.e. the same C types, so neither body depends on that spelling (rule 0 gives it no byte evidence)",
+        "header_harvest.py callees survey 2026-09-19 (user-direct-fixes-20260919): DIVERGENT ov12:RgFileSysRead, 3 TU typedef spelling vs 2 TU struct-tag spelling"
+      ],
+      "rationale": "Decided with docs/header-canon.md 'How a decision is made': the owner's declaration wins over a caller's view (rule 1), it is the most-used spelling (rule 7), and the two struct-tag spellings name exactly the same types through the shared typedefs, so they carry no byte evidence (rule 0). lint now reports rg_effect_env.c and rg_bxx.c as CONFLICT RgFileSysRead until they drop the tags; converging them is codegen-neutral.",
+      "text": "extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName, const char *pszRoot);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "RgHeapIsInSelf": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu019, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int RgHeapIsInSelf(RgHeap *pHeap, void *pPtr);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "RssdCallFunc": {
+      "confidence": "high",
+      "evidence": [
+        "main/tu110 src/main/ssd_init.c: RssdCallFunc (main:0x0023fff0) is INCLUDE_ASM, so no generated header states its prototype; main/tu110's own src/main/ssd_init.h declares `int RssdCallFunc(int command, RssdRequest *request, void *data, int size);` and is the only spelling in the published tree",
+        "original main:0x0023fff0..0x0024012c: `sh $21,0($17)` stores the command halfword, a non-null request is copied as the 32-byte RssdRequest (four ldl/ldr -> sdl/sdr pairs), `size` bytes of `data` follow at buffer +0x20, and the sceSifCallRpc result (or -1) is returned (src/main/ssd_init.h)",
+        "callers main/tu111 (ssd_set.c), main/tu112 (ssd_1.c) and main/tu113 (ssd_2.c) read it through that header (waived foreign_local_include), all calling RssdCallFunc(command, &request, data-or-0, size-or-0)",
+        "header_harvest.py callees survey 2026-09-19 (user-direct-fixes-20260919): RssdCallFunc, one spelling (main/tu110)"
+      ],
+      "rationale": "The callee is still assembly, so config/header-callees.json is its canonical home until main/tu110 publishes it in C. The text is the owner's single published spelling; RssdRequest is published by include/main/ssd_init.h, so a caller that declares RssdCallFunc locally includes that header for the type. RssdWork and RssdWorkFlags are not settled here (tu_local decision in config/header-canon.json).",
+      "text": "int RssdCallFunc(int command, RssdRequest *request, void *data, int size);",
+      "units": [
+        "main"
+      ]
+    },
+    "SPL_getValueXYZ": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu256, main/tu257, main/tu258",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void SPL_getValueXYZ(float *destination, void *spline, float frame);",
+      "units": [
+        "main"
+      ]
+    },
+    "UnduGet": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu257, main/tu269, main/tu270",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern float UnduGet(float x, float z);",
+      "units": [
+        "main"
+      ]
+    },
+    "XrgMulMatrix": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu068, ov12/tu088",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "XrgUnitMatrix": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu035, ov12/tu055, ov12/tu078",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void XrgUnitMatrix(RgMatrix destination);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "_nowScript": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu213, main/tu214",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int _nowScript;",
+      "units": [
+        "main"
+      ]
+    },
+    "findMethod": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu139, main/tu148",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern SceneMethod *findMethod(SceneClass *scene_class, SceneString *name,\n                               void *signature_or_type);",
+      "units": [
+        "main"
+      ]
+    },
+    "instanceOf": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu139, main/tu221",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int instanceOf(SceneClass *scene_class, SceneClass *parent_class);",
+      "units": [
+        "main"
+      ]
+    },
+    "loadConstString2": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu139, main/tu224",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern SceneString *loadConstString2(const char *bytes, int length);",
+      "units": [
+        "main"
+      ]
+    },
+    "mapNoSet": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu007, ov01/tu014",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void mapNoSet(int mapNo);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "root_name_name_check": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu082, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern const char root_name_name_check[];",
+      "units": [
+        "ov12"
+      ]
+    },
+    "root_name_result_check": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu082, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern const char root_name_result_check[];",
+      "units": [
+        "ov12"
+      ]
+    },
+    "root_name_source_file": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu082, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern const char root_name_source_file[];",
+      "units": [
+        "ov12"
+      ]
+    },
+    "sceVif1PkOpenDirectHLCode": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu008, ov01/tu018",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "sefHitEffect": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov01/tu023, ov01/tu025, ov01/tu030, ov01/tu033",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void sefHitEffect(void);",
+      "units": [
+        "ov01"
+      ]
+    },
+    "strcat": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu082, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern char *strcat(char *destination, const char *source);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "strcpy": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in ov12/tu010, ov12/tu069, ov12/tu082, ov12/tu083",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern char *strcpy(char *destination, const char *source);",
+      "units": [
+        "ov12"
+      ]
+    },
+    "xglAtan2": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu100, main/tu256, main/tu257",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern float xglAtan2(float x, float y);",
+      "units": [
+        "main"
+      ]
+    },
+    "xglFontDebugPrintf": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu132, main/tu148, main/tu158",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void xglFontDebugPrintf(int x, int y, const char *format, ...);",
+      "units": [
+        "main"
+      ]
+    },
+    "xglHddErrorScreen": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu092, main/tu099",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void xglHddErrorScreen(void);",
+      "units": [
+        "main"
+      ]
+    },
+    "xglHddMcGetFree": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu099, main/tu132",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern int xglHddMcGetFree(void);",
+      "units": [
+        "main"
+      ]
+    },
+    "xglRenderDrawFlipPk": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu118, main/tu130",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void xglRenderDrawFlipPk(XglPacket *packet);",
+      "units": [
+        "main"
+      ]
+    },
+    "xglSoundEffectNormalDirect": {
+      "confidence": "medium",
+      "evidence": [
+        "identical local declaration in main/tu116, main/tu130",
+        "header_harvest.py callees survey 2026-09-19 (.work/reviews/header-architecture-prep-20260919/callees-survey.json)"
+      ],
+      "rationale": "every published TU that declares it spells it this way",
+      "text": "extern void xglSoundEffectNormalDirect(int effect_id);",
+      "units": [
+        "main"
+      ]
+    },
+    "atan2f": {
+      "text": "extern float atan2f(float y, float x);",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        ".work/reviews/express-20261011/declaration-cleanup/context-18.json",
+        "Original checkTalk atan2f call0x243d88 then nearDir0x243d94; checkItemBox0x2441a8 then0x2441b4 use f12/f13 inputs and f0 result.",
+        "Existing exact get.h and near_dir.c float prototypes; include/README.md:65-75 still-ASM callee policy."
+      ],
+      "rationale": "Both callees remain original assembly. Accurate local float(float,float) declaration restores selected caller floating-point ABI without source/scaffold or function-class changes.",
+      "confidence": "high"
+    },
+    "nearDir": {
+      "text": "extern float nearDir(float from, float to);",
+      "units": [
+        "main"
+      ],
+      "evidence": [
+        ".work/reviews/express-20261011/declaration-cleanup/context-18.json",
+        "Original checkTalk atan2f call0x243d88 then nearDir0x243d94; checkItemBox0x2441a8 then0x2441b4 use f12/f13 inputs and f0 result.",
+        "Existing exact get.h and near_dir.c float prototypes; include/README.md:65-75 still-ASM callee policy."
+      ],
+      "rationale": "Both callees remain original assembly. Accurate local float(float,float) declaration restores selected caller floating-point ABI without source/scaffold or function-class changes.",
+      "confidence": "high"
+    }
+  }
+}

@@ -129,7 +129,7 @@ void Java_xeno_util_Menu_addItem__Ljava_lang_String_(JThread *thread,
 }
 
 extern MenuNative *TMENU_create(int menu_kind);
-extern void *classJava_xeno_util_Menu;
+extern SceneClass *classJava_xeno_util_Menu;
 
 /* These natives receive VM argument/result slots at four-byte intervals: the
  * original accesses the object at +0, location integers at +4/+8 and results

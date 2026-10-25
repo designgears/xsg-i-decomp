@@ -342,11 +342,315 @@ char *xglMcSetFullPath(int card, char *path)
     return D_0093E0C0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", execute);
+int sceMcGetDir(int port, int slot, const char *name, unsigned mode, int maxent, void *table);
+int sceMcMkdir(int port, int slot, const char *name);
+int sceMcFormat(int port, int slot);
+int sceMcUnformat(int port, int slot);
+extern char D_0093E0A1[];
+static void execute(XglMcQueue *q)
+{
+    int v = 4;
+    char *s;
+    unsigned char *p;
+
+    switch (q->type)
+    {
+    case 1:
+        sceMcGetInfo(q->port, 0, 0, q->result, 0);
+        return;
+    case 2:
+        if (q->a == -1) {
+            char *_g;
+            xglMcSetFullPath(-1, (char *)-1);
+            _g = D_0093E0C0;
+            sceMcGetDir(q->port, 0, _g, 0, 100, (void *)((q->b + 0xA3) & ~0x3F));
+            _g[-0x20] = 6;
+            return;
+        }
+        xglMcSetFullPath(q->a, 0);
+        sceMcOpen(q->port, 0, D_0093E0C0, 1);
+        p = D_0093E0C0 - 0x20;
+        p[0] = 2;
+        return;
+    case 3:
+        xglMcSetFullPath(0, q->name);
+        sceMcOpen(q->port, 0, D_0093E0C0, 1);
+        p = D_0093E0C0 - 0x20;
+        p[0] = 2;
+        return;
+    case 5:
+    case 7:
+    {
+        unsigned char w;
+        short t;
+
+        xglMcSetFullPath(0, q->name);
+        t = q->type;
+        switch (t)
+        {
+        case 7:
+            {
+                s = D_0093E0C0;
+                sceMcOpen(q->port, 0, s, 0x202);
+                s[-0x20] = 3;
+            }
+            break;
+        default:
+            {
+                sceMcOpen(q->port, 0, (char *)D_0093E0C0, 1);
+                s = D_0093E0C0;
+                s[-0x20] = 4;
+            }
+            break;
+        }
+        *D_0093E0A1 = 0;
+        return;
+    }
+    case 8:
+        p = D_0093E0C0 - 0x20;
+        xglMcSetFullPath(q->a, (char *)-1);
+        s = D_0093E0C0;
+        sceMcMkdir(q->port, 0, s);
+        v = 5;
+        goto set;
+    case 6:
+        p = D_0093E0C0 - 0x20;
+        xglMcSetFullPath(q->a, 0);
+        s = D_0093E0C0;
+        sceMcOpen(q->port, 0, s, 0x202);
+        v = 3;
+        goto set;
+    case 4:
+        do {
+            p = (unsigned char *)D_0093E0C0 - 0x20;
+            xglMcSetFullPath(q->a, 0);
+            s = (char *)(unsigned char *)D_0093E0C0;
+            sceMcOpen(q->port, 0, s, 1u);
+            v = (unsigned char)4;
+        set:
+            do { p[1] = 0; } while (0);
+            p[0] = (unsigned char)v;
+        } while (0);
+        break;
+    case 9:
+        sceMcFormat(q->port, 0);
+        return;
+    case 10:
+        sceMcUnformat(q->port, 0);
+        break;
+    default:
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", create_sub2);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", xglMcMain);
+extern unsigned char D_0093E144[];
+extern int D_0093E0A4[];
+int create_sub2(int);
+static inline unsigned char *mw_addr(void)
+{
+    return mw;
+}
+
+int xglMcMain(void)
+{
+    unsigned char *p;
+    int sp10;
+    int sp14;
+    int temp_2;
+    int c;
+    int flag;
+    short *t;
+    XglMcQueue *q;
+    unsigned char *dst;
+    unsigned char *src;
+    XglClock clk;
+    unsigned char *temp_19;
+    unsigned char *var_16;
+    unsigned char *var_2_3;
+    int var_18;
+    int var_18_2;
+    unsigned int var_21;
+    unsigned int temp_2_3;
+    int temp_17;
+    int var_22;
+    int temp_2_4;
+    int *wv;
+    int *wv2;
+    int c2;
+
+    temp_2 = sceMcSync(1, &sp10, &sp14);
+    if (temp_2 == 0) {
+        /* state 1: reply pending */
+        if (mw[0] == 1 && queue_end == queue_top) {
+            return *(int *)(mw + 4);
+        }
+        return 0xFF00FF;
+    }
+    /* sync error (-1): clear both results */
+    if (temp_2 == -1) {
+        sp14 = 0;
+        sp10 = 0;
+    }
+    switch (mw_addr()[0]) {
+    case 0:
+        goto block_36;
+    case 1:
+        if (queue_end != queue_top) {
+        } else {
+            wv = (int *)mw;
+            c = wv[3];
+            t = (short *)(mw + 4) + wv[2];
+            switch (c) {
+            case 1:
+                *t = 0x81;
+                break;
+            case 2:
+                *t = 1;
+                break;
+            case 3:
+                *t = 0x82;
+                break;
+            default:
+                *t = 0;
+                break;
+            }
+            if ((unsigned int)(sp14 + 2) < 2U) {
+                *t = 0x80;
+                goto block_33;
+            }
+            /* the halfword stores above may overlap mw+12: re-read it */
+            wv2 = (int *)mw;
+            c2 = wv2[3];
+            if (c2 != 2) {
+            } else if (sp14 != 0) {
+            } else {
+                if (wv2[5] == 0) {
+                    *t = c2;
+                }
+block_33:
+            }
+        }
+        mw[0] = 0;
+block_36:
+        if (queue_end != queue_top) {
+            q = queue + queue_top;
+            dst = D_0093E144;
+            src = (unsigned char *)q;
+            __builtin_memcpy(dst, src, 0x80);
+            execute(q);
+            queue_top = (queue_top + 1) & 7;
+            return 0xFF00FF;
+        }
+        flag = (mw[3] & 1) & 0xFF;
+        *(int *)(mw + 8) = flag;
+        sceMcGetInfo(flag, 0, (int *)(mw + 0xC), 0, (int *)(mw + 0x14));
+        mw[0] = 1;
+        mw[3] = mw[3] ^ 1;
+        goto block_ret;
+    case 2:
+        {
+            unsigned char *p = mw_addr();
+            *(int *)(*(int *)(p + 0xA8)) = sp14;
+            p[0] = 0;
+            if (sp14 < 0) {
+                goto block_ret;
+            }
+            sceMcClose(sp14);
+            return 0xFF00FF;
+        }
+    case 6:
+        var_18 = 0x64;
+        *(int *)(*(int *)(mw_addr() + 0xA8)) = sp14;
+        temp_19 = (unsigned char *)*(int *)(mw_addr() + 0xB0);
+        var_2_3 = temp_19 + 0x64;
+        do {
+            var_18 -= 1;
+            *var_2_3 = 0;
+            var_2_3 -= 1;
+        } while (var_18 >= 0);
+        if (sp14 > 0) {
+        var_21 = 0;
+        var_22 = (var_18 = 0);
+
+        var_16 = (unsigned char *)((*(int *)(mw_addr() + 0xB0) + 0xA3) & ~0x3F);
+        for (; var_18 < sp14; var_18++) {
+            temp_17 = ((var_16[0x30] * 0xA) + var_16[0x31]) - 0x210;
+            temp_19[temp_17] = 1;
+            clk.year = *(unsigned short *)(var_16 + 0xE);
+            clk.month = var_16[0xD];
+            clk.day = var_16[0xC];
+            clk.hour = var_16[0xB];
+            clk.minute = var_16[0xA];
+            clk.second = var_16[9];
+            clk.status = 0;
+            temp_2_3 = xglClockDayTime2UInt(&clk);
+            if (var_21 < temp_2_3) {
+                var_21 = temp_2_3;
+                var_22 = temp_17;
+            }
+            var_16 += 0x40;
+        }
+        temp_19[0x64] = var_22;
+        }
+        mw[0] = 0;
+        goto block_ret;
+    case 5:
+        temp_2_4 = create_sub2(sp14);
+        if (temp_2_4 == 0) {
+            return 0xFF00FF;
+        }
+        {
+            unsigned char *p5 = mw_addr();
+            p5[0] = 0;
+            if (temp_2_4 < 0) {
+                *(int *)(p5 + 4) = 0xFF00FF;
+            }
+            /* r < 0 reports the error word */
+        }
+        goto block_ret;
+    case 3:
+    case 4:
+        if (sp14 >= 0) {
+        if (mw[1] == 0) {
+            unsigned char type = mw[0];
+            void *buf;
+            int n;
+            *(int *)(mw + 8) = sp14;
+            n = *(int *)(mw + 0xB4);
+            buf = *(void **)(mw + 0xB0);
+            switch (type) {
+            case 3:
+                sceMcWrite(sp14, buf, n);
+                break;
+            case 4:
+                sceMcRead(sp14, buf, n);
+                break;
+            }
+            mw_addr()[1] = 1;
+            return 0xFF00FF;
+        }
+        sceMcClose(*(int *)(mw + 8));
+        goto c34_end;
+        }
+        {
+            unsigned char *pe = mw_addr();
+            *(int *)(*(int *)(pe + 0xA8)) = sp14;
+            *(int *)(pe + 4) = 0xFF00FF;
+        }
+    c34_end:
+        mw[0] = 0;
+        goto block_ret;
+    default:
+        goto block_ret;
+    }
+block_49:
+block_50:
+    return 0xFF00FF;
+block_ret:
+    return D_0093E0A4[0];
+}
 
 int xglMcEasyLoad(const char *path, void *buffer, int size)
 {

@@ -85,6 +85,42 @@ def original_zero_fill(orig, sec, lo, hi):
     return False
 
 
+_NESTED_REGISTRY = None
+
+
+def nested_function_identity(t, s, cdefs):
+    """A registered GNU nested function whose cc1 counter differs from the original
+    (ported from upstream mapcheck, OpokXeno/xsg-i-decomp 1cc0b01).
+
+    cc1 names every nested function (and function-local static) `name.N`, N being
+    the count of such private names emitted before it in the TU; while functions
+    owning earlier private names are still INCLUDE_ASM the C object numbers the
+    nested function differently. Accept exactly one LOCAL FUNC `source_name.M` of
+    the C object at the original address with the original size, as registered in
+    config/gnu-nested-functions.json."""
+    global _NESTED_REGISTRY
+    if _NESTED_REGISTRY is None:
+        reg = Path(__file__).resolve().parents[2] / "config/gnu-nested-functions.json"
+        _NESTED_REGISTRY = json.loads(reg.read_text()) if reg.is_file() else {}
+    tus = _NESTED_REGISTRY.get("tus", {})
+    tid = t.get("id") or ""
+    groups = ((tus.get(tid) or tus.get(tid.split("_")[0]) or {}).get("functions") or {})
+    for parent, spec in groups.items():
+        for item in spec.get("nested_functions") or []:
+            if (item.get("original_name") != s.name or int(item.get("va", "0"), 16) != s.value
+                    or item.get("size") != s.size or item.get("binding") != "LOCAL"
+                    or item.get("type") != "FUNC"):
+                continue
+            pattern = re.escape(item["source_name"]) + r"\.[0-9]+"
+            found = [(name, d) for name, defs in cdefs.items() if re.fullmatch(pattern, name)
+                     for d in defs if d["addr"] == s.value]
+            if (len(found) == 1 and found[0][1]["size"] == s.size and found[0][1]["bind"] == 0
+                    and found[0][1].get("type") == 2 and found[0][1]["section"] == ".text"):
+                return dict(original_symbol=s.name, original_va=f"0x{s.value:08X}", size=s.size,
+                            parent=parent, source_name=item["source_name"], c_symbol=found[0][0])
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--map", type=Path, required=True)
@@ -233,7 +269,7 @@ def main():
                 base = placed.get((c_obj, secname))
                 if base:
                     cdefs.setdefault(s.name, []).append(dict(addr=base[0] + s.value, size=s.size, bind=s.bind,
-                                                             section=secname))
+                                                             section=secname, type=s.type))
         tu_audit = dict(symbols_checked=0, commons=[], pieces={})
         owned = {}        # input section of the C object -> (original section, lo, hi)
         for sec, p in t["sections"].items():
@@ -284,6 +320,11 @@ def main():
                     continue
                 tu_audit["symbols_checked"] += 1
                 got = [d for d in cdefs.get(s.name, []) if d["addr"] == s.value]
+                if not got and sec == ".text" and s.type == 2 and s.bind == 0:
+                    proof = nested_function_identity(t, s, cdefs)
+                    if proof:
+                        tu_audit.setdefault("nested_function_identity_proofs", []).append(proof)
+                        continue
                 if not got:
                     alt = cdefs.get(s.name)
                     problems.append(dict(kind="original symbol not defined by the C object", tu=n, section=sec,

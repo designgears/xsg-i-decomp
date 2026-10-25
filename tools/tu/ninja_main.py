@@ -65,6 +65,9 @@ DVPASFLAGS = "--fatal-warnings -no-abicalls -64"
 # PacketSizeVu0MicroCode .. PacketBottomVu0MicroCode; see tools/tu/gen_main.py.
 VU0_PACKET = 0x730
 T = "timeout -k 5 30"
+# cc1 runs with ASLR off (personality inherited by the driver's children): heap
+# addresses can reach ee-gcc 2.96's CSE hashes (tools/tu/noaslr.py).
+NOASLR = "setarch -R"
 DATA_SECTIONS = [".data", ".rodata", ".lit4", ".sdata", ".sbss", ".bss"]
 C_SECTIONS = [".text", ".data", ".rodata", ".lit4", ".sdata", ".sbss", ".bss"]
 DISCARD = ["*(.reginfo)", "*(.MIPS.abiflags)", "*(.pdr)", "*(.gnu.attributes)", "*(.mdebug*)",
@@ -668,7 +671,7 @@ def main(argv=None):
          "# preprocessed text, and so every output, is unchanged by the option.",
          "rule ccas", f"  command = {T} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -E $flags $incs $in -o $out.i "
          f"-Wp,-MD,$out.d.raw && sed -e '1s|^[^:]*:|$out:|' $out.d.raw > $out.d && rm -f $out.d.raw "
-         f"&& {T} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -S $flags $out.i -o $out.s && "
+         f"&& {T} {NOASLR} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -S $flags $out.i -o $out.s && "
          + strict.format(T=T, src="$out.s"),
          "  depfile = $out.d", "  deps = gcc",
          "  description = CC $in",
@@ -676,7 +679,7 @@ def main(argv=None):
          "# symbols the TU declares/defines in C (tools/cinc.py, review finding F3)",
          "rule ccas_c", f"  command = {T} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -E $flags $incs $in -o $out.i "
          f"-Wp,-MD,$out.d.raw && sed -e '1s|^[^:]*:|$out:|' $out.d.raw > $out.d && rm -f $out.d.raw "
-         f"&& {T} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -S $flags $out.i -o $out.s && "
+         f"&& {T} {NOASLR} $ccdir/ee-gcc -B$ccdir/ -nostdinc -fno-builtin -S $flags $out.i -o $out.s && "
          f"{T} $py {HERE}/cinc.py --i $out.i --s $out.s --root . --dst $overlay --report $out.cinc.json && "
          f"( cd $overlay && {T} $eeas -EL -m5900 -mabi=eabi $gflag $asx -I . -I {unit_dir} -I {unit_dir}/include "
          f"-o {unit_dir}/$out {unit_dir}/$out.s > {unit_dir}/$out.asmsg 2>&1 ) "

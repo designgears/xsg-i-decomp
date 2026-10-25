@@ -245,7 +245,71 @@ static int skipConstantPool(DataBuffer *buffer, int bound)
     return tag;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jni", checkClass);
+extern int DataBuffer_getPos(DataBuffer *buffer);
+extern void DataBuffer_setPos(DataBuffer *buffer, int pos);
+extern int memcmp(const void *a, const void *b, unsigned int n);
+static inline int getClassIndex(DataBuffer *buf, int index)
+{
+    skipConstantPool(buf, index);
+    if (DataBuffer_getUByteAt(buf) == 7)
+        return DataBuffer_getUShortAt(buf);
+    return 0xFFFF;
+}
+
+static int checkClass(void *buffer, const char *name, int target)
+{
+    DataBuffer *buf = buffer;
+    int pos;
+    int super_index;
+    int index;
+    unsigned short length;
+    char *class_name;
+
+    if (DataBuffer_getUIntAt(buf) != 0xCAFEBABE)
+        return 0;
+    length = 0;
+    DataBuffer_getUShortAt(buf);
+    DataBuffer_getUShortAt(buf);
+    pos = DataBuffer_getPos(buf);
+    skipConstantPool(buf, 0);
+    DataBuffer_getUShortAt(buf);
+    index = DataBuffer_getUShortAt(buf);
+    super_index = DataBuffer_getUShortAt(buf);
+    class_name = 0;
+    if (index != 0) {
+        DataBuffer_setPos(buf, pos);
+        index = getClassIndex(buf, index);
+        DataBuffer_setPos(buf, pos);
+        if (index != 0) {
+            skipConstantPool(buf, index);
+            if (DataBuffer_getUByteAt(buf) == 1) {
+                length = DataBuffer_getUShortAt(buf);
+                class_name = (char *)buf->position;
+            }
+        }
+    }
+    if (target != 2) {
+        if (target == 0)
+            return (int)class_name;
+        if (memcmp(class_name, name, length - 1) != 0)
+            class_name = 0;
+        return (int)class_name;
+    }
+    if (super_index != 0) {
+        DataBuffer_setPos(buf, pos);
+        index = getClassIndex(buf, super_index);
+        DataBuffer_setPos(buf, pos);
+        if (index != 0) {
+            skipConstantPool(buf, index);
+            if (DataBuffer_getUByteAt(buf) != 1)
+                return 0;
+            length = DataBuffer_getUShortAt(buf);
+            if (memcmp(buf->position, name, length - 1) == 0)
+                return (int)class_name;
+        }
+    }
+    return 0;
+}
 
 static const char *getStrIndex(const char *name, int delimiter)
 {
@@ -355,25 +419,25 @@ int JNI_getRegister(int register_index)
 }
 
 /* Cached native Java class handles populated by JNI_loadNativeClass. */
-void *classJava_xeno_Enepc;
-void *classJava_xeno_Scene;
-void *classJava_xeno_util_Window;
-void *classJava_xeno_Uwamono;
-void *classJava_xeno_Chr;
-void *classJava_xeno_util_Format;
-void *classJava_xeno_Unit;
-void *classJava_xeno_vm_System;
-void *classJava_xeno_util_Vector4f;
-void *classJava_xeno_util_Runtime;
-void *classJava_xeno_util_Layout;
-void *classJava_xeno_Effect;
-void *classJava_xeno_Light;
-void *classJava_xeno_util_Menu;
-void *classJava_xeno_util_Toolkit;
-void *classJava_xeno_Stage;
-void *classJava_xeno_PlayControl;
-void *classJava_xeno_util_TCHParams;
-void *classJava_xeno_util_Spline;
-void *classJava_xeno_util_Input;
-void *classJava_xeno_Camera;
-void *classJava_xeno_Movie;
+SceneClass *classJava_xeno_Enepc;
+SceneClass *classJava_xeno_Scene;
+SceneClass *classJava_xeno_util_Window;
+SceneClass *classJava_xeno_Uwamono;
+SceneClass *classJava_xeno_Chr;
+SceneClass *classJava_xeno_util_Format;
+SceneClass *classJava_xeno_Unit;
+SceneClass *classJava_xeno_vm_System;
+SceneClass *classJava_xeno_util_Vector4f;
+SceneClass *classJava_xeno_util_Runtime;
+SceneClass *classJava_xeno_util_Layout;
+SceneClass *classJava_xeno_Effect;
+SceneClass *classJava_xeno_Light;
+SceneClass *classJava_xeno_util_Menu;
+SceneClass *classJava_xeno_util_Toolkit;
+SceneClass *classJava_xeno_Stage;
+SceneClass *classJava_xeno_PlayControl;
+SceneClass *classJava_xeno_util_TCHParams;
+SceneClass *classJava_xeno_util_Spline;
+SceneClass *classJava_xeno_util_Input;
+SceneClass *classJava_xeno_Camera;
+SceneClass *classJava_xeno_Movie;

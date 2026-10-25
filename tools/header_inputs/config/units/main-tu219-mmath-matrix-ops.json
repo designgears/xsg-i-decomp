@@ -1,0 +1,55 @@
+{
+  "source": {
+    "path": "src/main/m_math.c"
+  },
+  "functions": [
+    {
+      "name": "MMathRotateMatrixX",
+      "va": "0x002ef8a0"
+    },
+    {
+      "name": "MMathRotateMatrixY",
+      "va": "0x002ef908"
+    },
+    {
+      "name": "MMathRotateMatrixZ",
+      "va": "0x002ef970"
+    },
+    {
+      "name": "MMathRotateMatrixXY",
+      "va": "0x002ef9d8"
+    },
+    {
+      "name": "MMathRotateMatrixYX",
+      "va": "0x002efa68"
+    },
+    {
+      "name": "MMathRotateMatrixXYZ",
+      "va": "0x002efaf8"
+    },
+    {
+      "name": "MMathRotateMatrixYXZ",
+      "va": "0x002efbb0"
+    },
+    {
+      "name": "MMathApplyMatrix",
+      "va": "0x002efc68"
+    },
+    {
+      "name": "MMathMulMatrix",
+      "va": "0x002efca0"
+    },
+    {
+      "name": "MMathScaleMatrix",
+      "va": "0x002efd20"
+    },
+    {
+      "name": "MMathScaleMatrixS",
+      "va": "0x002efd60"
+    },
+    {
+      "name": "MMathTranslateMatrix",
+      "va": "0x002efda8"
+    }
+  ]
+}

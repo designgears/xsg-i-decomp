@@ -12,6 +12,7 @@ import subprocess
 import coverage_report as cov
 from tu import verify_report as verification
 from tu.elfinfo import Elf
+from tu.noaslr import NOASLR
 from tu.toolchain import Toolchain
 
 
@@ -25,7 +26,7 @@ def compile_source(root, unit_dir, source, output, ccdir, assembler, flags, skip
     preprocessed, assembly = Path(str(output) + '.i'), Path(str(output) + '.s')
     run([*common, '-E', *flags, *(['-DSKIP_ASM'] if skip_asm else []), '-Iinclude', '-I.',
          f'-I{root / "include"}', f'-I{source.parent}', source, '-o', preprocessed], unit_dir)
-    run([*common, '-S', *flags, preprocessed, '-o', assembly], unit_dir)
+    run([*NOASLR, *common, '-S', *flags, preprocessed, '-o', assembly], unit_dir)
     gflag = next(flag for flag in flags if flag.startswith('-G'))
     run([assembler, '-EL', '-m5900', '-mabi=eabi', gflag, '-I.',
          '-Iinclude', '-o', output, assembly], unit_dir)

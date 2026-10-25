@@ -18,7 +18,10 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PAT = re.compile(r'^(\s*\.word\s+)\.L([0-9A-Fa-f]{8})\b(.*)$')
+# Splat lines are often `/* VMA VA bytes */ .word .L00XXXXXX`.
+PAT = re.compile(
+    r'^(?P<prefix>\s*(?:/\*[^*]*\*/\s*)?\.word\s+)\.L(?P<va>[0-9A-Fa-f]{8})\b(?P<suffix>.*)$'
+)
 
 
 def fix_file(path: Path) -> int:
@@ -28,7 +31,7 @@ def fix_file(path: Path) -> int:
         m = PAT.match(line.rstrip('\n'))
         if m:
             nl = '\n' if line.endswith('\n') else ''
-            out.append(f'{m.group(1)}0x{m.group(2)}{m.group(3)}{nl}')
+            out.append(f'{m.group("prefix")}0x{m.group("va")}{m.group("suffix")}{nl}')
             n += 1
         else:
             out.append(line)
@@ -42,11 +45,20 @@ def main() -> int:
     ap.add_argument('--root', type=Path, default=ROOT)
     a = ap.parse_args()
     total, files = 0, 0
-    for path in (a.root / 'build').glob('*/asm/**/*.rodata.s'):
-        n = fix_file(path)
-        if n:
-            files += 1
-            total += n
+    patterns = (
+        '*/asm/**/*.rodata.s',
+        '*/carve/**/*.rodata.s',  # data_carve split pieces also keep splat .L jumptables
+    )
+    seen: set[Path] = set()
+    for pat in patterns:
+        for path in (a.root / 'build').glob(pat):
+            if path in seen:
+                continue
+            seen.add(path)
+            n = fix_file(path)
+            if n:
+                files += 1
+                total += n
     print(f'rewrote {total} .word .L* site(s) across {files} file(s)')
     return 0
 

@@ -12,6 +12,7 @@ batch across translation units.
 from __future__ import annotations
 
 import argparse
+import calendar
 import difflib
 import fcntl
 import json
@@ -109,6 +110,80 @@ def sibling(root: Path, c: dict, pending: set) -> dict | None:
         if r >= 0.85 and (best is None or r > best["similarity"]):
             best = {"name": n, "similarity": round(r, 3)}
     return best
+
+
+HOT_HOURS = 6.0
+HOT_SIZE_FACTOR = 1.5
+_MATCH_LINE = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ) MATCH (\S+)/(\S+)/(\S+)\s*$")
+
+
+def recent_matches(root: Path, hours: float = HOT_HOURS) -> dict:
+    """{(unit, tu): [(name, epoch)]} of loop.log MATCH lines from the last HOURS."""
+    out: dict = {}
+    try:
+        with (root / "build/auto_decomp/loop.log").open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 4_000_000))
+            lines = fh.read().decode(errors="replace").splitlines()
+    except OSError:
+        return out
+    cut = time.time() - hours * 3600
+    for ln in lines:
+        m = _MATCH_LINE.match(ln)
+        if not m:
+            continue
+        t = calendar.timegm(time.strptime(m.group(1), "%Y-%m-%dT%H:%M:%SZ"))
+        if t >= cut:
+            out.setdefault((m.group(2), m.group(3)), []).append((m.group(4), t))
+    return out
+
+
+def hot_sibling(root: Path, c: dict, recent: dict, min_sim: float = 0.5) -> dict | None:
+    """The most similar (opcode sequence) same-TU function matched in the last
+    HOT_HOURS: o493-o504 matched ~10 ov01/cmd functions in 1-2 tries each by
+    copying a just-matched neighbour's C."""
+    rec = recent.get((c["unit"], c["tu"]))
+    if not rec or not c.get("asm"):
+        return None
+    asm = root / c["asm"]
+    mine = _mnemonics(asm)
+    if len(mine) < 4:
+        return None
+    best = None
+    seen = set()
+    for n, t in sorted(rec, key=lambda x: -x[1]):
+        if n == c["name"] or n in seen:
+            continue
+        seen.add(n)
+        theirs = _mnemonics(asm.parent / f"{n}.s")
+        if not theirs or abs(len(theirs) - len(mine)) > max(8, len(mine) // 2):
+            continue
+        r = difflib.SequenceMatcher(None, mine, theirs, autojunk=False).ratio()
+        if r >= min_sim and (best is None or r > best["similarity"]):
+            best = {"name": n, "similarity": round(r, 3),
+                    "matched": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))}
+    return best
+
+
+def hot_order(root: Path, cands: list[dict], hours: float = HOT_HOURS) -> list[dict]:
+    """Stable re-order: candidates with a recently matched similar same-TU
+    sibling first (similarity >= 0.8, then >= 0.6), the queue order otherwise.
+    Each candidate with a >= 0.5 one carries `hot_sibling` (+ `tier`); a
+    tier-2 one may exceed --max-size by half (HOT_SIZE_FACTOR: the sibling's
+    C carries most of the size)."""
+    recent = recent_matches(root, hours)
+    if not recent:
+        return cands
+    tiered = []
+    for i, c in enumerate(cands):
+        tier = 0
+        if (c["unit"], c["tu"]) in recent:
+            hs = hot_sibling(root, c, recent)
+            if hs:
+                tier = 2 if hs["similarity"] >= 0.8 else 1 if hs["similarity"] >= 0.6 else 0
+                c = dict(c, hot_sibling=dict(hs, tier=tier))
+        tiered.append((-tier, i, c))
+    return [c for _, _, c in sorted(tiered, key=lambda x: (x[0], x[1]))]
 
 
 def load_fn_index(root: Path) -> dict:
@@ -231,12 +306,15 @@ def refresh_ghidra(root: Path, max_age_s: int = 86400) -> None:
         pass
 
 
+SKIPPED: dict[str, str] = {}      # key -> why eligible() passed over it (reported for --key)
+
+
 def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | None,
              per_tu: int | None = None, claim_owner: str | None = None,
              ttl_s: int = claims.DEFAULT_TTL_S, min_size: int = 0,
              keys: set[str] | None = None, include_blocked: bool = False,
              claim_model: str | None = None, near_miss: float | None = None,
-             untouched: bool = False) -> list[dict]:
+             untouched: bool = False, hot_hours: float = HOT_HOURS) -> list[dict]:
     """keys: only these candidates, ignoring size limits, attempt caps and back-off
     (a deliberate retry); blocked and genuine-asm ones are still skipped.
     near_miss: only candidates whose best score (failure record or the agents'
@@ -270,6 +348,8 @@ def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | Non
         cands = [c for c in cands if key(c["unit"], c["tu"], c["name"]) not in failed
                  and not (tries / f"{c['unit']}__{c['tu']}__{c['name']}").exists()
                  and not (bodies / c["unit"] / c["tu"] / f"{c['name']}.best.json").exists()]
+    if keys is None and near_miss is None and hot_hours > 0:
+        cands = hot_order(root, cands, hot_hours)        # fold10: recently matched siblings first
     free = keys is not None or near_miss is not None   # no size/attempt/back-off limits
     with claims.locked():
         taken = claims.active(now)
@@ -286,7 +366,9 @@ def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | Non
                     continue
                 if keys is not None and key(c["unit"], c["tu"], c["name"]) not in keys:
                     continue
-                if not free and (c["size"] < min_size or (max_size is not None and c["size"] > max_size)):
+                hot2 = (c.get("hot_sibling") or {}).get("tier") == 2
+                if not free and (c["size"] < min_size or (max_size is not None and c["size"] > max_size
+                                                          * (HOT_SIZE_FACTOR if hot2 else 1))):
                     continue
                 k = key(c["unit"], c["tu"], c["name"])
                 if k in taken or not c.get("asm"):
@@ -299,6 +381,15 @@ def eligible(root: Path, limit: int, max_size: int | None, units: set[str] | Non
                 if not free and f and f.get("next_eligible") and f["next_eligible"] > now:
                     continue
                 if genuine_asm(root, c):
+                    continue
+                if c.get("nested"):            # build_queue.nested_reason: needs its parent's C
+                    SKIPPED[k] = c["nested"] + ": decompile the parent with the nested definition inside"
+                    continue
+                if c.get("asm_blocked"):       # build_queue.asm_blocked_reason: VU0/COP2/sync
+                    SKIPPED[k] = c["asm_blocked"]
+                    continue
+                if c.get("ice"):               # build_queue.KNOWN_ICE: matching C crashes cc1 in the TU
+                    SKIPPED[k] = c["ice"]
                     continue
                 if twin_in_flight(fx, c, pending, busy):
                     continue
@@ -365,14 +456,20 @@ def main() -> int:
                          "ignores size limits, attempt caps and back-off")
     ap.add_argument("--untouched", action="store_true",
                     help="only functions nobody has tried (no failure record, try counter or .best.json)")
+    ap.add_argument("--hot-hours", type=float, default=HOT_HOURS,
+                    help="prefer candidates with a similar same-TU sibling matched in the last N hours "
+                         "(loop.log MATCH lines; 0 = plain queue order)")
     a = ap.parse_args()
     units = set(a.unit) if a.unit else None
     items = eligible(a.root, a.n, a.max_size, units, a.per_tu or None, a.claim,
                      a.ttl_min * 60, a.min_size, set(a.key) if a.key else None, a.include_blocked,
-                     a.model, a.near_miss, a.untouched)
+                     a.model, a.near_miss, a.untouched, a.hot_hours)
     q = json.loads(QUEUE_PATH.read_text())
-    print(json.dumps({"count": len(items), "queue_total": q["total"],
-                      "buckets": q["by_size_bucket"], "candidates": items}, indent=1))
+    out = {"count": len(items), "queue_total": q["total"],
+           "buckets": q["by_size_bucket"], "candidates": items}
+    if a.key and SKIPPED:
+        out["skipped"] = {k: v for k, v in SKIPPED.items() if k in set(a.key)}
+    print(json.dumps(out, indent=1))
     return 0
 
 

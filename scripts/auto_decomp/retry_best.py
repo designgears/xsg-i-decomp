@@ -14,6 +14,15 @@ each new match recursively retries its own TU + callers (bounded depth).
   retry_best.py --tu unit/tu
   retry_best.py --all [--min-score 0.9]
   [--dry-run] [--max-depth 3]
+  retry_best.py --all --suspect-scan [--apply]   # fold15
+
+--suspect-scan (fold15, o587 CheckGameSymbol / o590 MenuSystemMenuMain): for
+each selected .best.c the semantic tells (try_fn.prev_suspect, cached in
+.best.json) flag, re-score every other saved body of the function
+(<name>.c, .vN.c, .vN.best.c, .best.prev.c, .perm_cand.c; not .m2c / .ghidra
+/ .sweepbad) with the uninit check; the best-scoring one that compiles and is
+NOT suspect is reported and, with --apply, replaces .best.c whatever its
+score (the old one is kept as <name>.best.suspect.c). Leased keys skipped.
 """
 from __future__ import annotations
 
@@ -77,7 +86,8 @@ def select(fns: dict, a, after: str | None) -> list[str]:
         ks = [k for k, v in fns.items() if v["unit"] == u and v["tu"] == t]
     else:
         ks = list(fns)
-    ks = [k for k in ks if k != after and best_path(k).is_file()]
+    from build_queue import KNOWN_ICE      # fold13: a match integrate can never build (cc1 ICE)
+    ks = [k for k in ks if k != after and best_path(k).is_file() and k not in KNOWN_ICE]
     if a.min_score is not None:
         ks = [k for k in ks if best_score(k) >= a.min_score]
     return sorted(ks, key=lambda k: -best_score(k))
@@ -127,7 +137,11 @@ def process(fns: dict, keys: list[str], a, depth: int, seen: set, results: list)
             r["match_after_link"] = True
             r["false_lo16"] = rep.get("false_lo16") or []
         if not match and score is not None and score > prev and not a.dry_run:
-            rec = {"score": score}
+            try:                               # same text, new score: keep by / suspect / src_patch
+                rec = json.loads(best.with_suffix(".json").read_text())
+            except (OSError, ValueError):
+                rec = {}
+            rec["score"] = score
             for f in ("differing_words", "target_insns"):
                 if rep.get(f) is not None:
                     rec[f] = rep[f]
@@ -148,6 +162,62 @@ def process(fns: dict, keys: list[str], a, depth: int, seen: set, results: list)
                 process(fns, select(fns, a, k), a, depth + 1, seen, results)
 
 
+SCAN_SKIP = re.compile(r"^\.best\.c$|\.(m2c|ghidra|sweepbad|lit|retry|suspect)\.c$")
+
+
+def suspect_scan(fns: dict, keys: list[str], apply: bool) -> list[dict]:
+    out = []
+    for k in keys:
+        if k not in fns:
+            continue
+        if k in claims.active():
+            out.append({"key": k, "skipped": "leased"})
+            continue
+        u, t, n = k.split("/")
+        best = best_path(k)
+        side = best.with_suffix(".json")
+        try:
+            psus, psem = try_fn._prev_checks(u, t, n, side)   # 2026-10-19: + semantics gate
+            psus = psus + ["semantics: " + d for d in psem]
+        except Exception as e:  # noqa: BLE001
+            out.append({"key": k, "error": str(e)[:200]})
+            continue
+        if not psus:
+            continue
+        r = {"key": k, "score": best_score(k), "suspect": psus[:2], "replacement": None}
+        cands = [p for p in best.parent.glob(f"{n}.*c")
+                 if p.name.startswith(n + ".") and p.suffix == ".c" and not SCAN_SKIP.search(p.name[len(n):])]
+        cands += [p for p in (best.with_name(f"{n}.best.prev.c"), best.with_name(f"{n}.c")) if p.is_file()]
+        seen, top = set(), None
+        bt = best.read_text(errors="replace")
+        for c in cands:
+            if c in seen or re.search(r"\b(__asm__|asm)\b", c.read_text(errors="replace")):
+                continue
+            seen.add(c)
+            if c.read_text(errors="replace") == bt:
+                continue
+            try:
+                rep = try_fn.try_function(u, t, n, c, diff_limit=100000, uninit=True)
+            except Exception:  # noqa: BLE001
+                continue
+            if not rep.get("ok") or rep.get("score") is None or rep.get("suspect") or try_fn.sem_failures(rep):
+                continue
+            if top is None or rep["score"] > top[1]["score"]:
+                top = (c, rep)
+        if top:
+            r["replacement"] = {"body": top[0].name, "score": top[1]["score"]}
+            if apply:
+                shutil.copyfile(best, best.with_name(f"{n}.best.suspect.c"))
+                shutil.copyfile(top[0], best)
+                side.write_text(json.dumps(try_fn.best_record(
+                    top[1]["score"], top[1], [], by="suspect_scan", replaced=r["score"],
+                    replaced_suspect=psus[:2], source=top[0].name)) + "\n")
+                r["applied"] = True
+                log(f"SUSPECT_SCAN {k} {r['score']} -> {top[1]['score']} ({top[0].name})")
+        out.append(r)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -157,8 +227,20 @@ def main() -> int:
     ap.add_argument("--min-score", type=float)
     ap.add_argument("--max-depth", type=int, default=3)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--suspect-scan", action="store_true",
+                    help="fold15: replace suspect .best.c bodies by the best clean saved body (report only "
+                         "unless --apply)")
+    ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
     fns = pending()
+    if a.suspect_scan:
+        rs = suspect_scan(fns, select(fns, a, a.after), a.apply)
+        flagged = [r for r in rs if "suspect" in r]
+        print(json.dumps({"flagged": len(flagged),
+                          "replaceable": sum(1 for r in flagged if r.get("replacement")),
+                          "applied": sum(1 for r in flagged if r.get("applied")),
+                          "results": rs}, indent=1))
+        return 0
     results: list = []
     process(fns, select(fns, a, a.after), a, 0, set(), results)
     summary = {"tried": sum("score" in r for r in results),

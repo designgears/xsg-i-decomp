@@ -11,9 +11,106 @@ const char D_00A55328[16] = "pArg != NIL";
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _BallVsBall);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _BallVsPoly);
+extern int RgGeomPolyCheckRay(RgGeom *pPoly, RgVector origin, RgVector out);
+extern void XrgNegateVector(RgVector destination, RgVector source);
+typedef struct {
+    RgVector contact;              /* +0x00 */
+    RgVector normal;               /* +0x10 */
+    void *otherObject;             /* +0x20 */
+    unsigned char unmodeled_24[0xC];
+} RgBallVsPolyHit;
+typedef struct {
+    RgVector p0;                   /* +0x00 */
+    RgVector dir;                  /* +0x10 */
+    RgVector normal;               /* +0x20 ray out */
+    float t;                       /* +0x30 ray out */
+    unsigned char unmodeled_34[0xC];
+    RgVector ptB;                  /* +0x40 */
+    RgVector ptA;                  /* +0x50 */
+    RgBallVsPolyHit hit;           /* +0x60 */
+} RgBallVsPolyFrame;
+static inline void BvpCopy(void *dst, const void *src)
+{
+    __asm__ __volatile__("lqc2 $vf31, 0(%0)\n\tsqc2 $vf31, 0(%1)" : : "r"(src), "r"(dst) : "memory");
+}
+static inline void BvpXform(void *dst, const void *src, const void *m)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf2, 0(%1)\n\t"
+        "lqc2 $vf3, 0(%2)\n\t"
+        "lqc2 $vf4, 0x10(%2)\n\t"
+        "lqc2 $vf5, 0x20(%2)\n\t"
+        "lqc2 $vf6, 0x30(%2)\n\t"
+        "vmulax.xyzw ACC, $vf3, $vf2x\n\t"
+        "vmadday.xyzw ACC, $vf4, $vf2y\n\t"
+        "vmaddaz.xyzw ACC, $vf5, $vf2z\n\t"
+        "vmaddw.xyzw $vf2, $vf6, $vf2w\n\t"
+        "sqc2 $vf2, 0(%0)\n\t"
+        : : "r"(dst), "r"(src), "r"(m) : "memory");
+}
+static inline void BvpSub(void *dst, const void *a, const void *b)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf30, 0(%1)\n\t"
+        "lqc2 $vf31, 0(%2)\n\t"
+        "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+        "sqc2 $vf30, 0(%0)\n\t"
+        : : "r"(dst), "r"(a), "r"(b) : "memory");
+}
+static inline void BvpAdd(void *dst, const void *a, const void *b)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf30, 0(%1)\n\t"
+        "lqc2 $vf31, 0(%2)\n\t"
+        "vadd.xyzw $vf30, $vf30, $vf31\n\t"
+        "sqc2 $vf30, 0(%0)\n\t"
+        : : "r"(dst), "r"(a), "r"(b) : "memory");
+}
 
-static void _BallVsPoly(unsigned int *pArg);
+static int _BallVsPoly(unsigned int *pArg)
+{
+    RgBallVsPolyFrame f;
+    char *point;
+    RgGeom *poly;
+    void (*callback)(void *, void *);
+    int result;
+
+    point = (char *) pArg[0];
+    poly = (RgGeom *) pArg[2];
+    BvpCopy(f.ptA, point + 0x20);
+    BvpCopy(f.ptB, point + 0x30);
+    f.ptA[3] = 1.0f;
+    f.ptB[3] = 1.0f;
+    BvpXform(f.ptA, f.ptA, (char *) poly + 0x60);
+    BvpXform(f.ptB, f.ptB, (char *) poly + 0x60);
+    BvpCopy(f.p0, point + 0x30);
+    BvpSub(f.dir, point + 0x20, point + 0x30);
+    result = RgGeomPolyCheckRay(poly, f.p0, f.normal);
+    if (result != 0) {
+        float t = f.t;
+        f.hit.contact[0] = f.dir[0] * t;
+        f.hit.contact[1] = f.dir[1] * t;
+        f.hit.contact[2] = f.dir[2] * t;
+        f.hit.contact[3] = f.dir[3] * t;
+        BvpAdd(f.hit.contact, f.hit.contact, f.p0);
+        BvpCopy(f.hit.normal, f.normal);
+        f.hit.normal[3] = 1.0f;
+        callback = (void (*)(void *, void *)) pArg[1];
+        if (callback != 0) {
+            f.hit.otherObject = poly;
+            callback(point, &f.hit);
+        }
+        if (pArg[3] != 0) {
+            XrgNegateVector(f.hit.normal, f.hit.normal);
+            f.hit.otherObject = point;
+            ((void (*)(void *, void *)) pArg[3])(poly, &f.hit);
+        }
+        result = 1;
+    }
+    return result;
+}
+
+static int _BallVsPoly(unsigned int *pArg);
 
 static void _PolyVsBall(unsigned int *pArg)
 {
@@ -34,9 +131,96 @@ static void _PolyVsBall(unsigned int *pArg)
     _BallVsPoly(reordered);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _RobotVsPoly);
+extern void assert_prog(const char *expression, const char *source_file, int line);
+extern const char D_00A552E8[];
+extern const char D_00A55318[];
+extern void __RgGeomPointGetPos(RgGeomPoint *point, RgVector destination,
+                                const char *file, int line);
+extern float RgGeomBallGetRadius(RgGeomPoint *pBall);
+extern int RgGeomPolyCheckBall(RgGeom *pPoly, float *pOrgArg, float *pResult);
+extern void RgGeomPointSetPos(RgGeomPoint *point, RgVector position);
+extern void RgGeomPointGetVel(RgGeomPoint *point, RgVector velocity);
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
+extern float XrgInnerVector(RgVector first, RgVector second);
+typedef struct {
+    unsigned char unmodeled_00[8];
+    unsigned int flags;            /* +0x08 */
+    unsigned char unmodeled_0c[0x14];
+    RgVector position;             /* +0x20 */
+    unsigned char unmodeled_30[0x10];
+    RgVector velocity;             /* +0x40 */
+} RgRobVsPolyPoint;
+typedef struct {
+    RgVector contact;              /* +0x00 */
+    RgVector normal;               /* +0x10 */
+    void *otherObject;             /* +0x20 */
+    unsigned char unmodeled_24[0xC];
+} RgRobVsPolyHit;
+typedef struct {
+    RgVector pos;                  /* +0x00 */
+    float radius;                  /* +0x10 */
+    unsigned char unmodeled_14[0xC];
+    RgVector contact;              /* +0x20 */
+    RgVector normal;               /* +0x30 */
+    RgRobVsPolyHit hit;            /* +0x40 */
+    RgVector moved;                /* +0x70 */
+    RgVector dir;                  /* +0x80 */
+    RgVector copy;                 /* +0x90 */
+    RgVector vel;                  /* +0xA0 */
+} RgRobVsPolyFrame;
 
-static void _RobotVsPoly(unsigned int *pArg);
+static int _RobotVsPoly(unsigned int *pArg)
+{
+    RgRobVsPolyFrame f;
+    RgRobVsPolyPoint *point;
+    RgGeom *poly;
+    RgRobVsPolyHit *hitp;
+    float *copyp;
+    void (*callback)(void *, void *);
+
+    point = (RgRobVsPolyPoint *) pArg[0];
+    poly = (RgGeom *) pArg[2];
+    if (point == 0) {
+        assert_prog(D_00A552E8, D_00A552F8, 0xA1);
+    }
+    if (poly == 0) {
+        assert_prog(D_00A55318, D_00A552F8, 0xA2);
+    }
+    __RgGeomPointGetPos((RgGeomPoint *) point, f.pos, D_00A552F8, 0xA4);
+    f.radius = RgGeomBallGetRadius((RgGeomPoint *) point);
+    if (RgGeomPolyCheckBall(poly, f.pos, f.contact) == 0) {
+        return 0;
+    }
+    hitp = &f.hit;
+    XrgNormalizeVector(f.hit.normal, f.normal);
+    callback = (void (*)(void *, void *)) pArg[1];
+    if (callback != 0) {
+        f.hit.otherObject = poly;
+        callback(point, hitp);
+    }
+    callback = (void (*)(void *, void *)) pArg[3];
+    if (callback != 0) {
+        f.hit.otherObject = point;
+        callback(poly, hitp);
+    }
+    if (point->flags & 0x10) {
+        __RgGeomPointGetPos((RgGeomPoint *) point, f.moved, D_00A552F8, 0xB9);
+        copyp = f.copy;
+        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.normal) : "memory");
+        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(copyp) : "memory");
+        XrgAddVector(f.moved, f.moved, f.copy);
+        RgGeomPointSetPos((RgGeomPoint *) point, f.moved);
+    }
+    XrgNormalizeVector(f.dir, f.normal);
+    RgGeomPointGetVel((RgGeomPoint *) point, f.vel);
+    XrgScaleVector(f.moved, f.dir, XrgInnerVector(f.dir, f.vel));
+    XrgSubVector(point->velocity, point->velocity, f.moved);
+    return 1;
+}
+
+static int _RobotVsPoly(unsigned int *pArg);
 
 static void _PolyVsRobot(unsigned int *pArg)
 {
@@ -180,9 +364,65 @@ static void _TrayVsRob(void *hit)
     _TrayVsBall(hit);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _RobVsPillar);
+extern int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *ball, RgVector contact);
+extern void XrgNegateVector(RgVector destination, RgVector source);
+extern void XrgCopyVector(RgVector destination, RgVector source);
+extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
+typedef struct {
+    RgVector c0;                   /* +0x00 */
+    RgVector r10;                  /* +0x10 */
+    RgVector c20;                  /* +0x20 */
+    RgRobVsPolyHit hit;            /* +0x30 */
+    RgVector v60;                  /* +0x60 */
+    RgVector v70;                  /* +0x70 */
+} RgRobVsPillarFrame;
 
-static void _RobVsPillar(RgGeomColiArg *pArg);
+static int _RobVsPillar(RgGeomColiArg *pArg)
+{
+    RgRobVsPillarFrame f;
+    RgRobVsPolyPoint *point;
+    RgGeom *pillar;
+    RgRobVsPolyHit *hitp;
+    float d;
+    float *normalp;
+    float *contactp;
+    int result;
+
+    point = (RgRobVsPolyPoint *) pArg->data[0];
+    pillar = (RgGeom *) pArg->data[2];
+    result = RgGeomPillarCheckBall(pillar, (RgGeomPoint *) point, f.c0);
+    if (result != 0) {
+        contactp = f.hit.contact;
+        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.c0) : "memory");
+        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(contactp) : "memory");
+        normalp = f.hit.normal;
+        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.c20) : "memory");
+        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(normalp) : "memory");
+        hitp = &f.hit;
+        if (pArg->data[1] != 0) {
+            f.hit.otherObject = pillar;
+            ((void (*)(void *, void *)) pArg->data[1])(point, hitp);
+        }
+        if (pArg->data[3] != 0) {
+            XrgNegateVector(f.hit.normal, f.hit.normal);
+            f.hit.otherObject = point;
+            ((void (*)(void *, void *)) pArg->data[3])(pillar, hitp);
+        }
+        if (point->flags & 0x10) {
+            RgGeomPointSetPos((RgGeomPoint *) point, f.r10);
+        }
+        XrgCopyVector(f.v70, point->velocity);
+        d = XrgInnerVector(f.c20, f.v70);
+        if (d < 0.0f) {
+            XrgScaleVector(f.v60, f.c20, d);
+            XrgSubVector(point->velocity, point->velocity, f.v60);
+        }
+        result = 1;
+    }
+    return result;
+}
+
+static int _RobVsPillar(RgGeomColiArg *pArg);
 
 static void _PillarVsRob(RgGeomColiArg *pArg)
 {

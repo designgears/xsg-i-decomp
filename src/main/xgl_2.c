@@ -1,232 +1,260 @@
 #include "common.h"
+
 #include "shared.h"
+
 #include "main/xgl_2.h"
+
 #include "xgl_2.h"
 
 extern unsigned int D_004ADE80[];
-extern const float D_004D8858;
+
+extern unsigned long long iRandSeed;
+
+
 extern void xglDmaDirectSrcChain(unsigned int channel, unsigned int address);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglAtan2);
+extern StudioCamera *xglStudioGetCamera2(int cameraId);
 
-void xglMemCopy64(void *dst, void *src, int n)
+extern char Vu0CallSin[];
+
+extern char Vu0CallCos[];
+
+extern const int D_004D27C8[3];
+
+float xglAtan2(float y, float x)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
+    int reciprocal = 0;
+    int quadrant = 0;
+    const float coefficient1 = 0.0161657371f;
+    const float coefficient2 = 0.0429096147f;
+    const float coefficient3 = 0.0752896369f;
+    const float coefficient4 = 0.106562637f;
+    const float coefficient5 = 0.142088994f;
+    const float coefficient6 = 0.199935511f;
+    const float coefficient7 = 0.333331466f;
+    const float unitCoefficient = 1.0f;
+    float polynomial = 0.00286622578f;
+    float square;
 
+    if (y == 0.0f) {
+        if (x >= 0.0f) return 0.0f;
+        __builtin_memcpy(&reciprocal, &y, sizeof reciprocal);
+        if (reciprocal < 0) return -3.14159274f;
+        return 3.14159274f;
+    }
+    if (x == 0.0f) {
+        if (y < 0.0f) return -1.57079637f;
+        return 1.57079637f;
+    }
+    if (y >= 0.0f) {
+        if (x >= 0.0f) quadrant = 0;
+        else quadrant = 1;
+    } else {
+        quadrant = 2;
+        if (x >= 0.0f) quadrant = 2;
+        else quadrant = 3;
+    }
+    y = __builtin_fabsf(y);
+    x = __builtin_fabsf(x);
+    if (x < y) {
+        y = x / y;
+        reciprocal = 1;
+    } else {
+        y = y / x;
+    }
+    square = y * y;
+    polynomial *= square;
+    polynomial -= coefficient1;
+    polynomial *= square;
+    polynomial += coefficient2;
+    polynomial *= square;
+    polynomial -= coefficient3;
+    polynomial *= square;
+    polynomial += coefficient4;
+    polynomial *= square;
+    polynomial -= coefficient5;
+    polynomial *= square;
+    polynomial += coefficient6;
+    polynomial *= square;
+    polynomial -= coefficient7;
+    polynomial *= square;
+    polynomial += unitCoefficient;
+    polynomial *= y;
+    if (reciprocal) polynomial = 1.57079637f - polynomial;
+    if (quadrant == 1) polynomial = 3.14159274f - polynomial;
+    if (quadrant == 2) polynomial = -polynomial;
+    if (quadrant == 3) polynomial = polynomial - 3.14159274f;
+    return polynomial;
+}
+
+void xglMemCopy64(void *destination, const void *source, int count)
+{
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lq $2, 0(%1)\n\t"
-        "sq $2, 0(%0)\n\t"
-        "lq $2, 0x10(%1)\n\t"
-        "sq $2, 0x10(%0)\n\t"
-        "lq $2, 0x20(%1)\n\t"
-        "sq $2, 0x20(%0)\n\t"
-        "lq $2, 0x30(%1)\n\t"
-        "sq $2, 0x30(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, 0x40\n\t"
-        "addi %1, %1, 0x40\n\t"
-        "bne $0, %2, xglMemCopy64\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "lq $2,16(%1)\n\t"
+        "sq $2,16(%0)\n\t"
+        "lq $2,32(%1)\n\t"
+        "sq $2,32(%0)\n\t"
+        "lq $2,48(%1)\n\t"
+        "sq $2,48(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,64\n\t"
+        "addi %1,%1,64\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy64b(void *dst, void *src, int n)
+void xglMemCopy64b(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lq $2, 0(%1)\n\t"
-        "sq $2, 0(%0)\n\t"
-        "lq $2, -0x10(%1)\n\t"
-        "sq $2, -0x10(%0)\n\t"
-        "lq $2, -0x20(%1)\n\t"
-        "sq $2, -0x20(%0)\n\t"
-        "lq $2, -0x30(%1)\n\t"
-        "sq $2, -0x30(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, -0x40\n\t"
-        "addi %1, %1, -0x40\n\t"
-        "bne $0, %2, xglMemCopy64b\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "lq $2,-16(%1)\n\t"
+        "sq $2,-16(%0)\n\t"
+        "lq $2,-32(%1)\n\t"
+        "sq $2,-32(%0)\n\t"
+        "lq $2,-48(%1)\n\t"
+        "sq $2,-48(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,-64\n\t"
+        "addi %1,%1,-64\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy16(void *dst, void *src, int n)
+void xglMemCopy16(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lq $2, 0(%1)\n\t"
-        "sq $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, 0x10\n\t"
-        "addi %1, %1, 0x10\n\t"
-        "bne $0, %2, xglMemCopy16\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,16\n\t"
+        "addi %1,%1,16\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy16b(void *dst, void *src, int n)
+void xglMemCopy16b(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lq $2, 0(%1)\n\t"
-        "sq $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, -0x10\n\t"
-        "addi %1, %1, -0x10\n\t"
-        "bne $0, %2, xglMemCopy16b\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,-16\n\t"
+        "addi %1,%1,-16\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy8(void *dst, void *src, int n)
+void xglMemCopy8(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "ld $2, 0(%1)\n\t"
-        "sd $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, 0x8\n\t"
-        "addi %1, %1, 0x8\n\t"
-        "bne $0, %2, xglMemCopy8\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "ld $2,0(%1)\n\t"
+        "sd $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,8\n\t"
+        "addi %1,%1,8\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy8b(void *dst, void *src, int n)
+void xglMemCopy8b(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "ld $2, 0(%1)\n\t"
-        "sd $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, -0x8\n\t"
-        "addi %1, %1, -0x8\n\t"
-        "bne $0, %2, xglMemCopy8b\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "ld $2,0(%1)\n\t"
+        "sd $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,-8\n\t"
+        "addi %1,%1,-8\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy4(void *dst, void *src, int n)
+void xglMemCopy4(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lw $2, 0(%1)\n\t"
-        "sw $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, 0x4\n\t"
-        "addi %1, %1, 0x4\n\t"
-        "bne $0, %2, xglMemCopy4\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lw $2,0(%1)\n\t"
+        "sw $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,4\n\t"
+        "addi %1,%1,4\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy4b(void *dst, void *src, int n)
+void xglMemCopy4b(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lw $2, 0(%1)\n\t"
-        "sw $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, -0x4\n\t"
-        "addi %1, %1, -0x4\n\t"
-        "bne $0, %2, xglMemCopy4b\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lw $2,0(%1)\n\t"
+        "sw $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,-4\n\t"
+        "addi %1,%1,-4\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy2(void *dst, void *src, int n)
+void xglMemCopy2(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lh $2, 0(%1)\n\t"
-        "sh $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, 0x2\n\t"
-        "addi %1, %1, 0x2\n\t"
-        "bne $0, %2, xglMemCopy2\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lh $2,0(%1)\n\t"
+        "sh $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,2\n\t"
+        "addi %1,%1,2\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
 
-void xglMemCopy2b(void *dst, void *src, int n)
+void xglMemCopy2b(void *destination, const void *source, int count)
 {
-    register void *r_dst asm("$4") = dst;
-    register void *r_src asm("$5") = src;
-    register int r_n asm("$6") = n;
-
     __asm__ __volatile__(
-        ".set noreorder\n\t"
-        "lh $2, 0(%1)\n\t"
-        "sh $2, 0(%0)\n\t"
-        "addi %2, %2, -1\n\t"
-        "addi %0, %0, -0x2\n\t"
-        "addi %1, %1, -0x2\n\t"
-        "bne $0, %2, xglMemCopy2b\n\t"
-        "nop\n\t"
-        ".set reorder"
-        : "+r"(r_dst), "+r"(r_src), "+r"(r_n)
+        "1:\n\t"
+        "lh $2,0(%1)\n\t"
+        "sh $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,-2\n\t"
+        "addi %1,%1,-2\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop"
+        : "+r"(destination), "+r"(source), "+r"(count)
         :
         : "$2", "memory");
 }
@@ -416,47 +444,9 @@ void xglVectorOuter(Vector4 *destination, const Vector4 *left,
     destination->w = left->w;
 }
 
-/*
- * xgl_lengths. All three routines are leaf VU0 vsqrt
- * reductions with no scalar control flow: vmul.xyz squares the (already
- * vsub.xyz-subtracted, for the two distance routines) xyz lanes, vaddy.x/
- * vaddz.x reduce them to one scalar (xglPointLengthXZ omits the Y term,
- * matching its name), vsqrt/vwaitq compute the square root into Q, and
- * vaddq.x/qmfc2 add the architectural VF0.x (zero) and transfer the result
- * to a GPR. Only the VU0 reduction is inline assembly.
- *
- * xglPointLength/xglPointLengthXZ return that value as an ordinary float:
- * cc1 emits the mtc1 that copies the "=r" GPR result into $f0 itself
- * (CP-0161), never a hand-written mfc1/mtc1.
- *
- * xglVectorLength instead writes the value through its destination pointer
- * and returns void, which the original does with a plain GPR store (sw), not
- * a COP1 store. Two measured properties of the compiler drive the C shape:
- *
- * - The "=r" output is a `register float length asm("$2")`, not a plain
- *   unpinned `float` local. An unpinned local either lands in a different
- *   GPR (a1, when the store is written as a raw GPR pointer cast) or, kept
- *   as `float` and stored through a plain `float *`, gets copied into $f0
- *   with an extra register move before the store becomes a COP1 `s.s`
- *   (`swc1`) instead of the original's GPR `sw` -- both measured non-exact.
- *   Pinning the output to $2 reproduces the original's own choice of v0 and
- *   keeps the value a GPR value, so the store the compiler picks for it is
- *   the plain integer one.
- * - The store goes through `volatile float *out = destination`, not a plain
- *   `*destination`. A plain store here is a legal, side-effect-free
- *   candidate for this compiler's own post-reload delay-slot-fill pass
- *   (dbr_schedule), which moves it into the return's `jr` delay slot --
- *   4 bytes short of the original's literal `sw; jr; nop` order (measured).
- *   The `volatile` qualifier is ordinary C, not inline assembly: it keeps
- *   the store from being scheduled into that delay slot, without adding any
- *   instruction or any second asm statement of its own. It is carried by a
- *   local pointer rather than a cast at the store, which is the same
- *   qualifier conversion and keeps the emitted code identical (measured).
- */
 void xglVectorLength(float *destination, const Vector4 *vector)
 {
     register float length asm("$2");
-    volatile float *out = destination;
 
     __asm__ __volatile__(
         "lqc2 vf3, 0(%1)\n\t"
@@ -471,7 +461,8 @@ void xglVectorLength(float *destination, const Vector4 *vector)
         : "r"(vector)
         : "memory"
     );
-    *out = length;
+    *destination = length;
+    __asm__ __volatile__("" : : "r"(destination));
 }
 
 float xglPointLength(const Vector4 *point1, const Vector4 *point2)
@@ -517,11 +508,6 @@ float xglPointLengthXZ(const Vector4 *point1, const Vector4 *point2)
     return length;
 }
 
-/*
- * XYZ is normalized in place; the loaded W lane is retained through the
- * xyz-only vmulq scale and the full sqc2 store (see include/shared.h's
- * Vector4 comment).
- */
 void xglVectorNormal(Vector4 *destination, const Vector4 *source)
 {
     __asm__ __volatile__(
@@ -565,15 +551,6 @@ void xglVectorClampXYZ(Vector4 *destination, const Vector4 *source,
     destination->w = source->w;
 }
 
-/*
- * The plane's normal is the (unnormalized) cross product of the two edges
- * p1-p0 and p2-p1, normalized in place, and the plane's w is the negated
- * distance of p0 along that normal (Ax+By+Cz+D=0 with D = -normal.p0).
- *
- * edge0/edge1 keep the w lane of their vsub.xyz right-hand operand (p1, p2
- * respectively): only xyz is subtracted, w is storage (see include/shared.h's
- * Vector4 comment).
- */
 void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
                        const Vector4 *p1, const Vector4 *p2)
 {
@@ -606,11 +583,6 @@ void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
     destination->w = -destination->w;
 }
 
-/*
- * ACC accumulates the transformed vector one row at a time: row 0 times X,
- * then rows 1-3 times Y, Z and W (the last vmaddw includes the source's own
- * W lane instead of retaining it, unlike the xyz-only helpers above).
- */
 void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix,
                      const Vector4 *vector)
 {
@@ -631,10 +603,6 @@ void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix,
         : "memory"
     );
 }
-
-/* xgl_studio.c owns StudioCamera and this accessor; no header is published
- * for xgl_studio.c yet. */
-extern StudioCamera *xglStudioGetCamera2(int cameraId);
 
 float xglRotTransPers(Vector4 *out, const Matrix4 matrix, Vector4 *point, int cameraId)
 {
@@ -672,29 +640,27 @@ void xglRotTransPersN(Vector4 *destination, const Matrix4 matrix,
     xglMatrixStackPop(1);
 }
 
-extern float unit_0[16];
-
-/*
- * Straight 64-byte copy of the identity matrix. gcc 2.96 allocates the
- * pseudo holding unit_0's address to $2 and the loaded quadword to $3 for
- * every pure-C spelling tried (quadword fields, explicit row temp, loop,
- * volatile/non-volatile mixes), i.e. always the mirror image of the
- * original; the register assignment is only reproducible from asm, matching
- * how the neighbouring 64-byte copies are written.
- */
 void xglMatrixUnit(float matrix[4][4])
 {
+    /* Original local unit matrix: four quadword loads consume all 64 bytes. */
+    static Matrix4 unit = {
+        {1.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+
     __asm__ __volatile__(
-        "lq $2, 0x0(%0)\n\t"
-        "sq $2, 0x0(%1)\n\t"
-        "lq $2, 0x10(%0)\n\t"
-        "sq $2, 0x10(%1)\n\t"
-        "lq $2, 0x20(%0)\n\t"
-        "sq $2, 0x20(%1)\n\t"
-        "lq $2, 0x30(%0)\n\t"
-        "sq $2, 0x30(%1)\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "lq $2,16(%1)\n\t"
+        "sq $2,16(%0)\n\t"
+        "lq $2,32(%1)\n\t"
+        "sq $2,32(%0)\n\t"
+        "lq $2,48(%1)\n\t"
+        "sq $2,48(%0)"
         :
-        : "r"(unit_0), "r"(matrix)
+        : "r"(matrix), "r"(unit)
         : "$2", "memory");
 }
 
@@ -716,11 +682,6 @@ void xglMatrixUnit4s(float matrix[4][4])
         : "$2", "memory");
 }
 
-/*
- * Each destination row is right's row transformed by left: ACC accumulates
- * right-row.x * left-row0 + .y * left-row1 + .z * left-row2 + .w * left-row3,
- * one right row per vmulax/vmadday/vmaddaz/vmaddw chain.
- */
 void xglMatrixMul(Matrix *destination, Matrix *left, Matrix *right)
 {
     __asm__ __volatile__(
@@ -762,10 +723,6 @@ void xglMatrixMul(Matrix *destination, Matrix *left, Matrix *right)
 void xglMatrixReverse(Matrix *destination, const Matrix *source)
 {
     Matrix transposed;
-    XglQuadword copiedRow;
-    /* Both original callers transpose this matrix in place. */
-    volatile Matrix *copyDestination = destination;
-    const volatile Matrix *copySource;
     int row;
     int column;
 
@@ -775,15 +732,20 @@ void xglMatrixReverse(Matrix *destination, const Matrix *source)
                 source->elements[column * 4 + row];
         }
     }
-    copySource = &transposed;
-    copiedRow = copySource->quadwords[0];
-    copyDestination->quadwords[0] = copiedRow;
-    copiedRow = copySource->quadwords[1];
-    copyDestination->quadwords[1] = copiedRow;
-    copiedRow = copySource->quadwords[2];
-    copyDestination->quadwords[2] = copiedRow;
-    copiedRow = copySource->quadwords[3];
-    copyDestination->quadwords[3] = copiedRow;
+    /* The original SDK copy reuses scratch $2 for all four rows. */
+    __asm__ __volatile__(
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "lq $2,16(%1)\n\t"
+        "sq $2,16(%0)\n\t"
+        "lq $2,32(%1)\n\t"
+        "sq $2,32(%0)\n\t"
+        "lq $2,48(%1)\n\t"
+        "sq $2,48(%0)"
+        :
+        : "r"(destination), "r"(&transposed)
+        : "$2", "memory"
+    );
 }
 
 void xglMatrixInverse(Matrix4 d, const Matrix4 s)
@@ -863,38 +825,6 @@ void xglMatrixTrans(Matrix4 destination, const Matrix4 source,
     }
 }
 
-extern char Vu0CallSin[];
-extern char Vu0CallCos[];
-
-/*
- * xglMatrixRotV (ee-vu-cop2, re-treatment of the accepted
- * src/main/xgl_2/xglMatrixRotV.s -- config/units/math-spark-cont01-00229f30.json):
- * builds a row-major 4x4 rotation matrix for `angle` radians about `axis`
- * (Rodrigues' rotation formula: rotation = cos*I + sin*[axis]x +
- * (1-cos)*axis(x)axis) and multiplies `source` by it into `destination`.
- *
- * The sine and cosine of `angle` come from the resident VU0 macro-mode
- * trigonometric microprogram (Vu0CallSin/Vu0CallCos, dispatched through
- * vi27/CMSAR0 with vcallmsr, the same hardware sequence as xglMatrixRotX/Y/Z
- * above). The original fetches cosine four times and sine once rather than
- * caching one result across the whole function -- each `cosineFor*` local
- * below stands for one of those independent dispatches -- so this source
- * asks for it again each time it is needed and lets the compiler place it.
- * Only the VU0 dispatch is inline assembly; the two scaled-axis helper calls
- * and the Rodrigues arithmetic that builds `rotation` are ordinary C.
- *
- * `axis`'s x/y/z components and the two scaled-axis vectors' components are
- * read into scalar locals (`ax`/`ay`/`az`, `oneMinusCos*`, `sin*`) once, right
- * before their row's arithmetic, rather than re-read through the pointers at
- * each use: every value here is read again after an intervening VU0-dispatch
- * block, and the original keeps each in a register across that dispatch
- * instead of reloading it (docs/tu-worker.md, "The delay slot of a recovered
- * function" documents the analogous asm-scheduling sensitivity of this
- * hardware sequence). `ay` is read out of its natural x/y/z order, right
- * before it is first used by row 1, because it is not needed until then and
- * the original's own register schedule places its load there.
- *
- */
 void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
                    float angle)
 {
@@ -1000,42 +930,6 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
 
     xglMatrixMul(destination, source, &rotation);
 }
-
-/*
- * xglMatrixRotX/Y/Z (main/tu100, re-treatment of the accepted
- * src/main/xgl_2/rots.s -- config/units/math-spark-cont01-0022a0f8-rots.json,
- * src/math/main/spark-cont01-0022a0f8-rots/notes.md is the pinned semantic
- * evidence this reconstruction preserves) toward readable C with constrained
- * inline assembly.
- *
- * Each helper rotates `source` about one coordinate axis by `angle` radians
- * and writes the result to `destination`. `angle` is sent through vf4 to the
- * resident VU0 macro-mode trigonometric microprogram twice: the returned sine
- * and cosine are kept in a 16-byte stack pair (cosSin[0] = cos, cosSin[1] =
- * sin), loaded back as one quadword into vf1, and combined with the two matrix
- * rows the axis affects through COP2 ACC multiply/accumulate operations, while
- * the unaffected row and the translation row are moved verbatim with aligned
- * EE lq/sq.
- *
- * `Vu0CallSin`/`Vu0CallCos` are the resident microprogram's own entry symbols
- * (src/main/vu0/Vu0MicroCode.dvp, exact_vu_microcode, verbatim from the retail
- * symbol table); the VU0 audit's generated config/symbols/main.vu0-symbols.ld
- * carries their VU instruction-memory byte addresses into this link
- * (`Vu0CallSin = 0x020;`, `Vu0CallCos = 0x0E8;`). CMSAR0 takes a microprogram
- * start address in 8-byte instruction pairs, so each entry is divided by 8
- * before it is written to vi27 (docs/ee-reference/vu.md, "vcallms ... does not
- * turn the microprogram's bytes into the EE function body"): they are entry
- * points of a separate program, not EE data this TU owns.
- *
- * Only the VU0 dispatch and the COP2 row combination are inline assembly. The
- * `mfc1` that hands `angle` to qmtc2 and the `mtc1` that takes each returned
- * value back to COP1 are the compiler's own transfers, emitted because the
- * dispatch reads a float through an "r" operand and returns one through an
- * "=r" operand; they are not written here.
- */
-
-extern char Vu0CallSin[];
-extern char Vu0CallCos[];
 
 void xglMatrixRotX(Matrix4 destination, const Matrix4 source, float angle)
 {
@@ -1212,29 +1106,6 @@ void xglMatrixFrustum(Matrix *destination, Matrix *source,
     xglMatrixMul(destination, source, &projection);
 }
 
-/*
- * xglMatrixStackUnit/.../RTPS (ee-vu-cop2): the eighteen thin VU0
- * matrix-stack wrappers, re-treated as readable C from the accepted
- * stack.s. Every wrapper except Frustum, Save and Load loads a VU0
- * microprogram entry -- one of the Vu0Call* symbols exported by
- * src/main/vu0/Vu0MicroCode.dvp through config/symbols/main.vu0-symbols.ld
- * -- shifts it from a VU byte address to an instruction-pair index and
- * dispatches it with vcallmsr. The original `lui %hi(SYM)/addiu %lo(SYM)/
- * srl ,3` is exactly the C expression `(unsigned int)Vu0CallSYM >> 3`: the
- * compiler emits it from ordinary address arithmetic against the linked
- * symbol, so only ctc2.i/vnop/vcallmsr and the VF transfers are inline
- * assembly. An angle is handed to the block as an ordinary "r" operand and
- * the compiler emits the COP1 transfer itself, which is what reproduces the
- * original's mfc1 between the lui and the addiu (CP-0161). Save/Load
- * dispatch no microprogram at all: they are sqc2/lqc2 quartets over
- * vf28..vf31, the resident current-matrix registers (Vu0MicroCode.dvp,
- * "THE RESIDENT MATRIX"), with ctc2.i to $vi0 used only for its
- * interlocked-wait side effect (vi0 is hardwired zero, so the transferred
- * value itself is discarded). Frustum needs no VF transfer: it writes its
- * two quadwords of frustum parameters straight into the VU0 data window at
- * 0x11004800 with ordinary volatile stores, then synchronises before the
- * dispatch.
- */
 void xglMatrixStackUnit(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackUnit >> 3;
@@ -1535,19 +1406,48 @@ void xglMatrixStackRTPS(Vector4 *out, const Vector4 *point,
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_2", xglMatrix2Quaternion);
+void xglMatrix2Quaternion(float quaternion[4], const Matrix *matrix)
+{
+    float diagonalX = matrix->elements[0];
+    float diagonalY = matrix->elements[5];
+    float diagonalZ = matrix->elements[10];
+    float root;
+    float scale;
+    int largestAxis;
+    int nextAxis;
+    int lastAxis;
+    int nextAxes[3];
+    float *largestComponent;
+    float *nextComponent;
+    float *lastComponent;
+    scale = (diagonalX + diagonalY) + diagonalZ;
+    if (scale > 0.0f) {
+        scale = __builtin_sqrtf(scale + 1.0f);
+        root = 0.5f * scale;
+        quaternion[3] = root;
+        scale = 0.5f / (root + root);
+        quaternion[0] = (matrix->elements[6] - matrix->elements[9]) * scale;
+        quaternion[1] = (matrix->elements[8] - matrix->elements[2]) * scale;
+        quaternion[2] = (matrix->elements[1] - matrix->elements[4]) * scale;
+    } else {
+        __builtin_memcpy(nextAxes, D_004D27C8, sizeof(nextAxes));
+        largestAxis = 0;
+        if (diagonalX < diagonalY) largestAxis = 1;
+        if (matrix->elements[5 * largestAxis] < diagonalZ) largestAxis = 2;
+        nextAxis = nextAxes[largestAxis];
+        lastAxis = nextAxes[nextAxis];
+        largestComponent = &quaternion[largestAxis];
+        root = 0.5f * __builtin_sqrtf(matrix->elements[5 * largestAxis] - (matrix->elements[5 * nextAxis] + matrix->elements[5 * lastAxis]) + 1.0f);
+        *largestComponent = root;
+        nextComponent = &quaternion[nextAxis];
+        lastComponent = &quaternion[lastAxis];
+        scale = 0.5f / (root + root);
+        quaternion[3] = (matrix->elements[4 * nextAxis + lastAxis] - matrix->elements[4 * lastAxis + nextAxis]) * scale;
+        *nextComponent = (matrix->elements[4 * largestAxis + nextAxis] + matrix->elements[4 * nextAxis + largestAxis]) * scale;
+        *lastComponent = (matrix->elements[4 * largestAxis + lastAxis] + matrix->elements[4 * lastAxis + largestAxis]) * scale;
+    }
+}
 
-/*
- * xglQuaternion2Matrix (ee-vu-cop2): expands a normalized quaternion into a
- * 4x4 row-major rotation matrix. VU0 macro-mode hardware code with no scalar
- * equivalent under the pinned contract; the body is the original instruction
- * sequence reproduced verbatim inside one asm block. Only the destination and
- * quaternion pointers cross the C boundary; the trailing `nop` restores the
- * original's `jr $31; nop` (docs/tu-worker.md "The delay slot of a recovered
- * function"): a bare `sqc2` before the compiler's own `jr $31` would otherwise
- * be pulled into the delay slot by the assembler's reorder-mode scheduling.
- *
- */
 void xglQuaternion2Matrix(Matrix4 destination, const Vector4 *quaternion)
 {
     __asm__ __volatile__(
@@ -1597,7 +1497,7 @@ void xglRandSeedInit(void)
 
 void xglGeometryInit(void)
 {
-    float random_seed = D_004D8858;
+    float random_seed = 0.1f;
 
     __asm__ __volatile__(
         "qmtc2 %0,vf1\n\t"
@@ -1653,19 +1553,16 @@ void xglFSrand(float seed)
 
 int F2I(float value)
 {
-	int scratch;
-	int result;
-	float temp;
+    int result;
 
-	__asm__ __volatile__("mfc1 %0, %3\n\t"
-			     "nop\n\t"
-			     "mtc1 %0, %1\n\t"
-			     "nop\n\t"
-			     "cvt.w.s %1, %1\n\t"
-			     "mfc1 %2, %1"
-			     : "=&r"(scratch), "=&f"(temp), "=r"(result)
-			     : "f"(value));
-	return result;
+    __asm__ __volatile__(
+        "mtc1 %1,$f0\n\t"
+        "cvt.w.s $f0,$f0\n\t"
+        "mfc1 %0,$f0"
+        : "=r"(result)
+        : "r"(value)
+        : "$f0");
+    return result;
 }
 
 float I2F(int value)

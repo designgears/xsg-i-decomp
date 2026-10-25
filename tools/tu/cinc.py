@@ -31,7 +31,7 @@ def main():
     ap.add_argument("--dst", type=Path, required=True)
     ap.add_argument("--report", type=Path, required=True)
     a = ap.parse_args()
-    cc = a.s.read_text()
+    cc = a.s.read_text(errors="surrogateescape")  # cc1 output may carry raw SJIS bytes from string literals
     includes = [p for p in INCLUDE.findall(cc) if p.endswith(".s")]
     idents = set(re.findall(r"^\s*\.extern\s+([A-Za-z_.$][\w.$]*)\s*,", cc, re.M))
     idents |= set(re.findall(r"^([A-Za-z_.$][\w.$]*):", cc, re.M))

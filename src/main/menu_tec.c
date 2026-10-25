@@ -1,24 +1,437 @@
 #include "common.h"
 
 typedef struct MenuTecData {
-    unsigned char unmodeled_00[0x20];
+    unsigned char unmodeled_00[8];
+    unsigned char levelPointIncrement[8];
+    unsigned short levelPointBase[8];
     unsigned short speedPointCost[8];
     unsigned short waitPointCost[8];
 } MenuTecData;
 
 extern MenuTecData *MenuTecDataBuf;
+
 void *MenuTecDataGet(int chrNo);
 
-int PartyDataGet(void);
-typedef struct { char d[32]; } TecSave_t;
+struct MenuTecSaveRecord *MenuTecSaveDataGet(int chrNo);
 
-int MenuTecSaveDataGet(int chrNo)
+int MenuTecNextSpeedPointGet(int chrNo, int point);
+
+/* dataPlChaGet (ov01/data_unit_org_get.c VA 0x00a19210, still INCLUDE_ASM
+ * there and not yet linkable by that name): returns the running character's
+ * control record, whose word at +0xC this function decrements. Kept under
+ * the scaffold's undefined_funcs_auto.txt placeholder name until that TU
+ * recovers it. */
+
+int *func_A19210(int chrNo);
+
+typedef struct MenuWorkState {
+    unsigned char unmodeled_00[3];
+    unsigned char state;
+    unsigned char unmodeled_04[0x10 - 4];
+    signed char characterHelp; /* +0x10 */
+    unsigned char unmodeled_11[0x20 - 0x11];
+    unsigned char resetFlags;
+    unsigned char nextState; /* +0x21 */
+    unsigned char unmodeled_22[0x2a - 0x22];
+    unsigned char inputDelay; /* +0x2a */
+    unsigned char unmodeled_2b[0x30 - 0x2b];
+    signed char listCursor;
+    signed char mode;
+    signed char rowCursor;
+    signed char selectCursor;
+    unsigned char unmodeled_34[0x0C];
+    signed char characterNo;
+    signed char rosterCount;
+    signed char rosterCursor;
+    signed char tecBit;
+    signed char point;
+    unsigned char unmodeled_45[0x50 - 0x45];
+    int selectedTechnique; /* +0x50 */
+    unsigned char unmodeled_54[0x80 - 0x54];
+} MenuWorkState;
+
+extern MenuWorkState MenuWork;
+
+int MenuTecTLevLimitCheck(int chrNo, int point);
+
+int MenuTecNextTLevPointGet(int chrNo, int point);
+
+/* dataUnitOrgGet (ov01/data_unit_org_get.c VA 0x00a191c0, still INCLUDE_ASM
+ * there and not yet linkable by that name): returns the running character's
+ * parameter record (the full record is src/main/menu_para_pt_rate_get.c's
+ * CharParaData); MenuTecEquipCheck only reads the six equipped technique ids
+ * at +0x82. Kept under the scaffold's undefined_funcs_auto.txt placeholder
+ * name until that TU recovers it. */
+
+typedef struct MenuTecEquipRecord {
+    unsigned char unmodeled_00[0x82];
+    short techniqueId[6]; /* +0x82 */
+} MenuTecEquipRecord;
+
+MenuTecEquipRecord *func_A191C0(int chrNo);
+
+/* dataTecGet (ov01/data_unit_org_get.c VA 0x00a1a378, still INCLUDE_ASM there
+ * and not yet linkable by that name): returns a pointer to the technique's
+ * metadata record, or a NULL pointer plus a diagnostic print for a
+ * non-positive index. Kept under the scaffold's undefined_funcs_auto.txt
+ * placeholder name until that TU recovers it. */
+
+unsigned char *func_A1A378(int tecBit);
+
+/* Returns whether either of the technique's two low target-metadata bits is
+ * set (elf_names annotation). */
+
+int BitToTecNo(int bit);
+
+#include "main/party.h"
+
+typedef struct MenuTecSaveRecord {
+    unsigned char level[8];
+    unsigned char speed[8];
+    unsigned char wait[8];
+    unsigned char levelLimit[8];
+} MenuTecSaveRecord;
+
+typedef struct MenuTecPartySlot {
+    unsigned short character;
+    unsigned char unmodeled_02[2];
+} MenuTecPartySlot;
+
+typedef struct MenuTecPartySave {
+    unsigned char unmodeled_00[0x30];
+    MenuTecPartySlot attackSlots[3]; /* +0x30 */
+    MenuTecSaveRecord technique[8];
+} MenuTecPartySave;
+
+typedef struct MenuTecCharTechnique {
+    short levelAdjustment;
+    short waitAdjustment;
+    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    short useCount;
+    short targetCount;
+    unsigned char unmodeled_8[0x4];
+} MenuTecCharTechnique;
+
+typedef struct MenuTecCharacter {
+    unsigned char unmodeled_00[0x0c];
+    int points;
+    unsigned char unmodeled_10[0x3c];
+    MenuTecCharTechnique technique[8];
+} MenuTecCharacter;
+
+int MenuTecNextWaitPointGet(int chrNo, int point);
+
+/* dataPlChaGet (ov01/data_unit_org_get.c VA 0x00a19210, still INCLUDE_ASM
+ * there and not yet linkable by that name): returns the running character's
+ * control record, whose word at +0xC this function decrements. Kept under
+ * the scaffold's undefined_funcs_auto.txt placeholder name until that TU
+ * recovers it. */
+
+#include "shared.h"
+
+typedef struct MenuTecPasWork MenuTecPasWork;
+
+typedef struct MenuTecMenuWork MenuTecMenuWork;
+
+typedef struct MenuTecL1R1Work MenuTecL1R1Work;
+
+typedef struct MenuTecListWork MenuTecListWork;
+
+typedef struct MenuTecSetWinWork MenuTecSetWinWork;
+
+extern MenuTecPasWork *MenuTecPas;
+
+extern MenuTecMenuWork *MenuTecMenu;
+
+extern MenuTecL1R1Work *MenuTecL1R1;
+
+extern MenuTecListWork *MenuTecList;
+
+extern MenuTecSetWinWork *MenuTecSetWin;
+
+typedef struct MenuTecListRow {
+    const char *name;
+    int amount;
+    unsigned char flag;
+} MenuTecListRow;
+
+struct MenuTecListRow *MenuListGet(int list);
+
+struct MenuTecListRow *MenuListMake(int list, int mode);
+
+int MenuSortCheck(int list);
+
+void MoveSlide(short *current, short *target, float rate);
+
+void WindowDXSet(void *window);
+
+void WindowDXMain(void *window);
+
+void eSpriteSet(void *sprite, short spriteId);
+
+void eSpriteMain(void *sprite);
+
+void eNumberSet(void *number, int mode);
+
+void eNumberMain(void *number);
+
+void eTagFontSet(void *tag, const char *tagWord);
+
+void eTagFontMain(void *tag);
+
+typedef struct {
+    unsigned char pad_00[0x28];
+    unsigned short half_28;
+    unsigned short half_2a;
+    unsigned char unmodeled_2c[6];
+    unsigned short mappedPressed;
+    unsigned short mappedRepeat;
+} PadPrefixFull;
+
+extern PadPrefixFull PadData;
+
+#define PAD_L1 0x0004
+
+#define PAD_R1 0x0008
+
+typedef struct MenuTecLabel {
+    unsigned char unmodeled_00[4];
+    short x;                        /* +0x04 */
+    short y;                        /* +0x06 */
+    unsigned int drawOrder;         /* +0x08 */
+    signed char color[4];           /* +0x0C */
+    unsigned char unmodeled_10[0x1C - 0x10];
+    const char *text;               /* +0x1C */
+} MenuTecLabel;
+
+typedef struct MenuTecNumber {
+    short x;                        /* +0x00 */
+    short y;                        /* +0x02 */
+    unsigned int drawOrder;         /* +0x04 */
+    unsigned char unmodeled_08[6];
+    unsigned char format;           /* +0x0E */
+    unsigned char digits;           /* +0x0F */
+    unsigned char unmodeled_10[4];
+    int value;                      /* +0x14 */
+    unsigned char unmodeled_18[0x90 - 0x18];
+} MenuTecNumber;
+
+typedef struct MenuTecPasWindow {
+    short x;                            /* +0x00 */
+    short y;                            /* +0x02 */
+    int color;                          /* +0x04 */
+    short width;                        /* +0x08 */
+    short height;                       /* +0x0A */
+    unsigned char unmodeled_0c[0x10 - 0x0C];
+    signed char state;                  /* +0x10 */
+    unsigned char unmodeled_11[0x14 - 0x11];
+    void (*callback)(void);             /* +0x14 */
+    void *callbackArg;                  /* +0x18 */
+    unsigned char unmodeled_1c[0x194 - 0x1C];
+} MenuTecPasWindow;
+
+typedef struct MenuTecPasMessage {
+    unsigned char unmodeled_00;
+    unsigned char mode;                 /* +0x01 */
+    unsigned char unmodeled_02[2];
+    short x;                            /* +0x04 */
+    short y;                            /* +0x06 */
+    int color;                          /* +0x08 */
+    unsigned char unmodeled_0c[0xc];
+    const char *text;
+    unsigned char unmodeled_1c[0x28];
+} MenuTecPasMessage;
+
+typedef struct MenuTecPasBox {
+    short x;                            /* +0x00 */
+    short y;                            /* +0x02 */
+    int color;                          /* +0x04 */
+    short width;                        /* +0x08 */
+    short height;                       /* +0x0A */
+} MenuTecPasBox;
+
+struct MenuTecPasWork {
+    unsigned char state;                /* +0x000 */
+    unsigned char unmodeled_01[3];
+    int color;                          /* +0x004 */
+    MenuTecPasWindow window;            /* +0x008 */
+    MenuTecPasMessage message[3];       /* +0x19C */
+    unsigned char unmodeled_268[0x334 - 0x268];
+    MenuTecPasBox box;                  /* +0x334 */
+    unsigned char callbackWork[0x10];   /* +0x340 */
+};
+
+extern const char *msg_0_0036DC68[];
+
+int MenuPasLengthGet(const char *text);
+
+void MenuPasWindow(void);
+
+void eMessageSet(void *message, const char *text);
+
+void eMessageMain(void *message);
+
+void endPrintExtFunc(int kind, int id, void *data);
+
+typedef struct MenuTecWindowDX {
+    short x;                            /* +0x00 */
+    short y;                            /* +0x02 */
+    int color;                          /* +0x04 */
+    short width;                        /* +0x08 */
+    short height;                       /* +0x0A */
+    const char *title;                  /* +0x0C */
+    unsigned char state;                /* +0x10 */
+    unsigned char unmodeled_11[0]; /* +0x11: zero-length alias of the former padding member, kept for saved bodies */
+    unsigned char ribbonInitialized;
+    unsigned char unmodeled_12[0x2];
+    void *select;                       /* +0x14 */
+    void *selectArg;                    /* +0x18 */
+    unsigned char unmodeled_1c[0x194 - 0x1C];
+} MenuTecWindowDX;
+
+typedef struct MenuTecSetWinRow {
+    MenuTecLabel label[2];          /* +0x00: the row name, then its status text */
+    MenuTecNumber number[2];        /* +0x40: the current level, then the next cost */
+} MenuTecSetWinRow;
+
+typedef struct MenuTecCursor {
+    signed char mode;               /* +0x00 */
+    unsigned char unmodeled_01[3];
+    short x;                        /* +0x04 */
+    short y;                        /* +0x06 */
+    unsigned int drawOrder;         /* +0x08 */
+} MenuTecCursor;
+
+struct MenuTecSetWinWork {
+    unsigned char state;                /* +0x000 */
+    unsigned char flags;
+    unsigned char unmodeled_02[2];
+    int color;                          /* +0x004 */
+    MenuTecWindowDX window;             /* +0x008 */
+    MenuTecSetWinRow row[3];            /* +0x19C */
+    MenuTecLabel footer;                /* +0x5BC */
+    unsigned char unmodeled_5dc[0x61C - 0x5DC];
+    MenuTecCursor cursor;               /* +0x61C */
+};
+
+typedef struct MenuTecList {
+    unsigned char unmodeled_00[0x02];
+    unsigned short hasPrompt;           /* +0x02 */
+    int cursor;                         /* +0x04 */
+    const char *items;                  /* +0x08 */
+    const char *prompt;                 /* +0x0C */
+    unsigned char unmodeled_10[0x5F8 - 0x10];
+} MenuTecSelectList;
+
+struct MenuTecMenuWork {
+    unsigned char state;                /* +0x000 */
+    unsigned char unmodeled_01[3];
+    int color;                          /* +0x004 */
+    MenuTecWindowDX window[2];          /* +0x008 */
+    MenuTecSelectList list[2];          /* +0x330 */
+};
+
+extern const char *msg00_1_0036DC78[];
+
+extern const char *msg01_2_0036DC80[];
+
+void MenuSelectWindow(MenuTecWindowDX *window, MenuTecSelectList *list);
+
+typedef struct MenuTecL1R1Sprite {
+    unsigned char unmodeled_00[0x04];
+    short x;    /* +0x04 */
+    short y;    /* +0x06 */
+    int work;   /* +0x08 */
+    unsigned char unmodeled_0c[0x28 - 0x0c];
+} MenuTecL1R1Sprite;
+
+struct MenuTecL1R1Work {
+    unsigned char state;         /* +0x00 */
+    unsigned char unmodeled_01;
+    signed char slideOffset[2];  /* +0x02: added into sprite[i].x while non-zero */
+    int spriteWork;              /* +0x04: shared initial value for both sprites' work */
+    MenuTecL1R1Sprite sprite[2]; /* +0x08: L1, then R1 */
+};
+
+typedef struct MenuTecSPWindow {
+    unsigned char state;                /* +0x00 */
+    unsigned char rowFlags;             /* +0x01 */
+    unsigned char unmodeled_02[2];
+    short position;                     /* +0x04 */
+    short contentHeight;                /* +0x06 */
+    int color;                          /* +0x08 */
+    short width;                        /* +0x0C */
+    short height;                       /* +0x0E */
+    const char *caption;                /* +0x10 */
+    unsigned char columns;              /* +0x14 */
+    unsigned char rows;                 /* +0x15 */
+    unsigned char unmodeled_16[0x1C - 0x16];
+    MenuTecListRow *items;              /* +0x1C */
+    unsigned char unmodeled_20[0x26 - 0x20];
+    unsigned char selectionSet;         /* +0x26 */
+    unsigned char unmodeled_27;
+} MenuTecSPWindow;
+
+struct MenuTecListWork {
+    unsigned char state;                /* +0x00 */
+    unsigned char unmodeled_01;
+    unsigned char valid;                /* +0x02 */
+    unsigned char side;                 /* +0x03 */
+    int color;                          /* +0x04 */
+    MenuTecSPWindow window;             /* +0x08 */
+};
+
+extern const char *msg00_7[];
+
+extern const char *msg01_8_0036DCB8[];
+
+extern const char *msg02_9[];
+
+extern const char *msg03_10[];
+
+void eCursolSet(void *cursor, signed char width);
+
+void eCursolMain(void *cursor);
+
+void eCursolModeChange(void *cursor, int mode);
+
+int MenuTecSpeedLimitCheck(int chrNo, int point);
+
+int MenuTecWaitLimitCheck(int chrNo, int point);
+
+int MenuTecCharTLevUpCheck(void);
+
+int MenuTecCharSpeedUpCheck(void);
+
+int MenuTecCharWaitUpCheck(void);
+
+typedef struct MenuTecL1R1SpriteIds {
+    short id[2];
+} MenuTecL1R1SpriteIds;
+
+typedef struct MenuTecL1R1SlideStep {
+    signed char side[2];
+} MenuTecL1R1SlideStep;
+
+int func_A197E8(int chrNo, int tecNo);
+
+void *MenuSortAddrGet(int list);
+
+extern const unsigned char D_004C92E8[28];
+
+extern const unsigned char MenuTecTrgTbl00[];
+
+extern const unsigned char MenuTecTrgTbl01[];
+
+MenuTecSaveRecord *MenuTecSaveDataGet(int chrNo)
 {
-    unsigned short c = chrNo;
-    TecSave_t *p = (TecSave_t *)(PartyDataGet() + 0x3C);
-    if ((unsigned)(c - 1) >= 8)
+    int characterIndex = chrNo & 0xffff;
+    MenuTecPartySave *party = (MenuTecPartySave *)PartyDataGet();
+    MenuTecSaveRecord *records = party->technique;
+
+    if ((unsigned int)(characterIndex - 1) >= 8U)
         return 0;
-    return (int)&p[c - 1];
+    return &records[characterIndex - 1];
 }
 
 void *MenuTecDataGet(int characterNo)
@@ -32,59 +445,59 @@ void *MenuTecDataGet(int characterNo)
     return &records[characterIndex - 1];
 }
 
-int BitToTecNo(int b)
+int BitToTecNo(int bit)
 {
-    unsigned short bit = b;
-    if ((unsigned)(bit - 0x2D) < 8) return bit - 0x2D;
-    if ((unsigned)(bit - 0x35) < 7) return bit - 0x35;
-    if ((unsigned)(bit - 0x3C) < 8) return bit - 0x3C;
-    if ((unsigned)(bit - 0x44) < 8) return bit - 0x44;
-    if ((unsigned)(bit - 0x4C) < 7) return bit - 0x4C;
-    if ((unsigned)(bit - 0x53) < 8) return bit - 0x53;
-    if ((unsigned)(bit - 0x5B) < 8) return bit - 0x5B;
+    int techniqueBit = bit & 0xffff;
+
+    if (techniqueBit >= 45 && techniqueBit <= 52)
+        return techniqueBit - 45;
+    if (techniqueBit >= 53 && techniqueBit <= 59)
+        return techniqueBit - 53;
+    if (techniqueBit >= 60 && techniqueBit <= 67)
+        return techniqueBit - 60;
+    if (techniqueBit >= 68 && techniqueBit <= 75)
+        return techniqueBit - 68;
+    if (techniqueBit >= 76 && techniqueBit <= 82)
+        return techniqueBit - 76;
+    if (techniqueBit >= 83 && techniqueBit <= 90)
+        return techniqueBit - 83;
+    if (techniqueBit >= 91 && techniqueBit <= 98)
+        return techniqueBit - 91;
     return -1;
 }
 
 int MenuTecNextTLevPointGet(int chrNo, int point)
 {
-    unsigned char *data = MenuTecDataGet(chrNo);
-    unsigned char *save = (unsigned char *)MenuTecSaveDataGet(chrNo);
+    MenuTecData *data = MenuTecDataGet(chrNo);
+    MenuTecSaveRecord *saveData = MenuTecSaveDataGet(chrNo);
 
     if (point < 0)
         return 0;
-    return ((unsigned short *)(data + 0x10))[point] + data[point + 8] * (save[point] + 1);
+    return data->levelPointBase[point]
+         + data->levelPointIncrement[point] * (saveData->level[point] + 1);
 }
 
 int MenuTecTLevLimitCheck(int chrNo, int point)
 {
-    struct { unsigned char lv[0x18]; unsigned char max[0x18]; } *s;
+    MenuTecSaveRecord *saveData = MenuTecSaveDataGet(chrNo);
 
-    s = (void *)MenuTecSaveDataGet(chrNo);
     if (point < 0)
         return 0;
-    return s->lv[point] < s->max[point];
+    return saveData->level[point] < saveData->levelLimit[point];
 }
 
 void MenuTecTLevUp(int chrNo, int point)
 {
-    int maskedChrNo;
-    int saveData;
-    int *unit;
-    int *unitBase;
-    int points;
-    unsigned char *techLevel;
-
-    maskedChrNo = chrNo & 0xFFFF;
-    saveData = MenuTecSaveDataGet(maskedChrNo);
-    unit = func_A19210(maskedChrNo);
+    int maskedChrNo = chrNo & 0xffff;
+    MenuTecSaveRecord *saveData = MenuTecSaveDataGet(maskedChrNo);
+    MenuTecCharacter *character = (MenuTecCharacter *)func_A19210(maskedChrNo);
 
     if (point >= 0) {
-        points = MenuTecNextTLevPointGet(chrNo, point);
-        unitBase = unit + 3;
-        techLevel = (unsigned char *)(saveData + point);
-        *techLevel = *techLevel + 1;
-        *(short *)((char *)unitBase + point * 12 + 64) = (short)(*techLevel * 3 - 3);
-        unitBase[0] -= points;
+        int points = MenuTecNextTLevPointGet(chrNo, point);
+
+        saveData->level[point]++;
+        character->technique[point].levelAdjustment = saveData->level[point] * 3 - 3;
+        character->points -= points;
     }
 }
 
@@ -98,8 +511,6 @@ int MenuTecNextSpeedPointGet(int chrNo, int point)
     return data->speedPointCost[point];
 }
 
-int MenuTecSaveDataGet(int chrNo);
-
 int MenuTecSpeedLimitCheck(int chrNo, int point)
 {
     unsigned char *saveData = (unsigned char *)MenuTecSaveDataGet(chrNo);
@@ -110,26 +521,16 @@ int MenuTecSpeedLimitCheck(int chrNo, int point)
     return saveData[point + 8] != 1;
 }
 
-int MenuTecSaveDataGet(int chrNo);
-int MenuTecNextSpeedPointGet(int chrNo, int point);
-
-/* dataPlChaGet (ov01/data_unit_org_get.c VA 0x00a19210, still INCLUDE_ASM
- * there and not yet linkable by that name): returns the running character's
- * control record, whose word at +0xC this function decrements. Kept under
- * the scaffold's undefined_funcs_auto.txt placeholder name until that TU
- * recovers it. */
-int *func_A19210(int chrNo);
-
 void MenuTecSpeedUp(int chrNo, int point)
 {
     int maskedChrNo = chrNo & 0xFFFF;
-    int saveData = MenuTecSaveDataGet(maskedChrNo);
+    MenuTecSaveRecord *saveData = MenuTecSaveDataGet(maskedChrNo);
     int *unit = func_A19210(maskedChrNo);
 
     if (point >= 0) {
         int points = MenuTecNextSpeedPointGet(chrNo, point);
 
-        ((unsigned char *)(saveData + point))[8] = 1;
+        saveData->speed[point] = 1;
         unit[3] -= points;
     }
 }
@@ -146,41 +547,30 @@ int MenuTecNextWaitPointGet(int chrNo, int point)
 
 int MenuTecWaitLimitCheck(int chrNo, int point)
 {
-    void *record = (void *)(point + MenuTecSaveDataGet(chrNo));
-    int limitReached = 0;
+    /* The original adds the byte offset to the record address as integers
+     * (addu point, record); the pointer form swaps the addu operands. */
+    unsigned char *record = (unsigned char *)(point + (int)MenuTecSaveDataGet(chrNo));
 
-    if (point >= 0) {
-        limitReached = ((unsigned char *)record)[0x10] != 0;
+    if (point < 0) {
+        return 0;
     }
-    return limitReached;
+    return record[0x10] != 0;
 }
 
 void MenuTecWaitUp(int chrNo, int point)
 {
-    int maskedChrNo = chrNo & 0xFFFF;
-    int saveData = MenuTecSaveDataGet(chrNo);
-    int *unit = func_A19210(maskedChrNo);
+    int maskedChrNo = chrNo & 0xffff;
+    MenuTecSaveRecord *saveData = MenuTecSaveDataGet(chrNo);
+    MenuTecCharacter *character = (MenuTecCharacter *)func_A19210(maskedChrNo);
 
     if (point >= 0) {
-        int cost = MenuTecNextWaitPointGet(chrNo, point);
-        int idx = point + 0x10;
-        unsigned char *p = (unsigned char *)saveData + idx;
-        *p = *p - 1;
-        *(unsigned short *)((char *)unit + point * 0xC + 0x4E) = *p;
-        unit[3] -= cost;
+        int points = MenuTecNextWaitPointGet(chrNo, point);
+
+        saveData->wait[point]--;
+        character->technique[point].waitAdjustment = saveData->wait[point];
+        character->points -= points;
     }
 }
-
-typedef struct MenuWorkState {
-    unsigned char unmodeled_00[0x40];
-    signed char characterNo;
-    unsigned char unmodeled_41[3];
-    signed char point;
-    unsigned char unmodeled_45[0x3b];
-} MenuWorkState;
-extern MenuWorkState MenuWork;
-int MenuTecTLevLimitCheck(int chrNo, int point);
-int MenuTecNextTLevPointGet(int chrNo, int point);
 
 int MenuTecCharTLevUpCheck(void)
 {
@@ -208,7 +598,6 @@ int MenuTecCharSpeedUpCheck(void)
         if (characterData[3] >= nextPoint)
             return 1;
     }
-
     return 0;
 }
 
@@ -223,62 +612,1584 @@ int MenuTecCharWaitUpCheck(void)
         if (characterData[3] >= nextPoint)
             return 1;
     }
-
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecPasMain);
+void MenuTecPasMain(void)
+{
+    MenuTecPasWork *pas = MenuTecPas;
+    int tabLength[3];
+    short tabTarget[3];
+    short slideTarget;
+    int i;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecInfoMain);
+    for (i = 0; i < 3; i++)
+        tabLength[i] = MenuPasLengthGet(msg_0_0036DC68[i]);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecMenuMain);
+    switch (pas->state) {
+    case 0:
+        pas->color = 0x00FFFFF0;
+        WindowDXSet(&pas->window);
+        pas->window.x = -288;
+        pas->window.y = 8;
+        pas->window.color = pas->color;
+        pas->window.width = 272;
+        pas->window.height = 30;
+        pas->window.callback = MenuPasWindow;
+        pas->window.callbackArg = pas->callbackWork;
+        pas->window.state = 1;
+        WindowDXMain(&pas->window);
+        pas->window.state = 3;
+        for (i = 0; i < 3; i++) {
+            eMessageSet(&pas->message[i], msg_0_0036DC68[i]);
+            pas->message[i].mode = 0x20;
+            pas->message[i].x = 288;
+            pas->message[i].y = 11;
+            pas->message[i].color = pas->color + 2;
+        }
+        pas->state = 2;
+        /* fallthrough */
+    case 2:
+        break;
+    default:
+        return;
+    }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecExMain);
+    slideTarget = -16;
+    for (i = 0; i < 3; i++)
+        tabTarget[i] = 288;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecL1R1Main);
+    switch (MenuWork.state) {
+    case 0x10:
+    case 0x20:
+        tabTarget[0] = 16;
+        break;
+    case 0x30:
+    case 0x32:
+    case 0x50:
+    case 0x52:
+    case 0x54:
+    case 0x56:
+        tabTarget[0] = 16;
+        tabTarget[MenuWork.listCursor + 1] = tabLength[0] + 16;
+        break;
+    default:
+        slideTarget = -288;
+        break;
+    }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecStatusMain);
+    MoveSlide(&pas->window.x, &slideTarget, 3.0f);
+    WindowDXMain(&pas->window);
+    if (pas->window.state == 3) {
+        pas->box.x = pas->window.x + 3;
+        pas->box.y = pas->window.y + 3;
+        pas->box.color = pas->color;
+        pas->box.width = pas->window.width - 6;
+        pas->box.height = pas->window.height - 6;
+        endPrintExtFunc(pas->color, 0x65, &pas->box);
+        for (i = 0; i < 3; i++) {
+            MoveSlide(&pas->message[i].x, &tabTarget[i], 5.0f);
+            if (pas->message[i].x < 256)
+                eMessageMain(&pas->message[i]);
+        }
+        endPrintExtFunc(pas->color, 0x66, 0);
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecListMain);
+typedef struct MenuTextEntry {
+    const char *name;
+    const unsigned char *auxiliary;
+    const unsigned char *sortName;
+} MenuTextEntry;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", subMenuTecListChange_6);
+MenuTextEntry *MenuTextGet(int textId);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecListMain2);
+typedef struct MenuTecInfoWorkMT {
+    unsigned char state;
+} MenuTecInfoWorkMT;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", subListChange_11);
+extern MenuTecInfoWorkMT *MenuTecInfo;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTecSetWinMain);
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct MenuTecInfoWindow MenuTecInfoWindow;
 
-extern int func_A197E8(int, int);
+typedef struct MenuTecInfoDetail {
+    short x;
+    short y;
+    unsigned char unmodeled_04[4];
+    int visible;
+    char *message;
+} MenuTecInfoDetail;
+
+struct MenuTecInfoWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    unsigned char unmodeled_0c[4];
+    signed char state;
+    unsigned char unmodeled_11[3];
+    void (*callback)(MenuTecInfoWindow *window, MenuTecInfoDetail *detail);
+    MenuTecInfoDetail *callbackArg;
+    unsigned char unmodeled_1c[0x194 - 0x1c];
+};
+
+typedef struct MenuTecInfoWork {
+    unsigned char state;
+    signed char active;
+    signed char showCharacterHelp;
+    unsigned char showActionHelp;
+    int color;
+    MenuTecInfoWindow window;
+    unsigned char unmodeled_19c[4];
+    MenuTecInfoDetail detail;
+    unsigned char unmodeled_1b0[0x350 - 0x1b0];
+    char message[0x80];
+} MenuTecInfoWork;
+
+typedef struct MenuTecExRibbon {
+    short position[2];             /* X, Y */
+    unsigned int drawOrder;
+    short size[2];                 /* width, height */
+    unsigned char unmodeled_0c[0x70 - 0x0c];
+} MenuTecExRibbon;
+
+typedef struct MenuTecExRow {
+    MenuTecExRibbon ribbon;
+    MenuTecLabel label;
+    MenuTecNumber number;
+} MenuTecExRow;
+
+typedef struct MenuTecStatusHeader {
+    unsigned char state;
+    unsigned char mode;
+    unsigned char unmodeled_02[2];
+    unsigned char verticalFirst;
+    unsigned char compact;
+    unsigned char transition;
+    signed char previousCursor;
+    int color;
+} MenuTecStatusHeader;
+
+typedef struct MenuTecStatusRecord {
+    signed char characterNo;
+    unsigned char unmodeled_01;
+    unsigned char unmodeled_02[2];
+    short offsetX;
+    short offsetY;
+    unsigned char unmodeled_08[0x834 - 8];
+} MenuTecStatusRecord;
+
+typedef struct MenuTecStatusWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    const char *title;
+    unsigned char state;
+    unsigned char ribbonInitialized;
+    unsigned char unmodeled_12[2];
+    void (*display)(struct MenuStatusPanelWindow *, struct MenuStatusPanel *);
+    MenuTecStatusRecord *displayData;
+    unsigned char unmodeled_1c[0x188 - 0x1c];
+} MenuTecStatusWindow;
+
+typedef struct MenuTecStatusCursor {
+    signed char state;
+    unsigned char unmodeled_01[3];
+    short x;
+    short y;
+    int drawOrder;
+    unsigned char unmodeled_0c[4];
+} MenuTecStatusCursor;
+
+typedef struct MenuTecStatusWindowEntry {
+    MenuTecStatusHeader header;
+    MenuTecStatusWindow window;
+} MenuTecStatusWindowEntry;
+
+typedef struct MenuTecStatusRecordEntry {
+    MenuTecStatusHeader header;
+    MenuTecStatusRecord record;
+} MenuTecStatusRecordEntry;
+
+typedef struct MenuTecStatusCursorEntry {
+    MenuTecStatusHeader header;
+    MenuTecStatusCursor cursor;
+    unsigned char unmodeled_1c[0x24 - 0x1c];
+} MenuTecStatusCursorEntry;
+
+extern void MenuInfoWindow(void);
+void eMessageCpy(char *dst, const char *src);
+void eMessageCat(const char *src);
+char *MenuCharNameGet(int chrNo);
+int MenuSortGet(int listIndex, int index);
+char *MenuNumberTextGet(long long n, int a, int b);
+extern char D_004DB378[];
+extern char D_004C8A70[];
+extern char D_004C8AA0[];
+extern char D_004C8B98[];
+extern char D_004C8BD8[];
+extern char D_004C8BF0[];
+extern char D_004C8D90[];
+extern char D_004DB410[];
+extern char D_004DB418[];
+extern char D_004DB420[];
+typedef struct { unsigned char b[8]; } MenuTecInfoBlk8;
+typedef struct { MenuTecInfoBlk8 lo; int hi; } MenuTecInfoBlk12;
+typedef struct { MenuTecInfoBlk8 lo; MenuTecInfoBlk8 mid; int hi; } MenuTecInfoBlk20;
+typedef struct { MenuTecInfoBlk8 lo; MenuTecInfoBlk8 mid; MenuTecInfoBlk8 hi8; } MenuTecInfoBlk24;
+typedef struct { MenuTecInfoBlk8 c0; MenuTecInfoBlk8 c1; MenuTecInfoBlk8 c2; MenuTecInfoBlk8 c3; MenuTecInfoBlk8 c4; int hi; } MenuTecInfoBlk44;
+struct MenuTecInfoTab {
+    char *a0[2];
+    char *pad08[2];
+    char *b10[3];
+    int gap1c;
+    char *c20[5];
+    int gap34[3];
+    char *d40[6];
+    int gap58[2];
+    const char *e60[5];
+    int gap74[3];
+    char *f80[11];
+    int gapac;
+    char *g0b0[2];
+    int gapb8[2];
+    const char *h0c0[3];
+};
+union _gfv_PadData { struct { char _p[52]; unsigned short v; } o_34; };
+
+void MenuTecInfoMain(void)
+{
+    MenuTecInfoWorkMT **workSlot = &MenuTecInfo;
+    char *a0[2] = {
+        "Choose a character.",
+        " cannot be chosen."
+    };
+    char *b10[3] = {
+        "Set Tech Attack. \nNote: Attacks must be set to use.",
+        "Use T.Pts to improve Tech Attacks.",
+        "Cancel."
+    };
+    char *c20[5] = {
+        "TECH",
+        "SPEED",
+        "WAIT",
+        "XX's level",
+        "is now XX.\037"
+    };
+    char *d40[6] = {
+        "Level can be increased.",
+        "\n(Increases attack power)",
+        "\n(Enables Tech Attack to be set in HI Slot)",
+        "\n(Recover faster after using Tech Attack)",
+        "You do not have enough T.Pts.",
+        " cannot be improved any further."
+    };
+    const char *e60[5] = {
+        "XX",
+        " will be changed to ",
+        "HI",
+        "LW",
+        " is now "
+    };
+    char *f80[11] = {
+        "\243\260",
+        "\243\261",
+        "\243\262",
+        "\243\263",
+        "\243\264",
+        "\243\265",
+        "\243\266",
+        "\243\267",
+        "\243\270",
+        "\243\271",
+        "\243\301"
+    };
+    char *g0b0[2] = {
+        "Set a HI SPEED Tech Attack in the HI Slot.",
+        "Set a LW or HI SPEED Tech Attack in the LW Slot."
+    };
+    const char *h0c0[3] = {
+        "Because this Tech Attack's SPEED is LW,\nit cannot be set in this slot.",
+        "Because this Tech Attack's SPEED is LW\nand it conflicts with the slot range,\nit cannot be set in this slot.",
+        "Because this Tech Attack conflicts with the slot range, it cannot be set here."
+    };
+    unsigned char *w = (unsigned char *)*workSlot;
+    void *var_22;
+    char *var_19;
+    short spD0;
+    int temp_5;
+    char **p10;
+    char **p20;
+    char **p80;
+
+
+    p10 = b10;
+    p20 = c20;
+    p80 = f80;
+    switch (w[0]) {
+    case 0:
+        var_22 = w + 8;
+        *(int *)(w + 0x4) = 0xFFFFF0;
+        var_19 = (char *)w + 0x350;
+        WindowDXSet(var_22);
+        *(short *)(w + 0x8) = -0x10;
+        *(int *)(w + 0xC) = *(int *)(w + 0x4);
+        *(short *)(w + 0xA) = 0x1E0;
+        *(short *)(w + 0x10) = 0x220;
+        *(short *)(w + 0x12) = 0x36;
+        *(void **)(w + 0x20) = w + 0x1A0;
+        *(void **)(w + 0x1C) = (void *)MenuInfoWindow;
+        *(int *)(w + 0x1AC) = 0;
+        w[0x18] = 1;
+        WindowDXMain(var_22);
+        w[0x18] = 3;
+        w[0x1] = 1;
+        w[0x2] = 0;
+        w[0x3] = 0;
+        memset(var_19, 0, 0x80);
+        w[0] = 2;
+        break;
+    case 2:
+        var_22 = w + 8;
+        var_19 = (char *)w + 0x350;
+        break;
+    default:
+        return;
+    }
+
+    {
+        int w2 = *(signed char *)(w + 0x2);
+        spD0 = 0x182;
+        if (w2 == 0) {
+            if (PadData.half_2a & 0x20) {
+                *(signed char *)(w + 0x2) = 1;
+            }
+        } else if (((union _gfv_PadData *)&PadData)->o_34.v != 0) {
+            *(signed char *)(w + 0x2) = 0;
+        }
+    }
+
+    switch (MenuWork.state) {
+    case 0x10:
+        eMessageCpy(var_19, a0[0]);
+        if (*(signed char *)(w + 0x2) != 0) {
+            if (MenuWork.characterHelp != 0) {
+                eMessageCpy(var_19, MenuCharNameGet(MenuWork.characterNo));
+                eMessageCat(a0[1]);
+            }
+        }
+        break;
+    case 0x20:
+        eMessageCpy(var_19, ((struct { __typeof__((p10)[0]) a[1]; } *)(p10))->a[MenuWork.listCursor]);
+        break;
+    case 0x30:
+        if (MenuWork.mode < 2) {
+            eMessageCpy(var_19, g0b0[0]);
+        } else {
+            eMessageCpy(var_19, g0b0[1]);
+        }
+        break;
+    case 0x32:
+        temp_5 = MenuWork.selectedTechnique;
+        if (temp_5 >= 0) {
+            if (w[3] == 0) {
+                eMessageCpy(var_19, ((char **)MenuTextGet(MenuSortGet(0, temp_5)))[1]);
+                if (MenuWork.mode < 2) {
+                    if (MenuWork.resetFlags & 8) {
+                        if (MenuWork.resetFlags & 4) {
+                            eMessageCpy(var_19, h0c0[1]);
+                        } else {
+                            eMessageCpy(var_19, h0c0[0]);
+                        }
+                        w[3] = 1;
+                    } else if (MenuWork.resetFlags & 4) {
+                        eMessageCpy(var_19, h0c0[2]);
+                        w[3] = 1;
+                    }
+                } else {
+                    if (MenuWork.resetFlags & 4) {
+                        eMessageCpy(var_19, h0c0[2]);
+                        w[3] = 1;
+                    }
+                }
+            } else {
+                if (((union _gfv_PadData *)&PadData)->o_34.v & 0xFFFD) {
+                    w[3] = 0;
+                }
+            }
+        }
+        break;
+    case 0x50:
+        temp_5 = MenuWork.selectedTechnique;
+        if (temp_5 >= 0) {
+            if (w[3] == 0) {
+                if (PadData.half_2a & 0x20) {
+                    if (MenuTecCharTLevUpCheck() != 0 || MenuTecCharSpeedUpCheck() != 0 || MenuTecCharWaitUpCheck() != 0) {
+                        eMessageCpy(var_19, ((char **)MenuTextGet(MenuSortGet(0, MenuWork.selectedTechnique)))[1]);
+                    } else if (MenuTecTLevLimitCheck(MenuWork.characterNo, MenuWork.point) == 0 && MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) == 0 && MenuTecWaitLimitCheck(MenuWork.characterNo, MenuWork.point) == 0) {
+                        eMessageCpy(var_19, ((char **)MenuTextGet(MenuSortGet(0, MenuWork.selectedTechnique)))[0]);
+                        eMessageCat(d40[5]);
+                        w[3] = 1;
+                    } else {
+                        eMessageCpy(var_19, d40[4]);
+                        w[3] = 1;
+                    }
+                } else {
+                    eMessageCpy(var_19, ((char **)MenuTextGet(MenuSortGet(0, temp_5)))[1]);
+                }
+            } else {
+                if (((union _gfv_PadData *)&PadData)->o_34.v & 0xFFFD) {
+                    w[3] = 0;
+                }
+            }
+        }
+        break;
+    case 0x52:
+        switch (MenuWork.rowCursor) {
+        case 0:
+            if (MenuTecTLevLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+                if (MenuTecCharTLevUpCheck() != 0) {
+                    eMessageCpy(var_19, d40[0]);
+                    eMessageCat(d40[1]);
+                } else {
+                    eMessageCpy(var_19, d40[4]);
+                }
+            } else {
+                eMessageCpy(var_19, c20[0]);
+                eMessageCat(d40[5]);
+            }
+            break;
+        case 1:
+            if (MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+                if (MenuTecCharSpeedUpCheck() != 0) {
+                    eMessageCpy(var_19, d40[0]);
+                    eMessageCat(d40[2]);
+                } else {
+                    eMessageCpy(var_19, d40[4]);
+                }
+            } else {
+                eMessageCpy(var_19, c20[1]);
+                eMessageCat(d40[5]);
+            }
+            break;
+        case 2:
+            if (MenuTecWaitLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+                if (MenuTecCharWaitUpCheck() != 0) {
+                    eMessageCpy(var_19, d40[0]);
+                    eMessageCat(d40[3]);
+                } else {
+                    eMessageCpy(var_19, d40[4]);
+                }
+            } else {
+                eMessageCpy(var_19, c20[2]);
+                eMessageCat(d40[5]);
+            }
+            break;
+        }
+        break;
+    case 0x54:
+    case 0x56:
+        if (MenuWork.resetFlags & 1) {
+            int t21 = 0; if (MenuWork.state == 0x54) t21 = 1;
+            eMessageCpy(var_19, ((struct { __typeof__((p20)[0]) a[1]; } *)(p20))->a[MenuWork.rowCursor]);
+            eMessageCat(e60[1]);
+            switch (MenuWork.rowCursor) {
+            case 0:
+                {
+                MenuTecSaveRecord *save = (MenuTecSaveRecord *)MenuTecSaveDataGet(MenuWork.characterNo);
+                eMessageCat(MenuNumberTextGet(save->level[MenuWork.point] + t21, -1, 0));
+            }
+                break;
+            case 1:
+                eMessageCat(e60[2]);
+                break;
+            case 2:
+                {
+                MenuTecSaveRecord *save = (MenuTecSaveRecord *)MenuTecSaveDataGet(MenuWork.characterNo);
+                char **q = &p80[save->wait[MenuWork.point] - t21];
+                eMessageCat(f80[10]);
+                eMessageCat(*q);
+            }
+                break;
+            }
+            if (MenuWork.state == 0x54) {
+                eMessageCat(D_004DB418);
+            } else {
+                eMessageCat(D_004DB420);
+            }
+        }
+        break;
+    default:
+        spD0 = 0x200;
+        break;
+    }
+
+    *(char **)(w + 0x1AC) = var_19;
+    MoveSlide((short *)(w + 0xA), &spD0, 3.0f);
+    WindowDXMain(var_22);
+}
+
+void MenuTecMenuMain(void)
+{
+    MenuTecMenuWork *work = MenuTecMenu;
+    short target[2];
+    int i;
+
+    switch (work->state) {
+    case 0: {
+        work->color = 0x00FFFFF0;
+        WindowDXSet(&work->window[0]);
+        work->window[0].x = 528;
+        work->window[0].y = 192;
+        work->window[0].color = work->color;
+        work->window[0].width = 193;
+        work->window[0].height = 78;
+        work->window[0].title = "Menu";
+        work->window[0].select = (void *)MenuSelectWindow;
+        work->window[0].selectArg = &work->list[0];
+        work->list[0].cursor = 0;
+        work->list[0].hasPrompt = 0;
+        work->list[0].items = msg00_1_0036DC78[0];
+        work->window[0].state = 1;
+        WindowDXMain(&work->window[0]);
+        work->window[0].state = 3;
+        WindowDXSet(&work->window[1]);
+        work->window[1].x = 528;
+        work->window[1].y = 240;
+        work->window[1].color = work->color;
+        work->window[1].width = 169;
+        work->window[1].height = 102;
+        work->window[1].title = "Select";
+        work->window[1].select = (void *)MenuSelectWindow;
+        work->window[1].selectArg = &work->list[1];
+        work->list[1].cursor = 0;
+        work->list[1].hasPrompt = 1;
+        work->list[1].items = msg01_2_0036DC80[0];
+        work->list[1].prompt = msg01_2_0036DC80[1];
+        work->window[1].state = 1;
+        WindowDXMain(&work->window[1]);
+        work->window[1].state = 3;
+        work->state = 2;
+    }
+        /* fallthrough */
+    case 2:
+        target[0] = target[1] = 528;
+        switch (MenuWork.state) {
+        case 0x20:
+            if (MenuWork.resetFlags & 1) {
+                work->window[0].x = 528;
+                work->list[0].cursor = 0;
+            }
+            target[0] = 288;
+            work->list[0].cursor = MenuWork.listCursor;
+            break;
+        case 0x54:
+            if (MenuWork.resetFlags & 1) {
+                work->window[1].x = 528;
+                work->list[1].cursor = 0;
+            }
+            target[1] = 288;
+            work->list[1].cursor = MenuWork.selectCursor;
+            break;
+        }
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&work->window[i].x, &target[i], 3.0f);
+            WindowDXMain(&work->window[i]);
+        }
+        break;
+    }
+}
+
+typedef struct MenuTecExWork {
+    unsigned char state;
+    unsigned char pad1[3];
+    int color;
+    short rx;
+    short ry;
+    int rcolor;
+    short rw;
+    short rh;
+    unsigned char pad14[0x78 - 0x14];
+    unsigned char tag[4];
+    short tx;
+    short ty;
+    int tcolor;
+    unsigned char pad84[0x98 - 0x84];
+    short nx;
+    short ny;
+    int ncolor;
+    unsigned char padA0[6];
+    unsigned char nA6;
+    unsigned char nA7;
+    unsigned char padA8[4];
+    int point;
+} MenuTecExWork;
+extern MenuTecExWork *MenuTecEx;
+extern char *msg00_3_0036DC88[];
+extern void eRibbonSet(void *ribbon, int type);
+extern void eRibbonMain(void *ribbon);
+
+void MenuTecExMain(void)
+{
+    MenuTecExWork *ex = MenuTecEx;
+    short target[8];
+    MenuTecExWork **new_var;
+
+    switch (ex->state) {
+    case 0: {
+        char **msgb;
+        short *el;
+        int *rib;
+        int *lab;
+        int four;
+        ex->color = 0xFFFFF0;
+        msgb = (char **)msg00_3_0036DC88;
+        el = (short *)((char *)ex + 0x90);
+        eRibbonSet(&ex->rx, 3);
+        rib = (int *)((char *)ex + 0x0C);
+        lab = (int *)((char *)ex + 0x80);
+        four = 4;
+        { int colv = (*(new_var = &ex))->color;
+        el[-0x88/2] = -0x100;
+        el[-0x86/2] = 0x30;
+        rib[0] = colv; }
+        el[-0x80/2] = 0x100;
+        el[-0x7e/2] = 0x18;
+        eTagFontSet(ex->tag, msgb[0]);
+        lab[0] = ex->color + 2;
+        eNumberSet(&ex->nx, 0);
+        rib[0x90/4] = ex->color + 2;
+        ((unsigned char *)el)[0x17] = (unsigned char)four;
+        ((unsigned char *)el)[0x16] = 0;
+        rib[0xa0/4] = 0;
+        ex->state = 2;
+    }
+    case 2:
+        target[0] = -0x100;
+        switch (MenuWork.unmodeled_00[3]) {
+        case 0x20:
+        case 0x30:
+        case 0x32:
+        case 0x50:
+        case 0x52:
+        case 0x54:
+        case 0x56:
+            ex->point = func_A19210(MenuWork.characterNo)[3];
+            target[0] = 0;
+            break;
+        }
+        {
+        short *r = &ex->rx;
+        short *el = (short *)((char *)ex + 0x90);
+        MoveSlide(r, target, 3.0f);
+        eRibbonMain(r);
+        el[-0x14/2] = el[-0x88/2] + el[-0x80/2] - 0x44;
+        el[-0x12/2] = el[-0x86/2] + 4;
+        eTagFontMain(ex->tag);
+        el[8/2] = el[-0x88/2] + el[-0x80/2] - 0x3C;
+        el[0xa/2] = el[-0x86/2] + 4;
+        eNumberMain(&ex->nx);
+        }
+        break;
+    }
+}
+
+void MenuTecL1R1Main(void)
+{
+    MenuTecL1R1Work *self = MenuTecL1R1;
+    signed char *slideOffset;
+    int i;
+
+    switch (self->state) {
+    case 0: {
+        MenuTecL1R1SpriteIds spriteIds = { { 0x112, 0x110 } };
+
+        self->spriteWork = 0x00FFFFFF;
+        for (i = 0; i < 2; i++) {
+            eSpriteSet(&self->sprite[i], spriteIds.id[i]);
+            self->sprite[i].work = self->spriteWork;
+            self->sprite[i].y = 140;
+        }
+        self->sprite[0].x = -45;
+        self->sprite[1].x = 528;
+        slideOffset = self->slideOffset;
+        self->slideOffset[1] = 0;
+        self->slideOffset[0] = 0;
+        i = 2;
+        self->state = i;
+        break;
+    }
+    case 2:
+        slideOffset = self->slideOffset;
+        break;
+    default:
+        return;
+    }
+
+    {
+        short target[2];
+
+        target[0] = -45;
+        target[1] = 528;
+        if (MenuWork.state == 0x20) {
+            target[0] = 8;
+            target[1] = 475;
+            if (PadData.half_2a & PAD_L1) {
+                self->slideOffset[0] = -6;
+            } else if (PadData.half_2a & PAD_R1) {
+                self->slideOffset[1] = 6;
+            }
+        }
+
+        {
+            MenuTecL1R1SlideStep step = { { 1, -1 } };
+
+            for (i = 0; i < 2; i++) {
+                if (self->slideOffset[i] != 0) {
+                    self->slideOffset[i] = self->slideOffset[i] + step.side[i];
+                }
+            }
+        }
+
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&self->sprite[i].x, &target[i], 3.0f);
+            self->sprite[i].x = self->sprite[i].x + slideOffset[i];
+            eSpriteMain(&self->sprite[i]);
+        }
+    }
+}
+
+typedef struct MenuTecStatHeader {
+    unsigned char state;
+    unsigned char cursorOn;
+    unsigned char unmodeled_02[0x04 - 0x02];
+    unsigned char moveVert;
+    unsigned char flags;
+    unsigned char subState;
+    signed char lastCursor;
+    int color;
+} MenuTecStatHeader;
+typedef struct MenuTecStatRecord {
+    unsigned char chrNo;
+    unsigned char fullStatus;
+    unsigned char unmodeled_02[0x04 - 0x02];
+    short offsetX;
+    short offsetY;
+    unsigned char unmodeled_08[0x834 - 0x08];
+} MenuTecStatRecord;
+typedef struct MenuTecStatWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    char *title;
+    signed char state;
+    unsigned char visible;
+    unsigned char unmodeled_12[0x14 - 0x12];
+    void (*disp)(MenuTecStatRecord *record);
+    MenuTecStatRecord *dispWork;
+    unsigned char unmodeled_1c[0x188 - 0x1C];
+} MenuTecStatWindow;
+typedef struct MenuTecStatCursor {
+    signed char state;
+    unsigned char unmodeled_01[0x04 - 0x01];
+    short x;
+    short y;
+    int work;
+    unsigned char unmodeled_0c[0x10 - 0x0C];
+} MenuTecStatCursor;
+typedef struct MenuTecStatWindowEntry {
+    MenuTecStatHeader header;
+    MenuTecStatWindow window;
+} MenuTecStatWindowEntry;
+typedef struct MenuTecStatRecordEntry {
+    MenuTecStatHeader header;
+    MenuTecStatRecord work;
+} MenuTecStatRecordEntry;
+typedef struct MenuTecStatCursorEntry {
+    MenuTecStatHeader header;
+    MenuTecStatCursor cursor;
+    unsigned char unmodeled_1c[0x24 - 0x1C];
+} MenuTecStatCursorEntry;
+typedef struct MenuTecStatusWork {
+    MenuTecStatWindowEntry window[8];
+    MenuTecStatRecordEntry disp[8];
+    MenuTecStatCursorEntry cursor[2];
+    MenuTecStatHeader endHeader;
+} MenuTecStatusWork;
+typedef struct MenuTecMwView {
+    unsigned char unmodeled_00[3];
+    unsigned char state;
+    unsigned char unmodeled_04[0x1C];
+    unsigned char flags;
+    unsigned char unmodeled_21[0x41 - 0x21];
+    signed char partyCount;
+    signed char partyCursor;
+} MenuTecMwView;
+extern MenuTecMwView MenuTecMw __asm__("MenuWork");
+extern short MenuTecParty[];
+extern MenuTecStatusWork *MenuTecStatus;
+extern void MenuStatusDisp(MenuTecStatRecord *record);
+char *MenuTagTextGet(int kind);
+
+void MenuTecStatusMain(void)
+{
+    MenuTecStatusWork *status = MenuTecStatus;
+    short targetX[8];
+    short targetY[8];
+    short targetWidth[8];
+    short targetHeight[8];
+    short targetOffset[8];
+    int i;
+
+    switch (status->window[0].header.state) {
+    case 0:
+        status->window[0].header.color = 0x00FFF000;
+        for (i = 0; i < MenuTecMw.partyCount; i++) {
+            short chrNo = MenuTecParty[i];
+
+            WindowDXSet(&status->window[i].window);
+            status->window[i].window.x = (i & 1) * 816 - 272;
+            status->window[i].window.y = (i / 2) * 104 + 64;
+            status->window[i].window.color = status->window[0].header.color;
+            status->window[i].window.width = 240;
+            status->window[i].window.height = 82;
+            status->window[i].window.visible = 1;
+            if (PartyAttackerCheck(chrNo) != 0) {
+                status->window[i].window.title = MenuTagTextGet(1);
+            } else {
+                status->window[i].window.title = MenuTagTextGet(2);
+            }
+            status->window[i].window.disp = MenuStatusDisp;
+            status->window[i].window.dispWork = &status->disp[i].work;
+            status->disp[i].work.offsetX = 0;
+            status->disp[i].work.chrNo = chrNo;
+            status->disp[i].work.fullStatus = 0;
+            status->disp[i].work.offsetY = 0;
+            status->window[i].window.state = 1;
+            WindowDXMain(&status->window[i].window);
+            status->window[i].window.state = 3;
+        }
+        for (i = 0; i < 1; i++) {
+            eCursolSet(&status->cursor[i].cursor, 0);
+            status->cursor[i].cursor.state = 0;
+            status->cursor[i].cursor.work = 0x00FFFFFF;
+        }
+        status->window[0].header.cursorOn = 0;
+        status->window[0].header.flags = 0;
+        status->window[0].header.subState = 0;
+        status->window[0].header.moveVert = 0;
+        status->window[0].header.lastCursor = MenuTecMw.partyCursor;
+        status->window[0].header.state = 2;
+        /* fall through */
+    case 2:
+        for (i = 0; i < MenuTecMw.partyCount; i++) {
+            targetX[i] = (i & 1) * 816 - 272;
+            targetY[i] = (i / 2) * 104 + 64;
+            targetWidth[i] = 240;
+            targetHeight[i] = 82;
+            targetOffset[i] = 0;
+        }
+        switch (MenuTecMw.state) {
+        case 0x10:
+            if (MenuTecMw.flags & 0x01) {
+                status->cursor[0].cursor.state = 32;
+                status->window[0].header.cursorOn = 1;
+                status->window[0].header.moveVert = 1;
+                if ((status->window[0].header.flags & 1) != 0) {
+                    if (i != MenuTecMw.partyCursor) {
+                        status->window[i].window.x = (i & 1) * 816 - 272;
+                        status->window[i].window.y = 24;
+                    }
+                    status->window[0].header.flags &= 0xFE;
+                }
+            }
+            for (i = 0; i < MenuTecMw.partyCount; i++) {
+                targetX[i] = (i & 1) * 240 + 16;
+            }
+            break;
+        case 0x20:
+        case 0x30:
+        case 0x32:
+        case 0x50:
+        case 0x52:
+        case 0x54:
+        case 0x56:
+            if ((MenuTecMw.flags & 0x01) && MenuTecMw.state == 0x20) {
+                status->cursor[0].cursor.state = 0;
+                status->window[0].header.lastCursor = MenuTecMw.partyCursor;
+            }
+            if (status->window[0].header.lastCursor != MenuTecMw.partyCursor) {
+                status->window[MenuTecMw.partyCursor].window.x = 264;
+                status->window[MenuTecMw.partyCursor].window.y = 32;
+                status->window[0].header.lastCursor = MenuTecMw.partyCursor;
+            }
+            if ((status->window[0].header.flags & 1) != 0) {
+                for (i = 0; i < MenuTecMw.partyCount; i++) {
+                    if (i == MenuTecMw.partyCursor) {
+                        targetX[i] = 264;
+                        targetY[i] = 32;
+                    } else {
+                        targetX[i] = (i & 1) * 816 - 272;
+                        status->window[i].window.x = targetX[i];
+                    }
+                }
+            } else {
+                for (i = 0; i < MenuTecMw.partyCount; i++) {
+                    if (i == MenuTecMw.partyCursor) {
+                        targetX[i] = 264;
+                        targetY[i] = 32;
+                    }
+                }
+                if (targetY[MenuTecMw.partyCursor] == status->window[MenuTecMw.partyCursor].window.y) {
+                    status->window[0].header.flags |= 1;
+                }
+            }
+            status->window[0].header.cursorOn = 0;
+            status->window[0].header.moveVert = 0;
+            break;
+        }
+        for (i = 0; i < MenuTecMw.partyCount; i++) {
+            if (status->window[0].header.moveVert == 0) {
+                MoveSlide(&status->window[i].window.width, &targetWidth[i], 3.0f);
+                MoveSlide(&status->window[i].window.height, &targetHeight[i], 3.0f);
+                MoveSlide(&status->disp[i].work.offsetX, &targetOffset[i], 3.0f);
+                MoveSlide(&status->window[i].window.x, &targetX[i], 3.0f);
+                if (status->window[i].window.x == targetX[i]) {
+                    MoveSlide(&status->window[i].window.y, &targetY[i], 3.0f);
+                }
+            } else {
+                MoveSlide(&status->window[i].window.y, &targetY[i], 3.0f);
+                if (status->window[i].window.y == targetY[i]) {
+                    MoveSlide(&status->window[i].window.width, &targetWidth[i], 3.0f);
+                    MoveSlide(&status->disp[i].work.offsetX, &targetOffset[i], 3.0f);
+                    MoveSlide(&status->window[i].window.x, &targetX[i], 3.0f);
+                }
+            }
+            if (i == MenuTecMw.partyCursor) {
+                status->window[i].window.color = 0x7F00;
+            } else {
+                status->window[i].window.color = 0x7E00;
+            }
+            WindowDXMain(&status->window[i].window);
+        }
+        status->cursor[0].cursor.x = status->window[MenuTecMw.partyCursor].window.x + 3;
+        status->cursor[0].cursor.y = status->window[MenuTecMw.partyCursor].window.y
+                                     + status->window[MenuTecMw.partyCursor].window.height / 2 - 4;
+        status->cursor[0].cursor.work = 0x00FFFFFF;
+        eCursolMain(&status->cursor[0].cursor);
+        break;
+    }
+}
+
+extern unsigned char MenuKeepSelect[];
+extern char D_004C90F0[];
+extern char D_004DB458[];
+typedef struct MenuTecSPWindowView {
+    unsigned char state;                /* +0x00 */
+    unsigned char drawFlags;             /* +0x01 */
+    unsigned char unmodeled_02[2];
+    short x;                     /* +0x04 */
+    short y;                /* +0x06 */
+    int style;                          /* +0x08 */
+    short width;                        /* +0x0C */
+    short height;                       /* +0x0E */
+    const char *title;                /* +0x10 */
+    signed char columns;              /* +0x14 */
+    signed char rows;                 /* +0x15 */
+    unsigned char unmodeled_16[0x1C - 0x16];
+    MenuTecListRow *items;              /* +0x1C */
+    unsigned char unmodeled_20[0x26 - 0x20];
+    signed char mode;         /* +0x26 */
+    unsigned char unmodeled_27;
+} MenuTecSPWindowView;
+typedef struct MenuTecListWorkView {
+    unsigned char state;                /* +0x00 */
+    unsigned char unmodeled_01;
+    unsigned char valid;                /* +0x02 */
+    unsigned char side;                 /* +0x03 */
+    int color;                          /* +0x04 */
+    MenuTecSPWindowView window;             /* +0x08 */
+} MenuTecListWorkView;
+void WindowSPSet(MenuTecSPWindowView *window);
+void WindowSPMain(MenuTecSPWindowView *window);
+void WindowSPItemChange(MenuTecSPWindowView *window);
+void WindowSPSetSelect(MenuTecSPWindowView *window, unsigned char *selection);
+
+void MenuTecListMain(void)
+{
+    short target[1];
+    MenuTecListWorkView *work = (MenuTecListWorkView *)MenuTecList;
+    unsigned char state = work->state;
+
+    switch (state) {
+    case 0:
+        work->color = 0x00fffff8;
+        work->window.style = work->color;
+        work->window.x = 528;
+        work->window.y = 144;
+        work->window.drawFlags = 7;
+        work->window.rows = 8;
+        work->window.height = 198;
+        work->window.title = 0;
+        work->window.columns = 1;
+        work->window.items = 0;
+        WindowSPSet(&work->window);
+        work->state = 2;
+        work->valid = 1;
+        /* fallthrough */
+    case 2: {
+        if (!work->side)
+            target[0] = 528;
+        else
+            target[0] = -224;
+        switch (MenuWork.state) {
+        case 0x30:
+            if (MenuWork.resetFlags & 1) {
+                if (!work->valid) {
+                    MenuTecListWorkView *const *list = &work;
+                    MenuTecSPWindowView *window = &(*list)->window;
+
+                    work->window.width = 216;
+                    work->window.height = 126;
+                    work->window.rows = 5;
+                    work->window.drawFlags = 7;
+                    work->window.x = 528;
+                    work->window.title = D_004C90F0;
+                    work->window.columns = 1;
+                    work->window.items = MenuListGet(0);
+                    WindowSPItemChange(window);
+                    WindowSPSetSelect(window, MenuKeepSelect);
+                    work->window.mode = 1;
+                    window->state = 17;
+                    WindowSPMain(window);
+                    work->valid = 1;
+                }
+                work->side = 0;
+                work->window.drawFlags &= ~1;
+            }
+            target[0] = 288;
+            break;
+        case 0x32:
+            if (MenuWork.resetFlags & 1)
+                work->window.drawFlags |= 1;
+            target[0] = 288;
+            break;
+        case 0x50:
+            if (MenuWork.resetFlags & 1) {
+                if (!work->valid) {
+                    MenuTecListWorkView *const *list = &work;
+                    MenuTecSPWindowView *window = &(*list)->window;
+
+                    work->window.width = 200;
+                    work->window.height = 198;
+                    work->window.rows = 8;
+                    work->window.x = -224;
+                    work->window.drawFlags = 3;
+                    work->window.title = D_004DB458;
+                    work->window.columns = 1;
+                    work->window.items = MenuListGet(0);
+                    WindowSPItemChange(window);
+                    WindowSPSetSelect(window, &MenuKeepSelect[5]);
+                    work->window.mode = 1;
+                    window->state = 17;
+                    WindowSPMain(window);
+                    work->valid = 1;
+                }
+                work->side = 1;
+            }
+            /* fallthrough */
+        case 0x52:
+        case 0x54:
+        case 0x56:
+            target[0] = 32;
+            break;
+        default:
+            work->valid = 0;
+            break;
+        }
+        MoveSlide(&work->window.x, target, 3.0f);
+        WindowSPMain(&work->window);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+
+typedef struct MenuTecPasMessageL2 {
+    unsigned char unmodeled_00;
+    unsigned char mode;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int color;
+    unsigned char unmodeled_0c[0x18 - 0x0C];
+    const char *text;
+    unsigned char unmodeled_1c[0x44 - 0x1C];
+} MenuTecPasMessageL2;
+
+typedef struct MenuTecCharTechniqueL2 {
+    short levelAdjustment;
+    short waitAdjustment;
+    short useCount;
+    short targetCount;
+    unsigned char unmodeled_08[4];
+} MenuTecCharTechniqueL2;
+
+typedef struct MenuTecCharacterL2 {
+    unsigned char unmodeled_00[0x0c];
+    int points;
+    unsigned char unmodeled_10[0x3c];
+    MenuTecCharTechniqueL2 technique[8];
+} MenuTecCharacterL2;
+
+typedef struct MenuTecList2Row {
+    MenuTecWindowDX window;
+    MenuTecPasMessageL2 techniqueName[4];
+    MenuTecPasMessageL2 equipmentName[4];
+    MenuTecL1R1Sprite icon[8];
+    unsigned char unmodeled_4f4[0x6b4 - 0x4f4];
+    MenuTecL1R1Sprite marker[4];
+} MenuTecList2Row;
+
+typedef struct MenuTecList2Work {
+    unsigned char state;
+    unsigned char mode;
+    unsigned char unmodeled_02[2];
+    int color;
+    MenuTecList2Row row[2];
+    MenuTecWindowDX detailWindow;
+    MenuTecPasMessageL2 detailLabel[2];
+    MenuTecNumber detailNumber[2];
+    MenuTecCursor cursor;
+} MenuTecList2Work;
+
+typedef struct MenuTecList2SpriteIds {
+    short id[10];
+} MenuTecList2SpriteIds;
+
+typedef struct MenuTecList2MessageIds {
+    int id[6];
+} MenuTecList2MessageIds;
+
+extern const MenuTecList2MessageIds D_004C91D8;
+extern const MenuTecList2SpriteIds D_004C9210;
+
+extern const char D_004C91F0[];
+extern const char D_004C9200[];
+extern const char *msg00_4_0036DC90[];
+extern const char *msg01_5[];
+
+void MenuTecListMain2(void)
+{
+    extern MenuTecList2Work *MenuTecList2L2 __asm__("MenuTecList2");
+    int i;
+    int j;
+    MenuTecList2Work *work = MenuTecList2L2;
+
+    void subMenuTecListChange(void)
+    {
+        MenuTecEquipRecord *equipment = func_A191C0(MenuWork.characterNo);
+
+        if (MenuWork.characterNo == 7) {
+            for (i = 0; i < 2; i++) {
+                for (j = 0; j < i * 2 + 2; j++) {
+                    work->row[i].equipmentName[j].text = msg01_5[1];
+                }
+            }
+        } else {
+            MenuTecList2MessageIds messageIds = D_004C91D8;
+
+            for (i = 0; i < 2; i++) {
+                for (j = 0; j < i * 2 + 2; j++) {
+                    work->row[i].equipmentName[j].text =
+                        msg01_5[messageIds.id[j + i * 2]];
+                }
+            }
+        }
+        for (i = 0; i < 2; i++) {
+            for (j = 0; j < i * 2 + 2; j++) {
+                short techniqueId = equipment->techniqueId[j + i * 2];
+
+                if (techniqueId) {
+                    work->row[i].techniqueName[j].text =
+                        MenuTextGet(0x000a0000 + (unsigned short)techniqueId)->name;
+                } else {
+                    work->row[i].techniqueName[j].text = 0;
+                }
+            }
+        }
+    }
+
+    MenuTecList2SpriteIds spriteIds;
+    short targetX[8];
+    /* link probe */
+
+    short targetY[8];
+    short targetDetail;
+
+    switch (work->state) {
+    case 0:
+        work->color = 0x00fffff8;
+        for (i = 0; i < 2; i++) {
+            int positionY;
+            int rowHeight;
+
+            WindowDXSet(&work->row[i].window);
+            positionY = i * 68 + 192;
+            rowHeight = i * 48 + 54;
+            work->row[i].window.x = -272;
+            work->row[i].window.y = positionY;
+            work->row[i].window.color = work->color;
+            work->row[i].window.width = 285;
+            work->row[i].window.height = rowHeight;
+            if (i == 0)
+                work->row[i].window.title = D_004C91F0;
+            else
+                work->row[i].window.title = D_004C9200;
+            work->row[i].window.state = 1;
+            WindowDXMain(&work->row[i].window);
+            work->row[i].window.state = 3;
+            for (j = 0; j < 4; j++) {
+                eMessageSet(&work->row[i].techniqueName[j], 0);
+                work->row[i].techniqueName[j].mode = 0x20;
+                work->row[i].techniqueName[j].color = work->color + 2;
+                eMessageSet(&work->row[i].equipmentName[j], 0);
+                work->row[i].equipmentName[j].mode = 0x20;
+                work->row[i].equipmentName[j].color = work->color + 2;
+            }
+            {
+                spriteIds = D_004C9210;
+
+                for (j = 0; j < i * 6 + 2; j++) {
+                    eSpriteSet(&work->row[i].icon[j], spriteIds.id[j + i * 2]);
+                    work->row[i].icon[j].work = work->color + 2;
+                }
+            }
+            for (j = 0; j < 4; j++) {
+                eSpriteSet(&work->row[i].marker[j], 0x60b);
+                work->row[i].marker[j].work = work->color + 1;
+            }
+        }
+        WindowDXSet(&work->detailWindow);
+        {
+            MenuTecList2Work *detailWork = work;
+
+            detailWork->detailWindow.x = -272;
+            detailWork->detailWindow.y = 314;
+            detailWork->detailWindow.color = detailWork->color;
+            detailWork->detailWindow.width = 285;
+            detailWork->detailWindow.height = 54;
+            detailWork->detailWindow.state = 1;
+        }
+        WindowDXMain(&work->detailWindow);
+        work->detailWindow.state = 3;
+        for (i = 0; i < 2; i++) {
+            eMessageSet(&work->detailLabel[i], 0);
+            work->detailLabel[i].mode = 0x20;
+            work->detailLabel[i].color = work->color + 2;
+        }
+        for (i = 0; i < 2; i++) {
+            eNumberSet(&work->detailNumber[i], 0);
+            work->detailNumber[i].drawOrder = work->color + 2;
+            work->detailNumber[i].format = 0;
+            work->detailNumber[i].digits = 5;
+            work->detailNumber[i].value = 0;
+        }
+        eCursolSet(&work->cursor, 0);
+        work->cursor.mode = 0;
+        {
+            MenuTecList2Work *cursorWork = work;
+
+            cursorWork->mode = 0;
+            cursorWork->cursor.drawOrder = cursorWork->color + 2;
+        }
+        work->state = 2;
+        /* fallthrough */
+    case 2:
+        for (i = 0; i < 2; i++) {
+            targetX[i] = -304;
+            targetY[i] = i * 68 + 192;
+        }
+        targetDetail = -304;
+        switch (MenuWork.state) {
+        case 0x20:
+            targetX[1] = 0;
+            targetX[0] = 0;
+            work->cursor.mode = 0;
+            subMenuTecListChange();
+            break;
+        case 0x30:
+            if (MenuWork.resetFlags & 1)
+                eCursolModeChange(&work->cursor, 0x20);
+            /* fallthrough */
+        case 0x32: {
+            MenuTecCharacterL2 *character =
+                (MenuTecCharacterL2 *)func_A19210(MenuWork.characterNo);
+
+            if (MenuWork.point >= 0) {
+                work->detailNumber[0].value =
+                    character->technique[MenuWork.point].useCount;
+                work->detailNumber[1].value =
+                    character->technique[MenuWork.point].targetCount;
+            } else {
+                work->detailNumber[0].value = -1;
+                work->detailNumber[1].value = -1;
+            }
+            targetY[0] = 144;
+            targetY[1] = 212;
+            targetX[1] = 0;
+            targetX[0] = 0;
+            targetDetail = 0;
+            subMenuTecListChange();
+            break;
+        }
+        default:
+            work->cursor.mode = 0;
+            break;
+        }
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&work->row[i].window.x, &targetX[i], 3.0f);
+            MoveSlide(&work->row[i].window.y, &targetY[i], 3.0f);
+            WindowDXMain(&work->row[i].window);
+            if (i == 0) {
+                for (j = 0; j < 2; j++) {
+                    work->row[i].marker[j].x = work->row[i].window.x + 115;
+                    work->row[i].marker[j].y = work->row[i].window.y + j * 24 + 3;
+                    eSpriteMain(&work->row[i].marker[j]);
+                    work->row[i].equipmentName[j].x = work->row[i].window.x + 67;
+                    work->row[i].equipmentName[j].y = work->row[i].window.y + j * 24 + 3;
+                    eMessageMain(&work->row[i].equipmentName[j]);
+                    work->row[i].techniqueName[j].x = work->row[i].window.x + 123;
+                    work->row[i].techniqueName[j].y = work->row[i].window.y + j * 24 + 3;
+                    eMessageMain(&work->row[i].techniqueName[j]);
+                    work->row[i].icon[j].x = work->row[i].window.x + 19;
+                    work->row[i].icon[j].y = work->row[i].window.y + j * 24 + 3;
+                    eSpriteMain(&work->row[i].icon[j]);
+                }
+            } else {
+                for (j = 0; j < 4; j++) {
+                    work->row[i].marker[j].x = work->row[i].window.x + 115;
+                    work->row[i].marker[j].y = work->row[i].window.y + j * 24 + 3;
+                    eSpriteMain(&work->row[i].marker[j]);
+                    work->row[i].equipmentName[j].x = work->row[i].window.x + 67;
+                    work->row[i].equipmentName[j].y = work->row[i].window.y + j * 24 + 3;
+                    eMessageMain(&work->row[i].equipmentName[j]);
+                    work->row[i].techniqueName[j].x = work->row[i].window.x + 123;
+                    work->row[i].techniqueName[j].y = work->row[i].window.y + j * 24 + 3;
+                    eMessageMain(&work->row[i].techniqueName[j]);
+                }
+                for (j = 0; j < 8; j++) {
+                    work->row[i].icon[j].x = work->row[i].window.x + (j & 1) * 24 + 19;
+                    work->row[i].icon[j].y = work->row[i].window.y + j / 2 * 24 + 3;
+                    eSpriteMain(&work->row[i].icon[j]);
+                }
+            }
+        }
+        MoveSlide(&work->detailWindow.x, &targetDetail, 3.0f);
+        WindowDXMain(&work->detailWindow);
+        work->detailLabel[0].text = msg00_4_0036DC90[0];
+        work->detailLabel[0].x = work->detailWindow.x + 80;
+        if (MenuWork.tecBit == 0x61) {
+            work->detailLabel[1].x = work->detailWindow.x + 23;
+            work->detailLabel[1].text = msg00_4_0036DC90[2];
+        } else {
+            work->detailLabel[1].x = work->detailWindow.x + 36;
+            work->detailLabel[1].text = msg00_4_0036DC90[1];
+        }
+        for (j = 0; j < 2; j++) {
+            work->detailLabel[j].y = work->detailWindow.y + j * 24 + 3;
+            eMessageMain(&work->detailLabel[j]);
+        }
+        for (j = 0; j < 2; j++) {
+            work->detailNumber[j].x = work->detailWindow.x + 215;
+            work->detailNumber[j].y = work->detailWindow.y + j * 24 + 7;
+            eNumberMain(&work->detailNumber[j]);
+        }
+        work->cursor.x = work->row[0].window.x + 3;
+        if (MenuWork.mode < 2)
+            work->cursor.y = work->row[0].window.y + MenuWork.mode * 24 + 7;
+        else
+            work->cursor.y = work->row[1].window.y + MenuWork.mode * 24 - 41;
+        eCursolMain(&work->cursor);
+        break;
+    }
+}
+
+void MenuTecSetWinMain(void)
+{
+    MenuTecSetWinWork *work = MenuTecSetWin;
+    int i;
+    short slide;
+    int j;
+
+    /* Fills the three rows from the technique under the cursor. */
+    void subListChange(void)
+    {
+        work->row[0].number[0].value = MenuTecSaveDataGet(MenuWork.characterNo)->level[MenuWork.point];
+        work->row[1].number[0].format = 10;
+        if (MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+            work->row[1].number[0].value = (int)msg02_9[0];
+        } else {
+            work->row[1].number[0].value = (int)msg02_9[1];
+        }
+        work->row[2].number[0].format = 10;
+        work->row[2].number[0].value = (int)msg03_10[MenuTecSaveDataGet(MenuWork.characterNo)->wait[MenuWork.point]];
+        if (MenuTecTLevLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+            work->row[0].number[1].format = 0;
+            work->row[0].number[1].value = MenuTecNextTLevPointGet(MenuWork.characterNo, MenuWork.point);
+        } else {
+            work->row[0].number[1].format = 9;
+        }
+        if (MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+            work->row[1].number[1].format = 0;
+            work->row[1].number[1].value = MenuTecNextSpeedPointGet(MenuWork.characterNo, MenuWork.point);
+        } else {
+            work->row[1].number[1].format = 9;
+        }
+        if (MenuTecWaitLimitCheck(MenuWork.characterNo, MenuWork.point) != 0) {
+            work->row[2].number[1].format = 0;
+            work->row[2].number[1].value = MenuTecNextWaitPointGet(MenuWork.characterNo, MenuWork.point);
+        } else {
+            work->row[2].number[1].format = 9;
+        }
+        if (MenuTecTLevLimitCheck(MenuWork.characterNo, MenuWork.point) != 0 && MenuTecCharTLevUpCheck() != 0) {
+            work->row[0].label[1].text = msg01_8_0036DCB8[0];
+        } else {
+            work->row[0].label[1].text = 0;
+        }
+        if (MenuTecSpeedLimitCheck(MenuWork.characterNo, MenuWork.point) != 0 && MenuTecCharSpeedUpCheck() != 0) {
+            work->row[1].label[1].text = msg01_8_0036DCB8[0];
+        } else {
+            work->row[1].label[1].text = 0;
+        }
+        if (MenuTecWaitLimitCheck(MenuWork.characterNo, MenuWork.point) != 0 && MenuTecCharWaitUpCheck() != 0) {
+            work->row[2].label[1].text = msg01_8_0036DCB8[0];
+        } else {
+            work->row[2].label[1].text = 0;
+        }
+        for (i = 0; i < 3; i++) {
+            work->row[i].label[1].color[0] = 96;
+            work->row[i].label[1].color[2] = 96;
+            work->row[i].label[1].color[1] = -128;
+        }
+    }
+
+    switch (work->state) {
+    case 0:
+        work->color = 0x00FFFFF8;
+        WindowDXSet(&work->window);
+        work->window.x = 528;
+        work->window.y = 144;
+        work->window.color = work->color;
+        work->window.width = 240;
+        work->window.height = 64;
+        work->window.title = "Set\003,Lv\003\022T.Pts";
+        work->window.state = 1;
+        WindowDXMain(&work->window);
+        work->window.state = 3;
+        for (i = 0; i < 3; i++) {
+            eTagFontSet(&work->row[i].label[0], msg00_7[i]);
+            eTagFontSet(&work->row[i].label[1], 0);
+            eNumberSet(&work->row[i].number[0], 0);
+            eNumberSet(&work->row[i].number[1], 0);
+            work->row[i].number[0].digits = 2;
+            work->row[i].number[1].digits = 4;
+            for (j = 0; j < 2; j++) {
+                work->row[i].label[j].drawOrder = work->color + 2;
+                work->row[i].number[j].drawOrder = work->color + 2;
+                work->row[i].number[j].format = 0;
+                work->row[i].number[j].value = 0;
+            }
+        }
+        eTagFontSet(&work->footer, 0);
+        eCursolSet(&work->cursor, 0);
+        work->cursor.mode = 0;
+        work->cursor.drawOrder = work->color + 2;
+        work->flags = 0;
+        work->state = 2;
+        /* fallthrough */
+    case 2:
+        slide = 528;
+        switch (MenuWork.state) {
+        case 0x32:
+            if (MenuWork.resetFlags & 1) {
+                work->cursor.mode = 0;
+                work->window.y = 290;
+                work->window.width = 216;
+            }
+            subListChange();
+            slide = 288;
+            break;
+        case 0x50:
+        case 0x56:
+            if (MenuWork.resetFlags & 1) {
+                work->cursor.mode = 0;
+                work->window.y = 144;
+                work->window.width = 240;
+            }
+            subListChange();
+            slide = 264;
+            break;
+        case 0x52:
+        case 0x54:
+            if (MenuWork.resetFlags & 1) {
+                eCursolModeChange(&work->cursor, 32);
+                work->window.y = 144;
+            }
+            subListChange();
+            slide = 264;
+            break;
+        default:
+            work->cursor.mode = 0;
+            break;
+        }
+        MoveSlide(&work->window.x, &slide, 3.0f);
+        WindowDXMain(&work->window);
+        for (i = 0; i < 3; i++) {
+            work->row[i].label[0].x = work->window.x + 67;
+            work->row[i].label[0].y = work->window.y + i * 18 + 6;
+            eTagFontMain(&work->row[i].label[0]);
+            work->row[i].number[0].x = work->window.x + 75;
+            work->row[i].number[0].y = work->window.y + i * 18 + 6;
+            eNumberMain(&work->row[i].number[0]);
+            work->row[i].number[1].x = work->window.x + 105;
+            work->row[i].number[1].y = work->window.y + i * 18 + 6;
+            eNumberMain(&work->row[i].number[1]);
+            work->row[i].label[1].x = work->window.x + 157;
+            work->row[i].label[1].y = work->window.y + i * 18 + 6;
+            eTagFontMain(&work->row[i].label[1]);
+        }
+        work->cursor.x = work->window.x + 3;
+        work->cursor.y = work->window.y + MenuWork.rowCursor * 18 + 6;
+        eCursolMain(&work->cursor);
+        break;
+    }
+}
 
 void MenuTecSortSet00(void)
 {
-    int *addr = MenuSortAddrGet(0);
-    struct { short min; short max; } tbl[7] = {
-        { 0x2D, 0x34 }, { 0x35, 0x3B }, { 0x3C, 0x43 }, { 0x44, 0x4B },
-        { 0x4C, 0x52 }, { 0x53, 0x5A }, { 0x5B, 0x62 },
-    };
-    int i;
+    int *sortRow = MenuSortAddrGet(0);
+    struct {
+        short first;
+        short last;
+    } range[7];
+    int tecNo;
 
-    for (i = tbl[MenuWork.characterNo - 1].min; i <= tbl[MenuWork.characterNo - 1].max; i++) {
-        if (func_A197E8(MenuWork.characterNo, i) != 0) {
-            *addr++ = (i & 0xFFFF) + 0xA0000;
-        }
+    __builtin_memcpy(range, D_004C92E8, sizeof(range));
+    for (tecNo = range[MenuWork.characterNo - 1].first; tecNo <= range[MenuWork.characterNo - 1].last; tecNo++) {
+        if (func_A197E8(MenuWork.characterNo, tecNo) != 0)
+            *sortRow++ = 0xA0000 + (tecNo & 0xFFFF);
     }
-    *addr = 0;
+    *sortRow = 0;
 }
-
-/* dataUnitOrgGet (ov01/data_unit_org_get.c VA 0x00a191c0, still INCLUDE_ASM
- * there and not yet linkable by that name): returns the running character's
- * parameter record (the full record is src/main/menu_para_pt_rate_get.c's
- * CharParaData); MenuTecEquipCheck only reads the six equipped technique ids
- * at +0x82. Kept under the scaffold's undefined_funcs_auto.txt placeholder
- * name until that TU recovers it. */
-typedef struct MenuTecEquipRecord {
-    unsigned char unmodeled_00[0x82];
-    short techniqueId[6]; /* +0x82 */
-} MenuTecEquipRecord;
-MenuTecEquipRecord *func_A191C0(int chrNo);
 
 int MenuTecEquipCheck(int chrNo, int tecNo)
 {
@@ -295,22 +2206,10 @@ int MenuTecEquipCheck(int chrNo, int tecNo)
     return count;
 }
 
-/* dataTecGet (ov01/data_unit_org_get.c VA 0x00a1a378, still INCLUDE_ASM there
- * and not yet linkable by that name): returns a pointer to the technique's
- * metadata record, or a NULL pointer plus a diagnostic print for a
- * non-positive index. Kept under the scaffold's undefined_funcs_auto.txt
- * placeholder name until that TU recovers it. */
-unsigned char *func_A1A378(int tecBit);
-
-/* Returns whether either of the technique's two low target-metadata bits is
- * set (elf_names annotation). */
 int MenuTecTrgCheck(int tecBit)
 {
     return (func_A1A378(tecBit & 0xFFFF)[0] & 3) != 0;
 }
-
-int BitToTecNo(int bit);
-int MenuTecSaveDataGet(int chrNo);
 
 int MenuTecTypeCheck(int chrNo, int bit)
 {
@@ -318,71 +2217,506 @@ int MenuTecTypeCheck(int chrNo, int bit)
 
     chrNo = chrNo & 0xFFFF;
     tecNo = BitToTecNo(bit);
-    return ((unsigned char *)(MenuTecSaveDataGet(chrNo) + tecNo))[8] == 1;
+    return ((unsigned char *)MenuTecSaveDataGet(chrNo) + tecNo)[8] == 1;
 }
 
-typedef struct { int unk0; int unk4; char unk8; char pad[3]; } MenuTecRow;
-void *MenuListGet(int list);
-int *MenuSortAddrGet(int list);
-int MenuSortCheck(int list);
-void MenuListMake(int list, int mode);
+void MenuTecListMake00(void)
+{
+    short *techniqueIds;
+    int sortCount;
+    struct MenuTecListRow *rows;
 
-void MenuTecListMake00(void) {
-    MenuTecRow *row = MenuListGet(0);
-    int *addr = MenuSortAddrGet(0);
-    int n = MenuSortCheck(0);
-    int i;
+    rows = MenuListGet(0);
+    techniqueIds = MenuSortAddrGet(0);
+    sortCount = MenuSortCheck(0);
     MenuListMake(0, 0);
-    for (i = 0; i < n; i++) {
-        row[i].unk4 = MenuTecEquipCheck(MenuWork.characterNo, *(short *)&addr[i]);
-        row[i].unk8 = 0;
+    if (sortCount > 0) {
+        int remaining = sortCount;
+
+        do {
+            short techniqueId = *techniqueIds;
+            int equippedCount;
+
+            techniqueIds += 2;
+            remaining--;
+            equippedCount = MenuTecEquipCheck(MenuWork.characterNo, techniqueId);
+            rows->flag = 0;
+            rows->amount = equippedCount;
+            rows++;
+        } while (remaining != 0);
     }
 }
 
-extern unsigned char MenuTecTrgTbl00[];
-extern unsigned char MenuTecTrgTbl01[];
-
-void MenuTecListMake00_2(void) {
-    MenuTecRow *row = MenuListGet(0);
-    int *addr = MenuSortAddrGet(0);
-    int n = MenuSortCheck(0);
+void MenuTecListMake00_2(void)
+{
+    MenuTecListRow *rows = MenuListGet(0);
+    int *sortRow = MenuSortAddrGet(0);
+    int count = MenuSortCheck(0);
+    int lowMode = MenuWork.mode < 2;
     int i;
-    int mode = (signed char)MenuWork.unmodeled_00[0x31] < 2;
-    for (i = 0; i < n; i++) {
-        int type = MenuTecTypeCheck(MenuWork.characterNo, addr[i]);
-        if (mode == type || type == 1) {
-            unsigned char *tbl = (MenuWork.characterNo == 7) ? MenuTecTrgTbl01 : MenuTecTrgTbl00;
-            if (tbl[(signed char)MenuWork.unmodeled_00[0x31]] == MenuTecTrgCheck(addr[i])) {
-                row[i].unk8 = 0;
+
+    for (i = 0; i < count; i++) {
+        int learned = MenuTecTypeCheck(MenuWork.characterNo, sortRow[i]);
+
+        if (lowMode == learned || learned == 1) {
+            const unsigned char *table = MenuWork.characterNo == 7 ? MenuTecTrgTbl01 : MenuTecTrgTbl00;
+            unsigned char wanted = table[MenuWork.mode];
+
+            if (wanted == MenuTecTrgCheck(sortRow[i]))
+                rows[i].flag = 0;
+            else
+                rows[i].flag = 1;
+        } else {
+            rows[i].flag = 1;
+        }
+    }
+}
+
+void MenuTecListMake01(void)
+{
+    MenuTecListRow *rows = MenuListGet(0);
+    int *sortRow = MenuSortAddrGet(0);
+    int count = MenuSortCheck(0);
+    signed char savedBit = MenuWork.tecBit;
+    signed char savedPoint = MenuWork.point;
+    int i;
+
+    MenuListMake(0, 0);
+    for (i = 0; i < count; i++) {
+        rows[i].amount = MenuTecEquipCheck(MenuWork.characterNo, (short)sortRow[i]);
+        MenuWork.tecBit = sortRow[i];
+        MenuWork.point = BitToTecNo(MenuWork.tecBit);
+        if (MenuTecCharTLevUpCheck() != 0 || MenuTecCharWaitUpCheck() != 0)
+            rows[i].flag = 0;
+        else if (MenuTecCharSpeedUpCheck() != 0)
+            rows[i].flag = 0;
+        else
+            rows[i].flag = 1;
+    }
+    MenuWork.tecBit = savedBit;
+    MenuWork.point = savedPoint;
+}
+
+typedef struct MenuTecList2WorkMT {
+    unsigned char state;
+} MenuTecList2WorkMT;
+extern MenuTecList2WorkMT *MenuTecList2;
+extern unsigned char *MainMenuWorkEnd;
+extern char D_004C9308[];
+extern signed char D_004DB4E8[];
+extern char D_004DB4F0[];
+extern char D_004DB4F8[];
+extern char D_004DB500[];
+extern char D_004DB508[];
+extern char D_004DB510[];
+int PartyAttackerCheck(int characterNo);
+void MenuKeepSelectReset(void);
+int MenuMaryIdChange(int id);
+int PartyFriendLockCheck(int id, int flag);
+void xglSoundEffectNormalID(int sound_id, int variant);
+int MenuMainCharCheck(int charId);
+int MenuSelectMove(int selection, int count, int wrap);
+int MenuCursorKeepCheck(void);
+void WindowSPKeepSelectCheck(unsigned char *keep);
+short WindowSPSelect(void *window, int button_flags);
+void WindowSPKeepSelect(void *window, unsigned char *keep);
+int MenuSortGet(int listIndex, int index);
+void func_A16688(int chrNo, int slot, int technique);
+void ChangeTopLevel(int top_level);
+void MenuTecInfoMain(void);
+void MenuTecListMain2(void);
+void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+void MenuTec(void)
+{
+    unsigned char *heap;
+    int dataSize;
+    MenuTecPartySave *party;
+    int i;
+    int character;
+    int convertedCharacter;
+    int oldCursor;
+    int selected;
+    int validTarget;
+    int validType;
+    signed char nextMenu[3];
+    int canImprove[3];
+
+    if (MenuWork.state == 0) {
+        MenuTecPasWork *pas;
+        MenuTecInfoWorkMT *info;
+        MenuTecStatusWork *status;
+        MenuTecMenuWork *menu;
+        MenuTecListWork *list;
+        MenuTecList2WorkMT *list2;
+        MenuTecSetWinWork *setWin;
+        MenuTecExWork *extra;
+        MenuTecL1R1Work *shoulder;
+        heap = MainMenuWorkEnd;
+        MenuTecDataBuf = (void *)heap;
+        dataSize = xglCdReadFile(D_004C9308, heap, 0, 1);
+        heap = (unsigned char *)MenuTecDataBuf + dataSize;
+        pas = (void *)heap;
+        MenuTecPas = pas;
+        heap += 0x3b0;
+        pas->state = 0;
+        info = (void *)heap;
+        MenuTecInfo = info;
+        heap += 0x3d0;
+        info->state = 0;
+        status = (void *)heap;
+        MenuTecStatus = status;
+        heap += 0x4ef4;
+        status->window[0].header.state = 0;
+        menu = (void *)heap;
+        MenuTecMenu = menu;
+        heap += 0xf20;
+        menu->state = 0;
+        list = (void *)heap;
+        MenuTecList = list;
+        heap += 0x1740;
+        list->state = 0;
+        list2 = (void *)heap;
+        MenuTecList2 = list2;
+        heap += 0x1210;
+        list2->state = 0;
+        setWin = (void *)heap;
+        MenuTecSetWin = setWin;
+        heap += 0x640;
+        setWin->state = 0;
+        extra = (void *)heap;
+        MenuTecEx = extra;
+        heap += 0x248;
+        extra->state = 0;
+        shoulder = (void *)heap;
+        MenuTecL1R1 = shoulder;
+        shoulder->state = 0;
+        MenuWork.nextState = 0x10;
+        MenuWork.inputDelay = 12;
+        MenuWork.resetFlags = 0;
+        MenuWork.rosterCursor = 0;
+        MenuWork.rosterCount = 0;
+        MenuKeepSelectReset();
+        party = (MenuTecPartySave *)PartyDataGet();
+        for (i = 0; i < 3; i++) {
+            character = party->attackSlots[i].character;
+            if (character != 0) {
+                convertedCharacter = MenuMaryIdChange(character);
+                MenuTecParty[MenuWork.rosterCount] = convertedCharacter;
+                MenuWork.rosterCount++;
+            }
+        }
+        for (character = 1; character < 8; character++) {
+            if (PartyFriendLockCheck(character, 1) && !PartyAttackerCheck(character)) {
+                convertedCharacter = MenuMaryIdChange(character);
+                MenuTecParty[MenuWork.rosterCount] = convertedCharacter;
+                MenuWork.rosterCount++;
+            }
+        }
+    }
+    if (MenuWork.state != MenuWork.nextState) {
+        MenuWork.state = MenuWork.nextState;
+        MenuWork.resetFlags |= 1;
+    } else {
+        MenuWork.resetFlags &= 0xfe;
+    }
+    if (MenuWork.inputDelay != 0)
+        MenuWork.inputDelay--;
+    switch (MenuWork.state) {
+    case 0x10:
+        if (MenuWork.resetFlags & 1) {
+            MenuWork.listCursor = 0;
+            MenuWork.characterNo = MenuTecParty[MenuWork.rosterCursor];
+        }
+        if (MenuWork.inputDelay != 0)
+            break;
+        if (PadData.mappedRepeat & 0xf000) {
+            if (MenuWork.rosterCount == 1)
+                break;
+            switch (PadData.mappedRepeat) {
+            case 0x1000: MenuWork.rosterCursor -= 2; break;
+            case 0x4000: MenuWork.rosterCursor += 2; break;
+            case 0x8000: MenuWork.rosterCursor--; break;
+            case 0x2000: MenuWork.rosterCursor++; break;
+            }
+            if (MenuWork.rosterCursor < 0)
+                MenuWork.rosterCursor += MenuWork.rosterCount;
+            if (MenuWork.rosterCursor >= MenuWork.rosterCount)
+                MenuWork.rosterCursor -= MenuWork.rosterCount;
+            MenuWork.characterNo = MenuTecParty[MenuWork.rosterCursor];
+            xglSoundEffectNormalID(3, 0);
+        } else if (PadData.half_2a == 0x20) {
+            if (MenuMainCharCheck(MenuWork.characterNo)) {
+                MenuWork.nextState = 0x20;
+                MenuWork.inputDelay = 24;
+                xglSoundEffectNormalID(1, 0);
+                MenuWork.characterHelp = 0;
             } else {
-                row[i].unk8 = 1;
+                xglSoundEffectNormalID(5, 0);
+                MenuWork.characterHelp = 1;
+            }
+        } else if (PadData.half_2a == 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            MenuWork.nextState = 0xf0;
+        }
+        break;
+    case 0x20:
+        if (MenuWork.inputDelay != 0)
+            break;
+        if (PadData.half_2a == 4) {
+            for (i = 0; i < MenuWork.rosterCount; i++) {
+                if (MenuWork.rosterCursor == 0)
+                    MenuWork.rosterCursor = MenuWork.rosterCount - 1;
+                else
+                    MenuWork.rosterCursor--;
+                MenuWork.characterNo = MenuTecParty[MenuWork.rosterCursor];
+                if (MenuMainCharCheck(MenuWork.characterNo))
+                    break;
+            }
+            xglSoundEffectNormalID(3, 0);
+            MenuKeepSelectReset();
+        }
+        if (PadData.half_2a == 8) {
+            for (i = 0; i < MenuWork.rosterCount; i++) {
+                if (MenuWork.rosterCursor == MenuWork.rosterCount - 1)
+                    MenuWork.rosterCursor = 0;
+                else
+                    MenuWork.rosterCursor++;
+                MenuWork.characterNo = MenuTecParty[MenuWork.rosterCursor];
+                if (MenuMainCharCheck(MenuWork.characterNo))
+                    break;
+            }
+            xglSoundEffectNormalID(3, 0);
+            MenuKeepSelectReset();
+        }
+        oldCursor = MenuWork.listCursor;
+        MenuWork.listCursor = MenuSelectMove(MenuWork.listCursor, 3, 0);
+        if (MenuWork.listCursor == oldCursor) {
+            if (PadData.half_2a == 0x20) {
+                __builtin_memcpy(nextMenu, D_004DB4E8, sizeof(nextMenu));
+                MenuWork.inputDelay = 8;
+                MenuWork.nextState = nextMenu[MenuWork.listCursor];
+                if (!MenuCursorKeepCheck()) {
+                    MenuWork.mode = 0;
+                    MenuWork.rowCursor = 0;
+                }
+                if (MenuWork.listCursor == 2) {
+                    MenuKeepSelectReset();
+                    xglSoundEffectNormalID(2, 0);
+                } else {
+                    xglSoundEffectNormalID(1, 0);
+                }
+            }
+            if (PadData.half_2a == 0x40) {
+                MenuWork.nextState = 0x10;
+                MenuWork.inputDelay = 12;
+                xglSoundEffectNormalID(2, 0);
+                MenuKeepSelectReset();
+            }
+        }
+        break;
+    case 0x30:
+        if (MenuWork.resetFlags & 1) {
+            MenuTecSortSet00();
+            MenuTecListMake00();
+        }
+        if (MenuWork.inputDelay == 0) {
+            MenuWork.mode = MenuSelectMove(MenuWork.mode, 6, 0);
+            if (PadData.half_2a == 0x20) {
+                if (MenuSortCheck(0)) {
+                    MenuWork.nextState = 0x32;
+                    xglSoundEffectNormalID(1, 0);
+                } else {
+                    xglSoundEffectNormalID(5, 0);
+                }
+            }
+            if (PadData.half_2a == 0x40) {
+                if (!MenuCursorKeepCheck())
+                    MenuWork.listCursor = 0;
+                WindowSPKeepSelectCheck(MenuKeepSelect);
+                xglSoundEffectNormalID(2, 0);
+                MenuWork.inputDelay = 8;
+                MenuWork.nextState = 0x20;
+            }
+        }
+        MenuWork.tecBit = func_A191C0(MenuWork.characterNo)->techniqueId[MenuWork.mode];
+        MenuWork.point = BitToTecNo(MenuWork.tecBit);
+        break;
+    case 0x32:
+        if (MenuWork.resetFlags & 1)
+            MenuTecListMake00_2();
+        if (MenuWork.inputDelay == 0) {
+            MenuWork.selectedTechnique = WindowSPSelect(&MenuTecList->window, PadData.mappedRepeat);
+            WindowSPKeepSelect(&MenuTecList->window, MenuKeepSelect);
+            if (MenuWork.selectedTechnique >= 0) {
+                MenuWork.tecBit = MenuSortGet(0, MenuWork.selectedTechnique);
+                MenuWork.point = BitToTecNo(MenuWork.tecBit);
+                MenuWork.resetFlags &= 0xf3;
+                if (PadData.half_2a == 0x20) {
+                    validTarget = MenuTecTrgCheck(MenuWork.tecBit);
+                    if (MenuWork.characterNo == 7)
+                        selected = MenuTecTrgTbl01[MenuWork.mode];
+                    else
+                        selected = MenuTecTrgTbl00[MenuWork.mode];
+                    if (validTarget == selected)
+                        MenuWork.resetFlags &= 0xfb;
+                    else
+                        MenuWork.resetFlags |= 4;
+                    validType = MenuTecTypeCheck(MenuWork.characterNo, MenuWork.tecBit);
+                    if (validType == (MenuWork.mode < 2))
+                        MenuWork.resetFlags &= 0xf7;
+                    else
+                        MenuWork.resetFlags |= 8;
+                    if ((MenuWork.resetFlags & 4) == 0) {
+                        if (validType == 1 || (MenuWork.resetFlags & 8) == 0) {
+                            MenuTecEquipRecord *equip = func_A191C0(MenuWork.characterNo);
+                            int slot = MenuWork.mode;
+                            int technique = MenuWork.tecBit;
+                            selected = equip->techniqueId[slot];
+                            if (selected == technique) {
+                                xglSoundEffectNormalID(12, 0);
+                            } else {
+                                func_A16688(MenuWork.characterNo, slot, technique);
+                                xglSoundEffectNormalID(12, 0);
+                            }
+                            MenuTecListMake00();
+                            MenuTecListMake00_2();
+                        } else {
+                            xglSoundEffectNormalID(5, 0);
+                        }
+                    } else {
+                        xglSoundEffectNormalID(5, 0);
+                    }
+                }
+            }
+            if (PadData.half_2a == 0x40) {
+                xglSoundEffectNormalID(2, 0);
+                MenuWork.nextState = 0x30;
+            }
+        }
+        break;
+    case 0x50:
+        if (MenuWork.resetFlags & 1) {
+            MenuTecSortSet00();
+            MenuTecListMake01();
+        }
+        if (MenuWork.inputDelay == 0) {
+            MenuWork.selectedTechnique = WindowSPSelect(&MenuTecList->window, PadData.mappedRepeat);
+            WindowSPKeepSelect(&MenuTecList->window, &MenuKeepSelect[5]);
+            if (MenuWork.selectedTechnique >= 0) {
+                MenuWork.tecBit = MenuSortGet(0, MenuWork.selectedTechnique);
+                MenuWork.point = BitToTecNo(MenuWork.tecBit);
+                if (PadData.mappedPressed == 0x20) {
+                    if (MenuTecCharTLevUpCheck() || MenuTecCharSpeedUpCheck() || MenuTecCharWaitUpCheck()) {
+                        MenuWork.nextState = 0x52;
+                        xglSoundEffectNormalID(1, 0);
+                    } else {
+                        xglSoundEffectNormalID(5, 0);
+                    }
+                }
+            }
+            if (PadData.half_2a == 0x40) {
+                if (!MenuCursorKeepCheck())
+                    MenuWork.listCursor = 0;
+                WindowSPKeepSelectCheck(&MenuKeepSelect[5]);
+                xglSoundEffectNormalID(2, 0);
+                MenuWork.nextState = 0x20;
+                MenuWork.inputDelay = 8;
             }
         } else {
-            row[i].unk8 = 1;
+            MenuWork.selectedTechnique = WindowSPSelect(&MenuTecList->window, 0);
+            MenuWork.tecBit = MenuSortGet(0, MenuWork.selectedTechnique);
+            MenuWork.point = BitToTecNo(MenuWork.tecBit);
         }
+        break;
+    case 0x52:
+        if ((MenuWork.resetFlags & 1) && !MenuCursorKeepCheck())
+            MenuWork.rowCursor = 0;
+        if (MenuWork.inputDelay == 0) {
+            canImprove[0] = MenuTecCharTLevUpCheck();
+            canImprove[1] = MenuTecCharSpeedUpCheck();
+            canImprove[2] = MenuTecCharWaitUpCheck();
+            MenuWork.rowCursor = MenuSelectMove(MenuWork.rowCursor, 3, 0);
+            if (PadData.half_2a == 0x20) {
+                if (canImprove[0] + canImprove[1] + canImprove[2] != 0) {
+                    if (canImprove[MenuWork.rowCursor] != 0) {
+                        MenuWork.nextState = 0x54;
+                        MenuWork.inputDelay = 8;
+                        xglSoundEffectNormalID(1, 0);
+                    } else {
+                        xglSoundEffectNormalID(5, 0);
+                    }
+                } else {
+                    xglSoundEffectNormalID(5, 0);
+                }
+            }
+            if (PadData.half_2a == 0x40) {
+                xglSoundEffectNormalID(2, 0);
+                MenuWork.nextState = 0x50;
+            }
+        }
+        break;
+    case 0x54:
+        if (MenuWork.resetFlags & 1)
+            MenuWork.selectCursor = 0;
+        if (MenuWork.inputDelay == 0) {
+            MenuWork.selectCursor = MenuSelectMove(MenuWork.selectCursor, 2, 0);
+            if (PadData.half_2a == 0x20) {
+                if (MenuWork.selectCursor == 0) {
+                    switch (MenuWork.rowCursor) {
+                    case 0: MenuTecTLevUp(MenuWork.characterNo, MenuWork.point); break;
+                    case 1: MenuTecSpeedUp(MenuWork.characterNo, MenuWork.point); break;
+                    case 2: MenuTecWaitUp(MenuWork.characterNo, MenuWork.point); break;
+                    }
+                    xglSoundEffectNormalID(1, 0);
+                    MenuWork.nextState = 0x56;
+                } else {
+                    MenuWork.nextState = 0x52;
+                    xglSoundEffectNormalID(2, 0);
+                }
+                MenuTecListMake01();
+            }
+            if (PadData.half_2a == 0x40) {
+                xglSoundEffectNormalID(2, 0);
+                MenuWork.nextState = 0x52;
+            }
+        }
+        break;
+    case 0x56:
+        if (MenuWork.inputDelay == 0 && (PadData.half_2a & 0x20))
+            MenuWork.nextState = 0x52;
+        break;
+    case 0xf0:
+        if (MenuWork.resetFlags & 1)
+            MenuWork.inputDelay = 16;
+        if (MenuWork.inputDelay == 0)
+            MenuWork.nextState = 0xff;
+        break;
+    case 0xff:
+        ChangeTopLevel(0);
+        break;
     }
+    MenuTecPasMain();
+    MenuTecInfoMain();
+    MenuTecStatusMain();
+    MenuTecMenuMain();
+    MenuTecListMain();
+    MenuTecSetWinMain();
+    MenuTecListMain2();
+    MenuTecExMain();
+    MenuTecL1R1Main();
+    MenuWork.resetFlags |= 2;
+    xglFontDebugPrintf(0, 64, D_004DB4F0);
+    xglFontDebugPrintf(0, 80, D_004DB4F8, MenuWork.listCursor);
+    xglFontDebugPrintf(0, 88, D_004DB500, MenuWork.mode);
+    xglFontDebugPrintf(0, 96, D_004DB508, MenuWork.selectedTechnique);
+    xglFontDebugPrintf(0, 104, D_004DB510, MenuWork.rowCursor);
 }
 
-void MenuTecListMake01(void) {
-    MenuTecRow *row = MenuListGet(0);
-    int *addr = MenuSortAddrGet(0);
-    int n = MenuSortCheck(0);
-    int i;
-    signed char saveBit = MenuWork.unmodeled_41[2];
-    signed char savePoint = MenuWork.point;
-    MenuListMake(0, 0);
-    for (i = 0; i < n; i++) {
-        row[i].unk4 = MenuTecEquipCheck(MenuWork.characterNo, *(short *)&addr[i]);
-        MenuWork.unmodeled_41[2] = addr[i];
-        MenuWork.point = BitToTecNo((signed char)MenuWork.unmodeled_41[2]);
-        if (MenuTecCharTLevUpCheck() || MenuTecCharWaitUpCheck() || MenuTecCharSpeedUpCheck()) {
-            row[i].unk8 = 0;
-        } else {
-            row[i].unk8 = 1;
-        }
-    }
-    MenuWork.unmodeled_41[2] = saveBit;
-    MenuWork.point = savePoint;
-}
+/* Defined after MenuTec: the original .sdata holds it at 0x004DB518, after
+ * every string literal of the TU's functions (MenuTec's ends at 0x004DB517). */
+extern MenuTecData *MenuTecDataBuf;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_tec", MenuTec);
+/* nested-function ELF name aliases (migrate_tu) */
+__asm__(".equ subListChange.11, subListChange.0");
+__asm__(".size subListChange.11, 732");

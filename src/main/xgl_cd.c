@@ -339,7 +339,50 @@ void xglClockUInt2DayTime(XglClock *clock_time, unsigned int elapsed)
     clock->day = days + 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdDiskCheck);
+extern int sceCdStatus(void);
+extern int sceCdDiskReady(int mode);
+extern int sceCdGetDiskType(void);
+extern const char D_004D2468[];
+extern const char D_004D2478[];
+extern const char D_004D2488[];
+
+int xglCdDiskCheck(void)
+{
+    unsigned char state;
+    int type;
+
+    if (LW[0x33] != 0) {
+        LW[0x1C] = 1;
+        LW[0x1D] = 0x7F;
+    }
+    state = LW[0x1C];
+    if (state != 1) {
+        LW[0x1C] = 0;
+        if (sceCdStatus() == 1)
+            return -2;
+        if (sceCdDiskReady(1) != 2)
+            return -3;
+        type = sceCdGetDiskType();
+        if (type == 1)
+            return -3;
+        if (type == 0)
+            return type;
+        if (type != 0x14)
+            return -1;
+        LW[0x1D] = 0;
+        if (xglCdGetFileSize(D_004D2468) > 0)
+            LW[0x1D] |= 1;
+        if (xglCdGetFileSize(D_004D2478) > 0)
+            LW[0x1D] |= 2;
+        if (xglCdGetFileSize(D_004D2488) > 0)
+            LW[0x1D] |= 4;
+        LW[0x1C] = 1;
+    } else if (sceCdStatus() == state) {
+        LW[0x1C] = 0;
+        return -2;
+    }
+    return LW[0x1D];
+}
 
 static void xglCdDefaultCallback(int event, int value)
 {
@@ -513,7 +556,205 @@ static int xglCdGetFilePosSub(CdPathPos *fp, signed char *arg1)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdGetFilePos);
+typedef struct CdPosView {
+    int lbn;
+    int stored_bytes;
+    unsigned char unmodeled_08[0x1c];
+    unsigned char source;
+    unsigned char unmodeled_25;
+    unsigned char packed;
+    unsigned char unmodeled_27;
+    int descriptor;
+    int size_bytes;
+} CdPosView;
+typedef struct CdArcView {
+    unsigned char state;
+    unsigned char unmodeled_01;
+    unsigned char packed;
+    unsigned char unmodeled_03[5];
+    int lbn;
+    int file_lbn_offset;
+    int stored_bytes;
+    int size_bytes;
+} CdArcView;
+extern CdArchiveEntry D_0093DC58;
+extern char arcname_1[12];
+extern char arcname_2[12];
+extern char arcname_3[12];
+extern char arcname_4[12];
+extern unsigned char vcd_head_5[0x18];
+extern unsigned char hdd_head_6[7];
+typedef struct SearchLayerBytes {
+    unsigned char byte;
+    unsigned char unmodeled_01[0x10];
+} SearchLayerBytes;
+extern SearchLayerBytes D_0093CC32;
+extern int sceCdSync(int mode);
+extern int sceCdLayerSearchFile(CdFilePosition *position, signed char *name, unsigned char layer);
+extern int sceOpen(const char *path, int flags, ...);
+extern int xglHddCheck(void);
+
+static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
+                                       void (*callback)(int event, int value))
+{
+    char buffer[256];
+    const char *path = name;
+    CdArcView *entry;
+    const char *cursor;
+    char *destination;
+    const char *absolute_source;
+    char *absolute_destination;
+    char *scan;
+    int descriptor;
+    long offset;
+    unsigned char *header;
+    int size;
+    int source;
+    CdPosView *position = (CdPosView *)file_position;
+
+    /* p4 */
+    position->source = 0;
+    if (path[0] != 92) {
+        for (scan = (char *)path; *scan != 0; scan++) {
+            if (*scan == 47)
+                *scan = 92;
+        }
+    }
+    for (;;) {
+        entry = (CdArcView *)&ArcHeader[0];
+        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+            name = arcname_1;
+            position->source = entry->state;
+            break;
+        }
+        entry = (CdArcView *)&D_0093DC58;
+        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+            name = arcname_2;
+            position->source = entry->state;
+            goto resolved;
+        }
+        entry++;
+        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+            name = arcname_3;
+            position->source = entry->state;
+            goto resolved;
+        }
+        entry++;
+        if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
+            name = arcname_4;
+            position->source = entry->state;
+            goto resolved;
+        }
+        entry = 0;
+        goto resolved;
+    }
+resolved:
+    if (name[0] == 92) {
+        absolute_source = name + 1;
+        absolute_destination = buffer;
+        while ((*absolute_destination = *absolute_source) != 0) {
+            absolute_source++;
+            absolute_destination++;
+        }
+        position->source = 1;
+    } else {
+        destination = buffer;
+        source = position->source;
+        switch (source) {
+        case 0:
+            buffer[0] = 92;
+            destination = buffer + 1;
+            for (cursor = name; *cursor != 0; cursor++, destination++) {
+                if ((char)*cursor < 97)
+                    *destination = *cursor;
+                else
+                    *destination = *cursor - 32;
+            }
+            destination[0] = 59;
+            destination[1] = 49;
+            destination[2] = 0;
+            break;
+        case 1:
+        case 2: {
+            if (position->source == 1)
+                cursor = (const char *)vcd_head_5;
+            else
+                cursor = (const char *)hdd_head_6;
+            while ((*destination = *cursor) != 0) {
+                cursor++;
+                destination++;
+            }
+            cursor = name;
+            for (;;) {
+                if (*cursor == 92)
+                    *destination = 47;
+                else
+                    *destination = *cursor;
+                if (*cursor == 0)
+                    break;
+                cursor++;
+                destination++;
+            }
+            break;
+        }
+        }
+    }
+    callback(0, (int)path);
+    switch (position->source) {
+    case 0:
+        if (entry != 0) {
+            position->lbn = entry->lbn + entry->file_lbn_offset;
+            position->stored_bytes = entry->stored_bytes;
+            position->packed = entry->packed;
+            position->size_bytes = entry->size_bytes;
+        } else {
+            sceCdSync(0);
+            sceCdDiskReady(0);
+            if (sceCdLayerSearchFile((CdFilePosition *)position, (signed char *)buffer, D_0093CC32.byte) == 0)
+                return 0;
+            position->packed = 1;
+            position->size_bytes = position->stored_bytes;
+        }
+        break;
+    case 2:
+        if (xglHddCheck() < 0)
+            return xglCdGetFilePos(file_position, path, callback);
+    case 1:
+        descriptor = sceOpen(buffer, 1);
+        if (descriptor < 0)
+            return 0;
+        if (entry != 0) {
+            position->lbn = entry->lbn + entry->file_lbn_offset;
+            position->stored_bytes = entry->stored_bytes;
+            position->packed = entry->packed;
+            position->size_bytes = entry->size_bytes;
+        } else {
+            position->lbn = 0;
+            header = (unsigned char *)(((unsigned int)WorkEnd + 63) & -64);
+            sceRead(descriptor, header, 16);
+            if (*(int *)header == 0x585241 && *(int *)(header + 12) == 0) {
+                position->packed = 1;
+                position->size_bytes = *(int *)(header + 4);
+            } else {
+                position->packed = 0;
+            }
+            size = sceLseek(descriptor, 0, 2);
+            position->stored_bytes = size;
+            if (position->packed == 0)
+                position->size_bytes = size;
+        }
+        offset = (long)(unsigned int)position->lbn << 11;
+        sceLseek(descriptor, 0, 0);
+        while (offset > 0x40000000) {
+            sceLseek(descriptor, 0x40000000, 1);
+            offset -= 0x40000000;
+        }
+        sceLseek(descriptor, (int)offset, 1);
+        position->descriptor = descriptor;
+        break;
+    }
+    return (int)file_position;
+}
 
 int xglCdGetFileData(const char *path, CdFilePosition *file_position)
 {
@@ -539,7 +780,147 @@ int xglCdGetFileSize(const char *path)
     return *(int *)&pos.unmodeled_04[0x28];
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdReadFilePart);
+typedef struct RfpPos {
+    int lbn;
+    int stored_bytes;
+    unsigned char unmodeled_08[0x1c];
+    unsigned char source;
+    unsigned char unmodeled_25;
+    unsigned char packed;
+    unsigned char unmodeled_27;
+    int descriptor;
+    int size_bytes;
+} RfpPos;
+extern int sceCdGetError(void);
+
+int xglCdReadFilePart(const char *name, void *buffer, int mode,
+                      CdCompletionCallback *notify, int offset, int length)
+{
+    RfpPos position;
+    CdReadMode read_mode;
+    CdRequestPartial *request;
+    const char *source;
+    char *destination;
+    int asynchronous;
+    int result;
+    int padding;
+    int partial;
+
+    switch ((int)notify) {
+    case 0:
+        notify = callback;
+        break;
+    case 1:
+        notify = xglCdDummyCallback;
+        break;
+    case 2:
+        notify = xglCdDefaultCallback;
+        break;
+    }
+    asynchronous = mode & 1;
+    if (asynchronous != 0) {
+        if (CD_READ_CONTROL->dispatch_state != 0) {
+            if (CD_READ_CONTROL->dispatch_state != 3) {
+                request = &CD_READ_CONTROL->requests[CD_READ_CONTROL->queue_tail];
+                source = name;
+                destination = request->name;
+                while ((*destination++ = *source++) != 0)
+                    ;
+                request->buffer = buffer;
+                request->offset = offset;
+                request->length = length;
+                request->completion_callback = notify;
+                CD_READ_CONTROL->queue_tail = (CD_READ_CONTROL->queue_tail + 1) & 0x1f;
+                return 0;
+            }
+        }
+    }
+    if (CD_READ_CONTROL->dispatch_state != 0)
+        return -3;
+    if (xglCdGetFilePos((CdFilePosition *)&position, name, notify) == 0)
+        return -1;
+    position.lbn += offset >> 11;
+    if (length > 0)
+        position.stored_bytes = length;
+    notify(1, (position.stored_bytes + 2047) & -2048);
+    CD_READ_CONTROL->completion_callback = notify;
+    CD_READ_CONTROL->extract_destination = buffer;
+    CD_READ_CONTROL->extract_byte_count = (position.stored_bytes + 2047) & -2048;
+    if (position.packed == 0 || (mode & 2) != 0)
+        CD_READ_CONTROL->extract_source = buffer;
+    else
+        CD_READ_CONTROL->extract_source = (u8 *)buffer + ((position.size_bytes + 2047) & -2048)
+            - CD_READ_CONTROL->extract_byte_count;
+    CD_READ_CONTROL->read_poll_mode = position.source;
+    switch (position.source) {
+    case 0:
+    retry_cd:
+        sceCdSync(0);
+        sceCdDiskReady(0);
+        read_mode.try_count = 0;
+        read_mode.spindle_control = CD_READ_CONTROL->unmodeled_031[0];
+        read_mode.data_pattern = 0;
+        sceCdRead(position.lbn, CD_READ_CONTROL->extract_byte_count / 2048, CD_READ_CONTROL->extract_source,
+                  &read_mode);
+        if (asynchronous != 0) {
+            CD_READ_CONTROL->dispatch_state = 2;
+            return position.size_bytes;
+        }
+        CD_READ_CONTROL->dispatch_state = 1;
+        while (sceCdSync(1) > 0)
+            notify(2, sceCdGetReadPos());
+        result = sceCdGetError();
+        if ((unsigned int)result >= 2) {
+            notify(-2, result);
+            goto retry_cd;
+        }
+        break;
+    case 1:
+    case 2:
+        CD_READ_CONTROL->active_file_descriptor = position.descriptor;
+        CD_READ_CONTROL->write_cursor = CD_READ_CONTROL->extract_source;
+        CD_READ_CONTROL->remaining_bytes = position.stored_bytes;
+        if (asynchronous != 0) {
+            CD_READ_CONTROL->dispatch_state = 2;
+            return position.size_bytes;
+        }
+        CD_READ_CONTROL->dispatch_state = 1;
+        do {
+            if (CD_READ_CONTROL->remaining_bytes > 0xffff)
+                result = sceRead(CD_READ_CONTROL->active_file_descriptor,
+                                 CD_READ_CONTROL->write_cursor, 0x10000);
+            else
+                result = sceRead(CD_READ_CONTROL->active_file_descriptor,
+                                 CD_READ_CONTROL->write_cursor,
+                                 CD_READ_CONTROL->remaining_bytes);
+            if (result < 0) {
+                hdd_error();
+                CD_READ_CONTROL->dispatch_state = 0;
+                return xglCdReadFilePart(name, buffer, mode, notify, offset, length);
+            }
+            CD_READ_CONTROL->write_cursor += result;
+            CD_READ_CONTROL->remaining_bytes -= result;
+            notify(2, position.stored_bytes - CD_READ_CONTROL->remaining_bytes);
+        } while (CD_READ_CONTROL->remaining_bytes > 0);
+        partial = result & 0x7ff;
+        if (partial != 0) {
+            padding = -partial & 0x7ff;
+            while (padding > 0) {
+                *CD_READ_CONTROL->write_cursor++ = padding;
+                padding--;
+            }
+        }
+        sceClose(CD_READ_CONTROL->active_file_descriptor);
+        CD_READ_CONTROL->active_file_descriptor = -1;
+        break;
+    }
+    if ((mode & 2) == 0)
+        extract(CD_READ_CONTROL->extract_destination, CD_READ_CONTROL->extract_source,
+                CD_READ_CONTROL->extract_byte_count);
+    notify(4, 0);
+    CD_READ_CONTROL->dispatch_state = 0;
+    return (position.size_bytes + 2047) & -2048;
+}
 
 int xglCdReadFile(const char *name, void *buffer, int mode, int flags)
 {
@@ -594,7 +975,69 @@ int xglCdSync(void)
     return (signed char)LW[0x30] != 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdStreamOpen);
+typedef struct CdFilePositionView {
+    int lbn;
+    int stored_bytes;
+    unsigned char unmodeled_08[0x1c];
+    unsigned char source;
+    unsigned char unmodeled_25[3];
+    int descriptor;
+} CdFilePositionView;
+extern int sceCdStInit(int bufmax, int nbuf, int buffer);
+extern int sceCdStStart(int lbn, CdReadMode *read_mode);
+extern int sceSifAllocIopHeap(int size);
+extern int sceCdSync(int mode);
+
+int xglCdStreamOpen(CdStreamParam *stream, const char *path)
+{
+    CdFilePositionView position;
+    CdReadMode read_mode;
+    CdStreamParam **slot;
+    int index;
+    int mode;
+
+    /* s1 */
+    CD_READ_CONTROL->dispatch_state = 3;
+    if (xglCdGetFilePos(&position, path, xglCdDummyCallback) == 0) {
+        CD_READ_CONTROL->dispatch_state = 0;
+        return -1;
+    }
+    stream->mode = position.source;
+    stream->file_byte_count = position.stored_bytes;
+    mode = position.source;
+    switch (mode) {
+    case 0:
+        sceCdSync(0);
+        sceCdDiskReady(0);
+        stream->descriptor = position.lbn;
+        stream->iop_buffer = sceSifAllocIopHeap(((short)stream->sector_count << 11) + 128);
+        sceCdStInit((short)stream->sector_count, (short)stream->block_count,
+                    (stream->iop_buffer + 127) & -128);
+        read_mode.try_count = 0;
+        read_mode.spindle_control = 0;
+        read_mode.data_pattern = 0;
+        sceCdStStart(stream->descriptor, &read_mode);
+        break;
+    case 1:
+    case 2:
+        stream->descriptor = position.descriptor;
+        break;
+    }
+    stream->remaining = stream->file_byte_count;
+    stream->ring_size = 2048;
+    stream->state = 0;
+    if (stream->ring.buffer != 0) {
+        stream->ring.read_position = 0;
+        stream->ring.write_position = 0;
+        for (slot = &StrList, index = 0; index <= STR_LIST_LAST_INDEX; index++, slot++) {
+            if (*slot == 0) {
+                *slot = stream;
+                break;
+            }
+        }
+    }
+    return 0;
+}
 
 int xglCdStreamRead(CdStreamParam *stream, unsigned char *buffer, int bytes)
 {
@@ -651,9 +1094,128 @@ static int StreamReadRingCoreSub(CdStreamParam *stream, void *buffer, int sector
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", StreamReadRingCoreNormal);
+static void StreamReadRingCoreNormal(CdStreamParam *stream)
+{
+    /* Sectors to read: [0] up to the first boundary, [1] after the wrap. */
+    int sectors[2];
+    int available;
+    int mode;
+    int bytes;
+    int end_offset;
+    int padding;
+    int remaining;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", StreamReadRingCoreXss);
+    u8 *cursor;
+    u8 *end;
+
+    if (stream->remaining > 0) {
+        if (stream->ring.write_position <= stream->ring.read_position) {
+            sectors[1] = 0;
+            sectors[0] = (stream->ring.read_position - stream->ring.write_position) / 2048;
+        } else {
+            sectors[0] = (stream->ring.capacity - stream->ring.write_position) / 2048;
+            sectors[1] = stream->ring.read_position / 2048;
+        }
+        available = 0;
+        mode = stream->mode;
+        switch (mode) {
+        case 0:
+            available = sceCdStStat();
+            break;
+        case 1:
+        case 2:
+            available = 32;
+            break;
+        }
+        if (available < sectors[0]) {
+            sectors[0] = available;
+            sectors[1] = 0;
+        } else if (available - sectors[0] < sectors[1]) {
+            sectors[1] = available - sectors[0];
+        }
+        if (sectors[0] > 0) {
+            cursor = stream->ring.buffer + stream->ring.write_position;
+            bytes = StreamReadRingCoreSub(stream, cursor, sectors[0]);
+            if (sectors[1] > 0) {
+                cursor = stream->ring.buffer;
+                bytes = StreamReadRingCoreSub(stream, cursor, sectors[1]);
+            }
+            remaining = stream->remaining - ((sectors[0] + sectors[1]) << 11);
+            if (remaining <= 0) {
+                end = cursor + bytes;
+                stream->state = 1;
+                end_offset = (end - stream->ring.buffer) & (stream->ring_size - 1);
+                remaining = 0;
+                if (end_offset > 0) {
+                    padding = stream->ring_size - end_offset;
+                    cursor = end;
+                    if (padding > 0) {
+                        do {
+                            padding--;
+                            *cursor++ = 0;
+                        } while (padding > 0);
+                    }
+                }
+            }
+            stream->remaining = remaining;
+            stream->ring.write_position =
+                (stream->ring.write_position + ((sectors[0] + sectors[1]) << 11))
+                % stream->ring.capacity;
+        }
+    }
+}
+
+static void StreamReadRingCoreXss(CdStreamParam *stream)
+{
+    StreamXssBuffer *xss;
+    StreamRing *ring;
+    int available;
+    int mode;
+
+    if (stream->remaining > 0) {
+        available = 0;
+        mode = stream->mode;
+        xss = stream->xss;
+        switch (mode) {
+        case 0:
+            available = sceCdStStat();
+            break;
+        case 1:
+        case 2:
+            available = 32;
+            break;
+        }
+        while (available > 0 && stream->remaining > 0) {
+            if (xss->sectors <= 0) {
+                StreamReadRingCoreSub(stream, xss->source, 1);
+                xss->position = xss->source;
+                xss->value = 0;
+                xss->mode = 0;
+                xss->sectors = 0x4000;
+            } else {
+                if (xss->mode == 0) {
+                    xss->value = *xss->position;
+                    xss->position += 1;
+                    xss->mode = 8;
+                }
+                ring = ((xss->value >> (8 - xss->mode)) & 1) == 0
+                    ? &stream->ring : &stream->alternate_ring;
+                if (ring->write_position == ring->read_position)
+                    break;
+                xss->mode--;
+                xss->sectors--;
+                StreamReadRingCoreSub(stream, ring->buffer + ring->write_position, 1);
+                ring->write_position = (ring->write_position + 2048) % ring->capacity;
+            }
+            available--;
+            stream->remaining -= 2048;
+        }
+        if (stream->remaining <= 0) {
+            stream->remaining = 0;
+            stream->state = 1;
+        }
+    }
+}
 
 void xglCdStreamReadRingCore(CdStreamParam *stream)
 {
@@ -777,9 +1339,287 @@ static void FileSelectListReload(FileSelectList *list)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", FileSelectSub);
+typedef struct CdFileSelectU {
+    int x;                                         /* +0x000 */
+    int y;                                         /* +0x004 */
+    int rows;                                      /* +0x008 */
+    int state;                                     /* +0x00c */
+    char directory[0x100];                         /* +0x010 */
+    char *list;                                    /* +0x110 */
+    unsigned int list_size;                        /* +0x114 */
+    void (*print)(int x, int y, const char *format, ...); /* +0x118 */
+    char path[0x100];                              /* +0x11c */
+    unsigned short entry_count;                    /* +0x21c */
+    short first_row;                               /* +0x21e */
+    short cursor;                                  /* +0x220 */
+    unsigned char unmodeled_222[2];                /* +0x222 */
+    int list_index;                                /* +0x224 */
+    char *list_position;                           /* +0x228 */
+    unsigned char unmodeled_22c[0x268 - 0x22c];    /* +0x22c */
+} CdFileSelectU;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_cd", xglCdFileSelect);
+static void FileSelectSub(CdFileSelectU *select)
+{
+    char prefix[256];
+    char *src;
+    char *dst;
+    char *name;
+    char *probe;
+    char *part;
+    char *cursor;
+    char *last;
+    char first;
+    int prefix_start;
+    unsigned char character;
+    char expected;
+    int mismatch;
+
+    switch (select->state) {
+    case 0:
+    default:
+        FileSelectListReload((FileSelectList *)select);
+        select->path[0] = 0;
+        select->list_index = 0;
+        select->list_position = select->list;
+        select->entry_count = 1;
+        select->first_row = 0;
+        select->state = 1;
+    case 1:
+        src = select->path;
+        dst = prefix;
+        character = *src;
+        if (*src == 0) {
+            prefix[0] = '.';
+            prefix[1] = ':';
+            prefix[2] = 0;
+        } else {
+            do {
+                *dst++ = character;
+                src++;
+                character = *src;
+            } while (*src != 0);
+            *dst = 0;
+            dst[-1] = ':';
+        }
+        name = select->list;
+        prefix_start = 0;
+        while (*name != 0) {
+            first = *name;
+            if (first == '.')
+                name += 2;
+            mismatch = 0;
+            part = prefix + prefix_start;
+            if (*part != 0) {
+                if (*name != 0 && *name == *part) {
+                    for (;;) {
+                        name++;
+                        expected = *++part;
+                        if (expected == 0)
+                            break;
+                        if (*name == 0 || *name != expected) {
+                            mismatch = 1;
+                            break;
+                        }
+                    }
+                } else {
+                    mismatch = 1;
+                }
+            }
+            if (!mismatch) {
+                do {
+                    select->list_position = name + 1;
+                } while (0);
+                break;
+            }
+            {
+                unsigned char character;
+
+                while ((character = *name++) != 0) {
+                    do {
+                        character = *name++;
+                    } while (character != 0);
+                }
+            }
+        }
+        probe = select->list_position;
+        select->entry_count = 0;
+        if (select->path[0] != 0)
+            select->entry_count = 1;
+        if (*probe != 0) {
+            unsigned char character;
+
+            probe++;
+            for (;;) {
+                character = *probe++;
+                if (character != 0)
+                    continue;
+                select->entry_count++;
+                character = *probe;
+                if (character == 0)
+                    break;
+            }
+        }
+        select->state = 2;
+        break;
+    case 2:
+        return;
+    case 3:
+        last = select->path;
+        for (cursor = last; *cursor != 0; cursor++) {
+            if (*cursor == '/') {
+                if (cursor[1] == 0) {
+                    *last = 0;
+                    break;
+                }
+                last = cursor + 1;
+            }
+        }
+        *last = 0;
+        select->state = 1;
+        break;
+    }
+}
+
+typedef struct CdFileSelect {
+    int x;                                         /* +0x000 */
+    int y;                                         /* +0x004 */
+    int rows;                                      /* +0x008 */
+    int state;                                     /* +0x00c */
+    char directory[0x100];                         /* +0x010 */
+    char *list;                                    /* +0x110 */
+    unsigned int list_size;                        /* +0x114 */
+    void (*print)(int x, int y, const char *format, ...); /* +0x118 */
+    char path[0x100];                              /* +0x11c */
+    unsigned short entry_count;                    /* +0x21c */
+    short first_row;                               /* +0x21e */
+    short cursor;                                  /* +0x220 */
+    unsigned char unmodeled_222[2];                /* +0x222 */
+    int unmodeled_224;                             /* +0x224 */
+    char *list_position;                           /* +0x228 */
+    unsigned char unmodeled_22c[0x268 - 0x22c];    /* +0x22c */
+} CdFileSelect;
+typedef struct PadDataXgl {
+    unsigned char unmodeled_00[0x2a];
+    unsigned short pressed;                        /* +0x2a */
+    unsigned short repeated;                       /* +0x2c */
+} PadDataXgl;
+extern PadDataXgl PadData;
+extern const char D_004D2498[];
+extern const char D_004DC2F8[];
+extern const char D_004DC300[];
+extern const char D_004DC308[];
+extern const char D_004DC310[];
+
+int xglCdFileSelect(CdFileSelect *select)
+{
+    int index;
+    int skipped;
+    int end_row;
+    int rows;
+    int count;
+    int x;
+    int y;
+    unsigned char *list;
+    char *last;
+    char *path;
+    char *tail;
+    unsigned char *entry;
+
+    FileSelectSub(select);
+    /* c2 */
+    if ((PadData.pressed & 0x40) != 0)
+        return 2;
+    if (PadData.repeated & 0x1000)
+        select->cursor--;
+    if (select->cursor < 0)
+        select->cursor = select->entry_count - 1;
+    if (select->cursor - select->first_row <= 0)
+        select->first_row = select->cursor - 1;
+    if (select->first_row < 0)
+        select->first_row = 0;
+    if (PadData.repeated & 0x4000)
+        select->cursor++;
+    if (select->entry_count - 1 < select->cursor)
+        select->cursor = 0;
+    if (select->cursor - select->first_row > select->rows - 2)
+        select->first_row = select->cursor - select->rows + 2;
+    if ((unsigned int)(select->entry_count - select->rows) < (unsigned int)select->first_row)
+        select->first_row = select->entry_count - select->rows;
+    if (PadData.pressed & 0x20) {
+        entry = (unsigned char *)select->list_position;
+        if (select->path[0] != 0)
+            select->cursor--;
+        if (select->cursor < 0) {
+            path = select->path;
+            select->cursor = 0;
+            select->state = 3;
+            select->first_row = 0;
+        } else {
+            for (skipped = 0; skipped < select->cursor; skipped++) {
+                while (*entry++ != 0)
+                    ;
+            }
+            last = (char *)entry;
+            while (last[1] != 0)
+                last++;
+            path = select->path;
+            tail = path;
+            while (*tail != 0)
+                tail++;
+            do {
+                *tail++ = *entry;
+            } while (*entry++ != 0);
+            if (*last == '/') {
+                select->cursor = 0;
+                select->state = 1;
+                select->first_row = 0;
+            } else {
+                select->cursor = 0;
+                select->state = 3;
+                select->first_row = 0;
+                return 1;
+            }
+        }
+    } else {
+        path = select->path;
+    }
+    x = select->x;
+    y = select->y;
+    list = (unsigned char *)select->list_position;
+    select->print(x, y, D_004D2498, path);
+    count = select->entry_count;
+    rows = select->rows;
+    if (rows < count)
+        end_row = rows;
+    else
+        end_row = count;
+    end_row += select->first_row;
+    index = select->path[0] != 0;
+    y += 12;
+    if (select->first_row > 0)
+        select->print(x, y, D_004DC2F8);
+    for (; index < select->first_row; index++) {
+        while (*list++ != 0)
+            ;
+    }
+    for (index = select->first_row; index < end_row; index++) {
+        if (index == select->cursor)
+            select->print(x + 8, y, D_004DC300);
+        if (index == 0 && select->path[0] != 0) {
+            select->print(x + 16, y, D_004DC308);
+        } else {
+            select->print(x + 16, y, list);
+            while (*list++ != 0)
+                ;
+            if (*list == 0)
+                return 0;
+        }
+        y += 8;
+    }
+    if (*list != 0)
+        select->print(x, y - 8, D_004DC310);
+    return 0;
+}
 
 extern int sceSifLoadModule(const char *filename, int args, const char *argp);
 extern char head_8[13];

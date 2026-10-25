@@ -37,7 +37,15 @@ typedef struct AgwsMenuWork {
     signed char weaponHand;
     signed char equipSlot;
     signed char selectedIndex;
-    unsigned char unmodeled_57[0x64 - 0x57];
+    unsigned char unmodeled_57[0]; /* +0x57: zero-length alias of the former padding member, kept for saved bodies */
+    signed char selectedWeapon;
+    /* +0x57 */
+    signed char selectedAmmo;
+    /* +0x58 */
+    signed char selectedAccessory;
+    /* +0x59 */
+    signed char nameRow;
+    unsigned char unmodeled_5b[0x9];
     short chrNo;
     unsigned char unmodeled_66[0x80 - 0x66];
 } AgwsMenuWork;
@@ -90,16 +98,22 @@ enum {
 #define PAD_R1 0x0008
 
 typedef struct AgwsListRow {
-    unsigned char unmodeled_00[0x08];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    const char *text;
+    unsigned char unmodeled_4[0x4];
     unsigned char flag;
     unsigned char equipped;
     unsigned char unmodeled_0a[0x0C - 0x0A];
 } AgwsListRow;
 
 typedef struct AgwsListSPWindow {
-    unsigned char unmodeled_00[1];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    unsigned char state;
     unsigned char rowCount;
-    unsigned char unmodeled_02[0x0C - 0x02];
+    unsigned char unmodeled_02[0x2];
+    short x;
+    short y;
+    int color;
     short width;
     short height;
     int flags;

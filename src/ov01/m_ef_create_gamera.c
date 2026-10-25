@@ -11,8 +11,26 @@ extern void MMathCalcHermitePrm(HermiteVector *tangent_start, HermiteVector *tan
                                 const HermiteVector *point_end,
                                 const HermiteVector *point_next);
 
+/* fork type needed by GameraWork (derwetterfrosch) */
+#define GAMERA_PATH_POINTS 4
+
+#define GAMERA_TRAIL_LENGTH 28
+
 typedef struct GameraWork {
-    unsigned char unmodeled_00[0x2d0];
+    unsigned char unmodeled_00[0x8];
+    struct ActRecord *actor;
+    u32 coordinate;
+    unsigned char unmodeled_10[0x14];
+    struct ActRecord *target_actor;
+    u32 target_coordinate;
+    unsigned char unmodeled_2c[0x44];
+    short frame;
+    unsigned char unmodeled_72[0xe];
+    Vector4 origin;
+    Vector4 target;
+    short trail_active[GAMERA_TRAIL_LENGTH];
+    short trail_segment[GAMERA_TRAIL_LENGTH];
+    HermiteVector trail[GAMERA_TRAIL_LENGTH];
     short segment; /* +0x2d0 */
     short path_frame; /* +0x2d2 */
     unsigned char unmodeled_2d4[12];
@@ -27,7 +45,7 @@ static void makePath(GameraWork *state);
 static void makeHermiteParams(int segment, GameraWork *state);
 struct GameraTrailState;
 static void fnGAMERA_PR000(void *self, struct GameraTrailState *state);
-extern void fnGAMERA_DP000(void);
+static void fnGAMERA_DP000(void *self, struct GameraTrailState *state);
 static void fnGAMERA_PO000(void *self, void *work);
 typedef struct GameraCreateObject {
     void *unk0;
@@ -189,6 +207,35 @@ static void fnGAMERA_PR000(void *self, GameraTrailState *state)
         }
     }
 }
+
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef union GameraGsQword {
+    GameraQuadword whole;
+    unsigned short nloop; /* low halfword of a GIF tag: NLOOP and EOP */
+    struct {
+        u64 tag;
+        u64 registers;
+    } gif;
+    struct {
+        u64 data;
+        unsigned char address;
+    } ad;
+    struct {
+        int r, g, b, a;
+    } rgba;
+    struct {
+        int x, y, z, adc;
+    } xyz;
+} GameraGsQword;
+
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct GameraGsPacket {
+    void *data;
+    int capacity;
+    GameraGsQword *current; /* the open GIF tag */
+    int count;              /* queued quadwords */
+    int regCount;           /* NREG of the open GIF tag */
+} GameraGsPacket;
 
 INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_gamera", fnGAMERA_DP000);
 

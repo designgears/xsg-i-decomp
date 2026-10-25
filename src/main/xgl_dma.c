@@ -133,9 +133,49 @@ void xglDmaBufferRequest(XglDmaBuffer *buffer, u32 channel)
     buffer->current = buffer->start;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_dma", xglDmaMFIFOSetup);
+void xglDmaMFIFOSetup(u32 base, u32 size, int channel)
+{
+    XglDmaChannel *dma;
+    if (channel < 3) {
+        *(void **)DMAC_CTRL = (void *)(*DMAC_CTRL | 0xC);
+        dma = tbl[channel];
+        *(volatile int *)DMAC_RBOR = base;
+        *DMAC_RBSR = size - 0x10;
+        *(volatile u32 *)0x1000D010 = base;
+        *(void **)&mfifo_drain = dma;
+        dma->tag_address = base;
+        dma->quadword_count = 0;
+        dma->control = 0x104;
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_dma", xglDmaMFIFOKick);
+u32 xglDmaMFIFOKick(u32 arg0, u32 arg1)
+{
+  u32 temp_6;
+  u32 temp_6_2;
+  XglDmaChannel **new_var;
+  u32 temp_7;
+  u32 *new_var2;
+  u32 temp_8;
+  temp_7 = (*((volatile u32 *) 0x1000E040)) + 0x10;
+  do
+  {
+  }
+  while ((*((volatile u32 *) 0x1000D000)) & 0x100);
+  *((volatile u32 *) 0x1000D080) = arg0 & 0x3FF0;
+  *((volatile u32 *) 0x1000D020) = arg1;
+  temp_8 = temp_7 - 0x10;
+  do
+  {
+    new_var2 = &temp_8;
+    new_var = &mfifo_drain;
+    temp_6_2 = (((*new_var)->tag_address - (*((volatile u32 *) 0x1000D010))) + temp_7) & (*new_var2);
+    temp_6 = (temp_6_2 == 0) ? (temp_7) : (temp_6_2);
+  }
+  while (((u32) (arg1 * 0x10)) >= temp_6);
+  *((volatile u32 *) 0x1000D000) = 0x100;
+  return temp_6;
+}
 
 void xglDmaMFIFOLeave(void)
 {

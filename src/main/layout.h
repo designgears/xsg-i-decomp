@@ -29,10 +29,10 @@ typedef struct LayoutEffectPeer {
     float rotation_y; /* +0x94 */
 } LayoutEffectPeer;
 
-extern void *classJava_xeno_Unit;
-extern void *classJava_xeno_Chr;
-extern void *classJava_xeno_Effect;
-extern void *classJava_xeno_util_Layout;
+extern SceneClass *classJava_xeno_Unit;
+extern SceneClass *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Effect;
+extern SceneClass *classJava_xeno_util_Layout;
 
 extern const char layout_peer[];
 extern const char layout_px[];

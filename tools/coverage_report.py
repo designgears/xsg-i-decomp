@@ -508,6 +508,20 @@ def count_object(root, obj, tu_edit, problems):
         return counted
     names = [name for name, _, _ in obj['functions']]
     address = {name: va for name, va, _ in obj['functions']}
+    # GCC nested functions: the object has `Base_N` (gcc's `Base.N` local
+    # symbol) but the source defines `Base` inside an enclosing function, so it
+    # has no top-level block. Bind without it and credit it to the enclosing
+    # block (same category) when that block is counted.
+    nested = {}
+    for name in list(names):
+        m = re.fullmatch(r'(\w+?)_(\d+)', name)
+        if not m or m.group(1) in names:
+            continue
+        hit = re.search(r'^[ \t]+(?:static\s+)?[\w\s\*]*?\b' + re.escape(m.group(1))
+                        + r'\s*\([^;{}]*\)\s*\{', text, re.M)
+        if hit:
+            nested[name] = hit.start()
+            names.remove(name)
     try:
         # Binding against the tracked function list is what resolves splat
         # renames and a shared accepted `.s` that covers several functions. A
@@ -544,6 +558,9 @@ def count_object(root, obj, tu_edit, problems):
                     f'tracked table records it as accepted {language!r}')))
                 continue
             counted[va] = (name, category)
+        for name, pos in nested.items():
+            if block.core_start <= pos < block.core_end and address.get(block.key) in counted:
+                counted[address[name]] = (name, category)
     return counted
 
 

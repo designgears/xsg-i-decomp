@@ -149,7 +149,132 @@ void SPL_init2(SplineState *spline, int weight_mode, SplinePoint *samples,
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_cardinalInit);
+extern float D_004D84FC;
+enum {
+    SPL_LINEAR_TERM,
+    SPL_QUADRATIC_TERM,
+    SPL_CUBIC_TERM
+};
+typedef struct SplineStateFull {
+    unsigned char unmodeled_00[4];
+    unsigned short weight_mode;
+    unsigned short first_key;
+    unsigned short last_key;
+    unsigned short sample_count;
+    unsigned int component_count;
+    const float *samples;
+    float coefficients[3][96];
+} SplineStateFull;
+struct SplineWorkspace {
+    float interval[32];
+    float slope[32];
+    float diagonal[32];
+    float right_hand_side[32];
+    float second_derivative[32];
+};
+
+static void SPL_cardinalInit(SplineState *state)
+{
+    SplineStateFull *spline = (SplineStateFull *)state;
+    struct SplineWorkspace *workspace = (struct SplineWorkspace *)0x70000000;
+    float *next_curvature_cell;
+    int component = 0;
+    float *linear = spline->coefficients[SPL_LINEAR_TERM];
+    float *quadratic = spline->coefficients[SPL_QUADRATIC_TERM];
+    float *cubic = spline->coefficients[SPL_CUBIC_TERM];
+    unsigned short sample_count = spline->sample_count;
+    int components = spline->component_count;
+    const float *samples = spline->samples;
+    int last = (short)sample_count - 1;
+    int penultimate;
+    int final_interval;
+
+    if (components <= 0)
+        return;
+    penultimate = (short)sample_count - 2;
+    final_interval = last - 1;
+    do {
+        int segment;
+        float *last_curvature = &workspace->second_derivative[last];
+
+        {
+            segment = 0;
+            if (segment < last) {
+                unsigned int stride = spline->component_count + 1;
+                do {
+                    int current = segment * stride;
+                    int next = (segment + 1) * stride;
+                    float interval = samples[next] - samples[current];
+
+                    workspace->interval[segment] = interval;
+                    if (interval == 0.0f)
+                        workspace->interval[segment] = D_004D84FC;
+                    workspace->slope[segment] =
+                        (samples[next + component + 1] - samples[current + component + 1]) /
+                        workspace->interval[segment];
+                } while (++segment < last);
+            }
+
+            workspace->diagonal[0] =
+                (workspace->interval[0] + workspace->interval[1]) * 2.0f;
+            workspace->right_hand_side[0] =
+                (workspace->slope[1] - workspace->slope[0]) * 6.0f;
+            for (segment = 1; segment < last; ++segment) {
+                float previous_interval = workspace->interval[segment - 1];
+                float previous_diagonal = workspace->diagonal[segment - 1];
+
+                workspace->diagonal[segment] =
+                    (workspace->interval[segment] + previous_interval) * 2.0f -
+                    previous_interval * previous_interval / previous_diagonal;
+                workspace->right_hand_side[segment] =
+                    (workspace->slope[segment] - workspace->slope[segment - 1]) * 6.0f -
+                    previous_interval * workspace->right_hand_side[segment - 1] /
+                    previous_diagonal;
+            }
+        }
+
+        workspace->second_derivative[0] = 0.0f;
+        *last_curvature = 0.0f;
+        for (segment = penultimate; segment > 0; --segment) {
+            workspace->second_derivative[segment] =
+                (workspace->right_hand_side[segment] -
+                 workspace->interval[segment] * workspace->second_derivative[segment + 1]) /
+                workspace->diagonal[segment];
+        }
+
+        segment = 0;
+        if (segment <= final_interval) {
+            float (*curvatures)[32] = &workspace->second_derivative;
+            do {
+                unsigned int stride = (unsigned int)components + 1;
+                int index = segment * stride + component;
+                float *second_derivative = &(*curvatures)[segment];
+                float interval;
+                float difference;
+
+                quadratic[index] = second_derivative[0] * 0.5f;
+                next_curvature_cell = &second_derivative[1];
+                interval = workspace->interval[segment];
+                difference = samples[(segment + 1) * stride + component + 1] -
+                    samples[index + 1];
+                linear[index] =
+                    (-interval / 6.0f) * *next_curvature_cell -
+                    (interval / 3.0f) * second_derivative[0] +
+                    (1.0f / interval) * difference;
+                {
+                    float next_curvature = *next_curvature_cell;
+                    float current_curvature = (*curvatures)[segment];
+                    float curvature_change = next_curvature - current_curvature;
+
+                    cubic[index] =
+                        (1.0f / (workspace->interval[segment] * 6.0f)) *
+                        curvature_change;
+                }
+            } while (++segment <= penultimate);
+        }
+        ++component;
+    } while (component < components);
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_getValue);
 

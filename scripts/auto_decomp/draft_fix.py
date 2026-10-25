@@ -10,7 +10,10 @@ body lines and fixed deterministically:
 
   * missing s8/u8/s16/u16/s32/u32/s64/u64/f32/f64 typedefs are prepended;
   * m2c `?` placeholder types become int, `(bitwise T)` casts become `(T)`,
-    M2C_ERROR()/M2C_BREAK()/M2C_SYNC() get stub macros;
+    M2C_ERROR()/M2C_BREAK()/M2C_SYNC() get stub macros; fold14: a callee
+    result m2c could not see (`M2C_ERROR(/* Read from unset register $f0 */)`
+    right after `g(..);` or in `(g(..), M2C_ERROR(..))`) becomes a
+    `fret_g = ((float (*)(..))g)(..)` temp / inline cast call (o552);
   * draft declarations the TU already has (redefinition / conflicting types /
     static-follows-non-static) are commented out;
   * implicitly declared callees get their prototype from protos.json
@@ -408,7 +411,184 @@ def preprocess(lines: list[str], ctx: Ctx) -> list[str]:
                        lambda m: {1: "char", 2: "short", 4: "int", 8: "long long"}.get(
                            int(m.group(1), 16), m.group(0)), l)
         out.append(l)
+    # fold14: callee results m2c lost (M2C_ERROR "Read from unset register $f0/$v0")
+    t2, notes = m2c_ret_fix("\n".join(out), ctx.protos.get)
+    if notes:
+        out = t2.split("\n")
     return out
+
+
+
+
+# ---- fold14 (o552 Check_Straight_ID, o555, o556): callee result m2c lost ------
+
+_M2C_RET = re.compile(r"M2C_ERROR\(\s*/\*\s*Read from unset register \$(?P<r>f0|v0)\s*\*/\s*\)")
+_NOT_CALL = {"if", "while", "for", "switch", "return", "sizeof", "M2C_ERROR", "do", "else", "int", "float", "void",
+             "char", "short", "long", "unsigned", "signed", "double"}
+
+
+def _ret_cast(f: str, reg: str, proto: str | None) -> str:
+    """F called for its $f0 (float) / $v0 (int) result through a
+    function-pointer cast `((float (*)(void *, int))F)` (still a direct jal;
+    params from PROTO, pointers as void *: same code). Always cast: the TU
+    may declare F void even where protos.json has the real type (UnduCheck)."""
+    want = "float" if reg == "f0" else "int"
+    params = ""
+    if proto:
+        m = re.match(r"^\s*(?:extern\s+)?(?P<r>.*?)\b" + re.escape(f) + r"\s*\((?P<a>.*)\)\s*;?\s*$", proto)
+        if m:
+            a = m.group("a").strip()
+            if a and a != "void" and "(" not in a:
+                ps = []
+                for x in a.split(","):
+                    x = x.strip()
+                    if x == "...":
+                        ps = None
+                        break
+                    ps.append("void *" if "*" in x or "[" in x else x)
+                params = ", ".join(ps) if ps is not None else ""
+            elif a == "void":
+                params = "void"
+    return f"(({want} (*)({params})){f})"
+
+
+def _rmatch_paren(t: str, j: int) -> int:
+    """index of the '(' matching the ')' at J, or -1."""
+    d = 0
+    for i in range(j, -1, -1):
+        if t[i] == ")":
+            d += 1
+        elif t[i] == "(":
+            d -= 1
+            if d == 0:
+                return i
+    return -1
+
+
+def m2c_ret_fix(text: str, proto_of) -> tuple[str, list[str]]:
+    """m2c reads a callee's result as `M2C_ERROR(/* Read from unset register
+    $f0 */)` (or $v0) when the callee is declared void / the call was
+    dropped into a comma expression: draft_fix's stub turns it into 0 and the
+    seed silently compares a constant (o552 Check_Straight_ID, o555
+    Get_EnemyIDPos, o556 Check_Wall: all rewritten by hand). Rewrites
+      `g(a), (M2C_ERROR($v0) != -1)`  ->  `(CAST(g)(a) != -1)`
+      `g(a);` + next line reading M2C_ERROR($f0)  ->  `ret_g = CAST(g)(a);`
+        and every same-register M2C_ERROR up to the next call -> `ret_g`
+    with CAST from _ret_cast (o552's `((float (*)(...))UnduCheck)(...)`).
+    PROTO_OF(f) -> prototype text or None. Returns (text, notes)."""
+    notes: list[str] = []
+    for _ in range(40):                          # (A) comma expressions
+        hit = False
+        for m in _M2C_RET.finditer(text):
+            k = m.start() - 1
+            while k >= 0 and text[k] in " \t(":
+                k -= 1
+            if k < 0 or text[k] != ",":
+                continue
+            c = k - 1
+            while c >= 0 and text[c] in " \t":
+                c -= 1
+            if c < 0 or text[c] != ")":
+                continue
+            o = _rmatch_paren(text, c)
+            mi = re.search(r"([A-Za-z_]\w*)\s*$", text[:o]) if o > 0 else None
+            if not mi or mi.group(1) in _NOT_CALL:
+                continue
+            f = mi.group(1)
+            call = _ret_cast(f, m.group("r"), proto_of(f)) + text[o:c + 1]
+            text = text[:mi.start(1)] + text[k + 1:m.start()].lstrip() + call + text[m.end():]
+            notes.append(f"callee_ret_cast {f} (comma ${m.group('r')})")
+            hit = True
+            break
+        if not hit:
+            break
+    lines = text.split("\n")
+    call_stmt = re.compile(r"^(?P<ind>\s*)(?P<f>[A-Za-z_]\w*)\s*\((?P<a>.*)\)\s*;\s*$")
+    any_call = re.compile(r"(?<![\w.>])([A-Za-z_]\w*)\s*\(")
+    decls: list[tuple[int, str]] = []
+    mine: dict = {}
+    i = 0
+    while i < len(lines):
+        m = call_stmt.match(lines[i])
+        if not m or m.group("f") in _NOT_CALL or not _balanced(m.group("a")):
+            i += 1
+            continue
+        j, e = i + 1, None
+        while j < len(lines) and j <= i + 4:     # o555: `var_2 = 0 < 8;` in between
+            if lines[j].strip():
+                e = _M2C_RET.search(lines[j])
+                if e or not re.match(r"^\s*[\w.>\[\]\-]+\s*=[^=;]*;\s*$", lines[j]) or any_call.search(lines[j]):
+                    break
+            j += 1
+        if not e or any(x.group(1) not in _NOT_CALL for x in any_call.finditer(lines[j][:e.start()])):
+            i += 1
+            continue
+        reg, f = e.group("r"), m.group("f")
+        head = next((k for k in range(i, -1, -1) if re.match(r"^[A-Za-z_][^;]*\)\s*\{?\s*$", lines[k])), None)
+        if head is None:
+            i += 1
+            continue
+        v = mine.get((head, f, reg))
+        if v is None:
+            v = f"ret_{f}" if reg == "v0" else f"fret_{f}"
+            n = 2
+            while re.search(rf"\b{v}\b", "\n".join(lines)):
+                v = f"ret_{f}_{n}"
+                n += 1
+            mine[(head, f, reg)] = v
+            decls.append((head, f"{'float' if reg == 'f0' else 'int'} {v};"))
+        args = m.group("a")
+        pa = _proto_arity(proto_of(f), f)
+        if pa is not None and "/* extra? */" in args:
+            sp = _top_split(args)
+            while len(sp) > pa and "/* extra? */" in sp[-1]:
+                sp.pop()
+            args = ", ".join(x.strip() for x in sp)
+        lines[i] = f"{m.group('ind')}{v} = {_ret_cast(f, reg, proto_of(f))}({args});"
+        for q in range(j, len(lines)):
+            if q > j and any(x.group(1) not in _NOT_CALL for x in any_call.finditer(_M2C_RET.sub("", lines[q]))):
+                break
+            lines[q] = re.sub(r"M2C_ERROR\(\s*/\*\s*Read from unset register \$" + reg + r"\s*\*/\s*\)", v, lines[q])
+        notes.append(f"callee_ret_cast {f} (stmt ${reg} -> {v})")
+        i = j + 1
+    for head, d in sorted(decls, reverse=True):
+        at = head + 1 if lines[head].rstrip().endswith("{") else head + 2
+        lines.insert(at, "    " + d)
+    return "\n".join(lines), notes
+
+
+def _balanced(s: str) -> bool:
+    d = 0
+    for ch in s:
+        d += ch == "("
+        d -= ch == ")"
+        if d < 0:
+            return False
+    return d == 0
+
+
+def _top_split(s: str) -> list[str]:
+    out, d, cur = [], 0, ""
+    for ch in s:
+        if ch in "([{":
+            d += 1
+        elif ch in ")]}":
+            d -= 1
+        if ch == "," and d == 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    out.append(cur)
+    return out
+
+
+def _proto_arity(proto: str | None, f: str) -> int | None:
+    m = re.search(re.escape(f) + r"\s*\((?P<a>.*)\)\s*;?\s*$", proto or "")
+    if not m or "..." in m.group("a") or "(" in m.group("a"):
+        return None
+    a = m.group("a").strip()
+    return 0 if a in ("", "void") else len(_top_split(a))
 
 
 def prelude_end(lines: list[str]) -> int:
@@ -767,6 +947,12 @@ def _apply(lines, errs, warns, ctx, notes, pending, done_lines) -> bool:
                     if fo is not None and any(re.search(rf"^\s+[A-Za-z_][\w ]*[\s*]+{v}\s*(;|\[|=|,)", l)
                                               for l in lines[fo + 1:fo + 400] if TAG not in l):
                         continue          # declared already; the error is a cascade
+                    hdr = "" if fo is None else (lines[fo] if "(" in lines[fo] else (lines[fo - 1] if fo else ""))
+                    if hdr and re.search(rf"\(.*\b{v}\b.*\)", hdr):
+                        # fold12 (o529 ACT_loadResource): a parameter, undeclared only
+                        # because its type failed to parse (s32 before the typedef):
+                        # a local `int arg1;` would shadow it (the body reads garbage)
+                        continue
                     if fo is not None and f"    int {v}; {TAG}" not in lines[fo + 1:fo + 200]:
                         body_txt = "\n".join(lines[fo:func_end(lines, fo) + 1])
                         if re.search(rf"\b{v}\s*\[", body_txt) and not re.search(
@@ -1089,14 +1275,22 @@ def track_best(body: Path, text: str, report: dict) -> bool:
         prev = json.loads(side.read_text()).get("score", -1)
     except (OSError, ValueError):
         prev = -1
-    if score <= prev:
+    if score <= prev - try_fn.SUSPECT_MARGIN:
+        return False
+    sus = list(report.get("suspect") or [])
+    k3 = (report.get("key") or "").split("/")
+    fixed = body.with_name(stem + ".fixed.c")      # the file run() scored
+    if len(k3) == 3 and fixed.is_file() and fixed.read_text() == text:
+        try:                     # fold11: suspect-aware pick (uninit check, SUSPECT_MARGIN)
+            ok, sus = try_fn.prefer_over_best(*k3, fixed, score, report, side)
+        except (try_fn.TryError, OSError):
+            ok = score > prev
+    else:
+        ok = score > prev
+    if not ok:
         return False
     body.with_name(stem + ".best.c").write_text(text)
-    rec = {"score": score}
-    for k in ("differing_words", "target_insns"):
-        if report.get(k) is not None:
-            rec[k] = report[k]
-    side.write_text(json.dumps(rec) + "\n")
+    side.write_text(json.dumps(try_fn.best_record(score, report, sus)) + "\n")
     return True
 
 

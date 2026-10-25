@@ -1260,9 +1260,167 @@ int _GetPakaPakaBaseJnt(int actorID, int attachID)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffConstraint);
+extern void *CreateRgMatEffConstraint(void);
+extern void RgMatEffConstraintSetRoot(void *pEff, SkeMani *root, SkeMani *joint);
+extern void RgMatEffConstraintSetTop(void *pEff, SkeMani *top);
+extern void RgMatricesEffectorAddManipulator(void *pEff, SkeMani *pMani);
+extern void RgMatricesEffectorSetActivity(void *pEff, int activity);
+extern const char D_00A58BF0[];
+extern const char D_00A58C10[];
+extern const char D_00A58C20[];
+extern const char D_00A58C38[];
+extern const char D_00A58C68[];
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", XrgActorCreateEffArmCombine);
+void *XrgActorCreateEffConstraint(XrgActor *pActor, unsigned int eEffID, XrgActor *pWep)
+{
+  void *pEff;
+  RawJntData *pRaw;
+  unsigned char *pElm;
+  int i;
+  int off;
+  int new_var;
+  int *new_var2;
+  SkeMani *pRoot;
+  unsigned short *pJnt;
+  XrgEffSet *pSet;
+  unsigned int *pNum;
+  int *_ap;
+  pEff = CreateRgMatEffConstraint();
+  if ((pActor == 0) || (pWep == 0))
+  {
+    assert_prog(D_00A58BF0, D_00A587E0, 0x5BF);
+  }
+  if (0 == pEff)
+  {
+    assert_prog(D_00A58C10, D_00A587E0, 0x5C0);
+  }
+  pRaw = _FindRawJntData(pActor->actorID, eEffID);
+  pElm = (unsigned char *) pRaw->unmodeled_008;
+  if (pRaw == 0)
+  {
+    DisposeRgMatricesEffector(pEff);
+    return 0;
+  }
+  new_var = 0;
+  if ((*((int *) pElm)) >= new_var)
+  {
+    int *p;
+    *(_ap = &off) = new_var;
+    do
+    {
+      p = (int *) (pElm + off);
+      off += 4;
+      new_var2 = (int *) pElm;
+      RgMatricesEffectorAddManipulator(pEff, _CreateSkeMani_sub(pActor->pXenoAct, *p, D_00A587E0, 0x5CB));
+      new_var2 = (int *) (((char *) new_var2) + off);
+    }
+    while (0 <= (*new_var2));
+  }
+  pRoot = _CreateSkeMani_sub(pActor->pXenoAct, *((int *) (pRaw->unmodeled_008 + 0x80)), D_00A587E0, 0x5D0);
+  RgMatEffConstraintSetRoot(pEff, pRoot, _CreateSkeMani_sub(pActor->pXenoAct, *((int *) (0x84 + pRaw->unmodeled_008)), D_00A587E0, 0x5D1));
+  XrgLog(D_00A58C20, D_00A587E0, 0x5D4, 8, _ActJntToAccID_sub(8, D_00A587E0, 0x5D4));
+  RgMatEffConstraintSetTop(pEff, _CreateAccMani_sub(pWep->pXenoAct, _ActJntToAccID_sub(8, D_00A587E0, 0x5D5), D_00A587E0, 0x5D5));
+  pJnt = pWep->pXenoAct->jointData;
+  for (i = 1; pJnt[3] > i; i++)
+  {
+    if (pWep->pXenoAct != 0)
+    {
+      RgMatricesEffectorAddManipulator(pEff, _CreateSkeMani_sub(pWep->pXenoAct, i, D_00A587E0, 0x5DC));
+    }
+  }
+
+  if (eEffID >= 2)
+  {
+    assert_prog(D_00A58C38, D_00A587E0, 0x5E1);
+  }
+  pSet = (XrgEffSet *) (((char *) pActor) + 4);
+  new_var2 = (int *) (((char *) new_var2) + off);
+  {
+    int ofs = (eEffID * 4) + 0xF0;
+    pNum = (unsigned int *) (ofs + ((char *) pSet));
+  }
+  if (4 <= (*pNum))
+  {
+    assert_prog(D_00A58C68, D_00A587E0, 0x5E2);
+  }
+  RgMatricesEffectorSetActivity(pEff, 0);
+  pSet->eff[eEffID][(*pNum)++] = pEff;
+  return pEff;
+}
+
+extern const char D_00A58C88[];
+extern const char D_00A58C38[];
+extern const char D_00A58C68[];
+extern void *CreateRgMatEffCombine(void);
+extern void RgMatEffCombineSetRoot(void *combine, void *root, void *top);
+extern void RgMatricesEffectorAddDoubleMani(void *effector, void *first, void *second);
+extern void RgMatricesEffectorSetActivity(void *effector, int activity);
+typedef struct RawJntArm {
+    int id;
+    int jntID;
+    int jnt[33];
+    int root;
+} RawJntArm;
+
+void *XrgActorCreateEffArmCombine(XrgActor *pActor, XrgActor *pSrcActor, XrgActor *pAttach,
+                                  XrgActor *pAttached, unsigned int eEffID)
+{
+    XenoAct *pSrcXeno;
+    XenoAct *pXeno;
+    RawJntArm *raw;
+    void *combine;
+    int i;
+    void *a;
+    void *b;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 0x5F8);
+    }
+    if (pSrcActor == 0) {
+        assert_prog(D_00A58AC8, D_00A587E0, 0x5F9);
+    }
+    if (pAttach == 0) {
+        assert_prog(D_00A58C88, D_00A587E0, 0x5FA);
+    }
+    pSrcXeno = pSrcActor->pXenoAct;
+    pXeno = pActor->pXenoAct;
+    raw = (RawJntArm *)_FindRawJntData(pActor->actorID, eEffID);
+    if (raw == 0) {
+        return 0;
+    }
+    combine = CreateRgMatEffCombine();
+    for (i = 0; raw->jnt[i] >= 0; i++) {
+        int jnt = raw->jnt[i];
+        RgMatricesEffectorAddDoubleMani(combine,
+            _CreateSkeMani_sub(pXeno, jnt, D_00A587E0, 0x611),
+            _CreateSkeMani_sub(pSrcXeno, jnt, D_00A587E0, 0x612));
+    }
+    i = raw->root;
+    a = _CreateSkeMani_sub(pXeno, i, D_00A587E0, 0x618);
+    b = _CreateSkeMani_sub(pSrcXeno, i, D_00A587E0, 0x618);
+    RgMatEffCombineSetRoot(combine, a, b);
+    if (pAttach != 0 && pAttached != 0) {
+        XenoAct *pAtt = pAttach->pXenoAct;
+        XenoAct *pAttd = pAttached->pXenoAct;
+        void *jd = pAtt->jointData;
+        for (i = 1; i < *(unsigned short *)((char *)jd + 6); i++) {
+            a = _CreateSkeMani_sub(pAtt, i, D_00A587E0, 0x621);
+            b = _CreateSkeMani_sub(pAttd, i, D_00A587E0, 0x622);
+            if (a != 0 && b != 0) {
+                RgMatricesEffectorAddDoubleMani(combine, a, b);
+            }
+        }
+    }
+    if (eEffID >= 2) {
+        assert_prog(D_00A58C38, D_00A587E0, 0x629);
+    }
+    if (((XrgEffSet *)((char *)pActor + 4))->num[eEffID] >= 4) {
+        assert_prog(D_00A58C68, D_00A587E0, 0x62A);
+    }
+    RgMatricesEffectorSetActivity(combine, 0);
+    ((XrgEffSet *)((char *)pActor + 4))->eff[eEffID][((XrgEffSet *)((char *)pActor + 4))->num[eEffID]++] = combine;
+    return combine;
+}
 
 extern const char D_00A58C98[];
 

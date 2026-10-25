@@ -417,7 +417,55 @@ void nmlPacketAddGsFlushWide(void)
 
 extern struct { char pad[8]; u16 zbp; } sRender;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddReflectParam);
+void nmlPacketAddReflectParam(NmlMaterialRenderState *material, NmlModelRenderState *model)
+{
+  union { u32 w[20]; u64 d[10]; } packet;
+  int color[4];
+  float reflect;
+  u32 new_var;
+  u32 tbw;
+  *((u32 *) (&s_pPacket)) = (u32) xglPacketGetCurrent();
+  reflect = *((float *) (((u8 *) model) + 0x224));
+  if ((model->render_status & 0x100000) && (strstr(material->name, eye_name) != 0))
+    reflect = 2.0f;
+  sceVif1PkCnt(s_pPacket, 0);
+  packet.w[0] = 0x8004;
+  tbw = ((union { u16 h[16]; } *) (&sRender))->h[13];
+  new_var = ((u32 *) material)[0x4A];
+  packet.w[1] = 0x10000000;
+  packet.w[2] = 0xE;
+  packet.d[3] = 0x3F;
+  packet.w[8] = ((u32 *) material)[0x48] + (tbw << 5);
+  packet.w[9] = ((u32 *) material)[0x49] + (tbw << 10);
+  packet.d[5] = 6;
+  packet.w[12] = new_var;
+  packet.w[13] = ((u32 *) material)[0x4B];
+  packet.d[7] = 0x14;
+  packet.w[16] = ((u32 *) material)[0x4C];
+  packet.w[17] = ((u32 *) material)[0x4D];
+  packet.w[3] = 0;
+  packet.d[2] = 0;
+  packet.d[9] = 8;
+  sceVif1PkOpenUpkCode(s_pPacket, 0x3D5, 0x6C, 1, 1);
+  sceVif1PkAddUpkData128N(s_pPacket, &packet, 5);
+  sceVif1PkCloseUpkCode(s_pPacket);
+  tbw = ((union { u16 h[16]; } *) (&sRender))->h[13];
+  packet.w[8] = ((u32 *) material)[0x4E] + (tbw << 5);
+  packet.w[9] = ((u32 *) material)[0x4F] + (tbw << 10);
+  packet.w[12] = ((u32 *) material)[0x50];
+  packet.w[13] = ((u32 *) material)[0x51];
+  packet.w[16] = ((u32 *) material)[0x52];
+  packet.w[17] = ((u32 *) material)[0x53];
+  sceVif1PkOpenUpkCode(s_pPacket, 0x3DA, 0x6C, 1, 1);
+  sceVif1PkAddUpkData128N(s_pPacket, &packet, 5);
+  sceVif1PkCloseUpkCode(s_pPacket);
+  color[0] = (*((float *) (((u8 *) material) + 0xFC))) * 128.0f;
+  if (reflect < 2.0f) color[0] = reflect * 128.0f;
+  color[1] = color[0]; color[2] = color[0]; color[3] = color[0];
+  sceVif1PkOpenUpkCode(s_pPacket, 0x3F1, 0x6C, 1, 1);
+  sceVif1PkAddUpkData128N(s_pPacket, color, 1);
+  sceVif1PkCloseUpkCode(s_pPacket);
+}
 
 extern int D_004AE5A0[];
 extern u8 D_004AE5B0[];
@@ -726,6 +774,87 @@ void nmlPacketAddBlockMaterial(NmlMaterialRenderState *material, NmlModelRenderS
         sceVif1PkCloseUpkCode(s_pPacket);
     }
 }
+
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct NmlAttributePacket NmlAttributePacket;
+
+typedef union GsTag {
+    u64 value;
+    u32 words[2];
+} GsTag;
+
+typedef struct NmlModelResource {
+    unsigned char unmodeled_000[0x6c];
+    u32 texture_reference;
+} NmlModelResource;
+
+typedef struct NmlTextureResourceSet {
+    int count;
+    unsigned char unmodeled_04[0x2c];
+} NmlTextureResourceSet;
+
+typedef struct NmlTextureResourceEntry {
+    short width;
+    unsigned char unmodeled_02[2];
+    short height;
+    unsigned char unmodeled_06[2];
+    short psm;
+    unsigned char unmodeled_0a[2];
+    short buffer_width;
+    unsigned char unmodeled_0e[2];
+    int vram_offset;
+    int pixel_bytes;
+    unsigned char unmodeled_18[0x28];
+} NmlTextureResourceEntry;
+
+typedef struct XglLoadImage {
+    u64 giftag;
+    unsigned char unmodeled_08[0x58];
+} XglLoadImage;
+
+typedef struct NmlScreenGsScratchEntry {
+    GsTag payload;
+    GsTag address;
+} NmlScreenGsScratchEntry;
+
+typedef union NmlCurrentPacket {
+    XglPacket *sdk;
+    NmlAttributePacket *attributes;
+} NmlCurrentPacket;
+
+typedef union NmlAttributeCursor {
+    u8 *bytes;
+    Quadword *quadwords;
+} NmlAttributeCursor;
+
+struct NmlAttributePacket {
+    unsigned char unmodeled_00[0x20];
+    u32 limit;
+    NmlAttributeCursor cursor;
+};
+
+typedef struct NmlPixelTestPacket {
+    u32 loops;
+    u32 format;
+    u32 registers;
+    u32 register_high;
+    u64 first_value;
+    u64 first_address;
+    u64 second_value;
+    u64 second_address;
+} NmlPixelTestPacket;
+
+typedef struct NmlZbufRenderState {
+    unsigned char unmodeled_00[2];
+    short frame_psm;
+    short frame_width;
+    short frame_height; /* +0x6 */
+    u16 depth_buffer_base;
+    unsigned char unmodeled_0a[0x10]; /* +0xa */
+    u16 texture_buffer_base; /* +0x1a */
+    unsigned char unmodeled_1c[4]; /* +0x1c */
+    u16 display_buffer_base; /* +0x20 */
+} NmlZbufRenderState;
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketMakeCircleTexture);
 
@@ -1428,9 +1557,67 @@ u8 *nmlPacketSetAttributeData64(const void *data)
     return *(u8 **)&s_pPacket->cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketSetAttributeData64N);
+/* Handwritten function (original is assembly): copies count 64-byte blocks. */
+u8 *nmlPacketSetAttributeData64N(const void *data, u32 count)
+{
+    XglPacket *packet;
+    u8 *dst;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketSetAttributeData16N);
+    packet = xglPacketGetCurrent();
+    s_pPacket = packet;
+    *(u8 **)&packet->cursor -= count << 6;
+    dst = *(u8 **)&s_pPacket->cursor;
+    __asm__ __volatile__(
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "lq $2,16(%1)\n\t"
+        "sq $2,16(%0)\n\t"
+        "lq $2,32(%1)\n\t"
+        "sq $2,32(%0)\n\t"
+        "lq $2,48(%1)\n\t"
+        "sq $2,48(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,64\n\t"
+        "addi %1,%1,64\n\t"
+        ".set push\n\t"
+        ".set noreorder\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop\n\t"
+        ".set pop"
+        : "+r"(dst), "+r"(data), "+r"(count)
+        :
+        : "$2", "memory");
+    return *(u8 **)&s_pPacket->cursor;
+}
+
+/* Handwritten function (original is assembly): copies count quadwords. */
+u8 *nmlPacketSetAttributeData16N(const void *data, u32 count)
+{
+    XglPacket *packet;
+    u8 *dst;
+
+    packet = xglPacketGetCurrent();
+    s_pPacket = packet;
+    *(u8 **)&packet->cursor -= count << 4;
+    dst = *(u8 **)&s_pPacket->cursor;
+    __asm__ __volatile__(
+        "1:\n\t"
+        "lq $2,0(%1)\n\t"
+        "sq $2,0(%0)\n\t"
+        "addi %2,%2,-1\n\t"
+        "addi %0,%0,16\n\t"
+        "addi %1,%1,16\n\t"
+        ".set push\n\t"
+        ".set noreorder\n\t"
+        "bne $0,%2,1b\n\t"
+        "nop\n\t"
+        ".set pop"
+        : "+r"(dst), "+r"(data), "+r"(count)
+        :
+        : "$2", "memory");
+    return *(u8 **)&s_pPacket->cursor;
+}
 
 /* Same aliasing proof as nmlPacketSetAttributeData above (main 0x00238e00). */
 u8 *nmlPacketSetAttributeAlloc16N(u32 count)

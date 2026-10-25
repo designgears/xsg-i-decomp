@@ -65,7 +65,138 @@ static void _InitShoot(RgParticleShoot *shoot, RgParticleEffectEssence *essence)
     XrgClearVector(shoot->force);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_particle_effect", _ShootParticles);
+extern float floorf(float value);
+extern void XrgCopyMatrix(RgMatrix destination, const RgMatrix source);
+extern void XrgRandVectorRange(RgVector destination, float xRange, float yRange);
+extern void XrgUnitVector(RgVector vector);
+extern void XrgLinearIntpVector(RgVector destination, RgVector first, RgVector second, float weight);
+extern void XrgScaleVectorXYZ(RgVector destination, RgVector source, float scale);
+extern float XrgRand(float lower, float upper);
+extern void XrgAddVectorXYZ(RgVector destination, RgVector first, RgVector second);
+extern void XrgClearVector(RgVector destination);
+extern void XrgCopyVector(RgVector destination, RgVector source);
+static inline float _clampf(float x, float lo, float hi)
+{
+    if (x < lo) {
+        x = lo;
+    } else if (x > hi) {
+        x = hi;
+    }
+    return x;
+}
+static inline void _ApplyMatrix(float *dst, float *mtx, float *src)
+{
+    __asm__ __volatile__(
+        "lqc2 $vf2, 0(%2)\n\t"
+        "lqc2 $vf3, 0(%1)\n\t"
+        "lqc2 $vf4, 16(%1)\n\t"
+        "lqc2 $vf5, 32(%1)\n\t"
+        "lqc2 $vf6, 48(%1)\n\t"
+        "vmulax.xyzw ACCxyzw, vf3xyzw, vf2x\n\t"
+        "vmadday.xyzw ACCxyzw, vf4xyzw, vf2y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf5xyzw, vf2z\n\t"
+        "vmaddw.xyzw vf2xyzw, vf6xyzw, vf2w\n\t"
+        "sqc2 $vf2, 0(%0)\n\t"
+        : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+}
+static inline int _maxi(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
+static void _ShootParticles(RgParticleShot *shot, float deltaTime, int opening)
+{
+    RgMatrix mtx;
+    RgVector from;
+    RgVector to;
+    RgVector force;
+    RgVector pos;
+    RgVector vel;
+    RgVector zero;
+    RgVector posv;
+    RgVector dirv;
+    RgParticleShoot *shoot;
+    unsigned int n;
+    unsigned int end;
+    RgVector *p;
+    unsigned int t;
+    float f;
+    float c;
+    float range0;
+    float range1;
+    float inv;
+    int k;
+    float *lm;
+
+    shoot = (RgParticleShoot *)shot->shoot;
+    end = shot->dispArg0 + shot->dispArg1 * 0x50;
+    if (opening) {
+        if (shoot->duration > 0.0f) {
+            return;
+        }
+        n = shot->dispArg1;
+    } else {
+        shoot->life -= deltaTime;
+        if (shoot->life < 0.0f) {
+            return;
+        }
+        f = shoot->duration * deltaTime + *(float *)&shoot->shotCount;
+        c = floorf(f);
+        *(float *)&shoot->shotCount = f - c;
+        if (c <= 0.5f) {
+            return;
+        }
+        k = (int)c;
+        n = _maxi(1, k);
+    }
+    XrgCopyVector(force, shoot->force);
+    if (shoot->elapsedFrames == 0) {
+        shoot->elapsedFrames = shot->dispArg0;
+    }
+    p = (RgVector *)shoot->elapsedFrames;
+    range0 = _clampf(shoot->speed, 0.0f, 3.1415927f);
+    range1 = _clampf(shoot->speed, 0.0f, 6.2831855f);
+    lm = shoot->localMatrix;
+    XrgCopyMatrix(mtx, lm);
+    XrgUnitVector(&mtx[12]);
+    XrgCopyVector(from, &shoot->localMatrix[12]);
+    if (shoot->flags != 0) {
+        XrgCopyVector(to, &shoot->worldMatrix[12]);
+    } else {
+        XrgCopyVector(to, from);
+        shoot->flags = 1;
+    }
+    XrgCopyMatrix(shoot->worldMatrix, lm);
+    inv = 1.0f / (float)n;
+    while ((t = n--) != 0) {
+        XrgLinearIntpVector(pos, from, to, (float)n * inv);
+        XrgRandVectorRange(vel, range0, range1);
+        XrgScaleVectorXYZ(vel, vel, XrgRand(shoot->interval * 0.5f, shoot->interval));
+        _ApplyMatrix(vel, mtx, vel);
+        XrgAddVectorXYZ(vel, vel, force);
+        XrgClearVector(zero);
+        XrgCopyVector(posv, shoot->position);
+        XrgCopyVector(dirv, shoot->direction);
+        posv[2] *= 6.2831855f;
+        posv[3] *= 6.2831855f;
+        if (dirv[2] != 0.0f) {
+            posv[2] = XrgRand(0.0f, 3.1415927f);
+        }
+        if (dirv[3] != 0.0f) {
+            posv[3] = XrgRand(0.0f, 3.1415927f);
+        }
+        XrgCopyVector(p[0], pos);
+        XrgCopyVector(p[1], vel);
+        XrgCopyVector(p[2], zero);
+        XrgCopyVector(p[3], posv);
+        XrgCopyVector(p[4], dirv);
+        p += 5;
+        if ((unsigned int)p >= end) {
+            p = (RgVector *)shot->dispArg0;
+        }
+    }
+    shoot->elapsedFrames = (int)p;
+}
 
 static void _ReInitShoot(RgParticleShoot *shoot)
 {

@@ -25,6 +25,28 @@ typedef union {
     int i;
 } LayoutSlot;
 
+typedef struct NmlPartPixelAlpha {
+    short alpha;
+    short partId;
+} NmlPartPixelAlpha;
+
+typedef struct NmlAlphaGroup {
+    unsigned char unmodeled_00[4];
+    float sortDistance;
+    unsigned char unmodeled_08[8];
+} NmlAlphaGroup;
+
+/* Fork (derwetterfrosch) field map for LayoutStore.fields, NOT applied because
+ * adding these members perturbs nmlModelDirectSend codegen (cc1 allocation-order
+ * sensitivity), verified 2026-10-19:
+ *   +0x000 Matrix4 lightDirection   +0x040 Matrix4 lightColor
+ *   +0x080 Matrix4 place            +0x0c0 Matrix4 inversePlace
+ *   +0x100 Vector4 pointPosition[4] +0x140 Vector4 pointColor[4]
+ *   +0x1c0 Vector4 fogColor         +0x1d0 Vector4 fogPara
+ *   +0x200 Vector4 multiplyColor    +0x254 int parent
+ *   +0x278 int mapShadowPartCount   +0x27c int renderLevel
+ *   +0x2b4 int partPixelAlphaCount  +0x2d0 NmlPartPixelAlpha partPixelAlpha[4]
+ */
 typedef union {
     LayoutSlot slots[200];
     struct {
@@ -77,7 +99,9 @@ typedef union {
  * byte gap rather than a guessed int member.
  */
 typedef struct {
-    unsigned char unmodeled_00[0x10];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    int color[3];
+    int level;
     int frame;
     int duration;
     int skipRender;
@@ -183,8 +207,19 @@ extern int s_inBackBuffer[];
 typedef struct NmlModelBlock {
     char name[0x20];
     u32 flags;
-    unsigned char unmodeled_024[0x9c];
+    unsigned char unmodeled_024[0x2c - 0x24];
+    int partId; /* +0x2c */
+    unsigned char unmodeled_030[0xc0 - 0x30];
     u32 materialFlags;
+    unsigned char unmodeled_0c4[0x3c];
+    Vector4 multiplyColor; /* +0x100 */
+    float translationX, translationY;
+    float translationStepX, translationStepY;
+    unsigned char unmodeled_120[0x4c];
+    signed char shapeMathParameter;
+    signed char shapeMode, shapeWeight;
+    unsigned char shapeFlags;
+    char materialName[32]; /* +0x170 */
 } NmlModelBlock;
 
 #define NML_BLOCK_HIDDEN 0x8u
@@ -195,10 +230,20 @@ typedef struct NmlModelBlock {
  * holds byte offsets from this record to individual NmlModelBlock records.
  */
 typedef struct NmlModel {
-    unsigned char unmodeled_000[0x44];
+    unsigned char unmodeled_000[0x40 - 0x0];
+    int partCount; /* +0x40 */
     int blockCount;
     unsigned char unmodeled_048[0x68];
     int blockOffsets[1];
 } NmlModel;
+
+/* Parent records reference render layouts; +8/+0xc are the two entry counters. */
+typedef struct NmlParentBuffer {
+    LayoutStore *layout;
+    unsigned char unmodeled_04[4];
+    int nonAlphaCount;
+    int alphaCount;
+} NmlParentBuffer;
+typedef NmlParentBuffer NmlParentBuf;
 
 #endif /* SRC_MAIN_NML_MODEL_SET_H */

@@ -1,77 +1,154 @@
 #include "common.h"
 
-typedef struct GameMovieMovieInfo {
-    unsigned char pad_00[0x40];
-    short state;
-    unsigned char pad_42[4];
-    unsigned short frame;
-    unsigned char pad_48[0x83];
-    unsigned char threshold0;
-} GameMovieMovieInfo;
-typedef struct { unsigned char pad[0x10]; int flags; } GameMovieLoopState;
-typedef struct { unsigned char pad[0x14]; unsigned short packetControl; } GameMovieRender;
-typedef struct { unsigned char pad[0x40]; unsigned long long w40; unsigned char pad48[0x28]; unsigned long long w70; } GameMovieEnv;
-extern struct MovieInfo mi;
-#define MI (*(GameMovieMovieInfo *)&mi)
-extern GameMovieLoopState GameLoopState;
-extern GameMovieRender sRender;
-extern GameMovieEnv TestEnv_0_00367980;
-extern unsigned char GameMovieAlpha;
-extern unsigned short GameMovieFrame;
-extern unsigned char GameMovieTransparent;
-extern void xglMoviePlay(void *m);
-extern void nmlModelDirectSend(int a, void *p, int n);
+#include "game_movie.h"
+
+/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
+
+extern int xglMovieClose(void *movie);
+
+extern MovieInfo mi;
+
+
+/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
+
+extern int xglMovieOpen(void *movie, char *name);
+
+extern int SCRIPT_getEventActiveFlag(void);
+
+extern int SCRIPT_getFadeTime(void);
+
+extern void SCRIPT_sendMovieSkipSignal(void);
+
+extern void nmlModelSetActiveFadeInCancel(int fadeTime);
+
+#include "shared.h"
+
+#include "main/xgl_thread.h"
+
+#include "main/xgl_font.h"
+
+#include "main/xgl_cd.h"
+
+#include "main/party.h"
+
+extern MovieOverlayPacket TestEnv_0_00367980;
+
+
+extern MovieGameLoopState GameLoopState;
+
+extern MovieRenderState sRender;
+
+extern PadPrefix PadData;
+
+extern volatile unsigned char GameMovieTransparent;
+
+extern volatile unsigned char GameMovieAlpha;
+
+extern short GameMovieFrame;
+
+extern const char D_004C0290[24];
+
+extern const char D_004C02A8[88];
+
+extern int xglMoviePlay(void *movie);
+
+extern void nmlModelDirectSend(int mode, void *data, int count);
+
+extern int xglFontGetStringWidth(const char *text);
+
+extern char *GameResourceGetFreeAddr(void);
+
+extern void nmlModelSendSignalMovieStart(void);
+
+extern void nmlModelSendSignalMovieFinish(int mode);
+
+extern void xglRenderClearDepth(void);
+
+extern void xglSoundStreamStop(int stream);
+
+extern void xglSoundStreamMute(void);
+
+extern void xglSoundEffectNormalDirect(int effect);
+
+extern void *xglMpeg2InfoInit2(void *info, void *arena, int audio_buffer_size);
+
+extern int xglMpeg2Open(void *info, const char *name);
+
+extern int xglMpeg2Play(void *info);
+
+extern int xglMpeg2Close(void *info);
+
+extern void xglRenderCopyDisp2Draw(void);
+
+extern void xglFontPrintDirect(const char *text);
+
+extern void GamePauseDispBG(void);
+
+extern void GamePauseDispEvent(void);
+
+extern void PartyTimePauseStart(void);
+
+extern void PartyTimePauseEnd(void);
+
+#define MOVIE_FLAG_SKIP_ALL 0x10000000
+
+#define PAD_BUTTON_SKIP 0x10
+
+#define PAD_BUTTON_REPLAY 0x20
+
+#define PAD_BUTTON_START 0x800
+
+#define PAD_COMBO_ABORT 0x10c
+
+extern char *caption_nextline(char *cursor);
+
+
+extern char *caption_getparam(char *cursor, int *time, char *out);
+
+
+extern void caption_convert(char *text);
+
+
+/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
+
+/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
+
+/*
+ * Reads one caption entry: a time stamp (minutes:seconds:frames, or minutes
+ * and seconds only) followed by blanks and the text up to a CR, LF or
+ * backslash. The text is written to out with a two byte header (a tag byte
+ * of 1 and the complement of half the text width); a backslash starts a
+ * further line in the same entry. *time receives the time stamp in frames,
+ * or -1 when the line has none. Returns the start of the next entry.
+ */
+
+static inline char caption_peek(char *cursor)
+{
+    return *cursor;
+}
 
 void GameMovieMain(void)
 {
-    if (MI.state != 0) {
+    if (mi.state != 0) {
         if (!(GameLoopState.flags & 1)) {
-            MI.threshold0 = GameMovieTransparent;
+            mi.transparent = GameMovieTransparent;
             xglMoviePlay(&mi);
         }
-        GameMovieFrame = MI.frame;
-        TestEnv_0_00367980.w70 = ((unsigned long long)GameMovieAlpha << 32) | 0x64;
-        TestEnv_0_00367980.w40 = (0x24020000 | (sRender.packetControl << 5)) | 0x2000000640000000ULL;
-        nmlModelDirectSend(5, &TestEnv_0_00367980, 0xD);
+
+        GameMovieFrame = mi.frame;
+        TestEnv_0_00367980.registers[5].value =
+            ((unsigned long long)GameMovieAlpha << 32) | 100;
+        TestEnv_0_00367980.registers[2].value =
+            0x24020000 | (sRender.flip_base << 5) | 0x2000000640000000ULL;
+        nmlModelDirectSend(5, &TestEnv_0_00367980, 13);
     }
 }
-
-/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
-extern int xglMovieClose(void *movie);
-
-/*
- * Partial view of the movie handle xglMovieClose closes; only the
- * playback-state field GameMovieStop clears is modeled, the rest of the
- * layout is not recovered.
- */
-typedef struct MovieInfo {
-    unsigned char unmodeled_00[0x40];
-    short state;                      /* 0x40 */
-    unsigned char unmodeled_42[0x4e];
-    void *source_data;                /* 0x90 */
-    int source_size;                  /* 0x94 */
-    unsigned char unmodeled_98[2];
-    unsigned char opened;             /* 0x9a */
-    unsigned char unmodeled_9b[0x15];
-    void *buf0;                       /* 0xb0 */
-    void *buf1;                       /* 0xb4 */
-    unsigned char unmodeled_b8[0x11];
-    unsigned char transMode;          /* 0xc9 */
-    unsigned char threshold1;         /* 0xca */
-    unsigned char threshold0;         /* 0xcb */
-    unsigned char pad_cc[0x14];
-} MovieInfo;
-
-extern MovieInfo mi;
 
 void GameMovieStop(void)
 {
     xglMovieClose(&mi);
     mi.state = 0;
 }
-
-/* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */
-extern int xglMovieOpen(void *movie, char *name);
 
 int GameMoviePlay(char *name)
 {
@@ -81,11 +158,6 @@ int GameMoviePlay(char *name)
 
     return xglMovieOpen(&mi, name);
 }
-
-extern int SCRIPT_getEventActiveFlag(void);
-extern int SCRIPT_getFadeTime(void);
-extern void SCRIPT_sendMovieSkipSignal(void);
-extern void nmlModelSetActiveFadeInCancel(int fadeTime);
 
 static void movie_skip(int *mode)
 {
@@ -99,61 +171,261 @@ static void movie_skip(int *mode)
     }
 }
 
-static char *caption_nextline(char *p) {
-    char c = *p;
-    int u = (unsigned char)*p;
-    char d;
-    int t, cr;
-    if (c == 13 || c == 10) goto l0;
-    if (c != 0x3B) goto out;
-    p++;
-    u = (unsigned char)*p;
-    for (;;) {
-l0:
-        cr = 13;
-        d = u;
-        p++;
-        if (d != cr && d != 10) {
-            u = (unsigned char)*p;
-            continue;
+static char *caption_nextline(char *cursor)
+{
+    char character;
+
+    do {
+        if (*cursor != '\r' && *cursor != '\n') {
+            if (*cursor != ';') {
+                break;
+            }
+            cursor++;
         }
-        t = (unsigned char)*p;
-        u = t;
-        d = (char)t;
-        if (d == cr || d == 10 || d == 0x3B) continue;
-        break;
-    }
-out:
-    return p;
+        for (;;) {
+            character = *cursor++;
+            if (character == '\r' || character == '\n') {
+                if (*cursor != '\r' && *cursor != '\n' && *cursor != ';') {
+                    break;
+                }
+            }
+        }
+    } while (0);
+    return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_movie", caption_getparam);
+static char *caption_getparam(char *cursor, int *time, char *out)
+{
+    int frames;
+    int colons;
+    int value;
+    int scaled;
+    int width;
+    char ch;
+    char *text;
 
-extern int xglFontGetStringWidth(const char *text);
-extern char D_004C0290[];
-char *caption_getparam(char *src, int *out, char *dst);
+    if ((unsigned)((unsigned char)caption_peek(cursor) - '0') < 10) {
+        colons = 0;
+        frames = 0;
+        for (;;) {
+            value = 0;
+            while ((unsigned)((unsigned char)caption_peek(cursor) - '0') < 10) {
+                value = value * 10 + *cursor++ - '0';
+            }
+            frames += value;
+            if (*cursor == ':') {
+                colons++;
+                scaled = frames * 15;
+                frames = scaled * 2;
+                if (colons == 1) {
+                    frames = scaled * 4;
+                }
+                cursor++;
+            }
+            if (*cursor == ' ' || *cursor == '\t') {
+                break;
+            }
+        }
+        while (*cursor == ' ' || *cursor == '\t') {
+            cursor++;
+        }
+        for (;;) {
+            out += 2;
+            text = out;
+            ch = *cursor++;
+            while (ch != '\\' && ch != '\r' && ch != '\n') {
+                *out++ = ch;
+                ch = *cursor++;
+            }
+            *out = 0;
+            width = xglFontGetStringWidth(text);
+            text[-2] = 1;
+            text[-1] = ~(width / 2);
+            if (ch != '\\') {
+                break;
+            }
+            cursor++;
+            *out++ = '\n';
+        }
+    } else {
+        frames = -1;
+    }
 
-static void caption_convert(char *buf)
+    *time = frames;
+    *out = 0;
+    return caption_nextline(cursor);
+}
+
+static void caption_convert(char *text)
 {
     char *src;
-    int param[4];
+    int time;
 
-    src = buf;
+    src = text;
     xglFontGetStringWidth(D_004C0290);
-    if (*buf == ';') {
-        src = caption_nextline(buf);
+    if (*text == ';') {
+        src = caption_nextline(text);
     }
-    *buf++ = 0;
+    *text++ = 0;
     do {
-        src = caption_getparam(src, param, buf + 2);
-        buf[0] = param[0];
-        buf[1] = param[0] >> 8;
-        buf = buf + 2;
-        while (*buf++ != 0) {
+        src = caption_getparam(src, &time, text + 2);
+        text[0] = time;
+        text[1] = time >> 8;
+        text += 2;
+        while (*text++ != 0) {
         }
-    } while (param[0] >= 0);
+    } while (time >= 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_movie", GameMpeg2Play);
+void GameMpeg2Play(char *name, int mode)
+{
+    MovieMpegContext mpeg;
+    char *text;
+    unsigned char *cursor;
+    char *src;
+    char *dst;
+    int size;
+    int status;
+    int replay;
+    int time;
+    unsigned int pad;
+    int separator;
+    char next;
+    int pass;
+
+    if (!(GameLoopState.flags & MOVIE_FLAG_SKIP_ALL)) {
+        xglRenderClearDepth();
+        xglSoundStreamStop(0);
+        nmlModelSendSignalMovieStart();
+        do {
+            replay = 0;
+            text = GameResourceGetFreeAddr();
+            separator = '.';
+            src = name;
+            dst = text;
+            if (*src != 0) {
+                if (*src == separator) {
+                    dst[0] = '.';
+                    dst[1] = 'c';
+                    dst[2] = 'a';
+                    dst[3] = 'p';
+                    dst[4] = 0;
+                } else {
+                    do {
+                        *dst = *src;
+                        src++;
+                        dst++;
+                        next = *src;
+                    } while (next != 0 && next != separator);
+                    if (next != 0) {
+                        *dst = next;
+                        dst[1] = 'c';
+                        dst[2] = 'a';
+                        dst[3] = 'p';
+                        dst[4] = 0;
+                    }
+                }
+            }
+            size = xglCdReadFile(text, text, 0, 0);
+            if (size < 0) {
+                size = 0;
+            } else {
+                caption_convert(text);
+            }
+            xglMpeg2InfoInit2(&mpeg, text + ((size + 63) & ~63), 0x40000);
+            if (size == 0) {
+                text = 0;
+            }
+            if (xglMpeg2Open(&mpeg, name) >= 0) {
+                GameLoopState.input_delay = 32;
+                for (;;) {
+                    status = xglMpeg2Play(&mpeg);
+                    if (text != 0) {
+                        cursor = (unsigned char *)text;
+                        while (*cursor++ != 0) {
+                        }
+                        time = cursor[0] + (cursor[1] << 8);
+                        if (time >= 0 && mpeg.frame >= time) {
+                            text = (char *)(cursor + 2);
+                        }
+                        xglFontPrint(64, 317, 0xFFFFFF, D_004C0290);
+                        xglFontPrintDirect(text);
+                    }
+                    if (status < 0) {
+                        xglRenderCopyDisp2Draw();
+                        for (pass = 0; pass < 2; pass++) {
+                            xglFontPrint(96, 200, 0xFFFFFF, D_004C02A8);
+                            GamePauseDispBG();
+                            xglSleep();
+                        }
+                        PartyTimePauseStart();
+                        for (;;) {
+                            if (PadData.half_2a & PAD_BUTTON_SKIP) {
+                                movie_skip(&mode);
+                                break;
+                            }
+                            if (PadData.half_2a & PAD_BUTTON_REPLAY) {
+                                replay = 1;
+                                break;
+                            }
+                            xglSleep();
+                        }
+                        PartyTimePauseEnd();
+                        break;
+                    }
+                    if (status > 0) {
+                        break;
+                    }
+                    if (GameLoopState.input_delay != 0) {
+                        GameLoopState.input_delay--;
+                    } else if (PadData.half_2a & PAD_BUTTON_START) {
+                        GameLoopState.input_delay = 32;
+                        if ((PadData.half_28 & PAD_COMBO_ABORT) == PAD_COMBO_ABORT) {
+                            GameLoopState.flags |= MOVIE_FLAG_SKIP_ALL;
+                            break;
+                        }
+                        xglSoundEffectNormalDirect(4);
+                        sRender.scene_disabled = 1;
+                        xglRenderCopyDisp2Draw();
+                        GamePauseDispEvent();
+                        xglSleep();
+                        GamePauseDispEvent();
+                        xglSleep();
+                        PartyTimePauseStart();
+                        for (;;) {
+                            pad = PadData.half_2a;
+                            if (pad & PAD_BUTTON_SKIP) {
+                                movie_skip(&mode);
+                                break;
+                            }
+                            if (GameLoopState.input_delay != 0) {
+                                GameLoopState.input_delay--;
+                            } else if (pad & PAD_BUTTON_START) {
+                                /* START resumes without skipping the movie. */
+                                goto finish_movie_pause;
+                            }
+                            xglSleep();
+                        }
+finish_movie_pause:
+                        PartyTimePauseEnd();
+                        xglSoundEffectNormalDirect(4);
+                        sRender.scene_disabled = 0;
+                        GameLoopState.input_delay = 32;
+                        if (PadData.half_2a & PAD_BUTTON_SKIP) {
+                            GameLoopState.input_delay = 64;
+                            break;
+                        }
+                        xglSoundStreamMute();
+                    }
+                    xglSleep();
+                }
+                xglMpeg2Close(&mpeg);
+            }
+        } while (replay != 0);
+        xglRenderCopyDisp2Draw();
+        nmlModelSendSignalMovieFinish(mode);
+        xglSleep();
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/game_movie", GameMovieInit);

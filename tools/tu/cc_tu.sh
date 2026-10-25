@@ -36,7 +36,9 @@ if [ "$rc" -ne 0 ]; then step_failed "cpp (ee-gcc -E)" "$rc"; exit "$rc"; fi
 if [ -n "${XENO_TU_DEPFILE:-}" ]; then
     sed -e "1s|^[^:]*:|$OUT:|" "$XENO_TU_DEPFILE.raw" > "$XENO_TU_DEPFILE" && rm -f "$XENO_TU_DEPFILE.raw"
 fi
-"${T[@]}" "${ENV[@]}" "$CCDIR/ee-gcc" -B"$CCDIR/" -nostdinc -fno-builtin -S -O2 "$G" \
+# cc1 with ASLR off (setarch -R; inherited by the driver's children): heap
+# addresses can reach ee-gcc 2.96's CSE hashes (tools/tu/noaslr.py).
+"${T[@]}" "${ENV[@]}" setarch -R "$CCDIR/ee-gcc" -B"$CCDIR/" -nostdinc -fno-builtin -S -O2 "$G" \
     "${OUT%.o}.i" -o "${OUT%.o}.s" || rc=$?
 if [ "$rc" -ne 0 ]; then step_failed "cc1 (ee-gcc -S)" "$rc"; exit "$rc"; fi
 ( "${T[@]}" "${ENV[@]}" "$AS" -EL -m5900 -mabi=eabi "$G" $XENO_TU_ASFLAGS -I . -I "$UNIT" -I "$ROOT" \

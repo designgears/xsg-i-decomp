@@ -1,14 +1,37 @@
 #include "common.h"
+
 #include "shared.h"
+
 #include "main/xgl_packet.h"
 
 typedef unsigned int Quadword __attribute__((mode(TI)));
+
+typedef struct Matrix { float elements[16]; } Matrix;
+
+extern int _draw3D;
+
+
+extern int _nEffect2D;
+
+
+extern int eft_5;
+
+
+extern int charID_3;
+
+
+extern int eftCate_4;
+
+
+extern int _nowImage;
+
 
 /*
  * One 0x24-byte entry of the working image list svImageListCreate clears
  * and svGetImageItem indexes; only its address is ever taken in this
  * allocation, so its fields stay unmodeled.
  */
+
 typedef struct SvImageItem {
     unsigned char unmodeled_00[0x24];
 } SvImageItem;
@@ -18,12 +41,288 @@ typedef struct SvImageItem {
  * allocation) followed by 0x100 SvImageItem entries (0x1C + 0x100*0x24 =
  * 0x241C, svImageListCreate's own clear size).
  */
+
 typedef struct SvImageList {
     unsigned char unmodeled_header[0x1C];
     SvImageItem items[0x100];
 } SvImageList;
 
 extern SvImageList _imageList;
+
+
+/*
+ * One 0x24-byte entry of an image mapper's item table: only the leading
+ * dword svImageListDestroy clears is modeled.
+ */
+
+typedef struct SvImageMapperItem {
+    int used; /* 0x00, cleared when non-zero */
+    unsigned char unmodeled_04[0x24 - 4];
+} SvImageMapperItem;
+
+/*
+ * The image-mapper table has a 0x1C-byte header followed by 0x100 entries
+ * of 0x24 bytes. These entry fields are evidenced by the lookup routines:
+ * the active word is at +0x08, the type byte at +0x0E, and the resource
+ * name pointer at +0x20.
+ */
+
+typedef struct SvTypeListEntry {
+    const void *data;
+    unsigned char unmodeled_04[4];
+    int used;
+    short resourceKind;
+    unsigned char type;
+    unsigned char unmodeled_0F[3];
+    unsigned short basePointer;
+    unsigned short bitsPerPixel;
+    unsigned short bufferWidthPixels;
+    unsigned short width;
+    unsigned short height;
+    unsigned short textureWidthExponent;
+    unsigned short textureHeightExponent;
+    const char *name;
+} SvTypeListEntry;
+
+typedef struct SvTypeList {
+    int total;
+    int size;
+    unsigned char unmodeled_08[4];
+    int savedSize;
+    short width;
+    short height;
+    short entryCount;
+    unsigned char unmodeled_16[6];
+    SvTypeListEntry entries[0x100];
+} SvTypeList;
+
+typedef struct SvReferenceImageSlot {
+    unsigned int words[2];
+} SvReferenceImageSlot;
+
+/* _imageMapper's symbol-table size is 40 mapper records followed by these
+ * forty two-word reference-image slots. */
+
+typedef struct SvImageMapperStorage {
+    SvTypeList typeLists[40];
+    SvReferenceImageSlot referenceImages[40];
+} SvImageMapperStorage;
+
+/* Forty 0x241C-byte mapper records followed by forty reference-image slots. */
+
+extern SvImageMapperStorage _imageMapper;
+
+
+extern Matrix _defMatLcMod;
+
+
+extern Matrix _defMatLn;
+
+
+int strcmp(const char *, const char *);
+
+/*
+ * Only `data`, `destAddress` and `format` are evidenced (svLoadClut's three
+ * field reads); the bytes between `data` and `destAddress` are an explicit
+ * unmodeled span rather than an invented field.
+ */
+
+typedef struct ClutUploadRequest {
+    void *data;                     /* 0x00, CLUT pixel data source address */
+    unsigned char unmodeled_04[0x0E];
+    unsigned short destAddress;     /* 0x12, GS local CLUT destination */
+    unsigned short format;          /* 0x14, 8 => 256-entry CLUT, else 16-entry */
+} ClutUploadRequest;
+
+/*
+ * Parameter roles as the SDK body (main 0x0020b208) packs them: GS
+ * BITBLTBUF DBP/DPSM/DBW from basePointer/pixelFormat/bufferWidth, TRXPOS
+ * DSAX/DSAY from x/y, TRXREG RRW/RRH from width/height, then `qwc`
+ * quadwords of `image` sent by reference.
+ */
+
+extern void sceVif1PkRefLoadImage(XglPacket *packet,
+                                  unsigned short basePointer,
+                                  unsigned char pixelFormat,
+                                  unsigned short bufferWidth,
+                                  const void *image, unsigned int qwc,
+                                  unsigned int x, unsigned int y,
+                                  unsigned int width, unsigned int height);
+
+int svLoadImageList(SvTypeList *typeList);
+
+extern int svImageListAlloc(int typeListAddr);
+
+
+/*
+ * One svAddScript2 sub-record, at +0x1C of a 0x24-byte slot of the type
+ * list's item array. Only the fields this function itself writes are
+ * modeled, at their byte offset from this sub-record's own base: `codePtr`
+ * (+0x00, the script's own +0xC0 address), `active` (+0x08, always 1),
+ * `kind` (+0x0C, always 5, matching this function's own "script" name),
+ * `id` (+0x0E, the script's own +0xA halfword), two cleared halfwords
+ * (+0x18/+0x1A) and `dataPtr` (+0x20, the script's own +0x14 address).
+ * +0x20 (slot +0x3C) lands past the slot's own 0x24-byte stride, into the
+ * next slot's leading bytes -- evidenced by the original bytes, not
+ * treated as a bug.
+ */
+
+typedef struct SvScriptSlot {
+    void *codePtr;                  /* 0x00 */
+    unsigned char unmodeled_04[4];
+    int active;                      /* 0x08 */
+    short kind;                       /* 0x0C */
+    short id;                          /* 0x0E */
+    unsigned char unmodeled_10[8];
+    short clearedA;                     /* 0x18 */
+    short clearedB;                      /* 0x1A */
+    unsigned char unmodeled_1C[4];
+    void *dataPtr;                        /* 0x20 */
+} SvScriptSlot;
+
+int svAnalyzeChunk(SvTypeList *typeList, void *chunk);
+
+extern SvTypeList *svGetTypeList(int type);
+
+
+void svImageListDestroy(SvTypeList *typeList);
+
+/*
+ * SGsSendPacket's own address precedes SGsPacket's definition (below, before
+ * SGsInitGifPacket, outside this allocation): the same four fields, at the
+ * same evidenced offsets that definition documents, restated here under a
+ * local tag so this allocation adds text only next to its own function.
+ */
+
+typedef struct SGsPacketReset {
+    int count;               /* 0x0 */
+    int tagIndex;             /* 0x4 */
+    int loopCount;             /* 0x8 */
+    void *base;               /* 0xC, starts at the scratchpad (0x70000000) */
+} SGsPacketReset;
+
+extern void sceVif1PkCnt(XglPacket *packet, int count);
+
+extern void sceVif1PkAddCode(XglPacket *packet, unsigned int code);
+
+extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
+
+extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data,
+                                    int count);
+
+extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
+
+extern void sceVif1PkTerminate(XglPacket *packet);
+
+#define SEF_CLIP_VIEW_VOLUME_OFFSET 0x4F0
+
+/*
+ * sefDrawSchedulerEffect (still INCLUDE_ASM here) calls sefClipViewVolume and
+ * branches on the returned v0, and sefClipViewVolume itself ends in a tail
+ * jump to sefClipViewVolumeA (no jal, so its result is whatever
+ * sefClipViewVolumeA returns): both are declared non-void here.
+ */
+
+extern int sefClipViewVolumeA(void *scheduler);
+
+
+extern void sefInitClipViewVolume(void *view);
+
+
+extern void sefDrawSchedulerEffect(int schedulerIndex);
+
+
+extern void SGsSetZTestEnv(int enable);
+
+extern char *srsAnalyzeEftNo(int effectId, int *charId,
+                            int *effectCategory);
+
+/*
+ * One 0xab0-byte record of the scheduler table sefGetScheduler returns
+ * (src/main/sef.h, "The original scheduler table..."). Only the three
+ * fields this function reads are named; sefIsDeadSchduler (sef.c) reads the
+ * same in-use word raw through its own TU's SchedulerState, which this TU
+ * cannot include (TU-local elsewhere), so this is a separate, narrower view
+ * of the same bytes.
+ */
+
+typedef struct SchedulerRecord {
+    unsigned char unmodeled_000[0x6b0];
+    int inUse;                            /* +0x6b0 */
+    unsigned char unmodeled_6b4[0xa78 - 0x6b4];
+    short effectId;                       /* +0xa78 */
+    unsigned char unmodeled_a7a[0xa8c - 0xa7a];
+    int flags;                            /* +0xa8c */
+    unsigned char unmodeled_a90[0xab0 - 0xa90];
+} SchedulerRecord;
+
+/* sef.c (main/tu211) returns unsigned char *; this prototype
+ * preserves that return type across the call. */
+
+extern unsigned char *sefGetScheduler(void);
+
+#define SCHEDULER_COUNT 0x80
+
+/* Draws the alters whose group (+0x0E) equals layer. */
+
+void sdvDrawAlters(int layer);
+
+extern int _scMslCate;
+
+void MEfObjExec2nd(void);
+
+extern void svDrawSchedulerParticle(void);
+
+
+/*
+ * The SGs* family (SGsInitGifPacket, SGsOpenGifPacket, SGsCloseGifPacket,
+ * SGsAddReg, SGsAddGifXYZ2, SGsSendPacket and others in this TU) shares one
+ * accumulator: a growing array of 16-byte GIF records at `base`, `count`
+ * records long. SGsOpenGifPacket/SGsCloseGifPacket/SGsAddReg (still
+ * INCLUDE_ASM here, read for this evidence per docs/naming.md) show that
+ * `tagIndex` is the record index SGsOpenGifPacket saves so
+ * SGsCloseGifPacket can patch the GIFtag it opened, and `loopCount` is
+ * OR-ed, unshifted, into that tag's low (NLOOP) bits by SGsCloseGifPacket;
+ * both functions here leave it at 1.
+ */
+
+/*
+ * One 128-bit GIF packet record. The SGs* writers fill it as a whole
+ * quadword (sq), as two doublewords (sd at 0x0/0x8: a register value and
+ * its A+D address) or as four words (sw, SGsAddGifXYZ2).
+ */
+
+typedef union SGsGifRecord {
+    Quadword quad;
+    unsigned long long dword[2];
+    int word[4];
+    unsigned short halfword[8];
+    float floatValue[4];
+} SGsGifRecord;
+
+typedef struct SGsPacket {
+    int count;              /* 0x0 */
+    int tagIndex;           /* 0x4 */
+    int loopCount;          /* 0x8 */
+    SGsGifRecord *base;     /* 0xC, starts at the scratchpad (0x70000000) */
+} SGsPacket;
+
+typedef struct SvImageParameter {
+    unsigned long long texture;
+    float width;
+    float height;
+} SvImageParameter;
+
+extern const char D_004DBA50[];
+
+extern const char D_004DBA58[];
+
+/*
+ * GS XYZF2 vertex: X/Y are (value*16 + screen offset), Z and F are the
+ * raw depth and fog values -- the PS2 SDK's own XYZ2/XYZF2 naming.
+ */
+
+#include "sv_get_image_item.h"
 
 void *svGetImageItem(int index) {
     return &_imageList.items[index];
@@ -33,83 +332,9 @@ void svImageListCreate(void) {
     memset(&_imageList, 0, sizeof(SvImageList));
 }
 
-/*
- * One 0x24-byte entry of an image mapper's item table: only the leading
- * dword svImageListDestroy clears is modeled.
- */
-typedef struct SvImageMapperItem {
-    int used; /* 0x00, cleared when non-zero */
-    unsigned char unmodeled_04[0x24 - 4];
-} SvImageMapperItem;
-
-/*
- * SvTypeListFields and SvTypeList (below, next to svDeleteImageMapper) name
- * the same physical 0x241C-byte per-type record svGetTypeList indexes; they
- * are not two different objects. svDeleteImageMapper's own text completes
- * the SvTypeList tag with only its one evidenced field (entryCount, +0x14)
- * and is published, unallocated prelude here, so it is restated byte-
- * identical and never grown (AGENTS.md, "Source and acceptance": a
- * published struct cannot grow). svImageListDestroy and svAddImageMapper
- * (this allocation) sit earlier in the file and evidence more of the same
- * record than that completion models, so they read/write it through this
- * second tag naming only their own fields, at the identical offsets:
- * `total` (+0x00, unconditionally cleared), `size` (+0x04, read and
- * archived into `savedSize` at +0x0C before the clear), `width`/`height`
- * (+0x10/+0x12, the two fields svAddImageMapper stores its own second and
- * fourth arguments into, both cleared here) and `entryCount` (+0x14, the
- * same field and offset SvTypeList already names). Bytes 0x08-0x0B stay an
- * explicit unmodeled span; nothing in this allocation touches them.
- */
-typedef struct SvTypeList SvTypeList;
-
-/*
- * The image-mapper table has a 0x1C-byte header followed by 0x100 entries
- * of 0x24 bytes. These entry fields are evidenced by the lookup routines:
- * the active word is at +0x08, the type byte at +0x0E, and the resource
- * name pointer at +0x20.
- */
-typedef struct SvTypeListEntry {
-    unsigned char unmodeled_00[8];
-    int used;
-    unsigned char unmodeled_0C[2];
-    unsigned char type;
-    unsigned char unmodeled_0F[0x11];
-    const char *name;
-} SvTypeListEntry;
-
-typedef struct SvTypeListStorage {
-    unsigned char unmodeled_00[0x10];
-    short width;
-    short height;
-    short entryCount;
-    unsigned char unmodeled_16[6];
-    SvTypeListEntry entries[0x100];
-} SvTypeListStorage;
-
-typedef struct SvReferenceImageSlot {
-    unsigned int words[2];
-} SvReferenceImageSlot;
-
-/* _imageMapper's symbol-table size is 40 mapper records followed by these
- * forty two-word reference-image slots. */
-typedef struct SvImageMapperStorage {
-    SvTypeListStorage typeLists[40];
-    SvReferenceImageSlot referenceImages[40];
-} SvImageMapperStorage;
-
-typedef struct SvTypeListFields {
-    int total;         /* 0x00 */
-    int size;           /* 0x04 */
-    unsigned char unmodeled_08[4];
-    int savedSize;       /* 0x0C */
-    short width;          /* 0x10 */
-    short height;         /* 0x12 */
-    short entryCount;     /* 0x14 */
-} SvTypeListFields;
-
 void svImageListDestroy(SvTypeList *typeList)
 {
-  SvTypeListFields *header = (SvTypeListFields *) typeList;
+  SvTypeList *header = typeList;
   SvImageMapperItem *item = (SvImageMapperItem *) (((unsigned char *) typeList) + 0x24);
   int count = 0xFF;
 
@@ -133,10 +358,10 @@ void svImageListDestroy(SvTypeList *typeList)
 
 static int svImageListAlloc(int typeListAddr)
 {
-    SvTypeListStorage *typeList;
+    SvTypeList *typeList;
     int index;
 
-    typeList = (SvTypeListStorage *)typeListAddr;
+    typeList = (SvTypeList *)typeListAddr;
     for (index = 0; index < 0x100; index++) {
         if (typeList->entries[index].used == 0) {
             return index;
@@ -145,21 +370,19 @@ static int svImageListAlloc(int typeListAddr)
     return -1;
 }
 
-extern unsigned char _imageMapper[];
-
 static SvTypeList * svGetTypeList(int type) {
-    return (SvTypeList *) (_imageMapper + (type * 0x241C));
+    return &_imageMapper.typeLists[type];
 }
 
 static void *svGetImageListItemSub(int type, unsigned int flags)
 {
     SvTypeList *typeList;
-    SvTypeListStorage *storage;
+    SvTypeList *storage;
     SvTypeListEntry *entry;
     int index;
 
     typeList = svGetTypeList(type);
-    storage = (SvTypeListStorage *)typeList;
+    storage = typeList;
     entry = storage->entries;
     index = 0;
     while (index < 0x100) {
@@ -172,28 +395,35 @@ static void *svGetImageListItemSub(int type, unsigned int flags)
     return 0;
 }
 
-void *svGetImageListItem(int type, unsigned int flags) {
-    int t;
-    if (flags & 0x100) t = 0;
-    else if (flags & 0x200) t = type;
-    else if (flags & 0x400) t = type;
-    else if (flags & 0x800) t = 15;
-    else if (flags & 0x1000) t = type;
-    else t = 14;
-    return svGetImageListItemSub(t, flags);
-}
+void *svGetImageListItem(int type, unsigned int flags)
+{
+    int typeIndex;
 
-int strcmp(const char *, const char *);
+    if ((flags & 0x100) != 0) {
+        typeIndex = 0;
+    } else if ((flags & 0x200) != 0) {
+        typeIndex = type;
+    } else if ((flags & 0x400) != 0) {
+        typeIndex = type;
+    } else if ((flags & 0x800) != 0) {
+        typeIndex = 15;
+    } else if ((flags & 0x1000) != 0) {
+        typeIndex = type;
+    } else {
+        typeIndex = 14;
+    }
+    return svGetImageListItemSub(typeIndex, flags);
+}
 
 static SvTypeListEntry *svGetResFromName(const char *name)
 {
     SvTypeList *typeList;
-    SvTypeListStorage *storage;
+    SvTypeList *storage;
     SvTypeListEntry *entry;
     int index;
 
     typeList = svGetTypeList(0);
-    storage = (SvTypeListStorage *)typeList;
+    storage = typeList;
     entry = storage->entries;
     index = 0;
     while (index < 0x100) {
@@ -206,80 +436,99 @@ static SvTypeListEntry *svGetResFromName(const char *name)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svGetPrmFromName);
+SvImageParameter *svGetPrmFromName(const char *baseName,
+                                   SvImageParameter *parameter)
+{
+    char resourceName[128];
+    SvTypeListEntry *bitmap;
+    SvTypeListEntry *clut;
 
-typedef struct TextureUploadRequest {
-    void *data;                     /* 0x00, texture pixel data source address */
-    unsigned char unmodeled_04[0x0E];
-    unsigned short basePointer;     /* 0x12, GS local texture destination base pointer */
-    unsigned short format;          /* 0x14, 8 => pixelFormat 0x13, else 0x14 */
-    unsigned short bufferWidthRaw;  /* 0x16, raw value, shifted >> 6 for bufferWidth */
-    unsigned short width;           /* 0x18, texture width */
-    unsigned short height;          /* 0x1A, texture height */
-} TextureUploadRequest;
+    sprintf(resourceName, D_004DBA50, baseName);
+    bitmap = svGetResFromName(resourceName);
+    sprintf(resourceName, D_004DBA58, baseName);
+    clut = svGetResFromName(resourceName);
 
-void svLoadTexture(TextureUploadRequest *tex)
+    if (bitmap != 0) {
+        if (clut != 0) {
+            unsigned long long baseBits;
+            unsigned long long dimensionBits;
+            unsigned long long formatBits;
+            unsigned long long clutBits;
+            int pixelFormat;
+            unsigned short clutBasePointer;
+            unsigned short bitsPerPixel;
+            float scaledWidth;
+
+            clutBasePointer = clut->basePointer;
+            baseBits = (unsigned long long)bitmap->basePointer |
+                       0x2000000000000000ULL;
+            dimensionBits =
+                ((unsigned long long)bitmap->textureWidthExponent << 26) |
+                0x400000000ULL;
+            pixelFormat = 20;
+            bitsPerPixel = bitmap->bitsPerPixel;
+            if (bitsPerPixel == 8) {
+                pixelFormat = 19;
+            }
+            formatBits =
+                ((unsigned long long)pixelFormat << 20) |
+                ((unsigned long long)(bitmap->bufferWidthPixels >> 6) << 14);
+            clutBits =
+                ((unsigned long long)bitmap->textureHeightExponent << 30) |
+                ((unsigned long long)clutBasePointer << 37);
+            scaledWidth = bitmap->width * 0.01f;
+            parameter->height = bitmap->height * 0.01f;
+            parameter->width = scaledWidth;
+            parameter->texture = (baseBits | formatBits) |
+                                 (dimensionBits | clutBits);
+            return parameter;
+        }
+    }
+
+    memset(parameter, 0, 16);
+    return 0;
+}
+
+void svLoadTexture(SvTypeListEntry *image)
 {
     XglPacket *packet;
     unsigned short basePointer;
     unsigned short height;
     unsigned short width;
-    unsigned short bufferWidthRaw;
-    void *data;
-    int product;
-    int qwc;
+    unsigned short bitsPerPixel;
 
-    basePointer = tex->basePointer;
-    height = tex->height;
-    width = tex->width;
+    basePointer = image->basePointer;
+    height = image->height;
+    width = image->width;
     packet = xglPacketGetCurrent();
+    bitsPerPixel = image->bitsPerPixel;
 
-    if (tex->format == 8) {
-        bufferWidthRaw = tex->bufferWidthRaw;
-        data = tex->data;
-        product = (int)bufferWidthRaw * (int)height;
-        if (product < 0) {
-            product += 15;
+    if (bitsPerPixel == 8) {
+        unsigned short bufferWidth;
+        int qwc;
+
+        bufferWidth = image->bufferWidthPixels;
+        qwc = bufferWidth * height;
+        if (qwc < 0) {
+            qwc += 15;
         }
-        qwc = product >> 4;
-        sceVif1PkRefLoadImage(packet, basePointer, 0x13, bufferWidthRaw >> 6, data, qwc, 0, 0, width, height);
+        sceVif1PkRefLoadImage(packet, basePointer, 19,
+                              bufferWidth >> 6, image->data,
+                              (unsigned int)(qwc >> 4), 0, 0, width, height);
     } else {
-        bufferWidthRaw = tex->bufferWidthRaw;
-        data = tex->data;
-        product = (int)bufferWidthRaw * (int)height;
-        if (product < 0) {
-            product += 15;
+        unsigned short bufferWidth;
+        int qwc;
+
+        bufferWidth = image->bufferWidthPixels;
+        qwc = bufferWidth * height;
+        if (qwc < 0) {
+            qwc += 15;
         }
-        qwc = product >> 4;
-        sceVif1PkRefLoadImage(packet, basePointer, 0x14, bufferWidthRaw >> 6, data, qwc, 0, 0, width, height);
+        sceVif1PkRefLoadImage(packet, basePointer, 20,
+                              bufferWidth >> 6, image->data,
+                              (unsigned int)(qwc >> 4), 0, 0, width, height);
     }
 }
-
-/*
- * Only `data`, `destAddress` and `format` are evidenced (svLoadClut's three
- * field reads); the bytes between `data` and `destAddress` are an explicit
- * unmodeled span rather than an invented field.
- */
-typedef struct ClutUploadRequest {
-    void *data;                     /* 0x00, CLUT pixel data source address */
-    unsigned char unmodeled_04[0x0E];
-    unsigned short destAddress;     /* 0x12, GS local CLUT destination */
-    unsigned short format;          /* 0x14, 8 => 256-entry CLUT, else 16-entry */
-} ClutUploadRequest;
-
-/*
- * Parameter roles as the SDK body (main 0x0020b208) packs them: GS
- * BITBLTBUF DBP/DPSM/DBW from basePointer/pixelFormat/bufferWidth, TRXPOS
- * DSAX/DSAY from x/y, TRXREG RRW/RRH from width/height, then `qwc`
- * quadwords of `image` sent by reference.
- */
-extern void sceVif1PkRefLoadImage(XglPacket *packet,
-                                  unsigned short basePointer,
-                                  unsigned char pixelFormat,
-                                  unsigned short bufferWidth,
-                                  const void *image, unsigned int qwc,
-                                  unsigned int x, unsigned int y,
-                                  unsigned int width, unsigned int height);
 
 void svLoadClut(ClutUploadRequest *clut)
 {
@@ -294,49 +543,44 @@ void svLoadClut(ClutUploadRequest *clut)
     }
 }
 
-typedef struct { char pad0[0x1C]; struct { char pad[8]; int used; s16 type; char pad2[0x24-0xE]; } e[256]; } SvImgList_;
-
-int svLoadImageList(void *arg0) {
-    SvImgList_ *l = arg0;
+static inline int svLoadImageListCount(SvTypeList *typeList)
+{
     int i;
     int cnt = 0;
-    for (i = 0; i < 256; i++) {
-        if (l->e[i].used != 0) {
-            if (l->e[i].type == 4) {
+
+    for (i = 0; i < 0x100; i++) {
+        if (typeList->entries[i].used != 0) {
+            if (typeList->entries[i].resourceKind == 4) {
                 cnt++;
-                svLoadTexture((TextureUploadRequest *)&l->e[i]);
-            } else if (l->e[i].type == 3) {
-                svLoadClut((ClutUploadRequest *)&l->e[i]);
+                svLoadTexture(&typeList->entries[i]);
+            } else if (typeList->entries[i].resourceKind == 3) {
+                svLoadClut((ClutUploadRequest *)&typeList->entries[i]);
             }
         }
     }
     return cnt;
 }
 
-int svLoadImageList(void *);
-
-int svLoadMapperList(void)
+int svLoadImageList(SvTypeList *typeList)
 {
-  int ret;
-  int loadResult;
-  int reverseIndex;
-  int typeOffset;
+    return svLoadImageListCount(typeList);
+}
 
-  typeOffset = 0;
-  reverseIndex = 0x27;
-  do
-  {
-    ret = *((s16 *) (((unsigned char *) (((s16 *) ((s16 *) (((int) ((void *) _imageMapper)) + 0x14))) + ((reverseIndex - 39) * -4622))) + 0));
-    if (ret > 0)
-    {
-      loadResult = svLoadImageList((void *) (typeOffset + ((int) ((void *) _imageMapper))));
-      ret = loadResult;
+s16 svLoadMapperList(void)
+{
+    s16 result;
+    int type;
+    SvTypeList *typeLists = _imageMapper.typeLists;
+
+    for (type = 0; type < 40; type++) {
+        /* Preserve the original loop's separate entry-count pointer. */
+        const s16 *entryCount = &typeLists[type].entryCount;
+        result = *entryCount;
+        if (result > 0) {
+            result = ((s16 (*)(SvTypeList *))svLoadImageList)(&_imageMapper.typeLists[type]);
+        }
     }
-    typeOffset += 0x241C;
-    reverseIndex -= 1;
-  }
-  while (reverseIndex >= 0);
-  return ret;
+    return result;
 }
 
 static int svGetSizeBit(unsigned int value)
@@ -356,34 +600,98 @@ static int svGetSizeBit(unsigned int value)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddImage);
+typedef struct SvImageSlot {
+    void *codePtr;          /* 0x00 */
+    unsigned char unmodeled_04[4];
+    int active;             /* 0x08 */
+    short kind;             /* 0x0C */
+    short id;               /* 0x0E */
+    unsigned char unmodeled_10[2];
+    short vramAddr;         /* 0x12 */
+    short format;           /* 0x14 */
+    short height2;          /* 0x16 */
+    unsigned short width;   /* 0x18 */
+    unsigned short height;  /* 0x1A */
+    short widthBit;         /* 0x1C */
+    short heightBit;        /* 0x1E */
+    void *dataPtr;          /* 0x20 */
+} SvImageSlot;
+typedef struct SvImageHeader {
+    unsigned char unmodeled_00[4];
+    unsigned int size;      /* 0x04 */
+    unsigned char unmodeled_08[2];
+    unsigned short id;      /* 0x0A */
+    unsigned short width;   /* 0x0C */
+    unsigned short height;  /* 0x0E */
+    short format;           /* 0x10 */
+} SvImageHeader;
+
+static int svAddImage(int typeListAddr, SvImageHeader *image)
+{
+  int index;
+  int ret;
+  unsigned short width;
+  unsigned int height;
+  unsigned int size;
+  unsigned int addr;
+  void *slot;
+  SvImageSlot *sub;
+  index = svImageListAlloc(typeListAddr);
+  ret = -1;
+  slot = (void *) (typeListAddr + (index * 0x24));
+  if (index >= 0)
+  {
+    sub = (SvImageSlot *) (((unsigned char *) slot) + 0x1C);
+    sub->kind = 4;
+    sub->codePtr = ((unsigned char *) image) + 0x40;
+    sub->id = image->id;
+    sub->active = 1;
+    sub->width = image->width;
+    width = sub->width;
+    sub->height = image->height;
+    sub->format = image->format;
+    sub->widthBit = svGetSizeBit(width);
+    height = sub->height;
+    sub->heightBit = svGetSizeBit(height);
+    sub->dataPtr = ((unsigned char *) image) + 0x14;
+    size = image->size;
+    if (image->format == 4)
+    {
+      sub->height2 = ((short) image->width) >> 1;
+      if (((int) (height * 2)) < ((int) width))
+      {
+        size *= ((int) width) / ((int) (height * 2));
+      }
+    }
+    else
+      if (width < height)
+    {
+      sub->height2 = (((short) image->width) * ((int) height)) / ((int) width);
+    }
+    else
+    {
+      sub->height2 = image->width;
+    }
+    addr = *((unsigned int *) (typeListAddr + 0xC));
+    sub->vramAddr = addr >> 6;
+    *((unsigned int *) (typeListAddr + 0xC)) = addr + (size >> 2);
+    return index;
+  }
+  return ret;
+}
+
+typedef struct SvResourceChunk {
+    unsigned int byteSize;
+    unsigned char unmodeled_04[4];
+    short kind;
+    unsigned char unmodeled_0A[54];
+} SvResourceChunk;
+
+typedef struct SvResourceChunkFile {
+    SvResourceChunk *firstChunk;
+} SvResourceChunkFile;
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddClut);
-
-/*
- * One svAddScript2 sub-record, at +0x1C of a 0x24-byte slot of the type
- * list's item array. Only the fields this function itself writes are
- * modeled, at their byte offset from this sub-record's own base: `codePtr`
- * (+0x00, the script's own +0xC0 address), `active` (+0x08, always 1),
- * `kind` (+0x0C, always 5, matching this function's own "script" name),
- * `id` (+0x0E, the script's own +0xA halfword), two cleared halfwords
- * (+0x18/+0x1A) and `dataPtr` (+0x20, the script's own +0x14 address).
- * +0x20 (slot +0x3C) lands past the slot's own 0x24-byte stride, into the
- * next slot's leading bytes -- evidenced by the original bytes, not
- * treated as a bug.
- */
-typedef struct SvScriptSlot {
-    void *codePtr;                  /* 0x00 */
-    unsigned char unmodeled_04[4];
-    int active;                      /* 0x08 */
-    short kind;                       /* 0x0C */
-    short id;                          /* 0x0E */
-    unsigned char unmodeled_10[8];
-    short clearedA;                     /* 0x18 */
-    short clearedB;                      /* 0x1A */
-    unsigned char unmodeled_1C[4];
-    void *dataPtr;                        /* 0x20 */
-} SvScriptSlot;
 
 static int svAddModel(int typeListAddr, void *script)
 {
@@ -439,8 +747,6 @@ static int svAddScript(int typeListAddr, void *script)
   return index;
 }
 
-int svImageListAlloc();
-
 static int svAddScript2(int typeListAddr, void *script)
 {
   int index;
@@ -468,13 +774,57 @@ static int svAddScript2(int typeListAddr, void *script)
   return index;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAnalyzeChunk);
+int svAddClut(int typeListAddr, SvImageHeader *image);
+
+static int svAnalyzeChunk(SvTypeList *typeList, void *chunk)
+{
+    unsigned char *p;
+
+    p = *(unsigned char **) chunk;
+    while (*(short *) (p + 8) != 0) {
+        switch (*(short *) (p + 8)) {
+        case 1:
+        case 2:
+            p += 0x40;
+            break;
+        case 4:
+            svAddImage((int) typeList, (SvImageHeader *) p);
+            p += *(int *) p;
+            break;
+        case 3:
+            svAddClut((int) typeList, (SvImageHeader *) p);
+            p += *(int *) p;
+            break;
+        case 7:
+            svAddImage((int) typeList, (SvImageHeader *) p);
+            p += *(int *) p;
+            break;
+        case 6:
+        case 9:
+            svAddModel((int) typeList, p);
+            p += *(int *) p;
+            break;
+        case 5:
+            svAddScript((int) typeList, p);
+            p += *(int *) p;
+            break;
+        case 10:
+            svAddScript2((int) typeList, p);
+            p += *(int *) p;
+            break;
+        default:
+            goto out;
+        }
+    }
+out:
+    ;
+}
 
 extern int top_1[];
 extern int siz_0[];
 
 void svInitImageMapper(void) {
-    unsigned char *p = _imageMapper;
+    unsigned char *p = (unsigned char *)&_imageMapper;
     int i;
     memset(p, 0, 0x5A5A0);
     p += 0x10;
@@ -495,21 +845,19 @@ static void svInitRefImage(void)
     SvImageMapperStorage *storage;
     int index;
 
-    storage = (SvImageMapperStorage *)_imageMapper;
+    storage = &_imageMapper;
     for (index = 0; index < 40; index++) {
         storage->referenceImages[index].words[0] = 0;
         storage->referenceImages[index].words[1] = 0;
     }
 }
 
-int svAnalyzeChunk(SvTypeList *typeList, void *chunk);
-
 void svAddImageMapper(int type, int width, void *chunk, int height) {
     SvTypeList *typeList;
-    SvTypeListFields *header;
+    SvTypeList *header;
 
     typeList = svGetTypeList(type);
-    header = (SvTypeListFields *) typeList;
+    header = typeList;
     if (header->entryCount != 0) {
         svImageListDestroy(typeList);
     }
@@ -518,21 +866,6 @@ void svAddImageMapper(int type, int width, void *chunk, int height) {
     header->entryCount = (short) ((u16) header->entryCount + 1);
     svAnalyzeChunk(typeList, chunk);
 }
-
-/*
- * One image mapper's list: svGetTypeList (LOCAL in the original symbol
- * table) returns entry `type` of _imageMapper, 0x241c bytes apart. Only the
- * entry count is modeled: svDeleteImageMapper tests it (lh +0x14) and
- * svImageListDestroy clears it; the rest of the record stays an explicit
- * unmodeled span.
- */
-typedef struct SvTypeList {
-    unsigned char unmodeled_00[0x14];
-    short entryCount; /* 0x14 */
-} SvTypeList;
-
-static SvTypeList *svGetTypeList(int type);
-void svImageListDestroy(SvTypeList *typeList);
 
 void svDeleteImageMapper(int type)
 {
@@ -545,60 +878,131 @@ void svDeleteImageMapper(int type)
 
 void svDeleteImageMapperID(int id)
 {
-    int i;
-    unsigned char *base = _imageMapper;
-    int off = 2 * 0x241C;
+    int index;
 
-    for (i = 2; i < 14; i++) {
-        short *dim = (short *) (base + i * 0x241C + 0x10);
-        if (dim[0] == id) {
-            svImageListDestroy((SvTypeList *) (off + (int) base));
+    for (index = 2; index < 14; index++) {
+        if (_imageMapper.typeLists[index].width == id) {
+            svImageListDestroy(&_imageMapper.typeLists[index]);
             return;
         }
-        off += 0x241C;
     }
 }
 
-void svDeleteImageMapperData(int id)
+void svDeleteImageMapperData(int data)
 {
-    int i;
-    unsigned char *base = _imageMapper;
-    int off = 2 * 0x241C;
+    int index;
 
-    for (i = 2; i < 14; i++) {
-        short *dim = (short *) (base + i * 0x241C + 0x10);
-        if (dim[1] == id) {
-            svImageListDestroy((SvTypeList *) (off + (int) base));
+    for (index = 2; index < 14; index++) {
+        if (_imageMapper.typeLists[index].height == data) {
+            svImageListDestroy(&_imageMapper.typeLists[index]);
             return;
         }
-        off += 0x241C;
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svFileLoadScript);
+typedef struct SrsMemResSlots {
+    void *data[40];     /* +0x000 */
+    short pending[40];  /* +0x0A0 */
+    short no[40];       /* +0x0F0 */
+} SrsMemResSlots;
+extern unsigned char _srsMemRes[];
+extern int srsFileLoadCf(int arg0, int effectId);
+extern int sefIsFinishEffect2(int effectId);
+extern int sefGetLoadQue(void);
+extern void sefSetLoadQue(int effectId);
+extern void *smAlloc(unsigned int size);
+extern int srsLoadEffectData(void *buf, int effectId);
+#define MEMRES ((SrsMemResSlots *) _srsMemRes)
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svGetScript);
+int svFileLoadScript(int arg0, int effectId)
+{
+    unsigned char charId;
+    int cate;
+    SrsMemResSlots *res;
 
-/*
- * SGsSendPacket's own address precedes SGsPacket's definition (below, before
- * SGsInitGifPacket, outside this allocation): the same four fields, at the
- * same evidenced offsets that definition documents, restated here under a
- * local tag so this allocation adds text only next to its own function.
- */
-typedef struct SGsPacketReset {
-    int count;               /* 0x0 */
-    int tagIndex;             /* 0x4 */
-    int loopCount;             /* 0x8 */
-    void *base;               /* 0xC, starts at the scratchpad (0x70000000) */
-} SGsPacketReset;
+    srsAnalyzeEftNo(effectId, &charId, &cate);
+    if (cate == 16) {
+        return srsFileLoadCf(arg0, effectId);
+    } else if (cate == 14) {
+        if (MEMRES->data[14] != 0) {
+            if (effectId == MEMRES->no[14]) {
+                return 14;
+            }
+            if (sefIsFinishEffect2(MEMRES->no[14]) == 0) {
+                sefGetLoadQue();
+                sefSetLoadQue(effectId);
+                return -1;
+            }
+            svDeleteImageMapper(14);
+        }
+        sefSetLoadQue(0);
+        res = MEMRES;
+        if (res->data[14] == 0) {
+            res->data[14] = smAlloc(0x40000);
+            if (res->data[14] == 0) {
+                return -1;
+            }
+        }
+        res->no[14] = effectId;
+        res->pending[14] = 1;
+        if (srsLoadEffectData(res->data[14], effectId) < 0) {
+            res->pending[14] = 0;
+            res->no[14] = 0;
+            return -1;
+        }
+        return 14;
+    }
+    return -1;
+}
 
-extern void sceVif1PkCnt(XglPacket *packet, int count);
-extern void sceVif1PkAddCode(XglPacket *packet, unsigned int code);
-extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
-extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data,
-                                    int count);
-extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
-extern void sceVif1PkTerminate(XglPacket *packet);
+extern int sefSearchMapperIndex(int effect_no);
+extern char *srsGetEsdData(int index);
+extern int strncmp(const char *, const char *, unsigned int);
+extern unsigned int strlen(const char *);
+
+int **svGetScript(int eftNo)
+{
+    char *name;
+    int index;
+    SvTypeList *typeList;
+    unsigned char *base;
+    char *rec;
+    unsigned char *namep;
+    unsigned int off;
+    int i;
+    int kind5;
+    int none;
+
+    name = srsGetEsdData(eftNo);
+    if (name == 0) {
+        return 0;
+    }
+    index = sefSearchMapperIndex(eftNo);
+    typeList = &_imageMapper.typeLists[index];
+    if (index == 0xE) {
+        if (typeList->entries[0].used != 0 && typeList->entries[0].resourceKind != 0) {
+            return (int **)&typeList->entries[0];
+        }
+    }
+    i = 0;
+    base = (unsigned char *)typeList + 0x14;
+    kind5 = 5;
+    none = -1;
+    namep = (unsigned char *)&typeList->entries[0].name;
+    off = 0;
+    for (; i < 0x100; i++) {
+        rec = (char *)(off + (unsigned int)base);
+        if (*(int *)(rec + 0x10) != 0 && *(short *)(namep - 0x14) == kind5 &&
+            *(int *)namep != none) {
+            if (strncmp(name, *(char **)namep, strlen(name)) == 0) {
+                return (int **)((unsigned char *)typeList + off + 0x1C);
+            }
+        }
+        namep += 0x24;
+        off += 0x24;
+    }
+    return 0;
+}
 
 void SGsSendPacket(SGsPacketReset *packet)
 {
@@ -618,26 +1022,6 @@ void SGsSendPacket(SGsPacketReset *packet)
         packet->base = (void *)0x70000000;
     }
 }
-
-/*
- * One 128-bit GIF packet record. The SGs* writers fill it as a whole
- * quadword (sq), as two doublewords (sd at 0x0/0x8: a register value and
- * its A+D address) or as four words (sw, SGsAddGifXYZ2).
- */
-typedef union SGsGifRecord {
-    Quadword quad;
-    unsigned long long dword[2];
-    int word[4];
-    unsigned short halfword[8];
-    float floatValue[4];
-} SGsGifRecord;
-
-typedef struct SGsPacket {
-    int count;              /* 0x0 */
-    int tagIndex;           /* 0x4 */
-    int loopCount;          /* 0x8 */
-    SGsGifRecord *base;     /* 0xC, starts at the scratchpad (0x70000000) */
-} SGsPacket;
 
 extern SGsPacket _packet;
 static inline void SGsInitGifPacket_i(SGsPacket *packet)
@@ -668,9 +1052,7 @@ typedef struct SGsLightBackup {
     unsigned long long w[0x1e];
 } SGsLightBackup;
 extern SGsLightBackup _defLight;
-extern Quadword _defMatLcMod[];
-extern Quadword _defMatLc[];
-extern Quadword _defMatLn[];
+extern Matrix _defMatLc;
 static inline void SGsCopyMat4(void *dst, void *src)
 {
     __asm__ __volatile__(
@@ -709,11 +1091,11 @@ void SGsInitEnv(void)
     _defLight = *(SGsLightBackup *)lightSet;
     xglLightCalcMatrix(lightSet);
 
-    SGsCopyMat4(_defMatLcMod, (unsigned char *)lightSet + 0xB0);
-    SGsCopyMat4(_defMatLc, (unsigned char *)lightSet + 0xB0);
-    SGsCopyMat4(_defMatLn, (unsigned char *)lightSet + 0x70);
+    SGsCopyMat4(&_defMatLcMod, (unsigned char *)lightSet + 0xB0);
+    SGsCopyMat4(&_defMatLc, (unsigned char *)lightSet + 0xB0);
+    SGsCopyMat4(&_defMatLn, (unsigned char *)lightSet + 0x70);
 
-    row = (int *)_defMatLc;
+    row = (int *)&_defMatLc;
     i = 0;
     do {
         j = 2;
@@ -728,26 +1110,127 @@ void SGsInitEnv(void)
     } while (i < 3);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", SGsSetZTestEnv);
+void SGsSetZTestEnv(int enable)
+{
+    SGsInitGifPacket_i(&_packet);
+    SGsAddReg_i(&_packet, 0xE, 0x1000000000008001ULL);
+    if (enable) {
+        SGsAddReg_i(&_packet, 0x47, 0x5000D);
+    } else {
+        SGsAddReg_i(&_packet, 0x47, 0x2000D);
+    }
+    SGsSendPacket((SGsPacketReset *)&_packet);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", SGsRestoreEnv);
+void SGsRestoreEnv(void)
+{
+    SGsInitGifPacket_i(&_packet);
+    SGsAddReg_i(&_packet, 0xE, 0x1000000000008002ULL);
+    SGsAddReg_i(&_packet, 0x4E, 0x31000000);
+    SGsAddReg_i(&_packet, 0x14, 0);
+    SGsSendPacket((SGsPacketReset *)&_packet);
+    nmlModelSetLight(_defMatLcMod, _defMatLn);
+}
 
 static void sefInitClipViewVolume(void *view) {
     __asm__ __volatile__("lqc2 vf12, 0(%0)\n\tlqc2 vf13, 16(%0)\n\tlqc2 vf14, 32(%0)\n\tlqc2 vf15, 48(%0)\n\tlqc2 vf16, 64(%0)\n\tlqc2 vf17, 80(%0)\n\tlqc2 vf18, 96(%0)\n\tlqc2 vf19, 112(%0)\n\tnop" :  : "r"(view) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefClipViewVolumeA);
-
-#define SEF_CLIP_VIEW_VOLUME_OFFSET 0x4F0
-
 /*
- * sefDrawSchedulerEffect (still INCLUDE_ASM here) calls sefClipViewVolume and
- * branches on the returned v0, and sefClipViewVolume itself ends in a tail
- * jump to sefClipViewVolumeA (no jal, so its result is whatever
- * sefClipViewVolumeA returns): both are declared non-void here.
+ * Handwritten function (original is assembly): the same frustum test as
+ * face_point's _ModelCalcClip (vf16..vf19 / vf12..vf15 hold the two clip
+ * matrices) on the vector at scheduler, with every delay-slot/hazard nop
+ * explicit under .set noreorder as in the original. Returns 0 if inside,
+ * 1 if clipped.
  */
-static int sefClipViewVolumeA(void *scheduler);
-static void sefInitClipViewVolume(void *view);
+static int sefClipViewVolumeA(void *scheduler)
+{
+    register void *arg __asm__("$4") = scheduler;
+    register int result __asm__("$2");
+
+    __asm__ __volatile__(
+        ".set push\n\t"
+        ".set noreorder\n\t"
+        "move $2,$4\n\t"
+        "lqc2 vf20,0($2)\n\t"
+        "vaddw.x vf2x,vf0x,vf20w\n\t"
+        "qmfc2 $4,vf2\n\t"
+        "mtc1 $4,$f1\n\t"
+        "vmulax.xyzw ACC,vf16xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf17xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf18xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf19xyzw,vf0w\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vmulax.xyzw ACC,vf12xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf13xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf14xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf15xyzw,vf0w\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $4,vf9\n\t"
+        "mtc1 $4,$f0\n\t"
+        "nop\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "nop\n\t"
+        "bc1f 1f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "sub $4,$4,$4\n\t"
+        "j 2f\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "1:\n\t"
+        "sub $4,$4,$4\n\t"
+        "addi $4,$4,1\n\t"
+        "2:\n\t"
+        "move $2,$4\n\t"
+        ".set pop"
+        : "=r"(result), "+r"(arg)
+        :
+        : "$f0", "$f1", "memory");
+    return result;
+}
 
 int sefClipViewVolume(void *scheduler, void *effect)
 {
@@ -757,28 +1240,6 @@ int sefClipViewVolume(void *scheduler, void *effect)
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2D);
 
-/*
- * svRotMatrixScale: for each of the four source rows (effect-record offsets
- * +0x00/+0x10/+0x20/+0x30) forms row.x*vf13 + row.y*vf14 + row.z*vf15 through
- * the VU0 accumulator (vf13/vf14/vf15 are caller-established persistent VU0
- * columns, read only -- docs/ee-reference/vu.md, "Persistent VF state and
- * call boundaries"), adds row.w*vf8 (vf8 is the source record's contribution
- * vector at +0xC0), scales the result row i by scale-vector lane i (the
- * source record's scale vector at +0x100, one lane per row across every
- * output lane), and stores the four transformed rows into dst. All six
- * source loads precede all four destination stores, so an aliased
- * destination cannot clobber a not-yet-loaded source row. The source
- * effect record's full layout beyond these three evidenced sub-vectors is
- * not yet recovered, so it is addressed here by byte offset instead of an
- * invented, padded struct (AGENTS.md, "Source and acceptance").
- *
- * The block ends its last COP2 store with an explicit trailing `nop`: cc1's
- * bare `j $31` epilogue (a leaf function, no frame) leaves its delay slot to
- * the assembler, which in reorder mode fills it by moving the preceding
- * `sqc2`. The original leaves that slot an unfilled `jr $31; nop`, so the
- * block ends with a `nop` for the assembler to move instead, restoring the
- * original instruction order and extent
- */
 static void svRotMatrixScale(void *dst, const void *src)
 {
     const char *base = (const char *)src;
@@ -820,9 +1281,39 @@ static void svRotMatrixScale(void *dst, const void *src)
         : : "r"(dst), "r"(base), "r"(contrib), "r"(scale) : "memory");
 }
 
+typedef struct SvModelPosition {
+    int x;
+    int y;
+    int z;
+    int alpha;
+} SvModelPosition;
+
+typedef struct SvModelDrawItem {
+    Matrix4 orientation;
+    Matrix4 cfMatrix;
+    unsigned char unmodeled_080[64];
+    Vector4 origin;
+    unsigned char unmodeled_0d0[48];
+    Vector4 scale;
+    unsigned char unmodeled_110[48];
+    SvModelPosition position;
+    unsigned char unmodeled_150[4];
+    float scaleMultiplier;
+    unsigned char unmodeled_158[10];
+    unsigned char blendMode;
+    unsigned char unmodeled_163[13];
+    void *model;
+    void *texture;
+    unsigned char unmodeled_178[16];
+    short renderType;
+    unsigned char unmodeled_18a[2];
+    unsigned int renderFlags;
+    unsigned char unmodeled_190[0x280 - 0x190];
+} SvModelDrawItem;
+
 extern unsigned long long alphaTbl_2[];
 extern void nmlModelSetSortOffset(float offset);
-extern int nmlModelSetFogCancel(void);
+extern void nmlModelSetFogCancel(void);
 extern void nmlModelSetLight(void *colorMod, void *normal);
 extern void nmlModelSetSpecularOff(int disableSpecular);
 extern void nmlModelSetRenderStatus(int status);
@@ -833,116 +1324,216 @@ extern void nmlModelSetClip(int clip);
 extern void nmlModelSetPlace(void *matrix);
 extern void nmlModelEntryEffect(void *effect);
 
-void svDrawModel(unsigned char *model, void *place)
+void svDrawModel(SvModelDrawItem *model, void *place)
 {
     unsigned long long alpha;
-    unsigned char *material;
-    unsigned char light[4][16];
     int a;
-    unsigned char *dst, *src;
 
-    if (model[0x162] == 0 && *(int *)(model + 0x14C) == 0x80) {
+    if (*(unsigned char *)((unsigned char *)model + 0x162) == 0 && *(int *)((unsigned char *)model + 0x14C) == 0x80) {
         alpha = 0;
     } else {
-        a = *(int *)(model + 0x14C);
-        alpha = alphaTbl_2[model[0x162]] | ((unsigned long long)a << 32);
+        a = *(int *)((unsigned char *)model + 0x14C);
+        alpha = alphaTbl_2[*(unsigned char *)((unsigned char *)model + 0x162)] | ((unsigned long long)a << 32);
         nmlModelSetSortOffset(-5.0f);
     }
     nmlModelSetFogCancel();
-    __asm__ __volatile__("" : : "r"(model));
-    if (model[0x162] == 0) {
-        material = (unsigned char *)_defMatLcMod;
-    } else {
-        material = (unsigned char *)_defMatLc;
+    {
+        unsigned char *material;
+        if (*(unsigned char *)((unsigned char *)model + 0x162) == 0) {
+            material = (unsigned char *)&_defMatLcMod;
+        } else {
+            material = (unsigned char *)&_defMatLc;
+        }
+        {
+            unsigned char light[4][16];
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "lq $9, 16(%1)\n\t"
+                "lq $10, 32(%1)\n\t"
+                "lq $11, 48(%1)\n\t"
+                "sq $8, 0(%0)\n\t"
+                "sq $9, 16(%0)\n\t"
+                "sq $10, 32(%0)\n\t"
+                "sq $11, 48(%0)"
+                :
+                : "r"(light), "r"(material)
+                : "$8", "$9", "$10", "$11", "memory");
+            {
+                unsigned char *dst = light[3];
+                unsigned char *src = (unsigned char *)model + 0x140;
+                __asm__ __volatile__(
+                    ".set noat\n\t"
+                    "lui $1, 0x3C00\n\t"
+                    "mtc1 $1, $f0\n\t"
+                    "nop\n\t"
+                    "mfc1 $8, $f0\n\t"
+                    "qmtc2.ni $8, vf1\n\t"
+                    "lqc2 vf2, 0(%1)\n\t"
+                    "vitof0.xyzw vf2, vf2\n\t"
+                    "vmulx.xyz vf2, vf2, vf1x\n\t"
+                    "sqc2 vf2, 0(%0)\n\t"
+                    ".set at\n\t"
+                    :
+                    : "r"(dst), "r"(src)
+                    : "$1", "$f0", "$8", "memory");
+            }
+            nmlModelSetLight(light, &_defMatLn);
+        }
     }
-    __asm__ __volatile__(
-        "lq $8, 0(%1)\n\t"
-        "lq $9, 16(%1)\n\t"
-        "lq $10, 32(%1)\n\t"
-        "lq $11, 48(%1)\n\t"
-        "sq $8, 0(%0)\n\t"
-        "sq $9, 16(%0)\n\t"
-        "sq $10, 32(%0)\n\t"
-        "sq $11, 48(%0)"
-        :
-        : "r"(light), "r"(material)
-        : "$8", "$9", "$10", "$11", "memory");
-    dst = light[3];
-    src = model + 0x140;
-    __asm__ __volatile__("" : : "r"(dst), "r"(src));
-    __asm__ __volatile__(
-        "mfc1 $8, %0\n\t"
-        "qmtc2.ni $8, $vf1"
-        :
-        : "f"(1.0f / 128.0f)
-        : "$8");
-    __asm__ __volatile__(
-        "lqc2 $vf2, 0(%1)\n\t"
-        "vitof0.xyzw $vf2, $vf2\n\t"
-        "vmulx.xyz $vf2, $vf2, $vf1x\n\t"
-        "sqc2 $vf2, 0(%0)"
-        :
-        : "r"(dst), "r"(src)
-        : "memory");
-    nmlModelSetLight(light, _defMatLn);
     nmlModelSetSpecularOff(1);
-    if (*(int *)(model + 0x18C) & 1) {
+    if (*(int *)((unsigned char *)model + 0x18C) & 1) {
         nmlModelSetRenderStatus(0x100);
     }
     if (alpha != 0) {
         nmlModelSetToumei(1);
         nmlModelSetAlpha(alpha);
     }
-    if (*(void **)(model + 0x174) != 0) {
-        nmlModelSetTexture(*(void **)(model + 0x174));
+    if (*(int *)((unsigned char *)model + 0x174) != 0) {
+        nmlModelSetTexture(*(void **)((unsigned char *)model + 0x174));
     }
     nmlModelSetClip(1);
     nmlModelSetPlace(place);
-    nmlModelEntryEffect(*(void **)(model + 0x170));
+    nmlModelEntryEffect(*(void **)((unsigned char *)model + 0x170));
 }
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2);
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticleList);
+typedef struct SvParticleEffect {
+    unsigned char unmodeled_00[4];
+    const short *scriptWords;
+    unsigned char unmodeled_08[40];
+    Vector4 position;
+    unsigned char unmodeled_40[464 - 64];
+    const short *renderDomainA;
+    unsigned char unmodeled_1D4[12];
+    const short *renderDomainB;
+    unsigned char unmodeled_1E4[0x600 - 484];
+    short particleIndices[256];
+    unsigned char unmodeled_800[0x812 - 0x800];
+    unsigned short flags;
+} SvParticleEffect;
+typedef struct SvParticleDrawContext {
+    Matrix4 *place;
+    Vector4 *scale;
+    const Quadword *textureCoordinates;
+    const Quadword *gifRegisters;
+    float scaleMultiplier;
+    int drawVariant;
+} SvParticleDrawContext;
+extern Matrix4 _invView;
+extern Matrix4 _svUnitMatrix;
+extern const Quadword stqTbl_004CBEA0[4];
+extern const Quadword _svRegData;
+void svDrawModel(SvModelDrawItem *item, void *place);
+
+void sefDrawParticleList(SvParticleEffect *effect)
+{
+    Matrix4 modelPlace;
+    SvParticleDrawContext context;
+    SGsPacket *packet;
+    int is2D;
+    int drawMode;
+    int drawVariant;
+    SvModelDrawItem *particles;
+    short *particleIndex;
+    short quadRenderType;
+    int available;
+
+    is2D = 0;
+    drawMode = _draw3D;
+    if (*effect->renderDomainA == 3 || *effect->renderDomainB == 3) {
+        is2D = 1;
+    }
+    drawVariant = 0;
+    if (effect->scriptWords != 0) {
+        drawVariant = effect->scriptWords[-1];
+    }
+    packet = &_packet;
+    particles = (SvModelDrawItem *)sevGetPtAllocator2(0);
+    if (drawMode != 1 || is2D != 0) {
+        if (drawMode != 1 && is2D == 1) {
+            _nEffect2D++;
+            _imageMapper.referenceImages[_nowImage].words[1]++;
+        } else {
+            if (drawMode == 0) {
+                _imageMapper.referenceImages[_nowImage].words[0]++;
+            }
+            context.textureCoordinates = stqTbl_004CBEA0;
+            context.gifRegisters = &_svRegData;
+            context.drawVariant = drawVariant;
+            __asm__ __volatile__(
+                "lqc2 vf16, 0(%0)\n\tlqc2 vf17, 16(%0)\n\t"
+                "lqc2 vf18, 32(%0)\n\tlqc2 vf19, 48(%0)"
+                : : "r"(&_invView) : "memory");
+            __asm__ __volatile__(
+                "lqc2 vf13, 0(%0)\n\tlqc2 vf14, 16(%0)\n\tlqc2 vf15, 32(%0)"
+                : : "r"(&_svUnitMatrix) : "memory");
+            packet->loopCount = 1;
+            packet->base = (SGsGifRecord *)0x70000000;
+            packet->count = 0;
+            available = 64;
+            quadRenderType = 4;
+            packet->tagIndex = 0;
+            particleIndex = effect->particleIndices;
+            {
+                int remaining = 255;
+
+                while (remaining >= 0) {
+                    int index = *particleIndex;
+
+                    if (index >= 0) {
+                        SvModelDrawItem *item = &particles[index];
+
+                        if (item->position.alpha != 0) {
+                            switch (drawMode) {
+                            case 2:
+                                if (item->renderType == 6) {
+                                    svRotMatrixScale(&modelPlace, item);
+                                    svDrawModel(item, &modelPlace);
+                                }
+                                break;
+                            case 1:
+                                if (item->renderType == quadRenderType) {
+                                    available--;
+                                    sefDrawParticle2D(item, packet, context.textureCoordinates);
+                                    if (available == 0) {
+                                        available = 64;
+                                        SGsSendPacket((SGsPacketReset *)packet);
+                                    }
+                                }
+                                break;
+                            case 0:
+                                if (item->renderType == quadRenderType) {
+                                    context.scale = &item->scale;
+                                    if (context.drawVariant == 0) {
+                                        sefDrawParticle(item, &item->origin, packet, &context);
+                                    } else {
+                                        sefDrawParticle2(item, &item->origin, packet, &context);
+                                    }
+                                    available--;
+                                    if (available == 0) {
+                                        available = 64;
+                                        SGsSendPacket((SGsPacketReset *)packet);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    remaining--;
+                    particleIndex++;
+                }
+            }
+            SGsSendPacket((SGsPacketReset *)packet);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticleListCf);
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawSchedulerEffect);
-
-static void sefDrawSchedulerEffect(int schedulerIndex);
-extern void SGsSetZTestEnv(int enable);
-extern int srsAnalyzeEftNo(short effectId, unsigned char *charId,
-                            int *effectCategory);
-extern unsigned char charID_3;
-extern int eftCate_4;
-extern int eft_5;
-
-/*
- * One 0xab0-byte record of the scheduler table sefGetScheduler returns
- * (src/main/sef.h, "The original scheduler table..."). Only the three
- * fields this function reads are named; sefIsDeadSchduler (sef.c) reads the
- * same in-use word raw through its own TU's SchedulerState, which this TU
- * cannot include (TU-local elsewhere), so this is a separate, narrower view
- * of the same bytes.
- */
-typedef struct SchedulerRecord {
-    unsigned char unmodeled_000[0x6b0];
-    int inUse;                            /* +0x6b0 */
-    unsigned char unmodeled_6b4[0xa78 - 0x6b4];
-    short effectId;                       /* +0xa78 */
-    unsigned char unmodeled_a7a[0xa8c - 0xa7a];
-    int flags;                            /* +0xa8c */
-    unsigned char unmodeled_a90[0xab0 - 0xa90];
-} SchedulerRecord;
-
-/* sef.c (main/tu211) defines this returning unsigned char *; declare it with
- * that exact type and cast at the one call site so a later cross-TU
- * publication of the real prototype cannot conflict with this one. */
-extern unsigned char *sefGetScheduler(void);
-
-#define SCHEDULER_COUNT 0x80
 
 static void svDrawSchedulerBlk(int eftCate, int eftNo)
 {
@@ -972,21 +1563,12 @@ static void svDrawSchedulerBlk(int eftCate, int eftNo)
     } while (schedulerIndex < SCHEDULER_COUNT);
 }
 
-extern int _draw3D;
-
-/* Draws the alters whose group (+0x0E) equals layer. */
-void sdvDrawAlters(int layer);
-
 static void svDrawAlters(int layer)
 {
     if (_draw3D == 0) {
         sdvDrawAlters(layer);
     }
 }
-
-extern int _scMslCate;
-
-void MEfObjExec2nd(void);
 
 static void svDrawMissile(int category)
 {
@@ -997,12 +1579,82 @@ static void svDrawMissile(int category)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDrawSchedulerParticle);
+extern void SGsInitEnv(void);
+extern void SGsRestoreEnv(void);
 
-extern int _nEffect2D;
-extern int _nowImage;
+static void svDrawSchedulerParticle(void)
+{
+    int i;
+    int total;
+    int draw3D;
 
-static void svDrawSchedulerParticle(void);
+    draw3D = _draw3D;
+    SGsInitEnv();
+    if (_imageMapper.typeLists[0].entryCount > 0) {
+        if (svLoadImageList(&_imageMapper.typeLists[0]) > 0) {
+            SGsTexFlush();
+        }
+        svDrawSchedulerBlk(0, 0);
+    }
+    svDrawMissile(0);
+    if (draw3D != 1 || (int)_imageMapper.referenceImages[14].words[1] > 0
+        || (int)_imageMapper.referenceImages[2].words[1] > 0) {
+        total = 0;
+        for (i = 2; i < 11; i++) {
+            if (_imageMapper.typeLists[i].entryCount > 0) {
+                total += svLoadImageList(&_imageMapper.typeLists[i]);
+            }
+        }
+        if (total > 0) {
+            SGsTexFlush();
+        }
+        svDrawSchedulerBlk(2, 0);
+        svDrawAlters(2);
+    }
+    svDrawMissile(2);
+    if (draw3D != 1 || (int)_imageMapper.referenceImages[14].words[1] > 0
+        || (int)_imageMapper.referenceImages[11].words[1] > 0) {
+        total = 0;
+        for (i = 11; i < 14; i++) {
+            if (_imageMapper.typeLists[i].entryCount > 0) {
+                total += svLoadImageList(&_imageMapper.typeLists[i]);
+            }
+        }
+        if (total > 0) {
+            SGsTexFlush();
+        }
+        svDrawSchedulerBlk(0xB, 0);
+        svDrawAlters(0xB);
+    }
+    svDrawMissile(0xB);
+    if ((draw3D != 1 || (int)_imageMapper.referenceImages[14].words[1] > 0)
+        && _imageMapper.typeLists[14].entryCount > 0) {
+        if (svLoadImageList(&_imageMapper.typeLists[14]) > 0) {
+            SGsTexFlush();
+        }
+        svDrawSchedulerBlk(0xE, 0);
+    }
+    svDrawAlters(0xE);
+    svDrawMissile(0xE);
+    if (_imageMapper.typeLists[15].entryCount > 0) {
+        if (svLoadImageList(&_imageMapper.typeLists[15]) > 0) {
+            SGsTexFlush();
+        }
+        svDrawSchedulerBlk(0xF, 0);
+    }
+    for (i = 16; i < 40; i++) {
+        if (_imageMapper.typeLists[i].entryCount > 0
+            && (draw3D != 1 || (int)_imageMapper.referenceImages[i].words[1] > 0)) {
+            if (svLoadImageList(&_imageMapper.typeLists[i]) > 0) {
+                SGsTexFlush();
+            }
+            if (((SrsMemResSlots *)_srsMemRes)->no[i] > 0) {
+                svDrawSchedulerBlk(0x10, ((SrsMemResSlots *)_srsMemRes)->no[i]);
+            }
+        }
+    }
+    SGsRestoreEnv();
+}
 
 void svDrawScheduler2D(void)
 {
@@ -1021,19 +1673,52 @@ void svDrawScheduler(void)
     svDrawSchedulerParticle();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svDrawScheduler3D);
+extern void MEfObjExec1st(void);
+extern void SGsInitEnv(void);
+extern void SGsRestoreEnv(void);
 
-/*
- * The SGs* family (SGsInitGifPacket, SGsOpenGifPacket, SGsCloseGifPacket,
- * SGsAddReg, SGsAddGifXYZ2, SGsSendPacket and others in this TU) shares one
- * accumulator: a growing array of 16-byte GIF records at `base`, `count`
- * records long. SGsOpenGifPacket/SGsCloseGifPacket/SGsAddReg (still
- * INCLUDE_ASM here, read for this evidence per docs/naming.md) show that
- * `tagIndex` is the record index SGsOpenGifPacket saves so
- * SGsCloseGifPacket can patch the GIFtag it opened, and `loopCount` is
- * OR-ed, unshifted, into that tag's low (NLOOP) bits by SGsCloseGifPacket;
- * both functions here leave it at 1.
- */
+void svDrawScheduler3D(void)
+{
+    int i;
+    unsigned char *mem;
+    short *cnt;
+    short *no;
+
+    _draw3D = 2;
+    svInitRefImage();
+    SGsInitEnv();
+    if (_imageMapper.typeLists[0].entryCount > 0) {
+        _nowImage = 0;
+        svDrawSchedulerBlk(0, 0);
+    }
+    _nowImage = 2;
+    svDrawSchedulerBlk(2, 0);
+    _nowImage = 0xB;
+    svDrawSchedulerBlk(0xB, 0);
+    _nowImage = 0xE;
+    svDrawSchedulerBlk(0xE, 0);
+    _nowImage = 0xF;
+    svDrawSchedulerBlk(0xF, 0);
+    i = 0x10;
+    mem = _srsMemRes;
+    cnt = &_imageMapper.typeLists[16].entryCount;
+    no = (short *)(mem + 0x110);
+    do {
+        short count = *cnt;
+        cnt += 0x120E;
+        if (count > 0) {
+            short n = *no;
+            if (n > 0) {
+                _nowImage = i;
+                svDrawSchedulerBlk(0x10, n);
+            }
+        }
+        i++;
+        no++;
+    } while (i < 0x28);
+    MEfObjExec1st();
+    SGsRestoreEnv();
+}
 
 void SGsInitGifPacket(SGsPacket *packet)
 {
@@ -1075,10 +1760,6 @@ void SGsAddGifRGBA(SGsPacket *packet, Quadword rgba)
     packet->count++;
 }
 
-/*
- * GS XYZF2 vertex: X/Y are (value*16 + screen offset), Z and F are the
- * raw depth and fog values -- the PS2 SDK's own XYZ2/XYZF2 naming.
- */
 void SGsAddGifXYZ2(SGsPacket *packet, int x, int y, int z, int fog)
 {
     packet->base[packet->count].word[0] = x * 0x10 + 0x7000;
@@ -1112,3 +1793,7 @@ void SGsAddGifUV(SGsPacket *packet, int u_coordinate, int v_coordinate)
         (unsigned short)((unsigned int)v_coordinate << 4);
     packet->count++;
 }
+
+const char D_004DBA50[8] = {'%', 's', '.', 'b', 'm', 'p', '\0', '\0'};
+
+const char D_004DBA58[8] = {'%', 's', '.', 'c', 'l', 't', '\0', '\0'};

@@ -57,7 +57,119 @@ char *sefGetEffectName(int effectNo)
     return _loadEsdData + effectNo * 0x10;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsAnalyzeEftNo);
+typedef struct SrsChrEfEntry {
+    short chrNo;
+    short min0;
+    short max0;
+    short min1;
+    short max1;
+    short min2;
+    short max2;
+    short min3;
+    short max3;
+} SrsChrEfEntry;
+typedef struct SrsChrEf2Entry {
+    short chrNo;
+    short min;
+    short max;
+} SrsChrEf2Entry;
+extern SrsChrEfEntry _srsChrEfTbl[];
+extern SrsChrEf2Entry _srsChrEfTbl2[];
+extern char *_loadCfCommonData;
+extern char *_loadComboData[];
+
+char *srsAnalyzeEftNo(int effectNo, int *chrEftNo, int *effectCategory)
+{
+    int i;
+    SrsChrEf2Entry *p;
+    short *q;
+    char *ret;
+
+    *chrEftNo = 0;
+    *effectCategory = 0xE;
+    if ((u32) (effectNo - 1) >= 0xBFF) {
+        return 0;
+    }
+    if (effectNo >= 0xBE2) {
+        *effectCategory = 0xE;
+        return 0;
+    }
+    if ((u32) (effectNo - 0xA28) < 0x3E) {
+        *chrEftNo = 0;
+        *effectCategory = 0;
+        return 0;
+    }
+    if ((u32) (effectNo - 0xAF0) < 0xC8) {
+        *effectCategory = 2;
+        *chrEftNo = 0x11;
+        return 0;
+    }
+    if ((u32) (effectNo - 0x258) < 0x190) {
+        ret = _loadCfCommonData;
+        *effectCategory = 0xF;
+        return ret;
+    }
+    if ((u32) (effectNo - 0x898) < 0xA) {
+        *chrEftNo = 2;
+        *effectCategory = 0xE;
+        return 0;
+    }
+    if ((u32) (effectNo - 0x8A2) < 8) {
+        *chrEftNo = 5;
+        *effectCategory = 0xE;
+        return 0;
+    }
+    if ((u32) (effectNo - 0x3E8) < 0x3E8) {
+        *chrEftNo = 0;
+        *effectCategory = 0x10;
+        return 0;
+    }
+    if ((u32) (effectNo - 0x7D0) < 0xDB) {
+        *chrEftNo = 0;
+        *effectCategory = 0xE;
+        return 0;
+    }
+    for (i = 0; i < 12; i++) {
+        if (_srsChrEfTbl[i].min0 <= effectNo && effectNo <= _srsChrEfTbl[i].max0) {
+            *chrEftNo = _srsChrEfTbl[i].chrNo;
+            *effectCategory = 2;
+            return _loadComboData[*chrEftNo];
+        }
+        if (_srsChrEfTbl[i].min1 <= effectNo && effectNo <= _srsChrEfTbl[i].max1) {
+            *chrEftNo = _srsChrEfTbl[i].chrNo;
+            *effectCategory = 0xE;
+            return 0;
+        }
+        if (_srsChrEfTbl[i].min2 <= effectNo && effectNo <= _srsChrEfTbl[i].max2) {
+            *chrEftNo = _srsChrEfTbl[i].chrNo;
+            *effectCategory = 0xE;
+            return 0;
+        }
+        if (_srsChrEfTbl[i].min3 <= effectNo && effectNo <= _srsChrEfTbl[i].max3) {
+            *chrEftNo = _srsChrEfTbl[i].chrNo;
+            *effectCategory = 2;
+            return _loadComboData[*chrEftNo];
+        }
+    }
+    p = _srsChrEfTbl2;
+    for (i = 0; i < 0xA1; i++) {
+        q = &p[i].max;
+        if (q[-1] <= effectNo && effectNo <= q[0]) {
+            *chrEftNo = q[-2];
+            if (q[-2] < 0x97) {
+                *effectCategory = 0xB;
+                return _loadComboData[*chrEftNo];
+            }
+            if (effectNo >= 0xA78) {
+                *effectCategory = 0xB;
+                return _loadComboData[*chrEftNo];
+            }
+            *effectCategory = 0xE;
+            return 0;
+        }
+    }
+    return 0;
+}
 
 /*
  * One _srsChrEfTbl3 row (6 bytes; the 0xD8-byte symbol holds 36 rows).
@@ -150,7 +262,39 @@ void srsChangeSeparator(char *path)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsGetFileLen);
+extern int xglCdGetFileSize(const char *name);
+extern int sceOpen(const char *path, int flags, ...);
+extern int sceLseek(int descriptor, int offset, int whence);
+extern int sceClose(int descriptor);
+
+static int srsGetFileLen(char *name)
+{
+    char path[256];
+    int descriptor;
+    int size;
+
+    if (srsMakeFileName(path, name) == 0) {
+        return -1;
+    }
+    if (srsLoadMode == 0) {
+        srsChangeSeparator(path);
+        size = xglCdGetFileSize(path);
+        if (size <= 0) {
+            return -1;
+        }
+    } else if (srsLoadMode == 1) {
+        descriptor = sceOpen(path, 1);
+        if (descriptor < 0) {
+            return -1;
+        }
+        size = sceLseek(descriptor, 0, 2);
+        sceLseek(descriptor, 0, 0);
+        sceClose(descriptor);
+    } else {
+        return -1;
+    }
+    return size;
+}
 
 extern int xglCdGetFileSize(const char *name);
 extern int sceOpen(const char *path, int flags, ...);
@@ -768,16 +912,210 @@ void sresDataMapping(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", sresLoadBattleData);
+typedef struct SrsBattlePrm {
+    short charNo[3]; /* +0x00 */
+    short enemyNo[3]; /* +0x06 */
+    unsigned char unmodeled_0C[6];
+    short weaponEffect[3][3]; /* +0x12 */
+    short charReload[3]; /* +0x24 */
+    short enemyReload[3]; /* +0x2A */
+} SrsBattlePrm;
+typedef struct SrsResFlat {
+    void *image; /* +0x000 */
+    void *effectImage; /* +0x004 */
+    void *weaponData[3][3]; /* +0x008 */
+    void *comboData[3]; /* +0x02C */
+    void *battleImage; /* +0x038 */
+    void *cfImage; /* +0x03C */
+    void *effectData[24]; /* +0x040 */
+    short pending[40]; /* +0x0A0: image 0, effect image 1, weapon 2..10, combo 11..13 */
+    short no[40]; /* +0x0F0: same indexing */
+    void *effectExtra[24]; /* +0x140 */
+} SrsResFlat;
+
+void sresLoadBattleData(SrsBattlePrm *battlePrm)
+{
+    int i;
+    int j;
+    char *name;
+    int effectNo;
+
+    for (i = 0; i < 24; i++) {
+        if (((SrsResFlat *) _srsMemRes)->effectData[i] != 0) {
+            smFree(((SrsResFlat *) _srsMemRes)->effectData[i]);
+            ((SrsResFlat *) _srsMemRes)->effectData[i] = 0;
+            ((SrsResFlat *) _srsMemRes)->effectExtra[i] = 0;
+        }
+    }
+    if (((SrsResFlat *) _srsMemRes)->cfImage != 0) {
+        smFree(((SrsResFlat *) _srsMemRes)->cfImage);
+        ((SrsResFlat *) _srsMemRes)->cfImage = 0;
+    }
+    for (i = 0; i < 3; i++) {
+        if (battlePrm->charNo[i] > 0 && battlePrm->charReload[i] != 0) {
+            battlePrm->charReload[i] = 0;
+            if (battlePrm->charNo[i] < 151) {
+                if (battlePrm->charNo[i] >= 17 && battlePrm->charNo[i] < 33) {
+                    if (((SrsResFlat *) _srsMemRes)->weaponData[i][0] == 0) {
+                        ((SrsResFlat *) _srsMemRes)->weaponData[i][0] = smAlloc(0x12800);
+                    }
+                    if (((SrsResFlat *) _srsMemRes)->weaponData[i][0] != 0) {
+                        ((SrsResFlat *) _srsMemRes)->weaponData[i][1] = (char *) ((SrsResFlat *) _srsMemRes)->weaponData[i][0] + 0x6000;
+                        ((SrsResFlat *) _srsMemRes)->weaponData[i][2] = (char *) ((SrsResFlat *) _srsMemRes)->weaponData[i][0] + 0xC000;
+                    }
+                    ((SrsResFlat *) _srsMemRes)->no[2 + i * 3 + 0] = -1;
+                    ((SrsResFlat *) _srsMemRes)->no[2 + i * 3 + 1] = -1;
+                    ((SrsResFlat *) _srsMemRes)->no[2 + i * 3 + 2] = -1;
+                    for (j = 0; j < 3; j++) {
+                        if (battlePrm->weaponEffect[i][j] > 0) {
+                            effectNo = srsWeapon2EffectID(battlePrm->weaponEffect[i][j]);
+                            name = srsGetEffectName2(effectNo);
+                            if (name != 0) {
+                                ((SrsResFlat *) _srsMemRes)->pending[2 + i * 3 + j] = battlePrm->charNo[i];
+                                ((SrsResFlat *) _srsMemRes)->no[2 + i * 3 + j] = effectNo;
+                                if (fileLoad(((SrsResFlat *) _srsMemRes)->weaponData[i][j], name, 1) < 0) {
+                                    ((SrsResFlat *) _srsMemRes)->pending[2 + i * 3 + j] = 0;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    name = srsGetComboName(battlePrm->charNo[i]);
+                    if (((SrsResFlat *) _srsMemRes)->weaponData[i][0] == 0) {
+                        ((SrsResFlat *) _srsMemRes)->weaponData[i][0] = smAlloc(0x12800);
+                    }
+                    ((SrsResFlat *) _srsMemRes)->weaponData[i][1] = 0;
+                    ((SrsResFlat *) _srsMemRes)->weaponData[i][2] = 0;
+                    ((SrsResFlat *) _srsMemRes)->pending[2 + i * 3] = battlePrm->charNo[i];
+                    if (fileLoad(((SrsResFlat *) _srsMemRes)->weaponData[i][0], name, 1) < 0) {
+                        ((SrsResFlat *) _srsMemRes)->pending[2 + i * 3] = 0;
+                    }
+                }
+            }
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (battlePrm->enemyNo[i] > 0 && battlePrm->enemyReload[i] != 0) {
+            battlePrm->enemyReload[i] = 0;
+            if (battlePrm->enemyNo[i] < 17 || battlePrm->enemyNo[i] >= 33) {
+                name = srsGetComboName(battlePrm->enemyNo[i]);
+                if (((SrsResFlat *) _srsMemRes)->comboData[i] == 0) {
+                    ((SrsResFlat *) _srsMemRes)->comboData[i] = smAlloc(0x12000);
+                }
+                ((SrsResFlat *) _srsMemRes)->pending[11 + i] = battlePrm->enemyNo[i];
+                if (fileLoad(((SrsResFlat *) _srsMemRes)->comboData[i], name, 1) <= 0) {
+                    ((SrsResFlat *) _srsMemRes)->pending[11 + i] = 0;
+                }
+            }
+        }
+    }
+}
 
 int srsFileLoad(void *buffer, const char *name, int mode)
 {
     return fileLoad(buffer, name, mode);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsFileLoadCf);
+extern char D_004CC720[];
+extern char D_004CC748[];
+extern char D_004CC768[];
+extern void tracePrint();
 
-INCLUDE_ASM("asm/main/nonmatchings/srs", srsMemoryLoadCf);
+int srsFileLoadCf(int cfId, int effectNo)
+{
+    int charNo;
+    int effectType;
+    char *name;
+    void *buffer;
+    int i;
+    int size;
+
+    srsAnalyzeEftNo(effectNo, &charNo, &effectType);
+    if (effectType == 15) {
+        return 15;
+    }
+    if ((unsigned int) (effectType - 16) < 24) {
+        name = srsGetEffectName(effectNo);
+        if (name == 0) {
+            return 0;
+        }
+        for (i = 0; i < 24; i++) {
+            if (((SrsResFlat *) _srsMemRes)->effectData[i] != 0 && ((SrsResFlat *) _srsMemRes)->no[16 + i] == effectNo) {
+                return 0;
+            }
+        }
+        for (i = 0; i < 24; i++) {
+            if (((SrsResFlat *) _srsMemRes)->effectData[i] == 0) {
+                size = srsGetFileLen(name);
+                if (size <= 0) {
+                    return -1;
+                }
+                buffer = smAlloc(size);
+                ((SrsResFlat *) _srsMemRes)->effectData[i] = buffer;
+                if (buffer == 0) {
+                    tracePrint(D_004CC720);
+                    return -1;
+                }
+                size = srsFileLoad(buffer, name, 0);
+                if (size > 0) {
+                    ((SrsResFlat *) _srsMemRes)->pending[16 + i] = 1;
+                    ((SrsResFlat *) _srsMemRes)->no[16 + i] = effectNo;
+                    sresDataMapping();
+                    return size;
+                }
+                return -1;
+            }
+        }
+    } else {
+        tracePrint(D_004CC748, effectType, effectNo);
+    }
+    tracePrint(D_004CC768);
+    return -1;
+}
+
+extern void *memcpy(void *dst, const void *src, unsigned int n);
+
+int srsMemoryLoadCf(void *data, int effectNo, int size)
+{
+    int charNo;
+    int effectType;
+    void *buffer;
+    int i;
+
+    srsAnalyzeEftNo(effectNo, &charNo, &effectType);
+    if (effectType == 15) {
+        return 15;
+    }
+    if ((unsigned int) (effectType - 16) < 24) {
+        for (i = 0; i < 24; i++) {
+            if (((SrsResFlat *) _srsMemRes)->effectData[i] != 0 && ((SrsResFlat *) _srsMemRes)->no[16 + i] == effectNo) {
+                return 0;
+            }
+        }
+        for (i = 0; i < 24; i++) {
+            if (((SrsResFlat *) _srsMemRes)->effectData[i] == 0) {
+                if (size <= 0) {
+                    return -1;
+                }
+                buffer = smAlloc(size);
+                ((SrsResFlat *) _srsMemRes)->effectData[i] = buffer;
+                if (buffer == 0) {
+                    tracePrint(D_004CC720);
+                    return -1;
+                }
+                memcpy(buffer, data, size);
+                ((SrsResFlat *) _srsMemRes)->pending[16 + i] = 1;
+                ((SrsResFlat *) _srsMemRes)->no[16 + i] = effectNo;
+                sresDataMapping();
+                return size;
+            }
+        }
+    } else {
+        tracePrint(D_004CC748, effectType, effectNo);
+    }
+    tracePrint(D_004CC768);
+    return -1;
+}
 
 extern int strcmp(const char *s1, const char *s2);
 

@@ -25,18 +25,23 @@ typedef struct RssdRpcResponse {
     short result;                  /* +0x02: nonzero -> error status (-1) */
     int _unmodeled_04;             /* +0x04: 32-bit word, meaning not recovered */
     int value;                     /* +0x08: command result value */
-    int _unmodeled_0c[5];          /* +0x0c..0x1f: 32-bit words, not read here */
+    int _unmodeled_0c[0]; /* +0xc: zero-length alias of the former padding member, kept for saved bodies */
+    int data_size;
+    int unmodeled_10[4];
 } RssdRpcResponse;
 
 typedef struct RssdWorkFlags {
     int flags;                            /* +0x000: bit 3 cleared on RPC completion; bit 5 is the success status */
-    unsigned char _unmodeled_004[4];      /* +0x004..0x007 */
+    unsigned char _unmodeled_004[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    int rpc_buffer_size;
     int request_parameter;                /* +0x008: copied by RssdBusy from its request */
-    unsigned char _unmodeled_00c[4];      /* +0x00c..0x00f */
+    unsigned char _unmodeled_00c[0]; /* +0xc: zero-length alias of the former padding member, kept for saved bodies */
+    int init_parameter;
     unsigned short sample_rate;           /* +0x010: samples per second used by SsdGetTimeCode */
     short request_channel_count;          /* +0x012: copied by RssdBusy from its request */
     int request_size;                     /* +0x014: copied by RssdBusy from its request */
-    unsigned char _unmodeled_018[0x08];   /* +0x018..0x01f */
+    unsigned char _unmodeled_018[0x4];
+    int server_call_count;
     /*
      * Stored verbatim by SsdSetServerCallback (main:0x002403b0)
      * `sw $5,36($2)` / `sw $4,32($2)`, $2 = &RssdWork. No recovered function
@@ -48,11 +53,18 @@ typedef struct RssdWorkFlags {
     void (*complete_callback)(int status, RssdRpcResponse *response,
                               void *arg); /* +0x028: one-shot, cleared after use */
     void *callback_arg;                   /* +0x02c: third complete_callback argument */
-    unsigned char _unmodeled_030[0x04];   /* +0x030..0x033 */
+    unsigned char _unmodeled_030[0]; /* +0x30: zero-length alias of the former padding member, kept for saved bodies */
+    void *client_buffer_base;
     RssdRpcResponse *response_source;     /* +0x034: SIF RPC receive buffer */
     unsigned char _unmodeled_038[0x48];   /* +0x038..0x07f */
     RssdRpcResponse response;             /* +0x080..0x09f: copy of *response_source */
-    unsigned char _unmodeled_0a0[0xa8];   /* +0x0a0..0x147 */
+    unsigned char _unmodeled_0a0[0]; /* +0xa0: zero-length alias of the former padding member, kept for saved bodies */
+    void *server_buffer_base;
+    void *server_buffer;
+    unsigned char unmodeled_a8[0x58];
+    RssdRpcResponse server_packet;
+    unsigned char rpc_client[0x24];
+    void *rpc_client_serve;
     /*
      * The SCE SDK RPC server registration record: RssdInitIop
      * (main:0x0023fbb8, still asm) passes its address as the `sd` argument of
@@ -93,7 +105,9 @@ typedef struct RssdWorkFlags {
     int next_wave_thread_id;              /* +0x1ac: RssdBackNextWaveThread */
     void *next_wave_thread_stack;         /* +0x1b0: MYwaveTransThStack */
     int sema_id;                          /* +0x1b4: signalled when the RPC completes */
-    unsigned char _unmodeled_1b8[8];      /* +0x1b8..0x1bf */
+    unsigned char _unmodeled_1b8[0]; /* +0x1b8: zero-length alias of the former padding member, kept for saved bodies */
+    int busy_sema_id;
+    unsigned char unmodeled_1bc[0x4];
     struct SsdMemoryBlock *first_block;   /* +0x1c0: first allocator-list node */
     unsigned char _unmodeled_1c4[8];     /* +0x1c4..0x1cb */
     int spu_bytes_remaining;              /* +0x1cc: drained by RssdBackNextWaveThread */

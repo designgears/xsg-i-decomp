@@ -446,7 +446,140 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_msp_02", fnMSP02_DP000);
+typedef unsigned int Msp02Quad __attribute__((mode(TI)));
+typedef union Msp02QW {
+    Msp02Quad q;
+    unsigned long ul[2];
+    unsigned short us[8];
+    unsigned char uc[16];
+    volatile unsigned long vul[2];
+    volatile unsigned char vuc[16];
+} Msp02QW;
+extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
+extern void MGsGPTerm(void *packet);
+extern Msp02Quad McEfSTQtbl[];
+extern Msp02Quad coltbl_1_00A516B0[];
+extern float sztbl_2_00A51750[];
+typedef struct Msp02Packet {
+    void *data;
+    int capacity;
+    Msp02QW *current;
+    int count;
+    int auxCount;
+} Msp02Packet;
+#define MSP02_AD(P, REG, VAL) \
+    { Msp02QW *_ad = (P); _ad->uc[8] = (REG); _ad->ul[0] = (VAL); }
+
+static void fnMSP02_DP000(void *task, MspEffect *effect)
+{
+    int i;
+    long regs;
+    int nreg;
+    float *szp;
+    Vector4 verts[4];
+    Msp02Packet *pk;
+    Msp02Packet *gp;
+    Msp02QW *q;
+    Msp02QW *a1;
+    Msp02QW *a2;
+    Msp02QW *a3;
+    Msp02QW *a4;
+    Msp02QW *a5;
+    Msp02Quad color;
+    unsigned long *tex;
+    int j;
+    int n;
+    int off;
+    int lo;
+    int nloop;
+    int texReg;
+
+    pk = (Msp02Packet *)effect->drawPacket;
+    MGsGPInit(pk, 0, 0);
+    q = pk->current;
+    q[0].vul[0] = 0x1000000000008000;
+    q[0].vul[1] = 0xE;
+    pk->auxCount = 1;
+    a1 = q + 1;
+    a2 = q + 2;
+    a3 = q + 3;
+    a4 = q + 4;
+    a5 = q + 5;
+    a1->vuc[8] = 0x47;
+    a1->vul[0] = 0x5000D;
+    a2->vuc[8] = 0x14;
+    a2->vul[0] = 0x60;
+    a3->vuc[8] = 0x8;
+    a3->vul[0] = 5;
+    a4->vuc[8] = 0x4E;
+    a4->vul[0] = 0x131000000;
+    a5->vuc[8] = 0x42;
+    a5->vul[0] = 0x48;
+    nreg = 5;
+    n = pk->auxCount * nreg + 1;
+    pk->current->us[0] |= nreg;
+    pk->current += n;
+    pk->count += n;
+    for (i = 0; i < 10; i++) {
+        if (((short *)effect->active)[i] != 0) {
+            color = coltbl_1_00A516B0[i];
+            szp = &sztbl_2_00A51750[i];
+            lo = i < 6;
+            off = 0x138;
+            if (lo) {
+                off = 0x130;
+            }
+            tex = (unsigned long *)((char *)effect + off);
+            for (j = 0; j < 2; j++) {
+                if (MEfMake4Vertex2(verts, &effect->points[i][j], *szp, effect->twist[i][j]) == 0) {
+                    Msp02QW *t;
+                    Msp02QW *g;
+                    unsigned long texVal;
+                    int n1;
+                    int n2;
+
+                    gp = (Msp02Packet *)effect->drawPacket;
+                    texReg = 6;
+                    regs = 0x512;
+                    nloop = 3;
+                    t = gp->current;
+                    t[0].ul[0] = 0x1000000000008000;
+                    t[0].ul[1] = 0xE;
+                    gp->auxCount = 1;
+                    a1 = t + 1;
+                    texVal = *tex;
+                    a1->uc[8] = texReg;
+                    a1->ul[0] = texVal;
+                    n1 = gp->auxCount + 1;
+                    gp->current->us[0] |= 1;
+                    gp->current += n1;
+                    gp->count += n1;
+                    g = gp->current;
+                    g[0].ul[0] = 0x302A400000008000;
+                    g[0].ul[1] = regs;
+                    gp->auxCount = nloop;
+                    g[1].q = McEfSTQtbl[0];
+                    g[2].q = color;
+                    g[3].q = *(Msp02Quad *)&verts[0];
+                    g[4].q = McEfSTQtbl[1];
+                    g[5].q = color;
+                    g[6].q = *(Msp02Quad *)&verts[1];
+                    g[7].q = McEfSTQtbl[2];
+                    g[8].q = color;
+                    g[9].q = *(Msp02Quad *)&verts[2];
+                    g[10].q = McEfSTQtbl[3];
+                    g[11].q = color;
+                    g[12].q = *(Msp02Quad *)&verts[3];
+                    n2 = gp->auxCount * 4 + 1;
+                    gp->current->us[0] |= 4;
+                    gp->current += n2;
+                    gp->count += n2;
+                }
+            }
+        }
+    }
+    MGsGPTerm(pk);
+}
 
 /* MEfObjDestroy (src/main/m_ef_obj.c) and sefHitEffect (src/main/sef.c) are
  * still asm in their defining TU; declared locally until published there. */

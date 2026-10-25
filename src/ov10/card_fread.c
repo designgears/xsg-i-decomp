@@ -533,7 +533,274 @@ void CardDispTxtSub2(u16 x, u16 y, unsigned char *text)
     xglFontPrint(x, y, 0xFFF0, (char *)text);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardDispLight);
+extern void nmlModelSetLight(void *colorMod, void *normal);
+extern void nmlModelSetPlace(void *m);
+extern void nmlModelSetTexture(const char *texture);
+extern void nmlModelEntryCard(void *model);
+extern void xglMatrixTrans(float (*destination)[4], float (*source)[4], const float translation[4]);
+extern int CCColor;
+extern int oldno_0;
+extern char asDir[];
+extern float CardHpPos01[3];
+extern float CardHpPos10[3];
+extern float CardPowPos01[3];
+extern float CardPowPos10[3];
+extern float CardStnbyPos[3];
+extern float CardAttriPos[3];
+extern float CardAttakPos[3];
+extern float CardCondPos[4][3];
+extern unsigned char *EnemyDeckLst[];
+#define CardDispNumSub(trans, mat, place, m, pos, lt) \
+{ \
+    unsigned int mdl_ = (m); \
+    unsigned int lf_ = (lt); \
+    trans[0] = pos[0]; \
+    trans[1] = pos[1]; \
+    trans[2] = pos[2]; \
+    xglMatrixTrans(mat, place, trans); \
+    nmlModelSetPlace(mat); \
+    if (lf_) { \
+        nmlModelSetLight(&CCColor, asDir); \
+    } \
+    nmlModelSetTexture((char *)0x01C91000); \
+    nmlModelEntryCard((void *)mdl_); \
+}
+
+void CardDispLight(float (*place)[4], short no, short disp, unsigned char arg3)
+{
+    float f;
+    float trans[4];
+    float mat[4][4];
+    int flag = arg3;
+    unsigned char *info;
+    unsigned char *cond;
+    int i;
+    char *tex;
+    char *texture0;
+    unsigned int model;
+
+    if (no < 0) {
+        return;
+    }
+    info = (unsigned char *)(0x01000010 + no * 36);
+    tex = (char *)(0x0100C000 + no * 0xBAB0);
+    texture0 = tex;
+    if (oldno_0 != no) {
+        oldno_0 = no;
+    }
+    if (disp > 0) {
+        unsigned char l = flag & 1;
+        nmlModelSetPlace(place);
+        nmlModelSetTexture(texture0);
+        if (l) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelEntryCard((void *)0x016F8500);
+        trans[0] = -0.436f;
+        trans[1] = 0.847f;
+        trans[2] = 0.005f;
+        trans[3] = 1.0f;
+        xglMatrixTrans(mat, place, trans);
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture(texture0);
+        if (l) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelEntryCard((void *)0x016F8100);
+    }
+    if (info[0] == 1) {
+        if (!(*(unsigned short *)(info + 2) & 0xFFE0)) {
+            f = info[0x12] / 10;
+            if (f != 0.0f) {
+                CardDispNumSub(trans, mat, place, f * 1024.0f + 29884416.0f, CardHpPos10, flag & 2);
+            }
+            f = info[0x12] % 10;
+            CardDispNumSub(trans, mat, place, f * 1024.0f + 29884416.0f, CardHpPos01, flag & 2);
+        }
+        f = info[0x14] / 10;
+        if (f != 0.0f) {
+            CardDispNumSub(trans, mat, place, f * 1024.0f + 29884416.0f, CardPowPos10, flag & 4);
+        }
+        f = info[0x14] % 10;
+        CardDispNumSub(trans, mat, place, f * 1024.0f + 29884416.0f, CardPowPos01, flag & 4);
+    }
+    tex = (char *)0x01C91000;
+    f = info[0x10] % 10;
+    model = f * 1024.0f + 29884416.0f;
+    trans[0] = CardStnbyPos[0];
+    trans[1] = CardStnbyPos[1];
+    trans[2] = CardStnbyPos[2];
+    xglMatrixTrans(mat, place, trans);
+    nmlModelSetPlace(mat);
+    if (flag & 8) {
+        nmlModelSetLight(&CCColor, asDir);
+    }
+    nmlModelSetTexture(tex);
+    nmlModelEntryCard((void *)model);
+
+    if (info[0] == 1) {
+        f = 0.0f;
+        switch (*(unsigned short *)(info + 2)) {
+        case 1:
+            break;
+        case 0x20:
+        case 0x40:
+            f = 1.0f;
+        case 0x10:
+            f += 1.0f;
+        case 0x4:
+            f += 1.0f;
+        case 0x8:
+            f += 1.0f;
+        case 0x2:
+            f += 1.0f;
+            break;
+        }
+        tex = (char *)0x01C91000;
+        model = f * 1024.0f + 29914112.0f;
+        trans[0] = CardAttriPos[0];
+        trans[1] = CardAttriPos[1];
+        trans[2] = CardAttriPos[2];
+        xglMatrixTrans(mat, place, trans);
+        nmlModelSetPlace(mat);
+        if (flag & 0x10) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelSetTexture(tex);
+        nmlModelEntryCard((void *)model);
+    }
+
+    i = 0;
+    cond = info + 4;
+loop:
+    {
+        f = 0.0f;
+        switch (cond[i]) {
+        case 1:
+            break;
+        case 4:
+            f = 1.0f;
+        case 8:
+            f += 1.0f;
+        case 2:
+            f += 1.0f;
+            break;
+        case 31:
+            f = 6.0f;
+            break;
+        default:
+            f = 8.0f;
+            break;
+        }
+        if (f != 8.0f) {
+            tex = (char *)0x01C91000;
+            model = f * 1024.0f + 29904896.0f;
+            trans[0] = CardCondPos[i][0];
+            trans[1] = CardCondPos[i][1];
+            trans[2] = CardCondPos[i][2];
+            xglMatrixTrans(mat, place, trans);
+            nmlModelSetPlace(mat);
+            if (flag & 0x20) {
+                nmlModelSetLight(&CCColor, asDir);
+            }
+            nmlModelSetTexture(tex);
+            nmlModelEntryCard((void *)model);
+        }
+    }
+    i++;
+    if (i < 4) {
+        goto loop;
+    }
+
+    f = 0.0f;
+    switch (info[0x13]) {
+    case 1:
+        break;
+    case 4:
+        f = 1.0f;
+    case 3:
+        f += 1.0f;
+    case 2:
+        f += 1.0f;
+        break;
+    default:
+        f = -1.0f;
+        break;
+    }
+    if (f >= 0.0f) {
+        tex = (char *)0x01C94050;
+        model = f * 1024.0f + 29922304.0f;
+        trans[0] = CardAttakPos[0];
+        trans[1] = CardAttakPos[1];
+        trans[2] = CardAttakPos[2];
+        xglMatrixTrans(mat, place, trans);
+        nmlModelSetPlace(mat);
+        if (flag & 0x40) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelSetTexture(tex);
+        nmlModelEntryCard((void *)model);
+    }
+
+    switch (info[0x16]) {
+    case 0x50:
+        model = 0x01C90730;
+        break;
+    case 0x52:
+        model = 0x01C90220;
+        break;
+    case 0x55:
+        model = 0x01C8FD10;
+        break;
+    case 0x41:
+    default:
+        model = 0x01C8F800;
+        break;
+    }
+    nmlModelSetPlace(place);
+    if (flag & 0x80) {
+        nmlModelSetLight(&CCColor, asDir);
+    }
+    nmlModelSetTexture((char *)0x01C9BB70);
+    nmlModelEntryCard((void *)model);
+    if (disp > 0) {
+        switch (info[0]) {
+        case 2:
+            tex = (char *)0x016E0000;
+            model = 0x016FD440;
+            break;
+        case 1:
+            tex = (char *)0x016E0000;
+            model = 0x016F8900;
+            break;
+        case 3:
+        default:
+            tex = (char *)0x016E0000;
+            model = 0x01701F80;
+            break;
+        }
+    }
+    {
+        unsigned char l = flag & 1;
+        nmlModelSetPlace(place);
+        nmlModelSetTexture(tex);
+        if (l) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelEntryCard((void *)model);
+        if (disp & 2) {
+            nmlModelSetPlace(place);
+            nmlModelSetTexture(tex);
+            nmlModelEntryCard((void *)0x01706AC0);
+        }
+        nmlModelSetPlace(place);
+        nmlModelSetTexture((char *)0x01717600);
+        if (l) {
+            nmlModelSetLight(&CCColor, asDir);
+        }
+        nmlModelEntryCard((void *)0x01713600);
+    }
+}
 
 extern void nmlModelSetLight(void *colorMod, void *normal);
 extern void nmlModelSetPlace(void *m);
@@ -2459,7 +2726,175 @@ s32 CardPlayCntPower(CardGameWork *work, CardLayerStack *slot)
 
 INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardPlayDispBattle);
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardPlayDispHand);
+extern void xglMatrixRotY(float (*destination)[4], float (*source)[4], float angle);
+
+void CardPlayDispHand(int mode, int rot, CardHand *hand, float (*place)[4])
+{
+    float mat[4][4];
+    float mat2[4][4];
+    float trans[4];
+    float scale[4];
+    float scale2[4];
+    float angle;
+    float step;
+    float f;
+    float g;
+    float two;
+    int n;
+    int i;
+    int v;
+    int last;
+    int t;
+
+    n = CardPlayHandCnt(hand);
+    i = n / 10;
+    trans[2] = 0.01f;
+    trans[3] = 1.0f;
+    scale[1] = 1.4f;
+    scale[0] = 1.4f;
+    scale[2] = 1.0f;
+    scale[3] = 1.0f;
+    if (i != 0) {
+        last = 0x01C80000 + (i << 10);
+        trans[0] = -0.964f;
+        trans[1] = -1.876f;
+        xglMatrixTrans(mat, place, trans);
+        xglMatrixScale(mat, mat, scale);
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture((char *)0x01C91000);
+        nmlModelEntryCard((void *)last);
+    }
+    v = n % 10;
+    last = 0x01C80000 + (v << 10);
+    trans[0] = -0.85f;
+    trans[1] = -1.876f;
+    xglMatrixTrans(mat, place, trans);
+    xglMatrixScale(mat, mat, scale);
+    nmlModelSetPlace(mat);
+    nmlModelSetTexture((char *)0x01C91000);
+    two = 2.0f;
+    nmlModelEntryCard((void *)last);
+    if (n == 0) {
+        return;
+    }
+    angle = 0.0f;
+    step = HandPos1P[0] - HandPos1P[9];
+    if (n >= 2) {
+        step /= (float)n - 1.0f;
+    }
+    trans[3] = 1.0f;
+    scale[1] = 0.175f;
+    scale[3] = 1.0f;
+    scale[2] = 1.0f;
+    scale2[3] = 1.0f;
+    scale2[2] = 1.0f;
+    scale2[1] = 1.0f;
+    scale[0] = 0.175f;
+    scale2[0] = 1.0f;
+    for (i = 0; i < n; i++) {
+        if (((CardHandMoveView *)hand)->mv[i].timer != 0) {
+            ((CardHandMoveView *)hand)->mv[i].timer--;
+            ((CardHandMoveView *)hand)->mv[i].pos[0] += ((CardHandMoveView *)hand)->mv[i].vel[0];
+            ((CardHandMoveView *)hand)->mv[i].pos[1] += ((CardHandMoveView *)hand)->mv[i].vel[1];
+            ((CardHandMoveView *)hand)->mv[i].pos[2] += ((CardHandMoveView *)hand)->mv[i].vel[2];
+            switch (((CardHandMoveView *)hand)->mv[i].state) {
+            case 4:
+                angle = 3.1415927f;
+                g = two * (float)(10 - ((CardHandMoveView *)hand)->mv[i].timer) / 10.0f;
+                scale2[1] = g;
+                scale2[0] = g;
+                break;
+            case 3:
+                scale2[1] = 2.0f;
+                scale2[0] = 2.0f;
+                if (rot) {
+                    angle = 3.1415927f;
+                } else {
+                    angle = (float)((CardHandMoveView *)hand)->mv[i].timer * 11.25f / 180.0f * 3.1415927f;
+                }
+                break;
+            case 2:
+                if (rot) {
+                    angle = 3.1415927f;
+                }
+                scale2[1] = 2.0f;
+                scale2[0] = 2.0f;
+                break;
+            default:
+                if (rot) {
+                    angle = 3.1415927f;
+                }
+                g = two * (float)((CardHandMoveView *)hand)->mv[i].timer / 10.0f;
+                scale2[1] = g;
+                scale2[0] = g;
+                break;
+            }
+        } else {
+            switch (((CardHandMoveView *)hand)->mv[i].state) {
+            case 4:
+                ((CardHandMoveView *)hand)->mv[i].state--;
+                ((CardHandMoveView *)hand)->mv[i].timer = 16;
+                angle = 3.1415927f;
+                scale2[1] = 2.0f;
+                scale2[0] = 2.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[0] = 0.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[1] = 0.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[2] = 0.0f;
+                break;
+            case 3:
+                if (rot) {
+                    angle = 3.1415927f;
+                }
+                ((CardHandMoveView *)hand)->mv[i].state--;
+                ((CardHandMoveView *)hand)->mv[i].timer = 5;
+                scale2[1] = 2.0f;
+                scale2[0] = 2.0f;
+                break;
+            case 2:
+                if (rot) {
+                    angle = 3.1415927f;
+                }
+                ((CardHandMoveView *)hand)->mv[i].state--;
+                ((CardHandMoveView *)hand)->mv[i].timer = 10;
+                scale2[1] = 2.0f;
+                scale2[0] = 2.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[0] = (HandPos1P[0] - step * (float)i - ((CardHandMoveView *)hand)->mv[i].pos[0]) / 10.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[1] = (HandPos1P[1] - ((CardHandMoveView *)hand)->mv[i].pos[1]) / 10.0f;
+                ((CardHandMoveView *)hand)->mv[i].vel[2] = (HandPos1P[2] + (float)i * 0.005f - ((CardHandMoveView *)hand)->mv[i].pos[2]) / 10.0f;
+                break;
+            case 1:
+                ((CardHandMoveView *)hand)->mv[i].state--;
+                xglSoundEffectNormalID(0x2000F, 0);
+            default:
+                if (rot) {
+                    angle = 3.1415927f;
+                }
+                f = (float)i;
+                ((CardHandMoveView *)hand)->mv[i].pos[0] = HandPos1P[0] - step * f;
+                ((CardHandMoveView *)hand)->mv[i].pos[1] = HandPos1P[1];
+                ((CardHandMoveView *)hand)->mv[i].pos[2] = HandPos1P[2] + f * 0.005f;
+                break;
+            }
+        }
+        trans[0] = ((CardHandMoveView *)hand)->mv[i].pos[0];
+        trans[1] = ((CardHandMoveView *)hand)->mv[i].pos[1];
+        trans[2] = ((CardHandMoveView *)hand)->mv[i].pos[2];
+        xglMatrixTrans(mat, place, trans);
+        xglMatrixRotY(mat, mat, angle);
+        xglMatrixScale(mat, mat, scale2);
+        xglMatrixScale(mat2, mat, scale);
+        if (mode == 0) {
+            CardDispCard(mat2, hand->cards[i] & 0xF0FF, 1);
+        } else if (((CardHandMoveView *)hand)->mv[i].state != 0) {
+            CardDispCard(mat2, hand->cards[i] & 0xF0FF, 1);
+        } else {
+            CardDispCard(mat2, hand->cards[n - i - 1] & 0xF0FF, 1);
+        }
+        nmlModelSetPlace(mat2);
+        nmlModelSetTexture((char *)0x01717600);
+        nmlModelEntryCard((void *)0x01716600);
+    }
+}
 
 void CardPlayDispJunk(int unused, CardPlaySide *hand, float (*place)[4])
 {
@@ -3041,7 +3476,234 @@ int CAMASub(int areaCode) {
     return addr;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_fread", CardPlayDispCursor);
+extern void xglMatrixRotZ(float (*destination)[4], float (*source)[4], float angle);
+extern void xglMatrixRotX(float (*destination)[4], float (*source)[4], float angle);
+extern float xglSin(float angle);
+extern char CLColor[];
+extern char CLP1Color[];
+extern char CLP2Color[];
+typedef struct CardCursorDispView {
+    u16 selectionMode;
+    u8 unmodeled_02[2];
+    u16 anim;              /* +0x04 */
+    s16 controllingSide;   /* +0x06 */
+    u8 unmodeled_08[0x20 - 0x08];
+    float pos[4];          /* +0x20 */
+    u8 active[6][4];       /* +0x30 */
+    u8 unmodeled_48[0x6C - 0x48];
+    int visible;           /* +0x6C */
+    u8 unmodeled_70[0x7C - 0x70];
+    char *texture;         /* +0x7C */
+    u8 unmodeled_80[4];
+    char *markTexture;     /* +0x84 */
+} CardCursorDispView;
+static inline void CardSetLightCol(float (*col)[4], float r, float g, float b)
+{
+    col[3][2] = b;
+    col[3][1] = g;
+    col[3][0] = r;
+}
+
+void CardPlayDispCursor(int mode, CardGameWork *work, float (*place)[4])
+{
+    float mat[4][4];
+    float a[4];
+    float b[4];
+    float mat2[4][4];
+    CardCursorDispView *cur;
+    int model;
+    int mark;
+    int addr;
+    int side;
+    float (*cl)[4];
+    float (*p1)[4];
+    float (*p2)[4];
+    int i;
+    float s0;
+    float s2;
+    float s1;
+    float s3;
+
+    cur = (CardCursorDispView *)&work->cursor;
+    if (cur->selectionMode != 0 && cur->visible != 0) {
+        side = work->cursor.controllingSide;
+        if (side >= 0) {
+            model = 0x01D00000;
+            mark = 0x01D18000;
+            if (side != 0) {
+                model = 0x01D02000;
+                mark = 0x01D1C000;
+            }
+        } else {
+            switch ((s16)work->command.phase) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 5:
+            case 6:
+            case 11:
+                model = 0x01D00000;
+                mark = 0x01D18000;
+                break;
+            default:
+                model = 0x01D02000;
+                mark = 0x01D1C000;
+                break;
+            }
+        }
+        if (mode == 0) {
+            cur->anim++;
+        }
+        if (cur->anim >= 24) {
+            cur->anim = 0;
+        }
+        b[1] = 1.15f;
+        b[0] = 1.15f;
+        b[3] = 1.0f;
+        b[2] = 1.0f;
+        model += (cur->anim >> 2) * 0x510;
+        xglMatrixTrans(mat, place, cur->pos);
+        xglMatrixScale(mat, mat, b);
+        xglMatrixRotZ(mat, mat, -(*(float *)((char *)work + 0x70FC) / 180.0f * 3.1415927f));
+        xglMatrixRotX(mat, mat, -(*(float *)((char *)work + 0x70F8) / 180.0f * 3.1415927f));
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture(cur->texture);
+        nmlModelEntryCard((void *)model);
+        a[0] = 0.275f;
+        a[1] = 0.4f;
+        a[2] = 0.0f;
+        a[3] = 1.0f;
+        xglMatrixTrans(mat, mat, a);
+        nmlModelSetPlace(mat);
+        nmlModelSetTexture((char *)0x01D80000);
+        nmlModelEntryCard((void *)mark);
+    }
+    b[3] = 1.0f;
+    a[3] = 1.0f;
+    a[2] = 1.0f;
+    if (mode == 0) {
+        ((u8 *)work)[0x5BB0] = (((u8 *)work)[0x5BB0] + 1) & 0x1F;
+    }
+    s0 = xglSin((float)((u8 *)work)[0x5BB0] * 11.25f / 180.0f * 3.1415927f) * 0.5f + 1.0f;
+    s1 = xglSin((float)((u8 *)work)[0x5BB0] * 11.25f / 180.0f * 3.1415927f) * 0.25f + 1.75f;
+    s2 = xglSin((float)((u8 *)work)[0x5BB0] * 11.25f / 180.0f * 3.1415927f) * 0.235f + 0.735f;
+    s3 = xglSin((float)((u8 *)work)[0x5BB0] * 11.25f / 180.0f * 3.1415927f) * 0.285f + 0.685f;
+    cl = (float (*)[4])CLColor;
+    p1 = (float (*)[4])CLP1Color;
+    p2 = (float (*)[4])CLP2Color;
+    p2[3][0] = s1;
+    cl[3][2] = s0;
+    cl[3][1] = s0;
+    p1[3][1] = s2;
+    p2[3][2] = s3;
+    p2[3][1] = s3;
+    p1[3][2] = s1;
+    cl[3][0] = s0;
+    p1[3][0] = s2;
+    if (mode == 0) {
+        ((u8 *)work)[0x5BB1] = (((u8 *)work)[0x5BB1] + 1) & 0x3F;
+    }
+    s0 = xglSin((float)((u8 *)work)[0x5BB1] * 5.625f / 180.0f * 3.1415927f) * 0.25f + 1.0f;
+    CardSetLightCol((float (*)[4])CMColor, s0, s0, s0);
+    for (i = 0; i < 4; i++) {
+        b[0] = DisposePos1P[i][0];
+        b[1] = DisposePos1P[i][1];
+        b[2] = DisposePos1P[i][2] + 0.015f;
+        a[1] = 0.175f;
+        a[0] = 0.175f;
+        if (cur->active[0][i] != 0) {
+            addr = CAMASub(cur->active[0][i]);
+            xglMatrixTrans(mat2, place, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        b[0] = BattlePos1P[i][0];
+        b[1] = BattlePos1P[i][1];
+        b[2] = BattlePos1P[i][2] + 0.015f;
+        a[1] = 0.355f;
+        a[0] = 0.355f;
+        if (cur->active[1][i] != 0) {
+            addr = CAMASub(cur->active[1][i]);
+            xglMatrixTrans(mat2, place, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        b[0] = OperationPos1P[i][0];
+        b[1] = OperationPos1P[i][1];
+        b[2] = OperationPos1P[i][2] + 0.015f;
+        a[1] = 0.175f;
+        a[0] = 0.175f;
+        if (cur->active[2][i] != 0) {
+            addr = CAMASub(cur->active[2][i]);
+            xglMatrixTrans(mat2, place, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+    xglMatrixRotZ(mat, place, 3.1415927f);
+    for (i = 0; i < 4; i++) {
+        b[0] = DisposePos1P[i][0];
+        b[1] = DisposePos1P[i][1];
+        b[2] = DisposePos1P[i][2] + 0.015f;
+        a[1] = 0.175f;
+        a[0] = 0.175f;
+        if (cur->active[3][i] != 0) {
+            addr = CAMASub(cur->active[3][i]);
+            xglMatrixTrans(mat2, mat, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        b[0] = BattlePos1P[i][0];
+        b[1] = BattlePos1P[i][1];
+        b[2] = BattlePos1P[i][2] + 0.015f;
+        a[1] = 0.355f;
+        a[0] = 0.355f;
+        if (cur->active[4][i] != 0) {
+            addr = CAMASub(cur->active[4][i]);
+            xglMatrixTrans(mat2, mat, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        b[0] = OperationPos1P[i][0];
+        b[1] = OperationPos1P[i][1];
+        b[2] = OperationPos1P[i][2] + 0.015f;
+        a[1] = 0.175f;
+        a[0] = 0.175f;
+        if (cur->active[5][i] != 0) {
+            addr = CAMASub(cur->active[5][i]);
+            xglMatrixTrans(mat2, mat, b);
+            xglMatrixScale(mat2, mat2, a);
+            nmlModelSetLight(CLColor, asDir);
+            nmlModelSetPlace(mat2);
+            nmlModelSetTexture(cur->markTexture);
+            nmlModelEntryCard((void *)addr);
+        }
+    }
+}
 
 /*
  * CardPlayIdentityCheck (ov10:0x00a10b60): `hand` is a side's CardHand,

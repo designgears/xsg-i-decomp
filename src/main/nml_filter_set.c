@@ -91,7 +91,26 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
     return returnedFlags;
 }
 
-extern struct { short pad0; short h; char pad[0x10]; unsigned short fbp; char pad16[0xA]; unsigned short zbp; } sRender;
+/* Former anonymous view names (pad0/h/pad/fbp/pad16/zbp) stay available as
+ * aliases so saved bodies keep compiling. */
+struct NmlFilterRenderView {
+    union { u8 unmodeled_00[2]; short pad0; };
+    union { short pixelStorageMode; short h; };   /* +0x02 */
+    char pad[0];                                  /* +0x04: old byte view */
+    short frameWidth;            /* +0x04 */
+    short frameHeight;           /* +0x06 */
+    u8 unmodeled_08[0x0a];
+    u16 opaqueTexturePage;       /* +0x12 */
+    union { u16 framebufferPage; unsigned short fbp; };   /* +0x14 */
+    union { u8 unmodeled_16[0x0a]; char pad16[0xA]; };
+    union { u16 displayBufferBase; unsigned short zbp; }; /* +0x20 */
+};
+extern struct NmlFilterRenderView sRender;
+
+struct NmlFilterGsRegisterEntry {
+    u64 value;
+    u64 registerId;
+};
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterGunosys);
 
@@ -223,8 +242,8 @@ void nmlFilterSetFrameToBuffer(unsigned short dbp)
 
     ((FbtfGsReg *)0x70000000)->data = 0;
     ((FbtfGsReg *)0x70000000)->addr = 0x3F;
-    ((FbtfGsReg *)0x70000010)->data = 0x80000 | (dbp << 5) | ((u64)sRender.fbp << 37) | (0x8000LL << 36)
-        | ((u64)sRender.h << 24) | ((u64)sRender.h << 56);
+    ((FbtfGsReg *)0x70000010)->data = 0x80000 | (dbp << 5) | ((u64)sRender.framebufferPage << 37) | (0x8000LL << 36)
+        | ((u64)sRender.pixelStorageMode << 24) | ((u64)sRender.pixelStorageMode << 56);
     ((FbtfGsReg *)0x70000010)->addr = 0x50;
     ((FbtfGsReg *)0x70000020)->data = 0;
     ((FbtfGsReg *)0x70000020)->addr = 0x51;
@@ -248,7 +267,7 @@ void nmlFilterSetBufferToFrame(unsigned short dbp)
 
     ((FbtfGsReg *)0x70000000)->data = 0;
     ((FbtfGsReg *)0x70000000)->addr = 0x3F;
-    ((FbtfGsReg *)0x70000010)->data = 0x80000 | (sRender.fbp << 5) | ((u64)((short *)&sRender)[1] << 24)
+    ((FbtfGsReg *)0x70000010)->data = 0x80000 | (sRender.framebufferPage << 5) | ((u64)((short *)&sRender)[1] << 24)
         | ((u64)dbp << 37) | (0x8000LL << 36) | ((u64)((short *)&sRender)[1] << 56);
     ((FbtfGsReg *)0x70000010)->addr = 0x50;
     ((FbtfGsReg *)0x70000020)->data = 0;
@@ -396,7 +415,7 @@ void nmlFilterBackClear(void)
     ((FbcGsReg *)0x70000040)->addr = 4;
     nmlPacketGsInit();
     nmlPacketAddGsZbuf(1);
-    nmlPacketAddGsFrame(sRender.fbp, 0);
+    nmlPacketAddGsFrame(sRender.framebufferPage, 0);
     p = (FbcGsReg *)0x70000000;
     for (i = 4; i >= 0; i--) {
         packet_gs_entry64(p->addr, p);
@@ -421,7 +440,7 @@ void nmlFilterSetFlatRender(void *arg)
     }
     ((FsfrGsReg *)0x70000000)->r.data = 0;
     ((FsfrGsReg *)0x70000000)->r.addr = 0x3F;
-    ((FsfrGsReg *)0x70000010)->r.data = (sRender.fbp << 5 | 0x24020000) | 0x2000000640000000LL;
+    ((FsfrGsReg *)0x70000010)->r.data = (sRender.framebufferPage << 5 | 0x24020000) | 0x2000000640000000LL;
     ((FsfrGsReg *)0x70000010)->r.addr = 6;
     ((FsfrGsReg *)0x70000020)->r.data = 0x60;
     ((FsfrGsReg *)0x70000020)->r.addr = 0x14;
@@ -447,8 +466,8 @@ void nmlFilterSetFlatRender(void *arg)
     ((FsfrGsReg *)0x700000C0)->r.addr = 0x47;
     nmlPacketGsInit();
     nmlPacketAddGsZbuf(1);
-    nmlPacketAddGsFrame(sRender.zbp, 0);
-    nmlPacketAddGsFrame1(sRender.zbp, 0);
+    nmlPacketAddGsFrame(sRender.displayBufferBase, 0);
+    nmlPacketAddGsFrame1(sRender.displayBufferBase, 0);
     p = (FsfrGsReg *)0x70000000;
     for (i = 12; i >= 0; i--) {
         packet_gs_entry64(p->r.addr, p);

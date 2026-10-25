@@ -980,7 +980,195 @@ void encEnvMake(void *packet)
     GS_REG_SET(packet, 0x14, 0x60);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/entry_first_init", encEffObjInit);
+extern const char D_00A466B0[];
+extern float thetaInc;
+extern float theta;
+extern int encObjCnt;
+void encEffObj(ObjectTask *task);
+void encEffObjDraw();
+typedef struct EncGridPt {
+    float x;
+    float y;
+    float z;
+    float w;
+    int n;
+    int pad[3];
+} EncGridPt;
+typedef struct EncInitPrim {
+    char pad[0x40];
+    int w40;
+    float u[4];
+    float v[4];
+    char pad2[0x0C];
+} EncInitPrim;
+extern EncInitPrim ft4Base;
+typedef struct EncInitObj {
+    short active;
+    short idx[4];
+    short pad[3];
+    Vector4 v[4];
+    EncInitPrim prim;
+} EncInitObj;
+
+void encEffObjInit(void)
+{
+    int _mul;
+  EncGridPt (*grid)[65];
+  EncInitObj *obj;
+  EncGridPt *g;
+  FadeObjTask *task;
+  int i;
+  int j;
+  int l;
+  int t;
+  int p;
+  int u;
+  int a;
+  int b;
+  int n;
+  int m;
+  float dx;
+  float dy;
+  short *ip;
+  float *wp;
+  int *w40p;
+  obj = (EncInitObj *) 0x01DBF840;
+  grid = (EncGridPt (*)[65]) 0x01D9E000;
+  encObjCnt = 0;
+  theta = 0.0f;
+  thetaInc = 0.032724924f;
+  encEffCmd = 0;
+  for (i = 0; i < 65; i++)
+  {
+
+    for (j = 0; j < 65; j++)
+    {
+      g = &grid[j][i];
+      g->y = (i * 8) - 256;
+      g->z = 1.0f;
+      g->w = 1.0f;
+      g->x = (j * 8) - 256;
+      if ((i == 0) || (i == 64))
+      {
+        dy = 0.0f;
+      }
+      else
+      {
+        p = j - 32;
+        if (p < 0)
+        {
+          m = -j;
+          p = m + 32;
+        }
+        if (i >= 32)
+        {
+          dy = -(p / 2);
+        }
+        else
+        {
+          dy = p / 2;
+        }
+      }
+      if ((j == 0) || (j == 64))
+      {
+        dx = 0.0f;
+      }
+      else
+      {
+        u = i - 32;
+        if (u < 0)
+        {
+          n = -i;
+          u = n + 32;
+        }
+        if (j >= 32)
+        {
+          dx = -(u / 2);
+        }
+        else
+        {
+          dx = u / 2;
+        }
+      }
+      g->y += dy;
+      g->x += dx;
+    }
+
+  }
+
+  for (i = 0; i < 33; i++)
+  {
+    for (j = 0; j < 65; j++)
+    {
+      if (!((j < i) || (j > (64 - i)))) {
+        t = i;
+      } else {
+        t = (j <= 32) ? (j) : (64 - j);
+      }
+      grid[j][i].n = t;
+      grid[j][64 - i].n = t;
+    }
+
+  }
+
+  for (i = 0; i < 64; i++)
+  {
+    for (j = 0; j < 64; j++)
+    {
+      for (l = 0; l < 4; l++)
+      {
+        switch (l)
+        {
+          case 0:
+
+          default:
+            a = 0;
+            b = 0;
+            break;
+
+          case 1:
+            a = 1;
+            b = 0;
+            break;
+
+          case 2:
+            a = 0;
+            b = 1;
+            break;
+
+          case 3:
+            a = 1;
+            b = 1;
+            break;
+
+        }
+
+        g = &grid[j + a][i + b];
+        wp = &obj->v[l].w;
+        wp[-3] = g->x;
+        wp[-2] = g->y;
+        wp[-1] = g->z;
+        wp[0] = 1.0f;
+        obj->prim.u[l] = ft4Base.u[l] + ((float) (j * 8));
+        obj->prim.v[l] = ft4Base.v[l] + ((float) (i * 7));
+        obj->idx[l] = g->n;
+      }
+
+      obj->active = 1;
+      w40p = &ft4Base.w40;
+      obj->prim.w40 = *w40p;
+      encObjCnt++;
+      obj++;
+    }
+
+  }
+
+  printf(D_00A466B0, 0x01D9E000, obj);
+  task = (FadeObjTask *) objEntry2(encEffObj, (void (*)(ObjectTask *)) encEffObjDraw);
+  task->life = 0x80;
+  task->speed = 8;
+  task->delay = 0;
+}
 
 extern float thetaInc;
 extern float theta;

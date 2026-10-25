@@ -33,7 +33,7 @@ struct CalcUnitParam {
     u16 currentHp;           /* +0x34: calcPara2OrgSub's copy source */
     u16 currentEp;           /* +0x36: calcPara2OrgSub's copy source */
     short charaId;           /* +0x38 */
-    unsigned char unmodeled_3a[0x3E - 0x3A];
+    unsigned char unmodeled_3a[0x3E - 0x3A]; /* fork: +0x3A signed char dblActKind (not applied: perturbs ov01 codegen) */
     short turnBias;             /* +0x3E: calcWct/calcTurnEnd */
     short waitCount;            /* +0x40: calcTurnEnd/calcWctDec */
     short waitCountBase;        /* +0x42: calcTurnEnd */
@@ -41,8 +41,9 @@ struct CalcUnitParam {
     CalcUnitParam *linkedUnit;   /* +0x50: menuStatChrIdGet reads its charaId */
     unsigned char unmodeled_54[0x5E - 0x54];
     short sefSetupParams[3]; /* +0x5E: sefSetupPlayer's extra arguments */
+    /* fork names +0x5E weaponId[3] */
     short accessoryId[3];    /* +0x64: calcMagDefGet's per-slot item ids */
-    unsigned char unmodeled_6a[0x76 - 0x6A];
+    unsigned char unmodeled_6a[0x76 - 0x6A]; /* fork: +0x70 short wpnSlotValue[3] */
     short normalTechniqueId[CALC_NORMAL_TECHNIQUE_COUNT]; /* +0x76 */
     unsigned char unmodeled_82[0xAC - 0x82];
     u16 statActiveMask[8];   /* +0xAC: calcStatTurn's per-category bit set */

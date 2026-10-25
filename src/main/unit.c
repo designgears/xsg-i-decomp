@@ -132,7 +132,7 @@ static void UNIT_setUpdate(u8 *object, UnitUpdateState *state)
  * call below looks up. */
 extern const char D_004DC1D0[];
 
-extern void *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Chr;
 
 extern int SEQ_rotYCNSUnitChr();
 typedef struct UnitRotYCNSCall {

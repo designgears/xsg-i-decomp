@@ -197,7 +197,13 @@ typedef struct CardSaveData {
     u8 flags;                      /* +0x00: bit set (lbu/sb), see CARD_SAVE_ROTATE_STAGE below */
     u8 background;                 /* +0x01: title background, 0..5; CardMainProc wraps it at 6
                                     * (0x00a03fc8 `lbu $2,1($3)` / `sltiu $2,$2,6`) before CMIBGInit */
-    u8 unmodeled_02[0x2C - 0x02];
+    u8 unmodeled_02[0x04 - 0x02];
+    u8 cardCounts[38];             /* +0x04: owned copies (0..3) of each card id, 2 bits each, four ids per
+                                    * byte, least significant bits first, 150 ids; CardOpenProc case 10
+                                    * unpacks them into CardGameWork.ownedCount (0x00a1dfb4 `lbu $4,0($6+(i>>2))`,
+                                    * 0x00a1dfc4 `srav`, 0x00a1dfcc `andi $4,$4,3`), CardCntList reads them
+                                    * one card at a time (0x00a0b068 `lbu $3,4($6)`, masks 3/0xC/0x30/0xC0) */
+    u8 unmodeled_2A[0x2C - 0x2A];
     u8 deck[40];                   /* +0x2C: the first stored deck, card ids read with lbu
                                     * (CardMainProc 0x00a07400 `addiu $3,$4,44`, 40 iterations);
                                     * CardCopyRam2Deck (ov10 0x00a0ae40) reads stored deck n at
@@ -258,12 +264,19 @@ typedef struct CardEffect {
  */
 typedef struct CardGameWork {
     u16 flags;                     /* +0x0000: bit set, see CGP_FLAG_ERROR_PLUS */
-    u8 unmodeled_0002[2];
+    u8 unmodeled_0002[0]; /* +0x2: zero-length alias of the former padding member, kept for saved bodies */
+    u16 cardCount;                 /* +0x0002: number of entries in the definitions table; CardViewProc passes
+                                    * it to CardMakeDispList (0x00a1c458 `lhu`, which walks that many 0x24-byte
+                                    * records from +0x08) and uses it as the CardCntList loop bound (0x00a1c6a4) */
     u16 *commandIds;               /* +0x0004: command id per card id */
     CardDefinition *definitions;   /* +0x0008: card master table */
     CardSaveData *save;            /* +0x000C: card game save data (lw, then byte accesses through it);
                                     * CGPRotStageSub requires CARD_SAVE_ROTATE_STAGE */
-    u8 unmodeled_0010[0x013C - 0x0010];
+    u8 unmodeled_0010[0]; /* +0x10: zero-length alias of the former padding member, kept for saved bodies */
+    s16 ownedCount[150];           /* +0x0010: owned copies of each card id, unpacked from save->cardCounts by
+                                    * CardOpenProc case 10 (0x00a1dfd0 `sh $4,0($5)`, $5 = work + 0x10, stride 2);
+                                    * CardViewProc reads it with `lh` (0x00a1c698) and passes only the nonzero
+                                    * test to CardDisp (`sltu $6,$0,$6`) */
     s16 playerDeck[40];            /* +0x013C: deck of side 0; CardMainProc passes it to CardCopyRam2Deck
                                     * and CardPlayInitWork (0x00a051c4 `addiu $4,$30,0x13C`); CardCopyRam2Deck
                                     * fills it with 40 halfwords (`sh $2,0($4)`, stride 2), and enemyDeck
@@ -289,7 +302,12 @@ typedef struct CardGameWork {
                                     * and passes it to NewCMPGameModeExit (0x00a31c80), which stores
                                     * it back; CardHelpProc reads input[1] instead of input[0] when it is set */
     u8 activeHelpPage;             /* +0x59BE: CardHelpPageInit clears it (`sb $0,0x59BE($4)`) */
-    u8 unmodeled_59BF[0x59C0 - 0x59BF];
+    u8 unmodeled_59BF[0]; /* +0x59bf: zero-length alias of the former padding member, kept for saved bodies */
+    s8 helpTopic;                  /* +0x59BF: help topic of the running screen, set on entry (CardViewProc
+                                    * 0x00a1c210 `sb` 0x36, CardOpenProc 0x00a1cc3c `sb` 0x35, CardGameInit
+                                    * 0x00a25270 0x21, CGPNextTurnSub 0x00a25b4c stores a byte loaded from a table
+                                    * rather than a constant); CardHelpProc steps it and wraps it at 0x3B
+                                    * (0x00a20d58..0x00a20d78) */
     u8 helpPage[256];              /* +0x59C0: help page states; CardHelpPageInit clears
                                     * +0x5ABF down to +0x59C0 */
     CardCommandControl command;    /* +0x5AC0 */

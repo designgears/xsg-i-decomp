@@ -1,9 +1,16 @@
 #include "common.h"
+
 #include "shared.h"
+
 #include "end_print.h"
+
 #include "main/xgl_jpeg.h"
 
 #define NULL ((void *)0)
+
+#define SPRITE_UV_BYTES(u, v, width, height) \
+    (u) & 255, (u) >> 8, (v) & 255, (v) >> 8, \
+    (width) & 255, (width) >> 8, (height) & 255, (height) >> 8
 
 typedef struct EndPrintRenderState {
     unsigned char unmodeled_00[4];
@@ -16,15 +23,363 @@ typedef struct EndPrintRenderState {
 } EndPrintRenderState;
 
 extern EndPrintRenderState sRender;
-extern unsigned char D_00532A38[];
+
+/* 511 callback entries plus the adjacent terminal/overflow entry. The
+ * scaffold's D_00532A38 label is the interior address PrintFunc[511]. */
+
+extern PrintFuncEntry PrintFunc[512];
+
+
+extern PrintFuncEntry *pPrintFuncTop;
+
+
 extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
+
+extern void eMessageSpriteReset(void);
+
+extern void xglFontReloadTexture(EndPrintContext *context, int mode);
+
+/*
+ * uv_clut: a fixed table of UV/CLUT entries; only the CLUT id at +0x04 of
+ * each 8-byte entry is read here.
+ */
+
+typedef struct UvClutEntry {
+    const unsigned char *uv;       /* +0x00 */
+    int clut;                      /* +0x04 */
+} UvClutEntry;
+
+extern const unsigned char cur_uv[32];
+
+
+extern const unsigned char others_uv[200];
+
+
+extern const unsigned char pad_uv[64];
+
+
+extern const unsigned char icom_uv[376];
+
+
+extern const unsigned char face_puti_uv[80];
+
+
+extern const unsigned char tag_uv[416];
+
+
+extern const unsigned char win_uv[96];
+
+
+extern const unsigned char num_uv[80];
+
+
+extern const unsigned char pad2_uv[176];
+
+
+extern const unsigned char face_agws_uv[112];
+
+
+extern const unsigned char name_uv[8];
+
+
+extern const unsigned char others2_uv[24];
+
+
+extern const unsigned char face00_uv[16];
+
+
+extern const unsigned char face01_uv[16];
+
+
+extern const unsigned char face02_uv[16];
+
+
+extern const unsigned char face03_uv[16];
+
+
+extern const unsigned char face04_uv[16];
+
+
+extern const unsigned char thumnail_uv[8];
+
+
+extern const unsigned char ether_uv[40];
+
+
+extern const unsigned char seg_uv[192];
+
+
+extern const unsigned char umn_uv[96];
+
+
+extern const unsigned char btl_msg_uv[184];
+
+
+extern const unsigned char btl_msg_uv2[64];
+
+
+extern const unsigned char btl_msg_uv3[48];
+
+
+extern const unsigned char umn2_uv[32];
+
+
+extern const unsigned char umn3_uv[32];
+
+
+extern UvClutEntry uv_clut[26];
+
+
+/* Sprite coordinates, color and packed UV/CLUT indices consumed by the draw routines. */
+typedef struct PrintSpriteInfo {
+    short x, y;
+    int depth;
+    short width, height;
+    unsigned char color[4];
+    short uv; /* low byte: UV table entry; high byte: CLUT table entry */
+    unsigned char column, row;
+} PrintSpriteInfo;
+
+typedef struct PrintPointInfo {
+    short x;                /* +0x00 */
+    short y;                /* +0x02 */
+    int depth;              /* +0x04 */
+    unsigned char color[4]; /* +0x08..+0x0b */
+} PrintPointInfo;
+
+typedef struct PrintCircleInfo {
+    short x;                      /* +0x00 */
+    short y;                      /* +0x02 */
+    int depth;                    /* +0x04 */
+    unsigned char color[4];       /* +0x08..+0x0b */
+    int radius;                   /* +0x0c */
+    int pointCount;               /* +0x10 */
+    unsigned char pointColor[4];  /* +0x14..+0x17 */
+} PrintCircleInfo;
+
+extern void endPrintInfoSet(EndPrintContext *context, int clut, int flag);
+
+
+extern void subPrintSprite(EndPrintContext *context, PrintSpriteInfo *sprite);
+
+
+extern void subPrintLine(EndPrintContext *context, PrintPointInfo *line);
+
+
+extern void subPrintRibbon(EndPrintContext *context, PrintPointInfo *ribbon);
+
+
+#include "main/xgl_packet.h"
+
+/* EE scratchpad RAM base (src/ov01/gr_gp_init.c's grPacketSend and
+ * src/ov01/m_gs.c's MGsGPTerm build the same VIF1 direct-mode packet at the
+ * same address). */
+
+#define SCRATCHPAD_BASE ((void *)0x70000000)
+
+extern void sceVif1PkCnt(XglPacket *packet, int count);
+
+extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
+
+extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
+
+/* PrintCircleCore (this TU, still asm) draws into the scratchpad buffer this
+ * function points it at. */
+
+extern void PrintCircleCore(XglPacket *packet, void *buffer, PrintCircleInfo *circle);
+
+
+/*
+ * The JPEG-decode setup context: only the fields endDecodeJpeg itself
+ * reads or writes are named. +0x10/+0x14 are filled from the source and
+ * destination words already stored at +0x30/+0x34, and +0x20..+0x27 is
+ * cleared before the decode call; the rest of the struct is untouched
+ * here.
+ */
+
+typedef struct EndDecodeJpegContext {
+    unsigned char unmodeled_00[8]; /* +0x00..+0x07 */
+    short width;                   /* +0x08 */
+    short height;                  /* +0x0a */
+    unsigned char unmodeled_0c[4]; /* +0x0c..+0x0f */
+    int decodeSource;              /* +0x10 */
+    int decodeDestination;         /* +0x14 */
+    unsigned char unmodeled_18[8]; /* +0x18..+0x1f */
+    short decodeParam[4];          /* +0x20..+0x27 */
+    unsigned char unmodeled_28[8]; /* +0x28..+0x2f */
+    int source;                    /* +0x30 */
+    int destination;               /* +0x34 */
+} EndDecodeJpegContext;
+
+
+
+/* 511 callback entries plus the adjacent terminal/overflow entry. The
+ * scaffold's D_00532A38 label is the interior address PrintFunc[511]. */
+
+extern void xglPrimAddGifTagDirect(XglPacket *packet, const void *data, int count);
+
+/*
+ * uv_clut: a fixed table of UV/CLUT entries; only the CLUT id at +0x04 of
+ * each 8-byte entry is read here.
+ */
+
+/*
+ * The sprite descriptor subPrintSprite (still asm) draws; only the CLUT
+ * index byte at +0x11 is read by PrintSprite00.
+ */
+
+typedef struct SpriteUv {
+    short u;      /* +0x00 */
+    short v;      /* +0x02 */
+    short width;  /* +0x04 */
+    short height; /* +0x06 */
+} SpriteUv;
+
+typedef struct PrintTagFontInfo {
+    short x;                  /* +0x00 */
+    unsigned short y;         /* +0x02 */
+    int depth;                /* +0x04 */
+    unsigned char color[4];   /* +0x08..+0x0b */
+    unsigned char *text;      /* +0x0c */
+} PrintTagFontInfo;
+
+extern void endSpriteSet(PrintSpriteInfo *sprite, int flags);
+
+typedef struct PrintNumberInfo {
+    short x;                /* +0x00 */
+    unsigned short y;       /* +0x02 */
+    int depth;              /* +0x04 */
+    unsigned char color[4]; /* +0x08..+0x0b */
+    int value;              /* +0x0c */
+    unsigned short digits;  /* +0x10 */
+    unsigned short flags;   /* +0x12 */
+} PrintNumberInfo;
+
+/* EE scratchpad RAM base (src/ov01/gr_gp_init.c's grPacketSend and
+ * src/ov01/m_gs.c's MGsGPTerm build the same VIF1 direct-mode packet at the
+ * same address). */
+
+/* PrintCircleCore (this TU, still asm) draws into the scratchpad buffer this
+ * function points it at. */
+
+
+
+
+/* 511 callback entries plus the adjacent terminal/overflow entry. The
+ * scaffold's D_00532A38 label is the interior address PrintFunc[511]. */
+
+typedef struct WindowTexEntry {
+    unsigned int bufferWidthAndFormat; /* +0x00 */
+    unsigned int clutAddress;          /* +0x04 */
+    unsigned int vramAddress;          /* +0x08 */
+    int size;                          /* +0x0c */
+    int dataOffset;                    /* +0x10 */
+} WindowTexEntry;
+
+typedef struct WindowTexDirectory {
+    unsigned char unmodeled_00[8]; /* +0x00..+0x07 */
+    int entryCount;                /* +0x08 */
+    int entryOffset;               /* +0x0c */
+} WindowTexDirectory;
+
+extern WindowTexDirectory *WindowTexAddrGet(int index);
+
+extern void sceVif1PkAddDataN(XglPacket *packet, const void *data, int count);
+
+extern u64 ePrintEnv_0[12];
+
+
+
+typedef struct PrintLinePoint {
+    int x;                    /* +0x00 */
+    int y;                    /* +0x04 */
+    int z;                    /* +0x08 */
+    int terminator;           /* +0x0c */
+    unsigned char color[4];   /* +0x10..+0x13 */
+    unsigned char unmodeled_14[12]; /* +0x14..+0x1f */
+} PrintLinePoint;
+
+typedef struct PrintRect {
+    short x;      /* +0x00 */
+    short y;      /* +0x02 */
+    int depth;    /* +0x04 */
+    short width;  /* +0x08 */
+    short height; /* +0x0a */
+} PrintRect;
+
+extern u64 ThumImageEnv_1[12];
+
+extern u64 ThumDrawEnv_2[24];
+
+typedef struct PrintThumbnailInfo {
+    short x;                       /* +0x00 */
+    short y;                       /* +0x02 */
+    int depth;                     /* +0x04 */
+    unsigned char unmodeled_08[4]; /* +0x08..+0x0b */
+    const void *image;             /* +0x0c */
+} PrintThumbnailInfo;
+
+
+
+extern float xglSin(float angle);
+
+extern float xglCos(float angle);
+
+extern u64 Env_3[12];
+
+typedef struct PrintBackQuadVertex {
+    int x;            /* +0x00 */
+    int y;            /* +0x04 */
+    int z;            /* +0x08 */
+    int unmodeled_0c; /* +0x0c */
+} PrintBackQuadVertex;
+
+typedef struct PrintBackQuad {
+    PrintBackQuadVertex vertex[4]; /* +0x00..+0x3f */
+    float uv[4];                   /* +0x40..+0x4f */
+} PrintBackQuad;
+
+typedef struct PrintBackSpriteInfo {
+    short x;                /* +0x00 */
+    short y;                /* +0x02 */
+    int depth;              /* +0x04 */
+    unsigned char color[4]; /* +0x08..+0x0b */
+    short width;            /* +0x0c */
+    short height;           /* +0x0e */
+    short u;                /* +0x10 */
+    short v;                /* +0x12 */
+} PrintBackSpriteInfo;
+
+extern u64 sJpegEnv00_7[16];
+
+extern u64 JpegEnv01_8[20];
+
+extern u64 JpegEnv10_9[16];
+
+extern u64 JpegEnv11_10[20];
+
+typedef struct PrintJpegInfo {
+    short x;                        /* +0x00 */
+    short y;                        /* +0x02 */
+    int depth;                      /* +0x04 */
+    short width;                    /* +0x08 */
+    short height;                   /* +0x0a */
+    short offsetX;                  /* +0x0c */
+    short offsetY;                  /* +0x0e */
+    unsigned char unmodeled_10[0x24]; /* +0x10..+0x33 */
+    const void *image;              /* +0x34 */
+} PrintJpegInfo;
+
+/* The original direct-mode writers use EE scratchpad RAM. */
+
+#ifndef SCRATCHPAD_BASE
+
+#endif
 
 int ePrintWHGet(void)
 {
     return 0;
 }
-
-extern void eMessageSpriteReset(void);
 
 void endPrintInit(void)
 {
@@ -33,9 +388,28 @@ void endPrintInit(void)
     eMessageSpriteReset();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintWinTexLoad);
+void endPrintWinTexLoad(XglPacket *packet)
+{
+    int i;
+    WindowTexDirectory *directory;
+    WindowTexEntry *entry;
+    unsigned int image;
+    unsigned int imageLow;
 
-extern void xglFontReloadTexture(EndPrintContext *context, int mode);
+    i = 0;
+    directory = WindowTexAddrGet(0);
+    entry = (WindowTexEntry *)((unsigned char *)directory + directory->entryOffset);
+    for (; i < directory->entryCount; i++, entry++) {
+        image = entry->bufferWidthAndFormat;
+        imageLow = image & 0xFFFF;
+        ePrintEnv_0[4] = ((u64)((entry->vramAddress + 0xF0000) >> 6) << 32) |
+                         ((u64)(image >> 16) << 48);
+        ePrintEnv_0[8] = imageLow | ((u64)entry->clutAddress << 32);
+        sceVif1PkCnt(packet, 0);
+        sceVif1PkAddDataN(packet, ePrintEnv_0, 24);
+        sceVif1PkRef(packet, (unsigned char *)directory + entry->dataOffset, entry->size, 0, 0, 0);
+    }
+}
 
 static void PrintFlush(EndPrintContext *context)
 {
@@ -45,14 +419,14 @@ static void PrintFlush(EndPrintContext *context)
 
     xglFontReloadTexture(context, 2);
     cursor = PrintFunc;
-print_flush_loop:
-    func = cursor->func;
-    if (func != NULL) {
+    do {
+        func = cursor->func;
+        if (func == NULL)
+            break;
         param = cursor->param;
         cursor++;
         func(context, param);
-        goto print_flush_loop;
-    }
+    } while (1);
     endPrintInit();
     xglFontReloadTexture(context, 1);
     eMessageSpriteReset();
@@ -67,246 +441,590 @@ void endPrintExtFuncPack(void (*func)(EndPrintContext *context, int param), int 
     entry->param = param;
     entry++;
     pPrintFuncTop = entry;
-    if ((u32)D_00532A38 < (u32)entry) {
+    if ((u32)(PrintFunc + 511) < (u32)entry) {
         endPrintInit();
         entry = pPrintFuncTop;
     }
     entry->func = NULL;
 }
 
-extern void xglPrimAddGifTagDirect(XglPacket *packet, const void *data, int count);
-static inline u64 *endSetReg(u64 *p, u64 data, u64 addr)
-{
-    p[0] = data;
-    p[1] = addr;
-    return p + 2;
-}
-
 static void endPrintInfoSet(EndPrintContext *context, int clut, int flag)
 {
-    u64 *p;
-    int n;
-    unsigned short f;
+    u64 *command;
+    int count;
+    unsigned short useClut;
 
-    p = &context->scratch[2];
-    p = endSetReg(p, 0, 0x3F);
-    p = endSetReg(p, 0x44, 0x42);
-    p = endSetReg(p, 0x3FFFF0, 8);
-    n = 3;
-    f = flag & 1;
-    if (f) {
-        if (clut) {
-            p[0] = ((u64)((unsigned int)clut >> 6) << 37) | 0x2000000629343C00;
+    command = context->scratch + 2;
+    command[1] = 0x3F;
+    command[0] = 0;
+    command = context->scratch + 4;
+    command[0] = 0x44;
+    command[1] = 0x42;
+    command = context->scratch + 6;
+    command[0] = 0x3FFFF0;
+    command[1] = 8;
+    command = context->scratch + 8;
+    count = 3;
+    useClut = flag & 1;
+    if (useClut) {
+        if (clut != 0) {
+            command[0] = ((u64)((unsigned int)clut >> 6) << 37) | 0x2000000629343C00ULL;
         } else {
-            p[0] = 0x5DC00BC00;
+            command[0] = 0x00000005DC00BC00ULL;
         }
-        n = 4;
-        p[1] = 6;
-        p += 2;
+        command[1] = 6;
+        count = 4;
+        command += 2;
     }
-    p = endSetReg(p, 0x5000D, 0x47);
-    n++;
-    p = context->scratch;
-    p[0] = n + 0x1000000000000000;
-    p[1] = 0xE;
-    xglPrimAddGifTagDirect(context->packet, p, n + 1);
+    command[0] = 0x5000D;
+    count++;
+    command[1] = 0x47;
+    command = context->scratch;
+    command[0] = count + ((u64)0x8000 << 45);
+    command[1] = 0xE;
+    xglPrimAddGifTagDirect(context->packet, command, count + 1);
 }
 
-/*
- * uv_clut: a fixed table of UV/CLUT entries; only the CLUT id at +0x04 of
- * each 8-byte entry is read here.
- */
-typedef struct UvClutEntry {
-    unsigned char unmodeled_00[4]; /* +0x00 */
-    int clut;                      /* +0x04 */
-} UvClutEntry;
-
-extern UvClutEntry uv_clut[26];
-
-typedef struct { int pad; unsigned short u, v; } EndUvEnt;
-
-void endSpriteSet(unsigned char *data, int kind)
+void endSpriteSet(PrintSpriteInfo *sprite, int flags)
 {
-    int idx = data[0x10];
-    EndUvEnt *tbl = *(EndUvEnt **)uv_clut[data[0x11]].unmodeled_00;
+    int idx = ((const unsigned char *)&sprite->uv)[0];
+    const SpriteUv *table = (const SpriteUv *)uv_clut[((const unsigned char *)&sprite->uv)[1]].uv;
 
-    if (kind & 1) {
-        *(unsigned short *)(data + 8) = tbl[idx].u;
-        *(unsigned short *)(data + 0xA) = tbl[idx].v;
+    if (flags & 1) {
+        sprite->width = table[idx].width;
+        sprite->height = table[idx].height;
     }
-    if (kind & 2) {
-        data[0xC] = data[0xD] = data[0xE] = data[0xF] = 0x80;
+    if (flags & 2) {
+        sprite->color[3] = 0x80;
+        sprite->color[2] = 0x80;
+        sprite->color[1] = 0x80;
+        sprite->color[0] = 0x80;
     }
-    if (kind & 4) {
-        data[0x13] = data[0x12] = 0;
+    if (flags & 4) {
+        sprite->column = 0;
+        sprite->row = 0;
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", subPrintSprite);
+static void subPrintSprite(EndPrintContext *context, PrintSpriteInfo *sprite)
+{
+    int *words;
+    const SpriteUv *table;
+    int uvLeft;
+    int uvTop;
+    int width;
+    int height;
+    int left;
+    int top;
 
-/*
- * The sprite descriptor subPrintSprite (still asm) draws; only the CLUT
- * index byte at +0x11 is read by PrintSprite00.
- */
-typedef struct PrintSpriteInfo {
-    unsigned char unmodeled_00[0x11]; /* +0x00..+0x10 */
-    unsigned char clutIndex;          /* +0x11 */
-} PrintSpriteInfo;
+    words = (int *)context->scratch;
+    words[0] = 0x8001;
+    words[1] = 0x50AB4000;
+    words[2] = 0x53531;
+    words[3] = 0;
+    table = (const SpriteUv *)uv_clut[(sprite->uv >> 8) & 0xFF].uv;
+    uvLeft = table[sprite->uv & 0xFF].u;
+    uvTop = table[sprite->uv & 0xFF].v;
+    width = table[sprite->uv & 0xFF].width;
+    height = table[sprite->uv & 0xFF].height;
+    words = (int *)context->scratch + 4;
+    words[0] = sprite->color[0];
+    words[1] = sprite->color[1];
+    words[2] = sprite->color[2];
+    words[3] = sprite->color[3];
+    words = (int *)context->scratch + 8;
+    left = sprite->x * 16 + 0x6FF8;
+    top = sprite->y * 16 + 0x71F8;
+    words[0] = (uvLeft + width * sprite->column) * 16;
+    words[1] = (uvTop + height * sprite->row) * 16;
+    words[2] = 0;
+    words[3] = 0;
+    words[4] = left;
+    words[5] = top;
+    words[6] = sprite->depth & 0xFFFFFF;
+    words[7] = 0;
+    words[8] = words[0] + width * 16;
+    words[9] = words[1] + height * 16;
+    words[10] = 0;
+    words[11] = 0;
+    words[12] = left + sprite->width * 16;
+    words[13] = top + sprite->height * 16;
+    words[14] = words[6];
+    words[15] = 0;
+    xglPrimAddGifTagDirect(context->packet, context->scratch, 6);
+}
 
-extern void endPrintInfoSet(EndPrintContext *context, int clut, int flag);
-extern void subPrintSprite(EndPrintContext *context, PrintSpriteInfo *sprite);
-
+/* The high byte of the packed UV word selects the CLUT on little-endian EE. */
 static void PrintSprite00(EndPrintContext *context, PrintSpriteInfo *sprite)
 {
-    endPrintInfoSet(context, uv_clut[sprite->clutIndex].clut, 1);
+    endPrintInfoSet(context, uv_clut[((const unsigned char *)&sprite->uv)[1]].clut, 1);
     subPrintSprite(context, sprite);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintSprite01);
+enum { QUAD_X, QUAD_Y, QUAD_DEPTH };
+typedef struct PrintSpriteVertex {
+    int position[3];
+    unsigned char unmodeled_0c[4];
+} PrintSpriteVertex;
+typedef struct PrintSpriteColor {
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+    unsigned char alpha;
+} PrintSpriteColor;
+typedef struct PrintSpriteQuad {
+    unsigned char flags;
+    signed char coordinateMode;
+    unsigned short uv;
+    unsigned char unmodeled_04[12];
+    PrintSpriteVertex vertices[4];
+    PrintSpriteColor colors[4];
+} PrintSpriteQuad;
 
-typedef struct PrintPointInfo {
-    short x;
-    short y;
-    unsigned int z;
-    unsigned char r, g, b, a;
-} PrintPointInfo;
-
-static void PrintPoint(EndPrintContext *context, PrintPointInfo *pt)
+static void PrintSprite01(EndPrintContext *context, PrintSpriteQuad *sprite)
 {
-    int *p;
+    int cornerU[4];
+    int cornerV[4];
+    const SpriteUv *table;
+    unsigned int entry;
+    int *words;
+    int i;
+    unsigned char useDefaultColor;
 
-    p = (int *)context->scratch;
+    entry = sprite->uv & 255;
+    table = (const SpriteUv *)uv_clut[sprite->uv >> 8].uv;
+    endPrintInfoSet(context, uv_clut[sprite->uv >> 8].clut, 1);
+    switch (sprite->coordinateMode) {
+    case 0: {
+        const int left = sprite->vertices[0].position[QUAD_X];
+        const int top = sprite->vertices[0].position[QUAD_Y];
+        const int quadDepth = sprite->vertices[0].position[QUAD_DEPTH];
+        sprite->vertices[1].position[QUAD_X] = left;
+        sprite->vertices[3].position[QUAD_X] = left + table[entry].width;
+        sprite->vertices[2].position[QUAD_Y] = top;
+        sprite->vertices[3].position[QUAD_Y] = top + table[entry].height;
+        sprite->vertices[3].position[QUAD_DEPTH] = quadDepth;
+        sprite->vertices[2].position[QUAD_DEPTH] = quadDepth;
+        sprite->vertices[1].position[QUAD_Y] = top + table[entry].height;
+        sprite->vertices[2].position[QUAD_X] = left + table[entry].width;
+        sprite->vertices[1].position[QUAD_DEPTH] = quadDepth;
+    }
+    case 1:
+        useDefaultColor = sprite->flags & 1;
+        if (useDefaultColor) {
+            for (i = 0; i < 4; i++) {
+                sprite->colors[i].red = sprite->colors[i].green =
+                    sprite->colors[i].blue = sprite->colors[i].alpha = 128;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            sprite->vertices[i].position[QUAD_X] = sprite->vertices[i].position[QUAD_X] * 16 + 0x6ff8;
+            sprite->vertices[i].position[QUAD_Y] = sprite->vertices[i].position[QUAD_Y] * 16 + 0x71f8;
+        }
+        break;
+    }
+    cornerU[0] = table[entry].u * 16;
+    cornerU[1] = cornerU[0];
+    cornerU[3] = (table[entry].u + table[entry].width) * 16;
+    cornerU[2] = cornerU[3];
+    cornerV[0] = table[entry].v * 16;
+    cornerV[2] = cornerV[0];
+    cornerV[3] = (table[entry].v + table[entry].height) * 16;
+    cornerV[1] = cornerV[3];
+    words = (int *)context->scratch;
+    words[0] = 0x8004;
+    words[1] = 0x30ae4000;
+    words[2] = 0x531;
+    words[3] = 0;
+    words += 4;
+    for (i = 0; i < 4; i++) {
+        words[0] = sprite->colors[i].red;
+        words[1] = sprite->colors[i].green;
+        words[2] = sprite->colors[i].blue;
+        words[3] = sprite->colors[i].alpha;
+        words += 4;
+        words[0] = cornerU[i];
+        words[1] = cornerV[i];
+        words[2] = 0;
+        words[3] = 0;
+        words += 4;
+        words[0] = sprite->vertices[i].position[QUAD_X];
+        words[1] = sprite->vertices[i].position[QUAD_Y];
+        words[2] = sprite->vertices[i].position[QUAD_DEPTH];
+        words[3] = 0;
+        words += 4;
+    }
+    xglPrimAddGifTagDirect(context->packet, context->scratch, 13);
+}
+
+static void PrintPoint(EndPrintContext *context, PrintPointInfo *point)
+{
+    int *words;
+    int tagHigh;
+    int tagLow;
+
     endPrintInfoSet(context, 0, 0);
-    p[0] = 0x8001;
-    p[1] = 0x20204000;
-    p[2] = 0x51;
-    p[3] = 0;
-    p = (int *)&context->scratch[2];
-    p[0] = pt->r;
-    p[1] = pt->g;
-    p[2] = pt->b;
-    p[3] = pt->a;
-    p = (int *)&context->scratch[4];
-    p[0] = pt->x * 16 + 0x6FF8;
-    p[1] = pt->y * 16 + 0x71F8;
-    p[2] = pt->z & 0xFFFFFF;
-    p[3] = 0;
+    tagLow = 0x8001;
+    tagHigh = 0x20204000;
+    words = (int *)context->scratch;
+    words[0] = tagLow;
+    words[1] = tagHigh;
+    words[2] = 0x51;
+    words[3] = 0;
+    words = (int *)context->scratch + 4;
+    words[0] = point->color[0];
+    words[1] = point->color[1];
+    words[2] = point->color[2];
+    words[3] = point->color[3];
+    words = (int *)context->scratch + 8;
+    words[0] = point->x * 16 + 0x6FF8;
+    words[1] = point->y * 16 + 0x71F8;
+    words[2] = point->depth & 0xFFFFFF;
+    words[3] = 0;
     sceVif1PkAddDirectDataN(context->packet, context->scratch, 3);
 }
 
-static void subPrintLine(EndPrintContext *context, int line) {
-    int *p;
-    int n;
+static void subPrintLine(EndPrintContext *context, PrintPointInfo *line)
+{
+    int *words;
+    PrintPointInfo *point;
+    PrintPointInfo *scan;
     int count;
-    int q;
-    int r;
-    int w;
+    int qwords;
 
-    n = 0;
-    p = (int *)context->scratch;
-    w = line + 0xC;
-    if (*(int *)(line + 4) != 0) {
+    words = (int *)context->scratch;
+    count = 0;
+    scan = line + 1;
+    if (line->depth != 0) {
         do {
-            r = w + 4;
-            w += 0xC;
-            n += 1;
-        } while (*(int *)r != 0);
+            count++;
+        } while ((scan++)->depth != 0);
     }
-    p[0] = n + 0x8000;
-    p[1] = 0x20654000;
-    count = 1;
-    q = line;
-    p[2] = 0x51;
-    p[3] = 0;
-    p += 4;
-    if (n > 0) {
-        do {
-            n -= 1;
-            count += 2;
-            p[0] = *(unsigned char *)(q + 8);
-            p[1] = *(unsigned char *)(q + 9);
-            p[2] = *(unsigned char *)(q + 0xA);
-            p[3] = *(unsigned char *)(q + 0xB);
-            p += 4;
-            p[0] = (*(short *)q * 0x10) + 0x6FF8;
-            p[1] = (*(short *)(q + 2) * 0x10) + 0x71F8;
-            q += 0xC;
-            p[2] = *(int *)(line + 4) & 0xFFFFFF;
-            p[3] = 0;
-            p += 4;
-        } while (n > 0);
+    words[0] = 0x8000 + count;
+    words[1] = 0x20654000;
+    qwords = 1;
+    words[2] = 0x51;
+    words[3] = 0;
+    point = line;
+    words += 4;
+    while (count > 0) {
+        count--;
+        qwords += 2;
+        words[0] = point->color[0];
+        words[1] = point->color[1];
+        words[2] = point->color[2];
+        words[3] = point->color[3];
+        words += 4;
+        words[0] = point->x * 16 + 0x6FF8;
+        words[1] = point->y * 16 + 0x71F8;
+        words[2] = line->depth & 0xFFFFFF;
+        words[3] = 0;
+        words += 4;
+        point++;
     }
-    sceVif1PkAddDirectDataN(context->packet, context->scratch, count);
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, qwords);
 }
 
-extern void subPrintLine(EndPrintContext *context, int line);
-
-static void PrintLine(EndPrintContext *context, int line)
+/* Deferred print callbacks receive their descriptor address in an int slot. */
+static void PrintLine(EndPrintContext *context, int lineAddress)
 {
     endPrintInfoSet(context, 0, 0);
-    subPrintLine(context, line);
+    subPrintLine(context, (PrintPointInfo *)lineAddress);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintLine2);
-
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintDirectRibbon);
-
-static void subPrintRibbon(EndPrintContext *context, int line) {
-    int *p;
-    int n;
+static void PrintLine2(EndPrintContext *context, PrintLinePoint *line)
+{
+    int *words;
+    PrintLinePoint *point;
+    PrintLinePoint *scan;
     int count;
-    int q;
-    int r;
-    int w;
+    int qwords;
 
-    n = 0;
-    p = (int *)context->scratch;
-    w = line + 0xC;
-    if (*(int *)(line + 4) != 0) {
+    endPrintInfoSet(context, 0, 0);
+    scan = line + 1;
+    words = (int *)context->scratch;
+    count = 0;
+    if (line->terminator != 0) {
         do {
-            r = w + 4;
-            w += 0xC;
-            n += 1;
-        } while (*(int *)r != 0);
+            count++;
+        } while ((scan++)->terminator != 0);
     }
-    p[0] = n + 0x8000;
-    p[1] = 0x20A64000;
-    count = 1;
-    q = line;
-    p[2] = 0x51;
-    p[3] = 0;
-    p += 4;
-    if (n > 0) {
-        do {
-            n -= 1;
-            count += 2;
-            p[0] = *(unsigned char *)(q + 8);
-            p[1] = *(unsigned char *)(q + 9);
-            p[2] = *(unsigned char *)(q + 0xA);
-            p[3] = *(unsigned char *)(q + 0xB);
-            p += 4;
-            p[0] = (*(short *)q * 0x10) + 0x6FF8;
-            p[1] = (*(short *)(q + 2) * 0x10) + 0x71F8;
-            q += 0xC;
-            p[2] = *(int *)(line + 4) & 0xFFFFFF;
-            p[3] = 0;
-            p += 4;
-        } while (n > 0);
+    words[0] = 0x8000 + count;
+    words[1] = 0x20654000;
+    qwords = 1;
+    words[2] = 0x51;
+    words[3] = 0;
+    point = line;
+    words += 4;
+    while (count > 0) {
+        count--;
+        qwords += 2;
+        words[0] = point->color[0];
+        words[1] = point->color[1];
+        words[2] = point->color[2];
+        words[3] = point->color[3];
+        words += 4;
+        words[0] = point->x;
+        words[1] = point->y;
+        words[2] = point->z;
+        words[3] = 0;
+        words += 4;
+        point++;
     }
-    sceVif1PkAddDirectDataN(context->packet, context->scratch, count);
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, qwords);
 }
 
-extern void subPrintRibbon(EndPrintContext *context, int ribbon);
+void endPrintDirectRibbon(PrintPointInfo *ribbon)
+{
+    XglPacket *packet;
+    u64 *header;
+    int *words;
+    PrintPointInfo *point;
+    int count;
+    int qwords;
 
-static void PrintRibbon(EndPrintContext *context, int ribbon)
+    packet = xglPacketGetCurrent();
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkOpenDirectHLCode(packet, 0);
+    header = SCRATCHPAD_BASE;
+    header[0] = ((u64)0x10000000 << 32) | 3;
+    header[1] = 14;
+    header[2] = 0;
+    header[3] = 0x3F;
+    header[4] = 0x44;
+    header[5] = 0x42;
+    header[6] = 0x31001;
+    header[7] = 0x47;
+    sceVif1PkAddDirectDataN(packet, SCRATCHPAD_BASE, 4);
+    point = ribbon;
+    count = 0;
+    if ((point++)->depth != 0) {
+        do {
+            count++;
+        } while ((point++)->depth != 0);
+    }
+    ((int *)SCRATCHPAD_BASE)[0] = 0x8000 + count;
+    ((int *)SCRATCHPAD_BASE)[1] = 0x20A64000;
+    ((int *)SCRATCHPAD_BASE)[2] = 0x51;
+    ((int *)SCRATCHPAD_BASE)[3] = 0;
+    point = ribbon;
+    words = (int *)SCRATCHPAD_BASE + 4;
+    qwords = 1;
+    while (count > 0) {
+        count--;
+        qwords += 2;
+        words[0] = point->color[0];
+        words[1] = point->color[1];
+        words[2] = point->color[2];
+        words[3] = point->color[3];
+        words += 4;
+        words[0] = point->x * 16 + 0x6FF8;
+        words[1] = point->y * 16 + 0x71F8;
+        words[2] = ribbon->depth & 0xFFFFFF;
+        words[3] = 0;
+        words += 4;
+        point++;
+    }
+    sceVif1PkAddDirectDataN(packet, SCRATCHPAD_BASE, qwords);
+    sceVif1PkCloseDirectHLCode(packet);
+}
+
+static void subPrintRibbon(EndPrintContext *context, PrintPointInfo *ribbon)
+{
+    int *words;
+    PrintPointInfo *point;
+    PrintPointInfo *scan;
+    int count;
+    int qwords;
+
+    words = (int *)context->scratch;
+    count = 0;
+    scan = ribbon + 1;
+    if (ribbon->depth != 0) {
+        do {
+            count++;
+        } while ((scan++)->depth != 0);
+    }
+    words[0] = 0x8000 + count;
+    words[1] = 0x20A64000;
+    qwords = 1;
+    words[2] = 0x51;
+    words[3] = 0;
+    point = ribbon;
+    words += 4;
+    while (count > 0) {
+        count--;
+        qwords += 2;
+        words[0] = point->color[0];
+        words[1] = point->color[1];
+        words[2] = point->color[2];
+        words[3] = point->color[3];
+        words += 4;
+        words[0] = point->x * 16 + 0x6FF8;
+        words[1] = point->y * 16 + 0x71F8;
+        words[2] = ribbon->depth & 0xFFFFFF;
+        words[3] = 0;
+        words += 4;
+        point++;
+    }
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, qwords);
+}
+
+static void PrintRibbon(EndPrintContext *context, int ribbonAddress)
 {
     endPrintInfoSet(context, 0, 0);
-    subPrintRibbon(context, ribbon);
+    subPrintRibbon(context, (PrintPointInfo *)ribbonAddress);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintTagFont);
+static void PrintTagFont(EndPrintContext *context, PrintTagFontInfo *tag)
+{
+    PrintSpriteInfo sprite;
+    unsigned char *text;
+    unsigned char *start;
+    unsigned char *measure;
+    int x;
+    int shift;
+    int baseHeight;
+    unsigned int character;
+    unsigned int symbol;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", ScissorSet);
+    shift = 0;
+    text = tag->text;
+    x = tag->x;
+    endPrintInfoSet(context, 0xFDB00, 1);
+    if (*text == 1) {
+        start = text + 1;
+        measure = start;
+        while ((character = *measure) != 0) {
+            if ((unsigned char)(character - 'A') < 26) {
+                sprite.uv = *measure - 'A' + 0x500;
+            } else if ((unsigned char)(character - 'a') < 26) {
+                sprite.uv = *measure - 'a' + 0x51A;
+            } else {
+                symbol = (unsigned char)character;
+                if ((unsigned char)(character - '0') < 10) {
+                    sprite.uv = 0x700;
+                } else if (symbol == ':') {
+                    sprite.uv = 0x704;
+                } else if (symbol == '/') {
+                    sprite.uv = 0x703;
+                } else if (symbol == '.') {
+                    sprite.uv = 0x709;
+                } else if (symbol == '-') {
+                    sprite.uv = 0x706;
+                } else if (symbol == ' ') {
+                    shift += 8;
+                    measure++;
+                    continue;
+                } else if (symbol == 3) {
+                    measure++;
+                    shift += *measure;
+                    measure++;
+                    continue;
+                }
+            }
+            endSpriteSet(&sprite, 1);
+            measure++;
+            shift += sprite.width;
+        }
+        text = start;
+    }
+    sprite.uv = 0x500;
+    endSpriteSet(&sprite, 255);
+    sprite.color[0] = tag->color[0];
+    sprite.color[1] = tag->color[1];
+    sprite.color[2] = tag->color[2];
+    sprite.color[3] = tag->color[3];
+    baseHeight = sprite.height;
+    while ((character = *text) != 0) {
+        if ((unsigned char)(character - 'A') < 26) {
+            sprite.uv = *text - 'A' + 0x500;
+        } else if ((unsigned char)(character - 'a') < 26) {
+            sprite.uv = *text - 'a' + 0x51A;
+        } else {
+            symbol = (unsigned char)character;
+            if ((unsigned char)(character - '0') < 10) {
+                sprite.uv = 0x700;
+                endSpriteSet(&sprite, 1);
+                sprite.column = *text - '0';
+                sprite.x = x - shift;
+                sprite.y = tag->y + (baseHeight - sprite.height);
+                sprite.depth = tag->depth - 1;
+                subPrintSprite(context, &sprite);
+                return;
+            } else if (symbol == ':') {
+                sprite.uv = 0x704;
+            } else if (symbol == '/') {
+                sprite.uv = 0x703;
+            } else if (symbol == '.') {
+                sprite.uv = 0x709;
+            } else if (symbol == '-') {
+                sprite.uv = 0x706;
+            } else if (symbol == ' ') {
+                x += 8;
+                text++;
+                continue;
+            } else if (symbol == 3) {
+                text++;
+                x += *text;
+                text++;
+                continue;
+            }
+        }
+        endSpriteSet(&sprite, 1);
+        sprite.x = x - shift;
+        sprite.y = tag->y + (baseHeight - sprite.height);
+        sprite.depth = tag->depth - 1;
+        subPrintSprite(context, &sprite);
+        text++;
+        x += sprite.width;
+    }
+}
+
+static void ScissorSet(EndPrintContext *context, PrintRect *rect)
+{
+    u64 *scratch;
+    int x;
+    int y;
+    int width;
+    int height;
+
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x10000000 << 32) | 0x8001;
+    scratch[1] = 14;
+    x = rect->x;
+    y = rect->y;
+    width = rect->width;
+    height = rect->height;
+    if (x < 0) {
+        width += x;
+        if (width <= 0) {
+            width = 1;
+        }
+        x = 0;
+    } else if (x + width >= 512) {
+        if (x >= 512) {
+            return;
+        }
+        width -= x + width - 512;
+    }
+    if (y < 0) {
+        height += y;
+        if (height <= 0) {
+            height = 1;
+        }
+        y = 0;
+    } else if (y + height >= 448) {
+        if (y >= 448) {
+            return;
+        }
+        height -= y + height - 448;
+    }
+    scratch[2] = x | ((u64)(x + width - 1) << 16) | ((u64)y << 32) |
+                 ((u64)(y + height - 1) << 48);
+    scratch[3] = 64;
+    sceVif1PkAddDirectDataN(context->packet, scratch, 2);
+}
 
 static void ScissorReset(EndPrintContext *context)
 {
@@ -321,47 +1039,395 @@ static void ScissorReset(EndPrintContext *context)
     sceVif1PkAddDirectDataN(context->packet, scratch, 2);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintNumber);
+static void PrintNumber(EndPrintContext *context, PrintNumberInfo *number)
+{
+    PrintSpriteInfo sprite;
+    int offset;
+    int x;
+    int i;
+    int value;
+    int leadingDigit;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintWindow);
+    offset = 0;
+    endPrintInfoSet(context, 0xFDB00, 1);
+    if (number->value < 0) {
+        sprite.uv = 0x706;
+        endSpriteSet(&sprite, 255);
+        sprite.color[0] = number->color[0];
+        sprite.color[1] = number->color[1];
+        sprite.color[2] = number->color[2];
+        sprite.color[3] = number->color[3];
+        sprite.y = number->y;
+        sprite.depth = number->depth;
+        x = number->x;
+        if (number->flags & 0x10) {
+            offset = -(sprite.width * number->digits);
+        }
+        for (i = 0; i < number->digits; i++) {
+            sprite.x = x + offset;
+            subPrintSprite(context, &sprite);
+            x += sprite.width;
+        }
+    } else {
+        sprite.uv = (number->flags & 0xF) + 0x700;
+        endSpriteSet(&sprite, 255);
+        value = number->value;
+        if (value < 0) {
+            value = 0;
+        }
+        sprite.y = number->y;
+        sprite.depth = number->depth;
+        x = number->x + sprite.width * (number->digits - 1);
+        if (number->flags & 0x10) {
+            offset = -(sprite.width * number->digits);
+        }
+        /* The original routine reduces a copy to its leading decimal digit. */
+        leadingDigit = value;
+        while (leadingDigit / 10 != 0) {
+            leadingDigit = leadingDigit / 10;
+        }
+        for (i = 0; i < number->digits; i++) {
+            sprite.x = x + offset;
+            x -= sprite.width;
+            sprite.column = value % 10;
+            value = value / 10;
+            sprite.color[0] = number->color[0];
+            sprite.color[1] = number->color[1];
+            sprite.color[2] = number->color[2];
+            sprite.color[3] = number->color[3];
+            subPrintSprite(context, &sprite);
+        }
+    }
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintFrame);
+typedef struct PrintWindowInfo {
+    unsigned short x, y;
+    int depth;
+    unsigned short width, height;
+    unsigned char color[4];
+} PrintWindowInfo;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintThumbnail);
+static void PrintWindow(EndPrintContext *context, int param)
+{
+    const PrintWindowInfo *frame;
+    short left[8];
+    short top[8];
+    short width[8];
+    short height[8];
+    int count;
+    int *words;
+    int *command;
+    int i;
+    int j;
+    int rest;
+    int lines;
+    int innerX;
+    int innerY;
+    int right;
+    int bottom;
+    int innerWidth;
+    int innerHeight;
+    int depth;
+    int barWidth;
+    int barX;
+    int barY;
+    int barW;
+    const short *uv;
+    int frameX;
+    int frameY;
+    int frameWidth;
+    int frameHeight;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintCircleCore);
+    frame = (const PrintWindowInfo *)param;
+    command = (int *)context->scratch;
+    endPrintInfoSet(context, 0xfde00, 1);
+    words = command;
+    words[1] = 0x10000000;
+    words[2] = words[0] = 1;
+    count = 2;
+    words[3] = 0;
+    words += 4;
+    words[0] = frame->color[0];
+    words[1] = frame->color[2];
+    words[2] = frame->color[1];
+    words[3] = frame->color[3];
+    words += 4;
+    frameHeight = frame->height;
+    if ((short)frameHeight >= 7) {
+        rest = (short)frameHeight - 6;
+        lines = rest / 128 + 1;
+        words[1] = 0x40ab4000;
+        words[2] = 0x5353;
+        words[0] = lines;
+        words[3] = 0;
+        words += 4;
+        for (j = 0; j < lines; j++) {
+            barX = frame->x;
+            barY = frame->y;
+            barW = frame->width;
+            uv = (const short *)win_uv;
+            words[0] = uv[32] * 16;
+            words[1] = uv[33] * 16;
+            words[4] = ((short)barX + 3) * 16 + 0x6ff8;
+            words[2] = 0;
+            words[3] = 0;
+            words[5] = ((short)barY + 3 + j * 128) * 16 + 0x71f8;
+            words[6] = frame->depth & 0xffffff;
+            words[7] = 0;
+            if (rest > 128) {
+                words[13] = words[5] + 128 * 16;
+                words[9] = words[1] + uv[35] * 16;
+            } else {
+                words[9] = words[1] + rest * 16;
+                words[13] = words[5] + rest * 16;
+            }
+            rest -= 128;
+            words[10] = 0;
+            words[11] = 0;
+            words[15] = 0;
+            words[8] = words[0] + uv[34] * 16;
+            barWidth = ((short)barW - 6) * 16;
+            words[12] = words[4] + barWidth;
+            words[14] = words[6];
+            words += 16;
+        }
+        count = lines * 4 + 3;
+    }
+    frameX = frame->x;
+    frameY = frame->y;
+    frameWidth = frame->width;
+    left[5] = left[3] = left[0] = frameX;
+    innerX = frameX + 3;
+    left[6] = left[1] = innerX;
+    right = innerX + frameWidth - 6;
+    left[2] = right;
+    left[4] = right;
+    innerWidth = frameWidth - 6;
+    top[2] = top[1] = top[0] = frameY;
+    innerY = frameY + 3;
+    top[3] = innerY;
+    left[7] = right;
+    top[4] = innerY;
+    bottom = innerY + frameHeight - 6;
+    top[5] = bottom;
+    innerHeight = frameHeight - 6;
+    top[6] = bottom;
+    top[7] = bottom;
+    width[0] = 3;
+    width[2] = 3;
+    width[7] = width[5] = width[4] = width[3] = 3;
+    width[6] = width[1] = innerWidth;
+    height[6] = height[5] = height[2] = height[1] = height[0] = 3;
+    height[7] = 3;
+    height[4] = height[3] = innerHeight;
+    words[0] = 0x8008;
+    words[1] = 0x40ab4000;
+    words[2] = 0x5353;
+    words[3] = 0;
+    words += 4;
+    for (i = 0; i < 8; i++) {
+        words[0] = ((const short *)win_uv)[i * 4] * 16;
+        words[1] = ((const short *)win_uv)[i * 4 + 1] * 16;
+        words[4] = left[i] * 16 + 0x6ff8;
+        words[5] = top[i] * 16 + 0x71f8;
+        words[2] = 0;
+        words[3] = 0;
+        depth = frame->depth & 0xffffff;
+        words[8] = words[0] + ((const short *)win_uv)[i * 4 + 2] * 16;
+        words[9] = words[1] + ((const short *)win_uv)[i * 4 + 3] * 16;
+        words[12] = words[4] + width[i] * 16;
+        words[13] = words[5] + height[i] * 16;
+        words[14] = words[6] = depth;
+        words[7] = 0;
+        words[10] = 0;
+        words[11] = 0;
+        words[15] = 0;
+        words += 16;
+    }
+    xglPrimAddGifTagDirect(context->packet, command, count + i * 4 + 1);
+}
 
-#include "main/xgl_packet.h"
+typedef struct PrintUnsignedFrameInfo {
+    unsigned short x, y;
+    int depth;
+    unsigned short width, height;
+    unsigned char color[4];
+} PrintUnsignedFrameInfo;
 
-/* EE scratchpad RAM base (src/ov01/gr_gp_init.c's grPacketSend and
- * src/ov01/m_gs.c's MGsGPTerm build the same VIF1 direct-mode packet at the
- * same address). */
-#define SCRATCHPAD_BASE ((void *)0x70000000)
+static void PrintFrame(EndPrintContext *context, int param)
+{
+    const PrintUnsignedFrameInfo *frame;
+    short left[8];
+    short top[8];
+    short width[8];
+    short height[8];
+    int *words;
+    int *command;
+    int i;
+    int innerX;
+    int innerY;
+    int right;
+    int bottom;
+    int innerWidth;
+    int innerHeight;
+    int depth;
+    int frameX;
+    int frameY;
+    int frameWidth;
+    int frameHeight;
 
-extern void sceVif1PkCnt(XglPacket *packet, int count);
-extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
-extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
+    frame = (const PrintUnsignedFrameInfo *)param;
+    command = (int *)context->scratch;
+    endPrintInfoSet(context, 0xfde00, 1);
+    words = command;
+    words[1] = 0x10000000;
+    words[2] = words[0] = 1;
+    words[3] = 0;
+    words += 4;
+    words[0] = frame->color[0];
+    words[1] = frame->color[2];
+    words[2] = frame->color[1];
+    words[3] = frame->color[3];
+    frameX = frame->x;
+    frameWidth = frame->width;
+    frameY = frame->y;
+    left[5] = left[3] = left[0] = frameX;
+    innerX = frameX + 3;
+    left[6] = left[1] = innerX;
+    right = innerX + frameWidth - 6;
+    left[2] = right;
+    left[4] = right;
+    innerWidth = frameWidth - 6;
+    top[2] = top[1] = top[0] = frameY;
+    frameHeight = frame->height;
+    innerY = frameY + 3;
+    top[3] = innerY;
+    left[7] = right;
+    top[4] = innerY;
+    bottom = innerY + frameHeight - 6;
+    top[5] = bottom;
+    innerHeight = frameHeight - 6;
+    top[6] = bottom;
+    top[7] = bottom;
+    width[0] = 3;
+    width[2] = 3;
+    width[7] = width[5] = width[4] = width[3] = 3;
+    width[6] = width[1] = innerWidth;
+    height[6] = height[5] = height[2] = height[1] = height[0] = 3;
+    height[7] = 3;
+    height[4] = height[3] = innerHeight;
+    words += 4;
+    words[0] = 0x8008;
+    words[1] = 0x40ab4000;
+    words[2] = 0x5353;
+    words[3] = 0;
+    words += 4;
+    for (i = 0; i < 8; i++) {
+        words[0] = ((const short *)win_uv)[i * 4] * 16;
+        words[1] = ((const short *)win_uv)[i * 4 + 1] * 16;
+        words[4] = left[i] * 16 + 0x6ff8;
+        words[5] = top[i] * 16 + 0x71f8;
+        words[2] = 0;
+        words[3] = 0;
+        depth = frame->depth & 0xffffff;
+        words[8] = words[0] + ((const short *)win_uv)[i * 4 + 2] * 16;
+        words[9] = words[1] + ((const short *)win_uv)[i * 4 + 3] * 16;
+        words[12] = words[4] + width[i] * 16;
+        words[13] = words[5] + height[i] * 16;
+        words[14] = words[6] = depth;
+        words[7] = 0;
+        words[10] = 0;
+        words[11] = 0;
+        words[15] = 0;
+        words += 16;
+    }
+    xglPrimAddGifTagDirect(context->packet, command, i * 4 + 3);
+}
 
-/* PrintCircleCore (this TU, still asm) draws into the scratchpad buffer this
- * function points it at. */
-static void PrintCircleCore(XglPacket *packet, void *buffer, int radius);
+static void PrintThumbnail(EndPrintContext *context, PrintThumbnailInfo *thumbnail)
+{
+    int *words;
 
-void endPrintDirectCircle(int radius) {
+    sceVif1PkCloseDirectHLCode(context->packet);
+    sceVif1PkRef(context->packet, ThumImageEnv_1, 6, 0, 0, 0);
+    sceVif1PkRef(context->packet, thumbnail->image, 3586, 0, 0, 0);
+    sceVif1PkCnt(context->packet, 0);
+    sceVif1PkOpenDirectHLCode(context->packet, 0);
+    words = (int *)ThumDrawEnv_2;
+    words[36] = thumbnail->x * 16 + 0x6FF8;
+    words[37] = thumbnail->y * 16 + 0x71F8;
+    words[38] = thumbnail->depth;
+    words[44] = thumbnail->x * 16 + 0x77F8;
+    words[45] = thumbnail->y * 16 + 0x77D8;
+    words[46] = thumbnail->depth;
+    sceVif1PkAddDirectDataN(context->packet, ThumDrawEnv_2, 12);
+}
+
+static void PrintCircleCore(XglPacket *packet, void *buffer, PrintCircleInfo *circle)
+{
+    u64 *header;
+    int *words;
+    int count;
+    int i;
+    float angle;
+
+    header = buffer;
+    header[0] = ((u64)0x10000000 << 32) | 2;
+    header[1] = 14;
+    header[2] = 68;
+    header[3] = 66;
+    header[4] = 0x5200D;
+    header[5] = 71;
+    sceVif1PkAddDirectDataN(packet, buffer, 3);
+    words = (int *)buffer + 4;
+    words[0] = circle->color[0];
+    words[1] = circle->color[1];
+    words[2] = circle->color[2];
+    words[3] = circle->color[3];
+    words = (int *)buffer + 8;
+    words[0] = circle->x * 16 + 0x6FF8;
+    words[1] = circle->y * 16 + 0x71F8;
+    words[2] = circle->depth;
+    words[3] = 0;
+    words = (int *)buffer + 12;
+    count = 2;
+    for (i = 0; i < circle->pointCount; i++) {
+        angle = 6.2831855f / ((float)circle->pointCount - 1.0f) * (float)i;
+        words[0] = circle->pointColor[0];
+        words[1] = circle->pointColor[1];
+        words[2] = circle->pointColor[2];
+        words[3] = circle->pointColor[3];
+        words += 4;
+        count++;
+        words[0] = (unsigned int)(((float)(circle->x + 0x700) + xglSin(angle) * (float)circle->radius) * 16.0f - 8.0f);
+        words[1] = (unsigned int)(((float)(circle->y + 0x720) + xglCos(angle) * (float)circle->radius) * 16.0f - 8.0f);
+        words[2] = circle->depth;
+        words[3] = 0;
+        words += 4;
+        count++;
+    }
+    words = (int *)buffer;
+    words[0] = 0x8000 + count / 2;
+    words[1] = 0x2026C000;
+    words[2] = 0x51;
+    words[3] = 0;
+    sceVif1PkAddDirectDataN(packet, buffer, count + 1);
+}
+
+void endPrintDirectCircle(int circleAddress) {
     XglPacket *vif1Packet;
 
     vif1Packet = xglPacketGetCurrent();
     sceVif1PkCnt(vif1Packet, 0);
     sceVif1PkOpenDirectHLCode(vif1Packet, 0);
-    PrintCircleCore(vif1Packet, SCRATCHPAD_BASE, radius);
+    PrintCircleCore(vif1Packet, SCRATCHPAD_BASE, (PrintCircleInfo *)circleAddress);
     sceVif1PkCloseDirectHLCode(vif1Packet);
 }
 
-static void PrintCircle(EndPrintContext *context, int radius)
+static void PrintCircle(EndPrintContext *context, int circleAddress)
 {
-    PrintCircleCore(context->packet, context->scratch, radius);
+    PrintCircleCore(context->packet, context->scratch, (PrintCircleInfo *)circleAddress);
 }
-
-extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
 
 static void FontTexReload(EndPrintContext *context)
 {
@@ -376,7 +1442,38 @@ static void FontTexReload(EndPrintContext *context)
     xglFontReloadTexture(context, 2);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", FontTexChange);
+static void FontTexChange(EndPrintContext *context, WindowTexDirectory **window)
+{
+    u64 *scratch;
+    int i;
+    WindowTexDirectory *directory;
+    WindowTexEntry *entry;
+    unsigned int image;
+    unsigned int imageLow;
+
+    i = 0;
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x10000000 << 32) | 0x8000;
+    scratch[1] = 0xE;
+    scratch[3] = 0x3F;
+    scratch[2] = 0;
+    sceVif1PkAddDirectDataN(context->packet, scratch, 1);
+    sceVif1PkCloseDirectHLCode(context->packet);
+    directory = *window;
+    entry = (WindowTexEntry *)((unsigned char *)directory + directory->entryOffset);
+    for (; i < directory->entryCount; i++, entry++) {
+        image = entry->bufferWidthAndFormat;
+        imageLow = image & 0xFFFF;
+        Env_3[4] = ((u64)((entry->vramAddress + 0xF0000) >> 6) << 32) |
+                   ((u64)(image >> 16) << 48);
+        Env_3[8] = imageLow | ((u64)entry->clutAddress << 32);
+        sceVif1PkCnt(context->packet, 0);
+        sceVif1PkAddDataN(context->packet, Env_3, 24);
+        sceVif1PkRef(context->packet, (unsigned char *)directory + entry->dataOffset, entry->size, 0, 0, 0);
+    }
+    sceVif1PkCnt(context->packet, 0);
+    sceVif1PkOpenDirectHLCode(context->packet, 0);
+}
 
 static void DrawBackSet(DrawBackContext *context)
 {
@@ -416,39 +1513,256 @@ static void DrawBackReset(DrawBackContext *context)
     sceVif1PkAddDirectDataN(context->packet, scratch, 4);
 }
 
-typedef union { u64 d; unsigned int w[2]; } ScU;
-typedef struct { unsigned int v[8]; } ScS;
-
-static void ScreenClear(DrawBackContext *context)
+static void ScreenClear(EndPrintContext *context)
 {
-    ScU *scratch;
+    u64 *scratch;
 
-    scratch = (ScU *)context->scratch;
-    ((u64*)scratch)[0] = ((u64)0x40AB4000 << 32) | 0x8001;
-    ((u64*)scratch)[1] = 0x551E;
-    ((u64*)scratch)[2] = 0x31001;
-    ((u64*)scratch)[3] = 0x47;
-    ((u64*)scratch)[4] = 0;
-    ((u64*)scratch)[5] = 0;
-    scratch = (ScU *)&context->scratch[6];
-    ((unsigned int *)scratch)[0] = 0x6FF8;
-    ((unsigned int *)scratch)[1] = 0x71F8;
-    ((unsigned int *)scratch)[4] = 0x8FF8;
-    ((unsigned int *)scratch)[5] = 0x8DF8;
-    ((unsigned int *)scratch)[2] = 0;
-    ((unsigned int *)scratch)[3] = 0;
-    ((unsigned int *)scratch)[6] = 0;
-    ((unsigned int *)scratch)[7] = 0;
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x40AB4000 << 32) | 0x8001;
+    scratch[1] = 0x551E;
+    scratch[2] = 0x31001;
+    scratch[3] = 0x47;
+    scratch[4] = 0;
+    scratch[5] = 0;
+    scratch = context->scratch + 6;
+    ((int *)scratch)[0] = 0x6FF8;
+    ((int *)scratch)[1] = 0x71F8;
+    ((int *)scratch)[2] = 0;
+    ((int *)scratch)[3] = 0;
+    ((int *)scratch)[4] = 0x8FF8;
+    ((int *)scratch)[5] = 0x8DF8;
+    ((int *)scratch)[6] = 0;
+    ((int *)scratch)[7] = 0;
     sceVif1PkAddDirectDataN(context->packet, context->scratch, 5);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", ZScissor);
+static void ZScissor(EndPrintContext *context, PrintRect *rect)
+{
+    u64 *scratch;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintBackSprite);
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x40834000 << 32) | 0x8001;
+    scratch[1] = 0x551E;
+    scratch[2] = 0x32001;
+    scratch[3] = 0x47;
+    scratch[4] = 0;
+    scratch[5] = 0;
+    scratch = context->scratch + 6;
+    ((int *)scratch)[0] = rect->x * 16 + 0x6FF8;
+    ((int *)scratch)[1] = rect->y * 16 + 0x71F8;
+    ((int *)scratch)[2] = rect->depth;
+    ((int *)scratch)[3] = 0;
+    ((int *)scratch)[4] = (rect->x + rect->width) * 16 + 0x6FF8;
+    ((int *)scratch)[5] = (rect->y + rect->height) * 16 + 0x71F8;
+    ((int *)scratch)[6] = rect->depth;
+    ((int *)scratch)[7] = 0;
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, 5);
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintBackSprite2);
+static void PrintBackSprite(EndPrintContext *context, PrintBackQuad *quad)
+{
+    u64 *scratch;
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", PrintEtherLine);
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x10000000 << 32) | 5;
+    scratch[1] = 14;
+    scratch[2] = 68;
+    scratch[3] = 66;
+    scratch[4] = 0x7FDFF0;
+    scratch[5] = 8;
+    scratch[6] = 96;
+    scratch[7] = 20;
+    scratch[8] = (0x24020000 | (sRender.draw_back_value << 5)) | (((u64)0x20000006 << 32) | 0x40000000);
+    scratch[9] = 6;
+    scratch[10] = 0x30000;
+    scratch[11] = 71;
+    sceVif1PkAddDirectDataN(context->packet, scratch, 6);
+    {
+        short order[8] = { 0, 1, 0, 3, 2, 1, 2, 3 };
+        int *words;
+        float *texture;
+        PrintBackQuadVertex *vertex;
+        int i;
+        int gray;
+
+        ((int *)scratch)[0] = 0x8004;
+        ((int *)scratch)[1] = 0x302A4000;
+        ((int *)scratch)[2] = 0x521;
+        ((int *)scratch)[3] = 0;
+        words = (int *)context->scratch + 4;
+        gray = 128;
+        vertex = quad->vertex;
+        for (i = 0; i < 4; i++) {
+            words[3] = gray;
+            words[2] = gray;
+            words[1] = gray;
+            words[0] = gray;
+            words += 4;
+            texture = (float *)words;
+            texture[0] = quad->uv[order[i * 2]];
+            texture[1] = quad->uv[order[i * 2 + 1]];
+            texture[2] = 1.0f;
+            words[3] = 0;
+            words += 4;
+            words[0] = vertex->x;
+            words[1] = vertex->y;
+            words[2] = vertex->z;
+            words[3] = 0;
+            words += 4;
+            vertex++;
+        }
+    }
+    sceVif1PkAddDirectDataN(context->packet, scratch, 13);
+}
+
+static void PrintBackSprite2(EndPrintContext *context, PrintBackSpriteInfo *sprite)
+{
+    u64 *scratch;
+    int *words;
+
+    scratch = context->scratch;
+    scratch[0] = ((u64)0x10000000 << 32) | 5;
+    scratch[1] = 14;
+    scratch[2] = 68;
+    scratch[3] = 66;
+    scratch[4] = 0x7FDFF0;
+    scratch[5] = 8;
+    scratch[6] = 96;
+    scratch[7] = 20;
+    scratch[8] = (0x24020000 | (sRender.draw_back_value << 5)) | (((u64)0x20000006 << 32) | 0x40000000);
+    scratch[9] = 6;
+    scratch[10] = 0x3000D;
+    scratch[11] = 71;
+    sceVif1PkAddDirectDataN(context->packet, scratch, 6);
+    ((int *)scratch)[0] = 0x8001;
+    ((int *)scratch)[1] = 0x50AB4000;
+    ((int *)scratch)[2] = 0x53531;
+    ((int *)scratch)[3] = 0;
+    words = (int *)context->scratch + 4;
+    words[0] = sprite->color[0];
+    words[1] = sprite->color[1];
+    words[2] = sprite->color[2];
+    words[3] = sprite->color[3];
+    words = (int *)context->scratch + 8;
+    words[0] = 0;
+    words[1] = 0;
+    words[2] = 0;
+    words[3] = 0;
+    words = (int *)context->scratch + 12;
+    words[0] = sprite->x * 16 + 0x6FF8;
+    words[1] = sprite->y * 16 + 0x71F8;
+    words[2] = sprite->depth;
+    words[3] = 0;
+    words = (int *)context->scratch + 16;
+    words[0] = sprite->u * 16;
+    words[1] = sprite->v * 16;
+    words[2] = 0;
+    words[3] = 0;
+    words = (int *)context->scratch + 20;
+    words[0] = (sprite->x + sprite->width) * 16 + 0x6FF8;
+    words[1] = (sprite->y + sprite->height) * 16 + 0x71F8;
+    words[2] = sprite->depth;
+    words[3] = 0;
+    sceVif1PkAddDirectDataN(context->packet, context->scratch, 6);
+}
+
+typedef struct EtherLineEndpointEL {
+    float x;
+    float y;
+    float depth;
+    unsigned char unmodeled_0c[4];
+    unsigned char color[4];
+    unsigned char unmodeled_14[12];
+} EtherLineEndpointEL;
+
+static void PrintEtherLine(EndPrintContext *context, int param)
+{
+    const EtherLineEndpointEL *endpoints;
+    PrintPointInfo line[3];
+    PrintPointInfo ribbon[5];
+    float opacity;
+    int i;
+    u64 *command;
+
+    endpoints = (const EtherLineEndpointEL *)param;
+    command = context->scratch;
+    command[0] = ((u64)0x10000000 << 32) | 2;
+    command[1] = 14;
+    command[2] = 68;
+    command[3] = 66;
+    command[4] = 0x5000d;
+    command[5] = 71;
+    sceVif1PkAddDirectDataN(context->packet, command, 3);
+    line[0].color[0] = endpoints[0].color[0];
+    line[0].color[1] = endpoints[0].color[1];
+    line[0].color[2] = endpoints[0].color[2];
+    line[0].color[3] = endpoints[0].color[3];
+    line[1].color[0] = endpoints[1].color[0];
+    line[1].color[1] = endpoints[1].color[1];
+    line[1].color[2] = endpoints[1].color[2];
+    line[1].color[3] = endpoints[1].color[3];
+    line[0].x = (int)(endpoints[0].x);
+    line[0].y = (int)(endpoints[0].y);
+    line[2].depth = 0;
+    line[0].depth = (unsigned int)endpoints[0].depth;
+    line[1].x = (int)(endpoints[1].x);
+    line[1].y = (int)(endpoints[1].y);
+    line[1].depth = (unsigned int)endpoints[1].depth;
+    subPrintLine(context, line);
+    opacity = 1.0f;
+    ribbon[4].depth = 0;
+    ribbon[0].depth = ribbon[1].depth = (unsigned int)endpoints[0].depth;
+    ribbon[2].depth = ribbon[3].depth = (unsigned int)endpoints[1].depth;
+    ribbon[0].color[0] = ribbon[1].color[0] = endpoints[0].color[0];
+    ribbon[0].color[1] = ribbon[1].color[1] = endpoints[0].color[1];
+    ribbon[0].color[2] = ribbon[1].color[2] = endpoints[0].color[2];
+    ribbon[0].color[3] = ribbon[1].color[3] = endpoints[0].color[3];
+    ribbon[2].color[0] = ribbon[3].color[0] = endpoints[1].color[0];
+    ribbon[2].color[1] = ribbon[3].color[1] = endpoints[1].color[1];
+    ribbon[2].color[2] = ribbon[3].color[2] = endpoints[1].color[2];
+    ribbon[2].color[3] = ribbon[3].color[3] = endpoints[1].color[3];
+    if (endpoints[0].y == endpoints[1].y) {
+        for (i = 0; i < 8; i++) {
+            unsigned int startAlpha;
+            unsigned int endAlpha;
+
+            ribbon[0].x = (int)(endpoints[0].x - i);
+            ribbon[1].x = ribbon[0].x;
+            ribbon[2].x = (int)(endpoints[1].x + i);
+            ribbon[3].x = ribbon[2].x;
+            ribbon[0].y = (int)(endpoints[0].y - i);
+            ribbon[1].y = (int)(endpoints[0].y + i);
+            ribbon[2].y = (int)(endpoints[1].y - i);
+            ribbon[3].y = (int)(endpoints[1].y + i);
+            startAlpha = (unsigned int)(endpoints[0].color[3] * opacity);
+            ribbon[0].color[3] = ribbon[1].color[3] = startAlpha;
+            endAlpha = (unsigned int)(endpoints[1].color[3] * opacity);
+            ribbon[2].color[3] = ribbon[3].color[3] = endAlpha;
+            opacity *= 0.5f;
+            subPrintRibbon(context, ribbon);
+        }
+    } else {
+        for (i = 0; i < 8; i++) {
+            unsigned int startAlpha;
+            unsigned int endAlpha;
+
+            ribbon[0].x = (int)(endpoints[0].x - i);
+            ribbon[0].y = (int)(endpoints[0].y - i);
+            ribbon[1].x = (int)(endpoints[0].x + i);
+            ribbon[1].y = ribbon[0].y;
+            ribbon[2].x = (int)(endpoints[1].x - i);
+            ribbon[2].y = (int)(endpoints[1].y + i);
+            ribbon[3].x = (int)(endpoints[1].x + i);
+            ribbon[3].y = ribbon[2].y;
+            startAlpha = (unsigned int)(endpoints[0].color[3] * opacity);
+            ribbon[0].color[3] = ribbon[1].color[3] = startAlpha;
+            endAlpha = (unsigned int)(endpoints[1].color[3] * opacity);
+            ribbon[2].color[3] = ribbon[3].color[3] = endAlpha;
+            opacity *= 0.5f;
+            subPrintRibbon(context, ribbon);
+        }
+    }
+}
 
 extern int xglFontPrintExtFunc(unsigned int flags, void (*draw)(EndPrintContext *context, int param), int arg);
 extern void (*func_tbl_4[])(EndPrintContext *context, int param);
@@ -468,42 +1782,87 @@ int endPrintExtFunc(unsigned int flags, int id, int param)
     }
 }
 
-/* VIF1 direct-mode environment for endPrintDirectFrameCopy; only element 4
- * (the tag word written below) is touched here. */
-extern u64 FrameCopyEnv_6[12];
-
 void endPrintDirectFrameCopy(XglPacket *packet, int tagLow, int tagHigh)
 {
+    /* This 12-qword VIF/GIF template is retained across calls; element 4 is
+     * patched with the per-copy tag below. */
+    static u64 FrameCopyEnv[12] = {
+        0x0000000000000000ULL,
+        0x5100000511000000ULL,
+        0x1000000000008004ULL,
+        0x000000000000000EULL,
+        0x0000000000000000ULL,
+        0x0000000000000050ULL,
+        0x0000000000000000ULL,
+        0x0000000000000051ULL,
+        0x000001C000000200ULL,
+        0x0000000000000052ULL,
+        0x0000000000000002ULL,
+        0x0000000000000053ULL,
+    };
+
     if (packet != NULL) {
-        FrameCopyEnv_6[4] = (u64) (u32) (tagLow | 0x80000) |
-                             ((u64) tagHigh << 0x20) |
-                             ((u64) 0x8000 << 0x24);
-        sceVif1PkRef(packet, FrameCopyEnv_6, 6, 0, 0, 0);
+        FrameCopyEnv[4] = (u64) (u32) (tagLow | 0x80000) |
+                          ((u64) tagHigh << 0x20) |
+                          ((u64) 0x8000 << 0x24);
+        sceVif1PkRef(packet, FrameCopyEnv, 6, 0, 0, 0);
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintDirectLine);
+void endPrintDirectLine(PrintLinePoint *line)
+{
+    XglPacket *packet;
+    u64 *header;
+    int *words;
+    PrintLinePoint *point;
+    int count;
+    int qwords;
 
-/*
- * The JPEG-decode setup context: only the fields endDecodeJpeg itself
- * reads or writes are named. +0x10/+0x14 are filled from the source and
- * destination words already stored at +0x30/+0x34, and +0x20..+0x27 is
- * cleared before the decode call; the rest of the struct is untouched
- * here.
- */
-typedef struct EndDecodeJpegContext {
-    unsigned char unmodeled_00[8]; /* +0x00..+0x07 */
-    short width;                   /* +0x08 */
-    short height;                  /* +0x0a */
-    unsigned char unmodeled_0c[4]; /* +0x0c..+0x0f */
-    int decodeSource;              /* +0x10 */
-    int decodeDestination;         /* +0x14 */
-    unsigned char unmodeled_18[8]; /* +0x18..+0x1f */
-    short decodeParam[4];          /* +0x20..+0x27 */
-    unsigned char unmodeled_28[8]; /* +0x28..+0x2f */
-    int source;                    /* +0x30 */
-    int destination;               /* +0x34 */
-} EndDecodeJpegContext;
+    packet = xglPacketGetCurrent();
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkOpenDirectHLCode(packet, 0);
+    header = SCRATCHPAD_BASE;
+    header[0] = ((u64)0x10000000 << 32) | 3;
+    header[1] = 14;
+    header[2] = 0;
+    header[3] = 0x3F;
+    header[4] = 0x44;
+    header[5] = 0x42;
+    header[6] = 0x31001;
+    header[7] = 0x47;
+    sceVif1PkAddDirectDataN(packet, SCRATCHPAD_BASE, 4);
+    point = line;
+    count = 0;
+    if ((point++)->z != 0) {
+        do {
+            count++;
+        } while ((point++)->z != 0);
+    }
+    ((int *)SCRATCHPAD_BASE)[0] = 0x8000 + count;
+    ((int *)SCRATCHPAD_BASE)[1] = 0x20654000;
+    ((int *)SCRATCHPAD_BASE)[2] = 0x51;
+    ((int *)SCRATCHPAD_BASE)[3] = 0;
+    point = line;
+    words = (int *)SCRATCHPAD_BASE + 4;
+    qwords = 1;
+    while (count > 0) {
+        count--;
+        qwords += 2;
+        words[0] = point->color[0];
+        words[1] = point->color[1];
+        words[2] = point->color[2];
+        words[3] = point->color[3];
+        words += 4;
+        words[0] = point->x;
+        words[1] = point->y;
+        words[2] = point->z;
+        words[3] = 0;
+        words += 4;
+        point++;
+    }
+    sceVif1PkAddDirectDataN(packet, SCRATCHPAD_BASE, qwords);
+    sceVif1PkCloseDirectHLCode(packet);
+}
 
 void endDecodeJpeg(EndDecodeJpegContext *context) {
     int source;
@@ -522,4 +1881,39 @@ void endDecodeJpeg(EndDecodeJpegContext *context) {
     xglJpegDecode(&context->decodeSource);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/end_print", endPrintJpeg);
+void endPrintJpeg(PrintJpegInfo *jpeg)
+{
+    XglPacket *packet;
+    int *topWords;
+    int *bottomWords;
+
+    packet = xglPacketGetCurrent();
+    sceVif1PkRef(packet, sJpegEnv00_7, 8, 0, 0, 0);
+    sceVif1PkRef(packet, jpeg->image, 28672, 0, 0, 0);
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkOpenDirectHLCode(packet, 0);
+    topWords = (int *)JpegEnv01_8;
+    topWords[28] = (jpeg->x + jpeg->offsetX) * 16 + 0x6FF8;
+    topWords[29] = (jpeg->y + jpeg->offsetY) * 16 + 0x71F8;
+    topWords[30] = jpeg->depth;
+    topWords[36] = (jpeg->x + jpeg->width + jpeg->offsetX) * 16 + 0x6FF8;
+    topWords[37] = (jpeg->y + jpeg->height / 2 + jpeg->offsetY) * 16 + 0x71F8;
+    topWords[38] = jpeg->depth;
+    sceVif1PkAddDirectDataN(packet, JpegEnv01_8, 10);
+    sceVif1PkCloseDirectHLCode(packet);
+    sceVif1PkRef(packet, JpegEnv10_9, 8, 0, 0, 0);
+    sceVif1PkRef(packet, (const unsigned char *)jpeg->image + 0x70000, 28672, 0, 0, 0);
+    sceVif1PkCnt(packet, 0);
+    sceVif1PkOpenDirectHLCode(packet, 0);
+    bottomWords = (int *)JpegEnv11_10;
+    bottomWords[28] = (jpeg->x + jpeg->offsetX) * 16 + 0x6FF8;
+    bottomWords[29] = (jpeg->y + jpeg->height / 2 + jpeg->offsetY) * 16 + 0x71F8;
+    bottomWords[30] = jpeg->depth;
+    bottomWords[36] = (jpeg->x + jpeg->width + jpeg->offsetX) * 16 + 0x6FF8;
+    bottomWords[37] = (jpeg->y + jpeg->height + jpeg->offsetY) * 16 + 0x71F8;
+    bottomWords[38] = jpeg->depth;
+    sceVif1PkAddDirectDataN(packet, JpegEnv11_10, 10);
+    sceVif1PkCloseDirectHLCode(packet);
+}
+
+__asm__("FrameCopyEnv.6 = FrameCopyEnv.0");

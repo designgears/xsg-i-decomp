@@ -320,6 +320,18 @@ void GameResourceWorkReload(void)
     MapChangeFadeSet();
 }
 
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct {
+    const char *name;
+    u16 ids[14];
+} MotionEntry;
+
+typedef struct {
+    u16 *table;
+    u16 count;
+    u16 group;
+} FaceEntry;
+
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceAlloc);
 
 extern int GameResourceGetIndex(int id);
@@ -401,7 +413,142 @@ static u8 *skip_space(u8 *cursor)
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", search_key);
+static char *search_key(char *cursor, u8 *table, int *id)
+{
+    ResourceKeyEntry *var_22;
+    ResourceKeyEntry *var_15;
+    char **var_11;
+    char *var_3;
+    char *var_3_2;
+    char *var_3_3;
+    char *var_6;
+    char *var_21;
+    char *var_24;
+    char *var_13;
+    char *var_9;
+    char *var_10;
+    char *temp_2_3;
+    char *temp_2_2;
+    char *temp_2;
+    char *sp0;
+    int *sp4;
+    int var_30;
+    int var_25;
+    int var_14;
+    int var_2;
+    signed char var_4;
+    signed char var_12;
+    signed char var_3_4;
+    signed char var_3_5;
+    signed char temp_7;
+    signed char var_23;
+    signed char var_5;
+
+    var_22 = (ResourceKeyEntry *)table;
+    var_30 = 0;
+    sp0 = cursor;
+    var_3 = (char *)var_22->key;
+    sp4 = id;
+    if (var_3 != 0) {
+loop_1:
+        var_6 = sp0;
+        var_21 = var_3;
+loop_2:
+        var_4 = *var_21;
+        var_23 = *var_6;
+        if ((var_4 == 0) && (var_15 = (ResourceKeyEntry *)var_22->aliases, var_3_2 = (char *)var_15->key, var_25 = var_30, (var_3_2 != 0))) {
+            for (;;) {
+                var_13 = var_6;
+                var_24 = var_3_2;
+loop_6:
+                var_12 = *var_24;
+                var_5 = *var_13;
+                if ((var_12 == 0) && (var_11 = (char **)var_15->aliases, var_3_3 = *var_11, var_14 = var_25 + 1, (var_3_3 != 0))) {
+                    int k_plus = 0x2B;
+                    int k_sp = 0x20;
+                    int k_tab = 9;
+                    int k_nl = 10;
+                    int k_cr = 13;
+loop_9:
+                    var_10 = var_13;
+                    var_9 = var_3_3;
+loop_10:
+                    temp_7 = *var_10;
+                    var_3_4 = *var_9;
+                    if (var_3_4 == k_plus) {
+                        var_9 += 1;
+                        var_3_4 = *var_9;
+                    }
+                    if (var_3_4 == 0x2C) {
+                        var_3_4 = 0;
+                    }
+                    var_3_5 = var_3_4;
+                    if (var_3_5 == 0 && (temp_7 == 0x2C || temp_7 == k_sp || temp_7 == k_tab || temp_7 == k_nl || temp_7 == k_cr)) {
+                        *sp4 = var_14;
+                        return var_10;
+                    }
+                    var_2 = var_3_5 - 0x61;
+block_23:
+                    if ((u32)(var_2 & 0xFF) < 0x1AU) {
+                        var_3_5 -= 0x20;
+                    }
+                    if (temp_7 == var_3_5) {
+                        var_10 += 1;
+                        var_9 += 1;
+                        goto loop_10;
+                    }
+                    var_11 += 1;
+                    var_14 += 1;
+                    temp_2 = *var_11;
+                    var_3_3 = temp_2;
+                    if (temp_2 == 0) {
+                        goto block_31;
+                    }
+                    goto loop_9;
+                } else {
+block_31:
+                    if ((u32)(var_12 - 0x61) < 0x1AU) {
+                        var_12 -= 0x20;
+                    }
+                    if (var_5 == var_12) {
+                        var_13 += 1;
+                        var_24 += 1;
+                        goto loop_6;
+                    }
+                    var_15 += 1;
+                    var_25 += 0x100;
+                    temp_2_2 = (char *)var_15->key;
+                    var_3_2 = temp_2_2;
+                    if (temp_2_2 == 0) {
+                        goto block_39;
+                    }
+                }
+            }
+        } else {
+block_39:
+            if ((u32)(var_4 - 0x61) < 0x1AU) {
+                var_4 -= 0x20;
+            }
+            if (var_23 == var_4) {
+                var_6 += 1;
+                var_21 += 1;
+                goto loop_2;
+            }
+            var_22 += 1;
+            var_30 += 0x1000;
+            temp_2_3 = (char *)var_22->key;
+            var_3 = temp_2_3;
+            if (temp_2_3 == 0) {
+                goto block_47;
+            }
+            goto loop_1;
+        }
+    } else {
+block_47:
+        *sp4 = 0;
+        return sp0;
+    }
+}
 
 extern void GameResourceReset(int reset_mode);
 
@@ -724,11 +871,207 @@ void RES_GetMapEnvSeName(char *name)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadse);
+#include "main/xgl_sound.h"
+extern struct SoundWork SoundWork;
+int sprintf(char *buffer, const char *format, ...);
+extern const char D_004C00A8[];
+extern const char D_004C00C0[];
+extern const char D_004C00D8[];
+extern int SsdGetResultValue(int *result);
+extern int SsdGetSeqPlayStatus(int sequence_id);
+extern int SsdCheckPlayEffectFileID(u16 file_id);
+extern void xglSoundSendSmd(void *address);
+extern void xglSoundSequenceNormal(int mode);
+typedef struct {
+    u8 unmodeled_00[14];
+    u16 sequence_id;
+} SoundLoadBuffer;
+
+static u8 *command_loadse(int command, u8 *cursor)
+{
+    char sound_name[0x40];
+    char sequence_name[0x40];
+    char path[0x100];
+    int character;
+    u32 address;
+    u16 file_id;
+    int keep_current;
+    u8 set_normal;
+    int first_size;
+    int second_size;
+    u8 *name_end;
+    u8 *sequence_end;
+    void *second_address;
+
+    address = GameResourceGetFreeAddr();
+    name_end = sound_name;
+    for (;;) {
+        character = *cursor;
+        if ((character & 0xff) == ',' || (character & 0xff) == ' ' ||
+            (character & 0xff) == '\t' || (character & 0xff) == '\n' ||
+            (character & 0xff) == '\r')
+            break;
+        *name_end++ = character;
+        cursor++;
+    }
+    *name_end = 0;
+
+    keep_current = 0;
+    for (;;) {
+        character = (u8)*cursor;
+        if ((character & 0xff) == ',' || (character & 0xff) == ' ' ||
+            (character & 0xff) == '\t') {
+            cursor++;
+            continue;
+        }
+        break;
+    }
+    name_end = env_name;
+    goto environment_name_test;
+
+environment_name_copy:
+    if (character == '-') {
+        keep_current = 1;
+        cursor++;
+        goto environment_name_done;
+    }
+    *name_end++ = character;
+    character = *++cursor;
+
+environment_name_test:
+    if ((u8)character != ',' && (u8)character != ' ' &&
+        (u8)character != '\t' && (u8)character != '\n' &&
+        (u8)character != '\r')
+        goto environment_name_copy;
+
+environment_name_done:
+    *name_end = 0;
+
+    set_normal = 0;
+    for (;;) {
+        character = (u8)*cursor;
+        if ((character & 0xff) == ',' || (character & 0xff) == ' ' ||
+            (character & 0xff) == '\t') {
+            cursor++;
+            continue;
+        }
+        break;
+    }
+    sequence_end = sequence_name;
+    while ((u8)character != ',' && (u8)character != ' ' &&
+           (u8)character != '\t' && (u8)character != '\n' &&
+           (u8)character != '\r') {
+        if ((u8)character == '+') {
+            set_normal = 1;
+            break;
+        }
+        *sequence_end++ = character;
+        character = *++cursor;
+    }
+    *sequence_end = 0;
+
+    if (sound_name[0] == 0) {
+        xglSoundLoadEffect(0, 0, 2);
+    } else {
+        const char *src;
+        char *dst = foot_name;
+        if (sound_name[0] == 'S' && sound_name[1] == 'O' && sound_name[2] == '_')
+            src = sound_name + 3;
+        else
+            src = sound_name;
+        while ((*dst = *src) != 0) {
+            src++;
+            dst++;
+        }
+    }
+
+    if (env_name[0] == 0) {
+        xglSoundLoadEffect(0, 0, 3);
+    } else {
+        file_id = SoundWork.effect_banks[3].handle;
+        ((SoundLoadBuffer *)address)->sequence_id = file_id;
+        if (arcfileaddr != 0) {
+            first_size = next_arc_size((void *)address);
+            second_address = (void *)(address + first_size);
+            second_size = next_arc_size(second_address);
+        } else {
+            sprintf(path, D_004C00A8, env_name);
+            first_size = xglCdReadFile(path, (void *)address, 0, 0);
+            second_address = (void *)(address + first_size);
+            sprintf(path, D_004C00C0, env_name);
+            second_size = xglCdReadFile(path, second_address, 0, 0);
+        }
+        if (file_id != ((SoundLoadBuffer *)address)->sequence_id) {
+            keep_current = 0;
+        } else {
+            int request_status;
+            int effect_result;
+            int sequence_result;
+            SsdCheckPlayEffectFileID(file_id);
+            do { request_status = SsdGetResultValue(&effect_result); } while (request_status < 0);
+            SsdGetSeqPlayStatus(file_id);
+            do { request_status = SsdGetResultValue(&sequence_result); } while (request_status < 0);
+            if (effect_result == 0) {
+                if (sequence_result != 1)
+                    keep_current = 0;
+            }
+        }
+        if (!keep_current && first_size > 0 && second_size > 0)
+            xglSoundSendEffect((void *)address, second_address, 3);
+    }
+
+    if (sequence_name[0] != 0) {
+        if (sequence_name[0] == '.') {
+            xglSoundSendSmd(0);
+        } else {
+            int size;
+            if (arcfileaddr != 0) {
+                size = next_arc_size((void *)address);
+            } else {
+                sprintf(path, D_004C00D8, sequence_name);
+                size = xglCdReadFile(path, (void *)address, 0, 0);
+            }
+            if (size != 0) {
+                xglSoundSendSmd((void *)address);
+                if (set_normal)
+                    xglSoundSequenceNormal(0x7F);
+            }
+        }
+    }
+    return cursor;
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadsmd);
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_mpeg2_core);
+extern char base_2[];
+extern void GameMpeg2Play(char *name, int mode);
+
+static char *command_mpeg2_core(int command, char *cursor, int mode)
+{
+    char path[256];
+    char *s = base_2;
+    char *d = path;
+    int c;
+
+    while ((*d = *s) != 0) {
+        s++;
+        d++;
+    }
+    c = *(unsigned char *)cursor;
+    while ((unsigned char)c != ' ' && (unsigned char)c != '\t' && (unsigned char)c != '\n' && (unsigned char)c != '\r') {
+        *d = c;
+        cursor++;
+        c = *(unsigned char *)cursor;
+        d++;
+    }
+    d[2] = 's';
+    d[0] = '.';
+    d[1] = 'p';
+    d[4] = '\0';
+    d[3] = 's';
+    GameMpeg2Play(path, mode);
+    return cursor;
+}
 
 static char *command_mpeg2(int command, char *cursor)
 {
@@ -760,7 +1103,93 @@ static char *command_player_lock(int command, char *cursor, int mode)
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_enenpcse);
+extern char *strcpy(char *destination, const char *source);
+extern void xglSoundLoadEffect(const char *name, void *address, int bank);
+extern void xglSoundSendEffect(void *swd, void *sed, int bank);
+
+static char *command_enenpcse(int command, char *cursor, int mode)
+{
+    char name[64];
+    int id = 0;
+    unsigned char *p;
+    char *dst;
+    int foot;
+    int i;
+    char *addr;
+    char *ptr;
+    int size;
+    int size2;
+    unsigned char k_comma = ',';
+    unsigned char k_space = ' ';
+    unsigned char k_tab = 9;
+    unsigned char s_space;
+    unsigned char s_comma;
+    unsigned char s_tab;
+
+    p = (unsigned char *)search_key(cursor, model, &id);
+
+skip_top:
+    if ((*p & 0xFF) == k_comma)
+        goto skip_inc;
+    if ((*p & 0xFF) == k_space)
+        goto skip_inc;
+    dst = name;
+    if ((*p & 0xFF) != k_tab)
+        goto skip_done;
+skip_inc:
+    p++;
+    goto skip_top;
+skip_done:
+    for (;;) {
+        if ((unsigned char)*p == ',' || (unsigned char)*p == ' ' || (unsigned char)*p == '\t' || (unsigned char)*p == '\n' || (unsigned char)*p == '\r')
+            break;
+        *dst++ = *p;
+        p++;
+    }
+    *dst = 0;
+
+    s_comma = ',';
+    s_space = ' ';
+    s_tab = 9;
+    do {
+skip2_top:
+        if ((*p & 0xFF) == s_comma)
+            goto skip2_inc;
+        if ((*p & 0xFF) == s_space)
+            goto skip2_inc;
+        foot = 0;
+        if ((*p & 0xFF) != s_tab)
+            goto skip2_done;
+skip2_inc:
+        p++;
+        goto skip2_top;
+skip2_done:;
+    } while (0);
+    while ((unsigned char)(*p - '0') < 10) {
+        int c = *p++;
+        foot *= 10;
+        foot = foot + c - '0';
+    }
+
+    addr = (char *)GameResourceGetFreeAddr();
+    for (i = 0; i < 7 && EnemySeBank[i].id != 0; i++)
+        ;
+    EnemySeBank[i].id = id;
+    EnemySeBank[i].type = mode;
+    EnemySeBank[i].foot = foot;
+    strcpy(EnemySeBank[i].name, name);
+
+    if (arcfileaddr != 0) {
+        size = next_arc_size(addr);
+        ptr = addr + size;
+        size2 = next_arc_size(ptr);
+        if (size != 0 && size2 != 0)
+            xglSoundSendEffect(addr, ptr, i + 4);
+    } else {
+        xglSoundLoadEffect(name, addr, i + 4);
+    }
+    return (char *)p;
+}
 
 static char *command_enese(int command, char *cursor, int mode)
 {
@@ -817,7 +1246,106 @@ static void readreq(const char *name, void *buffer)
     xglCdReadFile(name, buffer, 0, 1);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceLoad);
+typedef struct {
+    const char *name;
+    char *(*callback)(int, char *);
+    void *unmodeled_08;
+} GameResourceCommand;
+extern GameResourceCommand command[];
+
+void GameResourceLoad(int scene_id)
+{
+    typedef struct {
+        u32 signature;
+    } SceneTextHeader;
+
+    char path[0x100];
+    u8 *cursor;
+    u8 *load_buffer;
+    char *extension;
+    int file_size;
+
+    arcno = 0;
+    GameLoopState.scene_id = scene_id;
+    if (arcfilepreload != 0) {
+        arcfileaddr = (u32 *)arcfilepreload;
+    } else {
+        load_buffer = (u8 *)scene_txt_buffer;
+        ((SceneTextHeader *)load_buffer)->signature = 0xCDCDCDCD;
+        arcfileaddr = 0;
+        extension = RES_getScenePath(path, scene_id);
+        readreq(path, load_buffer);
+        *extension++ = 'a';
+        *extension = '\0';
+        file_size = xglCdGetFileSize(path);
+        if (file_size > 0) {
+            arcfileaddr = (u32 *)(0x02000000 - ((file_size + 0x7FF) & ~0x7FF));
+            xglCdReadFile(path, arcfileaddr, 0, 1);
+        }
+    }
+
+    cursor = (u8 *)scene_txt_buffer;
+    if (((SceneTextHeader *)cursor)->signature == 0x6E637323) {
+        int resource_id;
+
+        cursor = next_line(cursor);
+        for (;;) {
+            GameResourceCommand *entry;
+
+            if (*cursor == '#') {
+                if (cursor[1] == 'e' && cursor[2] == 'n' && cursor[3] == 'd')
+                    break;
+                continue;
+            } else {
+                resource_id = 0;
+                cursor = skip_space(cursor);
+                if ((unsigned char)((unsigned char)*cursor + 0xD0) < 10) {
+                    do {
+                        resource_id *= 10;
+                        resource_id += (u8)*cursor++ - '0';
+                    } while ((unsigned char)((unsigned char)*cursor + 0xD0) < 10);
+                }
+                cursor = skip_space(cursor);
+                entry = command;
+                {
+                int matched = 0;
+                while (entry->name != 0) {
+                    const char *name = entry->name;
+                    u8 *scan = cursor;
+                    char name_character;
+
+                    for (;;) {
+                        u8 name_byte;
+
+                        name_character = *name;
+                        name_byte = (u8)*name++;
+                        if (name_character == '\0' &&
+                            ((char)*scan == ' ' || (char)*scan == '\t' ||
+                             (char)*scan == '\n' || (char)*scan == '\r')) {
+                            cursor = scan;
+                            matched = 1;
+                            break;
+                        }
+                        if (*scan != name_byte)
+                            break;
+                        scan++;
+                    }
+                    if (matched)
+                        break;
+                    entry++;
+                }
+                if (matched) {
+                    cursor = skip_space(cursor);
+                    cursor = (u8 *)entry->callback(resource_id, (char *)cursor);
+                }
+                }
+            }
+            cursor = next_line(cursor);
+        }
+        arcfileaddr = 0;
+        arcfilepreload = 0;
+    }
+}
 
 extern char *MAP_getPath(void);
 extern char dummy_3[];
@@ -857,7 +1385,110 @@ static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
     return size;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSubMap);
+extern char D_004D9EA8[];
+extern char D_004D9EB0[];
+extern char D_004D9EB8[];
+extern int func_A1CF18(char *, int);
+extern char *MapGetName(int map_id);
+typedef struct RESMapView {
+    float (*mtx)[4];
+    void *p4;
+    void *p8;
+    void *pC;
+    void *p10;
+    unsigned char pad[12];
+} RESMapView;
+
+static int RES_loadFileSubMap(void *arg0, int arg1)
+{
+  void *m;
+  float (*temp_4)[4];
+  unsigned char buf[256];
+  unsigned int var_16;
+  int var_4;
+  unsigned short af;
+  var_16 = (unsigned int)arg0;
+  m = arg0;
+  temp_4 = (float (*)[4]) (32 + ((char *) arg0));
+  ((RESMapView *) m)->mtx = temp_4;
+  xglMatrixUnit(temp_4);
+  var_16 = (int) (((RESMapView *) m)->mtx + 4);
+  temp_4 = (float (*)[4]) var_16;
+  arg0 = MapGetName(arg1);
+
+  af = arcfileaddr != 0;
+  ((RESMapView *) m)->p4 = (void *) temp_4;
+  if (af)
+  {
+    var_4 = next_arc_size((void *) var_16);
+  }
+  else
+  {
+    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EA8, (void *) var_16);
+  }
+  var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
+  af = arcfileaddr != 0;
+  ((RESMapView *) m)->p8 = (void *) var_16;
+  if (af)
+  {
+    var_4 = next_arc_size((void *) var_16);
+  }
+  else
+  {
+    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB0, (void *) var_16);
+  }
+  if (var_4 <= 0)
+  {
+    (*((RESMapView *) m)).p8 = 0;
+  }
+  else
+  {
+    var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
+  }
+  af = arcfileaddr != 0;
+  ((RESMapView *) m)->pC = (void *) var_16;
+  if (af)
+  {
+    var_4 = next_arc_size((void *) var_16);
+  }
+  else
+  {
+    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB8, (void *) var_16);
+  }
+  if (var_4 <= 0)
+  {
+    ((RESMapView *) m)->pC = 0;
+  }
+  else
+  {
+    var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
+  }
+  ((RESMapView *) m)->p10 = (void *) var_16;
+  if (func_A1CF18((char *) buf, arg1) != 0)
+  {
+    if (arcfileaddr != 0)
+    {
+      var_4 = next_arc_size(((RESMapView *) m)->p10);
+    }
+    else
+    {
+      var_4 = xglCdReadFile((char *) buf, ((RESMapView *) m)->p10, 0, 1);
+    }
+  }
+  else
+  {
+    var_4 = -1;
+  }
+  if (var_4 <= 0)
+  {
+    ((RESMapView *) m)->p10 = 0;
+  }
+  else
+  {
+    var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
+  }
+  return ((int) var_16) - ((int) m);
+}
 
 extern void GameResourceReset(int reset_mode);
 char *RES_GetMotBaseName(u16 id)
@@ -884,12 +1515,127 @@ char *RES_GetMotBaseName(u16 id)
   return cfMtnList->name;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_GetMdlFileNameSub);
+extern char root_4[6];
+extern char dummy_5[6];
+extern char D_004D9ED0[];
+static int convert_face(int id);
+static inline char *scopy(char *d, char *s)
+{
+    while ((*d = *s) != 0) {
+        d++;
+        s++;
+    }
+    return d;
+}
+
+static int RES_GetMdlFileNameSub(char *name, int key)
+{
+    char *suffix = 0;
+    int id = key & 0xFFFF;
+    int n;
+    int k;
+    ResourceKeyEntry *top;
+    ResourceKeyEntry *sub;
+    char **list;
+    char *out;
+    char *s;
+    char *t;
+    char c;
+    unsigned char u;
+
+    if ((key & 0xFFFF0000) == 0x10000) {
+        suffix = D_004D9ED0;
+        id = convert_face(id);
+    }
+    top = (ResourceKeyEntry *)model + ((id & 0x7000) >> 12);
+    k = (id & 0xF00) >> 8;
+    n = id & 0xFF;
+    if (n == 0) {
+        out = name;
+        s = root_4;
+        while ((*out = *s) != 0) {
+            out++;
+            s++;
+        }
+        s = (char *)top->unmodeled_08;
+        while ((*out = *s) != 0) {
+            out++;
+            s++;
+        }
+        s = dummy_5;
+        while ((*out = *s) != 0) {
+            out++;
+            s++;
+        }
+        if (suffix != 0) {
+            out = scopy(out, suffix);
+        }
+        return id;
+    }
+    sub = (ResourceKeyEntry *)top->aliases + k;
+    list = (char **)sub->aliases;
+    while (list != 0) {
+        if (--n == 0) {
+            break;
+        }
+        list++;
+    }
+    if (list != 0) {
+        out = name;
+        t = root_4;
+        while ((*out = *t) != 0) {
+            out++;
+            t++;
+        }
+        t = (char *)top->unmodeled_08;
+        while ((*out = *t) != 0) {
+            out++;
+            t++;
+        }
+        t = (char *)sub->unmodeled_08;
+        while ((*out = *t) != 0) {
+            out++;
+            t++;
+        }
+        t = *list;
+        if (suffix != 0) {
+            if (*t == '+') {
+                t++;
+            }
+            while ((c = *t++) != 0 && c != ',') {
+                *out++ = c;
+            }
+            t = suffix;
+            while ((*out = *t) != 0) {
+                out++;
+                t++;
+            }
+        } else {
+            u = *t;
+            if (*t == '+') {
+                c = ',';
+                t++;
+                while ((char)(u = *t++) != c) {
+                }
+                u = *t;
+            }
+            *out = u;
+            if (u != 0) {
+                do {
+                    out++;
+                    t++;
+                } while ((*out = *t) != 0);
+            }
+        }
+        return id;
+    }
+    *name = 0;
+    return 0;
+}
 
 extern u8 ModelPath;
-void RES_GetMdlFileNameSub(char *name);
 
-void RES_GetMdlFileName(char *name)
+void RES_GetMdlFileName(char *name, int charaId)
 {
     char buf[256];
     char *src;
@@ -897,10 +1643,10 @@ void RES_GetMdlFileName(char *name)
     int done;
 
     if (ModelPath == 0) {
-        RES_GetMdlFileNameSub(name);
+        RES_GetMdlFileNameSub(name, charaId);
         return;
     }
-    RES_GetMdlFileNameSub(buf);
+    RES_GetMdlFileNameSub(buf, charaId);
     src = buf;
     dst = name;
     done = 0;
@@ -919,9 +1665,308 @@ void RES_GetMdlFileName(char *name)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFileSub);
+extern const char D_004D9ED8[];
+typedef struct {
+    void *first_file;
+    void *second_file;
+    void *third_file;
+    u8 unmodeled_0c[4];
+} ResourceFileSet;
+extern const char D_004C0160[];
+extern const char base_6[];
+extern const char base_7[];
+extern const char base_8[];
+extern const char base_9[6];
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", RES_loadFile);
+static int RES_loadFileSub(int callback, int resource_id, int address_word)
+{
+    void *address = (void *)address_word;
+    char single_path[256];
+    char model_path[256];
+    char motion_path[256];
+    char named_path[256];
+    char effect_path[256];
+    char movie_path[256];
+    char texture_path[256];
+    char *path;
+    char *end;
+    const char *source;
+    int size = 0;
+    int type = callback & 0xffff;
+    int quotient;
+
+    switch (type) {
+    case 7: {
+        char *single_end;
+
+        RES_GetMdlFileName(single_path, resource_id);
+        single_end = single_path;
+        while (*single_end != 0)
+            single_end++;
+        if (arcfileaddr != 0) {
+            size = next_arc_size(address);
+            break;
+        }
+        __builtin_memcpy(single_end, D_004D9ED8, 5);
+        size = xglCdGetFileSize(single_path);
+        if (size > 0)
+            readreq(single_path, (void *)address);
+        break;
+    }
+    case 0:
+    case 4: {
+        char *model_end;
+        u8 *next;
+        ResourceFileSet *files;
+
+        next = (u8 *)address + 16;
+        RES_GetMdlFileName(model_path, resource_id);
+        model_end = model_path;
+        while (*model_end != 0)
+            model_end++;
+        files = (ResourceFileSet *)address;
+        files->first_file = 0;
+        files->second_file = 0;
+        files->third_file = 0;
+        if (arcfileaddr != 0) {
+            size = next_arc_size(next);
+            if (size <= 0)
+                break;
+        } else {
+            __builtin_memcpy(model_end, D_004D9EA8, 5);
+            size = xglCdGetFileSize(model_path);
+            if (size <= 0)
+                break;
+            readreq(model_path, next);
+        }
+        files->first_file = next;
+        next += (size + 15) & ~15;
+        if ((resource_id & 0xffff0000) == 0) {
+            if (arcfileaddr != 0) {
+                size = next_arc_size(next);
+            } else {
+                __builtin_memcpy(model_end, D_004D9EB0, 5);
+                size = xglCdGetFileSize(model_path);
+                if (size > 0)
+                    readreq(model_path, next);
+            }
+            if (size > 0) {
+                files->second_file = next;
+                next += (size + 15) & ~15;
+            }
+        }
+        if (type == 0) {
+            if (arcfileaddr != 0) {
+                size = next_arc_size(next);
+            } else {
+                __builtin_memcpy(model_end, D_004D9ED8, 5);
+                size = xglCdGetFileSize(model_path);
+                if (size > 0)
+                    readreq(model_path, next);
+            }
+            if (size > 0) {
+                files->third_file = next;
+                next += (size + 15) & ~15;
+            }
+        }
+        size = (u32)next - (u32)address;
+        break;
+    }
+    case 1:
+        size = RES_loadFileSubMap(address, resource_id);
+        break;
+    case 2:
+        if (arcfileaddr != 0) {
+            size = next_arc_size(address);
+            break;
+        }
+        sprintf(motion_path, D_004C0160, ((char *(*)(int))RES_GetMotBaseName)(resource_id));
+        size = xglCdGetFileSize(motion_path);
+        if (size > 0) {
+            size = xglCdGetFileSize(motion_path);
+            readreq(motion_path, (void *)address);
+        }
+        break;
+    case 3: {
+        int append_suffix;
+        char *named_end;
+        const char *named_source;
+        const char *resource_name = (const char *)resource_id;
+
+        if (arcfileaddr != 0) {
+            size = next_arc_size(address);
+            break;
+        }
+        named_end = named_path;
+        named_source = resource_name + 1;
+        if (resource_name[0] != '\\') {
+            named_source = base_6;
+            while ((*named_end = *named_source) != 0) {
+                named_end++;
+                named_source++;
+            }
+            named_source = resource_name;
+        }
+        *named_end = *named_source;
+        append_suffix = 1;
+        while (*named_end != 0) {
+            if (*named_source == '.')
+                append_suffix = 0;
+            named_source++;
+            named_end++;
+            *named_end = *named_source;
+        }
+        if (append_suffix) {
+            named_end[0] = '.';
+            named_end[1] = 'f';
+            named_end[2] = 'p';
+            named_end[3] = 'k';
+            named_end[4] = 0;
+        }
+        size = xglCdGetFileSize(named_path);
+        if (size > 0) {
+            size = xglCdGetFileSize(named_path);
+            readreq(named_path, (void *)address);
+        }
+        break;
+    }
+    case 10:
+        if (arcfileaddr != 0) {
+            size = next_arc_size(address);
+            break;
+        }
+        path = effect_path;
+        end = path;
+        source = base_7;
+        while ((*end = *source) != 0) {
+            end++;
+            source++;
+        }
+        goto format_numbered_path;
+    case 11:
+        if (arcfileaddr != 0) {
+            size = next_arc_size(address);
+            break;
+        }
+        path = movie_path;
+        end = path;
+        source = base_8;
+        while ((*end = *source) != 0) {
+            end++;
+            source++;
+        }
+
+format_numbered_path:
+        quotient = resource_id;
+        end[-5] = (u8)end[-5] + quotient % 10;
+        quotient /= 10;
+        end[-6] = (u8)end[-6] + quotient % 10;
+        quotient /= 10;
+        end[-7] = (u8)end[-7] + quotient % 10;
+        quotient /= 10;
+        end[-8] = (u8)end[-8] + quotient % 10;
+        size = xglCdGetFileSize(path);
+        if (size > 0)
+            readreq(path, (void *)address);
+        break;
+    case 5: {
+        char *texture_end;
+        const char *texture_source;
+
+        texture_end = texture_path;
+        texture_source = base_9;
+        while ((*texture_end = *texture_source) != 0) {
+            texture_end++;
+            texture_source++;
+        }
+        texture_source = (const char *)resource_id;
+        while ((*texture_end = *texture_source) != 0) {
+            texture_end++;
+            texture_source++;
+        }
+        *texture_end = 0;
+        size = xglCdGetFileSize(texture_path);
+        if (size > 0) {
+            int offset = callback >> 16;
+
+            size += offset;
+            readreq(texture_path, (u8 *)address + offset);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    return size;
+}
+
+extern int RES_loadFileSub(int callback, int resource_id, int address);
+
+int RES_loadFile(int command, int callback, int resource_id, int flags)
+{
+    int sp0;
+    int sp4;
+    int var_20;
+    int t;
+    int size;
+    int used;
+
+    sp0 = callback;
+    sp4 = resource_id;
+    var_20 = 0;
+    if (command == -1) {
+        command = GameResourceSearch(callback, resource_id);
+        if (command < 0) {
+            if (sp0 == 4) {
+                command = GameResourceSearch(0, sp4);
+            } else if (sp0 == 0) {
+                command = GameResourceSearch(4, sp4);
+                if (command >= 0) {
+                    u32 addr = GameResource[command].address;
+                    if (*(int *)(addr + 8) == 0) {
+                        t = resource_get_free();
+                        *(void **)(addr + 8) = (void *)GameResource[t].address;
+                        RES_loadFile(t, 7, sp4, flags);
+                    }
+                }
+            }
+        }
+        if (command >= 0) {
+            var_20 = GameResource[command].address;
+        } else {
+            command = resource_get_free();
+            if (command != -1) {
+                var_20 = RES_loadFile(command, sp0, sp4, flags);
+            }
+        }
+        return var_20;
+    }
+    if (command < 0x80) {
+        var_20 = GameResource[command].address;
+        if (flags == 0) {
+            flags = (int)RES_loadFileSub;
+        }
+        used = ((int (*)(int, int, int))flags)(callback, resource_id, var_20);
+        if (used < 0) {
+            return 0;
+        }
+        size = GameResource[command].size;
+        used = (used + 0x3F) & ~0x3F;
+        used = (size < used) ? size : used;
+        if (command < 0x7F) {
+            if (GameResource[command + 1].address == 0) {
+                GameResource[command + 1].size = size - used;
+                GameResource[command + 1].address = var_20 + used;
+                GameResource[command].size = used;
+            }
+        }
+        resource_typeid_translate(command, &sp0, &sp4);
+        GameResource[command].state = sp0;
+        GameResource[command].handle = sp4;
+    }
+    return var_20;
+}
 
 int GameResourceGetIndex(int id)
 {
@@ -967,7 +2012,35 @@ void GameResourceDump(int dump)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceReset);
+extern void xglSoundSendEffect(void *swd, void *sed, int bank);
+
+void GameResourceReset(int reset_mode)
+{
+    int i;
+    int total;
+
+    total = 0;
+    for (i = reset_mode; i < 0x80; i++) {
+        total += GameResource[i].size;
+    }
+    GameResource[reset_mode].size = total;
+    GameResource[reset_mode].state = -1;
+    GameResource[reset_mode].handle = 0;
+    for (i = reset_mode + 1; i < 0x80; i++) {
+        GameResource[i].address = 0;
+        GameResource[i].size = 0;
+        GameResource[i].handle = 0;
+        GameResource[i].state = -1;
+    }
+    for (i = 0; i < 8; i++) {
+        EnemySeBank[i].id = 0;
+        EnemySeBank[i].type = 0;
+        EnemySeBank[i].name[0] = 0;
+        xglSoundSendEffect(0, 0, i + 4);
+    }
+    GameResourceDump(0);
+    arcfilepreload = 0;
+}
 
 extern void (*GameResourceReadFileCallback)(void);
 

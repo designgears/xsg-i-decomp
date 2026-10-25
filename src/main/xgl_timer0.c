@@ -60,4 +60,129 @@ static u32 getbits(ArxBitReader *reader, u32 n)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_timer0", xglArxExtract);
+#define ARX_DECODE(v)                          \
+    do {                                       \
+        if (getbit1(&r) == 0) {                \
+            v = *r.data++;                     \
+        } else {                               \
+            n = 1;                             \
+            k = 0;                             \
+            while (getbit1(&r)) {              \
+                k += 1 << n;                   \
+                n++;                           \
+            }                                  \
+            v = table[k + getbits(&r, n)];     \
+        }                                      \
+    } while (0)
+
+int xglArxExtract(u32 *dst, int *src)
+{
+  ArxBitReader r;
+  int size;
+  int packed;
+  u32 *table;
+  u32 *out;
+  u32 *end;
+  int i;
+  u32 n;
+  int k;
+  u32 v;
+  out = dst;
+  if ((src[0] != 0x585241) || (src[3] != 0))
+  {
+    return -1;
+  }
+  size = src[1];
+  packed = src[2];
+  table = (u32 *) (((int) (WorkEnd + 0x3f)) & (~0x3f));
+  for (i = 0; i < 30; i++)
+  {
+    table[i] = src[i + 4];
+  }
+
+  r.value = 0;
+  r.bit_count = 0;
+  r.data = (u32 *) (src + 0x22);
+  if (((r.data < dst) || ((dst + (size / 4)) < r.data)) && (((r.data + (packed / 4)) < dst) || ((dst + (size / 4)) < (r.data + (packed / 4)))))
+  {
+    goto plain;
+  }
+  end = (u32 *) (((char *) dst) + size);
+  if (out >= end)
+  {
+    goto done;
+  }
+  {
+    int *srcEnd = src + (packed / 4);
+    do
+    {
+      do
+      {
+        if (getbit1(&r) == 0)
+        {
+          v = *(r.data++);
+        }
+        else
+        {
+          n = 1;
+          k = 0;
+          while (getbit1(&r))
+          {
+            k += 1 << n;
+            n++;
+          }
+
+          out++;
+          out--;
+          v = table[k + getbits(&r, n)];
+        }
+      }
+      while (0);
+      *(out++) = v;
+      if (out >= r.data)
+      {
+        u32 *s = r.data;
+        u32 *d = table + 32;
+        u32 *lim = (u32 *) (srcEnd + 0x22);
+        r.data = d;
+        while (s <= lim)
+        {
+          *(d++) = *(s++);
+        }
+
+        break;
+      }
+    }
+    while (out < end);
+  }
+  plain:
+  while (out < ((u32 *) (((char *) dst) + size)))
+  {
+    do
+    {
+      if (getbit1(&r) == 0)
+      {
+        v = *(r.data++);
+      }
+      else
+      {
+        n = 1;
+        k = 0;
+        while (getbit1(&r))
+        {
+          k += 1 << n;
+          n++;
+        }
+
+        v = table[k + getbits(&r, n)];
+      }
+    }
+    while (0);
+    *(out++) = v;
+  }
+
+
+  done:
+  return size;
+
+}

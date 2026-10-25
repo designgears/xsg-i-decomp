@@ -336,4 +336,69 @@ void GameOver(void)
     xglSleep();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game_over", Intermission);
+extern char name_6[];
+extern const char D_004C0738[];
+extern u32 GameResourceGetFreeAddr(void);
+extern void GameResourceReset(int mode);
+
+void Intermission(int number)
+{
+    JpegDecodeRequest jpeg;
+    u32 framebuffer;
+    int alpha;
+    int count;
+    int buttons;
+
+    if (GameLoopState.intermission_skip == 1) {
+        return;
+    }
+    GameLoopState.frame_status = number + 1;
+    alpha = 128;
+    copyframe();
+    count = 0;
+    framebuffer = GameResourceGetFreeAddr();
+    name_6[15] = number % 10 + '0';
+    name_6[14] = number / 10 % 10 + '0';
+    xglCdReadFile(name_6, (void *)(framebuffer + 0x100000), 0, 1);
+    memset(&jpeg, 0, sizeof(jpeg));
+    jpeg.source = framebuffer + 0x100000;
+    jpeg.destination = framebuffer;
+    xglJpegDecode(&jpeg);
+    xglRenderDrawFlipPk(xglPacketGetCurrent());
+    xglSleep();
+
+    for (;;) {
+        if (alpha > 0) {
+            alpha -= 2;
+        } else {
+            count += 1;
+            if (count >= 6) {
+                break;
+            }
+        }
+        DrawImage((void *)framebuffer);
+        DrawBack(alpha);
+        xglSleep();
+    }
+
+    for (;;) {
+        DrawImage((void *)framebuffer);
+        xglFontPrint(32, 32, -1, D_004C0738);
+        buttons = PadData.half_2a;
+        if (buttons & PAD_DECIDE) {
+            redraw_frame((void *)framebuffer);
+            xglStudioMainCameraInit();
+            MenuFileMain(0);
+            break;
+        }
+        if (buttons & PAD_CANCEL) {
+            xglSoundEffectNormalDirect(5);
+            redraw_frame((void *)framebuffer);
+            break;
+        }
+        xglSleep();
+    }
+    GameResourceReset(0);
+    copyframe();
+    xglSleep();
+}

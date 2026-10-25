@@ -324,7 +324,7 @@ extern int thinkRegGet(int regIndex);
 extern void thinkRegSet(unsigned short regIndex, unsigned short value);
 extern int cmdNum(short pc);
 extern int cmdThinksetSub(ThinkProcess *proc);
-extern void cmdAtktblSortSub(ThinkProcess *proc);
+extern int cmdAtktblSortSub(ThinkProcess *proc);
 extern int thinkProcessChk(int slot);
 
 /*

@@ -529,6 +529,62 @@ int debugEquSet(void)
     return calcAttEquipOrg(0x1A, 1, 1);
 }
 
+/*
+ * dataUnitOrgGet (ov01 VA 0x00a191c0, still asm in its own TU
+ * data_unit_org_get.c) returns character chrNo's original stat record;
+ * calcTotalParaMenu (ov01 VA 0x00a11108, still asm in ov01/calc.c) returns a
+ * recalculated copy of the same record (its own maxHp/maxEp lead the same
+ * way src/main/menu_para_pt_rate_get.c's CharParaData already evidences).
+ * The equip screens below index its agws/engine/frame/accessory/attachment/
+ * special/ether/skill ids by the character calcXxxEquipOrg is told to
+ * refit.
+ */
+typedef struct UnitOrgData {
+    short maxHp;               /* +0x00 */
+    short maxEp;                /* +0x02 */
+    unsigned char unmodeled_04[0x34 - 0x04];
+    short hp;                   /* +0x34 */
+    short ep;                   /* +0x36 */
+    short charaId;               /* +0x38 */
+    unsigned char unmodeled_3a[0x54 - 0x3A];
+    short agwsId;                /* +0x54 */
+    short engineId;               /* +0x56 */
+    short frameId;                /* +0x58 */
+    signed char weaponVariant[3]; /* +0x5A */
+    unsigned char unmodeled_5d;
+    short weaponId[3];            /* +0x5E */
+    short accessory[3];           /* +0x64 */
+    short attachment[3];          /* +0x6A */
+    unsigned char unmodeled_70[0x82 - 0x70];
+    short special[6];             /* +0x82 */
+    short ether[12];              /* +0x8E */
+    short skill[3];                /* +0xA6 */
+} UnitOrgData;
+
+/*
+ * The party roster record plUnitTblGet (ov01 VA 0x00a0b630, still asm in its
+ * own TU battle_init.c) returns the base of: configPlayer cycles player
+ * (+0x00) 0..0x1F, configPlPos cycles position (+0x02) 1..9. plUnitTblSet
+ * writes both fields back for one slot.
+ */
+typedef struct DebugPartyUnit {
+    short player;   /* +0x00 */
+    short position; /* +0x02 */
+    unsigned char unmodeled_04[4];
+} DebugPartyUnit;
+
+extern UnitOrgData *dataUnitOrgGet(int chrNo);
+
+extern DebugPartyUnit *plUnitTblGet(void);
+
+extern int valLR(int *value, int min, int max, int step);
+
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct DebugPadView {
+    unsigned char unmodeled_00[0x2C];
+    unsigned short buttons; /* +0x2C */
+} DebugPadView;
+
 INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugBattleConfig);
 
 int configStart(void) {
@@ -550,22 +606,7 @@ int configPlayer3(void) {
     return configPlayer(2);
 }
 
-/*
- * The party roster record plUnitTblGet (ov01 VA 0x00a0b630, still asm in its
- * own TU battle_init.c) returns the base of: configPlayer cycles player
- * (+0x00) 0..0x1F, configPlPos cycles position (+0x02) 1..9. plUnitTblSet
- * writes both fields back for one slot.
- */
-typedef struct DebugPartyUnit {
-    short player;   /* +0x00 */
-    short position; /* +0x02 */
-    unsigned char unmodeled_04[4];
-} DebugPartyUnit;
-
-extern DebugPartyUnit *plUnitTblGet(void);
 extern void plUnitTblSet(int slot, int player, int position);
-extern int valLR(int *value, int min, int max, int step);
-
 int configPlayer(int slot)
 {
     DebugPartyUnit *units;
@@ -736,41 +777,7 @@ int configThink(void) {
     return 0;
 }
 
-/*
- * dataUnitOrgGet (ov01 VA 0x00a191c0, still asm in its own TU
- * data_unit_org_get.c) returns character chrNo's original stat record;
- * calcTotalParaMenu (ov01 VA 0x00a11108, still asm in ov01/calc.c) returns a
- * recalculated copy of the same record (its own maxHp/maxEp lead the same
- * way src/main/menu_para_pt_rate_get.c's CharParaData already evidences).
- * The equip screens below index its agws/engine/frame/accessory/attachment/
- * special/ether/skill ids by the character calcXxxEquipOrg is told to
- * refit.
- */
-typedef struct UnitOrgData {
-    short maxHp;               /* +0x00 */
-    short maxEp;                /* +0x02 */
-    unsigned char unmodeled_04[0x34 - 0x04];
-    short hp;                   /* +0x34 */
-    short ep;                   /* +0x36 */
-    short charaId;               /* +0x38 */
-    unsigned char unmodeled_3a[0x54 - 0x3A];
-    short agwsId;                /* +0x54 */
-    short engineId;               /* +0x56 */
-    short frameId;                /* +0x58 */
-    signed char weaponVariant[3]; /* +0x5A */
-    unsigned char unmodeled_5d;
-    short weaponId[3];            /* +0x5E */
-    short accessory[3];           /* +0x64 */
-    short attachment[3];          /* +0x6A */
-    unsigned char unmodeled_70[0x82 - 0x70];
-    short special[6];             /* +0x82 */
-    short ether[12];              /* +0x8E */
-    short skill[3];                /* +0xA6 */
-} UnitOrgData;
-
 extern UnitOrgData *calcTotalParaMenu(int chrNo, int *attack, int *defense);
-extern UnitOrgData *dataUnitOrgGet(int chrNo);
-
 int configYadoya(void) {
     int chrNo;
     UnitOrgData *total;

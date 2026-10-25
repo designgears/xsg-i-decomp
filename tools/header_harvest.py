@@ -1,0 +1,7367 @@
+#!/usr/bin/env python3
+"""Harvest shared reading headers from accepted decompilation units.
+
+Python >= 3.10, standard library only. Run from the project root:
+    python3 tools/header_harvest.py            # regenerate the layout + conflicts
+    python3 tools/header_harvest.py --check     # exit 1 if output would change
+    python3 tools/header_harvest.py --report    # also write reports/header-harvest.md
+    python3 -B tools/header_harvest.py lint FILE [FILE ...] [--domain D] [--json OUT]
+    python3 -B tools/header_harvest.py promote [--dry-run] [--unit ID ...]
+
+Scope and authority
+-------------------
+Declarations come from three inputs, in this order of authority:
+
+  1. the accepted pool: files listed by a `config/units/*.json` unit, plus the
+     declarations config/header-retired.json and config/header-promoted.json
+     replay for files that were archived or promoted. Every name this pool
+     declares is decided here (domains, conflicts, config/header-canon.json).
+  2. published TU source: a name the pool does not declare is read from the
+     published translation unit that defines it - its `src/<unit>/<tu>.h`, then
+     its `.c` (a type it declares, or a function/data declaration for a symbol
+     its `.c` defines) - and can only be homed in that TU's
+     `include/<unit>/<tu>.h` (`published_tu_declarations`).
+  3. a `tu_include` decision in config/header-canon.json: the text a published
+     TU compiles against through a generated header without declaring the name
+     itself, replacing the pool's spelling of that name.
+
+Original ELFs stay the byte authority, and the generated headers are a *reading
+and reuse aid* only: they are not a source of matching credit and are not part
+of any strict match packet unless that packet lists them explicitly with their
+sha256.
+
+The scanner is a conservative tokenizer, not a C parser. It masks comments,
+string/char literals and preprocessor lines, brace-matches top-level
+declarations and classifies them by declarator shape. Anything that cannot be
+classified cleanly is skipped and counted in the report; nothing is invented,
+completed or padded.
+
+Where a declaration goes (the published per-TU layout)
+-----------------------------------------------------
+  include/<unit>/<tu>.h   what that TU DEFINES and at least one other TU needs
+  include/shared.h        what more than one TU needs and no TU defines
+  src/<unit>/<tu>.h       what only that TU needs - tracked source, never
+                          written by this tool
+
+"The definition wins": the translation unit that defines a function states its
+real prototype, and a consumer includes that TU's header. A name a published TU
+declares for itself in a different spelling is a TU-local divergence and reaches
+no shared header at all.
+
+Domains (`core`, `io`, `math`, ...) are still how a canonical spelling is chosen
+- config/header-canon.json is keyed on them - but they no longer name a file.
+
+Conflicts (same name, different body inside one domain) are emitted to neither
+header; both variants are written to reports/header-harvest-conflicts.md for a
+human or the orchestrator to resolve.
+
+Because accepted translation units include these headers (see `promote` below),
+every emitted declaration must be ordinary candidate C. A declaration that
+carries an attribute, inline assembly or another construct the strict runner
+rejects is withheld and reported instead; it stays exactly as it is inside its
+own translation unit.
+
+Promotion
+---------
+`promote` belonged to the pre-migration layout, where an accepted record was a
+function fragment with its own `private.h`. TU mode has no promotion step, so the
+subcommand refuses and says where a declaration lives instead.
+config/header-promoted.json is retained and still replayed: it holds every
+declaration an earlier promotion removed from accepted source, with the
+provenance it had, so nothing that was once shared is lost. This tool no longer
+writes that file.
+
+Canonical decisions
+-------------------
+config/header-canon.json records one canonical declaration per conflicting name
+(see docs/header-canon.md). A conflict with a decision is emitted from that
+decision, carries a `canon:` provenance comment and is reported under "Resolved
+conflicts"; a conflict without one stays withheld. A decision whose recorded
+text no longer matches the accepted file it names is a hard error: the harvest
+refuses to run rather than emit a declaration nobody accepted.
+
+The `lint` subcommand checks arbitrary .c/.h files against the generated headers
+and the canon file with the same tokenizer and the same equality rules, so a
+worker sees a divergence before it becomes a new conflict.
+"""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import hashlib
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+REPO_MARKER = "Generated by tools/header_harvest.py"
+
+UNITS_GLOB_DIR = "config/units"
+# Verbatim upstream library source (newlib/fdlibm/libgcc) integrated under
+# src/runtime/ keeps its own headers and provenance; it is neither harvested
+# into include/xeno/** nor promoted onto the shared headers.
+VERBATIM_SOURCE_PREFIX = "src/runtime/"
+
+
+def verbatim_unit(data: dict) -> bool:
+    """True when every source/header of a unit lives under src/runtime/."""
+    paths = []
+    source = data.get("source")
+    if isinstance(source, dict):
+        paths.append(source.get("path"))
+    elif isinstance(source, list):
+        paths.extend(item.get("path") for item in source if isinstance(item, dict))
+    for group in ("headers", "sources"):
+        for item in data.get(group) or []:
+            if isinstance(item, dict):
+                paths.append(item.get("path"))
+    paths = [p for p in paths if isinstance(p, str)]
+    return bool(paths) and all(p.startswith(VERBATIM_SOURCE_PREFIX) for p in paths)
+
+
+def retired_unit(data: dict) -> bool:
+    """True when the record's pre-migration source has been archived.
+
+    Such a record points at the published TU file that now carries its functions,
+    and `source.retired_from` says where the file it was accepted from went. The
+    declarations it carried are replayed from `config/header-retired.json`.
+    """
+    source = data.get("source")
+    return isinstance(source, dict) and isinstance(source.get("retired_from"), dict)
+CANON_FILE = "config/header-canon.json"
+PROMOTED_FILE = "config/header-promoted.json"
+RETIRED_FILE = "config/header-retired.json"
+TU_BUILD_FILE = "config/tu-build.json"
+EXPORTS_FILE = "config/header-exports.json"
+OWNER_MIGRATIONS_FILE = "config/header-owner-migrations.json"
+OWNER_WITNESS_ROOT = "config/header-owner-witnesses"
+CALLEES_FILE = "config/header-callees.json"
+LINT_CACHE = ".work/cache/header_harvest_lint.json"
+
+
+def header_input_path(root: str, relative: str) -> str:
+    """Use live workflow metadata, or the same inputs shipped with public clones."""
+    live = Path(root, relative)
+    bundled = Path(root, "tools/header_inputs", relative)
+    return str(live if live.exists() or not bundled.exists() else bundled)
+
+
+def export_inputs_main(argv: list[str]) -> int:
+    """Export header inputs without queue records, build paths or game binaries."""
+    ap = argparse.ArgumentParser(description=export_inputs_main.__doc__)
+    ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent))
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args(argv)
+    root, destination = Path(args.root).resolve(), Path(args.out).resolve()
+    documents = {}
+    for relative in (CANON_FILE, PROMOTED_FILE, RETIRED_FILE, EXPORTS_FILE,
+                     OWNER_MIGRATIONS_FILE, CALLEES_FILE, "config/header-types.json"):
+        documents[relative] = json.loads(Path(header_input_path(str(root), relative)).read_text())
+    # Historical review receipts are not inputs to header generation. The live
+    # private ledgers retain them; only the distributable copy omits them.
+    documents[CANON_FILE].pop("decision_history", None)
+    for row in documents[OWNER_MIGRATIONS_FILE].get("migrations", []):
+        row.pop("owner_receipt_history", None)
+    manifest = json.loads(Path(header_input_path(str(root), TU_BUILD_FILE)).read_text())
+    pinned_tus = {row["owner"]["tu"]
+                  for row in documents[OWNER_MIGRATIONS_FILE].get("migrations", [])}
+    documents[TU_BUILD_FILE] = {
+        "tus": [tu if tu.get("id") in pinned_tus else
+                {key: tu[key] for key in ("id", "unit", "path", "domain") if key in tu}
+                for tu in manifest.get("tus", [])]}
+    # Retired units are replayed by header-retired.json. Live source
+    # records contribute declarations directly; export their reading
+    # inputs rather than private acceptance reports, pins and attempt histories.
+    for path in sorted(Path(header_input_path(str(root), UNITS_GLOB_DIR)).glob("*.json")):
+        record = json.loads(path.read_text())
+        if retired_unit(record) or verbatim_unit(record):
+            continue
+        public = {}
+        source = record.get("source")
+        if isinstance(source, dict):
+            public["source"] = {"path": source["path"]}
+        elif isinstance(source, list):
+            public["source"] = [{"path": item["path"]} for item in source]
+        for key in ("headers", "sources"):
+            if record.get(key):
+                public[key] = [{"path": item["path"]} for item in record[key]]
+        public["functions"] = [{key: fn[key] for key in ("name", "va") if key in fn}
+                               for fn in record.get("functions", [])]
+        documents[f"{UNITS_GLOB_DIR}/{path.name}"] = public
+    # Machine-specific paths are not part of the distributable reading inputs.
+    # Rebind only derived metadata hashes after making those paths relative;
+    # source witnesses and the private acceptance records are never rewritten.
+    documents = json.loads(json.dumps(documents, ensure_ascii=False).replace(str(root) + "/", ""))
+
+    def rebind_metadata(value):
+        if isinstance(value, dict):
+            witness = value.get("tu_record_witness")
+            if witness is not None and "tu_record_sha256" in value:
+                record = witness["record"]
+                raw = json.dumps(record, sort_keys=True, separators=(",", ":"),
+                                 ensure_ascii=False).encode()
+                value["tu_record_sha256"] = hashlib.sha256(raw).hexdigest()
+                witness["original_identity_sha256"] = owner_tu_record_witness(record)["original_identity_sha256"]
+            for item in value.values():
+                rebind_metadata(item)
+        elif isinstance(value, list):
+            for item in value:
+                rebind_metadata(item)
+
+    rebind_metadata(documents)
+    for relative, document in documents.items():
+        path = destination / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    witnesses = owner_migration_witness_requests(str(root))
+    for relative, expected in witnesses:
+        raw, _ = owner_migration_witness(str(root), relative, expected, "public export")
+        path = destination / OWNER_WITNESS_ROOT / expected / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(raw.encode("utf-8"))
+    print(f"header_harvest: exported {len(documents)} metadata files and "
+          f"{len(witnesses)} exact-hash source witnesses to {destination}")
+    return 0
+TYPES_BASENAME = "types.h"
+PROTOS_BASENAME = "functions.h"
+# The base header every domain `types.h` includes. A type two domains both need
+# is defined here once instead of being repeated in each, so the domain headers
+# can be read together by one translation unit.
+COMMON_DOMAIN = "common"
+# Superseded generated basenames: still recognized so that a regeneration
+# removes them instead of leaving two copies of the same declarations behind.
+LEGACY_BASENAMES = ("harvested.h", "harvested_protos.h")
+INCLUDE_ROOT = "include/xeno"
+CONFLICT_REPORT = "reports/header-harvest-conflicts.md"
+SUMMARY_REPORT = "reports/header-harvest.md"
+PROMOTE_REPORT = "reports/header-promote.md"
+# The strict runners refuse an output directory outside these two trees.
+PROMOTE_BUILD_DIR = ".work/attempts/header-promote"
+
+# Declaration specifiers that are never a declared name.
+KEYWORDS = {
+    "auto", "char", "const", "double", "enum", "extern", "float", "inline",
+    "int", "long", "register", "restrict", "short", "signed", "static",
+    "struct", "typedef", "union", "unsigned", "void", "volatile",
+    "__inline", "__inline__", "__restrict", "__restrict__", "__signed",
+    "__signed__", "__const", "__volatile", "__volatile__", "_Bool", "sizeof",
+}
+
+IDENT_RE = re.compile(r"[A-Za-z_$][A-Za-z_0-9$]*")
+
+BODY_TOKEN = "@body@"
+
+TOKEN_RE = re.compile(r"[A-Za-z_$][A-Za-z_0-9$]*|[0-9][0-9A-Za-z_.]*|\S")
+
+
+class ParseError(Exception):
+    """A declaration or file that the conservative scanner refuses to guess at."""
+
+
+class CanonError(Exception):
+    """A canonical decision that no longer describes the accepted source."""
+
+
+# ---------------------------------------------------------------------------
+# masking
+# ---------------------------------------------------------------------------
+
+
+STDC_IF_RE = re.compile(r"^\s*(?:ifdef\s+__STDC__|if\s+defined\s*\(?\s*__STDC__\s*\)?)\s*$")
+
+
+def mask_source(text: str) -> tuple[str, str, bytearray]:
+    """Return (struct_view, code_view, dropped), all indexed like `text`.
+
+    struct_view blanks comments, preprocessor lines and string/char literals so
+    that brace/paren matching cannot be derailed by them.
+    code_view blanks comments and preprocessor lines only; it keeps literals and
+    is used to compare declaration bodies.
+    dropped marks characters that are not part of the accepted translation:
+    preprocessor directives themselves, and the `#else` branch of an
+    `#ifdef __STDC__` conditional (the pinned EE compiler defines __STDC__, so
+    the pre-ANSI branch is never the compiled text). No other conditional is
+    resolved; files whose remaining conditionals do not brace-match are skipped.
+    """
+    n = len(text)
+    struct_view = list(text)
+    code_view = list(text)
+    dropped = bytearray(n)
+    directives: list[tuple[int, int, str, str]] = []   # start, stop, keyword, rest
+
+    def blank(start: int, stop: int, both: bool) -> None:
+        for k in range(start, stop):
+            ch = text[k]
+            repl = ch if ch == "\n" else " "
+            struct_view[k] = repl
+            if both:
+                code_view[k] = repl
+
+    i = 0
+    at_line_start = True
+    while i < n:
+        ch = text[i]
+        if ch == "/" and i + 1 < n and text[i + 1] == "*":
+            j = text.find("*/", i + 2)
+            if j < 0:
+                raise ParseError("unterminated block comment")
+            blank(i, j + 2, True)
+            i = j + 2
+            at_line_start = False
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "/":
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+            blank(i, j, True)
+            i = j
+            at_line_start = False
+            continue
+        if ch in "\"'":
+            j = i + 1
+            while j < n:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == ch:
+                    j += 1
+                    break
+                # The pinned GCC 2.96 contract accepts multiline string
+                # literals as an extension. Preserve their line structure
+                # while masking their contents for header discovery; a
+                # physical newline in a character literal remains invalid.
+                if text[j] == "\n" and ch == "'":
+                    raise ParseError("unterminated literal")
+                j += 1
+            else:
+                raise ParseError("unterminated literal")
+            blank(i, j, False)
+            i = j
+            at_line_start = False
+            continue
+        if ch == "#" and at_line_start:
+            j = i
+            while j < n:
+                if text[j] == "\\" and j + 1 < n and text[j + 1] == "\n":
+                    j += 2
+                    continue
+                if text[j] == "\n":
+                    break
+                if text[j] == "/" and j + 1 < n and text[j + 1] == "*":
+                    end = text.find("*/", j + 2)
+                    if end < 0:
+                        raise ParseError("unterminated block comment")
+                    j = end + 2
+                    continue
+                j += 1
+            body = text[i + 1:j]
+            m = re.match(r"\s*(\w+)(.*)", body, re.S)
+            directives.append((i, j, m.group(1) if m else "", m.group(2) if m else ""))
+            blank(i, j, True)
+            for k in range(i, j):
+                dropped[k] = 1
+            i = j
+            continue
+        if ch == "\n":
+            at_line_start = True
+        elif not ch.isspace():
+            at_line_start = False
+        i += 1
+
+    # Narrow conditional resolution: drop the `#else` branch of `#ifdef __STDC__`.
+    stack: list[tuple[bool, int]] = []
+    for start, stop, keyword, rest in directives:
+        if keyword in ("if", "ifdef", "ifndef"):
+            is_stdc = bool(STDC_IF_RE.match(f"{keyword} {rest}"))
+            stack.append((is_stdc, -1))
+        elif keyword in ("else", "elif") and stack:
+            is_stdc, _ = stack[-1]
+            stack[-1] = (is_stdc, stop if is_stdc else -1)
+        elif keyword == "endif" and stack:
+            is_stdc, else_end = stack.pop()
+            if is_stdc and else_end >= 0:
+                blank(else_end, start, True)
+                for k in range(else_end, start):
+                    dropped[k] = 1
+
+    return "".join(struct_view), "".join(code_view), dropped
+
+
+def emit_text(raw: str, dropped: bytearray, start: int, stop: int) -> str:
+    """Raw declaration text with whole preprocessor/discarded-branch lines removed."""
+    keep_lines = []
+    pos = start
+    while pos < stop:
+        eol = raw.find("\n", pos, stop)
+        eol = stop if eol < 0 else eol
+        line = raw[pos:eol]
+        marked = any(dropped[k] for k in range(pos, eol))
+        if marked and not "".join(
+                raw[k] for k in range(pos, eol) if not dropped[k]).strip():
+            pos = eol + 1
+            continue
+        keep_lines.append(line)
+        pos = eol + 1
+    return "\n".join(keep_lines).rstrip()
+
+
+# Constructs the strict runner refuses in an ordinary candidate C file. They are
+# checked outside comments, exactly like tools/match.py `ordinary_c` does.
+NON_ORDINARY_RE = re.compile(
+    r"\b(?:asm|__asm|__asm__|__attribute|__attribute__|_Pragma)\b|\.incbin")
+
+
+def ordinary_candidate_c(text: str) -> str | None:
+    """The construct that keeps `text` out of a staged header, or None.
+
+    A generated header is included by accepted translation units, so it has to
+    pass the same admission check as the candidate itself. Nothing is rewritten
+    to make a declaration pass: it is withheld and reported.
+    """
+    if not text.isascii():
+        return "non-ASCII text"
+    if "??" in text:
+        return "trigraph sequence"
+    if "%:" in text:
+        return "alternative preprocessor token"
+    try:
+        code_view = mask_source(text)[1]
+    except ParseError:
+        return None
+    found = NON_ORDINARY_RE.search(code_view)
+    return found.group(0) if found else None
+
+
+def native_ti_owner_typedef(text: str) -> bool:
+    """The existing single unsigned-int TI typedef, only for a pinned owner.
+
+    This grants header transport, not source eligibility or storage credit.
+    Ordinary declarations and unrelated attributes keep their existing guard.
+    """
+    if (not text.isascii() or '\x00' in text or '??' in text or '%:' in text
+            or any(line.lstrip().startswith('#') for line in text.splitlines())):
+        return False
+    uncommented = re.sub(r'/\*.*?\*/|//[^\n]*', ' ', text, flags=re.S)
+    if '"' in uncommented or "'" in uncommented:
+        return False
+    try:
+        view = mask_source(text)[1]
+    except ParseError:
+        return False
+    return re.fullmatch(
+        r'\s*typedef\s+unsigned\s+int\s+[A-Za-z][A-Za-z_0-9]*'
+        r'\s+__attribute__\s*\(\s*\(\s*mode\s*\(\s*TI\s*\)\s*\)\s*\)\s*;\s*',
+        view) is not None
+
+
+# ---------------------------------------------------------------------------
+# top-level declaration splitting
+# ---------------------------------------------------------------------------
+
+OPEN = {"(": ")", "[": "]", "{": "}"}
+CLOSE = {")": "(", "]": "[", "}": "{"}
+
+
+def match_group(view: str, start: int) -> int:
+    """Index of the closer matching the opener at `start`."""
+    stack = [view[start]]
+    i = start + 1
+    while i < len(view):
+        ch = view[i]
+        if ch in OPEN:
+            stack.append(ch)
+        elif ch in CLOSE:
+            if not stack or stack[-1] != CLOSE[ch]:
+                raise ParseError("unbalanced bracket")
+            stack.pop()
+            if not stack:
+                return i
+        i += 1
+    raise ParseError("unbalanced bracket")
+
+
+def last_top_level(view: str, ch: str) -> int:
+    depth = 0
+    found = -1
+    for i, c in enumerate(view):
+        if c in CLOSE:
+            depth -= 1
+            if depth == 0 and c == ch:
+                found = i
+        elif c in OPEN:
+            if depth == 0 and c == ch:
+                found = i
+            depth += 1
+        elif depth == 0 and c == ch:
+            found = i
+    return found
+
+
+def is_function_body(head_view: str) -> tuple[bool, bool]:
+    """Classify a top-level `{` given the declaration text before it.
+
+    Returns (is_function_definition, is_kr_style).
+    """
+    head = head_view.rstrip()
+    if not head:
+        return False, False
+    close = last_top_level(head, ")")
+    if close < 0:
+        return False, False
+    tail = head[close + 1:].strip()
+    if not tail:
+        return True, False
+    # K&R parameter declarations sit between the ')' and the body.
+    if tail.endswith(";") and "=" not in tail:
+        return True, True
+    return False, False
+
+
+IDENT_LIST_RE = re.compile(r"\s*(?:[A-Za-z_$][A-Za-z_0-9$]*\s*(?:,\s*[A-Za-z_$][A-Za-z_0-9$]*\s*)*)?$")
+
+
+def kr_body_ahead(view: str, pos: int) -> int:
+    """Index of the `{` that follows a run of K&R parameter declarations, else -1."""
+    i = pos
+    n = len(view)
+    while i < n:
+        while i < n and view[i].isspace():
+            i += 1
+        if i >= n:
+            return -1
+        if view[i] == "{":
+            return i
+        j = i
+        while j < n:
+            c = view[j]
+            if c in OPEN:
+                j = match_group(view, j) + 1
+                continue
+            if c == ";":
+                break
+            if c in CLOSE or c == "=":
+                return -1
+            j += 1
+        if j >= n:
+            return -1
+        i = j + 1
+    return -1
+
+
+def kr_head(head_view: str) -> bool:
+    """True when `head_view` looks like a K&R definition head plus declarations."""
+    close = last_top_level(head_view, ")")
+    if close < 0:
+        return False
+    tail = head_view[close + 1:].strip()
+    if not tail or "=" in tail:
+        return False
+    open_paren = -1
+    depth = 0
+    for i in range(close, -1, -1):
+        ch = head_view[i]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            depth -= 1
+            if depth == 0:
+                open_paren = i
+                break
+    if open_paren < 0:
+        return False
+    return bool(IDENT_LIST_RE.fullmatch(head_view[open_paren + 1:close]))
+
+
+@dataclass
+class RawDecl:
+    start: int
+    stop: int
+    has_body: bool
+    is_kr: bool
+
+
+def split_top_level(view: str) -> list[RawDecl]:
+    """Split a masked translation unit into top-level declarations."""
+    out: list[RawDecl] = []
+    n = len(view)
+    i = 0
+    while i < n:
+        while i < n and view[i].isspace():
+            i += 1
+        if i >= n:
+            break
+        start = i
+        depth = 0
+        closed = False
+        while i < n:
+            ch = view[i]
+            if ch in "([":
+                i = match_group(view, i) + 1
+                continue
+            if ch in ")]":
+                raise ParseError("unbalanced bracket at top level")
+            if ch == "{":
+                is_func, is_kr = is_function_body(view[start:i])
+                end = match_group(view, i) + 1
+                if is_func:
+                    j = end
+                    while j < n and view[j].isspace():
+                        j += 1
+                    if j < n and view[j] == ";":
+                        end = j + 1
+                    out.append(RawDecl(start, end, True, is_kr))
+                    i = end
+                    closed = True
+                    break
+                i = end
+                continue
+            if ch == "}":
+                raise ParseError("stray closing brace at top level")
+            if ch == ";" and depth == 0:
+                if kr_head(view[start:i]):
+                    brace = kr_body_ahead(view, i + 1)
+                    if brace >= 0:
+                        end = match_group(view, brace) + 1
+                        out.append(RawDecl(start, end, True, True))
+                        i = end
+                        closed = True
+                        break
+                out.append(RawDecl(start, i + 1, False, False))
+                i += 1
+                closed = True
+                break
+            i += 1
+        if not closed:
+            if view[start:].strip():
+                raise ParseError("unterminated top-level declaration")
+            break
+    return out
+
+
+# ---------------------------------------------------------------------------
+# tokenizing and declarator analysis
+# ---------------------------------------------------------------------------
+
+
+def tokenize(view: str) -> list[str]:
+    """Tokenize a masked declaration, collapsing `{...}` bodies to BODY_TOKEN."""
+    toks: list[str] = []
+    i = 0
+    n = len(view)
+    while i < n:
+        ch = view[i]
+        if ch.isspace():
+            i += 1
+            continue
+        if ch == "{":
+            i = match_group(view, i) + 1
+            toks.append(BODY_TOKEN)
+            continue
+        m = TOKEN_RE.match(view, i)
+        if not m:
+            raise ParseError("untokenizable text")
+        toks.append(m.group(0))
+        i = m.end()
+    return toks
+
+
+def strip_attributes(toks: list[str]) -> list[str]:
+    out: list[str] = []
+    i = 0
+    while i < len(toks):
+        if toks[i] in ("__attribute__", "__attribute", "__asm__", "asm", "__asm"):
+            j = i + 1
+            if j < len(toks) and toks[j] == "(":
+                depth = 0
+                while j < len(toks):
+                    if toks[j] == "(":
+                        depth += 1
+                    elif toks[j] == ")":
+                        depth -= 1
+                        if depth == 0:
+                            j += 1
+                            break
+                    j += 1
+            i = j
+            continue
+        out.append(toks[i])
+        i += 1
+    return out
+
+
+def token_groups(toks: list[str], opener: str) -> list[tuple[int, int]]:
+    """Top-level (start, stop_exclusive) index pairs of `opener` groups."""
+    closer = OPEN[opener]
+    spans = []
+    depth = 0
+    start = -1
+    for i, t in enumerate(toks):
+        if t in OPEN:
+            if depth == 0 and t == opener:
+                start = i
+            depth += 1
+        elif t in CLOSE:
+            depth -= 1
+            if depth == 0 and start >= 0 and t == closer:
+                spans.append((start, i + 1))
+                start = -1
+            if depth < 0:
+                raise ParseError("unbalanced token brackets")
+    if depth != 0:
+        raise ParseError("unbalanced token brackets")
+    return spans
+
+
+def remove_bracket_groups(toks: list[str]) -> list[str]:
+    """Drop every `[...]` group (array dimensions) at any nesting depth."""
+    out: list[str] = []
+    depth = 0
+    for t in toks:
+        if t == "[":
+            depth += 1
+            continue
+        if t == "]":
+            depth -= 1
+            if depth < 0:
+                raise ParseError("unbalanced brackets")
+            continue
+        if depth == 0:
+            out.append(t)
+    return out
+
+
+def split_top_commas(toks: list[str]) -> list[list[str]]:
+    parts: list[list[str]] = [[]]
+    depth = 0
+    for t in toks:
+        if t in OPEN:
+            depth += 1
+        elif t in CLOSE:
+            depth -= 1
+        if t == "," and depth == 0:
+            parts.append([])
+            continue
+        parts[-1].append(t)
+    return [p for p in parts if p]
+
+
+def _matching_token(toks: list[str], start: int) -> int:
+    depth = 0
+    for i in range(start, len(toks)):
+        if toks[i] in OPEN:
+            depth += 1
+        elif toks[i] in CLOSE:
+            depth -= 1
+            if depth == 0:
+                return i
+    raise ParseError("unbalanced token brackets")
+
+
+def _drop_param_name(part: list[str]) -> list[str]:
+    """Drop a trailing parameter name, never a type name that carries meaning."""
+    end = len(part)
+    while end >= 2 and part[end - 1] == "]":
+        depth = 0
+        k = end - 1
+        while k >= 0:
+            if part[k] == "]":
+                depth += 1
+            elif part[k] == "[":
+                depth -= 1
+                if depth == 0:
+                    break
+            k -= 1
+        if k < 0:
+            return part
+        end = k                      # `name[4][4]` -> consider `name`
+    if end < 2 or part[end - 1] in KEYWORDS:
+        return part
+    if not re.fullmatch(r"[A-Za-z_$][A-Za-z_0-9$]*", part[end - 1]):
+        return part
+    if part[end - 2] in ("struct", "union", "enum"):
+        return part                  # `struct Foo` is the type itself
+    return part[:end - 1] + part[end:]
+
+
+def strip_param_names(toks: list[str]) -> list[str]:
+    """Remove parameter names inside every parenthesized group.
+
+    Comparison only: `int f(int count)` and `extern int f(int)` declare the same
+    function, and accepted TUs legitimately spell them differently.
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(toks):
+        if toks[i] == "(":
+            end = _matching_token(toks, i)
+            parts = split_top_commas(toks[i + 1:end])
+            out.append("(")
+            for k, part in enumerate(parts):
+                if k:
+                    out.append(",")
+                out.extend(_drop_param_name(strip_param_names(part)))
+            out.append(")")
+            i = end + 1
+            continue
+        out.append(toks[i])
+        i += 1
+    return out
+
+
+def canon_declaration(toks: list[str]) -> str:
+    """Normalized comparison text for a prototype or extern data declaration."""
+    toks = [t for t in toks if t not in ("extern", ";")]
+    return " ".join(strip_param_names(toks))
+
+
+def tokenize_full(view: str) -> list[str]:
+    """Tokenize a masked declaration, keeping `{`/`}` as tokens."""
+    toks: list[str] = []
+    i = 0
+    n = len(view)
+    while i < n:
+        ch = view[i]
+        if ch.isspace():
+            i += 1
+            continue
+        m = TOKEN_RE.match(view, i)
+        if not m:
+            raise ParseError("untokenizable text")
+        toks.append(m.group(0))
+        i = m.end()
+    return toks
+
+
+def is_ident(tok: str) -> bool:
+    return bool(IDENT_RE.fullmatch(tok))
+
+
+@dataclass
+class Refs:
+    """What a declaration needs from, and offers to, the rest of a domain header."""
+    needs: set[str] = field(default_factory=set)            # names that must exist
+    needs_complete: set[str] = field(default_factory=set)   # types that must be defined
+    provides: set[str] = field(default_factory=set)         # names it declares
+    provides_complete: set[str] = field(default_factory=set)
+    # typedef name -> the type whose completeness it inherits
+    complete_alias: dict[str, str] = field(default_factory=dict)
+
+
+def _split_semicolons(toks: list[str]) -> list[list[str]]:
+    out: list[list[str]] = [[]]
+    depth = 0
+    for t in toks:
+        if t in OPEN:
+            depth += 1
+        elif t in CLOSE:
+            depth -= 1
+        if t == ";" and depth == 0:
+            out.append([])
+            continue
+        out[-1].append(t)
+    return [p for p in out if p]
+
+
+def scan_refs(toks: list[str], refs: Refs, declared: set[str],
+              require_complete: bool = False) -> None:
+    """Collect referenced and declared names from a token list."""
+    toks = strip_attributes(toks)
+    i = 0
+    while i < len(toks):
+        t = toks[i]
+        if t in ("struct", "union", "enum"):
+            j = i + 1
+            tag = None
+            if j < len(toks) and is_ident(toks[j]) and toks[j] not in KEYWORDS:
+                tag = toks[j]
+                j += 1
+            if j < len(toks) and toks[j] == "{":
+                end = _matching_token(toks, j)
+                if tag:
+                    refs.provides.add(f"{t} {tag}")
+                    refs.provides_complete.add(f"{t} {tag}")
+                body = toks[j + 1:end]
+                if t == "enum":
+                    scan_enum_body(body, refs)
+                else:
+                    scan_struct_body(body, refs)
+                i = end + 1
+                continue
+            if tag:
+                pointer = j < len(toks) and toks[j] == "*"
+                if require_complete and not pointer:
+                    refs.needs_complete.add(f"{t} {tag}")
+            i = j
+            continue
+        if t == "sizeof" and i + 1 < len(toks) and toks[i + 1] == "(":
+            need = base_type_name(toks[i + 2:_matching_token(toks, i + 1)])
+            if need:
+                refs.needs_complete.add(need)
+            i += 2
+            continue
+        if is_ident(t) and t not in KEYWORDS and t not in declared:
+            refs.needs.add(t)
+        i += 1
+
+
+def base_type_name(toks: list[str]) -> str | None:
+    """The type name a declaration starts with, or None for a builtin type."""
+    i = 0
+    while i < len(toks) and toks[i] in KEYWORDS and toks[i] not in ("struct", "union", "enum"):
+        if toks[i] in ("char", "int", "short", "long", "float", "double", "void",
+                       "signed", "unsigned", "_Bool"):
+            return None
+        i += 1
+    if i >= len(toks):
+        return None
+    if toks[i] in ("struct", "union", "enum"):
+        if i + 1 < len(toks) and is_ident(toks[i + 1]) and toks[i + 1] not in KEYWORDS:
+            return f"{toks[i]} {toks[i + 1]}"
+        return None
+    if is_ident(toks[i]):
+        return toks[i]
+    return None
+
+
+def scan_enum_body(body: list[str], refs: Refs) -> None:
+    for part in split_top_commas(body):
+        if part and is_ident(part[0]):
+            refs.provides.add(part[0])
+        if "=" in part:
+            for t in part[part.index("=") + 1:]:
+                if is_ident(t) and t not in KEYWORDS:
+                    refs.needs.add(t)
+
+
+def scan_struct_body(body: list[str], refs: Refs) -> None:
+    for member in _split_semicolons(body):
+        member = strip_param_names(strip_attributes(member))
+        names: set[str] = set()
+        for part in split_top_commas(member):
+            try:
+                nm, _ = declarator_name(part)
+            except ParseError:
+                nm = None
+            if nm:
+                names.add(nm)
+        # A member spelled without '*' or '(' needs a complete type.
+        if "*" not in member and "(" not in member:
+            base = base_type_name(member)
+            if base and base not in names:
+                refs.needs_complete.add(base)
+        scan_refs(member, refs, names, require_complete=False)
+
+
+def analyze_refs(text: str, declared_names: list[str]) -> Refs:
+    """Reference/definition summary for one emitted declaration."""
+    struct_view, _code_view, _dropped = mask_source(text)
+    full_toks = tokenize_full(struct_view)
+    # Parameter names are not references to anything the header must provide.
+    toks = strip_param_names(full_toks)
+    declared = set(declared_names)
+    refs = Refs()
+    refs.provides.update(declared)
+    scan_refs(toks, refs, declared)
+    if full_toks and full_toks[0] == "typedef":
+        # Completeness is read from the unstripped declarator: strip_param_names
+        # also removes the name of a function-pointer typedef (`(*name)`), which
+        # would leave every such typedef looking incomplete and withhold each
+        # struct that embeds one by value.
+        record_typedef_completeness(full_toks[1:], refs)
+    refs.needs -= refs.provides
+    refs.needs_complete -= refs.provides_complete
+    return refs
+
+
+def record_typedef_completeness(toks: list[str], refs: Refs) -> None:
+    """Note whether each typedef is complete on its own or inherits completeness."""
+    body_end = 0
+    if "{" in toks:
+        body_end = _matching_token(toks, toks.index("{")) + 1
+    head = toks[:body_end]
+    for part in split_top_commas(toks[body_end:]):
+        full = head + part
+        try:
+            name, _is_func = declarator_name(full)
+        except ParseError:
+            continue
+        if not name:
+            continue
+        before_name = full[:full.index(name)] if name in full else full
+        if "{" in full or "*" in before_name or "(" in before_name:
+            refs.provides_complete.add(name)
+            continue
+        base = base_type_name(full)
+        if base is None or base == name:
+            refs.provides_complete.add(name)
+        else:
+            refs.complete_alias[name] = base
+
+
+def declarator_name(toks: list[str]) -> tuple[str | None, bool]:
+    """Return (declared name, declares_a_function) for one declarator."""
+    toks = remove_bracket_groups(strip_attributes(toks))
+    spans = token_groups(toks, "(")
+    if not spans:
+        for t in reversed(toks):
+            if t not in KEYWORDS and re.fullmatch(r"[A-Za-z_$][A-Za-z_0-9$]*", t):
+                return t, False
+        return None, False
+    start, stop = spans[0]
+    inner = toks[start + 1:stop - 1]
+    if inner and inner[0] in ("*", "("):
+        # Parenthesized declarator: the real name lives inside.
+        return declarator_name(inner)
+    for t in reversed(toks[:start]):
+        if t not in KEYWORDS and re.fullmatch(r"[A-Za-z_$][A-Za-z_0-9$]*", t):
+            return t, True
+    return None, True
+
+
+# ---------------------------------------------------------------------------
+# classification
+# ---------------------------------------------------------------------------
+
+KIND_TYPEDEF = "typedef"
+KIND_TAG = "tag"
+KIND_TAG_FORWARD = "tag_forward"
+KIND_PROTO = "proto"
+KIND_EXTERN_DATA = "extern_data"
+# The head of a `static` function definition. It is not a shareable declaration
+# and it is not even a readable one: a shared header that carries it forces
+# internal linkage (or an undefined static) on every translation unit that
+# includes the header. It is reported so the name can be withheld everywhere.
+KIND_STATIC_DEF = "static_def"
+
+TYPE_KINDS = (KIND_TYPEDEF, KIND_TAG, KIND_TAG_FORWARD)
+PROTO_KINDS = (KIND_PROTO, KIND_EXTERN_DATA)
+
+
+@dataclass
+class Decl:
+    kind: str
+    namespace: str
+    name: str
+    text: str            # emitted source text, ends with ';'
+    canon: str           # whitespace-normalized comparison text
+    doc: str | None      # attached preceding comment, if adjacent
+    file: str
+    index: int
+    domain: str
+    unit: str = ""
+    func_name: str = ""
+    func_va: str = ""
+
+    @property
+    def key(self) -> tuple[str, str]:
+        return (self.namespace, self.name)
+
+
+def normalize_ws(text: str) -> str:
+    return " ".join(text.split())
+
+
+def classify(raw_text: str, dropped: bytearray, start: int, stop: int,
+             struct_slice: str, has_body: bool,
+             is_kr: bool) -> tuple[str, str, str, str, str | None] | None:
+    """Return (kind, namespace, name, emitted_text) or None when not harvestable.
+
+    Raises ParseError when the declaration cannot be classified confidently.
+    """
+    toks = tokenize(struct_slice)
+    if not toks:
+        return None
+    raw = emit_text(raw_text, dropped, start, stop)
+
+    if has_body:
+        if is_kr:
+            raise ParseError("K&R function definition")
+        brace = struct_slice.index("{")
+        head_raw = emit_text(raw_text, dropped, start, start + brace).rstrip()
+        head_toks = tokenize(struct_slice[:brace])
+        if head_toks and head_toks[0] == "typedef":
+            raise ParseError("typedef with a function body")
+        name, is_func = declarator_name(head_toks)
+        if not name or not is_func:
+            raise ParseError("unrecognized function definition head")
+        head_specs: set[str] = set()
+        for t in head_toks:
+            if t in ("extern", "static", "typedef"):
+                head_specs.add(t)
+            if t in OPEN:
+                break
+        kind = KIND_STATIC_DEF if "static" in head_specs else KIND_PROTO
+        return kind, "ordinary", name, head_raw + ";", canon_declaration(head_toks)
+
+    body = toks[:-1] if toks and toks[-1] == ";" else toks
+    if not body:
+        return None
+
+    stripped = strip_attributes(body)
+    if not stripped:
+        return None
+
+    # struct/union/enum definitions and forward declarations
+    if stripped[0] in ("struct", "union", "enum"):
+        rest = stripped[1:]
+        tag = None
+        if rest and re.fullmatch(r"[A-Za-z_$][A-Za-z_0-9$]*", rest[0]) and rest[0] not in KEYWORDS:
+            tag = rest[0]
+            rest = rest[1:]
+        if rest and rest[0] == BODY_TOKEN:
+            rest = rest[1:]
+            if not rest:
+                if tag is None:
+                    return None  # anonymous, unusable on its own
+                return KIND_TAG, "tag", f"{stripped[0]} {tag}", raw.rstrip(), None
+        elif not rest:
+            if tag is None:
+                return None
+            return KIND_TAG_FORWARD, "tag", f"{stripped[0]} {tag}", raw.rstrip(), None
+        # falls through: struct with declarators, handled below
+
+    is_typedef = stripped[0] == "typedef"
+    specs = set()
+    for t in stripped:
+        if t in ("extern", "static", "typedef"):
+            specs.add(t)
+        if t in OPEN:
+            break
+
+    decl_toks = stripped[1:] if is_typedef else stripped
+    parts = split_top_commas(decl_toks)
+    if not parts:
+        return None
+
+    names: list[str] = []
+    funcs: list[bool] = []
+    for part in parts:
+        name, is_func = declarator_name(part)
+        if not name:
+            raise ParseError("no declarator name")
+        names.append(name)
+        funcs.append(is_func)
+
+    if is_typedef:
+        joined = ", ".join(names)
+        return KIND_TYPEDEF, "type", joined, raw.rstrip(), None
+
+    has_init = any("=" in part for part in parts)
+
+    if all(funcs):
+        if "static" in specs:
+            # A TU-local forward declaration; the definition itself is harvested.
+            return None
+        return KIND_PROTO, "ordinary", ", ".join(names), raw.rstrip(), canon_declaration(stripped)
+
+    if any(funcs):
+        raise ParseError("mixed function and data declarators")
+
+    if "extern" not in specs or has_init:
+        # A definition (or TU-local data): not a shareable declaration.
+        return None
+    return KIND_EXTERN_DATA, "ordinary", ", ".join(names), raw.rstrip(), canon_declaration(stripped)
+
+
+# ---------------------------------------------------------------------------
+# accepted-unit inventory
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class FileRecord:
+    path: str
+    units: list[str] = field(default_factory=list)
+    functions: dict[str, str] = field(default_factory=dict)   # name -> va
+    unit_functions: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+
+
+def load_accepted(root: str) -> tuple[dict[str, FileRecord], list[str], list[str]]:
+    """Return (accepted files, non-C files skipped, unit files that failed to load)."""
+    units_dir = header_input_path(root, UNITS_GLOB_DIR)
+    files: dict[str, FileRecord] = {}
+    non_c: set[str] = set()
+    bad_units: list[str] = []
+
+    for entry in sorted(os.listdir(units_dir)):
+        if not entry.endswith(".json"):
+            continue
+        unit_id = entry[:-5]
+        try:
+            with open(os.path.join(units_dir, entry), encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            bad_units.append(entry)
+            continue
+        if verbatim_unit(data):
+            continue
+        if retired_unit(data):
+            # The record's pre-migration source was archived (task
+            # tu-retire-legacy-src) and the record now points at the published TU
+            # file that carries the same functions. Its declarations are replayed
+            # from config/header-retired.json, so the shared headers stay what the
+            # accepted records generated. The TU file itself is read by
+            # `published_tu_declarations` for the names this pool does not
+            # declare (docs/header-canon.md).
+            continue
+
+        paths: list[str] = []
+        source = data.get("source")
+        if isinstance(source, dict):
+            paths.append(source.get("path"))
+        elif isinstance(source, list):
+            paths.extend(item.get("path") for item in source if isinstance(item, dict))
+        for group in ("headers", "sources"):
+            for item in data.get(group) or []:
+                if isinstance(item, dict):
+                    paths.append(item.get("path"))
+
+        funcs: list[tuple[str, str]] = []
+        for fn in data.get("functions") or []:
+            name = fn.get("name")
+            va = fn.get("va")
+            if name and va:
+                funcs.append((str(name), str(va)))
+        funcs.sort(key=lambda p: (p[1], p[0]))
+
+        for path in paths:
+            if not path:
+                continue
+            path = path.replace("\\", "/")
+            if not (path.endswith(".c") or path.endswith(".h")):
+                non_c.add(path)
+                continue
+            rec = files.setdefault(path, FileRecord(path))
+            if unit_id not in rec.units:
+                rec.units.append(unit_id)
+            rec.unit_functions.setdefault(unit_id, []).extend(funcs)
+            for name, va in funcs:
+                rec.functions.setdefault(name, va)
+
+    for rec in files.values():
+        rec.units.sort()
+    return files, sorted(non_c), bad_units
+
+
+# Two spellings of one domain reached the project from two directions: accepted
+# source ownership wrote `src/resource/`, while the per-function category view
+# behind `config/tu-build.json` says `resources`. They are the same domain. The
+# accepted spelling wins, because `include/xeno/resource/` is what accepted units
+# already pin.
+DOMAIN_ALIASES = {"resources": "resource"}
+
+# The six EE link units. `src/<unit>/` is a TU path, never a domain directory.
+TU_UNITS = ("main", "ov01", "ov02", "ov10", "ov11", "ov12")
+
+_TU_DOMAIN_CACHE: dict[str, dict[str, str]] = {}
+
+
+def tu_domains(root: str) -> dict[str, str]:
+    """`src/<unit>/...` path -> the domain `config/tu-build.json` records for it.
+
+    In TU mode the recovery unit is the original translation unit, so a file's
+    domain is no longer readable from its directory: `config/tu-build.json` is
+    the authority (docs/tu-build.md, "Domains"). Each TU contributes its own
+    `.c`/`.s`, its TU-local header `src/<unit>/<tu>.h` and anything under
+    `src/<unit>/<tu>/` (accepted standalone assembly).
+    """
+    if root in _TU_DOMAIN_CACHE:
+        return _TU_DOMAIN_CACHE[root]
+    mapping: dict[str, str] = {}
+    try:
+        with open(header_input_path(root, TU_BUILD_FILE), encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        data = {}
+    for tu in data.get("tus") or []:
+        path = str(tu.get("path") or "")
+        domain = DOMAIN_ALIASES.get(tu.get("domain") or "", tu.get("domain") or "")
+        if not path or not domain or domain == "unassigned":
+            continue
+        stem = path.rsplit(".", 1)[0]
+        mapping[path] = domain
+        mapping[stem + ".c"] = domain
+        mapping[stem + ".h"] = domain
+        mapping[stem + "/"] = domain          # prefix entry, matched below
+    _TU_DOMAIN_CACHE[root] = mapping
+    return mapping
+
+
+def domain_of(path: str, root: str | None = None) -> str | None:
+    parts = path.split("/")
+    if len(parts) < 3 or parts[0] != "src":
+        return None
+    if root is not None and parts[1] in TU_UNITS:
+        mapping = tu_domains(root)
+        found = mapping.get(path)
+        if found is not None:
+            return found
+        for prefix, domain in mapping.items():
+            if prefix.endswith("/") and path.startswith(prefix):
+                return domain
+        return None                           # an unrecorded TU path owns no domain
+    return DOMAIN_ALIASES.get(parts[1], parts[1])
+
+
+def provenance_for(rec: FileRecord, decl_name: str) -> tuple[str, str, str]:
+    """Pick a deterministic (unit, function name, VA) witness for a declaration."""
+    base = decl_name.split(",")[0].strip()
+    for unit in rec.units:
+        for name, va in sorted(rec.unit_functions.get(unit, [])):
+            if name == base:
+                return unit, name, va
+    for unit in rec.units:
+        funcs = sorted(rec.unit_functions.get(unit, []), key=lambda p: (p[1], p[0]))
+        if funcs:
+            return unit, funcs[0][0], funcs[0][1]
+    return (rec.units[0] if rec.units else ""), "", ""
+
+
+# ---------------------------------------------------------------------------
+# harvesting
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SkipRecord:
+    path: str
+    reason: str
+    snippet: str = ""
+
+
+def leading_comment(raw_text: str, code_view: str, start: int) -> str | None:
+    """Return an immediately preceding block/line comment, if adjacent."""
+    i = start - 1
+    blank_lines = 0
+    while i >= 0 and raw_text[i].isspace():
+        if raw_text[i] == "\n":
+            blank_lines += 1
+            if blank_lines > 1:
+                return None
+        i -= 1
+    if i < 1 or raw_text[i - 1:i + 1] != "*/":
+        return None
+    begin = raw_text.rfind("/*", 0, i)
+    if begin <= 0:
+        return None  # absent, or the file banner comment
+    # only attach when the span really is a comment (blanked in code_view)
+    if code_view[begin:i + 1].strip():
+        return None
+    text = raw_text[begin:i + 1]
+    if text.count("\n") > 40:
+        return None
+    return text
+
+
+def defined_names(struct_view: str, raw_decls: list[RawDecl]) -> set[str]:
+    """Every name a translation unit defines with external linkage.
+
+    A function body or a data definition without `extern`. This is what the TU
+    may publish: a `extern` line for a symbol some other TU defines is a reading
+    aid for this file, and the defining TU is the one that states the real type.
+    """
+    out: set[str] = set()
+    for rd in raw_decls:
+        toks = tokenize(struct_view[rd.start:rd.stop])
+        if not toks:
+            continue
+        if rd.has_body:
+            if rd.is_kr:
+                continue
+            head = tokenize(struct_view[rd.start:rd.stop].split("{", 1)[0])
+            specs = set()
+            for t in head:
+                if t in ("extern", "static", "typedef"):
+                    specs.add(t)
+                if t in OPEN:
+                    break
+            if specs & {"static", "typedef"}:
+                continue
+            name, is_func = declarator_name(head)
+            if name and is_func:
+                out.add(name)
+            continue
+        body = toks[:-1] if toks[-1] == ";" else toks
+        stripped = strip_attributes(body)
+        if not stripped or stripped[0] == "typedef":
+            continue
+        specs = set()
+        for t in stripped:
+            if t in ("extern", "static", "typedef"):
+                specs.add(t)
+            if t in OPEN:
+                break
+        if specs:
+            continue                          # `extern` declares, `static` hides
+        try:
+            parts = split_top_commas(stripped)
+        except ParseError:
+            continue
+        for part in parts:
+            try:
+                # The initializer names referenced storage, not this definition.
+                # Keep assignments nested inside a declarator's bounds intact.
+                depth = 0
+                for index, token in enumerate(part):
+                    if token in OPEN:
+                        depth += 1
+                    elif token in CLOSE:
+                        depth -= 1
+                    elif token == "=" and depth == 0:
+                        part = part[:index]
+                        break
+                name, is_func = declarator_name(part)
+            except ParseError:
+                continue
+            if name and not is_func:
+                out.add(name)                 # a tentative or initialized definition
+    return out
+
+
+def harvest_file(root: str, rec: FileRecord, skips: list[SkipRecord],
+                 static_defs: dict[str, list[tuple[str, str]]] | None = None
+                 ) -> tuple[list[Decl], int]:
+    path = os.path.join(root, rec.path)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            raw = fh.read()
+    except OSError as exc:
+        skips.append(SkipRecord(rec.path, f"unreadable: {exc.strerror}"))
+        return [], 0
+
+    domain = domain_of(rec.path, root)
+    if domain is None:
+        skips.append(SkipRecord(rec.path, "outside src/<domain>/ (already a shared header)"))
+        return [], 0
+    # A TU file publishes what it defines, not the externals it happens to call:
+    # the translation unit that defines a function is the one that knows its real
+    # prototype, and every other TU's view of it is a local reading aid. In legacy
+    # mode an accepted record is a function fragment rather than a whole TU, so
+    # its private.h externals are still the only declaration the project has.
+    tu_file = rec.path in tu_domains(root)
+
+    try:
+        struct_view, code_view, dropped = mask_source(raw)
+        raw_decls = split_top_level(struct_view)
+    except ParseError as exc:
+        skips.append(SkipRecord(rec.path, f"file not scannable: {exc}"))
+        return [], 0
+
+    defined_here = defined_names(struct_view, raw_decls) if tu_file else set()
+
+    out: list[Decl] = []
+    for index, rd in enumerate(raw_decls):
+        struct_slice = struct_view[rd.start:rd.stop]
+        code_slice = code_view[rd.start:rd.stop]
+        try:
+            result = classify(raw, dropped, rd.start, rd.stop,
+                              struct_slice, rd.has_body, rd.is_kr)
+        except ParseError as exc:
+            skips.append(SkipRecord(rec.path, f"declaration skipped: {exc}",
+                                    normalize_ws(struct_slice)[:110]))
+            continue
+        if result is None:
+            continue
+        kind, namespace, name, emitted, token_canon = result
+        if not emitted.endswith(";"):
+            emitted += ";"
+        if kind == KIND_STATIC_DEF:
+            # Not harvested in any mode, and remembered: a shared header must not
+            # carry this name at all, whichever file spells it `extern`.
+            if static_defs is not None:
+                static_defs.setdefault(name, []).append((rec.path, domain))
+            continue
+        if tu_file and kind in (KIND_PROTO, KIND_EXTERN_DATA) and not rd.has_body:
+            names = {part.strip() for part in name.split(",")}
+            if not names <= defined_here:
+                continue                       # a declaration of someone else's symbol
+        if kind == KIND_PROTO and rd.has_body:
+            canon_src = code_view[rd.start:rd.start + struct_slice.index("{")]
+        else:
+            canon_src = code_slice
+        unit, func_name, func_va = provenance_for(rec, name)
+        out.append(Decl(
+            kind=kind,
+            namespace=namespace,
+            name=name,
+            text=emitted.strip(),
+            canon=(token_canon if token_canon is not None
+                   else normalize_ws(canon_src).rstrip(";").strip()),
+            doc=leading_comment(raw, code_view, rd.start),
+            file=rec.path,
+            index=index,
+            domain=domain,
+            unit=unit,
+            func_name=func_name,
+            func_va=func_va,
+        ))
+    return out, len(raw_decls)
+
+
+@dataclass
+class Variant:
+    canon: str
+    text: str
+    doc: str | None
+    kind: str
+    rep_file: str = "￿"
+    rep_index: int = 1 << 30
+    sources: list[Decl] = field(default_factory=list)
+    refs: Refs = field(default_factory=Refs)
+    # set when this variant was chosen by config/header-canon.json
+    canon_file: str | None = None      # accepted file the text comes from, or None
+    canon_sdk: str | None = None       # SDK/libc reference when there is no file
+    canon_rejected: int = 0            # number of rejected variants
+    canon_foreign: str | None = None   # domain that owns the name, when not this one
+    borrowed_from: str | None = None   # domain this type declaration was copied from
+    # set when a `tu_include` decision supplied the text: the published TU that
+    # compiles against it through a generated header (docs/header-canon.md)
+    canon_tu: str | None = None
+    # the position the replaced spelling had, so a decision that supplies its own
+    # text does not move the declaration inside the generated header
+    order_hint: tuple[str, int] | None = None
+
+    @property
+    def is_canon(self) -> bool:
+        return self.canon_file is not None or self.canon_sdk is not None
+
+    @property
+    def order(self) -> tuple[str, int]:
+        if self.order_hint is not None:
+            return self.order_hint
+        first = min(self.sources, key=lambda d: (d.file, d.index))
+        return (first.file, first.index)
+
+
+# ---------------------------------------------------------------------------
+# canonical decisions (config/header-canon.json)
+# ---------------------------------------------------------------------------
+
+CANON_KINDS = {
+    KIND_TYPEDEF: "type",
+    KIND_TAG: "type",
+    KIND_TAG_FORWARD: "type",
+    KIND_PROTO: "prototype",
+    KIND_EXTERN_DATA: "extern",
+}
+
+NAMESPACE_KIND = {("tag", "type"): KIND_TAG, ("type", "type"): KIND_TYPEDEF,
+                  ("ordinary", "prototype"): KIND_PROTO,
+                  ("ordinary", "extern"): KIND_EXTERN_DATA}
+
+SDK_FILE = "<sdk>"
+# `canonical.source` of a decision whose text a published TU compiles against
+# through a generated header without declaring the name itself.
+TU_INCLUDE_SOURCE = "tu_include"
+CANON_SOURCES = ("accepted", "sdk", TU_INCLUDE_SOURCE)
+
+
+@dataclass
+class Decision:
+    """One entry of config/header-canon.json."""
+    name: str
+    kind: str                     # "type" | "prototype" | "extern"
+    domain: str | None            # optional disambiguator
+    file: str | None              # accepted file the text is taken from
+    text: str
+    source: str                   # "accepted" or "sdk"
+    rejected: list[dict]
+    rationale: str
+    evidence: list[str]
+    confidence: str
+    status: str = "active"            # "active" | "tu_local" | "static_local"
+    # accepted files whose divergent spelling a verified exact unit depends on:
+    # [{"file": ..., "unit": ..., "reason": ...}]. The shared header keeps the
+    # canonical text; lint does not report these files, because the divergence is
+    # evidence, not drift.
+    byte_required: list[dict] = field(default_factory=list)
+    used: bool = False
+    comparison: str | None = None     # cached comparison text (see canon_text_canon)
+
+    @property
+    def is_tu_local(self) -> bool:
+        return self.status == "tu_local"
+
+    @property
+    def is_tu_include(self) -> bool:
+        """The canonical text is what a published TU compiles against.
+
+        `canonical.file` names a published translation unit that uses the name,
+        does not declare it, and reaches it through a generated header; its
+        whole-file gate is the byte evidence (rule 0). The text therefore cannot
+        be validated against a declaration in that file - there is none, by
+        construction - and is validated structurally instead
+        (`validate_tu_include_decisions`).
+        """
+        return self.source == TU_INCLUDE_SOURCE
+
+    @property
+    def is_static_local(self) -> bool:
+        """The accepted definition of this name is `static`.
+
+        Internal linkage is structural evidence, not a spelling preference: no
+        shared header may carry the name, the recorded canonical text is not
+        validated against a file that may no longer declare it, and `lint` stops
+        holding candidates to it. Only new evidence that the original definition
+        is not `static` reverses this.
+        """
+        return self.status == "static_local"
+
+    def excepted(self, path: str) -> str | None:
+        """The recorded reason this file keeps a divergent spelling, if any.
+
+        A record is keyed by the accepted file it was written for and, once the
+        unit has been migrated, by the TU file that now carries the same
+        declaration (`tu_file`). Both keys answer while the two trees coexist.
+        """
+        for entry in self.byte_required:
+            if path in (entry.get("file"), entry.get("tu_file")):
+                return entry.get("reason") or "byte-required in its own unit"
+        return None
+
+
+@dataclass
+class Resolved:
+    """A divergence that a decision settled, in the domain that owns the name."""
+    domain: str
+    namespace: str
+    name: str
+    decision: Decision
+    variant: Variant              # the emitted (canonical) variant
+    in_domain: bool               # True when this domain also disagreed with itself
+    # every rejected spelling, in this domain and in any other: (files, reason, text)
+    rejected_groups: list[tuple[list[str], str, str]] = field(default_factory=list)
+
+
+@dataclass
+class TuLocal:
+    """A name withheld because exact units depend on incompatible spellings."""
+    domain: str
+    namespace: str
+    name: str
+    decision: Decision
+    spellings: list[tuple[list[str], str]] = field(default_factory=list)   # files, text
+
+
+@dataclass
+class CrossApply:
+    """A name another domain owns, spelled differently by this domain's files.
+
+    The canonical text replaces the local spelling. If it names a type this
+    domain's header cannot provide, the dependency pass withholds it as usual and
+    `emitted` stays False - no domain header ever contradicts a decision, and
+    none of them gains an invented declaration.
+    """
+    domain: str
+    name: str
+    owner: str                    # domain whose accepted file holds the canonical text
+    files: list[str]              # this domain's accepted files, with the local spelling
+    emitted: bool = False
+
+
+def load_canon(root: str) -> dict[str, Decision]:
+    """Read config/header-canon.json. A missing file simply means no decisions."""
+    path = header_input_path(root, CANON_FILE)
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{CANON_FILE}: cannot be read ({exc})") from exc
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        raise CanonError(f"{CANON_FILE}: schema_version 1 expected")
+    raw = data.get("decisions")
+    if not isinstance(raw, dict):
+        raise CanonError(f"{CANON_FILE}: `decisions` must be an object")
+
+    out: dict[str, Decision] = {}
+    for name, entry in raw.items():
+        if not isinstance(entry, dict):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` must be an object")
+        kind = entry.get("kind")
+        if kind not in ("type", "prototype", "extern"):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has kind {kind!r}")
+        canonical = entry.get("canonical")
+        if not isinstance(canonical, dict) or not isinstance(canonical.get("text"), str):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` needs canonical.text")
+        cfile = canonical.get("file")
+        if cfile is not None and not isinstance(cfile, str):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has a non-string canonical.file")
+        source = canonical.get("source", "accepted" if cfile else "sdk")
+        if source not in CANON_SOURCES:
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has canonical.source {source!r}")
+        if cfile is None and source != "sdk":
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has no canonical.file and is "
+                             f"not marked as an SDK/libc declaration")
+        if source == TU_INCLUDE_SOURCE and not entry.get("evidence"):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` takes its text from what "
+                             f"{cfile} compiles against, which needs the gate/audit "
+                             f"evidence recorded in `evidence`")
+        confidence = entry.get("confidence")
+        if confidence not in ("high", "medium", "low"):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has confidence {confidence!r}")
+        if not entry.get("rationale"):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has no rationale")
+        status = entry.get("status", "active")
+        if status not in ("active", "tu_local", "static_local"):
+            raise CanonError(f"{CANON_FILE}: decision `{name}` has status {status!r}")
+        required = list(entry.get("byte_required") or [])
+        for item in required:
+            if not isinstance(item, dict) or not item.get("file") or not item.get("reason"):
+                raise CanonError(f"{CANON_FILE}: decision `{name}` has a byte_required "
+                                 f"entry without a file and a reason")
+            tu_file = item.get("tu_file")
+            if tu_file is not None and not isinstance(tu_file, str):
+                raise CanonError(f"{CANON_FILE}: decision `{name}` has a non-string "
+                                 f"byte_required tu_file")
+        out[name] = Decision(
+            name=name,
+            kind=kind,
+            domain=entry.get("domain"),
+            file=cfile,
+            text=canonical["text"].rstrip(),
+            source=source,
+            rejected=list(entry.get("rejected") or []),
+            rationale=entry["rationale"],
+            evidence=list(entry.get("evidence") or []),
+            confidence=confidence,
+            status=status,
+            byte_required=required,
+        )
+    return out
+
+
+def validate_tu_include_decisions(root: str, canon: dict[str, Decision]) -> None:
+    """Hold every `tu_include` decision to what the named published TU really is.
+
+    Such a decision states the text a published translation unit compiles against
+    through a generated header. It goes stale - and the harvest refuses to run -
+    when `canonical.file` is not a published TU recorded in config/tu-build.json,
+    when that TU (its `.c` or its `src/<unit>/<tu>.h`) declares the name itself
+    (then the TU's own spelling is the accepted text, and a shared copy would be
+    a redefinition), when the TU no longer uses the name, or when the recorded
+    text is not exactly one declaration of the name with the recorded kind.
+    """
+    wanted = {name: d for name, d in canon.items() if d.is_tu_include and not d.is_static_local}
+    if not wanted:
+        return
+    try:
+        with open(header_input_path(root, TU_BUILD_FILE), encoding="utf-8") as fh:
+            manifest = json.load(fh)
+    except (OSError, ValueError):
+        manifest = {}
+    published = {str(t.get("path") or "") for t in manifest.get("tus") or []}
+    for name, decision in sorted(wanted.items()):
+        path = decision.file or ""
+        parts = path.split("/")
+        if (path not in published or not path.endswith(".c") or len(parts) != 3
+                or not os.path.isfile(os.path.join(root, path))):
+            raise CanonError(f"{CANON_FILE}: stale decision for `{name}`: {path} is not a "
+                             f"published translation unit, so nothing compiles against "
+                             f"the recorded text")
+        text = decision.text if decision.text.rstrip().endswith(";") else decision.text + ";"
+        found = scan_declarations(text)
+        if len(found) != 1 or found[0].name != name or found[0].defined:
+            raise CanonError(f"{CANON_FILE}: decision `{name}`: canonical.text must be "
+                             f"exactly one declaration of `{name}`")
+        if CANON_KINDS[found[0].kind] != decision.kind:
+            raise CanonError(f"{CANON_FILE}: stale decision for `{name}`: recorded kind "
+                             f"{decision.kind!r}, but the text declares a "
+                             f"{CANON_KINDS[found[0].kind]!r}")
+        key = (found[0].namespace, name)
+        base = name.split()[-1]
+        local_h = f"src/{parts[1]}/{parts[2][:-2]}.h"
+        used = False
+        for rel in (path, local_h):
+            full = os.path.join(root, rel)
+            if not os.path.isfile(full):
+                continue
+            with open(full, encoding="utf-8") as fh:
+                raw = fh.read()
+            for sc in scan_declarations(raw):
+                if (sc.namespace, sc.name) == key and not sc.defined:
+                    raise CanonError(
+                        f"{CANON_FILE}: stale decision for `{name}`: {rel} declares the "
+                        f"name itself, so a generated header it includes may not carry it "
+                        f"(that would be a redefinition); drop the declaration from the TU "
+                        f"or the decision")
+            _struct_view, code_view, _dropped = mask_source(raw)
+            ident_view = SCAFFOLD_MACRO_RE.sub(lambda m: " " * len(m.group(0)), code_view)
+            used = used or any(m.group(2) == base and not m.group(1)
+                               for m in MEMBER_IDENT_RE.finditer(ident_view))
+        if not used:
+            raise CanonError(f"{CANON_FILE}: stale decision for `{name}`: {path} no longer "
+                             f"uses the name, so it is no evidence for the recorded text")
+
+
+def decision_for(canon: dict[str, Decision], name: str, domain: str) -> Decision | None:
+    """The decision that governs `name` in `domain`, if this domain owns it.
+
+    A decision without a `domain` applies wherever the name appears. A decision
+    that names another domain does not apply here: that name is governed
+    elsewhere, and `apply_canon` drops the local spelling instead.
+    """
+    decision = canon.get(name)
+    if decision is None:
+        return None
+    if decision.domain is not None and decision.domain != domain:
+        return None
+    return decision
+
+
+def foreign_decision(canon: dict[str, Decision], name: str, domain: str) -> Decision | None:
+    """A decision for `name` owned by a different domain, if any."""
+    decision = canon.get(name)
+    if decision is None or decision.domain is None or decision.domain == domain:
+        return None
+    return decision
+
+
+def confirm_canonical(name: str, variant: Variant, decision: Decision) -> Variant:
+    """Re-stamp an already agreed declaration as the canonical one.
+
+    Nothing in this domain disagreed, so there is nothing to choose; the decision
+    still owns the name (another domain spells it differently), and its text must
+    still be exactly what the accepted file declares.
+    """
+    if decision.file is None or decision.is_tu_include:
+        return canonical_variant(Conflict(variant.sources[0].domain, variant.sources[0].namespace,
+                                          name, [variant]), decision)
+    match = None
+    on_disk = [d for d in variant.sources if d.file == decision.file]
+    for src in on_disk:
+        if src.text.rstrip() == decision.text:
+            match = src
+    if match is None:
+        if not on_disk:
+            raise CanonError(
+                f"{CANON_FILE}: stale decision for `{name}`: "
+                f"{decision.file} no longer declares it (re-read the accepted source and "
+                f"update or drop the decision)")
+        raise CanonError(
+            f"{CANON_FILE}: stale decision for `{name}`: the text recorded for "
+            f"{decision.file} is not what that file declares.\n"
+            f"  recorded: {normalize_ws(decision.text)}\n"
+            f"  on disk : {normalize_ws(on_disk[0].text)}")
+    if CANON_KINDS[variant.kind] != decision.kind:
+        raise CanonError(
+            f"{CANON_FILE}: stale decision for `{name}`: recorded kind "
+            f"{decision.kind!r}, but {decision.file} declares a {CANON_KINDS[variant.kind]!r}")
+    ordered = [match] + [d for d in variant.sources if d is not match]
+    out = Variant(canon=variant.canon, text=match.text, doc=variant.doc,
+                  kind=variant.kind, sources=ordered)
+    out.canon_file = decision.file
+    out.canon_rejected = 0
+    return out
+
+
+def canonical_variant(conflict: Conflict, decision: Decision) -> Variant:
+    """The Variant a decision selects, or raise CanonError when it went stale."""
+    if decision.file is None:
+        kind = NAMESPACE_KIND.get((conflict.namespace, decision.kind))
+        if kind is None:
+            raise CanonError(f"{CANON_FILE}: decision `{decision.name}` declares kind "
+                             f"{decision.kind!r}, which cannot hold a {conflict.namespace} name")
+        witness = Decl(kind=kind, namespace=conflict.namespace, name=conflict.name,
+                       text=decision.text, canon=normalize_ws(decision.text), doc=None,
+                       file=SDK_FILE, index=0, domain=conflict.domain)
+        var = Variant(canon=normalize_ws(decision.text), text=decision.text, doc=None,
+                      kind=kind, sources=[witness])
+        var.canon_sdk = decision.evidence[0] if decision.evidence else "SDK/libc declaration"
+        var.canon_rejected = len(conflict.variants)
+        return var
+
+    if decision.is_tu_include:
+        # The published TU uses the name and does not declare it: the text is what
+        # it compiles against, validated by validate_tu_include_decisions. Every
+        # accepted spelling is rejected, and the declaration keeps the position the
+        # accepted spellings gave it.
+        kind = NAMESPACE_KIND.get((conflict.namespace, decision.kind))
+        if kind is None:
+            raise CanonError(f"{CANON_FILE}: decision `{decision.name}` declares kind "
+                             f"{decision.kind!r}, which cannot hold a {conflict.namespace} name")
+        canon = canon_text_canon(decision)
+        witness = Decl(kind=kind, namespace=conflict.namespace, name=conflict.name,
+                       text=decision.text, canon=canon, doc=None,
+                       file=decision.file, index=0, domain=conflict.domain)
+        var = Variant(canon=canon, text=decision.text, doc=None, kind=kind, sources=[witness])
+        var.canon_file = decision.file
+        var.canon_tu = decision.file
+        var.canon_rejected = len([v for v in conflict.variants if v.canon != canon])
+        var.order_hint = min(v.order for v in conflict.variants)
+        return var
+
+    chosen = None
+    on_disk: list[Decl] = []
+    for var in conflict.variants:
+        for src in var.sources:
+            if src.file == decision.file:
+                on_disk.append(src)
+                if src.text.rstrip() == decision.text:
+                    chosen = (var, src)
+    if chosen is None:
+        if not on_disk:
+            raise CanonError(
+                f"{CANON_FILE}: stale decision for `{decision.name}`: "
+                f"{decision.file} no longer declares it (re-read the accepted source and "
+                f"update or drop the decision)")
+        raise CanonError(
+            f"{CANON_FILE}: stale decision for `{decision.name}`: the text recorded for "
+            f"{decision.file} is not what that file declares.\n"
+            f"  recorded: {normalize_ws(decision.text)}\n"
+            f"  on disk : {normalize_ws(on_disk[0].text)}")
+    var, src = chosen
+    if CANON_KINDS[var.kind] != decision.kind:
+        raise CanonError(
+            f"{CANON_FILE}: stale decision for `{decision.name}`: recorded kind "
+            f"{decision.kind!r}, but {decision.file} declares a {CANON_KINDS[var.kind]!r}")
+
+    ordered = [src] + [d for d in var.sources if d is not src]
+    out = Variant(canon=var.canon, text=src.text, doc=var.doc, kind=var.kind, sources=ordered)
+    out.canon_file = decision.file
+    out.canon_rejected = len(conflict.variants) - 1
+    return out
+
+
+def foreign_variant(namespace: str, name: str, local: Variant,
+                    decision: Decision) -> Variant:
+    """The canonical declaration, repeated in a domain that spells it differently."""
+    witness = Decl(kind=local.kind, namespace=namespace, name=name, text=decision.text,
+                   canon=canon_text_canon(decision), doc=None,
+                   file=decision.file or SDK_FILE, index=0, domain=decision.domain or "")
+    var = Variant(canon=witness.canon, text=decision.text, doc=None,
+                  kind=local.kind, sources=[witness])
+    var.canon_file = decision.file
+    var.canon_tu = decision.file if decision.is_tu_include else None
+    var.canon_foreign = decision.domain
+    var.canon_rejected = 1
+    return var
+
+
+def is_tu_local(canon: dict[str, Decision], name: str, domain: str) -> bool:
+    """True when a decision withholds this name from every shared header."""
+    decision = decision_for(canon, name, domain) or foreign_decision(canon, name, domain)
+    return decision is not None and decision.is_tu_local
+
+
+def apply_canon(domain: str, conflicts: list[Conflict],
+                merged: dict[tuple[str, str], Variant],
+                canon: dict[str, Decision]) -> tuple[list[Conflict], list[Resolved],
+                                                     list[CrossApply], list[TuLocal]]:
+    """Apply every decision that touches this domain.
+
+    Four cases:
+      * a name whose decision is `tu_local` - withheld from every domain, because
+        exact units depend on spellings that cannot both be shared;
+      * a conflict with a decision this domain owns - emit the chosen spelling;
+      * an agreed declaration with a decision this domain owns (the divergence is
+        with another domain) - confirm it and stamp its provenance;
+      * a declaration whose name another domain owns and whose spelling differs
+        from the canonical one - replace it with the canonical text. The usual
+        dependency pass then withholds it if it names a type this domain cannot
+        provide, so `memset` is repeated everywhere while `xglPacketGetCurrent`,
+        which returns a core type, is simply absent from the math header.
+    """
+    still: list[Conflict] = []
+    resolved: list[Resolved] = []
+    applied: list[CrossApply] = []
+    tu_local: list[TuLocal] = []
+
+    for conflict in conflicts:
+        decision = decision_for(canon, conflict.name, domain) or \
+            foreign_decision(canon, conflict.name, domain)
+        if decision is not None and decision.is_tu_local:
+            decision.used = True
+            tu_local.append(TuLocal(domain, conflict.namespace, conflict.name, decision,
+                                    [(sorted({d.file for d in v.sources}), v.text)
+                                     for v in conflict.variants]))
+            continue
+        decision = decision_for(canon, conflict.name, domain)
+        if decision is not None:
+            variant = canonical_variant(conflict, decision)
+            decision.used = True
+            merged[(conflict.namespace, conflict.name)] = variant
+            resolved.append(Resolved(domain, conflict.namespace, conflict.name,
+                                     decision, variant, True))
+            continue
+        decision = foreign_decision(canon, conflict.name, domain)
+        if decision is None:
+            still.append(conflict)
+            continue
+        # This domain disagrees with itself *and* with the owning domain: the
+        # canonical text settles both, and every local spelling is rejected.
+        local = conflict.variants[0]
+        merged[(conflict.namespace, conflict.name)] = foreign_variant(
+            conflict.namespace, conflict.name, local, decision)
+        applied.append(CrossApply(domain, conflict.name, decision.domain or "",
+                                  sorted({d.file for v in conflict.variants
+                                          for d in v.sources})))
+
+    for key in sorted(merged):
+        namespace, name = key
+        variant = merged[key]
+        if variant.is_canon:
+            continue                       # just emitted from a decision above
+        decision = decision_for(canon, name, domain) or foreign_decision(canon, name, domain)
+        if decision is not None and decision.is_tu_local:
+            decision.used = True
+            tu_local.append(TuLocal(domain, namespace, name, decision,
+                                    [(sorted({d.file for d in variant.sources}),
+                                      variant.text)]))
+            del merged[key]
+            continue
+        decision = decision_for(canon, name, domain)
+        if decision is not None:
+            merged[key] = confirm_canonical(name, variant, decision)
+            decision.used = True
+            # a `tu_include` text replaces this domain's own agreed spelling, so
+            # the divergence is inside the domain, not with another one
+            resolved.append(Resolved(domain, namespace, name, decision,
+                                     merged[key], decision.is_tu_include))
+            continue
+        decision = foreign_decision(canon, name, domain)
+        if decision is None:
+            continue
+        if variant.canon == canon_text_canon(decision):
+            continue                       # this domain already spells it canonically
+        applied.append(CrossApply(domain, name, decision.domain or "",
+                                  sorted({d.file for d in variant.sources})))
+        merged[key] = foreign_variant(namespace, name, variant, decision)
+    return still, resolved, applied, tu_local
+
+
+def canon_text_canon(decision: Decision) -> str:
+    """The comparison text of a decision, computed like the harvest computes it."""
+    if decision.comparison is None:
+        text = decision.text if decision.text.rstrip().endswith(";") else decision.text + ";"
+        found = scan_declarations(text)
+        decision.comparison = found[0].canon if len(found) == 1 else normalize_ws(text)
+    return decision.comparison
+
+
+def check_unused_decisions(canon: dict[str, Decision],
+                           index: dict[tuple[str, str], list[Decl]]) -> list[str]:
+    """Validate decisions no conflict consumed; return the obsolete ones.
+
+    A decision whose file still declares the name with different text is stale
+    and fails loudly, exactly like one that was applied. A decision whose file no
+    longer declares the name at all is merely obsolete: it is reported so a human
+    can drop it, because the accepted set legitimately changes over time.
+    """
+    obsolete: list[str] = []
+    by_name: dict[str, list[Decl]] = {}
+    for (_domain, name), decls in index.items():
+        by_name.setdefault(name, []).extend(decls)
+    for name, decision in sorted(canon.items()):
+        if decision.used or decision.file is None:
+            continue
+        if decision.is_tu_include:
+            # validated structurally before the harvest ran; no accepted spelling
+            # of the name is left for it to replace
+            obsolete.append(name)
+            continue
+        same_file = [d for d in by_name.get(name, ()) if d.file == decision.file]
+        if not same_file:
+            obsolete.append(name)
+            continue
+        if not any(d.text.rstrip() == decision.text for d in same_file):
+            raise CanonError(
+                f"{CANON_FILE}: stale decision for `{name}`: the text recorded for "
+                f"{decision.file} is not what that file declares.\n"
+                f"  recorded: {normalize_ws(decision.text)}\n"
+                f"  on disk : {normalize_ws(same_file[0].text)}")
+        obsolete.append(name)
+    return obsolete
+
+
+@dataclass
+class Unresolved:
+    domain: str
+    name: str
+    missing: list[str]
+    variant: Variant
+
+
+def prune_unresolved(merged: dict[tuple[str, str], Variant], domain: str,
+                     external: set[str] | None = None,
+                     external_complete: set[str] | None = None
+                     ) -> tuple[dict[tuple[str, str], Variant], list[Unresolved]]:
+    """Drop declarations that reference names this domain header cannot provide.
+
+    A declaration whose type, macro or tag was excluded (a conflict, a macro, a
+    type this header cannot reach) cannot be reused as written, so it is reported
+    instead of emitted. Nothing is substituted for the missing name.
+
+    `external` and `external_complete` are the type names another domain's
+    `types.h` provides. Passing them lets a declaration survive by including that
+    header; the caller decides which includes the emitted set really needs.
+    """
+    kept = dict(merged)
+    dropped: list[Unresolved] = []
+    while True:
+        available: set[str] = set(external or ())
+        complete: set[str] = set(external_complete or ())
+        alias: dict[str, str] = {}
+        for var in kept.values():
+            available |= var.refs.provides
+            complete |= var.refs.provides_complete
+            alias.update(var.refs.complete_alias)
+        # A `typedef struct T A;` is complete exactly when `struct T` is.
+        while True:
+            grown = {n for n, target in alias.items()
+                     if n not in complete and target in complete}
+            if not grown:
+                break
+            complete |= grown
+        round_drop = []
+        for key, var in kept.items():
+            missing = sorted(var.refs.needs - available)
+            missing += sorted(f"{t} (complete)" for t in var.refs.needs_complete - complete)
+            if missing:
+                round_drop.append((key, missing))
+        if not round_drop:
+            return kept, dropped
+        for key, missing in round_drop:
+            dropped.append(Unresolved(domain, key[1], missing, kept.pop(key)))
+
+
+def order_types(variants: list[Variant]) -> list[Variant]:
+    """Accepted source order, except that a type is emitted before it is needed.
+
+    Source order alone can place a struct that embeds another one by value ahead
+    of that other one's definition (newlib's `struct _reent` and `struct __sFILE`
+    do exactly that across two accepted files). Only real dependencies move a
+    declaration: this is a stable topological sort keyed on source order, and a
+    cycle - which valid C reaches only through pointers - falls back to source
+    order for the members of the cycle.
+    """
+    ordered = sorted(variants, key=lambda v: v.order)
+    provider: dict[str, int] = {}
+    for i, var in enumerate(ordered):
+        for name in var.refs.provides | var.refs.provides_complete:
+            provider.setdefault(name, i)
+    deps: list[set[int]] = []
+    for i, var in enumerate(ordered):
+        needed = set()
+        for name in var.refs.needs | var.refs.needs_complete:
+            j = provider.get(name)
+            if j is not None and j != i:
+                needed.add(j)
+        deps.append(needed)
+
+    out: list[Variant] = []
+    emitted: set[int] = set()
+    pending = list(range(len(ordered)))
+    while pending:
+        ready = [i for i in pending if deps[i] <= emitted]
+        chosen = ready[0] if ready else pending[0]   # cycle: keep source order
+        out.append(ordered[chosen])
+        emitted.add(chosen)
+        pending.remove(chosen)
+    return out
+
+
+@dataclass
+class Conflict:
+    domain: str
+    namespace: str
+    name: str
+    variants: list[Variant]
+
+
+def group_declarations(decls: list[Decl]) -> tuple[dict[tuple[str, str], Variant],
+                                                   list[Conflict],
+                                                   dict[tuple[str, str], Variant]]:
+    buckets: dict[tuple[str, str], dict[str, Variant]] = {}
+    for d in decls:
+        variants = buckets.setdefault(d.key, {})
+        var = variants.get(d.canon)
+        if var is None:
+            var = Variant(canon=d.canon, text=d.text, doc=d.doc, kind=d.kind)
+            variants[d.canon] = var
+        var.sources.append(d)
+        if var.doc is None and d.doc is not None:
+            var.doc = d.doc
+        # Representative spelling: the most informative text (named parameters
+        # over a bare prototype), then the earliest accepted file.
+        if (-len(normalize_ws(d.text)), d.file, d.index) < \
+                (-len(normalize_ws(var.text)), var.rep_file, var.rep_index):
+            var.text = d.text
+            var.rep_file = d.file
+            var.rep_index = d.index
+
+    merged: dict[tuple[str, str], Variant] = {}
+    conflicts: list[Conflict] = []
+    forwards: dict[tuple[str, str], Variant] = {}
+    for key, variants in buckets.items():
+        chosen = list(variants.values())
+        defs = [v for v in chosen if v.kind != KIND_TAG_FORWARD]
+        if defs and len(defs) != len(chosen):
+            # Keep the accepted forward declaration in reserve: if the definition
+            # is withheld, the harvested `struct X;` is still real accepted text.
+            stash = sorted((v for v in chosen if v.kind == KIND_TAG_FORWARD),
+                           key=lambda v: v.order)
+            stash[0].sources.sort(key=lambda d: (d.file, d.index))
+            forwards[key] = stash[0]
+            chosen = defs
+        if len(chosen) == 1:
+            var = chosen[0]
+            # deterministic representative text: earliest source wins
+            var.sources.sort(key=lambda d: (d.file, d.index))
+            merged[key] = var
+        else:
+            for var in chosen:
+                var.sources.sort(key=lambda d: (d.file, d.index))
+            chosen.sort(key=lambda v: v.order)
+            conflicts.append(Conflict(chosen[0].sources[0].domain, key[0], key[1], chosen))
+    return merged, conflicts, forwards
+
+
+# ---------------------------------------------------------------------------
+# emission
+# ---------------------------------------------------------------------------
+
+
+
+def guard_name(domain: str, basename: str) -> str:
+    stem = basename.replace(".", "_").upper()
+    return f"XENO_{domain.upper().replace('-', '_')}_{stem}"
+
+
+def provenance_block(var: Variant) -> list[str]:
+    # Generated headers carry no generated comments (user direction 2026-09-19):
+    # the canon/borrowed/TU-local provenance lines are no longer emitted; the
+    # decisions stay recorded in config/header-canon.json and reports/.
+    return []
+    lines = []
+    if var.borrowed_from:
+        lines.append(f"/* type owned by the `{var.borrowed_from}` domain and "
+                     f"repeated here: this domain needs it and the two `"
+                     f"{TYPES_BASENAME}` files cannot be included together */")
+    if var.canon_sdk:
+        # No accepted file spells this one; the decision is the whole provenance.
+        return [f"/* canon: sdk - {var.canon_sdk} (decision in {CANON_FILE}) */",
+                f"/* no accepted unit declares it in this shape; "
+                f"{var.canon_rejected} accepted spelling(s) rejected */"]
+    if var.canon_foreign:
+        verb = "compiles against it" if var.canon_tu else "declares it"
+        return [f"/* canon: {CANON_FILE} - `{var.canon_foreign}` owns this name and "
+                f"{var.canon_file} {verb} */",
+                "/* this domain's accepted files spell it differently; the canonical "
+                "form is repeated here */"]
+    if var.canon_tu:
+        plural = "" if var.canon_rejected == 1 else "s"
+        return lines + [f"/* canon: {CANON_FILE} - {var.canon_tu} compiles against this "
+                        f"spelling through this header, over {var.canon_rejected} other "
+                        f"accepted spelling{plural} */"]
+    if var.canon_file:
+        plural = "" if var.canon_rejected == 1 else "s"
+        lines.append(f"/* canon: {CANON_FILE} chose {var.canon_file} "
+                     f"over {var.canon_rejected} other accepted spelling{plural} */")
+    # The `/* from <path> (unit ..., function ... @ ...) */` provenance lines are
+    # no longer emitted (user instruction, 2026-09-14). They cited the file each
+    # declaration was accepted from, which was useful while the pre-migration
+    # layout still existed; after the TU migration almost none of those paths
+    # resolve. Measured before removal: of the 258 distinct paths the generated
+    # headers cited, **256 did not exist**, so the comments had become 961 dead
+    # pointers that invited a reader to chase a file that is not there.
+    #
+    # Nothing ever read them -- only this function wrote them -- and the
+    # information they carried is not lost: `config/units/<record>.json` is the
+    # acceptance authority for every declaration and names its source, and the
+    # `/* canon: ... */` line above still records which spelling was chosen when
+    # accepted files disagreed. That one stays, because it is about the decision
+    # rather than about a path.
+    if re.match(r"static\b", var.text):
+        lines.append("/* TU-local in the accepted source; listed for reading, not linking */")
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# the published per-TU header layout
+# ---------------------------------------------------------------------------
+#
+# The recovery unit is the original translation unit, and since task
+# tu-header-layout (user decision 2026-09-12) the header layer follows the
+# published tree instead of the pre-migration `include/xeno/<domain>/` grouping:
+#
+#   include/<unit>/<tu>.h   what a TU DEFINES and at least one other TU needs
+#                           (generated; "the definition wins")
+#   include/shared.h        what more than one TU needs and no TU defines
+#                           (generated: library and SDK entry points, engine
+#                           globals whose defining object is still assembler,
+#                           and the types several TUs read without any of them
+#                           carrying the definition)
+#   src/<unit>/<tu>.h       what only that TU needs (tracked source, never
+#                           written by this tool)
+#
+# The domains below are still how a declaration's canonical spelling is decided
+# (config/header-canon.json is keyed on them), but they no longer name a file.
+
+SHARED_HEADER = "include/shared.h"
+TU_HEADER_ROOT = "include"
+SHARED_GUARD = "INCLUDE_SHARED_H"
+
+SHARED_BANNER = ""
+
+UMBRELLA_HEADER = "include/umbrella/public.h"
+UMBRELLA_INCLUDE = "umbrella/public.h"
+UMBRELLA_GUARD = "INCLUDE_UMBRELLA_PUBLIC_H"
+
+UMBRELLA_BANNER = ""
+
+TU_BANNER = ""
+
+
+# A top-level `static` function declaration or definition head: `static`
+# (possibly after other specifiers), a return type, then the name before `(`.
+STATIC_FUNC_RE = re.compile(
+    r'(?m)^[ \t]*(?:(?:inline|__inline__|const|volatile|extern)\s+)*static\b[^;{()=]*?\b([A-Za-z_]\w*)\s*\(')
+
+
+@dataclass
+class TuFile:
+    """One published translation unit, as the header layout sees it."""
+    c: str
+    unit: str
+    stem: str
+    tu: str
+    local_h: str | None
+    ids: set[str] = field(default_factory=set)
+    local: set[tuple[str, str]] = field(default_factory=set)
+    local_canon: dict[tuple[str, str], str] = field(default_factory=dict)
+    defines: set[str] = field(default_factory=set)
+    want: set[tuple[str, str]] = field(default_factory=set)
+    # every `#include "..."` of the .c and .h that the preprocessor can reach,
+    # normalised: `main/x.h` for include/main/x.h, else the root-relative path
+    includes: set[str] = field(default_factory=set)
+    # direct includes from the TU-local source header only. A generated owner
+    # header may need to carry a dependency on another generated TU header;
+    # includes from the .c body are not part of that public declaration API.
+    header_includes: set[str] = field(default_factory=set)
+    # definition heads of the .c, by key: what the defining TU itself spells
+    defined_canon: dict[tuple[str, str], str] = field(default_factory=dict)
+    # ordinary names the TU itself declares or defines `static`: internal
+    # linkage, so the TU never consumes an external declaration of that name
+    statics: set[str] = field(default_factory=set)
+    static_data: set[str] = field(default_factory=set)
+
+    @property
+    def header(self) -> str:
+        return f"{TU_HEADER_ROOT}/{self.unit}/{self.stem}.h"
+
+
+PP_DIRECTIVE_RE = re.compile(r"^[ \t]*#[ \t]*(\w+)(.*)$")
+
+
+def effective_includes(raw: str, path: str) -> set[str]:
+    """The quoted includes a file really makes, with each path normalised.
+
+    Comments are removed first and `#if 0` regions (with their `#else`/`#elif`
+    arms honoured) are skipped, so an include in a comment or in dead code does
+    not count. Every spelling is normalised the way the preprocessor would find
+    it from the published tree: relative to the including file's directory when
+    that file exists, otherwise relative to `include/`. A header under
+    `include/` is returned relative to it (`main/xgl_studio.h`), anything else
+    root-relative.
+    """
+    text = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
+    text = re.sub(r"//[^\n]*", "", text)
+    lines = text.replace("\\\n", "").splitlines()
+    # stack of (this group is live, some arm of it was already taken)
+    stack: list[tuple[bool, bool]] = []
+    out: set[str] = set()
+    base = os.path.dirname(path)
+    for line in lines:
+        m = PP_DIRECTIVE_RE.match(line)
+        live = all(frame[0] for frame in stack)
+        if m:
+            word, rest = m.group(1), m.group(2).strip()
+            if word in ("if", "ifdef", "ifndef"):
+                zero = word == "if" and rest in ("0", "(0)")
+                stack.append((not zero, not zero))
+                continue
+            if word == "elif" and stack:
+                taken = stack[-1][1]
+                arm = not taken and rest not in ("0", "(0)")
+                stack[-1] = (arm, taken or arm)
+                continue
+            if word == "else" and stack:
+                taken = stack[-1][1]
+                stack[-1] = (not taken, True)
+                continue
+            if word == "endif" and stack:
+                stack.pop()
+                continue
+        if not live:
+            continue
+        found = INCLUDE_LINE_RE.match(line)
+        if not found:
+            continue
+        name = found.group(1)
+        beside = os.path.normpath(os.path.join(base, name)).replace(os.sep, "/")
+        under_include = os.path.normpath(os.path.join(TU_HEADER_ROOT, name)).replace(os.sep, "/")
+        # the including file's directory is searched first; the published tree
+        # has no header beside a TU that shadows one under include/, so the
+        # include/-relative reading is recorded as well
+        for candidate in (beside, under_include):
+            if candidate.startswith(TU_HEADER_ROOT + "/"):
+                out.add(candidate[len(TU_HEADER_ROOT) + 1:])
+            else:
+                out.add(candidate)
+    return out
+
+
+MEMBER_IDENT_RE = re.compile(r"(->|\.)?\s*\b([A-Za-z_][A-Za-z_0-9]*)\b")
+SCAFFOLD_MACRO_RE = re.compile(
+    r"^[ \t]*(?:INCLUDE_ASM|ACCEPTED_ASM|INCLUDE_RODATA)[ \t]*\([^)]*\)", re.M)
+
+
+def published_tus(root: str) -> list[TuFile]:
+    """Every `src/<unit>/<tu>.c` that config/tu-build.json records, with its
+    identifiers, its own declarations and what it defines."""
+    try:
+        with open(header_input_path(root, TU_BUILD_FILE), encoding="utf-8") as fh:
+            manifest = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    out: list[TuFile] = []
+    for entry in manifest.get("tus") or []:
+        rel = str(entry.get("path") or "")
+        if not rel.endswith(".c") or not os.path.isfile(os.path.join(root, rel)):
+            continue
+        parts = rel.split("/")
+        if len(parts) != 3 or parts[0] != "src":
+            continue
+        stem = parts[2][:-2]
+        local_h = f"src/{parts[1]}/{stem}.h"
+        files = [rel] + ([local_h] if os.path.isfile(os.path.join(root, local_h)) else [])
+        tu = TuFile(c=rel, unit=parts[1], stem=stem, tu=str(entry.get("id") or ""),
+                    local_h=local_h if len(files) > 1 else None)
+        for path in files:
+            with open(os.path.join(root, path), encoding="utf-8") as fh:
+                raw = fh.read()
+            includes = effective_includes(raw, path)
+            tu.includes |= includes
+            if path == local_h:
+                tu.header_includes |= includes
+            struct_view, code_view, _dropped = mask_source(raw)
+            # The scaffold macros name the TU's own original functions; that is
+            # the name of a body this file does not write in C, never a use that
+            # needs a declaration.
+            ident_view = SCAFFOLD_MACRO_RE.sub(lambda m: " " * len(m.group(0)), code_view)
+            for m in MEMBER_IDENT_RE.finditer(ident_view):
+                if not m.group(1):
+                    tu.ids.add(m.group(2))
+            if path.endswith(".c"):
+                try:
+                    tu.defines |= defined_names(struct_view, split_top_level(struct_view))
+                except ParseError:
+                    pass
+            for m in STATIC_FUNC_RE.finditer(struct_view):
+                tu.statics.add(m.group(1))
+            # Static data is not publishable, but its name still collides
+            # with any extern the umbrella would broadcast into this TU.
+            # Reuse the declarator parser only to collect those local names;
+            # never add them to the external ownership set (`defines`).
+            for rd in split_top_level(struct_view):
+                if rd.has_body:
+                    continue
+                local_head = struct_view[rd.start:rd.stop]
+                if not re.search(r"\bstatic\b", local_head):
+                    continue
+                data_head = re.sub(r"\bstatic\b", "", local_head, count=1)
+                tu.static_data |= defined_names(data_head, split_top_level(data_head))
+            for sc in scan_declarations(raw):
+                # A definition is not a forward declaration: a TU that calls a
+                # function it defines further down still needs the prototype,
+                # and a definition never competes with the shared spelling.
+                if sc.defined:
+                    if path.endswith(".c"):
+                        tu.defined_canon.setdefault((sc.namespace, sc.name), sc.canon)
+                    continue
+                for name in sc.name.split(","):
+                    key = (sc.namespace, name.strip())
+                    tu.local.add(key)
+                    tu.local_canon[key] = sc.canon
+        out.append(tu)
+    return out
+
+
+@dataclass
+class Homes:
+    """Where every needed declaration lives, and why."""
+    pool: dict[tuple[str, str], Variant] = field(default_factory=dict)
+    order: dict[tuple[str, str], tuple] = field(default_factory=dict)
+    assign: dict[tuple[str, str], tuple[str, str | None]] = field(default_factory=dict)
+    consumers: dict[tuple[str, str], set[str]] = field(default_factory=dict)
+    definers: dict[tuple[str, str], list[str]] = field(default_factory=dict)
+    divergent: dict[tuple[str, str], list[str]] = field(default_factory=dict)
+    missing: list[tuple[str, str]] = field(default_factory=list)
+    tus: list[TuFile] = field(default_factory=list)
+    # declarations only published TU source carries: key -> the TUs that declare it
+    published: dict[tuple[str, str], list[str]] = field(default_factory=dict)
+    # (name, TU, reason) for a published-TU declaration that no header may carry
+    published_withheld: list[tuple[str, str, str]] = field(default_factory=list)
+    published_found: int = 0          # published-TU declarations before any is withheld
+    # (header, name, outcome) for a type a generated TU header uses but neither
+    # defines nor gets from shared.h (see `complete_tu_header`)
+    completion: list[tuple[str, str, str]] = field(default_factory=list)
+    # the umbrella (include/umbrella/public.h): (key, owner TU .c) carried, and
+    # (name, owner header, reason) withheld (see `compute_umbrella`)
+    umbrella: list[tuple[tuple[str, str], str]] = field(default_factory=list)
+    umbrella_withheld: list[tuple[str, str, str]] = field(default_factory=list)
+    owner_migrations: list[dict] = field(default_factory=list)
+
+
+FORWARD_TYPEDEF_RE = re.compile(r"^typedef\s+(?:struct|union|enum)\s+(\w+)\s+(\w+)\s*;$")
+
+
+def forward_typedef_tag(var: Variant) -> tuple[str, str] | None:
+    """The tag key a forward typedef (`typedef struct X X;`) names, else None.
+
+    Such a typedef needs nothing, and the pinned cc1 (GCC 2.96) accepts it
+    again when it is repeated with the identical spelling (so does C11); only a
+    second *body* of the tag, or another spelling of the name, is refused.
+    """
+    if var.kind != KIND_TYPEDEF:
+        return None
+    text = normalize_ws(var.text)
+    m = FORWARD_TYPEDEF_RE.match(text)
+    if not m:
+        return None
+    return ("tag", f"{text.split()[1]} {m.group(1)}")
+
+
+def compatible_forward_typedef(var: Variant, key: tuple[str, str], text: str,
+                               *, witnessed_owner: bool = False) -> bool:
+    """Whether `text` is a forward typedef of this canonical complete type.
+
+    A local `typedef struct X X;` can coexist with the canonical complete
+    `typedef struct X { ... } X;` in shared.h. It must not make a full,
+    source-backed `tu_include` type look like competing local definitions.
+    Keep this deliberately narrow: both declarations must name the same tag
+    and typedef, and the complete canonical variant must actually define the
+    tagged type.
+    """
+    if key[0] != "type" or not (var.canon_tu or witnessed_owner):
+        return False
+    forward = FORWARD_TYPEDEF_RE.match(normalize_ws(text))
+    complete = re.match(
+        r"^typedef\s+(struct|union|enum)\s+(\w+)\s*\{", normalize_ws(var.text))
+    if forward is None or complete is None:
+        return False
+    tag_kind = normalize_ws(text).split()[1]
+    typedef_names = {name.strip() for name in key[1].split(",")}
+    return (forward.group(1) in typedef_names
+            and forward.group(2) == complete.group(2)
+            and tag_kind == complete.group(1))
+
+
+def same_spelling(tu: "TuFile", key: tuple[str, str], var: Variant) -> bool:
+    """`tu` declares `key` itself, exactly as the chosen variant spells it."""
+    return key in tu.local and normalize_ws(tu.local_canon[key]) == normalize_ws(var.canon)
+
+
+def includes_own_header(tu: "TuFile") -> bool:
+    """`tu` includes its own generated header `include/<unit>/<tu>.h`.
+
+    Such a TU already spells every body it declares in its prelude or src
+    header; homing one of those bodies into the generated header as well would
+    give the TU a second body of the tag (`redefinition of struct X`), as
+    main/tu092 xgl_cd.c showed once a second TU named CdStreamParam
+    (2026-09-24). The body then stays with its owner (`local`).
+    """
+    return tu.header[len(TU_HEADER_ROOT) + 1:] in tu.includes
+
+
+def relying_includers(homes: "Homes", header: str, key: tuple[str, str]) -> list[str]:
+    """Published TUs that include `header` (relative to include/) and use the
+    name of `key` without declaring it: they read it from that header."""
+    names = {n.strip() for n in key[1].split(",")}
+    return sorted(t.c for t in homes.tus
+                  if header in t.includes and key not in t.local and names & t.ids)
+
+
+def complete_tu_header(homes: Homes, tu: "TuFile", keys: list[tuple[str, str]],
+                       shared_provides: set[str]) -> list[tuple[str, str]]:
+    """Make `include/<unit>/<tu>.h` self-sufficient for the type names it uses.
+
+    A typedef that several TUs each declare for themselves (the usual
+    `typedef struct RgChar RgChar;`) is homed `local`, so the header of the TU
+    that uses it in a published declaration used to name it without declaring
+    it: the header did not compile on its own. Such a name is added to this
+    header when it is a forward typedef (`typedef struct X X;`, which needs
+    nothing), or when this TU itself declares it (the owner's own spelling).
+    The pinned cc1 refuses a typedef repeated in another spelling, and a
+    repeated full typedef may repeat a body, so the name is added only while no
+    published TU that includes this header also declares it itself - unless it
+    is a forward typedef that TU spells identically, which is a compatible
+    redeclaration. Otherwise it stays withheld and is recorded in
+    `homes.completion`.
+    """
+    provided = set(shared_provides)
+    needs: set[str] = set()
+    for key in keys:
+        var = homes.pool[key]
+        provided |= var.refs.provides | {n.strip() for n in key[1].split(",")}
+        needs |= var.refs.needs | var.refs.needs_complete
+    provider: dict[str, tuple[str, str]] = {}
+    for key in sorted(homes.pool, key=lambda k: homes.order[k]):
+        for name in sorted(homes.pool[key].refs.provides) + [n.strip() for n in key[1].split(",")]:
+            provider.setdefault(name, key)
+    header = tu.header[len(TU_HEADER_ROOT) + 1:]
+    includers = [t for t in homes.tus if header in t.includes]
+    added: list[tuple[str, str]] = []
+    for name in sorted(needs - provided):
+        key = provider.get(name)
+        var = homes.pool.get(key) if key else None
+        if var is None or var.kind != KIND_TYPEDEF:
+            homes.completion.append((tu.header, name, "unresolved: no typedef provides it"))
+            continue
+        forward = FORWARD_TYPEDEF_RE.match(normalize_ws(var.text))
+        owned = (tu.c in homes.published.get(key, ()) or tu.c in homes.definers.get(key, ())
+                 or same_spelling(tu, key, var))
+        if not (forward and forward.group(2) == name) and not owned:
+            homes.completion.append((tu.header, name, f"withheld: `{key[1]}` is a full typedef "
+                                                      "this TU does not declare"))
+            continue
+        if var.refs.needs - provided - {name}:
+            homes.completion.append((tu.header, name, "withheld: its typedef needs "
+                                     + ", ".join(sorted(var.refs.needs - provided - {name}))))
+            continue
+        # An includer's identical forward typedef is a compatible redeclaration:
+        # it no longer withholds the name once another includer reads the name
+        # from this header (withholding it would break that TU).
+        relaxed = bool(forward) and bool(relying_includers(homes, header, key))
+        clash = sorted(t.c for t in includers if key in t.local
+                       and not (relaxed and same_spelling(t, key, var)))
+        if clash:
+            homes.completion.append((tu.header, name, "withheld: " + ", ".join(clash) +
+                                     " includes this header and declares the name itself"))
+            continue
+        added.append(key)
+        provided |= var.refs.provides | {name}
+        homes.completion.append((tu.header, name, "added: " + ("forward typedef" if forward
+                                                              else "the owner's typedef")))
+    return added
+
+
+def build_pool(merged_by_domain: dict[str, dict[tuple[str, str], Variant]],
+               common: dict[tuple[str, str], Variant]
+               ) -> tuple[dict[tuple[str, str], Variant], dict[tuple[str, str], tuple]]:
+    """One canonical variant per name, with the deterministic emission order.
+
+    The order is the one the domain view produced - the shared base types first,
+    then each domain's types, then its prototypes - so a declaration keeps the
+    position its dependencies gave it.
+    """
+    pool: dict[tuple[str, str], Variant] = {}
+    order: dict[tuple[str, str], tuple] = {}
+
+    def rating(var, seq):
+        # the domain that owns the name states it; a borrowed or cross-domain
+        # copy of the same text is only a reading aid for its own domain
+        copy = 1 if (var.borrowed_from or var.canon_foreign) else 0
+        return (copy,) + seq
+
+    def offer(key, var, rank, domain, index):
+        seq = (rank, domain, index)
+        if key not in pool or rating(var, seq) < rating(pool[key], order[key]):
+            pool[key] = var
+            order[key] = seq
+
+    for index, var in enumerate(order_types(list(common.values()))):
+        for key, value in common.items():
+            if value is var:
+                offer(key, var, 0, "", index)
+                break
+    for domain in sorted(merged_by_domain):
+        merged = merged_by_domain[domain]
+        types = order_types([v for k, v in merged.items()
+                             if v.kind in TYPE_KINDS and k not in common])
+        protos = sorted([v for v in merged.values() if v.kind in PROTO_KINDS],
+                        key=lambda v: v.order)
+        for rank, group in ((1, types), (2, protos)):
+            for index, var in enumerate(group):
+                for key, value in merged.items():
+                    if value is var:
+                        offer(key, var, rank, domain, index)
+                        break
+    return pool, order
+
+
+PUBLISHED_RANK = 3        # after the shared base types (0), domain types (1) and protos (2)
+
+
+def published_tu_declarations(root: str, homes: Homes, canon: dict[str, Decision],
+                              static_names: set[str],
+                              asm_owned: dict[tuple[str, str], str] | None = None,
+                              source_owned: dict[tuple[str, str], str] | None = None
+                              ) -> tuple[dict[tuple[str, str], Variant],
+                                         dict[tuple[str, str], tuple],
+                                         dict[tuple[str, str], list[str]],
+                                         list[tuple[str, str, str]]]:
+    """Declarations that only published TU source carries.
+
+    The accepted records and the replayed ledgers are the pool every existing
+    name is decided from, and they stay authoritative: a name they already declare
+    is never re-read from a TU here (its TU spellings are still compared with it,
+    which is how a TU-local divergence is found). What this adds is a name no
+    record declares, taken from the translation unit that defines it:
+
+      * a function or data declaration, only for a name the TU's `.c` defines
+        with external linkage - its `src/<unit>/<tu>.h` declaration first, then a
+        prelude `extern`, then the definition head;
+      * a type (typedef, or a struct/union/enum definition), from the TU's `.c`
+        or `src/<unit>/<tu>.h`. A forward `struct X;` publishes nothing.
+
+    The declaring TU is the definer, so the layout homes the declaration in
+    `include/<unit>/<tu>.h`, never in `include/shared.h`: the TU keeps its own
+    declaration and includes the shared header, so a shared copy would be a
+    redefinition. A declaration is withheld (and reported) when it is not ordinary
+    candidate C, when a `static` definition or a `tu_local`/`static_local`
+    decision covers the name, when an active decision spells it differently, when
+    it provides a name the pool already provides, or when it needs a name neither
+    the pool nor another published declaration provides.
+
+    Returns (variants, emission order, declaring TUs, withheld).
+    """
+    pool_names: set[str] = set()
+    for key, var in homes.pool.items():
+        pool_names |= var.refs.provides
+        pool_names |= {n.strip() for n in key[1].split(",")}
+
+    # key -> TU -> (rank, Decl)
+    found: dict[tuple[str, str], dict[str, tuple[tuple, Decl]]] = {}
+    withheld: list[tuple[str, str, str]] = []
+    for tu in sorted(homes.tus, key=lambda t: t.c):
+        paths = ([tu.local_h] if tu.local_h else []) + [tu.c]
+        for file_rank, path in enumerate(paths):
+            try:
+                with open(os.path.join(root, path), encoding="utf-8") as fh:
+                    raw = fh.read()
+                struct_view, code_view, dropped = mask_source(raw)
+                raw_decls = split_top_level(struct_view)
+            except (OSError, ParseError):
+                continue
+            for index, rd in enumerate(raw_decls):
+                struct_slice = struct_view[rd.start:rd.stop]
+                try:
+                    result = classify(raw, dropped, rd.start, rd.stop,
+                                      struct_slice, rd.has_body, rd.is_kr)
+                except ParseError:
+                    continue
+                if result is None:
+                    continue
+                kind, namespace, name, emitted, token_canon = result
+                if kind in (KIND_STATIC_DEF, KIND_TAG_FORWARD):
+                    continue
+                key = (namespace, name)
+                if key in (source_owned or {}) and (source_owned or {})[key] != tu.c:
+                    continue              # pinned live owner is the sole migration source
+                if key in homes.pool:
+                    continue                  # the record pool decides this name
+                names = {part.strip() for part in name.split(",")}
+                if kind in PROTO_KINDS and not names <= tu.defines:
+                    if not (namespace == "ordinary" and key in (asm_owned or {})
+                            and (asm_owned or {})[key] == tu.c) \
+                            and not (namespace == "ordinary" and key in (source_owned or {})
+                                     and (source_owned or {})[key] == tu.c):
+                        continue              # a declaration of someone else's symbol
+                if not emitted.endswith(";"):
+                    emitted += ";"
+                if kind == KIND_PROTO and rd.has_body:
+                    canon_src = code_view[rd.start:rd.start + struct_slice.index("{")]
+                else:
+                    canon_src = code_view[rd.start:rd.stop]
+                decl = Decl(kind=kind, namespace=namespace, name=name, text=emitted.strip(),
+                            canon=(token_canon if token_canon is not None
+                                   else normalize_ws(canon_src).rstrip(";").strip()),
+                            doc=leading_comment(raw, code_view, rd.start),
+                            file=path, index=index, domain="")
+                rank = (file_rank, 1 if rd.has_body else 0, index)
+                current = found.setdefault(key, {}).get(tu.c)
+                if current is None or rank < current[0]:
+                    found[key][tu.c] = (rank, decl)
+
+    variants: dict[tuple[str, str], Variant] = {}
+    order: dict[tuple[str, str], tuple] = {}
+    declarers: dict[tuple[str, str], list[str]] = {}
+    for key in sorted(found):
+        by_tu = found[key]
+        first_tu = sorted(by_tu)[0]
+        rank, decl = by_tu[first_tu]
+        names = [n.strip() for n in key[1].split(",")]
+        reason = None
+        decision = canon.get(key[1])
+        if set(names) & static_names:
+            reason = "a `static` definition gives the name internal linkage"
+        elif decision is not None and (decision.is_tu_local or decision.is_static_local) \
+                and (source_owned or {}).get(key) != first_tu:
+            reason = f"`{decision.status}` decision in {CANON_FILE}"
+        elif decision is not None and decl.canon != canon_text_canon(decision) \
+                and (source_owned or {}).get(key) != first_tu:
+            reason = f"spelled differently from the decision in {CANON_FILE}"
+        elif ordinary_candidate_c(decl.text) is not None and not (
+                (source_owned or {}).get(key) == first_tu and native_ti_owner_typedef(decl.text)):
+            reason = f"not ordinary candidate C (`{ordinary_candidate_c(decl.text)}`)"
+        if reason is None:
+            var = Variant(canon=decl.canon, text=decl.text, doc=decl.doc, kind=decl.kind,
+                          sources=[by_tu[t][1] for t in sorted(by_tu)])
+            try:
+                var.refs = analyze_refs(var.text, names)
+            except ParseError:
+                reason = "not parseable by the harvest tokenizer"
+        if reason is None:
+            clash = sorted(var.refs.provides & pool_names)
+            if clash:
+                reason = f"provides `{clash[0]}`, which the accepted pool already provides"
+        if reason is not None:
+            withheld.append((key[1], first_tu, reason))
+            continue
+        variants[key] = var
+        order[key] = (PUBLISHED_RANK, first_tu) + rank
+        declarers[key] = sorted(by_tu)
+
+    # Nothing is emitted that names something no header can provide.
+    available, complete = availability(list(homes.pool.values()))
+    while True:
+        have, have_complete = availability(list(variants.values()))
+        have |= available
+        have_complete |= complete
+        dropped_now = []
+        for key, var in variants.items():
+            missing = sorted(var.refs.needs - have)
+            missing += sorted(f"{t} (complete)" for t in var.refs.needs_complete - have_complete)
+            if missing:
+                dropped_now.append((key, missing))
+        if not dropped_now:
+            break
+        for key, missing in dropped_now:
+            withheld.append((key[1], declarers[key][0],
+                             "needs " + ", ".join(f"`{m}`" for m in missing)))
+            del variants[key]
+            del order[key]
+            del declarers[key]
+    homes.published_found = len(found)
+    return variants, order, declarers, sorted(withheld)
+
+
+def original_asm_data_owner(root: str, tu_id: str, name: str) -> dict:
+    """Original storage identity for an owner extern; never C recovery credit."""
+    import importlib.util
+    base = Path(root).resolve()
+    build = json.loads(Path(base, TU_BUILD_FILE).read_text(encoding="utf-8"))
+    tus = [tu for tu in build.get("tus") or [] if tu.get("id") == tu_id]
+    if len(tus) != 1 or tus[0].get("category") != "game" or not tus[0].get("in_scope"):
+        raise CanonError(f"{EXPORTS_FILE}: ASM data has no unique game owner {tu_id}")
+    tu = tus[0]
+    unit = tu["unit"]
+    objects = json.loads(Path(base, f"config/objects/{unit}.objects.json").read_text(encoding="utf-8"))
+    owner_objects = [item for item in objects.get("tus") or [] if item.get("id") == tu_id]
+    if len(owner_objects) != 1 or owner_objects[0].get("path") != tu.get("path"):
+        raise CanonError(f"{EXPORTS_FILE}: ASM data original owner path differs")
+    obj = owner_objects[0]
+    helper = Path(base, "tools/tu/data_carve.py")
+    helper_sha = hashlib.sha256(helper.read_bytes()).hexdigest()
+    module_name = "_header_asm_data_" + helper_sha[:16]
+    dc = sys.modules.get(module_name)
+    if dc is None:
+        module_spec = importlib.util.spec_from_file_location(module_name, helper)
+        if module_spec is None or module_spec.loader is None:
+            raise CanonError(f"{EXPORTS_FILE}: ASM data original parser unavailable")
+        dc = importlib.util.module_from_spec(module_spec)
+        sys.modules[module_name] = dc
+        module_spec.loader.exec_module(dc)
+    original_record = build["units"][unit]
+    original_path = Path(base, original_record["file"])
+    original_bytes = original_path.read_bytes()
+    original_sha = hashlib.sha256(original_bytes).hexdigest()
+    if original_sha != original_record["sha256"]:
+        raise CanonError(f"{EXPORTS_FILE}: ASM data original binary differs")
+    original = dc.Elf(original_bytes)
+    symbols = [symbol for symbol in original.symbols if symbol.name == name]
+    if (len(symbols) != 1 or symbols[0].type != 1 or symbols[0].bind != 1 or
+            symbols[0].size <= 0 or not 0 < symbols[0].shndx < len(original.sections)):
+        raise CanonError(f"{EXPORTS_FILE}: {name} is not one original GLOBAL OBJECT")
+    symbol = symbols[0]
+    section = original.sections[symbol.shndx]
+    lo, hi = symbol.value, symbol.value + symbol.size
+    if not section.addr <= lo < hi <= section.addr + section.size:
+        raise CanonError(f"{EXPORTS_FILE}: ASM data exceeds original section allocation")
+    owners = []
+    for item in objects.get("tus") or []:
+        for piece in ((item.get("sections") or {}).get(section.name) or {}).get("pieces") or []:
+            if int(piece["start"], 16) <= lo and hi <= int(piece["end"], 16):
+                owners.append((item["id"], piece))
+    if len(owners) != 1 or owners[0][0] != tu_id or owners[0][1].get("c_split"):
+        raise CanonError(f"{EXPORTS_FILE}: ASM data has no unique original scaffold owner piece")
+    source = Path(base, tu["path"]).read_text(encoding="utf-8")
+    view = mask_source(source)[0]
+    if name in defined_names(view, split_top_level(view)):
+        raise CanonError(f"{EXPORTS_FILE}: {name} already has a C definition; use its ordinary owner")
+    for run in (tu.get("data_ownership", {}).get(section.name, {}).get("c_runs") or []):
+        span = run.get("range") or []
+        if (name in (run.get("c_owned_symbols") or []) or
+                (len(span) == 2 and int(span[0], 16) < hi and lo < int(span[1], 16))):
+            raise CanonError(f"{EXPORTS_FILE}: {name} overlaps current C-owned storage")
+    context_root = base
+    if not Path(base, "build", unit, "tu-manifest.json").is_file():
+        # Normal private header ingress precedes configure. Its canonical queue
+        # link identifies the real read-only original scaffold authority; it
+        # does not turn that storage into recovered C data or copy a header.
+        queue = Path(base, ".work", "queue.sqlite3")
+        if not queue.is_file():
+            raise CanonError(f"{EXPORTS_FILE}: pre-build ASM owner has no canonical queue authority")
+        context_root = queue.resolve().parent.parent
+        authority_build = json.loads(Path(context_root, TU_BUILD_FILE).read_text())
+        authority_tus = [t for t in authority_build.get("tus", []) if t.get("id") == tu_id]
+        authority_objects = json.loads(Path(context_root, f"config/objects/{unit}.objects.json").read_text())
+        authority_obj = [t for t in authority_objects.get("tus", []) if t.get("id") == tu_id]
+        if (context_root == base or len(authority_tus) != 1 or authority_obj != [obj] or
+                owner_tu_record_witness(authority_tus[0])["original_identity_sha256"] !=
+                owner_tu_record_witness(tu)["original_identity_sha256"] or
+                authority_build["units"][unit] != original_record):
+            raise CanonError(f"{EXPORTS_FILE}: pre-build ASM owner original authority differs")
+    ctx = dc.tu_context(context_root, unit, context_root / "build" / unit, tu_id)
+    if hashlib.sha256(Path(ctx["orig"]).read_bytes()).hexdigest() != original_sha:
+        raise CanonError(f"{EXPORTS_FILE}: ASM data scaffold original pin differs")
+    items = dc.section_items(ctx, section.name) or []
+    matched = [item for item in items if name in item.get("labels", []) and
+               item["start"] == lo and item["end"] == hi]
+    if len(matched) != 1:
+        raise CanonError(f"{EXPORTS_FILE}: no exact original named ASM data item {name}")
+    pieces = [piece for piece in ctx["pieces"].get(section.name, [])
+              if piece["start"] <= lo and hi <= piece["end"]]
+    if len(pieces) != 1:
+        raise CanonError(f"{EXPORTS_FILE}: ASM data scaffold piece differs")
+    scaffold = Path(ctx["path_of"](pieces[0], section.name)).resolve()
+    if not scaffold.is_relative_to(context_root):
+        raise CanonError(f"{EXPORTS_FILE}: ASM data scaffold source escapes root")
+    # NOBITS has allocation authority, not invented payload bytes.
+    raw_sha = None if section.type == 8 else hashlib.sha256(
+        original_bytes[section.offset + lo - section.addr:section.offset + hi - section.addr]).hexdigest()
+    return dict(schema="original-asm-data-owner/1", status="assembly-scaffolding", credited=False,
+                tu=tu_id, source_path=tu["path"], name=name, va=f"0x{lo:08x}", size=symbol.size,
+                binding="GLOBAL", type="OBJECT", section=section.name, section_type=section.type,
+                original_elf_sha256=original_sha, raw_bytes_sha256=raw_sha,
+                object_tu_record_sha256=hashlib.sha256(json.dumps(obj, sort_keys=True,
+                    separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+                tu_record_sha256=hashlib.sha256(json.dumps(tu, sort_keys=True,
+                    separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+                tu_record_witness=owner_tu_record_witness(tu),
+                scaffold_source=scaffold.relative_to(context_root).as_posix(),
+                scaffold_sha256=hashlib.sha256(scaffold.read_bytes()).hexdigest())
+
+
+def verify_asm_data_owner(root: str, tu_id: str, name: str, expected: dict) -> None:
+    live = original_asm_data_owner(root, tu_id, name)
+    if not isinstance(expected, dict) or set(expected) != set(live):
+        raise CanonError(f"{EXPORTS_FILE}: invalid ASM data identity for {name}")
+    verify_owner_tu_record(live["tu_record_witness"]["record"], expected, f"ASM data {name}")
+    metadata = {"tu_record_sha256", "tu_record_witness"}
+    if any(live[key] != expected[key] for key in live.keys() - metadata):
+        raise CanonError(f"{EXPORTS_FILE}: original ASM data owner identity changed for {name}")
+
+
+def source_bound_exports(root: str, pool: dict, doc: dict | None = None,
+                         tus: list[TuFile] | None = None) -> dict:
+    """Bind a complete type or original ASM-data extern to its genuine TU owner.
+
+    This handles a type repeated in several published TU-local headers, or an
+    extern whose storage remains in its original owner's ASM data piece. It
+    never supplies declaration text and cannot replace a retained pool record:
+    that ownership transfer still requires the ordinary migration record.
+    """
+    if doc is None:
+        path = Path(header_input_path(root, EXPORTS_FILE))
+        if not path.is_file():
+            return {}
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    by_tu = {t.tu: t for t in (published_tus(root) if tus is None else tus)}
+    owned = {}
+    import tu_edit
+    for index, row in enumerate(doc.get("exports") or []):
+        spec = row.get("source_owner")
+        if spec is None:
+            continue
+        if (not isinstance(spec, dict) or set(spec) not in (
+                {"path", "sha256", "declarations"}, {"path", "sha256", "declarations", "asm_data"})):
+            raise CanonError(f"{EXPORTS_FILE}: invalid source_owner {index}")
+        owner = by_tu.get(row.get("tu"))
+        if owner is None or spec["path"] not in (owner.c, owner.local_h):
+            raise CanonError(f"{EXPORTS_FILE}: source_owner is not a source/header of {row.get('tu')}")
+        declarations = spec["declarations"]
+        if (not isinstance(declarations, list) or not declarations or
+                any(not isinstance(item, dict) or set(item) != {"namespace", "name"}
+                    for item in declarations)):
+            raise CanonError(f"{EXPORTS_FILE}: invalid source_owner declarations {index}")
+        if {item["name"] for item in declarations} != set(row.get("names") or []):
+            raise CanonError(f"{EXPORTS_FILE}: source_owner keys differ from exported names {index}")
+        asm_data = spec.get("asm_data", {})
+        if not isinstance(asm_data, dict) or not set(asm_data) <= set(row.get("names") or []):
+            raise CanonError(f"{EXPORTS_FILE}: invalid ASM data owner declarations {index}")
+        witness, _proof = owner_migration_witness(root, spec["path"], spec["sha256"],
+                                                "export source owner")
+        live = Path(root, spec["path"]).read_text(encoding="utf-8")
+        if owner_migration_context(witness) != owner_migration_context(live):
+            raise CanonError(f"{EXPORTS_FILE}: source_owner preprocessing context changed")
+        for item in declarations:
+            key = (item["namespace"], item["name"])
+            if key in owned:
+                raise CanonError(f"{EXPORTS_FILE}: duplicate source_owner for {key[1]}")
+            if key in pool:
+                raise CanonError(f"{EXPORTS_FILE}: retained pool owner for {key[1]} needs an owner migration")
+            before, after = (owner_migration_entity(text, key) for text in (witness, live))
+            if (before.kind != after.kind or before.defined != after.defined or
+                    not tu_edit.same_code(before.text, after.text) or
+                    (ordinary_candidate_c(after.text) is not None
+                     and not native_ti_owner_typedef(after.text))):
+                raise CanonError(f"{EXPORTS_FILE}: source_owner declaration changed for {key[1]}")
+            if key[1] in asm_data:
+                if key[0] != "ordinary" or before.kind != KIND_EXTERN_DATA or before.defined:
+                    raise CanonError(f"{EXPORTS_FILE}: ASM data owner must be an ordinary extern {key[1]}")
+                verify_asm_data_owner(root, owner.tu, key[1], asm_data[key[1]])
+            elif (before.kind not in TYPE_KINDS or
+                  ("{" not in before.canon and not native_ti_owner_typedef(after.text))):
+                raise CanonError(f"{EXPORTS_FILE}: source_owner is not a complete ordinary type {key[1]}")
+            owned[key] = owner.c
+    return owned
+
+
+def published_exports(root: str, tus: list[TuFile], doc: dict | None = None) -> list[TuFile]:
+    """Consumers the owner TU declares in advance (config/header-exports.json).
+
+    The layout homes a published TU's declaration in its `include/<unit>/<tu>.h`
+    only once another published TU uses the name without declaring it. A TU
+    that is still scaffold (no published source) cannot be that consumer, yet
+    its worker needs the owner's header to exist before it can write the first
+    C that uses the type. An export names such a declaration; it is treated as
+    one more consumer, so the owner's header carries it (with everything it
+    needs) exactly as it will once the real consumer is published. It never
+    changes a spelling and never homes a name anywhere but in its owner's
+    header: a name the owner does not declare, or that the layout cannot give
+    the owner, is reported like any other unmet need.
+    """
+    path = header_input_path(root, EXPORTS_FILE)
+    if doc is None and not os.path.isfile(path):
+        return []
+    try:
+        if doc is None:
+            with open(path, encoding="utf-8") as fh:
+                doc = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{EXPORTS_FILE}: unreadable ({exc})")
+    by_id = {tu.tu: tu for tu in tus}
+    out: list[TuFile] = []
+    for index, row in enumerate(doc.get("exports") or []):
+        owner = by_id.get(str(row.get("tu") or ""))
+        names = [str(n) for n in row.get("names") or []]
+        if owner is None or not names or not row.get("reason"):
+            raise CanonError(f"{EXPORTS_FILE}: export {index} needs a published `tu`, "
+                             f"`names` and a `reason`")
+        # `TuFile.local` is keyed by declaration namespace and scanner name.
+        # For ordinary declarations and typedefs that name is the C identifier;
+        # tag keys also retain their `struct`/`union`/`enum` kind. Convert only
+        # that tag spelling to its identifier, without trying to infer a name
+        # from emitted declaration text (which differs for objects/prototypes).
+        def declared_identifier(key: tuple[str, str]) -> str | None:
+            namespace, name = key
+            if namespace == "tag":
+                match = re.fullmatch(r"(?:struct|union|enum)\s+([A-Za-z_$][A-Za-z_0-9$]*)", name)
+                return match.group(1) if match else None
+            return name
+
+        declared = {key: declared_identifier(key) for key in owner.local}
+        declared_names = {name for name in declared.values() if name is not None}
+        undeclared = sorted(set(names) - declared_names)
+        if undeclared:
+            raise CanonError(f"{EXPORTS_FILE}: stale export {index}: {owner.c} (or its "
+                             f"src/<unit>/<tu>.h) does not declare " + ", ".join(undeclared))
+        # what the owner declares itself is the owner's to provide, never a
+        # need of the export (a shared copy would redefine the owner's own)
+        exported = {key for key, name in declared.items() if name in names}
+        export = TuFile(c=f"{EXPORTS_FILE}#{owner.tu}", unit=owner.unit, stem=owner.stem,
+                        tu=owner.tu, local_h=None, ids=set(names))
+        export.export_skip = set(owner.local) - exported
+        out.append(export)
+    return out
+
+
+def owner_migration_witness_path(root: str, rel: str, expected: str) -> Path:
+    """One deterministic, exact-hash snapshot copy; never a discovery scan."""
+    if not re.fullmatch(r"[0-9a-f]{64}", expected):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid witness pin for {rel}")
+    if not rel or Path(rel).is_absolute() or ".." in Path(rel).parts:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid source path {rel}")
+    return Path(header_input_path(root, f"{OWNER_WITNESS_ROOT}/{expected}/{rel}"))
+
+
+def owner_migration_witness_requests(root: str) -> list[tuple[str, str]]:
+    """Only the source/header pins explicitly named by current migration rows."""
+    path = Path(header_input_path(root, OWNER_MIGRATIONS_FILE))
+    if not path.is_file():
+        return []
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        tu_doc = json.loads(Path(header_input_path(root, TU_BUILD_FILE)).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: unreadable witness requests ({exc})") from exc
+    if (not isinstance(doc, dict) or doc.get("schema_version") != 1 or
+            not isinstance(doc.get("migrations"), list)):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: schema_version 1 migrations expected")
+    tus = {str(t.get("id")): t for t in tu_doc.get("tus") or []}
+    requests: set[tuple[str, str]] = set()
+    for index, row in enumerate(doc["migrations"]):
+        if not isinstance(row, dict) or not isinstance(row.get("owner"), dict):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid witness owner {index}")
+        owner = row["owner"]
+        tu = tus.get(str(owner.get("tu") or ""))
+        source = str((tu or {}).get("path") or "")
+        rel = str(owner.get("path") or "")
+        local_h = f"src/{(tu or {}).get('unit')}/{Path(source).stem}.h"
+        if not source or rel not in (source, local_h):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid witness owner path {rel}")
+        pairs = [(rel, str(owner.get("source_sha256") or ""))]
+        if owner.get("tu_source_sha256"):
+            pairs.append((source, str(owner["tu_source_sha256"])))
+        asm = row.get("asm_identity")
+        if asm:
+            if not isinstance(asm, dict) or asm.get("tu") != owner.get("tu"):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid ASM witness owner {index}")
+            pairs.append((source, str(asm.get("source_sha256") or "")))
+        for source_path, expected in pairs:
+            owner_migration_witness_path(root, source_path, expected)
+            requests.add((source_path, expected))
+    exports_path = Path(header_input_path(root, EXPORTS_FILE))
+    if exports_path.is_file():
+        exports = json.loads(exports_path.read_text(encoding="utf-8"))
+        for row in exports.get("exports") or []:
+            spec = row.get("source_owner")
+            if spec is None:
+                continue
+            if not isinstance(spec, dict):
+                raise CanonError(f"{EXPORTS_FILE}: invalid source_owner witness")
+            tu = tus.get(str(row.get("tu") or ""))
+            source = str((tu or {}).get("path") or "")
+            rel = str(spec.get("path") or "")
+            local_h = f"src/{(tu or {}).get('unit')}/{Path(source).stem}.h"
+            if not source or rel not in (source, local_h):
+                raise CanonError(f"{EXPORTS_FILE}: invalid source_owner witness path {rel}")
+            expected = str(spec.get("sha256") or "")
+            owner_migration_witness_path(root, rel, expected)
+            requests.add((rel, expected))
+    return sorted(requests)
+
+
+def owner_migration_witness(root: str, rel: str, expected: str,
+                            label: str) -> tuple[str, dict]:
+    """Recover the exact file a migration pinned, without moving its pin.
+
+    A candidate can add unrelated declarations/functions to an owner file. Its
+    old whole-file hash remains provenance: only a locally available file that
+    reproduces that hash can witness the entity comparison below. Look at the
+    named path and retained snapshot copy in the candidate and tool checkout,
+    then at bounded Git history
+    of that same path; never discover witnesses by scanning generated trees.
+    """
+    if not re.fullmatch(r"[0-9a-f]{64}", expected):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid {label} pin for {rel}")
+    if Path(rel).is_absolute() or ".." in Path(rel).parts:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid source path {rel}")
+    roots = list(dict.fromkeys((os.path.abspath(root),
+                               str(Path(__file__).resolve().parent.parent))))
+    live_path = Path(root) / rel
+    live_sha = hashlib.sha256(live_path.read_bytes()).hexdigest()
+
+    def matched(data: bytes, witness: str) -> tuple[str, dict] | None:
+        if hashlib.sha256(data).hexdigest() != expected:
+            return None
+        try:
+            raw = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: non-UTF-8 witness for {rel}") from exc
+        return raw, {"source": rel, "source_sha256": expected,
+                     "current_source_sha256": live_sha, "witness": witness}
+
+    for tree in roots:
+        full = Path(tree) / rel
+        if full.is_file():
+            found = matched(full.read_bytes(), str(full))
+            if found:
+                return found
+        retained = owner_migration_witness_path(tree, rel, expected)
+        if retained.is_file():
+            if retained.is_symlink():
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: retained witness is a symlink for {rel}")
+            found = matched(retained.read_bytes(), str(retained))
+            if not found:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: retained witness hash mismatch for {rel}")
+            return found
+    seen: set[tuple[str, str]] = set()
+    for tree in roots:
+        code, top = run_bounded(["git", "rev-parse", "--show-toplevel"], tree)
+        if code:
+            continue
+        repo = top.strip()
+        try:
+            git_path = (Path(tree) / rel).relative_to(Path(repo)).as_posix()
+        except ValueError:
+            continue
+        if (repo, git_path) in seen:
+            continue
+        seen.add((repo, git_path))
+        code, revisions = run_bounded(
+            ["git", "log", "--format=%H", "-n64", "--all", "--", git_path], repo)
+        if code:
+            continue
+        for revision in [""] + revisions.split():
+            spec = f"{revision}:{git_path}"
+            code, raw = run_bounded(["git", "show", spec], repo)
+            if code:
+                continue
+            found = matched(raw.encode("utf-8"), f"git {spec}")
+            if found:
+                return found
+    raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {label} pin mismatch for {rel}; "
+                     "no local exact-hash witness is available")
+
+
+def owner_migration_entity(raw: str, key: tuple[str, str]) -> "Scanned":
+    """A unique migrated declaration, preserving its complete type layout."""
+    matches = [d for d in scan_declarations(raw)
+               if (d.namespace, d.name) == key]
+    if len(matches) != 1:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: no unique owner declaration for {key[1]}")
+    return matches[0]
+
+
+def owner_migration_context(raw: str) -> tuple:
+    """Preprocessing context is not an unrelated source addition.
+
+    Keep directives (including guards, packing and macro definitions) exact as
+    preprocessing tokens. Declaration equality alone cannot establish layout
+    when a macro or conditional around it changed.
+    """
+    import tu_edit
+    return tuple(tuple(tu_edit.c_tokens(item.text(raw)))
+                 for item in tu_edit.scan(raw) if item.kind == "pp")
+
+
+def unchanged_owner_definition(before: str, after: str, key: tuple[str, str]) -> bool:
+    """The same uniquely defined C symbol, with its exact source entity."""
+    import tu_edit
+    def definitions(raw):
+        view = mask_source(raw)[0]
+        if key[1] not in defined_names(view, split_top_level(view)):
+            return []
+        parsed = tu_edit.TU(raw)
+        block = parsed.by_name.get(key[1])
+        if block is not None and block.state == "c":
+            return [parsed.text[block.core_start:block.core_end]]
+        found = []
+        for item in parsed.items:
+            if item.kind != "decl":
+                continue
+            text = item.text(parsed.text)
+            view = mask_source(text)[0]
+            if key[1] in defined_names(view, split_top_level(view)):
+                found.append(text)
+        return found
+    a, b = definitions(before), definitions(after)
+    return (len(a) == 1 and len(b) == 1 and tu_edit.same_code(a[0], b[0]) and
+            owner_migration_context(before) == owner_migration_context(after))
+
+
+def reviewed_owner_migration_updates(root: str, authority_root: str,
+                                     corrections: list[dict],
+                                     migrations: dict | None = None) -> tuple[dict, list[dict]]:
+    """Carry an already reviewed owner declaration into normal regeneration.
+
+    A source correction does not rewrite a historical owner pin by itself.
+    Validate its ordinary receipt, require the exact owner entity before and
+    after, then retain the complete previous migration alongside the receipt.
+    Callers install this returned config before harvest and keep all ordinary
+    compiler, source eligibility, gate, audit and manual review requirements.
+    """
+    import tu_edit
+    path = Path(header_input_path(root, OWNER_MIGRATIONS_FILE))
+    doc = migrations if migrations is not None else json.loads(path.read_text(encoding="utf-8"))
+    if (doc.get("schema_version") != 1 or
+            not isinstance(doc.get("migrations"), list)):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: schema_version 1 migrations expected")
+    result = copy.deepcopy(doc)
+    updates = []
+    seen = {}
+    for correction_row in corrections:
+        metadata = correction_row.get("correction") or {}
+        if correction_row.get("role") != "owner_source_correction" or \
+                metadata.get("schema") != "reviewed-source-correction/1":
+            continue
+        if metadata.get("kind") == "owner_export":
+            continue  # unchanged owner source has no migration postimage to replace
+        owner_path = correction_row.get("path")
+        matching = [row for row in result["migrations"]
+                    if (row.get("owner") or {}).get("path") == owner_path]
+        if not matching:
+            continue
+        correction_id = metadata.get("id")
+        if not isinstance(correction_id, str) or not correction_id:
+            raise CanonError("owner correction lacks an operation id")
+        receipt_pin = hashlib.sha256(json.dumps(correction_row, sort_keys=True,
+            separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+        if correction_id in seen:
+            if seen[correction_id] != receipt_pin:
+                raise CanonError("owner correction id has conflicting receipt bytes")
+            continue
+        seen[correction_id] = receipt_pin
+        try:
+            receipt = tu_edit.validate_reviewed_source_correction(authority_root, correction_row)
+            before = tu_edit._copy_bytes(Path(authority_root), correction_row["base"]["copy"],
+                correction_row["base"]["sha256"], "owner correction before").decode("utf-8")
+            after = tu_edit._copy_bytes(Path(authority_root), correction_row["result"]["copy"],
+                correction_row["result"]["sha256"], "owner correction after").decode("utf-8")
+        except Exception as exc:
+            raise CanonError(f"owner correction {correction_id}: invalid ordinary receipt: {exc}") from exc
+        live = Path(root, owner_path).read_text(encoding="utf-8")
+        if owner_migration_context(before) != owner_migration_context(after) or \
+                owner_migration_context(after) != owner_migration_context(live):
+            raise CanonError(f"owner correction {correction_id}: preprocessing context differs")
+        for row in matching:
+            key = (row["namespace"], row["name"])
+            if (metadata.get("operation") or {}).get("owner_tu") != row["owner"].get("tu"):
+                raise CanonError(f"owner correction {correction_id}: owner TU differs for {key[1]}")
+            original_decl = owner_migration_entity(before, key)
+            corrected_decl = owner_migration_entity(after, key)
+            live_decl = owner_migration_entity(live, key)
+            if (corrected_decl.kind != original_decl.kind or
+                    corrected_decl.defined != original_decl.defined or
+                    corrected_decl.kind != live_decl.kind or
+                    corrected_decl.defined != live_decl.defined or
+                    not tu_edit.same_code(corrected_decl.text, live_decl.text)):
+                raise CanonError(f"owner correction {correction_id}: owner entity identity differs for {key[1]}")
+            unchanged = tu_edit.same_code(original_decl.text, corrected_decl.text)
+            defining_witness = None
+            if unchanged:
+                # A type refinement in this shared owner header also changes
+                # its whole-file hash for an unchanged extern. Retain that old
+                # header pin and supply the genuine defining-TU witness the
+                # existing ordinary ownership guard requires.
+                if key[0] != "ordinary" or row.get("asm_identity") or \
+                        row["owner"].get("tu_source_sha256") or not owner_path.endswith(".h"):
+                    continue
+                tu_doc = json.loads(Path(authority_root, TU_BUILD_FILE).read_text())
+                source_tu = next((t for t in tu_doc.get("tus") or []
+                                  if t.get("id") == row["owner"]["tu"]), None)
+                staged_doc = json.loads(Path(header_input_path(root, TU_BUILD_FILE)).read_text())
+                staged_tu = next((t for t in staged_doc.get("tus") or []
+                                  if t.get("id") == row["owner"]["tu"]), None)
+                if source_tu is None or source_tu != staged_tu:
+                    raise CanonError(f"owner correction {correction_id}: defining TU record differs for {key[1]}")
+                source_path = source_tu["path"]
+                source_before = Path(authority_root, source_path).read_text(encoding="utf-8")
+                source_after = Path(root, source_path).read_text(encoding="utf-8")
+                if not unchanged_owner_definition(source_before, source_after, key):
+                    raise CanonError(f"owner correction {correction_id}: no unchanged genuine C definition for {key[1]}")
+                defining_witness = dict(source_sha256=hashlib.sha256(source_before.encode()).hexdigest(),
+                    tu_record_sha256=hashlib.sha256(json.dumps(source_tu, sort_keys=True,
+                        separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+                    tu_record_witness=owner_tu_record_witness(source_tu))
+            if ordinary_candidate_c(corrected_decl.text) is not None:
+                raise CanonError(f"owner correction {correction_id}: nonordinary declaration {key[1]}")
+            history = row.get("correction_history") or []
+            prior = [item for item in history if item.get("id") == correction_id]
+            if prior:
+                if (len(prior) != 1 or prior[0].get("correction_sha256") != receipt_pin or
+                        (not unchanged and row["owner"].get("source_sha256") != correction_row["result"]["sha256"]) or
+                        normalize_ws(row["canon"]) != normalize_ws(corrected_decl.canon)):
+                    raise CanonError(f"owner correction {correction_id}: conflicting already-applied migration")
+                continue
+            if hashlib.sha256(before.encode()).hexdigest() == row["owner"]["source_sha256"]:
+                witness = before
+            else:
+                witness, _proof = owner_migration_witness(root, owner_path,
+                    row["owner"]["source_sha256"], f"prior owner correction {key[1]}")
+            witness_decl = owner_migration_entity(witness, key)
+            if (normalize_ws(original_decl.canon) != normalize_ws(row["canon"]) or
+                    not tu_edit.same_code(witness_decl.text, original_decl.text) or
+                    owner_migration_context(witness) != owner_migration_context(before)):
+                raise CanonError(f"owner correction {correction_id}: original owner pin/entity differs for {key[1]}")
+            old = copy.deepcopy(row)
+            old_sha = hashlib.sha256(json.dumps(old, sort_keys=True,
+                separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+            if defining_witness:
+                row["owner"]["tu_source_sha256"] = defining_witness["source_sha256"]
+                row["owner"]["tu_record_sha256"] = defining_witness["tu_record_sha256"]
+                row["owner"]["tu_record_witness"] = defining_witness["tu_record_witness"]
+            else:
+                row["canon"] = corrected_decl.canon
+                row["owner"]["source_sha256"] = correction_row["result"]["sha256"]
+            # A correction of an ordinary defining .c must also replace that
+            # explicit defining-source pin; a header correction leaves it alone.
+            if owner_path.endswith(".c") and row["owner"].get("tu_source_sha256"):
+                row["owner"]["tu_source_sha256"] = correction_row["result"]["sha256"]
+            row["correction_history"] = history + [dict(
+                schema="owner-migration-reviewed-correction/1", id=correction_id,
+                before_migration=old, before_migration_sha256=old_sha,
+                correction=copy.deepcopy(correction_row), correction_sha256=receipt_pin,
+                validated_receipt=receipt)]
+            updates.append(dict(namespace=key[0], name=key[1], owner_tu=row["owner"]["tu"],
+                owner_source=owner_path, before_migration_sha256=old_sha,
+                before_source_sha256=old["owner"]["source_sha256"],
+                after_source_sha256=row["owner"]["source_sha256"], correction_id=correction_id,
+                defining_source_witness=defining_witness))
+    return result, updates
+
+
+def reviewed_owner_export_updates(root: str, authority_root: str, corrections: list[dict],
+                                  exports: dict | None = None) -> tuple[dict, list[dict]]:
+    """Make reviewed source-only owner types available to their consumers.
+
+    Export metadata names exact source entities; it is not a generated-header
+    overlay. Retained-pool names remain subject to the migration guard in
+    source_bound_exports and cannot acquire fabricated historical provenance.
+    """
+    import tu_edit
+    path = Path(header_input_path(root, EXPORTS_FILE))
+    result = copy.deepcopy(exports if exports is not None else
+        json.loads(path.read_text(encoding="utf-8")) if path.is_file() else
+        {"schema_version": 1, "exports": []})
+    if not isinstance(result.get("exports"), list):
+        raise CanonError(f"{EXPORTS_FILE}: exports must be a list")
+    tus = {t["id"]: t for t in json.loads(Path(header_input_path(root, TU_BUILD_FILE)).read_text())["tus"]}
+    migrated = {(r["namespace"], r["name"]): r["owner"]["tu"] for r in
+                json.loads(Path(header_input_path(root, OWNER_MIGRATIONS_FILE)).read_text()).get("migrations", [])}
+    updates = []
+    for row in corrections:
+        metadata = row.get("correction") or {}
+        if row.get("role") != "owner_source_correction" or \
+                metadata.get("schema") != "reviewed-source-correction/1":
+            continue
+        if metadata.get("kind") == "owner_export":
+            receipt = tu_edit.validate_reviewed_source_correction(authority_root, row)
+            export = receipt["export"]
+            conflicts = [item for item in result["exports"] if item.get("tu") == export["tu"]
+                         and set(item.get("names") or []).intersection(export["names"])]
+            if conflicts and conflicts != [export]:
+                raise CanonError("unchanged owner export conflicts with a current owner row")
+            if not conflicts:
+                result["exports"].append(copy.deepcopy(export))
+                updates.append(dict(owner_tu=export["tu"], owner_source=row["path"],
+                    names=export["names"], correction_id=metadata["id"], zero_credit=True,
+                    unchanged_owner_export=True))
+            continue
+        operation = metadata.get("operation") or {}
+        owner_tu = operation.get("owner_tu")
+        owner = tus.get(owner_tu)
+        if owner is None:
+            raise CanonError("reviewed owner export has no original TU record")
+        local_h = str(Path(owner["path"]).with_suffix(".h"))
+        if row["path"] not in (owner["path"], local_h):
+            raise CanonError("reviewed owner export source is not a source/header of its TU")
+        try:
+            receipt = tu_edit.validate_reviewed_source_correction(authority_root, row)
+        except Exception as exc:
+            raise CanonError(f"reviewed owner export receipt is invalid: {exc}") from exc
+        candidates = [(d["namespace"], d["name"]) for d in receipt.get("export_declarations", [])]
+        if operation.get("owner_type"):
+            candidates.append(("type", operation["owner_type"]))
+        for change in operation.get("changes") or []:
+            for item in scan_declarations(change.get("after_text") or ""):
+                if (item.kind in TYPE_KINDS and "{" in item.canon) or item.kind == KIND_EXTERN_DATA:
+                    candidates.append((item.namespace, item.name))
+        if not candidates:
+            continue
+        try:
+            after = tu_edit._copy_bytes(Path(authority_root), row["result"]["copy"],
+                row["result"]["sha256"], "owner export postimage").decode("utf-8")
+        except Exception as exc:
+            raise CanonError(f"reviewed owner export receipt is invalid: {exc}") from exc
+        live = Path(root, row["path"]).read_text(encoding="utf-8")
+        consumers = sorted(set(metadata.get("affected_tus") or []) - {owner_tu})
+        if not consumers:
+            continue
+        for key in sorted(set(candidates)):
+            declared, current = (owner_migration_entity(text, key) for text in (after, live))
+            if (declared.kind != current.kind or declared.defined != current.defined or
+                    not tu_edit.same_code(declared.text, current.text) or
+                    owner_migration_context(after) != owner_migration_context(live) or
+                    ordinary_candidate_c(current.text) is not None):
+                raise CanonError(f"reviewed owner export lacks its exact complete entity {key[1]}")
+            source_owner = dict(path=row["path"], sha256=row["result"]["sha256"],
+                                declarations=[dict(namespace=key[0], name=key[1])])
+            if declared.kind == KIND_EXTERN_DATA:
+                source_owner["asm_data"] = {key[1]: original_asm_data_owner(root, owner_tu, key[1])}
+            elif declared.kind not in TYPE_KINDS or "{" not in declared.canon:
+                raise CanonError(f"reviewed owner export is not a complete type or original ASM datum {key[1]}")
+            existing = [item for item in result["exports"] if key[1] in item.get("names", [])]
+            if any(item.get("tu") != owner_tu for item in existing):
+                raise CanonError(f"reviewed owner export {key[1]} has another explicit owner")
+            if existing and migrated.get(key) == owner_tu:
+                continue                 # the retained-pool owner is already explicit
+            pinned = [item for item in existing if item.get("source_owner")]
+            if pinned:
+                actual = pinned[0]["source_owner"] if len(pinned) == 1 else {}
+                if ({k: v for k, v in actual.items() if k != "asm_data"} !=
+                        {k: v for k, v in source_owner.items() if k != "asm_data"} or
+                        set(actual.get("asm_data", {})) != set(source_owner.get("asm_data", {}))):
+                    raise CanonError(f"reviewed owner export {key[1]} has a different source pin")
+                for name, identity in actual.get("asm_data", {}).items():
+                    verify_asm_data_owner(root, owner_tu, name, identity)
+                continue
+            exported = dict(tu=owner_tu, names=[key[1]], consumers=consumers,
+                reason=f"Export the source-bound owner declaration carried by reviewed correction {metadata.get('id')}.",
+                source_owner=source_owner,
+                reviewed_correction=dict(correction=copy.deepcopy(row), validated_receipt=receipt))
+            result["exports"].append(exported)
+            updates.append(dict(owner_tu=owner_tu, owner_source=row["path"], namespace=key[0],
+                                name=key[1], consumers=consumers, source_sha256=row["result"]["sha256"]))
+    return result, updates
+
+
+def owner_proposal_export_updates(root: str, applied: list[dict], target_tu: str,
+                                  exports: dict | None = None,
+                                  metadata_root: str | None = None) -> tuple[dict, list[dict]]:
+    """Export owner types after the normal proposal stager validated/applied them.
+
+    This consumes its real applied rows, not fabricated receipts. Review and
+    publication callers must first call apply_reviewed_owner_proposals, which
+    revalidates the independently reviewed manifest and exact source entities.
+    """
+    path = Path(header_input_path(root, EXPORTS_FILE))
+    result = copy.deepcopy(exports if exports is not None else
+        json.loads(path.read_text()) if path.is_file() else {"schema_version": 1, "exports": []})
+    if not isinstance(result.get("exports"), list):
+        raise CanonError(f"{EXPORTS_FILE}: exports must be a list")
+    metadata_root = metadata_root or root
+    tus = {t["id"]: t for t in json.loads(Path(metadata_root, TU_BUILD_FILE).read_text())["tus"]}
+    updates = []
+    for item in applied:
+        owner = tus.get(item.get("owner_tu"))
+        owner_path, owner_type = item.get("owner_path"), item.get("owner_type")
+        if owner is None or owner_path not in (owner["path"], str(Path(owner["path"]).with_suffix(".h"))):
+            raise CanonError("applied owner proposal export has an invalid source owner")
+        if target_tu == item["owner_tu"]:
+            continue
+        raw = Path(root, owner_path).read_text(encoding="utf-8")
+        if hashlib.sha256(raw.encode()).hexdigest() != item.get("source_sha256"):
+            raise CanonError("applied owner proposal source changed before export")
+        entity = owner_migration_entity(raw, ("type", owner_type))
+        if entity.kind not in TYPE_KINDS or "{" not in entity.canon or \
+                ordinary_candidate_c(entity.text) is not None:
+            raise CanonError("applied owner proposal is not a complete ordinary type")
+        source_owner = dict(path=owner_path, sha256=item["source_sha256"],
+                            declarations=[dict(namespace="type", name=owner_type)])
+        matching = [row for row in result["exports"] if owner_type in row.get("names", [])]
+        if any(row.get("tu") != item["owner_tu"] for row in matching):
+            raise CanonError("applied owner proposal export has a different explicit TU owner")
+        pinned = [row for row in matching if row.get("source_owner")]
+        if pinned:
+            if len(pinned) != 1 or pinned[0]["source_owner"] != source_owner:
+                raise CanonError("applied owner proposal export has a different source pin")
+            continue
+        # An ordinary existing migration already establishes the unique owner.
+        migrations = json.loads(Path(header_input_path(metadata_root, OWNER_MIGRATIONS_FILE)).read_text()).get("migrations", [])
+        if matching and any(row.get("namespace") == "type" and row.get("name") == owner_type and
+                            row.get("owner", {}).get("tu") == item["owner_tu"] for row in migrations):
+            continue
+        row = dict(tu=item["owner_tu"], names=[owner_type], consumers=[target_tu],
+            reason=f"Export the complete owner type in independently reviewed proposal {item.get('id')}.",
+            source_owner=source_owner, reviewed_owner_proposal=copy.deepcopy(item))
+        result["exports"].append(row)
+        updates.append(dict(owner_tu=item["owner_tu"], owner_source=owner_path,
+                            name=owner_type, source_sha256=item["source_sha256"], consumer=target_tu))
+    return result, updates
+
+
+def owner_tu_record_witness(tu: dict) -> dict:
+    """Retain the full original record; only generated data ownership is metadata."""
+    identity = {key: value for key, value in tu.items() if key != "data_ownership"}
+    raw = json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return dict(schema="header-owner-tu-record-witness/1", record=copy.deepcopy(tu),
+                original_identity_sha256=hashlib.sha256(raw).hexdigest())
+
+
+def verify_owner_tu_record(tu: dict, spec: dict, label: str) -> None:
+    """Bind live immutable identity to an exact-hash historical full-record witness."""
+    expected = spec.get("tu_record_sha256")
+    raw = json.dumps(tu, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    witness = spec.get("tu_record_witness")
+    if witness is None:
+        if hashlib.sha256(raw).hexdigest() != expected:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {label} TU record pin mismatch")
+        return
+    if (not isinstance(witness, dict) or set(witness) != {
+            "schema", "record", "original_identity_sha256"} or
+            witness.get("schema") != "header-owner-tu-record-witness/1" or
+            not isinstance(witness.get("record"), dict)):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid {label} TU record witness")
+    historical = witness["record"]
+    historical_raw = json.dumps(historical, sort_keys=True, separators=(",", ":"),
+                                ensure_ascii=False).encode()
+    if hashlib.sha256(historical_raw).hexdigest() != expected:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {label} historical TU record pin mismatch")
+    original_identity = owner_tu_record_witness(historical)["original_identity_sha256"]
+    if (witness["original_identity_sha256"] != original_identity or
+            owner_tu_record_witness(tu)["original_identity_sha256"] != original_identity):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {label} original TU identity changed")
+
+
+def apply_owner_migrations(root: str, pool: dict, order: dict, doc: dict | None = None
+                           ) -> tuple[list[dict], dict[tuple[str, str], str],
+                                      dict[tuple[str, str], str]]:
+    """Transfer explicitly pinned retained declarations to their live TU owners.
+
+    The historical promoted rows remain in config/header-promoted.json. A migration
+    is accepted only when its row, current declaration, owner TU and (for an
+    assembly-backed prototype) original symbol/scaffold identity all match pins.
+    Whole-file source hashes witness the unchanged entity, rather than refusing
+    additions to unrelated entities in a candidate's copy of the owner file.
+    """
+    path = header_input_path(root, OWNER_MIGRATIONS_FILE)
+    if doc is None and not os.path.isfile(path):
+        return [], {}, {}
+    try:
+        if doc is None:
+            with open(path, encoding="utf-8") as fh:
+                doc = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: unreadable ({exc})") from exc
+    if not isinstance(doc, dict) or doc.get("schema_version") != 1:
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: schema_version 1 expected")
+    rows = doc.get("migrations")
+    if not isinstance(rows, list):
+        raise CanonError(f"{OWNER_MIGRATIONS_FILE}: `migrations` must be a list")
+    with open(header_input_path(root, TU_BUILD_FILE), encoding="utf-8") as fh:
+        tu_doc = json.load(fh)
+    tus = {str(t.get("id")): t for t in tu_doc.get("tus") or []}
+    promoted = load_promoted(root)
+    promoted_doc = json.load(open(header_input_path(root, PROMOTED_FILE), encoding="utf-8"))
+    promoted_rows = promoted_doc.get("declarations") or []
+    retired_doc = json.load(open(header_input_path(root, RETIRED_FILE), encoding="utf-8"))
+    retired_rows = retired_doc.get("declarations") or []
+    out: list[dict] = []
+    asm_owned: dict[tuple[str, str], str] = {}
+    source_owned: dict[tuple[str, str], str] = {}
+    seen: set[tuple[str, str]] = set()
+
+    for index, row in enumerate(rows):
+        key = (str(row.get("namespace") or ""), str(row.get("name") or ""))
+        old = row.get("promoted") or {}
+        owner = row.get("owner") or {}
+        if not key[0] or not key[1] or key in seen:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid/duplicate migration {index}")
+        seen.add(key)
+        prior_rows = row.get("prior_records")
+        pinned: list[tuple[str, dict]] = []
+        if prior_rows is not None:
+            if not isinstance(prior_rows, list) or not prior_rows:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid prior_records for {key[1]}")
+            for prior in prior_rows:
+                ledger = prior.get("ledger")
+                source_rows = promoted_rows if ledger == "promoted" else retired_rows if ledger == "retired" else None
+                if source_rows is None:
+                    raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid prior ledger for {key[1]}")
+                matches = [p for p in source_rows if p.get("namespace") == key[0]
+                           and p.get("name") == key[1] and p.get("file") == prior.get("file")
+                           and p.get("index") == prior.get("index")]
+                if len(matches) != 1:
+                    raise CanonError(f"{OWNER_MIGRATIONS_FILE}: prior row identity mismatch for {key[1]}")
+                raw = json.dumps(matches[0], sort_keys=True, separators=(",", ":"),
+                                 ensure_ascii=False).encode()
+                if hashlib.sha256(raw).hexdigest() != prior.get("record_sha256"):
+                    raise CanonError(f"{OWNER_MIGRATIONS_FILE}: prior row hash mismatch for {key[1]}")
+                pinned.append((ledger, matches[0]))
+        else:
+            matches = [p for p in promoted_rows
+                       if p.get("namespace") == key[0] and p.get("name") == key[1]
+                       and p.get("file") == old.get("file") and p.get("index") == old.get("index")]
+            if len(matches) != 1:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: migration {index} does not pin one retained promoted row")
+            raw = json.dumps(matches[0], sort_keys=True, separators=(",", ":"),
+                             ensure_ascii=False).encode()
+            if hashlib.sha256(raw).hexdigest() != old.get("record_sha256"):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: retained promoted row hash mismatch for {key[1]}")
+            pinned.append(("promoted", matches[0]))
+        record = next((p for p in promoted if p.file == old.get("file")
+                       and p.index == old.get("index") and (p.namespace, p.name) == key), None)
+        var = pool.get(key)
+        allowed_ids = {(p["file"], p["index"]) for _ledger, p in pinned}
+        actual_ids = set()
+        if var is not None:
+            actual_ids = {(d.file, d.index) for d in var.sources}
+            if actual_ids != allowed_ids:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {key[1]} has unpinned pool owners")
+        elif prior_rows is None:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: retained pool identity missing for {key[1]}")
+        tu_id = str(owner.get("tu") or "")
+        tu = tus.get(tu_id)
+        owner_path = str(owner.get("path") or "")
+        if tu is None or not owner_path or not os.path.isfile(os.path.join(root, owner_path)):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: migration {index} has no live owner source")
+        source_c = str(tu.get("path") or "")
+        local_h = f"src/{tu.get('unit')}/{Path(source_c).stem}.h"
+        if owner_path not in (source_c, local_h):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: {owner_path} is not a source/header of {tu_id}")
+        owner_raw, owner_proof = owner_migration_witness(
+            root, owner_path, str(owner.get("source_sha256") or ""), f"owner source {key[1]}")
+        source_raw = Path(root, source_c).read_text(encoding="utf-8")
+        source_proof = None
+        source_witness = owner_raw if owner_path == source_c else None
+        source_expected = owner.get("source_sha256") if owner_path == source_c else None
+        if owner.get("tu_source_sha256"):
+            source_expected = owner["tu_source_sha256"]
+            source_witness, source_proof = owner_migration_witness(
+                root, source_c, str(owner["tu_source_sha256"]), f"owner TU source {key[1]}")
+        if owner.get("tu_record_sha256"):
+            verify_owner_tu_record(tu, owner, f"owner {key[1]}")
+        with open(os.path.join(root, owner_path), encoding="utf-8") as fh:
+            live_raw = fh.read()
+        spelling = str(row.get("canon") or "")
+        pinned_decl = owner_migration_entity(owner_raw, key)
+        live_decl = owner_migration_entity(live_raw, key)
+        if any(normalize_ws(d.canon) != normalize_ws(spelling)
+               for d in (pinned_decl, live_decl)):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: live owner does not declare the retained spelling of {key[1]}")
+        import tu_edit
+        if (pinned_decl.kind != live_decl.kind or pinned_decl.defined != live_decl.defined
+                or not tu_edit.same_code(pinned_decl.text, live_decl.text)
+                or owner_migration_context(owner_raw) != owner_migration_context(live_raw)):
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: owner declaration/layout/context changed for {key[1]}")
+        owner_drift = hashlib.sha256(live_raw.encode()).hexdigest() != owner["source_sha256"]
+        source_drift = (source_witness is not None and
+                        hashlib.sha256(source_raw.encode()).hexdigest() != source_expected)
+        if source_drift:
+            if owner_migration_context(source_witness) != owner_migration_context(source_raw):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: owner TU preprocessing context changed for {key[1]}")
+        if (owner_drift or source_drift) and key[0] == "ordinary" and not row.get("asm_identity"):
+            # An extern in the pinned header is no evidence that this TU
+            # defines the object. Never relax a stale pin for that case.
+            if source_witness is None:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: unchanged definition of {key[1]} "
+                                 "needs a pinned owner TU source witness")
+            before = tu_edit.TU(source_witness)
+            after = tu_edit.TU(source_raw)
+            a_view = mask_source(source_witness)[0]
+            b_view = mask_source(source_raw)[0]
+            if (key[1] not in defined_names(a_view, split_top_level(a_view)) or
+                    key[1] not in defined_names(b_view, split_top_level(b_view))):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: live owner TU does not define {key[1]}; "
+                                 "owner reconciliation is required")
+
+            def definitions(parsed):
+                block = parsed.by_name.get(key[1])
+                if block is not None and block.state == "c":
+                    return [parsed.text[block.core_start:block.core_end]]
+                found = []
+                for item in parsed.items:
+                    if item.kind != "decl":
+                        continue
+                    text = item.text(parsed.text)
+                    view = mask_source(text)[0]
+                    if key[1] in defined_names(view, split_top_level(view)):
+                        found.append(text)
+                return found
+
+            original_defs, live_defs = definitions(before), definitions(after)
+            if (len(original_defs) != 1 or len(live_defs) != 1 or
+                    not tu_edit.same_code(original_defs[0], live_defs[0])):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: owner definition changed for {key[1]}")
+        asm = row.get("asm_identity")
+        if asm:
+            if key[0] != "ordinary" or asm.get("tu") != tu_id or asm.get("name") != key[1]:
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: invalid ASM identity for {key[1]}")
+            object_path = "config/objects/main.objects.json"
+            objects = json.load(open(os.path.join(root, object_path), encoding="utf-8"))
+            obj_tu = next((x for x in objects.get("tus", []) if x.get("id") == tu_id), None)
+            verify_owner_tu_record(tu, asm, f"original {key[1]}")
+            obj_hash = hashlib.sha256(json.dumps(obj_tu, sort_keys=True, separators=(",", ":"),
+                                                 ensure_ascii=False).encode()).hexdigest()
+            if obj_hash != asm.get("object_tu_record_sha256"):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: original object record pin mismatch for {key[1]}")
+            symbol = next((x for x in (obj_tu or {}).get("functions", [])
+                           if x.get("name") == key[1]), None)
+            expected = (asm.get("va"), asm.get("size"), asm.get("binding"))
+            actual = ((symbol or {}).get("va"), (symbol or {}).get("size"),
+                      (symbol or {}).get("binding"))
+            if actual != expected or source_c != tu.get("path"):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: original function identity mismatch for {key[1]}")
+            scaffold_witness, source_proof = owner_migration_witness(
+                root, source_c, str(asm.get("source_sha256") or ""), f"ASM scaffold source {key[1]}")
+            with open(os.path.join(root, source_c), encoding="utf-8") as fh:
+                scaffold = fh.read()
+            macro = re.compile(r'^\s*INCLUDE_ASM\("asm/[^"\n]*",\s*'
+                               + re.escape(key[1]) + r"\s*\);", re.M)
+            original_macros, live_macros = macro.findall(scaffold_witness), macro.findall(scaffold)
+            original_block = tu_edit.TU(scaffold_witness).by_name.get(key[1])
+            live_block = tu_edit.TU(scaffold).by_name.get(key[1])
+            if (len(original_macros) != 1 or len(live_macros) != 1 or
+                    original_block is None or live_block is None or
+                    original_block.state != "asm" or live_block.state != "asm" or
+                    original_block.conditional or live_block.conditional or
+                    not tu_edit.same_code(original_macros[0], live_macros[0]) or
+                    owner_migration_context(scaffold_witness) != owner_migration_context(scaffold)):
+                raise CanonError(f"{OWNER_MIGRATIONS_FILE}: no unique INCLUDE_ASM witness for {key[1]}")
+            asm_owned[key] = source_c
+        pool.pop(key, None)
+        order.pop(key, None)
+        source_owned[key] = source_c
+        display_prior = pinned[0][1]
+        out.append({"namespace": key[0], "name": key[1], "owner_tu": tu_id,
+                    "owner_source": owner_path, "promoted_file": display_prior["file"],
+                    "promoted_index": display_prior["index"],
+                    "prior_records": [{"ledger": ledger, "file": p["file"],
+                                       "index": p["index"]} for ledger, p in pinned],
+                    "asm_identity": asm,
+                    "source_witnesses": [p for p in (owner_proof, source_proof) if p]})
+    return out, asm_owned, source_owned
+
+
+def body_redeclared(homes: "Homes", key: tuple[str, str]) -> bool:
+    """`key` is a typedef that also defines a tag body, and a published TU that
+    includes `include/shared.h` declares it itself in the same spelling."""
+    var = homes.pool[key]
+    if key[0] != "type" or not any(p.split()[0] in ("struct", "union", "enum")
+                                   for p in var.refs.provides if " " in p):
+        return False
+    return any(SHARED_HEADER[len(TU_HEADER_ROOT) + 1:] in t.includes and same_spelling(t, key, var)
+               for t in homes.tus)
+
+
+def compute_homes(root: str, merged_by_domain, common,
+                  canon: dict[str, Decision] | None = None,
+                  static_names: set[str] | None = None,
+                  owner_migrations: dict | None = None,
+                  owner_exports: dict | None = None) -> Homes:
+    homes = Homes()
+    homes.pool, homes.order = build_pool(merged_by_domain, common)
+    migrated, asm_owned, source_owned = apply_owner_migrations(root, homes.pool, homes.order,
+                                                            owner_migrations)
+    homes.tus = published_tus(root)
+    export_owners = source_bound_exports(root, homes.pool, owner_exports, homes.tus)
+    for key, owner in export_owners.items():
+        if key in source_owned and source_owned[key] != owner:
+            raise CanonError(f"{EXPORTS_FILE}: source_owner conflicts with migration owner for {key[1]}")
+        source_owned[key] = owner
+    homes.owner_migrations = migrated
+
+    # Names the accepted pool already provides resolve a TU's identifier on their
+    # own; a published-TU declaration is wanted for a name nothing else provides.
+    pool_names: set[str] = set()
+    for key, var in homes.pool.items():
+        pool_names |= var.refs.provides
+        pool_names |= {n.strip() for n in key[1].split(",")}
+    published, published_order, declarers, homes.published_withheld = \
+        published_tu_declarations(root, homes, canon or {}, set(static_names or ()),
+                                  asm_owned, source_owned)
+    homes.pool.update(published)
+    homes.order.update(published_order)
+    homes.published = declarers
+
+    provider: dict[str, tuple[str, str]] = {}
+    tag_of: dict[str, set[tuple[str, str]]] = {}
+    for key in sorted(homes.pool, key=lambda k: homes.order[k]):
+        var = homes.pool[key]
+        for name in sorted(var.refs.provides) + [n.strip() for n in key[1].split(",")]:
+            provider.setdefault(name, key)
+        if key[0] == "tag" and key not in homes.published:
+            # a published-TU tag is pulled by a real need, never because an
+            # accepted typedef forward-declares it
+            tag_of.setdefault(key[1].split()[-1], set()).add(key)
+
+    exports = published_exports(root, homes.tus, owner_exports)
+    for tu in homes.tus + exports:
+        # an export names the owner's own declaration outright, even a tag the
+        # pool only forward-declares (`typedef struct X X;` + the owner's body)
+        exporting = hasattr(tu, "export_skip")
+        want = {key for key in homes.pool
+                if any(n.strip() in tu.ids
+                       and not (key in homes.published and n.strip() in pool_names
+                                and not exporting)
+                       for n in (key[1].split()[-1] if key[0] == "tag" else key[1]).split(","))}
+        changed = True
+        while changed:
+            changed = False
+            for key in list(want):
+                var = homes.pool[key]
+                pull = var.refs.needs | var.refs.needs_complete | var.refs.provides
+                for name in pull:
+                    # a typedef to a tag is a forward declaration; a member of
+                    # that type needs the tag's own definition
+                    for tag_key in tag_of.get(name, ()):
+                        if tag_key not in want:
+                            want.add(tag_key)
+                            changed = True
+                for name in var.refs.needs | var.refs.needs_complete:
+                    other = provider.get(name)
+                    if other is not None and other not in want:
+                        if other in homes.published and key in tu.local:
+                            # the TU spells `key` itself; what the published
+                            # spelling needs is no need of this TU
+                            continue
+                        want.add(other)
+                        changed = True
+        # a TU that declares or defines a published-TU name has its own
+        tu.want = {key for key in want - tu.local - getattr(tu, "export_skip", set())
+                   if tu.c not in homes.published.get(key, ())
+                   and not (key[0] == "ordinary" and key[1] in getattr(tu, "statics", ()))}
+        for key in tu.want:
+            homes.consumers.setdefault(key, set()).add(tu.c)
+        for key in tu.local:
+            if key in homes.pool and normalize_ws(tu.local_canon[key]) != \
+                    normalize_ws(homes.pool[key].canon):
+                # A compatible typedef forward does not compete with its
+                # witnessed owner's complete type. Keep genuine divergent
+                # bodies and struct/union/tag mismatches under the old guard.
+                if key in source_owned and compatible_forward_typedef(
+                        homes.pool[key], key, tu.local_canon[key].rstrip(';') + ';',
+                        witnessed_owner=True):
+                    continue
+                homes.divergent.setdefault(key, []).append(tu.c)
+        for key in homes.pool:
+            if key[0] != "ordinary":
+                continue
+            if {n.strip() for n in key[1].split(",")} <= tu.defines:
+                homes.definers.setdefault(key, []).append(tu.c)
+
+    by_path = {tu.c: tu for tu in homes.tus}
+    # A type only published TU source declares is defined by the TU that declares it.
+    for key, tus in homes.published.items():
+        if key[0] != "ordinary":
+            homes.definers[key] = list(tus)
+    for key, owner_source in asm_owned.items():
+        owners = homes.published.get(key, [])
+        if owners != [owner_source]:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: ASM owner declaration did not resolve uniquely for {key[1]}")
+        homes.definers[key] = owners
+    for key, owner_source in source_owned.items():
+        owners = homes.published.get(key, [])
+        if owners != [owner_source]:
+            raise CanonError(f"{OWNER_MIGRATIONS_FILE}: live source-owner declaration did not resolve uniquely for {key[1]}")
+        homes.definers[key] = owners
+    # Several TUs repeating one forward typedef (`typedef struct X X;`) with the
+    # identical spelling do not compete: when a TU reads the name from the
+    # header of the one TU that also declares the tag's body, that TU defines
+    # the name and its header keeps the typedef ("the definition wins").
+    for key, tus in homes.published.items():
+        tag = forward_typedef_tag(homes.pool[key]) if len(tus) > 1 else None
+        if tag is None or key in homes.divergent:
+            continue
+        # the body may itself be withheld from every header (a macro bound, say)
+        owners = [t for t in tus if tag in by_path[t].local
+                  and "{" in by_path[t].local_canon[tag]]
+        if len(owners) == 1 and relying_includers(
+                homes, by_path[owners[0]].header[len(TU_HEADER_ROOT) + 1:], key):
+            homes.definers[key] = owners
+
+    for key, cons in homes.consumers.items():
+        defs = homes.definers.get(key, [])
+        if key in homes.divergent:
+            # incompatible spellings in the tree: never shared, every TU keeps
+            # the declaration it was accepted with (docs/header-canon.md). The
+            # defining TU's header is the exception: only a TU that includes it
+            # would see both spellings, so a divergent caller view that does not
+            # include it leaves "the definition wins" standing.
+            # The exception never applies when the defining TU itself spells the
+            # name differently (a prelude declaration or its definition head):
+            # the header would then contradict the definition.
+            header = None
+            if len(defs) == 1 and not (len(cons) == 1 and not set(defs) - cons):
+                definer = by_path[defs[0]]
+                own = definer.defined_canon.get(key)
+                if own is not None and normalize_ws(own) != normalize_ws(homes.pool[key].canon):
+                    if definer.c not in homes.divergent[key]:
+                        homes.divergent[key].append(definer.c)
+                elif definer.c not in homes.divergent[key]:
+                    header = definer.header[len(TU_HEADER_ROOT) + 1:]
+            if header is not None and not any(header in by_path[f].includes
+                                              for f in homes.divergent[key]):
+                homes.assign[key] = ("tu", defs[0])
+            else:
+                homes.assign[key] = ("local", None)
+        elif key in homes.published and len(defs) != 1:
+            # declared by several TUs that each keep their own copy and include the
+            # shared header: no generated header may repeat it
+            var = homes.pool[key]
+            published_tu_rows = [by_path[path] for path in homes.published[key]
+                                  if path in by_path]
+            forward_only = (var.canon_tu is not None
+                            and len(published_tu_rows) == len(homes.published[key])
+                            and all(key in tu.local
+                                    and compatible_forward_typedef(
+                                        var, key, tu.local_canon[key])
+                                    for tu in published_tu_rows))
+            if forward_only:
+                # A compatible local typedef forward does not compete with a
+                # complete canonical `tu_include` definition. Keep the full
+                # source-backed type in shared.h for consumers that dereference
+                # it; the identical forward spelling may remain TU-local.
+                homes.assign[key] = ("shared", None)
+            else:
+                homes.assign[key] = ("local", None)
+        elif len(cons) == 1 and not (defs and set(defs) - cons):
+            homes.assign[key] = ("local", sorted(cons)[0])
+        elif len(defs) == 1:
+            homes.assign[key] = ("tu", defs[0])
+        elif key[0] == "tag" and any(same_spelling(t, key, homes.pool[key]) for t in homes.tus):
+            # every TU includes shared.h, so a copy there would be a second body
+            # of the tag in each TU that declares it: the one TU that declares
+            # the body defines it, otherwise every TU keeps its own
+            owners = [t.c for t in homes.tus if same_spelling(t, key, homes.pool[key])]
+            homes.assign[key] = ("tu", owners[0]) if len(owners) == 1 \
+                and not includes_own_header(by_path[owners[0]]) else ("local", None)
+        elif body_redeclared(homes, key):
+            # the same for a typedef that carries the body
+            # (`typedef struct X {...} X;`), declared by a TU that includes
+            # shared.h: a shared copy would be `redefinition of struct X` there
+            owners = [t.c for t in homes.tus if same_spelling(t, key, homes.pool[key])]
+            homes.assign[key] = ("tu", owners[0]) if len(owners) == 1 \
+                and not includes_own_header(by_path[owners[0]]) else ("local", None)
+        else:
+            homes.assign[key] = ("shared", None)
+
+    # A shared declaration that names a forward typedef no other home puts in
+    # shared.h (every consumer declares it itself, or it is homed elsewhere)
+    # carries that typedef with it, so shared.h never uses a name before it
+    # declares it. Only an identical spelling may be repeated, so a name any
+    # published TU spells differently is left alone.
+    shared_have: set[str] = set()
+    for key, (kind, _owner) in homes.assign.items():
+        if kind == "shared":
+            shared_have |= homes.pool[key].refs.provides | {n.strip() for n in key[1].split(",")}
+    changed = True
+    while changed:
+        changed = False
+        for key, (kind, _owner) in sorted(homes.assign.items(), key=lambda kv: homes.order[kv[0]]):
+            if kind != "shared":
+                continue
+            for name in sorted(homes.pool[key].refs.needs - shared_have):
+                other = provider.get(name)
+                if other is None or homes.assign.get(other, ("",))[0] == "shared":
+                    continue
+                var = homes.pool[other]
+                if (forward_typedef_tag(var) is None or name not in var.refs.provides
+                        or other in homes.divergent):
+                    continue
+                homes.assign[other] = ("shared", None)
+                homes.completion.append((SHARED_HEADER, name, "added: forward typedef"))
+                shared_have.add(name)
+                changed = True
+
+    # every `local` declaration has to be in the TU that needs it
+    by_path = {tu.c: tu for tu in homes.tus + exports}
+    for key, (kind, owner) in sorted(homes.assign.items()):
+        if kind != "local":
+            continue
+        names = {n.strip() for n in key[1].split(",")}
+        for consumer in sorted(homes.consumers[key]):
+            tu = by_path[consumer]
+            # the TU's own definition is as good as a declaration
+            if key not in tu.local and not names <= tu.defines:
+                homes.missing.append((consumer, f"{key[0]} {key[1]}"))
+    return homes
+
+
+def render_declarations(variants: list[Variant]) -> list[str]:
+    out: list[str] = []
+    for var in variants:
+        out.extend(provenance_block(var))
+        if var.doc:
+            out.extend(var.doc.splitlines())
+        out.extend(var.text.splitlines())
+        out.append("")
+    return out
+
+
+def order_for_header(homes: Homes, keys: list[tuple[str, str]]) -> list[Variant]:
+    """Dependency order, stable on the pool order."""
+    keys = sorted(keys, key=lambda k: homes.order[k])
+    provider = {}
+    for key in keys:
+        var = homes.pool[key]
+        for name in sorted(var.refs.provides) + [n.strip() for n in key[1].split(",")]:
+            provider.setdefault(name, key)
+    deps = {key: {provider[n] for n in homes.pool[key].refs.needs
+                  if n in provider and provider[n] != key} for key in keys}
+    out, done, pending = [], set(), list(keys)
+    while pending:
+        rest, progressed = [], False
+        for key in pending:
+            if deps[key] <= done:
+                out.append(key)
+                done.add(key)
+                progressed = True
+            else:
+                rest.append(key)
+        pending = rest
+        if not progressed:                    # a cycle: keep the pool order
+            out.extend(pending)
+            break
+    return [homes.pool[key] for key in out]
+
+
+def compute_umbrella(homes: Homes, shared_keys: list[tuple[str, str]]) -> None:
+    """Which TU-header declarations `include/umbrella/public.h` may repeat.
+
+    Every published TU includes `include/shared.h`, so a declaration carried
+    here is visible to all of them, in main and in every overlay. It is carried
+    only when that is provably neutral for every published TU:
+
+      * it is a function prototype or extern data declaration (a repeated
+        typedef/tag/enumerator is a C89 error, and the owner defines its types);
+      * everything it names is provided (and complete where it must be) by
+        `include/shared.h` alone, which is all that precedes the umbrella;
+      * no published TU declares the name in another spelling (the harvest's
+        equality: `extern` and parameter names aside, text-identical) and no TU
+        defines it with another head - a `static` definition included - so no
+        TU sees a composite type it did not already have (which is what keeps
+        -G8 small-data placement and argument promotion unchanged);
+      * no TU other than the owner defines the name (the same identifier in
+        another unit or overlay is another symbol).
+
+    Anything else stays in the owner's header only and is recorded, with the
+    reason, in `homes.umbrella_withheld`.
+    """
+    have, have_complete = availability([homes.pool[k] for k in shared_keys])
+    by_path = {tu.c: tu for tu in homes.tus}
+    carried: list[tuple[tuple[str, str], str]] = []
+    for key, (kind, owner) in sorted(homes.assign.items(), key=lambda kv: homes.order[kv[0]]):
+        if kind != "tu":
+            continue
+        var = homes.pool[key]
+        if var.kind not in PROTO_KINDS:
+            continue
+        header = by_path[owner].header
+        names = {n.strip() for n in key[1].split(",")}
+        canon = normalize_ws(var.canon)
+        reason = None
+        missing = sorted(var.refs.needs - have)
+        missing += sorted(f"{t} (complete)" for t in var.refs.needs_complete - have_complete)
+        if missing:
+            reason = ("needs " + ", ".join(f"`{m}`" for m in missing) +
+                      f", which `{SHARED_HEADER}` does not provide")
+        if reason is None:
+            for tu in homes.tus:
+                overlapping_groups = [local_key for local_key in tu.local
+                                      if local_key != key and
+                                      names & {n.strip() for n in local_key[1].split(",")}]
+                if overlapping_groups:
+                    # A grouped extern can collide with a singleton declared
+                    # by another overlay even though their dictionary keys
+                    # differ. Keep it in its owner's header until neutrality
+                    # is established for every individual identifier.
+                    reason = f"`{tu.c}` has an overlapping declaration group"
+                if key in tu.local and normalize_ws(tu.local_canon[key]) != canon:
+                    reason = f"`{tu.c}` declares it in another spelling"
+                elif key in tu.defined_canon and normalize_ws(tu.defined_canon[key]) != canon:
+                    reason = f"`{tu.c}` defines it with another head"
+                elif tu.c != owner and names & tu.defines:
+                    reason = f"`{tu.c}` also defines `{sorted(names & tu.defines)[0]}`"
+                elif names & tu.static_data:
+                    reason = f"`{tu.c}` has TU-local static data `{sorted(names & tu.static_data)[0]}`"
+                if reason:
+                    break
+        if reason is not None:
+            homes.umbrella_withheld.append((key[1], header, reason))
+            continue
+        carried.append((key, owner))
+    homes.umbrella = carried
+
+
+def render_umbrella(homes: Homes) -> str | None:
+    if not homes.umbrella:
+        return None
+    by_path = {tu.c: tu for tu in homes.tus}
+    by_owner: dict[str, list[tuple[str, str]]] = {}
+    for key, owner in homes.umbrella:
+        by_owner.setdefault(owner, []).append(key)
+    body = [f"#ifndef {UMBRELLA_GUARD}", f"#define {UMBRELLA_GUARD}", ""]
+    for owner in sorted(by_owner, key=lambda o: (TU_UNITS.index(by_path[o].unit)
+                                                 if by_path[o].unit in TU_UNITS else 99, o)):
+        tu = by_path[owner]
+        for var in order_for_header(homes, by_owner[owner]):
+            body.extend(var.text.splitlines())
+        body.append("")
+    while body and body[-1] == "":
+        body.pop()
+    body += ["", f"#endif /* {UMBRELLA_GUARD} */"]
+    return "\n".join(body) + "\n"
+
+
+def render_layout(homes: Homes) -> dict[str, str]:
+    """`include/shared.h`, every `include/<unit>/<tu>.h` and the umbrella."""
+    outputs: dict[str, str] = {}
+    shared_keys = [k for k, (kind, _o) in homes.assign.items() if kind == "shared"]
+    shared = order_for_header(homes, shared_keys)
+    shared_provides: set[str] = set()
+    for key in shared_keys:
+        shared_provides |= homes.pool[key].refs.provides
+        shared_provides |= {n.strip() for n in key[1].split(",")}
+
+    compute_umbrella(homes, shared_keys)
+    umbrella = render_umbrella(homes)
+    body = [f"#ifndef {SHARED_GUARD}", f"#define {SHARED_GUARD}", ""]
+    body += render_declarations(shared)
+    while body and body[-1] == "":
+        body.pop()
+    if umbrella is not None:
+        body += ["", f'#include "{UMBRELLA_INCLUDE}"']
+        outputs[UMBRELLA_HEADER] = umbrella
+    body += ["", f"#endif /* {SHARED_GUARD} */"]
+    outputs[SHARED_HEADER] = "\n".join(body) + "\n"
+
+    by_owner: dict[str, list[tuple[str, str]]] = {}
+    for key, (kind, owner) in homes.assign.items():
+        if kind == "tu":
+            by_owner.setdefault(owner, []).append(key)
+    by_path = {tu.c: tu for tu in homes.tus}
+    by_header = {tu.header[len(TU_HEADER_ROOT) + 1:]: tu for tu in homes.tus}
+    emitted_headers = {by_path[owner].header[len(TU_HEADER_ROOT) + 1:]
+                       for owner in by_owner}
+    header_imports: dict[str, list[str]] = {}
+    for owner in by_owner:
+        tu = by_path[owner]
+        own_header = tu.header[len(TU_HEADER_ROOT) + 1:]
+        header_imports[owner] = sorted((tu.header_includes & emitted_headers) - {own_header})
+    for owner, keys in sorted(by_owner.items()):
+        tu = by_path[owner]
+        keys = keys + complete_tu_header(homes, tu, keys, shared_provides)
+        variants = order_for_header(homes, keys)
+        needs: set[str] = set()
+        for var in variants:
+            needs |= var.refs.needs | var.refs.needs_complete
+        guard = re.sub(r"[^A-Za-z0-9]", "_", tu.header).upper().strip("_")
+        body = [f"#ifndef {guard}", f"#define {guard}", ""]
+        if needs & shared_provides:
+            body += ['#include "shared.h"', ""]
+        for imported in header_imports.get(owner, ()):
+            body += [f'#include "{imported}"']
+        if header_imports.get(owner):
+            body += [""]
+        body += render_declarations(variants)
+        while body and body[-1] == "":
+            body.pop()
+        body += ["", f"#endif /* {guard} */"]
+        outputs[tu.header] = "\n".join(body) + "\n"
+    return outputs
+
+
+def render_header(domain: str, basename: str, variants: list[Variant],
+                  extra_includes: list[str], blurb: str) -> str:
+    guard = guard_name(domain, basename)
+    out: list[str] = []
+    out.append(f"#ifndef {guard}")
+    out.append(f"#define {guard}")
+    out.append("")
+    for inc in extra_includes:
+        out.append(f'#include "{inc}"')
+    if extra_includes:
+        out.append("")
+    for var in variants:
+        out.extend(provenance_block(var))
+        if var.doc:
+            out.extend(var.doc.splitlines())
+        out.extend(var.text.splitlines())
+        out.append("")
+    out.append(f"#endif /* {guard} */")
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
+def render_tu_local(tu_local: list[TuLocal]) -> list[str]:
+    """Names withheld because exact units depend on incompatible spellings."""
+    out: list[str] = ["## TU-local by evidence", ""]
+    if not tu_local:
+        out.append("None. No name is recorded as a TU-local divergence.")
+        out.append("")
+        return out
+    out.append("Byte-exact reproduction outranks readability, majority and SDK evidence.")
+    out.append("Each name below is spelled differently by units that each reproduce their")
+    out.append("own original bytes, and the spellings cannot both be shared: adopting one")
+    out.append("either fails to compile in the other unit or changes its codegen. The name")
+    out.append("is therefore withheld from every shared header and stays TU-local, and")
+    out.append("`lint` does not report it. Reversing a decision like this needs new byte")
+    out.append("evidence, not a readability argument.")
+    out.append("")
+    seen: set[tuple[str, str]] = set()
+    for entry in sorted(tu_local, key=lambda e: (e.name, e.domain)):
+        if (entry.name, entry.domain) in seen:
+            continue
+        seen.add((entry.name, entry.domain))
+        d = entry.decision
+        out.append(f"### `{entry.name}` ({entry.domain}, {entry.namespace})")
+        out.append("")
+        out.append(f"Rationale: {d.rationale}")
+        out.append("")
+        if d.evidence:
+            out.append("Evidence:")
+            for item in d.evidence:
+                out.append(f"- {item}")
+            out.append("")
+        for files, text in entry.spellings:
+            for p in files:
+                out.append(f"- `{p}`")
+            out.append("")
+            out.append("  ```c")
+            for line in text.splitlines():
+                out.append(f"  {line}")
+            out.append("  ```")
+            out.append("")
+    return out
+
+
+def render_byte_required(canon: dict[str, Decision]) -> list[str]:
+    """Divergent spellings a verified exact unit depends on, kept on purpose."""
+    rows = [(name, entry) for name, decision in sorted(canon.items())
+            for entry in decision.byte_required if not decision.is_tu_local]
+    out: list[str] = ["## Byte-required local spellings", ""]
+    if not rows:
+        out.append("None recorded.")
+        out.append("")
+        return out
+    out.append("These accepted files keep a spelling the shared header does not carry,")
+    out.append("because the unit that owns the file only reproduces its original bytes")
+    out.append("with that spelling. The canonical text stays in the shared header - other")
+    out.append("units already depend on it - and `lint` does not report these files. The")
+    out.append("record below is the evidence, and removing it needs a new promotion run.")
+    out.append("")
+    out.append("| declaration | accepted file | TU file | unit | why the local spelling stays |")
+    out.append("| --- | --- | --- | --- | --- |")
+    for name, entry in rows:
+        tu_file = entry.get("tu_file")
+        out.append(f"| `{name}` | `{entry['file']}` | "
+                   f"{('`' + tu_file + '`') if tu_file else '-'} | "
+                   f"`{entry.get('unit', '-')}` | {entry['reason']} |")
+    out.append("")
+    return out
+
+
+def render_cross_domain(applied: list[CrossApply]) -> list[str]:
+    """Names one domain owns that another domain's accepted files spell differently."""
+    out: list[str] = ["## Cross-domain spellings", ""]
+    if not applied:
+        out.append("None. No domain declares a name another domain owns differently.")
+        out.append("")
+        return out
+    out.append("These accepted files declare a name whose canonical form belongs to")
+    out.append("another domain and spell it differently - usually `void *` where the")
+    out.append("owning domain names a type. The canonical text replaces the local")
+    out.append("spelling in the generated header, so no header contradicts a decision.")
+    out.append("Where that text names a type this domain's header cannot provide, the")
+    out.append("dependency pass withholds it (\"emitted: no\") and the canonical form is")
+    out.append("read in the owning domain's header instead. The local spelling stays")
+    out.append("exactly as it is inside its own accepted TU.")
+    out.append("")
+    out.append("| domain | declaration | owned by | emitted | accepted file(s) with the local spelling |")
+    out.append("| --- | --- | --- | --- | --- |")
+    for r in sorted(applied, key=lambda r: (r.domain, r.name)):
+        files = ", ".join(f"`{p}`" for p in r.files)
+        out.append(f"| {r.domain} | `{r.name}` | `{r.owner}` | "
+                   f"{'yes' if r.emitted else 'no'} | {files} |")
+    out.append("")
+    return out
+
+
+def render_static_local(static_local: list[StaticLocal],
+                        superseded: list[str] | None = None,
+                        definitions: int = 0) -> list[str]:
+    """Names withheld because the accepted definition has internal linkage."""
+    out: list[str] = ["## TU-local statics (never shared)", ""]
+    if definitions:
+        out.append(f"`static` function definitions read but not harvested: {definitions}. "
+                   f"Only the {len({(e.domain, e.name) for e in static_local})} below are "
+                   f"also declared `extern` by another accepted file, so only those had "
+                   f"to be taken out of a shared header.")
+        out.append("")
+    if not static_local:
+        out.append("None. No harvested name is defined `static` by accepted source.")
+        out.append("")
+        return out
+    out.append("The accepted definition of each name below is `static`, so the symbol has")
+    out.append("internal linkage in the original program and no other translation unit can")
+    out.append("reach it. A shared header may not carry it in any spelling: the definition")
+    out.append("head would force an undefined static on every TU that includes the header,")
+    out.append("and an `extern` view of it gives the identifier two linkages in the TU that")
+    out.append("defines it (cc1: `static declaration ... follows non-static`). A second")
+    out.append("accepted file that spells it `extern` keeps that spelling locally, where it")
+    out.append("is that file's own reading aid, and no header contradicts it.")
+    out.append("")
+    if superseded:
+        out.append("Decisions in `" + CANON_FILE + "` superseded by this evidence "
+                   "(kept as the record of what was once shared, never emitted, and "
+                   "not enforced by `lint`): "
+                   + ", ".join(f"`{n}`" for n in superseded) + ".")
+        out.append("")
+    out.append("| name | withheld from | defined `static` in | declared by |")
+    out.append("| --- | --- | --- | --- |")
+    seen: set[tuple[str, str]] = set()
+    for entry in sorted(static_local, key=lambda e: (e.name, e.domain)):
+        if (entry.domain, entry.name) in seen:
+            continue
+        seen.add((entry.domain, entry.name))
+        defs = ", ".join(f"`{p}`" for p in entry.defined_in)
+        files = ", ".join(f"`{p}`" for p in entry.files) or "-"
+        out.append(f"| `{entry.name}` | `{entry.domain}` | {defs} | {files} |")
+    out.append("")
+    return out
+
+
+def render_conflicts(conflicts: list[Conflict], resolved: list[Resolved],
+                     obsolete: list[str], applied: list[CrossApply],
+                     tu_local: list[TuLocal], canon: dict[str, Decision],
+                     static_local: list[StaticLocal] | None = None,
+                     superseded: list[str] | None = None,
+                     definitions: int = 0) -> str:
+    out: list[str] = []
+    out.append("# Harvested header conflicts")
+    out.append("")
+    out.append(f"<!-- {REPO_MARKER}. Do not edit by hand. -->")
+    out.append("")
+    out.append("Each entry below is a name that accepted source declares in more than one")
+    out.append("shape inside a single domain. A name with a decision in")
+    out.append(f"`{CANON_FILE}` is emitted from that decision and listed under")
+    out.append("\"Resolved conflicts\"; a name without one is emitted into neither header")
+    out.append("and listed under \"Open conflicts\", where it needs a human or orchestrator")
+    out.append("decision (one recovery is wrong, the TUs genuinely differ, or the name is")
+    out.append("coincidental). Do not merge them mechanically, and do not invent fields or")
+    out.append("padding to reconcile them. See docs/header-canon.md for how a decision is")
+    out.append("made and revised.")
+    out.append("")
+    withheld = len({(e.name, e.domain) for e in tu_local})
+    in_domain = len([r for r in resolved if r.in_domain])
+    out.append(f"Withheld as TU-local by evidence: {withheld}.")
+    out.append("")
+    out.append(f"Resolved by `{CANON_FILE}`: {len(resolved)} "
+               f"({in_domain} conflicting inside one domain, {len(resolved) - in_domain} "
+               f"agreed inside their domain but spelled differently by another). "
+               f"Still open: {len(conflicts)}.")
+    out.append("")
+    if obsolete:
+        out.append("Decisions that no longer match any conflict (the accepted file no longer")
+        out.append("declares the name); drop them or point them at the current source:")
+        for name in obsolete:
+            out.append(f"- `{name}`")
+        out.append("")
+    out.extend(render_resolved(resolved))
+    out.extend(render_tu_local(tu_local))
+    out.extend(render_static_local(static_local or [], superseded, definitions))
+    out.extend(render_byte_required(canon))
+    out.extend(render_cross_domain(applied))
+    out.append("## Open conflicts")
+    out.append("")
+    if not conflicts:
+        out.append("None. Every remaining duplicated name agrees across accepted source or")
+        out.append(f"has a decision in `{CANON_FILE}`.")
+        out.append("")
+        return "\n".join(out)
+
+    by_domain: dict[str, list[Conflict]] = {}
+    for c in conflicts:
+        by_domain.setdefault(c.domain, []).append(c)
+    out.append(f"Total conflicting names: {len(conflicts)}")
+    out.append("")
+    for domain in sorted(by_domain):
+        items = sorted(by_domain[domain], key=lambda c: (c.namespace, c.name))
+        out.append(f"### {domain} ({len(items)})")
+        out.append("")
+        for c in items:
+            out.append(f"#### `{c.name}` ({c.namespace}, {len(c.variants)} variants)")
+            out.append("")
+            for n, var in enumerate(c.variants, 1):
+                paths = sorted({d.file for d in var.sources})
+                out.append(f"Variant {n} - {len(paths)} file(s):")
+                for p in paths:
+                    d = next(s for s in var.sources if s.file == p)
+                    if d.func_name:
+                        out.append(f"- `{p}` (unit {d.unit}, function {d.func_name} @ {d.func_va})")
+                    else:
+                        out.append(f"- `{p}` (unit {d.unit})")
+                out.append("")
+                out.append("```c")
+                out.extend(var.text.splitlines())
+                out.append("```")
+                out.append("")
+    return "\n".join(out)
+
+
+def rejected_groups(r: Resolved,
+                    index: dict[tuple[str, str], list[Decl]]
+                    ) -> list[tuple[list[str], str, str]]:
+    """Every accepted spelling of this name that the decision did not take.
+
+    Collected across all domains, so a cross-domain divergence is reported beside
+    an in-domain one. Reasons come from the decision; a spelling with no recorded
+    reason is still listed, never hidden.
+    """
+    reasons = {entry.get("file"): entry.get("reason", "") for entry in r.decision.rejected}
+    groups: dict[str, list[Decl]] = {}
+    for (_domain, name), decls in index.items():
+        if name != r.name:
+            continue
+        for decl in decls:
+            if decl.canon == r.variant.canon:
+                continue
+            groups.setdefault(decl.canon, []).append(decl)
+    out: list[tuple[list[str], str, str]] = []
+    for canon in sorted(groups, key=lambda c: min((d.file, d.index) for d in groups[c])):
+        decls = sorted(groups[canon], key=lambda d: (d.file, d.index))
+        files = sorted({d.file for d in decls})
+        reason = next((reasons[f] for f in files if reasons.get(f)), "not chosen")
+        out.append((files, reason, decls[0].text))
+    return out
+
+
+def render_resolved(resolved: list[Resolved]) -> list[str]:
+    """The "Resolved conflicts" section: what was chosen, why, and what was not."""
+    out: list[str] = ["## Resolved conflicts", ""]
+    if not resolved:
+        out.append(f"None. `{CANON_FILE}` carries no decision for any current conflict.")
+        out.append("")
+        return out
+    out.append(f"Emitted from `{CANON_FILE}`. Each entry names the accepted file the")
+    out.append("canonical text was taken from, the rejected spellings, and the evidence.")
+    out.append("The rejected declarations stay exactly as they are in their own accepted")
+    out.append("TUs: a decision changes the shared header, never accepted source.")
+    out.append("")
+    by_domain: dict[str, list[Resolved]] = {}
+    for r in resolved:
+        by_domain.setdefault(r.domain, []).append(r)
+    for domain in sorted(by_domain):
+        items = sorted(by_domain[domain], key=lambda r: (r.namespace, r.name))
+        out.append(f"### {domain} ({len(items)})")
+        out.append("")
+        for r in items:
+            d = r.decision
+            out.append(f"#### `{r.name}` ({r.namespace}, confidence {d.confidence})")
+            out.append("")
+            if d.file is None:
+                out.append("Canonical: SDK/libc declaration (no accepted file spells it).")
+            elif d.is_tu_include:
+                out.append(f"Canonical: what `{d.file}` compiles against through the "
+                           f"generated header (the TU uses the name and does not declare it).")
+            else:
+                out.append(f"Canonical: `{d.file}`")
+            out.append("")
+            out.append("```c")
+            out.extend(r.variant.text.splitlines())
+            out.append("```")
+            out.append("")
+            out.append(f"Rationale: {d.rationale}")
+            out.append("")
+            if d.evidence:
+                out.append("Evidence:")
+                for item in d.evidence:
+                    out.append(f"- {item}")
+                out.append("")
+            if not r.in_domain:
+                out.append("Every accepted file in this domain agrees; the divergence is with")
+                out.append("another domain. The spellings below are replaced by the canonical")
+                out.append("text in that domain's header, or withheld there when the canonical")
+                out.append("text needs a type that domain cannot provide - see \"Cross-domain")
+                out.append("spellings\".")
+                out.append("")
+            if r.rejected_groups:
+                out.append("Rejected:")
+                out.append("")
+            for files, reason, text in r.rejected_groups:
+                out.append(f"- {reason}")
+                for p in files:
+                    out.append(f"  - `{p}`")
+                out.append("")
+                out.append("  ```c")
+                for line in text.splitlines():
+                    out.append(f"  {line}")
+                out.append("  ```")
+                out.append("")
+    return out
+
+
+def render_excluded(excluded: list[Excluded], cycles: list[tuple[str, str]],
+                    collisions: list[tuple[str, str, list[str]]]) -> list[str]:
+    """Declarations a header may not carry, and broken cross-domain cycles."""
+    out: list[str] = ["## Not ordinary candidate C", ""]
+    out.append("Accepted translation units include these headers, so every emitted")
+    out.append("declaration has to pass the same admission check as the candidate")
+    out.append("itself (`tools/match.py` `ordinary_c`). A declaration that carries an")
+    out.append("attribute, inline assembly, a trigraph or non-ASCII text is withheld")
+    out.append("here and stays exactly as it is in its own translation unit; the")
+    out.append("dependency pass then withholds whatever needed it.")
+    out.append("")
+    if excluded:
+        out.append("| domain | declaration | construct |")
+        out.append("| --- | --- | --- |")
+        for item in sorted(excluded, key=lambda e: (e.domain, e.name)):
+            out.append(f"| {item.domain} | `{item.name}` | `{item.reason}` |")
+    else:
+        out.append("None.")
+    out.append("")
+    out.append("## Refused cross-domain includes")
+    out.append("")
+    out.append("A domain's `functions.h` (or `types.h`) may include another")
+    out.append("domain's `types.h` to reach a type it does not own. The include is")
+    out.append("refused when both files define the same type name: C rejects a second")
+    out.append("definition of a struct tag, a typedef or an enumerator even when the")
+    out.append("two spellings are identical, so the combined translation unit would")
+    out.append("not compile. Declarations that needed a refused include stay withheld")
+    out.append("and are listed under \"Unresolved dependencies\".")
+    out.append("")
+    if collisions:
+        out.append("| domain | may not include | names both define |")
+        out.append("| --- | --- | --- |")
+        for domain, other, names in sorted(collisions):
+            listed = ", ".join(f"`{n}`" for n in names[:8])
+            if len(names) > 8:
+                listed += f", ... ({len(names)} in total)"
+            out.append(f"| {domain} | `xeno/{other}/{TYPES_BASENAME}` | {listed} |")
+    else:
+        out.append("None.")
+    out.append("")
+    out.append("## Cross-domain include cycles")
+    out.append("")
+    if cycles:
+        out.append("A `types.h` may include another domain's `types.h`, but the graph")
+        out.append("stays acyclic. These edges were refused; the declarations that")
+        out.append("needed them are listed under \"Unresolved dependencies\":")
+        out.append("")
+        for a, b in cycles:
+            out.append(f"- `{a}` -> `{b}`")
+    else:
+        out.append("None. The generated include graph is acyclic without refusing any")
+        out.append("cross-domain dependency.")
+    out.append("")
+    return out
+
+
+def render_layout_section(homes: "Homes | None") -> list[str]:
+    """Where every needed declaration lives in the published per-TU layout."""
+    out = ["## Header layout", ""]
+    if homes is None:
+        out += ["Not computed.", ""]
+        return out
+    by_kind: dict[str, int] = {}
+    for kind, _owner in homes.assign.values():
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+    tu_headers: dict[str, int] = {}
+    for key, (kind, owner) in homes.assign.items():
+        if kind == "tu":
+            tu_headers[owner] = tu_headers.get(owner, 0) + 1
+    out.append(f"- published translation units scanned: {len(homes.tus)}")
+    out.append(f"- declarations needed by at least one TU: {len(homes.assign)}")
+    out.append(f"- `{SHARED_HEADER}` (needed by more than one TU, defined by none): "
+               f"{by_kind.get('shared', 0)}")
+    out.append(f"- `include/<unit>/<tu>.h` (the defining TU publishes it): "
+               f"{by_kind.get('tu', 0)} in {len(tu_headers)} header(s)")
+    out.append(f"- kept in the TU that needs them (`src/<unit>/<tu>.h` or the .c "
+               f"prelude): {by_kind.get('local', 0)}")
+    out.append("")
+    if homes.owner_migrations:
+        out += ["### Pinned source-owner migrations", "",
+                "These retained promoted records are kept in their historical ledgers, "
+                "while the exact current source declarations define their generated "
+                "owner headers. Assembly-backed function ownership is identity-pinned; "
+                "this grants no recovery credit.", "",
+                "| declaration | current owner TU | current source | historical promoted row |",
+                "| --- | --- | --- | --- |"]
+        for row in homes.owner_migrations:
+            out.append(f"| `{row['name']}` | `{row['owner_tu']}` | "
+                       f"`{row['owner_source']}` | `{row['promoted_file']}#{row['promoted_index']}` |")
+        out.append("")
+    if tu_headers:
+        out += ["| TU header | declarations |", "| --- | ---: |"]
+        by_path = {tu.c: tu for tu in homes.tus}
+        for owner, count in sorted(tu_headers.items()):
+            out.append(f"| `{by_path[owner].header}` | {count} |")
+        out.append("")
+    published_homed = sorted((key, owner) for key, (kind, owner) in homes.assign.items()
+                             if key in homes.published and kind == "tu")
+    out.append("### Declarations only published TU source carries")
+    out.append("")
+    out.append("A name no accepted record or replayed ledger declares is read from the")
+    out.append("published TU that defines it (its `src/<unit>/<tu>.h`, then its `.c`), and")
+    out.append("homed in that TU's `include/<unit>/<tu>.h` when another TU needs it.")
+    out.append("")
+    out.append(f"- declarations found: {homes.published_found}")
+    out.append(f"- published in a TU header: {len(published_homed)}")
+    out.append(f"- withheld: {len(homes.published_withheld)}")
+    out.append("")
+    if published_homed:
+        by_path = {tu.c: tu for tu in homes.tus}
+        out += ["| declaration | TU header |", "| --- | --- |"]
+        for key, owner in published_homed:
+            out.append(f"| `{key[1]}` | `{by_path[owner].header}` |")
+        out.append("")
+    if homes.published_withheld:
+        out += ["| declaration | TU | why no header carries it |", "| --- | --- | --- |"]
+        for name, tu_path, reason in homes.published_withheld:
+            out.append(f"| `{name}` | `{tu_path}` | {reason} |")
+        out.append("")
+    if homes.divergent:
+        out.append("### TU-local divergences (never shared)")
+        out.append("")
+        out.append("A published TU declares the name in a spelling that differs from the")
+        out.append("canonical one, so no shared header may carry it: every TU keeps the")
+        out.append("declaration it was accepted with (docs/header-canon.md). The defining")
+        out.append("TU's own header still carries it when none of these TUs includes that")
+        out.append("header (see the TU header tables above).")
+        out.append("")
+        out += ["| name | TU(s) that diverge |", "| --- | --- |"]
+        for key, files in sorted(homes.divergent.items()):
+            out.append(f"| `{key[1]}` | {', '.join('`%s`' % f for f in sorted(files))} |")
+        out.append("")
+    out.append("### The umbrella (`include/umbrella/public.h`)")
+    out.append("")
+    out.append("Every prototype and extern data declaration of a generated TU header is")
+    out.append("repeated in the umbrella, which `include/shared.h` includes at its end, unless")
+    out.append("repeating it could change what some published TU compiles (include/README.md).")
+    out.append("")
+    out.append(f"- carried: {len(homes.umbrella)}")
+    out.append(f"- withheld (owner header only): {len(homes.umbrella_withheld)}")
+    out.append("")
+    if homes.umbrella_withheld:
+        out += ["| declaration | owner header | why the umbrella does not carry it |",
+                "| --- | --- | --- |"]
+        for name, header, reason in sorted(homes.umbrella_withheld):
+            out.append(f"| `{name}` | `{header}` | {reason} |")
+        out.append("")
+    if homes.missing:
+        out.append("### Local homes the TU does not spell")
+        out.append("")
+        for consumer, label in sorted(homes.missing):
+            out.append(f"- `{consumer}`: `{label}`")
+        out.append("")
+    if homes.completion:
+        out.append("### Type names a TU header uses but does not otherwise get")
+        out.append("")
+        out.append("A typedef homed `local` (several TUs declare it) is repeated in the TU")
+        out.append("header that uses it, so the header compiles on its own, unless a TU")
+        out.append("that includes the header declares the name itself (cc1 refuses a")
+        out.append("typedef repeated in another spelling; an identical forward typedef is")
+        out.append("a compatible redeclaration). A forward typedef a `shared.h`")
+        out.append("declaration names is carried in `shared.h` the same way.")
+        out.append("")
+        out += ["| header | name | outcome |", "| --- | --- | --- |"]
+        for header, name, outcome in sorted(homes.completion):
+            out.append(f"| `{header}` | `{name}` | {outcome} |")
+        out.append("")
+    return out
+
+
+def render_summary(harvest: Harvest) -> str:
+    stats, conflicts, unresolved = harvest.stats, harvest.conflicts, harvest.unresolved
+    skips, non_c, unaccepted = harvest.skips, harvest.non_c, harvest.unaccepted
+    bad_units, resolved = harvest.bad_units, harvest.resolved
+    obsolete, applied = harvest.obsolete, harvest.applied
+    out: list[str] = []
+    out.append("# Harvested header inventory")
+    out.append("")
+    out.append(f"<!-- {REPO_MARKER}. Do not edit by hand. -->")
+    out.append("")
+    out.append("Generated from the accepted units in `config/units/*.json` and the source")
+    out.append("files they list. Regenerate together with the headers:")
+    out.append("`python3 tools/header_harvest.py --report`.")
+    out.append("")
+    out.append("## Inputs")
+    out.append("")
+    out.append(f"- accepted unit descriptions: {stats['units']}")
+    out.append(f"- accepted C/H files scanned: {stats['files_scanned']}")
+    out.append(f"- accepted non-C files ignored (.s and similar): {len(non_c)}")
+    out.append(f"- top-level declarations examined: {stats['decls_examined']}")
+    out.append(f"- declarations harvested (before merge): {stats['decls_harvested']}")
+    out.append(f"- declarations replayed from `{PROMOTED_FILE}`: "
+               f"{stats.get('promoted_declarations', 0)}")
+    out.append("")
+    out.extend(render_layout_section(harvest.homes))
+    out.append("## Per domain")
+    out.append("")
+    out.append("The domain is how a declaration's canonical spelling is decided")
+    out.append(f"(`{CANON_FILE}` is keyed on it). It no longer names a file: the header")
+    out.append("layout follows the published per-TU tree, above.")
+    out.append("")
+    out.append("| domain | files | types | prototypes | extern data | resolved "
+               "| open conflicts | unresolved | includes |")
+    out.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    for domain in sorted(stats["domains"]):
+        d = stats["domains"][domain]
+        includes = ", ".join(f"`{x}`" for x in d.get("includes", ())) or "-"
+        out.append(f"| {domain} | {d['files']} | {d['types']} | {d['protos']} "
+                   f"| {d['extern_data']} | {d['resolved']} | {d['conflicts']} "
+                   f"| {d['unresolved']} | {includes} |")
+    totals = stats["domains"].values()
+    out.append(f"| **total** | {sum(d['files'] for d in totals)} "
+               f"| {sum(d['types'] for d in totals)} "
+               f"| {sum(d['protos'] for d in totals)} "
+               f"| {sum(d['extern_data'] for d in totals)} "
+               f"| {sum(d['resolved'] for d in totals)} "
+               f"| {sum(d['conflicts'] for d in totals)} "
+               f"| {sum(d['unresolved'] for d in totals)} | |")
+    out.append("")
+    out.extend(render_excluded(harvest.excluded, harvest.cycles,
+                               harvest.collisions))
+    out.append("## Resolved conflicts")
+    out.append("")
+    if resolved:
+        by_conf = {"high": 0, "medium": 0, "low": 0}
+        for r in resolved:
+            by_conf[r.decision.confidence] += 1
+        out.append(f"{len(resolved)} name(s) are emitted from a decision in")
+        out.append(f"`{CANON_FILE}` ({by_conf['high']} high, {by_conf['medium']} medium, "
+                   f"{by_conf['low']} low confidence). Rationale and rejected spellings:")
+        out.append(f"`{CONFLICT_REPORT}`.")
+        out.append("")
+        for r in sorted(resolved, key=lambda r: (r.domain, r.namespace, r.name)):
+            src = r.decision.file or "SDK/libc"
+            scope = "" if r.in_domain else ", cross-domain"
+            out.append(f"- `{r.domain}`: `{r.name}` ({r.decision.confidence}{scope}) "
+                       f"<- `{src}`")
+    else:
+        out.append("None.")
+    out.append("")
+    if applied:
+        out.append(f"{len(applied)} declaration(s) in one domain name something another")
+        out.append("domain owns and spell it differently; the canonical text replaces the")
+        out.append("local spelling, and is withheld when it needs the owning domain's types:")
+        out.append("")
+        for r in sorted(applied, key=lambda r: (r.domain, r.name)):
+            state = "emitted" if r.emitted else "withheld"
+            out.append(f"- `{r.domain}`: `{r.name}` (owned by `{r.owner}`, {state})")
+        out.append("")
+    if obsolete:
+        out.append("Decisions that match no current conflict (drop or repoint them):")
+        for name in obsolete:
+            out.append(f"- `{name}`")
+        out.append("")
+    out.append("## Open conflicts")
+    out.append("")
+    if conflicts:
+        out.append(f"{len(conflicts)} name(s) diverge inside a domain, have no decision in")
+        out.append(f"`{CANON_FILE}`, and are emitted into neither header.")
+        out.append(f"Details: `{CONFLICT_REPORT}`.")
+        out.append("")
+        for c in sorted(conflicts, key=lambda c: (c.domain, c.namespace, c.name)):
+            out.append(f"- `{c.domain}`: `{c.name}` ({c.namespace}, {len(c.variants)} variants)")
+    else:
+        out.append("None. Every duplicated name agrees across accepted source or has a")
+        out.append(f"decision in `{CANON_FILE}`.")
+    out.append("")
+    out.append("## Unresolved dependencies")
+    out.append("")
+    out.append("Declarations that name something the domain header cannot provide (a")
+    out.append("conflicting type, a macro constant, or a type owned by another domain).")
+    out.append("They are reported, never patched: filling the gap needs the owning TU's")
+    out.append("evidence, not a guess.")
+    out.append("")
+    if unresolved:
+        out.append(f"{len(unresolved)} declaration(s) withheld:")
+        out.append("")
+        out.append("| domain | declaration | missing |")
+        out.append("| --- | --- | --- |")
+        for u in sorted(unresolved, key=lambda u: (u.domain, u.name)):
+            miss = ", ".join(f"`{m}`" for m in u.missing)
+            out.append(f"| {u.domain} | `{u.name}` | {miss} |")
+    else:
+        out.append("None.")
+    out.append("")
+    out.append("## Skipped")
+    out.append("")
+    out.append("The scanner is conservative: anything it cannot classify without guessing")
+    out.append("is left out and listed here rather than approximated.")
+    out.append("")
+    if bad_units:
+        out.append(f"Unit descriptions that failed to load: {len(bad_units)}")
+        for entry in bad_units:
+            out.append(f"- `config/units/{entry}`")
+        out.append("")
+    if unaccepted:
+        out.append(f"Headers present under `src/` but not listed by any accepted unit "
+                   f"({len(unaccepted)}); not harvested:")
+        for p in unaccepted:
+            out.append(f"- `{p}`")
+        out.append("")
+    by_reason: dict[str, list[SkipRecord]] = {}
+    for s in skips:
+        by_reason.setdefault(s.reason.split(":")[0], []).append(s)
+    if by_reason:
+        out.append(f"Skipped constructs and files: {len(skips)}")
+        out.append("")
+        for reason in sorted(by_reason):
+            items = by_reason[reason]
+            out.append(f"### {reason} ({len(items)})")
+            out.append("")
+            for s in sorted(items, key=lambda s: (s.path, s.snippet))[:60]:
+                detail = s.reason.split(":", 1)[1].strip() if ":" in s.reason else ""
+                line = f"- `{s.path}`"
+                if detail:
+                    line += f" - {detail}"
+                if s.snippet:
+                    line += f" - `{s.snippet}`"
+                out.append(line)
+            if len(items) > 60:
+                out.append(f"- ... and {len(items) - 60} more")
+            out.append("")
+    else:
+        out.append("Nothing skipped.")
+        out.append("")
+    out.append("## Not harvested by design")
+    out.append("")
+    out.append("- macros (`#define`), conditional blocks and includes")
+    out.append("- data and function *definitions* (only `extern` data declarations and")
+    out.append("  function signatures are declarations a second TU can reuse)")
+    out.append("- `.s` sources and files outside `src/<domain>/`")
+    out.append("")
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# lint: compare arbitrary sources against the shared headers and the canon file
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Scanned:
+    """One top-level declaration found by the lint scanner."""
+    kind: str
+    namespace: str
+    name: str
+    text: str
+    canon: str
+    line: int
+    defined: bool = False        # a function definition head, not a declaration
+
+
+@dataclass
+class Canonical:
+    """What the shared headers (or a decision) say a name must look like."""
+    namespace: str
+    name: str
+    kind: str
+    canon: str
+    text: str
+    source: str            # repo-relative path of the header or the canon file
+    domain: str | None
+    # units whose files are held to this entry (a callee registry entry names
+    # them; None: every file)
+    units: list | None = None
+
+
+def scan_declarations(raw: str) -> list[Scanned]:
+    """Every classifiable top-level declaration of one translation unit.
+
+    Uses exactly the harvest tokenizer and the harvest comparison text, so a
+    declaration that lints clean is a declaration the harvest would merge.
+    """
+    struct_view, code_view, dropped = mask_source(raw)
+    out: list[Scanned] = []
+    for rd in split_top_level(struct_view):
+        struct_slice = struct_view[rd.start:rd.stop]
+        try:
+            result = classify(raw, dropped, rd.start, rd.stop,
+                              struct_slice, rd.has_body, rd.is_kr)
+        except ParseError:
+            continue                      # conservative: never guess, never fail
+        if result is None:
+            continue
+        kind, namespace, name, emitted, token_canon = result
+        if not emitted.endswith(";"):
+            emitted += ";"
+        if kind in (KIND_PROTO, KIND_STATIC_DEF) and rd.has_body:
+            canon_src = code_view[rd.start:rd.start + struct_slice.index("{")]
+        else:
+            canon_src = code_view[rd.start:rd.stop]
+        canon = (token_canon if token_canon is not None
+                 else normalize_ws(canon_src).rstrip(";").strip())
+        # `lint` has always seen a definition head as a prototype with
+        # `defined=True`; the harvest's own static/non-static split must not
+        # change what a candidate file is held to.
+        if kind == KIND_STATIC_DEF:
+            kind = KIND_PROTO
+        out.append(Scanned(kind=kind, namespace=namespace, name=name,
+                           text=emitted.strip(), canon=canon,
+                           line=raw.count("\n", 0, rd.start) + 1,
+                           defined=rd.has_body))
+    return out
+
+
+def generated_headers(root: str) -> list[str]:
+    return sorted(existing_generated(root))
+
+
+def _cache_key(root: str, paths: list[str]) -> list:
+    key = []
+    for rel in paths:
+        st = os.stat(os.path.join(root, rel))
+        key.append([rel, st.st_mtime_ns, st.st_size])
+    for rel in (CANON_FILE, CALLEES_FILE):
+        canon_path = os.path.join(root, rel)
+        if os.path.exists(canon_path):
+            st = os.stat(canon_path)
+            key.append([rel, st.st_mtime_ns, st.st_size])
+    # The scanner itself is part of the key: editing this tool must not be
+    # answered from a cache built by the previous version.
+    st = os.stat(os.path.abspath(__file__))
+    key.append([os.path.basename(__file__), st.st_mtime_ns, st.st_size])
+    return key
+
+
+def _read_cache(root: str, key: list) -> list[Canonical] | None:
+    try:
+        with open(os.path.join(root, LINT_CACHE), encoding="utf-8") as fh:
+            blob = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if blob.get("version") != 2 or blob.get("key") != key:
+        return None
+    try:
+        return [Canonical(**item) for item in blob["entries"]]
+    except (TypeError, KeyError):
+        return None
+
+
+def _write_cache(root: str, key: list, entries: list[Canonical]) -> None:
+    path = os.path.join(root, LINT_CACHE)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"version": 2, "key": key,
+                       "entries": [vars(e) for e in entries]}, fh)
+    except OSError:
+        pass                              # a cache is an optimization, never a requirement
+
+
+def canonical_entries(root: str, use_cache: bool = True) -> list[Canonical]:
+    """Parse the generated headers plus the canon file (cached by mtime/size)."""
+    paths = generated_headers(root)
+    key = _cache_key(root, paths)
+    if use_cache:
+        cached = _read_cache(root, key)
+        if cached is not None:
+            return cached
+
+    entries: list[Canonical] = []
+    for rel in paths:
+        domain = rel.split("/")[2] if rel.startswith("include/xeno/") else None
+        with open(os.path.join(root, rel), encoding="utf-8") as fh:
+            raw = fh.read()
+        for decl in scan_declarations(raw):
+            entries.append(Canonical(namespace=decl.namespace, name=decl.name,
+                                     kind=decl.kind, canon=decl.canon, text=decl.text,
+                                     source=rel, domain=domain))
+
+    # Decisions cover names the headers still withhold (an unresolved dependency,
+    # for instance), so a worker is held to the decision even before it is emitted.
+    for name, decision in sorted(load_canon(root).items()):
+        if decision.is_tu_local or decision.is_static_local:
+            continue          # withheld from every header; evidence, not a rule
+        text = decision.text if decision.text.rstrip().endswith(";") else decision.text + ";"
+        scanned = scan_declarations(text)
+        if len(scanned) != 1 or scanned[0].name != name:
+            continue                      # the decision text is checked by the harvest
+        decl = scanned[0]
+        entries.append(Canonical(namespace=decl.namespace, name=decl.name, kind=decl.kind,
+                                 canon=decl.canon, text=decl.text, source=CANON_FILE,
+                                 domain=decision.domain))
+    # Canonical prototypes of callees no published TU defines in C yet
+    # (config/header-callees.json): a worker's local extern is held to them.
+    for name, entry in sorted(load_callees(root).items()):
+        decl = entry["scanned"]
+        entries.append(Canonical(namespace=decl.namespace, name=decl.name, kind=decl.kind,
+                                 canon=decl.canon, text=decl.text, source=CALLEES_FILE,
+                                 domain=None, units=list(entry["units"])))
+    if use_cache:
+        # `--no-cache` neither reads nor writes the cache, so a private run under
+        # a symlinked `.work/` leaves the shared cache alone
+        _write_cache(root, key, entries)
+    return entries
+
+
+CALLEE_KEY_RE = re.compile(r"^[A-Za-z_$][A-Za-z_0-9$]*$")
+UNIT_OF_PATH_RE = re.compile(r"(?:^|/)src/(main|ov0[12]|ov1[012])/")
+
+
+def load_callees(root: str) -> dict[str, dict]:
+    """config/header-callees.json: one canonical prototype per callee that no
+    published TU defines in C yet (it is still INCLUDE_ASM/ACCEPTED_ASM, or an
+    SDK routine), for the units named in `units`.
+
+    Schema 1: {"schema_version": 1, "callees": {NAME: {"text": DECL, "units": [...],
+    "evidence": [...], "rationale": "...", "confidence": "high|medium|low"}}}.
+    `text` must be exactly one prototype or extern declaration of NAME. Raises
+    CanonError on a malformed entry (the harvest and `lint` exit 2).
+    """
+    path = header_input_path(root, CALLEES_FILE)
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{CALLEES_FILE}: unreadable ({exc})")
+    if doc.get("schema_version") != 1:
+        raise CanonError(f"{CALLEES_FILE}: schema_version must be 1")
+    out: dict[str, dict] = {}
+    for name, entry in sorted((doc.get("callees") or {}).items()):
+        if not CALLEE_KEY_RE.match(name):
+            raise CanonError(f"{CALLEES_FILE}: `{name}` is not an identifier")
+        text = str(entry.get("text") or "")
+        units = [str(u) for u in entry.get("units") or []]
+        if not units or any(u not in TU_UNITS for u in units):
+            raise CanonError(f"{CALLEES_FILE}: `{name}` needs `units` from {', '.join(TU_UNITS)}")
+        if not entry.get("evidence"):
+            raise CanonError(f"{CALLEES_FILE}: `{name}` has no evidence")
+        scanned = scan_declarations(text if text.rstrip().endswith(";") else text + ";")
+        if len(scanned) != 1 or scanned[0].name != name or scanned[0].kind not in PROTO_KINDS \
+                or scanned[0].defined:
+            raise CanonError(f"{CALLEES_FILE}: `{name}` text is not one prototype/extern of `{name}`")
+        out[name] = dict(entry, units=units, scanned=scanned[0])
+    return out
+
+
+def callee_survey(root: str) -> dict:
+    """Every ordinary name a published TU declares for itself while no published
+    TU defines it in C and no generated header carries it: the callees that are
+    still assembly (or SDK), with each spelling and the TUs that write it, and
+    what config/header-callees.json says about it."""
+    tus = published_tus(root)
+    defined: set[str] = set()
+    for tu in tus:
+        defined |= tu.defines
+    carried = {(e.namespace, e.name) for e in canonical_entries(root, use_cache=False)
+               if e.source != CALLEES_FILE}
+    registry = load_callees(root)
+    spell: dict[str, dict[str, dict[str, list[str]]]] = {}
+    texts: dict[tuple[str, str], str] = {}
+    for tu in tus:
+        for key, canon in sorted(tu.local_canon.items()):
+            if key[0] != "ordinary" or key in carried:
+                continue
+            names = {n.strip() for n in key[1].split(",")}
+            if names & defined or names & {"INCLUDE_ASM", "ACCEPTED_ASM", "INCLUDE_RODATA"}:
+                continue
+            c = normalize_ws(canon)
+            spell.setdefault(key[1], {}).setdefault(tu.unit, {}).setdefault(c, []).append(tu.tu)
+    for tu in tus:
+        for path in [tu.c] + ([tu.local_h] if tu.local_h else []):
+            try:
+                with open(os.path.join(root, path), encoding="utf-8") as fh:
+                    for sc in scan_declarations(fh.read()):
+                        if not sc.defined:
+                            texts.setdefault((sc.name, normalize_ws(sc.canon)), sc.text)
+            except OSError:
+                pass
+    # a `static` forward declaration names a TU-local function: never a callee
+    static_names = {name for (name, _c), text in texts.items()
+                    if re.match(r"^\s*static\b", text)}
+    rows = []
+    for name, by_unit in sorted(spell.items()):
+        if name in static_names:
+            continue
+        entry = registry.get(name)
+        for unit, spellings in sorted(by_unit.items()):
+            row = dict(name=name, unit=unit,
+                       spellings=[dict(canon=c, text=texts.get((name, c)), tus=sorted(t))
+                                  for c, t in sorted(spellings.items(), key=lambda kv: -len(kv[1]))],
+                       registered=None)
+            if entry is not None and unit in entry["units"]:
+                reg = entry["scanned"].canon
+                row["registered"] = dict(text=entry["scanned"].text,
+                                         diverging=sorted(t for c, ts in spellings.items()
+                                                          if c != reg for t in ts))
+            rows.append(row)
+    obsolete = sorted(n for n in registry if n in defined)
+    return dict(callees=rows, obsolete=obsolete)
+
+
+def callees_main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        prog="header_harvest.py callees",
+        description=f"Survey the local prototypes of callees no published TU defines in C, "
+                    f"against {CALLEES_FILE}.")
+    ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ap.add_argument("--json", dest="json_out", default=None, metavar="OUT")
+    ap.add_argument("--candidates", default=None, metavar="OUT",
+                    help="write registry-ready entries for every unregistered callee that at least "
+                         "two TUs of one unit spell identically and no TU of it spells otherwise")
+    args = ap.parse_args(argv)
+    try:
+        survey = callee_survey(args.root)
+    except (CanonError, ParseError) as exc:
+        print(f"header_harvest callees: {exc}", file=sys.stderr)
+        return 2
+    rows = survey["callees"]
+    divergent = [r for r in rows if len(r["spellings"]) > 1]
+    registered_diverging = [r for r in rows if r["registered"] and r["registered"]["diverging"]]
+    if args.json_out:
+        with open(args.json_out, "w", encoding="utf-8") as fh:
+            json.dump(survey, fh, indent=1)
+            fh.write("\n")
+    if args.candidates:
+        cands: dict[str, dict] = {}
+        for r in rows:
+            if r["registered"] or len(r["spellings"]) != 1 or len(r["spellings"][0]["tus"]) < 2:
+                continue
+            if any(o["name"] == r["name"] and o is not r and o["spellings"][0]["canon"] !=
+                   r["spellings"][0]["canon"] for o in rows):
+                continue                   # another unit spells the name otherwise
+            item = cands.setdefault(r["name"], dict(
+                text=r["spellings"][0]["text"], units=[],
+                evidence=[], rationale="every published TU that declares it spells it this way",
+                confidence="medium"))
+            item["units"].append(r["unit"])
+            item["evidence"].append(f"identical local declaration in {', '.join(r['spellings'][0]['tus'])}")
+        with open(args.candidates, "w", encoding="utf-8") as fh:
+            json.dump({"schema_version": 1, "callees": cands}, fh, indent=1, sort_keys=True)
+            fh.write("\n")
+    for r in divergent:
+        print(f"DIVERGENT {r['unit']}:{r['name']} " + " | ".join(
+            f"{s['canon']} ({len(s['tus'])} TU)" for s in r["spellings"]))
+    for r in registered_diverging:
+        print(f"CONFLICT {r['unit']}:{r['name']} {', '.join(r['registered']['diverging'])} "
+              f"differ from {CALLEES_FILE}")
+    for name in survey["obsolete"]:
+        print(f"OBSOLETE {name}: a published TU now defines it in C (its header states the prototype)")
+    print(f"OK callees={len(rows)} divergent={len(divergent)} "
+          f"registered={sum(1 for r in rows if r['registered'])} "
+          f"registered_diverging={len(registered_diverging)} obsolete={len(survey['obsolete'])}")
+    return 0
+
+
+def canonical_index(entries: list[Canonical]) -> dict[tuple[str, str], list[Canonical]]:
+    index: dict[tuple[str, str], list[Canonical]] = {}
+    for entry in entries:
+        index.setdefault((entry.namespace, entry.name), []).append(entry)
+    return index
+
+
+def static_definition_of(candidate: str, canonical: str) -> bool:
+    """True when a `static` definition head matches the canonical prototype.
+
+    The TU that defines a function keeps its definition, and a definition head is
+    not a declaration a second TU could ever reuse: the only difference lint can
+    see is the storage class. Reporting it every run would say nothing the
+    decision's own rationale does not already record.
+    """
+    stripped = " ".join(t for t in candidate.split() if t != "static")
+    return stripped == " ".join(canonical.split())
+
+
+def pick_canonical(candidates: list[Canonical], domain: str | None) -> Canonical:
+    """The entry to compare against.
+
+    A decision wins over `--domain`: a name canonical in one domain is canonical
+    everywhere, so a file that spells it differently is a divergence no matter
+    which domain it sits in. The decision's own domain header is preferred over
+    the canon file itself, because it is the artifact a reader would include.
+    Without a decision, `--domain` comes first, then any other domain.
+    """
+    decisions = [e for e in candidates if e.source == CANON_FILE]
+    if decisions:
+        owner = decisions[0].domain
+        if owner:
+            owned = [e for e in candidates
+                     if e.source != CANON_FILE and e.domain == owner]
+            if owned:
+                return owned[0]
+        return decisions[0]
+    if domain:
+        for entry in candidates:
+            if entry.domain == domain:
+                return entry
+    headers = [e for e in candidates if e.source != CANON_FILE]
+    ordered = sorted(headers or candidates, key=lambda e: (e.domain or "", e.source))
+    return ordered[0]
+
+
+def lint_main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        prog="header_harvest.py lint",
+        description="Check .c/.h files against include/xeno/*/types.h, "
+                    f"include/xeno/*/functions.h and {CANON_FILE}.")
+    ap.add_argument("files", nargs="+", metavar="FILE")
+    ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ap.add_argument("--domain", default=None,
+                    help="compare against this domain's headers first, then the others")
+    ap.add_argument("--json", dest="json_out", default=None, metavar="OUT",
+                    help="write the machine-readable report to OUT")
+    ap.add_argument("--allow", dest="allow", action="append", default=[], metavar="NAME",
+                    help="accept a divergence for NAME (repeatable); the caller records why")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="re-parse the shared headers instead of using the mtime cache")
+    args = ap.parse_args(argv)
+    root = args.root
+
+    try:
+        entries = canonical_entries(root, use_cache=not args.no_cache)
+    except (CanonError, ParseError, OSError) as exc:
+        print(f"header_harvest lint: {exc}", file=sys.stderr)
+        return 2
+    index = canonical_index(entries)
+    allowed_names = set(args.allow)
+    try:
+        canon = load_canon(root)
+    except CanonError as exc:
+        print(f"header_harvest lint: {exc}", file=sys.stderr)
+        return 2
+    # A byte_required entry excepts the accepted file whose divergent spelling a
+    # verified exact unit depends on. `file` is the file the exception was
+    # reviewed against, which for an entry written before the TU migration is a
+    # pre-migration path; `tu_file` is the published TU file that carries the
+    # same divergence today (the loader has always validated it). Index both, or
+    # a repointed entry stays dead data and the lint reports the reviewed
+    # divergence as drift.
+    byte_required = {(name, path): entry["reason"]
+                     for name, decision in canon.items()
+                     for entry in decision.byte_required
+                     for path in filter(None, (entry["file"], entry.get("tu_file")))}
+    excepted_hits: list[dict] = []
+
+    conflicts: list[dict] = []
+    allowed_hits: list[dict] = []
+    checked = 0
+    for path in args.files:
+        rel = os.path.relpath(os.path.abspath(path), root).replace(os.sep, "/")
+        try:
+            with open(path, encoding="utf-8") as fh:
+                raw = fh.read()
+        except OSError as exc:
+            print(f"header_harvest lint: cannot read {path}: {exc}", file=sys.stderr)
+            return 2
+        try:
+            scanned = scan_declarations(raw)
+        except ParseError as exc:
+            print(f"header_harvest lint: {rel}: {exc}", file=sys.stderr)
+            return 2
+        unit_m = UNIT_OF_PATH_RE.search(os.path.abspath(path).replace(os.sep, "/"))
+        file_unit = unit_m.group(1) if unit_m else None
+        for decl in scanned:
+            candidates = index.get((decl.namespace, decl.name))
+            if candidates:
+                # a callee registry entry holds only the units it names
+                candidates = [c for c in candidates
+                              if c.units is None or file_unit is None or file_unit in c.units]
+            if not candidates:
+                continue
+            checked += 1
+            canonical = pick_canonical(candidates, args.domain)
+            if decl.canon == canonical.canon:
+                continue
+            kinds = {decl.kind, canonical.kind}
+            if kinds == {KIND_TAG, KIND_TAG_FORWARD}:
+                continue      # `struct X;` beside `struct X { ... };` is not a divergence
+            if decl.defined and static_definition_of(decl.canon, canonical.canon):
+                continue      # the TU that defines it keeps its own definition head
+            excepted = byte_required.get((decl.name, rel))
+            if excepted is not None:
+                excepted_hits.append({"name": decl.name, "file": rel, "line": decl.line,
+                                      "reason": excepted})
+                continue
+            record = {
+                "name": decl.name,
+                "file": rel,
+                "line": decl.line,
+                "kind": CANON_KINDS.get(decl.kind, decl.kind),
+                "candidate": normalize_ws(decl.text),
+                "canonical": normalize_ws(canonical.text),
+                "canonical_source": canonical.source,
+            }
+            if decl.name in allowed_names:
+                allowed_hits.append(record)
+            else:
+                conflicts.append(record)
+
+    for record in conflicts:
+        print(f"CONFLICT {record['name']} {record['file']}:{record['line']} differs from "
+              f"{record['canonical_source']} (canonical: {record['canonical'][:100]})")
+    print(f"OK checked={checked} files={len(args.files)} "
+          f"conflicts={len(conflicts)} allowed={len(allowed_hits)} "
+          f"byte_required={len(excepted_hits)}")
+
+    if args.json_out:
+        report = {"conflicts": conflicts, "checked": checked,
+                  "allowed": allowed_hits, "byte_required": excepted_hits,
+                  "files": len(args.files)}
+        try:
+            out_dir = os.path.dirname(os.path.abspath(args.json_out))
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
+            with open(args.json_out, "w", encoding="utf-8") as fh:
+                json.dump(report, fh, indent=2)
+                fh.write("\n")
+        except OSError as exc:
+            print(f"header_harvest lint: cannot write {args.json_out}: {exc}", file=sys.stderr)
+            return 2
+
+    return 1 if conflicts else 0
+
+
+# ---------------------------------------------------------------------------
+# driver
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Excluded:
+    """A declaration held back because a header cannot legally carry it."""
+    domain: str
+    name: str
+    reason: str
+
+
+@dataclass
+class StaticLocal:
+    """A name withheld because its accepted definition is `static`."""
+    domain: str
+    name: str
+    defined_in: list[str]
+    files: list[str]
+
+
+@dataclass
+class DomainState:
+    """Everything one domain contributes, before the cross-domain pass."""
+    domain: str
+    base: dict[tuple[str, str], Variant]
+    forwards: dict[tuple[str, str], Variant]
+    conflicts: list[Conflict]
+    resolved: list[Resolved]
+    applied: list[CrossApply]
+    excluded: list[Excluded]
+    tu_local: list[TuLocal] = field(default_factory=list)
+    static_local: list[StaticLocal] = field(default_factory=list)
+
+
+@dataclass
+class Harvest:
+    """Everything one run produced: files to write plus what was left out."""
+    outputs: dict[str, str]
+    stats: dict
+    conflicts: list[Conflict]
+    unresolved: list[Unresolved]
+    skips: list[SkipRecord]
+    non_c: list[str]
+    unaccepted: list[str]
+    bad_units: list[str]
+    resolved: list[Resolved]
+    obsolete: list[str]
+    applied: list[CrossApply]
+    excluded: list[Excluded]
+    cycles: list[tuple[str, str]]
+    tu_local: list[TuLocal] = field(default_factory=list)
+    collisions: list[tuple[str, str, list[str]]] = field(default_factory=list)
+    borrowed: list[tuple[str, str, str]] = field(default_factory=list)
+    static_local: list[StaticLocal] = field(default_factory=list)
+    common: dict[tuple[str, str], list[str]] = field(default_factory=dict)
+    homes: "Homes | None" = None
+
+
+def prepare_domain(domain: str, decls: list[Decl],
+                   canon: dict[str, Decision],
+                   static_defs: dict[str, list[tuple[str, str]]] | None = None
+                   ) -> DomainState:
+    """Merge, resolve decisions and drop what no header may carry."""
+    merged, conflicts, forwards = group_declarations(decls)
+    conflicts, resolved, applied, tu_local = apply_canon(domain, conflicts, merged, canon)
+    # A name whose accepted definition is `static` has no external linkage in the
+    # original program: a shared header may not carry it in any spelling. An
+    # `extern` view of it in a second accepted file is that file's local reading
+    # aid, and in the original translation unit the two spellings are the same
+    # identifier with two linkages, which cc1 refuses.
+    static_names = set(static_defs or ())
+    withheld: list[StaticLocal] = []
+    if static_names:
+        for mapping in (merged, forwards):
+            for key in [k for k in mapping
+                        if {p.strip() for p in k[1].split(",")} & static_names]:
+                for part in sorted({p.strip() for p in key[1].split(",")} & static_names):
+                    withheld.append(StaticLocal(
+                        domain=domain, name=key[1],
+                        defined_in=sorted({f for f, _d in static_defs[part]}),
+                        files=sorted({d.file for d in mapping[key].sources})))
+                del mapping[key]
+        conflicts = [c for c in conflicts
+                     if not {p.strip() for p in c.name.split(",")} & static_names]
+        resolved = [r for r in resolved
+                    if not {p.strip() for p in r.name.split(",")} & static_names]
+        applied = [a for a in applied if a.name not in static_names]
+    for mapping in (merged, forwards):
+        for (_namespace, name), var in mapping.items():
+            try:
+                var.refs = analyze_refs(var.text, [n.strip() for n in name.split(",")])
+            except ParseError:
+                var.refs = Refs(needs={"<unparsed>"})
+    excluded: list[Excluded] = []
+    for mapping in (merged, forwards):
+        for key in sorted(mapping):
+            reason = ordinary_candidate_c(mapping[key].text)
+            if reason is not None:
+                excluded.append(Excluded(domain, key[1], reason))
+                del mapping[key]
+    # A tu_local name is withheld everywhere, including its forward declaration.
+    for key in [k for k in forwards if is_tu_local(canon, k[1], domain)]:
+        del forwards[key]
+    return DomainState(domain=domain, base=merged, forwards=forwards,
+                       conflicts=conflicts, resolved=resolved, applied=applied,
+                       excluded=excluded, tu_local=tu_local, static_local=withheld)
+
+
+def resolve_domain(state: DomainState, external: set[str],
+                   external_complete: set[str],
+                   extra: dict[tuple[str, str], Variant] | None = None
+                   ) -> tuple[dict[tuple[str, str], Variant], list[Unresolved]]:
+    """The declarations this domain emits, given what it may include or borrow."""
+    pool = dict(state.base)
+    pool.update(extra or {})
+    merged, unresolved = prune_unresolved(pool, state.domain,
+                                          external, external_complete)
+    # A withheld or conflicting tag keeps its accepted forward declaration,
+    # so prototypes that only pass pointers stay usable.
+    missing_tags = {c.name for c in state.conflicts} | {u.name for u in unresolved}
+    for key, var in sorted(state.forwards.items()):
+        if key not in merged and key[1] in missing_tags:
+            merged[key] = var
+    merged, extra = prune_unresolved(merged, state.domain, external, external_complete)
+    return merged, unresolved + extra
+
+
+def borrow_types(domain: str, state: DomainState,
+                 offers: dict[str, tuple[tuple[str, str], Variant, str]],
+                 local_names: set[str]) -> dict[tuple[str, str], Variant]:
+    """Type declarations this domain needs and another domain owns.
+
+    Two domain `types.h` files cannot be read together - each defines names the
+    other defines - so a missing type is repeated here instead, exactly as the
+    owning domain's accepted file spells it. This is the same operation the
+    canon pass already performs for a cross-domain prototype: no declaration is
+    invented, and a name this domain spells itself is never overridden.
+    """
+    borrowed: dict[tuple[str, str], Variant] = {}
+    for _round in range(8):
+        pool = dict(state.base)
+        pool.update(borrowed)
+        provides, complete = availability(list(pool.values()))
+        wanted: set[str] = set()
+        for var in pool.values():
+            wanted |= var.refs.needs - provides
+            wanted |= var.refs.needs_complete - complete
+        added = False
+        for name in sorted(wanted):
+            offer = offers.get(name)
+            if offer is None:
+                continue
+            key, var, owner = offer
+            if key in borrowed or key in state.base or name in local_names:
+                continue
+            if var.refs.provides & local_names:
+                continue                   # this domain already spells one of these
+            clone = Variant(canon=var.canon, text=var.text, doc=var.doc,
+                            kind=var.kind, sources=list(var.sources))
+            clone.refs = var.refs
+            clone.canon_file = var.canon_file
+            clone.canon_sdk = var.canon_sdk
+            clone.canon_rejected = var.canon_rejected
+            clone.canon_foreign = var.canon_foreign
+            clone.canon_tu = var.canon_tu
+            clone.order_hint = var.order_hint
+            clone.borrowed_from = owner
+            borrowed[key] = clone
+            added = True
+        if not added:
+            break
+    return borrowed
+
+
+def type_definitions(variants) -> set[str]:
+    """Names a header *defines*, which a second header may therefore not repeat.
+
+    A forward `struct X;` may be repeated; a definition, a typedef or an
+    enumerator may not.
+    """
+    out: set[str] = set()
+    for var in variants:
+        if var.kind in (KIND_TYPEDEF, KIND_TAG):
+            out |= var.refs.provides
+    return out
+
+
+def availability(variants: list[Variant]) -> tuple[set[str], set[str]]:
+    """The names a set of emitted declarations provides, and which are complete."""
+    provides: set[str] = set()
+    complete: set[str] = set()
+    alias: dict[str, str] = {}
+    for var in variants:
+        provides |= var.refs.provides
+        complete |= var.refs.provides_complete
+        alias.update(var.refs.complete_alias)
+    while True:
+        grown = {n for n, target in alias.items()
+                 if n not in complete and target in complete}
+        if not grown:
+            break
+        complete |= grown
+    return provides, complete
+
+
+def foreign_pool(exported: dict[str, tuple[set[str], set[str]]], domain: str,
+                 banned: set[str]) -> tuple[set[str], set[str]]:
+    """Every name `domain` may reach by including another domain's `types.h`."""
+    names: set[str] = set()
+    complete: set[str] = set()
+    for other in sorted(exported):
+        if other == domain or other in banned:
+            continue
+        names |= exported[other][0]
+        complete |= exported[other][1]
+    return names, complete
+
+
+def owner_index(exported: dict[str, tuple[set[str], set[str]]], domain: str,
+                banned: set[str]) -> dict[str, str]:
+    """name -> the domain whose `types.h` provides it (own domain excluded).
+
+    A name two domains export is attributed to `core` when `core` has it, and
+    otherwise to the alphabetically first domain, so the include set is stable.
+    """
+    owners: dict[str, str] = {}
+    for other in sorted(exported, key=lambda d: (d != "core", d)):
+        if other == domain or other in banned:
+            continue
+        for name in exported[other][0] | exported[other][1]:
+            owners.setdefault(name, other)
+    return owners
+
+
+def foreign_includes(merged: dict[tuple[str, str], Variant],
+                     owners: dict[str, str]) -> tuple[set[str], set[str]]:
+    """The domains `types.h` and `functions.h` must include, from what survived."""
+    local, local_complete = availability(list(merged.values()))
+    by_types: set[str] = set()
+    by_protos: set[str] = set()
+    for var in merged.values():
+        needed = (var.refs.needs - local) | (var.refs.needs_complete - local_complete)
+        found = {owners[name] for name in needed if name in owners}
+        if var.kind in TYPE_KINDS:
+            by_types |= found
+        else:
+            by_protos |= found
+    return by_types, by_protos - by_types
+
+
+def split_common(merged_by_domain: dict[str, dict[tuple[str, str], Variant]]
+                 ) -> tuple[dict[tuple[str, str], Variant], dict[tuple[str, str], list[str]]]:
+    """The type definitions that belong in `include/xeno/common/types.h`.
+
+    C refuses a second definition of a typedef, a struct/union/enum tag or an
+    enumerator, even an identical one, so two domain `types.h` files that both
+    define `XglClock` cannot be read by one translation unit. Every definition
+    more than one domain emits is therefore written once in a base header that
+    every domain `types.h` includes, and the transitive closure of what those
+    definitions name goes with it so the base header stands on its own.
+
+    Returns the declarations to emit in the base header and, for reporting, the
+    domains each one came from. A name two domains spell differently is left
+    where it is: the cross-domain divergence is a canon decision, not a move.
+    """
+    by_key: dict[tuple[str, str], dict[str, Variant]] = {}
+    for domain, merged in sorted(merged_by_domain.items()):
+        for key, var in merged.items():
+            by_key.setdefault(key, {})[domain] = var
+
+    def agreed(key: tuple[str, str]) -> Variant | None:
+        """The single spelling every domain that has this key emits, or None."""
+        variants = by_key.get(key) or {}
+        defining = {d: v for d, v in variants.items() if v.kind in (KIND_TYPEDEF, KIND_TAG)}
+        if not defining or len({v.canon for v in defining.values()}) != 1:
+            return None
+        # Prefer the domain that owns the declaration over one that borrowed it,
+        # so the emitted provenance is the accepted file, not a repetition note.
+        order = sorted(defining, key=lambda d: (defining[d].borrowed_from is not None,
+                                                d != "core", d))
+        return defining[order[0]]
+
+    wanted: set[tuple[str, str]] = set()
+    for key, variants in by_key.items():
+        defining = [v for v in variants.values() if v.kind in (KIND_TYPEDEF, KIND_TAG)]
+        if len(defining) > 1 and agreed(key) is not None:
+            wanted.add(key)
+
+    # Close over what the moved definitions name: a base header that references a
+    # type only a domain header defines would not compile on its own.
+    provider: dict[str, tuple[str, str]] = {}
+    for key, variants in sorted(by_key.items()):
+        chosen = agreed(key)
+        if chosen is None:
+            continue
+        for name in sorted(chosen.refs.provides | chosen.refs.provides_complete):
+            provider.setdefault(name, key)
+    for _round in range(16):
+        picked = {key: agreed(key) for key in wanted}
+        if any(v is None for v in picked.values()):
+            return {}, {}                      # never emit a half-agreed base header
+        provides, complete = availability(list(picked.values()))
+        needed: set[str] = set()
+        for var in picked.values():
+            needed |= var.refs.needs - provides
+            needed |= var.refs.needs_complete - complete
+        grown = {provider[name] for name in sorted(needed)
+                 if name in provider and provider[name] not in wanted}
+        if not grown:
+            break
+        wanted |= grown
+
+    common = {key: agreed(key) for key in sorted(wanted)}
+    if any(v is None for v in common.values()):
+        return {}, {}
+    origins = {key: sorted(by_key[key]) for key in common}
+    return common, origins
+
+
+def first_cycle(edges: dict[str, set[str]]) -> tuple[str, str] | None:
+    """One edge that closes a cycle in the `types.h` include graph, or None.
+
+    Only `types.h` files can form a cycle: nothing includes a `functions.h`.
+    """
+    colour: dict[str, int] = {}
+    stack: list[str] = []
+
+    def walk(node: str) -> tuple[str, str] | None:
+        colour[node] = 1
+        stack.append(node)
+        for other in sorted(edges.get(node, ())):
+            if colour.get(other) == 1:
+                return (node, other)
+            if colour.get(other, 0) == 0:
+                found = walk(other)
+                if found is not None:
+                    return found
+        stack.pop()
+        colour[node] = 2
+        return None
+
+    for node in sorted(edges):
+        if colour.get(node, 0) == 0:
+            found = walk(node)
+            if found is not None:
+                return found
+    return None
+
+
+# ---------------------------------------------------------------------------
+# promote: migrate accepted translation units onto the shared headers
+# ---------------------------------------------------------------------------
+
+# Every (runner, profile) pair an accepted EE C unit can have been built with.
+# `config/units/*.json` records the packet, not the backend that produced it, so
+# the backend is re-established by evidence: the first pair that reproduces the
+# unit byte for byte as it stands today is the pair the promoted source must
+# still satisfy. Hints only reorder the search; they never accept anything.
+PROMOTE_BACKENDS = (
+    ("tools/match.py", "config/match-profile.json"),
+    ("tools/match.py", "config/gcc29-match-profile.json"),
+    ("tools/match_gcc991111.py", "config/gcc291111-match-profile.json"),
+    ("tools/match_gcc991111.py", "config/gcc291111-g8-match-profile.json"),
+    ("tools/match_la29.py", "config/la29-match-profile.json"),
+)
+BACKEND_HINTS = (("gcc991111", "config/gcc291111-match-profile.json"),
+                 ("la29", "config/la29-match-profile.json"),
+                 ("gcc29", "config/gcc29-match-profile.json"))
+BACKEND_CACHE = PROMOTE_BUILD_DIR + "/backends.json"
+SUBPROCESS_TIMEOUT = 30
+
+INCLUDE_LINE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*"([^"\n]+)"[ \t]*$')
+DIRECTIVE_LINE_RE = re.compile(r"^[ \t]*#[ \t]*(\w+)")
+
+
+def sha256_file(path: str) -> str:
+    import hashlib
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+@dataclass
+class FileDecl:
+    """One top-level declaration of a translation unit, with its source span."""
+    kind: str
+    namespace: str
+    name: str
+    text: str
+    canon: str
+    start: int
+    stop: int
+    has_body: bool
+    index: int
+    line: int
+
+
+def file_declarations(raw: str) -> list[FileDecl]:
+    """Every classifiable top-level declaration, with the span it occupies."""
+    struct_view, code_view, dropped = mask_source(raw)
+    out: list[FileDecl] = []
+    for index, rd in enumerate(split_top_level(struct_view)):
+        struct_slice = struct_view[rd.start:rd.stop]
+        try:
+            result = classify(raw, dropped, rd.start, rd.stop,
+                              struct_slice, rd.has_body, rd.is_kr)
+        except ParseError:
+            continue
+        if result is None:
+            continue
+        kind, namespace, name, emitted, token_canon = result
+        if not emitted.endswith(";"):
+            emitted += ";"
+        if kind in (KIND_PROTO, KIND_STATIC_DEF) and rd.has_body:
+            canon_src = code_view[rd.start:rd.start + struct_slice.index("{")]
+        else:
+            canon_src = code_view[rd.start:rd.stop]
+        # `promote` only ever removes declarations (`has_body` false), so a
+        # definition head keeps the kind it has always reported here.
+        if kind == KIND_STATIC_DEF:
+            kind = KIND_PROTO
+        out.append(FileDecl(
+            kind=kind, namespace=namespace, name=name, text=emitted.strip(),
+            canon=(token_canon if token_canon is not None
+                   else normalize_ws(canon_src).rstrip(";").strip()),
+            start=rd.start, stop=rd.stop, has_body=rd.has_body, index=index,
+            line=raw.count("\n", 0, rd.start) + 1))
+    return out
+
+
+def comment_span(raw: str, code_view: str, start: int) -> int:
+    """Start of the comment attached to the declaration at `start`, or `start`."""
+    i = start - 1
+    blank_lines = 0
+    while i >= 0 and raw[i].isspace():
+        if raw[i] == "\n":
+            blank_lines += 1
+            if blank_lines > 1:
+                return start
+        i -= 1
+    if i < 1 or raw[i - 1:i + 1] != "*/":
+        return start
+    begin = raw.rfind("/*", 0, i)
+    if begin <= 0 or code_view[begin:i + 1].strip():
+        return start
+    return begin
+
+
+def line_bounds(raw: str, start: int, stop: int) -> tuple[int, int]:
+    """Widen a span to whole lines when only blanks share them."""
+    head = raw.rfind("\n", 0, start) + 1
+    if raw[head:start].strip():
+        head = start
+    tail = raw.find("\n", stop)
+    tail = len(raw) if tail < 0 else tail + 1
+    if raw[stop:tail].strip():
+        tail = stop
+    return head, tail
+
+
+def cut_spans(raw: str, spans: list[tuple[int, int]]) -> str:
+    """Remove spans, then collapse the blank runs the removal left behind."""
+    keep: list[str] = []
+    position = 0
+    for start, stop in sorted(spans):
+        if start < position:
+            continue
+        keep.append(raw[position:start])
+        position = stop
+    keep.append(raw[position:])
+    text = "".join(keep)
+    lines = text.split("\n")
+    out: list[str] = []
+    for line in lines:
+        if not line.strip() and out and not out[-1].strip():
+            continue
+        out.append(line)
+    while out and not out[0].strip():
+        out.pop(0)
+    while len(out) > 1 and not out[-1].strip() and not out[-2].strip():
+        out.pop()
+    return "\n".join(out)
+
+
+def guard_only(text: str) -> bool:
+    """True when only an include guard, whitespace and comments are left."""
+    if scan_declarations(text):
+        return False
+    directives = [DIRECTIVE_LINE_RE.match(line).group(1)
+                  for line in text.splitlines() if DIRECTIVE_LINE_RE.match(line)]
+    if directives and directives not in (["ifndef", "define", "endif"],
+                                         ["ifndef", "define"], ["endif"]):
+        return False
+    stripped = mask_source(text)[1]
+    return not stripped.strip()
+
+
+def remaining_comments(text: str) -> str:
+    """The comment text a deleted header would take with it."""
+    kept = [line for line in text.splitlines()
+            if line.strip() and not DIRECTIVE_LINE_RE.match(line)]
+    return "\n".join(kept).strip()
+
+
+@dataclass
+class SharedDecl:
+    """One declaration a generated header already provides."""
+    path: str
+    domain: str
+    basename: str
+    kind: str
+    canon: str
+    text: str
+
+
+def shared_header_maps(root: str) -> dict[str, dict[tuple[str, str], SharedDecl]]:
+    """Every generated header, with the declarations it provides."""
+    maps: dict[str, dict[tuple[str, str], SharedDecl]] = {}
+    for rel in sorted(existing_generated(root)):
+        basename = rel.rsplit("/", 1)[1]
+        if basename not in (TYPES_BASENAME, PROTOS_BASENAME):
+            continue                       # a superseded generated file
+        domain = rel.split("/")[2]
+        with open(os.path.join(root, rel), encoding="utf-8") as fh:
+            raw = fh.read()
+        entries: dict[tuple[str, str], SharedDecl] = {}
+        for decl in scan_declarations(raw):
+            entries.setdefault((decl.namespace, decl.name),
+                               SharedDecl(path=rel, domain=domain, basename=basename,
+                                          kind=decl.kind, canon=decl.canon,
+                                          text=decl.text))
+        maps[rel] = entries
+    return maps
+
+
+def shared_header_index(root: str) -> dict[tuple[str, str], SharedDecl]:
+    """(namespace, name) -> the generated header declaration that provides it."""
+    index: dict[tuple[str, str], SharedDecl] = {}
+    for _rel, entries in sorted(shared_header_maps(root).items()):
+        for key, decl in entries.items():
+            index.setdefault(key, decl)
+    return index
+
+
+def compatible(left: str, right: str, kinds: set[str]) -> bool:
+    """True when two spellings of one name may sit in the same translation unit."""
+    if left == right:
+        return True
+    # `struct X;` beside `struct X { ... };` is a forward declaration, not a clash.
+    return kinds == {KIND_TAG, KIND_TAG_FORWARD}
+
+
+def header_includes(root: str, rel: str) -> list[str]:
+    """The repository-relative headers one generated header includes."""
+    out: list[str] = []
+    with open(os.path.join(root, rel), encoding="utf-8") as fh:
+        for line in fh:
+            found = INCLUDE_LINE_RE.match(line)
+            if not found:
+                continue
+            name = found.group(1)
+            local = os.path.normpath(os.path.join(os.path.dirname(rel), name))
+            candidate = local.replace(os.sep, "/")
+            if not os.path.isfile(os.path.join(root, candidate)):
+                candidate = "include/" + name
+            out.append(candidate)
+    return out
+
+
+_CLOSURE_CACHE: dict[tuple[str, str], list[str]] = {}
+
+
+def include_closure(root: str, wanted: set[str]) -> list[str]:
+    """Every generated header a packet must stage to satisfy `wanted`."""
+    seen: set[str] = set()
+    pending = list(wanted)
+    while pending:
+        rel = pending.pop()
+        if rel in seen:
+            continue
+        seen.add(rel)
+        key = (root, rel)
+        if key not in _CLOSURE_CACHE:
+            _CLOSURE_CACHE[key] = header_includes(root, rel)
+        pending.extend(_CLOSURE_CACHE[key])
+    return sorted(seen)
+
+
+@dataclass
+class Removal:
+    """One declaration promotion takes out of an accepted file."""
+    path: str
+    decl: FileDecl
+    provider: SharedDecl
+    record: Decl | None
+    divergent: bool
+
+
+@dataclass
+class UnitPlan:
+    unit: str
+    status: str = "unchanged"
+    reason: str = ""
+    source: str = ""
+    domain: str = ""
+    removals: list[Removal] = field(default_factory=list)
+    rewritten: dict[str, str] = field(default_factory=dict)
+    deleted: list[str] = field(default_factory=list)
+    lost_comments: dict[str, str] = field(default_factory=dict)
+    packet_headers: list[dict] = field(default_factory=list)
+    includes: list[str] = field(default_factory=list)
+    backend: tuple[str, str] | None = None
+    baseline: dict = field(default_factory=dict)
+    verification: dict = field(default_factory=dict)
+    conservative: bool = False
+    full_failure: dict = field(default_factory=dict)
+    divergent: list[str] = field(default_factory=list)
+    refused_domains: list[str] = field(default_factory=list)
+    clashes: list[tuple[str, str, str]] = field(default_factory=list)
+    attempts: list[str] = field(default_factory=list)
+
+
+def unit_paths(data: dict) -> tuple[list[str], list[dict]]:
+    source = data.get("source")
+    sources = [source] if isinstance(source, dict) else list(source or [])
+    return [s["path"] for s in sources], list(data.get("headers") or [])
+
+
+def plan_unit(root: str, unit: str, data: dict, shared: dict[tuple[str, str], SharedDecl],
+              accepted: dict[str, FileRecord], maps: dict[str, dict] | None = None,
+              conservative: bool = False, repin_only: bool = False) -> UnitPlan:
+    """Decide what promoting one unit would change, without writing anything.
+
+    `conservative` keeps every declaration whose spelling differs from the shared
+    header, and gives up the whole domain that spells it differently, so the
+    translation unit never gets a declaration it did not accept.
+    """
+    plan = UnitPlan(unit=unit, conservative=conservative)
+    maps = shared_header_maps(root) if maps is None else maps
+    sources, header_entries = unit_paths(data)
+    if not sources or not all(p.endswith(".c") for p in sources):
+        plan.status = "skipped"
+        plan.reason = "not a C unit"
+        return plan
+    plan.source = sources[0]
+    plan.domain = domain_of(sources[0]) or ""
+    local_headers = [h for h in header_entries
+                     if not h["path"].startswith(INCLUDE_ROOT + "/")]
+    pinned_shared = [h for h in header_entries
+                     if h["path"].startswith(INCLUDE_ROOT + "/")]
+
+    if repin_only:
+        # Refresh what a unit already depends on, and move nothing. Regenerating
+        # the shared headers changes their hashes (and can add one to the include
+        # closure); a unit that is otherwise untouched still has to be re-verified
+        # against them. Promoting new declarations is a separate decision.
+        plan.packet_headers = header_entries
+        if not pinned_shared:
+            plan.status = "unchanged"
+            plan.reason = "no shared header is pinned by this unit"
+        elif stale_pins(root, data):
+            plan.status = "repin"
+            plan.reason = f"{len(stale_pins(root, data))} pinned shared header(s) changed"
+        else:
+            plan.status = "pinned"
+            plan.reason = "already promoted"
+        return plan
+
+    texts: dict[str, str] = {}
+    parsed: dict[str, list[FileDecl]] = {}
+    candidates: list[Removal] = []
+    skips: list[SkipRecord] = []
+    for path in sources + [h["path"] for h in local_headers]:
+        full = os.path.join(root, path)
+        try:
+            with open(full, encoding="utf-8") as fh:
+                raw = fh.read()
+        except OSError as exc:
+            plan.status = "skipped"
+            plan.reason = f"unreadable file {path}: {exc.strerror}"
+            return plan
+        texts[path] = raw
+        try:
+            parsed[path] = file_declarations(raw)
+        except ParseError as exc:
+            plan.status = "skipped"
+            plan.reason = f"{path} is not scannable: {exc}"
+            return plan
+        record = accepted.get(path)
+        harvested = {}
+        if record is not None:
+            for decl in harvest_file(root, record, skips)[0]:
+                harvested[(decl.index, decl.namespace, decl.name)] = decl
+        for decl in parsed[path]:
+            if decl.has_body:
+                continue                   # a definition, never a duplicate
+            provider = shared.get((decl.namespace, decl.name))
+            if provider is None or decl.kind not in TYPE_KINDS + PROTO_KINDS:
+                continue
+            if decl.kind == KIND_TAG and provider.kind == KIND_TAG_FORWARD:
+                continue                   # the header knows less than this file
+            candidates.append(Removal(
+                path=path, decl=decl, provider=provider,
+                record=harvested.get((decl.index, decl.namespace, decl.name)),
+                divergent=not compatible(decl.canon, provider.canon,
+                                         {decl.kind, provider.kind})))
+
+    # A declaration with no harvested record cannot be replayed into the shared
+    # header, so it stays where it is rather than disappearing from the project.
+    unreplayable = [r for r in candidates if r.record is None]
+    candidates = [r for r in candidates if r.record is not None]
+    plan.divergent = sorted({r.decl.name for r in candidates if r.divergent})
+    if conservative:
+        # Keep every spelling that differs from the shared one. The clash pass
+        # below then gives up exactly the headers that would contradict it.
+        candidates = [r for r in candidates if not r.divergent]
+
+    pinned_paths = {e["path"] for e in pinned_shared
+                    if e["path"].rsplit("/", 1)[1] in (TYPES_BASENAME, PROTOS_BASENAME)}
+    removals = usable_removals(root, candidates, parsed, maps, plan, pinned_paths)
+    if not removals:
+        plan.status = "unchanged"
+        plan.reason = plan.reason or (
+            "no declaration is provided by the shared headers" if not candidates
+            else "every shared spelling this unit could reuse is refused")
+        if unreplayable:
+            plan.reason += (f"; {len(unreplayable)} declaration(s) have no harvest "
+                            f"record")
+        if any(e["path"].rsplit("/", 1)[1] in (TYPES_BASENAME, PROTOS_BASENAME)
+               for e in pinned_shared):
+            plan.status = "pinned"
+            plan.reason = "already promoted"
+            plan.packet_headers = header_entries
+        return plan
+
+    wanted = {(r.provider.domain, r.provider.basename) for r in removals}
+    # Own domain first, then the others; a domain's types before its functions.
+    wanted_includes = [f'#include "xeno/{d}/{b}"' for d, b in sorted(
+        wanted, key=lambda pair: (pair[0] != plan.domain, pair[0],
+                                  pair[1] != TYPES_BASENAME))]
+
+    by_file: dict[str, list[Removal]] = {}
+    for removal in removals:
+        by_file.setdefault(removal.path, []).append(removal)
+    deleted: list[str] = []
+    rewritten: dict[str, str] = {}
+    for path, items in by_file.items():
+        raw = texts[path]
+        code_view = mask_source(raw)[1]
+        spans = []
+        for removal in items:
+            begin = comment_span(raw, code_view, removal.decl.start)
+            spans.append(line_bounds(raw, begin, removal.decl.stop))
+        rewritten[path] = cut_spans(raw, spans)
+    for path in texts:
+        rewritten.setdefault(path, texts[path])
+    for path, text in list(rewritten.items()):
+        if path in sources or not guard_only(text):
+            continue
+        deleted.append(path)
+        leftover = remaining_comments(text)
+        if leftover:
+            plan.lost_comments[path] = leftover
+        del rewritten[path]
+
+    source_path = sources[0]
+    rewritten[source_path] = rewrite_includes(
+        rewritten[source_path], wanted_includes,
+        {h["path"] for h in local_headers if h["path"] in deleted},
+        os.path.dirname(source_path))
+    for path in list(rewritten):
+        if rewritten[path] == texts[path]:
+            del rewritten[path]            # untouched by this plan
+
+    staged = include_closure(root, {r.provider.path for r in removals})
+    entries = [dict(path=rel, staged_path=rel, sha256="") for rel in staged]
+    for entry in pinned_shared:
+        if entry["path"] not in staged:
+            entries.append(dict(entry))
+    for entry in local_headers:
+        if entry["path"] in deleted:
+            continue
+        entries.append(dict(entry))
+    plan.status = "promote"
+    plan.removals = removals
+    plan.rewritten = rewritten
+    plan.deleted = deleted
+    plan.packet_headers = entries
+    plan.includes = wanted_includes
+    if unreplayable:
+        plan.reason = (f"{len(unreplayable)} declaration(s) kept: no harvest record "
+                       f"({', '.join(sorted({r.decl.name for r in unreplayable}))})")
+    return plan
+
+
+def usable_removals(root: str, candidates: list[Removal],
+                    parsed: dict[str, list[FileDecl]], maps: dict[str, dict],
+                    plan: UnitPlan, pinned: set[str] | None = None) -> list[Removal]:
+    """Drop the removals whose header would contradict what the unit still says.
+
+    Including a header brings in everything it includes, so a declaration this
+    unit keeps - a definition, or a spelling the promotion refused - must agree
+    with every declaration in that closure. Where it does not, the whole header
+    is given up; the unit keeps its own view, and the divergence stays visible.
+    """
+    removals = list(candidates)
+    # Headers the unit already includes are settled: a new one that contradicts
+    # them is the one that has to go.
+    fixed = include_closure(root, set(pinned or ()))
+    for _round in range(8):
+        if not removals:
+            return []
+        closure = include_closure(root, {r.provider.path for r in removals}
+                                  | set(fixed))
+        # The already-included headers are read first, then the unit's own
+        # domain, so a name two domains spell differently keeps the form this
+        # unit already accepted.
+        closure.sort(key=lambda rel: (rel not in fixed,
+                                      rel.split("/")[2] != plan.domain, rel))
+        provided: dict[tuple[str, str], SharedDecl] = {}
+        clashes: set[str] = set()
+        for rel in closure:
+            for key, decl in maps.get(rel, {}).items():
+                first = provided.get(key)
+                if first is None:
+                    provided[key] = decl
+                    continue
+                # A type definition may not be repeated in one translation unit,
+                # even identically, so two headers that both define a name can
+                # never be included together.
+                duplicate_type = (first.kind in (KIND_TYPEDEF, KIND_TAG)
+                                  and decl.kind in (KIND_TYPEDEF, KIND_TAG))
+                if duplicate_type or not compatible(first.canon, decl.canon,
+                                                    {first.kind, decl.kind}):
+                    clashes.add(decl.path)
+                    plan.clashes.append((key[1], first.path, decl.path))
+        removed = {(r.path, r.decl.index) for r in removals}
+        for path, decls in parsed.items():
+            for decl in decls:
+                if (path, decl.index) in removed:
+                    continue
+                other = provided.get((decl.namespace, decl.name))
+                if other is None:
+                    continue
+                duplicate_type = (decl.kind in (KIND_TYPEDEF, KIND_TAG)
+                                  and other.kind in (KIND_TYPEDEF, KIND_TAG))
+                if duplicate_type or not compatible(decl.canon, other.canon,
+                                                    {decl.kind, other.kind}):
+                    clashes.add(other.path)
+                    plan.clashes.append((decl.name, path, other.path))
+        clashes -= set(fixed)              # an existing include cannot be undone
+        if not clashes:
+            return removals
+        refused = {rel for rel in closure
+                   if clashes & set(include_closure(root, {rel}))}
+        removals = [r for r in removals if r.provider.path not in refused]
+    return removals
+
+
+def rewrite_includes(raw: str, wanted: list[str], dropped: set[str],
+                     source_dir: str) -> str:
+    """Put the shared includes at the top of a candidate, once."""
+    lines = raw.split("\n")
+    present = set()
+    first_include = None
+    keep: list[str] = []
+    for line in lines:
+        found = INCLUDE_LINE_RE.match(line)
+        if found is None:
+            keep.append(line)
+            continue
+        name = found.group(1)
+        if first_include is None:
+            first_include = len(keep)
+        if f'#include "{name}"' in wanted:
+            present.add(f'#include "{name}"')
+            keep.append(f'#include "{name}"')
+            continue
+        local = os.path.normpath(os.path.join(source_dir, name)).replace(os.sep, "/")
+        if local in dropped or name in {os.path.basename(p) for p in dropped}:
+            continue                       # the private header is gone
+        keep.append(line)
+    missing = [line for line in wanted if line not in present]
+    if missing:
+        at = first_include if first_include is not None else first_declaration_line(
+            "\n".join(keep))
+        block = missing if (at < len(keep) and keep[at:at + 1] and
+                            INCLUDE_LINE_RE.match(keep[at])) else missing + [""]
+        keep[at:at] = block
+    text = "\n".join(keep)
+    lines = text.split("\n")
+    out: list[str] = []
+    for line in lines:
+        if not line.strip() and out and not out[-1].strip():
+            continue
+        out.append(line)
+    while out and not out[0].strip():
+        out.pop(0)
+    return "\n".join(out)
+
+
+def first_declaration_line(raw: str) -> int:
+    """Index of the line the first top-level declaration (or its comment) starts on."""
+    try:
+        struct_view, code_view, _dropped = mask_source(raw)
+        decls = split_top_level(struct_view)
+    except ParseError:
+        return 0
+    if not decls:
+        return 0
+    start = comment_span(raw, code_view, decls[0].start)
+    return raw.count("\n", 0, start)
+
+
+def run_bounded(argv: list[str], cwd: str) -> tuple[int, str]:
+    """One bounded child process with process-group termination on timeout."""
+    try:
+        proc = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, start_new_session=True)
+    except OSError as exc:
+        return 127, str(exc)
+    try:
+        out = proc.communicate(timeout=SUBPROCESS_TIMEOUT)[0]
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        out = proc.communicate()[0]
+        return 124, (out or b"").decode("utf-8", "replace") + "\ntimeout"
+    return proc.returncode, (out or b"").decode("utf-8", "replace")
+
+
+def run_backend(root: str, unit: str, backend: tuple[str, str], tag: str) -> dict:
+    """Verify one unit with one runner/profile pair in a fresh build directory."""
+    runner, profile = backend
+    out_dir = os.path.join(root, PROMOTE_BUILD_DIR, unit, tag)
+    if os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
+    os.makedirs(os.path.dirname(out_dir), exist_ok=True)
+    code, text = run_bounded(
+        [sys.executable, "-B", os.path.join(root, runner), "--root", root,
+         "--profile", os.path.join(root, profile),
+         "--packet", os.path.join(root, UNITS_GLOB_DIR, unit + ".json"),
+         "--output-dir", out_dir], root)
+    result = {"runner": runner, "profile": profile, "returncode": code,
+              "output": text.strip()[-4000:], "gate_passed": False, "equal": {}}
+    path = os.path.join(out_dir, "result.json")
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                blob = json.load(fh)
+        except (OSError, ValueError):
+            return result
+        result["gate_passed"] = bool(blob.get("gate_passed"))
+        result["error"] = blob.get("error")
+        result["equal"] = {f["name"]: bool(f.get("equal"))
+                           for f in blob.get("functions", [])}
+        result["first_difference"] = [
+            {"name": f["name"], **(f.get("first_difference") or {})}
+            for f in blob.get("functions", []) if not f.get("equal")]
+    return result
+
+
+def backend_order(unit: str) -> list[tuple[str, str]]:
+    """Candidate backends, with the unit's own naming hints tried first."""
+    order = list(PROMOTE_BACKENDS)
+    for hint, profile in BACKEND_HINTS:
+        if hint in unit:
+            order.sort(key=lambda pair: pair[1] != profile)
+            break
+    return order
+
+
+def detect_backend(root: str, unit: str, cache: dict) -> dict:
+    """The runner and profile that reproduce this unit as it stands today."""
+    if unit in cache and cache[unit].get("gate_passed"):
+        return cache[unit]
+    for backend in backend_order(unit):
+        result = run_backend(root, unit, backend, "baseline")
+        if result["gate_passed"]:
+            cache[unit] = result
+            return result
+    cache[unit] = result
+    return result
+
+
+
+
+def read_unit(root: str, unit: str) -> dict:
+    with open(os.path.join(root, UNITS_GLOB_DIR, unit + ".json"), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def write_unit(root: str, unit: str, data: dict) -> None:
+    path = os.path.join(root, UNITS_GLOB_DIR, unit + ".json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+        fh.write("\n")
+
+
+def snapshot(root: str, paths: list[str]) -> dict[str, bytes | None]:
+    """The exact bytes of every file a plan may touch, or None when absent."""
+    out: dict[str, bytes | None] = {}
+    for rel in paths:
+        full = os.path.join(root, rel)
+        if os.path.isfile(full):
+            with open(full, "rb") as fh:
+                out[rel] = fh.read()
+        else:
+            out[rel] = None
+    return out
+
+
+def restore(root: str, original: dict[str, bytes | None]) -> None:
+    """Put every touched file back, byte for byte."""
+    for rel, blob in original.items():
+        full = os.path.join(root, rel)
+        if blob is None:
+            if os.path.isfile(full):
+                os.remove(full)
+            continue
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "wb") as fh:
+            fh.write(blob)
+
+
+def write_plan(root: str, plan: UnitPlan, data: dict) -> None:
+    """Write one promoted unit. The caller has already snapshotted the group."""
+    for rel, text in plan.rewritten.items():
+        with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
+            fh.write(text)
+    for rel in plan.deleted:
+        full = os.path.join(root, rel)
+        if os.path.isfile(full):
+            os.remove(full)
+    entries = []
+    for entry in plan.packet_headers:
+        entry = dict(entry)
+        entry["sha256"] = sha256_file(os.path.join(root, entry["path"]))
+        entries.append(entry)
+    data["headers"] = entries
+    source = data.get("source")
+    for item in ([source] if isinstance(source, dict) else source or []):
+        item["sha256"] = sha256_file(os.path.join(root, item["path"]))
+    write_unit(root, plan.unit, data)
+
+
+def plan_files(plan: UnitPlan) -> list[str]:
+    """Every repository file one plan writes, deletes or re-pins."""
+    return sorted(set(list(plan.rewritten) + plan.deleted
+                      + [f"{UNITS_GLOB_DIR}/{plan.unit}.json"]))
+
+
+def stale_pins(root: str, data: dict) -> list[str]:
+    """Packet headers whose pinned hash, or whose include closure, has moved.
+
+    A generated header may start including another one - `xeno/common/types.h`
+    carries the types more than one domain needs - and the runner stages exactly
+    what the packet lists, so a header the closure gained is as stale as a hash
+    that changed.
+    """
+    out = []
+    listed = {entry["path"] for entry in data.get("headers") or []}
+    for entry in data.get("headers") or []:
+        if not entry["path"].startswith(INCLUDE_ROOT + "/"):
+            continue
+        full = os.path.join(root, entry["path"])
+        if not os.path.isfile(full) or sha256_file(full) != entry["sha256"]:
+            out.append(entry["path"])
+    shared = {p for p in listed if p.startswith(INCLUDE_ROOT + "/")}
+    for rel in include_closure(root, shared):
+        if rel.startswith(INCLUDE_ROOT + "/") and rel not in listed:
+            out.append(rel)
+    return out
+
+
+def repin_unit(root: str, data: dict) -> None:
+    entries = list(data.get("headers") or [])
+    listed = {entry["path"] for entry in entries}
+    shared = {p for p in listed if p.startswith(INCLUDE_ROOT + "/")}
+    for rel in include_closure(root, shared):
+        if rel.startswith(INCLUDE_ROOT + "/") and rel not in listed:
+            entries.append(dict(path=rel, staged_path=rel, sha256=""))
+            listed.add(rel)
+    for entry in entries:
+        full = os.path.join(root, entry["path"])
+        if os.path.isfile(full):
+            entry["sha256"] = sha256_file(full)
+    data["headers"] = entries
+
+
+def verify_plan(root: str, unit: str, backend: tuple[str, str], baseline: dict) -> dict:
+    """Re-verify a promoted unit and require exactly the recorded result."""
+    result = run_backend(root, unit, backend, "promoted")
+    result["accepted"] = bool(result["gate_passed"]
+                              and result["equal"] == baseline.get("equal"))
+    return result
+
+
+def unit_groups(root: str, units: list[str]) -> list[list[str]]:
+    """Units that must move together because they share a private header.
+
+    Rewriting a header two units list would leave the other unit pinned to a
+    hash that no longer exists, so such units are planned, written and verified
+    as one group and restored as one group.
+    """
+    owners: dict[str, list[str]] = {}
+    for unit in units:
+        for entry in read_unit(root, unit).get("headers") or []:
+            if not entry["path"].startswith(INCLUDE_ROOT + "/"):
+                owners.setdefault(entry["path"], []).append(unit)
+    parent = {unit: unit for unit in units}
+
+    def find(item: str) -> str:
+        while parent[item] != item:
+            parent[item] = parent[parent[item]]
+            item = parent[item]
+        return item
+
+    for shared_units in owners.values():
+        for other in shared_units[1:]:
+            parent[find(other)] = find(shared_units[0])
+    grouped: dict[str, list[str]] = {}
+    for unit in units:
+        grouped.setdefault(find(unit), []).append(unit)
+    return [grouped[key] for key in sorted(grouped)]
+
+
+def headers_fingerprint(root: str) -> str:
+    """One digest of every generated header, so a plan can be tied to them."""
+    import hashlib
+    digest = hashlib.sha256()
+    for rel in sorted(existing_generated(root)):
+        digest.update(rel.encode())
+        digest.update(sha256_file(os.path.join(root, rel)).encode())
+    return digest.hexdigest()
+
+
+def unit_fingerprint(root: str, unit: str, headers: str) -> str:
+    """What a plan for this unit depends on: its own files and the headers."""
+    import hashlib
+    digest = hashlib.sha256(headers.encode())
+    data = read_unit(root, unit)
+    sources, entries = unit_paths(data)
+    for rel in sources + [e["path"] for e in entries]:
+        full = os.path.join(root, rel)
+        digest.update(rel.encode())
+        if os.path.isfile(full):
+            digest.update(sha256_file(full).encode())
+    return digest.hexdigest()
+
+
+def plan_group(root: str, group: list[str], shared, accepted, maps,
+               conservative: bool, repin_only: bool = False) -> list[tuple[UnitPlan, dict]]:
+    out = []
+    for unit in group:
+        data = read_unit(root, unit)
+        out.append((plan_unit(root, unit, data, shared, accepted, maps,
+                              conservative, repin_only), data))
+    return out
+
+
+def promote_units(root: str, units: list[str], dry_run: bool,
+                  continue_on_failure: bool, reverify: bool,
+                  repin_only: bool = False) -> tuple[list[UnitPlan], int]:
+    """Plan, apply and verify one batch; never leave a unit half-written.
+
+    A unit is first offered every declaration the shared headers provide. If the
+    result no longer reproduces the original bytes it is restored and tried once
+    more without the spellings that differ from its own; only then is it rework.
+    """
+    shared = shared_header_index(root)
+    maps = shared_header_maps(root)
+    accepted = load_accepted(root)[0]
+    cache: dict = {}
+    cache_path = os.path.join(root, BACKEND_CACHE)
+    if os.path.isfile(cache_path):
+        try:
+            with open(cache_path, encoding="utf-8") as fh:
+                cache = json.load(fh)
+        except (OSError, ValueError):
+            cache = {}
+    backends = cache.setdefault("backends", {})
+    refused = cache.setdefault("full_refused", {})
+    rejected = cache.setdefault("rework", {})
+    fingerprint = headers_fingerprint(root)
+    ledger = load_promoted(root)
+    plans: list[UnitPlan] = []
+    failures = 0
+    stop = False
+    for group in unit_groups(root, units):
+        if stop:
+            break
+        final: list[UnitPlan] = []
+        failed_full: dict[str, dict] = {}
+        # A full plan already shown not to reproduce this source against these
+        # headers is not built again: the run stays idempotent and no build is
+        # repeated only to fail the same way.
+        prints = {unit: unit_fingerprint(root, unit, fingerprint) for unit in group}
+        if all(rejected.get(unit, {}).get("fingerprint") == prints[unit]
+               for unit in group):
+            # Already shown to be rework against exactly these inputs.
+            for unit in group:
+                plan = UnitPlan(unit=unit, status="failed")
+                plan.source = unit_paths(read_unit(root, unit))[0][0]
+                plan.reason = (rejected[unit].get("reason", "")
+                               + " (recorded by an earlier run; the unit and the "
+                                 "shared headers have not changed since)")
+                plans.append(plan)
+            continue
+        known = all(refused.get(unit) == prints[unit] for unit in group)
+        modes = (True,) if known else (False, True)
+        for conservative in modes:
+            batch = plan_group(root, group, shared, accepted, maps, conservative,
+                               repin_only)
+            final = [plan for plan, _data in batch]
+            for plan in final:
+                plan.attempts.append("conservative" if conservative else "full")
+                if plan.unit in failed_full:
+                    plan.full_failure = failed_full[plan.unit]
+                    plan.reason = ((plan.reason + " ") if plan.reason else "") + (
+                        "the full plan did not reproduce this unit and was "
+                        "restored; only the identical spellings were promoted")
+            for plan, data in batch:
+                pins = stale_pins(root, data)
+                if plan.status == "pinned" and pins:
+                    plan.status = "repin" if reverify else "stale"
+                    plan.reason = (f"{len(pins)} pinned shared header(s) changed"
+                                   + ("" if reverify else
+                                      "; run promote --reverify-changed"))
+            active = [(plan, data) for plan, data in batch
+                      if plan.status in ("promote", "repin")]
+            if not active:
+                break
+            for plan, _data in active:
+                plan.baseline = detect_backend(root, plan.unit, backends)
+                if plan.baseline.get("gate_passed"):
+                    plan.backend = (plan.baseline["runner"], plan.baseline["profile"])
+                    continue
+                plan.status = "blocked"
+                plan.reason = ("no available runner reproduces this unit as it "
+                               "stands: " + (plan.baseline.get("error")
+                                             or plan.baseline.get("output", "")[-300:]))
+            if len(group) > 1 and any(plan.status == "blocked" for plan, _ in active):
+                for plan, _data in active:
+                    if plan.status != "blocked":
+                        plan.status = "held"
+                        plan.reason = ("held: another unit sharing this private "
+                                       "header cannot be verified")
+            active = [(plan, data) for plan, data in active
+                      if plan.status in ("promote", "repin")]
+            if not active or dry_run:
+                break
+
+            touched: list[str] = []
+            for plan, _data in active:
+                touched.extend(plan_files(plan))
+            original = snapshot(root, sorted(set(touched)))
+            for plan, data in active:
+                if plan.status == "repin":
+                    repin_unit(root, data)
+                    write_unit(root, plan.unit, data)
+                else:
+                    write_plan(root, plan, data)
+            ok = True
+            for plan, _data in active:
+                plan.verification = verify_plan(root, plan.unit, plan.backend,
+                                                plan.baseline)
+                ok &= plan.verification["accepted"]
+            if ok:
+                for plan, _data in active:
+                    plan.status = "promoted" if plan.status == "promote" else "repinned"
+                    ledger.extend(r.record for r in plan.removals
+                                  if r.record is not None)
+                save_promoted(root, ledger)
+                break
+            restore(root, original)
+            retry = (not conservative
+                     and any(plan.divergent or plan.clashes for plan, _ in active))
+            if retry:
+                failed_full = {plan.unit: plan.verification for plan, _ in active}
+                for plan, _data in active:
+                    refused[plan.unit] = unit_fingerprint(root, plan.unit,
+                                                          fingerprint)
+                continue                   # try again without the foreign spellings
+            failures += len(active)
+            for plan, _data in active:
+                plan.status = "failed"
+                rejected[plan.unit] = {
+                    "fingerprint": prints[plan.unit],
+                    "reason": (plan.verification.get("error")
+                               or "the promoted source did not reproduce the unit")}
+                if len(active) > 1:
+                    plan.reason = ((plan.reason + " ") if plan.reason else "") + \
+                        "restored with the rest of its private-header group"
+            if not continue_on_failure:
+                stop = True
+            break
+        plans.extend(final)
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "w", encoding="utf-8") as fh:
+        json.dump(cache, fh, indent=1, sort_keys=True)
+    return plans, failures
+
+
+def render_promote(plans: list[UnitPlan], dry_run: bool) -> str:
+    """The promotion report: what moved, what did not, and why."""
+    by_status: dict[str, list[UnitPlan]] = {}
+    for plan in plans:
+        by_status.setdefault(plan.status, []).append(plan)
+    out: list[str] = ["# Shared header promotion", ""]
+    out.append(f"<!-- {REPO_MARKER}. Do not edit by hand. -->")
+    out.append("")
+    out.append("`python3 -B tools/header_harvest.py promote` migrates accepted units")
+    out.append("onto `include/xeno/<domain>/types.h` and `functions.h`. A unit is")
+    out.append("rewritten only when its own runner and profile still reproduce every")
+    out.append("mapped function byte for byte; anything else is restored to its exact")
+    out.append("previous bytes and listed here as rework.")
+    out.append("")
+    out.append("Mode: " + ("dry run (nothing written)" if dry_run else "applied"))
+    out.append("")
+    out.append("| status | units |")
+    out.append("| --- | --- |")
+    for status in sorted(by_status):
+        out.append(f"| {status} | {len(by_status[status])} |")
+    out.append("")
+    applied = [p for p in plans if p.status in ("promote", "promoted")]
+    removed = sum(len(p.removals) for p in applied)
+    deleted = sum(len(p.deleted) for p in applied)
+    out.append(f"Declarations removed from accepted source: {removed}. "
+               f"Private headers deleted: {deleted}. "
+               f"Units already on the shared headers: "
+               f"{len([p for p in plans if p.status in ('pinned', 'repinned')])}.")
+    out.append("")
+    for status in ("failed", "blocked", "held", "stale", "promote", "promoted",
+                   "repinned", "repin", "pinned", "unchanged", "skipped"):
+        items = by_status.get(status)
+        if not items:
+            continue
+        out.append(f"## {status} ({len(items)})")
+        out.append("")
+        if status in ("failed", "blocked"):
+            for plan in items:
+                out.append(f"### `{plan.unit}`")
+                out.append("")
+                out.append(f"- source: `{plan.source}`")
+                if plan.backend:
+                    out.append(f"- runner: `{plan.backend[0]}` profile "
+                               f"`{plan.backend[1]}`")
+                if plan.reason:
+                    out.append(f"- reason: {plan.reason}")
+                names = ", ".join(f"`{r.decl.name}`" for r in plan.removals)
+                if names:
+                    out.append(f"- declarations that changed: {names}")
+                divergent = [r for r in plan.removals if r.divergent]
+                for r in divergent:
+                    out.append(f"  - `{r.decl.name}` in `{r.path}` diverged from "
+                               f"`{r.provider.path}`")
+                    out.append(f"    - local: `{normalize_ws(r.decl.text)[:160]}`")
+                    out.append(f"    - shared: `{normalize_ws(r.provider.text)[:160]}`")
+                result = plan.verification or plan.baseline
+                if result.get("first_difference"):
+                    out.append("- first difference: "
+                               + json.dumps(result["first_difference"][:4]))
+                if result.get("error"):
+                    out.append(f"- runner error: `{result['error']}`")
+                if result.get("output"):
+                    out.append("")
+                    out.append("```")
+                    out.extend(result["output"].splitlines()[-20:])
+                    out.append("```")
+                out.append("")
+            continue
+        out.append("| unit | source | declarations | private headers | runner |")
+        out.append("| --- | --- | --- | --- | --- |")
+        for plan in items:
+            names = ", ".join(f"`{r.decl.name}`" for r in plan.removals)
+            if not names:
+                names = ", ".join(
+                    f"`{e['path']}`" for e in plan.packet_headers
+                    if e["path"].startswith(INCLUDE_ROOT + "/")) or "-"
+            if len(names) > 300:
+                names = names[:300] + " ..."
+            gone = ", ".join(f"`{p}` deleted" for p in plan.deleted) or (
+                plan.reason or "-")
+            runner = f"`{plan.backend[1]}`" if plan.backend else "-"
+            out.append(f"| `{plan.unit}` | `{plan.source or '-'}` | {names} "
+                       f"| {gone} | {runner} |")
+        out.append("")
+    lost = {p.unit: p.lost_comments for p in plans if p.lost_comments}
+    if lost:
+        out.append("## Comments removed with a deleted private header")
+        out.append("")
+        for unit, files in sorted(lost.items()):
+            for path, text in sorted(files.items()):
+                out.append(f"- `{unit}` / `{path}`:")
+                out.append("")
+                out.append("  ```")
+                for line in text.splitlines():
+                    out.append(f"  {line}")
+                out.append("  ```")
+        out.append("")
+    return "\n".join(out) + "\n"
+
+
+def promote_main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(
+        prog="header_harvest.py promote",
+        description="Migrate accepted units onto the shared headers and re-verify "
+                    "each one with its own runner and profile.")
+    ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    ap.add_argument("--dry-run", action="store_true",
+                    help="plan and print the batch without writing anything")
+    ap.add_argument("--unit", action="append", default=[], metavar="ID",
+                    help="promote only this unit (repeatable)")
+    ap.add_argument("--exclude", action="append", default=[], metavar="ID",
+                    help="leave this unit untouched, e.g. because another live "
+                         "reservation owns its origin TU (repeatable)")
+    ap.add_argument("--continue-on-failure", action="store_true",
+                    help="keep going after a unit fails re-verification")
+    ap.add_argument("--reverify-changed", action="store_true",
+                    help="also re-verify every promoted unit whose pinned shared "
+                         "header hash differs, and update the pin on success")
+    ap.add_argument("--repin-only", action="store_true",
+                    help="refresh and re-verify the shared-header pins of every unit "
+                         "that already depends on them, and promote nothing new "
+                         "(implies --reverify-changed)")
+    ap.add_argument("--no-report", action="store_true",
+                    help=f"do not write {PROMOTE_REPORT}")
+    args = ap.parse_args(argv)
+    # The per-TU header layout (task tu-header-layout, 2026-09-12) has no
+    # promotion step. `promote` moved declarations out of an accepted unit's
+    # `private.h` into a domain header and re-verified the unit; in TU mode the
+    # recovery unit is the whole translation unit, there is no `private.h`, and
+    # where a declaration lives follows from what the TU defines and what the
+    # other TUs need - which the harvest itself decides on every run. Removing
+    # anything from a published TU is an integrator edit with its own gate run,
+    # not something this tool does behind a re-verification.
+    sys.stderr.write(
+            "header_harvest promote: the per-TU header layout has no promotion step.\n"
+            "  A declaration lives in the header of the TU that defines it\n"
+            "  (include/<unit>/<tu>.h), in include/shared.h when no TU defines it and\n"
+            "  more than one needs it, and in the TU's own src/<unit>/<tu>.h otherwise;\n"
+            "  `python3 tools/header_harvest.py` derives all of that from the published\n"
+            "  sources on every run. Moving a declaration into or out of a published TU\n"
+            "  is an integrator edit under baseline:integration, verified by the\n"
+            "  whole-file gate and the TU audit. See docs/header-canon.md.\n")
+    return 2
+    root = args.root
+
+    available = sorted(entry[:-5] for entry in os.listdir(header_input_path(root, UNITS_GLOB_DIR))
+                       if entry.endswith(".json"))
+    if args.unit:
+        unknown = [u for u in args.unit if u not in available]
+        if unknown:
+            print(f"header_harvest promote: unknown unit(s): {', '.join(unknown)}",
+                  file=sys.stderr)
+            return 2
+        available = [u for u in available if u in set(args.unit)]
+    available = [u for u in available if u not in set(args.exclude)]
+    available = [u for u in available
+                 if not verbatim_unit(read_unit(root, u))]
+
+    try:
+        plans, failures = promote_units(root, available, args.dry_run,
+                                        args.continue_on_failure,
+                                        args.reverify_changed or args.repin_only,
+                                        args.repin_only)
+    except (CanonError, ParseError, OSError) as exc:
+        print(f"header_harvest promote: {exc}", file=sys.stderr)
+        return 2
+
+    counts: dict[str, int] = {}
+    for plan in plans:
+        counts[plan.status] = counts.get(plan.status, 0) + 1
+    done = [p for p in plans if p.status in ("promote", "promoted")]
+    removed = sum(len(p.removals) for p in done)
+    deleted = sum(len(p.deleted) for p in done)
+    kept = sum(1 for p in plans if p.status in ("promote", "promoted")
+               and any(not e["path"].startswith(INCLUDE_ROOT + "/")
+                       for e in p.packet_headers))
+    print("header_harvest promote: "
+          + ", ".join(f"{status}={count}" for status, count in sorted(counts.items())))
+    print(f"  declarations removed={removed} private headers deleted={deleted} "
+          f"units keeping a private header={kept}")
+    for plan in plans:
+        if plan.status in ("failed", "blocked"):
+            print(f"  {plan.status:8s} {plan.unit}: {plan.reason[:160]}")
+    if not args.no_report:
+        path = os.path.join(root, PROMOTE_REPORT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(render_promote(plans, args.dry_run))
+        print(f"  report: {PROMOTE_REPORT}")
+    return 1 if failures else 0
+
+
+# ---------------------------------------------------------------------------
+# promoted declarations (config/header-promoted.json)
+# ---------------------------------------------------------------------------
+
+PROMOTED_FIELDS = ("kind", "namespace", "name", "text", "canon", "doc", "file",
+                   "index", "domain", "unit", "func_name", "func_va")
+
+
+def load_promoted(root: str) -> list[Decl]:
+    """Declarations `promote` moved from accepted source into a shared header.
+
+    The record is the declaration exactly as the accepted file spelled it, with
+    the provenance the harvest had already attributed to it. Nothing here is
+    invented: the file, unit and witness VA are the ones the source carried when
+    the integrator removed the now-duplicated declaration from it.
+    """
+    path = header_input_path(root, PROMOTED_FILE)
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{PROMOTED_FILE}: cannot be read ({exc})") from exc
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        raise CanonError(f"{PROMOTED_FILE}: schema_version 1 expected")
+    entries = data.get("declarations")
+    if not isinstance(entries, list):
+        raise CanonError(f"{PROMOTED_FILE}: `declarations` must be a list")
+    out: list[Decl] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not set(PROMOTED_FIELDS) <= set(entry):
+            raise CanonError(f"{PROMOTED_FILE}: a record is missing required fields")
+        out.append(Decl(**{key: entry[key] for key in PROMOTED_FIELDS}))
+    return out
+
+
+def load_retired(root: str) -> list[Decl]:
+    """Declarations the pre-migration sources carried when they were archived.
+
+    Task `tu-retire-legacy-src` (2026-09-12) moved the pre-migration layout to
+    `.work/archive/pre-tu-source-20260912/` and repointed every accepted record at
+    the published TU file that carries the same functions. The files the harvest
+    used to scan are therefore gone, and this ledger holds what they declared,
+    verbatim, with the provenance the harvest had already attributed to it plus
+    the sha256 of the archived file. It is replayed exactly like
+    `config/header-promoted.json`, and for the same reason: a declaration must not
+    be lost because the integrator removed the file that spelled it. This tool
+    never writes it.
+    """
+    path = header_input_path(root, RETIRED_FILE)
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        raise CanonError(f"{RETIRED_FILE}: cannot be read ({exc})") from exc
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        raise CanonError(f"{RETIRED_FILE}: schema_version 1 expected")
+    entries = data.get("declarations")
+    if not isinstance(entries, list):
+        raise CanonError(f"{RETIRED_FILE}: `declarations` must be a list")
+    out: list[Decl] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not set(PROMOTED_FIELDS) <= set(entry):
+            raise CanonError(f"{RETIRED_FILE}: a record is missing required fields")
+        out.append(Decl(**{key: entry[key] for key in PROMOTED_FIELDS}))
+    return out
+
+
+def retired_examined_counts(root: str) -> dict[str, int]:
+    """How many top-level declarations each archived file had, for the reports."""
+    path = header_input_path(root, RETIRED_FILE)
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    raw = data.get("examined") or {}
+    return {k: int(v) for k, v in raw.items()} if isinstance(raw, dict) else {}
+
+
+def load_retired_statics(root: str) -> dict[str, list[tuple[str, str]]]:
+    """`static` definitions the archived pre-migration sources carried.
+
+    Internal linkage outranks every decision (docs/header-canon.md), and the
+    evidence for it is the accepted file's own `static` definition head. Archiving
+    the file does not give the name external linkage, so the evidence is frozen
+    here beside the declarations and merged back into the harvest's view.
+    """
+    path = header_input_path(root, RETIRED_FILE)
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    raw = data.get("static_definitions") or {}
+    if not isinstance(raw, dict):
+        raise CanonError(f"{RETIRED_FILE}: `static_definitions` must be an object")
+    out: dict[str, list[tuple[str, str]]] = {}
+    for name, items in sorted(raw.items()):
+        out[name] = [(item["file"], item["domain"]) for item in items]
+    return out
+
+
+def save_promoted(root: str, decls: list[Decl]) -> None:
+    """Write the promoted-declaration ledger, deduplicated and ordered."""
+    seen: dict[tuple, Decl] = {}
+    for decl in decls:
+        seen[(decl.domain, decl.file, decl.index, decl.namespace, decl.name)] = decl
+    records = [{key: getattr(decl, key) for key in PROMOTED_FIELDS}
+               for _key, decl in sorted(seen.items())]
+    path = header_input_path(root, PROMOTED_FILE)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"schema_version": 1, "declarations": records}, fh, indent=2)
+        fh.write("\n")
+
+
+def build_outputs(root: str, *, owner_migrations: dict | None = None,
+                  owner_exports: dict | None = None) -> Harvest:
+    accepted, non_c, bad_units = load_accepted(root)
+    canon = load_canon(root)
+    validate_tu_include_decisions(root, canon)
+    skips: list[SkipRecord] = []
+
+    decls_by_domain: dict[str, list[Decl]] = {}
+    files_by_domain: dict[str, set[str]] = {}
+    static_defs: dict[str, list[tuple[str, str]]] = {}
+    decls_examined = 0
+    decls_harvested = 0
+    # Declarations the pre-migration sources carried when they were archived
+    # (task tu-retire-legacy-src). They take the place of the scan of the file
+    # they came from - same file, same order - so the headers stay what the
+    # accepted records generated.
+    retired_by_file: dict[str, list[Decl]] = {}
+    retired_examined = retired_examined_counts(root)
+    retired_used = 0
+    for decl in load_retired(root):
+        retired_by_file.setdefault(decl.file, []).append(decl)
+    for name, items in load_retired_statics(root).items():
+        static_defs.setdefault(name, []).extend(i for i in items if i not in static_defs.get(name, []))
+
+    for path in sorted(set(accepted) | set(retired_examined) | set(retired_by_file)):
+        rec = accepted.get(path)
+        if rec is not None:
+            found, examined = harvest_file(root, rec, skips, static_defs)
+        else:
+            # An archived file that declared nothing still kept its domain alive:
+            # `examined` lists every file that was scanned, not only the ones that
+            # produced a declaration.
+            found = retired_by_file.get(path, [])
+            examined = retired_examined.get(path, len(found))
+            retired_used += len(found)
+        domain = domain_of(path, root)
+        if domain is None:
+            continue
+        files_by_domain.setdefault(domain, set()).add(path)
+        decls_by_domain.setdefault(domain, []).extend(found)
+        decls_examined += examined
+        decls_harvested += len(found)
+
+    # Declarations an earlier `promote` run moved out of accepted source and into
+    # these headers. They carry their original provenance, so the header a
+    # promoted translation unit includes stays byte for byte what it was.
+    promoted = load_promoted(root)
+    seen_decls = {(d.file, d.index, d.namespace, d.name)
+                  for decls in decls_by_domain.values() for d in decls}
+    promoted_used = 0
+    for decl in promoted:
+        if (decl.file, decl.index, decl.namespace, decl.name) in seen_decls:
+            continue
+        decls_by_domain.setdefault(decl.domain, []).append(decl)
+        seen_decls.add((decl.file, decl.index, decl.namespace, decl.name))
+        promoted_used += 1
+    promoted_used += retired_used
+
+    # A decision cannot revive a name the original program gave internal linkage.
+    # The decision is kept in the file as the record of what was once shared, and
+    # reported, but it is not validated against a file that may no longer declare
+    # the name and it never reaches a header.
+    static_decisions = sorted({name for name in canon
+                               if name in static_defs or canon[name].is_static_local})
+    for name in static_decisions:
+        del canon[name]
+
+    decl_index: dict[tuple[str, str], list[Decl]] = {}
+    for domain, decls in decls_by_domain.items():
+        for decl in decls:
+            decl_index.setdefault((domain, decl.name), []).append(decl)
+
+    outputs: dict[str, str] = {}
+    all_conflicts: list[Conflict] = []
+    all_unresolved: list[Unresolved] = []
+    all_resolved: list[Resolved] = []
+    all_applied: list[CrossApply] = []
+    all_excluded: list[Excluded] = []
+    all_tu_local: list[TuLocal] = []
+    all_static_local: list[StaticLocal] = []
+    cycles_broken: list[tuple[str, str]] = []
+    collisions: list[tuple[str, str, list[str]]] = []
+    all_borrowed: list[tuple[str, str, str]] = []
+    stats = {
+        "units": len([e for e in os.listdir(header_input_path(root, UNITS_GLOB_DIR))
+                      if e.endswith(".json")]),
+        "files_scanned": len([p for p in accepted if domain_of(p, root)]),
+        "decls_examined": decls_examined,
+        "decls_harvested": decls_harvested,
+        "domains": {},
+    }
+
+    states: dict[str, DomainState] = {}
+    for domain in sorted(decls_by_domain):
+        state = prepare_domain(domain, decls_by_domain[domain], canon, static_defs)
+        states[domain] = state
+        all_conflicts.extend(state.conflicts)
+        all_resolved.extend(state.resolved)
+        all_applied.extend(state.applied)
+        all_excluded.extend(state.excluded)
+        all_tu_local.extend(state.tu_local)
+        all_static_local.extend(state.static_local)
+
+    # Phase 1: every domain closed over its own names only. What survives here is
+    # what another domain may rely on by including this domain's `types.h`.
+    phase1: dict[str, dict[tuple[str, str], Variant]] = {}
+    defined: dict[str, set[str]] = {}
+    for domain, state in states.items():
+        merged, _unresolved = resolve_domain(state, set(), set())
+        phase1[domain] = merged
+        defined[domain] = type_definitions(merged.values())
+
+    # Phase 2: a declaration may also name a type another domain owns. Two
+    # `types.h` files cannot be included together - each defines names the other
+    # defines, which C refuses - so the missing type declaration is repeated in
+    # the domain that needs it, exactly as its owner's accepted file spells it.
+    offers: dict[str, tuple[tuple[str, str], Variant, str]] = {}
+    for domain in sorted(phase1, key=lambda d: (d != "core", d)):
+        for key, var in sorted(phase1[domain].items()):
+            if var.kind not in TYPE_KINDS:
+                continue
+            for name in sorted(var.refs.provides | var.refs.provides_complete):
+                offers.setdefault(name, (key, var, domain))
+    for domain, other in sorted({(d, o) for d in states for o in states if d != o}):
+        shared_names = defined[domain] & defined[other]
+        if shared_names:
+            collisions.append((domain, other, sorted(shared_names)))
+
+    resolved_now = {}
+    for domain, state in states.items():
+        local_names = set()
+        for var in list(state.base.values()) + list(state.forwards.values()):
+            local_names |= var.refs.provides
+        own_offers = {name: item for name, item in offers.items()
+                      if item[2] != domain}
+        borrowed = borrow_types(domain, state, own_offers, local_names)
+        resolved_now[domain] = (resolve_domain(state, set(), set(), borrowed),
+                                borrowed)
+
+    merged_by_domain: dict[str, dict[tuple[str, str], Variant]] = {}
+    for domain in states:
+        merged_by_domain[domain] = resolved_now[domain][0][0]
+    common, common_of = split_common(merged_by_domain)
+    if common:
+        stats["domains"][COMMON_DOMAIN] = {
+            "files": 0, "types": len(common), "protos": 0, "extern_data": 0,
+            "conflicts": 0, "resolved": 0, "unresolved": 0, "borrowed": [],
+        }
+
+    for domain, state in states.items():
+        (merged, unresolved), borrowed = resolved_now[domain]
+        all_unresolved.extend(unresolved)
+        for entry in state.applied:
+            entry.emitted = any(v.canon_foreign and v.sources
+                                and key[1] == entry.name
+                                for key, v in merged.items())
+
+        types = [v for key, v in merged.items()
+                 if v.kind in TYPE_KINDS and key not in common]
+        protos = [v for v in merged.values() if v.kind in PROTO_KINDS]
+        types = order_types(types)
+        protos.sort(key=lambda v: v.order)
+
+        stats["domains"][domain] = {
+            "files": len(files_by_domain.get(domain, ())),
+            "types": len(types),
+            "protos": len([v for v in protos if v.kind == KIND_PROTO]),
+            "extern_data": len([v for v in protos if v.kind == KIND_EXTERN_DATA]),
+            "conflicts": len(state.conflicts),
+            "resolved": len(state.resolved),
+            "unresolved": len(unresolved),
+            "borrowed": sorted({v.borrowed_from for k, v in merged.items()
+                                if v.borrowed_from}),
+        }
+        for key, var in sorted(borrowed.items()):
+            if key in merged:
+                all_borrowed.append((domain, key[1], var.borrowed_from or ""))
+
+    # The published per-TU layout: a declaration lives in the header of the TU
+    # that defines it, in `include/shared.h` when no TU defines it and more than
+    # one needs it, and in the TU's own source when only that TU needs it.
+    homes = compute_homes(root, merged_by_domain, common, canon, set(static_defs),
+                          owner_migrations, owner_exports)
+    outputs.update(render_layout(homes))
+
+    for r in all_resolved:
+        r.rejected_groups = rejected_groups(r, decl_index)
+    obsolete_decisions = check_unused_decisions(canon, decl_index)
+    outputs[CONFLICT_REPORT] = render_conflicts(all_conflicts, all_resolved,
+                                                obsolete_decisions, all_applied,
+                                                all_tu_local, canon, all_static_local,
+                                                static_decisions, len(static_defs))
+
+    unaccepted = []
+    src_root = os.path.join(root, "src")
+    for dirpath, _dirnames, filenames in os.walk(src_root):
+        for fn in filenames:
+            if not fn.endswith(".h"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, fn), root).replace(os.sep, "/")
+            if rel not in accepted:
+                unaccepted.append(rel)
+    unaccepted.sort()
+
+    stats["promoted_declarations"] = promoted_used
+    return Harvest(outputs=outputs, stats=stats, conflicts=all_conflicts,
+                   unresolved=all_unresolved, skips=skips, non_c=non_c,
+                   unaccepted=unaccepted, bad_units=bad_units,
+                   resolved=all_resolved, obsolete=obsolete_decisions,
+                   applied=all_applied, excluded=all_excluded,
+                   cycles=cycles_broken, collisions=collisions,
+                   borrowed=all_borrowed, tu_local=all_tu_local,
+                   static_local=all_static_local, common=common_of, homes=homes)
+
+
+def existing_generated(root: str) -> set[str]:
+    """Every generated header now in the tree, by its own banner.
+
+    Since the per-TU layout that is `include/shared.h` and
+    `include/<unit>/<tu>.h`; the pre-migration `include/xeno/**` names are still
+    recognised so a leftover copy is removed rather than left beside the new
+    file. A TU-local `src/<unit>/<tu>.h` is tracked source and never generated.
+    """
+    found: set[str] = set()
+    inc_root = os.path.join(root, "include")
+    if not os.path.isdir(inc_root):
+        return found
+    for dirpath, _dirnames, filenames in os.walk(inc_root):
+        for fn in filenames:
+            if not fn.endswith(".h"):
+                continue
+            path = os.path.join(dirpath, fn)
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    head = fh.read(400)
+            except OSError:
+                continue
+            rel = os.path.relpath(path, root).replace(os.sep, "/")
+            # Generated headers carry no banner any more (user direction
+            # 2026-09-19): every header under include/ is generated except the
+            # hand-written top-level ones (common.h, include_asm.h).
+            if REPO_MARKER in head or rel == SHARED_HEADER or rel.count("/") >= 2:
+                found.add(rel)
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "export-inputs":
+        return export_inputs_main(argv[1:])
+    if argv and argv[0] == "lint":
+        return lint_main(argv[1:])
+    if argv and argv[0] == "promote":
+        return promote_main(argv[1:])
+    if argv and argv[0] == "callees":
+        return callees_main(argv[1:])
+
+    # `lint` and `promote` are dispatched above, before this parser ever sees the
+    # arguments, so argparse cannot discover them on its own. List them here so
+    # `--help` names every subcommand instead of only the default harvest run.
+    ap = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="subcommands:\n"
+               "  export-inputs --out DIRECTORY [--root ROOT]\n"
+               "      export the inputs needed by public clones\n"
+               "  lint SOURCE [SOURCE ...] [--domain DOMAIN] [--allow NAME] [--json OUT]\n"
+               "      check candidate declarations against the accepted shared view;\n"
+               "      exit 0 clean, 1 one CONFLICT line per diverging name, 2 usage error\n"
+               "  callees [--json OUT] [--candidates OUT]\n"
+               "      survey local prototypes of callees no TU defines in C against\n"
+               "      config/header-callees.json\n"
+               "  promote [options]\n"
+               "      move newly accepted private.h declarations into the domain headers,\n"
+               "      re-verify every touched unit and repin\n"
+               "  (no subcommand)\n"
+               "      regenerate include/xeno/*/{types,functions}.h\n\n"
+               "Run `header_harvest.py lint --help` or `promote --help` for their flags.")
+    ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    help="project root (default: the repository containing this tool)")
+    ap.add_argument("--check", action="store_true",
+                    help="do not write; exit 1 if regenerating would change anything")
+    ap.add_argument("--report", action="store_true",
+                    help=f"also write {SUMMARY_REPORT} (printed to stdout under --check)")
+    args = ap.parse_args(argv)
+    root = args.root
+
+    try:
+        harvest = build_outputs(root)
+    except CanonError as exc:
+        print(f"header_harvest: {exc}", file=sys.stderr)
+        return 2
+    outputs, stats = harvest.outputs, harvest.stats
+    conflicts, resolved = harvest.conflicts, harvest.resolved
+    summary = render_summary(harvest)
+
+    stale = existing_generated(root) - set(outputs)
+
+    changed: list[str] = []
+    for rel in sorted(outputs):
+        path = os.path.join(root, rel)
+        current = None
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                current = fh.read()
+        if current != outputs[rel]:
+            changed.append(rel)
+    changed.extend(sorted(f"{p} (obsolete)" for p in stale))
+
+    if args.check:
+        if args.report:
+            sys.stdout.write(summary)
+        for rel in changed:
+            print(f"would change: {rel}", file=sys.stderr)
+        if changed:
+            print(f"header_harvest: {len(changed)} generated file(s) are stale; "
+                  f"run `python3 tools/header_harvest.py`", file=sys.stderr)
+            return 1
+        print("header_harvest: generated headers are up to date")
+        return 0
+
+    for rel in sorted(outputs):
+        path = os.path.join(root, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(outputs[rel])
+    for rel in sorted(stale):
+        os.remove(os.path.join(root, rel))
+    if args.report:
+        path = os.path.join(root, SUMMARY_REPORT)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(summary)
+
+    total_types = sum(d["types"] for d in stats["domains"].values())
+    total_protos = sum(d["protos"] for d in stats["domains"].values())
+    total_data = sum(d["extern_data"] for d in stats["domains"].values())
+    print(f"header_harvest: {stats['files_scanned']} accepted file(s), "
+          f"{len(stats['domains'])} domain(s), {total_types} type(s), "
+          f"{total_protos} prototype(s), {total_data} extern data declaration(s), "
+          f"{len(resolved)} resolved conflict(s), {len(conflicts)} open conflict(s), "
+          f"{len(harvest.skips)} skip(s), {len(harvest.excluded)} withheld "
+          f"non-ordinary-C declaration(s)")
+    for domain in sorted(stats["domains"]):
+        d = stats["domains"][domain]
+        print(f"  {domain:12s} files={d['files']:4d} types={d['types']:4d} "
+              f"protos={d['protos']:4d} extern_data={d['extern_data']:4d} "
+              f"resolved={d['resolved']:3d} conflicts={d['conflicts']:3d}"
+              + (f" includes={','.join(d['includes'])}" if d.get("includes") else ""))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

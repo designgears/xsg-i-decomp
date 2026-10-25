@@ -79,6 +79,7 @@ struct SceneThread {
     SceneMethod *method;                 /* +0x18 */
     unsigned char unmodeled_1c[8];       /* +0x1c */
     unsigned int flags;                  /* +0x24 */
+    void *call_frame;                    /* +0x28: null once the thread has no call left to run */
 };
 
 #define SCENE_THREAD_CALL_PENDING 0x8u
@@ -153,7 +154,10 @@ struct ScriptObserverTask {
     const char *method_name;         /* +0x30 */
     const char *method_signature;    /* +0x34 */
     signed char vm_slot;             /* +0x38 */
-    u8 unmodeled_39;                 /* +0x39 */
+    union {
+        u8 unmodeled_39; /* former padding name, kept for saved bodies */
+        u8 invocation_state;                 /* +0x39 */
+    };
     u8 unmodeled_3a[2];              /* +0x3a */
     SceneMethod *method;             /* +0x3c */
 };

@@ -10,8 +10,8 @@ void *STAGE_create(u16 stage_id)
 
 extern SceneString *NAME_Constructor;
 extern SceneType *TYPE_Void;
-extern void *classJava_xeno_Chr;
-extern void *classJava_xeno_Stage;
+extern SceneClass *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Stage;
 extern unsigned char tcamera[];
 extern char D_004DA628[];
 extern char D_004DA630[];

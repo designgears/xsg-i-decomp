@@ -1852,7 +1852,57 @@ void Java_xeno_Chr_setShadow__II(JThread *thread, ChrShadowCall *arguments)
     peer->shadow_size = arguments->size;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/chr", Java_xeno_Chr_setShadow__aB);
+typedef struct ChrShadowDef {
+    u16 kind;
+    u16 id;
+    u8 *data;
+} ChrShadowDef;
+extern ChrShadowDef DropShadowDefineTable[];
+
+void Java_xeno_Chr_setShadow__aB(JThread *thread, ChrSplCall *arguments)
+{
+    JavaField *peer_field;
+    ChrShadowDef *def;
+    ChrShadowDef *slot;
+    signed char *src;
+    u8 *dst;
+    int id;
+    u8 *peer;
+
+    dst = 0;
+    src = *(signed char **)(arguments->spline + 8);
+    peer_field = lookupClassField(classJava_xeno_Chr,
+                                  loadConstString(chr_peer_string, -1), 0);
+    peer = *(u8 **)(arguments->object + peer_field->offset);
+    def = DropShadowDefineTable;
+    slot = 0;
+    id = *(u16 *)(peer + 0x86);
+    for (; def->data != 0; def++) {
+        if (def->kind == 0xFFFF && def->id == id)
+            break;
+        if (*(u32 *)def == 0xFFFF0000)
+            slot = def;
+    }
+    if (slot == 0) {
+        __asm__ volatile("break 0");
+    } else {
+        slot->id = id;
+        slot->kind = -1;
+        dst = slot->data;
+    }
+    while (*src != -1) {
+        do {
+            dst[0] = src[0];
+            dst[1] = src[1];
+            dst[2] = src[2];
+            src += 3;
+            dst += 3;
+        } while (src[-3] != -1);
+    }
+    dst[0] = src[0];
+    dst[1] = src[1];
+    dst[2] = src[2];
+}
 
 void Java_xeno_Chr_setID__I(JThread *thread, ChrScaleCall *arguments)
 {

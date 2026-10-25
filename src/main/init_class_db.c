@@ -1,16 +1,23 @@
 #include "common.h"
+
 #include "shared.h"
+
 #include "init_class_db.h"
 
+extern int classDB[8];
+
+
 extern void *xmalloc(int size, int type);
+
 typedef struct ClassFileMemberHeader {
     u16 access_flags;
     u16 name_index;
     u16 descriptor_index;
 } ClassFileMemberHeader;
 
-SceneField *addField(ClassDescriptor *class_info, ClassFileMemberHeader *field_info);
-SceneMethod *addMethod(ClassDescriptor *class_info, u16 method_info[3]);
+ClassFieldRecord *addField(ClassDescriptor *class_info, const ClassFileMemberHeader *field_info);
+
+SceneMethod *addMethod(ClassDescriptor *class_info, ClassFileMemberHeader *method_info);
 
 typedef struct ClassFilePath {
     unsigned char unmodeled_00[6];
@@ -28,13 +35,44 @@ typedef struct ClassFile {
     int length;
 } ClassFile;
 
-extern const char D_004DBFD0[];
+const char D_004DBFD0[];
+
+extern ConstString **constStringTable;
+
+
 extern char *strncpy(char *dest, const char *src, unsigned int count);
+
 extern char *strcat(char *dest, const char *src);
+
 extern ClassFile *PDB_findFile(int volume, const char *name);
-extern ClassDescriptor *newClass(void);
+
 extern void DataBuffer_init(DataBuffer *buffer, unsigned char *bytes,
                             int length, int big_endian);
+
+#include "main/init_vm.h"
+
+#include "main/find_native_method.h"
+
+#include "main/scene_1.h"
+
+/* classFromSig resolves both reference classes and primitive type records. */
+
+extern void *getClassFromSignature(const char *signature, void *class_loader);
+
+extern void methodDescripter(u8 *descriptor, s16 *paramSize, s16 *returnSize,
+                            signed char *returnType);
+
+extern SceneString *NAME_Constructor;
+
+extern SceneString *ATTR_Code;
+
+extern SceneString *ATTR_Exceptions;
+
+extern SceneString *ATTR_LineNumberTable;
+
+extern SceneString *ATTR_ConstantValue;
+
+void setFieldValue(SceneField *field, unsigned int value);
 
 void initClassDB(void)
 {
@@ -71,12 +109,6 @@ ClassDescriptor *findClass(ClassFileEntry *entry)
     return 0;
 }
 
-/*
- * Reads a Java class file header from `buffer` into `class_info`: the
- * magic 0xCAFEBABE, the unused minor/major version words, the constant
- * pool, access_flags/this_class/super_class, then the interfaces, fields,
- * methods and attributes that follow (JVM class file format).
- */
 ClassDescriptor *readClass(DataBuffer *buffer, ClassDescriptor *class_info,
                            u32 class_loader)
 {
@@ -102,7 +134,8 @@ ClassDescriptor *readClass(DataBuffer *buffer, ClassDescriptor *class_info,
     return class_info;
 }
 
-void addCode(DataBuffer *buffer, ClassDescriptor *class_info, SceneMethod *method)
+void addCode(DataBuffer *buffer, ClassDescriptor *class_info, SceneMethod *method,
+             u32 attributeLength)
 {
     u16 max_stack;
     u16 max_locals;
@@ -123,61 +156,84 @@ void addCode(DataBuffer *buffer, ClassDescriptor *class_info, SceneMethod *metho
     method->max_locals = max_locals;
     method->code_length = (u16) code_length;
     DataBuffer_seek(buffer, exception_table_count * 8);
-    readAttributes(buffer, class_info, (int) method);
+    readAttributes(buffer, class_info, method);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_class_db", addField);
-
-extern void *NAME_Constructor;
-void methodDescripter(u8 *descriptor, short *paramSize, short *returnSize, signed char *returnType);
-typedef union AddMethodWord {
-    u32 w;
-    short h;
-    struct { u32 pad[2]; u8 *descriptor; } *p;
-} AddMethodWord;
-typedef struct AddMethodView {
-    u32 name;
-    AddMethodWord desc;
-    short param_size;
-    short return_size;
-    u32 owner;
-    u16 flags;
-    short slot;
-    void *code;
-    u16 max_stack;
-    u16 max_locals;
-    u16 code_length;
-} AddMethodView;
-
-SceneMethod *addMethod(ClassDescriptor *class_info, u16 method_info[3])
+ClassFieldRecord *addField(ClassDescriptor *class_info,
+                           const ClassFileMemberHeader *field_info)
 {
-    AddMethodView *m;
-    AddMethodWord *pool;
-    u16 flags;
-    u32 name;
-    signed char ret[16];
-    u16 idx;
-    AddMethodWord desc;
+    ClassFieldRecord *field;
+    ClassFieldRecord *fields;
+    ClassConstantPoolValue descriptor_value;
+    ClassConstantPoolValue *constant_pool;
+    SceneTypeDescriptor *descriptor;
+    ClassSignatureResult *resolved_type;
+    const char *signature;
+    u16 field_index;
 
-    idx = class_info->method_count;
-    class_info->method_count = idx + 1;
-    m = (AddMethodView *)((u8 *)class_info->methods + (idx << 5));
-    pool = (AddMethodWord *)class_info->constant_pool;
-    flags = method_info[0];
-    m->flags = flags;
-    name = pool[method_info[1]].w;
-    m->name = name;
-    desc = pool[method_info[2]];
-    m->owner = (u32)class_info;
-    m->desc = desc;
-    m->slot = -1;
-    m->max_stack = 0;
-    m->max_locals = 0;
-    if (name == (u32)NAME_Constructor) {
-        m->flags = flags | 0x800;
+    constant_pool = class_info->constant_pool;
+    if ((field_info->access_flags & 8) != 0) {
+        field_index = class_info->static_field_count++;
+    } else {
+        class_info->field_count--;
+        field_index = class_info->field_count;
     }
-    methodDescripter(m->desc.p->descriptor, &m->param_size, &m->return_size, ret);
-    return (SceneMethod *)m;
+
+    fields = class_info->fields;
+    field = &fields[field_index];
+    field->name = constant_pool[field_info->name_index].object;
+    field->flags = field_info->access_flags;
+    descriptor_value = constant_pool[field_info->descriptor_index];
+    descriptor = descriptor_value.object;
+    signature = descriptor->signature;
+    if ((signature[0] == 'L') || (signature[0] == '[')) {
+        field->type_or_descriptor = descriptor;
+        field->field_size = 4;
+        field->flags |= 0x8000;
+    } else {
+        resolved_type = getClassFromSignature(signature, 0);
+        field->type_or_descriptor = resolved_type;
+        field->field_size = resolved_type->field_size;
+    }
+    return field;
+}
+
+SceneMethod *addMethod(ClassDescriptor *class_info,
+                       ClassFileMemberHeader *method_info)
+{
+    ClassConstantPoolValue *constant_pool;
+    SceneMethod *method;
+    SceneMethod *methods;
+    u16 method_index;
+    u16 access_flags;
+    u16 name_index;
+    u16 descriptor_index;
+    void *descriptor_object;
+    signed char return_type[16];
+
+    method_index = class_info->method_count;
+    methods = class_info->methods;
+    method = &methods[method_index];
+    class_info->method_count = method_index + 1;
+    constant_pool = class_info->constant_pool;
+    access_flags = method_info->access_flags;
+    method->access_flags = access_flags;
+    name_index = method_info->name_index;
+    descriptor_index = method_info->descriptor_index;
+    method->name = constant_pool[name_index].object;
+    descriptor_object = constant_pool[descriptor_index].object;
+    method->declaring_class = class_info;
+    method->descriptor = descriptor_object;
+    method->state = 0xffff;
+    method->max_stack = 0;
+    method->max_locals = 0;
+    if (method->name == NAME_Constructor) {
+        method->access_flags |= 0x800;
+    }
+    methodDescripter((u8 *)method->descriptor->signature,
+                     &method->parameter_size, &method->return_size,
+                     return_type);
+    return method;
 }
 
 static void readFields(DataBuffer *buffer, ClassDescriptor *class_info)
@@ -197,13 +253,13 @@ static void readFields(DataBuffer *buffer, ClassDescriptor *class_info)
         return;
     }
     while (field_index < field_count) {
-        SceneField *field;
+        ClassFieldRecord *field;
 
         field_info.access_flags = DataBuffer_getUShortAt(buffer);
         field_info.name_index = DataBuffer_getUShortAt(buffer);
         field_info.descriptor_index = DataBuffer_getUShortAt(buffer);
         field = addField(class_info, &field_info);
-        readAttributes(buffer, class_info, (int)field);
+        readAttributes(buffer, class_info, field);
         field_index++;
     }
     class_info->field_count = field_count;
@@ -213,7 +269,7 @@ static void readMethods(DataBuffer *buffer, ClassDescriptor *class_info)
 {
     u16 method_count;
     u16 method_index;
-    u16 method_info[3];
+    ClassFileMemberHeader method_info;
 
     method_count = DataBuffer_getUShortAt(buffer);
     class_info->method_count = 0;
@@ -227,11 +283,11 @@ static void readMethods(DataBuffer *buffer, ClassDescriptor *class_info)
     while (method_index < method_count) {
         SceneMethod *method;
 
-        method_info[0] = DataBuffer_getUShortAt(buffer);
-        method_info[1] = DataBuffer_getUShortAt(buffer);
-        method_info[2] = DataBuffer_getUShortAt(buffer);
-        method = addMethod(class_info, method_info);
-        readAttributes(buffer, class_info, (int)method);
+        method_info.access_flags = DataBuffer_getUShortAt(buffer);
+        method_info.name_index = DataBuffer_getUShortAt(buffer);
+        method_info.descriptor_index = DataBuffer_getUShortAt(buffer);
+        method = addMethod(class_info, &method_info);
+        readAttributes(buffer, class_info, method);
         method_index++;
     }
 }
@@ -257,15 +313,162 @@ static void readInterfaces(DataBuffer *buffer, ClassDescriptor *class_info)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/init_class_db", readAttributes);
+static void readAttributes(DataBuffer *buffer, ClassDescriptor *class_info,
+                           void *attribute_target)
+{
+    ClassConstantPoolValue tag_vector;
+    ClassConstantPoolValue constant_pool_value;
+    ClassConstantPoolValue *constant_pool;
+    unsigned short attribute_count;
+    unsigned short attribute_index;
+    unsigned short name_index;
+    unsigned int attribute_length;
+    void *attribute_name;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_class_db", readConstantPool);
+    attribute_count = DataBuffer_getUShortAt(buffer);
+    if (attribute_count == 0) {
+        return;
+    }
 
-/*
- * Stores a field's resolved constant/instance value and marks it resolved
- * (SceneField.flags bit 0x4000), the way readAttributes does after loading a
- * field's ConstantValue attribute.
- */
+    constant_pool = class_info->constant_pool;
+    tag_vector = constant_pool[0];
+    for (attribute_index = 0; attribute_index < attribute_count;
+         attribute_index++) {
+        name_index = DataBuffer_getUShortAt(buffer);
+        attribute_length = DataBuffer_getUIntAt(buffer);
+        switch (tag_vector.tags[name_index]) {
+        case 1:
+            constant_pool_value = constant_pool[name_index];
+            attribute_name = constant_pool_value.object;
+            if (attribute_name == ATTR_Code) {
+                addCode(buffer, class_info, (SceneMethod *)attribute_target,
+                        attribute_length);
+            } else if ((attribute_name == ATTR_Exceptions) ||
+                       (attribute_name == ATTR_LineNumberTable)) {
+                DataBuffer_seek(buffer, attribute_length);
+            } else if (attribute_name == ATTR_ConstantValue) {
+                setFieldValue((SceneField *)attribute_target,
+                              DataBuffer_getUShortAt(buffer));
+            } else {
+                DataBuffer_seek(buffer, attribute_length);
+            }
+            break;
+        default:
+            DataBuffer_seek(buffer, attribute_length);
+            break;
+        }
+    }
+}
+
+typedef union ClassConstantPoolValueUp {
+    void *object;
+    unsigned char *tags;
+    unsigned int word;
+    unsigned short index;
+} ClassConstantPoolValueUp;
+
+static void readConstantPool(DataBuffer *buffer, ClassDescriptor *class_info)
+{
+    unsigned int count;
+    unsigned short index;
+    ClassConstantPoolValueUp *constant_pool;
+    int is_non_member_tag;
+    unsigned char *tags;
+    int tag;
+
+    count = DataBuffer_getUShortAt(buffer);
+    if (count == 0) {
+        class_info->constant_pool = 0;
+        class_info->constant_pool_count = 0;
+        return;
+    }
+
+    constant_pool = xmalloc(count * sizeof(*constant_pool) + count, 14);
+    class_info->constant_pool_count = count;
+    class_info->constant_pool = constant_pool;
+    /* The tag bytes follow the four-byte entries in the same allocation.
+     * Entry zero holds the tag-vector pointer for the later loader stages. */
+    tags = class_info->constant_pool;
+    tags += count * sizeof(*constant_pool);
+    constant_pool[0].tags = tags;
+    tags[0] = 0;
+
+    for (index = 1; index < count;) {
+        unsigned char *tag_slot;
+        unsigned int current_tag = DataBuffer_getUByteAt(buffer);
+
+        tag_slot = &tags[index];
+        *tag_slot = current_tag;
+        switch (current_tag) {
+        case 1: {
+            unsigned int length = DataBuffer_getUShortAt(buffer);
+            const char *bytes = (const char *)buffer->position;
+
+            constant_pool[index].object = loadConstString(bytes, length - 1);
+            DataBuffer_seek(buffer, length);
+            break;
+        }
+        case 7:
+        case 8:
+            constant_pool[index].index = DataBuffer_getUShortAt(buffer);
+            break;
+        case 9:
+        case 10:
+        case 11:
+        case 12: {
+            unsigned int first_index = DataBuffer_getUShortAt(buffer);
+            unsigned int second_index = DataBuffer_getUShortAt(buffer);
+
+            constant_pool[index].word = (second_index << 16) | first_index;
+            break;
+        }
+        case 3:
+        case 4:
+            constant_pool[index].word = DataBuffer_getUIntAt(buffer);
+            break;
+        case 5: {
+            /* Long entries reserve the following pool slot. */
+            unsigned int high_word = DataBuffer_getUIntAt(buffer);
+            unsigned int low_word = DataBuffer_getUIntAt(buffer);
+
+            constant_pool[index].word = high_word;
+            index++;
+            tags[index] = 0;
+            constant_pool[index].word = low_word;
+            break;
+        }
+        case 6: {
+            /* Double entries use the same two-slot representation. */
+            unsigned int high_word = DataBuffer_getUIntAt(buffer);
+            unsigned int low_word = DataBuffer_getUIntAt(buffer);
+
+            constant_pool[index].word = high_word;
+            index++;
+            tags[index] = 0;
+            constant_pool[index].word = low_word;
+            break;
+        }
+        default:
+            break;
+        }
+        index++;
+    }
+
+    for (index = 1; index < count; index++) {
+        tag = tags[index];
+        is_non_member_tag = tag < 9;
+        if (is_non_member_tag && tag >= 7) {
+            unsigned short reference_index = constant_pool[index].index;
+
+            if (tags[reference_index] == 1) {
+                constant_pool[index].object = constant_pool[reference_index].object;
+            } else {
+                tags[index] = 0;
+            }
+        }
+    }
+}
+
 void setFieldValue(SceneField *field, unsigned int value)
 {
     field->instance_offset = value;
@@ -291,3 +494,9 @@ void setupClass(ClassDescriptor *class_info, u32 this_class_index,
         class_info->processing_state = 0;
     }
 }
+
+const char D_004DBFD0[] = ".class";
+extern ConstString **constStringTable;
+
+
+

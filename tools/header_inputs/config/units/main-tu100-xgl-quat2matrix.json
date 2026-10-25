@@ -1,0 +1,11 @@
+{
+  "source": {
+    "path": "src/main/xgl_2.c"
+  },
+  "functions": [
+    {
+      "name": "xglQuaternion2Matrix",
+      "va": "0x0022a950"
+    }
+  ]
+}

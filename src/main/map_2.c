@@ -1,9 +1,65 @@
 #include "common.h"
+
 #include "map_2.h"
 
 extern MapUnitResource *RES_loadFile(int command, int callback, int resource_id, int flags);
+
 extern void LOG(const char *format, ...);
+
 extern int MDL_create(void *model_instance, void *resource_model);
+
+#define NULL ((void *)0)
+
+#include "main/xgl_2.h"
+
+extern void unit6003_update(MapUnitSlot *unit);
+
+struct MdlHandle;
+
+extern void MDL_partsSetVisible(struct MdlHandle *model);
+
+extern void nmlModelSetTexture(const char *texture);
+
+extern void nmlModelSetPlace(const Vector4 *place);
+
+extern void nmlModelSetRenderLevel(int level);
+
+extern void nmlModelSetSortOffset(float offset);
+
+extern void nmlModelSetClip(int enabled);
+
+extern void nmlModelSetMapShadowParts(unsigned short part);
+
+extern void nmlModelSetTexMap(int mode, int size, float weight);
+
+extern void nmlModelSetToumei(int enabled);
+
+extern void nmlModelSetZwrite(int enabled);
+
+extern void nmlModelSetStencil(int enabled);
+
+extern void nmlModelSetFilter(int filter, float start, float end);
+
+extern void nmlModelSetTransparency(float transparency);
+
+extern void nmlModelSetReflTransparency(float transparency);
+
+extern void nmlModelSetShadowMapEntry(void);
+
+extern void nmlModelEntry(int entry);
+
+extern void nmlModelGetGblPosition(Vector4 *position);
+
+extern void xglMatrixStackLoad(float matrix[4][4]);
+
+extern void xglMatrixStackMul(const Matrix4 matrix);
+
+extern void xglMatrixStackPush(void);
+
+extern void xglMatrixStackPop(int count);
+
+
+
 
 int MAP_loadUnitResource(MapUnitSlot *unit, int resource_id)
 {
@@ -34,167 +90,99 @@ int MAP_loadUnitResource(MapUnitSlot *unit, int resource_id)
     return MDL_create(&unit->model_state, model);
 }
 
-typedef struct MapUnitInitView {
-    int flags;          /* 0x00 */
-    void *update;       /* 0x04 */
-    int unk8;           /* 0x08 */
-    void *typeUpdate;   /* 0x0C */
-    int unk10;
-    int unk14;
-    int unk18;
-    float unk1C;
-    char pad20[0x10];
-    float unk30;
-    float unk34;
-    float unk38;
-    float unk3C;
-    char pad40[0x64];
-    short serial;       /* 0xA4 */
-    short unkA6;
-    char padA8[0x28];
-    int unkD0;
-    void *resource_model;
-    float unkD8[2];
-    void *model;
-    int resource_status;
-    float unkE8[3];
-    char padF4[8];
-    int unkFC;
-    char pad100[0x120];
-    int unk220;
-    int unk224;
-    int unk228;
-    float unk22C;
-    int pad230;
-    int unk234;
-    int unk238;
-    float unk23C;
-    void *model_state;
-    char pad244[0x9C];
-    int unk2E0;
-    int unk2E4;
-    int unk2E8;
-    int unk2EC;
-    char pad2F0[0x10];
-} MapUnitInitView;
-
 void MAP_initUnit(void)
 {
-    MapUnitInitView *unit = (MapUnitInitView *)MapUnit;
+    MapUnitSlot *unit = MapUnit;
     int i;
     int j;
-    float *w;
-    char *p8;
 
-    for (i = 0; i < 0x40; i++, unit++) {
+    for (i = 0; i < 64; i++) {
         unit->flags = 0;
         unit->serial = -1;
         unit->update = 0;
-        unit->unk8 = 0;
-        p8 = (char *)&unit->unk8;
+        unit->draw = 0;
         unit->typeUpdate = 0;
         unit->resource_model = 0;
-        unit->unkD0 = 0;
-        unit->unk30 = 1.0f;
-        unit->unk34 = 1.0f;
-        unit->unk38 = 1.0f;
-        unit->unk3C = 1.0f;
-        unit->unk10 = 0;
-        unit->unk14 = 0;
-        unit->unk18 = 0;
-        unit->unk1C = 1.0f;
-        unit->unk220 = 0;
-        unit->unk224 = 0;
-        unit->unk228 = 0;
-        unit->unk22C = 1.0f;
-        unit->unk2E4 = 0;
-        unit->unk2E8 = 0;
-        unit->unk234 = 0;
-        unit->unk238 = 0x10;
-        unit->unk2E0 = 0;
-        unit->unk23C = 0.5f;
-        unit->unk2EC = 0;
-        unit->unkA6 = 0;
-        j = 1; w = &unit->unkD8[1];
-        goto L1;
-        while (j >= 0) {
-        L1:
-            *w-- = 0;
-            j--;
+        unit->sequence = 0;
+        unit->scale[0] = 1.0f;
+        unit->scale[1] = 1.0f;
+        unit->scale[2] = 1.0f;
+        unit->scale[3] = 1.0f;
+        unit->position[0] = 0;
+        unit->position[1] = 0;
+        unit->position[2] = 0;
+        unit->position[3] = 1.0f;
+        unit->modelPosition[0] = 0;
+        unit->modelPosition[1] = 0;
+        unit->modelPosition[2] = 0;
+        unit->modelPosition[3] = 1.0f;
+        unit->renderLevel = 0;
+        unit->filter = 0;
+        unit->texMapMode = 0;
+        unit->texMapSize = 16;
+        unit->shadowPartCount = 0;
+        unit->texMapWeight = 0.5f;
+        unit->sortOffset = 0;
+        unit->cleared_a6 = 0;
+        for (j = 0; j < 2; j++) {
+            unit->cleared_d8[j] = 0;
         }
-        j = 1; w = (float *)&unit->resource_status;
-        goto L2;
-        while (j >= 0) {
-        L2:
-            *w-- = 0;
-            j--;
+        for (j = 0; j < 2; j++) {
+            unit->modelResourceWords[j] = 0;
         }
-        w = (float *)(p8 + 0xE8); j = 2;
-        goto L3;
-        while (j >= 0) {
-        L3:
-            *w-- = 0;
-            j--;
+        for (j = 0; j < 3; j++) {
+            unit->effectCf[j] = 0;
         }
-        unit->unkFC = 0;
+        unit->parent = 0;
         unit->model_state = 0;
+        unit++;
     }
 }
 
-void unit6003_update(MapUnitSlot *unit);
-
-MapUnitSlot *MAP_createUnit(int index, int type)
+MapUnitSlot *MAP_createUnit(int slot, int serial)
 {
     MapUnitSlot *unit;
-    unsigned char *p;
     int i;
-    int *w;
-    void (*fn)(MapUnitSlot *);
+    void (*typeUpdate)(MapUnitSlot *);
 
-    if (index < 0) {
+    if (slot < 0) {
         for (i = 0; i < 64; i++) {
             if (MapUnit[i].serial < 0) {
-                index = i;
+                slot = i;
                 break;
             }
         }
-        if (index < 0) {
+        if (slot < 0) {
             return 0;
         }
     }
-    unit = &MapUnit[index];
-    p = (unsigned char *)unit;
-    p[0xA0] = index;
-    unit->serial = type;
-    *(float *)(p + 0x30) = 1.0f;
-    *(float *)(p + 0x34) = 1.0f;
-    *(float *)(p + 0x38) = 1.0f;
-    *(float *)(p + 0x3C) = 1.0f;
-    *(float *)(p + 0x22C) = 1.0f;
-    *(int *)(p + 0x220) = 0;
-    *(int *)(p + 0x224) = 0;
-    *(int *)(p + 0x228) = 0;
-    *(int *)(p + 0xD0) = 0;
-    fn = type == 0x6025 ? unit6003_update : 0;
+    unit = &MapUnit[slot];
+    unit->slot = slot;
+    unit->serial = serial;
+    unit->scale[0] = 1.0f;
+    unit->scale[1] = 1.0f;
+    unit->scale[2] = 1.0f;
+    unit->scale[3] = 1.0f;
+    unit->modelPosition[0] = 0;
+    unit->modelPosition[1] = 0;
+    unit->modelPosition[2] = 0;
+    unit->modelPosition[3] = 1.0f;
+    unit->sequence = 0;
+    if (serial == 0x6025) {
+        typeUpdate = unit6003_update;
+    } else {
+        typeUpdate = 0;
+    }
     unit->update = 0;
-    *(int *)(p + 0x8) = 0;
-    p[0xA2] = 0;
-    unit->typeUpdate = fn;
-    w = (int *)(p + 0xF0);
+    unit->draw = 0;
+        unit->actionSub = 0;
+    unit->typeUpdate = typeUpdate;
     for (i = 2; i >= 0; i--) {
-        *w = 0;
-        w--;
+        unit->effectCf[i] = 0;
     }
     return unit;
 }
 
-#define NULL ((void *)0)
-
-/*
- * Bit 0x10 of a unit's flags, tested for every MapUnit[] entry, skips both
- * per-frame callbacks below when set; the bit's own meaning is not
- * otherwise evidenced in this TU.
- */
 void MAP_updateUnit(void)
 {
     MapUnitSlot *unit = MapUnit;
@@ -213,7 +201,150 @@ void MAP_updateUnit(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/map_2", MAP_drawUnitAt);
+void MAP_drawUnitAt(MapUnitSlot *unit)
+{
+    Matrix4 place;
+    Matrix4 joint;
+    Matrix4 root;
+    Matrix4 *matrices;
+    int matrixIndex;
+    int model;
+    int i;
+    unsigned short *shadowPart;
+    void (*draw)(MapUnitSlot *);
+    void *modelState;
+    float homogeneousZero;
+
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(unit->position);
+    xglMatrixStackRotX(unit->rotation[0]);
+    xglMatrixStackRotY(unit->rotation[1]);
+    xglMatrixStackRotZ(unit->rotation[2]);
+    xglMatrixStackScale(unit->scale);
+    xglMatrixStackSave(place);
+    if (unit->parent != 0) {
+        matrixIndex = unit->parentMatrixIndex;
+        matrices = unit->parent->matrices;
+        if (matrixIndex >= 0) {
+            /* Aligned matrix copies use the SDK's scratch-register quartet. */
+            if (matrixIndex & 0x8000) {
+                __asm__ __volatile__(
+                    "lq $2, 0(%1)\n"
+                    "sq $2, 0(%0)\n"
+                    "lq $2, 16(%1)\n"
+                    "sq $2, 16(%0)\n"
+                    "lq $2, 32(%1)\n"
+                    "sq $2, 32(%0)\n"
+                    "lq $2, 48(%1)\n"
+                    "sq $2, 48(%0)\n"
+                    : : "r" (joint), "r" ((matrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices)
+                    : "$2", "memory");
+                homogeneousZero = 0.0f;
+                joint[2][3] = homogeneousZero;
+                joint[1][3] = homogeneousZero;
+                joint[0][3] = homogeneousZero;
+                xglMatrixStackLoad(joint);
+            } else {
+                __asm__ __volatile__(
+                    "lq $2, 0(%1)\n"
+                    "sq $2, 0(%0)\n"
+                    "lq $2, 16(%1)\n"
+                    "sq $2, 16(%0)\n"
+                    "lq $2, 32(%1)\n"
+                    "sq $2, 32(%0)\n"
+                    "lq $2, 48(%1)\n"
+                    "sq $2, 48(%0)\n"
+                    : : "r" (root), "r" (matrices[0])
+                    : "$2", "memory");
+                __asm__ __volatile__(
+                    "lq $2, 0(%1)\n"
+                    "sq $2, 0(%0)\n"
+                    "lq $2, 16(%1)\n"
+                    "sq $2, 16(%0)\n"
+                    "lq $2, 32(%1)\n"
+                    "sq $2, 32(%0)\n"
+                    "lq $2, 48(%1)\n"
+                    "sq $2, 48(%0)\n"
+                    : : "r" (joint), "r" ((unit->parentMatrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices)
+                    : "$2", "memory");
+                homogeneousZero = 0.0f;
+                joint[2][3] = homogeneousZero;
+                joint[1][3] = homogeneousZero;
+                joint[0][3] = homogeneousZero;
+                root[2][3] = homogeneousZero;
+                root[1][3] = homogeneousZero;
+                root[0][3] = homogeneousZero;
+                xglMatrixStackLoad(root);
+                xglMatrixStackMul((const float (*)[4])joint);
+            }
+            xglMatrixStackMul((const float (*)[4])place);
+            xglMatrixStackSave(place);
+        }
+    }
+    model = (int)unit->model;
+    if (model != 0) {
+        if (!(unit->flags & 4)) {
+            if (unit->resource_status != 0) {
+                nmlModelSetTexture((const char *)unit->resource_status);
+            }
+            modelState = &unit->model_state;
+            MDL_partsSetVisible(modelState);
+            nmlModelSetPlace((const Vector4 *)place);
+            nmlModelSetRenderLevel(unit->renderLevel);
+            nmlModelSetSortOffset((float)unit->sortOffset);
+            if (unit->flags & 0x40) {
+                nmlModelSetClip(1);
+            }
+            i = 0;
+            if (unit->shadowPartCount > 0) {
+                shadowPart = unit->shadowParts;
+                do {
+                    nmlModelSetMapShadowParts(*shadowPart++);
+                    i++;
+                } while (i < unit->shadowPartCount);
+            }
+            switch (unit->texMapMode) {
+            case 5:
+                nmlModelSetTexMap(1, unit->texMapSize, unit->texMapWeight);
+                break;
+            case 10:
+                nmlModelSetTexMap(0x40001, unit->texMapSize, unit->texMapWeight);
+                break;
+            case 6:
+                nmlModelSetTexMap(0x40003, unit->texMapSize, unit->texMapWeight);
+                break;
+            case 7:
+                nmlModelSetTexMap(0x10001, unit->texMapSize, unit->texMapWeight);
+                break;
+            case 8:
+                nmlModelSetTexMap(0x20001, unit->texMapSize, unit->texMapWeight);
+                break;
+            case 9:
+                nmlModelSetTexMap(0x30000, unit->texMapSize, unit->texMapWeight);
+                break;
+            }
+            if (unit->filter != 0) {
+                nmlModelSetToumei(1);
+                nmlModelSetZwrite(1);
+                nmlModelSetStencil(1);
+                nmlModelSetFilter(unit->filter, unit->filterStart, unit->filterEnd);
+                nmlModelSetTransparency(unit->transparency);
+                nmlModelSetReflTransparency(unit->reflTransparency);
+            }
+            if (unit->flags & 0x20) {
+                nmlModelSetShadowMapEntry();
+            }
+            nmlModelEntry(model);
+            nmlModelGetGblPosition(&unit->globalPosition);
+        }
+        draw = unit->draw;
+        if (draw != 0) {
+            xglMatrixStackPush();
+            draw(unit);
+            xglMatrixStackPop(1);
+        }
+    }
+}
 
 void MAP_drawUnit(void)
 {
@@ -240,3 +371,5 @@ void MAP_getHeight(MapPosition *position)
         position->y = height;
     }
 }
+
+

@@ -13,10 +13,6 @@ const char D_00A53E10[] = "(RG_EQUIP_POS_LEFT_HAND <= (ePos) && (ePos) <= RG_EQU
 const char D_00A53E80[] = "../rg_equip_type.euc.c";
 const char D_00A53E98[] = "pEquip != NIL";
 const char D_00A53EC8[] = "RG_EQUIP_TYPE_MIN <= (eType) && (eType) < RG_EQUIP_TYPE_NUM";
-const char D_00A53F90[] = "left";
-const char D_00A53F98[] = "right";
-const char D_00A53FA0[] = "back";
-const char D_00A53FA8[] = "???";
 
 #define RG_EQUIP_TYPE_COUNT 3
 
@@ -42,9 +38,89 @@ void InitRgEquip(RgEquipRecord *pEquip)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", CopyRgEquip);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", RgEquipAddMount);
+extern const char D_00A53F08[];
+typedef enum RgEquipTypeView { RG_EQUIP_TYPE_VIEW_DUMMY = 0 } RgEquipTypeView;
+typedef enum RgEquipPosView { RG_EQUIP_POS_VIEW_DUMMY = -1 } RgEquipPosView;
+typedef struct RgEquipMountView {
+    RgEquipTypeView type;
+    RgEquipPosView pos;
+    int mask;
+} RgEquipMountView;
+typedef struct RgEquipRecordView {
+    RgEquipMountView mounts[RG_EQUIP_MOUNT_MAX];
+    int mountCount;
+} RgEquipRecordView;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", RgEquipSetDefault);
+int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask)
+{
+    unsigned int n;
+
+    if (pEquip == 0) {
+        assert_prog(D_00A53E98, D_00A53E80, 0x55);
+    }
+    if ((unsigned int)eType >= 3) {
+        assert_prog(D_00A53EC8, D_00A53E80, 0x56);
+    }
+    if ((unsigned int)nMount + 1 >= 9) {
+        assert_prog(D_00A53E10, D_00A53E80, 0x58);
+    }
+    if (pEquip->mountCount >= RG_EQUIP_MOUNT_MAX) {
+        assert_prog(D_00A53F08, D_00A53E80, 0x59);
+    }
+    n = ((RgEquipRecordView *)pEquip)->mountCount++;
+    ((RgEquipRecordView *)pEquip)->mounts[n].type = eType;
+    ((RgEquipRecordView *)pEquip)->mounts[n].pos = nMount;
+    ((RgEquipRecordView *)pEquip)->mounts[n].mask = mask;
+}
+
+extern int s_aePosToType[8];
+const char D_00A53F38[] = "nMount >= 0";
+int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask);
+
+void RgEquipSetDefault(RgEquipRecord *pEquip, int arg1)
+{
+    int eType;
+    int flags;
+    int mask;
+    int bit;
+    int i;
+    int nMount;
+    int k;
+
+    if (pEquip == 0) {
+        assert_prog(D_00A53E98, D_00A53E80, 0x64);
+    }
+    pEquip->mountCount = 0;
+    eType = 0;
+    do {
+        flags = 0;
+        for (i = 0; i < 8; i++) {
+            if (s_aePosToType[i] == eType) {
+                flags |= 1 << i;
+            }
+        }
+        mask = flags & arg1;
+        nMount = -1;
+        if (mask != 0) {
+            for (k = 0; k < 8; k++) {
+                bit = 1 << k;
+                if (mask & bit) {
+                    nMount = k;
+                }
+            }
+            if (nMount < 0) {
+                assert_prog(D_00A53F38, D_00A53E80, 0x76);
+            }
+            RgEquipAddMount(pEquip, eType, nMount, mask);
+        }
+        eType++;
+    } while (eType < 3);
+}
+
+const char D_00A53F90[] = "left";
+const char D_00A53F98[] = "right";
+const char D_00A53FA0[] = "back";
+const char D_00A53FA8[] = "???";
 
 int RgEquipIsEquipable(RgEquipRecord *pEquip, int eType)
 {
@@ -61,7 +137,60 @@ int RgEquipIsEquipable(RgEquipRecord *pEquip, int eType)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", RgEquipCheckConfrict);
+extern const char D_00A53F48[];
+extern const char D_00A53F58[];
+
+int RgEquipCheckConfrict(RgEquipRecord **apEquip, unsigned int eType)
+{
+    int sp[RG_EQUIP_TYPE_COUNT];
+    int conflict;
+    int *m;
+    unsigned int j;
+    unsigned int off;
+    RgEquipRecord **pe;
+    unsigned int i;
+
+    if (apEquip == 0) {
+        assert_prog(D_00A53F48, D_00A53E80, 0x95);
+    }
+    if (eType >= 3) {
+        assert_prog(D_00A53F58, D_00A53E80, 0x96);
+    }
+    if (apEquip[eType] == 0) {
+        return 0;
+    }
+    i = 0;
+    pe = apEquip;
+    while (i < 3) {
+        sp[i] = 0;
+        if (*pe != 0) {
+            j = 0;
+            if (((RgEquipRecordView *)*pe)->mountCount != 0) {
+                off = 0;
+                do {
+                    m = (int *)((char *)*pe + off);
+                    off += 12;
+                    if (m[0] == i) {
+                        sp[i] |= m[2];
+                    }
+                    j++;
+                } while (j < (unsigned int)((RgEquipRecordView *)*pe)->mountCount);
+            }
+        }
+        pe++;
+        i++;
+    }
+    conflict = 0;
+    for (i = 0; i < 3; i++) {
+        if (i != eType && (sp[i] & sp[eType])) {
+            conflict |= 1 << i;
+        }
+    }
+    if (apEquip[eType] != 0 && apEquip[eType]->activeMount != 0) {
+        conflict |= 1 << eType;
+    }
+    return conflict;
+}
 
 const char *RgEquipTypeString(int eType)
 {
@@ -123,4 +252,51 @@ int RgEquipMountPos(RgEquipRecord *pEquip, int eType, int kind, const char *name
     return pos;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", RgEquipMountPosString);
+const char D_00A53FC8[] = "left hand";
+const char D_00A53FD8[] = "left elbow";
+const char D_00A53FE8[] = "left shoulder";
+const char D_00A53FF8[] = "right hand";
+const char D_00A54008[] = "right elbow";
+const char D_00A54018[] = "right shoulder";
+const char D_00A54028[] = "back left";
+const char D_00A54038[] = "back right";
+
+const char *RgEquipMountPosString(RgEquipRecord *pEquip, int eType, int kind, const char *name)
+{
+    int pos;
+
+    if ((unsigned int)eType >= 3) {
+        assert_prog(D_00A53EC8, D_00A53E80, 0x154);
+    }
+    if (eType == 2) {
+        return D_00A53FA0;
+    }
+    pos = RgEquipMountPos(pEquip, eType, kind, name);
+    switch (pos) {
+    case 0:
+        return D_00A53FC8;
+    case 1:
+        return D_00A53FD8;
+    case 2:
+        return D_00A53FE8;
+    case 3:
+        return D_00A53FF8;
+    case 4:
+        return D_00A54008;
+    case 5:
+        return D_00A54018;
+    case 6:
+        return D_00A54028;
+    case 7:
+        return D_00A54038;
+    default:
+        if (eType == 0) {
+            return D_00A53F90;
+        } else {
+            if (eType == 1) {
+                return D_00A53F98;
+            }
+            return RgEquipTypeString(eType);
+        }
+    }
+}

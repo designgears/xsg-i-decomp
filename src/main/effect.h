@@ -138,9 +138,9 @@ struct EffectUnitPeer {
     NativeEffectPeer *caster_effect; /* +0xE8 */
 };
 
-extern void *classJava_xeno_Effect;
+extern SceneClass *classJava_xeno_Effect;
 
-extern void *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Chr;
 
 /* Field-name string constants, byte-identical in the original binary:
    D_004DC130 "id", D_004DC138 "args", D_004DC140 "peer", D_004DC148 "px",

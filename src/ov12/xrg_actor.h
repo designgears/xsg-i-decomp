@@ -29,7 +29,8 @@ typedef struct XenoAct {
     unsigned char unmodeled_092[0x510 - 0x092];
     StudioLight light;                 /* 0x510: _InitAfterLoadXenoActor's
                                            xglLightSetDefault target */
-    unsigned char unmodeled_600[0x6F4 - 0x600];
+    unsigned char unmodeled_600[0xf0];
+    unsigned int motionFlags;
     float motionFrame;                /* 0x6F4 */
     unsigned char unmodeled_6f8[0x8D0 - 0x6F8];
     void *dupFileData;                 /* 0x8D0: resourceFiles[2]->data, cached by

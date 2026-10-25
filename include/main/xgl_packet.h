@@ -14,7 +14,8 @@ extern XglPacket *xglPacketGetCurrent(void);
  * writes stays unmodeled.
  */
 struct XglPacket {
-    unsigned char unmodeled_00[4];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    u32 *write_cursor;
     /*
      * +0x04: the address xglPacketSend hands to xglDmaDirectSrcChain as the
      * DMA source-chain start whenever a packet is pending (main

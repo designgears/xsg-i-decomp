@@ -10,8 +10,40 @@
  * those two regions belongs to the parts of the codec that are still assembler
  * and stays an opaque reserved span.
  */
+/* fork type needed by JpegWork (derwetterfrosch) */
+typedef struct JpegYuvPixel {
+    float luminance;
+    float firstChroma;
+    float secondChroma;
+    u8 unmodeled_0c[4];
+} JpegYuvPixel;
+
 typedef struct JpegWork {
-    u8 reserved0[5232];
+    unsigned char reserved0[0xd0];
+    float luminanceQuantization[64];
+    /* +0xD0 */
+    float chrominanceQuantization[64];
+    unsigned char unmodeled_2d0[0x80];
+    u8 *buffer;
+    int outputPosition;
+    signed char bitsRemaining;
+    u8 bufferedByte;
+    unsigned char unmodeled_35a[0x6];
+    int samplingMode;
+    short imageWidth;
+    short imageHeight;
+    short maximumX;
+    /* +0x368 */
+    short maximumY;
+    /* +0x36a */
+    int rowBytes;
+    s16 luminanceDcCodes[64];
+    /* +0x370 */
+    s16 chrominanceDcCodes[64];
+    /* +0x3f0 */
+    s16 luminanceAcCodes[1024];
+    /* +0x470 */
+    s16 chrominanceAcCodes[1024];
     float idct_block[8][8];
     float idct_stage[8];
 } JpegWork;
@@ -374,6 +406,27 @@ static void ExtractHuffmanTableSub(JpegHuffCode *table, u8 *data, int table_size
         length = (s16)(length + 1);
     } while (i >= 0);
 }
+
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct JpegImageDimensions {
+    short width;
+    short height;
+} JpegImageDimensions;
+
+typedef struct JpegDecodeControl {
+    u8 *source;
+    u8 *destination;
+    u8 unmodeled_08[0x14 - 0x08];
+    JpegImageDimensions imageLimits;
+    u8 luminancePercent;
+    u8 chrominancePercent;
+    u8 scaleMode;
+    u8 unmodeled_1b;
+    u8 redPercent;
+    u8 greenPercent;
+    u8 bluePercent;
+    u8 unmodeled_1f;
+} JpegDecodeControl;
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", xglJpegEncode);
 
@@ -863,4 +916,120 @@ static void ConvertYUV2RGB(int w, int h) {
 
 INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", StartOfScan);
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", xglJpegDecode);
+extern const float D_004D87EC;
+extern const float D_004D87F0;
+typedef struct XgJpegImageDimensions {
+    short width;
+    short height;
+} XgJpegImageDimensions;
+typedef struct XgJpegDecodeControl {
+    u8 *source;
+    u8 *destination;
+    u8 unmodeled_08[0x14 - 0x08];
+    XgJpegImageDimensions imageLimits;
+    u8 luminancePercent;
+    u8 chrominancePercent;
+    u8 scaleMode;
+    u8 unmodeled_1b;
+    u8 redPercent;
+    u8 greenPercent;
+    u8 bluePercent;
+    u8 unmodeled_1f;
+} XgJpegDecodeControl;
+typedef struct XgJpegWork {
+    u8 unmodeled_0000[0x364];
+    short imageWidth;
+    short imageHeight;
+    short maximumX; /* +0x368 */
+    short maximumY; /* +0x36a */
+    int rowBytes;
+    u8 unmodeled_0370[0x2BA0 - 0x370];
+    u32 restart_interval;
+    u32 restart_interval_plus_one;
+    int colorScaleMode; /* +0x2ba8 */
+    float luminanceScale; /* +0x2bac */
+    float firstChromaScale; /* +0x2bb0 */
+    float secondChromaScale; /* +0x2bb4 */
+    float redScale; /* +0x2bb8 */
+    float greenScale; /* +0x2bbc */
+    float blueScale; /* +0x2bc0 */
+} XgJpegWork;
+
+int xglJpegDecode(void *requestAddress)
+{
+    XgJpegDecodeControl *request = requestAddress;
+    XgJpegWork *work;
+    u32 extentBits;
+    u8 *cursor;
+    u8 marker;
+    float yuvPercentScale;
+    float rgbPercentScale;
+    float chrominanceScale;
+
+    /* The complete dimension pair is zero for an unbounded image. */
+    __builtin_memcpy(&extentBits, &request->imageLimits, sizeof(extentBits));
+    if (extentBits == 0) {
+        work = (XgJpegWork *)sw;
+        work->maximumY = work->maximumX = 0x7FFF;
+    } else {
+        work = (XgJpegWork *)sw;
+        work->maximumX = request->imageLimits.width - 1;
+        work->maximumY = request->imageLimits.height - 1;
+    }
+    work->restart_interval = 0;
+    work->colorScaleMode = request->scaleMode;
+    work->blueScale = work->greenScale = work->redScale =
+        work->secondChromaScale = work->firstChromaScale =
+        work->luminanceScale = 1.0f;
+
+    switch (request->scaleMode) {
+    case 1:
+        yuvPercentScale = 0.01f;
+        ((XgJpegWork *)sw)->luminanceScale = I2F(request->luminancePercent) * yuvPercentScale;
+        chrominanceScale = I2F(request->chrominancePercent) * yuvPercentScale;
+        ((XgJpegWork *)sw)->firstChromaScale = ((XgJpegWork *)sw)->secondChromaScale = chrominanceScale;
+        break;
+    case 2:
+        rgbPercentScale = 0.01f;
+        ((XgJpegWork *)sw)->redScale = I2F(request->redPercent) * rgbPercentScale;
+        ((XgJpegWork *)sw)->greenScale = I2F(request->greenPercent) * rgbPercentScale;
+        ((XgJpegWork *)sw)->blueScale = I2F(request->bluePercent) * rgbPercentScale;
+        break;
+    default:
+        break;
+    }
+    cursor = request->source;
+    for (;;) {
+        while (*cursor++ != 0xFF) {
+        }
+        marker = *cursor;
+        if (marker == 0xD0 || marker == 0xD9)
+            break;
+        cursor++;
+        switch (marker) {
+        case 0xD8:
+            break;
+        case 0xDD:
+            cursor = DefineRestartInterval(cursor);
+            break;
+        case 0xDB:
+            cursor = DefineQuantizeTable(cursor);
+            break;
+        case 0xC0:
+            cursor = StartOfFrame(cursor);
+            break;
+        case 0xC4:
+            cursor = DefineHuffmanTable(cursor);
+            break;
+        case 0xDA:
+            cursor = StartOfScan(cursor, requestAddress);
+            break;
+        default:
+            cursor += (cursor[0] << 8) + cursor[1];
+            break;
+        }
+    }
+    request->imageLimits.width = ((XgJpegWork *)sw)->imageWidth;
+    request->imageLimits.height = ((XgJpegWork *)sw)->imageHeight;
+    return 0;
+}

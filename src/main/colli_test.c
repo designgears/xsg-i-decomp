@@ -87,7 +87,207 @@ static int CheckInBox(const CollisionPoint *point, const CollisionPoint *lower,
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/colli_test", CheckBallBoxCollision);
+typedef struct BallBoxCollisionArgs {
+    CollisionPoint *box_corner_a;
+    CollisionPoint *box_corner_b;
+    CollisionPoint *line_start;
+    CollisionPoint *line_end;
+} BallBoxCollisionArgs;
+
+typedef struct CollisionBoundsFrame {
+    CollisionPoint bounds[2];
+    unsigned char unmodeled_20[16];
+} CollisionBoundsFrame;
+typedef struct FractionCell {
+    float value;
+} FractionCell;
+
+static int CheckBallBoxCollision(CollisionPoint *hit_position,
+                                 const BallBoxCollisionArgs *args, int mode)
+{
+    CollisionBoundsFrame frame;
+    FractionCell fraction_cell;
+    CollisionPoint *line_start = args->line_start;
+    CollisionPoint *corner_a = args->box_corner_a;
+    CollisionPoint *corner_b = args->box_corner_b;
+    int side;
+    int slope;
+    int intersection;
+    fraction_cell.value = line_start->w;
+
+    if (corner_a->x > corner_b->x) {
+        frame.bounds[1].x = corner_a->x + fraction_cell.value;
+        frame.bounds[0].x = corner_b->x - fraction_cell.value;
+    } else {
+        frame.bounds[1].x = corner_b->x + fraction_cell.value;
+        frame.bounds[0].x = corner_a->x - fraction_cell.value;
+    }
+    if (corner_a->z > corner_b->z) {
+        frame.bounds[1].z = corner_a->z + fraction_cell.value;
+        frame.bounds[0].z = corner_b->z - fraction_cell.value;
+    } else {
+        frame.bounds[1].z = corner_b->z + fraction_cell.value;
+        frame.bounds[0].z = corner_a->z - fraction_cell.value;
+    }
+    if (CheckInBox(line_start, &frame.bounds[0], &frame.bounds[1])) {
+        if (hit_position) {
+            /* Copy all four original lanes. VF31 is transient VU0 scratch;
+             * no ACC/Q/VI/flags are read or modified. The compiler does not
+             * allocate C values in VF registers. Caller point storage is
+             * 16-byte aligned and the memory clobber covers the full copy. */
+            __asm__ __volatile__(
+                "lqc2 vf31, 0(%1)\n\tsqc2 vf31, 0(%0)"
+                : : "r"(hit_position), "r"(args->line_start) : "memory");
+        }
+        return 1;
+    }
+    if (!CheckInBox(args->line_end, &frame.bounds[0], &frame.bounds[1])
+            && !CheckIntersect(args->line_start, args->line_end,
+                               &frame.bounds[0], &frame.bounds[1])) {
+        swapf(&frame.bounds[0].x, &frame.bounds[1].x);
+        if (!CheckIntersect(args->line_start, args->line_end,
+                            &frame.bounds[0], &frame.bounds[1]))
+            return 0;
+        swapf(&frame.bounds[0].x, &frame.bounds[1].x);
+    }
+    line_start = args->line_start;
+    side = 0;
+    if (line_start->z <= frame.bounds[0].z)
+        side = 1;
+    else if (frame.bounds[1].z <= line_start->z)
+        side = 2;
+    if (line_start->x <= frame.bounds[0].x)
+        side |= 4;
+    else if (frame.bounds[1].x <= line_start->x)
+        side |= 8;
+
+    switch (side) {
+    case 1:
+        intersection = GetIntersectionPointLineZ(&fraction_cell.value, &args->line_start->x,
+                                                &args->line_end->x, frame.bounds[0].z);
+        if (!intersection)
+            return intersection;
+        side |= 16;
+        break;
+    case 2:
+        intersection = GetIntersectionPointLineZ(&fraction_cell.value, &args->line_start->x,
+                                                &args->line_end->x, frame.bounds[1].z);
+        if (!intersection)
+            return intersection;
+        side |= 16;
+        break;
+    case 4:
+        if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                       &args->line_end->x, frame.bounds[0].x))
+            return 0;
+        break;
+    case 8:
+        if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                       &args->line_end->x, frame.bounds[1].x))
+            return 0;
+        break;
+    case 5:
+        slope = CheckSlope(line_start, args->line_end, line_start, &frame.bounds[0]);
+        if (slope != -1) {
+            if (slope != 1)
+                return 0;
+            intersection = GetIntersectionPointLineZ(&fraction_cell.value,
+                &args->line_start->x, &args->line_end->x, frame.bounds[0].z);
+            if (!intersection)
+                return intersection;
+            side |= 16;
+        } else {
+            if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                           &args->line_end->x, frame.bounds[0].x))
+                return 0;
+        }
+        break;
+    case 6:
+        swapf(&frame.bounds[0].z, &frame.bounds[1].z);
+        slope = CheckSlope(args->line_start, args->line_end,
+                           args->line_start, &frame.bounds[1]);
+        if (slope != -1) {
+            if (slope != 1)
+                return 0;
+            if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                           &args->line_end->x, frame.bounds[0].x))
+                return 0;
+        } else {
+            intersection = GetIntersectionPointLineZ(&fraction_cell.value,
+                &args->line_start->x, &args->line_end->x, frame.bounds[0].z);
+            if (!intersection)
+                return intersection;
+            side |= 16;
+        }
+        swapf(&frame.bounds[0].z, &frame.bounds[1].z);
+        break;
+    case 9:
+        swapf(&frame.bounds[0].x, &frame.bounds[1].x);
+        slope = CheckSlope(args->line_start, args->line_end,
+                           args->line_start, &frame.bounds[0]);
+        if (slope != -1) {
+            if (slope != 1)
+                return 0;
+            if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                           &args->line_end->x, frame.bounds[0].x))
+                return 0;
+        } else {
+            intersection = GetIntersectionPointLineZ(&fraction_cell.value,
+                &args->line_start->x, &args->line_end->x, frame.bounds[0].z);
+            if (!intersection)
+                return intersection;
+            side |= 16;
+        }
+        swapf(&frame.bounds[0].x, &frame.bounds[1].x);
+        break;
+    case 10:
+        slope = CheckSlope(line_start, args->line_end, line_start, &frame.bounds[1]);
+        if (slope != -1) {
+            if (slope != 1)
+                return 0;
+            intersection = GetIntersectionPointLineZ(&fraction_cell.value,
+                &args->line_start->x, &args->line_end->x, frame.bounds[1].z);
+            if (!intersection)
+                return intersection;
+            side |= 16;
+        } else {
+            if (!GetIntersectionPointLineX(&fraction_cell.value, &args->line_start->x,
+                                           &args->line_end->x, frame.bounds[1].x))
+                return 0;
+        }
+        break;
+    default:
+        return 0;
+    }
+    if (hit_position) {
+        fraction_cell.value -= 0.001f;
+        switch (mode) {
+        case 0:
+        default:
+            hit_position->x = (args->line_end->x - args->line_start->x) * fraction_cell.value
+                + args->line_start->x;
+            hit_position->y = (args->line_end->y - args->line_start->y) * fraction_cell.value
+                + args->line_start->y;
+            hit_position->z = (args->line_end->z - args->line_start->z) * fraction_cell.value
+                + args->line_start->z;
+            break;
+        case 1:
+            if (side & 16) {
+                hit_position->x = args->line_end->x;
+                hit_position->z = (args->line_end->z - args->line_start->z) * fraction_cell.value
+                    + args->line_start->z;
+            } else {
+                hit_position->x = (args->line_end->x - args->line_start->x) * fraction_cell.value
+                    + args->line_start->x;
+                hit_position->z = args->line_end->z;
+            }
+            hit_position->y = (args->line_end->y - args->line_start->y) * fraction_cell.value
+                + args->line_start->y;
+            break;
+        }
+    }
+    return 1;
+}
 
 typedef struct ParticleState {
     CollisionPoint position;
@@ -119,15 +319,70 @@ extern int hit;
 
 extern int mode_004DB9D8;
 
-INCLUDE_ASM("asm/main/nonmatchings/colli_test", InitTest_002DBE88);
+typedef struct InitTestCamera {
+    unsigned char pad[0xA0];
+    float a0, a4, a8;
+    unsigned char pad2[0xD0 - 0xAC];
+    float d0, d4, d8;
+} InitTestCamera;
+extern float D_004D826C;
+extern float D_004D8270;
+extern float D_004D8274;
+extern float D_004D8278;
+extern float D_004D827C;
+extern float D_004D8280;
+extern float D_004D8284;
+extern float D_004D8288;
+extern InitTestCamera *pCamera_004DC65C;
+extern void xglStudioInit(void);
+extern void xglStudioChange(int);
+extern void xglStudioMainCameraInit(void);
+extern void xglStudioGetCamera(void *camera_out, int camera_index);
+extern void ppInit(ParticleState *particle);
+
+static int InitTest(void)
+{
+    xglStudioInit();
+    xglStudioChange(0);
+    xglStudioMainCameraInit();
+    xglStudioGetCamera(&pCamera_004DC65C, 0);
+    pCamera_004DC65C->d4 = 16.0f;
+    pCamera_004DC65C->a0 = 4.712389f;
+    pCamera_004DC65C->d0 = 0.0f;
+    pCamera_004DC65C->d8 = 0.0f;
+    pCamera_004DC65C->a4 = 0.0f;
+    pCamera_004DC65C->a8 = 0.0f;
+    box1.x = -2.45f;
+    box1.z = -0.401f;
+    box1.y = 0.0f;
+    box2.x = 1.7f;
+    box2.z = 2.2f;
+    box2.y = 0.0f;
+    box3.x = -3.0f;
+    box3.z = -3.2f;
+    box3.y = 0.0f;
+    box4.x = 1.7f;
+    box4.z = -1.41f;
+    box4.y = 0.0f;
+    ppInit(&pos1);
+    ppInit(&pos2);
+    ppSetPos(&pos1, 0.0f, 0.0f, 3.0f);
+    radius = 0.5f;
+    ppSetPos(&pos2, 0.0f, 0.0f, 3.0f);
+    pos1.gravity = 0.0f;
+    pos1.damping = 0.8f;
+    pos2.gravity = 0.0f;
+    pos2.damping = 0.8f;
+    hitpos.x = 0.0f;
+    hitpos.z = 0.0f;
+    hitpos.y = 0.0f;
+    hitpos.w = radius;
+    mode_004DB9D8 = 0;
+    hit = 0;
+    return 1;
+}
 
 #include "shared.h"
-typedef struct BallBoxCollisionArgs {
-    CollisionPoint *box_corner_a;
-    CollisionPoint *box_corner_b;
-    CollisionPoint *line_start;
-    CollisionPoint *line_end;
-} BallBoxCollisionArgs;
 typedef union CollisionPadButtons {
     u64 bits;
     struct {

@@ -279,7 +279,244 @@ void eNumberSet(UmnKeyWordNumber *number, int mode);
 
 void eNumberMain(UmnKeyWordNumber *number);
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_guno_data_base_get", tskUmnDataBaseName);
+typedef struct UmnNameMessage {
+    unsigned char unk00;
+    unsigned char mode;
+    unsigned char unk02[2];
+    short x;
+    short y;
+    int color;
+    unsigned char unk0c[0x44 - 0x0C];
+} UmnNameMessage;
+typedef struct UmnNameEntry {
+    unsigned short id;
+    unsigned char pad02[2];
+    UmnDataBaseMenuWindow window;
+    UmnNameMessage message;
+    UmnKeyWordNumber number;
+} UmnNameEntry;
+typedef struct UmnNameCursol {
+    unsigned char unk00[4];
+    short x;
+    short y;
+    int color;
+} UmnNameCursol;
+typedef struct UmnDataBaseNameWork {
+    unsigned char state;
+    unsigned char opened;
+    unsigned char unk02;
+    unsigned char count;
+    int color;
+    UmnNameEntry entries[14];
+    UmnNameCursol cursol;
+} UmnDataBaseNameWork;
+extern unsigned short monster_folder[];
+extern char D_00A12F18[];
+extern char D_00A12F20[];
+void eCursolSet(void *cursol, int mode);
+void eCursolModeChange(void *cursol, int mode);
+void eCursolMain(void *cursol);
+void xglFontDebugPrintf(int x, int y, const char *format, ...);
+#define UMN_SEL ((signed char)UmnWork.unmodeled_04[0x3C] + (signed char)UmnWork.unmodeled_04[0x3E] * 2)
+#define UMN_TOP ((signed char)UmnWork.unmodeled_47[9] - (signed char)UmnWork.unmodeled_04[0x3E] * 2 - (signed char)UmnWork.unmodeled_04[0x3C])
+
+void tskUmnDataBaseName(UmnDataBaseTask *task, UmnDataBaseNameWork *work)
+{
+    short ty;
+    short tx;
+    short target;
+    short ty2;
+    int i;
+
+    if (UmnWork.mode != 2) {
+        task->state = -1;
+        return;
+    }
+
+    switch (task->state) {
+    case 0:
+        work->color = 0x00FFFF00;
+        for (i = 0; i < 14; i++) {
+            WindowDXSet((UmnDataBaseInfoWindow *)&work->entries[i].window);
+            work->entries[i].window.width = 0xDE;
+            work->entries[i].window.color = work->color;
+            work->entries[i].window.title = D_00A12F18;
+            work->entries[i].window.y = (i / 2) * 0x30 + 0x50;
+            work->entries[i].window.height = 0x1E;
+            work->entries[i].window.x = (work->entries[i].window.width + 0x220) * (i % 2) - work->entries[i].window.width - 0x10;
+            work->entries[i].window.state = 1;
+            WindowDXMain((UmnDataBaseInfoWindow *)&work->entries[i].window);
+            work->entries[i].window.state = 3;
+            eNumberSet(&work->entries[i].number, 0);
+            work->entries[i].number.digits = 3;
+            work->entries[i].number.type = 1;
+        }
+        eCursolSet(&work->cursol, 0);
+        work->count = UmnWork.unmodeled_47[0xA];
+        if (work->count > 12) {
+            work->count = 12;
+        }
+        work->state = 0;
+        work->opened = 0;
+        break;
+    case 2:
+        switch (work->state) {
+        case 0:
+        case 1:
+            if (UmnWork.stateOrCategory == 0x21) {
+                work->state = 10;
+                work->opened = 1;
+                eCursolModeChange(&work->cursol, 0x20);
+            }
+            break;
+        case 10: {
+            int sel10 = UMN_SEL;
+
+            for (i = 0; i < work->count; i++) {
+                if (sel10 != i) {
+                    work->entries[i].window.y = (i / 2) * 0x30 + 0x50;
+                    work->entries[i].window.x = (work->entries[i].window.width + 0x220) * (i % 2) - work->entries[i].window.width - 0x10;
+                }
+            }
+            work->state = 11;
+        }
+            /* fallthrough */
+        case 11: {
+            int done11 = 0;
+            int sel11 = UMN_SEL;
+
+            for (i = 0; i < work->count; i++) {
+                if (sel11 == i) {
+                    ty = (i / 2) * 0x30 + 0x50;
+                    MoveSlide(&work->entries[i].window.y, &ty, 3.0f);
+                    if (work->entries[i].window.y != ty) {
+                        continue;
+                    }
+                    sel11 = -1;
+                }
+                tx = (work->entries[0].window.width + 0x10) * (i % 2) + 0x20;
+                MoveSlide(&work->entries[i].window.x, &tx, 3.0f);
+                if (work->entries[i].window.x == tx) {
+                    done11++;
+                }
+            }
+            if (done11 == work->count) {
+                work->state = 12;
+                UmnWork.unmodeled_04[0xD] = 0;
+            }
+            break;
+        }
+        case 12:
+            switch (UmnWork.stateOrCategory) {
+            case 0x31:
+                work->state = 20;
+                break;
+            case 0x11:
+                work->state = 30;
+                break;
+            }
+            break;
+        case 20:
+        case 30: {
+            int done20 = 0;
+            int sel20 = UMN_SEL;
+
+            for (i = 0; i < work->count; i++) {
+                target = (work->entries[i].window.width + 0x220) * (i % 2) - work->entries[i].window.width - 0x10;
+                if (work->state == 20 && sel20 == i) {
+                    target = 0x110;
+                }
+                MoveSlide(&work->entries[i].window.x, &target, 3.0f);
+                if (work->entries[i].window.x == target) {
+                    if (work->state == 20 && sel20 == i) {
+                        ty2 = 0x20;
+                        MoveSlide(&work->entries[i].window.y, &ty2, 3.0f);
+                        if (work->entries[i].window.y == ty2) {
+                            done20++;
+                        }
+                    } else {
+                        done20++;
+                    }
+                }
+            }
+            if (done20 == work->count) {
+                if (work->state == 20) {
+                    work->state = 22;
+                } else {
+                    work->state = 0;
+                }
+                UmnWork.unmodeled_04[0xD] = 0;
+            }
+            break;
+        }
+        case 22:
+            if (UmnWork.stateOrCategory == 0x21) {
+                work->state = 10;
+            } else {
+                int sel22 = UMN_SEL;
+
+                for (i = 0; i < work->count; i++) {
+                    if (sel22 == i) {
+                        work->entries[i].window.x = 0x110;
+                    } else {
+                        work->entries[i].window.x = 0x210;
+                    }
+                    work->entries[i].window.y = 0x20;
+                }
+            }
+            break;
+        }
+        break;
+    }
+
+    if (work->opened != 0) {
+        int order[12];
+        int sel;
+        int j;
+        int c;
+        int *p;
+
+        sel = UMN_SEL;
+        for (i = 0; i < work->count; i++) {
+            j = UMN_TOP + i;
+            work->entries[i].id = monster_folder[j];
+        }
+        p = order;
+        for (i = 0; i < work->count; i++) {
+            if (sel != i) {
+                *p++ = i;
+            }
+        }
+        *p = sel;
+        for (i = 0; i < work->count; i++) {
+            j = order[i];
+            if (work->entries[j].id != 0) {
+                c = work->color;
+                work->entries[j].window.color = c;
+                if (sel == j) {
+                    work->entries[j].window.color = c + 0x10;
+                }
+                WindowDXMain((UmnDataBaseInfoWindow *)&work->entries[j].window);
+                eMessageSet(&work->entries[j].message, (const char *)UmnGunoDataBaseGet(work->entries[j].id));
+                work->entries[j].message.mode = 0x20;
+                work->entries[j].message.color = work->entries[j].window.color + 2;
+                work->entries[j].message.x = work->entries[j].window.x + 0x13;
+                work->entries[j].message.y = work->entries[j].window.y + 3;
+                eMessageMain(&work->entries[j].message);
+                work->entries[j].number.x = work->entries[j].window.x + 0x20;
+                work->entries[j].number.color = work->entries[j].window.color + 2;
+                work->entries[j].number.y = work->entries[j].window.y - 0xC;
+                work->entries[j].number.value = UMN_TOP + order[i] + 1;
+                eNumberMain(&work->entries[j].number);
+            }
+        }
+        work->cursol.x = work->entries[sel].window.x + 3;
+        work->cursol.color = work->entries[sel].window.color + 2;
+        work->cursol.y = work->entries[sel].window.y + 7;
+        eCursolMain(&work->cursol);
+    }
+    xglFontDebugPrintf(0x10, 0x60, D_00A12F20, work->state);
+}
 
 /* PadPrefix canonically covers [0x00, 0x2C). The original
  * tskUmnDataBaseAnalisis also performs an `ld` from PadData + 0x28, so this
@@ -977,4 +1214,310 @@ void UmnDataBaseModel(UmnDataBaseModelWork *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov02/umn_guno_data_base_get", UmnDataBase);
+extern int UmnWorkEnd;
+extern void *UmnModelSon;
+extern int UmnModelUkn;
+extern char D_00A13150[];
+extern char D_00A13158[];
+extern char D_00A13160[];
+extern char D_00A13170[];
+void UmnObjectTaskCreate(void (*task)(void *, void *), void *work);
+void UmnChangeTopLevel(int level);
+void xglFontDebugHex(int x, int y, int value, int digits);
+int UmnDataBaseMonsterCheck(int monster_id);
+int UmnDataBaseAnalisisCheck(int monster_id);
+signed char MenuSelectMove(int cursor, int count, int wrap);
+void MenuModelMemorySet(int mode);
+void MenuModelCreate(void **model, int model_id);
+void MenuModelExtFuncSet(void *model, void (*func)(), void *argument);
+void *memset(void *, int, unsigned int);
+void tskUmnDataBaseKeyWord(UmnDataBaseTask *task, UmnDataBaseKeyWordWork *work);
+void UmnDataBaseModel(UmnDataBaseModelWork *work);
+static inline unsigned char *umn(void)
+{
+    return (unsigned char *)&UmnWork;
+}
+static inline signed char *umnS(void)
+{
+    return (signed char *)&UmnWork;
+}
+static inline unsigned char *pad(void)
+{
+    return (unsigned char *)&PadData;
+}
+
+void UmnDataBase(void)
+{
+    int w;
+    int i;
+    int n;
+    unsigned short *p;
+    unsigned int num;
+    unsigned int k;
+    signed char d;
+    int first;
+    int snd;
+
+    switch (umn()[3]) {
+    case 0x00:
+        w = UmnWorkEnd;
+        w = (w + 0xF) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBasePas, (void *)w);
+        w = (w + 0x3D7) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseInfo, (void *)w);
+        w = (w + 0x35F) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseName, (void *)w);
+        w = (w + 0x222F) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseMenu, (void *)w);
+        w = (w + 0x7DB) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseExWin, (void *)w);
+        w = (w + 0x1D7) & ~0xF;
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseKeyWord, (void *)w);
+        UmnObjectTaskCreate((void (*)(void *, void *))tskUmnDataBaseAnalisis, 0);
+        memset(monster_folder, 0, 0x80);
+        n = 0;
+        p = monster_folder;
+        for (i = 0x22; i < 0x3F; i++) {
+            if (UmnDataBaseMonsterCheck(i) != 0) {
+                *p++ = i;
+                n++;
+            }
+        }
+        umnS()[0x51] = n;
+        umnS()[0x43] = (umnS()[0x51] - 1) / 2 + 1;
+        if (umnS()[0x43] > 5) {
+            umnS()[0x43] = 5;
+        }
+        umn()[3] = 0x10;
+        break;
+
+    case 0x10:
+        umn()[3] = 0x11;
+        umnS()[0x10] = 0xC;
+        umnS()[0x46] = 0;
+        /* fallthrough */
+    case 0x11:
+        if (umnS()[0x10] == 0) {
+            umnS()[0x46] = MenuSelectMove(umnS()[0x46], 3, 0);
+            if (*(unsigned short *)(pad() + 0x2A) & 0x20) {
+                switch (umnS()[0x46]) {
+                case 0:
+                    if (umnS()[0x51] != 0) {
+                        umn()[3] = 0x20;
+                        snd = 1;
+                    } else {
+                        snd = 5;
+                    }
+                    xglSoundEffectNormalID(snd, 0);
+                    break;
+                case 1:
+                    umn()[3] = 0x50;
+                    xglSoundEffectNormalID(1, 0);
+                    break;
+                case 2:
+                    umn()[3] = 0xF0;
+                    umnS()[0x10] = 0x10;
+                    xglSoundEffectNormalID(2, 0);
+                    break;
+                }
+            }
+            if (*(unsigned short *)(pad() + 0x2A) & 0x40) {
+                umn()[3] = 0xF0;
+                umnS()[0x10] = 0x10;
+                xglSoundEffectNormalID(2, 0);
+            }
+        }
+        break;
+
+    case 0x20:
+        umnS()[0x40] = 0;
+        umnS()[0x42] = 0;
+        umnS()[0x52] = monster_folder[0];
+        umnS()[0x44] = 0;
+        umnS()[0x50] = 0;
+        umnS()[0x5E] = UmnDataBaseAnalisisCheck((signed char)monster_folder[0]);
+        umn()[3] = 0x21;
+        umnS()[0x10] = 0xC;
+        umnS()[0x11] = 1;
+        /* fallthrough */
+    case 0x21:
+        if (*(unsigned short *)(umnS() + 0x10) == 0) {
+            num = 1;
+            d = 0;
+            switch (*(unsigned short *)(pad() + 0x34)) {
+            case 0x1000:
+                num = 2;
+            case 0x8000:
+                d = -1;
+                break;
+            case 0x4000:
+                num = 2;
+            case 0x2000:
+                d = 1;
+                break;
+            }
+            if (d != 0) {
+                first = 1;
+                if (num != 0) {
+                k = num;
+                do {
+                    umnS()[0x50] = umnS()[0x50] + d;
+                    if (umnS()[0x50] < 0) {
+                        umnS()[0x50] = 0;
+                        d = 0;
+                    } else if (umnS()[0x51] - 1 < umnS()[0x50]) {
+                        d = 0;
+                        umnS()[0x50] = umnS()[0x51] - 1;
+                    }
+                    umnS()[0x40] = umnS()[0x50] & 1;
+                    if (d < 0) {
+                        if (umnS()[0x40] != 0) {
+                            if (umnS()[0x42] == 0) {
+                                umnS()[0x44]--;
+                            } else {
+                                umnS()[0x42]--;
+                            }
+                        }
+                        if (first != 0) {
+                            xglSoundEffectNormalID(3, 0);
+                        }
+                        first = 0;
+                    } else if (d > 0) {
+                        if (umnS()[0x40] == 0) {
+                            if (umnS()[0x42] == 5) {
+                                umnS()[0x44]++;
+                            } else {
+                                umnS()[0x42]++;
+                            }
+                        }
+                        if (first != 0) {
+                            xglSoundEffectNormalID(3, 0);
+                        }
+                        first = 0;
+                    }
+                } while (--k != 0);
+                }
+                umnS()[0x52] = monster_folder[umnS()[0x50]];
+                umnS()[0x5E] = UmnDataBaseAnalisisCheck(umnS()[0x52]);
+            }
+            if (*(unsigned short *)(pad() + 0x2A) & 0x20) {
+                umn()[3] = 0x30;
+                xglSoundEffectNormalID(1, 0);
+            }
+            if (*(unsigned short *)(pad() + 0x2A) & 0x40) {
+                umn()[3] = 0x11;
+                umnS()[0x10] = 0xC;
+                xglSoundEffectNormalID(2, 0);
+            }
+        }
+        break;
+
+    case 0x30:
+        if (UmnModelUkn != 0) {
+            break;
+        }
+        MenuModelMemorySet(1);
+        umnS()[0x5F] = 0;
+        umn()[3] = 0x31;
+        umnS()[0x10] = 0xC;
+        umnS()[0x11] = 1;
+        /* fallthrough */
+    case 0x31:
+        if (*(unsigned short *)(umnS() + 0x10) == 0) {
+            if (umnS()[0x51] >= 2) {
+                if (*(unsigned short *)(pad() + 0x2A) == 4) {
+                    if (umnS()[0x50] == 0) {
+                        umnS()[0x50] = umnS()[0x51] - 1;
+                        umnS()[0x40] = umnS()[0x50] & 1;
+                        umnS()[0x42] = umnS()[0x43] - 1;
+                    } else {
+                        umnS()[0x50]--;
+                        if (umnS()[0x40] == 1) {
+                            umnS()[0x40]--;
+                        } else {
+                            umnS()[0x40] = 1;
+                            if (umnS()[0x42] > 0) {
+                                umnS()[0x42]--;
+                            } else {
+                                umnS()[0x44]--;
+                            }
+                        }
+                    }
+                    umnS()[0x52] = monster_folder[umnS()[0x50]];
+                    umnS()[0x5E] = UmnDataBaseAnalisisCheck(umnS()[0x52]);
+                    umnS()[0x5F] = 1;
+                    xglSoundEffectNormalID(3, 0);
+                }
+                if (*(unsigned short *)(pad() + 0x2A) == 8) {
+                    if (umnS()[0x50] == umnS()[0x51] - 1) {
+                        umnS()[0x50] = 0;
+                        umnS()[0x40] = 0;
+                        umnS()[0x42] = 0;
+                    } else {
+                        umnS()[0x50]++;
+                        if (umnS()[0x40] == 0) {
+                            umnS()[0x40]++;
+                        } else {
+                            umnS()[0x40] = 0;
+                            if (umnS()[0x42] < umnS()[0x43] - 1) {
+                                umnS()[0x42]++;
+                            } else {
+                                umnS()[0x44]++;
+                            }
+                        }
+                    }
+                    umnS()[0x52] = monster_folder[umnS()[0x50]];
+                    umnS()[0x5E] = UmnDataBaseAnalisisCheck(umnS()[0x52]);
+                    umnS()[0x5F] = 1;
+                    xglSoundEffectNormalID(3, 0);
+                }
+            }
+            if (*(unsigned short *)(pad() + 0x2A) == 0x40) {
+                umn()[3] = 0x21;
+                umnS()[0x11] = 1;
+                xglSoundEffectNormalID(2, 0);
+            }
+        }
+        if (UmnModelSon == 0) {
+            MenuModelCreate(&UmnModelSon, umnS()[0x52]);
+            MenuModelExtFuncSet(UmnModelSon, (void (*)())UmnDataBaseModel, 0);
+        }
+        break;
+
+    case 0x50:
+        umn()[3] = 0x51;
+        umnS()[0x5D] = 0;
+        /* fallthrough */
+    case 0x51:
+        if (umnS()[0x5D] == 1) {
+            umn()[3] = 0x11;
+            umnS()[0x10] = 0xC;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xF0:
+        if (UmnModelSon != 0) {
+            if (((unsigned char *)UmnModelSon)[0x10] == 0xFF) {
+                UmnModelSon = 0;
+            }
+            break;
+        }
+        umn()[3] = 0xF1;
+        /* fallthrough */
+    case 0xF1:
+        if (umnS()[0x10] == 0) {
+            MenuModelMemorySet(0);
+            UmnChangeTopLevel(0);
+        }
+        break;
+    }
+    if (umnS()[0x10] != 0) {
+        umnS()[0x10]--;
+    }
+    xglFontDebugHex(0, 0x40, umn()[3], 2);
+    xglFontDebugPrintf(0x10, 0x18, D_00A13150, umnS()[0x52]);
+    xglFontDebugPrintf(0x10, 0x20, D_00A13158, umnS()[0x50], umnS()[0x51]);
+    xglFontDebugPrintf(0x10, 0x28, D_00A13160, umnS()[0x40], umnS()[0x42], umnS()[0x43]);
+    xglFontDebugPrintf(0x10, 0x30, D_00A13170, umnS()[0x11]);
+}

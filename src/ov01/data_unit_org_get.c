@@ -9,11 +9,17 @@
 typedef struct BattleDataHeader {
     unsigned char unmodeled_00[8];
     int unitInitOffset; /* +0x08 */
-    unsigned char unmodeled_0c[4];
+    int techniqueOffset;
     int normalInitOffset; /* +0x10 */
     int specialInitOffset; /* +0x14 */
     int etherInitOffset; /* +0x18 */
-    unsigned char unmodeled_1c[0x38 - 0x1C];
+    int weaponOffset;
+    int ethOffset;
+    int itmOffset;
+    int attOffset;
+    int accessoryOffset;
+    int skillOffset;
+    int gainOffset;
     int experienceOffset; /* +0x38 */
     int parameterOffset; /* +0x3C */
     int specialTableOffset; /* +0x40 */
@@ -318,7 +324,7 @@ int dataSpecBaseGet(int cid)
  * table dataBakpBaseGet reads.
  */
 typedef struct SpecTable {
-    unsigned char unmodeled_00[0x3C];
+    int specialBase[0x3C / sizeof(int)];
     int bakpBase[1]; /* +0x3C, indexed dynamically */
 } SpecTable;
 
@@ -406,7 +412,168 @@ int dataNormIdxGet(ObjectTask *unit, int id)
     return ret;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPlUnitInit);
+typedef struct PlInitCopy12 { unsigned char b[0xC]; } PlInitCopy12;
+typedef struct PlInitCopy24 { unsigned char b[0x18]; } PlInitCopy24;
+typedef struct PlInitCopy34 { unsigned char b[0x34]; } PlInitCopy34;
+typedef struct PlPackedInt { int v; } __attribute__((packed)) PlPackedInt;
+typedef struct PlUnitSub {
+    unsigned char pad0[4];
+    unsigned short f4;
+    unsigned short f6;
+    unsigned short f8;
+    unsigned char b[3];
+    unsigned char padD;
+    unsigned short s[3][3];
+} PlUnitSub;
+typedef struct PlUnitInit {
+    unsigned short w0;
+    unsigned short w2;
+    unsigned char pad4[0x10];
+    signed char level;
+    unsigned char pad15[0x34 - 0x15];
+} PlUnitInit;
+typedef struct PlUnitRec {
+    unsigned short w0;
+    unsigned short w2;
+    unsigned char pad4[0x10];
+    signed char level;
+    unsigned char pad15[0x30 - 0x15];
+    PlUnitSub a;
+    PlUnitSub b;
+    unsigned char pad70[0x180 - 0x70];
+} PlUnitRec;
+typedef struct PlEquipSlot {
+    unsigned short s0;
+    unsigned char b;
+    unsigned char pad;
+    unsigned short s1;
+} PlEquipSlot;
+typedef struct PlChaSpec {
+    short id;
+    short pad2[2];
+    short lv;
+    unsigned char pad8[4];
+} PlChaSpec;
+typedef struct PlChaRec {
+    unsigned char pad0[4];
+    int nextExp;
+    unsigned char pad8[0x10];
+    unsigned short growth[8];
+    unsigned char pad28[0x20];
+    PlChaSpec spec[8];
+} PlChaRec;
+typedef struct PlShortTbl {
+    short v[12];
+} PlShortTbl;
+typedef struct PlNormSlot { PlInitCopy12 norm; unsigned char pad[0x180 - 0xC]; } PlNormSlot;
+extern PlNormSlot D_4229B6[];
+extern int D_4229C2;
+extern int D_4229CE;
+
+void dataPlUnitInit(void)
+{
+  PlInitCopy12 *nb;
+  unsigned char *cha;
+  int i;
+  int id;
+  int k;
+  int ofs;
+  int ofs2;
+  int j;
+  PlUnitRec *rec;
+  PlUnitSub *p;
+  PlUnitSub *p2;
+  unsigned char *q4;
+  PlEquipSlot *eq;
+  unsigned char *q;
+  unsigned char *exp;
+  unsigned short *para;
+  PlInitCopy12 *sb;
+  int *new_var;
+  unsigned char *new_var2;
+  unsigned short *d2;
+  new_var = &D_4229CE;
+  cha = plChaData;
+  for (i = 0; i < 0x20; i++)
+  {
+    rec = &((PlUnitRec *) orgData)[i];
+    nb = &D_4229B6[i].norm;
+    memset(rec, 0, 0x180);
+    id = i + 1;
+    *((PlUnitInit *) rec) = *((PlUnitInit *) dataUnitInitGet(id));
+    ofs = (i * 0x180) + 0x30;
+    p = (PlUnitSub *) (((unsigned char *) orgData) + ofs);
+    p->f4 = ((PlUnitInit *) rec)->w0;
+    p->f6 = ((PlUnitInit *) rec)->w2;
+    p->f8 = id;
+    *nb = *((PlInitCopy12 *) dataNormInitGet(id));
+    eq = dataDefEquipGet(id);
+    d2 = rec->b.s[2];
+    for (k = 0; k < 3; k++)
+    {
+      j = k * 6;
+      q = ((unsigned char *) eq) + 2;
+      q4 = ((unsigned char *) eq) + 4;
+      rec->b.b[k] = q[j];
+      d2[-6] = *((unsigned short *) (((unsigned char *) eq) + j));
+      *d2 = *((unsigned short *) (q4 + j));
+      d2++;
+    }
+
+    for (k = 0; k < 3; k++)
+    {
+      ((PlUnitRec *) (((unsigned char *) orgData) + (0x180 * i)))->b.s[1][k] = ((unsigned short *) (q + 0x10))[k];
+    }
+
+    new_var2 = (unsigned char *) new_var;
+    ofs2 = (i * 0x180) + 0x50;
+    p2 = ((unsigned char *) orgData) + ofs2;
+    p2->f4 = *((unsigned short *) (((unsigned char *) eq) + 0x18));
+    p2->f8 = *((unsigned short *) (((unsigned char *) eq) + 0x1A));
+    p2->f6 = *((unsigned short *) (((unsigned char *) eq) + 0x1C));
+    if (!eq)
+    {
+    }
+    if (i < 0x10)
+    {
+      memset((void *) ((i * 0xA8) + ((int) cha)), 0, 0xA8);
+      for (k = 7; k >= 0; k--)
+      {
+        ((short *) (cha + (i * 0xA8)))[(k * 6) + 0x27] = 2;
+      }
+
+      exp = ((unsigned char *(*)(int)) dataExpTblGet)(id);
+      ((PlChaRec *) dataPlChaGet(id))->nextExp = ((PlPackedInt *) (exp + (((PlUnitRec *) (((unsigned char *) orgData) + (i * 0x180)))->level * 4)))->v;
+      para = dataParaTblGet(id);
+      for (k = 0; k < 8; k++)
+      {
+        ((PlChaRec *) dataPlChaGet(id))->growth[k] = ((PlShortTbl *) para)->v[k];
+      }
+
+      if (((!k) && (!k)) && (!k))
+      {
+      }
+      if (!rec)
+      {
+      }
+      for (k = 0; k < 6; k++)
+      {
+        dataSpecLearnSet(i + 1, ((PlShortTbl *) dataSpecInitGet(i + 1))->v[k]);
+      }
+
+      for (k = 0; ((k - 1) + 1) <= (12 - 1); k++)
+      {
+        ((void (*)(int, int)) dataEtherLearnSet)(i + 1, ((PlShortTbl *) dataEtherInitGet(i + 1))->v[k]);
+      }
+
+      sb = (PlInitCopy12 *) (((unsigned char *) (&D_4229C2)) + (i * 0x180));
+      *sb = *((PlInitCopy12 *) dataSpecInitGet(id));
+      *((PlInitCopy24 *) (new_var2 + (i * 0x180))) = *((PlInitCopy24 *) dataEtherInitGet(id));
+      nb = &D_4229B6[i].norm;
+    }
+  }
+
+}
 
 void dataDummySet(void)
 {
@@ -440,6 +607,71 @@ void dataBattleInit(void)
     }
 }
 
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct BattleModelActor {
+    BattleActor state;
+    unsigned char unmodeled_88[0x8D0 - 0x88];
+    void *modelAdr; /* +0x8D0 */
+    void *animationAdr; /* +0x8D4 */
+    void *textureAdr; /* +0x8D8 */
+    /* dataUnitFileLoadMotSp2 indexes from +0x8DC; the extent is not yet
+     * recovered. The overlapping motionAdr word is entry 1 at +0x8E0. */
+    union {
+        int slot[2];
+        struct {
+            int unmodeled_8dc;
+            int motionAdr;
+        } weapon;
+    } motion;
+} BattleModelActor;
+
+typedef struct TecRecord {
+    unsigned char unmodeled_00[0x11];
+    signed char kind; /* +0x11 */
+    unsigned char unmodeled_12[0x14 - 0x12];
+    short motionId; /* +0x14 */
+    unsigned char unmodeled_16[0x18 - 0x16];
+} TecRecord;
+
+typedef struct WpnRecord {
+    unsigned char unmodeled_00[0x14];
+    short tecId; /* +0x14 */
+    unsigned char unmodeled_16[0x20 - 0x16];
+} WpnRecord;
+
+typedef struct AttRecord { unsigned char opaque[0x0E]; } AttRecord;
+
+typedef struct EthRecord { unsigned char opaque[0x0C]; } EthRecord;
+
+typedef struct ItmRecord { unsigned char opaque[0x14]; } ItmRecord;
+
+typedef struct AccRecord { unsigned char opaque[0x10]; } AccRecord;
+
+typedef struct FrmRecord { unsigned char opaque[0x10]; } FrmRecord;
+
+typedef struct EngRecord { unsigned char opaque[0x0C]; } EngRecord;
+
+typedef struct SklRecord { unsigned char opaque[0x08]; } SklRecord;
+
+typedef struct GainRecord { unsigned char opaque[0x14]; } GainRecord;
+
+typedef struct PartyLeaderView {
+    unsigned char unmodeled_00[0x2C];
+    unsigned short leader_battle_id; /* +0x2C */
+} PartyLeaderView;
+
+typedef struct PcPackEntry {
+    int weaponId;
+    char *name;
+} PcPackEntry;
+
+typedef struct CmdEntry {
+    int selector; /* +0x00 */
+    int argument; /* +0x04 */
+    int extra;    /* +0x08: unwritten by this call */
+    unsigned char unmodeled_0c[8]; /* +0x0C: unwritten by this call */
+} CmdEntry;
+
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitInitSet);
 
 /*
@@ -449,7 +681,7 @@ INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitInitSet);
  * counterpart). dataPosLineGet reads the halfword at +0x10 of the record.
  */
 typedef struct PosTblEntry {
-    unsigned char unmodeled_00[0x10];
+    float position[4];
     short line; /* +0x10 */
     unsigned char unmodeled_12[0x20 - 0x12];
 } PosTblEntry;
@@ -736,9 +968,143 @@ void dataFileInfoInitChg(ObjectTask *unit, int charaId)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataEnemyMdlChk);
+typedef struct EnemyMdlHdr {
+    unsigned int top;
+    unsigned char *mid;
+    unsigned char *end;
+} EnemyMdlHdr;
+typedef struct EnemyMdlRes {
+    EnemyMdlHdr *address;
+    int size;
+    int pad[2];
+} EnemyMdlRes;
+extern EnemyMdlRes GameResource[];
+extern const char D_00A45A68[];
+extern const char D_00A45A80[];
+extern const char D_00A45A98[];
+extern int GameResourceSearch(int type, int id);
+extern void xglMemCopy16(unsigned int dst, unsigned int src, int n);
+extern void xglMemCopy16b(unsigned int dst, unsigned int src, int n);
+typedef struct EnemyMdlEnt {
+    short id;
+    short pad[3];
+} EnemyMdlEnt;
+typedef struct EnemyMdlFile {
+    int charaId;
+    int cid;
+    unsigned char *base;
+    int pad0c[2];
+    unsigned char *mid;
+    int pad18[2];
+    unsigned char *end;
+    unsigned char pad24[0x130 - 0x24];
+} EnemyMdlFile;
+extern EnemyMdlFile D_00A59420[];
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataLeaderChk);
+void dataEnemyMdlChk(EnemyMdlEnt *tbl)
+{
+  EnemyMdlFile *dst;
+  int i;
+  int cid;
+  int idx;
+  EnemyMdlHdr *h;
+  int sz;
+  unsigned char *n;
+  unsigned char **p;
+  int id;
+  for (i = 0; (tbl[i].id != 0) && (i < 3); i++)
+  {
+    id = dataCidGet(tbl[i].id);
+    cid = id;
+    idx = GameResourceSearch(0, cid);
+    if (idx != (-1))
+    {
+      h = GameResource[idx].address;
+      sz = GameResource[idx].size;
+      printf(D_00A45A68, h->top, h->mid, h->end, sz);
+      if (((((h->top != 0) && (h->mid != 0)) && (h->end != 0)) && (h->top < ((unsigned int) h->mid))) && (h->mid < h->end))
+      {
+        id = tbl[i].id;
+        dst = &D_00A59420[i];
+        do
+        {
+          n = dst->base;
+        }
+        while (0);
+        dst->charaId = id;
+        do
+        {
+          p = &h->mid;
+          n += ((unsigned int) (*p)) - h->top;
+          dst->cid = cid;
+          dst->mid = n;
+          p = &h->end;
+          n += (*p) - h->mid;
+          dst->end = n;
+        }
+        while (0);
+        if (((unsigned int) dst->base) < h->top)
+        {
+          xglMemCopy16((unsigned int) dst->base, h->top, sz / 16);
+        }
+        else
+        {
+          xglMemCopy16b((((unsigned int) dst->base) + sz) - 0x10, (h->top + sz) - 0x10, sz / 16);
+        }
+        printf(D_00A45A80, dst->base, dst->mid, dst->end);
+        printf(D_00A45A98, tbl[i].id);
+        return;
+      }
+    }
+  }
+
+}
+
+extern int leaderId;
+extern int calcAccEquChk(ObjectTask *unit, int id);
+typedef struct LeaderChkWork {
+    unsigned char unmodeled_0[0x84];
+    void *org; /* +0x84 */
+    unsigned char unmodeled_88[0x88];
+} LeaderChkWork;
+
+void dataLeaderChk(short *ids)
+{
+  union 
+  {
+    ObjectTask task;
+    unsigned char pad[0x80];
+  } t;
+  LeaderChkWork work;
+  unsigned char *party;
+  UnitFileInfo *base;
+  int *p0;
+  int i;
+  party = PartyDataGet();
+  dataLeaderCidReset();
+  base = unitFileInfo;
+  for (i = 0; i < 3; i++)
+  {
+    unsigned short cid;
+    p0 = (int *) (base[0].unmodeled_4 + 4);
+    p0 = (int *) ((*(unitFileInfo + 0)).unmodeled_4 + 4);
+    t.task.work = &work;
+    work.org = dataUnitOrgGet(ids[i * 4]);
+    cid = *((unsigned short *) (party + 0x2C));
+    if ((cid == dataCidGet(ids[i * 4])) && (calcAccEquChk(&t.task, 0x2D) == 0))
+    {
+      int tmp = *((int *) (base[i].unmodeled_4 + 4));
+      int tmp0 = ((int *) base)[2];
+      *((void **) p0) = (void *) tmp;
+      *((unsigned int *) (&leaderCid)) = *((unsigned short *) (party + 0x2C));
+      *((int *) (base[i].unmodeled_4 + 4)) = tmp0;
+      leaderId = ids[(i * 2) * 2];
+      *((int *) (base[i].unmodeled_4 + 4)) = tmp0;
+      return;
+    }
+  }
+
+}
 
 int dataLeaderCidGet(void) {
     return leaderCid;
@@ -843,7 +1209,58 @@ int dataMotNameGetSub(char *name, CalcUnitParam *up, int motionId, int weaponId)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoad);
+extern int dataUnitFileLoadWep(ObjectTask *unit, int weaponId, int slot, void *fileInfo);
+extern int dataUnitFileLoadMdl();
+extern int leaderId;
+
+int dataUnitFileLoad(ObjectTask *unit, int mode)
+{
+  void *file;
+  int i;
+  int off;
+  unsigned char *base;
+  short wpn;
+  file = dataUnitFileGet(unit, mode);
+  if (file == 0)
+  {
+    return 0;
+  }
+  if (leaderId == mode)
+  {
+    if (leaderId != calcUPGet(unit)->charaId)
+    {
+      dataLeaderCidReset();
+    }
+  }
+  i = 0;
+  mode = calcUPGet(unit)->charaId;
+  dataUnitFileLoadMdl(unit, unitCidGet(unit), file);
+  off = 0x50;
+  do
+  {
+    base = ((unsigned char *) calcUPGet(unit)) + (off + (i * 2));
+    wpn = *((short *) (base + 0xE));
+    if ((wpn != 0) && ((*((signed char *) (dataTecGet(*((short *) (dataWpnGet(wpn) + 0x14))) + 0x11))) != 6))
+    {
+      dataUnitFileLoadWep(unit, wpn, i, file);
+    }
+    i += 1;
+  }
+  while (i < 3);
+  dataUnitFileLoadMot(unit, mode, 0, file);
+  i = 0;
+  do
+  {
+    wpn = calcUPGet(unit)->sefSetupParams[i];
+    if (((wpn != 0) && ((*((short *) (dataWpnGet(wpn) + 0xA))) == 1)) && ((*((signed char *) (dataTecGet(*((short *) (dataWpnGet(wpn) + 0x14))) + 0x11))) == 4))
+    {
+      dataUnitFileLoadMot(unit, *((short *) (dataTecGet(*((short *) (dataWpnGet(wpn) + 0x14))) + 0x14)), i + 1, file);
+    }
+    i += 1;
+  }
+  while (i < 3);
+  return 1;
+}
 
 extern const char D_00A45AC8[];
 
@@ -884,7 +1301,68 @@ void *dataUnitFileGet(ObjectTask *unit, int charaId)
     return slot;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataPackPcMdlNameGet);
+typedef struct { int id; char *name; } PackMdlEnt;
+extern PackMdlEnt pcPack_0[];
+extern int calcAccEquChk(ObjectTask *unit, int id);
+extern int calcStatGet(ObjectTask *unit, int a, int b);
+extern int MenuScenarioNoGet(void);
+
+char *dataPackPcMdlNameGet(ObjectTask *unit)
+{
+    short temp_16;
+    int temp_2;
+    int var_5;
+    char *var_18;
+
+    if (*(unsigned int *)unit->work & 0x40) {
+        goto block_8;
+    }
+    if (calcUPGet(unit)->flags & 0x40) {
+        goto block_8;
+    }
+    if (calcUPGet(unit)->charaId < 0xBB) {
+        goto block_16;
+    }
+    if (calcUPGet(unit)->charaId >= 0xC3) {
+        goto block_16;
+    }
+block_8:
+    if (calcUPGet(unit)->charaId >= 0xBB && calcUPGet(unit)->charaId < 0xC3) {
+        goto block_16;
+    }
+    return 0;
+block_16:
+    var_18 = 0;
+    temp_16 = calcUPGet(unit)->charaId;
+    for (var_5 = 0; pcPack_0[var_5].id != 0; var_5++) {
+        if (temp_16 == pcPack_0[var_5].id) {
+            var_18 = pcPack_0[var_5].name;
+            break;
+        }
+    }
+    if (calcUPGet(unit)->charaId < 0xBB || calcUPGet(unit)->charaId >= 0xC3) {
+        if (calcAccEquChk(unit, 0x2D) != 0) {
+            if (temp_16 == 3) {
+                var_18 = "shionm";
+            } else if (temp_16 == 6) {
+                var_18 = "momom";
+            } else if (temp_16 == 1) {
+                var_18 = "chaosm";
+            } else if (temp_16 == 7) {
+                var_18 = "jrm";
+            }
+        }
+        if (temp_16 == 2 && MenuScenarioNoGet() < 0xA) {
+            var_18 = "kosmos1";
+        }
+        if (calcStatGet(unit, 7, 2) != 0) {
+            var_18 = "momoa";
+        } else if (calcStatGet(unit, 7, 1) != 0) {
+            var_18 = "momob";
+        }
+    }
+    return var_18;
+}
 
 typedef struct { int id; char *name; } PackWpnEnt;
 extern PackWpnEnt pcPack_1[];
@@ -1146,7 +1624,171 @@ void dataUnitFileLoad2(void *unit)
     unitCmdSet(unit, cmd);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoad2Sub);
+extern void ACT_setHand(void *actor, int hand);
+extern void ACT_setFace(void *actor, void *other, int flags);
+extern void unitFaceMotSet(void *unit, int motionId);
+extern void unitWpnMotSet(void *unit, int slot, int a, int b);
+extern void *sefCreateEffect2(void *param);
+extern void dataSndSeRegLoad2(void *unit);
+extern char D_00A45F78[];
+extern char D_00A45FA0[];
+void dataPackWpnMdl2(EquipActor *actor);
+void ACT_setArms(void *actor, void *other, int acc_id, int flags);
+void ACT_allocMatrix(void *actor, int count);
+void ACT_setModelWrapper(void *actor, int flags);
+void ACT_updateDefault(void *actor);
+
+void dataUnitFileLoad2Sub(void *unit)
+{
+  unsigned char sp[0x24];
+  EquipActor *mot;
+  EquipActor *face;
+  EquipActor *actor;
+  unsigned char *pack;
+  void *fx;
+  int i;
+  int off;
+  int tec;
+  short wid;
+  mot = *((EquipActor **) (((char *) unit) + 0x14));
+  face = *((EquipActor **) (((char *) unit) + 0x2C));
+  if ((*((EquipActor **) (((char *) unit) + 0x14)))->wpnMdl[1] == 0)
+  {
+    int *hdr;
+    int t;
+    pack = mot->wpnMdl[0];
+    hdr = (int *) pack;
+    t = hdr[2];
+    mot->wpnMdl[0] = pack + t;
+    t = hdr[3];
+    mot->wpnMdl[1] = pack + t;
+    t = hdr[4];
+    mot->wpnMdl[2] = pack + t;
+    if (face != 0)
+    {
+      face->wpnMdl[1] = pack + hdr[3];
+      t = hdr[5];
+      face->wpnMdl[0] = pack + t;
+      t = hdr[6];
+      do
+      {
+        face->wpnMdl[2] = pack + t;
+      }
+      while (0);
+    }
+    printf(D_00A45F78);
+  }
+  i = 0;
+  off = 0x50;
+  do
+  {
+    if (sp)
+    {
+    }
+    wid = *((short *) ((((char *) calcUPGet(unit)) + (off + (i * 2))) + 0xE));
+    actor = ((EquipActor **) (((char *) unit) + 0x1C))[i & 3];
+    i += 1;
+    if (wid != 0x3000)
+    {
+      if (actor != 0)
+      {
+        if (actor->wpnMdl[1] == 0)
+        {
+          dataPackWpnMdl2(actor);
+          printf(D_00A45FA0);
+        }
+      }
+    }
+  }
+  while (i < 3);
+  ACT_allocMatrix(mot, -1);
+  ACT_setModelWrapper(mot, 0);
+  if (((!((*(*((int **) (((char *) unit) + 0x10)))) & 0x40)) && (!(calcUPGet(unit)->flags & 0x40))) && ((calcUPGet(unit)->charaId < 0xBB) || (calcUPGet(unit)->charaId >= 0xC3)))
+  {
+    short hand;
+    int sel;
+    hand = *((short *) (((char *) mot) + 0x86));
+    if (((hand == 4) || (hand == 0x14)) || ((sel = 0, hand == 0x15)))
+    {
+      sel = 1;
+    }
+    ACT_setHand(mot, sel);
+  }
+  dataMotAdrSet((MotionAdrTable *) mot, 0);
+  if (face != 0)
+  {
+    ACT_setFace(face, mot, 0);
+    ACT_allocMatrix(face, -1);
+    ACT_setModelWrapper(face, 0);
+    *((void **) (((char *) face) + 0x4)) = (void *) ACT_updateDefault;
+    *((int *) (((char *) face) + 0x8DC)) = ((MotionAdrTable *) mot)->slot[0];
+    *((int *) face) = (*((int *) face)) & (~8);
+    unitFaceMotSet(unit, 0x35);
+  }
+  for (i = 0; i < 3; i++)
+  {
+    wid = calcUPGet(unit)->sefSetupParams[i];
+    actor = ((EquipActor **) (((char *) unit) + 0x1C))[i & 3];
+    if (wid != 0)
+    {
+      tec = ((signed char *) dataTecGet(*((short *) (dataWpnGet(wid) + 0x14))))[0x11];
+      if ((*((short *) (dataWpnGet(wid) + 0xA))) == 1)
+      {
+        if (tec == 4)
+        {
+          dataMotAdrSet((MotionAdrTable *) mot, i + 1);
+        }
+      }
+      off = 0x5A;
+      if ((dataWidGet(wid) != 0x3000) && (0 != actor))
+      {
+        ACT_setArms(actor, mot, ((signed char *) calcUPGet(unit))[off + i], 0);
+        ACT_allocMatrix(actor, -1);
+        ACT_setModelWrapper(actor, 0);
+        *((void **) (((char *) actor) + 0x4)) = (void *) ACT_updateDefault;
+        if ((tec != 6) && (wid != 0xC))
+        {
+          *((int *) actor) = (*((int *) actor)) & (~8);
+        }
+        if (!((*(*((int **) (((char *) unit) + 0x10)))) & 0x40))
+        {
+          if (calcUPGet(unit)->flags & 0x40)
+          {
+            *((int *) (((char *) actor) + 0x8DC)) = ((int *) (((char *) mot) + 0x8E0))[i];
+            unitWpnMotSet(unit, i, 0, 5);
+          }
+          else
+          {
+            *((int *) (((char *) actor) + 0x8DC)) = ((MotionAdrTable *) mot)->slot[0];
+            unitWpnMotSet(unit, i, 0, 0xFF);
+          }
+        }
+      }
+    }
+  }
+
+  if ((((!((*(*((int **) (((char *) unit) + 0x10)))) & 0x40)) && (!(calcUPGet(unit)->flags & 0x40))) && ((calcUPGet(unit)->charaId < 0xBB) || (calcUPGet(unit)->charaId >= 0xC3))) || ((calcUPGet(unit)->charaId >= 0x97) && (calcUPGet(unit)->charaId < 0xBB)))
+  {
+    if ((calcStatGet(unit, 7, 2) == 0) && (calcStatGet(unit, 7, 1) == 0))
+    {
+      memset(sp, 0, 0x24);
+      *((short *) (sp + 0x14)) = 0x4001;
+      *((void **) sp) = *((void **) (((char *) unit) + 0x14));
+      *((short *) (sp + 0x10)) = calcUPGet(unit)->charaId;
+      fx = sefCreateEffect2(sp);
+      *((void **) (((char *) calcUPGet(unit)) + 0x158)) = fx;
+      if (fx != 0)
+      {
+        *((int *) (((char *) fx) + 0xA8C)) = (*((int *) (((char *) fx) + 0xA8C))) | 0x100;
+      }
+    }
+  }
+  else
+  {
+    *((void **) (((char *) calcUPGet(unit)) + 0x158)) = 0;
+  }
+  dataSndSeRegLoad2(unit);
+}
 
 /*
  * A packed model or animation file: 8 bytes not recovered, then one byte
@@ -1230,7 +1872,35 @@ WepSpEntry *dataTid2WepSp(int tid)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileLoadWepSp);
+int dataUnitFileLoadWep(ObjectTask *, int, int, void *);
+
+int dataFileLoadWepSp(ObjectTask *unit, int tid)
+{
+    WepSpEntry *ent;
+    void *fileInfo;
+    int wid;
+
+    fileInfo = dataUnitFileGet(unit, calcUPGet(unit)->charaId);
+    ent = dataTid2WepSp(tid);
+    wid = 2;
+    if (ent == 0) {
+        if (((signed char *)dataTecGet(tid))[0x11] == 6) {
+            wid = 1;
+        } else {
+            return 0;
+        }
+    }
+    if (wid == 2) {
+        calcUPGet(unit)->sefSetupParams[2] = ent->unk4;
+        calcUPGet(unit)->unmodeled_54[8] = ent->unk8;
+        dataUnitFileLoadWep(unit, ent->unk4, 2, fileInfo);
+        return 1;
+    } else if (wid == 1) {
+        dataUnitFileLoadWep(unit, calcUPGet(unit)->sefSetupParams[1], 1, fileInfo);
+        return 1;
+    }
+    return 0;
+}
 
 extern void ACT_setArms(void *actor, void *other, int acc_id, int flags);
 extern void ACT_allocMatrix(void *actor, int count);
@@ -1308,10 +1978,81 @@ int dataDefWpnGet(void *unit)
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataMtdRead);
+extern const char D_00A45FC8[];
+
+int dataMtdRead(void *unit, short trigger)
+{
+    unsigned char *act;
+    unsigned char *base;
+    unsigned char *rec;
+    unsigned char *r;
+    short *p;
+    unsigned int off;
+    int idx;
+    int id;
+    int i;
+    unsigned int v;
+    short cnt;
+    int sk;
+    short n;
+    float ft;
+    int frame;
+    int key;
+    int k;
+
+    act = *(unsigned char **)((unsigned char *)unit + 0x14);
+    idx = (*(unsigned short *)(act + 0x704) & 0x700) >> 8;
+    id = (*(unsigned short *)(act + 0x704) & 0xFF) + 1;
+    if (idx >= 5) {
+        return 0;
+    }
+    base = *(unsigned char **)(act + 0x100 + idx * 4);
+    if (base == 0) {
+        return 0;
+    }
+    off = *(short *)base;
+    p = (short *)base + (off >> 1);
+    rec = 0;
+    for (i = 0; (sk = p[i]) != 0; i += 2) {
+        if (sk == id) {
+            v = p[i + 1];
+            rec = base + (((unsigned int)v >> 1) << 1);
+            break;
+        }
+    }
+    if (rec == 0) {
+        return 0;
+    }
+    r = rec;
+    key = *(unsigned short *)r;
+    ft = *(float *)(act + 0x6F4) / 0.033333335f + 0.5f;
+    frame = (int)ft;
+    k = key;
+    while (k != 0) {
+        {
+            if ((short)k == trigger) {
+
+                for (i = 0; i < *(short *)(r + 2); i++) {
+                    idx = *(short *)(r + 4 + (i << 1));
+                    if (idx == frame) {
+                        printf(D_00A45FC8, (short)key);
+                        return 1;
+                    }
+                }
+                return 2;
+            }
+            n = *(short *)(r + 2);
+            rec = (unsigned char *)((short *)rec + n + 2);
+            r = rec;
+            key = k = *(unsigned short *)r;
+        }
+    }
+    return 0;
+}
 
 typedef struct XtxFileEntry {
-    unsigned char unmodeled_0[8];
+    const char *name;
+    unsigned int address;
 } XtxFileEntry;
 
 extern XtxFileEntry xtxFile[];

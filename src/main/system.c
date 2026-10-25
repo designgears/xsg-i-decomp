@@ -181,10 +181,10 @@ void Java_xeno_vm_System_println__Ljava_lang_String_(void *thread, void **argume
     }
 }
 
-extern void *classJava_xeno_Chr;
-extern void *classJava_xeno_Stage;
-extern void *classJava_xeno_util_Menu;
-extern void *classJava_xeno_util_Window;
+extern SceneClass *classJava_xeno_Chr;
+extern SceneClass *classJava_xeno_Stage;
+extern SceneClass *classJava_xeno_util_Menu;
+extern SceneClass *classJava_xeno_util_Window;
 extern int JNI_isInstanceOf(void *object, void *target_class);
 extern JThread *JTHREAD_get(void *object);
 

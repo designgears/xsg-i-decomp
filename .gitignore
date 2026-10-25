@@ -48,6 +48,9 @@
 !/tools/coverage_report.py
 !/tools/objdiff_report.py
 !/tools/tu_edit.py
+!/tools/header_harvest.py
+!/tools/header_types.py
+!/tools/header_inputs/
 !/tools/tu/
 
 # Inside tools/tu/, these regenerate the tracked inputs from the project's

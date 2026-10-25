@@ -20,6 +20,7 @@ import collections
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -29,25 +30,52 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 AD = ROOT / "build/auto_decomp"
-TRY_BUDGET = 60
+TRY_BUDGET = 120
 
-_cov = {"at": 0.0, "data": None}
+_cov = {"at": 0.0, "data": None, "running": False, "error": None, "secs": 0.0}
 _cov_lock = threading.Lock()
+COV_PERIOD = 60.0      # refresh coverage_report.py at most this often
+COV_TIMEOUT = 180.0    # hard cap on the subprocess; the box can be very loaded
+
+
+def _refresh_coverage() -> None:
+    """Run coverage_report.py off the request thread (single-flight)."""
+    t0 = time.time()
+    try:
+        p = subprocess.run([sys.executable, "-B", str(ROOT / "tools/coverage_report.py"), "--json"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=COV_TIMEOUT)
+        d = json.loads(p.stdout)
+        data = [{k: r.get(k) for k in ("unit", "target", "functions", "functions_total", "gate")}
+                for r in d.get("rows", [])]
+        with _cov_lock:
+            _cov["data"], _cov["at"], _cov["error"] = data, time.time(), None
+    except Exception as ex:  # noqa: BLE001 - a slow/failed report must never kill the page
+        with _cov_lock:
+            _cov["at"], _cov["error"] = time.time(), repr(ex)[:200]
+    finally:
+        with _cov_lock:
+            _cov["running"] = False
+            _cov["secs"] = round(time.time() - t0, 1)
 
 
 def coverage() -> dict | None:
+    """Stale-while-revalidate: never block a request on coverage_report.py.
+
+    The page polls every 2 s; under load the report takes minutes, so it runs
+    on its own thread and requests answer with the last good snapshot.
+    """
     with _cov_lock:
-        if time.time() - _cov["at"] > 60:
-            try:
-                p = subprocess.run([sys.executable, "-B", str(ROOT / "tools/coverage_report.py"), "--json"],
-                                   cwd=ROOT, capture_output=True, text=True, timeout=120)
-                d = json.loads(p.stdout)
-                _cov["data"] = [{k: r.get(k) for k in ("unit", "target", "functions", "functions_total", "gate")}
-                                for r in d.get("rows", [])]
-            except Exception:
-                pass
-            _cov["at"] = time.time()
-        return _cov["data"]
+        due = _cov["data"] is None or time.time() - _cov["at"] > COV_PERIOD
+        if due and not _cov["running"]:
+            _cov["running"] = True
+            threading.Thread(target=_refresh_coverage, daemon=True).start()
+    return _cov["data"]
+
+
+def coverage_state() -> dict:
+    with _cov_lock:
+        return {"age": round(time.time() - _cov["at"], 1) if _cov["at"] else None,
+                "refreshing": _cov["running"], "error": _cov["error"], "last_secs": _cov["secs"]}
 
 
 def read_json(p: Path, default=None):
@@ -92,6 +120,35 @@ def permuters() -> list[dict]:
     return out
 
 
+def kind_history(per: int = 50) -> dict:
+    """Latest PER MATCH / GIVEUP / FAIL lines from the WHOLE loop.log (the tail window
+    used for the event feed is mostly SWEEP/PERMUTE lines). Cached by file size/mtime."""
+    global _KH
+    p = AD / "loop.log"
+    try:
+        st = p.stat()
+    except OSError:
+        return {}
+    sig = (st.st_size, st.st_mtime)
+    if _KH and _KH[0] == sig:
+        return _KH[1]
+    out = {}
+    pat = re.compile(rb"^(\S+) (MATCH|GIVEUP|FAIL) (.*)$")
+    with p.open("rb") as fh:
+        hits = [m for m in (pat.match(l) for l in fh) if m]
+    for m in reversed(hits):
+        kind = m[2].decode()
+        lst = out.setdefault(kind, [])
+        if len(lst) < per:
+            lst.append({"t": parse_ts(m[1].decode()), "kind": kind,
+                        "msg": m[3].decode(errors="replace").rstrip(), "trend": None})
+    _KH = (sig, out)
+    return out
+
+
+_KH = None
+
+
 def status() -> dict:
     now = time.time()
     queue = read_json(AD / "queue.json", {}) or {}
@@ -107,7 +164,11 @@ def status() -> dict:
         unit, tu, name = k.split("/", 2)
         body = AD / "bodies" / unit / tu / f"{name}.c"
         tries = read_json(AD / "tries" / k.replace("/", "__"), 0)
-        best = (read_json(body.with_name(f"{name}.best.json"), {}) or {}).get("score")
+        # best of <name>.best.json and the variants' <name>.vN.best.json (workers score variant files)
+        scores = [(read_json(f, {}) or {}).get("score") for f in
+                  [body.with_name(f"{name}.best.json"), *body.parent.glob(f"{name}.v*.best.json")]]
+        scores = [s for s in scores if isinstance(s, (int, float))]
+        best = max(scores) if scores else None
         # last activity: the body, its variants (<name>.*), or the try counter (bumped by every try_fn run)
         mts = []
         for f in [body, AD / "tries" / k.replace("/", "__"), *body.parent.glob(f"{name}.*")]:
@@ -139,10 +200,43 @@ def status() -> dict:
                 hourly[23 - int(age // 3600)] += 1
         elif t and kind == "GIVEUP" and now - t < 86400:
             g24 += 1
-    for line in lines[-40:][::-1]:
+    trends, pbest, last = {}, {}, {}                       # SWEEP/PERMUTE score moves: "up" / "down"
+    for i, line in enumerate(lines):
+        rest = line.partition(" ")[2]
+        kind, _, msg = rest.partition(" ")
+        if kind not in ("SWEEP", "PERMUTE"):
+            continue
+        key = msg.split(" ", 1)[0]
+        m = re.search(r"(\d\.\d+) -> (\d\.\d+)", msg)
+        if m:                                    # "done 0.50 -> 0.51" / "pre-sweep a -> b"
+            a, b = float(m[1]), float(m[2])
+            if a != b:
+                trends[i] = "up" if b > a else "down"
+            last[key] = b
+        elif kind == "SWEEP" and (m := re.search(r" -> (\d\.\d+) \(\d+w\)", msg)):
+            b = float(m[1])                      # sweep step: only the new score is logged
+            if key not in last:
+                trends[i] = "base"
+            elif b != last[key]:
+                trends[i] = "up" if b > last[key] else "down"
+            last[key] = b
+        m = re.search(r"\bbest=(\d+)", msg)
+        if m:                                    # permuter score: lower is better
+            b = int(m[1])
+            if key not in pbest:
+                trends[i] = "base"               # first permuter score for this function
+            elif b != pbest[key]:
+                trends[i] = "up" if b < pbest[key] else "down"
+            pbest[key] = b
+    n = len(lines)
+    for j, line in enumerate(lines[-40:][::-1]):
         ts, _, rest = line.partition(" ")
         kind, _, msg = rest.partition(" ")
-        events.append({"t": parse_ts(ts), "kind": kind, "msg": msg})
+        events.append({"t": parse_ts(ts), "kind": kind, "msg": msg,
+                       "trend": trends.get(n - 1 - j)})
+    # per-kind history: the filter buttons show the latest N of that kind from the
+    # whole log window, not just whichever of them fall in the newest 40 lines
+    by_kind = kind_history()
 
     perms = permuters()
     for w in workers.values():                   # a permuter lease: no try_fn budget in play
@@ -154,12 +248,14 @@ def status() -> dict:
     return {
         "now": now,
         "units": coverage(),
+        "coverage": coverage_state(),
         "queue": len(queue.get("candidates", [])),
         "matched_loop": state.get("matched_count"),
         "failed": len(state.get("failed") or {}),
         "match_1h": m1, "match_24h": m24, "giveup_24h": g24, "hourly": hourly,
         "workers": [{"owner": o, "leases": sorted(v, key=lambda x: x["age"])} for o, v in sorted(workers.items())],
         "events": events,
+        "events_by_kind": by_kind,
         "permuters": perms,
         "ghidra_age": now - ghidra.stat().st_mtime if ghidra.is_file() else None,
         "try_budget": TRY_BUDGET,
@@ -200,6 +296,7 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:99px;transition:width .5s ease}
 .hero .bar{height:12px;margin-top:14px}
 .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:480px){.kpis{grid-template-columns:repeat(3,1fr)}}
 .kpi{background:var(--panel2);border-radius:10px;padding:10px 12px}
 .kpi .v{font-size:1.5rem;font-weight:650;line-height:1.15}
 .kpi .l{color:var(--dim);font-size:.72rem}
@@ -215,7 +312,9 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .hist i{flex:1;background:var(--acc);opacity:.85;border-radius:3px 3px 0 0;min-height:2px}
 .hist i.z{opacity:.2}
 .axis{display:flex;justify-content:space-between;color:var(--dim);font-size:.68rem;margin-top:4px}
-.workers{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+.workers{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))}
+.w .kv{display:grid;grid-template-columns:repeat(4,auto);gap:2px 14px;margin-top:6px;font-size:.78rem;color:var(--dim);font-variant-numeric:tabular-nums}
+.w .kv span b{display:block;color:var(--fg);font-weight:600;font-size:.9rem}
 .w{min-width:0;background:var(--panel2);border-radius:9px;padding:7px 10px;border-left:3px solid var(--ok)}
 .w.s-warn{border-left-color:var(--warn)}.w.s-bad{border-left-color:var(--bad)}
 .w .t{display:flex;align-items:center;gap:6px}
@@ -227,7 +326,7 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .w .sub2 .loc{flex:1 1 auto;min-width:0}
 .w .stats{white-space:nowrap;font-variant-numeric:tabular-nums}
 .w .stats b{color:var(--fg);font-weight:600}
-.w .bar{height:3px;margin-top:5px}
+.w .bar{height:4px;margin-top:7px}
 .chip{font-size:.64rem;padding:1px 7px;flex:none;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
 .ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.dim{color:var(--dim)}
 .filters{display:flex;gap:6px;flex-wrap:wrap}
@@ -237,6 +336,7 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 .e{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:7px 8px;border-radius:8px;font-size:.8rem}
 .e:nth-child(odd){background:var(--panel2)}
 .e .k{font-weight:700;font-size:.7rem;align-self:center}
+.e .k .ar.up{color:var(--ok)}.e .k .ar.down{color:var(--bad)}.e .k .ar.base{color:var(--acc)}
 .e .tm{color:var(--dim);font-size:.72rem;text-align:right;font-variant-numeric:tabular-nums}
 .e .m{grid-column:1/-1;font-family:var(--mono);word-break:break-word;color:var(--fg);opacity:.9}
 .empty{color:var(--dim);padding:18px 0;text-align:center;font-size:.85rem}
@@ -249,13 +349,15 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 </style></head><body>
 <header><div class="hd"><h1>Xenosaga I decomp</h1><span class="live"><span class="dot" id="dot"></span><span id="upd">connecting…</span></span></div></header>
 <main>
-  <section class="card hero"><h2>Overall progress</h2>
+  <section class="card hero"><h2>Overall progress <span class="c" id="scope">EE units</span></h2>
     <div class="row"><div class="big num" id="pct">–</div><div class="sub num" id="frac"></div></div>
     <div class="bar"><i id="pbar" style="width:0"></i></div>
     <div class="units" id="units"></div>
+    <div id="cov" class="c" style="color:var(--dim);font-size:.75rem;margin-top:6px"></div>
   </section>
   <section class="card loop"><h2>Loop <span class="c" id="aux"></span></h2>
     <div class="kpis">
+      <div class="kpi"><div class="v num ok" id="mloop">–</div><div class="l">matched · loop</div></div>
       <div class="kpi"><div class="v num ok" id="m1">–</div><div class="l">matches · 1h</div></div>
       <div class="kpi"><div class="v num" id="m24">–</div><div class="l">matches · 24h</div></div>
       <div class="kpi"><div class="v num warn" id="g24">–</div><div class="l">give-ups · 24h</div></div>
@@ -278,23 +380,33 @@ const when=t=>{if(!t)return'';const d=new Date(t*1000),n=new Date();const tm=d.t
   return d.toDateString()===n.toDateString()?tm:d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+tm};
 $('filters').onclick=e=>{const b=e.target.closest('button');if(!b)return;filt=b.dataset.k;
   for(const x of $('filters').children)x.classList.toggle('on',x===b);renderEvents()};
-function renderEvents(){if(!data)return;const ev=data.events.filter(e=>!filt||e.kind===filt);
-  $('events').innerHTML=ev.length?ev.map(e=>`<div class="e"><span class="k ${KC[e.kind]||'dim'}">${esc(e.kind)}</span><span class="tm">${when(e.t)}</span><span class="m">${esc(e.msg)}</span></div>`).join(''):'<div class="empty">Nothing here.</div>'}
+function renderEvents(){if(!data)return;const ev=filt?((data.events_by_kind||{})[filt]||[]):data.events;
+  $('events').innerHTML=ev.length?ev.map(e=>`<div class="e"><span class="k ${KC[e.kind]||'dim'}">${esc(e.kind)}${e.trend?` <span class="ar ${e.trend}">${{up:'▲',down:'▼',base:'●'}[e.trend]}</span>`:''}</span><span class="tm">${when(e.t)}</span><span class="m">${esc(e.msg)}</span></div>`).join(''):'<div class="empty">Nothing here.</div>'}
 async function tick(){
   if(document.hidden)return;
   try{
-    const d=data=await (await fetch('api/status',{cache:'no-store'})).json(); last=Date.now();
+    const d=data=await (await fetch('api/status',{cache:'no-store',signal:AbortSignal.timeout(8000)})).json(); last=Date.now();
+    const cs=d.coverage||{};
+    $('cov').textContent=cs.age>120
+      ? `per-unit coverage snapshot is ${dur(cs.age)} old${cs.refreshing?' (refreshing…)':''}${cs.error?' · '+esc(cs.error):''}`
+      : '';
     if(d.units){
       let f=0,t=0;
       const pc=u=>u.functions_total?100*u.functions/u.functions_total:0,off=u=>u.gate==='not built'?' off':'';
-      for(const u of d.units){f+=u.functions;t+=u.functions_total}
-      $('pbar').style.width=(100*f/t)+'%';
+      // Exclude not-built units (iop_*) from the headline % — they pad the
+      // denominator with 0/N and make EE matches look like they do nothing.
+      for(const u of d.units){if(u.gate==='not built'||u.unit.startsWith('iop_'))continue;f+=u.functions;t+=u.functions_total}
+      $('pbar').style.width=t?(100*f/t)+'%':'0';
       $('units').innerHTML=d.units.map(u=>{const p=pc(u);
         const g=u.gate==='passing'?'':u.gate==='not built'?' · not built':` · <span class="bad">gate ${esc(u.gate)}</span>`;
         return `<div class="u${off(u)}"><span class="n">${esc(u.unit)}</span><div class="bar"><i style="width:${p}%"></i></div><span class="p num">${p.toFixed(1)}%</span><span class="c num">${u.functions.toLocaleString()}/${u.functions_total.toLocaleString()}${g}</span></div>`}).join('');
-      $('pct').textContent=(100*f/t).toFixed(2)+'%';
-      $('frac').innerHTML=`${f.toLocaleString()} / ${t.toLocaleString()} functions<br>${(t-f).toLocaleString()} to go`;
+      $('pct').textContent=t?(100*f/t).toFixed(2)+'%':'–';
+      $('frac').innerHTML=t
+        ? `${f.toLocaleString()} / ${t.toLocaleString()} EE functions<br>${(t-f).toLocaleString()} to go · loop ${Number(d.matched_loop||0).toLocaleString()} matched`
+        : 'coverage unavailable';
+      $('scope').textContent='EE units only (IOP excluded)';
     }
+    $('mloop').textContent=Number(d.matched_loop||0).toLocaleString();
     $('m1').textContent=d.match_1h;$('m24').textContent=d.match_24h;$('g24').textContent=d.giveup_24h;$('q').textContent=d.queue.toLocaleString();
     const mx=Math.max(1,...d.hourly);$('hist').innerHTML=d.hourly.map((v,i)=>`<i class="${v?'':'z'}" style="height:${100*v/mx}%" title="${v} match${v==1?'':'es'}, ${23-i}h ago"></i>`).join('');
     $('aux').textContent=`${d.permuters.length} permuter${d.permuters.length==1?'':'s'} · ghidra ${dur(d.ghidra_age)} old`;
@@ -305,7 +417,8 @@ async function tick(){
       const tp=Math.min(100,100*l.tries/d.try_budget);
       const loc='';
       cards.push(`<div class="w s-${st[1]}"><div class="t"><span class="fn" title="${esc(l.key)}">${esc(l.name)}</span><span class="md${loc}">${esc(l.model)}</span><span class="chip ${st[1]}">${st[0]}</span></div>
-        <div class="sub2"><span class="loc">${esc(w.owner)} · ${esc(l.unit)}/${esc(l.tu)}${l.size?` · ${l.size}B`:''}</span><span class="stats"><b>${l.best==null?'–':(+l.best).toFixed(3)}</b> · ${l.tries}/${d.try_budget} · ${dur(l.age)} · idle ${dur(idle)}</span></div>
+        <div class="sub2"><span class="loc" title="${esc(l.key)}">${esc(w.owner)} · ${esc(l.unit)}/${esc(l.tu)}${l.size?` · ${l.size} B`:''}</span></div>
+        <div class="kv"><span>best<b>${l.best==null?'–':(+l.best).toFixed(4)}</b></span><span>tries<b>${l.tries} / ${d.try_budget}</b></span><span>running<b>${dur(l.age)}</b></span><span>last edit<b>${idle==null?'–':dur(idle)+' ago'}</b></span></div>
         <div class="bar"><i style="width:${l.best==null?0:100*l.best}%"></i></div></div>`)}
     $('wc').textContent=n?`${n} active`:'';
     $('workers').innerHTML=cards.length?cards.join(''):'<div class="empty">No active leases.</div>';
@@ -345,7 +458,13 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=8787)
     a = ap.parse_args()
     print(f"status page: http://{a.host}:{a.port}/")
-    ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
+    coverage()                                  # warm the snapshot off the request path
+    srv = ThreadingHTTPServer((a.host, a.port), Handler)
+    srv.daemon_threads = True
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
     return 0
 
 

@@ -1,8 +1,11 @@
 #include "common.h"
 
 typedef struct JSClassRecord JSClassRecord;
+
 typedef struct JSLookupEntry JSLookupEntry;
+
 typedef void *(*JSGetPeer)(int index);
+
 typedef void (*JSMethodCallback)(void *arguments);
 
 typedef union JSLookupKey {
@@ -13,6 +16,7 @@ typedef union JSLookupKey {
 
 typedef union JSLookupData {
     int auxiliary;
+    float floating;
     JSClassRecord *class_record;
     JSMethodCallback callback;
 } JSLookupData;
@@ -20,12 +24,15 @@ typedef union JSLookupData {
 /* Primitive values, lookup entries and method entries occupy three words.
  * Their second and third words carry different roles for integer constants,
  * named class lookups and native methods. */
+
 struct JSLookupEntry {
     int type;
     JSLookupKey key;
     JSLookupData data;
 };
+
 typedef JSLookupEntry JSPrimitive;
+
 typedef JSLookupEntry JSMethodEntry;
 
 struct JSClassRecord {
@@ -37,32 +44,104 @@ struct JSClassRecord {
 
 extern void *RSRC_alloc(int heap, int size, int tag);
 
-extern int numClass;
-extern int numPrimitive;
-extern void *primitive;
-extern void *classes;
+JSPrimitive *primitive;
+
+int numClass;
+
+JSClassRecord *classes;
+
+int numPrimitive;
+
 extern JSPrimitive js_type_int;
+
+
 extern JSPrimitive js_type_float;
+
+
 extern JSPrimitive js_type_string;
-extern const char D_004DA590[];
+
+
+extern char D_004DA590[];
+char D_004DA590[8] = ".[](),";
+
 extern char *tokenCurrent;
+
+
 extern char *tokenLimit;
+
+
 extern int tokenType;
 
+
 extern int strcmp(const char *left, const char *right);
+
 extern char *strchr(const char *text, int character);
+
 extern unsigned int strlen(const char *text);
+
 extern char *strcpy(char *destination, const char *source);
+
 extern int JS_callMethod(JSClassRecord *class_record, int token_type);
+
 extern char *STR_tokenGetNext(char *text, const char *delimiters);
+
 extern int STR_tokenGetType(void);
-static char *STR_getLine(char *destination, char *source, char *limit);
-static char *STR_trim(char *text);
-static char *STR_trim2(char *text, int delimiter);
+
+extern char *STR_getLine(char *destination, char *source, char *limit);
+
+
+extern char *STR_trim(char *text);
+
+
+extern char *STR_trim2(char *text, int delimiter);
+
 
 /* Resets the class/primitive tables and allocates their backing storage from
  * the caller's resource heap, sized for the requested primitive and class
  * capacities. */
+
+typedef void (*JSNativeMethod)(void);
+
+/*
+ * The script-class descriptor JS_loadClass hands back. JS_classAddMethod
+ * (still assembler in this TU, 0x0026b260) proves the layout: it reads and
+ * increments method_count through this same pointer's +0x8 word, then
+ * multiplies the pre-increment count by 12 to place the next entry, so the
+ * method table it appends to starts at +0xC. Only the two fields
+ * JS_classSetup itself touches are modeled; the rest is unmodeled.
+ */
+
+typedef struct JSClass {
+    unsigned char unmodeled_00[4];
+    JSNativeMethod get_peer; /* +0x4 */
+    int method_count;        /* +0x8 */
+} JSClass;
+
+extern char D_004DA598[];
+
+extern char D_004DA5A0[];
+
+extern double atof(const char *text);
+
+union JSArgumentValue {
+    int integer;
+    float floating;
+    char *string;
+    void *object;
+};
+
+struct JSCallArguments {
+    int count;
+    int unmodeled_04;
+    int type[8];
+    union JSArgumentValue value[8];
+};
+
+extern int atoi(const char *text);
+
+extern int JS_checkArgs(struct JSCallArguments *arguments,
+                        int argument_count, char **argument_names);
+
 void JS_init(int heap, int primitiveCapacity, int classCapacity) {
     numClass = 0;
     numPrimitive = 0;
@@ -70,18 +149,23 @@ void JS_init(int heap, int primitiveCapacity, int classCapacity) {
     classes = RSRC_alloc(heap, classCapacity * 0x6C, 0);
 }
 
-typedef struct { int count; } JSCounterView;
+JSClassRecord *JS_loadClass(const char *class_name) {
+    int *class_count = &numClass;
+    int *primitive_count = &numPrimitive;
+    JSClassRecord **class_table = &classes;
+    JSPrimitive **primitive_table = &primitive;
+    int class_index = *class_count;
+    int primitive_index = *primitive_count;
+    JSClassRecord *class_record = &(*class_table)[class_index];
+    JSPrimitive *primitive_entry = &(*primitive_table)[primitive_index];
 
-JSClassRecord *JS_loadClass(const char *name) {
-    JSClassRecord *class_record =
-        &((JSClassRecord *)classes)[((JSCounterView *)&numClass)->count++];
-    JSPrimitive *primitive_entry =
-        &(*(JSPrimitive **)&primitive)[((JSCounterView *)&numPrimitive)->count++];
+    *class_count = class_index + 1;
+    *primitive_count = primitive_index + 1;
 
-    class_record->name = name;
+    class_record->name = class_name;
     primitive_entry->type = 7;
-    *(JSClassRecord **)&primitive_entry->data = class_record;
-    *(const char **)&primitive_entry->key = name;
+    primitive_entry->key = (JSLookupKey){ .name = class_name };
+    primitive_entry->data.class_record = class_record;
     return class_record;
 }
 
@@ -95,24 +179,6 @@ int JS_loadConstInteger(int value, int auxiliary) {
     return 0;
 }
 
-typedef void (*JSNativeMethod)(void);
-
-/*
- * The script-class descriptor JS_loadClass hands back. JS_classAddMethod
- * (still assembler in this TU, 0x0026b260) proves the layout: it reads and
- * increments method_count through this same pointer's +0x8 word, then
- * multiplies the pre-increment count by 12 to place the next entry, so the
- * method table it appends to starts at +0xC. Only the two fields
- * JS_classSetup itself touches are modeled; the rest is unmodeled.
- */
-typedef struct JSClass {
-    unsigned char unmodeled_00[4];
-    JSNativeMethod get_peer; /* +0x4 */
-    int method_count;        /* +0x8 */
-} JSClass;
-
-/* Configures a freshly loaded script class: installs its native
- * getPeer/getHandle callback and resets its method table. */
 void JS_classSetup(JSClass *js_class, JSNativeMethod get_peer) {
     js_class->get_peer = get_peer;
     js_class->method_count = 0;
@@ -155,9 +221,175 @@ JSLookupEntry *JS_findObject(const char *name, JSLookupEntry *entries,
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/js_init", JS_callMethod);
+int JS_callMethod(JSClassRecord *class_record, int token_type) {
+    char object_name[128];
+    struct JSCallArguments call_arguments;
+    char *argument_names[8];
+    char **argument_slots;
+    int peer_index = -1;
+    JSLookupEntry *entry = 0;
+    char *token;
+    int argument_count;
+    int index;
+    int parsed_token_type;
 
-INCLUDE_ASM("asm/main/nonmatchings/js_init", JS_checkArgs);
+    if (token_type == '[') {
+        token = STR_tokenGetNext(0, D_004DA590);
+        parsed_token_type = STR_tokenGetType();
+        strcpy(object_name, token);
+        token = STR_trim(object_name);
+        entry = JS_findObject(token, primitive, numPrimitive);
+        if (entry != 0) {
+            if (parsed_token_type == ']') {
+                if (entry->type == 3) {
+                    peer_index = atoi(token);
+                } else {
+                    return 0;
+                }
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+        STR_tokenGetNext(0, D_004DA590);
+        token_type = STR_tokenGetType();
+    }
+    if (token_type != '.') {
+        return 0;
+    }
+    argument_count = 0;
+    argument_slots = argument_names;
+    for (index = 7; index >= 0; index--) {
+        argument_slots[index] = 0;
+    }
+    token = STR_tokenGetNext(0, D_004DA590);
+    parsed_token_type = STR_tokenGetType();
+    strcpy(object_name, token);
+    token = STR_trim(object_name);
+    if (class_record != 0) {
+        entry = JS_findObject(token, class_record->methods,
+                              class_record->method_count);
+    }
+    if (parsed_token_type == '(') {
+        do {
+            token = STR_tokenGetNext(0, D_004DA598);
+            parsed_token_type = STR_tokenGetType();
+            if (token == 0) {
+                break;
+            }
+            if (token[0] != '\0') {
+                argument_slots[argument_count] = token;
+                argument_count++;
+            }
+        } while (parsed_token_type != ')');
+    }
+    call_arguments.type[7] = (int)class_record->get_peer(peer_index);
+    JS_checkArgs(&call_arguments, argument_count, argument_slots);
+    if (entry->data.callback != 0) {
+        entry->data.callback(&call_arguments);
+    }
+    return 1;
+}
+
+int JS_checkArgs(struct JSCallArguments *call_arguments, int argument_count,
+                 char **argument_names) {
+    int index;
+    int *argument_types = call_arguments->type;
+    union JSArgumentValue *argument_values = call_arguments->value;
+    char **argument_slots = argument_names;
+    int count = argument_count;
+    int token_type;
+    int peer_index;
+    char object_name[128];
+    char *argument;
+    char *original_argument;
+    JSLookupEntry *entry;
+    JSClassRecord *class_record;
+
+    index = 0;
+    if (count > 0) {
+        do {
+            JSPrimitive *primitive_table;
+            int *primitive_count;
+            original_argument = STR_trim(argument_slots[index]);
+            primitive_table = primitive;
+            primitive_count = &numPrimitive;
+            argument_slots[index] = original_argument;
+            argument = original_argument;
+            entry = JS_findObject(argument, primitive_table, *primitive_count);
+            if (entry != 0) {
+                switch (entry->type) {
+                case 1:
+                    argument_types[index] = 3;
+                    argument_values[index].integer = entry->data.auxiliary;
+                    break;
+                case 2:
+                    argument_types[index] = 4;
+                    argument_values[index].floating = entry->data.floating;
+                    break;
+                case 3:
+                    argument_types[index] = 3;
+                    argument_values[index].integer = atoi(argument);
+                    break;
+                case 4:
+                    argument_types[index] = 4;
+                    argument_values[index].floating = (float)atof(argument);
+                    break;
+                case 5:
+                    argument_types[index] = 5;
+                    argument_values[index].string = STR_trim2(argument, '"');
+                    break;
+                default:
+                    argument_types[index] = 0;
+                    argument_values[index].string = argument;
+                    break;
+                }
+            } else {
+                argument = STR_tokenGetNext(argument, D_004DA5A0);
+                token_type = STR_tokenGetType();
+                entry = JS_findObject(argument, primitive, numPrimitive);
+                if (entry != 0) {
+                    if (entry->type == 7) {
+                        class_record = entry->data.class_record;
+                        peer_index = -1;
+                        if (token_type == '[') {
+                            argument = STR_tokenGetNext(0, D_004DA5A0);
+                            token_type = STR_tokenGetType();
+                            strcpy(object_name, argument);
+                            argument = STR_trim(object_name);
+                            entry = JS_findObject(argument, primitive,
+                                                  numPrimitive);
+                            if (entry != 0 && token_type == ']') {
+                                if (entry->type == 3) {
+                                    peer_index = atoi(argument);
+                                }
+                            } else {
+                                argument_types[index] = 0;
+                                argument_values[index].integer = 0;
+                            }
+                        }
+                        argument_types[index] = 6;
+                        argument_values[index].object =
+                            class_record->get_peer(peer_index);
+                    }
+                } else {
+                    argument_types[index] = 0;
+                    argument_values[index].string = argument;
+                }
+            }
+            index++;
+        } while (index < count);
+    }
+    if (argument_count - 1 > 0) {
+        index = argument_count - 1;
+        do {
+            index--;
+        } while (index != 0);
+    }
+    call_arguments->count = count;
+    return 0;
+}
 
 void JS_exec(char *source, char *limit) {
     char line[1024];
@@ -188,8 +420,6 @@ void JS_exec(char *source, char *limit) {
         }
     }
 }
-
-extern int tokenType;
 
 int STR_tokenGetType(void) {
     return tokenType;
@@ -279,7 +509,6 @@ char *STR_tokenGetNext(char *text, const char *delimiters) {
     return token_start;
 }
 
-/* Copy a line, omitting comments beginning with // or #. */
 static char *STR_getLine(char *destination, char *source, char *limit) {
     int character;
 

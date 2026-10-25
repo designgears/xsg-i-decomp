@@ -1,11 +1,19 @@
 #include "common.h"
+
 #include "shared.h"
 
 /* These cursors begin at the sentinel used before a resource table is found. */
-static int infoIndex = -1;
-static int infoLength = -1;
+
+extern int infoIndex;
+
+
+extern int infoLength;
+
+
 extern char D_004C23C0[];
-static char *rsrcDefaultPath = D_004C23C0;
+
+extern char *rsrcDefaultPath;
+
 
 typedef struct RsrcManager {
     u8 *heap_origin;
@@ -18,12 +26,60 @@ typedef struct RsrcManager {
 } RsrcManager;
 
 typedef struct RsrcItem {
-    u8 unmodeled_00[5];
+    u32 size;
+    u8 kind;
     u8 item_id;
     u16 flags;
-    void *data;
-    u32 key;
+    u8 *data;
+    u32 key : 32;
 } RsrcItem;
+
+/*
+ * The arena is one contiguous block carved out of the caller's memory:
+ * general heap allocations grow upward from `memory`, the fixed-size
+ * item table (item_capacity RsrcItem slots) sits directly below the
+ * manager, and the manager struct itself occupies the last
+ * sizeof(RsrcManager) bytes of the block. `items` is therefore reached
+ * by walking back item_capacity RsrcItem slots from `manager`, and
+ * `heap_bound` is the byte offset where the item table begins, i.e. the
+ * heap's usable limit.
+ */
+
+extern void *RSRC_loadFileSub(RsrcManager *manager, char *path, char *file_name);
+
+/* These cursors begin at the sentinel used before a resource table is found. */
+
+extern char *markedSTR[2][2];
+
+extern char *selectedSTR[2][2];
+
+extern char *unselectedSTR[2][2];
+
+extern char *normalSTR[2][2];
+
+extern u32 strlen(const char *s);
+
+extern int strncmp(const char *a, const char *b, u32 n);
+
+extern char *strcat(char *destination, const char *source);
+
+extern void *memcpy(void *destination, const void *source, u32 size);
+
+extern char *DB_pathGetShortPath(char *destination, const char *path, int size);
+
+extern RsrcItem *RSRC_getDirtyItem(RsrcManager *manager, u32 size);
+
+extern char *strcpy(char *destination, const char *source);
+
+extern int sceOpen(const char *path, int flags, ...);
+
+extern int sceLseek(int fd, int offset, int whence);
+
+extern int sceRead(int fd, void *buffer, int size);
+
+extern int sceClose(int fd);
+
+extern void *RSRC_searchFile(RsrcManager *manager, char *name);
 
 void RSRC_inactiveSource(RsrcManager *manager, int source)
 {
@@ -43,16 +99,6 @@ void RSRC_inactiveSource(RsrcManager *manager, int source)
     }
 }
 
-/*
- * The arena is one contiguous block carved out of the caller's memory:
- * general heap allocations grow upward from `memory`, the fixed-size
- * item table (item_capacity RsrcItem slots) sits directly below the
- * manager, and the manager struct itself occupies the last
- * sizeof(RsrcManager) bytes of the block. `items` is therefore reached
- * by walking back item_capacity RsrcItem slots from `manager`, and
- * `heap_bound` is the byte offset where the item table begins, i.e. the
- * heap's usable limit.
- */
 RsrcManager *RSRC_create(u8 *memory, u32 memory_size, int item_capacity)
 {
     RsrcManager *manager;
@@ -73,58 +119,54 @@ void RSRC_setPrintParam(int index, int length)
     infoLength = length;
 }
 
-extern char *normalSTR[][2];
-extern char *selectedSTR[][2];
-extern char *unselectedSTR[][2];
-extern char *markedSTR[][2];
-char *strcat(char *, const char *);
-void DB_pathGetShortPath(char *, char *, int);
-
 int RSRC_info(RsrcManager *manager, int mode)
 {
-    char buf0[128];
-    char buf1[128];
+    char line[128];
+    char marks[128];
     char path[128];
-    int doPath;
-    int start;
-    int i;
-    int end;
-    int count;
+    int show_path = mode & 0xf;
+    int first = infoIndex;
+    int length = infoLength;
+    int last;
+    int index;
     RsrcItem *item;
 
-    start = infoIndex;
-    if (start < 0) start = 0;
-    doPath = mode & 0xF;
-    if (infoLength < 0) {
-        end = count = manager->item_count;
-    } else {
-        count = manager->item_count;
-        end = start + infoLength;
-        if (count < end) end = count;
+    if (first < 0) {
+        first = 0;
     }
-    if (start < 0 || start >= count) start = 0;
-    i = start;
-    while (i < end) {
-        buf1[0] = 0;
-        buf0[0] = 0;
-        item = (RsrcItem *)manager->items + i;
-        i++;
+    if (length < 0) {
+        last = manager->item_count;
+    } else {
+        last = first + length;
+        if (manager->item_count < last) {
+            last = manager->item_count;
+        }
+    }
+    if (first < 0 || first >= manager->item_count) {
+        first = 0;
+    }
+    index = first;
+    while (index < last) {
+        marks[0] = 0;
+        line[0] = 0;
+        item = (RsrcItem *)manager->items + index;
+        index++;
         if (item->flags & 2) {
-            strcat(buf0, selectedSTR[mode][0]);
-            strcat(buf1, selectedSTR[mode][1]);
+            strcat(line, selectedSTR[mode][0]);
+            strcat(marks, selectedSTR[mode][1]);
         } else {
-            strcat(buf0, unselectedSTR[mode][0]);
-            strcat(buf1, unselectedSTR[mode][1]);
+            strcat(line, unselectedSTR[mode][0]);
+            strcat(marks, unselectedSTR[mode][1]);
         }
         if (item->flags & 1) {
-            strcat(buf0, markedSTR[mode][0]);
-            strcat(buf1, markedSTR[mode][1]);
+            strcat(line, markedSTR[mode][0]);
+            strcat(marks, markedSTR[mode][1]);
         } else {
-            strcat(buf0, normalSTR[mode][0]);
-            strcat(buf1, normalSTR[mode][1]);
+            strcat(line, normalSTR[mode][0]);
+            strcat(marks, normalSTR[mode][1]);
         }
-        if (item->unmodeled_00[4] == 1 && doPath) {
-            DB_pathGetShortPath(path, (char *)item->key, 0x16);
+        if (item->kind == 1 && show_path != 0) {
+            DB_pathGetShortPath(path, (char *)item->key, 22);
         }
     }
     infoIndex = -1;
@@ -169,41 +211,111 @@ int RSRC_check(RsrcManager *manager, int size)
     return 1;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_alloc);
-
-void *RSRC_searchFile(RsrcManager *manager, char *file_name)
+void *RSRC_alloc(RsrcManager *manager, u32 size, int key)
 {
-  int index = 0;
-  u16 count = manager->item_count;
-  u32 name_len = strlen(file_name);
-  RsrcItem *item = manager->items;
-  if (count != 0)
-  {
-    char *fname = file_name + name_len;
-    (void) fname;
-    do
-    {
-      if (item->unmodeled_00[4] == 1)
-      {
-        if (strncmp((char *) item->key, file_name, name_len) == 0)
-        {
-          return item->data;
+    RsrcItem *item = RSRC_getDirtyItem(manager, size);
+
+    if (item == 0) {
+        u32 aligned;
+
+        if (manager->item_count >= manager->item_capacity) {
+            item = RSRC_getDirtyItem(manager, 0);
+            if (item == 0) {
+                RSRC_info(manager, 0);
+            }
+        } else {
+            item = (RsrcItem *)manager->items + manager->item_count++;
         }
-      }
-      index++;
-      item++;
+        if (RSRC_check(manager, size)) {
+            RSRC_info(manager, 0);
+        }
+        aligned = (size + 15) >> 4 << 4;
+        item->data = manager->heap_cursor;
+        item->size = aligned;
+        manager->heap_cursor += aligned;
     }
-    while (index < count);
-  }
-  return 0;
+    item->key = key;
+    item->flags = 0;
+    item->kind = 2;
+    memset(item->data, 0, item->size);
+    return item->data;
 }
 
-static int isLeave(RsrcItem *item)
+void *RSRC_searchFile(RsrcManager *manager, char *name)
+{
+    int index = 0;
+    u16 count = manager->item_count;
+    int length = strlen(name);
+    RsrcItem *item = manager->items;
+
+    if (count != 0) {
+        do {
+            if (item->kind == 1 && strncmp((char *)item->key, name, length) == 0) {
+                return item->data;
+            }
+            index++;
+            item++;
+        } while (index < count);
+    }
+    return 0;
+}
+
+static int isLeave(RsrcItem *item, int mode)
 {
     return item->flags & 2;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_dispose);
+void RSRC_dispose(RsrcManager *manager, int mode)
+{
+    RsrcItem *item = manager->items;
+    u16 count = manager->item_count;
+    u8 *dst = manager->heap_origin;
+    int index;
+    int live;
+
+    for (index = 0; index < count; index++, item++) {
+        if (isLeave(item, mode)) {
+            if (dst != item->data) {
+                memcpy(dst, item->data, item->size);
+                if (item->kind == 1) {
+                    u32 offset = item->key - (u32)item->data;
+
+                    item->data = dst;
+                    item->key = (u32)dst + offset;
+                }
+            }
+            dst += item->size;
+        } else {
+            item->data = 0;
+        }
+    }
+    manager->heap_cursor = dst;
+
+    live = 0;
+    item = manager->items;
+    for (index = 0; index < count; index++, item++) {
+        if (item->data != 0) {
+            RsrcItem *slot = manager->items;
+            int slot_index = 0;
+
+            for (; slot_index < count; slot_index++, slot++) {
+                if (slot->data == 0) {
+                    break;
+                }
+            }
+            if (slot_index < index) {
+                *slot = *item;
+                memset(item, 0, sizeof(RsrcItem));
+                slot->flags = 0;
+            }
+            item->flags = 0;
+            live++;
+        } else {
+            item->flags = 0;
+        }
+    }
+    manager->item_count = live;
+}
 
 RsrcItem *RSRC_getItemID(RsrcManager *manager, int id)
 {
@@ -256,9 +368,55 @@ RsrcItem *RSRC_getItem(RsrcManager *manager, void *data)
     return 0;
 }
 
-extern void *RSRC_loadFileSub(RsrcManager *manager, char *path, char *file_name);
+void *RSRC_loadFileSub(RsrcManager *manager, char *path, char *file_name)
+{
+    char buffer[1024];
+    u8 *data;
+    void *found;
+    int fd;
+    int size;
+    int blocks;
+    int name_length;
+    int name_blocks;
+    RsrcItem *item;
 
-INCLUDE_ASM("asm/main/nonmatchings/rsrc", RSRC_loadFileSub);
+    found = RSRC_searchFile(manager, file_name);
+    if (found != 0) {
+        return found;
+    }
+
+    strcpy(buffer, path);
+    strcat(buffer, file_name);
+    data = manager->heap_cursor;
+    fd = sceOpen(buffer, 1);
+    if (fd < 0) {
+        return 0;
+    }
+    size = sceLseek(fd, 0, 2);
+    if (RSRC_check(manager, size)) {
+        return 0;
+    }
+    sceLseek(fd, 0, 0);
+    if (size != 0) {
+        sceRead(fd, data, size);
+    }
+    sceClose(fd);
+
+    blocks = (size + 15) / 16;
+    manager->heap_cursor += blocks * 16;
+    name_length = strlen(file_name);
+    strcpy(manager->heap_cursor, file_name);
+    item = (RsrcItem *)manager->items + manager->item_count;
+    name_blocks = (name_length + 16) / 16;
+    item->kind = 1;
+    item->data = data;
+    item->flags = 0;
+    item->key = (u32)manager->heap_cursor;
+    item->size = (blocks + name_blocks) * 16;
+    manager->heap_cursor += name_blocks * 16;
+    manager->item_count++;
+    return data;
+}
 
 void *RSRC_loadFile2(RsrcManager *manager, char *path, char *file_name)
 {
@@ -270,39 +428,34 @@ void *RSRC_loadFile(RsrcManager *manager, char *file_name)
     return RSRC_loadFile2(manager, rsrcDefaultPath, file_name);
 }
 
-RsrcItem *RSRC_getDirtyItem(RsrcManager *manager, u32 min)
+RsrcItem *RSRC_getDirtyItem(RsrcManager *manager, u32 size)
 {
+    int index;
     u16 count = manager->item_count;
     RsrcItem *item = manager->items;
-    int index;
 
-    if (min == 0) {
+    if (size == 0) {
         RsrcItem *best = 0;
-        min = -1;
+        u32 best_size = -1;
+
         if (count != 0) {
             index = count;
             do {
-                index--;
-                if (item->flags & 0x8000) {
-                    u32 v = *(u32 *)item;
-                    if (min >= v) {
-                        min = v;
-                        best = item;
-                    }
+                if ((item->flags & 0x8000) && item->size <= best_size) {
+                    best_size = item->size;
+                    best = item;
                 }
+                index--;
                 item++;
             } while (index != 0);
         }
         return best;
     }
-    index = 0;
-    if (count != 0) {
-        do {
-            if ((item->flags & 0x8000) && *(u32 *)item >= min)
-                return item;
-            index++;
-            item++;
-        } while (index < count);
+    for (index = 0; index < count; index++) {
+        if ((item->flags & 0x8000) && item->size >= size) {
+            return item;
+        }
+        item++;
     }
     return 0;
 }

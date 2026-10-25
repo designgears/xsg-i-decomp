@@ -1,0 +1,31 @@
+{
+  "source": {
+    "path": "src/main/m_math.c"
+  },
+  "functions": [
+    {
+      "name": "MMathCalcLength",
+      "va": "0x002ef2e0"
+    },
+    {
+      "name": "MMathCalcLengthXY",
+      "va": "0x002ef310"
+    },
+    {
+      "name": "MMathCalcLengthXZ",
+      "va": "0x002ef338"
+    },
+    {
+      "name": "MMathCalcLengthYZ",
+      "va": "0x002ef360"
+    },
+    {
+      "name": "MMathCalcDist",
+      "va": "0x002ef388"
+    },
+    {
+      "name": "MMathCalcDistXZ",
+      "va": "0x002ef3c0"
+    }
+  ]
+}

@@ -33,7 +33,7 @@ extern void sceVif1PkOpenDirectCode(XglPacket *packet, int mode);
 extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
 extern void sceVif1PkOpenGifTag(XglPacket *packet, Quadword tag);
 
-static void _openVifGif(XglPacket *packet, unsigned int prim,
+static void _openVifGif(XglPacket *packet, u64 prim,
                         unsigned int nreg, u64 regs)
 {
     XrgPaint2DGifTag tag;
@@ -292,7 +292,122 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
         : "memory");
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _CalcOffset);
+extern int s_anHomePos[];
+extern float s_aCurCenterPos[];
+extern float s_aSizeRatio[];
+extern const char D_00A59040[];
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+extern void XrgSubVectorXYZ(RgVector destination, RgVector first, RgVector second);
+extern void RgError(const char *message, const char *source_file, int line, ...);
+typedef struct XrgPaint2DOffsetOut {
+    int dx;
+    int dy;
+    int ex;
+    int ey;
+    int flag;
+    unsigned char unmodeled_14[0xC];
+    XrgPaint2DOffset vec;
+} XrgPaint2DOffsetOut;
+
+static int _CalcOffset(int *out, int mode, const XrgPaint2DOffset *anchor, XrgPaint2DOffset *result)
+{
+    XrgPaint2DOffset anchorCopy;
+    XrgPaint2DOffset resultCopy;
+    XrgPaint2DOffset tmp;
+    XrgPaint2DOffset vec;
+    float offsetWork[4];
+    float len;
+    XrgPaint2DOffsetOut *ptr;
+    XrgPaint2DOffset *pres;
+    int ret;
+
+    ret = 1;
+    pres = result;
+    anchorCopy = *anchor;
+    resultCopy = *pres;
+    pres = &resultCopy;
+    ptr = (mode & 0x10) ? (XrgPaint2DOffsetOut *)(long)pres->i.y : 0;
+    switch ((unsigned int)(mode & 3)) {
+    case 0:
+        out[0] = s_anHomePos[0];
+        out[1] = s_anHomePos[1];
+        break;
+    case 1:
+        out[0] = s_anHomePos[0] + anchorCopy.i.x;
+        out[1] = s_anHomePos[1] + anchorCopy.i.y;
+        break;
+    case 2:
+        ret = _CalcPosOnScreen(&tmp, &anchorCopy, offsetWork);
+        out[0] = tmp.i.x;
+        out[1] = tmp.i.y;
+        break;
+    case 3: {
+        _CalcPosOnScreenFloat(&tmp, &anchorCopy);
+        if (tmp.f.z < 0.0f) {
+            tmp.f.x = 2.0f * s_aCurCenterPos[0] - tmp.f.x;
+            tmp.f.y = 2.0f * s_aCurCenterPos[1] - tmp.f.y;
+        }
+        XrgSubVectorXYZ((float *)&vec, (float *)&tmp, s_aCurCenterPos);
+        vec.i.z = 0;
+        vec.i.w = 0;
+        {
+            float sz;
+
+            len = XrgNormalizeVector((float *)&vec, (float *)&vec);
+            sz = pres->f.x * s_aSizeRatio[0];
+            pres->f.x = sz;
+            if (sz < len) {
+                vec.f.x = vec.f.x * sz;
+                vec.f.y = vec.f.y * sz;
+                vec.f.z = vec.f.z * sz;
+                vec.f.w = vec.f.w * sz;
+                tmp.f.x = s_aCurCenterPos[0] + vec.f.x;
+                tmp.f.y = s_aCurCenterPos[1] + vec.f.y;
+                if (ptr != 0) {
+                    ptr->flag = ret;
+                }
+            } else if (ptr != 0) {
+                ptr->flag = 0;
+            }
+        }
+        __asm__ __volatile__("lqc2 $vf11, 0(%0)\n\t"
+                             "vftoi4.xyzw $vf11, $vf11\n\t"
+                             "sqc2 $vf11, 0(%0)"
+                             : : "r"(&tmp) : "memory");
+        out[0] = tmp.i.x;
+        out[1] = tmp.i.y;
+        if (ptr != 0) {
+            __asm__ __volatile__(".set noreorder\n\t"
+                                 "lqc2 $vf31, 0(%0)\n\t"
+                                 "sqc2 $vf31, 0(%1)\n\t"
+                                 ".set reorder"
+                                 : : "r"(&vec), "r"(&ptr->vec) : "memory");
+        } else {
+            goto done;
+        }
+        break;
+    }
+    default:
+        RgError(D_00A59040, D_00A59058, 0x181, mode);
+        break;
+    }
+
+    if (ptr != 0) {
+        ptr->dx = out[0] - s_anHomePos[0];
+        ptr->dy = out[1] - s_anHomePos[1];
+        if (mode & 8) {
+            ptr->ex = (pres->i.z + ptr->dx) / 2;
+            ptr->ey = (pres->i.w + ptr->dy) / 2;
+            out[0] = ptr->ex + s_anHomePos[0];
+            out[1] = ptr->ey + s_anHomePos[1];
+        } else {
+            ptr->ex = out[0] - s_anHomePos[0];
+            ptr->ey = out[1] - s_anHomePos[1];
+        }
+    }
+done:
+    return ret;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Geom2D);
 
@@ -323,7 +438,53 @@ static void _DrawNoTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v)
     _closeVifGif((sceVif1Packet *)pk);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _DrawWithTex);
+static void _DrawWithTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v, unsigned int mode)
+{
+    struct {
+        Quadword col;
+        XrgPaint2DVertex corners[4];
+    } loc;
+    u64 prim = 4;
+    u64 flag = 0;
+
+    _CalcUV(loc.corners, (const XrgIntRect *)&req->uLow, req->uvMode, (const XrgIntRect *)&req->uOffset);
+    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                         : : "r"(req->color), "r"(&loc.col) : "memory");
+    if (mode == 1) {
+        prim = 6;
+    }
+    if (req->alpha != 0) {
+        flag = 1;
+        _openVifGifAD(pk);
+        sceVif1PkAddGsAD(pk, 0x42, req->alpha);
+        _closeVifGif((sceVif1Packet *)pk);
+    }
+    prim = prim | (flag << 6) | 0x110;
+    _openVifGifAD(pk);
+    sceVif1PkAddGsAD(pk, 6, req->tex0);
+    _closeVifGif((sceVif1Packet *)pk);
+    if (mode == 1) {
+        _openVifGif(pk, prim, 5, 0x43431);
+        sceVif1PkAddGsPacked(pk, loc.col);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[0]);
+        sceVif1PkAddGsPacked(pk, v[0]);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[3]);
+        sceVif1PkAddGsPacked(pk, v[3]);
+        _closeVifGif((sceVif1Packet *)pk);
+    } else {
+        _openVifGif(pk, prim, 9, 0x434343431ULL);
+        sceVif1PkAddGsPacked(pk, loc.col);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[0]);
+        sceVif1PkAddGsPacked(pk, v[0]);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[1]);
+        sceVif1PkAddGsPacked(pk, v[1]);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[2]);
+        sceVif1PkAddGsPacked(pk, v[2]);
+        sceVif1PkAddGsPacked(pk, *(Quadword *)&loc.corners[3]);
+        sceVif1PkAddGsPacked(pk, v[3]);
+        _closeVifGif((sceVif1Packet *)pk);
+    }
+}
 
 static void _InitPaint(XrgPaint2D *paint, const char *sourceFile, int line) {
     XrgPaint2DDrawReq *req;
@@ -556,7 +717,7 @@ void XrgPaint2DAlpha(XrgPaint2D *paint, unsigned int mode)
 extern void RgBxxGetHeader(int header);
 extern long long XrgBxxPs2Tex0(void *texture);
 const char D_00A590C8[16] = "pPic != NIL";
-static void _DrawWithTex(XrgPaint2D *paint, void *pStudio);
+static void _DrawWithTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v, unsigned int mode);
 
 /*
  * The texture object XrgPaint2DUseTexture binds to a paint request: only the
@@ -592,7 +753,7 @@ void XrgPaint2DUseTexture(XrgPaint2D *paint, XrgPaint2DTexture *texture)
     tex0 = XrgBxxPs2Tex0(texture);
     req->texture = texture;
     req->tex0 = tex0;
-    req->draw = _DrawWithTex;
+    req->draw = (void (*)(XrgPaint2D *, void *))_DrawWithTex;
     req->uLow = texture->left * 0x10 + 8;
     req->vLow = texture->top * 0x10 + 8;
     req->uHigh = texture->right * 0x10 - 8;
@@ -703,7 +864,36 @@ void InitXrgPaint2DLine3D(XrgPaint2DLine3D *line, float width)
     line->width = width;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", XrgPaint2DDrawLine);
+extern int _Line3D(XrgPaint2DDrawReq *req, Quadword *v);
+
+void XrgPaint2DDrawLine(XrgPaint2D *paint, XrgPaint2DLine3D *line)
+{
+    XrgPaint2DDrawReq *req;
+    XrgPaint2DDrawReq *prev;
+
+    if (paint == 0) {
+        assert_prog(D_00A59098, D_00A59058, 0x3EC);
+    }
+    if ((unsigned int)paint->reqCount >= 0xFF) {
+        assert_prog(D_00A590D8, D_00A59058, 0x3ED);
+    }
+    req = paint->request;
+    *(void **)req = (void *)_Line3D;
+    *(int *)((char *)req + 8) = line->mode;
+    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                         : : "r"(&line->start), "r"((char *)req + 0x10) : "memory");
+    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+                         : : "r"(&line->end), "r"((char *)req + 0x20) : "memory");
+    ((union { int i; float f; } *)((char *)req + 0x30))->f = line->width * 0.5f;
+    {
+        int n = paint->reqCount + 1;
+        prev = paint->request;
+        paint->reqCount = n;
+        paint->request = &(&paint->req)[n];
+    }
+    _InitReq(paint->request);
+    _DeriveInfoReq(paint->request, prev);
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Paint2DFlush);
 

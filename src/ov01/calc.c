@@ -546,7 +546,215 @@ int calcUseItemMenu(int charaId, int itm)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcUseItem);
+typedef struct CalcHitItemArg {
+    int unk0;
+    ObjectTask *unit;
+    int itm;
+} CalcHitItemArg;
+
+extern char *dataPlChaGet(int chara);
+extern void calcStatReset(ObjectTask *unit, int category, int mask, int unused);
+extern void calcStatResetCha(ObjectTask *unit);
+extern int calcDmgItem(ObjectTask *attacker, CalcHitItemArg *arg);
+extern int calcBc(BattleUnit *unit, int delta);
+extern void specEscapeProc(void);
+
+int calcUseItem(int mode, CalcTakeEpArg *arg, int itm)
+{
+    CalcHitItemArg hit;
+    int tbl[4] = {0, 1, 2, 3};
+    unsigned char *item;
+    CalcUnitParam *up;
+    char *p;
+    int ret;
+
+    item = dataItmGet(itm);
+    up = calcUPGet((ObjectTask *)arg);
+    hit.itm = itm;
+    hit.unk0 = 0;
+    hit.unit = (ObjectTask *)arg;
+    ret = 1;
+    if (*(unsigned short *)(item + 0xC) & 1) {
+        ret = calcHp((ObjectTask *)arg, calcDmgItem((ObjectTask *)mode, &hit));
+    }
+    if (*(unsigned short *)(item + 0xC) & 2) {
+        calcEp((ObjectTask *)arg, calcDmgItem((ObjectTask *)mode, &hit));
+    }
+    if (*(unsigned short *)(item + 0xC) & 4) {
+        if (calcBattleChk((ObjectTask *)arg) == 0) {
+            *(int *)arg->totalPara &= ~0x10;
+        }
+        if (item[0xB] == 0) {
+            calcStatResetCha((ObjectTask *)arg);
+        } else if (item[0xB] == 1) {
+            calcStatReset((ObjectTask *)arg, 0, 0x7FFF, 0);
+        } else if (item[0xB] == 2) {
+            calcStatReset((ObjectTask *)arg, 1, 0x7FFF, 0);
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 8) {
+        ret = calcHp((ObjectTask *)arg, calcDmgItem((ObjectTask *)mode, &hit));
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x10) {
+        calcStatSet((ObjectTask *)arg, tbl[item[0xA]], *(short *)(item + 0xE), 0);
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x20) {
+        up->statProtect[tbl[item[0xA]]] |= *(unsigned short *)(item + 0xE);
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x40) {
+        if (*(short *)(item + 0xE) & 0x8000) {
+            *(unsigned short *)(dataPlChaGet(up->charaId) + 8) += item[0xE];
+        } else {
+            *(unsigned short *)(dataPlChaGet(up->charaId) + 8) -= item[0xE];
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x80) {
+        if (*(short *)(item + 0xE) & 0x8000) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 4);
+        v = w + b;
+        *(unsigned short *)((char *)up + 4) = (unsigned short)v;
+        if ((short)v >= 0x3E8) {
+            *(unsigned short *)((char *)up + 4) = 0x3E7;
+        }
+    }
+        }
+        if (*(unsigned short *)(item + 0xE) & 0x4000) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 6);
+        v = w + b;
+        *(unsigned short *)((char *)up + 6) = (unsigned short)v;
+        if ((short)v >= 0x3E8) {
+            *(unsigned short *)((char *)up + 6) = 0x3E7;
+        }
+    }
+        }
+        if (*(unsigned short *)(item + 0xE) & 0x2000) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 8);
+        v = w + b;
+        *(unsigned short *)((char *)up + 8) = (unsigned short)v;
+        if ((short)v >= 0x3E8) {
+            *(unsigned short *)((char *)up + 8) = 0x3E7;
+        }
+    }
+        }
+        if (*(unsigned short *)(item + 0xE) & 0x1000) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 0xA);
+        v = w + b;
+        *(unsigned short *)((char *)up + 0xA) = (unsigned short)v;
+        if ((short)v >= 0x3E8) {
+            *(unsigned short *)((char *)up + 0xA) = 0x3E7;
+        }
+    }
+        }
+        if (*(unsigned short *)(item + 0xE) & 0x800) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 0);
+        v = w + b;
+        *(unsigned short *)((char *)up + 0) = (unsigned short)v;
+        if ((short)v >= 0x2710) {
+            *(unsigned short *)((char *)up + 0) = 0x270F;
+        }
+    }
+        }
+        if (*(unsigned short *)(item + 0xE) & 0x400) {
+                {
+        int v;
+        int b;
+        unsigned short w;
+
+        b = item[0xA];
+        w = *(unsigned short *)((char *)up + 2);
+        v = w + b;
+        *(unsigned short *)((char *)up + 2) = (unsigned short)v;
+        if ((short)v >= 0x64) {
+            *(unsigned short *)((char *)up + 2) = 0x63;
+        }
+    }
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x200) {
+        *(int *)(dataPlChaGet(up->charaId) + 0x14) += item[0xA];
+        if (*(int *)(dataPlChaGet(up->charaId) + 0x14) >= 0x2710) {
+            *(int *)(dataPlChaGet(up->charaId) + 0x14) = 0x270F;
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x400) {
+        *(int *)(dataPlChaGet(up->charaId) + 0x10) += item[0xA];
+        if (*(int *)(dataPlChaGet(up->charaId) + 0x10) >= 0x2710) {
+            *(int *)(dataPlChaGet(up->charaId) + 0x10) = 0x270F;
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x800) {
+        *(int *)(dataPlChaGet(up->charaId) + 0xC) += item[0xA];
+        if (*(int *)(dataPlChaGet(up->charaId) + 0xC) >= 0x2710) {
+            *(int *)(dataPlChaGet(up->charaId) + 0xC) = 0x270F;
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x1000) {
+        unsigned char *pd = PartyDataGet();
+        int t = up->charaId;
+        t += 0x13F;
+        pd[t] += item[0xA];
+        if (*(unsigned char *)((int)up->charaId + (int)PartyDataGet() + 0x13F) >= 6) {
+            *(unsigned char *)((int)up->charaId + (int)PartyDataGet() + 0x13F) = 5;
+        }
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x2000) {
+        ret = calcHp((ObjectTask *)arg, calcDmgItem((ObjectTask *)mode, &hit));
+    }
+    if (*(unsigned short *)(item + 0xC) & 0x100) {
+        switch (item[0xA]) {
+        case 1:
+            ret = calcHp((ObjectTask *)arg, -calcDmgItem((ObjectTask *)mode, &hit));
+            break;
+        case 2:
+            calcBc((BattleUnit *)arg, 1);
+            break;
+        case 3:
+            specEscapeProc();
+            break;
+        case 4:
+            if (*(int *)((char *)calcUPGet((ObjectTask *)arg) + 0x17C) < 0x19) {
+                *(int *)((char *)calcUPGet((ObjectTask *)arg) + 0x17C) = 0x19;
+            }
+            break;
+        case 5:
+            if (*(int *)((char *)calcUPGet((ObjectTask *)arg) + 0x17C) < 0x32) {
+                *(int *)((char *)calcUPGet((ObjectTask *)arg) + 0x17C) = 0x32;
+            }
+            break;
+        }
+    }
+    return ret;
+}
 
 typedef struct CalcSkillView {
     unsigned char unmodeled_00[0xA6];
@@ -609,7 +817,7 @@ typedef struct CalcSkillInitView {
     u8 statE;          /* +0x0E */
 } CalcSkillInitView;
 void calcStatProtectSet(ObjectTask *unit, int group, int mask);
-void calcStatSet(ObjectTask *unit, int group, int mask, int force);
+int calcStatSet(ObjectTask *unit, int group, int mask, int force);
 
 void calcSkillInitSub(ObjectTask *unit, int skillId)
 {
@@ -1936,11 +2144,6 @@ int calcAttWpnChk(int weaponId)
     return dataWpnGet(weaponId)->equipped != 0;
 }
 
-typedef struct CalcHitItemArg {
-    int unk0;
-    ObjectTask *unit;
-    int itm;
-} CalcHitItemArg;
 typedef struct CalcHitItemOut {
     int unk0[3];
     int unkC;
@@ -2045,7 +2248,121 @@ int calcDmgItem(ObjectTask *attacker, CalcHitItemArg *arg)
     return dmg;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", tgtFindFirst);
+typedef struct TgtFindCmd TgtFindCmd;
+extern ObjectTask *tgtTbl[8];
+extern int tgtIdx;
+extern int tgtNum;
+extern int tgtFindChk(ObjectTask *a, ObjectTask *b, TgtFindCmd *c);
+extern char D_00A447B8[];
+extern char D_00A447D0[];
+extern char D_00A447E0[];
+extern char D_00A447E8[];
+static inline int tgtSideBit(ObjectTask *u)
+{
+    return *(int *)u->work & 0x40;
+}
+static inline int tgtDeadBit(ObjectTask *u)
+{
+    return *(int *)u->work & 0x80;
+}
+
+ObjectTask *tgtFindFirst(ObjectTask *arg0, TgtFindCmd *arg1)
+{
+    ObjectTask *buf;
+    ObjectTask **tbl;
+    int flag;
+    ObjectTask *t;
+    int all;
+    int ok;
+    int n;
+    int i;
+    int kind2;
+    int kind;
+
+    kind = ((int *)arg1)[3];
+    t = ((ObjectTask **)arg1)[1];
+    tgtNum = 0;
+    tgtIdx = 0;
+    if (kind != 3) {
+        flag = *(unsigned char *)dataTecGet(((int *)arg1)[0]);
+    } else {
+        flag = dataItmGet(((int *)arg1)[2])[8];
+        if (((int *)arg1)[0] != 0) {
+            flag &= 0x7F;
+            flag |= 0x50;
+        }
+    }
+    all = flag & 0x10;
+    if (all == 0) {
+        ok = 0;
+        if (tgtFindChk(arg0, t, arg1) != 0) {
+            if ((flag & 4) && (calcUPGet(t)->flags & 0x40)) {
+            } else if (flag & 8) {
+                if (arg0 == t) {
+                    ok = 1;
+                }
+            } else if (flag & 0x20) {
+                if (t == 0 || tgtDeadBit(t)) {
+                    ok = 1;
+                }
+            } else if (t != 0) {
+                ok = tgtDeadBit(t) == 0;
+            }
+        }
+        if (ok == 1) {
+            tgtTbl[0] = t;
+            tgtNum = ok;
+            return tgtTbl[tgtIdx++];
+        }
+        printf(D_00A447B8, calcUPGet(t)->charaId);
+    }
+    n = 1;
+    if (flag & 8) {
+        buf = arg0;
+        tbl = &buf;
+    } else {
+        kind2 = 2;
+        if ((flag & 0xC0) != 0xC0) {
+            if (flag & 0x80) {
+                kind2 = tgtSideBit(arg0) == 0;
+            } else if (flag & 0x40) {
+                kind2 = tgtSideBit(arg0) != 0;
+            } else {
+                kind2 = tgtSideBit(arg0) == 0;
+            }
+        }
+        n = unitTblGet(kind2, &tbl);
+    }
+    for (i = 0; i < n; i++) {
+        if (tbl[i] != 0 && tgtFindChk(arg0, tbl[i], arg1) != 0) {
+            if ((flag & 4) && (calcUPGet(tbl[i])->flags & 0x40)) {
+                continue;
+            }
+            if (flag & 0x20) {
+                if (tbl[i] != 0 && !(*(int *)tbl[i]->work & 0x80)) {
+                    continue;
+                }
+            } else {
+                if (tbl[i] == 0 || (*(int *)tbl[i]->work & 0x80)) {
+                    continue;
+                }
+            }
+            tgtTbl[tgtNum++] = tbl[i];
+        }
+    }
+    if (tgtNum == 0) {
+        return 0;
+    }
+    if (all == 0) {
+        tgtNum = 1;
+    }
+    printf(D_00A447D0);
+    for (i = 0; i < tgtNum; i++) {
+        printf(D_00A447E0, calcUPGet(tgtTbl[i])->charaId);
+    }
+    printf(D_00A447E8);
+    return tgtTbl[tgtIdx++];
+}
 
 typedef struct TgtFindCmd {
     int id;
@@ -2147,7 +2464,7 @@ int calcAtkChk(ObjectTask *a, ObjectTask *b, int id)
 
 int calcA2Chk(ObjectTask *unit)
 {
-    ObjectTask **table;
+    ObjectTask **table[1]; /* not `&x`: gcc 2.96 leaves an ADDRESSOF mem's alias set uninitialized (layout-dependent code) */
     ObjectTask *u;
     int count;
     int i;
@@ -2156,10 +2473,10 @@ int calcA2Chk(ObjectTask *unit)
     if (*(short *)((char *)calcUPGet(unit) + 0x44) == 8) {
         i = 0;
         flag = *(unsigned *)unit->work & 0x40;
-        count = unitTblGet(flag != 0, &table);
+        count = unitTblGet(flag != 0, table);
         if (count > 0) {
             do {
-                u = table[i];
+                u = table[0][i];
                 i++;
                 if (u != 0 && !(*(unsigned *)u->work & 0x80)
                     && (unsigned)(*(short *)((char *)calcUPGet(u) + 0x44) - 1) < 6) {
@@ -2659,13 +2976,13 @@ int calcStatGetNorm(ObjectTask *unit, int category, int flag) {
     int res;
 
     if ((category == 3 && (flag & 1)) || (category == 6 && (flag & 0x800))) {
-        ObjectTask **table;
-        int count = unitTblGet(0, &table);
+        ObjectTask **table[1]; /* not `&x`: gcc 2.96 leaves an ADDRESSOF mem's alias set uninitialized (layout-dependent code) */
+        int count = unitTblGet(0, table);
         int i;
 
         res = 0;
         for (i = 0; i < count; i++) {
-            ObjectTask *u = table[i];
+            ObjectTask *u = table[0][i];
 
             if (u == 0) {
                 continue;
@@ -2708,7 +3025,140 @@ int calcStatSetChk(ObjectTask *unit, unsigned int group, int mask, int force)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcStatSet);
+int calcStatBit2Idx(int mask);
+int calcStatDefTurnGet(ObjectTask *unit, int group, int mask);
+
+int calcStatSet(ObjectTask *unit, int group, int mask, int force)
+{
+    CalcUnitParam *up;
+    int idx;
+    int turn;
+    int o1;
+    int o2;
+    int ret;
+    u8 *hs;
+
+    up = calcUPGet(unit);
+    ret = calcStatSetChk(unit, group, mask, force);
+    if (ret == 0) {
+        return ret;
+    }
+    {
+        if (force == 0) {
+            hs = (u8 *)up + 0xC;
+            o1 = group * 2 + 0xA0;
+            *(u16 *)(hs + o1) |= mask;
+            idx = calcStatBit2Idx(mask);
+            turn = calcStatDefTurnGet(unit, group, mask);
+            if (turn != 0xFF && calcStatGet(unit, 3, 0x100) != 0) {
+                turn *= 2;
+                calcStatReset(unit, 3, 0x100, 0);
+            }
+            o2 = group * 16;
+            *((signed char *)((char *)(idx + o2) + (int)hs) + 0xC0) = turn;
+        } else {
+            if (group == 2 && (mask & 0x100)) {
+                if (calcStatGet(unit, 2, 0x100) != 0) {
+                    mask = (mask & ~0x100) | 0x80;
+                }
+            }
+            *(u16 *)((u8 *)up + 0xBC + group * 2) |= mask;
+        }
+        switch (group) {
+        case 0:
+            if (mask & 0x1000) {
+                calcStatReset(unit, 2, 0x100, force);
+                calcStatReset(unit, 2, 0x80, force);
+            }
+            if (mask & 0x400) {
+                calcStatReset(unit, 2, 0x40, force);
+            }
+            if (mask & 0x200) {
+                calcStatReset(unit, 2, 0x20, force);
+            }
+            if (mask & 0x40) {
+                calcStatReset(unit, 2, 0x10, force);
+            }
+            break;
+        case 2:
+            if (mask & 0x100) {
+                calcStatReset(unit, 0, 0x1000, force);
+                calcStatReset(unit, 2, 0x80, force);
+            }
+            if (mask & 0x80) {
+                calcStatReset(unit, 0, 0x1000, force);
+                calcStatReset(unit, 2, 0x100, force);
+            }
+            if (mask & 0x40) {
+                calcStatReset(unit, 0, 0x400, force);
+            }
+            if (mask & 0x20) {
+                calcStatReset(unit, 0, 0x200, force);
+            }
+            if (mask & 0x1000) {
+                calcStatReset(unit, 2, 0x400, force);
+            }
+            if (mask & 0x800) {
+                calcStatReset(unit, 2, 0x200, force);
+            }
+            if (mask & 0x400) {
+                calcStatReset(unit, 2, 0x1000, force);
+                calcStatReset(unit, 2, 0x200, force);
+            }
+            if (mask & 0x200) {
+                calcStatReset(unit, 2, 0x800, force);
+                calcStatReset(unit, 2, 0x400, force);
+            }
+            if (mask & 0x10) {
+                calcStatReset(unit, 0, 0x40, force);
+            }
+            break;
+        case 1:
+            if (mask & 0x10) {
+                calcStatReset(unit, 3, 0x200, force);
+            }
+            break;
+        case 3:
+            if (mask & 0x4000) {
+                calcStatReset(unit, 3, 0x2000, force);
+                calcStatReset(unit, 3, 0x1000, force);
+            }
+            if (mask & 0x2000) {
+                calcStatReset(unit, 3, 0x4000, force);
+                calcStatReset(unit, 3, 0x1000, force);
+            }
+            if (mask & 0x1000) {
+                calcStatReset(unit, 3, 0x4000, force);
+                calcStatReset(unit, 3, 0x2000, force);
+            }
+            if (mask & 0x200) {
+                calcStatReset(unit, 1, 0x10, force);
+            }
+            if (mask & 0x20) {
+                calcStatReset(unit, 3, 0x10, force);
+            }
+            if (mask & 0x10) {
+                calcStatReset(unit, 3, 0x20, force);
+            }
+            if (mask & 0x8) {
+                calcStatReset(unit, 3, 0x4, force);
+            }
+            if (mask & 0x4) {
+                calcStatReset(unit, 3, 0x8, force);
+            }
+            break;
+        case 7:
+            if (mask & 0x2) {
+                calcStatReset(unit, 7, 0x1, force);
+            }
+            if (mask & 0x1) {
+                calcStatReset(unit, 7, 0x2, force);
+            }
+            break;
+        }
+    }
+    return 1;
+}
 
 void calcStatReset(ObjectTask *unit, int category, int mask, int unused)
 {
@@ -2845,7 +3295,78 @@ void calcResultSub(ObjectTask *unit, int *gain, int div, int *out)
     out[4] = v;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcLvUp);
+typedef struct { int v; } __attribute__((packed)) CalcExpEnt;
+typedef struct { unsigned short id; unsigned short lv; } CalcSpecEnt;
+extern CalcExpEnt *dataExpTblGet(int cid);
+extern unsigned short *dataSpecTblGet(int cid);
+extern char *dataParaTblGet(int cid);
+extern short dataSpecLearnGet(int cid, int id);
+extern void dataSpecLearnSet(int cid, int id);
+
+int calcLvUp(int cid, int exp, char *res)
+{
+    char *pl;
+    CalcCharParaData *org;
+    int i;
+    unsigned short *spec;
+    char *para;
+    char *base;
+    unsigned short id;
+    short *p;
+    int old;
+    int v;
+    int d;
+    int off;
+    int *cnt;
+    int n;
+    int nv;
+
+    pl = dataPlChaGet(cid);
+    org = dataUnitOrgGet(cid);
+    if ((signed char)org->unmodeled_04[0x10] >= 99) return 0;
+    if ((*(int *)(pl + 4) -= exp) > 0) goto ret0;
+    while ((signed char)org->unmodeled_04[0x10] < 99) {
+        org->unmodeled_04[0x10]++;
+        *(int *)(pl + 4) += dataExpTblGet(cid)[(signed char)org->unmodeled_04[0x10]].v;
+        spec = dataSpecTblGet(cid) + 1;
+        for (i = 0; i < 8; i++, spec += 2) {
+            id = spec[-1];
+            if (id != 0 && dataSpecLearnGet(cid, id) == 0 && spec[0] != 0
+                && (signed char)org->unmodeled_04[0x10] >= spec[0]) {
+                dataSpecLearnSet(cid, id);
+                cnt = (int *)(res + 0x38);
+                n = *cnt;
+                ((int *)(res + 0x20))[n] = id;
+                *cnt = n + 1;
+                printf("** Spec Learn: (%d) %d\n", cid, id);
+            }
+        }
+        para = dataParaTblGet(cid);
+        base = pl + 8;
+        for (i = 0; i < 8; i++) {
+            off = i * 2 + 0x10;
+            nv = *(unsigned short *)(para + off);
+            old = *(short *)(base + off);
+            v = ((nv - old) * 100 / (100 - (signed char)org->unmodeled_04[0x10]) + 25) / 50 + old;
+            *(short *)(base + off) = v;
+            d = v - old;
+            switch (i) {
+            case 0: if ((short)(*(u16 *)&org->unmodeled_04[0] += d) >= 1000) *(u16 *)&org->unmodeled_04[0] = 999; break;
+            case 1: if ((short)(*(u16 *)&org->unmodeled_04[2] += d) >= 1000) *(u16 *)&org->unmodeled_04[2] = 999; break;
+            case 2: if ((short)(*(u16 *)&org->unmodeled_04[4] += d) >= 1000) *(u16 *)&org->unmodeled_04[4] = 999; break;
+            case 3: if ((short)(*(u16 *)&org->unmodeled_04[6] += d) >= 1000) *(u16 *)&org->unmodeled_04[6] = 999; break;
+            case 4: if ((signed char)(org->unmodeled_04[8] += d) >= 100) org->unmodeled_04[8] = 99; break;
+            case 5: if ((signed char)(org->unmodeled_04[9] += d) >= 100) org->unmodeled_04[9] = 99; break;
+            case 6: if ((org->maxHp += d) >= 10000) org->maxHp = 9999; break;
+            case 7: if ((org->maxEp += d) >= 100) org->maxEp = 99; break;
+            }
+        }
+        if (*(int *)(pl + 4) > 0) return 1;
+    }
+    return 1;
+ret0:
+    return 0;
+}
 
 /*
  * entryPhase40 (src/ov01/entry_first_init.c) calls this as a bare statement

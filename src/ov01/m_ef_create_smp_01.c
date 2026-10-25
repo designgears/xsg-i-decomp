@@ -284,6 +284,21 @@ static void fnSMP01_DM000(Smp01Object *self, Smp01Work *work)
     }
 }
 
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct Smp01Packet {
+    void *data;    /* 0x00 */
+    int capacity;  /* 0x04 */
+    void *current; /* 0x08 */
+    int count;     /* 0x0C */
+    int auxCount;  /* 0x10 */
+} Smp01Packet;
+
+typedef struct Smp01ImageParameter {
+    u64 texture;
+    float width;
+    float height;
+} Smp01ImageParameter;
+
 INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_smp_01", fnSMP01_DP000);
 
 extern void MEfObjDestroy(void *object);

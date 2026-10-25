@@ -39,7 +39,8 @@ def _compile(unit: str, tu: str, code: str, fn: str) -> tuple[str, ...]:
     gcc, flags = _flags(unit, tu)
     with tempfile.TemporaryDirectory(prefix="snip_") as td:
         (Path(td) / "x.c").write_text(code + "\n")
-        p = subprocess.run([gcc, *flags, "-S", "x.c", "-o", "x.s"], cwd=td, capture_output=True,
+        import trick_sweep
+        p = subprocess.run([*trick_sweep._noaslr(), gcc, *flags, "-S", "x.c", "-o", "x.s"], cwd=td, capture_output=True,
                            text=True, timeout=60)
         if p.returncode != 0:
             raise ValueError(p.stderr[-800:])

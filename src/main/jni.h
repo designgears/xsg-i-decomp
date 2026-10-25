@@ -6,6 +6,7 @@
 #define SRC_MAIN_JNI_H
 
 #include "shared.h"
+#include "main/jni.h"
 #include "main/data_buffer.h"
 
 /*
@@ -84,27 +85,6 @@ extern int classDB[8];
  */
 extern void *loadStaticClass(void **class_slot, u8 *class_name);
 
-extern void *classJava_xeno_Camera;
-extern void *classJava_xeno_Chr;
-extern void *classJava_xeno_Effect;
-extern void *classJava_xeno_Enepc;
-extern void *classJava_xeno_Light;
-extern void *classJava_xeno_Movie;
-extern void *classJava_xeno_PlayControl;
-extern void *classJava_xeno_Scene;
-extern void *classJava_xeno_Stage;
-extern void *classJava_xeno_Uwamono;
-extern void *classJava_xeno_util_Format;
-extern void *classJava_xeno_util_Input;
-extern void *classJava_xeno_util_Layout;
-extern void *classJava_xeno_util_Menu;
-extern void *classJava_xeno_util_Runtime;
-extern void *classJava_xeno_util_Spline;
-extern void *classJava_xeno_util_TCHParams;
-extern void *classJava_xeno_util_Toolkit;
-extern void *classJava_xeno_util_Vector4f;
-extern void *classJava_xeno_util_Window;
-extern void *classJava_xeno_vm_System;
 
 /* The fully-qualified class names JNI_loadNativeClass resolves. */
 extern const u8 D_004CCA70[16]; /* "xeno/vm/System" */

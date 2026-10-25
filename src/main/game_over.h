@@ -19,7 +19,10 @@ static int copyframe(void);
  * this TU does not repeat or contradict those names for spans it never
  * touches  */
 typedef struct {
-    u8 unmodeled_00[0x18];
+    u8 unmodeled_00[0xe];
+    /* Intermission returns at once when this halfword is 1. */
+    u16 intermission_skip;
+    u8 unmodeled_10[0x18 - 0x10];
     int scene_id;
     u8 unmodeled_1c[0x50 - 0x1c];
     u16 frame_status;

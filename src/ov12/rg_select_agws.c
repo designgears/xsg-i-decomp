@@ -1665,7 +1665,180 @@ void _Destruct(RgSelectAGWS *pSel) {
     DisposeRgBxx_sub(pSel->pBxx, D_00A56660, 0x6FA);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _PassTime_00A3B9E8);
+extern int XrgPadIsMaru(void);
+extern int XrgPadIsBatu(void);
+extern int XrgPadIsLR(void);
+extern int XrgPadIsL12(void);
+extern int XrgPadIsR12(void);
+extern void XrgSoundSystemOk(void);
+extern void XrgSoundSystemCancel(void);
+extern void XrgSoundSystemNG(void);
+extern void RgSelectRobotScreenPos(RgSelectRobot *pRobot, float pos);
+extern void RgSelectRobotSetMode(RgSelectRobot *pRobot, int mode);
+extern void RgSelectRobotPassTime(RgSelectRobot *pRobot, float deltaTime);
+extern void RgSelectRobotSet(RgSelectRobot *pRobot, int *selection);
+extern void RgPicListSetDrawEnable(RgPicList *pList, int enable);
+extern const char D_00A56C58[];
+static inline void _CancelOffSelect(RgSelectAGWS *pSel, SelDat *pSelDat)
+{
+    pSel->state = 2;
+    _TransitToOffSelect(pSelDat);
+    XrgSoundSystemCancel();
+}
+
+static void _PassTime(RgSelectAGWS *pSel, float deltaTime)
+{
+    int buf[7];
+    SelDat *pSelDat;
+    SelType *pSelType;
+    int *pData;
+    int state;
+    unsigned int cur;
+    int ofs;
+
+    pSelDat = pSel->pSelDat;
+    if (pSel == 0) {
+        assert_prog(D_00A568E0, D_00A56660, 0x706);
+    }
+    state = pSel->state;
+    switch (state) {
+    case 0:
+        pData = &pSelDat->selType.confrict[3];
+        RgSelectRobotScreenPos(pSel->pRobot, 0.0f);
+        RgSelectRobotSetMode(pSel->pRobot, -1);
+        _SaveCharSelectData(pSelDat, pData);
+        _LoadWepSelectData(pSelDat, pData);
+        if (XrgPadIsRight() != 0 && _GetSelectCharID(pSelDat) != -1) {
+            pSel->state = 3;
+            _TransitToOffSelect(pSelDat);
+            XrgSoundSystemCursor();
+        } else if (XrgPadIsMaru() != 0) {
+            if (_GetSelectCharID(pSelDat) == -1) {
+                pSel->state = 7;
+                XrgSoundSystemCancel();
+            } else {
+                pSel->state = 3;
+                _TransitToOffSelect(pSelDat);
+                XrgSoundSystemOk();
+            }
+        }
+        break;
+    case 1:
+        pSelType = &pSelDat->selType;
+        cur = _GetCursorSelType(pSelType);
+        RgSelectRobotSetMode(pSel->pRobot, _GetTypeSelType(pSelType));
+        RgSelectRobotScreenPos(pSel->pRobot, 1.0f);
+        _SaveWepSelectData(pSelDat, &pSelDat->selType.confrict[3]);
+        if (XrgPadIsLR() != 0) {
+            if (cur != 3) {
+                _SetSpecModeSelType(pSelType, 2);
+                XrgSoundSystemCursor();
+            }
+        } else if (XrgPadIsL12() != 0) {
+            if (cur != 3) {
+                _SetSpecModeSelType(pSelType, 0);
+                XrgSoundSystemCursor();
+            }
+        } else if (XrgPadIsR12() != 0) {
+            if (cur != 3) {
+                _SetSpecModeSelType(pSelType, 1);
+                XrgSoundSystemCursor();
+            }
+        } else if (XrgPadIsLeft() != 0) {
+            if (cur == 0) {
+                pSel->state = 2;
+                _TransitToOffSelect(pSelDat);
+                XrgSoundSystemCursor();
+            }
+        } else if (XrgPadIsMaru() != 0) {
+            if (cur != 3) {
+                if ((unsigned int)cur >= 3) {
+                    if (cur != 4) {
+                    } else {
+                        goto cancel_blk;
+                    }
+                } else {
+                    if (_DetachWeaponIfConfrictSelType(pSelType) == 0) {
+                        _SetDetermModeSelType(pSelType);
+                        XrgSoundSystemOk();
+                    } else {
+                        XrgSoundSystemNG();
+                    }
+                }
+            } else {
+                pSel->state = 6;
+                XrgSoundSystemOk();
+            }
+        } else if (XrgPadIsBatu() != 0) {
+            if (cur != 3) {
+cancel_blk:
+                pSel->state = 2;
+                _TransitToOffSelect(pSelDat);
+                XrgSoundSystemCancel();
+            } else {
+                _ResumeSelTypeOldCursor(pSelType);
+                XrgSoundSystemCancel();
+            }
+        }
+case1_end:
+        break;
+    case 2:
+        ofs = pSel->ofsX;
+        if (ofs < 0) {
+            int t = ofs + 0x20;
+            int t2 = (t > 0) ? 0 : t;
+            pSel->ofsX = t2;
+            ofs = t2;
+            if (ofs >= 0) {
+                pSel->state = 4;
+            }
+        } else {
+            pSel->state = 4;
+        }
+        RgSelectRobotScreenPos(pSel->pRobot, (float)-ofs * 0.00390625f);
+        break;
+    case 3:
+        ofs = pSel->ofsX;
+        if (ofs >= -0xFF) {
+            int t = ofs - 0x20;
+            pSel->ofsX = t;
+            if (t < -0x100) {
+                pSel->ofsX = -0x100;
+            }
+            if (pSel->ofsX < -0xFF) {
+                pSel->state = 5;
+            }
+        } else {
+            pSel->state = 5;
+        }
+        _TransitToWeaponSelect(pSelDat);
+        RgSelectRobotScreenPos(pSel->pRobot, (float)-pSel->ofsX * 0.00390625f);
+        break;
+    case 4:
+        pSel->state = 0;
+        RgPicListSetDrawEnable(pSel->pAgwsSelTop, 1);
+        RgPicListSetDrawEnable(pSel->pWepSelTop, 0);
+        _TransitToCharSelect(pSelDat);
+        break;
+    case 6:
+    case 7:
+        break;
+    case 5:
+        pSel->state = 1;
+        RgPicListSetDrawEnable(pSel->pAgwsSelTop, 0);
+        RgPicListSetDrawEnable(pSel->pWepSelTop, 1);
+        _SetSelectorWepListDisp(pSel->pWepListDisp, &pSelDat->selType);
+        break;
+    default:
+        RgError(D_00A56C58, D_00A56660, 0x7C3, state);
+        break;
+    }
+    _PassTimeSelectData(pSelDat, deltaTime);
+    RgSelectRobotPassTime(pSel->pRobot, deltaTime);
+    buf[0] = _GetSelectCharID(pSelDat);
+    _GetSelectWeps(pSelDat, &buf[1], &buf[4]);
+    RgSelectRobotSet(pSel->pRobot, buf);
+}
 
 /*
  * The picture handle RgPicListGetPic indexes out of a RgPicList (owned by

@@ -32,15 +32,79 @@
  * recovered.
  */
 typedef struct WindowDX WindowDX;
+/* fork type needed by WindowDX (derwetterfrosch) */
+typedef struct WindowDXRect {
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+} WindowDXRect;
+
+typedef struct WindowDXFrame {
+    unsigned char unmodeled_00[4];
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    signed char progress;
+    unsigned char mode;
+    unsigned char unmodeled_12[0x44 - 0x12];
+} WindowDXFrame;
+
+typedef struct BattleWinTagFont {
+    unsigned char unmodeled_00[4];
+    short x;
+    short y;
+    int style;
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char color_a;
+    unsigned char unmodeled_10[0x20 - 0x10];
+} BattleWinTagFont;
+
+typedef struct WindowDXRibbonCell {
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+    unsigned char unmodeled_04[8];
+} WindowDXRibbonCell;
+
+typedef struct WindowDXRibbon {
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    unsigned char unmodeled_0c[0x18 - 0x0c];
+    WindowDXRibbonCell cells[6];
+    unsigned char unmodeled_60[0x70 - 0x60];
+} WindowDXRibbon;
+
+typedef struct WindowDXSprite {
+    unsigned char unmodeled_00[0x10];
+    unsigned short kind;
+    unsigned char unmodeled_12[0x14 - 0x12];
+} WindowDXSprite;
+
 struct WindowDX {
-    unsigned char unmodeled_00[0xC];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
     int tag_id;                        /* +0x0C */
     unsigned char state;               /* +0x10 */
     unsigned char ribbon_initialized;  /* +0x11 */
     unsigned char unmodeled_12[2];
     void (*close_callback)(WindowDX *window, void *arg); /* +0x14 */
     void *close_callback_arg;          /* +0x18 */
-    unsigned char unmodeled_1c[16];
+    unsigned char unmodeled_1c[0x4];
+    WindowDXRect rect;
     unsigned char color_r;             /* +0x2C */
     unsigned char color_g;             /* +0x2D */
     unsigned char color_b;             /* +0x2E */
@@ -60,10 +124,41 @@ void WindowDXSet(WindowDX *window);
  * window.state lands at BW+0x1750.
  */
 typedef struct BattleWindow BattleWindow;
+/* fork type needed by BattleWindow (derwetterfrosch) */
+typedef struct BattleWinCommand {
+    const char *text;
+    const char *description;
+    unsigned char flags;
+    signed char icon;
+    unsigned char unmodeled_0a[2];
+} BattleWinCommand;
+
+typedef struct BattleWinMessage {
+    unsigned char unmodeled_00;
+    unsigned char mode;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int extent;
+    unsigned char unmodeled_0c[4];
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char unmodeled_13[0x18 - 0x13];
+    const char *text;
+    unsigned char paged;
+    unsigned char unmodeled_1d[0x44 - 0x1d];
+} BattleWinMessage;
+
 struct BattleWindow {
-    unsigned char unmodeled_00[8];
+    unsigned char unmodeled_00[0x1];
+    unsigned char mode;
+    unsigned char unmodeled_2[0x2];
+    BattleWinCommand *commands;
     unsigned char state;      /* +0x0008 */
-    unsigned char unmodeled_09[0x1740 - 9];
+    unsigned char unmodeled_09[0x5b];
+    BattleWinMessage message;
+    unsigned char unmodeled_a8[0x1698];
     WindowDX window;          /* +0x1740 */
     unsigned char unmodeled_1770[0x18D5 - (0x1740 + 0x30)];
     unsigned char active;     /* +0x18D5 */
@@ -80,7 +175,9 @@ void eBattleWinClose(void *window);
  */
 typedef struct BattleWindow2 BattleWindow2;
 struct BattleWindow2 {
-    unsigned char unmodeled_00[8];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    int active;
+    int text_offset;
     WindowDX window; /* +0x0008 */
 };
 
@@ -96,10 +193,35 @@ void eBattleWinClose2(void);
  * nothing in this allocation reads it back.
  */
 typedef struct BattleWindow3 BattleWindow3;
+/* fork type needed by BattleWindow3 (derwetterfrosch) */
+typedef struct BattleWinNumber {
+    short x;
+    short y;
+    int style;
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char unmodeled_0b;
+    unsigned char font;
+    unsigned char unmodeled_0d;
+    unsigned char option;
+    unsigned char places;
+    unsigned char unmodeled_10[4];
+    int value;
+    unsigned char unmodeled_18[0x90 - 0x18];
+} BattleWinNumber;
+
 struct BattleWindow3 {
-    unsigned char unmodeled_00[4];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    int active;
     WindowDX window;              /* +0x0004 */
-    unsigned char unmodeled_34[0x324 - (4 + 0x30)];
+    unsigned char unmodeled_34[0]; /* +0x34: zero-length alias of the former padding member, kept for saved bodies */
+    BattleWinMessage messages[3];
+    BattleWinTagFont tag_font;
+    BattleWinNumber number;
+    WindowDX window2;
+    BattleWinTagFont tag_fonts[5];
+    unsigned char unmodeled_280[0xa4];
     unsigned char secondary_state; /* +0x0324 */
 };
 
@@ -115,7 +237,8 @@ void eBattleWinClose3(void);
  */
 typedef struct BattleWindow4 BattleWindow4;
 struct BattleWindow4 {
-    unsigned char unmodeled_00[4];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    int active;
     int page;         /* +0x0004 */
     WindowDX window;  /* +0x0008 */
 };
@@ -161,13 +284,46 @@ void eBattleWinInit(void);
  * Everything else is unmodeled until a function that reads or writes it is
  * recovered.
  */
+typedef struct BattleWinItem BattleWinItem;
+/* fork type needed by WindowSPCursor (derwetterfrosch) */
+typedef struct BattleWinCursor {
+    unsigned char mode;
+    unsigned char shown;
+    unsigned char unmodeled_02[2];
+    short x;
+    short y;
+    int style;
+    unsigned char unmodeled_0c[0x24 - 0x0c];
+} BattleWinCursor;
+
 typedef struct WindowSPCursor {
-    unsigned char unmodeled_00[0x20];
-    unsigned char visible_top;    /* +0x20 */
-    unsigned char visible_bottom; /* +0x21 */
-    unsigned char unmodeled_22[2];
-    unsigned char current_row;    /* +0x24 */
-    unsigned char unmodeled_25[3];
+    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
+    unsigned char state;
+    unsigned char draw_flags;
+    unsigned char anim;
+    unsigned char unmodeled_3[0x1];
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    const char *title;
+    signed char columns;          /* +0x14 */
+    signed char rows;             /* +0x15 */
+    unsigned char unmodeled_16[2];
+    int buttons;                  /* +0x18 */
+    BattleWinItem *items;         /* +0x1C */
+    signed char visible_top;      /* +0x20 */
+    signed char visible_bottom;   /* +0x21 */
+    union {
+        unsigned char unmodeled_22[2];
+        struct { signed char visible_cols; signed char visible_rows; };
+    };
+    signed char current_row;      /* +0x24 */
+    union {
+        unsigned char unmodeled_25[3];
+        struct { signed char max_scroll; signed char mode; unsigned char unmodeled_27; };
+    };
     short selected_index;         /* +0x28 */
     short item_count;             /* +0x2A */
 } WindowSPCursor;

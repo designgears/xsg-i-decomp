@@ -55,9 +55,204 @@ float CheckDist2D(Vector4 *player_position, DoorPosition *door_position);
 float atan2f(float y, float x);
 float nearDir(float first, float second);
 
-INCLUDE_ASM("asm/main/nonmatchings/init_map_door", InitMapDoor);
+void GetPartsPos();
+void GetPartsSize();
+void MAP_updateUnitDoor(DoorUnit *door);
+extern char D_004CA280[];
+extern char D_004CA2B8[];
+extern char D_004CA2D8[];
+extern char D_004CA2F8[];
+typedef struct UpDoorModel {
+    float direction_x; /* +0x00 */
+    unsigned char unmodeled_04[4];
+    float direction_z; /* +0x08 */
+    unsigned char unmodeled_0c[0x24];
+    float x; /* +0x30 */
+    float y; /* +0x34 */
+    float z; /* +0x38 */
+} UpDoorModel;
+typedef struct UpDoorParams {
+    unsigned char unmodeled_00[2];
+    short kind; /* +0x02 */
+    signed char event_signal; /* +0x04 */
+    signed char linked_unit; /* +0x05 */
+    signed char motion_axis; /* +0x06 */
+    signed char door_type; /* +0x07 */
+    short open_limit; /* +0x08 */
+    unsigned char unmodeled_0a[2];
+    float part_size_x; /* +0x0c */
+    float part_size_y; /* +0x10 */
+    float part_size_z; /* +0x14 */
+    float part_offset_x; /* +0x18 */
+    float part_offset_y; /* +0x1c */
+    float part_offset_z; /* +0x20 */
+    float trigger_distance; /* +0x24 */
+    float travel_distance; /* +0x28 */
+    unsigned char unmodeled_2c[8];
+    int move_sound_channel; /* +0x34 */
+    int close_sound_channel; /* +0x38 */
+    unsigned char unmodeled_3c[8];
+    unsigned int initialization_state; /* +0x44 */
+} UpDoorParams;
+typedef union UpDoorPosition {
+    Vector4 values;
+    u64 words[2];
+} UpDoorPosition;
+typedef struct UpDoorUnit {
+    unsigned int flags; /* +0x00 */
+    void (*update_func)(struct UpDoorUnit *); /* +0x04 */
+    unsigned char unmodeled_008[8];
+    float model_x; /* +0x10 */
+    float model_y; /* +0x14 */
+    float model_z; /* +0x18 */
+    float model_w; /* +0x1c */
+    unsigned char unmodeled_020[0x60];
+    UpDoorModel *model; /* +0x80 */
+    unsigned char unmodeled_084[0x1c];
+    unsigned char sound_channel; /* +0xa0 */
+    unsigned char unmodeled_0a1;
+    signed char open_phase; /* +0xa2 */
+    unsigned char unmodeled_0a3;
+    short door_number; /* +0xa4 */
+    unsigned char unmodeled_0a6[2];
+    unsigned short open_timer; /* +0xa8 */
+    short close_delay; /* +0xaa */
+    unsigned char unmodeled_0ac[4];
+    UpDoorPosition resting_position; /* +0xb0 */
+    float x; /* +0xc0 */
+    float y; /* +0xc4 */
+    float z; /* +0xc8 */
+    float w; /* +0xcc */
+    unsigned char unmodeled_0d0[0xd0];
+    UpDoorParams params; /* +0x1a0 */
+} UpDoorUnit;
+typedef struct UpDoorMapUnit {
+    unsigned char unmodeled_000[0x10];
+    UpDoorPosition model_position; /* +0x10 */
+    unsigned char unmodeled_020[0x82];
+    signed char open_phase; /* +0xa2 */
+    unsigned char unmodeled_0a3[0x1d];
+    UpDoorPosition position; /* +0xc0 */
+    unsigned char unmodeled_0d0[0xd0];
+    UpDoorParams params; /* +0x1a0 */
+    unsigned char unmodeled_1e8[0x118];
+} UpDoorMapUnit;
 
-INCLUDE_ASM("asm/main/nonmatchings/init_map_door", MAP_updateUnitDoor);
+void InitMapDoor(DoorUnit *door_in)
+{
+    UpDoorUnit *door = (UpDoorUnit *)door_in;
+    UpDoorParams *params = &door->params;
+    int linked_index;
+    signed char door_type;
+
+    GetPartsPos(door);
+    __builtin_memcpy(&door->x, &door->model_x, 16);
+    GetPartsSize(door);
+    if (params->travel_distance == 0.0f) {
+        params->travel_distance = door->resting_position.values.x +
+                                 door->resting_position.values.x;
+    }
+    door->update_func = (void (*)(struct UpDoorUnit *))MAP_updateUnitDoor;
+    if ((unsigned char) door->open_phase != 4) {
+        door->open_phase = 0;
+    }
+    linked_index = params->linked_unit;
+    if (linked_index != -1) {
+        char *mu;
+        int unit_off = linked_index * 0x300;
+        UpDoorParams *linked_params = (UpDoorParams *)((char *)&((UpDoorMapUnit *)MapUnit)[0].params + unit_off);
+        mu = (char *)(unsigned int)MapUnit;
+        linked_params->open_limit = params->open_limit;
+        linked_params->part_size_x = params->part_size_x;
+        linked_params->part_size_y = params->part_size_y;
+        linked_params->part_size_z = params->part_size_z;
+        linked_params->part_offset_x = params->part_offset_x;
+        linked_params->part_offset_y = params->part_offset_y;
+        linked_params->part_offset_z = params->part_offset_z;
+        linked_params->travel_distance = params->travel_distance;
+        linked_params->trigger_distance = params->trigger_distance;
+        ((UpDoorMapUnit *)(mu + unit_off))->open_phase = 4;
+        GetPartsPos(mu + unit_off);
+        {
+            int mp_off = unit_off + 0x10;
+            int pos_off = unit_off + 0xC0;
+            *(UpDoorPosition *)(mu + pos_off) = *(UpDoorPosition *)(mu + mp_off);
+        }
+    }
+    door_type = params->door_type;
+    if (door_type == 1 && CheckDoorDist((DoorUnit *)door) < params->trigger_distance) {
+        params->event_signal = door_type;
+        door->open_phase = 2;
+    }
+    if (params->event_signal == 1) {
+        door->open_phase = 2;
+    }
+    params->initialization_state = 0;
+    door->flags |= 0x80000000U;
+    if (!printflg) {
+        return;
+    }
+    printf(D_004CA280, door->door_number, params->kind,
+           params->door_type, params->travel_distance);
+    printf(D_004CA2B8, door->x, door->y, door->z);
+    printf(D_004CA2D8, door->resting_position.values.x,
+           door->resting_position.values.y, door->resting_position.values.z);
+    printf(D_004CA2F8, params->travel_distance,
+           params->trigger_distance, params->open_limit);
+}
+
+typedef struct UDLanes {
+    float lanes[4];
+} UDLanes;
+typedef struct UDMapUnit {
+    unsigned char unmodeled_000[0x10];
+    UDLanes model_position; /* +0x10 */
+    unsigned char unmodeled_020[0x60];
+    DoorModel *model; /* +0x80 */
+    unsigned char unmodeled_084[0x24];
+    unsigned short open_timer; /* +0xa8 */
+    unsigned char unmodeled_0aa[0x256];
+} UDMapUnit;
+void DoubleDoorFunc();
+
+void MAP_updateUnitDoor(DoorUnit *door)
+{
+    extern UDMapUnit MapUnitUD[64] __asm__("MapUnit");
+    UpDoorParams *params = (UpDoorParams *)&door->params;
+
+    /* Case 5 is written before case 4: the original emitted the HalfAutoDoorFunc block first. */
+    switch (params->door_type) {
+    case 1:
+        AutoDoorFunc(door);
+        break;
+    case 2:
+        EventDoorFunc(door);
+        break;
+    case 3:
+        DoubleDoorFunc(door);
+        break;
+    case 5:
+        HalfAutoDoorFunc(door);
+        break;
+    case 4:
+        MjDoorFunc(door);
+        break;
+    }
+    door->model_x = door->model->x;
+    door->model_y = door->model->y;
+    door->model_z = door->model->z;
+    if (params->linked_unit != -1) {
+        int index = params->linked_unit;
+        DoorModel *model;
+
+        MapUnitUD[index].open_timer = door->open_timer;
+        DoorCommonFunc((DoorUnit *) &MapUnitUD[index]);
+        model = MapUnitUD[index].model;
+        MapUnitUD[index].model_position.lanes[0] = model->x;
+        MapUnitUD[index].model_position.lanes[1] = model->y;
+        MapUnitUD[index].model_position.lanes[2] = model->z;
+    }
+}
 
 void AutoDoorFunc(DoorUnit *door)
 {

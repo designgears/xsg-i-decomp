@@ -287,7 +287,224 @@ static void _SetVersion3Extent(RgCamera *camera)
 
 INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _LoadVersion3);
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _PassTimeVersion3);
+extern const char D_00A528F8[];
+extern float RgGeomRobotGetRotate(void *point);
+extern float XrgInnerVector(float *a, float *b);
+extern void XrgOuterVector(float *dst, float *a, float *b);
+extern void RgGeomPointGetVel(void *point, float *vel);
+extern float sinf(float x);
+extern float cosf(float x);
+
+static void _PassTimeVersion3(RgCamera *camera, float elapsed)
+{
+    float sp0[4];
+    float spUnk10[4];
+    float sp20[4];
+    float sp30[4];
+    float sp40[4];
+    float sp50[4];
+    float sp60[4];
+    int sp70[10];
+    int spA0[4];
+    int spB0[2];
+    float spC0[4];
+    float spD0[4];
+    float spE0[4];
+    float spF0[4];
+    float *enemy;
+    float *me;
+    int sp100;
+    int k;
+    int i;
+    int *pv;
+    int op;
+    int bit;
+    float f22;
+    float f23;
+    float f24;
+    float f20;
+    float f21;
+    float f6;
+    float f0;
+    float f1;
+    float f2;
+    float f4;
+    float f26;
+    float f25;
+    float f22v;
+    float fTmp;
+    float fq;
+    float fd;
+
+    sp100 = CAMI(camera, 0x50);
+    CAMI(camera, 0x50) = 0;
+    me = (float *)(int)CAMI(camera, 0x48);
+    enemy = (float *)(int)CAMI(camera, 0x4C);
+    if (CAMI(camera, 0x14C) >= 0) {
+        XrgPadSetID(CAMI(camera, 0x14C));
+        if (XrgPadIsSelect() != 0) {
+            if (camera->farDistance >= 10.0f) {
+                camera->farDistance = 8.0f;
+            } else {
+                camera->farDistance = 14.0f;
+            }
+        }
+    }
+    XrgCopyVector(sp40, ((float *)((unsigned char *)camera + 0x10)));
+    XrgCopyVector(sp50, ((float *)((unsigned char *)camera + 0x30)));
+    XrgCopyVector(sp60, ((float *)((unsigned char *)camera + 0x20)));
+    f21 = atan2f(sp60[0], sp60[2]);
+    f23 = CAMF(camera, 0x40);
+    f24 = camera->farDistance;
+    __RgGeomPointGetPos((RgGeomPoint *)me, (RgPointVector *)sp0, D_00A52760, 0x1EE);
+    if (enemy != 0) {
+        __RgGeomPointGetPos((RgGeomPoint *)enemy, (RgPointVector *)spUnk10, D_00A52760, 0x1F0);
+    } else {
+        XrgClearVector(spUnk10);
+    }
+    XrgSubVector(spD0, spUnk10, sp0);
+    f26 = XrgLengthVector(spD0);
+    f25 = RgGeomRobotGetRotate(me);
+    f22 = atan2f(spD0[0], spD0[2]);
+    for (i = 0; i < 10; i++) {
+        _PreJobVer3Timer((RgVer3Timer *)((unsigned char *)camera + 0xB0) + i, (int)camera);
+        sp70[i] = _IsVer3TimerActive((RgVer3Timer *)((unsigned char *)camera + 0xB0) + i);
+    }
+    for (i = 0; i < 4; i++) {
+        spA0[i] = sp70[CAMI(camera, 0x130 + i * 4)];
+        {
+            int bitI = 1 << i;
+
+            if (CAMI(camera, 0x140) & bitI) {
+                spA0[i] = !spA0[i];
+            }
+        }
+        if (0) {
+            spA0[i] = !spA0[i];
+        }
+    }
+    for (k = 0; k < 2; k++) {
+        op = CAMI(camera, 0x144 + k * 4);
+        pv = &spA0[k * 2];
+        switch (op) {
+        case 1:
+            spB0[k] = (pv[0] != 0) && (pv[1] != 0);
+            break;
+        case 0:
+            {
+                int r = 0;
+                int *q = &spB0[k];
+                if (pv[0] != 0) {
+                    goto one;
+                }
+                if (pv[1] == 0) {
+                    goto st;
+                }
+            one:
+                r = 1;
+            st:
+                *q = r;
+            }
+            break;
+        default:
+            RgError("unknown bool operator %d (index %d)", D_00A52760, 0x20D, op, k);
+            break;
+        }
+    }
+    XrgCopyVector(sp20, sp0);
+    if (spB0[0] != 0) {
+        if (spB0[1] != 0) {
+            XrgSubVector(spC0, spUnk10, sp20);
+            f20 = atan2f(spC0[0], spC0[2]);
+        } else {
+            f20 = f21;
+        }
+    } else {
+        if (CAMI(camera, 0xA0) != 0) {
+            RgGeomPointGetVel(me, spC0);
+            f20 = atan2f(spC0[0], spC0[2]);
+        } else {
+            f20 = RgGeomRobotGetRotate(me);
+        }
+    }
+    XrgCopyVector(sp30, XrgVectorY());
+    f1 = CAMF(camera, 0x8C);
+    f2 = f22 - f25;
+    f4 = (f1 - f26) / f1;
+    while (f2 > 3.1415927f) {
+        f2 -= 6.2831855f;
+    }
+    if (f2 < -3.1415927f) {
+        do {
+            f2 += 6.2831855f;
+        } while (f2 < -3.1415927f);
+    }
+    if (f2 < 0.0f) {
+        f2 = -f2;
+    }
+    fTmp = CAMF(camera, 0x90);
+    fq = fTmp / (3.1415927f - fTmp);
+    fd = f2 - fq;
+    if (f4 > 0.0f) {
+        if (fd > 0.0f) {
+            f24 = camera->farDistance + (CAMF(camera, 0x94) * f4);
+        }
+    }
+    f22v = 0.0f;
+    if (sp70[4] != 0) {
+        RgGeomPointGetVel(me, spE0);
+        XrgOuterVector(spF0, ((float *)((unsigned char *)camera + 0x20)), ((float *)((unsigned char *)camera + 0x30)));
+        f22v = (XrgInnerVector(spF0, spE0) > 0.0f) ? 0.03926991f : -0.03926991f;
+    }
+    switch (sp100) {
+    default:
+        {
+        f21 = f20;
+        CAMF(camera, 0x98) = f24;
+        f23 = (f23 * 0.9f) + (f22v * 0.1f);
+        sp40[0] = sp20[0] - (sinf(f21) * CAMF(camera, 0x98));
+        sp40[1] = sp20[1] + CAMF(camera, 0x78);
+        sp40[2] = sp20[2] - (cosf(f21) * CAMF(camera, 0x98));
+        XrgCopyVector(sp50, sp30);
+    }
+        break;
+    case 0:
+        {
+        f6 = f20 - f21;
+        if (f6 > 3.1415927f) {
+            do {
+                f6 -= 6.2831855f;
+            } while (f6 > 3.1415927f);
+        }
+        if (f6 < -3.1415927f) {
+            do {
+                f6 += 6.2831855f;
+            } while (f6 < -3.1415927f);
+        }
+        f0 = CAMF(camera, 0x9C);
+        f21 = f21 + (f6 * CAMF(camera, 0x7C));
+        f23 = (f23 * 0.9f) + (f22v * 0.1f);
+        CAMF(camera, 0x98) = (f24 * f0) + (CAMF(camera, 0x98) * (1.0f - f0));
+        sp40[0] = sp20[0] - (sinf(f21) * CAMF(camera, 0x98));
+        sp40[1] = sp20[1] + CAMF(camera, 0x78);
+        sp40[2] = sp20[2] - (cosf(f21) * CAMF(camera, 0x98));
+        XrgCopyVector(sp50, sp30);
+    }
+        break;
+    }
+    spD0[0] = sinf(f21) * camera->farDistance;
+    spD0[1] = -CAMF(camera, 0x74);
+    spD0[2] = cosf(f21) * camera->farDistance;
+    XrgCopyVectorXYZ(((float *)((unsigned char *)camera + 0x20)), spD0);
+    XrgCopyVectorXYZ(((float *)((unsigned char *)camera + 0x10)), sp40);
+    XrgCopyVectorXYZ(((float *)((unsigned char *)camera + 0x30)), sp50);
+    CAMF(camera, 0x40) = f23;
+    _SetView(camera);
+    for (i = 0; i < 10; i++) {
+        _PastVer3Timer((RgVer3Timer *)((unsigned char *)camera + 0xB0) + i, elapsed);
+    }
+    RgCameraResetAction(camera);
+}
 
 static void _SetVersion3Extent(RgCamera *camera);
 static void _LoadVersion3(RgCamera *camera, void *reader);

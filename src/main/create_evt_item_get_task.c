@@ -725,7 +725,89 @@ void MAP_updateUnitItemSymbol(ItemMapUnit *unit)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/create_evt_item_get_task", MAP_updateUnitSpecialSymbol);
+typedef union ItemMapVectorBlockUp {
+    Vector4 vector;
+    unsigned long long words[2];
+} ItemMapVectorBlockUp;
+typedef struct ItemMapUnitUp {
+    unsigned int flags;
+    void (*update)(struct ItemMapUnitUp *);
+    void (*draw)(struct ItemMapUnitUp *);
+    unsigned char unmodeled_0c[4];
+    ItemMapVectorBlockUp position;
+    Vector4 rotation;
+    Vector4 scale;
+    Matrix4 matrix;
+    Matrix4 *matrixPtr;
+    unsigned char unmodeled_84[0x1c];
+    unsigned char seChannel;
+    unsigned char actionNo;
+    unsigned char actionSub;
+    unsigned char unmodeled_a3;
+    unsigned short serial;
+    unsigned char unmodeled_a6[2];
+    short sequenceNo;
+    short sequenceEnd;
+    unsigned char unmodeled_ac[4];
+    float extent[3];
+    unsigned char unmodeled_bc[4];
+    ItemMapVectorBlockUp translation;
+    unsigned char unmodeled_d0[0x10];
+    void *model;
+    const char *texture;
+    int effectCf[3];
+    int ownerNo;
+    unsigned char unmodeled_f8[0xa8];
+    ItemUnitInfo info;
+} ItemMapUnitUp;
+
+void MAP_updateUnitSpecialSymbol(ItemMapUnit *arg)
+{
+    ItemMapUnitUp *unit = (ItemMapUnitUp *)arg;
+    ItemUnitInfo *info = &arg->info;
+    ItemMapVectorBlockUp targetBlock;
+    Vector4 *target = &targetBlock.vector;
+
+    switch (unit->actionSub) {
+    case 0:
+        if (info->signal == 1) {
+            unit->actionSub = 1;
+            unit->scale.x = unit->scale.y = unit->scale.z = 0.0f;
+            unit->flags &= ~4;
+            unit->sequenceNo = 0;
+        }
+        break;
+    case 1:
+        unit->rotation.y += 0.05f;
+        unit->position.vector.y += 0.03f;
+        unit->sequenceNo++;
+        unit->scale.x = unit->scale.y = unit->scale.z = unit->sequenceNo * 0.06;
+        unit->scale.w = 1.0f;
+        if (unit->scale.x > 1.0f) {
+            unit->scale.x = unit->scale.y = unit->scale.z = 1.0f;
+            unit->actionSub = 2;
+            unit->translation = unit->position;
+            unit->sequenceEnd = unit->sequenceNo;
+        }
+        break;
+    case 2:
+        unit->rotation.y += 0.05f;
+        break;
+    case 5:
+        targetBlock = ((ItemMapUnitUp *)GameLoopState[1])->position;
+        target->y += 1.2f;
+        unit->position.vector.x = target->x + (unit->translation.vector.x - target->x) * unit->sequenceNo / unit->sequenceEnd;
+        unit->position.vector.y = target->y + (unit->translation.vector.y - target->y) * unit->sequenceNo / unit->sequenceEnd;
+        unit->position.vector.z = target->z + (unit->translation.vector.z - target->z) * unit->sequenceNo / unit->sequenceEnd;
+        unit->rotation.y += 0.05f;
+        unit->scale.x = unit->scale.y = unit->scale.z = --unit->sequenceNo * 0.06;
+        if (unit->scale.x < 0.0f) {
+            unit->update = 0;
+            unit->serial = (unsigned short) -1;
+        }
+        break;
+    }
+}
 
 void MAP_updateUnitItem(ItemMapUnit *unit)
 {

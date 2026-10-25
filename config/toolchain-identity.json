@@ -19,9 +19,9 @@
   "ee-gcc2.96-realconv-lp7": {
    "role": "cc1 of every GCC 2.96-family compile contract (game and runtime C)",
    "dir": "ee-gcc2.96-realconv-lp7-fsv3-v1/bin",
-   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv3 + usecount",
+   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv3 + usecount + externname",
    "files": {
-    "cc1": "2bc2abcbc8d912a6ca553675659d9b5203723233499145b2c6313592c27b8af0",
+    "cc1": "5f8187c36cc275621f19d7bd66f96f616f36a556e57b8d7faaba5e063ef524df",
     "cpp0": "f6f6b598f39649edfe171d6da8c7f91d07f2b87c2aeeffffbc5f566bfb1a39a9",
     "ee-gcc": "b8c284d16c9c0a0e8788e9522c46881e224ad01fa1c732aed43f821cc32f168b"
    },
@@ -96,7 +96,8 @@
       "patches (0 of its 71 decimal literals discriminate rounding, 0 TUs reach the",
       "JUMP arm). The original bytes are not blind: 343 rounded-evidence constants",
       "and the ten padded objects. A clean witness is xglRenderSyncMove (main",
-      "0x0022CC40, five nops, body 7, unfilled delay slot)."
+      "0x0022CC40, five nops, body 7, unfilled delay slot).",
+      "The `externname` patch (user decision 2026-10-19): mips_output_external stored the raw `*sym` name pointer of block-scope `extern T x __asm__(\"sym\")` decls in the .extern list; the string is GC-owned and freed before mips_asm_file_end prints the list, so .extern lines came out garbled. The call at 0x081c7e66 jumps to a 21-byte cave over the dead debug_reload (0x081520a4) that xstrdup()s `*`-prefixed names. Only .extern lines change (menu_ether, enemy_1 lose garbage entries); .text/relocs/data identical for all 853 TUs. Script: /tmp/cc1bug/mkpatch.py."
      ],
      "load_virtual_address": "0x08048000",
      "patches": [
@@ -183,6 +184,24 @@
        "length": 30,
        "function": "fixed_scalar_and_varying_struct_p",
        "governs": "clause 2: a LO_SUM mem2_addr counts as non-varying (cmpb $0x90,(%eax))"
+      },
+      {
+       "group": "externname",
+       "file_offset": 1089700,
+       "old": "55a18cfe230889e550e81afdffff89ec5dc3909090",
+       "new": "8b451080382a75095250e8694c0900595a894204c3",
+       "length": 21,
+       "function": "debug_reload (dead; overwritten by the cave)",
+       "governs": "node->name = (*name=='*') ? xstrdup(name) : name; ret"
+      },
+      {
+       "group": "externname",
+       "file_offset": 1572454,
+       "old": "8b4510894204",
+       "new": "e839a2f8ff90",
+       "length": 6,
+       "function": "mips_output_external",
+       "governs": "replace `mov 0x10(%ebp),%eax; mov %eax,4(%edx)` with call to the cave + nop"
       },
       {
        "group": "usecount",

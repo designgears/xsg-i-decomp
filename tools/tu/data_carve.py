@@ -298,8 +298,41 @@ def piece_items(path, start, end):
     return header, items
 
 
-def write_piece_file(path, header, items):
-    lines = header + [line for it in items for line in it['block']['lines']]
+ALIGN_N = re.compile(r'^(\s*)\.align\s+(\d+)\s*$')
+
+
+def piece_lines(items, start):
+    """The block lines of a piece starting at `start`, with any `.align N` the
+    start address cannot honour lowered (block-leading ones only).
+
+    An assembled `.align N` raises the whole input section's alignment to 2**N:
+    a carved piece that starts mid-alignment (0x...524 holding an 8-aligned
+    string further on) is then moved up by the linker and everything after it
+    lands 4..8 bytes late (`cannot move location counter backwards` at the next
+    pin).  splat writes the padding before an aligned item as its own item, so a
+    block-leading `.align N` is a no-op at the original addresses: lowering it to
+    the start's own alignment keeps every byte where it was.  An `.align` inside
+    a block (padding that is not an item) is left as it was."""
+    room = (start & -start).bit_length() - 1 if start else 30
+    out = []
+    for it in items:
+        lead = True
+        for line in it['block']['lines']:
+            m = ALIGN_N.match(line)
+            if m and int(m.group(2)) > room:
+                if lead and it['start'] % (1 << int(m.group(2))) == 0:
+                    line = f'{m.group(1)}.align {room}'
+            if NONMATCHING.match(line):
+                lead = False
+            out.append(line)
+    return out
+
+
+def write_piece_file(path, header, items, start=None):
+    if start is None:
+        lines = header + [line for it in items for line in it['block']['lines']]
+    else:
+        lines = header + piece_lines(items, start)
     while lines and not lines[-1].strip():
         lines.pop()                    # as splat ends a data file: no trailing blank line
     text = '\n'.join(lines) + '\n'
@@ -470,7 +503,7 @@ def apply_main(root, unit_dir, manifest, registry=None, write=True):
                     rel = f'{CARVE_DIR}/main/{p["name"].split("/")[-1]}.{sec[1:]}.s'
                     entry['file'] = rel
                     if write:
-                        write_piece_file(Path(unit_dir) / rel, p['header'], p['items'])
+                        write_piece_file(Path(unit_dir) / rel, p['header'], p['items'], p['start'])
                 elif p['source'].get('file'):
                     entry['file'] = p['source']['file']
                 out_pieces.append(entry)
@@ -592,7 +625,7 @@ def apply_overlay(root, unit_dir, unit, ld_text, registry=None, write=True):
                 stem = p['name'].split('/')[-1]
                 rel = f'{CARVE_DIR}/{unit}/{stem}{sec}'
                 if write:
-                    write_piece_file(Path(unit_dir) / f'{rel}.s', p['header'], p['items'])
+                    write_piece_file(Path(unit_dir) / f'{rel}.s', p['header'], p['items'], p['start'])
                 out.append(f'{indent}build/{rel}.o({sec}); {LD_MARK}\n')
             text = text[:line.start()] + ''.join(out) + text[line.end():]
             if linked_obj != c_obj:
@@ -904,6 +937,21 @@ def plan_split(elf, csec, specs, want, check_items=False):
         prev, cur = specs[k - 1], specs[k]
         low = offsets[-1] + (prev['last'] - prev['lo']) + 1
         high = offsets[-1] + (prev['hi'] - prev['lo']) + 15
+        # A C copy of the scaffold item(s) right after run k-1 (a string literal
+        # a C and a still-INCLUDE_ASM function share) may sit between the runs:
+        # widen the window by the C bytes that equal the original bytes following
+        # run k-1 (left out of the pieces below, references resolve to the
+        # scaffold copy). InitShopSymbol: "Create Shop Symbol" between runs.
+        gap = cur['lo'] - prev['hi']
+        dup_at = offsets[-1] + (prev['hi'] - prev['lo'])
+        if gap > 0 and dup_at < size:
+            orig = bytes(want(prev['hi'], gap) or b'')
+            n = 0
+            while n < len(orig) and dup_at + n < size and data[dup_at + n] == orig[n] \
+                    and dup_at + n not in relocated:
+                n += 1
+            if n >= 4:
+                high += n
         cands = sorted(a for a in anchors if low <= a <= high and a < size)
         ref = bytes(want(cur['lo'], cur['first_end'] - cur['lo']) or b'').rstrip(b'\0')
         fit = [a for a in cands if compatible(a, ref)]

@@ -192,7 +192,47 @@ void scDestroyScriptAll(void)
         scDestroyScript(script_index);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sc_get", scExecScript);
+extern int _nowEvent;
+extern int _nowDataIdx;
+static int scDispatchScript(ScriptTask *task);
+typedef struct ScriptTaskUp {
+    ScriptTask t;
+    unsigned char pad_74[12];
+} ScriptTaskUp;
+typedef struct ScriptRecordUp {
+    ScriptTaskUp tasks[8];
+    int *dataTable;
+    int registers[16];
+    short dataIndex;
+    short eventValue;
+    short activeTasks;
+    short event;
+    unsigned char unmodeled_44C[4];
+} ScriptRecordUp;
+extern ScriptRecordUp ScriptWorkRec[] __asm__("_scriptWork");
+
+static void scExecScript(void)
+{
+    int script;
+    int task;
+    ScriptRecordUp *scripts = 0;
+
+    for (script = 0; script < 16; script++) {
+        _nowScript = script;
+        if (ScriptWorkRec[script].dataTable != 0) {
+            _nowDataIdx = ScriptWorkRec[script].dataIndex;
+            if (ScriptWorkRec[script].activeTasks == 0) {
+                scDestroyScript(script);
+            } else {
+                for (task = 0; task < 8; task++) {
+                    _nowEvent = task;
+                    scripts = ScriptWorkRec;
+                    scDispatchScript(&scripts[script].tasks[task].t);
+                }
+            }
+        }
+    }
+}
 
 /* scExecScript (above) is still INCLUDE_ASM; declare it so its caller does
  * not see an implicit declaration. */

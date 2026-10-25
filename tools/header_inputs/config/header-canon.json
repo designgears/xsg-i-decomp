@@ -1,0 +1,2625 @@
+{
+  "schema_version": 1,
+  "comment": "Canonical declaration for every name that accepted units in one domain spell differently. Consumed by tools/header_harvest.py (harvest and lint). See docs/header-canon.md. Since 2026-09-12 a `canonical.file`, a `rejected[].file` or a `byte_required[].file` under src/<domain>/ may name a file that is no longer in the tree: the pre-migration source layout was retired (task tu-retire-legacy-src) and those files live in .work/archive/pre-tu-source-20260912/ under the same path. The paths are kept, not rewritten: they are what the accepted record was accepted from, config/header-retired.json replays their declarations so the harvest still validates every decision against the text the file carried, and `byte_required` entries also carry `tu`/`tu_file` for the published TU that holds the same spelling, which is what `lint` answers to.",
+  "decisions": {
+    "struct SceneClass": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/main/find_native_method.c",
+        "source": "tu_include",
+        "text": "struct SceneClass {\n    unsigned char unmodeled_00[4];\n    SceneClassName *name;\n    unsigned char unmodeled_08[4];\n    void *class_loader;\n    unsigned char unmodeled_10[8];\n    SceneObjectClassRef *instance_class_ref;\n    SceneField *fields;\n    unsigned char unmodeled_20[16];\n    unsigned short field_count;\n    unsigned short static_field_count;\n    unsigned char unmodeled_34[4];\n    int instance_size; /* +0x38: newObject's xmalloc size for an instance */\n    unsigned char unmodeled_3c[4]; /* end of the 0x40-byte class record */\n};"
+      },
+      "rejected": [],
+      "rationale": "Restore the previously accepted complete0x40 SceneClass view through a source-bound tu_include canonical declaration. newObject in the defining VM class TU reads instance_size+0x38 and instance_class_ref+0x18. The generated shared header had lost its34..3f tail. Preserve all prior fields and the exact before-snapshot tail; no generated header is hand-edited.",
+      "evidence": [
+        ".work/reviews/express-20261011/before/root/include/shared.h SHA256 0c9159f0feb7a0587f24b7089efa880d4f5963f306ee419f412a6d7542da2ce0 preserves accepted SceneClass0x40 body.",
+        "build/main/asm/main/nonmatchings/find_native_method/newObject.s SHA256 8b131a46f75c1f66291cda5c0b0d08f47c006e774ee4a0562384d6adbfa306e9; VA2f4840 lw a0,0x38(s0) in xmalloc call delay; VA2f4844 lw v1,0x18(s0), store class reference at object0."
+      ],
+      "confidence": "high"
+    },
+    "BCD2INT": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0021d2e8/xglClockRead.c",
+        "text": "extern int BCD2INT(unsigned char value);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-0021d2c8/BCD2INT.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same signature; only the storage class differs, and the extern declaration is the shareable one. The parameter name `value` is the descriptive spelling. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/main-0021d2c8/BCD2INT.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/main-0021d2c8/BCD2INT.c defines it at main:0x0021d2c8",
+        "src/io/main-0021d2e8/xglClockRead.c calls it with the identical signature",
+        "static definition head in src/io/main-0021d2c8/BCD2INT.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "BSpline_Init": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/w3-002d1768-spline-routes/private.h",
+        "text": "extern void BSpline_Init(float *points, const float *origin, float angle);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/w3-002d8c18-bspline-init/BSpline_Init.c",
+          "reason": "the definition's own two-parameter signature; the caller's unit does not reproduce its bytes with it, and the definition cannot declare the third argument it never names"
+        }
+      ],
+      "rationale": "The caller and the definition need incompatible prototypes and both reproduce their own bytes. `math-main-w3-002d1768` passes three arguments (points, origin, angle) and refused full promotion onto the two-parameter shared prototype; `math-main-w3-002d8c18` defines the function with two typed parameters and cannot declare a third it never names. An unused third parameter would leave no trace in the definition, which is consistent with both units being right about their own bytes - but nothing in accepted source spells that signature, and it is not invented here. The name stays TU-local.",
+      "evidence": [
+        "promote recorded math-main-w3-002d1768 in full_refused; the conservative retry kept its three-parameter declaration",
+        "src/math/main/w3-002d1768-spline-routes/spline_routes.c: `BSpline_Init(spline_points[0], (float *)(actor_bytes + 0x10), *(float *)(actor_bytes + 0x9e4));`",
+        "src/math/main/w3-002d8c18-bspline-init/BSpline_Init.c defines it with two typed parameters",
+        "config/header-promoted.json records no unit that gave up a BSpline_Init declaration"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "DIntr": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0020cea0/private.h",
+        "text": "extern int DIntr(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-0020d220/private.h",
+          "reason": "void return; drops the SDK's previous-state result"
+        }
+      ],
+      "rationale": "PS2 SDK libkernel DIntr returns the previous interrupt-enable state as int; the void spelling discards a return value the SDK defines.",
+      "evidence": [
+        "PS2 SDK libkernel: `int DIntr(void);`",
+        "src/io/main-0020cea0/private.h declares the int form"
+      ],
+      "confidence": "high"
+    },
+    "EIntr": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0020cea0/private.h",
+        "text": "extern int EIntr(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-0020d220/private.h",
+          "reason": "void return; drops the SDK's result"
+        }
+      ],
+      "rationale": "PS2 SDK libkernel EIntr returns int, like DIntr; the void spelling discards it.",
+      "evidence": [
+        "PS2 SDK libkernel: `int EIntr(void);`",
+        "src/io/main-0020cea0/private.h declares the int form"
+      ],
+      "confidence": "high"
+    },
+    "FILE": {
+      "kind": "type",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00335438/private.h",
+        "text": "typedef struct __sFILE FILE;"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00333d00/vsprintf_r.c",
+          "reason": "restates the complete struct body inside the typedef; duplicates the separately resolved tag"
+        }
+      ],
+      "rationale": "newlib declares `typedef struct __sFILE FILE;` and defines the struct separately - which is exactly how the harvested io header carries it, since `struct __sFILE` is resolved above. Three accepted files use the alias form; the fourth repeats the whole definition inside the typedef, which would duplicate the tag.",
+      "evidence": [
+        "newlib stdio.h: `typedef struct __sFILE FILE;`",
+        "three accepted files use the alias spelling"
+      ],
+      "confidence": "high"
+    },
+    "FileCheckSumGet": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00284660/FileCheckSumGet.c",
+        "text": "void FileCheckSumGet(FileChecksumData *source, long long *checksum);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00284410/VersionUpDate.c",
+          "reason": "caller spelling with `void *` and `u64 *`; erases FileChecksumData and the signed accumulator"
+        }
+      ],
+      "rationale": "src/io/main-00284660/FileCheckSumGet.c is the accepted definition: it takes the save-file union it copies locally and accumulates into a signed long long. Two accepted files carry that signature; the third is a caller that erases both types. WP-H open item (2026-09-12, .work/reviews/tu-import-r4r6-20260912/review-r4.json findings[0]): inside the merged TU main#167 the caller had to write `FileCheckSumGet((FileChecksumData *)save_data, (long long *)&save_data->checksum)` because VersionUpDate holds a `SaveDataHeader *` (`u64 version; u64 checksum;`) while this prototype names the 0x163b0-byte `FileChecksumData` union whose `fields` are `byte header[8]; long long stored_checksum;`. The two views agree offset for offset on the first 16 bytes (+0 eight bytes, +8 eight bytes), and the `version` member has accepted evidence (VersionUpDate increments it as a u64), so a decision naming `FileChecksumData.fields` `u64 version; long long checksum;` would remove both casts. It edits include/xeno/io/types.h and the two accepted bodies that spell `local.fields.stored_checksum` (src/io/main-00284660, src/io/main-00284760), each of which has to be re-verified, so it is handed over as its own assignment rather than folded into this header change.",
+      "evidence": [
+        "definition at main:0x00284660 accumulates `*checksum += (long long)*data * i + 0x7ca;`",
+        "src/io/main-00284760/FileCheckSumCheck.c uses the same declaration"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/io/main-00284410/VersionUpDate.c",
+          "unit": "io-main-00284410",
+          "reason": "the canonical text names `FileChecksumData`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu167",
+          "tu_file": "src/main/file.c"
+        }
+      ]
+    },
+    "GameLoopState": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00245af8/GameModeCfEvent.c",
+        "text": "extern GameLoopFlagsPrefix GameLoopState;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00244d20/private.h",
+          "reason": "GameLoopStateLayout, the former canonical; its unit (core-main-00244d20) is blocked - no runner reproduces it as it stands - so this spelling has no byte evidence behind it"
+        },
+        {
+          "file": "src/core/main-0025a950/private.h",
+          "reason": "GameLoopStateAddressView, the `void *[]` view four promoted units reproduce their bytes with; incompatible with a struct view"
+        },
+        {
+          "file": "src/core/main-0025a9c0/private.h",
+          "reason": "GameLoopStateAddressView, the `void *[]` view four promoted units reproduce their bytes with; incompatible with a struct view"
+        },
+        {
+          "file": "src/core/main-0025aa38/private.h",
+          "reason": "GameLoopStateAddressView, the `void *[]` view four promoted units reproduce their bytes with; incompatible with a struct view"
+        },
+        {
+          "file": "src/core/main-0025ada0/private.h",
+          "reason": "GameLoopStateAddressView, the `void *[]` view four promoted units reproduce their bytes with; incompatible with a struct view"
+        },
+        {
+          "file": "src/core/main-002c66c0/private.h",
+          "reason": "GameLoopStateWords, the `unsigned int[]` view a fifth promoted unit uses"
+        },
+        {
+          "file": "src/core/main-00245ba8/private.h",
+          "reason": "GameModeDebugMenu's TU-local GameLoopStateLayout view (decision GameLoopStateLayout, status tu_local); the function reads camera_callback (+0x28) and clears pause_vector (+0x29f50) through the QuadVector union, which the canonical GameLoopFlagsPrefix does not model. Its unit is native-TI and has no promote backend (reviews core-cc-20260911-b11/b12)"
+        }
+      ],
+      "rationale": "Four accepted views of the same 0x2a030-byte global, and the byte evidence points in two directions at once. `core-main-00245af8` refused full promotion and keeps its GameLoopFlagsPrefix struct; four units pinned on the shared headers keep the `void *[]` address view, and a fifth keeps the `unsigned int[]` word view. A struct view and an array view cannot both be the declared type of one object, and the former canonical (GameLoopStateLayout) comes from a unit that no runner currently reproduces. The name is a genuine TU-local divergence: each unit keeps the view its own bytes justify, and no shared header declares GameLoopState.",
+      "evidence": [
+        "promote recorded core-main-00245af8 in full_refused; its conservative retry kept GameLoopFlagsPrefix",
+        "reports/header-promote.md lists core-main-00244d20 as blocked (\"ASM, incbin, attributes or pragmas are not ordinary candidate C\"), so GameLoopStateLayout is not byte-backed today",
+        "src/core/main-0025a950/private.h, -0025a9c0, -0025ada0 and -002c66c0 are pinned units that keep their array views",
+        "config/header-promoted.json records no unit that gave up a GameLoopState declaration"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "GameLoopStateLayout": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00244d20/private.h",
+        "text": "typedef struct GameLoopStateLayout {\n    u8 _unmodeled_00[0x0c];\n    u16 kind;\n    u8 _unmodeled_0e[2];\n    u32 flags;\n    u8 _unmodeled_14[0x14];\n    GameModeCameraCallback camera_callback;\n    u8 _unmodeled_2c[0x29f14];\n    u8 status;\n    u8 _unmodeled_29f41[0x0f];\n    Quadword pause_vector;\n    u16 saved_kind;\n} GameLoopStateLayout;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00245ba8/private.h",
+          "reason": "GameModeDebugMenu's own partial view: pause_vector is the single-member QuadVector union, which its exact unit depends on (CP-0151; with a bare Quadword the function first differs at 0x00245bd0, attempt-bab27253d193 form 01, re-checked by review core-cc-20260911-b11), and it omits `status` (+0x29f40), which it never accesses"
+        }
+      ],
+      "rationale": "Two accepted native-TI units of the game-mode code declare TU-local partial views of the 0x2a030-byte GameLoopState under the same name, with the same evidenced offsets (kind +0x0c, flags +0x10, camera_callback +0x28, pause_vector +0x29f50, saved_kind +0x29f60). They are incompatible spellings: core-main-00244d20's three handlers read and write `status` (+0x29f40), which the core-main-00245ba8 view does not declare, and GameModeDebugMenu reproduces its bytes only with pause_vector typed as the QuadVector union, while 00244d20 spells it as a bare Quadword. Neither unit can be rebuilt on the other's spelling as it stands, and both views depend on the native TI Quadword type, which the harvest withholds from shared headers as non-ordinary C. The name stays TU-local; no shared header declares it, as before this batch. The canonical record points at the view with more accepted use sites (three handlers and the status byte). Unifying the two views needs the game-mode TU scope decision (0x00244d20..0x00245c58) and new byte evidence, not a readability argument.",
+      "evidence": [
+        "src/core/main-00244d20/game_modes.c: game_mode_status (GameLoopState.status) tested and set to 16 in three handlers; game_mode_pause_vector cleared with por+sq",
+        "src/core/main-00245ba8/candidate.c: GameLoopState.pause_vector.quad = 0; its unit is exact under ee-gcc2_96-native-ti-copy-v1 -O2 -G8 (reviews core-cc-20260911-b11 and b12; attempt-4ba637a6f0fd form 01)",
+        "config/compiler-patterns.json CP-0151: union member store (alias set 0) orders the resume block; bare Quadword form first differs at 0x00245bd0",
+        "reports/header-promote.md lists core-main-00244d20 as blocked (no promote backend for native-TI units), so neither view is promote-verified; both are exact under their native-TI contract",
+        "config/header-promoted.json records no unit that gave up a GameLoopStateLayout declaration"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "Get_Angle": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/review11-002d8058/Get_Angle.c",
+        "text": "float Get_Angle(const Point4 *first, const Point4 *second);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/review09-002d8140/Get_Angle_Relative.c",
+          "reason": "caller-side Vector3 view of the same leading floats; not the definition's parameter type"
+        }
+      ],
+      "rationale": "src/math/main/review11-002d8058/Get_Angle.c is the accepted definition and reads ->x and ->z of a 16-byte Point4 (size-checked in its own private header). The caller's Vector3 spelling is a narrower view of the same first three floats. WP-H open item (2026-09-12): imported TU main#201 (201_get.c:121) passes both arguments as a different point spelling and warns on args 1 and 2. One decision on the point type used by the Get_Angle family settles it; handed over as its own assignment. main/tu191 passes 16-byte Vector4 positions; its x/z offsets match the accepted 16-byte Point4 view, so its caller declaration remains local under byte_required. Retain this accepted definition-based canonical choice and its existing evidence.",
+      "evidence": [
+        "definition: `return atan2f(second->x - first->x, second->z - first->z);`",
+        "src/math/main/review11-002d8058/private.h asserts sizeof(Point4) == 16",
+        "main/tu191 caller view is Vector4 (four floats, 16 bytes), with x and z at offsets 0 and 8; its exact candidate header SHA-256 is 9443c29a1ef72782408b75154f059af34d7807584b6931e18db904e58d436a86."
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/main/enemy_1.h",
+          "tu": "main/tu191",
+          "tu_file": "src/main/enemy_1.c",
+          "unit": "main",
+          "reason": "main/tu191 passes four-float Vector4 positions to Get_Angle; the function definition remains canonically declared as Point4 * and both pointer views are 16 bytes with matching x/z offsets. Keep the caller view local and preserve the existing definition-based canonical prototype."
+        }
+      ]
+    },
+    "HddTestMakeYourSaves": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255db0/HddTest1024Save.c",
+        "text": "extern void HddTestMakeYourSaves(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255d08/HddTestMakeYourSaves.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same `void (void)` signature in every accepted file; only the storage class differs. The extern declaration used by HddTest1024Save and HddTestMakeYS is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/main-00255d08/HddTestMakeYourSaves.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/main-00255d08/HddTestMakeYourSaves.c defines the function",
+        "the extern spelling appears in several accepted HDD-test TUs",
+        "static definition head in src/io/main-00255d08/HddTestMakeYourSaves.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "HddTestMountCommon": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255db0/HddTest1024Save.c",
+        "text": "extern void HddTestMountCommon(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255c98/HddTestMountCommon.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same `void (void)` signature in every accepted file; only the storage class differs. The extern declaration used by HddTest1024Save, HddTestDummyFolder and HddTestMakeYS is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/main-00255c98/HddTestMountCommon.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/main-00255c98/HddTestMountCommon.c defines the function",
+        "the extern spelling appears in several accepted HDD-test TUs",
+        "static definition head in src/io/main-00255c98/HddTestMountCommon.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "HddTestUnmountCommon": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255db0/HddTest1024Save.c",
+        "text": "extern void HddTestUnmountCommon(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255cd8/HddTestUnmountCommon.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same `void (void)` signature in every accepted file; only the storage class differs. The extern declaration used by HddTest1024Save, HddTestDummyFolder and HddTestMakeYS is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/main-00255cd8/HddTestUnmountCommon.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/main-00255cd8/HddTestUnmountCommon.c defines the function",
+        "the extern spelling appears in several accepted HDD-test TUs",
+        "static definition head in src/io/main-00255cd8/HddTestUnmountCommon.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "HermiteVector": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/ov01/correction13-ov01-00a38ac0-allocation-47a754a945e8/form-19/candidate.c",
+        "text": "typedef struct {\n    float x;\n    float y;\n    float z;\n    float w;\n} HermiteVector;"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction84-review16/0x00a36f28/candidate.c",
+          "reason": "array typedef of the same 16 bytes; unnamed components and by-value parameter spelling"
+        }
+      ],
+      "rationale": "Both spellings are four consecutive floats. The struct form is used by two accepted files, names the components, and matches the Vector4 convention chosen for this domain; the array typedef only exists so its TU can pass the vectors 'by value'. Same 16 bytes either way.",
+      "evidence": [
+        "two accepted OV01 files use `typedef struct { float x, y, z, w; } HermiteVector;` (spelled member by member)",
+        "src/math/ov01/correction84-review16/0x00a36f28/candidate.c uses `typedef float HermiteVector[4];`"
+      ],
+      "confidence": "medium"
+    },
+    "InstanceOfRgHeap": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c",
+        "text": "extern RgHeap *InstanceOfRgHeap(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a48a30/private.h",
+          "reason": "`void *` view from a caller that only forwards the singleton to RgHeapAlloc, whose own accepted prototype takes `void *heap`; names neither heap"
+        }
+      ],
+      "rationale": "OV12's system initialisation owns these two heap singletons: it declares them as `RgHeap *` and hands the results straight to InitRgHeap and ClearRgHeap, whose accepted prototypes take `RgHeap *`. RgHeap is an opaque `typedef struct RgHeap RgHeap;`, so the typed and the `void *` spelling are the same pointer at the ABI; only the typed one says what the singleton is. The io file-system TU spells it `void *` because its own RgHeapAlloc prototype takes `void *heap`.",
+      "evidence": [
+        "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c: `InitRgHeap(InstanceOfRgHeap(), (void *)0x01000000, 0x00100000);` and `ClearRgHeap(InstanceOfRgHeap());`",
+        "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c:2 `typedef struct RgHeap RgHeap;`",
+        "src/io/ov12-00a48a30/XrgFileSysModeGet.c passes the result to RgHeapAlloc(void *heap, ...)"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/io/ov12-00a48a30/private.h",
+          "unit": "io-ov12-00a48a30",
+          "reason": "the canonical text names `RgHeap`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "ov12/tu083",
+          "tu_file": "src/ov12/xrg_filesys_mode.c"
+        }
+      ]
+    },
+    "InstanceOfRgHeapData": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c",
+        "text": "extern RgHeap *InstanceOfRgHeapData(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a48a30/private.h",
+          "reason": "`void *` view from a caller that only forwards the singleton to RgHeapAlloc, whose own accepted prototype takes `void *heap`; names neither heap"
+        }
+      ],
+      "rationale": "OV12's system initialisation owns these two heap singletons: it declares them as `RgHeap *` and hands the results straight to InitRgHeap and ClearRgHeap, whose accepted prototypes take `RgHeap *`. RgHeap is an opaque `typedef struct RgHeap RgHeap;`, so the typed and the `void *` spelling are the same pointer at the ABI; only the typed one says what the singleton is. The io file-system TU spells it `void *` because its own RgHeapAlloc prototype takes `void *heap`.",
+      "evidence": [
+        "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c: `InitRgHeap(InstanceOfRgHeap(), (void *)0x01000000, 0x00100000);` and `ClearRgHeap(InstanceOfRgHeap());`",
+        "src/core/ov12-00a4c948/src/ov12/xrg_system_init.c:2 `typedef struct RgHeap RgHeap;`",
+        "src/io/ov12-00a48a30/XrgFileSysModeGet.c passes the result to RgHeapAlloc(void *heap, ...)"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/io/ov12-00a48a30/private.h",
+          "unit": "io-ov12-00a48a30",
+          "reason": "the canonical text names `RgHeap`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "ov12/tu083",
+          "tu_file": "src/ov12/xrg_filesys_mode.c"
+        }
+      ]
+    },
+    "JNI_initThread": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0025a6d8/private.h",
+        "text": "extern void JNI_initThread(SceneVm *vm);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00261fc0/getEmptyVM.h",
+          "reason": "identical type spelled `void *`; loses the SceneVm role name"
+        }
+      ],
+      "rationale": "The two spellings are the same type: src/core/main-0025a6d8/private.h declares `typedef void SceneVm;`, so `SceneVm *` and `void *` are identical after typedef expansion. The named form documents that the argument is the scene VM handle.",
+      "evidence": [
+        "src/core/main-0025a6d8/private.h:15 `typedef void SceneVm;`",
+        "src/core/main-0025a6d8/private.h also uses SceneVm * for JNI_callMethod, the same VM handle"
+      ],
+      "confidence": "high"
+    },
+    "JNI_isInstanceOf": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0025a6d8/private.h",
+        "text": "extern int JNI_isInstanceOf(SceneObject object, SceneClass *target_class);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "reason": "`void *` for both operands; compatible but names neither the object reference nor the class"
+        }
+      ],
+      "rationale": "The core scene TU names both operands: SceneObject is `SceneByte *`, the object-reference pointer whose first word is the class, and SceneClass is the opaque class object. It uses them through the rest of the JNI-style helpers in the same header. The math TU spells both `void *` because it only forwards a class global and an object it received. Same two pointers at the ABI; the typed spelling says which is which.",
+      "evidence": [
+        "src/core/main-0025a6d8/private.h:14 `typedef SceneByte *SceneObject;` and :6 `typedef struct SceneClass SceneClass;`",
+        "src/core/main-0025a6d8/candidate.c: `return JNI_isInstanceOf(scene_object, classJava_xeno_Scene);`",
+        "src/math/main/002ff538-chr-scl/CHR_sclX.c: `JNI_isInstanceOf(object, classJava_xeno_Chr)`"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "unit": "math-main-002ff538",
+          "reason": "the canonical text names `SceneObject` and `SceneClass`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu248",
+          "tu_file": "src/main/chr.h"
+        },
+        {
+          "file": "src/main/init_vm.c",
+          "reason": "the canonical text names `SceneObject` and `SceneClass`, which this TU (the JVM interpreter's virtualMachine bytecode loop and its init_vm.c prelude) does not declare and cannot obtain: it only ever passes a generic native object pointer and its own `VMClass *` class descriptor, computed by this same file's getClass()/newClass()/VMClass family. With the canonical spelling substituted, cc1 (ee-gcc2_96-realconv) emits `init_vm.c:1280: warning: passing arg 2 of 'JNI_isInstanceOf' from incompatible pointer type` at the `virtualMachine` call site, whose second argument is `getClass(...)` returning this TU's own `VMClass *`, not `SceneClass *`; config/toolchains-tu.json's include_asm.rules treats any compiler message as an error, so the canonical spelling breaks this TU's contract. Verified independently by patching to the canonical prototype and re-staging (review-main-tu226-virtualmachine-20260926/stage-02): the TU still gate/audit-passes byte for byte, but only with that warning present, which the contract refuses. This is the same situation already recorded above for src/math/main/002ff538-chr-scl/private.h, which spells both parameters `void *` for the same reason (it only forwards a class pointer of its own type); this TU's own domain-typed spelling (`void *` for the generic object slot, `VMClass *` for the class it already computes) is its fix-point.",
+          "tu": "main/tu226",
+          "tu_file": "src/main/init_vm.c"
+        }
+      ]
+    },
+    "JavaField": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/w3-002f93f8-getpeer-uwamono/private.h",
+        "text": "typedef struct JavaField {\n    unsigned int : 32; /* +0 */\n    unsigned int : 32; /* +4 */\n    unsigned int : 32; /* +8 */\n    unsigned int : 32; /* +12 */\n    int offset;        /* +16: read at 0x2f9438/0x2f94ac/... (lw v1,16(v0)) */\n} JavaField;"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "reason": "forward declaration only; compatible with the definition but provides no members"
+        }
+      ],
+      "rationale": "The complete definition supersedes the forward declaration of the same tag: it adds the one evidenced member, `int offset` at +16, with the instruction addresses that read it, and uses unnamed :32 bit-fields for the preceding words rather than inventing named padding. The forward-declaration spelling stays valid but provides no member.",
+      "evidence": [
+        "src/math/main/w3-002f93f8-getpeer-uwamono/private.h cites lw v1,16(v0) at 0x2f9438/0x2f94ac for the offset member",
+        "src/math/main/002ff538-chr-scl/private.h only forward-declares the tag"
+      ],
+      "confidence": "medium"
+    },
+    "LW": {
+      "kind": "extern",
+      "status": "static_local",
+      "domain": "io",
+      "canonical": {
+        "file": "src/main/xgl_cd.c",
+        "text": "static CdReadControl LW;"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-0021ced0/hdd_error.c",
+          "reason": "int view of the first word only; cannot address the other offsets"
+        },
+        {
+          "file": "src/io/main-0021e400/private.h",
+          "reason": "signed-char array for one evidenced byte at +0x30; contradicts the six-file unsigned view"
+        }
+      ],
+      "rationale": "The original LW symbol is LOCAL. Its formerly separate CD/HDD consumers now belong to main/tu092, which defines the complete 0x1040-byte CdReadControl layout. The signed dispatch byte and descriptor word are named fields of this one TU-local object. Historical per-function byte views below are retained as evidence; they no longer require a shared extern declaration.",
+      "evidence": [
+        "src/io/main-0021cf08/xglCdPowerOffCB.c: `LW[0x34] = 1;`",
+        "src/io/main-0021e400/private.h documents the signed byte at +0x30 (lb at 0x0021e404)",
+        "src/io/main-0021ced0/hdd_error.c reads LW+0 as a file descriptor",
+        "promote kept the local spelling in src/io/main-0021e400/private.h (unit io-main-0021e400); recorded under byte_required",
+        "promote recorded io-main-0021ced0 in full_refused (.work/attempts/header-promote/backends.json) after the TU-local and byte-required records above changed the shared headers",
+        "express full367: src/main/xgl_cd.c:257 still defines static CdReadControl LW; all old int/byte array views remain historical and are not cross-TU exports."
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/io/main-0021e400/private.h",
+          "unit": "io-main-0021e400",
+          "reason": "the unit reads byte +0x30 with `lb` at 0x0021e404 and only reproduces its bytes with the signed element type; promote refused its full promotion. Six promoted units depend on the unsigned canonical, so the name stays shared.",
+          "tu": "main/tu092",
+          "tu_file": "src/main/xgl_cd.c"
+        },
+        {
+          "file": "src/io/main-0021ced0/hdd_error.c",
+          "unit": "io-main-0021ced0",
+          "reason": "the unit reads LW+0 as the open file descriptor (`sceClose(LW); LW = -1;`) and only reproduces its bytes with the `int` spelling; promote refused its full promotion in the run of 2026-09-11. The six promoted units that gave up their own declaration depend on the unsigned byte-array canonical, so the name stays shared.",
+          "tu": "main/tu092",
+          "tu_file": "src/main/xgl_cd.c"
+        }
+      ]
+    },
+    "MenuBgTask": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/main/window_tex_load.c",
+        "text": "extern XglTaskScheduler *MenuBgTask;"
+      },
+      "rationale": "MenuBgTask is a global scheduler pointer used and defined only by the window_tex_load translation unit. Another translation unit uses MenuBgTask as the name of a local typedef for an unrelated task record; broadcasting this variable declaration through umbrella/public.h makes that exact C source ill-formed. Keep the owner's declaration with its source and do not export it to shared headers.",
+      "evidence": [
+        "src/main/window_tex_load.c declares the variable and accesses it in MenuBgTaskMain; the object definition is in that translation unit",
+        "src/main/tya_menu_bg_entry.c:20-37 defines a TU-local typedef named MenuBgTask for an unrelated task-record type",
+        "Other source references are to MenuBgTaskMain, not the variable; rg over src/main and include/main found no other variable use"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "MMathCalcHermite": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/main/m_math.c",
+        "text": "float *MMathCalcHermite(float *destination, float parameter,\n                         HermiteVector *tangent_first, HermiteVector *tangent_second,\n                         HermiteVector *endpoint_first, HermiteVector *endpoint_second);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a38ac0-allocation-47a754a945e8/form-19/candidate.c",
+          "reason": "a caller's view, superseded once main/tu219 recovered the function itself (docs/header-canon.md, \"the definition wins over a caller's view\"): this file's own `void` return does not match the original object's `daddu v0,a0,zero` return-the-destination-pointer lead-in, which the defining TU's `float *` does."
+        },
+        {
+          "file": "src/math/ov01/correction84-review16/0x00a36f28/candidate.c",
+          "reason": "by-value array-typedef spelling; equivalent at the ABI but inconsistent with the chosen HermiteVector type. Also a caller's view, superseded by the defining TU for the same reason as the other rejected variant."
+        }
+      ],
+      "rationale": "main/tu219 (src/main/m_math.c) now defines MMathCalcHermite as readable C with constrained ee-vu-cop2 inline assembly (task tu-slus-20469-412d448de315-retreat-main-tu219-m-math-002ef160-209f1101b8ca), reproducing the original object byte- and relocation-identically. The definition wins over every caller's view (docs/header-canon.md, rule 1): the original's `daddu v0,a0,zero` lead-in returns the destination pointer, so the real prototype is `float *`, not the stale `void` the two legacy ov01 accepted records declared for themselves before the function had a real definition anywhere. No caller reads the return value, so this correction is source-visible only and changes no emitted byte.",
+      "evidence": [
+        "src/main/m_math.c: MMathCalcHermite's original object ends with `daddu v0,a0,zero; jr ra; nop`, the same 'return the destination pointer' idiom every other pointer-returning function of this TU uses",
+        "no accepted caller of MMathCalcHermite reads its return value, so widening void -> float* is source-visible only"
+      ],
+      "confidence": "high"
+    },
+    "PadData": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00245af8/GameModeCfEvent.c",
+        "text": "extern PadPrefix PadData;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00244d20/private.h",
+          "reason": "not byte-required; exact units depend on the other spelling: PadDataLayout was the canonical, but its unit (core-main-00244d20) is blocked and reproduces nothing today, while core-main-00245af8 refused full promotion with the spelling above"
+        },
+        {
+          "file": "src/core/main-00245ba8/private.h",
+          "reason": "GameModeDebugMenu's partial view reaches the +0x2e halfword (debug_buttons, tested with & 0x100) that the canonical prefix does not model; it agrees with the canonical on the +0x28/+0x2a halfwords, and extending the shared prefix would add a member the canonical TU does not evidence. Divergence reason also recorded in its result.json header_divergence (attempt-4ba637a6f0fd; reviews core-cc-20260911-b11/b12)"
+        },
+        {
+          "file": "src/io/main-00256190/HddTest.c",
+          "reason": "raw 208-byte union of byte/halfword/doubleword arrays for macro access; names no field, though its 0xd0 extent agrees with the chosen layout's object"
+        }
+      ],
+      "rationale": "Revised on byte evidence. All three accepted views agree on the object (0xd0 bytes at 0x490d90) and on the two halfwords at +0x28/+0x2a. The chosen one is the only one a verified unit depends on: core-main-00245af8 refused full promotion and its conservative retry kept this struct. The former canonical, PadDataLayout, is layout-identical and better named, but its unit is blocked, so no reproduction currently stands behind it. Member names stay neutral because that TU judged the button roles unproven. WP-H (2026-09-12): main#116 is recorded under byte_required with the wider `PadDataDebugLayout` view; the canonical PadPrefix stays in the shared header for every unit that only reaches +0x2c.",
+      "evidence": [
+        "promote recorded core-main-00245af8 in full_refused; the conservative retry kept PadPrefix",
+        "reports/header-promote.md lists core-main-00244d20 (PadDataLayout) as blocked",
+        "both spellings model u8[0x28] then two u16, and the io union independently sizes the same global at 208 (0xd0) bytes",
+        "config/header-promoted.json records no unit that gave up a PadData declaration",
+        ".work/reviews/tu-import-r1r3-20260912/review-r3.json findings_for_integrator[2] and adaptation_judgements[1] (PadDataDebugLayout places +0x28 / pressed +0x2a, offset-for-offset identical)"
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/io/main-00256190/HddTest.c",
+          "unit": "io-main-00256190",
+          "reason": "the canonical text names `PadPrefix`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu132",
+          "tu_file": "src/main/yajima_test.c"
+        },
+        {
+          "file": "src/core/main-00245ba8/private.h",
+          "tu": "main/tu116",
+          "tu_file": "src/main/game.c",
+          "unit": "core-main-00245ba8",
+          "reason": "GameModeDebugMenu reads the halfword at PadData+0x2e, which the canonical `PadPrefix` (evidenced only to +0x2c) does not reach, so this TU declares `extern PadDataDebugLayout PadData;` - the same object with the two accessed halfwords named `places` at +0x28 and `pressed` at +0x2a and the accessed prefix extended to +0x30. The layout is offset-for-offset identical to PadPrefix where the two overlap; only the extent differs, and the wider view is the one this unit's bytes depend on. Replaces the standing `header_harvest.py lint --allow PadData` of the main#116 import."
+        }
+      ]
+    },
+    "PartyDataGet": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002b56c0/party.c",
+        "text": "unsigned char *PartyDataGet(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-002b6a48/private.h",
+          "reason": "single caller typing the result as PartyData *; a caller-side view, not the definition's return type"
+        },
+        {
+          "file": "src/core/main-002f7be0/getPartyDataOfs.c",
+          "reason": "single caller typing the result as void *"
+        }
+      ],
+      "rationale": "src/core/main-002b56c0/PartyDataGet.c is the accepted definition of the function and returns `SaveData + 0x10078`, an unsigned char *. Seventeen further accepted callers declare exactly that signature. The two remaining spellings are single-file caller conveniences. Batch b7 (2026-09-11) merged the original party source file main 0x002b56c0..0x002b6498 into the single unit core-main-002b56c0 and retired src/core/main-002b56c0/PartyDataGet.c; the declaration is carried there unchanged in src/core/main-002b56c0/party.c.",
+      "evidence": [
+        "definition: `unsigned char *PartyDataGet(void) { return SaveData + 0x10078; }` at main:0x002b56c0",
+        "18 accepted files carry the unsigned char * spelling",
+        "core-main-002b56c0 (b7 merged party TU): fresh exact, .work/reviews/core-cc-20260911-b7/review/merged-worker/verification.json"
+      ],
+      "confidence": "high"
+    },
+    "PartyDataPrefix": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002b56c0/private.h",
+        "text": "typedef struct PartyDataPrefix {\n    u8 _unmodeled_00[0x24];\n    u16 lock_party_mask;\n    u16 out_friend_mask;\n    u16 friend_mask;\n    u16 take_agws_mask;\n    u16 leader_battle_id;\n    u8 radar_disp;\n    PartyAttackPosition attack_slots[3];\n} PartyDataPrefix;"
+      },
+      "rejected": [],
+      "rationale": "Partial accessed prefix (first 0x3c bytes) of the party state PartyDataGet returns, shared by the three units of src/core/main-002b5e58 (PartyAttackerSet, PartyBattleChange, PartyLeaderSet); the member offsets agree with the accepted offset-cast readers (+0x24/+0x26/+0x28/+0x2a masks, +0x2c leader id in PartyLeaderCheck, +0x2e radar byte, +0x30 attack slots). Emitting this definition into include/xeno/core/types.h makes the exact unit a redefinition (`redefinition of struct PartyDataPrefix`, promote baseline compile.log in the b5 harvest simulation .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b5e58/baseline/compile.log), because its source already includes xeno/core/types.h next to the file that defines the type, and header_harvest promote cannot migrate it because its baseline must build as the unit stands. The exact unit therefore depends on keeping the definition local for now. The other accepted party units still spell these offsets as casts; they can adopt the view when the party translation unit 0x002b56c0.. is merged (next action recorded for main-002b6118). TU-local until the definition can be moved out of the unit in the same step that shares it (tools next action: let promote remove a definition the regenerated header now provides before the baseline build), or until the translation units that use it are merged. Batch b7 (2026-09-11) merged the original party source file main 0x002b56c0..0x002b6498 into the single unit core-main-002b56c0 and retired src/core/main-002b5e58/private.h; the declaration is carried there unchanged in src/core/main-002b56c0/private.h. After that merge only this one translation unit defines it; it stays TU-local because the unit includes xeno/core/types.h next to the file that defines it.",
+      "evidence": [
+        "core-main-002b5e58/002b5ef8/002b5f88: fresh exact, .work/reviews/core-cc-20260911-b5/review/party-attackerset|party-battlechange|party-leaderset/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b5e58/baseline/compile.log (redefinition)",
+        "core-main-002b56c0 (b7 merged party TU): fresh exact, .work/reviews/core-cc-20260911-b7/review/merged-worker/verification.json"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "PartyStateImage": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002b56c0/party.c",
+        "text": "typedef struct PartyStateImage {\n    unsigned long long words[0x188 / 8];\n} PartyStateImage;"
+      },
+      "rejected": [],
+      "rationale": "Whole-block view of the 0x188-byte party state (SaveData + 0x10078) that PartyAllPartyGet2 (main:0x002b6370) saves, swaps and restores by struct assignment; no member is claimed. Emitting this definition into include/xeno/core/types.h makes the exact unit a redefinition (`redefinition of struct PartyStateImage`, promote baseline compile.log in the b5 harvest simulation .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b6370/baseline/compile.log), because its source already includes xeno/core/types.h next to the file that defines the type, and header_harvest promote cannot migrate it because its baseline must build as the unit stands. The exact unit therefore depends on keeping the definition local for now. No other accepted unit uses it. TU-local until the definition can be moved out of the unit in the same step that shares it (tools next action: let promote remove a definition the regenerated header now provides before the baseline build), or until the translation units that use it are merged. Batch b7 (2026-09-11) merged the original party source file main 0x002b56c0..0x002b6498 into the single unit core-main-002b56c0 and retired src/core/main-002b6370/PartyAllPartyGet2.c; the declaration is carried there unchanged in src/core/main-002b56c0/party.c. After that merge only this one translation unit defines it; it stays TU-local because the unit includes xeno/core/types.h next to the file that defines it.",
+      "evidence": [
+        "core-main-002b6370: fresh exact, .work/reviews/core-cc-20260911-b5/review/party-allpartyget2-current/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b6370/baseline/compile.log (redefinition)",
+        "core-main-002b56c0 (b7 merged party TU): fresh exact, .work/reviews/core-cc-20260911-b7/review/merged-worker/verification.json"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "ProgramContext": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c",
+        "text": "typedef struct ProgramContext {\n    unsigned char unmodeled_00[0x11c];\n    u32 has_variant_program;           /* +0x11c: picks slot 4 over 3 */\n} ProgramContext;"
+      },
+      "rejected": [],
+      "rationale": "Bounded partial view completed inside the add_exec_prog/nmlPacketAddExecProg translation unit (math-correction13-0), which also includes xeno/math/types.h for the opaque `typedef struct NmlMaterialRenderState NmlMaterialRenderState;` / `typedef struct NmlModelRenderState NmlModelRenderState;` forward names. Emitting this definition into the shared header makes that exact unit a redefinition (`redefinition of struct ...`, .work/reviews/core-cc-20260911-b4/review/sim-merge-regen), and header_harvest promote cannot migrate it because its baseline must build as it stands. The exact unit therefore depends on keeping the definition local, and no other accepted unit reads these members. (Corrected 2026-09-13: this said \"nmlPacketAddExecProg still uses offset casts on +0x20/+0x250/+0x2b0\". It no longer does -- style-nml-packet-family-20260913 recovered those members into src/main/nml_packet_add.h, where +0x250 is `render_status`, +0x260/+0x264 are `proreal`/`proreal_override` of `NmlProRealParam` (this entry's ProgramContext), and +0x2b0 is `render_level`, each named from the nmlModelSet* setter that writes it. The DECISION is unaffected: the names live in the TU header this canon calls tu_local, no second TU reads them, and `canonical.text` below is still the byte-required spelling of the frozen accepted unit math-correction13-0 and must not be edited to match.). TU-local until a second translation unit needs the members and the definition can be moved out of the unit in the same step.",
+      "evidence": [
+        "math-correction13-0: fresh exact merged unit, .work/reviews/core-cc-20260911-b4/review/merge-G8/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b4/review/sim-merge-regen (redefinition)"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "RgError": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/ov12-00a48a30/private.h",
+        "text": "extern void RgError(const char *message, const char *source_file, int line, ...);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a4e340/private.h",
+          "reason": "fixed three-parameter spelling; a strict subset of the variadic form"
+        }
+      ],
+      "rationale": "The variadic form is a superset: a message/file/line error reporter with trailing format arguments. All the arguments in both accepted call shapes are integer-class, so the two declarations agree on argument passing for the calls that exist; the fixed three-parameter spelling simply cannot express the variadic call sites.",
+      "evidence": [
+        "src/io/ov12-00a48a30/private.h declares the variadic form",
+        "both spellings share the (const char *message, const char *source_file, int line) prefix"
+      ],
+      "confidence": "medium"
+    },
+    "RgSingletonIDEntry": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a18670/private.h",
+        "text": "extern void RgSingletonIDEntry(\n    int singleton_id,\n    RgSimpleDB *database,\n    void (*destructor)(RgSimpleDB *database));"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov12-00a0db58/private.h",
+          "reason": "same type through the RgSimpleDBDestructor typedef; single file, and adds a typedef dependency"
+        }
+      ],
+      "rationale": "Identical types: RgSimpleDBDestructor is `void (*)(RgSimpleDB *)`, exactly the third parameter written out in the chosen variant. Two accepted files use the expanded spelling, one uses the typedef, and the expanded form does not require the destructor typedef to be present. Parameter names are cosmetic; `singleton_id` is the descriptive one.",
+      "evidence": [
+        "src/core/ov12-00a0db58/private.h: `typedef void (*RgSimpleDBDestructor)(RgSimpleDB *database);`",
+        "the expanded spelling appears in ov12-00a18670 and ov12-00a1c818"
+      ],
+      "confidence": "high"
+    },
+    "RgSingletonIDGet": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a143c0/RgSingletonIDGet.c",
+        "text": "void *RgSingletonIDGet(unsigned int singleton_id);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov12-00a0db58/private.h",
+          "reason": "caller-side typed view (RgSimpleDB *, int id); compatible with the definition but not its declared types"
+        },
+        {
+          "file": "src/core/ov12-00a18670/private.h",
+          "reason": "caller-side typed view (RgSimpleDB *, int id); compatible with the definition but not its declared types"
+        },
+        {
+          "file": "src/core/ov12-00a1c818/private.h",
+          "reason": "caller-side typed view (RgSimpleDB *, int id); compatible with the definition but not its declared types"
+        }
+      ],
+      "rationale": "src/core/ov12-00a143c0/RgSingletonIDGet.c is the accepted definition; it returns the untyped result of `_Get(&s_inIDmgr, singleton_id)` and takes an unsigned id, matching `_Get`'s own accepted prototype. The three-file variant types the result as RgSimpleDB *, which is a caller-side view of the same pointer: the singleton table stores void * instances. Medium confidence because the typed form is better reading for the OV12 robot-DB callers even though it is not what the definition says.",
+      "evidence": [
+        "definition: `void *RgSingletonIDGet(unsigned int singleton_id) { return _Get(&s_inIDmgr, singleton_id); }`",
+        "src/core/ov12-00a143c0/private.h: `extern void *_Get(RgSingletonManager *manager, unsigned int singleton_id);`",
+        "RgSingletonManager stores `void *instances[15]`"
+      ],
+      "confidence": "medium"
+    },
+    "RgSingletonManager": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a140a0/private.h",
+        "text": "typedef struct RgSingletonManager {\n    void *instances[15];\n    void (*destructors[15])(void *instance);\n    unsigned int order[15];\n    int count;\n} RgSingletonManager;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov12-00a14370/private.h",
+          "reason": "forward declaration only; compatible with the definition but provides no members"
+        },
+        {
+          "file": "src/core/ov12-00a143c0/private.h",
+          "reason": "forward declaration only; compatible with the definition but provides no members"
+        }
+      ],
+      "rationale": "The complete definition supersedes the opaque `typedef struct RgSingletonManager RgSingletonManager;`: the opaque form is a forward declaration of the same tag and stays valid, while the definition additionally gives the three parallel 15-entry tables and the count that _Clear and _Get walk. Two accepted files carry each spelling, so the complete one is chosen for its evidence.",
+      "evidence": [
+        "src/core/ov12-00a140a0/private.h is the TU that defines _Clear, which clears instances/destructors/order",
+        "src/core/ov12-00a142d8/_Get.c walks the same 15-entry tables"
+      ],
+      "confidence": "medium"
+    },
+    "RssdWorkFlags": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00240188/private.h",
+        "text": "typedef struct RssdWorkFlags {\n    int flags;                            /* +0x000: bit 3 cleared on RPC completion; bit 5 is the success status */\n    unsigned char _unmodeled_004[0x24];   /* +0x004..0x027 */\n    void (*complete_callback)(int status, RssdRpcResponse *response,\n                              void *arg); /* +0x028: one-shot, cleared after use */\n    void *callback_arg;                   /* +0x02c: third complete_callback argument */\n    unsigned char _unmodeled_030[0x04];   /* +0x030..0x033 */\n    RssdRpcResponse *response_source;     /* +0x034: SIF RPC receive buffer */\n    unsigned char _unmodeled_038[0x48];   /* +0x038..0x07f */\n    RssdRpcResponse response;             /* +0x080..0x09f: copy of *response_source */\n    unsigned char _unmodeled_0a0[0x114];  /* +0x0a0..0x1b3 (+0x1ac: thread id, see RssdBackgroundNextWave) */\n    int sema_id;                          /* +0x1b4: signalled when the RPC completes */\n    unsigned char _unmodeled_1b8[0x48];   /* +0x1b8..0x1ff */\n} RssdWorkFlags;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0023ff28/private.h",
+          "reason": "`typedef struct RssdWorkFlags { int flags; } RssdWorkFlags;` is the leading-word view RssdBackgroundNextWave (main:0x0023ff28) needs: its only member access is `RssdWork.flags &= ~4` (+0x000), which the wider spelling keeps with the same name and type; not byte-required (core-main-0023ff28 re-verifies exact against the wider header, see evidence)"
+        }
+      ],
+      "rationale": "Both variants describe the same object, RssdWork (main:0x004aa080, ELF symbol size 0x200). The wider spelling from RssdSifRpcCallback (main:0x00240188) keeps the accepted leading `int flags` and adds only members that function reads or writes at their original offsets (complete_callback +0x28 called through a2 = &response +0x80 with arg +0x2c, response_source +0x34 copied as a 32-byte record, sema_id +0x1b4 passed to iSignalSema); every untouched byte stays an explicit `_unmodeled_*` span and the total equals the ELF symbol size, a documented witness extent. It is a superset that provably covers the other view's accesses (docs/header-canon.md rule 4). RssdCallFunc (main:0x0023fff0, unrecovered) corroborates the same offsets: `lw s1,52(s2)` (response_source), `sh -1,128(s2)` (response), `lw a0,436(s2)` (sema_id) and flags bit 3 set before sceSifCallRpc with end function RssdSifRpcCallback.\n\nSTALE, 2026-09-13, recorded rather than repaired. The canonical text above is the view accepted from src/core/main-00240188 and its _unmodeled_0a0 span is now recovered: style-cast-residue-20260913 read SsdInit (main:0x0023f960) creating two service threads and storing each as an (id, stack) pair at +0x1a4/+0x1a8 and +0x1ac/+0x1b0, with SsdQuit (main:0x0023fb08) as an independent second reader handing both ids to TerminateThread and DeleteThread beside its DeleteSema of +0x1b4. src/main/ssd_init.h carries the extended definition. The DECISION is unaffected - RssdWorkFlags stays tu_local and reaches no generated header, so header_harvest.py --check passes - and `lint` reports one deliberate CONFLICT RssdWorkFlags, clean under --allow RssdWorkFlags. I attempted the repoint and confirm_canonical refused it (`src/main/ssd_init.h no longer declares it`), because the decision text must match the harvest's own extraction byte for byte and a hand-copied typedef does not. Repointing it needs the harvester to supply the text, which is task header-canon-rssdworkflags-repoint-20260913.\n\nSettled 2026-09-13 (task header-canon-remaining-five-20260913, evidence .work/analysis/header-canon-rssdworkflags.md): the extended src/main/ssd_init.h spelling is the one exact unit (main/tu110, merging both RssdSifRpcCallback and RssdBackgroundNextWave) depends on, and the retired pre-migration record this canonical text is replayed from (config/header-retired.json, RssdWorkFlags/core-main-00240188) is not itself an exact unit any more -- it is a frozen replay of history that tools/header_harvest.py deliberately never rescans (retired_unit()), so repointing `canonical.file` at the live TU makes confirm_canonical raise \"src/main/ssd_init.h no longer declares it\": the merge never puts a live variant from that file in front of it to confirm against, because the file is retired-skipped by construction, not because the file stopped declaring the name. That is a tooling gap (task header-canon-rssdworkflags-repoint-20260913), not evidence that the shared text is wrong. Per docs/header-canon.md rule 0, this is the exact shape of a genuine TU-local divergence: record it as such instead. `status: tu_local` makes tools/header_harvest.py canonical_entries() and apply_canon() withhold the name from every generated header and from confirm_canonical entirely (both check is_tu_local before touching the file), so `header_harvest.py lint` reports 0 conflicts for it and `--check` no longer raises. Verified: all six images byte-identical with no source change, tools/tu/run_audit.py main 63/63.\n\nOne live spelling, 2026-09-16 (task claude-refactor-rssd-types-20260916): the RSSD sound TUs no longer carry their own views of this type. src/main/ssd_init.h (main/tu110) is the only published declaration of RssdWorkFlags, now also naming the two (callback, argument) pairs main/tu112 stores at +0x1e8/+0x1ec (SsdSetSampleDmaCallback, main:0x002410a0) and +0x1f0/+0x1f4 (SsdSetSampleKeyoffCallback, main:0x002410b8), with the remaining bytes kept as _unmodeled_1b8[0x30] and _unmodeled_1f8[0x08]. It also declares RssdRequestWord, RssdRequest and RssdCallFunc. main/tu111 (src/main/ssd_set.c), main/tu112 (src/main/ssd_1.c) and main/tu113 (src/main/ssd_2.c) dropped their local RssdWorkFlags/RssdRequest/SsdRequestWord/RssdCallFunc copies and include that header; tu113's wrappers use the 32-byte RssdRequest record in place of undersized int/union arrays. All four objects are byte-identical to the previous build, main.bin whole-file identical, tu_audit 2/5/16/23 unchanged. The status stays tu_local, now for a tooling reason rather than two diverging live spellings: the name is still in the harvest pool through the retired replay of src/core/main-00240188/private.h (config/header-retired.json), and published_tu_declarations never re-reads a pooled name from a TU, while a pooled type has no defining TU in compute_homes. Releasing the decision was probed (status active, same tree): the harvest withholds the type, whose live tu110 spelling differs from the retired text, yet emits the retired `extern RssdWorkFlags RssdWork;` into include/shared.h, a declaration naming a type no generated header defines, and include/main/ssd_init.h still gets only RssdRequestWord and RssdRequest. Moving RssdRpcResponse, RssdWorkFlags, RssdWork and RssdCallFunc into include/main/ssd_init.h needs the harvester to let a live published TU supersede a retired replay (task header-canon-rssdworkflags-repoint-20260913); until then the three consumer TUs include main/tu110's src/main/ssd_init.h directly, which is the same text the generated header would carry.",
+      "evidence": [
+        "core-main-00240188: fresh exact c-asm, .work/reviews/core-cc-20260911-b4/review/rssd-callback/verification.json",
+        "core-main-0023ff28 re-verified exact against the regenerated core types.h (header_harvest promote --reverify-changed, batch core-cc-20260911-b4)",
+        "original main:0x0023fff0..0x0024012c RssdCallFunc: lw 52/436, sh 128, ori flags 0x8, sceSifCallRpc end_func = 0x00240188",
+        "nm: RssdWork 004aa080 00000200 D",
+        ".work/reviews/claude-refactor-rssd-types-20260916/report.json: private clean build main.bin 412d448d... whole-file identical, elf_gate main/tu110..tu113 pass, ssd_init.o/ssd_set.o/ssd_1.o/ssd_2.o byte-identical to the pre-refactor build, tools/tu/run_audit.py main 85/85 with output identical to the base"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "ScriptDbEntry": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00261860/private.h",
+        "text": "typedef struct ScriptDbEntry {\n    u8 unmodeled_00[0xC];\n    int active;          /* +0xC: nonzero when this script slot is bound (zero test only) */\n    SceneThread *thread; /* +0x10: JTHREAD-shaped handle; see SCENE_THREAD_OBJECT_AT_16 */\n    u8 unmodeled_14[0x1C - 0x14];\n} ScriptDbEntry;"
+      },
+      "rejected": [],
+      "rationale": "Partial view of one 0x1c-byte scriptDB element (stride from the *7*4 indexing) used by the three ee-gcc2_96-la29 units of src/core/main-00261860 (CallMethod, CallMethod_I, CallMethod_II). Emitting this definition into include/xeno/core/types.h makes the exact unit a redefinition (`redefinition of struct ScriptDbEntry`, promote baseline compile.log in the b5 harvest simulation .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-00261b58-la29/baseline/compile.log), because its source already includes xeno/core/types.h next to the file that defines the type, and header_harvest promote cannot migrate it because its baseline must build as the unit stands. The exact unit therefore depends on keeping the definition local for now. No other accepted unit uses it. TU-local until the definition can be moved out of the unit in the same step that shares it (tools next action: let promote remove a definition the regenerated header now provides before the baseline build), or until the translation units that use it are merged.",
+      "evidence": [
+        "core-main-00261b58-la29/00261c28-la29/00261d08-la29: fresh exact, .work/reviews/core-cc-20260911-b5/review/CallMethod*-current/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-00261b58-la29/baseline/compile.log (redefinition)"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "SefKey3": {
+      "kind": "type",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-002e16b8/sefProgressKey3.c",
+        "text": "typedef struct SefKey3 {\n    short frame;\n    short value;\n    short jump;\n} SefKey3;"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002e1c98/sefLerpInt.c",
+          "reason": "two-member (4-byte) struct contradicted by the 6-byte stride its own body uses"
+        }
+      ],
+      "rationale": "The three-member form is proven by the other accepted TU itself: sefLerpInt steps through the same array with an explicit 6-byte stride (`(char *)keys + key_index * 6`), which is the size of {short frame; short value; short jump;}. Its own two-member struct is 4 bytes, so it had to bypass the type to index correctly. sefProgressKey3 also reads key[1].jump, a member the two-member form does not have.",
+      "evidence": [
+        "src/io/main-002e1c98/sefLerpInt.c uses `* 6` and `+ 6` byte arithmetic on SefKey3 *",
+        "src/io/main-002e16b8/sefProgressKey3.c indexes `keys + state->key_index` naturally and reads key[1].jump"
+      ],
+      "confidence": "high"
+    },
+    "TecInitEntry": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002b56c0/private.h",
+        "text": "typedef struct TecInitEntry {\n    unsigned char bytes[32];\n} TecInitEntry;"
+      },
+      "rejected": [],
+      "rationale": "Size-only view of one 32-byte record of data\\\\endou\\\\tec\\\\tecinit.bin that PartyDataInit (main:0x002b56d0) copies eight times (ldl/sdl x4). Emitting this definition into include/xeno/core/types.h makes the exact unit a redefinition (`redefinition of struct TecInitEntry`, promote baseline compile.log in the b5 harvest simulation .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b56d0/baseline/compile.log), because its source already includes xeno/core/types.h next to the file that defines the type, and header_harvest promote cannot migrate it because its baseline must build as the unit stands. The exact unit therefore depends on keeping the definition local for now. No other accepted unit uses it. TU-local until the definition can be moved out of the unit in the same step that shares it (tools next action: let promote remove a definition the regenerated header now provides before the baseline build), or until the translation units that use it are merged. Batch b7 (2026-09-11) merged the original party source file main 0x002b56c0..0x002b6498 into the single unit core-main-002b56c0 and retired src/core/main-002b56d0/private.h; the declaration is carried there unchanged in src/core/main-002b56c0/private.h. After that merge only this one translation unit defines it; it stays TU-local because the unit includes xeno/core/types.h next to the file that defines it.",
+      "evidence": [
+        "core-main-002b56d0: fresh exact, .work/reviews/core-cc-20260911-b5/review/party-datainit-current/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b5/review/harvest-sim/.work/attempts/header-promote/core-main-002b56d0/baseline/compile.log (redefinition)",
+        "core-main-002b56c0 (b7 merged party TU): fresh exact, .work/reviews/core-cc-20260911-b7/review/merged-worker/verification.json"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "UcodeTableRow": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c",
+        "text": "typedef struct UcodeTableRow {\n    u32 *programs[7];\n} UcodeTableRow;"
+      },
+      "rejected": [],
+      "rationale": "Bounded partial view completed inside the add_exec_prog/nmlPacketAddExecProg translation unit (math-correction13-0), which also includes xeno/math/types.h for the opaque `typedef struct NmlMaterialRenderState NmlMaterialRenderState;` / `typedef struct NmlModelRenderState NmlModelRenderState;` forward names. Emitting this definition into the shared header makes that exact unit a redefinition (`redefinition of struct ...`, .work/reviews/core-cc-20260911-b4/review/sim-merge-regen), and header_harvest promote cannot migrate it because its baseline must build as it stands. The exact unit therefore depends on keeping the definition local, and no other accepted unit reads these members. (Corrected 2026-09-13: this said \"nmlPacketAddExecProg still uses offset casts on +0x20/+0x250/+0x2b0\". It no longer does -- style-nml-packet-family-20260913 recovered those members into src/main/nml_packet_add.h, where +0x250 is `render_status`, +0x260/+0x264 are `proreal`/`proreal_override` of `NmlProRealParam` (this entry's ProgramContext), and +0x2b0 is `render_level`, each named from the nmlModelSet* setter that writes it. The DECISION is unaffected: the names live in the TU header this canon calls tu_local, no second TU reads them, and `canonical.text` below is still the byte-required spelling of the frozen accepted unit math-correction13-0 and must not be edited to match.). TU-local until a second translation unit needs the members and the definition can be moved out of the unit in the same step.",
+      "evidence": [
+        "math-correction13-0: fresh exact merged unit, .work/reviews/core-cc-20260911-b4/review/merge-G8/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b4/review/sim-merge-regen (redefinition)"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "UnduDataGetHeader": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/review09-002f6c50/private.h",
+        "text": "extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/correction13-main-002d6668-allocation-2125441c2df4/form-4/candidate.c",
+          "reason": "opaque forward-declared return type; its (type, index) parameter names may be the better ones - see the rationale"
+        }
+      ],
+      "rationale": "Both accepted files call the same lookup with a 0x200-based selector and an index, and both read floats from the result. LayoutHeader gives the result a bounded, evidenced type (four float components); UnduDataHeader is an opaque forward declaration whose caller reaches the same data with `*(float *)((char *)header + 12)`, that is components[3]. The typed return is chosen for readability. Low confidence: the parameter roles differ between the two recoveries (type/index vs map/unit), and the four-component bound is asserted by one TU only.",
+      "evidence": [
+        "src/math/main/review09-002f6c50/LAYOUT_mapID_setUnit.c: `UnduDataGetHeader(map_id + 0x200, unit_id + 0x8000)`",
+        "src/math/main/correction13-main-002d6668-.../form-4/candidate.c: `UnduDataGetHeader(0x207, offset)` then `*(float *)((char *)locator_header + 12)`"
+      ],
+      "confidence": "low"
+    },
+    "Vector4": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/review09-002d8c68/BSpline_Add.c",
+        "text": "typedef struct Vector4 {\n    float x;\n    float y;\n    float z;\n    float w;\n} Vector4;"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/correction84-review17-seq-rotate/private.h",
+          "reason": "anonymous-struct spelling of the identical layout; no tag to refer to"
+        },
+        {
+          "file": "src/math/main/review09-002d7240/Get_Point_By_AngleLength.c",
+          "reason": "anonymous-struct spelling of the identical layout; no tag to refer to"
+        },
+        {
+          "file": "src/math/main/spark-cont01-00231d50/nmlModelCalcDropShadow.c",
+          "reason": "anonymous-struct spelling of the identical layout; no tag to refer to"
+        }
+      ],
+      "rationale": "Layout-identical: four floats named x, y, z, w. The tagged form is used by eight accepted files against three for the anonymous one, and a tag also lets other declarations refer to `struct Vector4`. Both spellings stay correct; only one can be emitted.",
+      "evidence": [
+        "eight accepted math files spell `typedef struct Vector4 { float x, y, z, w; } Vector4;` (member by member)",
+        "three accepted files spell the identical layout as an anonymous struct typedef"
+      ],
+      "confidence": "high"
+    },
+    "WorkEnd": {
+      "kind": "extern",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-002289f0/private.h",
+        "text": "extern u8 *WorkEnd;"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-0021fa30/xglCdArcCheck.c",
+          "reason": "int view from a save/restore-only TU; states no pointer role for the stored address"
+        }
+      ],
+      "rationale": "WorkEnd holds the end address of the work area: src/io/main-002289f0 aligns it up to a 64-byte boundary and uses it as a buffer address, which is pointer arithmetic on a stored address. The `int` spelling comes from a TU that only saves and restores the word around xglCdArcInit and never dereferences it.",
+      "evidence": [
+        "src/io/main-002289f0/decrypt.c: `buffer = (u8 *)(((u32)WorkEnd + 63) & (u32)-64);`",
+        "src/io/main-0021fa30/xglCdArcCheck.c: saves WorkEnd, assigns *(int *)(ArcHeader + 4), restores it"
+      ],
+      "confidence": "medium"
+    },
+    "XrgCopyMatrix": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/ov12/correction13-ov12-00a2da60-allocation-bde5ba79a1ff/form-13/private.h",
+        "text": "extern void XrgCopyMatrix(RgMatrix destination, const RgMatrix source);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov12/geom_tray/geom_tray.c",
+          "reason": "Matrix4 (float [4][4]) spelling of the same 64 bytes; single file"
+        },
+        {
+          "file": "src/math/ov12/spark-cont01-00a450b0/RgDispModelGetLocal.c",
+          "reason": "same as the chosen form without const"
+        }
+      ],
+      "rationale": "Four accepted files declare the const-correct RgMatrix form. RgMatrix is `float [16]`, so the parameters are `float *` and `const float *`; the Matrix4 spelling (`float [4][4]`) is the same 64 bytes under another TU's name, and the third variant is the same as the chosen one without const.",
+      "evidence": [
+        "src/math/ov12/.../form-13/private.h: `typedef float RgMatrix[16];`",
+        "four OV12 geometry TUs declare the const form"
+      ],
+      "confidence": "high"
+    },
+    "XrgCopyVector": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/ov12/matrix_constraint_combine/private.h",
+        "text": "extern void XrgCopyVector(RgVector destination, RgVector source);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov12/geom_point_position/private.h",
+          "reason": "struct-pointer spelling of the same four floats; const-correct but single file and inconsistent with the RgVector/RgMatrix family"
+        }
+      ],
+      "rationale": "Two accepted files declare the RgVector form (`typedef float RgVector[4]`), matching the RgMatrix convention used across the same OV12 geometry code. The RgPointVector spelling passes a pointer to a size-checked 16-byte struct - the same four floats and the same argument - and is const-correct, which the chosen form is not; that is the cost of the majority spelling.",
+      "evidence": [
+        "src/math/ov12/matrix_constraint_combine/private.h: `typedef float RgVector[4];`",
+        "src/math/ov12/geom_point_position/private.h asserts sizeof(RgPointVector) == 16"
+      ],
+      "confidence": "medium"
+    },
+    "XrgInvMatrix": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/ov12/correction13-ov12-00a2da60-allocation-bde5ba79a1ff/form-13/private.h",
+        "text": "extern void XrgInvMatrix(RgMatrix destination, const RgMatrix source);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov12/geom_tray/geom_tray.c",
+          "reason": "Matrix4 (float [4][4]) spelling of the same 64 bytes; single file"
+        },
+        {
+          "file": "src/math/ov12/matrix_constraint_combine/private.h",
+          "reason": "same as the chosen form without const"
+        }
+      ],
+      "rationale": "Same reasoning as XrgCopyMatrix: four accepted files declare the const-correct RgMatrix form, and the other two spellings are the same 64 bytes under another name or without const.",
+      "evidence": [
+        "src/math/ov12/.../form-13/private.h: `typedef float RgMatrix[16];`",
+        "four OV12 geometry TUs declare the const form"
+      ],
+      "confidence": "high"
+    },
+    "_CurMode": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/ov12-00a48a30/private.h",
+        "text": "extern int _CurMode(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a489e0/_CurMode.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same `int (void)` signature; only the storage class differs, and the extern declaration is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/ov12-00a489e0/_CurMode.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/ov12-00a489e0/_CurMode.c defines it at ov12:0x00a489e0",
+        "src/io/ov12-00a48a30/private.h declares it extern",
+        "static definition head in src/io/ov12-00a489e0/_CurMode.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "_Destruct": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a14370/private.h",
+        "text": "extern void _Destruct(RgSingletonManager *manager);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov12-00a140a0/_Clear.c",
+          "reason": "the definition head is spelled static; identical signature, but a TU-local declaration is not shareable"
+        }
+      ],
+      "rationale": "Same signature in both files; only the storage class differs. A `static` definition head is TU-local and cannot be shared, so the extern declaration is the one a second TU can use. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/core/ov12-00a140a0/_Clear.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/core/ov12-00a140a0/_Clear.c defines _Destruct at ov12:0x00a14110",
+        "src/core/ov12-00a14370/private.h declares it extern with the identical parameter list",
+        "static definition head in src/core/ov12-00a140a0/_Clear.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "_Get": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov12-00a143c0/private.h",
+        "text": "extern void *_Get(RgSingletonManager *manager, unsigned int singleton_id);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov12-00a142d8/_Get.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same signature in both files; only the storage class differs, and the extern declaration is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/core/ov12-00a142d8/_Get.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/core/ov12-00a142d8/_Get.c defines _Get at ov12:0x00a142d8",
+        "src/core/ov12-00a143c0/private.h declares it extern with the identical parameter list",
+        "static definition head in src/core/ov12-00a142d8/_Get.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "actSequence": {
+      "kind": "extern",
+      "domain": "math",
+      "canonical": {
+        "file": "src/main/near_dir.h",
+        "text": "extern ActSequenceEntry actSequence[64];"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "reason": "unsized array; compatible but drops the witnessed extent"
+        }
+      ],
+      "rationale": "Use the defining TU type and 64-record extent. Each record has the evidenced 0x260 stride; this preserves the absolute-addressed 0x9800-byte retail object. Withhold the retired domain byte declaration; current callers include the defining TU header instead.",
+      "evidence": [
+        "src/math/main/correction84-review17-seq-rotate/private.h documents the witnessed size 0x9800 at 0x0046f460",
+        "the unsized form in src/math/main/002ff538-chr-scl/private.h makes no size claim"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "add_exec_prog": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c",
+        "text": "static int add_exec_prog(NmlMaterialRenderState *material, NmlModelRenderState *model,\n                         int program_index);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/private.h",
+          "reason": "`extern int add_exec_prog(...)` was the separate-packet linkage view nmlPacketAddExecProg's unit needed while add_exec_prog was an unrecovered external witness; since batch core-cc-20260911-b4 the definition and its only caller share one file and one unit, so no unit links against it any more, and an extern declaration ahead of the static definition only produces `static declaration follows non-static`"
+        }
+      ],
+      "rationale": "add_exec_prog (main:0x002386c8) is STB_LOCAL in the original symbol table and its only caller is nmlPacketAddExecProg (main:0x00238ba8), which immediately follows it; the definition reproduces the LOCAL binding only as `static`. Both functions are now one exact unit (math-correction13-0, 0x002386c8..0x00238da8 with the jump table at .rodata 0x004d30b0), so the name is local to that translation unit and no shared header declares it (same treatment as mcHearAlarm). WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "math-correction13-0: fresh exact merged unit, add_exec_prog binding LOCAL equal, nmlPacketAddExecProg GLOBAL equal, .work/reviews/core-cc-20260911-b4/review/merge-G8/verification.json",
+        "original symbol add_exec_prog main:55:1097 binding 0 (LOCAL), size 1248",
+        "static definition head in src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "asActiveThreadList": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002184b8/xglThreadInitial.c",
+        "text": "extern active_thread_t asActiveThreadList[];"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-002184b8/xglThreadRotate.c",
+          "reason": "same 5x4-byte layout with every slot spelled int; loses the entry/stack pointer types"
+        }
+      ],
+      "rationale": "Both accepted files describe the same 20-byte records in the same order. active_thread_t types the first two words as the thread entry point and the stack pointer; struct ActiveThread declares five plain ints for the same five slots. The typed form carries strictly more information at an identical layout.",
+      "evidence": [
+        "src/core/main-002184b8/xglThreadInitial.c writes entry/stack/stack_size/priority/id and stores CreateThread's result into id",
+        "src/core/main-002184b8/xglThreadRotate.c reads only `.id` from the same records",
+        "both TUs advance by the same 20-byte record stride"
+      ],
+      "confidence": "medium"
+    },
+    "ee_sema_t": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00201350/private.h",
+        "text": "typedef struct {\n    int count;\n    int max_count;\n    int init_count;\n    int wait_threads;\n    u32 attr;\n    u32 option;\n} ee_sema_t;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-002184b8/xglCreateSignal.c",
+          "reason": "identical layout with attr/option spelled `unsigned int` instead of the SDK's u32"
+        }
+      ],
+      "rationale": "Layout-identical; the two spellings differ only in whether attr/option use the u32 typedef. The chosen form matches the PS2 SDK libkernel declaration of ee_sema_t and is used by two accepted files.",
+      "evidence": [
+        "PS2 SDK libkernel: struct { int count, max_count, init_count, wait_threads; u32 attr, option; } ee_sema_t",
+        "src/core/main-00201350/private.h and src/core/main-00209040/private.h both spell it with u32"
+      ],
+      "confidence": "high"
+    },
+    "ee_thread_t": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002184b8/xglThreadInitial.c",
+        "text": "typedef struct {\n    int status;\n    thread_entry_t entry;\n    void *stack;\n    int stack_size;\n    void *gp_reg;\n    int initial_priority;\n} ee_thread_t;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00201350/private.h",
+          "reason": "the nine-member SDK form; `main-core-00201350` reproduces its bytes with it (`thread.func = &topThread;`) and cannot use the six-member form, so neither spelling can be shared"
+        }
+      ],
+      "rationale": "Two accepted units reproduce their original bytes with incompatible definitions of this type, so it cannot be shared. `core-main-00218968` (src/core/main-002184b8/xglThreadInitial.c) assigns `thread->entry` and refused full promotion onto the shared spelling: the nine-member SDK form has `void *func` at that offset and no `entry` member, so the promoted source does not compile. `main-core-00201350` assigns `thread.func = &topThread;` and needs exactly the member the other unit does not have. Byte-exact reproduction outranks the SDK evidence that picked the nine-member form before: the name stays TU-local and the shared headers carry no ee_thread_t at all. Both files keep their own definition.",
+      "evidence": [
+        "promote recorded core-main-00218968 in full_refused (.work/attempts/header-promote/backends.json): adopting the shared spellings did not reproduce the unit, and the conservative retry kept the local ones",
+        "src/core/main-002184b8/xglThreadInitial.c: `thread->entry = entry;` with `typedef void (*thread_entry_t)(void *);`",
+        "src/core/main-00201350/candidate.c:42 `thread.func = &topThread;`",
+        "config/header-promoted.json records no unit that gave up an ee_thread_t declaration, so withholding it breaks no promoted unit"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "hdd_device": {
+      "kind": "extern",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00256190/HddTest.c",
+        "text": "extern char hdd_device[];"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "a different string: the xglHdd layer copy at main:0x004DC368, not the HddTest copy at 0x004DA2D0 this name denotes. Renamed xgl_hdd_device by tu-type-xgltask (2026-09-12)"
+        }
+      ],
+      "rationale": "hdd_device is a device-name string passed to sceDevctl, whose device parameter is char *. The char array spelling matches that call without a cast; the u8 array spelling forces `(char *)hdd_device` at its own call sites. tu-type-xgltask (2026-09-12): the two accepted files were not spelling one object two ways, they were naming two different \"hdd0:\" strings the same. HddTest* reference main:0x004DA2D0 (HddTestFormat 0x00255B18, HddTest 0x0025619C) while the xglHdd layer references main:0x004DC368 (xglHddCheckCore 0x002271CC, xglHddMcCheckCore 0x00227C24, xglHddMcGetFree 0x00227DA0, xglHddMount 0x00228AF0). Neither address carries an original symbol. This name keeps the HddTest string; the xglHdd copy is now xgl_hdd_device, so the two TUs can define their own data.",
+      "evidence": [
+        "src/io/main-00256190/HddTest.c: `sceDevctl(hdd_device, 0x4807, 0, 0, 0, 0);`",
+        "src/io/main-002289f0/decrypt.c: `sceDevctl((char *)hdd_device, 0x480a, ...)` - the cast is the tell",
+        "sibling device-name globals (hdd_device_name) are declared char [] in accepted source",
+        "main:0x004DA2D0 and main:0x004DC368 are two distinct \"hdd0:\" strings in .sdata, referenced by disjoint sets of functions (TU main#132 and main#99)"
+      ],
+      "confidence": "medium"
+    },
+    "iCurrentThread": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002184b8/xglThreadRotate.c",
+        "text": "extern unsigned int iCurrentThread;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-002184b8/xglThreadInitial.c",
+          "reason": "int spelling from a TU whose only use is a plain store of 0, which does not distinguish signedness"
+        }
+      ],
+      "rationale": "The unsigned spelling is the one an exact match constrains: xglThreadRotate increments the variable and compares it with `>= 4`, so its signedness selects sltiu over slti and indexes asActiveThreadList. xglThreadInitial only stores 0 into it, which constrains nothing.",
+      "evidence": [
+        "src/core/main-002184b8/xglThreadRotate.c: `iCurrentThread++; if (iCurrentThread >= 4) iCurrentThread = 0;`",
+        "src/core/main-002184b8/xglThreadInitial.c: `iCurrentThread = 0;` only",
+        "promote kept the local spelling in src/core/main-002184b8/xglThreadInitial.c (unit core-main-00218968); recorded under byte_required"
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/core/main-002184b8/xglThreadInitial.c",
+          "unit": "core-main-00218968",
+          "reason": "kept by the conservative retry of a unit whose full promotion was refused for ee_thread_t; the only use here is `iCurrentThread = 0`, whose codegen is signedness-independent, while core-main-002188d0 is promoted onto the unsigned canonical and re-verified with its `>= 4` comparison.",
+          "tu": "main/tu086",
+          "tu_file": "src/main/xgl_thread.c"
+        }
+      ]
+    },
+    "iRandSeed": {
+      "kind": "extern",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/spark-cont01-0022aa78/xglRandSeedInit.c",
+        "text": "extern unsigned long long iRandSeed;"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/spark-cont01-0022ab08/xglLRand.c",
+          "reason": "signed spelling from a TU whose only operations are sign-agnostic"
+        }
+      ],
+      "rationale": "The unsigned spelling is the one an exact match constrains: xglSRand right-shifts the seed by 16, which selects a logical shift for unsigned and an arithmetic shift for signed. The `long long` spelling appears in a TU that only multiplies and adds, operations that do not distinguish signedness.",
+      "evidence": [
+        "src/math/main/spark-cont01-0022aac8/xglSRand.c: `return (unsigned short)((iRandSeed >> 16) & 0x7fff);`",
+        "src/math/main/spark-cont01-0022aa78/xglRandSeedInit.c: `iRandSeed = 0x12345678ULL;`",
+        "src/math/main/spark-cont01-0022ab08/xglLRand.c only multiplies/adds the seed"
+      ],
+      "confidence": "high"
+    },
+    "loadConstString": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0025a6d8/private.h",
+        "text": "extern SceneString *loadConstString(const char *bytes, int length);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "reason": "`void *` return; used by two math files, but states nothing about the returned object"
+        },
+        {
+          "file": "src/math/main/review09-002f6c50/private.h",
+          "reason": "`void *` return; used by two math files, but states nothing about the returned object"
+        },
+        {
+          "file": "src/math/main/w3-002f93f8-getpeer-uwamono/private.h",
+          "reason": "`char *` return; implies a C string rather than the interned scene-string object"
+        }
+      ],
+      "rationale": "Revised once the cross-domain spellings were compared. The math TUs left the handle-versus-C-string question open (`void *` in two files, `char *` in one); the core scene TU settles it by naming the result SceneString *, an opaque scene-string object, and passing it to JNI_callMethod as a method name and signature - the same interning call the math TUs make before handing the result to lookupClassField as a field name. `char *` would claim a C string the object is not, and `void *` claims nothing. Medium confidence: SceneString is an opaque tag, so no member evidence supports it beyond the naming.",
+      "evidence": [
+        "src/core/main-0025a6d8/private.h:44 `extern SceneString *loadConstString(const char *bytes, int length);` with `typedef struct SceneString SceneString;`",
+        "src/core/main-0025a6d8/candidate.c passes the result to JNI_callMethod as name and signature",
+        "src/math/main/002ff538-chr-scl/CHR_sclY.c passes it to lookupClassField as the field name",
+        "the -1 length argument means 'NUL-terminated', a JNI-style interning call"
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/math/main/002ff538-chr-scl/private.h",
+          "unit": "math-main-002ff538",
+          "reason": "the canonical text names `SceneString`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu248",
+          "tu_file": "src/main/chr.h"
+        },
+        {
+          "file": "src/math/main/review09-002f6c50/private.h",
+          "unit": "math-main-002f6c50-review09",
+          "reason": "the canonical text names `SceneString`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu237",
+          "tu_file": "src/main/layout.h"
+        }
+      ]
+    },
+    "lookupClassField": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/002ff538-chr-scl/private.h",
+        "text": "extern JavaField *lookupClassField(void *class_object, void *name, int flags);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/review09-002f6c50/private.h",
+          "reason": "`void *` return; loses the JavaField result type"
+        },
+        {
+          "file": "src/math/main/w3-002f93f8-getpeer-uwamono/private.h",
+          "reason": "`const char *name`; inconsistent with the chosen loadConstString return type"
+        }
+      ],
+      "rationale": "Two of the three accepted spellings return JavaField *, and two of the three take the field name as `void *` - the value loadConstString returns. The chosen variant is the one that agrees with the majority on both, and it stays consistent with the loadConstString decision. Low confidence: one accepted file each, and the `const char *name` spelling would be better if the name argument really is a C string.",
+      "evidence": [
+        "src/math/main/002ff538-chr-scl/private.h: `JavaField *lookupClassField(void *class_object, void *name, int flags);`",
+        "src/math/main/w3-002f93f8-getpeer-uwamono/private.h agrees on the JavaField * return",
+        "src/math/main/review09-002f6c50/private.h agrees on the void * name"
+      ],
+      "confidence": "low",
+      "byte_required": [
+        {
+          "file": "src/math/main/review09-002f6c50/private.h",
+          "unit": "math-main-002f6c50-review09",
+          "reason": "the canonical text names `JavaField`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu237",
+          "tu_file": "src/main/layout.h"
+        }
+      ]
+    },
+    "mcHearAlarm": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0020f378/mcHearAlarm.c",
+        "text": "static int mcHearAlarm(int alarm_id, int remaining_time, int thread_id);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0020f3a0/private.h",
+          "reason": "`extern int mcHearAlarm(int, int, int);` is the separate-packet linkage view mcDelayThread's unit needs to reference the handler it passes to SetAlarm; that unit only links against an external symbol, while the definition's unit only reproduces the LOCAL binding as `static`"
+        }
+      ],
+      "rationale": "mcHearAlarm (main:0x0020f378) and mcDelayThread (main:0x0020f3a0) are both LOCAL in the original symbol table and mcDelayThread materializes mcHearAlarm's address (lui 0x21 / addiu -3208) as SetAlarm's handler argument, so in the original they share one translation unit. They are accepted as two separate exact units with different compiler contracts (ee-gcc2_96-realconv c-asm and ee-gcc2_9-990721 C), and each depends on an incompatible spelling: the definition must be `static` for the LOCAL binding, the caller's packet must see an `extern` declaration to link. Two exact units depending on incompatible spellings make the name TU-local; no shared header declares it. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/core/main-0020f378/mcHearAlarm.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "core-main-0020f378: fresh exact, binding LOCAL equal, .work/reviews/core-cc-20260911-b2/published/pub-mc-hear-alarm",
+        "core-main-0020f3a0-gcc29: fresh exact with `extern int mcHearAlarm(int, int, int);` and reference mcHearAlarm @ 0x0020f378, .work/reviews/core-cc-20260911-b2/published/pub-mc-delay",
+        "original main:0x0020f3ac/0x0020f3bc `lui s0,0x21` / `addiu s0,s0,-3208` then `daddu a1,s0,zero` before `jal SetAlarm`",
+        "static definition head in src/core/main-0020f378/mcHearAlarm.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "memset": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/w3-00305a98-act-matrixinit/ACT_matrixInit.c",
+        "text": "extern void *memset(void *destination, int value, unsigned int count);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00335438/private.h",
+          "reason": "identical type through that file's own `typedef unsigned int size_t`; unnamed parameters"
+        },
+        {
+          "file": "src/math/ov01/correction13-ov01-00a362a8-allocation-d4de208408d7/form-10/candidate.c",
+          "reason": "identical type spelled with the u32 typedef"
+        }
+      ],
+      "rationale": "ANSI C declares `void *memset(void *, int, size_t)`, and size_t is unsigned int on this ABI, so the two spellings are the same type - one writes u32, the other unsigned int. The chosen form is used by two accepted files and needs no u32 typedef.",
+      "evidence": [
+        "ANSI C / newlib string.h: `void *memset(void *, int, size_t);` with size_t = unsigned int for ee-gcc",
+        "two accepted math files declare the unsigned int form"
+      ],
+      "confidence": "high"
+    },
+    "objRemovePure": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov01-00a00518/candidate.c",
+        "text": "void objRemovePure(ObjectTask *task);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov01-00a1ef28/candidate.c",
+          "reason": "caller-side opaque MessageTask view of the same task node; not the definition's parameter type"
+        },
+        {
+          "file": "src/core/ov01-00a1f000/candidate.c",
+          "reason": "caller-side opaque MessageTask view of the same task node; not the definition's parameter type"
+        }
+      ],
+      "rationale": "src/core/ov01-00a00518/candidate.c is the accepted definition and names its parameter type ObjectTask, the object-task node the OV01 object manager owns. The two message callbacks pass their own opaque MessageTask view of the same scheduler node, so the types describe one object under two TU-local names.",
+      "evidence": [
+        "definition at ov01:0x00a00518 forwards its argument to xglTaskRemove",
+        "src/core/ov01-00a1ef28/candidate.c documents MessageTask as an opaque task contract for the same node"
+      ],
+      "confidence": "medium"
+    },
+    "partitionname": {
+      "kind": "extern",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00228288/xglHddUninstall.c",
+        "text": "extern char partitionname[];"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "u8 array spelling; the mask in its own decrypt loop is redundant for unsigned bytes"
+        }
+      ],
+      "rationale": "partitionname is the obfuscated partition-name string decrypted in place before mounting. The char array spelling is what sceRemove and sceMount's char * parameters take without a cast, and the decrypt loop's redundant `value & 0xff` mask is what a signed char load needs, which supports plain char. Low confidence: one accepted file each, and the decrypt loop is equally writable over u8.",
+      "evidence": [
+        "src/io/main-00228288/xglHddUninstall.c: `sceRemove(partitionname);`",
+        "src/io/main-002289f0/decrypt.c: `int value = *source; register int masked = value & 0xff;` then `sceMount((char *)mount_device, partitionname, 5, 0, 0)`",
+        "the accepted sceMount prototype takes `char *device`"
+      ],
+      "confidence": "low"
+    },
+    "printf": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255bd8/HddTestHddFull.c",
+        "text": "extern int printf(const char *format, ...);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255af8/HddTestFormat.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        },
+        {
+          "file": "src/io/main-00255b78/HddTestShutdown.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        },
+        {
+          "file": "src/io/main-00255c98/HddTestMountCommon.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        },
+        {
+          "file": "src/io/main-00255cd8/HddTestUnmountCommon.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        },
+        {
+          "file": "src/io/main-00255d08/HddTestMakeYourSaves.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        },
+        {
+          "file": "src/io/main-00255f08/HddTestDummyFolder.c",
+          "reason": "drops the const qualifier the C library declares; used by six files but not correct for a shared header"
+        }
+      ],
+      "rationale": "ANSI C declares `int printf(const char *format, ...)`. The non-const spelling is a recovery convenience; the const form accepts every accepted call site and is what the C library header declares.",
+      "evidence": [
+        "ANSI C / newlib stdio.h: `int printf(const char *, ...);`",
+        "three accepted files already spell the const form"
+      ],
+      "confidence": "high"
+    },
+    "s_inLayout": {
+      "kind": "extern",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/spark-cont01-00231d50/nmlModelCalcDropShadow.c",
+        "text": "extern LayoutStore s_inLayout;"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/correction84-review18/0x0022fec8/slice-matrix.c",
+          "reason": "untyped `extern unsigned char s_inLayout[]` with `*(void **)(s_inLayout + 0x23c)`; the byte_required entry was withdrawn by WP-H (2026-09-12) and tu-type-xgltask then rewrote the accepted record onto the canonical LayoutStore spelling, re-verified byte-exact, so this spelling no longer exists in accepted source"
+        }
+      ],
+      "rationale": "The LayoutStore view is evidenced: its TU records that the .data object at 0x004a91e0 is 800 bytes and that the extent matches the original symbol, then models it as 200 four-byte float-or-int slots without claiming field names. The byte-array spelling writes a pointer at +0x23c, which is slot 143 of the same 200 and does not contradict the typed view. WP-H (2026-09-12): the byte_required entry for src/math/main/correction84-review18/0x0022fec8/slice-matrix.c is withdrawn. LayoutSlot is a 4-byte union, so slots[0x23c / 4] is byte offset 0x23c exactly, and the merged TU main/tu106 (src/main/nml_model_set.c) reproduces its original bytes with the canonical spelling (.work/reviews/tu-import-r1r3-20260912/review-r3.json, findings_for_integrator[1]). tu-type-xgltask (2026-09-12): the last file carrying the byte-array spelling, src/math/main/correction84-review18/0x0022fec8/slice-matrix.c, now writes `*(void **)&s_inLayout.slots[0x23c / 4]` and reproduces its original 12 bytes at main:0x0022FEC8 unchanged, so the divergence is closed in the source rather than carried as an exception.",
+      "evidence": [
+        "src/math/main/spark-cont01-00231d50/nmlModelCalcDropShadow.c documents the 800-byte extent at 0x004a91e0 and the witnessed float/int slot offsets",
+        "src/math/main/correction84-review18/0x0022fec8/slice-matrix.c: `*(void **)(s_inLayout + 0x23c) = matrix;`",
+        "promote kept the local spelling in src/math/main/correction84-review18/0x0022fec8/slice-matrix.c (unit math-correction84-review18-0); recorded under byte_required",
+        ".work/reviews/tu-import-r1r3-20260912/review-r3.json adaptation_judgements[3] and findings_for_integrator[1]: the canonical LayoutStore spelling reproduces the bytes inside the merged TU main/tu106",
+        "unit math-correction84-review18-0 re-verified byte-exact with the canonical LayoutStore spelling (tu-type-xgltask verification run, 2026-09-12)"
+      ],
+      "confidence": "medium"
+    },
+    "sceClose": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0021ced0/hdd_error.c",
+        "text": "extern int sceClose(int descriptor);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "empty parameter list `()`; declares no argument type"
+        }
+      ],
+      "rationale": "Seven accepted files give the full prototype; the rejected spelling is an empty parameter list, which declares nothing about the argument.",
+      "evidence": [
+        "SCE fileio: `int sceClose(int fd);`",
+        "src/io/main-0021ced0/hdd_error.c and six more accepted files declare the descriptor parameter"
+      ],
+      "confidence": "high"
+    },
+    "sceDevctl": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00256190/HddTest.c",
+        "text": "extern int sceDevctl(const char *device, int command, const void *input,\n                     unsigned int input_size, void *output, unsigned int output_size);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "empty parameter list `()`; declares no argument type"
+        },
+        {
+          "file": "src/io/main-00255b78/HddTestShutdown.c",
+          "reason": "same six parameters without the const and unsigned qualifiers"
+        },
+        {
+          "file": "src/io/main-00255d08/HddTestMakeYourSaves.c",
+          "reason": "same six parameters without the const and unsigned qualifiers"
+        }
+      ],
+      "rationale": "The chosen spelling matches the SCE fileio prototype - const device name, const input buffer and unsigned lengths - and accepts both other call shapes. One rejected variant is an empty parameter list; the other drops the const and unsigned qualifiers.",
+      "evidence": [
+        "SCE fileio: `int sceDevctl(const char *devname, int cmd, const void *arg, unsigned int arglen, void *bufp, unsigned int buflen);`",
+        "src/io/main-00256190/HddTest.c declares the fully qualified form"
+      ],
+      "confidence": "high"
+    },
+    "sceMkdir": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255db0/HddTest1024Save.c",
+        "text": "extern int sceMkdir(const char *path, int mode);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255d08/HddTestMakeYourSaves.c",
+          "reason": "drops the const qualifier on the path"
+        },
+        {
+          "file": "src/io/main-00255f08/HddTestDummyFolder.c",
+          "reason": "drops the const qualifier on the path"
+        }
+      ],
+      "rationale": "Same two parameters; the const spelling matches the SCE fileio prototype and accepts every accepted call site.",
+      "evidence": [
+        "SCE fileio: `int sceMkdir(const char *dirname, int mode);`"
+      ],
+      "confidence": "high"
+    },
+    "sceMount": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00255c98/HddTestMountCommon.c",
+        "text": "extern int sceMount(char *mount_point, char *device, int flags,\n                    void *payload, unsigned int payload_length);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "empty parameter list `()`; declares no argument type"
+        }
+      ],
+      "rationale": "The only accepted variant that declares parameters at all; the other is an empty parameter list. The five parameters correspond to the SCE fileio mount call (mount point, device, flags, argument buffer and length).",
+      "evidence": [
+        "SCE fileio: `int sceMount(const char *fsname, const char *devname, int flag, const void *arg, unsigned int arglen);`",
+        "src/io/main-002289f0/decrypt.c calls it with exactly these five arguments"
+      ],
+      "confidence": "high"
+    },
+    "sceOpen": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-002289f0/private.h",
+        "text": "extern int sceOpen(const char *path, int flags, ...);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255bd8/HddTestHddFull.c",
+          "reason": "two-parameter form; correct for its own two-argument calls but it rejects the three-argument creation call xglHddMount makes"
+        }
+      ],
+      "rationale": "SCE fileio declares `int sceOpen(const char *name, int flag, ...)`: the third argument is the creation mode and is supplied only when the flags request creation. Settled by tu-type-xgltask (2026-09-12): the two-parameter spelling was what forced the byte_required exception for io-main-002289f0, whose xglHddMount calls `sceOpen((char *)hddcheck, 1, 0x16D)` (main:0x00228B7C). The variadic SDK prototype accepts both call shapes and emits the same code for each - GCC 2.96 passes the named and the variadic integer arguments in $a0..$a3 alike - so the exception is withdrawn and the unit keeps the shared declaration.",
+      "evidence": [
+        "SCE fileio: `int sceOpen(const char *name, int flag, ...);`",
+        "main:0x00228B7C xglHddMount calls sceOpen with three arguments (path, 1, 0x16D)",
+        "probe with the pinned ee-gcc2.96-realconv-lp7 cc1 at -O2: a call through a variadic prototype and through a fixed one emit the same $a0..$a3 argument setup"
+      ],
+      "confidence": "high",
+      "source": "sdk"
+    },
+    "sceRead": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0021ea38/private.h",
+        "text": "int sceRead(int descriptor, void *buffer, int bytes);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002289f0/private.h",
+          "reason": "empty parameter list `()`; declares no argument type"
+        }
+      ],
+      "rationale": "Five accepted files give the full prototype; the rejected spelling is an empty parameter list.",
+      "evidence": [
+        "SCE fileio: `int sceRead(int fd, void *buf, int nbyte);`",
+        "the five CD-stream TUs all declare the descriptor/buffer/length form"
+      ],
+      "confidence": "high"
+    },
+    "sceUmount": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00227448/xglHddMcUmount.c",
+        "text": "extern int sceUmount(const char *path);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00255cd8/HddTestUnmountCommon.c",
+          "reason": "drops the const qualifier on the mount point"
+        }
+      ],
+      "rationale": "Same single parameter; the const spelling matches the SCE fileio prototype and is used by two accepted files.",
+      "evidence": [
+        "SCE fileio: `int sceUmount(const char *fsname);`",
+        "src/io/main-00227448/xglHddMcUmount.c and src/io/main-00228288/xglHddUninstall.c both use the const form"
+      ],
+      "confidence": "high"
+    },
+    "sceVif1PkRef": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00246308/GamePauseDispBG.c",
+        "text": "extern void sceVif1PkRef(XglPacket *packet, const void *environment,\n                         int count, int mode, int offset, int flags);"
+      },
+      "rejected": [
+        {
+          "file": "src/main/nml_packet_add/nml_packet_trans_microcode.c",
+          "reason": "unnamed parameters and `NmlPacket` (a TU-local `typedef void *`) for the packet"
+        }
+      ],
+      "rationale": "Same six parameters. The core spelling names the packet type and every parameter (environment, count, mode, offset, flags); the math spelling leaves all six unnamed and passes the packet as `void *` through the NmlPacket alias. Parameter names are cosmetic, so the descriptive, typed spelling wins.",
+      "evidence": [
+        "src/core/main-00246308/GamePauseDispBG.c:1 `typedef struct XglPacket XglPacket;` and `sceVif1PkRef(xglPacketGetCurrent(), ShadowEnv, 7, 0, 0, 0);`",
+        "src/main/nml_packet_add/nml_packet_trans_microcode.c:3 `typedef void *NmlPacket;`, so the two spellings are the same pointer",
+        "sceVif1Pk* is the SCE VIF1 packet API; its first argument is the current packet"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/main/nml_packet_add/nml_packet_trans_microcode.c",
+          "unit": "math-main-nml-packet-trans-microcode",
+          "reason": "the canonical text names `XglPacket`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu107",
+          "tu_file": "src/main/nml_packet_add.c"
+        }
+      ]
+    },
+    "sefProgressKey3": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-002e1c98/sefLerpInt.c",
+        "text": "extern void sefProgressKey3(SefKey3 *keys, SefProgressState *state);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002e16b8/sefProgressKey3.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same signature; only the storage class differs, and the extern declaration is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/io/main-002e16b8/sefProgressKey3.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/io/main-002e16b8/sefProgressKey3.c defines it at main:0x002e16b8",
+        "src/io/main-002e1c98/sefLerpInt.c calls it through the identical prototype",
+        "static definition head in src/io/main-002e16b8/sefProgressKey3.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "strlen": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0020f3e8/sceMcSync.c",
+        "text": "extern unsigned int strlen(const char *string);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a487d0/private.h",
+          "reason": "int return; used by three OV12 files but narrower than the library's size_t"
+        },
+        {
+          "file": "src/io/ov12-00a489e0/private.h",
+          "reason": "int return; used by three OV12 files but narrower than the library's size_t"
+        },
+        {
+          "file": "src/io/ov12-00a48a30/private.h",
+          "reason": "int return; used by three OV12 files but narrower than the library's size_t"
+        }
+      ],
+      "rationale": "ANSI C declares `size_t strlen(const char *)`, and size_t is unsigned int on this EE ABI, so the unsigned spelling is the library declaration. The int spelling is a recovery convenience even though three files use it; for a shared header the C library's own return type is the correct one.",
+      "evidence": [
+        "ANSI C / newlib string.h: `size_t strlen(const char *);` with size_t = unsigned int for ee-gcc",
+        "src/io/main-0020f3e8/sceMcSync.c declares the unsigned form"
+      ],
+      "confidence": "high"
+    },
+    "struct NmlMaterialRenderState": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c",
+        "text": "struct NmlMaterialRenderState {\n    char name[0x20];                   /* +0x00: searched for \"lenz\"/\"eye\" */\n    u32 render_flags;                  /* +0x20 */\n    unsigned char unmodeled_24[0x9c];\n    u32 material_flags;                /* +0xc0 */\n};"
+      },
+      "rejected": [],
+      "rationale": "Bounded partial view completed inside the add_exec_prog/nmlPacketAddExecProg translation unit (math-correction13-0), which also includes xeno/math/types.h for the opaque `typedef struct NmlMaterialRenderState NmlMaterialRenderState;` / `typedef struct NmlModelRenderState NmlModelRenderState;` forward names. Emitting this definition into the shared header makes that exact unit a redefinition (`redefinition of struct ...`, .work/reviews/core-cc-20260911-b4/review/sim-merge-regen), and header_harvest promote cannot migrate it because its baseline must build as it stands. The exact unit therefore depends on keeping the definition local, and no other accepted unit reads these members. (Corrected 2026-09-13: this said \"nmlPacketAddExecProg still uses offset casts on +0x20/+0x250/+0x2b0\". It no longer does -- style-nml-packet-family-20260913 recovered those members into src/main/nml_packet_add.h, where +0x250 is `render_status`, +0x260/+0x264 are `proreal`/`proreal_override` of `NmlProRealParam` (this entry's ProgramContext), and +0x2b0 is `render_level`, each named from the nmlModelSet* setter that writes it. The DECISION is unaffected: the names live in the TU header this canon calls tu_local, no second TU reads them, and `canonical.text` below is still the byte-required spelling of the frozen accepted unit math-correction13-0 and must not be edited to match.). TU-local until a second translation unit needs the members and the definition can be moved out of the unit in the same step.",
+      "evidence": [
+        "math-correction13-0: fresh exact merged unit, .work/reviews/core-cc-20260911-b4/review/merge-G8/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b4/review/sim-merge-regen (redefinition)"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "struct NmlModelRenderState": {
+      "kind": "type",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/correction13-main-00238ba8-vectors-matrices-c3b18adefd5e/form-0/candidate.c",
+        "text": "struct NmlModelRenderState {\n    unsigned char unmodeled_000[0x250];\n    u32 program_flags;                 /* +0x250 */\n    unsigned char unmodeled_254[0x0c];\n    ProgramContext *base_context;      /* +0x260 */\n    ProgramContext *override_context;  /* +0x264: used when non-null */\n    unsigned char unmodeled_268[0x48];\n    u32 model_flags;                   /* +0x2b0 */\n};"
+      },
+      "rejected": [],
+      "rationale": "Bounded partial view completed inside the add_exec_prog/nmlPacketAddExecProg translation unit (math-correction13-0), which also includes xeno/math/types.h for the opaque `typedef struct NmlMaterialRenderState NmlMaterialRenderState;` / `typedef struct NmlModelRenderState NmlModelRenderState;` forward names. Emitting this definition into the shared header makes that exact unit a redefinition (`redefinition of struct ...`, .work/reviews/core-cc-20260911-b4/review/sim-merge-regen), and header_harvest promote cannot migrate it because its baseline must build as it stands. The exact unit therefore depends on keeping the definition local, and no other accepted unit reads these members. (Corrected 2026-09-13: this said \"nmlPacketAddExecProg still uses offset casts on +0x20/+0x250/+0x2b0\". It no longer does -- style-nml-packet-family-20260913 recovered those members into src/main/nml_packet_add.h, where +0x250 is `render_status`, +0x260/+0x264 are `proreal`/`proreal_override` of `NmlProRealParam` (this entry's ProgramContext), and +0x2b0 is `render_level`, each named from the nmlModelSet* setter that writes it. The DECISION is unaffected: the names live in the TU header this canon calls tu_local, no second TU reads them, and `canonical.text` below is still the byte-required spelling of the frozen accepted unit math-correction13-0 and must not be edited to match.). TU-local until a second translation unit needs the members and the definition can be moved out of the unit in the same step.",
+      "evidence": [
+        "math-correction13-0: fresh exact merged unit, .work/reviews/core-cc-20260911-b4/review/merge-G8/verification.json",
+        "harvest simulation with the definition shared: .work/reviews/core-cc-20260911-b4/review/sim-merge-regen (redefinition)"
+      ],
+      "confidence": "medium",
+      "status": "tu_local"
+    },
+    "struct XglTaskPrefix": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c5c0/private.h",
+        "text": "struct XglTaskPrefix {\n    XglTaskScheduler *scheduler;\n    XglTaskPrefix *next;\n    XglTaskPrefix *previous;\n    int (*callback)(XglTaskPrefix *task);\n};"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00261fc0/getEmptyVM.h",
+          "reason": "identical layout with the fourth member named `entry`; single file, and its TU embeds the prefix rather than owning it"
+        }
+      ],
+      "rationale": "Layout-identical: scheduler pointer, next, previous, and a function pointer at +0x0c. Only the fourth member's name differs (callback vs entry). The scheduler TU that owns the type spells it `callback`, and the independent xgl_task_prefix recovery in src/core/main-0021c6b0/private.h names the same slot xgl_task_callback, so `callback` has two independent witnesses. Settled by tu-type-xgltask (2026-09-12): this is the one task header of the project. The int-returning callback at +0x0C is byte evidence, not a preference.",
+      "evidence": [
+        "src/core/main-0021c5c0/private.h asserts sizeof(XglTaskPrefix) == 16 with a compile-time size check",
+        "src/core/main-0021c6b0/private.h: `typedef int (*xgl_task_callback)(xgl_task_prefix *task);` at the same slot",
+        "main:0x0021C718 xglTaskWaitRemove stores the address of xglTaskRemove (0x0021C6B0) into the slot at +0x0C, and both functions return 0 in $v0, so the slot holds an int-returning callback taking the task",
+        "main:0x0021C528 xglTaskInitial builds the pool at scheduler+0x10 with a 0x80-byte stride; xglTaskEntryNext/Prev (0x0021C638/0x0021C5C0) write scheduler at +0x00, next at +0x04, previous at +0x08 and the callback at +0x0C; xglTaskRemove (0x0021C6B0) maintains exactly those four words. Nothing in the scheduler touches +0x10, so the word the XglTaskNode and ObjectTask views carried there is task payload, not header"
+      ],
+      "confidence": "high"
+    },
+    "struct XglTaskScheduler": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c5c0/private.h",
+        "text": "struct XglTaskScheduler {\n    XglTaskPrefix *free_tasks;\n    XglTaskPrefix *active_head;\n    XglTaskPrefix *active_tail;\n    XglTaskPrefix *next_to_visit;\n};"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0025a950/private.h",
+          "reason": "explicitly partial three-word view (12 bytes) of the same head; contradicted by two size-checked 16-byte recoveries"
+        },
+        {
+          "file": "src/core/main-0025a9c0/private.h",
+          "reason": "explicitly partial three-word view (12 bytes) of the same head; contradicted by two size-checked 16-byte recoveries"
+        },
+        {
+          "file": "src/core/main-0025aa38/private.h",
+          "reason": "explicitly partial three-word view (12 bytes) of the same head; contradicted by two size-checked 16-byte recoveries"
+        },
+        {
+          "file": "src/core/main-0025ada0/private.h",
+          "reason": "explicitly partial three-word view (12 bytes) of the same head; contradicted by two size-checked 16-byte recoveries"
+        }
+      ],
+      "rationale": "The four-member form is a superset of the three-member form and is corroborated by an independent recovery: src/core/main-0021c6b0/private.h declares the same list head as free_head/active_head/active_tail/current, so the fourth word at +0x0c is evidenced from another TU. The three-member variant states explicitly that it names only the prefix its two functions observe. The three-member variants were retired by tu-type-xgltask (2026-09-12) together with the XglTaskNode view they belonged to.",
+      "evidence": [
+        "src/core/main-0021c5c0/private.h asserts sizeof(XglTaskScheduler) == 16 with a compile-time size check",
+        "src/core/main-0021c6b0/private.h: struct xgl_task_list_prefix has the same four words",
+        "src/core/main-0025a950/private.h documents its three-member form as a partial scheduler contract",
+        "main:0x0021C528 xglTaskInitial builds the pool at scheduler+0x10 with a 0x80-byte stride; xglTaskEntryNext/Prev (0x0021C638/0x0021C5C0) write scheduler at +0x00, next at +0x04, previous at +0x08 and the callback at +0x0C; xglTaskRemove (0x0021C6B0) maintains exactly those four words. Nothing in the scheduler touches +0x10, so the word the XglTaskNode and ObjectTask views carried there is task payload, not header"
+      ],
+      "confidence": "high"
+    },
+    "struct __sFILE": {
+      "kind": "type",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-00337688/private.h",
+        "text": "struct __sFILE {\n    unsigned char *_p;\n    int _r;\n    int _w;\n    short _flags;\n    short _file;\n    struct __sbuf _bf;\n    int _lbfsize;\n\n    _PTR _cookie;\n    int (*_read)(_PTR _cookie, char *_buf, int _n);\n    int (*_write)(_PTR _cookie, const char *_buf, int _n);\n    _fpos_t (*_seek)(_PTR _cookie, _fpos_t _offset, int _whence);\n    int (*_close)(_PTR _cookie);\n\n    struct __sbuf _ub;\n    unsigned char *_up;\n    int _ur;\n    unsigned char _ubuf[3];\n    unsigned char _nbuf[1];\n    struct __sbuf _lb;\n\n    int _blksize;\n    int _offset;\n    struct _reent *_data;\n};"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-00335438/private.h",
+          "reason": "same layout with _PTR spelled `void *` and the hook parameters unnamed"
+        }
+      ],
+      "rationale": "Both variants are the newlib __sFILE layout, member for member. The chosen spelling is newlib's own: the cookie and the four hook parameters keep their _PTR/_fpos_t types and parameter names. Two accepted files carry it.",
+      "evidence": [
+        "newlib stdio.h struct __sFILE",
+        "src/io/main-00337688/private.h and src/io/main-003377d8/private.h implement __sread/__sclose against it"
+      ],
+      "confidence": "high"
+    },
+    "taskMan": {
+      "kind": "extern",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/ov01-00a00280/candidate.c",
+        "text": "extern TaskManager taskMan;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/ov01-00a00218/candidate.c",
+          "reason": "untyped `unsigned char []` used only to pass the address; names none of the four manager words"
+        }
+      ],
+      "rationale": "Three accepted files declare taskMan as the four-word task manager (free head, active head, active tail, next-to-visit); one declares an untyped byte array only because it passes the address to xglTaskInitial. The typed declaration is corroborated by the independent xgl_task_list_prefix recovery in src/core/main-0021c6b0/private.h, which names the same four words.",
+      "evidence": [
+        "src/core/ov01-00a00280/candidate.c: TaskManager { free_head, active_head, active_tail, next_to_visit }",
+        "src/core/main-0021c6b0/private.h: xgl_task_list_prefix { free_head, active_head, active_tail, current }",
+        "src/core/ov01-00a00218/candidate.c only needs the address: `xglTaskInitial(taskMan, 50, 0)`",
+        "promote kept the local spelling in src/core/ov01-00a00218/candidate.c (unit core-ov01-00a00218); recorded under byte_required"
+      ],
+      "confidence": "medium",
+      "byte_required": [
+        {
+          "file": "src/core/ov01-00a00218/candidate.c",
+          "unit": "core-ov01-00a00218",
+          "reason": "`xglTaskInitial(taskMan, 50, 0)` passes the object itself, which the canonical `TaskManager taskMan` can only express as `&taskMan`; promote refused the full promotion of this unit and its conservative retry kept the array spelling. Three promoted units depend on the canonical, so the name stays shared.",
+          "tu": "ov01/tu001",
+          "tu_file": "src/ov01/obj.c"
+        }
+      ]
+    },
+    "xglCdGetFileSize": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/ov12-00a487d0/private.h",
+        "text": "extern int xglCdGetFileSize(const char *name);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov02-00a0d290/dbfileno_load.c",
+          "reason": "drops the const qualifier on the name"
+        }
+      ],
+      "rationale": "Same signature; the const spelling is used by three accepted files and accepts the fourth file's call site.",
+      "evidence": [
+        "three OV12 file-system TUs declare the const form",
+        "src/io/ov02-00a0d290/dbfileno_load.c passes a char [] global, which converts to const char * unchanged"
+      ],
+      "confidence": "high"
+    },
+    "xglCdReadFile": {
+      "kind": "prototype",
+      "domain": "io",
+      "canonical": {
+        "file": "src/io/main-0024c598/readreq.c",
+        "text": "extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);"
+      },
+      "rejected": [
+        {
+          "file": "src/io/main-002751b0/MenuLoadFile.c",
+          "reason": "types the fourth parameter as a callback pointer; single file, but see the rationale - this is the strongest counter-evidence to the chosen spelling"
+        },
+        {
+          "file": "src/io/ov02-00a0d290/dbfileno_load.c",
+          "reason": "void return and a non-const name; contradicted by four files that keep the int result"
+        }
+      ],
+      "rationale": "Four accepted files declare `int xglCdReadFile(const char *, void *, int, int)`, and two of the three call shapes pass a plain 1 as the fourth argument. One accepted caller (MenuLoadFile) passes a real function pointer there, which is evidence that the fourth parameter is a completion callback and that 1 is a magic value rather than a flag. No merged prototype is invented; the majority spelling is chosen and the callback evidence is recorded. Low confidence - a human may prefer the callback typing. WP-H open item (2026-09-12): the fourth parameter is `int flags` here, but MenuLoadFile (src/io/main-002751b0, imported TU main#160 window_tex_load) passes a callback function pointer (`xglCdReadFile(name, buffer, 1, menuCallback)`), which cc1 reports as `makes integer from pointer without a cast`. The counter-evidence is already recorded in this decision; what is new is that the hardened tu_audit turns the message into a TU failure, so the fourth parameter's real type (an int flag word or a completion callback) has to be settled from the original code of xglCdReadFile itself. Handed over as its own assignment.",
+      "evidence": [
+        "src/io/main-0024c598/readreq.c: `xglCdReadFile(name, buffer, 0, 1);`",
+        "src/io/ov02-00a0d290/dbfileno_load.c: `xglCdReadFile(db_fileno_path, source, 0, 1);`",
+        "src/io/main-002751b0/MenuLoadFile.c: `xglCdReadFile(name, buffer, 1, menuCallback);` with `typedef int (*CdReadCallback)(int event);`"
+      ],
+      "confidence": "low"
+    },
+    "xglClockUInt2DayTime": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002b68c0/PartyTimeInit.c",
+        "text": "void xglClockUInt2DayTime(XglClock *clock, unsigned int seconds);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0021d430/candidate.c",
+          "reason": "the accepted definition spells the parameter with its TU-local `xglClock` typedef (src/core/main-0021d430/private.h), which is member-for-member the shared `XglClock` (status, second, minute, hour, day, month, unsigned short year; 8 bytes) under another typedef name; the definition keeps its own spelling until that unit is promoted onto the shared headers"
+        }
+      ],
+      "rationale": "Both spellings describe the same function and the same 8-byte clock record: the definition (xglClockUInt2DayTime @ main:0x0021d430, unit core-main-0021d430) writes second/minute/hour at +1/+2/+3, day at +4, month at +5 and the halfword year at +6 through its TU-local `xglClock`, which has exactly the members of the shared `XglClock` in core types.h. core-main-002b68c0 (PartyTimeInit) already gave up its own declaration for the shared one (config/header-promoted.json), so withholding the name would break a promoted exact unit; the shared `XglClock *` spelling stays canonical. Parameter names are cosmetic. Rule 1 (definition wins) does not pick a different type here: only the typedef name differs, and the shared name is the one five accepted party-time units use.",
+      "evidence": [
+        "config/header-promoted.json: `void xglClockUInt2DayTime(XglClock *clock, unsigned int seconds);` removed from src/core/main-002b68c0/PartyTimeInit.c by promote",
+        "src/core/main-0021d430/private.h: `typedef struct { unsigned char status; unsigned char second; unsigned char minute; unsigned char hour; unsigned char day; unsigned char month; unsigned short year; } xglClock;`",
+        "include/xeno/core/types.h: XglClock has the same eight members in the same order (PartyTimeInit, PartyTimePauseStart, PartyTimePauseEnd)",
+        "definition stores: sb hour +3, minute +2, second +1, sh year +6, sb month +5, day +4 (main:0x0021d430, fresh exact .work/reviews/core-cc-20260911-b2/published/pub-calendar)"
+      ],
+      "confidence": "high"
+    },
+    "xglCreateSignal": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-002184b8/xglThreadRotate.c",
+        "text": "extern int xglCreateSignal(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-002184b8/xglCreateSignal.c",
+          "reason": "TU-local `static` definition head; identical signature"
+        }
+      ],
+      "rationale": "Same signature; only the storage class differs, and the extern declaration is the shareable one. WP-H (2026-09-12): superseded by internal linkage. The accepted definition in `src/core/main-002184b8/xglCreateSignal.c` is `static`, so the original symbol is STB_LOCAL and no shared header may carry the name in any spelling: an `extern` view of it gives the identifier two linkages inside the defining translation unit (cc1: `static declaration ... follows non-static`). The caller's `extern` spelling recorded here stays where it is, as that file's own declaration; it is no longer emitted and `lint` no longer enforces it. Reversing this needs evidence that the original definition is not `static`, not a readability argument.",
+      "evidence": [
+        "src/core/main-002184b8/xglCreateSignal.c defines it at main:0x002188a0",
+        "src/core/main-002184b8/xglThreadRotate.c calls it through the identical extern prototype",
+        "static definition head in src/core/main-002184b8/xglCreateSignal.c; reports/header-harvest-conflicts.md \"TU-local statics (never shared)\""
+      ],
+      "confidence": "high",
+      "status": "static_local"
+    },
+    "xglMatrixScale": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/spark-cont01-00229e58-scale-trans/scale_trans.c",
+        "text": "void xglMatrixScale(Matrix4 destination, const Matrix4 source,\n                    const float scale[4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "reason": "struct-pointer spelling (Matrix, FloatVector4) of the same arguments from a caller TU"
+        }
+      ],
+      "rationale": "src/math/main/spark-cont01-00229e58-scale-trans/scale_trans.c is the accepted definition at main:0x00229e58 and indexes destination[row][column], so the parameters really are `float [4][4]` (Matrix4). The other spelling wraps the same 64 bytes in a struct and passes the scale as a FloatVector4 *.",
+      "evidence": [
+        "definition body indexes source[0..3][column] and scale[0..3]",
+        "src/math/main/spark-cont01-00229e58-scale-trans/scale_trans.c: `typedef float Matrix4[4][4];`"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "unit": "math-correction13-8",
+          "reason": "the canonical text names `Matrix4`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "ov01/tu008",
+          "tu_file": "src/ov01/gr_gp_init.c"
+        }
+      ]
+    },
+    "xglMatrixStackSave": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/nml_packet_refl_rot/nml_packet_refl_rot.c",
+        "text": "extern void xglMatrixStackSave(float matrix[4][4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "reason": "pointer to a struct wrapping float[16]; same address, less shape information"
+        },
+        {
+          "file": "src/math/ov02/review09-00a04de0/Rotation.c",
+          "reason": "bare `float *`; same address, no shape information"
+        }
+      ],
+      "rationale": "Three single-file spellings of one argument: `float [4][4]`, `float *`, and a pointer to a struct wrapping float[16]. All three pass the same address of a 64-byte matrix. The `float [4][4]` form is chosen because it states the 4x4 shape and because the sibling xglMatrixUnit is declared that way by two accepted files, keeping the xglMatrix* family consistent. Low confidence: no variant has more evidence than another. WP-H open item (2026-09-12), closed by task overlay-toolchain-warnings-20260913: the canonical `float matrix[4][4]` parameter made ov01 gr_gp_init.c and ov02 umn_procurator.c warn (`passing arg 1 ... from incompatible pointer type`), because those accepted bodies hold the matrix as the domain's `Matrix4`/float-pointer spelling. Both were repointed to this canonical declaration with an explicit `(float (*)[4])` cast at their call sites (config/adaptations/ov01.json, config/adaptations/ov02.json) rather than given their own diverging local declaration: `src/main/nml_packet_add.c` already depends on this exact canonical declaration through `main/xgl_2.h` (it defines xglMatrixStackSave and calls it with no local override), and `tools/header_harvest.py` drops a name from every shared header the moment any one TU's own local declaration diverges from the canonical text (`Homes.divergent` -> `assign local`, `compute_homes`), which would have silently broken that other TU's build. The same applied to `xglMatrixUnit` (its own decision) and to the ov12 Xrg matrix/vector helpers (rg_geom_tray.c, rg_geom_point.c), which were repointed the same way for the same reason (four other OV12 TUs depend on their canonical RgMatrix/RgVector declarations through shared.h). Nothing here changes the emitted declaration.",
+      "evidence": [
+        "src/math/main/nml_packet_refl_rot/nml_packet_refl_rot.c passes a local `float matrix[4][4]`",
+        "src/math/ov02/review09-00a04de0/Rotation.c passes a local `float matrix[16]` and reads matrix[12..14]",
+        "the accepted Matrix4 typedef in scale_trans.c is `float [4][4]`",
+        "src/main/nml_packet_add.c calls xglMatrixStackSave(matrix) with no local declaration, relying on main/xgl_2.h's canonical float[4][4] parameter"
+      ],
+      "confidence": "low"
+    },
+    "xglMatrixTrans": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/spark-cont01-00229e58-scale-trans/scale_trans.c",
+        "text": "void xglMatrixTrans(Matrix4 destination, const Matrix4 source,\n                    const float translation[4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "reason": "struct-pointer spelling (Matrix, FloatVector4) of the same arguments from a caller TU"
+        }
+      ],
+      "rationale": "Same reasoning as xglMatrixScale: this file is the accepted definition at main:0x00229eb8 and indexes the matrices as [row][column].",
+      "evidence": [
+        "definition body indexes source[0..3][column] and translation[0..3]",
+        "src/math/main/spark-cont01-00229e58-scale-trans/scale_trans.c: `typedef float Matrix4[4][4];`"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "unit": "math-correction13-8",
+          "reason": "the canonical text names `Matrix4`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "ov01/tu008",
+          "tu_file": "src/ov01/gr_gp_init.c"
+        }
+      ]
+    },
+    "xglMatrixUnit": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/nml_packet_refl_rot/nml_packet_refl_rot.c",
+        "text": "extern void xglMatrixUnit(float matrix[4][4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "reason": "pointer to a struct wrapping float[16]; same address, less shape information"
+        }
+      ],
+      "rationale": "Two accepted files declare the `float [4][4]` form, which matches the accepted Matrix4 typedef used by the xglMatrixScale/xglMatrixTrans definitions. The struct-pointer spelling wraps the same 64 bytes. Closed by task overlay-toolchain-warnings-20260913 (see decisions.xglMatrixStackSave): ov01 gr_gp_init.c's grCalcMatrix was repointed to this canonical declaration with an explicit `(float (*)[4])` cast at its one call site (config/adaptations/ov01.json) rather than given its own diverging local declaration, because other live main TUs depend on this canonical declaration through shared.h and `tools/header_harvest.py` drops a name from every shared header the moment any one TU's own local declaration diverges from the canonical text.",
+      "evidence": [
+        "two accepted math files pass a local `float matrix[4][4]`",
+        "src/math/main/spark-cont01-00231d50/nmlModelCalcDropShadow.c casts a slot address to `float (*)[4]` for this very call"
+      ],
+      "confidence": "medium"
+    },
+    "xglPacketGetCurrent": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00246308/GamePauseDispBG.c",
+        "text": "extern XglPacket *xglPacketGetCurrent(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/nml_packet_refl_rot/nml_packet_refl_rot.c",
+          "reason": "`NmlPacket`, a TU-local `typedef void *`; the same pointer with no type name"
+        },
+        {
+          "file": "src/main/nml_packet_add/nml_packet_trans_microcode.c",
+          "reason": "`NmlPacket`, a TU-local `typedef void *`; the same pointer with no type name"
+        }
+      ],
+      "rationale": "Both spellings are one pointer: the math TUs define `typedef void *NmlPacket;` and use it for every sceVif1Pk* argument, while the core TU names the packet with an opaque `struct XglPacket` tag. The tagged form says what the pointer is and keeps the xgl/sceVif1Pk family consistent; NmlPacket is a local alias for `void *`.",
+      "evidence": [
+        "src/core/main-00246308/GamePauseDispBG.c:1 `typedef struct XglPacket XglPacket;` and `sceVif1PkRef(xglPacketGetCurrent(), ShadowEnv, 7, 0, 0, 0);`",
+        "src/main/nml_packet_add/nml_packet_trans_microcode.c:3 `typedef void *NmlPacket;`, so the two spellings are the same pointer",
+        "sceVif1Pk* is the SCE VIF1 packet API; its first argument is the current packet"
+      ],
+      "confidence": "high",
+      "byte_required": [
+        {
+          "file": "src/math/main/nml_packet_refl_rot/nml_packet_refl_rot.c",
+          "unit": "math-main-nml-packet-refl-rot",
+          "reason": "the canonical text names `XglPacket`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu107",
+          "tu_file": "src/main/nml_packet_add.c"
+        },
+        {
+          "file": "src/main/nml_packet_add/nml_packet_trans_microcode.c",
+          "unit": "math-main-nml-packet-trans-microcode",
+          "reason": "the canonical text names `XglPacket`, which this translation unit does not declare and cannot obtain: `header_harvest.py promote` refuses this unit's include of the shared header, and with the canonical spelling written in place the unit no longer compiles, so it reproduces none of its original bytes (round 3, `.work/attempts/integration-round3/divergences2.json`). Its own spelling is what the exact unit depends on.",
+          "tu": "main/tu107",
+          "tu_file": "src/main/nml_packet_add.c"
+        }
+      ]
+    },
+    "xglSRand": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/spark-cont01-0022aac8/xglSRand.c",
+        "text": "unsigned short xglSRand(void);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/w3-002d8bc8-get-rnd/Get_Rnd.c",
+          "reason": "int return from caller TUs; compatible with the value range but not the definition's type"
+        },
+        {
+          "file": "src/math/mmath_angles.c",
+          "reason": "int return from caller TUs; compatible with the value range but not the definition's type"
+        }
+      ],
+      "rationale": "src/math/main/spark-cont01-0022aac8/xglSRand.c is the accepted definition and returns `(unsigned short)((iRandSeed >> 16) & 0x7fff)`, a 15-bit value. The int spelling comes from two callers that simply use the result as an integer.",
+      "evidence": [
+        "definition at main:0x0022aac8 masks with 0x7fff and returns unsigned short",
+        "callers in Get_Rnd and MMathMakeRandom2PI only widen the result"
+      ],
+      "confidence": "medium"
+    },
+    "xglStudioGetCamera2": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-00244d20/private.h",
+        "text": "extern StudioCamera *xglStudioGetCamera2(int camera_id);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/spark-cont01-002fb628/private.h",
+          "reason": "`void *` return from a TU that discards the result; states nothing about the camera object"
+        }
+      ],
+      "rationale": "The core game-mode TU dereferences the result - `camera->state == 4` - so it has evidence for the returned object and models it as StudioCamera (state at +4, the preceding word kept as opaque reserved bytes). The math camera TU discards the result entirely, casting the call to `(void)`, so its `void *` return is unconstrained. int versus unsigned int for the camera index is the same argument at this ABI.",
+      "evidence": [
+        "src/core/main-00244d20/game_modes.c: `StudioCamera *camera = xglStudioGetCamera2(0); if (camera->state == 4 && ...)`",
+        "src/core/main-00244d20/private.h models StudioCamera as reserved0[4] plus the evidenced state word",
+        "src/math/main/spark-cont01-002fb628/CAMERA_rotateSPL.c: `(void)xglStudioGetCamera2(*(const unsigned int *)(camera_bytes + 0x04));`"
+      ],
+      "confidence": "high"
+    },
+    "xglTaskEntryNext": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c5c0/xglTaskEntryPrev.c",
+        "text": "XglTaskPrefix *xglTaskEntryNext(XglTaskScheduler *scheduler,\n                                int (*callback)(XglTaskPrefix *task),\n                                XglTaskPrefix *entry);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0025a950/candidate.c",
+          "reason": "caller spelling (XglTaskNode, void-returning entry callback) from TUs that do not define the function"
+        },
+        {
+          "file": "src/core/main-0025a9c0/candidate.c",
+          "reason": "caller spelling (XglTaskNode, void-returning entry callback) from TUs that do not define the function"
+        },
+        {
+          "file": "src/core/main-0025ada0/candidate.c",
+          "reason": "caller spelling (XglTaskNode, void-returning entry callback) from TUs that do not define the function"
+        }
+      ],
+      "rationale": "src/core/main-0021c5c0/xglTaskEntryPrev.c contains the accepted definition of xglTaskEntryNext at main:0x0021c638, so its own parameter and return types are the primary evidence. It returns the linked task prefix and takes the scheduler-invoked callback; the XglTaskNode spelling used by three later callers is the same 16-byte prefix under another TU-local name, extended there with a flags word.",
+      "evidence": [
+        "definition at main:0x0021c638 in the scheduler TU that also owns struct XglTaskScheduler",
+        "src/core/main-0025a950/private.h describes XglTaskNode as the same scheduler/next/previous/entry prefix"
+      ],
+      "confidence": "medium"
+    },
+    "xglTaskExecute": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c6b0/xglTaskRemove.c",
+        "text": "void xglTaskExecute(XglTaskScheduler *scheduler);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0021c6b0/private.h",
+          "reason": "the `xgl_task_list_prefix` spelling of the same four scheduler words; retired by the type decision of 2026-09-12"
+        },
+        {
+          "file": "src/core/ov01-00a002a0/candidate.c",
+          "reason": "untyped `void *` forwarding spelling from a caller TU"
+        }
+      ],
+      "rationale": "The 0021c6b0 unit owns and defines xglTaskExecute, and its private header names the argument as the four-word task list prefix. The `void *manager` spelling is a single caller that only forwards the address.",
+      "evidence": [
+        "main:0x0021C528 xglTaskInitial builds the pool at scheduler+0x10 with a 0x80-byte stride; xglTaskEntryNext/Prev (0x0021C638/0x0021C5C0) write scheduler at +0x00, next at +0x04, previous at +0x08 and the callback at +0x0C; xglTaskRemove (0x0021C6B0) maintains exactly those four words. Nothing in the scheduler touches +0x10, so the word the XglTaskNode and ObjectTask views carried there is task payload, not header",
+        "src/core/main-0021c6b0/xglTaskRemove.c defines xglTaskExecute at main:0x0021C730"
+      ],
+      "confidence": "medium"
+    },
+    "xglTaskRemove": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c6b0/xglTaskRemove.c",
+        "text": "int xglTaskRemove(XglTaskPrefix *task);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0021c6b0/private.h",
+          "reason": "the same declaration under the snake_case `xgl_task_prefix` spelling of the one task header; retired by the type decision of 2026-09-12"
+        },
+        {
+          "file": "src/core/main-0025aa38/candidate.c",
+          "reason": "caller spelling; void return and a TU-local node name. Retired: the caller now uses the shared header"
+        },
+        {
+          "file": "src/core/main-0026ac68/candidate.c",
+          "reason": "caller spelling; void return and a TU-local node name. Retired: the caller now uses the shared header"
+        },
+        {
+          "file": "src/core/ov01-00a00478/candidate.c",
+          "reason": "caller spelling; void return and the OV01 ObjectTask name. Retired: ObjectTask now embeds XglTaskPrefix and the caller passes &task->task"
+        },
+        {
+          "file": "src/core/ov01-00a00518/candidate.c",
+          "reason": "caller spelling; void return and the OV01 ObjectTask name. Retired: ObjectTask now embeds XglTaskPrefix and the caller passes &task->task"
+        }
+      ],
+      "rationale": "src/core/main-0021c6b0/xglTaskRemove.c defines xglTaskRemove at main:0x0021C6B0. Settled by tu-type-xgltask (2026-09-12): the project carried four names for one 16-byte task header (XglTaskPrefix, xgl_task_prefix, XglTask and the 20-byte XglTaskNode) plus the OV01 ObjectTask view. The original type is the 16-byte header XglTaskPrefix with an int-returning callback at +0x0C; the fifth word the XglTaskNode and ObjectTask views carried is task payload. Every accepted caller now spells the header that way, so this decision has no rejected live spelling left for the type itself.",
+      "evidence": [
+        "main:0x0021C718 xglTaskWaitRemove stores the address of xglTaskRemove (0x0021C6B0) into the slot at +0x0C, and both functions return 0 in $v0, so the slot holds an int-returning callback taking the task",
+        "main:0x0021C528 xglTaskInitial builds the pool at scheduler+0x10 with a 0x80-byte stride; xglTaskEntryNext/Prev (0x0021C638/0x0021C5C0) write scheduler at +0x00, next at +0x04, previous at +0x08 and the callback at +0x0C; xglTaskRemove (0x0021C6B0) maintains exactly those four words. Nothing in the scheduler touches +0x10, so the word the XglTaskNode and ObjectTask views carried there is task payload, not header",
+        "definition at main:0x0021C6B0 in src/core/main-0021c6b0/xglTaskRemove.c"
+      ],
+      "confidence": "high"
+    },
+    "xglTaskWaitRemove": {
+      "kind": "prototype",
+      "domain": "core",
+      "canonical": {
+        "file": "src/core/main-0021c6b0/xglTaskRemove.c",
+        "text": "int xglTaskWaitRemove(XglTaskPrefix *task);"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-0021c6b0/private.h",
+          "reason": "snake_case `xgl_task_prefix` spelling of the same header; retired by the type decision of 2026-09-12"
+        },
+        {
+          "file": "src/core/main-00285348/private.h",
+          "reason": "caller spelling with a TU-local XglTask node name; retired, TskObject now embeds XglTaskPrefix"
+        },
+        {
+          "file": "src/core/main-0029fa60/private.h",
+          "reason": "caller spelling with a TU-local XglTask node name; retired, TskObject now embeds XglTaskPrefix"
+        },
+        {
+          "file": "src/core/main-002a20e8/private.h",
+          "reason": "caller spelling with a TU-local XglTask node name; retired, TskObject now embeds XglTaskPrefix"
+        },
+        {
+          "file": "src/core/main-002c66c0/candidate.c",
+          "reason": "caller spelling with the event-item task view; retired, EventItemTask now embeds XglTaskPrefix and the caller passes &task->task"
+        }
+      ],
+      "rationale": "src/core/main-0021c6b0/xglTaskRemove.c defines xglTaskRemove at main:0x0021C6B0. Settled by tu-type-xgltask (2026-09-12): the project carried four names for one 16-byte task header (XglTaskPrefix, xgl_task_prefix, XglTask and the 20-byte XglTaskNode) plus the OV01 ObjectTask view. The original type is the 16-byte header XglTaskPrefix with an int-returning callback at +0x0C; the fifth word the XglTaskNode and ObjectTask views carried is task payload. Every accepted caller now spells the header that way, so this decision has no rejected live spelling left for the type itself.",
+      "evidence": [
+        "main:0x0021C718 xglTaskWaitRemove stores the address of xglTaskRemove (0x0021C6B0) into the slot at +0x0C, and both functions return 0 in $v0, so the slot holds an int-returning callback taking the task",
+        "main:0x0021C528 xglTaskInitial builds the pool at scheduler+0x10 with a 0x80-byte stride; xglTaskEntryNext/Prev (0x0021C638/0x0021C5C0) write scheduler at +0x00, next at +0x04, previous at +0x08 and the callback at +0x0C; xglTaskRemove (0x0021C6B0) maintains exactly those four words. Nothing in the scheduler touches +0x10, so the word the XglTaskNode and ObjectTask views carried there is task payload, not header",
+        "definition at main:0x0021C718"
+      ],
+      "confidence": "high"
+    },
+    "enepc": {
+      "kind": "extern",
+      "domain": "math",
+      "canonical": {
+        "file": "src/math/main/002d33f8-sac-turn/private.h",
+        "text": "extern EnemyWork enepc[16];"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/w3-002d1768-spline-routes/private.h",
+          "reason": "`EnemyStateBlock enepc[16]` is a definition of a store this TU does not own (the original symbol is GLOBAL at main .data 0x00379110, far below main#193's own .data piece 0x003B1E30) and it spells the element as a bare byte array; the struct spelling names the element and is what the other accepted record declares"
+        }
+      ],
+      "rationale": "enepc is the 232192-byte (16 * 0x38b0) enemy-work store the executable exports as a GLOBAL symbol at main .data 0x00379110. The two accepted spellings are layout-equivalent - include/xeno/math/types.h carries both `struct EnemyWork { unsigned char bytes[0x38b0]; }` and `typedef unsigned char EnemyStateBlock[0x38b0]`, and 16 * 0x38b0 is exactly the original symbol size - so this is a naming divergence, not a layout one. The struct spelling is canonical because it names the element type (docs/header-canon.md rule 6) and because src/math/main/002d33f8-sac-turn takes `enepc + index` as an object address. main#193's bodies index the store as raw bytes (`state = enepc[actor_bytes[0x80]];` assigns to `unsigned char *`), which the struct spelling cannot express without a cast the accepted body does not contain, so that TU keeps the array spelling under byte_required. main/tu191 uses an independently exact local EnemyWorkEntry view with evidenced fields and exact 0x38b0 stride; retain that spelling only under its byte_required row while preserving the existing math/tu193 exception and canonical accepted definition.",
+      "evidence": [
+        "readelf -sW game/extracted-iso/SLUS_204.69: enepc GLOBAL OBJECT 0x00379110 size 0x38b00 = 16 * 0x38b0",
+        "src/math/main/002d33f8-sac-turn/Enemy_Command_Sac_Turn.c: `work = (unsigned char *)(enepc + enemy_actor_number(actor));`",
+        "src/math/main/w3-002d1768-spline-routes/spline_routes.c:19,48: `state = enepc[actor_bytes[0x80]];` with `state` an `unsigned char *`",
+        ".work/reviews/tu-import-r4r6-20260912/review-r5.json findings[1] and integration_conditions[0] (reviewer of tu-import-main-r5, 2026-09-12)",
+        "main/tu191 submitted header SHA-256 9443c29a1ef72782408b75154f059af34d7807584b6931e18db904e58d436a86 declares EnemyWorkEntry enepc[16]; the 16-element 0x38b0 stride matches the original 0x38b00 symbol extent."
+      ],
+      "confidence": "high",
+      "status": "active",
+      "byte_required": [
+        {
+          "file": "src/math/main/w3-002d1768-spline-routes/private.h",
+          "tu": "main/tu193",
+          "tu_file": "src/main/set_motion.c",
+          "unit": "math-main-w3-002d1768",
+          "reason": "the bodies of this TU index the store as bytes and assign the element to an `unsigned char *`, which only the `EnemyStateBlock` (bare 0x38b0 byte array) element type expresses; the canonical `EnemyWork` spelling would need a cast the accepted body does not contain, and the accepted body is what reproduces the original bytes. The two spellings are layout-identical, so nothing about the store's extent is in dispute."
+        },
+        {
+          "file": "src/main/enemy_1.h",
+          "tu": "main/tu191",
+          "tu_file": "src/main/enemy_1.c",
+          "unit": "main",
+          "reason": "main/tu191 uses an independently exact local EnemyWorkEntry view with evidenced fields; its elements retain the original 0x38b0 stride (16 entries match the 0x38b00 global extent). Keep this spelling confined to that TU while preserving the existing math/tu193 byte-required view and canonical EnemyWork declaration for other users."
+        }
+      ]
+    },
+    "StudioCamera": {
+      "kind": "type",
+      "domain": "core",
+      "canonical": {
+        "file": "src/main/xgl_studio.c",
+        "source": "tu_include",
+        "text": "typedef struct StudioCamera {\n    u32 active;\n    u32 state;\n    u8 unmodeled_08[0x18];\n    float nearClip;\n    float farClip;\n    u8 unmodeled_28[0x48];\n    Vector4 screenOffset;\n    Vector4 screenScale;\n    u8 unmodeled_90[0x10];\n    Vector4 rotation;\n    u8 unmodeled_b0[0x20];\n    Vector4 position;\n    u8 unmodeled_e0[0x390];\n    Matrix4 viewMatrix;\n    u8 unmodeled_4b0[0x140];\n} StudioCamera;"
+      },
+      "rejected": [
+        {
+          "file": "src/core/main-00244d20/private.h",
+          "reason": "partial view: models only the +4 state word its game-mode bodies read and keeps +0 as opaque reserved bytes; main/tu104 evidences +0 as the active flag and the 0x5f0-byte slot, and +4 state keeps its name, type and offset, so src/main/game.c `camera->state == 4` reads the same bytes"
+        },
+        {
+          "file": "src/core/main-00245ba8/private.h",
+          "reason": "same partial view as src/core/main-00244d20/private.h (identical text)"
+        }
+      ],
+      "rationale": "main/tu104 (src/main/xgl_studio.c) owns the studio camera table and compiles against this spelling through include/shared.h without declaring the type itself (a local copy beside the shared one would be a redefinition). Its accepted bodies read +0 as a boolean active flag and store 1 to both +0 and +4 on init, and index cameras[8] with a 0x5f0-byte stride, so the exact whole-file build of main depends on the member +0 and the full slot size (rule 0). The narrower retired view (u8 reserved0[4]; u32 state;) is covered by this superset at the same offsets (rule 4): src/main/game.c and src/main/camera.h only use `state` at +4 and pointers to the type. Revised 2026-09-18 (header-canon-prep-20260918): the +0x20/+0x24 words of the slot are the near and far clip distances. xglCameraClipRangeDefault (main/tu102, still asm) stores the two .lit4 floats D_004D88D0 = 0.01 and D_004D88D4 = 99000.0 into them through the camera pointer SCRIPT_exec obtains from xglStudioGetCamera, so `u8 unmodeled[0x5e8]` is split into unmodeled_08[0x18], float nearClip, float farClip and unmodeled_28[0x5c8]; the slot stays 0x5f0 bytes and +0/+4 are unchanged, so every accepted use keeps its offsets. Revised 2026-09-19 (unblock-bulk-prep-20260919): four more members of the slot, each read through the camera pointer xglStudioGetCamera2 returns: +0x470 is the 4x4 matrix xglRotTransPers loads as the base of the matrix stack and MEfObjExec1st publishes as mefCamParams.matrix (viewMatrix); +0x80 and +0x70 are the scale and offset vectors xglRotTransPers passes to xglMatrixStackRTPS (screenScale, screenOffset); +0xA0 is the angle vector MEfObjExec1st hands to MMathRotateMatrixYXZ (rotation). unmodeled_28[0x5c8] is split into unmodeled_28[0x48], the two vectors, unmodeled_90[0x10], rotation, unmodeled_b0[0x3c0], viewMatrix and unmodeled_4b0[0x140]: the slot stays 0x5f0 bytes, Vector4 and Matrix4 are plain float aggregates (4-byte alignment, as before), and +0/+4/+0x20/+0x24 are unchanged, so every accepted use keeps its offsets. Revised 2026-09-24 (shared-model-ov10-cardmain-20260924, user-authorized shared-model correction for the CardMainProc candidate): +0xD0 is the camera's position vector. xglCameraTravelInit copies the sShootPlaceR vector into it with a quadword store, xglCameraViewTravel reads it as the eye point it subtracts the focus offset from before xglMatrixStackTrans, and CardMainProc (ov10) stores (0, 0, 5.8, 1) there through xglStudioSelectGetActiveCamera(0). unmodeled_b0[0x3c0] is split into unmodeled_b0[0x20], Vector4 position and unmodeled_e0[0x390]: the slot stays 0x5f0 bytes, viewMatrix stays at +0x470, and every other member keeps its offset.",
+      "evidence": [
+        "main:0x0022c618 xglStudioSelectGetActiveCamera `lw $3,0($4)` feeding `bne $3,$0`: +0 read as the active flag",
+        "main:0x0022c6f0/0x0022c6f8 xglStudioMainCameraInit `sw $17,4($2)` / `sw $17,0($2)` with $17=1: +4 and +0 written on init",
+        "main:0x0022c620 `addiu $4,$4,1520`: one camera slot is 0x5f0 bytes (Studio.cameras[8])",
+        "reviews claude-review-r24-20260916 (variant C) and claude-review-r29-20260916: main whole-file identical, elf_gate main/tu104 and main/tu154 pass, tu_audit 13/13 and 3/3 exact_c with this spelling in include/shared.h",
+        "claude-tool-header-harvest-20260916 (.work/reviews/claude-tool-header-harvest-20260916/report.json): variant C harvested by tools/header_harvest.py with this decision, fresh private configure + ninja, main.bin 412d448de31505c03ad474cc63d500b3b4f8c48d49d32bd24c89fe5b21af0fb2 whole-file identical, elf_gate main/tu104, main/tu154, main/tu116, main/tu246 pass, tu_audit main/tu104 13/13 and main/tu154 3/3 exact_c grants_acceptance, run_audit main 82/82",
+        "main:0x0022c258/0x0022c260 xglCameraClipRangeDefault `swc1 $f0,0x20($4)` / `swc1 $f1,0x24($4)` with $f0/$f1 loaded from D_004D88D0 (.float 0.01) and D_004D88D4 (.float 99000.0): near and far clip distances of the camera slot",
+        "main:0x002649f4..0x002649fc SCRIPT_exec: `jal xglStudioGetCamera` then `jal xglCameraClipRangeDefault` on the camera it returned: the argument is a StudioCamera *",
+        "review-bulk-r45-20260918 stage-03 (main/tu102 xgl_camera): the candidate needs these two members to write camera->nearClip/farClip without offset casts",
+        "header-canon-prep-20260918 patch p05: this text in include/shared.h, header_harvest + --check exit 0, main rebuilt, every main object's allocated sections/relocations/symbols identical to the unpatched build, elf_gate and tu_audit main/tu104 13/13, main/tu116 5/5, main/tu246 5/5 exact_c unchanged",
+        "main:0x00229a4c..0x00229a5c xglRotTransPers: `jal xglStudioGetCamera2` then `jal xglMatrixStackLoad` with `addiu $4,$16,0x470`: +0x470 is a Matrix4 (xglMatrixStackLoad(float matrix[4][4]))",
+        "main:0x00229a74/0x00229a78 xglRotTransPers: `addiu $7,$16,0x70` / `addiu $6,$16,0x80` as the 4th (offset) and 3rd (scale) arguments of xglMatrixStackRTPS(Vector4 *out, const Vector4 *point, const Vector4 *scale, const Vector4 *offset) (src/main/xgl_2.c)",
+        "main:0x002f00ac..0x002f00c8 MEfObjExec1st: `addiu $8,$2,0xA0` / `addiu $7,$2,0x470` on xglStudioGetCamera2(0), stored to mefCamParams +8/+4, and $8 passed as the angle vector (3rd argument) of MMathRotateMatrixYXZ",
+        "unblock-bulk-prep-20260919: this text in include/shared.h, header_harvest + --check exit 0, all six units rebuilt whole-file identical, run_audit/run_audit_ovl failing sets unchanged",
+        "main:0x0022aff8..0x0022b004 xglCameraTravelInit: `addiu $6,$4,0xD0`, `lq $2,0($3)` from sShootPlaceR_5, `sq $2,0($6)`: a 16-byte vector at camera +0xD0, between the angle vectors at +0xA0..+0xC0 (sShootAngle*) and the next place vector at +0xE0 (sShootPlaceV_6); its argument is the camera: xglCameraInit(StudioCamera *camera) passes its own argument on (main:0x0022c0b4 `daddu $4,$16,$0`, 0x0022c0c0 `j xglCameraTravelInit`)",
+        "main:0x0022bd98..0x0022bdac xglCameraViewTravel: `addiu $2,$19,0xD0`, `lqc2 $vf2,0($2)`, `vsub.xyz $vf2,$vf2,$vf3` with the offset argument, stored to the stack and passed to xglMatrixStackTrans: +0xD0 is the camera position the view transform translates by",
+        "ov10:0x00a08618..0x00a0862c CardMainProc: `jal xglStudioSelectGetActiveCamera` (main 0x0022c5f8) with $4 = 0, `addiu $3,$2,208`, `lq $2,0($12)` from a stack vector holding (0, 0, 5.8, 1), `sq $2,0($3)`",
+        "shared-model-ov10-cardmain-20260924: this text in include/shared.h via header_harvest + --check, all six units rebuilt whole-file identical, every object's code unchanged against the unpatched private build"
+      ],
+      "confidence": "high"
+    },
+    "objCmdTailGet": {
+      "kind": "prototype",
+      "domain": "battle",
+      "canonical": {
+        "file": "src/ov01/obj.h",
+        "text": "void *objCmdTailGet(ObjectTask *task);"
+      },
+      "rejected": [
+        {
+          "file": "src/ov01/battle_init.h",
+          "reason": "caller-side view of the same function (replayed from the retired math-ov01-w3-00a0f900 record through config/header-promoted.json): curCmdSet names the task it passes CursorObject and the entry it gets back CursorCommand. The definer does not: objCmdTailGet returns &queue->entries[queue->readIndex] of the ObjectCommandQueue in task->work, typed void * so callers of every command kind can use it. The CursorCommand/CursorObject spelling is not byte-required (the argument and the result are both plain pointers in $a0/$v0) and stays TU-local in battle_init.h, which does not include include/ov01/obj.h."
+        }
+      ],
+      "rationale": "The definition wins (rule 1): ov01/tu001 (src/ov01/obj.c, published exact C) defines `void *objCmdTailGet(ObjectTask *task)` and declares it that way in src/ov01/obj.h. The accepted pool only carries battle_init.h's caller view, so without this decision the harvest homes that spelling in include/ov01/obj.h as soon as a second TU calls objCmdTailGet without declaring it, and pulls `struct CursorCommand` (its body) into include/shared.h, which then collides with battle_init.h's own definition (review-bulk-r52 stage-02: `src/ov01/battle_init.h:40: redefinition of struct CursorCommand`, OV01 build stopped). With the definer's spelling the pool's math-domain copy is replaced by the canonical text and CursorCommand stays inside battle_init.h.",
+      "evidence": [
+        "src/ov01/obj.c: `void *objCmdTailGet(ObjectTask *task) { ObjectCommandQueue *queue; queue = task->work; return &queue->entries[queue->readIndex]; }` (ov01/tu001 exact_c, tu_audit 18/18)",
+        "review-bulk-r52-20260918 stage-02 (ov01/tu002 candidate calling objCmdTailGet): ninja-ov01 FAILED build/scaffold/src/ov01/battle_init.o, battle_init.h:40 redefinition of struct CursorCommand",
+        "review-bulk-r52-20260918 probe-03: the same stage with this decision regenerates the headers without CursorCommand in include/shared.h and builds OV01 whole-file identical",
+        "header-canon-prep-20260918 patch p01: published tree + this decision, header_harvest + --check exit 0, all six units rebuilt, every object's allocated sections/relocations/symbols identical to the unpatched build, elf_gate and tu_audit unchanged"
+      ],
+      "confidence": "high",
+      "status": "active"
+    },
+    "struct RgFileSysData": {
+      "kind": "type",
+      "domain": "io",
+      "canonical": {
+        "file": "src/ov12/rg_filesys.c",
+        "source": "tu_include",
+        "text": "struct RgFileSysData {\n    void *data;\n    unsigned int size;\n    unsigned int mode;\n    RgFileSys *owner;\n    unsigned int ref_count;\n    unsigned int allocated;\n    RgFileSysData *dupOf;\n    char name[0x60 - 0x1C];\n};"
+      },
+      "rejected": [
+        {
+          "file": "src/io/ov12-00a34518/private.h",
+          "reason": "the accepted pool's spelling (replayed through config/header-promoted.json) stops at ref_count (+0x10) and is covered by this superset at the same offsets: every accepted use reads data/size/mode/owner/ref_count, which keep their names, types and offsets"
+        }
+      ],
+      "rationale": "ov12/tu065 (src/ov12/rg_filesys.c) owns the file-system records and compiles against struct RgFileSysData through include/shared.h without declaring it (src/ov12/rg_filesys.h says so), so the grown body is recorded as the text that TU reads (tu_include). _AllocFile allocates each record with RgHeapAlloc(heap, 0x60, ...) and RgFileSysOnMemory/RgFileSysDup strcpy the file name to record + 0x1C, the address RgFileSysDataGetName returns: the record is 0x60 bytes and +0x1C..+0x60 is the inline name buffer. The pool body is extended past ref_count with unmodeled_14[0x1C - 0x14] (the +0x14/+0x18 words RgFileSysOnMemory clears and RgFileSysDup sets to the source record are left unnamed) and char name[0x60 - 0x1C]. Reviewed proposal RgFileSysData.proposal.json (schema header-type-proposal/1, proposed by ov12/tu065 worker, applied 2026-09-24 with tools/header_types.py apply) named the +0x14/+0x18 span: `_AllocFile` stores 1 into +0x14 on every allocation (an allocated/in-use flag) and `RgFileSysOnMemory` clears both words for a caller-supplied buffer while `RgFileSysDup` stores the source record's own pointer into +0x18 (the record it was duplicated from), so unmodeled_14[0x1C - 0x14] is replaced additively, same size, by `unsigned int allocated;` and `RgFileSysData *dupOf;`. No published TU takes sizeof(RgFileSysData), indexes an array of it or embeds it (every use is a pointer), so the larger complete type changes no emitted byte; RgFileSysDataGetName can then return pFile->name instead of its local RgFileSysDataName view.",
+      "evidence": [
+        "ov12:0x00a33c14..0x00a33c28 _AllocFile: `addiu $5,$0,0x60` as RgHeapAlloc's size, then `sw $3,0x14($2)` with 1: one record is 0x60 bytes, and +0x14 is set to 1 (allocated) on every allocation",
+        "ov12:0x00a347d0..0x00a347e8 RgFileSysOnMemory: `addiu $4,$16,0x1C` / `jal strcpy` with the name argument, after clearing +0x14 and +0x18 (allocated/dupOf) for a caller-supplied buffer",
+        "ov12:0x00a344e0..0x00a344f0 RgFileSysDup: `addiu $4,$17,0x1C` / `addiu $5,$18,0x1C` / `jal strcpy`: the name is copied record to record at +0x1C; `sw $18,0x18($17)` stores the source record duplicated from into +0x18 (dupOf)",
+        "ov12:0x00a34aa8 RgFileSysDataGetName (published exact C, ov12/tu065): returns pFile + 0x1C",
+        "unblock-bulk-prep-20260919: this text in include/shared.h, header_harvest + --check exit 0, all six units rebuilt whole-file identical, run_audit/run_audit_ovl failing sets unchanged"
+      ],
+      "confidence": "high",
+      "status": "active"
+    },
+    "MMathCalcLength": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/main/m_math.c",
+        "text": "float MMathCalcLength(const Vector4 *vector);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/main/spark-cont01-002e5af8/private.h",
+          "reason": "Preserved historical per-function declaration; current defining owner owns the precise interface."
+        }
+      ],
+      "rationale": "Current defining TU main/tu219 accepts a const Vector4 pointer; the legacy float pointer view omits the current owner type.",
+      "evidence": [
+        "src/main/m_math.c defines MMathCalcLength at original main 0x002ef2e0",
+        "express full367 header-harvest conflict lists this current definition against the cited legacy declaration"
+      ],
+      "confidence": "high"
+    },
+    "xglMatrixStackTrans": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/main/xgl_2.c",
+        "text": "void xglMatrixStackTrans(const float translation[4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov02/review09-00a04de0/Rotation.c",
+          "reason": "Preserved historical per-function declaration; current defining owner owns the precise interface."
+        }
+      ],
+      "rationale": "Current defining TU main/tu100 accepts four const float lanes; retain the exact owner prototype rather than the historical mutable pointer.",
+      "evidence": [
+        "src/main/xgl_2.c defines xglMatrixStackTrans at original main 0x0022a480",
+        "express full367 header-harvest conflict lists this current definition against the cited legacy declaration"
+      ],
+      "confidence": "high"
+    },
+    "xglMatrixStackLoad": {
+      "kind": "prototype",
+      "domain": "math",
+      "canonical": {
+        "file": "src/main/xgl_2.c",
+        "text": "void xglMatrixStackLoad(float matrix[4][4]);"
+      },
+      "rejected": [
+        {
+          "file": "src/math/ov01/correction13-ov01-00a25af0-allocation-18edb66718f9/form-8/private.h",
+          "reason": "Preserved historical per-function declaration; current defining owner owns the precise interface."
+        }
+      ],
+      "rationale": "Current defining TU main/tu100 accepts four arrays of four float lanes; the historical Matrix pointer is a different nominal view of the same original input.",
+      "evidence": [
+        "src/main/xgl_2.c defines xglMatrixStackLoad at original main 0x0022a5b0",
+        "express full367 header-harvest conflict lists this current definition against the cited legacy declaration"
+      ],
+      "confidence": "high"
+    },
+    "MenuSelectWindow": {
+      "kind": "prototype",
+      "domain": "menu",
+      "canonical": {
+        "file": "src/main/menu_top_command_check.c",
+        "text": "int MenuSelectWindow(MenuStatusPanelWindow *window, MenuTopMenuPanel *panel);"
+      },
+      "rejected": [],
+      "rationale": "Precise current C definition supplies the tagged callback ABI; avoid stale zero-parameter/void views and extern-prefix owner divergence.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high",
+      "previous_decisions": [
+        {
+          "kind": "prototype",
+          "domain": "menu",
+          "canonical": {
+            "file": "src/main/menu_top_command_check.h",
+            "text": "extern int MenuSelectWindow(MenuStatusPanelWindow *window, MenuTopMenuPanel *panel);"
+          },
+          "rejected": [],
+          "rationale": "Current defining owner returns int and takes its precise tagged pointer views; WindowDX ignores the callback return.",
+          "evidence": [
+            "src/main/menu_top_command_check.c current int definition and matching owner header",
+            "nested-group/callback-owner-typed.json confirms cast-free parent bytes/relocations359/359",
+            "Original FilePassWindow draw slot is four bytes at0x14; no object stride or accepted body changes"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    "MenuStatusDisp": {
+      "kind": "prototype",
+      "domain": "menu",
+      "canonical": {
+        "file": "src/main/menu_top_command_check.c",
+        "text": "void MenuStatusDisp(MenuStatusPanelWindow *window, MenuStatusPanel *work);"
+      },
+      "rejected": [],
+      "rationale": "Precise current C definition supplies the tagged callback ABI; avoid stale zero-parameter/void views and extern-prefix owner divergence.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high",
+      "previous_decisions": [
+        {
+          "kind": "prototype",
+          "domain": "menu",
+          "canonical": {
+            "file": "src/main/menu_top_command_check.c",
+            "text": "void MenuStatusDisp(MenuStatusPanelWindow *window, MenuStatusPanel *work);"
+          },
+          "rejected": [],
+          "rationale": "Current defining owner and selected Status donor agree on two precise tagged pointers and void return; replace stale zero-parameter caller declaration.",
+          "evidence": [
+            "Current src/main/menu_top_command_check.c declaration and definition",
+            "struct_interfaces MenuTec Status field07 proposal preserves display pointer offset14 and width4"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    "_dummyClass": {
+      "kind": "extern",
+      "domain": "script",
+      "canonical": {
+        "file": "src/main/init_vm.c",
+        "text": "extern JavaClass _dummyClass;"
+      },
+      "rejected": [],
+      "rationale": "Original LOCAL/static storage remains owner227; only initVM needs the inherited linker-address alias, which must stay TU-local to avoid extern-before-static in the defining TU.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high",
+      "status": "tu_local"
+    },
+    "classJava_xeno_Chr": {
+      "kind": "extern",
+      "domain": "script",
+      "canonical": {
+        "file": "src/main/jni.h",
+        "text": "extern SceneClass *classJava_xeno_Chr;"
+      },
+      "rejected": [],
+      "rationale": "Current defining JNI data owner and original owner table provide this exact class-handle pointer; preserve existing C storage and replace stale caller type views only.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high"
+    },
+    "classJava_xeno_Unit": {
+      "kind": "extern",
+      "domain": "script",
+      "canonical": {
+        "file": "src/main/jni.h",
+        "text": "extern SceneClass *classJava_xeno_Unit;"
+      },
+      "rejected": [],
+      "rationale": "Current defining JNI data owner and original owner table provide this exact class-handle pointer; preserve existing C storage and replace stale caller type views only.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high"
+    },
+    "classClass": {
+      "kind": "extern",
+      "domain": "script",
+      "canonical": {
+        "file": "src/main/init_vm.h",
+        "text": "extern JavaClass *classClass;"
+      },
+      "rejected": [],
+      "rationale": "Existing initVM data definition determines the pointer type; no storage or original pointer target change.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high"
+    },
+    "classStringBuffer": {
+      "kind": "extern",
+      "domain": "script",
+      "canonical": {
+        "file": "src/main/init_vm.h",
+        "text": "extern SceneClass *classStringBuffer;"
+      },
+      "rejected": [],
+      "rationale": "Existing initVM data definition determines the pointer type; no storage or original pointer target change.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high"
+    },
+    "PadPrefix": {
+      "kind": "type",
+      "domain": "menu",
+      "canonical": {
+        "file": "src/main/menu_tec.c",
+        "text": "typedef struct {\n    u8 pad_00[0x28];\n    u16 half_28;\n    u16 half_2a;\n    unsigned char unmodeled_2c[6];\n    u16 mappedPressed;\n    u16 mappedRepeat;\n} PadPrefix;",
+        "source": "tu_include"
+      },
+      "rejected": [],
+      "rationale": "Exact selected MenuTec donor partial prefix preserves halfwords28/2a and adds evidenced mapped input halfwords32/34; no TU defines this shared partial data view.",
+      "evidence": [
+        "repair-01/build-03.log actual declaration diagnostics",
+        ".work/reviews/express-20261011/declaration-cleanup/context-12.json"
+      ],
+      "confidence": "high"
+    },
+    "CfCameraDefine": {
+      "kind": "extern",
+      "canonical": {
+        "file": "src/main/camera.c",
+        "source": "tu_include",
+        "text": "extern CfCameraDefinition CfCameraDefine[33];"
+      },
+      "rejected": [],
+      "rationale": "Use the recovered DATA owner declaration for the original 33 camera records. Existing partial caller views stay local; the owner header is explicitly included by compatible consumers.",
+      "evidence": [
+        "src/main/maptbl.h: canonical 160-byte camera record; src/main/maptbl.c: original 5280-byte initialized DATA owner."
+      ],
+      "confidence": "high"
+    }
+  }
+}

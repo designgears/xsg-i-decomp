@@ -178,7 +178,161 @@ void _FacePoint(Vector4 *destination, const Vector4 *lineStart, const Vector4 *l
     );
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", _CheckLine);
+const char D_004D4598[16] = "MC_UTK05";
+const char D_004D45A8[16] = "MC_UTK04";
+const char D_004D45B8[16] = "MC_KAS31";
+const char D_004D45C8[16] = "MC_KAS04";
+const char D_004D45D8[16] = "MC_KAS12";
+const char D_004D45E8[16] = "MC_KAS13";
+const char D_004D45F8[16] = "MC_KAS18";
+const char D_004D4608[16] = "MC_KAS19";
+const char D_004D4618[16] = "MC_KAS20";
+const char D_004D4628[16] = "MC_UTA03";
+const char D_004D4638[16] = "MC_UTA04";
+const char D_004D4648[16] = "MC_UTA05";
+const char D_004D4658[16] = "MC_UTA06";
+const char D_004D4668[16] = "MC_UTA07";
+const char D_004D4678[16] = "MC_UTA08";
+const char D_004D4688[16] = "MC_UTA13";
+const char D_004D4698[16] = "MC_UTA17";
+const char D_004D46A8[16] = "MC_GNK04";
+const char D_004D46B8[16] = "MC_GNK09";
+const char D_004D46C8[16] = "MC_GNK10";
+const char D_004D46D8[16] = "MC_GNK11";
+const char D_004D46E8[16] = "MC_GNK12";
+const char D_004D46F8[16] = "MC_GNK13";
+const char D_004D4708[16] = "MC_GNK14";
+const char D_004D4718[16] = "MC_GNK15";
+const char D_004D4728[16] = "MC_GNK18";
+const char D_004D4738[16] = "MC_GNK20";
+const char D_004D4748[16] = "MC_GNK21";
+const char D_004D4758[16] = "MC_GNK02";
+const char D_004D4768[16] = "MC_VOK13";
+const char D_004D4778[16] = "MC_VOK13B";
+const char D_004D4788[16] = "MC_GNU01";
+const char D_004D4798[16] = "MC_GNU02";
+const char D_004D47A8[16] = "MC_GNU03";
+const char D_004D47B8[16] = "MC_GNU04";
+const char D_004D47C8[16] = "MC_GNU05";
+const char D_004D47D8[16] = "MC_GNU06";
+const char D_004D47E8[16] = "MC_KUK16";
+const char D_004D47F8[16] = "MC_KUK12";
+const char D_004D4808[16] = "MC_KUK11";
+const char D_004D4818[16] = "MC_KUK02";
+const char D_004D4828[16] = "Mc_dyu04";
+const char D_004D4838[16] = "MC_DYU07";
+const char D_004D4848[16] = "MC_DYU10";
+const char D_004D4858[16] = "MC_DYU12";
+const char D_004D4868[16] = "MC_DYU13";
+const char D_004D4878[16] = "MC_DYU15";
+const char D_004D4888[16] = "MC_DYU16";
+const char D_004D4898[16] = "MC_KOU05";
+const char D_004D48A8[16] = "MC_KOU04";
+const char D_004D48B8[16] = "MC_KOU01";
+const char D_004D48C8[16] = "MC_DYU01";
+const char D_004D48D8[16] = "MC_VOK24";
+const char D_004D48E8[16] = "MC_ELS01";
+const char D_004D48F8[16] = "MC_ELS04B";
+const char D_004D4908[16] = "MC_ELS04";
+const char D_004D4918[16] = "MC_ELS03";
+const char D_004D4928[16] = "MC_ELS02B";
+const char D_004D4938[16] = "mc_els02";
+const char D_004D4948[16] = "MC_ELS09";
+const char D_004D4958[16] = "MC_ELS10";
+const char D_004D4968[16] = "MC_PRO02";
+const char D_004D4978[16] = "MC_VOK12b";
+const char D_004D4988[16] = "mc_vok12";
+const char D_004D4998[16] = "MC_VOK11";
+const char D_004D49A8[16] = "MC_VOK10";
+const char D_004D49B8[16] = "MC_VOK07";
+const char D_004D49C8[16] = "mc_vok04";
+const char D_004D49D8[16] = "MC_VOK03";
+extern void xglVectorScaleXYZ(float scale, Vector4 *destination,
+                              const Vector4 *source);
+typedef struct CullingMapNameSource {
+    u8 unmodeled_000[0x10];
+    char name_with_prefix[32];
+} CullingMapNameSource;
+typedef struct CullingCameraView {
+    u8 unmodeled_000[0x1B0];
+    Matrix4 occlusionTransform;
+} CullingCameraView;
+
+float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
+                 const Vector4 *endpointStart, const Vector4 *endpointEnd,
+                 const Vector4 *planePoint, const Vector4 *planeNormal)
+{
+    Vector4 adjustedStart;
+    Vector4 adjustedEnd;
+    Vector4 endpointDelta;
+    Vector4 pointFromStart;
+    Vector4 normalOffset;
+
+    xglVectorScaleXYZ(planeNormal->w * planePoint->w * 0.5f,
+                      &normalOffset, planeNormal);
+    xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedStart, offsetStart);
+    xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedEnd, offsetEnd);
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%0)\n\t"
+        "lqc2 vf2, 0(%1)\n\t"
+        "vsub.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%0)\n\t"
+        :
+        : "r"(&adjustedStart), "r"(endpointStart)
+        : "memory");
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%0)\n\t"
+        "lqc2 vf2, 0(%1)\n\t"
+        "vsub.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%0)\n\t"
+        :
+        : "r"(&adjustedEnd), "r"(endpointEnd)
+        : "memory");
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%1)\n\t"
+        "lqc2 vf2, 0(%0)\n\t"
+        "vadd.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%0)\n\t"
+        :
+        : "r"(&adjustedStart), "r"(&normalOffset)
+        : "memory");
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%1)\n\t"
+        "lqc2 vf2, 0(%0)\n\t"
+        "vadd.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%0)\n\t"
+        :
+        : "r"(&adjustedEnd), "r"(&normalOffset)
+        : "memory");
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%0)\n\t"
+        "lqc2 vf2, 0(%1)\n\t"
+        "vsub.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%2)\n\t"
+        :
+        : "r"(&adjustedStart), "r"(&adjustedEnd),
+          "r"(&endpointDelta)
+        : "memory");
+
+    __asm__ __volatile__(
+        "lqc2 vf3, 0(%0)\n\t"
+        "lqc2 vf2, 0(%1)\n\t"
+        "vsub.xyz vf2, vf2, vf3\n\t"
+        "sqc2 vf2, 0(%2)\n\t"
+        :
+        : "r"(&adjustedStart), "r"(planePoint),
+          "r"(&pointFromStart)
+        : "memory");
+
+    return endpointDelta.x * pointFromStart.x +
+           endpointDelta.y * pointFromStart.y +
+           endpointDelta.z * pointFromStart.z;
+}
 
 extern void xglVectorOuter(Vector4 *destination, const Vector4 *left, const Vector4 *right);
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
@@ -206,7 +360,58 @@ static void plane_from_points(const Vector4 *p0, const Vector4 *p1, const Vector
     plane->w = -(normal.x * p0->x + normal.y * p0->y + normal.z * p0->z);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", setup_occlusion);
+typedef unsigned int so_u128 __attribute__((mode(TI)));
+typedef struct SetupOcclusionView {
+    float position[4];
+    float rotation[4];
+    float scale[4];
+    Vector4 normal;
+    float matrix[4][4];
+    float inverse[4][4];
+    Vector4 corners[4];
+    Vector4 planes[5];
+    float depth;
+} SetupOcclusionView;
+
+void setup_occlusion(CullingVolume *volume, s32 camera)
+{
+    SetupOcclusionView *v = (SetupOcclusionView *)volume;
+    Vector4 a;
+    Vector4 b;
+    Vector4 c;
+    Vector4 d;
+    union { Vector4 v; so_u128 q; } o;
+    Vector4 *po;
+
+    apply_point(&a, (void *)(camera + 0x1B0), &v->corners[0]);
+    apply_point(&b, (void *)(camera + 0x1B0), &v->corners[1]);
+    apply_point(&c, (void *)(camera + 0x1B0), &v->corners[2]);
+    apply_point(&d, (void *)(camera + 0x1B0), &v->corners[3]);
+    po = &o.v;
+    a.z = -a.z;
+    b.z = -b.z;
+    c.z = -c.z;
+    d.z = -d.z;
+    v->depth = a.z;
+    if (b.z < v->depth) v->depth = b.z;
+    if (c.z < v->depth) v->depth = c.z;
+    if (d.z < v->depth) v->depth = d.z;
+    __asm__ volatile("sq $0, 0(%0)" : : "r"(po) : "memory");
+    plane_from_points(&a, &b, &c, &v->planes[0]);
+    if (v->planes[0].w > 0.0f) {
+        plane_from_points(po, &a, &b, &v->planes[1]);
+        plane_from_points(po, &b, &c, &v->planes[2]);
+        plane_from_points(po, &c, &d, &v->planes[3]);
+        plane_from_points(po, &d, &a, &v->planes[4]);
+    } else {
+        plane_from_points(&c, &b, &a, &v->planes[0]);
+        plane_from_points(po, &b, &a, &v->planes[1]);
+        plane_from_points(po, &c, &b, &v->planes[2]);
+        plane_from_points(po, &d, &c, &v->planes[3]);
+        plane_from_points(po, &a, &d, &v->planes[4]);
+    }
+}
+/* sq0 */
 
 typedef struct CullingVolumePlanes {
     Vector4 position;
@@ -378,7 +583,54 @@ s32 check_culling_map(const char *name) {
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", xglCullingMapSet);
+unsigned int strlen(const char *);
+char *strcpy(char *, const char *);
+
+void xglCullingMapSet(s32 model)
+{
+    s32 idx;
+    s32 off;
+    float *rec;
+    CullingVolume *v;
+
+    s_inCulling.count = 0;
+    s_inCulling.source = 0;
+    if (strlen((char *)model + 0x10) < 0x20) {
+        strcpy((char *)&s_inCulling, (char *)model + 0x11);
+    }
+    idx = check_culling_map((char *)&s_inCulling);
+    if (idx < 0) {
+        return;
+    }
+    s_inCulling.model = model;
+    s_inCulling.source = s_aCullingMap[idx].source;
+    if (s_aCullingMap[idx].entryCount == 0) {
+        return;
+    }
+    for (off = 0; ; off++) {
+        rec = (float *)s_aCullingMap[idx].entryCount + off * 9;
+        v = &s_inCulling.volumes[s_inCulling.count];
+        if (s_inCulling.count >= 10) {
+            return;
+        }
+        if (rec[6] < 0) {
+            return;
+        }
+        v->position.x = rec[0];
+        v->position.y = rec[1];
+        v->position.z = rec[2];
+        v->position.w = 1.0f;
+        v->rotation.x = rec[3];
+        v->rotation.y = rec[4];
+        v->rotation.z = rec[5];
+        v->scale.x = rec[6];
+        v->scale.y = rec[7];
+        v->scale.z = rec[8];
+        v->scale.w = 1.0f;
+        culling_matrix((CullingVolumeView *)v);
+        s_inCulling.count++;
+    }
+}
 
 extern float s_aCullingBase[9];
 
@@ -486,11 +738,229 @@ static void _ModelCalcClipInit(const Matrix4 clip[2])
                          "nop"                 :: "r"(clip) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", _ModelCalcClipMat2);
+static s32 _ModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2)
+{
+    s32 clipped;
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", _ModelCalcClipMat1);
+    __asm__ __volatile__(
+        "lqc2 vf10,0(%1)\n\t"
+        "lqc2 vf27,0(%2)\n\t"
+        "lqc2 vf28,16(%2)\n\t"
+        "lqc2 vf29,32(%2)\n\t"
+        "lqc2 vf30,48(%2)\n\t"
+        "vsubw.w vf27w,vf27w,vf27w\n\t"
+        "vsubw.w vf28w,vf28w,vf28w\n\t"
+        "vsubw.w vf29w,vf29w,vf29w\n\t"
+        "lqc2 vf20,0(%3)\n\t"
+        "lqc2 vf21,16(%3)\n\t"
+        "lqc2 vf22,32(%3)\n\t"
+        "lqc2 vf23,48(%3)\n\t"
+        "vsubw.w vf20w,vf20w,vf20w\n\t"
+        "vsubw.w vf21w,vf21w,vf21w\n\t"
+        "vsubw.w vf22w,vf22w,vf22w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf20xyzw,vf30xyzw,vf20w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf21x\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf21y\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf21z\n\t"
+        "vmaddw.xyzw vf21xyzw,vf30xyzw,vf21w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf22x\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf22y\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf22z\n\t"
+        "vmaddw.xyzw vf22xyzw,vf30xyzw,vf22w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf23x\n\t"
+        "vmove.xyzw vf27xyzw,vf20xyzw\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf23y\n\t"
+        "vmove.xyzw vf28xyzw,vf21xyzw\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf23z\n\t"
+        "vmove.xyzw vf29xyzw,vf22xyzw\n\t"
+        "vmaddw.xyzw vf30xyzw,vf30xyzw,vf23w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf10x\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf10y\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf10z\n\t"
+        "vmaddw.xyzw vf20xyzw,vf30xyzw,vf0w\n\t"
+        "vaddw.x vf2x,vf0x,vf10w\n\t"
+        "qmfc2 $2,vf2\n\t"
+        "mtc1 $2,$f1\n\t"
+        "vmulax.xyzw ACC,vf16xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf17xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf18xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf19xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmulax.xyzw ACC,vf12xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf13xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf14xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf15xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "sub $2,$2,$2\n\t"
+        "j 2f\n\t"
+        "1:\n\t"
+        "sub $2,$2,$2\n\t"
+        "addi $2,$2,1\n\t"
+        "2:\n\t"
+        "move %0,$2"
+        : "=r"(clipped)
+        : "r"(model), "r"(matrix1), "r"(matrix2)
+        : "$2", "$f0", "$f1", "memory");
+    return clipped;
+}
 
-INCLUDE_ASM("asm/main/nonmatchings/face_point", _ModelCalcClip);
+/* Handwritten function: original is assembly. */
+static s32 _ModelCalcClipMat1(s32 model, s32 matrix)
+{
+    s32 clipped;
+
+    __asm__ __volatile__(
+        "lqc2 vf10,0(%1)\n\t"
+        "lqc2 vf27,0(%2)\n\t"
+        "lqc2 vf28,16(%2)\n\t"
+        "lqc2 vf29,32(%2)\n\t"
+        "lqc2 vf30,48(%2)\n\t"
+        "vsubw.w vf27w,vf27w,vf27w\n\t"
+        "vsubw.w vf28w,vf28w,vf28w\n\t"
+        "vsubw.w vf29w,vf29w,vf29w\n\t"
+        "vmulax.xyzw ACC,vf27xyzw,vf10x\n\t"
+        "vmadday.xyzw ACC,vf28xyzw,vf10y\n\t"
+        "vmaddaz.xyzw ACC,vf29xyzw,vf10z\n\t"
+        "vmaddw.xyzw vf20xyzw,vf30xyzw,vf0w\n\t"
+        "vaddw.x vf2x,vf0x,vf10w\n\t"
+        "qmfc2 $2,vf2\n\t"
+        "mtc1 $2,$f1\n\t"
+        "vmulax.xyzw ACC,vf16xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf17xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf18xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf19xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmulax.xyzw ACC,vf12xyzw,vf20x\n\t"
+        "vmadday.xyzw ACC,vf13xyzw,vf20y\n\t"
+        "vmaddaz.xyzw ACC,vf14xyzw,vf20z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf15xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "sub $2,$2,$2\n\t"
+        "j 2f\n\t"
+        "1:\n\t"
+        "sub $2,$2,$2\n\t"
+        "addi $2,$2,1\n\t"
+        "2:\n\t"
+        "move %0,$2"
+        : "=r"(clipped)
+        : "r"(model), "r"(matrix)
+        : "$2", "$f0", "$f1", "memory");
+    return clipped;
+}
+
+/* Handwritten function: original is assembly. */
+static s32 _ModelCalcClip(s32 model)
+{
+    s32 clipped;
+
+    __asm__ __volatile__(
+        "lqc2 vf10,0(%1)\n\t"
+        "vaddw.x vf2x,vf0x,vf10w\n\t"
+        "qmfc2 $2,vf2\n\t"
+        "mtc1 $2,$f1\n\t"
+        "vmulax.xyzw ACC,vf16xyzw,vf10x\n\t"
+        "vmadday.xyzw ACC,vf17xyzw,vf10y\n\t"
+        "vmaddaz.xyzw ACC,vf18xyzw,vf10z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf19xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmulax.xyzw ACC,vf12xyzw,vf10x\n\t"
+        "vmadday.xyzw ACC,vf13xyzw,vf10y\n\t"
+        "vmaddaz.xyzw ACC,vf14xyzw,vf10z\n\t"
+        "vmaddw.xyzw vf9xyzw,vf15xyzw,vf0w\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "vmr32.xyzw vf9xyzw,vf9xyzw\n\t"
+        "qmfc2 $2,vf9\n\t"
+        "mtc1 $2,$f0\n\t"
+        "c.lt.s $f0,$f1\n\t"
+        "bc1f 1f\n\t"
+        "sub $2,$2,$2\n\t"
+        "j 2f\n\t"
+        "1:\n\t"
+        "sub $2,$2,$2\n\t"
+        "addi $2,$2,1\n\t"
+        "2:\n\t"
+        "move %0,$2"
+        : "=r"(clipped)
+        : "r"(model)
+        : "$2", "$f0", "$f1", "memory");
+    return clipped;
+}
 
 s32 xglStudioGetActiveCamera(void);
 s32 _ModelCalcClip(s32 model);

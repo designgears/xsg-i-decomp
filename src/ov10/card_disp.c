@@ -928,7 +928,245 @@ void CardDispHelpCard(char mode, Matrix4 matrix)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/card_disp", CardHelpProc);
+extern CHPTitleList D_00A578C8;
+extern CHPTitleList D_00A57B38;
+extern s8 SkipStartList[7];
+extern u8 SkipPageLst[7][14];
+extern s8 PageStatusLst[][3];
+extern u8 *CardHelpTxtLst[];
+extern u8 *CardTitleTxtLst[];
+extern char *CardSkipTitleTxtLst[];
+extern char *CardBookMarkTxtLst[];
+extern const char D_00A4E2F0[];
+extern const char D_00A4E2F8[];
+extern const char D_00A4E300[];
+extern const char D_00A4E310[];
+extern const char D_00A4E318[];
+extern void xglFontPrint(int x, int y, int color, const char *text);
+extern void xglSoundEffectNormalID(int sound_id, int variant);
+extern void CardStrListDisp(void *w, char **strs, int sel);
+extern void CardDispTxtSub(u16 x, u16 y, unsigned char *text, u16 color);
+extern void CardDispTxtSub2(u16 x, u16 y, unsigned char *text);
+#define HELP_CUR(w) ((w)->helpTopic)
+
+void CardHelpProc(CardGameWork *work)
+{
+    Matrix4 m;
+    Matrix4 m2;
+    float trans[4];
+    float scale[4];
+    u16 pressed;
+    u16 dirs;
+    int card;
+    int q;
+    u8 page;
+
+    xglMatrixUnit(m);
+    scale[0] = scale[1] = 0.97f;
+    scale[3] = 1.0f;
+    scale[2] = 1.0f;
+    trans[0] = trans[1] = trans[2] = 0.0f;
+    trans[3] = 1.0f;
+    xglMatrixScale(m, m, scale);
+
+    pressed = work->command.input[0].pressed;
+    dirs = work->command.input[0].directions;
+    if (work->menuPlayer != 0) {
+        pressed = work->command.input[1].pressed;
+        dirs = work->command.input[1].directions;
+    }
+
+    switch (work->helpState & 0xF0) {
+    case 0x30:
+        CHPMenuInitSub(&D_00A578C8, &D_00A57B38);
+        work->helpState = 0x10;
+    case 0x10:
+        if (pressed & 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            work->helpState = 1;
+        }
+        if (dirs & 0x1000) {
+            if (D_00A578C8.flagC != 0) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A578C8.flagC--;
+                CHPTitleInitSub(&D_00A57B38, D_00A578C8.flagC);
+            }
+        } else if (dirs & 0x4000) {
+            if (D_00A578C8.flagC < 6) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A578C8.flagC++;
+                CHPTitleInitSub(&D_00A57B38, D_00A578C8.flagC);
+            }
+        } else if (pressed & 0x2020) {
+            xglSoundEffectNormalID(1, 0);
+            work->helpState = 0x20;
+        }
+        xglFontPrint(0, 0, 0, D_00A4E2F0);
+        xglFontPrint(6, 0x19, 0xFFF0, D_00A4E2F8);
+        xglFontPrint(6, 0x19, 0xFFF0, D_00A4E300);
+        xglFontPrint(0x10A, 0x19, 0xFFF0, D_00A4E310);
+        CardStrListDisp(&D_00A578C8, CardBookMarkTxtLst, D_00A578C8.flagC);
+        CardStrListDisp(&D_00A57B38, &CardSkipTitleTxtLst[SkipStartList[D_00A578C8.flagC]], -1);
+        CHPMenuBackDispSub(m);
+        break;
+    case 0x20:
+        if (pressed & 0x8040) {
+            xglSoundEffectNormalID(2, 0);
+            work->helpState = 0x10;
+        }
+        if (dirs & 0x1000) {
+            if (D_00A57B38.flagC != 0) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A57B38.flagC--;
+            }
+        } else if (dirs & 0x4000) {
+            if (D_00A57B38.flagC < D_00A57B38.count - 1) {
+                xglSoundEffectNormalID(3, 0);
+                D_00A57B38.flagC++;
+            }
+        } else if (pressed & 0x20) {
+            xglSoundEffectNormalID(1, 0);
+            page = SkipPageLst[D_00A578C8.flagC][D_00A57B38.flagC];
+            work->helpState = 1;
+            HELP_CUR(work) = page;
+            if (work->activeHelpPage < 100) {
+                work->activeHelpPage++;
+            }
+            work->helpPage[work->activeHelpPage] = HELP_CUR(work);
+        }
+        CardStrListDisp(&D_00A578C8, CardBookMarkTxtLst, D_00A578C8.flagC);
+        CardStrListDisp(&D_00A57B38, &CardSkipTitleTxtLst[SkipStartList[D_00A578C8.flagC]], D_00A57B38.flagC);
+        xglFontPrint(0, 0, 0, D_00A4E2F0);
+        xglFontPrint(6, 0x19, 0xFFF0, D_00A4E2F8);
+        xglFontPrint(6, 0x19, 0xFFF0, D_00A4E300);
+        xglFontPrint(0x10A, 0x19, 0xFFF0, D_00A4E310);
+        CHPMenuBackDispSub(m);
+        break;
+    default:
+        if (pressed & 8) {
+            xglSoundEffectNormalID(3, 0);
+            HELP_CUR(work)++;
+            if (HELP_CUR(work) > 0x3A) {
+                HELP_CUR(work) = 0;
+            }
+        } else if (pressed & 4) {
+            xglSoundEffectNormalID(3, 0);
+            HELP_CUR(work)--;
+            if (HELP_CUR(work) < 0) {
+                HELP_CUR(work) = 0x3A;
+            }
+        } else {
+            goto other;
+        }
+        if (work->activeHelpPage < 100) {
+            work->activeHelpPage++;
+        }
+        work->helpPage[work->activeHelpPage] = HELP_CUR(work);
+        goto disp;
+    other:
+        if (pressed & 0x80) {
+            CHPMenuInitSub(&D_00A578C8, &D_00A57B38);
+            xglSoundEffectNormalID(1, 0);
+            work->helpState = 0x10;
+        } else if (pressed & 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            if (work->activeHelpPage == 0) {
+                work->helpState = 0;
+            } else {
+                work->activeHelpPage--;
+                HELP_CUR(work) = work->helpPage[work->activeHelpPage];
+            }
+        }
+    disp:
+        xglFontPrint(6, 0x19, 0xFFF0, D_00A4E318);
+        CardDispTxtSub(6, 0x19, CardTitleTxtLst[HELP_CUR(work)], 0xC);
+        CardDispTxtSub2(6, 0x32, CardHelpTxtLst[HELP_CUR(work)]);
+        CardDispTxtSub(0x11E, 0x19, (unsigned char *)CardBookMarkTxtLst[PageStatusLst[HELP_CUR(work)][0]], 0xC);
+        CardDispHelpCard(HELP_CUR(work), m);
+
+        trans[1] = -1.496f;
+        card = 0x1C8A800 + PageStatusLst[HELP_CUR(work)][0] * 0x400;
+        trans[2] = 0.0f;
+        trans[3] = 1.0f;
+        scale[1] = 0.9f;
+        scale[0] = 0.9f;
+        trans[0] = 1.0064001f;
+        scale[3] = 1.0f;
+        scale[2] = 1.0f;
+        xglMatrixTrans(m2, m, trans);
+        xglMatrixScale(m2, m2, scale);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetTexture((const char *)0x1C990A0);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)card);
+
+        q = (PageStatusLst[HELP_CUR(work)][1] + 1) / 10;
+        if (q != 0) {
+            trans[0] = 1.3564f;
+            card = 0x1C8A400 + q * 0x400;
+            xglMatrixTrans(m2, m, trans);
+            xglMatrixScale(m2, m2, scale);
+            nmlModelSetPlace((Vector4 *)m2);
+            nmlModelSetTexture((const char *)0x1C990A0);
+            nmlModelSetRenderLevel(2);
+            nmlModelEntryCard((void *)card);
+        }
+        card = 0x1C8A400 + ((PageStatusLst[HELP_CUR(work)][1] + 1) % 10) * 0x400;
+        trans[0] = 1.4824001f;
+        xglMatrixTrans(m2, m, trans);
+        xglMatrixScale(m2, m2, scale);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetTexture((const char *)0x1C990A0);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)card);
+
+        q = (HELP_CUR(work) + 1) / 10;
+        if (q != 0) {
+            trans[0] = 1.8304f;
+            card = 0x1C8A400 + q * 0x400;
+            xglMatrixTrans(m2, m, trans);
+            xglMatrixScale(m2, m2, scale);
+            nmlModelSetPlace((Vector4 *)m2);
+            nmlModelSetTexture((const char *)0x1C990A0);
+            nmlModelSetRenderLevel(2);
+            nmlModelEntryCard((void *)card);
+        }
+        card = 0x1C8A400 + ((HELP_CUR(work) + 1) % 10) * 0x400;
+        trans[0] = 1.9564f;
+        xglMatrixTrans(m2, m, trans);
+        xglMatrixScale(m2, m2, scale);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetTexture((const char *)0x1C990A0);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)card);
+
+        trans[0] = -1.4184f;
+        trans[1] = trans[2] = 0.0f;
+        trans[3] = 1.0f;
+        xglMatrixTrans(m2, m, trans);
+        nmlModelSetTexture((const char *)0x1CB0000);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)0x1CA1000);
+
+        trans[1] = 1.832f;
+        trans[0] = 1.4184f;
+        xglMatrixTrans(m2, m, trans);
+        nmlModelSetTexture((const char *)0x1CC0050);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)0x1CA1C00);
+
+        trans[0] = 1.4184f;
+        trans[1] = -1.832f;
+        xglMatrixTrans(m2, m, trans);
+        nmlModelSetTexture((const char *)0x1CC0050);
+        nmlModelSetPlace((Vector4 *)m2);
+        nmlModelSetRenderLevel(2);
+        nmlModelEntryCard((void *)0x1CA6000);
+        break;
+    }
+}
 
 /*
  * Clears the 256-byte help page-state buffer at +0x59c0..+0x5abf, then the

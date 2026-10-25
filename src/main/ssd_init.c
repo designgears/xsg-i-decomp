@@ -15,6 +15,26 @@ extern void SleepThread(void);
 extern void RssdInitIop(void);
 extern void sceSifRpcLoop(void *queue);
 
+/* Types ported from the derwetterfrosch fork (2026-10-19). */
+typedef struct SsdSemaCreateInfo {
+    int _unmodeled_00;                    /* +0x00 */
+    int max_count;                        /* +0x04 */
+    int init_count;                       /* +0x08 */
+    unsigned char _unmodeled_0c[0x08];    /* +0x0c..0x13 */
+    unsigned int option;                  /* +0x14 */
+} SsdSemaCreateInfo;
+
+typedef struct SsdThreadCreateInfo {
+    int _unmodeled_00;                    /* +0x00 */
+    void (*func)(void);                   /* +0x04 */
+    void *stack;                          /* +0x08 */
+    int stack_size;                       /* +0x0c */
+    void *gp_reg;                         /* +0x10 */
+    int initial_priority;                 /* +0x14 */
+    unsigned char _unmodeled_18[0x08];    /* +0x18..0x1f */
+    unsigned int option;                  /* +0x20 */
+} SsdThreadCreateInfo;
+
 INCLUDE_ASM("asm/main/nonmatchings/ssd_init", SsdInit);
 
 enum {
@@ -74,19 +94,19 @@ extern void sceSifRegisterRpc(void *sd, unsigned int command, void *func, void *
 extern int GetThreadId(void);
 extern int printf(const char *format, ...);
 extern const char D_004D4A60[];
-extern void RssdSifRpcServer();
+extern void *RssdSifRpcServer();
 
 void RssdInitIop(void)
 {
     RssdRequest request;
     RssdWorkFlags *w;
 
-    if (sceSifBindRpc(&RssdWork._unmodeled_0a0[0x80], 0x900, 1) < 0)
+    if (sceSifBindRpc(&RssdWork.rpc_client, 0x900, 1) < 0)
         return;
-    while (sceSifCheckStatRpc(&RssdWork._unmodeled_0a0[0x80]) != 0)
+    while (sceSifCheckStatRpc(&RssdWork.rpc_client) != 0)
         ;
     w = &RssdWork;
-    if (*(int *)&w->_unmodeled_0a0[0xa4] == 0) {
+    if (*(int *)&w->rpc_client_serve == 0) {
         printf(D_004D4A60, 0x900);
         return;
     }
@@ -94,11 +114,73 @@ void RssdInitIop(void)
     sceSifSetRpcQueue(w->rpc_queue, GetThreadId());
     sceSifRegisterRpc(w->rpc_server, 0x901, RssdSifRpcServer,
                       *(void **)&w->_unmodeled_038[0x6c], 0, 0, w->rpc_queue);
-    request.arg[0].value = *(int *)w->_unmodeled_00c;
+    request.arg[0].value = *(int *)((unsigned char *)&w->init_parameter);
     RssdCallFunc(1, &request, 0, 0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", RssdSifRpcServer);
+typedef struct RssdWorkRS {
+    unsigned char _pad0[0x1c];
+    int server_call_count;
+    void (*server_callback)(unsigned int command, void *request, void *arg);
+    void *server_callback_arg;
+    unsigned char _pad28[0x100 - 0x28];
+    RssdRpcResponse server_packet;
+    unsigned char _pad120[0x1e8 - 0x120];
+    void (*sample_dma_callback)(void *arg);
+    void *sample_dma_callback_arg;
+    void (*sample_keyoff_callback)(int channel, void *arg);
+    void *sample_keyoff_callback_arg;
+    void (*stream_end_callback)(int channel, void *arg);
+    void *stream_end_callback_arg;
+} RssdWorkRS;
+extern RssdWorkRS RssdWorkAliasRS __asm__("RssdWork");
+extern void RssdBusy();
+extern void RssdSpuRead();
+extern void RssdBackgroundNextWave();
+
+void *RssdSifRpcServer(unsigned int command, void *data, int size)
+{
+    RssdRpcResponse *packet = data;
+    RssdRequest *request = data;
+    int channel;
+
+    RssdWorkAliasRS.server_packet = *packet;
+    RssdWorkAliasRS.server_packet.error_code = command;
+    RssdWorkAliasRS.server_packet.result = 0;
+    RssdWorkAliasRS.server_call_count++;
+    switch (command) {
+    case 4096:
+        RssdBusy(data);
+        break;
+    case 27:
+        RssdSpuRead(data);
+        break;
+    case 37:
+        RssdBackgroundNextWave(data);
+        break;
+    case 218:
+        if (RssdWorkAliasRS.sample_dma_callback != 0)
+            RssdWorkAliasRS.sample_dma_callback(RssdWorkAliasRS.sample_dma_callback_arg);
+        break;
+    case 219:
+        if (RssdWorkAliasRS.sample_keyoff_callback != 0)
+            RssdWorkAliasRS.sample_keyoff_callback(0, RssdWorkAliasRS.sample_keyoff_callback_arg);
+        break;
+    case 10:
+        if (RssdWorkAliasRS.stream_end_callback != 0) {
+            for (channel = 0; channel < 4; channel++) {
+                if ((request->arg[0].value >> channel) & 1)
+                    RssdWorkAliasRS.stream_end_callback(channel, RssdWorkAliasRS.stream_end_callback_arg);
+            }
+        }
+        break;
+    default:
+        if (RssdWorkAliasRS.server_callback != 0)
+            RssdWorkAliasRS.server_callback(command, data, RssdWorkAliasRS.server_callback_arg);
+        break;
+    }
+    return data;
+}
 
 extern int SignalSema(int sema_id);
 typedef struct RssdWorkView {
@@ -224,7 +306,7 @@ int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
         *buf = *(RssdRpcResponse *)request;
     total = ((size + 0xF) & ~0xF) + 0x20;
     buf->error_code = command;
-    buf->_unmodeled_0c[0] = size;
+    buf->data_size = size;
     if (total > 0x10020) {
         printf(D_004D4A80);
         RssdWork.flags &= ~8;
@@ -234,7 +316,7 @@ int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
     if (size != 0)
         SsdCopyMemory(buf + 1, data, size);
     FlushCache(0);
-    ret = sceSifCallRpc(&RssdWork._unmodeled_0a0[0x80], command, 1, buf, total, buf, 0x20, RssdSifRpcCallback, &RssdWork);
+    ret = sceSifCallRpc(&RssdWork.rpc_client, command, 1, buf, total, buf, 0x20, RssdSifRpcCallback, &RssdWork);
     if (ret < 0) {
         RssdWork.flags &= ~8;
         SignalSema(RssdWork.sema_id);

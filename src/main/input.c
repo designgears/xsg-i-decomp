@@ -9,7 +9,7 @@
  */
 typedef struct JThread JThread;
 
-extern void *classJava_xeno_util_Input;
+extern SceneClass *classJava_xeno_util_Input;
 
 extern JavaField *lookupClassField(void *class_object, void *name, int flags);
 
