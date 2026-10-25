@@ -152,7 +152,7 @@ def prepare(root, evidence):
         verification.require(len(target_functions) == len(obj['functions']) and
                              sum(target_functions.values()) == sum(f[2] for f in obj['functions']),
                              f'{name}: target function scope differs from tracked TU')
-        return unit_config, dict(functions=target_functions, allowed=allowed,
+        return unit_config, dict(functions=target_functions, allowed={**allowed, **{f['original_symbol']: f['size'] for f in checked['functions']}},
                                  complete=checked['complete'])
 
     with ThreadPoolExecutor(max_workers=4) as pool:
