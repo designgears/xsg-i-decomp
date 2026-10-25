@@ -137,6 +137,9 @@ and the whole-file gate passes.
 
 Thanks to the developers and contributors of the projects on which this work relies:
 
+- [OpokXeno/xsg-i-decomp](https://github.com/OpokXeno/xsg-i-decomp), the upstream project this
+  repository builds on, and its contributors (including TreeThugga, LinuxJessi and
+  derwetterfrosch), whose matched functions and recovered types are ported here.
 - [splat](https://github.com/ethteck/splat),
   [spimdisasm](https://github.com/Decompollaborate/spimdisasm), and
   [Rabbitizer](https://github.com/Decompollaborate/rabbitizer) for splitting and disassembly.
