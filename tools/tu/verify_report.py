@@ -193,10 +193,19 @@ def finish(root, build, snapshot):
                     if category == 'exact_asm':
                         continue
                     target = original_symbol(original, name, size, va)
-                    require(target.name in emitted,
+                    c_name = target.name
+                    if c_name not in emitted:
+                        # A nested function's private suffix (`f.3`) is a compiler
+                        # counter, not code: accept the one emitted `f.N` of that base.
+                        base, dot, num = c_name.rpartition('.')
+                        alts = [e for e in emitted if dot and num.isdigit()
+                                and e.rpartition('.')[0] == base and e.rpartition('.')[2].isdigit()]
+                        if len(alts) == 1:
+                            c_name = alts[0]
+                    require(c_name in emitted,
                             f'{obj["id"]}/{name}: no compiler-emitted C function')
-                    current = symbol(linked, target.name, size, va)
-                    compiled_sym = symbol(compiled, target.name, size)
+                    current = symbol(linked, c_name, size, va)
+                    compiled_sym = symbol(compiled, c_name, size)
                     require(target.bind == current.bind == compiled_sym.bind,
                             f'{obj["id"]}/{name}: symbol binding differs')
                     a, b = function_bytes(original, target), function_bytes(linked, current)
