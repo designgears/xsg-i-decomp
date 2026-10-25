@@ -133,7 +133,7 @@ def prepare(root, evidence):
              '-o', target, stripped, *data], unit_dir)
         unit_config = dict(name=name, target_path=str(target), metadata=dict(
             source_path=obj['source'], progress_categories=[unit], complete=checked['complete']))
-        allowed = {f['original_symbol']: f['size'] for f in checked['functions']}
+        allowed = {f.get('c_symbol', f['original_symbol']): f['size'] for f in checked['functions']}
         if allowed:
             base = destination / 'base.o'
             assembly = compile_source(root, unit_dir, root / obj['source'], base,

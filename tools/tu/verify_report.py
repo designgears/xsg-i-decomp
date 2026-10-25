@@ -210,7 +210,7 @@ def finish(root, build, snapshot):
                             f'{obj["id"]}/{name}: symbol binding differs')
                     a, b = function_bytes(original, target), function_bytes(linked, current)
                     require(a == b, f'{obj["id"]}/{name}: linked function bytes differ')
-                    verified.append(dict(name=name, original_symbol=target.name,
+                    verified.append(dict(name=name, original_symbol=target.name, c_symbol=c_name,
                                          va=va, size=size, category=category,
                                          sha256=hashlib.sha256(b).hexdigest()))
             results[obj['id']] = dict(functions=verified)
