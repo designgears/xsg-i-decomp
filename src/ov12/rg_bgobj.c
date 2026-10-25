@@ -54,7 +54,7 @@ typedef struct RgBgObj {
 /* Defined later in this TU. */
 static void _InitRgBgObj(RgBgObj *pObj, void *dispModel, RgGeom *geomTray);
 static void _Draw(RgBgObj *pObj);
-void _PassTime(RgChar *pChar, float deltaTime);
+static void _PassTime(RgChar *pChar, float deltaTime);
 static void _Destruct(RgBgObj *pObj);
 
 /* Defined by other TUs. */
@@ -123,7 +123,7 @@ static void _Destruct(RgBgObj *pObj)
     }
 }
 
-void _PassTime(RgChar *pChar, float deltaTime)
+static void _PassTime(RgChar *pChar, float deltaTime)
 {
     RgBgObj *pObj = (RgBgObj *)pChar;
     unsigned int state;

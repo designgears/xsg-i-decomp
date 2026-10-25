@@ -138,7 +138,7 @@ static float _GetSleepTimeHomingThread(RgHomingThread *thread)
 extern float RgRobSubHoming(RgGeomPoint *geometry, RgGeomPoint *targetGeometry,
                             float speed, float turnRate);
 
-void _PassTimeHomingThread(RgHomingThread *thread, float deltaTime)
+static void _PassTimeHomingThread(RgHomingThread *thread, float deltaTime)
 {
     float t;
 

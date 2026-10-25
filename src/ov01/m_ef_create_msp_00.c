@@ -21,7 +21,7 @@ extern Vector4 *MMathSubVectorDivS(void *destination, const void *first, const v
 extern void *MEfCalcAngle(void *destination, const void *from, const void *to);
 extern void MGsGPInit(void *packet, void *address, int size);
 extern void *memset(void *destination, int value, unsigned int size);
-void fnMSP00_PR000(void *self, void *work);
+static void fnMSP00_PR000(void *self, void *work);
 static void fnMSP00_DM000();
 void fnMSP00_DP000(void *self, void *work);
 static void fnMSP00_PO000(void *self, void *work);
@@ -96,7 +96,7 @@ extern Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *fi
 extern void MMathRotateMatrixYX(Vector4 *destination, const Vector4 *source,
                                const Vector4 *angles);
 
-void fnMSP00_PR000(void *self, void *arg)
+static void fnMSP00_PR000(void *self, void *arg)
 {
     MSP00InitState *work = (MSP00InitState *)arg;
     Vector4 offset;

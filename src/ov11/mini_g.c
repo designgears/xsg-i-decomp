@@ -1351,7 +1351,7 @@ extern SlPrizeTex D_00A0DC38;
 extern const SlPrizeRct D_00A0BD88;
 extern SlPrizeRct D_00A0DC58;
 
-int SlPrizeEffect(int arg0)
+static int SlPrizeEffect(int arg0)
 {
     switch (mode_24) {
     case 0:
@@ -2063,7 +2063,7 @@ static void NgReal(void)
 
 extern void NgGetsDownBtnPrint(int);
 
-void NgGame_GetsDown(void)
+static void NgGame_GetsDown(void)
 {
     int *g = Gwork;
     double factor;

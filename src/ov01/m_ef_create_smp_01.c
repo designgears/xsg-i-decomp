@@ -113,7 +113,7 @@ typedef struct Smp01SmokeWork {
     float rotation[10][3];             /* 0x300 */
 } Smp01SmokeWork;
 
-void updateSmoke(Smp01Work *work)
+static void updateSmoke(Smp01Work *work)
 {
     Smp01SmokeWork *smoke = (Smp01SmokeWork *)work;
     Vector4 matrix[4];
@@ -160,7 +160,7 @@ extern void *MMathApplyMatrix(Vector4 *destination, const Vector4 *matrix,
                               const Vector4 *point);
 extern void MMathRotateMatrixYX(Vector4 *destination, const Vector4 *source,
                                const Vector4 *angles);
-extern void updateSmoke(Smp01Work *work);
+static void updateSmoke(Smp01Work *work);
 
 static void fnSMP01_PR010(Smp01Object *object, Smp01Work *work);
 
