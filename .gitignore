@@ -24,6 +24,7 @@
 !/tools/
 !/scripts/
 !/.github/
+!/assets/
 
 # ---------------------------------------------------------------- config/
 # The build inputs
