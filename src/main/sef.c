@@ -2487,7 +2487,7 @@ static inline int sefKeyWord(void *a)
     return *(int *)((char *)a + 0x1F4);
 }
 
-static int sefExecLineData(void *arg0)
+static int sefExecLineData(void *arg0, int arg1)
 {
   int q;
   int temp_2;
