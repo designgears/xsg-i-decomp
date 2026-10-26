@@ -950,13 +950,38 @@
      ],
      "generated": [
       "0x004be2b0",
-      "0x004be2b9"
+      "0x004be2c0"
      ],
      "generated_by": [
       "GameCFSoundReload"
      ],
      "c_owned_symbols": [
       "D_004BE2B0"
+     ],
+     "also_referenced_by_c": [
+      "D_004BE2C0",
+      "D_004BE2D0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game.o"
+     }
+    },
+    {
+     "range": [
+      "0x004be2e0",
+      "0x004be308"
+     ],
+     "generated": [
+      "0x004be2e0",
+      "0x004be304"
+     ],
+     "generated_by": [
+      "Game"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004BE2E0"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -987,7 +1012,8 @@
       "shopEffe",
       "evsEffe",
       "retEffe",
-      "D_004D8A60"
+      "D_004D8A60",
+      "D_004D8A68"
      ],
      "basis": {
       "kind": "derived",

@@ -3232,7 +3232,132 @@ void calcStatResetAll(ObjectTask *unit) {
     calcStatReset(unit, 6, 0x7FFF, 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcResult);
+typedef struct {
+  int exp, tp, ep, sp, money;
+  int grp[8];
+  int item[8];
+  int num;
+} CalcMonsGain;
+extern CalcMonsGain *monsGainPtrGet(void);
+extern int calcLvUp(int cid, int exp, char *res);
+extern int dataBoxInc(int category, int id);
+extern int dataMoneyBoxInc(int amount);
+void calcResultSub(ObjectTask *unit, int *gain, int div, int *out);
+
+int calcResult(int *out)
+{
+  CalcScratchUnit fakeUnit;
+  CalcScratchActor fakeActor;
+  int party[8];
+  int gain[24];
+  int tmp[15];
+  CalcScratchActor fakeActor2;
+  CalcScratchUnit fakeUnit2;
+  ObjectTask **table;
+  int alive;
+  CalcMonsGain *g;
+  int count;
+  int i;
+  int found;
+  int n;
+  int id;
+  int j;
+  ObjectTask *t;
+  CalcUnitParam *up;
+  CalcCharParaData *org;
+  short cid;
+  signed char lv;
+  short hp;
+  short ep;
+  g = monsGainPtrGet();
+  count = unitTblGet(0, &table);
+  alive = 0;
+  for (i = 0; i < count; i++)
+  {
+    if ((table[i] != 0) && (!((*((int *) table[i]->work)) & 0x80)))
+    {
+      alive++;
+    }
+  }
+
+  for (i = 0; i < g->num; i++)
+  {
+    dataBoxInc(g->grp[i], g->item[i]);
+  }
+
+  dataMoneyBoxInc(g->money);
+  for (i = 0; i < count; i++)
+  {
+    t = table[i];
+    if ((t != 0) && (!((*((int *) t->work)) & 0x80)))
+    {
+      if (calcUPGet(t)->flags & 0x40)
+      {
+        up = calcUPGet(table[i])->linkedUnit;
+        fakeUnit.task.work = &fakeActor;
+        fakeActor.actor.up = up;
+        t = &fakeUnit.task;
+      }
+      else
+      {
+        up = calcUPGet(table[i]);
+        t = table[i];
+      }
+      cid = up->charaId;
+      calcResultSub(t, (int *) g, alive, out);
+      org = dataUnitOrgGet(cid);
+      lv = ((signed char *) org)[0x14];
+      out[0] = cid;
+      hp = org->maxHp;
+      ep = org->maxEp;
+      if (calcLvUp(cid, out[1], out))
+      {
+        out[5] = ((signed char *) org)[0x14] - lv;
+        out[6] = org->maxHp - hp;
+        out[7] = org->maxEp - ep;
+        printf("Lv UP! (ID=%d) %d\n", cid, ((signed char *) org)[0x14]);
+      }
+      out = out + 15;
+    }
+  }
+
+  __builtin_memcpy(gain, g, 0x58);
+  gain[1] = 0;
+  gain[2] = 0;
+  gain[3] = 0;
+  gain[0] = (gain[0] / 4) * 3;
+  n = PartyAllPartyGet(party, 2);
+  for (j = 0; j < n; j++)
+  {
+    id = party[j];
+    found = 0;
+    for (i = 0; i < count; i++)
+    {
+      if (table[i] != 0)
+      {
+        if ((id == calcUPGet(table[i])->charaId) || ((calcUPGet(table[i])->flags & 0x40) && (id == calcUPGet(table[i])->linkedUnit->charaId)))
+        {
+          found = 1;
+          break;
+        }
+      }
+    }
+
+    if (found != 1)
+    {
+      fakeActor2.actor.up = (CalcUnitParam *) dataUnitOrgGet(id);
+      fakeUnit2.task.work = &fakeActor2;
+      memset(tmp, 0, 0x3C);
+      calcResultSub(&fakeUnit2.task, gain, alive, tmp);
+      if (calcLvUp(id, tmp[1], tmp))
+      {
+        printf("Alt Lv UP! (ID=%d) %d\n", id, ((signed char *) calcUPGet(&fakeUnit2.task))[0x14]);
+      }
+    }
+  }
+
+  return alive;
+}
 
 typedef struct CalcResPl {
     int exp;        /* +0x00 */

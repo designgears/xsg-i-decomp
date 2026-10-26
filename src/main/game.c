@@ -2536,4 +2536,158 @@ int GameModeDebugMenu(void)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/game", Game);
+extern void xglRenderClearOff(void);
+extern void nmlModelSetFadeInCancel(int frames);
+
+void Game(void)
+{
+    int i;
+    ActorHead *player;
+    float zero = 0.0f;
+    float one = 1.0f;
+    void *work_end = (void *)WorkEnd;
+    short *pause_flag = &pause_check;
+
+    gameLoopCG.map_number = (s16)-1;
+    gameLoopCG.saved_work_end = work_end;
+    gameLoopCG.frame_hook = (void *)0;
+    gameLoopCG.model = 0;
+    gameLoopCG.stateB0 = 0;
+    gameLoopCG.vector80[3] = one;
+    gameLoopCG.vector80[2] = one;
+    gameLoopCG.vector80[1] = one;
+    gameLoopCG.vector90[2] = zero;
+    gameLoopCG.vector90[1] = zero;
+    gameLoopCG.vector90[0] = zero;
+    gameLoopCG.vector90[3] = 30.0f;
+    gameLoopCG.vectorA0[2] = zero;
+    gameLoopCG.vectorA0[1] = zero;
+    gameLoopCG.state5c = 0;
+    gameLoopCG.state58 = 0;
+    gameLoopCG.frame_countdown = 0;
+    gameLoopCG.camera_callback = 0;
+    gameLoopCG.clear_callback = 0;
+    gameLoopCG.map_draw_callback = 0;
+    *pause_flag = 0;
+    gameLoopCG.kind = 0;
+    gameLoopCG.stateC8 = 0;
+    gameLoopCG.actor_draw_callback = 0;
+    gameLoopCG.vector80[0] = one;
+    gameLoopCG.vectorA0[0] = zero;
+    gameLoopCG.vectorA0[3] = 30.0f;
+    gameLoopCG.stateD0 = -2;
+    gameLoopCG.flags = 0x302;
+    nmlModelSetFadeInCancel(30u);
+    nmlModelSetEffectWrite(1);
+    Enemy_SystemInit();
+    InitUwamonoSys();
+    xglRenderClearDepth();
+    xglRenderGlobalFadeInit();
+    xglRenderClearOff();
+    xglStudioChange(0);
+    xglLightSetDefault((GameLightSet *)xglStudioGetLight2());
+    GameCameraReset();
+    GameCFSoundReload();
+    GameResourceInit(0x1000000, 0x1000000);
+    MSG_init();
+    TWSYS_init();
+    MapInit();
+    MAP_initUnit();
+    SCRIPT_sceneChangeTimeInit();
+    SCRIPT_clrEventActiveFlag();
+    SCRIPT_talkIgnoreClr();
+    ACT_init();
+    for (i = 0; i < 64; i++) {
+        actor[i].update = 0;
+    }
+    GameDefocusSet(-1, 0, 0);
+    GameBgDrawType0();
+    func_A22628();
+    sefInitEffectCf();
+    gameLoopCG.scheduler = (XglTaskScheduler *)WorkEnd;
+    WorkEnd = xglTaskInitial(WorkEnd, 64, 0);
+    WorkEnd = SCRIPT_init(WorkEnd);
+    GameRadarInit();
+    GameCfPlayerMoveInit();
+    gameLoopCG.controlled_actor = (struct LookAtPlayerActor *)ACT_create(0, 1);
+    Player_System_Init(gameLoopCG.controlled_actor);
+    gameLoopCG.status = 0x10;
+    if (gameLoopCG.kindDetail != 0) {
+        Quadword *position_dst;
+
+        player = (ActorHead *)gameLoopCG.controlled_actor;
+        GamePopSaveDataUser();
+        position_dst = (Quadword *)&player->position;
+        Java_xeno_util_Runtime_jump_sub(gameLoopCG.current_event_id, -1);
+        __asm__ __volatile__(
+            "lq $2, 0(%1)\n"
+            "sq $2, 0(%0)\n"
+            :
+            : "r" (position_dst), "r" (&gameLoopCG.saved_actor_position)
+            : "$2", "memory");
+        gameLoopCG.move_mode |= 0xa0;
+    } else {
+        Java_xeno_util_Runtime_jump_sub(gameLoopCG.current_event_id, -1);
+    }
+    while (1) {
+        if (gameLoopCG.frame_hook != 0) {
+            gameLoopCG.frame_hook(2);
+        }
+        nmlModelSendPauseSignal(gameLoopCG.flags & 1);
+        SCRIPT_sceneChangeTimeDec();
+        Disp_Homing();
+        if (gameLoopCG.status != 0) {
+            gameLoopCG.status--;
+        }
+        switch (gameLoopCG.kind) {
+        case 0:
+            gameLoopCG.kind = 2;
+            break;
+        case 1:
+            GameModePause();
+            break;
+        case 2:
+            GameModeCfMain();
+            break;
+        case 3:
+            GameModeCfEvent();
+            break;
+        case 6:
+            GameModeEvtDebug();
+            break;
+        case 7:
+            GameModeEvtTools();
+            break;
+        case 8:
+            GameModeDebugMenu();
+            break;
+        }
+        if (gameLoopCG.flags & 0x90000000) {
+            break;
+        }
+        xglTaskExecute(gameLoopCG.scheduler);
+        GameDrawSync();
+    }
+    xglSoundStreamStop(0);
+    GameMovieStop();
+    GameDefocusSet(-1, 0, 0);
+    sefInitEffectCf();
+    xglCdReset();
+    xglCullingMapInit();
+    GameCFSoundPurge();
+    nmlModelSendPauseSignal(0);
+    SCRIPT_sceneChangeTimeInit();
+    SCRIPT_clrEventActiveFlag();
+    SCRIPT_talkIgnoreClr();
+    xglRenderGlobalFadeInit();
+    xglStudioMainCameraInit();
+    nmlModelConstruct();
+    xglRenderClearOff();
+    WorkEnd = gameLoopCG.saved_work_end;
+    if (gameLoopCG.flags & 0x8000000) {
+        GameOver();
+    }
+    gameLoopCG.kind = 0;
+    xglSleep();
+    xglSleep();
+}
