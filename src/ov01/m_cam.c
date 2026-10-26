@@ -30,7 +30,7 @@ extern UnitInitData *dataUnitInitGet(int id);
  * data_ownership); the scaffold defines it under the original ELF's own
  * local symbol names, imported through config/symbols/ov01.txt.
  */
-extern void *sysCam;
+extern StudioCamera *sysCam;
 extern unsigned char sysCamBuff[0x5F0];
 extern int camFlags;
 extern unsigned char camParams[0x5B0];
