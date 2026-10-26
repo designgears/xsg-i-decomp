@@ -1346,7 +1346,7 @@ static void sefGetDirVector(void *dest, void *source) {
     __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvsub.z vf1, vf0, vf1\n\tvmulax.xyzw ACC, vf7, vf1x\n\tvmadday.xyzw ACC, vf8, vf1y\n\tvmaddaz.xyzw ACC, vf3, vf1z\n\tvmaddw.xyzw vf1, vf4, vf1w\n\tsqc2 vf1, 0(%1)\n\tnop" :  : "r"(source), "r"(dest) : "memory");
 }
 
-extern void sefGetOfsRange(void *position, unsigned char *offset_table, short index);
+static void sefGetOfsRange(void *position, unsigned char *offset_table, int index);
 
 /*
  * SefParticleOffset (sefGetStartPos/sefGetTargetPos, main:0x002e2960 and
