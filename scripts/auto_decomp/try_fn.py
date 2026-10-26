@@ -677,6 +677,13 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
                 state = None
             if state == "c":
                 p = tu_edit("to-asm", str(tsrc), name, "--unit-dir", str(unit_dir))
+                if p.returncode != 0 and "cannot infer the INCLUDE_ASM folder" in p.stdout + p.stderr:
+                    # an all-C TU has no INCLUDE_ASM line to copy the folder from
+                    for d in sorted((unit_dir / "asm").glob(f"*/nonmatchings/{tu}")):
+                        if (d / f"{name}.s").is_file():
+                            p = tu_edit("to-asm", str(tsrc), name, "--unit-dir", str(unit_dir),
+                                        "--asm-dir", str(d.relative_to(unit_dir)))
+                            break
                 if p.returncode != 0:
                     raise TryError(f"tu_edit to-asm failed: {(p.stdout + p.stderr)[-1500:]}")
                 base_text = p.stdout

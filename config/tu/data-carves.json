@@ -3390,7 +3390,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     },
     {
@@ -3420,7 +3420,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     },
     {
@@ -3438,11 +3438,16 @@
      "c_owned_symbols": [
       "jtbl_004C4910"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004C4D80",
+      "D_004C4D98",
+      "D_004C4DB0",
+      "D_004C4DC8"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     }
    ],
@@ -3463,6 +3468,7 @@
       "FileThumbnailDisp",
       "ListColorChage_3",
       "MenuFileInfo",
+      "MenuFileMain",
       "MenuFilePas",
       "tskFileData",
       "tskFileEx",
@@ -3480,7 +3486,10 @@
       "D_004DAA58",
       "D_004DAA60",
       "D_004DAA78",
+      "FileTask",
+      "FileCardDataBuf",
       "FileSaveData",
+      "FileExistCheckWork",
       "FileJpegDec",
       "FileObjectData",
       "FileObjectDataSystem"
@@ -3488,7 +3497,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     }
    ]
@@ -4305,7 +4314,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     }
    ],
@@ -4326,7 +4335,6 @@
       "jtbl_004C7710"
      ],
      "also_referenced_by_c": [
-      "D_004C7390",
       "D_004C74B0",
       "D_004C7500",
       "D_004C7520",
@@ -4338,7 +4346,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     },
     {
@@ -4365,7 +4373,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     },
     {
@@ -4387,7 +4395,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     },
     {
@@ -4411,7 +4419,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     },
     {
@@ -4429,13 +4437,11 @@
      "c_owned_symbols": [
       "jtbl_004C7A20"
      ],
-     "also_referenced_by_c": [
-      "D_004C7AA8"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+      "object": "build/main/build/c/menu_shop.o"
      }
     }
    ]
@@ -9054,13 +9060,35 @@
       "D_004D8784"
      ],
      "also_referenced_by_c": [
-      "D_004D878C",
-      "D_004D8790"
+      "D_004D8788"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/map_create_unit_peer.o"
+      "object": "build/main/build/c/map_create_unit_peer.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d878c",
+      "0x004d8794"
+     ],
+     "generated": [
+      "0x004d878c",
+      "0x004d8794"
+     ],
+     "generated_by": [
+      "SEQ_motionUnit"
+     ],
+     "c_owned_symbols": [
+      "D_004D878C",
+      "D_004D8790"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/map_create_unit_peer.o"
      }
     }
    ]

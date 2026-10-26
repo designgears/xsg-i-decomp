@@ -37,7 +37,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GCC = ROOT / ".work/toolchains/ee-gcc2.96-realconv-lp7-fsv3-v1/bin"
+GCC = ROOT / ".work/toolchains/ee-gcc2.96-realconv-lp7-fsv5-usecount-v1/bin"
 sys.path.insert(0, str(ROOT / "tools/tu"))
 from noaslr import NOASLR  # noqa: E402
 MEM = re.compile(r"\(mem[/\w]*:\w+ \(addressof[^\n]*?\) (-?\d+)\)")

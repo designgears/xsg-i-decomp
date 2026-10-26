@@ -4857,8 +4857,8 @@ typedef struct CGPCFStackSlot {
     CardLayerStackView battle;
     float nextShunt[3];
 } CGPCFStackSlot;
-extern s16 D_00A57DF0;
-extern s16 D_00A57DF2 __asm__("D_00A57DF0+2");
+extern s16 D_00A57DF0[1];
+extern s16 D_00A57DF2[1] __asm__("D_00A57DF0+2");
 extern CGPCFPair D_00A57DF8;
 extern s32 D_00A57E00;
 extern s32 D_00A57E04;
@@ -4944,8 +4944,8 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
 
         switch (work->command.step) {
         case 0:
-            D_00A57DF0 = 0;
-            D_00A57DF2 = 0;
+            D_00A57DF0[0] = 0;
+            D_00A57DF2[0] = 0;
             if (cnt < 2) {
                 CGPSetErrorMess(side, work, 0xD);
                 ret = 1;
@@ -4966,19 +4966,19 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
             nmlModelSetTexture((void *)0x01DB5800);
             nmlModelEntryCard((void *)0x01DAAC00);
             if ((side != 0 && work->rotStageId == 0) || (side == 0 && work->rotStageId != 0)) {
-                CGCPHandDispSub3(work->definitions, own, D_00A57DF0, 0, 0);
+                CGCPHandDispSub3(work->definitions, own, D_00A57DF0[0], 0, 0);
             } else {
-                CGCPHandDispSub2(work->definitions, own, D_00A57DF0, 0);
+                CGCPHandDispSub2(work->definitions, own, D_00A57DF0[0], 0);
             }
             if (repeat & 0x8000) {
-                if (D_00A57DF0 > 0) {
+                if (D_00A57DF0[0] > 0) {
                     xglSoundEffectNormalID(1, 0);
-                    D_00A57DF0--;
+                    D_00A57DF0[0]--;
                 }
             } else if (repeat & 0x2000) {
-                if (D_00A57DF0 < cnt - 1) {
+                if (D_00A57DF0[0] < cnt - 1) {
                     xglSoundEffectNormalID(1, 0);
-                    D_00A57DF0++;
+                    D_00A57DF0[0]++;
                 }
             }
             if (pressed & 0x20) {
@@ -4998,23 +4998,23 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
             nmlModelSetTexture((void *)0x01DB5800);
             nmlModelEntryCard((void *)0x01DAAC00);
             if ((side != 0 && work->rotStageId == 0) || (side == 0 && work->rotStageId != 0)) {
-                CGCPHandDispSub3(work->definitions, own, D_00A57DF2, 0, 0);
+                CGCPHandDispSub3(work->definitions, own, D_00A57DF2[0], 0, 0);
             } else {
-                CGCPHandDispSub2(work->definitions, own, D_00A57DF2, 0);
+                CGCPHandDispSub2(work->definitions, own, D_00A57DF2[0], 0);
             }
             if (repeat & 0x8000) {
-                if (D_00A57DF2 > 0) {
+                if (D_00A57DF2[0] > 0) {
                     xglSoundEffectNormalID(1, 0);
-                    D_00A57DF2--;
+                    D_00A57DF2[0]--;
                 }
             } else if (repeat & 0x2000) {
-                if (D_00A57DF2 < cnt - 1) {
+                if (D_00A57DF2[0] < cnt - 1) {
                     xglSoundEffectNormalID(1, 0);
-                    D_00A57DF2++;
+                    D_00A57DF2[0]++;
                 }
             }
             if (pressed & 0x20) {
-                if (D_00A57DF0 == D_00A57DF2) {
+                if (D_00A57DF0[0] == D_00A57DF2[0]) {
                     xglSoundEffectNormalID(5, 0);
                 } else {
                     xglSoundEffectNormalID(1, 0);
@@ -5033,7 +5033,7 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
             }
             break;
         case 4:
-            CardPlayDesert2Card(own, D_00A57DF0, D_00A57DF2);
+            CardPlayDesert2Card(own, D_00A57DF0[0], D_00A57DF2[0]);
             ret = 1;
             CardPlayDrawSute(own);
             break;

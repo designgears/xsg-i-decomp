@@ -397,7 +397,7 @@ int FileObjectAllLoad(void)
       vg->filled_color[3] = 0x80;
       vg->unfilled_color[0] = 0x40;
       vg->unfilled_color[1] = 0x40;
-      LOADWORK->result = 0;
+      *(int *)((char *)FileWork + 0x38) = 0;
       count = 0;
       i = 0;
       do
@@ -1352,12 +1352,10 @@ static void tskFileSelect(TskObject *task, void *data)
     }
     case 2: {
         short targets[4];
-        FileWorkBlockFS2 *fw;
 
         for (i = 0; i < 4; ++i)
             targets[i] = -258;
-        fw = FileWorkFS2;
-        switch (fw->state) {
+        switch (FileWorkFS2->state) {
         case 36:
             if (FileWorkFS2->input_flags & 1) {
                 view->windows[0].x = 544;
@@ -1365,11 +1363,10 @@ static void tskFileSelect(TskObject *task, void *data)
             }
             view->lists[0].selected = FileWorkFS2->device_selection;
             ListColorChage();
-            fw = FileWorkFS2;
         case 37:
         case 38:
         case 39:
-            if (!fw->hide_selection)
+            if (!FileWorkFS2->hide_selection)
                 targets[0] = 128;
             break;
         case 42:

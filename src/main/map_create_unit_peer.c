@@ -554,8 +554,6 @@ void SEQ_moveUnitXZ(MapUnitMotionRecord *unit)
 }
 
 extern void MAP_setUnitMotion(MapUnitMotionRecord *unit, int motionId);
-extern float D_004D878C;
-extern float D_004D8790;
 typedef struct {
     int pad0[2];
     int motion;
@@ -579,24 +577,20 @@ void SEQ_motionUnit(MapUnitMotionRecord *unit)
   MapUnitGroupSequenceEntry *seq = &unitSequence[((unsigned char *) unit)[0xA0]];
   SeqMotionUnit *u = (SeqMotionUnit *) (((unsigned char *) unit) + 0x100);
   SeqMotionTrack *track = (SeqMotionTrack *) (((unsigned char *) seq) + 0x138);
-  float k;
-  int new_var;
   if (!(seq->flags & 0x10))
   {
     seq->flags |= 0x10;
     MAP_setUnitMotion(unit, track->motion);
-    k = D_004D878C;
-    new_var = (!D_004D8790) && (!D_004D8790);
     u->flags = track->flags;
     if (track->start >= 0)
     {
-      u->time = (u->start = track->start * k);
-      u->end = track->end * k;
+      float st = track->start * 0.033333335f;
+      float en = track->end * 0.033333335f;
+      u->start = st;
+      u->time = st;
+      u->end = en;
     }
-    if (new_var && (!D_004D8790))
-    {
-    }
-    u->speed = track->speed * D_004D8790;
+    u->speed = track->speed * 0.033333335f;
   }
   if (!(seq->state & (~0x10)))
   {
