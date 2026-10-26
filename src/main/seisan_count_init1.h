@@ -52,9 +52,12 @@ extern void subSeisanMain(void);
  * recovers dataPlChaGet itself.
  */
 typedef struct SeisanCharRecord {
-    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
     int experience;
     int nextExp;                    /* +0x04 */
+    unsigned char unmodeled_08[4];
+    int techPoints;
+    int skillPoints;
+    int specialPoints;
 } SeisanCharRecord;
 
 extern SeisanCharRecord *func_A19210(int chrNo);
@@ -98,8 +101,7 @@ extern SeisanCountData SeisanCN;
  * count is nonzero, Check01 returns 0x58 once one reaches 5 or more.
  */
 typedef struct SeisanHissatuEntry {
-    int count;                      /* +0x00 */
-    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    int characterNo;
     int experience;
     int techPoints;
     int skillPoints;
@@ -108,12 +110,11 @@ typedef struct SeisanHissatuEntry {
     int hp;
     int ep;
     int learnedIds[6];
-    unsigned char unmodeled_38[0x4];
+    int count;                      /* +0x38 */
 } SeisanHissatuEntry;
 
 typedef struct SeisanResultData {
-    unsigned char unmodeled_00[0x38];
-    SeisanHissatuEntry entries[1];  /* +0x38: indexed dynamically, count from SeisanWork[6] */
+    SeisanHissatuEntry entries[3];  /* three 0x3c-byte rows, 180 bytes */
 } SeisanResultData;
 
 extern SeisanResultData *SeisanResult;
@@ -180,6 +181,7 @@ typedef struct SeisanButtonSprite {
     short x;                        /* +0x04 */
     short y;                        /* +0x06 */
     int color;                      /* +0x08 */
+    unsigned char unmodeled_0c[0x28 - 0x0c];
 } SeisanButtonSprite;
 
 typedef struct SeisanButtonWork {

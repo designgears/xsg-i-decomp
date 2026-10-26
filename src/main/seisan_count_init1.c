@@ -1488,4 +1488,224 @@ void SeisanDisp(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/seisan_count_init1", SeisanInit);
+typedef struct SeisanRewardSnapshot {
+    int techPoints;
+    int skillPoints;
+    int specialPoints;
+    int experience;
+} SeisanRewardSnapshot;
+typedef struct SeisanBackgroundColor {
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+    unsigned char unmodeled_03;
+} SeisanBackgroundColor;
+typedef struct SeisanItemCategoryTable {
+    short entries[4];
+} SeisanItemCategoryTable;
+typedef unsigned int SeisanQuadword __attribute__((mode(TI)));
+typedef struct SeisanRenderPrefix {
+    unsigned char unmodeled_00[0x12];
+    unsigned short height;
+    unsigned short flipBase;
+} SeisanRenderPrefix;
+extern SeisanRenderPrefix sRender;
+extern unsigned int GameLoopState[];
+extern SeisanFadeData *SeisanFadeView __asm__("SeisanFade");
+extern SeisanMoneyDataTE *func_00A0F110(void);
+static inline int SeisanRewardCharacter(int partySlot)
+{
+    const SeisanHissatuEntry *results = SeisanResult->entries;
+    return results[partySlot].characterNo;
+}
+static inline SeisanControlState *SeisanControlGet(void)
+{
+    return (void *)SeisanWork;
+}
+static inline void SeisanItemBoxClear(SeisanItemEntrySI *item)
+{
+    int itemSlot;
+    for (itemSlot = 0; itemSlot < 8; itemSlot++) {
+        item->itemId = 0;
+        item->count = 0;
+        item++;
+    }
+}
+extern const SeisanItemCategoryTable D_004DB0B8[];
+
+void SeisanInit(void)
+{
+    SeisanRewardSnapshot before[16];
+    SeisanItemCategoryTable itemGroups;
+    int itemCodes[8];
+    SeisanBackgroundColor background;
+    unsigned char *work;
+    TskObject *object;
+    SeisanStatusPanel *status;
+    int oldMoney;
+    int rewardTotal;
+    int withinCap;
+    int partySlot;
+    int i;
+    int entrySlot;
+
+    work = MenuWorkEndGet();
+    work = (void *)(((unsigned int)work + 127) & ~127U);
+    endPrintInit();
+    work = (void *)MenuBgTaskInit(work, 3);
+    xglStudioGetCamera2(3)->active = 1;
+    SeisanTask = (void *)work;
+    work = xglTaskInitial(work, 16, 0);
+    object = (TskObject *)xglTaskEntryNext(SeisanTask,
+                    (int (*)(XglTaskPrefix *))tskTskMain2,
+                    SeisanTask ? SeisanTask->active_tail : 0);
+    TskObjectSet2(object, (TskObjectWorker)SeisanTimeEx, work);
+    work += sizeof(SeisanTimePanel);
+    object = (TskObject *)xglTaskEntryNext(SeisanTask,
+                    (int (*)(XglTaskPrefix *))tskTskMain2,
+                    SeisanTask ? SeisanTask->active_tail : 0);
+    TskObjectSet2(object, (TskObjectWorker)tskSeisanButton, work);
+    work += sizeof(SeisanButtonWork);
+    object = (TskObject *)xglTaskEntryNext(SeisanTask,
+                    (int (*)(XglTaskPrefix *))tskTskMain2,
+                    SeisanTask ? SeisanTask->active_tail : 0);
+    TskObjectSet2(object, (TskObjectWorker)tskSeisanItem, work);
+    work += sizeof(SeisanItemPanel);
+    for (partySlot = 0; partySlot < 3; partySlot++) {
+        status = (void *)work;
+        object = (TskObject *)xglTaskEntryNext(SeisanTask,
+                        (int (*)(XglTaskPrefix *))tskTskMain2,
+                        SeisanTask ? SeisanTask->active_tail : 0);
+        TskObjectSet2(object, (TskObjectWorker)tskSeisanStatus, status);
+        status->partySlot = partySlot;
+        work += sizeof(*status);
+    }
+    SeisanFadeView = (void *)work;
+    work += sizeof(*SeisanFadeView);
+    SeisanFadeView->state = 0;
+    SeisanWork = work;
+    work += 64;
+    {
+        SeisanQuadword *const clearBase = (void *)SeisanWork;
+        SeisanQuadword clearValue = 0;
+        rewardTotal = 3;
+        do {
+            clearBase[3 - rewardTotal] = clearValue;
+        } while (--rewardTotal >= 0);
+    }
+    SeisanControlGet()->requestedState = 32;
+    SeisanItemBox = (void *)work;
+    {
+        SeisanItemEntrySI *item = (void *)work;
+        work += 8 * sizeof(*item);
+        SeisanItemBoxClear(item);
+    }
+    SeisanResult = (void *)work;
+    work += sizeof(*SeisanResult);
+    memset(SeisanResult, 0, sizeof(*SeisanResult));
+    SeisanCountInit1();
+    {
+        int snapshotCharacter;
+        for (snapshotCharacter = 1; snapshotCharacter < 13; snapshotCharacter++) {
+            SeisanCharRecord *character = func_A19210(snapshotCharacter);
+            before[snapshotCharacter - 1].techPoints = character->techPoints;
+            before[snapshotCharacter - 1].skillPoints = character->skillPoints;
+            before[snapshotCharacter - 1].specialPoints = character->specialPoints;
+            before[snapshotCharacter - 1].experience = character->experience;
+        }
+    }
+    oldMoney = dataMoneyBoxChk();
+    func_A17C08(SeisanResult);
+    SeisanMg = func_00A0F110();
+    for (i = 0; i < 3; i++) {
+        int characterNo = SeisanRewardCharacter(i);
+        withinCap = (unsigned int)(characterNo - 1) < 12;
+        if (withinCap) {
+            func_A19210(characterNo);
+            {
+            int rewardCharacter = SeisanRewardCharacter(i);
+            SeisanHissatuEntry *reward = &SeisanResult->entries[i];
+            {
+                rewardTotal = before[rewardCharacter - 1].techPoints + reward->techPoints;
+                if (rewardTotal >= 10000)
+                    reward->techPoints = reward->techPoints - rewardTotal + 9999;
+            }
+            {
+                int total = before[SeisanRewardCharacter(i) - 1].skillPoints + reward->skillPoints;
+                withinCap = total < 10000;
+                if (!withinCap)
+                    reward->skillPoints = reward->skillPoints - total + 9999;
+            }
+            {
+                int total = before[SeisanRewardCharacter(i) - 1].specialPoints + reward->specialPoints;
+                withinCap = total < 10000;
+                if (!withinCap)
+                    reward->specialPoints = reward->specialPoints - total + 9999;
+            }
+            {
+                int total = before[SeisanRewardCharacter(i) - 1].experience + reward->experience;
+                withinCap = total > 9999999;
+                if (withinCap)
+                    reward->experience = reward->experience - total + 9999999;
+            }
+            }
+        }
+    }
+    rewardTotal = oldMoney + SeisanMg->money;
+    if (rewardTotal > 999999999)
+        SeisanMg->money = SeisanMg->money - rewardTotal + 999999999;
+    SeisanCountInit2();
+    itemGroups = D_004DB0B8[0];
+    {
+    int itemIndex;
+    for (itemIndex = 0; itemIndex < SeisanMg->itemCount; itemIndex++) {
+        int type = SeisanMg->itemTypes[itemIndex];
+        if (type != 10)
+            itemCodes[itemIndex] = (unsigned short)SeisanMg->itemIds[itemIndex] + (itemGroups.entries[type] << 16);
+    }
+    for (itemIndex = 0; itemIndex < SeisanMg->itemCount; itemIndex++) {
+        entrySlot = 0;
+        if (SeisanMg->itemCount > 0) {
+            do {
+                if (itemCodes[itemIndex] == SeisanItemBox[entrySlot].itemId) {
+                    SeisanItemBox[entrySlot].itemId = itemCodes[itemIndex];
+                    SeisanItemBox[entrySlot].count++;
+                    break;
+                }
+                entrySlot++;
+            } while (entrySlot < SeisanMg->itemCount);
+        }
+        if (SeisanMg->itemCount == entrySlot) {
+            entrySlot = 0;
+            if (SeisanMg->itemCount > 0) {
+                SeisanItemEntrySI *empty = SeisanItemBox;
+                do {
+                    if (empty->count == 0) {
+                        int itemCode = itemCodes[itemIndex];
+                        empty->count = 1;
+                        empty->itemId = itemCode;
+                        break;
+                    }
+                    entrySlot++;
+                    empty++;
+                } while (entrySlot < SeisanMg->itemCount);
+            }
+        }
+    }
+    }
+    {
+    int partyIndex;
+    for (partyIndex = 0; partyIndex < 3; partyIndex++) {
+        if (SeisanRewardCharacter(partyIndex) != 0)
+            SeisanWork[6]++;
+    }
+    }
+    endPrintDirectFrameCopy(xglPacketGetCurrent(), sRender.height << 5, sRender.flipBase << 5);
+    memset(&background, 0, sizeof(background));
+    endBackTexDraw(&background);
+    MenuLoadInit();
+    MenuFontLoad(1, 1);
+    WindowTexLoad(0, 0x10001);
+    GameResourcePreLoad(GameLoopState[6]);
+    MenuWorkEndCheck(work);
+}
