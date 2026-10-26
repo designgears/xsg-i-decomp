@@ -5351,7 +5351,7 @@ typedef struct CFSSide {
     s16 pile[5][40];
 } CFSSide;
 
-void CGPCFSDispSub(s32 side, s32 turn, CardGameWork *work, s16 card)
+void CGPCFSDispSub(s32 side, s32 turn, CardGameWork *work, s16 card, s16 unused)
 {
     float sc[4];
     float vec[4];

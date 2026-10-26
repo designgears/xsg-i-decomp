@@ -1752,7 +1752,7 @@ typedef struct CalcStatAtkArg {
     int kind;
 } CalcStatAtkArg;
 
-int calcStatAtk(ObjectTask *self, CalcStatAtkArg *arg, unsigned char *out)
+int calcStatAtk(ObjectTask *self, CalcStatAtkArg *arg, unsigned char *out, int *val)
 {
     unsigned char *tec;
     unsigned char *att;
@@ -1844,7 +1844,7 @@ typedef struct CalcStatClrOut {
     int mask;
 } CalcStatClrOut;
 
-int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out)
+int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out, int *val)
 {
     unsigned char *tec;
     int cat;
