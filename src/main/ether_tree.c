@@ -646,7 +646,7 @@ void EtherTreeCenterSet(int axisMask, float x, float y)
     }
 }
 
-void EtherTreeToCenterSet(float targetX, float targetY)
+void EtherTreeToCenterSet(int axisMask, float targetX, float targetY)
 {
     EtherTreeSystem->targetCenter.x = targetX;
     EtherTreeSystem->targetCenter.y = targetY;
