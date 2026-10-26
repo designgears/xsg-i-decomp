@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "revision": "slus-20469-412d448de315",
+  "selected": "iop-gcc2_8_1",
+  "compiler_lock": "config/iop-toolchains.json",
+  "compiler_lock_sha256": "add7e34f7f2370b0b19d6386bd33718c1de51fd5c2cd0a3f9422c824b27e9251",
+  "default_flags": ["-O2", "-G0"],
+  "permitted_flags": [["-O2", "-G0"]],
+  "source_languages": ["c"],
+  "timeout_seconds": 30,
+  "address_kind": "module_relative",
+  "units": ["iop_ssd", "iop_rssd"],
+  "gate": "complete_irx_and_compiler_emission",
+  "original_object_modes": {
+    "schema": "iop-original-object-float/1",
+    "default_mode": "soft",
+    "units": {
+      "iop_ssd": {
+        "binary_sha256": "53393010609ac23b107d3ab93d67f0c07a7db5170e10081e76425daf17940363",
+        "hard_fdrs": [
+          {"index": 5, "filename": "ssd_seq.c"},
+          {"index": 7, "filename": "ssd_sec.c"},
+          {"index": 19, "filename": "ssd_vag.c"}
+        ]
+      },
+      "iop_rssd": {
+        "binary_sha256": "368167530995f362ba75e9c9c21608e24833670525061a2a75b6884d1500e1b6",
+        "hard_fdrs": []
+      }
+    }
+  },
+  "qualification": "Native MIPS-I and observed o32 argument layout; GCC 2.8.1 is a calibrated matching hypothesis, not original-language or compiler-version attribution. No EE ABI aliases, opcode masks, relocation normalization, register bindings, assembly source substitution or output patches. Exactness requires every original module byte plus audited compiler emission. Data and debug/ELF metadata scaffolds remain uncredited."
+}

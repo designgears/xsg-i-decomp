@@ -1,0 +1,2785 @@
+{
+  "compiler_profile": "config/iop-match-profile.json",
+  "compiler_profile_sha256": "fd9536971970946ed02276ae3825688dc0349a495c5d418a4eebbfee6a3d88ba",
+  "kind": "iop_source_build",
+  "policy": {
+    "assembly_flags": [
+      "-EL",
+      "-mips1",
+      "-32",
+      "-G0",
+      "-O2"
+    ],
+    "compile_flags": [
+      "-O2",
+      "-G0"
+    ],
+    "data_credit": 0,
+    "float_modes": "resolved independently by tools.match_iop.contract from original module-relative function identities; manifest values are an additional consistency assertion",
+    "source_dependencies": "all C sources are self-contained; selected packets require zero additional headers"
+  },
+  "profile": "iop-gcc2_8_1",
+  "revision": "slus-20469-412d448de315",
+  "schema_version": 1,
+  "scope_counts": {
+    "iop_rssd": 53,
+    "iop_ssd": 442,
+    "total": 495
+  },
+  "units": {
+    "iop_rssd": [
+      {
+        "fdr_filename": "rssdinit.c",
+        "fdr_index": 0,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "start",
+            "offset": 0,
+            "size": 276
+          },
+          {
+            "name": "RssdSifServerThread",
+            "offset": 276,
+            "size": 132
+          },
+          {
+            "name": "RssdSifRpcServer",
+            "offset": 408,
+            "size": 136
+          },
+          {
+            "name": "RssdExecFunc",
+            "offset": 544,
+            "size": 3756
+          },
+          {
+            "name": "RssdGetVoiceEnvX",
+            "offset": 4300,
+            "size": 192
+          },
+          {
+            "name": "RssdGetSeqPlayInfo",
+            "offset": 4492,
+            "size": 108
+          },
+          {
+            "name": "RssdSifClientThread",
+            "offset": 4600,
+            "size": 244
+          },
+          {
+            "name": "RssdSifRpcCallback",
+            "offset": 4844,
+            "size": 88
+          },
+          {
+            "name": "RssdCallFunc",
+            "offset": 4932,
+            "size": 352
+          },
+          {
+            "name": "iRssdCallFunc",
+            "offset": 5284,
+            "size": 332
+          },
+          {
+            "name": "RssdSetFuncCallback",
+            "offset": 5616,
+            "size": 20
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/rssd/rssdinit.c",
+        "source_sha256": "093ce91cc4b64e838fa86c03802d7db70da681e8d0c2ad5f3fbbc9c8b4dae3a1"
+      },
+      {
+        "fdr_filename": "rssdfunc.c",
+        "fdr_index": 1,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "RssdInit",
+            "offset": 5648,
+            "size": 248
+          },
+          {
+            "name": "RssdSpuDirectRead",
+            "offset": 5896,
+            "size": 152
+          },
+          {
+            "name": "RssdSpuReadCallback",
+            "offset": 6048,
+            "size": 132
+          },
+          {
+            "name": "RssdSpuReadNext",
+            "offset": 6180,
+            "size": 124
+          },
+          {
+            "name": "RssdAddWaveData",
+            "offset": 6304,
+            "size": 168
+          },
+          {
+            "name": "RssdNextWaveData",
+            "offset": 6472,
+            "size": 168
+          },
+          {
+            "name": "RssdSpuDmaTransferCallback",
+            "offset": 6640,
+            "size": 84
+          },
+          {
+            "name": "RssdPlaySequenceData",
+            "offset": 6724,
+            "size": 52
+          },
+          {
+            "name": "RssdAddSequenceData",
+            "offset": 6776,
+            "size": 60
+          },
+          {
+            "name": "RssdAddSeqEffectData",
+            "offset": 6836,
+            "size": 60
+          },
+          {
+            "name": "RssdAddEffectData",
+            "offset": 6896,
+            "size": 60
+          },
+          {
+            "name": "RssdInitSampling",
+            "offset": 6956,
+            "size": 80
+          },
+          {
+            "name": "RssdTransferSampling",
+            "offset": 7036,
+            "size": 44
+          },
+          {
+            "name": "RssdTransferSamplingNext",
+            "offset": 7080,
+            "size": 8
+          },
+          {
+            "name": "RssdSamplingDmaCallbackProc",
+            "offset": 7088,
+            "size": 84
+          },
+          {
+            "name": "RssdSamplingKeyoffCallbackProc",
+            "offset": 7172,
+            "size": 84
+          }
+        ],
+        "generated_data": [
+          {
+            "offset": 12256,
+            "section": ".rodata",
+            "sha256": "60ed7c516d349c6e05f03e6a326da21171ba45e76ed6225e51b0ba92b8afca51",
+            "size": 42
+          }
+        ],
+        "source": "src/audio/rssd/rssdfunc.c",
+        "source_sha256": "8bc044c36155fadaaf93084efed5fe7ddff14917677ff1e897fd0e71107ad22c"
+      },
+      {
+        "fdr_filename": "rssdstrm.c",
+        "fdr_index": 2,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitEEPcmStream",
+            "offset": 7264,
+            "size": 136
+          },
+          {
+            "name": "SsdDisposeEEPcmStream",
+            "offset": 7400,
+            "size": 80
+          },
+          {
+            "name": "SsdSetEEPcmStreamData",
+            "offset": 7480,
+            "size": 148
+          },
+          {
+            "name": "SsdGetEEPcmStreamStatus",
+            "offset": 7628,
+            "size": 88
+          },
+          {
+            "name": "SsdEEPcmStreamCallback",
+            "offset": 7716,
+            "size": 124
+          },
+          {
+            "name": "SsdInitEEVagStreamStereo",
+            "offset": 7840,
+            "size": 148
+          },
+          {
+            "name": "SsdInitEEVagStreamMono",
+            "offset": 7988,
+            "size": 268
+          },
+          {
+            "name": "SsdDisposeEEVagStream",
+            "offset": 8256,
+            "size": 136
+          },
+          {
+            "name": "SsdPlayEEVagStream",
+            "offset": 8392,
+            "size": 108
+          },
+          {
+            "name": "SsdStopEEVagStream",
+            "offset": 8500,
+            "size": 68
+          },
+          {
+            "name": "SsdSetEEVagStreamDataStereo",
+            "offset": 8568,
+            "size": 428
+          },
+          {
+            "name": "SsdGetEEVagStreamStatusStereo",
+            "offset": 8996,
+            "size": 128
+          },
+          {
+            "name": "SsdEEVagStreamCallbackStereo",
+            "offset": 9124,
+            "size": 132
+          },
+          {
+            "name": "SsdSetEEVagStreamDataMono",
+            "offset": 9256,
+            "size": 192
+          },
+          {
+            "name": "SsdGetEEVagStreamStatusMono",
+            "offset": 9448,
+            "size": 188
+          },
+          {
+            "name": "SsdGetEEVagStreamStatusAll",
+            "offset": 9636,
+            "size": 208
+          },
+          {
+            "name": "SsdEEClearRingBuffer",
+            "offset": 9844,
+            "size": 144
+          },
+          {
+            "name": "SsdEEVagStreamCallbackMono",
+            "offset": 9988,
+            "size": 224
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/rssd/rssdstrm.c",
+        "source_sha256": "36a62e96f3570fe13e121daf357bfd4025e393feaf1cb9d59a1abf4d55fa0e07"
+      },
+      {
+        "fdr_filename": "rssdring.c",
+        "fdr_index": 3,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "InitRingBuffer",
+            "offset": 10224,
+            "size": 120
+          },
+          {
+            "name": "DisposeRingBuffer",
+            "offset": 10344,
+            "size": 32
+          },
+          {
+            "name": "GetRingInBufferPtr",
+            "offset": 10376,
+            "size": 60
+          },
+          {
+            "name": "IncRingInBufferPtr",
+            "offset": 10436,
+            "size": 72
+          },
+          {
+            "name": "InRingBuffer",
+            "offset": 10508,
+            "size": 172
+          },
+          {
+            "name": "OutRingBuffer",
+            "offset": 10680,
+            "size": 112
+          },
+          {
+            "name": "ClearRingBuffer",
+            "offset": 10792,
+            "size": 16
+          },
+          {
+            "name": "CopyMemoryRingBuffer",
+            "offset": 10808,
+            "size": 84
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/rssd/rssdring.c",
+        "source_sha256": "358deaab59319c5d4b314f44aa87c755177150ce2677f98880a9899e0d76a4ad"
+      }
+    ],
+    "iop_ssd": [
+      {
+        "fdr_filename": "ssd_init.c",
+        "fdr_index": 0,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdStart",
+            "offset": 0,
+            "size": 60
+          },
+          {
+            "name": "SsdGetGlobalWorkPtr",
+            "offset": 60,
+            "size": 16
+          },
+          {
+            "name": "SsdInit",
+            "offset": 76,
+            "size": 508
+          },
+          {
+            "name": "SsdQuit",
+            "offset": 584,
+            "size": 112
+          },
+          {
+            "name": "SsdInitInterrupt",
+            "offset": 696,
+            "size": 108
+          },
+          {
+            "name": "SsdInitTimer",
+            "offset": 804,
+            "size": 168
+          },
+          {
+            "name": "SsdQuitInterrupt",
+            "offset": 972,
+            "size": 68
+          },
+          {
+            "name": "SsdQuitTimer",
+            "offset": 1040,
+            "size": 52
+          },
+          {
+            "name": "SsdResume",
+            "offset": 1092,
+            "size": 144
+          },
+          {
+            "name": "SsdSuspend",
+            "offset": 1236,
+            "size": 144
+          },
+          {
+            "name": "SsdEnable",
+            "offset": 1380,
+            "size": 92
+          },
+          {
+            "name": "SsdDisable",
+            "offset": 1472,
+            "size": 92
+          },
+          {
+            "name": "SsdGetRSRandom",
+            "offset": 1564,
+            "size": 44
+          },
+          {
+            "name": "SsdMainInterruptProcess",
+            "offset": 1608,
+            "size": 40
+          },
+          {
+            "name": "SsdLinkProc",
+            "offset": 1648,
+            "size": 108
+          },
+          {
+            "name": "SsdUnlinkProc",
+            "offset": 1756,
+            "size": 80
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_init.c",
+        "source_sha256": "aff1300f19c240af7745225ab9d422ebc7c4c116ab11d5e2f634b0b2a0d22d77"
+      },
+      {
+        "fdr_filename": "ssd_mem.c",
+        "fdr_index": 1,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitMainMemoryManager",
+            "offset": 1840,
+            "size": 92
+          },
+          {
+            "name": "SsdNewPtr",
+            "offset": 1932,
+            "size": 244
+          },
+          {
+            "name": "SsdNewPtr2",
+            "offset": 2176,
+            "size": 256
+          },
+          {
+            "name": "SsdDisposePtr",
+            "offset": 2432,
+            "size": 72
+          },
+          {
+            "name": "SsdGetMemoryFreeSize",
+            "offset": 2504,
+            "size": 124
+          },
+          {
+            "name": "SsdGetMemoryBlockCount",
+            "offset": 2628,
+            "size": 44
+          },
+          {
+            "name": "SsdMemoryCopy",
+            "offset": 2672,
+            "size": 168
+          },
+          {
+            "name": "SsdMemoryClear",
+            "offset": 2840,
+            "size": 116
+          },
+          {
+            "name": "SsdInitSpuMemoryManager",
+            "offset": 2956,
+            "size": 120
+          },
+          {
+            "name": "SsdSetSegmentAllocMode",
+            "offset": 3076,
+            "size": 76
+          },
+          {
+            "name": "SsdResetSegmentAllocMode",
+            "offset": 3152,
+            "size": 56
+          },
+          {
+            "name": "SsdSpuMalloc",
+            "offset": 3208,
+            "size": 272
+          },
+          {
+            "name": "SsdSpuMalloc2",
+            "offset": 3480,
+            "size": 284
+          },
+          {
+            "name": "SsdSpuMallocAdrs",
+            "offset": 3764,
+            "size": 304
+          },
+          {
+            "name": "SsdSpuMallocAdrsDynamic",
+            "offset": 4068,
+            "size": 280
+          },
+          {
+            "name": "SsdSpuMallocAdrsSegment",
+            "offset": 4348,
+            "size": 308
+          },
+          {
+            "name": "SsdSpuMFree",
+            "offset": 4656,
+            "size": 100
+          },
+          {
+            "name": "SsdSetSpuType",
+            "offset": 4756,
+            "size": 48
+          },
+          {
+            "name": "SsdGetSpuMemoryFree",
+            "offset": 4804,
+            "size": 120
+          },
+          {
+            "name": "SsdGetSpuMemManagerBlock",
+            "offset": 4924,
+            "size": 60
+          },
+          {
+            "name": "SsdGetSpuAddsBlock",
+            "offset": 4984,
+            "size": 60
+          },
+          {
+            "name": "SsdDisposeMemoryMap",
+            "offset": 5044,
+            "size": 32
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_mem.c",
+        "source_sha256": "bb6d174123b39b922b9d2dd1dc6c73bcddc18a9f1ee16a42bfc078506c79cde7"
+      },
+      {
+        "fdr_filename": "ssd_dma.c",
+        "fdr_index": 2,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitDmaManager",
+            "offset": 5088,
+            "size": 48
+          },
+          {
+            "name": "SsdSetPcmStreamCallback",
+            "offset": 5136,
+            "size": 16
+          },
+          {
+            "name": "SsdSetVagStreamCallback",
+            "offset": 5152,
+            "size": 16
+          },
+          {
+            "name": "SsdSetIrqCallback",
+            "offset": 5168,
+            "size": 16
+          },
+          {
+            "name": "SsdSpuDmaWrite",
+            "offset": 5184,
+            "size": 80
+          },
+          {
+            "name": "SsdSpuDmaRead",
+            "offset": 5264,
+            "size": 80
+          },
+          {
+            "name": "SsdDmaStartTransfer",
+            "offset": 5344,
+            "size": 308
+          },
+          {
+            "name": "SsdSpuDmaCompleted",
+            "offset": 5652,
+            "size": 80
+          },
+          {
+            "name": "SsdGetDmaQueueBuffer",
+            "offset": 5732,
+            "size": 52
+          },
+          {
+            "name": "SsdWaveTransferInterruptProcess",
+            "offset": 5784,
+            "size": 168
+          },
+          {
+            "name": "SsdStreamInterruptProcess",
+            "offset": 5952,
+            "size": 96
+          },
+          {
+            "name": "SsdDmaStartBuffer",
+            "offset": 6048,
+            "size": 140
+          },
+          {
+            "name": "SsdIrqInterruptProcess",
+            "offset": 6188,
+            "size": 100
+          },
+          {
+            "name": "SsdResetDmaManager",
+            "offset": 6288,
+            "size": 60
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_dma.c",
+        "source_sha256": "135a1417b3efebaf14b21557efd8da7314825c508400ba27c3e9789b3e788732"
+      },
+      {
+        "fdr_filename": "ssd_out.c",
+        "fdr_index": 3,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitOutputControl",
+            "offset": 6352,
+            "size": 184
+          },
+          {
+            "name": "SsdSetOutputMode",
+            "offset": 6536,
+            "size": 176
+          },
+          {
+            "name": "SsdSetSpuVolume",
+            "offset": 6712,
+            "size": 176
+          },
+          {
+            "name": "SsdSetCDVolume",
+            "offset": 6888,
+            "size": 140
+          },
+          {
+            "name": "SsdSetSequenceOutputVolume",
+            "offset": 7028,
+            "size": 40
+          },
+          {
+            "name": "SsdSetEffectOutputVolume",
+            "offset": 7068,
+            "size": 40
+          },
+          {
+            "name": "SsdSetGroupOutputVolume",
+            "offset": 7108,
+            "size": 108
+          },
+          {
+            "name": "SsdSetCDMixingReverb",
+            "offset": 7216,
+            "size": 32
+          },
+          {
+            "name": "SsdSetAudioAttenuator",
+            "offset": 7248,
+            "size": 8
+          },
+          {
+            "name": "SsdSetReverbParameter",
+            "offset": 7256,
+            "size": 352
+          },
+          {
+            "name": "SsdEnableReverbParam",
+            "offset": 7608,
+            "size": 132
+          },
+          {
+            "name": "SsdCheckWideMode",
+            "offset": 7740,
+            "size": 112
+          },
+          {
+            "name": "SsdSetVolumeRec",
+            "offset": 7852,
+            "size": 84
+          },
+          {
+            "name": "SsdReverbClear",
+            "offset": 7936,
+            "size": 8
+          },
+          {
+            "name": "SsdReverbClearCallback",
+            "offset": 7944,
+            "size": 8
+          },
+          {
+            "name": "SsdReverbClearCompleted",
+            "offset": 7952,
+            "size": 48
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_out.c",
+        "source_sha256": "264a4403dc5d1da8a856da77cb1fcda9e3bf87307b72c1c1c612a32a06a87917"
+      },
+      {
+        "fdr_filename": "ssd_wave.c",
+        "fdr_index": 4,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdAddWaveData",
+            "offset": 8000,
+            "size": 724
+          },
+          {
+            "name": "SsdNextWaveData",
+            "offset": 8724,
+            "size": 160
+          },
+          {
+            "name": "SsdSpuWaveMalloc",
+            "offset": 8884,
+            "size": 224
+          },
+          {
+            "name": "SsdDisposeWaveBank",
+            "offset": 9108,
+            "size": 76
+          },
+          {
+            "name": "SsdDisposeWaveData",
+            "offset": 9184,
+            "size": 212
+          },
+          {
+            "name": "SsdCheckWaveData",
+            "offset": 9396,
+            "size": 68
+          },
+          {
+            "name": "SsdGetWSPtrSpuAdrs",
+            "offset": 9464,
+            "size": 60
+          },
+          {
+            "name": "SsdGetWSPtrBank",
+            "offset": 9524,
+            "size": 68
+          },
+          {
+            "name": "SsdSetWaveToVoiceControl",
+            "offset": 9592,
+            "size": 136
+          },
+          {
+            "name": "SsdSetWaveTransCallback",
+            "offset": 9728,
+            "size": 20
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_wave.c",
+        "source_sha256": "bcd01b5eabb76d447be40029471c71fb9d04cc29fb000056a10fba4a1e6e0269"
+      },
+      {
+        "fdr_filename": "ssd_seq.c",
+        "fdr_index": 5,
+        "float_mode": "hard",
+        "functions": [
+          {
+            "name": "SsdInitSequence",
+            "offset": 9760,
+            "size": 364
+          },
+          {
+            "name": "SsdLinkSequence",
+            "offset": 10124,
+            "size": 64
+          },
+          {
+            "name": "SsdUnlinkSequence",
+            "offset": 10188,
+            "size": 168
+          },
+          {
+            "name": "SsdDisposeSequenceBuffer",
+            "offset": 10356,
+            "size": 112
+          },
+          {
+            "name": "SsdGetSeqPlayStatus",
+            "offset": 10468,
+            "size": 164
+          },
+          {
+            "name": "SsdSetSeqMasterTempo",
+            "offset": 10632,
+            "size": 256
+          },
+          {
+            "name": "SsdSetSeqMasterNote",
+            "offset": 10888,
+            "size": 164
+          },
+          {
+            "name": "SsdSetSeqMasterVolume",
+            "offset": 11052,
+            "size": 244
+          },
+          {
+            "name": "SsdSetSeqMasterPanpot",
+            "offset": 11296,
+            "size": 164
+          },
+          {
+            "name": "SsdSetSeqReverb",
+            "offset": 11460,
+            "size": 212
+          },
+          {
+            "name": "SsdSetSeqMute",
+            "offset": 11672,
+            "size": 264
+          },
+          {
+            "name": "SsdSetSeqNoteFader",
+            "offset": 11936,
+            "size": 100
+          },
+          {
+            "name": "SsdSetSeqVolumeFader",
+            "offset": 12036,
+            "size": 176
+          },
+          {
+            "name": "SsdSetSeqPanpotFader",
+            "offset": 12212,
+            "size": 100
+          },
+          {
+            "name": "SsdSetSeqPatchNumber",
+            "offset": 12312,
+            "size": 172
+          },
+          {
+            "name": "SsdSetTrackPatchSet",
+            "offset": 12484,
+            "size": 300
+          },
+          {
+            "name": "SsdSetSeqABRepeat",
+            "offset": 12784,
+            "size": 32
+          },
+          {
+            "name": "SsdGetSeqPlayTime",
+            "offset": 12816,
+            "size": 80
+          },
+          {
+            "name": "SsdGetTimeCode",
+            "offset": 12896,
+            "size": 164
+          },
+          {
+            "name": "SsdGetPlayMeasure",
+            "offset": 13060,
+            "size": 32
+          },
+          {
+            "name": "SsdGetSeqLyric",
+            "offset": 13092,
+            "size": 32
+          },
+          {
+            "name": "SsdGetSeqCuePoint",
+            "offset": 13124,
+            "size": 8
+          },
+          {
+            "name": "SsdSetSeqSignal",
+            "offset": 13132,
+            "size": 48
+          },
+          {
+            "name": "SsdSetSeqStopCallback",
+            "offset": 13180,
+            "size": 48
+          },
+          {
+            "name": "SsdGetSequencePtr",
+            "offset": 13228,
+            "size": 60
+          },
+          {
+            "name": "SsdStartingSequence",
+            "offset": 13288,
+            "size": 80
+          },
+          {
+            "name": "SsdStoppingSequence",
+            "offset": 13368,
+            "size": 96
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_seq.c",
+        "source_sha256": "f8bb96c038322d31ef66aaa1a5c584f2d5757ee49d05e45fddd3a1913071d31f"
+      },
+      {
+        "fdr_filename": "ssd_musc.c",
+        "fdr_index": 6,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdPlaySequence",
+            "offset": 13472,
+            "size": 84
+          },
+          {
+            "name": "SsdAddSeqEffectData",
+            "offset": 13556,
+            "size": 88
+          },
+          {
+            "name": "SsdAddSequenceData",
+            "offset": 13644,
+            "size": 512
+          },
+          {
+            "name": "SsdDisposeSequence",
+            "offset": 14156,
+            "size": 176
+          },
+          {
+            "name": "SsdCheckSequence",
+            "offset": 14332,
+            "size": 68
+          },
+          {
+            "name": "SsdStartSequence",
+            "offset": 14400,
+            "size": 220
+          },
+          {
+            "name": "SsdResumeSequence",
+            "offset": 14620,
+            "size": 100
+          },
+          {
+            "name": "SsdStopSequence",
+            "offset": 14720,
+            "size": 64
+          },
+          {
+            "name": "SsdPauseSequence",
+            "offset": 14784,
+            "size": 104
+          },
+          {
+            "name": "SsdInitMusicTrackRec",
+            "offset": 14888,
+            "size": 260
+          },
+          {
+            "name": "SsdCheckMidiChannel",
+            "offset": 15148,
+            "size": 96
+          },
+          {
+            "name": "SsdSetDataAddress",
+            "offset": 15244,
+            "size": 228
+          },
+          {
+            "name": "SsdGetSeqWorkSize",
+            "offset": 15472,
+            "size": 64
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_musc.c",
+        "source_sha256": "dab4a14457034485f35b3782e7185993cf7dfba20f57287fe588ed7f44cbcfb8"
+      },
+      {
+        "fdr_filename": "ssd_sec.c",
+        "fdr_index": 7,
+        "float_mode": "hard",
+        "functions": [
+          {
+            "name": "SsdMakeEffectSequenceRec",
+            "offset": 15536,
+            "size": 316
+          },
+          {
+            "name": "SsdAddEffectData",
+            "offset": 15852,
+            "size": 192
+          },
+          {
+            "name": "SsdDisposeEffectData",
+            "offset": 16044,
+            "size": 112
+          },
+          {
+            "name": "SsdLinkEffectSet",
+            "offset": 16156,
+            "size": 64
+          },
+          {
+            "name": "SsdUnlinkEffectSet",
+            "offset": 16220,
+            "size": 168
+          },
+          {
+            "name": "SsdCheckEffectData",
+            "offset": 16388,
+            "size": 68
+          },
+          {
+            "name": "SsdPlayEffectNormal",
+            "offset": 16456,
+            "size": 40
+          },
+          {
+            "name": "SsdSetPlayEffectParam",
+            "offset": 16496,
+            "size": 96
+          },
+          {
+            "name": "SsdPlayEffectParam",
+            "offset": 16592,
+            "size": 284
+          },
+          {
+            "name": "SsdPlaySeqEffectNormal",
+            "offset": 16876,
+            "size": 652
+          },
+          {
+            "name": "SsdPlayWaveNormal",
+            "offset": 17528,
+            "size": 40
+          },
+          {
+            "name": "SsdPlayWaveParam",
+            "offset": 17568,
+            "size": 100
+          },
+          {
+            "name": "SsdStopWave",
+            "offset": 17668,
+            "size": 32
+          },
+          {
+            "name": "SsdPlayWaveEffectNormal",
+            "offset": 17700,
+            "size": 608
+          },
+          {
+            "name": "SsdSetEffectParam",
+            "offset": 18308,
+            "size": 500
+          },
+          {
+            "name": "SsdSaechSeqFreeTrack",
+            "offset": 18808,
+            "size": 480
+          },
+          {
+            "name": "SsdStopAllEffect",
+            "offset": 19288,
+            "size": 120
+          },
+          {
+            "name": "SsdStopEffect",
+            "offset": 19408,
+            "size": 36
+          },
+          {
+            "name": "SsdContinueOneEffect",
+            "offset": 19444,
+            "size": 264
+          },
+          {
+            "name": "SsdStopEffectFileID",
+            "offset": 19708,
+            "size": 32
+          },
+          {
+            "name": "SsdFadeoutEffect",
+            "offset": 19740,
+            "size": 264
+          },
+          {
+            "name": "SsdFadeoutEffectFileID",
+            "offset": 20004,
+            "size": 148
+          },
+          {
+            "name": "SsdFadeoutStopEffectTrack",
+            "offset": 20152,
+            "size": 120
+          },
+          {
+            "name": "SsdCheckPlayEffectAll",
+            "offset": 20272,
+            "size": 64
+          },
+          {
+            "name": "SsdCheckPlayEffect",
+            "offset": 20336,
+            "size": 172
+          },
+          {
+            "name": "SsdCheckPlayEffectFileID",
+            "offset": 20508,
+            "size": 84
+          },
+          {
+            "name": "SsdGetFileIDToEffectData",
+            "offset": 20592,
+            "size": 60
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_sec.c",
+        "source_sha256": "7884291de22a5817679543a36f22710fce3fd6b37937c36dddaaaa3cc9624bc7"
+      },
+      {
+        "fdr_filename": "ssd_smpl.c",
+        "fdr_index": 8,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitSampling",
+            "offset": 20656,
+            "size": 200
+          },
+          {
+            "name": "SsdDisposeSampling",
+            "offset": 20856,
+            "size": 160
+          },
+          {
+            "name": "SsdSetSampleDmaCallback",
+            "offset": 21016,
+            "size": 16
+          },
+          {
+            "name": "SsdSetSampleKeyoffCallback",
+            "offset": 21032,
+            "size": 16
+          },
+          {
+            "name": "SsdTransferSampling",
+            "offset": 21048,
+            "size": 128
+          },
+          {
+            "name": "SsdTransferSamplingNext",
+            "offset": 21176,
+            "size": 100
+          },
+          {
+            "name": "SsdPlaySampling",
+            "offset": 21276,
+            "size": 208
+          },
+          {
+            "name": "SsdStopSampling",
+            "offset": 21484,
+            "size": 124
+          },
+          {
+            "name": "SsdSetSamplingParam",
+            "offset": 21608,
+            "size": 100
+          },
+          {
+            "name": "SsdSetSamplingEffect",
+            "offset": 21708,
+            "size": 84
+          },
+          {
+            "name": "SsdAllocSamplingVoice",
+            "offset": 21792,
+            "size": 172
+          },
+          {
+            "name": "SsdInitSamplingVoice",
+            "offset": 21964,
+            "size": 292
+          },
+          {
+            "name": "SsdSampleKeyoffInterProc",
+            "offset": 22256,
+            "size": 200
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_smpl.c",
+        "source_sha256": "b1063929633f5114952563c02c67c3b0f84d4a1bf3759b945c120745d363b155"
+      },
+      {
+        "fdr_filename": "ssd_main.c",
+        "fdr_index": 9,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdSeqInterruptProcess",
+            "offset": 22464,
+            "size": 280
+          },
+          {
+            "name": "SsdCommonControl",
+            "offset": 22744,
+            "size": 196
+          },
+          {
+            "name": "SsdMainSequenceProcess",
+            "offset": 22940,
+            "size": 608
+          },
+          {
+            "name": "SsdMidiTrackSequence",
+            "offset": 23548,
+            "size": 100
+          },
+          {
+            "name": "SsdNormalTrackEffect",
+            "offset": 23648,
+            "size": 568
+          },
+          {
+            "name": "SsdNormalTrackGate",
+            "offset": 24216,
+            "size": 152
+          },
+          {
+            "name": "SsdNormalTrackSequence",
+            "offset": 24368,
+            "size": 436
+          },
+          {
+            "name": "SsdEffectTrackSequence",
+            "offset": 24804,
+            "size": 968
+          },
+          {
+            "name": "SsdVoiceEvent",
+            "offset": 25772,
+            "size": 68
+          },
+          {
+            "name": "SsdDeviceVoiceEvent",
+            "offset": 25840,
+            "size": 940
+          },
+          {
+            "name": "SsdGetEnvx",
+            "offset": 26780,
+            "size": 120
+          },
+          {
+            "name": "SsdCalculateModulate",
+            "offset": 26900,
+            "size": 64
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_main.c",
+        "source_sha256": "1ed86a901791d492d6844010d977bc5c08bbcf4f9e335c004fc1b16f05a9ebbc"
+      },
+      {
+        "fdr_filename": "ssd_trap.c",
+        "fdr_index": 10,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdSeqDummy",
+            "offset": 26976,
+            "size": 96
+          },
+          {
+            "name": "SsdSeqDeltaForAfterDelta",
+            "offset": 27072,
+            "size": 20
+          },
+          {
+            "name": "SsdSeqDeltaForGate",
+            "offset": 27092,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqDeltaAddGate",
+            "offset": 27116,
+            "size": 32
+          },
+          {
+            "name": "SsdSeqDeltaAddAfterDelta",
+            "offset": 27148,
+            "size": 32
+          },
+          {
+            "name": "SsdSeqDelta1",
+            "offset": 27180,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqDelta2",
+            "offset": 27204,
+            "size": 32
+          },
+          {
+            "name": "SsdSeqDelta3",
+            "offset": 27236,
+            "size": 44
+          },
+          {
+            "name": "SsdSeqRest",
+            "offset": 27280,
+            "size": 64
+          },
+          {
+            "name": "SsdSeqTie",
+            "offset": 27344,
+            "size": 40
+          },
+          {
+            "name": "SsdSeqStop",
+            "offset": 27384,
+            "size": 108
+          },
+          {
+            "name": "SsdSeqRepeat",
+            "offset": 27492,
+            "size": 28
+          },
+          {
+            "name": "SsdSeqJump",
+            "offset": 27520,
+            "size": 36
+          },
+          {
+            "name": "SsdSeqIf",
+            "offset": 27556,
+            "size": 68
+          },
+          {
+            "name": "SsdSeqOctaveAbsolute",
+            "offset": 27624,
+            "size": 32
+          },
+          {
+            "name": "SsdSeqOctaveRelative",
+            "offset": 27656,
+            "size": 44
+          },
+          {
+            "name": "SsdSeqOctaveUp",
+            "offset": 27700,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqOctaveDown",
+            "offset": 27724,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqLoopTop",
+            "offset": 27748,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqLoopEnd",
+            "offset": 27820,
+            "size": 108
+          },
+          {
+            "name": "SsdSeqLoopEscape",
+            "offset": 27928,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqTempoAbsolute",
+            "offset": 28004,
+            "size": 88
+          },
+          {
+            "name": "SsdSeqTempoRelative",
+            "offset": 28092,
+            "size": 96
+          },
+          {
+            "name": "SsdSeqTempoChange",
+            "offset": 28188,
+            "size": 176
+          },
+          {
+            "name": "SsdSeqMeasure",
+            "offset": 28364,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqPosition",
+            "offset": 28440,
+            "size": 40
+          },
+          {
+            "name": "SsdSeqMasterFader",
+            "offset": 28480,
+            "size": 132
+          },
+          {
+            "name": "SsdSeqBankMSB",
+            "offset": 28612,
+            "size": 36
+          },
+          {
+            "name": "SsdSeqBankLSB",
+            "offset": 28648,
+            "size": 32
+          },
+          {
+            "name": "SsdSeqWaveChange",
+            "offset": 28680,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqWaveBankType",
+            "offset": 28732,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqProgramChange",
+            "offset": 28804,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqRandomNote",
+            "offset": 28856,
+            "size": 80
+          },
+          {
+            "name": "SsdSeqADSRReset",
+            "offset": 28936,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqADSRMode",
+            "offset": 28944,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqAR",
+            "offset": 28952,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqDR",
+            "offset": 29028,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqSL",
+            "offset": 29104,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqSR",
+            "offset": 29180,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqRR",
+            "offset": 29256,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqDRSL",
+            "offset": 29332,
+            "size": 84
+          },
+          {
+            "name": "SsdSeqAMode",
+            "offset": 29416,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqSMode",
+            "offset": 29492,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqRMode",
+            "offset": 29568,
+            "size": 76
+          },
+          {
+            "name": "SsdSeqPriority",
+            "offset": 29644,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqGateTime",
+            "offset": 29668,
+            "size": 20
+          },
+          {
+            "name": "SsdSeqSustaion",
+            "offset": 29688,
+            "size": 96
+          },
+          {
+            "name": "SsdSeqSulrOn",
+            "offset": 29784,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqSulrOff",
+            "offset": 29808,
+            "size": 24
+          },
+          {
+            "name": "SsdSeqPMOn",
+            "offset": 29832,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqPMOff",
+            "offset": 29884,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqNoiseAbsolute",
+            "offset": 29936,
+            "size": 60
+          },
+          {
+            "name": "SsdSeqNoiseRelative",
+            "offset": 29996,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqNoiseOn",
+            "offset": 30068,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqNoiseOff",
+            "offset": 30120,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqReverbParameter",
+            "offset": 30172,
+            "size": 84
+          },
+          {
+            "name": "SsdSeqReverbSet",
+            "offset": 30256,
+            "size": 140
+          },
+          {
+            "name": "SsdSeqReverbOn",
+            "offset": 30396,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqReverbOff",
+            "offset": 30448,
+            "size": 52
+          },
+          {
+            "name": "SsdSeqKeyTransposeAbsolute",
+            "offset": 30500,
+            "size": 60
+          },
+          {
+            "name": "SsdSeqKeyTransposeRelative",
+            "offset": 30560,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqTune",
+            "offset": 30632,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqDetune",
+            "offset": 30704,
+            "size": 80
+          },
+          {
+            "name": "SsdSeqBender",
+            "offset": 30784,
+            "size": 108
+          },
+          {
+            "name": "SsdSeqSweep",
+            "offset": 30892,
+            "size": 204
+          },
+          {
+            "name": "SsdSeqVibrateFade",
+            "offset": 31096,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqVibrate1",
+            "offset": 31168,
+            "size": 276
+          },
+          {
+            "name": "SsdSeqVibrate2",
+            "offset": 31444,
+            "size": 304
+          },
+          {
+            "name": "SsdSeqVibrateOn",
+            "offset": 31748,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqVibrateOff",
+            "offset": 31756,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqBenderOff",
+            "offset": 31764,
+            "size": 60
+          },
+          {
+            "name": "SsdSeqExpression",
+            "offset": 31824,
+            "size": 124
+          },
+          {
+            "name": "SsdSeqVolumeAbsolute",
+            "offset": 31948,
+            "size": 148
+          },
+          {
+            "name": "SsdSeqVolumeRelative",
+            "offset": 32096,
+            "size": 180
+          },
+          {
+            "name": "SsdSeqVolumeFade",
+            "offset": 32276,
+            "size": 256
+          },
+          {
+            "name": "SsdSeqTremoloFade",
+            "offset": 32532,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqTremolo1",
+            "offset": 32604,
+            "size": 248
+          },
+          {
+            "name": "SsdSeqTremolo2",
+            "offset": 32852,
+            "size": 268
+          },
+          {
+            "name": "SsdSeqTremoloOn",
+            "offset": 33120,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqTremoloOff",
+            "offset": 33128,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqPanpotAbsolute",
+            "offset": 33136,
+            "size": 108
+          },
+          {
+            "name": "SsdSeqPanpotRelative",
+            "offset": 33244,
+            "size": 128
+          },
+          {
+            "name": "SsdSeqPanpoMove",
+            "offset": 33372,
+            "size": 180
+          },
+          {
+            "name": "SsdSeqShakeFade",
+            "offset": 33552,
+            "size": 72
+          },
+          {
+            "name": "SsdSeqShake1",
+            "offset": 33624,
+            "size": 248
+          },
+          {
+            "name": "SsdSeqShake2",
+            "offset": 33872,
+            "size": 268
+          },
+          {
+            "name": "SsdSeqShakeOn",
+            "offset": 34140,
+            "size": 48
+          },
+          {
+            "name": "SsdSeqShakeOff",
+            "offset": 34188,
+            "size": 48
+          },
+          {
+            "name": "SsdSeqLFOProcess",
+            "offset": 34236,
+            "size": 128
+          },
+          {
+            "name": "SsdSeqLFOParameter",
+            "offset": 34364,
+            "size": 196
+          },
+          {
+            "name": "SsdSeqLFODelay",
+            "offset": 34560,
+            "size": 144
+          },
+          {
+            "name": "SsdSeqLFOOn",
+            "offset": 34704,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqLFOOff",
+            "offset": 34712,
+            "size": 8
+          },
+          {
+            "name": "SsdLfoOn",
+            "offset": 34720,
+            "size": 8
+          },
+          {
+            "name": "SsdLfoOff",
+            "offset": 34728,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqAllReset",
+            "offset": 34736,
+            "size": 252
+          },
+          {
+            "name": "SsdSeqLabel",
+            "offset": 34988,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqSMPTETime",
+            "offset": 34996,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqSMPTEFrame",
+            "offset": 35004,
+            "size": 8
+          },
+          {
+            "name": "SsdSeqSMPTEOffset",
+            "offset": 35012,
+            "size": 180
+          },
+          {
+            "name": "SsdSeqSkip",
+            "offset": 35192,
+            "size": 140
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_trap.c",
+        "source_sha256": "f98f5aae6fe005dc16932964baffc036ee0721dcc40793fbdafd606d6d6a7d65"
+      },
+      {
+        "fdr_filename": "ssd_chan.c",
+        "fdr_index": 11,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdNewMidiDevice",
+            "offset": 35344,
+            "size": 304
+          },
+          {
+            "name": "SsdDisposeMidiDevice",
+            "offset": 35648,
+            "size": 56
+          },
+          {
+            "name": "SsdGetNewDeivceID",
+            "offset": 35704,
+            "size": 96
+          },
+          {
+            "name": "SsdLinkMidiDevice",
+            "offset": 35800,
+            "size": 80
+          },
+          {
+            "name": "SsdUnlinkMidiDevice",
+            "offset": 35880,
+            "size": 72
+          },
+          {
+            "name": "SsdResumeDeviceAll",
+            "offset": 35952,
+            "size": 68
+          },
+          {
+            "name": "SsdResumeDeviceChannel",
+            "offset": 36020,
+            "size": 72
+          },
+          {
+            "name": "SsdResumeChannel",
+            "offset": 36092,
+            "size": 56
+          },
+          {
+            "name": "SsdSuspendDeviceAll",
+            "offset": 36148,
+            "size": 68
+          },
+          {
+            "name": "SsdSuspendDeviceChannel",
+            "offset": 36216,
+            "size": 72
+          },
+          {
+            "name": "SsdSuspendChannel",
+            "offset": 36288,
+            "size": 188
+          },
+          {
+            "name": "SsdResetMidiDeviceParam",
+            "offset": 36476,
+            "size": 52
+          },
+          {
+            "name": "SsdResetChannelAll",
+            "offset": 36528,
+            "size": 104
+          },
+          {
+            "name": "SsdResetChannel",
+            "offset": 36632,
+            "size": 196
+          },
+          {
+            "name": "SsdResetChannelFader",
+            "offset": 36828,
+            "size": 216
+          },
+          {
+            "name": "SsdSetMidiDevicePriority",
+            "offset": 37044,
+            "size": 40
+          },
+          {
+            "name": "SsdSetMidiDeviceMasterValue",
+            "offset": 37084,
+            "size": 56
+          },
+          {
+            "name": "SsdSetMidiDeviceNote",
+            "offset": 37140,
+            "size": 40
+          },
+          {
+            "name": "SsdSetMidiDeviceVolume",
+            "offset": 37180,
+            "size": 76
+          },
+          {
+            "name": "SsdSetMidiDevicePanpot",
+            "offset": 37256,
+            "size": 44
+          },
+          {
+            "name": "SsdSetMidiDeviceOutputVolume",
+            "offset": 37300,
+            "size": 76
+          },
+          {
+            "name": "SsdCutoffDevive",
+            "offset": 37376,
+            "size": 72
+          },
+          {
+            "name": "SsdCutoffChannel",
+            "offset": 37448,
+            "size": 76
+          },
+          {
+            "name": "SsdEnvxKeyoff",
+            "offset": 37524,
+            "size": 96
+          },
+          {
+            "name": "SsdLinkChannelVoice",
+            "offset": 37620,
+            "size": 84
+          },
+          {
+            "name": "SsdUnlinkChannelVoice",
+            "offset": 37704,
+            "size": 120
+          },
+          {
+            "name": "SsdSetChannelAllVoiceEvent",
+            "offset": 37824,
+            "size": 88
+          },
+          {
+            "name": "SsdSetChannelVoiceEvent",
+            "offset": 37912,
+            "size": 56
+          },
+          {
+            "name": "SsdSetChannelVoiceVelocity",
+            "offset": 37968,
+            "size": 76
+          },
+          {
+            "name": "SsdSetChannelHWEffectOn",
+            "offset": 38044,
+            "size": 68
+          },
+          {
+            "name": "SsdSetChannelHWEffectOff",
+            "offset": 38112,
+            "size": 72
+          },
+          {
+            "name": "SsdKeyonChannel",
+            "offset": 38184,
+            "size": 128
+          },
+          {
+            "name": "SsdKeyonChannelWave",
+            "offset": 38312,
+            "size": 364
+          },
+          {
+            "name": "SsdKeyonChannelProgram",
+            "offset": 38676,
+            "size": 756
+          },
+          {
+            "name": "SsdGetProgramSplitPtr",
+            "offset": 39432,
+            "size": 36
+          },
+          {
+            "name": "SsdKeyonChannelVoice",
+            "offset": 39468,
+            "size": 96
+          },
+          {
+            "name": "SsdSendChannelKeyoffEvent",
+            "offset": 39564,
+            "size": 120
+          },
+          {
+            "name": "SsdKeyoffChannel",
+            "offset": 39684,
+            "size": 108
+          },
+          {
+            "name": "SsdKeyoffChannelVoice",
+            "offset": 39792,
+            "size": 136
+          },
+          {
+            "name": "SsdForceKeyoffChannel",
+            "offset": 39928,
+            "size": 108
+          },
+          {
+            "name": "SsdForceKeyoffChannelVoice",
+            "offset": 40036,
+            "size": 108
+          },
+          {
+            "name": "SsdSetChannelWave",
+            "offset": 40144,
+            "size": 176
+          },
+          {
+            "name": "SsdSetChannelProgram",
+            "offset": 40320,
+            "size": 212
+          },
+          {
+            "name": "SsdSetChannelAdsr",
+            "offset": 40532,
+            "size": 12
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_chan.c",
+        "source_sha256": "3c8784e558542acb0bd351b7ecd33545cf87584c8c5b7853b4dd3c1fd5c75624"
+      },
+      {
+        "fdr_filename": "ssd_lfo.c",
+        "fdr_index": 12,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitLfoWork",
+            "offset": 40544,
+            "size": 56
+          },
+          {
+            "name": "SsdInitLfoParam",
+            "offset": 40600,
+            "size": 136
+          },
+          {
+            "name": "SsdResetLfoProc",
+            "offset": 40736,
+            "size": 196
+          },
+          {
+            "name": "SsdSeqGetLFODepth",
+            "offset": 40932,
+            "size": 172
+          },
+          {
+            "name": "SsdLfoControlProc",
+            "offset": 41104,
+            "size": 392
+          },
+          {
+            "name": "SsdLfoOffProc",
+            "offset": 41496,
+            "size": 24
+          },
+          {
+            "name": "SsdLfoRectangularSingleProc",
+            "offset": 41520,
+            "size": 72
+          },
+          {
+            "name": "SsdLfoRectangularDoubleProc",
+            "offset": 41592,
+            "size": 84
+          },
+          {
+            "name": "SsdLfoTriangularSingleProc",
+            "offset": 41676,
+            "size": 96
+          },
+          {
+            "name": "SsdLfoTriangularDoubleProc",
+            "offset": 41772,
+            "size": 104
+          },
+          {
+            "name": "SsdLfoSawtoothSingleProc",
+            "offset": 41876,
+            "size": 76
+          },
+          {
+            "name": "SsdLfoNoiseSingleProc",
+            "offset": 41952,
+            "size": 100
+          },
+          {
+            "name": "SsdLfoNoiseDoubleProc",
+            "offset": 42052,
+            "size": 104
+          },
+          {
+            "name": "SsdGetRSLFORandom",
+            "offset": 42156,
+            "size": 36
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_lfo.c",
+        "source_sha256": "6c43c16fa327b83caa34757229b0860b0b65c75d6cfd4db3250fba4101ed6b75"
+      },
+      {
+        "fdr_filename": "ssd_voic.c",
+        "fdr_index": 13,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitVoiceManager",
+            "offset": 42192,
+            "size": 272
+          },
+          {
+            "name": "SsdGetKeyonVoice",
+            "offset": 42464,
+            "size": 292
+          },
+          {
+            "name": "SsdKeyonVoice",
+            "offset": 42756,
+            "size": 136
+          },
+          {
+            "name": "SsdKeyoffUnlinkVoice",
+            "offset": 42892,
+            "size": 96
+          },
+          {
+            "name": "SsdCutoffUnlinkVoice",
+            "offset": 42988,
+            "size": 96
+          },
+          {
+            "name": "SsdCutoffVoice",
+            "offset": 43084,
+            "size": 108
+          },
+          {
+            "name": "SsdKeyoffVoice",
+            "offset": 43192,
+            "size": 108
+          },
+          {
+            "name": "SsdSetVoiceKeyon",
+            "offset": 43300,
+            "size": 1184
+          },
+          {
+            "name": "SsdSetVoiceKeyoff",
+            "offset": 44484,
+            "size": 260
+          },
+          {
+            "name": "SsdNoteToPitch",
+            "offset": 44744,
+            "size": 72
+          },
+          {
+            "name": "SsdCompellingKeyoff",
+            "offset": 44816,
+            "size": 136
+          },
+          {
+            "name": "SsdCalcDirectVoiceVolume",
+            "offset": 44952,
+            "size": 368
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_voic.c",
+        "source_sha256": "a05972a0325dd69f488804ad3e288d8bfe9a4882c26a41100db5a37e2f4fc9f9"
+      },
+      {
+        "fdr_filename": "ssd_dev.c",
+        "fdr_index": 14,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdSetVoiceVolume",
+            "offset": 45328,
+            "size": 100
+          },
+          {
+            "name": "SsdSetVoicePitch",
+            "offset": 45428,
+            "size": 72
+          },
+          {
+            "name": "SsdSetVoiceAdsr1",
+            "offset": 45500,
+            "size": 72
+          },
+          {
+            "name": "SsdSetVoiceAdsr2",
+            "offset": 45572,
+            "size": 72
+          },
+          {
+            "name": "SsdSetVoiceARAttr",
+            "offset": 45644,
+            "size": 132
+          },
+          {
+            "name": "SsdSetVoiceDR",
+            "offset": 45776,
+            "size": 112
+          },
+          {
+            "name": "SsdSetVoiceSL",
+            "offset": 45888,
+            "size": 108
+          },
+          {
+            "name": "SsdSetVoiceSRAttr",
+            "offset": 45996,
+            "size": 132
+          },
+          {
+            "name": "SsdSetVoiceRRAttr",
+            "offset": 46128,
+            "size": 128
+          },
+          {
+            "name": "SsdSetVoiceStartAddress",
+            "offset": 46256,
+            "size": 68
+          },
+          {
+            "name": "SsdSetVoiceLoopStartAddress",
+            "offset": 46324,
+            "size": 68
+          },
+          {
+            "name": "SsdGetVoiceEnvelope",
+            "offset": 46392,
+            "size": 80
+          },
+          {
+            "name": "SsdSetMasterVolume",
+            "offset": 46472,
+            "size": 96
+          },
+          {
+            "name": "SsdSetStreamVolume",
+            "offset": 46568,
+            "size": 8
+          },
+          {
+            "name": "SsdSetReverb",
+            "offset": 46576,
+            "size": 40
+          },
+          {
+            "name": "SsdSetReverbModeType",
+            "offset": 46616,
+            "size": 8
+          },
+          {
+            "name": "SsdSetReverbModeDepth",
+            "offset": 46624,
+            "size": 88
+          },
+          {
+            "name": "SsdSetReverbModeDelayTime",
+            "offset": 46712,
+            "size": 8
+          },
+          {
+            "name": "SsdSetReverbModeFeedback",
+            "offset": 46720,
+            "size": 8
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_dev.c",
+        "source_sha256": "8a14677399091e011bb50cfbd2a580d4f8819668f7233ee4d598513b7dbf8e43"
+      },
+      {
+        "fdr_filename": "ssd_err.c",
+        "fdr_index": 15,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdGetFuncErrorCode",
+            "offset": 46736,
+            "size": 16
+          },
+          {
+            "name": "SsdResetFuncErrorCode",
+            "offset": 46752,
+            "size": 20
+          },
+          {
+            "name": "SsdCheckSumMusicData",
+            "offset": 46772,
+            "size": 8
+          },
+          {
+            "name": "SsdCheckData",
+            "offset": 46780,
+            "size": 72
+          },
+          {
+            "name": "SsdGetCheckSum",
+            "offset": 46852,
+            "size": 44
+          },
+          {
+            "name": "SsdErrorProc",
+            "offset": 46896,
+            "size": 84
+          },
+          {
+            "name": "SsdWarringProc",
+            "offset": 46980,
+            "size": 64
+          },
+          {
+            "name": "SsdSeqErrorProc",
+            "offset": 47044,
+            "size": 32
+          }
+        ],
+        "generated_data": [
+          {
+            "offset": 58624,
+            "section": ".rodata",
+            "sha256": "3ada1a7e551ba6e1718ce2afdee7162640b452b8b35c80b7111a1f4ea7b0fb9f",
+            "size": 66
+          }
+        ],
+        "source": "src/audio/ssd/ssd_err.c",
+        "source_sha256": "a3a9aa10c4f43dc7f1799b1286c62d868d6411ae5bdaad879672c299e2783e0f"
+      },
+      {
+        "fdr_filename": "ssd_midi.c",
+        "fdr_index": 16,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdMakeMidiSequenceRec",
+            "offset": 47088,
+            "size": 176
+          },
+          {
+            "name": "SsdInMidiEvent",
+            "offset": 47264,
+            "size": 96
+          },
+          {
+            "name": "SsdMidiEventDecode",
+            "offset": 47360,
+            "size": 476
+          },
+          {
+            "name": "SsdMidiControlBankMSB",
+            "offset": 47836,
+            "size": 24
+          },
+          {
+            "name": "SsdMidiControlBankLSB",
+            "offset": 47860,
+            "size": 20
+          },
+          {
+            "name": "SsdMidiControlModulationMSB",
+            "offset": 47880,
+            "size": 8
+          },
+          {
+            "name": "SsdMidiControlPortamentoMSB",
+            "offset": 47888,
+            "size": 8
+          },
+          {
+            "name": "SsdMidiControlVolumeMSB",
+            "offset": 47896,
+            "size": 104
+          },
+          {
+            "name": "SsdMidiControlPanpotMSB",
+            "offset": 48000,
+            "size": 52
+          },
+          {
+            "name": "SsdMidiControlExpressionMSB",
+            "offset": 48052,
+            "size": 104
+          },
+          {
+            "name": "SsdMidiControlSustaion",
+            "offset": 48156,
+            "size": 72
+          },
+          {
+            "name": "SsdMidiControlReverb",
+            "offset": 48228,
+            "size": 64
+          },
+          {
+            "name": "SsdMidiControlRegParLSB",
+            "offset": 48292,
+            "size": 16
+          },
+          {
+            "name": "SsdMidiControlRegParMSB",
+            "offset": 48308,
+            "size": 16
+          },
+          {
+            "name": "SsdMidiControlNonRegParLSB",
+            "offset": 48324,
+            "size": 12
+          },
+          {
+            "name": "SsdMidiControlNonRegParMSB",
+            "offset": 48336,
+            "size": 12
+          },
+          {
+            "name": "SsdMidiControlSetRegParDataMSB",
+            "offset": 48348,
+            "size": 52
+          },
+          {
+            "name": "SsdMidiControlSetRegParDataLSB",
+            "offset": 48400,
+            "size": 8
+          }
+        ],
+        "generated_data": [
+          {
+            "offset": 58704,
+            "section": ".rodata",
+            "sha256": "5e705c311e18932fddcb1d4dc038aab9732ce8eea3c511f449ea0a2a9c0f2c7e",
+            "size": 51
+          }
+        ],
+        "source": "src/audio/ssd/ssd_midi.c",
+        "source_sha256": "5b4e450b86bb4fc63fb4c9820ad0d7b6bb52001be2ad7c225855cb76e0b18e31"
+      },
+      {
+        "fdr_filename": "ssd_dbg.c",
+        "fdr_index": 17,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdCheckSpuMemory",
+            "offset": 48416,
+            "size": 420
+          },
+          {
+            "name": "SsdDebOpenDevice",
+            "offset": 48836,
+            "size": 92
+          },
+          {
+            "name": "SsdDebCloseDevice",
+            "offset": 48928,
+            "size": 56
+          },
+          {
+            "name": "SsdDebWaveKeyon",
+            "offset": 48984,
+            "size": 228
+          },
+          {
+            "name": "SsdDebSetWaveToVoiceControl",
+            "offset": 49212,
+            "size": 252
+          },
+          {
+            "name": "SsdDebWaveKeyoff",
+            "offset": 49464,
+            "size": 124
+          },
+          {
+            "name": "SsdMidiDevSetMidiEvent",
+            "offset": 49588,
+            "size": 8
+          },
+          {
+            "name": "SsdMidiDevSetHWEffect",
+            "offset": 49596,
+            "size": 68
+          },
+          {
+            "name": "SsdDebAddEffect",
+            "offset": 49664,
+            "size": 164
+          },
+          {
+            "name": "SsdDebPlayEffect",
+            "offset": 49828,
+            "size": 156
+          },
+          {
+            "name": "NextTextPtr",
+            "offset": 49984,
+            "size": 24
+          }
+        ],
+        "generated_data": [
+          {
+            "offset": 58768,
+            "section": ".rodata",
+            "sha256": "02d80c492266341e87e3724289180c7848031ff2c45ec1f030f30dd553b30cd1",
+            "size": 172
+          }
+        ],
+        "source": "src/audio/ssd/ssd_dbg.c",
+        "source_sha256": "76e97757b696daf064b908662d27b8dd3b8195c13ec22cb8b6ef00b683437253"
+      },
+      {
+        "fdr_filename": "ssd_pcm.c",
+        "fdr_index": 18,
+        "float_mode": "soft",
+        "functions": [
+          {
+            "name": "SsdInitPcmStream",
+            "offset": 50016,
+            "size": 292
+          },
+          {
+            "name": "SsdDisposePcmStream",
+            "offset": 50308,
+            "size": 172
+          },
+          {
+            "name": "SsdResumePcmStream",
+            "offset": 50480,
+            "size": 112
+          },
+          {
+            "name": "SsdSuspendPcmStream",
+            "offset": 50592,
+            "size": 104
+          },
+          {
+            "name": "SsdPlayPcmStream",
+            "offset": 50696,
+            "size": 200
+          },
+          {
+            "name": "SsdStopPcmStream",
+            "offset": 50896,
+            "size": 120
+          },
+          {
+            "name": "SsdGetPcmStreamStatus",
+            "offset": 51016,
+            "size": 16
+          },
+          {
+            "name": "SsdSetPcmStreamData",
+            "offset": 51032,
+            "size": 160
+          },
+          {
+            "name": "SsdSetPcmStreamVolume",
+            "offset": 51192,
+            "size": 220
+          },
+          {
+            "name": "SsdPcmStreamVolumeFadeProc",
+            "offset": 51412,
+            "size": 136
+          },
+          {
+            "name": "SsdPcmStreamCallback",
+            "offset": 51548,
+            "size": 96
+          },
+          {
+            "name": "SsdStreamMonoCopyMemory",
+            "offset": 51644,
+            "size": 148
+          },
+          {
+            "name": "SsdStreamCopyMemory",
+            "offset": 51792,
+            "size": 84
+          },
+          {
+            "name": "SsdStreamClearMemory",
+            "offset": 51876,
+            "size": 48
+          }
+        ],
+        "generated_data": [
+          {
+            "offset": 58944,
+            "section": ".rodata",
+            "sha256": "038b33e4abcc579c6ab9faf50cc13a34733e95506889e6b55cfb88c583cfaa92",
+            "size": 64
+          }
+        ],
+        "source": "src/audio/ssd/ssd_pcm.c",
+        "source_sha256": "dcd4c9bd8902ab2817b9505b85c8f42382800f9daa25901f0bd17da298d7005a"
+      },
+      {
+        "fdr_filename": "ssd_vag.c",
+        "fdr_index": 19,
+        "float_mode": "hard",
+        "functions": [
+          {
+            "name": "SsdInitVagStreamStereo",
+            "offset": 51936,
+            "size": 116
+          },
+          {
+            "name": "SsdInitVagStreamMono",
+            "offset": 52052,
+            "size": 172
+          },
+          {
+            "name": "SsdInitVagStream",
+            "offset": 52224,
+            "size": 332
+          },
+          {
+            "name": "SsdDisposeVagStream",
+            "offset": 52556,
+            "size": 140
+          },
+          {
+            "name": "SsdResumeVagStream",
+            "offset": 52696,
+            "size": 104
+          },
+          {
+            "name": "SsdSuspendVagStream",
+            "offset": 52800,
+            "size": 104
+          },
+          {
+            "name": "SsdPlayVagStream",
+            "offset": 52904,
+            "size": 268
+          },
+          {
+            "name": "SsdStopVagStream",
+            "offset": 53172,
+            "size": 132
+          },
+          {
+            "name": "SsdGetVagStreamStatus",
+            "offset": 53304,
+            "size": 16
+          },
+          {
+            "name": "SsdGetVagStreamParam",
+            "offset": 53320,
+            "size": 92
+          },
+          {
+            "name": "SsdSetVagStreamDataStereo",
+            "offset": 53412,
+            "size": 164
+          },
+          {
+            "name": "SsdSetVagStreamDataMono",
+            "offset": 53576,
+            "size": 388
+          },
+          {
+            "name": "SsdVagStreamCallback",
+            "offset": 53964,
+            "size": 96
+          },
+          {
+            "name": "SsdVagStreamClearMemory",
+            "offset": 54060,
+            "size": 64
+          },
+          {
+            "name": "SsdVagStreamIrqCallback",
+            "offset": 54124,
+            "size": 32
+          },
+          {
+            "name": "SsdVagStreamDmaCallback",
+            "offset": 54156,
+            "size": 248
+          },
+          {
+            "name": "SsdVagStreamInitTrans",
+            "offset": 54404,
+            "size": 44
+          },
+          {
+            "name": "SsdVagStreamBlockTrans",
+            "offset": 54448,
+            "size": 280
+          },
+          {
+            "name": "SsdVagStreamSpuTransfer",
+            "offset": 54728,
+            "size": 156
+          },
+          {
+            "name": "SsdVagStreamDmaTransfer",
+            "offset": 54884,
+            "size": 244
+          },
+          {
+            "name": "SsdVagStreamTransferStatus",
+            "offset": 55128,
+            "size": 36
+          },
+          {
+            "name": "SsdInitVagStreamVoice",
+            "offset": 55164,
+            "size": 212
+          },
+          {
+            "name": "SsdSetVagStreamPitch",
+            "offset": 55376,
+            "size": 76
+          },
+          {
+            "name": "SsdSetVagStreamVolume",
+            "offset": 55452,
+            "size": 344
+          },
+          {
+            "name": "SsdSetVagStreamPanpot",
+            "offset": 55796,
+            "size": 264
+          },
+          {
+            "name": "SsdSetVagStreamParam",
+            "offset": 56060,
+            "size": 156
+          },
+          {
+            "name": "SsdSetVagStreamHWEffect",
+            "offset": 56216,
+            "size": 52
+          },
+          {
+            "name": "SsdSetVagStreamMasterVolume",
+            "offset": 56268,
+            "size": 320
+          },
+          {
+            "name": "SsdVagStreamVolumeFadeProc",
+            "offset": 56588,
+            "size": 436
+          },
+          {
+            "name": "SsdAllocVoiceVagStream",
+            "offset": 57024,
+            "size": 192
+          },
+          {
+            "name": "SsdFreeVoiceVagStream",
+            "offset": 57216,
+            "size": 104
+          }
+        ],
+        "generated_data": [],
+        "source": "src/audio/ssd/ssd_vag.c",
+        "source_sha256": "21a18b2578aa986e15ccf4ede5f226ef2e349c36550be7aa90502456abbaa9ce"
+      }
+    ]
+  }
+}

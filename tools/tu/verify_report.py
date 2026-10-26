@@ -145,7 +145,20 @@ def data_sizes(root, objects):
         for o in objects}
 
 
-def finish(root, build, snapshot):
+def run_iop_build(root):
+    """Fresh complete SSD/RSSD build (tools/iop_build.py) into a new .work dir."""
+    import time
+    work = root / '.work' / f'iop-verify-{time.time_ns()}'
+    report = work / 'report.json'
+    proc = subprocess.run([sys.executable, '-B', str(root / 'tools/iop_build.py'),
+                           '--build-dir', str(work / 'build'), '--report', str(report)],
+                          cwd=root, capture_output=True, text=True, timeout=900)
+    require(proc.returncode == 0 and report.is_file(),
+            f'IOP build failed: {(proc.stdout + proc.stderr).strip()[-2000:]}')
+    return report
+
+
+def finish(root, build, snapshot, iop_report=None):
     same_inputs(root, snapshot)
     started = (build / 'verification-inputs.json').stat().st_mtime_ns
     def fresh(path):
@@ -221,11 +234,48 @@ def finish(root, build, snapshot):
         entry['total_data'] = sizes[obj['id']]
         entry['complete'] = (bool(obj['functions']) and not entry['total_data']
                              and len(entry['functions']) == len(obj['functions']))
+    # IOP: a fresh complete SSD/RSSD build from the published C; strict mode
+    # requires both IRX files to equal the originals byte for byte.
+    from tu import iop_objdiff
+    iop_report = Path(iop_report).resolve() if iop_report else run_iop_build(root)
+    require(iop_report.is_relative_to(root), 'IOP build report must belong to this checkout')
+    artifacts[str(iop_report.relative_to(root))] = fresh(iop_report)
+    groups, _, _, iop_build = iop_objdiff.load_evidence(root, iop_report)
+    for unit, group, candidate, original in groups:
+        object_id = f'{unit}/debug-file-{group["fdr_index"]:03d}'
+        verified = []
+        for function in group['functions']:
+            target = original.named_symbol(function['name'])
+            measured = candidate['linked_functions'][target['name']]
+            require(measured['exact'], f'{object_id}/{target["name"]}: linked IOP bytes differ')
+            verified.append(dict(name=target['name'], original_symbol=target['name'],
+                                 va=target['value'], size=target['size'], category='exact_c',
+                                 sha256=measured['sha256']))
+        results[object_id] = dict(functions=verified, complete=False, source=group['source'],
+                                  data_credit=0)
+        for key in ('object', 'assembly'):
+            path = Path(candidate[key]).resolve()
+            require(path.is_relative_to(root), 'IOP compiler artifact lies outside this checkout')
+            artifacts[str(path.relative_to(root))] = fresh(path)
+    iop_units = {}
+    for unit, proof in iop_build['whole_irx'].items():
+        require(proof['byte_identical'], f'{unit}: rebuilt IRX differs from the original')
+        iop_units[unit] = dict(whole_file_identical=True, original_sha256=proof['original_sha256'],
+                               rebuilt_sha256=proof['sha256'])
+        for path in (Path(proof['path']), Path(iop_build['module_reports'][unit]['linked_elf'])):
+            path = path.resolve()
+            require(path.is_relative_to(root), 'IOP build output lies outside this checkout')
+            artifacts[str(path.relative_to(root))] = fresh(path)
     same_inputs(root, snapshot)
     artifacts[str((build / 'gate.json').relative_to(root))] = digest(build / 'gate.json')
     return dict(schema='verified-progress/1', inputs=snapshot, artifacts=artifacts,
-                objects=results, note='IOP has no build and earns zero credit. Original TU data '
-                'and standalone ASM earn no C matching or complete credit.')
+                objects=results, units=iop_units,
+                iop=dict(build_report=str(iop_report.relative_to(root)),
+                         build_report_sha256=digest(iop_report), functions=495, original_objects=24,
+                         data_credit=0),
+                note='IOP credit requires complete raw SSD.IRX/RSSD.IRX equality from the '
+                'published C. Original TU data and standalone ASM earn no C matching or '
+                'complete credit.')
 
 
 def load_verified(root, build):
@@ -243,6 +293,8 @@ def main():
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument('--begin', action='store_true')
     mode.add_argument('--finish', action='store_true')
+    ap.add_argument('--iop-report', type=Path,
+                    help='existing fresh tools/iop_build.py report (default: run a fresh IOP build)')
     a = ap.parse_args()
     root, build = a.root.resolve(), a.root.resolve() / 'build'
     try:
@@ -254,7 +306,10 @@ def main():
             result = inputs(root)
             output = build / 'verification-inputs.json'
         else:
-            result = finish(root, build, read(build / 'verification-inputs.json'))
+            report = a.iop_report
+            if report is not None and not report.is_absolute():
+                report = root / report
+            result = finish(root, build, read(build / 'verification-inputs.json'), report)
             output = build / 'verification.json'
         output.write_text(json.dumps(result, indent=1) + '\n')
         print(f'verify_report: {output}')

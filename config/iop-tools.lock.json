@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "role": "generic_elf_reader_not_iop_compiler",
+  "path": ".work/toolchains/ee-binutils/bin/mips64r5900el-ps2-elf-readelf",
+  "sha256": "3446d4d68507bf20bdbd53aab516e36d1567f9e60b1c97a2d859b652fb252395",
+  "version": "GNU readelf (GNU Binutils) 2.45.1",
+  "repository": "https://github.com/ps2dev/binutils-gdb.git",
+  "commit": "616e51fa6ed9d1e8f4bda7d0087fac30c5398aa9",
+  "license": "GPL-3.0-or-later (binutils); bundled components have additional licenses",
+  "build_provenance": "config/ee-binutils.lock.json",
+  "iop_compiler_selected": false
+}

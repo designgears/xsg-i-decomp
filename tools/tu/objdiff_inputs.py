@@ -162,19 +162,20 @@ def prepare(root, evidence):
         verification.require(unit['name'] not in expected, 'duplicate TU name')
         units.append(unit)
         expected[unit['name']] = checked
-    iop = verification.read(root / cov.IOP_OBJECTS)
-    for unit, entry in iop['units'].items():
-        target = tc.game_dir() / entry['file']
-        verification.require(verification.digest(target) == entry['sha256'], f'{unit}: wrong original')
-        original_functions = functions(target)
-        verification.require(len(original_functions) == entry['functions'], f'{unit}: original scope differs')
-        destination = project / unit
-        destination.mkdir(exist_ok=True)
-        stripped = destination / 'target.o'
-        strip_debug(prefix, target, stripped, root, iop_reference=True)
-        units.append(dict(name=unit, target_path=str(stripped),
-                          metadata=dict(complete=False, progress_categories=[unit])))
-        expected[unit] = dict(functions=original_functions, allowed={}, complete=False)
+    # IOP: per-FDR pairs of an original-instruction reference and the fresh
+    # compiler object from the verified complete SSD/RSSD build.
+    from tu import iop_objdiff
+    iop = evidence.get('iop') or {}
+    verification.require(iop.get('build_report'),
+                         'verified IOP build missing; run verify_report --finish')
+    report_path = root / iop['build_report']
+    verification.require(verification.digest(report_path) == iop.get('build_report_sha256'),
+                         'verified IOP build report changed')
+    iop_units, iop_expected, iop_proof = iop_objdiff.prepare(root, project, report_path)
+    verification.require(not set(iop_expected).intersection(expected), 'duplicate IOP object name')
+    units.extend(iop_units)
+    expected.update(iop_expected)
+    (project / 'iop-proof.json').write_text(json.dumps(iop_proof, indent=2) + '\n')
     config = dict(build_target=False, build_base=False, units=units,
                   progress_categories=[dict(id=u, name=targets.get(u, u)) for u in cov.UNITS])
     (project / 'objdiff.json').write_text(json.dumps(config, indent=1) + '\n')

@@ -1,0 +1,3273 @@
+{
+  "accepted_c_functions": 0,
+  "build_report": {
+    "path": "/home/pc/xenosaga1-port/xenosaga-i-decomp/.work/iop-original-names-20261024/outside-verify/build-report.json",
+    "sha256": "7a2059f6ff1cd64d2f6f8ef556e69e48103965e79e5cc3199e771e7b42432a19"
+  },
+  "native_objdiff_report": {
+    "path": ".work/iop-original-names-20261024/objdiff/native-report.json",
+    "sha256": "47f0cb7710159ac6ed6e53bf2e41ae58ba2569cc6f3c76c87b458aa4a0d867ad",
+    "units": 24,
+    "additional_unattributed_data_buckets": 2,
+    "functions": 495,
+    "matched_functions": 495,
+    "matched_code_bytes": 68048,
+    "total_code_bytes": 68048,
+    "data_credit": 0,
+    "all_original_data_accounted_once": true
+  },
+  "compiler_emission_identity": "verified",
+  "created_at_utc": "2026-10-24T05:21:36.222972+00:00",
+  "data_credit": 0,
+  "function_identities": [
+    {
+      "name": "start",
+      "offset": 0,
+      "size": 276,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSifServerThread",
+      "offset": 276,
+      "size": 132,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSifRpcServer",
+      "offset": 408,
+      "size": 136,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdExecFunc",
+      "offset": 544,
+      "size": 3756,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdGetVoiceEnvX",
+      "offset": 4300,
+      "size": 192,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdGetSeqPlayInfo",
+      "offset": 4492,
+      "size": 108,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSifClientThread",
+      "offset": 4600,
+      "size": 244,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSifRpcCallback",
+      "offset": 4844,
+      "size": 88,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdCallFunc",
+      "offset": 4932,
+      "size": 352,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "iRssdCallFunc",
+      "offset": 5284,
+      "size": 332,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSetFuncCallback",
+      "offset": 5616,
+      "size": 20,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdInit",
+      "offset": 5648,
+      "size": 248,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSpuDirectRead",
+      "offset": 5896,
+      "size": 152,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSpuReadCallback",
+      "offset": 6048,
+      "size": 132,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSpuReadNext",
+      "offset": 6180,
+      "size": 124,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdAddWaveData",
+      "offset": 6304,
+      "size": 168,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdNextWaveData",
+      "offset": 6472,
+      "size": 168,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSpuDmaTransferCallback",
+      "offset": 6640,
+      "size": 84,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdPlaySequenceData",
+      "offset": 6724,
+      "size": 52,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdAddSequenceData",
+      "offset": 6776,
+      "size": 60,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdAddSeqEffectData",
+      "offset": 6836,
+      "size": 60,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdAddEffectData",
+      "offset": 6896,
+      "size": 60,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdInitSampling",
+      "offset": 6956,
+      "size": 80,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdTransferSampling",
+      "offset": 7036,
+      "size": 44,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdTransferSamplingNext",
+      "offset": 7080,
+      "size": 8,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSamplingDmaCallbackProc",
+      "offset": 7088,
+      "size": 84,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "RssdSamplingKeyoffCallbackProc",
+      "offset": 7172,
+      "size": 84,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdInitEEPcmStream",
+      "offset": 7264,
+      "size": 136,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdDisposeEEPcmStream",
+      "offset": 7400,
+      "size": 80,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdSetEEPcmStreamData",
+      "offset": 7480,
+      "size": 148,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdGetEEPcmStreamStatus",
+      "offset": 7628,
+      "size": 88,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdEEPcmStreamCallback",
+      "offset": 7716,
+      "size": 124,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdInitEEVagStreamStereo",
+      "offset": 7840,
+      "size": 148,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdInitEEVagStreamMono",
+      "offset": 7988,
+      "size": 268,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdDisposeEEVagStream",
+      "offset": 8256,
+      "size": 136,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdPlayEEVagStream",
+      "offset": 8392,
+      "size": 108,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdStopEEVagStream",
+      "offset": 8500,
+      "size": 68,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdSetEEVagStreamDataStereo",
+      "offset": 8568,
+      "size": 428,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdGetEEVagStreamStatusStereo",
+      "offset": 8996,
+      "size": 128,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdEEVagStreamCallbackStereo",
+      "offset": 9124,
+      "size": 132,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdSetEEVagStreamDataMono",
+      "offset": 9256,
+      "size": 192,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdGetEEVagStreamStatusMono",
+      "offset": 9448,
+      "size": 188,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdGetEEVagStreamStatusAll",
+      "offset": 9636,
+      "size": 208,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdEEClearRingBuffer",
+      "offset": 9844,
+      "size": 144,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdEEVagStreamCallbackMono",
+      "offset": 9988,
+      "size": 224,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "InitRingBuffer",
+      "offset": 10224,
+      "size": 120,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "DisposeRingBuffer",
+      "offset": 10344,
+      "size": 32,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "GetRingInBufferPtr",
+      "offset": 10376,
+      "size": 60,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "IncRingInBufferPtr",
+      "offset": 10436,
+      "size": 72,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "InRingBuffer",
+      "offset": 10508,
+      "size": 172,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "OutRingBuffer",
+      "offset": 10680,
+      "size": 112,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "ClearRingBuffer",
+      "offset": 10792,
+      "size": 16,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "CopyMemoryRingBuffer",
+      "offset": 10808,
+      "size": 84,
+      "unit": "iop_rssd"
+    },
+    {
+      "name": "SsdStart",
+      "offset": 0,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetGlobalWorkPtr",
+      "offset": 60,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInit",
+      "offset": 76,
+      "size": 508,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdQuit",
+      "offset": 584,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitInterrupt",
+      "offset": 696,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitTimer",
+      "offset": 804,
+      "size": 168,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdQuitInterrupt",
+      "offset": 972,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdQuitTimer",
+      "offset": 1040,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResume",
+      "offset": 1092,
+      "size": 144,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspend",
+      "offset": 1236,
+      "size": 144,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdEnable",
+      "offset": 1380,
+      "size": 92,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisable",
+      "offset": 1472,
+      "size": 92,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetRSRandom",
+      "offset": 1564,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMainInterruptProcess",
+      "offset": 1608,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLinkProc",
+      "offset": 1648,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdUnlinkProc",
+      "offset": 1756,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitMainMemoryManager",
+      "offset": 1840,
+      "size": 92,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNewPtr",
+      "offset": 1932,
+      "size": 244,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNewPtr2",
+      "offset": 2176,
+      "size": 256,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposePtr",
+      "offset": 2432,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetMemoryFreeSize",
+      "offset": 2504,
+      "size": 124,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetMemoryBlockCount",
+      "offset": 2628,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMemoryCopy",
+      "offset": 2672,
+      "size": 168,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMemoryClear",
+      "offset": 2840,
+      "size": 116,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitSpuMemoryManager",
+      "offset": 2956,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSegmentAllocMode",
+      "offset": 3076,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetSegmentAllocMode",
+      "offset": 3152,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMalloc",
+      "offset": 3208,
+      "size": 272,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMalloc2",
+      "offset": 3480,
+      "size": 284,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMallocAdrs",
+      "offset": 3764,
+      "size": 304,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMallocAdrsDynamic",
+      "offset": 4068,
+      "size": 280,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMallocAdrsSegment",
+      "offset": 4348,
+      "size": 308,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuMFree",
+      "offset": 4656,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSpuType",
+      "offset": 4756,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSpuMemoryFree",
+      "offset": 4804,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSpuMemManagerBlock",
+      "offset": 4924,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSpuAddsBlock",
+      "offset": 4984,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeMemoryMap",
+      "offset": 5044,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitDmaManager",
+      "offset": 5088,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetPcmStreamCallback",
+      "offset": 5136,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamCallback",
+      "offset": 5152,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetIrqCallback",
+      "offset": 5168,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuDmaWrite",
+      "offset": 5184,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuDmaRead",
+      "offset": 5264,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDmaStartTransfer",
+      "offset": 5344,
+      "size": 308,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuDmaCompleted",
+      "offset": 5652,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetDmaQueueBuffer",
+      "offset": 5732,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdWaveTransferInterruptProcess",
+      "offset": 5784,
+      "size": 168,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStreamInterruptProcess",
+      "offset": 5952,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDmaStartBuffer",
+      "offset": 6048,
+      "size": 140,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdIrqInterruptProcess",
+      "offset": 6188,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetDmaManager",
+      "offset": 6288,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitOutputControl",
+      "offset": 6352,
+      "size": 184,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetOutputMode",
+      "offset": 6536,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSpuVolume",
+      "offset": 6712,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetCDVolume",
+      "offset": 6888,
+      "size": 140,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSequenceOutputVolume",
+      "offset": 7028,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetEffectOutputVolume",
+      "offset": 7068,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetGroupOutputVolume",
+      "offset": 7108,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetCDMixingReverb",
+      "offset": 7216,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetAudioAttenuator",
+      "offset": 7248,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverbParameter",
+      "offset": 7256,
+      "size": 352,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdEnableReverbParam",
+      "offset": 7608,
+      "size": 132,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckWideMode",
+      "offset": 7740,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVolumeRec",
+      "offset": 7852,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdReverbClear",
+      "offset": 7936,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdReverbClearCallback",
+      "offset": 7944,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdReverbClearCompleted",
+      "offset": 7952,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAddWaveData",
+      "offset": 8000,
+      "size": 724,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNextWaveData",
+      "offset": 8724,
+      "size": 160,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSpuWaveMalloc",
+      "offset": 8884,
+      "size": 224,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeWaveBank",
+      "offset": 9108,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeWaveData",
+      "offset": 9184,
+      "size": 212,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckWaveData",
+      "offset": 9396,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetWSPtrSpuAdrs",
+      "offset": 9464,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetWSPtrBank",
+      "offset": 9524,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetWaveToVoiceControl",
+      "offset": 9592,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetWaveTransCallback",
+      "offset": 9728,
+      "size": 20,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitSequence",
+      "offset": 9760,
+      "size": 364,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLinkSequence",
+      "offset": 10124,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdUnlinkSequence",
+      "offset": 10188,
+      "size": 168,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeSequenceBuffer",
+      "offset": 10356,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSeqPlayStatus",
+      "offset": 10468,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqMasterTempo",
+      "offset": 10632,
+      "size": 256,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqMasterNote",
+      "offset": 10888,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqMasterVolume",
+      "offset": 11052,
+      "size": 244,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqMasterPanpot",
+      "offset": 11296,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqReverb",
+      "offset": 11460,
+      "size": 212,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqMute",
+      "offset": 11672,
+      "size": 264,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqNoteFader",
+      "offset": 11936,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqVolumeFader",
+      "offset": 12036,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqPanpotFader",
+      "offset": 12212,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqPatchNumber",
+      "offset": 12312,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetTrackPatchSet",
+      "offset": 12484,
+      "size": 300,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqABRepeat",
+      "offset": 12784,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSeqPlayTime",
+      "offset": 12816,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetTimeCode",
+      "offset": 12896,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetPlayMeasure",
+      "offset": 13060,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSeqLyric",
+      "offset": 13092,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSeqCuePoint",
+      "offset": 13124,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqSignal",
+      "offset": 13132,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSeqStopCallback",
+      "offset": 13180,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSequencePtr",
+      "offset": 13228,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStartingSequence",
+      "offset": 13288,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStoppingSequence",
+      "offset": 13368,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlaySequence",
+      "offset": 13472,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAddSeqEffectData",
+      "offset": 13556,
+      "size": 88,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAddSequenceData",
+      "offset": 13644,
+      "size": 512,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeSequence",
+      "offset": 14156,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckSequence",
+      "offset": 14332,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStartSequence",
+      "offset": 14400,
+      "size": 220,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumeSequence",
+      "offset": 14620,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopSequence",
+      "offset": 14720,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPauseSequence",
+      "offset": 14784,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitMusicTrackRec",
+      "offset": 14888,
+      "size": 260,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckMidiChannel",
+      "offset": 15148,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetDataAddress",
+      "offset": 15244,
+      "size": 228,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetSeqWorkSize",
+      "offset": 15472,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMakeEffectSequenceRec",
+      "offset": 15536,
+      "size": 316,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAddEffectData",
+      "offset": 15852,
+      "size": 192,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeEffectData",
+      "offset": 16044,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLinkEffectSet",
+      "offset": 16156,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdUnlinkEffectSet",
+      "offset": 16220,
+      "size": 168,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckEffectData",
+      "offset": 16388,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayEffectNormal",
+      "offset": 16456,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetPlayEffectParam",
+      "offset": 16496,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayEffectParam",
+      "offset": 16592,
+      "size": 284,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlaySeqEffectNormal",
+      "offset": 16876,
+      "size": 652,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayWaveNormal",
+      "offset": 17528,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayWaveParam",
+      "offset": 17568,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopWave",
+      "offset": 17668,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayWaveEffectNormal",
+      "offset": 17700,
+      "size": 608,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetEffectParam",
+      "offset": 18308,
+      "size": 500,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSaechSeqFreeTrack",
+      "offset": 18808,
+      "size": 480,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopAllEffect",
+      "offset": 19288,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopEffect",
+      "offset": 19408,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdContinueOneEffect",
+      "offset": 19444,
+      "size": 264,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopEffectFileID",
+      "offset": 19708,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdFadeoutEffect",
+      "offset": 19740,
+      "size": 264,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdFadeoutEffectFileID",
+      "offset": 20004,
+      "size": 148,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdFadeoutStopEffectTrack",
+      "offset": 20152,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckPlayEffectAll",
+      "offset": 20272,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckPlayEffect",
+      "offset": 20336,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckPlayEffectFileID",
+      "offset": 20508,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetFileIDToEffectData",
+      "offset": 20592,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitSampling",
+      "offset": 20656,
+      "size": 200,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeSampling",
+      "offset": 20856,
+      "size": 160,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSampleDmaCallback",
+      "offset": 21016,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSampleKeyoffCallback",
+      "offset": 21032,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdTransferSampling",
+      "offset": 21048,
+      "size": 128,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdTransferSamplingNext",
+      "offset": 21176,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlaySampling",
+      "offset": 21276,
+      "size": 208,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopSampling",
+      "offset": 21484,
+      "size": 124,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSamplingParam",
+      "offset": 21608,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetSamplingEffect",
+      "offset": 21708,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAllocSamplingVoice",
+      "offset": 21792,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitSamplingVoice",
+      "offset": 21964,
+      "size": 292,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSampleKeyoffInterProc",
+      "offset": 22256,
+      "size": 200,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqInterruptProcess",
+      "offset": 22464,
+      "size": 280,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCommonControl",
+      "offset": 22744,
+      "size": 196,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMainSequenceProcess",
+      "offset": 22940,
+      "size": 608,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiTrackSequence",
+      "offset": 23548,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNormalTrackEffect",
+      "offset": 23648,
+      "size": 568,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNormalTrackGate",
+      "offset": 24216,
+      "size": 152,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNormalTrackSequence",
+      "offset": 24368,
+      "size": 436,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdEffectTrackSequence",
+      "offset": 24804,
+      "size": 968,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVoiceEvent",
+      "offset": 25772,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDeviceVoiceEvent",
+      "offset": 25840,
+      "size": 940,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetEnvx",
+      "offset": 26780,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCalculateModulate",
+      "offset": 26900,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDummy",
+      "offset": 26976,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDeltaForAfterDelta",
+      "offset": 27072,
+      "size": 20,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDeltaForGate",
+      "offset": 27092,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDeltaAddGate",
+      "offset": 27116,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDeltaAddAfterDelta",
+      "offset": 27148,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDelta1",
+      "offset": 27180,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDelta2",
+      "offset": 27204,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDelta3",
+      "offset": 27236,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqRest",
+      "offset": 27280,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTie",
+      "offset": 27344,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqStop",
+      "offset": 27384,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqRepeat",
+      "offset": 27492,
+      "size": 28,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqJump",
+      "offset": 27520,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqIf",
+      "offset": 27556,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqOctaveAbsolute",
+      "offset": 27624,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqOctaveRelative",
+      "offset": 27656,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqOctaveUp",
+      "offset": 27700,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqOctaveDown",
+      "offset": 27724,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLoopTop",
+      "offset": 27748,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLoopEnd",
+      "offset": 27820,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLoopEscape",
+      "offset": 27928,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTempoAbsolute",
+      "offset": 28004,
+      "size": 88,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTempoRelative",
+      "offset": 28092,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTempoChange",
+      "offset": 28188,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqMeasure",
+      "offset": 28364,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPosition",
+      "offset": 28440,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqMasterFader",
+      "offset": 28480,
+      "size": 132,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqBankMSB",
+      "offset": 28612,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqBankLSB",
+      "offset": 28648,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqWaveChange",
+      "offset": 28680,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqWaveBankType",
+      "offset": 28732,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqProgramChange",
+      "offset": 28804,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqRandomNote",
+      "offset": 28856,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqADSRReset",
+      "offset": 28936,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqADSRMode",
+      "offset": 28944,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqAR",
+      "offset": 28952,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDR",
+      "offset": 29028,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSL",
+      "offset": 29104,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSR",
+      "offset": 29180,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqRR",
+      "offset": 29256,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDRSL",
+      "offset": 29332,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqAMode",
+      "offset": 29416,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSMode",
+      "offset": 29492,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqRMode",
+      "offset": 29568,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPriority",
+      "offset": 29644,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqGateTime",
+      "offset": 29668,
+      "size": 20,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSustaion",
+      "offset": 29688,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSulrOn",
+      "offset": 29784,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSulrOff",
+      "offset": 29808,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPMOn",
+      "offset": 29832,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPMOff",
+      "offset": 29884,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqNoiseAbsolute",
+      "offset": 29936,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqNoiseRelative",
+      "offset": 29996,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqNoiseOn",
+      "offset": 30068,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqNoiseOff",
+      "offset": 30120,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqReverbParameter",
+      "offset": 30172,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqReverbSet",
+      "offset": 30256,
+      "size": 140,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqReverbOn",
+      "offset": 30396,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqReverbOff",
+      "offset": 30448,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqKeyTransposeAbsolute",
+      "offset": 30500,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqKeyTransposeRelative",
+      "offset": 30560,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTune",
+      "offset": 30632,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqDetune",
+      "offset": 30704,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqBender",
+      "offset": 30784,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSweep",
+      "offset": 30892,
+      "size": 204,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVibrateFade",
+      "offset": 31096,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVibrate1",
+      "offset": 31168,
+      "size": 276,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVibrate2",
+      "offset": 31444,
+      "size": 304,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVibrateOn",
+      "offset": 31748,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVibrateOff",
+      "offset": 31756,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqBenderOff",
+      "offset": 31764,
+      "size": 60,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqExpression",
+      "offset": 31824,
+      "size": 124,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVolumeAbsolute",
+      "offset": 31948,
+      "size": 148,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVolumeRelative",
+      "offset": 32096,
+      "size": 180,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqVolumeFade",
+      "offset": 32276,
+      "size": 256,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTremoloFade",
+      "offset": 32532,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTremolo1",
+      "offset": 32604,
+      "size": 248,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTremolo2",
+      "offset": 32852,
+      "size": 268,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTremoloOn",
+      "offset": 33120,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqTremoloOff",
+      "offset": 33128,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPanpotAbsolute",
+      "offset": 33136,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPanpotRelative",
+      "offset": 33244,
+      "size": 128,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqPanpoMove",
+      "offset": 33372,
+      "size": 180,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqShakeFade",
+      "offset": 33552,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqShake1",
+      "offset": 33624,
+      "size": 248,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqShake2",
+      "offset": 33872,
+      "size": 268,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqShakeOn",
+      "offset": 34140,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqShakeOff",
+      "offset": 34188,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLFOProcess",
+      "offset": 34236,
+      "size": 128,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLFOParameter",
+      "offset": 34364,
+      "size": 196,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLFODelay",
+      "offset": 34560,
+      "size": 144,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLFOOn",
+      "offset": 34704,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLFOOff",
+      "offset": 34712,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoOn",
+      "offset": 34720,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoOff",
+      "offset": 34728,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqAllReset",
+      "offset": 34736,
+      "size": 252,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqLabel",
+      "offset": 34988,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSMPTETime",
+      "offset": 34996,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSMPTEFrame",
+      "offset": 35004,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSMPTEOffset",
+      "offset": 35012,
+      "size": 180,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqSkip",
+      "offset": 35192,
+      "size": 140,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNewMidiDevice",
+      "offset": 35344,
+      "size": 304,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeMidiDevice",
+      "offset": 35648,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetNewDeivceID",
+      "offset": 35704,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLinkMidiDevice",
+      "offset": 35800,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdUnlinkMidiDevice",
+      "offset": 35880,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumeDeviceAll",
+      "offset": 35952,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumeDeviceChannel",
+      "offset": 36020,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumeChannel",
+      "offset": 36092,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspendDeviceAll",
+      "offset": 36148,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspendDeviceChannel",
+      "offset": 36216,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspendChannel",
+      "offset": 36288,
+      "size": 188,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetMidiDeviceParam",
+      "offset": 36476,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetChannelAll",
+      "offset": 36528,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetChannel",
+      "offset": 36632,
+      "size": 196,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetChannelFader",
+      "offset": 36828,
+      "size": 216,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDevicePriority",
+      "offset": 37044,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDeviceMasterValue",
+      "offset": 37084,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDeviceNote",
+      "offset": 37140,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDeviceVolume",
+      "offset": 37180,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDevicePanpot",
+      "offset": 37256,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMidiDeviceOutputVolume",
+      "offset": 37300,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCutoffDevive",
+      "offset": 37376,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCutoffChannel",
+      "offset": 37448,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdEnvxKeyoff",
+      "offset": 37524,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLinkChannelVoice",
+      "offset": 37620,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdUnlinkChannelVoice",
+      "offset": 37704,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelAllVoiceEvent",
+      "offset": 37824,
+      "size": 88,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelVoiceEvent",
+      "offset": 37912,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelVoiceVelocity",
+      "offset": 37968,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelHWEffectOn",
+      "offset": 38044,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelHWEffectOff",
+      "offset": 38112,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyonChannel",
+      "offset": 38184,
+      "size": 128,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyonChannelWave",
+      "offset": 38312,
+      "size": 364,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyonChannelProgram",
+      "offset": 38676,
+      "size": 756,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetProgramSplitPtr",
+      "offset": 39432,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyonChannelVoice",
+      "offset": 39468,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSendChannelKeyoffEvent",
+      "offset": 39564,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyoffChannel",
+      "offset": 39684,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyoffChannelVoice",
+      "offset": 39792,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdForceKeyoffChannel",
+      "offset": 39928,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdForceKeyoffChannelVoice",
+      "offset": 40036,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelWave",
+      "offset": 40144,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelProgram",
+      "offset": 40320,
+      "size": 212,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetChannelAdsr",
+      "offset": 40532,
+      "size": 12,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitLfoWork",
+      "offset": 40544,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitLfoParam",
+      "offset": 40600,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetLfoProc",
+      "offset": 40736,
+      "size": 196,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqGetLFODepth",
+      "offset": 40932,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoControlProc",
+      "offset": 41104,
+      "size": 392,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoOffProc",
+      "offset": 41496,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoRectangularSingleProc",
+      "offset": 41520,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoRectangularDoubleProc",
+      "offset": 41592,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoTriangularSingleProc",
+      "offset": 41676,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoTriangularDoubleProc",
+      "offset": 41772,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoSawtoothSingleProc",
+      "offset": 41876,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoNoiseSingleProc",
+      "offset": 41952,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdLfoNoiseDoubleProc",
+      "offset": 42052,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetRSLFORandom",
+      "offset": 42156,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitVoiceManager",
+      "offset": 42192,
+      "size": 272,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetKeyonVoice",
+      "offset": 42464,
+      "size": 292,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyonVoice",
+      "offset": 42756,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyoffUnlinkVoice",
+      "offset": 42892,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCutoffUnlinkVoice",
+      "offset": 42988,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCutoffVoice",
+      "offset": 43084,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdKeyoffVoice",
+      "offset": 43192,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceKeyon",
+      "offset": 43300,
+      "size": 1184,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceKeyoff",
+      "offset": 44484,
+      "size": 260,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdNoteToPitch",
+      "offset": 44744,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCompellingKeyoff",
+      "offset": 44816,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCalcDirectVoiceVolume",
+      "offset": 44952,
+      "size": 368,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceVolume",
+      "offset": 45328,
+      "size": 100,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoicePitch",
+      "offset": 45428,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceAdsr1",
+      "offset": 45500,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceAdsr2",
+      "offset": 45572,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceARAttr",
+      "offset": 45644,
+      "size": 132,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceDR",
+      "offset": 45776,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceSL",
+      "offset": 45888,
+      "size": 108,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceSRAttr",
+      "offset": 45996,
+      "size": 132,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceRRAttr",
+      "offset": 46128,
+      "size": 128,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceStartAddress",
+      "offset": 46256,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVoiceLoopStartAddress",
+      "offset": 46324,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetVoiceEnvelope",
+      "offset": 46392,
+      "size": 80,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetMasterVolume",
+      "offset": 46472,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetStreamVolume",
+      "offset": 46568,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverb",
+      "offset": 46576,
+      "size": 40,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverbModeType",
+      "offset": 46616,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverbModeDepth",
+      "offset": 46624,
+      "size": 88,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverbModeDelayTime",
+      "offset": 46712,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetReverbModeFeedback",
+      "offset": 46720,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetFuncErrorCode",
+      "offset": 46736,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResetFuncErrorCode",
+      "offset": 46752,
+      "size": 20,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckSumMusicData",
+      "offset": 46772,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckData",
+      "offset": 46780,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetCheckSum",
+      "offset": 46852,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdErrorProc",
+      "offset": 46896,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdWarringProc",
+      "offset": 46980,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSeqErrorProc",
+      "offset": 47044,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMakeMidiSequenceRec",
+      "offset": 47088,
+      "size": 176,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInMidiEvent",
+      "offset": 47264,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiEventDecode",
+      "offset": 47360,
+      "size": 476,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlBankMSB",
+      "offset": 47836,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlBankLSB",
+      "offset": 47860,
+      "size": 20,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlModulationMSB",
+      "offset": 47880,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlPortamentoMSB",
+      "offset": 47888,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlVolumeMSB",
+      "offset": 47896,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlPanpotMSB",
+      "offset": 48000,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlExpressionMSB",
+      "offset": 48052,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlSustaion",
+      "offset": 48156,
+      "size": 72,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlReverb",
+      "offset": 48228,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlRegParLSB",
+      "offset": 48292,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlRegParMSB",
+      "offset": 48308,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlNonRegParLSB",
+      "offset": 48324,
+      "size": 12,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlNonRegParMSB",
+      "offset": 48336,
+      "size": 12,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlSetRegParDataMSB",
+      "offset": 48348,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiControlSetRegParDataLSB",
+      "offset": 48400,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdCheckSpuMemory",
+      "offset": 48416,
+      "size": 420,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebOpenDevice",
+      "offset": 48836,
+      "size": 92,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebCloseDevice",
+      "offset": 48928,
+      "size": 56,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebWaveKeyon",
+      "offset": 48984,
+      "size": 228,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebSetWaveToVoiceControl",
+      "offset": 49212,
+      "size": 252,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebWaveKeyoff",
+      "offset": 49464,
+      "size": 124,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiDevSetMidiEvent",
+      "offset": 49588,
+      "size": 8,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdMidiDevSetHWEffect",
+      "offset": 49596,
+      "size": 68,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebAddEffect",
+      "offset": 49664,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDebPlayEffect",
+      "offset": 49828,
+      "size": 156,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "NextTextPtr",
+      "offset": 49984,
+      "size": 24,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitPcmStream",
+      "offset": 50016,
+      "size": 292,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposePcmStream",
+      "offset": 50308,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumePcmStream",
+      "offset": 50480,
+      "size": 112,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspendPcmStream",
+      "offset": 50592,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayPcmStream",
+      "offset": 50696,
+      "size": 200,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopPcmStream",
+      "offset": 50896,
+      "size": 120,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetPcmStreamStatus",
+      "offset": 51016,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetPcmStreamData",
+      "offset": 51032,
+      "size": 160,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetPcmStreamVolume",
+      "offset": 51192,
+      "size": 220,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPcmStreamVolumeFadeProc",
+      "offset": 51412,
+      "size": 136,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPcmStreamCallback",
+      "offset": 51548,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStreamMonoCopyMemory",
+      "offset": 51644,
+      "size": 148,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStreamCopyMemory",
+      "offset": 51792,
+      "size": 84,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStreamClearMemory",
+      "offset": 51876,
+      "size": 48,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitVagStreamStereo",
+      "offset": 51936,
+      "size": 116,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitVagStreamMono",
+      "offset": 52052,
+      "size": 172,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitVagStream",
+      "offset": 52224,
+      "size": 332,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdDisposeVagStream",
+      "offset": 52556,
+      "size": 140,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdResumeVagStream",
+      "offset": 52696,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSuspendVagStream",
+      "offset": 52800,
+      "size": 104,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdPlayVagStream",
+      "offset": 52904,
+      "size": 268,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdStopVagStream",
+      "offset": 53172,
+      "size": 132,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetVagStreamStatus",
+      "offset": 53304,
+      "size": 16,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdGetVagStreamParam",
+      "offset": 53320,
+      "size": 92,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamDataStereo",
+      "offset": 53412,
+      "size": 164,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamDataMono",
+      "offset": 53576,
+      "size": 388,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamCallback",
+      "offset": 53964,
+      "size": 96,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamClearMemory",
+      "offset": 54060,
+      "size": 64,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamIrqCallback",
+      "offset": 54124,
+      "size": 32,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamDmaCallback",
+      "offset": 54156,
+      "size": 248,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamInitTrans",
+      "offset": 54404,
+      "size": 44,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamBlockTrans",
+      "offset": 54448,
+      "size": 280,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamSpuTransfer",
+      "offset": 54728,
+      "size": 156,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamDmaTransfer",
+      "offset": 54884,
+      "size": 244,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamTransferStatus",
+      "offset": 55128,
+      "size": 36,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdInitVagStreamVoice",
+      "offset": 55164,
+      "size": 212,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamPitch",
+      "offset": 55376,
+      "size": 76,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamVolume",
+      "offset": 55452,
+      "size": 344,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamPanpot",
+      "offset": 55796,
+      "size": 264,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamParam",
+      "offset": 56060,
+      "size": 156,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamHWEffect",
+      "offset": 56216,
+      "size": 52,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdSetVagStreamMasterVolume",
+      "offset": 56268,
+      "size": 320,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdVagStreamVolumeFadeProc",
+      "offset": 56588,
+      "size": 436,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdAllocVoiceVagStream",
+      "offset": 57024,
+      "size": 192,
+      "unit": "iop_ssd"
+    },
+    {
+      "name": "SsdFreeVoiceVagStream",
+      "offset": 57216,
+      "size": 104,
+      "unit": "iop_ssd"
+    }
+  ],
+  "independent_review": "not_performed_per_user_instruction",
+  "manifest": {
+    "path": "config/iop-build.json",
+    "sha256": "895b67543cedc9e1e5a2231a7b5180c4fe740a129d65e4df707181885a73ed53"
+  },
+  "plan_submission_resolution": [
+    {
+      "plan_sentinel": "latest-pcm-form03",
+      "reason": "current queue submit audit for the same pinned PCM form03 attempt/result",
+      "resolved_submission_id": "991933f3e33cf839e7b7233c82dd19b74eec81cb9a824241232fb5c66a6bf1bc",
+      "task": "module-slus-20469-412d448de315-iop_ssd-0000c360-pcm-streaming-ed8aaaebc0bd-fn-0000c8d4"
+    }
+  ],
+  "publication_receipt": {
+    "note": "The docs path is locally ignored by the repository rules; this config ledger is the persistent visible status record.",
+    "path": "docs/IOP-PUBLICATION-20261024.json",
+    "schema": "tu-publication/1",
+    "sha256": "717fc9a7d222e1ba2cfbb37bb3aba7485a74c18643a36e1128a4f73be604b5fd"
+  },
+  "path_migration": {
+    "reason": "Rename the published files to their original FDR source names; source bytes and function identities are unchanged.",
+    "from_prefix": "src/audio/{ssd,rssd}/fdr-NNN-",
+    "to_prefix": "src/audio/{ssd,rssd}/"
+  },
+  "published_functions": 495,
+  "queue_closure": {
+    "direct_acceptance_done": 426,
+    "other_states": {},
+    "remaining_submitted": 0,
+    "retired_superseded": 2,
+    "retired_task_ids": [
+      "module-slus-20469-412d448de315-iop_ssd-00002620-sequence-control-617ce8b36283-fn-00002d98",
+      "module-slus-20469-412d448de315-iop_ssd-00008a10-midi-channels-e2d57e1a64cb-fn-0000949c"
+    ],
+    "revision_successors_blocked": [],
+    "selected_submissions": 426
+  },
+  "raw_irx_whole_file_equality": "verified",
+  "revision": "slus-20469-412d448de315",
+  "schema": "iop-publication/1",
+  "source_category_counts": {
+    "exact_c": 495
+  },
+  "source_groups": [
+    {
+      "fdr_filename": "rssdinit.c",
+      "fdr_index": 0,
+      "float_mode": "soft",
+      "functions": 11,
+      "source": "src/audio/rssd/rssdinit.c",
+      "source_sha256": "093ce91cc4b64e838fa86c03802d7db70da681e8d0c2ad5f3fbbc9c8b4dae3a1",
+      "unit": "iop_rssd"
+    },
+    {
+      "fdr_filename": "rssdfunc.c",
+      "fdr_index": 1,
+      "float_mode": "soft",
+      "functions": 16,
+      "source": "src/audio/rssd/rssdfunc.c",
+      "source_sha256": "8bc044c36155fadaaf93084efed5fe7ddff14917677ff1e897fd0e71107ad22c",
+      "unit": "iop_rssd"
+    },
+    {
+      "fdr_filename": "rssdstrm.c",
+      "fdr_index": 2,
+      "float_mode": "soft",
+      "functions": 18,
+      "source": "src/audio/rssd/rssdstrm.c",
+      "source_sha256": "36a62e96f3570fe13e121daf357bfd4025e393feaf1cb9d59a1abf4d55fa0e07",
+      "unit": "iop_rssd"
+    },
+    {
+      "fdr_filename": "rssdring.c",
+      "fdr_index": 3,
+      "float_mode": "soft",
+      "functions": 8,
+      "source": "src/audio/rssd/rssdring.c",
+      "source_sha256": "358deaab59319c5d4b314f44aa87c755177150ce2677f98880a9899e0d76a4ad",
+      "unit": "iop_rssd"
+    },
+    {
+      "fdr_filename": "ssd_init.c",
+      "fdr_index": 0,
+      "float_mode": "soft",
+      "functions": 16,
+      "source": "src/audio/ssd/ssd_init.c",
+      "source_sha256": "aff1300f19c240af7745225ab9d422ebc7c4c116ab11d5e2f634b0b2a0d22d77",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_mem.c",
+      "fdr_index": 1,
+      "float_mode": "soft",
+      "functions": 22,
+      "source": "src/audio/ssd/ssd_mem.c",
+      "source_sha256": "bb6d174123b39b922b9d2dd1dc6c73bcddc18a9f1ee16a42bfc078506c79cde7",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_dma.c",
+      "fdr_index": 2,
+      "float_mode": "soft",
+      "functions": 14,
+      "source": "src/audio/ssd/ssd_dma.c",
+      "source_sha256": "135a1417b3efebaf14b21557efd8da7314825c508400ba27c3e9789b3e788732",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_out.c",
+      "fdr_index": 3,
+      "float_mode": "soft",
+      "functions": 16,
+      "source": "src/audio/ssd/ssd_out.c",
+      "source_sha256": "264a4403dc5d1da8a856da77cb1fcda9e3bf87307b72c1c1c612a32a06a87917",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_wave.c",
+      "fdr_index": 4,
+      "float_mode": "soft",
+      "functions": 10,
+      "source": "src/audio/ssd/ssd_wave.c",
+      "source_sha256": "bcd01b5eabb76d447be40029471c71fb9d04cc29fb000056a10fba4a1e6e0269",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_seq.c",
+      "fdr_index": 5,
+      "float_mode": "hard",
+      "functions": 27,
+      "source": "src/audio/ssd/ssd_seq.c",
+      "source_sha256": "f8bb96c038322d31ef66aaa1a5c584f2d5757ee49d05e45fddd3a1913071d31f",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_musc.c",
+      "fdr_index": 6,
+      "float_mode": "soft",
+      "functions": 13,
+      "source": "src/audio/ssd/ssd_musc.c",
+      "source_sha256": "dab4a14457034485f35b3782e7185993cf7dfba20f57287fe588ed7f44cbcfb8",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_sec.c",
+      "fdr_index": 7,
+      "float_mode": "hard",
+      "functions": 27,
+      "source": "src/audio/ssd/ssd_sec.c",
+      "source_sha256": "7884291de22a5817679543a36f22710fce3fd6b37937c36dddaaaa3cc9624bc7",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_smpl.c",
+      "fdr_index": 8,
+      "float_mode": "soft",
+      "functions": 13,
+      "source": "src/audio/ssd/ssd_smpl.c",
+      "source_sha256": "b1063929633f5114952563c02c67c3b0f84d4a1bf3759b945c120745d363b155",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_main.c",
+      "fdr_index": 9,
+      "float_mode": "soft",
+      "functions": 12,
+      "source": "src/audio/ssd/ssd_main.c",
+      "source_sha256": "1ed86a901791d492d6844010d977bc5c08bbcf4f9e335c004fc1b16f05a9ebbc",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_trap.c",
+      "fdr_index": 10,
+      "float_mode": "soft",
+      "functions": 101,
+      "source": "src/audio/ssd/ssd_trap.c",
+      "source_sha256": "f98f5aae6fe005dc16932964baffc036ee0721dcc40793fbdafd606d6d6a7d65",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_chan.c",
+      "fdr_index": 11,
+      "float_mode": "soft",
+      "functions": 44,
+      "source": "src/audio/ssd/ssd_chan.c",
+      "source_sha256": "3c8784e558542acb0bd351b7ecd33545cf87584c8c5b7853b4dd3c1fd5c75624",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_lfo.c",
+      "fdr_index": 12,
+      "float_mode": "soft",
+      "functions": 14,
+      "source": "src/audio/ssd/ssd_lfo.c",
+      "source_sha256": "6c43c16fa327b83caa34757229b0860b0b65c75d6cfd4db3250fba4101ed6b75",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_voic.c",
+      "fdr_index": 13,
+      "float_mode": "soft",
+      "functions": 12,
+      "source": "src/audio/ssd/ssd_voic.c",
+      "source_sha256": "a05972a0325dd69f488804ad3e288d8bfe9a4882c26a41100db5a37e2f4fc9f9",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_dev.c",
+      "fdr_index": 14,
+      "float_mode": "soft",
+      "functions": 19,
+      "source": "src/audio/ssd/ssd_dev.c",
+      "source_sha256": "8a14677399091e011bb50cfbd2a580d4f8819668f7233ee4d598513b7dbf8e43",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_err.c",
+      "fdr_index": 15,
+      "float_mode": "soft",
+      "functions": 8,
+      "source": "src/audio/ssd/ssd_err.c",
+      "source_sha256": "a3a9aa10c4f43dc7f1799b1286c62d868d6411ae5bdaad879672c299e2783e0f",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_midi.c",
+      "fdr_index": 16,
+      "float_mode": "soft",
+      "functions": 18,
+      "source": "src/audio/ssd/ssd_midi.c",
+      "source_sha256": "5b4e450b86bb4fc63fb4c9820ad0d7b6bb52001be2ad7c225855cb76e0b18e31",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_dbg.c",
+      "fdr_index": 17,
+      "float_mode": "soft",
+      "functions": 11,
+      "source": "src/audio/ssd/ssd_dbg.c",
+      "source_sha256": "76e97757b696daf064b908662d27b8dd3b8195c13ec22cb8b6ef00b683437253",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_pcm.c",
+      "fdr_index": 18,
+      "float_mode": "soft",
+      "functions": 14,
+      "source": "src/audio/ssd/ssd_pcm.c",
+      "source_sha256": "dcd4c9bd8902ab2817b9505b85c8f42382800f9daa25901f0bd17da298d7005a",
+      "unit": "iop_ssd"
+    },
+    {
+      "fdr_filename": "ssd_vag.c",
+      "fdr_index": 19,
+      "float_mode": "hard",
+      "functions": 31,
+      "source": "src/audio/ssd/ssd_vag.c",
+      "source_sha256": "21a18b2578aa986e15ccf4ede5f226ef2e349c36550be7aa90502456abbaa9ce",
+      "unit": "iop_ssd"
+    }
+  ],
+  "state": "published_queue_closed",
+  "tu_audit": "not_applicable_to_iop_and_not_run",
+  "units": {
+    "iop_rssd": {
+      "built_irx_sha256": "368167530995f362ba75e9c9c21608e24833670525061a2a75b6884d1500e1b6",
+      "compiler_emission_identity": "verified",
+      "original_irx_sha256": "368167530995f362ba75e9c9c21608e24833670525061a2a75b6884d1500e1b6",
+      "published_functions": 53,
+      "raw_irx_identical": true
+    },
+    "iop_ssd": {
+      "built_irx_sha256": "53393010609ac23b107d3ab93d67f0c07a7db5170e10081e76425daf17940363",
+      "compiler_emission_identity": "verified",
+      "original_irx_sha256": "53393010609ac23b107d3ab93d67f0c07a7db5170e10081e76425daf17940363",
+      "published_functions": 442,
+      "raw_irx_identical": true
+    }
+  }
+}

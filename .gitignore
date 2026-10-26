@@ -37,6 +37,13 @@
 !/config/split/
 !/config/symbols/
 !/config/objects/
+!/config/iop-build.json
+!/config/iop-publication.json
+!/config/iop-match-profile.json
+!/config/iop-toolchains.json
+!/config/iop-targets.json
+!/config/iop-tools.lock.json
+!/config/targets.json
 
 
 /config/toolchain-local.json
@@ -51,6 +58,14 @@
 !/tools/tu_edit.py
 !/tools/header_harvest.py
 !/tools/header_types.py
+!/tools/iop_build.py
+!/tools/iop_module.py
+!/tools/iop_prepare.py
+!/tools/iop_backend.py
+!/tools/iop_compare.py
+!/tools/iop_inventory.py
+!/tools/match_iop.py
+!/tools/tu_manifest.py
 !/tools/header_inputs/
 !/tools/tu/
 

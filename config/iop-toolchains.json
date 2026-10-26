@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "revision": "slus-20469-412d448de315",
+  "profile": "iop-gcc2_8_1",
+  "variants": [
+    {
+      "id": "iop-gcc2_8_1",
+      "command": [
+        ".work/toolchains/iop-gcc2.8.1-20261023/bin/iop-gcc",
+        "-B.work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/",
+        "-nostdinc", "-fno-builtin", "-mips1", "-msoft-float", "-fno-pic", "-S"
+      ],
+      "flags": ["-O2", "-G0"],
+      "command_by_float_mode": {
+        "soft": [
+          ".work/toolchains/iop-gcc2.8.1-20261023/bin/iop-gcc",
+          "-B.work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/",
+          "-nostdinc", "-fno-builtin", "-mips1", "-msoft-float", "-fno-pic", "-S"
+        ],
+        "hard": [
+          ".work/toolchains/iop-gcc2.8.1-20261023/bin/iop-gcc",
+          "-B.work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/",
+          "-nostdinc", "-fno-builtin", "-mips1", "-mhard-float", "-fno-pic", "-S"
+        ]
+      }
+    }
+  ],
+  "tools": {
+    "assembler": ".work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/as",
+    "linker": ".work/toolchains/iop-binutils-20261023/bin/mipsel-none-elf-ld",
+    "objdump": ".work/toolchains/ee-binutils/bin/mips64r5900el-ps2-elf-objdump",
+    "readelf": ".work/toolchains/ee-binutils/bin/mips64r5900el-ps2-elf-readelf"
+  },
+  "assembler_flags": ["-EL", "-mips1", "-32", "-G0", "-O2"],
+  "linker_flags": ["-m", "elf32elmip"],
+  "output_arch": "mips:3000",
+  "output_format": "elf32-littlemips",
+  "pins": [
+    {"path": ".work/toolchains/iop-gcc2.8.1-20261023/bin/iop-gcc", "sha256": "dc6d434b0683035cd5b1f8df6ed0746bfba57b59fd44a04dc8044c83112e8686"},
+    {"path": ".work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/cc1", "sha256": "0f64ca93e7139af918539eb2d2220c0f37846c90592fa1af2345fdc983dee595"},
+    {"path": ".work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/cpp", "sha256": "cb83c67b058851afe9ad3b15aa41bdbe7e3ce4445783e8277949d822982bbd22"},
+    {"path": ".work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/as", "sha256": "1886a69827cd1f6aaef4b2514def6ee8e1c7a0725dd076851d519e8028531243"},
+    {"path": ".work/toolchains/iop-gcc2.8.1-20261023/lib/gcc-lib/mipsel-scei-elfl/2.8.1/specs", "sha256": "290d7e742ce73c2fb2bebc87a86b35df599eef685b86e9a1995bca6fdb5e5995"},
+    {"path": ".work/toolchains/iop-binutils-20261023/bin/mipsel-none-elf-ld", "sha256": "838757a570f4669df0f8d8ea12cdccc71ec37eee883c4014c6aad7781b55eb1e"},
+    {"path": ".work/toolchains/ee-binutils/bin/mips64r5900el-ps2-elf-objdump", "sha256": "69af7b3c772b0f255dd72898983f16b2bff3ed7e5edfa409b06d9eecc7bd67f0"},
+    {"path": ".work/toolchains/ee-binutils/bin/mips64r5900el-ps2-elf-readelf", "sha256": "3446d4d68507bf20bdbd53aab516e36d1567f9e60b1c97a2d859b652fb252395"}
+  ],
+  "host_libraries": [],
+  "qualification": "IOP MIPS-I/o32-compatible compiler hypothesis calibrated against original functions; original compiler distribution and minor version are not attributed. Every candidate requires fresh complete IRX reconstruction and compiler-emission audit. Generic EE-named objdump/readelf are readers only; no EE compiler, assembler or linker is used.",
+  "provenance": [
+    ".work/toolchains/iop-gcc2.8.1-20261023/provenance.json",
+    ".work/toolchains/iop-binutils-20261023/provenance.json"
+  ]
+}

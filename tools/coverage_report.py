@@ -10,7 +10,9 @@ only when three independent checks agree:
      `functions` list), `config/objects/overlays.compile.json` plus
      `config/symbols/<ovl>.txt` for the five overlays (the symbols whose address
      falls in the object's text range), `config/objects/iop.json` for the two
-     IOP modules, which have no build yet and therefore no numerator;
+     IOP modules, credited from the complete IRX build report (rechecking
+     current source hashes, compiler emission, original identities and
+     complete module bytes through tools/tu/iop_objdiff.py);
   2. the published source of that object really carries the block -- a C
      definition, or an `ACCEPTED_ASM(...)` line, read with the TU parser of
      `tools/tu_edit.py` and bound to the tracked function list, so a renamed
@@ -68,6 +70,7 @@ Python 3 standard library only.
     python3 -B tools/coverage_report.py --legacy       # the previous unit-record report
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -452,7 +455,7 @@ def tracked_scope(root):
                                 functions=functions, stubs=overlay_stubs(tu),
                                 declared=tu.get('functions')))
 
-    # IOP: in the recovery scope, but no build exists, so no numerator.
+    # IOP scope; its separate complete-IRX evidence supplies the numerator.
     iop = load_required(root, IOP_OBJECTS, 'the IOP module scope')
     iop_functions, iop_bytes = {}, {}
     for unit, record in iop.get('units', {}).items():
@@ -786,6 +789,67 @@ def out_of_scope_source(root, claims, counted):
 # --------------------------------------------------------------------------
 # the report
 # --------------------------------------------------------------------------
+def iop_coverage(root, build_dir):
+    """Revalidate retained IOP build evidence; never infer credit from a total."""
+    from tu import iop_objdiff
+    from tu.verify_report import VerificationError
+
+    root = Path(root).resolve()
+    states = {unit: dict(unit=unit, state=GATE_NOT_RUN, passing=False,
+                        source=None, from_status=False,
+                        reason='no verified IOP build report is available')
+              for unit in IOP_UNITS}
+    try:
+        verification = Path(build_dir) / 'verification.json'
+        evidence = {}
+        if verification.is_file():
+            verified = json.loads(verification.read_text())
+            if not isinstance(verified, dict):
+                raise ValueError('verification report must be a JSON object')
+            evidence = verified.get('iop')
+            if evidence is None:
+                evidence = {}
+            if not isinstance(evidence, dict):
+                raise ValueError('IOP verification evidence must be a JSON object')
+        if evidence:
+            report = dict(path=evidence['build_report'],
+                          sha256=evidence['build_report_sha256'])
+        else:
+            publication = root / 'config/iop-publication.json'
+            if not publication.is_file():
+                return [], states
+            published = json.loads(publication.read_text())
+            if not isinstance(published, dict):
+                raise ValueError('IOP publication must be a JSON object')
+            report = published.get('build_report')
+            if report is None:
+                report = {}
+        if not isinstance(report, dict):
+            raise ValueError('IOP build report reference must be a JSON object')
+        if not report:
+            return [], states
+        path = (root / report['path']).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError('IOP build evidence belongs to another checkout')
+        for state in states.values():
+            state['source'] = relative_to(root, path)
+        if not path.is_file():
+            for state in states.values():
+                state['reason'] = 'retained IOP build report is missing'
+            return [], states
+        if hashlib.sha256(path.read_bytes()).hexdigest() != report['sha256']:
+            raise ValueError('IOP build report hash changed')
+        groups, _, _, _ = iop_objdiff.load_evidence(root, path)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, VerificationError) as exc:
+        for state in states.values():
+            state.update(state=GATE_FAILING, reason=str(exc))
+        return [], states
+    for state in states.values():
+        state.update(state=GATE_PASSING, passing=True, reason=None,
+                     review_state='user_authorized_review_waiver')
+    return groups, states
+
+
 def evaluate(root, build_dir, ledger_dir, records_dir, tu_edit):
     """Tier A always, tier B when the maintainer files are there.
 
@@ -848,6 +912,20 @@ def evaluate(root, build_dir, ledger_dir, records_dir, tu_edit):
     if have_ledger:
         cross_check(claims, counted, problems)
 
+    # IOP publication evidence is separate from the EE acceptance ledger.
+    # The shared validator rechecks every source, emitted identity and IRX.
+    iop_groups, iop_gates = iop_coverage(root, build_dir)
+    gate_state.update(iop_gates)
+    for unit, gate in iop_gates.items():
+        if gate['state'] == GATE_FAILING:
+            problems.append(dict(unit=unit, reason=gate['reason']))
+    for unit, group, _, _ in iop_groups:
+        object_total[unit] += 1
+        for function in group['functions']:
+            key = unit, function['offset']
+            counted[key] = function['name'], 'exact_c'
+            sizes[key] = function['size']
+
     # Aggregate.
     done_functions = dict.fromkeys(UNITS, 0)
     done_bytes = dict.fromkeys(UNITS, 0)
@@ -902,7 +980,7 @@ def evaluate(root, build_dir, ledger_dir, records_dir, tu_edit):
             functions=done_functions.get(unit, 0), functions_total=total,
             bytes=done_bytes.get(unit, 0), bytes_total=byte_total.get(unit, 0),
             objects=object_total.get(unit, 0),
-            gate=gate_state.get(unit, {}).get('state', GATE_NO_BUILD),
+            gate=gate_state.get(unit, {}).get('state', GATE_NOT_RUN),
             gate_verified=verified_functions.get(unit, 0),
             # `percent` is the headline the README shows: functions over
             # in-scope functions. `percent_bytes` stays as a diagnostic.
