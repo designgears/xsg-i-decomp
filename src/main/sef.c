@@ -341,12 +341,12 @@ extern int srsAnalyzeEftNo(int effect_id, int *number, int *category);
  * number/category pair via srsAnalyzeEftNo, then feeds them to the mapper
  * lookup sefSearchMapperIndex2, discarding its result.
  */
-void sefSearchMapperIndex(int effect_id) {
+int sefSearchMapperIndex(int effect_id) {
     int number;
     int category;
 
     srsAnalyzeEftNo(effect_id, &number, &category);
-    sefSearchMapperIndex2(effect_id, number, category);
+    return sefSearchMapperIndex2(effect_id, number, category);
 }
 
 extern unsigned char _battleData[];
