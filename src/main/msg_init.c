@@ -16,7 +16,8 @@ void MSG_init(void)
 }
 
 unsigned int MSG_convert(unsigned char *destination, int capacity, const char *text, int length);
-int MSG_queuePush(void *q, unsigned char *msg, int size, int n);
+struct MsgQueue;
+int MSG_queuePush(struct MsgQueue *q, unsigned char *msg, int size, int n);
 
 void MSG_print2(unsigned char *p, int a, int b)
 {
@@ -908,7 +909,7 @@ char *MIF2_font(char *out, int argc, int *args)
 }
 
 unsigned int MSG_convert(unsigned char *destination, int capacity, const char *text, int length);
-int MSG_queuePush(void *q, unsigned char *msg, int size, int n);
+int MSG_queuePush(struct MsgQueue *q, unsigned char *msg, int size, int n);
 char *MIF2_color(char *out, int argc, unsigned char *args)
 {
     unsigned int code = *(unsigned int *)(args + 4);
