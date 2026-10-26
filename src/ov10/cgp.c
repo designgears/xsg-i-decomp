@@ -5591,7 +5591,673 @@ void CGPCommFaseEndSub(s32 side, CardPlaySide *ownSide, CardGameWork *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CGPCommFaseSub);
+typedef struct CGPCommSide {
+    CardHand hand;                 /* +0x000 */
+    s16 deck[40];                  /* +0x058 */
+    s16 sute[40];                  /* +0x0A8 */
+    s16 junk[40];                  /* +0x0F8 */
+    s16 answer[40];                /* +0x148 */
+    s16 lastCard;                  /* +0x198 */
+    u8 unmodeled_19A[2];
+    CGPCFStackSlot battle[4];      /* +0x19C */
+    CGPCFStackSlot disposal[4];    /* +0x88C */
+    s16 operations[40];            /* +0xF7C */
+    s16 operationFlags[40];        /* +0xFCC */
+} CGPCommSide;
+extern CGPCursorPosition D_00A57E10;
+extern s16 D_00A57E18;
+extern s16 D_00A57E12;
+extern s16 D_00A57E1A;
+extern s16 D_00A57E1C;
+extern float CLColor[4][4];
+extern int CardEnemyCommandRequest(s32 side, CardGameWork *work);
+extern int CardEnemyOperationPlay(s32 side, CardGameWork *work);
+extern int CardEnemy1stAnswer(s32 side, CardGameWork *work);
+extern int CardEnemyAnswer(s32 side, CardGameWork *work);
+extern int CardEnemyCommandPlay(s32 side, CardGameWork *work);
+extern s32 CardPlayCommandCondition(u16 side, u16 command, CardGameWork *work);
+extern void CGPCFSDispSub(s32 side, s32 turn, CardGameWork *work, s16 card, s16 unused);
+
+void CGPCommFaseSub(s32 side, CardGameWork *work, u16 autoA, u16 autoB)
+{
+    s32 turn; CGPCommSide *own;
+    CGPCommSide *opp;
+    u16 opad;
+    u16 pad;
+    
+    s32 opeZone;
+    s32 btlZone;
+    s32 handZone;
+    u16 timer;
+    s32 i;
+    s8 buf[4];
+    float m1[4][4];
+    float sc1[4];
+    float tr1[4];
+    float m2[4][4];
+    float sc2[4];
+    float tr2[4];
+
+    if (side == 0) {
+                turn = 1;
+ own = (CGPCommSide *)&work->player;
+        opad = work->command.input[1].pressed;
+        opp = (CGPCommSide *)&work->enemy;
+        pad = work->command.input[0].pressed;
+        opeZone = 7;
+        btlZone = 5;
+        handZone = 9; 
+
+    } else {
+                turn = 0;
+ opad = work->command.input[0].pressed;
+        pad = work->command.input[1].pressed;
+        own = (CGPCommSide *)&work->enemy;
+        opp = (CGPCommSide *)&work->player;
+        opeZone = 3;
+        handZone = 0;
+        btlZone = 4; 
+
+    }
+    switch ((s16)work->command.phaseTimer) {
+    case 0:
+        if (((s16)work->command.phase == 2 || (s16)work->command.phase == 9) &&
+            CardPlayCntBtl(&own->hand, 0xE) != 0 &&
+            CardPlayBattleCnt((CardPlaySide *)own) == 1) {
+            s32 cnt = CardPlayJunkCnt((CardPlayHand *)own); s32 j;
+            if (cnt != 0) {
+                CGPSetErrorMessPlusI(side, work, 0x24, 0xE);
+                for (j = 0; j < 4; j++) {
+                    if (own->battle[j].battle.layers[0].cardId == 0xE) {
+                        own->battle[j].battle.layers[0].unmodeled_01 = cnt;
+                        break;
+                    }
+                }
+                for (j = 0; j < cnt; j++) {
+                    own->junk[j] = -1;
+                }
+            }
+        }
+        if (autoA != 0) {
+            work->command.phaseTimer = 0x28;
+        } else {
+            work->command.phaseTimer++;
+        }
+        break;
+    case 1: {
+        s16 *cards;
+        s32 handCnt;
+        s32 n;
+        s32 cnt;
+
+        cards = own->hand.cards;
+        handCnt = 9; if (side != 0) { handCnt = 0; } CGPSetCursor(work, handCnt, 0);
+        handCnt = CardPlayHandCnt(&own->hand);
+                 buf[0] = 2;
+        buf[1] = 1;
+ buf[2] = 4; 
+
+
+        CardPlayTypeSort(work->definitions, cards, handCnt, buf);
+        n = 0;
+        for (i = 0; i < 4; i++) {
+            if (own->disposal[i].battle.layers[0].cardId >= 0) {
+                n++;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->battle[i].battle.layers[0].cardId >= 0) {
+                n++;
+                break;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (own->operations[i] >= 0) {
+                n++;
+                break;
+            }
+        }
+        if (n != 0) {
+            n = 0;
+            for (i = 0; i < handCnt; i++) {
+                s16 id = own->hand.cards[i];
+                if (work->definitions[id].kind == 2 && id != 0x52 && id != 0x74) {
+                    n++;
+                }
+            }
+            for (i = 0; i < 4; i++) {
+                if (own->operations[i] >= 0 && CGPChkPlayable(own->operations[i]) != 0) {
+                    n++;
+                }
+            }
+            for (i = 0; i < 4; i++) {
+                if (own->battle[i].battle.layers[0].cardId >= 0 &&
+                    CGPChkPlayable(own->battle[i].battle.layers[0].cardId) != 0) {
+                    n++;
+                }
+            }
+        }
+        if (n == 0) {
+            work->command.phaseTimer = 0x1E;
+            if (side == 0 && (work->flags & 0x40)) {
+                break;
+            }
+            if (side != 0 && (work->flags & 0x20)) {
+                break;
+            }
+            if (side == 0 && (work->save->flags & 8)) {
+                break;
+            }
+            if (side != 0 && (work->save->flags & 4)) {
+                break;
+            }
+            CGPSetErrorMess(side, work, 0x1E);
+        } else {
+            CGPRotStageSub(work, side);
+            work->command.phaseTimer++;
+            work->cursor.selectionMode = 1;
+        }
+        break;
+    }
+    case 2: {
+        s32 done;
+        s32 err; u16 moving; u16 card;
+
+        CGPMoveSub(side, own, work);
+        CGPCursor2Pos(&D_00A57E10, work);
+        card = D_00A57E10.cardId; moving = *(u16 *)&work->cursorMoveStep[0]; D_00A57E18 = card;
+        done = 0;
+        work->cursor.selectionMode = 1;
+        if (moving == 0 && handZone == D_00A57E10.zone) {
+            if ((side != 0 && work->rotStageId == 0) || (side == 0 && work->rotStageId != 0)) {
+                work->cursor.selectionMode = 0;
+                CGCPHandDispSub3(work->definitions, &own->hand, D_00A57E10.index, 2, 0);
+            } else {
+                work->cursor.selectionMode = 0;
+                CGCPHandDispSub2(work->definitions, &own->hand, D_00A57E10.index, 2);
+            }
+        }
+        if (!(pad & 0x20)) {
+            break;
+        }
+        if (*(u16 *)&work->cursorMoveStep[0] == 0 && D_00A57E18 >= 0) {
+            CGPCursor2Pos(&D_00A57E10, work);
+            if ((opeZone == D_00A57E10.zone && !(own->operationFlags[D_00A57E10.index] & 1)) ||
+                (btlZone == D_00A57E10.zone && !(own->battle[D_00A57E10.index].battle.flags & 2))) {
+                if (CGPChkPlayable(D_00A57E18) != 0) {
+                    s32 ok = 1;
+                    if (btlZone != D_00A57E10.zone) {
+                        ok = CGPChkOpePlayable(side, work, D_00A57E10.cardId) != 0;
+                    }
+                    if (ok) {
+                        CardCursorActive(&work->cursor, &D_00A57E10.zone, 2);
+                        xglSoundEffectNormalID(1, 0);
+                        work->cursor.selectionMode = 1;
+                        work->command.phaseTimer++;
+                        done = 1;
+                    } else {
+                        CGPSetErrorMess(side, work, 0xD);
+                        xglSoundEffectNormalID(5, 0);
+                    }
+                } else {
+                    CGPSetErrorMess(side, work, 0x11);
+                    xglSoundEffectNormalID(5, 0);
+                }
+            } else if (handZone == D_00A57E10.zone) {
+                if (work->definitions[D_00A57E10.cardId].kind & 2) {
+                    work->cursor.selectionMode = 0;
+                    work->command.phaseTimer = 10;
+                    done = 1;
+                } else {
+                    CGPSetErrorMess(side, work, 0x12);
+                    xglSoundEffectNormalID(5, 0);
+                }
+            } else {
+                if (btlZone == D_00A57E10.zone && (own->battle[D_00A57E10.index].battle.flags & 2)) {
+                    CGPSetErrorMess(side, work, 0x26);
+                } else {
+                    CGPSetErrorMess(side, work, 0x13);
+                }
+                xglSoundEffectNormalID(5, 0);
+            }
+        }
+        if (done == 0) {
+            xglSoundEffectNormalID(5, 0);
+        }
+        break;
+    }
+    case 3:
+        CGPDispErrorMessPlus(side, 0x17, D_00A57E18);
+        if (pad & 0x20) {
+            work->command.step = 0;
+            work->command.phaseTimer++;
+            xglSoundEffectNormalID(1, 0);
+        } else if (pad & 0x40) {
+            work->command.phaseTimer = (s16)work->command.phaseTimer - 1;
+            CardCursorPassive(&work->cursor);
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+    case 4: {
+        s32 r = CGPCFPlayCommOperation(side, work, D_00A57E18);
+        if (r != 0) {
+            if (r < 0) {
+                if (work->definitions[D_00A57E18].kind == 4) {
+                    CardPlayDesertOperation((CardPlaySide *)own, D_00A57E12);
+                } else {
+                    own->battle[D_00A57E12].battle.layers[0].life = 0;
+                }
+            }
+            work->command.phaseTimer++;
+        }
+        break;
+    }
+    case 5:
+        CardCursorPassive(&work->cursor);
+        work->command.phaseTimer = 1;
+        break;
+    case 40: {
+        s32 r = CardEnemyCommandRequest(side, work);
+        if (r < 0) {
+            work->command.phaseTimer++;
+            break;
+        }
+        own->lastCard = own->hand.cards[r];
+        own->hand.cards[r] = -1;
+        CardPlayCleanHand((CardPlayHand *)own);
+        work->command.step = 0;
+        work->command.phaseTimer = 0xC;
+        break;
+    }
+    case 41:
+        if (CardEnemyOperationPlay(side, work) != 0) {
+            work->command.phaseTimer = 0x1E;
+        }
+        break;
+    case 10: {
+        s32 err = CardPlayChkCondition(work->definitions, (CardPlaySide *)own, D_00A57E10.cardId, work);
+        if (err == 0) { err = CardPlayCommandCondition(side, D_00A57E10.cardId, work); } if (err != 0) {
+            CGPSetErrorMess(side, work, err);
+            xglSoundEffectNormalID(5, 0);
+            work->command.phaseTimer = 1;
+            } else {
+        
+        xglSoundEffectNormalID(1, 0);
+        work->command.step = 0;
+        work->command.phaseTimer++;
+        D_00A57E1A = D_00A57E1C = 0;
+        
+        } break;
+    }
+    case 11:
+        CGPDispErrorMess((CardGameWork *)side, 0x17);
+        if (pad & 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            work->command.phaseTimer = 2;
+        } else if (pad & 0x20) {
+            own->lastCard = own->hand.cards[D_00A57E10.index];
+            own->hand.cards[D_00A57E10.index] = -1;
+            CardPlayCleanHand((CardPlayHand *)own);
+            work->command.step = 0;
+            work->command.phaseTimer++;
+        }
+        break;
+    case 12:
+        if (autoB != 0) {
+            if (CardEnemy1stAnswer(turn, work) != 0) {
+                work->command.phaseTimer = 0x14;
+            } else {
+                work->command.phaseTimer++;
+            }
+        } else {
+            CGPDispErrorMessPlus(turn, 0x16, own->lastCard);
+            if (opad & 0x40) {
+                xglSoundEffectNormalID(2, 0);
+                work->command.phaseTimer++;
+            }
+            if (opad & 0x20) {
+                xglSoundEffectNormalID(1, 0);
+                work->command.phaseTimer = 0x14;
+                work->cursor.selectionMode = 0;
+            }
+        }
+        break;
+    case 13:
+        switch (own->lastCard) {
+        case 0x53 ... 0x58:
+        case 0x5C:
+        case 0x6B:
+        case 0x6D:
+        case 0x75:
+        case 0x76:
+            if (side == 0) {
+                CGPSetCursor(work, 5, 0);
+            } else {
+                CGPSetCursor(work, 4, 0);
+            }
+            break;
+        case 0x59 ... 0x5B:
+        case 0x60 ... 0x63:
+        case 0x67:
+        case 0x6F:
+        case 0x70:
+        case 0x72:
+        case 0x77:
+            if (side == 0) {
+                CGPSetCursor(work, 4, 0);
+            } else {
+                CGPSetCursor(work, 5, 0);
+            }
+            break;
+        }
+        work->command.phaseTimer++;
+        work->cursor.selectionMode = 1;
+        work->command.step = 0;
+        xglMatrixUnit(m1);
+        if (side != 0) {
+            xglMatrixRotZ(m1, m1, 3.1415927f);
+        }
+         tr1[0] = tr1[1] = 0.0f;
+        tr1[2] = 0.02f;
+        tr1[3] = 1.0f;
+        sc1[1] = 0.355f;
+        sc1[0] = 0.355f;
+        sc1[3] = 1.0f; 
+        sc1[2] = 1.0f;
+
+        xglMatrixTrans(m1, (const float (*)[4])m1, tr1);
+        xglMatrixScale(m1, (const float (*)[4])m1, sc1);
+        CardDispCard(m1, own->lastCard, 1);
+        break;
+    case 14: {
+        s32 r;
+        if (autoA != 0) {
+            r = CardEnemyCommandPlay(side, work);
+        } else {
+            r = CardPlayCommandPlay(side, work->commandIds[own->lastCard], work, 0, 0);
+        }
+        if (r != 0) {
+            s32 cost = work->definitions[own->lastCard].reserveCost;
+            for (i = 0; i < cost; i++) {
+                CardPlayCostCard((CardPlayHand *)own);
+            }
+            CardCursorPassive(&work->cursor);
+            CGPSetPermanentMess(work, 0);
+            own->junk[CardPlayJunkCnt((CardPlayHand *)own)] = own->lastCard;
+            own->lastCard = -1;
+            CardPlayCleanHand((CardPlayHand *)own);
+            CardPlayCleanJunk(&own->hand);
+            work->command.phaseTimer++;
+            break;
+        }
+        xglMatrixUnit(m2);
+        xglMatrixRotZ(m2, m2, (-*(float *)((char *)work + 0x70FC) / 180.0f) * 3.1415927f);
+        if (side != 0) {
+            xglMatrixRotZ(m2, m2, 3.1415927f);
+        }
+        tr2[0] = tr2[1] = 0.0f;
+        
+        tr2[2] = 0.02f;
+        tr2[3] = 1.0f;
+        sc2[1] = 0.355f;
+        sc2[0] = 0.355f;
+        sc2[3] = 1.0f;
+        sc2[2] = 1.0f;
+        xglMatrixTrans(m2, (const float (*)[4])m2, tr2);
+        xglMatrixScale(m2, (const float (*)[4])m2, sc2);
+        CardDispCard(m2, own->lastCard, 1);
+        nmlModelSetLight(CLColor, asDir);
+        nmlModelSetPlace(m2);
+        nmlModelSetTexture(*(void **)((char *)work + 0x5BD4));
+        nmlModelEntryCard((void *)0x01D0C000);
+        break;
+    }
+    case 15:
+        work->command.phaseTimer = 2;
+        if (autoA != 0) {
+            work->command.phaseTimer = 0x28;
+        }
+        break;
+    case 20:
+        work->command.phaseTimer++;
+        break;
+    case 21: {
+        s32 r;
+        
+        
+
+        if (autoB != 0) {
+            if (CardEnemyAnswer(turn, work) != 0) {
+                work->command.phaseTimer++;
+            } else {
+                work->command.phaseTimer = 0x17;
+            }
+            break;
+        }
+        r = CardPlayHandCnt(&opp->hand);
+        if (work->rotStageId == 0) {
+            if (opad & 0x2000) {
+                if (D_00A57E1C < r - 1) {
+                    D_00A57E1C++;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            } else if (opad & 0x8000) {
+                if (D_00A57E1C > 0) {
+                    D_00A57E1C--;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            }
+        } else {
+            if (opad & 0x8000) {
+                if (D_00A57E1C < r - 1) {
+                    D_00A57E1C++;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            } else if (opad & 0x2000) {
+                if (D_00A57E1C > 0) {
+                    D_00A57E1C--;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            }
+        }
+        CGPCFSDispSub(side, turn, work, own->lastCard, D_00A57E1C);
+        if ((turn != 0 && work->rotStageId == 0) || (turn == 0 && work->rotStageId != 0)) {
+            CGCPHandDispSub3(work->definitions, &opp->hand, D_00A57E1C, 2, 1);
+        } else {
+            CGCPHandDispSub2(work->definitions, &opp->hand, D_00A57E1C, 2);
+        }
+        if (opad & 0x20) {
+            if (opp->hand.cards[D_00A57E1C] == 0x52 || opp->hand.cards[D_00A57E1C] == 0x74) {
+                r = CardPlayChkCondition(work->definitions, (CardPlaySide *)opp,
+                                           opp->hand.cards[D_00A57E1C], work);
+                if (r != 0) {
+                    CGPSetErrorMess(turn, work, r);
+                    xglSoundEffectNormalID(5, 0);
+                    break;
+                }
+                r = work->definitions[opp->hand.cards[D_00A57E1C]].reserveCost;
+                for (i = 0; i < r; i++) {
+                    CardPlayCostCard((CardPlayHand *)opp);
+                }
+                for (i = 0; i < 40; i++) {
+                    if (opp->answer[i] < 0) {
+                        break;
+                    }
+                }
+                opp->answer[i] = opp->hand.cards[D_00A57E1C];
+                opp->hand.cards[D_00A57E1C] = -1;
+                CardPlayCleanHand((CardPlayHand *)opp);
+                xglSoundEffectNormalID(1, 0);
+                work->command.phaseTimer++;
+            } else {
+                xglSoundEffectNormalID(5, 0);
+            }
+        } else if (opad & 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            work->command.phaseTimer = 0x17;
+        }
+        break;
+    }
+    case 22: {
+        s32 r;
+        
+        
+
+        if (autoA != 0) {
+            if (CardEnemyAnswer(side, work) != 0) {
+                work->command.phaseTimer = (s16)work->command.phaseTimer - 1;
+            } else {
+                work->command.phaseTimer = 0x19;
+            }
+            break;
+        }
+        r = CardPlayHandCnt(&own->hand);
+        if (work->rotStageId == 0) {
+            if (pad & 0x2000) {
+                if (D_00A57E1A < r - 1) {
+                    D_00A57E1A++;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            } else if (pad & 0x8000) {
+                if (D_00A57E1A > 0) {
+                    D_00A57E1A--;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            }
+        } else {
+            if (pad & 0x8000) {
+                if (D_00A57E1A < r - 1) {
+                    D_00A57E1A++;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            } else if (pad & 0x2000) {
+                if (D_00A57E1A > 0) {
+                    D_00A57E1A--;
+                    xglSoundEffectNormalID(1, 0);
+                }
+            }
+        }
+        CGPCFSDispSub(side, side, work, own->lastCard, D_00A57E1A);
+        if ((side != 0 && work->rotStageId == 0) || (side == 0 && work->rotStageId != 0)) {
+            CGCPHandDispSub3(work->definitions, &own->hand, D_00A57E1A, 2, 1);
+        } else {
+            CGCPHandDispSub2(work->definitions, &own->hand, D_00A57E1A, 2);
+        }
+        if (pad & 0x20) {
+            if (own->hand.cards[D_00A57E1A] == 0x52 || own->hand.cards[D_00A57E1A] == 0x74) {
+                r = CardPlayChkCondition(work->definitions, (CardPlaySide *)own,
+                                           own->hand.cards[D_00A57E1A], work);
+                if (r != 0) {
+                    CGPSetErrorMess(side, work, r);
+                    xglSoundEffectNormalID(5, 0);
+                    break;
+                }
+                r = work->definitions[own->hand.cards[D_00A57E1A]].reserveCost;
+                for (i = 0; i < r; i++) {
+                    CardPlayCostCard((CardPlayHand *)own);
+                }
+                for (i = 0; i < 40; i++) {
+                    if (own->answer[i] < 0) {
+                        break;
+                    }
+                }
+                own->answer[i] = own->hand.cards[D_00A57E1A];
+                own->hand.cards[D_00A57E1A] = -1;
+                CardPlayCleanHand((CardPlayHand *)own);
+                xglSoundEffectNormalID(1, 0);
+                work->command.phaseTimer = (s16)work->command.phaseTimer - 1;
+            } else {
+                xglSoundEffectNormalID(5, 0);
+            }
+        } else if (pad & 0x40) {
+            xglSoundEffectNormalID(2, 0);
+            work->command.phaseTimer = 0x19;
+        }
+        break;
+    }
+    case 23: {
+        s16 *junk; s16 *junk2; s32 j;
+
+        junk = &own->junk[CardPlayJunkCnt((CardPlayHand *)own)];
+        for (j = 0; j < 40; j++) {
+            if (own->answer[j] >= 0) {
+                *junk++ = own->answer[j];
+                own->answer[j] = -1;
+            }
+        }
+        junk2 = &opp->junk[CardPlayJunkCnt((CardPlayHand *)opp)];
+        for (j = 0; j < 40; j++) {
+            if (opp->answer[j] >= 0) {
+                *junk2++ = opp->answer[j];
+                opp->answer[j] = -1;
+            }
+        }
+        work->command.phaseTimer++;
+        break;
+    }
+    case 24:
+        if (autoA != 0) {
+            work->command.phaseTimer = 0xD;
+            work->cursor.selectionMode = 1;
+        } else {
+            CGPDispErrorMessPlus(side, 0x1C, own->lastCard);
+            if (pad & 0xF0) {
+                xglSoundEffectNormalID(1, 0);
+                work->command.phaseTimer = 0xD;
+            }
+        }
+        break;
+    case 25: {
+        s32 cnt;
+        s16 *junk;
+        s32 cost;
+
+        cnt = CardPlayJunkCnt((CardPlayHand *)own);
+        for (i = 0; i < 40; i++) {
+            if (own->answer[i] >= 0) {
+                own->junk[cnt] = own->answer[i];
+                own->answer[i] = -1;
+                cnt++;
+            }
+        }
+        cost = work->definitions[own->lastCard].reserveCost;
+        for (i = 0; i < cost; i++) {
+            CardPlayCostCard((CardPlayHand *)own);
+        }
+        own->junk[cnt] = own->lastCard;
+        own->lastCard = -1;
+        junk = &opp->junk[CardPlayJunkCnt((CardPlayHand *)opp)];
+        for (i = 0; i < 40; i++) {
+            if (opp->answer[i] >= 0) {
+                *junk++ = opp->answer[i];
+                opp->answer[i] = -1;
+            }
+        }
+        work->command.phaseTimer = 0x28;
+        if (autoA == 0) {
+            CGPSetErrorMess(side, work, 0x1D);
+            work->command.phaseTimer = 2;
+        }
+        work->cursor.selectionMode = 1;
+        break;
+    }
+    case 30:
+        switch ((s16)work->command.phase) { case 4:
+            CGPCommFaseEndSub(0, &work->player, work);
+            break;
+        case 11:
+            CGPCommFaseEndSub(1, &work->enemy, work);
+            break;
+        }
+            work->command.phaseTimer++;
+        
+        break;
+    case 31:
+        CGPNextTurnSub(work);
+        break;
+    }
+}
 
 static inline s32 CGPEndFaseChkGuno(CardPlaySide *s, CardGameWork *work)
 {

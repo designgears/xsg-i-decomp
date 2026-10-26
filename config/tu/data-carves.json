@@ -12129,18 +12129,21 @@
     },
     {
      "range": [
-      "0x00a4f4c0",
+      "0x00a4f370",
       "0x00a4f5f0"
      ],
      "generated": [
-      "0x00a4f4c0",
+      "0x00a4f370",
       "0x00a4f5ec"
      ],
      "generated_by": [
       "CGPBattleFaseProc",
+      "CGPCommFaseSub",
       "CGPEndFaseProc"
      ],
      "c_owned_symbols": [
+      "jtbl_00A4F370",
+      "jtbl_00A4F420",
       "jtbl_00A4F4C0",
       "jtbl_00A4F5C0"
      ],
