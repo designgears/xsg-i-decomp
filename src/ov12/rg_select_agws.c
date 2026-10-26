@@ -602,7 +602,7 @@ static int _GetCurrentConfrictSelType(SelType *pSelType)
     return pSelType->confrict[eType];
 }
 
-static void _GetCurrentWeaponSelType(SelType *pSelType)
+static int _GetCurrentWeaponSelType(SelType *pSelType)
 {
     int eType;
 
@@ -613,7 +613,7 @@ static void _GetCurrentWeaponSelType(SelType *pSelType)
     if (eType == RG_EQUIP_TYPE_INVALID) {
         assert_prog(D_00A56768, D_00A56660, 0x24C);
     }
-    _GetEssSelWep(&pSelType->wepList[eType]);
+    return _GetEssSelWep(&pSelType->wepList[eType]);
 }
 
 static void _GetAllSelType(SelType *pSelType, int *out)

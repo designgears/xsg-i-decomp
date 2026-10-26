@@ -249,7 +249,7 @@ typedef struct JntRootScratch {
     JntRootSlot scale;
 } JntRootScratch;
 
-float FCV2_getPackValue();
+float FCV2_getPackValue(void *pack, float frame);
 
 void get_fcvpack(float *out, float *def, unsigned char *element, int mask, float t)
 {
@@ -258,33 +258,31 @@ void get_fcvpack(float *out, float *def, unsigned char *element, int mask, float
 
     for (i = 0; i < 3; i++) {
         if (mask & (one << i)) {
-            out[i] = ((float (*)(void *, float))FCV2_getPackValue)(element + 4, t);
+            out[i] = FCV2_getPackValue(element + 4, t);
         } else {
             out[i] = *(float *)((char *)def + (i << 2));
         }
     }
 }
 
-void get_fcvpack_fix(float *out, unsigned char *element, int mask, float def, float t)
+void get_fcvpack_fix(float *out, float def, unsigned char *element, int mask, float t)
 {
     int i;
     int one = 1;
 
     for (i = 0; i < 3; i++) {
         if (mask & (one << i)) {
-            out[i] = ((float (*)(void *, float))FCV2_getPackValue)(element + 4, t);
+            out[i] = FCV2_getPackValue(element + 4, t);
         } else {
             out[i] = def;
         }
     }
 }
 
-float FCV2_getPackValue(void *pack);
-
-void get_fcvpack_flag(unsigned char *element, int enable)
+void get_fcvpack_flag(unsigned char *element, int enable, float t)
 {
     if (enable & 1) {
-        if (FCV2_getPackValue(element + 4) != 0.0f) {
+        if (FCV2_getPackValue(element + 4, t) != 0.0f) {
             *(int *)(element + 0x38) |= 1;
         } else {
             *(int *)(element + 0x38) &= ~1;
@@ -367,19 +365,19 @@ void *FCV_getAttrAndValue(float *out, void *pack, float t)
     flags = *(unsigned short *)((char *)attr + 6);
     do {
         if (flags & 1) {
-            out[0] = ((float (*)(void *, float))FCV2_getPackValue)(pack, t);
+            out[0] = FCV2_getPackValue(pack, t);
         } else {
             out[0] = 0.0f;
         }
         if (flags & 2) {
-            out[1] = ((float (*)(void *, float))FCV2_getPackValue)(pack, t);
+            out[1] = FCV2_getPackValue(pack, t);
         } else {
             out[1] = 0.0f;
         }
         b = flags & 4;
         flags >>= 3;
         if (b) {
-            out[2] = ((float (*)(void *, float))FCV2_getPackValue)(pack, t);
+            out[2] = FCV2_getPackValue(pack, t);
         } else {
             out[2] = 0.0f;
         }
@@ -387,7 +385,7 @@ void *FCV_getAttrAndValue(float *out, void *pack, float t)
         out += 4;
     } while (i >= 0);
     if (flags & 1) {
-        out[0] = ((float (*)(void *, float))FCV2_getPackValue)(pack, t);
+        out[0] = FCV2_getPackValue(pack, t);
     } else {
         out[0] = 0.0f;
     }
@@ -474,8 +472,8 @@ JntStaticChannel *JNT_getVal(JntWork *work, JntStaticChannel *channel,
         value_mask >>= 3;
         get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
         value_mask >>= 3;
-        ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, unit_scale, work, value_mask, frame);
-        ((void (*)(void *, int, float))get_fcvpack_flag)(work, value_mask >> 1, frame);
+        get_fcvpack_fix(element->scale, unit_scale, (unsigned char *)work, value_mask, frame);
+        get_fcvpack_flag((unsigned char *)work, value_mask >> 1, frame);
         value_mask = 0;
     }
     switch (channel->type) {
@@ -485,7 +483,7 @@ JntStaticChannel *JNT_getVal(JntWork *work, JntStaticChannel *channel,
             get_fcvpack(element->translation, (float *)translation, (unsigned char *)work, value_mask, frame);
             value_mask >>= 3;
             get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
-            ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, 1.0f, work, value_mask >> 3, frame);
+            get_fcvpack_fix(element->scale, 1.0f, (unsigned char *)work, value_mask >> 3, frame);
         }
         break;
     case 3:
@@ -500,7 +498,7 @@ JntStaticChannel *JNT_getVal(JntWork *work, JntStaticChannel *channel,
 
             value_mask >>= 3;
             get_fcvpack(*angles, (float *)rotation, (unsigned char *)work, value_mask, frame);
-            ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, unit_scale, work, value_mask >> 3, frame);
+            get_fcvpack_fix(element->scale, unit_scale, (unsigned char *)work, value_mask >> 3, frame);
             sampled_translation = element->translation;
             limits_offset = channel->rotation_limits_offset;
             sampled_translation[0] = translation[0];
@@ -564,7 +562,7 @@ JntStaticChannel *JNT_getVal(JntWork *work, JntStaticChannel *channel,
             value_mask >>= 3;
             get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
             scale_mask = value_mask >> 3;
-            ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, unit_scale, work, scale_mask, frame);
+            get_fcvpack_fix(element->scale, unit_scale, (unsigned char *)work, scale_mask, frame);
         }
         break;
     case 6:
@@ -663,8 +661,8 @@ JntStaticChannel *JNT_getVal_staticChain(JntWork *work,
         value_mask >>= 3;
         get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
         value_mask >>= 3;
-        ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, 1.0f, work, value_mask, frame);
-        ((void (*)(void *, int, float))get_fcvpack_flag)(work, value_mask >> 1, frame);
+        get_fcvpack_fix(element->scale, 1.0f, (unsigned char *)work, value_mask, frame);
+        get_fcvpack_flag((unsigned char *)work, value_mask >> 1, frame);
         value_mask = 0;
     }
     switch (channel->type) {
@@ -677,7 +675,7 @@ JntStaticChannel *JNT_getVal_staticChain(JntWork *work,
             value_mask >>= 3;
             get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
             scale_mask = value_mask >> 3;
-            ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, 1.0f, work, scale_mask, frame);
+            get_fcvpack_fix(element->scale, 1.0f, (unsigned char *)work, scale_mask, frame);
         }
         break;
     case 3:
@@ -686,7 +684,7 @@ JntStaticChannel *JNT_getVal_staticChain(JntWork *work,
                 int channel_bit = 1 << index;
 
                 if (value_mask & channel_bit) {
-                    element->translation[index] = ((float (*)(void *, float))FCV2_getPackValue)(&work->cursor, frame);
+                    element->translation[index] = FCV2_getPackValue(&work->cursor, frame);
                 }
                 {
                     const float *static_sample = translation;
@@ -711,7 +709,7 @@ JntStaticChannel *JNT_getVal_staticChain(JntWork *work,
             value_mask >>= 3;
             angles = &element->rotation;
             get_fcvpack(*angles, (float *)rotation, (unsigned char *)work, value_mask, frame);
-            ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, 1.0f, work, value_mask >> 3, frame);
+            get_fcvpack_fix(element->scale, 1.0f, (unsigned char *)work, value_mask >> 3, frame);
             sampled_translation = element->translation;
             limits_offset = channel->rotation_limits_offset;
             sampled_translation[0] = translation[0];
@@ -775,7 +773,7 @@ JntStaticChannel *JNT_getVal_staticChain(JntWork *work,
         get_fcvpack(element->translation, (float *)translation, (unsigned char *)work, value_mask, frame);
         value_mask >>= 3;
         get_fcvpack(element->rotation, (float *)rotation, (unsigned char *)work, value_mask, frame);
-        ((void (*)(float *, float, void *, unsigned int, float))get_fcvpack_fix)(element->scale, 1.0f, work, value_mask >> 3, frame);
+        get_fcvpack_fix(element->scale, 1.0f, (unsigned char *)work, value_mask >> 3, frame);
         break;
     }
     work->current_index++;
@@ -1357,7 +1355,6 @@ void JNT_setFCurve(void *fcurve, int n)
     w->ptr = (unsigned char *)w + 0x830;
 }
 
-float FCV2_getPackValue(void *pack);
 typedef struct JntFcvWork {
     unsigned char unmodeled_00[0x38];
     int flags;      /* 0x38 */
