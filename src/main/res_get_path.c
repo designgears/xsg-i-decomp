@@ -676,17 +676,6 @@ static char *command_loadface(int command, char *cursor, int mode)
     return next_cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadmot);
-
-/*
- * The engine's actor record: main/tu194 (src/main/enemy_2.h) defines and
- * owns it. This TU only reads the resource pointer past that definition's
- * extent, so it names the same tag without completing it (no local header
- * can include another TU's TU-local one) rather than modelling a
- * competing layout.
- */
-struct Actor;
-
 /*
  * The resource record an actor's `resource` pointer refers to.
  * RES_GetFootStepNo is the only reader in this TU, and it reads only the
@@ -696,6 +685,71 @@ typedef struct ActorResource {
     unsigned char unmodeled_000[6];
     u8 foot_step_no; /* +6 */
 } ActorResource;
+
+static char *command_loadmot(int command, char *cursor)
+{
+    char name[0x100];
+    char *dst = name;
+    int character;
+    int motion_id;
+    int first;
+    short value;
+    int foot_step;
+
+    character = (u8)*cursor;
+    value = character;
+    while ((character & 0xff) != ',' && (character & 0xff) != ' ' &&
+           (character & 0xff) != '\t' && (character & 0xff) != '\n' &&
+           (character & 0xff) != '\r') {
+        *dst = value;
+        dst++;
+        cursor++;
+        character = (u8)*cursor;
+        value = character;
+    }
+    *dst = '\0';
+
+    for (;;) {
+        first = (u8)character;
+        if (first == ',' || first == ' ' || first == '\t') {
+            cursor++;
+            character = (u8)*cursor;
+            continue;
+        }
+        break;
+    }
+
+    motion_id = 0;
+    while ((u8)((u8)character + 0xD0) < 10U) {
+        int digit;
+        int parsed_id;
+
+        digit = (u8)*cursor;
+        cursor++;
+        motion_id = motion_id * 10;
+        parsed_id = motion_id + digit;
+        motion_id = parsed_id - '0';
+        character = *cursor & 0xff;
+    }
+
+    foot_step = motion_id;
+    motion_id = 0;
+    {
+        ActorResource *resource = RES_loadFile(command, 3, (int)name, 0);
+
+        resource->foot_step_no = foot_step;
+    }
+    return cursor;
+}
+
+/*
+ * The engine's actor record: main/tu194 (src/main/enemy_2.h) defines and
+ * owns it. This TU only reads the resource pointer past that definition's
+ * extent, so it names the same tag without completing it (no local header
+ * can include another TU's TU-local one) rather than modelling a
+ * competing layout.
+ */
+struct Actor;
 
 /*
  * +0x8dc: the actor's resource pointer, past the extent src/main/enemy_2.h
@@ -1041,7 +1095,102 @@ environment_name_done:
     return cursor;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", command_loadsmd);
+extern int xglSoundSendSmd2(void *smd, int bank);
+extern void xglSoundSequenceNormal2(int channel, int volume);
+
+static u8 *command_loadsmd(int command, u8 *cursor)
+{
+    char name[0x40];
+    char path[0x100];
+    s16 character;
+    u32 address;
+    int sequence_index;
+    int first_character;
+
+    sequence_index = 0;
+    address = GameResourceGetFreeAddr();
+    first_character = *cursor;
+    if ((u8)first_character != '\n' && (u8)first_character != '\r') {
+        int separator_value;
+
+        do {
+            char *name_end;
+            int stop_current;
+            int set_normal;
+            int file_size;
+            int request_status;
+            int sequence_status;
+            u16 sequence_id;
+
+            character = *cursor;
+            set_normal = 0;
+            stop_current = 0;
+            name_end = name;
+            if ((u8)character != ',' && (u8)character != ' ' &&
+                (u8)character != '\t' && (u8)character != '\n' &&
+                (u8)character != '\r') {
+                for (;;) {
+                    if ((character & 0xff) == '+') {
+                        cursor++;
+                        set_normal = 1;
+                    } else if ((character & 0xff) == '-') {
+                        cursor++;
+                        stop_current = 1;
+                    } else {
+                        *name_end++ = character;
+                        cursor++;
+                    }
+                    character = *cursor;
+                    if ((u8)character == ',' || (u8)character == ' ' ||
+                        (u8)character == '\t' || (u8)character == '\n' ||
+                        (u8)character == '\r')
+                        break;
+                }
+            }
+
+            sequence_id = SoundWork.channels[sequence_index].sequence;
+            *name_end = '\0';
+            ((SoundLoadBuffer *)address)->sequence_id = sequence_id;
+            if (arcfileaddr != 0) {
+                file_size = next_arc_size((void *)address);
+            } else {
+                const char *sequence_format = D_004C00D8;
+
+                sprintf(path, sequence_format, name);
+                file_size = xglCdReadFile(path, (void *)address, 0, 0);
+            }
+
+            if (sequence_id != ((SoundLoadBuffer *)address)->sequence_id) {
+                stop_current = 0;
+            } else {
+                SsdGetSeqPlayStatus(sequence_id);
+                do {
+                    request_status = SsdGetResultValue(&sequence_status);
+                } while (request_status < 0);
+                if (sequence_status != 1)
+                    stop_current = 0;
+            }
+            if (!stop_current && file_size > 0) {
+                xglSoundSendSmd2((void *)address, sequence_index);
+                if (set_normal)
+                    xglSoundSequenceNormal2(sequence_index, 0x7F);
+            }
+
+            for (;;) {
+                first_character = *cursor;
+                separator_value = first_character & 0xff;
+                if (separator_value == ',' || separator_value == ' ' ||
+                    separator_value == '\t') {
+                    cursor++;
+                } else {
+                    break;
+                }
+            }
+            sequence_index++;
+        } while (separator_value != '\n' && separator_value != '\r');
+    }
+    return cursor;
+}
 
 extern char base_2[];
 extern void GameMpeg2Play(char *name, int mode);
