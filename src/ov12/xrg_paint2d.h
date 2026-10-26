@@ -185,7 +185,15 @@ typedef union XrgPaint2DOffset {
 typedef struct XrgPaint2DDrawReq {
     unsigned char unmodeled_00[4];
     void (*draw)(XrgPaint2D *paint, void *pStudio);
-    unsigned char unmodeled_08[0x38];
+    int mode;
+    unsigned char unmodeled_0C[4];
+    int x;
+    int y;
+    int width;
+    int height;
+    float scale;
+    float angle;
+    unsigned char unmodeled_28[0x18];
     int offsetMode;
     unsigned char unmodeled_44[0xC];
     XrgPaint2DOffset offsetAnchor;

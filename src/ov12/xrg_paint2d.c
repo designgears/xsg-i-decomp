@@ -85,7 +85,7 @@ static void _closeVifGif(sceVif1Packet *packet) {
     sceVif1PkCloseDirectHLCode(packet);
 }
 
-static void _Geom2D();
+static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *v);
 static void _DrawNoTex();
 
 static void _InitReq(XrgPaint2DDrawReq *req)
