@@ -1242,7 +1242,7 @@ void nmlModelSetSortOffset(float offset)
 
 typedef int qword_t __attribute__((mode(TI)));
 extern qword_t s_inGblPointP[];
-extern int s_inGblPointC[];
+extern Vector4 s_inGblPointC[];
 void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
 
 void nmlModelSetGlobalPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
@@ -2393,7 +2393,7 @@ extern int D_0095DBF0[];
 extern int D_0095DC30[];
 typedef int qword_t __attribute__((mode(TI)));
 extern qword_t s_inGblPointP[];
-extern int s_inGblPointC[];
+extern Vector4 s_inGblPointC[];
 void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
 extern int s_aShapeId[32];
 extern float s_aShapeWeight[32];
