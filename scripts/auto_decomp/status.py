@@ -4,7 +4,7 @@
     python3 -B scripts/auto_decomp/status.py [--port 8787] [--host 127.0.0.1]
 
 Serves one page that refreshes itself every 2 s from /api/status:
-  - overall: per-unit progress (tools/coverage_report.py --json, cached 60 s),
+  - overall: ByteMatch measures from the objdiff report (build/report.json),
     queue size, matches in the last hour / day, an hourly match histogram;
   - workers: active leases (build/auto_decomp/claims) grouped by owner, with
     try_fn runs used (tries/), best score (bodies/*.best.json), lease age and
@@ -32,50 +32,29 @@ ROOT = Path(__file__).resolve().parents[2]
 AD = ROOT / "build/auto_decomp"
 TRY_BUDGET = 120
 
-_cov = {"at": 0.0, "data": None, "running": False, "error": None, "secs": 0.0}
-_cov_lock = threading.Lock()
-COV_PERIOD = 60.0      # refresh coverage_report.py at most this often
-COV_TIMEOUT = 180.0    # hard cap on the subprocess; the box can be very loaded
+REPORT = ROOT / "build/report.json"
+_rep = {"mtime": None, "data": None}
 
 
-def _refresh_coverage() -> None:
-    """Run coverage_report.py off the request thread (single-flight)."""
-    t0 = time.time()
+def report() -> dict | None:
+    """ByteMatch measures from the objdiff report (build/report.json), cached by mtime."""
     try:
-        p = subprocess.run([sys.executable, "-B", str(ROOT / "tools/coverage_report.py"), "--json"],
-                           cwd=ROOT, capture_output=True, text=True, timeout=COV_TIMEOUT)
-        d = json.loads(p.stdout)
-        data = [{k: r.get(k) for k in ("unit", "target", "functions", "functions_total", "gate")}
-                for r in d.get("rows", [])]
-        with _cov_lock:
-            _cov["data"], _cov["at"], _cov["error"] = data, time.time(), None
-    except Exception as ex:  # noqa: BLE001 - a slow/failed report must never kill the page
-        with _cov_lock:
-            _cov["at"], _cov["error"] = time.time(), repr(ex)[:200]
-    finally:
-        with _cov_lock:
-            _cov["running"] = False
-            _cov["secs"] = round(time.time() - t0, 1)
-
-
-def coverage() -> dict | None:
-    """Stale-while-revalidate: never block a request on coverage_report.py.
-
-    The page polls every 2 s; under load the report takes minutes, so it runs
-    on its own thread and requests answer with the last good snapshot.
-    """
-    with _cov_lock:
-        due = _cov["data"] is None or time.time() - _cov["at"] > COV_PERIOD
-        if due and not _cov["running"]:
-            _cov["running"] = True
-            threading.Thread(target=_refresh_coverage, daemon=True).start()
-    return _cov["data"]
-
-
-def coverage_state() -> dict:
-    with _cov_lock:
-        return {"age": round(time.time() - _cov["at"], 1) if _cov["at"] else None,
-                "refreshing": _cov["running"], "error": _cov["error"], "last_secs": _cov["secs"]}
+        mt = REPORT.stat().st_mtime
+    except OSError:
+        return None
+    if _rep["mtime"] != mt:
+        try:
+            r = json.loads(REPORT.read_text())
+        except (OSError, ValueError):
+            return _rep["data"]
+        keys = ("matched_code_percent", "matched_data_percent", "fuzzy_match_percent",
+                "matched_functions", "total_functions", "complete_code_percent")
+        _rep["data"] = {"at": mt, "measures": {k: r["measures"].get(k) for k in keys},
+                        "units": [{"id": c["id"], "name": c.get("name", c["id"]),
+                                   **{k: c["measures"].get(k) for k in keys}}
+                                  for c in r.get("categories", [])]}
+        _rep["mtime"] = mt
+    return _rep["data"]
 
 
 def read_json(p: Path, default=None):
@@ -247,8 +226,7 @@ def status() -> dict:
     ghidra = AD.parent / "ghidra/.stamp"
     return {
         "now": now,
-        "units": coverage(),
-        "coverage": coverage_state(),
+        "report": report(),
         "queue": len(queue.get("candidates", [])),
         "matched_loop": state.get("matched_count"),
         "failed": len(state.get("failed") or {}),
@@ -349,13 +327,13 @@ h2 .c{text-transform:none;letter-spacing:0;font-weight:500}
 </style></head><body>
 <header><div class="hd"><h1>Xenosaga I decomp</h1><span class="live"><span class="dot" id="dot"></span><span id="upd">connecting…</span></span></div></header>
 <main>
-  <section class="card hero"><h2>Overall progress <span class="c" id="scope">EE units</span></h2>
+  <section class="card hero"><h2>Progress <span class="c" id="scope">ByteMatch · code</span></h2>
     <div class="row"><div class="big num" id="pct">–</div><div class="sub num" id="frac"></div></div>
     <div class="bar"><i id="pbar" style="width:0"></i></div>
     <div class="units" id="units"></div>
     <div id="cov" class="c" style="color:var(--dim);font-size:.75rem;margin-top:6px"></div>
   </section>
-  <section class="card loop"><h2>Loop <span class="c" id="aux"></span></h2>
+  <section class="card loop"><h2>Loop</h2>
     <div class="kpis">
       <div class="kpi"><div class="v num ok" id="mloop">–</div><div class="l">matched · loop</div></div>
       <div class="kpi"><div class="v num ok" id="m1">–</div><div class="l">matches · 1h</div></div>
@@ -386,30 +364,18 @@ async function tick(){
   if(document.hidden)return;
   try{
     const d=data=await (await fetch('api/status',{cache:'no-store',signal:AbortSignal.timeout(8000)})).json(); last=Date.now();
-    const cs=d.coverage||{};
-    $('cov').textContent=cs.age>120
-      ? `per-unit coverage snapshot is ${dur(cs.age)} old${cs.refreshing?' (refreshing…)':''}${cs.error?' · '+esc(cs.error):''}`
-      : '';
-    if(d.units){
-      let f=0,t=0;
-      const pc=u=>u.functions_total?100*u.functions/u.functions_total:0,off=u=>u.gate==='not built'?' off':'';
-      // Exclude not-built units (iop_*) from the headline % — they pad the
-      // denominator with 0/N and make EE matches look like they do nothing.
-      for(const u of d.units){if(u.gate==='not built'||u.unit.startsWith('iop_'))continue;f+=u.functions;t+=u.functions_total}
-      $('pbar').style.width=t?(100*f/t)+'%':'0';
-      $('units').innerHTML=d.units.map(u=>{const p=pc(u);
-        const g=u.gate==='passing'?'':u.gate==='not built'?' · not built':` · <span class="bad">gate ${esc(u.gate)}</span>`;
-        return `<div class="u${off(u)}"><span class="n">${esc(u.unit)}</span><div class="bar"><i style="width:${p}%"></i></div><span class="p num">${p.toFixed(1)}%</span><span class="c num">${u.functions.toLocaleString()}/${u.functions_total.toLocaleString()}${g}</span></div>`}).join('');
-      $('pct').textContent=t?(100*f/t).toFixed(2)+'%':'–';
-      $('frac').innerHTML=t
-        ? `${f.toLocaleString()} / ${t.toLocaleString()} EE functions<br>${(t-f).toLocaleString()} to go · loop ${Number(d.matched_loop||0).toLocaleString()} matched`
-        : 'coverage unavailable';
-      $('scope').textContent='EE units only (IOP excluded)';
-    }
+    const r=d.report;
+    if(r){
+      const m=r.measures,pct=v=>(+v||0).toFixed(2)+'%';
+      $('pct').textContent=pct(m.matched_code_percent);
+      $('pbar').style.width=(+m.matched_code_percent||0)+'%';
+      $('frac').innerHTML=`Functions ${Number(m.matched_functions).toLocaleString()} / ${Number(m.total_functions).toLocaleString()}<br>Data ${pct(m.matched_data_percent)} · fuzzy ${pct(m.fuzzy_match_percent)}`;
+      $('units').innerHTML=r.units.map(u=>`<div class="u"><span class="n">${esc(u.name)}</span><div class="bar"><i style="width:${+u.matched_code_percent||0}%"></i></div><span class="p num">${(+u.matched_code_percent||0).toFixed(1)}%</span><span class="c num">${Number(u.matched_functions).toLocaleString()}/${Number(u.total_functions).toLocaleString()}</span></div>`).join('');
+      $('cov').textContent=`report ${dur(Date.now()/1000-r.at)} old`;
+    }else{$('pct').textContent='–';$('frac').textContent='no build/report.json yet';}
     $('mloop').textContent=Number(d.matched_loop||0).toLocaleString();
     $('m1').textContent=d.match_1h;$('m24').textContent=d.match_24h;$('g24').textContent=d.giveup_24h;$('q').textContent=d.queue.toLocaleString();
     const mx=Math.max(1,...d.hourly);$('hist').innerHTML=d.hourly.map((v,i)=>`<i class="${v?'':'z'}" style="height:${100*v/mx}%" title="${v} match${v==1?'':'es'}, ${23-i}h ago"></i>`).join('');
-    $('aux').textContent=`${d.permuters.length} permuter${d.permuters.length==1?'':'s'} · ghidra ${dur(d.ghidra_age)} old`;
     const cards=[];let n=0;
     for(const w of d.workers)for(const l of w.leases){n++;
       const idle=l.edited;
@@ -458,7 +424,6 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=8787)
     a = ap.parse_args()
     print(f"status page: http://{a.host}:{a.port}/")
-    coverage()                                  # warm the snapshot off the request path
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     srv.daemon_threads = True
     try:
