@@ -986,6 +986,10 @@ void nmlFilterSetFlatRender(void *arg)
     nmlPacketAddGsFlushWide();
 }
 
+typedef union { struct { u64 data; u64 addr; } r; float f; } FtfdGsReg;
+typedef struct { char pad[0x26C]; float f; int i; } FtfdArg;
+
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlFilterSetTexFillDraw);
+/* H5 probe 1 */
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlFilterSetVolumeCubeRender);

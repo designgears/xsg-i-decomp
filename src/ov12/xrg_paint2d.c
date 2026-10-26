@@ -895,7 +895,143 @@ void XrgPaint2DDrawLine(XrgPaint2D *paint, XrgPaint2DLine3D *line)
     _DeriveInfoReq(paint->request, prev);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Paint2DFlush);
+extern void *RgDrawStudioGetView(void *pStudio);
+extern void RgDrawViewGetScreenRect(void *view, int *rect);
+extern void sceVif1PkInit(XglPacket *packet, u32 buffer_address);
+extern unsigned int sceVif1PkSize(XglPacket *packet);
+extern void sceVif1PkAddCode(XglPacket *packet, unsigned int code);
+extern void nmlModelDirectSend(int mode, unsigned char *packet, int size);
+extern void nmlModelDirectSendXtx(int mode, void *texture);
+extern void *RgBxxGetXtx(void *texture);
+extern const char D_00A590F8[];
+
+static void _Paint2DFlush(XrgPaint2D *paint, void *pStudio)
+{
+  Quadword pkbuf[2];
+  int new_var;
+  XglPacket *pk = (XglPacket *) pkbuf;
+  int rect[4];
+  Quadword v[4];
+  unsigned int flags;
+  unsigned int ret;
+  void *view;
+  void *tex;
+  XrgPaint2DDrawReq *req;
+  void *prevTex;
+  unsigned int i;
+  unsigned int n;
+  flags = 0;
+  if (paint == 0)
+  {
+    assert_prog(D_00A59098, D_00A59058, 0x412);
+  }
+  if ((paint->reqCount != 0) && (pStudio != 0))
+  {
+    view = RgDrawStudioGetView(pStudio);
+    if (view == 0)
+    {
+      assert_prog(D_00A590F8, D_00A59058, 0x41C);
+    }
+    s_pCurView_00A51220 = view;
+    RgDrawViewGetScreenRect(view, rect);
+    new_var = rect[0];
+    s_aSizeRatio[0] = ((float) (rect[2] - new_var)) * 0.001953125f;
+    s_aCurCenterPos[0] = ((float) (((new_var + rect[2]) >> 1) - 0x100)) + 2048.0f;
+    s_aCurCenterPos[1] = ((float) (((rect[1] + rect[3]) >> 1) - 0xE0)) + 2048.0f;
+    s_aSizeRatio[1] = ((float) (rect[3] - rect[1])) / 448.0f;
+    sceVif1PkInit(pk, 0x70000000);
+    sceVif1PkCnt(pk, 0);
+    sceVif1PkAddCode(pk, 0x13000000);
+    sceVif1PkAlign(pk, 2, 3);
+    _openVifGifAD(pk);
+    sceVif1PkAddGsAD(pk, 0x3F, 0);
+    sceVif1PkAddGsAD(pk, 0x47, 0x31001);
+    sceVif1PkAddGsAD(pk, 8, (((((u64) 0x3FC) << 16) | 0x3F) << 16) | 0xC000);
+    sceVif1PkAddGsAD(pk, 0x49, 0);
+    sceVif1PkAddGsAD(pk, 0x42, 0x44);
+    _closeVifGif((sceVif1Packet *) pk);
+    n = sceVif1PkSize(pk);
+    if (n != 0)
+    {
+      nmlModelDirectSend(*((int *) (((char *) view) + 0x60)), (unsigned char *) 0x70000000, n);
+    }
+    sceVif1PkInit(pk, 0x70000000);
+    prevTex = 0;
+    i = 0;
+    if (paint->reqCount != 0)
+    {
+      req = &paint->req;
+      do
+      {
+        tex = req->texture;
+        ret = 0;
+        if (tex != 0)
+        {
+          ret = (unsigned int) RgBxxGetXtx(*((void **) (((char *) tex) + 0x58)));
+        }
+        if (ret != ((unsigned int) prevTex))
+        {
+          n = sceVif1PkSize(pk);
+          if (n != 0)
+          {
+            nmlModelDirectSend(*((int *) (((char *) view) + 0x60)), (unsigned char *) 0x70000000, n);
+          }
+          sceVif1PkInit(pk, 0x70000000);
+          prevTex = (void *) ret;
+          if (ret != 0)
+          {
+            nmlModelDirectSendXtx(*((int *) (((char *) view) + 0x60)), (void *) ret);
+            _openVifGifAD(pk);
+            sceVif1PkAddGsAD(pk, 0x3F, 0);
+            _closeVifGif((sceVif1Packet *) pk);
+          }
+        }
+        {
+          int cb0 = *((int *) req);
+          if (cb0 != 0)
+          {
+            unsigned int r = ((unsigned int (*)(XrgPaint2DDrawReq *, Quadword *)) cb0)(req, v);
+            if ((r & 4) != (flags & 4))
+            {
+              _openVifGifAD(pk);
+              if ((r & 4) != 0)
+              {
+                sceVif1PkAddGsAD(pk, 0x47, 0x71001);
+              }
+              else
+              {
+                sceVif1PkAddGsAD(pk, 0x47, 0x31001);
+              }
+              _closeVifGif((sceVif1Packet *) pk);
+            }
+            if ((r & 3) != 0)
+            {
+              if (req->draw != 0)
+              {
+                ((void (*)(XrgPaint2DDrawReq *, XglPacket *, Quadword *, unsigned int)) req->draw)(req, pk, v, r & 3);
+                flags = r;
+              }
+            }
+          }
+        }
+        n = sceVif1PkSize(pk);
+        if (n >= 0x381)
+        {
+          nmlModelDirectSend(*((int *) (((char *) view) + 0x60)), (unsigned char *) 0x70000000, n);
+          sceVif1PkInit(pk, 0x70000000);
+        }
+        i += 1;
+        req += 1;
+      }
+      while (i < ((unsigned int) paint->reqCount));
+    }
+    n = sceVif1PkSize(pk);
+    if (n != 0)
+    {
+      nmlModelDirectSend(*((int *) (((char *) view) + 0x60)), (unsigned char *) 0x70000000, n);
+    }
+  }
+}
 
 static void _InitReq(XrgPaint2DDrawReq *req);
 

@@ -1528,8 +1528,6 @@ void svDrawModel(SvModelDrawItem *model, void *place)
     nmlModelEntryEffect(*(void **)((unsigned char *)model + 0x170));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2);
-
 typedef struct SvParticleDrawContext {
     Matrix4 *place;
     Vector4 *scale;
@@ -1545,6 +1543,7 @@ typedef struct SvQuadImageParameters {
     float halfWidth;
     float halfHeight;
 } SvQuadImageParameters;
+
 typedef struct SvQuadParticle {
     Matrix4 localTransform;
     unsigned char unmodeled_40[248 - 64];
@@ -1559,6 +1558,9 @@ typedef struct SvQuadParticle {
     Vector4 planeOffset;
     unsigned char unmodeled_250[640 - 592];
 } SvQuadParticle;
+
+INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2);
+
 static inline const SvQuadImageParameters *svPrepareParticleImage(
     SGsGifRecord *header, SvQuadParticle *particle, Quadword gifRegisters,
     unsigned int textureRegister, unsigned int alphaRegister)

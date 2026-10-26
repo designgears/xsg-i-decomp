@@ -4200,7 +4200,100 @@ boost:
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", dmgValPut);
+void *objDmgNumCreate(void *target, int value, int flags);
+extern char D_00A44188[];
+extern char D_00A44190[];
+extern char D_00A44198[];
+extern char D_00A441A0[];
+extern char D_00A441A8[];
+extern char D_00A441B0[];
+extern char D_00A441B8[];
+extern char D_00A441C8[];
+extern char D_00A441D8[];
+extern char D_00A441E8[];
+extern char D_00A441F8[];
+extern char D_00A44208[];
+extern char D_00A44218[];
+extern char D_00A44228[];
+extern char D_00A44238[];
+extern char D_00A44248[];
+extern char D_00A44258[];
+
+int dmgValPut(int arg0, BattleUnit **arg1) {
+    int *d = (int *)arg1;
+    int flags;
+    int value;
+    int type;
+    int bits;
+    int dst;
+    void *first = *(void **)d;
+    flags = d[3];
+    type = flags & 0xFF;
+    value = d[2];
+    if (type != 0xB) {
+        bits = (flags >> 8) & 0xFF;
+        objDmgNumCreate(first, value, flags);
+        if ((unsigned)(type - 7) < 2U) {
+            dst = 2;
+        } else {
+            dst = 4;
+            if ((unsigned)(type - 9) >= 2U) {
+                dst = 0xB;
+            }
+        }
+        if (dst != 0xB) {
+            objDmgNumCreate(*(void **)arg0, value, dst);
+        }
+        printf(D_00A44188);
+        if (bits & 1) {
+            printf(D_00A44190);
+        } else if (bits & 2) {
+            printf(D_00A44198);
+        } else if (bits & 4) {
+            printf(D_00A441A0);
+        } else if (bits & 8) {
+            printf(D_00A441A8);
+        }
+        switch (*(unsigned char *)((char *)arg1 + 0xC)) {
+        case 0:
+            printf(D_00A441B0);
+            break;
+        case 1:
+            printf(D_00A441B8, value);
+            break;
+        case 2:
+            printf(D_00A441C8, value);
+            break;
+        case 3:
+            printf(D_00A441D8, value);
+            break;
+        case 4:
+            printf(D_00A441E8, value);
+            break;
+        case 5:
+            printf(D_00A441F8);
+            break;
+        case 6:
+            printf(D_00A44208);
+            break;
+        case 7:
+            printf(D_00A44218, value);
+            break;
+        case 8:
+            printf(D_00A44228, value);
+            break;
+        case 9:
+            printf(D_00A44238, value);
+            break;
+        case 10:
+            printf(D_00A44248, value);
+            break;
+        default:
+            printf(D_00A44258);
+            break;
+        }
+    }
+}
 
 /*
  * Battle monster-gain tallies (original ELF symbol name; only its total size is

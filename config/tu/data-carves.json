@@ -9368,7 +9368,13 @@
       "D_00A43E18"
      ],
      "also_referenced_by_c": [
+      "D_00A43CB8",
+      "D_00A43CC8",
+      "D_00A43CD8",
       "D_00A43CE8",
+      "D_00A43D10",
+      "D_00A43D30",
+      "D_00A43D40",
       "D_00A43D48",
       "D_00A43D50",
       "D_00A43D58",
@@ -9543,7 +9549,7 @@
      ],
      "generated": [
       "0x00a440c0",
-      "0x00a44164"
+      "0x00a44168"
      ],
      "generated_by": [
       "decoEffCall",
@@ -9556,6 +9562,47 @@
      "also_referenced_by_c": [
       "D_00A44168",
       "D_00A44178",
+      "D_00A44188",
+      "D_00A44190",
+      "D_00A44198",
+      "D_00A441A0",
+      "D_00A441A8",
+      "D_00A441B0",
+      "D_00A441B8",
+      "D_00A441C8",
+      "D_00A441D8",
+      "D_00A441E8",
+      "D_00A441F8",
+      "D_00A44208",
+      "D_00A44218",
+      "D_00A44228",
+      "D_00A44238",
+      "D_00A44248",
+      "D_00A44258"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a44270",
+      "0x00a442a0"
+     ],
+     "generated": [
+      "0x00a44270",
+      "0x00a4429c"
+     ],
+     "generated_by": [
+      "dmgValPut"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A44270"
+     ],
+     "also_referenced_by_c": [
+      "D_00A442A0",
       "D_00A442C8",
       "D_00A442E0",
       "D_00A442F8"
