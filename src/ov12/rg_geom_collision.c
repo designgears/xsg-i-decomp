@@ -9,7 +9,103 @@
 const char D_00A552F8[32] = "../rg_geom_collision.euc.c";
 const char D_00A55328[16] = "pArg != NIL";
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _BallVsBall);
+extern int RgGeomGetType(RgGeom *pGeom);
+extern int RgGeomBallCheckBall(RgGeom *a, RgGeom *b, void *contact);
+extern int RgGeomBallCheckBallDist(RgGeom *a, RgGeom *b, void *contact);
+extern float RgGeomPointGetWeight(RgGeomPoint *point);
+extern void RgGeomPointSetPos(RgGeomPoint *point, RgVector position);
+extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
+extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
+extern void XrgCopyVector(RgVector destination, RgVector source);
+extern void XrgNegateVector(RgVector destination, RgVector source);
+typedef struct {
+    RgVector position1;            /* +0x00 */
+    RgVector position2;            /* +0x10 */
+    RgVector penetration;          /* +0x20 */
+    float distance;                /* +0x30 */
+} RgBallVsBallContact;
+typedef struct {
+    RgVector contact;              /* +0x00 */
+    RgVector normal;               /* +0x10 */
+    void *otherObject;             /* +0x20 */
+} RgBallVsBallHit;
+typedef struct {
+    unsigned char unmodeled_00[8];
+    unsigned int flags;            /* +0x08 */
+} RgBallVsBallBody;
+
+static int _BallVsBall(unsigned int *pArg)
+{
+    RgBallVsBallContact contact;
+    RgVector scaled;
+    RgVector moved;
+    RgBallVsBallHit hit;
+    RgGeom *a;
+    RgGeom *b;
+    void (*callback)(void *, void *);
+    int typeA;
+    int typeB;
+    int result;
+    unsigned int flags;
+    float weightA;
+    float weightB;
+    float total;
+
+    a = (RgGeom *) pArg[0];
+    b = (RgGeom *) pArg[2];
+    typeA = RgGeomGetType(a);
+    typeB = RgGeomGetType(b);
+    if (typeA == 2) {
+        if (typeB == typeA) {
+            result = RgGeomBallCheckBallDist(a, b, &contact);
+            goto dispatched;
+        }
+    }
+    if (typeA != typeB && (typeA == 2 || typeB == 2)) {
+        result = RgGeomBallCheckBall(a, b, &contact);
+    } else {
+        result = RgGeomBallCheckBallDist(a, b, &contact);
+    }
+dispatched:
+    if (result != 0) {
+        flags = ((RgBallVsBallBody *) a)->flags & ((RgBallVsBallBody *) b)->flags;
+        weightA = RgGeomPointGetWeight((RgGeomPoint *) a);
+        weightB = RgGeomPointGetWeight((RgGeomPoint *) b);
+        if (flags & 0x10) {
+            total = weightA + weightB;
+            XrgScaleVector(scaled, contact.penetration, weightB / total);
+            XrgAddVector(moved, contact.position1, scaled);
+            RgGeomPointSetPos((RgGeomPoint *) a, moved);
+            XrgScaleVector(scaled, contact.penetration, weightA / total);
+            XrgSubVector(moved, contact.position2, scaled);
+            RgGeomPointSetPos((RgGeomPoint *) b, moved);
+        }
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vadd.xyzw $vf30, $vf30, $vf31\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(hit.contact), "r"(contact.position1), "r"(contact.position2) : "memory");
+        hit.contact[0] *= 0.5f;
+        hit.contact[1] *= 0.5f;
+        hit.contact[2] *= 0.5f;
+        hit.contact[3] *= 0.5f;
+        XrgCopyVector(hit.normal, contact.penetration);
+        callback = (void (*)(void *, void *)) pArg[1];
+        if (callback != 0) {
+            hit.otherObject = b;
+            callback(a, &hit);
+        }
+        if (pArg[3] != 0) {
+            XrgNegateVector(hit.normal, hit.normal);
+            hit.otherObject = a;
+            ((void (*)(void *, void *)) pArg[3])(b, &hit);
+        }
+        return 1;
+    }
+    return 0;
+}
 
 extern int RgGeomPolyCheckRay(RgGeom *pPoly, RgVector origin, RgVector out);
 extern void XrgNegateVector(RgVector destination, RgVector source);
