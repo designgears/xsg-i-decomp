@@ -351,7 +351,83 @@ static void _PillarVsBall(RgGeomColiArg *pArg)
     _BallVsPillar(&reordered);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _RobVsTray);
+extern int RgGeomTrayCheckBall(void *tray, void *ball, void *result);
+extern void XrgClearVector(RgVector destination);
+extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
+typedef struct {
+    RgVector contact;              /* +0x00 */
+    RgVector pos;                  /* +0x10 */
+    RgVector normals[3];           /* +0x20 */
+    unsigned int count;            /* +0x50 */
+} RgRobTrayRes;
+
+static int _RobVsTray(unsigned int *pArg)
+{
+    RgRobTrayRes res;
+    RgRobVsPolyHit hit;
+    RgRobVsPolyHit *hitp;
+    void *tray;
+    RgRobVsPolyPoint *point;
+    RgVector sum;
+    RgVector vel;
+    void (*callback)(void *, void *);
+    int i;
+    float *normal;
+    float *m;
+    float *vp;
+    float dot;
+    int result;
+
+    point = (RgRobVsPolyPoint *) pArg[0];
+    tray = (void *) pArg[2];
+    result = RgGeomTrayCheckBall(tray, point, &res);
+    if (result != 0) {
+        hitp = &hit;
+        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(res.contact) : "memory");
+        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(hitp) : "memory");
+        if (res.count >= 2) {
+            XrgClearVector(sum);
+            for (i = 0; i < res.count; i++) {
+                BvpAdd(sum, sum, res.normals[i]);
+            }
+            normal = hit.normal;
+            XrgNormalizeVector(normal, sum);
+        } else {
+            normal = hit.normal;
+            __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(res.normals[0]) : "memory");
+            __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(normal) : "memory");
+        }
+        callback = (void (*)(void *, void *)) pArg[1];
+        if (callback != 0) {
+            hit.otherObject = tray;
+            callback(point, hitp);
+        }
+        callback = (void (*)(void *, void *)) pArg[3];
+        if (callback != 0) {
+            hit.otherObject = point;
+            callback(tray, hitp);
+        }
+        if (point->flags & 0x10) {
+            RgGeomPointSetPos((RgGeomPoint *) point, res.pos);
+        }
+        i = 0;
+        if (res.count != 0) {
+            m = (float *) res.normals;
+            do {
+                __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)" : : "r"(point->velocity), "r"(vel) : "memory");
+                dot = m[0] * vel[0] + m[1] * vel[1] + m[2] * vel[2];
+                if (dot < 0) {
+                    XrgScaleVector(sum, (float *) m, dot);
+                    XrgSubVector(point->velocity, point->velocity, sum);
+                }
+                m += 4;
+                i++;
+            } while (i < res.count);
+        }
+        result = 1;
+    }
+    return result;
+}
 
 /* Still INCLUDE_ASM in this TU. hit: a four-word pair record whose halves
  * _TrayVsBall swaps before calling _BallVsTray (layout not yet recovered). */
