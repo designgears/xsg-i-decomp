@@ -3015,6 +3015,16 @@ ACCEPTED_ASM("src/main/nml_model_set", nmlModelEntryEffect);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelEntryCard);
 
+typedef struct {
+    s16 block;
+    s16 kind;
+    int unk4;
+    u32 status;
+    LayoutStore *sort;
+} NonAlphaGroupEntry;
+
+extern NonAlphaGroupEntry s_aNonAlphaGroup[];
+
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelRenderProreal);
 
 extern float D_004D8948;
@@ -3222,14 +3232,6 @@ static int nmlModelRenderDrop(DropRect *rect, int step, StudioCamera *camera, in
     return result;
 }
 
-typedef struct {
-    s16 block;
-    s16 kind;
-    LayoutStore *sort;
-    u32 status;
-    int pad;
-} NonAlphaGroupEntry;
-extern NonAlphaGroupEntry s_aNonAlphaGroup[];
 typedef struct {
     unsigned char u00[0x20];
     unsigned short fbp;
