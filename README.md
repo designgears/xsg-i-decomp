@@ -14,9 +14,9 @@ The Sony SDK and public libraries do not need to be recovered.
 ## Progress
 
 <!-- coverage-report:begin -->
-Recovered 7,520 of 7,645 in-scope game function(s) (98.365%).
+Recovered 7,522 of 7,645 in-scope game function(s) (98.391%).
 
-- `exact_c` (pure C): 7,106 function(s)
+- `exact_c` (pure C): 7,108 function(s)
 - `exact_c_with_asm`: 409 function(s)
 - `exact_asm`: 5 function(s)
 - `exact_vu_microcode`: no accepted VU microprogram
@@ -32,7 +32,7 @@ The counts below are source-level: functions whose C (or accepted asm) is in the
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
-| NTSC-U | `SLUS_204.69` | 3,599 / 3,671 | 98.039% |
+| NTSC-U | `SLUS_204.69` | 3,601 / 3,671 | 98.093% |
 | NTSC-U | `OV01.OVL` | 1,053 / 1,081 | 97.410% |
 | NTSC-U | `OV02.OVL` | 108 / 110 | 98.182% |
 | NTSC-U | `OV10.OVL` | 357 / 361 | 98.892% |
