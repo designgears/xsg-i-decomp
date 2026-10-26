@@ -7,12 +7,16 @@ credit. IOP originals have no base. All binary inputs remain local.
 from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
+import struct
 import subprocess
 
 import coverage_report as cov
 from tu import verify_report as verification
 from tu.elfinfo import Elf
 from tu.noaslr import NOASLR
+from tu import data_carve, target_layout, target_symbolize
+
+LITERAL_SECTIONS = ('.lit4', '.lit8')
 from tu.toolchain import Toolchain
 
 
@@ -73,6 +77,57 @@ def strip_debug(prefix, source, destination, cwd, iop_reference=False):
     verification.require(identity(before) == identity(after), f'{source}: FUNC identity changed')
 
 
+def preserve_gp0(source, target):
+    """Restore the text object's .reginfo ri_gp_value after `ld -r`.
+
+    `ld -r` writes a fresh gp (0x7ff0) into .reginfo but leaves every implicit
+    GPREL16/LITERAL addend encoded for the assembler's gp0, so objdiff would
+    display a spurious +0x7ff0 on each gp-relative operand. Only that metadata
+    word is restored, and only when ld -r kept the text bytes unchanged.
+    """
+    before, after = Elf(source.read_bytes()), Elf(target.read_bytes())
+    verification.require(before.section_bytes(before.section('.text')) ==
+                         after.section_bytes(after.section('.text')),
+                         f'{target}: ld -r changed text bytes')
+    old = [s for s in before.sections if s.name == '.reginfo']
+    new = [s for s in after.sections if s.name == '.reginfo']
+    if len(old) != 1 or len(new) != 1 or old[0].size != 24 or new[0].size != 24:
+        return
+    data = bytearray(after.data)
+    data[new[0].offset + 20:new[0].offset + 24] = before.data[old[0].offset + 20:old[0].offset + 24]
+    target.write_bytes(bytes(data))
+
+
+def mark_compiler_literals(target, labels):
+    """GPREL16 -> R_MIPS_LITERAL for gp loads of compiler-generated literals.
+
+    gas records a load from the compiler's own literal pool (`li.s`/`li.d`) as
+    R_MIPS_LITERAL; it is resolved exactly like GPREL16 (S + A - GP), only
+    marking that the datum is a literal-pool entry. Applied only to lwc1/ldc1
+    off $gp whose symbol is a label of a declared C-generated literal run in
+    .lit4/.lit8 (config/tu/data-carves.json, laid out by target_layout). Data
+    the C names (`extern const float D_...`) keeps GPREL16, as in cc1 output.
+    """
+    elf = Elf(target.read_bytes())
+    data = bytearray(elf.data)
+    text = elf.section('.text')
+    text_bytes = elf.section_bytes(text)
+    for rel in elf.sections:
+        if rel.type != 9 or rel.info != text.index:
+            continue
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            if info & 255 != 7:
+                continue
+            symbol = elf.symbols[info >> 8]
+            section = elf.sections[symbol.shndx].name if 0 < symbol.shndx < len(elf.sections) else ''
+            word = int.from_bytes(text_bytes[offset:offset + 4], 'little')
+            if (symbol.name in labels.get(section, ()) and word >> 26 in (0x31, 0x35)
+                    and (word >> 21) & 31 == 28):
+                struct.pack_into('<I', data, at + 4, (info & ~255) | 8)
+    target.write_bytes(bytes(data))
+
+
 def prepare(root, evidence):
     build, project = root / 'build', root / 'build/objdiff'
     project.mkdir(exist_ok=True)
@@ -84,6 +139,14 @@ def prepare(root, evidence):
     overlays = {unit: verification.read(build / unit / 'compile-manifest.json')
                 for unit in cov.OVERLAY_UNITS}
     expected = {}
+    main_elf = build / 'main/build/carve/main.rom.elf'
+    registry = data_carve.load_registry(root)
+    linked = {unit: Elf((build / 'main/build/carve/main.rom.elf' if unit == 'main' else
+                         build / unit / f'build/{unit}.rom.elf').read_bytes())
+              for unit in ('main', *cov.OVERLAY_UNITS)}
+    symtabs = {unit: target_symbolize.SymbolTable(
+        [main_elf] + ([] if unit == 'main' else [build / unit / f'build/{unit}.rom.elf']))
+        for unit in ('main', *cov.OVERLAY_UNITS)}
 
     def prepare_object(obj):
         unit, stem = obj['unit'], Path(obj['source']).stem
@@ -119,21 +182,10 @@ def prepare(root, evidence):
                                target_text, ccdir, assembler, flags, skip_asm=False)
             else:
                 target_text = build_target(unit_dir, stem, unit)
-        data = []
-        for source in data_sources:
-            output = destination / (source.stem + '.o')
-            run([str(prefix) + 'as', '-EL', '-march=r5900', '-mabi=eabi', '-mgp64',
-                 '-G0', '-no-pad-sections', '-mno-fix-r5900', '-I.', '-Iinclude',
-                 '-o', output, source], unit_dir)
-            data.append(output)
-        target = destination / 'target.o'
-        stripped = destination / 'text.nodebug.o'
-        strip_debug(prefix, target_text, stripped, unit_dir)
-        run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
-             '-o', target, stripped, *data], unit_dir)
-        unit_config = dict(name=name, target_path=str(target), metadata=dict(
+        unit_config = dict(name=name, target_path=str(destination / 'target.o'), metadata=dict(
             source_path=obj['source'], progress_categories=[unit], complete=checked['complete']))
         allowed = {f.get('c_symbol', f['original_symbol']): f['size'] for f in checked['functions']}
+        base_elf = None
         if allowed:
             base = destination / 'base.o'
             assembly = compile_source(root, unit_dir, root / obj['source'], base,
@@ -148,6 +200,65 @@ def prepare(root, evidence):
             stripped_base = destination / 'base.nodebug.o'
             strip_debug(prefix, base, stripped_base, unit_dir)
             unit_config['base_path'] = str(stripped_base)
+            base_elf = Elf(stripped_base.read_bytes())
+        runs = dict(registry['tus'].get(tu.get('id'), {})) if base_elf is not None else {}
+        if unit == 'main':
+            # Import-era C-owned pieces (config/split/main.data-splits.json).
+            for section, entry in main['sections'].items():
+                split = [dict(generated=[p['start'], p['end']]) for p in entry['order']
+                         if p.get('tu') == stem and p.get('c_split')]
+                if split and not runs.get(section):
+                    runs[section] = split
+        carved = next((c for c in ([unit_dir / f'build/c/{stem}.carved.o'] if unit == 'main'
+                                   else [unit_dir / f'build/src/{unit}/{stem}.carved.o',
+                                         unit_dir / f'build/scaffold/src/{unit}/{stem}.carved.o'])
+                       if c.is_file()), None)
+        assemble = lambda source, output: run(
+            [str(prefix) + 'as', '-EL', '-march=r5900', '-mabi=eabi', '-mgp64', '-G0',
+             '-no-pad-sections', '-mno-fix-r5900', '-I.', '-Iinclude', '-o', output, source], unit_dir)
+        data, literal_labels, merged = [], {}, set()
+        for section in LITERAL_SECTIONS:
+            group = [d for d in data_sources if d.name.endswith(section + '.s')]
+            compiled = [x for x in base_elf.sections if x.name == section] if base_elf else []
+            if not group or not runs.get(section) or len(compiled) != 1:
+                continue
+            ordered = destination / (group[0].stem + '.compiler-order.s')
+            output = destination / (group[0].stem + '.o')
+            proof = target_layout.reorder(group, ordered, runs[section],
+                                          base_elf.section_bytes(compiled[0]), linked[unit],
+                                          carved, section)
+            if proof is None:
+                continue
+            original_size = 0
+            for source in group:
+                assemble(source, destination / (source.stem + '.orig.o'))
+                original = Elf((destination / (source.stem + '.orig.o')).read_bytes())
+                original_size += sum(x.size for x in original.sections if x.name == section)
+            assemble(ordered, output)
+            if target_layout.verify(output, section, proof, original_size):
+                literal_labels[section] = set(proof['labels'])
+                merged.update(group)
+                data.append(output)
+        for source in data_sources:
+            if source in merged:
+                continue
+            output = destination / (source.stem + '.o')
+            assemble(source, output)
+            data.append(output)
+        if obj['functions']:
+            # Report-local copy: recover splat's unpaired %hi/%lo operands
+            # from the original disassembly + linked ELF addresses.
+            target_text, _ = target_symbolize.symbolize(
+                target_text, unit_dir, destination / 'text.sym.o', assembler, flags,
+                symtabs[unit])
+        target = destination / 'target.o'
+        stripped = destination / 'text.nodebug.o'
+        strip_debug(prefix, target_text, stripped, unit_dir)
+        run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
+             '-o', target, stripped, *data], unit_dir)
+        preserve_gp0(stripped, target)
+        if literal_labels:
+            mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
         verification.require(len(target_functions) == len(obj['functions']) and
                              sum(target_functions.values()) == sum(f[2] for f in obj['functions']),
