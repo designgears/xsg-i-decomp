@@ -1805,6 +1805,11 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
     }
 }
 
+typedef struct SefLightInput {
+    int coordinates[3];
+    int range;
+} SefLightInput;
+
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecLineLocalData);
 
 static void sevFreePtAllocator(unsigned int handle);
@@ -2476,7 +2481,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
 }
 
 int sefExecLineGlobalData(void *arg0, int arg1);
-unsigned short sefExecLineLocalData(void *arg0, unsigned short arg1);
+int sefExecLineLocalData(void *arg0, unsigned short arg1);
 extern float D_004D834C;
 static inline short *sefKeyPtr(void *a)
 {
@@ -3350,10 +3355,6 @@ int sefIsSeSignal(SefActor *actor)
     return 0;
 }
 
-typedef struct SefLightInput {
-    int coordinates[3];
-    int range;
-} SefLightInput;
 typedef struct SefLightSet {
     unsigned long long words[30];
 } SefLightSet;
