@@ -58,7 +58,10 @@ struct NmlMaterialRenderState {
      * suppresses its extended pair.
      */
     u32 render_flags;
-    unsigned char unmodeled_024[0x9c];
+    unsigned char unmodeled_024[0x08];
+    /* +0x2c: matched against the model's pixel_test_entries. */
+    u32 geometry_block_index;
+    unsigned char unmodeled_030[0x90];
     /*
      * +0xc0: the material's blend and lighting flags.  add_exec_prog reads it
      * with lw (main 0x002387e8) and so does nmlPacketAddReflRot (main
@@ -74,13 +77,32 @@ struct NmlMaterialRenderState {
  * The model layout the engine renders from: the single s_inLayout (main
  * 0x004a91e0, 0x320 bytes) plus the per-entry copies in s_apModelLayout.
  */
+typedef struct NmlPixelTestEntry {
+    short reference;
+    short geometry_block_index;
+} NmlPixelTestEntry;
+
 struct NmlModelRenderState {
-    unsigned char unmodeled_000[0x1c0];
+    unsigned char unmodeled_000[0x80];
+    /* +0x80: projection matrix (element 13 is the ground height). */
+    float projection_elements[16];
+    unsigned char unmodeled_0c0[0x100];
     /* +0x1c0: the fog color parcel; its fourth word is fog intensity. */
     u32 fog_color[4];
     /* +0x1d0: the fog-distance parcel sent after fog_color. */
     u32 fog_parameters[4];
-    unsigned char unmodeled_1e0[0x70];
+    unsigned char unmodeled_1e0[0x10];
+    float circle_center_x; /* +0x1f0 */
+    unsigned char unmodeled_1f4[4];
+    float circle_center_z; /* +0x1f8 */
+    unsigned char unmodeled_1fc[0x24];
+    float material_alpha_scale; /* +0x220 */
+    float reflect_alpha;
+    float default_block_alpha;
+    unsigned char unmodeled_22c[0x0c];
+    int pixel_test_reference; /* +0x238 */
+    unsigned char unmodeled_23c[0x0c];
+    u64 pixel_test_parameters; /* +0x248 */
     /*
      * +0x250: the render-status word.  nmlModelSetRenderStatus is the setter
      * that names it, and it ORs the value it is given (main 0x0022fab0 sets
@@ -99,7 +121,8 @@ struct NmlModelRenderState {
      * nmlModelRenderDrop 0x80000 (0x00234d58).
      */
     u32 render_status;
-    unsigned char unmodeled_254[0x0c];
+    struct NmlModelResource *resource; /* +0x254 */
+    unsigned char unmodeled_258[0x08];
     /*
      * +0x260: this layout's own proreal block, the packet address nmlModelEntry
      * stores after copying s_inProReal (main 0x00233030).
@@ -113,7 +136,11 @@ struct NmlModelRenderState {
      * it in preference to `proreal` whenever it is set.
      */
     NmlProRealParam *proreal_override;
-    unsigned char unmodeled_268[0x48];
+    unsigned char unmodeled_268[0x14];
+    int block_alpha_view; /* +0x27c */
+    unsigned char unmodeled_280[0x28];
+    int shadow_height_enabled; /* +0x2a8 */
+    float shadow_height;
     /*
      * +0x2b0: the render-level word nmlModelSetRenderLevel ORs its whole
      * argument into (main 0x0022e97c).  nmlModelSetSpecularOff sets bit 1
@@ -123,9 +150,16 @@ struct NmlModelRenderState {
      * own, so they stay literals.
      */
     u32 render_level;
-    unsigned char unmodeled_2b4[0x3c];
+    int pixel_test_count; /* +0x2b4 */
+    unsigned char unmodeled_2b8[4];
+    float special_block_alpha; /* +0x2bc */
+    unsigned char unmodeled_2c0[4];
+    float circle_scale; /* +0x2c4 */
+    unsigned char unmodeled_2c8[8];
+    NmlPixelTestEntry pixel_test_entries[8]; /* +0x2d0 */
     /* +0x2f0: one fog intensity multiplier for each viewport. */
     float fog_intensity[4];
+    float block_alpha_by_view[4]; /* +0x300 */
 };
 
 typedef void *NmlPacket;

@@ -30,7 +30,9 @@ typedef struct AgwsMenuWork {
     unsigned char weaponHandKind;
     unsigned char unmodeled_2f[0x30 - 0x2F];
     unsigned char flags;
-    unsigned char unmodeled_31[0x51 - 0x31];
+    unsigned char unmodeled_31[0x41 - 0x31];
+    signed char selectedAgws; /* +0x41 */
+    unsigned char unmodeled_42[0x51 - 0x42];
     signed char reserveCursor;
     signed char listSelect;
     unsigned char unmodeled_53[0x54 - 0x53];
@@ -47,7 +49,8 @@ typedef struct AgwsMenuWork {
     signed char nameRow;
     unsigned char unmodeled_5b[0x9];
     short chrNo;
-    unsigned char unmodeled_66[0x80 - 0x66];
+    short agwsCount; /* +0x66 */
+    unsigned char unmodeled_68[0x80 - 0x68];
 } AgwsMenuWork;
 
 typedef struct WeaponWaglData {

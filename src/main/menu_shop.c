@@ -868,9 +868,223 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
     WindowDXMain((MenuShopWindowDX *)(void *)(&work->window));
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", ListMake_3);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopSelect);
+static void MenuShopSelect(TskObject *task, void *data)
+{
+    MenuShopSelectWork *work = data;
+
+    MenuShopSelectCommand *ListMake(int menuIndex)
+    {
+        MenuShopCommandPane *pane = (MenuShopCommandPane *)(menuIndex * sizeof(MenuShopCommandPane) + (int)work + 8);
+
+        memset(pane->commands, 0, sizeof(pane->commands));
+        {
+            int commandIndex;
+
+            for (commandIndex = 0; commandIndex < 4; commandIndex++) {
+                work->menus[menuIndex].commands[commandIndex].text =
+                    msg00_1_0036DB30[menuIndex * 4 + commandIndex];
+                work->menus[menuIndex].commands[commandIndex].locked = 0;
+            }
+            work->menus[menuIndex].commands[commandIndex].text = 0;
+        }
+        if (menuIndex == 0) {
+            if (MenuShopWork->noCategories != 0)
+                work->menus[menuIndex].commands[0].locked = 1;
+            if (MenuShopWork->equipmentStatus == 0)
+                work->menus[menuIndex].commands[2].locked = 1;
+        }
+        return work->menus[menuIndex].commands;
+    }
+
+    int i;
+
+    switch (task->state) {
+    case 0:
+        work->depth = 0xfffff4;
+        for (i = 0; i < 2; i++) {
+            WindowDXSet((MenuShopWindowDX *)&work->menus[i].window);
+            work->menus[i].window.x = 528;
+            work->menus[i].window.style = work->depth;
+            if (i == 0)
+                work->menus[0].window.width = 205;
+            else
+                work->menus[i].window.width = 205;
+            work->menus[i].window.height = 102;
+            work->menus[i].window.close_callback_arg = &work->menus[i].panel;
+            work->menus[i].window.close_callback = (void (*)(MenuShopSelectWindow *, void *))MenuSelectWindow;
+            work->menus[i].window.tag_id = D_004DB168;
+            work->menus[i].panel.cursor = 0;
+            work->menus[i].panel.commands = ListMake(i);
+            work->menus[i].panel.displayMode = 2;
+            work->menus[i].window.state = 1;
+            WindowDXMain((MenuShopWindowDX *)&work->menus[i].window);
+            work->menus[i].window.state = 3;
+        }
+        for (i = 0; i < 1; i++) {
+            WindowDXSet((MenuShopWindowDX *)&work->choices[i].window);
+            work->choices[i].window.x = 528;
+            work->choices[i].window.width = 169;
+            work->choices[i].window.height = 102;
+            work->choices[i].window.style = work->depth;
+            work->choices[i].window.tag_id = D_004DB170;
+            work->choices[i].panel.choices = msg01_2_0036DB50[3];
+            work->choices[i].panel.prompt = msg01_2_0036DB50[0];
+            work->choices[i].window.close_callback_arg = &work->choices[i].panel;
+            work->choices[i].window.close_callback = (void (*)(MenuShopSelectWindow *, void *))MenuSelectWindow;
+            work->choices[i].panel.cursor = 0;
+            work->choices[i].panel.displayMode = 1;
+            work->choices[i].window.state = 1;
+            WindowDXMain((MenuShopWindowDX *)&work->choices[i].window);
+            work->choices[i].window.state = 3;
+        }
+        work->popupFlags = 0;
+        break;
+    case 2: {
+        short menuX[2];
+        short choiceX[2];
+        MenuShopWorkData *shop;
+
+        for (i = 0; i < 2; i++) {
+            unsigned char popupVisible;
+
+            menuX[i] = 528;
+            popupVisible = work->popupFlags & 1;
+            if (popupVisible)
+                choiceX[i] = -176;
+            else
+                choiceX[i] = 528;
+        }
+        shop = MenuShopWork;
+        switch (shop->state) {
+        case 0x20:
+            if (shop->stateFlags & 1) {
+                work->menus[0].window.x = 528;
+                work->menus[0].window.y = 192;
+            }
+            menuX[0] = 152;
+            work->menus[0].panel.cursor = shop->mode;
+            break;
+        case 0xc0:
+            if (shop->stateFlags & 1) {
+                work->menus[1].window.x = 528;
+                work->menus[1].window.y = 192;
+            }
+            menuX[1] = 160;
+            work->menus[1].panel.cursor = shop->sortOption;
+            break;
+        case 0xa2: {
+            unsigned char *mode = &shop->mode;
+            unsigned char updatePopup;
+
+            updatePopup = shop->stateFlags & 1;
+
+            if (updatePopup) {
+                switch (*mode) {
+                case 0:
+                    work->choices[0].panel.prompt = msg01_2_0036DB50[0];
+                    switch (mode[1]) {
+                    case 0:
+                        work->choices[0].window.x = 528;
+                        work->choices[0].window.y = 256;
+                        work->popupFlags &= ~1;
+                        break;
+                    case 7:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 208;
+                        work->popupFlags |= 1;
+                        break;
+                    case 8:
+                        work->choices[0].window.x = 528;
+                        work->choices[0].window.y = 256;
+                        work->popupFlags &= ~1;
+                        break;
+                    default:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 80;
+                        work->popupFlags |= 1;
+                        break;
+                    }
+                    break;
+                default:
+                    work->choices[0].panel.prompt = msg01_2_0036DB50[1];
+                    switch (mode[1]) {
+                    case 0:
+                    case 8:
+                        work->choices[0].window.x = 528;
+                        work->choices[0].window.y = 256;
+                        work->popupFlags &= ~1;
+                        break;
+                    case 1:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 272;
+                        work->popupFlags |= 1;
+                        break;
+                    case 4:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 272;
+                        work->popupFlags |= 1;
+                        break;
+                    case 7:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 192;
+                        work->popupFlags |= 1;
+                        break;
+                    default:
+                        work->choices[0].window.x = -136;
+                        work->choices[0].window.y = 80;
+                        work->popupFlags |= 1;
+                        break;
+                    }
+                    break;
+                }
+            }
+            switch (MenuShopWork->category) {
+            case 0:
+            case 8:
+                choiceX[0] = 304;
+                break;
+            case 7:
+                choiceX[0] = 48;
+                break;
+            default:
+                choiceX[0] = 32;
+                break;
+            }
+            work->choices[0].panel.cursor = MenuShopWork->quantityAction;
+            break;
+        }
+        case 0xc4:
+            if (shop->stateFlags & 1) {
+                work->choices[0].panel.prompt = msg01_2_0036DB50[2];
+                work->choices[0].window.x = -136;
+                work->choices[0].window.y = 192;
+                work->popupFlags |= 1;
+            }
+            choiceX[0] = 88;
+            work->choices[0].panel.cursor = MenuShopWork->quantityAction;
+            break;
+        case 0xd4:
+            if (shop->stateFlags & 1) {
+                work->choices[0].panel.prompt = msg01_2_0036DB50[0];
+                work->choices[0].window.x = 528;
+                work->choices[0].window.y = 176;
+                work->popupFlags &= ~1;
+            }
+            choiceX[0] = 304;
+            work->choices[0].panel.cursor = MenuShopWork->quantityAction;
+            break;
+        }
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&work->menus[i].window.x, &menuX[i], 3.0f);
+            WindowDXMain((MenuShopWindowDX *)&work->menus[i].window);
+        }
+        MoveSlide(&work->choices[0].window.x, &choiceX[0], 3.0f);
+        WindowDXMain((MenuShopWindowDX *)&work->choices[0].window);
+        break;
+    }
+    }
+}
 
 typedef struct MenuShopSortTab {
     short *list;

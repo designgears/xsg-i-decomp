@@ -1164,7 +1164,92 @@ void JNT_setCurve(void *static_value_records, void *value_records)
     work->value_records = value_records;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_setMDLMatrix);
+typedef struct JntModelMatrixResource {
+    unsigned char unmodeled_00[0x50];
+    int matrices_offset;          /* 0x50 */
+    unsigned char unmodeled_54[4];
+    int combined_matrices_offset; /* 0x58 */
+    int model_matrices_offset;    /* 0x5C */
+} JntModelMatrixResource;
+typedef struct JntModelWork {
+    unsigned char unmodeled_000[0x2C];
+    int current_index;                 /* 0x2C */
+    unsigned char unmodeled_030[4];
+    JntModelMatrixResource *model;     /* 0x34 */
+    unsigned char unmodeled_038[0x4c0 - 0x38];
+    unsigned short matrix_index;       /* 0x4C0 */
+    unsigned char unmodeled_4c2[0x7a0 - 0x4c2];
+    JntInterpMatrix *matrix_buffer;    /* 0x7A0 */
+} JntModelWork;
+static inline JntInterpMatrix *jntMatrixAt(void *base, int index)
+{
+    return (JntInterpMatrix *)((index << 6) + (unsigned int)base);
+}
+static inline void jntCopyMatrix(JntInterpMatrix *destination, const JntInterpMatrix *source)
+{
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n\t"
+        "sq $2, 0(%0)\n\t"
+        "lq $2, 16(%1)\n\t"
+        "sq $2, 16(%0)\n\t"
+        "lq $2, 32(%1)\n\t"
+        "sq $2, 32(%0)\n\t"
+        "lq $2, 48(%1)\n\t"
+        "sq $2, 48(%0)"
+        : : "r"(destination), "r"(source) : "$2", "memory");
+}
+void MATRIX_convert4(float destination[4][4], float source[4][4]);
+void xglMatrixMul(float destination[4][4], float left[4][4], float right[4][4]);
+
+void *JNT_setMDLMatrix(void *work_area, void *channel_area)
+{
+    JntModelWork *work = (JntModelWork *)work_area;
+    JntStaticChannel *channel = (JntStaticChannel *)channel_area;
+    JntModelMatrixResource *model = work->model;
+    JntStaticChannel *next_channel = channel + 1;
+
+    if (model == 0) {
+        return next_channel;
+    }
+    switch (channel->type) {
+    case 0:
+    case 1:
+    case 3:
+    case 4:
+        break;
+    case 5:
+        MATRIX_convert4(work->matrix_buffer[work->current_index].elements,
+                        work->matrix_buffer[work->current_index].elements);
+        {
+            unsigned short matrix_index = work->matrix_index;
+            int current_index = work->current_index;
+            unsigned char *matrices = (unsigned char *)model +
+                model->matrices_offset;
+            JntInterpMatrix *destination = jntMatrixAt(matrices, matrix_index);
+            JntInterpMatrix *source = jntMatrixAt(work->matrix_buffer, current_index);
+
+            jntCopyMatrix(destination, source);
+        }
+        work->matrix_index++;
+        break;
+    case 2:
+        MATRIX_convert4(work->matrix_buffer[work->current_index].elements,
+                        work->matrix_buffer[work->current_index].elements);
+        xglMatrixMul(
+            (float (*)[4])((unsigned char *)model + model->combined_matrices_offset +
+                (work->matrix_index << 6)),
+            work->matrix_buffer[work->current_index].elements,
+            (float (*)[4])((unsigned char *)model + model->model_matrices_offset +
+                (work->matrix_index << 6)));
+        work->matrix_index++;
+        break;
+    case 6:
+        work->matrix_index++;
+        break;
+    }
+    work->current_index++;
+    return next_channel;
+}
 
 void *JNT_setMDLMatrix(void *work, void *p);
 

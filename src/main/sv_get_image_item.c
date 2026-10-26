@@ -1238,7 +1238,139 @@ int sefClipViewVolume(void *scheduler, void *effect)
     return sefClipViewVolumeA(scheduler);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2D);
+extern unsigned long long alphaTbl_004CBE78[4];
+typedef struct SvSpriteParticle {
+    unsigned char unmodeled_00[0xC0];
+    float centerX;
+    float centerY;
+    unsigned char unmodeled_C8[0xF8 - 0xC8];
+    float angle;
+    unsigned char unmodeled_FC[4];
+    float scaleX;
+    float scaleY;
+    unsigned char unmodeled_108[0x140 - 0x108];
+    SGsGifRecord packedColor;
+    unsigned char unmodeled_150[18];
+    unsigned char blendMode;
+    unsigned char unmodeled_163[0x178 - 0x163];
+    unsigned long long texture;
+    float halfWidth;
+    float halfHeight;
+    unsigned char unmodeled_188[0x240 - 0x188];
+    float offsetX;
+    float offsetY;
+    unsigned char unmodeled_248[0x280 - 0x248];
+} SvSpriteParticle;
+typedef struct SvSpriteVertex {
+    float x;
+    float y;
+} SvSpriteVertex;
+static inline float svSpriteExtentPixels(float extent, float scale)
+{
+    float scaledExtent = extent * scale;
+    return scaledExtent * 100.0f;
+}
+static inline void svAppendSpriteVertex(SGsPacket *packet,
+                                         const Quadword *textureCoordinates,
+                                         const SvSpriteVertex *vertex,
+                                         float centerX, float centerY)
+{
+    int screenX;
+    int screenY;
+
+    packet->base[packet->count].quad = *textureCoordinates;
+    packet->count++;
+    screenX = (int)(centerX + vertex->x) * 16 + 0x7000;
+    screenY = (int)(centerY + vertex->y) * 16 + 0x7200;
+    packet->base[packet->count].word[0] = screenX;
+    packet->base[packet->count].word[1] = screenY;
+    packet->base[packet->count].word[2] = 0xFFFFFA;
+    packet->base[packet->count].word[3] = 0;
+    packet->count++;
+}
+
+void sefDrawParticle2D(SvSpriteParticle *particle, SGsPacket *packet,
+                      const Quadword textureCoordinates[4])
+{
+    float scaleX;
+    float scaleY;
+    float halfWidth;
+    float halfHeight;
+    float centerX;
+    float centerY;
+    float offsetX;
+    float offsetY;
+    float angle;
+    float sine;
+    float cosine;
+    float cornerX;
+    float cornerY;
+    SvSpriteVertex vertex;
+    unsigned long long gifRegisters;
+    unsigned long long gifTag;
+
+    gifRegisters = 0x0525252521EEULL;
+    packet->loopCount = 1;
+    packet->tagIndex = packet->count;
+    packet->base[packet->count].dword[1] = gifRegisters;
+    gifTag = 0xB02A400000008000ULL;
+    packet->base[packet->count].dword[0] = gifTag;
+    packet->count++;
+    packet->base[packet->count].dword[0] = particle->texture;
+    packet->base[packet->count].dword[1] = 6;
+    packet->count++;
+    packet->base[packet->count].dword[0] = alphaTbl_004CBE78[particle->blendMode];
+    packet->base[packet->count].dword[1] = 66;
+    packet->count++;
+    packet->base[packet->count].quad = particle->packedColor.quad;
+    packet->count++;
+
+    scaleX = particle->scaleX;
+    scaleY = particle->scaleY;
+    halfWidth = particle->halfWidth * scaleX;
+    halfHeight = svSpriteExtentPixels(particle->halfHeight, scaleY);
+    centerX = particle->centerX * 10.0f;
+    centerY = particle->centerY * 10.0f;
+    offsetX = particle->offsetX;
+    offsetY = particle->offsetY;
+    centerX += 256.0f;
+    centerY += 224.0f;
+    offsetX *= scaleX;
+    offsetY *= scaleY;
+    halfWidth *= 100.0f;
+    angle = particle->angle;
+    __asm__ __volatile__(
+        "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0x20\n\t"
+        "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
+        : "=f"(sine) : "f"(angle) : "$8", "memory");
+    __asm__ __volatile__(
+        "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0xE8\n\t"
+        "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
+        : "=f"(cosine) : "f"(angle) : "$8", "memory");
+
+    cornerX = offsetX - halfWidth;
+    cornerY = offsetY - halfHeight;
+    vertex.x = cornerX * cosine - cornerY * sine;
+    vertex.y = cornerX * sine + cornerY * cosine;
+    svAppendSpriteVertex(packet, &textureCoordinates[0], &vertex, centerX, centerY);
+    cornerX = offsetX + halfWidth;
+    cornerY = offsetY - halfHeight;
+    vertex.x = cornerX * cosine - cornerY * sine;
+    vertex.y = cornerX * sine + cornerY * cosine;
+    svAppendSpriteVertex(packet, &textureCoordinates[1], &vertex, centerX, centerY);
+    cornerX = offsetX - halfWidth;
+    cornerY = offsetY + halfHeight;
+    vertex.x = cornerX * cosine - cornerY * sine;
+    vertex.y = cornerX * sine + cornerY * cosine;
+    svAppendSpriteVertex(packet, &textureCoordinates[2], &vertex, centerX, centerY);
+    cornerX = offsetX + halfWidth;
+    cornerY = offsetY + halfHeight;
+    vertex.x = cornerX * cosine - cornerY * sine;
+    vertex.y = cornerX * sine + cornerY * cosine;
+    svAppendSpriteVertex(packet, &textureCoordinates[3], &vertex, centerX, centerY);
+    packet->loopCount = 1;
+    packet->base[packet->tagIndex].dword[0] |= packet->loopCount;
+}
 
 static void svRotMatrixScale(void *dst, const void *src)
 {
@@ -1398,7 +1530,192 @@ void svDrawModel(SvModelDrawItem *model, void *place)
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle2);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticle);
+typedef struct SvParticleDrawContext {
+    Matrix4 *place;
+    Vector4 *scale;
+    const Quadword *textureCoordinates;
+    const Quadword *gifRegisters;
+    float scaleMultiplier;
+    int drawVariant;
+} SvParticleDrawContext;
+
+typedef struct SvQuadImageParameters {
+    unsigned char unmodeled_00[8];
+    unsigned long long texture;
+    float halfWidth;
+    float halfHeight;
+} SvQuadImageParameters;
+typedef struct SvQuadParticle {
+    Matrix4 localTransform;
+    unsigned char unmodeled_40[248 - 64];
+    float angle;
+    unsigned char unmodeled_FC[320 - 252];
+    SGsGifRecord packedColor;
+    unsigned char unmodeled_150[18];
+    unsigned char blendMode;
+    unsigned char unmodeled_163[368 - 355];
+    SvQuadImageParameters imageParameters;
+    unsigned char unmodeled_188[576 - 392];
+    Vector4 planeOffset;
+    unsigned char unmodeled_250[640 - 592];
+} SvQuadParticle;
+static inline const SvQuadImageParameters *svPrepareParticleImage(
+    SGsGifRecord *header, SvQuadParticle *particle, Quadword gifRegisters,
+    unsigned int textureRegister, unsigned int alphaRegister)
+{
+    const SvQuadImageParameters *image = &particle->imageParameters;
+    unsigned long long textureValue;
+
+    header->quad = gifRegisters;
+    textureValue = image->texture;
+    header[1].dword[1] = textureRegister;
+    header[1].dword[0] = textureValue;
+    header[2].dword[0] = alphaTbl_004CBE78[particle->blendMode];
+    header[2].dword[1] = alphaRegister;
+    header[3].quad = particle->packedColor.quad;
+    return image;
+}
+
+void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
+                     SGsPacket *packet, SvParticleDrawContext *context)
+{
+    SGsGifRecord *header;
+    SGsGifRecord *vertices;
+    SGsGifRecord *xyzVertices;
+    const SvQuadImageParameters *image;
+    const Quadword *textureCoordinates;
+    const Vector4 *scale;
+    float angle;
+    float halfWidth;
+    float halfHeight;
+    int clipFlags;
+
+    scale = context->scale;
+    header = &packet->base[packet->count];
+    vertices = &header[4];
+    angle = particle->angle;
+    __asm__ __volatile__(
+        "lqc2 vf8, 0(%0)\n\t"
+        "vmulax.xyzw ACCxyzw, vf13xyzw, vf16x\n\t"
+        "vmadday.xyzw ACCxyzw, vf14xyzw, vf16y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf15xyzw, vf16z\n\t"
+        "vmaddw.xyzw vf9xyzw, vf8xyzw, vf16w\n\t"
+        "vmulax.xyzw ACCxyzw, vf13xyzw, vf17x\n\t"
+        "vmadday.xyzw ACCxyzw, vf14xyzw, vf17y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf15xyzw, vf17z\n\t"
+        "vmaddw.xyzw vf10xyzw, vf8xyzw, vf17w\n\t"
+        "vmulax.xyzw ACCxyzw, vf13xyzw, vf18x\n\t"
+        "vmadday.xyzw ACCxyzw, vf14xyzw, vf18y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf15xyzw, vf18z\n\t"
+        "vmaddw.xyzw vf11xyzw, vf8xyzw, vf18w\n\t"
+        "vmulax.xyzw ACCxyzw, vf13xyzw, vf19x\n\t"
+        "vmadday.xyzw ACCxyzw, vf14xyzw, vf19y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf15xyzw, vf19z\n\t"
+        "vmaddw.xyzw vf12xyzw, vf8xyzw, vf19w\n\t"
+        "mfc1 $8, %2\n\tqmtc2 $8, vf4\n\tvcallms 0xe8\n\t"
+        "vaddx.x vf7x, vf0x, vf1x\n\tqmtc2 $8, vf4\n\t"
+        "vcallms 0x20\n\tvaddx.x vf8x, vf0x, vf1x\n\t"
+        "lqc2 vf1, 0(%1)\n\t"
+        "vmulax.xyzw ACCxyzw, vf9xyzw, vf7x\n\t"
+        "vmaddx.xyzw vf5xyzw, vf10xyzw, vf8x\n\t"
+        "vmulax.xyzw ACCxyzw, vf10xyzw, vf7x\n\t"
+        "vmsubx.xyzw vf6xyzw, vf9xyzw, vf8x\n\t"
+        "vmulz.xyzw vf11xyzw, vf11xyzw, vf1z\n\t"
+        "vmulw.xyzw vf12xyzw, vf12xyzw, vf1w\n\t"
+        "vmulx.xyzw vf9xyzw, vf5xyzw, vf1x\n\t"
+        "vmuly.xyzw vf10xyzw, vf6xyzw, vf1y\n\t"
+        "vmulax.xyzw ACCxyzw, vf21xyzw, vf9x\n\t"
+        "vmadday.xyzw ACCxyzw, vf22xyzw, vf9y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf9z\n\t"
+        "vmaddw.xyzw vf27xyzw, vf24xyzw, vf9w\n\t"
+        "vmulax.xyzw ACCxyzw, vf21xyzw, vf10x\n\t"
+        "vmadday.xyzw ACCxyzw, vf22xyzw, vf10y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf10z\n\t"
+        "vmaddw.xyzw vf28xyzw, vf24xyzw, vf10w\n\t"
+        "vmulax.xyzw ACCxyzw, vf21xyzw, vf11x\n\t"
+        "vmadday.xyzw ACCxyzw, vf22xyzw, vf11y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf11z\n\t"
+        "vmaddw.xyzw vf29xyzw, vf24xyzw, vf11w\n\t"
+        "vmulax.xyzw ACCxyzw, vf21xyzw, vf12x\n\t"
+        "vmadday.xyzw ACCxyzw, vf22xyzw, vf12y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf12z\n\t"
+        "vmaddw.xyzw vf30xyzw, vf24xyzw, vf12w"
+        : : "r"(position), "r"(scale), "f"(angle)
+        : "$8", "memory");
+
+    __asm__ __volatile__("" : : "r"(vertices));
+    image = svPrepareParticleImage(header, particle, *context->gifRegisters,
+                                   6, 66);
+    halfWidth = image->halfWidth;
+    halfHeight = image->halfHeight;
+    __asm__ __volatile__(
+        "lqc2 vf5, 0(%2)\n\tmfc1 $2, %0\n\tmfc1 $3, %1\n\t"
+        "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
+        "vmove.zw vf1zw, vf5zw\n\tvmove.zw vf2zw, vf5zw\n\t"
+        "vmove.zw vf3zw, vf5zw\n\tvmove.zw vf4zw, vf5zw\n\t"
+        "vsubx.x vf1x, vf5x, vf6x\n\tvaddx.x vf2x, vf5x, vf6x\n\t"
+        "vsubx.x vf3x, vf5x, vf6x\n\tvaddx.x vf4x, vf5x, vf6x\n\t"
+        "vaddx.y vf1y, vf5y, vf7x\n\tvaddx.y vf2y, vf5y, vf7x\n\t"
+        "vsubx.y vf3y, vf5y, vf7x\n\tvsubx.y vf4y, vf5y, vf7x"
+        : : "f"(halfWidth), "f"(halfHeight), "r"(&particle->planeOffset)
+        : "$2", "$3", "memory");
+
+    textureCoordinates = context->textureCoordinates;
+    xyzVertices = &vertices[1];
+    vertices[0].quad = textureCoordinates[0];
+    vertices[2].quad = textureCoordinates[1];
+    vertices[4].quad = textureCoordinates[2];
+    vertices[6].quad = textureCoordinates[3];
+    /* All XYZ2 stores finish before the clip flags are returned to C. */
+    __asm__ __volatile__(
+        "ctc2 $0, $vi18\n\t"
+        "vmulax.xyzw ACCxyzw, vf27xyzw, vf1x\n\t"
+        "vmadday.xyzw ACCxyzw, vf28xyzw, vf1y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf29xyzw, vf1z\n\t"
+        "vmaddw.xyzw vf9xyzw, vf30xyzw, vf0w\n\t"
+        "vmulax.xyzw ACCxyzw, vf27xyzw, vf2x\n\t"
+        "vmadday.xyzw ACCxyzw, vf28xyzw, vf2y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf29xyzw, vf2z\n\t"
+        "vmaddw.xyzw vf10xyzw, vf30xyzw, vf0w\n\t"
+        "vclipw.xyz vf9xyz, vf9w\n\tvdiv Q, vf0w, vf9w\n\t"
+        "vmulax.xyzw ACCxyzw, vf27xyzw, vf3x\n\t"
+        "vmadday.xyzw ACCxyzw, vf28xyzw, vf3y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf29xyzw, vf3z\n\t"
+        "vmaddw.xyzw vf11xyzw, vf30xyzw, vf0w\n\t"
+        "vclipw.xyz vf10xyz, vf10w\n\t"
+        "vmulax.xyzw ACCxyzw, vf27xyzw, vf4x\n\t"
+        "vmadday.xyzw ACCxyzw, vf28xyzw, vf4y\n\t"
+        "vmaddaz.xyzw ACCxyzw, vf29xyzw, vf4z\n\t"
+        "vmaddw.xyzw vf12xyzw, vf30xyzw, vf0w\n\t"
+        "vclipw.xyz vf11xyz, vf11w\n\t"
+        "vmulq.xyz vf9xyz, vf9xyz, Q\n\tvmulq.xyz vf10xyz, vf10xyz, Q\n\t"
+        "vmulq.xyz vf11xyz, vf11xyz, Q\n\tvclipw.xyz vf12xyz, vf12w\n\t"
+        "vmulq.xyz vf12xyz, vf12xyz, Q\n\t"
+        "vmulaw.xyzw ACCxyzw, vf26xyzw, vf0w\n\t"
+        "vmadd.xyzw vf1xyzw, vf9xyzw, vf25xyzw\n\t"
+        "vmulaw.xyzw ACCxyzw, vf26xyzw, vf0w\n\t"
+        "vmadd.xyzw vf2xyzw, vf10xyzw, vf25xyzw\n\t"
+        "vmulaw.xyzw ACCxyzw, vf26xyzw, vf0w\n\t"
+        "vmadd.xyzw vf3xyzw, vf11xyzw, vf25xyzw\n\t"
+        "vmulaw.xyzw ACCxyzw, vf26xyzw, vf0w\n\t"
+        "vmadd.xyzw vf4xyzw, vf12xyzw, vf25xyzw\n\t"
+        "vftoi4.xy vf9xy, vf1xy\n\tvftoi4.xy vf10xy, vf2xy\n\t"
+        "vftoi4.xy vf11xy, vf3xy\n\tvftoi4.xy vf12xy, vf4xy\n\t"
+        "vftoi0.zw vf9zw, vf1zw\n\tvftoi0.zw vf10zw, vf2zw\n\t"
+        "vftoi0.zw vf11zw, vf3zw\n\tvftoi0.zw vf12zw, vf4zw\n\t"
+        "vsub.w vf9w, vf0w, vf0w\n\tvsub.w vf10w, vf0w, vf0w\n\t"
+        "vsub.w vf11w, vf0w, vf0w\n\tvsub.w vf12w, vf0w, vf0w\n\t"
+        "sqc2 vf9, 0(%1)\n\tsqc2 vf10, 32(%1)\n\t"
+        "sqc2 vf11, 64(%1)\n\tsqc2 vf12, 96(%1)\n\tcfc2.ni %0, $vi18"
+        : "=r"(clipFlags) : "r"(xyzVertices) : "memory");
+    if (clipFlags == 0) {
+        int tagIndex = packet->count;
+
+        packet->tagIndex = tagIndex;
+        packet->count = tagIndex + 12;
+        header->dword[0] |= 1;
+    }
+}
 
 typedef struct SvParticleEffect {
     unsigned char unmodeled_00[4];
@@ -1414,14 +1731,6 @@ typedef struct SvParticleEffect {
     unsigned char unmodeled_800[0x812 - 0x800];
     unsigned short flags;
 } SvParticleEffect;
-typedef struct SvParticleDrawContext {
-    Matrix4 *place;
-    Vector4 *scale;
-    const Quadword *textureCoordinates;
-    const Quadword *gifRegisters;
-    float scaleMultiplier;
-    int drawVariant;
-} SvParticleDrawContext;
 extern Matrix4 _invView;
 extern Matrix4 _svUnitMatrix;
 extern const Quadword stqTbl_004CBEA0[4];
@@ -1533,7 +1842,181 @@ void sefDrawParticleList(SvParticleEffect *effect)
 
 INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticleListCf);
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawSchedulerEffect);
+typedef struct SvParticleListCfContext {
+    Matrix4 *place;
+    Vector4 *scaledScale;
+    const Quadword *textureCoordinates;
+    const Quadword *gifRegisters;
+    float scaleMultiplier;
+    int drawVariant;
+    unsigned char unmodeled_18[8];
+    int schedulerVariant;
+} SvParticleListCfContext;
+typedef struct SvSchedulerEffectGroup {
+    signed char effectIds[0x20];
+    unsigned char unmodeled_20[0x0C];
+    short effectCount;
+    unsigned char unmodeled_2e[2];
+} SvSchedulerEffectGroup;
+typedef struct SvSchedulerEffectRecord {
+    Quadword transform[4];
+    Quadword localTransform[4];
+    Quadword packetInfo;
+    unsigned char unmodeled_90[0x10];
+    float localScale;
+    unsigned char unmodeled_a4[0x0C];
+    SvSchedulerEffectGroup groups[0x20];
+    int inUse;
+    unsigned char unmodeled_6b4[8];
+    void *transformFlagA;
+    unsigned char unmodeled_6c0[4];
+    void *transformFlagB;
+    unsigned char unmodeled_6c8[0x3C0];
+    float scaleMultiplier;
+    unsigned int flags;
+    unsigned char unmodeled_a90[10];
+    signed char active;
+    unsigned char unmodeled_a9b[0x15];
+} SvSchedulerEffectRecord;
+typedef struct SvBattleEffectData {
+    unsigned char unmodeled_00[0x30];
+    Quadword packetInfo;
+    unsigned char unmodeled_40[0x1DC];
+    float scaleMultiplier;
+    unsigned char unmodeled_220[4];
+    unsigned int flags;
+    unsigned char unmodeled_228[4];
+    unsigned int partialFlags;
+} SvBattleEffectData;
+extern Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector);
+extern Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right);
+extern unsigned char *sefGetBattleData(void);
+extern unsigned char *sefGetLineAdr(int lineIndex);
+extern float sefGetMatrixScale(float *matrix);
+extern StudioCamera *xglStudioGetActiveCamera(void);
+void sefDrawParticleListCf(SvParticleEffect *effect, SvParticleListCfContext *context, SvSchedulerEffectRecord *scheduler);
+
+static void sefDrawSchedulerEffect(int schedulerIndex)
+{
+    SvSchedulerEffectRecord *scheduler =
+        (SvSchedulerEffectRecord *)(sefGetScheduler() + schedulerIndex * 0xAB0);
+    SvBattleEffectData *battleData = (SvBattleEffectData *)sefGetBattleData();
+    StudioCamera *camera;
+    int drawMode;
+    int groupIndex;
+    int effectIndex;
+
+    if (scheduler->inUse == 0 || scheduler->active == 0) {
+        return;
+    }
+
+    camera = xglStudioGetActiveCamera();
+    __asm__ __volatile__(
+        "lqc2 vf21, 0(%0)\n\t"
+        "lqc2 vf22, 16(%0)\n\t"
+        "lqc2 vf23, 32(%0)\n\t"
+        "lqc2 vf24, 48(%0)"
+        : : "r"(&camera->viewMatrix) : "memory");
+    __asm__ __volatile__(
+        "lqc2 vf25, 0(%0)\n\t"
+        "lqc2 vf26, 0(%1)"
+        : : "r"(&camera->screenScale), "r"(&camera->screenOffset) : "memory");
+
+    battleData->flags = scheduler->flags;
+    battleData->partialFlags = scheduler->flags & 2;
+    if ((scheduler->flags & 2) == 0 || (drawMode = _draw3D) == 1) {
+        __asm__ __volatile__(
+            "lq $8, 0(%1)\n\t"
+            "sq $8, 0(%0)"
+            : : "r"(&battleData->packetInfo), "r"(&scheduler->packetInfo)
+            : "$8", "memory");
+        for (groupIndex = 0; groupIndex < 32; groupIndex++) {
+            SvSchedulerEffectGroup *group = &scheduler->groups[groupIndex];
+
+            if (group->effectCount == 0) {
+                continue;
+            }
+            for (effectIndex = 0; effectIndex < 32; effectIndex++) {
+                int lineIndex = group->effectIds[effectIndex];
+
+                if (lineIndex >= 0) {
+                    sefDrawParticleList((SvParticleEffect *)sefGetLineAdr(lineIndex));
+                }
+            }
+        }
+    } else {
+        Quadword localTransform[4];
+        Vector4 position;
+        SvParticleListCfContext context;
+        float matrixScale;
+        const Quadword *gifRegisters;
+
+        context.textureCoordinates = stqTbl_004CBEA0;
+        gifRegisters = &_svRegData;
+        context.schedulerVariant = (unsigned short)scheduler->flags & 0x10;
+        context.gifRegisters = gifRegisters;
+        context.place = (Matrix4 *)localTransform;
+        if (scheduler->transformFlagA != 0 || scheduler->transformFlagB != 0) {
+            MMathMulMatrix((Matrix4 *)localTransform,
+                           (const Matrix4 *)scheduler->transform,
+                           (const Matrix4 *)scheduler->localTransform);
+            matrixScale = sefGetMatrixScale((float *)localTransform);
+        } else {
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "lq $9, 16(%1)\n\t"
+                "lq $10, 32(%1)\n\t"
+                "lq $11, 48(%1)\n\t"
+                "sq $8, 0(%0)\n\t"
+                "sq $9, 16(%0)\n\t"
+                "sq $10, 32(%0)\n\t"
+                "sq $11, 48(%0)"
+                : : "r"(localTransform), "r"(scheduler->localTransform)
+                : "$8", "$9", "$10", "$11", "memory");
+            matrixScale = scheduler->localScale;
+        }
+        battleData->scaleMultiplier = scheduler->scaleMultiplier * matrixScale;
+
+        for (groupIndex = 0; groupIndex < 32; groupIndex++) {
+            SvSchedulerEffectGroup *group = &scheduler->groups[groupIndex];
+
+            if (group->effectCount == 0) {
+                continue;
+            }
+            for (effectIndex = 0; effectIndex < 32; effectIndex++) {
+                int lineIndex = group->effectIds[effectIndex];
+
+                if (lineIndex >= 0) {
+                    SvParticleEffect *effect =
+                        (SvParticleEffect *)sefGetLineAdr(lineIndex);
+                    Vector4 *effectPosition = &effect->position;
+
+                    context.place = (Matrix4 *)localTransform;
+                    context.scaleMultiplier = matrixScale;
+                    if (*effect->renderDomainA == 3 || *effect->renderDomainB == 3) {
+                        char *base = (char *)&_imageMapper.typeLists[0].size;
+                        int offset = _nowImage * 8 + 369760;
+                        SvReferenceImageSlot *slot = (SvReferenceImageSlot *)(base + offset);
+
+                        _nEffect2D++;
+                        slot->words[0]++;
+                    } else if ((effect->flags & 0x400) != 0) {
+                        sefDrawParticleListCf(effect, &context, scheduler);
+                    } else {
+                        MMathApplyMatrix(&position, (Matrix4 *)localTransform, effectPosition);
+                        position.w = battleData->scaleMultiplier;
+                        if (context.schedulerVariant != 0 &&
+                            drawMode == 0 &&
+                            sefClipViewVolume(&position, camera) != 0) {
+                            continue;
+                        }
+                        sefDrawParticleListCf(effect, &context, scheduler);
+                    }
+                }
+            }
+        }
+    }
+}
 
 static void svDrawSchedulerBlk(int eftCate, int eftNo)
 {

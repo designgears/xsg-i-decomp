@@ -112,7 +112,163 @@ struct NmlFilterGsRegisterEntry {
     u64 registerId;
 };
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterGunosys);
+struct NmlFilterGsPair {
+    union { u64 value; } payload;
+    union { u64 value; } registerSlot;
+};
+typedef int NmlFilterGridVector[4] __attribute__((aligned(16)));
+enum {
+    NML_GRID_X,
+    NML_GRID_Y,
+    NML_GRID_U,
+    NML_GRID_V
+};
+struct NmlFilterGridPoint {
+    NmlFilterGridVector original;
+    NmlFilterGridVector displaced;
+};
+struct NmlFilterModelView {
+    unsigned char unmodeled_000[0x1e0];
+    float filterAlpha;
+    float filterAmplitude;
+    unsigned char unmodeled_1e8[0x234 - 0x1e8];
+    u32 filterFlags;
+};
+float xglSin(float);
+float xglCos(float);
+void nmlPacketGsInit(void);
+void packet_gs_entry64(int, void *);
+void nmlPacketAddGsFrame(int, int);
+void nmlPacketAddGsFBA(int);
+void nmlPacketAddGsFlushWide(void);
+
+static void nmlModelSetFilterGunosys(int *modelArg, int flags, int count)
+{
+    int entryCount = 0;
+    const struct NmlFilterModelView *model = (const struct NmlFilterModelView *)modelArg;
+    struct NmlFilterGridPoint grid[4][5];
+    struct NmlFilterGsPair *packet = (struct NmlFilterGsPair *)0x70000000;
+    struct NmlFilterGsPair *alphaEntry;
+    struct NmlFilterGsPair *clampEntry;
+    struct NmlFilterGsPair *entry;
+    int row;
+    int column;
+    int remaining;
+
+    packet[0].registerSlot.value = 0x3f;
+    packet[0].payload.value = 0;
+    entryCount = 1;
+    if (model->filterFlags & 4) {
+        packet[entryCount].payload.value = (u64)(0x24020000 | (sRender.framebufferPage << 5)) |
+            0x2000000640000000ULL;
+    } else {
+        packet[entryCount].payload.value = (u64)(0x24020000 | (sRender.opaqueTexturePage << 5)) |
+            0x2000000640000000ULL;
+    }
+    packet[entryCount].registerSlot.value = 6;
+    ++entryCount;
+    alphaEntry = (struct NmlFilterGsPair *)0x70000020;
+    entryCount += 2;
+    alphaEntry->payload.value = ((u64)(int)model->filterAlpha << 32) | 100;
+    alphaEntry->registerSlot.value = 0x42;
+    clampEntry = (struct NmlFilterGsPair *)0x70000030;
+    clampEntry->registerSlot.value = 8;
+    clampEntry->payload.value = 0;
+    if (flags) {
+        packet[entryCount].payload.value = 0x5f001;
+    } else {
+        packet[entryCount].payload.value = 0x5d001;
+    }
+    packet[entryCount++].registerSlot.value = 0x47;
+    packet[entryCount].payload.value = 0x3f80000000808080ULL;
+    packet[entryCount].registerSlot.value = 1;
+    ++entryCount;
+
+    {
+        /* Each row has four spans and one closing grid point. */
+        for (row = 0; row < 4; ++row) {
+            for (column = 0; column < 5; ++column) {
+                struct NmlFilterGridPoint *point = &grid[row][column];
+                point->original[NML_GRID_X] = ((column * 128) + 1792) << 4;
+                point->original[NML_GRID_Y] = ((row * 448 / 3) + 1824) << 4;
+                point->original[NML_GRID_U] = (column * 128) << 4;
+                point->original[NML_GRID_V] = (row * 448 / 3) << 4;
+            }
+        }
+    }
+    for (row = 0; row < 4; ++row) {
+        for (column = 0; column < 5; ++column) {
+            struct NmlFilterGridPoint *point = &grid[row][column];
+            float phase = (float)((count + row * 4 + column) % 16) * 0.0625f;
+            float angle = (phase + phase) * 3.1415927f;
+            float sine = xglSin(angle);
+            int displacementX = (int)(model->filterAmplitude * sine);
+            float cosine = xglCos(angle);
+            int displacementY = (int)(model->filterAmplitude * cosine);
+            displacementX = (column & 1) ? displacementX : -displacementX;
+            displacementY = (column & 1) ? displacementY : -displacementY;
+            point->displaced[NML_GRID_X] = point->original[NML_GRID_X] + displacementX;
+            point->displaced[NML_GRID_U] = point->original[NML_GRID_U];
+            point->displaced[NML_GRID_V] = point->original[NML_GRID_V];
+            point->displaced[NML_GRID_Y] = point->original[NML_GRID_Y] + displacementY;
+        }
+    }
+    for (row = 0; row < 3; ++row) {
+        packet[entryCount].payload.value = 0x154;
+        packet[entryCount].registerSlot.value = 0;
+        ++entryCount;
+        packet[entryCount].payload.value = (u64)grid[row][0].displaced[NML_GRID_U] |
+            ((u64)grid[row][0].displaced[NML_GRID_V] << 16);
+        packet[entryCount].registerSlot.value = 3;
+        ++entryCount;
+        packet[entryCount].payload.value = 0x7fffffff00000000ULL | (u64)grid[row][0].displaced[NML_GRID_X] |
+            ((u64)grid[row][0].displaced[NML_GRID_Y] << 16);
+        packet[entryCount].registerSlot.value = 4;
+        ++entryCount;
+        packet[entryCount].payload.value = (u64)grid[row + 1][0].displaced[NML_GRID_U] |
+            ((u64)grid[row + 1][0].displaced[NML_GRID_V] << 16);
+        packet[entryCount].registerSlot.value = 3;
+        ++entryCount;
+        packet[entryCount].payload.value = (u64)grid[row + 1][0].displaced[NML_GRID_X] |
+            0x7fffffff00000000ULL | ((u64)grid[row + 1][0].displaced[NML_GRID_Y] << 16);
+        packet[entryCount].registerSlot.value = 4;
+        ++entryCount;
+        for (column = 1; column < 5; ++column) {
+            packet[entryCount].payload.value = (u64)grid[row][column].displaced[NML_GRID_U] |
+                ((u64)grid[row][column].displaced[NML_GRID_V] << 16);
+            packet[entryCount].registerSlot.value = 3;
+            ++entryCount;
+            packet[entryCount].payload.value = 0x7fffffff00000000ULL | (u64)grid[row][column].displaced[NML_GRID_X] |
+                ((u64)grid[row][column].displaced[NML_GRID_Y] << 16);
+            packet[entryCount].registerSlot.value = 4;
+            ++entryCount;
+            packet[entryCount].payload.value = (u64)grid[row + 1][column].displaced[NML_GRID_U] |
+                ((u64)grid[row + 1][column].displaced[NML_GRID_V] << 16);
+            packet[entryCount].registerSlot.value = 3;
+            ++entryCount;
+            packet[entryCount].payload.value = (u64)grid[row + 1][column].displaced[NML_GRID_X] |
+                0x7fffffff00000000ULL | ((u64)grid[row + 1][column].displaced[NML_GRID_Y] << 16);
+            packet[entryCount].registerSlot.value = 4;
+            ++entryCount;
+        }
+    }
+    nmlPacketGsInit();
+    nmlPacketAddGsFrame(sRender.displayBufferBase, 0);
+    nmlPacketAddGsFBA(0);
+    if (entryCount > 0) {
+        remaining = entryCount;
+        entry = packet;
+        do {
+            --remaining;
+            packet_gs_entry64(entry->registerSlot.value, &entry->payload.value);
+            entry++;
+        } while (remaining != 0);
+    }
+    nmlPacketAddGsFlushWide();
+}
+
+/* v2 */
+/* v3 */
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterStealth);
 
@@ -205,7 +361,361 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
     return lengthSq;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlFilterStealthMake);
+union NmlStealthXYZ {
+    Vector4 vector;
+    struct {
+        int x;
+        int y;
+        int z;
+        int w;
+    };
+};
+union NmlStealthUV {
+    Vector4 vector;
+    struct {
+        int u;
+        int v;
+        int clipFlags;
+        unsigned char unmodeled_0c[4];
+    };
+};
+struct NmlStealthGeometry {
+    Vector4 endpoints[2];
+    float sortClass;
+    unsigned char unmodeled_24[0x0c];
+    union NmlStealthXYZ xyz[14];
+    union NmlStealthUV uv[14];
+};
+struct NmlStealthDescriptor {
+    int firstJoint;
+    int secondJoint;
+    unsigned char unmodeled_08[4];
+    int sortClass;
+    float firstWidth;
+    float secondWidth;
+    float firstExtension;
+    float secondExtension;
+    float longitudinalStretch[4];
+};
+struct NmlStealthJointData {
+    unsigned char unmodeled_00[0x48];
+    int jointCount;
+    unsigned char unmodeled_4c[12];
+    unsigned int jointMatrixOffset;
+    unsigned int jointAuxMatrixOffset;
+};
+union NmlStealthModelView {
+    int slots[200];
+    struct {
+    unsigned char unmodeled_000[0x80];
+    Matrix4 modelToWorld;
+    unsigned char unmodeled_0c0[0x1f0 - 0xc0];
+    Vector4 fallbackSphere;
+    unsigned char unmodeled_200[0x254 - 0x200];
+    struct NmlStealthJointData *jointData;
+    unsigned char unmodeled_258[0x280 - 0x258];
+    struct NmlStealthGeometry *stealthParts[10];
+    } fields;
+};
+extern struct NmlStealthDescriptor s_aStealthDat[10];
+extern struct NmlStealthDescriptor s_inStealthUnitDat;
+extern void *nmlPacketSetAttributeAlloc16N(int records);
+extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
+extern void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
+extern float xglAtan2(float x, float y);
+#define NML_STEALTH_EDGE(vertex, center, centerY, depth, sign, width) { \
+    geometry->xyz[vertex].x = (int)((float)geometry->xyz[center].x sign side.y * (width)); \
+    geometry->xyz[vertex].y = (int)((centerY) sign side.x * (width)); \
+    geometry->xyz[vertex].z = (depth); \
+}
+#define NML_STEALTH_EDGE_UV(vertex, center, centerY, sign, width) { \
+    geometry->uv[vertex].u = (int)((float)geometry->xyz[center].x sign side.y * (width)); \
+    geometry->uv[vertex].v = (int)((centerY) sign side.x * (width)); \
+}
+#define NML_STEALTH_BAND(vertex, center, centerY, depth, edge) { \
+    geometry->xyz[vertex].x = (int)((float)geometry->xyz[center].x * weight + \
+        (float)geometry->xyz[edge].x * (1.0f - weight)); \
+    geometry->xyz[vertex].y = (int)((centerY) * weight + \
+        (float)geometry->xyz[edge].y * (1.0f - weight)); \
+    geometry->xyz[vertex].z = (depth); \
+}
+#define NML_STEALTH_BAND_UV(vertex, center, centerY, edge) { \
+    geometry->uv[vertex].u = (int)((float)geometry->xyz[center].x * weight + \
+        (float)geometry->xyz[edge].x * (1.0f - weight)); \
+    geometry->uv[vertex].v = (int)((centerY) * weight + \
+        (float)geometry->xyz[edge].y * (1.0f - weight)); \
+}
+#define NML_STEALTH_EXTEND_XYZ(vertex, sign, amount) { \
+    geometry->xyz[vertex].x += (int)(sign longitudinal.x * (amount)); \
+    geometry->xyz[vertex].y += (int)(sign longitudinal.y * (amount)); \
+}
+#define NML_STEALTH_EXTEND_UV(vertex, sign, amount) { \
+    geometry->uv[vertex].u += (int)(sign longitudinal.x * (amount)); \
+    geometry->uv[vertex].v += (int)(sign longitudinal.y * (amount)); \
+}
+#define NML_STEALTH_CLIP_ENDPOINT(numerator, denominator) { \
+    float fraction = __builtin_fabsf((float)(numerator) / (float)(denominator)); \
+    float complement = 1.0f - fraction; \
+    uv[outside].u = (int)(fraction * (float)uv[1 - outside].u + complement * (float)uv[outside].u); \
+    uv[outside].v = (int)(fraction * (float)uv[1 - outside].v + complement * (float)uv[outside].v); \
+    xyz[outside].x = (int)(fraction * (float)xyz[1 - outside].x + complement * (float)xyz[outside].x); \
+    xyz[outside].y = (int)(fraction * (float)xyz[1 - outside].y + complement * (float)xyz[outside].y); \
+}
+
+void nmlFilterStealthMake(int partIndex, StudioCamera *camera,
+    int *modelArg, float widthScale)
+{
+    Vector4 direction;
+    Vector4 side;
+    struct {
+        float x;
+        float y;
+    } longitudinal;
+    Vector4 center;
+    Vector4 fallback;
+    struct {
+        int left;
+        int right;
+        int top;
+        int bottom;
+    } clipBounds;
+    union NmlStealthModelView *model = (union NmlStealthModelView *)modelArg;
+    struct NmlStealthJointData *jointData = model->fields.jointData;
+    struct NmlStealthGeometry *geometry;
+    const struct NmlStealthDescriptor *descriptor;
+    Vector4 *firstEndpoint;
+    float firstY;
+    float secondY;
+    float weight;
+    int firstDepth;
+    int secondDepth;
+    int jointCount;
+    int index;
+    union NmlStealthUV *uv;
+
+    geometry = nmlPacketSetAttributeAlloc16N(31);
+    model->fields.stealthParts[partIndex] = geometry;
+    firstEndpoint = &geometry->endpoints[0];
+    jointCount = model->fields.jointData->jointCount;
+    descriptor = &s_aStealthDat[partIndex];
+    if (descriptor->firstJoint < jointCount &&
+        descriptor->secondJoint < jointCount) {
+        _WeightToGlobalPlaceInit(model->fields.modelToWorld);
+        _WeightToGlobalPlaceVec(firstEndpoint,
+            ((Matrix4 *)((const unsigned char *)jointData +
+                jointData->jointMatrixOffset))[descriptor->firstJoint],
+            ((Matrix4 *)((const unsigned char *)jointData +
+                jointData->jointAuxMatrixOffset))[descriptor->firstJoint]);
+        _WeightToGlobalPlaceVec(&geometry->endpoints[1],
+            ((Matrix4 *)((const unsigned char *)jointData +
+                jointData->jointMatrixOffset))[descriptor->secondJoint],
+            ((Matrix4 *)((const unsigned char *)jointData +
+                jointData->jointAuxMatrixOffset))[descriptor->secondJoint]);
+    } else {
+        descriptor = &s_inStealthUnitDat;
+        __asm__ __volatile__(
+            "lq $2,0(%1)\n\t"
+            "sq $2,0(%0)"
+            : : "r"(&fallback), "r"(&model->fields.fallbackSphere) : "$2", "memory");
+        fallback.y -= fallback.w * 0.3f;
+        __asm__ __volatile__(
+            "lq $2,0(%1)\n\t"
+            "sq $2,0(%0)"
+            : : "r"(firstEndpoint), "r"(&fallback) : "$2", "memory");
+        fallback.y += fallback.w * 0.6f;
+        __asm__ __volatile__(
+            "lq $2,0(%1)\n\t"
+            "sq $2,0(%0)"
+            : : "r"(&geometry->endpoints[1]), "r"(&fallback) : "$2", "memory");
+    }
+
+    __asm__ __volatile__(
+        "lqc2 $vf3,0(%1)\n\t"
+        "lqc2 $vf2,0(%0)\n\t"
+        "vadd.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
+        "sqc2 $vf2,0(%2)"
+        : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&center) : "memory");
+    xglVectorScaleXYZ(0.5f, &center, &center);
+    geometry->sortClass = (float)descriptor->sortClass;
+    firstEndpoint->w = _VectorLengthSQ(&camera->position, &center);
+    if (descriptor->firstExtension != 0.0f) {
+        __asm__ __volatile__(
+            "lqc2 $vf3,0(%0)\n\t"
+            "lqc2 $vf2,0(%1)\n\t"
+            "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
+            "sqc2 $vf2,0(%2)"
+            : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&direction) : "memory");
+        xglVectorNormal(&direction, &direction);
+        firstEndpoint->x -= direction.x * descriptor->firstExtension;
+        firstEndpoint->y -= direction.y * descriptor->firstExtension;
+        firstEndpoint->z -= direction.z * descriptor->firstExtension;
+    }
+    if (descriptor->secondExtension != 0.0f) {
+        __asm__ __volatile__(
+            "lqc2 $vf3,0(%0)\n\t"
+            "lqc2 $vf2,0(%1)\n\t"
+            "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
+            "sqc2 $vf2,0(%2)"
+            : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&direction) : "memory");
+        xglVectorNormal(&direction, &direction);
+        geometry->endpoints[1].x += direction.x * descriptor->secondExtension;
+        geometry->endpoints[1].y += direction.y * descriptor->secondExtension;
+        geometry->endpoints[1].z += direction.z * descriptor->secondExtension;
+    }
+
+    _CurSetMatrix(camera->viewMatrix);
+    _CurSetViewScaleTrans(&camera->screenScale.x, &camera->screenOffset.x);
+    _CurRotTransPersClip(&geometry->xyz[0].vector, firstEndpoint);
+    _CurRotTransPersClip(&geometry->xyz[1].vector, &geometry->endpoints[1]);
+    direction.x = (float)geometry->xyz[1].x - (float)geometry->xyz[0].x;
+    direction.y = (float)geometry->xyz[1].y - (float)geometry->xyz[0].y;
+    direction.z = 0.0f;
+    xglVectorNormal(&direction, &direction);
+    side.z = xglAtan2(direction.x, direction.y);
+    side.x = widthScale * xglCos(side.z + 1.5707964f);
+    side.y = widthScale * xglSin(side.z + 1.5707964f);
+    firstY = (float)geometry->xyz[0].y;
+    firstDepth = geometry->xyz[0].z;
+    secondDepth = geometry->xyz[1].z;
+    secondY = (float)geometry->xyz[1].y;
+
+    NML_STEALTH_EDGE(6, 0, firstY, firstDepth, -, descriptor->firstWidth);
+    NML_STEALTH_EDGE(12, 0, firstY, firstDepth, +, descriptor->firstWidth);
+    NML_STEALTH_EDGE(7, 1, secondY, secondDepth, -, descriptor->secondWidth);
+    NML_STEALTH_EDGE(13, 1, secondY, secondDepth, +, descriptor->secondWidth);
+    NML_STEALTH_EDGE_UV(6, 0, firstY, -, descriptor->firstWidth);
+    NML_STEALTH_EDGE_UV(12, 0, firstY, +, descriptor->firstWidth);
+    NML_STEALTH_EDGE_UV(7, 1, secondY, -, descriptor->secondWidth);
+    NML_STEALTH_EDGE_UV(13, 1, secondY, +, descriptor->secondWidth);
+    weight = 0.75f;
+    NML_STEALTH_BAND(4, 0, firstY, firstDepth, 6);
+    NML_STEALTH_BAND(10, 0, firstY, firstDepth, 12);
+    NML_STEALTH_BAND(5, 1, secondY, secondDepth, 7);
+    NML_STEALTH_BAND(11, 1, secondY, secondDepth, 13);
+    weight = 0.9f;
+    NML_STEALTH_BAND_UV(4, 0, firstY, 6);
+    NML_STEALTH_BAND_UV(10, 0, firstY, 12);
+    NML_STEALTH_BAND_UV(5, 1, secondY, 7);
+    NML_STEALTH_BAND_UV(11, 1, secondY, 13);
+    weight = 0.5f;
+    NML_STEALTH_BAND(2, 0, firstY, firstDepth, 6);
+    NML_STEALTH_BAND(8, 0, firstY, firstDepth, 12);
+    NML_STEALTH_BAND(3, 1, secondY, secondDepth, 7);
+    NML_STEALTH_BAND(9, 1, secondY, secondDepth, 13);
+    weight = 0.7f;
+    NML_STEALTH_BAND_UV(2, 0, firstY, 6);
+    NML_STEALTH_BAND_UV(8, 0, firstY, 12);
+    NML_STEALTH_BAND_UV(3, 1, secondY, 7);
+    NML_STEALTH_BAND_UV(9, 1, secondY, 13);
+
+    longitudinal.x = direction.x * descriptor->firstWidth * widthScale;
+    longitudinal.y = direction.y * descriptor->firstWidth * widthScale;
+    NML_STEALTH_EXTEND_XYZ(0, -, descriptor->longitudinalStretch[0]);
+    NML_STEALTH_EXTEND_XYZ(1, +, descriptor->longitudinalStretch[0]);
+    geometry->uv[0].u = geometry->xyz[0].x;
+    geometry->uv[0].v = geometry->xyz[0].y;
+    geometry->uv[1].u = geometry->xyz[1].x;
+    geometry->uv[1].v = geometry->xyz[1].y;
+    NML_STEALTH_EXTEND_XYZ(4, -, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_XYZ(5, +, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_XYZ(10, -, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_XYZ(11, +, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_UV(4, -, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_UV(5, +, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_UV(10, -, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_UV(11, +, descriptor->longitudinalStretch[1]);
+    NML_STEALTH_EXTEND_XYZ(2, -, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_XYZ(3, +, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_XYZ(8, -, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_XYZ(9, +, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_UV(2, -, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_UV(3, +, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_UV(8, -, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_UV(9, +, descriptor->longitudinalStretch[2]);
+    NML_STEALTH_EXTEND_XYZ(6, -, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_XYZ(7, +, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_XYZ(12, -, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_XYZ(13, +, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_UV(6, -, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_UV(7, +, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_UV(12, -, descriptor->longitudinalStretch[3]);
+    NML_STEALTH_EXTEND_UV(13, +, descriptor->longitudinalStretch[3]);
+
+    uv = &geometry->uv[0];
+    for (index = 0; index < 14; index++, uv++) {
+        uv->u -= (4096 - sRender.frameWidth) * 8;
+        uv->v -= (4096 - sRender.frameHeight) * 8;
+        uv->clipFlags = 4;
+    }
+    uv = &geometry->uv[0];
+    {
+        union NmlStealthXYZ *xyz = &geometry->xyz[0];
+
+        for (index = 0; index < 7; index++, xyz += 2, uv += 2) {
+            int outside;
+
+            clipBounds.left = 16;
+            clipBounds.right = (sRender.frameWidth - 1) << 4;
+            clipBounds.bottom = (sRender.frameHeight - 1) << 4;
+            clipBounds.top = 16;
+            if (xyz[0].z < 0) {
+                uv[0].clipFlags = 12;
+            }
+            if (xyz[1].z < 0) {
+                uv[1].clipFlags = 12;
+            }
+            if (uv[0].u < clipBounds.left && uv[1].u < clipBounds.left) {
+                uv[0].clipFlags = 12;
+                uv[1].clipFlags = 12;
+            }
+            if (uv[0].v < clipBounds.top && uv[1].v < clipBounds.top) {
+                uv[0].clipFlags = 12;
+                uv[1].clipFlags = 12;
+            }
+            if (uv[0].u > clipBounds.right && uv[1].u > clipBounds.right) {
+                uv[0].clipFlags = 12;
+                uv[1].clipFlags = 12;
+            }
+            if (uv[0].v > clipBounds.bottom && uv[1].v > clipBounds.bottom) {
+                uv[0].clipFlags = 12;
+                uv[1].clipFlags = 12;
+            }
+
+            outside = 0;
+            if ((uv[0].u < clipBounds.left && uv[1].u > clipBounds.left) ||
+                (outside = (uv[1].u < clipBounds.left &&
+                    uv[0].u > clipBounds.left)) != 0) {
+                NML_STEALTH_CLIP_ENDPOINT(uv[outside].u,
+                    uv[1 - outside].u - uv[outside].u);
+            }
+            outside = 0;
+            if ((uv[0].v < clipBounds.top && uv[1].v > clipBounds.top) ||
+                (outside = (uv[1].v < clipBounds.top &&
+                    uv[0].v > clipBounds.top)) != 0) {
+                NML_STEALTH_CLIP_ENDPOINT(uv[outside].v,
+                    uv[1 - outside].v - uv[outside].v);
+            }
+            outside = 0;
+            if ((uv[0].u > clipBounds.right && uv[1].u < clipBounds.right) ||
+                (outside = (uv[1].u > clipBounds.right &&
+                    uv[0].u < clipBounds.right)) != 0) {
+                NML_STEALTH_CLIP_ENDPOINT(uv[outside].u - clipBounds.right,
+                    uv[outside].u - uv[1 - outside].u);
+            }
+            outside = 0;
+            if ((uv[0].v > clipBounds.bottom && uv[1].v < clipBounds.bottom) ||
+                (outside = (uv[1].v > clipBounds.bottom &&
+                    uv[0].v < clipBounds.bottom)) != 0) {
+                NML_STEALTH_CLIP_ENDPOINT(uv[outside].v - clipBounds.bottom,
+                    uv[outside].v - uv[1 - outside].v);
+            }
+            uv[0].u &= 0x1fff;
+            uv[0].v &= 0x1fff;
+            uv[1].u &= 0x1fff;
+            uv[1].v &= 0x1fff;
+        }
+    }
+}
 
 void nmlFilterSetPacket(int *model, int count)
 {

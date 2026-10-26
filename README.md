@@ -1,6 +1,6 @@
 # Xenosaga Episode I
-[![Recovered](https://img.shields.io/badge/Recovered-7%2C006%20%2F%207%2C645%20%2891.6%25%29-blue)](#progress)
-[![EE](https://img.shields.io/badge/EE%20functions-97.99%25-blue)](#progress)
+[![Recovered](https://img.shields.io/badge/Recovered-7%2C520%20%2F%207%2C645%20%2898.4%25%29-blue)](#progress)
+[![EE](https://img.shields.io/badge/EE%20functions-98.25%25-blue)](#progress)
 [![objdiff code](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&label=objdiff%20code)](https://bytematch.dev/designgears/xsg-i-decomp)
 [![objdiff functions](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=matched_functions&label=objdiff%20functions)](https://bytematch.dev/designgears/xsg-i-decomp)
 
@@ -15,10 +15,10 @@ The Sony SDK and public libraries do not need to be recovered.
 ## Progress
 
 <!-- coverage-report:begin -->
-Recovered 7,006 of 7,645 in-scope game function(s) (91.642%).
+Recovered 7,520 of 7,645 in-scope game function(s) (98.365%).
 
-- `exact_c` (pure C): 6,598 function(s)
-- `exact_c_with_asm`: 403 function(s)
+- `exact_c` (pure C): 7,106 function(s)
+- `exact_c_with_asm`: 409 function(s)
 - `exact_asm`: 5 function(s)
 - `exact_vu_microcode`: no accepted VU microprogram
 - empty-body functions: 0 of the counted function(s) are 8-byte `jr ra; nop` bodies
@@ -28,20 +28,20 @@ Recovered 7,006 of 7,645 in-scope game function(s) (91.642%).
   contract, independently reviewed: config/units and config/vu-build.json are not tracked.
 <!-- coverage-report:end -->
 
-The `objdiff` badges and the ByteMatch map are stricter: they weigh code bytes, count the
-unbuilt IOP modules, and give partial credit to ~230 functions that are byte-identical in the
+The `objdiff` badges and the ByteMatch map are stricter: they weigh code bytes and give
+partial credit to ~230 functions that are byte-identical in the
 linked build but whose original-side disassembly lacks some relocations and literal names.
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
-| NTSC-U | `SLUS_204.69` | 3,580 / 3,671 | 97.521% |
+| NTSC-U | `SLUS_204.69` | 3,599 / 3,671 | 98.039% |
 | NTSC-U | `OV01.OVL` | 1,053 / 1,081 | 97.410% |
 | NTSC-U | `OV02.OVL` | 108 / 110 | 98.182% |
 | NTSC-U | `OV10.OVL` | 357 / 361 | 98.892% |
 | NTSC-U | `OV11.OVL` | 137 / 139 | 98.561% |
 | NTSC-U | `OV12.OVL` | 1,771 / 1,788 | 99.049% |
-| NTSC-U | `SSD.IRX` | 0 / 442 | 0.000% |
-| NTSC-U | `RSSD.IRX` | 0 / 53 | 0.000% |
+| NTSC-U | `SSD.IRX` | 442 / 442 | 100.000% |
+| NTSC-U | `RSSD.IRX` | 53 / 53 | 100.000% |
 
 [![Progress map](https://bytematch.dev/designgears/xsg-i-decomp.svg?w=950&h=475)](https://bytematch.dev/designgears/xsg-i-decomp)
 

@@ -47,4 +47,78 @@ struct MenuShopWorkData {
 
 extern MenuShopWorkData *MenuShopWork;
 
+/* MenuShopSelect work (ported from upstream): two command panes and one
+ * yes/no pane, each a 0x194-byte WindowDX followed by its panel. */
+typedef struct MenuShopSelectWindow MenuShopSelectWindow;
+struct MenuShopSelectWindow {
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    const char *tag_id;
+    unsigned char state;
+    unsigned char unmodeled_11[3];
+    void (*close_callback)(MenuShopSelectWindow *window, void *arg);
+    void *close_callback_arg;
+    unsigned char unmodeled_1c[0x194 - 0x1c];
+};
+
+typedef struct MenuShopSelectCommand {
+    const char *text;
+    unsigned char unmodeled_04[4];
+    unsigned char locked;
+    unsigned char unmodeled_09[3];
+} MenuShopSelectCommand;
+
+typedef struct MenuShopCommandPanel {
+    unsigned char unmodeled_00[2];
+    unsigned short displayMode;
+    int cursor;
+    unsigned char unmodeled_08[4];
+    unsigned char unmodeled_0c[4];
+    MenuShopSelectCommand *commands;
+    unsigned char unmodeled_14[1508];
+} MenuShopCommandPanel;
+
+typedef enum MenuShopChoiceCursor {
+    MENU_SHOP_CHOICE_FIRST = 0
+} MenuShopChoiceCursor;
+
+typedef struct MenuShopChoicePanel {
+    unsigned short unmodeled_00;
+    unsigned short displayMode : 16;
+    MenuShopChoiceCursor cursor;
+    const char *choices;
+    const char *prompt;
+    int unmodeled_10;
+    void *unmodeled_14;
+    unsigned char unmodeled_18[1504];
+} MenuShopChoicePanel;
+
+typedef struct MenuShopCommandPane {
+    MenuShopSelectWindow window;
+    MenuShopCommandPanel panel;
+    MenuShopSelectCommand commands[8];
+} MenuShopCommandPane;
+
+typedef struct MenuShopChoicePane {
+    MenuShopSelectWindow window;
+    MenuShopChoicePanel panel;
+} MenuShopChoicePane;
+
+typedef struct MenuShopSelectWork {
+    unsigned char unmodeled_00[3];
+    unsigned char popupFlags;
+    int depth;
+    MenuShopCommandPane menus[2];
+    MenuShopChoicePane choices[1];
+} MenuShopSelectWork;
+
+extern const char *msg00_1_0036DB30[8];
+extern const char *msg01_2_0036DB50[4];
+extern const char D_004DB168[];
+extern const char D_004DB170[];
+extern int MenuSelectWindow();
+
 #endif /* SRC_MAIN_MENU_SHOP_H */

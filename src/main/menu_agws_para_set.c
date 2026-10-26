@@ -1314,7 +1314,407 @@ void AgwsWeapon2Main(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_agws_para_set", AgwsNameMain);
+typedef struct AgwsWeapon2Cursol {
+    unsigned char state;                    /* +0x00 */
+    unsigned char unmodeled_01[3];
+    short x;                                /* +0x04 */
+    short y;                                /* +0x06 */
+    int color;                              /* +0x08 */
+    unsigned char unmodeled_0c[0x24 - 0x0C];
+} AgwsWeapon2Cursol;
+extern unsigned short AgwsNo[];
+typedef struct AgwsNamePoint {
+    short x, y;
+    int depth;
+    unsigned char r, g, b, a;
+} AgwsNamePoint;
+typedef struct AgwsNameWindow {
+    short x, y;
+    int color;
+    short width, height;
+    char *title;
+    unsigned char state;
+    unsigned char ribbonInitialized;
+    unsigned char unmodeled_12[0x80 - 0x12];
+    struct {
+        unsigned char unmodeled_00[0x1C];
+        const char *text;
+    } titleFont;
+    unsigned char unmodeled_a0[0x194 - 0xA0];
+} AgwsNameWindow;
+typedef struct AgwsNameWorkPrefix {
+    unsigned char unmodeled_00[0x10];
+    unsigned char state;
+    unsigned char mode;
+    unsigned char slide;
+    signed char selection;
+    int timer;
+    int color;
+    AgwsNameWindow window[8];
+    AgwsWeapon2Sprite portrait[8];
+    unsigned char unmodeled_dfc[0xF3C - 0xDFC];
+    AgwsWeapon2Message message[8][2];
+    AgwsWeapon2Cursol cursol;
+    AgwsNamePoint ribbon[8][20];
+    unsigned char unmodeled_1b20[0x1D00 - 0x1B20];
+} AgwsNameWorkPrefix;
+extern AgwsNameWorkPrefix *AgwsName;
+
+typedef union AgwsNameMenuView {
+    AgwsMenuWork agws;
+    int words[0x80 / 4];
+} AgwsNameMenuView;
+#define AGWS_NAME_MENU (*(AgwsNameMenuView *)&MenuWork)
+
+void AgwsNameMain(void) {
+    int settledRows;
+    int rowIndex;
+    short slideTargetY;
+    int titleLeft;
+    int titleTop;
+    int nameRight;
+    int nameLeft;
+    int nameTop;
+    int pilot;
+    int portraitLeft;
+    int portraitRight;
+    int portraitBottom;
+    int pilotLeft;
+    int pilotRight;
+    int pilotTop;
+    int titleRight;
+    int messageDepth;
+    int portraitTop;
+    int pilotBottom;
+    int titleBottom;
+    int nameBottom;
+    int portraitDepth;
+    int pilotDepth;
+    int titleDepth;
+    int nameDepth;
+    int cursorY;
+    unsigned short character;
+    AgwsNameWorkPrefix *name;
+    char *pilotText;
+    AgwsNamePoint *portraitRibbon;
+    AgwsNamePoint *pilotRibbon;
+    AgwsNamePoint *titleRibbon;
+    AgwsNamePoint *nameRibbon;
+    AgwsWeapon2Cursol *cursor;
+
+    name = AgwsName;
+    func_A191C0(AGWS_NAME_MENU.agws.chrNo);
+    switch (name->state) {
+    case 0x0:
+    {
+        int band;
+        int pilot;
+        int face;
+        int depth;
+
+        name->color = 0xFFFFF0;
+        for (rowIndex = 0; rowIndex < AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            int character = AgwsNo[rowIndex];
+            func_A191C0(character);
+            pilot = MenuAgwsPilotCheck(character);
+            WindowDXSet((void *)&name->window[rowIndex]);
+            name->window[rowIndex].x = (rowIndex & 1) * 0x320 - 0x100;
+            name->window[rowIndex].y = rowIndex / 2 * 0x60 + 0x40;
+            name->window[rowIndex].color = name->color;
+            name->window[rowIndex].width = 0xE0;
+            name->window[rowIndex].height = 0x36;
+            if (pilot == 0)
+                name->window[rowIndex].title = MenuTagTextGet(2);
+            else if (PartyAttackerCheck(pilot) != 0)
+                name->window[rowIndex].title = MenuTagTextGet(3);
+            else
+                name->window[rowIndex].title = MenuTagTextGet(4);
+            name->window[rowIndex].ribbonInitialized = 1;
+            name->window[rowIndex].state = 1;
+            WindowDXMain((void *)&name->window[rowIndex]);
+            name->window[rowIndex].state = 3;
+            eMessageSet(&name->message[rowIndex][0], MenuCharNameGet(character));
+            name->message[rowIndex][0].color = name->color + 2;
+            name->message[rowIndex][0].mode = 0x20;
+            eMessageSet(&name->message[rowIndex][1], MenuCharNameGet(pilot));
+            name->message[rowIndex][1].color = name->color + 4;
+            name->message[rowIndex][1].mode = 0x20;
+            for (band = 0; band < 4; band++) {
+                AgwsNamePoint *ribbonColors;
+                ribbonColors = &name->ribbon[rowIndex][band * 5 + 3];
+                ribbonColors[0].b = 1;
+                ribbonColors[-1].b = 1;
+                ribbonColors[-2].b = 1;
+                ribbonColors[-3].b = 1;
+                ribbonColors[0].g = 1;
+                ribbonColors[-1].g = 1;
+                ribbonColors[-2].g = 1;
+                ribbonColors[-3].g = 1;
+                ribbonColors[0].r = 1;
+                ribbonColors[-1].r = 1;
+                ribbonColors[-2].r = 1;
+                ribbonColors[-3].r = 1;
+                depth = name->color;
+                name->ribbon[rowIndex][band * 5 + 3].depth = depth;
+                name->ribbon[rowIndex][band * 5 + 2].depth = depth;
+                name->ribbon[rowIndex][band * 5 + 1].depth = depth;
+                name->ribbon[rowIndex][band * 5 + 0].depth = depth;
+                name->ribbon[rowIndex][band * 5 + 4].depth = 0;
+                ribbonColors[-2].a = 0x80;
+                ribbonColors[-3].a = 0x80;
+                ribbonColors[0].a = 0;
+                ribbonColors[-1].a = 0;
+            }
+            face = ((unsigned short (*)(int, int))MenuFaceEpidGet)(character, 0);
+            eSpriteSet(&name->portrait[rowIndex], face);
+            name->portrait[rowIndex].color = name->color + 1;
+        }
+        eCursolSet(&name->cursol, 0);
+        name->mode = 0;
+        name->selection = -1;
+        name->state = 0xA;
+        name->slide = 0;
+        name->timer = 0;
+        break;
+    }
+    case 0xA:
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            name->window[rowIndex].y = rowIndex / 2 * 0x60 + 0x40;
+            name->window[rowIndex].x = (rowIndex & 1) * 0x320 - 0x100;
+        }
+        name->cursol.state = 0x20;
+        name->state = 0xB;
+        /* fallthrough */
+    case 0xB:
+    case 0x33:
+        settledRows = 0;
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            short target;
+            if (name->state == 0xB)
+                target = (rowIndex & 1) * 0xF0 + 0x18;
+            else
+                target = (rowIndex & 1) * 0x320 - 0x100;
+            MoveSlide(&name->window[rowIndex].x, &target, 3.0f);
+            if (name->window[rowIndex].x == target)
+                settledRows++;
+        }
+        if (settledRows == (short)AGWS_NAME_MENU.agws.agwsCount) {
+            if (name->state == 0xB)
+                name->state = 0xC;
+            else
+                name->state = 2;
+        }
+        break;
+    case 0xC:
+        switch (AGWS_NAME_MENU.agws.state) {
+        case 0x22:
+            name->state = 0x14;
+            break;
+        case 0xF1:
+            name->state = 0x33;
+            break;
+        }
+        break;
+    case 0x14:
+        name->cursol.state = 0;
+        name->state = 0x15;
+        /* fallthrough */
+    case 0x15:
+        settledRows = 0;
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            short targetX, targetY;
+            if (rowIndex == AGWS_NAME_MENU.agws.selectedAgws) {
+                targetX = 0x110;
+                targetY = 0x18;
+            } else {
+                targetX = (rowIndex & 1) * 0x320 - 0x100;
+                targetY = rowIndex / 2 * 0x60 + 0x40;
+            }
+            MoveSlide(&name->window[rowIndex].x, &targetX, 3.0f);
+            if (name->window[rowIndex].x == targetX) {
+                MoveSlide(&name->window[rowIndex].y, &targetY, 3.0f);
+                if (name->window[rowIndex].y == targetY)
+                    settledRows++;
+            }
+        }
+        if (settledRows == (short)AGWS_NAME_MENU.agws.agwsCount)
+            name->state = 0x16;
+        break;
+    case 0x3D:
+        settledRows = 0;
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            short targetY;
+            short targetX;
+            targetX = (rowIndex & 1) * 0xF0 + 0x18;
+            targetY = rowIndex / 2 * 0x60 + 0x40;
+            MoveSlide(&name->window[rowIndex].y, &targetY, 3.0f);
+            if (name->window[rowIndex].y == targetY) {
+                MoveSlide(&name->window[rowIndex].x, &targetX, 3.0f);
+                if (name->window[rowIndex].x == targetX)
+                    settledRows++;
+            }
+        }
+        if (settledRows == (short)AGWS_NAME_MENU.agws.agwsCount)
+            name->state = 0xC;
+        break;
+    case 0x16:
+        switch (AGWS_NAME_MENU.agws.state) {
+        case 0x10:
+            name->cursol.state = 0x20;
+            name->state = 0x3D;
+            break;
+        case 0x40:
+            name->state = 0x1E;
+            break;
+        }
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            if (rowIndex == AGWS_NAME_MENU.agws.selectedAgws) {
+                name->window[rowIndex].x = 0x110;
+                name->window[rowIndex].y = 0x18;
+            } else {
+                name->window[rowIndex].x = (rowIndex & 1) * 0x320 - 0x100;
+                name->window[rowIndex].y = rowIndex / 2 * 0x60 + 0x40;
+            }
+        }
+        break;
+    case 0x1E:
+    case 0x28:
+        slideTargetY = 0x18;
+        if (name->state == 0x1E)
+            slideTargetY = -0x40;
+        MoveSlide(&name->window[AGWS_NAME_MENU.agws.selectedAgws].y, &slideTargetY, 3.0f);
+        if (name->window[AGWS_NAME_MENU.agws.selectedAgws].y == slideTargetY) {
+            if (name->state == 0x1E)
+                name->state = 0x20;
+            else
+                name->state = 0x16;
+        }
+        break;
+    case 0x20:
+        if (AGWS_NAME_MENU.agws.state == 0x22)
+            name->state = 0x28;
+        break;
+    }
+    cursor = &name->cursol;
+    rowIndex = 0;
+    if ((short) AGWS_NAME_MENU.agws.agwsCount > 0) {
+        for (rowIndex = 0; rowIndex < (short)AGWS_NAME_MENU.agws.agwsCount; rowIndex++) {
+            func_A191C0(AgwsNo[rowIndex]);
+            if (rowIndex == (signed char) AGWS_NAME_MENU.agws.selectedAgws) {
+                name->window[rowIndex].color = 0xFFFF00;
+            } else {
+                name->window[rowIndex].color = 0xFFF000;
+            }
+            pilot = MenuAgwsPilotCheck(AgwsNo[rowIndex]);
+            if (pilot == 0) {
+                name->window[rowIndex].titleFont.text = MenuTagTextGet(2);
+            } else if (PartyAttackerCheck(pilot) != 0) {
+                name->window[rowIndex].titleFont.text = MenuTagTextGet(3);
+            } else {
+                name->window[rowIndex].titleFont.text = MenuTagTextGet(4);
+            }
+            WindowDXMain((void *)&name->window[rowIndex]);
+            portraitRibbon = &name->ribbon[rowIndex][0];
+            portraitLeft = (unsigned short)name->window[rowIndex].x + 3;
+            portraitDepth = name->window[rowIndex].color;
+            portraitRibbon[1].x = (short) portraitLeft;
+            portraitRibbon[0].x = (short) portraitLeft;
+            name->ribbon[rowIndex][3].depth = portraitDepth;
+            portraitRight = (unsigned short)name->window[rowIndex].x + 0x53;
+            name->ribbon[rowIndex][3].x = (short) portraitRight;
+            name->ribbon[rowIndex][1].depth = portraitDepth;
+            name->ribbon[rowIndex][2].x = (short) portraitRight;
+            name->ribbon[rowIndex][2].depth = portraitDepth;
+            name->ribbon[rowIndex][0].depth = portraitDepth;
+            portraitTop = (unsigned short)name->window[rowIndex].y + 3;
+            name->ribbon[rowIndex][2].y = (short) portraitTop;
+            name->ribbon[rowIndex][0].y = (short) portraitTop;
+            portraitBottom = ((unsigned short)name->window[rowIndex].y + (unsigned short)name->window[rowIndex].height) - 3;
+            name->ribbon[rowIndex][3].y = (short) portraitBottom;
+            name->ribbon[rowIndex][1].y = (short) portraitBottom;
+            endPrintExtFunc(name->color, 3, portraitRibbon);
+            pilotRibbon = &name->ribbon[rowIndex][5];
+            pilotLeft = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 0x8E;
+            pilotDepth = name->window[rowIndex].color;
+            name->ribbon[rowIndex][6].x = (short) pilotLeft;
+            name->ribbon[rowIndex][5].x = (short) pilotLeft;
+            name->ribbon[rowIndex][8].depth = pilotDepth;
+            name->ribbon[rowIndex][6].depth = pilotDepth;
+            pilotRight = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 3;
+            name->ribbon[rowIndex][7].depth = pilotDepth;
+            name->ribbon[rowIndex][5].depth = pilotDepth;
+            name->ribbon[rowIndex][8].x = (short) pilotRight;
+            name->ribbon[rowIndex][7].x = (short) pilotRight;
+            pilotTop = (unsigned short)name->window[rowIndex].y + 0x1B;
+            name->ribbon[rowIndex][7].y = (short) pilotTop;
+            name->ribbon[rowIndex][5].y = (short) pilotTop;
+            pilotBottom = ((unsigned short)name->window[rowIndex].y + (unsigned short)name->window[rowIndex].height) - 3;
+            name->ribbon[rowIndex][8].y = (short) pilotBottom;
+            name->ribbon[rowIndex][6].y = (short) pilotBottom;
+            endPrintExtFunc(name->color, 3, pilotRibbon);
+            titleRibbon = &name->ribbon[rowIndex][10];
+            titleRight = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 3;
+            titleDepth = name->window[rowIndex].color;
+            name->ribbon[rowIndex][11].x = (short) titleRight;
+            name->ribbon[rowIndex][10].x = (short) titleRight;
+            name->ribbon[rowIndex][13].depth = titleDepth;
+            name->ribbon[rowIndex][11].depth = titleDepth;
+            titleLeft = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 0xA0;
+            name->ribbon[rowIndex][12].depth = titleDepth;
+            name->ribbon[rowIndex][10].depth = titleDepth;
+            name->ribbon[rowIndex][13].x = (short) titleLeft;
+            name->ribbon[rowIndex][12].x = (short) titleLeft;
+            titleTop = (unsigned short)name->window[rowIndex].y + 3;
+            name->ribbon[rowIndex][12].y = (short) titleTop;
+            name->ribbon[rowIndex][10].y = (short) titleTop;
+            titleBottom = (unsigned short)name->window[rowIndex].y + 0x1B;
+            name->ribbon[rowIndex][13].y = (short) titleBottom;
+            name->ribbon[rowIndex][11].y = (short) titleBottom;
+            endPrintExtFunc(name->color, 3, titleRibbon);
+            name->portrait[rowIndex].x = (short) ((unsigned short)name->window[rowIndex].x + 0x13);
+            name->portrait[rowIndex].color = name->window[rowIndex].color;
+            name->portrait[rowIndex].y = (short) ((unsigned short)name->window[rowIndex].y + 3);
+            eSpriteMain(&name->portrait[rowIndex]);
+            nameRibbon = &name->ribbon[rowIndex][15];
+            nameRight = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 0x8C;
+            nameDepth = name->window[rowIndex].color;
+            name->ribbon[rowIndex][16].x = (short) nameRight;
+            name->ribbon[rowIndex][15].x = (short) nameRight;
+            name->ribbon[rowIndex][18].depth = nameDepth;
+            name->ribbon[rowIndex][16].depth = nameDepth;
+            name->ribbon[rowIndex][17].depth = nameDepth;
+            name->ribbon[rowIndex][15].depth = nameDepth;
+            nameLeft = ((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 0xB4;
+            name->ribbon[rowIndex][18].x = (short) nameLeft;
+            name->ribbon[rowIndex][17].x = (short) nameLeft;
+            nameTop = (unsigned short)name->window[rowIndex].y + 0x1B;
+            name->ribbon[rowIndex][17].y = (short) nameTop;
+            name->ribbon[rowIndex][15].y = (short) nameTop;
+            nameBottom = ((unsigned short)name->window[rowIndex].y + (unsigned short)name->window[rowIndex].height) - 3;
+            name->ribbon[rowIndex][18].y = (short) nameBottom;
+            name->ribbon[rowIndex][16].y = (short) nameBottom;
+            endPrintExtFunc(name->color, 3, nameRibbon);
+            name->message[rowIndex][0].x = (short) ((unsigned short)name->window[rowIndex].x + 0x3C);
+            name->message[rowIndex][0].color = name->window[rowIndex].color + 2;
+            name->message[rowIndex][0].y = (short) ((unsigned short)name->window[rowIndex].y + 0x1B);
+            eMessageMain(&name->message[rowIndex][0]);
+            name->message[rowIndex][1].x = (short) (((unsigned short)name->window[rowIndex].x + (unsigned short)name->window[rowIndex].width) - 0x53);
+            name->message[rowIndex][1].y = (short) ((unsigned short)name->window[rowIndex].y + 3);
+            character = AgwsNo[rowIndex];
+            pilotText = MenuCharNameGet(MenuAgwsPilotCheck((int) character));
+            messageDepth = name->window[rowIndex].color;
+            name->message[rowIndex][1].text = pilotText;
+            name->message[rowIndex][1].color = messageDepth + 2;
+            eMessageMain(&name->message[rowIndex][1]);
+        }
+    }
+    name->cursol.x = (unsigned short)name->window[AGWS_NAME_MENU.agws.selectedAgws].x + 3;
+    cursorY = (unsigned short)name->window[AGWS_NAME_MENU.agws.selectedAgws].y + 0x13;
+    name->cursol.color = name->color + 3;
+    name->cursol.y = cursorY;
+    eCursolMain(cursor);
+    endPrintExtFunc(name->color, 6, 0);
+}
 
 /* The pilot face the AGWS pilot list shows: the window slides in while the
  * list is open and carries the face sprite of the row under the cursor. */
@@ -1561,54 +1961,9 @@ void MenuAgwsModelMain(AgwsModelUnit *self)
     }
 }
 
-typedef struct AgwsWeapon2Cursol {
-    unsigned char state;                    /* +0x00 */
-    unsigned char unmodeled_01[3];
-    short x;                                /* +0x04 */
-    short y;                                /* +0x06 */
-    int color;                              /* +0x08 */
-    unsigned char unmodeled_0c[0x24 - 0x0C];
-} AgwsWeapon2Cursol;
 typedef signed char s8;
 typedef int s32;
 typedef s32 M2C_UNK;
-extern unsigned short AgwsNo[];
-typedef struct AgwsNamePoint {
-    short x, y;
-    int depth;
-    unsigned char r, g, b, a;
-} AgwsNamePoint;
-typedef struct AgwsNameWindow {
-    short x, y;
-    int color;
-    short width, height;
-    char *title;
-    unsigned char state;
-    unsigned char ribbonInitialized;
-    unsigned char unmodeled_12[0x80 - 0x12];
-    struct {
-        unsigned char unmodeled_00[0x1C];
-        const char *text;
-    } titleFont;
-    unsigned char unmodeled_a0[0x194 - 0xA0];
-} AgwsNameWindow;
-typedef struct AgwsNameWorkPrefix {
-    unsigned char unmodeled_00[0x10];
-    unsigned char state;
-    unsigned char mode;
-    unsigned char slide;
-    signed char selection;
-    int timer;
-    int color;
-    AgwsNameWindow window[8];
-    AgwsWeapon2Sprite portrait[8];
-    unsigned char unmodeled_dfc[0xF3C - 0xDFC];
-    AgwsWeapon2Message message[8][2];
-    AgwsWeapon2Cursol cursol;
-    AgwsNamePoint ribbon[8][4][5];
-    unsigned char unmodeled_1b20[0x1D00 - 0x1B20];
-} AgwsNameWorkPrefix;
-extern AgwsNameWorkPrefix *AgwsName;
 s32 MenuMainAgwsCheck(s16);
 void MenuModelAllBreak(void);
 void MenuModelCreate(int *output, int character);

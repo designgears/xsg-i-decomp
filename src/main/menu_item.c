@@ -1373,7 +1373,187 @@ void MenuItemListMain(void)
   }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemSelectMain);
+extern void *MenuItemSelect;
+extern void *MenuItemSegment;
+typedef struct MenuItemSelectContent {
+    u8 unmodeled_00[2];
+    unsigned short mode;
+    int selection;
+    const char *text;
+    u8 unmodeled_0c[0xBF0 - 0x0C];
+} MenuItemSelectContent;
+typedef struct MenuItemSelectWindow MenuItemSelectWindow;
+struct MenuItemSelectWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    const char *title;
+    signed char state;
+    u8 ribbonInitialized;
+    u8 unmodeled_12[2];
+    void (*callback)(MenuItemSelectWindow *, struct MenuItemSelectContent *);
+    struct MenuItemSelectContent *callbackArg;
+    u8 unmodeled_1c[0x194 - 0x1C];
+};
+typedef struct MenuItemSelectSprite {
+    u8 state;
+    u8 unmodeled_01[3];
+    short x;
+    short y;
+    int color;
+} MenuItemSelectSprite;
+typedef struct MenuItemSelectWork {
+    u8 state;
+    u8 unmodeled_01;
+    u8 unmodeled_02;
+    u8 unmodeled_03;
+    int color;
+    MenuItemSelectWindow window;
+    u8 unmodeled_19c[0x330 - 0x19C];
+    MenuItemSelectContent content;
+    MenuItemSelectSprite sprite;
+} MenuItemSelectWork;
+typedef struct MenuSortSelectContent {
+    u8 unmodeled_00[2];
+    unsigned short mode;
+    int selection;
+    const char *text;
+    u8 unmodeled_0c[0xBF0 - 0x0C];
+} MenuSortSelectContent;
+typedef struct MenuSortSelectWindow MenuSortSelectWindow;
+struct MenuSortSelectWindow {
+    short x;
+    short y;
+    int color;
+    short width;
+    short height;
+    const char *title;
+    signed char state;
+    u8 ribbonInitialized;
+    u8 unmodeled_12[2];
+    void (*callback)(MenuSortSelectWindow *, MenuSortSelectContent *);
+    MenuSortSelectContent *callbackArg;
+    u8 unmodeled_1c[0x194 - 0x1C];
+};
+typedef struct MenuSortSelectSprite {
+    u8 state;
+    u8 unmodeled_01[3];
+    short x;
+    short y;
+    int color;
+} MenuSortSelectSprite;
+typedef struct MenuSortSelectWork {
+    u8 state;
+    u8 unmodeled_01;
+    u8 unmodeled_02;
+    u8 unmodeled_03;
+    int color;
+    MenuSortSelectWindow window[1];
+    u8 unmodeled_19c[0x330 - 0x19C];
+    MenuSortSelectContent content;
+    MenuSortSelectSprite sprite;
+} MenuSortSelectWork;
+typedef struct MenuSortMenuWork {
+    u8 unmodeled_00[3];
+    u8 mode;
+    u8 unmodeled_04[0x30 - 0x04];
+    signed char listTab;        /* +0x30 */
+    signed char sortChoices[8]; /* +0x31 */
+    u8 unmodeled_39[0x72 - 0x39];
+    signed char sortSelection;  /* +0x72 */
+} MenuSortMenuWork;
+extern const char *msg10_3[];
+extern const char *msg00_2_0036D6A8[];
+extern int MenuSelectWindow();
+extern void eSpriteSet(void *sprite, short spriteId);
+extern void eSpriteMain(void *sprite);
+
+void MenuItemSelectMain(void)
+{
+    MenuSortSelectWork *select = MenuItemSelect;
+    struct {
+        short x;
+        short y;
+        short mode;
+    } slideTarget;
+    short *targetY;
+    unsigned char sortMode;
+    MenuSortMenuWork *menu;
+    int n;
+    int m;
+    short windowWidth;
+    short windowHeight;
+
+    switch (select->state) {
+    case 0:
+        select->color = 0xFFFFF0;
+        windowWidth = 176;
+        windowHeight = 102;
+        for (n = 0, m = 0; n < 1; n++, m++) {
+        int *color = &select->color;
+        const char **titleTable = msg10_3;
+        const char **sortTextTable = msg00_2_0036D6A8;
+        short *size = &select->window[n].width;
+        int spriteColor;
+        int windowState;
+
+        WindowDXSet((WindowDX *)&select->window[n]);
+        select->window[n].title = titleTable[0];
+        windowState = 3;
+        select->window[m].callbackArg = &select->content;
+        select->window[n].color = *color;
+        select->window[n].callback = (void (*)(MenuSortSelectWindow *, MenuSortSelectContent *))MenuSelectWindow;
+        size[0] = windowWidth;
+        select->content.text = sortTextTable[n];
+        select->window[0].height = windowHeight;
+        select->content.mode = 0;
+        select->content.selection = 0;
+        select->window[n].x = -208;
+        select->window[n].y = 160;
+        select->window[n].state = 1;
+        WindowDXMain((WindowDX *)&select->window[n]);
+        select->window[n].state = windowState;
+        eSpriteSet(&select->sprite, 0x60A);
+        spriteColor = *color;
+        select->unmodeled_02 = 0;
+        select->state = n + 2;
+        select->sprite.color = spriteColor + 2;
+    }
+        /* fall through */
+    case 2:
+        break;
+    default:
+        return;
+    }
+
+    menu = (MenuSortMenuWork *)&MenuWork;
+    targetY = &slideTarget.y;
+    slideTarget.x = -208;
+    *targetY = 160;
+    slideTarget.mode = 0;
+    if (menu->mode == 0x80) {
+        slideTarget.x = 80;
+        slideTarget.mode = 1;
+        select->content.selection = menu->sortSelection;
+    }
+    {
+        short *currentX = &select->window[0].x;
+        signed char tab;
+
+        MoveSlide(currentX, &slideTarget.x, 3.0f);
+        MoveSlide(&select->window[0].y, targetY, 3.0f);
+        WindowDXMain((WindowDX *)&select->window[0]);
+        select->sprite.x = (unsigned short)*currentX + 144;
+
+        /* Eight tabs share the ability, normal and six category sort choices. */
+        tab = menu->listTab;
+        sortMode = menu->sortChoices[tab];
+        select->sprite.y = (unsigned short)select->window[0].y + ((signed char)sortMode / 2) * 24 + 2;
+        eSpriteMain(&select->sprite);
+    }
+}
 
 typedef struct MenuItemWorkData_P3 {
     u8 unmodeled_00[3];
@@ -1762,48 +1942,6 @@ typedef struct MenuItemListWork {
     int color;
     MenuItemWindowSP window;
 } MenuItemListWork;
-extern void *MenuItemSelect;
-extern void *MenuItemSegment;
-typedef struct MenuItemSelectContent {
-    u8 unmodeled_00[2];
-    unsigned short mode;
-    int selection;
-    const char *text;
-    u8 unmodeled_0c[0xBF0 - 0x0C];
-} MenuItemSelectContent;
-typedef struct MenuItemSelectWindow MenuItemSelectWindow;
-struct MenuItemSelectWindow {
-    short x;
-    short y;
-    int color;
-    short width;
-    short height;
-    const char *title;
-    signed char state;
-    u8 ribbonInitialized;
-    u8 unmodeled_12[2];
-    void (*callback)(MenuItemSelectWindow *, struct MenuItemSelectContent *);
-    struct MenuItemSelectContent *callbackArg;
-    u8 unmodeled_1c[0x194 - 0x1C];
-};
-typedef struct MenuItemSelectSprite {
-    u8 state;
-    u8 unmodeled_01[3];
-    short x;
-    short y;
-    int color;
-} MenuItemSelectSprite;
-typedef struct MenuItemSelectWork {
-    u8 state;
-    u8 unmodeled_01;
-    u8 unmodeled_02;
-    u8 unmodeled_03;
-    int color;
-    MenuItemSelectWindow window;
-    u8 unmodeled_19c[0x330 - 0x19C];
-    MenuItemSelectContent content;
-    MenuItemSelectSprite sprite;
-} MenuItemSelectWork;
 typedef struct MenuItemSegmentNumber {
     unsigned short x;
     unsigned short y;

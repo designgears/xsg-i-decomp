@@ -9,20 +9,27 @@ typedef struct SefActor {
     unsigned char unmodeled_20[0x30];
     Vector4 rotation;
     Vector4 scale;
-    unsigned char unmodeled_70[0x7b4];
+    unsigned char unmodeled_70[0x510 - 0x70];
+    Vector4 light_parameters[15];    /* +0x510 */
+    unsigned char unmodeled_600[0x824 - 0x600];
     Matrix4 *accessoryMatrix;
 } SefActor;
 
 #define SEF_ACTOR_LIGHT_FLAG 0x00008000u
 #define SEF_BATTLE_ACTOR_MAX 24
 typedef struct SefBattleActor {
-    unsigned char unmodeled_000[0x80];
+    unsigned char unmodeled_000[0x20];
+    Vector4 light_direction;         /* +0x20 */
+    unsigned char unmodeled_030[0x20];
+    Vector4 light_accumulator;       /* +0x50 */
+    Vector4 light_position;          /* +0x60 */
+    Vector4 actor_position;          /* +0x70 */
     SefActor *actor;
     unsigned char unmodeled_084[0]; /* +0x84: zero-length alias of the former padding member, kept for saved bodies */
     short excluded;
     short lightCount;
     short hitSignal;
-    unsigned char unmodeled_08a[2];
+    short schedulerLightCount;
     short seSignal;
     unsigned char unmodeled_08e[2];
 } SefBattleActor;
@@ -2328,9 +2335,147 @@ int sefCreateParticle(SefLocalData *data, int kind)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecLineGlobalData);
+typedef struct SefLineData {
+    unsigned char unmodeled_000[0x30];
+    Vector4 global_position;                 /* +0x30 */
+    unsigned char unmodeled_040[0x60];
+    Vector4 origin_offset;                   /* +0xa0 */
+    unsigned char unmodeled_0b0[0x1d0 - 0xb0];
+    unsigned char *scale_keys;               /* +0x1d0 */
+    unsigned char unmodeled_1d4[0x818 - 0x1d4];
+    short global_data_state;                 /* +0x818 */
+    unsigned char unmodeled_81a[6];
+} SefLineData;
+typedef struct SefLineGlobalView {
+    Vector4 global_position;                 /* +0x00 */
+    unsigned char unmodeled_010[0x10];
+    Vector4 parent_position;                 /* +0x20 */
+    unsigned char unmodeled_030[0x60];
+    Vector4 position_delta;                  /* +0x90 */
+    unsigned char unmodeled_0a0[0x20];
+    Vector4 global_position_source;          /* +0xc0 */
+    unsigned char unmodeled_0d0[0x10];
+    Vector4 parent_position_source;          /* +0xe0 */
+    unsigned char unmodeled_0f0[0x184 - 0xf0];
+    int emit_count;                          /* +0x184 */
+    unsigned char unmodeled_188[0x190 - 0x188];
+    int particle_count;                      /* +0x190 */
+} SefLineGlobalView;
 
-int sefExecLineGlobalData(void *arg0, unsigned short arg1);
+static int sefExecLineGlobalData(void *line_arg, int frame)
+{
+    SefLineData *line_data = line_arg;
+    unsigned char *battle;
+    Vector4 initial_position;
+    Matrix4 parent_matrix;
+    int scale_is_fixed;
+    int rotation_is_fixed;
+    int particle_count;
+    int emit_count;
+    int point_index;
+    int count;
+    int parent_line;
+    short point_handle;
+    unsigned int scale_mode;
+    short **keys;
+    SefLineGlobalView *global;
+
+    keys = (short **)&line_data->scale_keys;
+    global = (SefLineGlobalView *)&line_data->global_position;
+    particle_count = global->particle_count;
+    scale_is_fixed = keys[0][0] == 4;
+    rotation_is_fixed = keys[2][0] == 4;
+    line_data->global_data_state = 0;
+    if (particle_count <= 0) {
+        return 1;
+    }
+    battle = _battleData;
+    if ((*(int *)(battle + 0x224) & 0x100) != 0) {
+        return 1;
+    }
+    scale_mode = (unsigned short)keys[0][0];
+    if ((scale_mode & 0x1000) && _nowScheduler != 0) {
+        unsigned int scheduler_flags = _nowScheduler->flags;
+
+        _nowScheduler->flags = scheduler_flags | 0x80;
+        if ((short)keys[0][0] >= 0x1001 &&
+            (*(int *)battle != 0 || *(int *)(battle + 0x70) != 0)) {
+            _nowScheduler->flags = scheduler_flags | 0x1080;
+            sefGetParentMatrix(_nowScheduler, (short)scale_mode - 0x1000, &parent_matrix);
+        }
+    }
+    __asm__ __volatile__(
+        "lq $8, 0(%0)\n\t"
+        "sq $8, 0(%1)"
+        :
+        : "r"(&global->global_position), "r"(&initial_position)
+        : "$8", "memory");
+    if (!scale_is_fixed) {
+        sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
+        __asm__ __volatile__(
+            "lqc2 vf1, 0(%0)\n\t"
+            "lqc2 vf2, 0(%1)\n\t"
+            "vadd.xyz vf1, vf1, vf2\n\t"
+            "sqc2 vf1, 0(%0)"
+            :
+            : "r"(&global->global_position), "r"(&line_data->origin_offset)
+            : "memory");
+    }
+    if (!rotation_is_fixed) {
+        sefGetPosition(&global->parent_position, (unsigned char *)&global->parent_position_source, keys[2][0]);
+    }
+    if (frame % particle_count == 0) {
+        emit_count = global->emit_count;
+        if (_parentLine >= 0) {
+            SefLocalData *parent_data = (SefLocalData *)&_lineData[_parentLine * SEF_LINE_DATA_RECORD_SIZE];
+
+            if (parent_data == 0) {
+                __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&global->position_delta) : "memory");
+                return 1;
+            }
+            for (parent_line = 0; parent_line < 0x100; parent_line++) {
+                point_handle = parent_data->pointHandles[parent_line];
+                if (point_handle >= 0) {
+                    _nowParentLocal = point_handle;
+                    if (scale_is_fixed) {
+                        sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
+                        __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+                        __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&line_data->origin_offset) : "memory");
+                        __asm__ __volatile__("vadd.xyz vf1, vf1, vf2");
+                        __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+                    }
+                    if (rotation_is_fixed) {
+                        sefGetPosition(&global->parent_position, (unsigned char *)&global->parent_position_source, keys[2][0]);
+                    }
+                    if (emit_count > 0) {
+                        count = emit_count;
+                        do {
+                            sefCreateParticle((SefLocalData *)line_data, point_handle);
+                        } while (--count != 0);
+                    }
+                }
+            }
+        } else {
+            if (emit_count > 0) {
+                parent_line = emit_count;
+                do {
+                    sefCreateParticle((SefLocalData *)line_data, -1);
+                } while (--parent_line != 0);
+            }
+        }
+    }
+    __asm__ __volatile__(
+        "lqc2 vf1, 0(%0)\n\t"
+        "lqc2 vf2, 0(%1)\n\t"
+        "vsub.xyz vf1, vf1, vf2\n\t"
+        "sqc2 vf1, 0(%2)"
+        :
+        : "r"(&global->global_position), "r"(&initial_position), "r"(&global->position_delta)
+        : "memory");
+    return 1;
+}
+
+int sefExecLineGlobalData(void *arg0, int arg1);
 unsigned short sefExecLineLocalData(void *arg0, unsigned short arg1);
 extern float D_004D834C;
 static inline short *sefKeyPtr(void *a)
@@ -3007,7 +3152,58 @@ static int sefSetReverseDir(int effect_id, int category)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefCreateBattleActorTbl);
+void sefCreateBattleActorTbl(int effect_no)
+{
+    SchedulerState *scheduler;
+    int scheduler_index;
+    int actor_index;
+
+    if ((unsigned int)(effect_no - 0x9c4) < 0x11f) {
+        return;
+    }
+
+    memset(_battleActor, 0, 0xda0);
+    for (scheduler_index = 0; scheduler_index < 0x80; scheduler_index++) {
+        scheduler = &((SchedulerState *)_scheduler)[scheduler_index];
+        if (scheduler->inUse == 0) {
+            continue;
+        }
+        if (scheduler->flags & 0x202) {
+            continue;
+        }
+        if (scheduler->effectNo != effect_no) {
+            continue;
+        }
+
+        if (scheduler->targetActor != 0) {
+            for (actor_index = 0;
+                 actor_index < _battleActor->count
+                 && _battleActor->actors[actor_index].actor != scheduler->targetActor;
+                 actor_index++) {
+            }
+            if (actor_index == _battleActor->count && actor_index < 24) {
+                _battleActor->actors[actor_index].actor = scheduler->targetActor;
+                _battleActor->actors[actor_index].schedulerLightCount = scheduler->targetLightCount;
+                _battleActor->actors[actor_index].excluded = 1;
+                _battleActor->count = actor_index + 1;
+            }
+        }
+
+        if (scheduler->sourceActor != 0) {
+            for (actor_index = 0;
+                 actor_index < _battleActor->count
+                 && _battleActor->actors[actor_index].actor != scheduler->sourceActor;
+                 actor_index++) {
+            }
+            if (actor_index == _battleActor->count && actor_index < 24) {
+                _battleActor->actors[actor_index].schedulerLightCount = scheduler->sourceLightCount;
+                _battleActor->actors[actor_index].actor = scheduler->sourceActor;
+                _battleActor->actors[actor_index].excluded = 0;
+                _battleActor->count = actor_index + 1;
+            }
+        }
+    }
+}
 
 extern Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scale);
 static inline SefBattleActorTbl *sefBattleTbl(void)
@@ -3154,7 +3350,86 @@ int sefIsSeSignal(SefActor *actor)
     return 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefAddLightActor);
+typedef struct SefLightInput {
+    int coordinates[3];
+    int range;
+} SefLightInput;
+typedef struct SefLightSet {
+    unsigned long long words[30];
+} SefLightSet;
+extern float D_004D8350;
+extern Vector4 _defLight[15];
+extern void *MMathNormalizeVector2(void *destination, const Vector4 *source);
+extern float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second);
+
+static void sefAddLightActor(const Vector4 *position, const SefLightInput *light)
+{
+    float range_squared = (float)light->range * D_004D8350;
+    int actor_index;
+    SefBattleActor *battle_actor;
+    Vector4 *lights;
+    Vector4 actor_position;
+    Vector4 difference;
+    float distance_squared;
+    float weight;
+
+    range_squared *= range_squared;
+
+    for (actor_index = 0; actor_index < _battleActor->count; actor_index++) {
+        battle_actor = &_battleActor->actors[actor_index];
+        if (battle_actor->actor == 0 || battle_actor->lightCount != 0) {
+            continue;
+        }
+
+        sefGetNullPosition(&actor_position, battle_actor->actor, 0, 1);
+        __asm__ __volatile__(
+            "lqc2 vf1, 0(%0)\n\t"
+            "lqc2 vf2, 0(%1)\n\t"
+            "vsub.xyz vf1, vf1, vf2\n\t"
+            "sqc2 vf1, 0(%2)"
+            :
+            : "r"(position), "r"(&actor_position), "r"(&difference)
+            : "memory");
+        distance_squared = MMathVectorDotProduct(&difference, &difference);
+        if (!(distance_squared < range_squared)) {
+            continue;
+        }
+
+        lights = battle_actor->actor->light_parameters;
+        weight = (range_squared - distance_squared) / range_squared * 0.0078125f;
+        if (battle_actor->lightCount == 0) {
+            *(SefLightSet *)lights = *(SefLightSet *)_defLight;
+            __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&battle_actor->light_accumulator) : "memory");
+            MMathNormalizeVector2(&battle_actor->light_direction, &difference);
+            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&lights[6]), "r"(&battle_actor->light_direction) : "$8", "memory");
+            battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
+            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->light_position), "r"(position) : "$8", "memory");
+            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->actor_position), "r"(&actor_position) : "$8", "memory");
+        }
+
+        __asm__ __volatile__(
+            "mfc1 $2, %2\n\t"
+            "lqc2 vf1, 0(%0)\n\t"
+            "lqc2 vf3, 0(%1)\n\t"
+            "vitof0.xyzw vf1, vf1\n\t"
+            "qmtc2 $2, vf2\n\t"
+            "vmulx.xyz vf1, vf1, vf2x\n\t"
+            "vadd.xyz vf3, vf1, vf3\n\t"
+            "sqc2 vf3, 0(%1)"
+            :
+            : "r"(light), "r"(&battle_actor->light_accumulator), "f"(weight)
+            : "$2", "memory");
+        battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
+        __asm__ __volatile__(
+            "lqc2 vf1, 0(%0)\n\t"
+            "lqc2 vf2, 0(%1)\n\t"
+            "vadd.xyz vf1, vf1, vf2\n\t"
+            "sqc2 vf1, 0(%2)"
+            :
+            : "r"(&lights[5]), "r"(&battle_actor->light_accumulator), "r"(&lights[5]));
+        battle_actor->lightCount++;
+    }
+}
 
 extern void smInitilize(void *pool, unsigned int poolSize);
 extern void sresInitMemoryRes(void);

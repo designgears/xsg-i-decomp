@@ -55,11 +55,19 @@ struct SchedulerState {
     Vector4 vectors[3];
     unsigned char effects[32][0x30];
     int inUse;                       /* +0x6b0 */
-    unsigned char unmodeled_6b4[0x6e0 - 0x6b4];
+    unsigned char unmodeled_6b4[0x6bc - 0x6b4];
+    struct SefActor *targetActor;    /* +0x6bc */
+    struct SefActor *sourceActor;    /* +0x6c0 */
+    unsigned char unmodeled_6c4[0x6e0 - 0x6c4];
     int soundId;                     /* +0x6e0 */
-    unsigned char unmodeled_6e4[0xa8c - 0x6e4];
+    unsigned char unmodeled_6e4[0xa74 - 0x6e4];
+    unsigned short targetLightCount; /* +0xa74 */
+    unsigned short sourceLightCount; /* +0xa76 */
+    short effectNo;                  /* +0xa78 */
+    unsigned char unmodeled_a7a[0xa8c - 0xa7a];
     int flags;
     ScriptBinding scriptBinding;
+    unsigned char unmodeled_a98[0xab0 - 0xa98]; /* record stride 0xab0 */
 };
 
 /* sefGetDirMatrix (main:0x002e2818) is still INCLUDE_ASM in this TU; declared

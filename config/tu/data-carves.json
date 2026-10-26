@@ -124,40 +124,22 @@
     {
      "range": [
       "0x004d24e0",
-      "0x004d2540"
+      "0x004d2580"
      ],
      "generated": [
       "0x004d24e0",
-      "0x004d2540"
+      "0x004d257c"
      ],
      "generated_by": [
+      "create_sub2",
       "execute",
+      "xglMcMain",
       "xglMcRequest"
      ],
      "c_owned_symbols": [
       "jtbl_004D24E0",
-      "jtbl_004D2510"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_mc.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d2560",
-      "0x004d2580"
-     ],
-     "generated": [
-      "0x004d2560",
-      "0x004d257c"
-     ],
-     "generated_by": [
-      "xglMcMain"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004D2510",
+      "jtbl_004D2540",
       "jtbl_004D2560"
      ],
      "also_referenced_by_c": [],
@@ -704,6 +686,40 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_packet_add.o"
+     }
+    }
+   ]
+  },
+  "main/tu108": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8978",
+      "0x004d8998"
+     ],
+     "generated": [
+      "0x004d8978",
+      "0x004d8998"
+     ],
+     "generated_by": [
+      "nmlFilterStealthMake",
+      "nmlModelSetFilterGunosys"
+     ],
+     "c_owned_symbols": [
+      "D_004D8978",
+      "D_004D897C",
+      "D_004D8980",
+      "D_004D8984",
+      "D_004D8988",
+      "D_004D898C",
+      "D_004D8990",
+      "D_004D8994"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_filter_set.o"
      }
     }
    ]
@@ -4143,18 +4159,20 @@
     {
      "range": [
       "0x004c6f50",
-      "0x004c7090"
+      "0x004c7190"
      ],
      "generated": [
       "0x004c6f50",
-      "0x004c7090"
+      "0x004c7190"
      ],
      "generated_by": [
-      "AgwsListMain"
+      "AgwsListMain",
+      "AgwsNameMain"
      ],
      "c_owned_symbols": [
       "jtbl_004C6F50",
-      "jtbl_004C7000"
+      "jtbl_004C7000",
+      "jtbl_004C7090"
      ],
      "also_referenced_by_c": [
       "D_004C6F38",
@@ -4184,7 +4202,9 @@
      "c_owned_symbols": [
       "jtbl_004C7250"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004C72D0"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -4209,15 +4229,24 @@
       "D_004DAFD0"
      ],
      "also_referenced_by_c": [
+      "D_004DAF28",
+      "D_004DAF40",
       "D_004DAF48",
       "D_004DAF80",
       "D_004DAF88",
       "D_004DAF90",
+      "D_004DAFD8",
+      "D_004DAFE0",
       "D_004DAFE8",
+      "D_004DAFF0",
+      "D_004DAFF8",
       "AgwsPas",
+      "AgwsInfo",
       "AgwsSelect",
       "AgwsList",
       "AgwsStatus",
+      "AgwsWeapon2",
+      "AgwsName",
       "AgwsFace",
       "AgwsSwitch"
      ],
@@ -4283,6 +4312,37 @@
    ".rodata": [
     {
      "range": [
+      "0x004c7710",
+      "0x004c7738"
+     ],
+     "generated": [
+      "0x004c7710",
+      "0x004c7738"
+     ],
+     "generated_by": [
+      "MenuShopSelect"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C7710"
+     ],
+     "also_referenced_by_c": [
+      "D_004C7390",
+      "D_004C74B0",
+      "D_004C7500",
+      "D_004C7520",
+      "D_004C7580",
+      "D_004C75A0",
+      "D_004C7650",
+      "D_004C7738"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_shop.o"
+     }
+    },
+    {
+     "range": [
       "0x004c77c0",
       "0x004c7838"
      ],
@@ -4300,14 +4360,6 @@
       "D_004C7820"
      ],
      "also_referenced_by_c": [
-      "D_004C7390",
-      "D_004C74B0",
-      "D_004C7500",
-      "D_004C7520",
-      "D_004C7580",
-      "D_004C75A0",
-      "D_004C7650",
-      "D_004C7738",
       "D_004C7858"
      ],
      "basis": {
@@ -8508,17 +8560,19 @@
     {
      "range": [
       "0x004d1aa0",
-      "0x004d1ac0"
+      "0x004d1ae0"
      ],
      "generated": [
       "0x004d1aa0",
-      "0x004d1abc"
+      "0x004d1adc"
      ],
      "generated_by": [
-      "JNT_interpolate"
+      "JNT_interpolate",
+      "JNT_setMDLMatrix"
      ],
      "c_owned_symbols": [
-      "jtbl_004D1AA0"
+      "jtbl_004D1AA0",
+      "jtbl_004D1AC0"
      ],
      "also_referenced_by_c": [],
      "basis": {

@@ -443,7 +443,112 @@ static void execute(XglMcQueue *q)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_mc", create_sub2);
+typedef struct McSavePayload {
+    unsigned char unmodeled_00[4];
+    int entry_count;
+    unsigned char unmodeled_08[8];
+    int group_count;
+} McSavePayload;
+typedef struct McSaveHeader {
+    unsigned char unmodeled_00[4];
+    int start;
+    int end;
+    unsigned char unmodeled_0c[0x34];
+    char icon_header[0x400];
+    McSavePayload payload;
+} McSaveHeader;
+typedef struct McSaveChecksum {
+    unsigned char unmodeled_00[28];
+    float checksum;
+} McSaveChecksum;
+typedef struct McWorkState {
+    unsigned char phase;
+    unsigned char subphase;
+    unsigned char unmodeled_02;
+    unsigned char next_card;
+    int status;
+    int descriptor;
+    unsigned char unmodeled_0c[0x14];
+} McWorkState;
+typedef struct McWorkspaceView {
+    McWorkState state;
+    unsigned char full_path[96];
+    unsigned char map_name[36];
+    XglMcQueue request;
+} McWorkspaceView;
+extern float D_004D8794;
+float xglFRand(void);
+int sceMcDelete(int port, int slot, const char *name);
+void FlushCache(int mode);
+#define MC_WORKSPACE (&*(McWorkspaceView *)mw)
+
+static int create_sub2(int result)
+{
+    int slot = MC_WORKSPACE->request.a;
+    McSaveHeader *save;
+    McSavePayload *payload;
+    McSaveChecksum *trailer;
+    float *checksum;
+    int size;
+    unsigned char *write_data;
+
+    if (MC_WORKSPACE->state.subphase < 2 && (result >= 0 || result == -4)) {
+        if (MC_WORKSPACE->state.subphase == 0) {
+            xglMcSetFullPath(slot, 0);
+            sceMcDelete(MC_WORKSPACE->request.port, 0, (char *)MC_WORKSPACE->full_path);
+        } else {
+            xglMcSetFullPath(slot, (char *)1);
+            sceMcOpen(MC_WORKSPACE->request.port, 0, (char *)mw + 32, 0x202);
+        }
+    } else {
+        if (result < 0)
+            goto store_error;
+        save = (McSaveHeader *)MC_WORKSPACE->request.b;
+        switch (MC_WORKSPACE->state.subphase) {
+        case 0:
+        case 1:
+        case 2:
+            MC_WORKSPACE->state.descriptor = result;
+            write_data = (unsigned char *)save->icon_header;
+            xglMcWriteMapName((char *)write_data, slot);
+            sceMcWrite(MC_WORKSPACE->state.descriptor, write_data, 964);
+            break;
+        case 3:
+            sceMcClose(MC_WORKSPACE->state.descriptor);
+            break;
+        case 4:
+            xglMcSetFullPath(slot, (char *)2);
+            {
+                McWorkspaceView *view = (McWorkspaceView *)mw;
+                sceMcOpen(view->request.port, 0, (char *)mw + 32, 0x202);
+            }
+            break;
+        case 5:
+            MC_WORKSPACE->state.descriptor = result;
+            write_data = (unsigned char *)&save->payload;
+            payload = (McSavePayload *)write_data;
+            trailer = (McSaveChecksum *)((unsigned char *)payload + (payload->entry_count * 8 + 16) * payload->group_count);
+            checksum = &trailer->checksum;
+            size = save->end - save->start - 40;
+            *checksum = (xglFRand() - 1.5f) * D_004D8794 + 1.0f;
+            FlushCache(0);
+            sceMcWrite(MC_WORKSPACE->state.descriptor, write_data, size);
+            break;
+        case 6:
+            sceMcClose(MC_WORKSPACE->state.descriptor);
+            return 1;
+        default:
+            break;
+        }
+    }
+    MC_WORKSPACE->state.subphase++;
+    *MC_WORKSPACE->request.result = MC_WORKSPACE->state.subphase;
+    return 0;
+
+store_error:
+    *MC_WORKSPACE->request.result = result;
+    return -1;
+}
 
 extern unsigned char D_0093E144[];
 extern int D_0093E0A4[];

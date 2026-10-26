@@ -856,7 +856,198 @@ typedef struct NmlZbufRenderState {
     u16 display_buffer_base; /* +0x20 */
 } NmlZbufRenderState;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketMakeCircleTexture);
+extern float D_004D8970;
+extern const float D_004D8974;
+typedef union NmlCircleVector {
+    Vector4 vector;
+    int words[4];
+    u32 unsigned_words[4];
+} NmlCircleVector;
+typedef union NmlCircleOffsetTable {
+    float values[4];
+    u64 pairs[2];
+} NmlCircleOffsetTable;
+typedef struct NmlCircleScratchpad {
+    NmlCircleVector position[4];
+    NmlCircleVector transform[4];
+    NmlCircleVector projected[4];
+    NmlCircleVector perspective[4];
+} NmlCircleScratchpad;
+typedef struct NmlCircleGsRecord {
+    GsTag value;
+    GsTag address;
+} NmlCircleGsRecord;
+extern const NmlCircleOffsetTable D_004D3090;
+extern const NmlCircleOffsetTable D_004D30A0;
+static inline NmlCircleGsRecord *nmlCircleGsRecord(unsigned int index)
+{
+    return (NmlCircleGsRecord *)(0x70001000u +
+                                 index * sizeof(NmlCircleGsRecord));
+}
+static inline void nmlCircleSetGsRecord(NmlCircleGsRecord *record,
+                                        int address, u64 value)
+{
+    record->value.value = value;
+    record->address.value = address;
+}
+static inline int nmlCircleSetPositionRecord(NmlCircleGsRecord *record,
+                                              u64 packed_position,
+                                              const int *clip_flags,
+                                              int previous_flags,
+                                              int earlier_flags)
+{
+    int flags;
+
+    record->value.value = packed_position;
+    flags = *clip_flags;
+    record->address.value = (flags | previous_flags) | earlier_flags;
+    return flags;
+}
+static inline u64 nmlCircleMakeTextureParameter(u32 texture_base)
+{
+    int low = 0x19304000;
+    u64 parameter;
+
+    low |= texture_base;
+    parameter = low;
+    parameter |= (u64)(texture_base + 0x80u) << 37;
+    parameter |= 0x2000000580000000ULL;
+    return parameter;
+}
+
+void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
+                                const StudioCamera *camera)
+{
+    NmlCircleScratchpad *scratch = (NmlCircleScratchpad *)0x70000000;
+    NmlCircleVector *transform = (NmlCircleVector *)0x70000040;
+    float radius_scale;
+    float height_offset;
+    float *matrix;
+    NmlCircleOffsetTable x_offsets;
+    NmlCircleOffsetTable z_offsets;
+    u32 texture_base;
+    int i;
+    int first_clip_flags;
+    int second_clip_flags;
+    int third_clip_flags;
+
+    x_offsets = D_004D3090;
+    z_offsets = D_004D30A0;
+
+    matrix = (float *)transform;
+
+    matrix[14] = 1.0f;
+    matrix[0] = 0.0f;
+    matrix[1] = 0.0f;
+    matrix[2] = 1.0f;
+    matrix[4] = 1.0f;
+    matrix[5] = 0.0f;
+    matrix[6] = 1.0f;
+    matrix[8] = 0.0f;
+    matrix[9] = 1.0f;
+    matrix[10] = 1.0f;
+    matrix[12] = 1.0f;
+    radius_scale = D_004D8970;
+    matrix[13] = 1.0f;
+
+    _CurSetViewScaleTrans(&camera->screenScale, &camera->screenOffset);
+    _CurSetMatrix(camera->viewMatrix);
+    height_offset = D_004D8974;
+
+    for (i = 0; i < 4;) {
+        int clip_flags;
+        NmlCircleVector *position = &scratch->position[i];
+        NmlCircleVector *projected = &scratch->projected[i];
+        NmlCircleVector *perspective = &scratch->perspective[i];
+        NmlCircleVector *vertex_transform = &transform[i];
+
+        position->vector.x =
+            model->circle_center_x +
+            x_offsets.values[i] * model->circle_scale * radius_scale;
+        position->vector.z =
+            model->circle_center_z +
+            z_offsets.values[i] * model->circle_scale * radius_scale;
+        position->vector.y =
+            model->projection_elements[13] + height_offset;
+        i++;
+        if (model->shadow_height_enabled != 0)
+            position->vector.y =
+                model->shadow_height + height_offset;
+
+        clip_flags = _CurRotTransPersClip(&projected->vector,
+            &perspective->vector, &position->vector, &vertex_transform->vector);
+        if (clip_flags != 0)
+            projected->words[3] = 12;
+        else
+            projected->words[3] = 4;
+    }
+
+    nmlCircleSetGsRecord(nmlCircleGsRecord(0), 0x3f, 0);
+    texture_base = ((u16 *)&sRender)[13] << 5;
+    nmlCircleSetGsRecord(nmlCircleGsRecord(1), 6,
+                         nmlCircleMakeTextureParameter(texture_base));
+    nmlCircleSetGsRecord(nmlCircleGsRecord(2), 0x14, 0x60);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(3), 0x47, 0x71001);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(4), 8, 0);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(5), 0x42, 0x89);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(6), 0, 0x54);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(7), 1,
+        ((u64)scratch->perspective[0].unsigned_words[2] << 32) | 0x80808080);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(8), 2,
+        scratch->perspective[0].unsigned_words[0] |
+        ((u64)scratch->perspective[0].unsigned_words[1] << 32));
+    first_clip_flags = nmlCircleSetPositionRecord(nmlCircleGsRecord(9),
+        scratch->projected[0].words[0] |
+        ((u64)scratch->projected[0].words[1] << 16) |
+        ((u64)scratch->projected[0].words[2] << 32),
+        &scratch->projected[0].words[3], 0, 0);
+
+    nmlCircleSetGsRecord(nmlCircleGsRecord(10), 1,
+        ((u64)scratch->perspective[1].unsigned_words[2] << 32) | 0x80808080);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(11), 2,
+        scratch->perspective[1].unsigned_words[0] |
+        ((u64)scratch->perspective[1].unsigned_words[1] << 32));
+    second_clip_flags = nmlCircleSetPositionRecord(nmlCircleGsRecord(12),
+        scratch->projected[1].words[0] |
+        ((u64)scratch->projected[1].words[1] << 16) |
+        ((u64)scratch->projected[1].words[2] << 32),
+        &scratch->projected[1].words[3], first_clip_flags, 0);
+
+    nmlCircleSetGsRecord(nmlCircleGsRecord(13), 1,
+        ((u64)scratch->perspective[2].unsigned_words[2] << 32) | 0x80808080);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(14), 2,
+        scratch->perspective[2].unsigned_words[0] |
+        ((u64)scratch->perspective[2].unsigned_words[1] << 32));
+    third_clip_flags = nmlCircleSetPositionRecord(nmlCircleGsRecord(15),
+        scratch->projected[2].words[0] |
+        ((u64)scratch->projected[2].words[1] << 16) |
+        ((u64)scratch->projected[2].words[2] << 32),
+        &scratch->projected[2].words[3], second_clip_flags, first_clip_flags);
+
+    nmlCircleSetGsRecord(nmlCircleGsRecord(16), 1,
+        ((u64)scratch->perspective[3].unsigned_words[2] << 32) | 0x80808080);
+    nmlCircleSetGsRecord(nmlCircleGsRecord(17), 2,
+        scratch->perspective[3].unsigned_words[0] |
+        ((u64)scratch->perspective[3].unsigned_words[1] << 32));
+    nmlCircleSetPositionRecord(nmlCircleGsRecord(18),
+        scratch->projected[3].words[0] |
+        ((u64)scratch->projected[3].words[1] << 16) |
+        ((u64)scratch->projected[3].words[2] << 32),
+        &scratch->projected[3].words[3], third_clip_flags, second_clip_flags);
+
+    g_nGsEntry = 0;
+    {
+        int remaining;
+        NmlCircleGsRecord *cursor = (NmlCircleGsRecord *)0x70001000;
+
+        for (remaining = 18; remaining >= 0; remaining--) {
+            packet_gs_entry64(cursor->address.words[0],
+                                   &cursor->value.value);
+            cursor++;
+        }
+    }
+    nmlPacketAddGsFlushWide();
+}
 
 typedef struct NmlGsLoadImage {
     u64 giftag0[2];
@@ -1696,7 +1887,178 @@ void nmlPacketAddFog(NmlModelRenderState *model, int viewport_index)
     sceVif1PkCloseUpkCode(s_pPacket);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_packet_add", nmlPacketAddPixelControl);
+static inline u32 nmlPacketInvalidatePixelModel(
+    NmlModelResource *const *resource, const u32 *material_flags)
+{
+    s_nPixelTestType = -1;
+    s_pModelCache = *resource;
+    return *material_flags;
+}
+static inline u64 nmlPacketMakeGsTest(int alpha_test_enabled, int alpha_test,
+                                      int alpha_reference, int alpha_failure,
+                                      int destination_alpha_enabled,
+                                      int destination_alpha, int depth_enabled,
+                                      int depth_test)
+{
+    u64 test = (u64)alpha_reference << 4;
+
+    test |= (u64)depth_test << 17;
+    test |= (u64)depth_enabled << 16;
+    test |= (u64)alpha_failure << 12;
+    test |= (u64)destination_alpha_enabled << 14;
+    test |= (u64)destination_alpha << 15;
+    test |= (u64)(alpha_test_enabled | (alpha_test << 1));
+    return test;
+}
+static inline u64 nmlPacketMakeGsFixedAlpha(int alpha_value)
+{
+    return ((u64)alpha_value << 32) | 0x68;
+}
+static inline void nmlPacketSetPixelBlend(NmlModelRenderState *model,
+                                          int pixel_type, float alpha,
+                                          float reflect_alpha,
+                                          int alpha_reference,
+                                          int use_alpha_reference)
+{
+    if (s_nPixelTestType != pixel_type) {
+        int alpha_value =
+            (int)(model->material_alpha_scale * 128.0f * alpha);
+        u64 test_value = 0x50000;
+        u64 blend_value;
+
+        if (reflect_alpha < 2.0f)
+            alpha_value = (int)(reflect_alpha * 128.0f * alpha);
+        if (use_alpha_reference)
+            test_value = nmlPacketMakeGsTest(1, 3, alpha_reference,
+                                             0, 0, 0, 1, 2);
+        blend_value = nmlPacketMakeGsFixedAlpha(alpha_value);
+        s_nPixelTestType = pixel_type;
+        packet_gs_entry32(0x47, 0, (u32)test_value);
+        packet_gs_entry64(0x43, &blend_value);
+        nmlPacketAddPixelTestPacket(0x47, test_value, 0x50000,
+                                    0x42, *(u64 *)&model->pixel_test_parameters,
+                                    blend_value);
+    }
+}
+
+void nmlPacketAddPixelControl(NmlMaterialRenderState *material,
+                              NmlModelRenderState *model,
+                              u32 pixel_control_flags)
+{
+    NmlCurrentPacket selected;
+    u16 viewport = pixel_control_flags;
+    int pixel_reference = model->pixel_test_reference;
+    float reflect_alpha = model->reflect_alpha;
+    float alpha;
+    int special_material = 0;
+    u32 material_flags;
+    u64 packed_alpha;
+    int i;
+
+    alpha = model->default_block_alpha;
+    if (viewport != model->block_alpha_view)
+        alpha = model->block_alpha_by_view[viewport];
+    if (model->render_status & 0x100000) {
+        if (strstr(material->name, lenz_name) != 0 ||
+            strstr(material->name, eye_name) != 0) {
+            alpha = model->special_block_alpha;
+            reflect_alpha = 2.0f;
+            special_material = 1;
+            s_nPixelTestType = -1;
+        }
+    }
+
+    for (i = 0; i < *(int *)&model->pixel_test_count; i++) {
+        s_nPixelTestType = -1;
+        if (((short *)((u8 *)model + i * 4))[361] ==
+            *(u32 *)&material->geometry_block_index) {
+            pixel_reference = model->pixel_test_entries[i].reference;
+            break;
+        }
+    }
+
+    selected.sdk = xglPacketGetCurrent();
+    *(NmlCurrentPacket *)&s_pPacket = selected;
+
+    material_flags = ((union { u32 w; u64 d; } *)&material->material_flags)->w;
+    if (material_flags & 0x10)
+        pixel_reference = 0x7F;
+    if (s_pModelCache != model->resource) {
+        material_flags = nmlPacketInvalidatePixelModel(
+            &model->resource, &material->material_flags);
+    }
+
+    if (pixel_control_flags & 0x10000) {
+        if (material_flags & 4) {
+            if (pixel_control_flags & 0x20000) {
+                if (s_nPixelTestType != 1) {
+                    u64 blend_mode = 0x68;
+
+                    s_nPixelTestType = 1;
+                    if (*(u32 *)&material->material_flags & 0x8000) {
+                        packet_gs_entry32(0x47, 0, 0x50000);
+                    } else {
+                        packet_gs_entry32(0x47, 0,
+                            (u32)nmlPacketMakeGsTest(1, 5, pixel_reference,
+                                                    0, 0, 0, 1, 2));
+                    }
+                    packet_gs_entry64(0x42, &blend_mode);
+                }
+            } else if (model->render_status & 0x20) {
+                nmlPacketSetPixelBlend(model, 2, alpha, reflect_alpha,
+                                       pixel_reference, 0);
+            } else {
+                nmlPacketSetPixelBlend(model, 3, alpha, reflect_alpha,
+                                       pixel_reference, 1);
+            }
+        } else if (pixel_control_flags & 0x20000) {
+            u64 blend_mode;
+
+            if (s_nPixelTestType != 4) {
+                s_nPixelTestType = 4;
+                packet_gs_entry32(0x47, 0, 0x50000);
+                blend_mode = 0x68;
+                packet_gs_entry64(0x42, &blend_mode);
+                nmlPacketAddPixelTestPacket(0x47, 0x50000, 0x50000,
+                                            0x42, *(u64 *)&model->pixel_test_parameters,
+                                            blend_mode);
+            }
+        } else {
+            nmlPacketSetPixelBlend(model, 5, alpha, reflect_alpha,
+                                   pixel_reference, 0);
+        }
+    } else if (material_flags & 4) {
+        if (s_nPixelTestType != 6) {
+            u64 test_value;
+            u32 depth_base;
+
+            pixel_reference =
+                (int)(model->material_alpha_scale * (float)pixel_reference);
+            test_value = nmlPacketMakeGsTest(1, 5, pixel_reference,
+                                             0, 0, 0, 1, 2);
+            depth_base = sRender.zbp;
+
+            packet_gs_entry32(0x47, 0, (u32)test_value);
+            s_nPixelTestType = 6;
+            nmlPacketAddPixelTestPacket(0x47, test_value, 0x50001, 0x4E,
+                                        depth_base | 0x01000000,
+                                        depth_base | (0x8080ULL << 0x11));
+        }
+    } else if (s_nPixelTestType != 7) {
+        u32 depth_base = sRender.zbp;
+
+        packed_alpha = nmlPacketMakeGsFixedAlpha((int)(alpha * 128.0f));
+        s_nPixelTestType = 7;
+        packet_gs_entry32(0x47, 0, 0x50000);
+        packet_gs_entry64(0x43, &packed_alpha);
+        nmlPacketAddPixelTestPacket(0x47, 0x50000, 0x50000, 0x4E,
+                                    depth_base | 0x01000000,
+                                    depth_base | (0x8080ULL << 0x11));
+    }
+
+    if (special_material)
+        s_nPixelTestType = -1;
+}
 
 int nmlPacketDirectData(void *arg0, int arg1) {
     XglPacket *p;
