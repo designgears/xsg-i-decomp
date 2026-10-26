@@ -2799,11 +2799,656 @@ void MenuShopInfoSet(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", subMenuShopNumerInc_11);
+void MenuShopCore(void) {
+    if (MenuShopWork->state != MenuShopWork->nextState) {
+        MenuShopWork->state = MenuShopWork->nextState;
+        MenuShopWork->stateFlags |= 1;
+    } else {
+        MenuShopWork->stateFlags &= 0xFE;
+    }
+    if (MenuShopWork->waitFrames != 0) {
+        MenuShopWork->waitFrames--;
+    }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", subMenuShopNumerDec_12);
+    switch (MenuShopWork->state) {
+    case 0x20:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->stateFlags |= 0x10;
+            MenuShopWork->waitFrames = 8;
+            break;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->mode = MenuSelectMove(MenuShopWork->mode, 4, 0);
+        if (PadData.half_2a == 0x20)
+            switch (MenuShopWork->mode) {
+            case 0:
+            case 1: {
+                u8 listStates[2] = { 0x30, 0x90 };
+                u8 *nextStates = listStates;
+                int categoryIndex;
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopCore);
+                MenuShopInfoSet();
+                if (MenuShopWork->categoryMask != 0) {
+                    for (categoryIndex = 0; categoryIndex < 8; categoryIndex++) {
+                        if ((MenuShopWork->categoryMask >> categoryIndex) & 1) {
+                            MenuShopWork->category = categoryIndex;
+                            break;
+                        }
+                    }
+                    MenuShopWork->nextState = nextStates[MenuShopWork->mode];
+                    MenuShopWork->stateFlags |= 0xC;
+                    xglSoundEffectNormalID(1, 0);
+                    MenuShopWork->waitFrames = 0xC;
+                } else {
+                    xglSoundEffectNormalID(5, 0);
+                }
+                break;
+            }
+            case 2:
+                if (MenuShopWork->equipmentStatus != 0) {
+                    xglSoundEffectNormalID(1, 0);
+                    MenuShopWork->nextState = 0xC0;
+                } else {
+                    xglSoundEffectNormalID(5, 0);
+                }
+                break;
+            case 3:
+                xglSoundEffectNormalID(2, 0);
+                MenuShopWork->nextState = 0xF0;
+                break;
+            }
+        if (PadData.half_2a & 0x40) {
+            MenuShopWork->nextState = 0xF0;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0x30:
+    case 0x90:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->listIndex = MenuShopListChange00I(1);
+            MenuShopWork->itemId = MenuShopWork->modelId = 0;
+            MenuShopWork->availableMoney = dataMoneyBoxChk();
+        }
+        if (MenuShopWork->waitFrames == 0) {
+            MenuShopWork->listIndex = WindowSPSelect(MenuShopWinSP, PadData.mappedRepeat);
+            WindowSPKeepSelect(MenuShopWinSP, &MenuKeepSelect[(MenuShopWork->category + MenuShopWork->mode * 9) * 5]);
+            if (MenuShopWork->listIndex >= 0) {
+                MenuShopWork->canEquip = subMenuShopEquipCheck(MenuSortGet(0, MenuShopWork->listIndex), MenuShopWork->category);
+            } else {
+                MenuShopWork->canEquip = 0;
+            }
+            if (MenuShopWork->listIndex >= 0) {
+                MENU_SHOP_PREVIEW_ITEM(MenuShopWork->listIndex);
+            } else {
+                MenuShopWork->itemId = *(unsigned int *)&MenuShopWork->modelId = 0;
+            }
+            if (PadData.mappedRepeat & 0xA000) {
+                u8 previousCategory;
+                int categoryStep;
+                int category;
+                int count;
+
+                previousCategory = MenuShopWork->category;
+                WindowSPKeepSelectCheck((unsigned char *)(void *)(&MenuKeepSelect[(previousCategory + MenuShopWork->mode * 9) * 5]));
+                categoryStep = (PadData.mappedRepeat & 0x2000) ? 1 : -1;
+                category = MenuShopWork->category;
+                for (count = 0; count < 9; count += categoryStep) {
+                    category += categoryStep;
+                    if (category < 0) {
+                        category = 8;
+                    }
+                    if (category >= 9) {
+                        category = 0;
+                    }
+                    if ((MenuShopWork->categoryMask >> category) & 1) {
+                        MenuShopWork->category = category;
+                        break;
+                    }
+                }
+                if (previousCategory != MenuShopWork->category) {
+                    xglSoundEffectNormalID(1, 0);
+                    MenuShopWork->listIndex = MenuShopListChange00I(0);
+                    if (MenuShopWork->listIndex >= 0) {
+                        MenuShopWork->canEquip = subMenuShopEquipCheck(MenuSortGet(0, MenuShopWork->listIndex), MenuShopWork->category);
+                        MENU_SHOP_PREVIEW_ITEM(MenuShopWork->listIndex);
+                    }
+                    MenuShopWork->waitFrames = 8;
+                }
+            } else if (PadData.half_2a & 0x20) {
+                if (MenuSortCheck(0) != 0) {
+                    if (MenuShopWork->mode == 0) {
+                        if (MenuBoxMoneyGet(MenuShopWork->itemId, 0) > MenuShopWork->availableMoney
+                            || MenuBoxChk(MenuShopWork->itemId) >= 99) {
+                            xglSoundEffectNormalID(5, 0);
+                        } else {
+                            MenuShopWork->nextState = 0xA0;
+                            MenuShopWork->quantity = 1;
+                            MenuShopWork->quantityLimit = MenuBoxChk(MenuShopWork->itemId);
+                            xglSoundEffectNormalID(1, 0);
+                        }
+                    } else if (MenuShopNoSaleCheck(MenuShopWork->itemId) != 0) {
+                        xglSoundEffectNormalID(5, 0);
+                    } else {
+                        MenuShopWork->nextState = 0xA0;
+                        MenuShopWork->quantity = 1;
+                        MenuShopWork->quantityLimit = MenuBoxChk(MenuShopWork->itemId);
+                        xglSoundEffectNormalID(1, 0);
+                    }
+                }
+            } else if (PadData.half_2a & 0x40) {
+                if (MenuCursorKeepCheck() == 0) {
+                    MenuShopWork->mode = 0;
+                }
+                MenuShopWork->nextState = 0x20;
+                xglSoundEffectNormalID(2, 0);
+            }
+        } else {
+            MenuShopWork->listIndex = WindowSPSelect(MenuShopWinSP, 0);
+        }
+        break;
+
+    case 0xA0: {
+        struct MenuShopQuantityChangeState {
+            int maximumQuantity;
+            int calculatedTotal;
+            int playChangeSound;
+            int minimumQuantity;
+        } quantityState;
+        int i;
+
+        void subMenuShopNumerInc(void)
+        {
+            int unitCost;
+
+            if (MenuShopWork->quantity < quantityState.maximumQuantity) {
+                unitCost = MenuBoxMoneyGet(MenuShopWork->itemId, 0);
+                quantityState.calculatedTotal = unitCost * (MenuShopWork->quantity + 1);
+                if (MenuShopWork->availableMoney >= quantityState.calculatedTotal) {
+                    MenuShopWork->quantity++;
+                    if (quantityState.playChangeSound != 0) {
+                        xglSoundEffectNormalID(3, 0);
+                        quantityState.playChangeSound = 0;
+                    }
+                }
+            }
+        }
+
+        void subMenuShopNumerDec(void)
+        {
+            if (quantityState.minimumQuantity < MenuShopWork->quantity) {
+                MenuShopWork->quantity = MenuShopWork->quantity - 1;
+                if (quantityState.playChangeSound != 0) {
+                    xglSoundEffectNormalID(3, 0);
+                    quantityState.playChangeSound = 0;
+                }
+            }
+        }
+
+        if (MenuShopWork->stateFlags & 1) {
+            if (MenuShopWork->category == 7) {
+                MenuShopWork->nextState = 0xA2;
+                MenuShopWork->waitFrames = 1;
+            } else {
+                MenuShopWork->waitFrames = 8;
+            }
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        if (MenuShopWork->mode == 0) {
+            quantityState.maximumQuantity = 99 - MenuShopWork->quantityLimit;
+            quantityState.minimumQuantity = 1;
+            quantityState.playChangeSound = 1;
+            quantityState.calculatedTotal = 0;
+            if (PadData.mappedRepeat & 0x4000) {
+                subMenuShopNumerDec();
+            }
+            if (PadData.mappedRepeat & 0x1000) {
+                subMenuShopNumerInc();
+            }
+            if (PadData.mappedRepeat & 0x2000) {
+                for (i = 0; i < 10; i++) {
+                    subMenuShopNumerInc();
+                }
+            }
+            if (PadData.mappedRepeat & 0x8000) {
+                for (i = 0; i < 10; i++) {
+                    subMenuShopNumerDec();
+                }
+            }
+        } else {
+            int minimumQuantity = 1;
+            u8 quantityLimit;
+
+            quantityLimit = MenuShopSelectionGet()->quantityLimit;
+            if ((PadData.mappedRepeat & 0x4000) && MenuShopSelectionGet()->quantity != minimumQuantity) {
+                MenuShopSelectionGet()->quantity--;
+                xglSoundEffectNormalID(3, 0);
+            }
+            if ((PadData.mappedRepeat & 0x1000) && MenuShopSelectionGet()->quantity != quantityLimit) {
+                MenuShopSelectionGet()->quantity++;
+                xglSoundEffectNormalID(3, 0);
+            }
+            if ((PadData.mappedRepeat & 0x2000) && MenuShopSelectionGet()->quantity != quantityLimit) {
+                MenuShopSelectionGet()->quantity += 10;
+                if (MenuShopSelectionGet()->quantity > quantityLimit) {
+                    MenuShopSelectionGet()->quantity = quantityLimit;
+                }
+                xglSoundEffectNormalID(3, 0);
+            }
+            if ((PadData.mappedRepeat & 0x8000) && MenuShopSelectionGet()->quantity != minimumQuantity) {
+                MenuShopSelectionGet()->quantity -= 10;
+                if (MenuShopSelectionGet()->quantity < minimumQuantity) {
+                    MenuShopSelectionGet()->quantity = minimumQuantity;
+                }
+                xglSoundEffectNormalID(3, 0);
+            }
+        }
+        if (PadData.half_2a & 0x20) {
+            MenuShopWork->nextState = 0xA2;
+            xglSoundEffectNormalID(1, 0);
+        }
+        if (PadData.half_2a & 0x40) {
+            if (MenuShopWork->mode == 0) {
+                MenuShopWork->nextState = 0x30;
+            } else {
+                MenuShopWork->nextState = 0x90;
+            }
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+    }
+
+    case 0xA2:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->quantityAction = 0;
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->quantityAction = MenuSelectMove(MenuShopWork->quantityAction, 2, 0);
+        if (PadData.half_2a & 0x20) {
+            if (MenuShopSelectionGet()->quantityAction == 0) {
+                int i;
+
+                if (MenuShopSelectionGet()->mode == 0) {
+                    for (i = 0; i < MenuShopSelectionGet()->quantity; i++) {
+                        MenuBoxInc(MenuSortGet(0, MenuShopWork->listIndex));
+                    }
+                    dataMoneyBoxDec(MenuBoxMoneyGet(MenuShopWork->itemId, 0) * MenuShopWork->quantity);
+                } else {
+                    for (i = 0; i < MenuShopSelectionGet()->quantity; i++) {
+                        MenuBoxDec(MenuShopWork->itemId);
+                    }
+                    dataMoneyBoxInc(MenuBoxMoneyGet(MenuShopWork->itemId, 1) * MenuShopWork->quantity);
+                    MenuShopWork->stateFlags |= 0x10;
+                }
+                MenuShopWork->nextState = 0xA4;
+            } else if (MenuShopSelectionGet()->category == 7) {
+                u8 listStates[2] = { 0x30, 0x90 };
+
+                MenuShopWork->nextState = *(listStates + MenuShopSelectionGet()->mode);
+            } else {
+                MenuShopWork->nextState = 0xA0;
+            }
+            xglSoundEffectNormalID(1, 0);
+        }
+        if (PadData.half_2a & 0x40) {
+            if (MenuShopSelectionGet()->category == 7) {
+                u8 listStates[2] = { 0x30, 0x90 };
+
+                MenuShopWork->nextState = *(listStates + MenuShopSelectionGet()->mode);
+            } else {
+                MenuShopWork->nextState = 0xA0;
+            }
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xA4:
+        if (MenuShopWork->stateFlags & 1) {
+            if (MenuShopWork->mode == 0 && MenuShopWork->category == 7) {
+                int partyUnitIds[16];
+                int i;
+
+                MenuShopWork->unitCount = PartyAgwsGet(partyUnitIds);
+                for (i = 0; i < MenuShopWork->unitCount; i++) {
+                    MenuShopPartyGet()->unitIds[i] = partyUnitIds[i];
+                }
+                MenuShopAgwsListChange();
+            }
+            MenuShopWork->listIndex = MenuShopListChange00I(1);
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        if (PadData.half_2a & 0x20) {
+            u8 listStates[2] = { 0x30, 0x90 };
+
+            MenuShopWork->nextState = *(listStates + MenuShopWork->mode);
+            if (MenuShopWork->mode == 0) {
+                MenuShopListColorChange(0, 0);
+            }
+            xglSoundEffectNormalID(1, 0);
+        }
+        break;
+
+    case 0xC0:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->sortOption = MenuSelectMove(MenuShopWork->sortOption, 4, 0);
+        if (PadData.mappedPressed == 0x20) {
+            switch (MenuShopWork->sortOption) {
+            case 0:
+            case 1:
+                if (MenuShopWork->sortOption == 0) {
+                    MenuShopWork->sort_mode_selector = 1;
+                } else {
+                    MenuShopWork->sort_mode_selector = 0;
+                }
+                xglSoundEffectNormalID(1, 0);
+                if (MenuShopWork->sort_mode_selector != 0) {
+                    WindowSPKeepSelectCheck((unsigned char *)(void *)(&MenuKeepSelect[0x5A]));
+                } else {
+                    WindowSPKeepSelectCheck((unsigned char *)(void *)(&MenuKeepSelect[0x5F]));
+                }
+                MenuShopWork->listIndex = MenuShopListChange01I(0);
+                MenuShopWork->nextState = 0xD0;
+                MenuShopWork->waitFrames = 0xC;
+                break;
+            case 2:
+                if (dataMoneyBoxChk() >= 100) {
+                    xglSoundEffectNormalID(1, 0);
+                    MenuShopWork->nextState = 0xC2;
+                } else {
+                    xglSoundEffectNormalID(5, 0);
+                }
+                MenuShopWork->waitFrames = 0xC;
+                break;
+            case 3:
+                xglSoundEffectNormalID(2, 0);
+                MenuShopWork->nextState = 0x20;
+                break;
+            }
+        }
+        if (PadData.mappedPressed == 0x40) {
+            if (MenuCursorKeepCheck() == 0) {
+                MenuShopWork->mode = 0;
+            }
+            MenuShopWork->nextState = 0x20;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xC2:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->waitFrames = 0xC;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->unitSelection = MenuSelectMove2(MenuShopAgwsGet()->unitSelection, MenuShopAgwsGet()->unitCount, 0);
+        MenuShopAgwsGet()->unitId = MenuShopPartyGet()->unitIds[MenuShopAgwsGet()->unitSelection];
+        if (PadData.mappedPressed == 0x20) {
+            if (dataMoneyBoxChk() >= 100 && MenuCharHpCheck(MenuShopWork->unitId) == 0) {
+                MenuShopWork->nextState = 0xC4;
+                xglSoundEffectNormalID(1, 0);
+            } else {
+                xglSoundEffectNormalID(5, 0);
+            }
+        }
+        if (PadData.mappedPressed == 0x40) {
+            if (MenuCursorKeepCheck() == 0) {
+                MenuShopWork->sortOption = 0;
+            }
+            MenuShopWork->nextState = 0xC0;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xC4:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->quantityAction = 0;
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->quantityAction = MenuSelectMove(MenuShopWork->quantityAction, 2, 0);
+        if (PadData.mappedPressed == 0x20) {
+            if (MenuShopWork->quantityAction == 0) {
+                MenuShopWork->nextState = 0xC6;
+                xglSoundEffectNormalID(1, 0);
+            } else {
+                MenuShopWork->nextState = 0xC2;
+                xglSoundEffectNormalID(2, 0);
+            }
+        }
+        if (PadData.mappedPressed == 0x40) {
+            MenuShopWork->nextState = 0xC2;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xC6:
+        if (MenuShopWork->stateFlags & 1) {
+            int repairAttack[4];
+            int repairDefense[4];
+            MenuShopUnitData *unit;
+            ShopCalculatedPara *para;
+
+            unit = func_A191C0(MenuShopPartyGet()->unitIds[MenuShopWork->unitSelection]);
+            para = func_00A11108(MenuShopPartyGet()->unitIds[MenuShopWork->unitSelection], repairAttack, repairDefense);
+            unit->hitPoints = para->maxHp;
+            dataMoneyBoxDec(100);
+            MenuShopWork->waitFrames = 2;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        if (PadData.mappedPressed == 0x20) {
+            if (dataMoneyBoxChk() >= 100) {
+                MenuShopWork->nextState = 0xC2;
+            } else {
+                MenuShopWork->nextState = 0xC0;
+            }
+            xglSoundEffectNormalID(1, 0);
+        }
+        break;
+
+    case 0xD0:
+        if (MenuShopWork->waitFrames == 0) {
+            MenuShopWork->listIndex = WindowSPSelect(MenuShopWinSP, PadData.mappedRepeat);
+            if (MenuShopWork->sort_mode_selector != 0) {
+                WindowSPKeepSelect(MenuShopWinSP, &MenuKeepSelect[0x5A]);
+            } else {
+                WindowSPKeepSelect(MenuShopWinSP, &MenuKeepSelect[0x5F]);
+            }
+            if (MenuShopWork->listIndex >= 0) {
+                int itemId;
+                int unitId;
+
+                itemId = MenuSortGet(0, MenuShopWork->listIndex);
+                MenuShopItemGet()->itemId = itemId;
+                MenuShopItemGet()->modelId = (s16)MenuShopItemGet()->itemId;
+                if (MenuShopItemGet()->listIndex >= 0) {
+                    MenuShopAgwsGet()->equipmentId = MenuShopItemGet()->modelId;
+                    MenuShopAgwsGet()->unitId = 0x11;
+                    for (unitId = 0x11; unitId < 0x21; unitId++) {
+                        if (MenuFrameEquipCheck(unitId, MenuShopWork->equipmentId) != 0) {
+                            MenuShopWork->unitId = unitId;
+                            break;
+                        }
+                    }
+                    if (PadData.mappedPressed == 0x20) {
+                        int money;
+
+                        money = ((int (*)(void))dataMoneyBoxChk)();
+                        if (money >= MenuBoxMoneyGet(MenuShopWork->itemId, 0)) {
+                            MenuShopWork->nextState = 0xD4;
+                            xglSoundEffectNormalID(1, 0);
+                            MenuShopWork->waitFrames = 2;
+                            if (MenuCursorKeepCheck() == 0) {
+                                MenuShopWork->unitSelection = 0;
+                            }
+                        } else {
+                            xglSoundEffectNormalID(5, 0);
+                            MenuShopWork->waitFrames = 2;
+                        }
+                    }
+                }
+            }
+            if (PadData.mappedPressed == 0x40) {
+                if (MenuCursorKeepCheck() == 0) {
+                    MenuShopWork->sortOption = 0;
+                }
+                MenuShopWork->nextState = 0xC0;
+                MenuShopWork->waitFrames = 2;
+                xglSoundEffectNormalID(2, 0);
+            }
+        } else {
+            MenuShopWork->listIndex = WindowSPSelect(MenuShopWinSP, 0);
+            if (MenuShopWork->listIndex >= 0) {
+                int itemId;
+
+                itemId = MenuSortGet(0, MenuShopWork->listIndex);
+                MenuShopItemGet()->itemId = itemId;
+                MenuShopItemGet()->modelId = (s16)MenuShopItemGet()->itemId;
+                MenuShopWork->equipmentId = MenuShopItemGet()->modelId;
+            }
+        }
+        break;
+
+    case 0xD2: {
+        MenuShopUnitData *unit;
+        int unitSelection;
+        int canEquip;
+        s16 previousEquipmentId;
+
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        unitSelection = MenuSelectMove2(MenuShopAgwsGet()->unitSelection, MenuShopAgwsGet()->unitCount, 0);
+        if (MenuShopAgwsGet()->unitSelection != unitSelection) {
+            MenuAgwsParaSet(MenuShopAgwsGet()->unitId, 10);
+        }
+        MenuShopWork->unitSelection = unitSelection;
+        MenuShopAgwsGet()->unitId = MenuShopPartyGet()->unitIds[MenuShopAgwsGet()->unitSelection];
+        if (PadData.mappedPressed == 0x20) {
+            if (MenuShopAgwsGet()->sort_mode_selector != 0) {
+                canEquip = MenuFrameEquipCheck(MenuShopAgwsGet()->unitId, MenuShopAgwsGet()->equipmentId);
+            } else {
+                canEquip = MenuEngineEquipCheck(MenuShopAgwsGet()->unitId, MenuShopAgwsGet()->equipmentId);
+            }
+            if (canEquip != 0) {
+                MenuShopWork->nextState = 0xD4;
+                xglSoundEffectNormalID(1, 0);
+            } else {
+                xglSoundEffectNormalID(5, 0);
+            }
+        }
+        if (PadData.mappedPressed == 0x40) {
+            MenuShopWork->nextState = 0xD0;
+            xglSoundEffectNormalID(2, 0);
+        }
+        unit = func_A191C0(MenuShopWork->unitId);
+        if (MenuShopAgwsGet()->sort_mode_selector != 0) {
+            previousEquipmentId = unit->frameId;
+            unit->frameId = MenuShopAgwsGet()->equipmentId;
+        } else {
+            previousEquipmentId = unit->engineId;
+            unit->engineId = MenuShopAgwsGet()->equipmentId;
+        }
+        MenuAgwsParaSet(MenuShopWork->unitId, 1);
+        if (MenuShopWork->sort_mode_selector != 0) {
+            unit->frameId = previousEquipmentId;
+        } else {
+            unit->engineId = previousEquipmentId;
+        }
+        break;
+    }
+
+    case 0xD4:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->quantityAction = 0;
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->quantityAction = MenuSelectMove(MenuShopWork->quantityAction, 2, 0);
+        if (PadData.mappedPressed == 0x20) {
+            if (MenuShopWork->quantityAction == 0) {
+                MenuShopWork->nextState = 0xD6;
+                xglSoundEffectNormalID(1, 0);
+            } else {
+                MenuShopWork->nextState = 0xD0;
+                xglSoundEffectNormalID(2, 0);
+            }
+        }
+        if (PadData.mappedPressed == 0x40) {
+            MenuShopWork->nextState = 0xD0;
+            xglSoundEffectNormalID(2, 0);
+        }
+        break;
+
+    case 0xD6:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopUnitData *unit;
+            int equipmentKey;
+
+            unit = func_A191C0(MenuShopWork->unitId);
+            if (MenuShopAgwsGet()->sort_mode_selector != 0) {
+                unit->frameId = MenuShopAgwsGet()->equipmentId;
+            } else {
+                unit->engineId = MenuShopAgwsGet()->equipmentId;
+            }
+            MenuAgwsParaSet(MenuShopWork->unitId, 0);
+            if (MenuShopAgwsGet()->sort_mode_selector != 0) {
+                equipmentKey = (u16)MenuShopAgwsGet()->equipmentId + 0xB0000;
+            } else {
+                equipmentKey = (u16)MenuShopAgwsGet()->equipmentId + 0xC0000;
+            }
+            dataMoneyBoxDec(MenuBoxMoneyGet(equipmentKey, 0));
+            MenuShopListColorChange(0, 2);
+            MenuShopWork->waitFrames = 8;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        if (PadData.mappedPressed == 0x20) {
+            MenuShopWork->nextState = 0xD0;
+            xglSoundEffectNormalID(1, 0);
+        }
+        break;
+
+    case 0xF0:
+        if (MenuShopWork->stateFlags & 1) {
+            MenuShopWork->waitFrames = 0x10;
+        }
+        if (MenuShopWork->waitFrames != 0) {
+            break;
+        }
+        MenuShopWork->nextState = 0xFF;
+        break;
+    }
+    MenuShopWork->stateFlags &= 0xFD;
+    xglFontDebugHex(0, 0x48, MenuShopWork->state, 2);
+    xglFontDebugHex(0, 0x50, MenuShopWork->nextState, 2);
+    xglFontDebugPrintf(0, 0x60, D_004C7A68, MenuShopWork->mode);
+    xglFontDebugPrintf(0, 0x68, D_004C7A78, MenuShopWork->category);
+    xglFontDebugPrintf(0, 0x70, D_004C7A88, MenuShopWork->listIndex);
+    xglFontDebugPrintf(0, 0x80, D_004C7A98, MenuShopWork->unitSelection);
+}
 
 extern void MenuShopSelect(TskObject *task, void *data);
 extern void MenuShopEx(TskObject *task, void *data);

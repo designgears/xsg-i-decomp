@@ -31,7 +31,9 @@ struct MenuShopWorkData {
     int itemId;
     int modelId;
     unsigned int modelPending;
-    long long availableMoney;
+    union {
+        long long availableMoney;
+    };
     unsigned char unmodeled_38[8];
     short unitId;
     short equipmentId;
@@ -120,5 +122,43 @@ extern const char *msg01_2_0036DB50[4];
 extern const char D_004DB168[];
 extern const char D_004DB170[];
 extern int MenuSelectWindow();
+
+/* MenuShopCore (ported from upstream) declarations. */
+/* TU-local view of the pad state: the shared PadPrefix stops at +0x2c,
+ * this TU also reads the mapped pressed/repeat masks at +0x32/+0x34. */
+typedef struct {
+    u8 pad_00[0x28];
+    u16 half_28;
+    u16 half_2a;
+    unsigned char unmodeled_2c[6];
+    u16 mappedPressed;
+    u16 mappedRepeat;
+} MenuShopPadData;
+extern MenuShopPadData PadData;
+extern const char D_004C7A68[];
+extern const char D_004C7A78[];
+extern const char D_004C7A88[];
+extern const char D_004C7A98[];
+void xglSoundEffectNormalID(int, int);
+void MenuAgwsParaSet(int, int);
+int MenuSelectMove(int selection, int count, int wrap);
+int MenuSelectMove2(int, int, int);
+struct MenuShopWindowSP;
+void WindowSPKeepSelect(struct MenuShopWindowSP *cursor, unsigned char *keep);
+void WindowSPKeepSelectCheck(unsigned char *keep);
+int MenuCursorKeepCheck(void);
+int MenuBoxInc(unsigned int);
+int MenuBoxDec(unsigned int);
+int dataMoneyBoxInc(int);
+int dataMoneyBoxDec(int);
+void xglFontDebugHex(int, int, unsigned int, int);
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+
+/* Each list selection updates the item and its signed model key together. */
+#define MENU_SHOP_PREVIEW_ITEM(listIndex) \
+    { \
+        MenuShopWork->itemId = MenuSortGet(0, (listIndex)); \
+        MenuShopWork->modelId = (short)MenuShopWork->itemId; \
+    }
 
 #endif /* SRC_MAIN_MENU_SHOP_H */

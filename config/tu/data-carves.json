@@ -4437,7 +4437,51 @@
      "c_owned_symbols": [
       "jtbl_004C7A20"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004C7A68",
+      "D_004C7A78",
+      "D_004C7A88",
+      "D_004C7A98"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_shop.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db238",
+      "0x004db258"
+     ],
+     "generated": [
+      "0x004db238",
+      "0x004db252"
+     ],
+     "generated_by": [
+      "MenuShopCore"
+     ],
+     "c_owned_symbols": [
+      "D_004DB238",
+      "D_004DB240",
+      "D_004DB248",
+      "D_004DB250"
+     ],
+     "also_referenced_by_c": [
+      "D_004DB138",
+      "D_004DB140",
+      "D_004DB148",
+      "D_004DB150",
+      "D_004DB168",
+      "D_004DB170",
+      "D_004DB1A0",
+      "D_004DB1B8",
+      "D_004DB220",
+      "D_004DB228",
+      "D_004DB230"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
