@@ -1,7 +1,8 @@
 # Xenosaga Episode I
-[![Code](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&label=Code)](https://bytematch.dev/designgears/xsg-i-decomp)
-[![Functions](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=functions&label=Functions)](https://bytematch.dev/designgears/xsg-i-decomp)
-[![Linked](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=complete_code&label=Linked)](https://bytematch.dev/designgears/xsg-i-decomp)
+[![Recovered](https://img.shields.io/badge/Recovered-7%2C006%20%2F%207%2C645%20%2891.6%25%29-blue)](#progress)
+[![EE](https://img.shields.io/badge/EE%20functions-97.99%25-blue)](#progress)
+[![objdiff code](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&label=objdiff%20code)](https://bytematch.dev/designgears/xsg-i-decomp)
+[![objdiff functions](https://bytematch.dev/designgears/xsg-i-decomp.svg?mode=shield&measure=matched_functions&label=objdiff%20functions)](https://bytematch.dev/designgears/xsg-i-decomp)
 
 > This project is developed with AI assistance.
 
@@ -26,6 +27,10 @@ Recovered 7,006 of 7,645 in-scope game function(s) (91.642%).
   counted function matches its accepted record under its recorded
   contract, independently reviewed: config/units and config/vu-build.json are not tracked.
 <!-- coverage-report:end -->
+
+The `objdiff` badges and the ByteMatch map are stricter: they weigh code bytes, count the
+unbuilt IOP modules, and give partial credit to ~230 functions that are byte-identical in the
+linked build but whose original-side disassembly lacks some relocations and literal names.
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
