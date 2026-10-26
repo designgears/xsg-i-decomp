@@ -2147,7 +2147,169 @@ static void MenuShopEx02(TskObject *task, struct MenuShopUnitPanel *work)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopIcon);
+float xglCos(float angle);
+extern const float D_004D7E64;
+extern const float D_004D7E68;
+struct MenuShopIconSprite {
+    signed char state;
+    unsigned char unmodeled_01[3];
+    short x;
+    short y;
+    int depth;
+    signed char red;
+    signed char green;
+    signed char blue;
+    unsigned char alpha;
+    unsigned char unmodeled_10[0x14];
+    short spriteId;
+};
+struct MenuShopIconDisplay {
+    signed char state;
+    unsigned char unmodeled_01;
+    unsigned char slide;
+    unsigned char phase;
+    short animation;
+    short active;
+    signed char categoryLift[9];
+    unsigned char unmodeled_11[3];
+    int depth;
+    float scale;
+    struct MenuShopIconSprite sprites[11];
+};
+extern const union MenuShopIconIds D_004C79F8;
+static void MenuShopIcon(TskObject *task, void *data)
+{
+    struct MenuShopIconDisplay *work = data;
+    int i;
+
+    switch (task->state) {
+    case 0:
+        {
+            union MenuShopIconIds spriteIds = D_004C79F8;
+            work->depth = 0xfffff0;
+            for (i = 0; i < 11; i++) {
+                eSpriteSet(&work->sprites[i], spriteIds.ids[i]);
+                work->sprites[i].depth = work->depth;
+            }
+        }
+        {
+            short topY = 12;
+            for (i = 1; i >= 0; i--)
+                work->sprites[i].y = topY;
+        }
+        for (i = 2; i < 11; i++) {
+            work->sprites[i].y = 12;
+            if (((MenuShopWork->categoryMask >> (i - 2)) & 1) == 0) {
+                work->sprites[i].blue = 0x40;
+                work->sprites[i].green = 0x40;
+                work->sprites[i].red = 0x40;
+            }
+        }
+        work->active = 1;
+        work->slide = 16;
+        work->scale = 1.0f;
+        work->animation = 0;
+        work->phase = 0;
+        for (i = 0; i < 9; i++)
+            work->categoryLift[i] = 0;
+        work->state = 2;
+        return;
+    case 2:
+        switch (MenuShopWork->state) {
+        case 0x20:
+            if (MenuShopWork->stateFlags & 1) {
+                for (i = 2; i < 11; i++) {
+                    work->sprites[i].blue = -0x80;
+                    work->sprites[i].green = -0x80;
+                    work->sprites[i].red = -0x80;
+                }
+            }
+            if (work->slide != 0)
+                work->slide--;
+            if (work->scale != 1.0f)
+                work->scale += 0.2;
+            break;
+        case 0xa0:
+        case 0xa4:
+        case 0xa2:
+        case 0x30:
+        case 0x90:
+            if (MenuShopWork->stateFlags & 1) {
+                for (i = 2; i < 11; i++) {
+                    if (((MenuShopWork->categoryMask >> (i - 2)) & 1) == 0) {
+                        work->sprites[i].blue = 0x40;
+                        work->sprites[i].green = 0x40;
+                        work->sprites[i].red = 0x40;
+                    } else {
+                        work->sprites[i].blue = -0x80;
+                        work->sprites[i].green = -0x80;
+                        work->sprites[i].red = -0x80;
+                    }
+                }
+            }
+            if (work->slide != 0)
+                work->slide--;
+            work->scale += D_004D7E64;
+            if (work->scale > 1.0f)
+                work->scale = 1.0f;
+            break;
+        case 0xf0:
+            work->active = 0;
+            /* fall through */
+        case 0xff:
+            if (work->slide != 16)
+                work->slide++;
+            break;
+        default:
+            if (work->slide != 0)
+                work->slide--;
+            work->scale -= D_004D7E68;
+            if (work->scale < 0.0f)
+                work->scale = 0.0f;
+            break;
+        }
+        for (i = 0; i < 9; i++) {
+            if (i == MenuShopWork->category) {
+                unsigned char state = MenuShopWork->state;
+                if (state != 0x20 && state != 0xf0 &&
+                    (state >> 4) != 0xc && (state >> 4) != 0xd) {
+                    if (work->categoryLift[i] != 6)
+                        work->categoryLift[i]++;
+                    continue;
+                }
+            }
+            if (work->categoryLift[i] != 0)
+                work->categoryLift[i]--;
+        }
+        work->phase++;
+        {
+        for (i = 0; i < 2; i++) {
+            float cosine;
+            float alpha;
+            work->sprites[i].x = 0x102 + i * 0xdd;
+            cosine = xglCos((float)i * 3.1415927f);
+            work->sprites[i].x = (int)((float)work->sprites[i].x + cosine * (float)-(work->slide * 2));
+            work->sprites[i].y = 14;
+            alpha = (128.0f - (float)work->slide * 0.0625f * 128.0f) * work->scale;
+            work->sprites[i].alpha = alpha;
+        }
+        }
+        {
+        for (i = 2; i < 11; i++) {
+            float alpha;
+            work->sprites[i].x = 0x121 + (i - 2) * 0x15;
+            work->sprites[i].x = (int)((float)work->sprites[i].x +
+                xglCos((float)(i - 2) * 0.448798954f) * (float)-(work->slide * 2));
+            work->sprites[i].y = work->categoryLift[i - 2] + 12;
+            alpha = (128.0f - (float)work->slide * 0.0625f * 128.0f) * work->scale;
+            work->sprites[i].alpha = alpha;
+        }
+        }
+        for (i = 0; i < 11; i++)
+            eSpriteMain(&work->sprites[i]);
+        break;
+    }
+}
 
 typedef struct MenuShopUnitData {
     unsigned char unmodeled_00[0x34];
@@ -3454,7 +3616,7 @@ extern void MenuShopSelect(TskObject *task, void *data);
 extern void MenuShopEx(TskObject *task, void *data);
 extern void MenuShopSeisan(TskObject *task, void *data);
 extern void MenuShopSeisan02(TskObject *task, void *data);
-extern void MenuShopIcon(TskObject *task, void *data);
+static void MenuShopIcon(TskObject *task, void *data);
 extern void MenuShopParameter(TskObject *task, void *data);
 extern XglTaskScheduler *MenuShopTask;
 extern int ShopDataBufTop;
