@@ -77,6 +77,8 @@ typedef struct SefProgressState {
     int key_index;
     int frame;
     int value;
+    unsigned char unmodeled_0c[4];
+    Vector4 vector;
 } SefProgressState;
 
 float MMathCalcLength(float *vec);
@@ -1897,7 +1899,315 @@ typedef struct SefLightInput {
     int range;
 } SefLightInput;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecLineLocalData);
+typedef struct SefKey5Prefix8 {
+    unsigned int unmodeled_000[2];
+    SefKey5 keys[1];
+} SefKey5Prefix8;
+
+typedef struct SefKey3Table {
+    unsigned int unmodeled_000;
+    SefKey3 keys[1];
+} SefKey3Table;
+
+typedef struct SefModeKeyTable {
+    short mode;
+    unsigned char unmodeled_002[6];
+    SefKey5 keys[1];
+} SefModeKeyTable;
+
+typedef unsigned int SefPackedAnimation __attribute__((mode(TI)));
+
+typedef struct SefIntegerProgressState {
+    int key_index;
+    int frame;
+    int value;
+} SefIntegerProgressState;
+
+typedef struct SefParticle {
+    unsigned char unmodeled_000[0x040];
+    Matrix4 transform;                               /* +0x040 */
+    unsigned char unmodeled_080[0x0c0 - 0x080];
+    Vector4 start_position;                           /* +0x0c0 */
+    Vector4 target_position;                           /* +0x0d0 */
+    Vector4 random_rotation;                           /* +0x0e0 */
+    Vector4 rotated_position;                          /* +0x0f0 */
+    float animated_color_xyz[3];                       /* +0x100 */
+    float one_initialized_scalar;                     /* +0x10c */
+    unsigned char unmodeled_110[0x130 - 0x110];
+    Vector4 random_translation;                        /* +0x130 */
+    union {
+        SefPackedAnimation animated_scale;           /* +0x140 */
+        int animated_scale_words[4];
+    };
+    float random_scale;                               /* +0x150 */
+    float battle_scale;                               /* +0x154 */
+    int kind;                                         /* +0x158 */
+    short frame;                                      /* +0x15c */
+    short state;                                      /* +0x15e */
+    short animate_advance;                            /* +0x160 */
+    unsigned char signal;                             /* +0x162 */
+    unsigned char unmodeled_163[0x188 - 0x163];
+    short rotation_state;                             /* +0x188 */
+    unsigned char unmodeled_18a[0x1a0 - 0x18a];
+    int color[4];                                     /* +0x1a0 */
+    unsigned char unmodeled_1b0[0x1c0 - 0x1b0];
+    Vector4 rotation;                                 /* +0x1c0 */
+    unsigned char unmodeled_1d0[0x1e0 - 0x1d0];
+    union {
+        Vector4 color_scale;                          /* +0x1e0 */
+        SefPackedAnimation color_scale_bits;
+    };
+    unsigned char unmodeled_1f0[0x200 - 0x1f0];
+    Vector4 color_offset;                             /* +0x200 */
+    unsigned char unmodeled_210[0x220 - 0x210];
+    SefLightInput light;                              /* +0x220 */
+    unsigned char unmodeled_230[0x240 - 0x230];
+    Vector4 size;                                     /* +0x240 */
+    struct {
+        int key_index;
+        int frame;
+        int value;
+    } first_integer_progress;                         /* +0x250 */
+    struct {
+        int key_index;
+        int frame;
+        int value;
+    } second_integer_progress;                        /* +0x25c */
+    SefFloatProgressState float_progress;             /* +0x268 */
+} SefParticle;
+
+typedef struct SefLineData {
+    SefKey5Prefix8 *initial_vector_keys;
+    SefModeKeyTable *rotation_vector_keys;
+    SefKey5 *position_vector_keys;
+    SefKey3Table *first_integer_keys_local;
+    SefKey3 *second_integer_keys_local;
+    SefKey5 *size_vector_keys;
+    SefKey3Table *float_keys;
+    SefKey5 *light_keys;
+    unsigned char unmodeled_020[0x10];
+    Vector4 global_position;                 /* +0x30 */
+    unsigned char unmodeled_040[0x10];
+    Vector4 parent_position;                 /* +0x50 */
+    unsigned char unmodeled_060[0x40];
+    Vector4 origin_offset;                   /* +0xa0 */
+    Vector4 position;
+    Vector4 position_delta;                  /* +0xc0 */
+    unsigned char unmodeled_0D0[0x10];
+    Vector4 scale_vector;
+    Vector4 global_position_source;          /* +0xf0 */
+    Vector4 rotation_vector;
+    Vector4 parent_position_source;          /* +0x110 */
+    Vector4 position_vector;
+    unsigned char position_source[0x30];
+    SefProgressState first_vector_progress;
+    SefProgressState second_vector_progress;
+    unsigned char unmodeled_1A0[0x0C];
+    SefIntegerProgressState first_integer_progress;
+    SefIntegerProgressState second_integer_progress;
+    unsigned char unmodeled_1C4[0x0C];
+    unsigned char *scale_keys;
+    struct SefKey5Table *first_vector_keys;
+    unsigned char *rotation_keys;
+    struct SefKey5Table *second_vector_keys;
+    SefModeKeyTable *key_1E0;
+    unsigned char *key_1E4;
+    struct SefKey3 *first_integer_keys;
+    struct SefKey3 *second_integer_keys;
+    unsigned char *key_1F0;
+    short *position_keys;
+    unsigned char unmodeled_1F8[0x400];
+    float gravity;
+    float height;
+    short local_point_handles[0x100];                 /* +0x600 */
+    unsigned char unmodeled_800[2];
+    short global_result;
+    short timer;
+    unsigned short frame;
+    short start_time;                        /* +0x808 */
+    unsigned short loop_mode;
+    unsigned short global_data_count;
+    short field_80E;                         /* +0x80E */
+    short link_index;                        /* +0x810 */
+    unsigned short line_flags;               /* +0x812 */
+    unsigned short local_result;
+    short collision_progress;
+    short global_data_state;                 /* +0x818 */
+    unsigned char unmodeled_81A[6];
+} SefLineData;
+
+extern float D_004D831C;
+extern int D_00794334[];
+extern short _revDirZ;
+static int sefFreeLocalData(unsigned char *line_data, unsigned int index);
+static int sefAnimate(unsigned char *object, unsigned char *state, int advance);
+static void sefAddLightActor(const Vector4 *position, const SefLightInput *light);
+
+static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
+{
+    SefParticle *particle;
+    short *handle_pointer;
+    int active_count = 0;
+    int add_light = 0;
+    SefKey5 *initial_vector_keys = line_data->initial_vector_keys != 0
+        ? line_data->initial_vector_keys->keys : 0;
+    SefKey5 *rotation_vector_keys = line_data->rotation_vector_keys != 0
+        ? line_data->rotation_vector_keys->keys : 0;
+    SefKey3 *float_keys = line_data->float_keys != 0
+        ? line_data->float_keys->keys : 0;
+    SefKey3 *first_integer_keys = line_data->first_integer_keys_local != 0
+        ? line_data->first_integer_keys_local->keys : 0;
+    SefKey5 *color_keys = line_data->key_1E0 != 0
+        ? line_data->key_1E0->keys : 0;
+    int loop_mode = line_data->rotation_vector_keys != 0
+        ? line_data->rotation_vector_keys->mode : 0;
+    int previous_mode = line_data->rotation_vector_keys != 0
+        ? ((short *)line_data->rotation_vector_keys)[-1] : 0;
+    int update_parent;
+    int update_scaled_size;
+    int update_rotation;
+    int index;
+    int component_result;
+    int point_part;
+    short reverse_direction;
+
+    (void)frame;
+    update_parent = (_nowScheduler->flags & 0x800) != 0 &&
+                    (line_data->line_flags & 0x400) == 0;
+    update_scaled_size = line_data->key_1E0->mode != 3 && line_data->size_vector_keys != 0;
+    reverse_direction = _revDirZ;
+    point_part = loop_mode & ~0xe000;
+    if (point_part >= 5) {
+        sefGetPoint((Vector4 *)D_00794310, _zeroPos_004CBF00, point_part);
+    }
+
+    index = 0;
+    handle_pointer = line_data->local_point_handles;
+    loop_mode = previous_mode != 0 ? loop_mode | 0x8000 : loop_mode;
+    for (; index < 256; index++, handle_pointer++) {
+        short handle = *handle_pointer;
+        if (handle >= 0) {
+            particle = (SefParticle *)&_ptAlloc[handle * 0x280];
+            if (particle != 0) {
+                particle->state++;
+                if (particle->state >= 1024) {
+                    particle->state = 1023;
+                }
+                if (particle->state <= particle->frame) {
+                    component_result = 0;
+                    update_rotation = particle->rotation_state != 4 || previous_mode != 0;
+                    if (initial_vector_keys != 0) {
+                        sefLerpIVector(initial_vector_keys,
+                                       (SefProgressState *)((unsigned char *)particle + 0x190));
+                    }
+                    if (rotation_vector_keys != 0 &&
+                        sefLerpVector(rotation_vector_keys,
+                                      (SefProgressState *)((unsigned char *)particle + 0x1b0))) {
+                        sefCalcRotChange((unsigned char *)particle, loop_mode, update_rotation);
+                    }
+                    if (line_data->position_vector_keys != 0) {
+                        sefLerpIVector(line_data->position_vector_keys,
+                                       (SefProgressState *)((unsigned char *)particle + 0x1d0));
+                    }
+                    if (first_integer_keys != 0) {
+                        sefLerpInt(first_integer_keys,
+                                   (SefProgressState *)&particle->first_integer_progress);
+                    }
+                    if (line_data->size_vector_keys != 0 &&
+                        sefLerpVector(line_data->size_vector_keys,
+                                      (SefProgressState *)((unsigned char *)particle + 0x230)) && update_scaled_size) {
+                        __asm__ __volatile__(
+                            "lqc2 $vf1, 0(%0)\n\t"
+                            "mfc1 $8, %1\n\t"
+                            "qmtc2 $8, $vf2\n\t"
+                            "vmulx.xyz $vf1xyz, $vf1xyz, $vf2x\n\t"
+                            "sqc2 $vf1, 0(%0)"
+                            : : "r"(&particle->size), "f"(D_004D831C)
+                            : "$8", "memory");
+                    }
+                    sefLerpFloat(float_keys, (SefProgressState *)&particle->float_progress);
+                    if (sefLerpVector(color_keys,
+                                      (SefProgressState *)((unsigned char *)particle + 0x1f0)) && reverse_direction != 0) {
+                        particle->color_offset.z = -particle->color_offset.z;
+                    }
+                    if (line_data->light_keys != 0 && add_light == 0) {
+                        unsigned long long light_xy;
+                        sefLerpIVector2(line_data->light_keys,
+                                        (SefProgressState *)((unsigned char *)particle + 0x210));
+                        __builtin_memcpy(&light_xy, particle->light.coordinates, sizeof(light_xy));
+                        if (light_xy != 0 || particle->light.coordinates[2] != 0) {
+                            sefAddLightActor(&line_data->position, &particle->light);
+                            add_light = 1;
+                        }
+                    }
+
+                    _nowParentLocal = particle->kind;
+                    __asm__ __volatile__(
+                        "lqc2 $vf21, 0(%0)\n\t"
+                        "lqc2 $vf1, 0(%2)\n\t"
+                        "lqc2 $vf3, 0(%3)\n\t"
+                        "vmul.xyz $vf22, $vf21, $vf21\n\t"
+                        "mfc1 $2, %4\n\t"
+                        "qmtc2 $2, $vf2\n\t"
+                        "vaddy.x $vf22x, $vf22x, $vf22y\n\t"
+                        "vitof0.xyzw $vf1, $vf1\n\t"
+                        "vaddz.x $vf22x, $vf22x, $vf22z\n\t"
+                        "vmulx.xyz $vf1xyz, $vf1xyz, $vf2x\n\t"
+                        "vsqrt Q, vf22x\n\t"
+                        "vadd.xyz $vf3xyz, $vf1xyz, $vf3xyz\n\t"
+                        "sqc2 $vf3, 0(%1)\n\t"
+                        "vwaitq\n\t"
+                        "vaddq.x vf22x, vf0x, Q\n\t"
+                        "vdiv Q, vf0w, vf22x\n\t"
+                        "vmove.w $vf22w, $vf0w"
+                        :
+                        : "r"(&particle->color_offset), "r"(particle->animated_color_xyz),
+                          "r"(&particle->color), "r"(&particle->random_translation),
+                          "f"(0.015625f)
+                        : "$2", "memory");
+                    /* Copy the packed integer scale lanes, then replace the
+                     * fourth word with the animation value. */
+                    particle->animated_scale = particle->color_scale_bits;
+                    particle->animated_scale_words[3] = particle->first_integer_progress.value;
+                    sefAnimate((unsigned char *)line_data, (unsigned char *)particle,
+                               particle->animate_advance);
+                    __asm__ __volatile__(
+                        "vwaitq\n\t"
+                        "vmulq.xyz vf22xyz, vf21xyz, Q\n\t"
+                        "sqc2 $vf22, 0(%0)"
+                        : : "r"(&particle->color_offset) : "memory");
+                    if (line_data->second_integer_keys_local != 0) {
+                        sefLerpInt(line_data->second_integer_keys_local,
+                                   (SefProgressState *)&particle->second_integer_progress);
+                        component_result = particle->second_integer_progress.value;
+                    }
+                    if (update_parent) {
+                        __asm__ __volatile__(
+                            "lqc2 $vf1, 0(%1)\n\t"
+                            "lqc2 $vf2, 0(%2)\n\t"
+                            "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
+                            "sqc2 $vf1, 0(%0)"
+                            : : "r"(&particle->start_position),
+                                "r"(&particle->start_position),
+                                "r"(&line_data->position_delta)
+                            : "memory");
+                    }
+                    sefMoveParticle((unsigned char *)particle, (unsigned char *)&line_data->scale_keys,
+                                    component_result);
+                    if (update_rotation) {
+                        sefCalcLocalMatrix((unsigned char *)particle, loop_mode,
+                                           line_data->key_1E0->mode);
+                    }
+                    active_count++;
+                } else {
+                    particle->frame = 0;
+                    sefFreeLocalData((unsigned char *)line_data, index);
+                }
+            }
+        }
+    }
+    return (D_00794334[0] & 0x100) == 0 ? active_count : 1;
+}
 
 static void sevFreePtAllocator(unsigned int handle);
 
@@ -2191,39 +2501,6 @@ typedef struct SefLocalData {
     unsigned char unmodeled_800[0x80e - 0x800];
     short cursor;                                      /* +0x80e */
 } SefLocalData;
-typedef struct SefParticle {
-    unsigned char unmodeled_000[0x040];
-    Matrix4 transform;                               /* +0x040 */
-    unsigned char unmodeled_080[0x0c0 - 0x080];
-    Vector4 start_position;                           /* +0x0c0 */
-    Vector4 target_position;                           /* +0x0d0 */
-    Vector4 random_rotation;                           /* +0x0e0 */
-    Vector4 rotated_position;                          /* +0x0f0 */
-    unsigned char unmodeled_100[0x10c - 0x100];
-    float one_initialized_scalar;                     /* +0x10c */
-    unsigned char unmodeled_110[0x130 - 0x110];
-    Vector4 random_translation;                        /* +0x130 */
-    unsigned char unmodeled_140[0x150 - 0x140];
-    float random_scale;                               /* +0x150 */
-    float battle_scale;                               /* +0x154 */
-    int kind;                                         /* +0x158 */
-    short frame;                                      /* +0x15c */
-    short state;                                      /* +0x15e */
-    unsigned char unmodeled_160[0x162 - 0x160];
-    unsigned char signal;                             /* +0x162 */
-    unsigned char unmodeled_163[0x188 - 0x163];
-    short rotation_state;                             /* +0x188 */
-    unsigned char unmodeled_18a[0x1a0 - 0x18a];
-    int color[4];                                     /* +0x1a0 */
-    unsigned char unmodeled_1b0[0x1c0 - 0x1b0];
-    Vector4 rotation;                                 /* +0x1c0 */
-    unsigned char unmodeled_1d0[0x1e0 - 0x1d0];
-    Vector4 color_scale;                              /* +0x1e0 */
-    unsigned char unmodeled_1f0[0x200 - 0x1f0];
-    Vector4 color_offset;                             /* +0x200 */
-    unsigned char unmodeled_210[0x240 - 0x210];
-    Vector4 size;                                     /* +0x240 */
-} SefParticle;
 extern float D_004D8338;
 #define D_004D833C (0.009999999776482582f)
 #define D_004D8340 (0.009999999776482582f)
@@ -2427,17 +2704,6 @@ int sefCreateParticle(SefLocalData *data, int kind)
     return result;
 }
 
-typedef struct SefLineData {
-    unsigned char unmodeled_000[0x30];
-    Vector4 global_position;                 /* +0x30 */
-    unsigned char unmodeled_040[0x60];
-    Vector4 origin_offset;                   /* +0xa0 */
-    unsigned char unmodeled_0b0[0x1d0 - 0xb0];
-    unsigned char *scale_keys;               /* +0x1d0 */
-    unsigned char unmodeled_1d4[0x818 - 0x1d4];
-    short global_data_state;                 /* +0x818 */
-    unsigned char unmodeled_81a[6];
-} SefLineData;
 typedef struct SefLineGlobalView {
     Vector4 global_position;                 /* +0x00 */
     unsigned char unmodeled_010[0x10];
@@ -2568,7 +2834,6 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
 }
 
 int sefExecLineGlobalData(void *arg0, int arg1);
-int sefExecLineLocalData(void *arg0, unsigned short arg1);
 extern float D_004D834C;
 static inline short *sefKeyPtr(void *a)
 {
