@@ -72,8 +72,11 @@ typedef struct SvTypeListEntry {
     unsigned char unmodeled_04[4];
     int used;
     short resourceKind;
-    unsigned char type;
-    unsigned char unmodeled_0F[3];
+    union {
+        unsigned short typeFlags; /* +0x0e */
+        struct { unsigned char type; unsigned char unmodeled_0f; };
+    };
+    unsigned char unmodeled_0F[2];
     unsigned short basePointer;
     unsigned short bitsPerPixel;
     unsigned short bufferWidthPixels;
@@ -694,7 +697,51 @@ typedef struct SvResourceChunkFile {
     SvResourceChunk *firstChunk;
 } SvResourceChunkFile;
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", svAddClut);
+typedef struct SvClutChunk {
+    unsigned char unmodeled_00[10];
+    unsigned short typeFlags;
+    short width;
+    unsigned short height;
+    unsigned short bitsPerPixel;
+    unsigned char unmodeled_12[2];
+    char name[44];
+    unsigned char data[1];
+} SvClutChunk;
+
+/* H351: upstream typed port (after typeFlags union in SvTypeListEntry) */
+static int svAddClut(SvTypeList *typeList, void *const chunkData)
+{
+    const SvClutChunk *const chunk = chunkData;
+    SvTypeListEntry *entry;
+    int index;
+
+    index = svImageListAlloc((int)typeList);
+    if (index < 0) {
+        return -1;
+    }
+    entry = &typeList->entries[index];
+    entry->data = chunk->data;
+    entry->used = 1;
+    entry->resourceKind = 3;
+    entry->typeFlags = chunk->typeFlags;
+    entry->width = chunk->width;
+    entry->height = chunk->height;
+    entry->bitsPerPixel = chunk->bitsPerPixel;
+    entry->textureWidthExponent = svGetSizeBit(entry->width);
+    entry->textureHeightExponent = svGetSizeBit(entry->height);
+    {
+        const char *name = chunk->name;
+        const int savedSize = typeList->savedSize;
+        const short bufferWidthPixels = chunk->width * 4;
+        const unsigned short basePointer = (unsigned int)savedSize >> 6;
+
+        entry->bufferWidthPixels = bufferWidthPixels;
+        entry->name = name;
+        typeList->savedSize = entry->bitsPerPixel == 8 ? savedSize + 256 : savedSize + 128;
+        entry->basePointer = basePointer;
+    }
+    return index;
+}
 
 static int svAddModel(int typeListAddr, void *script)
 {
@@ -777,7 +824,7 @@ static int svAddScript2(int typeListAddr, void *script)
   return index;
 }
 
-int svAddClut(int typeListAddr, SvImageHeader *image);
+static int svAddClut(SvTypeList *typeList, void *const chunkData);
 
 static int svAnalyzeChunk(SvTypeList *typeList, void *chunk)
 {
@@ -795,7 +842,7 @@ static int svAnalyzeChunk(SvTypeList *typeList, void *chunk)
             p += *(int *) p;
             break;
         case 3:
-            svAddClut((int) typeList, (SvImageHeader *) p);
+            svAddClut(typeList, p);
             p += *(int *) p;
             break;
         case 7:
