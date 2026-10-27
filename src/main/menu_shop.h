@@ -39,12 +39,15 @@ struct MenuShopWorkData {
     short equipmentId;
     signed char equipmentStatus;
     signed char unitCount;
-    unsigned char unmodeled_46;
+    signed char partyCount;
     signed char unitSelection;
     signed char sort_mode_selector;
-    unsigned char unmodeled_49[7];
+    signed char modelBreakPending;
+    unsigned char unmodeled_4a[6];
     /* PartyAgwsGet emits at most six IDs; the core stores their low halfwords. */
     short unitIds[6];
+    unsigned char unmodeled_5c[4];
+    short partyIds[6];
 };
 
 extern MenuShopWorkData *MenuShopWork;
