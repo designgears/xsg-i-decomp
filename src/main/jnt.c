@@ -100,7 +100,7 @@ typedef struct JntWork {
     unsigned char unmodeled_000[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
     JntProducer *producer;         /* +0x000 */
     unsigned short *cursor;        /* +0x004: FCV2 packed-curve state */
-    unsigned char unmodeled_008[0x28 - 0x08];
+    unsigned char unmodeled_008[0x10 - 0x08]; int frame_count; /* 0x10 */ unsigned char unmodeled_014[0x28 - 0x14];
     JntHairIdSource *hair_id_source; /* +0x028 */
     /*
      * JNT_getStaticVal2/JNT_getVal2 read this as the default matrix slot for
@@ -133,14 +133,14 @@ typedef struct JntWork {
     void *static_value_records;    /* 0x7A8, JNT_setCurve arg0; read by JNT_getStaticVal */
     void *value_records;           /* 0x7AC, JNT_setCurve arg1; read by JNT_getVal */
     unsigned char unmodeled_7b0[0x7f0 - 0x7b0];
-    unsigned int attribute_key;    /* +0x7f0 */
-    unsigned char unmodeled_7f4[8];
+    int attribute_key;    /* +0x7f0 */
+    int frame_delta; /* 0x7f4 */ unsigned char unmodeled_7f8[4];
     float current_frame;           /* +0x7fc */
     float interpolation; /* 0x800, JNT_setInterpMatrix */
     unsigned char unmodeled_804[4];
-    unsigned char *current_value;  /* +0x808 */
+    JntChannelTag *hair_tag;  /* +0x808 */
     char *attribute_name;          /* +0x80c */
-    unsigned int animation_flags;  /* +0x810 */
+    int animation_flags;  /* +0x810 */
     unsigned char unmodeled_814[4];
     JntInterruptElement *elements; /* +0x818 */
     int channel_start_index;       /* +0x81c */
@@ -1554,9 +1554,9 @@ void JNT_resetHair(void)
     }
 }
 
-static int JNT_hairID(JntChannelWork *work)
+static int JNT_hairID(JntWork *work)
 {
-    JntChannelTag *tag = work->tag;
+    JntChannelTag *tag = work->hair_tag;
     JntHairIdSource *source = work->hair_id_source;
     int id;
 
