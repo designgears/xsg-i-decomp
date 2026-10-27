@@ -276,6 +276,86 @@ static void SPL_cardinalInit(SplineState *state)
     } while (component < components);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_getValue);
+float SPL_getValue(void *spline, int index, float frame)
+{
+    SplineStateFull *state = spline;
+    const float *samples = state->samples;
+    const float *time;
+    const float *row_base;
+    unsigned int components = state->component_count;
+    const float *linear = state->coefficients[SPL_LINEAR_TERM];
+    const float *quadratic = state->coefficients[SPL_QUADRATIC_TERM];
+    const float *cubic = state->coefficients[SPL_CUBIC_TERM];
+    int last = (short)state->sample_count - 1;
+    int selection;
+    int sample_offset = last * (components + 1);
+    float distance = 0.0f;
+
+    ++index;
+    if (frame <= samples[0])
+        return samples[index];
+    if (samples[sample_offset] <= frame)
+        return samples[sample_offset + index];
+    row_base = samples;
+    selection = (short)state->weight_mode;
+    switch (selection) {
+    case 0: {
+        int upper_offset;
+        unsigned int first_row_address;
+        float value;
+        float difference;
+
+        first_row_address = components * sizeof(float) + (unsigned int)row_base;
+        time = (const float *)first_row_address;
+        selection = 1;
+        if (time[1] <= frame) {
+            do {
+                if (frame == row_base[selection * (components + 1)])
+                    return row_base[selection * (components + 1) + index];
+                ++selection;
+            } while (row_base[selection * (components + 1)] <= frame);
+        }
+        upper_offset = selection * (components + 1);
+        sample_offset = (selection - 1) * (components + 1);
+        distance = (frame - row_base[sample_offset]) /
+                   (row_base[upper_offset] - row_base[sample_offset]);
+        value = row_base[sample_offset + index];
+        difference = row_base[upper_offset + index] - value;
+        return value + distance * difference;
+    }
+    case 1: {
+        int component_offset;
+        unsigned int previous_values_address;
+        unsigned int component_bytes;
+        int reverse_bytes;
+        float value;
+        float difference;
+        float sample_time;
+
+        if ((selection = last) >= 0) {
+            component_bytes = components * sizeof(float);
+            time = row_base + selection * (components + 1) + 1;
+            while (selection >= 0) {
+                sample_time = *--time;
+                distance = frame - sample_time;
+                if (distance >= 0.0f)
+                    break;
+                reverse_bytes = -component_bytes;
+                previous_values_address = reverse_bytes + (unsigned int)time;
+                time = (const float *)previous_values_address;
+                --selection;
+            }
+        }
+        sample_offset = selection * (components + 1);
+        component_offset = sample_offset + index;
+        value = row_base[component_offset];
+        difference = linear[component_offset - 1] + distance *
+            (quadratic[component_offset - 1] + distance * cubic[component_offset - 1]);
+        return value + distance * difference;
+    }
+    default:
+        return 0.0f;
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_getValueXYZ);
