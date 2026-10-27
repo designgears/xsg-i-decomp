@@ -2065,47 +2065,29 @@
     {
      "range": [
       "0x004c1620",
-      "0x004c1910"
+      "0x004c1b00"
      ],
      "generated": [
       "0x004c1620",
-      "0x004c1908"
+      "0x004c1af4"
      ],
      "generated_by": [
+      "MIF2_ruby",
       "MSG_copyln",
       "MSG_getSize",
       "MSG_queueGetInfo",
-      "MSG_queuePop"
+      "MSG_queuePop",
+      "MSG_queuePush",
+      "_copyCTRLCode",
+      "_skipCTRLCode"
      ],
      "c_owned_symbols": [
       "jtbl_004C1620",
       "jtbl_004C1690",
       "jtbl_004C1700",
       "jtbl_004C17B0",
-      "jtbl_004C1860"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/msg_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c19b8",
-      "0x004c1b00"
-     ],
-     "generated": [
-      "0x004c19b8",
-      "0x004c1af4"
-     ],
-     "generated_by": [
-      "MIF2_ruby",
-      "_copyCTRLCode",
-      "_skipCTRLCode"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004C1860",
+      "jtbl_004C1910",
       "D_004C19B8",
       "jtbl_004C1A20",
       "jtbl_004C1A90"

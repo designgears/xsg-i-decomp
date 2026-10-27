@@ -706,7 +706,119 @@ typedef struct RubyFontContext {
     unsigned char flags;
 } RubyFontContext;
 
-INCLUDE_ASM("asm/main/nonmatchings/msg_init", MSG_queuePush);
+int MSG_queuePush(struct MsgQueue *queue, unsigned char *text, int capacity, int length)
+{
+    int newTail;
+    int tail;
+    unsigned char *currentOutput;
+    unsigned char *output;
+    unsigned char *input;
+    unsigned char *end;
+
+    if (length < 0) {
+        length = MSG_getSize(text);
+    }
+    tail = queue->tail;
+    newTail = tail + length;
+    output = queue->buffer + tail;
+    input = (unsigned char *)text;
+    end = output + length;
+    if (newTail >= queue->size) {
+        return -1;
+    }
+    queue->tail = newTail;
+    currentOutput = output;
+    if (currentOutput < end) {
+        do {
+            int code;
+
+            code = *input;
+            input++;
+            if (code == '/') {
+                int bracketCode;
+
+                *currentOutput = '/';
+                output++;
+                bracketCode = *input;
+                if (bracketCode == '[') {
+                    *output++ = bracketCode;
+                    input++;
+                    bracketCode = *input++;
+                    if (bracketCode >= 0x80) {
+                        *output++ = bracketCode;
+                        switch (bracketCode) {
+                        case ']':
+                        case 0x81:
+                        case 0x84:
+                            break;
+                        case 0x85: {
+                            int payloadCode;
+
+                            do {
+                                *output = *input;
+                                currentOutput = output + 1;
+                                payloadCode = *output;
+                                output = currentOutput;
+                                input++;
+                            } while (payloadCode != 0);
+                            break;
+                        }
+                        case 0x80:
+                        case 0x82:
+                        case 0x83:
+                            *output++ = *input++;
+                            break;
+                        default:
+                            break;
+                        }
+                        *output++ = *input++;
+                    } else {
+                        input--;
+                        for (;;) {
+                            bracketCode = *input++;
+                            if (bracketCode < 0x20) {
+                                input--;
+                                _copyCTRLCode(&output, &input);
+                            } else if (bracketCode == ']') {
+                                currentOutput = output + 1;
+                                *output = ']';
+                                output = currentOutput;
+                                break;
+                            } else {
+                                *output++ = bracketCode;
+                                if (bracketCode >= 0x8e) {
+                                    *output++ = *input++;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (code == '\n') {
+                *currentOutput++ = '\n';
+                output = currentOutput;
+            } else if (code < 0x20) {
+                input--;
+                _copyCTRLCode(&output, &input);
+            } else {
+                *currentOutput++ = code;
+                output = currentOutput;
+                if (code >= 0xa0) {
+                    *currentOutput++ = *input++;
+                    output = currentOutput;
+                }
+            }
+            {
+                unsigned char *completedOutput = output;
+
+                currentOutput = completedOutput;
+                if (completedOutput >= end) {
+                    break;
+                }
+            }
+        } while (1);
+    }
+    return newTail;
+}
 
 unsigned char *matchBracket(unsigned char *p)
 {
