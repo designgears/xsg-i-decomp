@@ -4417,6 +4417,15 @@ void sefHitEffect(void) {
     _hitFlag = 1;
 }
 
+typedef enum SefSaveActive {
+    SEF_SAVE_INACTIVE,
+    SEF_SAVE_ACTIVE
+} SefSaveActive;
+
+typedef enum SefSaveTail {
+    SEF_SAVE_TAIL_NONE
+} SefSaveTail;
+
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefPushEffect);
 
 typedef struct SefSavePrm {
@@ -4443,14 +4452,6 @@ typedef struct SefSavedEffect {
 #define SEF_SAVE_PRM_COUNT 0x80
 extern SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
 extern SefSavedEffect D_0065A9A0[];
-typedef enum SefSaveActive {
-    SEF_SAVE_INACTIVE,
-    SEF_SAVE_ACTIVE
-} SefSaveActive;
-typedef enum SefSaveTail {
-    SEF_SAVE_TAIL_NONE
-} SefSaveTail;
-
 void sefPopEffect(void)
 {
     unsigned char *save_params;
