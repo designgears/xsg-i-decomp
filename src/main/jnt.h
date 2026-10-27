@@ -13,7 +13,7 @@ typedef struct JntMatrix JntMatrix;
  * evidenced as 0x40 bytes; its own field layout is not recovered.
  */
 struct JntMatrix {
-    unsigned char unmodeled_00[0x40];
+    float elements[4][4];
 };
 
 typedef JntMatrix *JntMatrixBuffer;

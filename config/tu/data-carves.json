@@ -5207,7 +5207,10 @@
       "D_004D7E7C",
       "D_004D7E80"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004D7E84",
+      "D_004D7E88"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -8683,6 +8686,28 @@
      "c_owned_symbols": [
       "jtbl_004D1A00",
       "jtbl_004D1A20"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/jnt.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d1a60",
+      "0x004d1a80"
+     ],
+     "generated": [
+      "0x004d1a60",
+      "0x004d1a80"
+     ],
+     "generated_by": [
+      "JNT_getVal2"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004D1A60"
      ],
      "also_referenced_by_c": [],
      "basis": {
