@@ -3013,8 +3013,6 @@ INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelEntry);
 
 ACCEPTED_ASM("src/main/nml_model_set", nmlModelEntryEffect);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelEntryCard);
-
 typedef struct {
     s16 block;
     s16 kind;
@@ -3024,6 +3022,8 @@ typedef struct {
 } NonAlphaGroupEntry;
 
 extern NonAlphaGroupEntry s_aNonAlphaGroup[];
+
+INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelEntryCard);
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelRenderProreal);
 
