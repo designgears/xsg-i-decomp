@@ -1842,8 +1842,6 @@ void sefDrawParticleList(SvParticleEffect *effect)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticleListCf);
-
 typedef struct SvParticleListCfContext {
     Matrix4 *place;
     Vector4 *scaledScale;
@@ -1854,12 +1852,14 @@ typedef struct SvParticleListCfContext {
     unsigned char unmodeled_18[8];
     int schedulerVariant;
 } SvParticleListCfContext;
+
 typedef struct SvSchedulerEffectGroup {
     signed char effectIds[0x20];
     unsigned char unmodeled_20[0x0C];
     short effectCount;
     unsigned char unmodeled_2e[2];
 } SvSchedulerEffectGroup;
+
 typedef struct SvSchedulerEffectRecord {
     Quadword transform[4];
     Quadword localTransform[4];
@@ -1880,6 +1880,9 @@ typedef struct SvSchedulerEffectRecord {
     signed char active;
     unsigned char unmodeled_a9b[0x15];
 } SvSchedulerEffectRecord;
+
+INCLUDE_ASM("asm/main/nonmatchings/sv_get_image_item", sefDrawParticleListCf);
+
 typedef struct SvBattleEffectData {
     unsigned char unmodeled_00[0x30];
     Quadword packetInfo;
