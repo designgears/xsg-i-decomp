@@ -438,10 +438,17 @@ void CreateUwamonoCommon(UwamonoMapUnit *unit);
 typedef struct UwamonoCollisionUnit {
     unsigned char unmodeled_00[0x10];
     Vector4 position;
-    unsigned char unmodeled_20[0x90];
+    float rotX;                       /* +0x20 */
+    float rotY;                       /* +0x24 */
+    float rotZ;                       /* +0x28 */
+    unsigned char unmodeled_2c[0x14];
+    float savedMatrix[4][4];          /* +0x40, xglMatrixStackSave target */
+    float *boxMatrix;                 /* +0x80 */
+    unsigned char unmodeled_84[0x2c];
     float radius;
     float height;
-    unsigned char unmodeled_b8[0xe8];
+    float dimZ;                       /* +0xB8 */
+    unsigned char unmodeled_bc[0xe4];
     UwamonoMapUnitState state;
 } UwamonoCollisionUnit;
 
@@ -2149,7 +2156,7 @@ int HitCheckCorner(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit) {
     return 0;
 }
 
-extern struct { unsigned char pad[0x2A]; unsigned short trig; } PadData;
+extern struct { unsigned char pad[0x28]; unsigned short half_28; unsigned short trig; } PadData;
 
 /* Types ported from the derwetterfrosch fork (2026-10-19). */
 typedef struct UwamonoNyuruAlignedActor {
