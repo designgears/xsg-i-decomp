@@ -551,7 +551,50 @@ static void CLEAR_MODEL_ENTRY(void)
     s_nMapClip = 0;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", CONSTRUCT_MODELSYSTEM);
+extern int g_aSubWindow[4];
+extern Vector4 s_inGblPointC[];
+extern Vector4 s_inGblFogCol;
+extern Vector4 s_inGblFogPara;
+extern int s_nModel, s_nBlocks, s_nDirect, s_nBlocksAlpha, s_nBlocksAlphaLast;
+extern int s_nAnotherStudio, s_nUseStealth, s_nUseGnosys, s_nUseZwrite;
+extern int s_nMapAlphaEntry, s_nMapLast, s_nMainCameraWarp, s_nRenderCancel;
+extern int s_nRenderCancelOld, s_nFrameLockOff, s_nPause, s_nMenu, s_nEffectWrite;
+
+static void CONSTRUCT_MODELSYSTEM(void)
+{
+    int primaryWindow = 2;
+    int inactiveWindow = 0;
+    unsigned int initialBlockCount = 1;
+
+    g_aSubWindow[0] = primaryWindow;
+    s_nModel = 0;
+    s_nBlocks = initialBlockCount;
+    s_nDirect = 0;
+    s_nBlocksAlpha = 0;
+    s_nBlocksAlphaLast = 0;
+    s_nAnotherStudio = 0;
+    s_nUseStealth = 0;
+    s_nUseGnosys = 0;
+    s_nUseZwrite = 0;
+    s_nMapAlphaEntry = 0;
+    s_nMapLast = 0;
+    s_nMainCameraWarp = 0;
+    s_nRenderCancel = 0;
+    s_nRenderCancelOld = 0;
+    s_nFrameLockOff = 0;
+    s_nPause = 0;
+    s_nMenu = 0;
+    g_aSubWindow[3] = g_aSubWindow[2] = g_aSubWindow[1] = inactiveWindow;
+    s_nEffectWrite = 1;
+    __asm__ __volatile__(
+        "sq $0, 0(%0)\n"
+        "sq $0, 16(%0)\n"
+        "sq $0, 32(%0)\n"
+        "sq $0, 48(%0)"
+        : : "r"(s_inGblPointC) : "memory");
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&s_inGblFogCol) : "memory");
+    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&s_inGblFogPara) : "memory");
+}
 
 /* CONSTRUCT_MODELSYSTEM (above) is still INCLUDE_ASM; declare it so its
  * caller does not see an implicit declaration. */
