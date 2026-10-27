@@ -2775,7 +2775,64 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
 extern int nmlModelCalcClipStudio(Vector4 *, int);
 extern float D_004D88F4;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcEntryClip);
+typedef struct NmlModelSampleView {
+    unsigned char unmodeled_000[0x48];
+    int sampleCount;
+    unsigned char unmodeled_04c[0x58 - 0x4c];
+    int weightOffset;
+    int transformOffset;
+    unsigned char unmodeled_060[0x90 - 0x60];
+    Vector4 samplePosition;
+} NmlModelSampleView;
+
+static int nmlModelCalcEntryClip(NmlModelSampleView *model)
+{
+    Vector4 clip;
+    int anySubwindow;
+    int index;
+
+    int clipDisabled = 1;
+    do {
+    } while (0);
+    if (s_nClip != clipDisabled) {
+        __asm__ __volatile__(
+                "lq $2, 0(%1)\n\t"
+                "sq $2, 0(%0)"
+                :
+            : "r"(&clip), "r"(&s_inLayout.slots[0x7C])
+                : "$2", "memory"
+        );
+        clip.w *= D_004D88F4;
+
+        if (model->sampleCount != 0) {
+            anySubwindow = 0;
+            for (index = 1; index < 4; ++index) {
+                if (g_aSubWindow[index] != 0) {
+                    anySubwindow = 1;
+                }
+            }
+            if (anySubwindow) {
+                int passed = 0;
+                int active = 0;
+                for (index = 0; index < 4; ++index) {
+                    if (g_aSubWindow[index] != 0) {
+                        int result = nmlModelCalcClipStudio(&clip, index);
+                        ++active;
+                        s_inLayout.slots[0xC4 + index].i = result;
+                        passed += result;
+                    }
+                }
+                if (passed == active) {
+                    s_inLayout.slots[0x94].i |= 0x20000;
+                }
+            } else if (nmlModelCalcClipStudio(&clip, 0) != 0) {
+                s_inLayout.slots[0xC4].i = 1;
+                s_inLayout.slots[0x94].i |= 0x20000;
+            }
+        }
+    }
+    return 0;
+}
 
 extern float tanf(float);
 
