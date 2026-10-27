@@ -635,7 +635,7 @@ void EtherTreeObjectSet(int firstDataIndex)
     EtherTreeSystem->node.scale = 1.0f;
 }
 
-void EtherTreeCenterSet(int axisMask, float x, float y)
+void EtherTreeCenterSet(float x, float y, int axisMask)
 {
     if ((EtherTreeSystem->flags & 1) &&
         (!(axisMask & 1) || EtherTreeSystem->center.x != EtherTreeSystem->targetCenter.x) &&
@@ -646,7 +646,7 @@ void EtherTreeCenterSet(int axisMask, float x, float y)
     }
 }
 
-void EtherTreeToCenterSet(int axisMask, float targetX, float targetY)
+void EtherTreeToCenterSet(float targetX, float targetY, int unused)
 {
     EtherTreeSystem->targetCenter.x = targetX;
     EtherTreeSystem->targetCenter.y = targetY;
@@ -1247,7 +1247,7 @@ void EtherTreeLine2Main(void)
     }
 }
 
-extern void endSpriteSet(unsigned char *data, int kind);
+extern void endSpriteSet();
 typedef struct LampView {
     unsigned char pad00[0x30];
     short x;
@@ -1296,20 +1296,6 @@ void sub2ObjectLampDraw(LampView *obj)
 }
 
 /* Types ported from the derwetterfrosch fork (2026-10-19). */
-typedef struct PrintSpriteInfo EtherTreeSprite;
-
-typedef struct PrintSpriteInfo {
-    short x;
-    short y;
-    int depth;
-    short width;
-    short height;
-    unsigned char color[4];
-    short uv;
-    unsigned char column;
-    unsigned char row;
-} EtherTreeSprite;
-
 typedef struct EtherTreeRibbonPoint {
     short x;
     short y;
@@ -1336,7 +1322,57 @@ typedef struct EtherTreeLineGeometry {
     EtherTreeGeometrySegment segments[6];
 } EtherTreeLineGeometry;
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeObjectDraw);
+extern const float D_004D7E88;
+
+void EtherTreeObjectDraw(void)
+{
+    EtherTreeObjectData *objects = EtherTreeObject;
+    EtherTreeObjectData *object;
+    EtherTreeSprite *sprite;
+    const Vector4 *objectPosition;
+    int i;
+    const float fade = D_004D7E88;
+
+    i = 0;
+    do {
+        object = &objects[i];
+        sprite = &objects[i].sprite;
+        objectPosition = &object->position.vector;
+
+        if (object->flags & 8) {
+            EtherTreeSystemData *system = EtherTreeSystem;
+            EtherTreeNodeTransform *node = &system->node;
+            EtherTreeCoordinates *center = &system->center;
+            float translatedX = objectPosition->x + node->x;
+            const unsigned short uvs[3] = { 0x1200, 0x1201, 0x1202 };
+            Vector4 position;
+
+            position.x = ((translatedX + center->x) - 19.0f) * node->scale;
+            position.y = ((objectPosition->y + node->y + center->y) - 24.0f) * node->scale;
+            position.z = node->z;
+            object->sprite.uv = uvs[(unsigned char)object->displayType];
+            endSpriteSet(sprite, 255);
+            object->sprite.x = (int)position.x;
+            object->sprite.y = (int)position.y;
+            object->sprite.width = (int)(object->sprite.width * node->scale);
+            object->sprite.height = (int)(object->sprite.height * node->scale);
+            object->sprite.depth = (unsigned int)position.z;
+            {
+                EtherTreeObjectData *dimmedObject = &objects[i];
+
+                if (object->flags & 0x10) {
+                    dimmedObject->sprite.color[0] = (unsigned int)(object->sprite.color[0] * fade);
+                    objects[i].sprite.color[1] = (unsigned int)(object->sprite.color[1] * fade);
+                    objects[i].sprite.color[2] = (unsigned int)(object->sprite.color[2] * fade);
+                }
+            }
+            endPrintExtFunc(0, 2, &objects[i].sprite.x);
+            if (object->flags & 2)
+                sub2ObjectLampDraw(&objects[i]);
+        }
+        i++;
+    } while (i < 80);
+}
 
 void subTreeLineDraw(EtherTreeLineData *line, const int *colorIndices)
 {
@@ -1607,4 +1643,163 @@ static int RoboEtherCheck(int etherIndex)
     return (unsigned int) (etherIndex - 13) < 4U;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/ether_tree", EtherTreeMain);
+typedef struct EtherTreeMenuState {
+    unsigned char unmodeled_00[3];
+    unsigned char state;
+    unsigned char unmodeled_04[0x1c];
+    unsigned char flags;
+    unsigned char unmodeled_21[0x11];
+    signed char slotCursor;
+    unsigned char unmodeled_33[0x0d];
+    signed char chrNo;
+    unsigned char unmodeled_41[3];
+    signed char etherId;
+    signed char slotEther;
+    signed char targetChrNo;
+    unsigned char unmodeled_47[9];
+    int listSelect;
+} EtherTreeMenuState;
+extern EtherTreeMenuState MenuWork;
+extern void func_A194E0(int characterId, int etherId);
+extern PadPrefix PadData;
+
+void EtherTreeMain(void)
+{
+    unsigned char *modeFlag = &EtherTreeSystem->unmodeled_01;
+
+    switch (MenuWork.state) {
+    case 0x50:
+    case 0x70:
+    {
+        if (MenuWork.flags & 1) {
+            int centerYPixels = 224;
+            float centerY = centerYPixels;
+
+            EtherTreeObjectSet(MenuWork.chrNo);
+            EtherTreeCenterSet(768.0f, centerY, 0);
+            EtherTreeToCenterSet(384.0f, centerY, 0);
+            EtherTreeTargetChange(MenuWork.etherId, 1);
+            *modeFlag &= (unsigned char)~1;
+            if (MenuWork.state == 0x50) {
+                EtherTreeBlackModeChange(1);
+                EtherTreeRightSet(MenuWork.etherId, 0);
+                EtherTreeRightModeChange(1, 0);
+            } else {
+                EtherTreeBlackModeChange(3);
+                EtherTreeRightModeChange(3, 0);
+                EtherTreeRightModeChange(3, 1);
+            }
+        }
+        {
+            EtherTreeMenuState *activeMenu = &MenuWork;
+
+            if (RoboEtherCheck(activeMenu->etherId) == 0) {
+                if (EtherTreeSystem->firstDataIndex != activeMenu->chrNo) {
+                    EtherTreeObjectSet(activeMenu->chrNo);
+                    EtherTreeCenterSet(768.0f, 224.0f, 0);
+                    EtherTreeTargetChange(activeMenu->etherId, 1);
+                }
+                if (activeMenu->listSelect >= 0)
+                    EtherTreeTargetChange(activeMenu->etherId, 0);
+                if (activeMenu->state == 0x50) {
+                    EtherTreeRightTargetChange(activeMenu->etherId, 0);
+                    if (PadData.half_2a & 0x20)
+                        EtherTreeParaSet(EtherTreeObjectGet(activeMenu->etherId));
+                }
+            }
+        }
+        break;
+    }
+    case 0x74:
+        if (MenuWork.flags & 1) {
+            EtherTreeLine2Set(MenuWork.etherId, 0);
+            EtherTreeLine2SelectChange(MenuWork.slotCursor);
+            EtherTreeRightSet(MenuWork.etherId, 0);
+            EtherTreeRightModeChange(1, 0);
+            EtherTreeRightSet(MenuWork.slotEther, 1);
+            EtherTreeRightModeChange(1, 1);
+            EtherTreeBlackModeChange(1);
+        }
+        EtherTreeLine2SelectChange(MenuWork.slotCursor);
+        EtherTreeTargetChange(MenuWork.slotEther, 0);
+        EtherTreeRightTargetChange(MenuWork.slotEther, 1);
+        break;
+    case 0x72:
+        if (!(MenuWork.flags & 1))
+            break;
+        EtherTreeTargetChange(MenuWork.etherId, 0);
+        /* Fall through: both states close the tree panels. */
+    case 0x78:
+        if (MenuWork.flags & 1) {
+            *modeFlag |= 1;
+            EtherTreeBlackModeChange(3);
+            EtherTreeRightModeChange(3, 0);
+            EtherTreeRightModeChange(3, 1);
+            EtherTreeLine2ModeChange(3);
+            if (MenuWork.state == 0x78) {
+                int i;
+
+                for (i = 0; i < 80; ++i)
+                    EtherTreeParaSet(&EtherTreeObject[i]);
+                EtherTreeLineSet();
+            }
+        }
+        break;
+    case 0x82:
+        if (MenuWork.flags & 1) {
+            if (EtherTreeSystem->firstDataIndex != MenuWork.chrNo) {
+                EtherTreeObjectSet(MenuWork.chrNo);
+                EtherTreeCenterSet(768.0f, 224.0f, 0);
+                EtherTreeToCenterSet(384.0f, 224.0f, 0);
+                EtherTreeTargetChange(MenuWork.etherId, 1);
+            }
+            EtherTreeBlackModeChange(1);
+            EtherTreeRightSet(MenuWork.etherId, 0);
+            EtherTreeRightModeChange(1, 0);
+        }
+        break;
+    case 0x84:
+        if (MenuWork.flags & 1) {
+            EtherTreeCharacterRecord *character;
+            int bitIndex;
+            int byteIndex;
+
+            func_A194E0(MenuWork.targetChrNo, MenuWork.etherId);
+            EtherTreeObjectSet(MenuWork.targetChrNo);
+            character = func_A19210(MenuWork.targetChrNo);
+            bitIndex = MenuWork.etherId - 1;
+            byteIndex = bitIndex;
+            if (bitIndex < 0)
+                byteIndex = MenuWork.etherId + 6;
+            byteIndex >>= 3;
+            character->learnedEther[byteIndex] &=
+                (unsigned char)~(1U << (bitIndex - byteIndex * 8));
+            EtherTreeCenterSet(768.0f, 224.0f, 0);
+            EtherTreeToCenterSet(384.0f, 224.0f, 0);
+            EtherTreeTargetChange(MenuWork.etherId, 1);
+            EtherTreeRightSet(MenuWork.etherId, 0);
+            EtherTreeRightModeChange(1, 0);
+        }
+        break;
+    case 0x86:
+        if (MenuWork.flags & 1) {
+            EtherTreeBlackModeChange(3);
+            EtherTreeRightModeChange(3, 0);
+        }
+        break;
+    case 0x76:
+        break;
+    default:
+        EtherTreeRightModeChange(3, 0);
+        EtherTreeRightModeChange(3, 1);
+        EtherTreeBlackModeChange(3);
+        EtherTreeToCenterSet(768.0f, 224.0f, 0);
+        break;
+    }
+
+    EtherTreeCenterMove();
+    EtherTreeLine2Main();
+    EtherTreeRightMain();
+    EtherTreeBlackMain();
+    EtherTreeDraw();
+}

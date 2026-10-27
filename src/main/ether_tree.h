@@ -7,6 +7,18 @@
 
 #include "shared.h"
 
+typedef struct PrintSpriteInfo {
+    short x;
+    short y;
+    int depth;
+    short width;
+    short height;
+    unsigned char color[4];
+    short uv;
+    unsigned char column;
+    unsigned char row;
+} EtherTreeSprite;
+
 /* These four-float positions are copied as two aligned doublewords. */
 typedef union EtherTreePosition {
     Vector4 vector;
@@ -32,11 +44,14 @@ struct EtherTreeObjectData {
     signed char displayType;
     unsigned char unmodeled_1b[5];
     EtherTreePosition position;
-    unsigned char unmodeled_30[0x15];
+    EtherTreeSprite sprite; /* +0x30 */
+    unsigned char unmodeled_44;
     signed char isSet;
-    unsigned char unmodeled_46[2];
+    short lampBrightness; /* +0x46 */
     short setValue;
-    unsigned char unmodeled_4a[0x26];
+    unsigned char unmodeled_4a[6];
+    EtherTreeSprite lamp; /* +0x50 */
+    unsigned char unmodeled_64[12];
 };
 
 /*
