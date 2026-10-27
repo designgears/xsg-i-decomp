@@ -39,6 +39,7 @@ typedef struct ScriptBinding {
     short state;
     short script_id;
     short task_id;
+    short link_id; /* +0x6 */
 } ScriptBinding;
 
 /*

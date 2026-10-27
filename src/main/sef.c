@@ -1,6 +1,7 @@
 #include "common.h"
 #include "shared.h"
 #include "sef.h"
+extern int offset_2[];
 
 typedef struct SefActor {
     unsigned int flags;
@@ -1244,7 +1245,93 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefGetOfsRange);
+extern const float D_004D82FC;
+extern const float D_004D8300;
+extern const float D_004D8304;
+extern const float D_004D8308;
+extern const float D_004D830C;
+extern const float D_004D8310;
+extern const float D_004D8314;
+extern const char D_004CBF20[];
+extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
+extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
+
+static void sefGetOfsRange(Vector4 *position, const void *offset_table, int index)
+{
+    const int *offsets = offset_table;
+
+    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(position) : "memory");
+
+    if (index == 0) {
+        float radius;
+
+        if (!__builtin_expect(offsets[0], 0)) {
+            return;
+        }
+        radius = (float)offsets[0] * D_004D82FC;
+        sefGetSpherePos(position, radius * sefRandf());
+        return;
+    }
+    if (index == 1) {
+        if (!__builtin_expect(offsets[0], 0)) {
+            return;
+        }
+        sefGetSpherePos(position, (float)offsets[0] * D_004D8300);
+        return;
+    }
+    if (index == 2) {
+        sefGetCubePos(position, offsets);
+        return;
+    }
+    if (index == 3) {
+        sefGetCubePosTop(position, offsets);
+        return;
+    }
+    if (index == 4) {
+        sefGetCubePosBtm(position, offsets);
+        return;
+    }
+    if (index == 5) {
+        Matrix4 rotation;
+        Vector4 circle_position;
+
+        sefGetCirclePos(&circle_position, (float)offsets[0] * D_004D8304);
+        __asm__ __volatile__(
+            "vmr32.xyzw vf1, vf0\n\t"
+            "vmr32.xyzw vf2, vf1\n\t"
+            "vmr32.xyzw vf3, vf2\n\t"
+            "sqc2 vf0, 48(%0)\n\t"
+            "sqc2 vf1, 32(%0)\n\t"
+            "sqc2 vf2, 16(%0)\n\t"
+            "sqc2 vf3, 0(%0)"
+            :
+            : "r"(&rotation)
+            : "memory");
+
+        if (offsets[1] != 0) {
+            MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * D_004D8308);
+        }
+        if (offsets[2] != 0) {
+            MMathRotateMatrixZ(&rotation, &rotation, (float)offsets[2] * D_004D830C);
+        }
+        MMathApplyMatrix(position, &rotation, &circle_position);
+        return;
+    }
+    if (index == 6) {
+        unsigned int seed = sefRandSeed * 0x41C64E6Du;
+        float range = (float)offsets[0];
+        int sample;
+
+        seed += 0x3039u;
+        sample = (int)((seed >> 16) & 0x7FFFu);
+        sefRandSeed = seed;
+        sefGetCirclePos(position,
+                        (float)sample * D_004D8310 * range * D_004D8314);
+        position->y = sefRandf() * (float)offsets[1] * D_004D8314;
+        return;
+    }
+    tracePrint(D_004CBF20, index);
+}
 
 static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
 {
@@ -1346,7 +1433,7 @@ static void sefGetDirVector(void *dest, void *source) {
     __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvsub.z vf1, vf0, vf1\n\tvmulax.xyzw ACC, vf7, vf1x\n\tvmadday.xyzw ACC, vf8, vf1y\n\tvmaddaz.xyzw ACC, vf3, vf1z\n\tvmaddw.xyzw vf1, vf4, vf1w\n\tsqc2 vf1, 0(%1)\n\tnop" :  : "r"(source), "r"(dest) : "memory");
 }
 
-static void sefGetOfsRange(void *position, unsigned char *offset_table, int index);
+static void sefGetOfsRange(Vector4 *position, const void *offset_table, int index);
 
 /*
  * SefParticleOffset (sefGetStartPos/sefGetTargetPos, main:0x002e2960 and
@@ -2595,7 +2682,7 @@ typedef struct EffectData {
     short category;
     short effect_no;
     short flags;
-    unsigned char unmodeled_2a[2];
+    short active;
     short frame;
 } EffectData;
 
@@ -2852,7 +2939,76 @@ void sefDestroyScriptScheduler2(int script_index, int task_index)
     } while (index < 0x80);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefInitEffectTbl);
+typedef struct SefEffectDescriptor {
+    short category;
+    unsigned short script_offset;
+    short setting;
+} SefEffectDescriptor;
+extern int _nowScriptAdr;
+static inline void sefInitializeDescriptorEffect(EffectData *effect,
+                                                  SefEffectDescriptor *entry,
+                                                  int scheduler_index,
+                                                  ScriptBinding *binding,
+                                                  SefEffectDescriptor *descriptors)
+{
+    int owner;
+    owner = scGetImmAdrImmIdx2(_nowScriptAdr, (unsigned short *)entry, 1);
+
+    if (owner == 0) {
+        owner = 1;
+    }
+    sefInitEffectData(effect, owner, scheduler_index, entry->category);
+    if (entry->setting >= 0) {
+        binding->link_id = descriptors[entry->setting].category;
+    }
+}
+static inline void sefApplyDescriptorCommand(EffectData *effect, short command)
+{
+    if (command == -0x200) {
+        effect->active |= 0x10;
+    } else if (command == -0x201) {
+        effect->active |= 0x20;
+    }
+}
+
+static void sefInitEffectTbl(SefEffectDescriptor *entry, int scheduler_index, int init_flags)
+{
+    int index = 0;
+    EffectData *effects = (EffectData *)((SchedulerState *)_scheduler)[scheduler_index].effects;
+    SefEffectDescriptor *descriptors = entry;
+    int preserve_setting = -0x100;
+
+    if (entry->category >= 0) {
+        SchedulerState *scheduler = &((SchedulerState *)_scheduler)[scheduler_index];
+        EffectData *effect = effects;
+        ScriptBinding *binding = &scheduler->scriptBinding;
+        EffectData *cursor = effects;
+
+process_descriptor:
+        {
+            int next_category;
+            int has_capacity;
+            if (entry->setting != preserve_setting || (init_flags & 1) != 0) {
+                sefInitializeDescriptorEffect(effect, entry, scheduler_index, binding, descriptors);
+            }
+            sefApplyDescriptorCommand(effect, entry->setting);
+            entry++;
+            cursor++;
+            next_category = entry->category;
+            has_capacity = ++index < 32;
+            effect = cursor;
+            if (next_category >= 0 && has_capacity) {
+                goto process_descriptor;
+            }
+        }
+    }
+    if (index < 32) {
+        do {
+            effects[index].owner = 0;
+            index++;
+        } while (index < 32);
+    }
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/sef", sefCreateScheduler2);
 
@@ -2870,7 +3026,6 @@ int sefCreateScheduler(int effect_no, int value2, int value3, int value4, int va
     return sefCreateScheduler2(effect_no, value2, value3, value4, 0, value5);
 }
 
-extern int offset_2[];
 
 /*
  * sefGetSizeOffset (main:0x002e5920): returns the size-offset table entry at
