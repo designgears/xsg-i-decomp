@@ -20,9 +20,14 @@
 typedef struct RgEquipRecord RgEquipRecord;
 
 /* The accessor compares each mount's first word; the rest stays opaque. */
+typedef enum RgEquipTypeField { RG_EQUIP_TYPE_FIELD_DUMMY = 0 } RgEquipTypeField;
+
+typedef enum RgEquipPosField { RG_EQUIP_POS_FIELD_DUMMY = -1 } RgEquipPosField;
+
 typedef struct RgEquipMount {
-    int type;
-    unsigned char unmodeled_004[8];
+    RgEquipTypeField type;
+    RgEquipPosField pos;
+    int mask;
 } RgEquipMount;
 
 #define RG_EQUIP_MOUNT_MAX 4

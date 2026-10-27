@@ -36,21 +36,39 @@ void InitRgEquip(RgEquipRecord *pEquip)
     pEquip->activeMount = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_equip_type", CopyRgEquip);
+typedef RgEquipTypeField RgEquipTypeView;
 
-extern const char D_00A53F08[];
-typedef enum RgEquipTypeView { RG_EQUIP_TYPE_VIEW_DUMMY = 0 } RgEquipTypeView;
-typedef enum RgEquipPosView { RG_EQUIP_POS_VIEW_DUMMY = -1 } RgEquipPosView;
+typedef RgEquipPosField RgEquipPosView;
+
 typedef struct RgEquipMountView {
     RgEquipTypeView type;
     RgEquipPosView pos;
     int mask;
 } RgEquipMountView;
+
 typedef struct RgEquipRecordView {
     RgEquipMountView mounts[RG_EQUIP_MOUNT_MAX];
     int mountCount;
 } RgEquipRecordView;
 
+extern const char D_00A53EA8[];
+
+void CopyRgEquip(RgEquipRecord *pDst, RgEquipRecord *pSrc)
+{
+    int i;
+
+    if ((pDst == 0) || (pSrc == 0)) {
+        assert_prog(D_00A53EA8, D_00A53E80, 0x45);
+    }
+    pDst->mountCount = pSrc->mountCount;
+    for (i = 0; i < pSrc->mountCount; i++) {
+        pDst->mounts[i].type = pSrc->mounts[i].type;
+        pDst->mounts[i].pos = pSrc->mounts[i].pos;
+        pDst->mounts[i].mask = pSrc->mounts[i].mask;
+    }
+}
+
+extern const char D_00A53F08[];
 int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask)
 {
     unsigned int n;
