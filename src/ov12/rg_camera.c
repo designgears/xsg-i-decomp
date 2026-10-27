@@ -285,7 +285,93 @@ static void _SetVersion3Extent(RgCamera *camera)
   *((int *) (((unsigned char *) camera) + 0x13C)) = 3;
   }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_camera", _LoadVersion3);
+struct RgTextInfoEntry {
+    unsigned int type;
+    const char *pszName;
+    unsigned int destination;
+    unsigned int auxiliary;
+} __attribute__((aligned(8)));
+struct RgTextInfoTbl {
+    struct RgTextInfoEntry e[25];
+};
+extern void RgTextInfoRead(void *reader, struct RgTextInfoEntry *list, char *base);
+extern unsigned int strlen(const char *s);
+extern char D_00A527F8[], D_00A52808[], D_00A52818[], D_00A52828[], D_00A52838[];
+extern char D_00A52848[], D_00A52858[], D_00A52860[], D_00A52868[], D_00A52870[];
+extern char D_00A52878[], D_00A52880[], D_00A52888[], D_00A52898[], D_00A528A8[];
+extern char D_00A528B8[], D_00A528C8[], D_00A528D0[], D_00A528D8[];
+
+static void _LoadVersion3(RgCamera *camera, void *reader)
+{
+    char cond[4][64];
+    char ope[2][64];
+    char *name;
+    int *op;
+    int i;
+    int id;
+    char *p;
+    char *base;
+    struct RgTextInfoEntry list[25] = {
+        [0]= { 1, D_00A527F8, 0x70, 0 },
+        [1] = { 1, D_00A52808, 0x74, 0 },
+        [2] = { 1, D_00A52818, 0x78, 0 },
+        [3] = { 1, D_00A52828, 0x7C, 0 },
+        [4] = { 3, D_00A52838, 0xA0, 0 },
+        [5] = { 1, s_aszVer3TimerName[0], 0xB4, 0 },
+        [6] = { 1, s_aszVer3TimerName[1], 0xC0, 0 },
+        [7] = { 1, s_aszVer3TimerName[2], 0xCC, 0 },
+        [8] = { 1, s_aszVer3TimerName[3], 0xD8, 0 },
+        [9] = { 1, s_aszVer3TimerName[4], 0xE4, 0 },
+        [10] = { 1, s_aszVer3TimerName[5], 0xF0, 0 },
+        [11] = { 1, s_aszVer3TimerName[6], 0xFC, 0 },
+        [12] = { 1, s_aszVer3TimerName[7], 0x108, 0 },
+        [13] = { 1, D_00A52848, 0xB4, 0 },
+        [14] = { 8, D_00A52858, (unsigned int) cond[0], 0 },
+        [15] = { 8, D_00A52860, (unsigned int) cond[1], 0 },
+        [16] = { 8, D_00A52868, (unsigned int) cond[2], 0 },
+        [17] = { 8, D_00A52870, (unsigned int) cond[3], 0 },
+        [18] = { 8, D_00A52878, (unsigned int) ope[0], 0 },
+        [19] = { 8, D_00A52880, (unsigned int) ope[1], 0 },
+        [20] = { 1, D_00A52888, 0x8C, 0 },
+        [21] = { 1, D_00A52898, 0x90, 0 },
+        [22] = { 1, D_00A528A8, 0x94, 0 },
+        [23] = { 1, D_00A528B8, 0x9C, 0 },
+        [24] = { 12 },
+    };
+    name = ope[0];
+    base = (char *) camera;
+
+    for (i = 3; i >= 0; i--) {
+        cond[i][0] = 0;
+    }
+    name[64] = 0;
+    name[0] = 0;
+    RgTextInfoRead(reader, list, base);
+    *(float *) (base + 0x90) = (*(float *) (base + 0x90) * 3.1415927f) / 180.0f;
+    for (i = 0; i < 4; i++) {
+        char *p = cond[i];
+        if (*p == '!') {
+            p++;
+            *(int *) (base + 0x140) |= (1 << i);
+        }
+        id = _GetVer3TimerID(p);
+        if (id >= 0) {
+            ((int *) (base + 0x130))[i] = id;
+        }
+    }
+    op = (int *) (base + 0x144);
+    for (i = 0; i < 2; i++) {
+        name = ope[i];
+        if (!strcmp(name, D_00A528C8)) {
+            *op = 1;
+        } else if (strcmp(name, D_00A528D0) == 0) {
+            *op = 0;
+        } else if (strlen(name) != 0) {
+            RgError(D_00A528D8, D_00A52760, 0x1AD, name);
+        }
+        op++;
+    }
+}
 
 extern const char D_00A528F8[];
 extern float RgGeomRobotGetRotate(void *point);
