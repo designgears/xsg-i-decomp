@@ -358,4 +358,122 @@ float SPL_getValue(void *spline, int index, float frame)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/spl", SPL_getValueXYZ);
+void SPL_getValueXYZ(float *destination, void *state, float frame)
+{
+    const SplineStateFull *spline = state;
+    int components;
+    unsigned int stride;
+    int last;
+    int end;
+    float elapsed;
+    float weight;
+    const float *samples;
+    const float (*linear)[96];
+    const float (*quadratic)[96];
+    const float (*cubic)[96];
+    unsigned int sample_count;
+    int segment;
+    int row_index;
+    short easing_mode;
+    short weight_mode;
+
+    components = spline->component_count;
+    stride = spline->component_count + 1;
+    last = (short)spline->sample_count - 1;
+    end = last * stride;
+    elapsed = 0.0f;
+    samples = spline->samples;
+    linear = &spline->coefficients[SPL_LINEAR_TERM];
+    quadratic = &spline->coefficients[SPL_QUADRATIC_TERM];
+    cubic = &spline->coefficients[SPL_CUBIC_TERM];
+    sample_count = spline->sample_count;
+
+    easing_mode = (short)spline->first_key;
+    switch (easing_mode) {
+    case 0:
+        weight = frame * (1.0f / (float)(short)spline->last_key);
+        frame = weight * weight * samples[end];
+        break;
+    case 1: {
+        float duration = samples[end];
+        weight = 1.0f - frame * (1.0f / (float)(short)spline->last_key);
+        frame = duration - weight * weight * duration;
+        break;
+    }
+    case 2:
+        weight = frame * (1.0f / (float)(short)spline->last_key);
+        frame = weight * samples[end];
+        break;
+    case 3: {
+        float square = frame * frame;
+        float inverse = 1.0f / (float)(short)spline->last_key;
+        float inverse_square = inverse * inverse;
+        frame = samples[end] *
+            (square * 3.0f * inverse_square -
+             2.0f * (square * frame * inverse_square) * inverse);
+        break;
+    }
+    }
+
+    if (frame <= samples[0]) {
+        destination[0] = samples[1];
+        destination[1] = samples[2];
+        destination[2] = samples[3];
+        return;
+    }
+    if (samples[end] <= frame) {
+        destination[0] = samples[end + 1];
+        destination[1] = samples[end + 2];
+        destination[2] = samples[end + 3];
+        return;
+    }
+
+    weight_mode = (short)spline->weight_mode;
+    switch (weight_mode) {
+    case 0:
+    case 2: {
+        segment = 1;
+        while (samples[segment * (components + 1)] <= frame) {
+            if (frame == samples[segment * (components + 1)]) {
+                destination[0] = samples[segment * (components + 1) + 1];
+                destination[1] = samples[segment * (components + 1) + 2];
+                destination[2] = samples[segment * (components + 1) + 3];
+                return;
+            }
+            ++segment;
+        }
+        row_index = segment * stride;
+        end = (segment - 1) * stride;
+        elapsed = (frame - samples[end]) / (samples[row_index] - samples[end]);
+        for (segment = 0; segment < components; ++segment) {
+            float difference =
+                samples[row_index + segment + 1] - samples[end + segment + 1];
+            destination[segment] =
+                samples[end + segment + 1] + difference * elapsed;
+        }
+        return;
+    }
+    case 1:
+    case 3:
+        segment = (short)sample_count - 1;
+        if (segment >= 0) {
+            elapsed = frame - samples[segment * ((unsigned int)components + 1)];
+            if (!(elapsed >= 0.0f)) {
+                do {
+                    --segment;
+                    if (segment < 0)
+                        break;
+                    elapsed = frame - samples[segment * ((unsigned int)components + 1)];
+                } while (!(elapsed >= 0.0f));
+            }
+        }
+        row_index = segment * stride;
+        for (segment = 0; segment < components; ++segment) {
+            int index = segment + row_index;
+            destination[segment] = samples[index + 1] + elapsed *
+                ((*linear)[index] + elapsed *
+                 ((*quadratic)[index] + elapsed * (*cubic)[index]));
+        }
+        return;
+    }
+}
