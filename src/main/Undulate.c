@@ -105,7 +105,9 @@ typedef struct UnduDataHeaderIndex {
 } UnduDataHeaderIndex;
 
 typedef struct UnduGameLoopState {
-    unsigned char unmodeled_00[0x5c];
+    unsigned char unmodeled_00[0x10];
+    unsigned int flags;
+    unsigned char unmodeled_14[0x48];
     float attributeHeights[32];
 } UnduGameLoopState;
 extern UnduGameLoopState GameLoopState;
@@ -187,10 +189,10 @@ int StudioEntrySkip = 0;
 
 signed char FLAG_FRAME_60 = 0;
 
-extern float UnduCheckSub(UnduWork *work, int subOffset);
+static float UnduCheckSub(UnduWork *work, int subOffset);
 
 
-extern int UnduCheckSubHeightCheck(UnduWork *work, int subOffset, float height);
+static int UnduCheckSubHeightCheck(UnduWork *work, int subOffset, float height);
 
 
 float UnduCheck(float *sample, void *output, UnduQuery *query);
@@ -1064,7 +1066,108 @@ typedef struct UnduQueryParameters {
     UnduWallAttributes attributes;
 } UnduQueryParameters;
 
-INCLUDE_ASM("asm/main/nonmatchings/Undulate", UnduCheck);
+extern int printf(const char *format, ...);
+extern const char D_004D26F8[];
+extern const char D_004D2718[];
+extern const char D_004D2730[];
+extern const char D_004D2790[];
+extern const char D_004D27B0[];
+#define DEBUG_BREAK() __asm__ __volatile__("break 0")
+
+float UnduCheck(float *sample, void *output, UnduQuery *query)
+{
+    UnduWork *work = query->prefix.parameters.scratchpad;
+    /* Return address of this call, stored at the frame bottom by the sw $31
+     * below; volatile keeps that store and the later reload by printf in place. */
+    unsigned int volatile caller;
+    UnduDataHeader *header;
+    unsigned char *subList;
+    unsigned short *attribute;
+    float *offset;
+    float height;
+    float x;
+    float y;
+    float z;
+
+    __asm__ __volatile__("sw $31,%0" : "=m"(caller));
+    if (work == 0)
+        work = (UnduWork *)0x70000000;
+    if (CurrentColiHead == 0)
+        return 0.0f;
+    header = query->prefix.parameters.header;
+    if (header == 0) {
+        if ((CurrentColiHead[0] & 0x7f) != 2)
+            return 0.0f;
+        header = ((UnduColiHead *)CurrentColiHead)->directHeaders;
+    }
+    work->heightTolerance = query->prefix.parameters.heightLimit;
+    work->collisionHeight = -1000.0f;
+    work->vertexData = header->vertexData;
+    work->collisionPoint[0] = sample[0];
+    work->collisionPoint[1] = sample[1];
+    subList = header->subList;
+    work->subCount = header->subCount;
+    work->normalData = header->normalData;
+    work->subListOffset = (int)subList;
+    work->wallAttributeTable = header->wallAttributeTable;
+    work->collisionPoint[2] = sample[2];
+    work->collisionType = 0;
+    work->wallAttributeMask = query->excludedAttributes;
+    work->wallAttributeValue = query->includedAttributes;
+    work->wallAttrHeader = (UnduWallAttrHeader *)query;
+    work->collisionAttribute = 0;
+    work->hasCollisionPoint = (int)output;
+    if (output != 0
+        && (((int *)output)[0] == 0x7fffffff || ((int *)output)[1] == 0x7fffffff
+            || ((int *)output)[2] == 0x7fffffff))
+        work->hasCollisionPoint = 0;
+    if (query->prefix.parameters.previousAttribute == 0
+        || (*(long long *)&query->prefix.result.flags & 0x5000)
+        || (GameLoopState.flags & 0x20)) {
+        work->hitPoint[0] = work->collisionPoint[0];
+        work->hitPoint[1] = work->collisionPoint[1];
+        work->hitPoint[2] = work->collisionPoint[2];
+        UnduCheckSubCheckAll(work);
+        height = UnduCheckResultCheck(work, &query->prefix.result, sample);
+        if (height == -1000.0f || work->hasCollisionPoint == 0)
+            return height;
+        work->collisionHeight = -1000.0f;
+        work->collisionAttribute = 0;
+    }
+    if (query->prefix.parameters.attribute != 0)
+        attribute = query->prefix.parameters.attribute;
+    else
+        attribute = query->prefix.parameters.previousAttribute;
+    if ((unsigned int)attribute < (unsigned int)work->subListOffset
+        && (unsigned int)attribute >= work->subListOffset + work->subCount * 0x18) {
+        printf(D_004D26F8, caller);
+        if (D_004D2718 != 0) {
+            printf(D_004D2730, D_004D2790, D_004D27B0, 1269);
+            DEBUG_BREAK();
+        }
+    }
+    x = work->collisionPoint[0];
+    y = work->collisionPoint[1];
+    z = work->collisionPoint[2];
+    offset = (float *)work->hasCollisionPoint;
+    if (offset != 0) {
+        x += offset[0];
+        y += offset[1];
+        z += offset[2];
+    }
+    work->hitPoint[0] = x;
+    work->hitPoint[1] = y;
+    work->hitPoint[2] = z;
+    height = UnduCheckSub(work, (int)attribute);
+    if (height != -1000.0f)
+        UnduCheckSubHeightCheck(work, (int)attribute, height);
+    else if (work->hasCollisionPoint == 0)
+        UnduCheckSubCheckAll(work);
+    else
+        UnduCheckSubCrossCheck(work, query, (int)attribute);
+    height = UnduCheckResultCheck(work, &query->prefix.result, sample);
+    return height;
+}
 
 float UnduGet2(int queryAddress, float x, float z)
 {
