@@ -437,9 +437,92 @@ extern int MenuModelOut[4];
 void MenuModelCreate(int *model, int chrNo);
 void MenuModelExtFuncSet(int model, void (*func)(void), int argument);
 
-static void MenuShopModelMain(unsigned char *unit);
+static void MenuShopModelMain(TskObject *task, void *data);
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopModelMain);
+typedef long long s64;
+typedef struct MenuShopModelTask {
+    TskObject base;
+    int modelId;
+} MenuShopModelTask;
+extern void xglCameraInit(StudioCamera *camera);
+static inline MenuShopWorkData *MenuShopWorkRead(void)
+{
+    return *(MenuShopWorkData *const *)&MenuShopWork;
+}
+
+static void MenuShopModelMain(TskObject *task, void *data)
+{
+    MenuShopModelTask *model = (MenuShopModelTask *)task;
+    s64 position[2];
+    s64 rotation[2];
+    StudioCamera *camera;
+    StudioCamera *camera2;
+    MenuShopWorkData *work;
+    int *modelId;
+    int category;
+    int enabled;
+
+    modelId = &model->modelId;
+    enabled = MenuShopWork->modelBreakPending;
+    work = MenuShopWork;
+    if (enabled == 0)
+        return;
+
+    switch (task->state) {
+    case 0:
+        *modelId = 0;
+        position[0] = ((s64 *)D_004C7390)[0];
+        position[1] = ((s64 *)D_004C7390)[1];
+        MenuModelOut[0] = 0;
+        memset(rotation, 0, 16);
+        ((float *)rotation)[3] = 1.0f;
+        camera = xglStudioGetCamera2(0);
+        xglCameraInit(camera);
+        camera->state = 1;
+        ((s64 *)&camera->rotation)[0] = rotation[0];
+        ((s64 *)&camera->rotation)[1] = rotation[1];
+        ((s64 *)&camera->position)[0] = position[0];
+        ((s64 *)&camera->position)[1] = position[1];
+        camera2 = xglStudioGetCamera2(2);
+        camera2->active = 1;
+        camera2->state = 1;
+        break;
+    case 2:
+        if (MenuShopWork->mode != 0)
+            break;
+        switch (MenuShopWork->state) {
+        case 0x30:
+        case 0xA0:
+        case 0xA2:
+        case 0xA4:
+            break;
+        default:
+            goto mark_pending;
+        }
+        category = MenuShopWork->category;
+        if (category != 7)
+            goto mark_pending;
+        if ((MenuShopWork->itemId >> 16) != category)
+            break;
+        if (*modelId != MenuShopWork->modelId) {
+            MenuShopWork->modelPending = 1;
+            *modelId = MenuShopWork->modelId;
+            work = MenuShopWorkRead();
+        }
+        if (work->modelId == 0)
+            break;
+        if (MenuModelOut[0] != 0)
+            break;
+        work->modelPending = 0;
+        MenuModelCreate(MenuModelOut, work->modelId);
+        MenuModelExtFuncSet(MenuModelOut[0], MenuShopModelDisp, 0);
+        *modelId = MenuShopWork->modelId;
+        break;
+mark_pending:
+        MenuShopWork->modelPending = 1;
+        break;
+    }
+}
 
 typedef struct MenuShopPasMessageSlot {
     unsigned char unmodeled_00;
