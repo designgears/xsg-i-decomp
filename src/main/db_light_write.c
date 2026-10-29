@@ -636,7 +636,112 @@ void drawAxis(Matrix4 matrix, float scale)
   xglPrimAddGifTagDirect(0, (void *) 0x70000000, 0xD);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/db_light_write", drawCircle3);
+typedef struct {
+    Matrix4 m;
+} Matrix4Block;
+
+typedef struct {
+    float elements[16];
+} Matrix;
+extern void MATRIX_transpose3(Matrix4 matrix);
+extern void xglMatrixMul(Matrix4 destination, Matrix4 left, Matrix4 right);
+extern float dptofp(double value);
+extern const float D_004D7CB8;
+
+void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
+{
+    StudioCamera *camera_slot;
+    StudioCamera **camera = &camera_slot;
+    Matrix rotation;
+    unsigned int *write;
+    const unsigned char *red;
+    const unsigned char *green;
+    const unsigned char *blue;
+    const unsigned char *alpha;
+    const unsigned char *red_column;
+    const unsigned char *green_column;
+    const unsigned char *blue_column;
+    const unsigned char *alpha_column;
+    double magnitude;
+    double zero;
+    float offset_x;
+    Vector4 *centre;
+    float radius;
+    float angle;
+    int segment;
+    int colour;
+
+    color_index *= 2;
+    xglStudioGetCamera(camera, 0);
+    ((DebugLineScratch *)0x70000000)->transform.screen_offset = (*camera)->screenOffset;
+    *(Matrix4Block *)((DebugLineScratch *)0x70000000)->transform.world = *(Matrix4Block *)(*camera)->viewMatrix;
+    ((DebugLineScratch *)0x70000000)->transform.screen_scale = (*camera)->screenScale;
+    ((DebugLineScratch *)0x70000000)->transform.local = matrix;
+    ((DebugLineScratch *)0x70000000)->input[0].x = position->x;
+    ((DebugLineScratch *)0x70000000)->input[0].y = position->y;
+    ((DebugLineScratch *)0x70000000)->input[0].z = position->z;
+    ((DebugLineScratch *)0x70000000)->input[0].w = 1.0f;
+    transformVector(((DebugLineScratch *)0x70000000)->output, ((DebugLineScratch *)0x70000000)->input, 1, &((DebugLineScratch *)0x70000000)->transform);
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r"(&rotation), "r"((char *)*camera + 0x170)
+        : "$2", "memory");
+    rotation.elements[12] = 0.0f;
+    rotation.elements[13] = 0.0f;
+    rotation.elements[14] = 0.0f;
+    MATRIX_transpose3((float (*)[4])rotation.elements);
+    ((DebugLineScratch *)0x70000000)->transform.local = (Matrix4 *)rotation.elements;
+    xglMatrixMul(*matrix, (float (*)[4])rotation.elements, *matrix);
+    ((DebugLineScratch *)0x70000000)->input[0].x = position->w;
+    ((DebugLineScratch *)0x70000000)->input[0].y = 0.0f;
+    ((DebugLineScratch *)0x70000000)->input[0].z = 0.0f;
+    ((DebugLineScratch *)0x70000000)->input[0].w = 1.0f;
+    write = (unsigned int *)0x70000000;
+    zero = 0.0;
+    transformVector(&((DebugLineScratch *)0x70000000)->output[1], ((DebugLineScratch *)0x70000000)->input, 1, &((DebugLineScratch *)0x70000000)->transform);
+    write[0] = 0x8011;
+    write[1] = 0x20054000;
+    write[2] = 0xffffff51;
+    write[3] = 0;
+    write += 4;
+    magnitude = fptodp(((Vector4 *)0x700004f0)->x - 2048.0f);
+    if (magnitude < zero)
+        magnitude = zero - magnitude;
+    radius = dptofp(magnitude);
+    colour = color_index * 4 + 4;
+    red_column = (const unsigned char *)col;
+    green_column = (const unsigned char *)col + 1;
+    blue_column = (const unsigned char *)col + 2;
+    alpha_column = (const unsigned char *)col + 3;
+    green = green_column + colour;
+    blue = blue_column + colour;
+    alpha = alpha_column + colour;
+    red = red_column + colour;
+    centre = (Vector4 *)0x700004e0;
+    angle = 0.0f;
+    for (segment = 16; segment >= 0; segment--) {
+        write[0] = *red;
+        write[1] = *green;
+        write[2] = *blue;
+        write[3] = *alpha;
+        write += 4;
+        write[0] = (centre->x + xglSin(angle) * radius) * 16.0f;
+        write[1] = (centre->y + xglCos(angle) * radius) * 16.0f;
+        angle += D_004D7CB8;
+        write[2] = 0xffffffffU;
+        write[3] = 0;
+        write += 4;
+    }
+    xglPrimAddGifTagDirect(0, (const void *)0x70000000, 35);
+}
 
 typedef struct { Matrix4 m; } MatBlock64;
 
@@ -674,9 +779,6 @@ void drawTags(Vector4 *arg0, Matrix4 *arg1, const char *arg2)
 }
 
 typedef struct DbLightVector3 { float x, y, z; } DbLightVector3;
-typedef struct {
-    Matrix4 m;
-} Matrix4Block;
 extern StudioCamera *xglStudioGetActiveCamera(void);
 
 void drawVector4(const DbLightVector3 *vector, Matrix4 *matrix, int color_index)
