@@ -1702,7 +1702,60 @@ typedef struct {
 
 extern ClearEnvColorView ClearEnv;
 
-INCLUDE_ASM("asm/main/nonmatchings/db_light_write", initLight3);
+void initLight3(void)
+{
+    StudioLight *light;
+    StudioLight *l;
+    StudioLight *source;
+    Vector4 *slot;
+    Vector4 *colour;
+    Vector4 *direction;
+    float sum;
+    int i;
+    int filled;
+
+    xglStudioGetLight(&light);
+    l = light;
+    slot = &lightCol[3];
+    slot->x = l->ambient_color.x;
+    slot->y = l->ambient_color.y;
+    slot->z = l->ambient_color.z;
+    sum = slot->x + slot->y + slot->z;
+    slot->w = sum / 3.0f;
+    colour = lightCol;
+    i = 0;
+    do {
+        filled = i + 1;
+        source = l;
+        colour->x = source->lights[0].color.x;
+        colour->y = source->lights[0].color.y;
+        colour->z = source->lights[0].color.z;
+        colour->w = (colour->x + colour->y + colour->z) / 3.0f;
+        colour++;
+        i = filled;
+    } while (filled < 3);
+    slot = &lightCol[4];
+    slot->x = (float)ClearEnv.color_r / 255.0f;
+    slot->y = (float)ClearEnv.color_g / 255.0f;
+    slot->z = (float)ClearEnv.color_b / 255.0f;
+    slot->w = (slot->x + slot->y + slot->z) / 3.0f;
+    slot = &lightCol[5];
+    slot->w = (slot->x + slot->y + slot->z) / 3.0f;
+    source = l;
+    i = 0;
+    do {
+        direction = &lightDir[i];
+        direction->x = source->lights[0].direction.x;
+        direction->y = source->lights[0].direction.y;
+        if (direction->y >= 0.0f) {
+            direction->y = 1.0f;
+        } else {
+            direction->y = -1.0f;
+        }
+        l = source;
+        direction->z = source->lights[0].direction.z;
+    } while (++i < 3);
+}
 
 void initLight2(void)
 {
