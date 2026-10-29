@@ -10,7 +10,17 @@ typedef struct MovieInfo {
     short state;
     unsigned char unmodeled_42[4];
     short frame;
-    unsigned char unmodeled_48[0x83];
+    unsigned char unmodeled_48[0x48];
+    unsigned char *source_data;
+    int source_size;
+    unsigned char unmodeled_98[2];
+    unsigned char opened;
+    unsigned char unmodeled_9b[0x15];
+    unsigned char *display_base;
+    unsigned char *display_end;
+    unsigned char unmodeled_b8[0x11];
+    unsigned char copy_mode;
+    unsigned char threshold1;
     unsigned char transparent;
     unsigned char unmodeled_cc[4];
 } MovieInfo;
