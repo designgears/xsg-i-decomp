@@ -5016,7 +5016,62 @@ int curPosProc(CursorObject *unused, int *pos)
     return changed;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", curTgtProcInit);
+typedef struct CurTgtInitList {
+    ObjectTask *units[9];
+    int pos[9];        /* +0x24 */
+    int count;         /* +0x48 */
+    int curIdx;        /* +0x4C */
+    unsigned char unmodeled_50[0x58 - 0x50];
+    u32 group;         /* +0x58 */
+} CurTgtInitList;
+extern int calcTgtUnitTbl(ObjectTask *self, int flags, ObjectTask **table);
+extern int oldCurGrp;
+
+int curTgtProcInit(ObjectTask **target, ObjectTask *self, int flags)
+{
+    ObjectTask *task = pTaskEnCur;
+    CurTgtInitList *list = (CurTgtInitList *)&curMove;
+    ObjectTask *table[8];
+    int count;
+    int n;
+    int i;
+    int ret;
+
+    list->curIdx = 0;
+    if ((flags & 0xC0) == 0xC0) {
+        curGrpSel(task, (int *)list, 0x1000, 0x4000);
+    }
+    count = calcTgtUnitTbl(self, flags, table);
+    n = 0;
+    for (i = 0; i < count; i++) {
+        if ((list->group == 0 && !(*(int *)table[i]->work & 0x40)) ||
+            (list->group == 1 && (*(int *)table[i]->work & 0x40))) {
+            list->units[n++] = table[i];
+        }
+    }
+    list->count = n;
+    for (i = 0; i < list->count; i++) {
+        list->pos[i] = *(short *)((char *)calcUPGet(list->units[i]) + 0x44);
+        if (oldCurGrp == list->group) {
+            if (*target == list->units[i]) {
+                list->curIdx = i;
+            }
+        } else if (list->group == 0 && self == list->units[i]) {
+            list->curIdx = i;
+        }
+    }
+    if (list->count == 0) {
+        printf(D_00A442C8);
+        ret = 0;
+    } else {
+        int idx = list->curIdx;
+        ret = 1;
+        *(int *)((char *)task->work + 0x78) = 1;
+        *target = list->units[idx];
+    }
+    oldCurGrp = list->group;
+    return ret;
+}
 
 typedef struct CurTgtList {
     void *units[9];
