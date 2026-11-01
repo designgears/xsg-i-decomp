@@ -8735,39 +8735,21 @@
     {
      "range": [
       "0x004d1a60",
-      "0x004d1a80"
-     ],
-     "generated": [
-      "0x004d1a60",
-      "0x004d1a80"
-     ],
-     "generated_by": [
-      "JNT_getVal2"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004D1A60"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/jnt.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d1aa0",
       "0x004d1ae0"
      ],
      "generated": [
-      "0x004d1aa0",
+      "0x004d1a60",
       "0x004d1adc"
      ],
      "generated_by": [
+      "JNT_getVal2",
+      "JNT_getVal_HOGE2",
       "JNT_interpolate",
       "JNT_setMDLMatrix"
      ],
      "c_owned_symbols": [
+      "jtbl_004D1A60",
+      "jtbl_004D1A80",
       "jtbl_004D1AA0",
       "jtbl_004D1AC0"
      ],
@@ -8790,6 +8772,7 @@
       "0x004dc249"
      ],
      "generated_by": [
+      "JNT_computeMatrix",
       "JNT_offSmoothHair",
       "JNT_onSmoothHair"
      ],
