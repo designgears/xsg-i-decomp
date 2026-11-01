@@ -608,35 +608,6 @@ struct FontWindowTransferPacket {
     struct FontGsRegisterWrite trxdir;
 };
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontFlushSub);
-
-/*
- * Draws one glyph from the font texture: u and v are texel coordinates in
- * 1/16 units, size packs the glyph width (high byte) and height (low byte),
- * flags' low nibble selects the draw attributes and bit 4 can double the
- * drawn size.
- */
-static void xglFontFlushSub(int u, int v, int size, int flags);
-
-/* Hex digit glyphs are 6x8 texels, 8 texels apart at v 0x2F00 (row 752). */
-static void xglFontFlushSubHex(int digit)
-{
-    xglFontFlushSub(digit << 7, 0x2F00, (6 << 8) | 8, 0x13);
-}
-
-static void xglFontFlushSubCRLF(void)
-{
-    unsigned short *p = (unsigned short *)0x70000000;
-    unsigned char *fs = FS;
-    int h = *(unsigned short *)(fs + 0xC);
-    int y = p[5] + h;
-    p[5] = y;
-    p[4] = p[2];
-    if (fs[0xB] == 0) {
-        *(unsigned short *)0x7000000A = y + h;
-    }
-}
-
 typedef struct XglPacket {
     int *cur;
     int unk4;
@@ -685,6 +656,232 @@ struct FontDrawCursor {
     struct FontEffectScratchPacket effect_packet;
 };
 
+struct FontState {
+    struct FontImage *font_image;
+    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
+    void *window_image;
+    unsigned short flags;
+    unsigned char font_selection;
+    unsigned char debug_mode;
+    unsigned short line_height;
+    unsigned short character_spacing;
+    unsigned char default_width;
+    union {
+        unsigned char unmodeled_11; /* former padding name, kept for saved bodies */
+        unsigned char queue_reset_flag;
+    };
+    unsigned char proportional_mode;
+    unsigned char horizontal_shift;
+    unsigned char unmodeled_14[8];
+    unsigned char *queue_cursor;
+};
+
+typedef union FontStateStorage {
+    struct FontState state;
+    unsigned char bytes[0x20];
+} FontStateStorage;
+
+extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int size);
+extern signed char tbl_1_004DC2A8[4][2];
+
+static void xglFontFlushSub(int texture_u, int texture_v, int size, int flags)
+{
+    /* FS read through its typed view (the TU declares it as bytes). */
+    extern FontStateStorage xglFontStateView __asm__("FS");
+    struct FontDrawCursor *cursor = (struct FontDrawCursor *)0x70000000;
+    struct FontSpritePacket *sprite = (struct FontSpritePacket *)0x70000100;
+    int glyph_width = size >> 8;
+    unsigned int glyph_height = size & 0xff;
+    int texture_width;
+    int texture_height;
+    int draw_width;
+    int draw_height;
+    int effect_x;
+    int effect_y;
+    int cursor_x = (short)cursor->x;
+    int cursor_y = (short)cursor->y;
+    int offset_x = (short)cursor->offset_x;
+    int offset_y = (short)cursor->offset_y;
+    unsigned int left = ((offset_x + cursor_x) * 16) - 8;
+    unsigned int top = ((offset_y + cursor_y) * 16) - 9;
+
+    int attributes = flags & 15;
+    texture_width = glyph_width * 16;
+    texture_height = glyph_height * 16;
+    cursor->attributes = attributes;
+    if (!xglFontStateView.state.debug_mode && (flags & 16)) {
+        draw_width = texture_width * 2;
+        draw_height = texture_height * 2;
+    } else {
+        draw_width = glyph_width * 16;
+        draw_height = glyph_height * 16;
+    }
+    draw_width = (draw_width * (short)cursor->scale_x) >> 4;
+    effect_x = cursor->effect_x * 16;
+    effect_y = cursor->effect_y * 16;
+    draw_height = (draw_height * (short)cursor->scale_y) >> 4;
+    cursor->x += draw_width / 16;
+    if ((xglFontStateView.state.flags & 8) && (left > 0xf000U || top > 0xf000U)) {
+        return;
+    }
+    {
+        unsigned long long texture;
+
+        sprite->tag_low = 0x8001;
+        sprite->tag_high = 0x60ab4000;
+        sprite->registers_low = 0x535316;
+        sprite->registers_high = 0;
+        texture = (attributes & 2) ? 0x2a942bc00ULL : 0x2a942b820ULL;
+        sprite->texture = texture | ((!xglFontStateView.state.debug_mode) ? 0x2000000400000000ULL : 0x2000000000000000ULL) |
+                   (((unsigned long long)((attributes & 1) + 0x3800)) << 37);
+        sprite->red = cursor->red;
+        sprite->green = cursor->green;
+        sprite->blue = cursor->blue;
+        sprite->alpha = cursor->alpha;
+        sprite->corners[0].texture_u_or_x = texture_u;
+        sprite->corners[0].texture_v_or_y = texture_v;
+        if (xglFontStateView.state.horizontal_shift) {
+            unsigned int shifted_left = left + xglFontStateView.state.horizontal_shift * 16;
+            int u_end = texture_u + texture_width;
+
+            sprite->corners[0].y = top;
+            sprite->corners[2].texture_u_or_x = texture_u;
+            sprite->corners[1].texture_v_or_y = texture_v;
+            sprite->tag_low = 0x8001;
+            sprite->tag_high = 0xa0aa4000;
+            sprite->registers_low = 0x53535316;
+            sprite->registers_high = 0x53;
+            sprite->corners[0].x = shifted_left;
+            sprite->corners[0].depth = cursor->depth;
+            sprite->corners[0].depth_upper = 0;
+            sprite->corners[1].y = top;
+            sprite->corners[1].x = shifted_left + draw_width;
+            sprite->corners[1].texture_u_or_x = u_end;
+            sprite->corners[1].depth = cursor->depth;
+            sprite->corners[1].depth_upper = 0;
+            sprite->corners[2].x = left;
+            sprite->corners[2].texture_v_or_y = texture_v + texture_height;
+            sprite->corners[2].y = top + draw_height;
+            sprite->corners[2].depth = cursor->depth;
+            sprite->corners[2].depth_upper = 0;
+            sprite->corners[3].texture_u_or_x = u_end;
+            sprite->corners[3].texture_v_or_y = texture_v + texture_height;
+            sprite->corners[3].x = left + draw_width;
+            sprite->corners[3].y = top + draw_height;
+            sprite->corners[3].depth = cursor->depth;
+            sprite->corners[3].depth_upper = 0;
+            sceVif1PkAddDirectDataN(cursor->packet, sprite, 11);
+            return;
+        }
+        sprite->corners[0].x = left;
+        sprite->corners[0].y = top;
+        sprite->corners[0].depth = cursor->depth;
+        sprite->corners[0].depth_upper = 0;
+        sprite->corners[1].texture_u_or_x = texture_u + texture_width;
+        sprite->corners[1].texture_v_or_y = texture_v + texture_height;
+        sprite->corners[1].x = left + draw_width;
+        sprite->corners[1].y = top + draw_height;
+        sprite->corners[1].depth = cursor->depth;
+        sprite->corners[1].depth_upper = 0;
+        sceVif1PkAddDirectDataN(cursor->packet, sprite, 7);
+        sprite->corners[0].depth--;
+        sprite->corners[1].depth--;
+        if (cursor->effect == 4) {
+            unsigned int old_left = sprite->corners[0].x;
+            unsigned int old_right = sprite->corners[1].x;
+            unsigned int old_top = sprite->corners[0].y;
+            unsigned int old_bottom = sprite->corners[1].y;
+
+            sprite->corners[0].x = old_left + 16;
+            sprite->corners[2].texture_v_or_y = old_top;
+            sprite->corners[2].backup_x = old_right;
+            sprite->corners[2].backup_y = old_bottom;
+            sprite->corners[0].y = old_top;
+            sprite->corners[1].y = old_bottom;
+            sprite->corners[1].x = old_right + 16;
+            sprite->corners[2].texture_u_or_x = old_left;
+            sceVif1PkAddDirectDataN(cursor->packet, sprite, 7);
+            sprite->corners[0].x = sprite->corners[2].texture_u_or_x;
+            sprite->corners[0].y = sprite->corners[2].texture_v_or_y + 16;
+            sprite->corners[1].x = sprite->corners[2].backup_x;
+            sprite->corners[1].y = sprite->corners[2].backup_y + 16;
+            sceVif1PkAddDirectDataN(cursor->packet, sprite, 7);
+        } else if (cursor->effect >= 2) {
+            unsigned char effect_red = cursor->effect_red;
+            unsigned char effect_green = cursor->effect_green;
+            unsigned char effect_blue = cursor->effect_blue;
+            unsigned int old_left = sprite->corners[0].x;
+            unsigned int old_top = sprite->corners[0].y;
+            unsigned int old_right = sprite->corners[1].x;
+            unsigned int old_bottom = sprite->corners[1].y;
+
+            sprite->red = effect_red;
+            sprite->green = effect_green;
+            sprite->blue = effect_blue;
+            sprite->corners[2].texture_u_or_x = old_left;
+            sprite->corners[2].texture_v_or_y = old_top;
+            sprite->corners[2].backup_x = old_right;
+            sprite->corners[2].backup_y = old_bottom;
+            if (cursor->effect == 2) {
+                sprite->corners[0].x = old_left + effect_x;
+                sprite->corners[0].y = old_top + effect_y;
+                sprite->corners[1].x = old_right + effect_x;
+                sprite->corners[1].y = old_bottom + effect_y;
+                sceVif1PkAddDirectDataN(cursor->packet, sprite, 7);
+            } else {
+                int row;
+                int column;
+                int direction;
+
+                for (row = 16; row <= effect_y; row += 16) {
+                    for (column = 16; column <= effect_x; column += 16) {
+                        for (direction = 0; direction < 4; direction++) {
+                            int offset_x = tbl_1_004DC2A8[direction][0] * column;
+                            int offset_y = tbl_1_004DC2A8[direction][1] * row;
+
+                            sprite->corners[0].x = sprite->corners[2].texture_u_or_x + offset_x;
+                            sprite->corners[0].y = sprite->corners[2].texture_v_or_y + offset_y;
+                            sprite->corners[1].x = sprite->corners[2].backup_x + offset_x;
+                            sprite->corners[1].y = sprite->corners[2].backup_y + offset_y;
+                            sceVif1PkAddDirectDataN(cursor->packet, sprite, 7);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+ * Draws one glyph from the font texture: u and v are texel coordinates in
+ * 1/16 units, size packs the glyph width (high byte) and height (low byte),
+ * flags' low nibble selects the draw attributes and bit 4 can double the
+ * drawn size.
+ */
+static void xglFontFlushSub(int u, int v, int size, int flags);
+
+/* Hex digit glyphs are 6x8 texels, 8 texels apart at v 0x2F00 (row 752). */
+static void xglFontFlushSubHex(int digit)
+{
+    xglFontFlushSub(digit << 7, 0x2F00, (6 << 8) | 8, 0x13);
+}
+
+static void xglFontFlushSubCRLF(void)
+{
+    unsigned short *p = (unsigned short *)0x70000000;
+    unsigned char *fs = FS;
+    int h = *(unsigned short *)(fs + 0xC);
+    int y = p[5] + h;
+    p[5] = y;
+    p[4] = p[2];
+    if (fs[0xB] == 0) {
+        *(unsigned short *)0x7000000A = y + h;
+    }
+}
+
+
+
+
 INCLUDE_ASM("asm/main/nonmatchings/xgl_font", xglFontFlushCore);
 
 extern char tbl_7[];
@@ -727,25 +924,6 @@ struct FontImage {
     unsigned short proportional_widths[256];
 };
 
-struct FontState {
-    struct FontImage *font_image;
-    unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
-    void *window_image;
-    unsigned short flags;
-    unsigned char font_selection;
-    unsigned char debug_mode;
-    unsigned short line_height;
-    unsigned short character_spacing;
-    unsigned char default_width;
-    union {
-        unsigned char unmodeled_11; /* former padding name, kept for saved bodies */
-        unsigned char queue_reset_flag;
-    };
-    unsigned char proportional_mode;
-    unsigned char horizontal_shift;
-    unsigned char unmodeled_14[8];
-    unsigned char *queue_cursor;
-};
 
 extern unsigned char FS[];
 
@@ -1222,10 +1400,6 @@ void xglFontInitial(void)
 
 /* Types recovered upstream (origin/master); kept for reference. */
 /* The partial state view shares the complete 0x20-byte retail allocation. */
-typedef union FontStateStorage {
-    struct FontState state;
-    unsigned char bytes[0x20];
-} FontStateStorage;
 
 typedef union FontPrintQueueStorage {
     unsigned long long alignment;
