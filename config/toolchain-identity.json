@@ -18,10 +18,10 @@
  "tools": {
   "ee-gcc2.96-realconv-lp7": {
    "role": "cc1 of every GCC 2.96-family compile contract (game and runtime C)",
-   "dir": "ee-gcc2.96-realconv-lp7-fsv5-usecount-v1/bin",
-   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv5 + usecount + externname",
+   "dir": "ee-gcc2.96-realconv-lp7-fsv12-usecount-externname-v1/bin",
+   "version": "gcc 2.96-ee-001003-1 (cc1), locally patched: realconv + lp7 + fsv3 + fsv4 + fsv5 + fsv6 + fsv7 + fsv8 + fsv9 + fsv10 + fsv12 + usecount + externname",
    "files": {
-    "cc1": "eca55caba431bd931e21d9f14c13569d7774d762ca7017cd307e297e04dcb580",
+    "cc1": "98f571940f6d66f3b7aeda4c64782227b73aac9e04bda324aa6fb9555f27ad45",
     "cpp0": "f6f6b598f39649edfe171d6da8c7f91d07f2b87c2aeeffffbc5f566bfb1a39a9",
     "ee-gcc": "b8c284d16c9c0a0e8788e9522c46881e224ad01fa1c732aed43f821cc32f168b"
    },
@@ -46,7 +46,7 @@
     ],
     "cc1_byte_patches": {
      "note": [
-      "Each entry patches the bytes of the extracted cc1 at `file_offset` (one byte, except the fsv1, fsv3, fsv4, externname entries and the 86-byte fsv5 gen_extendqidi2 entry, which replace the given hex strings).",
+      "Each entry patches the bytes of the extracted cc1 at `file_offset` (one byte, except the fsv1, fsv3 and fsv4 entries, the 86-byte fsv5 gen_extendqidi2 entry, the three fsv6 entries, the four fsv7 entries, the two fsv8 entries, the fsv9 entry, the two fsv10 entries and the two fsv12 entries, which replace the given hex strings).",
       "`old` must be the byte already there; `new` replaces it.",
       "The six `realconv` patches turn the six MASK_MIPS5900 conversion gates",
       "of the bundled e-type float code into unconditional jumps, so decimal",
@@ -54,9 +54,6 @@
       "The two `lp7` patches raise the R5900 short-loop padding gate and loop",
       "bound in mips_r5900_lengthen_loops from 4 to 6, which reproduces the",
       "7-d padding ten original game objects carry.",
-      "The `usecount` patch turns the jne at 0x081ccf54 in mips_r5900_lengthen_loops",
-      "into a jmp so that USE insns count toward the loop distance, as the original",
-      "objects show (main/pdb/getStrIndex_002F5F30, system/getStrIndex_002F6210: 3 nops, not 4).",
       "The `fsv1` patch (user decision 2026-09-23, reports/cc1-fsv-clause1-losum.md)",
       "rewrites clause 1 of the alias-analysis helper fixed_scalar_and_varying_struct_p",
       "(cc1 0x080ee624) so that a LO_SUM address of the scalar mem1 counts as",
@@ -85,6 +82,65 @@
       "R5900 short-loop pass, as the original getStrIndex family (main tu145, tu148,",
       "tu229, 0x002f6210) shows. FSF GCC fuses the two into extendqidi2_insn; the",
       "original EE build is inferred to differ.",
+      "The three `fsv6` patches (release ee-gcc2.96-realconv-lp7-fsv6-v2, user decision 2026-10-27,",
+      "reports/cc1-fsv6-legit-addr.md, Rev 2) supersede fsv5 on top of it and remove two reads of",
+      "host heap garbage that made codegen depend on line-marker path lengths and",
+      "ASLR. mips_legitimate_address_p (0x081c184d, 20 bytes from legit.S) evaluates",
+      "its TARGET_64BIT `INTVAL (xplus1) > 0` clause only for a CONST_INT, so",
+      "SYMBOL_REF/CONST/LABEL_REF/HIGH sym(reg) addresses are accepted, as on the",
+      "original 32-bit host whose heap lay below 0x80000000 (ov11 VW_ViewModeInit,",
+      "VW_SamMode). gen_mem_addressof (0x08093e59, 15 bytes) jumps to a 28-byte cave",
+      "(0x081a4570, memalias.S, in the tail of gen_extendqidi2 unreachable since",
+      "fsv5) that clears MEM_ALIAS_SET (reg) before get_alias_set (decl), so an",
+      "address-taken VAR_DECL gets alias set 0 instead of the uninitialised high",
+      "word of the REG field it was converted from. Inferred from original bytes and",
+      "full six-unit identity, not from a recovered binary.",
+      "The four `fsv7` patches (release ee-gcc2.96-realconv-lp7-fsv7-v2, user decision 2026-10-27,",
+      "reports/cc1-fsv7-transp-argreg.md, section 8) supersede fsv6 on top of it: compute_transp",
+      "(gcse.c) calls transp_dep (0x081d5798) instead of canon_true_dependence at",
+      "0x080f30e6. transp_dep keeps the fsv4 decision (rtx_varies_p), except that an",
+      "in-struct store whose base register (bare REG or PLUS operand 0) has global",
+      "origin S - every SET of it loads (mem (symbol_ref S)) or copies a register",
+      "with origin S - against a load of (symbol_ref S) takes the FSF decision",
+      "(rtx_addr_varies_p): a struct store through a pointer loaded from global S",
+      "kills a later load of S (rule \"SameG\"; MenuShopCore and MenuShopModelMain",
+      "natural forms, main 0x0024EE80). The three caves (transp_org.S) overwrite",
+      "debugger-only functions: transp_dep over debug_print_page_list, reg_global_origin",
+      "over debug_rli (0x08082640) and chk over debug_candidates (0x0816a064). Empirical",
+      "model fitted on 27 decisive sites; no GCC 2.96 source mechanism is known.",
+      "The two `fsv8` patches (release ee-gcc2.96-realconv-lp7-fsv8-v1, user decision 2026-10-28,",
+      "reports/cc1-fsv8-nzinit.md) supersede fsv7 on top of it (\"NZ-init\"): in the fsv3 make_decl_rtl",
+      "cave the small-data jg at 0x080d92a2 (file 0x912a2, inside the fsv3 entry at 0x9127c,",
+      "so that entry applies first) jumps to a 54-byte cave at 0x080d92d4 (nzinit.S, over",
+      "the unreachable tail of debug_rtx_list and the debugger-only debug_rtx_range). A",
+      "small-data declaration whose DECL_INITIAL is non-null, not error_mark_node and not",
+      "integer_zerop then also gets its type alias set (set_mem_attributes), as every",
+      "non-small-data declaration does since fsv3; small-data declarations without an",
+      "initializer or with a zero one keep alias set 0. Empirical: one positive case",
+      "(sw in main tu097 xglJpegEncode/StartOfScan), neutral on 673 TUs.",
+      "The `fsv9` patch (release ee-gcc2.96-realconv-lp7-fsv9-v1, user decision 2026-10-29,",
+      "reports/cc1-fsv9-anyg.md) supersedes fsv8 on top of it (\"AnyG\"): in the fsv7-v2 compute_transp",
+      "cave transp_dep (over debug_print_page_list) the 5 bytes at 0x081d57e8 (file 0x18d7e8)",
+      "turn `cmp 0x4(%ebx),%eax; jne` (store base origin == the PRE load symbol) into",
+      "`test %eax,%eax; nop; je` (any global origin). An in-struct store through a pointer",
+      "loaded from any global then takes the FSF rtx_addr_varies_p decision for a load of a",
+      "global. Empirical: fsv7 named AnyG as equally consistent; main tu167 MenuFile is the",
+      "separating case. Neutral on 673 TUs.",
+      "The two `fsv10` patches (release ee-gcc2.96-realconv-lp7-fsv10-v1, user decision 2026-10-29,",
+      "reports/cc1-fsv10-swu.md) supersede fsv9 on top of it (\"swu\"): mems_conflict_for_gcse_p pushes",
+      "rtx_addr_varies_p at 0x080efe20 (file 0xa7e20); that push becomes a jump to a 38-byte cave",
+      "over the unreferenced debug_rtx_find at 0x080d9310 (file 0x91310). The cave pushes",
+      "rtx_varies_p when the store MEM (%edx) is SImode, has alias set 0 and MEM_IN_STRUCT_P,",
+      "rtx_addr_varies_p otherwise, and jumps back to 0x080efe25. Empirical, one positive case",
+      "(main tu167 MenuFile head store); neutral on 673 TUs.",
+      "The two `fsv12` patches (release ee-gcc2.96-realconv-lp7-fsv12-v1, user decision 2026-10-30,",
+      "reports/cc1-fsv12-r3split.md) supersede fsv10 on top of it (\"R3\"): the split_insns prologue at 0x08197798",
+      "(file 0x14f798) becomes a jump to a 286-byte cave over the unreferenced debug_candidate at",
+      "0x08169f0c (file 0x121f0c). After reload the cave splits (set (reg:SI R) SYM), SYM accepted by",
+      "mips_check_split, into (set R (high SYM)) + (set R (lo_sum R SYM)) when R is $16..$23 or $30",
+      "and a CALL_INSN precedes the insn in its basic block; otherwise it runs the replaced prologue",
+      "and jumps to 0x0819779e. Empirical surrogate, one positive case (main tu211 sefExecScheduler",
+      "prologue); neutral on 673 TUs and the live tree.",
       "Why this is a patched binary and not a published one (public-compiler hunt,",
       "2026-09-12, .work/attempts/tu-public-compiler-hunt/attempt-1/artifact.json):",
       "all 15 public ee-gcc* entries of the pinned decompme catalog revision were",
@@ -113,10 +169,31 @@
       "JUMP arm). The original bytes are not blind: 343 rounded-evidence constants",
       "and the ten padded objects. A clean witness is xglRenderSyncMove (main",
       "0x0022CC40, five nops, body 7, unfilled delay slot).",
-      "The `externname` patch (user decision 2026-10-19): mips_output_external stored the raw `*sym` name pointer of block-scope `extern T x __asm__(\"sym\")` decls in the .extern list; the string is GC-owned and freed before mips_asm_file_end prints the list, so .extern lines came out garbled. The call at 0x081c7e66 jumps to a 21-byte cave over the dead debug_reload (0x081520a4) that xstrdup()s `*`-prefixed names. Only .extern lines change (menu_ether, enemy_1 lose garbage entries); .text/relocs/data identical for all 853 TUs. Script: /tmp/cc1bug/mkpatch.py."
+      "Each entry patches the bytes of the extracted cc1 at `file_offset` (one byte, except the fsv1, fsv3, fsv4, externname entries and the 86-byte fsv5 gen_extendqidi2 entry, which replace the given hex strings).",
+      "The `usecount` patch turns the jne at 0x081ccf54 in mips_r5900_lengthen_loops",
+      "The `externname` patch (user decision 2026-10-19): mips_output_external stored the raw `*sym` name pointer of block-scope `extern T x __asm__(\"sym\")` decls in the .extern list; the string is GC-owned and freed before mips_asm_file_end prints the list, so .extern lines came out garbled. The call at 0x081c7e66 jumps to a 21-byte cave over the dead debug_reload (0x081520a4) that xstrdup()s `*`-prefixed names. Only .extern lines change (menu_ether, enemy_1 lose garbage entries); .text/relocs/data identical for all 853 TUs. Script: /tmp/cc1bug/mkpatch.py.",
+      "2026-11-01 (user decision): adopted upstream OpokXeno's fsv6-fsv12 cc1 patches on top of ours (usecount, externname); full six-unit gate identical before adoption."
      ],
      "load_virtual_address": "0x08048000",
      "patches": [
+      {
+       "group": "fsv7",
+       "file_offset": 239168,
+       "old": "5589e5538b5d086a008b035068e56d2008a18cfe230850e880e3ffff6a008b43045068ea6d2008a18cfe230850e86ae3ffff83c4206a008b430c5068f26d2008a18cfe230850e851e3ffff8b4308508b4314508b43105068006e2008a18cfe230850e8",
+       "new": "5589e557565383cfff837d0c087f48e8d0c7050089c685f6743885ff74340fb70683e82b83f80277248b5e1c803b3275178b4b048b0148781450518b5c8104e8e0790e005958ebeee8d7790e008b7614ebc483ffff750231ff89f88d65f45b5e5fc9c3",
+       "length": 99,
+       "function": "debug_rli (debugger-only host: cave)",
+       "governs": "transp_org.S reg_global_origin: the SYMBOL_REF name every SET of a pseudo loads (or copies), else none"
+      },
+      {
+       "group": "fsv6",
+       "file_offset": 310873,
+       "old": "57e80d91050089430c89531083c404",
+       "new": "e91207110090909090909090909090",
+       "length": 15,
+       "function": "gen_mem_addressof",
+       "governs": "push decl; call get_alias_set; store; pop -> jmp 0x081a4570 (cave) + 10 nops"
+      },
       {
        "group": "realconv",
        "file_offset": 543167,
@@ -184,6 +261,33 @@
        "governs": "non-FUNCTION_DECL decl with int_size_in_bytes (TREE_TYPE) <= 0 or > mips_section_threshold: set_mem_attributes (mem, decl, 1) with DECL_RTL NULL, then DECL_RTL = mem; resume at 0x080d1e73"
       },
       {
+       "group": "fsv8",
+       "file_offset": 594594,
+       "old": "7f0c",
+       "new": "eb30",
+       "length": 2,
+       "function": "make_decl_rtl fsv3 cave (over debug_rtx_list)",
+       "governs": "nzinit: jg 0x080d92b0 (size > -G: typed) -> jmp 0x080d92d4 (nzinit cave, which keeps that jg); old is the fsv3 new byte pair, so fsv3 (0x9127c) applies first"
+      },
+      {
+       "group": "fsv8",
+       "file_offset": 594644,
+       "old": "0485f675eb8d65f85b5e89ec5dc389f65589e556538b5d088b750ceb038b5b1453e856ffffff83c40485db740439f375ec8d65f85b5e",
+       "new": "0f8fd6ffffff8b55088b524085d20f84bcffffff3b15403825080f84b0ffffff52e84630faff83c40485c00f859fffffffe9a6ffffff",
+       "length": 54,
+       "function": "unreachable tail of debug_rtx_list + debug_rtx_range (debugger-only host: cave)",
+       "governs": "nzinit.S: a small-data decl whose DECL_INITIAL is non-null, not error_mark_node and not integer_zerop takes the typed (set_mem_attributes) path; otherwise alias set 0"
+      },
+      {
+       "group": "fsv10",
+       "file_offset": 594704,
+       "old": "5589e5538b5d088b450ceb078d7426008b5b1485db740939430475f485db7515506876f62008",
+       "new": "807a02047516837a0c007510f6420310740a68cc950d08e9f96a010068b0970d08e9ef6a0100",
+       "length": 38,
+       "function": "cave over debug_rtx_find (unreferenced)",
+       "governs": "swu: an SImode, alias-set-0, MEM_IN_STRUCT_P store MEM is tested with rtx_varies_p, any other store with rtx_addr_varies_p"
+      },
+      {
        "group": "fsv1",
        "file_offset": 681544,
        "old": "8b451050ffd783c40485c075118b451450ffd783c40485c0740489d8eb2c",
@@ -202,6 +306,15 @@
        "governs": "clause 2: a LO_SUM mem2_addr counts as non-varying (cmpb $0x90,(%eax))"
       },
       {
+       "group": "fsv10",
+       "file_offset": 687648,
+       "old": "68b0970d08",
+       "new": "e9eb94feff",
+       "length": 5,
+       "function": "mems_conflict_for_gcse_p",
+       "governs": "push $rtx_addr_varies_p -> jmp to the swu cave"
+      },
+      {
        "group": "fsv4",
        "file_offset": 700630,
        "old": "68b0970d08",
@@ -209,6 +322,15 @@
        "length": 5,
        "function": "compute_transp",
        "governs": "varies argument of call canon_true_dependence (0x080f30e6): push $rtx_addr_varies_p (0x080d97b0) -> push $rtx_varies_p (0x080d95cc)"
+      },
+      {
+       "group": "fsv7",
+       "file_offset": 700646,
+       "old": "e821b7ffff",
+       "new": "e8ad260e00",
+       "length": 5,
+       "function": "compute_transp (gcse.c)",
+       "governs": "call canon_true_dependence -> call transp_dep (0x081d5798); varies argument stays rtx_varies_p (fsv4)"
       },
       {
        "group": "externname",
@@ -220,12 +342,39 @@
        "governs": "node->name = (*name=='*') ? xstrdup(name) : name; ret"
       },
       {
+       "group": "fsv12",
+       "file_offset": 1187596,
+       "old": "5589e583ec085756538b45088945fc8b15a8e2240801c08945f80345fc8d3cc500000000803c3a000f841f010000807c3a01000f84ef0000008b55fc5289d08b1588e22408030598e224088b04825068f0b32108a1ace9230850e899f6edff680db42108a1ace9230850e889f6edffa1a8e2240831f683c4183b74380c7d2c89fb8d76008b4418088b04b050681ab42108a1ace9230850e85cf6edffa1a8e2240883c40c463b74180c7cd9681fb42108a1ace9230850e83df6edff6821b42108a1ace9230850e82df6edff8b15a8e224088b7df88b4dfc31f683c4108d04393b74c2147d318b45fc8d1c38c1e3038b441a108b04b050681ab42108a1ace9230850e8f2f5edff8b15a8e2240883c40c463b741a147ccf681fb42108a1ace9",
+       "new": "5589e55356578b5d0866833b390f85fc000000833da4142708000f84ef000000833dc4152708000f84e20000008b730466833e450f85d5000000807e02040f85cb000000837e04200f83c10000008b460483f81e741283f8100f82b000000083f8170f87a70000008b450c85c00f849c0000008b400c85c00f84910000000fb70883f92d741083f92f0f848000000083f92c747bebdd8b7b0c6a0457e8e773050083c40885c07467e8b761f7ff576a04688f000000e85a7bf7ff83c40c50566a006a39e84c72f7ff83c41050e80b5df7ff83c40457566a046890000000e83272f7ff83c41050566a006a39e82472f7ff83c41050e8e35cf7ff83c404e83363f7ff89c3e8b862f7ff89d85f5e5b5dc35f5e5b5d5589e583ec1ce974d70200",
+       "length": 286,
+       "function": "cave over debug_candidate (unreferenced)",
+       "governs": "R3: after reload, (set callee-saved-reg symbolic) splits into high + lo_sum of the same register when a CALL_INSN precedes it in the basic block"
+      },
+      {
+       "group": "fsv7",
+       "file_offset": 1187940,
+       "old": "5589e5538b5d08538b1588e2240889d8030598e224088b0482506860b42108a1ace9230850e876f5edff4383c4103b1d94e224087d188db60000000053e866feffff83c404433b1d94e224087cee8b5dfc89",
+       "new": "803b3975498b430480384575418b40043b450875398b5b0c803b4a750d8b5b04803b4c752a8b4304eb19803b4575208b450c4050ff7304e8a085f1ff83c40885c0740c83ffff740439c7750389c7c331ffc3",
+       "length": 82,
+       "function": "debug_candidates (debugger-only host: cave)",
+       "governs": "transp_org.S chk: per-insn origin test used by reg_global_origin"
+      },
+      {
        "group": "fsv5",
        "file_offset": 1279858,
-       "old": "0x74",
-       "new": "0xeb",
+       "old": "74",
+       "new": "eb",
        "function": "recog_4",
        "governs": "je -> jmp at 0x08180772: the return of insn code 158 (extendqidi2_insn) becomes unreachable"
+      },
+      {
+       "group": "fsv12",
+       "file_offset": 1374104,
+       "old": "5589e583ec1c",
+       "new": "e96f27fdff90",
+       "length": 6,
+       "function": "split_insns",
+       "governs": "prologue -> jmp to the R3 cave; nop"
       },
       {
        "group": "fsv5",
@@ -235,6 +384,24 @@
        "length": 86,
        "function": "gen_extendqidi2",
        "governs": "expander body (qisi.S): tmp = gen_reg_rtx (SImode); emit gen_extendqisi2 (tmp, op1) and gen_extendsidi2 (op0, tmp) in one sequence"
+      },
+      {
+       "group": "fsv6",
+       "file_offset": 1426800,
+       "old": "576a05e87c92f3ff8945fc6a05e89e86f3ff8945f86a006a386a00e8",
+       "new": "31c089430c89431057e8ee89f4ff89430c89531083c404e9dcf8eeff",
+       "length": 28,
+       "function": "gen_extendqidi2 (dead tail since fsv5: cave)",
+       "governs": "memalias.S: MEM_ALIAS_SET (reg) = 0; MEM_ALIAS_SET (reg) = get_alias_set (decl); jmp 0x08093e68"
+      },
+      {
+       "group": "fsv6",
+       "file_offset": 1546317,
+       "old": "f6c620740f8b430885c07f087525837b0400741f",
+       "new": "f6c620740f837dfc3f7509837b08007c228d7600",
+       "length": 20,
+       "function": "mips_legitimate_address_p",
+       "governs": "legit.S: TARGET_64BIT clause rejects only a CONST_INT xplus1 with a negative high word; SYMBOL_REF/CONST/LABEL_REF/HIGH are accepted without reading past the rtx"
       },
       {
        "group": "externname",
@@ -268,6 +435,24 @@
        "new": "0x06",
        "function": "mips_r5900_lengthen_loops",
        "governs": "cmp $imm8,%ebx: JUMP_INSN arm nop-emission loop bound, i = d .. imm"
+      },
+      {
+       "group": "fsv7",
+       "file_offset": 1628056,
+       "old": "5589e556538b45088d1c85000000008b83e0e7240850be60e724088b04335068007e2308e8f340e7ff8b1c3383c40c85db7423908d7426000fb74312500fb74310505368137e2308e8cf40e7ff8b1b83c41085db75e268237e2308e8bc40e7ffa188fe230850e8313ee7ff8d",
+       "new": "5589e553ff7518ff7514ff7510ff750cff7508e85c90f1ff83c41485c075488b5508f6420310743d8b55148b5a04803b4c75328b5510803a5375038b5204803a4575226a00ff7204e85bceeaff83c4083b43047510c74518b0970d088b5dfcc9e90f90f1ff31c08b5dfcc9c3",
+       "length": 108,
+       "function": "debug_print_page_list (debugger-only host: cave)",
+       "governs": "transp_org.S transp_dep: fsv4 canon_true_dependence (rtx_varies_p); if no conflict, an in-struct store whose base register has global origin S kills a load of (symbol_ref S) by the FSF rtx_addr_varies_p decision (\"SameG\")"
+      },
+      {
+       "group": "fsv9",
+       "file_offset": 1628136,
+       "old": "3b43047510",
+       "new": "85c0907410",
+       "length": 5,
+       "function": "transp_dep (fsv7-v2 cave over debug_print_page_list)",
+       "governs": "AnyG: cmp 0x4(%ebx),%eax; jne (store base origin == load symbol) -> test %eax,%eax; nop; je (any global origin): an in-struct store through a pointer loaded from any global takes the FSF compute_transp decision for a load of a global"
       }
      ],
      "intermediate_hashes": {
@@ -276,7 +461,8 @@
       "realconv_lp7_fsv1_cc1": "7abe318da59f6dc6595a7a65766098581d9169a0732786c70db85f688c47f3bf",
       "realconv_lp7_fsv3_cc1": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625",
       "realconv_lp7_fsv3_usecount_externname_cc1": "5f8187c36cc275621f19d7bd66f96f616f36a556e57b8d7faaba5e063ef524df",
-      "realconv_lp7_fsv4_usecount_externname_cc1": "e1efee2adab94b596f830b5bb1b73f9fcd36bd37ef7e8738af42abda8353fa40"
+      "realconv_lp7_fsv4_usecount_externname_cc1": "e1efee2adab94b596f830b5bb1b73f9fcd36bd37ef7e8738af42abda8353fa40",
+      "realconv_lp7_fsv12_upstream_cc1": "58a63b84ed4385101b1135a71919a2516f2d6c61b80258b5917ccd47bc56b1f4"
      }
     },
     "license": "GPL-2.0-or-later (GCC).  The published binary ships without corresponding source; no 2.96-ee-001003 source tree is available, so this is a license reference, not corresponding-source proof.",
