@@ -52,23 +52,52 @@ typedef struct ScriptBinding {
  * xglSoundEffectStopID, cleared once stopped.
  */
 struct SchedulerState {
-    unsigned char unmodeled_0[0x80];
-    Vector4 vectors[3];
+    Matrix4 worldMatrix;             /* +0x00 */
+    Matrix4 localMatrix;             /* +0x40 */
+    Vector4 vectors[3]; /* +0x80 */
     unsigned char effects[32][0x30];
     int inUse;                       /* +0x6b0 */
-    unsigned char unmodeled_6b4[0x6bc - 0x6b4];
-    struct SefActor *targetActor;    /* +0x6bc */
-    struct SefActor *sourceActor;    /* +0x6c0 */
-    unsigned char unmodeled_6c4[0x6e0 - 0x6c4];
-    int soundId;                     /* +0x6e0 */
-    unsigned char unmodeled_6e4[0xa74 - 0x6e4];
+    unsigned char *scriptAddress;    /* +0x6b4 */
+    unsigned char *savedActive;      /* +0x6b8 */
+    struct SefActor *targetActor;   /* +0x6bc */
+    struct SefActor *sourceActor;   /* +0x6c0 */
+    struct SefParentRecord *parentRecord; /* +0x6c4 */
+    int savedParameter;              /* +0x6c8 */
+    int soundParameters[4];          /* +0x6cc, cleared with soundMode and soundId */
+    int soundMode;                   /* +0x6dc */
+    int soundId;                    /* +0x6e0 */
+    unsigned char cameraChoice[0x44]; /* +0x6e4, filled by sdvSelectCamera */
+    unsigned char unmodeled_728[0x730 - 0x728];
+    int effectValue;                 /* +0x730, start of the 0x320-byte effect block */
+    int effectScript;                /* +0x734 */
+    unsigned char unmodeled_738[0x740 - 0x738];
+    int effectMode;                  /* +0x740 */
+    unsigned char unmodeled_744[0x9e6 - 0x744];
+    short scriptParameter;          /* +0x9e6 */
+    unsigned char unmodeled_9e8[0xa50 - 0x9e8];
+    int alterValue;                  /* +0xa50, start of the 0x14-byte alter block */
+    unsigned char unmodeled_a54[0xa60 - 0xa54];
+    int alterMode;                   /* +0xa60 */
+    unsigned char request[0xa74 - 0xa64]; /* +0xa64, copy of the SefEffectRequest */
     unsigned short targetLightCount; /* +0xa74 */
     unsigned short sourceLightCount; /* +0xa76 */
     short effectNo;                  /* +0xa78 */
-    unsigned char unmodeled_a7a[0xa8c - 0xa7a];
+    short nusumeResult;              /* +0xa7a */
+    unsigned char unmodeled_a7c[0xa82 - 0xa7c];
+    unsigned short initFlags;        /* +0xa82 */
+    int requestParam;                /* +0xa84, the request's param word */
+    float effectSpeed;               /* +0xa88 */
     int flags;
     ScriptBinding scriptBinding;
-    unsigned char unmodeled_a98[0xab0 - 0xa98]; /* record stride 0xab0 */
+    short category;                  /* +0xa98 */
+    signed char extraByte;           /* +0xa9a */
+    unsigned char signalByte;        /* +0xa9b */
+    short delayFrames;               /* +0xa9c, frames before the first step */
+    short schedulerIndex;            /* +0xa9e */
+    short effectNumber;              /* +0xaa0 */
+    unsigned char unmodeled_aa2[0xaa4 - 0xaa2];
+    short mapperIndex;               /* +0xaa4 */
+    unsigned char unmodeled_aa6[0xab0 - 0xaa6];
 };
 
 /* sefGetDirMatrix (main:0x002e2818) is still INCLUDE_ASM in this TU; declared

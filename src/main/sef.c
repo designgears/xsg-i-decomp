@@ -5200,8 +5200,6 @@ typedef enum SefSaveTail {
     SEF_SAVE_TAIL_NONE
 } SefSaveTail;
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefPushEffect);
-
 typedef struct SefSavePrm {
     Vector4 position;
     Vector4 orientation;
@@ -5226,6 +5224,72 @@ typedef struct SefSavedEffect {
 #define SEF_SAVE_PRM_COUNT 0x80
 extern SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
 extern SefSavedEffect D_0065A9A0[];
+
+#ifndef offsetof
+#define offsetof(type, member) ((unsigned int)&((type *)0)->member)
+#endif
+#define SEF_REL_FIELD(type, cursor, offset) (*(type *)((cursor) + (offset)))
+#define SEF_BACK_FIELD(type, cursor, distance) (*(type *)((cursor) - (distance)))
+#define SEF_SAVE_REL(member) ((int)offsetof(SefSavePrm, member) - (int)offsetof(SefSavePrm, saved_words[3]))
+#define SEF_SCHED_REL(member) ((int)offsetof(SchedulerState, member) - (int)offsetof(SchedulerState, sourceActor))
+
+void sefPushEffect(void)
+{
+    int index;
+    Vector4 *destination_position;
+    Vector4 *destination_orientation;
+    Vector4 *destination_vector;
+    unsigned char *scheduler;
+    unsigned char *scheduler_vector0;
+    unsigned char *scheduler_vector1;
+    unsigned char *scheduler_vector2;
+    unsigned char *save_cursor;
+    unsigned char *scheduler_cursor;
+    unsigned char *scheduler_base;
+    unsigned char *save_base;
+    int scheduler_offset;
+    int save_offset;
+
+    sefMemZero(_savePrm, sizeof(_savePrm));
+    scheduler = _scheduler;
+    scheduler_base = (unsigned char *)&((SchedulerState *)scheduler)->sourceActor;
+    save_base = (unsigned char *)&_savePrm[0].saved_words[3];
+    for (index = 0; index < SEF_SAVE_PRM_COUNT; index++) {
+        scheduler_offset = index * sizeof(SchedulerState);
+        save_offset = index * sizeof(SefSavePrm);
+        scheduler_cursor = scheduler_base + scheduler_offset;
+        save_cursor = save_base + save_offset;
+        if (SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(inUse)) != 0) {
+            destination_position = &_savePrm[index].position;
+            scheduler_vector0 = scheduler + 0x80;
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "sq $8, 0(%0)"
+                : : "r"(destination_position), "r"(scheduler_offset + (int)scheduler_vector0) : "$8", "memory");
+            destination_orientation = &_savePrm[index].orientation;
+            scheduler_vector1 = scheduler + 0x90;
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "sq $8, 0(%0)"
+                : : "r"(destination_orientation), "r"(scheduler_offset + (int)scheduler_vector1) : "$8", "memory");
+            destination_vector = &_savePrm[index].saved_vector;
+            scheduler_vector2 = scheduler + 0xA0;
+            __asm__ __volatile__(
+                "lq $8, 0(%1)\n\t"
+                "sq $8, 0(%0)"
+                : : "r"(destination_vector), "r"(scheduler_offset + (int)scheduler_vector2) : "$8", "memory");
+            SEF_BACK_FIELD(SefSaveActive, save_cursor, -SEF_SAVE_REL(active)) = SEF_BACK_FIELD(SefSaveActive, scheduler_cursor, -SEF_SCHED_REL(savedActive));
+            SEF_REL_FIELD(int, save_cursor, SEF_SAVE_REL(saved_words[0])) = SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(targetActor));
+            SEF_REL_FIELD(int, save_cursor, SEF_SAVE_REL(saved_words[1])) = SEF_REL_FIELD(int, scheduler_cursor, 0);
+            SEF_REL_FIELD(int, save_cursor, SEF_SAVE_REL(saved_words[2])) = SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(parentRecord));
+            SEF_REL_FIELD(int, save_cursor, 0) = SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(savedParameter));
+            SEF_REL_FIELD(SefSaveTail, save_cursor, SEF_SAVE_REL(saved_words[4])) = SEF_REL_FIELD(SefSaveTail, scheduler_cursor, SEF_SCHED_REL(flags));
+            SEF_REL_FIELD(unsigned short, save_cursor, SEF_SAVE_REL(effect_no)) = SEF_REL_FIELD(unsigned short, scheduler_cursor, SEF_SCHED_REL(effectNo));
+            save_cursor[SEF_SAVE_REL(saved_flags)] = scheduler_cursor[SEF_SCHED_REL(extraByte)];
+        }
+    }
+}
+
 void sefPopEffect(void)
 {
     unsigned char *save_params;
