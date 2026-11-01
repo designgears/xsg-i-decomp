@@ -219,7 +219,7 @@ static int resource_typeid_translate(int arg0, int *arg1, int *arg2)
  * marks one in use (original bytes; neither function is claimed here).
  */
 typedef struct {
-    u32 address;   /* +0x0 */
+    unsigned char *address;   /* +0x0 */
     int size;       /* +0x4 */
     int handle;     /* +0x8 */
     int state;      /* +0xC, -1 = free */
@@ -332,7 +332,22 @@ typedef struct {
     u16 group;
 } FaceEntry;
 
-INCLUDE_ASM("asm/main/nonmatchings/res_get_path", GameResourceAlloc);
+void *GameResourceAlloc(int size)
+{
+    int index;
+
+    index = resource_get_free();
+    if (index == -1)
+        return 0;
+
+    size = (size + 63) & ~63;
+    GameResource[index + 1].address = GameResource[index].address + size;
+    GameResource[index + 1].size = GameResource[index].size - size;
+    GameResource[index].size = size;
+    GameResource[index].state = 9;
+    GameResource[index].handle = xglSRand();
+    return GameResource[index].address;
+}
 
 extern int GameResourceGetIndex(int id);
 
@@ -881,14 +896,14 @@ static char *command_player(int command, char *cursor, int mode)
     return cursor;
 }
 
-extern int GameResourceAlloc(int a, int b);
+extern void *GameResourceAlloc(int size);
 
 extern int GameResourceRealloc(int resource, int size);
 
 static char *command_dummy(int command, char *cursor, int mode)
 {
     if (GameResource[command + 1].address == 0) {
-        GameResourceAlloc(0, 0);
+        ((void *(*)(int, int))GameResourceAlloc)(0, 0);
     } else {
         ((int (*)())GameResourceRealloc)(GameResource[command].address);
     }
@@ -2054,8 +2069,8 @@ extern int RES_loadFileSub(int callback, int resource_id, int address);
 
 int RES_loadFile(int command, int callback, int resource_id, int flags)
 {
-    int sp0;
     int sp4;
+    int sp0;
     int var_20;
     int t;
     int size;
