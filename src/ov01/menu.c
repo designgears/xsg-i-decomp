@@ -1623,7 +1623,78 @@ typedef struct StockSlots {
     ObjectTask *slot[1];
 } StockSlots;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStockBoost);
+extern HomogeneousVector cursor[];
+typedef struct CursorObject CursorObject;
+typedef struct CursorCommandState CursorCommandState;
+typedef struct CursorCommand CursorCommand;
+struct CursorObject {
+    unsigned char unmodeled_00[0x10];
+    CursorCommandState *state; 
+};
+struct CursorCommandState {
+    unsigned int flags; 
+};
+struct CursorCommand {
+    int selector;
+    int argument;
+    int word08;
+    int word0c;
+    int word10;
+};
+extern CursorCommand *objCmdTailGet(CursorObject *cursor);
+typedef struct MenuObjTransform {
+    Vector4 position;                  
+    unsigned char unmodeled_10[0x50];
+    Vector4 target;                    
+    unsigned char unmodeled_70[0x10];  
+} MenuObjTransform;
+typedef struct MenuStockWork {
+    u32 flags;                         
+    unsigned char unmodeled_04[0x6C];
+    int frameCount;                    
+    unsigned char unmodeled_74[4];
+    
+    union {
+        int value;
+        void *alias;
+    } width;                           
+    int stockSlot;                     
+    int index;                         
+    unsigned char unmodeled_84[0xC];
+    
+    MenuObjTransform transform;      
+} MenuStockWork;
+typedef struct MenuStockPos {
+    int x;
+    int z;
+} MenuStockPos;
+enum MenuStockWorkFlag {
+    MENU_STOCK_HIDDEN = 0x4
+};
+static __inline__ MenuStockWork *menuStockWorkGet(ObjectTask *task)
+{
+    return (MenuStockWork *)*(u32 *)&task->work;
+}
+
+void menuStockBoost(void)
+{
+    extern MenuStockPos stockPosTblView[5] __asm__("stockPosTbl");
+    ObjectTask *task;
+    MenuObjTransform *transform;
+    MenuCmdEntryView *entry;
+
+    task = pStockObj[4];
+    transform = &menuStockWorkGet(task)->transform;
+    entry = objCmdTailGet(task);
+    entry->selector = 3;
+    transform->target.y = 0.0f;
+    transform->position.y = 0.0f;
+    transform->target.x = stockPosTblView[0].x;
+    transform->target.z = stockPosTblView[0].z;
+    transform->position.x = stockPosTblView[4].x;
+    transform->position.z = stockPosTblView[4].z;
+    menuStockWorkGet(task)->flags &= ~MENU_STOCK_HIDDEN;
+}
 
 extern char D_00A46898[];
 extern int printf(const char *format, ...);
