@@ -204,9 +204,10 @@ typedef struct MenuItemPasWindow {
     int color;
     short width;
     short height;
-    u8 unmodeled_0c[0x10 - 0x0C];
+    const char *tag_id;
     signed char state;
-    u8 unmodeled_11[0x14 - 0x11];
+    u8 ribbon_initialized; /* +0x11 */
+    u8 unmodeled_12[0x14 - 0x12];
     void (*callback)(WindowDX *window, void *work);
     void *callbackArg;
     u8 unmodeled_1c[0x194 - 0x1C];
@@ -262,21 +263,29 @@ typedef struct MenuItemWorkData {
     u8 mode;
     u8 unmodeled_04[0x20 - 0x04];
     u8 flags;
-    unsigned char unmodeled_021[0x22 - 0x21];
-    u8 busy; /* +0x22 */
-    unsigned char unmodeled_023[0x30 - 0x23];
+    u8 nextMode;
+    u8 busy;
+    u8 partyCount;
+    signed char selectionMode;
+    u8 unmodeled_25[0x2E - 0x25];
+    short selectedItem;
     signed char listTab;
-    signed char sortAbility;
-    signed char sortNormal;
-    signed char sortCategory[3];
-    u8 unmodeled_36[0x1A];
+    signed char sortChoices[8]; /* +0x31 */
+    u8 unmodeled_39[0x40 - 0x39];
+    signed char tabChangeDirection;
+    signed char scrollDir;
+    u8 unmodeled_42[0x50 - 0x42];
     int selectDir;
     u8 unmodeled_54[0x62 - 0x54];
     signed char agwsMode;
     signed char selectedAgws;
     signed char agwsCount;
-    u8 unmodeled_65[0x72 - 0x65]; /* +0x65 */
+    u8 unmodeled_65[0x70 - 0x65];
+    signed char selectedParty;
+    u8 unmodeled_71; /* +0x65 */
     signed char sortSelection; /* +0x72 */
+    u8 unmodeled_73;
+    u8 segmentSelection; /* +0x74 */
 } MenuItemWorkData;
 extern void *MenuItemInfo;
 extern struct MenuItemListRow *MenuListGet(int list);
@@ -1871,7 +1880,6 @@ int subRoboPartsCheck(int arg0)
     return var_16;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_item", MenuItemSegmentMain);
 
 typedef struct MenuItemWorkData_MI {
     u8 unmodeled_00[3];
@@ -2073,6 +2081,509 @@ void WindowSPKeepSelectCheck(unsigned char *keep);
 void MenuItemSelectMain(void);
 void MenuItemSegmentMain(void);
 
+extern const char *text[12];
+typedef struct MenuItemSegmentTriangleOffsets {
+    short x[3];
+    short y[3];
+} MenuItemSegmentTriangleOffsets;
+typedef struct MenuItemSegmentRibbonHead {
+    short x;
+    short y;
+    int work;
+    short width;
+    short height;
+    u8 mode;
+    u8 progress;
+    u8 visible;
+    u8 style;
+    MenuItemSegmentPoint points[6];
+} MenuItemSegmentRibbonHead;
+typedef struct MenuItemSegmentAlignedWork {
+    u8 state;
+    u8 visible;
+    short x;
+    short y;
+    u8 unmodeled_06[2];
+    int work;
+    int selected;
+    MenuItemPasWindow windows[2];
+    MenuItemIconSprite labels[2];
+    MenuItemSegmentMessage text[2];
+    MenuItemSegmentRow rows[18];
+    u8 unmodeled_1c88[4];
+    unsigned short ownedParts;
+    unsigned short selectedParts;
+    MenuItemIconSprite mapSprites[19];
+    MenuItemSegmentRibbonHead ribbon;
+    MenuItemSegmentPoint unmodeled_1fe0[2];
+    MenuItemSegmentPoint vertices[24];
+    MenuItemSegmentOutline outlines[2];
+    int texture;
+} __attribute__((aligned(32))) MenuItemSegmentAlignedWork;
+extern const char *tag_msg_5[];
+extern const char D_004DAAF8[];
+extern const char *MenuSegmentInfoTextGet(int segment);
+extern const char *MenuSegmentItemNameGet(int segment);
+extern const char *MenuSegmentMapNameGet(int segment);
+extern int WindowTexAddrGet(int texture);
+extern char *dataEvtItmNameGet(int item);
+extern void eRibbonMain(void *ribbon);
+extern void eRibbonSet(void *ribbon, int mode);
+
+void MenuItemSegmentMain(void)
+{
+    /* menuWorkView/padDataView as this function reads them. */
+    extern MenuItemWorkData menuWorkView __asm__("MenuWork");
+    extern MenuItemInfoPad padDataView __asm__("PadData");
+    MenuItemSegmentWork *segment = MenuItemSegment;
+    int i;
+    MenuItemSegmentAlignedWork *aligned = (MenuItemSegmentAlignedWork *)segment;
+
+    switch (segment->state) {
+    case 0: {
+        segment->x = -512;
+        segment->y = 52;
+        segment->work = 0x0FFFF8;
+        segment->visible = 0;
+        segment->selected = 0;
+        for (i = 0; i < 18; i++) {
+            MenuItemSegmentRow *row = &segment->rows[i];
+
+            row->flags = 0;
+            if (xglFlagsGet(i + 3201, 1)) {
+                row->flags |= 1;
+            }
+            if (xglFlagsGet(i + 3221, 1)) {
+                row->flags |= 2;
+            }
+            if (xglFlagsGet(i + 3241, 1)) {
+                row->flags |= 4;
+            }
+        }
+        segment->ownedParts = 0;
+        for (i = 0; i < 18; i++) {
+            if (segment->rows[i].flags & 4) {
+                segment->ownedParts |= subRoboPartsCheck(i + 1);
+            }
+        }
+        segment->outlines[0].pulse = 32;
+        segment->selectedParts = 0;
+        segment->outlines[0].pulseDirection = 4;
+        segment->rows[0].pulseDirection = 4;
+        segment->outlines[1].pulse = 0;
+        segment->outlines[1].pulseDirection = 0;
+        segment->rows[0].pulse = 0;
+        for (i = 0; i < 18; i++) {
+            int rowNumber = i + 1;
+
+    
+            eNumberSet(&aligned->rows[i].number, 0);
+            aligned->rows[i].number.format = 0;
+            aligned->rows[i].number.value = rowNumber;
+            aligned->rows[i].number.digitCount = 2;
+            if (segment->rows[i].flags == 7) {
+                eSpriteSet(&segment->rows[i].sprites[0], 4865);
+            } else {
+                eSpriteSet(&segment->rows[i].sprites[0], 4864);
+            }
+            eSpriteSet(&segment->rows[i].sprites[1], 4870);
+            eSpriteSet(&segment->rows[i].sprites[2], 4869);
+            segment->rows[i].emphasis = 0;
+            segment->rows[i].emphasisDirection = 0;
+            eSpriteSet(&segment->rows[i].sprites[3], 4868);
+            eSpriteSet(&segment->rows[i].sprites[4], 4867);
+        }
+        {
+            short mapSpriteIds[19] = {
+                4885, 4878, 4872, 4874, 4874, 4876, 4876, 4881, 4884, 4883,
+                4880, 4882, 4879, 4877, 4871, 4873, 4873, 4875, 4875
+            };
+
+            for (i = 0; i < 19; i++) {
+                eSpriteSet(&segment->mapSprites[i], mapSpriteIds[i]);
+            }
+        }
+        eRibbonSet(&segment->ribbon, 3);
+        {
+            short labelSpriteIds[2] = {4886, 4887};
+
+            for (i = 0; i < 2; i++) {
+                WindowDXSet(&segment->windows[i]);
+                segment->windows[i].color = 0;
+                segment->windows[i].tag_id = tag_msg_5[i];
+                segment->windows[i].x = 544;
+                segment->windows[i].width = 247;
+                segment->windows[i].height = (2 - i) * 24 + 7;
+                segment->windows[i].state = 1;
+                segment->windows[i].y = 0;
+                WindowDXMain(&segment->windows[i]);
+                segment->windows[i].state = 3;
+                eSpriteSet(&segment->labels[i], labelSpriteIds[i]);
+                eMessageSet(&segment->text[i], D_004DAAF8);
+                segment->text[i].mode = 32;
+            }
+        }
+        segment->state = 2;
+    }
+        /* fall through */
+    case 2:
+        if (menuWorkView.mode == 48) {
+            segment->state = 3;
+            segment->visible = 1;
+        }
+        break;
+    case 3: {
+        short targetX = 16;
+
+        MoveSlide(&segment->x, &targetX, 3.0f);
+        if (segment->x == targetX) {
+            segment->state = 4;
+        }
+        if (menuWorkView.mode != 48) {
+            segment->state = 5;
+        }
+        break;
+    }
+    case 4: {
+        int movement = 0;
+
+        switch (padDataView.activity) {
+        case 0x1000:
+            movement = -3;
+            break;
+        case 0x8000:
+            movement = -1;
+            break;
+        case 0x4000:
+            movement = 3;
+            break;
+        case 0x2000:
+            movement = 1;
+            break;
+        }
+        if (movement != 0) {
+            segment->selected += movement;
+            if (segment->selected < 0) {
+                segment->selected += 18;
+            } else if (segment->selected >= 18) {
+                segment->selected -= 18;
+            }
+            xglSoundEffectNormalID(3, 0);
+        }
+        segment->selectedParts = subRoboPartsCheck(segment->selected + 1);
+        if (menuWorkView.mode != 48) {
+            segment->state = 5;
+        }
+        menuWorkView.segmentSelection = segment->selected + 1;
+        break;
+    }
+    case 5: {
+        short targetX = -512;
+
+        MoveSlide(&segment->x, &targetX, 3.0f);
+        if (segment->x == targetX) {
+            segment->visible = 0;
+            segment->state = 2;
+        }
+        break;
+    }
+    }
+    if (segment->visible == 0) {
+        return;
+    }
+    for (i = 0; i < 2; i++) {
+        segment->windows[i].x = segment->x + 238;
+        segment->windows[i].color = segment->work;
+        segment->windows[i].y = aligned->y + i * 80 + 16;
+        WindowDXMain(&segment->windows[i]);
+    }
+    if (segment->rows[segment->selected].flags & 1) {
+        segment->text[0].x = segment->windows[0].x + 7;
+        segment->text[0].y = segment->windows[0].y + 3;
+        segment->text[0].work = segment->windows[0].color + 2;
+        segment->text[0].text = MenuSegmentMapNameGet(segment->selected + 1);
+        eMessageMain(&segment->text[0]);
+    }
+    {
+        const char *itemName;
+        MenuItemInfoWork *info = MenuItemInfo;
+        char *description = info->buffer;
+
+        if (segment->rows[segment->selected].flags & 4) {
+            switch (segment->selected) {
+            case 0:
+                if (segment->ownedParts & 0x40) {
+                    itemName = MenuSegmentItemNameGet(19);
+                    strcpy(description, MenuSegmentInfoTextGet(19));
+                } else {
+                    itemName = dataEvtItmNameGet(56);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            case 1:
+                if (segment->ownedParts & 0x80) {
+                    itemName = MenuSegmentItemNameGet(21);
+                    strcpy(description, MenuSegmentInfoTextGet(21));
+                } else {
+                    itemName = dataEvtItmNameGet(59);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            case 8:
+                if (segment->ownedParts & 0x100) {
+                    itemName = MenuSegmentItemNameGet(20);
+                    strcpy(description, MenuSegmentInfoTextGet(20));
+                } else {
+                    itemName = dataEvtItmNameGet(58);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            case 6:
+                if (segment->ownedParts & 0x100) {
+                    itemName = MenuSegmentItemNameGet(20);
+                    strcpy(description, MenuSegmentInfoTextGet(20));
+                } else {
+                    itemName = dataEvtItmNameGet(57);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            case 7:
+                if (segment->ownedParts & 0x200) {
+                    itemName = MenuSegmentItemNameGet(22);
+                    strcpy(description, MenuSegmentInfoTextGet(22));
+                } else {
+                    itemName = dataEvtItmNameGet(61);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            case 2:
+                if (segment->ownedParts & 0x200) {
+                    itemName = MenuSegmentItemNameGet(22);
+                    strcpy(description, MenuSegmentInfoTextGet(22));
+                } else {
+                    itemName = dataEvtItmNameGet(60);
+                    strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                }
+                break;
+            default:
+                itemName = MenuSegmentItemNameGet(segment->selected + 1);
+                strcpy(description, MenuSegmentInfoTextGet(segment->selected + 1));
+                break;
+            }
+            segment->text[1].text = itemName;
+            segment->text[1].x = segment->windows[1].x + 7;
+            segment->text[1].y = segment->windows[1].y + 3;
+            segment->text[1].work = segment->windows[1].color + 2;
+            eMessageMain(&segment->text[1]);
+        } else {
+            description[0] = D_004DAAD0[0];
+        }
+    }
+    segment->texture = WindowTexAddrGet(2);
+    endPrintExtFunc(0, 14, &segment->texture);
+    segment->rows[0].pulse += segment->rows[0].pulseDirection;
+    if (segment->rows[0].pulse == 120 || segment->rows[0].pulse == 0) {
+        segment->rows[0].pulseDirection = -segment->rows[0].pulseDirection;
+    }
+    for (i = 0; i < 18; i++) {
+        segment->rows[i].sprites[0].x = segment->x + (i % 3) * 72;
+        segment->rows[i].sprites[0].y = segment->y + (i / 3) * 58;
+        segment->rows[i].sprites[0].style = segment->work;
+        eSpriteMain(&segment->rows[i].sprites[0]);
+        if (segment->rows[i].flags & 1) {
+            segment->rows[i].sprites[1].x = segment->rows[i].sprites[0].x + 10;
+            segment->rows[i].sprites[1].style = segment->rows[i].sprites[0].style + 1;
+            segment->rows[i].sprites[1].y = segment->rows[i].sprites[0].y + 29;
+            eSpriteMain(&segment->rows[i].sprites[1]);
+        }
+        if (segment->rows[i].flags & 2) {
+            segment->rows[i].sprites[2].x = segment->rows[i].sprites[0].x + 42;
+            segment->rows[i].sprites[2].style = segment->rows[i].sprites[0].style + 1;
+            segment->rows[i].sprites[2].y = segment->rows[i].sprites[0].y + 29;
+            eSpriteMain(&segment->rows[i].sprites[2]);
+        }
+        if (segment->rows[i].flags == 7) {
+            segment->rows[i].sprites[3].x = segment->rows[i].sprites[0].x + 39;
+            segment->rows[i].sprites[3].style = segment->rows[i].sprites[0].style + 1;
+            segment->rows[i].sprites[3].y = segment->rows[i].sprites[0].y;
+            segment->rows[i].sprites[3].alpha = segment->rows[0].pulse;
+            eSpriteMain(&segment->rows[i].sprites[3]);
+        }
+        {
+            int highlighted = 0;
+
+            if (segment->selected == i) {
+                highlighted = 1;
+            } else if (segment->selectedParts != 0 &&
+                       (segment->rows[segment->selected].flags & 4) &&
+                       subRoboPartsCheck(i + 1) != 0) {
+                if (segment->rows[i].flags & 4) {
+                    highlighted = 1;
+                } else {
+                    highlighted = 0;
+                }
+            }
+            if (highlighted == 1 && segment->rows[i].emphasisDirection == 0) {
+                segment->rows[i].emphasisDirection = 4;
+            }
+            segment->rows[i].emphasis += segment->rows[i].emphasisDirection;
+            if (segment->rows[i].emphasis >= 120) {
+                segment->rows[i].emphasis = 120;
+                segment->rows[i].emphasisDirection = -segment->rows[i].emphasisDirection;
+            }
+            if (segment->rows[i].emphasis == 0) {
+                segment->rows[i].emphasis = 0;
+                segment->rows[i].emphasisDirection = -segment->rows[i].emphasisDirection;
+            }
+            if (highlighted == 0) {
+                if (segment->rows[i].emphasisDirection >= 0) {
+                    segment->rows[i].emphasisDirection = -segment->rows[i].emphasisDirection;
+                }
+                if (segment->rows[i].emphasis == 0) {
+                    segment->rows[i].emphasisDirection = 0;
+                }
+            }
+        }
+        segment->rows[i].sprites[4].x = segment->rows[i].sprites[0].x + 2;
+        segment->rows[i].sprites[4].style = segment->rows[i].sprites[0].style + 1;
+        segment->rows[i].sprites[4].y = segment->rows[i].sprites[0].y + 2;
+        segment->rows[i].sprites[4].alpha = segment->rows[i].emphasis;
+        eSpriteMain(&segment->rows[i].sprites[4]);
+    }
+    {
+        int outline;
+
+        for (outline = 0; outline < 1; outline++) {
+            int border;
+
+            segment->outlines[outline].pulse += segment->outlines[outline].pulseDirection;
+            if (segment->outlines[outline].pulse == 120 || segment->outlines[outline].pulse == 32) {
+                segment->outlines[outline].pulseDirection = -segment->outlines[outline].pulseDirection;
+            }
+            for (border = 0; border < 2; border++) {
+                int point;
+
+                for (point = 0; point < 5; point++) {
+                    segment->outlines[outline].points[border * 6 + point].red = -2 - border * 64;
+                    segment->outlines[outline].points[border * 6 + point].green = -88 - border * 64;
+                    segment->outlines[outline].points[border * 6 + point].blue = 1;
+                    segment->outlines[outline].points[border * 6 + point].alpha = segment->outlines[outline].pulse;
+                }
+                {
+                    segment->outlines[outline].points[border * 6].x =
+                        segment->outlines[outline].points[border * 6 + 3].x =
+                        segment->outlines[outline].points[border * 6 + 4].x = segment->rows[segment->selected].sprites[0].x - border;
+                    segment->outlines[outline].points[border * 6 + 1].x =
+                        segment->outlines[outline].points[border * 6 + 2].x = segment->rows[segment->selected].sprites[0].x + border + 71;
+                    segment->outlines[outline].points[border * 6].y =
+                        segment->outlines[outline].points[border * 6 + 1].y =
+                        segment->outlines[outline].points[border * 6 + 4].y = segment->rows[segment->selected].sprites[0].y - border;
+                    segment->outlines[outline].points[border * 6 + 2].y =
+                        segment->outlines[outline].points[border * 6 + 3].y = segment->rows[segment->selected].sprites[0].y + border + 57;
+                    segment->outlines[outline].points[border * 6].work =
+                        segment->outlines[outline].points[border * 6 + 1].work =
+                        segment->outlines[outline].points[border * 6 + 2].work =
+                        segment->outlines[outline].points[border * 6 + 3].work =
+                        segment->outlines[outline].points[border * 6 + 4].work = segment->rows[segment->selected].sprites[0].style + 2;
+                    segment->outlines[outline].points[border * 6 + 5].work = 0;
+                    endPrintExtFunc(0, 0, &segment->outlines[outline].points[border * 6]);
+                }
+            }
+        }
+    }
+    segment->ribbon.x = segment->x + 258;
+    segment->ribbon.y = segment->y + 136;
+    segment->ribbon.work = segment->work;
+    segment->ribbon.width = 208;
+    segment->ribbon.height = 208;
+    eRibbonMain(&segment->ribbon);
+    segment->mapSprites[0].x = segment->ribbon.x + segment->ribbon.width / 2 - 44;
+    segment->mapSprites[0].y = segment->ribbon.y + segment->ribbon.height / 2 - 84;
+    segment->mapSprites[0].style = segment->work;
+    eSpriteMain(&segment->mapSprites[0]);
+    {
+        int partOffset;
+        short partX[6] = {30, 24, 72, 4, 49, 23};
+        short partY[6] = {4, 39, 39, 39, 99, 99};
+        short labelX[6] = {64, -49, 96, -53, 72, -33};
+        short labelY[6] = {-10, 4, 39, 70, 107, 138};
+        MenuItemSegmentTriangleOffsets triangleOffsets[6] = {
+            {{45, 61, 109}, {19, 3, 3}},
+            {{43, -5, -53}, {64, 18, 18}},
+            {{78, 96, 144}, {68, 52, 52}},
+            {{10, -6, -54}, {68, 84, 84}},
+            {{55, 71, 119}, {136, 120, 120}},
+            {{29, 13, -35}, {136, 152, 152}}
+        };
+
+
+        for (i = 0; i < 6; i++) {
+            if ((aligned->ownedParts >> i) & 1) {
+                aligned->mapSprites[i + 1].x = aligned->mapSprites[0].x + partX[i];
+                aligned->mapSprites[i + 1].style = aligned->mapSprites[0].style + 1;
+                aligned->mapSprites[i + 1].y = aligned->mapSprites[0].y + partY[i];
+                eSpriteMain(&aligned->mapSprites[i + 1]);
+                if ((aligned->selectedParts >> i) & 1) {
+                    if (i == 0) {
+                        aligned->mapSprites[i + 13].x = aligned->mapSprites[i + 1].x - 3;
+                        aligned->mapSprites[i + 13].y = aligned->mapSprites[i + 1].y - 3;
+                    } else {
+                        aligned->mapSprites[i + 13].x = aligned->mapSprites[i + 1].x - 2;
+                        aligned->mapSprites[i + 13].y = aligned->mapSprites[i + 1].y - 2;
+                    }
+                    aligned->mapSprites[i + 13].style = aligned->mapSprites[i + 1].style + 1;
+                    eSpriteMain(&aligned->mapSprites[i + 13]);
+                }
+                {
+                    int last;
+                    int point;
+
+                    for (point = 0; point < 3; point++) {
+                        if (point == 2) {
+                            aligned->vertices[i * 4 + point].red = -36;
+                            aligned->vertices[i * 4 + point].green = -66;
+                            aligned->vertices[i * 4 + point].blue = -1;
+                        } else {
+                            aligned->vertices[i * 4 + point].red = 75;
+                            aligned->vertices[i * 4 + point].green = -46;
+                            aligned->vertices[i * 4 + point].blue = -1;
+                        }
+                        aligned->vertices[i * 4 + point].alpha = -128;
+                    }
+                    for (point = 0; point < 3; point++) {
+                        aligned->vertices[i * 4 + point].x = aligned->mapSprites[0].x + triangleOffsets[i].x[point];
+                        aligned->vertices[i * 4 + point].y = aligned->mapSprites[0].y + triangleOffsets[i].y[point];
+                        aligned->vertices[i * 4 + point].work = aligned->mapSprites[0].style + 2;
+                    }
+                    last = i * 4 + point;
+                    aligned->vertices[last].work = 0;
+                    endPrintExtFunc(0, 0, &aligned->vertices[i * 4]);
+                }
+                aligned->mapSprites[i + 7].x = aligned->mapSprites[0].x + labelX[i];
+                aligned->mapSprites[i + 7].style = aligned->mapSprites[0].style + 2;
+                aligned->mapSprites[i + 7].y = aligned->mapSprites[0].y + labelY[i];
+                eSpriteMain(&aligned->mapSprites[i + 7]);
+            }
+            /* Dead, but its read after the loop is what gives the original's partX/partY index copy. */
+            partOffset = i * 2;
+        }
+        i = partOffset;
+    }
+    for (i = 0; i < 2; i++) {
+        segment->labels[i].x = segment->windows[i].x + 3;
+        segment->labels[i].style = segment->windows[i].color;
+        segment->labels[i].y = segment->windows[i].y + 3;
+        eSpriteMain(&segment->labels[i]);
+    }
+    endPrintExtFunc(0, 15, 0);
+    for (i = 0; i < 18; i++) {
+
+        aligned->rows[i].number.x = segment->rows[i].sprites[0].x + 15;
+        aligned->rows[i].number.work = segment->rows[i].sprites[0].style + 1;
+        aligned->rows[i].number.y = segment->rows[i].sprites[0].y + 6;
+        eNumberMain(&aligned->rows[i].number);
+    }
+}
 int MenuItem(void)
 {
     extern MenuItemWorkData_MI MenuWork_MI __asm__("MenuWork");

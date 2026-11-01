@@ -3591,7 +3591,11 @@
       "jtbl_004C4F80"
      ],
      "also_referenced_by_c": [
-      "D_004C4F60"
+      "D_004C4ED0",
+      "D_004C4F38",
+      "D_004C4F50",
+      "D_004C4F60",
+      "D_004C4FC0"
      ],
      "basis": {
       "kind": "derived",
@@ -3602,19 +3606,91 @@
     {
      "range": [
       "0x004c4ff0",
-      "0x004c5018"
+      "0x004c5040"
      ],
      "generated": [
       "0x004c4ff0",
-      "0x004c5014"
+      "0x004c5040"
      ],
      "generated_by": [
+      "MenuItemSegmentMain",
       "subRoboPartsCheck"
      ],
      "c_owned_symbols": [
-      "jtbl_004C4FF0"
+      "jtbl_004C4FF0",
+      "D_004C5018"
      ],
      "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_item.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c5060",
+      "0x004c5140"
+     ],
+     "generated": [
+      "0x004c5060",
+      "0x004c5134"
+     ],
+     "generated_by": [
+      "MenuItemSegmentMain"
+     ],
+     "c_owned_symbols": [
+      "D_004C5060",
+      "D_004C5070",
+      "D_004C5080",
+      "D_004C5090",
+      "D_004C50A0",
+      "jtbl_004C50F0",
+      "jtbl_004C5110"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_item.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004daaf0",
+      "0x004daaf8"
+     ],
+     "generated": [
+      "0x004daaf0",
+      "0x004daaf4"
+     ],
+     "generated_by": [
+      "MenuItemSegmentMain"
+     ],
+     "c_owned_symbols": [
+      "D_004DAAF0"
+     ],
+     "also_referenced_by_c": [
+      "D_004DAAC8",
+      "D_004DAAD0",
+      "D_004DAAD8",
+      "D_004DAAE0",
+      "D_004DAAF8",
+      "D_004DAB00",
+      "D_004DAB08",
+      "MenuItemPas",
+      "MenuItemInfo",
+      "MenuItemLine",
+      "MenuItemStatus",
+      "MenuItemStatusAgws",
+      "MenuItemList",
+      "MenuItemSelect",
+      "MenuItemIcon",
+      "MenuItemEx",
+      "MenuItemSegment"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
