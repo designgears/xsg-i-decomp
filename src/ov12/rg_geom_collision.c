@@ -337,7 +337,72 @@ static void _PolyVsRobot(unsigned int *pArg)
     _RobotVsPoly(reordered);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_geom_collision", _BallVsTray);
+typedef struct {
+    RgVector contact;              /* +0x00 */
+    RgVector pos;                  /* +0x10 */
+    RgVector normals[3];           /* +0x20 */
+    unsigned int count;            /* +0x50 */
+} RgRobTrayRes;
+
+/*
+ * A hit-normal scratch record _BallVsPillar builds beside the contact point:
+ * a cleared RgVector whose Y lane is then set to 1.0 (main 0x00a2fe64/
+ * 0x00a2fe6c), followed by the other collider's own pointer (main
+ * 0x00a2fe78/0x00a2fe80). Neither of this function's own calls reads it
+ * back, so its consumer is outside this allocation's evidence.
+ */
+typedef struct {
+    RgVector normal;      /* +0x00 */
+    void *otherObject;    /* +0x10 */
+    unsigned char unmodeled_14[0xC];
+} RgGeomColiHit;
+
+/*
+ * A pairwise collision-response callback, stored by RgGeomColiArg's own
+ * words (data[1]/data[3] above): called with the OTHER side's object
+ * pointer and the contact point _BallVsPillar computes.
+ */
+typedef void (*RgGeomColiCallback)(void *object, RgVector contact);
+
+extern int RgGeomTrayCheckBall(void *tray, void *ball, void *result);
+extern void XrgClearVector(RgVector destination);
+
+static int _BallVsTray(unsigned int *pArg)
+{
+    RgRobTrayRes res;
+    RgVector contact;
+    RgGeomColiHit hit;
+    RgVector sum;
+    void *point;
+    void *tray;
+    unsigned int i;
+
+    point = (void *) pArg[0];
+    tray = (void *) pArg[2];
+    if (RgGeomTrayCheckBall(tray, point, &res) != 0) {
+        BvpCopy(contact, res.contact);
+        if (res.count >= 2) {
+            XrgClearVector(sum);
+            for (i = 0; i < res.count; i++) {
+                BvpAdd(sum, sum, res.normals[i]);
+            }
+            XrgNormalizeVector(hit.normal, sum);
+        } else {
+            BvpCopy(hit.normal, res.normals[0]);
+        }
+        if (pArg[1] != 0) {
+            hit.otherObject = tray;
+            ((RgGeomColiCallback) pArg[1])(point, contact);
+        }
+        if (pArg[3] != 0) {
+            XrgNegateVector(hit.normal, hit.normal);
+            hit.otherObject = point;
+            ((RgGeomColiCallback) pArg[3])(tray, contact);
+        }
+        return 1;
+    }
+    return 0;
+}
 
 static int _BallVsTray(unsigned int *pArg);
 
@@ -372,26 +437,6 @@ typedef struct RgGeomColiArg {
 } RgGeomColiArg;
 
 extern int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact);
-
-/*
- * A pairwise collision-response callback, stored by RgGeomColiArg's own
- * words (data[1]/data[3] above): called with the OTHER side's object
- * pointer and the contact point _BallVsPillar computes.
- */
-typedef void (*RgGeomColiCallback)(void *object, RgVector contact);
-
-/*
- * A hit-normal scratch record _BallVsPillar builds beside the contact point:
- * a cleared RgVector whose Y lane is then set to 1.0 (main 0x00a2fe64/
- * 0x00a2fe6c), followed by the other collider's own pointer (main
- * 0x00a2fe78/0x00a2fe80). Neither of this function's own calls reads it
- * back, so its consumer is outside this allocation's evidence.
- */
-typedef struct {
-    RgVector normal;      /* +0x00 */
-    void *otherObject;    /* +0x10 */
-    unsigned char unmodeled_14[0xC];
-} RgGeomColiHit;
 
 static int _BallVsPillar(RgGeomColiArg *pArg)
 {
@@ -450,13 +495,6 @@ static void _PillarVsBall(RgGeomColiArg *pArg)
 extern int RgGeomTrayCheckBall(void *tray, void *ball, void *result);
 extern void XrgClearVector(RgVector destination);
 extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
-typedef struct {
-    RgVector contact;              /* +0x00 */
-    RgVector pos;                  /* +0x10 */
-    RgVector normals[3];           /* +0x20 */
-    unsigned int count;            /* +0x50 */
-} RgRobTrayRes;
-
 static int _RobVsTray(unsigned int *pArg)
 {
     RgRobTrayRes res;
