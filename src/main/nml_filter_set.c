@@ -1,8 +1,70 @@
 #include "common.h"
 #include "shared.h"
 
+typedef union {
+    float f;
+    int i;
+} LayoutSlot;
+typedef union {
+    LayoutSlot slots[200];
+    struct {
+        unsigned char unmodeled_000[0x80];
+        Matrix4 modelToWorld;
+        unsigned char unmodeled_0c0[0x1e0 - 0xc0];
+        float filterAlpha;
+        float filterAmplitude;
+        unsigned char unmodeled_1e8[8];
+        Vector4 fallbackSphere;
+        unsigned char unmodeled_200[0x234 - 0x200];
+        u32 filterFlags;
+        int pixelAlpha;
+        unsigned char unmodeled_23c[4];
+        const char *texture;
+        int texfunc;
+        u64 alpha;
+        u32 render_status;
+        struct NmlStealthJointData *jointData;
+        unsigned char unmodeled_258[0x26c - 0x258];
+        float textureFillWeight;
+        int textureMapAlpha;
+        unsigned char unmodeled_274[0x280 - 0x274];
+        struct NmlStealthGeometry *stealthParts[10];
+        unsigned char unmodeled_2a8[0x2c0 - 0x2a8];
+        float transparency;
+        unsigned char unmodeled_2c4[4];
+        int stealthPartCount;
+        unsigned char unmodeled_2cc[0x2e0 - 0x2cc];
+        unsigned short mapShadowParts[8];
+    } fields;
+} LayoutStore;
+
+union NmlStealthXYZ {
+    Vector4 vector;
+    struct {
+        int x;
+        int y;
+        int z;
+        int w;
+    };
+};
+union NmlStealthUV {
+    Vector4 vector;
+    struct {
+        int u;
+        int v;
+        int clipFlags;
+        unsigned char unmodeled_0c[4];
+    };
+};
+struct NmlStealthGeometry {
+    Vector4 endpoints[2];
+    float sortClass;
+    unsigned char unmodeled_24[0x0c];
+    union NmlStealthXYZ xyz[14];
+    union NmlStealthUV uv[14];
+};
 void nmlModelSetFilterGunosys(int *model, int flags, int count);
-void nmlModelSetFilterStealth(int *model, int flags);
+void nmlModelSetFilterStealth(const LayoutStore *model, int flags);
 
 /*
  * Loads the supplied four-row matrix into the resident VU0 macro-mode
@@ -270,7 +332,149 @@ static void nmlModelSetFilterGunosys(int *modelArg, int flags, int count)
 /* v2 */
 /* v3 */
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlModelSetFilterStealth);
+struct NmlStealthTint {
+    float channels[4];
+} __attribute__((aligned(16)));
+extern const struct NmlStealthTint D_004D30D0;
+#define NML_STEALTH_VERTEX(vertex, entryIndex, clipFlags) { \
+    struct NmlFilterGsPair *uvEntry = &packet[entryIndex]; \
+    uvEntry->payload.value = (u64)geometry->uv[vertex].u | \
+        ((u64)geometry->uv[vertex].v << 16); \
+    uvEntry->registerSlot.value = 3; \
+    { \
+        u64 positionX = geometry->xyz[vertex].x; \
+        u64 positionY = geometry->xyz[vertex].y; \
+        struct NmlFilterGsPair *xyzEntry = &packet[(entryIndex) + 1]; \
+        xyzEntry->payload.value = positionX | (positionY << 16) | \
+            ((u64)geometry->xyz[vertex].z << 32); \
+        xyzEntry->registerSlot.value = (clipFlags); \
+    } \
+}
+#define NML_STEALTH_CLIP(vertex) (geometry->uv[vertex].clipFlags)
+
+static void nmlModelSetFilterStealth(const LayoutStore *model, int flags)
+{
+    struct NmlStealthTint baseTint = D_004D30D0;
+    float outlineColor[3];
+    struct NmlFilterGsPair *packet = (struct NmlFilterGsPair *)0x70000000;
+    struct NmlFilterGsPair *entry;
+    const struct NmlStealthGeometry *geometry;
+    int remaining;
+    int part;
+
+    packet[0].payload.value = 0;
+    packet[0].registerSlot.value = 0x3f;
+    {
+        struct NmlFilterGsPair *textureEntry = &packet[1];
+        textureEntry->payload.value = (u64)(0x24020000 | (sRender.framebufferPage << 5)) |
+            0x2000000640000000ULL;
+        textureEntry->registerSlot.value = 6;
+    }
+    {
+        struct NmlFilterGsPair *alphaEntry = &packet[2];
+        alphaEntry->payload.value = ((u64)(int)model->fields.filterAlpha << 32) | 100;
+        alphaEntry->registerSlot.value = 0x42;
+    }
+    {
+        struct NmlFilterGsPair *clampEntry = &packet[3];
+        clampEntry->payload.value = 0;
+        clampEntry->registerSlot.value = 8;
+    }
+    {
+        struct NmlFilterGsPair *testEntry = &packet[4];
+        testEntry->payload.value = 0x3f001;
+        testEntry->registerSlot.value = 0x47;
+    }
+    {
+        struct NmlFilterGsPair *colorEntry = &packet[5];
+        colorEntry->payload.value = 0x3f80000000808080ULL;
+        colorEntry->registerSlot.value = 1;
+    }
+    nmlPacketGsInit();
+    nmlPacketAddGsFrame(sRender.displayBufferBase, 0);
+    nmlPacketAddGsFBA(0);
+    entry = packet;
+    for (remaining = 6 - 1; remaining >= 0; remaining--, entry++) {
+        packet_gs_entry64(entry->registerSlot.words[0], &entry->payload.value);
+    }
+    nmlPacketAddGsFlushWide();
+
+    for (part = 0; part < model->fields.stealthPartCount; part++) {
+        geometry = model->fields.stealthParts[part];
+        packet[0].payload.value = 0x154;
+        packet[0].registerSlot.value = 0;
+        NML_STEALTH_VERTEX(13, 1, NML_STEALTH_CLIP(13));
+        NML_STEALTH_VERTEX(12, 3,
+            NML_STEALTH_CLIP(12) | NML_STEALTH_CLIP(13));
+        NML_STEALTH_VERTEX(9, 5,
+            NML_STEALTH_CLIP(9) | NML_STEALTH_CLIP(12) | NML_STEALTH_CLIP(13));
+        NML_STEALTH_VERTEX(8, 7,
+            NML_STEALTH_CLIP(8) | NML_STEALTH_CLIP(9) | NML_STEALTH_CLIP(12));
+        NML_STEALTH_VERTEX(11, 9,
+            NML_STEALTH_CLIP(11) | NML_STEALTH_CLIP(8) | NML_STEALTH_CLIP(9));
+        NML_STEALTH_VERTEX(10, 11,
+            NML_STEALTH_CLIP(10) | NML_STEALTH_CLIP(11) | NML_STEALTH_CLIP(8));
+        NML_STEALTH_VERTEX(1, 13,
+            NML_STEALTH_CLIP(1) | NML_STEALTH_CLIP(10) | NML_STEALTH_CLIP(11));
+        NML_STEALTH_VERTEX(0, 15,
+            NML_STEALTH_CLIP(0) | NML_STEALTH_CLIP(1) | NML_STEALTH_CLIP(10));
+        NML_STEALTH_VERTEX(5, 17,
+            NML_STEALTH_CLIP(5) | NML_STEALTH_CLIP(0) | NML_STEALTH_CLIP(1));
+        NML_STEALTH_VERTEX(4, 19,
+            NML_STEALTH_CLIP(4) | NML_STEALTH_CLIP(5) | NML_STEALTH_CLIP(0));
+        NML_STEALTH_VERTEX(3, 21,
+            NML_STEALTH_CLIP(3) | NML_STEALTH_CLIP(4) | NML_STEALTH_CLIP(5));
+        NML_STEALTH_VERTEX(2, 23,
+            NML_STEALTH_CLIP(2) | NML_STEALTH_CLIP(3) | NML_STEALTH_CLIP(4));
+        NML_STEALTH_VERTEX(7, 25,
+            NML_STEALTH_CLIP(7) | NML_STEALTH_CLIP(4) | NML_STEALTH_CLIP(5));
+        NML_STEALTH_VERTEX(6, 27,
+            NML_STEALTH_CLIP(6) | NML_STEALTH_CLIP(7) | NML_STEALTH_CLIP(4));
+        nmlPacketGsInit();
+        entry = packet;
+        for (remaining = 28; remaining >= 0; remaining--, entry++) {
+            packet_gs_entry64(entry->registerSlot.words[0], &entry->payload.value);
+        }
+        nmlPacketAddGsFlushWide();
+    }
+
+    outlineColor[0] = baseTint.channels[0] * 128.0f;
+    outlineColor[1] = baseTint.channels[1] * 128.0f;
+    outlineColor[2] = baseTint.channels[2] * 128.0f;
+    packet[0].payload.value = 0x3d001;
+    packet[0].registerSlot.value = 0x47;
+    {
+        struct NmlFilterGsPair *alphaEntry = &packet[1];
+        alphaEntry->payload.value = ((u64)(int)model->fields.filterAmplitude << 32) | 100;
+        alphaEntry->registerSlot.value = 0x42;
+    }
+    {
+        struct NmlFilterGsPair *colorEntry = &packet[2];
+        colorEntry->payload.value = (u64)(int)outlineColor[0] |
+            ((u64)(int)outlineColor[1] << 8) | ((u64)(int)outlineColor[2] << 16) | 0x3f80000000000000ULL;
+        colorEntry->registerSlot.value = 1;
+    }
+    {
+        struct NmlFilterGsPair *primEntry = &packet[3];
+        primEntry->payload.value = 0x46;
+        primEntry->registerSlot.value = 0;
+    }
+    {
+        struct NmlFilterGsPair *topCornerEntry = &packet[4];
+        topCornerEntry->payload.value = 0x72007000;
+        topCornerEntry->registerSlot.value = 4;
+    }
+    {
+        struct NmlFilterGsPair *bottomCornerEntry = &packet[5];
+        bottomCornerEntry->payload.value = 0x8e009000;
+        bottomCornerEntry->registerSlot.value = 4;
+    }
+    entry = packet;
+    for (remaining = 6 - 1; remaining >= 0; remaining--, entry++) {
+        packet_gs_entry64(entry->registerSlot.words[0], &entry->payload.value);
+    }
+    nmlPacketAddGsFlushWide();
+}
 
 /*
  * Loads the supplied four-row placement matrix into the resident VU0
@@ -361,31 +565,6 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
     return lengthSq;
 }
 
-union NmlStealthXYZ {
-    Vector4 vector;
-    struct {
-        int x;
-        int y;
-        int z;
-        int w;
-    };
-};
-union NmlStealthUV {
-    Vector4 vector;
-    struct {
-        int u;
-        int v;
-        int clipFlags;
-        unsigned char unmodeled_0c[4];
-    };
-};
-struct NmlStealthGeometry {
-    Vector4 endpoints[2];
-    float sortClass;
-    unsigned char unmodeled_24[0x0c];
-    union NmlStealthXYZ xyz[14];
-    union NmlStealthUV uv[14];
-};
 struct NmlStealthDescriptor {
     int firstJoint;
     int secondJoint;
@@ -989,42 +1168,6 @@ void nmlFilterSetFlatRender(void *arg)
 typedef union { struct { u64 data; u64 addr; } r; float f; } FtfdGsReg;
 typedef struct { char pad[0x26C]; float f; int i; } FtfdArg;
 
-typedef union {
-    float f;
-    int i;
-} LayoutSlot;
-typedef union {
-    LayoutSlot slots[200];
-    struct {
-        unsigned char unmodeled_000[0x80];
-        Matrix4 modelToWorld;
-        unsigned char unmodeled_0c0[0x1e0 - 0xc0];
-        float filterAlpha;
-        float filterAmplitude;
-        unsigned char unmodeled_1e8[8];
-        Vector4 fallbackSphere;
-        unsigned char unmodeled_200[0x234 - 0x200];
-        u32 filterFlags;
-        int pixelAlpha;
-        unsigned char unmodeled_23c[4];
-        const char *texture;
-        int texfunc;
-        u64 alpha;
-        u32 render_status;
-        struct NmlStealthJointData *jointData;
-        unsigned char unmodeled_258[0x26c - 0x258];
-        float textureFillWeight;
-        int textureMapAlpha;
-        unsigned char unmodeled_274[0x280 - 0x274];
-        struct NmlStealthGeometry *stealthParts[10];
-        unsigned char unmodeled_2a8[0x2c0 - 0x2a8];
-        float transparency;
-        unsigned char unmodeled_2c4[4];
-        int stealthPartCount;
-        unsigned char unmodeled_2cc[0x2e0 - 0x2cc];
-        unsigned short mapShadowParts[8];
-    } fields;
-} LayoutStore;
 
 void nmlFilterSetTexFillDraw(int frameBase, LayoutStore *model)
 {
