@@ -31,9 +31,14 @@ typedef struct NmlPartPixelAlpha {
 } NmlPartPixelAlpha;
 
 typedef struct NmlAlphaGroup {
-    unsigned char unmodeled_00[4];
+    short firstBlock;
+    short blockCount;
     float sortDistance;
-    unsigned char unmodeled_08[8];
+    u32 status;
+    union {
+        union LayoutStore *layout; /* layout record this group was built from */
+        int address;
+    } owner;                       /* +0x0c */
 } NmlAlphaGroup;
 
 /* Fork (derwetterfrosch) field map for LayoutStore.fields, NOT applied because
@@ -117,13 +122,13 @@ typedef union {
  * byte gap rather than a guessed int member.
  */
 typedef struct {
-    unsigned char unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
     int color[3];
     int level;
     int frame;
     int duration;
     int skipRender;
-    unsigned char unmodeled_1c[8];
+    int unclassified_1c;
+    int unclassified_20;
     int dispose;
     int cancelFrames;
     int startDelay;
@@ -225,9 +230,12 @@ extern int s_inBackBuffer[];
 typedef struct NmlModelBlock {
     char name[0x20];
     u32 flags;
-    unsigned char unmodeled_024[0x2c - 0x24];
+    int baseOffset;
+    int textOffset;
     int partId; /* +0x2c */
-    unsigned char unmodeled_030[0xc0 - 0x30];
+    unsigned short matrixIndices[48]; /* +0x30; transform then weighted entries */
+    float clipBounds[4]; /* +0x90; element 3 is the weighted clip radius */
+    unsigned char unmodeled_0a0[0x20];
     u32 materialFlags;
     unsigned char unmodeled_0c4[0x3c];
     Vector4 multiplyColor; /* +0x100 */
@@ -248,10 +256,19 @@ typedef struct NmlModelBlock {
  * holds byte offsets from this record to individual NmlModelBlock records.
  */
 typedef struct NmlModel {
-    unsigned char unmodeled_000[0x40 - 0x0];
+    unsigned char unmodeled_000[0x3f];
+    signed char unclassified_3f;
     int partCount; /* +0x40 */
     int blockCount;
-    unsigned char unmodeled_048[0x68];
+    int sampleCount; /* +0x48 */
+    unsigned char unmodeled_04c[4];
+    int weightedMatrixOffset; /* +0x50: byte offset from the model to its weighted matrices */
+    unsigned char unmodeled_054[0x18];
+    int unclassified_6c;
+    unsigned char unmodeled_070[0x20];
+    Vector4 entryTranslation; /* +0x90; w at +0x9c */
+    int unclassified_a0;
+    unsigned char unmodeled_0a4[0x0c];
     int blockOffsets[1];
 } NmlModel;
 

@@ -3474,7 +3474,7 @@ typedef struct {
     unsigned char unmodeled_16[0x0a];
     unsigned short display_buffer_base; /* +0x20 */
 } NmlFlushAlphaRS;
-typedef struct {
+typedef struct NmlPartFlagData {
     unsigned char unmodeled_00[0x1c];
     unsigned int flags; /* +0x1c */
     unsigned char unmodeled_20[0x40 - 0x20];
@@ -3715,7 +3715,241 @@ static int nmlModelFlushSubAlpha(int viewport, StudioCamera *camera)
     return result;
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelFlushSub);
+#define SCISSOR_F(c, i) (*(float *)((char *)(c) + 0x60 + 4 * (i)))
+typedef void (*XglRenderFadeCallback)(XglPacket *packet);
+typedef struct XglRenderReso {
+    unsigned char unmodeled_00[2];
+    short frame_psm;                   
+    short frame_width;                 
+    unsigned char unmodeled_06[2];
+} XglRenderReso;
+typedef struct NmlDirectRecord {
+    void *data;
+    s16 count;
+    s16 attribute;
+} NmlDirectRecord;
+struct NmlModelRenderRange {
+    short first;
+    short count;
+    unsigned char unmodeled_04[8];
+    LayoutStore *layout;
+};
+typedef struct {
+    short x;                            
+    short y;                            
+    unsigned char unmodeled_004[8];
+    int ownerAddress;                   
+} NmlCircleOrigin;
+typedef struct NmlNonAlphaGroupUp {
+    union {
+        struct {
+            short firstBlock;
+            short blockCount;
+        };
+    };
+    unsigned char unmodeled_04[4];
+    unsigned int flags;
+    union {
+        LayoutStore *layout;
+        int address;     
+    } owner;             
+} NmlNonAlphaGroupUp;
+typedef struct NmlAlphaGroupUp {
+    short firstBlock;
+    short blockCount;
+    float sortDistance;
+    u32 status;
+    union {
+        union LayoutStore *layout; 
+        int address;
+    } owner;                       
+} NmlAlphaGroupUp;
+typedef struct XglRenderStateUp {
+    XglRenderReso reso;                
+    unsigned char unmodeled_08[0x08];
+    u16 width;                         
+    u16 height;                        
+    u16 flip_base;                     
+    unsigned char unmodeled_16[4];
+    u16 texture_buffer_base;            
+    unsigned char unmodeled_1c[4];
+    u16 display_buffer_base;            
+    u16 draw_buffer_base;               
+    XglRenderFadeCallback final_packet_callback[8]; 
+    XglRenderFadeCallback fade_callback; 
+    u32 render_status;                  
+    u32 frame_delta;                    
+    u32 frame_count;                    
+    u32 frame_status;                   
+    unsigned char scene_disabled;       
+    unsigned char unmodeled_59[3];
+} XglRenderStateUp;
+void nmlPacketAddGsScissor1(u64 scissor);
+void nmlPacketAddScreenClear(void);
+void nmlPacketClrTextureCache(void);
+int nmlPacketDirectData(const void *data, int size);
+extern void sefDrawEffect(void);
+
+static int nmlModelFlushSub(int viewport)
+{
+    extern NmlNonAlphaGroupUp s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+    extern NmlAlphaGroupUp s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+    extern XglRenderStateUp sRenderView __asm__("sRender");
+    int result;
+    StudioCamera *camera;
+    int index;
+    int result_clear;
+
+    camera = xglStudioSelectGetActiveCamera(viewport);
+    if (camera == 0) {
+        return 0;
+    }
+    nmlPacketAddScreen((NmlModelRenderState *)camera);
+    nmlPacketGsInit();
+    nmlPacketAddGsScissor(
+        ((u64)(int)SCISSOR_F(camera, 0) |
+         ((u64)(int)SCISSOR_F(camera, 1) << 32)) |
+        (((u64)((int)SCISSOR_F(camera, 3) - 1) << 48) |
+         ((u64)((int)SCISSOR_F(camera, 2) - 1) << 16)));
+    nmlPacketAddGsScissor1(
+        ((u64)(int)SCISSOR_F(camera, 0) |
+         ((u64)(int)SCISSOR_F(camera, 1) << 32)) |
+        (((u64)((int)SCISSOR_F(camera, 3) - 1) << 48) |
+         ((u64)((int)SCISSOR_F(camera, 2) - 1) << 16)));
+    nmlPacketAddGsFlush();
+    if (viewport != 0) {
+        nmlPacketAddScreenClear();
+        if (s_nAnotherStudio == 0) {
+            return 0;
+        }
+    }
+    result = nmlModelFlushSubNonAlpha(viewport, camera);
+    if (result == 0 && viewport == 0) {
+        for (index = 0; index < s_nDirect; index++) {
+            NmlDirectRecord *record = &s_aDirect[index];
+            if ((u16)record->attribute == 1) {
+                result = nmlPacketDirectData(record->data, (u16)record->count);
+                if (result != 0) {
+                    break;
+                }
+            }
+        }
+    }
+    nmlPacketClrModelCache();
+    result_clear = (result == 0);
+    if (result_clear) {
+        nmlFilterSetFrameAlphaClear();
+        index = result;
+        for (; index < s_nNonAlphaGroup; index++) {
+            unsigned int flags = s_aNonAlphaGroupView[index].flags;
+            if (flags & 1) {
+                result = nmlModelRenderTexture(&s_aNonAlphaGroupView[index], 1, viewport);
+                if (result != 0) {
+                    break;
+                }
+                continue;
+            }
+            if (flags & 0x100) {
+                result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aNonAlphaGroupView[index], 1, viewport);
+                if (result != 0) {
+                    break;
+                }
+                continue;
+            }
+            if (flags & 0x200) {
+                result = nmlModelRenderDropCircle(&s_aNonAlphaGroupView[index], 1, camera);
+                if (result != 0) {
+                    break;
+                }
+                continue;
+            }
+            if (flags & 0x80) {
+                result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aNonAlphaGroupView[index], 1, camera, viewport);
+                if (result != 0) {
+                    break;
+                }
+            }
+            if (result != 0) {
+                break;
+            }
+        }
+        {
+            int callback_mode = -1;
+            for (index = 0; index < s_nAlphaGroup && result == 0; index++) {
+                if (s_aAlphaGroupView[index].status & 0x20) {
+                    if (s_aAlphaGroupView[index].status & 1) {
+                        result = nmlModelRenderTexture(&s_aAlphaGroupView[index], callback_mode, viewport);
+                        if (result != 0) {
+                            break;
+                        }
+                        continue;
+                    } else if (s_aAlphaGroupView[index].status & 0x100) {
+                        result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aAlphaGroupView[index], callback_mode, viewport);
+                        if (result != 0) {
+                            break;
+                        }
+                        continue;
+                    } else if (s_aAlphaGroupView[index].status & 0x200) {
+                        result = nmlModelRenderDropCircle(&s_aAlphaGroupView[index], callback_mode, camera);
+                        if (result != 0) {
+                            break;
+                        }
+                        continue;
+                    } else if ((s_aAlphaGroupView[index].status & 0x80) == 0) {
+                        continue;
+                    } else {
+                        result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aAlphaGroupView[index], callback_mode, camera, viewport);
+                        if (result != 0) {
+                            break;
+                        }
+                        continue;
+                    }
+                }
+            }
+        }
+        if (result == 0) {
+            if (viewport == 0 && s_nEffectWrite == 0) {
+                nmlPacketGsInit();
+                nmlPacketAddGsZbuf(0);
+                nmlPacketAddGsPixeltest(0x50000);
+                nmlPacketAddGsFrame(sRenderView.display_buffer_base, 0);
+                nmlPacketAddGsFlush();
+                sefDrawEffect();
+            }
+        }
+        if (result == 0) {
+            if (viewport == 0 && s_nUseStealth != 0 && s_nMapAlphaEntry == 0) {
+                nmlFilterSetFrameToBuffer(sRenderView.display_buffer_base);
+            }
+        }
+        if (result == 0) {
+            nmlPacketGsInit();
+            nmlPacketAddGsPixeltest(0x50000);
+            nmlPacketAddGsFlush();
+            nmlFilterSetFrameAlphaClear();
+            nmlPacketClrTextureCache();
+            result = nmlModelFlushSubAlpha(viewport, camera);
+            if (result == 0) {
+                for (index = 0; index < s_nDirect; index++) {
+                    NmlDirectRecord *record = &s_aDirect[index];
+                    if (((u16)record->attribute == 2 && viewport == 0) ||
+                        (u16)record->attribute - 3 == viewport) {
+                        result = nmlPacketDirectData(record->data, (u16)record->count);
+                        if (result != 0) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    nmlPacketGsInit();
+    nmlPacketAddGsScissor(((u64)0x01BF << 48) | ((u64)0x01FF << 16));
+    nmlPacketAddGsScissor1(((u64)0x01BF << 48) | ((u64)0x01FF << 16));
+    nmlPacketAddGsFlush();
+    nmlPacketClrTextureCache();
+    return result;
+}
 
 /*
  * CONSTRUCT_CIRCLR_SHADOW (near the top of this TU) is still INCLUDE_ASM
