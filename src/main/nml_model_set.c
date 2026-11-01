@@ -3123,7 +3123,291 @@ typedef struct {
 
 extern NonAlphaGroupEntry s_aNonAlphaGroup[];
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelEntryCard);
+typedef struct NmlQword {
+    unsigned long long lo;
+    unsigned long long hi;
+} NmlQword;
+typedef union NmlVector4Overlay {
+    Vector4 v;
+    NmlQword q;
+} NmlVector4Overlay;
+typedef struct NmlStealthPacket {
+    unsigned char unmodeled_00[0x0c];
+    float distanceSquared;
+    unsigned char unmodeled_10[0x10];
+    float unclassified_20;
+} NmlStealthPacket;
+typedef struct NmlRenderVolume {
+    unsigned char unmodeled_000[0x160];
+    float planeNormalX; 
+    unsigned char unmodeled_164[4];
+    float planeNormalZ; 
+    unsigned char unmodeled_16c[0x190 - 0x16c];
+    Vector4 origin; 
+    Vector4 boundsMin; 
+    Vector4 boundsMax; 
+    unsigned char unmodeled_1c0[0x1c8 - 0x1c0];
+    u64 alpha; 
+} NmlRenderVolume;
+typedef void (*XglRenderFadeCallback)(XglPacket *packet);
+typedef float Matrix4[4][4];
+union NmlLayoutEc {
+    LayoutSlot slots[200];
+    unsigned long long qwords[100];
+    struct {
+        Matrix4 lightDirection; 
+        Matrix4 lightColor; 
+        Matrix4 place; 
+        Matrix4 inversePlace; 
+        Vector4 pointPosition[4]; 
+        Vector4 pointColor[4]; 
+        Matrix4 projectionMatrix; 
+        Vector4 fogColor; 
+        Vector4 fogPara; 
+        unsigned char unmodeled_1e0[0x1f0 - 0x1e0];
+        NmlVector4Overlay unmodeled_1f0; 
+        Vector4 multiplyColor; 
+        unsigned char unmodeled_210[0x234 - 0x210];
+        unsigned int packetFilterFlags;
+        int pixelAlpha;                     
+        unsigned char unmodeled_23c[4];
+        const char *texture;                
+        int texfunc;                        
+        u64 alpha;                          
+        u32 render_status;                  
+        int parent; 
+        Matrix4 *weightedMatrices; 
+        unsigned char unmodeled_25c[4];
+        NmlRenderVolume *volume; 
+        NmlRenderVolume *renderVolume; 
+        int texMapMode; 
+        float textureTransparency;
+        int texMapSize; 
+        float texMapWeight; 
+        int mapShadowPartCount; 
+        int renderLevel; 
+        NmlStealthPacket *stealthPackets[10]; 
+        unsigned char unmodeled_2a8[0x2b0 - 0x2a8];
+        unsigned int featureFlags;
+        int partPixelAlphaCount; 
+        unsigned char *clipMasks; 
+        unsigned char unmodeled_2bc[4];
+        float circleShadowScale; 
+        unsigned char unmodeled_2c4[4];
+        int stealthEntryCount; 
+        unsigned char unmodeled_2cc[4];
+        NmlPartPixelAlpha partPixelAlpha[4]; 
+        unsigned short mapShadowParts[8];    
+        unsigned char unmodeled_2f0[0x300 - 0x2f0];
+        float viewportAlpha[4];
+        int viewportFlags[4];
+    } fields;
+};
+typedef union NmlLayoutEc NmlLayoutEc;
+typedef struct NmlModelEc {
+    unsigned char unmodeled_000[0x3f];
+    signed char unclassified_3f;
+    int partCount; 
+    int blockCount;
+    int sampleCount; 
+    unsigned char unmodeled_04c[4];
+    int weightedMatrixOffset; 
+    unsigned char unmodeled_054[0x18];
+    int unclassified_6c;
+    unsigned char unmodeled_070[0x20];
+    Vector4 entryTranslation; 
+    int unclassified_a0;
+    unsigned char unmodeled_0a4[0x0c];
+    int blockOffsets[1];
+} NmlModelEc;
+typedef struct NmlAlphaGroupEc {
+    short firstBlock;
+    short blockCount;
+    float sortDistance;
+    u32 status;
+    union {
+        union NmlLayoutEc *layout; 
+        int address;
+    } owner;                       
+} NmlAlphaGroupEc;
+typedef struct NmlNonAlphaGroupEc {
+    union {
+        struct {
+            short firstBlock;
+            short blockCount;
+        };
+    };
+    unsigned char unmodeled_04[4];
+    unsigned int flags;
+    union {
+        NmlLayoutEc *layout;
+        int address;     
+    } owner;             
+} NmlNonAlphaGroupEc;
+typedef struct NmlModelBlockEc {
+    char name[0x20];
+    u32 flags;
+    int baseOffset;
+    int textOffset;
+    int partId; 
+    unsigned short matrixIndices[48]; 
+    float clipBounds[4]; 
+    unsigned char unmodeled_0a0[0x20];
+    u32 materialFlags;
+    unsigned char unmodeled_0c4[0x3c];
+    Vector4 multiplyColor; 
+    float translationX, translationY;
+    float translationStepX, translationStepY;
+    unsigned char unmodeled_120[0x4c];
+    signed char shapeMathParameter;
+    signed char shapeMode, shapeWeight;
+    unsigned char shapeFlags;
+    char materialName[32]; 
+} NmlModelBlockEc;
+typedef struct XglRenderResoEc {
+    unsigned char unmodeled_00[2];
+    short frame_psm;                   
+    short frame_width;                 
+    unsigned char unmodeled_06[2];
+} XglRenderResoEc;
+typedef struct XglRenderStateEc {
+    XglRenderResoEc reso;                
+    unsigned char unmodeled_08[0x08];
+    u16 width;                         
+    u16 height;                        
+    u16 flip_base;                     
+    unsigned char unmodeled_16[4];
+    u16 texture_buffer_base;            
+    unsigned char unmodeled_1c[4];
+    u16 display_buffer_base;            
+    u16 draw_buffer_base;               
+    XglRenderFadeCallback final_packet_callback[8]; 
+    XglRenderFadeCallback fade_callback; 
+    u32 render_status;                  
+    u32 frame_delta;                    
+    u32 frame_count;                    
+    u32 frame_status;                   
+    unsigned char scene_disabled;       
+    unsigned char unmodeled_59[3];
+} XglRenderStateEc;
+void nmlModelClear(void);
+void *nmlPacketSetAttributeAlloc16N(int count);
+u8 *nmlPacketSetAttributeData64N(const void *data, int count);
+void nmlPacketSetCurrent(void);
+void xglMatrixReverse(Matrix4 destination, const Matrix4 source);
+
+void nmlModelEntryCard(NmlModelEc *model)
+{
+    extern NmlAlphaGroupEc s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+    extern NmlNonAlphaGroupEc s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+    extern XglRenderStateEc sRenderView __asm__("sRender");
+    NmlLayoutEc *layout;
+    NmlModelBlockEc *block;
+    int *blockTable;
+    int *blockOffsets;
+    int paddedBlockCount;
+    int quadIndex;
+    int index;
+    int alphaAdded;
+    int nonAlphaAdded;
+    int nextModel;
+    Vector4 sortPos;
+
+    nmlPacketSetCurrent();
+    if (s_nModel < 0x200 && s_nBlocks + s_nBlocksAlpha + model->blockCount < 0xfff) {
+        __builtin_memset(&index, 0, sizeof(index));
+        blockTable = model->blockOffsets;
+        LAYOUT_S32(0x25c) = s_nModel;
+        s_fSortOffset = s_fSortOffsetEntry;
+        (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
+        __asm__ __volatile__(
+            "lqc2 vf3, 0(%1)\n\t"
+            "lqc2 vf2, 0(%0)\n\t"
+            "vadd.xyz vf2, vf2, vf3\n\t"
+            "sqc2 vf2, 0(%0)"
+            :
+            : "r"(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0), "r"(&model->entryTranslation)
+            : "memory");
+        _CurSetMatrix((*(NmlLayoutEc *)&s_inLayout).fields.place);
+        _CurApplyMatrix(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v, &(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v);
+        (*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v.w = model->entryTranslation.w;
+        (*(NmlLayoutEc *)&s_inLayout).fields.textureTransparency = 1.0f;
+        LAYOUT_S32(0x228) = 0;
+        (*(NmlLayoutEc *)&s_inLayout).fields.viewportAlpha[(*(NmlLayoutEc *)&s_inLayout).fields.renderLevel] = 0.0f;
+        (*(NmlLayoutEc *)&s_inLayout).fields.featureFlags |= 2;
+        xglMatrixReverse((*(NmlLayoutEc *)&s_inLayout).fields.lightColor, (*(NmlLayoutEc *)&s_inLayout).fields.lightColor);
+        (*(NmlLayoutEc *)&s_inLayout).fields.weightedMatrices = (Matrix4 *)nmlPacketSetAttributeData64N(
+            (char *)model + model->weightedMatrixOffset,
+            (model->partCount + model->sampleCount) * 2);
+        LAYOUT_S32(0x264) = 0;
+        paddedBlockCount = model->blockCount; /* one clip-mask byte per block, in whole quadwords */
+        if ((paddedBlockCount & 0xf) != 0) {
+            paddedBlockCount = paddedBlockCount - (paddedBlockCount & 0xf) + 16;
+        }
+        (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
+        for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
+            __asm__ __volatile__("sq $0, 0(%0)"
+                : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
+        }
+        layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
+        __builtin_memset(&alphaAdded, 0, sizeof(alphaAdded));
+        __builtin_memset(&nonAlphaAdded, 0, sizeof(nonAlphaAdded));
+        s_apModelLayout[s_nModel] = layout;
+        if (s_nAlphaGroup < 0x1ff) {
+            s_aAlphaGroupView[s_nAlphaGroup].firstBlock = (short)(0xfff - s_nBlocksAlpha);
+            s_aAlphaGroupView[s_nAlphaGroup].blockCount = 0;
+            s_aAlphaGroupView[s_nAlphaGroup].sortDistance = 0.0f;
+            s_aAlphaGroupView[s_nAlphaGroup].owner.layout = layout;
+            set_group_status(layout, &s_aAlphaGroupView[s_nAlphaGroup].status);
+        }
+        if (s_nNonAlphaGroup < 0x1ff) {
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].firstBlock = (short)s_nBlocks;
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].blockCount = 0;
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].owner.layout = layout;
+            set_group_status(layout, &s_aNonAlphaGroupView[s_nNonAlphaGroup].flags);
+        }
+        index = 0;
+        if (model->blockCount > 0) {
+        blockOffsets = blockTable;
+        do {
+            block = (NmlModelBlockEc *)((char *)model + *blockOffsets);
+            if (s_nBlocksAlpha + s_nBlocks < 0xfff) {
+                if ((block->materialFlags & 6) != 0 ||
+                    (layout->fields.render_status & 0x20) != 0 ||
+                    is_parts_transparency(block) != 0) {
+                    s_aAlphaGroupView[s_nAlphaGroup].blockCount++;
+                    alphaAdded = 1;
+                    __builtin_memcpy(&s_apBlock[0xfff - s_nBlocksAlpha], &block, sizeof(block));
+                    s_aBlockLayout[0xfff - s_nBlocksAlpha++] = s_nModel;
+                }
+                if ((block->materialFlags & 2) == 0 &&
+                    (layout->fields.render_status & 0x20) == 0 &&
+                    (*(u64 *)&block->materialFlags & 0x40004) != 0x40004 &&
+                    is_parts_transparency(block) == 0) {
+                    s_aNonAlphaGroupView[s_nNonAlphaGroup].blockCount++;
+                    nonAlphaAdded = 1;
+                    s_apBlock[s_nBlocks] = block;
+                    s_aBlockLayout[s_nBlocks++] = s_nModel;
+                }
+            }
+            index++;
+            blockOffsets++;
+        } while (index < model->blockCount);
+        }
+        nextModel = s_nModel + 1;
+        __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
+        if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
+            __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+                : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
+            AlphaGroupSortEntry(&sortPos);
+            s_nAlphaGroup = s_nAlphaGroup + 1;
+        }
+        if (nonAlphaAdded != 0) {
+            s_nNonAlphaGroup = s_nNonAlphaGroup + 1;
+        }
+    }
+    nmlModelClear();
+}
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelRenderProreal);
 
