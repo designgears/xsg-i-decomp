@@ -8835,25 +8835,58 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/look.o"
      }
+    },
+    {
+     "range": [
+      "0x004d85b0",
+      "0x004d85c8"
+     ],
+     "generated": [
+      "0x004d85b0",
+      "0x004d85c8"
+     ],
+     "generated_by": [
+      "LOOK_eye_cont"
+     ],
+     "c_owned_symbols": [
+      "D_004D85B0",
+      "D_004D85B4",
+      "D_004D85B8",
+      "D_004D85BC",
+      "D_004D85C0",
+      "D_004D85C4"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/look.o"
+     }
     }
    ],
    ".rodata": [
     {
      "range": [
       "0x004d1d40",
-      "0x004d1d60"
+      "0x004d1da0"
      ],
      "generated": [
       "0x004d1d40",
-      "0x004d1d54"
+      "0x004d1d9c"
      ],
      "generated_by": [
+      "LOOK_eye_cont",
       "look_get_place"
      ],
      "c_owned_symbols": [
-      "jtbl_004D1D40"
+      "jtbl_004D1D40",
+      "jtbl_004D1D60"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "s_aEyeIdling",
+      "s_aEyeControl",
+      "s_aEyeDefault"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

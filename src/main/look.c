@@ -415,7 +415,7 @@ void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
     return channels;
 }
 
-int LOOK_eye_cont(char *model, int target, char *step, int side);
+void *LOOK_eye_cont(LookJointWork *work, void *channels, LookCharacter *actor, int side);
 extern float s_fEyeOffset;
 
 void LOOK_eyeL_cont(int model, int target, int step)
@@ -430,4 +430,158 @@ void LOOK_eyeR_cont(int model, int target, int step)
     LOOK_eye_cont(model, target, step, 1);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/look", LOOK_eye_cont);
+typedef struct LookAngleView {
+    unsigned char unmodeled_000[0x600];
+    float lookAngles[2][4];
+    unsigned char unmodeled_620[0x20];
+    float eyeAngles[2][4];
+} LookAngleView;
+extern const char D_004DC258[];
+extern const char D_004DC260[];
+extern const char D_004DC268[];
+#define D_004D85B0 0.4f
+extern float s_aEyeIdling[22][4];
+enum LookEyeComponent { EYE_YAW, EYE_PITCH, EYE_DURATION, EYE_STEP };
+#define D_004D85B4 0.005235988f
+extern float s_aEyeControl[15][4];
+extern float s_aEyeDefault[1][4];
+#define D_004D85B8 0.13962634f
+#define D_004D85C0 0.3f
+#define D_004D85C4 0.6f
+#define D_004D85BC 0.13962634f
+
+void *LOOK_eye_cont(LookJointWork *work, void *channels, LookCharacter *actor, int side)
+{
+    Matrix4 jointMatrix;
+    Matrix4 rootMatrix;
+    LookAlignedVector4 targetPlace;
+    Vector4 localPlace;
+    Vector4 angles;
+    LookJointElement *element;
+    LookEyeState *eyes;
+    LookAngleView *view;
+    float eyeWeight;
+    float yawScale;
+    float pitchScale;
+    float horizontalDistance;
+    float step;
+    int controlled;
+    unsigned int mode;
+    LookCharacter *owner;
+    LookModelRecord *model;
+
+    owner = actor->eyeOwner;
+    if (owner != 0)
+        actor = owner;
+    if (actor != 0) {
+    eyeWeight = actor->worldPosition.w;
+    controlled = 0;
+    element = work->elements + work->jointIndex;
+    eyes = actor->eyes;
+    view = (LookAngleView *)actor;
+    pitchScale = 1.0f;
+    yawScale = pitchScale;
+    if (eyeWeight <= 0.0f)
+        eyeWeight = 1.0f;
+    model = actor->model;
+    if (model != 0) {
+        const char *name = model->name;
+        if (strstr(name, D_004DC258) ||
+            strstr(name, D_004DC260) ||
+            strstr(name, D_004DC268)) {
+            pitchScale *= D_004D85B0;
+            yawScale *= D_004D85B0;
+        }
+    }
+    mode = actor->eyeMode;
+    switch (mode) {
+    case 1:
+        look_limit_add(&eyes[side].yaw, s_aEyeIdling[eyes[side].frame][EYE_YAW],
+                       s_aEyeIdling[eyes[side].frame][EYE_STEP]);
+        look_limit_add(&eyes[side].pitch, s_aEyeIdling[eyes[side].frame][EYE_PITCH],
+                       s_aEyeIdling[eyes[side].frame][EYE_STEP]);
+        eyes[side].timer++;
+        if (eyes[side].timer >= (int)s_aEyeIdling[eyes[side].frame][EYE_DURATION]) {
+            eyes[side].timer = 0;
+            eyes[side].frame++;
+            if (s_aEyeIdling[eyes[side].frame][EYE_DURATION] < 0.0f)
+                eyes[side].frame = 0;
+        }
+        controlled = 1;
+        break;
+    case 14:
+        yawScale = D_004D85B4;
+        yawScale = eyeWeight * yawScale;
+        look_limit_add(&eyes[side].yaw, actor->eyeYaw, yawScale);
+        look_limit_add(&eyes[side].pitch, actor->eyePitch, yawScale);
+        controlled = 1;
+        break;
+    case 7:
+    case 8:
+    case 9:
+        if (side != 0)
+            yawScale = -yawScale;
+        /* fall through */
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 10:
+    case 11:
+    case 12:
+        look_limit_add(&eyes[side].yaw,
+                       s_aEyeControl[mode][EYE_YAW] * yawScale,
+                       s_aEyeControl[mode][EYE_STEP]);
+        look_limit_add(&eyes[side].pitch,
+                       s_aEyeControl[actor->eyeMode][EYE_PITCH] * pitchScale,
+                       s_aEyeControl[actor->eyeMode][EYE_STEP]);
+        controlled = 1;
+        break;
+    case 13:
+        controlled = 1;
+        break;
+    case 0:
+        break;
+    }
+    if (!controlled) {
+        look_limit_add(&eyes[side].yaw, s_aEyeDefault[0][EYE_YAW], s_aEyeDefault[0][EYE_STEP]);
+        look_limit_add(&eyes[side].pitch, s_aEyeDefault[0][EYE_PITCH], s_aEyeDefault[0][EYE_STEP]);
+    }
+    if (look_get_place(actor, &targetPlace) == 0) {
+        targetPlace.v.w = 1.0f;
+        look_copy_matrix(jointMatrix, work->matrixBuffer[work->jointIndex - 1]);
+        look_copy_matrix(rootMatrix, work->rootMatrix);
+        jointMatrix[0][3] = 0.0f;
+        jointMatrix[1][3] = 0.0f;
+        jointMatrix[2][3] = 0.0f;
+        rootMatrix[0][3] = 0.0f;
+        rootMatrix[1][3] = 0.0f;
+        rootMatrix[2][3] = 0.0f;
+        xglMatrixMul(jointMatrix, rootMatrix, jointMatrix);
+        xglMatrixInverse(jointMatrix, jointMatrix);
+        xglVectorMulMat(&localPlace, jointMatrix, &targetPlace.v);
+        localPlace.z += s_fEyeOffset;
+        angles.y = xglAtan2(localPlace.z, localPlace.x);
+        horizontalDistance = __builtin_sqrtf(localPlace.z * localPlace.z +
+                                             localPlace.x * localPlace.x);
+        step = D_004D85B8;
+        step = eyeWeight * step;
+        angles.z = xglAtan2(localPlace.y, horizontalDistance);
+        look_limit_add(&view->lookAngles[side][0], angles.y, step);
+        look_limit_add(&view->lookAngles[side][3], angles.z, step);
+        element->rotation[1] -= view->lookAngles[side][0] * D_004D85C0 * D_004D85C4;
+        element->rotation[0] += view->lookAngles[side][3] * D_004D85C0 * D_004D85C0;
+    } else {
+        step = D_004D85BC;
+        step = eyeWeight * step;
+        look_limit(&view->lookAngles[side][0], step);
+        look_limit(&view->lookAngles[side][3], step);
+        element->rotation[1] -= view->lookAngles[side][0] * D_004D85C0 * D_004D85C4;
+        element->rotation[0] += view->lookAngles[side][3] * D_004D85C0 * D_004D85C0;
+    }
+    element->rotation[1] += view->eyeAngles[side][2];
+    element->rotation[0] += view->eyeAngles[side][3];
+    }
+    return channels;
+}
