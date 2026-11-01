@@ -206,7 +206,96 @@ typedef struct MCamPointParams {
     MCamCoordOffset coordOffset;
 } MCamPointParams;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_cam", MCamTakeControl);
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+extern void xglCameraInit(StudioCamera *camera);
+extern const char D_00A50EC8[];
+typedef Vector4 MCamVec __attribute__((aligned(16)));
+typedef struct MCamSavedCamera {
+    unsigned char unmodeled_000[0xA0];
+    Vector4 rotation;                  /* +0x0A0 */
+    unsigned char unmodeled_0b0[0xD0 - 0xB0];
+    MCamVec position;                  /* +0x0D0 */
+    unsigned char unmodeled_0e0[0x5F0 - 0xE0];
+} MCamSavedCamera;
+typedef struct MCamParamsView {
+    int mode;                          /* +0x000 */
+    unsigned char unmodeled_004[0x10 - 0x4];
+    MCamVec position;                  /* +0x010 */
+    unsigned char unmodeled_020[0x70 - 0x20];
+    int state70;                       /* +0x070 */
+    unsigned char unmodeled_074[0xB0 - 0x74];
+    int stateB0;                       /* +0x0B0 */
+    unsigned char unmodeled_0b4[0xC0 - 0xB4];
+    MCamVec direction;                 /* +0x0C0 */
+    unsigned char unmodeled_0d0[0x120 - 0xD0];
+    int state120;                      /* +0x120 */
+    unsigned char unmodeled_124[0x1F4 - 0x124];
+    float fov;                         /* +0x1F4 */
+    unsigned char unmodeled_1f8[0x5B0 - 0x1F8];
+} MCamParamsView;
+#define MCAM_VU0_TRIG(addr, out, in)                 \
+    __asm__ __volatile__(                            \
+        "mfc1    $8, %1\n\t"                         \
+        "qmtc2.ni $8, $vf4\n\t"                      \
+        "vcallms " #addr "\n\t"                      \
+        "qmfc2.i $8, $vf1\n\t"                       \
+        "mtc1    $8, %0\n\t"                         \
+        : "=f"(out)                                  \
+        : "f"(in)                                    \
+        : "$8", "memory")
+
+int MCamTakeControl(void)
+{
+    extern MCamParamsView camParamsView __asm__("camParams");
+    extern MCamSavedCamera sysCamBuffView __asm__("sysCamBuff");
+    MCamSavedCamera *saved;
+    MCamVec direction;
+    float sinY;
+    float cosX;
+    float sinX;
+    float cosY;
+    float cosX2;
+    unsigned long long dlo;
+    unsigned long long dhi;
+
+    if (camFlags & 1) {
+        MOutputDebugStringWarn(D_00A50EC8);
+        return 0;
+    }
+    sysCam = xglStudioGetCamera2(0);
+    saved = &sysCamBuffView;
+    bcopy(sysCam, &sysCamBuffView, 0x5F0);
+    xglCameraInit(sysCam);
+    sysCam->active = 1;
+    sysCam->state = 1;
+    memset(&camParamsView, 0, 0x5B0);
+    camParamsView.mode = 0;
+    camParamsView.position = saved->position;
+    camParamsView.state70 = 0;
+    MCAM_VU0_TRIG(0x20, sinY, saved->rotation.y);
+    MCAM_VU0_TRIG(0xe8, cosX, saved->rotation.x);
+    direction.x = -sinY * cosX;
+    MCAM_VU0_TRIG(0x20, sinX, saved->rotation.x);
+    direction.y = sinX;
+    MCAM_VU0_TRIG(0xe8, cosY, saved->rotation.y);
+    MCAM_VU0_TRIG(0xe8, cosX2, saved->rotation.x);
+    direction.z = -cosY * cosX2;
+    __asm__ __volatile__(
+        "lqc2    $vf1, 0(%0)\n\t"
+        "lqc2    $vf2, 0(%1)\n\t"
+        "vadd.xyz $vf1, $vf1, $vf2\n\t"
+        "sqc2    $vf1, 0(%0)\n\t"
+        : : "r"(&direction), "r"(&saved->position) : "memory");
+    dlo = ((unsigned long long *)&direction)[0];
+    dhi = ((unsigned long long *)&direction)[1];
+    camFlags |= 1;
+    camParamsView.fov = 0.6981317f;
+    ((unsigned long long *)&camParamsView.direction)[0] = dlo;
+    ((unsigned long long *)&camParamsView.direction)[1] = dhi;
+    camParamsView.state120 = 0;
+    camParamsView.stateB0 = 0;
+    return 1;
+}
 
 int MCamReleaseControl(void)
 {
