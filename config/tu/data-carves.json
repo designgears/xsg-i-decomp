@@ -12440,22 +12440,29 @@
     {
      "range": [
       "0x00a4f370",
-      "0x00a4f5f0"
+      "0x00a4f710"
      ],
      "generated": [
       "0x00a4f370",
-      "0x00a4f5ec"
+      "0x00a4f710"
      ],
      "generated_by": [
       "CGPBattleFaseProc",
       "CGPCommFaseSub",
-      "CGPEndFaseProc"
+      "CGPEndFaseProc",
+      "CardGameProc"
      ],
      "c_owned_symbols": [
       "jtbl_00A4F370",
       "jtbl_00A4F420",
       "jtbl_00A4F4C0",
-      "jtbl_00A4F5C0"
+      "jtbl_00A4F5C0",
+      "jtbl_00A4F5F0",
+      "jtbl_00A4F620",
+      "jtbl_00A4F640",
+      "jtbl_00A4F680",
+      "jtbl_00A4F6B0",
+      "jtbl_00A4F6E0"
      ],
      "also_referenced_by_c": [],
      "basis": {

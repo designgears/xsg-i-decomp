@@ -7859,4 +7859,604 @@ afterRepeat:
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CardGameProc);
+typedef struct CardListEntry {
+    s16 cardId;
+    u16 count;
+} CardListEntry;
+extern void CaedGameWinMode(s32 outcome, CardGameWork *work, s32 round);
+extern void CardEnemyMove(s32 side, CardGameWork *work);
+extern void CardEnemySet(s32 side, CardGameWork *work);
+extern void CardPlayDispBattle(s32 side, CardGameWork *work, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispCursor(s32 mode, CardGameWork *work, Matrix4 matrix);
+extern void CardPlayDispDispose(s32 side, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispHand(s32 side, s32 faceUp, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispJunk(s32 side, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispOperation(s32 side, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispSute(s32 side, CardPlaySide *ownSide, Matrix4 matrix);
+extern void CardPlayDispYama(s32 side, CardPlaySide *ownSide, Matrix4 matrix);
+extern s32 NewCMPGameModeExit(s32 player, CardGameWork *work, s32 round);
+extern void xglMatrixRotX(Matrix4 destination, const Matrix4 source, float angle);
+typedef struct CardListWindow {
+    s16 active;
+    u8 baseColor;                  
+    u8 cursorColor;                
+    s8 mode;                       
+    s8 cursor;                     
+    s16 x;                         
+    s16 y;                         
+    s16 lineHeight;                
+    s16 top;                       
+    s16 columns;                   
+    s16 rows;                      
+    s16 count;                     
+    CardListEntry entries[151];    
+} CardListWindow;
+#define CGP_FLAG_SIDE1_AUTO 0x20
+#define CGP_FLAG_SIDE0_AUTO 0x40
+#define CGP_SE_DECIDE 1
+#define CGP_SE_BUZZER 5
+#define CGP_SE_CANCEL 2
+#define CGP_PAD_CONFIRM 0x0020
+#define CGP_PAD_CANCEL 0x0040        
+#define CGP_AREA_ENEMY_DISPOSAL 2
+#define CGP_AREA_ENEMY_BATTLE 4
+#define CGP_AREA_PLAYER_BATTLE 5
+#define CGP_AREA_PLAYER_DISPOSAL 6
+#define CGP_ERROR_MESS_TEXTURE 0x01DB5800
+#define CARD_PAD_INPUT0_WORD 0x2D68
+#define CARD_CMD_INPUT_WORDS (sizeof(CardCommandInput) / sizeof(u16))
+#define CARD_PAD_UP_PAIR (-0x4000)
+#define CGP_OPE_DISPOSE_LOCK_FLAG4 145
+#define CGP_OPE_DISPOSE_LOCK_ANY 146
+#define CGP_OPE_DISPOSE_LOCK_FLAG2 147
+#define CGP_OPE_HANDS_FACE_DOWN 121
+#define CGP_PAD_FACE_BUTTONS 0x00F0
+#define CGP_PAD_SQUARE 0x0080
+#define CGP_PAD_START 0x0800
+#define CGP_PAD_ROTATE_STAGE 0x0001
+#define CGP_FLAG_HIDE_HANDS 0x80
+#define CGP_GAME_MESS_MODEL 0x01DA8100
+#define PI_F 3.1415927f
+#define CARD_PAD_FLIP(pad, mask, turned)                                     \
+    turned = ((*(pad) & 0xF000) << 2) & mask;                                 \
+    *(pad) = (((*(pad) & 0xF000) >> 2) & 0x3000) | (turned | (*(pad) & 0x0FFF))
+
+s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round)
+{
+    CardEffectMatrix matrix;
+    float offset[4];
+    float vec[4];
+    CGPBoardArea place;
+    CardEffectMatrix cursorMatrix;
+    s32 result;
+    s32 side;
+    u16 pressed;
+    u16 cursorPressed;
+    s32 faceUp;
+    s32 i;
+    u16 cpuTurn;
+    u16 cpuFoe;
+
+    result = 0;
+    switch ((s16) work->command.phase) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 5:
+    case 6:
+    case 11:
+        side = 0;
+        pressed = work->command.input[0].pressed;
+        break;
+    default:
+        pressed = work->command.input[1].pressed;
+        side = 1;
+        break;
+    }
+    if (work->rotStageId != 0) {
+        s32 mask = CARD_PAD_UP_PAIR;
+        u16 *playerWords = (u16 *) work;
+        u16 *enemyWords = playerWords + CARD_CMD_INPUT_WORDS;
+        u16 turned;
+        s32 k;
+        s32 word;
+
+        for (k = 0; k < 3; k++) {
+            u16 *playerPad;
+            u16 *enemyPad;
+
+            word = CARD_PAD_INPUT0_WORD + k;
+            playerPad = playerWords + word;
+            enemyPad = enemyWords + word;
+            CARD_PAD_FLIP(playerPad, mask, turned);
+            CARD_PAD_FLIP(enemyPad, mask, turned);
+        }
+    }
+    if (mode == 0) {
+        offset[0] = 0.0f;
+        offset[1] = 1.95f;
+        offset[2] = 0.1f;
+        offset[3] = 1.0f;
+        vec[0] = 1.0f;
+        vec[1] = 0.85f;
+        vec[2] = 1.0f;
+        vec[3] = 1.0f;
+        xglMatrixUnit(matrix.m);
+        xglMatrixTrans(matrix.m, (const float (*)[4]) matrix.m, offset);
+        xglMatrixScale(matrix.m, (const float (*)[4]) matrix.m, vec);
+        nmlModelSetPlace(matrix.m);
+        if (side == 0) {
+            nmlModelSetLight(Player1Color, asDir);
+        } else {
+            nmlModelSetLight(Player2Color, asDir);
+        }
+        nmlModelSetTexture((void *) CGP_ERROR_MESS_TEXTURE);
+        nmlModelEntryCard((void *) CGP_GAME_MESS_MODEL);
+        if (work->errorMessKind != 0) {
+            u16 answer = work->command.input[0].pressed;
+
+            if (work->errorMessCode != 0) {
+                answer = work->command.input[1].pressed;
+            }
+            if (answer & CGP_PAD_FACE_BUTTONS) {
+                xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                work->errorMessKind = 0;
+                work->flags &= ~CGP_FLAG_ERROR_PLUS;
+            }
+        } else if (work->command.interruptMessId != 0) {
+            if (work->command.interruptMessTimer != 0) {
+                work->command.interruptMessTimer--;
+            } else {
+                work->command.interruptMessId = 0;
+                work->command.interruptMessTimer = 0;
+                work->interruptMess = 0;
+            }
+        } else {
+            if ((u16) (work->command.flowRequest - 3) >= 3) {
+                if (CardPlayYamaCnt(&work->enemy) == 0) {
+                    work->command.step = 0;
+                    work->command.flowRequest = 3;
+                } else if (CardPlayYamaCnt(&work->player) == 0) {
+                    work->command.step = 0;
+                    work->command.flowRequest = 4;
+                }
+            }
+            if ((s16) work->command.phase != 5 && (s16) work->command.phase != 12) {
+                place.area = CGP_AREA_PLAYER_BATTLE;
+                for (i = 0; i < 4; i++) {
+                    place.slot = i;
+                    CGPHPCheckSub(work->definitions, &work->player, &work->player.battle[i].battle, &place);
+                }
+                place.area = CGP_AREA_PLAYER_DISPOSAL;
+                for (i = 0; i < 4; i++) {
+                    place.slot = i;
+                    CGPHPCheckSub(work->definitions, &work->player, &work->player.disposal[i].battle, &place);
+                }
+                place.area = CGP_AREA_ENEMY_BATTLE;
+                for (i = 0; i < 4; i++) {
+                    place.slot = i;
+                    CGPHPCheckSub(work->definitions, &work->enemy, &work->enemy.battle[i].battle, &place);
+                }
+                place.area = CGP_AREA_ENEMY_DISPOSAL;
+                for (i = 0; i < 4; i++) {
+                    place.slot = i;
+                    CGPHPCheckSub(work->definitions, &work->enemy, &work->enemy.disposal[i].battle, &place);
+                }
+            }
+            if (work->command.flowRequest != 0) {
+                switch (work->command.flowRequest) {
+                case 1:
+                    CGPDispErrorMess(-1, 0);
+                    if (pressed & CGP_PAD_CONFIRM) {
+                        CardPlaySide *turnSide = &work->player;
+                        s32 blocked;
+                        s32 slot;
+
+                        xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                        switch ((s16) work->command.phase) {
+                        case 8:
+                            turnSide = &work->enemy;
+                            /* fall through */
+                        case 1:
+                            blocked = 0;
+                            if (CardPlayCntOpe(&work->player, CGP_OPE_DISPOSE_LOCK_ANY) != 0 || CardPlayCntOpe(&work->enemy, CGP_OPE_DISPOSE_LOCK_ANY) != 0) {
+                                if (CardPlayBattleCnt(turnSide) < 4 && CardPlayDisposeCnt(turnSide) > 0) {
+                                    CGPSetErrorMessPlus(1, work, 14, CGP_OPE_DISPOSE_LOCK_ANY);
+                                    xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+                                    blocked = 1;
+                                }
+                            }
+                            if (CardPlayCntOpe(&work->player, CGP_OPE_DISPOSE_LOCK_FLAG4) != 0 || CardPlayCntOpe(&work->enemy, CGP_OPE_DISPOSE_LOCK_FLAG4) != 0) {
+                                if (CardPlayBattleCnt(turnSide) < 4 && CardPlayDisposeCnt(turnSide) > 0) {
+                                    blocked = 0;
+                                    for (slot = 0; slot < 4; slot++) {
+                                        if (turnSide->disposal[slot].battle.layers[0].cardId >= 0 &&
+                                            (work->definitions[turnSide->disposal[slot].battle.layers[0].cardId].flags & 4)) {
+                                            CGPSetErrorMessPlus(1, work, 14, CGP_OPE_DISPOSE_LOCK_FLAG4);
+                                            xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+                                            blocked = 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (CardPlayCntOpe(&work->player, CGP_OPE_DISPOSE_LOCK_FLAG2) != 0 || CardPlayCntOpe(&work->enemy, CGP_OPE_DISPOSE_LOCK_FLAG2) != 0) {
+                                if (CardPlayBattleCnt(turnSide) < 4 && CardPlayDisposeCnt(turnSide) > 0) {
+                                    blocked = 0;
+                                    for (slot = 0; slot < 4; slot++) {
+                                        if (turnSide->disposal[slot].battle.layers[0].cardId >= 0 &&
+                                            (work->definitions[turnSide->disposal[slot].battle.layers[0].cardId].flags & 2)) {
+                                            CGPSetErrorMessPlus(1, work, 14, CGP_OPE_DISPOSE_LOCK_FLAG2);
+                                            xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+                                            blocked = 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            work->command.flowRequest = 0;
+                            if (!blocked) {
+                                CGPNextTurnSub(work);
+                            }
+                            break;
+                        case 4:
+                            CGPCommFaseEndSub(0, &work->player, work);
+                            work->command.flowRequest = 0;
+                            CGPNextTurnSub(work);
+                            break;
+                        case 11:
+                            CGPCommFaseEndSub(1, &work->enemy, work);
+                            work->command.flowRequest = 0;
+                            CGPNextTurnSub(work);
+                            break;
+                        default:
+                            work->command.flowRequest = 0;
+                            CGPNextTurnSub(work);
+                            break;
+                        }
+                    } else if (pressed & CGP_PAD_CANCEL) {
+                        work->command.flowRequest = 0;
+                        xglSoundEffectNormalID(CGP_SE_CANCEL, 0);
+                    }
+                    break;
+                case 3:
+                    if (work->fase == 9) {
+                        CaedGameWinMode(1, work, round);
+                    } else {
+                        CaedGameWinMode(0, work, round);
+                    }
+                    result = 1;
+                    break;
+                case 4:
+                    if (work->fase == 9) {
+                        CaedGameWinMode(2, work, round);
+                    } else {
+                        CaedGameWinMode(-1, work, round);
+                    }
+                    result = 2;
+                    break;
+                case 5:
+                    CaedGameWinMode(3, work, round);
+                    break;
+                case 6:
+                {
+                    s32 exitResult = NewCMPGameModeExit(work->menuPlayer, work, round);
+
+                    if (exitResult < 0) {
+                        work->command.flowRequest = 0;
+                    } else if (exitResult != 0) {
+                        if (CGPChkFaseLock(work)) {
+                            work->command.flowRequest = 1;
+                            xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                        } else {
+                            xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+                        }
+                    }
+                    break;
+                }
+                }
+            } else {
+                if (pressed & CGP_PAD_SQUARE) {
+                    if (CGPChkFaseLock(work)) {
+                        work->command.flowRequest = 1;
+                        xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                    } else {
+                        xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+                    }
+                }
+                if (work->command.input[0].pressed & CGP_PAD_START) {
+                    work->command.flowRequest = 6;
+                    work->menuPlayer = 0;
+                    work->command.exitMenuSub = -1;
+                    work->command.exitMenuItem = 0;
+                    xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                } else if (work->command.input[1].pressed & CGP_PAD_START) {
+                    work->command.flowRequest = 6;
+                    work->menuPlayer = 1;
+                    work->command.exitMenuSub = -1;
+                    work->command.exitMenuItem = 0;
+                    xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+                }
+                if (work->fadeOutFlag != 0) {
+                    work->fadeOutFlag = 0;
+                    CGPNextTurnSub(work);
+                } else {
+                    switch ((s16) work->command.phase) {
+                    case 0:
+                        CGPDrawFaseProc(0, work, &work->player, &work->enemy);
+                        break;
+                    case 1:
+                        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+                            CardEnemyMove(0, work);
+                        } else {
+                            CGPMoveFaseProc(0, work, &work->player);
+                        }
+                        break;
+                    case 3:
+                        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+                            CardEnemySet(0, work);
+                        } else {
+                            CGPSetFaseProc(0, work, &work->player);
+                        }
+                        break;
+                    case 4:
+                        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+                            cpuFoe = 1;
+                        } else {
+                            cpuFoe = 0;
+                        }
+                        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+                            cpuTurn = 1;
+                        } else {
+                            cpuTurn = 0;
+                        }
+                        CGPCommFaseSub(1, work, cpuTurn, cpuFoe);
+                        break;
+                    case 5:
+                        CGPBattleFaseProc(0, work);
+                        break;
+                    case 6:
+                        CGPEndFaseProc(0, work, window);
+                        break;
+                    case 7:
+                        CGPDrawFaseProc(1, work, &work->enemy, &work->player);
+                        break;
+                    case 8:
+                        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+                            CardEnemyMove(1, work);
+                        } else {
+                            CGPMoveFaseProc(1, work, &work->enemy);
+                        }
+                        break;
+                    case 10:
+                        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+                            CardEnemySet(1, work);
+                        } else {
+                            CGPSetFaseProc(1, work, &work->enemy);
+                        }
+                        break;
+                    case 9:
+                        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+                            cpuFoe = 1;
+                        } else {
+                            cpuFoe = 0;
+                        }
+                        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+                            cpuTurn = 1;
+                        } else {
+                            cpuTurn = 0;
+                        }
+                        CGPCommFaseSub(1, work, cpuTurn, cpuFoe);
+                        break;
+                    case 2:
+                    case 11:
+                        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+                            cpuTurn = 1;
+                        } else {
+                            cpuTurn = 0;
+                        }
+                        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+                            cpuFoe = 1;
+                        } else {
+                            cpuFoe = 0;
+                        }
+                        CGPCommFaseSub(0, work, cpuTurn, cpuFoe);
+                        break;
+                    case 12:
+                        CGPBattleFaseProc(1, work);
+                        break;
+                    case 13:
+                        CGPEndFaseProc(1, work, window);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    xglMatrixUnit(matrix.m);
+    switch ((s16) work->command.phase) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 5:
+    case 6:
+    case 11:
+        cursorPressed = work->command.input[0].pressed;
+        break;
+    default:
+        cursorPressed = work->command.input[1].pressed;
+        break;
+    }
+    if (work->rotStageFlag != 0) {
+        float dy = -2.0f;
+        float dx = -0.09f;
+
+        work->rotStageFlag--;
+        if (work->rotStageActive == 0) {
+            dy = 2.0f;
+            dx = 0.09f;
+        }
+        work->rotStageVector[1] += dy;
+        work->rotStageVector[0] += dx;
+    }
+    if (work->rotStageCooldown == 0) {
+        if (cursorPressed & CGP_PAD_ROTATE_STAGE) {
+            if ((s16) work->command.phase == 5 || (s16) work->command.phase == 12) {
+                xglSoundEffectNormalID(CGP_SE_BUZZER, 0);
+            } else {
+                work->rotStageCooldown = 20;
+                work->rotStageId = (work->rotStageId + 1) & 1;
+                xglSoundEffectNormalID(CGP_SE_DECIDE, 0);
+            }
+        }
+    } else {
+        work->rotStageCooldown--;
+        work->rotStageVector[2] += -9.0f;
+    }
+    vec[0] = vec[1] = 0.0f;
+    vec[2] = work->rotStageVector[0];
+    if (!(work->flags & CGP_FLAG_ERROR_PLUS) && work->command.commandIndex == 0) {
+        vec[2] = work->rotStageVector[0] - work->command.slideOffset;
+    }
+    vec[3] = 1.0f;
+    xglMatrixTrans(matrix.m, (const float (*)[4]) matrix.m, vec);
+    xglMatrixRotX(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[1] / 180.0f * PI_F);
+    xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[2] / 180.0f * PI_F);
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r" ((CardEffectMatrix *) work->models[4].matrix), "r" (&matrix)
+        : "$2", "memory");
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r" ((CardEffectMatrix *) work->models[5].matrix), "r" (&matrix)
+        : "$2", "memory");
+    xglMatrixRotZ(work->models[15].matrix, (const float (*)[4]) matrix.m, -work->rotStageVector[2] / 180.0f * PI_F);
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r" (&cursorMatrix), "r" (&matrix)
+        : "$2", "memory");
+    faceUp = 0;
+    if (!(work->flags & CGP_FLAG_HIDE_HANDS)) {
+        if (work->flags & CGP_FLAG_SIDE0_AUTO) {
+            faceUp = 1;
+        } else {
+            switch ((s16) work->command.phase) {
+            case 4:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 12:
+            case 13:
+                faceUp = 1;
+                break;
+            case 2:
+            case 11:
+                if ((s16) work->command.phaseTimer >= 10) {
+                    faceUp = 1;
+                }
+                break;
+            }
+        }
+    }
+    if (CardPlayCntOpe(&work->player, CGP_OPE_HANDS_FACE_DOWN) != 0 || CardPlayCntOpe(&work->enemy, CGP_OPE_HANDS_FACE_DOWN) != 0) {
+        faceUp = 0;
+    }
+    CardPlayDispHand(0, faceUp, &work->player, matrix.m);
+    CardPlayDispBattle(0, work, &work->player, matrix.m);
+    CardPlayDispDispose(0, &work->player, matrix.m);
+    CardPlayDispOperation(0, &work->player, matrix.m);
+    CardPlayDispYama(0, &work->player, matrix.m);
+    CardPlayDispSute(0, &work->player, matrix.m);
+    CardPlayDispJunk(0, &work->player, matrix.m);
+    CardDispEffect(0, work, &matrix);
+    xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, PI_F);
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r" ((CardEffectMatrix *) work->models[6].matrix), "r" (&matrix)
+        : "$2", "memory");
+    __asm__ __volatile__(
+        "lq $2, 0(%1)\n"
+        "sq $2, 0(%0)\n"
+        "lq $2, 16(%1)\n"
+        "sq $2, 16(%0)\n"
+        "lq $2, 32(%1)\n"
+        "sq $2, 32(%0)\n"
+        "lq $2, 48(%1)\n"
+        "sq $2, 48(%0)\n"
+        :
+        : "r" ((CardEffectMatrix *) work->models[7].matrix), "r" (&matrix)
+        : "$2", "memory");
+    faceUp = 0;
+    if (!(work->flags & CGP_FLAG_HIDE_HANDS)) {
+        if (work->flags & CGP_FLAG_SIDE1_AUTO) {
+            faceUp = 1;
+        } else {
+            switch ((s16) work->command.phase) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 5:
+            case 6:
+            case 11:
+                faceUp = 1;
+                break;
+            case 4:
+            case 9:
+                if ((s16) work->command.phaseTimer >= 10) {
+                    faceUp = 1;
+                }
+                break;
+            }
+        }
+    }
+    if (CardPlayCntOpe(&work->player, CGP_OPE_HANDS_FACE_DOWN) != 0 || CardPlayCntOpe(&work->enemy, CGP_OPE_HANDS_FACE_DOWN) != 0) {
+        faceUp = 0;
+    }
+    CardPlayDispHand(1, faceUp, &work->enemy, matrix.m);
+    CardPlayDispBattle(1, work, &work->enemy, matrix.m);
+    CardPlayDispDispose(1, &work->enemy, matrix.m);
+    CardPlayDispOperation(1, &work->enemy, matrix.m);
+    CardPlayDispYama(1, &work->enemy, matrix.m);
+    CardPlayDispSute(1, &work->enemy, matrix.m);
+    CardPlayDispJunk(1, &work->enemy, matrix.m);
+    CardDispEffect(1, work, &matrix);
+    CardPlayDispCursor(mode, work, cursorMatrix.m);
+    CardPlayDispInfo(work);
+    return result;
+}

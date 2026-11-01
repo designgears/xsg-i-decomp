@@ -175,7 +175,15 @@ typedef struct CardCommandControl {
     u16 commandIndex;              /* +0x0C */
     u8 unmodeled_0E[2];
     CardCommandInput input[2];     /* +0x10: player, enemy */
-    u8 unmodeled_20[8];
+    union {
+        u8 unmodeled_20[8];
+        struct {
+            s16 interruptMessId;   /* +0x20 */
+            s16 interruptMessTimer; /* +0x22 */
+            s16 exitMenuItem;      /* +0x24 */
+            s16 exitMenuSub;       /* +0x26 */
+        };
+    };
     u16 slideDirection;            /* +0x28: nonzero slides the offset down (CardMainProc 0x00a0859c lhu) */
     u16 slideTimer;                /* +0x2A: frames the slide still runs (0x00a08594 lhu, 0x00a085bc sh) */
     float slideOffset;             /* +0x2C: CardMainProc steps it by 0.1 per frame (0x00a085cc lwc1,
@@ -343,16 +351,16 @@ typedef struct CardGameWork {
     u8 unmodeled_5BE4[0x5BF0 - 0x5BE4];
     CardEffect effects[64];        /* +0x5BF0: card-game effect table */
     CardModelEntry models[16];     /* +0x6BF0: models drawn after every fase (0x00a083a0 `addiu $16,$30,0x6BF0`) */
-    u8 unmodeled_70F0;
+    union { u8 unmodeled_70F0; u8 rotStageFlag; };       /* +0x70F0 */
     u8 rotStageCooldown;           /* +0x70F1: nonzero while a pending CGPRotStageSub request is in effect;
                                     * CGPRotStageSub sets it to 20 when it stores a new rotStageId */
-    u8 unmodeled_70F2[0x70F3 - 0x70F2];
+    union { u8 unmodeled_70F2[0x70F3 - 0x70F2]; u8 rotStageActive; }; /* +0x70F2 */
     u8 rotStageId;                 /* +0x70F3: stage id CGPRotStageSub last stored for a rotation request */
-    u8 unmodeled_70F4[0x7100 - 0x70F4];
+    union { u8 unmodeled_70F4[0x7100 - 0x70F4]; float rotStageVector[3]; }; /* +0x70F4 */
     u16 modelFadeInTimer;          /* +0x7100: ticks left for CardModelFadeIn (ov10/tu002) to run */
     u16 fadeOutTimer;              /* +0x7102: ticks left for CardFadeOut (ov10/tu002) to run */
     u8 fadeOutStep;                /* +0x7104: amount CardFadeOut subtracts per tick (read with lbu) */
-    u8 unmodeled_7105[0x7106 - 0x7105];
+    union { u8 unmodeled_7105[0x7106 - 0x7105]; u8 fadeOutFlag; }; /* +0x7105 */
     u8 fadeOutColor[4];            /* +0x7106: one level per model slot, CardFadeOut clamps each at zero */
     u8 unmodeled_710A[0x7110 - 0x710A];
     float modelFadeStep;           /* +0x7110: amount CardModelFadeIn adds per tick */
