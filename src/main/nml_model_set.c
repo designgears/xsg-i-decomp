@@ -1,6 +1,7 @@
 #include "common.h"
 #include "shared.h"
 #include "nml_model_set.h"
+#include "nml_packet_add.h"
 
 /* Types recovered upstream (origin/master); kept for reference. */
 /*
@@ -3409,7 +3410,414 @@ void nmlModelEntryCard(NmlModelEc *model)
     nmlModelClear();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelRenderProreal);
+typedef struct StageThread {
+    u8 unmodeled_00[0x0d];
+    u8 wait_kind;            
+    u8 unmodeled_0e[0x14 - 0x0e];
+    void (*entry)(struct JThreadHandle *thread); 
+    SceneMethod *method;     
+    u8 unmodeled_1c[0x24 - 0x1c];
+    unsigned int flags;      
+    u8 unmodeled_28[0x3c - 0x28];
+    u16 resume_frames;       
+    u16 frame_depth;         
+} StageThread;
+typedef union NmlModelBlockBounds {
+    NmlModelBlock block;
+    struct {
+        unsigned char unmodeled_00[0x70];
+        Vector4 boxMinOffset; 
+        Vector4 boxMaxOffset; 
+    } bounds;
+} NmlModelBlockBounds;
+typedef struct NmlQwordRp {
+    unsigned long long lo;
+    unsigned long long hi;
+} NmlQwordRp;
+typedef union NmlVector4OverlayRp {
+    Vector4 v;
+    NmlQwordRp q;
+} NmlVector4OverlayRp;
+typedef struct NmlRenderVolumeRp {
+    unsigned char unmodeled_000[0x160];
+    float planeNormalX; 
+    unsigned char unmodeled_164[4];
+    float planeNormalZ; 
+    unsigned char unmodeled_16c[0x190 - 0x16c];
+    Vector4 origin; 
+    Vector4 boundsMin; 
+    Vector4 boundsMax; 
+    unsigned char unmodeled_1c0[0x1c8 - 0x1c0];
+    u64 alpha; 
+} NmlRenderVolumeRp;
+typedef struct NmlPartPixelAlphaRp {
+    short alpha;
+    short partId;
+} NmlPartPixelAlphaRp;
+typedef struct NmlStealthPacketRp {
+    unsigned char unmodeled_00[0x0c];
+    float distanceSquared;
+    unsigned char unmodeled_10[0x10];
+    float unclassified_20;
+} NmlStealthPacketRp;
+typedef struct NmlProRealFieldsRp {
+    Matrix4 matrix_000;
+    Matrix4 inverseTransform;
+    
+    NmlVector4OverlayRp unmodeled_080[4];
+    NmlVector4OverlayRp unmodeled_0c0[4];
+    int unmodeled_100;
+    int unmodeled_104;
+    int unmodeled_108;
+    int unmodeled_10c;
+    short unmodeled_110;
+    short unmodeled_112;
+    short unmodeled_114;
+    short unmodeled_116;
+    int unmodeled_118;
+    int unmodeled_11c;
+    float unmodeled_120;
+    float unmodeled_124;
+    unsigned char unmodeled_128[8];
+    u64 textureWord;
+    u64 clampWord;
+    float textureUOffset;
+    float textureUScale;
+    float textureVOffset;
+    float textureVScale;
+    Vector4 transformOrigin;
+    Vector4 unmodeled_160;
+    NmlVector4OverlayRp unmodeled_170[2];
+    NmlVector4OverlayRp unmodeled_190[3];
+} NmlProRealFieldsRp;
+typedef struct NmlProRealRp {
+    NmlProRealFieldsRp fields;
+    int projection_entry;
+    unsigned char unmodeled_1c4[0x1c8 - 0x1c4];
+    u64 unmodeled_1c8;
+    u64 unmodeled_1d0;
+    unsigned char unmodeled_1d8[0x1e0 - 0x1d8];
+} NmlProRealRp;
+union NmlLayoutRp {
+    LayoutSlot slots[200];
+    unsigned long long qwords[100];
+    struct {
+        Matrix4 lightDirection; 
+        Matrix4 lightColor; 
+        Matrix4 place; 
+        Matrix4 inversePlace; 
+        Vector4 pointPosition[4]; 
+        Vector4 pointColor[4]; 
+        Matrix4 projectionMatrix; 
+        Vector4 fogColor; 
+        Vector4 fogPara; 
+        unsigned char unmodeled_1e0[0x1f0 - 0x1e0];
+        NmlVector4OverlayRp unmodeled_1f0; 
+        Vector4 multiplyColor; 
+        unsigned char unmodeled_210[0x234 - 0x210];
+        unsigned int packetFilterFlags;
+        int pixelAlpha;                     
+        unsigned char unmodeled_23c[4];
+        const char *texture;                
+        int texfunc;                        
+        u64 alpha;                          
+        u32 render_status;                  
+        int parent; 
+        Matrix4 *weightedMatrices; 
+        unsigned char unmodeled_25c[4];
+        NmlRenderVolumeRp *volume; 
+        NmlRenderVolumeRp *renderVolume; 
+        int texMapMode; 
+        float textureTransparency;
+        int texMapSize; 
+        float texMapWeight; 
+        int mapShadowPartCount; 
+        int renderLevel; 
+        NmlStealthPacketRp *stealthPackets[10]; 
+        unsigned char unmodeled_2a8[0x2b0 - 0x2a8];
+        unsigned int featureFlags;
+        int partPixelAlphaCount; 
+        unsigned char *clipMasks; 
+        unsigned char unmodeled_2bc[4];
+        float circleShadowScale; 
+        unsigned char unmodeled_2c4[4];
+        int stealthEntryCount; 
+        unsigned char unmodeled_2cc[4];
+        NmlPartPixelAlphaRp partPixelAlpha[4]; 
+        unsigned short mapShadowParts[8];    
+        unsigned char unmodeled_2f0[0x300 - 0x2f0];
+        float viewportAlpha[4];
+        int viewportFlags[4];
+    } fields;
+};
+typedef union NmlLayoutRp NmlLayoutRp;
+typedef struct NmlModelRp {
+    unsigned char unmodeled_000[0x3f];
+    signed char unclassified_3f;
+    int partCount; 
+    int blockCount;
+    int sampleCount; 
+    unsigned char unmodeled_04c[4];
+    int weightedMatrixOffset; 
+    unsigned char unmodeled_054[0x18];
+    int unclassified_6c;
+    unsigned char unmodeled_070[0x20];
+    Vector4 entryTranslation; 
+    int unclassified_a0;
+    unsigned char unmodeled_0a4[0x0c];
+    int blockOffsets[1];
+} NmlModelRp;
+typedef struct NmlAlphaGroupRp {
+    short firstBlock;
+    short blockCount;
+    float sortDistance;
+    u32 status;
+    union {
+        union NmlLayoutRp *layout; 
+        int address;
+    } owner;                       
+} NmlAlphaGroupRp;
+typedef struct NmlNonAlphaGroupRp {
+    union {
+        struct {
+            short firstBlock;
+            short blockCount;
+        };
+    };
+    unsigned char unmodeled_04[4];
+    unsigned int flags;
+    union {
+        NmlLayoutRp *layout;
+        int address;     
+    } owner;             
+} NmlNonAlphaGroupRp;
+typedef struct NmlModelBlockRp {
+    char name[0x20];
+    u32 flags;
+    int baseOffset;
+    int textOffset;
+    int partId; 
+    unsigned short matrixIndices[48]; 
+    float clipBounds[4]; 
+    unsigned char unmodeled_0a0[0x20];
+    u32 materialFlags;
+    unsigned char unmodeled_0c4[0x3c];
+    Vector4 multiplyColor; 
+    float translationX, translationY;
+    float translationStepX, translationStepY;
+    unsigned char unmodeled_120[0x4c];
+    signed char shapeMathParameter;
+    signed char shapeMode, shapeWeight;
+    unsigned char shapeFlags;
+    char materialName[32]; 
+} NmlModelBlockRp;
+typedef struct XglRenderResoRp {
+    unsigned char unmodeled_00[2];
+    short frame_psm;                   
+    short frame_width;                 
+    unsigned char unmodeled_06[2];
+} XglRenderResoRp;
+typedef struct XglRenderStateRp {
+    XglRenderResoRp reso;                
+    unsigned char unmodeled_08[0x08];
+    u16 width;                         
+    u16 height;                        
+    u16 flip_base;                     
+    unsigned char unmodeled_16[4];
+    u16 texture_buffer_base;            
+    unsigned char unmodeled_1c[4];
+    u16 display_buffer_base;            
+    u16 draw_buffer_base;               
+    XglRenderFadeCallback final_packet_callback[8]; 
+    XglRenderFadeCallback fade_callback; 
+    u32 render_status;                  
+    u32 frame_delta;                    
+    u32 frame_count;                    
+    u32 frame_status;                   
+    unsigned char scene_disabled;       
+    unsigned char unmodeled_59[3];
+} XglRenderStateRp;
+extern int nmlFilterSetVolumeCubeRender(Vector4 *, Vector4 *);
+void nmlPacketAddBlockMaterial(NmlMaterialRenderState *, NmlModelRenderState *, int, int);
+void nmlPacketAddExecProg();
+void nmlPacketAddGifTagStandard(int, int);
+void nmlPacketAddGsAlpha(unsigned long long a);
+void nmlPacketAddGsFlush(void);
+extern void nmlPacketAddGsFrame(int fbp, int mask);
+void nmlPacketAddGsPixeltest(unsigned int test);
+extern void nmlPacketAddGsTexture(void);
+void nmlPacketAddGsZbuf(unsigned long long mask);
+int nmlPacketAddParts(u8 *, NmlModelRenderState *, StudioCamera *);
+void nmlPacketAddTextureParam(NmlMaterialRenderState *material, NmlModelRenderState *model);
+extern void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *,
+                                       const NmlModelRenderState *);
+void nmlPacketClrModelCache(void);
+void nmlPacketGsInit(void);
+
+static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
+{
+    extern int s_inMapHandleView[4] __asm__("s_inMapHandle");
+    extern NmlNonAlphaGroupRp s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+    extern NmlParentBuffer *parent_buf_entryUp(NmlLayoutRp *inLayout) __asm__("parent_buf_entry");
+    extern int nmlModelCalcEntryClipUp(NmlModelSampleView *model, StudioCamera *camera) __asm__("nmlModelCalcEntryClip");
+    extern void nmlModelCalcDropShadowUp(NmlModelRp *model) __asm__("nmlModelCalcDropShadow");
+    extern void xglVectorScaleXYZUp(Vector4 *destination, const Vector4 *source, float scale) __asm__("xglVectorScaleXYZ");
+    extern void nmlModelSetProrealUp(NmlProRealRp *input) __asm__("nmlModelSetProreal");
+    int groupIndex;
+    int index;
+    int result;
+    Vector4 pointA;
+    Vector4 pointB;
+    Vector4 pointC;
+    Vector4 pointD;
+    Vector4 *worldMax;
+    Vector4 *worldMin;
+    StudioCamera *camera;
+
+    groupIndex = 0;
+    result = groupIndex;
+    camera = xglStudioSelectGetActiveCamera(model->fields.renderLevel);
+    if (camera == 0) {
+        return 0;
+    }
+    nmlPacketClrModelCache();
+    for (groupIndex = 0; groupIndex < s_nNonAlphaGroup; groupIndex++) {
+        int cube;
+        int pass;
+        int visible;
+
+        visible = (s_aNonAlphaGroupView[groupIndex].flags & 0x10) ? (model->fields.texMapMode & 1) : (model->fields.texMapMode & 2);
+        if (visible == 0) {
+            continue;
+        }
+        cube = nmlFilterSetVolumeCubeRender(&model->fields.volume->boundsMin, &model->fields.volume->boundsMax);
+        pass = (model->fields.texMapMode & 0x40000) ? 1 : cube;
+        if (model == s_aNonAlphaGroupView[groupIndex].owner.layout) {
+            continue;
+        }
+        if ((s_aNonAlphaGroupView[groupIndex].flags & 0x10) == 0) {
+            Vector4 *bound = &s_aNonAlphaGroupView[groupIndex].owner.layout->fields.unmodeled_1f0.v;
+            if (model->fields.volume->boundsMax.x < bound->x || bound->z > model->fields.volume->boundsMax.z ||
+                bound->x < model->fields.volume->boundsMin.x || bound->z < model->fields.volume->boundsMin.z) {
+                continue;
+            }
+            __asm__ __volatile__(
+                "lqc2 vf3, 0(%1)\n\t"
+                "lqc2 vf2, 0(%2)\n\t"
+                "vsub.xyz vf2, vf2, vf3\n\t"
+                "sqc2 vf2, 0(%0)"
+                : : "r"(&pointA), "r"(bound), "r"(&model->fields.volume->origin) : "memory");
+            if (pointA.x * model->fields.volume->planeNormalX + pointA.z * model->fields.volume->planeNormalZ < 0.0f) {
+                continue;
+            }
+        }
+
+        nmlPacketGsInit();
+        nmlPacketAddGsTexture();
+        nmlPacketAddGsZbuf(1);
+        nmlPacketAddGsFrame((*(XglRenderStateRp *)&sRender).display_buffer_base, 0);
+        if (pass != 0) {
+            nmlPacketAddGsPixeltest(0x51001);
+        } else {
+            nmlPacketAddGsPixeltest(0x5d001);
+        }
+        if (s_aNonAlphaGroupView[groupIndex].flags & 0x10) {
+            nmlPacketAddGsAlpha(model->fields.volume->alpha);
+        } else {
+            nmlPacketAddGsAlpha(model->fields.volume->alpha);
+        }
+        nmlPacketAddGsFlush();
+        nmlPacketAddGifTagStandard(1, 1);
+
+        for (index = s_aNonAlphaGroupView[groupIndex].firstBlock;
+             index < s_aNonAlphaGroupView[groupIndex].firstBlock + s_aNonAlphaGroupView[groupIndex].blockCount;
+             index++) {
+            NmlModelBlockBounds *entry = s_apBlock[index];
+            NmlLayoutRp *layout = s_apModelLayout[s_aBlockLayout[index]];
+
+            worldMax = &pointC;
+            worldMin = &pointD;
+            if (layout->fields.render_status & 0x100000) {
+                continue;
+            }
+            if (s_aNonAlphaGroupView[groupIndex].flags & 0x10) {
+                if ((int)layout == s_inMapHandleView[1] && model->fields.mapShadowPartCount != 0) {
+                    if (!is_shadow_map_parts(model, entry->block.partId)) {
+                        continue;
+                    }
+                } else if (entry->block.materialFlags & 0x10) {
+                    Vector4 *minCorner = &pointB;
+                    float *matrixRow = layout->fields.weightedMatrices[entry->block.matrixIndices[0] - 1][3];
+
+                    __asm__ __volatile__(
+                        "lqc2 vf3, 0(%1)\n\t"
+                        "lqc2 vf2, 0(%2)\n\t"
+                        "vadd.xyz vf2, vf2, vf3\n\t"
+                        "sqc2 vf2, 0(%0)"
+                        : : "r"(&pointA),
+                            "r"(matrixRow),
+                            "r"(&entry->bounds.boxMaxOffset) : "memory");
+                    __asm__ __volatile__(
+                        "lqc2 vf3, 0(%2)\n\t"
+                        "lqc2 vf2, 0(%3)\n\t"
+                        "vadd.xyz vf2, vf2, vf3\n\t"
+                        "sqc2 vf2, 0(%1)"
+                        : "=m"(*minCorner) : "r"(minCorner),
+                            "r"(matrixRow),
+                            "r"(&entry->bounds.boxMinOffset) : "memory");
+                    if (model->fields.volume->boundsMax.x < pointA.x || pointA.y > model->fields.volume->boundsMax.y ||
+                        pointA.z > model->fields.volume->boundsMax.z || pointB.x < model->fields.volume->boundsMin.x ||
+                        pointB.y < model->fields.volume->boundsMin.y || pointB.z < model->fields.volume->boundsMin.z) {
+                        continue;
+                    }
+                } else {
+                    __asm__ __volatile__(
+                        "lqc2 vf3, 0(%1)\n\t"
+                        "lqc2 vf2, 0(%2)\n\t"
+                        "vadd.xyz vf2, vf2, vf3\n\t"
+                        "sqc2 vf2, 0(%0)"
+                        : : "r"(worldMax),"r"(&layout->fields.place[3]),
+                            "r"(&((NmlLayoutRp *)layout->fields.parent)->fields.place[0]) : "memory");
+                    __asm__ __volatile__(
+                        "lqc2 vf3, 0(%2)\n\t"
+                        "lqc2 vf2, 0(%3)\n\t"
+                        "vadd.xyz vf2, vf2, vf3\n\t"
+                        "sqc2 vf2, 0(%1)"
+                        : "=m"(*worldMin) : "r"(worldMin),"r"(&layout->fields.place[3]),
+                            "r"(&((NmlLayoutRp *)layout->fields.parent)->fields.lightColor[3]) : "memory");
+                    if (model->fields.volume->boundsMax.x < pointC.x || pointC.y > model->fields.volume->boundsMax.y ||
+                        pointC.z > model->fields.volume->boundsMax.z || pointD.x < model->fields.volume->boundsMin.x ||
+                        pointD.y < model->fields.volume->boundsMin.y || pointD.z < model->fields.volume->boundsMin.z) {
+                        continue;
+                    }
+                }
+            }
+
+            layout->fields.render_status |= 0x800;
+            layout->fields.renderVolume = model->fields.volume;
+            nmlPacketAddTransMicrocode((NmlMaterialRenderState *)&entry->block,
+                                       (NmlModelRenderState *)layout);
+            nmlPacketAddTextureParam((NmlMaterialRenderState *)&entry->block,
+                                     (NmlModelRenderState *)layout);
+            nmlPacketAddBlockMaterial((NmlMaterialRenderState *)&entry->block,
+                                      (NmlModelRenderState *)layout, 0, frame);
+            result = (int)nmlPacketAddParts((NmlMaterialRenderState *)&entry->block,
+                                            (NmlModelRenderState *)layout, camera);
+            if (result != 0) {
+                break;
+            }
+            nmlPacketAddGsFlush();
+            nmlPacketAddExecProg((NmlMaterialRenderState *)&entry->block,
+                                 (NmlModelRenderState *)layout, 1, 0);
+            layout->fields.render_status &= ~0x800u;
+            layout->fields.renderVolume = 0;
+        }
+        if (result != 0) {
+            return result;
+        }
+    }
+    return result;
+}
 
 extern float D_004D8948;
 void nmlPacketAddGifTagStandard(int, int);
@@ -3498,7 +3906,7 @@ done:
 }
 
 extern float D_004D894C;
-extern int nmlModelRenderProreal(void *, int);
+static int nmlModelRenderProreal();
 extern void nmlPacketSendCircleTexture(void *texture, void *clut);
 extern unsigned char s_aCircleShadow[];
 extern unsigned char s_aCircleShadowClut[];
@@ -3559,7 +3967,6 @@ static int nmlModelRenderDropCircle(short *arg0, int arg1, void *arg2)
     return 0;
 }
 
-#include "nml_packet_add.h"
 typedef struct { short w; short h; } DropRect;
 void nmlFilterSetFrameAlphaClear(void);
 void nmlPacketGsInit(void);
