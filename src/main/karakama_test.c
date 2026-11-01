@@ -12,6 +12,10 @@ typedef struct CfActor {
     float x;
     float y;
     float z;
+    u8 unmodeled_1c[0x4DC - 0x1C];
+    float undulation;
+    u8 unmodeled_4e0[8];
+    u32 collision_bits;
 } CfActor;
 
 typedef struct CfClearEnvironment {
@@ -25,7 +29,25 @@ typedef struct CfClearEnvironment {
 typedef struct CfGameLoopState {
     u32 unmodeled_00;
     CfActor *current_actor;
-    u8 unmodeled_08[0x2A030 - 8];
+    u8 unmodeled_08[4];
+    u16 kind;
+    u16 kindDetail;
+    u32 flags;
+    u32 base_flags;
+    u8 unmodeled_18[0x28 - 0x18];
+    void (*camera_callback)(void);
+    void (*clear_callback)(void);
+    void (*map_draw_callback)();
+    void (*actor_draw_callback)();
+    u8 unmodeled_38[8];
+    void (*frame_hook)(int stage);
+    u8 unmodeled_44[0x50 - 0x44];
+    u16 map_number;
+    u8 unmodeled_52[2];
+    void *model;
+    u8 unmodeled_58[0xC0 - 0x58];
+    signed char unmodeled_c0;
+    u8 unmodeled_c1[0x2A030 - 0xC1];
 } CfGameLoopState;
 
 typedef struct TextureTransferHeader {
@@ -335,7 +357,170 @@ void KarakamaTest(void)
     xglRenderClearDepth();
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/karakama_test", CfTest);
+void InitCf(void);
+void PrimTest(void);
+void SetMapUnitTest(void);
+extern double fptodp(float value);
+extern void ACT_update(void);
+extern void DispDebugUwamono(void);
+extern void GameCameraReset(void);
+extern void GameCfPlayerMove(void);
+extern void GameDrawSync(void);
+extern void MapChange(int map_id);
+extern void MAP_updateUnit(void);
+typedef struct CfCamera {
+    u32 active;
+    union { u32 state; int state_i; };
+    u8 unmodeled_08[0xCC];
+    float position_y;
+    u8 unmodeled_d8[0x2C];
+    float distance;
+    u8 unmodeled_108[8];
+    float target_x;
+    float target_y;
+    float target_z;
+} CfCamera;
+extern void xglStudioGetCamera(CfCamera **camera_out, int camera_index);
+extern const char D_004C9CB0[];
+extern void GameCamera(void);
+extern int MapNo;
+extern u8 UseTestPath;
+extern const char D_004C9CC8[];
+extern const char D_004DB6B0[];
+extern const char D_004C9CE8[];
+extern const char D_004C9CF8[];
+
+static void CfTest(void)
+{
+    CfCamera *const camera;
+    CfCamera *camera_after;
+    CfActor *actor;
+    CfActor *position_actor;
+    CfCamera *view;
+    u32 bits;
+    u32 acc;
+    int i;
+    u16 held;
+    int scene_id;
+    int map;
+    int map_no;
+    CfGameLoopState *game;
+
+    InitCf();
+    printf(D_004C9CB0);
+    xglStudioGetCamera((CfCamera **)&camera, 0);
+    camera->state = 3;
+    camera->position_y = 5.0f;
+    camera->distance = 5.0f;
+    GameCameraReset();
+    game = &GameLoopState;
+    scene_id = 770;
+    if (scene_id == 770) {
+        game->flags = scene_id;
+    } else {
+        game->flags = 1;
+    }
+    if (scene_id == 770) {
+        game->unmodeled_c0 = 1;
+    }
+    game->camera_callback = GameCamera;
+    game->map_draw_callback = 0;
+    game->actor_draw_callback = 0;
+    map = 4;
+    game->map_number = map;
+    game = &GameLoopState;
+    game->flags = scene_id;
+    game->map_number = -1;
+    game->camera_callback = GameCamera;
+    camera->state = 4;
+    game->kindDetail = 0;
+    game->model = 0;
+    game->frame_hook = 0;
+    game->kind = 0;
+    MapNo = 19;
+    UseTestPath = scene_id;
+    MapChange(19);
+    SetMapUnitTest();
+    printf(D_004C9CC8);
+    while ((PadData.input.snapshot & 0x8000100ULL) != 0x8000100ULL) {
+        held = PadData.input.buttons.held;
+        actor = tActor;
+        if (held & 0x8000) {
+            actor->x -= 0.1f;
+        }
+        if (held & 0x2000) {
+            actor->x += 0.1f;
+        }
+        if (held & 0x10) {
+            actor->y += 0.1f;
+        }
+        if (held & 0x40) {
+            actor->y -= 0.1f;
+        }
+        if (held & 0x1000) {
+            actor->z -= 0.1f;
+        }
+        if (held & 0x4000) {
+            actor->z += 0.1f;
+        }
+        view = camera;
+        view->target_x = actor->x;
+        view->target_y = actor->y + 1.0f;
+        view->target_z = actor->z;
+        if (held & 0x10) {
+            view->distance -= 0.1f;
+        }
+        if (held & 0x40) {
+            view->distance += 0.1f;
+        }
+        if (held & 1) {
+            view->position_y += 0.1f;
+        }
+        if (held & 2) {
+            view->position_y -= 0.1f;
+        }
+        GameCfPlayerMove();
+        if (PadData.input.buttons.held & 0x20) {
+            char name[12] = "\xA5\xA2\xA5\xA4\xA5\xC6\xA5\xE0";
+
+            xglFontDebugPrintf(8, 80, D_004DB6B0, name);
+        }
+        bits = tActor->collision_bits;
+        acc = 0;
+        for (i = 0; i < 32; i++) {
+            acc <<= 1;
+            acc += bits & 1;
+            bits >>= 1;
+            if ((i & 7) == 7) {
+                char line[32];
+
+                line[0] = 17;
+                line[1] = 2;
+                line[2] = i & 7;
+                line[3] = 0;
+                line[4] = 0;
+                line[5] = 0;
+                line[6] = acc;
+                line[7] = 0;
+                xglFontDebugPrintf((i & 0x18) * 6, (i & 8) >> 3, line);
+            }
+        }
+        map_no = MapNo;
+        xglFontDebugPrintf(8, 8, D_004C9CE8, map_no, fptodp(tActor->undulation));
+        position_actor = tActor;
+        xglFontDebugPrintf(8, 176, D_004C9CF8, fptodp(position_actor->x),
+                           fptodp(position_actor->y), fptodp(position_actor->z));
+        xglStudioGetCamera(&camera_after, 0);
+        if (camera_after->state == 4 && GameLoopState.camera_callback != 0) {
+            GameLoopState.camera_callback();
+        }
+        PrimTest();
+        ACT_update();
+        MAP_updateUnit();
+        DispDebugUwamono();
+        GameDrawSync();
+    }
+}
 
 void SePacketTest(void)
 {
