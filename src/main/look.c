@@ -174,7 +174,6 @@ void LOOK_target_doit(void)
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/look", LOOK_sebo_cont);
 
 #include "shared.h"
 typedef struct LookJointElement {
@@ -263,6 +262,84 @@ void MATRIX_convert4(Matrix4 destination, Matrix4 source);
 void xglMatrixRotX(Matrix4 destination, Matrix4 source, float angle);
 void xglMatrixRotY(Matrix4 destination, Matrix4 source, float angle);
 float xglAsin(float value);
+
+#define D_004D8568 0.0001f
+#define D_004D856C 0.13962633907794952f
+#define D_004D8570 0.13962633907794952f
+#define D_004D8574 0.2f
+static inline void look_zero_vector(Vector4 *destination)
+{
+    __asm__ __volatile__("sq $0, 0(%0)"
+                         : : "r" (destination) : "memory");
+}
+static inline void look_copy_matrix(Matrix4 destination, Matrix4 source)
+{
+    __asm__ __volatile__("lq $2, 0(%1)\n"
+                         "sq $2, 0(%0)\n"
+                         "lq $2, 16(%1)\n"
+                         "sq $2, 16(%0)\n"
+                         "lq $2, 32(%1)\n"
+                         "sq $2, 32(%0)\n"
+                         "lq $2, 48(%1)\n"
+                         "sq $2, 48(%0)\n"
+                         : : "r" (destination), "r" (source) : "$2", "memory");
+}
+
+void *LOOK_sebo_cont(LookJointWork *work, void *channels, LookCharacter *actor)
+{
+    Matrix4 matrix;
+    Matrix4 rootMatrix;
+    LookAlignedVector4 place;
+    Vector4 localPlace;
+
+    if (actor != 0) {
+        float weight = actor->lookWeight;
+        LookJointElement *element = &work->elements[work->jointIndex];
+
+        if (!(__builtin_fabsf(weight) < D_004D8568)) {
+
+            do {
+            if (weight <= 0.0f)
+                weight = 1.0f;
+            {
+                int placeStatus = look_get_place((LookActor *)actor, (LookVector *)&place);
+
+                if (placeStatus == 0) {
+                    float *angle;
+
+                    place.v.w = 1.0f;
+                    look_copy_matrix(matrix, work->matrixBuffer[work->jointIndex - 1]);
+                    look_copy_matrix(rootMatrix, work->rootMatrix);
+                    matrix[0][3] = 0.0f;
+                    matrix[1][3] = 0.0f;
+                    matrix[2][3] = 0.0f;
+                    rootMatrix[0][3] = 0.0f;
+                    rootMatrix[1][3] = 0.0f;
+                    rootMatrix[2][3] = 0.0f;
+                    xglMatrixMul(matrix, rootMatrix, matrix);
+                    xglMatrixInverse(matrix, matrix);
+                    {
+                        Vector4 targetAngle;
+
+                        look_zero_vector(&targetAngle);
+                        xglVectorMulMat(&localPlace, matrix, &place.v);
+                        angle = &actor->lookAngles[0].y;
+                        targetAngle.y = xglAtan2(localPlace.x, localPlace.z);
+                        look_limit_add(angle, targetAngle.y, weight * D_004D8570);
+                    }
+                    element->rotation[2] += *angle * D_004D8574;
+                } else {
+                    float *angle = &actor->lookAngles[0].y;
+
+                    look_limit(angle, weight * D_004D856C);
+                    element->rotation[2] += *angle * D_004D8574;
+                }
+            }
+            } while (0);
+        }
+    }
+    return channels;
+}
 
 void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
 {

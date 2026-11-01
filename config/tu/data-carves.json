@@ -8792,17 +8792,22 @@
    ".lit4": [
     {
      "range": [
-      "0x004d8578",
+      "0x004d8568",
       "0x004d85a8"
      ],
      "generated": [
-      "0x004d8578",
+      "0x004d8568",
       "0x004d85a8"
      ],
      "generated_by": [
-      "LOOK_head_cont"
+      "LOOK_head_cont",
+      "LOOK_sebo_cont"
      ],
      "c_owned_symbols": [
+      "D_004D8568",
+      "D_004D856C",
+      "D_004D8570",
+      "D_004D8574",
       "D_004D8578",
       "D_004D857C",
       "D_004D8580",
