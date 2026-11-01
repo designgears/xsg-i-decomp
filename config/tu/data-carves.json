@@ -5541,7 +5541,32 @@
       "D_004D7ED0",
       "D_004D7ED4",
       "D_004D7ED8",
-      "D_004D7EDC",
+      "D_004D7EDC"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_uwamono_sys.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d7ee0",
+      "0x004d7ee8"
+     ],
+     "generated": [
+      "0x004d7ee0",
+      "0x004d7ee8"
+     ],
+     "generated_by": [
+      "HitCheckBoxTest"
+     ],
+     "c_owned_symbols": [
+      "D_004D7EE0",
+      "D_004D7EE4"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7EE8",
       "D_004D7EEC",
       "D_004D7EF0",
       "D_004D7EF4"
@@ -5555,20 +5580,23 @@
     {
      "range": [
       "0x004d7ef8",
-      "0x004d7f08"
+      "0x004d7f10"
      ],
      "generated": [
       "0x004d7ef8",
-      "0x004d7f08"
+      "0x004d7f10"
      ],
      "generated_by": [
+      "CrossPointUwamono",
       "ShootMapUnit"
      ],
      "c_owned_symbols": [
       "D_004D7EF8",
       "D_004D7EFC",
       "D_004D7F00",
-      "D_004D7F04"
+      "D_004D7F04",
+      "D_004D7F08",
+      "D_004D7F0C"
      ],
      "also_referenced_by_c": [
       "D_004D7F10",
@@ -5678,6 +5706,13 @@
       "D_004CA028"
      ],
      "also_referenced_by_c": [
+      "D_004C9F20",
+      "D_004C9F58",
+      "D_004C9F88",
+      "D_004C9FB0",
+      "D_004C9FD0",
+      "D_004C9FF0",
+      "D_004CA008",
       "D_004CA040",
       "D_004CA050"
      ],
@@ -5748,6 +5783,8 @@
       "0x004ca1b0"
      ],
      "generated_by": [
+      "InitEvsSymbol",
+      "InitRetSymbol",
       "InitSaveSymbol",
       "InitShopSymbol"
      ],
@@ -5759,6 +5796,10 @@
       "D_004CA1B0",
       "D_004CA1D0",
       "D_004CA1F8",
+      "D_004CA220",
+      "D_004CA230",
+      "D_004CA240",
+      "D_004CA250",
       "D_004CA260"
      ],
      "basis": {
