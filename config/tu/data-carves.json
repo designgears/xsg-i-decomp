@@ -12226,14 +12226,15 @@
     {
      "range": [
       "0x00a4e540",
-      "0x00a4e690"
+      "0x00a4e758"
      ],
      "generated": [
       "0x00a4e540",
-      "0x00a4e690"
+      "0x00a4e758"
      ],
      "generated_by": [
       "CGPChkFaseLock",
+      "CardDispEffect",
       "CardPlayDispInfo",
       "CardSetEffect"
      ],
@@ -12241,7 +12242,10 @@
       "jtbl_00A4E540",
       "jtbl_00A4E560",
       "jtbl_00A4E5A0",
-      "jtbl_00A4E600"
+      "jtbl_00A4E600",
+      "jtbl_00A4E690",
+      "jtbl_00A4E720",
+      "jtbl_00A4E740"
      ],
      "also_referenced_by_c": [
       "D_00A4E4F0",

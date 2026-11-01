@@ -1204,7 +1204,922 @@ typedef struct CpuDeckRecord {
     char data[0x28];
 } CpuDeckRecord;
 
-INCLUDE_ASM("asm/nonmatchings/ov10/cgp", CardDispEffect);
+extern void nmlModelSetAlpha(u64 alpha);
+#define CARD_EFFECT_COUNT 64                  
+#define CARD_EFFECT_SE_HIT 0x20008            
+#define CARD_EFFECT_SE_BURST 0x2000A
+#define CARD_EFFECT_ALPHA 0x48                
+#define CARD_EFFECT_SPRITE_MODEL 0x01A00000   
+#define CARD_EFFECT_SCALED_MODEL 0x01A00800   
+#define CARD_EFFECT_SMALL_FRAME 0x1480        
+#define CARD_EFFECT_LARGE_FRAME 0x1D80        
+#define CARD_EFFECT_FRAME(base, index, size) ((void *) ((base) + (index) * (size)))
+#define CARD_EFFECT_STRIP_TRAVEL_1 0x1BF0000  
+#define CARD_EFFECT_STRIP_TRAVEL_2 0x1C04000  
+#define CARD_EFFECT_STRIP_TRAVEL_3 0x1A14000  
+#define CARD_EFFECT_STRIP_TRAVEL_4 0x1A01000  
+#define CARD_EFFECT_STRIP_BURST_1 0x1BD8000   
+#define CARD_EFFECT_STRIP_BURST_2 0x1AA0000   
+#define CARD_EFFECT_STRIP_BURST_3 0x1A85000   
+#define CARD_EFFECT_STRIP_BURST_4 0x1A67000   
+#define CARD_EFFECT_STRIP_FADE 0x1A28000      
+#define CARD_EFFECT_STRIP_SWIRL 0x1A40000     
+#define CARD_EFFECT_DIGIT_TEXTURE 0x1C990A0   
+#define CARD_EFFECT_DIGITS_FIRST 0x1C8A400    
+#define CARD_EFFECT_DIGITS 0x1C8CC00          
+typedef unsigned int Quadword __attribute__((mode(TI)));
+typedef union CardEffectMatrix {
+    float m[4][4];
+    Quadword q[4];
+} CardEffectMatrix;
+
+/*
+ * Draws and advances the 64 card-game effects of one side. Each effect starts
+ * from a fresh copy of the caller's placement matrix; the matrix is read as
+ * volatile, so the copy at the top of the loop is never moved into the loop
+ * branch (the original keeps the epilogue `ld $16` there, 0x00a25070).
+ */
+void CardDispEffect(s32 side, CardGameWork *work, volatile CardEffectMatrix *matrix)
+{
+    CardEffect *effect;
+    s32 i;
+
+    effect = work->effects;
+    for (i = 0; i < CARD_EFFECT_COUNT; i++, effect++) {
+        CardEffectMatrix local;
+        float offset[4];
+        CardEffectMatrix quad;
+        void *texture;
+        s32 digit;
+        Quadword row;
+
+        row = matrix->q[0];
+        local.q[0] = row;
+        row = matrix->q[1];
+        local.q[1] = row;
+        row = matrix->q[2];
+        local.q[2] = row;
+        row = matrix->q[3];
+        local.q[3] = row;
+
+        switch (effect->code) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            if (side != effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    switch (effect->code) {
+                    case 1:
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_TRAVEL_1, 14 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+                        break;
+                    case 2:
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_TRAVEL_2, 14 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+                        break;
+                    case 3:
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_TRAVEL_3, 14 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+                        break;
+                    default:
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_TRAVEL_4, 14 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+                        break;
+                    }
+                    effect->position[0] += effect->velocity[0];
+                    effect->position[1] += effect->velocity[1];
+                    effect->position[2] += effect->velocity[2];
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+                } else {
+                    effect->phase = 1;
+                    switch (effect->code) {
+                    case 1:
+                        effect->timer = 13;
+                        xglSoundEffectNormalID(CARD_EFFECT_SE_BURST, 0);
+                        break;
+                    case 2:
+                        xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                        effect->timer = 16;
+                        break;
+                    case 3:
+                        xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                        effect->timer = 11;
+                        break;
+                    case 4:
+                        xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                        effect->timer = 15;
+                        break;
+                    }
+                }
+                break;
+            case 1:
+                switch (effect->code) {
+                case 1:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_1, 12 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase = 2;
+                    }
+                    break;
+                case 2:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase = 2;
+                    }
+                    break;
+                case 3:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_3, 10 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase = 2;
+                    }
+                    break;
+                case 4:
+                    if (effect->timer == 0) {
+                        effect->code = 0;
+                        break;
+                    }
+                    effect->timer--;
+                    texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_4, 14 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    break;
+                }
+                break;
+            case 2:
+                if (effect->stack == 0 || effect->stack->layers[0].life > 0) {
+                    effect->code = 0;
+                } else {
+                    effect->phase = 3;
+                    effect->timer = 20;
+                }
+                break;
+            case 3:
+                if (effect->timer == 0) {
+                    effect->code = 0;
+                    break;
+                }
+                effect->timer--;
+                texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_FADE, 10 - effect->timer / 2, CARD_EFFECT_SMALL_FRAME);
+                xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                CDEMatrixSub(local.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(local.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+                break;
+            }
+            break;
+        case 21:
+        case 22:
+        case 23:
+        case 24:
+            if (side != effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    effect->position[0] += effect->velocity[0];
+                    effect->position[1] += effect->velocity[1];
+                    effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->timer = 9;
+                    effect->phase++;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    break;
+                }
+                effect->phase++;
+                switch (effect->code) {
+                case 21:
+                    effect->timer = 13;
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_BURST, 0);
+                    break;
+                case 22:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 16;
+                    break;
+                case 23:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 11;
+                    break;
+                case 24:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 15;
+                    break;
+                }
+                break;
+            case 2:
+                switch (effect->code) {
+                case 21:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_1, 12 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 22:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 23:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_3, 10 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 24:
+                    if (effect->timer == 0) {
+                        effect->code = 0;
+                        break;
+                    }
+                    effect->timer--;
+                    texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_4, 14 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    break;
+                }
+                break;
+            case 3:
+                if (effect->stack == 0 || effect->stack->layers[0].life > 0) {
+                    effect->code = 0;
+                } else {
+                    effect->timer = 20;
+                    effect->phase++;
+                }
+                break;
+            case 4:
+                if (effect->timer == 0) {
+                    effect->code = 0;
+                    break;
+                }
+                effect->timer--;
+                texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_FADE, 10 - effect->timer / 2, CARD_EFFECT_SMALL_FRAME);
+                xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                CDEMatrixSub(local.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(local.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+                break;
+            }
+            break;
+        case 31:
+        case 32:
+        case 34:
+            if (side != effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    effect->position[0] += effect->velocity[0];
+                    effect->position[1] += effect->velocity[1];
+                    effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->timer = 18;
+                    effect->phase++;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    break;
+                }
+                effect->phase++;
+                switch (effect->code) {
+                case 31:
+                    effect->timer = 13;
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_BURST, 0);
+                    break;
+                case 32:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 16;
+                    break;
+                case 33:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 11;
+                    break;
+                case 34:
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 15;
+                    break;
+                }
+                break;
+            case 2:
+                switch (effect->code) {
+                case 31:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_1, 12 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 32:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 33:
+                    if (effect->timer != 0) {
+                        effect->timer--;
+                        texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_3, 10 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                        nmlModelSetTexture(texture);
+                        nmlModelSetPlace(local.m);
+                        nmlModelSetToumei(1);
+                        nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                        nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    } else {
+                        effect->phase++;
+                    }
+                    break;
+                case 34:
+                    if (effect->timer == 0) {
+                        effect->code = 0;
+                        break;
+                    }
+                    effect->timer--;
+                    texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_4, 14 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                    break;
+                }
+                break;
+            case 3:
+                if (effect->stack == 0 || effect->stack->layers[0].life > 0) {
+                    effect->code = 0;
+                } else {
+                    effect->timer = 20;
+                    effect->phase++;
+                }
+                break;
+            case 4:
+                if (effect->timer == 0) {
+                    effect->code = 0;
+                    break;
+                }
+                effect->timer--;
+                texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_FADE, 10 - effect->timer / 2, CARD_EFFECT_SMALL_FRAME);
+                xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                CDEMatrixSub(local.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(local.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+                break;
+            }
+            break;
+        case 33:
+            if (side != effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    effect->position[0] += effect->velocity[0];
+                    effect->position[1] += effect->velocity[1];
+                    effect->position[2] += effect->velocity[2];
+                    texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_TRAVEL_3, 14 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+                } else {
+                    effect->phase = 1;
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                    effect->timer = 11;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                    texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_3, 10 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                    xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                    xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+                    nmlModelSetTexture(texture);
+                    nmlModelSetPlace(local.m);
+                    nmlModelSetToumei(1);
+                    nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                    nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                } else {
+                    effect->timer = 15;
+                    effect->phase = 2;
+                    xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                }
+                break;
+            case 2:
+                if (effect->timer == 0) {
+                    effect->code = 0;
+                    break;
+                }
+                effect->timer--;
+                texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                offset[2] = effect->position[2];
+                offset[3] = 1.0f;
+                offset[0] = effect->position[0] - 0.54f;
+                offset[1] = effect->position[1] + 0.3915f;
+                xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                CDEMatrixSub(quad.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(quad.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                offset[0] = effect->position[0] + 0.54f;
+                offset[1] = effect->position[1] + 0.3915f;
+                xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                CDEMatrixSub(quad.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(quad.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                offset[0] = effect->position[0] - 0.54f;
+                offset[1] = effect->position[1] - 0.3915f;
+                xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                CDEMatrixSub(quad.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(quad.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                offset[0] = effect->position[0] + 0.54f;
+                offset[1] = effect->position[1] - 0.3915f;
+                xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                CDEMatrixSub(quad.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(quad.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SCALED_MODEL);
+                break;
+            }
+            break;
+        case 5:
+            if (side != effect->side) {
+                break;
+            }
+            if (effect->timer == 0) {
+                effect->code = 0;
+                break;
+            }
+            effect->timer--;
+            texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+            xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+            CDEMatrixSub(local.m);
+            nmlModelSetTexture(texture);
+            nmlModelSetPlace(local.m);
+            nmlModelSetToumei(1);
+            nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+            nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+            break;
+        case 25:
+            if (side != effect->side) {
+                break;
+            }
+            if (effect->timer != 0) {
+                effect->timer--;
+                texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_BURST_2, 15 - effect->timer, CARD_EFFECT_LARGE_FRAME);
+                xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                CDEMatrixSub(local.m);
+                nmlModelSetTexture(texture);
+                nmlModelSetPlace(local.m);
+                nmlModelSetToumei(1);
+                nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+                nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+            } else if (effect->phase != 0) {
+                effect->code = 0;
+            } else {
+                effect->phase++;
+                effect->timer = 15;
+                xglSoundEffectNormalID(CARD_EFFECT_SE_HIT, 0);
+                effect->position[0] += 0.25f;
+                effect->position[1] += 0.25f;
+            }
+            break;
+        case 10:
+            if (side != effect->side) {
+                break;
+            }
+            if (effect->timer == 0) {
+                effect->code = 0;
+                break;
+            }
+            effect->timer--;
+            texture = CARD_EFFECT_FRAME(CARD_EFFECT_STRIP_SWIRL, 29 - effect->timer, CARD_EFFECT_SMALL_FRAME);
+            xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+            CDEMatrixSub(local.m);
+            nmlModelSetTexture(texture);
+            xglMatrixScale(local.m, (const float (*)[4]) local.m, effect->scale);
+            nmlModelSetPlace(local.m);
+            nmlModelSetToumei(1);
+            nmlModelSetAlpha(CARD_EFFECT_ALPHA);
+            nmlModelEntryCard((void *) CARD_EFFECT_SPRITE_MODEL);
+            break;
+        case 11:
+            if (side == effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                } else {
+                    effect->phase = 1;
+                    effect->timer = 15;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                        offset[3] = 1.0f;
+                        if (effect->stack != 0) {
+                            offset[0] = effect->stack->position[0];
+                            offset[1] = effect->stack->position[1];
+                            offset[2] = effect->stack->position[2];
+                        } else {
+                            offset[0] = 0.0f;
+                            offset[1] = -1.81f;
+                            offset[2] = 0.0f;
+                        }
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, offset);
+                        CDEMatrixSub(local.m);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        offset[0] = 0.15f;
+                        offset[1] = 0.0f;
+                        offset[2] = 0.1f;
+                        offset[3] = 1.0f;
+                        digit = effect->value / 10;
+                        if (digit != 0) {
+                            xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                            digit = CARD_EFFECT_DIGITS + (digit << 10);
+                            nmlModelSetPlace(quad.m);
+                            nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                            nmlModelSetLight(asColor, asDir);
+                            nmlModelEntryCard((void *) digit);
+                        }
+                        offset[0] = 0.25f;
+                        digit = effect->value % 10;
+                        digit = CARD_EFFECT_DIGITS + (digit << 10);
+                        xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                        nmlModelSetPlace(quad.m);
+                        nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                        nmlModelSetLight(asColor, asDir);
+                        nmlModelEntryCard((void *) digit);
+                        effect->position[0] += effect->velocity[0];
+                        effect->position[1] += effect->velocity[1];
+                        effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->code = 0;
+                }
+                break;
+            }
+            break;
+        case 15:
+            if (side == effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                } else {
+                    effect->phase = 1;
+                    effect->timer = 15;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                        offset[3] = 1.0f;
+                        if (effect->stack != 0) {
+                            offset[0] = effect->stack->position[0];
+                            offset[1] = effect->stack->position[1];
+                            offset[2] = effect->stack->position[2];
+                        } else {
+                            offset[0] = 0.0f;
+                            offset[1] = -1.81f;
+                            offset[2] = 0.0f;
+                        }
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, offset);
+                        CDEMatrixSub(local.m);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        offset[0] = 0.15f;
+                        offset[1] = 0.0f;
+                        offset[2] = 0.1f;
+                        offset[3] = 1.0f;
+                        digit = effect->value / 10;
+                        if (digit != 0) {
+                            xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                            digit = CARD_EFFECT_DIGITS + (digit << 10);
+                            nmlModelSetPlace(quad.m);
+                            nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                            nmlModelSetLight(asColor, asDir);
+                            nmlModelEntryCard((void *) digit);
+                        }
+                        offset[0] = 0.25f;
+                        digit = effect->value % 10;
+                        digit = CARD_EFFECT_DIGITS + (digit << 10);
+                        xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                        nmlModelSetPlace(quad.m);
+                        nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                        nmlModelSetLight(asColor, asDir);
+                        nmlModelEntryCard((void *) digit);
+                        effect->position[0] += effect->velocity[0];
+                        effect->position[1] += effect->velocity[1];
+                        effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->code = 0;
+                }
+                break;
+            }
+            break;
+        case 12:
+            if (side != effect->side) {
+                break;
+            }
+            if (effect->timer == 0) {
+                effect->code = 0;
+                break;
+            }
+            effect->timer--;
+            offset[3] = 1.0f;
+            if (effect->stack != 0) {
+                offset[0] = effect->stack->position[0];
+                offset[1] = effect->stack->position[1];
+                offset[2] = effect->stack->position[2];
+            } else {
+                if (effect->phase == 0) {
+                    offset[1] = -1.81f;
+                } else {
+                    offset[1] = 1.81f;
+                }
+                offset[0] = 0.0f;
+                offset[2] = 0.0f;
+            }
+            xglMatrixTrans(local.m, (const float (*)[4]) local.m, offset);
+            CDEMatrixSub(local.m);
+            xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+            offset[0] = 0.15f;
+            offset[1] = 0.0f;
+            offset[2] = 0.1f;
+            digit = effect->value / 10;
+            if (digit != 0) {
+                xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                if (effect->phase == 0) {
+                    digit = CARD_EFFECT_DIGITS_FIRST + (digit << 10);
+                } else {
+                    digit = CARD_EFFECT_DIGITS + (digit << 10);
+                }
+                nmlModelSetPlace(quad.m);
+                nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                nmlModelSetLight(asColor, asDir);
+                nmlModelEntryCard((void *) digit);
+            }
+            offset[0] = 0.25f;
+            digit = effect->value % 10;
+            if (effect->phase == 0) {
+                digit = CARD_EFFECT_DIGITS_FIRST + (digit << 10);
+            } else {
+                digit = CARD_EFFECT_DIGITS + (digit << 10);
+            }
+            xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+            nmlModelSetPlace(quad.m);
+            nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+            nmlModelSetLight(asColor, asDir);
+            nmlModelEntryCard((void *) digit);
+            effect->position[0] += effect->velocity[0];
+            effect->position[1] += effect->velocity[1];
+            effect->position[2] += effect->velocity[2];
+            break;
+        case 14:
+            if (side == effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                } else {
+                    effect->phase = 1;
+                    effect->timer = 15;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                        offset[3] = 1.0f;
+                        if (effect->stack != 0) {
+                            offset[0] = effect->stack->position[0];
+                            offset[1] = effect->stack->position[1];
+                            offset[2] = effect->stack->position[2];
+                        } else {
+                            offset[0] = 0.0f;
+                            offset[1] = -1.81f;
+                            offset[2] = 0.0f;
+                        }
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, offset);
+                        CDEMatrixSub(local.m);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        offset[0] = -0.35f;
+                        offset[1] = 0.0f;
+                        offset[2] = 0.1f;
+                        offset[3] = 1.0f;
+                        digit = effect->value / 10;
+                        if (digit != 0) {
+                            xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                            digit = CARD_EFFECT_DIGITS + (digit << 10);
+                            nmlModelSetPlace(quad.m);
+                            nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                            nmlModelSetLight(asColor, asDir);
+                            nmlModelEntryCard((void *) digit);
+                        }
+                        offset[0] = -0.25f;
+                        digit = effect->value % 10;
+                        digit = CARD_EFFECT_DIGITS + (digit << 10);
+                        xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                        nmlModelSetPlace(quad.m);
+                        nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                        nmlModelSetLight(asColor, asDir);
+                        nmlModelEntryCard((void *) digit);
+                        effect->position[0] += effect->velocity[0];
+                        effect->position[1] += effect->velocity[1];
+                        effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->code = 0;
+                }
+                break;
+            }
+            break;
+        case 16:
+            if (side == effect->side) {
+                break;
+            }
+            switch (effect->phase) {
+            case 0:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                } else {
+                    effect->phase = 1;
+                    effect->timer = 15;
+                }
+                break;
+            case 1:
+                if (effect->timer != 0) {
+                    effect->timer--;
+                        offset[3] = 1.0f;
+                        if (effect->stack != 0) {
+                            offset[0] = effect->stack->position[0];
+                            offset[1] = effect->stack->position[1];
+                            offset[2] = effect->stack->position[2];
+                        } else {
+                            offset[0] = 0.0f;
+                            offset[1] = -1.81f;
+                            offset[2] = 0.0f;
+                        }
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, offset);
+                        CDEMatrixSub(local.m);
+                        xglMatrixTrans(local.m, (const float (*)[4]) local.m, effect->position);
+                        offset[0] = 0.15f;
+                        offset[1] = 0.0f;
+                        offset[2] = 0.1f;
+                        offset[3] = 1.0f;
+                        digit = effect->value / 10;
+                        if (digit != 0) {
+                            xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                            digit = CARD_EFFECT_DIGITS + (digit << 10);
+                            nmlModelSetPlace(quad.m);
+                            nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                            nmlModelSetLight(asColor, asDir);
+                            nmlModelEntryCard((void *) digit);
+                        }
+                        offset[0] = 0.25f;
+                        digit = effect->value % 10;
+                        digit = CARD_EFFECT_DIGITS + (digit << 10);
+                        xglMatrixTrans(quad.m, (const float (*)[4]) local.m, offset);
+                        nmlModelSetPlace(quad.m);
+                        nmlModelSetTexture((void *) CARD_EFFECT_DIGIT_TEXTURE);
+                        nmlModelSetLight(asColor, asDir);
+                        nmlModelEntryCard((void *) digit);
+                        effect->position[0] += effect->velocity[0];
+                        effect->position[1] += effect->velocity[1];
+                        effect->position[2] += effect->velocity[2];
+                } else {
+                    effect->code = 0;
+                }
+                break;
+            }
+            break;
+        }
+    }
+}
 
 typedef struct {
     s16 id;
