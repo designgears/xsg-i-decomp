@@ -84,6 +84,31 @@
       "jtbl_004D2200"
      ],
      "also_referenced_by_c": [
+      "D_004D2350"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_font.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d23b0",
+      "0x004d2448"
+     ],
+     "generated": [
+      "0x004d23b0",
+      "0x004d2444"
+     ],
+     "generated_by": [
+      "xglFontFlushCore"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004D23B0",
+      "jtbl_004D2430"
+     ],
+     "also_referenced_by_c": [
       "D_004D2448",
       "D_004D2458"
      ],
@@ -110,7 +135,9 @@
      "c_owned_symbols": [
       "D_004DC2A0"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "tbl_1_004DC2A8"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
