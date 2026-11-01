@@ -3518,7 +3518,64 @@ void sefFreeSchedulerCf(SchedulerState *scheduler)
   }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefFreeScheduler);
+typedef struct SefScriptStatus {
+    unsigned char unmodeled_00[8];
+    short active_tasks;
+    unsigned char unmodeled_0a[6];
+} SefScriptStatus;
+typedef struct SefScriptReference {
+    unsigned char unmodeled_000[0x440];
+    SefScriptStatus status;
+} SefScriptReference;
+extern SefScriptReference _scriptWork[16];
+extern SchedulerState sefSchedulerTable[] __asm__("_scheduler");
+
+void sefFreeScheduler(unsigned int scheduler_index)
+{
+    enum {
+        scheduler_stride = sizeof(SchedulerState),
+        binding_offset = 0xa90
+    };
+    int byte_offset;
+    int script_id;
+    int i;
+    unsigned char (*effect)[0x30];
+    SefScriptStatus *status;
+    ScriptBinding *binding;
+    SchedulerState *scheduler;
+    SchedulerState *entry;
+
+    if (scheduler_index >= 128) {
+        return;
+    }
+    if (sefSchedulerTable[scheduler_index].inUse == 0) {
+        return;
+    }
+    scheduler = &sefSchedulerTable[scheduler_index];
+    if ((scheduler->flags & 0x202) != 0) {
+        sefFreeSchedulerCf(scheduler);
+        return;
+    }
+    effect = (unsigned char (*)[0x30])((unsigned char *)sefSchedulerTable
+        + 0xb0
+        + scheduler_index * scheduler_stride);
+    for (i = 31; i >= 0; i--, effect++) {
+        sefDestroyEffectData(*effect);
+    }
+    byte_offset = scheduler_index * scheduler_stride;
+    binding = (ScriptBinding *)((unsigned int)sefSchedulerTable
+        + (byte_offset + binding_offset));
+    script_id = binding->script_id;
+    if (script_id >= 0) {
+        status = &_scriptWork[script_id].status;
+        --status->active_tasks;
+    }
+    entry = (SchedulerState *)((unsigned int)sefSchedulerTable + byte_offset);
+    entry->inUse = 0;
+    binding->script_id = -1;
+    binding->task_id = -1;
+    binding->state = 0;
+}
 
 /*
  * sefDestroyScriptScheduler (main:0x002e52b8): like sefDestroyScriptScheduler2
