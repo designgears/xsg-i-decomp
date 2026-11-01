@@ -14,10 +14,10 @@ The Sony SDK and public libraries do not need to be recovered.
 ## Progress
 
 <!-- coverage-report:begin -->
-Recovered 7,551 of 7,645 in-scope game function(s) (98.770%).
+Recovered 7,582 of 7,645 in-scope game function(s) (99.176%).
 
-- `exact_c` (pure C): 7,127 function(s)
-- `exact_c_with_asm`: 419 function(s)
+- `exact_c` (pure C): 7,146 function(s)
+- `exact_c_with_asm`: 431 function(s)
 - `exact_asm`: 5 function(s)
 - `exact_vu_microcode`: no accepted VU microprogram
 - empty-body functions: 0 of the counted function(s) are 8-byte `jr ra; nop` bodies
@@ -32,10 +32,10 @@ The counts below are source-level: functions whose C (or accepted asm) is in the
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
-| NTSC-U | `SLUS_204.69` | 3,621 / 3,671 | 98.638% |
+| NTSC-U | `SLUS_204.69` | 3,650 / 3,671 | 99.428% |
 | NTSC-U | `OV01.OVL` | 1,055 / 1,081 | 97.595% |
 | NTSC-U | `OV02.OVL` | 109 / 110 | 99.091% |
-| NTSC-U | `OV10.OVL` | 358 / 361 | 99.169% |
+| NTSC-U | `OV10.OVL` | 360 / 361 | 99.723% |
 | NTSC-U | `OV11.OVL` | 137 / 139 | 98.561% |
 | NTSC-U | `OV12.OVL` | 1,776 / 1,788 | 99.329% |
 | NTSC-U | `SSD.IRX` | 442 / 442 | 100.000% |
@@ -70,7 +70,7 @@ are recorded there in full:
 
 | Tool | What the build uses it for | Where it comes from |
 | --- | --- | --- |
-| `ee-gcc2.96-realconv-lp7` | `cc1` for the game code (Monolith) and the C runtime (newlib/libgcc) | the published `ee-gcc2.96` archive, with eighteen documented patches to `cc1` (six single bytes that restore the original decimal-literal rounding, two that restore the R5900 short-loop padding, four multi-byte alias-analysis patches, fsv1 and fsv3: `%lo`-addressed global scalars and struct-field accesses may be reordered in either direction, and a non-small-data global's memory reference gets its type's alias set; fsv4: gcse load-PRE transparency uses `rtx_varies_p`; two fsv5 patches: a char widened to 64 bits expands as `extendqisi2` + `extendsidi2`; plus the documented usecount and externname fixes) |
+| `ee-gcc2.96-realconv-lp7` | `cc1` for the game code (Monolith) and the C runtime (newlib/libgcc) | the published `ee-gcc2.96` archive, with eighteen documented patches to `cc1` (six single bytes that restore the original decimal-literal rounding, two that restore the R5900 short-loop padding, four multi-byte alias-analysis patches, fsv1 and fsv3: `%lo`-addressed global scalars and struct-field accesses may be reordered in either direction, and a non-small-data global's memory reference gets its type's alias set; fsv4: gcse load-PRE transparency uses `rtx_varies_p`; two fsv5 patches: a char widened to 64 bits expands as `extendqisi2` + `extendsidi2`; fsv6-fsv12 (adopted from upstream OpokXeno 2026-11-01: host-heap reads removed, gcse transparency and split refinements); plus the documented usecount and externname fixes) |
 | `ee-gcc2.9-991111` | `cc1` for the SCE SDK libraries (Sony's own compiler; out of recovery scope, built from original assembly) | the published `ee-gcc2.9-991111` archive, unmodified |
 | `ee-as-la29-vsqrt` | assembler for every game and runtime object | GNU as 2.9-ee-991111 built from the pinned `ps2-ee-toolchain` commit with the recorded five-change diff (an overlap-safe `memmove`, the `vsqrt` opcode's bits 21-22, labels left before the hazard nops `append_insn` inserts, `la` of a base register plus a 16-bit constant as one `addiu`, and an optional `-mswap-fix` flag, off by default, that lets `append_insn` fill delay slots after macro expansions; passed only to the TUs in `config/tu/as-flags.json`) |
 | `ee-as-2.9-plain` | assembler for the SCE SDK objects | the same commit, unpatched |
