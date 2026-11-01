@@ -10,7 +10,9 @@ typedef struct SefActor {
     unsigned char unmodeled_20[0x30];
     Vector4 rotation;
     Vector4 scale;
-    unsigned char unmodeled_70[0x510 - 0x70];
+    unsigned char unmodeled_70[0x86 - 0x70];
+    short scheduleState;             /* +0x86 */
+    unsigned char unmodeled_88[0x510 - 0x88];
     Vector4 light_parameters[15];    /* +0x510 */
     unsigned char unmodeled_600[0x824 - 0x600];
     Matrix4 *accessoryMatrix;
@@ -1092,9 +1094,26 @@ typedef struct SefBattleParameters {
 } SefBattleParameters;
 
 typedef struct {
-    unsigned char unmodeled_00[0x0c];
+    struct SefActor *targetActor;    /* +0x00 */
+    struct SefActor *sourceActor;    /* +0x04 */
+    unsigned char unmodeled_08[0x0c - 0x08];
     short phase;
-    unsigned char unmodeled_0e[0x22c - 0x0e];
+    unsigned char unmodeled_0e[0x14 - 0x0e];
+    short effectNo;                  /* +0x14 */
+    short nusumeResult;              /* +0x16 */
+    unsigned char unmodeled_18[0x70 - 0x18];
+    struct SefParentRecord *parentRecord; /* +0x70 */
+    int savedParameter;              /* +0x74 */
+    unsigned char unmodeled_78[0x80 - 0x78];
+    Matrix4 targetMatrix;            /* +0x80, identity, then the target actor's transform */
+    Matrix4 sourceMatrix;            /* +0xc0, identity, then the source actor's transform */
+    unsigned char unmodeled_100[0x214 - 0x100];
+    int vectorActive;                /* +0x214 */
+    unsigned char unmodeled_218[0x21c - 0x218];
+    float effectSpeed;               /* +0x21c */
+    unsigned char unmodeled_220[0x224 - 0x220];
+    int flags;                       /* +0x224 */
+    unsigned char unmodeled_228[0x22c - 0x228];
     int running;
 } SefBattleStatus;
 
@@ -3960,7 +3979,219 @@ void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *mat
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefExecScheduler);
+extern int func_A33248(void);
+extern int func_00A0CE30(void);
+extern void sdvExecAmbient(void);
+extern void sdvClearSpecialWork(void);
+extern void sdvScheduleSound(void *sequence);
+extern void sdvScheduleCamera(void *camera);
+extern void sdvExecSpecial(void *special);
+extern void sdvDrawSpecial(void *special);
+extern void sdvScheduleAlter(void *alter, void *request);
+typedef struct SefParentRecord {
+    unsigned char unmodeled_000[0x10];
+    Vector4 position;                /* +0x10 */
+    Vector4 rotation;                /* +0x20 */
+    Vector4 scale;                   /* +0x30 */
+    unsigned char unmodeled_040[0xa4 - 0x40];
+    short liveState;                 /* +0xa4 */
+    unsigned char unmodeled_0a6[0xf8 - 0xa6];
+    int matrixIndex;                 /* +0xf8 */
+    struct SefActor *actor;          /* +0xfc */
+} SefParentRecord;
+extern unsigned char D_0065A9B0[];
+extern unsigned char D_0065AFCC[];
+extern unsigned char D_0065B030[];
+#ifndef offsetof
+#define offsetof(type, member) ((unsigned int)&((type *)0)->member)
+#endif
+extern short _hitFlag;
+extern int _nowEftNo;
+#define SLOT(f) (*(__typeof__(((SchedulerState *)0)->f) *)(control_address + (offsetof(SchedulerState, f) - 0xa80)))
+#define BATTLE ((SefBattleStatus *)_battleData)
+
+int sefExecScheduler(void)
+{
+    SchedulerState *scheduler;
+    SchedulerState *table;
+    short hit_flag;
+    int active_count = 0;
+    int index;
+    unsigned int control_address;
+    unsigned int record_offset = 0;
+
+    table = sefSchedulerTable;
+
+    sdvExecAmbient();
+    sefInitBattlePrm();
+    sdvClearSpecialWork();
+    sefExecLoadQue();
+
+    scheduler = table;
+    control_address = (unsigned int)table + 0xa80;
+    for (index = 0; index < 128; control_address += sizeof(SchedulerState), record_offset += sizeof(SchedulerState), scheduler++, index++) {
+        int effect_alive = 0;
+        int running;
+        int k;
+        SchedulerState *expired;
+        unsigned int binding_offset;
+        ScriptBinding *exec_binding;
+        SchedulerState *record;
+
+        binding_offset = index * sizeof(SchedulerState) + offsetof(SchedulerState, scriptBinding);
+        running = (unsigned short)SLOT(flags) & 0x2;
+        hit_flag = _hitFlag;
+
+        if (SLOT(inUse) != 0 && SLOT(extraByte) != 0) {
+            if (func_A33248() != 0) {
+                active_count += 1;
+                continue;
+            }
+            if (SLOT(delayFrames) > 0) {
+                SLOT(delayFrames) -= 1;
+                active_count += 1;
+                continue;
+            }
+            if (running != 0) {
+                if (SLOT(parentRecord) != 0 && SLOT(parentRecord)->liveState < 0) {
+                    sefFreeScheduler(index);
+                    continue;
+                }
+                if (SLOT(targetActor) != 0 && SLOT(targetActor)->scheduleState <= 0) {
+                    sefFreeScheduler(index);
+                    continue;
+                }
+            }
+
+            *(SefEffectRequest *)BATTLE = *(SefEffectRequest *)SLOT(request);
+            BATTLE->targetActor = SLOT(targetActor);
+            /* Copied as a plain int word: the int-typed load/store dependences give the
+             * original instruction order (a pointer-typed copy schedules differently). */
+            *(int *)&BATTLE->sourceActor = *(int *)&SLOT(sourceActor);
+            BATTLE->parentRecord = SLOT(parentRecord);
+            BATTLE->savedParameter = SLOT(savedParameter);
+            BATTLE->effectNo = SLOT(effectNo);
+            BATTLE->flags = SLOT(flags);
+            BATTLE->running = running;
+
+            if (SLOT(effectNo) == 55 && hit_flag != 0) {
+                SLOT(nusumeResult) = BATTLE->nusumeResult = func_00A0CE30();
+            }
+
+            /* _nowScript/_nowEvent are declared const for their readers (sefCreateScheduler2
+             * matches only with that); this is their one writer. */
+            *(int *)&_nowScript = SLOT(scriptBinding.script_id);
+            *(int *)&_nowEvent = SLOT(scriptBinding.task_id);
+            _nowScriptAdr = (int)SLOT(scriptAddress);
+            _nowEftNo = SLOT(effectNo);
+            /* Non-zero when vectors[1] (x and y read as one doubleword, then z) is not zero. */
+            BATTLE->vectorActive = (((long long)*(int *)&SLOT(vectors[1].z)
+                                     | *(unsigned long long *)&SLOT(vectors[1])) != 0);
+            _nowScheduler = scheduler;
+            sefCalcRotTransSMatrix(&scheduler->vectors[1], &scheduler->vectors[0],
+                                   &scheduler->vectors[2], (Matrix4 *)&scheduler->localMatrix);
+
+            __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->targetMatrix) : "memory");
+            __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->sourceMatrix) : "memory");
+
+            if (running != 0) {
+                sefGetParentMatrix(scheduler, 0, (Matrix4 *)&scheduler->worldMatrix);
+            } else {
+                __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&scheduler->worldMatrix) : "memory");
+                if (SLOT(targetActor) != 0) {
+                    sefCalcRotTransSMatrix(&SLOT(targetActor)->rotation, &SLOT(targetActor)->position,
+                                           &SLOT(targetActor)->scale, &BATTLE->targetMatrix);
+                }
+            }
+            if (SLOT(sourceActor) != 0) {
+                sefCalcRotTransSMatrix(&SLOT(sourceActor)->rotation, &SLOT(sourceActor)->position,
+                                       &SLOT(sourceActor)->scale, &BATTLE->sourceMatrix);
+            }
+
+            BATTLE->effectSpeed = SLOT(effectSpeed);
+            sefSetReverseDir(SLOT(effectNo), (short)SLOT(requestParam));
+            for (k = 0; k < 32; k++) {
+                exec_binding = (ScriptBinding *)((unsigned int)_scheduler + binding_offset);
+                if (sefExecEffectData((EffectData *)(D_0065A9B0 + index * sizeof(SchedulerState) + k * sizeof(scheduler->effects[0])),
+                                      exec_binding->state, &hit_flag) != 0) {
+                    effect_alive += 1;
+                }
+            }
+
+            /* D_0065AFCC is sefSchedulerTable[0].soundParameters (+0x6cc): +0x18 cameraChoice,
+             * +0x64 the effect block (+0x730, D_0065B030), +0x384/+0x398 alter block and request. */
+            sdvScheduleSound(D_0065AFCC + record_offset);
+            sdvScheduleCamera(D_0065AFCC + 0x18 + record_offset);
+            sdvExecSpecial(D_0065AFCC + 0x64 + record_offset);
+            sdvScheduleAlter(D_0065AFCC + 0x384 + record_offset, D_0065AFCC + 0x398 + record_offset);
+
+            if (_hitFlag != 0 || _hitSignal != 0) {
+                unsigned int reaction_offset = record_offset + offsetof(SchedulerState, scriptBinding);
+                signed char *binding = (signed char *)(reaction_offset + (unsigned int)table);
+
+                if (binding[11] == 0) {
+                    sefCreateReactionEffect();
+                }
+                binding[11] = (signed char)(binding[11] + 1);
+            }
+            if (!(GameLoopState.flags & SEF_DRAW_FLAG_PENDING)) {
+                sdvDrawSpecial(D_0065B030 + record_offset);
+            }
+
+            if (effect_alive == 0) {
+                if (_nowScheduler->flags & 0x4000) {
+                    _nowScheduler->flags &= ~0x4000;
+                    func_A2C408(0);
+                }
+                expired = (SchedulerState *)(record_offset + (unsigned int)_scheduler);
+                if (expired->scriptBinding.link_id < 0) {
+                    /* Rebased through the negated table address, as the original computes it. */
+                unsigned int back_base = 0 - (unsigned int)_scheduler;
+
+                    record = (SchedulerState *)(record_offset - back_base);
+                    if ((record->flags & 0x20) == 0) {
+                        sefFreeScheduler(index);
+                        continue;
+                    }
+                }
+                for (k = 0; k < 32; k++) {
+                    sefDestroyEffectData(D_0065A9B0 + index * sizeof(SchedulerState) + k * sizeof(scheduler->effects[0]));
+                }
+                record_offset -= sizeof(SchedulerState);
+                SLOT(scriptBinding.state) = SLOT(scriptBinding.link_id);
+                {
+                    SefEffectDescriptor *descriptor = (SefEffectDescriptor *)SLOT(inUse);
+                    int init_flags = SLOT(initFlags);
+
+                    control_address -= sizeof(SchedulerState);
+                    scheduler--;
+                    sefInitEffectTbl(descriptor, index, init_flags);
+                }
+                index -= 1;
+                continue;
+            } else {
+                unsigned int state_offset = record_offset + offsetof(SchedulerState, scriptBinding);
+                ScriptBinding *binding;
+                SchedulerState *state;
+
+                binding = (ScriptBinding *)(state_offset + (unsigned int)_scheduler);
+
+                binding->state++;
+                if (binding->state == 0x3ff) {
+                    binding->state = 0x3fe;
+                }
+                state = (SchedulerState *)(record_offset + (unsigned int)_scheduler);
+                if ((state->flags & 0x40) == 0) {
+                    active_count += 1;
+                }
+            }
+        }
+        SLOT(flags) &= ~9;
+    }
+
+    sefSetLightFlag();
+    return active_count > 0;
+}
 
 int sefIsDeadSchduler(unsigned int scheduler_index)
 {
