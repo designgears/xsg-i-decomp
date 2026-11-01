@@ -2464,7 +2464,227 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
     DB_cmode(0);
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/script", SCRIPT_exec);
+extern ScriptActorRecord *ACT_create(int resource_id, int flags);
+extern int ACT_initMotion(void *actor);
+extern int ACT_loadMotion(ScriptActorRecord *actor, int resource_id, int flags);
+extern void ACT_loadResource(ScriptActorRecord *actor, int resource_id);
+extern void ACT_matrixInit(void);
+extern void InitCfSystem(void);
+extern void *PLAY_getCurrent(void);
+extern void PLAY_setupDefault(void *play);
+extern void STAGE_instance(SceneVm *vm, SceneObject stage_object);
+extern void TCAMERA_init(void);
+extern void UnduInit(unsigned char *state);
+void XTK_setResourceID(int id);
+typedef struct JThread {
+    unsigned int : 32;                  /* +0x00 */
+    struct JThread *previous;           /* +0x04 */
+    struct JThread *next;               /* +0x08 */
+    u8 kind;                            /* +0x0c */
+    u8 wait_kind;                       /* +0x0d */
+    unsigned short : 16;                /* +0x0e */
+    void *object;                       /* +0x10 */
+    void (*reset)(struct JThread *thread); /* +0x14 */
+    void *method;                       /* +0x18 */
+    unsigned int : 32;                  /* +0x1c */
+    unsigned int : 32;                  /* +0x20 */
+    u32 flags;                          /* +0x24 */
+    u32 *stack;                         /* +0x28 */
+    void *frames;                       /* +0x2c */
+    /* wait_kind selects elapsed frames, a native peer, or a thread. */
+    union {
+        int elapsed_frames;
+        void *object;
+        struct JThreadNode *thread;
+    } wait_target;                    /* +0x30, four-byte tagged storage */
+    int wait_parameter;                 /* +0x34 */
+    u16 stack_offset;                   /* +0x38 */
+    short stack_limit;                  /* +0x3a */
+    u16 resume_frames;                  /* +0x3c */
+    u16 frame_depth;                    /* +0x3e */
+    short frame_limit;                  /* +0x40 */
+} JThread;
+
+ScriptDbEntry *SCRIPT_exec(void)
+{
+    ScriptDbEntry *entry;
+    SceneObject object;
+    JThread *thread;
+    ScriptSceneTask *task;
+    XglTaskScheduler *scheduler;
+    JThread *vm;
+    StudioCamera *stage_camera;
+    StudioCamera *scene_camera;
+    int camera_index;
+
+    XTK_setWindowOwner(0);
+    currentScriptDB ^= 1;
+    entry = &scriptDB[(currentScriptDB + 1) & 1];
+    JNI_loadClassDB(entry->class_slot, 0);
+    entry = &scriptDB[currentScriptDB];
+    PLAY_setupDefault(PLAY_getCurrent());
+    if (entry->active == 0) {
+        ScriptActorRecord *actor;
+
+        JNI_popFrame();
+        XTK_setResourceID(1);
+        GameLoopStateV.kind = 2;
+        nmlModelSetGlobalPointLightReset();
+        s_nScriptCfTime = 0;
+        TCAMERA_init();
+        TWSYS_init();
+        MSG_init();
+        ACT_init();
+        MAP_initUnit();
+        InitCfSystem();
+        actor = ACT_create(0, 1);
+        ACT_initMotion(actor);
+        ACT_loadMotion(actor, actor->in_use_id, 1);
+        ACT_loadResource(actor, actor->in_use_id);
+        GameLoopStateV.main_actor = actor;
+        entry->skip_count = 1;
+        entry->thread = 0;
+        JNI_loadClassDB(entry->class_slot, 0);
+        JNI_pushFrame();
+        JNI_loadNativeClass();
+        return 0;
+    }
+    if (GameLoopStateV.flags & 0x800) {
+        JNI_popFrame();
+        TCAMERA_init();
+        TWSYS_init();
+        MSG_init();
+        ACT_init();
+        MAP_initUnit();
+        JNI_pushFrame();
+        JNI_loadNativeClass();
+    }
+    if (entry->skip_count != 0) {
+        if (entry->skip_count == 1) {
+            ScriptActorRecord *actor;
+            int camera_index;
+
+            camera_index = 0;
+            JNI_popFrame();
+            XTK_setResourceID(1);
+            GameLoopStateV.kind = 2;
+            nmlModelSetGlobalPointLightReset();
+            s_nScriptCfTime = 0;
+            while (camera_index < 8) {
+                StudioCamera *configured_camera;
+
+                xglStudioGetCamera(&stage_camera, camera_index);
+                xglCameraClipRangeDefault(stage_camera);
+                configured_camera = stage_camera;
+                if (camera_index == 0) {
+                    configured_camera->state = 4;
+                    configured_camera->active = 1;
+                } else {
+                    configured_camera->active = 0;
+                }
+                ++camera_index;
+                configured_camera->position.z = 1000000.0f;
+                configured_camera->position.y = 1000000.0f;
+                configured_camera->position.x = 1000000.0f;
+                configured_camera->rotation.y = 1.5707964f;
+                configured_camera->rotation.x = 0.0f;
+                configured_camera->rotation.z = 0.0f;
+            }
+            s_nScriptTalkLock = 0;
+            TCAMERA_init();
+            TWSYS_init();
+            MSG_init();
+            nmlModelInit();
+            ACT_init();
+            MAP_initUnit();
+            InitCfSystem();
+            s_nScriptSequenceReset = 0;
+            xglRenderClearColor(0x80000000);
+            actor = ACT_create(0, 1);
+            ACT_initMotion(actor);
+            ACT_loadMotion(actor, actor->in_use_id, 1);
+            ACT_loadResource(actor, actor->in_use_id);
+            GameLoopStateV.main_actor = actor;
+            JNI_pushFrame();
+            JNI_loadNativeClass();
+            JNI_loadClassDB(entry->class_slot, entry->class_image);
+            object = newObject(loadClass(
+                loadConstString((const char *)entry->active, -1), 0));
+            thread = JNI_createThread(2, 6, 0x46);
+            *(void **)&thread->object = object;
+            vm = defaultVM;
+            entry->thread = thread;
+            STAGE_instance(vm, object);
+        }
+        return entry;
+    }
+
+    XTK_setResourceID(2);
+    nmlModelSetGlobalPointLightReset();
+    nmlModelSetFadeIn((int)GameLoopStateV.fade_frames, 0);
+    FX_ScreenMask(0,
+                  SCRIPT_FADE_COLOR(GameLoopStateV.fade_red,
+                                    GameLoopStateV.fade_green,
+                                    GameLoopStateV.fade_blue),
+                  (int)GameLoopStateV.fade_frames, 3);
+    {
+        int camera_index = 0;
+
+        while (camera_index < 8) {
+            StudioCamera *configured_camera;
+
+            xglStudioGetCamera(&scene_camera, camera_index);
+            xglCameraClipRangeDefault(scene_camera);
+            configured_camera = scene_camera;
+            if (camera_index == 0) {
+                configured_camera->state = 4;
+                configured_camera->active = 1;
+            } else {
+                configured_camera->active = 0;
+            }
+            ++camera_index;
+            configured_camera->position.z = 1000000.0f;
+            configured_camera->position.y = 1000000.0f;
+            configured_camera->position.x = 1000000.0f;
+            configured_camera->rotation.y = 1.5707964f;
+            configured_camera->rotation.x = 0.0f;
+            configured_camera->rotation.z = 0.0f;
+        }
+    }
+    s_nScriptTalkLock = 0;
+    TCAMERA_init();
+    TWSYS_init();
+    MSG_init();
+    {
+    unsigned int *event_active = &s_nScriptEventActive;
+    unsigned int *sequence_reset = &s_nScriptSequenceReset;
+    GameLoopStateV.kind = 3;
+    *event_active = 1;
+    GameLoopStateV.flags |= 0x800;
+    *sequence_reset = 0;
+    }
+    xglRenderClearColor(0x80000000);
+    nmlModelInit();
+    GameResourceReset(0);
+    GameLoopStateV.scene_reset_counter = 0;
+    UnduInit(0);
+    ACT_matrixInit();
+    ACT_initScene();
+    MAP_initUnit();
+    JNI_pushFrame();
+    JNI_loadNativeClass();
+    JNI_loadClassDB(entry->class_slot, entry->class_image);
+    scheduler = GameLoopStateV.task_scheduler;
+    task = (ScriptSceneTask *)xglTaskEntryNext(
+        scheduler, (int (*)(XglTaskPrefix *))sceneObserver,
+        scheduler != 0 ? scheduler->active_tail : 0);
+    if (task != 0) {
+        task->thread = 0;
+        task->owner = &GameLoopStateV;
+        task->state_flags = 0;
+    }
+    return entry;
+}
 
 typedef struct ScriptDbEntrySX {
     void *class_image;   /* +0x0: class database image read from the script file */

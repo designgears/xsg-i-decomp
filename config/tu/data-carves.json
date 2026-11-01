@@ -2327,18 +2327,23 @@
     {
      "range": [
       "0x004d7c9c",
-      "0x004d7ca4"
+      "0x004d7cb4"
      ],
      "generated": [
       "0x004d7c9c",
-      "0x004d7ca4"
+      "0x004d7cb4"
      ],
      "generated_by": [
-      "DB_evtMonitor"
+      "DB_evtMonitor",
+      "SCRIPT_exec"
      ],
      "c_owned_symbols": [
       "D_004D7C9C",
-      "D_004D7CA0"
+      "D_004D7CA0",
+      "D_004D7CA4",
+      "D_004D7CA8",
+      "D_004D7CAC",
+      "D_004D7CB0"
      ],
      "also_referenced_by_c": [],
      "basis": {
