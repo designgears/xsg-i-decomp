@@ -2413,6 +2413,7 @@
       "D_004D7CB4"
      ],
      "also_referenced_by_c": [
+      "D_004D7CB8",
       "D_004D7CBC"
      ],
      "basis": {
@@ -2453,17 +2454,22 @@
     },
     {
      "range": [
-      "0x004d7cf0",
+      "0x004d7ce0",
       "0x004d7d14"
      ],
      "generated": [
-      "0x004d7cf0",
+      "0x004d7ce0",
       "0x004d7d14"
      ],
      "generated_by": [
+      "updateLight",
       "updateWind"
      ],
      "c_owned_symbols": [
+      "D_004D7CE0",
+      "D_004D7CE4",
+      "D_004D7CE8",
+      "D_004D7CEC",
       "D_004D7CF0",
       "D_004D7CF4",
       "D_004D7CF8",
@@ -2490,7 +2496,7 @@
      ],
      "generated": [
       "0x004c20f0",
-      "0x004c2104"
+      "0x004c2108"
      ],
      "generated_by": [
       "changeCameraMode"
@@ -2508,6 +2514,31 @@
       "D_004C2128",
       "D_004C2148",
       "D_004C2158",
+      "D_004C2170",
+      "D_004C2190"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/db_light_write.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c21b0",
+      "0x004c21c8"
+     ],
+     "generated": [
+      "0x004c21b0",
+      "0x004c21c8"
+     ],
+     "generated_by": [
+      "updateLight"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C21B0"
+     ],
+     "also_referenced_by_c": [
       "D_004C21C8",
       "D_004C21D8",
       "D_004C21F0",
