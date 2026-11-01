@@ -439,7 +439,211 @@ typedef struct JpegDecodeControl {
     u8 unmodeled_1f;
 } JpegDecodeControl;
 
-INCLUDE_ASM("asm/main/nonmatchings/xgl_jpeg", xglJpegEncode);
+extern int sceGsExecStoreImage(void *image, void *buffer);
+extern int sceGsSetDefStoreImage(void *image, short sourceX, short sourceY, short psm,
+                                 short destinationX, short destinationY, unsigned int width,
+                                 unsigned int height);
+typedef struct JpegEncodeRequest {
+    u8 unmodeled_00[4];
+    u8 *outputBuffer;
+    int outputSize;
+    short sourceX;
+    short sourceY;
+    short destinationX;
+    short destinationY;
+    short width;
+    short height;
+    u8 luminanceQuality;
+    u8 chrominanceQuality;
+    u8 samplingMode;
+    u8 unmodeled_1b;
+} JpegEncodeRequest;
+extern u8 headerALL[0x26F];
+
+int xglJpegEncode(JpegEncodeRequest *request)
+{
+    u8 *header;
+    u8 *outputBuffer;
+    int y;
+    int x;
+    int row;
+    int column;
+    int i;
+    int mcuWidth;
+    int mcuHeight;
+    int quotient;
+
+    sw->rowBytes = request->width * 3;
+    RebuildQuantizeTable(sw->unmodeled_02d0, sw->luminanceQuantization, 0, request->luminanceQuality);
+    RebuildQuantizeTable(&sw->unmodeled_02d0[0x40], sw->chrominanceQuantization, 1, request->chrominanceQuality);
+    ExtractHuffmanTableSub((JpegHuffCode *) sw->luminanceDcCodes, headerALL + 0xB6, 16);
+    ExtractHuffmanTableSub((JpegHuffCode *) sw->chrominanceDcCodes, headerALL + 0x18E, 16);
+    ExtractHuffmanTableSub((JpegHuffCode *) sw->luminanceAcCodes, headerALL + 0xD7, 256);
+    ExtractHuffmanTableSub((JpegHuffCode *) sw->chrominanceAcCodes, headerALL + 0x1AF, 256);
+
+    sw->buffer = request->outputBuffer;
+    sw->bitsRemaining = 0;
+    sw->bufferedByte = 0;
+    __builtin_memcpy(sw->buffer, headerALL, 623);
+
+    sw->outputPosition = 623;
+    header = sw->buffer + 14;
+    quotient = 0xAF00 / request->height;
+    header[1] = quotient;
+    header[0] = quotient >> 8;
+    quotient = 0xFA00 / request->width;
+    header[3] = quotient;
+    header[2] = quotient >> 8;
+
+    header = sw->buffer + 25;
+    for (i = 0; i < 64; i++) {
+        *header = sw->unmodeled_02d0[ZigZag[i]];
+        header++;
+    }
+    header = sw->buffer + 94;
+    for (i = 0; i < 64; i++) {
+        *header = sw->unmodeled_02d0[0x40 + ZigZag[i]];
+        header++;
+    }
+
+    switch (request->samplingMode) {
+    case 0:
+        i = 0x11;
+        break;
+    case 1:
+        i = 0x21;
+        break;
+    case 2:
+    default:
+        i = 0x22;
+        break;
+    }
+    header = sw->buffer + 163;
+    header[0] = request->height >> 8;
+    header[1] = request->height;
+    header[2] = request->width >> 8;
+    header[3] = request->width;
+    header[6] = i;
+
+    sw->dcPredictors[2] = 0;
+    sw->dcPredictors[1] = 0;
+    sw->dcPredictors[0] = 0;
+
+    switch (request->samplingMode) {
+    case 0:
+        mcuWidth = 8;
+        mcuHeight = mcuWidth;
+        break;
+    case 1:
+        mcuWidth = 16;
+        mcuHeight = 8;
+        break;
+    case 2:
+    default:
+        mcuWidth = 16;
+        mcuHeight = mcuWidth;
+        break;
+    }
+
+    for (y = 0; y < request->height; y += mcuHeight) {
+        for (x = 0; x < request->width; x += mcuWidth) {
+            sceGsSetDefStoreImage(&sw->unmodeled_0000[0x60], request->sourceX, request->sourceY, 1,
+                                  request->destinationX + x, request->destinationY + y,
+                                  ((unsigned) mcuWidth << 16) >> 16, ((unsigned) mcuHeight << 16) >> 16);
+            sceGsExecStoreImage(&sw->unmodeled_0000[0x60], (void *) 0x70003000);
+
+            for (row = 0; row < mcuHeight; row++) {
+                u8 *rgb = (u8 *) 0x70003000 + row * mcuWidth * 3;
+                float *pixel = (float *) sw->decodedYuvPixels + row * 48;
+                for (column = 0; column < mcuWidth; column++) {
+                    float red = I2F(rgb[0]);
+                    float green = I2F(rgb[1]);
+                    float blue = I2F(rgb[2]);
+
+                    pixel[0] = red * 0.299f + green * 0.587f + blue * 0.114f;
+                    pixel[1] = red * -0.16874f + green * -0.33126f + blue * 0.5f;
+                    pixel[2] = red * 0.5f + green * -0.41869f + blue * -0.08131f;
+                    rgb += 3;
+                    pixel += 3;
+                }
+            }
+
+            ConvertYUV2MCU(sw->decodedMcuPlanes, (float *) sw->decodedYuvPixels, request->samplingMode);
+
+            switch (request->samplingMode) {
+        case 0:
+            FFDCT(sw->decodedMcuPlanes + 0);
+            FFDCT(sw->decodedMcuPlanes + 256);
+            FFDCT(sw->decodedMcuPlanes + 320);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[0], sw->decodedMcuPlanes + 0, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[4], sw->decodedMcuPlanes + 256, sw->chrominanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[5], sw->decodedMcuPlanes + 320, sw->chrominanceQuantization);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[0], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[4], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[1]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[5], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[2]);
+            break;
+        case 1:
+            FFDCT(sw->decodedMcuPlanes + 0);
+            FFDCT(sw->decodedMcuPlanes + 64);
+            FFDCT(sw->decodedMcuPlanes + 256);
+            FFDCT(sw->decodedMcuPlanes + 320);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[0], sw->decodedMcuPlanes + 0, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[1], sw->decodedMcuPlanes + 64, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[4], sw->decodedMcuPlanes + 256, sw->chrominanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[5], sw->decodedMcuPlanes + 320, sw->chrominanceQuantization);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[0], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[1], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[4], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[1]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[5], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[2]);
+            break;
+        case 2:
+        default:
+            FFDCT(sw->decodedMcuPlanes + 0);
+            FFDCT(sw->decodedMcuPlanes + 64);
+            FFDCT(sw->decodedMcuPlanes + 128);
+            FFDCT(sw->decodedMcuPlanes + 192);
+            FFDCT(sw->decodedMcuPlanes + 256);
+            FFDCT(sw->decodedMcuPlanes + 320);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[0], sw->decodedMcuPlanes + 0, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[1], sw->decodedMcuPlanes + 64, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[2], sw->decodedMcuPlanes + 128, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[3], sw->decodedMcuPlanes + 192, sw->luminanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[4], sw->decodedMcuPlanes + 256, sw->chrominanceQuantization);
+            Quantize(((int (*)[64]) sw->decodedYuvPixels)[5], sw->decodedMcuPlanes + 320, sw->chrominanceQuantization);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[0], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[1], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[2], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[3], (JpegHuffCode *) sw->luminanceDcCodes,
+                          (JpegHuffCode *) sw->luminanceAcCodes, &sw->dcPredictors[0]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[4], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[1]);
+            HuffmanEncode(((int (*)[64]) sw->decodedYuvPixels)[5], (JpegHuffCode *) sw->chrominanceDcCodes,
+                          (JpegHuffCode *) sw->chrominanceAcCodes, &sw->dcPredictors[2]);
+            break;
+            }
+        }
+    }
+
+    if (sw->bitsRemaining != 0) {
+        sw->buffer[sw->outputPosition] = sw->bufferedByte;
+        sw->outputPosition++;
+    }
+    sw->buffer[sw->outputPosition] = 0xFF;
+    sw->buffer[sw->outputPosition + 1] = 0xD9;
+    sw->outputPosition += 2;
+    request->outputSize = sw->outputPosition;
+    return 0;
+}
 
 /*
  * Parses a DRI (Define Restart Interval) marker segment: marker[0..1] is the
