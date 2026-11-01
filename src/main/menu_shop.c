@@ -1551,7 +1551,562 @@ static void MenuShopList(TskObject *task, struct MenuShopListDisplay *work)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/menu_shop", MenuShopEx);
+typedef struct WindowDX WindowDX;
+typedef struct WindowDXRect {
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+} WindowDXRect;
+typedef struct WindowDXFrame {
+    unsigned char unmodeled_00[4];
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    signed char progress;
+    unsigned char mode;
+    unsigned char unmodeled_12[0x44 - 0x12];
+} WindowDXFrame;
+typedef struct WindowDXRibbonCell {
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+    unsigned char unmodeled_04[8];
+} WindowDXRibbonCell;
+typedef struct WindowDXRibbon {
+    short x;
+    short y;
+    int style;
+    short width;
+    short height;
+    unsigned char unmodeled_0c[0x18 - 0x0c];
+    WindowDXRibbonCell cells[6];
+    unsigned char unmodeled_60[0x70 - 0x60];
+} WindowDXRibbon;
+typedef struct WindowDXSprite {
+    unsigned char unmodeled_00[0x10];
+    unsigned short kind;
+    unsigned char unmodeled_12[0x14 - 0x12];
+} WindowDXSprite;
+typedef struct BattleWinTagFont {
+    unsigned char unmodeled_00[4];
+    short x;
+    short y;
+    int style;
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char color_a;
+    unsigned char unmodeled_10[0x20 - 0x10];
+} BattleWinTagFont;
+typedef struct BattleWinNumber {
+    short x;
+    short y;
+    int style;
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char unmodeled_0b;
+    unsigned char font;
+    unsigned char unmodeled_0d;
+    unsigned char option;
+    unsigned char places;
+    unsigned char unmodeled_10[4];
+    int value;
+    unsigned char unmodeled_18[0x90 - 0x18];
+} BattleWinNumber;
+struct WindowDX {
+    short x;                           /* +0x00 */
+    short y;                           /* +0x02 */
+    int style;                         /* +0x04 */
+    short width;                       /* +0x08 */
+    short height;                      /* +0x0A */
+    const char *tag_id;                 /* +0x0C: title text */
+    unsigned char state;               /* +0x10 */
+    unsigned char ribbon_initialized;  /* +0x11 */
+    unsigned char unmodeled_12[2];
+    void (*close_callback)(WindowDX *window, void *arg); /* +0x14 */
+    void *close_callback_arg;          /* +0x18 */
+    unsigned char unmodeled_1c[4];
+    WindowDXRect rect;                 /* +0x20 */
+    unsigned char color_r;             /* +0x2C */
+    unsigned char color_g;             /* +0x2D */
+    unsigned char color_b;             /* +0x2E */
+    unsigned char alpha;               /* +0x2F */
+    unsigned char unmodeled_30[0x3C - 0x30];
+    WindowDXFrame frame;               /* +0x3C */
+    BattleWinTagFont title_font;        /* +0x80 */
+    WindowDXRibbon ribbon_top;          /* +0xA0 */
+    WindowDXRibbon ribbon_bottom;       /* +0x110 */
+    WindowDXSprite sprite;              /* +0x180 */
+};
+typedef struct ERibbonPoint {
+    short x;
+    short y;
+    int work;
+    signed char red;
+    signed char green;
+    signed char blue;
+    signed char alpha;
+} ERibbonPoint;
+typedef struct ERibbonSetData {
+    short x;
+    short y;
+    int work;
+    u8 unmodeled_008[4];
+    signed char mode;
+    unsigned char progress;
+    unsigned char visible;
+    unsigned char style;
+    ERibbonPoint points[6];
+} ERibbonSetData;
+typedef struct ETagFontMainData {
+    u8 unmodeled_000[4];
+    short x;
+    short y;
+    int work;
+    signed char color[4];
+    struct {
+        short x;
+        short y;
+        int work;
+        signed char color[4];
+        const char *text;
+    } render;
+} ETagFontMainData;
+typedef struct ETagFont {
+    signed char state;      /* +0x00 */
+    signed char subState;   /* +0x01 */
+    u8 unmodeled_002[10];   /* +0x02..0x0b */
+    signed char color[4];    /* +0x0c..0x0f */
+    u8 unmodeled_010[0xc];  /* +0x10..0x1b */
+    const char *text;        /* +0x1c */
+} ETagFont;
+typedef struct ERibbonRenderPoint {
+    short x;
+    short y;
+    int work;
+    u8 unmodeled_008[4];
+} ERibbonRenderPoint;
+typedef struct ERibbonMainData {
+    short x;
+    short y;
+    int work;
+    short width;
+    short height;
+    signed char mode;
+    unsigned char progress;
+    unsigned char visible;
+    unsigned char style;
+    ERibbonRenderPoint points[6];
+    u8 unmodeled_058[4];
+    int renderCount;
+} ERibbonMainData;
+typedef struct ENumberSpriteDescriptor {
+    short x, y;
+    int work;
+    short width, height;
+    unsigned char color[4];
+    short spriteId;
+    short unmodeled_012;
+} ENumberSpriteDescriptor;
+typedef struct ENumberRenderDescriptor {
+    unsigned short x, y;
+    int work;
+    union {
+        struct {
+            signed char red, green, blue, alpha;
+            int value;
+        } number;
+        struct {
+            short width, height;
+            unsigned char color[4];
+        } sprite;
+        struct {
+            unsigned char color[4];
+            const char *text;
+        } text;
+    } payload;
+    /* Opcode 10: digit count and flags; opcode 2: sprite ID in argument1. */
+    unsigned short argument1, argument2;
+} ENumberRenderDescriptor;
+typedef ENumberRenderDescriptor ENumberRenderArray[4];
+typedef union ENumberValue {
+    int integer;
+    const char *text;
+} ENumberValue;
+typedef struct ENumberMainData {
+    unsigned short x, y;
+    int work;
+    unsigned char color[4];
+    unsigned char mode;
+    unsigned char unmodeled_00d;
+    unsigned char format;
+    unsigned char digits;
+    unsigned char colorMode[2];
+    unsigned char alignment;
+    unsigned char firstOnly;
+    ENumberValue value;
+    ENumberRenderArray render;
+    ENumberSpriteDescriptor separators[2];
+} ENumberMainData;
+typedef struct UnduDataHeaderGroup {
+    unsigned short firstIdentifier;
+    unsigned short headerCount;
+    float (*headers)[4];
+} UnduDataHeaderGroup;
+struct MenuShopExBullet {
+    unsigned char unmodeled_00[4];
+    int depth;
+    WindowDX window;
+    MenuShopMessage message;
+};
+struct MenuShopExHeader {
+    WindowDXRibbon ribbon;
+    BattleWinTagFont label;
+    BattleWinNumber number;
+};
+struct MenuShopExPortrait {
+    signed char state;
+    unsigned char unmodeled_01[3];
+    short x;
+    short y;
+    int depth;
+    signed char red;
+    signed char green;
+    signed char blue;
+    signed char alpha;
+    unsigned char unmodeled_10[0x14];
+    short spriteId;
+};
+struct MenuShopExParty {
+    WindowDXRibbon ribbon;
+    BattleWinTagFont label;
+    struct MenuShopExPortrait sprites[7];
+    unsigned char unmodeled_1a8[4];
+};
+struct MenuShopExDisplay {
+    unsigned char state;
+    unsigned char active;
+    unsigned char flags;
+    unsigned char slideFlags;
+    int depth;
+    struct MenuShopExHeader headers[2];
+    struct MenuShopExParty parties[2];
+    struct MenuShopExHeader equipment;
+    struct MenuShopExBullet bullet;
+};
+extern const char *msg00_5_0036DB68[];
+extern unsigned short MenuFaceEpidGet(int unitId, int smallPortrait);
+void eNumberMain(void *number);
+void eNumberSet(void *data, int unused);
+void eRibbonMain(void *ribbon);
+void eRibbonSet(void *ribbon, int style);
+void eSpriteMain(void *sprite);
+void eSpriteSet(void *sprite, short spriteId);
+void eTagFontMain(void *tag);
+void eTagFontSet(void *tag, const char *text);
+
+static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
+{
+    /* dataMoneyBoxChk's word result (the TU declares it long). */
+    extern int dataMoneyBoxChkWord(void) __asm__("dataMoneyBoxChk");
+    MenuShopWorkData **shop = &MenuShopWork;
+    short ribbonX[2];
+    short rosterX[2];
+    short ribbonY[2];
+    short rosterY[2];
+    short totalX[1];
+    short totalY[1];
+    int i;
+    int j;
+    extern int MenuWeaponEquipCheck(int unit, int item, int mode);
+    extern int MenuAccessoryEquipCheck(int unit, int item, int mode);
+
+    switch (task->state) {
+    case 0:
+        work->depth = 0x00fffff0;
+        for (i = 0; i < 2; i++) {
+            eRibbonSet((ERibbonSetData *)(void *)&work->headers[i].ribbon, 3);
+            work->headers[i].ribbon.x = 0x210;
+            work->headers[i].ribbon.y = 0;
+            work->headers[i].ribbon.width = 0x100;
+            work->headers[i].ribbon.height = 0x18;
+            work->headers[i].ribbon.x = 0x220;
+            work->headers[i].ribbon.y = 0x53 + 0x20 * i;
+            work->headers[i].ribbon.style = work->depth;
+            eTagFontSet((ETagFont *)(void *)&work->headers[i].label, msg00_5_0036DB68[i]);
+            work->headers[i].label.style = work->depth + 2;
+            eNumberSet((void *)&work->headers[i].number, 0);
+            work->headers[i].number.style = work->depth + 2;
+        }
+        for (i = 0; i < 2; i++) {
+            eRibbonSet((ERibbonSetData *)(void *)&work->parties[i].ribbon, 3);
+            work->parties[i].ribbon.width = 0x100;
+            work->parties[i].ribbon.style = work->depth;
+            work->parties[i].ribbon.x = 0x220;
+            work->parties[i].ribbon.y = 0x93;
+            eTagFontSet((ETagFont *)(void *)&work->parties[i].label, msg00_5_0036DB68[2]);
+            work->parties[i].label.style = work->depth + 2;
+        }
+        work->parties[0].ribbon.height = 0x30;
+        for (j = 0; j < (*shop)->partyCount; j++) {
+            eSpriteSet(&work->parties[0].sprites[j], MenuFaceEpidGet(*(short *)((char *)(*shop)->partyIds + (j << 1)), 1));
+            work->parties[0].sprites[j].depth = work->depth + 2;
+        }
+        work->parties[1].ribbon.height = 0x60;
+        for (j = 0; j < (*shop)->unitCount; j++) {
+            eSpriteSet(&work->parties[1].sprites[j], MenuFaceEpidGet(*(short *)((char *)(*shop)->unitIds + (j << 1)), 1));
+            work->parties[1].sprites[j].depth = work->depth + 2;
+        }
+        eRibbonSet((ERibbonSetData *)(void *)&work->equipment.ribbon, 3);
+        {
+            const char **labels;
+            short width, height, left, top;
+            int style;
+
+            left = 0x210;
+            {
+                const char *head = *(const char **)(void *)&work->equipment.ribbon;
+
+                *(const char **)(void *)&work->equipment.ribbon = head;
+            }
+            style = ((union { int value; short half[2]; } *)(void *)&work->depth)->value;
+            labels = msg00_5_0036DB68;
+            top = 0x93;
+            height = 0x18;
+            width = 0x100;
+            work->equipment.ribbon.x = left;
+            work->equipment.ribbon.width = width;
+            work->equipment.ribbon.style = style;
+            work->equipment.ribbon.height = height;
+            work->equipment.ribbon.y = top;
+            eTagFontSet((ETagFont *)(void *)&work->equipment.label, labels[3]);
+        }
+        work->equipment.label.style = work->depth + 2;
+        eNumberSet((void *)&work->equipment.number, 0);
+        work->equipment.number.style = work->depth + 2;
+        work->slideFlags = 0;
+        work->equipment.number.option = 0;
+        work->flags = 0;
+        work->equipment.number.places = 1;
+        break;
+    case 2:
+
+        for (i = 0; i < 2; i++) {
+            ribbonX[i] = 0x210;
+            ribbonY[i] = 0x53 + 0x20 * i;
+        }
+        rosterY[0] = 0x93;
+        rosterY[1] = 0x43;
+        rosterX[0] = 0x210;
+        rosterX[1] = 0x210;
+        totalX[0] = 0x210;
+        totalY[0] = 0xcb;
+
+        switch ((*shop)->state) {
+        case 0x30:
+        case 0x90:
+        case 0xa4:
+            if ((unsigned char)((*shop)->stateFlags & 1)) {
+                if ((*shop)->mode == 0)
+                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00_5_0036DB68[0]);
+                else
+                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00_5_0036DB68[4]);
+                work->slideFlags |= 2;
+            }
+            for (i = 0; i < 2; i++) {
+                ribbonX[i] = 0x130;
+                ribbonY[i] = 0x53 + 0x20 * i;
+                if (work->slideFlags & 2) {
+                    work->headers[i].ribbon.y = 0x53 + 0x20 * i;
+                    work->slideFlags &= ~2;
+                }
+            }
+            switch ((*shop)->category - 1) {
+            case 0:
+            case 1:
+            case 2:
+                work->equipment.ribbon.y = totalY[0] = 0xcb;
+                totalX[0] = 0x130;
+                eTagFontSet((ETagFont *)(void *)&work->parties[0].label, msg00_5_0036DB68[2]);
+                rosterX[0] = 0x130;
+                rosterY[0] = 0x93;
+                work->parties[0].ribbon.y = 0x93;
+                work->slideFlags |= 2;
+                break;
+            case 3:
+            case 4:
+            case 5:
+                work->equipment.ribbon.y = totalY[0] = 0xfb;
+                totalX[0] = 0x130;
+                eTagFontSet((ETagFont *)(void *)&work->parties[1].label, msg00_5_0036DB68[2]);
+                rosterX[1] = 0x130;
+                rosterY[1] = 0x93;
+                work->parties[1].ribbon.y = 0x93;
+                work->slideFlags |= 2;
+                break;
+            case 6:
+                ribbonX[0] = 0x210;
+                ribbonX[1] = 0x130;
+                ribbonY[1] = 0x118;
+                break;
+            }
+            break;
+        case 0xa0:
+        case 0xa2:
+            switch ((*shop)->category - 1) {
+            case 0:
+            case 1:
+            case 2:
+                rosterX[0] = 0x130;
+                rosterY[0] = 0xf0;
+                break;
+            case 3:
+            case 4:
+            case 5:
+                rosterX[1] = 0x130;
+                rosterY[1] = 0xe8;
+                break;
+            case 6:
+                ribbonX[1] = 0x130;
+                ribbonY[1] = 0x118;
+                break;
+            }
+            break;
+        }
+
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&work->headers[i].ribbon.x, &ribbonX[i], 3.0f);
+            if (work->headers[i].ribbon.x == ribbonX[i])
+                MoveSlide(&work->headers[i].ribbon.y, &ribbonY[i], 3.0f);
+            eRibbonMain((ERibbonMainData *)(void *)&work->headers[i].ribbon);
+            work->headers[i].number.x = work->headers[i].ribbon.x + 0x40;
+            work->headers[i].number.y = work->headers[i].ribbon.y + 4;
+            work->headers[i].number.option = 0;
+            if (i == 0) {
+                if ((*shop)->mode == 0) {
+                    work->headers[i].number.places = 2;
+                    if ((*shop)->listIndex >= 0)
+                        work->headers[0].number.value = MenuBoxChk(MenuSortGet(0, (*shop)->listIndex));
+                    else
+                        work->headers[0].number.value = 0;
+                } else {
+                    work->headers[i].number.places = 6;
+                    if ((*shop)->listIndex >= 0)
+                        work->headers[0].number.value = MenuBoxMoneyGet(MenuSortGet(0, (*shop)->listIndex), 1);
+                    else
+                        work->headers[0].number.value = 0;
+                }
+            } else {
+                work->headers[i].number.places = 9;
+                if ((*shop)->listIndex >= 0)
+                    work->headers[i].number.value = dataMoneyBoxChkWord();
+                else
+                    work->headers[i].number.value = 0;
+            }
+            eNumberMain((ENumberMainData *)(void *)&work->headers[i].number);
+            work->headers[i].label.x = work->headers[i].number.x - 8;
+            work->headers[i].label.y = work->headers[i].ribbon.y + 4;
+            eTagFontMain((ETagFontMainData *)(void *)&work->headers[i].label);
+        }
+
+        for (i = 0; i < 2; i++) {
+            MoveSlide(&work->parties[i].ribbon.x, &rosterX[i], 3.0f);
+            if (work->parties[i].ribbon.x == rosterX[i])
+                MoveSlide(&work->parties[i].ribbon.y, &rosterY[i], 3.0f);
+            eRibbonMain((ERibbonMainData *)(void *)&work->parties[i].ribbon);
+            if (i == 0) {
+                for (j = 0; j < (*shop)->partyCount; j++) {
+                    int usable;
+
+                    usable = 0;
+                    if ((*shop)->modelId != 0) {
+                        switch (((short *)&(*shop)->itemId)[1]) {
+                        case 3:
+                            if (MenuWeaponEquipCheck(*(short *)((char *)(*shop)->partyIds + (j << 1)), (*shop)->modelId, 0))
+                                usable = 1;
+                            break;
+                        case 5:
+                            if (MenuAccessoryEquipCheck(*(short *)((char *)(*shop)->partyIds + (j << 1)), (*shop)->modelId, -1))
+                                usable = 1;
+                            break;
+                        case 4:
+                            usable = MenuWeaponEquipCheck(*(short *)((char *)(*shop)->partyIds + (j + j)), ((short *)func_A1A428((*shop)->modelId))[6], 0) != 0;
+                            break;
+                        }
+                    }
+                    if (usable == 1) {
+                        work->parties[i].sprites[j].blue = 0x80;
+                        work->parties[i].sprites[j].green = 0x80;
+                        work->parties[i].sprites[j].red = 0x80;
+                    } else {
+                        work->parties[i].sprites[j].blue = 0x40;
+                        work->parties[i].sprites[j].green = 0x40;
+                        work->parties[i].sprites[j].red = 0x40;
+                    }
+                    work->parties[i].sprites[j].x = work->parties[i].ribbon.x + (j % 4) * 20 + 0x40;
+                    work->parties[i].sprites[j].y = work->parties[i].ribbon.y + (j / 4) * 24;
+                    eSpriteMain(&work->parties[i].sprites[j]);
+                }
+            } else {
+                for (j = 0; j < (*shop)->unitCount; j++) {
+                    int usable;
+
+                    usable = 0;
+                    eSpriteSet(&work->parties[i].sprites[j], MenuFaceEpidGet(*(short *)((char *)(*shop)->unitIds + (j << 1)), 1));
+                    if ((*shop)->modelId != 0) {
+                        switch (((short *)&(*shop)->itemId)[1]) {
+                        case 3:
+                            if (MenuWeaponEquipCheck(*(short *)((char *)(*shop)->unitIds + (j << 1)), (*shop)->modelId, 0))
+                                usable = 1;
+                            break;
+                        case 5:
+                            if (MenuAccessoryEquipCheck(*(short *)((char *)(*shop)->unitIds + (j << 1)), (*shop)->modelId, -1))
+                                usable = 1;
+                            break;
+                        case 4:
+                            usable = MenuWeaponEquipCheck(*(short *)((char *)(*shop)->unitIds + (j << 1)), ((short *)func_A1A428((*shop)->modelId))[6], 0) != 0;
+                            break;
+                        }
+                    }
+                    if (usable == 1) {
+                        work->parties[i].sprites[j].blue = 0x80;
+                        work->parties[i].sprites[j].green = 0x80;
+                        work->parties[i].sprites[j].red = 0x80;
+                    } else {
+                        work->parties[i].sprites[j].blue = 0x40;
+                        work->parties[i].sprites[j].green = 0x40;
+                        work->parties[i].sprites[j].red = 0x40;
+                    }
+                    work->parties[i].sprites[j].x = work->parties[i].ribbon.x + (j & 1) * 64 + 0x40;
+                    work->parties[i].sprites[j].depth = work->parties[i].ribbon.style + 2;
+                    work->parties[i].sprites[j].y = work->parties[i].ribbon.y + (j / 2) * 32;
+                    eSpriteMain(&work->parties[i].sprites[j]);
+                }
+            }
+            work->parties[i].label.x = work->parties[i].sprites[0].x - 8;
+            work->parties[i].label.y = work->parties[i].ribbon.y + i * 28 + 16;
+            eTagFontMain((ETagFontMainData *)(void *)&work->parties[i].label);
+        }
+        MoveSlide(&work->equipment.ribbon.x, &totalX[0], 3.0f);
+        if ((&work->equipment)[i].ribbon.x == totalX[i])
+            MoveSlide(&work->equipment.ribbon.y, &totalY[0], 3.0f);
+        eRibbonMain((ERibbonMainData *)(void *)&work->equipment.ribbon);
+        work->equipment.number.x = work->equipment.ribbon.x + 0x40;
+        work->equipment.number.y = work->equipment.ribbon.y + 4;
+        work->equipment.number.value = (*shop)->canEquip;
+        eNumberMain((ENumberMainData *)(void *)&work->equipment.number);
+        work->equipment.label.x = work->equipment.number.x - 8;
+        work->equipment.label.y = work->equipment.ribbon.y + 4;
+        eTagFontMain((ETagFontMainData *)(void *)&work->equipment.label);
+        break;
+    }
+}
 
 extern const char *msg00_6[3];
 extern const char *msg01_7[4];
@@ -3696,7 +4251,7 @@ void MenuShopCore(void) {
 }
 
 extern void MenuShopSelect(TskObject *task, void *data);
-extern void MenuShopEx(TskObject *task, void *data);
+static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work);
 extern void MenuShopSeisan(TskObject *task, void *data);
 extern void MenuShopSeisan02(TskObject *task, void *data);
 static void MenuShopIcon(TskObject *task, void *data);
