@@ -113,8 +113,8 @@ struct NmlFilterGsRegisterEntry {
 };
 
 struct NmlFilterGsPair {
-    union { u64 value; } payload;
-    union { u64 value; } registerSlot;
+    union { u64 value; u32 words[2]; } payload;
+    union { u64 value; u32 words[2]; } registerSlot;
 };
 typedef int NmlFilterGridVector[4] __attribute__((aligned(16)));
 enum {
@@ -989,7 +989,242 @@ void nmlFilterSetFlatRender(void *arg)
 typedef union { struct { u64 data; u64 addr; } r; float f; } FtfdGsReg;
 typedef struct { char pad[0x26C]; float f; int i; } FtfdArg;
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlFilterSetTexFillDraw);
+typedef union {
+    float f;
+    int i;
+} LayoutSlot;
+typedef union {
+    LayoutSlot slots[200];
+    struct {
+        unsigned char unmodeled_000[0x80];
+        Matrix4 modelToWorld;
+        unsigned char unmodeled_0c0[0x1e0 - 0xc0];
+        float filterAlpha;
+        float filterAmplitude;
+        unsigned char unmodeled_1e8[8];
+        Vector4 fallbackSphere;
+        unsigned char unmodeled_200[0x234 - 0x200];
+        u32 filterFlags;
+        int pixelAlpha;
+        unsigned char unmodeled_23c[4];
+        const char *texture;
+        int texfunc;
+        u64 alpha;
+        u32 render_status;
+        struct NmlStealthJointData *jointData;
+        unsigned char unmodeled_258[0x26c - 0x258];
+        float textureFillWeight;
+        int textureMapAlpha;
+        unsigned char unmodeled_274[0x280 - 0x274];
+        struct NmlStealthGeometry *stealthParts[10];
+        unsigned char unmodeled_2a8[0x2c0 - 0x2a8];
+        float transparency;
+        unsigned char unmodeled_2c4[4];
+        int stealthPartCount;
+        unsigned char unmodeled_2cc[0x2e0 - 0x2cc];
+        unsigned short mapShadowParts[8];
+    } fields;
+} LayoutStore;
+
+void nmlFilterSetTexFillDraw(int frameBase, LayoutStore *model)
+{
+    struct NmlFilterGsPair *packet = (struct NmlFilterGsPair *)0x70000000;
+    unsigned short frame = frameBase;
+    int remaining;
+    float fillScale = 128.0f;
+    struct NmlFilterGsPair *alphaEntry = (struct NmlFilterGsPair *)0x70000010;
+    u64 alphaBits;
+    float mapAlpha;
+    float fillWeight;
+    u64 testRegister;
+
+    remaining = 4;
+    mapAlpha = (float)model->fields.textureMapAlpha;
+    fillWeight = model->fields.textureFillWeight;
+    packet[0].payload.value = 0x35001;
+    packet[0].registerSlot.value = 0x47;
+    alphaBits = ((u64)(fillScale - ((fillScale - (fillScale - mapAlpha)) * fillWeight)) << 24);
+    alphaEntry->payload.value = alphaBits | 0x3F80000000808080ULL;
+    alphaEntry->registerSlot.value = 1;
+    {
+        struct NmlFilterGsPair *modeEntry = (struct NmlFilterGsPair *)0x70000020;
+        struct NmlFilterGsPair *clampEntry = (struct NmlFilterGsPair *)0x70000030;
+        struct NmlFilterGsPair *colorEntry = (struct NmlFilterGsPair *)0x70000040;
+
+        modeEntry->payload.value = 6;
+        modeEntry->registerSlot.value = 0;
+        clampEntry->payload.value = 0x72007000;
+        clampEntry->registerSlot.value = 4;
+        colorEntry->payload.value = 0x7FF08000;
+        colorEntry->registerSlot.value = 4;
+    }
+    nmlPacketGsInit();
+    {
+        struct NmlFilterGsPair *blockEntry = packet;
+
+        do {
+            --remaining;
+            packet_gs_entry64(blockEntry->registerSlot.words[0], &blockEntry->payload.value);
+            blockEntry++;
+        } while (remaining >= 0);
+    }
+    nmlPacketAddGsFlush();
+
+    packet[0].payload.value = 0x24020000 | (frame << 5) | 0x2000000640000000ULL;
+    packet[0].registerSlot.value = 6;
+    {
+        struct NmlFilterGsPair *scissorEntry = (struct NmlFilterGsPair *)0x70000010;
+        struct NmlFilterGsPair *modeEntry = (struct NmlFilterGsPair *)0x70000020;
+        struct NmlFilterGsPair *clampEntry = (struct NmlFilterGsPair *)0x70000030;
+        struct NmlFilterGsPair *colorEntry = (struct NmlFilterGsPair *)0x70000040;
+
+        scissorEntry->payload.value = 0x60;
+        scissorEntry->registerSlot.value = 0x14;
+        modeEntry->payload.value = 0x31001;
+        modeEntry->registerSlot.value = 0x47;
+        clampEntry->payload.value = 0;
+        clampEntry->registerSlot.value = 8;
+        colorEntry->payload.value = 0x3F80000080808080ULL;
+        colorEntry->registerSlot.value = 1;
+    }
+    nmlPacketGsInit();
+    nmlPacketAddGsFrame(frame, 0);
+    {
+        struct NmlFilterGsPair *blockEntry = packet;
+
+        remaining = 4;
+        do {
+            --remaining;
+            packet_gs_entry64(blockEntry->registerSlot.words[0], &blockEntry->payload.value);
+            blockEntry++;
+        } while (remaining >= 0);
+    }
+    nmlPacketAddGsFlush();
+
+    {
+        u64 textureFlush;
+        u64 uvSlot;
+        u64 xyzSlot;
+        u64 firstUv;
+        u64 firstXyz;
+        u64 secondUv;
+        u64 secondXyz;
+        u64 spritePrimitive;
+        struct NmlFilterGsPair *gsEntry1;
+        struct NmlFilterGsPair *gsEntry2;
+        struct NmlFilterGsPair *gsEntry3;
+        struct NmlFilterGsPair *gsEntry4;
+        struct NmlFilterGsPair *gsEntry5;
+        struct NmlFilterGsPair *gsEntry6;
+        struct NmlFilterGsPair *gsEntry7;
+        struct NmlFilterGsPair *gsEntry8;
+        struct NmlFilterGsPair *gsEntry9;
+        struct NmlFilterGsPair *gsEntry10;
+        struct NmlFilterGsPair *gsEntry11;
+
+        do {
+            textureFlush = 0x3F;
+            gsEntry1 = (struct NmlFilterGsPair *)0x70000010;
+            gsEntry2 = (struct NmlFilterGsPair *)0x70000020;
+            gsEntry3 = (struct NmlFilterGsPair *)0x70000030;
+            gsEntry4 = (struct NmlFilterGsPair *)0x70000040;
+            gsEntry5 = (struct NmlFilterGsPair *)0x70000050;
+            gsEntry8 = (struct NmlFilterGsPair *)0x70000080;
+            gsEntry9 = (struct NmlFilterGsPair *)0x70000090;
+            gsEntry10 = (struct NmlFilterGsPair *)0x700000A0;
+            gsEntry6 = (struct NmlFilterGsPair *)0x70000060;
+            gsEntry7 = (struct NmlFilterGsPair *)0x70000070;
+            gsEntry11 = (struct NmlFilterGsPair *)0x700000B0;
+        } while (0);
+        do {
+            spritePrimitive = 0x116;
+            uvSlot = 3;
+            xyzSlot = 4;
+            firstUv = 0x100010;
+            firstXyz = 0x72108010;
+            secondUv = 0x0DF00FF0;
+            secondXyz = 0x7FF08FF0;
+        } while (0);
+        packet[0].payload.value = 0;
+        packet[0].registerSlot.value = textureFlush;
+        gsEntry1->payload.value = spritePrimitive;
+        gsEntry1->registerSlot.value = 0;
+        gsEntry2->payload.value = firstUv;
+        gsEntry2->registerSlot.value = uvSlot;
+        gsEntry3->payload.value = firstXyz;
+        gsEntry3->registerSlot.value = xyzSlot;
+        gsEntry4->payload.value = secondUv;
+        gsEntry4->registerSlot.value = uvSlot;
+        gsEntry5->payload.value = secondXyz;
+        gsEntry5->registerSlot.value = xyzSlot;
+        gsEntry6->payload.value = 0;
+        gsEntry6->registerSlot.value = 0x3F;
+        gsEntry7->payload.value = spritePrimitive;
+        gsEntry7->registerSlot.value = 0;
+        gsEntry8->payload.value = 0x101010;
+        gsEntry8->registerSlot.value = 3;
+        gsEntry9->payload.value = 0x72107010;
+        gsEntry9->registerSlot.value = 4;
+        gsEntry10->payload.value = 0x0DF01FF0;
+        gsEntry10->registerSlot.value = 3;
+        gsEntry11->payload.value = 0x7FF07FF0;
+        gsEntry11->registerSlot.value = 4;
+    }
+    nmlPacketGsInit();
+    {
+        struct NmlFilterGsPair *blockEntry = packet;
+
+        remaining = 11;
+        do {
+            --remaining;
+            packet_gs_entry64(blockEntry->registerSlot.words[0], &blockEntry->payload.value);
+            blockEntry++;
+        } while (remaining >= 0);
+    }
+    nmlPacketAddGsFlush();
+
+    do {
+        testRegister = 0x47;
+        packet[0].payload.value = 0x31001;
+        packet[0].registerSlot.value = testRegister;
+        {
+            struct NmlFilterGsPair *gsEntry1 = (struct NmlFilterGsPair *)0x70000010;
+            struct NmlFilterGsPair *gsEntry2 = (struct NmlFilterGsPair *)0x70000020;
+            struct NmlFilterGsPair *gsEntry3 = (struct NmlFilterGsPair *)0x70000030;
+            struct NmlFilterGsPair *gsEntry4 = (struct NmlFilterGsPair *)0x70000040;
+            struct NmlFilterGsPair *gsEntry5 = (struct NmlFilterGsPair *)0x70000050;
+            struct NmlFilterGsPair *gsEntry6 = (struct NmlFilterGsPair *)0x70000060;
+            struct NmlFilterGsPair *gsEntry7 = (struct NmlFilterGsPair *)0x70000070;
+
+            gsEntry1->payload.value = 0x3F80000080000000ULL;
+            gsEntry1->registerSlot.value = 1;
+            gsEntry2->payload.value = 2;
+            gsEntry2->registerSlot.value = 0;
+            gsEntry3->payload.value = 0x72007FF0;
+            gsEntry3->registerSlot.value = 4;
+            gsEntry4->payload.value = 0x72007000;
+            gsEntry4->registerSlot.value = 4;
+            gsEntry5->payload.value = 0x7FF07000;
+            gsEntry5->registerSlot.value = 4;
+            gsEntry6->payload.value = 0x7FF07FF0;
+            gsEntry6->registerSlot.value = 4;
+            gsEntry7->payload.value = 0x72007FF0;
+            gsEntry7->registerSlot.value = 4;
+        }
+        nmlPacketGsInit();
+        {
+            struct NmlFilterGsPair *blockEntry = packet;
+
+            remaining = 7;
+            do {
+                --remaining;
+                packet_gs_entry64(blockEntry->registerSlot.words[0], &blockEntry->payload.value);
+                blockEntry++;
+            } while (remaining >= 0);
+        }
+    } while (0);
+    nmlPacketAddGsFlush();
+}
 /* H5 probe 1 */
 
 INCLUDE_ASM("asm/main/nonmatchings/nml_filter_set", nmlFilterSetVolumeCubeRender);

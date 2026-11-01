@@ -50,15 +50,33 @@ typedef struct NmlAlphaGroup {
 typedef union {
     LayoutSlot slots[200];
     struct {
-        unsigned char unmodeled_000[0x238];
-        int pixelAlpha;                     /* +0x238, full-width pixel-alpha word */
+        unsigned char unmodeled_000[0x80];
+        Matrix4 modelToWorld;
+        unsigned char unmodeled_0c0[0x1e0 - 0xc0];
+        float filterAlpha;
+        float filterAmplitude;
+        unsigned char unmodeled_1e8[8];
+        Vector4 fallbackSphere;
+        unsigned char unmodeled_200[0x234 - 0x200];
+        u32 filterFlags;
+        int pixelAlpha;
         unsigned char unmodeled_23c[4];
-        const char *texture;                /* +0x240 */
-        int texfunc;                        /* +0x244 */
-        u64 alpha;                          /* +0x248 */
-        u32 render_status;                  /* +0x250 */
-        unsigned char unmodeled_254[0x2e0 - 0x254];
-        unsigned short mapShadowParts[8];    /* +0x2e0 */
+        const char *texture;
+        int texfunc;
+        u64 alpha;
+        u32 render_status;
+        struct NmlStealthJointData *jointData;
+        unsigned char unmodeled_258[0x26c - 0x258];
+        float textureFillWeight;
+        int textureMapAlpha;
+        unsigned char unmodeled_274[0x280 - 0x274];
+        struct NmlStealthGeometry *stealthParts[10];
+        unsigned char unmodeled_2a8[0x2c0 - 0x2a8];
+        float transparency;
+        unsigned char unmodeled_2c4[4];
+        int stealthPartCount;
+        unsigned char unmodeled_2cc[0x2e0 - 0x2cc];
+        unsigned short mapShadowParts[8];
     } fields;
 } LayoutStore;
 
