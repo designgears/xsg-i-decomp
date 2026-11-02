@@ -726,7 +726,7 @@ def try_function(unit: str, tu: str, name: str, body: Path, keep: bool = False,
                 # was reported). Keep the head of the log and the first few error lines.
                 errl = [l for l in log.splitlines() if ": " in l and "warning:" not in l]
                 report.update(ok=False, match=False, stage=f"compile_{tag}",
-                              first_errors=errl[:8],
+                              first_errors=errl[:int(os.environ.get("TRY_FN_NERR", "8"))],
                               error=log if len(log) <= 3000 else log[:1500] + "\n...\n" + log[-1500:])
                 if tag == "cand":
                     col = decl_collisions(log, text, body, name)
