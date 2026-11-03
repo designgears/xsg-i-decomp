@@ -1,6 +1,6 @@
 {
   "compiler_profile": "config/iop-match-profile.json",
-  "compiler_profile_sha256": "fd9536971970946ed02276ae3825688dc0349a495c5d418a4eebbfee6a3d88ba",
+  "compiler_profile_sha256": "708bb5fedefeca24fc6188d43b575b2ee55425536defee2c8a7fe24dda3a8bcb",
   "kind": "iop_source_build",
   "policy": {
     "assembly_flags": [

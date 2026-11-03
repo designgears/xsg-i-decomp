@@ -3,7 +3,7 @@
   "revision": "slus-20469-412d448de315",
   "selected": "iop-gcc2_8_1",
   "compiler_lock": "config/iop-toolchains.json",
-  "compiler_lock_sha256": "add7e34f7f2370b0b19d6386bd33718c1de51fd5c2cd0a3f9422c824b27e9251",
+  "compiler_lock_sha256": "74e2926178bce105d27f64d3bb392dc0fbcc3aac4cf944f4a2fd66bc5c3c9e72",
   "default_flags": ["-O2", "-G0"],
   "permitted_flags": [["-O2", "-G0"]],
   "source_languages": ["c"],
