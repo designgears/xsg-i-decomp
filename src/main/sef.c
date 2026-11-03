@@ -3720,7 +3720,141 @@ process_descriptor:
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/sef", sefCreateScheduler2);
+/*
+ * sefCreateScheduler2's view of a _scheduler record: the upstream layout
+ * (16-byte aligned position/rotation/scale vectors, the request copy
+ * typed as a SefEffectRequest). Same 0xab0-byte record as SchedulerState.
+ */
+typedef struct SefSchedulerCreateView {
+    Matrix4 worldMatrix;
+    Matrix4 localMatrix;
+    Vector4 position __attribute__((aligned(16)));
+    Vector4 rotation __attribute__((aligned(16)));
+    Vector4 scale __attribute__((aligned(16)));
+    unsigned char effects[32][0x30];
+    int inUse;
+    unsigned char *scriptAddress;
+    void *savedActive;
+    int caster;
+    int target;
+    void *casterUnit;
+    void *targetUnit;
+    int soundParameters[4];
+    int soundMode;
+    int soundId;
+    unsigned char cameraChoice[0x44];
+    unsigned char unmodeled_728[0x730 - 0x728];
+    int effectValue;
+    int effectScript;
+    unsigned char unmodeled_738[0x740 - 0x738];
+    int effectMode;
+    unsigned char unmodeled_744[0xa50 - 0x744];
+    int alterValue;
+    unsigned char unmodeled_a54[0xa64 - 0xa54];
+    SefEffectRequest request;
+    float effectSpeed;
+    int flags;
+    ScriptBinding scriptBinding;
+    short category;
+    signed char display;
+    unsigned char signalByte;
+    short delayFrames;
+    short schedulerIndex;
+    short effectNumber;
+    unsigned char unmodeled_aa2[0xaa4 - 0xaa2];
+    short mapperIndex;
+    unsigned char unmodeled_aa6[0xab0 - 0xaa6];
+} SefSchedulerCreateView;
+extern SefSchedulerCreateView sefSchedulerCreateTable[] __asm__("_scheduler");
+int sefCreateScheduler2(int effect_no, int parameters, int position, int table, int flags, int index)
+{
+    int number;
+    int category;
+    int scheduler_index;
+    unsigned char *saved_script_adr;
+    int value0;
+    int value1;
+    int value2;
+    int value3;
+    void *origin;
+    SefScriptStatus *work;
+    int *param_block;
+    int *camera_block;
+    int *effect_block;
+    int *tail_block;
+    SefEffectRequest *request;
+
+    value0 = scGetImmAdrImmIdx2(table, (unsigned short *)effect_no, 0);
+    value1 = scGetImmAdrImmIdx2(table, (unsigned short *)effect_no, 1);
+    value2 = scGetImmAdrImmIdx2(table, (unsigned short *)effect_no, 2);
+    value3 = scGetImmAdrImmIdx2(table, (unsigned short *)effect_no, 3);
+    effect_no += 8;
+
+    if (index >= 0) {
+        scheduler_index = index;
+        sefSchedulerCreateTable[scheduler_index].inUse = effect_no;
+        sefSchedulerCreateTable[scheduler_index].scriptBinding.link_id = -1;
+        sefSchedulerCreateTable[scheduler_index].scriptBinding.script_id = *(const int *)&_nowScript;
+        sefSchedulerCreateTable[scheduler_index].scriptBinding.task_id = *(const int *)&_nowEvent;
+        sefSchedulerCreateTable[scheduler_index].scriptBinding.state = 0;
+    } else {
+        scheduler_index = sefAllocScheduler(effect_no);
+    }
+    if (scheduler_index < 0) {
+        return -1;
+    }
+
+    origin = (void *)position;
+    saved_script_adr = *(unsigned char **)&_nowScriptAdr;
+    _nowScriptAdr = table;
+    request = &sefSchedulerCreateTable[scheduler_index].request;
+    *request = *((SefEffectRequest *)parameters);
+    sefSchedulerCreateTable[scheduler_index].caster = ((SefEffectRequest *)parameters)->source;
+    sefSchedulerCreateTable[scheduler_index].targetUnit = 0;
+    sefSchedulerCreateTable[scheduler_index].casterUnit = 0;
+    sefSchedulerCreateTable[scheduler_index].target = ((SefEffectRequest *)parameters)->target;
+    if (origin == 0) {
+        origin = (void *)_zeroPos_004CBF00;
+    }
+    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
+    __asm__ __volatile__("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
+    sefSchedulerCreateTable[scheduler_index].savedActive = 0;
+    sefSchedulerCreateTable[scheduler_index].scriptAddress = (unsigned char *)table;
+    sefSchedulerCreateTable[scheduler_index].delayFrames = (short)flags;
+    sefSchedulerCreateTable[scheduler_index].flags = 0;
+    sefSchedulerCreateTable[scheduler_index].signalByte = 0;
+    sefSchedulerCreateTable[scheduler_index].schedulerIndex = (short)scheduler_index;
+    param_block = (int *)&sefSchedulerCreateTable[scheduler_index].soundParameters;
+    memset(param_block, 0, 0x18);
+    camera_block = (int *)&sefSchedulerCreateTable[scheduler_index].cameraChoice;
+    memset(camera_block, 0, 0x44);
+    effect_block = (int *)&sefSchedulerCreateTable[scheduler_index].effectValue;
+    memset(effect_block, 0, 0x320);
+    tail_block = &sefSchedulerCreateTable[scheduler_index].alterValue;
+    memset(tail_block, 0, 0x14);
+    param_block[0] = value0;
+    param_block[4] = 4;
+    tail_block[4] = 18;
+    effect_block[4] = 2;
+    tail_block[0] = value3;
+    effect_block[1] = table;
+    effect_block[0] = value2;
+    sdvSelectCamera(camera_block, table, value1);
+    __asm__ __volatile__("vmaxw.xyzw vf1, vf0, vf0w\n\t"
+                         "sqc2 vf1, 0(%0)"
+                         : : "r"(&sefSchedulerCreateTable[scheduler_index].scale) : "memory");
+    sefSchedulerCreateTable[scheduler_index].display = 1;
+    sefSchedulerCreateTable[scheduler_index].effectSpeed = 3.0f;
+    work = &_scriptWork[sefSchedulerCreateTable[scheduler_index].scriptBinding.script_id].status;
+    work->active_tasks += 1;
+    sefInitEffectTbl((SefEffectDescriptor *)effect_no, scheduler_index, *(unsigned short *)((char *)parameters + 0x1e));
+    _nowScriptAdr = (int)saved_script_adr;
+    srsAnalyzeEftNo(((SefEffectRequest *)parameters)->effect_no, &number, &category);
+    sefSchedulerCreateTable[scheduler_index].effectNumber = (short)number;
+    sefSchedulerCreateTable[scheduler_index].category = (short)category;
+    sefSchedulerCreateTable[scheduler_index].mapperIndex = sefSearchMapperIndex(((SefEffectRequest *)parameters)->effect_no);
+    return scheduler_index;
+}
 
 extern int sefCreateScheduler2(int effect_no, int value2, int value3, int value4, int flags, int value5);
 

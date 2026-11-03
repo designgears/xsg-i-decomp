@@ -1067,7 +1067,90 @@ void ACT_resourceInit(void)
 {
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/act_2", ACT_initMotion);
+typedef struct ActInitMotionLookTarget {
+    unsigned char unmodeled_00[8];
+    float control;
+    float *lookat_point;
+} ActInitMotionLookTarget;
+typedef struct ActInitMotionLookAngles { float x; float y; float z; } ActInitMotionLookAngles;
+typedef struct ActInitMotionLookLimits { float *minimum; float *maximum; } ActInitMotionLookLimits;
+typedef struct ActInitMotionEnemy {
+    unsigned long long unmodeled_0000;
+    unsigned char unmodeled_0008[0x3860 - 8];
+    ActInitMotionLookTarget look_target; /* +0x3860 */
+    ActInitMotionLookAngles look_angles; /* +0x3870 */
+    unsigned char unmodeled_387c[4];
+    ActInitMotionLookLimits look_limits; /* +0x3880 */
+    unsigned char unmodeled_3888[0x38b0 - 0x3888];
+} ActInitMotionEnemy;
+extern ActInitMotionEnemy act_im_enepc[16] __asm__("enepc");
+extern const char D_004DC238[];
+extern float min_0[];
+extern float max_1[];
+extern void *JNT_computeMatrix(void *work, void *channels, int argument);
+extern void *LOOK_sebo_cont(void *work, void *channels, int argument);
+extern void *LOOK_head_cont(void *work, void *channels, int argument);
+extern void *LOOK_eyeL_cont(void *work, void *channels, int argument);
+extern void *LOOK_eyeR_cont(void *work, void *channels, int argument);
+#define ACT_IM_ZERO_QW(destination) \
+    __asm__ __volatile__("sq $0, 0(%0)\n" : : "r" (destination) : "memory")
+#define ACT_IM_ADD(producer, order, fn, arg) \
+    ((int (*)(void *, int, void *(*)(void *, void *, int), int))JNT_addConsumer)( \
+        (producer), order, fn, (int)(arg))
+
+void ACT_initMotion(Actor *actor)
+{
+    ActorAnimationState *animation = &actor->animation;
+    ActorAnimSlot *slot = &animation->slot;
+    int enemyIndex;
+    Vector4 *cleared = (Vector4 *)actor->unmodeled_600;
+    unsigned short channelMask = 0x1ff;
+    int flags = 8;
+
+    slot->currentDataId = 0xffff;
+    slot->nextDataId = 0xffff;
+    slot->flags = flags;
+    *(unsigned short *)&slot->unmodeled_018[0] = channelMask;
+    slot->speed = 0.033333335f;
+    *(float *)animation->unmodeled_024 = 0.26666668f;
+    animation->blendWork[2] = 0;
+    animation->blendWork[0] = 0;
+    animation->blendWork[1] = 0;
+    animation->blendWork[3] = 0;
+    animation->animData = 0;
+    ACT_IM_ZERO_QW(&cleared[0]);
+    ACT_IM_ZERO_QW(&cleared[1]);
+    actor->attachmentCount = 0;
+    JNT_initProducer((struct JntProducer *)actor->jointProducer);
+    ACT_IM_ADD(actor->jointProducer, 0, JNT_computeMatrix, 0);
+
+    do {
+        if (actor->modelResource != 0 && strstr((char *)actor->modelResource + 0x10, D_004DC238) != 0) {
+            ACT_IM_ADD(actor->jointProducer, 5, LOOK_eyeL_cont, actor);
+            ACT_IM_ADD(actor->jointProducer, 8, LOOK_eyeR_cont, actor);
+            break;
+        }
+
+        enemyIndex = actor->unmodeled_80[0];
+        if (enemyIndex < 16) {
+            act_im_enepc[enemyIndex].look_target.lookat_point = 0;
+            act_im_enepc[enemyIndex].look_target.control = 0;
+            act_im_enepc[enemyIndex].look_angles.x = act_im_enepc[enemyIndex].look_angles.y = act_im_enepc[enemyIndex].look_angles.z = 0.0f;
+            act_im_enepc[enemyIndex].look_limits.minimum = min_0;
+            act_im_enepc[enemyIndex].look_limits.maximum = max_1;
+            min_0[0] = -0.52359879f;
+            min_0[1] = -1.39626348f;
+            min_0[2] = max_1[0] = 0.52359879f;
+            max_1[1] = 1.39626348f;
+            max_1[2] = 1.91986215f;
+        }
+        ACT_IM_ADD(actor->jointProducer, 36, LOOK_sebo_cont, actor);
+        ACT_IM_ADD(actor->jointProducer, 48, LOOK_head_cont, actor);
+    } while (0);
+}
+/* */
+/* */
+/**/
 
 void ACT_setMotion(Actor *actor, int motionId)
 {

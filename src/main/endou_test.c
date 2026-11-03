@@ -61,10 +61,6 @@ extern void MenuModelExtFuncSet(int model,
 
 extern void MenuModelMain(void);
 
-/* EUC-JP bytes for the model-test diagnostic with its leading control byte. */
-
-const unsigned char D_004C2AE8[16] =
-    "\x0B\xA5\xE2\xA5\xC7\xA5\xEB\xA5\xC6\xA5\xB9\xA5\xC8";
 
 extern const char not_found_format[16];
 
@@ -809,7 +805,646 @@ void SeisanTest(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/endou_test", ModelTest);
+#define PAD_L2       0x0001
+#define PAD_R2       0x0002
+#define PAD_L1       0x0004
+#define PAD_R1       0x0008
+#define PAD_TRIANGLE 0x0010
+#define PAD_CIRCLE   0x0020
+#define PAD_SELECT   0x0100
+#define PAD_START    0x0800
+#define PAD_UP       0x1000
+#define PAD_RIGHT    0x2000
+#define PAD_DOWN     0x4000
+#define PAD_LEFT     0x8000
+#define NULL ((void *)0)
+typedef struct EndouModelTestPad {
+    unsigned char unmodeled_00[0x28];
+    unsigned short held;
+    unsigned short pressed;
+    unsigned char unmodeled_2c[4];
+    unsigned char unmodeled_30[8];
+    signed char stick_axis[4];
+} EndouModelTestPad;
+#define ENDOU_MODEL_TEST_PAD ((EndouModelTestPad *)&PadData)
+extern void xglStudioChange(int studio_index);
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+typedef Vector4 EndouAlignedVector4 __attribute__((aligned(16)));
+typedef Vector4 EndouDwordVector4 __attribute__((aligned(8)));
+typedef struct EndouModelActor {
+    u8 unmodeled_00[0x10];
+    EndouAlignedVector4 position;
+    u8 unmodeled_20[0x30];
+    EndouAlignedVector4 rotation;
+    EndouAlignedVector4 scale;
+    u8 unmodeled_70[0x16];
+    short inUseId;
+    u8 unmodeled_88[0x8d0 - 0x88];
+    void *modelResource;
+    void *matrixResource;
+    void *move;
+    void *animPackTables[8];
+} EndouModelActor;
+#define ENDOU_EXIT_CHORD 0x08000100
+#define ENDOU_STICK_DEADZONE 0x40
+#define ENDOU_GRID_ROWS 5
+#define ENDOU_GRID_COLUMNS 6
+#define ENDOU_GRID_POINT_COUNT (ENDOU_GRID_ROWS * ENDOU_GRID_COLUMNS)
+#define ENDOU_MODEL_MESSAGE_FRAMES 0x40
+#define EMESSAGE_MODE_LINE_START 0x24
+#define END_PRINT_CMD_LINE_RAW 11
+typedef struct EndouTestLighting {
+    EndouDwordVector4 ambient;
+    EndouDwordVector4 parallel_intensity[3];
+    Vector4 direction[3];
+} EndouTestLighting;
+typedef struct EndouModelLineVertex {
+    int x;
+    int y;
+    int z;
+    int terminator;
+} EndouModelLineVertex;
+typedef struct EndouModelLinePoint {
+    EndouModelLineVertex vertex;
+    unsigned char color[4];
+    unsigned char unmodeled_14[12];
+} EndouModelLinePoint;
+typedef struct EndouModelBackQuad {
+    int vertices[4][4];
+    float uv[4];
+} EndouModelBackQuad;
+typedef struct EndouModelMessage {
+    unsigned char flags;
+    unsigned char mode;
+    unsigned char visible;
+    unsigned char wrap_width_half;
+    short x;
+    short y;
+    int draw_parameter;
+    unsigned char unmodeled_0c[0x44 - 0x0c];
+} EndouModelMessage;
+typedef struct EndouModelMessageWindow {
+    EndouModelMessage message;
+    u8 unmodeled_44[0xc];
+} EndouModelMessageWindow;
+struct StudioLight;
+extern void xglStudioGetLight(struct StudioLight **light_out);
+extern void xglLightIntensityAmbient(void *light, const void *intensity);
+extern void xglLightIntensityParallel(void *light, unsigned int index, const void *intensity);
+extern void xglLightDirection(void *light, unsigned int index, const Vector4 *direction);
+extern StudioCamera *xglStudioGetActiveCamera(void);
+extern void GameResourceInit(unsigned int address, int size);
+extern EndouModelActor *ACT_create(int slot, int id);
+extern void ACT_initMotion(EndouModelActor *actor);
+extern int ACT_allocMatrix(EndouModelActor *self, int count);
+extern void ACT_modelDraw(EndouModelActor *actor);
+extern EndouModelActor *ACT_setArms(EndouModelActor *actor, EndouModelActor *parent, unsigned int accessoryId, int flags);
+extern void ACT_setModelWrapper(EndouModelActor *actor, int unused);
+extern void ACT_setMotion(EndouModelActor *actor, int motionId);
+extern void ACT_updateMotion(EndouModelActor *actor);
+extern void nmlModelFlush(void);
+extern void RES_GetMdlFileName(char *destination, int selector);
+extern char *strcat(char *destination, const char *source);
+extern char *strcpy(char *destination, const char *source);
+extern int xglCdGetFileSize(const char *name);
+extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
+extern void xglMatrixStackRotX(float angle);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackRotZ(float angle);
+extern void xglMatrixStackSave(float matrix[4][4]);
+extern void xglMatrixStackTrans(const float translation[4]);
+extern void xglMatrixStackUnit(void);
+extern void xglRotTransPersN(void *destination, Matrix4 *matrix, const void *points, int count, int cameraId);
+extern const EndouTestLighting D_004C25E0;
+extern const char D_004C2658[];
+extern const char D_004C26F0[];
+extern const EndouDwordVector4 D_004C2720[4];
+extern const char D_004DA6C0[8];
+extern const char D_004DA6C8[8];
+extern const char D_004DA6D0[];
+extern unsigned char D_004DA6E0[];
+extern unsigned char D_004DA6E8[];
+extern float ang_0[4];
+extern float pos_1[4];
+extern f32 pipo_2;
+extern int time_10;
+extern int no_13;
+extern const char *msg00_14[4];
+extern EndouModelMessageWindow msg_11;
+extern EndouModelLinePoint line00_3[7];
+extern EndouModelLinePoint line01_4[7];
+extern EndouModelLinePoint line02_5[7];
+extern EndouModelLinePoint line03_6[7];
+extern EndouModelLinePoint line10_7[7];
+extern EndouModelLinePoint line11_8[7];
+extern EndouModelLinePoint line12_9[7];
+extern EndouModelBackQuad bsp_12;
+#define modelTestLighting D_004C25E0
+#define modelTestFpkName D_004C2658
+#define modelTestMotionName D_004C26F0
+#define modelTestQuadWordTable D_004C2720
+#define modelTestLexExtension D_004DA6C0
+#define modelTestXtxExtension D_004DA6C8
+#define modelTestJntExtension D_004DA6D0
+#define modelTestColumnAlphaTable D_004DA6E0
+#define modelTestRowAlphaTable D_004DA6E8
+#define GAME_RESOURCE_BASE_ADDRESS 0x07000000
+#define GAME_RESOURCE_BUFFER_SIZE 0x06000000
+static inline void endModelCameraPosition(StudioCamera *camera, float x, float y, float z)
+{
+    camera->position.x = x;
+    camera->position.y = y;
+    camera->position.z = z;
+}
+static __inline__ void EndouApplyModelLighting(struct StudioLight **light_slot, EndouTestLighting profile)
+{
+    xglStudioGetLight(light_slot);
+    xglLightIntensityAmbient(*light_slot, &profile.ambient);
+    xglLightIntensityParallel(*light_slot, 0, &profile.parallel_intensity[0]);
+    xglLightDirection(*light_slot, 0, &profile.direction[0]);
+    xglLightIntensityParallel(*light_slot, 1, &profile.parallel_intensity[1]);
+    xglLightDirection(*light_slot, 1, &profile.direction[1]);
+    xglLightIntensityParallel(*light_slot, 2, &profile.parallel_intensity[2]);
+    xglLightDirection(*light_slot, 2, &profile.direction[2]);
+}
+
+void ModelTest(void) {
+    struct StudioLight *light;
+    u8 **work_end = &WorkEnd;
+    int *message_time = &time_10;
+    int motion;
+
+    motion = 1;
+    xglStudioChange(0);
+    EndouApplyModelLighting(&light, modelTestLighting);
+    {
+    int point_index;
+    StudioCamera *temp_17_4;
+    StudioCamera *temp_2;
+    StudioCamera *temp_2_2;
+    f32 temp_f0_21;
+    f32 temp_f0_22;
+    f32 temp_f0_23;
+    f32 temp_f0_24;
+    f32 temp_f0_25;
+    f32 temp_f0_26;
+    f32 temp_f0_27;
+    f32 temp_f1;
+    f32 temp_f20;
+    f32 temp_f2;
+    int temp_2_11;
+    int temp_2_14;
+    int temp_2_16;
+    int temp_2_18;
+    int temp_2_20;
+    int temp_2_22;
+    int temp_2_24;
+    int temp_2_26;
+    int temp_2_5;
+    int temp_2_7;
+    int temp_2_9;
+    u16 temp_16;
+    u16 temp_4;
+    u16 var_3_2;
+    u8 *temp_3;
+    u8 *temp_3_10;
+    u8 *temp_3_11;
+    u8 *temp_3_2;
+    u8 *temp_3_3;
+    u8 *temp_3_4;
+    u8 *temp_3_5;
+    u8 *temp_3_6;
+    u8 *temp_3_7;
+    u8 *temp_3_8;
+    u8 *temp_3_9;
+    EndouModelActor *temp_23_9;
+    EndouModelActor *temp_2_12;
+    EndouModelActor *temp_2_3;
+    u8 *resource_buffer;
+    u8 *accessory_resource_buffer;
+
+    temp_2 = xglStudioGetCamera2(0);
+    temp_2->rotation.x = 0.0f;
+    temp_2->rotation.y = 0.0f;
+    temp_2->rotation.z = 0.0f;
+    endModelCameraPosition(temp_2, 0.0f, 1.0f, 4.0f);
+    temp_2->active = 1;
+    temp_2->state = 1;
+    temp_2_2 = xglStudioGetCamera2(1);
+    temp_2_2->state = 1;
+    endModelCameraPosition(temp_2_2, -1.0f, 1.0f, 4.0f);
+    temp_2_2->rotation.y = 0.0f;
+    temp_2_2->rotation.z = 0.0f;
+    temp_2_2->active = 0;
+    temp_2_2->rotation.x = 0.0f;
+    GameResourceInit(GAME_RESOURCE_BASE_ADDRESS, GAME_RESOURCE_BUFFER_SIZE);
+    ACT_init();
+    temp_2_3 = ACT_create(-1, 0x2101);
+    ACT_initMotion(temp_2_3);
+    {
+    char sp70[128] = "\0";
+    char spF0[128] = "\0";
+    EndouTestLighting unused_lighting;
+
+    RES_GetMdlFileName(sp70, temp_2_3->inUseId);
+    resource_buffer = (u8 *)((u32)((*work_end) + 0x7f) & ~0x7fU);
+    strcpy(spF0, sp70);
+    strcat(spF0, modelTestLexExtension);
+    temp_2_5 = xglCdReadFile(spF0, resource_buffer, 0, 0);
+    temp_3 = (*work_end) + temp_2_5;
+    temp_2_3->modelResource = resource_buffer;
+    (*work_end) = temp_3;
+    resource_buffer = (u8 *)((u32)(temp_3 + 0x7f) & ~0x7fU);
+    strcpy(spF0, sp70);
+    strcat(spF0, modelTestXtxExtension);
+    temp_2_7 = xglCdReadFile(spF0, resource_buffer, 0, 0);
+    temp_3_2 = (*work_end) + temp_2_7;
+    temp_2_3->matrixResource = resource_buffer;
+    (*work_end) = temp_3_2;
+    resource_buffer = (u8 *)((u32)(temp_3_2 + 0x7f) & ~0x7fU);
+    strcpy(spF0, sp70);
+    strcat(spF0, modelTestJntExtension);
+    temp_2_9 = xglCdReadFile(spF0, resource_buffer, 0, 0);
+    }
+    temp_3_3 = ((*work_end) + temp_2_9);
+    temp_2_3->move = resource_buffer;
+    resource_buffer = (u8 *)((u32)(temp_3_3 + 0x7f) & ~0x7fU);
+    (*work_end) = temp_3_3;
+    temp_2_11 = xglCdReadFile(modelTestFpkName, resource_buffer, 0, 0);
+    temp_3_4 = (*work_end) + temp_2_11;
+    temp_2_3->animPackTables[0] = resource_buffer;
+    (*work_end) = temp_3_4;
+    ACT_allocMatrix(temp_2_3, -1);
+    ACT_setModelWrapper(temp_2_3, 0);
+    ACT_setMotion(temp_2_3, 1);
+    temp_2_12 = ACT_create(-1, 1);
+    ACT_initMotion(temp_2_12);
+    {
+    char sp1E0[128] = "\0";
+    char sp260[128] = "\0";
+
+    RES_GetMdlFileName(sp1E0, temp_2_12->inUseId);
+    resource_buffer = (u8 *)((u32)((*work_end) + 0x7f) & ~0x7fU);
+    strcpy(sp260, sp1E0);
+    strcat(sp260, modelTestLexExtension);
+    temp_2_14 = xglCdReadFile(sp260, resource_buffer, 0, 0);
+    temp_3_5 = (*work_end) + temp_2_14;
+    temp_2_12->modelResource = resource_buffer;
+    (*work_end) = temp_3_5;
+    resource_buffer = (u8 *)((u32)(temp_3_5 + 0x7f) & ~0x7fU);
+    strcpy(sp260, sp1E0);
+    strcat(sp260, modelTestXtxExtension);
+    temp_2_16 = xglCdReadFile(sp260, resource_buffer, 0, 0);
+    temp_3_6 = (*work_end) + temp_2_16;
+    temp_2_12->matrixResource = resource_buffer;
+    (*work_end) = temp_3_6;
+    resource_buffer = (u8 *)((u32)(temp_3_6 + 0x7f) & ~0x7fU);
+    strcpy(sp260, sp1E0);
+    strcat(sp260, modelTestJntExtension);
+    temp_2_18 = xglCdReadFile(sp260, resource_buffer, 0, 0);
+    }
+    temp_3_7 = (*work_end) + temp_2_18;
+    temp_2_12->move = resource_buffer;
+    resource_buffer = (u8 *)((u32)(temp_3_7 + 0x7f) & ~0x7fU);
+    (*work_end) = temp_3_7;
+    temp_2_20 = xglCdReadFile(modelTestMotionName, resource_buffer, 0, 0);
+    temp_3_8 = (*work_end) + temp_2_20;
+    temp_2_12->animPackTables[0] = resource_buffer;
+    (*work_end) = temp_3_8;
+    ACT_allocMatrix(temp_2_12, -1);
+    ACT_setModelWrapper(temp_2_12, 0);
+    ACT_setMotion(temp_2_12, 1);
+    temp_23_9 = ACT_create(-1, 0x3003);
+    {
+    char sp2E0[128] = "\0";
+    char sp360[128] = "\0";
+
+    RES_GetMdlFileName(sp2E0, temp_23_9->inUseId);
+    accessory_resource_buffer = (u8 *)((u32)((*work_end) + 0x7f) & ~0x7fU);
+    strcpy(sp360, sp2E0);
+    strcat(sp360, modelTestLexExtension);
+    temp_2_22 = xglCdReadFile(sp360, accessory_resource_buffer, 0, 0);
+    temp_3_9 = (*work_end) + temp_2_22;
+    temp_23_9->modelResource = accessory_resource_buffer;
+    (*work_end) = temp_3_9;
+    accessory_resource_buffer = (u8 *)((u32)(temp_3_9 + 0x7f) & ~0x7fU);
+    strcpy(sp360, sp2E0);
+    strcat(sp360, modelTestXtxExtension);
+    temp_2_24 = xglCdReadFile(sp360, accessory_resource_buffer, 0, 0);
+    temp_3_10 = (*work_end) + temp_2_24;
+    temp_23_9->matrixResource = accessory_resource_buffer;
+    (*work_end) = temp_3_10;
+    accessory_resource_buffer = (u8 *)((u32)(temp_3_10 + 0x7f) & ~0x7fU);
+    strcpy(sp360, sp2E0);
+    strcat(sp360, modelTestJntExtension);
+    if (xglCdGetFileSize(sp360) < 0) {
+        temp_23_9->move = NULL;
+    } else {
+        temp_2_26 = xglCdReadFile(sp360, accessory_resource_buffer, 0, 0);
+        temp_3_11 = (*work_end) + temp_2_26;
+        temp_23_9->move = accessory_resource_buffer;
+        (*work_end) = temp_3_11;
+    }
+    }
+    ACT_allocMatrix(temp_23_9, -1);
+    ACT_setModelWrapper(temp_23_9, 0);
+    ACT_setArms(temp_23_9, temp_2_3, 0x108U, 0);
+    {
+        while ((PadData.buttons.button_state & ENDOU_EXIT_CHORD) != ENDOU_EXIT_CHORD) {
+            var_3_2 = ENDOU_MODEL_TEST_PAD->pressed;
+            if (var_3_2 & PAD_R1) {
+                ACT_setMotion(temp_2_3, ++motion);
+                var_3_2 = ENDOU_MODEL_TEST_PAD->pressed;
+            }
+            if (var_3_2 & PAD_R2) {
+                ACT_setMotion(temp_2_3, --motion);
+            }
+            temp_4 = ENDOU_MODEL_TEST_PAD->held;
+            if (temp_4 & PAD_SELECT) {
+                EndouAlignedVector4 reset_position = {0.0f, 0.0f, 0.0f, 1.0f};
+                EndouAlignedVector4 reset_rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+                EndouAlignedVector4 reset_scale = {1.0f, 1.0f, 1.0f, 1.0f};
+                temp_4 = ENDOU_MODEL_TEST_PAD->held;
+                temp_2_3->position = reset_position;
+                temp_2_3->rotation = reset_rotation;
+                temp_2_3->scale = reset_scale;
+            }
+            {
+            Matrix4 camera_matrix;
+            float world_points[ENDOU_GRID_ROWS][ENDOU_GRID_COLUMNS][4];
+            EndouModelLineVertex screen_points[ENDOU_GRID_ROWS][ENDOU_GRID_COLUMNS];
+            Matrix4 projection_matrix;
+            unsigned char column_alphas[ENDOU_GRID_ROWS];
+            unsigned char row_alphas[ENDOU_GRID_COLUMNS];
+            EndouDwordVector4 quad_words[4];
+            if (temp_4 & PAD_TRIANGLE) {
+                if (temp_4 & PAD_RIGHT) {
+                    temp_2_3->scale.x += 0.1f;
+                }
+                if (temp_4 & PAD_LEFT) {
+                    temp_2_3->scale.x -= 0.1f;
+                }
+                if (temp_4 & PAD_UP) {
+                    temp_2_3->scale.y += 0.1f;
+                }
+                if (temp_4 & PAD_DOWN) {
+                    temp_2_3->scale.y -= 0.1f;
+                }
+                if (temp_4 & PAD_L1) {
+                    temp_2_3->scale.z += 0.1f;
+                }
+                if ((unsigned short)(temp_4 & PAD_L2)) {
+                    temp_2_3->scale.z -= 0.1f;
+                }
+            } else {
+                if (temp_4 & PAD_RIGHT) {
+                    temp_2_3->position.x += 0.1f;
+                }
+                if (temp_4 & PAD_LEFT) {
+                    temp_2_3->position.x -= 0.1f;
+                }
+                if (temp_4 & PAD_UP) {
+                    temp_2_3->position.y += 0.1f;
+                }
+                if (temp_4 & PAD_DOWN) {
+                    temp_2_3->position.y -= 0.1f;
+                }
+                if (temp_4 & PAD_L1) {
+                    temp_2_3->position.z += 0.1f;
+                }
+                if ((unsigned short)(temp_4 & PAD_L2)) {
+                    temp_2_3->position.z -= 0.1f;
+                }
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[0] < -ENDOU_STICK_DEADZONE) {
+                temp_2_3->rotation.y += 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[0] >= ENDOU_STICK_DEADZONE + 1) {
+                temp_2_3->rotation.y -= 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[1] < -ENDOU_STICK_DEADZONE) {
+                temp_2_3->rotation.x += 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[1] >= ENDOU_STICK_DEADZONE + 1) {
+                temp_2_3->rotation.x -= 0.04f;
+            }
+            temp_17_4 = xglStudioGetCamera2(0);
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[2] < -ENDOU_STICK_DEADZONE) {
+                ang_0[1] += 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[2] >= ENDOU_STICK_DEADZONE + 1) {
+                ang_0[1] -= 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[3] < -ENDOU_STICK_DEADZONE) {
+                ang_0[0] += 0.04f;
+            }
+            if (ENDOU_MODEL_TEST_PAD->stick_axis[3] >= ENDOU_STICK_DEADZONE + 1) {
+                ang_0[0] -= 0.04f;
+            }
+            xglMatrixStackUnit();
+            xglMatrixStackRotZ(ang_0[2]);
+            xglMatrixStackRotY(ang_0[1]);
+            xglMatrixStackRotX(ang_0[0]);
+            xglMatrixStackTrans(pos_1);
+            xglMatrixStackSave(camera_matrix);
+            temp_f0_21 = ang_0[0];
+            temp_16 = ENDOU_MODEL_TEST_PAD->held;
+            temp_17_4->rotation.x = temp_f0_21;
+            temp_f0_22 = ang_0[1];
+            temp_17_4->rotation.y = temp_f0_22;
+            temp_f1 = ang_0[2];
+            temp_17_4->rotation.z = temp_f1;
+            temp_f2 = camera_matrix[3][0];
+            temp_17_4->position.x = temp_f2;
+            temp_f0_23 = camera_matrix[3][1] + 1.0f;
+            temp_17_4->position.y = temp_f0_23;
+            temp_f20 = camera_matrix[3][2];
+            temp_17_4->position.z = temp_f20;
+            if (temp_16 & PAD_R1) {
+                temp_f0_24 = pipo_2 + 0.2;
+                pipo_2 = temp_f0_24;
+            }
+            if (temp_16 & PAD_R2) {
+                temp_f0_26 = pipo_2 - 0.2;
+                pipo_2 = temp_f0_26;
+            }
+            temp_f0_25 = pipo_2;
+            temp_f0_27 = temp_f20 + temp_f0_25;
+            temp_17_4->position.z = temp_f0_27;
+            temp_2_12->position = temp_2_3->position;
+            temp_2_12->position.x += 1.0f;
+            temp_2_12->rotation = temp_2_3->rotation;
+            temp_2_12->scale = temp_2_3->scale;
+            ACT_updateMotion(temp_2_3);
+            ACT_updateMotion(temp_2_12);
+            xglStudioGetActiveCamera()->active = 0;
+            xglStudioGetCamera2(0)->active = 1;
+            ACT_modelDraw(temp_2_3);
+            xglStudioGetActiveCamera()->active = 0;
+            xglStudioGetCamera2(0)->active = 1;
+            ACT_modelDraw(temp_2_12);
+            nmlModelFlush();
+            {
+                int row;
+
+                for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
+                    float x = point_index * 0.5f + -1.25f;
+
+                    for (row = 0; row < ENDOU_GRID_ROWS; row++) {
+                        world_points[row][point_index][0] = x;
+                        world_points[row][point_index][1] = 0.0f;
+                        world_points[row][point_index][3] = 1.0f;
+                        world_points[row][point_index][2] = row * 0.5f + -1.0f;
+                    }
+                }
+                {
+                    for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
+                        world_points[0][point_index][2] -= 0.5f;
+                        world_points[4][point_index][2] += 0.5f;
+                    }
+                    for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                        world_points[point_index][0][0] -= 0.5f;
+                        world_points[point_index][5][0] += 0.5f;
+                    }
+                }
+            }
+            __builtin_memcpy(column_alphas, modelTestColumnAlphaTable,
+                             sizeof(column_alphas));
+            __builtin_memcpy(row_alphas, modelTestRowAlphaTable, sizeof(row_alphas));
+            xglMatrixStackUnit();
+            xglMatrixStackSave(projection_matrix);
+            xglRotTransPersN(screen_points, &projection_matrix, world_points, ENDOU_GRID_POINT_COUNT, 0);
+            {
+                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                    unsigned char *color;
+                    line00_3[point_index].vertex = screen_points[point_index][1];
+                    color = line00_3[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = column_alphas[point_index];
+                    line00_3[point_index].vertex.terminator = 1;
+                }
+                line00_3[5].vertex.terminator = 0;
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                    unsigned char *color;
+                    line01_4[point_index].vertex = screen_points[point_index][2];
+                    color = line01_4[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = column_alphas[point_index];
+                    line01_4[point_index].vertex.terminator = 1;
+                }
+                (line01_4 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                    unsigned char *color;
+                    line02_5[point_index].vertex = screen_points[point_index][3];
+                    color = line02_5[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = column_alphas[point_index];
+                    line02_5[point_index].vertex.terminator = 1;
+                }
+                (line02_5 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                    unsigned char *color;
+                    line03_6[point_index].vertex = screen_points[point_index][4];
+                    color = line03_6[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = column_alphas[point_index];
+                    line03_6[point_index].vertex.terminator = 1;
+                }
+                (line03_6 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
+                    unsigned char *color;
+                    line10_7[point_index].vertex = screen_points[1][point_index];
+                    color = line10_7[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = row_alphas[point_index];
+                    line10_7[point_index].vertex.terminator = 1;
+                }
+                (line10_7 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
+                    unsigned char *color;
+                    line11_8[point_index].vertex = screen_points[2][point_index];
+                    color = line11_8[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = row_alphas[point_index];
+                    line11_8[point_index].vertex.terminator = 1;
+                }
+                (line11_8 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
+                    unsigned char *color;
+                    line12_9[point_index].vertex = screen_points[3][point_index];
+                    color = line12_9[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = row_alphas[point_index];
+                    line12_9[point_index].vertex.terminator = 1;
+                }
+                (line12_9 + point_index)->vertex.terminator = 0;
+                }
+            }
+            endPrintExtFunc(0xFFFFF0, END_PRINT_CMD_LINE_RAW, line00_3);
+            endPrintExtFunc(0xFFFFF1, END_PRINT_CMD_LINE_RAW, line01_4);
+            endPrintExtFunc(0xFFFFF2, END_PRINT_CMD_LINE_RAW, line02_5);
+            endPrintExtFunc(0xFFFFF3, END_PRINT_CMD_LINE_RAW, line03_6);
+            endPrintExtFunc(0xFFFFF4, END_PRINT_CMD_LINE_RAW, line10_7);
+            endPrintExtFunc(0xFFFFF5, END_PRINT_CMD_LINE_RAW, line11_8);
+            endPrintExtFunc(0xFFFFF6, END_PRINT_CMD_LINE_RAW, line12_9);
+            __builtin_memcpy(quad_words, modelTestQuadWordTable, sizeof(quad_words));
+            endPrintExtFunc(0, 0x6A, NULL);
+            endPrintExtFunc(0, 0x6C, NULL);
+            if (*message_time == 0) {
+                eMessageSet(&msg_11.message, msg00_14[no_13]);
+                msg_11.message.mode = EMESSAGE_MODE_LINE_START;
+                *message_time = ENDOU_MODEL_MESSAGE_FRAMES;
+                no_13 = (no_13 + 1) & 3;
+            }
+            (*message_time)--;
+            msg_11.message.x = 0;
+            msg_11.message.draw_parameter = 0xFFFFF0;
+            msg_11.message.y = 0;
+            eMessageMain(&msg_11.message);
+            endPrintExtFunc(0, 0x6B, NULL);
+            bsp_12.uv[0] = 0.0f;
+            bsp_12.uv[2] = 0.234375f;
+            bsp_12.uv[3] = 0.046875f;
+            bsp_12.uv[1] = 0.0f;
+            xglRotTransPersN(bsp_12.vertices, NULL, quad_words, 4, 0);
+            endPrintExtFunc(0, 0x6D, &bsp_12);
+            xglSleep();
+            }
+        }
+    }
+    }
+}
 
 extern void eBattleWinOpen(void *a);
 extern void eBattleWinOpen2(void *a);
@@ -962,7 +1597,656 @@ void BattleWindowTest(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/endou_test", eNumberTest);
+#define PAD_L2       0x0001
+#define PAD_R2       0x0002
+#define PAD_L1       0x0004
+#define PAD_R1       0x0008
+#define PAD_TRIANGLE 0x0010
+#define PAD_CIRCLE   0x0020
+#define PAD_SELECT   0x0100
+#define PAD_START    0x0800
+#define PAD_UP       0x1000
+#define PAD_RIGHT    0x2000
+#define PAD_DOWN     0x4000
+#define PAD_LEFT     0x8000
+#define NULL ((void *)0)
+#define ENDOU_MODEL_PAD ((EndouModelPadState *)&PadData)
+#define ENDOU_EXIT_CHORD_U 0x08000100U
+#define END_PRINT_CMD_LINE 0
+#define END_PRINT_CMD_SPRITE 2
+#define END_PRINT_CMD_RIBBON 3
+#define END_PRINT_CMD_POINT 4
+#define END_PRINT_CMD_SPRITE_QUAD 8
+#define END_PRINT_CMD_NUMBER 10
+#define END_PRINT_CMD_EXT_BASE 100
+#define END_PRINT_EXT_FLUSH 0
+#define E_MODE_SHOW_START 0x20
+#define ELINE_STATE_DRAW_SEQUENTIAL 0x10
+#define ELINE_STATE_DRAW_ALL 0x20
+typedef struct EndouModelPadState {
+    unsigned char unmodeled_00[0x28];
+    unsigned short held;
+    unsigned short pressed;
+    unsigned char unmodeled_2c[4];
+    unsigned char unmodeled_30[8];
+    signed char stick_axis[4];
+} EndouModelPadState;
+typedef struct EndouPrintLinePoint {
+    int x;
+    int y;
+    int z;
+    u32 unmodeled_0c;
+    u8 color[4];
+    u8 unmodeled_14[12];
+} EndouPrintLinePoint;
+typedef struct EndouPrintPoint {
+    short x;
+    unsigned short y;
+    int depth;
+    unsigned char color[4];
+} EndouPrintPoint;
+typedef struct ECursolSprite {
+    short x;
+    short y;
+    int work;
+    short width;
+    short height;
+    signed char color[4];
+    short style;
+    signed char frame;
+    signed char flags;
+} ECursolSprite;
+typedef struct ECursolMainData {
+    unsigned char state;
+    unsigned char active;
+    unsigned char timer;
+    unsigned char width;
+    unsigned short x;
+    unsigned short y;
+    int work;
+    unsigned char color[4];
+    ECursolSprite sprite;
+} ECursolMainData;
+typedef struct EndouSpriteQuadVertex {
+    int x;
+    int y;
+    int depth;
+    unsigned char unmodeled_00c[4];
+} EndouSpriteQuadVertex;
+typedef struct EndouSpriteQuad {
+    unsigned char flags;
+    signed char coordinate_mode;
+    unsigned short uv;
+    unsigned char unmodeled_004[12];
+    EndouSpriteQuadVertex vertices[4];
+    unsigned char unmodeled_050[16];
+} EndouSpriteQuad;
+typedef struct ENumberSpriteDescriptor {
+    short x, y;
+    int work;
+    short width, height;
+    unsigned char color[4];
+    short spriteId;
+    short unmodeled_012;
+} ENumberSpriteDescriptor;
+typedef struct ENumberRenderDescriptor {
+    unsigned short x, y;
+    int work;
+    union {
+        struct {
+            signed char red, green, blue, alpha;
+            int value;
+        } number;
+        struct {
+            short width, height;
+            unsigned char color[4];
+        } sprite;
+        struct {
+            unsigned char color[4];
+            const char *text;
+        } text;
+    } payload;
+    unsigned short argument1, argument2;
+} ENumberRenderDescriptor;
+typedef struct EndouQuadPosition {
+    short x;
+    short y;
+    int depth;
+} EndouQuadPosition;
+typedef struct EndouQuadColor {
+    signed char red;
+    signed char green;
+    signed char blue;
+    signed char alpha;
+} EndouQuadColor;
+typedef struct EndouQuadDescriptor {
+    EndouQuadPosition points[4];
+    EndouQuadColor colors[4];
+    unsigned int format;
+} EndouQuadDescriptor;
+typedef struct EndouELinePoint {
+    int x;
+    int y;
+    int work;
+    signed char red;
+    signed char green;
+    signed char blue;
+    signed char alpha;
+} EndouELinePoint;
+typedef struct EndouELineEntry {
+    u8 state;
+    u8 unmodeled_001[2];
+    u8 duration;
+    u8 progress[5];
+    u8 unmodeled_009[3];
+    EndouELinePoint points[5];
+    u32 count;
+    EndouELinePoint render[5];
+} EndouELineEntry;
+typedef struct ENumberMainData {
+    short x, y;
+    int work;
+    unsigned char color_r;
+    unsigned char color_g;
+    unsigned char color_b;
+    unsigned char color_a;
+    unsigned char mode;
+    unsigned char unmodeled_00d;
+    unsigned char format;
+    unsigned char digits;
+    unsigned char colorModeFirst;
+    unsigned char colorModeSecond;
+    unsigned char alignment;
+    unsigned char firstOnly;
+    int value;
+    ENumberRenderDescriptor render[4];
+    ENumberSpriteDescriptor separators[2];
+} ENumberMainData;
+typedef struct ERibbonPoint {
+    short x;
+    short y;
+    int work;
+    signed char red;
+    signed char green;
+    signed char blue;
+    signed char alpha;
+} ERibbonPoint;
+typedef struct ERibbonMainData {
+    short x;
+    short y;
+    int work;
+    short width;
+    short height;
+    unsigned char mode;
+    unsigned char progress;
+    unsigned char visible;
+    unsigned char style;
+    ERibbonPoint points[6];
+    u8 unmodeled_058[4];
+    int renderCount;
+    u8 unmodeled_060[0x10];
+} ERibbonMainData;
+typedef struct ESprite {
+    signed char state;
+    u8 unmodeled_001[3];
+    short x;
+    short y;
+    int work;
+    signed char color[4];
+    u8 unmodeled_010[0x14];
+    short spriteId;
+} ESprite;
+typedef struct ESpriteMainData ESpriteMainData;
+typedef struct ETagFontMainData {
+    signed char state;
+    signed char subState;
+    u8 unmodeled_002[2];
+    short x;
+    short y;
+    int work;
+    unsigned char color[4];
+    struct {
+        short x;
+        short y;
+        int work;
+        unsigned char color[4];
+        const char *text;
+    } render;
+} ETagFontMainData;
+typedef union EndouTagFontViews {
+    ETagFontMainData control;
+    ETagFontMainData draw;
+} EndouTagFontViews;
+extern void eCursolMain(ECursolMainData *cursol);
+extern void eCursolSet(ECursolMainData *cursol, int width);
+extern void eLineMain(EndouELineEntry *line);
+extern void eLineSet(EndouELineEntry *line, int unused);
+extern void endPrintDirectLine(EndouPrintLinePoint *line);
+extern void endSpriteSet(void *sprite, int mode);
+extern void eNumberMain(ENumberMainData *number);
+extern void eNumberSet(ENumberMainData *number, int unused);
+extern void eRibbonMain(ERibbonMainData *ribbon);
+extern void eRibbonSet(ERibbonMainData *ribbon, int style);
+extern void eSpriteMain(ESpriteMainData *sprite);
+extern void eSpriteSet(ESprite *sprite, int flags);
+extern void eTagFontMain(ETagFontMainData *tag);
+extern void eTagFontSet(ETagFontMainData *tag, const char *text);
+extern void xglClockRead(XglClock *clock);
+extern void xglStudioChange(int studio_index);
+extern StudioCamera *xglStudioGetCamera2(int camera_id);
+extern void xglStudioGetCamera(StudioCamera **camera_out, int camera_index);
+extern const char D_004C2AD8[16];
+#define eNumberTestLabel D_004C2AD8
+extern char moji_26[27];
+extern char moji2_27[27];
+extern EndouPrintPoint line_34[6];
+extern EndouPrintPoint d_42[7];
+extern EndouPrintPoint d_43;
+extern u8 time_37;
+extern ECursolMainData cur_25;
+extern EndouSpriteQuad d_28;
+extern ENumberSpriteDescriptor d_33;
+extern ENumberSpriteDescriptor d_35[2];
+extern ENumberSpriteDescriptor d_36;
+extern ENumberSpriteDescriptor d_38;
+extern ENumberRenderDescriptor d_39;
+extern ENumberRenderDescriptor d_40;
+extern ENumberSpriteDescriptor d_41;
+extern EndouQuadDescriptor d_44;
+extern EndouELineEntry line_23[4];
+extern ENumberMainData num_29[1];
+extern ENumberMainData num_30[1];
+extern ENumberMainData num_31[1];
+extern ENumberMainData num_32[1];
+extern ERibbonMainData rbn_21[4];
+extern ESprite spr_22[4];
+extern EndouTagFontViews tgf_24[2];
+
+void eNumberTest(void) {
+    EndouPrintLinePoint line[3];
+    XglClock sp60;
+    short sp70[2];
+    StudioCamera *camera;
+    StudioCamera *studio_camera;
+    int primary_order;
+    int number_order;
+    int sprite_order;
+    StudioCamera *second_camera;
+    u8 sprite_tick;
+    short blink_sprite_id;
+    int cursor_pressed;
+    EndouPrintPoint *cursor;
+
+    eSpriteSet(&spr_22[0], 0x200);
+    eSpriteSet(&spr_22[1], 0x200);
+    eSpriteSet(&spr_22[2], 0x200);
+    eSpriteSet(&spr_22[3], 0x200);
+    eRibbonSet(&rbn_21[0], 1);
+    eRibbonSet(&rbn_21[1], 0);
+    eRibbonSet(&rbn_21[2], 0);
+    eLineSet(&line_23[0], 0);
+    eLineSet(&line_23[1], 0);
+    eLineSet(&line_23[2], 0);
+    eLineSet(&line_23[3], 0);
+    eCursolSet(&cur_25, 0);
+    eTagFontSet(&tgf_24[0].control, moji_26);
+    eTagFontSet(&tgf_24[1].control, moji2_27);
+    cursor = &d_43;
+    xglRenderClearFrame();
+    xglStudioChange(0);
+    xglStudioGetCamera(&camera, 0);
+    PadData.buttons.input.pressed = 0;
+    studio_camera = camera;
+    studio_camera->rotation.x = 0.0f;
+    studio_camera->rotation.y = 0.0f;
+    studio_camera->rotation.z = 0.0f;
+    studio_camera->position.x = 0.0f;
+    studio_camera->position.y = 0.0f;
+    studio_camera->position.z = 1.0f;
+    studio_camera->active = 1;
+    studio_camera->state = 1;
+    second_camera = xglStudioGetCamera2(0);
+    second_camera->position.y = 1.0f;
+    second_camera->position.z = 4.0f;
+    second_camera->rotation.x = 0.0f;
+    second_camera->rotation.y = 0.0f;
+    second_camera->rotation.z = 0.0f;
+    second_camera->position.x = 0.0f;
+    second_camera->active = 1;
+    second_camera->state = 1;
+    WindowTexLoad(NULL, 1U);
+    if ((PadData.buttons.button_state & ENDOU_EXIT_CHORD_U) != ENDOU_EXIT_CHORD_U) {
+        primary_order = 0xFFFFFF;
+        number_order = 0xFFFFFE;
+        sprite_order = 0x02FFFFF0;
+        do {
+            xglFontDebugPrintf(0, 0, eNumberTestLabel);
+            d_28.uv = 0xE00;
+            d_28.vertices[0].x = 0x100;
+            d_28.vertices[0].y = 0x40;
+            d_28.vertices[0].depth = primary_order;
+            d_28.coordinate_mode = 0;
+            d_28.flags = 1;
+            endPrintExtFunc(0, END_PRINT_CMD_SPRITE_QUAD, &d_28);
+            line[0].x = 0x70F8;
+            line[0].y = 0x84B8;
+            line[1].x = 0x8F38;
+            line[1].y = 0x7BF8;
+            line[0].z = primary_order;
+            line[0].color[1] = 0x40;
+            line[0].color[0] = 0x40;
+            line[0].color[3] = 0x80;
+            line[0].color[2] = 0x80;
+            line[1].z = primary_order;
+            line[1].color[0] = 0x80;
+            line[1].color[3] = 0;
+            line[1].color[2] = 0;
+            line[1].color[1] = 0;
+            line[2].z = 0;
+            endPrintDirectLine(line);
+            eNumberSet(num_29, 0);
+            num_29[0].x = 0x10;
+            num_29[0].y = 0x80;
+            num_29[0].digits = 5;
+            num_29[0].work = number_order;
+            num_29[0].value = -1;
+            num_29[0].format = 0;
+            eNumberMain(num_29);
+            xglClockRead(&sp60);
+            eNumberSet(&num_30[0], 0);
+            num_30[0].x = 0x10;
+            num_30[0].y = 0xA0;
+            __builtin_memcpy(&num_30[0].value, &sp60,
+                             sizeof(num_30[0].value));
+            num_30[0].work = number_order;
+            num_30[0].format = 2;
+            eNumberMain(num_30);
+            eNumberSet(&num_31[0], 0);
+            num_31[0].x = 0x40;
+            num_31[0].y = 0xC0;
+            num_31[0].work = number_order;
+            num_31[0].format = 3;
+            sp70[1] = 0xC8;
+            sp70[0] = 0;
+            num_31[0].value = *(int *)sp70;
+            num_31[0].digits = 3;
+            num_31[0].colorModeFirst = 1;
+            num_31[0].colorModeSecond = 2;
+            num_31[0].alignment = 0;
+            num_31[0].firstOnly = 0;
+            eNumberMain(num_31);
+            eNumberSet(&num_32[0], 0);
+            num_32[0].x = 0x40;
+            num_32[0].y = 0xE0;
+            num_32[0].format = 7;
+            num_32[0].digits = 4;
+            num_32[0].value = 0x4D2;
+            num_32[0].work = number_order;
+            eNumberMain(num_32);
+            d_33.spriteId = 1024;
+            endSpriteSet(&d_33, 0xFF);
+            d_33.x = 0x64;
+            d_33.y = 0x60;
+            d_33.work = sprite_order;
+            endPrintExtFunc(d_33.work, END_PRINT_CMD_SPRITE, &d_33);
+            endPrintExtFunc(0xFFFFFF, END_PRINT_CMD_LINE, line_34);
+            d_35[0].spriteId = 0x31C;
+            d_35[1].spriteId = 0x31F;
+            endSpriteSet(&d_35[0], 0xFF);
+            endSpriteSet(&d_35[1], 0xFF);
+            d_35[0].x = 0xC8;
+            d_35[0].y = 0x60;
+            d_35[1].x = d_35[0].x + d_35[0].width - d_35[1].width;
+            d_35[1].y = d_35[0].y + d_35[0].height - d_35[1].height;
+            d_35[1].work = 0x02FFFFF2;
+            d_35[0].work = sprite_order;
+            d_35[1].color[0] = 0xFF;
+            d_35[1].color[1] = 0x20;
+            d_35[1].color[2] = d_35[1].color[1];
+            endPrintExtFunc(d_35[0].work, END_PRINT_CMD_SPRITE, &d_35[0]);
+            endPrintExtFunc(d_35[1].work, END_PRINT_CMD_SPRITE, &d_35[1]);
+            sprite_tick = time_37++;
+            blink_sprite_id = ((sprite_tick >> 4) & 1) + 0x10D;
+            d_36.spriteId = blink_sprite_id;
+            endSpriteSet(&d_36, 0xFF);
+            d_36.x = 0x108;
+            d_36.y = 0x60;
+            d_36.work = sprite_order;
+            endPrintExtFunc(d_36.work, END_PRINT_CMD_SPRITE, &d_36);
+            d_38.spriteId = 0x609;
+            endSpriteSet(&d_38, 0xFF);
+            d_38.x = 0x108;
+            d_38.y = 0x80;
+            d_38.work = sprite_order;
+            endPrintExtFunc(d_38.work, END_PRINT_CMD_SPRITE, &d_38);
+            rbn_21[0].work = 0xFFFFF0;
+            rbn_21[0].x = 0x40;
+            rbn_21[0].y = 0x80;
+            rbn_21[0].width = 0x100;
+            rbn_21[0].height = 0x20;
+            eRibbonMain(&rbn_21[0]);
+            d_39.payload.number.value = 0x7B;
+            d_39.argument1 = 3;
+            d_39.x = 0xA;
+            d_39.y = 0x40;
+            d_39.work = primary_order;
+            d_39.payload.number.alpha = -0x80;
+            d_39.argument2 = 0;
+            d_39.payload.number.blue = -0x80;
+            d_39.payload.number.green = -0x80;
+            d_39.payload.number.red = -0x80;
+            endPrintExtFunc(d_39.work, END_PRINT_CMD_NUMBER, &d_39);
+            {
+            short c5 = 5, c1 = 1, c80 = 0x50;
+            d_40.x = 0xA;
+            d_40.work = primary_order;
+            d_40.argument1 = c5;
+            d_40.y = c80;
+            d_40.argument2 = c1;
+            d_40.payload.number.alpha = -0x80;
+            d_40.payload.number.value = 0;
+            d_40.payload.number.blue = -0x80;
+            d_40.payload.number.green = -0x80;
+            d_40.payload.number.red = -0x80;
+            endPrintExtFunc(d_40.work, END_PRINT_CMD_NUMBER, &d_40);
+            }
+            d_41.spriteId = 258;
+            d_41.x = 0xA;
+            d_41.y = 0x60;
+            d_41.work = primary_order;
+            endPrintExtFunc(d_41.work, END_PRINT_CMD_SPRITE, &d_41);
+            cursor_pressed = PadData.buttons.input.pressed & PAD_CIRCLE;
+            cur_25.x = 0x10;
+            cur_25.y = 0xC8;
+            cur_25.work = 0xFFFFF4;
+            if (cursor_pressed) {
+                cur_25.state = E_MODE_SHOW_START;
+            }
+            eCursolMain(&cur_25);
+            endPrintExtFunc(0x01000000, END_PRINT_CMD_RIBBON, d_42);
+            if ((PadData.buttons.input.held & PAD_UP) != 0) {
+                int cursor_y = cursor->y;
+
+                cursor->y = cursor_y - 2;
+            }
+            if ((PadData.buttons.input.held & PAD_DOWN) != 0) {
+                int cursor_y = cursor->y;
+
+                cursor->y = cursor_y + 2;
+            }
+            endPrintExtFunc(cursor->depth, END_PRINT_CMD_POINT, cursor);
+            if (PadData.buttons.input.pressed & PAD_CIRCLE) {
+                spr_22[0].state = 0x22;
+                spr_22[1].state = 0x22;
+                spr_22[2].state = 0x22;
+                spr_22[3].state = 0x22;
+            }
+            spr_22[0].x = 0x64;
+            spr_22[0].y = 0xC8;
+            spr_22[0].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr_22[0]);
+            spr_22[1].y = 0xC8;
+            spr_22[1].x = 0xA4;
+            spr_22[1].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr_22[1]);
+            spr_22[2].x = 0xC8;
+            spr_22[2].y = spr_22[2].x;
+            spr_22[2].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr_22[2]);
+            spr_22[3].x = 0x190;
+            spr_22[3].y = spr_22[3].x;
+            spr_22[3].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr_22[3]);
+            tgf_24[0].draw.x = 0x40;
+            tgf_24[0].draw.y = 0x12C;
+            tgf_24[0].draw.work = primary_order;
+            eTagFontMain(&tgf_24[0].draw);
+            tgf_24[1].draw.y = 0x140;
+            tgf_24[1].draw.x = 0x40;
+            tgf_24[1].draw.work = primary_order;
+            eTagFontMain(&tgf_24[1].draw);
+            d_44.points[0].depth = 0x01FFFFF0;
+            d_44.points[1].depth = 0x01FFFFF0;
+            d_44.points[2].depth = 0x01FFFFF0;
+            d_44.points[3].depth = 0x01FFFFF0;
+            d_44.points[0].y = 0x32;
+            d_44.points[1].y = 0x64;
+            d_44.points[2].y = 0x14;
+            d_44.points[3].y = 0x82;
+            d_44.colors[3].red = -0x80;
+            d_44.colors[2].red = -0x80;
+            d_44.colors[1].red = -0x80;
+            d_44.colors[0].red = -0x80;
+            d_44.colors[3].green = -0x80;
+            d_44.colors[2].green = -0x80;
+            d_44.colors[1].green = -0x80;
+            d_44.colors[0].green = -0x80;
+            d_44.colors[3].blue = -0x80;
+            d_44.colors[2].blue = -0x80;
+            d_44.colors[1].blue = -0x80;
+            d_44.colors[0].blue = -0x80;
+            d_44.colors[0].alpha = -0x80;
+            d_44.colors[1].alpha = -0x80;
+            d_44.colors[2].alpha = -0x80;
+            d_44.colors[3].alpha = -0x80;
+            d_44.points[0].x = 0;
+            d_44.points[1].x = 0;
+            d_44.points[2].x = 0xA0;
+            d_44.points[3].x = 0xA0;
+            d_44.format = 0x1A11;
+            line_23[1].count = 4;
+            line_23[1].points[0].x = 0xB4;
+            line_23[1].points[0].y = 0x46;
+            line_23[1].points[0].work = 0x7FFFFFFF;
+            line_23[1].points[1].x = 0xB4;
+            line_23[1].points[1].y = 0x78;
+            line_23[1].points[1].work = 0x7FFFFFFF;
+            line_23[1].points[2].x = 0x96;
+            line_23[1].points[2].y = 0x96;
+            line_23[1].points[2].work = 0x7FFFFFFF;
+            line_23[1].points[3].x = 0x64;
+            line_23[1].points[3].y = 0x96;
+            line_23[1].points[3].work = 0x7FFFFFFF;
+            line_23[1].points[0].red = -1;
+            line_23[1].points[0].green = 0;
+            line_23[1].points[0].blue = 0;
+            line_23[1].points[0].alpha = -0x80;
+            line_23[1].points[1].red = 0;
+            line_23[1].points[1].green = 0;
+            line_23[1].points[1].blue = -1;
+            line_23[1].points[1].alpha = -0x80;
+            line_23[1].points[2].red = 0;
+            line_23[1].points[2].green = -1;
+            line_23[1].points[2].blue = 0;
+            line_23[1].points[2].alpha = -0x80;
+            line_23[1].points[3].red = -1;
+            line_23[1].points[3].green = -1;
+            line_23[1].points[3].blue = -1;
+            line_23[1].points[3].alpha = -0x80;
+            if (PadData.buttons.input.pressed & PAD_START) {
+                line_23[1].state = ELINE_STATE_DRAW_ALL;
+            }
+            if (PadData.buttons.input.pressed & PAD_SELECT) {
+                line_23[1].state = ELINE_STATE_DRAW_SEQUENTIAL;
+            }
+            eLineMain(&line_23[1]);
+            line_23[2].count = 4;
+            line_23[2].points[0].x = 0x64;
+            line_23[2].points[0].y = 0x64;
+            line_23[2].points[0].work = 0x7FFFFFFF;
+            line_23[2].points[1].y = 0x46;
+            line_23[2].points[1].x = 0x82;
+            line_23[2].points[1].work = 0x7FFFFFFF;
+            line_23[2].points[2].x = 0x82;
+            line_23[2].points[2].y = 0x78;
+            line_23[2].points[2].work = 0x7FFFFFFF;
+            line_23[2].points[3].y = 0x78;
+            line_23[2].points[3].x = 0xB4;
+            line_23[2].points[3].work = 0x7FFFFFFF;
+            line_23[2].points[0].red = -1;
+            line_23[2].points[0].green = 0;
+            line_23[2].points[0].blue = 0;
+            line_23[2].points[0].alpha = -0x80;
+            line_23[2].points[1].red = 0;
+            line_23[2].points[1].green = 0;
+            line_23[2].points[1].blue = -1;
+            line_23[2].points[1].alpha = -0x80;
+            line_23[2].points[2].red = 0;
+            line_23[2].points[2].green = -1;
+            line_23[2].points[2].blue = 0;
+            line_23[2].points[2].alpha = -0x80;
+            line_23[2].points[3].red = -1;
+            line_23[2].points[3].green = -1;
+            line_23[2].points[3].blue = -1;
+            line_23[2].points[3].alpha = -0x80;
+            if (ENDOU_MODEL_PAD->pressed & PAD_START) {
+                line_23[2].state = ELINE_STATE_DRAW_ALL;
+            }
+            if (ENDOU_MODEL_PAD->pressed & PAD_SELECT) {
+                line_23[2].state = ELINE_STATE_DRAW_SEQUENTIAL;
+            }
+            eLineMain(&line_23[2]);
+            line_23[3].count = 4;
+            line_23[3].points[0].x = 0x82;
+            line_23[3].points[0].y = 0x78;
+            line_23[3].points[0].work = 0x7FFFFFFF;
+            line_23[3].points[1].x = 0x64;
+            line_23[3].points[1].y = 0x96;
+            line_23[3].points[1].work = 0x7FFFFFFF;
+            line_23[3].points[2].x = 0x64;
+            line_23[3].points[2].y = 0x64;
+            line_23[3].points[2].work = 0x7FFFFFFF;
+            line_23[3].points[3].x = 0x96;
+            line_23[3].points[3].y = 0x64;
+            line_23[3].points[3].work = 0x7FFFFFFF;
+            line_23[3].points[0].red = -1;
+            line_23[3].points[0].green = 0;
+            line_23[3].points[0].blue = 0;
+            line_23[3].points[0].alpha = -0x80;
+            line_23[3].points[1].red = 0;
+            line_23[3].points[1].green = 0;
+            line_23[3].points[1].blue = -1;
+            line_23[3].points[1].alpha = -0x80;
+            line_23[3].points[2].red = 0;
+            line_23[3].points[2].green = -1;
+            line_23[3].points[2].blue = 0;
+            line_23[3].points[2].alpha = -0x80;
+            line_23[3].points[3].red = -1;
+            line_23[3].points[3].green = -1;
+            line_23[3].points[3].blue = -1;
+            line_23[3].points[3].alpha = -0x80;
+            if (ENDOU_MODEL_PAD->pressed & PAD_START) {
+                line_23[3].state = ELINE_STATE_DRAW_ALL;
+            }
+            if (ENDOU_MODEL_PAD->pressed & PAD_SELECT) {
+                line_23[3].state = ELINE_STATE_DRAW_SEQUENTIAL;
+            }
+            eLineMain(&line_23[3]);
+            endPrintExtFunc(0xFFFFFF, END_PRINT_CMD_EXT_BASE + END_PRINT_EXT_FLUSH, NULL);
+            xglSleep();
+        } while ((PadData.buttons.button_state & ENDOU_EXIT_CHORD_U) != ENDOU_EXIT_CHORD_U);
+    }
+}
 
 void eModelTestMain(EModelTestState *unit)
 {
@@ -977,6 +2261,11 @@ void eModelTestMain(EModelTestState *unit)
 
     MenuModelControl(unit);
 }
+
+/* EUC-JP bytes for the model-test diagnostic with its leading control byte. */
+
+const unsigned char D_004C2AE8[16] =
+    "\x0B\xA5\xE2\xA5\xC7\xA5\xEB\xA5\xC6\xA5\xB9\xA5\xC8";
 
 void eModelTest(void)
 {

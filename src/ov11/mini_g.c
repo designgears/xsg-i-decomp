@@ -4343,7 +4343,205 @@ static void init_shpmenu(void)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", shop_main);
+extern int dataItmBoxChk(int id);
+extern int dataItmBoxInc(int id);
+extern int dataAccBoxInc(int id);
+extern int dataEvtBoxInc(int id);
+extern int init_110;
+extern int cur_111;
+extern int top_112;
+extern const char D_00A0C4A8[];
+typedef union ShopPadView {
+    struct { unsigned char u0[0x2A]; unsigned short half_2a; } canonical;
+    struct { unsigned char u0[0x28]; u64 words; } dword;
+    struct { unsigned char u0[0x2C]; unsigned short repeat; unsigned char u2e[0x36]; signed char stick[4]; } wide;
+} ShopPadView;
+#define SHOP_PAD (*(ShopPadView *)PadData)
+
+static void shop_main(void)
+{
+    int prize;
+    int box_id;
+    int item;
+    int shown;
+    int i;
+    int *init;
+
+    Pkt = xglPacketGetCurrent();
+    xglPacketTextureTrans((void *)SHOP_EXCHANGE_TEX_BUFFER);
+    SetRegAD(Pkt, 0x3F, 0);
+    {
+        float current = *(float *)&Pkt;
+        *(float *)&Pkt = current;
+    }
+    init = &init_110;
+    SetDrawStatus(3, 0);
+    {
+        int done = *init;
+        *init = done;
+    }
+    MakeSprite(BG_Tex, BG_Rect);
+    xglPacketTextureTrans((void *)0x0118B000);
+    SetRegAD(Pkt, 0x3F, 0);
+    DecPrint2(((struct CasinoSaveWork *)SaveWork)->coin_balance, -1, 468, 260, 0);
+    if (*init == 0) {
+        init_shpmenu();
+        *init = 1;
+    }
+    shown = 0;
+    i = 0;
+    if (i < MenuNum) {
+        do {
+            if (i >= top_112 && shown != 8) {
+                item = shpmenu_work[i];
+                xglFontPrint(0, 0, 0, D_00A0C4A0);
+                xglFontPrint(0, 0, 0, D_00A0C4A8);
+                xglFontPrint(240, shown * 24 + 32, 0xFF00, RES_ShopDataName(item));
+                shown++;
+            }
+            i++;
+        } while (i < MenuNum);
+    }
+    SetDrawStatus(3, 0);
+    UtlCurPrint(216, cur_111 * 24 + 34);
+    if (SHOP_PAD.wide.repeat & 0x1000) {
+        RES_SoundEffect(19);
+        if (cur_111 == 0) {
+            top_112--;
+        } else {
+            cur_111--;
+        }
+    }
+    if (SHOP_PAD.wide.repeat & 0x4000) {
+        RES_SoundEffect(20);
+        if (cur_111 + top_112 < MenuNum - 1 && cur_111 == 8 - 1) {
+            top_112++;
+        } else {
+            cur_111++;
+        }
+    }
+    if (top_112 + cur_111 >= MenuNum) {
+        cur_111 = MenuNum - top_112 - 1;
+    }
+    if (top_112 < 0) {
+        top_112 = 0;
+    }
+    if (MenuNum < cur_111) {
+        cur_111 = MenuNum - 1;
+    }
+    prize = shpmenu_work[top_112 + cur_111];
+    SetDrawStatus(0, 0);
+    DecPrint2(RES_ShopDataCoin(prize), -1, 128, 260, 1);
+    xglFontPrint(0, 0, 0xFF00, D_00A0C4A0);
+    xglFontPrint(0, 0, 0, D_00A0C4B0);
+    xglFontPrint(32, 310, 0xFF00, RES_ShopDataInfo(prize));
+    if (SHOP_PAD.dword.words & ((u64)(0x20 | 0x8) << 32)) {
+        if (RES_ShopDataCoin(prize) <= ((struct CasinoSaveWork *)SaveWork)->coin_balance) {
+        ((struct CasinoSaveWork *)SaveWork)->coin_balance -= RES_ShopDataCoin(prize);
+        if (prize >= 2 && prize <= 50) {
+            SaveWork[prize] = 1;
+            init_110 = 0;
+            if (shown == 1) {
+                top_112--;
+            }
+        }
+        switch (prize) {
+        case 0:
+            if (dataItmBoxChk(1) == 99 && dataItmBoxChk(5) == 99 && dataItmBoxChk(10) == 99 && dataItmBoxChk(12) == 99) {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            } else {
+                RES_SoundEffect(21);
+                dataItmBoxInc(1);
+                dataItmBoxInc(5);
+                dataItmBoxInc(10);
+                dataItmBoxInc(12);
+            }
+            break;
+        case 1:
+            if (dataItmBoxChk(16) == 99 && dataItmBoxChk(36) == 99) {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            } else {
+                dataItmBoxInc(16);
+                dataItmBoxInc(36);
+                RES_SoundEffect(21);
+            }
+            break;
+        case 2:
+            if (dataAccBoxInc(100)) {
+                RES_SoundEffect(21);
+            } else {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            }
+            break;
+        case 3:
+            if (dataAccBoxInc(109)) {
+                RES_SoundEffect(21);
+            } else {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            }
+            break;
+        case 4:
+            if (dataItmBoxInc(11)) {
+                RES_SoundEffect(21);
+            } else {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            }
+            break;
+        case 5:
+            if (dataItmBoxInc(18)) {
+                RES_SoundEffect(21);
+            } else {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            }
+            break;
+        case 36:
+        case 37:
+        case 38:
+            box_id = prize + 17;
+            goto event;
+        case 39:
+        case 40:
+        case 41:
+        case 42:
+        case 43:
+        case 44:
+        case 45:
+        case 46:
+        case 47:
+        case 48:
+        case 49:
+        case 50:
+            box_id = prize + 2;
+        event:
+            if (dataEvtBoxInc(box_id)) {
+                RES_SoundEffect(21);
+            } else {
+                RES_SoundEffect(22);
+                ((struct CasinoSaveWork *)SaveWork)->coin_balance += RES_ShopDataCoin(prize);
+            }
+            break;
+        default:
+            RES_SoundEffect(21);
+            break;
+        }
+        } else {
+            RES_SoundEffect(22);
+        }
+    }
+    if (SHOP_PAD.canonical.half_2a & 0x40) {
+        top_112 = 0;
+        cur_111 = 0;
+        init_110 = 0;
+        GameModeChange(0);
+        RES_SoundEffect(23);
+    }
+}
 
 /* ov11:0x00a083f8. Loads the data-viewer minigame's dataviewer and sampler
  * textures. */
@@ -4428,7 +4626,128 @@ static int VW_ViewModeInit(int no)
     return type;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov11/mini_g", VW_ViewMode);
+extern unsigned char tex_114[0x1C];
+extern unsigned char keytex_115[0x1C];
+extern unsigned char keyrect_116[0x10];
+struct VwRect { int x; int y; int w; int h; };
+typedef union VwPadView {
+    struct { unsigned char u0[0x2A]; unsigned short half_2a; } canonical;
+    struct { unsigned char u0[0x2C]; unsigned short repeat; unsigned char u2e[0x36]; signed char stick[4]; } wide;
+} VwPadView;
+#define VW_PAD (*(VwPadView *)PadData)
+#define VW_SCROLL_X Gwork[0x1C0 / 4]
+#define VW_SCROLL_Y Gwork[0x1C4 / 4]
+
+/* ov11:0x00a08650. Viewer image display: loads the entry's images with
+ * VW_ViewModeInit, draws them as a 2x2 grid of 578-wide pages at the scroll
+ * offsets (the second row is 448 high, one page when the type is not 1 is
+ * shown only as the first two), scrolls with the larger of the two stick
+ * axes (the x offset only when the entry type is 1), clamps the offsets,
+ * then draws the key sprite. Returns 1 when cross is newly pressed (sound
+ * 0x1C), else 0. Not sure which stick bytes are which axis. */
+static int VW_ViewMode(int arg)
+{
+    struct VwRect rect[4];
+    int type;
+    int dx;
+    signed char dy;
+    int ax;
+    int ay;
+    int bx;
+    int by;
+    signed char abs_ax;
+    signed char abs_ay;
+    signed char abs_bx;
+    signed char abs_by;
+    signed char by_char;
+
+    type = VW_ViewModeInit(arg);
+    rect[3].w = 578;
+    rect[2].w = 578;
+    rect[1].w = 578;
+    rect[0].w = 578;
+    rect[2].h = 512;
+    rect[3].h = 448;
+    rect[0].h = 512;
+    rect[1].h = 448;
+    rect[0].x = VW_SCROLL_X;
+    rect[1].x = VW_SCROLL_X;
+    rect[2].y = VW_SCROLL_Y;
+    rect[0].y = VW_SCROLL_Y;
+    rect[3].y = VW_SCROLL_Y + 512;
+    rect[1].y = VW_SCROLL_Y + 512;
+    rect[2].x = VW_SCROLL_X + 578;
+    rect[3].x = VW_SCROLL_X + 578;
+    SetDrawStatus(3, 0);
+    xglPacketTextureTrans((void *)0x01491000);
+    SetRegAD(Pkt, 0x3F, 0);
+    MakeSprite(tex_114, &rect[0]);
+    xglPacketTextureTrans((void *)0x014D1800);
+    SetRegAD(Pkt, 0x3F, 0);
+    MakeSprite(tex_114, &rect[1]);
+    if (type == 1) {
+        xglPacketTextureTrans((void *)0x01512000);
+        SetRegAD(Pkt, 0x3F, 0);
+        MakeSprite(tex_114, &rect[2]);
+        xglPacketTextureTrans((void *)0x01552800);
+        SetRegAD(Pkt, 0x3F, 0);
+        MakeSprite(tex_114, &rect[3]);
+    }
+    ax = VW_PAD.wide.stick[0] / 2;
+    abs_ax = ax;
+    if (ax < 0) {
+        abs_ax = -ax;
+    }
+    ay = VW_PAD.wide.stick[1] / 2;
+    abs_ay = ay;
+    if (abs_ay < 0) {
+        abs_ay = -abs_ay;
+    }
+    bx = VW_PAD.wide.stick[2] / 2;
+    abs_bx = bx;
+    if (bx < 0) {
+        abs_bx = -bx;
+    }
+    by = VW_PAD.wide.stick[3] / 2;
+    by_char = by;
+    if (by_char < 0) {
+        abs_by = -by_char;
+    } else {
+        abs_by = by_char;
+    }
+    dy = by;
+    if (abs_ay >= abs_by) {
+        dy = ay;
+    }
+    VW_SCROLL_Y -= dy;
+    dx = ax;
+    if (abs_ax < abs_bx) {
+        dx = bx;
+    }
+    if (type == 1) {
+        VW_SCROLL_X -= dx;
+    }
+    if (VW_SCROLL_X < -578) {
+        VW_SCROLL_X = -578;
+    }
+    if (VW_SCROLL_X > 0) {
+        VW_SCROLL_X = 0;
+    }
+    if (VW_SCROLL_Y < -592) {
+        VW_SCROLL_Y = -592;
+    }
+    if (VW_SCROLL_Y > 0) {
+        VW_SCROLL_Y = 0;
+    }
+    xglPacketTextureTrans((void *)VW_DATAVIEWER_TEX_BUFFER);
+    SetRegAD(Pkt, 0x3F, 0);
+    MakeSprite(keytex_115, keyrect_116);
+    if (VW_PAD.canonical.half_2a & 0x40) {
+        RES_SoundEffect(0x1C);
+        return 1;
+    }
+    return 0;
+}
 
 
 static int VW_SamMode(int enable)

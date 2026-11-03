@@ -2995,9 +2995,362 @@ static void nmlModelCalcDropShadow(void)
     }
 }
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcEntryProjectCircle);
+#define QuadwordCopy(destination, source) \
+    __asm__ __volatile__("lq $2, 0(%1)\n" "sq $2, 0(%0)\n" \
+        : : "r" (destination), "r" (source) : "$2", "memory")
+#define QuadwordZeroMatrix(destination) \
+    __asm__ __volatile__("sq $0, 0(%0)\n" "sq $0, 16(%0)\n" \
+        "sq $0, 32(%0)\n" "sq $0, 48(%0)\n" : : "r" (destination) : "memory")
+#define Vu0AddVectorXYZ(destination, first, second) \
+    __asm__ __volatile__("lqc2 $vf3, 0(%2)\n\tlqc2 $vf2, 0(%1)\n\t" \
+        "vadd.xyz vf2, vf2, vf3\n\tsqc2 $vf2, 0(%0)\n\t.set noreorder\n\t.set reorder" \
+        : : "r" (destination), "r" (first), "r" (second) : "memory")
+#define NML_RENDER_PROREAL_CP 0x800u
+typedef struct { float x, y, z; } NmlVec3Cp;
+typedef union { float elements[16]; Matrix4 rows; } NmlMatrixCp;
+typedef Vector4 NmlDwVector4Cp __attribute__((aligned(8)));
+typedef struct { unsigned long long lo, hi; } NmlQwordCp;
+typedef union { Vector4 v; NmlQwordCp q; } NmlOvCp;
+typedef struct {
+    struct {
+        Matrix4 matrix_000;
+        Matrix4 inverseTransform;
+        NmlOvCp unmodeled_080[4];
+        NmlOvCp unmodeled_0c0[4];
+        int unmodeled_100;
+        int unmodeled_104;
+        int unmodeled_108;
+        int unmodeled_10c;
+        short unmodeled_110;
+        short unmodeled_112;
+        short unmodeled_114;
+        short unmodeled_116;
+        int unmodeled_118;
+        int unmodeled_11c;
+        float unmodeled_120;
+        float unmodeled_124;
+        unsigned char unmodeled_128[8];
+        u64 textureWord;
+        u64 clampWord;
+        float textureUOffset;
+        float textureUScale;
+        float textureVOffset;
+        float textureVScale;
+        Vector4 transformOrigin;
+        Vector4 unmodeled_160;
+        NmlOvCp unmodeled_170[2];
+        NmlOvCp unmodeled_190[3];
+    } fields;
+    int projection_entry;
+    unsigned char unmodeled_1c4[0x1c8 - 0x1c4];
+    u64 unmodeled_1c8;
+    u64 unmodeled_1d0;
+    unsigned char unmodeled_1d8[0x1e0 - 0x1d8];
+} NmlProRealCp;
+typedef union {
+    LayoutSlot slots[200];
+    struct {
+        unsigned char unmodeled_000[0x180];
+        Matrix4 projectionMatrix;
+        unsigned char unmodeled_1c0[0x1f0 - 0x1c0];
+        NmlOvCp center;
+        unsigned char unmodeled_200[0x250 - 0x200];
+        u32 render_status;
+        unsigned char unmodeled_254[0x268 - 0x254];
+        int texMapMode;
+    } fields;
+} NmlLayoutCp;
+typedef struct {
+    struct {
+        unsigned char unmodeled_00[4];
+        short frame_width;
+        short frame_height;
+    } reso;
+    unsigned char unmodeled_08[0x1a - 0x08];
+    u16 texture_buffer_base;
+} NmlRenderCp;
+extern NmlProRealCp s_inProRealCp[] __asm__("s_inProReal");
+extern NmlLayoutCp s_inLayoutCp __asm__("s_inLayout");
+extern NmlRenderCp sRenderCp __asm__("sRender");
+extern void xglMatrixStackInverse(void);
+extern void xglMatrixStackMul(Matrix4 matrix);
+extern void xglMatrixStackRotY(float angle);
+extern void xglMatrixStackRotZ(float angle);
 
-INCLUDE_ASM("asm/main/nonmatchings/nml_model_set", nmlModelCalcEntryProjectMap);
+static void nmlModelCalcEntryProjectCircle(NmlModel *model)
+{
+    extern NmlDwVector4Cp D_004D28B0;
+    extern NmlDwVector4Cp D_004D28C0;
+    extern NmlDwVector4Cp D_004D28D0;
+    
+    NmlVec3Cp projectionAngles;
+    NmlMatrixCp savedMatrix;
+    NmlDwVector4Cp screenScaleStorage = D_004D28B0;
+    NmlDwVector4Cp screenCenter = D_004D28C0;
+    NmlDwVector4Cp screenOffsetStorage = D_004D28D0;
+    Vector4 cameraTranslation;
+    Vector4 normal;
+    Vector4 spare;
+    float scale;
+    float inverseScale;
+    float modelScale;
+    float offset;
+    float value;
+    float one;
+
+    s_inProRealCp[0].fields.unmodeled_190[0].q = s_inLayoutCp.fields.center.q;
+    inverseScale = 0.9f;
+    modelScale = model->entryTranslation.w * inverseScale;
+    scale = 1.0f;
+    one = 1.0f;
+    scale /= modelScale;
+
+    screenScaleStorage.x *= scale;
+    screenScaleStorage.y *= scale;
+    projectionAngles.x = 1.5707964f;
+    cameraTranslation.x = 0.0f;
+    cameraTranslation.y = one;
+    cameraTranslation.z = 0.0f;
+    cameraTranslation.w = one;
+    projectionAngles.z = 0.0f;
+    projectionAngles.y = 0.0f;
+    Vu0AddVectorXYZ(&cameraTranslation, &cameraTranslation, &s_inProRealCp[0].fields.unmodeled_190[0].v);
+
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(&cameraTranslation.x);
+    xglMatrixStackRotY(projectionAngles.y);
+    xglMatrixStackRotX(projectionAngles.x);
+    xglMatrixStackSave(s_inProRealCp[0].fields.matrix_000);
+    xglMatrixStackInverse();
+    xglMatrixStackSave((float (*)[4])savedMatrix.elements);
+    xglMatrixStackUnit();
+
+    screenOffsetStorage.x -= ((float)sRenderCp.reso.frame_width - screenCenter.x) * 0.5f;
+    screenOffsetStorage.y -= ((float)sRenderCp.reso.frame_height - screenCenter.y) * 0.5f;
+    xglMatrixStackTrans(&screenOffsetStorage.x);
+    xglMatrixStackScale(&screenScaleStorage.x);
+    xglMatrixStackMul(savedMatrix.rows);
+    xglMatrixStackSave(s_inLayoutCp.fields.projectionMatrix);
+
+    s_inProRealCp[0].unmodeled_1c8 = 0x89;
+    s_inProRealCp[0].unmodeled_1d0 = 0x3200000062LL;
+    s_inProRealCp[0].fields.unmodeled_100 = 0;
+    s_inProRealCp[0].fields.unmodeled_104 = 0;
+    s_inProRealCp[0].fields.unmodeled_108 = 0x40;
+    s_inProRealCp[0].fields.unmodeled_10c = 0x40;
+    s_inProRealCp[0].fields.unmodeled_116 = sRenderCp.texture_buffer_base;
+    s_inProRealCp[0].fields.unmodeled_118 = 0x80;
+    s_inProRealCp[0].fields.unmodeled_114 = 0x13;
+    s_inProRealCp[0].fields.unmodeled_110 = 0;
+    s_inProRealCp[0].fields.unmodeled_112 = 0;
+    s_inProRealCp[0].fields.unmodeled_120 = 64.0f / (scale * 64.0f);
+    s_inProRealCp[0].fields.unmodeled_124 = 64.0f / (scale * 64.0f);
+    s_inProRealCp[0].fields.unmodeled_170[0].v.x =
+        s_inProRealCp[0].fields.unmodeled_170[0].v.y =
+        s_inProRealCp[0].fields.unmodeled_170[0].v.z = 0.0f;
+    s_inProRealCp[0].fields.unmodeled_170[0].v.w = one;
+    s_inProRealCp[0].fields.unmodeled_170[1].v.x =
+        s_inProRealCp[0].fields.unmodeled_170[1].v.y =
+        s_inProRealCp[0].fields.unmodeled_170[1].v.z = one;
+    s_inProRealCp[0].fields.unmodeled_170[1].v.w = one;
+    s_inProRealCp[0].projection_entry = 0;
+    nmlModelSetProreal((NmlProRealState *)s_inProRealCp);
+    s_inProRealCp[0].fields.unmodeled_11c = 1;
+
+    QuadwordZeroMatrix(&s_inProRealCp[0].fields.unmodeled_0c0[0]);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_0c0[0], &s_inProRealCp[0].fields.unmodeled_170[0]);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_0c0[3], &s_inProRealCp[0].fields.unmodeled_170[1]);
+    xglVectorScaleXYZ(-1.0f, &s_inProRealCp[0].fields.unmodeled_160,
+                      &s_inProRealCp[0].fields.unmodeled_160);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_080[0], &s_inProRealCp[0].fields.unmodeled_160);
+
+    s_inProRealCp[0].fields.unmodeled_190[1].q = s_inProRealCp[0].fields.unmodeled_190[0].q;
+    s_inProRealCp[0].fields.unmodeled_190[2].q = s_inProRealCp[0].fields.unmodeled_190[0].q;
+    s_inLayoutCp.fields.render_status &= ~NML_RENDER_PROREAL_CP;
+    s_inProRealCp[0].fields.unmodeled_080[0].v.x = 0.0f;
+    s_inProRealCp[0].fields.unmodeled_080[1].v.x = one;
+    s_inProRealCp[0].fields.unmodeled_080[2].v.x = 0.0f;
+    offset = (s_inLayoutCp.slots[0x9d].f * 0.8f) / scale;
+    s_inProRealCp[0].fields.unmodeled_190[2].v.x += offset;
+    s_inProRealCp[0].fields.unmodeled_190[2].v.z += offset;
+    s_inProRealCp[0].fields.unmodeled_190[1].v.x -= offset;
+    s_inProRealCp[0].fields.unmodeled_190[1].v.z -= offset;
+    value = s_inProRealCp[0].fields.unmodeled_190[1].v.y -
+            (model->entryTranslation.w * s_inLayoutCp.slots[0x9d].f + 0.5f);
+    s_inProRealCp[0].fields.unmodeled_190[1].v.y = value;
+    if (s_inLayoutCp.slots[0x2d].f < value) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.y = s_inLayoutCp.slots[0x2d].f - 0.5f;
+    }
+
+    normal.x = 0.0f;
+    normal.y = one;
+    normal.z = 0.0f;
+    xglVectorNormal(&normal, &normal);
+    inverseScale = one / scale;
+    xglVectorScaleXYZ(inverseScale, &normal, &normal);
+    if (normal.x < 0.0f) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.x += normal.x;
+    } else {
+        s_inProRealCp[0].fields.unmodeled_190[2].v.x += normal.x;
+    }
+    if (normal.z < 0.0f) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.z += normal.z;
+    } else {
+        s_inProRealCp[0].fields.unmodeled_190[2].v.z += normal.z;
+    }
+}
+
+static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
+{
+    extern void xglVectorScale(Vector4 *, const Vector4 *, float);
+    extern float atan2f(float, float);
+    extern void xglVectorScaleXYZPtrFirst(Vector4 *, const Vector4 *, float) __asm__("xglVectorScaleXYZ");
+    extern const NmlOvCp D_004D28E0;
+    extern const NmlOvCp D_004D28F0;
+    extern const NmlOvCp D_004D2900;
+    NmlVec3Cp angles;
+    NmlMatrixCp savedMatrix;
+    NmlOvCp projectionScale;
+    NmlOvCp screenCenter;
+    NmlOvCp screenOffset;
+    Vector4 surfaceDir;
+    Vector4 normal;
+    float distance;
+    float denom;
+    float scale;
+    float offset;
+    /* Never accessed: the original frame keeps this 16-byte slot (frame 272). */
+    Vector4 unusedFrameSlot;
+
+    /* Empty loop kept from the original: its loop notes order the prologue
+     * (callee saves before the projection constant loads). */
+    do { } while (0);
+    projectionScale = D_004D28E0;
+    screenCenter = D_004D28F0;
+    screenOffset = D_004D2900;
+    denom = model->entryTranslation.w;
+    if (5.0f + camera->position.y < s_inLayoutCp.slots[0x7d].f) {
+        if (5.0f + camera->position.y < s_inLayoutCp.slots[0x2d].f) {
+            s_inLayoutCp.fields.render_status &= ~0x4000u;
+            return;
+        }
+    }
+
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_190[0], &s_inLayoutCp.fields.center);
+    s_inProRealCp[0].fields.unmodeled_190[0].v.y -= 0.2f;
+    distance = __builtin_fabsf(s_inProRealCp[0].fields.unmodeled_190[0].v.y - s_inLayoutCp.slots[0x2d].f);
+    if (distance > model->entryTranslation.w) {
+        denom = distance;
+    }
+    if (denom < 0.968f) {
+        denom = 0.968f;
+    }
+    scale = 0.968f / denom;
+    projectionScale.v.x *= scale;
+    projectionScale.v.y *= scale;
+    surfaceDir.x = s_inLayoutCp.slots[0x10].f;
+    surfaceDir.y = 1.5f;
+    surfaceDir.z = s_inLayoutCp.slots[0x18].f;
+    surfaceDir.w = 1.0f;
+    if (s_nShadowVec != 0) {
+        surfaceDir.x = s_inShadowVec.x;
+        surfaceDir.z = s_inShadowVec.z;
+    }
+    angles.z = __builtin_sqrtf(surfaceDir.x * surfaceDir.x + surfaceDir.z * surfaceDir.z);
+    angles.y = -atan2f(surfaceDir.x, -surfaceDir.z);
+    angles.x = atan2f(surfaceDir.y, angles.z);
+
+    xglVectorNormal(&surfaceDir, &surfaceDir);
+    xglVectorScale(&surfaceDir, &surfaceDir, 3.0f);
+    Vu0AddVectorXYZ(&surfaceDir, &surfaceDir, &s_inProRealCp[0].fields.unmodeled_190[0].v);
+
+    xglMatrixStackUnit();
+    xglMatrixStackTrans(&surfaceDir.x);
+    xglMatrixStackRotY(angles.y);
+    xglMatrixStackRotX(angles.x);
+    xglMatrixStackRotZ(1.5707964f);
+    xglMatrixStackSave(s_inProRealCp[0].fields.matrix_000);
+    xglMatrixStackInverse();
+    xglMatrixStackSave((float (*)[4])savedMatrix.elements);
+    xglMatrixStackUnit();
+
+    screenOffset.v.x -= ((float)sRenderCp.reso.frame_width - screenCenter.v.x) * 0.5f;
+    screenOffset.v.y -= ((float)sRenderCp.reso.frame_height - screenCenter.v.y) * 0.5f;
+    xglMatrixStackTrans(&screenOffset.v.x);
+    xglMatrixStackScale(&projectionScale.v.x);
+    xglMatrixStackMul(savedMatrix.rows);
+    xglMatrixStackSave(s_inLayoutCp.fields.projectionMatrix);
+
+    s_inProRealCp[0].unmodeled_1c8 = 0x89;
+    s_inProRealCp[0].unmodeled_1d0 = 0x3200000062LL;
+    s_inProRealCp[0].fields.unmodeled_100 = 0;
+    s_inProRealCp[0].fields.unmodeled_104 = 0;
+    s_inProRealCp[0].fields.unmodeled_108 = 0x100;
+    s_inProRealCp[0].fields.unmodeled_10c = 0xe0;
+    s_inProRealCp[0].fields.unmodeled_116 = sRenderCp.texture_buffer_base;
+    s_inProRealCp[0].fields.unmodeled_110 = 0;
+    s_inProRealCp[0].fields.unmodeled_112 = 0;
+    s_inProRealCp[0].fields.unmodeled_120 = 64.0f / (scale * 128.0f);
+    s_inProRealCp[0].fields.unmodeled_124 = s_inProRealCp[0].fields.unmodeled_120;
+    s_inProRealCp[0].fields.unmodeled_170[0].v.x = s_inProRealCp[0].fields.unmodeled_170[0].v.y =
+        s_inProRealCp[0].fields.unmodeled_170[0].v.z = 0.0f;
+    s_inProRealCp[0].fields.unmodeled_170[0].v.w = 1.0f;
+    s_inProRealCp[0].fields.unmodeled_170[1].v.x = s_inProRealCp[0].fields.unmodeled_170[1].v.y =
+        s_inProRealCp[0].fields.unmodeled_170[1].v.z = 1.0f;
+    s_inProRealCp[0].fields.unmodeled_170[1].v.w = 1.0f;
+    s_inProRealCp[0].projection_entry = 0;
+    s_inProRealCp[0].fields.unmodeled_118 = 0;
+    s_inProRealCp[0].fields.unmodeled_114 = 0;
+    nmlModelSetProreal((NmlProRealState *)s_inProRealCp);
+    s_inProRealCp[0].fields.unmodeled_11c = 1;
+
+    QuadwordZeroMatrix(&s_inProRealCp[0].fields.unmodeled_0c0[0]);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_0c0[0], &s_inProRealCp[0].fields.unmodeled_170[0]);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_0c0[3], &s_inProRealCp[0].fields.unmodeled_170[1]);
+    xglVectorScaleXYZPtrFirst(&s_inProRealCp[0].fields.unmodeled_160,
+                      &s_inProRealCp[0].fields.unmodeled_160, -1.0f);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_080[0], &s_inProRealCp[0].fields.unmodeled_160);
+
+    s_inLayoutCp.fields.render_status &= ~NML_RENDER_PROREAL_CP;
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_190[1], &s_inProRealCp[0].fields.unmodeled_190[0]);
+    QuadwordCopy(&s_inProRealCp[0].fields.unmodeled_190[2], &s_inProRealCp[0].fields.unmodeled_190[0]);
+
+    offset = s_inLayoutCp.slots[0x9d].f * 0.8f;
+    s_inProRealCp[0].fields.unmodeled_190[2].v.x += offset;
+    s_inProRealCp[0].fields.unmodeled_190[2].v.z += offset;
+    s_inProRealCp[0].fields.unmodeled_190[1].v.x -= offset;
+    s_inProRealCp[0].fields.unmodeled_190[1].v.z -= offset;
+    s_inProRealCp[0].fields.unmodeled_190[2].v.y += model->entryTranslation.w * s_inLayoutCp.slots[0x9d].f;
+    s_inProRealCp[0].fields.unmodeled_190[1].v.y -= model->entryTranslation.w * s_inLayoutCp.slots[0x9d].f;
+
+    normal.x = -s_inLayoutCp.slots[0x10].f;
+    normal.y = 0.0f;
+    normal.z = -s_inLayoutCp.slots[0x18].f;
+    if (s_nShadowVec != 0) {
+        normal.x = -s_inShadowVec.x;
+        normal.z = -s_inShadowVec.z;
+    }
+    xglVectorNormal(&normal, &normal);
+    xglVectorScaleXYZPtrFirst(&normal, &normal, 1.0f / scale);
+    if (normal.x < 0.0f) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.x += normal.x;
+    } else {
+        s_inProRealCp[0].fields.unmodeled_190[2].v.x += normal.x;
+    }
+    if (normal.z < 0.0f) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.z += normal.z;
+    } else {
+        s_inProRealCp[0].fields.unmodeled_190[2].v.z += normal.z;
+    }
+    if (s_inProRealCp[0].fields.unmodeled_190[1].v.y > s_inLayoutCp.slots[0x2d].f) {
+        s_inProRealCp[0].fields.unmodeled_190[1].v.y = s_inLayoutCp.slots[0x2d].f - 0.5f;
+    }
+    if ((s_inLayoutCp.fields.texMapMode & 0x40000) != 0) {
+        if (0.0f < s_inProRealCp[0].fields.unmodeled_190[1].v.y) {
+            s_inProRealCp[0].fields.unmodeled_190[1].v.y = -0.2f;
+        }
+    }
+}
 
 extern float D_004D8940;
 extern Vector4 D_70000010;

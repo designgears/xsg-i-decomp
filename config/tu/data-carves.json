@@ -558,6 +558,61 @@
    ]
   },
   "main/tu106": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d891c",
+      "0x004d8940"
+     ],
+     "generated": [
+      "0x004d891c",
+      "0x004d8940"
+     ],
+     "generated_by": [
+      "nmlModelCalcDropShadow",
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap"
+     ],
+     "c_owned_symbols": [
+      "D_004D891C",
+      "D_004D8920",
+      "D_004D8924",
+      "D_004D8928",
+      "D_004D892C",
+      "D_004D8930",
+      "D_004D8934",
+      "D_004D8938",
+      "D_004D893C"
+     ],
+     "also_referenced_by_c": [
+      "D_004D88D8",
+      "D_004D88DC",
+      "D_004D88E0",
+      "D_004D88E4",
+      "D_004D88E8",
+      "D_004D88EC",
+      "D_004D88F0",
+      "D_004D88F4",
+      "D_004D88F8",
+      "D_004D88FC",
+      "D_004D8900",
+      "D_004D8904",
+      "D_004D8908",
+      "D_004D890C",
+      "D_004D8910",
+      "D_004D8914",
+      "D_004D8918",
+      "D_004D8940",
+      "D_004D8948",
+      "D_004D894C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/nml_model_set.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -574,11 +629,13 @@
      "c_owned_symbols": [
       "jtbl_004D2800"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004D2820"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_model_set.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/nml_model_set.o"
      }
     },
     {
@@ -603,7 +660,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_model_set.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/nml_model_set.o"
      }
     },
     {
@@ -621,11 +678,18 @@
      "c_owned_symbols": [
       "D_004D28A0"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004D28B0",
+      "D_004D28C0",
+      "D_004D28D0",
+      "D_004D28E0",
+      "D_004D28F0",
+      "D_004D2900"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_model_set.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/nml_model_set.o"
      }
     }
    ]
@@ -2734,28 +2798,126 @@
    ".lit4": [
     {
      "range": [
-      "0x004d7d3c",
+      "0x004d7d34",
       "0x004d7d40"
      ],
      "generated": [
-      "0x004d7d3c",
+      "0x004d7d34",
       "0x004d7d40"
      ],
      "generated_by": [
+      "ModelTest",
       "endCallback"
      ],
      "c_owned_symbols": [
+      "D_004D7D34",
+      "D_004D7D38",
       "progress_percent"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
      }
     }
    ],
    ".rodata": [
+    {
+     "range": [
+      "0x004c2650",
+      "0x004c2658"
+     ],
+     "generated": [
+      "0x004c2650",
+      "0x004c2658"
+     ],
+     "generated_by": [
+      "ModelTest"
+     ],
+     "c_owned_symbols": [
+      "D_004C2650"
+     ],
+     "also_referenced_by_c": [
+      "D_004C2440",
+      "D_004C2458",
+      "D_004C2468",
+      "D_004C2480",
+      "D_004C2498",
+      "D_004C24B0",
+      "D_004C24C8",
+      "D_004C24E0",
+      "D_004C24F8",
+      "D_004C2510",
+      "D_004C2528",
+      "D_004C2540",
+      "D_004C2558",
+      "D_004C2568",
+      "D_004C2588",
+      "D_004C2598",
+      "D_004C25B0",
+      "D_004C25C8",
+      "D_004C25E0",
+      "D_004C2658",
+      "D_004C26F0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c2710",
+      "0x004c2720"
+     ],
+     "generated": [
+      "0x004c2710",
+      "0x004c2720"
+     ],
+     "generated_by": [
+      "ModelTest"
+     ],
+     "c_owned_symbols": [
+      "D_004C2710"
+     ],
+     "also_referenced_by_c": [
+      "D_004C2720"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c27a0",
+      "0x004c27b0"
+     ],
+     "generated": [
+      "0x004c27a0",
+      "0x004c27b0"
+     ],
+     "generated_by": [
+      "ModelTest"
+     ],
+     "c_owned_symbols": [
+      "D_004C27A0",
+      "D_004C27A8"
+     ],
+     "also_referenced_by_c": [
+      "D_004C2A70",
+      "D_004C2A88",
+      "D_004C2AD8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+     }
+    },
     {
      "range": [
       "0x004c2ae8",
@@ -2772,22 +2934,10 @@
       "D_004C2AE8"
      ],
      "also_referenced_by_c": [
-      "D_004C2440",
-      "D_004C2458",
-      "D_004C2468",
-      "D_004C2480",
-      "D_004C2498",
-      "D_004C24B0",
-      "D_004C24C8",
-      "D_004C24E0",
-      "D_004C24F8",
-      "D_004C2510",
-      "D_004C2528",
-      "D_004C2540",
-      "D_004C2558",
-      "D_004C2A70",
-      "D_004C2A88",
       "D_004C2C70",
+      "D_004C2C88",
+      "D_004C2CA0",
+      "D_004C2CB8",
       "D_004C2CD0",
       "D_004C2CF0",
       "D_004C2D08",
@@ -2798,7 +2948,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
      }
     },
     {
@@ -2820,6 +2970,9 @@
       "D_004C2D80",
       "D_004C2D98",
       "D_004C2DA8",
+      "D_004C2DB8",
+      "D_004C2DD0",
+      "D_004C2DE0",
       "D_004C2DF0",
       "D_004C2E08",
       "D_004C2E38",
@@ -2835,7 +2988,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
      }
     },
     {
@@ -2857,7 +3010,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
      }
     }
    ]
@@ -3461,7 +3614,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
      }
     },
     {
@@ -3491,23 +3644,25 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
      }
     },
     {
      "range": [
       "0x004c4910",
-      "0x004c4a10"
+      "0x004c4d80"
      ],
      "generated": [
       "0x004c4910",
-      "0x004c4a04"
+      "0x004c4d80"
      ],
      "generated_by": [
+      "MenuFile",
       "tskFileData"
      ],
      "c_owned_symbols": [
-      "jtbl_004C4910"
+      "jtbl_004C4910",
+      "jtbl_004C4A10"
      ],
      "also_referenced_by_c": [
       "D_004C4D80",
@@ -3518,7 +3673,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
      }
     }
    ],
@@ -3538,6 +3693,7 @@
       "FileObjectJpegSet",
       "FileThumbnailDisp",
       "ListColorChage_3",
+      "MenuFile",
       "MenuFileInfo",
       "MenuFileMain",
       "MenuFilePas",
@@ -3557,6 +3713,9 @@
       "D_004DAA58",
       "D_004DAA60",
       "D_004DAA78",
+      "D_004DAA80",
+      "D_004DAA88",
+      "D_004DAA90",
       "FileTask",
       "FileCardDataBuf",
       "FileSaveData",
@@ -3568,7 +3727,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
      }
     }
    ]
@@ -8585,18 +8744,26 @@
    ".lit4": [
     {
      "range": [
-      "0x004d8478",
+      "0x004d845c",
       "0x004d8480"
      ],
      "generated": [
-      "0x004d8478",
+      "0x004d845c",
       "0x004d8480"
      ],
      "generated_by": [
+      "ACT_initMotion",
       "ACT_setMotion",
       "ACT_setMotion2"
      ],
      "c_owned_symbols": [
+      "D_004D845C",
+      "D_004D8460",
+      "D_004D8464",
+      "D_004D8468",
+      "D_004D846C",
+      "D_004D8470",
+      "D_004D8474",
       "D_004D8478",
       "D_004D847C"
      ],
@@ -8604,7 +8771,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/act_2.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/act_2.o"
      }
     }
    ],
@@ -8624,11 +8791,14 @@
      "c_owned_symbols": [
       "jtbl_004D1820"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004D1800",
+      "D_004D1810"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/act_2.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/act_2.o"
      }
     }
    ]
@@ -8925,43 +9095,25 @@
     {
      "range": [
       "0x004d1a00",
-      "0x004d1a40"
-     ],
-     "generated": [
-      "0x004d1a00",
-      "0x004d1a40"
-     ],
-     "generated_by": [
-      "JNT_getVal",
-      "JNT_getVal_staticChain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004D1A00",
-      "jtbl_004D1A20"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/jnt.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d1a60",
       "0x004d1ae0"
      ],
      "generated": [
-      "0x004d1a60",
+      "0x004d1a00",
       "0x004d1adc"
      ],
      "generated_by": [
+      "JNT_constructMatrix",
+      "JNT_getVal",
       "JNT_getVal2",
       "JNT_getVal_HOGE2",
+      "JNT_getVal_staticChain",
       "JNT_interpolate",
       "JNT_setMDLMatrix"
      ],
      "c_owned_symbols": [
+      "jtbl_004D1A00",
+      "jtbl_004D1A20",
+      "jtbl_004D1A40",
       "jtbl_004D1A60",
       "jtbl_004D1A80",
       "jtbl_004D1AA0",
@@ -8971,7 +9123,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/jnt.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/jnt.o"
      }
     }
    ],
@@ -8997,7 +9149,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/jnt.o"
+      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/jnt.o"
      }
     }
    ]
@@ -10988,6 +11140,36 @@
     }
    ]
   },
+  "ov02/tu007_00a03450": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a12030",
+      "0x00a12050"
+     ],
+     "generated": [
+      "0x00a12030",
+      "0x00a12050"
+     ],
+     "generated_by": [
+      "taskUmnTopWin"
+     ],
+     "c_owned_symbols": [
+      "D_00A12030",
+      "D_00A12038",
+      "D_00A12048"
+     ],
+     "also_referenced_by_c": [
+      "D_00A12050"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/task_umn_top_win.o"
+     }
+    }
+   ]
+  },
   "ov02/tu008_00a04170": {
    ".rodata": [
     {
@@ -12714,9 +12896,15 @@
       "anm_107",
       "cur_108",
       "curpt_109",
+      "init_110",
+      "cur_111",
+      "top_112",
       "ViewSamTex",
       "fileinfo",
       "old_113",
+      "tex_114",
+      "keytex_115",
+      "keyrect_116",
       "mode_123",
       "MUSICLIST_125",
       "oldreq_126"
@@ -12724,7 +12912,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     }
    ],
@@ -12771,7 +12959,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12797,7 +12985,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12822,7 +13010,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12854,7 +13042,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12886,7 +13074,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12917,7 +13105,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12955,7 +13143,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -12984,7 +13172,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -13018,7 +13206,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -13038,7 +13226,31 @@
      ],
      "also_referenced_by_c": [
       "D_00A0C4A0",
-      "D_00A0C4B0",
+      "D_00A0C4A8",
+      "D_00A0C4B0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a0c4c0",
+      "0x00a0c590"
+     ],
+     "generated": [
+      "0x00a0c4c0",
+      "0x00a0c590"
+     ],
+     "generated_by": [
+      "shop_main"
+     ],
+     "c_owned_symbols": [
+      "jtbl_00A0C4C0"
+     ],
+     "also_referenced_by_c": [
       "D_00A0C590",
       "D_00A0C5B0",
       "D_00A0C5C8",
@@ -13063,7 +13275,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     },
     {
@@ -13085,7 +13297,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     }
    ]

@@ -838,7 +838,583 @@ struct JntProducer {
     unsigned char *deferred_limits[1]; /* 0x74: partial deferred-limit list */
 };
 
-INCLUDE_ASM("asm/main/nonmatchings/jnt", JNT_constructMatrix);
+void CUR_MATRIX_Set(JntMatrix *matrix);
+void CUR_MATRIX_Get(JntMatrix *matrix);
+void CUR_MATRIX_Txyz4s(float *translate);
+void CUR_MATRIX_Rzyx4s(float *rotate);
+void alignXAxis(float *axis, Matrix4 frame);
+void MATRIX_transpose3(Matrix4 matrix);
+void CUR_MATRIX_4s3(Matrix4 matrix);
+void CUR_MATRIX_Rx4s(const int *rotate);
+float xglAtan2(float y, float x);
+void CUR_MATRIX_Rz4s(const int *rotate);
+void CUR_MATRIX_GetT(Vector4 *translation);
+void CUR_MATRIX_SetR(Matrix4 matrix);
+void CUR_MATRIX_SetT(const Vector4 *translation);
+void CUR_MATRIX_Sxyz4s(const Vector4 *scale);
+#define Vu0SubVector(destination, minuend, subtrahend) \
+    __asm__ __volatile__( \
+        "lqc2 vf20, 0(%1)\n" \
+        "lqc2 vf21, 0(%2)\n" \
+        "vsub.xyzw vf20, vf20, vf21\n" \
+        "sqc2 vf20, 0(%0)\n" \
+        : \
+        : "r" (destination), "r" (minuend), "r" (subtrahend) \
+        : "memory")
+static inline JntMatrix *jcmMatrixAt(void *base, int index)
+{
+    return (JntMatrix *)((index << 6) + (unsigned int)base);
+}
+static inline void JntCopyVector(Vector4 *destination, const Vector4 *source)
+{
+    *destination = *source;
+}
+#define JNT_CHANNEL_FLAG_INHERIT 0x8000
+typedef struct JcmElement {
+    Vector4 scale;
+    float rotation[3];
+    unsigned char unmodeled_1c[4];
+    Vector4 translation;
+    unsigned short key;
+    unsigned short interrupt_channel;
+    void *attribute_data;
+    unsigned char unmodeled_38[8];
+} JcmElement;
+#define JNT_KEY_LINK_PIVOT 2
+#define JNT_KEY_LINK_TRANSLATION 4
+#define JNT_KEY_LINK_ROTATION 8
+#define JNT_KEY_LINK_MASK 0xe
+typedef void *(*JntProductionConsumer)(JntWork *work, JntStaticChannel *channel, int argument);
+#define JNT_CONSUMER_CODE_BASE 0x001F0000U
+#define JNT_CONSUMER_CODE_SPAN 0x01E0FFFFU
+
+JntStaticChannel *JNT_constructMatrix(JntWork *work, JntStaticChannel *channel)
+{
+    Vector4 target;
+    Matrix4 alignment;
+    Vector4 two_link_axis;
+    Vector4 endpoint;
+    Vector4 chain_axis;
+    Vector4 current_translation;
+    float pivot_angle;
+    float joint_angle;
+    float chain_angle;
+    JntStaticChannel *next_channel = channel + 1;
+    JcmElement *element = (JcmElement *)&work->elements[work->current_index];
+    struct FcvPackAttribute *attribute = element->attribute_data;
+    unsigned short flags = element->key;
+    JntChainSlot *chain_slot;
+
+    if (attribute != 0) {
+        short interrupt_channel = element->interrupt_channel;
+        if (interrupt_channel != 0) {
+            JntProducer *producer = work->producer;
+            JntProductionConsumer consumer = (JntProductionConsumer)producer->consumers[interrupt_channel];
+            int argument = producer->consumer_arguments[interrupt_channel];
+            unsigned int address = (unsigned int)consumer;
+            if (address - JNT_CONSUMER_CODE_BASE <= JNT_CONSUMER_CODE_SPAN) {
+                if ((address & 3U) == 0) {
+                    consumer(work, channel, argument);
+                }
+            }
+        }
+        switch (channel->type) {
+        case 0:
+        case 1: {
+            unsigned short link;
+            CUR_MATRIX_Set(work->matrix_buffer[channel->matrix_index].elements);
+            if ((flags & JNT_KEY_LINK_MASK) != 0) {
+                if ((flags & JNT_KEY_LINK_TRANSLATION) != 0) {
+                    link = attribute->translation_index;
+                    if (link < work->current_index) {
+                        CUR_MATRIX_SetT((const Vector4 *)work->matrix_buffer[link].elements[3]);
+                    }
+                } else {
+                    CUR_MATRIX_Txyz4s(&element->translation);
+                }
+                if ((flags & JNT_KEY_LINK_ROTATION) != 0) {
+                    link = attribute->rotation_index;
+                    if (link < work->current_index) {
+                        CUR_MATRIX_SetR(work->matrix_buffer[link].elements);
+                    }
+                } else {
+                    CUR_MATRIX_Rzyx4s((const int *)element->rotation);
+                    CUR_MATRIX_Sxyz4s(&element->scale);
+                }
+            } else {
+                CUR_MATRIX_Txyz4s(&element->translation);
+                CUR_MATRIX_Rzyx4s((const int *)element->rotation);
+                CUR_MATRIX_Sxyz4s(&element->scale);
+            }
+            if (channel->rotation_limits_offset != 0) {
+                JntRotationLimitHeader *limit = (JntRotationLimitHeader *)
+                    ((unsigned char *)channel + channel->rotation_limits_offset);
+                if (limit->deferred_offset != 0) {
+                    JntProducer *producer = work->producer;
+                    int slot = producer->state++;
+                    producer->deferred_limits[slot] = (struct ActorShapeBinding *)
+                        ((unsigned char *)limit + limit->deferred_offset);
+                    if ((flags & JNT_KEY_LINK_TRANSLATION) != 0) {
+                        if (attribute->translation_index < work->current_index) {
+                            element = &work->elements[attribute->translation_index];
+                            CUR_MATRIX_SetT(&element->translation);
+                        }
+                    } else {
+                        CUR_MATRIX_SetT(&element->translation);
+                    }
+                }
+            }
+            CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+            break;
+        }
+        case 3: {
+            Vector4 *root_translation;
+            CUR_MATRIX_Set(work->matrix_buffer[channel->matrix_index].elements);
+            work->chain_base_index = work->current_index;
+            CUR_MATRIX_Txyz4s(&element->translation);
+            CUR_MATRIX_Rzyx4s((const int *)element->rotation);
+            CUR_MATRIX_Get(work->transform_basis);
+            CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+            work->chain_length = 0.0f;
+            root_translation = &work->chain_slots[0].translation;
+            {
+                const Vector4 *basis_translation = (const Vector4 *)work->transform_basis[3];
+                *root_translation = *basis_translation;
+            }
+            root_translation->w = 1.0f;
+            ((JntChainSlot *)((char *)work + 0xa0))->attribute = attribute;
+            work->matrix_index = 1;
+            break;
+        }
+        case 2: {
+            float initial_length = element->translation.x;
+            float *source_rotation = element->rotation;
+            Vector4 *translation;
+            Vector4 *scale;
+            Vector4 *rotation;
+            chain_slot = &work->chain_slots[work->matrix_index];
+            translation = &chain_slot->translation;
+            scale = &chain_slot->scale;
+            rotation = &chain_slot->rotation;
+            work->chain_length += initial_length;
+            {
+                const Vector4 *translation_vector = &element->translation;
+                *translation = *translation_vector;
+            }
+            translation->w = 1.0f;
+            chain_slot->attribute = attribute;
+            rotation->x = source_rotation[0];
+            rotation->y = source_rotation[1];
+            rotation->z = source_rotation[2];
+            {
+                const Vector4 *source_scale = &element->scale;
+                *scale = *source_scale;
+            }
+            scale->w = 1.0f;
+            if (0.0f <= channel->translation_direction) {
+                chain_slot->translation.x = -element->translation.x;
+            }
+            work->matrix_index++;
+            break;
+        }
+        case 4: {
+            float distance;
+            float z_component;
+            int index;
+            int have_target = 0;
+            if ((flags & JNT_KEY_LINK_MASK) != 0 && (flags & JNT_KEY_LINK_TRANSLATION) != 0 &&
+                attribute->translation_index < work->current_index) {
+                float *translation = work->matrix_buffer[attribute->translation_index].elements[3];
+                float x;
+                float y;
+                float z;
+                have_target = 1;
+                target.x = translation[0];
+                target.y = translation[1];
+                target.z = translation[2];
+                x = target.x;
+                y = target.y;
+                z = target.z;
+                target.x = x * work->root_correction[0][0] +
+                           y * work->root_correction[1][0] +
+                           z * work->root_correction[2][0] +
+                           work->root_correction[3][0];
+                target.y = x * work->root_correction[0][1] +
+                           y * work->root_correction[1][1] +
+                           z * work->root_correction[2][1] +
+                           work->root_correction[3][1];
+                target.z = x * work->root_correction[0][2] +
+                           y * work->root_correction[1][2] +
+                           z * work->root_correction[2][2] +
+                           work->root_correction[3][2];
+            }
+            if (!have_target) {
+                CUR_MATRIX_Set(work->transform_basis);
+                for (index = 1; index <= work->matrix_index - 1; index++) {
+                    JntChainSlot *slot = &work->chain_slots[index];
+                    slot->translation.x = __builtin_fabsf(slot->translation.x);
+                    slot->translation.w = 1.0f;
+                    if ((slot->attribute->channel_flags & JNT_KEY_LINK_ROTATION) != 0) {
+                        unsigned short rotation_index = slot->attribute->rotation_index;
+                        if (rotation_index < work->current_index) {
+                            JntMatrix *rotation_matrix = &work->matrix_buffer[rotation_index];
+                            CUR_MATRIX_Txyz4s(&slot->translation);
+                            CUR_MATRIX_SetR(rotation_matrix->elements);
+                            CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + index].elements);
+                        }
+                    } else {
+                        slot->translation.x = __builtin_fabsf(slot->translation.x);
+                        CUR_MATRIX_Txyz4s(&slot->translation);
+                        CUR_MATRIX_Rzyx4s((const int *)&slot->rotation);
+                        CUR_MATRIX_Sxyz4s(&slot->scale);
+                        CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + index].elements);
+                    }
+                }
+                CUR_MATRIX_Txyz4s(&element->translation);
+                CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+            } else {
+                Vector4 *translation = &element->translation;
+                struct FcvPackAttribute *slot_attribute = element->attribute_data;
+                JntChainSlot *slot = &work->chain_slots[work->matrix_index];
+                Vector4 *slot_translation = &slot->translation;
+                *slot_translation = *translation;
+                slot->attribute = slot_attribute;
+                slot_translation->w = 1.0f;
+                work->matrix_index++;
+                if (work->matrix_index == 4) {
+                    float (*basis)[4];
+                    float cosine;
+                    float homogeneous;
+                    float segment_length;
+                    float squared_difference;
+                    float sine;
+                    float sine_magnitude;
+                    Vector4 *upper_translation;
+                    Vector4 *lower_translation;
+                    Vu0SubVector(&two_link_axis, &target, &work->chain_slots[0].translation);
+                    {
+                        float x = two_link_axis.x;
+                        float y = two_link_axis.y;
+                        float z = two_link_axis.z;
+                        two_link_axis.x = work->transform_basis[0][0] * x +
+                                          work->transform_basis[0][1] * y +
+                                          work->transform_basis[0][2] * z;
+                        two_link_axis.y = work->transform_basis[1][0] * x +
+                                          work->transform_basis[1][1] * y +
+                                          work->transform_basis[1][2] * z;
+                        two_link_axis.z = work->transform_basis[2][0] * x +
+                                          work->transform_basis[2][1] * y +
+                                          work->transform_basis[2][2] * z;
+                    }
+                    distance = two_link_axis.x * two_link_axis.x +
+                               two_link_axis.y * two_link_axis.y +
+                               two_link_axis.z * two_link_axis.z;
+                    basis = work->transform_basis;
+                    alignXAxis(&two_link_axis, alignment);
+                    MATRIX_transpose3(alignment);
+                    CUR_MATRIX_Set(basis);
+                    CUR_MATRIX_4s3(alignment);
+                    CUR_MATRIX_Get(basis);
+                    if ((work->chain_slots[1].attribute->channel_flags & JNT_KEY_LINK_PIVOT) != 0) {
+                        Vector4 *pivot = (Vector4 *)work->matrix_buffer[work->chain_slots[1].attribute->pivot_index].elements[3];
+                        float radius;
+                        float x;
+                        float y;
+                        float z;
+                        float norm_squared;
+                        pivot->w = 1.0f;
+                        two_link_axis.x = pivot->x - work->transform_basis[3][0];
+                        two_link_axis.y = pivot->y - work->transform_basis[3][1];
+                        two_link_axis.z = pivot->z - work->transform_basis[3][2];
+                        x = two_link_axis.x;
+                        y = two_link_axis.y;
+                        z = two_link_axis.z;
+                        two_link_axis.x = work->transform_basis[0][0] * x +
+                                          work->transform_basis[0][1] * y +
+                                          work->transform_basis[0][2] * z;
+                        two_link_axis.y = work->transform_basis[1][0] * x +
+                                          work->transform_basis[1][1] * y +
+                                          work->transform_basis[1][2] * z;
+                        two_link_axis.z = work->transform_basis[2][0] * x +
+                                          work->transform_basis[2][1] * y +
+                                          work->transform_basis[2][2] * z;
+                        radius = __builtin_sqrtf(two_link_axis.y * two_link_axis.y +
+                                                two_link_axis.z * two_link_axis.z);
+                        z_component = two_link_axis.z;
+                        norm_squared = two_link_axis.x * two_link_axis.x +
+                                       two_link_axis.y * two_link_axis.y +
+                                       z_component * z_component;
+                        __builtin_sqrtf(norm_squared);
+                        z_component = two_link_axis.z;
+                        pivot_angle = -xglAtan2(-z_component / radius, two_link_axis.y / radius);
+                        CUR_MATRIX_Set(basis);
+                        CUR_MATRIX_Rx4s((const int *)&pivot_angle);
+                        CUR_MATRIX_Sxyz4s(&work->chain_slots[1].scale);
+                        CUR_MATRIX_Get(basis);
+                    } else {
+                        CUR_MATRIX_Rx4s((const int *)&work->chain_slots[1].rotation.z);
+                        CUR_MATRIX_Sxyz4s(&work->chain_slots[1].scale);
+                        CUR_MATRIX_Get(basis);
+                    }
+                    upper_translation = &work->chain_slots[2].translation;
+                    lower_translation = &work->chain_slots[3].translation;
+                    distance = __builtin_sqrtf(distance);
+                    segment_length = upper_translation->x;
+                    if (0.0f <= segment_length) {
+                        float final_length = lower_translation->x;
+                        squared_difference = segment_length * segment_length - final_length * final_length;
+                        cosine = (distance * distance + squared_difference) /
+                                 ((2.0f * segment_length) * distance);
+                        sine_magnitude = __builtin_sqrtf(1.0f - cosine * cosine);
+                        sine = sine_magnitude;
+                    } else {
+                        float final_length;
+                        float magnitude = __builtin_fabsf(segment_length);
+                        upper_translation->x = magnitude;
+                        final_length = lower_translation->x;
+                        squared_difference = magnitude * magnitude - final_length * final_length;
+                        cosine = (distance * distance + squared_difference) /
+                                 ((2.0f * magnitude) * distance);
+                        sine_magnitude = __builtin_sqrtf(1.0f - cosine * cosine);
+                        sine = -sine_magnitude;
+                    }
+                    if (1.0f < cosine) {
+                        cosine = 1.0f;
+                        sine = 0.0f;
+                    } else if (cosine < -1.0f) {
+                        cosine = -1.0f;
+                        sine = 0.0f;
+                    }
+                    joint_angle = xglAtan2(sine, cosine);
+                    CUR_MATRIX_Set(basis);
+                    CUR_MATRIX_Rz4s((const int *)&joint_angle);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + 1].elements);
+                    CUR_MATRIX_Txyz4s(upper_translation);
+                    CUR_MATRIX_Get(basis);
+                    CUR_MATRIX_Get(work->interpolation_root);
+                    homogeneous = 1.0f;
+                    JntCopyVector(&endpoint, (const Vector4 *)work->interpolation_root[3]);
+                    endpoint.w = homogeneous;
+                    Vu0SubVector(&two_link_axis, &target, &endpoint);
+                    {
+                        float *output_y = &two_link_axis.y;
+                        float *output_z = &two_link_axis.z;
+                        float x = two_link_axis.x;
+                        float y = two_link_axis.y;
+                        float z = two_link_axis.z;
+                        two_link_axis.w = homogeneous;
+                        two_link_axis.x = basis[0][0] * x +
+                                          work->transform_basis[0][1] * y +
+                                          work->transform_basis[0][2] * z;
+                        *output_y = work->transform_basis[1][0] * x +
+                                          work->transform_basis[1][1] * y +
+                                          work->transform_basis[1][2] * z;
+                        *output_z = work->transform_basis[2][0] * x +
+                                          work->transform_basis[2][1] * y +
+                                          work->transform_basis[2][2] * z;
+                    }
+                    alignXAxis(&two_link_axis, alignment);
+                    MATRIX_transpose3(alignment);
+                    CUR_MATRIX_Set(basis);
+                    CUR_MATRIX_4s3(alignment);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + 2].elements);
+                    CUR_MATRIX_Txyz4s(translation);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+                } else if (work->matrix_index == 3) {
+                    float x = target.x - work->chain_slots[0].translation.x;
+                    float y = target.y - work->chain_slots[0].translation.y;
+                    float z = target.z - work->chain_slots[0].translation.z;
+                    endpoint.x = work->transform_basis[0][0] * x +
+                                 work->transform_basis[0][1] * y +
+                                 work->transform_basis[0][2] * z;
+                    endpoint.y = work->transform_basis[1][0] * x +
+                                 work->transform_basis[1][1] * y +
+                                 work->transform_basis[1][2] * z;
+                    endpoint.z = work->transform_basis[2][0] * x +
+                                 work->transform_basis[2][1] * y +
+                                 work->transform_basis[2][2] * z;
+                    alignXAxis(&endpoint, alignment);
+                    MATRIX_transpose3(alignment);
+                    CUR_MATRIX_Set(work->transform_basis);
+                    CUR_MATRIX_4s3(alignment);
+                    CUR_MATRIX_Rx4s((const int *)&work->chain_slots[1].rotation.z);
+                    CUR_MATRIX_Sxyz4s(&work->chain_slots[1].scale);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + 1].elements);
+                    CUR_MATRIX_Txyz4s(translation);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + 2].elements);
+                } else {
+                    Vu0SubVector(&chain_axis, &target, &work->chain_slots[0].translation);
+                    {
+                        float x = chain_axis.x;
+                        float y = chain_axis.y;
+                        float z = chain_axis.z;
+                        chain_axis.x = work->transform_basis[0][0] * x +
+                                       work->transform_basis[0][1] * y +
+                                       work->transform_basis[0][2] * z;
+                        chain_axis.y = work->transform_basis[1][0] * x +
+                                       work->transform_basis[1][1] * y +
+                                       work->transform_basis[1][2] * z;
+                        chain_axis.z = work->transform_basis[2][0] * x +
+                                       work->transform_basis[2][1] * y +
+                                       work->transform_basis[2][2] * z;
+                    }
+                    distance = chain_axis.x * chain_axis.x +
+                               chain_axis.y * chain_axis.y +
+                               chain_axis.z * chain_axis.z;
+                    chain_slot = &work->chain_slots[1];
+                    alignXAxis(&chain_axis, alignment);
+                    MATRIX_transpose3(alignment);
+                    CUR_MATRIX_Set(work->transform_basis);
+                    CUR_MATRIX_4s3(alignment);
+                    CUR_MATRIX_Get(work->transform_basis);
+                    if ((chain_slot->attribute->channel_flags & JNT_KEY_LINK_PIVOT) != 0) {
+                        Vector4 *pivot = (Vector4 *)work->matrix_buffer[chain_slot->attribute->pivot_index].elements[3];
+                        float radius;
+                        float x;
+                        float y;
+                        float z;
+                        float norm_squared;
+                        pivot->w = 1.0f;
+                        chain_axis.x = pivot->x - work->transform_basis[3][0];
+                        chain_axis.y = pivot->y - work->transform_basis[3][1];
+                        chain_axis.z = pivot->z - work->transform_basis[3][2];
+                        x = chain_axis.x;
+                        y = chain_axis.y;
+                        z = chain_axis.z;
+                        chain_axis.x = work->transform_basis[0][0] * x +
+                                       work->transform_basis[0][1] * y +
+                                       work->transform_basis[0][2] * z;
+                        chain_axis.y = work->transform_basis[1][0] * x +
+                                       work->transform_basis[1][1] * y +
+                                       work->transform_basis[1][2] * z;
+                        chain_axis.z = work->transform_basis[2][0] * x +
+                                       work->transform_basis[2][1] * y +
+                                       work->transform_basis[2][2] * z;
+                        radius = __builtin_sqrtf(chain_axis.y * chain_axis.y + chain_axis.z * chain_axis.z);
+                        z_component = chain_axis.z;
+                        norm_squared = chain_axis.x * chain_axis.x +
+                                       chain_axis.y * chain_axis.y + z_component * z_component;
+                        __builtin_sqrtf(norm_squared);
+                        z_component = chain_axis.z;
+                        chain_slot->rotation.z = -xglAtan2(-z_component / radius, chain_axis.y / radius);
+                    }
+                    for (index = 2; index < work->matrix_index - 1; index++) {
+                        float *joint_length = &work->chain_slots[index + 1].translation.x;
+                        float remaining_length = work->chain_length - *joint_length;
+                        float cosine;
+                        float sine;
+                        float sine_magnitude;
+                        float segment_length;
+                        float squared_difference;
+                        distance = __builtin_sqrtf(distance);
+                        segment_length = *joint_length;
+                        if (0.0f <= segment_length) {
+                            float segment_squared;
+                            float denominator;
+                            segment_squared = segment_length * segment_length;
+                            squared_difference = segment_squared - remaining_length * remaining_length;
+                            denominator = (2.0f * segment_length) * distance;
+                            cosine = (distance * distance + squared_difference) / denominator;
+                            sine_magnitude = __builtin_sqrtf(1.0f - cosine * cosine);
+                            sine = sine_magnitude;
+                        } else {
+                            float magnitude;
+                            float denominator;
+                            magnitude = __builtin_fabsf(segment_length);
+                            *joint_length = magnitude;
+                            squared_difference = magnitude * magnitude - remaining_length * remaining_length;
+                            denominator = (2.0f * magnitude) * distance;
+                            cosine = (distance * distance + squared_difference) / denominator;
+                            sine_magnitude = __builtin_sqrtf(1.0f - cosine * cosine);
+                            sine = -sine_magnitude;
+                        }
+                        if (1.0f < cosine) {
+                            cosine = 1.0f;
+                            sine = 0.0f;
+                        } else if (cosine < -1.0f) {
+                            cosine = -1.0f;
+                            sine = 0.0f;
+                        }
+                        chain_angle = xglAtan2(sine, cosine);
+                        CUR_MATRIX_Set(work->transform_basis);
+                        CUR_MATRIX_Rz4s((const int *)&chain_angle);
+                        CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + index].elements);
+                        CUR_MATRIX_Txyz4s(&work->elements[index].translation);
+                        CUR_MATRIX_Get(work->transform_basis);
+                    }
+                    CUR_MATRIX_GetT(&current_translation);
+                    {
+                        float *output_y = &chain_axis.y;
+                        float *output_z = &chain_axis.z;
+                        float x = target.x - current_translation.x;
+                        float y = target.y - current_translation.y;
+                        z_component = target.z - current_translation.z;
+                        chain_axis.x = work->transform_basis[0][0] * x +
+                                        work->transform_basis[0][1] * y +
+                                        work->transform_basis[0][2] * z_component;
+                        chain_axis.w = 1.0f;
+                        *output_y = work->transform_basis[1][0] * x +
+                                      work->transform_basis[1][1] * y +
+                                      work->transform_basis[1][2] * z_component;
+                        *output_z = work->transform_basis[2][0] * x +
+                                      work->transform_basis[2][1] * y +
+                                      work->transform_basis[2][2] * z_component;
+                    }
+                    distance = chain_axis.x * chain_axis.x +
+                               chain_axis.y * chain_axis.y +
+                               chain_axis.z * chain_axis.z;
+                    alignXAxis(&chain_axis, alignment);
+                    MATRIX_transpose3(alignment);
+                    CUR_MATRIX_Set(work->transform_basis);
+                    CUR_MATRIX_4s3(alignment);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->chain_base_index + index].elements);
+                    CUR_MATRIX_Txyz4s(&work->chain_slots[index + 1].translation);
+                    CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+                }
+            }
+            break;
+        }
+        case 5:
+            CUR_MATRIX_Set(work->matrix_buffer[channel->matrix_index].elements);
+            CUR_MATRIX_Txyz4s(&element->translation);
+            CUR_MATRIX_Rzyx4s((const int *)element->rotation);
+            CUR_MATRIX_Sxyz4s(&element->scale);
+            CUR_MATRIX_Get(work->matrix_buffer[work->current_index].elements);
+            break;
+        case 6:
+            break;
+        }
+        if ((flags & JNT_CHANNEL_FLAG_INHERIT) != 0) {
+            unsigned short channel_index;
+            xglMatrixUnit(work->root_correction);
+            channel_index = work->channel_index;
+            if (work->current_index >= 4) {
+                float (*current)[4] = work->matrix_buffer[work->current_index].elements;
+                JntStaticChannel *channels = work->channels;
+                current[3][1] *= (channels[work->current_index - 1].translate[1] +
+                                  work->matrix_buffer[0].elements[3][1]) *
+                                 (1.0f / work->matrix_buffer[work->current_index - 1].elements[3][1]);
+            }
+            if ((channel_index & 7) == 0) {
+                unsigned short parent_index = channel->matrix_index;
+                float (*current)[4] =
+                    jcmMatrixAt(work->matrix_buffer, work->current_index)->elements;
+                float (*parent)[4] =
+                    jcmMatrixAt(work->matrix_buffer, parent_index)->elements;
+                work->root_correction[3][0] = -(current[3][0] - parent[3][0]);
+                work->root_correction[3][1] = -(current[3][1] - parent[3][1]);
+                work->root_correction[3][2] = -(current[3][2] - parent[3][2]);
+                current[3][0] = parent[3][0];
+                current[3][1] = parent[3][1];
+                current[3][2] = parent[3][2];
+            }
+        }
+        work->current_index++;
+        return next_channel;
+    }
+    work->current_index++;
+    return next_channel;
+}
 
 /*
  * CUR_MATRIX_* (defined in another TU, not yet recovered there) form a
