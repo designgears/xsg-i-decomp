@@ -14,10 +14,10 @@ The Sony SDK and public libraries do not need to be recovered.
 ## Progress
 
 <!-- coverage-report:begin -->
-Recovered 7,589 of 7,645 in-scope game function(s) (99.267%).
+Recovered 7,600 of 7,645 in-scope game function(s) (99.411%).
 
-- `exact_c` (pure C): 7,148 function(s)
-- `exact_c_with_asm`: 436 function(s)
+- `exact_c` (pure C): 7,157 function(s)
+- `exact_c_with_asm`: 438 function(s)
 - `exact_asm`: 5 function(s)
 - `exact_vu_microcode`: no accepted VU microprogram
 - empty-body functions: 0 of the counted function(s) are 8-byte `jr ra; nop` bodies
@@ -32,11 +32,11 @@ The counts below are source-level: functions whose C (or accepted asm) is in the
 
 | Version | Target | Functions | Progress |
 | --- | --- | ---: | ---: |
-| NTSC-U | `SLUS_204.69` | 3,653 / 3,671 | 99.510% |
+| NTSC-U | `SLUS_204.69` | 3,661 / 3,671 | 99.728% |
 | NTSC-U | `OV01.OVL` | 1,058 / 1,081 | 97.872% |
-| NTSC-U | `OV02.OVL` | 109 / 110 | 99.091% |
+| NTSC-U | `OV02.OVL` | 110 / 110 | 100.000% |
 | NTSC-U | `OV10.OVL` | 360 / 361 | 99.723% |
-| NTSC-U | `OV11.OVL` | 137 / 139 | 98.561% |
+| NTSC-U | `OV11.OVL` | 139 / 139 | 100.000% |
 | NTSC-U | `OV12.OVL` | 1,777 / 1,788 | 99.385% |
 | NTSC-U | `SSD.IRX` | 442 / 442 | 100.000% |
 | NTSC-U | `RSSD.IRX` | 53 / 53 | 100.000% |
