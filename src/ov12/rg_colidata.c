@@ -287,4 +287,166 @@ void RgColiDataVsBall(RgColiData *pPoly, void *pArg, void *pResult)
     _CheckIntersectBall(pPoly, pArg, pResult);
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_colidata", RgColiDataVsRay);
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) AlignedVector4;
+typedef struct RgColiSegment {
+    RgVector m_start;
+    RgVector m_vector;
+} RgColiSegment;
+typedef struct RgColiSegmentHit {
+    RgVector m_plane;
+    float m_fraction;
+} RgColiSegmentHit;
+enum {
+    RG_COLI_HIT = 1,
+    RG_COLI_MISS_OUT_OF_RANGE = -1,
+    RG_COLI_MISS_OUTSIDE_TRIANGLE = -2,
+    RG_COLI_MISS_BEYOND_SEGMENT = -3,
+    RG_COLI_MISS_NOT_FACING = -4
+};
+#define RG_COLI_EPSILON 1e-4f
+#define coliDataAssertDataNotNil D_00A554F0
+#define coliDataSourcePath D_00A55500
+#define coliDataAssertSegmentNotNil D_00A556A0
+#define coliDataAssertRayResultNotNil D_00A556B0
+const char D_00A556A0[16] = "pArg != NIL";
+const char D_00A556B0[16] = "pResult != NIL";
+
+int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
+                    RgColiSegmentHit *pResult)
+{
+    int i;
+    int status;
+    float fraction;
+    AlignedVector4 edges[3];
+    AlignedVector4 cross;
+    AlignedVector4 offset;
+
+    if (pData == 0) {
+        assert_prog(coliDataAssertDataNotNil, coliDataSourcePath, 411);
+    }
+    if (pSegment == 0) {
+        assert_prog(coliDataAssertSegmentNotNil, coliDataSourcePath, 412);
+    }
+    if (pResult == 0) {
+        assert_prog(coliDataAssertRayResultNotNil, coliDataSourcePath, 413);
+    }
+    if (pData->m_pTriangles == 0 || pData->m_nTriangles <= 0) {
+        return 0;
+    }
+
+    for (i = 0; i < pData->m_nTriangles; i++) {
+        RgColiTriangle *pTriangle = &pData->m_pTriangles[i];
+        float *pPlane = pTriangle->m_plane;
+        float *pVector = pSegment->m_vector;
+        float dot;
+        float denom;
+        float t;
+        float *pVertex1 = pTriangle->m_vertices[1];
+
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(&edges[0]), "r"(pVertex1),
+                "r"(pTriangle->m_vertices[0]) : "memory", "$2");
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(&edges[1]), "r"(pTriangle->m_vertices[2]),
+                "r"(pVertex1) : "memory", "$2");
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(&edges[2]), "r"(pTriangle->m_vertices[0]),
+                "r"(pTriangle->m_vertices[2]) : "memory", "$2");
+
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
+            "vopmsub.xyz vf30xyz, vf31xyz, vf30xyz\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(&cross), "r"(&edges[0]), "r"(pVector)
+            : "memory", "$2");
+        __asm__ __volatile__(
+            "lqc2 $vf30, 0(%1)\n\t"
+            "lqc2 $vf31, 0(%2)\n\t"
+            "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+            "sqc2 $vf30, 0(%0)\n\t"
+            : : "r"(&offset), "r"(pSegment->m_start),
+                "r"(pTriangle->m_vertices[0]) : "memory", "$2");
+        if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
+            status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
+        } else {
+            __asm__ __volatile__(
+                "lqc2 $vf30, 0(%1)\n\t"
+                "lqc2 $vf31, 0(%2)\n\t"
+                "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
+                "vopmsub.xyz vf30xyz, vf31xyz, vf30xyz\n\t"
+                "sqc2 $vf30, 0(%0)\n\t"
+                : : "r"(&cross), "r"(&edges[1]), "r"(pVector)
+                : "memory", "$2");
+            __asm__ __volatile__(
+                "lqc2 $vf30, 0(%1)\n\t"
+                "lqc2 $vf31, 0(%2)\n\t"
+                "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+                "sqc2 $vf30, 0(%0)\n\t"
+                : : "r"(&offset), "r"(pSegment->m_start),
+                    "r"(pVertex1) : "memory", "$2");
+            if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
+                status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
+            } else {
+                __asm__ __volatile__(
+                    "lqc2 $vf30, 0(%1)\n\t"
+                    "lqc2 $vf31, 0(%2)\n\t"
+                    "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
+                    "vopmsub.xyz vf30xyz, vf31xyz, vf30xyz\n\t"
+                    "sqc2 $vf30, 0(%0)\n\t"
+                    : : "r"(&cross), "r"(&edges[2]), "r"(pVector)
+                    : "memory", "$2");
+                __asm__ __volatile__(
+                    "lqc2 $vf30, 0(%1)\n\t"
+                    "lqc2 $vf31, 0(%2)\n\t"
+                    "vsub.xyzw $vf30, $vf30, $vf31\n\t"
+                    "sqc2 $vf30, 0(%0)\n\t"
+                    : : "r"(&offset), "r"(pSegment->m_start),
+                        "r"(pTriangle->m_vertices[2]) : "memory", "$2");
+                if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
+                    status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
+                } else {
+                    denom = pPlane[0] * pVector[0]
+                          + pPlane[1] * pVector[1]
+                          + pPlane[2] * pVector[2];
+                    if (denom >= -RG_COLI_EPSILON) {
+                        status = RG_COLI_MISS_NOT_FACING;
+                    } else {
+                        t = -(pPlane[0] * pSegment->m_start[0]
+                              + pPlane[1] * pSegment->m_start[1]
+                              + pPlane[2] * pSegment->m_start[2]
+                              + pPlane[3]) / denom;
+                        if (0.0f <= t && t <= 1.0f) {
+                            fraction = t;
+                            status = RG_COLI_HIT;
+                        } else {
+                            status = RG_COLI_MISS_BEYOND_SEGMENT;
+                        }
+                    }
+                }
+            }
+        }
+        if (status >= 0) {
+            __asm__ __volatile__(
+                "lqc2 $vf31, 0(%1)\n\t"
+                "sqc2 $vf31, 0(%0)\n\t"
+                : : "r"(pResult), "r"(pPlane) : "memory", "$2");
+            pResult->m_fraction = fraction;
+            return 1;
+        }
+    }
+    return 0;
+}

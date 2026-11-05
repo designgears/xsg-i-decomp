@@ -12000,7 +12000,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
@@ -12030,7 +12030,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
@@ -12057,24 +12057,26 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
      "range": [
-      "0x00a4d620",
+      "0x00a4d520",
       "0x00a4d710"
      ],
      "generated": [
-      "0x00a4d620",
+      "0x00a4d520",
       "0x00a4d70c"
      ],
      "generated_by": [
       "CGCPNeedDispSub",
       "CardCursorActive",
+      "CardPlayDispBattle",
       "CardPlayDispCursor"
      ],
      "c_owned_symbols": [
+      "jtbl_00A4D520",
       "jtbl_00A4D620",
       "jtbl_00A4D640",
       "jtbl_00A4D660",
@@ -12087,7 +12089,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     }
    ]
@@ -16935,6 +16937,7 @@
       "RgColiDataAddTriangle",
       "RgColiDataInitTriangles",
       "RgColiDataVsBall",
+      "RgColiDataVsRay",
       "_AddTriangle",
       "_AllocDataMemory",
       "_DisposeColiData",
@@ -16956,29 +16959,32 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_colidata.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_colidata.o"
      }
     },
     {
      "range": [
       "0x00a55670",
-      "0x00a556a0"
+      "0x00a556c0"
      ],
      "generated": [
       "0x00a55670",
-      "0x00a5569e"
+      "0x00a556c0"
      ],
      "generated_by": [
-      "RgColiDataVsBall"
+      "RgColiDataVsBall",
+      "RgColiDataVsRay"
      ],
      "c_owned_symbols": [
-      "D_00A55670"
+      "D_00A55670",
+      "D_00A556A0",
+      "D_00A556B0"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_colidata.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_colidata.o"
      }
     }
    ]

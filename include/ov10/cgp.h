@@ -47,7 +47,7 @@ typedef struct CardBattleLayer {
     u8 unmodeled_01;
     u8 boostCount;                 /* +0x02: CCC26ExecSub adds one */
     s8 life;                       /* +0x03: CCC38ExecSub subtracts two, clamped at zero */
-    u8 unmodeled_04;
+    u8 shownLife;                  /* +0x04: copy of life CGPHPCheckSub refreshes */
     u8 damageTimer;                /* +0x05 */
     s16 cardId;                    /* +0x06 */
     u8 unmodeled_08[2];
@@ -59,12 +59,14 @@ typedef struct CardBattleLayer {
  */
 typedef struct CardLayerStack {
     u8 flags;
-    u8 unmodeled_01;
+    u8 moveFrames;                 /* +0x01: frames remaining in the current movement */
     u8 power;
     u8 powerLimit;
-    u8 unmodeled_04[4];
+    u8 previousFlags;              /* +0x04: copy of flags CGPHPCheckSub makes */
+    u8 unmodeled_05[3];
     CardBattleLayer layers[40];    /* +0x008 */
-    float position[4];             /* +0x198: effect position (CardSetEffect) */
+    float position[3];             /* +0x198: effect position (CardSetEffect) */
+    float step[3];                 /* +0x1A4: per-frame movement toward the next slot */
 } CardLayerStack;
 
 /* TU-local view with the movement fields evidenced by CGPRecalcPosSub. */
@@ -86,7 +88,6 @@ typedef struct CardBoardSlot {
                                     * (0x00a21768) copies that slot's effect
                                     * position 0x1BC bytes forward into it */
     CardLayerStack battle;         /* +0x00C */
-    u8 unmodeled_1B4[8];
 } CardBoardSlot;
 
 /*

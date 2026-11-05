@@ -409,9 +409,290 @@ done:
     return ret;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Geom2D);
+#define XRG_PAINT2D_ANCHOR_CORNER 0
+#define XRG_PAINT2D_ANCHOR_HALF 1
+#define XRG_PAINT2D_ANCHOR_FULL 2
+#define XRG_PAINT2D_GEOM_SPRITE 1
+#define XRG_PAINT2D_GEOM_QUAD 2
+#define XRG_PAINT2D_GEOM_LINE 6
+#define XRG_PAINT2D_MODE_PIC_SIZE 0x20
+#define XRG_PAINT2D_MODE_SCALE 0x40
+#define XRG_PAINT2D_MODE_ANGLE 0x80
+#define XRG_PAINT2D_MODE_JITTER 0x100
+extern const char D_00A59070[];
+extern void XrgUnitMatrix(RgMatrix destination);
+extern void XrgRotMatrixZ(RgMatrix d, RgMatrix s, float angle);
+extern float XrgLengthVector(float *v);
+extern struct XrgPaint2DDispEnvView {
+    unsigned long long flags;
+    unsigned char unmodeled_08[0x10];
+    struct {
+        unsigned int dx : 12; unsigned int dy : 11; unsigned int magh : 4;
+        unsigned int magv : 2; unsigned int unmodeled_29 : 3;
+        unsigned int dw : 12; unsigned int dh : 11; unsigned int unmodeled_55 : 9;
+    } display;
+} DispEnv;
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_paint2d", _Line3D);
+static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
+{
+    XrgPaint2DVertex *corners = (XrgPaint2DVertex *) cornersQ;
+    struct {
+        float box[4];
+        XrgPaint2DOffset offset;
+        XrgPaint2DOffset quad[4];
+        RgMatrix matrix;
+    } w;
+    int status;
+    int mode;
+    unsigned int bits;
+    int i;
+    float x1;
+    float y1;
+    XrgPaint2DVertex *corner;
+    int color = 0x40000;
+    int prio = 0x7F;
+
+    mode = req->mode;
+    status = XRG_PAINT2D_GEOM_SPRITE;
+    if (!_CalcOffset((int *) &w.offset, req->offsetMode, &req->offsetAnchor, &req->offsetResult)) {
+        return 0;
+    }
+    if ((mode & XRG_PAINT2D_MODE_PIC_SIZE) && req->tex0 != 0) {
+        w.box[2] = (float) req->uHigh;
+        w.box[3] = (float) req->vHigh;
+    } else {
+        w.box[2] = (float) (((XrgIntRect *) &req->x)->width << 4);
+        w.box[3] = (float) (((XrgIntRect *) &req->x)->height << 4);
+    }
+    if (mode & XRG_PAINT2D_MODE_SCALE) {
+        w.box[2] = w.box[2] * req->scale;
+        w.box[3] = w.box[3] * req->scale;
+    }
+    w.box[0] = (float) (((XrgIntRect *) &req->x)->x << 4);
+    w.box[1] = (float) (((XrgIntRect *) &req->x)->y << 4);
+    bits = mode;
+    for (i = 0; i < 2; i++) {
+        unsigned int action = bits & 3;
+        float edge = w.box[i];
+
+        bits = bits >> 2;
+        switch (action) {
+        case XRG_PAINT2D_ANCHOR_CORNER:
+            w.box[i] = edge;
+            break;
+        case XRG_PAINT2D_ANCHOR_HALF:
+            w.box[i] = edge - w.box[i + 2] * 0.5f;
+            break;
+        case XRG_PAINT2D_ANCHOR_FULL:
+            w.box[i] = edge - w.box[i + 2];
+            break;
+        default:
+            RgError(D_00A59070, D_00A59058, 454, mode);
+            break;
+        }
+    }
+    *(Quadword *) &w.quad[3] = 0;
+    *(Quadword *) &w.quad[2] = 0;
+    *(Quadword *) &w.quad[1] = 0;
+    *(Quadword *) &w.quad[0] = 0;
+    w.quad[2].f.x = w.box[0];
+    w.quad[1].f.y = w.box[1];
+    w.quad[0].f.x = w.box[0];
+    w.quad[0].f.y = w.box[1];
+    x1 = w.box[0] + w.box[2];
+    w.quad[1].f.x = x1;
+    w.quad[3].f.x = x1;
+    y1 = w.box[1] + w.box[3];
+    w.quad[2].f.y = y1;
+    w.quad[3].f.y = y1;
+    if (mode & XRG_PAINT2D_MODE_ANGLE) {
+        XrgUnitMatrix(w.matrix);
+        XrgRotMatrixZ(w.matrix, w.matrix, req->angle);
+        for (i = 0; i < 4; i++) {
+            __asm__ __volatile__(
+                "lqc2 vf2, 0(%0)\n\t"
+                "lqc2 vf3, 0(%1)\n\t"
+                "lqc2 vf4, 16(%1)\n\t"
+                "lqc2 vf5, 32(%1)\n\t"
+                "lqc2 vf6, 48(%1)\n\t"
+                "vmulax.xyzw ACC, vf3, vf2x\n\t"
+                "vmadday.xyzw ACC, vf4, vf2y\n\t"
+                "vmaddaz.xyzw ACC, vf5, vf2z\n\t"
+                "vmaddw.xyzw vf2, vf6, vf2w\n\t"
+                "sqc2 vf2, 0(%0)"
+                : : "r"(&w.quad[i].f.x), "r"(w.matrix) : "memory");
+        }
+        status = XRG_PAINT2D_GEOM_QUAD;
+    }
+    if (mode & XRG_PAINT2D_MODE_JITTER) {
+        float scale = 12.272727f / (54.0f / (float) (DispEnv.display.magh + 1));
+
+        float *py = &w.quad[0].f.y;
+
+        for (i = 0; i < 4; i++, py += 4) {
+            *py = *py * scale;
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        __asm__ __volatile__(
+            "lqc2 vf11, 0(%0)\n\t"
+            "vftoi0.xyzw vf11, vf11\n\t"
+            "sqc2 vf11, 0(%1)"
+            : : "r"(&w.quad[i].f.x), "r"(&corners[i]) : "memory");
+    }
+    for (i = 0; i < 4; i++) {
+        corners[i].x += w.offset.i.x;
+        corners[i].y += w.offset.i.y;
+    }
+    corners[3].color = color;
+    corners[2].color = color;
+    corners[1].color = color;
+    corners[0].color = color;
+    corners[3].prio = prio;
+    corners[2].prio = prio;
+    corners[1].prio = prio;
+    corners[0].prio = prio;
+    return status;
+}
+
+static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
+{
+    XrgPaint2DVertex *corners = (XrgPaint2DVertex *) cornersQ;
+    XrgPaint2DOffset screen[2];
+    int flags[2];
+    unsigned int i;
+    XrgPaint2DOffset work[4];
+    XrgPaint2DOffset normal;
+    XrgPaint2DOffset delta;
+    XrgPaint2DOffset offset[2];
+    int idx[4];
+    XrgPaint2DOffset *point;
+    XrgPaint2DOffset *scr = screen;
+    XrgPaint2DOffset *dst;
+    XrgPaint2DOffset *quad;
+    XrgPaint2DOffset *out;
+    int dy0;
+    int dx0;
+    float halfWidth;
+    int *flag;
+    int off;
+
+    point = (XrgPaint2DOffset *) &req->x;
+    dst = quad = work + 2;
+    i = 0;
+    flag = flags;
+    off = 0;
+    for (i = 0; i < 2; i++) {
+        int visible;
+        visible = _CalcPosOnScreen(scr, point, (XrgPaint2DOffset *) ((char *) work + off));
+
+        do {
+            dst->f.z = 0;
+        } while (0);
+        halfWidth = (*(float *)((char *)req + 0x30));
+        *flag = visible;
+        dst->f.y = halfWidth;
+        dst->f.x = halfWidth;
+        __asm__ __volatile__(
+            "lqc2 vf11, 0(%0)\n\t"
+            "vmulq.xyzw vf11, vf11, Q\n\t"
+            "sqc2 vf11, 0(%0)"
+            : : "r"(quad) : "memory");
+        quad->f.x = quad->f.x * quad[-2].f.x;
+        quad->f.y = quad->f.y * quad[-2].f.y;
+        quad->f.z = quad->f.z * quad[-2].f.z;
+        quad->f.w = quad->f.w * quad[-2].f.w;
+        scr++;
+        dst++;
+        quad++;
+        flag++;
+        point++;
+        off += 16;
+    }
+    if (flags[0] && flags[1]) {
+        if (req->mode & 1) {
+            for (i = 0; i < 4; i++) {
+                idx[i] = (i + 1) & 3;
+            }
+        } else {
+            for (i = 0; i < 4; i++) {
+                idx[i] = i;
+            }
+        }
+        ((Quadword *) &delta)[0] = 0;
+        delta.i.x = screen[0].i.x - screen[1].i.x;
+        delta.i.y = screen[0].i.y - screen[1].i.y;
+        __asm__ __volatile__(
+            "lqc2 vf11, 0(%0)\n\t"
+            "vitof4.xyzw vf11, vf11\n\t"
+            "sqc2 vf11, 0(%1)"
+            : : "r"(&delta), "r"(&delta) : "memory");
+        normal.f.x = -delta.f.y;
+        normal.f.y = delta.f.x;
+        normal.i.z = 0;
+        XrgNormalizeVector((float *) &normal, (float *) &normal);
+        for (i = 0, dst = work + 2, out = offset; i < 2; i++) {
+            float len;
+
+            len = XrgLengthVector((float *) dst);
+            out->f.x = normal.f.x * len;
+            out->f.y = normal.f.y * len;
+            out->f.z = normal.f.z * len;
+            out->f.w = normal.f.w * len;
+            __asm__ __volatile__(
+                "lqc2 vf11, 0(%0)\n\t"
+                "vftoi4.xyzw vf11, vf11\n\t"
+                "sqc2 vf11, 0(%0)"
+                : : "r"(out) : "memory");
+            out++;
+            dst++;
+        }
+        __asm__ __volatile__(
+            "lqc2 vf31, 0(%0)\n\t"
+            "sqc2 vf31, 0(%1)"
+            : : "r"(&screen[0]), "r"((idx[0] * 16 + (int) corners)) : "memory");
+        __asm__ __volatile__(
+            "lqc2 vf31, 0(%0)\n\t"
+            "sqc2 vf31, 0(%1)"
+            : : "r"(&screen[0]), "r"((idx[1] * 16 + (int) corners)) : "memory");
+        __asm__ __volatile__(
+            "lqc2 vf31, 0(%0)\n\t"
+            "sqc2 vf31, 0(%1)"
+            : : "r"(&screen[1]), "r"((idx[2] * 16 + (int) corners)) : "memory");
+        __asm__ __volatile__(
+            "lqc2 vf31, 0(%0)\n\t"
+            "sqc2 vf31, 0(%1)"
+            : : "r"(&screen[1]), "r"((idx[3] * 16 + (int) corners)) : "memory");
+        dx0 = offset[0].i.x;
+        dy0 = offset[0].i.y;
+        {
+            int *x = (int *) (idx[0] * 16 + (int) corners);
+            int *y = x + 1;
+            x[0] += dx0;
+            y[0] += dy0;
+        }
+        {
+            int *x = (int *) (idx[1] * 16 + (int) corners);
+            int *y = x + 1;
+            x[0] -= dx0;
+            y[0] -= dy0;
+        }
+        {
+            int *x = (int *) (idx[2] * 16 + (int) corners);
+            int *y = x + 1;
+            x[0] += offset[1].i.x;
+            y[0] += offset[1].i.y;
+        }
+        {
+            int *x = (int *) (idx[3] * 16 + (int) corners);
+            int *y = x + 1;
+            x[0] -= offset[1].i.x;
+            y[0] -= offset[1].i.y;
+        }
+        return XRG_PAINT2D_GEOM_LINE;
+    }
+    return 0;
+}
 
 extern void sceVif1PkAddGsAD(XglPacket *packet, int reg, u64 value);
 extern void sceVif1PkAddGsPacked(XglPacket *packet, Quadword data);

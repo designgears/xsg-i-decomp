@@ -862,7 +862,151 @@ static void _SetSelectorWepListDisp(WepListDisp *pDisp, SelType *pSelType)
     pDisp->topIndex = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _DrawWepListDisp);
+#define WEP_LIST_ROWS 7
+#define WEP_LIST_ROW_HEIGHT 23
+#define SEL_ARROW_BOB 4
+#define WLD_FRAME(p) (*(void **)&(p)->unmodeled_00c[0])
+#define WLD_UP(p) (*(void **)&(p)->unmodeled_00c[4])
+#define WLD_DOWN(p) (*(void **)&(p)->unmodeled_00c[8])
+#define WLD_X(p) (*(int *)&(p)->unmodeled_00c[12])
+#define WLD_Y(p) (*(int *)&(p)->unmodeled_00c[16])
+typedef struct AgwsEss {
+    char pad[0x330];
+    char databaseName[0x20];
+    char displayName[0x30];
+} AgwsEss;
+typedef struct AgwsFontColor { int r, g, b, a; } AgwsFontColor;
+extern AgwsFontColor s_aRed_1[2];
+extern AgwsFontColor s_aWhite_2[2];
+extern const char D_00A56808[];
+extern const char D_00A56820[];
+extern void RgFontSetColor(int font, AgwsFontColor *color);
+extern void RgFontSetDefaultColor(int font);
+extern void RgFontStr(XrgPaint2D *paint, int font, const char *text, int x, int y, int flag);
+extern int RgFontPut(XrgPaint2D *paint, int font, int ch, int x, int y, int flag);
+extern void XrgDispMainFont(int x, int y, const char *pszString, int bright);
+
+static void _DrawWepListDisp(WepListDisp *pDisp, XrgPaint2D *paint, int ofsX,
+                             int ofsY)
+{
+    int equipType;
+    int xBase;
+    int yBase;
+    int cursor;
+    int essSize;
+    int *pSlot;
+    int endIdx;
+    int maxTop;
+    int x;
+    int y;
+    int i;
+    int selected;
+    int confrict;
+    int topIndex;
+    int *essList;
+    unsigned int curConfrict;
+    AgwsEss *ess;
+    SelWep *pCur;
+    int essences[RG_EQUIP_TYPE_NUM + 1];
+
+    if (pDisp == 0) {
+        assert_prog(D_00A56798, D_00A56660, 813);
+    }
+    if (pDisp->pSelType == 0) {
+        return;
+    }
+    _GetCursorSelType(pDisp->pSelType);
+    equipType = _GetTypeSelType(pDisp->pSelType);
+    pCur = _GetCurSelType(pDisp->pSelType);
+    if (pCur == 0) {
+        return;
+    }
+    _GetAllSelType(pDisp->pSelType, essences);
+    if (pCur != pDisp->pSelWep) {
+        pDisp->pSelWep = pCur;
+        pDisp->topIndex = _GetCursorSelWep(pCur) - 3;
+    }
+    topIndex = pDisp->topIndex;
+    cursor = _GetCursorSelWep(pCur);
+    essSize = _GetEssListSizeSelWep(pCur);
+    if (topIndex > cursor - 2) {
+        topIndex = cursor - 2;
+    }
+    if (topIndex < cursor - 4) {
+        topIndex = cursor - 4;
+    }
+    maxTop = essSize - WEP_LIST_ROWS;
+    if (maxTop < 0) {
+        maxTop = 0;
+    }
+    if (topIndex < 0) {
+        topIndex = 0;
+    } else if (topIndex > maxTop) {
+        topIndex = maxTop;
+    }
+    pDisp->topIndex = topIndex;
+    x = WLD_X(pDisp) + ofsX;
+    y = WLD_Y(pDisp) + ofsY;
+    xBase = x;
+    yBase = y;
+    essList = _GetEssListSelWep(pCur);
+    endIdx = topIndex + WEP_LIST_ROWS;
+
+    for (i = topIndex; i < endIdx && i < essSize; i++) {
+        selected = (i == cursor);
+        ess = (AgwsEss *)essList[i];
+        pSlot = &essences[equipType];
+        *pSlot = (int)ess;
+        confrict = _CheckEquipWeps(essences, equipType);
+        if (selected != 0) {
+            XrgPaint2DUseTexture(paint, WLD_FRAME(pDisp));
+            XrgPaint2DAlpha(paint, XRG_PAINT2D_BLEND_LINEAR);
+            XrgPaint2DDrawXYWH(paint, XRG_PAINT2D_MODE_USE_PIC_SIZE, x - 9, y - 8, 0, 0);
+        }
+        if (!confrict) {
+            RgFontSetColor(pDisp->font, &s_aWhite_2[selected]);
+        } else {
+            RgFontSetColor(pDisp->font, &s_aRed_1[selected]);
+        }
+        RgFontStr(paint, pDisp->font, ess->databaseName, x, y, 0);
+        y += WEP_LIST_ROW_HEIGHT;
+    }
+
+    if (topIndex < cursor) {
+        x += 108;
+        y = yBase - _SinGet(SEL_ARROW_BOB) + 58;
+        XrgPaint2DUseTexture(paint, WLD_UP(pDisp));
+        XrgPaint2DAlpha(paint, XRG_PAINT2D_BLEND_LINEAR);
+        XrgPaint2DDrawXYWH(paint, XRG_PAINT2D_MODE_USE_PIC_SIZE, x, y, 0, 0);
+    }
+    if (cursor < essSize - 1) {
+        x = xBase + 108;
+        y = yBase + _SinGet(SEL_ARROW_BOB) + 102;
+        XrgPaint2DUseTexture(paint, WLD_DOWN(pDisp));
+        XrgPaint2DAlpha(paint, XRG_PAINT2D_BLEND_LINEAR);
+        XrgPaint2DDrawXYWH(paint, XRG_PAINT2D_MODE_USE_PIC_SIZE, x, y, 0, 0);
+    }
+
+    RgFontSetDefaultColor(pDisp->font);
+    if (topIndex > 0) {
+        RgFontPut(paint, pDisp->font, '@', xBase + 32, yBase - 20, 1);
+    }
+    if (topIndex < essSize - WEP_LIST_ROWS) {
+        RgFontPut(paint, pDisp->font, '!', xBase + 32, yBase + 156, 1);
+    }
+
+    x = xBase - 48;
+    y = yBase + 192;
+    ess = (AgwsEss *)_GetCurrentWeaponSelType(pDisp->pSelType);
+    curConfrict = _GetCurrentConfrictSelType(pDisp->pSelType);
+    if (!curConfrict) {
+        XrgDispMainFont(x, y, ess->displayName, 0);
+    } else if (curConfrict & (1 << equipType)) {
+        XrgDispMainFont(x, y, D_00A56808, 0);
+    } else {
+        XrgDispMainFont(x, y, D_00A56820, 0);
+    }
+}
 
 extern const char D_00A56838[]; /* "pSelDat != NIL" */
 
@@ -1277,7 +1421,163 @@ static void _DrawPlayerMode(XrgPaint2D *paint, RgBxx *pBxx, int playerMode)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_select_agws", _SetCharSelDisp);
+#define SEL_CHAR_CURSOR_NOP RG_ACTOR_CHAR_NUM
+typedef void RgPic;
+typedef struct RgSelCharPicEntry {
+    int m_idx[6];
+} RgSelCharPicEntry;
+extern RgSelCharPicEntry s_ainPics_3[6];
+extern const char D_00A56958[];
+extern void *RgPicListGetPic(RgPicList *pList, int index);
+extern void RgPicSetAlpha(void *pic, int alpha);
+extern void RgPicSetDark(void *pic, int dark);
+extern void RgPicNotDraw(void *pic, int notDraw);
+extern void RgPicSetOfsXY(void *pic, int x, int y);
+
+static void _SetCharSelDisp(RgPicList *pList, SelChar *pSelChar, int playerMode)
+{
+    int i;
+    unsigned int cursor;
+    int flag;
+    unsigned int selectable;
+    unsigned int selChar;
+    int off;
+    void *pA;
+    void *pB;
+    RgPic *pUp;
+    const char *table = (const char *) s_ainPics_3;
+    RgPic *pDown;
+
+    if (pList == 0) {
+        assert_prog(D_00A56958, D_00A56660, 1292);
+    }
+    if (pSelChar == 0) {
+        assert_prog(D_00A56650, D_00A56660, 1293);
+    }
+    i = 0;
+    off = 0;
+    selChar = _GetSelectChar(pSelChar);
+    cursor = _GetSelectCursor(pSelChar);
+    selectable = _GetSelectableSelectChar(pSelChar);
+
+    for (; i < RG_ACTOR_CHAR_NUM; i++, off += 24) {
+        if ((unsigned int) i < RG_ACTOR_CHAR_NUM) {
+            RgPic *pC;
+            RgPic *pD;
+            RgPic *pE;
+            pA = RgPicListGetPic(pList, ((const RgSelCharPicEntry *) (table + off))->m_idx[2]);
+            table = pA;
+            if (pA != 0) {
+                table = (const char *) s_ainPics_3;
+            } else if (selChar != 0) {
+                table = (const char *) s_ainPics_3;
+            } else {
+                table = (const char *) s_ainPics_3;
+            }
+            pB = RgPicListGetPic(pList, ((const RgSelCharPicEntry *) (off + table))->m_idx[3]);
+            table = pB;
+            pC = RgPicListGetPic(pList, s_ainPics_3[i].m_idx[4]);
+            pD = RgPicListGetPic(pList, s_ainPics_3[i].m_idx[5]);
+            pE = RgPicListGetPic(pList, s_ainPics_3[i].m_idx[1]);
+            table = (const char *) s_ainPics_3;
+            if ((selectable & (1 << i)) != 0) {
+                if (pA) {
+                    RgPicSetAlpha(pA, 3);
+                    if (selChar == i) {
+                        RgPicNotDraw(pA, 0);
+                    } else {
+                        RgPicNotDraw(pA, 1);
+                    }
+                }
+                if (0 != pB) {
+                    RgPicSetAlpha(pB, 3);
+                    RgPicSetDark(pB, 1);
+                    if (selChar == i) {
+                        RgPicNotDraw(pB, 1);
+                    } else {
+                        RgPicNotDraw(pB, 0);
+                    }
+                }
+                if (0 != pC) {
+                    RgPicNotDraw(pC, 1);
+                }
+                if (0 != pD) {
+                    RgPicNotDraw(pD, 1);
+                }
+                if (0 != pE) {
+                    RgPicNotDraw(pE, 0);
+                }
+            } else {
+                if (pA != 0) {
+                    RgPicNotDraw(pA, 1);
+                }
+                if (pB != 0) {
+                    RgPicNotDraw(pB, 1);
+                }
+                if (pE != 0) {
+                    RgPicNotDraw(pE, 1);
+                }
+                if (pC != 0) {
+                    RgPicNotDraw(pC, 0);
+                }
+                if (pD != 0) {
+                    RgPicNotDraw(pD, 0);
+                    RgPicSetDark(pD, 1);
+                }
+            }
+        }
+    }
+
+    flag = (cursor != SEL_CHAR_CURSOR_NOP);
+    RgPicSetDark(RgPicListGetPic(pList, 44), flag);
+    RgPicSetDark(RgPicListGetPic(pList, 57), flag);
+
+    for (i = 0; RG_ACTOR_CHAR_NUM > i; i++) {
+        if ((unsigned int) i < RG_ACTOR_CHAR_NUM) {
+            pA = RgPicListGetPic(pList, s_ainPics_3[i].m_idx[0]);
+            pB = RgPicListGetPic(pList, s_ainPics_3[i].m_idx[1]);
+            if (pA != 0) {
+                if (selChar == i) {
+                    RgPicSetDark(pA, 0);
+                } else {
+                    RgPicSetDark(pA, 1);
+                }
+            }
+            if (pB != 0) {
+                if (selChar == i) {
+                    RgPicSetDark(pB, 0);
+                } else {
+                    RgPicSetDark(pB, 1);
+                }
+            }
+        }
+    }
+
+    {
+        pUp = RgPicListGetPic(pList, 58);
+
+        if (pUp != 0) {
+            if (_IsExistItemUpper(pSelChar) != 0) {
+                RgPicNotDraw(pUp, 0);
+            } else {
+                RgPicNotDraw(pUp, 1);
+            }
+            RgPicSetOfsXY(pUp, 0, -_SinGet(SEL_ARROW_BOB));
+        }
+    }
+    {
+        pDown = RgPicListGetPic(pList, 59);
+
+        if (pDown != 0) {
+            if (_IsExistItemLower(pSelChar) != 0) {
+                RgPicNotDraw(pDown, 0);
+            } else {
+                RgPicNotDraw(pDown, 1);
+            }
+            RgPicSetOfsXY(pDown, 0, _SinGet(SEL_ARROW_BOB));
+        }
+    }
+}
 
 extern void *RgBxxGetPic(RgBxx *pBxx, const char *pszName);
 

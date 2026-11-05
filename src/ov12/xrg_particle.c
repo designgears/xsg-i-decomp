@@ -110,7 +110,118 @@ static void _DisposeDriver(XrgParticleDriver *driver)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_particle", _Calc);
+#define XRG_PARTICLE_SIZE_MAX 100.0f
+#define XRG_PI 3.1415927f
+#define XRG_TWO_PI 6.2831855f
+typedef union XrgParticleRow {
+    Quadword quad;
+    int word[4];
+    RgVector vec;
+} XrgParticleRow;
+struct XrgParticle {
+    XrgParticleRow position;
+    XrgParticleRow velocity;
+    XrgParticleRow acceleration;
+    XrgParticleRow appearance;
+    XrgParticleRow appearanceRate;
+};
+static inline void _Damp(float *v, float factor)
+{
+    v[0] *= factor;
+    v[1] *= factor;
+    v[2] *= factor;
+    v[3] *= factor;
+}
+static inline float *_ScaleFor(float *dst, float *tmp, float *src, float elapsed)
+{
+    tmp[0] = src[0] * elapsed;
+    tmp[1] = src[1] * elapsed;
+    tmp[2] = src[2] * elapsed;
+    tmp[3] = src[3] * elapsed;
+    return dst;
+}
+static inline float _WrapAngle(float angle)
+{
+    while (XRG_PI < angle) {
+        angle -= XRG_TWO_PI;
+    }
+    while (angle < -XRG_PI) {
+        angle += XRG_TWO_PI;
+    }
+    return angle;
+}
+static inline void _ClampState(XrgParticle *e, float zero, float sizeMax, float one)
+{
+    e->appearance.vec[0] = (e->appearance.vec[0] < zero)
+        ? 0.0f : ((sizeMax < e->appearance.vec[0]) ? XRG_PARTICLE_SIZE_MAX : e->appearance.vec[0]);
+    e->appearance.vec[1] = (e->appearance.vec[1] < zero)
+        ? 0.0f : ((one < e->appearance.vec[1]) ? 1.0f : e->appearance.vec[1]);
+    e->appearance.vec[2] = _WrapAngle(e->appearance.vec[2]);
+    e->appearance.vec[3] = _WrapAngle(e->appearance.vec[3]);
+}
+
+static void _Calc(XrgParticle *particle, int count, float rate,
+                  float elapsed)
+{
+    float tmp[4];
+    float factor;
+    float *scratch;
+    int old;
+    XrgParticle *e = particle;
+    float zero = 0.0f;
+    float sizeMax = XRG_PARTICLE_SIZE_MAX;
+    float one = 1.0f;
+
+    if (rate <= zero) {
+        for (;;) {
+            old = count;
+            count--;
+            if (old == 0) {
+                break;
+            }
+            scratch = tmp;
+            {
+                float *dst = _ScaleFor(e->velocity.vec, tmp, e->acceleration.vec, elapsed);
+
+                __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+            }
+            {
+                float *dst = _ScaleFor(e->position.vec, tmp, e->velocity.vec, elapsed);
+
+                __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+            }
+            {
+                float *dst = _ScaleFor(e->appearance.vec, tmp, e->appearanceRate.vec, elapsed);
+
+                __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+            }
+            _ClampState(e, zero, sizeMax, one);
+            e++;
+        }
+        return;
+    }
+    factor = one - rate * elapsed;
+    for (; (unsigned int) count-- != 0;) {
+        {
+            float *dst = _ScaleFor(e->velocity.vec, tmp, e->acceleration.vec, elapsed);
+
+            __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+        }
+        {
+            float *dst = _ScaleFor(e->position.vec, tmp, e->velocity.vec, elapsed);
+
+            __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+        }
+        {
+            float *dst = _ScaleFor(e->appearance.vec, tmp, e->appearanceRate.vec, elapsed);
+
+            __asm__ __volatile__("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+        }
+        _Damp(e->velocity.vec, factor);
+        _ClampState(e, zero, sizeMax, one);
+        e++;
+    }
+}
 
 typedef union XrgParticleRectQ {
     Quadword q;

@@ -122,7 +122,160 @@ static void _AnaAutoHoming(RgRobotSpecFull *pSpec, char *str, int bValue)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/rg_robot_spec", RgRobotSpecReadFromText);
+#define offsetof(type, member) ((unsigned int) &((type *) 0)->member)
+enum {
+    RG_TEXT_INFO_INT_OFFSET,
+    RG_TEXT_INFO_FLOAT_OFFSET,
+    RG_TEXT_INFO_STRING_OFFSET,
+    RG_TEXT_INFO_BOOL_OFFSET,
+    RG_TEXT_INFO_FLOAT_ARRAY_OFFSET,
+    RG_TEXT_INFO_CALLBACK_OFFSET,
+    RG_TEXT_INFO_INT_ADDRESS,
+    RG_TEXT_INFO_FLOAT_ADDRESS,
+    RG_TEXT_INFO_STRING_ADDRESS,
+    RG_TEXT_INFO_BOOL_ADDRESS,
+    RG_TEXT_INFO_FLOAT_ARRAY_ADDRESS,
+    RG_TEXT_INFO_CALLBACK_ADDRESS,
+    RG_TEXT_INFO_END
+};
+struct RgTextInfoEntry {
+    unsigned int type;
+    const char *pszName;
+    void *destination;
+    void *auxiliary;
+} __attribute__((aligned(8)));
+struct RgReadText;
+extern void RgTextInfoRead(struct RgReadText *pReadText,
+                           struct RgTextInfoEntry *pParaList, char *pData);
+extern int strcasecmp(const char *, const char *);
+#define RG_DASH_MODE_NORMAL 0
+#define RG_DASH_MODE_VR 1
+#define RG_DASH_MODE_NEO 2
+#define RG_DASH_MODE_NEO2 3
+#define RG_DASH_MODE_NEO3 4
+extern const char D_00A51F30[];
+#define robotSpecEnginePowerKey D_00A51F30
+extern const char D_00A51F40[];
+#define robotSpecEngineImpulseKey D_00A51F40
+extern const char D_00A51F50[];
+#define robotSpecMoveSpeedMaxKey D_00A51F50
+extern const char D_00A51F60[];
+#define robotSpecDashSpeedMaxKey D_00A51F60
+extern const char D_00A51F70[];
+#define robotSpecRotSpeedBottomRateKey D_00A51F70
+extern const char D_00A51F88[];
+#define robotSpecWeightKey D_00A51F88
+extern const char D_00A51F90[];
+#define robotSpecMoveResistKey D_00A51F90
+extern const char D_00A51FA0[];
+#define robotSpecRotResistKey D_00A51FA0
+extern const char D_00A51FB0[];
+#define robotSpecDashTimeKey D_00A51FB0
+extern const char D_00A51FC0[];
+#define robotSpecDashPowerKey D_00A51FC0
+extern const char D_00A51FD0[];
+#define robotSpecDashCooldownKey D_00A51FD0
+extern const char D_00A51FE0[];
+#define robotSpecLifeKey D_00A51FE0
+extern const char D_00A51FE8[];
+#define robotSpecDamageStiffTimeKey D_00A51FE8
+extern const char D_00A52000[];
+#define robotSpecBodyAttackDamageKey D_00A52000
+extern const char D_00A52018[];
+#define robotSpecJetEffectKey D_00A52018
+extern const char D_00A52020[];
+#define robotSpecDashEffectKey D_00A52020
+extern const char D_00A52030[];
+#define robotSpecBareHandKey D_00A52030
+extern const char D_00A52038[];
+#define robotSpecRollPowerKey D_00A52038
+extern const char D_00A52048[];
+#define robotSpecAutoHomingKey D_00A52048
+extern const char D_00A52058[];
+#define robotSpecRotSpeedMaxKey D_00A52058
+extern const char D_00A52068[];
+#define robotSpecDashModeKey D_00A52068
+extern const char D_00A52078[];
+#define robotSpecDashModeNormalKeyword D_00A52078
+extern const char D_00A52080[];
+#define robotSpecDashModeVrKeyword D_00A52080
+extern const char D_00A52088[];
+#define robotSpecDashModeNeoKeyword D_00A52088
+extern const char D_00A52090[];
+#define robotSpecDashModeNeo2Keyword D_00A52090
+extern const char D_00A52098[];
+#define robotSpecDashModeNeo3Keyword D_00A52098
+
+void RgRobotSpecReadFromText(RgRobotSpecFull *pSpec, struct RgReadText *pReader)
+{
+    float rotSpdMax;
+    float vec[3];
+    char szMode[64];
+    struct RgTextInfoEntry paraList[] = {
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecEnginePowerKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f20), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecEngineImpulseKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f20), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecMoveSpeedMaxKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f0C), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecDashSpeedMaxKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f10), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecRotSpeedBottomRateKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f18), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecWeightKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f1C), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecMoveResistKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f28), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecRotResistKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f2C), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecDashTimeKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f30), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecDashPowerKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f34), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecDashCooldownKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f38), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecLifeKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f4C), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecDamageStiffTimeKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f50), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_OFFSET, .pszName = robotSpecBodyAttackDamageKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, f54), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_STRING_OFFSET, .pszName = robotSpecJetEffectKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, s58), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_STRING_OFFSET, .pszName = robotSpecDashEffectKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, s78), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_STRING_OFFSET, .pszName = robotSpecBareHandKey,
+         .destination = (void *) offsetof(RgRobotSpecFull, name), .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_FLOAT_ARRAY_ADDRESS, .pszName = robotSpecRollPowerKey,
+         .destination = vec, .auxiliary = (void *) 3},
+        {.type = RG_TEXT_INFO_CALLBACK_ADDRESS, .pszName = robotSpecAutoHomingKey,
+         .destination = pSpec, .auxiliary = _AnaAutoHoming},
+        {.type = RG_TEXT_INFO_FLOAT_ADDRESS, .pszName = robotSpecRotSpeedMaxKey,
+         .destination = &rotSpdMax, .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_STRING_ADDRESS, .pszName = robotSpecDashModeKey,
+         .destination = szMode, .auxiliary = (void *) 0},
+        {.type = RG_TEXT_INFO_END}
+    };
+
+    szMode[0] = 0;
+    _ResetAnaAutoHoming();
+    RgTextInfoRead(pReader, paraList, (char *)pSpec);
+
+    pSpec->f24 = vec[0] * 6.2831855f * vec[1] / vec[2];
+    pSpec->f14 = 6.2831855f / rotSpdMax;
+
+    if (strcasecmp(szMode, robotSpecDashModeNormalKeyword) == 0) {
+        pSpec->type = RG_DASH_MODE_NORMAL;
+    } else if (strcasecmp(szMode, robotSpecDashModeVrKeyword) == 0) {
+        pSpec->type = RG_DASH_MODE_VR;
+    } else if (strcasecmp(szMode, robotSpecDashModeNeoKeyword) == 0) {
+        pSpec->type = RG_DASH_MODE_NEO;
+    } else if (strcasecmp(szMode, robotSpecDashModeNeo2Keyword) == 0) {
+        pSpec->type = RG_DASH_MODE_NEO2;
+    } else if (strcasecmp(szMode, robotSpecDashModeNeo3Keyword) == 0) {
+        pSpec->type = RG_DASH_MODE_NEO3;
+    }
+}
 
 extern void XrgLog(const char *format, const char *source_file, int line, ...);
 extern const char D_00A520A0[];
