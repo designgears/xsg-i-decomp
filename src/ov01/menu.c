@@ -2228,7 +2228,60 @@ void menuPlStatPut(ObjectTask *task, int packet, BattleUnit *unit)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuNumPut);
+typedef struct { unsigned char c[2][4]; } NumCol2;
+extern NumCol2 D_00A468E0;
+
+int menuNumPut(int packet, int x, int y, int value, int digits, int style)
+{
+    NumCol2 col = D_00A468E0;
+    int kind;
+    int w;
+    int h;
+    int step;
+    int v;
+    int div;
+    int i;
+
+    kind = 0;
+    if (style == 1) {
+        v = 0xA0;
+        w = 10;
+        step = 10;
+        h = 13;
+    } else if (style == 2) {
+        v = 0x90;
+        w = 12;
+        step = 12;
+        h = 16;
+        kind = 1;
+    } else if (style == 3) {
+        /* Four dashes; the offset goes through div (needed for the match). */
+        v = 0xA0;
+        w = 10;
+        step = 10;
+        h = 13;
+        for (i = 0; i < 4; i++) {
+            div = i * step;
+            menuStatSpriteRGB(packet, x + div, y, w, h, w * 10, v, col.c[kind]);
+        }
+        return;
+    } else {
+        v = 0x90;
+        w = 12;
+        step = 12;
+        h = 16;
+    }
+    div = 1;
+    for (i = 0; i < digits - 1; i++) {
+        div *= 10;
+    }
+    for (i = 0; i < digits; i++) {
+        int d = value / div;
+        value %= div;
+        menuStatSpriteRGB(packet, x + i * step, y, w, h, w * d, v, col.c[kind]);
+        div /= 10;
+    }
+}
 
 void menuApBarPut(int packet, int x, int y, int amount)
 {
