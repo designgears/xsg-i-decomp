@@ -758,7 +758,27 @@ Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, co
     return destination;
 }
 
-ACCEPTED_ASM("src/main/m_math", MMathSpecialVectorSub);
+Vector4 *MMathSpecialVectorSub(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter)
+{
+    __asm__ __volatile__(
+        "lui $8,%%hi(McMathUnitVector)\n\t"
+        "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
+        "movz %0,$8,%0\n\t"
+        "li.s $f8,0.001953125\n\t"
+        "mul.s $f8,$f8,%3\n\t"
+        "mfc1 $8,$f8\n\t"
+        "qmtc2 $8,$vf4\n\t"
+        "lqc2 $vf1,0(%2)\n\t"
+        "lqc2 $vf2,0(%0)\n\t"
+        "vmr32.xyzw $vf3xyzw,$vf0xyzw\n\t"
+        "vsub.xyz $vf1xyz,$vf3xyz,$vf1xyz\n\t"
+        "vmulax.xyz ACCxyz,$vf1xyz,$vf4x\n\t"
+        "vmaddw.xyz $vf1xyz,$vf2xyz,$vf0w\n\t"
+        "sqc2 $vf1,0(%1)\n\t"
+        "nop"
+        : "+r"(second) : "r"(destination), "r"(first), "f"(parameter) : "$8", "$f8", "memory");
+    return destination;
+}
 
 Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle)
 {

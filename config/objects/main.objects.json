@@ -66544,11 +66544,6 @@
           {
             "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
             "state_hint": "exact_asm",
-            "unit_record": "config/units/main-mmath-matrix-ops.json"
-          },
-          {
-            "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
-            "state_hint": "exact_asm",
             "unit_record": "config/units/math-main-002ef160-review11.json"
           }
         ],
@@ -66612,7 +66607,7 @@
             ],
             "flags_recorded": true,
             "generated_data": [],
-            "language": "ee-asm",
+            "language": "c-asm",
             "probe_compilers_reproducing": [
               "2.96"
             ],
@@ -66622,17 +66617,17 @@
             "recorded_profile": null,
             "recorded_runner": null,
             "scope": null,
-            "source": "src/main/m_math/MMathSpecialVectorSub.s",
+            "source": "src/main/m_math.c",
             "source_functions": [
               "MMathSpecialVectorSub"
             ],
-            "source_sha256": "798294263fb5531adef84200d12cb8ca442bf579e8c9870f2284c1de5c9af1af",
             "text": {
               "sha256": "48213d73532f1dd7f7524a04fcd4390de18792dbd58933de04da60138de4b38d",
               "size": 80,
               "va": "0x002ef850"
             },
-            "unit_record": "config/units/main-mmath-matrix-ops.json"
+            "unit_record": "config/units/main-mmath-matrix-ops.json",
+            "note": "re-treated 2026-10-31 (user order): the accepted ee-asm body src/main/m_math/MMathSpecialVectorSub.s was replaced by C with constrained inline asm in src/main/m_math.c (exact_c_with_asm, source class hardware); whole-file gate green refs/green/20261031T172751Z. The .s is deleted; the unit record stays the acceptance authority."
           },
           {
             "flags": [
