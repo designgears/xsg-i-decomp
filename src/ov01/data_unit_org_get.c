@@ -672,7 +672,116 @@ typedef struct CmdEntry {
     unsigned char unmodeled_0c[8]; /* +0x0C: unwritten by this call */
 } CmdEntry;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitInitSet);
+extern BattleUnitInfo playerData2[7] __asm__("playerData");
+extern const char D_00A457F0[];
+extern const char D_00A45810[];
+extern const char D_00A45830[];
+extern const char D_00A45850[];
+typedef struct UnitInitWork { unsigned char unmodeled_00[0x84]; BattleUnitInfo *info; } UnitInitWork;
+typedef struct BattleUnitCopy { unsigned char b[0x180]; } BattleUnitCopy;
+extern void calcCopyParaMake();
+typedef struct BattleUnitSub { unsigned char pad0[4]; short f4; short f6; short id; } BattleUnitSub;
+#define BSUB(p) ((BattleUnitSub *)((char *)(p) + 0x30))
+extern void calcSkillInit();
+
+void dataUnitInitSet(ObjectTask *unit, int cid)
+{
+    BattleUnitInfo *p = 0;
+    UnitInitWork *w;
+    int i;
+    int src;
+    BattleUnitInfo *pd;
+
+    if (cid <= 0) {
+        printf(D_00A457F0, cid);
+        return;
+    }
+    w = *(UnitInitWork **)((char *)unit + 0x10);
+    if (cid <= 0x20) {
+        for (i = 0; i < 7; i++) {
+            pd = playerData;
+            if (BSUB(&playerData[i])->id == cid) {
+                w->info = &pd[i];
+                return;
+            }
+        }
+        for (i = 0; i < 7; i++) {
+            if (playerData[i].calcIdx == 0) {
+                p = &playerData[i];
+                break;
+            }
+        }
+        if (p == 0) {
+            printf(D_00A45810);
+            return;
+        }
+        w->info = p;
+        calcCopyParaMake(dataUnitOrgGet(cid), w->info);
+        calcSkillInit(unit);
+    } else if (cid < 0xBB) {
+        for (i = 0; i < 5; i++) {
+            if (enemyData[i].calcIdx == 0) {
+                p = &enemyData[i];
+                break;
+            }
+        }
+        if (p == 0) {
+            printf(D_00A45830);
+            return;
+        }
+        w->info = p;
+        memset(p, 0, 0x180);
+        *(PlUnitInit *)p = *(PlUnitInit *)dataUnitInitGet(cid);
+        BSUB(p)->f4 = ((PlUnitInit *)p)->w0;
+        BSUB(p)->f6 = ((PlUnitInit *)p)->w2;
+        *(PlInitCopy12 *)((char *)p + 0x76) = *(PlInitCopy12 *)dataNormInitGet(cid);
+        *(PlInitCopy24 *)((char *)p + 0x8E) = *(PlInitCopy24 *)dataEtherInitGet(cid);
+    } else {
+        for (i = 0; i < 7; i++) {
+            if (playerData[i].calcIdx == 0) {
+                p = &playerData[i];
+                break;
+            }
+        }
+        if (p == 0) {
+            printf(D_00A45850);
+            return;
+        }
+        switch (cid - 0xBB) {
+        case 0:
+        case 1:
+            src = 7;
+            break;
+        case 2:
+            src = 6;
+            break;
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+            src = 3;
+            break;
+        case 7:
+            src = 2;
+            break;
+        default:
+            printf(D_00A45850);
+            return;
+        }
+        w->info = p;
+        {
+            BattleUnitInfo *q = playerData2;
+            for (i = 0; i < 7; i++) {
+                if (BSUB(&q[i])->id == src) {
+                    *p = playerData2[i];
+                }
+            }
+        }
+        for (i = 2; i >= 0; i--) {
+            ((short *)((char *)p + 0x5E))[i] = 0;
+        }
+    }
+}
 
 /*
  * posTbl is a table of 0x20-byte position records; dataPosTblGet and
