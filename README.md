@@ -17,8 +17,8 @@ The Sony SDK and public libraries do not need to be recovered.
 Recovered 7,645 of 7,645 in-scope game function(s) (100.000%).
 
 - `exact_c` (pure C): 7,188 function(s)
-- `exact_c_with_asm`: 453 function(s)
-- `exact_asm`: 4 function(s)
+- `exact_c_with_asm`: 457 function(s)
+- `exact_asm`: 0 function(s)
 - `exact_vu_microcode`: no accepted VU microprogram
 - empty-body functions: 0 of the counted function(s) are 8-byte `jr ra; nop` bodies
 - These counts come from the tracked object tables, the tracked symbol
