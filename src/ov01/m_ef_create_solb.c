@@ -195,7 +195,404 @@ static void fnSOLB_PR000(void *self, void *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_solb", fnSOLB_DP000);
+typedef unsigned int Quadword __attribute__((mode(TI)));
+typedef unsigned int MEfGsQuadword __attribute__((mode(TI)));
+typedef union MEfGsQword {
+    Quadword whole;
+    unsigned short nloop;
+    struct { u64 tag; u64 registers; } gif;
+    struct { u64 data; unsigned char address; } ad;
+    u32 channel[4];
+    struct { int r, g, b, a; } rgba;
+    struct { int x, y, z, adc; } xyz;
+    float element[4];
+    Vector4 vector;
+} MEfGsQword;
+typedef struct MEfGsPacket {
+    void *data;
+    int capacity;
+    MEfGsQword *current;
+    int count;
+    int reg_count;
+} MEfGsPacket;
+#define MEF_GS_SETUP_TAG 0x1000000000008000
+#define MEF_GS_SETUP_REGS 0xE
+#define MEF_GS_STRIP_PRIM 0x4C
+#define MEF_GS_STRIP_REGS 0x5151
+#define MEF_GS_XYZ_ADC 0x8000
+#define MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL 0x5000D
+#define MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE 0x131000000
+#define MEF_GS_ALPHA_1_ADDITIVE 0x48
+#define GIF_TAG_EOP 0x8000
+#define SCE_GS_ALPHA_1 0x42
+#define SCE_GS_TEST_1 0x47
+#define SCE_GS_ZBUF_1 0x4E
+#define QuadwordCopyT0(destination, source) \
+    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#define Vu0SetOrigin(destination) \
+    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+typedef struct MEfGsCamParams {
+    StudioCamera *screen;
+    Matrix4 *matrix;
+} MEfGsCamParams;
+#define Vu0Sin(result, angle) \
+    __asm__ __volatile__( \
+        "mfc1 $8, %1\n" \
+        "qmtc2 $8, vf4\n" \
+        "vcallms 0x20\n" \
+        "qmfc2.i $8, vf1\n" \
+        "mtc1 $8, %0\n" \
+        : "=f" (result) \
+        : "f" (angle) \
+        : "$8", "memory")
+#define Vu0Cos(result, angle) \
+    __asm__ __volatile__( \
+        "mfc1 $8, %1\n" \
+        "qmtc2 $8, vf4\n" \
+        "vcallms 0xe8\n" \
+        "qmfc2.i $8, vf1\n" \
+        "mtc1 $8, %0\n" \
+        : "=f" (result) \
+        : "f" (angle) \
+        : "$8", "memory")
+typedef struct SolbDrawState {
+    unsigned int : 32;                  /* +0x000 */
+    SolbActorAngle *actorAngle;         /* +0x004 */
+    void *actor;                       /* +0x008 */
+    u32 coord;                          /* +0x00c */
+    Vector4 localOffset;                /* +0x010 */
+    short sweepDegrees;                 /* +0x020 */
+    unsigned short : 16;                /* +0x022 */
+    unsigned int : 32;                  /* +0x024 */
+    unsigned int : 32;                  /* +0x028 */
+    unsigned int : 32;                  /* +0x02c */
+    unsigned int : 32;                  /* +0x030 */
+    unsigned int : 32;                  /* +0x034 */
+    unsigned int : 32;                  /* +0x038 */
+    unsigned int : 32;                  /* +0x03c */
+    unsigned int : 32;                  /* +0x040 */
+    unsigned int : 32;                  /* +0x044 */
+    unsigned int : 32;                  /* +0x048 */
+    unsigned int : 32;                  /* +0x04c */
+    unsigned int : 32;                  /* +0x050 */
+    unsigned int : 32;                  /* +0x054 */
+    unsigned int : 32;                  /* +0x058 */
+    unsigned int : 32;                  /* +0x05c */
+    unsigned int : 32;                  /* +0x060 */
+    unsigned int : 32;                  /* +0x064 */
+    unsigned int : 32;                  /* +0x068 */
+    unsigned int : 32;                  /* +0x06c */
+    short age;                          /* +0x070: frames since creation */
+    short active[SOLB_TRAIL_LENGTH];    /* +0x072 */
+    short birth_age[SOLB_TRAIL_LENGTH]; /* +0x0b0: age when the entry was made */
+    unsigned short : 16;                /* +0x0ee */
+    Vector4 trail[SOLB_TRAIL_LENGTH];               /* +0x0f0 */
+    short segment;                      /* +0x2e0: current path segment */
+    short frame;                        /* +0x2e2: frame inside that segment */
+    unsigned int : 32;                  /* +0x2e4 */
+    unsigned int : 32;                  /* +0x2e8 */
+    unsigned int : 32;                  /* +0x2ec */
+    HermiteVector control[SOLB_CONTROL_POINTS];     /* +0x2f0 */
+    HermiteVector tangent_at_segment_start;         /* +0x330 */
+    HermiteVector tangent_at_segment_end;           /* +0x340 */
+    MEfGsPacket packet;                             /* +0x350 */
+} SolbDrawState;
+extern Quadword coltbl_1_00A43780[3];
+extern Vector4 *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
+extern float MMathMakeRandom2PI(void);
+extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera,
+                                 Matrix4 *matrix, const Vector4 *point);
+extern void MGsGPTerm(MEfGsPacket *packet);
+typedef struct SolbCamParams { StudioCamera *screen; Matrix4 *matrix; } SolbCamParams;
+extern SolbCamParams mefCamParams;
+#define SOLB_RIBBON_PRIM 0x4C
+#define SOLB_LINE_PRIM 0x4A
+#define SOLB_RIBBON_REGS 0x551
+#define SOLB_LINE_REGS 0x51
+#define SOLB_FIBER_COUNT 6
+#define SOLB_TRAIL_DRAWN 30
+static inline MEfGsQword *solbOpenTag(MEfGsPacket *packet, int pre, int prim, int reg_count,
+                                      u64 registers)
+{
+    MEfGsQword *qword = packet->current;
+
+    qword->gif.tag = GIF_TAG_EOP | ((u64)pre << 46) | ((u64)prim << 47) | ((u64)reg_count << 60);
+    qword->gif.registers = registers;
+    packet->reg_count = reg_count;
+    return qword + 1;
+}
+static inline void solbSetRegister(MEfGsQword *qword, unsigned char address, u64 data)
+{
+    qword->ad.data = data;
+    qword->ad.address = address;
+}
+static inline void solbCloseTag(MEfGsPacket *packet, int nloop)
+{
+    int size;
+
+    size = packet->reg_count * nloop + 1;
+    packet->current->nloop |= nloop;
+    packet->current += size;
+    packet->count += size;
+}
+
+static void fnSOLB_DP000(void *self, void *work)
+{
+    SolbDrawState *state = (SolbDrawState *)work;
+    MEfGsQword color;
+    Matrix4 matrix;
+    Vector4 aim;
+    Vector4 lead;
+    MEfGsQword vertex[2];
+    MEfGsPacket *packet;
+    Vector4 *point;
+    StudioCamera *screen;
+    Matrix4 *view;
+    MEfGsQword *qword;
+    float width;
+    int *adc;
+    int alpha;
+    int clip;
+    int drawn;
+    int pass;
+    int i;
+    int j;
+
+    screen = mefCamParams.screen;
+    view = mefCamParams.matrix;
+    point = (Vector4 *)&state->packet;
+    MGsGPInit(point, 0, 0);
+    {
+    MEfGsQword *setting = ((MEfGsPacket *)point)->current;
+    setting[0].gif.tag = MEF_GS_SETUP_TAG;
+    setting[0].gif.registers = MEF_GS_SETUP_REGS;
+    ((MEfGsPacket *)point)->reg_count = 1;
+    qword = &setting[1];
+    solbSetRegister(qword, SCE_GS_TEST_1, MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL);
+    solbSetRegister(&setting[2], SCE_GS_ZBUF_1, MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE);
+    solbSetRegister(&setting[3], SCE_GS_ALPHA_1, MEF_GS_ALPHA_1_ADDITIVE);
+    solbCloseTag((MEfGsPacket *)point, 3);
+    }
+    point = *(Vector4 **)point;
+    adc = &vertex[1].xyz.adc;
+
+    color.whole = coltbl_1_00A43780[0];
+    for (pass = 0; pass < 2; pass++) {
+        clip = 0;
+        drawn = 0;
+        qword = solbOpenTag(&state->packet, 1, SOLB_RIBBON_PRIM, 3, SOLB_RIBBON_REGS);
+        {
+            float x = point->x;
+
+            point->x = x;
+        }
+        Vu0SetOrigin(&lead);
+        for (i = 0; i < SOLB_TRAIL_DRAWN; i++) {
+            if (state->active[i] == 0) {
+                continue;
+            }
+            if (i == SOLB_TRAIL_DRAWN - 1) {
+                color.rgba.a = 0;
+            } else {
+                alpha = 256 - state->birth_age[i] * 11;
+                if (alpha < 0) {
+                    alpha = 0;
+                }
+                color.rgba.a = alpha;
+            }
+            if (i != 0 && i != SOLB_TRAIL_DRAWN - 1) {
+                width = 0.02f;
+            } else {
+                width = 0.0f;
+            }
+            point = &state->trail[i];
+            MEfCalcAngle(&aim, point, &state->trail[i + 1]);
+            MMathRotateMatrixYXZ(&matrix, 0, &aim);
+            __asm__ __volatile__(
+                "lqc2 $vf1, 0(%1)\n"
+                "vmove.w $vf1w, $vf0w\n"
+                "sqc2 $vf1, 48(%0)\n"
+                : : "r"(&matrix), "r"(point) : "memory");
+
+            (&lead.x)[pass] = width;
+            MMathApplyMatrix(&aim, &matrix, &lead);
+            if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &aim)) {
+                clip = 2;
+            } else if (clip != 0) {
+                clip--;
+                vertex[0].xyz.adc = MEF_GS_XYZ_ADC;
+            }
+            (&lead.x)[pass] = -width;
+            MMathApplyMatrix(&aim, &matrix, &lead);
+            if (MMathRotTransPersClip(&vertex[1].vector, screen, view, &aim)) {
+                clip = 2;
+            } else if (clip != 0) {
+                clip--;
+                *adc = MEF_GS_XYZ_ADC;
+            }
+            drawn++;
+            qword[0].whole = color.whole;
+            qword[1].whole = vertex[0].whole;
+            qword[2].whole = vertex[1].whole;
+            qword += 3;
+        }
+        packet = &state->packet;
+        if (drawn > 0) {
+            solbCloseTag(packet, drawn);
+        }
+    }
+
+    {
+    MEfGsQword *setting = packet->current;
+    setting[0].gif.tag = MEF_GS_SETUP_TAG;
+    setting[0].gif.registers = MEF_GS_SETUP_REGS;
+    packet->reg_count = 1;
+    qword = &setting[1];
+    solbSetRegister(qword, SCE_GS_TEST_1, MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL);
+    solbSetRegister(&setting[2], SCE_GS_ZBUF_1, MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE);
+    solbSetRegister(&setting[3], SCE_GS_ALPHA_1, MEF_GS_ALPHA_1_ADDITIVE);
+    solbCloseTag(packet, 3);
+    }
+    color.whole = coltbl_1_00A43780[1];
+    for (pass = 0; pass < SOLB_FIBER_COUNT; pass++) {
+        clip = 0;
+        drawn = 0;
+        qword = solbOpenTag(&state->packet, 1, SOLB_LINE_PRIM, 2, SOLB_LINE_REGS);
+        for (j = 0; j < SOLB_TRAIL_DRAWN; j++) {
+            if (state->active[j] == 0) {
+                continue;
+            }
+            if (j == SOLB_TRAIL_DRAWN - 1) {
+                color.rgba.a = 0;
+            } else {
+                color.rgba.a = 256 - state->birth_age[j] * 11;
+                if (color.rgba.a < 48) {
+                    color.rgba.a = 48;
+                }
+            }
+            point = &state->trail[j];
+            MEfCalcAngle(&aim, point, &state->trail[j + 1]);
+            MMathRotateMatrixYXZ(&matrix, 0, &aim);
+            __asm__ __volatile__(
+                "lqc2 $vf1, 0(%1)\n"
+                "vmove.w $vf1w, $vf0w\n"
+                "sqc2 $vf1, 48(%0)\n"
+                : : "r"(&matrix), "r"(point) : "memory");
+            point = &state->trail[j + 2];
+            {
+                float x = point->x;
+
+                point->x = x;
+            }
+            Vu0SetOrigin(&aim);
+            if (j != 0 && j < SOLB_TRAIL_DRAWN - 1) {
+                width = (float)j * 0.2094395f;
+                width = width + (float)pass * 1.0471975f;
+                Vu0Cos(aim.x, width);
+                aim.x = aim.x * 0.1f;
+                Vu0Sin(aim.y, width);
+                aim.y = aim.y * 0.1f;
+            }
+            MMathApplyMatrix(&aim, &matrix, &aim);
+            if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &aim)) {
+                clip = 1;
+            } else if (clip != 0) {
+                clip--;
+                vertex[0].xyz.adc = MEF_GS_XYZ_ADC;
+            }
+            drawn++;
+            qword[0].whole = color.whole;
+            qword[1].whole = vertex[0].whole;
+            qword += 2;
+        }
+        if (drawn > 0) {
+            solbCloseTag(packet, drawn);
+        }
+    }
+
+    {
+    MEfGsQword *setting = packet->current;
+    setting[0].gif.tag = MEF_GS_SETUP_TAG;
+    setting[0].gif.registers = MEF_GS_SETUP_REGS;
+    packet->reg_count = 1;
+    qword = &setting[1];
+    solbSetRegister(qword, SCE_GS_TEST_1, MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL);
+    solbSetRegister(&setting[2], SCE_GS_ZBUF_1, MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE);
+    solbSetRegister(&setting[3], SCE_GS_ALPHA_1, MEF_GS_ALPHA_1_ADDITIVE);
+    solbCloseTag(packet, 3);
+    }
+    color.whole = coltbl_1_00A43780[1];
+    for (pass = 0; pass < 2; pass++) {
+        drawn = 0;
+        clip = 0;
+        qword = solbOpenTag(&state->packet, 1, SOLB_LINE_PRIM, 2, SOLB_LINE_REGS);
+        for (j = 0; j < SOLB_TRAIL_DRAWN; j++) {
+            if (state->active[j] == 0) {
+                continue;
+            }
+            if (j == SOLB_TRAIL_DRAWN - 1) {
+                color.rgba.a = 0;
+            } else {
+                color.rgba.a = 256 - state->birth_age[j] * 11;
+                if (color.rgba.a < 48) {
+                    color.rgba.a = 48;
+                }
+            }
+            point = &state->trail[j];
+            MEfCalcAngle(&aim, point, &state->trail[j + 1]);
+            MMathRotateMatrixYXZ(&matrix, 0, &aim);
+            __asm__ __volatile__(
+                "lqc2 $vf1, 0(%1)\n"
+                "vmove.w $vf1w, $vf0w\n"
+                "sqc2 $vf1, 48(%0)\n"
+                : : "r"(&matrix), "r"(point) : "memory");
+            point = &state->trail[j + 2];
+            {
+                float x = point->x;
+
+                point->x = x;
+            }
+            {
+                float y = point->y;
+
+                point->y = y;
+            }
+            {
+                float z = point->z;
+
+                point->z = z;
+            }
+            Vu0SetOrigin(&aim);
+            if (j != 0 && j < SOLB_TRAIL_DRAWN - 1) {
+                width = MMathMakeRandom2PI();
+                Vu0Cos(aim.x, width);
+                aim.x = aim.x * 0.25f;
+                Vu0Sin(aim.y, width);
+                aim.y = aim.y * 0.25f;
+            }
+            MMathApplyMatrix(&aim, &matrix, &aim);
+            if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &aim)) {
+                clip = 1;
+            } else if (clip != 0) {
+                clip--;
+                vertex[0].xyz.adc = MEF_GS_XYZ_ADC;
+            }
+            drawn++;
+            qword[0].whole = color.whole;
+            qword[1].whole = vertex[0].whole;
+            qword += 2;
+        }
+        if (drawn > 0) {
+            solbCloseTag(packet, drawn);
+        }
+    }
+    MGsGPTerm(packet);
+    drawn = *(int *)point;
+    drawn++;
+}
+
+/* MEfObjDestroy is defined by src/main/m_ef_obj.c; sefHitEffect
+ * is defined by src/main/sef.c. */
 
 /* MEfObjDestroy (src/main/m_ef_obj.c) and sefHitEffect (src/main/sef.c) are
  * still asm in their defining TU; declared locally until published there. */

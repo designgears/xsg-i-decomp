@@ -237,7 +237,211 @@ typedef struct GameraGsPacket {
     int regCount;           /* NREG of the open GIF tag */
 } GameraGsPacket;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_gamera", fnGAMERA_DP000);
+typedef unsigned int MEfGsQuadword __attribute__((mode(TI)));
+typedef union MEfGsQword {
+    MEfGsQuadword whole;
+    unsigned short nloop;
+    struct { u64 tag; u64 registers; } gif;
+    struct { u64 data; unsigned char address; } ad;
+    u32 channel[4];
+    struct { int r, g, b, a; } rgba;
+    struct { int x, y, z, adc; } xyz;
+    float element[4];
+    Vector4 vector;
+} MEfGsQword;
+typedef struct MEfGsPacket {
+    void *data;
+    int capacity;
+    MEfGsQword *current;
+    int count;
+    int reg_count;
+} MEfGsPacket;
+#define MEF_GS_SETUP_TAG 0x1000000000008000
+#define MEF_GS_SETUP_REGS 0xE
+#define MEF_GS_STRIP_PRIM 0x4C
+#define MEF_GS_STRIP_REGS 0x5151
+#define MEF_GS_XYZ_ADC 0x8000
+#define MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL 0x5000D
+#define MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE 0x131000000
+#define MEF_GS_ALPHA_1_ADDITIVE 0x48
+#define GIF_TAG_EOP 0x8000
+#define SCE_GS_ALPHA_1 0x42
+#define SCE_GS_TEST_1 0x47
+#define SCE_GS_ZBUF_1 0x4E
+#define QuadwordCopyT0(destination, source) \
+    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#define Vu0SetOrigin(destination) \
+    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+typedef struct MEfGsCamParams {
+    StudioCamera *screen;
+    Matrix4 *matrix;
+} MEfGsCamParams;
+#define GAMERA_DRAWN_SEGMENTS 27
+#define GAMERA_TRAIL_WIDTH_Y -0.005f
+#define GAMERA_TRAIL_WIDTH_X 0.05f
+typedef struct GameraDrawWork {
+    unsigned char unmodeled_00[0x70];
+    short frame;
+    unsigned char unmodeled_72[0x0e];
+    Vector4 origin;
+    Vector4 target;
+    short trail_active[GAMERA_TRAIL_LENGTH];
+    short trail_segment[GAMERA_TRAIL_LENGTH];
+    Vector4 trail[GAMERA_TRAIL_LENGTH];
+    short segment;
+    short path_frame;
+    unsigned char unmodeled_2d4[12];
+    HermiteVector control_points[GAMERA_PATH_POINTS];
+    float path_angle[GAMERA_PATH_POINTS];
+    HermiteVector tangent_start;
+    HermiteVector tangent_end;
+    MEfGsPacket packet;
+} GameraDrawWork;
+typedef struct GameraCamParams {
+    StudioCamera *screen;
+    Matrix4 *matrix;
+} GameraCamParams;
+extern GameraCamParams mefCamParams;
+extern void MGsGPTerm(MEfGsPacket *packet);
+extern const MEfGsQword coltbl_2_00A517F0[3];
+extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera,
+                                 Matrix4 *matrix, const Vector4 *point);
+extern Vector4 *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
+extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *destination, Matrix4 *matrix, const Vector4 *angles);
+static inline MEfGsQword *gameraOpenTag(MEfGsPacket *packet, int pre, int prim,
+                                           int reg_count, u64 registers)
+{
+    MEfGsQword *qword = packet->current;
+
+    qword->gif.tag = GIF_TAG_EOP | ((u64)pre << 46) | ((u64)prim << 47) | ((u64)reg_count << 60);
+    qword->gif.registers = registers;
+    packet->reg_count = reg_count;
+    return qword + 1;
+}
+static inline void gameraSetRegister(MEfGsQword *qword, unsigned char address, u64 data)
+{
+    qword->ad.data = data;
+    qword->ad.address = address;
+}
+static inline void gameraCloseTag(MEfGsPacket *packet, int nloop)
+{
+    int size;
+
+    size = packet->reg_count * nloop + 1;
+    packet->current->nloop |= nloop;
+    packet->current += size;
+    packet->count += size;
+}
+typedef struct GameraOffsets {
+    float inner[4];
+    float outer[4];
+} GameraOffsets;
+
+static void fnGAMERA_DP000(void *self, struct GameraTrailState *work)
+{
+    GameraDrawWork *state = (GameraDrawWork *)work;
+    MEfGsQword colour[2];
+    Matrix4 matrix;
+    Vector4 angles;
+    Vector4 offset[2];
+    MEfGsQword vertex[2];
+    const void *screen;
+    const void *view;
+    MEfGsPacket *packet;
+    MEfGsPacket *tail;
+    MEfGsQword *setting;
+    MEfGsQword *qword;
+    int clip;
+    int drawn;
+    int line;
+    int side;
+    MEfGsPacket *opener;
+    int segment;
+    GameraOffsets *slots;
+    Vector4 *outer_offset;
+    float inner;
+    float outer;
+
+    screen = mefCamParams.screen;
+    view = mefCamParams.matrix;
+    packet = &state->packet;
+    MGsGPInit(packet, 0, 0);
+    setting = packet->current;
+    setting[0].gif.tag = MEF_GS_SETUP_TAG;
+    setting[0].gif.registers = MEF_GS_SETUP_REGS;
+    packet->reg_count = 1;
+    gameraSetRegister(&setting[1], SCE_GS_TEST_1, MEF_GS_TEST_1_ALPHA_GREATER_ZGEQUAL);
+    gameraSetRegister(&setting[2], SCE_GS_ZBUF_1, MEF_GS_ZBUF_1_PSMZ24_NO_DEPTH_WRITE);
+    gameraSetRegister(&setting[3], SCE_GS_ALPHA_1, MEF_GS_ALPHA_1_ADDITIVE);
+    gameraCloseTag(packet, 3);
+    line = 0;
+    outer_offset = &offset[1];
+    opener = packet;
+    tail = packet;
+
+    slots = (GameraOffsets *)offset;
+    for (; line < 2; line++) {
+        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&offset[0]) : "memory");
+        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(outer_offset) : "memory");
+        for (side = -1; side < 2; side += 2) {
+            drawn = 0;
+            inner = (float)side * GAMERA_TRAIL_WIDTH_Y;
+            outer = (float)side * GAMERA_TRAIL_WIDTH_X;
+            qword = gameraOpenTag(opener, 1, MEF_GS_STRIP_PRIM, 4, MEF_GS_STRIP_REGS);
+            packet = &state->packet;
+            clip = 0;
+            for (segment = 0; segment < GAMERA_DRAWN_SEGMENTS; segment++) {
+                if (state->trail_active[segment] == 0) {
+                    continue;
+                }
+                colour[0].whole = coltbl_2_00A517F0[0].whole;
+                colour[1].whole = coltbl_2_00A517F0[1].whole;
+                if (segment == 0 || segment == GAMERA_DRAWN_SEGMENTS - 1) {
+                    colour[0].rgba.a = colour[1].rgba.a = 0;
+                    slots->inner[line] = slots->outer[line] = 0.0f;
+                } else {
+                    slots->inner[line] = inner;
+                    slots->outer[line] = outer;
+                }
+                MEfCalcAngle(&angles, &state->trail[segment],
+                             &state->trail[segment + 1]);
+                angles.z = state->path_angle[state->trail_segment[segment]];
+                MMathRotateMatrixYXZ(&matrix, 0, &angles);
+                __asm__ __volatile__(
+                    "lqc2 $vf1,0(%1)\n\t"
+                    "vmove.w $vf1w,$vf0w\n\t"
+                    "sqc2 $vf1,48(%0)\n\t"
+                    :
+                    : "r"(matrix), "r"(&state->trail[segment])
+                    : "memory");
+                MMathApplyMatrix(&angles, &matrix, &offset[0]);
+                if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &angles)) {
+                    clip = 2;
+                } else if (clip != 0) {
+                    clip--;
+                    vertex[0].xyz.adc = MEF_GS_XYZ_ADC;
+                }
+                MMathApplyMatrix(&angles, &matrix, outer_offset);
+                if (MMathRotTransPersClip(&vertex[1].vector, screen, view, &angles)) {
+                    clip = 2;
+                } else if (clip != 0) {
+                    clip--;
+                    vertex[1].xyz.adc = MEF_GS_XYZ_ADC;
+                }
+                drawn++;
+                qword[0].whole = colour[0].whole;
+                qword[1].whole = vertex[0].whole;
+                qword[2].whole = colour[1].whole;
+                qword[3].whole = vertex[1].whole;
+                qword += 4;
+            }
+            if (drawn > 0) {
+                gameraCloseTag(tail, drawn);
+            }
+        }
+    }
+    MGsGPTerm(tail);
+}
 
 /* MEfObjDestroy (src/main/m_ef_obj.c) and sefHitEffect (src/main/sef.c) are
  * still asm in their defining TU; declared locally until published there. */
