@@ -158,16 +158,16 @@ typedef struct PrintCircleInfo {
     unsigned char pointColor[4];  /* +0x14..+0x17 */
 } PrintCircleInfo;
 
-extern void endPrintInfoSet(EndPrintContext *context, int clut, int flag);
+static void endPrintInfoSet(EndPrintContext *context, int clut, int flag);
 
 
-extern void subPrintSprite(EndPrintContext *context, PrintSpriteInfo *sprite);
+static void subPrintSprite(EndPrintContext *context, PrintSpriteInfo *sprite);
 
 
-extern void subPrintLine(EndPrintContext *context, PrintPointInfo *line);
+static void subPrintLine(EndPrintContext *context, PrintPointInfo *line);
 
 
-extern void subPrintRibbon(EndPrintContext *context, PrintPointInfo *ribbon);
+static void subPrintRibbon(EndPrintContext *context, PrintPointInfo *ribbon);
 
 
 #include "main/xgl_packet.h"
@@ -187,7 +187,7 @@ extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
 /* PrintCircleCore (this TU, still asm) draws into the scratchpad buffer this
  * function points it at. */
 
-extern void PrintCircleCore(XglPacket *packet, void *buffer, PrintCircleInfo *circle);
+static void PrintCircleCore(XglPacket *packet, void *buffer, PrintCircleInfo *circle);
 
 
 /*

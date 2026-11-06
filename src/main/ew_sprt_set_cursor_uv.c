@@ -103,7 +103,7 @@ extern void EW_drawComoponent(int context, EwWidget *widget);
 
 EwWidget ewComponent[64];
 
-extern void EW_setDrawEnv(int context);
+static void EW_setDrawEnv(int context);
 
 
 extern void xglFontReloadTexture(int context, int mode);
@@ -219,7 +219,7 @@ typedef struct EwTextWidget {
     EwTextState text;
 } EwTextWidget;
 
-extern void container_init(EwContainerState *container);
+static void container_init(EwContainerState *container);
 
 
 const unsigned char D_004C2340[0x20] = {
@@ -236,18 +236,18 @@ const unsigned char D_004C2340[0x20] = {
  * tests only the enabled bit via flags & 0x4000.
  */
 
-extern void frame_put(int context, EwWidget *widget);
+static void frame_put(int context, EwWidget *widget);
 
-extern void label_put(EwDrawContext *context, EwLabelWidget *widget);
-
-
-extern void mask_put(int context, void *arg);
+static void label_put(EwDrawContext *context, EwLabelWidget *widget);
 
 
-extern void set_clip(int context, void *arg);
+static void mask_put(int context, void *arg);
 
 
-extern void sprt_put(int context, EwSpriteWidget *widget);
+static void set_clip(int context, void *arg);
+
+
+static void sprt_put(int context, EwSpriteWidget *widget);
 
 
 extern void xglFontPrint(int x, int y, int color, const char *text);

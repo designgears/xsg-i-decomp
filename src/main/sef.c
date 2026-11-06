@@ -19,6 +19,12 @@ typedef struct SefActor {
     Matrix4 *accessoryMatrix;
 } SefActor;
 
+static void sefAnalyzeAnim(unsigned char *object);
+static int sefSetReverseDir(int effect_id, int category);
+static void sefInitBattlePrm(void);
+static void sefSetLightFlag(void);
+static void sefSetHitSignal(SefActor *actor);
+
 #define SEF_ACTOR_LIGHT_FLAG 0x00008000u
 #define SEF_BATTLE_ACTOR_MAX 24
 typedef struct SefBattleActor {
@@ -1135,7 +1141,7 @@ typedef struct {
     unsigned char unmodeled_a7a[0xab0 - 0xa7a];
 } SefSchedulerRecord;
 
-static static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
+static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
 {
     Vector4 extent_vector;
     Vector4 random_vector;

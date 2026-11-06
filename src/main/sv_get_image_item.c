@@ -155,7 +155,7 @@ extern void sceVif1PkRefLoadImage(XglPacket *packet,
 
 int svLoadImageList(SvTypeList *typeList);
 
-extern int svImageListAlloc(int typeListAddr);
+static int svImageListAlloc(int typeListAddr);
 
 
 /*
@@ -184,9 +184,9 @@ typedef struct SvScriptSlot {
     void *dataPtr;                        /* 0x20 */
 } SvScriptSlot;
 
-int svAnalyzeChunk(SvTypeList *typeList, void *chunk);
+static int svAnalyzeChunk(SvTypeList *typeList, void *chunk);
 
-extern SvTypeList *svGetTypeList(int type);
+static SvTypeList *svGetTypeList(int type);
 
 
 void svImageListDestroy(SvTypeList *typeList);
@@ -227,13 +227,13 @@ extern void sceVif1PkTerminate(XglPacket *packet);
  * sefClipViewVolumeA returns): both are declared non-void here.
  */
 
-extern int sefClipViewVolumeA(void *scheduler);
+static int sefClipViewVolumeA(void *scheduler);
 
 
-extern void sefInitClipViewVolume(void *view);
+static void sefInitClipViewVolume(void *view);
 
 
-extern void sefDrawSchedulerEffect(int schedulerIndex);
+static void sefDrawSchedulerEffect(int schedulerIndex);
 
 
 extern void SGsSetZTestEnv(int enable);
@@ -275,7 +275,7 @@ extern int _scMslCate;
 
 void MEfObjExec2nd(void);
 
-extern void svDrawSchedulerParticle(void);
+static void svDrawSchedulerParticle(void);
 
 
 /*

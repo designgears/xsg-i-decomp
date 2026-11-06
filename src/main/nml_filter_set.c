@@ -64,8 +64,8 @@ struct NmlStealthGeometry {
     union NmlStealthXYZ xyz[14];
     union NmlStealthUV uv[14];
 };
-void nmlModelSetFilterGunosys(int *model, int flags, int count);
-void nmlModelSetFilterStealth(const LayoutStore *model, int flags);
+static void nmlModelSetFilterGunosys(int *model, int flags, int count);
+static void nmlModelSetFilterStealth(const LayoutStore *model, int flags);
 
 /*
  * Loads the supplied four-row matrix into the resident VU0 macro-mode

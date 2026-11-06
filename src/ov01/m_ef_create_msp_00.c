@@ -24,7 +24,7 @@ extern void MGsGPInit(void *packet, void *address, int size);
 extern void *memset(void *destination, int value, unsigned int size);
 static void fnMSP00_PR000(void *self, void *work);
 static void fnMSP00_DM000();
-void fnMSP00_DP000(void *self, void *work);
+static void fnMSP00_DP000(void *self, void *work);
 static void fnMSP00_PO000(void *self, void *work);
 typedef struct MSP00InitState {
     unsigned char unmodeled_00[8];

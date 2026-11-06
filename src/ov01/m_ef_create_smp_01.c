@@ -61,7 +61,7 @@ extern const char D_00A51490[];
 static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work);
 static void fnSMP01_DM000(Smp01Object *self, Smp01Work *work);
 static void fnSMP01_PO000(void *object, void *work);
-extern void fnSMP01_DP000();
+static void fnSMP01_DP000();
 
 int MEfCreate_SMP01(Smp01CreateObject *object)
 {

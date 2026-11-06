@@ -9,23 +9,23 @@
 
 void XrgSystemInit(void);
 
-extern const char xrg_system_init_log_1[];
+/* static const char xrg_system_init_log_1[] (defined in xrg_sysinit.c) */
 
 extern const char xrg_system_init_source_file[];
 
-extern const char xrg_system_init_log_2[];
+/* static const char xrg_system_init_log_2[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_3[];
+/* static const char xrg_system_init_log_3[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_4[];
+/* static const char xrg_system_init_log_4[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_5[];
+/* static const char xrg_system_init_log_5[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_6[];
+/* static const char xrg_system_init_log_6[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_7[];
+/* static const char xrg_system_init_log_7[] (defined in xrg_sysinit.c) */
 
-extern const char xrg_system_init_log_8[];
+/* static const char xrg_system_init_log_8[] (defined in xrg_sysinit.c) */
 
 extern void XrgLogSys(const char *, const char *, int, ...);
 

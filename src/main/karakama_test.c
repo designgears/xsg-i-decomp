@@ -149,7 +149,7 @@ extern void xglRenderClearFrame(void);
 
 extern void xglRenderClearDepth(void);
 
-extern void CfTest(void);
+static void CfTest(void);
 
 extern void SePacketTest(void);
 

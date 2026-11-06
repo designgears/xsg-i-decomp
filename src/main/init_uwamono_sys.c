@@ -543,9 +543,9 @@ typedef struct UwamonoNyuruActor {
     UwamonoNyuruVector displacement;
 } UwamonoNyuruActor;
 
-extern int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit);
+static int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit);
 
-extern int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int mode);
+static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int mode);
 
 extern int HitCheckMapUnit(void *actor);
 
@@ -584,7 +584,7 @@ extern const float D_004D7F18;
 
 extern int CheckCrossCircle(float radius, const Vector4 *from, const Vector4 *to, const Vector4 *center);
 
-extern float CheckCornerDist(const Vector4 *position, UwamonoCollisionUnit *unit);
+static float CheckCornerDist(const Vector4 *position, UwamonoCollisionUnit *unit);
 
 
 typedef struct BrokenMapUnitState {
@@ -2507,7 +2507,7 @@ static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int
     }
 }
 
-int NyuruCorner(UwamonoCollisionActor *, UwamonoCollisionUnit *);
+static int NyuruCorner(UwamonoCollisionActor *, UwamonoCollisionUnit *);
 
 int NyuruBox(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit, int arg2) {
     UwamonoAlignedVector dim;

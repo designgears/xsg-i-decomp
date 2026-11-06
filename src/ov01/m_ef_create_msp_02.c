@@ -151,7 +151,7 @@ extern const char D_00A51680[];
 extern const char D_00A51690[];
 static void fnMSP02_PR000(void *task, MspEffect *effect);
 static void fnMSP02_DM000(void *task, MspEffect *effect);
-extern void fnMSP02_DP000();
+static void fnMSP02_DP000();
 static void fnMSP02_PO000(void *self, MspEffect *effect);
 static inline void msp02Copy(Vector4 *destination, Vector4 *source)
 {

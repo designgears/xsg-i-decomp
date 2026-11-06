@@ -11,7 +11,7 @@ const char D_004C23D8[] = "\t%8.3f %8.3f %8.3f %8.3f\n";
 
 void MATRIX_rotate4(Matrix4 rotation, float angle, float axisX, float axisY, float axisZ);
 
-extern void MATRIX_mul3x4(Matrix4 destination, Matrix4 source, Matrix4 rotation);
+static void MATRIX_mul3x4(Matrix4 destination, Matrix4 source, Matrix4 rotation);
 
 
 void MATRIX_mul4sx3(Matrix4 destination, Matrix4 source, Matrix4 rotation);

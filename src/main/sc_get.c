@@ -52,7 +52,7 @@ static int scFindScriptData(int eftNo)
     return sefSearchMapperIndex(eftNo);
 }
 
-extern int scCreateTask(int script_index, int task_index, int address, unsigned char *data);
+static int scCreateTask(int script_index, int task_index, int address, unsigned char *data);
 extern int **svGetScript(int eftNo);
 extern unsigned char D_004CC790[];
 

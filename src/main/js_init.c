@@ -87,13 +87,13 @@ extern char *STR_tokenGetNext(char *text, const char *delimiters);
 
 extern int STR_tokenGetType(void);
 
-extern char *STR_getLine(char *destination, char *source, char *limit);
+static char *STR_getLine(char *destination, char *source, char *limit);
 
 
-extern char *STR_trim(char *text);
+static char *STR_trim(char *text);
 
 
-extern char *STR_trim2(char *text, int delimiter);
+static char *STR_trim2(char *text, int delimiter);
 
 
 /* Resets the class/primitive tables and allocates their backing storage from

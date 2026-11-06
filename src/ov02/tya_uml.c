@@ -46,7 +46,7 @@ typedef struct TyaUmlGsPacket {
 
 extern TyaUmlRenderSize sRender;
 static void tyaUmlDispType3(TyaUmlDispParam *parameter);
-extern void tyaUmlDispType3Sub0(void *context, void *argument);
+static void tyaUmlDispType3Sub0(void *context, void *argument);
 extern void xglFontPrintExtFunc(unsigned int flags,
                                 void (*draw)(void *context, void *argument),
                                 void *argument);

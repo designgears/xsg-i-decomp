@@ -100,13 +100,13 @@ extern void PartyTimePauseEnd(void);
 
 #define PAD_COMBO_ABORT 0x10c
 
-extern char *caption_nextline(char *cursor);
+static char *caption_nextline(char *cursor);
 
 
-extern char *caption_getparam(char *cursor, int *time, char *out);
+static char *caption_getparam(char *cursor, int *time, char *out);
 
 
-extern void caption_convert(char *text);
+static void caption_convert(char *text);
 
 
 /* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */

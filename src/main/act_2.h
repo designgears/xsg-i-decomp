@@ -205,8 +205,6 @@ typedef struct Actor {
 
 /* ACT_setVisible's third argument is forwarded to both MDL tail calls. */
 extern void ACT_setVisible(Actor *actor, int part, int visible);
-extern void ACT_modelDrawSub(Actor *actor);
-extern void ACT_updateMotionSub(Actor *actor, int pause);
 
 int ACT_jointGetMoveElementID(Actor *actor);
 

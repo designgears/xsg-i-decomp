@@ -328,7 +328,7 @@ typedef struct {
     ActZeldaShadowPacket packet;
 } ActShadowScratchpad;
 
-extern void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
+static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
                               ActShadowMatrix *matrix);
 
 
@@ -512,13 +512,13 @@ typedef struct {
     ActShadowMatrixSet *shadow_matrices;
 } ActDrawShadowActor;
 
-extern void DrawCircleShadow(void *actor);
+static void DrawCircleShadow(void *actor);
 
 
-extern void DrawDropCircle(ActShadowActor *actor);
+static void DrawDropCircle(ActShadowActor *actor);
 
 
-extern void DrawDropShadow(ActShadowActor *actor);
+static void DrawDropShadow(ActShadowActor *actor);
 
 
 extern ActShadowLight *xglStudioGetLight2(void);

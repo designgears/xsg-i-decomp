@@ -47,8 +47,8 @@ typedef struct {
 } DefocusLayer;
 
 extern DefocusLayer GameDefocusParam[16];
-extern void DefocusMain(XglPacket *packet);
-extern void DefocusMainType09Final(DefocusLayer *layer);
+static void DefocusMain(XglPacket *packet);
+static void DefocusMainType09Final(DefocusLayer *layer);
 
 static u64 GetTex0(int type, int tex_cc)
 {

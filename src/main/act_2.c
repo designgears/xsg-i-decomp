@@ -92,7 +92,9 @@ extern void ACT_setVisible(Actor *actor, int part, int visible);
  * at 0x00306d44/0x00306d5c.
  */
 
-extern void ACT_updateMotionCore(Actor *actor, int pause);
+static void ACT_updateMotionCore(Actor *actor, int pause);
+static void ACT_updateMotionSub(Actor *actor, int pause);
+static void ACT_modelDrawSub(Actor *actor);
 
 
 /* main:0x00307c38 is `jr ra` / nop: no argument is read and no state changes. */

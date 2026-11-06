@@ -43,15 +43,15 @@ extern void xglSoundEffectNormalID(int sound_id, int variant);
 extern void xglSoundEffectParamID(int sound_id, int volume, int pan, int flags);
 extern void xglSoundEffectStopID(int sound_id, int flags);
 
-extern int s_bNowPlaying;
-extern int s_eLoadedSeq;
+/* static int s_bNowPlaying; (defined in xrg_sound.c) */
+/* static int s_eLoadedSeq; (defined in xrg_sound.c) */
 
 /* ../xrg_sound.euc.c: the source-file debug tag every RgHeapAlloc/RgHeapFree
    call in this translation unit passes; .data is still scaffold-owned. */
-extern const char D_00A59288[];
+/* static const char D_00A59288[]; (defined in xrg_sound.c) */
 /* "MINIBAT": the sound bank InitXrgSoundSystem primes; .data is still
    scaffold-owned. */
-extern const char D_00A592A0[];
+/* static const char D_00A592A0[]; (defined in xrg_sound.c) */
 
 static int _LoadSequence(const char *, void *, int);
 
