@@ -3182,7 +3182,147 @@ int nusumeGet(void)
 
 INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProcInit);
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProc);
+extern int jtypeIdx;
+int specSyoukanProc(SyoukanRec *rec, int arg1, unsigned int *state, int arg3);
+int specHensinProc(void *arg0, int arg1, unsigned int *arg2);
+void specInoriProc(void);
+int specNusumuProc(void *arg0, ObjectTask **arg1);
+void eBattleWinMain3(void);
+void eBattleWinClose3(void);
+
+int flowSpecProc(ScenarioBatExec *exec, void **arg1)
+{
+  int ret;
+  int id;
+  int tec;
+  ret = 0;
+  switch (tec = ((ScnExec50 *) exec)->tec)
+  {
+    case 0x22B:
+      eBattleWinMain3();
+      if (dataPadRead(1) & 0x60)
+    {
+      ret = 1;
+      eBattleWinClose3();
+    }
+      break;
+
+    case 0x235:
+      ret = sefIsFinishEffect(dataTecGet(0x235)[0xB]);
+      if ((ret == 1) && (calcStatGet(*((BattleUnit **) arg1), 1, 0x100) == 0))
+    {
+      specNusumuProc(exec, (ObjectTask **) arg1);
+      battleMsg((int) (&msgWork));
+    }
+      break;
+
+    case 0x236:
+
+    case 0x237:
+
+    case 0x238:
+      if (tec == 0x236)
+    {
+      id = 0xBE;
+    }
+    else
+      if (tec == 0x237)
+    {
+      id = 0xBF;
+    }
+    else
+      if (tec == 0x238)
+    {
+      id = 0xC0;
+    }
+    else
+    {
+      id = 0xC1;
+    }
+      ret = specSyoukanProc((SyoukanRec *) exec, (int) arg1, (unsigned int *) (&jtypeIdx), id);
+      break;
+
+    case 0x39:
+
+    case 0x22C:
+
+    case 0x22F:
+      if (exec)
+    {
+      ret = (*((int *) (((char *) (*((void **) (((char *) ((ScnExec50 *) exec)->unit) + 0x14)))) + 0x6F0))) & 0x1000;
+      break;
+    }
+    else
+    {
+      ret = (*((int *) (((char *) (*((void **) (((char *) ((ScnExec50 *) exec)->unit) + 0x14)))) + 0x6F0))) & 0x1000;
+      break;
+    }
+
+    case 0x240:
+      ret = specSyoukanProc((SyoukanRec *) exec, (int) arg1, (unsigned int *) (&jtypeIdx), 0xC2);
+      break;
+
+    case 0x5A:
+      if (sefIsFinishEffect(dataTecGet(0x5A)[0xB]))
+    {
+      if ((*((int *) (((char *) (*((void **) (((char *) ((ScnExec50 *) exec)->unit) + 0x14)))) + 0x6F0))) & 0x1000)
+      {
+        ret = 1;
+        battleMsg((int) (&msgWork));
+      }
+    }
+      break;
+
+    case 0x251:
+      ret = sefIsFinishEffect(dataTecGet(0x251)[0xB]);
+      if (ret == 1)
+    {
+      specInoriProc();
+    }
+      break;
+
+    case 0x254:
+
+    case 0x257:
+      ret = specHensinProc(exec, (int) arg1, (unsigned int *) (&jtypeIdx));
+      break;
+
+    case 0x259:
+      ret = specSyoukanProc((SyoukanRec *) exec, (int) arg1, (unsigned int *) (&jtypeIdx), 0xBD);
+      break;
+
+    case 0x25D:
+      ret = sefIsFinishEffect(dataTecGet(0x25D)[0xB]);
+      if (ret == 1)
+    {
+      battleMsg((int) (&msgWork));
+    }
+      break;
+
+    case 0x262:
+
+    case 0x263:
+      if (tec == 0x262)
+    {
+      id = 0xBB;
+    }
+    else
+    {
+      id = 0xBC;
+    }
+      ret = specSyoukanProc((SyoukanRec *) exec, (int) arg1, (unsigned int *) (&jtypeIdx), id);
+      break;
+
+    case 0x29A:
+
+    case 0x29B:
+      ret = sefIsFinishEffect(dataTecGet(tec)[0xB]);
+      break;
+
+  }
+
+  return ret;
+}
 
 extern void unitCmdClear(ObjectTask *unit);
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
