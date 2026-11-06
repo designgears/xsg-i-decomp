@@ -1731,7 +1731,145 @@ int dataUnitFileLoadMot(ObjectTask *unit, int motionId, int slot, void *fileInfo
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadWep);
+extern void *dataChildActorCreate(int callerId);
+extern char *wpnNameBase;
+extern const char D_00A45EE0[];
+extern const char D_00A45F08[];
+extern const char D_00A45F20[];
+struct WpnFileInfo;
+extern int dataWpnLRChk(ObjectTask *unit, int weaponId, int slot, struct WpnFileInfo *fileInfo);
+typedef struct WepFileEnt {
+    int id;
+    void *adr;
+    int size;
+} WepFileEnt;
+typedef struct WepFileSlot {
+    WepFileEnt part[3];
+} WepFileSlot;
+typedef struct WepFileInfo {
+    unsigned char unmodeled_00[8];
+    void *modelAdr; /* +0x08 */
+    unsigned char unmodeled_0c[0xA0 - 0x0C];
+    WepFileSlot wpn[3]; /* +0xA0 */
+} WepFileInfo;
+typedef struct WepActor {
+    unsigned char unmodeled_00[0x698];
+    int weaponLoadInfo; /* +0x698 */
+    unsigned char unmodeled_69c[0x8D0 - 0x69C];
+    void *resource[3]; /* +0x8D0 */
+    unsigned char unmodeled_8dc[0x9A0 - 0x8DC];
+    unsigned int drawEnvFlags; /* +0x9A0 */
+} WepActor;
+typedef struct WepUnit {
+    unsigned char unmodeled_00[0x10];
+    unsigned int *work;
+    int motionActor;
+    unsigned char unmodeled_18[4];
+    int equipActor[4];
+} WepUnit;
+#define WPN_FILE_SECTORS(name) \
+    (((xglCdGetFileSize(name) + (0x800 - 1)) / 0x800) * 0x800)
+#define WEPF ((WepFileInfo *)fileInfo)
+
+int dataUnitFileLoadWep(ObjectTask *unit, int weaponId, int slot, void *fileInfo)
+{
+    WepUnit *equip = (WepUnit *)unit;
+    WepActor *actor;
+    const char *packedName;
+    int packed;
+    unsigned char *address;
+    int i;
+
+    if (dataWidGet(weaponId) == 0x3000) {
+        return 0;
+    }
+    if (weaponId != WEPF->wpn[slot].part[0].id) {
+        packedName = dataPackWpnMdlNameGet(weaponId);
+        if (packedName != 0) {
+            packed = 1;
+            strcpy(mdlFileName2, wpnNameBase);
+            strcat(mdlFileName2, packedName);
+            strcat(mdlFileName2, D_00A44898);
+            WEPF->wpn[slot].part[0].size = WPN_FILE_SECTORS(mdlFileName2);
+            WEPF->wpn[slot].part[1].size = 0;
+            WEPF->wpn[slot].part[2].size = 0;
+        } else {
+            packed = 0;
+            RES_GetMdlFileName(mdlFileName, dataWidGet(weaponId));
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45DF8);
+            WEPF->wpn[slot].part[0].size = WPN_FILE_SECTORS(mdlFileName2);
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45E00);
+            WEPF->wpn[slot].part[1].size = WPN_FILE_SECTORS(mdlFileName2);
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45E08);
+            WEPF->wpn[slot].part[2].size = WPN_FILE_SECTORS(mdlFileName2);
+        }
+        if (!(calcUPGet(unit)->flags & 0x40) && slot == 2) {
+            address = (unsigned char *)((int *)mdlAdrTbl)[6];
+            WEPF->wpn[2].part[0].id = 0x3000;
+        } else {
+            address = WEPF->modelAdr;
+            if (!(*equip->work & 0x40)) {
+                address += 0x180000;
+            } else {
+                address += 0x100000;
+            }
+            for (i = 0; i < 3; i++) {
+                if (WEPF->wpn[i].part[0].id != 0 && WEPF->wpn[i].part[0].adr != 0
+                    && (unsigned char *)WEPF->wpn[i].part[0].adr < address) {
+                    address = WEPF->wpn[i].part[0].adr;
+                }
+            }
+            address -= WEPF->wpn[slot].part[0].size + WEPF->wpn[slot].part[1].size
+                       + WEPF->wpn[slot].part[2].size;
+            WEPF->wpn[slot].part[0].id = weaponId;
+        }
+        if (packed == 1) {
+            if (dataWpnLRChk(unit, weaponId, slot, (struct WpnFileInfo *)fileInfo)) {
+                WEPF->wpn[slot].part[0].adr = WEPF->wpn[0].part[0].adr;
+            } else {
+                WEPF->wpn[slot].part[0].adr = address;
+                dataFileLoadNB(mdlFileName2, address);
+            }
+            WEPF->wpn[slot].part[1].adr = 0;
+            WEPF->wpn[slot].part[2].adr = 0;
+        } else if (dataWpnLRChk(unit, weaponId, slot, (struct WpnFileInfo *)fileInfo)) {
+            WEPF->wpn[slot].part[0].adr = WEPF->wpn[0].part[0].adr;
+            WEPF->wpn[slot].part[1].adr = WEPF->wpn[0].part[1].adr;
+            WEPF->wpn[slot].part[2].adr = WEPF->wpn[0].part[2].adr;
+        } else {
+            WEPF->wpn[slot].part[0].adr = address;
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45DF8);
+            dataFileLoadNB(mdlFileName2, WEPF->wpn[slot].part[0].adr);
+            WEPF->wpn[slot].part[1].adr =
+                (unsigned char *)WEPF->wpn[slot].part[0].adr + WEPF->wpn[slot].part[0].size;
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45E00);
+            dataFileLoadNB(mdlFileName2, WEPF->wpn[slot].part[1].adr);
+            WEPF->wpn[slot].part[2].adr =
+                (unsigned char *)WEPF->wpn[slot].part[1].adr + WEPF->wpn[slot].part[1].size;
+            strcpy(mdlFileName2, mdlFileName);
+            strcat(mdlFileName2, D_00A45E08);
+            dataFileLoadNB(mdlFileName2, WEPF->wpn[slot].part[2].adr);
+        }
+    } else {
+        printf(D_00A45EE0, weaponId, WEPF->wpn[slot].part[0].adr);
+    }
+    printf(D_00A45F08, WEPF->wpn[slot].part[0].size + WEPF->wpn[slot].part[1].size
+                           + WEPF->wpn[slot].part[2].size);
+    actor = dataChildActorCreate(dataWidGet(weaponId));
+    actor->resource[0] = WEPF->wpn[slot].part[0].adr;
+    actor->drawEnvFlags |= 0x200;
+    actor->resource[1] = WEPF->wpn[slot].part[1].adr;
+    equip->equipActor[slot & 3] = (int) actor;
+    actor->resource[2] = WEPF->wpn[slot].part[2].adr;
+    printf(D_00A45F20, actor, ((WepActor *)equip->motionActor)->weaponLoadInfo);
+    return 1;
+}
+#undef WEPF
 
 /*
  * dataWpnLRChk shares dataUnitFileLoadWep's own (ObjectTask *, weaponId,
