@@ -934,7 +934,59 @@ int dataFileLoadNB(const char *name, void *dst)
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataFileInfoInit);
+typedef struct UfiEntry {
+    int a;
+    unsigned char *adr;
+    int c;
+} UfiEntry;
+typedef struct UfiMot {
+    int a;
+    void *adr;
+    int c;
+    int unmodeled_c[3];
+} UfiMot;
+typedef struct UnitFileInfoView {
+    int charaId;          /* +0x000 */
+    UfiEntry mdl[3];      /* +0x004 */
+    UfiMot mot[5];        /* +0x028 */
+    UfiEntry tex[3][3];   /* +0x0A0 */
+    UfiEntry face[3];     /* +0x10C */
+} UnitFileInfoView;
+extern UnitFileInfoView ufiView[6] __asm__("unitFileInfo");
+#define U ufiView
+extern void *motAdrTbl[];
+extern unsigned char *mdlAdrTbl[];
+
+void dataFileInfoInit(void)
+{
+    int i;
+    int j;
+    int k;
+
+    for (i = 0; i < 6; i++) {
+        U[i].charaId = 0;
+        for (j = 0; j < 5; j++) {
+            U[i].mot[j].a = 0;
+            U[i].mot[j].adr = 0;
+            U[i].mot[j].c = 0;
+        }
+        U[i].mot[0].adr = motAdrTbl[i];
+        U[i].mot[4].adr = motAdrTbl[6];
+        for (j = 0; j < 3; j++) {
+            U[i].mdl[j].adr = mdlAdrTbl[i];
+            U[i].mdl[j].a = 0;
+            U[i].mdl[j].c = 0;
+            U[i].face[j].a = 0;
+            U[i].face[j].adr = 0;
+            U[i].face[j].c = 0;
+            for (k = 0; k < 3; k++) {
+                U[i].tex[k][j].a = 0;
+                U[i].tex[k][j].adr = 0;
+                U[i].tex[k][j].c = 0;
+            }
+        }
+    }
+}
 
 extern const char D_00A45A48[];
 
