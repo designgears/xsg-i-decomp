@@ -35,7 +35,85 @@ typedef struct SsdThreadCreateInfo {
     unsigned int option;                  /* +0x20 */
 } SsdThreadCreateInfo;
 
-INCLUDE_ASM("asm/main/nonmatchings/ssd_init", SsdInit);
+#define RSSD_FLAG_READY 0x1
+#define RSSD_TRANSFER_MAX 0x10000
+#define RSSD_BUFFER_ALIGN 64
+#define RSSD_THREAD_STACK_BYTES 16384
+#define RSSD_THREAD_PRIORITY 6
+extern unsigned char MYclientPtr[];
+extern unsigned char MYserverPtr[];
+extern unsigned char MYthreadStack[];
+extern unsigned char MYwaveTransThStack[];
+extern void *_gp;
+extern int CreateSema(SsdSemaCreateInfo *sema);
+extern int CreateThread(SsdThreadCreateInfo *thread);
+extern int StartThread(int thread_id, void *args);
+extern int WaitSema(int sema_id);
+extern int DeleteSema(int sema_id);
+extern void RSsdSifRpcThread(void);
+extern void RssdBackNextWaveThread(void);
+
+void SsdInit(int init_size)
+{
+    SsdSemaCreateInfo sema;
+    SsdThreadCreateInfo thread;
+    void *gp_value;
+
+    if (RssdWork.flags & RSSD_FLAG_READY)
+        return;
+
+    RssdWork.rpc_buffer_size = RSSD_TRANSFER_MAX;
+    sema.init_count = 1;
+    sema.max_count = 1;
+    RssdWork.client_buffer_base = MYclientPtr;
+    RssdWork.server_buffer_base = MYserverPtr;
+    RssdWork.init_parameter = init_size;
+    sema.option = 0;
+    RssdWork.response_source = (RssdRpcResponse *)(((unsigned int)MYclientPtr + RSSD_BUFFER_ALIGN - 1) & -RSSD_BUFFER_ALIGN);
+    RssdWork.server_buffer = (void *)(((unsigned int)MYserverPtr + RSSD_BUFFER_ALIGN - 1) & -RSSD_BUFFER_ALIGN);
+    RssdWork.flags = 0;
+    RssdWork.request_parameter = 0;
+    RssdWork.sample_rate = 0;
+    RssdWork.request_channel_count = 0;
+    RssdWork.request_size = 0;
+    RssdWork.server_call_count = 0;
+    RssdWork.server_callback = 0;
+    RssdWork.server_callback_arg = 0;
+    RssdWork.complete_callback = 0;
+    RssdWork.callback_arg = 0;
+    RssdWork.stream_end_callback = 0;
+    RssdWork.stream_end_callback_arg = 0;
+    RssdWork.sema_id = CreateSema(&sema);
+
+    sema.max_count = 1;
+    sema.init_count = 0;
+    sema.option = 0;
+    RssdWork.busy_sema_id = CreateSema(&sema);
+
+    RssdWork.rpc_thread_stack = MYthreadStack;
+    thread.func = RSsdSifRpcThread;
+    thread.stack = RssdWork.rpc_thread_stack;
+    thread.stack_size = RSSD_THREAD_STACK_BYTES;
+    thread.initial_priority = RSSD_THREAD_PRIORITY;
+    gp_value = &_gp;
+    thread.gp_reg = gp_value;
+    thread.option = 0;
+    RssdWork.rpc_thread_id = CreateThread(&thread);
+    StartThread(RssdWork.rpc_thread_id, 0);
+
+    RssdWork.next_wave_thread_stack = MYwaveTransThStack;
+    thread.func = RssdBackNextWaveThread;
+    thread.stack = RssdWork.next_wave_thread_stack;
+    thread.stack_size = RSSD_THREAD_STACK_BYTES;
+    thread.initial_priority = RSSD_THREAD_PRIORITY;
+    thread.gp_reg = gp_value;
+    thread.option = 0;
+    RssdWork.next_wave_thread_id = CreateThread(&thread);
+    StartThread(RssdWork.next_wave_thread_id, 0);
+
+    WaitSema(RssdWork.busy_sema_id);
+    DeleteSema(RssdWork.busy_sema_id);
+}
 
 enum {
     RSSD_CMD_QUIT    = 0x02,

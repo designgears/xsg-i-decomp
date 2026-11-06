@@ -2592,7 +2592,7 @@
    "compiler_profile": "ee-gcc2_96-realconv-lp7",
    "flags": [
     "-O2",
-    "-G0"
+    "-G8"
    ],
    "assembler": "LA29-vsqrt-nolabel-laimm (ee-legacy-binutils-la29-vsqrt-nolabel-laimm-v1, user-approved 2026-09-11, 2026-09-24, 2026-09-25)",
    "owners": {

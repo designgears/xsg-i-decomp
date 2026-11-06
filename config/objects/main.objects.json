@@ -30846,7 +30846,7 @@
         "compiler_profile": "ee-gcc2_96-realconv-lp7",
         "flags": [
           "-O2",
-          "-G0"
+          "-G8"
         ],
         "language": "c",
         "source_class": "c"
@@ -30858,7 +30858,7 @@
         "compiler_confidence": "high",
         "g_basis": "no gp use and no small-object references: -G0 and -G8 indistinguishable",
         "g_confidence": "low",
-        "g_flag": "-G0",
+        "g_flag": "-G8",
         "source": "toolchain-per-object.json main#110"
       },
       "domain": "audio",
@@ -31089,7 +31089,7 @@
         "cc1": "tool:ee-gcc2.96-realconv-lp7/cc1",
         "cc1_sha256": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625",
         "differences": {},
-        "id": "ee-tu-c296-G0",
+        "id": "ee-tu-c296-G8",
         "path": "src/main/ssd_init.c",
         "present": true
       },
