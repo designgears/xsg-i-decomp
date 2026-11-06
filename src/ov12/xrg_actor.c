@@ -389,7 +389,7 @@ extern void ACT_updateMotion(void *pXenoAct);
 extern void RgMatricesEffectorJob(void *pEffector);
 extern double atan2(double, double);
 
-void _PassTime_00A45D30(XrgActor *pActorArg, float dt)
+void _PassTime(XrgActor *pActorArg, float dt)
 {
     RgMatrix locals[64];
     RgMatrix a;
@@ -1289,14 +1289,14 @@ void XrgActorDraw(XrgActor *pActor)
     RgDrawReq(InstanceOfRgDraw(), pActor, &_DrawActor, 0, 0, -1);
 }
 
-void _PassTime_00A45D30(XrgActor *pActor, float dt);
+void _PassTime(XrgActor *pActor, float dt);
 
 void XrgActorPassTime(XrgActor *pActor, float dt)
 {
     if (pActor == 0) {
         assert_prog(D_00A589C8, D_00A587E0, 1285);
     }
-    _PassTime_00A45D30(pActor, dt);
+    _PassTime(pActor, dt);
 }
 
 extern const char D_00A58B00[];
