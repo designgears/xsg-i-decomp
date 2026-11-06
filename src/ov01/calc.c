@@ -1659,7 +1659,354 @@ int calcPlusAglGet(ObjectTask *unit, int id)
     return agl;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/calc", calcDmg);
+typedef struct DmgTecView {
+    u8 attr;
+    signed char epCost;
+    u16 flags;
+    int effectType : 8;
+    int doubleDamageKind : 8;
+    u8 powLevBase;
+    signed char agility;
+    unsigned char statFlagKind[3];
+    unsigned char unmodeled_0b[0x0C - 0x0B];
+    signed char statCategory;
+    signed char statRate;
+    u16 statMask;
+    unsigned char unmodeled_10[0x11 - 0x10];
+    signed char kind;
+    u16 attribute;
+} DmgTecView;
+typedef struct DmgTgtCmd {
+    int tecId;
+    ObjectTask *target;
+    int itmId;
+    int mode;
+} DmgTgtCmd;
+typedef struct DmgHitInfo {
+    int result;
+    int damage;
+    int ichigekiHit;
+    int setCategory;
+    int setMask;
+    int clearCategory;
+    int clearMask;
+} DmgHitInfo;
+typedef struct DmgUPView {
+    short maxHp;
+    short maxEp;
+    short baseAtk;
+    short phyDefense;
+    short magAttack;
+    short magDefense;
+    unsigned char unmodeled_0c[0x1C - 0x0C];
+    u16 flags;
+    unsigned char unmodeled_1e[0x34 - 0x1E];
+    short currentHp;
+    short currentEp;
+} DmgUPView;
+typedef int CalcDamage;
+#define DMGUP(u) ((DmgUPView *)calcUPGet(u))
+extern int calcStatProtectGet(ObjectTask *unit, int group, int mask);
+extern int calcBackLineChk(ObjectTask *unit, int selector);
+extern int calcPowLevGet(ObjectTask *unit, int id);
+extern int futtobiChk(ObjectTask *unit, unsigned short *tec);
+extern int calcStat();
+extern int calcStatAtk();
+extern int calcStatClr();
+extern int calcCrit();
+extern int calcSpec();
+extern int calcLinePos();
+extern int calcAtrChg(ObjectTask *unit, int attribute);
+extern const char D_00A44498[];
+extern const char D_00A444B0[];
+extern const char D_00A444E0[];
+extern const char D_00A44508[];
+extern const char D_00A44518[];
+extern const char D_00A44528[];
+
+int calcDmg(ObjectTask *attacker, CalcHitDmgArg *cmdArg, CalcHitDmgOut *hitArg)
+{
+    DmgTgtCmd *cmd = (DmgTgtCmd *)cmdArg;
+    DmgHitInfo *hit = (DmgHitInfo *)hitArg;
+    DmgTecView *tec;
+    int dmg;
+    int phyArm;
+    int magArm;
+    int atk;
+    int def;
+    int magAtk;
+    int magDef;
+    unsigned char mode;
+    short maxPoint;
+    short curPoint;
+    int wpn;
+    int a;
+    int d;
+    int adj;
+    int rate;
+    int statOk;
+    int category;
+    int first;
+
+    tec = (DmgTecView *)dataTecGet(cmd->tecId);
+    atk = DMGUP(attacker)->baseAtk;
+    def = DMGUP(cmd->target)->phyDefense;
+    magAtk = DMGUP(attacker)->magAttack;
+    magDef = DMGUP(cmd->target)->magDefense;
+    if (calcStatGet(attacker, 0, 0x100) != 0 || calcStatGet(attacker, 4, 0x1000) != 0) {
+        atk -= atk / 4;
+    }
+    if (calcStatGet(cmd->target, 0, 0x80) != 0 || calcStatGet(cmd->target, 4, 0x400) != 0) {
+        def -= def / 4;
+    }
+    if (calcStatGet(attacker, 1, 0x800) != 0) {
+        magAtk -= magAtk / 4;
+    }
+    if (calcStatGet(attacker, 3, 0x20) != 0) {
+        magAtk += magAtk / 4;
+        magDef -= magDef / 4;
+    } else if (calcStatGet(attacker, 3, 0x10) != 0) {
+        magAtk -= magAtk / 4;
+        magDef += magDef / 4;
+    }
+    if (calcStatGet(cmd->target, 7, 0x4000) != 0) {
+        magDef += magDef / 4 * calcDeadUnitNum(cmd->target, 0x40);
+    }
+    if (calcStatGet(cmd->target, 7, 0x2000) != 0) {
+        def += def / 4 * calcDeadUnitNum(cmd->target, 0x40);
+    }
+    if (calcStatGet(attacker, 7, 0x400) != 0) {
+        atk = atk * (14 - DMGUP(attacker)->currentHp / (DMGUP(attacker)->maxHp / 10)) / 4;
+    }
+    mode = hit->result;
+    {
+        int v = hit->setMask;
+
+        hit->setMask = v;
+    }
+    switch (tec->effectType) {
+    case 0:
+        phyArm = calcPhyDefGet(cmd->target);
+        magArm = calcMagDefGet(cmd->target);
+        printf(D_00A44498, phyArm, magArm);
+        if (mode == 3) {
+            dmg = DMGUP(cmd->target)->maxEp * tec->powLevBase / 20;
+        } else {
+            switch (tec->doubleDamageKind) {
+            case 0:
+                wpn = calcWpnAtkGet(attacker, cmd->itmId);
+                if (tec->flags & 0x80) {
+                    a = calcHitParaGet(attacker) + wpn;
+                } else {
+                    a = atk + wpn;
+                }
+                if (calcStatGet(attacker, 2, 0x1000) != 0) {
+                    a += a / 5;
+                } else if (calcStatGet(attacker, 2, 0x400) != 0) {
+                    a += a / 4;
+                } else if (calcStatGet(attacker, 2, 0x200) != 0) {
+                    a -= a / 4;
+                }
+                d = def + phyArm;
+                if (calcStatGet(cmd->target, 2, 0x800) != 0) {
+                    d += d / 5;
+                } else if (calcStatGet(cmd->target, 2, 0x400) != 0) {
+                    d -= d / 4;
+                } else if (calcStatGet(cmd->target, 2, 0x200) != 0) {
+                    d += d / 4;
+                }
+                if (calcStatGet(attacker, 3, 0x400) != 0 && calcBackLineChk(attacker, 1) == 0) {
+                    a += a / 4;
+                }
+                if (calcStatGet(cmd->target, 3, 0x400) != 0 && calcBackLineChk(cmd->target, 1) == 0) {
+                    d += d / 4;
+                }
+                d *= 3;
+                a *= 4;
+                dmg = a * calcPowLevGet(attacker, cmd->tecId) / 20 - d;
+                if (dmg < 0) {
+                    dmg = 0;
+                } else {
+                    dmg += rnd(dmg / 10 + 2);
+                }
+                if (((hit->result >> 8) & 0xFF) == 2) {
+                    rate = (calcAtrChg(attacker, tec->attribute) & 2) ? 20 : 50;
+                    dmg -= dmg * rate / 100;
+                }
+                break;
+            case 1:
+                magAtk *= 5;
+                magArm = (magDef + magArm) * 4;
+                dmg = magAtk * calcPowLevGet(attacker, cmd->tecId) / 20 - magArm;
+                if (dmg < 0) {
+                    dmg = 0;
+                } else {
+                    dmg += rnd(dmg / 10 + 2);
+                }
+                if (calcStatGet(attacker, 3, 0x40) != 0) {
+                    dmg *= 2;
+                }
+                if (!(tec->flags & 0x1000)) {
+                    adj = 0;
+                    if (calcStatGet(cmd->target, 3, 8) != 0) {
+                        adj = -(dmg / 4);
+                    }
+                    if (calcStatGet(cmd->target, 3, 4) != 0) {
+                        adj += dmg / 2;
+                    }
+                    dmg += adj;
+                    if (calcStatGet(cmd->target, 6, 0x800) != 0) {
+                        dmg -= dmg / 4;
+                    }
+                }
+                if (((hit->result >> 8) & 0xFF) == 2) {
+                    dmg -= dmg / 5;
+                }
+                break;
+            default:
+                dmg = 0;
+                break;
+            }
+        }
+        break;
+    case 1:
+        if (mode == 4) {
+            dmg = DMGUP(cmd->target)->maxEp * tec->powLevBase / 20;
+        } else {
+            dmg = DMGUP(attacker)->magAttack * calcPowLevGet(attacker, cmd->tecId);
+            if (calcStatGet(cmd->target, 3, 0x80) != 0) {
+                dmg *= 2;
+                calcStatReset(cmd->target, 3, 0x80, 0);
+            }
+            if (!(tec->flags & 0x1000)) {
+                adj = 0;
+                if (calcStatGet(cmd->target, 3, 8) != 0) {
+                    adj = -(dmg / 4);
+                }
+                if (calcStatGet(cmd->target, 3, 4) != 0) {
+                    adj += dmg / 4;
+                }
+                dmg += adj;
+                if (calcStatGet(cmd->target, 6, 0x800) != 0) {
+                    dmg -= dmg / 4;
+                }
+            }
+            if (tec->flags & 0x10) {
+                if (DMGUP(cmd->target)->flags & 0x1000) {
+                    dmg = 0;
+                }
+            }
+        }
+        break;
+    case 2:
+        dmg = DMGUP(cmd->target)->maxHp * calcPowLevGet(attacker, cmd->tecId) / 10;
+        break;
+    case 5:
+        if (mode == 7) {
+            maxPoint = DMGUP(cmd->target)->maxHp;
+            curPoint = DMGUP(cmd->target)->currentHp;
+        } else {
+            maxPoint = DMGUP(cmd->target)->maxEp;
+            curPoint = DMGUP(cmd->target)->currentEp;
+        }
+        if (mode == 9 && calcStatGet(cmd->target, 3, 2) != 0) {
+            dmg = 0;
+        } else {
+            dmg = maxPoint * tec->powLevBase / 20;
+        }
+        if (curPoint < dmg) {
+            dmg = curPoint;
+        }
+        if (((hit->result >> 8) & 0xFF) == 2) {
+            dmg -= dmg / 2;
+        }
+        break;
+    case 6: {
+        if (mode == 8) {
+            dmg = DMGUP(cmd->target)->currentHp - 1;
+        } else {
+            dmg = DMGUP(cmd->target)->currentEp - 1;
+        }
+        if (mode == 10 && calcStatGet(cmd->target, 3, 2) != 0) {
+            dmg = 0;
+        }
+        if (((hit->result >> 8) & 0xFF) == 2) {
+            dmg -= dmg / 2;
+        }
+        break;
+    }
+    default:
+        dmg = 0;
+        break;
+    }
+    if (dmg < 0) {
+        dmg = 0;
+    }
+    printf(D_00A444B0, tec->attr, tec->effectType, tec->doubleDamageKind, tec->flags);
+    printf(D_00A444E0, (unsigned char) hit->result, (hit->result >> 8) & 0xFF, dmg);
+    calcStat(attacker, cmd, hit, &dmg);
+    statOk = calcStatAtk(attacker, cmd, hit, &dmg);
+    calcStatClr(attacker, cmd, hit, &dmg);
+    calcCrit(attacker, cmd, hit, &dmg);
+    calcSpec(attacker, cmd, &hit->result, &dmg);
+    calcLinePos(attacker, cmd, hit, &dmg);
+    if (statOk == 0 && tec->effectType == 3) {
+        hit->result &= 0xFF00;
+    }
+    category = hit->setCategory;
+    if (cmd->tecId == 0x23E && (category != 1 || hit->setMask != 0x100)) {
+        hit->setCategory = 1;
+        hit->setMask = 2;
+        category = 1;
+    }
+    first = category;
+    if (category == 1) {
+        if (hit->setMask == 0x100) {
+            calcStatSet(cmd->target, 1, 0x100, 0);
+            *(CalcDamage *) &dmg = DMGUP(cmd->target)->currentHp;
+            hit->result = category;
+            printf(D_00A44508);
+            category = hit->setCategory;
+        }
+        if (category == first && hit->setMask == 2 && calcStatProtectGet(cmd->target, 1, 2) == 0) {
+            *(CalcDamage *) &dmg = DMGUP(cmd->target)->currentHp / 4;
+            hit->result = category;
+            printf(D_00A44518);
+        }
+    }
+    category = hit->result & 0xFF;
+    if (category != 1) {
+        hit->ichigekiHit = 0;
+    } else {
+        if (calcStatGet(cmd->target, 7, 2) != 0) {
+            *(CalcDamage *) &dmg /= 2;
+        }
+        if (calcStatGet(attacker, 7, 1) != 0) {
+            *(CalcDamage *) &dmg += *(CalcDamage *) &dmg / 2;
+        }
+        if ((hit->result & 0xFF) == category) {
+            if (futtobiChk(cmd->target, (unsigned short *)tec) != 0) {
+                hit->ichigekiHit = 2;
+            } else {
+                hit->ichigekiHit = (hit->result >> 8) & 1;
+            }
+        } else {
+            hit->ichigekiHit = 0;
+        }
+    }
+    if (tec->flags & 8) {
+        *(CalcDamage *) &dmg = 9999;
+    }
+    if (*(CalcDamage *) &dmg >= 10000) {
+        *(CalcDamage *) &dmg = 9999;
+    }
+    {
+        int value = *(CalcDamage *) &dmg;
+
+        printf(D_00A44528, hit->result & 0xFF, (hit->result >> 8) & 0xFF, value);
+    }
+    return *(CalcDamage *) &dmg;
+}
 
 int futtobiChk(ObjectTask *unit, unsigned short *tec)
 {

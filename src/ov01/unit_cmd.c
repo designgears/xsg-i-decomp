@@ -891,7 +891,66 @@ typedef struct TecJobView {
     signed char jobType; /* +0x04 */
 } TecJobView;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/unit_cmd", unitCmdEther);
+typedef struct EtherReqC {
+    int id;
+    ObjectTask *target;
+    int itmId;
+    int mode;
+} EtherReqC;
+typedef struct EtherCmdC {
+    int selector;
+    int argument;
+    int extra;
+    int itmId;
+} EtherCmdC;
+typedef struct EtherDataC {
+    unsigned char unmodeled_00[2];
+    unsigned short flags;
+} EtherDataC;
+typedef struct EtherUPViewC {
+    unsigned char unmodeled_00[0x8E];
+    short etherId[12];
+} EtherUPViewC;
+extern EtherDataC *dataEthGet(int id);
+extern void calcEtherDisableSet(ObjectTask *unit, int index);
+
+int unitCmdEther(ObjectTask *unit)
+{
+    EtherReqC request;
+    Actor *actor;
+    EtherCmdC *cmd;
+    int i;
+    int value;
+    ObjectTask *target;
+    int itmId;
+
+    actor = unit->work;
+    cmd = (EtherCmdC *)unitCmdPtrGet(unit);
+    if (calcStatGet(unit, 1, 0x1000) != 0) {
+        return unitCmdNext(unit);
+    }
+    if (actor->moveState == 0) {
+        target = (ObjectTask *)*(int *)&((Actor *)*(int *)&unit->work)->targetUnit;
+        value = cmd->argument;
+        request.id = value;
+        request.target = target;
+        itmId = cmd->itmId;
+        request.mode = 2;
+        request.itmId = itmId;
+        unitCmdAtkSub(unit, (int *)&request);
+        calcEp(unit, -calcTakeEpGet(unit, request.id));
+        for (i = 0; i < 12; i++) {
+            if (dataEthGet(request.itmId)->flags & 0x2000) {
+                if (((EtherUPViewC *)calcUPGet(unit))->etherId[i] == request.itmId) {
+                    calcEtherDisableSet(unit, i);
+                    break;
+                }
+            }
+        }
+        actor->moveState++;
+    }
+    return 0;
+}
 
 typedef struct { int a, b, c, d; } ItemCmd;
 extern void unitCmdItemSub(ObjectTask *unit, ItemCmd *buf);

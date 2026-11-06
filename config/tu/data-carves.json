@@ -10103,18 +10103,24 @@
    ".rodata": [
     {
      "range": [
-      "0x00a43e18",
-      "0x00a43e30"
+      "0x00a43dc0",
+      "0x00a43e78"
      ],
      "generated": [
-      "0x00a43e18",
-      "0x00a43e30"
+      "0x00a43dc0",
+      "0x00a43e78"
      ],
      "generated_by": [
-      "convKey2unit"
+      "battleExec",
+      "convKey2unit",
+      "manInput"
      ],
      "c_owned_symbols": [
-      "D_00A43E18"
+      "jtbl_00A43DC0",
+      "jtbl_00A43E00",
+      "D_00A43E18",
+      "jtbl_00A43E30",
+      "jtbl_00A43E50"
      ],
      "also_referenced_by_c": [
       "D_00A43CB8",
@@ -10128,33 +10134,10 @@
       "D_00A43D50",
       "D_00A43D58",
       "D_00A43D78",
-      "D_00A43D90"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43e30",
-      "0x00a43e78"
-     ],
-     "generated": [
-      "0x00a43e30",
-      "0x00a43e78"
-     ],
-     "generated_by": [
-      "battleExec",
-      "convKey2unit"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A43E30",
-      "jtbl_00A43E50"
-     ],
-     "also_referenced_by_c": [
+      "D_00A43D90",
+      "D_00A43DB0",
       "D_00A43E78",
+      "D_00A43E90",
       "D_00A43EA8",
       "D_00A43EC0",
       "D_00A43ED0"
@@ -10162,7 +10145,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10186,7 +10169,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10210,7 +10193,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10229,12 +10212,13 @@
       "jtbl_00A43F80"
      ],
      "also_referenced_by_c": [
-      "D_00A43F98"
+      "D_00A43F98",
+      "D_00A43FB8"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10261,7 +10245,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10288,7 +10272,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10332,7 +10316,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     },
     {
@@ -10359,7 +10343,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     }
    ]
@@ -10401,29 +10385,38 @@
       "D_00A44450",
       "D_00A44478"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_00A44498",
+      "D_00A444B0",
+      "D_00A444E0",
+      "D_00A44508",
+      "D_00A44518",
+      "D_00A44528"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
      }
     },
     {
      "range": [
-      "0x00a44570",
+      "0x00a44550",
       "0x00a447b8"
      ],
      "generated": [
-      "0x00a44570",
+      "0x00a44550",
       "0x00a447b8"
      ],
      "generated_by": [
       "calcCrit",
+      "calcDmg",
       "calcLinePos",
       "calcSpec",
       "calcStatAtk"
      ],
      "c_owned_symbols": [
+      "jtbl_00A44550",
       "D_00A44570",
       "D_00A44588",
       "D_00A445A8",
@@ -10447,48 +10440,36 @@
       "D_00A44788",
       "D_00A447A0"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_00A447B8",
+      "D_00A447D0",
+      "D_00A447E0",
+      "D_00A447E8"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
      }
     },
     {
      "range": [
       "0x00a447f0",
-      "0x00a44810"
+      "0x00a44880"
      ],
      "generated": [
       "0x00a447f0",
-      "0x00a44810"
+      "0x00a44880"
      ],
      "generated_by": [
+      "calcLvUp",
+      "calcResult",
       "calcStatSet"
      ],
      "c_owned_symbols": [
-      "jtbl_00A447F0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a44840",
-      "0x00a44880"
-     ],
-     "generated": [
-      "0x00a44840",
-      "0x00a44880"
-     ],
-     "generated_by": [
-      "calcLvUp"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A447F0",
+      "D_00A44810",
+      "D_00A44828",
       "D_00A44840",
       "jtbl_00A44860"
      ],
@@ -10496,7 +10477,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/calc.o"
      }
     }
    ]

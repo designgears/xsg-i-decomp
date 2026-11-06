@@ -1672,7 +1672,64 @@ int dataUnitFileLoadFaceMdl(void *task, int cid, void *info) {
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadMot);
+extern char motFileName[];
+extern const char D_00A45E80[];
+extern const char D_00A45E98[];
+extern const char D_00A45EC0[];
+typedef struct ActorWordsC {
+    unsigned char unmodeled_0[0x100];
+    int packEntry[4];
+    unsigned char unmodeled_110[0x8D0 - 0x110];
+    int resource[11];
+} ActorWordsC;
+typedef struct MotSlotView {
+    unsigned char unmodeled_00[0x28];
+    UfiMot motion[5];
+} MotSlotView;
+
+int dataUnitFileLoadMot(ObjectTask *unit, int motionId, int slot, void *fileInfo)
+{
+    MotSlotView *file = (MotSlotView *)fileInfo;
+    char *actor;
+    char *pack;
+    int index;
+    int i;
+
+    actor = *(char **)((char *)unit + 0x14);
+    if (motionId != file->motion[slot].a) {
+        if (dataMotNameGet(motFileName, unit, motionId, slot - 1) == 0) {
+            printf(D_00A45E80);
+            return 0;
+        }
+        file->motion[slot].c = ((xglCdGetFileSize(motFileName) + 0x7FF) / 0x800) * 0x800;
+        if (slot == 0 || slot == 4) {
+            pack = file->motion[slot].adr;
+        } else {
+            pack = file->motion[0].adr;
+            pack += (**(int **)((char *)unit + 0x10) & 0x40) == 0 ? 0x40000 : 0x32000;
+            for (i = 1; i < 4; i++) {
+                if (file->motion[i].a != 0 && file->motion[i].adr != 0
+                    && (unsigned)file->motion[i].adr < (unsigned)pack) {
+                    pack = file->motion[i].adr;
+                }
+            }
+            pack -= file->motion[slot].c;
+        }
+        file->motion[slot].adr = pack;
+        dataFileLoadNB(motFileName, pack);
+        if (slot != 4) {
+            file->motion[slot].a = motionId;
+        }
+    } else {
+        printf(D_00A45E98, motionId, file->motion[slot].adr);
+    }
+    pack = file->motion[slot].adr;
+    index = 3 + slot;
+    ((ActorWordsC *)actor)->resource[index] = (int)pack;
+    ((ActorWordsC *)actor)->packEntry[slot] = (int)pack;
+    printf(D_00A45EC0, file->motion[slot].c, slot);
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/ov01/data_unit_org_get", dataUnitFileLoadWep);
 
