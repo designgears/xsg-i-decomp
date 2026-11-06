@@ -35963,13 +35963,13 @@
       "in_scope": true,
       "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "game_id_light_set",
       "name_basis": "common function-name prefix 'GameIdLightSet' (100% of global functions)",
       "name_confidence": "low",
       "ordinal": 128,
       "owners": {
-        ".text": "asm"
+        ".text": "c"
       },
       "path": "src/main/game_id_light_set.c",
       "scaffold_path": "scaffold/src/main/game_id_light_set.c",
@@ -35994,7 +35994,18 @@
         "start": "0x00252d50"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "game_id_light_set: GameIdLightSet ported from upstream C; whole TU now C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/game_id_light_set.c"
+        }
+      }
     },
     {
       "accepted": {
@@ -58668,7 +58679,7 @@
       "in_scope": true,
       "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "pause_menu_page_enemy",
       "name_basis": "first global function PauseMenuPageEnemy",
       "name_confidence": "low",
@@ -58677,7 +58688,7 @@
         ".lit4": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
-        ".text": "asm"
+        ".text": "c"
       },
       "path": "src/main/pause_menu_page_enemy.c",
       "scaffold_path": "scaffold/src/main/pause_menu_page_enemy.c",
@@ -58775,7 +58786,18 @@
         "start": "0x002d4450"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "pause_menu_page_enemy: PauseMenuPageEnemy and Debug_Mark ported from upstream C (string-bearing print helpers rewritten as statement-expression macros so literals emit in original order); .text C, C-generated .rodata/.lit4/.sdata runs carved via config/tu/data-carves.json (data_carve.py derive).",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/pause_menu_page_enemy.c"
+        }
+      }
     },
     {
       "accepted": {
@@ -59059,13 +59081,13 @@
       "in_scope": true,
       "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "check",
       "name_basis": "common function-name prefix 'Check' (100% of global functions)",
       "name_confidence": "low",
       "ordinal": 199,
       "owners": {
-        ".text": "asm"
+        ".text": "c"
       },
       "path": "src/main/check.c",
       "scaffold_path": "scaffold/src/main/check.c",
@@ -59090,7 +59112,18 @@
         "start": "0x002d6aa8"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "check: Check_Actor ported from upstream C; whole TU now C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/check.c"
+        }
+      }
     },
     {
       "accepted": {
@@ -78743,13 +78776,13 @@
       "in_scope": true,
       "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "jc_face",
       "name_basis": "first global function JC_face",
       "name_confidence": "low",
       "ordinal": 262,
       "owners": {
-        ".text": "asm"
+        ".text": "c"
       },
       "path": "src/main/jc_face.c",
       "scaffold_path": "scaffold/src/main/jc_face.c",
@@ -78774,7 +78807,18 @@
         "start": "0x00315958"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "jc_face: JC_face, JC_setParent, JC_setParent2 and JC_copyChain ported from upstream C; whole TU now C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/jc_face.c"
+        }
+      }
     },
     {
       "accepted": {

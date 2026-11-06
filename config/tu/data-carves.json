@@ -6902,6 +6902,271 @@
     }
    ]
   },
+  "main/tu197": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8160",
+      "0x004d8164"
+     ],
+     "generated": [
+      "0x004d8160",
+      "0x004d8164"
+     ],
+     "generated_by": [
+      "Debug_Mark"
+     ],
+     "c_owned_symbols": [
+      "D_004D8160"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pause_menu_page_enemy.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004cafb0",
+      "0x004cbad0"
+     ],
+     "generated": [
+      "0x004cafb0",
+      "0x004cbacc"
+     ],
+     "generated_by": [
+      "PauseMenuPageEnemy"
+     ],
+     "c_owned_symbols": [
+      "D_004CAFB0",
+      "D_004CAFF8",
+      "D_004CB008",
+      "D_004CB018",
+      "D_004CB028",
+      "D_004CB038",
+      "D_004CB048",
+      "D_004CB080",
+      "D_004CB0B8",
+      "D_004CB0C8",
+      "D_004CB0E0",
+      "D_004CB0F0",
+      "D_004CB110",
+      "D_004CB120",
+      "D_004CB130",
+      "D_004CB140",
+      "D_004CB160",
+      "D_004CB180",
+      "D_004CB1A0",
+      "D_004CB1C0",
+      "D_004CB1D0",
+      "D_004CB1E0",
+      "D_004CB1F8",
+      "D_004CB210",
+      "D_004CB228",
+      "D_004CB240",
+      "D_004CB258",
+      "D_004CB278",
+      "D_004CB298",
+      "D_004CB2B8",
+      "D_004CB2D8",
+      "D_004CB2F8",
+      "D_004CB318",
+      "D_004CB338",
+      "D_004CB358",
+      "D_004CB368",
+      "D_004CB378",
+      "D_004CB390",
+      "D_004CB3B0",
+      "D_004CB3C8",
+      "D_004CB3E0",
+      "D_004CB400",
+      "D_004CB420",
+      "D_004CB440",
+      "D_004CB460",
+      "D_004CB480",
+      "D_004CB498",
+      "D_004CB4B0",
+      "D_004CB4C8",
+      "D_004CB4F0",
+      "D_004CB508",
+      "D_004CB518",
+      "D_004CB538",
+      "D_004CB558",
+      "D_004CB578",
+      "D_004CB598",
+      "D_004CB5B8",
+      "D_004CB5D8",
+      "D_004CB5F8",
+      "D_004CB618",
+      "D_004CB628",
+      "D_004CB640",
+      "D_004CB658",
+      "D_004CB670",
+      "D_004CB690",
+      "D_004CB6A8",
+      "D_004CB6C8",
+      "D_004CB6E8",
+      "D_004CB708",
+      "D_004CB718",
+      "D_004CB730",
+      "D_004CB748",
+      "D_004CB760",
+      "D_004CB778",
+      "D_004CB790",
+      "D_004CB7A8",
+      "D_004CB7C0",
+      "D_004CB7E0",
+      "D_004CB7F8",
+      "D_004CB810",
+      "D_004CB838",
+      "D_004CB858",
+      "D_004CB868",
+      "D_004CB880",
+      "D_004CB890",
+      "D_004CB8A8",
+      "D_004CB8C0",
+      "D_004CB8D8",
+      "D_004CB8E8",
+      "D_004CB8F8",
+      "D_004CB908",
+      "D_004CB920",
+      "D_004CB938",
+      "D_004CB950",
+      "D_004CB978",
+      "D_004CB990",
+      "D_004CB9A8",
+      "D_004CB9C8",
+      "D_004CB9F0",
+      "D_004CBA18",
+      "D_004CBA30",
+      "D_004CBA48",
+      "D_004CBA78",
+      "jtbl_004CBA90"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004CAFF8": "D_004CB048",
+      "D_004CB008": "D_004CB048",
+      "D_004CB018": "D_004CB048",
+      "D_004CB028": "D_004CB048",
+      "D_004CB038": "D_004CB048",
+      "D_004CB0C8": "D_004CB110",
+      "D_004CB0E0": "D_004CB110",
+      "D_004CB0F0": "D_004CB110",
+      "D_004CB120": "D_004CB140",
+      "D_004CB130": "D_004CB140"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pause_menu_page_enemy.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db860",
+      "0x004db9a8"
+     ],
+     "generated": [
+      "0x004db860",
+      "0x004db9a8"
+     ],
+     "generated_by": [
+      "PauseMenuPageEnemy"
+     ],
+     "c_owned_symbols": [
+      "DebugActor",
+      "Page_0",
+      "D_004DB868",
+      "D_004DB870",
+      "D_004DB878",
+      "D_004DB880",
+      "D_004DB888",
+      "D_004DB890",
+      "D_004DB898",
+      "D_004DB8A0",
+      "D_004DB8A8",
+      "D_004DB8B0",
+      "D_004DB8B8",
+      "D_004DB8C0",
+      "D_004DB8C8",
+      "D_004DB8D0",
+      "D_004DB8D8",
+      "D_004DB8E0",
+      "D_004DB8E8",
+      "D_004DB8F0",
+      "D_004DB8F8",
+      "D_004DB900",
+      "D_004DB908",
+      "D_004DB910",
+      "D_004DB918",
+      "D_004DB920",
+      "D_004DB928",
+      "D_004DB930",
+      "D_004DB938",
+      "D_004DB940",
+      "D_004DB948",
+      "D_004DB950",
+      "D_004DB958",
+      "D_004DB960",
+      "D_004DB968",
+      "D_004DB970",
+      "D_004DB978",
+      "D_004DB980",
+      "D_004DB988",
+      "D_004DB990",
+      "D_004DB998",
+      "D_004DB9A0",
+      "EventID",
+      "FlagExEvent",
+      "FlagOnEvent"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DB868": "D_004CAFB0",
+      "D_004DB870": "D_004CAFB0",
+      "D_004DB878": "D_004CAFB0",
+      "D_004DB880": "D_004CAFB0",
+      "D_004DB888": "D_004CAFB0",
+      "D_004DB890": "D_004CB140",
+      "D_004DB898": "D_004CB048",
+      "D_004DB8A0": "D_004CB048",
+      "D_004DB8A8": "D_004CB048",
+      "D_004DB8B0": "D_004CB048",
+      "D_004DB8B8": "D_004CB048",
+      "D_004DB8C0": "D_004CB048",
+      "D_004DB8C8": "D_004CB048",
+      "D_004DB8D0": "D_004CB048",
+      "D_004DB8D8": "D_004CB080",
+      "D_004DB8E0": "D_004CB080",
+      "D_004DB8E8": "D_004CB080",
+      "D_004DB8F0": "D_004CB080",
+      "D_004DB8F8": "D_004CB080",
+      "D_004DB900": "D_004CB080",
+      "D_004DB908": "D_004CB080",
+      "D_004DB910": "D_004CB080",
+      "D_004DB918": "D_004CB0B8",
+      "D_004DB920": "D_004CB0B8",
+      "D_004DB928": "D_004CB0B8",
+      "D_004DB930": "D_004CB0B8",
+      "D_004DB938": "D_004CB110",
+      "D_004DB940": "D_004DB950",
+      "D_004DB948": "D_004DB950",
+      "D_004DB958": "D_004DB960"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pause_menu_page_enemy.o"
+     }
+    }
+   ]
+  },
   "main/tu198": {
    ".rodata": [
     {
