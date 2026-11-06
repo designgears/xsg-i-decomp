@@ -636,7 +636,224 @@ typedef struct MenuEventTimerWork {
     float z; /* +0x98 */
 } MenuEventTimerWork;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuStatDispCreate);
+extern int unitTblGet(int side, ObjectTask ***table);
+typedef struct MsdCmdEntry { int selector; int argument; } MsdCmdEntry;
+typedef struct MsdTransform {
+    Vector4 position;
+    float ap;
+    float hp;
+    float ep;
+    unsigned char unmodeled_1c[0x14];
+    float bp;
+    unsigned char unmodeled_34[0x2C];
+    Vector4 target;
+    unsigned char unmodeled_70[0x10];
+} MsdTransform;
+typedef struct MsdObjWork {
+    u32 flags;
+    unsigned char unmodeled_04[0x8C];
+    MsdTransform transform;
+} MsdObjWork;
+typedef struct MsdCritWork {
+    u32 flags;
+    unsigned char unmodeled_04[0x7C];
+    int count;
+    unsigned char unmodeled_84[0xC];
+    MsdTransform transform;
+} MsdCritWork;
+typedef struct MsdStockWork {
+    u32 flags;
+    unsigned char unmodeled_04[0x6C];
+    int frameCount;
+    unsigned char unmodeled_74[4];
+    union { int value; void *alias; } width;
+    int stockSlot;
+    int index;
+    unsigned char unmodeled_84[0xC];
+    MsdTransform transform;
+} MsdStockWork;
+typedef struct MsdStatDisplay {
+    Vector4 position;
+    float ap;
+    float hp;
+    float ep;
+    unsigned char unmodeled_1c[0x30 - 0x1C];
+    float bp;
+} MsdStatDisplay;
+typedef struct MsdStatObjWork {
+    unsigned char unmodeled_00[0x78];
+    int charaId;
+    int iconSlot;
+    BattleUnit *unit;
+    unsigned char unmodeled_84[0x90 - 0x84];
+    MsdStatDisplay display;
+} MsdStatObjWork;
+enum { MSD_CRIT_HIDDEN = 0x4, MSD_STOCK_HIDDEN = 0x4 };
+enum MenuStatStartZ { MENU_STAT_START_Z = -88 };
+extern const enum MenuStatStartZ menuStatStartZ __asm__("D_00A46774");
+static __inline__ MsdCritWork *msdCritWorkGet(ObjectTask *task)
+{ return (MsdCritWork *)*(u32 *)&task->work; }
+static __inline__ MsdStockWork *msdStockWorkGet(ObjectTask *task)
+{ return (MsdStockWork *)*(u32 *)&task->work; }
+static __inline__ MsdStatObjWork *msdStatWorkGet(ObjectTask *task)
+{ return (MsdStatObjWork *)*(u32 *)&task->work; }
+void *objCmdPush(ObjectTask *task);
+extern ObjectTask *pPreObj, *pAtbObj, *pKeyGuideObj, *pBoostObj, *pCritObj;
+extern ObjectTask *pStockObj[5];
+extern ObjectTask *pStatObj[4];
+extern int mapH, mapHDist;
+extern float RingRot, ETRot, ETRotDist;
+extern int rnd(int max);
+void menuTimeSet(int time);
+void menuStatPreObj(void);
+void menuStatPreObjDraw(void);
+void menuATBObj(ObjectTask *arg0);
+void menuATBObjDraw(ObjectTask *task);
+void menuKeyGuideObj(void);
+void menuKeyGuideObjDraw(int packet);
+void menuBoostObj(ObjectTask *task);
+void menuBoostObjDraw(ObjectTask *task);
+int menuCritObj(ObjectTask *task);
+void menuCritObjDraw(ObjectTask *task);
+void menuStockObj(ObjectTask *arg0);
+void menuStockObjDraw(ObjectTask *task);
+void menuStatObj(ObjectTask *arg0);
+void menuStatObjDraw(ObjectTask *task);
+
+void menuStatDispCreate(void)
+{
+    MsdCmdEntry *entry;
+    MsdTransform *transform;
+    ObjectTask *task;
+    BattleUnit **units;
+    float x;
+    float stockX;
+    float stockZ;
+    int count;
+    int i;
+    int offset;
+    const enum MenuStatStartZ *startZ = &menuStatStartZ;
+
+    pPreObj = objEntry2(menuStatPreObj, menuStatPreObjDraw);
+    objStdInit(pPreObj);
+
+    pAtbObj = objEntry2(menuATBObj, menuATBObjDraw);
+    x = 376.0f;
+    objStdInit(pAtbObj);
+    transform = &((MsdObjWork *)pAtbObj->work)->transform;
+    transform->position.x = x;
+    transform->position.y = 0.0f;
+    transform->position.z = 608.0f;
+    entry = objCmdPush(pAtbObj);
+    entry->selector = 1;
+    entry->argument = 10;
+    entry = objCmdPush(pAtbObj);
+    entry->selector = 2;
+    transform->target.x = x;
+    transform->target.y = 0.0f;
+    transform->target.z = 300.0f;
+    mapH = mapHDist = 64;
+    RingRot = 0.0f;
+    menuTimeSet(rnd(3));
+    ETRot = ETRotDist;
+
+    pKeyGuideObj = objEntry2(menuKeyGuideObj, menuKeyGuideObjDraw);
+    objStdInit(pKeyGuideObj);
+    transform = &((MsdObjWork *)pKeyGuideObj->work)->transform;
+    transform->position.x = 8.0f;
+    transform->position.y = 0.0f;
+    transform->position.z = 292.0f;
+
+    pBoostObj = objEntry2(menuBoostObj, menuBoostObjDraw);
+    objStdInit(pBoostObj);
+    transform = &((MsdObjWork *)pBoostObj->work)->transform;
+    transform->position.x = 260.0f;
+    transform->position.y = 0.0f;
+    transform->position.z = 404.0f;
+    ((MsdObjWork *)pBoostObj->work)->flags |= MSD_CRIT_HIDDEN;
+
+    pCritObj = objEntry2(menuCritObj, menuCritObjDraw);
+    objStdInit(pCritObj);
+    msdCritWorkGet(pCritObj)->count = -1;
+    transform = &msdCritWorkGet(pCritObj)->transform;
+    transform->position.x = 576.0f;
+    transform->position.y = 0.0f;
+    transform->position.z = 310.0f;
+    msdCritWorkGet(pCritObj)->flags |= MSD_CRIT_HIDDEN;
+
+    for (i = 0; i < 5; i++) {
+        task = objEntry2(menuStockObj, menuStockObjDraw);
+        objStdInit(task);
+        transform = &msdStockWorkGet(task)->transform;
+        stockX = stockPosTbl[i].x;
+        stockZ = stockPosTbl[i].y;
+        msdStockWorkGet(task)->index = i;
+        transform->position.y = 0.0f;
+        transform->position.x = stockX;
+        msdStockWorkGet(task)->stockSlot = i;
+        transform->position.z = stockZ;
+        if (i >= 4) {
+            msdStockWorkGet(task)->flags |= MSD_STOCK_HIDDEN;
+        }
+        pStockObj[i] = task;
+    }
+
+    count = unitTblGet(0, (ObjectTask ***)&units);
+    offset = 0;
+    if (count != 0) {
+        float w = *(float *)&units;
+
+        *(float *)&units = w;
+    }
+    for (i = 0; i < count; i++) {
+        void *object = menuStatObj;
+        BattleUnit *unit = units[i];
+
+        if (unit == 0) {
+            pStatObj[i] = 0;
+        } else {
+            void (*draw)(ObjectTask *);
+            float keep;
+
+            draw = menuStatObjDraw;
+            draw = 0;
+            draw = menuStatObjDraw;
+            keep = *(float *)unit;
+            if (count != 0) {
+                *(float *)unit = keep;
+            }
+            task = objEntry2(menuStatObj, draw);
+            x = offset;
+            if (offset != 0) {
+                float word = *(float *)unit;
+
+                *(float *)unit = word;
+            }
+            objStdInit(task);
+            offset += 172;
+            transform = (MsdTransform *)&msdStatWorkGet(task)->display;
+            pStatObj[i] = task;
+            transform->ap = 0;
+            transform->hp = *(short *)&calcUPGet((ObjectTask *)unit)->currentHp;
+            transform->ep = *(short *)&calcUPGet((ObjectTask *)unit)->currentEp;
+            transform->bp = 0;
+            msdStatWorkGet(task)->charaId = 7;
+            transform->position.z = *startZ;
+            msdStatWorkGet(task)->iconSlot = 0x8000;
+            transform->position.x = x;
+            transform->position.y = 0;
+            msdStatWorkGet(task)->unit = unit;
+            entry = objCmdPush(task);
+            entry->selector = 1;
+            entry->argument = 10;
+            entry = objCmdPush(task);
+            entry->selector = 2;
+            transform->target.z = 16.0f;
+            transform->target.x = x;
+            transform->target.y = 0;
+        }
+    }
+}
 
 extern ObjectTask *pPreObj;
 extern ObjectTask *pAtbObj;
@@ -2029,7 +2246,105 @@ void menuEventTimerDisp(ObjectTask *task, int packet)
     grCloseSpr();
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/menu", menuEventTimerDispSub);
+typedef struct MenuETTransform {
+    Vector4 position;
+    unsigned char unmodeled_10[0x70];
+} MenuETTransform;
+typedef struct MenuETWork {
+    u32 flags;
+    unsigned char unmodeled_04[0x8C];
+    MenuETTransform transform;
+} MenuETWork;
+typedef struct MenuETInt4 { int a[4]; } MenuETInt4;
+extern MenuETInt4 D_00A468C0;
+extern MenuETInt4 D_00A468D0;
+extern float xglSin(float x);
+extern float xglCos(float x);
+
+void menuEventTimerDispSub(ObjectTask *task, int packet)
+{
+    float ring[12][4];
+    float *point;
+    Vector4 *dst;
+    Vector4 corner;
+    BoostFT4 vtx;
+    float mtx[4][4];
+    float rot[4];
+    float pos[4];
+    MenuETWork *work;
+    float radius = 28.0f;
+    float halfWidth = 9.0f;
+    float angleStep = 0.5235988f;
+    int cellSize = 15;
+    int originX;
+    int originY;
+    int i;
+    int j;
+    int row;
+    int col;
+    int idx;
+    int cellRow;
+    MenuETInt4 uBase = D_00A468C0;
+    MenuETInt4 vBase = D_00A468D0;
+
+    /* Read the work slot as a word, like menuCritWorkGet: a pointer-typed load
+     * of task->work is hoisted above the table copies above. */
+    work = (MenuETWork *)*(u32 *)&task->work;
+    originX = (int)work->transform.position.x;
+    originY = (int)work->transform.position.z;
+    originY += 101;
+    originX -= 13;
+    for (i = 0, point = ring[0]; i < 12; i++, point += 4) {
+        point[0] = 0;
+        point[1] = radius * xglSin(angleStep * (float)i);
+        point[2] = -(radius * xglCos(angleStep * (float)i));
+        point[3] = 1.0f;
+    }
+    xglMatrixUnit(mtx);
+    rot[0] = ETRot - 0.7853982f;
+    rot[1] = 0;
+    rot[2] = 0;
+    rot[3] = 1.0f;
+    grRotMatrix(mtx, mtx, rot);
+    /* Store-back of an unchanged element: reload_cse deletes it, but until then
+     * it holds the memory slot that decides where the -9 and 16777212 constants
+     * are born. */
+    {
+        float v = mtx[0][0];
+        mtx[0][0] = v;
+    }
+    vtx.col[0] = 0x80;
+    vtx.col[1] = 0x80;
+    vtx.col[2] = 0x80;
+    vtx.col[3] = 0x80;
+    for (i = 0; i < 12; i++) {
+        for (j = 0; j < 4; j++) {
+            row = j >> 1;
+            col = j & 1;
+            idx = (i + row) % 12;
+            cellRow = i / 3;
+            corner.x = halfWidth;
+            if (col == 0) {
+                corner.x = -halfWidth;
+            }
+            corner.y = ring[idx][1];
+            corner.z = ring[idx][2];
+            corner.w = ring[idx][3];
+            xglVectorMulMat(pos, mtx, &corner);
+            dst = &vtx.vertex[j];
+            dst->x = (float)originX + pos[0];
+            dst->y = (float)originY + pos[1];
+            dst->z = 16777212.0f;
+            vtx.u[j] = (float)(uBase.a[cellRow] + col * 18);
+            vtx.v[j] = (float)(vBase.a[cellRow] + i % 3 * cellSize) + (float)(row * cellSize);
+        }
+        if (vtx.vertex[0].y < vtx.vertex[2].y) {
+            grOpenFT4(packet);
+            grPutFT4(packet, &vtx, 0);
+            grCloseFT4();
+        }
+    }
+}
 
 extern int rnd(int max);
 extern int eventTimer;
