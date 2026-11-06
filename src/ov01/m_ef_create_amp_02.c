@@ -247,7 +247,149 @@ static void fnAMP02_DM000(void *self, Amp02DrawState *work) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_amp_02", fnAMP02_DP000);
+typedef union Amp02QW {
+    Amp02Quadword q;
+    unsigned long ul[2];
+    unsigned short us[8];
+    unsigned char uc[16];
+    volatile unsigned long vul[2];
+    volatile unsigned char vuc[16];
+} Amp02QW;
+extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
+extern void MGsGPTerm(void *packet);
+extern Amp02Quadword McEfSTQtbl[];
+extern Amp02Quadword coltbl_1_00A515B0[];
+extern float sztbl_2_00A51650[];
+typedef struct Amp02Packet {
+    void *data;
+    int capacity;
+    Amp02QW *current;
+    int count;
+    int auxCount;
+} Amp02Packet;
+typedef struct Amp02Draw {
+    unsigned char unmodeled_00[0xE4];
+    unsigned char packet[0x14];    /* +0xe4 */
+    unsigned char unmodeled_f8[0x10];
+    unsigned short active[10];     /* +0x108 */
+    unsigned char unmodeled_11c[4];
+    Vector4 points[10];            /* +0x120 */
+    float twist[10];               /* +0x1c0 */
+} Amp02Draw;
+
+static void fnAMP02_DP000(void *self, void *work)
+{
+    Amp02Draw *effect = (Amp02Draw *)work;
+    int i;
+    long regs;
+    int nreg;
+    float *szp;
+    Vector4 verts[4];
+    Amp02Packet *pk;
+    Amp02Packet *gp;
+    Amp02QW *q;
+    Amp02QW *a1;
+    Amp02QW *a2;
+    Amp02QW *a3;
+    Amp02QW *a4;
+    Amp02QW *a5;
+    Amp02Quadword color;
+    int j;
+    int n;
+    int nloop;
+    int texReg;
+    int k;
+    int lo;
+    int off;
+    unsigned long *tex;
+    struct { unsigned char pad[0xF0]; unsigned long tex[2]; short active[10]; } *sub;
+
+    pk = (Amp02Packet *)effect->packet;
+    MGsGPInit(pk, 0, 0);
+    q = pk->current;
+    q[0].ul[0] = 0x1000000000008000;
+    q[0].ul[1] = 0xE;
+    pk->auxCount = 1;
+    a1 = q + 1;
+    a2 = q + 2;
+    a3 = q + 3;
+    a4 = q + 4;
+    a5 = q + 5;
+    a1->vuc[8] = 0x47;
+    a1->vul[0] = 0x5000D;
+    a2->vuc[8] = 0x14;
+    a2->vul[0] = 0x60;
+    a3->vuc[8] = 0x8;
+    a3->vul[0] = 5;
+    a4->vuc[8] = 0x4E;
+    a4->vul[0] = 0x131000000;
+    a5->vuc[8] = 0x42;
+    a5->vul[0] = 0x48;
+    nreg = 5;
+    n = pk->auxCount * nreg + 1;
+    pk->current->us[0] |= nreg;
+    pk->current += n;
+    pk->count += n;
+    for (i = 0; i < 10; i++) {
+        if ((sub = (void *)((char *)work + 8))->active[i] != 0) {
+            color = coltbl_1_00A515B0[i];
+            lo = i < 6;
+            off = 0xF8;
+            if (lo) {
+                off = 0xF0;
+            }
+            tex = (unsigned long *)((char *)sub + off);
+            for (j = 0; j < 1; j++) {
+                if (MEfMake4Vertex2(verts, (Vector4 *)((char *)effect + (i << 4) + 0x120 + j * 16), sztbl_2_00A51650[i], effect->twist[i + j]) == 0) {
+                    Amp02QW *t;
+                    Amp02QW *g;
+                    unsigned long texVal;
+                    int n1;
+                    int n2;
+
+                    gp = (Amp02Packet *)effect->packet;
+                    texReg = 6;
+                    regs = 0x512;
+                    nloop = 3;
+                    t = gp->current;
+                    t[0].ul[0] = 0x1000000000008000;
+                    t[0].ul[1] = 0xE;
+                    gp->auxCount = 1;
+                    a1 = t + 1;
+                    texVal = *tex;
+                    a1->uc[8] = texReg;
+                    a1->ul[0] = texVal;
+                    n1 = gp->auxCount + 1;
+                    gp->current->us[0] |= 1;
+                    gp->current += n1;
+                    gp->count += n1;
+                    g = gp->current;
+                    g[0].ul[0] = 0x302A400000008000;
+                    g[0].ul[1] = regs;
+                    gp->auxCount = nloop;
+                    g[1].q = McEfSTQtbl[0];
+                    g[2].q = color;
+                    g[3].q = *(Amp02Quadword *)&verts[0];
+                    g[4].q = McEfSTQtbl[1];
+                    g[5].q = color;
+                    g[6].q = *(Amp02Quadword *)&verts[1];
+                    g[7].q = McEfSTQtbl[2];
+                    g[8].q = color;
+                    g[9].q = *(Amp02Quadword *)&verts[2];
+                    g[10].q = McEfSTQtbl[3];
+                    g[11].q = color;
+                    g[12].q = *(Amp02Quadword *)&verts[3];
+                    n2 = gp->auxCount * 4 + 1;
+                    gp->current->us[0] |= 4;
+                    gp->current += n2;
+                    gp->count += n2;
+                }
+            }
+
+        }
+    }
+    MGsGPTerm(pk);
+}
 
 extern void MEfObjDestroy(void *self);
 extern void sefHitEffect(void);
