@@ -21,6 +21,7 @@
 !/src/
 !/include/
 !/config/
+!/port/
 !/tools/
 !/scripts/
 !/.github/
