@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -765,7 +766,7 @@ void Java_xeno_Camera_setCFAngle__IFFFF(JavaEnvironment *environment,
         float *source = angles;
 
         definition->pedestal_mode = 0;
-        __asm__ __volatile__("lq $2, 0(%1)\n"
+        PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->angles), "r" (source)
@@ -823,7 +824,7 @@ void Java_xeno_Camera_setCFAnglePers__IFFFFF(JavaEnvironment *environment,
         float *source = angles;
 
         definition->pedestal_mode = 0;
-        __asm__ __volatile__("lq $2, 0(%1)\n"
+        PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->angles), "r" (source)
@@ -1070,12 +1071,12 @@ void Java_xeno_Camera_setFog__IFFFFIIII(VMThread *thread,
         float *source_parameters = fog_parameters;
         float *source_color = fog_color;
 
-        __asm__ __volatile__("lq $2, 0(%1)\n"
+        PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->fog_parameters), "r" (source_parameters)
                              : "$2", "memory");
-        __asm__ __volatile__("lq $2, 0(%1)\n"
+        PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->fog_color), "r" (source_color)
@@ -1103,8 +1104,8 @@ void Java_xeno_Camera_resetFog__I(JavaEnvironment *environment,
     }
     p = &CfCameraDefine[start];
     for (; start < end; start++) {
-        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)p + 0x60) : "memory");
-        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)p + 0x70) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)p + 0x60) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)p + 0x70) : "memory");
         p++;
     }
 }

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -230,7 +231,7 @@ void EXM_SetDirectionalWind(Vector4 *dir)
     if (dir != 0) {
         *(Vector4 *)&w->direction = *dir;
     } else {
-        __asm__ volatile("");
+        PS2_ASMV("");
     }
     w->mode = 1;
 }
@@ -243,7 +244,7 @@ void EXM_SetPointWind(Vector4 *pos)
     if (pos != 0) {
         *(Vector4 *)&w->direction = *pos;
     } else {
-        __asm__ volatile("");
+        PS2_ASMV("");
     }
     w->mode = 2;
 }

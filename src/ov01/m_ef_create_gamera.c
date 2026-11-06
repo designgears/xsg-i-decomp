@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 32: 0x00a387a8..0x00a39088 (7 functions)
  */
@@ -69,7 +70,7 @@ int MEfCreate_GAMERA(void *self)
     memset(base + 0xC0, 0, 0x38);
     memset(base + 0xF8, 0, 0x38);
     memset(trail, 0, 0x1C0);
-    __asm__ volatile("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(trail), "r"(actor) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(trail), "r"(actor) : "$8", "memory");
     *(short *)(state + 0x2D0) = 0;
     *(short *)(state + 0x2D2) = 0;
     makePath((GameraWork *)state);
@@ -109,8 +110,8 @@ static void makePath(GameraWork *state)
     }
     scale = MMathMakeRandom() + 0.05f;
     for (i = 0; i < 4; i++) {
-        __asm__ volatile("sqc2 $vf0, 0(%0)" : : "r"(&v) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&v) : "memory");
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
             "vcallms 0xe8\n\t"
@@ -118,7 +119,7 @@ static void makePath(GameraWork *state)
             "mtc1 $8, %0\n\t"
             : "=f"(s) : "f"(angle) : "$8", "memory");
         v.x = s * rtbl_1_00A517E0[i] * scale;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
             "vcallms 0x20\n\t"
@@ -191,10 +192,10 @@ static void fnGAMERA_PR000(void *self, GameraTrailState *state)
     for (i = 26; i >= 0; i--) {
         state->trail_active[i + 1] = state->trail_active[i];
         state->trail_segment[i + 1] = state->trail_segment[i];
-        __asm__ volatile("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
     }
     state->trail_active[0] = 0;
-    __asm__ volatile("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
     if (state->frame < 24) {
         state->trail_active[0] = 1;
         state->trail_segment[0] = state->segment;
@@ -269,9 +270,9 @@ typedef struct MEfGsPacket {
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
 #define QuadwordCopyT0(destination, source) \
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
 #define Vu0SetOrigin(destination) \
-    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -381,8 +382,8 @@ static void fnGAMERA_DP000(void *self, struct GameraTrailState *work)
 
     slots = (GameraOffsets *)offset;
     for (; line < 2; line++) {
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&offset[0]) : "memory");
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(outer_offset) : "memory");
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&offset[0]) : "memory");
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(outer_offset) : "memory");
         for (side = -1; side < 2; side += 2) {
             drawn = 0;
             inner = (float)side * GAMERA_TRAIL_WIDTH_Y;
@@ -407,7 +408,7 @@ static void fnGAMERA_DP000(void *self, struct GameraTrailState *work)
                              &state->trail[segment + 1]);
                 angles.z = state->path_angle[state->trail_segment[segment]];
                 MMathRotateMatrixYXZ(&matrix, 0, &angles);
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf1,0(%1)\n\t"
                     "vmove.w $vf1w,$vf0w\n\t"
                     "sqc2 $vf1,48(%0)\n\t"

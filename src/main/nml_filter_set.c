@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -74,7 +75,7 @@ void nmlModelSetFilterStealth(const LayoutStore *model, int flags);
  */
 static void _CurSetMatrix(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf27,0(%0)\n\t"
         "lqc2 $vf28,16(%0)\n\t"
         "lqc2 $vf29,32(%0)\n\t"
@@ -93,7 +94,7 @@ static void _CurSetMatrix(float matrix[4][4])
  */
 static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTrans[4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf25,0(%0)\n\t"
         "lqc2 $vf26,0(%1)\n\t"
         "nop"
@@ -118,10 +119,10 @@ static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTran
  */
 static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
 {
-    register int clipFlags asm("$2");
-    register int returnedFlags asm("$4");
+    register int clipFlags PS2_REG("$2");
+    register int returnedFlags PS2_REG("$4");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2 $0,$vi18\n\t"
         "lqc2 $vf31,0(%2)\n\t"
         "vmulax.xyzw ACC,vf27xyzw,vf31x\n\t"
@@ -149,7 +150,7 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
     );
     clipFlags &= 0x3f;
     returnedFlags = clipFlags;
-    __asm__ __volatile__("" : : "r"(returnedFlags), "r"(clipFlags));
+    PS2_ASMV("" : : "r"(returnedFlags), "r"(clipFlags));
     return returnedFlags;
 }
 
@@ -483,7 +484,7 @@ static void nmlModelSetFilterStealth(const LayoutStore *model, int flags)
  */
 static void _WeightToGlobalPlaceInit(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf10,0(%0)\n\t"
         "lqc2 $vf11,16(%0)\n\t"
         "lqc2 $vf12,32(%0)\n\t"
@@ -497,7 +498,7 @@ static void _WeightToGlobalPlaceInit(float matrix[4][4])
 
 static void _WeightToGlobalPlaceVec(Vector4 *destination, float placeMatrix[4][4], float weightMatrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%2)\n\t"
         "lq $3,16(%2)\n\t"
         "lq $4,32(%2)\n\t"
@@ -546,9 +547,9 @@ static void _WeightToGlobalPlaceVec(Vector4 *destination, float placeMatrix[4][4
  */
 static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
 {
-    register float lengthSq asm("$f0");
+    register float lengthSq PS2_REG("$f0");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf10,0(%1)\n\t"
         "lqc2 $vf11,0(%2)\n\t"
         "vsub.xyz vf10xyz,vf11xyz,vf10xyz\n\t"
@@ -692,23 +693,23 @@ void nmlFilterStealthMake(int partIndex, StudioCamera *camera,
                 jointData->jointAuxMatrixOffset))[descriptor->secondJoint]);
     } else {
         descriptor = &s_inStealthUnitDat;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(&fallback), "r"(&model->fields.fallbackSphere) : "$2", "memory");
         fallback.y -= fallback.w * 0.3f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(firstEndpoint), "r"(&fallback) : "$2", "memory");
         fallback.y += fallback.w * 0.6f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(&geometry->endpoints[1]), "r"(&fallback) : "$2", "memory");
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3,0(%1)\n\t"
         "lqc2 $vf2,0(%0)\n\t"
         "vadd.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
@@ -718,7 +719,7 @@ void nmlFilterStealthMake(int partIndex, StudioCamera *camera,
     geometry->sortClass = (float)descriptor->sortClass;
     firstEndpoint->w = _VectorLengthSQ(&camera->position, &center);
     if (descriptor->firstExtension != 0.0f) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf3,0(%0)\n\t"
             "lqc2 $vf2,0(%1)\n\t"
             "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
@@ -730,7 +731,7 @@ void nmlFilterStealthMake(int partIndex, StudioCamera *camera,
         firstEndpoint->z -= direction.z * descriptor->firstExtension;
     }
     if (descriptor->secondExtension != 0.0f) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf3,0(%0)\n\t"
             "lqc2 $vf2,0(%1)\n\t"
             "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "chr.h"
 
@@ -1884,7 +1885,7 @@ void Java_xeno_Chr_setShadow__aB(JThread *thread, ChrSplCall *arguments)
             slot = def;
     }
     if (slot == 0) {
-        __asm__ volatile("break 0");
+        PS2_ASMV("break 0");
     } else {
         slot->id = id;
         slot->kind = -1;
@@ -2158,7 +2159,7 @@ void Java_xeno_Chr_setPointLightReset__(JThread *thread, ChrTalkCall *arguments)
     peer = *(u8 **)(object + peer_field->offset);
     p = (peer + 0x970);
     for (i = 2; i >= 0; i--) {
-        __asm__ volatile("sq $0, 0(%0)" : : "r"(p) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"(p) : "memory");
         p += 16;
     }
     *(int *)(peer + 0x9A0) &= ~0x20;
@@ -2338,12 +2339,12 @@ void Java_xeno_Chr_look_default__(JThread *thread, ChrScaleCall *arguments)
     peer->look_mode = 1;
     peer->look_eye_control = 0;
     peer->look_target = 0;
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x600) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x610) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x620) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x640) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x650) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x660) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x600) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x610) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x620) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x640) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x650) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x660) : "memory");
     peer->look_speed = 1.0f;
     peer->look_eye_speed = 1.0f;
 }

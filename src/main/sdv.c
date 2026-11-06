@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -150,13 +151,13 @@ void sdvSaveAmbient(void)
     void *ambient = xglStudioGetLight2();
     void *map_rgb = func_A2C3F8();
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r" (_sdvAmbient), "r" (ambient)
         : "$8", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
@@ -237,7 +238,7 @@ void sdvExecAmbient(void)
 
         parameter = (float)_sdvAmbFrame / divisor;
         /* These constrained operations implement the eight evidenced COP2 instructions. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%1)\n\t"
             "mfc1 $8, %0\n\t"
             "qmtc2 $8, vf2\n\t"
@@ -246,7 +247,7 @@ void sdvExecAmbient(void)
             :
             : "f"(half), "r"(&_sdvMapRgb[0]), "r"(&map_rgb)
             : "$8", "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%1)\n\t"
             "mfc1 $8, %0\n\t"
             "qmtc2 $8, vf2\n\t"
@@ -456,7 +457,7 @@ static void sdvSetCameraParam(void *camera_data, int selection, const short *pos
         camera->position.y = y;
         if (selection == 5) {
             sefGetPosition(&origin, 0, 5);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf1, 0(%0)\n\t"
                 "lqc2 vf2, 0(%1)\n\t"
                 "vadd.xyz vf1, vf1, vf2\n\t"
@@ -663,14 +664,14 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
 
     type = *(short *)(*(int *)((char *)mtx + 0x54) + 2);
     if (type == 3) {
-        __asm__ __volatile__("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(out), "r"(src) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(out), "r"(src) : "$8", "memory");
         out[0] += 0x100;
         out[1] += 0xE0;
         out[2] = arg3[1] << 16;
         return 1;
     }
     sched = sefGetNowScheduler();
-    __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
     tmp[2] *= D_004D836C;
     tmp[3] = 1.0f;
     sefGetPosition(pos, tmp, type);
@@ -678,7 +679,7 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
         MMathMulMatrix(m, mtx, sched + 0x40);
         MMathApplyMatrix(pos, m, pos);
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "vmove.w vf1, vf0\n\t"
         "vmr32.xyzw vf2, vf0\n\t"
@@ -690,7 +691,7 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
         "sqc2 vf4, 0(%1)\n\tnop" : : "r"(pos), "r"(m) : "memory");
     cam = xglStudioGetActiveCamera();
     MMathMulMatrix(m2, cam + 0x470, m);
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(pos) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(pos) : "memory");
     if (MMathRotTransPersClip(out, cam, m2, pos) != 0) {
         return 0;
     }
@@ -831,7 +832,7 @@ void sdvExecSpecial(SdvSpecial *special)
                     1);
                 slot->frame = 0;
                 slot->index = 0;
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $8, 0(%1)\n\t"
                     "lq $9, 16(%1)\n\t"
                     "lq $10, 32(%1)\n\t"
@@ -1294,7 +1295,7 @@ void sdvExecAlter(SdvAlter *alter)
             void *actor;
             Vector4 *slot = &a->trail[i][a->samples];
 
-            __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(slot) : "memory");
+            PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(slot) : "memory");
             if (selector == 529)
                 selector = sefGetDmgNull();
             if (selector == 256) {
@@ -1304,7 +1305,7 @@ void sdvExecAlter(SdvAlter *alter)
                 actor = a->p.request.target_actor;
             copy:
                 if (actor != 0) {
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lq $8, 0(%1)\n\t"
                         "sq $8, 0(%0)"
                         :
@@ -1492,7 +1493,7 @@ void sdvDrawAlter(SdvAlter *alter_in, void *packet_in)
     SGsAddReg(packet, 66, alphaTbl_004CC8D8[alter->parameters.blend]);
     packet->loop_count = 1;
     SGsCloseGifPacket(packet);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
         "lq $10, 32(%1)\n\t"

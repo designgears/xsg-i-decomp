@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 24: 0x00a346c8..0x00a34e90 (5 functions)
  */
@@ -33,7 +34,7 @@ int MEfCreate_BP00(BP00Object *object)
     memset(work->trail, 0, sizeof(work->trail));
     work->visibility[0].flag[0] = 1;
     /* Quadword copy: the first trail point starts at the current position. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
@@ -42,7 +43,7 @@ int MEfCreate_BP00(BP00Object *object)
     MMathCalcVectorMatrix(&direction, (const Matrix4 *)&actorMatrix);
     /* vectorOrigin[0].xyz = direction.xyz * -0.65, the first strand's
        per-frame step back along the actor's facing. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,$vf2\n\t"
@@ -64,7 +65,7 @@ extern float MMathMakeRandom(void);
 extern Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scale);
 static __inline__ void bp00AddVectorXYZ(Vector4 *destination, const Vector4 *left, const Vector4 *right)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%2)\n\t"
         "vadd.xyz $vf1xyz,$vf1xyz,$vf2xyz\n\t"
@@ -75,7 +76,7 @@ static __inline__ void bp00AddVectorXYZ(Vector4 *destination, const Vector4 *lef
 }
 static __inline__ void bp00SubVectorXYZ(Vector4 *destination, const Vector4 *left, const Vector4 *right)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%2)\n\t"
         "vsub.xyz $vf1xyz,$vf1xyz,$vf2xyz\n\t"
@@ -86,7 +87,7 @@ static __inline__ void bp00SubVectorXYZ(Vector4 *destination, const Vector4 *lef
 }
 static __inline__ void bp00CopyVector(Vector4 *destination, const Vector4 *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
@@ -97,7 +98,7 @@ static __inline__ float bp00Cos(float angle)
 {
     float cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0xe8\n\t"
@@ -112,7 +113,7 @@ static __inline__ float bp00Sin(float angle)
 {
     float sine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0x20\n\t"
@@ -171,7 +172,7 @@ static void fnBP00_PR000(void *self, void *data)
 
 static inline void fnBP00_vaddxyz(Vector4 *src, Vector4 *dst)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"

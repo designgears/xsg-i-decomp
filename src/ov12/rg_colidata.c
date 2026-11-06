@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 62: 0x00a31970..0x00a32688 (14 functions)
  */
@@ -96,7 +97,7 @@ static void _AllocDataMemory(RgColiData *pData, int nCapa)
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
 static inline void _ColiApply(float *dst, float *mtx, float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
         "lqc2 $vf4,16(%1)\n\t"
@@ -131,7 +132,7 @@ static int _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult)
     for (i = 0; i < pPoly->m_nTriangles; i++) {
         mtx = pPoly->m_pTriangles[i].m_planeMatrix;
         radius = ((float *)pArg)[4];
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf31, 0(%1)\n\t"
             "sqc2 $vf31, 0(%0)\n\t"
             : : "r"(pos), "r"(pArg) : "memory");
@@ -343,21 +344,21 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
         float t;
         float *pVertex1 = pTriangle->m_vertices[1];
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vsub.xyzw $vf30, $vf30, $vf31\n\t"
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&edges[0]), "r"(pVertex1),
                 "r"(pTriangle->m_vertices[0]) : "memory", "$2");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vsub.xyzw $vf30, $vf30, $vf31\n\t"
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&edges[1]), "r"(pTriangle->m_vertices[2]),
                 "r"(pVertex1) : "memory", "$2");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -365,7 +366,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             : : "r"(&edges[2]), "r"(pTriangle->m_vertices[0]),
                 "r"(pTriangle->m_vertices[2]) : "memory", "$2");
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
@@ -373,7 +374,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&cross), "r"(&edges[0]), "r"(pVector)
             : "memory", "$2");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -383,7 +384,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
         if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
             status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
         } else {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf30, 0(%1)\n\t"
                 "lqc2 $vf31, 0(%2)\n\t"
                 "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
@@ -391,7 +392,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                 "sqc2 $vf30, 0(%0)\n\t"
                 : : "r"(&cross), "r"(&edges[1]), "r"(pVector)
                 : "memory", "$2");
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf30, 0(%1)\n\t"
                 "lqc2 $vf31, 0(%2)\n\t"
                 "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -401,7 +402,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
                 status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
             } else {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf30, 0(%1)\n\t"
                     "lqc2 $vf31, 0(%2)\n\t"
                     "vopmula.xyz ACCxyz, vf30xyz, vf31xyz\n\t"
@@ -409,7 +410,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                     "sqc2 $vf30, 0(%0)\n\t"
                     : : "r"(&cross), "r"(&edges[2]), "r"(pVector)
                     : "memory", "$2");
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf30, 0(%1)\n\t"
                     "lqc2 $vf31, 0(%2)\n\t"
                     "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -440,7 +441,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             }
         }
         if (status >= 0) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf31, 0(%1)\n\t"
                 "sqc2 $vf31, 0(%0)\n\t"
                 : : "r"(pResult), "r"(pPlane) : "memory", "$2");

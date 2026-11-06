@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -449,7 +450,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
     frame = joint->currentFrame;
     {
         Matrix *rootSource = joint->matrixBuffer;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
             "lq $2,16(%1)\n\t"
@@ -465,7 +466,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
     }
     {
         matrixBase = joint->matrixBuffer;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
             "lq $2,16(%1)\n\t"
@@ -579,7 +580,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
         }
         {
             Matrix *rootRestore = joint->matrixBuffer;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $2,0(%1)\n\t"
                 "sq $2,0(%0)\n\t"
                 "lq $2,16(%1)\n\t"
@@ -671,7 +672,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 {
                     matrixIndex = joint->currentIndex;
                     matrixBase = joint->matrixBuffer;
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lq $2,0(%0)\n\t"
                         "sq $2,0(%1)\n\t"
                         "lq $2,16(%0)\n\t"
@@ -797,7 +798,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
             rootDestination = joint->matrixBuffer;
         }
         {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $2,0(%1)\n\t"
                 "sq $2,0(%0)\n\t"
                 "lq $2,16(%1)\n\t"
@@ -822,7 +823,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 {
                     matrixIndex = joint->currentIndex;
                     matrixBase = joint->matrixBuffer;
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lq $2,0(%0)\n\t"
                         "sq $2,0(%1)\n\t"
                         "lq $2,16(%0)\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV10 original TU 8: 0x00a21768..0x00a324b8 (68 functions)
  */
@@ -8324,7 +8325,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     xglMatrixTrans(matrix.m, (const float (*)[4]) matrix.m, vec);
     xglMatrixRotX(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[1] / 180.0f * PI_F);
     xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[2] / 180.0f * PI_F);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"
@@ -8336,7 +8337,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[4].matrix), "r" (&matrix)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"
@@ -8349,7 +8350,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         : "r" ((CardEffectMatrix *) work->models[5].matrix), "r" (&matrix)
         : "$2", "memory");
     xglMatrixRotZ(work->models[15].matrix, (const float (*)[4]) matrix.m, -work->rotStageVector[2] / 180.0f * PI_F);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"
@@ -8397,7 +8398,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     CardPlayDispJunk(0, &work->player, matrix.m);
     CardDispEffect(0, work, &matrix);
     xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, PI_F);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"
@@ -8409,7 +8410,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[6].matrix), "r" (&matrix)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"

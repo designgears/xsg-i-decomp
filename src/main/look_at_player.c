@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -629,7 +630,7 @@ void GameCfPlayerLoadResource(int use_cache)
     if (GameResource[1].address == 0) {
         GameResourceAlloc(0x12a000);
     } else if (GameResource[0].size != 0x12a000) {
-        __asm__ volatile("break 0");
+        PS2_ASMV("break 0");
     }
     if (GameResource[2].address == 0) {
         GameResourceAlloc(0);

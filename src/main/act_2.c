@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "act_2.h"
@@ -220,7 +221,7 @@ void ACT_resetMatrix(Actor *actor)
         CUR_MATRIX_Rz4s((int *)&actor->rotation.z);
         CUR_MATRIX_Sxyz4s(&actor->scale);
         CUR_MATRIX_Get(matrix);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n\t"
             "sq $2, 0(%0)\n\t"
             "lq $2, 16(%1)\n\t"
@@ -626,7 +627,7 @@ block_12:
                 sw = (unsigned int)actor->staticValueRecords;
                 actor->staticValueRecords = temp_5;
                 actor->valueRecords = (void *)sw;
-                __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)\n" : : "r"(actor->jointMatrices), "r"(actor->previousJointMatrices) : "$2", "memory");
+                PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)\n" : : "r"(actor->jointMatrices), "r"(actor->previousJointMatrices) : "$2", "memory");
 
             }
             FCV2_setStep(anim->slot.speed);
@@ -878,7 +879,7 @@ static void ACT_modelDrawSub(Actor *actor)
     scaleVector[0].words[0] = actor->scale.words[0];
     scaleVector[0].words[1] = actor->scale.words[1];
     if (parent != 0) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
             "vmul.xyz vf2, vf2, vf3\n\t"
@@ -1093,7 +1094,7 @@ extern void *LOOK_head_cont(void *work, void *channels, int argument);
 extern void *LOOK_eyeL_cont(void *work, void *channels, int argument);
 extern void *LOOK_eyeR_cont(void *work, void *channels, int argument);
 #define ACT_IM_ZERO_QW(destination) \
-    __asm__ __volatile__("sq $0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sq $0, 0(%0)\n" : : "r" (destination) : "memory")
 #define ACT_IM_ADD(producer, order, fn, arg) \
     ((int (*)(void *, int, void *(*)(void *, void *, int), int))JNT_addConsumer)( \
         (producer), order, fn, (int)(arg))
@@ -1244,7 +1245,7 @@ void ACT_setMotion2(Actor *actor, int motionId, unsigned int flags)
                 slotFlags = (unsigned int)actor->staticValueRecords;
                 actor->staticValueRecords = valueTmp;
                 actor->valueRecords = (void *)slotFlags;
-                __asm__ __volatile__("lq $2, 0(%1)\n"
+                PS2_ASMV("lq $2, 0(%1)\n"
                                      "sq $2, 0(%0)\n"
                                      "lq $2, 16(%1)\n"
                                      "sq $2, 16(%0)\n"

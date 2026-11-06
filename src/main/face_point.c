@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -65,7 +66,7 @@ typedef struct CullingVolumeView {
 } CullingVolumeView;
 static inline void apply_point(void *destination, float (*matrix)[4], const void *vector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -100,7 +101,7 @@ static void culling_matrix(CullingVolumeView *volume)
     xglMatrixStackSave(volume->inverse);
     axis = D_004D4A10;
     dst = &volume->normal;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -143,7 +144,7 @@ static void culling_cell_disp(void)
  */
 void _FacePoint(Vector4 *destination, const Vector4 *lineStart, const Vector4 *lineEnd,
                 const Vector4 *normal, const Vector4 *planePoint) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf22, 0(%0)\n\t"
         "lqc2 vf20, 0(%1)\n\t"
         "lqc2 vf21, 0(%2)\n\t"
@@ -273,7 +274,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
     xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedStart, offsetStart);
     xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedEnd, offsetEnd);
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -282,7 +283,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedStart), "r"(endpointStart)
         : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -291,7 +292,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedEnd), "r"(endpointEnd)
         : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%0)\n\t"
         "vadd.xyz vf2, vf2, vf3\n\t"
@@ -300,7 +301,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedStart), "r"(&normalOffset)
         : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%0)\n\t"
         "vadd.xyz vf2, vf2, vf3\n\t"
@@ -309,7 +310,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedEnd), "r"(&normalOffset)
         : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -319,7 +320,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
           "r"(&endpointDelta)
         : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -396,7 +397,7 @@ void setup_occlusion(CullingVolume *volume, s32 camera)
     if (b.z < v->depth) v->depth = b.z;
     if (c.z < v->depth) v->depth = c.z;
     if (d.z < v->depth) v->depth = d.z;
-    __asm__ volatile("sq $0, 0(%0)" : : "r"(po) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(po) : "memory");
     plane_from_points(&a, &b, &c, &v->planes[0]);
     if (v->planes[0].w > 0.0f) {
         plane_from_points(po, &a, &b, &v->planes[1]);
@@ -727,14 +728,14 @@ void xglCullingMapDebug(void)
  */
 static void _ModelCalcClipInit(const Matrix4 clip[2])
 {
-    __asm__ __volatile__("lqc2 vf12, 0(%0)"   :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf13, 16(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf14, 32(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf15, 48(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf16, 64(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf17, 80(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf18, 96(%0)"  :: "r"(clip) : "memory");
-    __asm__ __volatile__("lqc2 vf19, 112(%0)\n\t"
+    PS2_ASMV("lqc2 vf12, 0(%0)"   :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf13, 16(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf14, 32(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf15, 48(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf16, 64(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf17, 80(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf18, 96(%0)"  :: "r"(clip) : "memory");
+    PS2_ASMV("lqc2 vf19, 112(%0)\n\t"
                          "nop"                 :: "r"(clip) : "memory");
 }
 
@@ -742,7 +743,7 @@ static s32 _ModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2)
 {
     s32 clipped;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "lqc2 vf27,0(%2)\n\t"
         "lqc2 vf28,16(%2)\n\t"
@@ -838,7 +839,7 @@ static s32 _ModelCalcClipMat1(s32 model, s32 matrix)
 {
     s32 clipped;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "lqc2 vf27,0(%2)\n\t"
         "lqc2 vf28,16(%2)\n\t"
@@ -908,7 +909,7 @@ static s32 _ModelCalcClip(s32 model)
 {
     s32 clipped;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "vaddw.x vf2x,vf0x,vf10w\n\t"
         "qmfc2 $2,vf2\n\t"
@@ -1018,7 +1019,7 @@ s32 nmlModelCalcClipMat1(s32 model, s32 matrix) {
     s32 camera = xglStudioGetActiveCamera();
 
     if (camera != 0) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "lqc2 vf27, 0(%1)\n\t"
             "lqc2 vf28, 16(%1)\n\t"
@@ -1056,7 +1057,7 @@ s32 nmlModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2) {
     s32 camera = xglStudioGetActiveCamera();
 
     if (camera != 0) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "lqc2 vf27, 0(%1)\n\t"
             "lqc2 vf28, 16(%1)\n\t"
@@ -1155,7 +1156,7 @@ s32 nmlModelCalcClipMat1AllCam(s32 model, s32 matrix)
             return camera;
         }
         if (g_aSubWindow[i] != 0) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "lqc2 vf27, 0(%1)\n\t"
                 "lqc2 vf28, 16(%1)\n\t"
@@ -1207,7 +1208,7 @@ s32 nmlModelCalcClipMat2AllCam(s32 model, s32 matrix1, s32 matrix2)
                 return camera;
             }
             _ModelCalcClipInit((const Matrix4 *) (camera + 0x4F0));
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "lqc2 vf27, 0(%1)\n\t"
                 "lqc2 vf28, 16(%1)\n\t"
@@ -1253,7 +1254,7 @@ s32 nmlModelCalcClipMat2AllCam(s32 model, s32 matrix1, s32 matrix2)
  * from vector->w.
  */
 void _ApplyMatrix33(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -1278,7 +1279,7 @@ void _ApplyMatrix33(Vector4 *destination, const Matrix4 matrix, const Vector4 *v
  * the first lqc2 loaded from vector->w.
  */
 void _ApplyMatrix(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -1305,7 +1306,7 @@ void _ApplyMatrix(Vector4 *destination, const Matrix4 matrix, const Vector4 *vec
  * loaded from vector->w.
  */
 void _ApplyMatrix2Mat(Vector4 *destination, const Matrix4 matrix1, const Matrix4 matrix2, const Vector4 *vector) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -26,13 +27,13 @@ static void xglCameraScreenInit(StudioCamera *camera)
 
     *(int *)(s + 0x0) = 0xFFFFFF;
     *(int *)(s + 0x4) = 0;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"(s + 0x10), "r"(sClipRange_0)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
@@ -146,37 +147,37 @@ static void xglCameraTravelInit(StudioCamera *studio)
     travel->fov = 0.69813174f;
     travel->fov_velocity = 0.0f;
     travel->scale = 0.0f;
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->rotation), "r"(&sShootAngleR_2)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->angle_velocity), "r"(&sShootAngleV_3)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->angle_delta), "r"(&sShootAngleA_4)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->position), "r"(&sShootPlaceR_5)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->place_velocity), "r"(&sShootPlaceV_6)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->place_delta), "r"(&sShootPlaceA_7)
                          : "$2", "memory");
     travel->chase_yaw = travel->rotation.y;
     travel->chase_distance = travel->position.z;
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->chase_reference), "r"(&sChaseRefPos_8)
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->chase_position), "r"(&sChaseIntPos_9)
                          : "$2", "memory");
@@ -188,13 +189,13 @@ extern float sShootPlaceA_11[4];
 static void xglCameraTravelReset(StudioCamera *camera)
 {
     *(int *)((char *)camera + 0xC) = 0;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"((char *)camera + 0x30), "r"(sShootAngleA_10)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
@@ -298,7 +299,7 @@ static void xglCameraTravelManual(XglCamera *camera)
     travel->fov += travel->fov_velocity;
     xglVectorScaleXYZ(&travel->angle_velocity, &travel->angle_velocity, damping);
     xglVectorScaleXYZ(&travel->place_velocity, &travel->place_velocity, damping);
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)\n\t"
@@ -311,12 +312,12 @@ static void xglCameraTravelManual(XglCamera *camera)
     xglVectorScaleAddXYZ(&travel->place_velocity, &axes[0], &travel->place_velocity, travel->place_delta.x);
     travel->place_velocity.y += travel->place_delta.y;
     xglVectorScaleAddXYZ(&travel->place_velocity, &axes[2], &travel->place_velocity, travel->place_delta.z);
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->rotation), "r"(&travel->angle_velocity) : "memory");
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
@@ -357,12 +358,12 @@ static void xglCameraTravelChase(XglCamera *camera)
     travel->fov += travel->fov_velocity;
     xglVectorScaleXYZ(&travel->angle_velocity, &travel->angle_velocity, damping);
     xglVectorScaleXYZ(&travel->place_velocity, &travel->place_velocity, damping);
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->angle_velocity), "r"(&travel->angle_delta) : "memory");
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
@@ -375,7 +376,7 @@ static void xglCameraTravelChase(XglCamera *camera)
     if (travel->chase_distance > 100.0f) {
         travel->chase_distance = 100.0f;
     }
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)"
@@ -385,7 +386,7 @@ static void xglCameraTravelChase(XglCamera *camera)
     if (offset.w < 1.0f) {
         xglVectorScaleAddXYZ(&travel->chase_position, &offset, &travel->chase_position, 0.2f);
     } else {
-        __asm__ __volatile__("lq $2, 0(%1)\n\t"
+        PS2_ASMV("lq $2, 0(%1)\n\t"
                              "sq $2, 0(%0)"
                              : : "r"(&travel->chase_position), "r"(&travel->chase_reference)
                              : "$2", "memory");
@@ -408,7 +409,7 @@ static void xglCameraTravelChase(XglCamera *camera)
     if (travel->position.y > 100.0f) {
         travel->position.y = 100.0f;
     }
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)"
@@ -492,7 +493,7 @@ static void xglCameraViewScreen(StudioCamera *studio)
     }
     screen->clipRange.z = screen->projection.x * (scaled.z / screen->resolution.z);
     screen->clipRange.w = screen->projection.y * (scaled.w / screen->resolution.w);
-    __asm__ __volatile__("lq $2, 0(%1)\n\t"
+    PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&screen->projection), "r"(&screen->resolution)
                          : "$2", "memory");
@@ -529,19 +530,19 @@ static void xglCameraViewTravel(StudioCamera *studio, Vector4 *offset)
     travel->frustum[3].x = nearClip;
     travel->frustum[3].w = travel->frustum[3].y = screen->clipRange.y;
     travel->frustum[3].z = nearClip;
-    __asm__ __volatile__("lqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
-    __asm__ __volatile__("lqc2 vf21, 0(%0)" : : "r"(&extent) : "memory");
-    __asm__ __volatile__("vmul.xyzw vf20, vf20, vf21" : : : "memory");
-    __asm__ __volatile__("sqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
+    PS2_ASMV("lqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
+    PS2_ASMV("lqc2 vf21, 0(%0)" : : "r"(&extent) : "memory");
+    PS2_ASMV("vmul.xyzw vf20, vf20, vf21" : : : "memory");
+    PS2_ASMV("sqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
     xglVectorScale(&camera->travel.frustum[2], frustum, -1.0f);
-    __asm__ __volatile__("lqc2 vf20, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf20, 0(%1)\n\t"
                          "lqc2 vf21, 0(%2)\n\t"
                          "vmul.xyzw vf20, vf20, vf21\n\t"
                          "sqc2 vf20, 0(%0)"
                          : : "r"(&camera->travel.frustum[1]), "r"(frustum), "r"(&ratio) : "memory");
     xglVectorScale(&camera->travel.frustum[0], &camera->travel.frustum[1], -1.0f);
     xglMatrixStackUnit();
-    __asm__ __volatile__("lqc2 vf3, 0(%1)\n\t"
+    PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)\n\t"
@@ -579,7 +580,7 @@ static void xglCameraViewVolume(StudioCamera *studio, Vector4 *offset)
     transform = camera->transform;
     for (; i < 1; i++) {
         volume = &camera->volume[i];
-        __asm__ __volatile__("lq $2, 0(%1)\n\t"
+        PS2_ASMV("lq $2, 0(%1)\n\t"
                              "sq $2, 0(%0)\n\t"
                              "lq $2, 16(%1)\n\t"
                              "sq $2, 16(%0)\n\t"

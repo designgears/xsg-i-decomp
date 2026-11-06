@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "main/xgl_2.h"
@@ -29,7 +30,7 @@ void CalcVerticalVector(const Vector4 *first, const Vector4 *second,
     Vector4 second_edge;
     Vector4 normal;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -37,7 +38,7 @@ void CalcVerticalVector(const Vector4 *first, const Vector4 *second,
         :
         : "r"(&first_edge), "r"(first), "r"(second)
         : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -62,7 +63,7 @@ float CalcLength(const Vector4 *first, const Vector4 *second, const Vector4 *thi
 
     CalcVerticalVector(first, second, third, &vertical);
     xglVectorNormal(&vertical, &vertical);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -84,7 +85,7 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
     intersection_values[1] = CalcLength(first, second, third);
     CalcVerticalVector(first, second, third, &normal);
     xglVectorNormal(&normal, &normal);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
         "vsub.xyz vf2, vf2, vf3\n\t"
@@ -99,7 +100,7 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
     cross_point->x *= intersection_values[0] * intersection_values[1];
     cross_point->y *= intersection_values[0] * intersection_values[1];
     cross_point->z *= intersection_values[0] * intersection_values[1];
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 0(%1)\n\t"
         "vadd.xyzw vf20, vf20, vf21\n\t"

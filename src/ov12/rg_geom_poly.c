@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 55: 0x00a2d900..0x00a2dd58 (10 functions)
  */
@@ -149,7 +150,7 @@ int RgGeomPolyCheckBall(RgGeom *pPoly, float *pOrgArg, float *pResult)
 extern int RgColiDataVsRay(RgColiData *pPoly, void *pArg, void *pResult);
 static inline void RgGeomPolyApply(float *dst, float *mtx, float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
         "lqc2 $vf4,16(%1)\n\t"

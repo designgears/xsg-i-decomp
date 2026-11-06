@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -879,7 +880,7 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
      * vertices 2..5 and the remaining points (in $3) from projected[1..4].
      * Plain 128-bit C copies emit the same lq/sq but cannot reproduce the
      * original $2/$3 allocation around the packet trailer. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "lq $3, 16(%1)\n\t"
         "sq $2, 16(%0)\n\t"
@@ -928,7 +929,7 @@ static void DrawZeldaShadow(char *obj) {
         }
     }
     *(int *)0x7000013C = i;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\tsq $2, 0(%0)\n\t"
         "lq $2, 16(%1)\n\tsq $2, 16(%0)\n\t"
         "lq $2, 32(%1)\n\tsq $2, 32(%0)\n\t"
@@ -1190,7 +1191,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             /* Each VU block loads both complete vectors, changes XYZ, and retains
                the VF2 input's W. VF2/VF3 and arithmetic flags are scratch here;
                no incoming ACC/Q state is used and this compiler has no VF allocator. */
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vsub.xyz vf2,vf2,vf3\n\t"
@@ -1212,7 +1213,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             work->temporary[0] = first_position[0];
             work->temporary[1] = first_position[1];
             work->temporary[2] = first_position[2];
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vadd.xyz vf2,vf2,vf3\n\t"
@@ -1222,7 +1223,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorMulMat(&points[8], work->flatten, &points[0]);
             points[0].w = 1.0f;
             points[8].w = 1.0f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vsub.xyz vf2,vf2,vf3\n\t"
@@ -1232,7 +1233,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorMulMat(&points[9], work->flatten, &points[1]);
             points[1].w = 1.0f;
             points[9].w = 1.0f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vsub.xyz vf2,vf2,vf3\n\t"
@@ -1246,7 +1247,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             work->temporary[0] = second_position[0];
             work->temporary[1] = second_position[1];
             work->temporary[2] = second_position[2];
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vadd.xyz vf2,vf2,vf3\n\t"
@@ -1256,7 +1257,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorMulMat(&points[10], work->flatten, &points[2]);
             points[2].w = 1.0f;
             points[10].w = 1.0f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vsub.xyz vf2,vf2,vf3\n\t"
@@ -1266,7 +1267,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorMulMat(&points[11], work->flatten, &points[3]);
             points[3].w = 1.0f;
             points[11].w = 1.0f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vadd.xyz vf2,vf2,vf3\n\t"
@@ -1283,7 +1284,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 (first_position[1] + second_position[1]) * 0.5f;
             work->temporary[2] =
                 (first_position[2] + second_position[2]) * 0.5f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vadd.xyz vf2,vf2,vf3\n\t"
@@ -1293,7 +1294,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorMulMat(&points[14], work->flatten, &points[6]);
             points[6].w = 1.0f;
             points[14].w = 1.0f;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
                 "vsub.xyz vf2,vf2,vf3\n\t"
@@ -1403,7 +1404,7 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
         ActShadowMatrix *matrix = actor->shadow_matrices;
         ActShadowMatrix *destination = &work->model;
         /* Match the original four aligned SDK copies through its scratch GPR. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
             "lq $2,16(%1)\n\t"
@@ -1625,7 +1626,7 @@ void ACT_DrawShadow(ActDrawShadowActor *actor)
         light = xglStudioGetLight2();
     }
     /* sceVu0CopyVector shape: one quadword through a fixed scratch register. */
-    __asm__ __volatile__("lq $2, 0(%1)\n"
+    PS2_ASMV("lq $2, 0(%1)\n"
                          "sq $2, 0(%0)\n"
                          :
                          : "r"(&actor->direction), "r"(&light->direction)

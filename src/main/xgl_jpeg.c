@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -951,7 +952,7 @@ static void FFIDCT(float block[8][8])
         stage[5] = block[3][i];
         stage[6] = block[5][i];
         stage[7] = block[7][i];
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf9,0(%0)\n"
             "lqc2 vf10,16(%0)\n"
             "vmulax.xyzw ACCxyzw,vf1xyzw,vf9x\n"
@@ -1003,7 +1004,7 @@ transform_column:
         stage[5] = column[3 * 8];
         stage[6] = column[5 * 8];
         stage[7] = column[7 * 8];
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf9,0(%0)\n"
             "lqc2 vf10,16(%0)\n"
             "vmulax.xyzw ACCxyzw,vf11xyzw,vf9x\n"
@@ -1103,7 +1104,7 @@ static void ConvertYUV2RGB(int w, int h) {
         n = w;
         do {
             int v;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf10,0(%1)\n"
                 "vmulax.xyzw ACCxyzw,$vf21xyzw,$vf10x\n"
                 "vmadday.xyzw ACCxyzw,$vf22xyzw,$vf10y\n"
@@ -1148,7 +1149,7 @@ static u8 *StartOfScan(u8 *segment, void *requestAddress)
 
     /* VU0 setup: the I register is loaded with 0.125f through $2 (hence the clobber),
      * vf1-vf8 are scaled into vf11-vf18 and vf21-vf26 are loaded. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $2,0x3e00\n\t"
         "ctc2 $2,$vi21\n\t"
         "lqc2 vf1,0(%0)\n\t"
@@ -1170,7 +1171,7 @@ static u8 *StartOfScan(u8 *segment, void *requestAddress)
         :
         : "r"(imm0_3)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf21,0(%0)\n\t"
         "lqc2 vf22,16(%0)\n\t"
         "lqc2 vf23,32(%0)\n\t"

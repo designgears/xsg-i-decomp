@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "main/xgl_2.h"
@@ -760,7 +761,7 @@ static void seffectDebugCf(void)
 
     handle_9 = 0;
     memset(&dmyActor_12, 0, 0xA70);
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&dmyActor_12.scale_x) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&dmyActor_12.scale_x) : "memory");
     dmyActor_12.rotation_w = 1.0f;
     dmyActor_12.scale_w = 1.0f;
     dmyActor_12.scale_z = 1.0f;

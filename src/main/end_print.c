@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -1916,4 +1917,6 @@ void endPrintJpeg(PrintJpegInfo *jpeg)
     sceVif1PkCloseDirectHLCode(packet);
 }
 
+#ifndef PORT_HOST
 __asm__("FrameCopyEnv.6 = FrameCopyEnv.0");
+#endif

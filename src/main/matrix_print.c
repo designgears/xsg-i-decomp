@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -123,7 +124,7 @@ void MATRIX_convert4s(Matrix4 destination, const Matrix4 source)
 
 void MATRIX_convert4MulMatrix(Matrix4 destination, Matrix4 matrix, Matrix4 other)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
         "lqc2 vf29, 32(%0)\n\t"
@@ -170,7 +171,7 @@ void MATRIX_convert4MulMatrix(Matrix4 destination, Matrix4 matrix, Matrix4 other
 
 void MATRIX_convert4MulMatrixRev(Matrix4 destination, Matrix4 matrix, Matrix4 other)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
         "lqc2 vf29, 32(%0)\n\t"
@@ -664,7 +665,7 @@ void QUAT_interpL(float destination[4], const float first[4], const float second
 
 void CUR_MATRIX_Unit(void)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmove.xyzw vf30, vf0\n\t"
         "vmr32.xyzw vf29, vf0\n\t"
         "vmr32.xyzw vf28, vf29\n\t"
@@ -677,7 +678,7 @@ void CUR_MATRIX_Unit(void)
 
 void CUR_MATRIX_Unit4s(void)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmove.xyzw vf30, vf0\n\t"
         "vmr32.xyzw vf29, vf0\n\t"
         "vmr32.xyzw vf28, vf29\n\t"
@@ -693,7 +694,7 @@ void CUR_MATRIX_Unit4s(void)
 
 void CUR_MATRIX_Set(Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
         "lqc2 vf29, 32(%0)\n\t"
@@ -706,7 +707,7 @@ void CUR_MATRIX_Set(Matrix4 matrix)
 
 void CUR_MATRIX_Get(Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "sqc2 vf27, 0(%0)\n\t"
         "sqc2 vf28, 16(%0)\n\t"
         "sqc2 vf29, 32(%0)\n\t"
@@ -719,7 +720,7 @@ void CUR_MATRIX_Get(Matrix4 matrix)
 
 void CUR_MATRIX_GetT(Vector4 *translation)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmove.xyz vf20, vf30\n\t"
         "vmove.w vf20, vf0\n\t"
         "sqc2 vf20, 0(%0)\n\t"
@@ -731,7 +732,7 @@ void CUR_MATRIX_GetT(Vector4 *translation)
 
 void CUR_MATRIX_SetT(const Vector4 *translation)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "vmove.xyz vf30, vf1\n\t"
         :
@@ -742,7 +743,7 @@ void CUR_MATRIX_SetT(const Vector4 *translation)
 
 void CUR_MATRIX_SetR(Matrix4 rotation)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 16(%0)\n\t"
         "lqc2 vf22, 32(%0)\n\t"
@@ -757,7 +758,7 @@ void CUR_MATRIX_SetR(Matrix4 rotation)
 
 void CUR_MATRIX_4s3(Matrix4 local)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 16(%0)\n\t"
         "lqc2 vf22, 32(%0)\n\t"
@@ -790,7 +791,7 @@ void CUR_MATRIX_4s3(Matrix4 local)
 
 void CUR_MATRIX_Txyz4s(const Vector4 *displacement)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf4, 0(%0)\n\t"
         "vmulx.w vf20, vf27, vf4x\n\t"
         "vmuly.w vf21, vf28, vf4y\n\t"
@@ -809,7 +810,7 @@ void CUR_MATRIX_Rx4s(const int *angle)
 {
     int bits = *angle;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf20, vf1\n\t"
@@ -831,7 +832,7 @@ void CUR_MATRIX_Ry4s(const int *angle)
 {
     int bits = *angle;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf20, vf1\n\t"
@@ -853,7 +854,7 @@ void CUR_MATRIX_Rz4s(const int *angle)
 {
     int bits = *angle;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf22, vf1\n\t"
@@ -876,7 +877,7 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
     int bits;
 
     bits = angles[2];
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf20, vf1\n\t"
@@ -889,7 +890,7 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
     );
 
     bits = angles[1];
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf21, vf1\n\t"
@@ -902,7 +903,7 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
     );
 
     bits = angles[0];
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
         "vmove.x vf22, vf1\n\t"
@@ -931,7 +932,7 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
 
 void CUR_MATRIX_Sxyz4s(const Vector4 *scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf19, 0(%0)\n\t"
         "vmulx.w vf27, vf27, vf19x\n\t"
         "vmuly.w vf28, vf28, vf19y\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "jnt.h"
 #include "shared.h"
@@ -853,7 +854,7 @@ void CUR_MATRIX_SetR(Matrix4 matrix);
 void CUR_MATRIX_SetT(const Vector4 *translation);
 void CUR_MATRIX_Sxyz4s(const Vector4 *scale);
 #define Vu0SubVector(destination, minuend, subtrahend) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "lqc2 vf20, 0(%1)\n" \
         "lqc2 vf21, 0(%2)\n" \
         "vsub.xyzw vf20, vf20, vf21\n" \
@@ -1759,7 +1760,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                 float lane_z;
 
                 /* sums - slot0 translation, computed as one VU0 vector subtract. */
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf20, 0(%1)\n"
                     "lqc2 $vf21, 0(%2)\n"
                     "vsub.xyzw $vf20, $vf20, $vf21\n"
@@ -1861,7 +1862,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                     CUR_MATRIX_Get(work->transform_basis);
                     CUR_MATRIX_GetT(&mid_b);
                     /* sums - end translation, computed as one VU0 vector subtract. */
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 $vf20, 0(%0)\n"
                         "lqc2 $vf21, 0(%1)\n"
                         "vsub.xyzw $vf20, $vf20, $vf21\n"
@@ -1918,7 +1919,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                 float direction_z;
 
                 /* sums - slot0 translation, computed as one VU0 vector subtract. */
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf20, 0(%0)\n"
                     "lqc2 $vf21, 0(%1)\n"
                     "vsub.xyzw $vf20, $vf20, $vf21\n"
@@ -2537,7 +2538,7 @@ JntStaticChannel *JNT_getVal_HOGE2(JntWork *work, JntStaticChannel *channel, flo
 
 static void liner_interpolate(float *a, float *b, float t)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $3, %2\n"
         "qmtc2.ni $3, $vf31\n"
         "lqc2 $vf22, 0x30(%0)\n"
@@ -2590,7 +2591,7 @@ void xglQuaternionInterpolateLinear(Vector4 *destination, const Vector4 *left, c
 void xglVectorLength(float *length, const Vector4 *vector);
 static inline void jntInterpCopyMatrix(JntInterpMatrix *destination, const JntInterpMatrix *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
         "lq $2, 16(%1)\n\t"
@@ -2603,7 +2604,7 @@ static inline void jntInterpCopyMatrix(JntInterpMatrix *destination, const JntIn
 }
 static inline void jntInterpCopyMatrixRow(float destination[4], const float source[4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         : : "r"(destination), "r"(source) : "$2", "memory");
@@ -2875,7 +2876,7 @@ static inline JntInterpMatrix *jntMatrixAt(void *base, int index)
 }
 static inline void jntCopyMatrix(JntInterpMatrix *destination, const JntInterpMatrix *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
         "lq $2, 16(%1)\n\t"
@@ -3529,7 +3530,7 @@ void MATRIX_convert4(float destination[4][4], float source[4][4]);
 void xglMatrixUnit4s(float destination[4][4]);
 static inline void jntResetCopyMatrix(JntMatrixRows *destination, const JntMatrixRows *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
         "lq $2, 16(%1)\n\t"

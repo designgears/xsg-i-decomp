@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "xgl_light.h"
@@ -74,7 +75,7 @@ void xglLightAngle(XglLightSet *lightSet, unsigned int index, const float *angle
         xglMatrixStackRotY(angle[1]);
         xglMatrixStackRotX(angle[0]);
         xglMatrixStackSave(m);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             : : "r"((index << 5) + (unsigned int)lightSet + 32), "r"(&m[2]) : "$2", "memory");
@@ -96,7 +97,7 @@ extern char Vu0CallLightCalcMatrix[];
 
 void xglLightCalcMatrix(XglLightSet *lightSet)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "lqc2 vf4,0(%1)\n\t"
         "lqc2 vf5,16(%1)\n\t"

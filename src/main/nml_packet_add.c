@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "main/xgl_2.h"
@@ -87,7 +88,7 @@ extern void sceVif1PkAddUpkData128(NmlPacket packet, Quadword data);
  */
 static void _CurMatrixSet(const Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
         "lqc2 vf29, 32(%0)\n\t"
@@ -106,7 +107,7 @@ static void _CurMatrixSet(const Matrix4 matrix)
  */
 static void _CurMatrixGet(Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "sqc2 vf27, 0(%0)\n\t"
         "sqc2 vf28, 16(%0)\n\t"
         "sqc2 vf29, 32(%0)\n\t"
@@ -126,7 +127,7 @@ static void _CurMatrixGet(Matrix4 matrix)
  */
 static void _CurMatrixMul(const Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf2, 0(%0)\n\t"
         "lqc2 vf3, 16(%0)\n\t"
         "lqc2 vf4, 32(%0)\n\t"
@@ -165,7 +166,7 @@ static void _CurMatrixMul(const Matrix4 matrix)
  */
 static void _CurApplyMatrix(Vector4 *destination, const Vector4 *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "vmulax.xyzw ACC, vf27, vf31x\n\t"
         "vmadday.xyzw ACC, vf28, vf31y\n\t"
@@ -188,7 +189,7 @@ static void _CurApplyMatrix(Vector4 *destination, const Vector4 *source)
  */
 static void _CurMatrixMul33norm(Vector4 *destination, const Vector4 *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 16(%0)\n\t"
         "lqc2 vf22, 32(%0)\n\t"
@@ -251,7 +252,7 @@ static void _CurMatrixMul33norm(Vector4 *destination, const Vector4 *source)
  */
 static void _CurSetViewScaleTrans(const Vector4 *view_scale, const Vector4 *view_translation)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf25, 0(%0)\n\t"
         "lqc2 vf26, 0(%1)\n\t"
         "nop"
@@ -263,7 +264,7 @@ static void _CurSetViewScaleTrans(const Vector4 *view_scale, const Vector4 *view
 
 static int _CurRotTransPersClip(Vector4 *destination, Vector4 *destination2, const Vector4 *vector, const Vector4 *vector2) {
     int clip;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "lqc2 $vf31, 0(%3)\n\t"
         "lqc2 $vf20, 0(%4)\n\t"
@@ -304,7 +305,7 @@ static int _CurRotTransPersClip(Vector4 *destination, Vector4 *destination2, con
  */
 static void _CurSetMatrix(const Matrix4 matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
         "lqc2 vf29, 32(%0)\n\t"
@@ -508,7 +509,7 @@ void nmlPacketAddTransMicrocodeInit(void)
     sceVif1PkAddUpkData128N(s_pPacket, matrix, 3);
     sceVif1PkCloseUpkCode(s_pPacket);
     s_nReflRotType = 1;
-    __asm__ __volatile__("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)"
+    PS2_ASMV("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)"
                          : : "r"(&s_inLc0) : "memory");
     s_inLc0.m[3][3] = 1.0f;
     s_inLc0.m[3][2] = 1.0f;
@@ -624,7 +625,7 @@ void nmlPacketAddScreen(StudioCamera *camera)
 
     s_pPacket = xglPacketGetCurrent();
     sceVif1PkCnt(s_pPacket, 0);
-    __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(&offset), "r"(&camera->screenOffset) : "$2", "memory");
+    PS2_ASMV("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(&offset), "r"(&camera->screenOffset) : "$2", "memory");
     ((float *)offset.words)[3] = 0.0f;
     if ((((u16 *)&sRender)[13] << 5) != 0x3800)
         ((float *)offset.words)[3] = 3.1415927f;
@@ -1225,7 +1226,7 @@ typedef union NmlPartsMatrix {
 } NmlPartsMatrix;
 static inline void parts_copy_matrix(void *dst, const void *src)
 {
-    __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\t"
+    PS2_ASMV("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\t"
                          "lq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\t"
                          "lq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\t"
                          "lq $2,0x30(%1)\n\tsq $2,0x30(%0)"
@@ -1356,7 +1357,7 @@ int nmlPacketAddParts(u8 *parts, NmlModelRenderState *model, StudioCamera *camer
             light.m[3][j] = tp[j];
         }
         if (model->render_status & 0x800)
-            __asm__ __volatile__("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(light.rows + 3), "r"(proreal + 0x160) : "$2", "memory");
+            PS2_ASMV("lq $2,0x0(%1)\n\tsq $2,0x0(%0)" : : "r"(light.rows + 3), "r"(proreal + 0x160) : "$2", "memory");
         sceVif1PkOpenUpkCode(s_pPacket, 0x3CD, 0x6C, 1, 1);
         sceVif1PkAddUpkData128N(s_pPacket, &light, 4);
         sceVif1PkCloseUpkCode(s_pPacket);
@@ -1743,7 +1744,7 @@ u8 *nmlPacketSetAttributeData64(const void *data)
     s_pPacket = packet;
     *(u8 **)&packet->cursor -= 0x40;
     dst = *(u8 **)&s_pPacket->cursor;
-    asm volatile("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\tlq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\tlq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\tlq $2,0x30(%1)\n\tsq $2,0x30(%0)"
+    PS2_ASMV("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\tlq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\tlq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\tlq $2,0x30(%1)\n\tsq $2,0x30(%0)"
                  : : "r"(dst), "r"(data) : "$2", "memory");
     return *(u8 **)&s_pPacket->cursor;
 }
@@ -1758,7 +1759,7 @@ u8 *nmlPacketSetAttributeData64N(const void *data, u32 count)
     s_pPacket = packet;
     *(u8 **)&packet->cursor -= count << 6;
     dst = *(u8 **)&s_pPacket->cursor;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
@@ -1792,7 +1793,7 @@ u8 *nmlPacketSetAttributeData16N(const void *data, u32 count)
     s_pPacket = packet;
     *(u8 **)&packet->cursor -= count << 4;
     dst = *(u8 **)&s_pPacket->cursor;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"

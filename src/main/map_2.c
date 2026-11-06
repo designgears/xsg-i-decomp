@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "map_2.h"
@@ -228,7 +229,7 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
         if (matrixIndex >= 0) {
             /* Aligned matrix copies use the SDK's scratch-register quartet. */
             if (matrixIndex & 0x8000) {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
                     "lq $2, 16(%1)\n"
@@ -245,7 +246,7 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
                 joint[0][3] = homogeneousZero;
                 xglMatrixStackLoad(joint);
             } else {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
                     "lq $2, 16(%1)\n"
@@ -256,7 +257,7 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
                     "sq $2, 48(%0)\n"
                     : : "r" (root), "r" (matrices[0])
                     : "$2", "memory");
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
                     "lq $2, 16(%1)\n"

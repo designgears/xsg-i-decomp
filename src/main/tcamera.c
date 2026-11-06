@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -191,7 +192,7 @@ void TCAMERA_transMPack(TCamera *camera, void *source, float frame)
     interest[0] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
     interest[1] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
     interest[2] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -230,13 +231,13 @@ void TCAMERA_transMPack2(TCamera *camera, void *source, float frame)
     interest.vector.y = FCV2_getPackValue(TCAMERA_MPACK_SCRATCH, frame);
     interest.vector.z = FCV2_getPackValue(TCAMERA_MPACK_SCRATCH, frame);
     interest.vector.w = 1.0f;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"(&mpack_interest.storage), "r"(&interest.storage)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -300,7 +301,7 @@ void TCAMERA_setView(TCamera *camera, float x, float y, float z)
     home[0] = x;
     home[1] = y;
     home[2] = z;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -344,7 +345,7 @@ void TCAMERA_viewSPL(TCamera *camera, void *spline, float frame)
     float pitchDenominator;
 
     SPL_getValueXYZ(point, spline, frame);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -378,7 +379,7 @@ void TCAMERA_transCNS(TCamera *camera, float **constraint, Vector4 *offset, int 
         point[1] = (*constraint)[5];
         point[2] = (*constraint)[6];
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vadd.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -412,7 +413,7 @@ void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int m
         point[2] = (*constraint)[6];
     }
     camera = (TCamera *)((u8 *)camera + 0xd0);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vadd.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"
@@ -420,7 +421,7 @@ void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int m
         :
         : "r"(offset), "r"(point)
         : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf2xyz, $vf2xyz, $vf3xyz\n\t"

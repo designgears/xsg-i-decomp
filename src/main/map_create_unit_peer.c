@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "main/xgl_2.h"
@@ -892,7 +893,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             matrices = (Matrix4 *)(model + *(int *)(model + 0x50));
 
             /* Aligned matrix copies use the SDK's scratch-register quartet. */
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $2, 0(%1)\n"
                 "sq $2, 0(%0)\n"
                 "lq $2, 16(%1)\n"
@@ -923,7 +924,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             xglMatrixStackSave(inverse);
             xglMatrixStackLoad(aligned);
             xglMatrixStackMul((const float (*)[4])local);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf20, 0(%1)\n"
                 "lqc2 $vf21, 0(%2)\n"
                 "vsub.xyzw $vf20xyzw, $vf20xyzw, $vf21xyzw\n"
@@ -971,7 +972,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             local[3][1] = local[3][1] + angles.y + unit->matrix[3][1];
             local[3][2] = local[3][2] + angles.z + unit->matrix[3][2];
             if (*(short *)((unsigned char *)unit + 0xA4) < *(int *)(*(unsigned char **)(display + 4) + 0x40)) {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
                     "lq $2, 16(%1)\n"

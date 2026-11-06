@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "ssd_init.h"
@@ -432,8 +433,8 @@ void RssdSifRpcCallback(void)
 
     RssdWork.complete_callback = 0;
     iSignalSema(RssdWork.sema_id);
-    __asm__ __volatile__("sync.l" : : : "memory");
-    __asm__ __volatile__("ei" : : : "memory");
+    PS2_ASMV("sync.l" : : : "memory");
+    PS2_ASMV("ei" : : : "memory");
     return;
 }
 

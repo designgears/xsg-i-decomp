@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 17: 0x00a314b8..0x00a32db8 (36 functions)
  */
@@ -67,14 +68,14 @@ Vector4 *MCamGetCurrentBaseCoord(Vector4 *out, int type)
 {
     Vector4 *src;
 
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
     src = &D_00A5B200;
-    __asm__ __volatile__("" : "+r"(src));
+    PS2_ASMV("" : "+r"(src));
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B210;
 copy:
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
 end:
     return out;
 }
@@ -86,14 +87,14 @@ Vector4 *MCamGetCurrentCoord(Vector4 *out, int type)
 {
     Vector4 *src;
 
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(out) : "memory");
     src = &D_00A5B230;
-    __asm__ __volatile__("" : "+r"(src));
+    PS2_ASMV("" : "+r"(src));
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B240;
 copy:
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
 end:
     out->w = 1.0f;
     return out;
@@ -110,14 +111,14 @@ Vector4 *MCamGetCurrentAngle(Vector4 *out, int type)
 {
     Vector4 *src;
 
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
     src = &D_00A5B1E0;
-    __asm__ __volatile__("" : "+r"(src));
+    PS2_ASMV("" : "+r"(src));
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B1F0;
 copy:
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
 end:
     return out;
 }
@@ -126,7 +127,7 @@ extern Vector4 D_00A5B250;
 
 Vector4 *MCamGetCurrentEye(Vector4 *out)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
@@ -234,7 +235,7 @@ typedef struct MCamParamsView {
     unsigned char unmodeled_1f8[0x5B0 - 0x1F8];
 } MCamParamsView;
 #define MCAM_VU0_TRIG(addr, out, in)                 \
-    __asm__ __volatile__(                            \
+    PS2_ASMV(                            \
         "mfc1    $8, %1\n\t"                         \
         "qmtc2.ni $8, $vf4\n\t"                      \
         "vcallms " #addr "\n\t"                      \
@@ -280,7 +281,7 @@ int MCamTakeControl(void)
     MCAM_VU0_TRIG(0xe8, cosY, saved->rotation.y);
     MCAM_VU0_TRIG(0xe8, cosX2, saved->rotation.x);
     direction.z = -cosY * cosX2;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2    $vf1, 0(%0)\n\t"
         "lqc2    $vf2, 0(%1)\n\t"
         "vadd.xyz $vf1, $vf1, $vf2\n\t"
@@ -317,10 +318,10 @@ void MCamStoreParams(void)
 
     /* 12-byte ld/lw copies: the original's block-move template with 8-byte
      * alignment, which cc1 only emits as move_by_pieces from C. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
         : : "r"(sysCamBuff + 0xD0), "r"(camParams + 0x1B0) : "$8", "$9", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
         : : "r"(sysCamBuff + 0xA0), "r"(camParams + 0x1E0) : "$8", "$9", "memory");
     cam = sysCamBuff;
@@ -540,13 +541,13 @@ typedef struct MCamActorView {
 
 static Vector4 *MCamGetActorCoord(Vector4 *out, MCamActorView *actor, int null)
 {
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
     if (actor == 0) {
         MOutputDebugStringWarn(D_00A50FD8);
         return out;
     }
     if (null == 0) {
-        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&actor->position), "r"(out) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&actor->position), "r"(out) : "$8", "memory");
     } else {
         sefGetNullPosition(out, actor, null - 1, 0);
     }
@@ -584,10 +585,10 @@ static float MCamCalcBaseCoord(Vector4 *out, MCamBaseParams *params)
     float t;
 
     dist = 0.0f;
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
     switch (params->type) {
     case 0:
-        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&params->position), "r"(out) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&params->position), "r"(out) : "$8", "memory");
         out->w = dist;
         break;
     case 1:
@@ -606,7 +607,7 @@ static float MCamCalcBaseCoord(Vector4 *out, MCamBaseParams *params)
         dist = MMathCalcDistXZ(&a, &b);
         t = (dist + MCamGetAtkRange(params->idA) - MCamGetDefRange(params->idB)) * 0.5f;
         if (dist == 0.0f || t == 0.0f) {
-            __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&a), "r"(out) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&a), "r"(out) : "$8", "memory");
         } else {
             MMathVectorInterpolation(out, &a, &b, t / dist);
         }
@@ -701,7 +702,7 @@ static int MCamMoveProc_Pers(MCamMoveState *state);
 static void MCamShakeProc(void);
 static inline void mcam_quad_copy(void *dst, const void *src)
 {
-    __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(dst), "r"(src) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(dst), "r"(src) : "$8", "memory");
 }
 
 static void MCamExec_Control(void)
@@ -762,7 +763,7 @@ static void MCamExec_Control(void)
 extern Vector4 *MMathCalcDirVector(Vector4 *out, Vector4 *from, Vector4 *to);
 static inline void mcam_copy_vec3(void *dst, const void *src)
 {
-    __asm__ __volatile__("ld $8,0(%1)\n\t"
+    PS2_ASMV("ld $8,0(%1)\n\t"
                          "lw $9,8(%1)\n\t"
                          "sd $8,0(%0)\n\t"
                          "sw $9,8(%0)"
@@ -808,7 +809,7 @@ static void MCamExec_SetParams_Base(void)
     MCamCalcCoord((Vector4 *)(base + 0x1B0), (MCamCoordParams *)base);
     MCamCalcCoord((Vector4 *)(base + 0x1C0), (MCamCoordParams *)(base + 0xB0));
     MMathCalcAngleCam((Vector4 *)(base + 0x160), (Vector4 *)(base + 0x1B0), (Vector4 *)(base + 0x1C0));
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(base + 0x160), "r"(base + 0x1E0) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(base + 0x160), "r"(base + 0x1E0) : "$8", "memory");
     *(float *)(base + 0x1E8) = *(float *)(base + 0x1F0);
     MMathCalcAngleCam((Vector4 *)(base + 0x170), (Vector4 *)(base + 0x1C0), (Vector4 *)(base + 0x1B0));
 }
@@ -856,7 +857,7 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
     MCamCalcCoord(&m->other, other);
     MCamCalcCoord(&m->start, &m->from.p);
     MCamCalcCoord(&m->end, &m->to.p);
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->start), "r"(&m->current) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->start), "r"(&m->current) : "$8", "memory");
     {
         int z = req->extra[2];
         int x = req->extra[0];
@@ -867,7 +868,7 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
         m->extra[3] = 0;
     }
     cur->p.base.type = 0;
-    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->current), "r"(&cur->p.base.position) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->current), "r"(&cur->p.base.position) : "$8", "memory");
     shake = req->shake;
     {
         int *flags = &camFlags;
@@ -981,7 +982,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     case 1: {
         float sine1;
         ratio = ratio * 3.14159265f + 4.712389f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
             "vcallms 0x20\n\t"
@@ -999,7 +1000,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     case 2: {
         float sine2;
         ratio = ratio * 1.57079633f + 4.712389f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
             "vcallms 0x20\n\t"
@@ -1015,7 +1016,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     case 3: {
         float sine3;
         ratio = ratio * 1.57079633f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
             "vcallms 0x20\n\t"
@@ -1041,7 +1042,7 @@ extern float MMathCalcDist(const Vector4 *first, const Vector4 *second);
 extern float MMathCalcRotNear(float first, float second);
 static inline void MCamVecSub(Vector4 *dst, Vector4 *a, Vector4 *b)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vsub.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
@@ -1050,7 +1051,7 @@ static inline void MCamVecSub(Vector4 *dst, Vector4 *a, Vector4 *b)
 }
 static inline void MCamVecScale(Vector4 *dst, Vector4 *a, float t)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "mfc1 $8,%2\n\t"
         "qmtc2.ni $8,vf2\n\t"
@@ -1060,7 +1061,7 @@ static inline void MCamVecScale(Vector4 *dst, Vector4 *a, float t)
 }
 static inline void MCamVecAdd(Vector4 *dst, Vector4 *a, Vector4 *b)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vadd.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
@@ -1087,8 +1088,8 @@ static int MCamMoveProc_Coord(MCamCoordMove *m)
         MCamVecAdd(&m->current, &cur, &step);
         break;
     case 1:
-        __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&origin) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV("sq $0, 0(%0)" : : "r"(&origin) : "memory");
+        PS2_ASMV(
             "ld $8, 0(%0)\n\t"
             "lw $9, 8(%0)\n\t"
             "sd $8, 0(%1)\n\t"
@@ -1098,7 +1099,7 @@ static int MCamMoveProc_Coord(MCamCoordMove *m)
         cur.w = MMathCalcDist(&origin, &m->start);
         MMathCalcAngle(&tmp, &origin, &m->end);
         tmp.w = MMathCalcDist(&origin, &m->end);
-        __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&offs) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"(&offs) : "memory");
         offs.x = cur.x + MMathCalcRotNear(cur.x, tmp.x) * ratio;
         offs.y = cur.y + MMathCalcRotNear(cur.y, tmp.y) * ratio;
         offs.w = cur.w + (tmp.w - cur.w) * ratio;

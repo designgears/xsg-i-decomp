@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 35: 0x00a397c8..0x00a3a090 (7 functions)
  */
@@ -37,7 +38,7 @@ int MEfCreate_DORA(void *self)
     memset(base + 0xC0, 0, 0x44);
     memset(base + 0x104, 0, 0x44);
     memset(trail, 0, 0x220);
-    __asm__ volatile("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(trail), "r"(weapon) : "$8", "memory");
+    PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(trail), "r"(weapon) : "$8", "memory");
     *(short *)(state + 0x350) = 0;
     *(short *)(state + 0x352) = 0;
     makePath((struct DoraHermiteState *)state);
@@ -109,8 +110,8 @@ static void makePath(DoraHermiteState *state)
     }
     scale = MMathMakeRandom() + 0.05f;
     for (i = 0; i < 4; i++) {
-        __asm__ volatile("sqc2 $vf0, 0(%0)" : : "r"(&v) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&v) : "memory");
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
             "vcallms 0xe8\n\t"
@@ -118,7 +119,7 @@ static void makePath(DoraHermiteState *state)
             "mtc1 $8, %0\n\t"
             : "=f"(s) : "f"(angle) : "$8", "memory");
         v.x = s * rtbl_1_00A51830[i] * scale;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
             "vcallms 0x20\n\t"
@@ -185,10 +186,10 @@ static void fnDORA_PR000(void *self, DoraHermiteState *state)
     for (i = 32; i >= 0; i--) {
         state->trail_active[i + 1] = state->trail_active[i];
         state->trail_segment[i + 1] = state->trail_segment[i];
-        __asm__ volatile("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
     }
     state->trail_active[0] = 0;
-    __asm__ volatile("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
     if (state->frame < 15) {
         state->trail_active[0] = 1;
         state->trail_segment[0] = state->segment;
@@ -234,9 +235,9 @@ typedef struct MEfGsPacket {
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
 #define QuadwordCopyT0(destination, source) \
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
 #define Vu0SetOrigin(destination) \
-    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -356,7 +357,7 @@ static void fnDORA_DP000(void *self, DoraHermiteState *work)
                 MEfCalcAngle(&angle, &state->trail[slot], &state->trail[slot + 1]);
                 angle.z = state->path_progress[state->trail_segment[slot]];
                 MMathRotateMatrixYXZ((Matrix4 *)matrix, 0, &angle);
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf1, 0(%1)\n"
                     "vmove.w vf1, vf0\n"
                     "sqc2 vf1, 48(%0)\n"

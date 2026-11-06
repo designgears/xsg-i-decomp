@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 22: 0x00a337a0..0x00a33f08 (11 functions)
  */
@@ -35,7 +36,7 @@ void *MEfCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "lqc2 $vf2, 0(%2)\n\t"
         "vsub.xz $vf3, $vf2, $vf1\n\t"
@@ -72,7 +73,7 @@ Vector4 *MEfCalcAngleMatrix(Vector4 *out, const Vector4 *matrix)
 {
     Vector4 direction;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmove.xyzw vf1, vf0\n\t"
         "vsubw.z vf1, vf0, vf0w\n\t"
         "sqc2 vf1, 0(%0)"
@@ -81,7 +82,7 @@ Vector4 *MEfCalcAngleMatrix(Vector4 *out, const Vector4 *matrix)
         : "memory"
     );
     MMathApplyMatrix(&direction, matrix, &direction);
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
     out->x = srsAtan2(direction.y, -MMathCalcLengthXZ(&direction));
     out->y = srsAtan2(direction.x, direction.z);
     return out;
@@ -94,7 +95,7 @@ extern void *MMathRotateMatrixY(void *out, const void *matrix, float angle);
 extern int ACT_jointGetAccessories(void *actor, unsigned int id);
 static inline void MEfUnitMatrix(void *out)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmr32.xyzw vf1, vf0\n\t"
         "vmr32.xyzw vf2, vf1\n\t"
         "vmr32.xyzw vf3, vf2\n\t"
@@ -109,7 +110,7 @@ static inline void MEfUnitMatrix(void *out)
 }
 static inline void MEfSetTrans(void *m, void *pos)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
         "sqc2 $vf1,48(%0)\n\t"
@@ -120,7 +121,7 @@ static inline void MEfSetTrans(void *m, void *pos)
 }
 static inline void MEfCopyMatrix(void *d, void *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
                 "lq $8,0(%1)\n\t"
                 "lq $9,16(%1)\n\t"
                 "lq $10,32(%1)\n\t"
@@ -168,7 +169,7 @@ Vector4 *MEfGetActorCoord(Vector4 *dst, void *actor, u32 coord)
     Vector4 matrix[4];
 
     MEfGetActorMatrix(matrix, actor, coord);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,48(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
         "sqc2 $vf1,0(%0)\n\t"
@@ -208,7 +209,7 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
 
     /* The R5900's native 128-bit copy of the four basis rows; the original
        loads all four before storing any of them. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "lq $9,16(%1)\n\t"
         "lq $10,32(%1)\n\t"
@@ -224,7 +225,7 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
 
     /* Put source in the translation row, forcing that row's w lane to the
        architectural VF0.w = 1 rather than keeping source's own w. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
         "sqc2 $vf1,48(%0)\n\t"
@@ -236,7 +237,7 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
     vertex = dst;
     for (i = 0; i < 4; i++) {
         /* Clear the offset to the origin with w = 1 (VF0). */
-        __asm__ __volatile__("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+        PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
 
         offset.x = (i & 2) ? -size : size;
         offset.y = (i & 1) ? -size : size;
@@ -268,7 +269,7 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
 
     angleTable = mefVertex2CornerTable;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "lq $9,16(%1)\n\t"
         "lq $10,32(%1)\n\t"
@@ -282,7 +283,7 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
         : "$8", "$9", "$10", "$11", "memory"
     );
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
         "sqc2 $vf1,48(%0)\n\t"
@@ -299,9 +300,9 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
     for (i = 0; i < 4; i++) {
         float angle = angleBase + angleTable.angle[i];
 
-        __asm__ __volatile__("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+        PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8,%1\n\t"
             "qmtc2.ni $8,$vf4\n\t"
             "vcallms 0xe8\n\t"
@@ -313,7 +314,7 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
         );
         offset.x = size * cosine;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8,%1\n\t"
             "qmtc2.ni $8,$vf4\n\t"
             "vcallms 0x20\n\t"
@@ -350,14 +351,14 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
 
     /* Clear offset to the origin and set its w lane to 1 in one instruction:
        sqc2 stores the architectural quadword constant VF0 = (0,0,0,1). */
-    __asm__ __volatile__("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+    PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
 
     /* Move the angle into VF4 through a GPR (uninterlocked: nothing is
        pending), launch the resident VU0 cosine microprogram at its fixed
        instruction-pair entry, then read VF1 back with an interlocked transfer,
        which waits for the microprogram to finish. The EE has no scalar cosine
        or sine instruction. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0xe8\n\t"
@@ -370,7 +371,7 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
     offset.x = radius * cosine;
 
     /* The same launch at the resident sine entry. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0x20\n\t"
@@ -384,7 +385,7 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
 
     /* Translate the point to center. The lane mask is the operation: only xyz
        is summed, so the w lane keeps the 1 stored above. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%0)\n\t"
         "vadd.xyz $vf1xyz,$vf1xyz,$vf2xyz\n\t"
@@ -396,7 +397,7 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
 
     /* The R5900's native 128-bit copy, the shape the SDK's own vector copy
        uses. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
@@ -428,7 +429,7 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
        The trailing nop is the delay-slot filler the original assembler left
        before the call below: without it the assembler in reorder mode moves
        this sqc2 into that call's delay slot. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
         "sqc2 $vf1,48(%0)\n\t"
@@ -442,11 +443,11 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
     randomLength = spread * MMathMakeRandom();
 
     /* Clear the offset to the origin with w = 1 (VF0). */
-    __asm__ __volatile__("sqc2 $vf0,0(%0)" : : "r"(&angles) : "memory");
+    PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&angles) : "memory");
 
     /* The resident VU0 cosine and sine microprogram launches; the EE has no
        scalar cosine or sine instruction. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0xe8\n\t"
@@ -458,7 +459,7 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
     );
     angles.x = randomLength * cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
         "vcallms 0x20\n\t"

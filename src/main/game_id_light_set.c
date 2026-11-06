@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -29,7 +30,7 @@
 
 /* 16-byte copy through the R5900 128-bit GPRs (sceVu0CopyVector idiom). */
 #define QuadwordCopy(destination, source) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "lq $2, 0(%1)\n" \
         "sq $2, 0(%0)\n" \
         : \

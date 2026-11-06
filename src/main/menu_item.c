@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -1869,7 +1870,7 @@ int subRoboPartsCheck(int arg0)
         flag = xglFlagsGet(0xCE8, 1);
         {
             int hi = 0x230;
-            __asm__("xori %0, %0, 0" : "+r"(flag));
+            PS2_ASM("xori %0, %0, 0" : "+r"(flag));
             var_16 = 0x20;
             if (flag) {
                 var_16 = hi;

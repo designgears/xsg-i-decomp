@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 23: 0x00a33f08..0x00a346c8 (5 functions)
  */
@@ -69,10 +70,10 @@ int MEfCreate_MSP00(MSP00Object *object)
     MMathApplyMatrix(&work->spawn_position, actor_matrix, &work->source_offset);
     MEfGetActorCoord(actor_coordinate, work->coordinate_actor, work->coordinate_part);
     MEfCalcCircumXZ(&work->circumference_position, actor_coordinate, 1.0f);
-    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+    PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->position), "r"(&work->spawn_position)
                          : "$8", "memory");
-    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+    PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->previous_position), "r"(&work->spawn_position)
                          : "$8", "memory");
     MMathSubVectorDivS(&work->velocity, &work->circumference_position,
@@ -105,12 +106,12 @@ static void fnMSP00_PR000(void *self, void *arg)
     int j;
 
     if (work->frame < 18) {
-        __asm__ __volatile__("lq $8, 0(%1)\n\t"
+        PS2_ASMV("lq $8, 0(%1)\n\t"
                              "sq $8, 0(%0)"
                              :
                              : "r"(&work->previous_position), "r"(&work->position)
                              : "$8", "memory");
-        __asm__ __volatile__("lqc2 vf1, 0(%0)\n\t"
+        PS2_ASMV("lqc2 vf1, 0(%0)\n\t"
                              "lqc2 vf2, 0(%1)\n\t"
                              "vadd.xyz vf1, vf1, vf2\n\t"
                              "sqc2 vf1, 0(%0)"
@@ -122,7 +123,7 @@ static void fnMSP00_PR000(void *self, void *arg)
     for (i = 8; i >= 0; i--) {
         work->active[i + 1] = work->active[i];
         for (j = 0; j < 3; j++) {
-            __asm__ __volatile__("lq $8, 0(%1)\n\t"
+            PS2_ASMV("lq $8, 0(%1)\n\t"
                                  "sq $8, 0(%0)"
                                  :
                                  : "r"(&work->points[(i + 1) * 3 + j]), "r"(&work->points[i * 3 + j])
@@ -132,7 +133,7 @@ static void fnMSP00_PR000(void *self, void *arg)
     }
     work->active[0] = 0;
     for (j = 0; j < 3; j++) {
-        __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&work->points[j]) : "memory");
+        PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&work->points[j]) : "memory");
     }
     if (work->frame < 18) {
         work->active[0] = 1;
@@ -140,10 +141,10 @@ static void fnMSP00_PR000(void *self, void *arg)
             MMathVectorInterpolation(&offset, &work->position, &work->previous_position,
                                      (float)j / 3.0f);
             MMathRotateMatrixYX(matrix, 0, &work->angles);
-            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
-            __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-            __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
-            __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
+            PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
+            PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+            PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+            PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
             offset.x = MMathMakeRandom() * 0.06f - 0.03f;
             offset.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&work->points[j], matrix, &offset);
@@ -171,7 +172,7 @@ static void fnMSP00_DM000(void *self, MSP00DrawState *work)
     if (work->frame < 18) {
         MMathRotateMatrixYXZ(&matrix, 0, &work->angles);
         MMathScaleMatrix(&matrix, &matrix, &scale_0_00A51380);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%1)\n\t"
             "vmove.w vf1, vf0\n\t"
             "sqc2 vf1, 48(%0)\n\t"
@@ -311,7 +312,7 @@ static void fnMSP00_DP000(void *self, void *work)
                     gp->count += n2;
                 }
             }
-            __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__("");
+            PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM("");
         }
     }
     MGsGPTerm(pk);

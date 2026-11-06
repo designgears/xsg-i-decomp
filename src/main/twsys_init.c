@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 /*
@@ -495,7 +496,7 @@ void TW_setPos(TComponent *component_)
 
     /* Original VU0 operation: distance from the anchor to the camera.
      * vf2/vf3 are local VU scratch state; the stored vector feeds length. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf3,0(%1)\n"
         "lqc2 $vf2,0(%2)\n"
         "vsub.xyz $vf2xyz,$vf2xyz,$vf3xyz\n"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "look.h"
 
@@ -101,7 +102,7 @@ typedef struct LookActor {
 void *xglStudioGetActiveCamera(void);
 static inline void look_copy_place(void *from, void *to)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%0)\n\t"
         "sq $2, 0(%1)"
         :
@@ -269,12 +270,12 @@ float xglAsin(float value);
 #define D_004D8574 0.2f
 static inline void look_zero_vector(Vector4 *destination)
 {
-    __asm__ __volatile__("sq $0, 0(%0)"
+    PS2_ASMV("sq $0, 0(%0)"
                          : : "r" (destination) : "memory");
 }
 static inline void look_copy_matrix(Matrix4 destination, Matrix4 source)
 {
-    __asm__ __volatile__("lq $2, 0(%1)\n"
+    PS2_ASMV("lq $2, 0(%1)\n"
                          "sq $2, 0(%0)\n"
                          "lq $2, 16(%1)\n"
                          "sq $2, 16(%0)\n"
@@ -368,7 +369,7 @@ void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
             MATRIX_convert4(rootMatrix, work->rootMatrix);
             xglMatrixMul(matrix, rootMatrix, matrix);
             /* The SDK copies the joint's translated row through one scratch register. */
-            __asm__ __volatile__("lq $2, 0(%1)\n"
+            PS2_ASMV("lq $2, 0(%1)\n"
                                  "sq $2, 0(%0)\n"
                                  : : "r" (&actor->headPosition), "r" (matrix[3])
                                  : "$2", "memory");
@@ -376,7 +377,7 @@ void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
             actor->headPosition.y += D_004D857C;
             if (look_get_place((LookActor *)actor, (LookVector *)&place) == 0) {
                 place.v.w = 1.0f;
-                __asm__ __volatile__("sq $0, 0(%0)\n"
+                PS2_ASMV("sq $0, 0(%0)\n"
                                      : : "r" (&rotation) : "memory");
                 xglMatrixInverse(matrix, matrix);
                 xglVectorMulMat(&localPlace, matrix, &place.v);

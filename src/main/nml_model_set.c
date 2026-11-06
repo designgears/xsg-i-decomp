@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "nml_model_set.h"
@@ -39,7 +40,7 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
 {
     float lengthSq;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf10,0(%1)\n\t"
         "lqc2 $vf11,0(%2)\n\t"
         "vsub.xyz vf10xyz,vf11xyz,vf10xyz\n\t"
@@ -63,7 +64,7 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
  */
 static void _CurSetMatrix(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf27,0(%0)\n\t"
         "lqc2 $vf28,16(%0)\n\t"
         "lqc2 $vf29,32(%0)\n\t"
@@ -82,7 +83,7 @@ static void _CurSetMatrix(float matrix[4][4])
  */
 static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTrans[4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf25,0(%0)\n\t"
         "lqc2 $vf26,0(%1)\n\t"
         "nop"
@@ -94,7 +95,7 @@ static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTran
 
 static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
     int clip;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
@@ -132,7 +133,7 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
  * _CurApplyMatrix below.
  */
 static void _CurRotTransPersFog(Vector4 *destination, const Vector4 *vector, const Vector4 *fog) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "lqc2 vf4, 0(%2)\n\t"
         "vmulax.xyzw ACC, vf27, vf31x\n\t"
@@ -160,7 +161,7 @@ static void _CurRotTransPersFog(Vector4 *destination, const Vector4 *vector, con
  * src/main/face_point.c's _ApplyMatrix.
  */
 static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "vmulax.xyzw ACC, vf27, vf31x\n\t"
         "vmadday.xyzw ACC, vf28, vf31y\n\t"
@@ -181,7 +182,7 @@ static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
  */
 static void _WeightToGlobalVec(Vector4 *destination, float matrix[4][4], float weight[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%2)\n\t"
         "lq $3, 16(%2)\n\t"
         "lq $4, 32(%2)\n\t"
@@ -232,7 +233,7 @@ static void _WeightToGlobalVec(Vector4 *destination, float matrix[4][4], float w
 
 /* Stores componentwise minima in the first vector and maxima in the second. */
 static void _MinMaxSort(Vector4 *min, Vector4 *max) {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 0(%1)\n\t"
         "vmini.xyz vf22, vf20, vf21\n\t"
@@ -260,10 +261,10 @@ static void CLEAR_LAYOUT_MODEL(LayoutStore *arg0)
     xglStudioChange(0);
     xglStudioGetLight((void *)&light);
     xglLightCalcMatrix((void *)light);
-    __asm__ volatile("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst), "r"(light + 0xB0) : "$2", "memory");
-    __asm__ volatile("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst + 0x40), "r"(light + 0x70) : "$2", "memory");
-    __asm__ volatile("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(s_inGblPlace), "r"(dst + 0x80) : "$2", "memory");
-    __asm__ volatile("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inGblPos), "r"(dst + 0x1F0) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst), "r"(light + 0xB0) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst + 0x40), "r"(light + 0x70) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(s_inGblPlace), "r"(dst + 0x80) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inGblPos), "r"(dst + 0x1F0) : "$2", "memory");
     arg0->slots[0x88].f = 1.0f;
     arg0->slots[0x89].f = 2.0f;
     arg0->slots[0xB0].f = 1.0f;
@@ -308,9 +309,9 @@ static void CLEAR_LAYOUT_MODEL(LayoutStore *arg0)
     arg0->slots[0xBE].f = 1.0f;
     arg0->slots[0xBF].f = 1.0f;
     arg0->slots[0xB1].f = 0.0f;
-    __asm__ volatile("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)" : : "r"(dst + 0x140) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"(dst + 0x1F0) : "memory");
-    __asm__ volatile("sq $0, 0(%0)" : : "r"((unsigned char *)arg0 + 0x210) : "memory");
+    PS2_ASMV("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)" : : "r"(dst + 0x140) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(dst + 0x1F0) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"((unsigned char *)arg0 + 0x210) : "memory");
 }
 
 static void set_circle_shadow_ratio(int scale);
@@ -587,14 +588,14 @@ static void CONSTRUCT_MODELSYSTEM(void)
     s_nMenu = 0;
     g_aSubWindow[3] = g_aSubWindow[2] = g_aSubWindow[1] = inactiveWindow;
     s_nEffectWrite = 1;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "sq $0, 0(%0)\n"
         "sq $0, 16(%0)\n"
         "sq $0, 32(%0)\n"
         "sq $0, 48(%0)"
         : : "r"(s_inGblPointC) : "memory");
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&s_inGblFogCol) : "memory");
-    __asm__ __volatile__("sq $0, 0(%0)" : : "r"(&s_inGblFogPara) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(&s_inGblFogCol) : "memory");
+    PS2_ASMV("sq $0, 0(%0)" : : "r"(&s_inGblFogPara) : "memory");
 }
 
 /* CONSTRUCT_MODELSYSTEM (above) is still INCLUDE_ASM; declare it so its
@@ -636,13 +637,13 @@ static void FLUSH_MODELSYSTEM(void) {
     s_nFrameLockOff = 0;
     cam = xglStudioSelectGetActiveCamera(0);
     if (cam != 0) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r"(&s_inMainCameraPos), "r"(cam + 0xd0)
             : "$2", "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
@@ -1184,7 +1185,7 @@ int nmlModelAskNonLinearCamera(void) {
             } else {
                 ang_ptr = (float *)&s_inMainCameraAng;
                 cam_ptr = (float *)(camera + 0xA0);
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf3,0(%1)\n\t"
                     "lqc2 $vf2,0(%2)\n\t"
                     "vsub.xyz $vf2,$vf2,$vf3\n\t"
@@ -1205,7 +1206,7 @@ int nmlModelAskNonLinearCamera(void) {
 
 void nmlModelGetGblPosition(Vector4 *position)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
@@ -1221,7 +1222,7 @@ void nmlModelSetBackBufferToBattle(int ownerIndex)
     int one = 1;
     p[6] = 0x28;
     p[0] = one;
-    __asm__ __volatile__("" ::: "memory");
+    PS2_ASMV("" ::: "memory");
     p[4] = ownerIndex;
     p[5] = one;
     p[8] = 0;
@@ -1239,7 +1240,7 @@ void nmlModelSetBackBufferToEventSkip(int ownerIndex)
     int one = 1;
     p[6] = 0x28;
     p[0] = one;
-    __asm__ __volatile__("" ::: "memory");
+    PS2_ASMV("" ::: "memory");
     p[4] = ownerIndex;
     p[5] = one;
     p[8] = 0;
@@ -1292,7 +1293,7 @@ void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source)
 void nmlModelSetGlobalPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
 {
     if (idx < 3) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
@@ -1312,7 +1313,7 @@ void nmlModelSetGlobalPointLightCol(unsigned int idx, Vector4 *col)
 void nmlModelSetGlobalPointLightPos(unsigned int idx, qword_t *pos)
 {
     if (idx < 3) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
@@ -1323,7 +1324,7 @@ void nmlModelSetGlobalPointLightPos(unsigned int idx, qword_t *pos)
 void nmlModelSetGlobalPointLightReset(void)
 {
     s_inLayout.slots[0x250 / 4].i &= ~0x2000000;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "sq $0, 0x0(%0)\n"
         "sq $0, 0x10(%0)\n"
         "sq $0, 0x20(%0)\n"
@@ -1334,7 +1335,7 @@ void nmlModelSetGlobalPointLightReset(void)
 void nmlModelSetPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
 {
     if (idx < 3) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&((qword_t *)&s_inLayout.slots[0x100 / 4])[idx]) : "$2", "memory");
@@ -1361,7 +1362,7 @@ void nmlModelSetShadowHeight(float height)
 
 void nmlModelSetShadowVec(const Vector4 *shadowVector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%0)\n\t"
         "sq $2,0(%1)"
         :
@@ -1477,7 +1478,7 @@ void nmlModelSetProreal(NmlProRealState *state)
     xglVectorMulMat(&input->fields.transformOrigin, (const float (*)[4])scaledTransform,
                     (const Vector4 *)transformOrigin);
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%0)\n"
         "lqc2 vf2, 0(%1)\n"
         "vsub.xyz vf2, vf2, vf3\n"
@@ -1537,19 +1538,19 @@ void nmlModelSetProreal(NmlProRealState *state)
     input->fields.textureVOffset = (float)input->fields.unmodeled_104 / (float)screenHeight -
                             input->fields.textureVScale * 0.5f;
 
-    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[0]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[0])
                          : "$2", "memory");
-    __asm__ __volatile__("sq $0, 0(%0)"
+    PS2_ASMV("sq $0, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[1]) : "memory");
-    __asm__ __volatile__("sq $0, 0(%0)"
+    PS2_ASMV("sq $0, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[2]) : "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[3]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[1])
                          : "$2", "memory");
-    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_080[0]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_160)
                          : "$2", "memory");
@@ -1662,7 +1663,7 @@ extern Vector4 s_inScale;
 
 void nmlModelSetScale(Vector4 *scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%0)\n"
         "sq $2, 0(%1)\n"
         :
@@ -1734,7 +1735,7 @@ void nmlModelSetToumei(int enabled)
 
 static inline void _CopyMatrix(void *s, void *d)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0x0(%0)\n"
         "sq $2, 0x0(%1)\n"
         "lq $2, 0x10(%0)\n"
@@ -1799,7 +1800,7 @@ void xglMatrixInverse(void *dst, void *src);
 void nmlModelSetPlace(void *m)
 {
     char *p = (char *)&s_inLayout + 0x80;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
         "lq $2, 0x10(%1)\n"
@@ -1839,12 +1840,12 @@ void nmlModelSetMatOffset(MatName32 *name, MulColor16 *color)
 {
     *(MatName32 *)s_aMatName = *name;
     s_aMatName[31] = 0;
-    __asm__ __volatile__("lq $2, 0(%0)\n\tsq $2, 0(%1)" :: "r"(color), "r"(&s_inMulColor) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%0)\n\tsq $2, 0(%1)" :: "r"(color), "r"(&s_inMulColor) : "$2", "memory");
 }
 
 void nmlModelSetMulColor(const float *color)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -1854,7 +1855,7 @@ void nmlModelSetMulColor(const float *color)
 
 void nmlModelSetFogCol(const float *color)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -1907,7 +1908,7 @@ void nmlModelSetFogDist(float fogNear, float fogFar, float fogMin, float fogMax)
 void nmlModelSetGlobalFogCol(const float *color)
 {
     extern Vector4 s_inGblFogCol;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -2361,7 +2362,7 @@ static void AlphaGroupLastEntry(void)
  */
 static void AlphaGroupSort(int *unused)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         ".set push\n\t"
         ".set noreorder\n\t"
         "lw $8,s_nAlphaGroup\n\t"
@@ -2593,7 +2594,7 @@ static void nmlModelLexBlockDoit(NmlModel *model)
 
         if (s_aMatName[0] != '\0') {
             if (strcmp(s_aMatName, block->materialName) == 0) {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $2, 0(%1)\n\t"
                     "sq $2, 0(%0)"
                     :
@@ -2602,7 +2603,7 @@ static void nmlModelLexBlockDoit(NmlModel *model)
                 );
             }
         } else {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)"
                 :
@@ -2727,12 +2728,12 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
         if (s_inLayout.slots[0x230 / 4].i & 1) {
             s_inLayout.slots[0x1F4 / 4].f = s_inLayout.slots[0x230 / 4].f - s_inLayout.slots[0x1F4 / 4].f;
         }
-        __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"(&s_inLayout.slots[0x1F0 / 4]) : "$2", "memory");
+        PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"(&s_inLayout.slots[0x1F0 / 4]) : "$2", "memory");
         if (arg1 != 0) {
-            __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"((char *)*arg1 + 0x210) : "$2", "memory");
+            PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"((char *)*arg1 + 0x210) : "$2", "memory");
         }
     } else {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
             "vadd.xyz vf2, vf2, vf3\n\t"
@@ -2796,7 +2797,7 @@ static int nmlModelCalcEntryClip(NmlModelSampleView *model)
     do {
     } while (0);
     if (s_nClip != clipDisabled) {
-        __asm__ __volatile__(
+        PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)"
                 :
@@ -2849,15 +2850,15 @@ static float deapth_for_studio(int studio, const Vector4 *vector, float size)
     camera = xglStudioSelectGetActiveCamera(studio);
     new_var = (Vector4 *)screen;
     result = 0.0f;
-    __asm__ __volatile__("" : "+f"(result));
+    PS2_ASMV("" : "+f"(result));
     mat = (float (*)[4])(camera + 0x470);
-    __asm__ __volatile__("" : : "r"(mat));
+    PS2_ASMV("" : : "r"(mat));
     ret = result;
     if (camera != 0) {
         _CurSetMatrix(mat);
         _CurSetViewScaleTrans((const float *)(camera + 0x80), (const float *)(camera + 0x70));
         _CurRotTransPersClip(new_var, vector);
-        __asm__ __volatile__("" : : "f"(result));
+        PS2_ASMV("" : : "f"(result));
         ret = ((float)screen[2] * size) / tanf(*(float *)(camera + 0x94) * 0.5f);
     }
     return ret;
@@ -2996,13 +2997,13 @@ static void nmlModelCalcDropShadow(void)
 }
 
 #define QuadwordCopy(destination, source) \
-    __asm__ __volatile__("lq $2, 0(%1)\n" "sq $2, 0(%0)\n" \
+    PS2_ASMV("lq $2, 0(%1)\n" "sq $2, 0(%0)\n" \
         : : "r" (destination), "r" (source) : "$2", "memory")
 #define QuadwordZeroMatrix(destination) \
-    __asm__ __volatile__("sq $0, 0(%0)\n" "sq $0, 16(%0)\n" \
+    PS2_ASMV("sq $0, 0(%0)\n" "sq $0, 16(%0)\n" \
         "sq $0, 32(%0)\n" "sq $0, 48(%0)\n" : : "r" (destination) : "memory")
 #define Vu0AddVectorXYZ(destination, first, second) \
-    __asm__ __volatile__("lqc2 $vf3, 0(%2)\n\tlqc2 $vf2, 0(%1)\n\t" \
+    PS2_ASMV("lqc2 $vf3, 0(%2)\n\tlqc2 $vf2, 0(%1)\n\t" \
         "vadd.xyz vf2, vf2, vf3\n\tsqc2 $vf2, 0(%0)\n\t.set noreorder\n\t.set reorder" \
         : : "r" (destination), "r" (first), "r" (second) : "memory")
 #define NML_RENDER_PROREAL_CP 0x800u
@@ -3994,12 +3995,12 @@ void nmlModelEntry(U_NmlModel *model)
             (U_s_inLayout.slots[(0x25c) / 4].i) = U_s_nModel;
             U_s_inLayout.fields.mapShadowPartCount = U_s_nMapShadowParts;
             if ((U_s_inLayout.qwords[0x250 / 8] & (U_NML_RENDER_GLOBAL_FOG | U_NML_RENDER_FOG)) == U_NML_RENDER_GLOBAL_FOG) {
-                __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogPara), "r" (&U_s_inGblFogPara) : "$2", "memory");
-                __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogColor), "r" (U_s_inGblFogCol) : "$2", "memory");
+                PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogPara), "r" (&U_s_inGblFogPara) : "$2", "memory");
+                PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogColor), "r" (U_s_inGblFogCol) : "$2", "memory");
             }
             if ((U_s_inLayout.qwords[0x250 / 8] & (U_NML_RENDER_GLOBAL_POINT_LIGHT | U_NML_RENDER_POINT_LIGHT)) == U_NML_RENDER_GLOBAL_POINT_LIGHT) {
-                __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointPosition[0]), "r" (&U_s_inGblPointP[0]) : "$2", "memory");
-                __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointColor[0]), "r" (&U_s_inGblPointC[0]) : "$2", "memory");
+                PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointPosition[0]), "r" (&U_s_inGblPointP[0]) : "$2", "memory");
+                PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointColor[0]), "r" (&U_s_inGblPointC[0]) : "$2", "memory");
             }
             if (parent != 0) {
                 U_s_inLayout.fields.render_status |= parent->layout->fields.render_status & (U_NML_RENDER_TEXMAP_CIRCLE | U_NML_RENDER_TEXMAP_TEXTURE);
@@ -4073,7 +4074,7 @@ void nmlModelEntry(U_NmlModel *model)
                 }
                 U_s_inLayout.fields.clipMasks = U_nmlPacketSetAttributeAlloc16N(quadCount / 16);
                 for (quadIndex = 0; quadIndex < quadCount / 16; quadIndex++) {
-                    __asm__ __volatile__( "sq $0, 0(%0)\n" : : "r" (quadIndex * 16 + (int)U_s_inLayout.fields.clipMasks) : "memory");
+                    PS2_ASMV( "sq $0, 0(%0)\n" : : "r" (quadIndex * 16 + (int)U_s_inLayout.fields.clipMasks) : "memory");
                 }
                 if ((U_s_inLayout.fields.render_status & (U_NML_RENDER_TEXMAP_CIRCLE | U_NML_RENDER_TEXMAP_TEXTURE | U_NML_RENDER_PROREAL)) != 0) {
                     (U_s_inLayout.slots[(0x260) / 4].i) = (int)U_nmlPacketSetAttributeData16N(U_s_inProReal, 0x1e);
@@ -4225,7 +4226,7 @@ void nmlModelEntry(U_NmlModel *model)
                 }
                 if (alphaAdded != 0 && (U_s_nParent == 0 || alphaParentAdded != 0) &&
                     U_s_nAlphaGroup < (512 - 1)) {
-                    __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&sortPos), "r" (&layout->fields.center) : "$2", "memory");
+                    PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&sortPos), "r" (&layout->fields.center) : "$2", "memory");
                     first = (U_NmlModelBlock *)((char *)model + blockOffsets[0]);
                     if (first->materialFlags & 0x10u) {
                         float far = U_k10000;
@@ -4459,7 +4460,7 @@ void nmlModelEntryEffect(NmlModelEc *model)
         LAYOUT_S32(0x25c) = s_nModel;
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
             "vadd.xyz vf2, vf2, vf3\n\t"
@@ -4483,7 +4484,7 @@ void nmlModelEntryEffect(NmlModelEc *model)
         }
         (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
         for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
-            __asm__ __volatile__("sq $0, 0(%0)"
+            PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
         }
         layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
@@ -4535,7 +4536,7 @@ void nmlModelEntryEffect(NmlModelEc *model)
         nextModel = s_nModel + 1;
         __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
         if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
-            __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+            PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                 : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
             AlphaGroupSortEntry(&sortPos);
             s_nAlphaGroup = s_nAlphaGroup + 1;
@@ -4571,7 +4572,7 @@ void nmlModelEntryCard(NmlModelEc *model)
         LAYOUT_S32(0x25c) = s_nModel;
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
             "vadd.xyz vf2, vf2, vf3\n\t"
@@ -4597,7 +4598,7 @@ void nmlModelEntryCard(NmlModelEc *model)
         }
         (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
         for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
-            __asm__ __volatile__("sq $0, 0(%0)"
+            PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
         }
         layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
@@ -4648,7 +4649,7 @@ void nmlModelEntryCard(NmlModelEc *model)
         nextModel = s_nModel + 1;
         __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
         if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
-            __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+            PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                 : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
             AlphaGroupSortEntry(&sortPos);
             s_nAlphaGroup = s_nAlphaGroup + 1;
@@ -4951,7 +4952,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                 bound->x < model->fields.volume->boundsMin.x || bound->z < model->fields.volume->boundsMin.z) {
                 continue;
             }
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n\t"
                 "lqc2 vf2, 0(%2)\n\t"
                 "vsub.xyz vf2, vf2, vf3\n\t"
@@ -4999,7 +5000,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                     Vector4 *minCorner = &pointB;
                     float *matrixRow = layout->fields.weightedMatrices[entry->block.matrixIndices[0] - 1][3];
 
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf3, 0(%1)\n\t"
                         "lqc2 vf2, 0(%2)\n\t"
                         "vadd.xyz vf2, vf2, vf3\n\t"
@@ -5007,7 +5008,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         : : "r"(&pointA),
                             "r"(matrixRow),
                             "r"(&entry->bounds.boxMaxOffset) : "memory");
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf3, 0(%2)\n\t"
                         "lqc2 vf2, 0(%3)\n\t"
                         "vadd.xyz vf2, vf2, vf3\n\t"
@@ -5021,14 +5022,14 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         continue;
                     }
                 } else {
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf3, 0(%1)\n\t"
                         "lqc2 vf2, 0(%2)\n\t"
                         "vadd.xyz vf2, vf2, vf3\n\t"
                         "sqc2 vf2, 0(%0)"
                         : : "r"(worldMax),"r"(&layout->fields.place[3]),
                             "r"(&((NmlLayoutRp *)layout->fields.parent)->fields.place[0]) : "memory");
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf3, 0(%2)\n\t"
                         "lqc2 vf2, 0(%3)\n\t"
                         "vadd.xyz vf2, vf2, vf3\n\t"

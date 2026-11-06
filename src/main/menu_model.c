@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -1542,7 +1543,7 @@ void MenuModelNavelMove(MenuModelUnit *unit)
     actor->position.value.z = control->position.value.z - matrix[3][2];
     actor->position.value.w = 1.0f;
     /* VF2 retains position.w; VF2/VF3 and arithmetic flags are scratch here. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3,0(%0)\n\t"
         "lqc2 vf2,0(%1)\n\t"
         "vadd.xyz vf2,vf2,vf3\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 
@@ -272,7 +273,7 @@ extern StudioCamera save_cam;
 extern unsigned char CfCameraDefine[];
 static inline void QCopy(void *dst, void *src)
 {
-    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
 }
 
 void GameCameraStateSave(void) {
@@ -414,7 +415,7 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
        This pin is a precondition on the surrounding ordinary C's register
        allocation; it is not an operand of any of the three inline blocks
        below. */
-    register float zero asm("$f21") = 0.0f;
+    register float zero PS2_REG("$f21") = 0.0f;
     Vector4 difference;
     float distance;
 
@@ -432,7 +433,7 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
            this site and the matching one below as identical and folds them
            into one shared unaligned ldl/ldr/sdl/sdr block reached by two
            jumps -- which the original does not do. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
@@ -441,7 +442,7 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
         return;
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n"
         "lqc2 vf21, 0(%1)\n"
         "vsub.xyzw vf20, vf20, vf21\n"
@@ -459,7 +460,7 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
         *remaining = 0.0f;
 
     if (*remaining == 0.0f) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
@@ -596,7 +597,7 @@ typedef struct CalcLookAtCamera {
 } CalcLookAtCamera;
 static __inline__ void CalcLookAtDelta(float *delta, float *center, float *pos)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf20, 0(%0)\n"
         "lqc2 vf21, 0(%1)\n"
         "vsub.xyzw vf20, vf20, vf21\n"
@@ -891,7 +892,7 @@ static void CameraType0(void)
     }
     MoveHokan(scratchpad, HKN.position_step, (Vector4 *)CamPosPos,
               &scratchpad->view->position, &HKN.position_remaining);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n"
         "lqc2 vf2, 0(%0)\n"
         "vsub.xyz vf2, vf2, vf3\n"
@@ -903,7 +904,7 @@ static void CameraType0(void)
     scratchpad->view->rotation.x = xglAtan2(scratchpad->look_at_delta.y,
         __builtin_sqrtf(scratchpad->look_at_delta.x * scratchpad->look_at_delta.x
                             + scratchpad->look_at_delta.z * scratchpad->look_at_delta.z));
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -997,7 +998,7 @@ static void CameraType1(void)
         const Vector4 *view_look_at = &view->look_at;
         const Vector4 *view_position = &view->position;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3, 0(%2)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
             "vsub.xyz vf2, vf2, vf3\n\t"
@@ -1058,7 +1059,7 @@ static void CameraType1(void)
         }
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -1104,7 +1105,7 @@ static void CameraType4(void)
         if (mode < 2) {
             MoveHokan((void *)0x70000000, HokanNow[1], (Vector4 *)(scratch + 0x20),
                       (Vector4 *)(*(unsigned char **)(scratch + 0xC) + 0x90), &HokanNow[3]);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n"
                 "lqc2 vf2, 0(%0)\n"
                 "vsub.xyz vf2, vf2, vf3\n"
@@ -1315,7 +1316,7 @@ void GameCamera(void)
         CPS.attribute_mask = 2;
     }
     if (GLS.camera_flags & 0x20) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
@@ -1330,7 +1331,7 @@ void GameCamera(void)
             GLS.camera_id = 0x8000;
         } else {
             if (CamPlayer.header != 0 && !(GLS.camera_flags & 2)) {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf20, 0(%0)\n"
                     "lqc2 vf21, 0(%1)\n"
                     "vsub.xyzw vf20, vf20, vf21\n"
@@ -1340,7 +1341,7 @@ void GameCamera(void)
                     : "memory");
                 UnduCheck((float *)&CamPlyPosOld, &scratchpad->look_at_delta, (struct CamLookAtQuery *)&CamPlayer);
                 if (CamPlayer.height == -1000.0f) {
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lq $2, 0(%1)\n"
                         "sq $2, 0(%0)\n"
                         :
@@ -1421,13 +1422,13 @@ void GameCamera(void)
         }
     }
     if (GLS.camera_flags & 0x80) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (&CamPlyPosOld), "r" (&scratchpad->target->position)
             : "$2", "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
@@ -1475,7 +1476,7 @@ void GameCamera(void)
             xglMatrixStackRotY(scratchpad->target->facing_angle);
             xglMatrixStackTrans(scratchpad->translation);
             xglMatrixStackSave(scratchpad->matrix);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n"
                 "lqc2 vf2, 0(%2)\n"
                 "vsub.xyz vf2, vf2, vf3\n"

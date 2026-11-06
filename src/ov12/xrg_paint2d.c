@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 86: 0x00a4a620..0x00a4c840 (42 functions)
  */
@@ -166,7 +167,7 @@ static void _CalcUV(XrgPaint2DVertex corners[4], const XrgIntRect *base,
 {
     XrgIntRect rect;
 
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(base), "r"(&rect) : "memory");
     if (mode & 1) {
         rect.x += override->x;
@@ -191,7 +192,7 @@ static int _CalcPosOnScreen(void *destination, const void *position, float *offs
     float x;
     float scale;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui %0, %%hi(s_pCurView_00A51220)\n\t"
         "addiu %0, %0, %%lo(s_pCurView_00A51220)\n\t"
         "lw %3, 0(%0)\n\t"
@@ -213,13 +214,13 @@ static int _CalcPosOnScreen(void *destination, const void *position, float *offs
         : "memory");
 
     x = offsetWork[0];
-    __asm__ __volatile__("" : : "f"(x) : "$f0");
+    PS2_ASMV("" : : "f"(x) : "$f0");
     scale = 0.375f;
-    __asm__ __volatile__("" : "+f"(scale) : "f"(x));
+    PS2_ASMV("" : "+f"(scale) : "f"(x));
     offsetWork[0] = x * scale;
     offsetWork[1] *= scale;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vmulax.xyzw ACC, $vf27, $vf31x\n\t"
@@ -257,7 +258,7 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
     void *offset;
     void *addr;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui %1, %%hi(s_pCurView_00A51220)\n\t"
         "addiu %1, %1, %%lo(s_pCurView_00A51220)\n\t"
         "lw %3, 0(%1)\n\t"
@@ -370,14 +371,14 @@ static int _CalcOffset(int *out, int mode, const XrgPaint2DOffset *anchor, XrgPa
                 ptr->flag = 0;
             }
         }
-        __asm__ __volatile__("lqc2 $vf11, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf11, 0(%0)\n\t"
                              "vftoi4.xyzw $vf11, $vf11\n\t"
                              "sqc2 $vf11, 0(%0)"
                              : : "r"(&tmp) : "memory");
         out[0] = tmp.i.x;
         out[1] = tmp.i.y;
         if (ptr != 0) {
-            __asm__ __volatile__(".set noreorder\n\t"
+            PS2_ASMV(".set noreorder\n\t"
                                  "lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)\n\t"
                                  ".set reorder"
@@ -509,7 +510,7 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         XrgUnitMatrix(w.matrix);
         XrgRotMatrixZ(w.matrix, w.matrix, req->angle);
         for (i = 0; i < 4; i++) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf2, 0(%0)\n\t"
                 "lqc2 vf3, 0(%1)\n\t"
                 "lqc2 vf4, 16(%1)\n\t"
@@ -534,7 +535,7 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         }
     }
     for (i = 0; i < 4; i++) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vftoi0.xyzw vf11, vf11\n\t"
             "sqc2 vf11, 0(%1)"
@@ -593,7 +594,7 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         *flag = visible;
         dst->f.y = halfWidth;
         dst->f.x = halfWidth;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vmulq.xyzw vf11, vf11, Q\n\t"
             "sqc2 vf11, 0(%0)"
@@ -622,7 +623,7 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         ((Quadword *) &delta)[0] = 0;
         delta.i.x = screen[0].i.x - screen[1].i.x;
         delta.i.y = screen[0].i.y - screen[1].i.y;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vitof4.xyzw vf11, vf11\n\t"
             "sqc2 vf11, 0(%1)"
@@ -639,7 +640,7 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
             out->f.y = normal.f.y * len;
             out->f.z = normal.f.z * len;
             out->f.w = normal.f.w * len;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf11, 0(%0)\n\t"
                 "vftoi4.xyzw vf11, vf11\n\t"
                 "sqc2 vf11, 0(%0)"
@@ -647,19 +648,19 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
             out++;
             dst++;
         }
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[0]), "r"((idx[0] * 16 + (int) corners)) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[0]), "r"((idx[1] * 16 + (int) corners)) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[1]), "r"((idx[2] * 16 + (int) corners)) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[1]), "r"((idx[3] * 16 + (int) corners)) : "memory");
@@ -702,7 +703,7 @@ static void _DrawNoTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v)
     Quadword col;
     unsigned int prim = 4;
 
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(req->color), "r"(&col) : "memory");
     if (req->alpha != 0) {
         _openVifGifAD(pk);
@@ -729,7 +730,7 @@ static void _DrawWithTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v, uns
     u64 flag = 0;
 
     _CalcUV(loc.corners, (const XrgIntRect *)&req->uLow, req->uvMode, (const XrgIntRect *)&req->uOffset);
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(req->color), "r"(&loc.col) : "memory");
     if (mode == 1) {
         prim = 6;
@@ -894,7 +895,7 @@ void XrgPaint2DOffset3D(XrgPaint2D *paint, const XrgPaint2DOffset *anchor)
     }
     req = paint->request;
     req->offsetMode = 2;
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(anchor), "r"(&req->offsetAnchor) : "memory");
 }
 
@@ -914,7 +915,7 @@ void XrgPaint2DOffset3DForce(XrgPaint2D *paint, const XrgPaint2DOffset *anchor,
     }
     req = paint->request;
     req->offsetMode = 3;
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(anchor), "r"(&req->offsetAnchor) : "memory");
     paint->request->offsetResult.f.x = force;
 }
@@ -954,8 +955,8 @@ void XrgPaint2DColor(XrgPaint2D *paint, const unsigned int *color)
         assert_prog(D_00A59098, D_00A59058, 843);
     }
     dst = paint->request->color;
-    __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(color) : "memory");
-    __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(dst) : "memory");
+    PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(color) : "memory");
+    PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(dst) : "memory");
 }
 
 /*
@@ -1108,7 +1109,7 @@ void XrgPaint2DDrawRect(XrgPaint2D *paint, XrgPaint2DRect *rect)
     }
     req = paint->request;
     *(int *)((char *)req + 8) = rect->mode;
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&rect->x), "r"((char *)req + 0x10) : "memory");
     ((union { int i; float f; } *)((char *)req + 0x24))->f = rect->angle;
     ((union { int i; float f; } *)((char *)req + 0x20))->f = rect->scale;
@@ -1161,9 +1162,9 @@ void XrgPaint2DDrawLine(XrgPaint2D *paint, XrgPaint2DLine3D *line)
     req = paint->request;
     *(void **)req = (void *)_Line3D;
     *(int *)((char *)req + 8) = line->mode;
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&line->start), "r"((char *)req + 0x10) : "memory");
-    __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
+    PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&line->end), "r"((char *)req + 0x20) : "memory");
     ((union { int i; float f; } *)((char *)req + 0x30))->f = line->width * 0.5f;
     {

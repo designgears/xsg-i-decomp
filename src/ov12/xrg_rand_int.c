@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 88: 0x00a4caf8..0x00a4e1e8 (60 functions)
  */
@@ -231,11 +232,11 @@ void XrgUnitMatrix(RgMatrix destination)
 
 void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right)
 {
-    register void *d __asm__("$4") = destination;
-    register void *m __asm__("$5") = left;
-    register void *s __asm__("$6") = right;
+    register void *d PS2_REG("$4") = destination;
+    register void *m PS2_REG("$5") = left;
+    register void *s PS2_REG("$6") = right;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         ".set noreorder\n\t"
         "lqc2 vf4, 0x0(%2)\n\t"
         "lqc2 vf5, 0x10(%2)\n\t"
@@ -333,7 +334,7 @@ void XrgRandVectorRange(RgVector destination, float xRange, float yRange)
  * xglVectorMulMat (src/main/xgl_2.c). */
 void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -355,7 +356,7 @@ void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector)
  * the result keeps the source vector's own w component unchanged. */
 void XrgRotVector(RgVector destination, RgMatrix matrix, RgVector vector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"

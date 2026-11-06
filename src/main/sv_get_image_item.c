@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -1105,7 +1106,7 @@ extern SGsLightBackup _defLight;
 extern Matrix _defMatLc;
 static inline void SGsCopyMat4(void *dst, void *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
         "lq $10, 32(%1)\n\t"
@@ -1183,7 +1184,7 @@ void SGsRestoreEnv(void)
 }
 
 static void sefInitClipViewVolume(void *view) {
-    __asm__ __volatile__("lqc2 vf12, 0(%0)\n\tlqc2 vf13, 16(%0)\n\tlqc2 vf14, 32(%0)\n\tlqc2 vf15, 48(%0)\n\tlqc2 vf16, 64(%0)\n\tlqc2 vf17, 80(%0)\n\tlqc2 vf18, 96(%0)\n\tlqc2 vf19, 112(%0)\n\tnop" :  : "r"(view) : "memory");
+    PS2_ASMV("lqc2 vf12, 0(%0)\n\tlqc2 vf13, 16(%0)\n\tlqc2 vf14, 32(%0)\n\tlqc2 vf15, 48(%0)\n\tlqc2 vf16, 64(%0)\n\tlqc2 vf17, 80(%0)\n\tlqc2 vf18, 96(%0)\n\tlqc2 vf19, 112(%0)\n\tnop" :  : "r"(view) : "memory");
 }
 
 /*
@@ -1195,10 +1196,10 @@ static void sefInitClipViewVolume(void *view) {
  */
 static int sefClipViewVolumeA(void *scheduler)
 {
-    register void *arg __asm__("$4") = scheduler;
-    register int result __asm__("$2");
+    register void *arg PS2_REG("$4") = scheduler;
+    register int result PS2_REG("$2");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         ".set push\n\t"
         ".set noreorder\n\t"
         "move $2,$4\n\t"
@@ -1389,11 +1390,11 @@ void sefDrawParticle2D(SvSpriteParticle *particle, SGsPacket *packet,
     offsetY *= scaleY;
     halfWidth *= 100.0f;
     angle = particle->angle;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0x20\n\t"
         "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
         : "=f"(sine) : "f"(angle) : "$8", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0xE8\n\t"
         "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
         : "=f"(cosine) : "f"(angle) : "$8", "memory");
@@ -1428,7 +1429,7 @@ static void svRotMatrixScale(void *dst, const void *src)
     const char *contrib = base + 0xC0;
     const char *scale = base + 0x100;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf8, 0(%2)\n\t"
         "lqc2 vf1, 0(%1)\n\t"
         "lqc2 vf2, 16(%1)\n\t"
@@ -1528,7 +1529,7 @@ void svDrawModel(SvModelDrawItem *model, void *place)
         }
         {
             unsigned char light[4][16];
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
                 "lq $10, 32(%1)\n\t"
@@ -1543,7 +1544,7 @@ void svDrawModel(SvModelDrawItem *model, void *place)
             {
                 unsigned char *dst = light[3];
                 unsigned char *src = (unsigned char *)model + 0x140;
-                __asm__ __volatile__(
+                PS2_ASMV(
                     ".set noat\n\t"
                     "lui $1, 0x3C00\n\t"
                     "mtc1 $1, $f0\n\t"
@@ -1629,7 +1630,7 @@ static inline int sefClipQuad(SGsGifRecord *v)
 {
     int cfc;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "vmulax.xyzw ACC, vf27, vf1x\n\t"
         "vmadday.xyzw ACC, vf28, vf1y\n\t"
@@ -1720,7 +1721,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
     vertices = &header[3];
     scale = context->scale;
     /* The render basis and viewport registers are live on entry. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf8, 0(%0)\n\t"
         "lqc2 vf31, 0(%1)\n\t"
         "lqc2 vf1, 0(%2)\n\t"
@@ -1750,7 +1751,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         : : "r"(position), "r"(scale), "r"(&particle->localTransform)
         : "memory");
     /* Project the four transformed and scaled matrix rows. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmulax.xyzw ACCxyzw, vf21xyzw, vf9x\n\t"
         "vmadday.xyzw ACCxyzw, vf22xyzw, vf9y\n\t"
         "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf9z\n\t"
@@ -1791,7 +1792,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
             "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
@@ -1808,7 +1809,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
             "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
@@ -1825,7 +1826,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
             "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
@@ -1852,7 +1853,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
     vertices[10].quad = particle->packedColor.quad;
 
     /* Project each corner, divide ST by W, then write the packed XYZ2 lanes. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2 $0, $vi18\n\t"
         "vmulax.xyzw ACCxyzw, vf27xyzw, vf1x\n\t"
         "vmadday.xyzw ACCxyzw, vf28xyzw, vf1y\n\t"
@@ -1904,7 +1905,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         "sqc2 vf9, 32(%0)\n\tsqc2 vf10, 80(%0)\n\t"
         "sqc2 vf11, 128(%0)\n\tsqc2 vf12, 176(%0)"
         : : "r"(vertices) : "memory");
-    __asm__ __volatile__("cfc2.ni %0, $vi18" : "=r"(registerWord));
+    PS2_ASMV("cfc2.ni %0, $vi18" : "=r"(registerWord));
     if (registerWord == 0) {
         packet->tagIndex = packet->count;
         packet->count += 15;
@@ -1947,7 +1948,7 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
     header = &packet->base[packet->count];
     vertices = &header[4];
     angle = particle->angle;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf8, 0(%0)\n\t"
         "vmulax.xyzw ACCxyzw, vf13xyzw, vf16x\n\t"
         "vmadday.xyzw ACCxyzw, vf14xyzw, vf16y\n\t"
@@ -1996,12 +1997,12 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
         : : "r"(position), "r"(scale), "f"(angle)
         : "$8", "memory");
 
-    __asm__ __volatile__("" : : "r"(vertices));
+    PS2_ASMV("" : : "r"(vertices));
     image = svPrepareParticleImage(header, particle, *context->gifRegisters,
                                    6, 66);
     halfWidth = image->halfWidth;
     halfHeight = image->halfHeight;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf5, 0(%2)\n\tmfc1 $2, %0\n\tmfc1 $3, %1\n\t"
         "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
         "vmove.zw vf1zw, vf5zw\n\tvmove.zw vf2zw, vf5zw\n\t"
@@ -2020,7 +2021,7 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
     vertices[4].quad = textureCoordinates[2];
     vertices[6].quad = textureCoordinates[3];
     /* All XYZ2 stores finish before the clip flags are returned to C. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2 $0, $vi18\n\t"
         "vmulax.xyzw ACCxyzw, vf27xyzw, vf1x\n\t"
         "vmadday.xyzw ACCxyzw, vf28xyzw, vf1y\n\t"
@@ -2125,11 +2126,11 @@ void sefDrawParticleList(SvParticleEffect *effect)
             context.textureCoordinates = stqTbl_004CBEA0;
             context.gifRegisters = &_svRegData;
             context.drawVariant = drawVariant;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf16, 0(%0)\n\tlqc2 vf17, 16(%0)\n\t"
                 "lqc2 vf18, 32(%0)\n\tlqc2 vf19, 48(%0)"
                 : : "r"(&_invView) : "memory");
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf13, 0(%0)\n\tlqc2 vf14, 16(%0)\n\tlqc2 vf15, 32(%0)"
                 : : "r"(&_svUnitMatrix) : "memory");
             packet->loopCount = 1;
@@ -2276,11 +2277,11 @@ void sefDrawParticleListCf(SvParticleEffect *effect,
         drawVariant = effect->scriptWords[-1];
     }
     /* The draw helpers consume the persistent camera and unit-matrix VF banks. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf16, 0(%0)\n\tlqc2 vf17, 16(%0)\n\t"
         "lqc2 vf18, 32(%0)\n\tlqc2 vf19, 48(%0)"
         : : "r"(&_invView) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf13, 0(%0)\n\tlqc2 vf14, 16(%0)\n\tlqc2 vf15, 32(%0)"
         : : "r"(&_svUnitMatrix) : "memory");
     _packet.loopCount = 1;
@@ -2321,7 +2322,7 @@ void sefDrawParticleListCf(SvParticleEffect *effect,
             default:
                 if (item->position.alpha != 0 && item->renderType == 4) {
                     MMathApplyMatrix(&position, context->place, &item->origin);
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf1, 0(%0)\n\t"
                         "mfc1 $8, %1\n\t"
                         "qmtc2.ni $8, vf2\n\t"
@@ -2382,13 +2383,13 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
     }
 
     camera = xglStudioGetActiveCamera();
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf21, 0(%0)\n\t"
         "lqc2 vf22, 16(%0)\n\t"
         "lqc2 vf23, 32(%0)\n\t"
         "lqc2 vf24, 48(%0)"
         : : "r"(&camera->viewMatrix) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf25, 0(%0)\n\t"
         "lqc2 vf26, 0(%1)"
         : : "r"(&camera->screenScale), "r"(&camera->screenOffset) : "memory");
@@ -2396,7 +2397,7 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
     battleData->flags = scheduler->flags;
     battleData->partialFlags = scheduler->flags & 2;
     if ((scheduler->flags & 2) == 0 || (drawMode = _draw3D) == 1) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%1)\n\t"
             "sq $8, 0(%0)"
             : : "r"(&battleData->packetInfo), "r"(&scheduler->packetInfo)
@@ -2433,7 +2434,7 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
                            (const Matrix4 *)scheduler->localTransform);
             matrixScale = sefGetMatrixScale((float *)localTransform);
         } else {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
                 "lq $10, 32(%1)\n\t"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "sef.h"
@@ -234,15 +235,15 @@ extern Matrix4 *MMathScaleMatrix(Matrix4 *out, Matrix4 *matrix, Vector4 *scale);
  */
 void sefCalcRotTransSMatrix(Vector4 *angles, Vector4 *translation, Vector4 *scale, Matrix4 *matrix)
 {
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(translation) : "memory");
-    __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf2, vf0" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf3, vf2" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf4, vf3" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf2, 32(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf3, 16(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf4, 0(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(translation) : "memory");
+    PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf2, vf0" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf4, vf3" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf2, 32(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf3, 16(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf4, 0(%0)" : : "r"(matrix) : "memory");
     MMathRotateMatrixXYZ(matrix, matrix, angles);
     MMathScaleMatrix(matrix, matrix, scale);
 }
@@ -261,13 +262,13 @@ extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, Matrix4 *matrix, Vector4 *ang
 static void sefCalcInvView(Matrix4 *matrix) {
     StudioCamera *camera = xglStudioGetActiveCamera();
 
-    __asm__ __volatile__("vmr32.xyzw vf1, vf0" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf2, vf1" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf3, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf0, 48(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf1, 32(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf2, 16(%0)" : : "r"(matrix) : "memory");
-    __asm__ __volatile__("sqc2 vf3, 0(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("vmr32.xyzw vf1, vf0" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf2, vf1" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf0, 48(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf1, 32(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf2, 16(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("sqc2 vf3, 0(%0)" : : "r"(matrix) : "memory");
     MMathRotateMatrixYXZ(matrix, matrix, &camera->rotation);
 }
 
@@ -491,7 +492,7 @@ static SefKey5 *sefProgressKey5(SefKey5 *keys, SefProgressState *state)
  */
 static void sefLerpVectorA(void *keys, Vector4 *dest)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ldl $9, 7(%0)\n\t"
         "ldr $9, 0(%0)\n\t"
         "dsrl $9, $9, 0x10\n\t"
@@ -521,7 +522,7 @@ int sefLerpVector(SefKey5 *keys, SefProgressState *state)
     key = sefProgressKey5(keys, state);
     if (key->end_frame != key[1].end_frame) {
         fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $9, %2\n\t"
             "qmtc2.ni $9, $vf3\n\t"
             "ldl $8, 7(%0)\n\t"
@@ -580,12 +581,12 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
     int status = sefLerpVector(keys, vectors);
     float scale = effect_scale_literal_0_1;
 
-    __asm__ __volatile__("" : : "f"(scale));
+    PS2_ASMV("" : : "f"(scale));
 
     if (status != 0) {
         vectors++;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
             "qmtc2 $8, $vf2\n\t"
@@ -602,7 +603,7 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
 
 void sefLerpIVectorA(void *keys, Vector4 *dest)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ldl $9, 7(%0)\n\t"
         "ldr $9, 0(%0)\n\t"
         "pcgth $10, $0, $9\n\t"
@@ -628,7 +629,7 @@ void sefLerpIVector(SefKey5 *keys, SefProgressState *state)
     key = sefProgressKey5(keys, state);
     if (key->end_frame != key[1].end_frame) {
         fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "ldl $8, 7(%0)\n\t"
             "ldr $8, 0(%0)\n\t"
             "ldl $9, 7(%1)\n\t"
@@ -761,7 +762,7 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
         if (joint >= 0) {
             mats = *(int *)(actor + 0x824);
             if (mats != 0) {
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lq $8, 0(%0)\n\t"
                     "lq $9, 16(%0)\n\t"
                     "lq $10, 32(%0)\n\t"
@@ -783,7 +784,7 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
         return;
     }
     /* Identity: rotate $vf0 = (0,0,0,1) one lane at a time, rows back to front. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
         "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
         "vmr32.xyzw $vf3xyzw, $vf2xyzw\n\t"
@@ -809,7 +810,7 @@ void sefGetNullPosition(SefQuadBlock *out, void *actor, unsigned int id, int fla
         if (joint < 0 || mats == 0) {
             ((float *)out)[1] = 20.0f;
         } else {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%0)\n\t"
                 "sq $8, 0(%1)"
                 :
@@ -830,7 +831,7 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
         if (joint < 0 || mats == 0) {
             ((float *)out)[1] = 20.0f;
         } else {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%0)\n\t"
                 "sq $8, 0(%1)"
                 :
@@ -850,7 +851,7 @@ static inline short sefPointHasOffset(unsigned char *source)
 }
 static inline void sefLoadPointMatrix(Vector4 *dst, unsigned char *rows, Vector4 *position)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "lq $9, 0x10(%0)\n\t"
         "lq $10, 0x20(%0)\n\t"
@@ -871,7 +872,7 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 
     matrix = 0;
     offset = sefPointHasOffset(source);
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(position) : "memory");
     battle = _battleData;
     if (*(int *)(battle + 0x224) & 2) {
         if ((unsigned int)(target - 0x101) < 0x10) {
@@ -908,14 +909,14 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
                     parent = 0;
                 }
                 if (parent != 0) {
-                    __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(parent + 0xC0), "r"(position) : "$8", "memory");
+                    PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(parent + 0xC0), "r"(position) : "$8", "memory");
                 }
             } else if (target & 0x400) {
                 sefGetWeaponPosition((SefQuadBlock *)position, *(void **)(battle + 8), target - 0x400);
                 sefLoadPointMatrix(local, battle + 0x80, position);
                 matrix = (unsigned char *)local;
             } else if (target == 5) {
-                __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(D_00795100), "r"(position) : "$8", "memory");
+                PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(D_00795100), "r"(position) : "$8", "memory");
             } else if (target & 0x800) {
                 sefGetNullPosition((SefQuadBlock *)position, *(void **)battle, target - 0x801, 1);
                 MMathApplyMatrix(position, battle + 0x80, position);
@@ -926,10 +927,10 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
         if (offset != 0) {
             MMathApplyMatrix(position, matrix, (Vector4 *)source);
         } else {
-            __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(matrix + 0x30), "r"(position) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(matrix + 0x30), "r"(position) : "$8", "memory");
         }
     } else {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
             "vadd.xyz $vf1, $vf1, $vf2\n\t"
@@ -974,7 +975,7 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     float x_unit;
     float z_unit;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %1\n\t"
         "qmtc2 $8, $vf4\n\t"
         "vcallms 0xe8\n\t"
@@ -986,7 +987,7 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     );
     pos->x = x_unit * radius;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %1\n\t"
         "qmtc2 $8, $vf4\n\t"
         "vcallms 0x20\n\t"
@@ -1020,7 +1021,7 @@ static void sefGetSpherePos(Vector4 *pos, float radius)
     sefRandSeed = (int)t5;
     vals[2] = (t5 >> 16) & 0x7FFF;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "mfc1 $2, %2\n\t"
         "vitof0.xyzw $vf1, $vf1\n\t"
@@ -1149,9 +1150,9 @@ static static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
     float final_scale;
     float half_scale;
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
-    __asm__ __volatile__("vitof0.xyzw vf1, vf1" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
+    PS2_ASMV("vitof0.xyzw vf1, vf1" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
     random_vector.w = 0.0f;
     random_position = &random_vector;
 
@@ -1167,27 +1168,27 @@ static static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
     random_vector.y = (float)random_y * random_scale;
     random_vector.z = (float)random_z * random_scale;
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("vmul.xyz vf1, vf1, vf2\n\tsqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("vmul.xyz vf1, vf1, vf2\n\tsqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
     extent_vector.y = 0.0f;
 
     half_scale = 0.5f;
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
-    __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
+    PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("vsub.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("vsub.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
 
     final_scale = 0.1f;
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
-    __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
-    __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+    PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
+    PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
 }
 
 /*
@@ -1226,9 +1227,9 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     float final_scale;
     float half_scale;
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
-    __asm__ __volatile__("vitof0.xyzw vf1, vf1" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
+    PS2_ASMV("vitof0.xyzw vf1, vf1" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
     random_vector.w = 0.0f;
 
     random_scale = D_004D82F4;
@@ -1243,27 +1244,27 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     random_vector.y = (float)random_y * random_scale;
     random_vector.z = (float)random_z * random_scale;
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("vmul.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("vmul.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
 
     half_scale = 0.5f;
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
-    __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
+    PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
-    __asm__ __volatile__("vsub.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+    PS2_ASMV("vsub.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
 
     final_scale = D_004D82F8;
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
-    __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
-    __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+    PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
+    PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
 }
 
 extern const float D_004D82FC;
@@ -1281,7 +1282,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
 {
     const int *offsets = offset_table;
 
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(position) : "memory");
 
     if (index == 0) {
         float radius;
@@ -1317,7 +1318,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         Vector4 circle_position;
 
         sefGetCirclePos(&circle_position, (float)offsets[0] * D_004D8304);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "vmr32.xyzw vf1, vf0\n\t"
             "vmr32.xyzw vf2, vf1\n\t"
             "vmr32.xyzw vf3, vf2\n\t"
@@ -1360,7 +1361,7 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
     float angle[4];
     float len;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "vsub.xyz $vf2, $vf0, $vf1\n\t"
         "vmul.xz $vf4, $vf2, $vf2\n\t"
@@ -1373,7 +1374,7 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
         : "r"(dir), "r"(angle), "r"(&neg)
         : "memory");
     angle[1] = srsAtan2(neg.x, neg.z);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vwaitq\n\t"
         "vaddq.x $vf1, $vf0, Q\n\t"
         "qmfc2.ni %0, $vf1"
@@ -1381,7 +1382,7 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
         :
         : "memory");
     angle[0] = srsAtan2(neg.y, len);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf7, 0(%1)\n\t"
         "vaddx.x $vf4, $vf0, $vf7x\n\t"
         "vcallms 0xe8\n\t"
@@ -1428,7 +1429,7 @@ void sefGetVecMatrix(Matrix4 *dest, Vector4 *source_a, Vector4 *source_b)
 {
     Vector4 dir;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vsub.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
@@ -1451,7 +1452,7 @@ void sefGetVecMatrix(Matrix4 *dest, Vector4 *source_a, Vector4 *source_b)
  * before this call; this function neither reads nor writes them as C state.
  */
 static void sefGetDirVector(void *dest, void *source) {
-    __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvsub.z vf1, vf0, vf1\n\tvmulax.xyzw ACC, vf7, vf1x\n\tvmadday.xyzw ACC, vf8, vf1y\n\tvmaddaz.xyzw ACC, vf3, vf1z\n\tvmaddw.xyzw vf1, vf4, vf1w\n\tsqc2 vf1, 0(%1)\n\tnop" :  : "r"(source), "r"(dest) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)\n\tvsub.z vf1, vf0, vf1\n\tvmulax.xyzw ACC, vf7, vf1x\n\tvmadday.xyzw ACC, vf8, vf1y\n\tvmaddaz.xyzw ACC, vf3, vf1z\n\tvmaddw.xyzw vf1, vf4, vf1w\n\tsqc2 vf1, 0(%1)\n\tnop" :  : "r"(source), "r"(dest) : "memory");
 }
 
 static void sefGetOfsRange(Vector4 *position, const void *offset_table, int index);
@@ -1487,10 +1488,10 @@ typedef struct SefParticleOffset {
  */
 static void sefGetStartPos(Vector4 *position, SefParticleOffset *record) {
     sefGetOfsRange(position, record->start_offset_table, *record->start_index);
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&record->start_position) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
-    __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&record->start_position) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
 /*
@@ -1500,10 +1501,10 @@ static void sefGetStartPos(Vector4 *position, SefParticleOffset *record) {
  */
 static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     sefGetOfsRange(position, record->target_offset_table, *record->target_index);
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&record->target_position) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
-    __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&record->target_position) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+    PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
 extern int _parentLine;
@@ -1520,13 +1521,13 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
     speed = *(float *)(record + 0x270) + *(float *)(record + 0x150);
     velocity = (Vector4 *)(record + 0x200);
     if (speed == 0.0f) {
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(speed_out) : "memory");
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(speed_out) : "memory");
         return;
     }
     if (frame != 0 && type != 0) {
         MMathSpecialVectorSub(&dir, velocity, velocity, (float)frame);
     } else {
-        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(velocity), "r"(&dir) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(velocity), "r"(&dir) : "$8", "memory");
     }
     if (type >= 5) {
         sefGetVecMatrix((Matrix4 *)record, (Vector4 *)(record + 0xD0), (Vector4 *)(record + 0xC0));
@@ -1545,13 +1546,13 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         }
     } else if (type == 3) {
         speed *= 10.0f;
-        __asm__ __volatile__("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&dir), "r"(&dir) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&dir), "r"(&dir) : "$8", "memory");
     } else if (type == 1) {
         if (*(int *)_battleData != 0) {
             MMathApplyMatrix(&dir, _battleData + 0x80, &dir);
         }
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "mfc1 $8, %2\n\t"
         "qmtc2.ni $8, $vf2\n\t"
@@ -1586,7 +1587,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
             target += 0x700;
         }
         if ((_nowScheduler->flags & 0x1400) == 0x1000) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
                 "lq $10, 32(%1)\n\t"
@@ -1603,7 +1604,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
     }
     if (*(signed char *)(particle + 0x163) == 0) {
         sefGetSpeed(&speed, particle, target, frame);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
             "vadd.xyz $vf1, $vf1, $vf2\n\t"
@@ -1613,7 +1614,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
             : "memory");
     }
     *(float *)(particle + 0x114) -= _gravity;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vadd.xyz $vf1, $vf1, $vf2\n\t"
@@ -1623,7 +1624,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
         : "memory");
     if (_colision != 0.0f && *(float *)(particle + 0xC4) <= _height) {
         if (*(signed char *)(particle + 0x163) == 0) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%0)\n\t"
                 "lqc2 $vf2, 0(%1)\n\t"
                 "vadd.xyz $vf1, $vf1, $vf2\n\t"
@@ -1636,7 +1637,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
         height = _height;
         scale = _colision;
         *(float *)(particle + 0xC4) = height;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf2\n\t"
@@ -1728,7 +1729,7 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     } else if (target == 1) {
         /* The base matrix becomes the local one: the four quadword moves the
          * original performs inline through the EE's own scratch GPRs. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%0)\n\t"
             "lq $9, 16(%0)\n\t"
             "lq $10, 32(%0)\n\t"
@@ -1744,7 +1745,7 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     } else if (in_battle != 0 && (target & 0x200) != 0) {
         Vector4 direction;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
             "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
@@ -1761,7 +1762,7 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     } else {
         /* The identity matrix, built by rotating $vf0 = (0,0,0,1) one lane at
          * a time and storing the rows back to front. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
             "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
             "vmr32.xyzw $vf3xyzw, $vf2xyzw\n\t"
@@ -1841,12 +1842,12 @@ extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, Matrix4 *matrix, Vector4 *ang
 
 static void sefCalcRotChange(unsigned char *record, int flags, int update)
 {
-    __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(record + SEF_ROTCHANGE_DELTA) : "memory");
+    PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(record + SEF_ROTCHANGE_DELTA) : "memory");
 
     {
-        register float degToRad asm("$f8") = D_004D8318;
+        register float degToRad PS2_REG("$f8") = D_004D8318;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf1\n\t"
             "vmulx.xyz $vf2, $vf2, $vf1x\n\t"
@@ -1856,7 +1857,7 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
             : "$8", "memory");
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "lqc2 $vf2, 0(%2)\n\t"
         "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
@@ -2141,7 +2142,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                     if (line_data->size_vector_keys != 0 &&
                         sefLerpVector(line_data->size_vector_keys,
                                       (SefProgressState *)((unsigned char *)particle + 0x230)) && update_scaled_size) {
-                        __asm__ __volatile__(
+                        PS2_ASMV(
                             "lqc2 $vf1, 0(%0)\n\t"
                             "mfc1 $8, %1\n\t"
                             "qmtc2 $8, $vf2\n\t"
@@ -2167,7 +2168,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                     }
 
                     _nowParentLocal = particle->kind;
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 $vf21, 0(%0)\n\t"
                         "lqc2 $vf1, 0(%2)\n\t"
                         "lqc2 $vf3, 0(%3)\n\t"
@@ -2196,7 +2197,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                     particle->animated_scale_words[3] = particle->first_integer_progress.value;
                     sefAnimate((unsigned char *)line_data, (unsigned char *)particle,
                                particle->animate_advance);
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "vwaitq\n\t"
                         "vmulq.xyz vf22xyz, vf21xyz, Q\n\t"
                         "sqc2 $vf22, 0(%0)"
@@ -2207,7 +2208,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                         component_result = particle->second_integer_progress.value;
                     }
                     if (update_parent) {
-                        __asm__ __volatile__(
+                        PS2_ASMV(
                             "lqc2 $vf1, 0(%1)\n\t"
                             "lqc2 $vf2, 0(%2)\n\t"
                             "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
@@ -2406,7 +2407,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     if (line_data->scale_keys != 0 && ((short *)line_data->scale_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->scale_keys + 8, &line_data->global_position_source);
         vector_scale = D_004D8328;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf2\n\t"
@@ -2419,7 +2420,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     if (line_data->rotation_keys != 0 && ((short *)line_data->rotation_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->rotation_keys + 8, &line_data->parent_position_source);
         vector_scale = D_004D832C;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf2\n\t"
@@ -2433,7 +2434,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
         sefLerpVectorA(line_data->position_keys + 4,
                        (Vector4 *)line_data->position_source);
         vector_scale = D_004D8330;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf2\n\t"
@@ -2748,26 +2749,26 @@ int sefCreateParticle(SefLocalData *data, int kind)
                 jitter.y = sefRandf();
                 jitter.z = sefRandf();
                 jitter.w = 0.0f;
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vmul.xyz vf1, vf1, vf2\n\t"
                     "sqc2 vf1, 0(%0)"
                     : : "r"(&jitter), "r"(&spread) : "memory");
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "mfc1 $8, %1\n\t"
                     "qmtc2 $8, vf2\n\t"
                     "vmulx.xyz vf1, vf1, vf2x\n\t"
                     "sqc2 vf1, 0(%0)"
                     : : "r"(&spread), "f"(0.5f) : "$8", "memory");
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vsub.xyz vf1, vf1, vf2\n\t"
                     "sqc2 vf1, 0(%2)"
                     : : "r"(&jitter), "r"(&spread), "r"(&particle->random_rotation) : "memory");
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 vf2, 0(%0)\n\t"
                     "lwc1 $f8, %1\n\t"
                     "mfc1 $8, $f8\n\t"
@@ -2777,7 +2778,7 @@ int sefCreateParticle(SefLocalData *data, int kind)
                     : : "r"(&particle->random_rotation), "m"(D_004D8338) : "$8", "$f8", "memory");
                 battle = _battleData;
                 if (*(int *)(battle + 0x22C) != 0) {
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lq $8, 0(%1)\n\t"
                         "lq $9, 16(%1)\n\t"
                         "lq $10, 32(%1)\n\t"
@@ -2818,7 +2819,7 @@ int sefCreateParticle(SefLocalData *data, int kind)
             if (data->rotation_keys != 0 && *(short *)(data->rotation_keys + 10) == 1024) {
                 sefLerpVectorA(data->rotation_keys, &particle->size);
                 if (*(short *)data->color_keys != 3) {
-                    __asm__ __volatile__(
+                    PS2_ASMV(
                         "lqc2 vf1, 0(%3)\n\t"
                         "mfc1 $8, %2\n\t"
                         "qmtc2 $8, vf2\n\t"
@@ -2841,7 +2842,7 @@ int sefCreateParticle(SefLocalData *data, int kind)
                 }
                 sefCalcRotChange((unsigned char *)particle, angle, update);
             }
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf1, 0(%0)\n\t"
                 "lqc2 vf2, 0(%1)\n\t"
                 "vadd.xyz vf1, vf1, vf2\n\t"
@@ -2953,7 +2954,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             sefGetParentMatrix(_nowScheduler, (short)scale_mode - 0x1000, &parent_matrix);
         }
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "sq $8, 0(%1)"
         :
@@ -2961,7 +2962,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
         : "$8", "memory");
     if (!scale_is_fixed) {
         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
             "vadd.xyz vf1, vf1, vf2\n\t"
@@ -2979,7 +2980,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             SefLocalData *parent_data = (SefLocalData *)&_lineData[_parentLine * SEF_LINE_DATA_RECORD_SIZE];
 
             if (parent_data == 0) {
-                __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&global->position_delta) : "memory");
+                PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&global->position_delta) : "memory");
                 return 1;
             }
             for (parent_line = 0; parent_line < 0x100; parent_line++) {
@@ -2988,10 +2989,10 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
                     _nowParentLocal = point_handle;
                     if (scale_is_fixed) {
                         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
-                        __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
-                        __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(&line_data->origin_offset) : "memory");
-                        __asm__ __volatile__("vadd.xyz vf1, vf1, vf2");
-                        __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+                        PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+                        PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&line_data->origin_offset) : "memory");
+                        PS2_ASMV("vadd.xyz vf1, vf1, vf2");
+                        PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
                     }
                     if (rotation_is_fixed) {
                         sefGetPosition(&global->parent_position, (unsigned char *)&global->parent_position_source, keys[2][0]);
@@ -3013,7 +3014,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             }
         }
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vsub.xyz vf1, vf1, vf2\n\t"
@@ -3816,8 +3817,8 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     if (origin == 0) {
         origin = (void *)_zeroPos_004CBF00;
     }
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
-    __asm__ __volatile__("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
+    PS2_ASMV("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
     sefSchedulerCreateTable[scheduler_index].savedActive = 0;
     sefSchedulerCreateTable[scheduler_index].scriptAddress = (unsigned char *)table;
     sefSchedulerCreateTable[scheduler_index].delayFrames = (short)flags;
@@ -3840,7 +3841,7 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     effect_block[1] = table;
     effect_block[0] = value2;
     sdvSelectCamera(camera_block, table, value1);
-    __asm__ __volatile__("vmaxw.xyzw vf1, vf0, vf0w\n\t"
+    PS2_ASMV("vmaxw.xyzw vf1, vf0, vf0w\n\t"
                          "sqc2 vf1, 0(%0)"
                          : : "r"(&sefSchedulerCreateTable[scheduler_index].scale) : "memory");
     sefSchedulerCreateTable[scheduler_index].display = 1;
@@ -4016,7 +4017,7 @@ extern void xglMatrixStackSave(float matrix[4][4]);
 extern void xglMatrixInverse(void *dst, void *src);
 static inline void sefCopyMatrix(void *dst, void *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "lq $9, 16(%0)\n\t"
         "lq $10, 32(%0)\n\t"
@@ -4093,7 +4094,7 @@ void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *mat
             *(float *)(D_00794290 + 0xA0) = sefGetMatrixScale((float *)D_00794290);
         } else {
                 inverse = 0;
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
                     "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
                     "vmr32.xyzw $vf3xyzw, $vf2xyzw\n\t"
@@ -4225,13 +4226,13 @@ int sefExecScheduler(void)
             sefCalcRotTransSMatrix(&scheduler->vectors[1], &scheduler->vectors[0],
                                    &scheduler->vectors[2], (Matrix4 *)&scheduler->localMatrix);
 
-            __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->targetMatrix) : "memory");
-            __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->sourceMatrix) : "memory");
+            PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->targetMatrix) : "memory");
+            PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->sourceMatrix) : "memory");
 
             if (running != 0) {
                 sefGetParentMatrix(scheduler, 0, (Matrix4 *)&scheduler->worldMatrix);
             } else {
-                __asm__ __volatile__("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&scheduler->worldMatrix) : "memory");
+                PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&scheduler->worldMatrix) : "memory");
                 if (SLOT(targetActor) != 0) {
                     sefCalcRotTransSMatrix(&SLOT(targetActor)->rotation, &SLOT(targetActor)->position,
                                            &SLOT(targetActor)->scale, &BATTLE->targetMatrix);
@@ -4435,7 +4436,7 @@ static void sefInitBattlePrm(void)
     int count = 0;
     int i;
 
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(D_00795100) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(D_00795100) : "memory");
     for (i = 0; i < sefBattleTbl()->count; i++) {
         record = &sefBattleTbl()->actors[i];
         actor = record->actor;
@@ -4444,10 +4445,10 @@ static void sefInitBattlePrm(void)
         record->seSignal = 0;
         if (actor != 0 && *(short *)((char *)record + 0x84) == 0) {
             position = (Vector4 *)((char *)actor + 0x10);
-            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
-            __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
-            __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
-            __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
+            PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
+            PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+            PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+            PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
             count++;
         }
     }
@@ -4464,16 +4465,16 @@ void sefCaclAllTarget(Vector4 *target)
     int count = 0;
     int i;
 
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(target) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(target) : "memory");
     for (i = 0; i < _battleActor->count; i++) {
         record = &_battleActor->actors[i];
         actor = record->actor;
         if (actor != 0 && record->excluded == 0) {
             position = (Vector4 *)((char *)actor + 0x10);
-            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(target) : "memory");
-            __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
-            __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
-            __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+            PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+            PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+            PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+            PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(target) : "memory");
             count++;
         }
     }
@@ -4618,7 +4619,7 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
         }
 
         sefGetNullPosition(&actor_position, battle_actor->actor, 0, 1);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
             "vsub.xyz vf1, vf1, vf2\n\t"
@@ -4635,15 +4636,15 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
         weight = (range_squared - distance_squared) / range_squared * 0.0078125f;
         if (battle_actor->lightCount == 0) {
             *(SefLightSet *)lights = *(SefLightSet *)_defLight;
-            __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&battle_actor->light_accumulator) : "memory");
+            PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&battle_actor->light_accumulator) : "memory");
             MMathNormalizeVector2(&battle_actor->light_direction, &difference);
-            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&lights[6]), "r"(&battle_actor->light_direction) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&lights[6]), "r"(&battle_actor->light_direction) : "$8", "memory");
             battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
-            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->light_position), "r"(position) : "$8", "memory");
-            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->actor_position), "r"(&actor_position) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->light_position), "r"(position) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->actor_position), "r"(&actor_position) : "$8", "memory");
         }
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $2, %2\n\t"
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf3, 0(%1)\n\t"
@@ -4656,7 +4657,7 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
             : "r"(light), "r"(&battle_actor->light_accumulator), "f"(weight)
             : "$2", "memory");
         battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
             "vadd.xyz vf1, vf1, vf2\n\t"
@@ -5257,7 +5258,7 @@ void sefCreateEffect(SefEffectRequest *request)
         }
         script_request = (SefEffectRequest *)_battleData;
         *script_request = *request;
-        __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(_battleData + 0x30) : "memory");
+        PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(_battleData + 0x30) : "memory");
         sefCnvDeathEffectNo(script_request);
         scCreateScript(script_request);
     }
@@ -5405,7 +5406,7 @@ static unsigned char *sefCreateEffectCf2(int effectNo, int position, void *orien
         scheduler = (SchedulerState *)((unsigned char *)_scheduler + index * 0xab0);
         scheduler->flags |= 0x412;
         if (orientation != 0) {
-            __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"((char *)scheduler + 0x90), "r"(orientation) : "$8", "memory");
+            PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"((char *)scheduler + 0x90), "r"(orientation) : "$8", "memory");
         }
     }
     return (unsigned char *)scheduler;
@@ -5708,19 +5709,19 @@ void sefPushEffect(void)
         if (SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(inUse)) != 0) {
             destination_position = &_savePrm[index].position;
             scheduler_vector0 = scheduler + 0x80;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_position), "r"(scheduler_offset + (int)scheduler_vector0) : "$8", "memory");
             destination_orientation = &_savePrm[index].orientation;
             scheduler_vector1 = scheduler + 0x90;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_orientation), "r"(scheduler_offset + (int)scheduler_vector1) : "$8", "memory");
             destination_vector = &_savePrm[index].saved_vector;
             scheduler_vector2 = scheduler + 0xA0;
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_vector), "r"(scheduler_offset + (int)scheduler_vector2) : "$8", "memory");
@@ -5762,7 +5763,7 @@ void sefPopEffect(void)
             sefCreateEffectCf2(*(short *)(save_cursor + 0x08),
                                record_offset + (int)save_params,
                                (void *)(record_offset + (int)save_params_10), index);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(effect_offset + (int)effect_data), "r"(record_offset + (int)save_params_20) : "$8", "memory");
@@ -5871,7 +5872,7 @@ unsigned char *sefGetParentLine(int line, int parent_local)
  * no evidenced caller in this allocation.
  */
 void sefScaleIVectorAdd(void *dest, void *scale_source, void *addend, float scale) {
-    __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tlqc2 vf3, 0(%1)\n\tvitof0.xyzw vf1, vf1\n\tqmtc2.ni %2, vf2\n\tvmulx.xyz vf1, vf1, vf2x\n\tvadd.xyz vf3, vf1, vf3\n\tsqc2 vf3, 0(%3)\n\tnop" :  : "r"(scale_source), "r"(addend), "r"(scale), "r"(dest) : "memory");
+    PS2_ASMV("lqc2 vf1, 0(%0)\n\tlqc2 vf3, 0(%1)\n\tvitof0.xyzw vf1, vf1\n\tqmtc2.ni %2, vf2\n\tvmulx.xyz vf1, vf1, vf2x\n\tvadd.xyz vf3, vf1, vf3\n\tsqc2 vf3, 0(%3)\n\tnop" :  : "r"(scale_source), "r"(addend), "r"(scale), "r"(dest) : "memory");
 }
 
 /*
@@ -5884,12 +5885,12 @@ void sefScaleIVectorAdd(void *dest, void *scale_source, void *addend, float scal
  */
 void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
 {
-    __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(src) : "memory");
+    PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(src) : "memory");
 
     {
-        register float degToRad asm("$f8") = lit4_004d8354;
+        register float degToRad PS2_REG("$f8") = lit4_004d8354;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf1\n\t"
             "vmulx.xyz $vf2, $vf2, $vf1x\n\t"
@@ -5904,7 +5905,7 @@ void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
 
 void sefMergeMatrixPos(Matrix4 dest, Matrix4 matrix, Vector4 *pos)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0x10(%1)\n\t"
         "lq $10, 0x20(%1)\n\t"
@@ -5935,7 +5936,7 @@ void sefLerpVectorB(void *first, Vector4 *dest, float factor)
 {
     void *second = (char *)first + 10;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $9, %3\n\t"
         "qmtc2.ni $9, $vf3\n\t"
         "ldl $8, 7(%0)\n\t"
@@ -5986,7 +5987,7 @@ void sefLerpIVectorB(void *first, Vector4 *dest, float factor)
 {
     void *second = (char *)first + 10;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ldl $8, 7(%0)\n\t"
         "ldr $8, 0(%0)\n\t"
         "ldl $9, 7(%1)\n\t"

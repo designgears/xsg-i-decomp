@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 57: 0x00a2e698..0x00a2f650 (12 functions)
  */
@@ -118,11 +119,11 @@ int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact)
     RgVector *corners[4];
     int hit;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(D_00A5AB80), "r"(point->oldPosition) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(D_00A5AB90), "r"(point->position) : "memory");
@@ -153,7 +154,7 @@ int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact)
         const float *local = pillar->local;
 
         contact[3] = 1.0f;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf2, 0(%0)\n\t"
             "lqc2 $vf3, 0(%1)\n\t"
             "lqc2 $vf4, 16(%1)\n\t"
@@ -265,7 +266,7 @@ static int CheckInBox(const RgVector point, const RgVector lower,
 static int CheckIntersect(const RgVector from, const RgVector to, float *lower, float *upper);
 static inline void BoxCopy(float *dst, const float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(dst), "r"(src) : "memory");
@@ -460,7 +461,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
     RgVector localCorrection;
     int hit;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%2)\n\t"
         "lqc2 $vf3, 0(%1)\n\t"
         "lqc2 $vf4, 16(%1)\n\t"
@@ -481,7 +482,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         return hit;
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
         "lqc2 $vf4, 16(%2)\n\t"
@@ -494,7 +495,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(worldResults[0]), "r"(localContact),
             "r"(pillar->local) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
         "lqc2 $vf4, 16(%2)\n\t"
@@ -508,7 +509,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         : : "r"(worldResults[1]), "r"(localNormal),
             "r"(pillar->local) : "memory");
     localCorrection[3] = 0.0f;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
         "lqc2 $vf4, 16(%2)\n\t"
@@ -527,14 +528,14 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
 extern float XrgNormalizeVector(RgVector destination, RgVector source);
 static inline void PillarCopy(float *dst, const float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(dst), "r"(src) : "memory");
 }
 static inline void PillarSub(float *dst, const float *a, const float *b)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -543,7 +544,7 @@ static inline void PillarSub(float *dst, const float *a, const float *b)
 }
 static inline void PillarAdd(float *dst, const float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf30, 0(%0)\n\t"
         "lqc2 $vf31, 0(%1)\n\t"
         "vadd.xyzw $vf30, $vf30, $vf31\n\t"

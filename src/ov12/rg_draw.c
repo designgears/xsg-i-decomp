@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 45: 0x00a26c78..0x00a285e0 (45 functions)
  */
@@ -361,15 +362,15 @@ static void _SetScreenSplitMode(RgDraw *pDraw, int splitMode)
     if (pDraw->m_FullScreenMode == 0) {
         if (_GetSplitRect(splitMode, 0, &rect) != 0) {
             pScreenRect0 = &pDraw->m_pStudios[0]->m_pView->screenRect;
-            __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
-            __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(pScreenRect0) : "memory");
+            PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
+            PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(pScreenRect0) : "memory");
             xglCameraSetWindow(xglStudioSelectGetActiveCamera(0), rect.x0,
                                rect.y0, rect.x1, rect.y1);
         }
         if (_GetSplitRect(splitMode, 1, &rect) != 0) {
             pScreenRect1 = &pDraw->m_pStudios[1]->m_pView->screenRect;
-            __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
-            __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(pScreenRect1) : "memory");
+            PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
+            PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(pScreenRect1) : "memory");
             xglCameraSetWindow(xglStudioSelectGetActiveCamera(1), rect.x0,
                                rect.y0, rect.x1, rect.y1);
         }

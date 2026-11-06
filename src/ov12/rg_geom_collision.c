@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 58: 0x00a2f650..0x00a303a8 (15 functions)
  */
@@ -81,7 +82,7 @@ dispatched:
             XrgSubVector(moved, contact.position2, scaled);
             RgGeomPointSetPos((RgGeomPoint *) b, moved);
         }
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vadd.xyzw $vf30, $vf30, $vf31\n\t"
@@ -127,11 +128,11 @@ typedef struct {
 } RgBallVsPolyFrame;
 static inline void BvpCopy(void *dst, const void *src)
 {
-    __asm__ __volatile__("lqc2 $vf31, 0(%0)\n\tsqc2 $vf31, 0(%1)" : : "r"(src), "r"(dst) : "memory");
+    PS2_ASMV("lqc2 $vf31, 0(%0)\n\tsqc2 $vf31, 0(%1)" : : "r"(src), "r"(dst) : "memory");
 }
 static inline void BvpXform(void *dst, const void *src, const void *m)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
         "lqc2 $vf4, 0x10(%2)\n\t"
@@ -146,7 +147,7 @@ static inline void BvpXform(void *dst, const void *src, const void *m)
 }
 static inline void BvpSub(void *dst, const void *a, const void *b)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -155,7 +156,7 @@ static inline void BvpSub(void *dst, const void *a, const void *b)
 }
 static inline void BvpAdd(void *dst, const void *a, const void *b)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vadd.xyzw $vf30, $vf30, $vf31\n\t"
@@ -304,8 +305,8 @@ static int _RobotVsPoly(unsigned int *pArg)
     if (point->flags & 0x10) {
         __RgGeomPointGetPos((RgGeomPoint *) point, f.moved, D_00A552F8, 0xB9);
         copyp = f.copy;
-        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.normal) : "memory");
-        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(copyp) : "memory");
+        PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.normal) : "memory");
+        PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(copyp) : "memory");
         XrgAddVector(f.moved, f.moved, f.copy);
         RgGeomPointSetPos((RgGeomPoint *) point, f.moved);
     }
@@ -454,8 +455,8 @@ static int _BallVsPillar(RgGeomColiArg *pArg)
     result = RgGeomPillarCheckPoint(pillar, point, contact);
     hitContactPtr = hitContact;
     if (result != 0) {
-        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(contact) : "memory");
-        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(hitContactPtr) : "memory");
+        PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(contact) : "memory");
+        PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(hitContactPtr) : "memory");
         XrgClearVector(hit.normal);
         callback = (RgGeomColiCallback) pArg->data[1];
         hit.normal[1] = 1.0f;
@@ -517,8 +518,8 @@ static int _RobVsTray(unsigned int *pArg)
     result = RgGeomTrayCheckBall(tray, point, &res);
     if (result != 0) {
         hitp = &hit;
-        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(res.contact) : "memory");
-        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(hitp) : "memory");
+        PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(res.contact) : "memory");
+        PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(hitp) : "memory");
         if (res.count >= 2) {
             XrgClearVector(sum);
             for (i = 0; i < res.count; i++) {
@@ -528,8 +529,8 @@ static int _RobVsTray(unsigned int *pArg)
             XrgNormalizeVector(normal, sum);
         } else {
             normal = hit.normal;
-            __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(res.normals[0]) : "memory");
-            __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(normal) : "memory");
+            PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(res.normals[0]) : "memory");
+            PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(normal) : "memory");
         }
         callback = (void (*)(void *, void *)) pArg[1];
         if (callback != 0) {
@@ -548,7 +549,7 @@ static int _RobVsTray(unsigned int *pArg)
         if (res.count != 0) {
             m = (float *) res.normals;
             do {
-                __asm__ __volatile__("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)" : : "r"(point->velocity), "r"(vel) : "memory");
+                PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)" : : "r"(point->velocity), "r"(vel) : "memory");
                 dot = m[0] * vel[0] + m[1] * vel[1] + m[2] * vel[2];
                 if (dot < 0) {
                     XrgScaleVector(sum, (float *) m, dot);
@@ -603,11 +604,11 @@ static int _RobVsPillar(RgGeomColiArg *pArg)
     result = RgGeomPillarCheckBall(pillar, (RgGeomPoint *) point, f.c0);
     if (result != 0) {
         contactp = f.hit.contact;
-        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.c0) : "memory");
-        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(contactp) : "memory");
+        PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.c0) : "memory");
+        PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(contactp) : "memory");
         normalp = f.hit.normal;
-        __asm__ __volatile__("lqc2 vf31, 0(%0)" : : "r"(f.c20) : "memory");
-        __asm__ __volatile__("sqc2 vf31, 0(%0)" : : "r"(normalp) : "memory");
+        PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.c20) : "memory");
+        PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(normalp) : "memory");
         hitp = &f.hit;
         if (pArg->data[1] != 0) {
             f.hit.otherObject = pillar;

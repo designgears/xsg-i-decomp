@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 56: 0x00a2dd58..0x00a2e698 (8 functions)
  */
@@ -141,11 +142,11 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
 
     hit_axes = 0;
     hit_count = 0;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(current_position), "r"(end_position) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(last_contact), "r"(current_position) : "memory");
@@ -166,7 +167,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 1) == 0 && current_position[2] < radius - height) {
         current_position[2] = radius - height;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
@@ -192,7 +193,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 2) == 0 && current_position[2] > height - radius) {
         current_position[2] = height - radius;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
@@ -218,7 +219,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 4) == 0 && current_position[0] < radius - width) {
         current_position[0] = radius - width;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
@@ -244,7 +245,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 8) == 0 && current_position[0] > width - radius) {
         current_position[0] = width - radius;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
@@ -256,7 +257,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
 
     if ((hit_axes & 0x10) == 0 && current_position[1] < radius) {
         current_position[1] = radius;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
@@ -265,7 +266,7 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
         hit_count++;
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(clipped_position), "r"(current_position) : "memory");
@@ -276,7 +277,7 @@ extern const char D_00A55240[];
 extern const char D_00A55250[];
 static inline void RgGeomTrayApply(float *dst, float *mtx, float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
         "lqc2 $vf4,16(%1)\n\t"
@@ -310,11 +311,11 @@ int RgGeomTrayCheckBall(void *pTray, float *pCheck, float *pResult)
     if (pResult == 0) {
         assert_prog(D_00A55250, D_00A55228, 0xE4);
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(start), "r"(pCheck + 12) : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(end), "r"(pCheck + 8) : "memory");

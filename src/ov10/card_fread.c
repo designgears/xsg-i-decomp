@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV10 original TU 2: 0x00a08670..0x00a12a90 (101 functions)
  */
@@ -1062,7 +1063,7 @@ void CardDisp(float (*place)[4], s16 no, s16 flag, s16 disp)
         nmlModelSetTexture((char *)0x01C9BB70);
         nmlModelEntryCard(model);
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
         "lq $2, 0x10(%1)\n"
@@ -2725,7 +2726,7 @@ s32 CardPlayCntPower(CardGameWork *work, CardLayerStack *slot)
 }
 
 #define QuadwordCopyMatrix(destination, source) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "lq $2, 0(%1)\n" \
         "sq $2, 0(%0)\n" \
         "lq $2, 16(%1)\n" \
@@ -4624,7 +4625,7 @@ void CGCPYamaDispSub(CardPlaySide *side, int index, int count, unsigned short bu
             CardDispCard(mat, side->deck[i], 1);
         }
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
         "lq $2, 0x10(%1)\n"

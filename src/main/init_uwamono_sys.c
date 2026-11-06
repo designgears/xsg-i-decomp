@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -2855,7 +2856,7 @@ void CalcNearCrossPointCircle(const Vector4 *from, const Vector4 *to,
     if (CrossCheckMapUnitCircle(from, to, unit)) {
         delta = *from;
         delta.y = unit->position.y;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 vf3,0(%0)\n\t"
             "lqc2 vf2,0(%1)\n\t"
             "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
@@ -2950,7 +2951,7 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
     float lenA;
     float lenB;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3,0(%1)\n\t"
         "lqc2 vf2,0(%0)\n\t"
         "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
@@ -2961,7 +2962,7 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
     );
     xglVectorLength(&lenA, &delta);
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3,0(%1)\n\t"
         "lqc2 vf2,0(%0)\n\t"
         "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"

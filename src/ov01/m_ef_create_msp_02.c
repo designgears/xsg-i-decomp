@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 28: 0x00a360e0..0x00a36be8 (6 functions)
  */
@@ -154,7 +155,7 @@ extern void fnMSP02_DP000();
 static void fnMSP02_PO000(void *self, MspEffect *effect);
 static inline void msp02Copy(Vector4 *destination, Vector4 *source)
 {
-    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+    PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(destination), "r"(source)
                          : "$8", "memory");
 }
@@ -218,14 +219,14 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
     if (effect->frame < 20) {
         /* Quadword copy: previousPosition = position (VU0 library copy). */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&effect->previousPosition), "r"(&effect->position)
             : "$8", "memory");
         /* position.xyz += velocity.xyz, leaving position.w alone. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
             "vadd.xyz $vf1, $vf1, $vf2\n"
@@ -234,7 +235,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             : "r"(&effect->position), "r"(&effect->position), "r"(&effect->velocity)
             : "memory");
         /* Quadword copy: previousTarget = target. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
@@ -254,7 +255,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
         MMathRotateMatrixYX(matrix, 0, &effect->rotation);
         /* matrix[3] = position, keeping the W lane of vf0. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
             "sqc2 $vf1, 48(%0)\n"
@@ -263,7 +264,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             : "memory");
 
         /* work = vf0, the VU0 constant (0, 0, 0, 1). */
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
         {
             /* The swing offset in the rotated frame, in polar form: the two
              * circular components of the current angle, scaled by the spread.
@@ -278,7 +279,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             float cosine;
             float sine;
 
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "mfc1 $8, %1\n"
                 "qmtc2.ni $8, $vf4\n"
                 "vcallms 0xe8\n"
@@ -289,7 +290,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                 : "$8", "memory");
             work.x = cosine * effect->spread;
 
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "mfc1 $8, %1\n"
                 "qmtc2.ni $8, $vf4\n"
                 "vcallms 0x20\n"
@@ -315,8 +316,8 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
         effect->turn.y = work.y;
 
         /* lead = vf0; work = tip - target (xyz). */
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&lead) : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&lead) : "memory");
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
             "vsub.xyz $vf1, $vf1, $vf2\n"
@@ -335,7 +336,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
         /* work = target + velocity (xyz), and that becomes the translation the
          * lead offset is rotated about. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
             "vadd.xyz $vf1, $vf1, $vf2\n"
@@ -343,7 +344,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(&work), "r"(&effect->target), "r"(&effect->velocity)
             : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
             "sqc2 $vf1, 48(%0)\n"
@@ -363,7 +364,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
          trail >= 0; slotOffset -= MSP02_SLOT_BYTES, trail--) {
         effect->active[trail + 1] = effect->active[trail];
         for (point = 0; point < MSP02_TRAIL_POINTS; point++) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n"
                 "sq $8, 0(%0)\n"
                 :
@@ -377,7 +378,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
     effect->active[0] = 0;
     for (point = 0; point < MSP02_TRAIL_POINTS; point++)
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&effect->points[0][point]) : "memory");
+        PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&effect->points[0][point]) : "memory");
 
     if (effect->frame < 20) {
         effect->active[0] = 1;
@@ -385,7 +386,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             MMathVectorInterpolation(&work, &effect->target, &effect->previousTarget,
                                      (float)point * 0.5f);
             MMathRotateMatrixYX(matrix, 0, &effect->rotation);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1, $vf0\n"
                 "sqc2 $vf1, 48(%0)\n"
@@ -394,7 +395,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                 : "memory");
 
             /* A small random spray around the interpolated trail point. */
-            __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
+            PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
             work.x = MMathMakeRandom() * 0.06f - 0.03f;
             work.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&effect->points[0][point], matrix, &work);
@@ -413,7 +414,7 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
     if (effect->frame < 20) {
         parameters = (struct MspCreationParameters *)effect->creationParameters;
         /* The draw orientation is the trail turn with a half-turn on Y. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
@@ -429,9 +430,9 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
 
         {
             /* Keep the target translation's address in v1, as the original does. */
-            register Vector4 *target asm("$3") = &effect->target;
+            register Vector4 *target PS2_REG("$3") = &effect->target;
 
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 extern unsigned char *MenuEtherDataBuf;
@@ -127,7 +128,7 @@ void MenuEtherCapSet(void)
 
         org[0x17] = 0;
         j = 0;
-        __asm__(".align 3");
+        PS2_ASM(".align 3");
     lp:
         if (j >= 12)
             goto end;

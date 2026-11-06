@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -204,7 +205,7 @@ static void *getPeer_Unit(void *java_unit)
                     ((unsigned char *)model + model->part_transform_offset);
                 source = &table[peer->serial];
                 transform = &peer->transform;
-                __asm__ __volatile__("lq $2, 0(%1)\n"
+                PS2_ASMV("lq $2, 0(%1)\n"
                                      "sq $2, 0(%0)\n"
                                      "lq $2, 16(%1)\n"
                                      "sq $2, 16(%0)\n"

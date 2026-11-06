@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 29: 0x00a36be8..0x00a37ab8 (7 functions)
  */
@@ -61,11 +62,11 @@ static void makePath(void *work)
 
     MEfGetActorMatrix(&actorMatrix, state->actor, state->coord);
     MMathApplyMatrix(&worldOrigin, &actorMatrix, &state->localOffset);
-    __asm__ __volatile__("lqc2 $vf1, 0(%0)" : : "r"(&worldOrigin) : "memory");
-    __asm__ __volatile__("vmove.w $vf1, $vf0" : : : "memory");
-    __asm__ __volatile__("sqc2 $vf1, 48(%0)" : : "r"(&actorMatrix) : "memory");
+    PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&worldOrigin) : "memory");
+    PS2_ASMV("vmove.w $vf1, $vf0" : : : "memory");
+    PS2_ASMV("sqc2 $vf1, 48(%0)" : : "r"(&actorMatrix) : "memory");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
         "lq $10, 32(%1)\n\t"
@@ -76,10 +77,10 @@ static void makePath(void *work)
         "sq $11, 48(%0)"
         : : "r"(&matrix), "r"(&actorMatrix)
         : "$8", "$9", "$10", "$11", "memory");
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&direction) : "memory");
-    __asm__ __volatile__("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
-    __asm__ __volatile__("vmove.w $vf1, $vf0" : : : "memory");
-    __asm__ __volatile__("sqc2 $vf1, 48(%0)" : : "r"(&matrix) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&direction) : "memory");
+    PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
+    PS2_ASMV("vmove.w $vf1, $vf0" : : : "memory");
+    PS2_ASMV("sqc2 $vf1, 48(%0)" : : "r"(&matrix) : "memory");
 
     direction.x = 1.0f;
     MMathApplyMatrix(&direction, &matrix, &direction);
@@ -97,10 +98,10 @@ static void makePath(void *work)
         MMathApplyMatrix(&direction, &headingMatrix, &offset_0[i]);
         MMathApplyMatrix(&direction, &pitchMatrix, &direction);
         MMathApplyMatrix(&direction, &yawMatrix, &direction);
-        __asm__ __volatile__("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
-        __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(&worldOrigin) : "memory");
-        __asm__ __volatile__("vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz" : : : "memory");
-        __asm__ __volatile__("sqc2 $vf1, 0(%0)" : : "r"(&state->control[i]) : "memory");
+        PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
+        PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(&worldOrigin) : "memory");
+        PS2_ASMV("vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz" : : : "memory");
+        PS2_ASMV("sqc2 $vf1, 0(%0)" : : "r"(&state->control[i]) : "memory");
         MMathRotateMatrixY(&yawMatrix, &yawMatrix, sweepStep);
     }
 }
@@ -177,11 +178,11 @@ static void fnSOLB_PR000(void *self, void *work)
     for (i = SOLB_TRAIL_LENGTH - 2; i >= 0; i--) {
         state->active[i + 1] = state->active[i];
         state->birth_age[i + 1] = state->birth_age[i];
-        __asm__ volatile("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
+        PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
     }
     state->active[0] = 0;
     state->birth_age[0] = 0;
-    __asm__ volatile("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
     if (state->age < 23) {
         state->birth_age[0] = state->age;
         state->active[0] = 1;
@@ -228,15 +229,15 @@ typedef struct MEfGsPacket {
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
 #define QuadwordCopyT0(destination, source) \
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
 #define Vu0SetOrigin(destination) \
-    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
 } MEfGsCamParams;
 #define Vu0Sin(result, angle) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "mfc1 $8, %1\n" \
         "qmtc2 $8, vf4\n" \
         "vcallms 0x20\n" \
@@ -246,7 +247,7 @@ typedef struct MEfGsCamParams {
         : "f" (angle) \
         : "$8", "memory")
 #define Vu0Cos(result, angle) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "mfc1 $8, %1\n" \
         "qmtc2 $8, vf4\n" \
         "vcallms 0xe8\n" \
@@ -408,7 +409,7 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[i];
             MEfCalcAngle(&aim, point, &state->trail[i + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"
@@ -473,7 +474,7 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[j];
             MEfCalcAngle(&aim, point, &state->trail[j + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"
@@ -541,7 +542,7 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[j];
             MEfCalcAngle(&aim, point, &state->trail[j + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"

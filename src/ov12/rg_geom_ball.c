@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 53: 0x00a2ca28..0x00a2d290 (7 functions)
  */
@@ -144,30 +145,30 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
     float s;
     float t;
 
-    __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                          "sqc2 $vf31, 0(%0)\n\t"
                          : : "r"(oldPosition1), "r"(((float *)ball1->unmodeled_30)) : "memory");
-    __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                          "sqc2 $vf31, 0(%0)\n\t"
                          : : "r"(oldPosition2), "r"(((float *)ball2->unmodeled_30)) : "memory");
-    __asm__ __volatile__("lqc2 $vf30, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(motion1), "r"(ball1->position), "r"(oldPosition1) : "memory");
-    __asm__ __volatile__("lqc2 $vf30, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(motion2), "r"(ball2->position), "r"(oldPosition2) : "memory", "$2");
-    __asm__ __volatile__("lqc2 $vf30, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(startOffset), "r"(oldPosition1), "r"(oldPosition2) : "memory");
     /* The outer product of the two motions is computed and stored, and
        nothing reads it back. */
-    __asm__ __volatile__("lqc2 $vf30, 0(%1)\n\t"
+    PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vopmula.xyz ACC, vf30, vf31\n\t"
                          "vopmsub.xyz vf30, vf31, vf30\n\t"
@@ -211,7 +212,7 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         motion1[1] *= s;
         motion1[2] *= s;
         motion1[3] *= s;
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%1)\n\t"
@@ -220,23 +221,23 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         motion2[1] *= t;
         motion2[2] *= t;
         motion2[3] *= t;
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%1)\n\t"
                              : : "r"(motion2), "r"(oldPosition2) : "memory");
-        __asm__ __volatile__("lqc2 $vf30, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                              "lqc2 $vf31, 0(%2)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(motion1), "r"(oldPosition1), "r"(oldPosition2) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(oldPosition1) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(oldPosition2) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(motion1) : "memory");
         contact->distance = XrgLengthVector(motion1);
@@ -259,24 +260,24 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         closest[1] = motion1[1] * s;
         closest[2] = motion1[2] * s;
         closest[3] = motion1[3] * s;
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(oldPosition1) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(closest) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(ball2->position) : "memory");
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(ball2->position) : "memory");
         contact->distance = XrgLengthVector(closest);
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(closest) : "memory");
     } else if (RG_GEOM_BALL_MIN_MOTION_SQ <= speedSq2) {
@@ -298,18 +299,18 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         closest[1] = motion2[1] * s;
         closest[2] = motion2[2] * s;
         closest[3] = motion2[3] * s;
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(oldPosition2) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(ball1->position) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(closest) : "memory");
-        __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+        PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
@@ -317,13 +318,13 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         contact->distance = XrgLengthVector(closest);
         XrgNegateVector(contact->penetration, closest);
     } else {
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(ball1->position) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(ball2->position) : "memory");
-        __asm__ __volatile__("lqc2 $vf31, 0(%1)\n\t"
+        PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(startOffset) : "memory");
         contact->distance = XrgLengthVector(startOffset);
@@ -352,7 +353,7 @@ int RgGeomBallCheckBallDist(RgGeomBall *ball1, RgGeomBall *ball2,
 
     /* The position begins at byte 0x20 in the point body of each ball.
        Both operands are loaded before the difference overwrites VF30. */
-    __asm__ __volatile__("lqc2 $vf30, 0(%0)\n\t"
+    PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                          "lqc2 $vf31, 0(%1)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%2)"
@@ -372,27 +373,27 @@ int RgGeomBallCheckBallDist(RgGeomBall *ball1, RgGeomBall *ball2,
                 float y_component = direction[1];
 
                 y_component *= penetration;
-                __asm__ __volatile__("" : : "f"(y_component));
+                PS2_ASMV("" : : "f"(y_component));
                 x_component *= penetration;
                 (*penetration_vector)[1] = y_component;
                 (*penetration_vector)[0] = x_component;
             }
             /* Keep each pair's store order and its scalar inputs visible. */
-            __asm__ __volatile__("" : : "r"(penetration_vector));
+            PS2_ASMV("" : : "r"(penetration_vector));
             {
                 float z_component = direction[2] * penetration;
 
                 (*penetration_vector)[2] = z_component;
-                __asm__ __volatile__("" : : "f"(z_component));
+                PS2_ASMV("" : : "f"(z_component));
                 (*penetration_vector)[3] = direction[3] * penetration;
             }
-            __asm__ __volatile__("lqc2 $vf31, 0(%0)\n\t"
+            PS2_ASMV("lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)"
                                  :
                                  : "r"(&ball1->position),
                                    "r"(contact->position1)
                                  : "memory");
-            __asm__ __volatile__("lqc2 $vf31, 0(%0)\n\t"
+            PS2_ASMV("lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)"
                                  :
                                  : "r"(&ball2->position),

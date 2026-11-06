@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 typedef struct CollisionPoint {
@@ -135,7 +136,7 @@ static int CheckBallBoxCollision(CollisionPoint *hit_position,
              * no ACC/Q/VI/flags are read or modified. The compiler does not
              * allocate C values in VF registers. Caller point storage is
              * 16-byte aligned and the memory clobber covers the full copy. */
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf31, 0(%1)\n\tsqc2 vf31, 0(%0)"
                 : : "r"(hit_position), "r"(args->line_start) : "memory");
         }

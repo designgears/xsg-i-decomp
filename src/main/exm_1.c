@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "exm_1.h"
 
@@ -2336,7 +2337,7 @@ ExMotionChannel_XM *EXM_CalcExMotion(ExMotionJointWork_XM *work, ExMotionChannel
         if (index < jointCount) {
             do {
                 Matrix_XM *current = ExMotionMatrices(work) + work->saved_index + index;
-                __asm__ __volatile__(
+                PS2_ASMV(
                     "lqc2 $vf20,0(%0)\n\t"
                     "lqc2 $vf21,0(%1)\n\t"
                     "vsub.xyzw $vf20,$vf20,$vf21\n\t"

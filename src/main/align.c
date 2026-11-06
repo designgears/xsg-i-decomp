@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "align.h"
@@ -30,7 +31,7 @@ void alignXAxisEuler(const Vector4 *direction, Vector4 *euler) {
     Vector4 components;
     float pitch;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.y vf11, vf0, vf0w\n\t"
         "vnop\n\t"
@@ -77,7 +78,7 @@ void alignXAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.y vf11, vf0, vf0w\n\t"
         "vnop\n\t"
@@ -126,7 +127,7 @@ void alignYAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.z vf11, vf0, vf0w\n\t"
         "vnop\n\t"
@@ -175,7 +176,7 @@ void alignZAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.x vf11, vf0, vf0w\n\t"
         "vnop\n\t"

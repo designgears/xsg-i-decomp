@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 36: 0x00a3a090..0x00a3aac8 (5 functions)
  */
@@ -116,7 +117,7 @@ int MEfCreate_KOSBW02(void *storage)
     MEfCalcAngle(&angle_vector, &state->target_point, &state->start_point);
     angle_vector.z = (float)state->rotation_degrees * 0.017453292f;
     MMathRotateMatrixYXZ(state->matrix, 0, &angle_vector);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n"
         "vmove.w $vf1, $vf0\n"
         "sqc2 $vf1, 48(%0)\n"
@@ -125,13 +126,13 @@ int MEfCreate_KOSBW02(void *storage)
         : "memory");
     state->angle = 0.0f;
     state->angle_step = 0.12566371f;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r"(&state->position), "r"(&state->start_point)
         : "$8", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
@@ -168,17 +169,17 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
     Vector4 *trail_point;
 
     if (work->frame < 25) {
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&work->previous_position), "r"(&work->position)
             : "$8", "memory");
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)"
+        PS2_ASMV("sqc2 $vf0, 0(%0)"
                              :
                              : "r"(&work_vector)
                              : "memory");
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n"
             "qmtc2 $8, $vf4\n"
             "vcallms 0x20\n"
@@ -188,7 +189,7 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
             : "f"(work->angle)
             : "$8", "memory");
         work_vector.x = work->half_length * sine;
-        __asm__ __volatile__(
+        PS2_ASMV(
             "mfc1 $8, %1\n"
             "qmtc2 $8, $vf4\n"
             "vcallms 0xe8\n"
@@ -210,7 +211,7 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
             point_index = trail * 3 + point;
             shifted_point = &work->points[point_index + 3];
             source_point = &work->points[point_index];
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $8, 0(%1)\n"
                 "sq $8, 0(%0)\n"
                 :
@@ -223,7 +224,7 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
     work->active[0] = 0;
     for (point = 0; point < 3; point++) {
         trail_point = &work->points[point];
-        __asm__ __volatile__("sqc2 $vf0, 0(%0)"
+        PS2_ASMV("sqc2 $vf0, 0(%0)"
                              :
                              : "r"(trail_point)
                              : "memory");
@@ -236,14 +237,14 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
                                      &work->previous_position,
                                      (float)point / 3.0f);
             MMathRotateMatrixYX(matrix, 0, &work->rotation);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1, $vf0\n"
                 "sqc2 $vf1, 48(%0)\n"
                 :
                 : "r"(matrix), "r"(&work_vector)
                 : "memory");
-            __asm__ __volatile__("sqc2 $vf0, 0(%0)"
+            PS2_ASMV("sqc2 $vf0, 0(%0)"
                                  :
                                  : "r"(&work_vector)
                                  : "memory");
@@ -261,7 +262,7 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
 
     if (work->frame < 25) {
         MMathRotateMatrixYXZ(matrix, 0, &work->rotation);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
             "sqc2 $vf1, 48(%0)\n"
@@ -404,7 +405,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
                     gp->count += n2;
                 }
             }
-             __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__("");
+             PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM("");
         }
     }
     if (effect->frame < 26) {

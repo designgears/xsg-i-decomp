@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 /*
@@ -1072,7 +1073,7 @@ extern const char D_004D2718[];
 extern const char D_004D2730[];
 extern const char D_004D2790[];
 extern const char D_004D27B0[];
-#define DEBUG_BREAK() __asm__ __volatile__("break 0")
+#define DEBUG_BREAK() PS2_ASMV("break 0")
 
 float UnduCheck(float *sample, void *output, UnduQuery *query)
 {
@@ -1089,7 +1090,7 @@ float UnduCheck(float *sample, void *output, UnduQuery *query)
     float y;
     float z;
 
-    __asm__ __volatile__("sw $31,%0" : "=m"(caller));
+    PS2_ASMV("sw $31,%0" : "=m"(caller));
     if (work == 0)
         work = (UnduWork *)0x70000000;
     if (CurrentColiHead == 0)

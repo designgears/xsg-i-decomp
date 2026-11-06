@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 25: 0x00a34e90..0x00a358a0 (7 functions)
  */
@@ -76,10 +77,10 @@ int MEfCreate_SMP01(Smp01CreateObject *object)
     MMathApplyMatrix(&work->spawnPoint, actor_matrix, &work->source_offset);
     MEfGetActorCoord(actor_coordinate, work->coordinate_actor, -1);
     MEfCalcCircumXZ(&work->targetPosition, actor_coordinate, 1.0f);
-    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+    PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->position), "r"(&work->spawnPoint)
                          : "$8", "memory");
-    __asm__ __volatile__("lq $8,0(%1)\n\tsq $8,0(%0)"
+    PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->previousPosition), "r"(&work->spawnPoint)
                          : "$8", "memory");
     MEfCalcAngle(&work->angles, &work->targetPosition, &work->spawnPoint);
@@ -124,7 +125,7 @@ static void updateSmoke(Smp01Work *work)
     for (i = 8; i >= 0; i--) {
         smoke->count[i + 1] = smoke->count[i];
         for (j = 0; j < 3; j++) {
-            __asm__ __volatile__("lq $8, 0(%1)\n\t"
+            PS2_ASMV("lq $8, 0(%1)\n\t"
                                  "sq $8, 0(%0)"
                                  :
                                  : "r"(&smoke->smoke[i + 1][j]), "r"(&smoke->smoke[i][j])
@@ -134,7 +135,7 @@ static void updateSmoke(Smp01Work *work)
     }
     smoke->count[0] = 0;
     for (j = 0; j < 3; j++) {
-        __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&smoke->smoke[0][j]) : "memory");
+        PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&smoke->smoke[0][j]) : "memory");
     }
     if (work->frame < 15) {
         smoke->count[0] = 1;
@@ -142,10 +143,10 @@ static void updateSmoke(Smp01Work *work)
             MMathVectorInterpolation(&offset, &work->position, &work->previousPosition,
                                      (float)j / 3.0f);
             MMathRotateMatrixYX(matrix, 0, &work->angles);
-            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
-            __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-            __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
-            __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
+            PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
+            PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+            PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+            PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
             offset.x = MMathMakeRandom() * 0.06f - 0.03f;
             offset.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&smoke->smoke[0][j], matrix, &offset);
@@ -176,14 +177,14 @@ static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work)
     work->phase = phase + 1;
     work->phaseCount = work->phaseCount - phase + 5;
 
-    __asm__ __volatile__("lq $8, 0(%1)\n\t"
+    PS2_ASMV("lq $8, 0(%1)\n\t"
                          "sq $8, 0(%0)"
                          :
                          : "r"(&work->previousPosition), "r"(&work->position)
                          : "$8", "memory");
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&offset) : "memory");
 
-    __asm__ __volatile__("mfc1 $8, %1\n\t"
+    PS2_ASMV("mfc1 $8, %1\n\t"
                          "qmtc2.ni $8, vf4\n\t"
                          "vcallms 0x20\n\t"
                          "qmfc2.i $8, vf1\n\t"
@@ -193,7 +194,7 @@ static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work)
                          : "$8", "memory");
     offset.x = (float)work->phase * 0.06f * sine;
 
-    __asm__ __volatile__("mfc1 $8, %1\n\t"
+    PS2_ASMV("mfc1 $8, %1\n\t"
                          "qmtc2.ni $8, vf4\n\t"
                          "vcallms 0xe8\n\t"
                          "qmfc2.i $8, vf1\n\t"
@@ -207,12 +208,12 @@ static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work)
     MMathRotateMatrixYX(matrix, 0, &work->angles);
     {
         /* Keep the translation load's address in v1, as at 0x00a352ec. */
-        register Vector4 *spawnPoint asm("$3") = &work->spawnPoint;
+        register Vector4 *spawnPoint PS2_REG("$3") = &work->spawnPoint;
 
-        __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(spawnPoint) : "memory");
+        PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(spawnPoint) : "memory");
     }
-    __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-    __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+    PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+    PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
     MMathApplyMatrix(&work->position, matrix, &offset);
 
     if (work->phase >= 4) {
@@ -221,7 +222,7 @@ static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work)
 
     if (work->phase >= 5) {
         work->phase = 0;
-        __asm__ __volatile__("lq $8, 0(%1)\n\t"
+        PS2_ASMV("lq $8, 0(%1)\n\t"
                              "sq $8, 0(%0)"
                              :
                              : "r"(&work->phaseStart), "r"(&work->position)
@@ -242,13 +243,13 @@ static void fnSMP01_PR010(Smp01Object *object, Smp01Work *work)
     if (work->frame < SMP01_DRAW_FRAME_LIMIT) {
         float phase;
 
-        __asm__ __volatile__("lq $8, 0(%1)\n\t"
+        PS2_ASMV("lq $8, 0(%1)\n\t"
                              "sq $8, 0(%0)"
                              :
                              : "r"(&work->previousPosition), "r"(&work->position)
                              : "$8", "memory");
         phase = ((float)(work->phase + 1) / 10.0f) * 1.5707964f + 4.712389f;
-        __asm__ __volatile__("mfc1 $8, %0\n\t"
+        PS2_ASMV("mfc1 $8, %0\n\t"
                              "qmtc2.ni $8, vf4\n\t"
                              "vcallms 0x20\n\t"
                              "qmfc2.i $8, vf1\n\t"
@@ -277,9 +278,9 @@ static void fnSMP01_DM000(Smp01Object *self, Smp01Work *work)
     if (work->frame < SMP01_DRAW_FRAME_LIMIT) {
         MMathRotateMatrixYXZ(matrix, 0, &work->angles);
         MMathScaleMatrix(matrix, matrix, &scale_0_00A514A0);
-        __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&work->position) : "memory");
-        __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-        __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+        PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&work->position) : "memory");
+        PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+        PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
         MEfDrawModel(matrix, work->modelEntry, work->textureName);
     }
 }
@@ -447,7 +448,7 @@ static void fnSMP01_DP000(void *task, Smp01Draw *effect)
           gp->count += n2;
         }
       }
-__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");
+PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");PS2_ASM("");
     }
   }
 

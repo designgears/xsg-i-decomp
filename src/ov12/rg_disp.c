@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 44: 0x00a26a00..0x00a26c78 (3 functions)
  */
@@ -95,7 +96,7 @@ int RgDispWpnDat_GetNameUVWH(const char *name, u64 *uvwh)
 
     for (i = 0; i < 36; i++) {
         if (strcasecmp(s_aWepPicTbl_0[i].name, name) == 0) {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf31, 0(%1)\n\t"
                 "sqc2 $vf31, 0(%0)\n\t"
                 : : "r"(uvwh), "r"(s_aWepPicTbl_0[i].uvwh) : "memory");

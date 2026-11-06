@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV10 original TU 1: 0x00a00410..0x00a08670 (15 functions)
  */
@@ -3327,7 +3328,7 @@ s32 CardMainProc(CardGameWork *work) {
         float *eye = &xglStudioSelectGetActiveCamera(0)->position.x;
 
         /* sceVu0CopyVector: the original copies the quadword with lq/sq. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 52: 0x00a2c288..0x00a2ca28 (18 functions)
  */
@@ -244,7 +245,7 @@ void RgGeomPointPassTime(RgGeomPoint *pPoint, float deltaTime)
         assert_prog(rg_point_assert_expression, D_00A55100, 172);
     }
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(pPoint->oldPosition), "r"(pPoint->position) : "memory");
@@ -257,7 +258,7 @@ void RgGeomPointPassTime(RgGeomPoint *pPoint, float deltaTime)
         pPoint->maxXYSpd * pPoint->maxXYSpd) {
         RgVector horizontal;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf31, 0(%1)\n\t"
             "sqc2 $vf31, 0(%0)\n\t"
             : : "r"(horizontal), "r"(pPoint->velocity) : "memory");

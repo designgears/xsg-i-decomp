@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "near_dir.h"
@@ -536,7 +537,7 @@ void SEQ_moveSPL(Actor *actor)
         Vector4 delta;
         float length;
 
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lqc2 $vf3,0(%1)\n\t"
             "lqc2 $vf2,0(%2)\n\t"
             "vsub.xyz $vf2xyz,$vf2xyz,$vf3xyz\n\t"
@@ -1026,7 +1027,7 @@ void ACT_updatePlayer(Actor *actor)
 
         /* sceVu0CopyMatrix shape: the camera basis is copied as four quadwords
          * through a fixed scratch register. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             "lq $2, 16(%1)\n"

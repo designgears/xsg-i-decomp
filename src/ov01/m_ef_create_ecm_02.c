@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 31: 0x00a38190..0x00a387a8 (5 functions)
  */
@@ -57,7 +58,7 @@ int MEfCreate_ECM02(void *self)
 
     state->frame = 0;
     /* Preserve the original four-word vector before replacing its second float. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "sq $8, 0(%0)"
         :
@@ -101,7 +102,7 @@ static void makeCoord(void *destination, float radius, float angle, void *effect
      * materializes that constant into "local" in one quadword store instead of
      * four scalar stores. Only z (0.0) and w (1.0) survive from this store: x
      * and y are overwritten immediately below. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "sqc2 $vf0, 0(%1)"
         : "=m"(local)
         : "r"(&local)

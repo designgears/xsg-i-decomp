@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #ifndef PAUSE_MENU_PAGE_ENEMY_H
 #define PAUSE_MENU_PAGE_ENEMY_H
 
@@ -18,7 +19,7 @@
 /* 64-byte four-row matrix copy through the R5900 128-bit GPRs
  * (sceVu0CopyMatrix idiom). */
 #define QuadwordCopyMatrix(destination, source) \
-    __asm__ __volatile__( \
+    PS2_ASMV( \
         "lq $2, 0(%1)\n" \
         "sq $2, 0(%0)\n" \
         "lq $2, 16(%1)\n" \

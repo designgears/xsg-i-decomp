@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 43: 0x00a25d30..0x00a26a00 (12 functions)
  */
@@ -57,7 +58,7 @@ static int _GetAgwsNameUVWH(int nameIndex, struct AgwsNameUvwh *uvwh)
              * at +0x10. VF31 carries those four words into the output object;
              * it is scratch VU state for this transfer.
              */
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "sqc2 vf31, 0(%1)\n\t"
                 :

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -270,7 +271,15 @@ int scMoveParseScript(ScriptObject *script)
 }
 
 /* splat _N → ELF name.N aliases (migrate_tu) */
+#ifndef PORT_HOST
 __asm__(".equ moveHandlerTbl.1, moveHandlerTbl_1");
+#endif
+#ifndef PORT_HOST
 __asm__(".size moveHandlerTbl.1, 8");
+#endif
+#ifndef PORT_HOST
 __asm__(".equ waitHandlerTbl.0, waitHandlerTbl_0");
+#endif
+#ifndef PORT_HOST
 __asm__(".size waitHandlerTbl.0, 24");
+#endif

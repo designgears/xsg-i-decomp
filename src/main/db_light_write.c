@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 extern int mode_004DC5A8;
@@ -682,7 +683,7 @@ void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
     ((DebugLineScratch *)0x70000000)->input[0].z = position->z;
     ((DebugLineScratch *)0x70000000)->input[0].w = 1.0f;
     transformVector(((DebugLineScratch *)0x70000000)->output, ((DebugLineScratch *)0x70000000)->input, 1, &((DebugLineScratch *)0x70000000)->transform);
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         "lq $2, 16(%1)\n"
@@ -945,7 +946,7 @@ void updateCursorMode1(void)
     xglVectorLength(&len, &vel);
     if (len > 40.0f) {
         {
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)\n\t"
                 "lq $2, 16(%1)\n\t"
@@ -1137,7 +1138,7 @@ void updateCursorModePlane(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             "lq $2, 16(%1)\n"
@@ -1193,7 +1194,7 @@ void updateCursorModePlane(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             "lq $2, 16(%1)\n"
@@ -1302,7 +1303,7 @@ void updateCursorMode0(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             "lq $2, 16(%1)\n"
@@ -1358,7 +1359,7 @@ void updateCursorMode0(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             "lq $2, 16(%1)\n"
@@ -2145,7 +2146,7 @@ void updateLight(int mode)
     translation.y = 0.0f;
     translation.z = 5.0f;
     translation.w = 1.0f;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%0)\n\t"
         "sq $2,0(%1)\n\t"
         "lq $2,16(%0)\n\t"

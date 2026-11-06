@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 33: 0x00a39088..0x00a397c0 (4 functions)
  */
@@ -91,10 +92,10 @@ static void fnEAD00_PR000(void *self, void *work)
     int part_id;
 
     /* VU0's constant vf0 supplies zero xyz and unit w for both local points. */
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&first_point) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&first_point) : "memory");
     first_point.x = -0.1f;
     first_point.z = -0.2f;
-    __asm__ __volatile__("sqc2 $vf0, 0(%0)" : : "r"(&second_point) : "memory");
+    PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&second_point) : "memory");
     actor_id = state->actor_id;
     second_point.x = -9.0f;
     part_id = state->part_id;
@@ -112,7 +113,7 @@ static void fnEAD00_PR000(void *self, void *work)
     matrix_input = &transformed_point;
     for (point_index = 0, remaining = 2; remaining >= 0; ) {
         /* Copy the complete aligned vector through the original scratch GPR. */
-        __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)"
+        PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)"
                              : : "r"(matrix_input), "r"(&first_point)
                              : "$8", "memory");
         transformed_point.x *= frame_scale;
@@ -120,7 +121,7 @@ static void fnEAD00_PR000(void *self, void *work)
                          matrix_input);
         first_point.x += 0.1f;
 
-        __asm__ __volatile__("lq $8, 0(%1)\n\tsq $8, 0(%0)"
+        PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)"
                              : : "r"(matrix_input), "r"(&second_point)
                              : "$8", "memory");
         remaining--;
@@ -180,9 +181,9 @@ typedef struct EAD00DrawWork {
 #define SCE_GS_ZBUF_1 0x4E
 #define EAD00_FADE_START 62
 #define QuadwordCopyT0(destination, source) \
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
 #define Vu0SetOrigin(destination) \
-    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
 typedef struct EAD00CamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -301,16 +302,16 @@ static void fnEAD00_DP000(void *self, void *work)
                 QuadwordCopyT0(&angles, angle);
                 angles.z = ray_angle + (float)segment * 0.5235988f;
                 MMathRotateMatrixYXZ(&rotation, 0, &angles);
-                __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
-                __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-                __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
-                __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
-                __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(displacement) : "memory");
-                __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
-                __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
-                __asm__ __volatile__("lqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
-                __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
-                __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&point) : "memory");
+                PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+                PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+                PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
+                PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+                PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(displacement) : "memory");
+                PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+                PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+                PS2_ASMV("lqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
+                PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+                PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&point) : "memory");
 
                 if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &point)) {
                     clip = 2;

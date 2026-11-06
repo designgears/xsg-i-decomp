@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "game.h"
@@ -554,7 +555,7 @@ void GameStateRestoreCameraLight(void)
 extern void GameStateSaveCameraLight(void);
 static inline void GameQCopy(void *dst, void *src)
 {
-    __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+    PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
 }
 
 void GameStateSave(void)
@@ -654,13 +655,13 @@ void GamePushSaveDataUser(void)
     for (i = 0; i < 8; i++) {
         save->params[i] = state->params[i];
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r" (&save->actor_position), "r" (&state->saved_actor_position)
         : "$2", "memory");
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
@@ -2619,7 +2620,7 @@ void Game(void)
         GamePopSaveDataUser();
         position_dst = (Quadword *)&player->position;
         Java_xeno_util_Runtime_jump_sub(gameLoopCG.current_event_id, -1);
-        __asm__ __volatile__(
+        PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :

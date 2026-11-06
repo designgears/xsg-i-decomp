@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "act_1.h"
 
@@ -143,7 +144,7 @@ void ACT_init(void)
             ((char *)a + 0x6e0)[i] = 0;
         }
         for (i = 0; i < 3; i++) {
-            __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x970 + i * 16) : "memory");
+            PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x970 + i * 16) : "memory");
         }
         for (i = 10; i >= 0; i--) {
             ((int *)((char *)a + 0x8d0))[i] = 0;
@@ -156,9 +157,9 @@ void ACT_init(void)
         AF(int, a, 0x678) = 0;
         AF(short, a, 0x674) = 1;
         AF(int, a, 0x67c) = 0;
-        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x640) : "memory");
-        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x650) : "memory");
-        __asm__ volatile("sq $0, 0(%0)" : : "r"((char *)a + 0x660) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x640) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x650) : "memory");
+        PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x660) : "memory");
         AF(float, a, 0x66c) = 1.0f;
         AF(float, a, 0x62c) = 1.0f;
         AF(float, a, 0x670) = 1.0f;

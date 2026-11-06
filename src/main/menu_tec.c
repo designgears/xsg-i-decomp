@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 typedef struct MenuTecData {
@@ -2718,5 +2719,9 @@ void MenuTec(void)
 extern MenuTecData *MenuTecDataBuf;
 
 /* nested-function ELF name aliases (migrate_tu) */
+#ifndef PORT_HOST
 __asm__(".equ subListChange.11, subListChange.0");
+#endif
+#ifndef PORT_HOST
 __asm__(".size subListChange.11, 732");
+#endif

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 26: 0x00a19388..0x00a1c7d8 (90 functions)
  */
@@ -1539,7 +1540,7 @@ void _CheckLockOn(RgWeapon *weapon)
         target = RgRobotGetTarget(robotId);
         if (target != 0) {
             __RgGeomPointGetPos((RgGeomPoint *) target, (RgPointVector *) targetWorld, D_00A53658, 1819);
-            __asm__ __volatile__(
+            PS2_ASMV(
                 "lqc2 $vf2, 0(%0)\n\t"
                 "lqc2 $vf3, 0(%1)\n\t"
                 "lqc2 $vf4, 16(%1)\n\t"

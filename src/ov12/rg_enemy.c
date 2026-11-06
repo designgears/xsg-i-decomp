@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 6: 0x00a09ba0..0x00a0cbc8 (9 functions)
  */
@@ -771,7 +772,7 @@ static void _JobEnemy(RgEnemyControl *pCtrl)
             RgRobotAccelarate(pRobot, move);
         }
     }
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n"
         "sqc2 $vf31, 0(%0)\n"
         :

@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV01 original TU 30: 0x00a37ab8..0x00a38190 (4 functions)
  */
@@ -179,9 +180,9 @@ typedef struct MEfGsPacket {
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
 #define QuadwordCopyT0(destination, source) \
-    __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+    PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
 #define Vu0SetOrigin(destination) \
-    __asm__ __volatile__("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+    PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -211,7 +212,7 @@ extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camer
 extern Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles);
 extern Vector4 *ECM01ApplyMatrix(Vector4 *destination, const Matrix4 *matrix, const Vector4 *point) __asm__("MMathApplyMatrix");
 #define Vu0SefAddVectorXYZ(destination, first, second) \
-    __asm__ __volatile__("lqc2 vf1, 0(%1)\n" "lqc2 vf2, 0(%2)\n" "vadd.xyz vf1, vf1, vf2\n" "sqc2 vf1, 0(%0)\n" \
+    PS2_ASMV("lqc2 vf1, 0(%1)\n" "lqc2 vf2, 0(%2)\n" "vadd.xyz vf1, vf1, vf2\n" "sqc2 vf1, 0(%0)\n" \
         : : "r" (destination), "r" (first), "r" (second) : "memory")
 #define ECMW ((ECM01DWork *)vwork)
 static inline MEfGsQword *ecm01OpenTag(MEfGsPacket *packet, int pre, int prim, int reg_count,
@@ -295,14 +296,14 @@ static void fnECM01_DP000(void *self, void *vwork)
                     colour[0].channel[3] = colour[0].channel[3] * (60 - ECMW->frame_age[segment]) / 20;
                 }
                 MMathRotateMatrixYX(&matrix, 0, &ECMW->angles);
-                __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
+                PS2_ASMV("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
                                      :
                                      : "r"(&currentPosition), "r"(&matrix)
                                      : "memory");
                 target = &point;
                 angle = ECMW->initial_angle + ECMW->angle_step * (float)(ECMW->frame - segment);
                 Vu0SetOrigin(target);
-                __asm__ __volatile__("mfc1 $8, %1\n\t"
+                PS2_ASMV("mfc1 $8, %1\n\t"
                                      "qmtc2.ni $8, vf4\n\t"
                                      "vcallms 0x20\n\t"
                                      "qmfc2.i $8, vf1\n\t"
@@ -312,11 +313,11 @@ static void fnECM01_DP000(void *self, void *vwork)
                                      : "$8", "memory");
                 point.y = radius * angle;
                 ECM01ApplyMatrix(target, &matrix, target);
-                __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
+                PS2_ASMV("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
                                      :
                                      : "r"(target), "r"(&matrix)
                                      : "memory");
-                __asm__ __volatile__("lqc2 vf1, 48(%1)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 0(%0)"
+                PS2_ASMV("lqc2 vf1, 48(%1)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 0(%0)"
                                      :
                                      : "r"(target), "r"(&matrix)
                                      : "memory");

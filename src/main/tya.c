@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -761,4 +762,6 @@ void tyaCaptureEnd(void)
     GameLoopState.flags &= 0xFAFFFFFF;
 }
 
+#ifndef PORT_HOST
 __asm__("head.1 = head.0");
+#endif

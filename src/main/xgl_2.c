@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 
 #include "shared.h"
@@ -89,7 +90,7 @@ float xglAtan2(float y, float x)
 
 void xglMemCopy64(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
@@ -111,7 +112,7 @@ void xglMemCopy64(void *destination, const void *source, int count)
 
 void xglMemCopy64b(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
@@ -133,7 +134,7 @@ void xglMemCopy64b(void *destination, const void *source, int count)
 
 void xglMemCopy16(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
@@ -149,7 +150,7 @@ void xglMemCopy16(void *destination, const void *source, int count)
 
 void xglMemCopy16b(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
@@ -165,7 +166,7 @@ void xglMemCopy16b(void *destination, const void *source, int count)
 
 void xglMemCopy8(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "ld $2,0(%1)\n\t"
         "sd $2,0(%0)\n\t"
@@ -181,7 +182,7 @@ void xglMemCopy8(void *destination, const void *source, int count)
 
 void xglMemCopy8b(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "ld $2,0(%1)\n\t"
         "sd $2,0(%0)\n\t"
@@ -197,7 +198,7 @@ void xglMemCopy8b(void *destination, const void *source, int count)
 
 void xglMemCopy4(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lw $2,0(%1)\n\t"
         "sw $2,0(%0)\n\t"
@@ -213,7 +214,7 @@ void xglMemCopy4(void *destination, const void *source, int count)
 
 void xglMemCopy4b(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lw $2,0(%1)\n\t"
         "sw $2,0(%0)\n\t"
@@ -229,7 +230,7 @@ void xglMemCopy4b(void *destination, const void *source, int count)
 
 void xglMemCopy2(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lh $2,0(%1)\n\t"
         "sh $2,0(%0)\n\t"
@@ -245,7 +246,7 @@ void xglMemCopy2(void *destination, const void *source, int count)
 
 void xglMemCopy2b(void *destination, const void *source, int count)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "1:\n\t"
         "lh $2,0(%1)\n\t"
         "sh $2,0(%0)\n\t"
@@ -446,9 +447,9 @@ void xglVectorOuter(Vector4 *destination, const Vector4 *left,
 
 void xglVectorLength(float *destination, const Vector4 *vector)
 {
-    register float length asm("$2");
+    register float length PS2_REG("$2");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "vmul.xyz vf3xyz, vf3xyz, vf3xyz\n\t"
         "vaddy.x vf3x, vf3x, vf3y\n\t"
@@ -462,14 +463,14 @@ void xglVectorLength(float *destination, const Vector4 *vector)
         : "memory"
     );
     *destination = length;
-    __asm__ __volatile__("" : : "r"(destination));
+    PS2_ASMV("" : : "r"(destination));
 }
 
 float xglPointLength(const Vector4 *point1, const Vector4 *point2)
 {
     float length;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf2, 0(%1)\n\t"
         "lqc2 vf3, 0(%2)\n\t"
         "vsub.xyz vf2xyz, vf2xyz, vf3xyz\n\t"
@@ -491,7 +492,7 @@ float xglPointLengthXZ(const Vector4 *point1, const Vector4 *point2)
 {
     float length;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf2, 0(%1)\n\t"
         "lqc2 vf3, 0(%2)\n\t"
         "vsub.xyz vf2xyz, vf2xyz, vf3xyz\n\t"
@@ -510,7 +511,7 @@ float xglPointLengthXZ(const Vector4 *point1, const Vector4 *point2)
 
 void xglVectorNormal(Vector4 *destination, const Vector4 *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf2, 0(%1)\n\t"
         "vmul.xyz vf3xyz, vf2xyz, vf2xyz\n\t"
         "vaddy.x vf3x, vf3x, vf3y\n\t"
@@ -557,7 +558,7 @@ void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
     Vector4 edge0;
     Vector4 edge1;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
         "vsub.xyz vf2xyz, vf2xyz, vf3xyz\n\t"
@@ -567,7 +568,7 @@ void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
         : "memory"
     );
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
         "vsub.xyz vf2xyz, vf2xyz, vf3xyz\n\t"
@@ -586,7 +587,7 @@ void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
 void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix,
                      const Vector4 *vector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%2)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
         "lqc2 vf28, 16(%1)\n\t"
@@ -650,7 +651,7 @@ void xglMatrixUnit(float matrix[4][4])
         {0.0f, 0.0f, 0.0f, 1.0f}
     };
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
         "lq $2,16(%1)\n\t"
@@ -668,7 +669,7 @@ extern float unit_1[16];
 
 void xglMatrixUnit4s(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2, 0x0(%0)\n\t"
         "sq $2, 0x0(%1)\n\t"
         "lq $2, 0x10(%0)\n\t"
@@ -684,7 +685,7 @@ void xglMatrixUnit4s(float matrix[4][4])
 
 void xglMatrixMul(Matrix *destination, Matrix *left, Matrix *right)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf2, 0(%2)\n\t"
         "lqc2 vf3, 16(%2)\n\t"
         "lqc2 vf4, 32(%2)\n\t"
@@ -733,7 +734,7 @@ void xglMatrixReverse(Matrix *destination, const Matrix *source)
         }
     }
     /* The original SDK copy reuses scratch $2 for all four rows. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%1)\n\t"
         "sq $2,0(%0)\n\t"
         "lq $2,16(%1)\n\t"
@@ -846,7 +847,7 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
     float sinY;
     float sinZ;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -858,7 +859,7 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
     );
     xglVectorScaleXYZ(1.0f - cosineForScale, &oneMinusCosAxis, axis);
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -870,7 +871,7 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
     );
     xglVectorScaleXYZ(sine, &sinAxis, axis);
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -893,7 +894,7 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
     rotation.elements[3] = 0.0f;
     rotation.elements[4] = oneMinusCosX * ay - sinZ;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -911,7 +912,7 @@ void xglMatrixRotV(Matrix *destination, Matrix *source, Vector4 *axis,
     rotation.elements[8] = oneMinusCosX * az + sinY;
     rotation.elements[9] = oneMinusCosY * az - sinX;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -938,7 +939,7 @@ void xglMatrixRotX(Matrix4 destination, const Matrix4 source, float angle)
     float sine;
     float cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -949,7 +950,7 @@ void xglMatrixRotX(Matrix4 destination, const Matrix4 source, float angle)
         : "memory"
     );
     cosSin[1] = sine;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -961,7 +962,7 @@ void xglMatrixRotX(Matrix4 destination, const Matrix4 source, float angle)
     );
     cosSin[0] = cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,0(%1)\n\t"
         "lqc2 vf28,16(%1)\n\t"
         "lqc2 vf29,32(%1)\n\t"
@@ -988,7 +989,7 @@ void xglMatrixRotY(Matrix4 destination, const Matrix4 source, float angle)
     float sine;
     float cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -999,7 +1000,7 @@ void xglMatrixRotY(Matrix4 destination, const Matrix4 source, float angle)
         : "memory"
     );
     cosSin[1] = sine;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -1011,7 +1012,7 @@ void xglMatrixRotY(Matrix4 destination, const Matrix4 source, float angle)
     );
     cosSin[0] = cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,16(%1)\n\t"
         "lqc2 vf27,0(%1)\n\t"
         "lqc2 vf29,32(%1)\n\t"
@@ -1038,7 +1039,7 @@ void xglMatrixRotZ(Matrix4 destination, const Matrix4 source, float angle)
     float sine;
     float cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -1049,7 +1050,7 @@ void xglMatrixRotZ(Matrix4 destination, const Matrix4 source, float angle)
         : "memory"
     );
     cosSin[1] = sine;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,vf4\n\t"
@@ -1061,7 +1062,7 @@ void xglMatrixRotZ(Matrix4 destination, const Matrix4 source, float angle)
     );
     cosSin[0] = cosine;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $2,32(%1)\n\t"
         "lqc2 vf27,0(%1)\n\t"
         "lqc2 vf28,16(%1)\n\t"
@@ -1110,7 +1111,7 @@ void xglMatrixStackUnit(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackUnit >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "vnop\n\t"
@@ -1126,7 +1127,7 @@ void xglMatrixStackMul(const Matrix4 matrix)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackMul >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "lqc2 $vf4,0(%1)\n\t"
         "lqc2 $vf5,16(%1)\n\t"
@@ -1144,7 +1145,7 @@ void xglMatrixStackReverse(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackReverse >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "vnop\n\t"
@@ -1160,7 +1161,7 @@ void xglMatrixStackInverse(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackInverse >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "vnop\n\t"
@@ -1176,7 +1177,7 @@ void xglMatrixStackScale(const float scale[4])
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackScale >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "lqc2 $vf4,0(%1)\n\t"
@@ -1192,7 +1193,7 @@ void xglMatrixStackTrans(const float translation[4])
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackTrans >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "lqc2 $vf4,0(%1)\n\t"
@@ -1208,7 +1209,7 @@ void xglMatrixStackRotV(const float axis[4], float angle)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackRotV >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "lqc2 $vf5,0(%1)\n\t"
         "qmtc2 %2,$vf4\n\t"
@@ -1224,7 +1225,7 @@ void xglMatrixStackRotX(float angle)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackRotX >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %1,$vf4\n\t"
@@ -1240,7 +1241,7 @@ void xglMatrixStackRotY(float angle)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackRotY >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %1,$vf4\n\t"
@@ -1256,7 +1257,7 @@ void xglMatrixStackRotZ(float angle)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackRotZ >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %1,$vf4\n\t"
@@ -1275,7 +1276,7 @@ void xglMatrixStackFrustum(float left, float right, float bottom, float top,
     volatile float *window = (volatile float *)0x11004800;
     unsigned int entry = (unsigned int)Vu0CallMatrixStackFrustum >> 3;
 
-    __asm__ __volatile__("ctc2.i %0,$vi27" : : "r"(entry) : "memory");
+    PS2_ASMV("ctc2.i %0,$vi27" : : "r"(entry) : "memory");
     window[0] = left;
     window[1] = bottom;
     window[2] = nearPlane;
@@ -1284,15 +1285,15 @@ void xglMatrixStackFrustum(float left, float right, float bottom, float top,
     window[6] = farPlane;
     ((volatile int *)window)[7] = 0;
     ((volatile int *)window)[3] = 0;
-    __asm__ __volatile__("sync" : : : "memory");
-    __asm__ __volatile__("vcallmsr $vi27\n\t"
+    PS2_ASMV("sync" : : : "memory");
+    PS2_ASMV("vcallmsr $vi27\n\t"
                          "nop"
                          : : : "memory");
 }
 
 void xglMatrixStackSave(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi0\n\t"
         "sqc2 $vf28,0(%0)\n\t"
         "sqc2 $vf29,16(%0)\n\t"
@@ -1307,7 +1308,7 @@ void xglMatrixStackSave(float matrix[4][4])
 
 void xglMatrixStackLoad(float matrix[4][4])
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi0\n\t"
         "lqc2 $vf28,0(%0)\n\t"
         "lqc2 $vf29,16(%0)\n\t"
@@ -1324,7 +1325,7 @@ void xglMatrixStackPushUnit(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackPushUnit >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "vnop\n\t"
@@ -1340,7 +1341,7 @@ void xglMatrixStackPush(void)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackPush >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "vnop\n\t"
@@ -1356,7 +1357,7 @@ void xglMatrixStackPop(int count)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackPop >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "ctc2 %1,$vi1\n\t"
@@ -1372,7 +1373,7 @@ void xglMatrixStackMulVector(Vector4 *out, const Vector4 *vector)
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackMulVector >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "vnop\n\t"
         "lqc2 $vf4,0(%2)\n\t"
@@ -1391,7 +1392,7 @@ void xglMatrixStackRTPS(Vector4 *out, const Vector4 *point,
 {
     unsigned int entry = (unsigned int)Vu0CallMatrixStackRTPS >> 3;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "lqc2 $vf4,0(%2)\n\t"
         "lqc2 $vf5,0(%3)\n\t"
@@ -1450,7 +1451,7 @@ void xglMatrix2Quaternion(float quaternion[4], const Matrix *matrix)
 
 void xglQuaternion2Matrix(Matrix4 destination, const Vector4 *quaternion)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "vaddw.x vf27x, vf0x, vf0w\n\t"
         "vaddw.y vf28y, vf0y, vf0w\n\t"
@@ -1494,7 +1495,7 @@ void xglQuaternionInterpolateLinear(Vector4 *destination, const Vector4 *left, c
     /* The blend takes the shorter arc: when the dot product of the two
      * quaternions is not positive, right is negated first. The sum is then
      * normalised with the VU0 reciprocal square root. */
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $3, %3\n\t"
         "mfc1 $7, %4\n\t"
         "qmtc2 $3, vf10\n\t"
@@ -1547,7 +1548,7 @@ void xglGeometryInit(void)
 {
     float random_seed = 0.1f;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2 %0,vf1\n\t"
         "vrinit R,vf1x"
         :
@@ -1577,7 +1578,7 @@ float xglFRand(void)
 {
     float value;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "vrnext.x vf1, R\n\t"
         "qmfc2.ni %0, vf1"
         : "=r"(value)
@@ -1589,7 +1590,7 @@ float xglFRand(void)
 
 void xglFSrand(float seed)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "qmtc2.ni %0, vf1\n\t"
         "vrinit R, vf1x\n\t"
         "nop"
@@ -1603,7 +1604,7 @@ int F2I(float value)
 {
     int result;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mtc1 %1,$f0\n\t"
         "cvt.w.s $f0,$f0\n\t"
         "mfc1 %0,$f0"
@@ -1623,7 +1624,7 @@ float xglSin(float angle)
     unsigned int entry = (unsigned int)Vu0CallSin >> 3;
     float result;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,$vf4\n\t"
@@ -1641,7 +1642,7 @@ float xglCos(float angle)
     unsigned int entry = (unsigned int)Vu0CallCos >> 3;
     float result;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "ctc2.i %1,$vi27\n\t"
         "vnop\n\t"
         "qmtc2 %2,$vf4\n\t"

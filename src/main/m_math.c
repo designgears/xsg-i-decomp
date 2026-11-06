@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "main/xgl_2.h"
@@ -64,9 +65,9 @@ float *MMathCalcHermite(float *destination, float parameter,
                          HermiteVector *tangent_first, HermiteVector *tangent_second,
                          HermiteVector *endpoint_first, HermiteVector *endpoint_second)
 {
-    register int scratch asm("$10");
+    register int scratch PS2_REG("$10");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 %0,%1\n\t"
         "qmtc2 %2,$vf1\n\t"
         "vaddx.xyz $vf2xyz,$vf0xyz,$vf1x\n\t"
@@ -110,7 +111,7 @@ void MMathCalcHermitePrm(HermiteVector *tangent_start, HermiteVector *tangent_en
                           const HermiteVector *point_prev, const HermiteVector *point_start,
                           const HermiteVector *point_end, const HermiteVector *point_next)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%2)\n\t"
         "lqc2 vf2,0(%3)\n\t"
         "lqc2 vf3,0(%4)\n\t"
@@ -150,9 +151,9 @@ void MMathCalcHermitePrm(HermiteVector *tangent_start, HermiteVector *tangent_en
  */
 void *MMathDeg2RadVector(void *destination, const Vector4 *source)
 {
-    register void *result asm("$2") = destination;
-    register float scale asm("$f8") = 0.01745329238f;
-    __asm__ __volatile__(
+    register void *result PS2_REG("$2") = destination;
+    register float scale PS2_REG("$f8") = 0.01745329238f;
+    PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
         "lqc2 vf2,0(%1)\n\t"
@@ -168,9 +169,9 @@ void *MMathDeg2RadVector(void *destination, const Vector4 *source)
 
 void *MMathDeg2RadVectorI(void *destination, const Vector4 *source)
 {
-    register void *result asm("$2") = destination;
-    register float scale asm("$f8") = 0.01745329238f;
-    __asm__ __volatile__(
+    register void *result PS2_REG("$2") = destination;
+    register float scale PS2_REG("$f8") = 0.01745329238f;
+    PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
         "lqc2 vf2,0(%1)\n\t"
@@ -187,9 +188,9 @@ void *MMathDeg2RadVectorI(void *destination, const Vector4 *source)
 
 void *MMathRad2DegVector(void *destination, const Vector4 *source)
 {
-    register void *result asm("$2") = destination;
-    register float scale asm("$f8") = 57.29578018f;
-    __asm__ __volatile__(
+    register void *result PS2_REG("$2") = destination;
+    register float scale PS2_REG("$f8") = 57.29578018f;
+    PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
         "lqc2 vf2,0(%1)\n\t"
@@ -205,9 +206,9 @@ void *MMathRad2DegVector(void *destination, const Vector4 *source)
 
 void *MMathRad2DegVectorI(void *destination, const Vector4 *source)
 {
-    register void *result asm("$2") = destination;
-    register float scale asm("$f8") = 57.29578018f;
-    __asm__ __volatile__(
+    register void *result PS2_REG("$2") = destination;
+    register float scale PS2_REG("$f8") = 57.29578018f;
+    PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
         "lqc2 vf2,0(%1)\n\t"
@@ -229,7 +230,7 @@ void *MMathRad2DegVectorI(void *destination, const Vector4 *source)
  */
 void *MMathNormalizeVector2(void *destination, const Vector4 *source)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xyz vf2xyz,vf1xyz,vf1xyz\n\t"
         "vaddy.x vf2x,vf2x,vf2y\n\t"
@@ -257,7 +258,7 @@ void *MMathNormalizeVector2(void *destination, const Vector4 *source)
 float MMathCalcLength(const Vector4 *vector)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xyz vf1xyz,vf1xyz,vf1xyz\n\t"
         "vaddy.x vf1x,vf1x,vf1y\n\t"
@@ -277,7 +278,7 @@ float MMathCalcLength(const Vector4 *vector)
 float MMathCalcLengthXY(const Vector4 *vector)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xy vf1xy,vf1xy,vf1xy\n\t"
         "vaddy.x vf1x,vf1x,vf1y\n\t"
@@ -296,7 +297,7 @@ float MMathCalcLengthXY(const Vector4 *vector)
 float MMathCalcLengthXZ(const Vector4 *vector)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xz vf1xz,vf1xz,vf1xz\n\t"
         "vaddz.x vf1x,vf1x,vf1z\n\t"
@@ -315,7 +316,7 @@ float MMathCalcLengthXZ(const Vector4 *vector)
 float MMathCalcLengthYZ(const Vector4 *vector)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.yz vf1yz,vf1yz,vf1yz\n\t"
         "vaddz.y vf1y,vf1y,vf1z\n\t"
@@ -334,7 +335,7 @@ float MMathCalcLengthYZ(const Vector4 *vector)
 float MMathCalcDist(const Vector4 *first, const Vector4 *second)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vsub.xyz vf1xyz,vf2xyz,vf1xyz\n\t"
@@ -356,7 +357,7 @@ float MMathCalcDist(const Vector4 *first, const Vector4 *second)
 float MMathCalcDistXZ(const Vector4 *first, const Vector4 *second)
 {
     float result;
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vsub.xz vf1xz,vf2xz,vf1xz\n\t"
@@ -377,8 +378,8 @@ float MMathCalcDistXZ(const Vector4 *first, const Vector4 *second)
 Vector4 *MMathCalcDirVector(Vector4 *destination, const Vector4 *source,
                             const Vector4 *target)
 {
-    register Vector4 *normalized_destination asm("$2") = destination;
-    __asm__ __volatile__(
+    register Vector4 *normalized_destination PS2_REG("$2") = destination;
+    PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vsub.xyz vf2,vf2,vf1\n\t"
@@ -413,7 +414,7 @@ Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
         "movz %1,$8,%1\n\t"
@@ -444,7 +445,7 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
         "movz %1,$8,%1\n\t"
@@ -478,7 +479,7 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
  */
 Vector4 *MMathAddRotateVectorY(Vector4 *destination, float angle, const Vector4 *base, const Vector4 *offset)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf6\n\t"
         "vmove.x vf4, vf6\n\t"
@@ -508,7 +509,7 @@ Vector4 *MMathAddRotateVectorY(Vector4 *destination, float angle, const Vector4 
  */
 Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf5, 0(%0)\n\t"
         "lqc2 vf6, 0(%1)\n\t"
         "vaddy.w vf7, vf5, vf6y\n\t"
@@ -538,7 +539,7 @@ Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vecto
  */
 Vector4 *MMathCalcOffsetXYZ(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf5, 0(%0)\n\t"
         "lqc2 vf6, 0(%1)\n\t"
         "vaddw.x vf4, vf0, vf5w\n\t"
@@ -560,7 +561,7 @@ Vector4 *MMathCalcOffsetXYZ(Vector4 *destination, const Vector4 *first, const Ve
 /* MMathSubVectorMulS: destination = (first - second) * scale (xyz only). */
 Vector4 *MMathSubVectorMulS(Vector4 *destination, const Vector4 *first, const Vector4 *second, float scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
         "lqc2 vf1, 0(%1)\n\t"
@@ -576,7 +577,7 @@ Vector4 *MMathSubVectorMulS(Vector4 *destination, const Vector4 *first, const Ve
 /* MMathSubVectorDivS: destination = (first - second) / scale (xyz only). */
 Vector4 *MMathSubVectorDivS(Vector4 *destination, const Vector4 *first, const Vector4 *second, float scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
         "lqc2 vf1, 0(%1)\n\t"
@@ -597,7 +598,7 @@ Vector4 *MMathSubVectorDivS(Vector4 *destination, const Vector4 *first, const Ve
  */
 Vector4 *MMathDivVector(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vdiv Q, vf1x, vf2x\n\t"
@@ -619,7 +620,7 @@ Vector4 *MMathDivVector(Vector4 *destination, const Vector4 *first, const Vector
 /* MMathDivVectorS: destination.xyz = source.xyz / scale. */
 Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf2\n\t"
         "lqc2 vf1, 0(%1)\n\t"
@@ -635,7 +636,7 @@ Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scal
 /* MMathDivVector4: destination = first / second, all four lanes. */
 Vector4 *MMathDivVector4(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vdiv Q, vf1x, vf2x\n\t"
@@ -660,7 +661,7 @@ Vector4 *MMathDivVector4(Vector4 *destination, const Vector4 *first, const Vecto
 /* MMathDivVectorS4: destination = source / scale, all four lanes. */
 Vector4 *MMathDivVectorS4(Vector4 *destination, const Vector4 *source, float scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf2\n\t"
         "lqc2 vf1, 0(%1)\n\t"
@@ -677,7 +678,7 @@ short MMathIsVectorEqual(const Vector4 *first, const Vector4 *second)
 {
     int result;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0(%2)\n\t"
         "pxor $10, $8, $9\n\t"
@@ -695,7 +696,7 @@ short MMathIsVectorEqual4(const Vector4 *first, const Vector4 *second)
 {
     int result;
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0(%2)\n\t"
         "pxor $10, $8, $9\n\t"
@@ -714,12 +715,12 @@ float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second)
 {
     float result;
 
-    __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(first) : "memory");
-    __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(second) : "memory");
-    __asm__ __volatile__("vmul.xyz vf1, vf1, vf2" : : : "memory");
-    __asm__ __volatile__("vaddy.x vf1, vf1, vf1y" : : : "memory");
-    __asm__ __volatile__("vaddz.x vf1, vf1, vf1z" : : : "memory");
-    __asm__ __volatile__(
+    PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(first) : "memory");
+    PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(second) : "memory");
+    PS2_ASMV("vmul.xyz vf1, vf1, vf2" : : : "memory");
+    PS2_ASMV("vaddy.x vf1, vf1, vf1y" : : : "memory");
+    PS2_ASMV("vaddz.x vf1, vf1, vf1z" : : : "memory");
+    PS2_ASMV(
         "qmfc2.ni $8, vf1\n\t"
         "mtc1 $8, %0"
         : "=f"(result) :  : "$8", "memory");
@@ -729,7 +730,7 @@ float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second)
 /* MMathVectorCrossProduct: destination.xyz = first x second, w forced to 1.0. */
 Vector4 *MMathVectorCrossProduct(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "vopmula.xyz ACC, vf1, vf2\n\t"
@@ -744,7 +745,7 @@ Vector4 *MMathVectorCrossProduct(Vector4 *destination, const Vector4 *first, con
 /* MMathVectorInterpolation: destination = first * (1 - parameter) + second * parameter. */
 Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
         "vsubx.w vf3, vf0, vf3x\n\t"
@@ -760,7 +761,7 @@ Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, co
 
 Vector4 *MMathSpecialVectorSub(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
         "movz %0,$8,%0\n\t"
@@ -782,7 +783,7 @@ Vector4 *MMathSpecialVectorSub(Vector4 *destination, const Vector4 *first, const
 
 Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -812,7 +813,7 @@ Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle)
 
 Matrix4 *MMathRotateMatrixY(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -842,7 +843,7 @@ Matrix4 *MMathRotateMatrixY(Matrix4 *out, const Matrix4 *matrix, float angle)
 
 Matrix4 *MMathRotateMatrixZ(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -872,7 +873,7 @@ Matrix4 *MMathRotateMatrixZ(Matrix4 *out, const Matrix4 *matrix, float angle)
 
 Matrix4 *MMathRotateMatrixXY(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -912,7 +913,7 @@ Matrix4 *MMathRotateMatrixXY(Matrix4 *out, const Matrix4 *matrix, const Vector4 
 
 Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -952,7 +953,7 @@ Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 
 
 Matrix4 *MMathRotateMatrixXYZ(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -1002,7 +1003,7 @@ Matrix4 *MMathRotateMatrixXYZ(Matrix4 *out, const Matrix4 *matrix, const Vector4
 
 Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
         "movz %0,$8,%0\n\t"
@@ -1052,7 +1053,7 @@ Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, const Matrix4 *matrix, const Vector4
 
 Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,0(%2)\n\t"
         "lqc2 $vf2,0(%1)\n\t"
         "lqc2 $vf3,16(%1)\n\t"
@@ -1070,7 +1071,7 @@ Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *ve
 
 Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2,0(%1)\n\t"
         "lqc2 $vf3,16(%1)\n\t"
         "lqc2 $vf4,32(%1)\n\t"
@@ -1106,7 +1107,7 @@ Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right)
 
 Matrix4 *MMathScaleMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf5,0(%2)\n\t"
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,16(%1)\n\t"
@@ -1127,7 +1128,7 @@ Matrix4 *MMathScaleMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *sc
 
 Matrix4 *MMathScaleMatrixS(Matrix4 *out, const Matrix4 *matrix, float scale)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,$vf5\n\t"
         "lqc2 $vf1,0(%1)\n\t"
@@ -1149,7 +1150,7 @@ Matrix4 *MMathScaleMatrixS(Matrix4 *out, const Matrix4 *matrix, float scale)
 
 Matrix4 *MMathTranslateMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *translation)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf5,0(%2)\n\t"
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,16(%1)\n\t"
@@ -1181,13 +1182,13 @@ Matrix4 *MMathCalcMatrixVector(Matrix4 *out, const Vector4 *direction)
 {
     float directionX;
 
-    __asm__ __volatile__("vmr32.xyzw vf1, vf0" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf2, vf1" : : : "memory");
-    __asm__ __volatile__("vmr32.xyzw vf3, vf2" : : : "memory");
-    __asm__ __volatile__("sqc2 vf0, 48(%0)" : : "r"(out) : "memory");
-    __asm__ __volatile__("sqc2 vf1, 32(%0)" : : "r"(out) : "memory");
-    __asm__ __volatile__("sqc2 vf2, 16(%0)" : : "r"(out) : "memory");
-    __asm__ __volatile__("sqc2 vf3, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("vmr32.xyzw vf1, vf0" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf2, vf1" : : : "memory");
+    PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+    PS2_ASMV("sqc2 vf0, 48(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 vf1, 32(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 vf2, 16(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 vf3, 0(%0)" : : "r"(out) : "memory");
 
     directionX = direction->x;
     if (directionX == 0.0f && direction->z == 0.0f) {
@@ -1206,7 +1207,7 @@ Matrix4 *MMathCalcMatrixVector(Matrix4 *out, const Vector4 *direction)
  */
 Vector4 *MMathCalcVectorMatrix(Vector4 *out, const Matrix4 *matrix)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf1,32(%1)\n\t"
         "vsub.xyzw $vf2xyzw,$vf0xyzw,$vf1xyzw\n\t"
         "sqc2 $vf2,0(%0)\n\t"
@@ -1226,7 +1227,7 @@ Vector4 *MMathCalcAngleMatrix(Vector4 *out, const Matrix4 *matrix)
     Vector4 direction;
 
     MMathCalcVectorMatrix(&direction, matrix);
-    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
+    PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
     out->x = srsAtan2(direction.y, MMathCalcLengthXZ(&direction));
     out->y = srsAtan2(direction.x, direction.z);
     return out;
@@ -1240,7 +1241,7 @@ Vector4 *MMathCalcAngleMatrix(Vector4 *out, const Matrix4 *matrix)
  */
 void MMathRotTransPers(Vector4 *destination, const StudioCamera *camera, const Matrix4 *matrix, const Vector4 *point)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
         "lqc2 vf3, 16(%1)\n\t"
@@ -1283,10 +1284,10 @@ void MMathRotTransPers(Vector4 *destination, const StudioCamera *camera, const M
  */
 void MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera, const Matrix4 *matrix, const Vector4 *point)
 {
-    register int flag asm("$2");
-    register int clipped asm("$9");
+    register int flag PS2_REG("$2");
+    register int clipped PS2_REG("$9");
 
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 vf1, 0(%2)\n\t"
         "lqc2 vf2, 0(%3)\n\t"
         "lqc2 vf3, 16(%3)\n\t"

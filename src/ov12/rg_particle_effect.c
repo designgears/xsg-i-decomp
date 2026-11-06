@@ -1,3 +1,4 @@
+#include "port/ps2_asm.h"
 /*
  * OV12 original TU 35: 0x00a20718..0x00a21c58 (27 functions)
  */
@@ -86,7 +87,7 @@ static inline float _clampf(float x, float lo, float hi)
 }
 static inline void _ApplyMatrix(float *dst, float *mtx, float *src)
 {
-    __asm__ __volatile__(
+    PS2_ASMV(
         "lqc2 $vf2, 0(%2)\n\t"
         "lqc2 $vf3, 0(%1)\n\t"
         "lqc2 $vf4, 16(%1)\n\t"
