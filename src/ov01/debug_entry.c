@@ -585,7 +585,385 @@ typedef struct DebugPadView {
     unsigned short buttons; /* +0x2C */
 } DebugPadView;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/debug_entry", debugBattleConfig);
+#define DEBUG_CHARA_ID_MAX 0xC2
+#define PAD_CIRCLE 0x0020
+#define PAD_CROSS 0x0040
+extern int configSeq, statId, equipId, gainId, equipPosX, slot, monsSet, mapNo, cfEncount, cfEvent, D_00A5AA60;
+typedef struct DbcOrg {
+    short maxHp;               /* +0x00 */
+    short maxEp;                /* +0x02 */
+    short str;                  /* +0x04 */
+    short vit;                  /* +0x06 */
+    short eatk;                 /* +0x08 */
+    short edef;                 /* +0x0A */
+    signed char hit;            /* +0x0C */
+    signed char eva;            /* +0x0D */
+    signed char agility;        /* +0x0E */
+    signed char moveKindId;     /* +0x0F */
+    short atkRange;             /* +0x10 */
+    short defRange;             /* +0x12 */
+    signed char level;          /* +0x14 */
+    signed char size;           /* +0x15 */
+    signed char cRate;          /* +0x16 */
+    signed char ecap;           /* +0x17 */
+    unsigned short weak;        /* +0x18 */
+    unsigned short spec;        /* +0x1A */
+    unsigned short flags;       /* +0x1C */
+    short weight;               /* +0x1E */
+    signed char bRate;          /* +0x20 */
+    signed char bNum;           /* +0x21 */
+    unsigned char unmodeled_22[0x24 - 0x22];
+    unsigned short protect[8];  /* +0x24 */
+    short hp;                   /* +0x34 */
+    short ep;                   /* +0x36 */
+    short charaId;               /* +0x38 */
+    unsigned char unmodeled_3a[0x54 - 0x3A];
+    short agwsId;                /* +0x54 */
+    short engineId;               /* +0x56 */
+    short frameId;                /* +0x58 */
+    signed char weaponVariant[3]; /* +0x5A */
+    unsigned char unmodeled_5d;
+    short weaponId[3];            /* +0x5E */
+    short accessory[3];           /* +0x64 */
+    short attachment[3];          /* +0x6A */
+    unsigned char unmodeled_70[0x76 - 0x70];
+    short norm[6];                /* +0x76 */
+    short special[6];             /* +0x82 */
+    short ether[12];              /* +0x8E */
+    short skill[3];                /* +0xA6 */
+} DbcOrg;
+extern PadPrefix PadData;
+typedef struct DebugGainRecord {
+    int exp;                      /* +0x00: "EXP   =%8d" */
+    unsigned short money;         /* +0x04: "MONEY =%8d" */
+    unsigned char tp;             /* +0x06: "TP    =%4d" */
+    unsigned char ep;             /* +0x07: "EP    =%4d" */
+    unsigned char sp;             /* +0x08: "SP    =%4d" */
+    unsigned char unmodeled_09;
+    unsigned char layer[3];       /* +0x0A: "LAY =%3d" */
+    unsigned char group[3];       /* +0x0D: "GRP =%3d" */
+    unsigned char item[3];        /* +0x10: "ITEM =%3d" */
+} DebugGainRecord;
+typedef struct DebugGrowRecord {
+    int exp;                      /* +0x00: "EXP      =%8d" */
+    int nextExp;                  /* +0x04: "NEXT EXP =%8d" */
+    short weaponOffset;           /* +0x08: "W OFS    =%4d" */
+    short weaponCount;            /* +0x0A: "W CNT    =%4d" */
+    int tp;                       /* +0x0C: "TP       =%4d" */
+    int ep;                       /* +0x10: "EP       =%4d" */
+    int sp;                       /* +0x14: "SP       =%4d" */
+    short grow[8];                /* +0x18: "GROW PARA=%4d %4d %4d %4d" x2 */
+} DebugGrowRecord;
+extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
+extern void xglSleep(void);
+extern void dataThinkLoad(int thinkNo);
+extern int cfEncountGet(void);
+extern int cfEventGet(void);
+extern int mapNoGet(void);
+extern int monsSetNoGet(void);
+extern int thinkNoGet(void);
+extern int plMutekiGet(void);
+extern int enMutekiGet(void);
+extern int plIchigekiGet(void);
+extern int cameraFlagGet(void);
+extern void debugItemSet(void);
+extern void debugEtherSet(void);
+extern void debugSkillSet(void);
+extern int debugEquSet(void);
+extern UnitOrgData *dataUnitInitGet(int chrNo);
+extern short *dataNormInitGet(int chrNo);
+extern short *dataEtherInitGet(int chrNo);
+extern DebugGainRecord *dataGainGet(int gainId);
+extern int valUD(int *value, int min, int max, int step);
+extern int configPos;
+extern int equipPos;
+extern int (*configCmdTbl[21])(int *);
+extern int (*equipCmdTbl[])();
+extern const char *posName[10];
+extern const char *szName[5];
+extern const char D_00A50870[];
+extern const char D_00A50878[];
+extern const char D_00A50898[];
+extern const char D_00A508B0[];
+extern const char D_00A508C0[];
+extern const char D_00A508D8[];
+extern const char D_00A508E8[];
+extern const char D_00A508F8[];
+extern const char D_00A50908[];
+extern const char D_00A50918[];
+extern const char D_00A50930[];
+extern const char D_00A50948[];
+extern const char D_00A50960[];
+extern const char D_00A50978[];
+extern const char D_00A50990[];
+extern const char D_00A509A8[];
+extern const char D_00A509C0[];
+extern const char D_00A509D8[];
+extern const char D_00A509E8[];
+extern const char D_00A509F8[];
+extern const char D_00A50A08[];
+extern const char D_00A50A18[];
+extern const char D_00A50A28[];
+extern const char D_00A50A38[];
+extern const char D_00A50A40[];
+extern const char D_00A50A58[];
+extern const char D_00A50A70[];
+extern const char D_00A50A88[];
+extern const char D_00A50AA0[];
+extern const char D_00A50AB8[];
+extern const char D_00A50AD0[];
+extern const char D_00A50AE8[];
+extern const char D_00A50B00[];
+extern const char D_00A50B18[];
+extern const char D_00A50B30[];
+extern const char D_00A50B48[];
+extern const char D_00A50B60[];
+extern const char D_00A50B78[];
+extern const char D_00A50B90[];
+extern const char D_00A50BA8[];
+extern const char D_00A50BC0[];
+extern const char D_00A50BD8[];
+extern const char D_00A50BF0[];
+extern const char D_00A50C00[];
+extern const char D_00A50C10[];
+extern const char D_00A50C20[];
+extern const char D_00A50C30[];
+extern const char D_00A50C48[];
+extern const char D_00A50C60[];
+extern const char D_00A50C78[];
+extern const char D_00A50C88[];
+extern const char D_00A50C98[];
+extern const char D_00A50CA8[];
+extern const char D_00A50CB8[];
+extern const char D_00A50CC8[];
+extern const char D_00A50CD8[];
+extern const char D_00A50D00[];
+extern const char D_00A50D20[];
+extern const char D_00A50D40[];
+extern const char D_00A50D60[];
+extern const char D_00A50D78[];
+extern const char D_00A50D88[];
+extern const char D_00A50D98[];
+extern const char D_00A50DA8[];
+extern const char D_00A50DB8[];
+extern const char D_00A50DC8[];
+extern const char D_00A50DD8[];
+extern const char D_00A50DF8[];
+extern const char D_00A50E08[];
+extern const char D_00A50E18[];
+extern const char D_00A50E28[];
+extern const char D_00A50E38[];
+extern const char D_00A50E48[];
+extern const char D_00A50E58[];
+extern const char D_00A50E68[];
+extern const char D_00A50E88[];
+
+void debugBattleConfig(void)
+{
+    DebugPartyUnit *party;
+    DbcOrg *rec;
+    DebugGainRecord *gain;
+    DebugGrowRecord *grow;
+    short *norm;
+    short *ether;
+    int cmdCount;
+    int lastCmd;
+    int equipCount;
+    int cmdResult;
+    int hp;
+    int row;
+    int h = 9;
+    int x = 12;
+    int w = 9;
+    int column;
+    int ep;
+    int i;
+    int y;
+    int *pos;
+
+    party = plUnitTblGet();
+    for (cmdCount = 0; configCmdTbl[cmdCount] != 0; cmdCount++) {
+    }
+    mapNo = mapNoGet();
+    monsSet = monsSetNoGet();
+    cfEncount = cfEncountGet();
+    cfEvent = cfEventGet();
+    D_00A5AA60 = thinkNoGet();
+    debugItemSet();
+    debugEtherSet();
+    debugSkillSet();
+    debugEquSet();
+    lastCmd = cmdCount - 1;
+    for (;;) {
+        if (configSeq == 0) {
+            row = 0;
+            x = 12;
+            valUD(&configPos, 0, lastCmd, 1);
+            {
+                int cursorY = h * (configPos + 1) + x;
+                float word = *(float *)party;
+
+                *(float *)party = word;
+                xglFontDebugPrintf(12, cursorY, D_00A50870);
+            }
+            { union { int i; float f; } *view = (void *)configCmdTbl; float f = view->f; view->f = f; }
+            pos = &configPos;
+            cmdResult = configCmdTbl[*pos](pos);
+            pos = 0;
+            pos = &configPos;
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50878);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50898);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A508B0, D_00A5AA60);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A508C0, monsSet);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A508D8, mapNo);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A508E8, debugNameGet(party[0].player));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A508F8, debugNameGet(party[1].player));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50908, debugNameGet(party[2].player));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50918, posName[party[0].position]);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50930, posName[party[1].position]);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50948, posName[party[2].position]);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50960, cameraFlagGet());
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50978, plMutekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50990, enMutekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, D_00A509A8, plIchigekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, D_00A509C0, cfEncount);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A509D8, cfEvent);
+            xglFontDebugPrintf(12, h * row++ + x, D_00A509E8, debugNameGet(statId));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A509F8, debugNameGet(equipId));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50A08, debugNameGet(gainId));
+            xglFontDebugPrintf(12, h * row++ + x, D_00A50A18);
+            if (cmdResult == 1 && (PadData.half_2a & PAD_CIRCLE)) {
+                goto done;
+            }
+            pos = 0;
+            if (PadData.half_2a & PAD_CROSS) {
+                goto done;
+            }
+        } else if (configSeq == 1) {
+            row = 0;
+            valLR(&statId, 1, DEBUG_CHARA_ID_MAX, 1);
+            if (statId < 0x21) {
+                rec = dataUnitOrgGet(statId);
+                hp = rec->hp;
+                ep = rec->ep;
+                norm = rec->norm;
+                ether = rec->ether;
+            } else {
+                rec = dataUnitInitGet(statId);
+                hp = rec->maxHp;
+                ep = rec->maxEp;
+                norm = dataNormInitGet(statId);
+                ether = dataEtherInitGet(statId);
+            }
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A28);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(statId));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A40, hp, rec->maxHp);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A58, ep, rec->maxEp);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A70, rec->str, rec->vit);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A88, rec->eatk, rec->edef);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AA0, rec->hit, rec->eva);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AB8, rec->agility, rec->moveKindId);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AD0, rec->atkRange, rec->defRange);
+            { const char *sz = szName[rec->size]; xglFontDebugPrintf(12, h * row++ + 12, D_00A50AE8, rec->level, sz); }
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B00, rec->cRate, rec->ecap);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B18, rec->weak, rec->spec);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B30, rec->flags, rec->weight);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B48, rec->bRate, rec->bNum);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B60, norm[0], norm[1], norm[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B78, norm[3], norm[4], norm[5]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B90, ether[0], ether[1], ether[2], ether[3]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BA8, ether[4], ether[5], ether[6], ether[7]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BA8, ether[8], ether[9], ether[10], ether[11]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BC0, rec->protect[0], rec->protect[1],
+                               rec->protect[2], rec->protect[3]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BD8, rec->protect[4], rec->protect[5],
+                               rec->protect[6], rec->protect[7]);
+            if (PadData.half_2a & PAD_CROSS) {
+                configSeq = 0;
+            }
+        } else if (configSeq == 2) {
+            row = 0;
+            for (equipCount = 0; equipCmdTbl[equipCount] != 0; equipCount++) {
+            }
+            if (valUD(&equipPos, 0, equipCount - 1, 1) == 1) {
+                slot = 0;
+                equipPosX = 0;
+            }
+            column = w;
+            xglFontDebugPrintf(column * equipPosX + 12, h * (equipPos + 1) + 12, D_00A50870);
+            equipCmdTbl[equipPos]();
+            rec = dataUnitOrgGet(equipId);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BF0);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(equipId));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C00, debugNameGet(rec->agwsId));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C10, rec->engineId);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C20, rec->frameId);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C30, rec->weaponVariant[0],
+                               debugWpnGet(rec->weaponId[0]));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C48, rec->weaponVariant[1],
+                               debugWpnGet(rec->weaponId[1]));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C60, rec->weaponVariant[2],
+                               debugWpnGet(rec->weaponId[2]));
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C78, rec->attachment[0]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C88, rec->attachment[1]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C98, rec->attachment[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CA8, rec->accessory[0]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CB8, rec->accessory[1]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CC8, rec->accessory[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CD8, rec->special[0], rec->special[1],
+                               rec->special[2], rec->special[3], rec->special[4], rec->special[5]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D00, rec->ether[0], rec->ether[1],
+                               rec->ether[2], rec->ether[3]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D20, rec->ether[4], rec->ether[5],
+                               rec->ether[6], rec->ether[7]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D40, rec->ether[8], rec->ether[9],
+                               rec->ether[10], rec->ether[11]);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D60, rec->skill[0], rec->skill[1],
+                               rec->skill[2]);
+            if (PadData.half_2a & PAD_CROSS) {
+                configSeq = 0;
+            }
+        } else if (configSeq == 3) {
+            valLR(&gainId, 1, DEBUG_CHARA_ID_MAX, 1);
+            row = 0;
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D78);
+            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(gainId));
+            if (gainId >= 0x21) {
+                gain = dataGainGet(gainId);
+                xglFontDebugPrintf(12, h * row++ + 12, D_00A50D88, gain->exp);
+                xglFontDebugPrintf(12, h * row++ + 12, D_00A50D98, gain->money);
+                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DA8, gain->tp);
+                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DB8, gain->ep);
+                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DC8, gain->sp);
+                for (i = 0; i < 3; i++) {
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50DD8, gain->layer[i],
+                                       gain->group[i], gain->item[i]);
+                }
+            } else {
+                if (gainId < 0x11) {
+                    grow = (DebugGrowRecord *)dataPlChaGet(gainId);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50DF8, grow->exp);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E08, grow->nextExp);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E18, grow->weaponOffset);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E28, grow->weaponCount);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E38, grow->tp);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E48, grow->ep);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E58, grow->sp);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E68, grow->grow[0], grow->grow[1],
+                                       grow->grow[2], grow->grow[3]);
+                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E88, grow->grow[4], grow->grow[5],
+                                       grow->grow[6], grow->grow[7]);
+                }
+            }
+            if (PadData.half_2a & PAD_CROSS) {
+                configSeq = 0;
+            }
+        }
+        xglSleep();
+    }
+done:
+    dataThinkLoad(D_00A5AA60);
+}
 
 int configStart(void) {
     return 1;

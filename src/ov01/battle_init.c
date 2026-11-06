@@ -995,7 +995,432 @@ int battleCtrlMan(BattleUnit *unit, int *inp)
   return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", manInput);
+int keyCmdApGet(ObjectTask *arg0, int arg1);
+extern short *dataTecGet(int id);
+unsigned char *dataEthGet(int id);
+extern void menuMapHSet(int enable);
+extern int sndSysSePlay(int soundId);
+extern int calcDItemChk(BattleUnit *unit, int itmId);
+extern void menuOpenBat(BattleUnit *unit);
+extern void menuCloseBat(void);
+extern int menuResultBat(void);
+extern void menuOpenEth(BattleUnit *unit);
+extern void menuCloseEth(void);
+extern int menuResultEth(int *ethId);
+extern void menuOpenItm(BattleUnit *unit);
+extern void menuCloseItm(void);
+extern int menuResultItm(int *itmId);
+int keyCmdGet(ObjectTask *unit);
+int keyCmdChk(ObjectTask *unit, BattleUnit *tgt, int cmd);
+int curPosProcInit(ObjectTask *arg0, int arg1);
+int curPosProc(CursorObject *unused, int *pos);
+int curTgtProcInit(ObjectTask **target, ObjectTask *self, int flags);
+int curTgtProc(int *pos, int flags);
+extern short *dataItmGet(int id);
+enum BattleKeyCommand {
+    KEY_CMD_NONE = 0,
+    KEY_CMD_WEAPON_LIMIT = 20,     /* ids below this are weapon slots */
+    KEY_CMD_ATTACK = 0x13,         /* guessed: the battle menu's attack entry */
+    KEY_CMD_ETHER = 0x14,
+    KEY_CMD_ITEM = 0x15,
+    KEY_CMD_GUARD = 0x16,
+    KEY_CMD_AGWS = 0x17,
+    KEY_CMD_MOVE = 0x18,
+    KEY_CMD_ITEM_WIDE = 0x19,      /* guessed: item on the wide target (two box uses) */
+    KEY_CMD_END = 0x1A,
+    KEY_CMD_CANCEL = 0x1B          /* guessed: no command this frame (also tested as 0) */
+};
+enum ManSelectState {
+    MAN_SELECT_ROOT = 0,           /* no menu: CROSS opens the battle menu, a key picks a command */
+    MAN_SELECT_KEY_PICKED = 1,     /* a weapon key was chosen: read its AP cost */
+    MAN_SELECT_BAT_OPEN = 2,       /* open the battle menu (also the CROSS return target) */
+    MAN_SELECT_BAT_MENU = 3,       /* battle menu is open and reports its result */
+    MAN_SELECT_COMMAND_DONE = 4,   /* command decided (or menu exit): report the key */
+    MAN_SELECT_ETH_OPEN = 5,
+    MAN_SELECT_ETH_MENU = 6,
+    MAN_SELECT_ETH_TARGET = 7,
+    MAN_SELECT_ITM_OPEN = 8,
+    MAN_SELECT_ITM_MENU = 9,
+    MAN_SELECT_ITM_TARGET = 0xA,
+    MAN_SELECT_ITM_TARGET_WIDE = 0xB,
+    MAN_SELECT_GUARD = 0xC,        /* GUARD key straight away */
+    MAN_SELECT_AGWS_POS = 0xD,     /* position select for AGWS (curPosProc mode 5) */
+    MAN_SELECT_MOVE_POS = 0xE,     /* position select for MOVE (curPosProc mode 6) */
+    MAN_SELECT_ATTACK_TARGET = 0xF /* enemy target select for the attack entry */
+};
+extern const char D_00A43DB0[];
+#define PAD_CIRCLE 0x0020
+typedef struct MIWork {
+    int tgtSelect; int field04; int selection; int controlPhase;
+    BattleUnit *unitTask; unsigned char unmodeled_14[4];
+} MIWork;
+#define PAD_TRIANGLE 0x0010
+#define PAD_CROSS 0x0040
+
+int manInput(BattleUnit *unit, int *inp)
+{
+  MIWork *work = (MIWork *)inp;
+  int pad;
+  int cmd;
+  int ap;
+  int trgFlags;
+  int selection;
+  int result;
+  BattleUnit *tgt[1];
+  BattleUnit *target;
+
+  cmd = 0;
+  ap = 0;
+  pad = dataPadRead(1);
+  if (work->unitTask != unit)
+  {
+    work->controlPhase = 0;
+  }
+  else if (work->field04 != KEY_CMD_CANCEL && work->field04 != KEY_CMD_NONE)
+  {
+    work->controlPhase = work->field04;
+  }
+  switch (work->tgtSelect)
+  {
+  case MAN_SELECT_ROOT:
+    menuMapHSet(0);
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    menuFlag = 0;
+    if (pad & PAD_CROSS)
+    {
+      ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+      menuFlag = 1;
+    }
+    else
+    {
+      cmd = keyCmdGet(unit);
+      if (cmd != KEY_CMD_CANCEL && cmd != KEY_CMD_NONE)
+      {
+        menuMapHSet(1);
+        ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+        work->tgtSelect = MAN_SELECT_KEY_PICKED;
+        ap = keyCmdApGet(unit, cmd);
+      }
+    }
+    break;
+  case MAN_SELECT_KEY_PICKED:
+    cmd = keyCmdGet(unit);
+    ap = keyCmdApGet(unit, cmd);
+    break;
+  case MAN_SELECT_BAT_OPEN:
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+    menuOpenBat(unit);
+    work->tgtSelect = MAN_SELECT_BAT_MENU;
+    D_00A57B80.type = 0x12;
+    D_00A57B80.unit = pActUnit;
+    ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    break;
+  case MAN_SELECT_BAT_MENU:
+    if (pad & PAD_CROSS)
+    {
+      menuCloseBat();
+      work->tgtSelect = MAN_SELECT_ROOT;
+      camEventTurnStartSet();
+    }
+    else
+    {
+      int command = menuResultBat();
+      if (command != 0)
+      {
+        switch (command)
+        {
+        case 1:
+          menuCloseBat();
+          menuOpenEth(unit);
+          work->tgtSelect = MAN_SELECT_ETH_OPEN;
+          D_00A57B80.type = 0xD;
+          break;
+        case 2:
+          menuCloseBat();
+          menuOpenItm(unit);
+          work->tgtSelect = MAN_SELECT_ITM_OPEN;
+          D_00A57B80.type = 0xE;
+          break;
+        case 3:
+          menuCloseBat();
+          work->tgtSelect = MAN_SELECT_GUARD;
+          D_00A57B80.type = 0xF;
+          break;
+        case 4:
+          menuCloseBat();
+          work->tgtSelect = MAN_SELECT_AGWS_POS;
+          D_00A57B80.type = 0x10;
+          break;
+        case 5:
+          menuCloseBat();
+          work->tgtSelect = MAN_SELECT_MOVE_POS;
+          D_00A57B80.type = 0x11;
+          break;
+        case 6:
+          menuCloseBat();
+          work->tgtSelect = MAN_SELECT_ATTACK_TARGET;
+          D_00A57B80.type = 0x16;
+          break;
+        }
+        D_00A57B80.unit = pActUnit;
+        ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      }
+    }
+    break;
+  case MAN_SELECT_COMMAND_DONE:
+    cmd = KEY_CMD_END;
+    printf(D_00A43DB0);
+    work->tgtSelect = MAN_SELECT_ROOT;
+    menuFlag = 0;
+    menuMapHSet(1);
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+    break;
+  case MAN_SELECT_ETH_OPEN:
+    menuResultEth(&selection);
+    if (selection != -1)
+    {
+      work->tgtSelect = MAN_SELECT_ETH_MENU;
+    }
+    break;
+  case MAN_SELECT_ETH_MENU:
+    pad = menuResultEth(&selection);
+    work->selection = selection;
+    if ((pad & PAD_CIRCLE) && selection != 0)
+    {
+      menuCloseEth();
+      tgt[0] = tgtUnitGet();
+      D_00A57B80.type = 9;
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.target = tgt[0];
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      curSelGrpSet(-1, *(unsigned char *)dataTecGet(*(short *)(dataEthGet(work->selection) + 6)));
+      work->tgtSelect = MAN_SELECT_ETH_TARGET;
+    }
+    else if (pad & PAD_CROSS)
+    {
+      menuCloseEth();
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+    }
+    break;
+  case MAN_SELECT_ETH_TARGET:
+    trgFlags = *(unsigned char *)dataTecGet(*(short *)(dataEthGet(work->selection) + 6));
+    tgt[0] = tgtUnitGet();
+    curTgtProcInit(tgt, unit, trgFlags);
+    if (curTgtProc(tgt, trgFlags) != 0)
+    {
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.type = 9;
+      D_00A57B80.target = tgt[0];
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    }
+    tgtUnitSet(tgt[0]);
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    if (pad & PAD_CIRCLE)
+    {
+      ap = keyCmdApGet(unit, KEY_CMD_ETHER);
+      work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+      cmd = KEY_CMD_ETHER;
+      ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+      sndSysSePlay(1);
+    }
+    else if (pad & PAD_CROSS)
+    {
+      work->tgtSelect = MAN_SELECT_ETH_OPEN;
+      menuOpenEth(unit);
+      D_00A57B80.type = 0xD;
+      D_00A57B80.unit = pActUnit;
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+      sndSysSePlay(2);
+    }
+    break;
+  case MAN_SELECT_ITM_OPEN:
+    menuResultItm(&selection);
+    if (selection != -1)
+    {
+      work->tgtSelect = MAN_SELECT_ITM_MENU;
+    }
+    break;
+  case MAN_SELECT_ITM_MENU:
+    pad = menuResultItm(&selection);
+    work->selection = selection;
+    if ((pad & PAD_CIRCLE) && selection != 0)
+    {
+      menuCloseItm();
+      tgt[0] = tgtUnitGet();
+      D_00A57B80.type = 0xA;
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.target = tgt[0];
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      curSelGrpSet(-1, *(unsigned char *)((char *)dataItmGet(work->selection) + 8));
+      work->tgtSelect = MAN_SELECT_ITM_TARGET;
+    }
+    else if ((pad & PAD_TRIANGLE) && selection != 0)
+    {
+      if (calcDItemChk(unit, selection) != 0)
+      {
+        menuCloseItm();
+        tgt[0] = tgtUnitGet();
+        D_00A57B80.type = 0xA;
+        D_00A57B80.unit = pActUnit;
+        D_00A57B80.target = tgt[0];
+        ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+        curSelGrpSet(-1, *(unsigned char *)((char *)dataItmGet(work->selection) + 8));
+        work->tgtSelect = MAN_SELECT_ITM_TARGET_WIDE;
+        sndSysSePlay(1);
+      }
+      else
+      {
+        sndSysSePlay(5);
+      }
+    }
+    else if (pad & PAD_CROSS)
+    {
+      menuCloseItm();
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+    }
+    break;
+  case MAN_SELECT_ITM_TARGET:
+  case MAN_SELECT_ITM_TARGET_WIDE:
+    trgFlags = *(unsigned char *)((char *)dataItmGet(work->selection) + 8);
+    if (work->tgtSelect == MAN_SELECT_ITM_TARGET_WIDE)
+    {
+      trgFlags &= 0x7F;
+      trgFlags |= 0x50;
+    }
+    tgt[0] = tgtUnitGet();
+    curTgtProcInit(tgt, unit, trgFlags);
+    if (curTgtProc(tgt, trgFlags) != 0)
+    {
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.type = 0xA;
+      D_00A57B80.target = tgt[0];
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    }
+    tgtUnitSet(tgt[0]);
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    if (pad & PAD_CIRCLE)
+    {
+      cmd = KEY_CMD_ITEM;
+      if (work->tgtSelect != MAN_SELECT_ITM_TARGET)
+      {
+        cmd = KEY_CMD_ITEM_WIDE;
+      }
+      ap = keyCmdApGet(unit, cmd);
+      work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+      ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+      sndSysSePlay(1);
+    }
+    else if (pad & PAD_CROSS)
+    {
+      work->tgtSelect = MAN_SELECT_ITM_OPEN;
+      menuOpenItm(unit);
+      D_00A57B80.type = 0xE;
+      D_00A57B80.unit = pActUnit;
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      ((Actor *)*(u32 *)&pTaskEnCur->work)->flags |= 4;
+      sndSysSePlay(2);
+    }
+    break;
+  case MAN_SELECT_GUARD:
+    cmd = KEY_CMD_GUARD;
+    ap = keyCmdApGet(unit, KEY_CMD_GUARD);
+    work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+    break;
+  case MAN_SELECT_AGWS_POS:
+    curSelGrpSet(0, 0);
+    curPosProcInit(unit, 5);
+    if (curPosProc(unit, &work->selection) != 0)
+    {
+      D_00A57B80.type = 0xB;
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.param = work->selection;
+      D_00A57B80.target = 0;
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    }
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    if (pad & PAD_CIRCLE)
+    {
+      ap = keyCmdApGet(unit, KEY_CMD_AGWS);
+      work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+      D_00A57B80.type = 0x18;
+      D_00A57B80.unit = pActUnit;
+      cmd = KEY_CMD_AGWS;
+      D_00A57B80.param = work->selection;
+      D_00A57B80.target = 0;
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+      sndSysSePlay(1);
+    }
+    else if (pad & PAD_CROSS)
+    {
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+      sndSysSePlay(2);
+    }
+    break;
+  case MAN_SELECT_MOVE_POS:
+    curSelGrpSet(0, 0);
+    curPosProcInit(unit, 6);
+    if (curPosProc(unit, &work->selection) != 0)
+    {
+      D_00A57B80.type = 0xC;
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.param = work->selection;
+      D_00A57B80.target = 0;
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    }
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    if (pad & PAD_CIRCLE)
+    {
+      ap = keyCmdApGet(unit, KEY_CMD_MOVE);
+      work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+      cmd = KEY_CMD_MOVE;
+      sndSysSePlay(1);
+    }
+    else if (pad & PAD_CROSS)
+    {
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+      sndSysSePlay(2);
+    }
+    break;
+  case MAN_SELECT_ATTACK_TARGET:
+    tgt[0] = tgtUnitGet();
+    curSelGrpSet(1, 0);
+    curEnProcInit(tgt, 1);
+    if (curEnProc(tgt) != 0)
+    {
+      D_00A57B80.unit = pActUnit;
+      D_00A57B80.type = 0x15;
+      D_00A57B80.target = tgt[0];
+      ((void (*)(CamEvent *))camEventExec)(&D_00A57B80);
+    }
+    tgtUnitSet(tgt[0]);
+    ((Actor *)*(u32 *)&pTaskEnCur->work)->flags &= ~4;
+    if (pad & PAD_CIRCLE)
+    {
+      if (keyCmdChk(unit, tgt[0], KEY_CMD_ATTACK) == 0)
+      {
+        ap = keyCmdApGet(unit, KEY_CMD_ATTACK);
+        work->tgtSelect = MAN_SELECT_COMMAND_DONE;
+        cmd = KEY_CMD_ATTACK;
+        sndSysSePlay(1);
+      }
+      else
+      {
+        sndSysSePlay(5);
+      }
+    }
+    else if (pad & PAD_CROSS)
+    {
+      work->tgtSelect = MAN_SELECT_BAT_OPEN;
+      sndSysSePlay(2);
+    }
+    break;
+  }
+  work->field04 = cmd;
+  work->unitTask = unit;
+  return ap;
+}
 
 void camEventTurnStartSet(void)
 {
@@ -1488,7 +1913,165 @@ int battleExecDead(void)
   return flag;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", stat1Proc);
+typedef struct { BattleUnit *unit; int cmd; int hpBonus; } S1Stat;
+typedef struct { int selector; int argument; int extra; unsigned char pad[8]; } S1Cmd;
+extern const char D_00A43E90[];
+extern void unitCmdClear(ObjectTask *unit);
+extern int calcHp(ObjectTask *unit, int v);
+extern int dmgValPut(int, BattleUnit **);
+
+int stat1Proc(void *p)
+{
+    S1Stat *stat = p;
+    BattleUnit *unit = stat->unit;
+    int mode = stat->cmd;
+    int hp;
+    int ep;
+    int alive;
+    int neg;
+    int dmg;
+    int flags;
+    S1Cmd cmd;
+    struct
+    {
+        BattleUnit *unit;
+        int pad;
+        int dmg;
+        int flags;
+        int more[8];
+    } rec;
+    int curHp;
+    int ret = 0;
+
+    if (unit != 0)
+    {
+        hp = 0;
+        curHp = (short) calcUPGet((ObjectTask *)unit)->currentHp;
+        ep = 0;
+        if (calcStatGet((ObjectTask *)unit, 1, 0x100) != 0
+            && rnd(100) < (curHp % 10) * 5)
+        {
+            calcHp((ObjectTask *)unit, curHp);
+            return 1;
+        }
+        if (calcStatGet((ObjectTask *)unit, 0, 0x800) != 0)
+        {
+            hp = *(short *)calcUPGet((ObjectTask *)unit) / 5;
+        }
+        if (mode == 1)
+        {
+            if (calcStatGet((ObjectTask *)unit, 1, 0x400) != 0)
+            {
+                hp += *(short *)calcUPGet((ObjectTask *)unit) / 2;
+            }
+            if (calcStatGet((ObjectTask *)unit, 1, 0x80) != 0)
+            {
+                hp += stat->hpBonus;
+            }
+        }
+        if (mode == 2)
+        {
+            if (calcStatGet((ObjectTask *)unit, 1, 0x20) != 0)
+            {
+                ep = calcUPGet((ObjectTask *)unit)->maxEp / 8;
+            }
+        }
+        if (calcStatGet((ObjectTask *)unit, 4, 0x80) != 0)
+        {
+            ep += calcUPGet((ObjectTask *)unit)->maxEp / 8;
+        }
+        if (mode == 4)
+        {
+            if (calcStatGet((ObjectTask *)unit, 6, 0x200) != 0)
+            {
+                hp -= *(short *)calcUPGet((ObjectTask *)unit) / 10;
+            }
+            if (calcStatGet((ObjectTask *)unit, 6, 0x100) != 0)
+            {
+                calcStatReset((ObjectTask *)unit, 4, 0x7FFF, 0);
+                calcStatReset((ObjectTask *)unit, 5, 0x7FFF, 0);
+            }
+        }
+        if (hp != 0)
+        {
+            unitCmdClear((ObjectTask *)unit);
+            if (hp > 0)
+            {
+                if (*(int *)unit->work & 0x800)
+                {
+                    cmd.selector = 11;
+                }
+                else
+                {
+                    cmd.selector = 9;
+                }
+                cmd.argument = 0;
+            }
+            else
+            {
+                cmd.selector = 39;
+            }
+            unitCmdSet((ObjectTask *)unit, (int *)&cmd);
+            neg = -hp;
+            alive = calcHp((ObjectTask *)unit, neg);
+            curHp = (hp > 0) ? 1 : 2;
+            if (alive == 0
+                && calcStatGet((ObjectTask *)unit, 2, 1) != 0)
+            {
+                calcHp((ObjectTask *)unit, 1);
+                calcStatReset((ObjectTask *)unit, 2, 1, 0);
+                printf(D_00A43E90);
+            }
+            dmg = neg;
+            flags = curHp | 0x400;
+            if (hp >= 0)
+            {
+                dmg = hp;
+                alive = 0;
+            }
+            rec.dmg = dmg;
+            rec.flags = flags;
+            rec.unit = unit;
+            dmgValPut(0, &rec.unit);
+            *((int *) (((char *) calcUPGet((ObjectTask *)unit)) + 0x150)) = 0;
+        }
+        if (ep != 0)
+        {
+            unitCmdClear((ObjectTask *)unit);
+            cmd.selector = 9;
+            cmd.argument = 0;
+            unitCmdSet((ObjectTask *)unit, (int *)&cmd);
+            calcEp((ObjectTask *)unit, -ep);
+            rec.flags = 0x403;
+            rec.unit = unit;
+            rec.dmg = ep;
+            dmgValPut(0, &rec.unit);
+        }
+        if ((*(short *)((char *)unit->actor + 0x86) == 20 && calcStatGet((ObjectTask *)unit, 7, 2) == 0)
+            || (*(short *)((char *)unit->actor + 0x86) == 21 && calcStatGet((ObjectTask *)unit, 7, 1) == 0))
+        {
+            unitCmdClear((ObjectTask *)unit);
+            cmd.selector = 43;
+            cmd.argument = (*(short *)((char *)calcUPGet((ObjectTask *)unit) + 0x44) < 0)
+                ? -*(short *)((char *)calcUPGet((ObjectTask *)unit) + 0x44) : *(short *)((char *)calcUPGet((ObjectTask *)unit) + 0x44);
+            cmd.extra = calcUPGet((ObjectTask *)unit)->charaId;
+            unitCmdSet((ObjectTask *)unit, (int *)&cmd);
+            cmd.selector = 37;
+            cmd.argument = 0;
+            unitCmdSet((ObjectTask *)unit, (int *)&cmd);
+            return 1;
+        }
+        if (hp == 0 && ep == 0)
+        {
+            ret = 0;
+        }
+        else
+        {
+            ret = 1;
+        }
+    }
+    return ret;
+}
 
 extern void unitCmdClear(ObjectTask *unit);
 extern int calcHp(ObjectTask *unit, int v);
