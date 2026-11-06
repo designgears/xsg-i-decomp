@@ -18292,11 +18292,11 @@
     {
      "range": [
       "0x00a58f10",
-      "0x00a58f50"
+      "0x00a58fe8"
      ],
      "generated": [
       "0x00a58f10",
-      "0x00a58f48"
+      "0x00a58fe8"
      ],
      "generated_by": [
       "CreateArrayOfXrgParticle",
@@ -18309,6 +18309,7 @@
       "XrgParticleDriverPassTimeReq",
       "XrgParticleDriverSet",
       "_ClearReqDisp",
+      "_Disp_00A49318",
       "_DisposeDriver",
       "_DrawDriver",
       "_InitDriver",
@@ -18317,30 +18318,8 @@
      "c_owned_symbols": [
       "D_00A58F10",
       "D_00A58F20",
-      "D_00A58F30"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a58f78",
-      "0x00a58fe8"
-     ],
-     "generated": [
-      "0x00a58f78",
-      "0x00a58fe8"
-     ],
-     "generated_by": [
-      "CreateArrayOfXrgParticle",
-      "XrgParticleDriverDispReq",
-      "XrgParticleDriverPassTimeReq"
-     ],
-     "c_owned_symbols": [
+      "D_00A58F30",
+      "D_00A58F50",
       "D_00A58F78",
       "D_00A58FA0",
       "D_00A58FB0",
@@ -18353,7 +18332,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/xrg_particle.o"
      }
     },
     {
@@ -18377,7 +18356,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
+      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/xrg_particle.o"
      }
     }
    ]

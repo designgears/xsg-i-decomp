@@ -349,7 +349,143 @@ static void _store_matrix(RgMatrix dst, const RgMatrix src)
     dst[15] = m33;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov12/xrg_actor", _PassTime_00A45D30);
+typedef struct PtVec { float x, y, z, w; } PtVec;
+typedef struct PtAct {
+    unsigned char pad_000[0x10];
+    PtVec position;                   /* 0x010 */
+    unsigned char pad_020[0x50 - 0x20];
+    PtVec rotation;                   /* 0x050 */
+    unsigned char pad_060[0x6F8 - 0x60];
+    float animSpeed;                  /* 0x6F8: animation.slot.speed */
+    unsigned char pad_6fc[0x824 - 0x6FC];
+    RgMatrix *jointMatrices;          /* 0x824 */
+    unsigned char pad_828[0x8D8 - 0x828];
+    SkeJointData *move;               /* 0x8D8 */
+} PtAct;
+typedef struct PtXrg {
+    PtAct *pXenoAct;
+    unsigned char pad_004[0x10 - 4];
+    RgMatrix local;
+    int smoothPlay, loopPlay, motionID;
+    int motionComaStep;
+    float motionComaStepAccum;
+    void *children;
+    struct PtXrg *parent;
+    int attachID;
+    int charID;
+    void *effector[2][8];             /* 0x074 */
+    unsigned char pad_0b4[0xF4 - 0xB4];
+    unsigned int effectorCount[2];    /* 0x0F4 */
+    unsigned char pad_0fc[0x118 - 0xFC];
+    int pakaPaka;                     /* 0x118 */
+    int pakaBaseJnt;                  /* 0x11C */
+    RgMatrix pakaBaseMatrix;          /* 0x120 */
+    int pakaBaseMatrixSet;            /* 0x160 */
+} PtXrg;
+extern int D_00A5ACE4;
+extern const char D_00A589F8[];
+extern const char D_00A58A10[];
+extern void ACT_updateMotion(void *pXenoAct);
+extern void RgMatricesEffectorJob(void *pEffector);
+extern double atan2(double, double);
+
+void _PassTime_00A45D30(XrgActor *pActorArg, float dt)
+{
+    RgMatrix locals[64];
+    RgMatrix a;
+    RgMatrix b;
+    RgMatrix c;
+    PtXrg *pActor = (PtXrg *)pActorArg;
+    PtAct *pXenoAct;
+    PtXrg *pParent;
+    PtAct *pParentAct;
+    SkeJointData *pJntData;
+    RgMatrix *pOwnMatrices;
+    float *pRoot;
+    RgMatrix *pParentMatrices;
+    unsigned int numElement;
+    unsigned int i;
+    unsigned int j;
+    float step;
+    const float frameTime = 1.0f / 30.0f;
+
+    if (pActor == 0) {
+        assert_prog(D_00A589C8, D_00A587E0, 371);
+    }
+    pXenoAct = pActor->pXenoAct;
+    if (pXenoAct == 0) {
+        return;
+    }
+    pParent = pActor->parent;
+    if (pParent == 0) {
+        pParentAct = 0;
+        pXenoAct->position.x = pActor->local[12];
+        pXenoAct->position.y = pActor->local[13] - 1.5f;
+        pXenoAct->position.z = pActor->local[14];
+        pXenoAct->rotation.y = atan2(-pActor->local[8], -pActor->local[10]);
+    } else {
+        pParentAct = pParent->pXenoAct;
+    }
+    if (pActor->motionComaStep != 0) {
+        step = pActor->motionComaStepAccum + dt;
+        pActor->motionComaStepAccum = step;
+        if (!(frameTime <= step)) {
+            pXenoAct->animSpeed = 0.0f;
+        } else {
+            pActor->motionComaStepAccum = step - frameTime;
+            pXenoAct->animSpeed = frameTime;
+        }
+    } else {
+        pXenoAct->animSpeed = dt;
+    }
+    ACT_updateMotion(pXenoAct);
+    if (pActor->pakaPaka != 0 && pParentAct != 0) {
+        D_00A5ACE4 = pActor->pakaBaseJnt;
+        pJntData = pXenoAct->move;
+        pOwnMatrices = pXenoAct->jointMatrices;
+        pParentMatrices = pParentAct->jointMatrices;
+        if (pJntData != 0 && pParentMatrices != 0 && pOwnMatrices != 0) {
+            pRoot = pOwnMatrices[1];
+            _ActJntToJoint((XenoAct *)pParentAct, pActor->attachID);
+            if (pActor->pakaBaseMatrixSet == 0) {
+                _copy_matrix(b, pParentMatrices[0]);
+                _copy_matrix(a, pParentMatrices[D_00A5ACE4]);
+                XrgMulMatrix(a, b, a);
+                _copy_matrix(b, pRoot);
+                XrgInvMatrix(c, a);
+                XrgMulMatrix(pActor->pakaBaseMatrix, c, b);
+                pActor->pakaBaseMatrixSet = 1;
+            }
+            numElement = pJntData->numElement;
+            if (numElement > 64) {
+                RgWarn(D_00A589F8, D_00A587E0, 456);
+            }
+            _copy_matrix(a, pRoot);
+            XrgInvMatrix(c, a);
+            for (i = 1; i < numElement; i++) {
+                _copy_matrix(a, pOwnMatrices[i]);
+                XrgMulMatrix(locals[i], c, a);
+            }
+            _copy_matrix(b, pParentMatrices[0]);
+            _copy_matrix(a, pParentMatrices[D_00A5ACE4]);
+            XrgMulMatrix(b, b, a);
+            XrgMulMatrix(b, b, pActor->pakaBaseMatrix);
+            for (i = 1; i < numElement; i++) {
+                XrgMulMatrix(a, b, locals[i]);
+                _store_matrix(pOwnMatrices[i], a);
+            }
+        }
+    }
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < pActor->effectorCount[i]; j++) {
+            if (pActor->effector[i][j] != 0) {
+                RgMatricesEffectorJob(pActor->effector[i][j]);
+            } else {
+                RgWarn(D_00A58A10, D_00A587E0, 487, pActor->charID, i, j);
+            }
+        }
+    }
+}
 
 #include "ov12/rg_debug_flags.h"
 
@@ -1153,7 +1289,7 @@ void XrgActorDraw(XrgActor *pActor)
     RgDrawReq(InstanceOfRgDraw(), pActor, &_DrawActor, 0, 0, -1);
 }
 
-static void _PassTime_00A45D30(XrgActor *pActor, float dt);
+void _PassTime_00A45D30(XrgActor *pActor, float dt);
 
 void XrgActorPassTime(XrgActor *pActor, float dt)
 {
