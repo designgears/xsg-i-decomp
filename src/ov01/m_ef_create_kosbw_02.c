@@ -272,7 +272,185 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_kosbw_02", fnKOSBW02_DP000);
+typedef unsigned int Kos02Quad __attribute__((mode(TI)));
+typedef union Kos02QW {
+    Kos02Quad q;
+    unsigned long ul[2];
+    unsigned short us[8];
+    unsigned char uc[16];
+    volatile unsigned long vul[2];
+    volatile unsigned char vuc[16];
+} Kos02QW;
+extern int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size);
+extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
+extern void MGsGPTerm(void *packet);
+extern Kos02Quad McEfSTQtbl[];
+extern Kos02Quad coltbl_0_00A518A0[];
+extern float sztbl_1[];
+typedef struct Kos02Packet {
+    void *data;
+    int capacity;
+    Kos02QW *current;
+    int count;
+    int auxCount;
+} Kos02Packet;
+
+static void fnKOSBW02_DP000(void *task, void *state)
+{
+    Kosbw02CreateState *effect = state;
+    int i;
+    int nreg;
+    float *szp;
+    Vector4 verts[4];
+    Kos02Packet *pk;
+    Kos02Packet *gp;
+    Kos02QW *q;
+    Kos02QW *a1;
+    Kos02QW *a2;
+    Kos02QW *a3;
+    Kos02QW *a4;
+    Kos02QW *a5;
+    Kos02Quad color;
+    unsigned long *tex;
+    int j;
+    int n;
+    int off;
+    int lo;
+    char *base;
+    long regs;
+    int texReg;
+    int nloop;
+    unsigned long texVal;
+    struct { unsigned char pad[0x150]; short active[10]; } *sub;
+
+    pk = (Kos02Packet *)effect->draw_packet;
+    MGsGPInit(pk, 0, 0);
+    q = pk->current;
+    q[0].ul[0] = 0x1000000000008000;
+    q[0].ul[1] = 0xE;
+    pk->auxCount = 1;
+    a1 = q + 1;
+    a2 = q + 2;
+    a3 = q + 3;
+    a4 = q + 4;
+    a5 = q + 5;
+    a1->vuc[8] = 0x47;
+    a1->vul[0] = 0x5000D;
+    a2->vuc[8] = 0x14;
+    a2->vul[0] = 0x60;
+    a3->vuc[8] = 0x8;
+    a3->vul[0] = 5;
+    a4->vuc[8] = 0x4E;
+    a4->vul[0] = 0x131000000;
+    a5->vuc[8] = 0x42;
+    a5->vul[0] = 0x48;
+    nreg = 5;
+    n = pk->auxCount * nreg + 1;
+    pk->current->us[0] |= nreg;
+    pk->current += n;
+    pk->count += n;
+    szp = sztbl_1;
+    for (i = 0; i < 10; i++) {
+        if ((sub = (void *)((char *)state + 8))->active[i] != 0) {
+            color = coltbl_0_00A518A0[i];
+            lo = i < 6;
+            off = 0x148;
+            if (lo) {
+                off = 0x140;
+            }
+            tex = (unsigned long *)((char *)sub + off);
+            for (j = 0; j < 3; j++) {
+                if (MEfMake4Vertex2(verts, &((Vector4 (*)[3])effect->points)[i][j], sztbl_1[i], ((float (*)[3])effect->twist)[i][j]) == 0) {
+                    Kos02QW *t;
+                    Kos02QW *g;
+                    int n1;
+                    int n2;
+
+                    gp = (Kos02Packet *)effect->draw_packet;
+                    texReg = 6;
+                    regs = 0x512;
+                    nloop = 3;
+                    t = gp->current;
+                    t[0].ul[0] = 0x1000000000008000;
+                    t[0].ul[1] = 0xE;
+                    gp->auxCount = 1;
+                    a1 = t + 1;
+                    texVal = *tex;
+                    a1->uc[8] = texReg;
+                    a1->ul[0] = texVal;
+                    n1 = gp->auxCount + 1;
+                    gp->current->us[0] |= 1;
+                    gp->current += n1;
+                    gp->count += n1;
+                    g = gp->current;
+                    g[0].ul[0] = 0x302A400000008000;
+                    g[0].ul[1] = regs;
+                    gp->auxCount = nloop;
+                    g[1].q = McEfSTQtbl[0];
+                    g[2].q = color;
+                    g[3].q = *(Kos02Quad *)&verts[0];
+                    g[4].q = McEfSTQtbl[1];
+                    g[5].q = color;
+                    g[6].q = *(Kos02Quad *)&verts[1];
+                    g[7].q = McEfSTQtbl[2];
+                    g[8].q = color;
+                    g[9].q = *(Kos02Quad *)&verts[2];
+                    g[10].q = McEfSTQtbl[3];
+                    g[11].q = color;
+                    g[12].q = *(Kos02Quad *)&verts[3];
+                    n2 = gp->auxCount * 4 + 1;
+                    gp->current->us[0] |= 4;
+                    gp->current += n2;
+                    gp->count += n2;
+                }
+            }
+             __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__(""); __asm__("");
+        }
+    }
+    if (effect->frame < 26) {
+        if (MEfMake4Vertex(verts, &effect->position, 0.5f) == 0) {
+            Kos02QW *t;
+            Kos02QW *g;
+            int n1;
+            int n2;
+
+
+            t = pk->current;
+            t[0].ul[0] = 0x1000000000008000;
+            t[0].ul[1] = 0xE;
+            pk->auxCount = 1;
+            a1 = t + 1;
+            texVal = *(unsigned long *)((char *)effect + 0x48);
+            a1->uc[8] = 6;
+            a1->ul[0] = texVal;
+            color = 0xFF000000280000002800000028;
+            n1 = pk->auxCount + 1;
+            pk->current->us[0] |= 1;
+            pk->current += n1;
+            pk->count += n1;
+            g = pk->current;
+            { long r = 0x512; g[0].ul[0] = 0x302A400000008000; g[0].ul[1] = r; }
+            pk->auxCount = 3;
+            g[1].q = McEfSTQtbl[0];
+            g[2].q = color;
+            g[3].q = *(Kos02Quad *)&verts[0];
+            g[4].q = McEfSTQtbl[1];
+            g[5].q = color;
+            g[6].q = *(Kos02Quad *)&verts[1];
+            g[7].q = McEfSTQtbl[2];
+            g[8].q = color;
+            g[9].q = *(Kos02Quad *)&verts[2];
+            g[10].q = McEfSTQtbl[3];
+            g[11].q = color;
+            g[12].q = *(Kos02Quad *)&verts[3];
+            n2 = pk->auxCount * 4 + 1;
+            pk->current->us[0] |= 4;
+            pk->current += n2;
+            pk->count += n2;
+        }
+    }
+    MGsGPTerm(pk);
+}
 
 extern void MEfObjDestroy(void *self);
 extern void sefHitEffect(void);

@@ -299,7 +299,160 @@ typedef struct Smp01ImageParameter {
     float height;
 } Smp01ImageParameter;
 
-INCLUDE_ASM("asm/nonmatchings/ov01/m_ef_create_smp_01", fnSMP01_DP000);
+typedef unsigned int Smp01xQuad __attribute__((mode(TI)));
+typedef union Smp01xQW {
+    Smp01xQuad q;
+    unsigned long ul[2];
+    unsigned short us[8];
+    unsigned char uc[16];
+    volatile unsigned long vul[2];
+    volatile unsigned char vuc[16];
+} Smp01xQW;
+extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
+extern void MGsGPTerm(void *packet);
+extern Smp01xQuad McEfSTQtbl[];
+extern Smp01xQuad coltbl_1_00A514B0[];
+extern float sztbl_2_00A51550[];
+typedef struct Smp01xPacket {
+    void *data;
+    int capacity;
+    Smp01xQW *current;
+    int count;
+    int auxCount;
+} Smp01xPacket;
+#define SMP01X_AD(P, REG, VAL) \
+    { Smp01xQW *_ad = (P); _ad->uc[8] = (REG); _ad->ul[0] = (VAL); }
+typedef struct Smp01Sub {
+    unsigned char unmodeled_00[0x100];
+    unsigned short active[10];          /* 0x108 - 8 */
+} Smp01Sub;
+typedef struct Smp01Draw {
+    unsigned char unmodeled_00[0xE4];
+    unsigned char drawPacket[0x14];     /* 0xE4 */
+    unsigned char unmodeled_f8[0x10];
+    unsigned short active[10];          /* 0x108 */
+    unsigned char unmodeled_11c[4];
+    Vector4 points[10][3];              /* 0x120 */
+    float twist[10][3];                 /* 0x300 */
+} Smp01Draw;
+
+static void fnSMP01_DP000(void *task, Smp01Draw *effect)
+{
+  int i;
+  long regs;
+  int nreg;
+  float *szp;
+  Vector4 verts[4];
+  Smp01xPacket *pk;
+  Smp01xPacket *gp;
+  Smp01xQW *q;
+  Smp01xQW *a1;
+  Smp01xQW *a2;
+  Smp01xQW *a3;
+  Smp01xQW *a4;
+  Smp01xQW *a5;
+  Smp01xQuad color;
+  unsigned long *tex;
+  int j;
+  int n;
+  int off;
+  int lo;
+  int nloop;
+  int texReg;
+  Smp01Sub *sub;
+  ;
+  pk = (Smp01xPacket *) effect->drawPacket;
+  MGsGPInit(pk, 0, 0);
+  q = pk->current;
+  q[0].vul[0] = 0x1000000000008000;
+  q[0].vul[1] = 0xE;
+  pk->auxCount = 1;
+  a1 = q + 1;
+  a2 = q + 2;
+  a3 = q + 3;
+  a4 = q + 4;
+  a5 = q + 5;
+  a1->vuc[8] = 0x47;
+  a1->vul[0] = 0x5000D;
+  a2->vuc[8] = 0x14;
+  a2->vul[0] = 0x60;
+  a3->vuc[8] = 0x8;
+  a3->vul[0] = 5;
+  a4->vuc[8] = 0x4E;
+  a4->vul[0] = 0x131000000;
+  a5->vuc[8] = 0x42;
+  a5->vul[0] = 0x48;
+  nreg = 5;
+  n = (pk->auxCount * nreg) + 1;
+  pk->current->us[0] |= nreg;
+  pk->current += n;
+  pk->count += n;
+  for (i = 0; i < 10; i++)
+  {
+    sub = (Smp01Sub *)((char *)effect + 8);
+    if (((short *)sub->active)[i] != 0)
+    {
+      color = coltbl_1_00A514B0[i];
+      lo = i < 5;
+      off = 0xF8;
+      if (lo)
+      {
+        off = 0xF0;
+      }
+      tex = (unsigned long *) (((char *) sub) + off);
+      for (j = 0; j < 3; j++)
+      {
+        if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl_2_00A51550[i], effect->twist[i][j]) == 0)
+        {
+          Smp01xQW *t;
+          Smp01xQW *g;
+          unsigned long texVal;
+          int n1;
+          int n2;
+          gp = (Smp01xPacket *) effect->drawPacket;
+          texReg = 6;
+          regs = 0x512;
+          nloop = 3;
+          t = gp->current;
+          t[0].ul[0] = 0x1000000000008000;
+          t[0].ul[1] = 0xE;
+          gp->auxCount = 1;
+          a1 = t + 1;
+          texVal = *tex;
+          a1->uc[8] = texReg;
+          a1->ul[0] = texVal;
+          n1 = gp->auxCount + 1;
+          gp->current->us[0] |= 1;
+          gp->current += n1;
+          gp->count += n1;
+          g = gp->current;
+          g[0].ul[0] = 0x302A400000008000;
+          g[0].ul[1] = regs;
+          gp->auxCount = nloop;
+          g[1].q = McEfSTQtbl[0];
+          g[2].q = color;
+          g[3].q = *((Smp01xQuad *) (&verts[0]));
+          g[4].q = McEfSTQtbl[1];
+          g[5].q = color;
+          g[6].q = *((Smp01xQuad *) (&verts[1]));
+          g[7].q = McEfSTQtbl[2];
+          g[8].q = color;
+          g[9].q = *((Smp01xQuad *) (&verts[2]));
+          g[10].q = McEfSTQtbl[3];
+          g[11].q = color;
+          g[12].q = *((Smp01xQuad *) (&verts[3]));
+          n2 = ((gp->auxCount * 2) * 2) + 1;
+          gp->current->us[0] |= 4;
+          gp->current += n2;
+          gp->count += n2;
+        }
+      }
+__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");__asm__("");
+    }
+  }
+
+  MGsGPTerm(pk);
+}
 
 extern void MEfObjDestroy(void *object);
 extern void sefHitEffect(void);
