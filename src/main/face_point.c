@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
@@ -361,7 +362,7 @@ static void plane_from_points(const Vector4 *p0, const Vector4 *p1, const Vector
     plane->w = -(normal.x * p0->x + normal.y * p0->y + normal.z * p0->z);
 }
 
-typedef unsigned int so_u128 __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, so_u128);
 typedef struct SetupOcclusionView {
     float position[4];
     float rotation[4];

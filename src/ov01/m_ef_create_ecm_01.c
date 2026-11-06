@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 30: 0x00a37ab8..0x00a38190 (4 functions)
@@ -5,7 +6,7 @@
 #include "common.h"
 #include "shared.h"
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union ECM01QuadVector {
     unsigned int words[4];
@@ -96,8 +97,8 @@ int MEfCreate_ECM01(ECM01Object *object)
     work->initial_angle = (float)(xglSRand() & 1) * 3.1415927f;
     angle_range = MMathMakeRandom2PI() + 6.283185f;
     /* The packed dimension words, from low to high: 24, 48, 24, 255. */
-    initial_dimensions = (Quadword)0xFF000000180000003000000018;
-    work->vector_origin.quad = 0;
+    initial_dimensions = PS2_QCONST((Quadword)0xFF000000180000003000000018, 0x18, 0x30, 0x18, 0xFF);
+    work->vector_origin.quad = PS2_QZERO;
     work->dimensions.quad = initial_dimensions;
     work->angle_step = angle_range / 30.0f;
     work->dimensions.words[0] = (xglSRand() & 0xF) + 16;
@@ -148,7 +149,7 @@ static void fnECM01_PR000(void *self, void *work)
     }
 }
 
-typedef unsigned int ECMQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, ECMQuadword);
 typedef union MEfGsQword {
     ECMQuadword whole;
     unsigned short nloop;

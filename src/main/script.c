@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "common.h"
 #include "shared.h"
 #include "script.h"
@@ -1891,7 +1892,7 @@ static void DB_scriptFileSelect(DbSfsTask *task)
     }
 }
 
-typedef unsigned int DbWindQuad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, DbWindQuad);
 extern char dbgWind[];
 extern void EXM_GetWindPara(void *para);
 extern void EXM_SetWindStruct(void *state);
@@ -1925,7 +1926,7 @@ static void DB_wind(DbWindTask *task)
         EXM_GetWindPara(dbgWind);
         EXM_SetWindStruct(dbgWind);
         ((DbWindGameState *)GameLoopState)->flags &= ~1;
-        ((DbWindGameState *)GameLoopState)->quad_29f50 = 0;
+        ((DbWindGameState *)GameLoopState)->quad_29f50 = PS2_QZERO;
         ((DbWindGameState *)GameLoopState)->state_0c = ((DbWindGameState *)GameLoopState)->state_29f60;
     }
     updateWind(dbgWind);

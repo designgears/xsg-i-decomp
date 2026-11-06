@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 /*
  * OV02 original TU 5: 0x00a023a8..0x00a02d68 (7 functions)
  */
@@ -93,7 +94,7 @@ void UmnObjectTaskCreate(UmnObjectTaskWorker worker, void *data) {
         task->zeroedOnCreate[i] = 0;
 }
 
-typedef int umn_q __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, umn_q);
 void UmnProcuratorSet(void);
 
 void UmnChangeTopLevel(int lvl)
@@ -101,7 +102,7 @@ void UmnChangeTopLevel(int lvl)
     umn_q *p = (umn_q *)&UmnWork;
     int i;
     for (i = 1; i < 8; i++) {
-        p[i] = 0;
+        p[i] = PS2_QZERO;
     }
     UmnWork.mode = lvl;
     UmnWork.unmodeled_02[1] = 0;

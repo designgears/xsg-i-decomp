@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 35: 0x00a397c8..0x00a3a090 (7 functions)
@@ -15,7 +16,7 @@ static void makeHermiteParams(int segment, struct DoraHermiteState *state);
 static void fnDORA_PR000(void *self, struct DoraHermiteState *state);
 static void fnDORA_DP000(void *self, struct DoraHermiteState *state);
 static void fnDORA_PO000(void *self, void *work);
-typedef unsigned int DoraCreateQuad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, DoraCreateQuad);
 typedef struct DoraCreateObject {
     void *unk0;
     void *process;
@@ -50,7 +51,7 @@ int MEfCreate_DORA(void *self)
     return 1;
 }
 
-typedef unsigned int DoraQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, DoraQuadword);
 
 /* The Hermite control-point storage shares the post-process state object.
  * The earlier quadword arrays preserve its observed sixteen-byte alignment. */
@@ -203,7 +204,7 @@ static void fnDORA_PR000(void *self, DoraHermiteState *state)
     }
 }
 
-typedef unsigned int MEfGsQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, MEfGsQuadword);
 typedef union MEfGsQword {
     MEfGsQuadword whole;
     unsigned short nloop;

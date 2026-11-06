@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "act_1.h"
@@ -98,7 +99,7 @@ void ACT_matrixInit(void)
     memset(matrixHeapBlock, 0, 0x400);
 }
 
-typedef unsigned int ActInitQuad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, ActInitQuad);
 extern void UnduParamInit(void *p);
 extern void EXM_InitWind(void);
 extern void EXM_InitMovedHair(ActRecord *self);

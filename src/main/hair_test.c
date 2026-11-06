@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
@@ -17,7 +18,7 @@ typedef struct JntHairDescriptor {
     unsigned short staticCount;
 } JntHairDescriptor;
 
-typedef unsigned int JntQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, JntQuadword);
 
 typedef union Matrix {
     float elements[16];

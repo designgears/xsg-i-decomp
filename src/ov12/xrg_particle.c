@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV12 original TU 84: 0x00a48c08..0x00a49f70 (20 functions)
@@ -19,7 +20,7 @@ extern void assert_prog(const char *expression, const char *source_file,
  * 64-bit fields and the whole 16 bytes be read back as the single register
  * sceVif1PkOpenGifTag takes.
  */
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union XrgParticleGifTag {
     struct {
@@ -622,7 +623,7 @@ void _DrawDriver(XrgParticleDriver *driver, void *pStudio)
             nmlModelDirectSendXtx(view->projectionMode, RgBxxGetXtx(curBxx));
         }
         tex0 = XrgBxxPs2Tex0(pic);
-        rect[0].q = 0;
+        rect[0].q = PS2_QZERO;
         rect[0].i[0] = pic->u * 16 + 8;
         rect[0].i[1] = pic->v * 16 + 8;
         rect[1].q = rect[0].q;
@@ -684,11 +685,11 @@ XrgParticle *CreateArrayOfXrgParticle(unsigned int num)
     }
     p = array;
     for (i = 0; i < num; i++) {
-        p->v[0].q = 0;
-        p->v[1].q = 0;
-        p->v[2].q = 0;
-        p->v[3].q = 0;
-        p->v[4].q = 0;
+        p->v[0].q = PS2_QZERO;
+        p->v[1].q = PS2_QZERO;
+        p->v[2].q = PS2_QZERO;
+        p->v[3].q = PS2_QZERO;
+        p->v[4].q = PS2_QZERO;
         p->v[0].f[3] = 1.0f;
         p++;
     }

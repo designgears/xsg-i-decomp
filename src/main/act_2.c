@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -178,7 +179,7 @@ extern int MDL_setNameVisible(void *model, const void *pattern, int visible);
 
 enum { HAND_NAME, HAND_SUFFIX, HAND_NAME_MASK, HAND_SUFFIX_MASK };
 
-typedef unsigned int ActMatrixRow __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, ActMatrixRow);
 typedef struct ActMatrixView {
     unsigned char unmodeled_000[0x790];
     unsigned char rootElement[0x824 - 0x790];
@@ -755,7 +756,7 @@ typedef struct ActorShapeBinding {
     unsigned short shapeId;
 } ActorShapeBinding;
 typedef ActorShapeBinding *ActorShapeTable[];
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 extern void JNT_animSetFlags(unsigned int flags);
 extern void MATRIX_convert4(void *out, unsigned int matrices);
 extern void MDL_draw(void *model, void *matrix);

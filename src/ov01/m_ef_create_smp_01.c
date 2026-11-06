@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 25: 0x00a34e90..0x00a358a0 (7 functions)
@@ -300,7 +301,7 @@ typedef struct Smp01ImageParameter {
     float height;
 } Smp01ImageParameter;
 
-typedef unsigned int Smp01xQuad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Smp01xQuad);
 typedef union Smp01xQW {
     Smp01xQuad q;
     unsigned long ul[2];

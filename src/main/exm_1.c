@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "exm_1.h"
@@ -43,7 +44,7 @@ extern float skirtColliSize;
 extern float skirtColliSizeB;
 extern float skirtColliSizeS;
 extern float skirtColliFootRad;
-typedef unsigned int XglQuadword_XP __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword_XP);
 typedef union Matrix_XP {
     float elements[16];
     XglQuadword_XP quadwords[4];
@@ -1061,7 +1062,7 @@ struct request_XC {
     u8 mode;
     u8 data;
 };
-typedef unsigned int XglQuadword_XC __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword_XC);
 typedef union Matrix_XC {
     float elements[16];
     XglQuadword_XC quadwords[4];
@@ -1349,7 +1350,7 @@ static int EXM_CheckExCollision(ExMotionJointWork_XC *work, const float position
 
 float xglSin(float angle);
 float xglCos(float angle);
-typedef unsigned int XglQuadword_XS __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword_XS);
 typedef union Matrix_XS {
     float elements[16];
     XglQuadword_XS quadwords[4];
@@ -1924,7 +1925,7 @@ static void AdjustJrCoatWidth(float *a, float *b, float width)
 
 float atan2f(float y, float x);
 void xglMatrixInverse(Matrix4 destination, const Matrix4 source);
-typedef unsigned int XglQuadword_XM __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword_XM);
 typedef union Matrix_XM {
     float elements[16];
     XglQuadword_XM quadwords[4];

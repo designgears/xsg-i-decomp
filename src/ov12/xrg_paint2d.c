@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV12 original TU 86: 0x00a4a620..0x00a4c840 (42 functions)
@@ -18,7 +19,7 @@
  * 64-bit fields and the whole 16 bytes be read back as the single register
  * sceVif1PkOpenGifTag takes.
  */
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union XrgPaint2DGifTag {
     struct {
@@ -92,7 +93,7 @@ static void _DrawNoTex();
 static void _InitReq(XrgPaint2DDrawReq *req)
 {
     char *p = (char *)req;
-    Quadword z = 0;
+    Quadword z = PS2_QZERO;
 
     *(void **)(p + 0x0) = _Geom2D;
     req->draw = (void (*)(XrgPaint2D *, void *))_DrawNoTex;
@@ -492,10 +493,10 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
             break;
         }
     }
-    *(Quadword *) &w.quad[3] = 0;
-    *(Quadword *) &w.quad[2] = 0;
-    *(Quadword *) &w.quad[1] = 0;
-    *(Quadword *) &w.quad[0] = 0;
+    *(Quadword *) &w.quad[3] = PS2_QZERO;
+    *(Quadword *) &w.quad[2] = PS2_QZERO;
+    *(Quadword *) &w.quad[1] = PS2_QZERO;
+    *(Quadword *) &w.quad[0] = PS2_QZERO;
     w.quad[2].f.x = w.box[0];
     w.quad[1].f.y = w.box[1];
     w.quad[0].f.x = w.box[0];
@@ -620,7 +621,7 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
                 idx[i] = i;
             }
         }
-        ((Quadword *) &delta)[0] = 0;
+        ((Quadword *) &delta)[0] = PS2_QZERO;
         delta.i.x = screen[0].i.x - screen[1].i.x;
         delta.i.y = screen[0].i.y - screen[1].i.y;
         PS2_ASMV(

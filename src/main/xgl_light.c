@@ -1,9 +1,10 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
 #include "xgl_light.h"
 
-typedef unsigned int XglLightQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglLightQuadword);
 
 /* Light vectors occupy aligned quadwords consumed by the VU light matrix program. */
 typedef struct {

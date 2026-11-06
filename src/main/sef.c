@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
@@ -198,7 +199,7 @@ static int sefIsBossID(int character_id)
  * 16-byte aligned zero-fill blocks sefMemZero clears with por+sq; no wide
  * arithmetic is done on it.
  */
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union SefQuadBlock {
     Quadword quad;
@@ -220,7 +221,7 @@ void sefMemZero(void *dest, int size)
     int i;
 
     for (i = 0; i < block_count; i++) {
-        blocks[i].quad = 0;
+        blocks[i].quad = PS2_QZERO;
     }
     for (i = 0; i < word_count; i++) {
         words[i] = 0;
@@ -1954,7 +1955,7 @@ typedef struct SefModeKeyTable {
     SefKey5 keys[1];
 } SefModeKeyTable;
 
-typedef unsigned int SefPackedAnimation __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, SefPackedAnimation);
 
 typedef struct SefIntegerProgressState {
     int key_index;

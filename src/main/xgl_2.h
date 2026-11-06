@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 /*
  * TU-local declarations of main/tu100 (src/main/xgl_2.c).
  */
@@ -7,7 +8,7 @@
 
 #include "shared.h"
 
-typedef unsigned int XglQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword);
 
 typedef union Matrix {
     float elements[16];

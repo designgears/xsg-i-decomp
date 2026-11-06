@@ -1068,9 +1068,9 @@ static void _InitEnemy(RgEnemyControl *pControl, RgRobot *pRobot,
     pBaseControl->destructMethod = (RgRobotControlDestructFunc)_DestructEnemy;
     pControl->pEnemyRobot = pEnemyRobot;
     pControl->enemyType = enemyType;
-    pControl->turn.work = 0;
-    pControl->move.work = 0;
-    pControl->shot.work = 0;
+    pControl->turn.work = PS2_QZERO;
+    pControl->move.work = PS2_QZERO;
+    pControl->shot.work = PS2_QZERO;
 
     zeroVelocity = 0.0f;
     pControl->turn.state = 0;

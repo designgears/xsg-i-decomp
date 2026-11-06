@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "common.h"
 #include "shared.h"
 
@@ -396,7 +397,7 @@ int xglMovieOpen(XglMovieOpenView *info, int mode)
     return 0;
 }
 
-typedef unsigned int XglMovieQuad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglMovieQuad);
 typedef struct XglMoviePlayView {
     unsigned char pad00[0x28];
     int ringWrite;                      /* +0x28 */

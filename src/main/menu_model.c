@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -989,7 +990,7 @@ typedef struct MenuModelTransformControl {
     unsigned char unmodeled_6C[4];
 } MenuModelTransformControl;
 
-typedef unsigned int XglLightQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglLightQuadword);
 typedef struct {
     XglLightQuadword intensity;
     XglLightQuadword direction;

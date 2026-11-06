@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -79,7 +80,7 @@ extern void DB_incPos(int x, int y);
 
 extern void DB_println(const char *format, ...);
 
-typedef unsigned int CameraVectorStorage __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, CameraVectorStorage);
 
 typedef union {
     Vector4 vector;

@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
@@ -10,7 +11,7 @@ extern float D_004D7BA0;
  * 16-byte aligned typed storage that the original clears with por+sq; no
  * wide arithmetic.
  */
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 /*
  * 16-byte quadword-aligned vector storage, cleared through the union's quad
@@ -1360,7 +1361,7 @@ struct XglTaskScheduler_CG {
     XglTaskPrefix_CG *active_tail;
     XglTaskPrefix_CG *next_to_visit;
 };
-typedef unsigned int Quadword_CG __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword_CG);
 typedef void (*GameModeCameraCallback_CG)(void);
 typedef union GameDebugMenuStorage_CG {
     Quadword_CG storage;
@@ -1705,7 +1706,7 @@ extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern char str_0[];
 extern char str_1[];
 extern char D_004D8A60[];
-typedef int gdt_q __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, gdt_q);
 typedef union { float m[4][4]; gdt_q q[4]; } GdtMtx;
 typedef struct { gdt_q q[4]; } GdtQ4;
 
@@ -1969,7 +1970,7 @@ static int GameModeEvtTools(void)
             } else {
                 xglSoundEffectNormalDirect(4);
                 game_mode_flags &= 0xfffffffeu;
-                game_mode_pause_vector = 0;
+                game_mode_pause_vector = PS2_QZERO;
                 game_mode_kind = game_mode_saved_kind;
             }
         }
@@ -2000,7 +2001,7 @@ static int GameModePause(void)
             } else {
                 xglSoundEffectNormalDirect(4);
                 game_mode_flags &= 0xfffffffeu;
-                game_mode_pause_vector = 0;
+                game_mode_pause_vector = PS2_QZERO;
                 game_mode_kind = game_mode_saved_kind;
                 PartyTimePauseEnd();
             }
@@ -2035,7 +2036,7 @@ static int GameModeEvtDebug(void)
             } else {
                 xglSoundEffectNormalDirect(4);
                 game_mode_flags &= 0xfffffffeu;
-                game_mode_pause_vector = 0;
+                game_mode_pause_vector = PS2_QZERO;
                 game_mode_kind = game_mode_saved_kind;
             }
         }
@@ -2176,7 +2177,7 @@ int GameModeCfMain(void)
                 gameLoopCG.flags |= 1;
                 gameLoopCG.kind = 1;
                 gameLoopCG.saved_kind = previous_kind;
-                gameLoopCG.debug_menu.storage = 0;
+                gameLoopCG.debug_menu.storage = PS2_QZERO;
                 PartyTimePauseStart();
                 return 0;
             }
@@ -2521,7 +2522,7 @@ static int GameModeCfEvent(void)
 int GameModeDebugMenu(void)
 {
     if ((PadData.debug_buttons & 0x100) != 0) {
-        GameLoopState.pause_vector.quad = 0;
+        GameLoopState.pause_vector.quad = PS2_QZERO;
         GameLoopState.flags &= 0xfffffffeu;
         GameLoopState.kind = GameLoopState.saved_kind;
     }

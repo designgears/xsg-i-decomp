@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "shared.h"
@@ -607,7 +608,7 @@ static void INIT_MODELSYSTEM(void)
     CONSTRUCT_MODELSYSTEM();
 }
 
-typedef int FlushQ __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, FlushQ);
 extern int s_nBlocks, s_nUseZwrite, s_nModel, s_nDirect, s_nBlocksAlpha, s_nBlocksAlphaLast, s_nAnotherStudio, s_nUseStealth, s_nUseGnosys, s_nMapAlphaEntry;
 extern void *xglStudioSelectGetActiveCamera(int studio_index);
 extern float xglPointLength(const void *point1, const void *point2);
@@ -1285,7 +1286,7 @@ void nmlModelSetSortOffset(float offset)
     s_fSortOffsetEntry = offset;
 }
 
-typedef int qword_t __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, qword_t);
 extern qword_t s_inGblPointP[];
 extern Vector4 s_inGblPointC[];
 void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
@@ -1832,7 +1833,7 @@ void nmlModelSetTexOffset(TexAlias *name, float u, float v)
 
 typedef struct { char s[32]; } MatName32;
 
-typedef int MulColor16 __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, MulColor16);
 
 extern MulColor16 s_inMulColor;
 
@@ -2436,7 +2437,7 @@ extern int D_0095DB70[];
 extern int D_0095DBB0[];
 extern int D_0095DBF0[];
 extern int D_0095DC30[];
-typedef int qword_t __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, qword_t);
 extern qword_t s_inGblPointP[];
 extern Vector4 s_inGblPointC[];
 void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
@@ -3509,7 +3510,7 @@ typedef struct U_StudioCamera {
     U_u8 unmodeled_570[0x80];
 } U_StudioCamera;
 extern U_u8 *U_buffer NMLE_SYM(buffer);
-typedef unsigned int U_XglQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, U_XglQuadword);
 typedef union U_Matrix {
     float elements[16];
     U_Matrix4 rows;
@@ -3815,7 +3816,7 @@ typedef struct U_NmlBlockGroup {
         int address;
     } owner;
 } U_NmlBlockGroup;
-typedef unsigned int U_NmlPointQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, U_NmlPointQuadword);
 typedef struct U_NmlParentBuffer {
     U_LayoutStore *layout;
     unsigned char unmodeled_04[4];

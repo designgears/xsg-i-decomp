@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "common.h"
 
 #include "shared.h"
@@ -9,7 +10,7 @@
 extern unsigned char MenuWorkEndTop[0x10000];
 
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef struct {
     unsigned char menu_state[4];
@@ -198,7 +199,7 @@ void ChangeTopLevel(int top_level)
     MenuWork.menu_state[2] = 0;
     do {
         remaining--;
-        MenuWork.reset_work[slot] = 0;
+        MenuWork.reset_work[slot] = PS2_QZERO;
         slot++;
     } while (remaining >= 0);
 }

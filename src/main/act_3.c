@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -168,7 +169,7 @@ extern ActShadowCommand Head_9;
 extern ActShadowEndPacket Tail_10;
 
 
-typedef unsigned int ActShadowQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, ActShadowQuadword);
 
 /* DMA TTE carries DIRECT; its payload is one GIFtag and eight packed registers. */
 

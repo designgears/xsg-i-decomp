@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 27: 0x00a358a8..0x00a360e0 (5 functions)
@@ -5,7 +6,7 @@
 #include "common.h"
 #include "shared.h"
 
-typedef unsigned int Amp02Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Amp02Quadword);
 
 typedef struct Amp02TargetPacket {
     float target_x;

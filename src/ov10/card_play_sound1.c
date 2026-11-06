@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV10 original TU 1: 0x00a00410..0x00a08670 (15 functions)
@@ -175,7 +176,7 @@ extern u8 CardInitialDataPack[];
 extern u16 CardCommandPlay[];
 extern u8 D_4A6840[];
 typedef struct { float x, y, z, w; } __attribute__((aligned(16))) CardMainVec;
-typedef int Q16 __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, Q16);
 typedef struct { u8 pad[0x5BB0]; u32 a[4]; u32 b[4]; } CardMainSub;
 extern float s_asIntensity[4][4];
 extern float s_asDirection[4][4];

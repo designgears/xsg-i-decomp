@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 /*
  * OV11 original TU 1: 0x00a00100..0x00a091f8 (135 functions)
  */
@@ -85,7 +86,7 @@ void dprintf(const char *fmt, ...)
     va_end(args);
 }
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union { struct { u64 lo; u64 hi; } part; Quadword quad; } SetRegADTag;
 

@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 32: 0x00a387a8..0x00a39088 (7 functions)
@@ -238,7 +239,7 @@ typedef struct GameraGsPacket {
     int regCount;           /* NREG of the open GIF tag */
 } GameraGsPacket;
 
-typedef unsigned int MEfGsQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, MEfGsQuadword);
 typedef union MEfGsQword {
     MEfGsQuadword whole;
     unsigned short nloop;

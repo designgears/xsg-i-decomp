@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -891,7 +892,7 @@ typedef struct {
     signed char unk9;
 } KeyDataView;
 extern KeyDataView keyData;
-typedef int TIq __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(int, TIq);
 typedef union {
     Matrix4 m;
     Vector4 row[4];

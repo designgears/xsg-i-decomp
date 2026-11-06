@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 24: 0x00a346c8..0x00a34e90 (5 functions)
@@ -206,7 +207,7 @@ static void fnBP00_PR010(void *self, BP00Work *work)
     }
 }
 
-typedef unsigned int BP00Quad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, BP00Quad);
 typedef union BP00QW {
     BP00Quad q;
     unsigned long ul[2];

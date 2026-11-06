@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 31: 0x00a38190..0x00a387a8 (5 functions)
@@ -154,7 +155,7 @@ static void fnECM02_PR000(void *self, void *work)
     }
 }
 
-typedef unsigned int ECM02Quad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, ECM02Quad);
 typedef union ECM02QW {
     ECM02Quad q;
     unsigned long ul[2];

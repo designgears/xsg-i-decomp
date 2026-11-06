@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 33: 0x00a39088..0x00a397c0 (4 functions)
@@ -138,7 +139,7 @@ static void fnEAD00_PR000(void *self, void *work)
     }
 }
 
-typedef unsigned int EAD00Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, EAD00Quadword);
 typedef union MEfGsQword {
     EAD00Quadword whole;
     unsigned short nloop;

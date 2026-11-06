@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 29: 0x00a36be8..0x00a37ab8 (7 functions)
@@ -196,8 +197,8 @@ static void fnSOLB_PR000(void *self, void *work)
     }
 }
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
-typedef unsigned int MEfGsQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
+PS2_TI_TYPEDEF(unsigned int, MEfGsQuadword);
 typedef union MEfGsQword {
     Quadword whole;
     unsigned short nloop;

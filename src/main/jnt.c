@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 #include "jnt.h"
@@ -269,7 +270,7 @@ typedef struct JntAnimWork {
     float clip_radius;
 } JntAnimWork;
 
-typedef unsigned int JntRootStorage __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, JntRootStorage);
 typedef union JntRootSlot {
     JntRootStorage storage;
     struct {

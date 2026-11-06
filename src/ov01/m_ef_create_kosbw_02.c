@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 36: 0x00a3a090..0x00a3aac8 (5 functions)
@@ -273,7 +274,7 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
     }
 }
 
-typedef unsigned int Kos02Quad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Kos02Quad);
 typedef union Kos02QW {
     Kos02Quad q;
     unsigned long ul[2];
@@ -424,7 +425,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
             texVal = *(unsigned long *)((char *)effect + 0x48);
             a1->uc[8] = 6;
             a1->ul[0] = texVal;
-            color = 0xFF000000280000002800000028;
+            color = PS2_QCONST(0xFF000000280000002800000028, 0x28, 0x28, 0x28, 0xFF);
             n1 = pk->auxCount + 1;
             pk->current->us[0] |= 1;
             pk->current += n1;

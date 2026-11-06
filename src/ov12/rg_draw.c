@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV12 original TU 45: 0x00a26c78..0x00a285e0 (45 functions)
@@ -35,7 +36,7 @@ static void _DoubleScreenStudio(RgDraw *pDraw);
 static void _DrawMain(RgDraw *pDraw);
 static void _DrawReqTerminate(RgDraw *pDraw);
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef union GifTag {
     struct {

@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV10 original TU 8: 0x00a21768..0x00a324b8 (68 functions)
@@ -1228,7 +1229,7 @@ extern void nmlModelSetAlpha(u64 alpha);
 #define CARD_EFFECT_DIGIT_TEXTURE 0x1C990A0   
 #define CARD_EFFECT_DIGITS_FIRST 0x1C8A400    
 #define CARD_EFFECT_DIGITS 0x1C8CC00          
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 typedef union CardEffectMatrix {
     float m[4][4];
     Quadword q[4];

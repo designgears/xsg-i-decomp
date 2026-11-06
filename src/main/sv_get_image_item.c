@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -5,7 +6,7 @@
 
 #include "main/xgl_packet.h"
 
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 typedef struct Matrix { float elements[16]; } Matrix;
 

@@ -25,9 +25,6 @@ set(XSG_FLAGS
   -Wno-error=implicit-function-declaration -Wno-error=implicit-int
   -Wno-error=int-conversion -Wno-error=incompatible-pointer-types
   -Wno-error=return-mismatch -Wno-error=declaration-missing-parameter-type
-  # 128-bit `mode(TI)` quadword typedefs: i386 has no TImode.  Temporary,
-  # shrinks those types to 8 bytes; see STAGE2_PROGRESS.md "What's left".
-  -DTI=DI
   -include ${CMAKE_CURRENT_SOURCE_DIR}/include/ps2_host_compat.h
 )
 if(PORT_ASM_TRAP)

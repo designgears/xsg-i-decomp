@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 /*
  * TU-local declarations of ov12/tu006 (src/ov12/rg_enemy.c).
  */
@@ -22,7 +23,7 @@ typedef struct RgRobot RgRobot;
 typedef struct RgEnemyControl RgEnemyControl;
 
 /* A 128-bit GPR quantity (docs/native-ti.md). */
-typedef unsigned int Quadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Quadword);
 
 /*
  * One of the three behaviour jobs _JobEnemy runs each frame (turning,

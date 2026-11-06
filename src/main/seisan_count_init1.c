@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "common.h"
 
 #include "shared.h"
@@ -1507,7 +1508,7 @@ typedef struct SeisanBackgroundColor {
 typedef struct SeisanItemCategoryTable {
     short entries[4];
 } SeisanItemCategoryTable;
-typedef unsigned int SeisanQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, SeisanQuadword);
 typedef struct SeisanRenderPrefix {
     unsigned char unmodeled_00[0x12];
     unsigned short height;
@@ -1591,7 +1592,7 @@ void SeisanInit(void)
     work += 64;
     {
         SeisanQuadword *const clearBase = (void *)SeisanWork;
-        SeisanQuadword clearValue = 0;
+        SeisanQuadword clearValue = PS2_QZERO;
         rewardTotal = 3;
         do {
             clearBase[3 - rewardTotal] = clearValue;

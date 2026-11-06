@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 #include "common.h"
 
@@ -2173,7 +2174,7 @@ typedef union UwamonoAlignedScreenPoint {
     long long words[2];
 } UwamonoAlignedScreenPoint;
 
-typedef unsigned int XglQuadword __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, XglQuadword);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 typedef struct UwamonoCrossBasis {
     float xAxisX;

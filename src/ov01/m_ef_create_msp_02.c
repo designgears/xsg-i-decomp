@@ -1,3 +1,4 @@
+#include "port/ps2_types.h"
 #include "port/ps2_asm.h"
 /*
  * OV01 original TU 28: 0x00a360e0..0x00a36be8 (6 functions)
@@ -447,7 +448,7 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
     }
 }
 
-typedef unsigned int Msp02Quad __attribute__((mode(TI)));
+PS2_TI_TYPEDEF(unsigned int, Msp02Quad);
 typedef union Msp02QW {
     Msp02Quad q;
     unsigned long ul[2];
