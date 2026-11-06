@@ -4251,8 +4251,6 @@ void nmlModelEntry(U_NmlModel *model)
     nmlModelClear();
 }
 
-ACCEPTED_ASM("src/main/nml_model_set", nmlModelEntryEffect);
-
 typedef struct {
     s16 block;
     s16 kind;
@@ -4435,6 +4433,119 @@ void *nmlPacketSetAttributeAlloc16N(int count);
 u8 *nmlPacketSetAttributeData64N(const void *data, int count);
 void nmlPacketSetCurrent(void);
 void xglMatrixReverse(Matrix4 destination, const Matrix4 source);
+
+void nmlModelEntryEffect(NmlModelEc *model)
+{
+    extern NmlAlphaGroupEc s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+    extern NmlNonAlphaGroupEc s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+    extern XglRenderStateEc sRenderView __asm__("sRender");
+    NmlLayoutEc *layout;
+    NmlModelBlockEc *block;
+    int *blockTable;
+    int *blockOffsets;
+    int paddedBlockCount;
+    int quadIndex;
+    int index;
+    int alphaAdded;
+    int nonAlphaAdded;
+    int nonAlphaGroupDelta;
+    int nextModel;
+    Vector4 sortPos;
+
+    nmlPacketSetCurrent();
+    if (s_nModel < 0x200 && s_nBlocks + s_nBlocksAlpha + model->blockCount < 0xfff) {
+        index = 0;
+        blockTable = model->blockOffsets;
+        LAYOUT_S32(0x25c) = s_nModel;
+        s_fSortOffset = s_fSortOffsetEntry;
+        (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
+        __asm__ __volatile__(
+            "lqc2 vf3, 0(%1)\n\t"
+            "lqc2 vf2, 0(%0)\n\t"
+            "vadd.xyz vf2, vf2, vf3\n\t"
+            "sqc2 vf2, 0(%0)"
+            :
+            : "r"(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0), "r"(&model->entryTranslation)
+            : "memory");
+        _CurSetMatrix((*(NmlLayoutEc *)&s_inLayout).fields.place);
+        _CurApplyMatrix(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v, &(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v);
+        (*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v.w = model->entryTranslation.w;
+        (*(NmlLayoutEc *)&s_inLayout).fields.textureTransparency = 1.0f;
+        LAYOUT_S32(0x228) = 0;
+        (*(NmlLayoutEc *)&s_inLayout).fields.viewportAlpha[(*(NmlLayoutEc *)&s_inLayout).fields.renderLevel] = 0.0f;
+        (*(NmlLayoutEc *)&s_inLayout).fields.weightedMatrices = (Matrix4 *)nmlPacketSetAttributeData64N(
+            (char *)model + model->weightedMatrixOffset,
+            (model->partCount + model->sampleCount) * 2);
+        LAYOUT_S32(0x264) = 0;
+        paddedBlockCount = model->blockCount; /* one clip-mask byte per block, in whole quadwords */
+        if ((paddedBlockCount & 0xf) != 0) {
+            paddedBlockCount = paddedBlockCount - (paddedBlockCount & 0xf) + 16;
+        }
+        (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
+        for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
+            __asm__ __volatile__("sq $0, 0(%0)"
+                : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
+        }
+        layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
+        alphaAdded = 0;
+        nonAlphaAdded = 0;
+        s_apModelLayout[s_nModel] = layout;
+        if (s_nAlphaGroup < 0x1ff) {
+            s_aAlphaGroupView[s_nAlphaGroup].firstBlock = (short)(0xfff - s_nBlocksAlpha);
+            s_aAlphaGroupView[s_nAlphaGroup].blockCount = 0;
+            s_aAlphaGroupView[s_nAlphaGroup].sortDistance = 0.0f;
+            s_aAlphaGroupView[s_nAlphaGroup].owner.layout = layout;
+            set_group_status(layout, &s_aAlphaGroupView[s_nAlphaGroup].status);
+        }
+        if (s_nNonAlphaGroup < 0x1ff) {
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].firstBlock = (short)s_nBlocks;
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].blockCount = 0;
+            s_aNonAlphaGroupView[s_nNonAlphaGroup].owner.layout = layout;
+            set_group_status(layout, &s_aNonAlphaGroupView[s_nNonAlphaGroup].flags);
+        }
+        index = 0;
+        if (model->blockCount > 0) {
+        blockOffsets = blockTable;
+        do {
+            block = (NmlModelBlockEc *)((char *)model + *blockOffsets);
+            if (s_nBlocksAlpha + s_nBlocks < 0xfff) {
+                if ((block->materialFlags & 6) != 0 ||
+                    (layout->fields.render_status & 0x20) != 0 ||
+                    is_parts_transparency(block) != 0) {
+                    s_aAlphaGroupView[s_nAlphaGroup].blockCount++;
+                    alphaAdded = 1;
+                    __builtin_memcpy(&s_apBlock[0xfff - s_nBlocksAlpha], &block, sizeof(block));
+                    s_aBlockLayout[0xfff - s_nBlocksAlpha++] = s_nModel;
+                }
+                if ((block->materialFlags & 2) == 0 &&
+                    (layout->fields.render_status & 0x20) == 0 &&
+                    (*(u64 *)&block->materialFlags & 0x40004) != 0x40004 &&
+                    is_parts_transparency(block) == 0) {
+                    nonAlphaGroupDelta = (s_nParent != 0) ? -1 : 0;
+                    nonAlphaAdded = 1;
+                    s_aNonAlphaGroupView[s_nNonAlphaGroup + nonAlphaGroupDelta].blockCount++;
+                    s_apBlock[s_nBlocks] = block;
+                    s_aBlockLayout[s_nBlocks++] = s_nModel;
+                }
+            }
+            index++;
+            blockOffsets++;
+        } while (index < model->blockCount);
+        }
+        nextModel = s_nModel + 1;
+        __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
+        if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
+            __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)"
+                : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
+            AlphaGroupSortEntry(&sortPos);
+            s_nAlphaGroup = s_nAlphaGroup + 1;
+        }
+        if (nonAlphaAdded != 0) {
+            s_nNonAlphaGroup = s_nNonAlphaGroup + 1;
+        }
+    }
+    nmlModelClear();
+}
 
 void nmlModelEntryCard(NmlModelEc *model)
 {

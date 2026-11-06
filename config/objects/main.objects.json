@@ -27700,13 +27700,7 @@
         "all_functions_accepted": false,
         "all_functions_accepted_note": "every function has an accepted unit record; says nothing about the TU data (statics, strings) or completeness as C",
         "functions": 3,
-        "migration_hints": [
-          {
-            "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
-            "state_hint": "exact_asm",
-            "unit_record": "config/units/io-main-00233980.json"
-          }
-        ],
+        "migration_hints": [],
         "of": 170,
         "records": [
           {
@@ -27716,7 +27710,7 @@
             ],
             "flags_recorded": true,
             "generated_data": [],
-            "language": "ee-asm",
+            "language": "c-asm",
             "probe_compilers_reproducing": [
               "2.96"
             ],
@@ -27726,17 +27720,17 @@
             "recorded_profile": null,
             "recorded_runner": null,
             "scope": null,
-            "source": "src/main/nml_model_set/nmlModelEntryEffect.s",
+            "source": "src/main/nml_model_set.c",
             "source_functions": [
               "nmlModelEntryEffect"
             ],
-            "source_sha256": "22dbfbc1478fb9e6752a7c5a911f7ed9fd0237398513cf0030c589007e8e30b6",
             "text": {
               "sha256": "412c17c1180cfec66b45c9cfb8871a4f4d6bf3121229d3f5d1adaae6cc4f4e60",
               "size": 1112,
               "va": "0x0023397c"
             },
-            "unit_record": "config/units/io-main-00233980.json"
+            "unit_record": "config/units/io-main-00233980.json",
+            "note": "re-treated 2026-10-31 (user order): the accepted ee-asm body src/main/nml_model_set/nmlModelEntryEffect.s was replaced by C with constrained inline asm in src/main/nml_model_set.c (exact_c_with_asm, source class hardware); whole-file gate green refs/green/20261031T172751Z. The .s is deleted; the unit record stays the acceptance authority."
           },
           {
             "flags": [
