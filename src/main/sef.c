@@ -4456,7 +4456,31 @@ static void sefInitBattlePrm(void)
     }
 }
 
-ACCEPTED_ASM("src/main/sef", sefCaclAllTarget);
+void sefCaclAllTarget(Vector4 *target)
+{
+    SefBattleActor *record;
+    SefActor *actor;
+    Vector4 *position;
+    int count = 0;
+    int i;
+
+    __asm__ __volatile__("sqc2 vf0, 0(%0)" : : "r"(target) : "memory");
+    for (i = 0; i < _battleActor->count; i++) {
+        record = &_battleActor->actors[i];
+        actor = record->actor;
+        if (actor != 0 && record->excluded == 0) {
+            position = (Vector4 *)((char *)actor + 0x10);
+            __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+            __asm__ __volatile__("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+            __asm__ __volatile__("vadd.xyz vf1, vf1, vf2" : : : "memory");
+            __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+            count++;
+        }
+    }
+    if (count != 0) {
+        MMathDivVectorS(target, target, (float)count);
+    }
+}
 
 /*
  * sefSetLightFlag (main:0x002e6738): walks every listed battle effect actor

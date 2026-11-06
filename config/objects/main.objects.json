@@ -62392,11 +62392,6 @@
           {
             "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
             "state_hint": "exact_asm",
-            "unit_record": "config/units/math-main-002e6698-review09.json"
-          },
-          {
-            "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
-            "state_hint": "exact_asm",
             "unit_record": "config/units/math-main-w3-002e7f40.json"
           }
         ],
@@ -62669,7 +62664,7 @@
             ],
             "flags_recorded": true,
             "generated_data": [],
-            "language": "ee-asm",
+            "language": "c-asm",
             "probe_compilers_reproducing": [
               "2.96"
             ],
@@ -62679,17 +62674,17 @@
             "recorded_profile": null,
             "recorded_runner": null,
             "scope": null,
-            "source": "src/main/sef/sefCaclAllTarget.s",
+            "source": "src/main/sef.c",
             "source_functions": [
               "sefCaclAllTarget"
             ],
-            "source_sha256": "07ddbe95fc9e3f51b285282d7c85f80b9961cbaff4d7342db4d091aa3873e4cc",
             "text": {
               "sha256": "94f77c32be7b87600c71ed026633ec0635f9ce56c15171512461da738b84b501",
               "size": 160,
               "va": "0x002e6698"
             },
-            "unit_record": "config/units/math-main-002e6698-review09.json"
+            "unit_record": "config/units/math-main-002e6698-review09.json",
+            "note": "re-treated 2026-10-31 (user order): the accepted ee-asm body src/main/sef/sefCaclAllTarget.s was replaced by C with constrained inline asm in src/main/sef.c (exact_c_with_asm, source class hardware); whole-file gate green refs/green/20261031T172751Z. The .s is deleted; the unit record stays the acceptance authority."
           },
           {
             "flags": [
