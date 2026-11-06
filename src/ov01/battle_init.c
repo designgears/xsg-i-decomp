@@ -3180,7 +3180,101 @@ int nusumeGet(void)
     return nusumuFlag;
 }
 
-INCLUDE_ASM("asm/nonmatchings/ov01/battle_init", flowSpecProcInit);
+extern int jtypeIdx;
+extern const char D_00A43FB8[];
+extern int calcBc(ObjectTask *unit, int value);
+void specAnalyzeProc(ObjectTask *arg0);
+void specEscapeProc(void);
+int specNusumuProc(void *arg0, ObjectTask **arg1);
+extern void sefHitEffect(void);
+
+int flowSpecProcInit(ScenarioBatExec *exec, void **arg1)
+{
+  ScnExec50 *e = (ScnExec50 *) exec;
+  ObjectTask **target = (ObjectTask **) arg1;
+  int tec;
+  int v;
+  ObjectTask *u;
+  jtypeIdx = 0;
+  switch (tec = e->tec)
+  {
+    case 0x22B:
+      specAnalyzeProc(*target);
+      tec = e->tec;
+      break;
+
+    case 0x22C:
+      specEscapeProc();
+      tec = e->tec;
+      break;
+
+    case 0x22F:
+      calcBc(*target, 1);
+      tec = e->tec;
+      break;
+
+    case 0x39:
+      calcStatSet((ObjectTask *) (*target), 0, 0x1000, 0);
+      calcStatSet((ObjectTask *) (*target), 0, 0x400, 0);
+      calcStatSet((ObjectTask *) (*target), 0, 0x80, 0);
+      calcStatSet((ObjectTask *) (*target), 4, 0x800, 0);
+      calcStatSet((ObjectTask *) (*target), 4, 0x200, 0);
+      calcStatSet((ObjectTask *) (*target), 4, 0x400, 0);
+      tec = e->tec;
+      break;
+
+    case 0x5A:
+      if (specNusumuProc(exec, target))
+    {
+      nusumeSet(1);
+    }
+    else
+    {
+      nusumeSet(0);
+    }
+      sefHitEffect();
+      tec = e->tec;
+      break;
+
+    case 0x251:
+      break;
+
+    case 0x235 ... 0x238:
+
+    case 0x240:
+
+    case 0x259:
+
+    case 0x262 ... 0x263:
+
+    case 0x29A ... 0x29B:
+      break;
+
+    case 0x254:
+      u = (ObjectTask *) e->unit;
+      v = 2;
+      goto common;
+
+    case 0x257:
+      u = (ObjectTask *) e->unit;
+      v = 1;
+      common:
+    calcStatSet(u, 7, v, 0);
+
+      *((volatile int *) (((char *) e->unit->work) + 0x7C)) = 0;
+      tec = *(int *)((char *)exec + 8);
+      break;
+
+    case 0x25D:
+      specNusumuProc(exec, target);
+      tec = e->tec;
+      break;
+
+  }
+
+  printf(D_00A43FB8, tec);
+  return 0;
+}
 
 extern int jtypeIdx;
 int specSyoukanProc(SyoukanRec *rec, int arg1, unsigned int *state, int arg3);
