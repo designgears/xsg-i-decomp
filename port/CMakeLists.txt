@@ -37,6 +37,9 @@ endif()
 set(XSG_OBJECTS)
 foreach(unit IN LISTS XSG_UNITS)
   file(GLOB_RECURSE srcs CONFIGURE_DEPENDS "${XSG_ROOT}/src/${unit}/*.c")
+  # src/main/nml_packet_add/ is an unreferenced work copy of a function that
+  # nml_packet_add.c already defines; the PS2 build does not compile it.
+  list(FILTER srcs EXCLUDE REGEX "/src/main/nml_packet_add/")
   list(SORT srcs)
   add_library(xsg_${unit} OBJECT ${srcs})
   target_compile_definitions(xsg_${unit} PRIVATE PORT_HOST)
@@ -48,3 +51,36 @@ endforeach()
 
 add_library(xsg_game STATIC ${XSG_OBJECTS})
 set_target_properties(xsg_game PROPERTIES LINKER_LANGUAGE C)
+
+# ---------------------------------------------------------------------------
+# Stage 3: host runtime + the linked executable port/build/xsg.
+# Game data comes from the PS2 build's own outputs (build/<unit>/..., made by
+# configure.py from the user's disc); gen_host_data.py converts it for i386.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+set(XSG_GAME_DIR "${XSG_ROOT}/game" CACHE PATH "Default game directory (iso/, extracted-iso/)")
+
+file(GLOB XSG_RUNTIME_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.c")
+add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS})
+target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
+  -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
+target_compile_definitions(xsg_runtime PRIVATE "XSG_DEFAULT_GAME_DIR=\"${XSG_GAME_DIR}\"")
+
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/data/data_sources.cmake
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
+          --root ${XSG_ROOT} --out ${CMAKE_BINARY_DIR}/data
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
+          ${XSG_ROOT}/build/main/main.elf.ld
+  COMMENT "Converting PS2 game data for the host")
+
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/xsg
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
+          --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
+          --runtime $<TARGET_OBJECTS:xsg_runtime> --libs=-lm
+  DEPENDS xsg_game xsg_runtime $<TARGET_OBJECTS:xsg_runtime>
+          ${CMAKE_BINARY_DIR}/data/data_sources.cmake
+          ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
+  COMMAND_EXPAND_LISTS
+  COMMENT "Linking host executable xsg")
+add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg)
