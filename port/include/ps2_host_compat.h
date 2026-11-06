@@ -29,4 +29,9 @@ typedef ps2_u128 u_long128;
 typedef ps2_u128 u128;
 
 
+/* ee-gcc varargs: the game's hand-written va_start macros subtract the MIPS
+ * register save area, (8 - __builtin_args_info(2)) * 8 bytes.  On i386 every
+ * argument is on the stack after the last named one, so the offset is 0. */
+#define __builtin_args_info(n) 8
+
 #endif /* PS2_HOST_COMPAT_H */

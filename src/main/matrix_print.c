@@ -516,9 +516,13 @@ void QUAT_toAxis(const float quaternion[4], float axisAngle[4])
     extern double fptodp(float value);
     extern float dptofp(unsigned long long value);
     const float D_004D7D28 = 0.000001f;
+#ifndef PORT_HOST
     double cosine = fptodp(quaternion[3]);
     unsigned long long angleDouble = acos(cosine);
     float angle = dptofp(angleDouble);
+#else
+    float angle = (float)__builtin_acos((double)quaternion[3]);
+#endif
     float sine;
 
     axisAngle[3] = angle * -2.0f;
@@ -619,8 +623,13 @@ void QUAT_interpS(float firstWeight, float secondWeight,
         float angle;
         float sine;
 
+#ifndef PORT_HOST
         __builtin_memcpy(&encodedDot, &promotedDot, sizeof(encodedDot));
         angle = dptofp(acos_bits(encodedDot));
+#else
+        /* the u64 views above model the EE soft-float ABI; use host doubles */
+        angle = (float)__builtin_acos(promotedDot);
+#endif
         sine = sinf(angle);
 
         firstWeight = sinf(firstWeight * angle);

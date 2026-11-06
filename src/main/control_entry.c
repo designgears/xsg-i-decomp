@@ -54,6 +54,11 @@ extern int Title(void);
  * screen's entry address and the top byte is the overlay to load before
  * jumping to it. Never returns.
  */
+#ifdef PORT_HOST
+extern void *xsg_ps2_func(unsigned int ps2_addr);
+extern unsigned int xsg_ps2_addr_of(void *host_fn);
+#endif
+
 void ControlEntry(void)
 {
     unsigned int selection;
@@ -75,12 +80,23 @@ void ControlEntry(void)
         if (selection == 0) {
             continue;
         }
+#ifndef PORT_HOST
         entry = (int (*)(void))(selection & 0x00ffffff);
         if (entry == Title) {
             continue;
         }
         xglCdLoadOverlay(selection >> 24);
         entry();
+#else
+        /* The selection carries a PS2 overlay address; map it to the host
+         * function once the overlay it lives in is active. */
+        if ((selection & 0x00ffffff) == xsg_ps2_addr_of(Title)) {
+            continue;
+        }
+        xglCdLoadOverlay(selection >> 24);
+        entry = (int (*)(void))xsg_ps2_func(selection & 0x00ffffff);
+        entry();
+#endif
     }
 }
 

@@ -133,6 +133,14 @@ extern void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
                               const Vector4 *p1, const Vector4 *p2);
 extern void xglVectorScale(Vector4 *destination, const Vector4 *source,
                            float scale);
+#ifdef PORT_HOST
+/* EE ABI: a float argument travels in $f12 whatever its position, so this
+ * (destination, source, scale) view and xgl_2.c's (scale, destination, source)
+ * definition are the same call on the PS2.  On i386 the order matters. */
+extern void xglVectorScale_def(float scale, Vector4 *destination,
+                               const Vector4 *source) __asm__("xglVectorScale");
+#define xglVectorScale(d, s, k) xglVectorScale_def((k), (d), (s))
+#endif
 extern float xglSin(float angle);
 extern float xglCos(float angle);
 extern void xglVectorScaleAddXYZ(Vector4 *destination, const Vector4 *source,
