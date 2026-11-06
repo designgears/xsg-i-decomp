@@ -93,7 +93,11 @@ typedef struct PortResult {
 extern PortUnit *PortGetUnit(int chrNo) __asm__("func_A191C0");
 extern PortChar *PortGetChar(int chrNo) __asm__("func_A19210");
 #define SeisanCN (*(PortCountData *)&SeisanCN)
+#ifndef PORT_HOST
 #define SeisanResult ((PortResult *)SeisanResult)
+#else /* host gcc has no cast-as-lvalue (SeisanResult is assigned below) */
+#define SeisanResult (*(PortResult **)&SeisanResult)
+#endif
 static inline void SeisanRollbackStats(PortUnit *unit,
                                       PortChar *character,
                                       const PortHis *row)

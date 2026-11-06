@@ -167,12 +167,12 @@ static void scDeleteTask(int script_index, int task_index);
  */
 void scDestroyScript2(int script_index, int task_index)
 {
-    /* tracePrint's other callers in this TU (below) declare it with fewer
+    /* tracePrint3's other callers in this TU (below) declare it with fewer
      * trailing arguments; this call needs both script_index and task_index. */
-    extern int tracePrint(unsigned char *fmt, int script_index, int task_index);
+    extern int tracePrint3(unsigned char *fmt, int script_index, int task_index) __asm__("tracePrint");
 
     if ((unsigned int)script_index >= 16u) {
-        tracePrint(D_004CC7B8, script_index, task_index);
+        tracePrint3(D_004CC7B8, script_index, task_index);
         return;
     }
     sefDestroyScriptScheduler2(script_index, task_index);

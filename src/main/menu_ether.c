@@ -12,6 +12,7 @@ void *MenuEtherDataGet(int id)
         return 0;
     return buf + (index << 2) - 4;
 }
+extern struct EtherStatus *func_A1A488(unsigned short etherId); /* dataEthGet */
 
 int MenuEtherJoutoCheck(int id)
 {

@@ -205,6 +205,8 @@ int dataSndStEdNumSub(ObjectTask *unit, int condition)
     }
     return ret;
 }
+extern char *strcpy(char *destination, const char *source);
+extern char *strcat(char *destination, const char *source);
 
 extern SndStEdData btst[];
 extern SndStEdData bted[];

@@ -174,6 +174,7 @@ int MenuSaveMapTextLoad(int work, int mode)
     }
     return next;
 }
+extern struct UnitOrgWeapons *func_A191C0(int chrNo);
 
 int PartyAllPartyGet(int *out, int mode);
 short *func_00A11108(int id, void *a, void *b);
@@ -1001,7 +1002,7 @@ int MenuWeaponEquipCheck(int chr, int weaponId)
  * at +0x64 as CharParaData's accessory[3]; only that weapon array is read
  * here.
  */
-typedef struct {
+typedef struct UnitOrgWeapons {
     unsigned char unmodeled_00[0x5E];
     short weapon[3]; /* +0x5E */
 } UnitOrgWeapons;

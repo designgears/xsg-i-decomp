@@ -2038,11 +2038,11 @@ void nmlModelSetMapShadowParts(int partId)
 
 void nmlModelSetMapLastEntry(void *map, int blockId)
 {
-    extern void *s_pMapLast;
+    extern void *s_pMapLastPtr __asm__("s_pMapLast");
     extern int s_aMapLast[];
 
     if (s_nMapLast < 12) {
-        s_pMapLast = map;
+        s_pMapLastPtr = map;
         s_aMapLast[s_nMapLast++] = blockId;
     }
 }
@@ -4908,7 +4908,7 @@ void nmlPacketGsInit(void);
 static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
 {
     extern int s_inMapHandleView[4] __asm__("s_inMapHandle");
-    extern NmlNonAlphaGroupRp s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+    extern NmlNonAlphaGroupRp s_aNonAlphaGroupViewRp[] __asm__("s_aNonAlphaGroup");
     extern NmlParentBuffer *parent_buf_entryUp(NmlLayoutRp *inLayout) __asm__("parent_buf_entry");
     extern int nmlModelCalcEntryClipUp(NmlModelSampleView *model, StudioCamera *camera) __asm__("nmlModelCalcEntryClip");
     extern void nmlModelCalcDropShadowUp(NmlModelRp *model) __asm__("nmlModelCalcDropShadow");
@@ -4937,17 +4937,17 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
         int pass;
         int visible;
 
-        visible = (s_aNonAlphaGroupView[groupIndex].flags & 0x10) ? (model->fields.texMapMode & 1) : (model->fields.texMapMode & 2);
+        visible = (s_aNonAlphaGroupViewRp[groupIndex].flags & 0x10) ? (model->fields.texMapMode & 1) : (model->fields.texMapMode & 2);
         if (visible == 0) {
             continue;
         }
         cube = nmlFilterSetVolumeCubeRender(&model->fields.volume->boundsMin, &model->fields.volume->boundsMax);
         pass = (model->fields.texMapMode & 0x40000) ? 1 : cube;
-        if (model == s_aNonAlphaGroupView[groupIndex].owner.layout) {
+        if (model == s_aNonAlphaGroupViewRp[groupIndex].owner.layout) {
             continue;
         }
-        if ((s_aNonAlphaGroupView[groupIndex].flags & 0x10) == 0) {
-            Vector4 *bound = &s_aNonAlphaGroupView[groupIndex].owner.layout->fields.unmodeled_1f0.v;
+        if ((s_aNonAlphaGroupViewRp[groupIndex].flags & 0x10) == 0) {
+            Vector4 *bound = &s_aNonAlphaGroupViewRp[groupIndex].owner.layout->fields.unmodeled_1f0.v;
             if (model->fields.volume->boundsMax.x < bound->x || bound->z > model->fields.volume->boundsMax.z ||
                 bound->x < model->fields.volume->boundsMin.x || bound->z < model->fields.volume->boundsMin.z) {
                 continue;
@@ -4972,7 +4972,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
         } else {
             nmlPacketAddGsPixeltest(0x5d001);
         }
-        if (s_aNonAlphaGroupView[groupIndex].flags & 0x10) {
+        if (s_aNonAlphaGroupViewRp[groupIndex].flags & 0x10) {
             nmlPacketAddGsAlpha(model->fields.volume->alpha);
         } else {
             nmlPacketAddGsAlpha(model->fields.volume->alpha);
@@ -4980,8 +4980,8 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
         nmlPacketAddGsFlush();
         nmlPacketAddGifTagStandard(1, 1);
 
-        for (index = s_aNonAlphaGroupView[groupIndex].firstBlock;
-             index < s_aNonAlphaGroupView[groupIndex].firstBlock + s_aNonAlphaGroupView[groupIndex].blockCount;
+        for (index = s_aNonAlphaGroupViewRp[groupIndex].firstBlock;
+             index < s_aNonAlphaGroupViewRp[groupIndex].firstBlock + s_aNonAlphaGroupViewRp[groupIndex].blockCount;
              index++) {
             NmlModelBlockBounds *entry = s_apBlock[index];
             NmlLayoutRp *layout = s_apModelLayout[s_aBlockLayout[index]];
@@ -4991,7 +4991,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
             if (layout->fields.render_status & 0x100000) {
                 continue;
             }
-            if (s_aNonAlphaGroupView[groupIndex].flags & 0x10) {
+            if (s_aNonAlphaGroupViewRp[groupIndex].flags & 0x10) {
                 if ((int)layout == s_inMapHandleView[1] && model->fields.mapShadowPartCount != 0) {
                     if (!is_shadow_map_parts(model, entry->block.partId)) {
                         continue;
@@ -5734,9 +5734,9 @@ extern void sefDrawEffect(void);
 
 static int nmlModelFlushSub(int viewport)
 {
-    extern NmlNonAlphaGroupUp s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
-    extern NmlAlphaGroupUp s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
-    extern XglRenderStateUp sRenderView __asm__("sRender");
+    extern NmlNonAlphaGroupUp s_aNonAlphaGroupViewUp[] __asm__("s_aNonAlphaGroup");
+    extern NmlAlphaGroupUp s_aAlphaGroupViewUp[] __asm__("s_aAlphaGroup");
+    extern XglRenderStateUp sRenderViewUp __asm__("sRender");
     int result;
     StudioCamera *camera;
     int index;
@@ -5783,30 +5783,30 @@ static int nmlModelFlushSub(int viewport)
         nmlFilterSetFrameAlphaClear();
         index = result;
         for (; index < s_nNonAlphaGroup; index++) {
-            unsigned int flags = s_aNonAlphaGroupView[index].flags;
+            unsigned int flags = s_aNonAlphaGroupViewUp[index].flags;
             if (flags & 1) {
-                result = nmlModelRenderTexture(&s_aNonAlphaGroupView[index], 1, viewport);
+                result = nmlModelRenderTexture(&s_aNonAlphaGroupViewUp[index], 1, viewport);
                 if (result != 0) {
                     break;
                 }
                 continue;
             }
             if (flags & 0x100) {
-                result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aNonAlphaGroupView[index], 1, viewport);
+                result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aNonAlphaGroupViewUp[index], 1, viewport);
                 if (result != 0) {
                     break;
                 }
                 continue;
             }
             if (flags & 0x200) {
-                result = nmlModelRenderDropCircle(&s_aNonAlphaGroupView[index], 1, camera);
+                result = nmlModelRenderDropCircle(&s_aNonAlphaGroupViewUp[index], 1, camera);
                 if (result != 0) {
                     break;
                 }
                 continue;
             }
             if (flags & 0x80) {
-                result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aNonAlphaGroupView[index], 1, camera, viewport);
+                result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aNonAlphaGroupViewUp[index], 1, camera, viewport);
                 if (result != 0) {
                     break;
                 }
@@ -5818,29 +5818,29 @@ static int nmlModelFlushSub(int viewport)
         {
             int callback_mode = -1;
             for (index = 0; index < s_nAlphaGroup && result == 0; index++) {
-                if (s_aAlphaGroupView[index].status & 0x20) {
-                    if (s_aAlphaGroupView[index].status & 1) {
-                        result = nmlModelRenderTexture(&s_aAlphaGroupView[index], callback_mode, viewport);
+                if (s_aAlphaGroupViewUp[index].status & 0x20) {
+                    if (s_aAlphaGroupViewUp[index].status & 1) {
+                        result = nmlModelRenderTexture(&s_aAlphaGroupViewUp[index], callback_mode, viewport);
                         if (result != 0) {
                             break;
                         }
                         continue;
-                    } else if (s_aAlphaGroupView[index].status & 0x100) {
-                        result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aAlphaGroupView[index], callback_mode, viewport);
+                    } else if (s_aAlphaGroupViewUp[index].status & 0x100) {
+                        result = nmlModelRenderCircle((const NmlCircleOrigin *)&s_aAlphaGroupViewUp[index], callback_mode, viewport);
                         if (result != 0) {
                             break;
                         }
                         continue;
-                    } else if (s_aAlphaGroupView[index].status & 0x200) {
-                        result = nmlModelRenderDropCircle(&s_aAlphaGroupView[index], callback_mode, camera);
+                    } else if (s_aAlphaGroupViewUp[index].status & 0x200) {
+                        result = nmlModelRenderDropCircle(&s_aAlphaGroupViewUp[index], callback_mode, camera);
                         if (result != 0) {
                             break;
                         }
                         continue;
-                    } else if ((s_aAlphaGroupView[index].status & 0x80) == 0) {
+                    } else if ((s_aAlphaGroupViewUp[index].status & 0x80) == 0) {
                         continue;
                     } else {
-                        result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aAlphaGroupView[index], callback_mode, camera, viewport);
+                        result = (int)nmlModelRenderDrop((struct NmlModelRenderRange *)&s_aAlphaGroupViewUp[index], callback_mode, camera, viewport);
                         if (result != 0) {
                             break;
                         }
@@ -5854,14 +5854,14 @@ static int nmlModelFlushSub(int viewport)
                 nmlPacketGsInit();
                 nmlPacketAddGsZbuf(0);
                 nmlPacketAddGsPixeltest(0x50000);
-                nmlPacketAddGsFrame(sRenderView.display_buffer_base, 0);
+                nmlPacketAddGsFrame(sRenderViewUp.display_buffer_base, 0);
                 nmlPacketAddGsFlush();
                 sefDrawEffect();
             }
         }
         if (result == 0) {
             if (viewport == 0 && s_nUseStealth != 0 && s_nMapAlphaEntry == 0) {
-                nmlFilterSetFrameToBuffer(sRenderView.display_buffer_base);
+                nmlFilterSetFrameToBuffer(sRenderViewUp.display_buffer_base);
             }
         }
         if (result == 0) {

@@ -106,6 +106,7 @@ typedef struct CalcPartAdj {
     short aC;               /* +0x0C */
     unsigned char aE;       /* +0x0E */
 } CalcPartAdj;
+extern CalcCharParaData *calcTotalParaMenuSub(int charaId, int *attack, int *defense, unsigned char *table);
 extern int unitAgwsPilotGet(int charaId);
 extern unsigned char *dataFrmGet(int index);
 extern unsigned char *dataEngGet(int index);
@@ -765,6 +766,7 @@ typedef struct CalcAccSkillView {
     unsigned char unmodeled_00[0xE];
     unsigned short skillId;
 } CalcAccSkillView;
+extern AccessoryData *dataAccGet(int accessoryId);
 
 void calcSkillInitSub(ObjectTask *unit, int skillId);
 
@@ -2191,7 +2193,7 @@ typedef struct CalcStatClrOut {
     int mask;
 } CalcStatClrOut;
 
-int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out, int *val)
+int calcStatClr(int unused, CalcStatClrArg *arg, CalcStatClrOut *out, int *val_param)
 {
     unsigned char *tec;
     int cat;
@@ -2392,6 +2394,7 @@ done:
     }
     return ret;
 }
+extern short dataPosLineGet(int id);
 
 int calcLinePos(int unused, CalcStatClrArg *arg, unsigned char *mode, int *val)
 {

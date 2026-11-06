@@ -133,7 +133,11 @@ static int extract(void *destination, void *source, int byte_count)
         xglArxExtract(destination, source);
     } else if (destination != source) {
         for (; byte_count > 0; byte_count -= 4) {
+#ifndef PORT_HOST
             *((int *)destination)++ = *((int *)source)++;
+#else /* host gcc has no cast-as-lvalue */
+            *(*(int **)&destination)++ = *(*(int **)&source)++;
+#endif
         }
     }
 }

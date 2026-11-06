@@ -591,8 +591,8 @@ void QUAT_interpS(float firstWeight, float secondWeight,
                   Vector4 *destination, const Vector4 *first,
                   const Vector4 *second)
 {
-    extern unsigned long long acos(unsigned long long value);
-    extern unsigned long long fptodp(float value);
+    extern unsigned long long acos_bits(unsigned long long value) __asm__("acos");
+    extern unsigned long long fptodp_bits(float value) __asm__("fptodp");
     extern float dptofp(unsigned long long value);
     const float D_004D7D2C = 0.000001f;
     float firstX = first->x;
@@ -620,7 +620,7 @@ void QUAT_interpS(float firstWeight, float secondWeight,
         float sine;
 
         __builtin_memcpy(&encodedDot, &promotedDot, sizeof(encodedDot));
-        angle = dptofp(acos(encodedDot));
+        angle = dptofp(acos_bits(encodedDot));
         sine = sinf(angle);
 
         firstWeight = sinf(firstWeight * angle);

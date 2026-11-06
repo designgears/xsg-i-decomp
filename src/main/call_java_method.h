@@ -6,7 +6,7 @@
 #define SRC_MAIN_CALL_JAVA_METHOD_H
 
 typedef struct EnemyWork EnemyWork;
-extern EnemyWork enepc[16];
+extern unsigned char enepc[]; /* struct EnemyWork[16]; element type incomplete here */
 
 typedef unsigned int GameLoopStateWords[];
 extern GameLoopStateWords GameLoopState;

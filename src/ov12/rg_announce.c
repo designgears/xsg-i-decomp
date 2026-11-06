@@ -4,6 +4,7 @@
 #include "common.h"
 #include "shared.h"
 #include "rg_announce.h"
+extern void *InstanceOfRgBattleCommonData(void);
 
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);

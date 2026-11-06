@@ -240,8 +240,8 @@ typedef struct GameActorCopy { u64 w[0xA70 / 8]; } GameActorCopy;
 
 void Game_Data_Push(void)
 {
-    extern GameActorCopy actor[];
-    GameActorCopy *src = actor;
+    extern GameActorCopy actor_copy[] __asm__("actor");
+    GameActorCopy *src = actor_copy;
     u8 *gs = (u8 *)&GameLoopState;
     short i;
     short k;
@@ -465,8 +465,8 @@ void Game_Data_Pop(void)
 
 void MenuGameDataPush(void)
 {
-    extern GameActorCopy actor[];
-    GameActorCopy *src = actor;
+    extern GameActorCopy actor_copy[] __asm__("actor");
+    GameActorCopy *src = actor_copy;
     u8 *gs = (u8 *)&GameLoopState;
     short i;
 
@@ -534,6 +534,7 @@ void MenuGameDataPop(void)
         }
     }
 }
+extern void *xglStudioGetLight2(void);
 
 typedef struct GameLightBackup { u64 w[0x1e]; } GameLightBackup;
 

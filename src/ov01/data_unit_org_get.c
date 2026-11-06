@@ -1648,6 +1648,7 @@ int dataUnitFileLoadMdl(MdlLoadUnit *unit, int charaId, MdlLoadFile *file)
     }
     return 1;
 }
+extern void *dataChildActorCreate(int callerId);
 
 extern const char D_00A45E50[];
 

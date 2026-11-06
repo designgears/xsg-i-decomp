@@ -429,6 +429,7 @@ typedef struct XglMoviePlayView {
     unsigned char bcb;                  /* +0xcb */
     unsigned char padcc[4];
 } XglMoviePlayView;
+extern int sceGsSyncPath(int mode, unsigned short timeout);
 #define IPU_BP    ((volatile u32 *) 0x10002020)
 extern int printf(const char *format, ...);
 extern char D_004D2580[];

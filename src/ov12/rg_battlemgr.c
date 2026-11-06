@@ -341,6 +341,7 @@ static RgCamera *_GetCameraBattleField(BattleField *pField, u32 index)
     }
     return pField->camera[index];
 }
+extern RgDraw *InstanceOfRgDraw(void);
 
 static void _ClearBattleField(BattleField *pField) {
     int i;

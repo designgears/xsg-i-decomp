@@ -109,6 +109,7 @@ void menuBatObj(ObjectTask *task) {
      * code. */
     work = task->work;
 }
+extern unsigned short dataPadRead(int);
 
 typedef signed char s8;
 typedef signed int s32;
@@ -1728,6 +1729,8 @@ void menuTgtLineDisp(ObjectTask *task, int packet) {
         grCloseSpr();
     }
 }
+struct CursorObject;
+extern struct CursorCommand *objCmdTailGet(struct CursorObject *cursor);
 
 void menuStockStart(void)
 {

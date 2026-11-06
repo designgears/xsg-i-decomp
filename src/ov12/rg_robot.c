@@ -1405,7 +1405,6 @@ static void _DashExit(RgRobotStatus *status, RgBody *body)
 
 extern void RgError(const char *message, const char *source_file, int line, ...);
 extern const char D_00A519C0[];
-static int _DashPassTime();
 extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
 
 static int _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command)
@@ -1694,7 +1693,6 @@ extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
 extern void RgError(const char *message, const char *source_file, int line, ...);
 extern const char D_00A51A30[];
 static int _DashVRExecCmd();
-static int _DashVRPassTime();
 
 static int _InitDashVRStatus(RgRobotStatus *status, RgBody *body, RgCmd *command,
                              int param1, int param2)

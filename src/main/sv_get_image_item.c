@@ -2085,6 +2085,7 @@ typedef struct SvParticleEffect {
     unsigned char unmodeled_800[0x812 - 0x800];
     unsigned short flags;
 } SvParticleEffect;
+extern void *sevGetPtAllocator2(int index);
 extern Matrix4 _invView;
 extern Matrix4 _svUnitMatrix;
 extern const Quadword stqTbl_004CBEA0[4];
@@ -2241,6 +2242,8 @@ static inline void sefFlushListPacket(void)
 {
     SGsSendPacket((SGsPacketReset *)&_packet);
 }
+extern Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector);
+extern Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right);
 
 void sefDrawParticleListCf(SvParticleEffect *effect,
                            SvParticleListCfContext *context,

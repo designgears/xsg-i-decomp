@@ -296,7 +296,12 @@ extern short srsEftNoWeaponEffectID(int effect_id);
 extern short D_00794120[];
 
 int sefSearchMapperIndex2(int effect_id, int number, int category) {
+#ifndef PORT_HOST
     extern SefMapTbl__df _srsMemRes;
+#else /* file scope declares _srsMemRes as SefMemRes; alias this view */
+    extern SefMapTbl__df _srsMemResMap __asm__("_srsMemRes");
+#define _srsMemRes _srsMemResMap
+#endif
     extern unsigned char _battlePrm[];
     int o, i, n, j;
     int w;
@@ -344,6 +349,9 @@ int sefSearchMapperIndex2(int effect_id, int number, int category) {
     }
     return 0;
 }
+#ifdef PORT_HOST
+#undef _srsMemRes
+#endif
 
 extern int sefSearchMapperIndex2(int effect_id, int number, int category);
 extern int srsAnalyzeEftNo(int effect_id, int *number, int *category);

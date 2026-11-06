@@ -2072,6 +2072,8 @@ int stat1Proc(void *p)
     }
     return ret;
 }
+extern char *strcat(char *dst, const char *src);
+extern const char *itemNameGet(int group, int index);
 
 extern void unitCmdClear(ObjectTask *unit);
 extern int calcHp(ObjectTask *unit, int v);
@@ -5902,6 +5904,7 @@ typedef union {
     unsigned int u;
     void *p;
 } CurTgtFlags;
+extern unsigned int frameCntGet(void);
 
 int curTgtProc(int *pos, int flags)
 {
