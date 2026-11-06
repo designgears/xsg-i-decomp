@@ -25211,11 +25211,6 @@
             "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
             "state_hint": "exact_asm",
             "unit_record": "config/units/math-main-00229750-review12.json"
-          },
-          {
-            "reason": "standalone ee-asm record: ACCEPTED_ASM(\"src/main/<tu>/\", name) from its tracked reviewed .s (not a generated nonmatching)",
-            "state_hint": "exact_asm",
-            "unit_record": "config/units/math-spark-cont01-0022a950-quat.json"
           }
         ],
         "migration_hints_note": "The exact_asm hints of config/units/math-main-002297e8-review11.json, config/units/math-main-00229960-review11.json, config/units/math-spark-cont01-00229bc8.json were dropped on 2026-09-13 (task tu-retreat-integration-20260913b): those records were re-treated to C and are C records now, so there is no accepted assembly left for them to wire. tools/tu/gen_main.py emits that hint only for ee-asm records, so a regeneration agrees. It would, however, emit a `migration_rework` hint instead, because the frozen toolchain classification still records their probes as reproducing at -G0 while this TU's contract is -G8; that hint would be false - the published C reproduces the original bytes under the TU's own -G8 contract, which the whole-file gate and tools/tu_audit.py both prove - so it is deliberately not written here (same decision as main/tu257, tu-retreat-integration-20260912, and the batch-2 four, tu-retreat-integration-20260913a). config/units/math-spark-cont01-0022a950-quat.json keeps its exact_asm hint: it is still an ee-asm record, narrowed to xglQuaternionInterpolateLinear. The exact_asm hints of config/units/math-spark-cont01-0022a0f8-rots.json and config/units/math-spark-cont01-0022a3b0-stack.json were dropped on 2026-09-13 (task tu-retreat-integration-20260913c): those records were re-treated to C (main/tu100's remaining eighteen matrix-stack wrappers and three rotation helpers) and are C records now, so there is no accepted assembly left for them to wire.",
@@ -25564,7 +25559,7 @@
             ],
             "flags_recorded": true,
             "generated_data": [],
-            "language": "ee-asm",
+            "language": "c-asm",
             "probe_compilers_reproducing": [
               "2.96"
             ],
@@ -25574,17 +25569,17 @@
             "recorded_profile": null,
             "recorded_runner": null,
             "scope": null,
-            "source": "src/main/xgl_2/quat.s",
+            "source": "src/main/xgl_2.c",
             "source_functions": [
               "xglQuaternionInterpolateLinear"
             ],
-            "source_sha256": "f08f479c4614fe9e6f14b609a0c61ca3c94c5603690a864e980e906377021676",
             "text": {
               "sha256": "07b8c6480110bd7df84f0d9d5c34b7740bce84fbe847e950426b688f2c1c3aec",
               "size": 168,
               "va": "0x0022a9d0"
             },
-            "unit_record": "config/units/math-spark-cont01-0022a950-quat.json"
+            "unit_record": "config/units/math-spark-cont01-0022a950-quat.json",
+            "note": "re-treated 2026-10-31 (user order): the accepted ee-asm body src/main/xgl_2/quat.s was replaced by C with constrained inline asm in src/main/xgl_2.c (exact_c_with_asm, source class hardware); whole-file gate green refs/green/20261031T172751Z. The .s is deleted; the unit record stays the acceptance authority."
           },
           {
             "flags": [

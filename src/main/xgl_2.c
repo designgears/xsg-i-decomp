@@ -1488,7 +1488,55 @@ void xglQuaternion2Matrix(Matrix4 destination, const Vector4 *quaternion)
     );
 }
 
-ACCEPTED_ASM("src/main/xgl_2", quat);
+void xglQuaternionInterpolateLinear(Vector4 *destination, const Vector4 *left, const Vector4 *right,
+                                    float left_weight, float right_weight)
+{
+    /* The blend takes the shorter arc: when the dot product of the two
+     * quaternions is not positive, right is negated first. The sum is then
+     * normalised with the VU0 reciprocal square root. */
+    __asm__ __volatile__(
+        "mfc1 $3, %3\n\t"
+        "mfc1 $7, %4\n\t"
+        "qmtc2 $3, vf10\n\t"
+        "qmtc2 $7, vf11\n\t"
+        "lqc2 vf20, 0(%1)\n\t"
+        "lqc2 vf21, 0(%2)\n\t"
+        "vmul.xyzw vf18, vf20, vf21\n\t"
+        "li.s $f0, 0.0\n\t"
+        "vsubw.x vf1, vf0, vf0w\n\t"
+        "vaddy.x vf23, vf0, vf18y\n\t"
+        "vaddz.x vf24, vf0, vf18z\n\t"
+        "vaddw.x vf25, vf0, vf18w\n\t"
+        "vmulaw.x ACC, vf18, vf0w\n\t"
+        "vmaddaw.x ACC, vf23, vf0w\n\t"
+        "vmaddaw.x ACC, vf24, vf0w\n\t"
+        "vmaddw.x vf26, vf25, vf0w\n\t"
+        "qmfc2 $2, vf26\n\t"
+        "mtc1 $2, $f1\n\t"
+        "c.lt.s $f0, $f1\n\t"
+        "bc1t 1f\n\t"
+        "vmulx.xyzw vf21, vf21, vf1x\n"
+        "1:\n\t"
+        "vmulx.xyzw vf20, vf20, vf10x\n\t"
+        "vmulx.xyzw vf21, vf21, vf11x\n\t"
+        "vadd.xyzw vf22, vf20, vf21\n\t"
+        "vmul.xyzw vf19, vf22, vf22\n\t"
+        "vaddy.x vf23, vf0, vf19y\n\t"
+        "vaddz.x vf24, vf0, vf19z\n\t"
+        "vaddw.x vf25, vf0, vf19w\n\t"
+        "vmulaw.x ACC, vf19, vf0w\n\t"
+        "vmaddaw.x ACC, vf23, vf0w\n\t"
+        "vmaddaw.x ACC, vf24, vf0w\n\t"
+        "vmaddw.x vf26, vf25, vf0w\n\t"
+        "vrsqrt Q, vf0w, vf26x\n\t"
+        "vwaitq\n\t"
+        "vmulq.xyzw vf22, vf22, Q\n\t"
+        "sqc2 vf22, 0(%0)\n\t"
+        "nop"
+        :
+        : "r"(destination), "r"(left), "r"(right), "f"(left_weight), "f"(right_weight)
+        : "$2", "$3", "$7", "$f0", "$f1", "memory");
+}
 
 void xglRandSeedInit(void)
 {
