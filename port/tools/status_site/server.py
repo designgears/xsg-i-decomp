@@ -27,6 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 BUILD_BIN = ROOT / "port/build/xsg"
 LIVE_DIR = Path("/tmp/xsg-live")
+RUNS_KEEP = 10  # LIVE_DIR/runs/run-N.log files kept
 INTERACTIVE = False
 GALLERY_DIRS = [ROOT / "port/docs/screenshots", ROOT / "port/build/shots"]
 DOCS = ROOT / "port/docs"
@@ -97,7 +98,16 @@ def runner(shot_every, run_seconds, pad):
                          tags=collections.Counter(), frame=None, frame_t=None, fps=None,
                          bin_mtime=BUILD_BIN.stat().st_mtime)
             state["runs"] += 1
+            run_no = state["runs"]
+        # the full log of every run, so a crash leaves evidence (last RUNS_KEEP kept)
+        runs_dir = LIVE_DIR / "runs"
+        runs_dir.mkdir(exist_ok=True)
+        old = sorted(runs_dir.glob("run-*.log"), key=lambda f: f.stat().st_mtime)
+        for f in old[:max(0, len(old) - (RUNS_KEEP - 1))]:
+            f.unlink(missing_ok=True)
+        run_log = open(runs_dir / f"run-{run_no}.log", "w", errors="replace")
         for line in p.stdout:
+            run_log.write(line)
             line = line.rstrip("\n")
             with lock:
                 state["log"].append(line)
@@ -115,11 +125,14 @@ def runner(shot_every, run_seconds, pad):
                     elif state["frame"] is None:
                         state["frame"], state["frame_t"] = n, t
         rc = p.wait()
+        run_log.write(f"[status-site] run {run_no} exited with {rc}\n")
+        run_log.close()
         game["proc"] = None
         with lock:
             state.update(running=False, exit=rc, pid=None)
-            state["history"].append({"run": state["runs"], "exit": rc, "secs": round(time.time() - state["started"]),
-                                     "lines": state["lines"], "frame": state["frame"]})
+            state["history"].append({"run": run_no, "exit": rc, "secs": round(time.time() - state["started"]),
+                                     "lines": state["lines"], "frame": state["frame"],
+                                     "log": f"/runs/run-{run_no}.log"})
             del state["history"][:-20]
         time.sleep(0.5 if game["restart"] else 3)
 
@@ -561,7 +574,7 @@ $('tiles').innerHTML=[tile(r.frame??'–','game frame'),tile(r.fps?r.fps.toFixed
  tile(fmtB(m.bin_size),'binary size'),tile(ago(m.bin_mtime),'last build'),tile(m.shots_total??'–','screenshots'),
  tile(r.proc?fmtB(r.proc.rss):'–','game RSS'),tile(m.load?m.load[0].toFixed(2):'–','host load'),tile(r.lines??0,'log lines')].join('');
 const p=r.proc;$('proc').innerHTML=p?`<tr><th>PID</th><td class="n">${r.pid}</td></tr><tr><th>Threads</th><td class="n">${p.threads}</td></tr><tr><th>CPU time</th><td class="n">${p.cpu.toFixed(1)}s</td></tr><tr><th>RSS</th><td class="n">${fmtB(p.rss)}</td></tr><tr><th>Binary built</th><td class="n">${ago(r.bin_mtime)}</td></tr>`:'<tr><td class="mut">not running</td></tr>';
-$('hist').innerHTML='<tr><th>Run</th><th>Exit</th><th class="n">Secs</th><th class="n">Frame</th><th class="n">Lines</th></tr>'+(r.history||[]).slice().reverse().map(h=>`<tr><td>#${h.run}</td><td style="color:${h.exit===0?'var(--ok)':'var(--bad)'}">${h.exit}</td><td class="n">${h.secs}</td><td class="n">${h.frame??'–'}</td><td class="n">${h.lines}</td></tr>`).join('');
+$('hist').innerHTML='<tr><th>Run</th><th>Exit</th><th class="n">Secs</th><th class="n">Frame</th><th class="n">Lines</th><th>Log</th></tr>'+(r.history||[]).slice().reverse().map(h=>`<tr><td>#${h.run}</td><td style="color:${h.exit===0?'var(--ok)':'var(--bad)'}">${h.exit}</td><td class="n">${h.secs}</td><td class="n">${h.frame??'–'}</td><td class="n">${h.lines}</td><td>${h.log?`<a href="${h.log}">log</a>`:''}</td></tr>`).join('');
 const tg=Object.entries(r.tags||{}).sort((a,b)=>b[1]-a[1]).slice(0,16),mx=tg.length?tg[0][1]:1;
 $('tags').innerHTML=tg.map(([k,v])=>`<tr><td><code>[${esc(k)}]</code></td><td class="n">${v}</td><td style="width:45%"><div class="barc"><i style="width:${100*v/mx}%"></i></div></td></tr>`).join('')||'<tr><td class="mut">no tagged lines yet</td></tr>';
 const L=$('log');const atEnd=L.scrollTop+L.clientHeight>=L.scrollHeight-20;L.textContent=r.log.join('\n');if(atEnd)L.scrollTop=1e9;$('lc').textContent=r.log.length;
@@ -782,6 +795,12 @@ class H(BaseHTTPRequestHandler):
                     if p.parent == d.resolve() and p.suffix == ".png":
                         return self.file(p, "image/png")
             return self.send(404, b"not found", "text/plain")
+        if path.startswith("/runs/"):
+            name = os.path.basename(path[6:])
+            p = (LIVE_DIR / "runs" / name).resolve()
+            if re.fullmatch(r"run-\d+\.log", name) and p.is_file():
+                return self.file(p, "text/plain; charset=utf-8")
+            return self.send(404, b"no such run log", "text/plain")
         if path.startswith("/doc/"):
             p = (DOCS / os.path.basename(path[5:])).resolve()
             if p.parent == DOCS.resolve() and p.suffix == ".md":
