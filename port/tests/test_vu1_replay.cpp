@@ -7,6 +7,8 @@
  *   cmake --build port/build --target test_vu1_replay
  *   port/build/test_vu1_replay /tmp/vu1cap/vu1cap_*.bin    # exit 0 = identical
  *   ... --bench N   replay each file N times and print pairs/s
+ *   ... --bisect    run the reference and the fast path per run; report the first differing pair
+ *   XSG_PROF=<file> sample the replay (port/tools/prof_report.py)
  */
 #include <cstdarg>
 #include <cstdint>
@@ -21,6 +23,7 @@
 
 extern "C" {
 volatile unsigned xsg_frame;
+void xsg_prof_init(void);   /* XSG_PROF=<file>: sample the replay (port/runtime/prof.c) */
 void xsg_logf(const char* fmt, ...) { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
 }
 /* the capture writer is not linked: capture stays off */
@@ -80,6 +83,7 @@ int main(int argc, char** argv) {
         return 2;
     }
     xsgvu::SetKick(OnKick);
+    xsg_prof_init();
     unsigned long long runs = 0, bad = 0, pairs = 0;
     for (const char* fn : files) {
         FILE* f = std::fopen(fn, "rb");

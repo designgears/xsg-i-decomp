@@ -626,6 +626,7 @@ struct alignas(16) DP {
     __m128i ldmask;      // lower dest lanes
     UpFn up;
     LoFn lo;
+    u16 uop, lop;        // switch-dispatch ids of up/lo (RunFast)
     V* udst;             // upper target (vf[fd], acc, or a sink for vf0)
     V* ldst;             // lower VF target (sink for vf0)
     const V* ua;         // upper fs
@@ -707,7 +708,7 @@ inline __m128 OperandB(const DP& d) {
 }
 
 template <int OP, int B>
-void UpF(const DP& d) {
+__attribute__((always_inline)) inline void UpF(const DP& d) {
     const __m128 x = InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ua->u)));
     const __m128 y = OperandB<B>(d);
     __m128 z;
@@ -730,6 +731,47 @@ void UpF(const DP& d) {
 }
 
 void UpNop(const DP&) {}
+
+/* ITOF0/4/12/15: cvtdq2ps and the scale (both under the run's MXCSR, as
+   float(int) * sc in Upper) */
+template <int K>
+__attribute__((always_inline)) inline void UpITOF(const DP& d) {
+    static const float sc[4] = {1.0f, 1.0f / 16, 1.0f / 4096, 1.0f / 32768};
+    const __m128 f = _mm_cvtepi32_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ua->u)));
+    Blend(d.udst, OutN(K ? _mm_mul_ps(f, _mm_set1_ps(sc[K])) : _mm_mul_ps(f, _mm_set1_ps(1.0f))), d.udmask);
+}
+/* FTOI0/4/12/15: the scale is a power of two, so the float product equals
+   Upper's double product unless it saturates (>= 2^31; FLT_MAX under RZ). */
+template <int K>
+__attribute__((always_inline)) inline void UpFTOI(const DP& d) {
+    static const float sc[4] = {1.0f, 16.0f, 4096.0f, 32768.0f};
+    __m128 v = InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ua->u)));
+    if (K) v = _mm_mul_ps(v, _mm_set1_ps(sc[K]));
+    __m128i iv = _mm_cvttps_epi32(v);
+    const __m128i pos_sat = _mm_castps_si128(_mm_cmpge_ps(v, _mm_set1_ps(2147483648.0f)));
+    iv = _mm_blendv_epi8(iv, Bits(0x7fffffffu), pos_sat);
+    Blend(d.udst, iv, d.udmask);
+}
+/* CLIP fs.xyz, ft.w */
+__attribute__((always_inline)) inline void UpCLIP(const DP& d) {
+    const float lim = std::fabs(In(d.ub->u[3]));
+    const __m128 v = InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ua->u)));
+    const u32 gt = u32(_mm_movemask_ps(_mm_cmpgt_ps(v, _mm_set1_ps(lim))));
+    const u32 lt = u32(_mm_movemask_ps(_mm_cmplt_ps(v, _mm_set1_ps(-lim))));
+    const u32 j = (gt & 1) | ((lt & 1) << 1) | ((gt & 2) << 1) | ((lt & 2) << 2) | ((gt & 4) << 2) | ((lt & 4) << 3);
+    s.clip_l = ((s.clip_l << 6) | j) & 0xffffff;
+    if (d.push) {
+        if (s.fq_n == 16) {
+            auto& w = s.fq[s.fq_head];
+            s.mac = w.mac; s.status = w.status; s.clip = w.clip;
+            s.fq_head = (s.fq_head + 1) & 15; s.fq_n--;
+        }
+        auto& w = s.fq[(s.fq_head + s.fq_n) & 15];
+        w.ready = s.cycle + u64(flag_latency);
+        w.mac = s.mac_l; w.status = s.status_l; w.clip = s.clip_l;
+        s.fq_n++;
+    }
+}
 
 /* the reference upper (rare ops), committed at once: only for pairs whose
    lower half does not interact with it */
@@ -780,53 +822,66 @@ inline void StoreQV(const DP& d, u32 q) {
     _mm_storeu_si128(p, _mm_blendv_epi8(_mm_loadu_si128(p), v, d.ldmask));
 }
 
-u32 LoNop(const DP&) { return kNoBr; }
-u32 LoI(const DP& d) { s.I = d.wlo; return kNoBr; }
+__attribute__((always_inline)) inline u32 LoNop(const DP&) { return kNoBr; }
+/* flag readers: land what is due, then read (the same pair's upper write is
+   queued with ready > cycle, so it is never seen, as in the reference order) */
+inline void LandDue() { if (s.fq_n) LandFlags(false); }
+__attribute__((always_inline)) inline u32 LoFCAND(const DP& d) { LandDue(); stats.clip_reads++; SetVi(1, (s.clip & d.limm) != 0); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFCEQ(const DP& d) { LandDue(); stats.clip_reads++; SetVi(1, (s.clip & 0xffffff) == d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFCOR(const DP& d) { LandDue(); stats.clip_reads++; SetVi(1, ((s.clip | d.limm) & 0xffffff) == 0xffffff); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFCGET(const DP& d) { LandDue(); stats.clip_reads++; SetVi(d.lit, s.clip & 0xfff); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFSAND(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, s.status & d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFSEQ(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, (s.status & 0xfff) == d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFSOR(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, (s.status & 0xfff) | d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFMAND(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, s.mac & s.vi[d.lis]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFMEQ(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, (s.mac & 0xffff) == s.vi[d.lis]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoFMOR(const DP& d) { LandDue(); stats.flag_reads++; SetVi(d.lit, (s.mac & 0xffff) | s.vi[d.lis]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoI(const DP& d) { s.I = d.wlo; return kNoBr; }
 u32 LoSlow(const DP& d) { u32 t = 0; return Lower(d.wlo, d.pc, &t) ? t : kNoBr; }
-u32 LoLQ(const DP& d) { LoadQV(d, u32(s.vi[d.lis] + d.limm)); return kNoBr; }
-u32 LoSQ(const DP& d) { StoreQV(d, u32(s.vi[d.lit] + d.limm)); return kNoBr; }
-u32 LoLQI(const DP& d) { LoadQV(d, s.vi[d.lis]); SetVi(d.lis, s.vi[d.lis] + 1); return kNoBr; }
-u32 LoSQI(const DP& d) { StoreQV(d, s.vi[d.lit]); SetVi(d.lit, s.vi[d.lit] + 1); return kNoBr; }
-u32 LoILW(const DP& d) {
+__attribute__((always_inline)) inline u32 LoLQ(const DP& d) { LoadQV(d, u32(s.vi[d.lis] + d.limm)); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoSQ(const DP& d) { StoreQV(d, u32(s.vi[d.lit] + d.limm)); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoLQI(const DP& d) { LoadQV(d, s.vi[d.lis]); SetVi(d.lis, s.vi[d.lis] + 1); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoSQI(const DP& d) { StoreQV(d, s.vi[d.lit]); SetVi(d.lit, s.vi[d.lit] + 1); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoILW(const DP& d) {
     u32 v; std::memcpy(&v, QA(u32(s.vi[d.lis] + d.limm)) + 4 * d.lilane, 4); SetVi(d.lit, v); return kNoBr;
 }
-u32 LoISW(const DP& d) {
+__attribute__((always_inline)) inline u32 LoISW(const DP& d) {
     u8* p = QA(u32(s.vi[d.lis] + d.limm));
     const u32 v = s.vi[d.lit];
     _mm_storeu_si128(reinterpret_cast<__m128i*>(p),
                      _mm_blendv_epi8(_mm_loadu_si128(reinterpret_cast<const __m128i*>(p)), Bits(v), d.ldmask));
     return kNoBr;
 }
-u32 LoIADDIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }   // lit != 0
-u32 LoISUBIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] - d.limm); return kNoBr; }
-u32 LoIADD(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] + s.vi[d.lit]); return kNoBr; }  // lid != 0
-u32 LoISUB(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] - s.vi[d.lit]); return kNoBr; }
-u32 LoIAND(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] & s.vi[d.lit]); return kNoBr; }
-u32 LoIOR(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] | s.vi[d.lit]); return kNoBr; }
-u32 LoIADDI(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }
-u32 LoMOVE(const DP& d) {
+__attribute__((always_inline)) inline u32 LoIADDIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }   // lit != 0
+__attribute__((always_inline)) inline u32 LoISUBIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] - d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoIADD(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] + s.vi[d.lit]); return kNoBr; }  // lid != 0
+__attribute__((always_inline)) inline u32 LoISUB(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] - s.vi[d.lit]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoIAND(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] & s.vi[d.lit]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoIOR(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] | s.vi[d.lit]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoIADDI(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoMOVE(const DP& d) {
     Blend(d.ldst, _mm_loadu_si128(reinterpret_cast<const __m128i*>(s.vf[d.lfs].u)), d.ldmask); return kNoBr;
 }
-u32 LoMR32(const DP& d) {
+__attribute__((always_inline)) inline u32 LoMR32(const DP& d) {
     const __m128i v = _mm_shuffle_epi32(_mm_loadu_si128(reinterpret_cast<const __m128i*>(s.vf[d.lfs].u)), _MM_SHUFFLE(0, 3, 2, 1));
     Blend(d.ldst, v, d.ldmask); return kNoBr;
 }
-u32 LoMFIR(const DP& d) { Blend(d.ldst, Bits(u32(s32(std::int16_t(s.vi[d.lis])))), d.ldmask); return kNoBr; }
-u32 LoMTIR(const DP& d) { SetVi(d.lit, s.vf[d.lfs].u[d.lfsf] & 0xffff); return kNoBr; }
-u32 LoMFP(const DP& d) { Blend(d.ldst, Bits(s.P), d.ldmask); return kNoBr; }
-u32 LoB(const DP& d) { return d.limm; }
-u32 LoBAL(const DP& d) { SetVi(d.lit, (d.pc + 16) / 8); return d.limm; }
-u32 LoJR(const DP& d) { return (u32(s.vi[d.lis]) * 8) & 0x3ff8; }
-u32 LoJALR(const DP& d) { const u32 t = (u32(s.vi[d.lis]) * 8) & 0x3ff8; SetVi(d.lit, (d.pc + 16) / 8); return t; }
-u32 LoIBEQ(const DP& d) { return s.vi[d.lit] == s.vi[d.lis] ? d.limm : kNoBr; }
-u32 LoIBNE(const DP& d) { return s.vi[d.lit] != s.vi[d.lis] ? d.limm : kNoBr; }
-u32 LoIBLTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) < 0 ? d.limm : kNoBr; }
-u32 LoIBGTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) > 0 ? d.limm : kNoBr; }
-u32 LoIBLEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) <= 0 ? d.limm : kNoBr; }
-u32 LoIBGEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) >= 0 ? d.limm : kNoBr; }
-u32 LoXGKICK(const DP& d) { Kick(s.vi[d.lis]); return kNoBr; }
-u32 LoXTOP(const DP& d) { SetVi(d.lit, s.top); return kNoBr; }
-u32 LoXITOP(const DP& d) { SetVi(d.lit, s.itop); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoMFIR(const DP& d) { Blend(d.ldst, Bits(u32(s32(std::int16_t(s.vi[d.lis])))), d.ldmask); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoMTIR(const DP& d) { SetVi(d.lit, s.vf[d.lfs].u[d.lfsf] & 0xffff); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoMFP(const DP& d) { Blend(d.ldst, Bits(s.P), d.ldmask); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoB(const DP& d) { return d.limm; }
+__attribute__((always_inline)) inline u32 LoBAL(const DP& d) { SetVi(d.lit, (d.pc + 16) / 8); return d.limm; }
+__attribute__((always_inline)) inline u32 LoJR(const DP& d) { return (u32(s.vi[d.lis]) * 8) & 0x3ff8; }
+__attribute__((always_inline)) inline u32 LoJALR(const DP& d) { const u32 t = (u32(s.vi[d.lis]) * 8) & 0x3ff8; SetVi(d.lit, (d.pc + 16) / 8); return t; }
+__attribute__((always_inline)) inline u32 LoIBEQ(const DP& d) { return s.vi[d.lit] == s.vi[d.lis] ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoIBNE(const DP& d) { return s.vi[d.lit] != s.vi[d.lis] ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoIBLTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) < 0 ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoIBGTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) > 0 ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoIBLEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) <= 0 ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoIBGEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) >= 0 ? d.limm : kNoBr; }
+__attribute__((always_inline)) inline u32 LoXGKICK(const DP& d) { Kick(s.vi[d.lis]); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoXTOP(const DP& d) { SetVi(d.lit, s.top); return kNoBr; }
+__attribute__((always_inline)) inline u32 LoXITOP(const DP& d) { SetVi(d.lit, s.itop); return kNoBr; }
 
 constexpr u32 kRd = 1, kWr = 2;   // lower VF access
 
@@ -898,10 +953,16 @@ void DecodeUpper(DP& d, u32 w, int* target, bool* flags) {
     case 0x2a: set(UPC(MUL, BVEC), 32, true); return;
     case 0x2c: set(UPC(SUB, BVEC), 32, true); return;
     case 0x2d: set(UPC(MSUB, BVEC), 32, true); return;
-    case 0x10: case 0x11: case 0x12: case 0x13:
-    case 0x14: case 0x15: case 0x16: case 0x17:
-    case 0x1d: *target = int(ft); return;                              // ITOF/FTOI/ABS (generic)
-    case 0x1f: *flags = true; return;                                    // CLIP (generic)
+    case 0x10: set(UpITOF<0>, int(ft), false); return;
+    case 0x11: set(UpITOF<1>, int(ft), false); return;
+    case 0x12: set(UpITOF<2>, int(ft), false); return;
+    case 0x13: set(UpITOF<3>, int(ft), false); return;
+    case 0x14: set(UpFTOI<0>, int(ft), false); return;
+    case 0x15: set(UpFTOI<1>, int(ft), false); return;
+    case 0x16: set(UpFTOI<2>, int(ft), false); return;
+    case 0x17: set(UpFTOI<3>, int(ft), false); return;
+    case 0x1d: *target = int(ft); return;                              // ABS (generic)
+    case 0x1f: d.up = UpCLIP; *flags = true; return;                     // CLIP
     case 0x2e: *target = 32; *flags = true; return;                      // OPMULA (generic)
     case 0x2f: d.up = UpNop; return;                                     // NOP
     default: *target = 99; return;
@@ -928,7 +989,23 @@ void DecodeLower(DP& d, u32 w, u32 pc, u8* vf, bool* slow, bool* event) {
     auto rd = [&](u32 r) { vf[r] |= kRd; };
     auto wr = [&](u32 r) { vf[r] |= kWr; };
     auto all = [&] { for (int i = 0; i < 32; ++i) vf[i] = kRd | kWr; };
-    if (op7 >= 0x10 && op7 <= 0x1c) { *slow = true; *event = true; return; }
+    if (op7 >= 0x10 && op7 <= 0x1c) {
+        *event = true;
+        const u32 fimm = ((w >> 10) & 0x800) | (w & 0x7ff);
+        switch (op7) {
+        case 0x10: d.lo = LoFCEQ; d.limm = w & 0xffffff; return;
+        case 0x12: d.lo = LoFCAND; d.limm = w & 0xffffff; return;
+        case 0x13: d.lo = LoFCOR; d.limm = w & 0xffffff; return;
+        case 0x14: d.lo = LoFSEQ; d.limm = fimm; return;
+        case 0x16: d.lo = LoFSAND; d.limm = fimm; return;
+        case 0x17: d.lo = LoFSOR; d.limm = fimm; return;
+        case 0x18: d.lo = LoFMEQ; return;
+        case 0x1a: d.lo = LoFMAND; return;
+        case 0x1b: d.lo = LoFMOR; return;
+        case 0x1c: d.lo = LoFCGET; return;
+        default: *slow = true; return;   // FCSET/FSSET write the flags: reference order
+        }
+    }
     switch (op7) {
     case 0x00: d.lo = LoLQ; d.limm = imm11; wr(ft); return;
     case 0x01: d.lo = LoSQ; d.limm = imm11; rd(fs); return;
@@ -966,8 +1043,11 @@ void DecodeLower(DP& d, u32 w, u32 pc, u8* vf, bool* slow, bool* event) {
     case 0x31: d.lo = ft ? LoMR32 : LoNop; rd(fs); wr(ft); return;
     case 0x34: d.lo = LoLQI; wr(ft); return;
     case 0x35: d.lo = LoSQI; rd(fs); return;
-    case 0x38: case 0x39: case 0x3a:   // DIV/SQRT/RSQRT: status write
-        *slow = true; *event = true; rd(fs); rd(ft); return;
+    case 0x38: case 0x39: case 0x3a:   // DIV/SQRT/RSQRT: lands flags, writes I/D
+        /* Direct order is equivalent: the I/D bits of queued entries are
+           masked when they land, and the upper's status_l update commutes
+           with DivFlags (disjoint bits apart from the sticky OR). */
+        d.lo = LoSlow; *event = true; rd(fs); rd(ft); return;
     case 0x3b: d.pre = 1; d.lo = LoNop; return;      // WAITQ (stalled before the upper)
     case 0x7b: d.pre = 2; d.lo = LoNop; return;      // WAITP
     case 0x3c: d.lo = LoMTIR; rd(fs); return;
@@ -984,6 +1064,74 @@ void DecodeLower(DP& d, u32 w, u32 pc, u8* vf, bool* slow, bool* event) {
         d.lo = LoSlow; rd(fs); rd(ft); wr(ft); return;
     default: all(); *slow = true; return;
     }
+}
+
+#define LO_LIST(X) X(LoNop) X(LoSlow) X(LoFCAND) X(LoFCEQ) X(LoFCOR) X(LoFCGET) X(LoFSAND) X(LoFSEQ) X(LoFSOR) X(LoFMAND) X(LoFMEQ) X(LoFMOR) \
+    X(LoI) \
+    X(LoLQ) \
+    X(LoSQ) \
+    X(LoLQI) \
+    X(LoSQI) \
+    X(LoILW) \
+    X(LoISW) \
+    X(LoIADDIU) \
+    X(LoISUBIU) \
+    X(LoIADD) \
+    X(LoISUB) \
+    X(LoIAND) \
+    X(LoIOR) \
+    X(LoIADDI) \
+    X(LoMOVE) \
+    X(LoMR32) \
+    X(LoMFIR) \
+    X(LoMTIR) \
+    X(LoMFP) \
+    X(LoB) \
+    X(LoBAL) \
+    X(LoJR) \
+    X(LoJALR) \
+    X(LoIBEQ) \
+    X(LoIBNE) \
+    X(LoIBLTZ) \
+    X(LoIBGTZ) \
+    X(LoIBLEZ) \
+    X(LoIBGEZ) \
+    X(LoXGKICK) \
+    X(LoXTOP) \
+    X(LoXITOP) \
+    X(PairSlow)
+#define UP_LIST(X) \
+    X(ADD, BVEC) X(ADD, BBC) X(ADD, BQ) X(ADD, BI) X(SUB, BVEC) X(SUB, BBC) X(SUB, BQ) X(SUB, BI) \
+    X(MUL, BVEC) X(MUL, BBC) X(MUL, BQ) X(MUL, BI) X(MADD, BVEC) X(MADD, BBC) X(MADD, BQ) X(MADD, BI) \
+    X(MSUB, BVEC) X(MSUB, BBC) X(MSUB, BQ) X(MSUB, BI) X(MAX, BVEC) X(MAX, BBC) X(MAX, BQ) X(MAX, BI) \
+    X(MIN, BVEC) X(MIN, BBC) X(MIN, BQ) X(MIN, BI)
+enum LoId {
+#define X(n) ID_##n,
+    LO_LIST(X)
+#undef X
+};
+constexpr u16 UpId(int op, int b) { return u16(2 + op * 4 + b); }
+
+void AssignIds(DP& d) {
+    d.uop = 0xffff;
+    if (d.up == UpNop) d.uop = 0;
+    else if (d.up == UpGeneric) d.uop = 1;
+    else if (d.up == UpCLIP) d.uop = 30;
+    else if (d.up == static_cast<UpFn>(UpITOF<0>)) d.uop = 31;
+    else if (d.up == static_cast<UpFn>(UpITOF<1>)) d.uop = 32;
+    else if (d.up == static_cast<UpFn>(UpITOF<2>)) d.uop = 33;
+    else if (d.up == static_cast<UpFn>(UpITOF<3>)) d.uop = 34;
+    else if (d.up == static_cast<UpFn>(UpFTOI<0>)) d.uop = 35;
+    else if (d.up == static_cast<UpFn>(UpFTOI<1>)) d.uop = 36;
+    else if (d.up == static_cast<UpFn>(UpFTOI<2>)) d.uop = 37;
+    else if (d.up == static_cast<UpFn>(UpFTOI<3>)) d.uop = 38;
+#define X(o, b) else if (d.up == static_cast<UpFn>(UpF<o, b>)) d.uop = UpId(o, b);
+    UP_LIST(X)
+#undef X
+    d.lop = 0xffff;
+#define X(n) if (d.lo == static_cast<LoFn>(n)) d.lop = ID_##n;
+    LO_LIST(X)
+#undef X
 }
 
 struct Prog {
@@ -1011,6 +1159,7 @@ void Decode(Prog& p, const u8* micro) {
         if (tgt >= 0 && tgt < 32 && vf[tgt]) slow = true;   // lower reads/writes the upper's target
         if (slow) { d.up = UpNop; d.lo = PairSlow; }
     }
+    for (u32 i = 0; i < 2048; ++i) AssignIds(p.dp[i]);
     // control may leave after a branch's delay slot and after the pair that follows an E bit
     for (u32 i = 0; i < 2048; ++i) {
         if (p.dp[i].is_branch || p.dp[i].ebit) p.dp[(i + 1) & 2047].leave = 1;
@@ -1088,8 +1237,30 @@ u64 RunFast(u32& pc) {
             if (d->pre == 1 && s.q_busy) { s.Q = s.q_next; s.q_busy = false; }
             if (d->pre == 2 && s.p_busy) { s.P = s.p_next; s.p_busy = false; }
         }
-        d->up(*d);
-        const u32 bt = d->lo(*d);
+        switch (d->uop) {
+        case 0: break;
+        case 1: UpGeneric(*d); break;
+        case 30: UpCLIP(*d); break;
+        case 31: UpITOF<0>(*d); break;
+        case 32: UpITOF<1>(*d); break;
+        case 33: UpITOF<2>(*d); break;
+        case 34: UpITOF<3>(*d); break;
+        case 35: UpFTOI<0>(*d); break;
+        case 36: UpFTOI<1>(*d); break;
+        case 37: UpFTOI<2>(*d); break;
+        case 38: UpFTOI<3>(*d); break;
+#define X(o, b) case UpId(o, b): UpF<o, b>(*d); break;
+        UP_LIST(X)
+#undef X
+        default: __builtin_unreachable();
+        }
+        u32 bt;
+        switch (d->lop) {
+#define X(n) case ID_##n: bt = n(*d); break;
+        LO_LIST(X)
+#undef X
+        default: __builtin_unreachable();
+        }
         branch = bt != kNoBr;
         btarget = bt;
         if (take_branch) pc = target;

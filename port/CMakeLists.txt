@@ -200,7 +200,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref.cmake)
 # Stage 10: VU1 interpreter replay against XSG_VU1_CAPTURE files (bit-identical check + bench).
 add_executable(test_vu1_replay EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu1_replay.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/prof.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
 target_include_directories(test_vu1_replay PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 target_compile_options(test_vu1_replay PRIVATE -m32 -O2 -g -fno-pic -msse4.1 -mfpmath=sse)
 target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)
