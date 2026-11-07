@@ -26,7 +26,7 @@ def run(argv, cwd):
 
 
 def compile_source(root, unit_dir, source, output, ccdir, assembler, flags, skip_asm,
-                   as_flags=()):
+                   as_flags=(), keep_locals=False):
     common = [ccdir / 'ee-gcc', f'-B{ccdir}/', '-nostdinc', '-fno-builtin']
     preprocessed, assembly = Path(str(output) + '.i'), Path(str(output) + '.s')
     run([*common, '-E', *flags, *(['-DSKIP_ASM'] if skip_asm else []), '-Iinclude', '-I.',
@@ -35,7 +35,11 @@ def compile_source(root, unit_dir, source, output, ccdir, assembler, flags, skip
     gflag = next(flag for flag in flags if flag.startswith('-G'))
     # as_flags: the TU's extra ee-as options (config/tu/as-flags.json), as the
     # published build passes them (tools/tu/ninja_main.py, ninja_ovl.py).
-    run([assembler, '-EL', '-m5900', '-mabi=eabi', gflag, *as_flags, '-I.',
+    # keep_locals (-L): keep the compiler's local labels ($LC string/float
+    # literals) as symbols, so objdiff measures anonymous data byte for byte
+    # instead of seeing a section with no symbols. Bytes are unchanged.
+    run([assembler, '-EL', '-m5900', '-mabi=eabi', gflag, *as_flags,
+         *(['-L'] if keep_locals else []), '-I.',
          '-Iinclude', '-o', output, assembly], unit_dir)
     return assembly
 
@@ -110,6 +114,68 @@ def pair_verified_names(prefix, target, base_elf, verified, cwd):
     if args:
         # objcopy applies --redefine-sym before --localize-symbol.
         run([str(prefix) + 'objcopy', *args, target], cwd)
+
+
+def section_relative_data_relocs(target, base_elf):
+    """Write the target's data pointers to its own unnamed items the way cc1 does.
+
+    A pointer in the original data to an anonymous item (a string literal) is
+    an R_MIPS_32 against a splat label (`D_00A0DC18`, addend 0) in the target,
+    and against the section symbol with the item's offset stored in the word in
+    the compiled object. Both resolve to the same address. Only relocations
+    against a label the C object does not define are rewritten, to the
+    section symbol with the label's offset added to the stored addend.
+    """
+    elf = Elf(Path(target).read_bytes())
+    data = bytearray(elf.data)
+    named = {s.name for s in base_elf.symbols if s.shndx}
+    section_symbol = {s.shndx: s.index for s in elf.symbols if s.type == 3}
+    for rel in elf.sections:
+        if rel.type != 9:
+            continue
+        applies = elf.sections[rel.info]
+        if not applies.flags & 2 or applies.flags & 4:
+            continue
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            symbol = elf.symbols[info >> 8]
+            if (info & 255 != 2 or symbol.type == 3 or symbol.name in named
+                    or symbol.shndx not in section_symbol):
+                continue
+            word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+            struct.pack_into('<I', data, applies.offset + offset,
+                             (word + symbol.value) & 0xffffffff)
+            struct.pack_into('<I', data, at + 4, (section_symbol[symbol.shndx] << 8) | 2)
+    Path(target).write_bytes(bytes(data))
+
+
+def trim_link_padding(target, base_elf):
+    """End a target data section's last symbol where the C object's section ends.
+
+    splat gives a data item the zero fill the original linker inserted to align
+    the next object's section, so the target section is a few bytes longer than
+    the compiled one. Only zero bytes past the compiled section's size, fewer
+    than 16, are dropped from the covering symbol's size; objdiff still compares
+    every byte both objects contain.
+    """
+    elf = Elf(Path(target).read_bytes())
+    data = bytearray(elf.data)
+    base = {s.name: s for s in base_elf.sections}
+    symtab = next(s for s in elf.sections if s.type == 2)
+    for section in elf.sections:
+        if section.type != 1 or section.name not in base or not section.flags & 2 \
+                or section.flags & 4:
+            continue
+        size = base[section.name].size
+        if not 0 < section.size - size < 16 or any(
+                elf.data[section.offset + size:section.offset + section.size]):
+            continue
+        for symbol in elf.symbols:
+            if symbol.shndx == section.index and symbol.size and \
+                    symbol.value <= size < symbol.value + symbol.size:
+                struct.pack_into('<I', data, symtab.offset + 16 * symbol.index + 8,
+                                 size - symbol.value)
+    Path(target).write_bytes(bytes(data))
 
 
 def preserve_gp0(source, target):
@@ -229,7 +295,7 @@ def prepare(root, evidence):
             base = destination / 'base.o'
             assembly = compile_source(root, unit_dir, root / obj['source'], base,
                                       ccdir, assembler, flags, skip_asm=True,
-                                      as_flags=as_flags)
+                                      as_flags=as_flags, keep_locals=True)
             emitted = verification.compiler_functions(assembly.read_text())
             actual = functions(base)
             # Removing inline scaffold blocks can change scheduling/alignment.
@@ -299,6 +365,8 @@ def prepare(root, evidence):
         preserve_gp0(stripped, target)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
+            trim_link_padding(target, base_elf)
+            section_relative_data_relocs(target, base_elf)
         if literal_labels:
             mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
