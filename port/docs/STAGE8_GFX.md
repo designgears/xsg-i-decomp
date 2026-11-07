@@ -95,7 +95,8 @@ added around the original `#define`.
 
 ## Next
 
-* The overlapping subtitle lines at vblank 1700 (the font/event text path).
+* ~~The overlapping subtitle lines at vblank 1700~~: an `XSG_SKIP_EVENTS` artefact, and the
+  scene's darkness matches PCSX2. See [STAGE10_COMPARE.md](STAGE10_COMPARE.md).
 * Other splat-symbolised integer words: a general check (for example, words whose symbol is
   never referenced as a pointer by code) would be safer than the label list.
 * The scene is dark grey. Compare the lighting and fog with a PS2 capture.
