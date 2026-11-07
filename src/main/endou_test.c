@@ -902,7 +902,13 @@ extern EndouModelActor *ACT_setArms(EndouModelActor *actor, EndouModelActor *par
 extern void ACT_setModelWrapper(EndouModelActor *actor, int unused);
 extern void ACT_setMotion(EndouModelActor *actor, int motionId);
 extern void ACT_updateMotion(EndouModelActor *actor);
+#ifdef PORT_HOST
+/* PS2: called with a leftover $a0; it only reaches AlphaGroupSort, which ignores it */
+extern void nmlModelFlush(int *arg0);
+#define nmlModelFlush() nmlModelFlush(0)
+#else
 extern void nmlModelFlush(void);
+#endif
 extern void RES_GetMdlFileName(char *destination, int selector);
 extern char *strcat(char *destination, const char *source);
 extern char *strcpy(char *destination, const char *source);

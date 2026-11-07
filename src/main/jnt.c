@@ -919,8 +919,13 @@ JntStaticChannel *JNT_constructMatrix(JntWork *work, JntStaticChannel *channel)
             JntProductionConsumer consumer = (JntProductionConsumer)producer->consumers[interrupt_channel];
             int argument = producer->consumer_arguments[interrupt_channel];
             unsigned int address = (unsigned int)consumer;
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+            if (XSG_HOST_IS_CODE(address)) {
+                {
+#else
             if (address - JNT_CONSUMER_CODE_BASE <= JNT_CONSUMER_CODE_SPAN) {
                 if ((address & 3U) == 0) {
+#endif
                     consumer(work, channel, argument);
                 }
             }
@@ -3302,7 +3307,11 @@ int JNT_startProduction(JntProduction *prod, void *target, float time)
     if (prod->count > 0) {
         fn = prod->produce;
         param = prod->param;
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+        if (XSG_HOST_IS_CODE(fn)) {
+#else
         if ((unsigned int)((int)fn - 0x1F0000) <= 0x01E0FFFF && !((int)fn & 3)) {
+#endif
             fn((void *)0x70000000, arg, param);
             if (target != 0) {
                 *(int *)((char *)target + 0xA60) = *(int *)0x700007A0;

@@ -34,4 +34,13 @@ typedef ps2_u128 u128;
  * argument is on the stack after the last named one, so the offset is 0. */
 #define __builtin_args_info(n) 8
 
+/* The game validates callback pointers by checking they lie in EE RAM code
+ * (`addr - 0x1F0000 <= 0x1E0FFFF && !(addr & 3)`).  Host code lives in the
+ * executable's text segment (ld's __executable_start..etext, overlays
+ * included) and is not 4-aligned, so the PORT_HOST side of those sites uses
+ * this instead. */
+extern char __executable_start[], etext[];
+#define XSG_HOST_IS_CODE(a) ((unsigned int)(a) >= (unsigned int)__executable_start && \
+                             (unsigned int)(a) < (unsigned int)etext)
+
 #endif /* PS2_HOST_COMPAT_H */

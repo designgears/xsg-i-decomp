@@ -436,12 +436,21 @@ int srsGetWeaponEffectIdx(int id)
 
 extern int srsGetWeaponEffectIdx();
 
+#ifdef PORT_HOST
+/* PS2: (void); the caller's $a0 (effect id, see sef.c) passes straight through */
+short srsEftNoWeaponEffectID(int id)
+#else
 short srsEftNoWeaponEffectID(void)
+#endif
 {
     int index;
     short weaponEffectID;
 
+#ifdef PORT_HOST
+    index = srsGetWeaponEffectIdx(id);
+#else
     index = ((int (*)())srsGetWeaponEffectIdx)();
+#endif
     weaponEffectID = 0;
     if (index >= 0) {
         weaponEffectID = _weaponTbl[index].weaponEffectID;
@@ -463,12 +472,21 @@ short srsWeapon2EffectID(int weaponID)
     return -1;
 }
 
+#ifdef PORT_HOST
+/* PS2: (void); the caller's $a0 (effect id, see set_path.c) passes straight through */
+short srsEftNo2WeaponID(int id)
+#else
 short srsEftNo2WeaponID(void)
+#endif
 {
     int index;
     short weaponID;
 
+#ifdef PORT_HOST
+    index = srsGetWeaponEffectIdx(id);
+#else
     index = ((int (*)())srsGetWeaponEffectIdx)();
+#endif
     weaponID = 0;
     if (index >= 0) {
         weaponID = _weaponTbl[index].weaponID;

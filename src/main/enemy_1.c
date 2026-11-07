@@ -1036,7 +1036,11 @@ void Enemy_Route(EnemyActor *self)
     if (work->spline_point_count * 128 - 384 <= saved_parameter &&
         (self->flags & 0x80000000) != 0) {
         if (work->pause_kind != 8) {
+#ifdef PORT_HOST
+            Set_Spline_By_Random(self); /* PS2: $a0 still holds self */
+#else
             Set_Spline_By_Random();
+#endif
         } else {
             Set_Spline_By_Route(self, 0);
         }

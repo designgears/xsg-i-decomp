@@ -3046,7 +3046,12 @@ one:
         }
         goto zero;
     case 2:
+#ifdef PORT_HOST
+        /* PS2: $f12 still holds this function's incoming r */
+        if (((int (*)(Vector4 *, char *, float))AreaCheckBox)(arg0, arg1, r) != 0) {
+#else
         if (((int (*)(Vector4 *, char *))AreaCheckBox)(arg0, arg1) != 0) {
+#endif
             goto one;
         }
 zero:

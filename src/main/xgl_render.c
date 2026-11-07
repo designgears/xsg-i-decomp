@@ -482,7 +482,13 @@ extern void xglStudioInit(void);
 
 extern void xglStudioMainCameraInit(void);
 
+#ifdef PORT_HOST
+/* PS2: called with a leftover $a0; it only reaches AlphaGroupSort, which ignores it */
+extern void nmlModelFlush(int *arg0);
+#define nmlModelFlush() nmlModelFlush(0)
+#else
 extern void nmlModelFlush(void);
+#endif
 
 extern void nmlModelFlushClear(void);
 

@@ -734,7 +734,12 @@ int sndSeStop(int unused, int pack)
     int stopped = 0;
 
     if (pack != 0) {
+#ifdef PORT_HOST
+        /* PS2: $a0/$a1 still hold this function's own (unit, pack) */
+        xglSoundEffectStopID(sndBankGet(unused, pack) << 0x10, 0);
+#else
         xglSoundEffectStopID(sndBankGet() << 0x10, 0);
+#endif
         printf(D_00A4E810, pack);
         stopped = 1;
     }

@@ -1329,7 +1329,11 @@ int MenuShopNoSaleCheck(int item)
 
 void MenuShopListColorChange(int list, int kind)
 {
+#ifdef PORT_HOST
+    int *sorted = ((int *(*)(int)) MenuSortAddrGet)(list); /* PS2: $a0 still holds list */
+#else
     int *sorted = MenuSortAddrGet();
+#endif
     int count = MenuSortCheck(list);
     MenuShopListRow *entry = MenuListGet(list);
     int i;
@@ -4299,7 +4303,13 @@ extern void MenuBgTaskBreak(void);
 extern void MenuModelAllBreak(void);
 extern void GameResourceWorkReload(void);
 extern void GameCfPlayerLoadResource(int);
+#ifdef PORT_HOST
+/* PS2: called with a leftover $a0; it only reaches AlphaGroupSort, which ignores it */
+extern void nmlModelFlush(int *arg0);
+#define nmlModelFlush() nmlModelFlush(0)
+#else
 extern void nmlModelFlush(void);
+#endif
 extern void MenuModelMain(void);
 extern void MenuShopAgwsListChange(void);
 extern void MenuKeepSelectReset(void);

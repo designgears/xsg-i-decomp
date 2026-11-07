@@ -363,7 +363,11 @@ void AutoDoorStanbyFunc(DoorUnit *door)
     model->x = door->x;
     model->y = door->y;
     model->z = door->z;
+#ifdef PORT_HOST
+    if (CheckDoorDist(door) < params->trigger_distance) { /* PS2: $a0 still holds door */
+#else
     if (CheckDoorDist() < params->trigger_distance) {
+#endif
         door->open_phase = 1;
         if (xglSoundEffectCheckID(params->move_sound_channel, door->sound_channel + 1) != 0) {
             xglSoundEffectStopID(params->move_sound_channel, door->sound_channel + 1);
@@ -577,7 +581,11 @@ void MjDoorStanbyFunc(DoorUnit *door)
     model->x = door->x;
     model->y = door->y;
     model->z = door->z;
+#ifdef PORT_HOST
+    if (CheckDoorDist(door) < params->trigger_distance && CheckDoorSwitch(door) != 0) { /* PS2: $a0 still holds door */
+#else
     if (CheckDoorDist() < params->trigger_distance && CheckDoorSwitch(door) != 0) {
+#endif
         door->open_phase = 1;
         if (xglSoundEffectCheckID(params->move_sound_channel, door->sound_channel + 1) != 0) {
             xglSoundEffectStopID(params->move_sound_channel, door->sound_channel + 1);

@@ -1848,7 +1848,11 @@ int battleExecDead(void)
               short charaId = calcUPGet((ObjectTask *) table[i])->charaId;
               if ((((charaId != 0x22) && (charaId != 0x24)) && (charaId != 0x99)) && (((unsigned) (charaId - 0x6F)) >= 0x28))
               {
+#ifdef PORT_HOST
+                ((void (*)(int)) UmnDataBaseMonsterSet)(charaId); /* PS2: $a0 still holds charaId */
+#else
                 UmnDataBaseMonsterSet();
+#endif
               }
             }
             if (menuTimeGet() == 3)
@@ -4822,7 +4826,13 @@ void transWepIn(BattleUnit *unit, int slot)
     }
 }
 
+#ifdef PORT_HOST
+/* PS2 declares (void) and calls with $a0 still holding the caller's actor */
+extern void unitActdraw(Actor *actor);
+#define unitActdraw() unitActdraw(actor)
+#else
 extern void unitActdraw(void);
+#endif
 
 void transWepInDraw(Actor *actor) {
     float transparency;

@@ -474,7 +474,13 @@ void nmlModelSetLight(Matrix4 intensity, Matrix4 direction);
 void nmlModelSetTexture(const char *texture);
 void nmlModelSetPlace(float matrix[4][4]);
 void nmlModelEntry(int model);
+#ifdef PORT_HOST
+/* PS2: called with a leftover $a0; it only reaches AlphaGroupSort, which ignores it */
+extern void nmlModelFlush(int *arg0);
+#define nmlModelFlush() nmlModelFlush(0)
+#else
 void nmlModelFlush(void);
+#endif
 
 static void tskMenuTai(MenuTaiTask *task)
 {

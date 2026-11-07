@@ -228,7 +228,13 @@ extern void MenuAgws(void);
 extern void UmnInterface(void);
 extern void MenuSystem(void);
 extern void endPrintExtFunc(int, int, int);
+#ifdef PORT_HOST
+/* PS2: called with a leftover $a0; it only reaches AlphaGroupSort, which ignores it */
+extern void nmlModelFlush(int *arg0);
+#define nmlModelFlush() nmlModelFlush(0)
+#else
 extern void nmlModelFlush(void);
+#endif
 extern void MenuModelMain(void);
 extern void xglFontDebugPrintf(int, int, const char *, ...);
 extern void xglFontDebugHex(int, int, int, int);

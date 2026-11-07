@@ -1970,7 +1970,11 @@ int cmdCamLock(void)
         printf(D_00A46590, camMode);
         return 0;
     }
+#ifdef PORT_HOST
+    MCamGetCurrentCoord(&v, camMode);   /* PS2: $a1 still holds camMode (bgez delay slot) */
+#else
     ((Vector4 *(*)(Vector4 *))MCamGetCurrentCoord)(&v);   /* original passes only &v */
+#endif
     cam = (CamLockView *)mcamPtrGet();
     cam->pos.x = v.x;
     cam->mode = 0;

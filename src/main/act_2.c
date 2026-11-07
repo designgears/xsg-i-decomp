@@ -883,7 +883,11 @@ static void ACT_modelDrawSub(Actor *actor)
     flagsNow = actor->flags;
     parent = actor->parent;
     if ((flagsNow & 0x800) == 0) {
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+        if (XSG_HOST_IS_CODE(drawHook)) {
+#else
         if (((unsigned int)drawHook - 0x1f0000 < 0x1e10000) && (((unsigned int)drawHook & 3) == 0)) {
+#endif
             drawHook(actor);
             flagsNow = actor->flags;
         } else if (parent != 0) {
@@ -897,7 +901,11 @@ static void ACT_modelDrawSub(Actor *actor)
             if ((parentFlags & 0x800) != 0) {
                 ACT_setDrawEnv(parent);
             } else {
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+                if (XSG_HOST_IS_CODE(drawHook)) {
+#else
                 if (((unsigned int)drawHook - 0x1f0000 < 0x1e10000) && (((unsigned int)drawHook & 3) == 0)) {
+#endif
                     drawHook(parent);
                 }
             }
