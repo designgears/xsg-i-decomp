@@ -19,7 +19,8 @@ are fixed (§2). Screenshots and the `XSG_STREAM` stream still read paraLLEl-GS 
 **Update (characters + motion vectors, 2026-11-07):** set-2 batches (skinned, rigid and two-bone
 characters, all twelve vertex loops) also run the C reference instead of VU1 and are drawn
 natively with GPU skinning (§7), so character edges are high-res in the composite. Both the
-scenery and the character shaders write an RG16F motion-vector target (§8). Speed: §9.
+scenery and the character shaders write an RG16F motion-vector target (§8). Speed: §9 (with
+everything on, 104 vblanks/s headless in the field, 77 with native off; 60.0 in a window).
 
 ## 1. Where to intercept
 
@@ -167,6 +168,8 @@ XSG_PAD='300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60' port/build-wt/xsg  
 | `XSG_GPU_NATIVE_VU1=1` | keep the VU1 interpreter for native set-0 batches (A/B); set 2 then stays on the interpreter too |
 | `XSG_GPU_NATIVE_SKIN=0` | set 2 (characters) stays on VU1 + paraLLEl-GS (A/B) |
 | `XSG_GPU_MV_VIEW=1` | the window shows the motion vectors as colour (hue = direction, brightness = length, full at 16 px at 1×; `=N` sets that length) |
+| `XSG_GPU_PROF=1` | xsg-gpu per-stage CPU timers and GPU timestamps, a `[prof]` line every 600 vsyncs (§9) |
+| `XSG_GPU_OWNER_THREAD=0` | run the ownership GS on the main thread (default: its own thread, §9) |
 | `XSG_GPU_NATIVE_SHOT`, `_DIR` | diagnostic images per listed vsync |
 
 Per shot vsync: `native_VVVVVV_{gs_1x, native_only_1x, comp_1x, diff_1x, native_only_Sx,
@@ -257,9 +260,10 @@ target back into GS VRAM before such effects instead of compositing afterwards.
    per-frame VRAM readback by reading paraLLEl-GS VRAM on the GPU.
 5. Mirror completeness (local→local, render-to-texture, CSM2), Ad blending, dithering.
 6. Widescreen: widen M962's projection and the GS scissor/guard band.
-7. Speed of the live path with characters (§9): record the 1× and S× renders once (multiview or
-   two subpasses), or in two threads; move the scenery's vertices and constants into the arena as
-   set 2 does.
+7. Speed of the live path (§9): ~~record the 1× and S× renders once~~ (the 1× render is gone with
+   exact ownership). Left: per-draw recording cost (bindless textures and one constant buffer per
+   frame would allow multi-draw), the GPU-side effect snapshot (needs access to paraLLEl-GS's VRAM
+   buffer), and the GIF trackers (§9).
 
 ## 7. Characters (set 2), natively
 
@@ -371,8 +375,10 @@ Images are in `port/docs/screenshots/skin_*`. `live_4x` is the window at 4×.
   this is the jitter-free projection. Blended draws and draws without colour writes leave the
   vector of what is under them.
 * **Resolve** (`native_mv.comp`, run after `composite.comp`, which is unchanged). A sample keeps
-  its native vector only where the composite took the native sample (the same colour; where that
-  is also the GS colour, composite rule 1 decides). Everything the GS owns gets zero: UI, 2D,
+  its native vector only where the composite took the native sample: the exact ownership plane
+  (§10) says native owns the pixel, and the final colour is still the native sample's, so no post
+  effect changed it (§9). With `XSG_GPU_NATIVE_OWNER=0` the old test stays: the same colour, and
+  where that is also the GS colour, composite rule 1 decides. Everything the GS owns gets zero: UI, 2D,
   dialogue box, minimap and post-processed frames. At 1401 (the DOF fallback) the resolved field
   is all zero.
 * `XSG_GPU_MV_VIEW=1` replaces the window image with the colour view.
@@ -394,24 +400,135 @@ silhouettes, where no single vector can be right.
 Images: `skin_001351_rawmv.png` shows Shion turning; the static scenery and KOS-MOS are grey
 (zero). `skin_004003_mv.png` is the resolved field: idle characters, and zero in the minimap area.
 
-## 9. Speed with characters native
+## 9. Speed with characters, effects and ownership on
 
-Windowed, with the task recipe (`XSG_FPS=600 XSG_GS=gpu XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4 …`),
-both `XSG_GPU_NATIVE=1` and `=0` hold 60.0 vblanks/s and 30.0 game frames/s in the field (vblank
-1800–4200). In the hangar the `=0` run dipped once to 55.8 vblanks/s; the `=1` run did not.
+Recipe: `XSG_GS=gpu XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4` (characters, effect replay and the
+exact ownership plane all on), the §4 pad script, `XSG_FPS=600`. Before this pass the xsg-gpu
+process was the bottleneck: about 54–56 vblanks/s headless fast in the field against 77 with native
+off, and with a window xsg-gpu crashed (below).
 
-Headless, `XSG_FAST=1`, sequential runs, field (`[fps]` lines, vblank ~3600–8400):
+### Profile (`XSG_GPU_PROF=1`)
 
-| run | vblanks/s |
-|---|---|
-| `XSG_GPU_NATIVE=0` | 77.3 |
-| native set 0 + set 2, live 4× | 68–71 |
-| native set 0 only (`XSG_GPU_NATIVE_SKIN=0`), live 4× | 87.2 |
-| native set 0 + set 2, no live composite (`XSG_GPU_NATIVE_LIVE=0`) | 108.0 |
+`native_prof.{h,cpp}`: per-stage CPU timers on the xsg-gpu main thread and Vulkan timestamps around
+the live pass, printed as a `[prof]` line every 600 vsyncs (ms per vsync; one live composite per
+two vsyncs, since the game runs at 30 fps). perf is not installed, and a SIGPROF sampler on the
+xsg-gpu main thread got the process SIGKILLed inside the NVIDIA driver, so the stages are timed
+instead. The timers cost about 10% of the speed. Field, headless fast, vblank ~4200–6000:
 
-The game thread gains from skipping VU1 for characters too (108 vs 77 without the composite), but
-with the live composite xsg-gpu is now the bottleneck. It records the displayed list twice (1× and
-4×), about 12,400 draws per frame in the field instead of about 5,400. Next steps, item 7.
+| stage (ms per vsync) | before | after |
+|---|---|---|
+| GIF trackers (native.cpp state + GS-memory mirror; native_fx.cpp parser) | 5.34 | 1.13 + 1.95 |
+| paraLLEl-GS `gif_transfer` (main GS) | 0.76 | 0.76 |
+| ownership GS `gif_transfer` (main thread) | 1.16 | 0.11 (hand-off to its thread) |
+| GPU_MSG_NATIVE handling (textures, set-2 arena, history) | 3.25 | 2.29 |
+| effect snapshot at the post-phase trigger | 1.14 | 0.52 |
+| live: GS flush + VRAM wait | 0.02 | 0.03 |
+| live: CPU decode of the displayed buffer (colour, Z, owner) | 1.35 | 0.51 |
+| live: command recording (draws, composite, replay, MV) | 5.07 | 2.59 |
+| outside the native code (ring wait, vsync, paraLLEl-GS flush) | 1.26 | 1.12 |
+| **wall** | **19.4** | **11.0** |
+| GPU per live frame: 1× render / S× render / composite+replay+MV | 1.29 / 0.94 / 0.40 | – / 0.84 / 0.42 |
+
+The GPU is idle most of the time (≈1.3 ms per live frame on an RTX 5090); everything was CPU on the
+xsg-gpu main thread.
+
+### What changed
+
+* **GS-memory mirror.** Host→local IMAGE data went into the mirror one pixel at a time through
+  `Memory::Write`. Each qword is now unpacked and stored a row run at a time (`WriteRun`): ≈1.8 ms.
+* **One render per live frame.** The 1× render only fed the colour rule of `composite.comp`, which
+  the exact ownership plane replaces, so with ownership on the displayed list is recorded once, at
+  S× (≈6,200 draws per field frame instead of 12,400): ≈2.5 ms. Multiview or downsampling was not
+  needed; with `XSG_GPU_NATIVE_OWNER=0` the 1× render is still drawn for the colour rule.
+* **Ownership GS on its own thread.** It already had its own Vulkan device; its GIF stream is now
+  handed to a worker thread in pieces of up to 512 KB (consecutive messages of one path
+  concatenated: one hand-off per message cost a futex wake each and was no faster). The main thread
+  waits for it only before reading its VRAM, and its part of the effect snapshot runs on that
+  thread too. Exact results are unchanged: it is the same second paraLLEl-GS, fed the same bytes.
+  `XSG_GPU_OWNER_THREAD=0` keeps it inline.
+* **Effect snapshot.** It copied both GSes' whole 4 MB VRAM into vectors that were reallocated and
+  zero-filled every frame. It now copies only the pages of the frame buffer and the Z buffers
+  (the trigger's and the native batches') into persistent buffers; what is left is the wait for
+  paraLLEl-GS to finish the frame so far.
+* **Decode of the displayed buffer** (colour, Z, owner plane): split over four threads.
+* **Texture cache keys.** A texture's key hashed every page it spans with a serial FNV chain each
+  time an upload touched them, once per (TEX0, TEXA); characters re-upload their slots for every
+  material. Each page now keeps its own four-lane hash, recomputed only after an upload, and a
+  texture's key folds the page hashes (batch-snap 1.20 → 0.43 ms). Set-2 messages no longer copy
+  their vertices.
+* **Motion vectors** (`native_mv.comp`): the exact owner plane instead of the colour comparison (§8).
+
+Not done, and why: keeping the snapshot and the decode entirely on the GPU needs paraLLEl-GS's VRAM
+buffer, which is private to its renderer (the main GS and our pipeline share a device, so a GPU copy
+would work once it is exposed). Tagging native writes inside the main GS (FBA/alpha or a Z bit) is
+not safe here: the game reads destination alpha (DATE, Ad blending, the afterimage strips' alpha-bit
+marks), and Z24 has no spare bits the GS writes. Rasterising ownership ourselves would need every GS
+primitive's coverage, which is what the second GS provides; since it now costs the main thread only
+the hand-off, it stays.
+
+### Speed
+
+Headless, `XSG_FAST=1`, sequential runs, `[fps]` every 600 vblanks (RTX 5090, 16 threads):
+
+| run | cutscene (vblank 1201–1801, hangar) | field (2401–13800) |
+|---|---|---|
+| native off (`XSG_GPU_NATIVE=0`) | 64.3 | 76.4 (73.6–76.9) |
+| native on, before (pc-port 8b3736a) | 49.0 | 53.9 (52.1–55.8) |
+| native on, after | 79.6 | 103.6 (101.0–104.0) |
+| native on, after, with `XSG_GPU_PROF=1` | 72.9 | 88 (84.5–90.7) |
+
+Native on is now faster than native off (the game thread skips VU1 for all native batches; the
+no-composite run of the old §9 did 108). xsg-gpu's main thread spends ≈11 ms per vsync in the
+field, so at 60 Hz it has ≈35% headroom.
+
+Windowed (Wayland, mailbox, live 4×): real time holds 60.0 vblanks/s and 30.0 game frames/s
+throughout (vblank 0–5400; every present after the cutscene is the native composite). With
+`XSG_FAST=1` the window runs 104.7–107.7 vblanks/s in the field.
+
+**Windowed crash (fixed).** With a window, `XSG_GPU_NATIVE=1` crashed xsg-gpu in
+`WSI::begin_frame` (a null function pointer in `blocking_init_swapchain`), also on pc-port before
+this pass. Granite loads instance-level entry points into volk's globals, and creating the
+ownership GS's own instance (without surface extensions) left the window's surface and swapchain
+functions null. `native_fx.cpp` reloads the main instance's entry points afterwards.
+
+### Validation
+
+Shots at 1350, 1351, 1352, 1401, 1550, 1551, 4001, 4002, 4003 (headless, scale 4) against pc-port
+8b3736a run the same way: every image (`gs_1x`, `native_only_*`, `comp_*`, `diff_1x`, `owner_1x`,
+`replay_1x`, `live_4x`, `live_down_1x`, raw MV) is byte-identical, and so are all the logged
+statistics; only the resolved motion vectors differ (the new rule). The numbers:
+
+| vsync | owner (native px) | replay at 1× vs paraLLEl-GS: exact / ≤2 / ≤8 / >8 | live 4× box-downsampled: exact / ≤2 / ≤8 / >8 | resolved MV samples (before → after) |
+|---|---|---|---|---|
+| 1350 hangar | 212,233 | – | 51,147 / 118,677 / 33,044 / 26,508 | 1,035,255 → 1,056,527 |
+| 1401 hangar DOF | 229,376 (pre-post) | 201,524 / 27,606 / 246 / 0 | 118,701 / 98,613 / 7,709 / 4,353 | 1,373,677 → 1,374,477 |
+| 1550 field + dialogue | 226,357 (pre-post) | 218,608 / 9,823 / 230 / 715 | 33,912 / 181,373 / 6,984 / 7,107 | 147,610 → 147,581 |
+| 4001 field | 208,586 (pre-post) | 219,327 / 9,805 / 244 / 0 | 33,328 / 186,415 / 5,592 / 4,041 | 120,219 → 120,187 |
+
+The replay rows match §10. (The live-downsampled numbers differ from §10's, which predate the
+characters; they are unchanged by this pass.)
+
+MV warp check (§8; frame A warped by B's vectors, compared with B, 4× images): native-only with the
+raw vectors, 1351 → 1352 (Shion turning): 1,026,580 samples ≥ 0.5 px, mean 10.33 px, error
+14.98 → 4.62, 71% better / 25% worse (unchanged). Live composite with the resolved vectors: before
+1,001,314 samples, 15.06 → 4.69; after 1,020,978 samples, 14.94 → 4.64 (70% / 25%). Field
+4001 → 4002: 4,985 samples, 6.48 → 5.94 both before and after. 1550 → 1551 is the same frame.
+
+### The GS-owned parts of the characters at 1550
+
+In `owner_1x` at 1550 Shion's legs and the dark parts of her jacket, KOS-MOS's lower legs at the
+right edge and a blob under the soldier are GS-owned. A GS trace (`XSG_GPU_FX_TRACE=1549`) shows that
+every character pass is drawn as native (marked) in the ownership GS; what takes these pixels are
+the game's own **afterimage strips** (PATH2, after the characters and before more native batches):
+pairs of narrow strips around the player and at (420–468, 393–493), first FBMSK 0x7fffffff
+alpha-bit marks (TEST: alpha NEVER + FB_ONLY, Z GREATER), then strips that read the frame buffer
+itself (TEX0 = FBP·32) shifted by a few pixels and blend it in with ALPHA (Cs − Cd)·FIX 0x10 + Cd,
+alpha test EQUAL 0x10. They change those pixels in the main GS too, so the owner plane is right:
+the GS really wrote them last, with an effect the native layer does not draw. The blob under the
+soldier is a flat ABE fan (his shadow, ALPHA 0x44). Showing them at S× needs the strips replayed at
+S×; they cannot start the post phase, because native batches follow them in the same frame (a
+mid-scene frame read needs the native layer resolved into the frame first, as in "next steps").
+Left as is.
 
 ## 10. Effects at high resolution and exact ownership (native_fx.*)
 
@@ -441,7 +558,8 @@ DTHE off; Z, alpha test, masks and scissor are untouched. Local→host transfers
 A pixel is native-owned iff the ownership GS still holds the marker colour there at the end of
 the frame (or at the effect snapshot). `composite.comp` takes the native S× sample exactly on
 owned pixels. `XSG_GPU_NATIVE_OWNER=0` restores the old colour/depth rule. Cost: a second
-paraLLEl-GS and one 4 MB readback per composited frame.
+paraLLEl-GS (on its own thread since §9, so it costs the main thread almost nothing) and a
+readback of the displayed buffer's pages per composited frame.
 
 ### Effect replay
 
