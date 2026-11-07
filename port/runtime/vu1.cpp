@@ -608,6 +608,14 @@ void LoadRegs(const Vu1CapRegs& r) {
     s.mac = s.mac_l = r.mac; s.status = s.status_l = r.status; s.clip = s.clip_l = r.clip;
     s.fq_n = 0; s.q_busy = s.p_busy = false;
 }
+void SaveRegs(Vu1CapRegs& r) {
+    std::memset(&r, 0, sizeof r);
+    std::memcpy(r.vf, s.vf, sizeof r.vf);
+    std::memcpy(r.acc, s.acc.u, 16);
+    for (int i = 0; i < 16; ++i) r.vi[i] = s.vi[i];
+    r.I = s.I; r.Q = s.Q; r.P = s.P; r.R = s.R;
+    r.mac = s.mac; r.status = s.status; r.clip = s.clip;
+}
 u32 Resume() { return s.resume; }
 Stats& GetStats() { return stats; }
 
@@ -632,12 +640,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     const bool cap = g_data_off == 0xC000 && CapOn();
     if (cap) {
         Vu1CapRegs r;
-        std::memset(&r, 0, sizeof r);
-        std::memcpy(r.vf, s.vf, sizeof r.vf);
-        std::memcpy(r.acc, s.acc.u, 16);
-        for (int i = 0; i < 16; ++i) r.vi[i] = s.vi[i];
-        r.I = s.I; r.Q = s.Q; r.P = s.P; r.R = s.R;
-        r.mac = s.mac; r.status = s.status; r.clip = s.clip;
+        SaveRegs(r);
         CapBegin(pc & g_pc_mask, top, itop, r, Micro(), Data());
     }
     const unsigned csr = _mm_getcsr();

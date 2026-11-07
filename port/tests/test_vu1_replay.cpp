@@ -98,7 +98,13 @@ int main(int argc, char** argv) {
             recs.push_back(r);
             o += 8 + r.bytes;
         }
-        unsigned long long frame_bad = 0, frame_runs = 0;
+        unsigned long long frame_bad = 0, frame_runs = 0, state_bad = 0;
+        /* Full-state check: the registers a run leaves must be the entry
+           registers of the next run of the same file (the EE does not touch
+           VU1 registers in micro mode; VU0 runs save/restore them). */
+        Vu1CapRegs end_regs;
+        bool have_end = false;
+        uint32_t end_seq = 0;
         for (int pass = 0; pass < (bench ? bench : 1); ++pass) {
             g_record = pass == 0;
             timespec t0, t1;
@@ -110,11 +116,30 @@ int main(int argc, char** argv) {
                 Vu1CapRun h;
                 std::memcpy(&h, r.p, sizeof h);
                 std::memcpy(kData, r.p + sizeof h, 16384);
+                if (pass == 0 && have_end && h.seq == end_seq + 1) {
+                    Vu1CapRegs e = h.regs;
+                    e.pad = 0;
+                    if (std::memcmp(&e, &end_regs, sizeof e)) {
+                        state_bad++;
+                        if (verbose || state_bad <= 3) {
+                            std::printf("%s: state after run %u differs from entry of run %u:", fn, end_seq, h.seq);
+                            const uint32_t* a = reinterpret_cast<const uint32_t*>(&end_regs);
+                            const uint32_t* b = reinterpret_cast<const uint32_t*>(&e);
+                            for (size_t w = 0; w < sizeof e / 4; ++w)
+                                if (a[w] != b[w]) std::printf(" [w%zu %08x/%08x]", w, a[w], b[w]);
+                            std::printf("\n");
+                        }
+                    }
+                }
                 xsgvu::LoadRegs(h.regs);
                 g_kicks.clear();
                 const unsigned long long n = xsgvu::Run(h.pc, h.top, h.itop);
                 bench_pairs += n;
                 if (pass) continue;
+                xsgvu::SaveRegs(end_regs);
+                end_regs.pad = 0;
+                have_end = true;
+                end_seq = h.seq;
                 frame_runs++;
                 bool ok = n == h.pairs && xsgvu::Resume() == h.end_pc && g_kicks.size() == h.nkick;
                 const unsigned char* k = r.p + sizeof h + 16384;
@@ -142,9 +167,9 @@ int main(int argc, char** argv) {
                             1e-6 * double(bench_pairs) / dt);
             }
         }
-        std::printf("%s: %llu runs, %llu differ\n", fn, frame_runs, frame_bad);
+        std::printf("%s: %llu runs, %llu differ, %llu state mismatches\n", fn, frame_runs, frame_bad, state_bad);
         runs += frame_runs;
-        bad += frame_bad;
+        bad += frame_bad + state_bad;
     }
     std::printf("total: %llu runs, %llu pairs, %llu differ\n", runs, pairs, bad);
     return bad ? 1 : 0;

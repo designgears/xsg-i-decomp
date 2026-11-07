@@ -34,6 +34,8 @@ void SetKick(KickFn fn);
 /* Stage 10 (port/tests/test_vu1_replay.cpp): set the register file from a
    capture record (vu1_capture.h); nothing is in flight afterwards. */
 void LoadRegs(const struct ::Vu1CapRegs& r);
+/* The register file as a capture record would hold it (pad = 0). */
+void SaveRegs(struct ::Vu1CapRegs& r);
 /* Run from byte address `pc` in micro memory to the end of the program (E bit);
    TOP/ITOP as VIF1 hands them over.  Returns the pairs executed. */
 u64 Run(u32 pc, u32 top, u32 itop);
