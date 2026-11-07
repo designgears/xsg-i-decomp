@@ -262,7 +262,7 @@ uint8_t AxisByte(int v) {
 std::string Option(const char* key, const char* env, const char* def) {
     (void)env;
     (void)def;
-    return xsgcfg::Get(("video." + std::string(key)).c_str());   // env > settings.ini > default (menu/cfg.cpp)
+    return xsgcfg::Get(("display." + std::string(key)).c_str());   // settings.ini > default (menu/cfg.cpp)
 }
 
 void Init(GpuPad* pad, bool sdl) {
@@ -277,7 +277,7 @@ void Init(GpuPad* pad, bool sdl) {
     g_def_padmap[kRT] = R2;
     ApplyIni();
     if (!sdl) return;
-    if (const char* t = std::getenv("XSG_GPU_INPUT_TEST"); t && *t) ParseTest(t);
+    if (const char* t = xsgcfg::CStr("debug.input_test"); t && *t) ParseTest(t);
     int n = 0;
     if (SDL_JoystickID* ids = SDL_GetGamepads(&n)) {
         for (int i = 0; i < n; ++i) Open(ids[i]);

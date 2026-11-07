@@ -9,6 +9,7 @@
  * Called from vu1.cpp (CapBegin/CapKick/CapEnd); VU0 runs are not recorded.
  */
 #include <cstdio>
+#include "xsg_settings.h"
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -51,12 +52,12 @@ void Tag(uint32_t t, uint32_t n) { W(&t, 4); W(&n, 4); }
 
 bool CapOn() {
     if (c.init == 0) {
-        const char* d = std::getenv("XSG_VU1_CAPTURE");
+        const char* d = xsg_cfg("debug.vu1_capture");
         if (!d || !*d) { c.init = -1; return false; }
         std::snprintf(c.dir, sizeof c.dir, "%s", d);
-        if (const char* e = std::getenv("XSG_VU1_CAPTURE_FROM")) c.from = unsigned(std::atol(e));
-        if (const char* e = std::getenv("XSG_VU1_CAPTURE_FRAMES")) c.frames = unsigned(std::atol(e));
-        if (const char* e = std::getenv("XSG_VU1_CAPTURE_EVERY")) c.every = unsigned(std::atol(e));
+        if (const char* e = xsg_cfg("debug.vu1_capture_from")) c.from = unsigned(std::atol(e));
+        if (const char* e = xsg_cfg("debug.vu1_capture_frames")) c.frames = unsigned(std::atol(e));
+        if (const char* e = xsg_cfg("debug.vu1_capture_every")) c.every = unsigned(std::atol(e));
         if (!c.every) c.every = 1;
         c.init = 1;
         xsg_logf("[vu1cap] capturing %u frames every %u from vblank %u to %s\n", c.frames, c.every, c.from, c.dir);

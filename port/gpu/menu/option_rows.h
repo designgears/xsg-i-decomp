@@ -4,8 +4,8 @@
  * right.  Each row shows a setting of the cfg table (cfg.h) and changes it
  * through xsgcfg::Set: Enter / A / a click steps it, Left / Right step it.  A
  * row marks the default value, says "after restart" when the setting is read
- * at start, and is greyed out with a note when an environment variable
- * fixes it.
+ * at start, and is greyed out with a note when another setting makes it
+ * meaningless (opt_disable_next).
  *
  * Adapted from TotK Recomp's runtime/ui/option_rows.{h,cpp} (MIT, Copyright
  * (c) 2026 Valiantsin Dzerakh; itself adapted from SavageWindRecomp, MIT):
@@ -52,6 +52,13 @@ void opt_text(const char* text, bool warn = false);
 bool opt_toggle(const char* key, const char* label, const char* desc);
 bool opt_choice(const char* key, const char* label, const char* const* names, const char* desc);
 bool opt_slider(const char* key, const char* label, int lo, int hi, int step, const char* fmt, const char* desc);
+/* A free-text row (paths, lists, numbers): Enter / A / a click opens a text
+   field, Enter keeps it, Esc cancels. */
+bool opt_edit(const char* key, const char* label, const char* desc);
+/* A text field is open (the menu keeps Esc / B for it). */
+bool opt_editing();
+/* The row that fits the key's value list: toggle, choice, slider or text. */
+bool opt_auto(const char* key, const char* label, const char* desc);
 /* An action row; true on activation.  value: shown on the right. */
 bool opt_button(const char* id, const char* label, const char* desc, const char* value = "");
 /* A read-only row. */

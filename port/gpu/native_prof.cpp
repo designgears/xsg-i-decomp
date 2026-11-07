@@ -1,5 +1,6 @@
 /* xsg-gpu: per-stage timers (native_prof.h). */
 #include "native_prof.h"
+#include "menu/cfg.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +19,7 @@ uint64_t g_last;
 }  // namespace
 
 void Init() {
-    const char* e = std::getenv("XSG_GPU_PROF");
+    const char* e = xsgcfg::CStr("debug.gpu_prof");
     g_on = e && *e && std::strcmp(e, "0") != 0;
     if (g_on) g_last = Now();
 }

@@ -11,6 +11,7 @@
  */
 #define _GNU_SOURCE
 #include <stdlib.h>
+#include "xsg_settings.h"
 #include <string.h>
 #include <time.h>
 #include <ucontext.h>
@@ -67,15 +68,15 @@ volatile unsigned xsg_frame;
 static int (*vsync_cb)(int);
 static struct { int cause; int (*fn)(int); int used; } intc[32];
 /* Frame pacing: vblanks are spaced frame_ns apart in real time (60 Hz by
- * default; XSG_FRAME_US overrides the period, XSG_FAST=1 or XSG_FRAME_US=0
- * runs unthrottled; XSG_FAST_UNTIL=N runs unthrottled up to vblank N).  Deadlines are absolute, so time spent running the game
+ * default; settings.ini [game] fps_limit, or [debug] frame_us which fixes the
+ * period (0: unthrottled); [debug] fast_until=N runs unthrottled up to vblank N).  Deadlines are absolute, so time spent running the game
  * between vblanks counts toward the frame; if the host falls more than a few
  * frames behind, the schedule restarts from now instead of bursting. */
 static long frame_ns = 16666667;
-int xsg_skip_events;        /* XSG_SKIP_EVENTS=1: script sleeps collapse to one tick (src/main/system.c) */
-static unsigned fast_until; /* XSG_FAST_UNTIL=N: unthrottled before vblank N */
+int xsg_skip_events;        /* [debug] skip_events=1: script sleeps collapse to one tick (src/main/system.c) */
+static unsigned fast_until; /* [debug] fast_until=N: unthrottled before vblank N */
 static struct timespec next_vblank;
-static int frame_env;       /* XSG_FRAME_US / XSG_FAST set: the menu's FPS limit does not apply */
+static int frame_env;       /* [debug] frame_us set: the menu's FPS limit does not apply */
 int xsg_gpu_settings_poll(unsigned *frame_us, int *audio_on, int vol[4]); /* gpu_client.cpp */
 void xsg_sound_set_volume(int on, const int vol[4]);                       /* iop_sound.c */
 
@@ -104,16 +105,20 @@ void xsg_kernel_init(void)
     th[1].state = TS_READY;
     th[1].prio = 1; /* crt0 runs main at the highest user priority */
     th[1].seq = seq_counter++;
-    const char *fp = getenv("XSG_FRAME_US");
-    const char *fast = getenv("XSG_FAST");
+    /* settings.ini: [game] fps_limit (the menu changes it live through
+       GpuSettings), or [debug] frame_us, which fixes the period. */
+    const char *fl = xsg_cfg("game.fps_limit");
+    if (fl && !strcmp(fl, "uncapped"))
+        frame_ns = 0;
+    else if (fl && atol(fl) > 0 && atol(fl) != 60)
+        frame_ns = 1000000000L / atol(fl);
+    const char *fp = xsg_cfg("debug.frame_us");
     if (fp)
         frame_ns = atol(fp) * 1000;
-    frame_env = (fp && *fp) || (fast && *fast);
-    if (fast && fast[0] && fast[0] != '0')
-        frame_ns = 0;
-    const char *se = getenv("XSG_SKIP_EVENTS");
+    frame_env = fp != NULL;
+    const char *se = xsg_cfg("debug.skip_events");
     xsg_skip_events = se && se[0] && se[0] != '0';
-    const char *fu = getenv("XSG_FAST_UNTIL");
+    const char *fu = xsg_cfg("debug.fast_until");
     if (fu)
         fast_until = (unsigned)strtoul(fu, NULL, 0);
     clock_gettime(CLOCK_MONOTONIC, &next_vblank);

@@ -3,6 +3,7 @@
  * See native_skin.h and port/docs/NATIVE_RENDERER.md §7-8.
  */
 #include "native_skin.h"
+#include "menu/cfg.h"
 
 #include "device.hpp"
 
@@ -169,7 +170,7 @@ bool Init(Vulkan::Device* dev) {
     if (!g_palbuf || !g_arenabuf) return false;
     g_palmap = static_cast<uint8_t*>(dev->map_host_buffer(*g_palbuf, Vulkan::MEMORY_ACCESS_WRITE_BIT));
     g_arenamap = static_cast<uint8_t*>(dev->map_host_buffer(*g_arenabuf, Vulkan::MEMORY_ACCESS_WRITE_BIT));
-    if (const char* s = std::getenv("XSG_GPU_MV_VIEW"); s && *s) {
+    if (const char* s = xsgcfg::CStr("debug.mv_view"); s && *s) {
         g_view = std::atof(s) != 0.0;
         if (std::atof(s) > 1.0) g_view_full = float(std::atof(s));
     }

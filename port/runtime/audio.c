@@ -21,6 +21,7 @@
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include "xsg_settings.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +62,7 @@ static int alsa_load(void)
 {
     if (!A.tried) {
         A.tried = 1;
-        const char *e = getenv("XSG_AUDIO");
+        const char *e = xsg_cfg("audio.enabled");
         if (e && atoi(e) == 0)
             return 0;
         void *h = dlopen("libasound.so.2", RTLD_NOW);

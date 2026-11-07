@@ -4,6 +4,7 @@
  * paraLLEl-GS frame.  See native.h and port/docs/NATIVE_RENDERER.md.
  */
 #include "native.h"
+#include "menu/cfg.h"
 #include "native_skin.h"
 #include "native_fx.h"
 #include "native_prof.h"
@@ -940,16 +941,16 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
 }  // namespace
 
 bool Init(Vulkan::Device* dev) {
-    const char* e = std::getenv("XSG_GPU_NATIVE");
+    const char* e = xsgcfg::CStr("renderer.native");
     g_on = e && *e && std::strcmp(e, "0") != 0;
     if (!g_on) return false;
     g_dev = dev;
     xsgprof::Init();
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_SCALE")) g_scale = std::max(1, std::min(8, std::atoi(s)));
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_LIVE"); s && *s) g_live = std::atoi(s) != 0;
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_THR"); s && *s) g_thr = std::atoi(s);
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_DIR"); s && *s) g_dir = s;
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_SHOT"))
+    if (const char* s = xsgcfg::CStr("renderer.native_scale")) g_scale = std::max(1, std::min(8, std::atoi(s)));
+    if (const char* s = xsgcfg::CStr("debug.native_live"); s && *s) g_live = std::atoi(s) != 0;
+    if (const char* s = xsgcfg::CStr("debug.native_thr"); s && *s) g_thr = std::atoi(s);
+    if (const char* s = xsgcfg::CStr("debug.native_dir"); s && *s) g_dir = s;
+    if (const char* s = xsgcfg::CStr("debug.native_shot"))
         for (const char* q = s; *q;) {
             char* end;
             unsigned long v = std::strtoul(q, &end, 0);

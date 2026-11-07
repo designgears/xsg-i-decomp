@@ -5,6 +5,7 @@
  */
 #define _GNU_SOURCE
 #include <elf.h>
+#include "xsg_settings.h"
 #include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
@@ -96,10 +97,10 @@ void xsg_map_ps2_memory(void)
  * bytes.  The host's own copy of that data is what C symbols refer to. */
 void xsg_load_main_image(void)
 {
-    const char *path = getenv("XSG_ELF");
+    const char *path = xsg_cfg("game.elf");
     char buf[1024];
     if (!path) {
-        const char *root = getenv("XSG_GAME_DIR");
+        const char *root = xsg_cfg("game.game_dir");
         snprintf(buf, sizeof buf, "%s/extracted-iso/SLUS_204.69", root ? root : XSG_DEFAULT_GAME_DIR);
         path = buf;
     }
@@ -140,7 +141,7 @@ static void *dmac_thread(void *arg)
     static const uint32_t chcr[] = {0x10008000, 0x10009000, 0x1000A000, 0x1000B000, 0x1000B400,
                                     0x1000C000, 0x1000C400, 0x1000C800, 0x1000D000, 0x1000D400};
     struct timespec ts = {0, 50000};
-    const char *e = getenv("XSG_DMA_THREAD");
+    const char *e = xsg_cfg("debug.dma_thread");
     const int async_gfx = e && atoi(e);
     (void)arg;
     for (;;) {
@@ -197,15 +198,16 @@ int main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    const char *lv = getenv("XSG_LOG");
+    const char *lv = xsg_cfg("debug.log");
     xsg_log_fp = stderr;
     if (lv)
         xsg_log_level = atoi(lv);
-    if (getenv("XSG_LOG_FILE")) {
-        xsg_log_fp = fopen(getenv("XSG_LOG_FILE"), "w");
+    if (xsg_cfg("debug.log_file")) {
+        xsg_log_fp = fopen(xsg_cfg("debug.log_file"), "w");
         if (!xsg_log_fp)
             xsg_log_fp = stderr;
     }
+    xsg_cfg_report();
     struct sigaction sa;
     memset(&sa, 0, sizeof sa);
     sa.sa_sigaction = on_fault;
@@ -219,9 +221,9 @@ int main(int argc, char **argv)
     sigaction(SIGFPE, &sa, NULL);
     sigaction(SIGTRAP, &sa, NULL);
 
-    if (getenv("XSG_TIMEOUT")) {
+    if (xsg_cfg("debug.timeout")) {
         signal(SIGALRM, on_alarm);
-        alarm(atoi(getenv("XSG_TIMEOUT")));
+        alarm(atoi(xsg_cfg("debug.timeout")));
     }
     xsg_map_ps2_memory();
     xsg_load_main_image();

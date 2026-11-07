@@ -3,6 +3,7 @@
  * draw trace.  See native_fx.h and port/docs/NATIVE_RENDERER.md §7.
  */
 #include "native_fx.h"
+#include "menu/cfg.h"
 #include "native.h"
 #include "native_prof.h"
 
@@ -695,7 +696,7 @@ Vulkan::ImageHandle Storage(uint32_t w, uint32_t h, VkFormat fmt, const void* in
 
 bool Init(Vulkan::Device* dev) {
     g_dev = dev;
-    if (const char* s = std::getenv("XSG_GPU_FX_TRACE"))
+    if (const char* s = xsgcfg::CStr("debug.fx_trace"))
         for (const char* q = s; *q;) {
             char* end;
             unsigned long v = std::strtoul(q, &end, 0);
@@ -703,7 +704,7 @@ bool Init(Vulkan::Device* dev) {
             g_trace.push_back(uint32_t(v));
             q = *end ? end + 1 : end;
         }
-    if (const char* s = std::getenv("XSG_GPU_NATIVE_OWNER"); s && *s) g_own_on = std::atoi(s) != 0;
+    if (const char* s = xsgcfg::CStr("debug.native_owner"); s && *s) g_own_on = std::atoi(s) != 0;
     if (g_own_on) {
         // Its own Vulkan context and device: two GSInterfaces on one Granite
         // Device deadlock in next_frame_context (each flush cycles the frame
@@ -726,7 +727,7 @@ bool Init(Vulkan::Device* dev) {
         // swapchain functions null (xsg-gpu crashed in WSI::begin_frame with a window).
         volkLoadInstance(g_dev->get_instance());
         if (!g_own) { Log("ownership GS: init failed"); g_own_on = false; }
-        const char* th = std::getenv("XSG_GPU_OWNER_THREAD");
+        const char* th = xsgcfg::CStr("debug.owner_thread");
         if (g_own && !(th && *th && std::atoi(th) == 0)) {
             g_worker = new OwnWorker;
             g_worker->th = std::thread([] { g_worker->Run(); });

@@ -9,6 +9,7 @@
  * and the data is copied out of game memory at the time of the DMA kick.
  */
 #include "gpu_client.h"
+#include "xsg_settings.h"
 #include "gpu_ipc.h"
 
 #include <cerrno>
@@ -145,55 +146,7 @@ std::string DefaultBin() {
 
 bool Active() { return shm != nullptr; }
 
-/* In-game menu (port/docs/MENU.md): settings that must be known when the
-   game starts (the renderer choice is read by gs_bridge.cpp and xsg-gpu at
-   start-up) come from ~/.config/xsg/settings.ini.  Each one the environment
-   does not set is exported here, before xsg-gpu is spawned, and listed in
-   XSG_CFG_FROM_INI so the menu can tell them from real environment
-   overrides (and a restart can drop them again). */
-void InjectIniSettings() {
-    static const struct { const char* sec; const char* key; const char* env; } kKeys[] = {
-        {"renderer", "native", "XSG_GPU_NATIVE"},       {"renderer", "native_scale", "XSG_GPU_NATIVE_SCALE"},
-        {"renderer", "ssaa", "XSG_GPU_SSAA"},           {"renderer", "ssaa_textures", "XSG_GPU_SSAA_TEX"},
-        {"renderer", "hires_scanout", "XSG_GPU_HIRES"},
-    };
-    if (std::getenv("XSG_CFG_FROM_INI")) return;   // already done (or a restart that kept them)
-    std::string path;
-    if (const char* p = std::getenv("XSG_SETTINGS_INI"); p && *p) path = p;
-    else if (const char* x = std::getenv("XDG_CONFIG_HOME"); x && *x) path = std::string(x) + "/xsg/settings.ini";
-    else if (const char* h = std::getenv("HOME"); h && *h) path = std::string(h) + "/.config/xsg/settings.ini";
-    FILE* f = path.empty() ? nullptr : std::fopen(path.c_str(), "r");
-    std::string list;
-    if (f) {
-        char line[512];
-        std::string sec;
-        auto trim = [](std::string t) {
-            size_t a = t.find_first_not_of(" \t\r\n"), b = t.find_last_not_of(" \t\r\n");
-            return a == std::string::npos ? std::string() : t.substr(a, b - a + 1);
-        };
-        while (std::fgets(line, sizeof line, f)) {
-            std::string l = trim(line);
-            if (l.empty() || l[0] == '#' || l[0] == ';') continue;
-            if (l[0] == '[') { sec = trim(l.substr(1, l.find(']') - 1)); continue; }
-            size_t eq = l.find('=');
-            if (eq == std::string::npos) continue;
-            std::string k = trim(l.substr(0, eq)), v = trim(l.substr(eq + 1));
-            for (auto& e : kKeys)
-                if (strcasecmp(sec.c_str(), e.sec) == 0 && strcasecmp(k.c_str(), e.key) == 0 && !v.empty()) {
-                    const char* cur = std::getenv(e.env);
-                    if (cur && *cur && list.find(e.env) == std::string::npos) break;   // the environment wins
-                    setenv(e.env, v.c_str(), 1);
-                    if (list.find(e.env) == std::string::npos) list += std::string(list.empty() ? "" : ",") + e.env;
-                }
-        }
-        std::fclose(f);
-    }
-    setenv("XSG_CFG_FROM_INI", list.c_str(), 1);
-    if (!list.empty()) xsg_logf("[gpu] settings.ini: %s\n", list.c_str());
-}
-
 bool Start(const char* stream) {
-    InjectIniSettings();
     int fd = memfd_create("xsg-gpu-ring", MFD_CLOEXEC);
     if (fd < 0 || ftruncate(fd, XSG_GPU_SHM_SIZE) != 0) {
         xsg_logf("[gpu] memfd: %s\n", std::strerror(errno));
@@ -212,25 +165,21 @@ bool Start(const char* stream) {
     s->reply_size = XSG_GPU_REPLY;
     s->reply_seq = ~0u;
 
-    const char* bin_env = std::getenv("XSG_GPU_BIN");
-    std::string bin = bin_env && *bin_env ? bin_env : DefaultBin();
-    std::vector<std::string> env_s;
-    for (char** e = environ; *e; ++e)
-        if (std::strncmp(*e, "XSG_GPU_STREAM=", 15) != 0) env_s.push_back(*e);
-    if (stream) env_s.push_back(std::string("XSG_GPU_STREAM=") + stream);
-    std::vector<char*> envp;
-    for (auto& e : env_s) envp.push_back(&e[0]);
-    envp.push_back(nullptr);
-    char* argv[] = {&bin[0], nullptr};
+    // xsg-gpu reads the same settings.ini (XSG_CONFIG is inherited); the
+    // live-stream FIFO, which only one process may feed, goes on its command line.
+    const char* bin_cfg = xsg_cfg("debug.gpu_bin");
+    std::string bin = bin_cfg ? bin_cfg : DefaultBin();
+    std::string fd_arg = std::to_string(XSG_GPU_FD), stream_arg = std::string("--stream=") + (stream ? stream : "");
+    char* argv[] = {&bin[0], &fd_arg[0], stream ? &stream_arg[0] : nullptr, nullptr};
     posix_spawn_file_actions_t fa;
     posix_spawn_file_actions_init(&fa);
     posix_spawn_file_actions_adddup2(&fa, fd, XSG_GPU_FD);
     pid_t pid;
-    int rc = posix_spawn(&pid, bin.c_str(), &fa, nullptr, argv, envp.data());
+    int rc = posix_spawn(&pid, bin.c_str(), &fa, nullptr, argv, environ);
     posix_spawn_file_actions_destroy(&fa);
     close(fd);
     if (rc != 0) {
-        xsg_logf("[gpu] cannot start %s: %s (XSG_GPU_BIN overrides the path)\n", bin.c_str(), std::strerror(rc));
+        xsg_logf("[gpu] cannot start %s: %s ([debug] gpu_bin in settings.ini overrides the path)\n", bin.c_str(), std::strerror(rc));
         return false;
     }
     child = pid;
@@ -414,24 +363,12 @@ int SettingsRead(GpuSettings* out) {
 }
 
 /* "Restart now": end xsg-gpu, then exec this program again with the same
-   command line.  The settings exported by InjectIniSettings are dropped so
-   that the new run reads settings.ini afresh. */
+   command line; the new run reads settings.ini afresh. */
 [[noreturn]] void Restart() {
     xsg_logf("[settings] restart requested by the menu\n");
     if (child > 0) {
         kill(child, SIGTERM);
         waitpid(child, nullptr, 0);
-    }
-    if (const char* l = std::getenv("XSG_CFG_FROM_INI")) {
-        std::string s = l;
-        size_t i = 0;
-        while (i < s.size()) {
-            size_t j = s.find(',', i);
-            if (j == std::string::npos) j = s.size();
-            unsetenv(s.substr(i, j - i).c_str());
-            i = j + 1;
-        }
-        unsetenv("XSG_CFG_FROM_INI");
     }
     std::vector<std::string> args;
     if (FILE* f = std::fopen("/proc/self/cmdline", "rb")) {

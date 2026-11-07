@@ -9,6 +9,7 @@
  * written at once, vwaitq is a no-op.
  */
 #include "vu0.h"
+#include "xsg_settings.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -398,7 +399,7 @@ MMI(pcpyh) { XsgGpr r; for (int i = 0; i < 4; i++) { r.h[i] = t->h[0]; r.h[4 + i
 
 static void __attribute__((destructor)) vu0_stats(void)
 {
-    const char *e = getenv("XSG_VU0_STATS");
+    const char *e = xsg_cfg("debug.vu0_stats");
     if (e && atoi(e))
         fprintf(stderr, "[vu0] translated asm blocks run: %llu, vcallms: %llu\n", xsg_vu0_blocks, callms_count);
 }

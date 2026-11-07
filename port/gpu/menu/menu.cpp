@@ -95,8 +95,8 @@ double g_shot_note_t;
 // restart-pending: the after-restart settings as they were at start
 std::vector<std::pair<std::string, std::string>> g_boot_values;
 
-enum { TAB_DISPLAY, TAB_RENDERER, TAB_GAME, TAB_CONTROLS, TAB_INFO, TAB_COUNT };
-const char* const kTabNames[TAB_COUNT] = {"DISPLAY", "RENDERER", "GAME", "CONTROLS", "INFO"};
+enum { TAB_DISPLAY, TAB_RENDERER, TAB_GAME, TAB_CONTROLS, TAB_INFO, TAB_DEBUG, TAB_COUNT };
+const char* const kTabNames[TAB_COUNT] = {"DISPLAY", "RENDERER", "GAME", "CONTROLS", "INFO", "DEBUG"};
 
 /* ------------------------------------------------------------- perf overlay */
 std::vector<float> g_ft;      // frame times (ms), last 2048 presents
@@ -164,17 +164,17 @@ struct {
 } g_test;
 
 void TestParse() {
-    if (const char* s = std::getenv("XSG_GPU_MENU_TEST"); s && *s) {
+    if (const char* s = xsgcfg::CStr("debug.menu_test"); s && *s) {
         unsigned a = 0, p = 0, w = 0, h = 0;
         int n = std::sscanf(s, "%u:%u:%ux%u", &a, &p, &w, &h);
         if (n >= 1) g_test.at = a ? a : 1;
         if (n >= 2 && p) g_test.per = p;
         if (n >= 4 && w && h) { g_test.w = w; g_test.h = h; }
-        if (const char* d = std::getenv("XSG_GPU_MENU_TEST_DIR"); d && *d) g_test.dir = d;
+        if (const char* d = xsgcfg::CStr("debug.menu_test_dir"); d && *d) g_test.dir = d;
         Log("test hook: open at vsync %u, %u vsyncs per page, %ux%u -> %s", g_test.at, g_test.per, g_test.w, g_test.h,
             g_test.dir.c_str());
     }
-    if (const char* s = std::getenv("XSG_GPU_MENU_TEST_SET"); s && *s) {
+    if (const char* s = xsgcfg::CStr("debug.menu_test_set"); s && *s) {
         std::string all = s;
         size_t i = 0;
         while (i < all.size()) {
@@ -222,7 +222,6 @@ void SetOpen(bool open) {
 
 /* ------------------------------------------------------------- settings -> game */
 uint32_t FrameUs() {
-    if (xsgcfg::FromEnv("game.fps_limit")) return XSG_GPU_FRAME_US_KEEP;
     std::string v = xsgcfg::Get("game.fps_limit");
     if (v == "uncapped") return 0;
     int fps = std::atoi(v.c_str());
@@ -237,8 +236,8 @@ void Publish(bool restart = false) {
     __atomic_store_n(&p->seq, s + 1, __ATOMIC_RELAXED);
     __atomic_thread_fence(__ATOMIC_RELEASE);
     p->frame_us = FrameUs();
-    // XSG_AUDIO in the environment decides the device itself (audio.c); the menu only mutes the mix
-    p->audio_on = xsgcfg::FromEnv("audio.enabled") || xsgcfg::GetBool("audio.enabled") ? 1 : 0;
+    // audio.enabled=0 at start opens no device at all (audio.c); live, it mutes the mix
+    p->audio_on = xsgcfg::GetBool("audio.enabled") ? 1 : 0;
     p->vol[0] = uint32_t(xsgcfg::GetInt("audio.master"));
     p->vol[1] = uint32_t(xsgcfg::GetInt("audio.music"));
     p->vol[2] = uint32_t(xsgcfg::GetInt("audio.effects"));
@@ -363,37 +362,42 @@ void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float scale, float alpha, bool gr
 
 /* ------------------------------------------------------------- pages */
 std::string g_mc_dir;
-std::vector<std::string> g_env_lines;
 
 void TabDisplay(float scale) {
     opt_begin("##display", scale);
     opt_group("WINDOW");
-    opt_toggle("video.fullscreen", "Fullscreen",
+    opt_toggle("display.fullscreen", "Fullscreen",
                "Borderless fullscreen on the current display. F11 toggles it at any time.");
-    if (xsgcfg::GetBool("video.fullscreen")) opt_disable_next("The window size applies in windowed mode.");
-    opt_slider("video.window_scale", "Window size", 1, 4, 1, "%dx",
+    if (xsgcfg::GetBool("display.fullscreen")) opt_disable_next("The window size applies in windowed mode.");
+    opt_slider("display.window_scale", "Window size", 1, 4, 1, "%dx",
                "The window's size as a multiple of the PS2 frame (512 x 448). The window can also be resized freely.");
     static const char* kPresent[] = {"Mailbox", "FIFO (vsync)", "Immediate", "Auto"};
-    opt_choice("video.present", "Present mode", kPresent,
+    opt_choice("display.present", "Present mode", kPresent,
                "Mailbox: no tearing, the game's own 59.94 Hz timer paces everything (default).\n"
                "FIFO: waits for the display's refresh. Use it on a display at 60 Hz or faster.\n"
                "Immediate: lowest latency, may tear.\nThe swapchain is recreated at once.");
     opt_group("PICTURE");
     static const char* kAspect[] = {"4:3", "16:9", "Stretch"};
-    opt_choice("video.aspect", "Aspect ratio", kAspect,
+    opt_choice("display.aspect", "Aspect ratio", kAspect,
                "4:3 is the original picture, letter- or pillarboxed. 16:9 stretches it to a wide frame (the game does not "
                "render more of the scene). Stretch fills the window.");
     static const char* kScale[] = {"Fit", "Integer"};
-    opt_choice("video.scale_mode", "Scaling", kScale,
+    opt_choice("display.scale_mode", "Scaling", kScale,
                "Fit: as large as the window allows. Integer: the largest whole multiple of the scanout height that fits "
                "(sharp pixels; falls back to fit below 1x).");
     static const char* kFilter[] = {"Linear", "Nearest"};
-    opt_choice("video.filter", "Filter", kFilter, "How the picture is scaled to the window: smooth (linear) or sharp (nearest).");
+    opt_choice("display.filter", "Filter", kFilter, "How the picture is scaled to the window: smooth (linear) or sharp (nearest).");
     opt_end();
 }
 
 void TabRenderer(float scale) {
     opt_begin("##renderer", scale);
+    opt_group("GS BACKEND");
+    static const char* kGs[] = {"GPU (paraLLEl-GS)", "Software", "Both (compare)"};
+    opt_choice("renderer.gs", "GS backend", kGs,
+               "GPU: the xsg-gpu process renders with paraLLEl-GS (this window and menu).\n"
+               "Software: the port's software GS; no window and no menu (change it back in settings.ini).\n"
+               "Both: both run and are compared (a debugging mode).");
     opt_group("RENDERER");
     static const char* kRenderer[] = {"paraLLEl-GS", "Native"};
     opt_choice("renderer.native", "Renderer", kRenderer,
@@ -428,8 +432,15 @@ void TabGame(float scale) {
     opt_choice("game.fps_limit", "FPS limit", kFps,
                "The game's vblank rate. The game logic runs per vblank, so this is also the game speed: 60 is normal, "
                "uncapped runs as fast as the PC allows (fast-forward). Applied live by the game process.");
+    opt_group("MOVIES");
+    opt_toggle("game.movies", "Play movies", "The FMV cutscenes, decoded by ffmpeg. Off skips them.");
+    if (!xsgcfg::GetBool("game.movies")) opt_disable_next("Movies are off.");
+    opt_edit("game.ffmpeg", "ffmpeg program", "The ffmpeg binary that decodes the movies. Empty: ffmpeg on PATH.");
     opt_group("AUDIO");
-    opt_toggle("audio.enabled", "Audio", "Mutes or unmutes the game's sound output (live).");
+    opt_toggle("audio.enabled", "Audio", "Mutes or unmutes the game's sound output (live). Off at start opens no "
+               "audio device at all.");
+    opt_toggle("audio.sound_driver", "Sound driver",
+               "Runs the game's IOP sound driver (RSSD). Off: no music, effects or voices are produced at all.");
     if (!xsgcfg::GetBool("audio.enabled")) opt_disable_next("Audio is muted.");
     opt_slider("audio.master", "Master volume", 0, 100, 5, "%d %%", "The whole mix, after the SPU2.");
     if (!xsgcfg::GetBool("audio.enabled")) opt_disable_next("Audio is muted.");
@@ -442,8 +453,15 @@ void TabGame(float scale) {
                "The streamed audio: scene voice and movie soundtracks (SPU2 core 1 stream voices and AutoDMA). Scenes mix "
                "their background music into the same stream.");
     opt_group("MEMORY CARD");
-    opt_info("##mc", "Memory card folder", g_mc_dir.c_str(),
-             "Where slot 1's saves are kept (XSG_MC_DIR overrides it). Read-only here.");
+    opt_toggle("game.memcard", "Memory card", "A memory card in slot 1. Off: the game sees no card.");
+    if (!xsgcfg::GetBool("game.memcard")) opt_disable_next("No memory card.");
+    opt_edit("game.memcard_dir", "Memory card folder",
+             ("Where slot 1's saves are kept. Empty: " + g_mc_dir + ".").c_str());
+    opt_group("GAME FILES");
+    opt_edit("game.game_dir", "Game folder", "The folder with iso/ (the disc image) and extracted-iso/ (SLUS_204.69). "
+             "Empty: the folder the port was built with.");
+    opt_edit("game.iso", "Disc image", "The disc image. Empty: the first image in <game folder>/iso.");
+    opt_edit("game.elf", "Main executable", "SLUS_204.69. Empty: <game folder>/extracted-iso/SLUS_204.69.");
     opt_end();
 }
 
@@ -572,10 +590,10 @@ void TabInfo(float scale) {
                "present mode, GPU and the renderer's counters.");
     std::string sv = g_shot_note.empty() || Now() - g_shot_note_t > 4 ? "" : g_shot_note;
     if (opt_button("##shot", "Take screenshot", "Writes a PNG of the current game frame (without the menu) to "
-                   "~/Pictures/xsg (XSG_SCREENSHOT_DIR overrides it).", sv.empty() ? "PNG" : sv.c_str()) &&
+                   "[game] screenshot_dir, default ~/Pictures/xsg (Debug tab).", sv.empty() ? "PNG" : sv.c_str()) &&
         g_host.screenshot) {
         std::string dir;
-        if (const char* d = std::getenv("XSG_SCREENSHOT_DIR"); d && *d) dir = d;
+        if (const char* d = xsgcfg::CStr("game.screenshot_dir")) dir = d;
         else if (const char* h = std::getenv("HOME"); h && *h) dir = std::string(h) + "/Pictures/xsg";
         else dir = ".";
         char name[64];
@@ -592,11 +610,31 @@ void TabInfo(float scale) {
     static std::string gpu = g_dev ? g_dev->get_gpu_properties().deviceName : "";
     opt_info("##gpu", "GPU", gpu.c_str(), "The Vulkan device xsg-gpu renders on.");
     std::string path = xsgcfg::Path();
-    opt_info("##ini", "Settings file", path.c_str(), "Every option of this menu is saved here. Environment variables win "
-             "over it (rows they fix are greyed out).");
-    opt_group("ACTIVE XSG_* ENVIRONMENT");
-    if (g_env_lines.empty()) opt_text("None set.");
-    for (auto& l : g_env_lines) opt_text(l.c_str());
+    opt_info("##ini", "Settings file", path.c_str(), "Every setting of the port is kept here and every one can be changed "
+             "in this menu. XSG_CONFIG=<file> picks another file; no other environment variable sets anything.");
+    if (!xsgcfg::IgnoredEnv().empty()) {
+        opt_group("IGNORED XSG_* ENVIRONMENT");
+        opt_text("These are no longer read: set them in settings.ini (or here) instead.", true);
+        for (auto& l : xsgcfg::IgnoredEnv()) opt_text(l.c_str());
+    }
+    opt_end();
+}
+
+/* Every [debug] key of the table (port/runtime/xsg_settings_table.h), in its
+   order, each with the row its value list calls for. */
+void TabDebug(float scale) {
+    opt_begin("##debug", scale);
+    opt_group("RUNTIME");
+    static const char* kOverlay[] = {"Off", "FPS", "Full"};
+    opt_choice("overlay.mode", "Performance overlay", kOverlay, "F10 cycles it.");
+    opt_edit("game.screenshot_dir", "Screenshot folder", "Where Take screenshot (Info) writes. Empty: ~/Pictures/xsg.");
+    opt_group("DEVELOPER SWITCHES (AFTER RESTART)");
+    opt_text("Traces, captures, logs and test hooks. They are read when the game starts.");
+    for (int i = 0; const xsgcfg::Meta* m = xsgcfg::At(i); ++i) {
+        if (std::strncmp(m->key, "debug.", 6)) continue;
+        opt_auto(m->key, m->key + 6, m->desc);
+    }
+    if (RestartPending()) opt_text("Changes apply after a restart: use Restart now below.", true);
     opt_end();
 }
 
@@ -812,7 +850,8 @@ void LayoutMenu(float scale) {
     case TAB_RENDERER: TabRenderer(scale); break;
     case TAB_GAME: TabGame(scale); break;
     case TAB_CONTROLS: TabControls(scale); break;
-    default: TabInfo(scale); break;
+    case TAB_INFO: TabInfo(scale); break;
+    default: TabDebug(scale); break;
     }
     ImGui::SetCursorScreenPos(ImVec2(tp.x, win->Pos.y + h - ImGui::GetStyle().WindowPadding.y - std::round(44 * scale)));
     Bottom(scale, w);
@@ -832,8 +871,8 @@ void LayoutMenu(float scale) {
     ImGui::End();
     ImGui::PopStyleVar();
 
-    // tab switching and closing (not while a binding waits for its press)
-    if (!g_cap) {
+    // tab switching and closing (not while a binding waits for its press or a text field is open)
+    if (!g_cap && !opt_editing()) {
         bool nin = xsgcfg::Get("gamepad.layout") == "nintendo";
         (void)nin;
         if (ImGui::IsKeyPressed(ImGuiKey_GamepadL1, false) || ImGui::IsKeyPressed(ImGuiKey_Q, false))
@@ -878,16 +917,7 @@ void Init(Vulkan::Device* dev, void*, GpuSettings* shared, const Host& host) {
     if (!g_ok) Log("renderer set-up failed; the menu stays closed");
     TestParse();
     // read-only facts for the pages
-    if (const char* d = std::getenv("XSG_MC_DIR"); d && *d) g_mc_dir = d;
-    else if (const char* h = std::getenv("HOME"); h && *h) g_mc_dir = std::string(h) + "/.local/share/xsg/mc0";
-    std::string from = std::getenv("XSG_CFG_FROM_INI") ? std::getenv("XSG_CFG_FROM_INI") : "";
-    for (char** e = environ; *e; ++e) {
-        if (std::strncmp(*e, "XSG_", 4) || !std::strncmp(*e, "XSG_CFG_FROM_INI=", 17)) continue;
-        std::string l = *e, name = l.substr(0, l.find('='));
-        if (("," + from + ",").find("," + name + ",") != std::string::npos) l += "   (from settings.ini)";
-        g_env_lines.push_back(l);
-    }
-    std::sort(g_env_lines.begin(), g_env_lines.end());
+    if (const char* h = std::getenv("HOME"); h && *h) g_mc_dir = std::string(h) + "/.local/share/xsg/mc0";   // the default
     for (int i = 0; const xsgcfg::Meta* m = xsgcfg::At(i); ++i)
         if (!m->live) g_boot_values.push_back({m->key, xsgcfg::Get(m->key)});
     g_overlay = OverlayMode();

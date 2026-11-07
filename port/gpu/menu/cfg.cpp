@@ -1,8 +1,9 @@
 /*
  * Settings table and ~/.config/xsg/settings.ini (port/docs/MENU.md).
  * Structure after TotK Recomp's runtime/cfg.h (MIT, Copyright (c) 2026
- * Valiantsin Dzerakh): a meta table {key, env, default, values, live},
- * env > ini > default, a debounced save.  Our own implementation.
+ * Valiantsin Dzerakh): a meta table {key, default, values, live}, ini >
+ * default, a debounced save.  Our own implementation.  The table itself is
+ * port/runtime/xsg_settings_table.h, shared with the game process.
  */
 #include "cfg.h"
 
@@ -16,36 +17,15 @@
 #include <sys/stat.h>
 #include <vector>
 
+extern char** environ;
+
 namespace xsgcfg {
 namespace {
 
 const Meta kTable[] = {
-    // Display (live)
-    {"video.fullscreen", "XSG_GPU_FULLSCREEN", "0", "0|1", true},
-    {"video.window_scale", "XSG_GPU_SCALE", "2", "1..4", true},
-    {"video.present", "XSG_GPU_PRESENT", "mailbox", "mailbox|fifo|immediate|auto", true},
-    {"video.aspect", "XSG_GPU_ASPECT", "4:3", "4:3|16:9|stretch", true},
-    {"video.scale_mode", "XSG_GPU_SCALEMODE", "fit", "fit|integer", true},
-    {"video.filter", "XSG_GPU_FILTER", "linear", "linear|nearest", true},
-    // Renderer (after restart; exported to the environment by the game, gpu_client.cpp)
-    {"renderer.native", "XSG_GPU_NATIVE", "0", "0|1", false},
-    {"renderer.native_scale", "XSG_GPU_NATIVE_SCALE", "2", "1..8", false},
-    {"renderer.ssaa", "XSG_GPU_SSAA", "1", "1|2|4|8|16", false},
-    {"renderer.ssaa_textures", "XSG_GPU_SSAA_TEX", "0", "0|1", false},
-    {"renderer.hires_scanout", "XSG_GPU_HIRES", "0", "0|1", false},
-    // Game (live, applied by the game process through GpuSettings)
-    {"game.fps_limit", "XSG_FRAME_US", "60", "60|30|120|uncapped", true},
-    {"audio.enabled", "XSG_AUDIO", "1", "0|1", true},
-    {"audio.master", nullptr, "100", "0..100", true},
-    {"audio.music", nullptr, "100", "0..100", true},
-    {"audio.effects", nullptr, "100", "0..100", true},
-    {"audio.voice", nullptr, "100", "0..100", true},
-    // Controls
-    {"gamepad.deadzone", nullptr, "8000", "0..32000", true},
-    {"gamepad.trigger_threshold", nullptr, "8000", "0..32000", true},
-    {"gamepad.layout", nullptr, "xbox", "xbox|playstation|nintendo", true},
-    // Info
-    {"overlay.mode", "XSG_GPU_OVERLAY", "off", "off|fps|full", true},
+#define XSG_SETTING(key, env, def, values, live, desc) {key, env, def, values, live != 0, desc},
+#include "xsg_settings_table.h"
+#undef XSG_SETTING
 };
 constexpr int kN = int(sizeof kTable / sizeof kTable[0]);
 
@@ -56,7 +36,8 @@ unsigned g_version = 1;
 bool g_dirty, g_save_ok = true;
 std::chrono::steady_clock::time_point g_dirty_at;
 std::string g_path;
-std::string g_from_ini;   // XSG_CFG_FROM_INI: env vars the game exported from settings.ini
+std::vector<std::string> g_ignored_env;
+std::map<std::string, std::string> g_cstr;   // CStr() storage
 
 void Log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 void Log(const char* fmt, ...) {
@@ -125,23 +106,12 @@ std::string ConfigDir() {
     return ".";
 }
 
-bool EnvSet(const char* env) {
-    if (!env) return false;
-    const char* v = std::getenv(env);
-    if (!v || !*v) return false;
-    // exported by the game from settings.ini, not by the user
-    std::string l = "," + g_from_ini + ",";
-    return l.find("," + std::string(env) + ",") == std::string::npos;
-}
-
 }  // namespace
 
 void Load() {
-    if (const char* f = std::getenv("XSG_CFG_FROM_INI")) g_from_ini = f;
-    if (const char* p = std::getenv("XSG_SETTINGS_INI"); p && *p) g_path = p;
+    if (const char* p = std::getenv("XSG_CONFIG"); p && *p) g_path = p;   // the one environment variable
     else g_path = ConfigDir() + "/settings.ini";
     std::string legacy = ConfigDir() + "/input.ini";
-    const char* explicit_input = std::getenv("XSG_INPUT_INI");
     int n = ReadFile(g_path);
     if (n >= 0) {
         Log("%s: %d entries", g_path.c_str(), n);
@@ -154,13 +124,25 @@ void Load() {
             g_dirty_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
         }
     }
-    if (explicit_input && *explicit_input) {   // backward compatibility: an explicit input.ini wins
-        int m = ReadFile(explicit_input);
-        Log("XSG_INPUT_INI %s: %d entries", explicit_input, m);
+    // [video] was renamed [display]: move its entries (an explicit [display] value wins).
+    if (auto it = g_ini.find("video"); it != g_ini.end()) {
+        auto old = it->second;
+        g_ini.erase(it);
+        g_order.erase(std::remove(g_order.begin(), g_order.end(), std::string("video")), g_order.end());
+        auto& d = Sec("display");
+        for (auto& [k, v] : old)
+            if (!Lookup("display", k)) d[k] = v;
+        Log("moved [video] to [display]");
+        g_dirty = true;
+        g_dirty_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
     }
-    for (int i = 0; i < kN; ++i)
-        if (EnvSet(kTable[i].env)) Log("%s set by %s=%s (greyed out in the menu)", kTable[i].key, kTable[i].env, std::getenv(kTable[i].env));
+    // The environment no longer sets anything; the game logs the deprecation (settings.c).
+    for (char** e = environ; *e; ++e)
+        if (!std::strncmp(*e, "XSG_", 4) && std::strncmp(*e, "XSG_CONFIG=", 11)) g_ignored_env.push_back(*e);
+    std::sort(g_ignored_env.begin(), g_ignored_env.end());
 }
+
+const std::vector<std::string>& IgnoredEnv() { return g_ignored_env; }
 
 const Meta* Find(const char* key) {
     for (auto& m : kTable)
@@ -169,40 +151,20 @@ const Meta* Find(const char* key) {
 }
 const Meta* At(int i) { return i >= 0 && i < kN ? &kTable[i] : nullptr; }
 
-bool FromEnv(const char* key) {
-    const Meta* m = Find(key);
-    if (!m) return false;
-    if (!std::strcmp(key, "game.fps_limit") && EnvSet("XSG_FAST")) return true;
-    if (!std::strcmp(key, "video.present") && EnvSet("XSG_GPU_VSYNC") && !EnvSet("XSG_GPU_PRESENT")) return true;
-    return EnvSet(m->env);
-}
-
-std::string EnvName(const char* key) {
-    const Meta* m = Find(key);
-    if (!m) return "";
-    if (!std::strcmp(key, "game.fps_limit") && EnvSet("XSG_FAST")) return "XSG_FAST";
-    if (!std::strcmp(key, "video.present") && EnvSet("XSG_GPU_VSYNC") && !EnvSet("XSG_GPU_PRESENT")) return "XSG_GPU_VSYNC";
-    return m->env && EnvSet(m->env) ? m->env : "";
-}
-
 std::string Get(const char* key) {
     const Meta* m = Find(key);
-    if (m && m->env && FromEnv(key)) {
-        if (!std::strcmp(key, "game.fps_limit")) {   // XSG_FAST / XSG_FRAME_US -> the row's value
-            if (EnvSet("XSG_FAST") && std::strcmp(std::getenv("XSG_FAST"), "0")) return "uncapped";
-            long us = std::atol(std::getenv("XSG_FRAME_US") ? std::getenv("XSG_FRAME_US") : "16667");
-            return us == 0 ? "uncapped" : std::to_string(int(1e6 / us + 0.5));
-        }
-        if (!std::strcmp(key, "video.present") && !EnvSet("XSG_GPU_PRESENT")) return "fifo";
-        return std::getenv(m->env);
-    }
     std::string sec, name;
     Split(key, &sec, &name);
     if (const std::string* v = Lookup(sec, name); v && !v->empty()) return *v;
-    if (m && m->env) {   // exported by the game from settings.ini (same value) or a legacy env
-        if (const char* v = std::getenv(m->env); v && *v) return v;
-    }
     return m ? m->def : "";
+}
+
+const char* CStr(const char* key) {
+    std::string v = Get(key);
+    if (v.empty()) return nullptr;
+    auto& slot = g_cstr[key];
+    if (slot != v) slot = v;   // callers read it at start; a later change re-points
+    return slot.c_str();
 }
 
 int GetInt(const char* key) {
@@ -262,8 +224,8 @@ bool SaveNow() {
         return false;
     }
     std::fprintf(f, "# Xenosaga Episode I PC port settings (written by the in-game menu, F1).\n"
-                    "# Environment variables (XSG_*) override these.  See port/docs/MENU.md.\n");
-    static const char* kOrder[] = {"video", "renderer", "game", "audio", "overlay", "keyboard", "gamepad"};
+                    "# The only environment variable is XSG_CONFIG (another settings file).  See port/docs/MENU.md.\n");
+    static const char* kOrder[] = {"display", "renderer", "game", "audio", "gamepad", "overlay", "keyboard", "debug"};
     std::vector<std::string> order(std::begin(kOrder), std::end(kOrder));
     for (auto& s : g_order)
         if (std::find(order.begin(), order.end(), s) == order.end()) order.push_back(s);

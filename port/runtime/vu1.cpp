@@ -17,6 +17,7 @@
  *    branch delay slots. M/D/T bits are ignored.
  */
 #include "vu1.h"
+#include "xsg_settings.h"
 
 #include <cmath>
 #include <cstdio>
@@ -1305,13 +1306,13 @@ void DumpHistogram() {
 
 u64 Run(u32 pc, u32 top, u32 itop) {
     if (flag_latency < 0) {
-        const char* e = std::getenv("XSG_VU_FLAGLAT");
+        const char* e = xsg_cfg("debug.vu_flaglat");
         flag_latency = e ? std::atoi(e) : 4;
-        hist_on = std::getenv("XSG_VU_HIST") && std::atoi(std::getenv("XSG_VU_HIST"));
+        hist_on = xsg_cfg("debug.vu_hist") && std::atoi(xsg_cfg("debug.vu_hist"));
         s.vf[0].f[3] = 1.0f;
     }
     stats.runs++;
-    static long trace_runs = std::getenv("XSG_VU_TRACE") ? std::atol(std::getenv("XSG_VU_TRACE")) : 0;
+    static long trace_runs = xsg_cfg("debug.vu_trace") ? std::atol(xsg_cfg("debug.vu_trace")) : 0;
     const bool trace_left = trace_runs > 0;
     if (trace_runs > 0) { trace_runs--; xsg_logf("[vu1t] run at 0x%x top %x itop %x\n", pc, top, itop); }
     s.top = top; s.itop = itop;
@@ -1329,7 +1330,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
        latency every queued entry has landed before the queue can overflow,
        so landing on demand gives exactly the per-cycle values. */
     const bool lazy_flags = flag_latency < 16;
-    if (g_fast < 0) g_fast = !std::getenv("XSG_VU_FAST") || std::atoi(std::getenv("XSG_VU_FAST"));
+    if (g_fast < 0) g_fast = !xsg_cfg("debug.vu_fast") || std::atoi(xsg_cfg("debug.vu_fast"));
     const bool fast_on = g_fast;
     u64 n = 0;
     const u64 limit = g_limit;

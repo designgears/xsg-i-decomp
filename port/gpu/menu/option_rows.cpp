@@ -5,7 +5,7 @@
  * (https://github.com/valentderah/totk-pc-recomp, MIT, Copyright (c) 2026
  * Valiantsin Dzerakh), which adapts SavageWindRecomp's option_rows.mm (MIT):
  * the two panes, the row model (default mark, "after restart", greyed out by
- * the environment), left / right stepping with the hold speed-up and the
+ * a disabled note), left / right stepping with the hold speed-up and the
  * binding cells.  Changes: plain strings instead of a text catalog, the
  * xsgcfg table, and a Xenosaga-style look (thin cyan outlines, corner
  * brackets, indigo panels).
@@ -40,15 +40,13 @@ void desc_set(Desc& d, const char* desc, const char* key, const char* disabled) 
     if (disabled) {
         d.text += "\n\n";
         d.text += disabled;
-    } else if (m && xsgcfg::FromEnv(key)) {
-        d.text += "\n\nFixed by the environment variable " + xsgcfg::EnvName(key) + ". Unset it to change this here.";
     } else if (m && !m->live) {
         d.text += "\n\nApplies after a restart (Restart now, below).";
     }
     if (m) {
-        d.text += "\n\nsettings.ini   ";
-        d.text += m->key;
-        if (m->env) { d.text += "\nenvironment   "; d.text += m->env; }
+        const char* dot = std::strchr(m->key, '.');
+        d.text += "\n\nsettings.ini   [" + std::string(m->key, dot - m->key) + "] " + (dot + 1);
+        if (m->env) { d.text += "\nreplaces   "; d.text += m->env; d.text += " (the environment is ignored)"; }
     }
 }
 
@@ -100,7 +98,7 @@ int Row(const char* key, const char* label, const char* desc, const RowView& v) 
     const xsgcfg::Meta* m = xsgcfg::Find(key);
     const char* disabled = g_disable_note;
     g_disable_note = nullptr;
-    bool off = disabled || (m && xsgcfg::FromEnv(key));
+    bool off = disabled != nullptr;
     ImGui::PushID(key);
     ImVec2 p = ImGui::GetCursorScreenPos();
     float fs = ImGui::GetFontSize(), w = ImGui::GetContentRegionAvail().x - 6 * g_scale, h = std::floor(fs * 2.15f);
@@ -160,10 +158,7 @@ int Row(const char* key, const char* label, const char* desc, const RowView& v) 
     }
     ImVec4 clip(p.x, p.y, value_left - fs * 0.6f, p.y + h);
     dl->AddText(font, fs, ImVec2(p.x + pad, ty), off ? col::kTextOff : col::kText, label, nullptr, 0, &clip);
-    const char* note = disabled ? disabled
-                       : off    ? "SET BY ENVIRONMENT"
-                       : m && !m->live ? "AFTER RESTART"
-                                       : nullptr;
+    const char* note = disabled ? disabled : m && !m->live ? "AFTER RESTART" : nullptr;
     if (note) dl->AddText(font, small, ImVec2(p.x + pad, ny), off ? col::kWarn : col::kSteel, note);
     ImGui::PopID();
     return off ? 0 : step;
@@ -312,7 +307,7 @@ bool opt_slider(const char* key, const char* label, int lo, int hi, int step, co
         float x0 = p.x + 18 * g_scale, x1 = p.x + w * 0.45f, y = p.y + h - 4 * g_scale;
         float t = hi > lo ? float(v - lo) / float(hi - lo) : 0;
         dl->AddRectFilled(ImVec2(x0, y), ImVec2(x1, y + 2 * g_scale), IM_COL32(150, 180, 235, 40));
-        dl->AddRectFilled(ImVec2(x0, y), ImVec2(x0 + (x1 - x0) * t, y + 2 * g_scale), xsgcfg::FromEnv(key) ? col::kTextOff : col::kCyan);
+        dl->AddRectFilled(ImVec2(x0, y), ImVec2(x0 + (x1 - x0) * t, y + 2 * g_scale), col::kCyan);
     }
     if (!s) return false;
     int steps = g_held && (hi - lo) > 40 * step ? 5 : 1;
@@ -322,6 +317,67 @@ bool opt_slider(const char* key, const char* label, int lo, int hi, int step, co
     if (n == v) return false;
     xsgcfg::Set(key, std::to_string(n));
     return true;
+}
+
+namespace {
+std::string g_edit_key;   // the text row being edited
+char g_edit_buf[512];
+bool g_edit_focus;
+}  // namespace
+
+bool opt_edit(const char* key, const char* label, const char* desc) {
+    const xsgcfg::Meta* m = xsgcfg::Find(key);
+    std::string now = xsgcfg::Get(key);
+    const bool editing = g_edit_key == key;
+    if (editing) {
+        // the row becomes a text field: Enter keeps, Esc cancels
+        ImGui::PushID(key);
+        float fs = ImGui::GetFontSize(), w = ImGui::GetContentRegionAvail().x - 6 * g_scale;
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        p.x += 3 * g_scale;
+        ImGui::SetCursorScreenPos(p);
+        RowFrame(ImGui::GetWindowDrawList(), p, ImVec2(p.x + w, p.y + std::floor(fs * 2.15f)), true, false);
+        ImGui::SetCursorScreenPos(ImVec2(p.x + 16 * g_scale, p.y + fs * 0.3f));
+        ImGui::SetNextItemWidth(w - 32 * g_scale);
+        if (g_edit_focus) { ImGui::SetKeyboardFocusHere(); g_edit_focus = false; }
+        bool done = ImGui::InputText("##edit", g_edit_buf, sizeof g_edit_buf, ImGuiInputTextFlags_EnterReturnsTrue);
+        bool cancel = ImGui::IsItemDeactivated() && !done;
+        ImGui::SetCursorScreenPos(p);
+        ImGui::Dummy(ImVec2(w, std::floor(fs * 2.15f)));
+        if (ImGui::IsItemHovered() || true) desc_set(g_focus, (std::string(desc ? desc : "") + "\n\nEnter keeps the text, Esc cancels. Empty: the default.").c_str(), key, nullptr);
+        ImGui::PopID();
+        if (done) {
+            g_edit_key.clear();
+            std::string v = g_edit_buf;
+            if (v != now) { xsgcfg::Set(key, v); return true; }
+        } else if (cancel) {
+            g_edit_key.clear();
+        }
+        return false;
+    }
+    std::string shown = now.empty() ? "(empty)" : now;
+    if (shown.size() > 40) shown = "..." + shown.substr(shown.size() - 37);
+    RowView v = {shown.c_str(), m && now == m->def, false, nullptr};
+    if (Row(key, label, desc, v) == 2) {
+        g_edit_key = key;
+        std::snprintf(g_edit_buf, sizeof g_edit_buf, "%s", now.c_str());
+        g_edit_focus = true;
+    }
+    return false;
+}
+
+bool opt_editing() { return !g_edit_key.empty(); }
+
+bool opt_auto(const char* key, const char* label, const char* desc) {
+    const xsgcfg::Meta* m = xsgcfg::Find(key);
+    if (!m) return false;
+    if (m->values && !std::strcmp(m->values, "0|1")) return opt_toggle(key, label, desc);
+    if (m->values && std::strchr(m->values, '|')) return opt_choice(key, label, nullptr, desc);
+    if (m->values && std::strstr(m->values, "..")) {
+        int lo = std::atoi(m->values), hi = std::atoi(std::strstr(m->values, "..") + 2);
+        return opt_slider(key, label, lo, hi, 1, "%d", desc);
+    }
+    return opt_edit(key, label, desc);
 }
 
 bool opt_button(const char* id, const char* label, const char* desc, const char* value) {

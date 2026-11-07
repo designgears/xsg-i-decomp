@@ -5,6 +5,7 @@
  */
 #define _GNU_SOURCE
 #include <ctype.h>
+#include "xsg_settings.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -323,7 +324,7 @@ static int pad_live_on(void)
 {
     static int on = -1;
     if (on < 0) {
-        const char *v = getenv("XSG_PAD_LIVE");
+        const char *v = xsg_cfg("debug.pad_live");
         on = !(v && v[0] == '0' && !v[1]);
     }
     return on;
@@ -338,7 +339,7 @@ static int pad_script_sticks(unsigned char *st)
     static int nev = -1;
     int i;
     if (nev < 0) {
-        const char *s = getenv("XSG_PAD_STICK");
+        const char *s = xsg_cfg("debug.pad_stick");
         char *e;
         nev = 0;
         while (s && *s && nev < 64) {
@@ -378,7 +379,7 @@ static void pad_log_live(unsigned live, const unsigned char *data)
     static unsigned last_b = ~0u, last_s;
     unsigned s;
     if (log_on < 0) {
-        const char *l = getenv("XSG_PAD_LOG");
+        const char *l = xsg_cfg("debug.pad_log");
         log_on = l && *l && *l != '0';
     }
     if (!log_on)
@@ -499,7 +500,7 @@ unsigned xsg_pad_script_buttons(void)
     static int log_on;
     static unsigned last;
     if (nev < 0) {
-        const char *s = getenv("XSG_PAD"), *l = getenv("XSG_PAD_LOG");
+        const char *s = xsg_cfg("debug.pad"), *l = xsg_cfg("debug.pad_log");
         log_on = l && *l && *l != '0';
         nev = 0;
         while (s && *s && nev < 512) {
@@ -573,7 +574,7 @@ void xsg_twin_trace(int slot, unsigned flags, unsigned state, unsigned kg, unsig
     static int on = -1;
     static unsigned last[4][4];
     if (on < 0) {
-        const char *e = getenv("XSG_TWIN_LOG");
+        const char *e = xsg_cfg("debug.twin_log");
         on = e && *e && *e != '0';
     }
     if (!on || slot < 0 || slot > 3)

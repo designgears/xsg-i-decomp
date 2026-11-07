@@ -29,6 +29,7 @@
  */
 #define _GNU_SOURCE
 #include <errno.h>
+#include "xsg_settings.h"
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -737,7 +738,7 @@ void xsg_sound_set_volume(int on, const int vol[4])
 
 int xsg_sound_enabled(void)
 {
-    const char *e = getenv("XSG_SOUND");
+    const char *e = xsg_cfg("audio.sound_driver");
     return !(e && atoi(e) == 0);
 }
 
@@ -747,12 +748,12 @@ void xsg_sound_start(void)
     if (started || !xsg_sound_enabled())
         return;
     started = 1;
-    const char *e = getenv("XSG_SOUND_LOG");
+    const char *e = xsg_cfg("debug.sound_log");
     log_on = e ? atoi(e) : 0;
-    trace_dir = getenv("XSG_SPU_TRACE");
-    const char *ck = getenv("XSG_SOUND_CLOCK");
+    trace_dir = xsg_cfg("debug.spu_trace");
+    const char *ck = xsg_cfg("debug.sound_clock");
     game_clock = !(ck && !strcmp(ck, "real"));
-    const char *w = getenv("XSG_WAV");
+    const char *w = xsg_cfg("debug.wav");
     if (w && *w) {
         wav = fopen(w, "wb");
         if (wav) {

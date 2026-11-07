@@ -27,6 +27,7 @@
  */
 #define _GNU_SOURCE
 #include <errno.h>
+#include "xsg_settings.h"
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
@@ -102,7 +103,7 @@ static struct {
 
 static int enabled(void)
 {
-    const char *e = getenv("XSG_MPEG");
+    const char *e = xsg_cfg("game.movies");
     return !e || atoi(e) != 0;
 }
 
@@ -165,7 +166,7 @@ static void helper_stop(void)
 static int helper_start(void)
 {
     int in[2], out[2];
-    const char *ff = getenv("XSG_FFMPEG");
+    const char *ff = xsg_cfg("game.ffmpeg");
     if (!ff)
         ff = "ffmpeg";
     if (pipe2(in, O_CLOEXEC) || pipe2(out, O_CLOEXEC))

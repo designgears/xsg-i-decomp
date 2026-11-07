@@ -11,29 +11,16 @@
  *   GPU_MSG_READ_VRAM  map_vram_read(0, 4 MB) -> reply area
  *   GPU_MSG_READ_FIFO  read_transfer_fifo(n) -> reply area
  *
- * Environment (inherited from the game):
- *   XSG_GPU_HEADLESS=1   no window (Vulkan device only)
- *   XSG_GPU_SSAA=1|2|4|8|16  paraLLEl-GS super-sampling (default 1)
- *   XSG_GPU_SSAA_TEX=1   super-sampled textures (with SSAA >= 2)
- *   XSG_GPU_HIRES=1      high-resolution scanout (with SSAA >= 4)
- *   XSG_GPU_SCALE=N      initial window size N x 512x448 (default 2)
- *   XSG_GPU_VSYNC=1      FIFO present (blocks on the display); default mailbox
- *   XSG_GPU_PRESENT=mailbox|fifo|immediate   present mode (overrides VSYNC)
- *   XSG_GPU_ASPECT=4:3|16:9|stretch          display aspect (default 4:3)
- *   XSG_GPU_SCALEMODE=fit|integer            image scaling (default fit)
- *   XSG_GPU_FILTER=linear|nearest            blit filter (default linear)
- *   XSG_GPU_FULLSCREEN=1 start fullscreen (F11 toggles)
- *   XSG_GPU_INPUT_TEST   synthetic SDL input events (STAGE10_INPUT.md)
- * The same video options can be set in [video] of ~/.config/xsg/settings.ini
- * (menu/cfg.cpp; input.ini is migrated) and in the in-game menu (F1,
- * menu/menu.cpp, port/docs/MENU.md).
+ * Settings: settings.ini only (port/docs/MENU.md; the file is
+ * ~/.config/xsg/settings.ini or $XSG_CONFIG, inherited from the game), read
+ * by menu/cfg.cpp from the shared table port/runtime/xsg_settings_table.h:
+ *   [display]  fullscreen, window_scale, present, aspect, scale_mode, filter (live)
+ *   [renderer] ssaa, ssaa_textures, hires_scanout, native, native_scale
+ *   [debug]    headless, vulkan_validation, pmode_raw, input_test, native_*, ...
+ * The in-game menu (F1, menu/menu.cpp) edits all of them.
  * Keyboard/gamepad input: xsg_input.cpp, port/docs/STAGE10_INPUT.md.
- *   XSG_GPU_STREAM=fifo  the 512x448 RGB24 live stream (set by the game from
- *                        XSG_STREAM when it does not run the soft GS itself)
- *   XSG_GPU_VVL=1        allow the Vulkan validation layer
- *   XSG_GPU_NATIVE=1     native renderer (native.cpp, port/docs/NATIVE_RENDERER.md): the
- *                        window shows the live composite at XSG_GPU_NATIVE_SCALE (default 2);
- *                        XSG_GPU_NATIVE_LIVE=0 (shots only), _THR, _SHOT, _DIR
+ * Command line (from the game): [fd] [--stream=FIFO], the 512x448 RGB24 live
+ * stream ([debug] stream) when the game does not run the soft GS itself.
  */
 #include "gpu_ipc.h"
 #include "xsg_input.h"
@@ -104,10 +91,6 @@ long Futex(volatile uint32_t* addr, int op, uint32_t val, const timespec* ts) {
     return syscall(SYS_futex, (uint32_t*)addr, op, val, ts, nullptr, 0);
 }
 
-bool EnvOn(const char* n) {
-    const char* v = std::getenv(n);
-    return v && *v && std::strcmp(v, "0") != 0;
-}
 
 /* ---------------------------------------------------------------- GS memory decode
    The displayed pixel from a raw local-memory copy, with the software GS's
@@ -197,7 +180,7 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
             if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_F11 && !e.key.repeat) {
                 fullscreen = !fullscreen;
                 SDL_SetWindowFullscreen(win, fullscreen);
-                xsgcfg::Set("video.fullscreen", fullscreen ? "1" : "0");
+                xsgcfg::Set("display.fullscreen", fullscreen ? "1" : "0");
                 continue;
             }
             if (xsgmenu::Event(e)) continue;   // F1 / Esc / F10, and everything while the menu is open
@@ -228,7 +211,7 @@ struct Renderer {
     uint32_t native_msgs = 0, native_last = 0;   // GPU_MSG_NATIVE this / last vsync (menu overlay)
     std::string shot_path;                        // the menu's screenshot request
     int window_scale = 2;
-    bool pmode_raw = EnvOn("XSG_GPU_PMODE_RAW"), pmode_logged = false;
+    bool pmode_raw = xsgcfg::GetBool("debug.pmode_raw"), pmode_logged = false;
     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     uint32_t hires = 0;
     std::string aspect = "4:3";
@@ -241,7 +224,7 @@ struct Renderer {
     bool InitWindow() {
 #ifdef XSG_GPU_SDL
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) { Log("SDL_Init: %s", SDL_GetError()); return false; }
-        int scale = xsgcfg::GetInt("video.window_scale");
+        int scale = xsgcfg::GetInt("display.window_scale");
         if (scale < 1) scale = 1;
         window_scale = scale;
         platform = std::make_unique<SdlPlatform>();
@@ -267,7 +250,7 @@ struct Renderer {
         // Present mode.  The renderer thread is the ring consumer, so a blocking
         // present (fifo) paces the whole pipeline to the display; mailbox (the
         // default) never blocks and the game's own vblank timer paces it.
-        std::string pm = xsginput::Option("present", "XSG_GPU_PRESENT", EnvOn("XSG_GPU_VSYNC") ? "fifo" : "mailbox");
+        std::string pm = xsginput::Option("present", nullptr, "mailbox");
         wsi->set_present_mode(PresentModeOf(pm));
         aspect = xsginput::Option("aspect", "XSG_GPU_ASPECT", "4:3");
         integer_scale = xsginput::Option("scale_mode", "XSG_GPU_SCALEMODE", "fit") == "integer";
@@ -303,19 +286,19 @@ struct Renderer {
         nearest = xsginput::Option("filter", "XSG_GPU_FILTER", "linear") == "nearest";
 #ifdef XSG_GPU_SDL
         if (!windowed) return;
-        bool fs = xsgcfg::GetBool("video.fullscreen");
+        bool fs = xsgcfg::GetBool("display.fullscreen");
         if (fs != platform->fullscreen) {
             platform->fullscreen = fs;
             SDL_SetWindowFullscreen(platform->win, fs);
         }
-        int sc = std::max(1, xsgcfg::GetInt("video.window_scale"));
+        int sc = std::max(1, xsgcfg::GetInt("display.window_scale"));
         if (sc != window_scale) {
             window_scale = sc;
             if (!fs) SDL_SetWindowSize(platform->win, 512 * sc, 448 * sc);
         }
-        auto mode = PresentModeOf(xsgcfg::Get("video.present"));
+        auto mode = PresentModeOf(xsgcfg::Get("display.present"));
         if (mode != wsi->get_present_mode()) {
-            Log("present mode -> %s (swapchain recreated)", xsgcfg::Get("video.present").c_str());
+            Log("present mode -> %s (swapchain recreated)", xsgcfg::Get("display.present").c_str());
             wsi->set_present_mode(mode);
         }
 #endif
@@ -347,19 +330,19 @@ struct Renderer {
     }
 
     bool Init() {
-        if (!EnvOn("XSG_GPU_VVL")) setenv("GRANITE_VULKAN_NO_VALIDATION", "1", 0);
+        if (!xsgcfg::GetBool("debug.vulkan_validation")) setenv("GRANITE_VULKAN_NO_VALIDATION", "1", 0);
         if (!Vulkan::Context::init_loader(nullptr)) { Log("no Vulkan loader"); return false; }
-        if (!EnvOn("XSG_GPU_HEADLESS") && !InitWindow()) Log("no window; running headless");
+        if (!xsgcfg::GetBool("debug.headless") && !InitWindow()) Log("no window; running headless");
         bool sdl_input = windowed;
 #ifdef XSG_GPU_SDL
         // Headless: input only for the synthetic test hook (no real devices).
-        if (!windowed && std::getenv("XSG_GPU_INPUT_TEST") && *std::getenv("XSG_GPU_INPUT_TEST"))
+        if (!windowed && xsgcfg::CStr("debug.input_test") && *xsgcfg::CStr("debug.input_test"))
             sdl_input = SDL_Init(SDL_INIT_EVENTS);
 #endif
         xsginput::Init(reinterpret_cast<GpuPad*>(reinterpret_cast<uint8_t*>(shm) + XSG_GPU_PAD_OFF), sdl_input);
         if (!dev && !InitHeadless()) { Log("no Vulkan device"); return false; }
         GSOptions o = {};
-        int ss = std::getenv("XSG_GPU_SSAA") ? std::atoi(std::getenv("XSG_GPU_SSAA")) : 1;
+        int ss = xsgcfg::CStr("renderer.ssaa") ? std::atoi(xsgcfg::CStr("renderer.ssaa")) : 1;
         switch (ss) {
         case 2: o.super_sampling = SuperSampling::X2; break;
         case 4: o.super_sampling = SuperSampling::X4; break;
@@ -367,8 +350,8 @@ struct Renderer {
         case 16: o.super_sampling = SuperSampling::X16; break;
         default: ss = 1; o.super_sampling = SuperSampling::X1; break;
         }
-        o.super_sampled_textures = ss > 1 && EnvOn("XSG_GPU_SSAA_TEX");
-        hires = ss >= 4 && EnvOn("XSG_GPU_HIRES");
+        o.super_sampled_textures = ss > 1 && xsgcfg::GetBool("renderer.ssaa_textures");
+        hires = ss >= 4 && xsgcfg::GetBool("renderer.hires_scanout");
         if (!gs.init(dev, o)) { Log("GSInterface::init failed"); return false; }
         xsgnative::Init(dev);
         InitMenu();
@@ -715,7 +698,11 @@ int main(int argc, char** argv) {
     g_parent = getppid();
     prctl(PR_SET_PDEATHSIG, SIGTERM);  // the game died: go too
     int fd = XSG_GPU_FD;
-    if (argc > 1) fd = std::atoi(argv[1]);
+    const char* stream = nullptr;   // the game passes [debug] stream here when xsg-gpu feeds it
+    for (int i = 1; i < argc; ++i) {
+        if (!std::strncmp(argv[i], "--stream=", 9)) stream = argv[i] + 9;
+        else fd = std::atoi(argv[i]);
+    }
     void* m = mmap(nullptr, XSG_GPU_SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (m == MAP_FAILED) { Log("mmap of fd %d failed (run by the game with XSG_GS=gpu|both)", fd); return 1; }
     shm = static_cast<GpuShm*>(m);
@@ -723,7 +710,7 @@ int main(int argc, char** argv) {
     ring = static_cast<uint8_t*>(m) + XSG_GPU_HDR;
     reply = ring + XSG_GPU_RING;
 
-    if (const char* s = std::getenv("XSG_GPU_STREAM"); s && *s) {
+    if (const char* s = stream; s && *s) {
         g_stream = new ::Stream;
         g_stream->path = s;
         std::thread(StreamWriter).detach();

@@ -10,6 +10,7 @@
  * identity-mapped in this 32-bit process, so DMA addresses are pointers.
  */
 #include <chrono>
+#include "xsg_settings.h"
 #include <condition_variable>
 #include <thread>
 #include <fcntl.h>
@@ -72,12 +73,12 @@ bool g_mode_init = false;
 void ModeInit() {
     if (g_mode_init) return;
     g_mode_init = true;
-    const char* m = std::getenv("XSG_GS");
+    const char* m = xsg_cfg("renderer.gs");
     if (m && !std::strcmp(m, "gpu")) g_mode = Mode::Gpu;
     else if (m && !std::strcmp(m, "both")) g_mode = Mode::Both;
     else if (m && *m && std::strcmp(m, "soft")) xsg_logf("[gs] XSG_GS=%s unknown, using soft\n", m);
     if (g_mode != Mode::Soft) {
-        const char* stream = std::getenv("XSG_STREAM");
+        const char* stream = xsg_cfg("debug.stream");
         // gpu only: the renderer feeds the live stream itself (both: the soft GS does).
         if (!xsggpu::Start(g_mode == Mode::Gpu && stream && *stream ? stream : nullptr)) {
             xsg_logf("[gs] XSG_GS=%s but xsg-gpu could not start; stopping\n", m);
@@ -278,7 +279,7 @@ void KickRef(const Vu1Ref* R, u32 k) {
 }
 
 int NativeOn() {
-    static const int on = std::getenv("XSG_GPU_NATIVE") ? std::atoi(std::getenv("XSG_GPU_NATIVE")) : 0;
+    static const int on = xsg_cfg("renderer.native") ? std::atoi(xsg_cfg("renderer.native")) : 0;
     return on;
 }
 
@@ -287,7 +288,7 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
     static const u8 sig[16] = {0x7c, 0x13, 0xe2, 0x81, 0x03, 0x01, 0x40, 0x00,
                                0x7c, 0x1b, 0xf0, 0x81, 0xff, 0x02, 0x00, 0x00};   /* set 0 @ 0x0c18 */
     static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
-    static const bool interp = std::getenv("XSG_GPU_NATIVE_VU1") && std::atoi(std::getenv("XSG_GPU_NATIVE_VU1"));
+    static const bool interp = xsg_cfg("debug.native_vu1") && std::atoi(xsg_cfg("debug.native_vu1"));
     xsgvu::SaveRegs(R->regs);
     if ((R->regs.vi[15] & 0xffff) * 8 != 0xc18 || std::memcmp(Vu1Micro() + 0xc18, sig, 16)) return false;
     u8* d = Vu1Data();
@@ -384,8 +385,8 @@ u32 Crc(const u8* p, size_t n, u32 c = 0xffffffffu);
 bool NativeSkin(u32 pc, u32 top, u32 itop) {
     if ((pc & 0x3ff8) != 0x188) return false;
     /* XSG_GPU_NATIVE_SKIN=0: set 2 stays on the interpreter (as does everything with XSG_GPU_NATIVE_VU1=1). */
-    static const bool on = !(std::getenv("XSG_GPU_NATIVE_SKIN") && !std::atoi(std::getenv("XSG_GPU_NATIVE_SKIN"))) &&
-                           !(std::getenv("XSG_GPU_NATIVE_VU1") && std::atoi(std::getenv("XSG_GPU_NATIVE_VU1")));
+    static const bool on = !(xsg_cfg("debug.native_skin") && !std::atoi(xsg_cfg("debug.native_skin"))) &&
+                           !(xsg_cfg("debug.native_vu1") && std::atoi(xsg_cfg("debug.native_vu1")));
     if (!on) return false;
     static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
     static u32 gen = 0;
@@ -491,7 +492,7 @@ void RunVu1(u32 pc) {
     else { vif.dbf = true; vif.tops = vif.base + vif.ofst; }
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
-    static const bool off = std::getenv("XSG_VU1") && !std::atoi(std::getenv("XSG_VU1"));
+    static const bool off = xsg_cfg("debug.vu1") && !std::atoi(xsg_cfg("debug.vu1"));
     if (!off && g_mode == Mode::Gpu && NativeOn() && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop))) return;
     if (!off) xsgvu::Run(pc, top, itop);
 }
@@ -554,7 +555,7 @@ void VifCode(u32 w) {
     case 0x31: vif.st_kind = 2; vif.st_n = 0; vif.want = 4; break;  // STCOL
     case 0x4A:
         st.mpg++;
-        { static int n = 0; static const bool t = std::getenv("XSG_MPG_TRACE") != nullptr;
+        { static int n = 0; static const bool t = xsg_cfg_on("debug.mpg_trace");
           if (t && n++ < 40) xsg_logf("[vif1] MPG addr 0x%x num %u\n", imm * 8, num ? num : 256); }
         g_micro_gen++;
         vif.kind = 2; vif.addr = imm * 8; vif.want = (num ? num : 256) * 2;
@@ -691,7 +692,7 @@ void RunChannel(int ch, u32 base) {
         u32 tag[4];
         std::memcpy(tag, t, 16);
         st.tags++;
-        static const bool trace = std::getenv("XSG_DMA_TRACE") != nullptr;
+        static const bool trace = xsg_cfg_on("debug.dma_trace");
         if (trace) xsg_logf("[dma] ch%d tag @%08x: %08x %08x %08x %08x\n", ch, tadr, tag[0], tag[1], tag[2], tag[3]);
         const u32 qwc = tag[0] & 0xffff, id = (tag[0] >> 28) & 7, addr = tag[1] & 0xfffffff0u;
         if (tte && ch == 1) VifWords(t + 8, 2);
@@ -792,7 +793,7 @@ bool shot_init = false;
 
 void ShotInit() {
     shot_init = true;
-    if (const char* s = std::getenv("XSG_SHOT"))
+    if (const char* s = xsg_cfg("debug.shot"))
         for (const char* p = s; *p;) {
             char* e;
             unsigned long v = std::strtoul(p, &e, 0);
@@ -800,9 +801,9 @@ void ShotInit() {
             shot_frames.insert(u32(v));
             p = *e ? e + 1 : e;
         }
-    if (const char* s = std::getenv("XSG_SHOT_EVERY")) shot_every = u32(std::strtoul(s, nullptr, 0));
-    shot_vram = std::getenv("XSG_SHOT_VRAM") && std::atoi(std::getenv("XSG_SHOT_VRAM"));
-    const char* d = std::getenv("XSG_SHOT_DIR");
+    if (const char* s = xsg_cfg("debug.shot_every")) shot_every = u32(std::strtoul(s, nullptr, 0));
+    shot_vram = xsg_cfg("debug.shot_vram") && std::atoi(xsg_cfg("debug.shot_vram"));
+    const char* d = xsg_cfg("debug.shot_dir");
     shot_dir = d ? d : XSG_DEFAULT_SHOT_DIR;
     if (!shot_frames.empty() || shot_every) {
         mkdir(shot_dir.c_str(), 0755);
@@ -924,7 +925,7 @@ void StreamFrame() {
 }
 
 void StreamInit() {
-    const char* p = std::getenv("XSG_STREAM");
+    const char* p = xsg_cfg("debug.stream");
     if (!p || !*p) return;
     ::signal(SIGPIPE, SIG_IGN);
     g_stream = new Stream;
@@ -945,7 +946,7 @@ void Shot(u32 frame, const PixelSource& px, const char* tag) {
     xsg_logf("[shot] %s pmode %llx smode2 %llx FBP 0x%x fbw %u psm %u %ux%u\n", name,
              (unsigned long long)pmode, (unsigned long long)smode2, fbp, fbw, psm, w, h);
     // XSG_SHOT_FBP=base[:fbw[:psm]],... (FBP as FRAME has it, in 2048-word pages, hex): extra buffers, 512x448.
-    if (const char* e = std::getenv("XSG_SHOT_FBP"))
+    if (const char* e = xsg_cfg("debug.shot_fbp"))
         for (const char* p = e; *p;) {
             char* q;
             u32 b = u32(std::strtoul(p, &q, 16)), bw = 8, ps = 0;
@@ -1115,7 +1116,7 @@ void xsg_gs_vblank(unsigned frame) {
     ModeInit();
     if (!shot_init) ShotInit();
     // XSG_FPS=N: every N vblanks, wall-clock vblanks/s and game frames/s (DISPFB1 flips).
-    static const long fps_every = std::getenv("XSG_FPS") ? std::atol(std::getenv("XSG_FPS")) : 0;
+    static const long fps_every = xsg_cfg("debug.fps") ? std::atol(xsg_cfg("debug.fps")) : 0;
     if (fps_every > 0) {
         static u64 last_fb = ~0ull, flips = 0;
         static u32 base_frame = frame;
@@ -1132,12 +1133,12 @@ void xsg_gs_vblank(unsigned frame) {
         }
     }
     // XSG_GS_TRACE=N: the software GS's primitive/transfer trace for frame N only (stderr).
-    static const long trace_frame = std::getenv("XSG_GS_TRACE") ? std::atol(std::getenv("XSG_GS_TRACE")) : -1;
+    static const long trace_frame = xsg_cfg("debug.gs_trace") ? std::atol(xsg_cfg("debug.gs_trace")) : -1;
     if (trace_frame >= 0 && (frame == u32(trace_frame) || frame == u32(trace_frame) + 1)) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
         if (g_soft) G().trace = frame == u32(trace_frame);
     }
-    static const long vu_dump = std::getenv("XSG_VU_DUMP") ? std::atol(std::getenv("XSG_VU_DUMP")) : -1;
+    static const long vu_dump = xsg_cfg("debug.vu_dump") ? std::atol(xsg_cfg("debug.vu_dump")) : -1;
     if (long(frame) == vu_dump) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
         if (!shot_init) ShotInit();
@@ -1147,7 +1148,7 @@ void xsg_gs_vblank(unsigned frame) {
         if (std::FILE* f = std::fopen(n.c_str(), "wb")) { std::fwrite(Vu1Data(), 1, 0x4000, f); std::fclose(f); }
         xsg_logf("[vu1] dumped VU1 memories to %s\n", shot_dir.c_str());
     }
-    static const long vu_log = std::getenv("XSG_VU_LOG") ? std::atol(std::getenv("XSG_VU_LOG")) : 0;
+    static const long vu_log = xsg_cfg("debug.vu_log") ? std::atol(xsg_cfg("debug.vu_log")) : 0;
     if (vu_log > 0 && frame % u32(vu_log) == 0) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
         static xsgvu::Stats last;
@@ -1180,7 +1181,7 @@ void xsg_gs_vblank(unsigned frame) {
         xsg_dma_poll();
         xsggpu::Vsync(frame, frame & 1);
         // XSG_GS_COMPARE=N: compare every N vblanks in both mode (default 60, 0 = only at shots).
-        static const long every = std::getenv("XSG_GS_COMPARE") ? std::atol(std::getenv("XSG_GS_COMPARE")) : 60;
+        static const long every = xsg_cfg("debug.gs_compare") ? std::atol(xsg_cfg("debug.gs_compare")) : 60;
         if (g_soft && every > 0 && frame % u32(every) == 0) Compare(frame);
     }
     if (!shot_frames.count(frame) && !(shot_every && frame % shot_every == 0)) return;

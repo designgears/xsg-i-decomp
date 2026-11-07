@@ -8,6 +8,7 @@
  * addresses (innermost first); port/tools/prof_report.py symbolises them. */
 #define _GNU_SOURCE
 #include <execinfo.h>
+#include "xsg_settings.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,15 +74,15 @@ void xsg_prof_dump(void)
 
 void xsg_prof_init(void)
 {
-    prof_path = getenv("XSG_PROF");
+    prof_path = xsg_cfg("debug.prof");
     if (!prof_path || !*prof_path) {
         prof_path = NULL;
         return;
     }
     prof_buf = calloc((size_t)PROF_MAX * PROF_DEPTH, sizeof(void *));
-    if (getenv("XSG_PROF_START"))
-        prof_start = (unsigned)atoi(getenv("XSG_PROF_START"));
-    int hz = getenv("XSG_PROF_HZ") ? atoi(getenv("XSG_PROF_HZ")) : 1000;
+    if (xsg_cfg("debug.prof_start"))
+        prof_start = (unsigned)atoi(xsg_cfg("debug.prof_start"));
+    int hz = xsg_cfg("debug.prof_hz") ? atoi(xsg_cfg("debug.prof_hz")) : 1000;
     void *warm[2];
     backtrace(warm, 2); /* load libgcc_s before the first signal */
     struct sigaction sa;

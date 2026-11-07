@@ -209,7 +209,7 @@ endif()
 # Stage 7: VU0 model unit tests (port/tests/test_vu0.c); run port/build*/test_vu0.
 add_executable(test_vu0 EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp ${CMAKE_BINARY_DIR}/vu0_microcode.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${CMAKE_BINARY_DIR}/vu0_microcode.c
   ${XSG_ROOT}/src/main/m_math.c)
 set_source_files_properties(${XSG_ROOT}/src/main/m_math.c TARGET_DIRECTORY test_vu0 PROPERTIES
   COMPILE_OPTIONS "${XSG_FLAGS};-DPORT_HOST;-I${XSG_ROOT}/include;-I${XSG_ROOT}")
@@ -224,7 +224,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref.cmake)
 # Stage 10: VU1 interpreter replay against XSG_VU1_CAPTURE files (bit-identical check + bench).
 add_executable(test_vu1_replay EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu1_replay.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/prof.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/prof.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/settings.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
 target_include_directories(test_vu1_replay PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 target_compile_options(test_vu1_replay PRIVATE -m32 -O2 -g -fno-pic -msse4.1 -mfpmath=sse)
 target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)

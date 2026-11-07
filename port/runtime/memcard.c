@@ -13,6 +13,7 @@
  */
 #define _GNU_SOURCE
 #include <dirent.h>
+#include "xsg_settings.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
@@ -39,9 +40,9 @@ static void done(int cmd, int result) { pending_cmd = cmd; pending_result = resu
 static int card_present(int port, int slot)
 {
     if (enabled < 0) {
-        const char *e = getenv("XSG_MC");
+        const char *e = xsg_cfg("game.memcard");
         enabled = !(e && e[0] == '0');
-        const char *d = getenv("XSG_MC_DIR");
+        const char *d = xsg_cfg("game.memcard_dir");
         if (d && *d)
             snprintf(root, sizeof root, "%s", d);
         else {

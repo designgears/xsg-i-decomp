@@ -11,6 +11,7 @@
  */
 #define _GNU_SOURCE
 #include <ctype.h>
+#include "xsg_settings.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -50,10 +51,10 @@ static int read_pvd(uint32_t base, int layer)
 
 void xsg_disc_init(void)
 {
-    const char *iso = getenv("XSG_ISO");
+    const char *iso = xsg_cfg("game.iso");
     char buf[1024];
     if (!iso) {
-        const char *gd = getenv("XSG_GAME_DIR");
+        const char *gd = xsg_cfg("game.game_dir");
         snprintf(buf, sizeof buf, "%s/iso", gd ? gd : XSG_DEFAULT_GAME_DIR);
         DIR *d = opendir(buf);
         struct dirent *e;

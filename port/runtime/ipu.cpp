@@ -17,6 +17,7 @@
 // dry mid-macroblock the decoder rewinds to the macroblock start and waits for more DMA.
 
 #include <cmath>
+#include "xsg_settings.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -47,7 +48,7 @@ u8* Mem(u32 a) {
 }
 
 bool log_on() {
-    static int v = std::getenv("XSG_IPU_LOG") ? std::atoi(std::getenv("XSG_IPU_LOG")) : 0;
+    static int v = xsg_cfg("debug.ipu_log") ? std::atoi(xsg_cfg("debug.ipu_log")) : 0;
     return v != 0;
 }
 
