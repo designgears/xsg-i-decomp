@@ -237,7 +237,8 @@ void Publish(bool restart = false) {
     __atomic_store_n(&p->seq, s + 1, __ATOMIC_RELAXED);
     __atomic_thread_fence(__ATOMIC_RELEASE);
     p->frame_us = FrameUs();
-    p->audio_on = xsgcfg::GetBool("audio.enabled") ? 1 : 0;
+    // XSG_AUDIO in the environment decides the device itself (audio.c); the menu only mutes the mix
+    p->audio_on = xsgcfg::FromEnv("audio.enabled") || xsgcfg::GetBool("audio.enabled") ? 1 : 0;
     p->vol[0] = uint32_t(xsgcfg::GetInt("audio.master"));
     p->vol[1] = uint32_t(xsgcfg::GetInt("audio.music"));
     p->vol[2] = uint32_t(xsgcfg::GetInt("audio.effects"));
@@ -900,8 +901,12 @@ void Init(Vulkan::Device* dev, void*, GpuSettings* shared, const Host& host) {
 bool IsOpen() { return g_open; }
 
 #ifdef XSG_GPU_SDL
-bool Event(const SDL_Event& e) {
+bool Event(const SDL_Event& ev) {
     if (!g_ok) return false;
+    SDL_Event e = ev;
+    // synthetic key events (XSG_GPU_INPUT_TEST) carry no window; the SDL3 backend drops those
+    if ((e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) && !e.key.windowID && g_win)
+        e.key.windowID = SDL_GetWindowID(g_win);
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN: {
         const SDL_Scancode sc = e.key.scancode;
@@ -926,7 +931,7 @@ bool Event(const SDL_Event& e) {
             return true;
         }
         if (!g_open) return false;
-        ImGui_ImplSDL3_ProcessEvent(&e);
+        if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
         return true;
     }
     case SDL_EVENT_KEY_UP:
@@ -937,7 +942,6 @@ bool Event(const SDL_Event& e) {
     case SDL_EVENT_MOUSE_WHEEL:
         if (!g_open) return false;
         if (g_win) ImGui_ImplSDL3_ProcessEvent(&e);
-        else if (e.type == SDL_EVENT_KEY_UP) return true;
         return true;
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     case SDL_EVENT_WINDOW_FOCUS_LOST:

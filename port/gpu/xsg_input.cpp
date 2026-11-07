@@ -234,6 +234,7 @@ void Push(const TestEv& t, bool down) {
     if (t.kind == 0) {
         e.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
         e.key.scancode = SDL_Scancode(t.code);
+        e.key.key = SDL_GetKeyFromScancode(SDL_Scancode(t.code), SDL_KMOD_NONE, false);   // for the menu (ImGui)
         e.key.down = down;
     } else if (t.kind == 1) {
         e.type = down ? SDL_EVENT_GAMEPAD_BUTTON_DOWN : SDL_EVENT_GAMEPAD_BUTTON_UP;
