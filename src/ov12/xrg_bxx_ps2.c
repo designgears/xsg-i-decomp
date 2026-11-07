@@ -6,6 +6,10 @@
 
 const char D_00A58D10[16] = "log2 error %d";
 const char D_00A58D20[24] = "../xrg_bxx_ps2.euc.c";
+const char D_00A58D38[] = "pPic != NIL";
+const char D_00A58D48[] = "pHead != NIL";
+const char D_00A58D58[] = "muri";
+const char D_00A58D60[] = "unknown BPP type %d";
 
 extern void RgError(const char *message, const char *source_file, int line,
                     ...);
@@ -72,10 +76,6 @@ typedef struct XrgBxxTexPic {
 } XrgBxxTexPic;
 extern void assert_prog(const char *expression, const char *source_file, int line);
 extern XrgBxxHead *RgBxxGetHeader(int bxx);
-extern const char D_00A58D38[];
-extern const char D_00A58D48[];
-extern const char D_00A58D58[];
-extern const char D_00A58D60[];
 
 u64 XrgBxxPs2Tex0(XrgBxxTexPic *pPic)
 {

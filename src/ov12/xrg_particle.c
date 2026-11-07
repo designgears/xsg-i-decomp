@@ -442,6 +442,8 @@ const char D_00A58F78[] = "pDrv->m_uReqCalcNum < REQ_CALC_MAX";
 const char D_00A58FA0[] = "pPoints != NIL";
 const char D_00A58FB0[] = "pDrv->m_uReqDispNum < REQ_DISP_MAX";
 const char D_00A58FD8[] = "pPic != NIL";
+const char D_00A58FE8[] = "pEnv != NIL";
+const char D_00A58FF8[] = "pView != NIL";
 const char D_00A59008[] = "p != NIL";
 const char D_00A59018[] = "pArray != NIL";
 
@@ -572,8 +574,6 @@ void XrgParticleDriverPassTime(XrgParticleDriver *pDrv, float elapsed)
     pDrv->m_uReqCalcNum = 0;
 }
 
-extern const char D_00A58FE8[];
-extern const char D_00A58FF8[];
 extern RgDrawView *RgDrawStudioGetView(void *pStudio);
 extern void *RgBxxGetXtx(void *pBxx);
 extern void nmlModelDirectSendXtx(int modelId, void *data);
