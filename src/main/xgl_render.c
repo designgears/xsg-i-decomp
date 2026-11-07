@@ -684,6 +684,11 @@ static void xglRenderSyncMove(void)
     while (sceGsSyncV(0) != 0) {
     }
     while ((unsigned int)VSyncCount < 2U) {
+#ifdef PORT_HOST
+        /* the vblank interrupt cannot preempt a spinning host thread:
+         * wait for it (sceGsSyncV runs the vsync callback) */
+        sceGsSyncV(0);
+#endif
     }
 
     if ((unsigned int)VSyncCount >= 3U) {

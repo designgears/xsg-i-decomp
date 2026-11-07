@@ -111,6 +111,37 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp" PROPER
 target_include_directories(xsg_gs PRIVATE "${XSG_GS_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
 target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${CMAKE_BINARY_DIR}/shots\"")
 
+# Stage 10: the IOP sound driver (src/audio, SSD.IRX + RSSD.IRX) built for the
+# host and run by runtime/iop_sound.c.  Its tables come from the user's IRX
+# files (gen_iop_sound_data.py); the whole driver is one relocatable object
+# with every symbol prefixed `ssdiop_`, so it cannot clash with the EE code.
+set(XSG_IOP_DIR "${XSG_GAME_DIR}/extracted-iso/IOP")
+file(GLOB XSG_SSD_SRCS CONFIGURE_DEPENDS "${XSG_ROOT}/src/audio/ssd/*.c")
+file(GLOB XSG_RSSD_SRCS CONFIGURE_DEPENDS "${XSG_ROOT}/src/audio/rssd/*.c")
+set(XSG_SOUND_FLAGS -m32 -std=gnu89 -O1 -g -w -fno-strict-aliasing -fwrapv -fno-common -fno-builtin
+  -fno-pic -fno-stack-protector -mno-sse -mno-sse2 -Wno-error=incompatible-pointer-types
+  -Wno-error=implicit-function-declaration -Wno-error=int-conversion -DPORT_HOST)
+add_library(xsg_ssd OBJECT ${XSG_SSD_SRCS})
+target_compile_options(xsg_ssd PRIVATE ${XSG_SOUND_FLAGS} -D_fdata=ssd_fdata)
+add_library(xsg_rssd OBJECT ${XSG_RSSD_SRCS})
+target_compile_options(xsg_rssd PRIVATE ${XSG_SOUND_FLAGS} -D_fdata=rssd_fdata)
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/iop_sound_data.S
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_iop_sound_data.py
+          ${XSG_IOP_DIR}/SSD.IRX ${XSG_IOP_DIR}/RSSD.IRX ${CMAKE_BINARY_DIR}/iop_sound_data.S
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_iop_sound_data.py
+          ${XSG_IOP_DIR}/SSD.IRX ${XSG_IOP_DIR}/RSSD.IRX
+  COMMENT "Extracting the IOP sound driver's data")
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/iop_sound_driver.o
+  COMMAND ${CMAKE_C_COMPILER} -m32 -c ${CMAKE_BINARY_DIR}/iop_sound_data.S -o ${CMAKE_BINARY_DIR}/iop_sound_data.o
+  COMMAND ld -m elf_i386 -r -o ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o
+          $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.o
+  COMMAND objcopy --prefix-symbols=ssdiop_ ${CMAKE_BINARY_DIR}/iop_sound_driver.r.o ${CMAKE_BINARY_DIR}/iop_sound_driver.o
+  DEPENDS xsg_ssd xsg_rssd $<TARGET_OBJECTS:xsg_ssd> $<TARGET_OBJECTS:xsg_rssd> ${CMAKE_BINARY_DIR}/iop_sound_data.S
+  COMMAND_EXPAND_LISTS
+  COMMENT "Linking the host IOP sound driver")
+
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/data/data_sources.cmake
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
@@ -123,8 +154,9 @@ add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/xsg
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
           --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
-          --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> --libs=-lm --libs=-lstdc++ --libs=-pthread
+          --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o --libs=-lm --libs=-lstdc++ --libs=-pthread
   DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
+          ${CMAKE_BINARY_DIR}/iop_sound_driver.o
           ${CMAKE_BINARY_DIR}/data/data_sources.cmake
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
   COMMAND_EXPAND_LISTS
@@ -173,3 +205,10 @@ target_include_directories(test_vu1_replay PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/r
 target_compile_options(test_vu1_replay PRIVATE -m32 -O2 -g -fno-pic -msse4.1 -mfpmath=sse)
 target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)
 target_link_libraries(test_vu1_replay m stdc++)
+# Stage 10: software SPU2 checks (port/tests/test_spu2.c); run port/build*/test_spu2.
+add_executable(test_spu2 EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_spu2.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2_tables.c)
+target_include_directories(test_spu2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
+target_compile_options(test_spu2 PRIVATE -m32 -O1 -g -Wall)
+target_link_options(test_spu2 PRIVATE -m32)
+target_link_libraries(test_spu2 m)

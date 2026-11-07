@@ -212,6 +212,7 @@ extern int xsg_vsync_waiters_wake(void);
 static int vsync_waiters[MAX_THREADS];
 
 void xsg_gs_vblank(unsigned frame);
+void xsg_iop_poll(void);
 
 void xsg_vblank(void)
 {
@@ -242,6 +243,7 @@ void xsg_vblank(void)
             if (th[i].state == TS_SLEEP)
                 make_ready(i);
         }
+    xsg_iop_poll(); /* Stage 10: IOP -> EE calls from the sound driver's threads */
     for (int i = 0; i < 32; i++)
         if (intc[i].used && intc[i].cause == 2 /* INTC_VBLANK_S */)
             intc[i].fn(2);
