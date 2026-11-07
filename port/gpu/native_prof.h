@@ -16,7 +16,8 @@ enum Stage {
     GifParse,     // native.cpp's GIF state tracker
     GifFx,        // native_fx.cpp's GIF parser (vertices, post phase, ownership stream)
     GifMain,      // paraLLEl-GS gif_transfer, main GS
-    GifOwn,       // ownership: second paraLLEl-GS / own plane bookkeeping
+    GifOwn,       // ownership GS: gif_transfer (or the hand-off to its thread)
+    OwnWait,      // waiting for the ownership GS thread
     Batch,        // GPU_MSG_NATIVE handling (textures, skin arena)
     TexDecode,    // CPU texture decode (part of Batch)
     Snapshot,     // effect snapshot at the post-phase trigger
@@ -31,7 +32,7 @@ enum Stage {
 
 extern bool g_on;
 extern uint64_t g_ns[kStages];
-extern double g_gpu_ms[4];   // live pass GPU time, summed: 1x render, Sx render, composite+replay+mv
+extern double g_gpu_ms[4];   // live pass GPU time, summed: Sx render, 1x render (colour rule only), composite+replay+mv
 extern uint64_t g_gpu_n;
 
 inline uint64_t Now() {

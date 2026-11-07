@@ -10,6 +10,7 @@
 #include "device.hpp"
 #include "gs_interface.hpp"
 #include "ps2host/gs.h"
+#include "thread_id.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -17,7 +18,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <condition_variable>
+#include <deque>
 #include <map>
+#include <mutex>
+#include <thread>
 #include <memory>
 #include <set>
 #include <string>
@@ -419,10 +424,75 @@ void OwnAd(uint32_t reg, uint64_t v) {
     std::memcpy(q + 24, &a, 8);
     g_obuf.insert(g_obuf.end(), q, q + 32);
 }
+/* The ownership GS runs on its own thread: it has its own Vulkan device, and
+   nothing on the main thread waits for it except the owner-plane reads
+   (OwnSync).  Work items are GIF data (path 0-3) or a flush (kOwnFlush). */
+constexpr uint32_t kOwnFlush = 0xff;
+struct OwnWorker {
+    std::thread th;
+    std::mutex m;
+    std::condition_variable cv, idle_cv;
+    std::deque<std::pair<uint32_t, std::vector<uint8_t>>> q;
+    std::vector<std::vector<uint8_t>> pool;   // recycled buffers
+    bool busy = false;
+    void Run() {
+        Util::register_thread_index(0);
+        std::unique_lock<std::mutex> l(m);
+        for (;;) {
+            cv.wait(l, [&] { return !q.empty(); });
+            auto item = std::move(q.front());
+            q.pop_front();
+            busy = true;
+            l.unlock();
+            if (item.first == kOwnFlush) g_own->flush();
+            else g_own->gif_transfer(item.first, item.second.data(), item.second.size());
+            item.second.clear();
+            l.lock();
+            pool.push_back(std::move(item.second));
+            busy = false;
+            if (q.empty()) idle_cv.notify_all();
+        }
+    }
+    void Push(uint32_t path, std::vector<uint8_t>& data) {
+        std::vector<uint8_t> next;
+        {
+            std::lock_guard<std::mutex> l(m);
+            q.emplace_back(path, std::move(data));
+            if (!pool.empty()) { next = std::move(pool.back()); pool.pop_back(); }
+        }
+        cv.notify_one();
+        data = std::move(next);
+        data.clear();
+    }
+    void Sync() {
+        std::unique_lock<std::mutex> l(m);
+        idle_cv.wait(l, [&] { return q.empty() && !busy; });
+    }
+};
+OwnWorker* g_worker;
+uint32_t g_obuf_path;   // path of the data in g_obuf (consecutive messages of one path are handed over together)
+void OwnHandOff() {
+    if (!g_obuf.empty()) g_worker->Push(g_obuf_path, g_obuf);
+}
+/* Before the main thread touches g_own (flush, VRAM reads): the worker is idle. */
+void OwnSync() {
+    xsgprof::Scope ps(xsgprof::OwnWait);
+    if (g_worker) { OwnHandOff(); g_worker->Sync(); }
+}
+/* The end of a GIF message (or a cut in it): its ownership-GS data so far. */
 void OwnFlush(uint32_t path) {
     xsgprof::Scope ps(xsgprof::GifOwn);
-    if (g_own && !g_obuf.empty()) g_own->gif_transfer(path, g_obuf.data(), g_obuf.size());
-    g_obuf.clear();
+    if (!g_own || g_obuf.empty()) { g_obuf.clear(); return; }
+    if (!g_worker) { g_own->gif_transfer(path, g_obuf.data(), g_obuf.size()); g_obuf.clear(); return; }
+    // Whole packets only (the client cuts messages on tag boundaries), so
+    // messages of one path may be concatenated: hand over in large pieces.
+    g_obuf_path = path;
+    if (g_obuf.size() >= (512u << 10)) OwnHandOff();
+}
+/* A message on another path starts: hand over what the last path left. */
+void OwnPath(uint32_t path) {
+    if (g_worker && !g_obuf.empty() && g_obuf_path != path) OwnHandOff();
+    g_obuf_path = path;
 }
 
 struct PathParse {
@@ -537,6 +607,7 @@ void Snapshot(ParallelGS::GSInterface& gs) {
         pf.pre_main.resize(4u << 20);
         std::memcpy(pf.pre_main.data(), gs.map_vram_read(0, 4u << 20), 4u << 20);
         if (g_own) {
+            OwnSync();
             g_own->flush();
             pf.pre_own.resize(4u << 20);
             std::memcpy(pf.pre_own.data(), g_own->map_vram_read(0, 4u << 20), 4u << 20);
@@ -608,6 +679,12 @@ bool Init(Vulkan::Device* dev) {
             if (!g_own->init(g_own_dev.get(), o)) g_own.reset();
         }
         if (!g_own) { Log("ownership GS: init failed"); g_own_on = false; }
+        const char* th = std::getenv("XSG_GPU_OWNER_THREAD");
+        if (g_own && !(th && *th && std::atoi(th) == 0)) {
+            g_worker = new OwnWorker;
+            g_worker->th = std::thread([] { g_worker->Run(); });
+            g_worker->th.detach();
+        }
     }
     Vulkan::ResourceLayout cl;
     cl.sets[0].storage_buffer_mask = 1u << 0;
@@ -616,7 +693,7 @@ bool Init(Vulkan::Device* dev) {
     for (int i = 0; i < 4; ++i) cl.sets[0].meta[i].array_size = 1;
     cl.push_constant_size = 48;
     g_prog = dev->request_program(dev->request_shader(kFx, sizeof kFx, &cl));
-    Log("on: ownership %s (marker %06x), effect replay, %zu trace vsyncs", g_own ? "exact (second GS)" : "off",
+    Log("on: ownership %s (marker %06x), effect replay, %zu trace vsyncs", g_own ? (g_worker ? "exact (second GS, own thread)" : "exact (second GS)") : "off",
         MarkerOut(), g_trace.size());
     return true;
 }
@@ -624,6 +701,7 @@ bool Init(Vulkan::Device* dev) {
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
     path &= 3;
     PathParse& p = g_path[path];
+    OwnPath(path);
     uint32_t start = 0;
     uint8_t oq[16];
     const uint64_t t0 = xsgprof::g_on ? xsgprof::Now() : 0;
@@ -685,7 +763,10 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
     for (auto& [fbp, pf] : g_post)
         if (pf.active) { pf.active = false; pf.done = true; }
     g_drawn.clear();
-    if (g_own) g_own->flush();
+    if (g_own) {
+        if (g_worker) { OwnHandOff(); std::vector<uint8_t> none; g_worker->Push(kOwnFlush, none); }
+        else g_own->flush();
+    }
     if (frame % 600 == 0)
         Log("vsync %u: %llu post phases (%llu cancelled by a later native batch, %llu not replayable)", frame,
             (unsigned long long)g_npost_frames, (unsigned long long)g_ncancel, (unsigned long long)g_nbad);
@@ -721,6 +802,7 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     auto it = g_post.find(sf.fbp);
     if (it != g_post.end() && it->second.done && !it->second.pre_own.empty()) v = it->second.pre_own.data();
     if (!v) {
+        OwnSync();
         g_own->flush();
         v = static_cast<const uint8_t*>(g_own->map_vram_read(0, 4u << 20));
     }

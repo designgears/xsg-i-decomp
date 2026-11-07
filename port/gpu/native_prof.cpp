@@ -12,7 +12,7 @@ double g_gpu_ms[4];
 uint64_t g_gpu_n;
 
 namespace {
-const char* kName[kStages] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "batch", "tex-decode", "snapshot", "fx-vsync",
+const char* kName[kStages] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "own-wait", "batch", "tex-decode", "snapshot", "fx-vsync",
                               "live-wait", "live-decode", "live-record", "live-submit", "other"};
 uint64_t g_last;
 }  // namespace
@@ -31,13 +31,13 @@ void Vsync(uint32_t frame) {
     int o = std::snprintf(b, sizeof b, "[prof] vsync %u: wall %.2f ms/vsync;", frame, wall);
     double sum = 0;
     for (int i = 0; i < kStages; ++i) {
-        if (i != TexDecode) sum += double(g_ns[i]) * per;   // inside batch
+        if (i != TexDecode && i != OwnWait) sum += double(g_ns[i]) * per;   // inside batch / snapshot / live-decode
         o += std::snprintf(b + o, sizeof b - o, " %s %.2f", kName[i], double(g_ns[i]) * per);
         g_ns[i] = 0;
     }
     o += std::snprintf(b + o, sizeof b - o, "; outside native %.2f", wall - sum);
     if (g_gpu_n)
-        o += std::snprintf(b + o, sizeof b - o, "; GPU/live frame (%llu): 1x %.2f Sx %.2f post %.2f ms",
+        o += std::snprintf(b + o, sizeof b - o, "; GPU/live frame (%llu): Sx %.2f 1x %.2f post %.2f ms",
                            (unsigned long long)g_gpu_n, g_gpu_ms[0] / g_gpu_n, g_gpu_ms[1] / g_gpu_n,
                            g_gpu_ms[2] / g_gpu_n);
     g_gpu_n = 0;
