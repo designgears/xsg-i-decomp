@@ -20,6 +20,10 @@ typedef void (*thread_entry_t)(void *);
 
 typedef struct {
     thread_entry_t entry;
+    void *stack;
+    int stack_size;
+    int priority;
+    int reserved;
 } system_thread_entry_t;
 
 typedef struct {
@@ -58,8 +62,6 @@ extern int SignalSema(int sema_id);
 void xglThreadInitial(void);
 
 extern active_thread_t asActiveThreadList[];
-
-extern system_thread_entry_t asSystemThreadList[];
 
 void xglThreadRotate(void);
 

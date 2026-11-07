@@ -181,6 +181,10 @@ void Java_xeno_vm_System_println__Ljava_lang_String_(void *thread, void **argume
     }
 }
 
+/* Defined after its only user: the original addresses it with lui/addiu, as
+ * an object of unknown size, not gp-relative. */
+static char D_004DC090[] = "%8.2f";
+
 extern SceneClass *classJava_xeno_Chr;
 extern SceneClass *classJava_xeno_Stage;
 extern SceneClass *classJava_xeno_util_Menu;

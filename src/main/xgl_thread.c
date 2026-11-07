@@ -24,6 +24,18 @@ typedef struct {
 } ee_thread_t;
 
 extern ee_thread_t sThreadParam;
+
+extern void xglRenderEntry(void);
+extern void xglCdControlThread(void);
+extern void xglStudioEntry(void);
+extern void ControlEntry(void);
+
+static system_thread_entry_t asSystemThreadList[4] = {
+    { (thread_entry_t)xglRenderEntry, 0, 0x1000, 9, 0 },
+    { (thread_entry_t)xglCdControlThread, 0, 0x1000, 10, 0 },
+    { (thread_entry_t)xglStudioEntry, 0, 0x1000, 12, 0 },
+    { (thread_entry_t)ControlEntry, 0, 0x10000, 11, 0 },
+};
 extern int CreateThread(ee_thread_t *thread);
 
 static int xglCreateSignal(void)
