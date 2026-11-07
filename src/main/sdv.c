@@ -6,10 +6,10 @@
 
 #include "m_ef_obj.h"
 
-extern float _sdvMapRgb[4];
+static float _sdvMapRgb[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 
-extern float _sdvAmbient[4];
+static float _sdvAmbient[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
 
 
 extern const float McMathUnitMatrix[4][4];
@@ -743,7 +743,6 @@ static int sdvAllocSpecialWork(int kind)
     return -1;
 }
 
-extern const short blksiz_2[9];
 typedef struct SdvScreenPoint {
     int x;
     int y;
@@ -894,6 +893,7 @@ void sdvExecSpecial(SdvSpecial *special)
 
 void sdvDrawSpecial(SdvSpecial *special)
 {
+    static short blksiz[9] __asm__("blksiz.2") = { 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, 0x7F, 0xFF, 0x1FF };
     int params[16];
     SdvScreenPoint offset;
     SdvScreenPoint screen;
@@ -994,8 +994,8 @@ void sdvDrawSpecial(SdvSpecial *special)
             params[4] = key->width;
             params[5] = key->height;
             for (i = 0; i < 9; i++) {
-                if (blksiz_2[i] >= key->intensity) {
-                    size = blksiz_2[i];
+                if (blksiz[i] >= key->intensity) {
+                    size = blksiz[i];
                     break;
                 }
             }
@@ -1086,6 +1086,9 @@ void sdvDrawSpecial(SdvSpecial *special)
         }
     }
 }
+
+unsigned char orgData[33][0x180] = {{0}};
+unsigned char plChaData[0xA80] = {0};
 
 #define SCE_GS_SET_TEX0(tbp, tbw, psm, tw, th, tcc, tfx, cbp, cpsm, csm, csa, cld) \
     ((unsigned long long)(tbp) | ((unsigned long long)(tbw) << 14) | \

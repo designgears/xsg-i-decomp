@@ -355,6 +355,77 @@
    ]
   },
   "main/tu098": {
+   ".data": [
+    {
+     "range": [
+      "0x004a8130",
+      "0x004a813c"
+     ],
+     "generated": [
+      "0x004a8130",
+      "0x004a813c"
+     ],
+     "generated_by": [
+      "xglSoundLoadEffect",
+      "xglSoundLoadRequestSmd",
+      "xglSoundLoadSwd"
+     ],
+     "c_owned_symbols": [
+      "SoundDataPath"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_sound.o"
+     }
+    },
+    {
+     "range": [
+      "0x004a8140",
+      "0x004a89e4"
+     ],
+     "generated": [
+      "0x004a8140",
+      "0x004a89e4"
+     ],
+     "generated_by": [
+      "xglMakeSePacket",
+      "xglSendSePacket",
+      "xglSoundEffectCheckID",
+      "xglSoundEffectNormalDirect",
+      "xglSoundEffectNormalID",
+      "xglSoundEffectParamDirect",
+      "xglSoundEffectParamID",
+      "xglSoundEffectPosID",
+      "xglSoundEffectStopBank",
+      "xglSoundEffectStopDirect",
+      "xglSoundEffectStopID",
+      "xglSoundInitial",
+      "xglSoundReset",
+      "xglSoundSendSed",
+      "xglSoundSendSmd2",
+      "xglSoundSendSwd",
+      "xglSoundSequenceFadeOut2",
+      "xglSoundSequenceNormal3",
+      "xglSoundSequenceStop2",
+      "xglSoundStreamMain",
+      "xglSoundStreamOpenPcm",
+      "xglSoundStreamOpenVagMultiParam",
+      "xglSoundStreamOpenVagStereoParam",
+      "xglSoundStreamStop"
+     ],
+     "c_owned_symbols": [
+      "SoundWork"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_sound.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -378,7 +449,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_sound.o"
+      "object": "build/main/build/c/xgl_sound.o"
      }
     }
    ]
@@ -8025,6 +8096,80 @@
    ]
   },
   "main/tu213": {
+   ".data": [
+    {
+     "range": [
+      "0x0041e290",
+      "0x0041e3c4"
+     ],
+     "generated": [
+      "0x0041e290",
+      "0x0041e3c4"
+     ],
+     "generated_by": [
+      "scCreateTask",
+      "scParseScript"
+     ],
+     "c_owned_symbols": [
+      "_zeroPos_0041E290",
+      "_scFuncHandler"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sc_get.o"
+     }
+    },
+    {
+     "range": [
+      "0x0041e3d0",
+      "0x004228d0"
+     ],
+     "generated": [
+      "0x0041e3d0",
+      "0x004228d0"
+     ],
+     "generated_by": [
+      "scAdrToImm",
+      "scCreateScript",
+      "scCreateTask",
+      "scDeleteTask",
+      "scDestroyScript",
+      "scDestroyScript2",
+      "scEFFECT2Script",
+      "scEFFECT3Script",
+      "scEFFECTScript",
+      "scExecScript",
+      "scGetAdrIdx",
+      "scGetAdrImmScript",
+      "scGetCmdAdrScript",
+      "scGetCmdScript",
+      "scGetImmAdrImmIdx",
+      "scGetReg",
+      "scGetRegAdr",
+      "scGetTableAdrIdx",
+      "scGetTableAdrImmIdx",
+      "scGetTableNumIdx",
+      "scGetTaskAdr",
+      "scInitScript",
+      "scMOVIEScript",
+      "scOBJEVEScript",
+      "scPRINTScript",
+      "scREVEScript",
+      "scSetReg"
+     ],
+     "c_owned_symbols": [
+      "_scriptWork"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sc_get.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -8042,7 +8187,10 @@
       "jtbl_004CC880"
      ],
      "also_referenced_by_c": [
+      "D_004CC790",
       "D_004CC7B8",
+      "D_004CC7E8",
+      "D_004CC800",
       "D_004CC818",
       "D_004CC830",
       "D_004CC850",
@@ -8052,7 +8200,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sc_get.o"
+      "object": "build/main/build/c/sc_get.o"
      }
     }
    ]
@@ -8110,6 +8258,56 @@
    ]
   },
   "main/tu215": {
+   ".data": [
+    {
+     "range": [
+      "0x004228f0",
+      "0x00422922"
+     ],
+     "generated": [
+      "0x004228f0",
+      "0x00422922"
+     ],
+     "generated_by": [
+      "sdvDrawSpecial",
+      "sdvExecAmbient",
+      "sdvRestoreAmbient",
+      "sdvSaveAmbient"
+     ],
+     "c_owned_symbols": [
+      "_sdvMapRgb",
+      "_sdvAmbient",
+      "blksiz_2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sdv.o"
+     }
+    },
+    {
+     "range": [
+      "0x00422940",
+      "0x00426540"
+     ],
+     "generated": [
+      "0x00422940",
+      "0x00426540"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "orgData",
+      "plChaData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sdv.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -8137,7 +8335,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sdv.o"
+      "object": "build/main/build/c/sdv.o"
      }
     },
     {
@@ -8159,7 +8357,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sdv.o"
+      "object": "build/main/build/c/sdv.o"
      }
     }
    ],
@@ -8185,7 +8383,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sdv.o"
+      "object": "build/main/build/c/sdv.o"
      }
     }
    ]

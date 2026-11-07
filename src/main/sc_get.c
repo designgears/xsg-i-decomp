@@ -253,7 +253,7 @@ void scExecEffect(void)
 
 extern unsigned char D_004CC7E8[];
 extern unsigned char D_004CC800[];
-extern struct { long long a, b; } _zeroPos_0041E290;
+static struct { long long a, b; } _zeroPos = { 0, 0x3F80000000000000LL };
 typedef struct { unsigned char b[32]; int w; } ScTaskCopy36;
 
 static int scCreateTask(int script_index, int task_index, int address, unsigned char *data)
@@ -286,10 +286,10 @@ static int scCreateTask(int script_index, int task_index, int address, unsigned 
         __builtin_memcpy((int *)task + 12, src, 36);
         task->effect_scheduler = -1;
         *(short *)task->unmodeled_58 = task_index;
-        *(long long *)((char *)task + 0x20) = _zeroPos_0041E290.a;
+        *(long long *)((char *)task + 0x20) = _zeroPos.a;
         hdr[3] = task_index;
         hdr[4]++;
-        *(long long *)((char *)task + 0x28) = _zeroPos_0041E290.b;
+        *(long long *)((char *)task + 0x28) = _zeroPos.b;
     } else {
         tracePrint(D_004CC800, script_index);
     }
@@ -1428,7 +1428,29 @@ check_move:
     return 1;
 }
 
-extern int (*_scFuncHandler[0x49])();
+static int (*_scFuncHandler[0x49])() = {
+    scERRORScript, scGOScript, scGOSUBScript, scBRAScript,
+    scEXITScript, scRETURNScript, scONGOScript, scONGOSUBScript,
+    scERRORScript, scERRORScript, scPRINTScript, scRPUTScript,
+    scRDUMPScript, scCMDPUTONScript, scCMDPUTOFFScript, scFADEONScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scRSETScript, scRINCScript, scRDECScript, scRADDScript,
+    scRSUBScript, scRMULScript, scRDIVScript, scRMODScript,
+    scR_ANDScript, scR_ORScript, scR_XORScript, scR_NOTScript,
+    scR_NEGScript, scRRNDScript, scREVEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scOBJEVEScript, scABORTScript, scPAUSEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scERRORScript, scERRORScript, scWAITCNTScript, scWAITEVEScript,
+    scWAITEFTScript, scWAITMOVIEScript, scWAITMISSILEScript, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scEFFECTScript, scEFFECT2Script, scEFFECT3Script, scERRORScript,
+    scERRORScript, scERRORScript, scERRORScript, scERRORScript,
+    scERRORScript, scERRORScript, scMOVIEScript, scMISSILEScript,
+    scMISSILE3Script
+};
+
+unsigned char _scriptWork[16 * 0x450] = {0};
 
 static int scParseScript(ScriptTask *task)
 {
