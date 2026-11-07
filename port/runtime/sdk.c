@@ -63,7 +63,17 @@ int sceSifLoadElf(const char *name, void *info)
 }
 
 /* ---- GS ------------------------------------------------------------- */
-void sceGsResetGraph(int a, int b, int c, int d) { STUB_LOG("%d %d %d %d", a, b, c, d); }
+#define GS_PRIV_EARLY(off) (*(volatile uint64_t *)(uintptr_t)(PS2_GSPRIV_BASE + (off)))
+/* sceGsResetGraph(mode, inter, omode, ffmd): program the video mode the way the
+ * SDK does, so SMODE1 is valid (paraLLEl-GS needs it to pick the scanout mode;
+ * it was 0 -> "Unknown video format" every vblank).  omode 2 = NTSC, 3 = PAL. */
+void sceGsResetGraph(int a, int b, int c, int d)
+{
+    STUB_LOG("%d %d %d %d", a, b, c, d);
+    GS_PRIV_EARLY(0x10) = (c == 3) ? 0x0000000740836504ull   /* PAL  */
+                                   : 0x0000000740834504ull;  /* NTSC */
+    GS_PRIV_EARLY(0x20) = (uint64_t)(b & 1) | ((uint64_t)(d & 1) << 1); /* SMODE2: INT, FFMD */
+}
 void sceGsResetPath(void) { STUB_LOG(""); }
 /* Stage 5: the display environment goes to the GS privileged registers (plain
  * memory at 0x12000000, read by the screenshot code), draw environments and
