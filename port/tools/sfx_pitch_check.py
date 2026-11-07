@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """End-to-end pitch check of the sound output (Stage 10).
 
-Run the game with XSG_WAV=mix.wav XSG_SPU_TRACE=dir XSG_SOUND_LOG=1
-XSG_LOG_FILE=log.  Every key on then leaves the sample it played in dir
+Run the game with [debug] wav = mix.wav, spu_trace = dir, sound_log = 1,
+log_file = log in settings.ini (XSG_CONFIG).  Every key on then leaves the sample it played in dir
 (kNNN_cC_vVV_pPITCH_aADDR.adpcm) and a "[sound] T keyon N ..." line in the log.
 For each traced sample this decodes the PS-ADPCM source, finds its dominant
 frequency at the SPU2's native 48 kHz, scales it by the voice's pitch register

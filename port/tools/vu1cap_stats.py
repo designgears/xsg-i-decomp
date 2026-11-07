@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise XSG_VU1_CAPTURE files (format: port/runtime/vu1_capture.h).
+"""Summarise [debug] vu1_capture files (format: port/runtime/vu1_capture.h).
 
   vu1cap_stats.py FILE...            per entry pc: runs, MSCNT share, pairs, kicks, GIF prims
   --micro-out PREFIX                 also write each distinct MICR record to PREFIX_N.bin

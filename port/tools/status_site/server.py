@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Xenosaga PC port status site: live screen, screenshots, progress, metrics.
 
-Stdlib only.  Runs a private copy of port/build/xsg in a loop with
-XSG_SHOT_EVERY so the page can show the latest frame, and serves:
+Stdlib only.  Runs a private copy of port/build/xsg in a loop, configured
+only by a per-run settings file (LIVE_DIR/settings.ini, passed as XSG_CONFIG;
+the port reads no other environment variable, port/docs/MENU.md), with
+[debug] shot_every so the page can show the latest frame, and serves:
   /            the page (mobile-first; dense dashboard on wide screens)
   /live.png    newest live frame
   /shot/<name> a gallery image
@@ -30,6 +32,33 @@ FRAME_RE = re.compile(r"\bframe\s+(\d+)")
 TAG_RE = re.compile(r"^\[([a-zA-Z0-9_]+)\]")
 
 
+def write_settings(path, shot_every, run_seconds, pad, frames):
+    """The live run's settings.ini: headless xsg-gpu, no audio, no movies,
+    skipped events, the pad script, periodic shots, the stream FIFO."""
+    stream = str(STREAM_FIFO) if STREAM_FIFO.exists() else ""
+    path.write_text(f"""# Written by port/tools/status_site/server.py for each live run.
+[renderer]
+gs = gpu
+
+[game]
+movies = 0
+memcard_dir = {LIVE_DIR / "mc"}
+
+[audio]
+enabled = 0
+
+[debug]
+headless = 1
+gpu_bin = {BUILD_BIN.parent / "gpu/xsg-gpu"}
+skip_events = 1
+pad = {pad}
+shot_every = {shot_every}
+shot_dir = {frames}
+stream = {stream}
+timeout = {run_seconds}
+""")
+
+
 def runner(shot_every, run_seconds, pad):
     LIVE_DIR.mkdir(parents=True, exist_ok=True)
     while True:
@@ -41,13 +70,11 @@ def runner(shot_every, run_seconds, pad):
         frames.mkdir(exist_ok=True)
         for f in frames.glob("*.png"):
             f.unlink(missing_ok=True)
-        env = dict(os.environ, XSG_SHOT_EVERY=str(shot_every), XSG_SHOT_DIR=str(frames),
-                   XSG_MC_DIR=str(LIVE_DIR / "mc"), XSG_TIMEOUT=str(run_seconds))
-        if pad:
-            env["XSG_PAD"] = pad
-        env.setdefault("XSG_GPU_BIN", str(ROOT / "port/build/gpu/xsg-gpu"))  # the live copy runs from /tmp
-        if STREAM_FIFO.exists():
-            env["XSG_STREAM"] = str(STREAM_FIFO)
+        cfg = LIVE_DIR / "settings.ini"
+        write_settings(cfg, shot_every, run_seconds, pad, frames)
+        # only XSG_CONFIG: stale XSG_* in the server's own environment would just be logged as ignored
+        env = {k: v for k, v in os.environ.items() if not k.startswith("XSG_")}
+        env["XSG_CONFIG"] = str(cfg)
         p = subprocess.Popen([str(exe)], cwd=str(ROOT), env=env, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, text=True, errors="replace")
         with lock:
@@ -411,7 +438,7 @@ def main():
     ap.add_argument("--no-runner", action="store_true")
     ap.add_argument("--shot-every", type=int, default=30, help="frames between live captures")
     ap.add_argument("--run-seconds", type=int, default=120, help="restart the game after this long")
-    ap.add_argument("--pad", default="", help="XSG_PAD script, e.g. 300:0x0800")
+    ap.add_argument("--pad", default="", help="[debug] pad script, e.g. 300:0x0800")
     ap.add_argument("--quality", type=int, default=5, help="MJPEG quality (2 best .. 31 worst)")
     a = ap.parse_args()
     LIVE_DIR.mkdir(parents=True, exist_ok=True)

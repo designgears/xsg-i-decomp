@@ -1067,13 +1067,13 @@ void Frame(uint32_t vsync, const Stats& s) {
         SetOpen(true);
     }
     if (g_test.page >= 0 && vsync >= g_test.page_t + g_test.per) {
-        static const char* kNames[] = {"display", "renderer", "game", "controls", "info", "overlay"};
+        static const char* kNames[] = {"display", "renderer", "game", "controls", "info", "debug", "overlay"};
         g_test.shot = g_test.dir + "/menu_" + std::to_string(g_test.page) + "_" + kNames[g_test.page] + ".png";
         g_test.page_t = vsync;
         // the shot is of this frame; the next page starts at the next one (handled after the layout below)
     }
     ApplyCfg();
-    if (g_test.page == 5) g_overlay = 2;   // the overlay page: menu closed, full panel
+    if (g_test.page == TAB_COUNT) g_overlay = 2;   // the overlay page: menu closed, full panel
     xsgcfg::SaveTick(false);
     if (g_open) g_fade = float(std::min(1.0, (Now() - g_open_t) / 0.16));
     g_visible = false;

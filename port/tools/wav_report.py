@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report on a recorded mix (XSG_WAV=path, Stage 10): per-second RMS and peak
+"""Report on a recorded mix ([debug] wav = path in settings.ini, Stage 10): per-second RMS and peak
 level, clipping, and the dominant frequencies, so sound output can be checked
 without listening.
 

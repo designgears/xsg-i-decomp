@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise an XSG_PROF sample file (port/runtime/prof.c).
+"""Summarise a [debug] prof sample file (port/runtime/prof.c).
 
   prof_report.py port/build/xsg prof.txt [-n 40]
 
