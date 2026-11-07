@@ -16526,11 +16526,11 @@
     {
      "range": [
       "0x00a54ac0",
-      "0x00a54c10"
+      "0x00a54c68"
      ],
      "generated": [
       "0x00a54ac0",
-      "0x00a54c10"
+      "0x00a54c68"
      ],
      "generated_by": [
       "InstanceOfRgDraw",
@@ -16561,6 +16561,7 @@
       "_DisposeRgDrawView",
       "_DoubleScreenStudio",
       "_DrawMain",
+      "_FadeShadow",
       "_FullScreenStudio",
       "_GetViewRgDrawStudio",
       "_InitDraw",
@@ -16585,30 +16586,8 @@
       "D_00A54B90",
       "D_00A54BB0",
       "D_00A54BC8",
-      "D_00A54BE8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A54C10"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_draw.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a54c50",
-      "0x00a54c68"
-     ],
-     "generated": [
-      "0x00a54c50",
-      "0x00a54c68"
-     ],
-     "generated_by": [
-      "_DrawMain"
-     ],
-     "c_owned_symbols": [
+      "D_00A54BE8",
+      "D_00A54C10",
       "D_00A54C50"
      ],
      "also_referenced_by_c": [],
@@ -17131,11 +17110,11 @@
     {
      "range": [
       "0x00a55338",
-      "0x00a553b8"
+      "0x00a553c8"
      ],
      "generated": [
       "0x00a55338",
-      "0x00a553b5"
+      "0x00a553c4"
      ],
      "generated_by": [
       "CreateRgGeomGroup",
@@ -17171,11 +17150,10 @@
       "D_00A55348",
       "D_00A55360",
       "D_00A55380",
-      "D_00A553A8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A553A8",
       "D_00A553B8"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

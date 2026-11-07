@@ -62,6 +62,15 @@ const char D_00A54B90[32] = "global studio don't have view";
 const char D_00A54BB0[24] = "unknown studio ID %d";
 const char D_00A54BC8[32] = "pDraw->m_uReqNum < REQ_CAPA";
 const char D_00A54BE8[40] = "pObject != NIL && pHandler != NIL";
+typedef struct FadeShadowVerts {
+    GifTag v[4];
+} FadeShadowVerts;
+const FadeShadowVerts D_00A54C10 = {{
+    {{0x0000000000000000, 0x0000007F00040000}},
+    {{0x0000000000000FFF, 0x0000007F00040000}},
+    {{0x00000FFF00000000, 0x0000007F00040000}},
+    {{0x00000FFF00000FFF, 0x0000007F00040000}},
+}};
 const char D_00A54C50[24] = "unknown draw id %d";
 
 extern void sceVif1PkCnt(XglPacket *packet, int count);
@@ -825,10 +834,6 @@ extern void sceVif1PkAddGsAD(XglPacket *packet, int reg, u64 value);
 extern void sceVif1PkAddGsPacked(XglPacket *packet, Quadword data);
 extern int sceVif1PkSize(XglPacket *packet);
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
-typedef struct FadeShadowVerts {
-    GifTag v[4];
-} FadeShadowVerts;
-extern const FadeShadowVerts D_00A54C10;
 typedef union FadeShadowQuad {
     int w[4];
     Quadword quad;
