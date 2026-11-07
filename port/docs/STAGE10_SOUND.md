@@ -10,8 +10,8 @@ ALSA, and can be recorded with `XSG_WAV`. Measured below: the title-menu SFX pla
 pitch its source sample and pitch register predict (8 of 8 key-ons within 1 %), the
 270 s prologue movie's audio runs in step with its pictures, and the SCE01001 cutscene
 stream (which was opened but never read before) plays continuously with no clipping.
-**Not verified:** sequenced music (`.SED`-style sequences started with RSSD 0x30/0x34). The
-parts of the game reached here never start a sequence (see Gaps).
+**Sequenced music** (field BGM of the Virtual Tutorial, RSSD 0x31 add + 0x34 start) now plays
+and is checked in §7; a reverb work-area bug that put a stuck tone over it was fixed there.
 
 ## New environment variables
 
@@ -21,6 +21,7 @@ parts of the game reached here never start a sequence (see Gaps).
 | `XSG_WAV=path` | record the final mix (48 kHz, stereo, s16 WAV). The header is refreshed every ~0.5 s, so a killed run is still readable |
 | `XSG_AUDIO=0` | no ALSA output (the driver still runs; useful with `XSG_WAV`) |
 | `XSG_SOUND_LOG=1` | log every EE → IOP command (with audio time), the driver's own printf, and a status line every 5 s |
+| `XSG_SOUND_LOG=2` | also dump every active voice (phase, envelope, pitch, ADSR, volume, addresses, NOISE/PMOD/wet) every 5 s |
 | `XSG_SOUND_CLOCK=real` | run the IOP on wall-clock time instead of the game clock (see §4) |
 | `XSG_SPU_TRACE=dir` | at each key-on (first 256), dump the sample being played to `dir/kNNN_cC_vVV_pPITCH_aADDR.adpcm` and log the time |
 
@@ -137,16 +138,27 @@ models:
   and noise (NON, noise clock);
 * VMIXL/R dry and VMIXEL/R wet buses, MMIX gates, core 0's output into core 1's external
   input (AVOL), AutoDMA input (BVOL);
-* reverb: the psx-spx algorithm on the core's work area (ESA = EEA − preset size + 1) at
-  24 kHz, with offsets scaled ×4 for halfword addressing, and EVOL. Its input is the pairwise
-  average of the wet bus and its output is linearly interpolated (no 39-tap FIR);
+* reverb: the full psx-spx formula (same/different-side reflections with vIIR and vWALL, four
+  combs, two all-pass stages, the intermediate clamps) on the core's work area
+  (ESA = EEA − size + 1; EEA keeps only A20..A17, so it ends a 128 KiB page) at 24 kHz, offsets
+  ×4 for halfword addressing, then EVOL. The work area is written only while effect enable is
+  set. 48 → 24 kHz and back go through the 39-tap half-band FIR (zero-stuffed, gain 2 on the
+  way up). The presets are libsd's (`spu2_libsd_presets`, from ps2-port-engine, MIT; they match
+  the table in the game's LIBSD.IRX and differ from psx-spx's PS1 examples). For echo (7) and
+  delay (8), `sceSdSetEffectAttr`'s delay and feedback (0–127) rewrite the registers as libsd
+  does: d = (delay+1)·32, vWALL = feedback·258, mLSAME = 2d − dAPF1, mRSAME = d − dAPF2,
+  dLSAME = dRSAME + d, mLCOMB1 = mRCOMB1 + d, mL/RAPF1 = mL/RAPF2 + d (delay 127 gives the preset);
 * MVOL, mute, and the IRQ on voice block fetch and DMA reads/writes at IRQA (latched until
   IRQ enable is rewritten).
 
 `port/tests/test_spu2.c` (target `test_spu2`) encodes a 1 kHz sine to ADPCM and checks: pitch
 0x1000 / 0x800 / 0x2000 → 1000.0 / 500.0 / 2000.0 Hz, the attack reaches full level (RMS
 11229, ideal 11314), the loop and ENDX, half volume → 0.500 of the level, key off → silence,
-IRQ fires once, the hall reverb leaves a tail with no clipping. Cost: 10 s of audio with all 48
+IRQ fires once, the hall reverb leaves a tail with no clipping, delay mode with delay 127
+reproduces libsd's registers, echo delay 63 / feedback 64 gives mLSAME 0x0ffd and vWALL 0x4080,
+the delay-63 echo starts at 0.3412 s (predicted (0x800 − 6)·4 steps at 24 kHz + 2·19 FIR
+samples = 0.3411 s) with nothing before it, and a 1 kHz tone through the FIR and the delay
+line comes out at 1.000 of the dry level. Cost: 10 s of audio with all 48
 voices and reverb on both cores takes 0.33 s of CPU (3.3 % of a core).
 
 **Clock and output.** The EE starts sounds and feeds streams once per game frame, so the IOP
@@ -157,9 +169,19 @@ the same with sound off), the sound slows down with it at the correct pitch, ins
 streams underflowing. Before this gate, the cutscene stream got 9.2 data blocks/s against
 13.3 needed. After it, the feed is 1 block per 2 IRQs, which is exactly the driver's cadence.
 ALSA (`audio.c`'s dlopen loader, now shared: `xsg_alsa_open/write/avail`) is opened
-non-blocking with a 100 ms buffer. A full device drops samples, an xrun is recovered, and the
-render amount is nudged ±8 frames per tick to keep ~60 ms queued against the device's clock
-drift. The game never waits on audio.
+non-blocking with a 250 ms buffer. A full device drops samples, an xrun is recovered, and the
+render amount is nudged ±8 frames per tick to keep the queue near a target against the device's
+clock drift. The game never waits on audio.
+
+**Live output when the game is slow.** Because the clock is gated, a slow game would run the
+device dry (xruns: hard gaps with clicks). Now, when the gate held the IOP back and less than
+20 ms is queued, the gap is filled with the last output sample decaying to zero (×0.98 per
+sample, ~1 ms), and the next real audio ramps in over 2 ms. Each fill raises the target queue
+by 20 ms (60 → at most 200 ms) and it relaxes by 1 ms per second, so a game that stutters
+gets a bigger cushion and one at full speed returns to low latency. Only the device sees the
+filler; `XSG_WAV` stays in game time. Measured on the headless KOS-MOS cutscene (~40 % speed,
+`XSG_AUDIO=1`, 60 s): **0 underruns** (before: an xrun at nearly every frame), 408 filled
+gaps, 1 drop of 800 frames at start-up. The status line reports the filler.
 
 ## 5. Verification without ears
 
@@ -210,16 +232,61 @@ driver equals that without it (1937 vs 1868 vblanks in 60 s).
 
 ## 6. Gaps
 
-1. **Sequenced music is unverified.** No sequence command (0x30/0x31/0x34) was seen on the
-   title, in the movies or in SCE01001. Field BGM (cf0210 / `SO_VOK05.SWD/.SED`) is after
-   the cutscene, and the headless cutscene runs at ~30 % speed, so it was not reached within
-   the time budget. Effect sequences (SFX) do run through the same sequencer code.
-2. **Reverb** uses averaging/linear interpolation for the 48 ↔ 24 kHz conversion instead of
-   the 39-tap FIR, and ignores libsd's delay/feedback for the echo/delay modes.
-3. No checks yet of noise, pitch modulation, the PCM (AutoDMA) stream path (0xa0–0xa8, not
-   used so far), or the sampling commands (0xd0–0xd7).
+1. **Music not compared with PCSX2 yet.** §7 checks the music by numbers only; a PCSX2 audio
+   dump of the Virtual Tutorial (`.work/ref/`, STAGE10_COMPARE) was not recorded in this pass.
+   The title has no music (only the SE on START).
+2. Echo/delay reverb modes are implemented and unit-tested, but the game used only mode 4
+   (studio C, both cores) in the scenes reached.
+3. Noise (NON) and pitch modulation (PMON) are implemented but **not used** by anything
+   reached (0 voices with NOISE/PMOD in all `XSG_SOUND_LOG=2` dumps of the field), so they are
+   unchecked against the game. Likewise the PCM (AutoDMA) stream path (0xa0–0xa8) and the
+   sampling commands (0xd0–0xd7).
 4. The key-on delay, the exact ADSR timing at 48 kHz versus the PS1's 44.1 kHz rules, and
    volume-sweep corner cases follow psx-spx and are not compared with hardware.
-5. When the game runs slower than real time, the sound slows with it (§4), so live ALSA
-   output then has gaps (xruns). `XSG_SOUND_CLOCK=real` gives continuous output, but the
-   streams underflow.
+5. When the game runs slower than real time the sound still slows with it (§4); live output
+   no longer xruns but contains filled (silent) gaps. Time-stretching was not attempted.
+
+## 7. Sequenced music (field BGM)
+
+**Where it starts.** The script calls `xeno.Sound.sequencePlay` (`src/main/sound.c`) →
+`xglSoundSequenceNormal*` → `SsdStartSequence` (RSSD **0x34**: handle, volume ≤ 0x7f, fade
+time). The sequence data is uploaded before by `xglSoundSendSmd2` → `SsdAddSequenceData`
+(RSSD **0x31**, the `.smd` blob, 14 860 bytes here), after the field's wave bank (0x20/0x21,
+~1.1 MB) and effect data (0x60). In the field the sequence is then run by the driver's 2 ms
+timer (`SsdSeqInterruptProcess`). The title has no BGM. Battle music was not reached.
+
+**Scene:** the Virtual Tutorial, `XSG_FAST=1 XSG_SKIP_EVENTS=1` with the field recipe; the
+0x31/0x34 pair arrives between vblank 1200 and 1800 (audio time 11.9–13.8 s, which is game
+time because the clock is gated). Runs of 70–120 s, `XSG_SOUND_LOG=2`, `XSG_SPU_TRACE`.
+
+**Bug found and fixed:** the first recordings had a constant, perfectly stable sine
+(727.5 Hz in one run, 1149.8 Hz and 1756.5 Hz in others, ±0.25 Hz over 4 s windows) 12–18 dB
+above everything else, with images at 6000 ± f. With the reverb output muted it vanished, and
+the remaining peaks were musical. Cause: `sceSdSetAddr(EEA)` was masked with `| 0x1ffff`
+halfwords (256 KiB), so core 0's EEA (0x1dffff) became the top of RAM, the same as core 1's,
+and the two cores' studio-C reverbs ran in one work area and fed each other. EEA now ends a
+128 KiB page (`| 0xffff`), and the reset values are libsd's (core 0 0x1dffff, core 1
+0x1fffff). After the fix no window has a stuck tone.
+
+**Analysis after the fix** (`wav_report.py`, `/tmp` spectrum scripts, the voice dumps):
+* Level: 10 s windows −21.7 to −22.8 dBFS RMS, peak −3.6 dBFS, **no clipped samples**, no
+  dropouts after the music starts (the two at 11.5/11.9 s are the cutscene stream's end).
+* Notes: the strongest spectral peaks per 4 s window are 82.2, 110.0, 123.5, 146–147, 164.5,
+  245.8, 293, 326.8, 439, 490, 582.6 Hz: E2 A2 B2 D3 E3 B3 D4 E4 A4 B4 D5 (E minor/dorian),
+  within 1 % of equal temperament (some instruments are tuned ~15 cents flat in their sample).
+  The pitch registers predict exact ET frequencies for the traced key-ons (440.0, 493.9,
+  586.8, 660.4 Hz, `sfx_pitch_check` "expected" column). 22 different samples over 246
+  key-ons in 25 s; drum-like samples always at the same pitch, melodic ones at whole/half-step
+  offsets (e.g. −3.5, −1.5, −0.5, +1.5 semitones from 0x1000).
+* Tempo: the inter-onset intervals cluster at 0.16–0.17 s (79 of 246) and 0.33 s and 0.66 s,
+  i.e. sixteenths of a 0.663 s beat: **~90.5 BPM**, steady over the run.
+* Polyphony: up to 21 voices active on core 0 (status lines), typically 13–19; the VAG stream
+  voices (core 1, 20/21) key off when the cutscene stream stops (0xb4 then 0xb2).
+* Envelopes: the dumps show attack 0x80ff (exponential, fastest), sustain levels holding at
+  0x7fff for pads (ADSR2 0xdfe6/0xdfec: sustain rate 0x7f = hold) and releases decaying
+  (phase 4, env 0x3057 → 0x0938 between dumps). No voice was found stuck: every sustained voice
+  is retriggered by the sequence (the hard-panned pad pair at pitch 0x0aab, ssa 0x0b66d0 /
+  0x0c2d20, keyed on 10 times in 25 s).
+* `sfx_pitch_check` finds the predicted frequency as the window's *dominant* one for only 19
+  of 254 key-ons: in a polyphonic mix the dominant peak is usually another voice, so this tool
+  is not meant for music.
