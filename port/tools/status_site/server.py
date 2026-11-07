@@ -112,15 +112,22 @@ _mcache = {"t": 0, "v": {}}
 
 def metrics():
     """Slow-changing project metrics, cached for 30 s."""
-    if time.time() - _mcache["t"] < 30:
+    if time.time() - _mcache["t"] < 120:
         return _mcache["v"]
     v = {}
     v["port_commits"] = int((git("rev-list", "--count", f"{BASE_BRANCH}..pc-port").strip() or 0))
     ds = git("diff", "--shortstat", f"{BASE_BRANCH}...pc-port").strip()
     v["diffstat"] = ds
-    asm = git("grep", "-c", "-E", r"PS2_ASMV?\(", "--", "src").splitlines()
-    v["asm_sites"] = sum(int(l.rsplit(":", 1)[1]) for l in asm if ":" in l)
-    v["asm_files"] = len(asm)
+    v["asm_sites"] = v["asm_files"] = None
+    try:  # sites with no host translation yet (translated ones keep their PS2 asm under #ifdef)
+        rep = subprocess.run(["python3", "port/scripts/vu0_translate.py", "--report"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=60).stdout
+        m = re.search(r"(\d+) untranslated", rep)
+        if m:
+            v["asm_sites"] = int(m.group(1))
+            v["asm_files"] = len(re.findall(r"^src/\S+: \d+", rep, re.M))
+    except Exception:
+        pass
     v["c_files"] = len([l for l in git("ls-files", "src").splitlines() if l.endswith(".c")])
     stubs = ROOT / "port/build/autostubs.txt"
     v["autostubs"] = len(stubs.read_text().split()) if stubs.exists() else None
@@ -244,7 +251,7 @@ const r=s.runner,m=s.metrics;$('sub').textContent='branch pc-port · '+(m.diffst
 $('dot').className='dot '+(r.running?'on':'off');
 $('run').textContent=r.running?`running · run #${r.runs} · ${Math.round(r.uptime)}s`:`stopped (exit ${r.exit})`;
 $('tiles').innerHTML=[tile(r.frame??'–','game frame'),tile(r.fps?r.fps.toFixed(1):'–','frames/s'),
- tile(m.port_commits??'–','port commits'),tile(m.asm_sites??'–','inline asm left'),
+ tile(m.port_commits??'–','port commits'),tile(m.asm_sites??'–','asm untranslated'),
  tile(m.autostubs??'–','auto-stubbed syms'),tile(m.c_files??'–','game C files'),
  tile(fmtB(m.bin_size),'binary size'),tile(ago(m.bin_mtime),'last build'),tile(m.shots_total??'–','screenshots'),
  tile(r.proc?fmtB(r.proc.rss):'–','game RSS'),tile(m.load?m.load[0].toFixed(2):'–','host load'),tile(r.lines??0,'log lines')].join('');
