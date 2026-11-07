@@ -70,6 +70,7 @@ set(XSG_GS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ps2-port-engine-gs")
 file(GLOB XSG_GS_SRCS CONFIGURE_DEPENDS "${XSG_GS_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.cpp")
 add_library(xsg_gs OBJECT ${XSG_GS_SRCS})
 target_compile_options(xsg_gs PRIVATE -m32 -std=c++17 -O2 -g -msse4.1 -fno-pic -fno-stack-protector -w)
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp" PROPERTIES COMPILE_OPTIONS "-mfpmath=sse;-msse2")
 target_include_directories(xsg_gs PRIVATE "${XSG_GS_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
 target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${CMAKE_BINARY_DIR}/shots\"")
 

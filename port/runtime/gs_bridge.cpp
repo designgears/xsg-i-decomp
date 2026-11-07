@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "ps2host/gs.h"
+#include "vu1.h"
 
 namespace ps2host { std::uint32_t g_dma_source = 0; }
 
@@ -46,6 +47,10 @@ Gs& G() {
 struct Stats {
     u64 gif_kicks = 0, vif_kicks = 0, gif_qw = 0, vif_qw = 0, tags = 0;
     u64 direct_qw = 0, mscal = 0, mscnt = 0, mpg = 0, unpack = 0, bad_vif = 0;
+    // PATH1 (XGKICK) validation
+    u64 p1_packets = 0, p1_tags = 0, p1_qw = 0, p1_prims = 0, p1_bad = 0;
+    u64 p1_prim_type[8] = {};
+    u64 p1_nloop = 0;   // vertices-ish: NLOOP of PACKED/REGLIST tags
 } st;
 
 /* PS2 DMA/tag address -> host pointer. Bit 31 = scratchpad; 0x2/0x3xxxxxxx
@@ -104,9 +109,10 @@ struct Vif {
     u32 upk_vn = 0, upk_vl = 0, upk_usn = 0, upk_elem = 0, upk_bits = 0, upk_acc_n = 0;
     u8 upk_buf[16];
     u32 upk_have = 0;
-    u32 cl = 1, wl = 1, cycle = 0, base = 0, ofst = 0, tops = 0;
+    u32 cl = 1, wl = 1, cycle = 0, base = 0, ofst = 0, tops = 0, itops = 0;
     u32 row[4] = {}, col[4] = {}, mask = 0, mode = 0;
     bool dbf = false;
+    u32 st_kind = 0, st_n = 0;      // STROW(1)/STCOL(2)/STMASK(3) data being received
 } vif;
 
 u8* Vu1Micro() { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + 0x8000)); }
@@ -136,10 +142,62 @@ void UnpackElement() {
         }
     }
     u32 a = vif.addr & 0x3ff0;
-    if (vif.mode == 1) for (int c = 0; c < 4; ++c) out[c] += vif.row[c];
+    u32 cur[4];
+    std::memcpy(cur, Vu1Data() + a, 16);
+    const u32 mrow = vif.cycle < 3 ? vif.cycle : 3;
+    const bool use_mask = (vif.code >> 28) & 1;     // UNPACK's M bit
+    for (int c = 0; c < 4; ++c) {
+        u32 m = use_mask ? (vif.mask >> (mrow * 8 + c * 2)) & 3 : 0;
+        if (m == 0) {
+            if (vif.mode == 1) out[c] += vif.row[c];
+            else if (vif.mode == 2) { vif.row[c] += out[c]; out[c] = vif.row[c]; }
+        } else if (m == 1) out[c] = vif.row[c];
+        else if (m == 2) out[c] = vif.col[mrow];
+        else out[c] = cur[c];
+    }
     std::memcpy(Vu1Data() + a, out, 16);
     vif.addr += 16;
     if (vif.cl < vif.wl) {} else if (++vif.cycle == vif.wl) { vif.cycle = 0; vif.addr += (vif.cl - vif.wl) * 16; }
+}
+
+/* PATH1: a GIF packet in VU1 data memory from quadword `q` (wrapping) to EOP. */
+void Path1Kick(const u8* data, u32 q) {
+    Gs& gs = G();
+    st.p1_packets++;
+    for (u32 guard = 0; guard < 1024; ++guard) {
+        u64 lo, hi;
+        std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
+        std::memcpy(&hi, data + (q & 0x3ff) * 16 + 8, 8);
+        st.p1_tags++;
+        const u32 nloop = u32(lo & 0x7fff), eop = u32(lo >> 15) & 1, pre = u32(lo >> 46) & 1;
+        const u32 prim = u32(lo >> 47) & 0x7ff, flg = u32(lo >> 58) & 3;
+        u32 nreg = u32(lo >> 60) & 15;
+        if (!nreg) nreg = 16;
+        if (pre) { st.p1_prims++; st.p1_prim_type[prim & 7]++; }
+        if (flg != 2) st.p1_nloop += nloop;
+        u32 body = flg == 0 ? nloop * nreg : flg == 1 ? (nloop * nreg + 1) / 2 : nloop;
+        if (body > 1024) { st.p1_bad++; break; }
+        gs.Qword(1, lo, hi);
+        ++q;
+        for (u32 i = 0; i < body; ++i, ++q) {
+            std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
+            std::memcpy(&hi, data + (q & 0x3ff) * 16 + 8, 8);
+            gs.Qword(1, lo, hi);
+        }
+        st.p1_qw += body + 1;
+        if (eop) return;
+    }
+}
+
+void RunVu1(u32 pc) {
+    // TOP/ITOP as VIF1 hands them over; then the double buffer flips.
+    const u32 top = vif.tops, itop = vif.itops;
+    if (vif.dbf) { vif.dbf = false; vif.tops = vif.base; }
+    else { vif.dbf = true; vif.tops = vif.base + vif.ofst; }
+    static bool init = false;
+    if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
+    static const bool off = std::getenv("XSG_VU1") && !std::atoi(std::getenv("XSG_VU1"));
+    if (!off) xsgvu::Run(pc, top, itop);
 }
 
 void VifData(u32 w) {
@@ -168,6 +226,11 @@ void VifData(u32 w) {
             }
         }
         break;
+    case 4:
+        if (vif.st_kind == 1) vif.row[vif.st_n++ & 3] = w;
+        else if (vif.st_kind == 2) vif.col[vif.st_n++ & 3] = w;
+        else if (vif.st_kind == 3) vif.mask = w;
+        break;
     default:
         break;
     }
@@ -181,19 +244,22 @@ void VifCode(u32 w) {
     switch (cmd) {
     case 0x00: break;                                       // NOP
     case 0x01: vif.cl = imm & 0xff; vif.wl = (imm >> 8) & 0xff; vif.cycle = 0; break;
-    case 0x02: vif.ofst = imm & 0x3ff; vif.dbf = false; break;
+    case 0x02: vif.ofst = imm & 0x3ff; vif.dbf = false; vif.tops = vif.base; break;
     case 0x03: vif.base = imm & 0x3ff; break;
-    case 0x04: vif.tops = imm & 0x3ff; break;               // ITOP
+    case 0x04: vif.itops = imm & 0x3ff; break;              // ITOP
     case 0x05: vif.mode = imm & 3; break;
     case 0x06: break;                                       // MSKPATH3
     case 0x07: break;                                       // MARK
     case 0x10: case 0x11: case 0x13: break;                 // FLUSHE/FLUSH/FLUSHA
-    case 0x14: case 0x15: st.mscal++; break;                // MSCAL/MSCALF: no VU1 yet
-    case 0x17: st.mscnt++; break;
-    case 0x20: vif.kind = 4; vif.want = 1; break;           // STMASK (kept loosely)
-    case 0x30: case 0x31: vif.kind = 4; vif.want = 4; break;  // STROW/STCOL
+    case 0x14: case 0x15: st.mscal++; RunVu1(imm * 8); break;   // MSCAL/MSCALF
+    case 0x17: st.mscnt++; RunVu1(xsgvu::Resume()); break;     // MSCNT
+    case 0x20: vif.st_kind = 3; vif.st_n = 0; vif.want = 1; break;  // STMASK
+    case 0x30: vif.st_kind = 1; vif.st_n = 0; vif.want = 4; break;  // STROW
+    case 0x31: vif.st_kind = 2; vif.st_n = 0; vif.want = 4; break;  // STCOL
     case 0x4A:
         st.mpg++;
+        { static int n = 0; static const bool t = std::getenv("XSG_MPG_TRACE") != nullptr;
+          if (t && n++ < 40) xsg_logf("[vif1] MPG addr 0x%x num %u\n", imm * 8, num ? num : 256); }
         vif.kind = 2; vif.addr = imm * 8; vif.want = (num ? num : 256) * 2;
         break;
     case 0x50: case 0x51:
@@ -223,6 +289,7 @@ void VifCode(u32 w) {
         break;
     }
     if (cmd == 0x20 || cmd == 0x30 || cmd == 0x31) vif.kind = 4;
+    vif.code = w;
 }
 
 void VifWords(const u8* p, u32 words) {
@@ -487,6 +554,13 @@ void xsg_dma_poll(void) {
     }
 }
 
+/* xglDmaDirectNormal / xglDmaDirectSrcChain (channel index 0..2): run the
+   transfer synchronously on the game's thread, right at the CHCR write. */
+void xsg_dma_kick(uint32_t channel) {
+    if (channel != 1 && channel != 2) return;
+    xsg_dma_poll();
+}
+
 /* A GIF packet (through EOP) on PATH3, as sceGsPutDrawEnv/ExecLoadImage send it. */
 void xsg_gs_send_packet(const void* p) {
     std::lock_guard<std::recursive_mutex> l(g_lock);
@@ -507,6 +581,37 @@ void xsg_gs_vblank(unsigned frame) {
     if (trace_frame >= 0 && (frame == u32(trace_frame) || frame == u32(trace_frame) + 1)) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
         G().trace = frame == u32(trace_frame);
+    }
+    static const long vu_dump = std::getenv("XSG_VU_DUMP") ? std::atol(std::getenv("XSG_VU_DUMP")) : -1;
+    if (long(frame) == vu_dump) {
+        std::lock_guard<std::recursive_mutex> l(g_lock);
+        if (!shot_init) ShotInit();
+        std::string n = shot_dir + "/vu1_micro.bin";
+        if (std::FILE* f = std::fopen(n.c_str(), "wb")) { std::fwrite(Vu1Micro(), 1, 0x4000, f); std::fclose(f); }
+        n = shot_dir + "/vu1_data.bin";
+        if (std::FILE* f = std::fopen(n.c_str(), "wb")) { std::fwrite(Vu1Data(), 1, 0x4000, f); std::fclose(f); }
+        xsg_logf("[vu1] dumped VU1 memories to %s\n", shot_dir.c_str());
+    }
+    static const long vu_log = std::getenv("XSG_VU_LOG") ? std::atol(std::getenv("XSG_VU_LOG")) : 0;
+    if (vu_log > 0 && frame % u32(vu_log) == 0) {
+        std::lock_guard<std::recursive_mutex> l(g_lock);
+        static xsgvu::Stats last;
+        static u64 lp = 0, lprims = 0, lpq = 0;
+        static u64 lt[8];
+        auto& v = xsgvu::GetStats();
+        xsg_logf("[vu1] frame %u: runs %llu pairs %llu kicks %llu (tags %llu, qw %llu, prims %llu: pt %llu ln %llu ls %llu "
+                 "tri %llu ts %llu tf %llu spr %llu) flagreads %llu clipreads %llu bad %llu\n", frame,
+                 (unsigned long long)(v.runs - last.runs), (unsigned long long)(v.pairs - last.pairs),
+                 (unsigned long long)(v.kicks - last.kicks), (unsigned long long)(st.p1_tags - lp),
+                 (unsigned long long)(st.p1_qw - lpq), (unsigned long long)(st.p1_prims - lprims),
+                 (unsigned long long)(st.p1_prim_type[0] - lt[0]), (unsigned long long)(st.p1_prim_type[1] - lt[1]),
+                 (unsigned long long)(st.p1_prim_type[2] - lt[2]), (unsigned long long)(st.p1_prim_type[3] - lt[3]),
+                 (unsigned long long)(st.p1_prim_type[4] - lt[4]), (unsigned long long)(st.p1_prim_type[5] - lt[5]),
+                 (unsigned long long)(st.p1_prim_type[6] - lt[6]), (unsigned long long)(v.flag_reads - last.flag_reads),
+                 (unsigned long long)(v.clip_reads - last.clip_reads), (unsigned long long)v.bad);
+        last = v; lp = st.p1_tags; lprims = st.p1_prims; lpq = st.p1_qw;
+        for (int i = 0; i < 8; ++i) lt[i] = st.p1_prim_type[i];
+        if (frame % (u32(vu_log) * 100) == 0) xsgvu::DumpHistogram();
     }
     if (!shot_frames.count(frame) && !(shot_every && frame % shot_every == 0)) return;
     std::lock_guard<std::recursive_mutex> l(g_lock);
