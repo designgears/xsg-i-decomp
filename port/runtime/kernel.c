@@ -66,7 +66,13 @@ static struct sema sem[MAX_SEMAS];
 volatile unsigned xsg_frame;
 static int (*vsync_cb)(int);
 static struct { int cause; int (*fn)(int); int used; } intc[32];
-static int frame_ns = 0; /* XSG_FRAME_US: real-time pacing per frame (0 = none) */
+/* Frame pacing: vblanks are spaced frame_ns apart in real time (60 Hz by
+ * default; XSG_FRAME_US overrides the period, XSG_FAST=1 or XSG_FRAME_US=0
+ * runs unthrottled).  Deadlines are absolute, so time spent running the game
+ * between vblanks counts toward the frame; if the host falls more than a few
+ * frames behind, the schedule restarts from now instead of bursting. */
+static long frame_ns = 16666667;
+static struct timespec next_vblank;
 
 void xsg_kernel_init(void)
 {
@@ -74,7 +80,12 @@ void xsg_kernel_init(void)
     th[1].prio = 1; /* crt0 runs main at the highest user priority */
     th[1].seq = seq_counter++;
     const char *fp = getenv("XSG_FRAME_US");
-    frame_ns = fp ? atoi(fp) * 1000 : 0;
+    const char *fast = getenv("XSG_FAST");
+    if (fp)
+        frame_ns = atol(fp) * 1000;
+    if (fast && fast[0] && fast[0] != '0')
+        frame_ns = 0;
+    clock_gettime(CLOCK_MONOTONIC, &next_vblank);
 }
 
 static void thread_trampoline(int id)
@@ -197,8 +208,19 @@ void xsg_vblank(void)
 {
     xsg_frame++;
     if (frame_ns) {
-        struct timespec ts = {0, frame_ns};
-        nanosleep(&ts, NULL);
+        struct timespec now;
+        next_vblank.tv_nsec += frame_ns;
+        while (next_vblank.tv_nsec >= 1000000000L) {
+            next_vblank.tv_nsec -= 1000000000L;
+            next_vblank.tv_sec++;
+        }
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        long long behind = (now.tv_sec - next_vblank.tv_sec) * 1000000000LL +
+                           (now.tv_nsec - next_vblank.tv_nsec);
+        if (behind > 4LL * frame_ns)
+            next_vblank = now; /* too far behind: resync */
+        else
+            while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_vblank, NULL) != 0) {}
     }
     if ((xsg_frame % 600) == 0)
         xsg_logf("[kernel] frame %u (thread %d)\n", xsg_frame, cur);
