@@ -322,6 +322,7 @@ typedef struct MCamParamsView {
     float fov;                         /* +0x1F4 */
     unsigned char unmodeled_1f8[0x5B0 - 0x1F8];
 } MCamParamsView;
+#ifndef PORT_HOST
 #define MCAM_VU0_TRIG(addr, out, in)                 \
     PS2_ASMV(                            \
         "mfc1    $8, %1\n\t"                         \
@@ -332,6 +333,22 @@ typedef struct MCamParamsView {
         : "=f"(out)                                  \
         : "f"(in)                                    \
         : "$8", "memory")
+#else
+/* Hand port (the translator cannot see through the stringised #addr):
+   $8 = in; vf4 = $8; vcallms addr (Vu0CallSin 0x20 / Vu0CallCos 0xe8);
+   $8 = vf1.x; out = $8. */
+#define MCAM_VU0_TRIG(addr, out, in)                 \
+    do {                                             \
+        XsgFpr xsg_f_in_ = XSG_FIN(in), xsg_f_out_;  \
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_f_in_.u);   \
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);                \
+        vu0_callms(addr);                            \
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);                \
+        xsg_f_out_.u = xsg_ee_gpr[8].w[0];           \
+        (out) = xsg_f_out_.f;                        \
+        xsg_vu0_blocks++;                            \
+    } while (0)
+#endif
 
 int MCamTakeControl(void)
 {
