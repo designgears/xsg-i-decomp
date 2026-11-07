@@ -91,6 +91,13 @@ typedef struct MpegStreamData {
 #define D4_CHCR   ((volatile u32 *) 0x1000b400)
 #define IPU_CMD   ((volatile u32 *) 0x10002000)
 #define IPU_CTRL  ((volatile u32 *) 0x10002010)
+#ifdef PORT_HOST
+/* The host IPU model (port/runtime/ipu.cpp) sees register writes through this hook. */
+extern void xsg_ipu_reg_written(u32 address);
+#define IPU_WRITTEN(r) xsg_ipu_reg_written((u32)(r))
+#else
+#define IPU_WRITTEN(r) ((void)0)
+#endif
 #define UNCACHED(address) \
     ((void *) (((unsigned int) (address) & 0x0FFFFFFF) | 0x20000000))
 
@@ -132,7 +139,7 @@ static int myDmaDirectFromIPU(u32 address, u32 count)
 
     DIntr();
     *D_ENABLEW = *D_ENABLEW | 0x10000;
-    *D3_CHCR = 0x100;
+    *D3_CHCR = 0x100; IPU_WRITTEN(D3_CHCR);
     *D_ENABLEW = *D_ENABLEW & 0xfffeffff;
     return EIntr();
 }
@@ -145,7 +152,7 @@ static void setD4_CHCR(u32 value)
 {
     DIntr();
     *D_ENABLEW = *D_ENABLEW | 0x10000;
-    *D4_CHCR = value;
+    *D4_CHCR = value; IPU_WRITTEN(D4_CHCR);
     *D_ENABLEW = *D_ENABLEW & 0xfffeffff;
     EIntr();
 }
@@ -445,13 +452,13 @@ int xglMoviePlay(XglMoviePlayView *info)
     u32 c;
 
     if (!(*D4_CHCR & 0x100)) {
-        *IPU_CTRL = 0x40000000;
+        *IPU_CTRL = 0x40000000; IPU_WRITTEN(IPU_CTRL);
         if (sceIpuSync(0, 0x40) < 0)
             return -1;
-        *IPU_CMD = (info->bca << 16) | info->bcb | 0x90000000;
+        *IPU_CMD = (info->bca << 16) | info->bcb | 0x90000000; IPU_WRITTEN(IPU_CMD);
         if (sceIpuSync(0, 0x40) < 0)
             return -1;
-        *IPU_CMD = info->b9f;
+        *IPU_CMD = info->b9f; IPU_WRITTEN(IPU_CMD);
         if (sceIpuSync(0, 0x40) < 0)
             return -1;
         *D4_MADR = info->dmaAddr;
@@ -471,16 +478,16 @@ int xglMoviePlay(XglMoviePlayView *info)
         for (y = 0; y < info->height; y += 16) {
             myDmaDirectFromIPU(info->vramAddr[info->bufIndex], info->stride);
             if (y == 0) {
-                *IPU_CMD = 0x40000000;
+                *IPU_CMD = 0x40000000; IPU_WRITTEN(IPU_CMD);
                 if (sceIpuSync(0, 0x40) < 0)
                     return -1;
                 c = *IPU_CMD;
-                *IPU_CMD = 0x40000008;
+                *IPU_CMD = 0x40000008; IPU_WRITTEN(IPU_CMD);
                 v = c >> 24;
                 if (sceIpuSync(0, 0x40) < 0)
                     return -1;
-                *IPU_CTRL = (v & 0xfb) << 16;
-                *IPU_CMD = (((v & 4) >> 2) << 24) | 0x10010000;
+                *IPU_CTRL = (v & 0xfb) << 16; IPU_WRITTEN(IPU_CTRL);
+                *IPU_CMD = (((v & 4) >> 2) << 24) | 0x10010000; IPU_WRITTEN(IPU_CMD);
             }
             make_gstrans((XglMovieGsView *)info, y);
             i = 0;
@@ -503,16 +510,16 @@ int xglMoviePlay(XglMoviePlayView *info)
 
             myDmaDirectFromIPU(0x70000000, info->stride);
             if (y == 0) {
-                *IPU_CMD = 0x40000000;
+                *IPU_CMD = 0x40000000; IPU_WRITTEN(IPU_CMD);
                 if (sceIpuSync(0, 0x40) < 0)
                     return -1;
                 c = *IPU_CMD;
-                *IPU_CMD = 0x40000008;
+                *IPU_CMD = 0x40000008; IPU_WRITTEN(IPU_CMD);
                 v = c >> 24;
                 if (sceIpuSync(0, 0x40) < 0)
                     return -1;
-                *IPU_CTRL = (v & 0xfb) << 16;
-                *IPU_CMD = (((v & 4) >> 2) << 24) | 0x10010000;
+                *IPU_CTRL = (v & 0xfb) << 16; IPU_WRITTEN(IPU_CTRL);
+                *IPU_CMD = (((v & 4) >> 2) << 24) | 0x10010000; IPU_WRITTEN(IPU_CMD);
             }
             i = 0;
             if (*D3_CHCR & 0x100) {
@@ -542,7 +549,7 @@ int xglMoviePlay(XglMoviePlayView *info)
     }
     if (sceIpuSync(0, 0x40) < 0)
         return -1;
-    *IPU_CMD = 0x40000020;
+    *IPU_CMD = 0x40000020; IPU_WRITTEN(IPU_CMD);
     if (sceIpuSync(0, 0x40) < 0)
         return -1;
     if (++info->currentFrame >= info->frames) {
@@ -553,7 +560,7 @@ int xglMoviePlay(XglMoviePlayView *info)
             setD4_CHCR(5);
             DIntr();
             *D_ENABLEW = *D_ENABLEW | 0x10000;
-            *D3_CHCR = 0;
+            *D3_CHCR = 0; IPU_WRITTEN(D3_CHCR);
             *D_ENABLEW = *D_ENABLEW & 0xfffeffff;
             EIntr();
             if (info->streamOpen != 0) {
@@ -613,11 +620,11 @@ int xglMovieClose(XglMovieInfo *info)
         xglCdStreamClose((struct CdStreamParam *) info);
     }
     setD4_CHCR(0);
-    *IPU_CTRL = 0x40000000;
+    *IPU_CTRL = 0x40000000; IPU_WRITTEN(IPU_CTRL);
     if (sceIpuSync(0, 0x40) < 0) {
         return -1;
     }
-    *IPU_CMD = 0;
+    *IPU_CMD = 0; IPU_WRITTEN(IPU_CMD);
     return sceIpuSync(0, 0x40) < 0 ? -1 : 0;
 }
 
@@ -816,7 +823,7 @@ static int nodataCallback(int event, void *data, XglMovieInfo *info)
         qwc = 0x1000;
         *qwc_register = qwc;
         *D4_MADR = dma_address;
-        *D4_CHCR = 0x101;
+        *D4_CHCR = 0x101; IPU_WRITTEN(D4_CHCR);
         return 1;
     }
 
@@ -847,7 +854,7 @@ static int nodataCallback(int event, void *data, XglMovieInfo *info)
     }
     *D4_QWC = length / 16;
     *D4_MADR = (unsigned int) info->dmaBuffer + info->dmaRead;
-    *D4_CHCR = 0x101;
+    *D4_CHCR = 0x101; IPU_WRITTEN(D4_CHCR);
     info->dmaNextRead = (info->dmaRead + length) % info->dmaSize;
     return 1;
 }
