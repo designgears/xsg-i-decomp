@@ -1810,7 +1810,7 @@ s32 CheckDamageCommand(s32 side, CardGameWork *work, s32 kind)
   s32 attack[4];
   s32 i;
   s32 count;
-  unsigned long new_var2;
+  unsigned PS2_LONG new_var2;
   s32 cnt;
   s32 before;
   s32 best;

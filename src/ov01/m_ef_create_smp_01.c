@@ -8,7 +8,7 @@
 #include "m_ef_create_smp_01.h"
 
 typedef struct Smp01GsParameter {
-    unsigned long primitive_tag;
+    unsigned PS2_LONG primitive_tag;
     unsigned char rest[8];
 } Smp01GsParameter;
 typedef struct Smp01CreateWork {
@@ -31,8 +31,8 @@ typedef struct Smp01CreateWork {
     Vector4 angles;                     /* 0xD0 */
     float phaseAngle;                   /* 0xE0 */
     unsigned char packet[0x14];         /* 0xE4 */
-    unsigned long parameter_first;      /* 0xF8 */
-    unsigned long parameter_second;     /* 0x100 */
+    unsigned PS2_LONG parameter_first;      /* 0xF8 */
+    unsigned PS2_LONG parameter_second;     /* 0x100 */
     unsigned char active[0x14];         /* 0x108 */
     unsigned char unmodeled_11C[4];
     unsigned char points[0x1E0];        /* 0x120 */
@@ -304,10 +304,10 @@ typedef struct Smp01ImageParameter {
 PS2_TI_TYPEDEF(unsigned int, Smp01xQuad);
 typedef union Smp01xQW {
     Smp01xQuad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } Smp01xQW;
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
@@ -341,7 +341,7 @@ typedef struct Smp01Draw {
 static void fnSMP01_DP000(void *task, Smp01Draw *effect)
 {
   int i;
-  long regs;
+  PS2_LONG regs;
   int nreg;
   float *szp;
   Vector4 verts[4];
@@ -354,7 +354,7 @@ static void fnSMP01_DP000(void *task, Smp01Draw *effect)
   Smp01xQW *a4;
   Smp01xQW *a5;
   Smp01xQuad color;
-  unsigned long *tex;
+  unsigned PS2_LONG *tex;
   int j;
   int n;
   int off;
@@ -401,14 +401,14 @@ static void fnSMP01_DP000(void *task, Smp01Draw *effect)
       {
         off = 0xF0;
       }
-      tex = (unsigned long *) (((char *) sub) + off);
+      tex = (unsigned PS2_LONG *) (((char *) sub) + off);
       for (j = 0; j < 3; j++)
       {
         if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl_2_00A51550[i], effect->twist[i][j]) == 0)
         {
           Smp01xQW *t;
           Smp01xQW *g;
-          unsigned long texVal;
+          unsigned PS2_LONG texVal;
           int n1;
           int n2;
           gp = (Smp01xPacket *) effect->drawPacket;

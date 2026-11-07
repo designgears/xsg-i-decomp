@@ -70,7 +70,11 @@ extern int MenuSortGet(int list, int index);
 extern MenuShopListRow *MenuListGet(int list);
 extern int MenuSortCheck(int list);
 extern int MenuBoxMoneyGet(int item, int mode);
-extern long dataMoneyBoxChk(void);
+#ifndef PORT_HOST
+extern PS2_LONG dataMoneyBoxChk(void);
+#else
+extern int dataMoneyBoxChk(void);
+#endif
 extern int MenuBoxChk(int item);
 extern int subMenuShopEquipCheck(int item, int category);
 extern int MenuShopNoSaleCheck(int item);
@@ -705,7 +709,7 @@ extern MenuTextEntry *func_A2C918(unsigned int itemId);
 extern MenuTextEntry *func_A2C968(unsigned int itemId);
 extern const char *MenuCharNameGet(int unitId);
 #ifndef PORT_HOST
-extern const char *MenuNumberTextGet(long value, int digits, int flag);
+extern const char *MenuNumberTextGet(PS2_LONG value, int digits, int flag);
 #else
 extern const char *MenuNumberTextGet(long long value, int digits, int flag);
 #endif
@@ -788,7 +792,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
         break;
     case 162:
         if (MenuShopWork->itemId != 0) {
-            long money;
+            PS2_LONG money;
 
             eMessageCpy(work->message, MenuNumberTextGet(MenuShopWork->quantity, 2, 0));
             eMessageCat(tab32.p[2]);

@@ -2598,7 +2598,7 @@ typedef struct SefAnimKey {
     signed char unk7;
 } SefAnimKey;
 typedef struct SefAnimFrame {
-    long d[3];
+    PS2_LONG d[3];
     int i;
     short s[2];
 } SefAnimFrame;
@@ -5188,7 +5188,7 @@ int srsGetBossWaitEftNo(int no);
 
 static void sefCnvWaitEffectNo(char *p)
 {
-  unsigned long new_var;
+  unsigned PS2_LONG new_var;
   unsigned short id;
   if ((*((short *) (p + 0x14))) != 0x4001)
   {

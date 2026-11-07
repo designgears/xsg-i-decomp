@@ -140,7 +140,7 @@ extern void TWIN_initScene(SceneWindow *window);
  * int/long are indistinguishable (upper already zero). No cleaner pure-C
  * hypothesis exists in evidence.
  */
-long SCENE_dispose(SceneObject scene_object);
+PS2_LONG SCENE_dispose(SceneObject scene_object);
 
 void SCENE_cleanup(SceneVm *vm, SceneObject scene_object);
 

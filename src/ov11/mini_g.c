@@ -257,14 +257,14 @@ static void SetRGBA(short red, short green, short blue, short alpha)
     BoxRGBA[3] = alpha;
 }
 
-extern unsigned long BoxPOS[4];
+extern unsigned PS2_LONG BoxPOS[4];
 
 static void MakeBoxPos(int x, int y, int w, int h)
 {
-    BoxPOS[0] = (unsigned long)((x << 4) + 0x7000) | ((unsigned long)((y << 4) + 0x7200) << 16) | (1UL << 32);
-    BoxPOS[1] = (unsigned long)(((x + w) << 4) + 0x7000) | ((unsigned long)((y << 4) + 0x7200) << 16) | (1UL << 32);
-    BoxPOS[2] = (unsigned long)((x << 4) + 0x7000) | ((unsigned long)(((y + h) << 4) + 0x7200) << 16) | (1UL << 32);
-    BoxPOS[3] = (unsigned long)(((x + w) << 4) + 0x7000) | ((unsigned long)(((y + h) << 4) + 0x7200) << 16) | (1UL << 32);
+    BoxPOS[0] = (unsigned PS2_LONG)((x << 4) + 0x7000) | ((unsigned PS2_LONG)((y << 4) + 0x7200) << 16) | (1UL << 32);
+    BoxPOS[1] = (unsigned PS2_LONG)(((x + w) << 4) + 0x7000) | ((unsigned PS2_LONG)((y << 4) + 0x7200) << 16) | (1UL << 32);
+    BoxPOS[2] = (unsigned PS2_LONG)((x << 4) + 0x7000) | ((unsigned PS2_LONG)(((y + h) << 4) + 0x7200) << 16) | (1UL << 32);
+    BoxPOS[3] = (unsigned PS2_LONG)(((x + w) << 4) + 0x7000) | ((unsigned PS2_LONG)(((y + h) << 4) + 0x7200) << 16) | (1UL << 32);
 }
 
 extern const SetRegADTag D_00A0BBA0;

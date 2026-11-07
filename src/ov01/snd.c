@@ -595,7 +595,7 @@ void dataSndSeRegLoad2(ObjectTask *unit)
         return;
     }
     dest = bank->work.dest;
-    n = *(long *)dest / 2;
+    n = *(PS2_LONG *)dest / 2;
     for (i = 0; i < n; i++) {
         *(char **)&bank->unmodeled_0c[0] = dest + (int)((void **)dest)[i * 2 + 2];
         *(char **)&bank->unmodeled_0c[4] = dest + (int)((void **)dest)[i * 2 + 3];

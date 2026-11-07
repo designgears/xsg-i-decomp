@@ -692,7 +692,7 @@ void EtherTreeCenterMove(void)
     }
 }
 
-typedef struct EtherTreeRightPos { long a, b; } EtherTreeRightPos;
+typedef struct EtherTreeRightPos { PS2_LONG a, b; } EtherTreeRightPos;
 typedef struct EtherTreeRightSetView {
     unsigned char flags;
     unsigned char mode;
@@ -726,7 +726,7 @@ void EtherTreeRightSet(int id, int index)
     record->flags |= 1;
     record->counter = 0;
     record->pos.a = ((EtherTreeRightPos *)((char *)object + 0x20))->a;
-    *(volatile long *)&record->pos.b = ((EtherTreeRightPos *)((char *)object + 0x20))->b;
+    *(volatile PS2_LONG *)&record->pos.b = ((EtherTreeRightPos *)((char *)object + 0x20))->b;
     record->size = record->col0a = 0x20;
     *(volatile unsigned char *)&record->col1[0] = 0x80;
     *(volatile unsigned char *)&record->col1a = 0;

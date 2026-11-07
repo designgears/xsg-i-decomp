@@ -188,10 +188,10 @@ static void fnMSP00_DM000(void *self, MSP00DrawState *work)
 PS2_TI_TYPEDEF(unsigned int, Msp00Quad);
 typedef union Msp00QW {
     Msp00Quad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } Msp00QW;
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
@@ -219,7 +219,7 @@ static void fnMSP00_DP000(void *self, void *work)
 {
     Msp00Draw *effect = (Msp00Draw *)work;
     int i;
-    long regs;
+    PS2_LONG regs;
     int nreg;
     float *szp;
     Vector4 verts[4];
@@ -271,7 +271,7 @@ static void fnMSP00_DP000(void *self, void *work)
                 if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl_2_00A51430[i], effect->twist[i][j]) == 0) {
                     Msp00QW *t;
                     Msp00QW *g;
-                    unsigned long texVal;
+                    unsigned PS2_LONG texVal;
                     int n1;
                     int n2;
 
@@ -284,7 +284,7 @@ static void fnMSP00_DP000(void *self, void *work)
                     t[0].ul[1] = 0xE;
                     gp->auxCount = 1;
                     a1 = t + 1;
-                    texVal = *(unsigned long *)((char *)effect + 0x48 + ((j ^ i) & 1) * 8);
+                    texVal = *(unsigned PS2_LONG *)((char *)effect + 0x48 + ((j ^ i) & 1) * 8);
                     a1->uc[8] = texReg;
                     a1->ul[0] = texVal;
                     n1 = gp->auxCount + 1;

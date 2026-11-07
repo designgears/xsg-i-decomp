@@ -10,7 +10,7 @@ static int xglHddDummyCB(int event, int value)
 
 static int xglHddCheckCore(void)
 {
-    long status;
+    PS2_LONG status;
     int expectedStatus;
     int result;
 

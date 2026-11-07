@@ -58,7 +58,7 @@ typedef struct PortCountData {
     unsigned int state;
     PortCountTarget targets[3];
     unsigned char unmodeled_64[4];
-    long countedMoney;
+    PS2_LONG countedMoney;
     int nextExp[12];
     unsigned char unmodeled_A0[0x10];
 } PortCountData;

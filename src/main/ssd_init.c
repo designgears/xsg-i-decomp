@@ -442,7 +442,7 @@ void RssdFuncCallCompleted(int status)
 {
   int result;
   int next;
-  long code;
+  PS2_LONG code;
 
   do {
     if (next) {

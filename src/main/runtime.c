@@ -727,7 +727,7 @@ void Java_xeno_util_Runtime_setPartyData__II(JThread *thread, unsigned int *argu
         *(int *)p = arguments[1];
         break;
     case 3:
-        *(long *)p = (int)arguments[1];
+        *(PS2_LONG *)p = (int)arguments[1];
         break;
     }
     if (arguments[0] == 0x0100002C) {

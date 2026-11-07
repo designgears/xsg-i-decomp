@@ -399,7 +399,7 @@ static void _ActivateAct(RgSelectRobot *pAct)
     _select_light((StudioLight *)(pNew + 0x510));
     *(int *)pNew |= 0x8800;
     *(int *)(pNew + 0x9A0) |= 3;
-    *(long *)(pNew + 0x9D8) = 0x44;
+    *(PS2_LONG *)(pNew + 0x9D8) = 0x44;
     *(int *)(pNew + 0x9C0) = 0;
     ACT_initMotion(pNew);
     if (exMot != 0) {

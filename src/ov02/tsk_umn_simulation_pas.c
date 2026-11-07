@@ -170,7 +170,7 @@ typedef struct UmnSimInfoWindow {
     unsigned char unmodeled_1c[0x194 - 0x1C];
 } UmnSimInfoWindow;
 typedef struct UmnSimInfoStr {
-    long head;
+    PS2_LONG head;
     short tail;
 } UmnSimInfoStr;
 typedef struct UmnSimInfoWork {
@@ -372,7 +372,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
             }
             MoveSlide(&work->x, &target, 3.0f);
             if (work->x == target) {
-                { long s = work->state; if (s == 20) work->state = 30; else work->state = 0; }
+                { PS2_LONG s = work->state; if (s == 20) work->state = 30; else work->state = 0; }
             }
             break;
         case 30:

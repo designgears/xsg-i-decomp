@@ -681,7 +681,7 @@ void eMessageCpy(char *dst, char *src)
 
 void eMessageCat(char *src)
 {
-  unsigned long new_var;
+  unsigned PS2_LONG new_var;
   char *dst = MessageCpyEnd;
   int n;
   int i;

@@ -993,7 +993,7 @@ extern char D_00A459C8[];
 
 int dataFileLoad(const char *name, void *dst)
 {
-    long size = xglCdReadFile(name, dst, 0, 0);
+    PS2_LONG size = xglCdReadFile(name, dst, 0, 0);
     if (size < 0) {
         printf(D_00A459B0, name);
         return 0;
@@ -1033,7 +1033,7 @@ extern const char D_00A45A28[];
 
 int dataFileLoadNB(const char *name, void *dst)
 {
-    long size = xglCdReadFile(name, dst, 1, (int)dataNBreadCB);
+    PS2_LONG size = xglCdReadFile(name, dst, 1, (int)dataNBreadCB);
     if (size < 0) {
         printf(D_00A45A10, name);
         return 0;

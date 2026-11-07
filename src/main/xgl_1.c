@@ -162,14 +162,14 @@ typedef struct XglMovieGsView {
     short height;                       /* +0x40 */
     unsigned char unmodeled_42[0x6e];
     int vramAddr[2];                    /* +0xb0 */
-    unsigned long *packet[2];           /* +0xb8 */
-    unsigned long texReg;               /* +0xc0 */
+    unsigned PS2_LONG *packet[2];           /* +0xb8 */
+    unsigned PS2_LONG texReg;               /* +0xc0 */
     unsigned char bufIndex;             /* +0xc8 */
     unsigned char transMode;            /* +0xc9 */
 } XglMovieGsView;
 
-static unsigned long *make_gstrans(XglMovieGsView *info, int x) {
-    unsigned long *p;
+static unsigned PS2_LONG *make_gstrans(XglMovieGsView *info, int x) {
+    unsigned PS2_LONG *p;
     int addr;
     int h;
     int y;
@@ -184,10 +184,10 @@ static unsigned long *make_gstrans(XglMovieGsView *info, int x) {
     switch (info->transMode) {
     case 0:
     default:
-        p[4] = (unsigned long)sRender.w14 << 37 | 0x0008000000000000;
+        p[4] = (unsigned PS2_LONG)sRender.w14 << 37 | 0x0008000000000000;
         break;
     case 1:
-        p[4] = (unsigned long)sRender.w1a << 37 | 0x0008000000000000;
+        p[4] = (unsigned PS2_LONG)sRender.w1a << 37 | 0x0008000000000000;
         break;
     case 2:
         p[4] = info->texReg;
@@ -202,7 +202,7 @@ static unsigned long *make_gstrans(XglMovieGsView *info, int x) {
         p[1] = 0;
         p[2] = 0x1000000000008002;
         p[3] = 0xE;
-        p[4] = (long)y << 32 | (long)x << 48;
+        p[4] = (PS2_LONG)y << 32 | (PS2_LONG)x << 48;
         p[5] = 0x51;
         p[6] = 0;
         p[7] = 0x53;
@@ -306,7 +306,7 @@ static int checkdma(XglMovieDmaView *d)
 typedef struct XglMovieTag {
     int tag;
     int addr;
-    unsigned long pad;
+    unsigned PS2_LONG pad;
 } XglMovieTag;
 typedef struct XglMovieOpenView {
     unsigned char pad00[0x14];
@@ -423,7 +423,7 @@ typedef struct XglMoviePlayView {
     XglMovieTag *dmaTag;                /* +0xac */
     int vramAddr[2];                    /* +0xb0 */
     int packet[2];                      /* +0xb8 */
-    unsigned long texReg;               /* +0xc0 */
+    unsigned PS2_LONG texReg;               /* +0xc0 */
     unsigned char bufIndex;             /* +0xc8 */
     unsigned char transMode;            /* +0xc9 */
     unsigned char bca;                  /* +0xca */
@@ -638,22 +638,22 @@ void *xglMovieMakeXtxHeader(XglMovieInfo *info, unsigned char *header)
     int *p;
 
     count = *(int *)&info->unmodeled_48[4];
-    ((unsigned long *)header)[0] = 0x0000005000585458;
-    ((unsigned long *)header)[1] = 0x0000001000000001;
+    ((unsigned PS2_LONG *)header)[0] = 0x0000005000585458;
+    ((unsigned PS2_LONG *)header)[1] = 0x0000001000000001;
     p = (int *)(header + 0x10);
     p[0] = info->width + 0x40000;
     p[1] = info->height;
     p[2] = 0;
     p[3] = count + 2;
-    ((unsigned long *)header)[4] = 0x30;
-    ((unsigned long *)header)[5] = 0;
-    ((unsigned long *)header)[6] = 0;
+    ((unsigned PS2_LONG *)header)[4] = 0x30;
+    ((unsigned PS2_LONG *)header)[5] = 0;
+    ((unsigned PS2_LONG *)header)[6] = 0;
     p = (int *)(header + 0x38);
     p[0] = 0;
     p[1] = count + 0x50000001;
     p[2] = count + 0x8000;
     p[3] = 0x08000000;
-    ((unsigned long *)header)[9] = 0;
+    ((unsigned PS2_LONG *)header)[9] = 0;
     return header + 0x50;
 }
 
@@ -915,7 +915,7 @@ int xglMpeg2Open(XglMovieInfo *info)
 }
 
 static void setLoadImageTags(void *buf, int addr, int h, int w) {
-    unsigned long *p;
+    unsigned PS2_LONG *p;
     int x, y;
 
     p = UNCACHED(buf);
@@ -934,7 +934,7 @@ static void setLoadImageTags(void *buf, int addr, int h, int w) {
             p[1] = 0;
             p[2] = 0x1000000000008002;
             p[3] = 0xE;
-            p[4] = (long)y << 32 | (long)x << 48;
+            p[4] = (PS2_LONG)y << 32 | (PS2_LONG)x << 48;
             p[5] = 0x51;
             p[6] = 0;
             p[7] = 0x53;
@@ -956,9 +956,9 @@ typedef struct XglMpegView {
     int height;         /* +0x04 */
     int frameCount;     /* +0x08 */
     int pad0c;
-    long pts;           /* +0x10 */
-    long dts;           /* +0x18 */
-    unsigned long flags; /* +0x20 */
+    PS2_LONG pts;           /* +0x10 */
+    PS2_LONG dts;           /* +0x18 */
+    unsigned PS2_LONG flags; /* +0x20 */
 } XglMpegView;
 extern int sceMpegIsEnd(void *mpeg);
 extern int sceMpegGetPicture(void *mpeg, void *buffer, int count);

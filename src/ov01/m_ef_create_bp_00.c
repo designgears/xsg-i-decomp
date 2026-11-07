@@ -210,11 +210,11 @@ static void fnBP00_PR010(void *self, BP00Work *work)
 PS2_TI_TYPEDEF(unsigned int, BP00Quad);
 typedef union BP00QW {
     BP00Quad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned int ui[4];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } BP00QW;
 typedef struct BP00GPacket {
@@ -240,13 +240,13 @@ static inline void bp00Flush(BP00GPacket *pk, int nreg)
     pk->current += m;
     pk->count += m;
 }
-static inline BP00QW *bp00Begin(BP00GPacket *gp, unsigned long tag, unsigned long regs, int aux)
+static inline BP00QW *bp00Begin(BP00GPacket *gp, unsigned PS2_LONG tag, unsigned PS2_LONG regs, int aux)
 {
     BP00QW *t = gp->current;
     BP00QW *r = t + 1;
 
     t[0].ul[1] = regs;
-    t[0].ul[0] = tag | ((unsigned long)aux << 60);
+    t[0].ul[0] = tag | ((unsigned PS2_LONG)aux << 60);
     gp->auxCount = aux;
     return r;
 }

@@ -120,7 +120,7 @@ typedef struct MspEffect {
 } MspEffect;
 
 typedef struct Msp02GsParameter {
-    unsigned long primitive_tag;
+    unsigned PS2_LONG primitive_tag;
     unsigned char rest[8];
 } Msp02GsParameter;
 typedef struct Msp02CreationView {
@@ -185,9 +185,9 @@ int MEfCreate_MSP02(Msp02Object *object)
     work->angle = MMathMakeRandom2PI();
     MGsGPInit(work->drawPacket, 0, 0);
     svGetPrmFromName(D_00A51680, &parameter);
-    *(unsigned long *)(work->drawPacket + 0x18) = parameter.primitive_tag;
+    *(unsigned PS2_LONG *)(work->drawPacket + 0x18) = parameter.primitive_tag;
     svGetPrmFromName(D_00A51690, &parameter);
-    *(unsigned long *)(work->drawPacket + 0x20) = parameter.primitive_tag;
+    *(unsigned PS2_LONG *)(work->drawPacket + 0x20) = parameter.primitive_tag;
     memset(work->active, 0, sizeof(work->active));
     memset(work->points, 0, sizeof(work->points));
     memset(work->twist, 0, sizeof(work->twist));
@@ -451,10 +451,10 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
 PS2_TI_TYPEDEF(unsigned int, Msp02Quad);
 typedef union Msp02QW {
     Msp02Quad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } Msp02QW;
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
@@ -475,7 +475,7 @@ typedef struct Msp02Packet {
 static void fnMSP02_DP000(void *task, MspEffect *effect)
 {
     int i;
-    long regs;
+    PS2_LONG regs;
     int nreg;
     float *szp;
     Vector4 verts[4];
@@ -488,7 +488,7 @@ static void fnMSP02_DP000(void *task, MspEffect *effect)
     Msp02QW *a4;
     Msp02QW *a5;
     Msp02Quad color;
-    unsigned long *tex;
+    unsigned PS2_LONG *tex;
     int j;
     int n;
     int off;
@@ -531,12 +531,12 @@ static void fnMSP02_DP000(void *task, MspEffect *effect)
             if (lo) {
                 off = 0x130;
             }
-            tex = (unsigned long *)((char *)effect + off);
+            tex = (unsigned PS2_LONG *)((char *)effect + off);
             for (j = 0; j < 2; j++) {
                 if (MEfMake4Vertex2(verts, &effect->points[i][j], *szp, effect->twist[i][j]) == 0) {
                     Msp02QW *t;
                     Msp02QW *g;
-                    unsigned long texVal;
+                    unsigned PS2_LONG texVal;
                     int n1;
                     int n2;
 

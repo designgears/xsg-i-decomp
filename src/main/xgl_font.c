@@ -1,19 +1,19 @@
 #include "common.h"
 
 extern unsigned char FS[];
-extern unsigned long ModeEnv[];
+extern unsigned PS2_LONG ModeEnv[];
 
 void xglFontDebugMode(int mode)
 {
-  unsigned long *new_var2;
+  unsigned PS2_LONG *new_var2;
   if (mode >= 0)
   {
     unsigned int new_var;
     FS[11] = mode;
     new_var = 4;
     new_var2 = ModeEnv;
-    (new_var2 + 16)[new_var] = ((unsigned long) FS[11]) | 0x50000;
-    (ModeEnv + 0)[new_var] = ((unsigned long) (FS[11] + 0x23)) | 0x50000;
+    (new_var2 + 16)[new_var] = ((unsigned PS2_LONG) FS[11]) | 0x50000;
+    (ModeEnv + 0)[new_var] = ((unsigned PS2_LONG) (FS[11] + 0x23)) | 0x50000;
   }
 }
 
@@ -150,7 +150,7 @@ extern unsigned char *D_0088119C[];
 
 static void xglFontPrintSub(void *args)
 {
-  long *ap;
+  PS2_LONG *ap;
   char *text;
   unsigned char *fs;
   unsigned char *fsn;
@@ -163,17 +163,17 @@ static void xglFontPrintSub(void *args)
   int size;
   int width;
   unsigned char base;
-  unsigned long v;
+  unsigned PS2_LONG v;
   unsigned int fv;
   float f;
   unsigned char *s;
-  unsigned long st;
+  unsigned PS2_LONG st;
   unsigned char b2;
   unsigned char b3;
   unsigned char b4;
   unsigned char b5;
   unsigned char b6;
-  ap = (long *) args;
+  ap = (PS2_LONG *) args;
   text = (char *) ((int) (*(ap++)));
   if (*text != 0)
   {
@@ -300,7 +300,7 @@ static void xglFontPrintDirectCore(const char *text)
         {
           do
           {
-            *((*D_0088119C)++) = (unsigned char) ((long) (*text));
+            *((*D_0088119C)++) = (unsigned char) ((PS2_LONG) (*text));
             text++;
           }
           while ((--size) > 0);
@@ -1460,12 +1460,12 @@ typedef struct FontCtx {
     unsigned char mode;
 } FontCtx;
 extern int LoopCount;
-extern unsigned long KanjiTex0Env_8[];
-extern unsigned long KanjiTex1Env_9[];
-extern unsigned long WinTexEnv_10[];
-extern unsigned long TestEnv_11_00490BC0[];
-extern unsigned long TestEnv_12_00490C20[];
-extern unsigned long TestEnv_13[];
+extern unsigned PS2_LONG KanjiTex0Env_8[];
+extern unsigned PS2_LONG KanjiTex1Env_9[];
+extern unsigned PS2_LONG WinTexEnv_10[];
+extern unsigned PS2_LONG TestEnv_11_00490BC0[];
+extern unsigned PS2_LONG TestEnv_12_00490C20[];
+extern unsigned PS2_LONG TestEnv_13[];
 extern void sceVif1PkCloseDirectHLCode(XglPacket *);
 extern void sceVif1PkOpenDirectHLCode(XglPacket *, int);
 extern void sceVif1PkCnt(XglPacket *, int);
@@ -1476,7 +1476,7 @@ void xglFontReloadTexture(FontCtx *ctx, int type)
 {
     XglPacket *pkt;
     int *hl;
-    unsigned long *env;
+    unsigned PS2_LONG *env;
 
     pkt = ctx->pkt;
     ctx->flags |= 0x40;
@@ -1510,8 +1510,8 @@ void xglFontReloadTexture(FontCtx *ctx, int type)
             unsigned int pos = e->pos;
             unsigned int hi = pos >> 16;
             unsigned int lo = pos & 0xFFFF;
-            WinTexEnv_10[4] = ((unsigned long)((unsigned int)(e->addr + 0xF0000) >> 6) << 32) | ((unsigned long)hi << 48);
-            WinTexEnv_10[8] = lo | ((unsigned long)e->size << 32);
+            WinTexEnv_10[4] = ((unsigned PS2_LONG)((unsigned int)(e->addr + 0xF0000) >> 6) << 32) | ((unsigned PS2_LONG)hi << 48);
+            WinTexEnv_10[8] = lo | ((unsigned PS2_LONG)e->size << 32);
             sceVif1PkCnt(ctx->pkt, 0);
             sceVif1PkAddDataN(ctx->pkt, WinTexEnv_10, 0x18);
             sceVif1PkRef(ctx->pkt, (char *)wt + e->offset, e->count, 0, 0, 0);

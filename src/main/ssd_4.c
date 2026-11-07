@@ -468,7 +468,7 @@ void SsdCopyMemory(void *destination, void *source, int byte_count)
     const unsigned int *source_words = source;
     unsigned char *destination_bytes;
     const unsigned char *source_bytes;
-    long copy_count;
+    PS2_LONG copy_count;
     long long source_word0;
     long long source_word1;
     long long source_word2;
@@ -511,8 +511,8 @@ void SsdClearMemory(void *buffer, int size)
     unsigned long long *destination64 = buffer;
     unsigned int *destination32;
     unsigned char *destination_bytes;
-    long block_count;
-    long byte_count;
+    PS2_LONG block_count;
+    PS2_LONG byte_count;
 
     block_count = size >> 5;
     if (block_count != 0) {

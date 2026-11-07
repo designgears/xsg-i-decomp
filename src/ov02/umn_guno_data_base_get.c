@@ -531,7 +531,7 @@ typedef union UmnPadInputPrefix {
                 unsigned short half_2a;
                 unsigned int unmodeled_2c;
             } halves;
-            unsigned long buttonRegister;
+            unsigned PS2_LONG buttonRegister;
         } buttons;
     } wide;
 } UmnPadInputPrefix;
@@ -549,7 +549,7 @@ typedef struct UmnGunoDataBase {
     int text;                                /* +0x2C */
     int picture;                            /* +0x30 */
     int sound;                              /* +0x34 */
-    long model;                             /* +0x38 */
+    PS2_LONG model;                             /* +0x38 */
     char name[0x52 - 0x40];                 /* +0x40 */
     char reading[0x68 - 0x52];              /* +0x52 */
 } UmnGunoDataBase;
@@ -566,7 +566,7 @@ typedef struct UmnDataBaseWinParam {
     int text;                               /* +0x1C */
     int picture;                            /* +0x20 */
     int sound;                              /* +0x24 */
-    long model;                             /* +0x28 */
+    PS2_LONG model;                             /* +0x28 */
     unsigned char unmodeled_30[0x34 - 0x30];
     char *name;                             /* +0x34 */
     char *reading;                          /* +0x38 */
@@ -950,7 +950,7 @@ typedef struct UmnDataBaseDispParam {
     short y;                                /* +0x0A */
     short width;                            /* +0x0C */
     short height;                           /* +0x0E */
-    unsigned long color;                    /* +0x10 */
+    unsigned PS2_LONG color;                    /* +0x10 */
     unsigned char unmodeled_18[0x40 - 0x18];
     void *window;                           /* +0x40 */
     void *list;                             /* +0x44 */

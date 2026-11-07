@@ -259,29 +259,29 @@ typedef struct GameBgBandVertex {
     GameBgGsPosition position;
 } GameBgBandVertex;
 typedef struct GameBgGifTagWord {
-    unsigned long loop_count : 15;
-    unsigned long end_of_packet : 1;
-    unsigned long reserved_10 : 16;
-    unsigned long reserved_20 : 14;
-    unsigned long primitive_enable : 1;
-    unsigned long primitive : 11;
-    unsigned long format : 2;
-    unsigned long register_count : 4;
+    unsigned PS2_LONG loop_count : 15;
+    unsigned PS2_LONG end_of_packet : 1;
+    unsigned PS2_LONG reserved_10 : 16;
+    unsigned PS2_LONG reserved_20 : 14;
+    unsigned PS2_LONG primitive_enable : 1;
+    unsigned PS2_LONG primitive : 11;
+    unsigned PS2_LONG format : 2;
+    unsigned PS2_LONG register_count : 4;
 } GameBgGifTagWord;
 typedef struct GameBgGifRegisterList {
-    unsigned long front_start_texture : 4;
-    unsigned long front_start_color : 4;
-    unsigned long front_start_position : 4;
-    unsigned long back_start_texture : 4;
-    unsigned long back_start_color : 4;
-    unsigned long back_start_position : 4;
-    unsigned long front_end_texture : 4;
-    unsigned long front_end_color : 4;
-    unsigned long front_end_position : 4;
-    unsigned long back_end_texture : 4;
-    unsigned long back_end_color : 4;
-    unsigned long back_end_position : 4;
-    unsigned long unused_registers : 16;
+    unsigned PS2_LONG front_start_texture : 4;
+    unsigned PS2_LONG front_start_color : 4;
+    unsigned PS2_LONG front_start_position : 4;
+    unsigned PS2_LONG back_start_texture : 4;
+    unsigned PS2_LONG back_start_color : 4;
+    unsigned PS2_LONG back_start_position : 4;
+    unsigned PS2_LONG front_end_texture : 4;
+    unsigned PS2_LONG front_end_color : 4;
+    unsigned PS2_LONG front_end_position : 4;
+    unsigned PS2_LONG back_end_texture : 4;
+    unsigned PS2_LONG back_end_color : 4;
+    unsigned PS2_LONG back_end_position : 4;
+    unsigned PS2_LONG unused_registers : 16;
 } GameBgGifRegisterList;
 typedef struct GameBgGifTag {
     GameBgGifTagWord tag;
@@ -289,7 +289,7 @@ typedef struct GameBgGifTag {
 } GameBgGifTag;
 typedef struct GameBgBandPacketHeader {
     unsigned long long vif_nops;
-    unsigned long vif_command;
+    unsigned PS2_LONG vif_command;
     GameBgGifTag gif;
 } GameBgBandPacketHeader;
 typedef struct GameBgBandPacket {
@@ -333,7 +333,7 @@ typedef struct GameBgBandParameters {
 void GameBgDrawType2(void)
 {
     float point_component;
-    unsigned long vif_command;
+    unsigned PS2_LONG vif_command;
     XglPacket *packet = xglPacketGetCurrent();
     GameBgBandParameters *param = (GameBgBandParameters *)&GameBgDrawType2Param;
     GameBgBandTexture *texture;

@@ -1019,7 +1019,7 @@ signed char GetUwamonoSignal(UwamonoMapUnit *unit)
 
 typedef struct SaveSymbolUnit {
     u32 flags;                        /* +0x00 */
-    long (*update)(UwamonoMapUnit *); /* +0x04 */
+    PS2_LONG (*update)(UwamonoMapUnit *); /* +0x04 */
     unsigned char unmodeled_08[8];
     float position[4];                /* +0x10 */
     float rotation[4];                /* +0x20 */
@@ -1287,7 +1287,7 @@ void InitEvsSymbol(UwamonoCreatedUnit *arg0)
   {
     sub->state = 0;
   }
-  unit->update = (long (*)(UwamonoMapUnit *)) MAP_updateUnitSymbol;
+  unit->update = (PS2_LONG (*)(UwamonoMapUnit *)) MAP_updateUnitSymbol;
   { float _sb = arg0 != 0; if (_sb) {} }
   sub->count = 0;
   unit->flags |= 0x10000;
@@ -1317,7 +1317,7 @@ void InitRetSymbol(UwamonoCreatedUnit *arg0)
   {
     sub->state = 0;
   }
-  unit->update = (long (*)(UwamonoMapUnit *)) MAP_updateUnitSymbol;
+  unit->update = (PS2_LONG (*)(UwamonoMapUnit *)) MAP_updateUnitSymbol;
   { float _sb = arg0 != 0; if (_sb) {} }
   sub->count = 0;
   unit->flags |= 0x10000;

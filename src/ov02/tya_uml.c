@@ -665,7 +665,7 @@ static void dbheader_load(DbHeaderWork *work)
       work->count = n - 1;
       return;
     }
-    new_var5 = find_text(text, (long) (*src));
+    new_var5 = find_text(text, (PS2_LONG) (*src));
     p = (u8 *) new_var5;
     if (p != 0)
     {

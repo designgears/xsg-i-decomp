@@ -158,11 +158,11 @@ static void fnECM02_PR000(void *self, void *work)
 PS2_TI_TYPEDEF(unsigned int, ECM02Quad);
 typedef union ECM02QW {
     ECM02Quad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned int ui[4];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } ECM02QW;
 typedef struct ECM02GPacket {
@@ -196,13 +196,13 @@ static inline void ecm02Flush(ECM02GPacket *pk, int nreg)
     pk->current += m;
     pk->count += m;
 }
-static inline ECM02QW *ecm02Begin(ECM02GPacket *gp, unsigned long tag, unsigned long regs, int aux)
+static inline ECM02QW *ecm02Begin(ECM02GPacket *gp, unsigned PS2_LONG tag, unsigned PS2_LONG regs, int aux)
 {
     ECM02QW *t = gp->current;
     ECM02QW *r = t + 1;
 
     t[0].ul[1] = regs;
-    t[0].ul[0] = tag | ((unsigned long)aux << 60);
+    t[0].ul[0] = tag | ((unsigned PS2_LONG)aux << 60);
     gp->auxCount = aux;
     return r;
 }

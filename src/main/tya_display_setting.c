@@ -38,14 +38,14 @@ static void DrawImage(u8 *framebuffer)
 }
 
 typedef struct {
-    unsigned long DX : 12;
-    unsigned long DY : 11;
-    unsigned long MAGH : 4;
-    unsigned long MAGV : 2;
-    unsigned long p0 : 3;
-    unsigned long DW : 12;
-    unsigned long DH : 11;
-    unsigned long p1 : 9;
+    unsigned PS2_LONG DX : 12;
+    unsigned PS2_LONG DY : 11;
+    unsigned PS2_LONG MAGH : 4;
+    unsigned PS2_LONG MAGV : 2;
+    unsigned PS2_LONG p0 : 3;
+    unsigned PS2_LONG DW : 12;
+    unsigned PS2_LONG DH : 11;
+    unsigned PS2_LONG p1 : 9;
 } TyaGsDisplay;
 typedef struct {
     u64 pmode;

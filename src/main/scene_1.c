@@ -210,7 +210,7 @@ void SCENE_instance(SceneVm *vm, SceneObject scene_object)
  * int/long are indistinguishable (upper already zero). No cleaner pure-C
  * hypothesis exists in evidence.
  */
-long SCENE_dispose(SceneObject scene_object)
+PS2_LONG SCENE_dispose(SceneObject scene_object)
 {
     return JNI_isInstanceOf(scene_object, classJava_xeno_Scene);
 }

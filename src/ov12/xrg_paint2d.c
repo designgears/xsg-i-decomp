@@ -328,7 +328,7 @@ static int _CalcOffset(int *out, int mode, const XrgPaint2DOffset *anchor, XrgPa
     anchorCopy = *anchor;
     resultCopy = *pres;
     pres = &resultCopy;
-    ptr = (mode & 0x10) ? (XrgPaint2DOffsetOut *)(long)pres->i.y : 0;
+    ptr = (mode & 0x10) ? (XrgPaint2DOffsetOut *)(PS2_LONG)pres->i.y : 0;
     switch ((unsigned int)(mode & 3)) {
     case 0:
         out[0] = s_anHomePos[0];

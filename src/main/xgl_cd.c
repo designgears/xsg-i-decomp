@@ -610,7 +610,7 @@ static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
     char *absolute_destination;
     char *scan;
     int descriptor;
-    long offset;
+    PS2_LONG offset;
     unsigned char *header;
     int size;
     int source;
@@ -747,7 +747,7 @@ resolved:
             if (position->packed == 0)
                 position->size_bytes = size;
         }
-        offset = (long)(unsigned int)position->lbn << 11;
+        offset = (PS2_LONG)(unsigned int)position->lbn << 11;
         sceLseek(descriptor, 0, 0);
         while (offset > 0x40000000) {
             sceLseek(descriptor, 0x40000000, 1);

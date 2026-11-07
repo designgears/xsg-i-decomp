@@ -277,10 +277,10 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
 PS2_TI_TYPEDEF(unsigned int, Kos02Quad);
 typedef union Kos02QW {
     Kos02Quad q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } Kos02QW;
 extern int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size);
@@ -313,16 +313,16 @@ static void fnKOSBW02_DP000(void *task, void *state)
     Kos02QW *a4;
     Kos02QW *a5;
     Kos02Quad color;
-    unsigned long *tex;
+    unsigned PS2_LONG *tex;
     int j;
     int n;
     int off;
     int lo;
     char *base;
-    long regs;
+    PS2_LONG regs;
     int texReg;
     int nloop;
-    unsigned long texVal;
+    unsigned PS2_LONG texVal;
     struct { unsigned char pad[0x150]; short active[10]; } *sub;
 
     pk = (Kos02Packet *)effect->draw_packet;
@@ -360,7 +360,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
             if (lo) {
                 off = 0x140;
             }
-            tex = (unsigned long *)((char *)sub + off);
+            tex = (unsigned PS2_LONG *)((char *)sub + off);
             for (j = 0; j < 3; j++) {
                 if (MEfMake4Vertex2(verts, &((Vector4 (*)[3])effect->points)[i][j], sztbl_1[i], ((float (*)[3])effect->twist)[i][j]) == 0) {
                     Kos02QW *t;
@@ -422,7 +422,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
             t[0].ul[1] = 0xE;
             pk->auxCount = 1;
             a1 = t + 1;
-            texVal = *(unsigned long *)((char *)effect + 0x48);
+            texVal = *(unsigned PS2_LONG *)((char *)effect + 0x48);
             a1->uc[8] = 6;
             a1->ul[0] = texVal;
             color = PS2_QCONST(0xFF000000280000002800000028, 0x28, 0x28, 0x28, 0xFF);
@@ -431,7 +431,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
             pk->current += n1;
             pk->count += n1;
             g = pk->current;
-            { long r = 0x512; g[0].ul[0] = 0x302A400000008000; g[0].ul[1] = r; }
+            { PS2_LONG r = 0x512; g[0].ul[0] = 0x302A400000008000; g[0].ul[1] = r; }
             pk->auxCount = 3;
             g[1].q = McEfSTQtbl[0];
             g[2].q = color;

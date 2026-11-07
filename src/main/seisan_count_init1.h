@@ -85,7 +85,7 @@ typedef struct SeisanCountData {
     unsigned char unmodeled_04[0]; /* +0x4: zero-length alias of the former padding member, kept for saved bodies */
     SeisanCountTarget targets[3];
     unsigned char unmodeled_64[0x4];
-    long countedMoney;
+    PS2_LONG countedMoney;
     int nextExp[12];                /* +0x70: character 1..12's next_exp, set by SeisanCountInit1 */
     unsigned char unmodeled_A0[0x10];
 } SeisanCountData;

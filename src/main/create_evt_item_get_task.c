@@ -434,9 +434,9 @@ void InitItemBox(ItemMapUnit *unit)
     unit->actionSub = 0;
     if (info->unitNo != -1) {
         ItemOwnerUnit *o = &MapUnit[info->unitNo];
-        *(long *)((char *)o + 0x10) = *(long *)&unit->position;
+        *(PS2_LONG *)((char *)o + 0x10) = *(PS2_LONG *)&unit->position;
         *(unsigned int *)o |= 4;
-        *(long *)((char *)o + 0x18) = *(long *)((char *)&unit->position + 8);
+        *(PS2_LONG *)((char *)o + 0x18) = *(PS2_LONG *)((char *)&unit->position + 8);
     }
     if (info->itemNo >= 602) {
         unit->serial = (unsigned short)-1;

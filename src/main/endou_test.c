@@ -624,7 +624,7 @@ typedef struct EndouBattleAnalysisParams {
     int ether_points;
     int skill_points;
     int experience;
-    long money;
+    PS2_LONG money;
     unsigned short common_drop;
     unsigned short rare_drop;
 } EndouBattleAnalysisParams;

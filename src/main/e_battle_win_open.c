@@ -349,7 +349,7 @@ typedef struct BattleWinAnalysisParams {
     int ether_points;
     int skill_points;
     int experience;
-    long money;
+    PS2_LONG money;
     unsigned short item;
     unsigned short rare_item;
     const char *item_text;

@@ -251,10 +251,10 @@ static void fnAMP02_DM000(void *self, Amp02DrawState *work) {
 
 typedef union Amp02QW {
     Amp02Quadword q;
-    unsigned long ul[2];
+    unsigned PS2_LONG ul[2];
     unsigned short us[8];
     unsigned char uc[16];
-    volatile unsigned long vul[2];
+    volatile unsigned PS2_LONG vul[2];
     volatile unsigned char vuc[16];
 } Amp02QW;
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
@@ -283,7 +283,7 @@ static void fnAMP02_DP000(void *self, void *work)
 {
     Amp02Draw *effect = (Amp02Draw *)work;
     int i;
-    long regs;
+    PS2_LONG regs;
     int nreg;
     float *szp;
     Vector4 verts[4];
@@ -303,8 +303,8 @@ static void fnAMP02_DP000(void *self, void *work)
     int k;
     int lo;
     int off;
-    unsigned long *tex;
-    struct { unsigned char pad[0xF0]; unsigned long tex[2]; short active[10]; } *sub;
+    unsigned PS2_LONG *tex;
+    struct { unsigned char pad[0xF0]; unsigned PS2_LONG tex[2]; short active[10]; } *sub;
 
     pk = (Amp02Packet *)effect->packet;
     MGsGPInit(pk, 0, 0);
@@ -340,12 +340,12 @@ static void fnAMP02_DP000(void *self, void *work)
             if (lo) {
                 off = 0xF0;
             }
-            tex = (unsigned long *)((char *)sub + off);
+            tex = (unsigned PS2_LONG *)((char *)sub + off);
             for (j = 0; j < 1; j++) {
                 if (MEfMake4Vertex2(verts, (Vector4 *)((char *)effect + (i << 4) + 0x120 + j * 16), sztbl_2_00A51650[i], effect->twist[i + j]) == 0) {
                     Amp02QW *t;
                     Amp02QW *g;
-                    unsigned long texVal;
+                    unsigned PS2_LONG texVal;
                     int n1;
                     int n2;
 

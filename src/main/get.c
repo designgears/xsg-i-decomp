@@ -162,7 +162,7 @@ typedef struct { float x, y, z, w; } __attribute__((aligned(8))) StraightVec;
 
 extern int HitCheckMapUnitPosSize(StraightVec *pos, float size);
 
-extern long EneTerritoryID[];
+extern PS2_LONG EneTerritoryID[];
 
 void Check_Wall(const Point4 *center, char *hits, short count, int mapIndex,
                 int unused, int territory, float radius, float size)

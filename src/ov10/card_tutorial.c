@@ -93,7 +93,7 @@ extern int tutopage;
 extern void *tuxtx_tbl;
 extern void *tulex_tbl;
 extern void *lex;
-typedef struct { long a; long b; } TutoVec16;
+typedef struct { PS2_LONG a; PS2_LONG b; } TutoVec16;
 extern const TutoVec16 D_00A4E4D0;
 extern const char D_00A4E4E0[];
 

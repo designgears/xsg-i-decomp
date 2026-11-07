@@ -227,7 +227,7 @@ int tyaBmpOutput(char *path, u8 *pixels)
     int fbp;
     u8 *dst;
     u8 *src;
-    unsigned long image;
+    unsigned PS2_LONG image;
 
     sceGsSyncPath(0, 0);
     fd = sceOpen(path, 0x602);
@@ -277,7 +277,7 @@ int tyaSiPicOutput(char *path, char *zpath, u8 *pixels)
     u32 zmax;
     u32 z;
     u32 *p;
-    unsigned long image;
+    unsigned PS2_LONG image;
     u32 *end;
     u32 *rowLimit;
     u32 *zp;

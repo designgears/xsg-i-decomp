@@ -475,14 +475,14 @@ typedef struct UmlTestArg {
     short y;
     short w;
     short h;
-    long z;
+    PS2_LONG z;
 } UmlTestArg;
 
 static void UmlDispTestSub(XglPacket **packet, UmlTestArg *a)
 {
     UmlTestEnv *e = &TestEnv_42;
     int x0, y0, x1, y1;
-    long z;
+    PS2_LONG z;
 
     x1 = (a->x + a->w) * 16;
     y1 = (a->y + a->h) * 16;
@@ -684,7 +684,7 @@ typedef struct DatabaseTestDisp {
     short y;
     short width;
     short height;
-    unsigned long color;
+    unsigned PS2_LONG color;
     unsigned char unmodeled_18[0x40 - 0x18];
     void *window;
     void *list;

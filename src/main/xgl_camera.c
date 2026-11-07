@@ -107,7 +107,7 @@ struct XglCamera {
 
 typedef struct CameraDisplayEnv {
     u8 unmodeled_00[0x18];
-    long display;
+    PS2_LONG display;
     u8 unmodeled_20[0x30];
 } CameraDisplayEnv;
 extern CameraDisplayEnv DispEnv;
