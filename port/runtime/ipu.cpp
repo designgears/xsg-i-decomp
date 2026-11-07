@@ -8,7 +8,7 @@
 //
 // Implemented: BCLR, IDEC (RGB32 output with CSC and the SETTH alpha rule), FDEC, SETIQ,
 // SETVQ (stored), SETTH, CSC is not used by the game and is logged. BDEC/VDEC are logged
-// (the game only reaches them through libmpeg, which the port replaces, see mpeg.cpp).
+// (the game only reaches them through libmpeg, which the port replaces, see mpeg.c).
 //
 // Input is pulled lazily from channel 4: the FIFO holds only qwords the decoder asked for,
 // so IPU_BP's IFC/BP describe exactly how far the bitstream has been read, which is what
@@ -26,6 +26,7 @@
 
 extern "C" void xsg_logf(const char* fmt, ...);
 extern "C" volatile unsigned xsg_frame;
+extern "C" int xsg_mpeg_active;  // mpeg.c: libmpeg playback owns ch4
 
 namespace {
 
@@ -600,6 +601,7 @@ void xsg_ipu_reg_written(uint32_t addr) {
     }
     case D4_CHCR: {
         u32 v = R(D4_CHCR);
+        if (xsg_mpeg_active) break;  // mpeg.c takes the slice itself
         if (v & 0x100) {
             ch4.start();
             if (log_on()) xsg_logf("[ipu] ch4 start chcr %08x madr %08x qwc %x tadr %08x\n", ch4.chcr, ch4.madr, ch4.qwc, ch4.tadr);

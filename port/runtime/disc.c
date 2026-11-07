@@ -206,7 +206,7 @@ static uint32_t st_lsn;
  * buffered, which is never more than that (the game sizes its reads by it). */
 static uint32_t st_bufmax = 16;
 int sceCdStInit(uint32_t bufmax, uint32_t bankmax, void *buf) { STUB_LOG("%u %u %p", bufmax, bankmax, buf); st_bufmax = bufmax; return 1; }
-int sceCdStStart(uint32_t lsn, void *mode) { (void)mode; STUB_LOG("lsn=%u", lsn); st_lsn = lsn; return 1; }
+int sceCdStStart(uint32_t lsn, void *mode) { (void)mode; xsg_logf("[disc] StStart lsn=%u\n", lsn); st_lsn = lsn; return 1; }
 int sceCdStSeek(uint32_t lsn) { STUB_LOG("lsn=%u", lsn); st_lsn = lsn; return 1; }
 int sceCdStStop(void) { return 1; }
 int sceCdStPause(void) { return 1; }
