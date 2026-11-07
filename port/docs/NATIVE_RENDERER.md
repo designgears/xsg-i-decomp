@@ -243,7 +243,10 @@ target back into GS VRAM before such effects instead of compositing afterwards.
 
 ## 6. Next steps
 
-1. ~~Characters~~ done (§7). ~~Motion vectors~~ done (§8).
+0. Effects (§10): avoid the per-frame VRAM snapshot (read the GS frame on the GPU), decode
+   GS-rendered textures from the final VRAM instead of falling back, motion vectors for replays
+   (today replayed/PMODE pixels get zero motion).
+1. ~~Characters~~ done (§7). ~~Motion vectors~~ done (§8). ~~Effects at S×~~ done (§10).
 2. Effects at S×: detect GS draws that sample the displayed frame/Z (TEX0.TBP0 in the FRAME/ZBUF
    range) and redo the hangar DOF and fades on the native target, so post-processed frames stay
    high-res. Replace rule 2 with an exact last-writer plane once more of the frame is native.
@@ -409,3 +412,76 @@ Headless, `XSG_FAST=1`, sequential runs, field (`[fps]` lines, vblank ~3600–84
 The game thread gains from skipping VU1 for characters too (108 vs 77 without the composite), but
 with the live composite xsg-gpu is now the bottleneck. It records the displayed list twice (1× and
 4×), about 12,400 draws per frame in the field instead of about 5,400. Next steps, item 7.
+
+## 10. Effects at high resolution and exact ownership (native_fx.*)
+
+`port/gpu/native_fx.{h,cpp}` + `native_fx.comp`; `composite.comp` now takes an ownership plane.
+Shared-file edits are small: `xsg_gpu.cpp` lets `xsgnative::Gif` do the paraLLEl-GS transfer,
+`native.cpp` calls the fx hooks from `Gif`/`Batch`/`Vsync`/`Live`/`Shot`.
+
+### Inventory (GS traces, `XSG_GPU_FX_TRACE=v1,v2`, plus `src/main`)
+
+| effect | where | GS operations |
+|---|---|---|
+| defocus blur (type 01/03, preset 1/2) | hangar cutscene ~1401, **and every field frame** (light) | full-screen FST sprites, TEX0 = the draw buffer itself (TBP = FBP·32, CT32, TBW 8), ALPHA 0x44 with vertex alpha 0x40, TCC 0, bilinear, UV offset by a few pixels; TEST ZTE GREATER with the sprite's Z, so only far pixels blur (Z-based DOF); ZMSK |
+| alpha-only sprite before the blur | hangar | full-screen sprite, FBMSK 0x00ffffff (writes destination alpha) |
+| dialogue box | hangar, field 1550 | REGION_REPEAT stripe sprite (T8+CLUT), Ad-blended strip (ALPHA C = Ad), glyph sprites (T4, ALPHA 0x11, alpha test GREATER 0) |
+| screen fade (`nml_model_set.c` fade_render) | hangar 1401 (alpha 0x34) | full-screen flat sprite, ALPHA 0x44, TEST 0x30000 |
+| afterimage strip | field, around the player | narrow tri strips: FBMSK 0x7fffffff alpha-bit marks, then strips reading the frame (ALPHA FIX 0x10) |
+| radar/minimap (`game_radar.c`) | field | own texture, ALPHA 0x44 sprites; no frame read |
+| others in code, not reached | `game_defocus.c` | 05 mosaic (REGION_REPEAT frame read), 07 radial zoom, 08 glare streaks, 09 PMODE/EXTBUF feedback, 10 frozen-frame fade (local→local copy), 11 wave distortion |
+| PMODE | whole run | constant 0x8004 (vsync 0–9000): no two-circuit fades reached; only defocus type 09 changes it |
+
+### Exact ownership (replaces the colour check)
+
+A second paraLLEl-GS instance (on its **own** Vulkan context/device: two GSInterfaces on one
+Granite Device deadlock in `next_frame_context`) receives the same GIF stream, except that each
+native batch's PATH1 packet is drawn with fog forced on (FGE, F = 0, FOGCOL = marker), ABE and
+DTHE off; Z, alpha test, masks and scissor are untouched. Local→host transfers are disabled there.
+A pixel is native-owned iff the ownership GS still holds the marker colour there at the end of
+the frame (or at the effect snapshot). `composite.comp` takes the native S× sample exactly on
+owned pixels. `XSG_GPU_NATIVE_OWNER=0` restores the old colour/depth rule. Cost: a second
+paraLLEl-GS and one 4 MB readback per composited frame.
+
+### Effect replay
+
+Once native batches have drawn into buffer F this frame, the first later draw into F that
+(a) samples F or its Z as a texture over ≥ 50 % of the screen, or (b) is a blended full-screen
+sprite that is not a no-op, starts the **post phase**: the GIF message is split there, both GSes
+are flushed and their VRAM snapshotted (colour, Z, owner), and every later draw into F is
+recorded with its full state. A native batch after the trigger cancels it (mid-scene sprite).
+At vsync the composite starts from the snapshot, and `native_fx.comp` redraws the recorded
+draws at S× on it (one dispatch per primitive): sprites and triangles with the top-left rule,
+Gouraud/flat, STQ/UV, TFX (all four), REGION_CLAMP/REPEAT, nearest/bilinear (4-bit), fog,
+alpha test + AFAIL, DATE, Z test/write against the S× Z (native depth in GS units where owned),
+ALPHA (A,B,C,D with As/Ad/FIX), PABE, COLCLAMP, FBA, FBMSK. A frame read samples a copy of the
+S× surface with UVs ×S. Other textures are decoded from the GS-memory mirror. Not replayable
+(→ the frame falls back to 1×, logged): points/lines, Z read as texture, textures the GS rendered
+this frame, transfers into F, > 4096 post draws. Small frame reads (the afterimage strip) do not
+trigger; the ownership plane hands their pixels to the GS (1×). PMODE: a blend pass with BGCOLOR
+(SLBG) or same-buffer circuits runs after the replay; a second circuit reading another buffer
+is not done at S× (not reached).
+
+### Validation (scale 4, headless, RTX 5090)
+
+| vsync | post draws | replay at 1× on the snapshot vs paraLLEl-GS: exact / ≤2 / ≤8 / >8 | live 4× box-downsampled vs paraLLEl-GS |
+|---|---|---|---|
+| 1401 hangar (DOF + box + fade) | 9 | 201,524 / 27,606 / 246 / **0** | 169,687 / 58,006 / 1,273 / 410 |
+| 1550 field + dialogue | 62 | 218,608 / 9,823 / 230 / 715 | 45,110 / 177,886 / 4,072 / 2,308 |
+| 4001 field | 2 | 219,327 / 9,805 / 244 / **0** | 41,782 / 183,934 / 3,503 / 157 |
+| 6001 field | 2 | 219,333 / 9,801 / 242 / **0** | 41,773 / 183,946 / 3,500 / 157 |
+
+1401 was a 1× fallback before (composite took 0 px); now the native layer owns 171,631 px
+before the post phase and the whole frame is S×. 1550's remaining >8 are glyph edges. Speed in
+the field: ~66 vsyncs/s headless (was ~85), the cost of the per-frame snapshot (the field blurs
+every frame) and the ownership GS. Images: `port/docs/screenshots/fx_VVVVVV_{live_4x,
+live_down_1x,gs_1x,owner_1x,replay_1x}.png`. Shot logs show ownership, post phase, trigger.
+
+### With characters (merge)
+
+Set-2 batches take part in ownership like set 0: every GPU_NATIVE_SET2 message marks the next
+PATH1 GIF tag (two for the two-pass programs, whose one packet holds tags 1011 and 1012) and
+GPU_NATIVE_SET2_ENV marks the env-pass packet, so the ownership GS draws all character passes in
+the marker colour; `NativeFbp` gets each pass's FRAME. In the live resolve the order is
+composite, effect replay, PMODE, then the motion-vector pass, so MV sees the final image and
+gives post-effect and GS-owned pixels zero motion.

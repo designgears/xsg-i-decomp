@@ -14,6 +14,7 @@
 #define XSG_GPU_NATIVE_H
 
 #include <cstdint>
+#include <vector>
 
 #include "image.hpp"
 
@@ -24,13 +25,17 @@ namespace xsgnative {
 
 bool Init(Vulkan::Device* dev);   // false: XSG_GPU_NATIVE is off
 bool On();
-void Gif(uint32_t path, const uint8_t* data, uint32_t len);
+/* One GPU_MSG_GIF: tracked here, then handed to paraLLEl-GS (gs) by native_fx. */
+void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs);
 void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len);
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs);
-/* The live composite of the displayed buffer (TRANSFER_SRC_OPTIMAL, frame
+/* The live composite of the displayed buffer (GENERAL layout, frame
    buffer size x Scale()), or null when this vsync had no native layer. */
 const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h);
 int Scale();
+/* A TEX0 texture decoded from the GS-memory mirror (RGBA8), and the mirror's upload generation. */
+std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h);
+uint32_t MirrorGen();
 
 }  // namespace xsgnative
 

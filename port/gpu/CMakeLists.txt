@@ -45,14 +45,14 @@ set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
 # Native renderer shaders (native.vert/.frag, composite.comp) -> SPIR-V word lists included by native.cpp.
 find_program(XSG_GLSLC glslc REQUIRED)
 set(XSG_NATIVE_INC)
-foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp)
+foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/${src}.inc)
   add_custom_command(OUTPUT ${out}
     COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/${src}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb)

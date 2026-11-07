@@ -1,0 +1,229 @@
+#version 450
+// Native renderer effect replay (port/docs/NATIVE_RENDERER.md §7): one GS
+// primitive recorded after the effect trigger, rasterised at scale s onto the
+// high-resolution composite (colour + alpha + GS Z), the GS way: sample points
+// at 1x pixel corners, sprite/triangle coverage with the top-left rule, TFX,
+// alpha test, destination alpha test, Z test, ALPHA blending with COLCLAMP,
+// FBA, FBMSK.  A texture read of the frame buffer itself samples a copy of
+// the high-resolution surface with the UVs scaled by s.
+// mode 1 (p.prim < 0): the PMODE circuit blend over the finished image.
+layout(local_size_x = 8, local_size_y = 8) in;
+
+struct Prim {
+    vec4 xy[3];         // x, y (1x pixels, XYOFFSET removed), u, v (texels, FST) / s, t
+    vec4 col[3];        // RGBA 0..255
+    vec4 q;             // q per vertex (STQ), w unused
+    vec4 fog;           // F per vertex, w: FOGCOL bits
+    uvec4 z;            // Z per vertex
+    uvec4 kind;         // x: 0 point 1 line 3 triangle 6 sprite; y: PRIM; z: source 0 none 1 texture 2 frame; w: texture slot
+    uvec4 tex;          // x: TEX0 lo, y: TEX0 hi, z: CLAMP lo, w: CLAMP hi
+    uvec4 st;           // x: TEX1 lo, y: ALPHA lo, z: ALPHA hi (FIX), w: TEST
+    uvec4 fb;           // x: FRAME hi (FBMSK), y: ZBUF hi (ZMSK), z: FBA | PABE << 1 | COLCLAMP << 2, w: ZBUF psm
+    ivec4 sc;           // scissor x0 y0 x1 y1 (1x)
+    ivec4 tsz;          // texture w, h (texels), region of the frame source in it: w, h
+};
+layout(std430, set = 0, binding = 0) readonly buffer Prims { Prim prims[]; };
+layout(rgba8, set = 0, binding = 1) uniform image2D o_col;
+layout(r32ui, set = 0, binding = 2) uniform uimage2D o_z;
+layout(set = 0, binding = 3) uniform sampler2D src;    // texture (1x texels) or the surface copy (s x)
+layout(push_constant) uniform P {
+    int prim, s, w, h;          // w, h: surface at 1x
+    int ox, oy, pad0, pad1;     // bbox origin (s x samples)
+    uint pmode, bgcolor, zmax, pad2;
+} p;
+
+uint Bits(uint v, int lo, int n) { return bitfieldExtract(v, lo, n); }
+
+ivec4 Fetch(ivec2 t, Prim r) {
+    // GS texture addressing per axis, in texels of the source image.
+    const bool frame = r.kind.z == 2u;
+    const int sc = frame ? p.s : 1;
+    ivec2 size = frame ? r.tsz.zw * p.s : r.tsz.xy;
+    uint wms = Bits(r.tex.z, 0, 2), wmt = Bits(r.tex.z, 2, 2);
+    ivec2 lo = ivec2(0), hi = (frame ? r.tsz.xy * p.s : r.tsz.xy) - 1;
+    ivec2 tl = r.tsz.xy * sc;
+    // REGION_CLAMP limits (in 1x texels).
+    int minu = int(Bits(r.tex.z, 4, 10)), maxu = int(Bits(r.tex.z, 14, 10));
+    int minv = int(Bits(r.tex.z, 24, 8) | (Bits(r.tex.w, 0, 2) << 8)), maxv = int(Bits(r.tex.w, 2, 10));
+    // REGION_REPEAT: u = (u & MINU) | MAXU on 1x texels (sub-texel kept for a scaled source).
+    if (wms == 3u) t.x = (((t.x / sc) & minu) | maxu) * sc + t.x % sc;
+    if (wmt == 3u) t.y = (((t.y / sc) & minv) | maxv) * sc + t.y % sc;
+    if (wms == 0u) t.x = t.x & (tl.x - 1);
+    else if (wms == 1u) t.x = clamp(t.x, 0, tl.x - 1);
+    else if (wms == 2u) t.x = clamp(t.x, minu * sc, (maxu + 1) * sc - 1);
+    if (wmt == 0u) t.y = t.y & (tl.y - 1);
+    else if (wmt == 1u) t.y = clamp(t.y, 0, tl.y - 1);
+    else if (wmt == 2u) t.y = clamp(t.y, minv * sc, (maxv + 1) * sc - 1);
+    t = clamp(t, ivec2(0), size - 1);
+    return ivec4(round(texelFetch(src, t, 0) * 255.0));
+}
+
+ivec4 Sample(vec2 uv, Prim r) {
+    // uv in 1x texels.  Frame source: s x texels.
+    const float sc = r.kind.z == 2u ? float(p.s) : 1.0;
+    vec2 t = uv * sc;
+    const bool lin = Bits(r.st.x, 5, 1) != 0u;
+    if (!lin) return Fetch(ivec2(floor(t)), r);
+    t -= 0.5;
+    ivec2 i = ivec2(floor(t));
+    // GS bilinear: 4-bit fraction.
+    ivec2 f = ivec2(floor((t - vec2(i)) * 16.0));
+    ivec4 a = Fetch(i, r), b = Fetch(i + ivec2(1, 0), r), c = Fetch(i + ivec2(0, 1), r), d = Fetch(i + ivec2(1, 1), r);
+    ivec4 top = a * (16 - f.x) + b * f.x, bot = c * (16 - f.x) + d * f.x;
+    return (top * (16 - f.y) + bot * f.y) >> 8;
+}
+
+bool Atst(uint t, int a, int ref) {
+    switch (t) {
+    case 0u: return false;
+    case 1u: return true;
+    case 2u: return a < ref;
+    case 3u: return a <= ref;
+    case 4u: return a == ref;
+    case 5u: return a >= ref;
+    case 6u: return a > ref;
+    default: return a != ref;
+    }
+}
+
+void PmodePass(ivec2 o) {
+    // Circuit 1 = this image; circuit 2 = BGCOLOR (SLBG) — the only form the
+    // composite can see at high resolution (see the doc for circuit 2 reads).
+    vec4 c1 = imageLoad(o_col, o) * 255.0;
+    uint pm = p.pmode;
+    bool en1 = (pm & 1u) != 0u, en2 = (pm & 2u) != 0u;
+    vec3 c2 = vec3(Bits(p.bgcolor, 0, 8), Bits(p.bgcolor, 8, 8), Bits(p.bgcolor, 16, 8));
+    float a = (pm & 32u) != 0u ? float(Bits(pm, 8, 8)) : min(c1.a * 2.0, 255.0);
+    vec3 r = c1.rgb;
+    if (en1 && en2) r = floor((c1.rgb * a + c2 * (255.0 - a)) / 255.0);
+    else if (en1 && (pm & 128u) != 0u) r = floor((c1.rgb * a + c2 * (255.0 - a)) / 255.0);
+    imageStore(o_col, o, vec4(r, c1.a) / 255.0);
+}
+
+void main() {
+    ivec2 o = ivec2(gl_GlobalInvocationID.xy) + ivec2(p.ox, p.oy);
+    if (o.x >= p.w * p.s || o.y >= p.h * p.s) return;
+    if (p.prim < 0) { PmodePass(o); return; }
+    Prim r = prims[p.prim];
+    // Sample point in 1x pixel space: pixel X samples at X.0 (the GS corner).
+    vec2 pt = (vec2(o) + 0.5) / float(p.s) - 0.5;
+    if (pt.x < float(r.sc.x) - 0.5 / p.s || pt.y < float(r.sc.y) - 0.5 / p.s ||
+        pt.x > float(r.sc.z) + 0.5 - 0.5 / p.s || pt.y > float(r.sc.w) + 0.5 - 0.5 / p.s) return;
+    const uint type = r.kind.x, prim = r.kind.y;
+    vec3 bc;                    // barycentrics (triangle) or (fx, fy) (sprite)
+    vec4 col;
+    vec2 uv;
+    float q = 1.0;
+    float fo;
+    uint z;
+    const bool fst = Bits(prim, 8, 1) != 0u;
+    // Texture coordinates of a nearest-sampled texture are taken inside the 1x
+    // pixel's [X, X+1) footprint (so the s x samples of pixel X all fetch the
+    // texel the GS fetches at X.0); bilinear keeps the sample point.
+    const float ush = Bits(r.st.x, 5, 1) != 0u ? 0.0 : 0.5 - 0.5 / float(p.s);
+    const vec2 ptu = pt + vec2(ush);
+    if (type == 6u) {
+        vec2 a = r.xy[0].xy, b = r.xy[1].xy;
+        vec2 mn = min(a, b), mx = max(a, b);
+        if (pt.x < mn.x || pt.y < mn.y || pt.x >= mx.x || pt.y >= mx.y) return;
+        vec2 f = (pt - a) / (b - a);
+        uv = mix(r.xy[0].zw, r.xy[1].zw, (ptu - a) / (b - a));
+        q = r.q.y;
+        col = r.col[1];
+        fo = r.fog.y;
+        z = r.z.y;
+        if (!fst) uv /= q;
+    } else if (type == 3u) {
+        vec2 a = r.xy[0].xy, b = r.xy[1].xy, c = r.xy[2].xy;
+        float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        if (area == 0.0) return;
+        float sg = area > 0.0 ? 1.0 : -1.0;
+        // Edge functions (positive inside after orientation), top-left tie break.
+        vec3 e = vec3((c.x - b.x) * (pt.y - b.y) - (c.y - b.y) * (pt.x - b.x),
+                      (a.x - c.x) * (pt.y - c.y) - (a.y - c.y) * (pt.x - c.x),
+                      (b.x - a.x) * (pt.y - a.y) - (b.y - a.y) * (pt.x - a.x)) * sg;
+        vec2 d0 = (c - b) * sg, d1 = (a - c) * sg, d2 = (b - a) * sg;
+        bvec3 tl = bvec3(d0.y < 0.0 || (d0.y == 0.0 && d0.x > 0.0), d1.y < 0.0 || (d1.y == 0.0 && d1.x > 0.0),
+                         d2.y < 0.0 || (d2.y == 0.0 && d2.x > 0.0));
+        for (int k = 0; k < 3; ++k)
+            if (e[k] < 0.0 || (e[k] == 0.0 && !tl[k])) return;
+        bc = e / abs(area);
+        const bool iip = Bits(prim, 3, 1) != 0u;
+        col = iip ? r.col[0] * bc.x + r.col[1] * bc.y + r.col[2] * bc.z : r.col[2];
+        col = floor(col);
+        fo = iip ? floor(r.fog.x * bc.x + r.fog.y * bc.y + r.fog.z * bc.z) : r.fog.z;
+        z = uint(clamp(float(r.z.x) * bc.x + float(r.z.y) * bc.y + float(r.z.z) * bc.z, 0.0, 4294967040.0));
+        vec3 bu = vec3((c.x - b.x) * (ptu.y - b.y) - (c.y - b.y) * (ptu.x - b.x),
+                       (a.x - c.x) * (ptu.y - c.y) - (a.y - c.y) * (ptu.x - c.x),
+                       (b.x - a.x) * (ptu.y - a.y) - (b.y - a.y) * (ptu.x - a.x)) * sg / abs(area);
+        uv = r.xy[0].zw * bu.x + r.xy[1].zw * bu.y + r.xy[2].zw * bu.z;
+        if (!fst) { q = r.q.x * bu.x + r.q.y * bu.y + r.q.z * bu.z; uv /= q; }
+    } else {
+        return;
+    }
+    z = min(z, p.zmax);
+    // STQ: s/q is normalised; to texels.
+    if (!fst) uv *= vec2(r.tsz.xy);
+    ivec4 c = ivec4(col);
+    // Texture function.
+    if (Bits(prim, 4, 1) != 0u && r.kind.z != 0u) {
+        ivec4 t = Sample(uv, r);
+        const uint tfx = Bits(r.tex.y, 3, 2), tcc = Bits(r.tex.y, 2, 1);
+        ivec4 f = c;
+        if (tfx == 0u) { c.rgb = min((t.rgb * f.rgb) >> 7, ivec3(255)); c.a = tcc != 0u ? min((t.a * f.a) >> 7, 255) : f.a; }
+        else if (tfx == 1u) { c.rgb = t.rgb; c.a = tcc != 0u ? t.a : f.a; }
+        else if (tfx == 2u) { c.rgb = min(((t.rgb * f.rgb) >> 7) + f.a, ivec3(255)); c.a = tcc != 0u ? min(t.a + f.a, 255) : f.a; }
+        else { c.rgb = min(((t.rgb * f.rgb) >> 7) + f.a, ivec3(255)); c.a = tcc != 0u ? t.a : f.a; }
+    }
+    // Fog: (F * C + (255 - F) * FOGCOL) >> 8.
+    if (Bits(prim, 5, 1) != 0u) {
+        uint fcb = floatBitsToUint(r.fog.w);
+        ivec3 fc = ivec3(Bits(fcb, 0, 8), Bits(fcb, 8, 8), Bits(fcb, 16, 8));
+        int f = int(fo);
+        c.rgb = (f * c.rgb + (255 - f) * fc) >> 8;
+    }
+    // Alpha test.
+    const uint test = r.st.w;
+    bool wfb = true, wz = Bits(r.fb.y, 0, 1) == 0u, wa = true;
+    if (Bits(test, 0, 1) != 0u && !Atst(Bits(test, 1, 3), c.a, int(Bits(test, 4, 8)))) {
+        uint afail = Bits(test, 12, 2);
+        if (afail == 0u) return;
+        if (afail == 1u) wz = false;
+        else if (afail == 2u) wfb = false;
+        else { wz = false; wa = false; }
+    }
+    vec4 dst = imageLoad(o_col, o) * 255.0;
+    ivec4 d = ivec4(round(dst));
+    // Destination alpha test.
+    if (Bits(test, 14, 1) != 0u && ((d.a >> 7) & 1) != int(Bits(test, 15, 1))) return;
+    // Z test.
+    uint zb = imageLoad(o_z, o).r;
+    if (Bits(test, 16, 1) != 0u) {
+        uint zt = Bits(test, 17, 2);
+        if (zt == 0u) return;
+        if (zt == 2u && z < zb) return;
+        if (zt == 3u && z <= zb) return;
+    }
+    // Blend.
+    const bool colclamp = (r.fb.z & 4u) != 0u;
+    ivec3 res = c.rgb;
+    if (Bits(prim, 6, 1) != 0u && !((r.fb.z & 2u) != 0u && c.a < 128)) {
+        const uint al = r.st.y;
+        uint A = Bits(al, 0, 2), B = Bits(al, 2, 2), C = Bits(al, 4, 2), D = Bits(al, 6, 2);
+        ivec3 va = A == 0u ? c.rgb : A == 1u ? d.rgb : ivec3(0);
+        ivec3 vb = B == 0u ? c.rgb : B == 1u ? d.rgb : ivec3(0);
+        ivec3 vd = D == 0u ? c.rgb : D == 1u ? d.rgb : ivec3(0);
+        int vc = C == 0u ? c.a : C == 1u ? d.a : int(Bits(r.st.z, 0, 8));
+        res = (((va - vb) * vc) >> 7) + vd;
+    }
+    res = colclamp ? clamp(res, ivec3(0), ivec3(255)) : (res & 255);
+    int oa = c.a | ((r.fb.z & 1u) != 0u ? 128 : 0);
+    if (wfb) {
+        uint msk = r.fb.x;
+        uint nv = uint(res.r) | uint(res.g) << 8 | uint(res.b) << 16 | uint(wa ? oa : d.a) << 24;
+        uint ov = uint(d.r) | uint(d.g) << 8 | uint(d.b) << 16 | uint(d.a) << 24;
+        uint v = (nv & ~msk) | (ov & msk);
+        imageStore(o_col, o, vec4(v & 255u, (v >> 8) & 255u, (v >> 16) & 255u, v >> 24) / 255.0);
+    }
+    if (wz) imageStore(o_z, o, uvec4(z));
+}

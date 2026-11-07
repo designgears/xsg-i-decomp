@@ -517,8 +517,8 @@ int main(int argc, char** argv) {
         switch (h.type) {
         case GPU_MSG_PAD: adv = XSG_GPU_RING - (rpos & mask); break;
         case GPU_MSG_GIF:
-            if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len);
-            r.gs.gif_transfer(h.a, payload, h.len);
+            if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len, r.gs);   // transfers too (native_fx.cpp)
+            else r.gs.gif_transfer(h.a, payload, h.len);
             r.gif_bytes += h.len;
             break;
         case GPU_MSG_PRIV: {
