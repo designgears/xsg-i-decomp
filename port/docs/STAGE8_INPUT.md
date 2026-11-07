@@ -129,10 +129,14 @@ dprintfs:
   first rendered UI: the message window with text and cursor at vblank 22000, and the field
   minimap frame afterwards. The 3D scene is still black (VU0 work, STAGE7_VU0.md).
   No crash to vblank 35,000+. The tutorial waits for the player to walk to KOS-MOS and talk.
-* Movement test (`UP` held 240 frames every 600, `CIRCLE` every 300): see §6.
+* Movement test (`...,23000:UP:240*20@600,23300:CIRCLE*40@300,23400:LEFT:60*20@600`,
+  1500 s timeout): no crash up to vblank 32,298 (timeout). Every thread is in its normal
+  per-frame sleep. No new message or file load follows, so blind walking did not reach
+  KOS-MOS. The screen shows only the minimap frame.
 
 ## 6. Next
 
-* Field movement: see the run notes below. Without visible geometry, steering to KOS-MOS is
-  blind. A position trace (player actor coordinates) would help.
-* 3D in the field is black; the minimap/UI render.
+* Field movement: without visible geometry, steering to KOS-MOS is blind. A trace of the player
+  actor's position (and the "talk" trigger check) would show whether `UP`/`LEFT` move
+  Shion at all, and where KOS-MOS stands.
+* 3D in the field is black, while the minimap and UI render (VU0/VU1 work).
