@@ -37,6 +37,10 @@ extern int sceGsSyncPath(int mode, int timeout);
 #define D8_SADR        ((volatile u32 *)0x1000D080)
 
 void xglDmaDirectSrcChain(u32 channel, u32 address);
+#ifdef PORT_HOST
+/* Port: run the started transfer now, on the game's thread (gs_bridge.cpp). */
+extern void xsg_dma_kick(u32 channel);
+#endif
 
 void xglDmaDirectNormal(u32 channel, u32 address, u32 count)
 {
@@ -54,6 +58,9 @@ void xglDmaDirectNormal(u32 channel, u32 address, u32 count)
         dma->memory_address = (address & 0x3fffU) + 0x80000000U;
     *DMAC_STAT = 1U << channel;
     dma->control = 0x141;
+#ifdef PORT_HOST
+    xsg_dma_kick(channel);
+#endif
 }
 
 void xglDmaDirectSrcChain(u32 channel, u32 address)
@@ -72,6 +79,9 @@ void xglDmaDirectSrcChain(u32 channel, u32 address)
         dma->tag_address = (address & 0x3fffU) + 0x80000000U;
     *DMAC_STAT = 1U << channel;
     dma->control = 0x145;
+#ifdef PORT_HOST
+    xsg_dma_kick(channel);
+#endif
 }
 
 void xglDmaBufferReset(XglDmaBuffer *buffer, u32 *address)

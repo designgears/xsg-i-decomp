@@ -121,12 +121,20 @@ static void *dmac_thread(void *arg)
     static const uint32_t chcr[] = {0x10008000, 0x10009000, 0x1000A000, 0x1000B000, 0x1000B400,
                                     0x1000C000, 0x1000C400, 0x1000C800, 0x1000D000, 0x1000D400};
     struct timespec ts = {0, 50000};
+    const char *e = getenv("XSG_DMA_THREAD");
+    const int async_gfx = e && atoi(e);
     (void)arg;
     for (;;) {
         for (unsigned i = 0; i < sizeof chcr / sizeof chcr[0]; i++) {
             volatile uint32_t *r = (volatile uint32_t *)(uintptr_t)chcr[i];
-            if ((*r & 0x100) && (i == 1 || i == 2))
-                xsg_dma_run(i, chcr[i]); /* VIF1, GIF: gs_bridge.cpp */
+            /* VIF1 and GIF run synchronously on the game's thread (xsg_dma_kick
+               from xglDmaDirect*, gs_bridge.cpp); XSG_DMA_THREAD=1 brings back
+               Stage 5's asynchronous run here. */
+            if (i == 1 || i == 2) {
+                if (async_gfx && (*r & 0x100))
+                    xsg_dma_run(i, chcr[i]);
+                continue;
+            }
             if (*r & 0x100)
                 __atomic_fetch_and(r, ~0x100u, __ATOMIC_SEQ_CST);
         }
