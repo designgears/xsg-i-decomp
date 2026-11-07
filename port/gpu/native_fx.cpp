@@ -4,6 +4,7 @@
  */
 #include "native_fx.h"
 #include "native.h"
+#include "native_prof.h"
 
 #include "context.hpp"
 #include "device.hpp"
@@ -419,6 +420,7 @@ void OwnAd(uint32_t reg, uint64_t v) {
     g_obuf.insert(g_obuf.end(), q, q + 32);
 }
 void OwnFlush(uint32_t path) {
+    xsgprof::Scope ps(xsgprof::GifOwn);
     if (g_own && !g_obuf.empty()) g_own->gif_transfer(path, g_obuf.data(), g_obuf.size());
     g_obuf.clear();
 }
@@ -528,6 +530,7 @@ void Qword(uint32_t path, PathParse& p, const uint8_t* q, uint8_t* oq) {
 }
 
 void Snapshot(ParallelGS::GSInterface& gs) {
+    xsgprof::Scope ps(xsgprof::Snapshot);
     for (auto& [fbp, pf] : g_post) {
         if (!pf.active || !pf.pre_main.empty()) continue;
         gs.flush();
@@ -623,6 +626,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
     PathParse& p = g_path[path];
     uint32_t start = 0;
     uint8_t oq[16];
+    const uint64_t t0 = xsgprof::g_on ? xsgprof::Now() : 0;
     for (uint32_t i = 0; i + 16 <= len; i += 16) {
         Qword(path, p, data + i, oq);
         if (g_snap_req) {
@@ -643,7 +647,11 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
             }
         }
     }
-    if (len > start) gs.gif_transfer(path, data + start, len - start);
+    if (xsgprof::g_on) xsgprof::g_ns[xsgprof::GifFx] += xsgprof::Now() - t0;
+    {
+        xsgprof::Scope ps(xsgprof::GifMain);
+        if (len > start) gs.gif_transfer(path, data + start, len - start);
+    }
     OwnFlush(path);
 }
 

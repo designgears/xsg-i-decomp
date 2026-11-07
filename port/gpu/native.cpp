@@ -6,6 +6,7 @@
 #include "native.h"
 #include "native_skin.h"
 #include "native_fx.h"
+#include "native_prof.h"
 
 #include "gpu_ipc.h"
 #include "device.hpp"
@@ -19,6 +20,8 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cmath>
+#include <array>
+#include <deque>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -101,15 +104,41 @@ void XferQword(const uint8_t* q) {
     using namespace ps2host::gs;
     const int bpp = t.psm == PSMCT32 || t.psm == PSMZ32 ? 32 : t.psm == PSMCT24 || t.psm == PSMZ24 ? 24
                   : (t.psm == PSMT8 || t.psm == PSMT8H) ? 8 : (t.psm == PSMT4 || t.psm == PSMT4HL || t.psm == PSMT4HH) ? 4 : 16;
-    for (int i = 0; i < 16 && t.on; ++i) {
-        t.pend |= uint64_t(q[i]) << t.pend_bits;
-        t.pend_bits += 8;
-        while (t.pend_bits >= bpp && t.on) {
-            g_mem.Write(t.dbp, t.dbw, (t.x0 + t.x) & 2047, (t.y0 + t.y) & 2047, t.psm, uint32_t(t.pend & ((1ull << bpp) - 1)));
-            if (++t.x >= t.w) { t.x = 0; if (++t.y >= t.h) t.on = false; }
-            t.pend >>= bpp;
-            t.pend_bits -= bpp;
+    // Unpack the qword's pixels, then store them a row run at a time (WriteRun).
+    uint32_t px[32];
+    int n = 0;
+    if (bpp == 32) {
+        std::memcpy(px, q, 16);
+        n = 4;
+    } else if (bpp == 16) {
+        for (int i = 0; i < 8; ++i) px[i] = uint32_t(q[2 * i]) | uint32_t(q[2 * i + 1]) << 8;
+        n = 8;
+    } else if (bpp == 8) {
+        for (int i = 0; i < 16; ++i) px[i] = q[i];
+        n = 16;
+    } else if (bpp == 4) {
+        for (int i = 0; i < 16; ++i) { px[2 * i] = q[i] & 15; px[2 * i + 1] = q[i] >> 4; }
+        n = 32;
+    } else {   // 24 bits: pixels straddle qwords
+        for (int i = 0; i < 16; ++i) {
+            t.pend |= uint64_t(q[i]) << t.pend_bits;
+            t.pend_bits += 8;
+            if (t.pend_bits >= 24) {
+                px[n++] = uint32_t(t.pend & 0xffffff);
+                t.pend >>= 24;
+                t.pend_bits -= 24;
+            }
         }
+    }
+    for (int i = 0; i < n && t.on;) {
+        const uint32_t run = std::min<uint32_t>(uint32_t(n - i), t.w - t.x);
+        const uint32_t x = (t.x0 + t.x) & 2047, y = (t.y0 + t.y) & 2047;
+        if (x + run <= 2048) g_mem.WriteRun(t.dbp, t.dbw, x, y, t.psm, px + i, run);
+        else
+            for (uint32_t k = 0; k < run; ++k) g_mem.Write(t.dbp, t.dbw, (x + k) & 2047, y, t.psm, px[i + k]);
+        i += int(run);
+        t.x += run;
+        if (t.x >= t.w) { t.x = 0; if (++t.y >= t.h) t.on = false; }
     }
 }
 
@@ -164,7 +193,10 @@ void GifQword(PathParse& p, const uint8_t* q) {
         return;
     }
     p.left--;
-    if (p.flg >= 2) { XferQword(q); return; }   // IMAGE
+    if (p.flg >= 2) {   // IMAGE
+        XferQword(q);
+        return;
+    }
     auto one = [&](uint64_t v, uint64_t hiw, bool packed) {
         const uint32_t d = uint32_t(p.regs >> (4 * p.idx)) & 15;
         p.idx = (p.idx + 1) % p.nreg;
@@ -619,6 +651,20 @@ void DecodeGs(const uint8_t* vram, const Region& rg, std::vector<uint32_t>& out)
         }
 }
 
+/* GPU timestamps of the live passes, read once Granite has resolved them. */
+std::deque<std::array<Vulkan::QueryPoolHandle, 4>> g_ts;
+void ProfGpu() {
+    const double tick = double(g_dev->get_gpu_properties().limits.timestampPeriod) * 1e-6;
+    while (!g_ts.empty() && g_ts.front()[3]->is_signalled()) {
+        auto& t = g_ts.front();
+        for (int k = 0; k < 3; ++k)
+            xsgprof::g_gpu_ms[k] += double(t[k + 1]->get_timestamp_ticks() - t[k]->get_timestamp_ticks()) * tick;
+        xsgprof::g_gpu_n++;
+        g_ts.pop_front();
+    }
+    while (g_ts.size() > 64) g_ts.pop_front();
+}
+
 /* Live path: draw the displayed buffer's native batches at 1x and g_scale and
    composite them over the paraLLEl-GS frame on the GPU (composite.comp). */
 void Live(ParallelGS::GSInterface& gs) {
@@ -644,14 +690,22 @@ void Live(ParallelGS::GSInterface& gs) {
         g_live_img.reset();
         return;
     }
-    gs.flush();
     // With a post phase the composite starts from the GS frame just before it.
     const uint8_t* vram = xsgfx::PreVram(fbp);
-    if (!vram) vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    {
+        xsgprof::Scope ps(xsgprof::LiveWait);
+        gs.flush();
+        if (!vram) vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    }
     static std::vector<uint32_t> gsbuf;
-    DecodeGs(vram, rg, gsbuf);
-    const bool own = xsgfx::OwnerPlane(Surf(rg), gsbuf);
-    if (!own) gsbuf.resize(gsbuf.size() + size_t(rg.w) * rg.h);
+    bool own;
+    {
+        xsgprof::Scope ps(xsgprof::LiveDecode);
+        DecodeGs(vram, rg, gsbuf);
+        own = xsgfx::OwnerPlane(Surf(rg), gsbuf);
+        if (!own) gsbuf.resize(gsbuf.size() + size_t(rg.w) * rg.h);
+    }
+    uint64_t prof_rec0 = xsgprof::g_on ? xsgprof::Now() : 0;
     auto& dev = *g_dev;
     Vulkan::BufferCreateInfo bi = {};
     bi.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -660,8 +714,12 @@ void Live(ParallelGS::GSInterface& gs) {
     auto gsb = dev.create_buffer(bi, gsbuf.data());
 
     auto cmd = dev.request_command_buffer();
+    Vulkan::QueryPoolHandle ts[4];
+    if (xsgprof::g_on) ts[0] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     GpuTarget n1 = RenderGpu(*cmd, list, rg, 1, nullptr);
+    if (xsgprof::g_on) ts[1] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     GpuTarget ns = g_scale > 1 ? RenderGpu(*cmd, list, rg, g_scale, nullptr) : n1;
+    if (xsgprof::g_on) ts[2] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     auto oi = Vulkan::ImageCreateInfo::immutable_2d_image(ns.w, ns.h, VK_FORMAT_R8G8B8A8_UNORM);
     oi.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     oi.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -702,7 +760,16 @@ void Live(ParallelGS::GSInterface& gs) {
     cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-    dev.submit(cmd);
+    if (xsgprof::g_on) {
+        ts[3] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+        g_ts.push_back({ts[0], ts[1], ts[2], ts[3]});
+        xsgprof::g_ns[xsgprof::LiveRecord] += xsgprof::Now() - prof_rec0;
+    }
+    {
+        xsgprof::Scope ps(xsgprof::LiveSubmit);
+        dev.submit(cmd);
+    }
+    ProfGpu();
     g_live_img = out;
     g_live_w = rg.w;
     g_live_h = rg.h;
@@ -872,6 +939,7 @@ bool Init(Vulkan::Device* dev) {
     g_on = e && *e && std::strcmp(e, "0") != 0;
     if (!g_on) return false;
     g_dev = dev;
+    xsgprof::Init();
     if (const char* s = std::getenv("XSG_GPU_NATIVE_SCALE")) g_scale = std::max(1, std::min(8, std::atoi(s)));
     if (const char* s = std::getenv("XSG_GPU_NATIVE_LIVE"); s && *s) g_live = std::atoi(s) != 0;
     if (const char* s = std::getenv("XSG_GPU_NATIVE_THR"); s && *s) g_thr = std::atoi(s);
@@ -914,7 +982,10 @@ bool On() { return g_on; }
 
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
     PathParse& p = g_path[path & 3];
-    for (uint32_t i = 0; i + 16 <= len; i += 16) GifQword(p, data + i);
+    {
+        xsgprof::Scope ps(xsgprof::GifParse);
+        for (uint32_t i = 0; i + 16 <= len; i += 16) GifQword(p, data + i);
+    }
     xsgfx::Gif(path, data, len, gs);
 }
 
@@ -969,6 +1040,7 @@ void Snap(Stored& s, const uint32_t* tagw) {
         auto it = cache.find(key);
         if (it == cache.end()) {
             auto t = std::make_shared<Tex>();
+            xsgprof::Scope ps(xsgprof::TexDecode);
             t->px = DecodeTexture(g_mem.data(), s.tex0, s.texa, &t->w, &t->h);
             it = cache.emplace(key, t).first;
             g_ntex++;
@@ -997,6 +1069,7 @@ void FxNative(const uint32_t* tagw, uint32_t ntags) {
 }  // namespace
 
 void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
+    xsgprof::Scope ps(xsgprof::Batch);
     if (kind == GPU_NATIVE_SET2_ENV) {   // the env pass's A+D state has been kicked: snapshot it now
         if (g_env_pending) FxNative(g_env_pending->b.tag1010, 1);   // the env pass packet is kicked next
         if (g_env_pending && Near()) {
@@ -1051,8 +1124,14 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
     g_last_vsync = frame;
-    xsgfx::Vsync(frame, gs);   // first: it closes the post phase of the frame just drawn
-    xsgskin::Vsync(frame);
+    {
+        xsgprof::Scope ps(xsgprof::FxVsync);
+        xsgfx::Vsync(frame, gs);   // first: it closes the post phase of the frame just drawn
+    }
+    {
+        xsgprof::Scope ps(xsgprof::Other);
+        xsgskin::Vsync(frame);
+    }
     if (g_live) Live(gs);
     if (g_shots.count(frame)) Shot(frame, gs);
     if (frame % 600 == 0)
@@ -1064,6 +1143,7 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
             it = it->second.first.use_count() <= 1 ? g_teximg.erase(it) : std::next(it);
     if (g_fb.size() > 8) g_fb.clear();
     g_vsyncs++;
+    xsgprof::Vsync(frame);
 }
 
 const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h) {

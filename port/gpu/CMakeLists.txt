@@ -52,7 +52,7 @@ foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.co
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp native_prof.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb)

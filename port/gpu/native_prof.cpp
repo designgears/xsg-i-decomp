@@ -1,0 +1,49 @@
+/* xsg-gpu: per-stage timers (native_prof.h). */
+#include "native_prof.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+namespace xsgprof {
+bool g_on;
+uint64_t g_ns[kStages];
+double g_gpu_ms[4];
+uint64_t g_gpu_n;
+
+namespace {
+const char* kName[kStages] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "batch", "tex-decode", "snapshot", "fx-vsync",
+                              "live-wait", "live-decode", "live-record", "live-submit", "other"};
+uint64_t g_last;
+}  // namespace
+
+void Init() {
+    const char* e = std::getenv("XSG_GPU_PROF");
+    g_on = e && *e && std::strcmp(e, "0") != 0;
+    if (g_on) g_last = Now();
+}
+
+void Vsync(uint32_t frame) {
+    if (!g_on || frame % 600 != 0) return;
+    const uint64_t now = Now();
+    const double per = 1e-6 / 600.0, wall = double(now - g_last) * per;
+    char b[1024];
+    int o = std::snprintf(b, sizeof b, "[prof] vsync %u: wall %.2f ms/vsync;", frame, wall);
+    double sum = 0;
+    for (int i = 0; i < kStages; ++i) {
+        if (i != TexDecode) sum += double(g_ns[i]) * per;   // inside batch
+        o += std::snprintf(b + o, sizeof b - o, " %s %.2f", kName[i], double(g_ns[i]) * per);
+        g_ns[i] = 0;
+    }
+    o += std::snprintf(b + o, sizeof b - o, "; outside native %.2f", wall - sum);
+    if (g_gpu_n)
+        o += std::snprintf(b + o, sizeof b - o, "; GPU/live frame (%llu): 1x %.2f Sx %.2f post %.2f ms",
+                           (unsigned long long)g_gpu_n, g_gpu_ms[0] / g_gpu_n, g_gpu_ms[1] / g_gpu_n,
+                           g_gpu_ms[2] / g_gpu_n);
+    g_gpu_n = 0;
+    for (double& d : g_gpu_ms) d = 0;
+    std::fprintf(stderr, "%s\n", b);
+    g_last = now;
+}
+
+}  // namespace xsgprof
