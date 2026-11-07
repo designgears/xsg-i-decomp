@@ -132,7 +132,12 @@ void JNI_callMethod(SceneVm *vm, SceneMethod *method, SceneObject *arguments,
         flags = thread->flags;
     }
     if (flags & 4) {
+#ifdef PORT_HOST
+        /* The PS2 call passes no argument: $a0 still holds vm. */
+        ((void (*)(void *))JTHREAD_waitFor)(vm);
+#else
         JTHREAD_waitFor();
+#endif
         flags = thread->flags;
         if (flags & 4)
             return;
