@@ -1399,7 +1399,7 @@ extern EnemyGameLoopStateAU GameLoopState_AU __asm__("GameLoopState");
 extern EnemyPadViewAU PadData;
 extern short DebugActor;
 extern short NowTester;
-extern EnemyVector4AU EnemyTarget;
+EnemyVector4AU EnemyTarget = {0};
 extern short EfTab_Code[];
 extern short EfTab_Intr[];
 extern float EfTab_Scal[];

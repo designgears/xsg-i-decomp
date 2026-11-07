@@ -6456,18 +6456,45 @@
    ]
   },
   "main/tu191": {
+   ".data": [
+    {
+     "range": [
+      "0x00379100",
+      "0x00379110"
+     ],
+     "generated": [
+      "0x00379100",
+      "0x00379110"
+     ],
+     "generated_by": [
+      "ACT_updateEnemy"
+     ],
+     "c_owned_symbols": [
+      "EnemyTarget"
+     ],
+     "also_referenced_by_c": [
+      "enepc"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/enemy_1.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d8004",
-      "0x004d801c"
+      "0x004d8034"
      ],
      "generated": [
       "0x004d8004",
-      "0x004d801c"
+      "0x004d8034"
      ],
      "generated_by": [
       "Enemy_Chase",
+      "Enemy_Route",
       "Enemy_Tentacle"
      ],
      "c_owned_symbols": [
@@ -6476,7 +6503,13 @@
       "D_004D800C",
       "D_004D8010",
       "D_004D8014",
-      "D_004D8018"
+      "D_004D8018",
+      "D_004D801C",
+      "D_004D8020",
+      "D_004D8024",
+      "D_004D8028",
+      "D_004D802C",
+      "D_004D8030"
      ],
      "also_referenced_by_c": [
       "D_004D8034",
@@ -6487,7 +6520,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_1.o"
+      "object": "build/main/build/c/enemy_1.o"
      }
     },
     {
@@ -6518,7 +6551,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_1.o"
+      "object": "build/main/build/c/enemy_1.o"
      }
     }
    ],
@@ -6544,7 +6577,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_1.o"
+      "object": "build/main/build/c/enemy_1.o"
      }
     },
     {
@@ -6573,7 +6606,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_1.o"
+      "object": "build/main/build/c/enemy_1.o"
      }
     },
     {
@@ -6595,7 +6628,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_1.o"
+      "object": "build/main/build/c/enemy_1.o"
      }
     }
    ]
@@ -8898,6 +8931,37 @@
    ]
   },
   "main/tu249": {
+   ".data": [
+    {
+     "range": [
+      "0x0043c1d0",
+      "0x00465de0"
+     ],
+     "generated": [
+      "0x0043c1d0",
+      "0x00465de0"
+     ],
+     "generated_by": [
+      "UNIT_moveXZ",
+      "UNIT_rotX",
+      "UNIT_rotY",
+      "UNIT_rotZ",
+      "UNIT_sclX",
+      "UNIT_sclY",
+      "UNIT_sclZ"
+     ],
+     "c_owned_symbols": [
+      "defaultOffset_0043C1D0",
+      "actor"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/unit.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -8934,7 +8998,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/unit.o"
+      "object": "build/main/build/c/unit.o"
      }
     }
    ]
