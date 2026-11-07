@@ -18385,6 +18385,31 @@
    ]
   },
   "ov12/tu084_00a48c08": {
+   ".data": [
+    {
+     "range": [
+      "0x00a511f4",
+      "0x00a511f8"
+     ],
+     "generated": [
+      "0x00a511f4",
+      "0x00a511f8"
+     ],
+     "generated_by": [
+      "_Disp_00A49318",
+      "_DrawDriver"
+     ],
+     "c_owned_symbols": [
+      "s_pCurView_00A511F4"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_particle.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

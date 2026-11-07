@@ -222,7 +222,7 @@ typedef union XrgParticleRectQ {
     int i[4];
 } XrgParticleRectQ;
 
-extern RgDrawView *s_pCurView_00A511F4;
+static RgDrawView *s_pCurView_00A511F4 = 0;
 
 #define SCE_GS_PABE 0x49
 #define SCE_GS_TEXFLUSH 0x3F
