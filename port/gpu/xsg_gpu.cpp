@@ -29,9 +29,12 @@
  *   XSG_GPU_STREAM=fifo  the 512x448 RGB24 live stream (set by the game from
  *                        XSG_STREAM when it does not run the soft GS itself)
  *   XSG_GPU_VVL=1        allow the Vulkan validation layer
+ *   XSG_GPU_NATIVE=1     native renderer slice (native.cpp, port/docs/NATIVE_RENDERER.md),
+ *                        with XSG_GPU_NATIVE_SCALE / _SHOT / _DIR
  */
 #include "gpu_ipc.h"
 #include "xsg_input.h"
+#include "native.h"
 
 #include "context.hpp"
 #include "device.hpp"
@@ -303,6 +306,7 @@ struct Renderer {
         o.super_sampled_textures = ss > 1 && EnvOn("XSG_GPU_SSAA_TEX");
         hires = ss >= 4 && EnvOn("XSG_GPU_HIRES");
         if (!gs.init(dev, o)) { Log("GSInterface::init failed"); return false; }
+        xsgnative::Init(dev);
         const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
@@ -396,6 +400,7 @@ struct Renderer {
     }
 
     void Vsync(uint32_t frame, uint32_t field) {
+        if (xsgnative::On()) xsgnative::Vsync(frame, gs);
         VSyncInfo info = {};
         info.phase = field;
         info.dst_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -488,6 +493,7 @@ int main(int argc, char** argv) {
         switch (h.type) {
         case GPU_MSG_PAD: adv = XSG_GPU_RING - (rpos & mask); break;
         case GPU_MSG_GIF:
+            if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len);
             r.gs.gif_transfer(h.a, payload, h.len);
             r.gif_bytes += h.len;
             break;
@@ -498,6 +504,7 @@ int main(int argc, char** argv) {
             break;
         }
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
+        case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); break;
         case GPU_MSG_READ_VRAM: {
             r.gs.flush();
             const void* v = r.gs.map_vram_read(0, 4u << 20);

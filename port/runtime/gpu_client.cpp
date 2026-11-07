@@ -318,6 +318,8 @@ void ReadFifo(void* dst, u32 qwords) {
 
 void Flush() { Close(); }
 
+void Native(u32 kind, u32 nvert, const void* payload, u32 len) { Send(GPU_MSG_NATIVE, kind, nvert, payload, len); }
+
 /* Stage 10: a consistent copy of the live pad block (seqlock read). */
 int PadRead(unsigned* buttons, unsigned char stick[4], unsigned char press[12]) {
     if (!shm) return 0;

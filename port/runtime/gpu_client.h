@@ -24,6 +24,8 @@ const std::uint8_t* ReadVram();
 /* Synchronous: `qwords` of local->host transfer data (TRXDIR 1). */
 void ReadFifo(void* dst, std::uint32_t qwords);
 void Flush();
+/* XSG_GPU_NATIVE: one message of `len` bytes (GPU_MSG_NATIVE). */
+void Native(std::uint32_t kind, std::uint32_t nvert, const void* payload, std::uint32_t len);
 
 }  // namespace xsggpu
 

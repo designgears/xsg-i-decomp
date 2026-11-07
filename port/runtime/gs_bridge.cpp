@@ -29,6 +29,8 @@
 #include "ps2host/gs.h"
 #include "vu1.h"
 #include "gpu_client.h"
+#include "gpu_ipc.h"
+#include "vu1_capture.h"
 
 namespace ps2host { std::uint32_t g_dma_source = 0; }
 
@@ -232,6 +234,60 @@ void Path1Kick(const u8* data, u32 q) {
     }
 }
 
+/* XSG_GPU_NATIVE=1 (port/docs/NATIVE_RENDERER.md): after a set-0 strip batch
+   (MSCNT 0x170 into loop 0x0c18) ran, send its inputs to xsg-gpu.  The batch
+   header has already morphed P and converted C to floats in place. */
+void NativeBatch(u32 pc, u32 top) {
+    static const int on = std::getenv("XSG_GPU_NATIVE") ? std::atoi(std::getenv("XSG_GPU_NATIVE")) : 0;
+    if (!on || (pc & 0x3ff8) != 0x170) return;
+    static const u8 sig[16] = {0x7c, 0x13, 0xe2, 0x81, 0x03, 0x01, 0x40, 0x00,
+                               0x7c, 0x1b, 0xf0, 0x81, 0xff, 0x02, 0x00, 0x00};   /* set 0 @ 0x0c18 */
+    Vu1CapRegs r;
+    xsgvu::SaveRegs(r);
+    if ((r.vi[15] & 0xffff) * 8 != 0xc18 || std::memcmp(Vu1Micro() + 0xc18, sig, 16)) return;
+    const u8* d = Vu1Data();
+    auto Q = [&](u32 q) { return d + (q & 0x3ff) * 16; };
+    u32 hx, hy;
+    std::memcpy(&hx, Q(top), 4);
+    std::memcpy(&hy, Q(top) + 4, 4);
+    if ((hy & 0xffff) == 0x4000) return;   /* register batch */
+    const u32 n = hx & 0x7fff;
+    if (!n) return;
+    static std::vector<u8> buf;
+    buf.resize(sizeof(GpuNativeBatch) + n * sizeof(GpuNativeVertex));
+    GpuNativeBatch* b = reinterpret_cast<GpuNativeBatch*>(buf.data());
+    std::memcpy(b->m, Q(962), 64);
+    std::memcpy(b->scale, Q(966), 16);
+    std::memcpy(b->offset, Q(967), 16);
+    std::memcpy(b->cscale, r.vf[24], 16);
+    std::memcpy(b->uv, Q(972), 16);
+    std::memcpy(b->fog, Q(1007), 16);
+    std::memcpy(b->tag, Q(1011), 16);
+    static u32 seq;
+    b->frame = xsg_frame;
+    b->seq = seq++;
+    b->pad[0] = b->pad[1] = 0;
+    GpuNativeVertex* v = reinterpret_cast<GpuNativeVertex*>(b + 1);
+    for (u32 i = 0; i < n; ++i) {
+        std::memcpy(v[i].p, Q(top + 1 + i), 16);
+        std::memcpy(v[i].c, Q(top + 1 + 2 * n + i), 16);
+        std::memcpy(&v[i].t, Q(top + 1 + n + i) + 12, 4);
+        v[i].pad[0] = v[i].pad[1] = v[i].pad[2] = 0;
+    }
+    if (on == 2 && b->seq % 2000 == 0) {   // debug: vertex 0 recomputed vs the VU1 output
+        const float* P = v[0].p;
+        float c[4], sx[3];
+        for (int l = 0; l < 4; ++l) c[l] = b->m[0][l] * P[0] + b->m[1][l] * P[1] + b->m[2][l] * P[2] + b->m[3][l];
+        for (int l = 0; l < 3; ++l) sx[l] = b->offset[l] + c[l] / c[3] * b->scale[l];
+        int32_t o[4];
+        std::memcpy(o, Q(top + 0xf3 + 3), 16);
+        xsg_logf("[native] seq %u n %u: P %g %g %g  scr %g %g %g  vu1 %g %g %u  col %g %g %g %g tag %08x%08x\n", b->seq, n, P[0],
+                 P[1], P[2], sx[0], sx[1], sx[2], o[0] / 16.0, o[1] / 16.0, unsigned(o[2]) >> 4, v[0].c[0], v[0].c[1], v[0].c[2],
+                 v[0].c[3], b->tag[1], b->tag[0]);
+    }
+    xsggpu::Native(GPU_NATIVE_SET0_STRIP, n, buf.data(), u32(buf.size()));
+}
+
 void RunVu1(u32 pc) {
     // TOP/ITOP as VIF1 hands them over; then the double buffer flips.
     const u32 top = vif.tops, itop = vif.itops;
@@ -241,6 +297,7 @@ void RunVu1(u32 pc) {
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = std::getenv("XSG_VU1") && !std::atoi(std::getenv("XSG_VU1"));
     if (!off) xsgvu::Run(pc, top, itop);
+    if (g_mode == Mode::Gpu) NativeBatch(pc, top);
 }
 
 void VifData(u32 w) {
