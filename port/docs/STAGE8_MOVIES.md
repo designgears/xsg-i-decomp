@@ -1,5 +1,10 @@
 # PC port, Stage 8: the .pss movies (libmpeg through an external ffmpeg)
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE7_IPU.md](STAGE7_IPU.md).
 
 **Result:** with `XSG_PAD=3100:0x0800 XSG_FAST=1` (START on the title, New Game), the

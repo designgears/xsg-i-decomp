@@ -1,5 +1,10 @@
 # PC port, Stage 7: the IPU (logo movies), and where the other "IPU" images really come from
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE6_VU1.md](STAGE6_VU1.md).
 
 **Result:** the namco and logo_msi logo movies (`namco.ipu`, `logo_msi.ipu`) now decode

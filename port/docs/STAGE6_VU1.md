@@ -1,5 +1,10 @@
 # PC port, Stage 6: synchronous DMA, VU1 interpreter, past the New Game crash
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE5_GS.md](STAGE5_GS.md).
 
 **Result:** VIF1/GIF DMA now runs synchronously on the game's thread. A VU1 micro-mode

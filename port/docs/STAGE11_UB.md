@@ -1,5 +1,10 @@
 # PC port, Stage 11: undefined-behaviour sweep, -O3 status
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. Follows [STAGE10_PERF.md](STAGE10_PERF.md) §1a
 (open points 5b and 5c and the -O3 note).
 

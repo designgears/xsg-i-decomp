@@ -1,5 +1,10 @@
 # Stage 8: input, leftover-register calls, past the tutorial prompt
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 ## 1. Why `waitkey(64)` in ST0210 never ended
 
 The pad was never the problem. `XSG_PAD` reached the game: `xglPadRead` turns the

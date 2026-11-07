@@ -1,5 +1,10 @@
 # PC port, Stage 9: hardware GS in a separate 64-bit process (xsg-gpu, paraLLEl-GS)
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. Builds on [STAGE5_GS.md](STAGE5_GS.md),
 [STAGE6_VU1.md](STAGE6_VU1.md) and [STAGE8_GFX.md](STAGE8_GFX.md).
 
@@ -116,17 +121,17 @@ cmake --build port/build -j               # -> port/build/xsg, port/build/gpu/xs
 x86-64 and the rest is `-m32`. It needs the Vulkan headers/loader and SDL3 (pkg-config
 `sdl3`; without SDL3 it builds headless-only). Release build type.
 
-| variable | meaning |
+| settings.ini key (was) | meaning |
 |---|---|
-| `XSG_GS=soft\|gpu\|both` | renderer (default soft) |
-| `XSG_GS_COMPARE=N` | both: compare the displayed frame every N vblanks (default 60; 0 = only at shots) |
-| `XSG_GPU_HEADLESS=1` | no window |
-| `XSG_GPU_BIN` | path of xsg-gpu |
-| `XSG_GPU_SCALE=N` | initial window size N×(512×448), default 2 |
-| `XSG_GPU_VSYNC=1` | FIFO present instead of mailbox |
-| `XSG_GPU_SSAA`, `XSG_GPU_SSAA_TEX`, `XSG_GPU_HIRES` | see above |
-| `XSG_GPU_VVL=1` | allow the Vulkan validation layer |
-| `XSG_FPS=N` | every N vblanks: wall-clock vblanks/s and game frames/s (DISPFB1 flips) |
+| `[renderer] gs = soft\|gpu\|both` (`XSG_GS`) | renderer (default gpu since 2026-11-07; was soft) |
+| `[debug] gs_compare = N` (`XSG_GS_COMPARE`) | both: compare the displayed frame every N vblanks (default 60; 0 = only at shots) |
+| `[debug] headless = 1` (`XSG_GPU_HEADLESS`) | no window |
+| `[debug] gpu_bin` (`XSG_GPU_BIN`) | path of xsg-gpu |
+| `[display] window_scale = N` (`XSG_GPU_SCALE`) | initial window size N×(512×448), default 2 |
+| `[display] present = fifo` (`XSG_GPU_VSYNC`) | FIFO present instead of mailbox |
+| `[renderer] ssaa, ssaa_textures, hires_scanout` (`XSG_GPU_SSAA`, `_SSAA_TEX`, `_HIRES`) | see above |
+| `[debug] vulkan_validation = 1` (`XSG_GPU_VVL`) | allow the Vulkan validation layer |
+| `[debug] fps = N` (`XSG_FPS`) | every N vblanks: wall-clock vblanks/s and game frames/s (DISPFB1 flips) |
 
 ## 5. Licence boundary
 

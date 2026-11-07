@@ -1,5 +1,10 @@
 # Stage 10: keyboard and gamepad play, window options
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Real input without a 32-bit SDL. Only the 64-bit SDL3 exists (STAGE8_INPUT.md §2), and the
 64-bit renderer process `xsg-gpu` already owns the SDL3 window, so input is read there and
 handed to the game through the shared memory it already maps (STAGE9_GPU.md).

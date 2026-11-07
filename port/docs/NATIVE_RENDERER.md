@@ -1,5 +1,10 @@
 # Native renderer: design and live slice
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. Builds on [VU1_PROGRAMS.md](VU1_PROGRAMS.md)
 (programs, I/O, C references, the motion-vector plan), [STAGE9_GPU.md](STAGE9_GPU.md) (xsg-gpu,
 the IPC ring) and [STAGE10_PERF.md](STAGE10_PERF.md) §6 (the VU1 interpreter).
@@ -153,24 +158,37 @@ Trade-offs:
 
 ## 4. Running it
 
-```
-XSG_GS=gpu XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4 XSG_AUDIO=0 XSG_MPEG=0 XSG_SKIP_EVENTS=1 \
-XSG_PAD='300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60' port/build-wt/xsg      # window
-# headless captures: + XSG_GPU_HEADLESS=1 XSG_GPU_NATIVE_SHOT=1401,1550,4001 XSG_GPU_NATIVE_DIR=/tmp/native
+```ini
+# XSG_CONFIG=native.ini port/build/xsg      (window)
+[renderer]
+gs = gpu
+native = 1
+native_scale = 4
+[game]
+movies = 0
+[audio]
+enabled = 0
+[debug]
+skip_events = 1
+pad = 300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60
+# headless captures:
+# headless = 1
+# native_shot = 1401,1550,4001
+# native_dir = /tmp/native
 ```
 
-| variable | meaning |
+| settings.ini key (was) | meaning |
 |---|---|
-| `XSG_GPU_NATIVE=1` | native set-0 path (game: skip VU1; xsg-gpu: live composite) |
-| `XSG_GPU_NATIVE_SCALE` | 1–8 (default 2) |
-| `XSG_GPU_NATIVE_LIVE=0` | no live composite (shots only) |
-| `XSG_GPU_NATIVE_THR` | rule-2 colour threshold (default 12) |
-| `XSG_GPU_NATIVE_VU1=1` | keep the VU1 interpreter for native set-0 batches (A/B); set 2 then stays on the interpreter too |
-| `XSG_GPU_NATIVE_SKIN=0` | set 2 (characters) stays on VU1 + paraLLEl-GS (A/B) |
-| `XSG_GPU_MV_VIEW=1` | the window shows the motion vectors as colour (hue = direction, brightness = length, full at 16 px at 1×; `=N` sets that length) |
-| `XSG_GPU_PROF=1` | xsg-gpu per-stage CPU timers and GPU timestamps, a `[prof]` line every 600 vsyncs (§9) |
-| `XSG_GPU_OWNER_THREAD=0` | run the ownership GS on the main thread (default: its own thread, §9) |
-| `XSG_GPU_NATIVE_SHOT`, `_DIR` | diagnostic images per listed vsync |
+| `[renderer] native = 1` (`XSG_GPU_NATIVE`) | native set-0 path (game: skip VU1; xsg-gpu: live composite) |
+| `[renderer] native_scale` (`XSG_GPU_NATIVE_SCALE`) | 1–8 (default 2) |
+| `[debug] native_live = 0` (`XSG_GPU_NATIVE_LIVE`) | no live composite (shots only) |
+| `[debug] native_thr` (`XSG_GPU_NATIVE_THR`) | rule-2 colour threshold (default 12) |
+| `[debug] native_vu1 = 1` (`XSG_GPU_NATIVE_VU1`) | keep the VU1 interpreter for native set-0 batches (A/B); set 2 then stays on the interpreter too |
+| `[debug] native_skin = 0` (`XSG_GPU_NATIVE_SKIN`) | set 2 (characters) stays on VU1 + paraLLEl-GS (A/B) |
+| `[debug] mv_view = 1` (`XSG_GPU_MV_VIEW`) | the window shows the motion vectors as colour (hue = direction, brightness = length, full at 16 px at 1×; `=N` sets that length) |
+| `[debug] gpu_prof = 1` (`XSG_GPU_PROF`) | xsg-gpu per-stage CPU timers and GPU timestamps, a `[prof]` line every 600 vsyncs (§9) |
+| `[debug] owner_thread = 0` (`XSG_GPU_OWNER_THREAD`) | run the ownership GS on the main thread (default: its own thread, §9) |
+| `[debug] native_shot`, `native_dir` (`XSG_GPU_NATIVE_SHOT`, `_DIR`) | diagnostic images per listed vsync |
 
 Per shot vsync: `native_VVVVVV_{gs_1x, native_only_1x, comp_1x, diff_1x, native_only_Sx,
 comp_Sx, live_Sx, live_down_1x}.png`. `live_Sx` is a readback of what the window shows;

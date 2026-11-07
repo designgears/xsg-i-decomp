@@ -1,5 +1,10 @@
 # Stage 10: comparison against a reference emulator
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 **Result:** PCSX2 v2.8.2 with OpenPS2BIOS 0.6 boots Xenosaga and runs it through the prologue,
 the KOS-MOS scene and into the Virtual Tutorial field. It needs two small local fixes to
 OpenPS2BIOS's IOP services (§1.3). Unpatched, OpenPS2BIOS stops on a black screen before the

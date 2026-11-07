@@ -1,5 +1,10 @@
 # VU1 programs: inventory, I/O spec, C references
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. This is groundwork for a native renderer in the
 ico-pc style: each VU1 microprogram becomes a vertex shader, VIF UNPACK data becomes vertex
 streams, and VU1 data memory becomes a constant buffer. Builds on [STAGE6_VU1.md](STAGE6_VU1.md)

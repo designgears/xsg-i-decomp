@@ -1,5 +1,10 @@
 # PC port, Stage 10: optimised build, profiling, VU1 speed
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. Builds on [STAGE9_GPU.md](STAGE9_GPU.md).
 
 **Result:** the default build is now `Release` (-O2 -g) and it runs through the title, the

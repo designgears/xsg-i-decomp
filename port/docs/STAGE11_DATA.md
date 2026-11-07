@@ -1,5 +1,10 @@
 # Stage 11: data relocation and symbol-overlap audit
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Stage 11 checks two kinds of data bug that each turned up as single cases before:
 
 1. **Integers that splat symbolised.** A data word whose value falls in the RAM

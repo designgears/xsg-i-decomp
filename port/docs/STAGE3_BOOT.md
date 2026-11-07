@@ -1,5 +1,10 @@
 # PC port, Stage 3: a linked host executable that boots headless
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 > **Superseded in part by [STAGE4_BOOT.md](STAGE4_BOOT.md)**: boot now reaches the title
 > screen and overlay 1; blockers 1, 2, 4 and 5 below are resolved there, and vblanks are paced
 > at 60 Hz by default (`XSG_FAST=1` for unthrottled).
@@ -20,23 +25,24 @@ and title screen) yet; see "Next blockers".
 # prerequisite: the PS2 build has been configured from your own disc, so build/<unit>/ exists
 source scripts/env.sh && .venv/bin/python -B configure.py --quiet   # (and ninja, for the gate)
 cmake -S port -B port/build && cmake --build port/build -j
-port/build/xsg                                    # logs to stderr
-XSG_LOG_FILE=/tmp/xsg.log XSG_TIMEOUT=20 port/build/xsg
+port/build/xsg                                    # logs to stderr; ~/.config/xsg/settings.ini
+printf '[debug]\nlog_file = /tmp/xsg.log\ntimeout = 20\n' > /tmp/boot.ini
+XSG_CONFIG=/tmp/boot.ini port/build/xsg
 ```
 
-Environment:
+Settings (settings.ini, or the file in `XSG_CONFIG`; full list in [MENU.md](MENU.md#settingsini-reference)):
 
-| variable | meaning |
+| key | meaning |
 |---|---|
-| `XSG_GAME_DIR` | default `<repo>/game` (CMake cache `XSG_GAME_DIR`); `iso/*.iso` and `extracted-iso/SLUS_204.69` are read from it |
-| `XSG_ISO` | the disc image, read-only (default: the first `*.iso` in `$XSG_GAME_DIR/iso`) |
-| `XSG_ELF` | the original main ELF (default `$XSG_GAME_DIR/extracted-iso/SLUS_204.69`) |
-| `XSG_LOG` | 0 quiet, 1 (default) first 3 calls of each stub then every 1000th, 2 every call |
-| `XSG_LOG_FILE` | log to a file instead of stderr |
-| `XSG_TIMEOUT` | after N seconds, print the running EE thread's backtrace and the thread table, then exit 124 |
-| `XSG_FRAME_US` | sleep this long per vblank (0 = run flat out) |
+| `[game] game_dir` | default `<repo>/game` (CMake cache `XSG_GAME_DIR`); `iso/*.iso` and `extracted-iso/SLUS_204.69` are read from it |
+| `[game] iso` | the disc image, read-only (default: the first `*.iso` in `<game_dir>/iso`) |
+| `[game] elf` | the original main ELF (default `<game_dir>/extracted-iso/SLUS_204.69`) |
+| `[debug] log` | 0 quiet, 1 (default) first 3 calls of each stub then every 1000th, 2 every call |
+| `[debug] log_file` | log to a file instead of stderr |
+| `[debug] timeout` | after N seconds, print the running EE thread's backtrace and the thread table, then exit 124 |
+| `[debug] frame_us` | sleep this long per vblank (0 = run flat out) |
 
-Backtraces from `XSG_TIMEOUT` are raw addresses; resolve them with
+Backtraces from `[debug] timeout` are raw addresses; resolve them with
 `addr2line -f -e port/build/xsg`. Crashes print `[fatal] signal N at address A` and dump core;
 under gdb, `gdb -batch -ex run -ex bt port/build/xsg` works (a non-PIE i386 executable with
 debug info for the runtime). The game objects have no `-g`; add it to `XSG_FLAGS` if needed.

@@ -1,5 +1,10 @@
 # PC port, Stage 4: boot through the logos and the title screen into overlay 1
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE3_BOOT.md](STAGE3_BOOT.md); build, memory map,
 data pipeline and overlay strategy are described there and still apply.
 

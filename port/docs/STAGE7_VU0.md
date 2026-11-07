@@ -1,5 +1,10 @@
 # PC port, Stage 7: host VU0 (macro + micro mode) and the game's inline asm
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE6_VU1.md](STAGE6_VU1.md).
 
 **Result:** 1038 of the 1039 stubbed inline-asm statements (81 files) now run as host C

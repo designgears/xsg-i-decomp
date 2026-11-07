@@ -1,5 +1,10 @@
 # PC port, Stage 8: full frames again, and real 3D geometry
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port` (agent worktree), 2026-11-07. Builds on [STAGE7_VU0.md](STAGE7_VU0.md),
 [STAGE7_IPU.md](STAGE7_IPU.md) and [STAGE6_VU1.md](STAGE6_VU1.md).
 

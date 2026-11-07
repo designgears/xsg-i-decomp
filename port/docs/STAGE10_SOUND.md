@@ -1,5 +1,10 @@
 # PC port, Stage 10: sound (the game's IOP sound driver on a software SPU2)
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`. Builds on [STAGE4_BOOT.md](STAGE4_BOOT.md) (the RSSD RPC protocol and the
 old fake IOP), [STAGE8_MOVIES.md](STAGE8_MOVIES.md) (the movie audio stream and the ALSA
 loader) and [STAGE7_EVENTS.md](STAGE7_EVENTS.md) (the scene voice/BGM stream).

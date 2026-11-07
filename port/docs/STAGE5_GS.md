@@ -1,5 +1,10 @@
 # PC port, Stage 5: software GS and screenshots
 
+> **Settings (2026-11-07):** the port no longer reads `XSG_*` environment variables. Every
+> `XSG_FOO=v` in this document is now `[section] key = v` in settings.ini (the mapping is the
+> "replaces" column of [MENU.md, settings.ini reference](MENU.md#settingsini-reference)); run
+> with `XSG_CONFIG=<file> port/build/xsg`. Samples: [examples/](examples/).
+
 Branch `pc-port`, 2026-11-07. Builds on [STAGE4_BOOT.md](STAGE4_BOOT.md).
 
 **Result:** the game's GIF and VIF1 DMA traffic now reaches a software GS, and the displayed
