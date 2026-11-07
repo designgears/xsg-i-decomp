@@ -304,6 +304,14 @@ void JTHREAD_waitFor(JThreadNode *thread)
     }
 }
 
+/* Thread-algorithm names; no code in this build refers to them. */
+const char D_004D15D0[] = "JTHREAD_ALG_UNIT";
+const char D_004D15E8[] = "JTHREAD_ALG_DEFAULT";
+const char D_004D1600[] = "JTHREAD_ALG_SCENE";
+const char D_004D1618[] = "JTHREAD_ALG_STAGE";
+const char D_004D1630[] = "JTHREAD_ALG_CHR";
+const char D_004D1640[] = "JTHREAD_ALG_SYSTEM";
+
 void JTHREAD_info(void)
 {
     JThreadNode *thread = jthreadTop;
