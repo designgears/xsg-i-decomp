@@ -5,6 +5,12 @@ Reads the DVP-assembled object of the PS2 build (build/main/build/vu0/
 Vu0MicroCode.o) and takes the MPG payload of its .vudata packet: the VU0 instruction-memory
 image (224 pairs, 0x700 bytes) the game DMAs to VU0 at start-up.
 
+It also defines the program's global entry labels (Vu0CallSin,
+Vu0CallMatrixStackTrans, ...) as absolute symbols with their VU0 micro-memory
+byte addresses, as the PS2 link has them.  The game computes CMSAR0 entries as
+`(unsigned)Vu0CallX >> 3`; without these the host linker made logging stubs
+of them and every vcallmsr ran from a host text address (Stage 8).
+
 Usage: gen_vu0_microcode.py <Vu0MicroCode.o> <out.c>
 """
 import struct
@@ -29,6 +35,16 @@ def main():
             if mpg >> 24 != 0x4A or mpg & 0xFFFF:
                 sys.exit("gen_vu0_microcode: unexpected VIF code %08x" % mpg)
             img = v[32:32 + num * 8]
+    labels = []
+    for s in secs:
+        if s[1] != 2:          # SHT_SYMTAB
+            continue
+        names = secs[s[6]]
+        for off in range(s[4], s[4] + s[5], 16):
+            st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack_from("<IIIBBH", d, off)
+            name = d[names[4] + st_name:].split(b"\0")[0].decode()
+            if st_info >> 4 == 1 and name.startswith("Vu0Call"):   # STB_GLOBAL
+                labels.append((name, st_value))
     if img is None:
         sys.exit("gen_vu0_microcode: no .vudata section in " + obj)
     with open(out, "w") as f:
@@ -37,6 +53,9 @@ def main():
         for i in range(0, len(img), 16):
             f.write("  " + ",".join("0x%02x" % b for b in img[i:i + 16]) + ",\n")
         f.write("};\nconst unsigned int xsg_vu0_microcode_size = %d;\n" % len(img))
+        f.write("/* entry labels: VU0 micro-memory byte addresses */\n")
+        for name, value in sorted(labels, key=lambda t: t[1]):
+            f.write('__asm__(".globl %s\\n\\t.set %s, 0x%x");\n' % (name, name, value))
 
 
 if __name__ == "__main__":

@@ -42,6 +42,13 @@ COMMENT_RE = re.compile(r"/\*.*?\*/")
 SEC_RE = re.compile(r'^\s*\.section\s+([.\w]+)')
 # splat line comment: /* rom vram BYTES */ (BYTES as stored, big-endian hex)
 RAW_RE = re.compile(r"/\*\s*[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+([0-9A-Fa-f]{8})\s*\*/")
+# Integer tables whose words splat symbolised because they happen to look like
+# RAM addresses (asVramBase: u16 pairs such as 0x0000,0x008C read as
+# D_008C0000).  Harmless on the PS2, but the host would relocate them to its own
+# address of that symbol (xglRenderSetReso then took ZBP 0x130 from the low
+# half of the host pointer and the depth buffer landed inside the 448-line
+# frame buffers).  Inside these labels every word is emitted as its raw bytes.
+NO_RELOC_LABELS = {"asVramBase"}
 STR_CHARS = set(b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-+%:/\\ ")
 
 
@@ -103,6 +110,7 @@ def convert(src, unit, unit_dir):
     pending_align = False
     prev_raw = None
     at_label = False
+    no_reloc = False
     for raw in text.splitlines():
         if pending_align:
             # First addressed line after a .section: start this piece at the
@@ -141,13 +149,17 @@ def convert(src, unit, unit_dir):
             if weak and vis == "global":
                 vis = "weak"
             out += ["\t.%s %s" % (vis, name), "\t.type %s,@object" % name, "%s:" % name]
+            no_reloc = name in NO_RELOC_LABELS
         elif op == "enddlabel":
             name = arg.strip()
             out.append("\t.size %s, . - %s" % (name, name))
+            no_reloc = False
         elif op == ".size":
             continue  # enddlabel already sized it
         elif op == ".align":
             out.append("\t.balign %d" % (1 << int(arg, 0)))
+        elif op == ".word" and cur_raw is not None and no_reloc:
+            out.append("\t.balign 4\n\t.byte %s" % ", ".join("0x%02x" % c for c in cur_raw))
         elif op == ".word" and cur_raw is not None and re.match(r"[A-Za-z_]", arg) \
                 and not arg.startswith(".L") and string_tail(cur_raw, last_raw, was_label):
             stats["strings"] += 1

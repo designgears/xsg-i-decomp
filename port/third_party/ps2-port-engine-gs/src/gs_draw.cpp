@@ -324,10 +324,10 @@ void Gs::Draw() {
                          queue_[1].y, queue_[1].s, queue_[1].t, queue_[1].q);
         std::fprintf(trace_out, "[gs]   tex1 %llX clamp %llX texa %llX tfx %u tcc %u\n", (unsigned long long)c.tex1,
                      (unsigned long long)c.clamp, (unsigned long long)texa_, Bits(c.tex0, 35, 2), Bits(c.tex0, 34, 1));
-        std::fprintf(trace_out, "[gs]   frame fbp %X fbw %u psm %02X fbmsk %08X; zbuf zbp %X psm %02X zmsk %u; test %llX alpha %llX\n",
+        std::fprintf(trace_out, "[gs]   frame fbp %X fbw %u psm %02X fbmsk %08X; zbuf zbp %X psm %02X zmsk %u; test %llX alpha %llX scissor %llX xyoff %llX\n",
                      Bits(c.frame, 0, 9), Bits(c.frame, 16, 6), Bits(c.frame, 24, 6), Bits(c.frame, 32, 32),
                      Bits(c.zbuf, 0, 9), Bits(c.zbuf, 24, 4), Bits(c.zbuf, 32, 1),
-                     (unsigned long long)c.test, (unsigned long long)c.alpha);
+                     (unsigned long long)c.test, (unsigned long long)c.alpha, (unsigned long long)c.scissor, (unsigned long long)c.xyoffset);
     }
     if (trace) {
         // PS2HOST_GS_DUMP_BEFORE=TBP,PSM (hex): local memory to gsmem_before.bin
@@ -372,6 +372,32 @@ void Gs::Draw() {
         }
         // Sampling what it writes itself: drawn alone, in order.
         if ((s.tbp < s.frame_end && s.fbp < s.tex_end) || ((s.zte || !s.zmsk) && s.tbp < s.z_end && s.zbp < s.tex_end)) {
+            FinishJobs();
+            DrawJob(job, 0, 1);
+            pixels_ += t_pixels;
+            t_pixels = 0;
+            return;
+        }
+    }
+    // xsg port: frame/depth aliasing. Rows are dealt out to bands, so a write
+    // that lands on another row of local memory than the pixel's own (a depth
+    // buffer placed inside a frame buffer at a different base, as the game's
+    // movie/clear setup has it: ZBP 0x130 inside FBP 0xE0's 448 lines) would
+    // be ordered by band, not by primitive. Such a job is drawn in order.
+    {
+        auto overlap = [](u32 a0, u32 a1, u32 b0, u32 b1) { return a0 < b1 && b0 < a1; };
+        const bool wz = s.zte && !s.zmsk;
+        bool alias = wz && s.zbp != s.fbp && overlap(s.zbp, s.z_end, s.fbp, s.frame_end);
+        for (const Job& queued : jobs_) {
+            if (alias) break;
+            const Setup& q = queued.s;
+            const bool qwz = q.zte && !q.zmsk;
+            alias = (s.fbp != q.fbp && overlap(s.fbp, s.frame_end, q.fbp, q.frame_end)) ||
+                    (qwz && s.fbp != q.zbp && overlap(s.fbp, s.frame_end, q.zbp, q.z_end)) ||
+                    (wz && s.zbp != q.fbp && overlap(s.zbp, s.z_end, q.fbp, q.frame_end)) ||
+                    (s.zte && qwz && s.zbp != q.zbp && overlap(s.zbp, s.z_end, q.zbp, q.z_end));
+        }
+        if (alias) {
             FinishJobs();
             DrawJob(job, 0, 1);
             pixels_ += t_pixels;
