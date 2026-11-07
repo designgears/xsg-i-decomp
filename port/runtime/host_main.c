@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
+#include <ucontext.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,11 +186,69 @@ static void on_alarm(int sig)
     (void)sig;
 }
 
+/* Async-signal-safe hex line: "<label>0x%08x\n" via write(2). */
+static void fault_hex(int fd, const char *label, unsigned long v)
+{
+    char b[96];
+    int n = 0;
+    while (*label && n < 64)
+        b[n++] = *label++;
+    b[n++] = '0';
+    b[n++] = 'x';
+    for (int s = (int)sizeof(v) * 8 - 4; s >= 0; s -= 4)
+        b[n++] = "0123456789abcdef"[(v >> s) & 15];
+    b[n++] = '\n';
+    if (write(fd, b, n) < 0)
+        return;
+}
+
 static void on_fault(int sig, siginfo_t *si, void *uc)
 {
-    (void)uc;
+    static volatile sig_atomic_t in_fault;
     xsg_logf("[fatal] signal %d at address %p (frame %u, overlay %d)\n", sig, si->si_addr,
              xsg_frame, xsg_active_overlay);
+    if (!in_fault) {
+        /* Backtrace for the log (STAGE12_BATTLE.md): raw addresses work with
+           `addr2line -f -e port/build/xsg ADDR`.  write(2) and the backtrace()
+           primed in main() only; the game is dead anyway. */
+        in_fault = 1;
+        int fd = fileno(xsg_log_fp);
+        fflush(xsg_log_fp);
+#if defined(__i386__)
+        const ucontext_t *u = (const ucontext_t *)uc;
+        unsigned long ip = u->uc_mcontext.gregs[REG_EIP], sp = u->uc_mcontext.gregs[REG_ESP];
+        fault_hex(fd, "[fatal] eip ", ip);
+        fault_hex(fd, "[fatal] esp ", sp);
+        /* a call through a bad pointer leaves the caller's return address
+           at [esp]; backtrace() cannot unwind from a garbage eip */
+        if (sp)
+            fault_hex(fd, "[fatal] [esp] (return address if eip is a bad call target) ",
+                      *(const unsigned long *)sp);
+        /* Stack scan: words on the stack that point into .text, i.e. likely
+           return addresses.  Printed before backtrace(), which can itself
+           fault on the game's makecontext stacks. */
+        extern char __executable_start[], etext[];
+        static const char sh[] = "[fatal] stack scan, .text words (addr2line -f -e <xsg> ADDR):\n";
+        if (write(fd, sh, sizeof sh - 1) < 0)
+            (void)0;
+        const unsigned long *w = (const unsigned long *)sp;
+        /* 2 KB: the EE thread stacks are far larger than that, so the scan
+           stays inside the mapping of a faulting thread's stack */
+        for (int i = 0, k = 0; sp && i < 512 && k < 40; i++) {
+            unsigned long v = w[i];
+            if (v >= (unsigned long)__executable_start && v < (unsigned long)etext) {
+                fault_hex(fd, "  ", v);
+                k++;
+            }
+        }
+#endif
+        void *bt[48];
+        int n = backtrace(bt, 48);
+        static const char hdr[] = "[fatal] backtrace (addr2line -f -e <xsg> ADDR):\n";
+        if (write(fd, hdr, sizeof hdr - 1) < 0)
+            (void)0;
+        backtrace_symbols_fd(bt, n, fd);
+    }
     signal(sig, SIG_DFL);
     raise(sig);
 }
@@ -215,6 +274,10 @@ int main(int argc, char **argv)
     static char altstack[65536];
     stack_t ss = {.ss_sp = altstack, .ss_size = sizeof altstack};
     sigaltstack(&ss, NULL);
+    {
+        void *prime[2]; /* load libgcc's unwinder now, not inside the handler */
+        backtrace(prime, 2);
+    }
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGBUS, &sa, NULL);
     sigaction(SIGILL, &sa, NULL);
