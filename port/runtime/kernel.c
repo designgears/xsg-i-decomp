@@ -204,9 +204,12 @@ static void make_ready(int id)
 extern int xsg_vsync_waiters_wake(void);
 static int vsync_waiters[MAX_THREADS];
 
+void xsg_gs_vblank(unsigned frame);
+
 void xsg_vblank(void)
 {
     xsg_frame++;
+    xsg_gs_vblank(xsg_frame);
     if (frame_ns) {
         struct timespec now;
         next_vblank.tv_nsec += frame_ns;

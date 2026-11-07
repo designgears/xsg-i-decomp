@@ -122,7 +122,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--cc", default="cc")
     ap.add_argument("--runtime", nargs="*", default=[])
-    ap.add_argument("--libs", nargs="*", default=[])
+    ap.add_argument("--libs", action="append", default=[])
     a = ap.parse_args()
     b = os.path.abspath(a.build)
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))

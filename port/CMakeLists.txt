@@ -8,7 +8,7 @@
 # port/docs/STAGE2_PROGRESS.md).  Output: one object library per unit plus a
 # static archive libxsg_game.a.  Nothing is linked into an executable yet.
 cmake_minimum_required(VERSION 3.20)
-project(xsg_port C)
+project(xsg_port C CXX)
 
 get_filename_component(XSG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 
@@ -65,6 +65,14 @@ target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=6
   -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
 target_compile_definitions(xsg_runtime PRIVATE "XSG_DEFAULT_GAME_DIR=\"${XSG_GAME_DIR}\"")
 
+# Stage 5: software GS (vendored, MIT, see third_party/ps2-port-engine-gs/) and its bridge.
+set(XSG_GS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ps2-port-engine-gs")
+file(GLOB XSG_GS_SRCS CONFIGURE_DEPENDS "${XSG_GS_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.cpp")
+add_library(xsg_gs OBJECT ${XSG_GS_SRCS})
+target_compile_options(xsg_gs PRIVATE -m32 -std=c++17 -O2 -g -msse4.1 -fno-pic -fno-stack-protector -w)
+target_include_directories(xsg_gs PRIVATE "${XSG_GS_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/runtime")
+target_compile_definitions(xsg_gs PRIVATE "XSG_DEFAULT_SHOT_DIR=\"${CMAKE_BINARY_DIR}/shots\"")
+
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/data/data_sources.cmake
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_host_data.py
@@ -77,8 +85,8 @@ add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/xsg
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
           --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
-          --runtime $<TARGET_OBJECTS:xsg_runtime> --libs=-lm
-  DEPENDS xsg_game xsg_runtime $<TARGET_OBJECTS:xsg_runtime>
+          --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> --libs=-lm --libs=-lstdc++ --libs=-pthread
+  DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
           ${CMAKE_BINARY_DIR}/data/data_sources.cmake
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
   COMMAND_EXPAND_LISTS

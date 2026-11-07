@@ -112,7 +112,10 @@ void xsg_load_main_image(void)
 /* Stand-in for the DMA controller: the EE register range is plain memory, so
  * a channel's CHCR.STR (bit 8) would stay set forever after the game starts a
  * transfer and polls for completion.  Every DMA "completes" immediately: a
- * host thread keeps clearing STR.  Nothing consumes the data yet. */
+ * host thread keeps clearing STR.  VIF1 (ch1) and GIF (ch2)
+ * transfers are run first, into the software GS (gs_bridge.cpp). */
+void xsg_dma_run(int ch, uint32_t base);
+
 static void *dmac_thread(void *arg)
 {
     static const uint32_t chcr[] = {0x10008000, 0x10009000, 0x1000A000, 0x1000B000, 0x1000B400,
@@ -122,6 +125,8 @@ static void *dmac_thread(void *arg)
     for (;;) {
         for (unsigned i = 0; i < sizeof chcr / sizeof chcr[0]; i++) {
             volatile uint32_t *r = (volatile uint32_t *)(uintptr_t)chcr[i];
+            if ((*r & 0x100) && (i == 1 || i == 2))
+                xsg_dma_run(i, chcr[i]); /* VIF1, GIF: gs_bridge.cpp */
             if (*r & 0x100)
                 __atomic_fetch_and(r, ~0x100u, __ATOMIC_SEQ_CST);
         }
