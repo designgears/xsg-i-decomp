@@ -166,6 +166,8 @@ static void *dmac_thread(void *arg)
 
 extern int xsg_game_main(int argc, int argv);
 extern void xsg_kernel_dump(void);
+extern void xsg_prof_init(void);
+extern void xsg_prof_dump(void);
 
 /* XSG_TIMEOUT=<s>: after that many seconds, log where the game is and exit
  * (headless runs have no other way to tell a busy-wait from progress). */
@@ -177,6 +179,7 @@ static void on_alarm(int sig)
              xsg_active_overlay);
     backtrace_symbols_fd(bt, n, fileno(xsg_log_fp));
     xsg_kernel_dump();
+    xsg_prof_dump();
     _exit(124);
     (void)sig;
 }
@@ -227,6 +230,7 @@ int main(int argc, char **argv)
     xsg_overlay_init();
     xsg_disc_init();
     xsg_kernel_init();
+    xsg_prof_init();
     xsg_logf("[boot] entering game main()\n");
     int r = xsg_game_main(0, 0);
     xsg_logf("[boot] game main() returned %d\n", r);

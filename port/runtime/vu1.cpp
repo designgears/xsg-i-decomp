@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <xmmintrin.h>
+#include <smmintrin.h>
 
 extern "C" {
 #include "xsg_rt.h"
@@ -171,23 +172,71 @@ enum Op { ADD, SUB, MUL, MADD, MSUB, MAX, MIN };
 
 inline bool Lane(u32 dest, int l) { return (dest >> (3 - l)) & 1; }
 
-void Arith(Op op, const V& a, const float* b, UpRes& r) {
-    r.set_mac = op != MAX && op != MIN;
-    for (int l = 0; l < 4; ++l) {
-        if (!Lane(r.dest, l)) continue;
-        float x = Fv(a, l), y = b[l], z;
-        u32* fl = r.set_mac ? &r.mac : nullptr;
-        switch (op) {
-        case ADD: z = x + y; break;
-        case SUB: z = x - y; break;
-        case MUL: z = x * y; break;
-        case MADD: { float m = In(Out(x * y, l, nullptr)); z = Fv(s.acc, l) + m; break; }
-        case MSUB: { float m = In(Out(x * y, l, nullptr)); z = Fv(s.acc, l) - m; break; }
-        case MAX: z = x > y ? x : y; break;
-        default: z = x < y ? x : y; break;
-        }
-        r.val[l] = Out(z, l, fl);
+/* Stage 10: the FMAC ops on all four lanes at once (SSE). Bit-identical to
+ * the per-lane In/Out path: the same single-precision ops under the same
+ * MXCSR; only the dest lanes are committed and only their MAC bits kept. */
+inline __m128i Bits(u32 v) { return _mm_set1_epi32(int(v)); }
+
+inline __m128 InV(__m128i b) {
+    const __m128i sign = _mm_and_si128(b, Bits(0x80000000u));
+    const __m128i e = _mm_and_si128(b, Bits(0x7f800000u));
+    const __m128i is_max = _mm_cmpeq_epi32(e, Bits(0x7f800000u));
+    const __m128i is_den = _mm_cmpeq_epi32(e, _mm_setzero_si128());
+    b = _mm_blendv_epi8(b, sign, is_den);
+    b = _mm_blendv_epi8(b, _mm_or_si128(sign, Bits(0x7f7fffffu)), is_max);
+    return _mm_castsi128_ps(b);
+}
+
+/* lane l (0 = x) -> MAC bit 3 - l */
+const u8 kRev4[16] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
+
+/* Out() on four lanes; MAC bits of the lanes in `dest` (x 8 .. w 1) are or'ed
+   into *flags when flags != null. */
+inline __m128i OutV(__m128 f, u32 dest, u32* flags) {
+    __m128i b = _mm_castps_si128(f);
+    const __m128i sign = _mm_and_si128(b, Bits(0x80000000u));
+    const __m128i e = _mm_and_si128(b, Bits(0x7f800000u));
+    const __m128i mant = _mm_and_si128(b, Bits(0x7fffffu));
+    const __m128i mant0 = _mm_cmpeq_epi32(mant, _mm_setzero_si128());
+    const __m128i is_max = _mm_cmpeq_epi32(e, Bits(0x7f800000u));
+    const __m128i is_den = _mm_andnot_si128(mant0, _mm_cmpeq_epi32(e, _mm_setzero_si128()));
+    // NaN with the sign clear -> +max, else sign | max
+    const __m128i pos_nan = _mm_andnot_si128(mant0, _mm_cmpeq_epi32(sign, _mm_setzero_si128()));
+    const __m128i maxv = _mm_blendv_epi8(_mm_or_si128(sign, Bits(0x7f7fffffu)), Bits(0x7f7fffffu), pos_nan);
+    b = _mm_blendv_epi8(b, maxv, is_max);
+    b = _mm_blendv_epi8(b, sign, is_den);
+    if (flags) {
+        const u32 dm = dest & 15;
+        const u32 o = kRev4[_mm_movemask_ps(_mm_castsi128_ps(is_max))] & dm;
+        const u32 u = kRev4[_mm_movemask_ps(_mm_castsi128_ps(is_den))] & dm;
+        const __m128i z = _mm_cmpeq_epi32(_mm_and_si128(b, Bits(0x7fffffffu)), _mm_setzero_si128());
+        const u32 zb = kRev4[_mm_movemask_ps(_mm_castsi128_ps(z))] & dm;
+        const u32 sb = kRev4[_mm_movemask_ps(_mm_castsi128_ps(b))] & dm;
+        *flags |= zb | (sb << 4) | (u << 8) | (o << 12);
     }
+    return b;
+}
+
+inline __m128 Load(const V& v) { return _mm_castsi128_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(v.u))); }
+
+void Arith(Op op, const V& a, __m128 y, UpRes& r) {
+    r.set_mac = op != MAX && op != MIN;
+    const __m128 x = InV(_mm_castps_si128(Load(a)));
+    __m128 z;
+    switch (op) {
+    case ADD: z = _mm_add_ps(x, y); break;
+    case SUB: z = _mm_sub_ps(x, y); break;
+    case MUL: z = _mm_mul_ps(x, y); break;
+    case MADD: case MSUB: {
+        const __m128 m = InV(OutV(_mm_mul_ps(x, y), 0, nullptr));
+        const __m128 acc = InV(_mm_castps_si128(Load(s.acc)));
+        z = op == MADD ? _mm_add_ps(acc, m) : _mm_sub_ps(acc, m);
+        break;
+    }
+    case MAX: z = _mm_max_ps(x, y); break;   // maxps(x, y) = x > y ? x : y
+    default: z = _mm_min_ps(x, y); break;    // minps(x, y) = x < y ? x : y
+    }
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(r.val), OutV(z, r.dest, r.set_mac ? &r.mac : nullptr));
 }
 
 void Upper(u32 w, UpRes& r) {
@@ -196,9 +245,9 @@ void Upper(u32 w, UpRes& r) {
     r.dest = dest;
     const V& A = s.vf[fs];
     const V& B = s.vf[ft];
-    float b[4];
-    auto bvec = [&] { for (int l = 0; l < 4; ++l) b[l] = Fv(B, l); };
-    auto bsc = [&](u32 bits) { float f = In(bits); for (int l = 0; l < 4; ++l) b[l] = f; };
+    __m128 b;
+    auto bvec = [&] { b = InV(_mm_castps_si128(Load(B))); };
+    auto bsc = [&](u32 bits) { b = _mm_set1_ps(In(bits)); };
     auto bbc = [&] { bsc(B.u[w & 3]); };
     if (op < 0x3c) {
         r.target = 1; r.reg = int(fd);
@@ -325,12 +374,21 @@ void Upper(u32 w, UpRes& r) {
     }
 }
 
+inline __m128i DestMask(u32 dest) {
+    return _mm_set_epi32(-int(dest & 1), -int((dest >> 1) & 1), -int((dest >> 2) & 1), -int((dest >> 3) & 1));
+}
+
+inline void StoreLanes(V& d, const u32* val, u32 dest) {
+    __m128i* p = reinterpret_cast<__m128i*>(d.u);
+    _mm_storeu_si128(p, _mm_blendv_epi8(_mm_loadu_si128(p), _mm_loadu_si128(reinterpret_cast<const __m128i*>(val)),
+                                        DestMask(dest)));
+}
+
 void Commit(const UpRes& r) {
     if (r.target == 1) {
-        if (r.reg != 0)
-            for (int l = 0; l < 4; ++l) if (Lane(r.dest, l)) s.vf[r.reg].u[l] = r.val[l];
+        if (r.reg != 0) StoreLanes(s.vf[r.reg], r.val, r.dest);
     } else if (r.target == 2) {
-        for (int l = 0; l < 4; ++l) if (Lane(r.dest, l)) s.acc.u[l] = r.val[l];
+        StoreLanes(s.acc, r.val, r.dest);
     }
     if (r.set_mac || r.set_clip) PushFlags(r.mac, r.set_mac, r.clip, r.set_clip);
 }
@@ -364,6 +422,7 @@ void StartP(float v, int lat) {
     s.p_ready = s.cycle + u64(lat);
 }
 void DivFlags(bool inv, bool dz) {
+    if (s.fq_n) LandFlags(false);
     u32 b = (inv ? 0x10u : 0) | (dz ? 0x20u : 0);
     s.status = (s.status & ~0x30u) | b | (b << 6);
     s.status_l = (s.status_l & ~0x30u) | b | (b << 6);
@@ -381,6 +440,9 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
     const u32 dest = (w >> 21) & 15, ft = (w >> 16) & 31, fs = (w >> 11) & 31, fd = (w >> 6) & 31;
     const u32 it = ft & 15, is = fs & 15, id = fd & 15;
     auto br = [&](bool take) { if (take) *tgt = (pc + 8 + u32(Imm11(w) * 8)) & g_pc_mask; return take; };
+    /* Stage 10: MAC/status/clip land lazily, when a lower op reads or writes
+       them (see Run); that gives the same values as landing every cycle. */
+    if (op7 >= 0x10 && op7 <= 0x1c && s.fq_n) LandFlags(false);
     switch (op7) {
     case 0x00: H("LQ"); LoadQ(ft, dest, u32(s.vi[is] + Imm11(w))); return false;
     case 0x01: H("SQ"); StoreQ(fs, dest, u32(s.vi[it] + Imm11(w))); return false;
@@ -537,6 +599,15 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
 /* ------------------------------------------------------------ API */
 
 void SetKick(KickFn fn) { kick_fn = fn; }
+
+void LoadRegs(const Vu1CapRegs& r) {
+    std::memcpy(s.vf, r.vf, sizeof s.vf);
+    std::memcpy(s.acc.u, r.acc, 16);
+    for (int i = 0; i < 16; ++i) s.vi[i] = u16(r.vi[i]);
+    s.I = r.I; s.Q = r.Q; s.P = r.P; s.R = r.R;
+    s.mac = s.mac_l = r.mac; s.status = s.status_l = r.status; s.clip = s.clip_l = r.clip;
+    s.fq_n = 0; s.q_busy = s.p_busy = false;
+}
 u32 Resume() { return s.resume; }
 Stats& GetStats() { return stats; }
 
@@ -572,6 +643,11 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     const unsigned csr = _mm_getcsr();
     _mm_setcsr((csr & ~0x6000u) | 0x6000u | 0x8040u);   // round toward zero, FTZ, DAZ
     pc &= g_pc_mask;
+    /* Flags are observed only by lower ops (Lower lands them first), DIV's
+       status write and the end of the run. With fewer than 16 pairs of
+       latency every queued entry has landed before the queue can overflow,
+       so landing on demand gives exactly the per-cycle values. */
+    const bool lazy_flags = flag_latency < 16;
     u64 n = 0;
     bool branch = false, ending = false;
     u32 btarget = 0;
@@ -579,7 +655,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     const u8* micro = Micro();
     for (; n < limit; ++n) {
         s.cycle++;
-        if (s.fq_n && s.fq[s.fq_head].ready <= s.cycle) LandFlags(false);
+        if (!lazy_flags && s.fq_n && s.fq[s.fq_head].ready <= s.cycle) LandFlags(false);
         if (s.q_busy | s.p_busy) LandQP(false);
         const u32 cur = pc;
         u32 lo, hi;

@@ -10,6 +10,10 @@
 
 #include <cstdint>
 
+extern "C" {
+#include "vu1_capture.h"
+}
+
 namespace xsgvu {
 
 using u32 = std::uint32_t;
@@ -27,6 +31,9 @@ struct Stats {
 };
 
 void SetKick(KickFn fn);
+/* Stage 10 (port/tests/test_vu1_replay.cpp): set the register file from a
+   capture record (vu1_capture.h); nothing is in flight afterwards. */
+void LoadRegs(const struct ::Vu1CapRegs& r);
 /* Run from byte address `pc` in micro memory to the end of the program (E bit);
    TOP/ITOP as VIF1 hands them over.  Returns the pairs executed. */
 u64 Run(u32 pc, u32 top, u32 itop);

@@ -8,6 +8,14 @@
 # port/docs/STAGE2_PROGRESS.md).  Output: one object library per unit plus a
 # static archive libxsg_game.a.  Nothing is linked into an executable yet.
 cmake_minimum_required(VERSION 3.20)
+
+# Stage 10: optimised by default. Game C is -O2 except the files that give one
+# symbol two C names (see scripts/find_alias_views.py), which stay -O0.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Debug (-O0) or Release (-O2, default)" FORCE)
+endif()
+set(CMAKE_C_FLAGS_RELEASE "-O2 -g" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g" CACHE STRING "" FORCE)
 project(xsg_port C CXX)
 
 get_filename_component(XSG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
@@ -17,10 +25,14 @@ option(PORT_WERROR_C "Keep the C-level downgraded warnings as warnings (OFF = si
 
 set(XSG_UNITS main ov01 ov02 ov10 ov11 ov12)
 
+set(XSG_SSP "-fno-stack-protector" CACHE STRING "Game C stack protector (-fstack-protector-all finds frame overruns)")
 set(XSG_FLAGS
   -m32 -std=gnu89 -fno-strict-aliasing -fwrapv -ffp-contract=off -fsigned-char
-  -fno-common -fgnu89-inline -fno-builtin -fno-pic -fno-stack-protector
+  -fno-common -fgnu89-inline -fno-builtin -fno-pic ${XSG_SSP}
   -fno-delete-null-pointer-checks
+  # Stage 10: data tables name file-static functions (link_xsg.py globalizes
+  # them); at -O1+ unreferenced statics would be dropped or inlined away.
+  -fkeep-static-functions -fkeep-static-consts
   # Stage 6: no SSE in game code. Quadword-aligned struct copies became
   # movdqa/movaps, which fault where a caller's Vector4 (or the i386 stack)
   # is not 16-byte aligned (Java_xeno_Light_setColor -> xglLightIntensityAmbient).
@@ -39,12 +51,26 @@ if(NOT PORT_WERROR_C)
 endif()
 
 set(XSG_OBJECTS)
+option(XSG_ALIAS_VIEWS_O0 "Build game files with two C names for one symbol at -O0" ON)
+set(XSG_ALIAS_VIEW_FILES "")
+if(XSG_ALIAS_VIEWS_O0)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_alias_views.py
+                          ${XSG_ROOT}/src --cmake
+                  OUTPUT_VARIABLE XSG_ALIAS_VIEW_FILES)
+endif()
 foreach(unit IN LISTS XSG_UNITS)
   file(GLOB_RECURSE srcs CONFIGURE_DEPENDS "${XSG_ROOT}/src/${unit}/*.c")
   # src/main/nml_packet_add/ is an unreferenced work copy of a function that
   # nml_packet_add.c already defines; the PS2 build does not compile it.
   list(FILTER srcs EXCLUDE REGEX "/src/main/nml_packet_add/")
   list(SORT srcs)
+  # Alias-view files at -O0; bisection aid: -DXSG_O0_REGEX=<regex> adds more.
+  foreach(f IN LISTS srcs)
+    if(f IN_LIST XSG_ALIAS_VIEW_FILES OR (XSG_O0_REGEX AND f MATCHES "${XSG_O0_REGEX}"))
+      set_source_files_properties(${f} PROPERTIES COMPILE_OPTIONS "-O0")
+    endif()
+  endforeach()
   add_library(xsg_${unit} OBJECT ${srcs})
   target_compile_definitions(xsg_${unit} PRIVATE PORT_HOST)
   target_compile_options(xsg_${unit} PRIVATE ${XSG_FLAGS})
@@ -138,3 +164,12 @@ target_link_libraries(test_vu0 m stdc++)
 
 # VU1 C references + capture test (native renderer groundwork).
 include(${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref.cmake)
+
+# Stage 10: VU1 interpreter replay against XSG_VU1_CAPTURE files (bit-identical check + bench).
+add_executable(test_vu1_replay EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu1_replay.cpp ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+target_include_directories(test_vu1_replay PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
+target_compile_options(test_vu1_replay PRIVATE -m32 -O2 -g -fno-pic -msse4.1 -mfpmath=sse)
+target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)
+target_link_libraries(test_vu1_replay m stdc++)
