@@ -336,12 +336,64 @@ void VifCode(u32 w) {
     vif.code = w;
 }
 
+/* Stage 10b: UNPACK/MPG data in bulk (same results as VifData word by word).
+   Starts only on an element boundary at a word boundary; returns the words
+   consumed (0 = take the word-by-word path). */
+u32 VifBulk(const u8* p, u32 words) {
+    u32 n = std::min(words, vif.want);
+    if (vif.kind == 2) {
+        u8* m = Vu1Micro();
+        for (u32 i = 0; i < n; ++i) { std::memcpy(m + (vif.addr & 0x3ffc), p + 4 * i, 4); vif.addr += 4; }
+        vif.want -= n;
+        return n;
+    }
+    if (vif.kind != 3 || vif.upk_have != 0 || !vif.upk_acc_n) return 0;
+    const u32 elem = vif.upk_elem;
+    const u32 bytes = n * 4;
+    u32 k = std::min(vif.upk_acc_n, bytes / elem);
+    if (!k) return 0;
+    const bool v4_32_plain = vif.upk_vn == 3 && vif.upk_vl == 0 && vif.mode == 0 && !((vif.code >> 28) & 1);
+    const u8* q = p;
+    for (u32 e = 0; e < k; ++e, q += elem) {
+        if (v4_32_plain) {
+            std::memcpy(Vu1Data() + (vif.addr & 0x3ff0), q, 16);
+            vif.addr += 16;
+            if (vif.cl < vif.wl) {} else if (++vif.cycle == vif.wl) { vif.cycle = 0; vif.addr += (vif.cl - vif.wl) * 16; }
+        } else {
+            std::memcpy(vif.upk_buf, q, elem);
+            UnpackElement();
+        }
+    }
+    vif.upk_acc_n -= k;
+    u32 used = k * elem;
+    u32 w = (used + 3) / 4;
+    if (vif.upk_acc_n && (used & 3)) {
+        // the rest of the last word starts the next element
+        const u32 rest = 4 - (used & 3);
+        u32 take = std::min(rest, elem);   // rest < elem here (k is maximal)
+        std::memcpy(vif.upk_buf, p + used, take);
+        vif.upk_have = take;
+    }
+    vif.want -= w;
+    return w;
+}
+
 void VifWords(const u8* p, u32 words) {
-    for (u32 i = 0; i < words; ++i) {
-        u32 w;
-        std::memcpy(&w, p + i * 4, 4);
-        if (vif.want) VifData(w);
-        else VifCode(w);
+    for (u32 i = 0; i < words;) {
+        if (vif.want) {
+            if (vif.kind == 2 || vif.kind == 3) {
+                const u32 n = VifBulk(p + i * 4, words - i);
+                if (n) { i += n; continue; }
+            }
+            u32 w;
+            std::memcpy(&w, p + i * 4, 4);
+            VifData(w);
+        } else {
+            u32 w;
+            std::memcpy(&w, p + i * 4, 4);
+            VifCode(w);
+        }
+        ++i;
     }
 }
 
