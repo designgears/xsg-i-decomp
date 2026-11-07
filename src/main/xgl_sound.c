@@ -565,10 +565,20 @@ void xglSoundEffectStopID(int soundEffectId, int source)
  * $a0 before the call, leaving $a1 untouched; declared here with the one
  * argument this call site sets.
  */
+#ifdef PORT_HOST
+int SsdCheckPlayEffect(int effect_id, int source_id);
+#else
 int SsdCheckPlayEffect(int effect_id);
+#endif
 int SsdCheckPlayEffectAll(void);
 
+#ifdef PORT_HOST
+/* PS2: one declared param; callers pass a second (source) in $a1, which
+ * reaches SsdCheckPlayEffect untouched */
+int xglSoundEffectCheckID(int soundEffectId, int source)
+#else
 int xglSoundEffectCheckID(int soundEffectId)
+#endif
 {
     int result;
     int bank;
@@ -581,7 +591,11 @@ int xglSoundEffectCheckID(int soundEffectId)
         bank = soundEffectId >> 16;
         handle = SoundWork.effect_banks[bank].handle;
         if (handle != 0xFFFF) {
+#ifdef PORT_HOST
+            SsdCheckPlayEffect((handle << 16) + (soundEffectId & 0xFFFF), source);
+#else
             SsdCheckPlayEffect((handle << 16) + (soundEffectId & 0xFFFF));
+#endif
         }
     }
     do {

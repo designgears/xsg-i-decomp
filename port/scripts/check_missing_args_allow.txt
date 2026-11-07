@@ -1,0 +1,11 @@
+# Calls that pass fewer args than the callee defines, where the callee never
+# reads the missing ones on any path (so garbage on the i386 stack is harmless).
+# Format: `file:line:name  reason` or `name  reason`.
+menuStatSprite  8th param srcRow is never read (ov01/menu.c)
+_InitDashVRStatus  param1/param2 are never read (ov12/rg_robot.c)
+CharactorAllRecovery  continueFlag only reaches func_A191C0, which takes one arg; then overwritten by the loop
+AgwsAllRecovery  continueFlag only reaches func_A191C0, which takes one arg; then overwritten by the loop
+scenarioBatExecMain  arg2 is never read (ov01/battle_init.c)
+dataEtherLearnSet  selector is never read (ov01/data_unit_org_get.c)
+SsdAddEffectData  2nd param only fed to the error printf as an unused vararg
+tyaElevatorTask  field_offset is never read; caller is the dead static Dummy() in yajima_test.c

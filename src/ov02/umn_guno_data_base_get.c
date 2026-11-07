@@ -1162,7 +1162,12 @@ void UmnDataBaseModel(UmnDataBaseModelWork *work)
 
     if (model == 0) {
         if (UmnWork.modelFlag != 0) {
+#ifdef PORT_HOST
+            /* PS2: $a0 still holds work (faithful to the original) */
+            ((void (*)(void *))MenuModelUnitBreak)(work);
+#else
             MenuModelUnitBreak();
+#endif
             UmnWork.modelFlag = 0;
         }
     }

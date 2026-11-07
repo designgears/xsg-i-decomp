@@ -150,9 +150,16 @@ void _LoadSeq(int seq)
 extern void _LoadSeq(int seq);
 extern void xglSoundSequenceNormal2(int channel, int volume);
 
+#ifdef PORT_HOST
+/* PS2: (void); the caller's $a0 (sequence, see rg_main.c) passes through to _LoadSeq */
+void XrgSoundSystemPlayBGM(int seq)
+{
+    _LoadSeq(seq);
+#else
 void XrgSoundSystemPlayBGM(void)
 {
     ((void (*)())_LoadSeq)();
+#endif
     if (s_eLoadedSeq != -1 && s_bNowPlaying == 0) {
         xglSoundSequenceNormal2(0, 127);
         s_bNowPlaying = 1;

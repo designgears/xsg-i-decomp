@@ -45,12 +45,22 @@ int UmnManzaiControl(void)
     return 1;
 }
 
+#ifdef PORT_HOST
+/* PS2: (void); the caller's $a0 (event number, see tsk_umn_mail_pas.c)
+ * passes straight through to UmnEventTextMake */
+int UmnManzaiInit(int ev)
+#else
 int UmnManzaiInit(void)
+#endif
 {
     UmnManzaiWinTask *window;
     int index;
 
+#ifdef PORT_HOST
+    if (((int (*)(int))UmnEventTextMake)(ev) < 0) {
+#else
     if (UmnEventTextMake() < 0) {
+#endif
         return -1;
     }
     UmnManzaiText = UmnEventTextNextGet(0);

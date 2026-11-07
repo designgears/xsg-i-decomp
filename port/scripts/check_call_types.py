@@ -17,19 +17,28 @@ string is classified by a second compile of a probe TU that includes the
 source and emits __builtin_classify_type/sizeof per type, so typedefs resolve
 exactly as gcc sees them.  Each parameter becomes one of
   F float  D double  I int (<=4 bytes)  L 8-byte int  P pointer  S<n> struct
-and every declaration of a global name is compared against its definition
+Q16 (a PS2 TImode quadword: a scalar in one 128-bit GPR on the EE, a ps2_u128
+struct on the host), and every declaration of a global name is compared against its definition
 (or, without a definition, against the most common declaration).
 
 Reported (file:line: message), most severe first:
   RET     return class differs (float vs int vs void/8-byte...)
+  STRUCT  one view passes a struct of STRUCT_REF_MIN+ bytes by value in a slot
+          where another view has a pointer/int/other struct: the EE EABI
+          passes such aggregates by invisible reference (one GPR holding the
+          address), so the PS2 code can mix `T s` and `T *` freely, while
+          i386 cdecl copies the whole struct onto the stack
   ARGS    parameter class sequence differs (float position, count, width)
   NOPROTO definition has float or 8-byte int params but a TU calls it through
           an unprototyped or implicit declaration (float -> double promotion,
           an int argument where 8 bytes are read)
+With --structs, also list (informational, BYVAL) every definition taking a
+struct of STRUCT_REF_MIN+ bytes by value: any caller outside C's view (asm,
+function-pointer tables, casts through `()`) hands it a pointer on the EE.
 Static functions are scoped per TU.  Exit 1 when a finding is not listed in
 port/scripts/check_call_types_allow.txt (`name  reason` per line).
 
-usage: check_call_types.py [-j N] [--all]
+usage: check_call_types.py [-j N] [--all] [--structs]
 """
 import collections
 import concurrent.futures
@@ -157,10 +166,13 @@ def run_tu(arg):
             lines = {}
             with open(probe, 'w') as f:
                 f.write('#include "%s"\n' % src)
-                n = 2
+                # host stand-in for the EE's TImode quadword (a scalar there)
+                f.write('#ifndef PS2_U128_DEFINED\ntypedef struct { char __c[3]; } ps2_u128;\n#endif\n')
+                n = 5
                 for i in todo:
                     f.write('static void __xq_%d(%s __x) { static char __xs_%d[__builtin_classify_type(__x)'
-                            ' * 4096 + sizeof(__x)]; __asm__ volatile("" :: "r"(__xs_%d)); }'
+                            ' * 4096 + sizeof(__x) + 0x100000 * __builtin_types_compatible_p(__typeof__(__x),'
+                            ' ps2_u128)]; __asm__ volatile("" :: "r"(__xs_%d)); }'
                             ' void *__xu_%d = (void *)__xq_%d;\n' % (i, types[i], i, i, i, i))
                     lines[n] = i
                     n += 1
@@ -170,7 +182,7 @@ def run_tu(arg):
             if p3.returncode == 0:
                 for m in re.finditer(r'\.local\s+__xs_(\d+)\.\d+\n\s*\.comm\s+__xs_\d+\.\d+,(\d+)', p3.stdout):
                     i, v = int(m.group(1)), int(m.group(2))
-                    cls[types[i]] = classify(v // 4096, v % 4096)
+                    cls[types[i]] = 'Q16' if v >= 0x100000 else classify(v // 4096, v % 4096)
                 break
             badl = {int(m.group(1)) for m in re.finditer(r'probe\.c:(\d+):\d+: error', p3.stderr)}
             drop = {lines[l] for l in badl if l in lines}
@@ -201,6 +213,28 @@ def sig(d, cls):
     return cls.get(d['ret'], '?'), ps
 
 
+# EE gcc 2.96 EABI (mips.c function_arg_pass_by_reference): aggregates larger
+# than UNITS_PER_WORD (8 on the EE) go by invisible reference.
+STRUCT_REF_MIN = 9
+
+
+def big_struct(c):
+    return c.startswith('S') and c[1:].isdigit() and int(c[1:]) >= STRUCT_REF_MIN
+
+
+def struct_slots(a, b):
+    """slot indices where one view has a by-reference-on-EE struct and the
+    other view something else"""
+    out = []
+    for k in range(min(len(a), len(b))):
+        if '...' in (a[k], b[k]):
+            break
+        x, y = norm(a[k]), norm(b[k])
+        if x != y and (big_struct(x) or big_struct(y)):
+            out.append(k)
+    return out
+
+
 def norm(c):
     """i386 slot class.  Narrow ints are promoted to a 4-byte slot at prototyped
     calls, and pointers and ints share a 4-byte slot, so I, i1, i2, P and (for
@@ -209,6 +243,8 @@ def norm(c):
     structs."""
     if c.startswith('i') or c in ('P', 'V'):
         return 'I'
+    if c == 'Q16':
+        return 'S16'  # on the host a quadword is a 16-byte struct like any other
     return c
 
 
@@ -282,7 +318,12 @@ def main():
                 # a double and an 8-byte int occupy the same two stack slots
                 a = tuple(norm(x).replace('D', 'L') for x in e[3])
                 b = tuple(norm(x).replace('D', 'L') for x in rp)
-                if args_differ(a, b) and not any('?' in x for x in a + b):
+                ss = struct_slots(e[3], rp)
+                if ss and not any('?' in x for x in e[3] + rp):
+                    findings.append((0, name, where, 'STRUCT %s(%s) here, (%s) at %s [slot %s]' % (
+                        name, ','.join(e[3]), ','.join(rp), what, ','.join(str(k + 1) for k in ss))))
+                    seen.add((where, name))
+                elif args_differ(a, b) and not any('?' in x for x in a + b):
                     findings.append((1, name, where, 'ARGS %s(%s) here, (%s) at %s' % (
                         name, ','.join(e[3]), ','.join(rp), what)))
                     seen.add((where, name))
@@ -306,6 +347,18 @@ def main():
         if ref[3] and any(x in ('F', 'L') for x in ref[3]):
             findings.append((2, n, where, 'NOPROTO %s(%s) implicitly declared here' % (n, ','.join(ref[3]))))
     findings.sort()
+    if '--structs' in sys.argv:
+        seen_def = set()
+        for key, es in sorted(by.items()):
+            for e in es:
+                if not e[1]['defn'] or e[3] is None:
+                    continue
+                ss = [k for k, x in enumerate(e[3]) if big_struct(x)]
+                where = '%s:%d' % (rel(e[1]['file']), e[1]['line'])
+                if ss and (where, key) not in seen_def:
+                    seen_def.add((where, key))
+                    print('%s: BYVAL %s(%s) struct by value in slot %s' % (
+                        where, key.split('@')[0], ','.join(e[3]), ','.join(str(k + 1) for k in ss)))
     bad = 0
     for sev, name, where, msg in findings:
         allowed = name in allow
