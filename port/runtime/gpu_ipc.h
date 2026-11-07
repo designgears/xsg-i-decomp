@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 3u
+#define XSG_GPU_VERSION 4u
 #define XSG_GPU_FD 3
 #define XSG_GPU_HDR 4096u
 #define XSG_GPU_RING (64u << 20)
@@ -151,5 +151,23 @@ typedef struct {
     volatile uint32_t updates;     /* bumped on every publish (diagnostics) */
     uint32_t reserved[11];
 } GpuPad;
+
+/* In-game menu (port/docs/MENU.md): the settings the game process applies
+ * live, written by xsg-gpu's menu (port/gpu/menu/) and polled by the game
+ * once per vblank (kernel.c -> gpu_client.cpp xsg_gpu_settings_poll).  Same
+ * seqlock as GpuPad.  All zero (valid = 0) = no menu: the game keeps its
+ * environment / built-in defaults. */
+#define XSG_GPU_SETTINGS_OFF 2048u
+#define XSG_GPU_FRAME_US_KEEP 0xffffffffu /* frame_us: leave the game's pacing alone */
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t valid;       /* 1 once xsg-gpu publishes settings */
+    volatile uint32_t frame_us;    /* vblank period in us; 0 = uncapped; FRAME_US_KEEP = no change */
+    volatile uint32_t audio_on;    /* 0 = muted */
+    volatile uint32_t vol[4];      /* master, music, effects, voice: 0..100 (percent) */
+    volatile uint32_t restart;     /* nonzero: the game restarts itself (re-exec) */
+    volatile uint32_t menu_open;   /* diagnostics: the menu is open (game input neutral) */
+    uint32_t reserved[22];
+} GpuSettings;
 
 #endif

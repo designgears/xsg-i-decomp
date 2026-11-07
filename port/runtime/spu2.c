@@ -81,6 +81,12 @@ typedef struct {
 
 static uint16_t ram[SPU2_RAM_BYTES / 2];
 static core_t C[2];
+/* In-game menu volumes (port/docs/MENU.md), Q15 (32768 = unity): per voice
+ * class and the master on the final output.  Classes follow how the sound
+ * driver allocates voices: core 0 = sequenced music, core 1 voices 0..19 =
+ * sound effects, core 1 voices 20..23 (the VAG stream voices: scene voice and
+ * movie audio) and the AutoDMA PCM input = voice. */
+static volatile int32_t gain_master = 32768, gain_class[3] = {32768, 32768, 32768};
 static void (*irq_cb)(int core);
 static void (*adma_cb)(int core);
 static void (*keyon_cb)(int core, int voice, uint32_t ssa, uint16_t pitch);
@@ -687,7 +693,9 @@ static void core_sample(int c, int32_t ext_l, int32_t ext_r)
         v->out = clamp16(o);
         vol_tick(&v->vol[0]);
         vol_tick(&v->vol[1]);
-        int32_t l = o * v->vol[0].level >> 15, r = o * v->vol[1].level >> 15;
+        int32_t g = gain_class[c == 0 ? 0 : i >= 20 ? 2 : 1];
+        int32_t om = g == 32768 ? o : (int32_t)((int64_t)o * g >> 15);
+        int32_t l = om * v->vol[0].level >> 15, r = om * v->vol[1].level >> 15;
         uint32_t bit = 1u << i;
         if (k->vmixl & bit) dl += l;
         if (k->vmixr & bit) dr += r;
@@ -712,6 +720,10 @@ static void core_sample(int c, int32_t ext_l, int32_t ext_r)
     /* inputs: external (core 0 -> core 1) through AVOL, AutoDMA through BVOL */
     int32_t al, ar;
     adma_sample(k, c, &al, &ar);
+    if (gain_class[2] != 32768) {
+        al = al * gain_class[2] >> 15;
+        ar = ar * gain_class[2] >> 15;
+    }
     int32_t el = ext_l * k->avol[0] >> 15, er = ext_r * k->avol[1] >> 15;
     int32_t il = al * k->bvol[0] >> 15, ir = ar * k->bvol[1] >> 15;
     /* MMIX gates: 0x800/0x400 voices dry L/R, 0x200/0x100 voices wet,
@@ -753,8 +765,9 @@ void spu2_render(int16_t *out, int frames)
     for (int n = 0; n < frames; n++) {
         core_sample(0, 0, 0);
         core_sample(1, C[0].out[0], C[0].out[1]);
-        out[2 * n] = (int16_t)C[1].out[0];
-        out[2 * n + 1] = (int16_t)C[1].out[1];
+        int32_t gm = gain_master;
+        out[2 * n] = gm == 32768 ? C[1].out[0] : (int16_t)(C[1].out[0] * gm >> 15);
+        out[2 * n + 1] = gm == 32768 ? C[1].out[1] : (int16_t)(C[1].out[1] * gm >> 15);
     }
 }
 
@@ -788,4 +801,12 @@ int spu2_voice_info(int core, int vi, spu2_voice_info_t *o)
     o->pmod = (k->pmon & bit) != 0;
     o->wet = ((k->vmixel | k->vmixer) & bit) != 0;
     return v->phase != PH_OFF;
+}
+
+void spu2_set_mix_gains(int master, int music, int effects, int voice)
+{
+    gain_master = master;
+    gain_class[0] = music;
+    gain_class[1] = effects;
+    gain_class[2] = voice;
 }

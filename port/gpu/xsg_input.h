@@ -7,6 +7,8 @@
 #include "gpu_ipc.h"
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #ifdef XSG_GPU_SDL
 union SDL_Event;
@@ -30,6 +32,28 @@ void BeginFrame(uint32_t frame);
 void Publish();
 /* SDL_PollEvent loop for runs without a window (test hook only). */
 void PumpHeadless();
+
+/* In-game menu (port/docs/MENU.md). While open the game gets a neutral pad. */
+void SetMenuOpen(bool open);
+bool MenuOpen();
+/* "CROSS+UP" <-> SCE_PAD mask (plus the LS_ / RS_ stick targets). */
+uint32_t TargetMask(const char* names);
+std::string TargetNames(uint32_t mask);
+void SetDeadzone(int deadzone, int trigger_threshold);
+#ifdef XSG_GPU_SDL
+/* Raw SDL gamepad state for menu navigation: bit i = SDL_GamepadButton i,
+   left stick axes.  False when no gamepad is open. */
+bool MenuPad(uint32_t* buttons, int* lx, int* ly);
+/* Remapping: (scancode | SDL_GamepadButton, mask) pairs.  Gamepad ids
+   SDL_GAMEPAD_BUTTON_COUNT / +1 are the left / right trigger axes. */
+std::vector<std::pair<int, uint32_t>> KeyBinds();
+std::vector<std::pair<int, uint32_t>> PadBinds();
+void SetKeyBind(int scancode, uint32_t mask);   // 0 unbinds
+void SetPadBind(int button, uint32_t mask);
+const char* PadButtonName(int button);
+void SaveBinds();    // into settings.ini [keyboard] / [gamepad] (diff to the defaults)
+void ResetBinds();
+#endif
 
 }  // namespace xsginput
 

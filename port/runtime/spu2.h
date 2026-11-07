@@ -58,6 +58,11 @@ void spu2_peek(uint32_t byte_addr, void *dst, uint32_t bytes);
 /* Render `frames` stereo frames of the final output (core 1 out). */
 void spu2_render(int16_t *out, int frames);
 
+/* In-game menu volumes, Q15 (32768 = unity): master on the output, music
+ * (core 0 voices), effects (core 1 voices 0..19), voice (core 1 voices
+ * 20..23 and AutoDMA).  Any thread (plain stores read per sample). */
+void spu2_set_mix_gains(int master, int music, int effects, int voice);
+
 /* Debug: active voice count, keyon count since reset. */
 int spu2_active_voices(void);
 unsigned spu2_keyons(void);
