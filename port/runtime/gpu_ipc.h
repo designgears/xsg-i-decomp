@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 2u
+#define XSG_GPU_VERSION 3u
 #define XSG_GPU_FD 3
 #define XSG_GPU_HDR 4096u
 #define XSG_GPU_RING (64u << 20)
@@ -46,7 +46,30 @@ enum {
     GPU_MSG_READ_VRAM = 4, /* a = seq: copy all 4 MB of local memory to the reply area */
     GPU_MSG_READ_FIFO = 5, /* a = seq, b = qwords: local->host transfer data (TRXDIR 1) */
     GPU_MSG_QUIT = 6,
+    GPU_MSG_NATIVE = 7,    /* a = kind (GPU_NATIVE_*), b = vertex count; payload: GpuNativeBatch + vertices */
 };
+
+/* Native renderer (port/docs/NATIVE_RENDERER.md, XSG_GPU_NATIVE=1): the inputs
+ * of one VU1 geometry batch, taken from VU1 data memory after the batch ran.
+ * The VU1 output is still kicked to the GS as before; the renderer redraws
+ * the batch natively from these inputs. */
+enum { GPU_NATIVE_SET0_STRIP = 1 };   /* set 0, loop 0x0c18 (entry 0x0bd8) */
+typedef struct {
+    float m[4][4];      /* qw 962-965: object -> clip (rows as VU1 holds them: m[k] multiplies coordinate k) */
+    float scale[4];     /* qw 966 */
+    float offset[4];    /* qw 967 */
+    float cscale[4];    /* vf24 (qw 971): colour scale */
+    float uv[4];        /* qw 972: .xy UV offset */
+    float fog[4];       /* qw 1007: x min, y max, z bias, w scale */
+    uint32_t tag[4];    /* qw 1011: GIF tag template (PRIM in bits 47..57) */
+    uint32_t frame, seq, pad[2];
+} GpuNativeBatch;
+/* followed by `b` vertices of GpuNativeVertex */
+typedef struct {
+    float p[4];         /* xyz, w = S */
+    float c[4];         /* RGBA (0..255 floats, after ITOF) */
+    float t, pad[3];    /* T */
+} GpuNativeVertex;
 
 typedef struct {
     uint32_t type, len; /* len = payload bytes (multiple of 16) */

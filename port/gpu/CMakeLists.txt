@@ -42,9 +42,20 @@ pkg_check_modules(SDL3 IMPORTED_TARGET sdl3)
 
 # The software GS's local-memory swizzle (MIT, ours) decodes VRAM for the stream.
 set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
-add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp ${XSG_GS_DIR}/src/gs_memory.cpp)
+# Native renderer shaders (native.vert/.frag) -> SPIR-V word lists included by native.cpp.
+find_program(XSG_GLSLC glslc REQUIRED)
+set(XSG_NATIVE_INC)
+foreach(stage vert frag)
+  set(out ${CMAKE_CURRENT_BINARY_DIR}/native.${stage}.inc)
+  add_custom_command(OUTPUT ${out}
+    COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/native.${stage}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/native.${stage} VERBATIM)
+  list(APPEND XSG_NATIVE_INC ${out})
+endforeach()
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
-target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include)
+target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb)
 target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan pthread)
 if(SDL3_FOUND)
   target_compile_definitions(xsg-gpu PRIVATE XSG_GPU_SDL=1)
