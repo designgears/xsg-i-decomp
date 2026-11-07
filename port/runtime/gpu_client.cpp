@@ -318,4 +318,31 @@ void ReadFifo(void* dst, u32 qwords) {
 
 void Flush() { Close(); }
 
+/* Stage 10: a consistent copy of the live pad block (seqlock read). */
+int PadRead(unsigned* buttons, unsigned char stick[4], unsigned char press[12]) {
+    if (!shm) return 0;
+    const GpuPad* p = reinterpret_cast<const GpuPad*>(reinterpret_cast<const u8*>(shm) + XSG_GPU_PAD_OFF);
+    for (int tries = 0; tries < 1000; ++tries) {
+        const u32 s0 = __atomic_load_n(&p->seq, __ATOMIC_ACQUIRE);
+        if (s0 & 1) continue;
+        if (!p->active) return 0;
+        const u32 b = p->buttons;
+        u8 st[4], pr[12];
+        for (int i = 0; i < 4; ++i) st[i] = u8(p->stick[i]);
+        for (int i = 0; i < 12; ++i) pr[i] = u8(p->press[i]);
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&p->seq, __ATOMIC_RELAXED) != s0) continue;
+        *buttons = b;
+        std::memcpy(stick, st, 4);
+        std::memcpy(press, pr, 12);
+        return 1;
+    }
+    return 0;
+}
+
 }  // namespace xsggpu
+
+/* Returns 0 when xsg-gpu is not running or publishes no input (headless). */
+extern "C" int xsg_gpu_pad_read(unsigned* buttons, unsigned char stick[4], unsigned char press[12]) {
+    return xsggpu::PadRead(buttons, stick, press);
+}

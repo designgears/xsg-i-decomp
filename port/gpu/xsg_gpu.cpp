@@ -18,11 +18,20 @@
  *   XSG_GPU_HIRES=1      high-resolution scanout (with SSAA >= 4)
  *   XSG_GPU_SCALE=N      initial window size N x 512x448 (default 2)
  *   XSG_GPU_VSYNC=1      FIFO present (blocks on the display); default mailbox
+ *   XSG_GPU_PRESENT=mailbox|fifo|immediate   present mode (overrides VSYNC)
+ *   XSG_GPU_ASPECT=4:3|16:9|stretch          display aspect (default 4:3)
+ *   XSG_GPU_SCALEMODE=fit|integer            image scaling (default fit)
+ *   XSG_GPU_FILTER=linear|nearest            blit filter (default linear)
+ *   XSG_GPU_FULLSCREEN=1 start fullscreen (F11 toggles)
+ *   XSG_GPU_INPUT_TEST   synthetic SDL input events (STAGE10_INPUT.md)
+ * The same video options can be set in [video] of ~/.config/xsg/input.ini.
+ * Keyboard/gamepad input: xsg_input.cpp, port/docs/STAGE10_INPUT.md.
  *   XSG_GPU_STREAM=fifo  the 512x448 RGB24 live stream (set by the game from
  *                        XSG_STREAM when it does not run the soft GS itself)
  *   XSG_GPU_VVL=1        allow the Vulkan validation layer
  */
 #include "gpu_ipc.h"
+#include "xsg_input.h"
 
 #include "context.hpp"
 #include "device.hpp"
@@ -142,6 +151,7 @@ bool StreamWants() {
 struct SdlPlatform final : Vulkan::WSIPlatform {
     SDL_Window* win = nullptr;
     bool is_alive = true;
+    bool fullscreen = false;
     uint32_t w = 1024, h = 896;
 
     VkSurfaceKHR create_surface(VkInstance instance, VkPhysicalDevice) override {
@@ -166,6 +176,12 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
     void poll_input() override {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_F11 && !e.key.repeat) {
+                fullscreen = !fullscreen;
+                SDL_SetWindowFullscreen(win, fullscreen);
+                continue;
+            }
+            if (xsginput::Event(e)) continue;
             if (e.type == SDL_EVENT_QUIT || e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) is_alive = false;
             if (e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
                 w = uint32_t(e.window.data1 > 0 ? e.window.data1 : 1);
@@ -191,6 +207,8 @@ struct Renderer {
     uint64_t vsyncs = 0, gif_bytes = 0, presents = 0;
     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     uint32_t hires = 0;
+    std::string aspect = "4:3";
+    bool integer_scale = false, nearest = false;
 
     static constexpr Vulkan::ContextCreationFlags kFlags = Vulkan::CONTEXT_CREATION_ENABLE_PUSH_DESCRIPTOR_BIT |
                                                            Vulkan::CONTEXT_CREATION_ENABLE_DESCRIPTOR_HEAP_BIT |
@@ -198,7 +216,7 @@ struct Renderer {
 
     bool InitWindow() {
 #ifdef XSG_GPU_SDL
-        if (!SDL_Init(SDL_INIT_VIDEO)) { Log("SDL_Init: %s", SDL_GetError()); return false; }
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) { Log("SDL_Init: %s", SDL_GetError()); return false; }
         int scale = std::getenv("XSG_GPU_SCALE") ? std::atoi(std::getenv("XSG_GPU_SCALE")) : 2;
         if (scale < 1) scale = 1;
         platform = std::make_unique<SdlPlatform>();
@@ -206,6 +224,12 @@ struct Renderer {
                                          SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
         if (!platform->win) { Log("SDL_CreateWindow: %s", SDL_GetError()); return false; }
         int pw = 0, ph = 0;
+        SDL_SetWindowMinimumSize(platform->win, 320, 240);
+        if (xsginput::Option("fullscreen", "XSG_GPU_FULLSCREEN", "0") != "0") {
+            platform->fullscreen = true;
+            SDL_SetWindowFullscreen(platform->win, true);
+            SDL_SyncWindow(platform->win);
+        }
         SDL_GetWindowSizeInPixels(platform->win, &pw, &ph);
         platform->w = uint32_t(pw > 0 ? pw : 512 * scale);
         platform->h = uint32_t(ph > 0 ? ph : 448 * scale);
@@ -215,8 +239,20 @@ struct Renderer {
         // Granite creates the swapchain COLOR_ATTACHMENT only unless told otherwise;
         // the present path clears and blits into it (ico-recomp's WSI usage fix).
         wsi->set_extra_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-        wsi->set_present_mode(EnvOn("XSG_GPU_VSYNC") ? Vulkan::PresentMode::SyncToVBlank
-                                                     : Vulkan::PresentMode::UnlockedNoTearing);
+        // Present mode.  The renderer thread is the ring consumer, so a blocking
+        // present (fifo) paces the whole pipeline to the display; mailbox (the
+        // default) never blocks and the game's own vblank timer paces it.
+        std::string pm = xsginput::Option("present", "XSG_GPU_PRESENT", EnvOn("XSG_GPU_VSYNC") ? "fifo" : "mailbox");
+        Vulkan::PresentMode mode = Vulkan::PresentMode::UnlockedNoTearing;
+        if (pm == "fifo" || pm == "vsync") mode = Vulkan::PresentMode::SyncToVBlank;
+        else if (pm == "immediate") mode = Vulkan::PresentMode::UnlockedForceTearing;
+        else if (pm == "auto") mode = Vulkan::PresentMode::UnlockedMaybeTear;
+        wsi->set_present_mode(mode);
+        aspect = xsginput::Option("aspect", "XSG_GPU_ASPECT", "4:3");
+        integer_scale = xsginput::Option("scale_mode", "XSG_GPU_SCALEMODE", "fit") == "integer";
+        nearest = xsginput::Option("filter", "XSG_GPU_FILTER", "linear") == "nearest";
+        Log("window: present %s, aspect %s, %s scaling, %s filter, F11 fullscreen", pm.c_str(), aspect.c_str(),
+            integer_scale ? "integer" : "fit", nearest ? "nearest" : "linear");
         if (!wsi->init_context_from_platform(1, {}, kFlags) || !wsi->init_device() || !wsi->init_surface_swapchain()) {
             Log("WSI init failed");
             wsi.reset();
@@ -247,6 +283,13 @@ struct Renderer {
         if (!EnvOn("XSG_GPU_VVL")) setenv("GRANITE_VULKAN_NO_VALIDATION", "1", 0);
         if (!Vulkan::Context::init_loader(nullptr)) { Log("no Vulkan loader"); return false; }
         if (!EnvOn("XSG_GPU_HEADLESS") && !InitWindow()) Log("no window; running headless");
+        bool sdl_input = windowed;
+#ifdef XSG_GPU_SDL
+        // Headless: input only for the synthetic test hook (no real devices).
+        if (!windowed && std::getenv("XSG_GPU_INPUT_TEST") && *std::getenv("XSG_GPU_INPUT_TEST"))
+            sdl_input = SDL_Init(SDL_INIT_EVENTS);
+#endif
+        xsginput::Init(reinterpret_cast<GpuPad*>(reinterpret_cast<uint8_t*>(shm) + XSG_GPU_PAD_OFF), sdl_input);
         if (!dev && !InitHeadless()) { Log("no Vulkan device"); return false; }
         GSOptions o = {};
         int ss = std::getenv("XSG_GPU_SSAA") ? std::atoi(std::getenv("XSG_GPU_SSAA")) : 1;
@@ -274,10 +317,26 @@ struct Renderer {
         else priv.qwords_hi[((off - 0x1000) >> 4) * 2] = v;
     }
 
+    /* Destination size in a bw x bh backbuffer: the display aspect (4:3 unless
+       "stretch"), and with integer scaling the largest whole multiple of the
+       scanout height that fits (fit scaling if even 1x does not). */
+    void Fit(int bw, int bh, int src_h, int* dw, int* dh) const {
+        if (aspect == "stretch") { *dw = bw; *dh = bh; return; }
+        int an = 4, ad = 3;
+        if (aspect == "16:9") { an = 16; ad = 9; }
+        int h = bh, w = bh * an / ad;
+        if (w > bw) { w = bw; h = bw * ad / an; }
+        if (integer_scale && src_h > 0) {
+            int k = h / src_h;
+            if (k >= 1) { h = k * src_h; w = h * an / ad; }
+        }
+        *dw = w;
+        *dh = h;
+    }
+
     void Present(const ScanoutResult& so) {
 #ifdef XSG_GPU_SDL
         if (!windowed) return;
-        platform->poll_input();
         if (!platform->is_alive) {
             Log("window closed");
             std::_Exit(0);   // the game sees the process go and exits too
@@ -292,16 +351,14 @@ struct Renderer {
         VkClearValue clear = {};
         cmd->clear_image(bb, clear);
         if (so.image) {
-            // Letterbox to the mode's aspect (4:3).
-            const int bw = int(bb.get_width()), bh = int(bb.get_height());
-            int dw = bw, dh = bw * 3 / 4;
-            if (dh > bh) { dh = bh; dw = bh * 4 / 3; }
-            const int x0 = (bw - dw) / 2, y0 = (bh - dh) / 2;
+            int dw, dh;
+            Fit(int(bb.get_width()), int(bb.get_height()), int(so.image->get_height()), &dw, &dh);
+            const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
             cmd->barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                          VK_ACCESS_2_TRANSFER_WRITE_BIT);
             cmd->blit_image(bb, *so.image, {x0, y0, 0}, {dw, dh, 1}, {0, 0, 0},
                             {int(so.image->get_width()), int(so.image->get_height()), 1}, 0, 0, 0, 0, 1,
-                            VK_FILTER_LINEAR);
+                            nearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
         }
         cmd->image_barrier(bb, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
@@ -350,6 +407,12 @@ struct Renderer {
         info.high_resolution_scanout = hires != 0;
         gs.flush();
         ScanoutResult so = gs.vsync(info);
+        xsginput::BeginFrame(frame);
+#ifdef XSG_GPU_SDL
+        if (windowed) platform->poll_input();
+        else xsginput::PumpHeadless();
+#endif
+        xsginput::Publish();
         Present(so);
         if (!windowed) dev->next_frame_context();
         if (StreamWants()) Stream();

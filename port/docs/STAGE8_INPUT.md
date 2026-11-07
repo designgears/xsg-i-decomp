@@ -63,6 +63,8 @@ status when they change (hooked from `TWSYS_update` under PORT_HOST). States: 0 
 1 opening, 2 closing, 8 waitkey, 9 clear, 10 newline/scroll, 12 page full (CIRCLE),
 13 `wait(n)`, 17 end of text (CIRCLE).
 
+**Superseded by Stage 10** (STAGE10_INPUT.md): keyboard and gamepad are read by the 64-bit
+xsg-gpu with SDL3 and passed to `scePadRead` through shared memory. Original note:
 **SDL2 keyboard/gamepad input: skipped.** The system has only the 64-bit libSDL2; there is
 no `/usr/lib32/libSDL2*`, and `pkg-config` with `PKG_CONFIG_PATH=/usr/lib32/pkgconfig` falls
 back to the 64-bit .pc file. To add it, install lib32-sdl2, then feed `scePadRead` port 0
