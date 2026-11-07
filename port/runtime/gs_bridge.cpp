@@ -9,6 +9,11 @@
  * the sceGs* functions and xsg_gs_vblank().  The game's PS2 addresses are
  * identity-mapped in this 32-bit process, so DMA addresses are pointers.
  */
+#include <condition_variable>
+#include <thread>
+#include <fcntl.h>
+#include <unistd.h>
+#include <csignal>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -462,6 +467,80 @@ void ShotInit() {
 
 u64 Priv(u32 off) { return *reinterpret_cast<volatile u64*>(uintptr_t(PS2_GSPRIV_BASE + off)); }
 
+/* XSG_STREAM=<fifo>: every vblank, the displayed buffer as raw 512x448 RGB24
+   on a FIFO (for the status site's live video).  A writer thread takes the
+   latest frame; frames are dropped while it is busy or no reader is attached. */
+struct Stream {
+    std::string path;
+    std::mutex m;
+    std::condition_variable cv;
+    std::vector<u8> buf, out;
+    bool ready = false;
+    int fd = -1;
+};
+Stream* g_stream = nullptr;
+
+void StreamWriter() {
+    Stream& s = *g_stream;
+    for (;;) {
+        {
+            std::unique_lock<std::mutex> l(s.m);
+            s.cv.wait(l, [&] { return s.ready; });
+            s.out.swap(s.buf);
+            s.ready = false;
+        }
+        if (s.fd < 0) {
+            s.fd = ::open(s.path.c_str(), O_WRONLY | O_NONBLOCK);
+            if (s.fd < 0) continue;  // no reader yet
+            ::fcntl(s.fd, F_SETFL, ::fcntl(s.fd, F_GETFL) & ~O_NONBLOCK);
+        }
+        size_t off = 0;
+        while (off < s.out.size()) {
+            ssize_t n = ::write(s.fd, s.out.data() + off, s.out.size() - off);
+            if (n <= 0) { ::close(s.fd); s.fd = -1; break; }  // reader went away
+            off += size_t(n);
+        }
+    }
+}
+
+void StreamFrame() {
+    if (!g_stream) return;
+    {
+        std::lock_guard<std::mutex> l(g_stream->m);
+        if (g_stream->ready) return;  // writer still busy: drop
+    }
+    Gs& gs = G();
+    gs.Finish();
+    const u64 pmode = Priv(0x00);
+    int circ = (pmode & 1) ? 1 : (pmode & 2) ? 2 : 1;
+    u64 dispfb = Priv(circ == 1 ? 0x70 : 0x90), display = Priv(circ == 1 ? 0x80 : 0xA0);
+    if (circ == 1 && dispfb == 0 && display == 0) { dispfb = Priv(0x90); display = Priv(0xA0); }
+    u32 fbp = u32(dispfb & 0x1ff), fbw = u32(dispfb >> 9) & 63, psm = u32(dispfb >> 15) & 31;
+    u32 dbx = u32(dispfb >> 32) & 0x7ff, dby = u32(dispfb >> 43) & 0x7ff;
+    if (!fbw) fbw = 8;
+    std::vector<u8> v(512 * 448 * 3);
+    for (u32 y = 0; y < 448; ++y)
+        for (u32 x = 0; x < 512; ++x) {
+            u32 px = gs.FramePixel(fbp, fbw, psm, x + dbx, y + dby);
+            u8* o = &v[(size_t(y) * 512 + x) * 3];
+            o[0] = u8(px); o[1] = u8(px >> 8); o[2] = u8(px >> 16);
+        }
+    std::lock_guard<std::mutex> l(g_stream->m);
+    g_stream->buf.swap(v);
+    g_stream->ready = true;
+    g_stream->cv.notify_one();
+}
+
+void StreamInit() {
+    const char* p = std::getenv("XSG_STREAM");
+    if (!p || !*p) return;
+    ::signal(SIGPIPE, SIG_IGN);
+    g_stream = new Stream;
+    g_stream->path = p;
+    std::thread(StreamWriter).detach();
+    xsg_logf("[stream] raw 512x448 rgb24 -> %s\n", p);
+}
+
 void Shot(u32 frame) {
     Gs& gs = G();
     gs.Finish();
@@ -612,6 +691,13 @@ void xsg_gs_vblank(unsigned frame) {
         last = v; lp = st.p1_tags; lprims = st.p1_prims; lpq = st.p1_qw;
         for (int i = 0; i < 8; ++i) lt[i] = st.p1_prim_type[i];
         if (frame % (u32(vu_log) * 100) == 0) xsgvu::DumpHistogram();
+    }
+    static bool stream_init = false;
+    if (!stream_init) { stream_init = true; StreamInit(); }
+    if (g_stream) {
+        std::lock_guard<std::recursive_mutex> l(g_lock);
+        xsg_dma_poll();
+        StreamFrame();
     }
     if (!shot_frames.count(frame) && !(shot_every && frame % shot_every == 0)) return;
     std::lock_guard<std::recursive_mutex> l(g_lock);

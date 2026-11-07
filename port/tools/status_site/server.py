@@ -45,6 +45,8 @@ def runner(shot_every, run_seconds, pad):
                    XSG_MC_DIR=str(LIVE_DIR / "mc"), XSG_TIMEOUT=str(run_seconds))
         if pad:
             env["XSG_PAD"] = pad
+        if STREAM_FIFO.exists():
+            env["XSG_STREAM"] = str(STREAM_FIFO)
         p = subprocess.Popen([str(exe)], cwd=str(ROOT), env=env, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, text=True, errors="replace")
         with lock:
@@ -76,6 +78,48 @@ def runner(shot_every, run_seconds, pad):
                                      "lines": state["lines"], "frame": state["frame"]})
             del state["history"][:-20]
         time.sleep(3)
+
+
+STREAM_FIFO = LIVE_DIR / "stream.fifo"
+video = {"jpeg": None, "seq": 0, "fps": None, "cond": threading.Condition(), "ok": False}
+
+
+def video_loop(quality):
+    """Raw RGB frames from the game's XSG_STREAM FIFO -> ffmpeg -> MJPEG frames."""
+    if not shutil.which("ffmpeg"):
+        return
+    LIVE_DIR.mkdir(parents=True, exist_ok=True)
+    if not STREAM_FIFO.exists():
+        os.mkfifo(STREAM_FIFO)
+    video["ok"] = True
+    while True:
+        p = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "rawvideo",
+                              "-pix_fmt", "rgb24", "-s", "512x448", "-i", str(STREAM_FIFO),
+                              "-f", "mjpeg", "-q:v", str(quality), "pipe:1"],
+                             stdout=subprocess.PIPE, stdin=subprocess.DEVNULL)
+        buf, n, t0 = b"", 0, time.time()
+        while True:
+            chunk = p.stdout.read1(1 << 16)
+            if not chunk:
+                break
+            buf += chunk
+            while True:
+                a = buf.find(b"\xff\xd8")
+                b = buf.find(b"\xff\xd9", a + 2) if a >= 0 else -1
+                if a < 0 or b < 0:
+                    break
+                frame, buf = buf[a:b + 2], buf[b + 2:]
+                n += 1
+                now = time.time()
+                if now - t0 >= 1:
+                    video["fps"], n, t0 = n / (now - t0), 0, now
+                with video["cond"]:
+                    video["jpeg"] = frame
+                    video["seq"] += 1
+                    video["cond"].notify_all()
+        p.wait()
+        video["fps"] = None
+        time.sleep(0.5)
 
 
 def latest_frame(keep=20):
@@ -177,6 +221,7 @@ h1{margin:0;font-size:18px;line-height:1.25}.sub{color:var(--mut);font-size:13px
 .live{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 12px;margin:0 -12px}
 #live{display:block;width:100%;aspect-ratio:8/7;object-fit:contain;background:#000;border-radius:8px;image-rendering:pixelated;cursor:zoom-in}
 .bar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+#mode{margin-left:auto;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;min-height:36px;cursor:pointer}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--mut);flex:none}.dot.on{background:var(--ok)}.dot.off{background:var(--bad)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
 .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
@@ -219,7 +264,8 @@ td.n{text-align:right}.barc{height:6px;background:var(--line);border-radius:3px;
 <header><h1>Xenosaga Ep. I &mdash; PC port</h1><div class="sub" id="sub">loading&hellip;</div></header>
 <div class="dash">
 <div><div class="live"><img id="live" alt="Live game frame">
-<div class="bar"><span class="dot" id="dot"></span><span id="run"></span></div></div>
+<div class="bar"><span class="dot" id="dot"></span><span id="run"></span>
+<button id="mode" type="button">60 fps video</button></div></div>
 <div class="tiles" id="tiles"></div>
 <details class="wide" open><summary>Live process</summary><div class="body"><table id="proc"></table></div></details>
 <details class="wide" open><summary>Recent runs</summary><div class="body"><table id="hist"></table></div></details>
@@ -243,11 +289,18 @@ const fmtB=b=>b==null?'–':b>1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFi
 const ago=t=>{if(!t)return'–';const s=Date.now()/1000-t;return s<90?Math.round(s)+'s ago':s<5400?Math.round(s/60)+'m ago':Math.round(s/3600)+'h ago'};
 const desk=matchMedia('(min-width:1100px)');function openAll(){if(desk.matches)document.querySelectorAll('details').forEach(d=>d.open=true)}
 desk.addEventListener('change',openAll);openAll();
-let busy=false;function tick(){if(document.hidden||busy)return;busy=true;const i=new Image();
+let busy=false,video=null,hasVideo=false;
+try{video=localStorage.getItem('xsgVideo');}catch(e){}
+function wantVideo(){return hasVideo&&video!=='0'&&!document.hidden}
+function setMode(){const m=$('mode');m.hidden=!hasVideo;m.textContent=video==='0'?'Switch to 60 fps video':'Switch to snapshots';
+ const L=$('live');if(wantVideo()){if(!L.src.includes('/live.mjpg'))L.src='/live.mjpg?'+Date.now();}else if(L.src.includes('/live.mjpg')){L.src='';tick();}}
+$('mode').addEventListener('click',()=>{video=video==='0'?'1':'0';try{localStorage.setItem('xsgVideo',video)}catch(e){}setMode();});
+$('live').addEventListener('error',()=>{if($('live').src.includes('/live.mjpg'))setTimeout(()=>{$('live').src='/live.mjpg?'+Date.now()},2000)});
+function tick(){if(document.hidden||busy||wantVideo())return;busy=true;const i=new Image();
 i.onload=()=>{$('live').src=i.src;busy=false};i.onerror=()=>{busy=false};i.src='/live.png?'+Date.now();}
 function tile(v,l){return `<div class="tile"><b>${esc(v)}</b><span>${esc(l)}</span></div>`}
 async function status(){if(document.hidden)return;try{const s=await (await fetch('/api/status')).json();
-const r=s.runner,m=s.metrics;$('sub').textContent='branch pc-port · '+(m.diffstat||'')+' · '+new Date().toLocaleTimeString();
+const r=s.runner,m=s.metrics;if(hasVideo!==!!r.video){hasVideo=!!r.video;setMode();}$('sub').textContent='branch pc-port · '+(m.diffstat||'')+' · '+new Date().toLocaleTimeString();
 $('dot').className='dot '+(r.running?'on':'off');
 $('run').textContent=r.running?`running · run #${r.runs} · ${Math.round(r.uptime)}s`:`stopped (exit ${r.exit})`;
 $('tiles').innerHTML=[tile(r.frame??'–','game frame'),tile(r.fps?r.fps.toFixed(1):'–','frames/s'),
@@ -272,7 +325,7 @@ $('gal').addEventListener('click',e=>{const im=e.target.closest('img');if(im)vie
 $('live').addEventListener('click',()=>view($('live').src));
 $('viewer').addEventListener('click',()=>$('viewer').classList.remove('on'));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('viewer').classList.remove('on')});
-document.addEventListener('visibilitychange',()=>{tick();status();});
+document.addEventListener('visibilitychange',()=>{setMode();tick();status();});
 tick();status();setInterval(tick,1000);setInterval(status,4000);
 </script></body></html>"""
 
@@ -299,6 +352,27 @@ class H(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path == "/":
             return self.send(200, PAGE.encode(), "text/html; charset=utf-8")
+        if path == "/live.mjpg":
+            if not video["ok"]:
+                return self.send(404, b"no stream", "text/plain")
+            self.send_response(200)
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            seq = -1
+            try:
+                while True:
+                    with video["cond"]:
+                        video["cond"].wait_for(lambda: video["seq"] != seq, timeout=5)
+                        jpg, seq = video["jpeg"], video["seq"]
+                    if jpg is None:
+                        continue
+                    self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: "
+                                     + str(len(jpg)).encode() + b"\r\n\r\n" + jpg + b"\r\n")
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return
         if path == "/live.png":
             f = latest_frame()
             return self.file(f, "image/png") if f else self.send(404, b"no frame yet", "text/plain")
@@ -323,6 +397,8 @@ class H(BaseHTTPRequestHandler):
                 r["history"] = list(state["history"])
             r["uptime"] = time.time() - r["started"] if r["started"] and r["running"] else 0
             r["proc"] = proc_info(r["pid"])
+            r["video_fps"] = video["fps"]
+            r["video"] = video["ok"]
             body = {"runner": r, "commits": commits(), "gallery": gallery(), "metrics": metrics()}
             return self.send(200, json.dumps(body).encode(), "application/json")
         self.send(404, b"not found", "text/plain")
@@ -335,7 +411,12 @@ def main():
     ap.add_argument("--shot-every", type=int, default=30, help="frames between live captures")
     ap.add_argument("--run-seconds", type=int, default=120, help="restart the game after this long")
     ap.add_argument("--pad", default="", help="XSG_PAD script, e.g. 300:0x0800")
+    ap.add_argument("--quality", type=int, default=5, help="MJPEG quality (2 best .. 31 worst)")
     a = ap.parse_args()
+    LIVE_DIR.mkdir(parents=True, exist_ok=True)
+    if shutil.which("ffmpeg") and not STREAM_FIFO.exists():
+        os.mkfifo(STREAM_FIFO)
+    threading.Thread(target=video_loop, args=(a.quality,), daemon=True).start()
     if not a.no_runner:
         threading.Thread(target=runner, args=(a.shot_every, a.run_seconds, a.pad), daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", a.port), H).serve_forever()
