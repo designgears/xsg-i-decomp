@@ -151,7 +151,11 @@ def main():
         if u == "main":
             rename = ["--redefine-sym", "main=xsg_game_main"]
         else:
-            rename = []
+            # The overlay's compiled-C statics get their own sections too, so
+            # the runtime can restore them on activation as the PS2 did by
+            # reloading the overlay image (__start_/__stop_xsgcd_<ov>, ...).
+            rename = ["--rename-section", ".data=xsgcd_%s,alloc,load,data,contents" % u,
+                      "--rename-section", ".bss=xsgcb_%s,alloc" % u]
         q = os.path.join(work, u + ".g.o")
         args = ["objcopy"] + rename
         if glob:

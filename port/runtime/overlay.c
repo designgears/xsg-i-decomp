@@ -1,8 +1,10 @@
 /*
  * Overlays on the host.  All five overlays are linked into the executable;
  * "loading" one (sceSifLoadElf("cdrom0:\\OVxx.OVL;1")) makes it the active
- * overlay and restores its converted .data/.bss (sections xsgd_<ov> /
- * xsgb_<ov>, see gen_host_data.py) from a pristine copy taken at startup.
+ * overlay and restores its .data/.bss from a pristine copy taken at startup:
+ * both the converted data (sections xsgd_<ov> / xsgb_<ov>, gen_host_data.py)
+ * and the overlay's compiled-C statics (xsgcd_<ov> / xsgcb_<ov>, renamed from
+ * .data/.bss by link_xsg.py).
  *
  * PS2 code reaches overlay functions through fixed addresses (func_A19xxx,
  * selection codes returned by the title screen...).  xsg_ps2_func() maps a PS2
@@ -20,24 +22,28 @@ struct ovtab_ent {
     void *fn;
 };
 
+#define SEC(sec, name)                                                               \
+    extern char __start_##sec##_##name[] __attribute__((weak));                       \
+    extern char __stop_##sec##_##name[] __attribute__((weak));
 #define OV(name)                                                                     \
     extern const struct ovtab_ent xsg_ovtab_##name[] __attribute__((weak));          \
-    extern char __start_xsgd_##name[] __attribute__((weak));                          \
-    extern char __stop_xsgd_##name[] __attribute__((weak));                           \
-    extern char __start_xsgb_##name[] __attribute__((weak));                          \
-    extern char __stop_xsgb_##name[] __attribute__((weak));
+    SEC(xsgd, name) SEC(xsgb, name) SEC(xsgcd, name) SEC(xsgcb, name)
 OV(ov01) OV(ov02) OV(ov10) OV(ov11) OV(ov12)
 
+/* [0] the converted data (xsgd_/xsgb_), [1] the overlay's compiled-C
+ * .data/.bss, renamed to xsgcd_/xsgcb_ by link_xsg.py */
 struct overlay {
     int id;
     const char *name;
     const struct ovtab_ent *tab;
-    char *d0, *d1, *b0, *b1;
-    char *pristine;
+    char *d0[2], *d1[2], *b0[2], *b1[2];
+    char *pristine[2];
 };
 #define OVE(n, name)                                                                  \
-    {n, #name, xsg_ovtab_##name, __start_xsgd_##name, __stop_xsgd_##name,             \
-     __start_xsgb_##name, __stop_xsgb_##name, NULL}
+    {n, #name, xsg_ovtab_##name,                                                     \
+     {__start_xsgd_##name, __start_xsgcd_##name}, {__stop_xsgd_##name, __stop_xsgcd_##name}, \
+     {__start_xsgb_##name, __start_xsgcb_##name}, {__stop_xsgb_##name, __stop_xsgcb_##name}, \
+     {NULL, NULL}}
 static struct overlay ovl[] = {OVE(1, ov01), OVE(2, ov02), OVE(10, ov10), OVE(11, ov11),
                                OVE(12, ov12)};
 #define NOV (int)(sizeof ovl / sizeof ovl[0])
@@ -46,33 +52,42 @@ static struct overlay ovl[] = {OVE(1, ov01), OVE(2, ov02), OVE(10, ov10), OVE(11
  * xglCdInitial sets loaded_overlay = 2, so it is active from the start. */
 int xsg_active_overlay = 2;
 
+static size_t span(char *a, char *b) { return a && b ? (size_t)(b - a) : 0; }
+
 void xsg_overlay_init(void)
 {
     for (int i = 0; i < NOV; i++) {
         struct overlay *o = &ovl[i];
-        size_t n = o->d0 ? (size_t)(o->d1 - o->d0) : 0;
         int fns = 0;
-        if (n) {
-            o->pristine = malloc(n);
-            memcpy(o->pristine, o->d0, n);
+        for (int k = 0; k < 2; k++) {
+            size_t n = span(o->d0[k], o->d1[k]);
+            if (n) {
+                o->pristine[k] = malloc(n);
+                memcpy(o->pristine[k], o->d0[k], n);
+            }
         }
         for (const struct ovtab_ent *e = o->tab; e && e->addr; e++)
             fns++;
-        xsg_logf("[ovl] %s: data %zu bytes, bss %zu bytes, %d PS2-address functions\n", o->name,
-                 n, o->b0 ? (size_t)(o->b1 - o->b0) : 0, fns);
+        xsg_logf("[ovl] %s: data %zu+%zu bytes, bss %zu+%zu bytes (converted+C), %d PS2-address "
+                 "functions\n", o->name, span(o->d0[0], o->d1[0]), span(o->d0[1], o->d1[1]),
+                 span(o->b0[0], o->b1[0]), span(o->b0[1], o->b1[1]), fns);
     }
 }
 
+/* Activating an overlay = the PS2 loading its image afresh: every initialised
+ * static is back to its link-time value and .bss is zero. */
 int xsg_overlay_activate(int id)
 {
     for (int i = 0; i < NOV; i++) {
         struct overlay *o = &ovl[i];
         if (o->id != id)
             continue;
-        if (o->pristine)
-            memcpy(o->d0, o->pristine, o->d1 - o->d0);
-        if (o->b0)
-            memset(o->b0, 0, o->b1 - o->b0);
+        for (int k = 0; k < 2; k++) {
+            if (o->pristine[k])
+                memcpy(o->d0[k], o->pristine[k], span(o->d0[k], o->d1[k]));
+            if (span(o->b0[k], o->b1[k]))
+                memset(o->b0[k], 0, span(o->b0[k], o->b1[k]));
+        }
         xsg_logf("[ovl] overlay %s active (was %d)\n", o->name, xsg_active_overlay);
         xsg_active_overlay = id;
         return 0;
