@@ -9,6 +9,7 @@
  * the sceGs* functions and xsg_gs_vblank().  The game's PS2 addresses are
  * identity-mapped in this 32-bit process, so DMA addresses are pointers.
  */
+#include <chrono>
 #include <condition_variable>
 #include <thread>
 #include <fcntl.h>
@@ -27,6 +28,7 @@
 
 #include "ps2host/gs.h"
 #include "vu1.h"
+#include "gpu_client.h"
 
 namespace ps2host { std::uint32_t g_dma_source = 0; }
 
@@ -47,6 +49,41 @@ Gs* g_gs;
 Gs& G() {
     if (!g_gs) g_gs = &ps2host::gs::TheGs();
     return *g_gs;
+}
+
+/* Stage 9: XSG_GS=soft (default) | gpu | both.  soft runs the CPU software GS
+   in this process; gpu forwards everything to the xsg-gpu renderer process
+   (gpu_client.cpp) and never touches the software GS; both does the two and
+   compares the displayed frames. */
+enum class Mode { Soft, Gpu, Both };
+Mode g_mode = Mode::Soft;
+bool g_soft = true, g_gpu = false;
+bool g_mode_init = false;
+
+void ModeInit() {
+    if (g_mode_init) return;
+    g_mode_init = true;
+    const char* m = std::getenv("XSG_GS");
+    if (m && !std::strcmp(m, "gpu")) g_mode = Mode::Gpu;
+    else if (m && !std::strcmp(m, "both")) g_mode = Mode::Both;
+    else if (m && *m && std::strcmp(m, "soft")) xsg_logf("[gs] XSG_GS=%s unknown, using soft\n", m);
+    if (g_mode != Mode::Soft) {
+        const char* stream = std::getenv("XSG_STREAM");
+        // gpu only: the renderer feeds the live stream itself (both: the soft GS does).
+        if (!xsggpu::Start(g_mode == Mode::Gpu && stream && *stream ? stream : nullptr)) {
+            xsg_logf("[gs] XSG_GS=%s but xsg-gpu could not start; stopping\n", m);
+            std::_Exit(1);
+        }
+    }
+    g_soft = g_mode != Mode::Gpu;
+    g_gpu = g_mode != Mode::Soft;
+    xsg_logf("[gs] renderer: %s\n", g_mode == Mode::Soft ? "soft" : g_mode == Mode::Gpu ? "gpu" : "both");
+}
+
+/* Every quadword the GS receives goes through here. */
+inline void GsQword(int path, u64 lo, u64 hi) {
+    if (g_soft) G().Qword(path, lo, hi);
+    if (g_gpu) xsggpu::Gif(path, lo, hi);
 }
 
 struct Stats {
@@ -72,6 +109,8 @@ const u8* Ptr(u32 a) {
 /* ---------------------------------------------------------------- GIF */
 
 void GifSend(int path, const u8* p, u32 qwords) {
+    if (g_gpu) xsggpu::GifBlock(path, p, qwords);
+    if (!g_soft) return;
     Gs& gs = G();
     for (u32 i = 0; i < qwords; ++i, p += 16) {
         u64 lo, hi;
@@ -167,7 +206,6 @@ void UnpackElement() {
 
 /* PATH1: a GIF packet in VU1 data memory from quadword `q` (wrapping) to EOP. */
 void Path1Kick(const u8* data, u32 q) {
-    Gs& gs = G();
     st.p1_packets++;
     for (u32 guard = 0; guard < 1024; ++guard) {
         u64 lo, hi;
@@ -182,12 +220,12 @@ void Path1Kick(const u8* data, u32 q) {
         if (flg != 2) st.p1_nloop += nloop;
         u32 body = flg == 0 ? nloop * nreg : flg == 1 ? (nloop * nreg + 1) / 2 : nloop;
         if (body > 1024) { st.p1_bad++; break; }
-        gs.Qword(1, lo, hi);
+        GsQword(1, lo, hi);
         ++q;
         for (u32 i = 0; i < body; ++i, ++q) {
             std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
             std::memcpy(&hi, data + (q & 0x3ff) * 16 + 8, 8);
-            gs.Qword(1, lo, hi);
+            GsQword(1, lo, hi);
         }
         st.p1_qw += body + 1;
         if (eop) return;
@@ -211,7 +249,7 @@ void VifData(u32 w) {
         vif.gif_words[vif.gif_n++] = w;
         if (vif.gif_n == 4) {
             vif.gif_n = 0;
-            G().Qword(2, u64(vif.gif_words[0]) | u64(vif.gif_words[1]) << 32,
+            GsQword(2, u64(vif.gif_words[0]) | u64(vif.gif_words[1]) << 32,
                       u64(vif.gif_words[2]) | u64(vif.gif_words[3]) << 32);
             st.direct_qw++;
         }
@@ -467,6 +505,67 @@ void ShotInit() {
 
 u64 Priv(u32 off) { return *reinterpret_cast<volatile u64*>(uintptr_t(PS2_GSPRIV_BASE + off)); }
 
+/* Where displayed pixels come from: the software GS, or a copy of xsg-gpu's
+   local memory (decoded with the same swizzle code). */
+struct PixelSource {
+    const Gs* soft = nullptr;
+    const ps2host::gs::Memory* mem = nullptr;
+    u32 operator()(u32 fbp, u32 fbw, u32 psm, u32 x, u32 y) const {
+        if (soft) return soft->FramePixel(fbp, fbw, psm, x, y);
+        const u32 c = mem->Read(fbp * 32, fbw, x, y, psm);
+        if (psm == 0x02 || psm == 0x0A)
+            return ((c & 31) << 3) | (((c >> 5) & 31) << 11) | (((c >> 10) & 31) << 19) | ((c & 0x8000) ? 0x80000000u : 0);
+        if (psm == 0x01) return (c & 0xFFFFFF) | 0x80000000u;
+        return c;
+    }
+};
+
+PixelSource SoftSource() {
+    PixelSource s;
+    G().Finish();
+    s.soft = &G();
+    return s;
+}
+
+ps2host::gs::Memory* g_gpu_mem;
+PixelSource GpuSource() {
+    if (!g_gpu_mem) g_gpu_mem = new ps2host::gs::Memory;
+    std::memcpy(g_gpu_mem->data(), xsggpu::ReadVram(), 4u << 20);
+    PixelSource s;
+    s.mem = g_gpu_mem;
+    return s;
+}
+
+/* The displayed buffer (DISPFB of the enabled circuit). */
+struct Shown { u32 fbp, fbw, psm, dbx, dby, w, h; };
+Shown Displayed(bool fixed_512) {
+    const u64 pmode = Priv(0x00);
+    int circ = (pmode & 1) ? 1 : (pmode & 2) ? 2 : 1;
+    u64 dispfb = Priv(circ == 1 ? 0x70 : 0x90), display = Priv(circ == 1 ? 0x80 : 0xA0);
+    if (circ == 1 && dispfb == 0 && display == 0) { dispfb = Priv(0x90); display = Priv(0xA0); }
+    Shown d;
+    d.fbp = u32(dispfb & 0x1ff); d.fbw = u32(dispfb >> 9) & 63; d.psm = u32(dispfb >> 15) & 31;
+    d.dbx = u32(dispfb >> 32) & 0x7ff; d.dby = u32(dispfb >> 43) & 0x7ff;
+    u32 magh = u32(display >> 23) & 15, dw = u32(display >> 32) & 0xfff, dh = u32(display >> 44) & 0x7ff;
+    d.w = (dw + 1) / (magh + 1); d.h = dh + 1;
+    if (!display || fixed_512) { d.w = 512; d.h = 448; }
+    if (!d.fbw) d.fbw = fixed_512 ? 8 : (d.w + 63) / 64;
+    if (d.w > 1024) d.w = 1024;
+    if (d.h > 1024) d.h = 1024;
+    return d;
+}
+
+std::vector<u8> Grab(const PixelSource& px, const Shown& d) {
+    std::vector<u8> rgb(size_t(d.w) * d.h * 3);
+    for (u32 y = 0; y < d.h; ++y)
+        for (u32 x = 0; x < d.w; ++x) {
+            u32 p = px(d.fbp, d.fbw, d.psm, x + d.dbx, y + d.dby);
+            u8* o = &rgb[(size_t(y) * d.w + x) * 3];
+            o[0] = u8(p); o[1] = u8(p >> 8); o[2] = u8(p >> 16);
+        }
+    return rgb;
+}
+
 /* XSG_STREAM=<fifo>: every vblank, the displayed buffer as raw 512x448 RGB24
    on a FIFO (for the status site's live video).  A writer thread takes the
    latest frame; frames are dropped while it is busy or no reader is attached. */
@@ -509,22 +608,7 @@ void StreamFrame() {
         std::lock_guard<std::mutex> l(g_stream->m);
         if (g_stream->ready) return;  // writer still busy: drop
     }
-    Gs& gs = G();
-    gs.Finish();
-    const u64 pmode = Priv(0x00);
-    int circ = (pmode & 1) ? 1 : (pmode & 2) ? 2 : 1;
-    u64 dispfb = Priv(circ == 1 ? 0x70 : 0x90), display = Priv(circ == 1 ? 0x80 : 0xA0);
-    if (circ == 1 && dispfb == 0 && display == 0) { dispfb = Priv(0x90); display = Priv(0xA0); }
-    u32 fbp = u32(dispfb & 0x1ff), fbw = u32(dispfb >> 9) & 63, psm = u32(dispfb >> 15) & 31;
-    u32 dbx = u32(dispfb >> 32) & 0x7ff, dby = u32(dispfb >> 43) & 0x7ff;
-    if (!fbw) fbw = 8;
-    std::vector<u8> v(512 * 448 * 3);
-    for (u32 y = 0; y < 448; ++y)
-        for (u32 x = 0; x < 512; ++x) {
-            u32 px = gs.FramePixel(fbp, fbw, psm, x + dbx, y + dby);
-            u8* o = &v[(size_t(y) * 512 + x) * 3];
-            o[0] = u8(px); o[1] = u8(px >> 8); o[2] = u8(px >> 16);
-        }
+    std::vector<u8> v = Grab(SoftSource(), Displayed(true));
     std::lock_guard<std::mutex> l(g_stream->m);
     g_stream->buf.swap(v);
     g_stream->ready = true;
@@ -541,36 +625,17 @@ void StreamInit() {
     xsg_logf("[stream] raw 512x448 rgb24 -> %s\n", p);
 }
 
-void Shot(u32 frame) {
-    Gs& gs = G();
-    gs.Finish();
+void Shot(u32 frame, const PixelSource& px, const char* tag) {
     const u64 pmode = Priv(0x00), smode2 = Priv(0x20);
-    // Circuit 1 when enabled (the game flips through DISPFB1), else circuit 2.
-    int circ = (pmode & 1) ? 1 : (pmode & 2) ? 2 : 1;
-    u64 dispfb = Priv(circ == 1 ? 0x70 : 0x90), display = Priv(circ == 1 ? 0x80 : 0xA0);
-    if (circ == 1 && dispfb == 0 && display == 0) { dispfb = Priv(0x90); display = Priv(0xA0); }
-    u32 fbp = u32(dispfb & 0x1ff), fbw = u32(dispfb >> 9) & 63, psm = u32(dispfb >> 15) & 31;
-    u32 dbx = u32(dispfb >> 32) & 0x7ff, dby = u32(dispfb >> 43) & 0x7ff;
-    u32 magh = u32(display >> 23) & 15, dw = u32(display >> 32) & 0xfff, dh = u32(display >> 44) & 0x7ff;
-    u32 w = (dw + 1) / (magh + 1), h = dh + 1;
-    if (!display) { w = 512; h = 448; }
-    if (!fbw) fbw = (w + 63) / 64;
-    if (w > 1024) w = 1024;
-    if (h > 1024) h = 1024;
-    std::vector<u8> rgb(size_t(w) * h * 3);
-    for (u32 y = 0; y < h; ++y)
-        for (u32 x = 0; x < w; ++x) {
-            u32 p = gs.FramePixel(fbp, fbw, psm, x + dbx, y + dby);
-            u8* o = &rgb[(size_t(y) * w + x) * 3];
-            o[0] = u8(p); o[1] = u8(p >> 8); o[2] = u8(p >> 16);
-        }
+    const Shown d = Displayed(false);
+    const u32 fbp = d.fbp, fbw = d.fbw, psm = d.psm, w = d.w, h = d.h;
+    std::vector<u8> rgb = Grab(px, d);
     char name[512];
-    std::snprintf(name, sizeof name, "%s/frame%06u.png", shot_dir.c_str(), frame);
+    std::snprintf(name, sizeof name, "%s/frame%06u%s.png", shot_dir.c_str(), frame, tag);
     WritePng(name, rgb, w, h);
     xsg_logf("[shot] dispfb1 %llx dispfb2 %llx\n", (unsigned long long)Priv(0x70), (unsigned long long)Priv(0x90));
-    xsg_logf("[shot] %s pmode %llx smode2 %llx FBP 0x%x fbw %u psm %u %ux%u (prims %llu)\n", name,
-             (unsigned long long)pmode, (unsigned long long)smode2, fbp, fbw, psm, w, h,
-             (unsigned long long)gs.primitives());
+    xsg_logf("[shot] %s pmode %llx smode2 %llx FBP 0x%x fbw %u psm %u %ux%u\n", name,
+             (unsigned long long)pmode, (unsigned long long)smode2, fbp, fbw, psm, w, h);
     // XSG_SHOT_FBP=base[:fbw[:psm]],... (FBP as FRAME has it, in 2048-word pages, hex): extra buffers, 512x448.
     if (const char* e = std::getenv("XSG_SHOT_FBP"))
         for (const char* p = e; *p;) {
@@ -582,11 +647,11 @@ void Shot(u32 frame) {
             std::vector<u8> v(512 * 448 * 3);
             for (u32 y = 0; y < 448; ++y)
                 for (u32 x = 0; x < 512; ++x) {
-                    u32 px = gs.FramePixel(b, bw, ps, x, y);
+                    u32 c = px(b, bw, ps, x, y);
                     u8* o = &v[(size_t(y) * 512 + x) * 3];
-                    o[0] = u8(px); o[1] = u8(px >> 8); o[2] = u8(px >> 16);
+                    o[0] = u8(c); o[1] = u8(c >> 8); o[2] = u8(c >> 16);
                 }
-            std::snprintf(name, sizeof name, "%s/fb%03x_%06u.png", shot_dir.c_str(), b, frame);
+            std::snprintf(name, sizeof name, "%s/fb%03x_%06u%s.png", shot_dir.c_str(), b, frame, tag);
             WritePng(name, v, 512, 448);
             p = *q ? q + 1 : q;
         }
@@ -594,13 +659,37 @@ void Shot(u32 frame) {
         std::vector<u8> v(1024 * 1024 * 3);
         for (u32 y = 0; y < 1024; ++y)
             for (u32 x = 0; x < 1024; ++x) {
-                u32 p = gs.FramePixel(0, 16, 0, x, y);
+                u32 p = px(0, 16, 0, x, y);
                 u8* o = &v[(size_t(y) * 1024 + x) * 3];
                 o[0] = u8(p); o[1] = u8(p >> 8); o[2] = u8(p >> 16);
             }
-        std::snprintf(name, sizeof name, "%s/vram%06u.png", shot_dir.c_str(), frame);
+        std::snprintf(name, sizeof name, "%s/vram%06u%s.png", shot_dir.c_str(), frame, tag);
         WritePng(name, v, 1024, 1024);
     }
+}
+
+/* XSG_GS=both: the displayed frame of the two renderers, compared. */
+u64 cmp_n = 0, cmp_bad = 0;
+void Compare(u32 frame) {
+    const Shown d = Displayed(true);
+    std::vector<u8> a = Grab(SoftSource(), d), b = Grab(GpuSource(), d);
+    u64 sum = 0;
+    u32 diff = 0, maxd = 0;
+    for (size_t i = 0; i < a.size(); i += 3) {
+        u32 m = 0;
+        for (int c = 0; c < 3; ++c) {
+            u32 e = u32(std::abs(int(a[i + c]) - int(b[i + c])));
+            sum += e;
+            m = std::max(m, e);
+        }
+        if (m > 8) diff++;
+        maxd = std::max(maxd, m);
+    }
+    const double pct = 100.0 * diff / (a.size() / 3), mae = double(sum) / a.size();
+    cmp_n++;
+    if (pct > 1.0) cmp_bad++;
+    xsg_logf("[cmp] vblank %u FBP 0x%x: %.2f%% pixels differ by >8, mean abs %.3f, max %u (%llu/%llu frames >1%%)\n",
+             frame, d.fbp, pct, mae, maxd, (unsigned long long)cmp_bad, (unsigned long long)cmp_n);
 }
 
 }  // namespace
@@ -612,6 +701,7 @@ extern "C" {
 /* Called by the DMAC stand-in for a started channel (CHCR.STR set). Runs the
    transfer for ch1/ch2 and clears STR. */
 void xsg_dma_run(int ch, uint32_t base) {
+    ModeInit();
     std::lock_guard<std::recursive_mutex> l(g_lock);
     volatile u32* chcr = reinterpret_cast<volatile u32*>(uintptr_t(base));
     if ((ch == 1 || ch == 2) && (*chcr & 0x100)) {
@@ -622,6 +712,7 @@ void xsg_dma_run(int ch, uint32_t base) {
 
 /* Any started VIF1/GIF transfer, run now (keeps sceGs* calls in order). */
 void xsg_dma_poll(void) {
+    ModeInit();
     std::lock_guard<std::recursive_mutex> l(g_lock);
     static const u32 bases[3] = {0, 0x10009000, 0x1000A000};
     for (int ch = 1; ch <= 2; ++ch) {
@@ -642,6 +733,7 @@ void xsg_dma_kick(uint32_t channel) {
 
 /* A GIF packet (through EOP) on PATH3, as sceGsPutDrawEnv/ExecLoadImage send it. */
 void xsg_gs_send_packet(const void* p) {
+    ModeInit();
     std::lock_guard<std::recursive_mutex> l(g_lock);
     xsg_dma_poll();
     const u8* b = static_cast<const u8*>(p);
@@ -649,17 +741,93 @@ void xsg_gs_send_packet(const void* p) {
 }
 
 void xsg_gs_send(const void* p, uint32_t qwords) {
+    ModeInit();
     std::lock_guard<std::recursive_mutex> l(g_lock);
     GifSend(3, static_cast<const u8*>(p), qwords);
 }
 
+/* sceGsExecStoreImage: a local->host transfer (TRXDIR 1) set up by the
+   sceGsSetDefStoreImage packet `si` (GIF tag + BITBLTBUF/TRXPOS/TRXREG/TRXDIR,
+   then the IMAGE tag whose NLOOP is the size).  The data lands at `dst`. */
+void xsg_gs_store_image(const void* si, void* dst) {
+    ModeInit();
+    std::lock_guard<std::recursive_mutex> l(g_lock);
+    xsg_dma_poll();
+    u64 q[12];
+    std::memcpy(q, si, sizeof q);
+    const u32 qwords = u32(q[10] & 0x7fff);
+    u64 pkt[10];
+    std::memcpy(pkt, q, sizeof pkt);
+    pkt[0] |= 1ull << 15;   // EOP on the A+D tag: no IMAGE data follows
+    if (g_gpu) xsggpu::GifBlock(3, pkt, 5);
+    std::vector<u8> soft;
+    if (g_soft) {
+        Gs& gs = G();
+        for (int i = 0; i < 5; ++i) gs.Qword(3, pkt[i * 2], pkt[i * 2 + 1]);
+        gs.Finish();
+        // The software GS has no local->host path: read the rectangle out here.
+        const u64 bb = q[2], pos = q[4], reg = q[6];
+        const u32 sbp = u32(bb & 0x3fff), sbw = u32(bb >> 16) & 63, spsm = u32(bb >> 24) & 63;
+        const u32 sx = u32(pos & 0x7ff), sy = u32(pos >> 16) & 0x7ff;
+        const u32 w = u32(reg & 0xfff), h = u32(reg >> 32) & 0xfff;
+        soft.assign(size_t(qwords) * 16, 0);
+        u64 bit = 0;
+        for (u32 y = 0; y < h; ++y)
+            for (u32 x = 0; x < w; ++x) {
+                const u32 v = gs.memory.Read(sbp, sbw, sx + x, sy + y, spsm);
+                u32 bits = 32;
+                switch (spsm) {
+                case 0x01: case 0x31: bits = 24; break;
+                case 0x02: case 0x0A: case 0x32: case 0x3A: bits = 16; break;
+                case 0x13: bits = 8; break;
+                case 0x14: bits = 4; break;
+                default: break;
+                }
+                for (u32 b = 0; b < bits; b += 4, bit += 4) {
+                    const size_t byte = size_t(bit >> 3);
+                    if (byte >= soft.size()) break;
+                    soft[byte] |= u8(((v >> b) & 15) << (bit & 4));
+                }
+            }
+    }
+    if (g_gpu) {
+        std::vector<u8> gpu(size_t(qwords) * 16);
+        xsggpu::ReadFifo(gpu.data(), qwords);
+        if (g_soft) {
+            if (std::memcmp(gpu.data(), soft.data(), gpu.size()) != 0) xsg_logf("[cmp] store image of %u qw differs\n", qwords);
+        } else {
+            std::memcpy(dst, gpu.data(), gpu.size());
+            return;
+        }
+    }
+    std::memcpy(dst, soft.data(), soft.size());
+}
+
 void xsg_gs_vblank(unsigned frame) {
+    ModeInit();
     if (!shot_init) ShotInit();
+    // XSG_FPS=N: every N vblanks, wall-clock vblanks/s and game frames/s (DISPFB1 flips).
+    static const long fps_every = std::getenv("XSG_FPS") ? std::atol(std::getenv("XSG_FPS")) : 0;
+    if (fps_every > 0) {
+        static u64 last_fb = ~0ull, flips = 0;
+        static u32 base_frame = frame;
+        static auto t0 = std::chrono::steady_clock::now();
+        const u64 fb = Priv(0x70);
+        if (fb != last_fb) { flips++; last_fb = fb; }
+        if (frame - base_frame >= u32(fps_every)) {
+            const double dt = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            xsg_logf("[fps] vblank %u: %.1f vblanks/s, %.1f game frames/s (%s)\n", frame, (frame - base_frame) / dt,
+                     flips / dt, g_mode == Mode::Soft ? "soft" : g_mode == Mode::Gpu ? "gpu" : "both");
+            base_frame = frame;
+            flips = 0;
+            t0 = std::chrono::steady_clock::now();
+        }
+    }
     // XSG_GS_TRACE=N: the software GS's primitive/transfer trace for frame N only (stderr).
     static const long trace_frame = std::getenv("XSG_GS_TRACE") ? std::atol(std::getenv("XSG_GS_TRACE")) : -1;
     if (trace_frame >= 0 && (frame == u32(trace_frame) || frame == u32(trace_frame) + 1)) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
-        G().trace = frame == u32(trace_frame);
+        if (g_soft) G().trace = frame == u32(trace_frame);
     }
     static const long vu_dump = std::getenv("XSG_VU_DUMP") ? std::atol(std::getenv("XSG_VU_DUMP")) : -1;
     if (long(frame) == vu_dump) {
@@ -693,16 +861,26 @@ void xsg_gs_vblank(unsigned frame) {
         if (frame % (u32(vu_log) * 100) == 0) xsgvu::DumpHistogram();
     }
     static bool stream_init = false;
-    if (!stream_init) { stream_init = true; StreamInit(); }
-    if (g_stream) {
+    if (!stream_init) { stream_init = true; if (g_soft) StreamInit(); }
+    if (g_stream && g_soft) {
         std::lock_guard<std::recursive_mutex> l(g_lock);
         xsg_dma_poll();
         StreamFrame();
     }
+    if (g_gpu) {
+        std::lock_guard<std::recursive_mutex> l(g_lock);
+        xsg_dma_poll();
+        xsggpu::Vsync(frame, frame & 1);
+        // XSG_GS_COMPARE=N: compare every N vblanks in both mode (default 60, 0 = only at shots).
+        static const long every = std::getenv("XSG_GS_COMPARE") ? std::atol(std::getenv("XSG_GS_COMPARE")) : 60;
+        if (g_soft && every > 0 && frame % u32(every) == 0) Compare(frame);
+    }
     if (!shot_frames.count(frame) && !(shot_every && frame % shot_every == 0)) return;
     std::lock_guard<std::recursive_mutex> l(g_lock);
     xsg_dma_poll();
-    Shot(frame);
+    if (g_soft) Shot(frame, SoftSource(), "");
+    if (g_gpu) Shot(frame, GpuSource(), g_soft ? "_gpu" : "");
+    if (g_soft && g_gpu) Compare(frame);
     xsg_logf("[gs] frame %u: GIF kicks %llu (%llu qw), VIF1 kicks %llu (%llu qw), tags %llu, DIRECT %llu qw, "
              "MSCAL %llu, MSCNT %llu, MPG %llu, UNPACK %llu\n",
              frame, (unsigned long long)st.gif_kicks, (unsigned long long)st.gif_qw,

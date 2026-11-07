@@ -105,6 +105,25 @@ add_custom_command(
   COMMENT "Linking host executable xsg")
 add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg)
 
+# Stage 9: xsg-gpu, the 64-bit paraLLEl-GS renderer process (port/gpu/, own
+# CMake project because it is not -m32; paraLLEl-GS is fetched and linked only
+# there).  Output: ${CMAKE_BINARY_DIR}/gpu/xsg-gpu, found by the game for XSG_GS=gpu|both.
+option(XSG_GPU "Build the xsg-gpu hardware renderer (fetches paraLLEl-GS)" ON)
+set(XSG_PGS_SOURCE_DIR "" CACHE PATH "Use this paraLLEl-GS checkout instead of fetching it")
+if(XSG_GPU)
+  include(ExternalProject)
+  set(_xsg_gpu_args -DCMAKE_BUILD_TYPE=Release)
+  if(XSG_PGS_SOURCE_DIR)
+    list(APPEND _xsg_gpu_args -DFETCHCONTENT_SOURCE_DIR_PARALLEL_GS=${XSG_PGS_SOURCE_DIR})
+  endif()
+  ExternalProject_Add(xsg_gpu
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gpu
+    BINARY_DIR ${CMAKE_BINARY_DIR}/gpu
+    CMAKE_ARGS ${_xsg_gpu_args}
+    BUILD_ALWAYS ON
+    INSTALL_COMMAND "")
+endif()
+
 # Stage 7: VU0 model unit tests (port/tests/test_vu0.c); run port/build*/test_vu0.
 add_executable(test_vu0 EXCLUDE_FROM_ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c

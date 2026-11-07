@@ -125,7 +125,8 @@ int sceGsExecLoadImage(void *li, void *src)
     xsg_gs_send(src, (uint32_t)(q[10] & 0x7fff));
     return 0;
 }
-int sceGsExecStoreImage(void *si, void *dst) { STUB_LOG("%p %p (GS->host not modelled)", si, dst); return 0; }
+void xsg_gs_store_image(const void *si, void *dst);
+int sceGsExecStoreImage(void *si, void *dst) { STUB_LOG("%p %p", si, dst); xsg_gs_store_image(si, dst); return 0; }
 int sceGsSyncPath(int mode, unsigned short timeout) { (void)mode; (void)timeout; return 0; }
 
 /* ---- VIF1 packet builder (libvifpk semantics; gs_bridge.cpp consumes it) --- */
