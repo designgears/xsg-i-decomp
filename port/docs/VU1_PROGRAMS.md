@@ -268,7 +268,7 @@ and every run is **bit-exact** with the interpreter, 0 failures, 0 "no reference
 
 | capture | runs | GIF loops kicked (vertices + A+D) | programs seen |
 |---|---|---|---|
-| cutscene 1400 / 1550 / 1700 + the older 1300 | 42,233 | 260,823 | set 0: strip, strip_face (+ entries); set 2: all 12 loops + 0x2fe8/0x3020 |
+| 1300, 1400 (hangar cutscene), 1550, 1700 (tutorial room) | 42,233 | 260,823 | set 0: strip, strip_face (+ entries); set 2: all 12 loops + 0x2fe8/0x3020 |
 | field (tutorial room) 6001 | 11,460 | 53,633 | set 0 strip; set 2 skin_lit, skin_lit_spec_2pass, rigid_lit(_spec, _spec_2pass), blend_lit(_spec_2pass) |
 
 That is 35 program/entry kinds: `nop`, `gs_flush_3d5`, set 0 `strip`, `strip_face` and the three

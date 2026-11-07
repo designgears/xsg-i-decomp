@@ -165,7 +165,7 @@ struct Stored {
     std::vector<GpuNativeVertex> v;
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
-std::vector<Stored> g_batches;
+std::vector<Stored> g_batches, g_prev;   // this vsync's batches; the last vsync that had any
 
 /* ---------------------------------------------------------------- Vulkan */
 Vulkan::Device* g_dev;
@@ -447,6 +447,7 @@ int ChanDiff(uint32_t a, uint32_t b) {
 }
 
 void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
+    if (g_batches.empty()) g_batches.swap(g_prev);   // 30 fps: the frame was drawn before the last vsync
     if (g_batches.empty()) { Log("vsync %u: no native batches", vsync); return; }
     // The buffer most batches went to.
     std::map<uint32_t, unsigned> fbps;
@@ -650,6 +651,7 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
     if (frame % 600 == 0)
         Log("vsync %u: %llu batches, %llu vertices so far", frame, (unsigned long long)g_nbatch,
             (unsigned long long)g_nvert);
+    if (!g_batches.empty()) g_prev.swap(g_batches);
     g_batches.clear();
     g_last_vsync = frame;
 }
