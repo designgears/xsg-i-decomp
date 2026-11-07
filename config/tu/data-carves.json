@@ -1277,45 +1277,28 @@
     {
      "range": [
       "0x004d7ba4",
-      "0x004d7bb4"
+      "0x004d7c0c"
      ],
      "generated": [
       "0x004d7ba4",
-      "0x004d7bb4"
+      "0x004d7c0c"
      ],
      "generated_by": [
-      "GameCameraReset"
+      "CalcCameraPos",
+      "CameraType0",
+      "CameraType1",
+      "CameraType1Core",
+      "CameraType4",
+      "GameCameraReset",
+      "GetCenter",
+      "GetNearestCenter"
      ],
      "c_owned_symbols": [
       "D_004D7BA4",
       "D_004D7BA8",
       "D_004D7BAC",
-      "D_004D7BB0"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7BB4"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_camera.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7bb8",
-      "0x004d7bf0"
-     ],
-     "generated": [
-      "0x004d7bb8",
-      "0x004d7bf0"
-     ],
-     "generated_by": [
-      "CalcCameraPos",
-      "CameraType0",
-      "GetNearestCenter"
-     ],
-     "c_owned_symbols": [
+      "D_004D7BB0",
+      "D_004D7BB4",
       "D_004D7BB8",
       "D_004D7BBC",
       "D_004D7BC0",
@@ -1329,43 +1312,20 @@
       "D_004D7BE0",
       "D_004D7BE4",
       "D_004D7BE8",
-      "D_004D7BEC"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7BF0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_camera.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7bf4",
-      "0x004d7c08"
-     ],
-     "generated": [
-      "0x004d7bf4",
-      "0x004d7c08"
-     ],
-     "generated_by": [
-      "CameraType1"
-     ],
-     "c_owned_symbols": [
+      "D_004D7BEC",
+      "D_004D7BF0",
       "D_004D7BF4",
       "D_004D7BF8",
       "D_004D7BFC",
       "D_004D7C00",
-      "D_004D7C04"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7C04",
       "D_004D7C08"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_camera.o"
+      "object": "build/main/build/c/game_camera.o"
      }
     }
    ],
@@ -1389,7 +1349,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_camera.o"
+      "object": "build/main/build/c/game_camera.o"
      }
     }
    ]

@@ -476,14 +476,13 @@ struct CameraCenterSource {
     unsigned char unmodeled_20[0x66];
     short type;
 };
-extern volatile const float D_004D7BB4;
 extern float CfCameraOfsNow[3];
 
 static void GetCenter(Vector4 *center, const struct CameraCenterSource *source)
 {
     float vertical_offset;
 
-    vertical_offset = D_004D7BB4;
+    vertical_offset = 1.2f;
     if (source->type >= 1618) {
         vertical_offset = 3.0f;
     }
@@ -911,7 +910,6 @@ static void CameraType0(void)
         : "$2", "memory");
 }
 
-extern float D_004D7BF0;
 typedef struct CameraType1CoreCam {
     unsigned char unmodeled_00[0x30];
     float angle[4];  /* +0x30 */
@@ -966,10 +964,10 @@ static void CameraType1Core(void)
     MoveHokan((void *)0x70000000, HokanNow[0], (Vector4 *)CamPosPos,
               (Vector4 *)((unsigned char *)((CT1Scr *)scratch)->st + 0x40),
               (float *)((unsigned char *)HokanNow + 8));
-    if (((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0 <
+    if (((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - 0.01f <
         ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98) {
         ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f98 =
-            ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - D_004D7BF0;
+            ((CameraType1CoreState *)((CT1Scr *)scratch)->st)->f48 - 0.01f;
     }
 }
 
@@ -1066,7 +1064,6 @@ static void CameraType1(void)
         : "$2", "memory");
 }
 
-extern float D_004D7C08;
 extern int F2I(float f);
 extern float xglAtan2(float x, float y);
 
@@ -1112,7 +1109,7 @@ static void CameraType4(void)
                 :
                 : "r"(*(unsigned char **)(scratch + 0xC) + 0x90), "r"(*(unsigned char **)(scratch + 0xC) + 0x40), "r"(scratch + 0xB0)
                 : "memory");
-            *(float *)(*(unsigned char **)(scratch + 0xC) + 0x14) = xglAtan2(*(float *)(scratch + 0xB0), *(float *)(scratch + 0xB8)) + D_004D7C08;
+            *(float *)(*(unsigned char **)(scratch + 0xC) + 0x14) = xglAtan2(*(float *)(scratch + 0xB0), *(float *)(scratch + 0xB8)) + 3.1415927f;
             horizontal = sqrtBuiltinBoundary(*(float *)(scratch + 0xB0) * *(float *)(scratch + 0xB0)
                                              + *(float *)(scratch + 0xB8) * *(float *)(scratch + 0xB8));
             *(float *)(*(unsigned char **)(scratch + 0xC) + 0x10) = xglAtan2(*(float *)(scratch + 0xB4), horizontal);
