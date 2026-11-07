@@ -18357,6 +18357,29 @@
    ]
   },
   "ov12/tu079_00a45120": {
+   ".data": [
+    {
+     "range": [
+      "0x00a508a0",
+      "0x00a50920"
+     ],
+     "generated": [
+      "0x00a508a0",
+      "0x00a50920"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "aAmbVec",
+      "aAmbCol"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_dispmodel_impl.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
