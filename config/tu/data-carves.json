@@ -3407,6 +3407,80 @@
     }
    ]
   },
+  "main/tu163": {
+   ".data": [
+    {
+     "range": [
+      "0x0036c370",
+      "0x0036c38c"
+     ],
+     "generated": [
+      "0x0036c370",
+      "0x0036c38c"
+     ],
+     "generated_by": [
+      "eMessageDrawType01"
+     ],
+     "c_owned_symbols": [
+      "otb"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/e_message.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da918",
+      "0x004da91c"
+     ],
+     "generated": [
+      "0x004da918",
+      "0x004da91c"
+     ],
+     "generated_by": [
+      "eMessageDrawType01",
+      "eMessageSpriteReset"
+     ],
+     "c_owned_symbols": [
+      "msg_spr_count"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/e_message.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da920",
+      "0x004da930"
+     ],
+     "generated": [
+      "0x004da920",
+      "0x004da92b"
+     ],
+     "generated_by": [
+      "eMessageDrawType01"
+     ],
+     "c_owned_symbols": [
+      "D_004DA920",
+      "D_004DA928"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/e_message.o"
+     }
+    }
+   ]
+  },
   "main/tu164": {
    ".data": [
     {
