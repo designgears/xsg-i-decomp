@@ -514,7 +514,7 @@ static void output(const int16_t *s, int frames)
         if (r == -11)
             alsa_dropped += frames;
         else if (r < 0)
-            alsa_underruns++;
+            alsa_dropped += frames;
         else if (r < frames)
             alsa_dropped += frames - r;
     }
@@ -589,6 +589,8 @@ static void *audio_thread(void *p)
          * CLOCK_MONOTONIC, so render a little more or less */
         if (pcm) {
             long avail = xsg_alsa_avail(pcm);
+            if (avail < 0)
+                alsa_underruns++; /* xrun: the next write recovers */
             long queued = avail >= 0 ? (long)(RATE / 10) - avail : 0; /* 100 ms buffer */
             if (avail >= 0 && queued < RATE * 40 / 1000)
                 budget += 8;
