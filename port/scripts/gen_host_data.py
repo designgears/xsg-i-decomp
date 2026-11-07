@@ -47,8 +47,13 @@ RAW_RE = re.compile(r"/\*\s*[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+([0-9A-Fa-f]{8})\s*\*/
 # D_008C0000).  Harmless on the PS2, but the host would relocate them to its own
 # address of that symbol (xglRenderSetReso then took ZBP 0x130 from the low
 # half of the host pointer and the depth buffer landed inside the 448-line
-# frame buffers).  Inside these labels every word is emitted as its raw bytes.
-NO_RELOC_LABELS = {"asVramBase"}
+# frame buffers).  Head_9 (act_3, the drop-shadow begin packet) and
+# TestPrim_0_004A8D00 (xgl_packet) carry the CLAMP_1 value 0x6FC_007FC00A,
+# whose low word splat read as D_007FC00A: relocated, REGION_CLAMP got
+# MINU 708 > MAXU 511 and the shadow pass sampled the wrong texels (a grey
+# silhouette instead of a foot shadow).  Inside these labels every word is
+# emitted as its raw bytes.
+NO_RELOC_LABELS = {"asVramBase", "Head_9", "TestPrim_0_004A8D00"}
 STR_CHARS = set(b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-+%:/\\ ")
 
 

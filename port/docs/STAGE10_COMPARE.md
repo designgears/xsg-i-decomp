@@ -12,8 +12,9 @@ What the comparison shows:
     script timing, vblank 1700 shows one subtitle, the same as on PCSX2.
   * **Darkness:** the scene is meant to be this dark. Mean luma matches PCSX2 within 1/255
     in every matched 3D frame.
-* One real rendering difference was found and is still open: in the field, the projected drop
-  shadow is wrong (§3.3).
+* One real rendering difference was found and fixed: in the field, the projected drop
+  shadow was wrong because a GIF packet's CLAMP word had been relocated as a pointer in the
+  host data (§3.3).
 
 ## 1. Reference setup (dev tools only, outside the repo)
 
@@ -106,7 +107,7 @@ right. Y is mean luma over the whole picture.
 | "the emotion module…" | `stage10_cmp_emotion_6300.png` | 49.8 | 49.1 | none beyond the animation phase | – |
 | "mixed feelings" | `stage10_cmp_mixed_9100.png` | 52.3 | 51.4 | none | – |
 | hangar close-up | `stage10_cmp_hangar_10200.png` | 98.5 | 98.8 | none | – |
-| Virtual Tutorial | `stage10_cmp_tutorial_1800.png`, zoom `stage10_tutorial_shadow_zoom.png` | 189.4 | 189.1 | port: translucent grey full-height "capsule" around Shion and KOS-MOS, and no soft shadow at their feet; the soldier's round shadow is correct | §3.3, open |
+| Virtual Tutorial | `stage10_cmp_tutorial_1800.png`, zoom `stage10_tutorial_shadow_zoom.png` | 189.4 | 189.1 | port (before): translucent grey full-height "capsule" around Shion and KOS-MOS, and no soft shadow at their feet. Fixed: relocated CLAMP word in `Head_9` | §3.3, fixed |
 
 There were no differences in fog, alpha blending, text layout or geometry in the matched
 cutscene frames. The subtitle font, outline and line breaks are identical.
@@ -128,36 +129,53 @@ means. The KOS-MOS scene really is lit this dimly. The earlier impression came f
 at frames without a reference. Nothing to fix in nmlModelSetLight, the colour scaling or
 SGsRestoreEnv.
 
-### 3.3 Drop shadow in the field (open)
+### 3.3 Drop shadow in the field (fixed)
 
-PCSX2 draws a soft projected shadow of Shion's feet on the floor. The port draws no floor
-shadow. Instead it draws a semi-transparent grey silhouette, slightly wider than her and
-standing upright, from her feet to above her head. It is present in every shot from
-1550 to 1900, so it is not a one-frame entry effect. The circle shadow (soldier) is correct.
+PCSX2 draws a soft projected shadow of Shion's feet on the floor. The port drew no floor
+shadow and instead a semi-transparent grey silhouette, wider than her and standing
+upright, from her feet to above her head (every shot 1550 to 1900). The soldier's circle
+shadow was correct.
 
-What is known so far:
+**Root cause: host data relocation, not VU0/VU1.** These actors use shadow type 4,
+`DrawDropShadow` in act_3.c (not `nmlModelCalcDropShadow`, which is why zeroing that
+matrix changed nothing). It is a destination-alpha shadow volume. Per bone segment it builds
+a capsule outline and projects it to the ground plane 0.5 below the actor, then draws three passes:
 
-* These models use the `NML_RENDER_TEXMAP_DROP` path: `nmlModelCalcDropShadow` builds a
-  flattening matrix at layout +0x180 (row 1 = (-sx/sy, 0, -sz/sy), translation y = plane +
-  0.005), and the VU1 microcode family `s_aUcodeDrop` (set 1 or 6 in VU1_PROGRAMS.md) draws
-  it. This VU1 set has never been exercised before. The cutscene captures use only sets 0 and 2.
-* Zeroing the +0x180 matrix in `nmlModelCalcDropShadow` (temporary `XSG_DBG_DROP` hack, not
-  committed) did **not** change the silhouette. So either the matrix the drop program uses
-  is not that one (another copy, the `U_nmlModelCalcDropShadow` alias, or a stale VU1 memory
-  slot), or the silhouette is drawn by another pass.
-* A VRAM dump at 1800 (`XSG_SHOT_VRAM=1`) shows no off-screen shadow texture.
+1. back faces with FBMSK 0x7FFFFFFF (alpha bit 31 only), alpha 0x00, Z GREATER;
+2. TEXFLUSH, then front faces textured **from the frame buffer itself** (TBP = FBP,
+   TCC=1, MODULATE with alpha = shadow alpha, ATST EQUAL AREF = shadow alpha), so a
+   pixel darkens only where its alpha bit 31 is still set, i.e. where the floor is inside
+   the volume;
+3. the back faces again with alpha 0x80 to restore the bit.
 
-Next steps:
+`ACT_DrawShadowBegin` sends `Head_9` first. It sets CLAMP_1 to REGION_CLAMP
+0..511 × 0..447 (`0x000006FC_007FC00A`). splat symbolised that low word as
+`D_007FC00A` (an act_1 .bss label), so `gen_host_data.py` emitted a relocation. The host
+packet then carried `0x6FC_08817C4A`, which is MINU 708 > MAXU 511. Every texel of pass 2 was
+clamped to u = 708, outside the 512-wide frame, so it read an unrelated row whose alpha was
+0x80. The front faces therefore passed the alpha test everywhere: the whole capsule
+was darkened instead of only its floor intersection. Both renderers drew this the same way
+because the input was wrong.
 
-1. Run `XSG_VU1_CAPTURE` over vblanks 1550–1560 and check which program and entry draws the
-   grey primitives, and which matrix it reads.
-2. Compare the set 1/6 interpreter results with expected PS2 VU behaviour for that program's
-   `mr32`/`clipw`/`fcand` paths.
-3. Confirm at normal script timing. The no-skip port run did not reach the tutorial in the
-   time budget.
+Found with a per-pixel probe in the software GS: the frame alpha at the pixel was 0x00
+after pass 1, but pass 2 sampled 0x80. The trace showed CLAMP = 0x6FC08816C4A, set by
+the begin sprite's A+D list. The PS2 ELF bytes of `Head_9` showed the original value.
+
+Fix: `port/scripts/gen_host_data.py` adds `Head_9` and `TestPrim_0_004A8D00`
+(xgl_packet, which has the same CLAMP word) to `NO_RELOC_LABELS`, so their words are
+emitted raw. No `src/` change. After the fix, both `XSG_GS=soft` and `XSG_GS=gpu` show
+the soft foot shadow and no silhouette, as PCSX2 does (`stage10_tutorial_1800_after_soft.png`,
+`stage10_tutorial_1800_after_gpu.png`, zoom `stage10_tutorial_shadow_zoom_after.png`:
+PCSX2 left, port right).
+
+Other data labels may have the same problem: any GIF packet word between 0x00010000 and
+0x02000000 that splat turned into a `D_` symbol. To find more, grep `build/*/asm` for
+`.word D_` inside `Head_*`/`Tail_*`/`TestEnv*`/packet labels.
 
 ## 4. Fixes
 
 * None in `src/` were needed for the two Stage 8 issues (§3.1, §3.2). No `src/` files changed.
 * Reference-side fixes (outside the repo): the OpenPS2BIOS layer-1 SearchFile and the
   LOADFILE ELF load (§1.3).
+* §3.3: `port/scripts/gen_host_data.py` NO_RELOC_LABELS += `Head_9`, `TestPrim_0_004A8D00`.
+  No `src/` change.
