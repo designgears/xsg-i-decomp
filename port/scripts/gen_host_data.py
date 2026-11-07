@@ -42,18 +42,114 @@ COMMENT_RE = re.compile(r"/\*.*?\*/")
 SEC_RE = re.compile(r'^\s*\.section\s+([.\w]+)')
 # splat line comment: /* rom vram BYTES */ (BYTES as stored, big-endian hex)
 RAW_RE = re.compile(r"/\*\s*[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+([0-9A-Fa-f]{8})\s*\*/")
-# Integer tables whose words splat symbolised because they happen to look like
-# RAM addresses (asVramBase: u16 pairs such as 0x0000,0x008C read as
-# D_008C0000).  Harmless on the PS2, but the host would relocate them to its own
-# address of that symbol (xglRenderSetReso then took ZBP 0x130 from the low
-# half of the host pointer and the depth buffer landed inside the 448-line
-# frame buffers).  Head_9 (act_3, the drop-shadow begin packet) and
-# TestPrim_0_004A8D00 (xgl_packet) carry the CLAMP_1 value 0x6FC_007FC00A,
-# whose low word splat read as D_007FC00A: relocated, REGION_CLAMP got
-# MINU 708 > MAXU 511 and the shadow pass sampled the wrong texels (a grey
-# silhouette instead of a foot shadow).  Inside these labels every word is
-# emitted as its raw bytes.
-NO_RELOC_LABELS = {"asVramBase", "Head_9", "TestPrim_0_004A8D00"}
+# Labels whose words are all integers although splat symbolised some of them
+# (their value happens to fall in the RAM range).  Harmless on the PS2 (the
+# linker writes back the same value), but the host would relocate them to its
+# own address of that symbol.  Inside these labels every word is emitted as
+# its raw bytes.  Each Stage 11 entry was found by audit_data_relocs.py: no
+# symbolised word in the label is the start of a real object, and the C type
+# of the label is an integer/struct/char array (STAGE11_DATA.md).
+NO_RELOC_LABELS = {
+    # asVramBase: u16 pairs such as 0x0000,0x008C read as D_008C0000.
+    # xglRenderSetReso took ZBP 0x130 from the low half of the host pointer
+    # and the depth buffer landed inside the 448-line frame buffers (Stage 8).
+    "asVramBase": "u16 FBP/ZBP pairs (xgl_render)",
+    # Head_9 (act_3, the drop-shadow begin packet) and TestPrim_0_004A8D00
+    # (xgl_packet) carry CLAMP_1 0x6FC_007FC00A, whose low word splat read as
+    # D_007FC00A: relocated, REGION_CLAMP got MINU 708 > MAXU 511 and the
+    # shadow pass sampled the wrong texels (Stage 10).
+    "Head_9": "GIF A+D CLAMP_1 0x6FC_007FC00A (act_3)",
+    "TestPrim_0_004A8D00": "GIF A+D CLAMP_1 0x6FC_007FC00A (xgl_packet)",
+    # --- Stage 11: GIF packets (A+D register data words) -------------------
+    "TestPrim_0_00362790":   'u64 packet, A+D CLAMP_1 low word 0x007FC005 (map_1)',
+    "Head_13":               'packet, A+D CLAMP_1 low word 0x007FC005 (game_defocus)',
+    "TestEnv_0_00369BA0":    'u32[28] env packet, CLAMP_1 0x003FC000 (game_radar)',
+    "TestEnv_1_0036DDB0":    'sprite env packet, CLAMP_1 0x003FDFF0 (karakama_test)',
+    "TestEnv_49":            'env packet, CLAMP_1 0x003FFFF0 (endou_test)',
+    "TestEnv_56":            'env packet, CLAMP_1 0x003FDFF0 (endou_test)',
+    "TestEnv_59":            'env packet, CLAMP_1 0x003FDFF0 (endou_test)',
+    "TestEnv_60":            'env packet, CLAMP_2 0x007FDFF0 (endou_test)',
+    "sPoint_0":              'int[] GIF packet, RGBAQ 0x005151EE (init_uwamono_sys)',
+    # --- Stage 11: integer / struct tables and copied MIPS code -----------
+    "others_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "others2_uv":            'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "ether_uv":              'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "icom_uv":               'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "pad_uv":                'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "pad2_uv":               'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face00_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face01_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face02_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face03_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face04_uv":             'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "face_agws_uv":          'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "seg_uv":                'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "btl_msg_uv":            'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "btl_msg_uv2":           'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "umn_uv":                'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "thumnail_uv":           'u16 u,v,w,h rectangle table, unsigned char[] (end_print)',
+    "_srsChrEfTbl2":         'SrsChrEf2Entry {short chrNo, min, max}[] (srs)',
+    "TrapKind_t_0":          'TrapKindEntry.flags 0x00400000/0x00800000 (init_map_trap)',
+    "line_34":               'EndouPrintPoint[6] {short x; u16 y; int depth; u8 color[4]}, RGBA 0x00806060',
+    "d_42":                  'EndouPrintPoint[7], RGBA 0x00804040 (endou_test)',
+    "D_004C92E8":            'const unsigned char[28] range table, u16 pairs (menu_tec)',
+    "BmpHeader":             'u8[0x36] BMP file header, bfOffBits 0x36 (tya)',
+    "headerALL":             'u8[0x26F] JPEG header and Huffman tables (xgl_jpeg)',
+    "list":                  '{int id; char name[12]} table, name tail bytes (hair_test)',
+    "two_over_pi_004D6220":  'libm e_rem_pio2 int32 2/pi digit table',
+    "osdsrc":                'MIPS instructions copied into the kernel (InitExecPS2)',
+    "srcfile":               'MIPS instructions copied into the kernel (InitExecPS2)',
+    "tlbsrc":                'MIPS instructions, TLB miss handler (set_tlb_handler)',
+    "kernelTLB":             'TLB entries PageMask/EntryHi/EntryLo (set_tlb_handler)',
+    "defaultTLB":            'TLB entries (set_tlb_handler)',
+    "extendTLB":             'TLB entries (set_tlb_handler)',
+    "eenull":                'MIPS instructions of the EE null thread (glue_2)',
+    # --- Stage 11: strings whose NUL-terminated tail looks like a RAM address;
+    # their control codes / SJIS bytes are outside string_tail()'s charset.
+    "D_004C21C8":            '"\\x0b\\x0c\\x80\\0\\0OFF" (db_light_write)',
+    "D_004C21D8":            '"\\x0b\\x0c\\x80\\0\\0DIRECTIONAL" (db_light_write)',
+    "D_004C2200":            '"\\x0b\\x0c\\x80\\0\\0POINT" (db_light_write)',
+    "D_004CBC58":            '"\\x0b\\x0c\\x80\\0\\0CollisionHit!!" (colli_test)',
+    "D_004C2BE0":            'SJIS text with 0x19/0x0d control codes (endou_test)',
+    "D_004C6E70":            '"\\x0c\\x80\\x80\\x80R. Arm\\n..." body-part names (menu_para_pt_rate_get)',
+    "D_004C8690":            '"List\\x03\\x9cE.Pts" column header (menu_ether)',
+    "D_004C86A0":            'column header string (menu_ether)',
+    "D_004C90F0":            '"List\\x03P\\x03>Eqp" column header (menu_tec)',
+    "D_004CA818":            '"\\r\\0<SJIS>%4d" (pause_menu_page_uwamono)',
+    "D_004CA8E8":            '"\\r\\0<SJIS> %6dG" gold counter (pause_menu_page_uwamono)',
+    "D_004DA580":            '"\\x0bVECTOR" (db_light_write)',
+    "D_004DA670":            '"\\x0bCW" shop heading (endou_test)',
+    "D_004DA678":            'shop heading (endou_test)',
+    "D_004DA680":            'shop heading (endou_test)',
+    "D_004DA688":            '"\\x0bAW" shop heading (endou_test)',
+    "D_004DA690":            'shop heading (endou_test)',
+    "D_004DA698":            'shop heading (endou_test)',
+    "D_004DA6A0":            'shop heading (endou_test)',
+    "D_004DA6A8":            'shop heading (endou_test)',
+    "D_004DA9D8":            '"\\x01Hp" battle window label (e_battle_win_open)',
+    "D_004DAE00":            '"\\x01Weight" (menu_para_pt_rate_get)',
+    "D_004DAF98":            '"\\x01Weight" (menu_agws_para_set)',
+    "D_004DB188":            '"\\x01Target" (menu_shop)',
+    "D_004DB1A8":            '"\\x01Result" (menu_shop)',
+    "D_004DB2D8":            '"\\x01Wt" (menu_ether)',
+    "D_004DB310":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB318":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB320":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB328":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB330":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB338":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB340":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB4F8":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB500":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB508":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB510":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB5B0":            '"\\x0b... %2d" debug printf format (menu_ether)',
+    "D_004DB578":            '" P@0\\0p`" colour/position bytes (menu_system)',
+    "D_004DB5A8":            '"\\x0bsystem" (menu_system)',
+    "D_004DBBB8":            '"???" placeholder (sef_print)',
+    "D_004DC2C8":            '"\\x0b%s" (xgl_menu)',
+    "text_17":               'EUC/SJIS text with control codes (endou_test, char text_17[])',
+}
 STR_CHARS = set(b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-+%:/\\ ")
 
 
