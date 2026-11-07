@@ -11583,6 +11583,36 @@
     }
    ]
   },
+  "ov01/tu036_00a3a090": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51880",
+      "0x00a51970"
+     ],
+     "generated": [
+      "0x00a51880",
+      "0x00a51968"
+     ],
+     "generated_by": [
+      "MEfCreate_KOSBW02",
+      "fnKOSBW02_DP000"
+     ],
+     "c_owned_symbols": [
+      "D_00A51880",
+      "D_00A51890",
+      "coltbl_0_00A518A0",
+      "sztbl_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_kosbw_02.o"
+     }
+    }
+   ]
+  },
   "ov02/tu002_00a00858": {
    ".rodata": [
     {

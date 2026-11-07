@@ -91,8 +91,6 @@ extern void MGsGPInit(void *packet, void *address, int size);
 extern Kosbw02GsParameter *svGetPrmFromName(const char *name,
                                             Kosbw02GsParameter *output);
 extern float MMathMakeRandom2PI(void);
-extern const char D_00A51880[];
-extern const char D_00A51890[];
 extern Vector4 *MMathRotateMatrixYXZ(Vector4 *destination,
                                      const Vector4 *source,
                                      const Vector4 *angles);
@@ -139,9 +137,9 @@ int MEfCreate_KOSBW02(void *storage)
         : "$8", "memory");
     MEfCalcAngle(&state->rotation, &state->target_point, &state->start_point);
     MGsGPInit(state->draw_packet, 0, 0);
-    svGetPrmFromName(D_00A51880, &parameter);
+    svGetPrmFromName("de_cld01", &parameter);
     state->draw_parameter = parameter.primitive_tag;
-    svGetPrmFromName(D_00A51890, &parameter);
+    svGetPrmFromName("de_cld02", &parameter);
     state->texture_parameter = parameter.primitive_tag;
     memset(state->active, 0, sizeof(state->active));
     memset(state->points, 0, sizeof(state->points));
@@ -285,8 +283,6 @@ extern int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size);
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
 extern void MGsGPTerm(void *packet);
 extern Kos02Quad McEfSTQtbl[];
-extern Kos02Quad coltbl_0_00A518A0[];
-extern float sztbl_1[];
 typedef struct Kos02Packet {
     void *data;
     int capacity;
@@ -297,6 +293,21 @@ typedef struct Kos02Packet {
 
 static void fnKOSBW02_DP000(void *task, void *state)
 {
+    static const Kos02QW coltbl[10] = {
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002400000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000000800000080UL } },
+    };
+    static const float sztbl[10] = {
+        0.1f, 0.13f, 0.16f, 0.18f, 0.2f, 0.22f, 0.24f, 0.26f, 0.28f, 0.25f,
+    };
     Kosbw02CreateState *effect = state;
     int i;
     int nreg;
@@ -349,10 +360,10 @@ static void fnKOSBW02_DP000(void *task, void *state)
     pk->current->us[0] |= nreg;
     pk->current += n;
     pk->count += n;
-    szp = sztbl_1;
+    szp = sztbl;
     for (i = 0; i < 10; i++) {
         if ((sub = (void *)((char *)state + 8))->active[i] != 0) {
-            color = coltbl_0_00A518A0[i];
+            color = coltbl[i].q;
             lo = i < 6;
             off = 0x148;
             if (lo) {
@@ -360,7 +371,7 @@ static void fnKOSBW02_DP000(void *task, void *state)
             }
             tex = (unsigned long *)((char *)sub + off);
             for (j = 0; j < 3; j++) {
-                if (MEfMake4Vertex2(verts, &((Vector4 (*)[3])effect->points)[i][j], sztbl_1[i], ((float (*)[3])effect->twist)[i][j]) == 0) {
+                if (MEfMake4Vertex2(verts, &((Vector4 (*)[3])effect->points)[i][j], sztbl[i], ((float (*)[3])effect->twist)[i][j]) == 0) {
                     Kos02QW *t;
                     Kos02QW *g;
                     int n1;
