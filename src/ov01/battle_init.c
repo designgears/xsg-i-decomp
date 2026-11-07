@@ -290,6 +290,17 @@ int battleEndChk(void);
  */
 extern int batMainFlag;
 
+#ifdef PORT_HOST
+/* PORT_HOST: entryPhase50 tests `battleMain() == 0`; on the PS2 the tail
+ * call left battleEndChk's v0 in place, so return it explicitly. */
+int battleMain(void)
+{
+    batMainFlag = 1;
+    battleCtrl();
+    battleExec();
+    return battleEndChk();
+}
+#else
 void battleMain(void)
 {
     /* Separate load keeps this store in its own register. */
@@ -299,6 +310,7 @@ void battleMain(void)
     battleExec();
     battleEndChk();
 }
+#endif
 
 extern const char D_00A43CB8[];
 extern const char D_00A43CC8[];
