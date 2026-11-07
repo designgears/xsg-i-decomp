@@ -810,7 +810,33 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/nml_filter_set.o"
+      "object": "build/main/build/c/nml_filter_set.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d30d0",
+      "0x004d3140"
+     ],
+     "generated": [
+      "0x004d30d0",
+      "0x004d3140"
+     ],
+     "generated_by": [
+      "nmlFilterSetVolumeCubeRender",
+      "nmlModelSetFilterStealth"
+     ],
+     "c_owned_symbols": [
+      "D_004D30D0",
+      "D_004D30E0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_filter_set.o"
      }
     }
    ]
@@ -7447,6 +7473,33 @@
     }
    ]
   },
+  "main/tu203": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8290",
+      "0x004d8298"
+     ],
+     "generated": [
+      "0x004d8290",
+      "0x004d8298"
+     ],
+     "generated_by": [
+      "ppInit"
+     ],
+     "c_owned_symbols": [
+      "D_004D8290",
+      "D_004D8294"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pp_init.o"
+     }
+    }
+   ]
+  },
   "main/tu204": {
    ".lit4": [
     {
@@ -8339,7 +8392,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/find_native_method.o"
+      "object": "build/main/build/c/find_native_method.o"
      }
     }
    ],
@@ -8347,27 +8400,27 @@
     {
      "range": [
       "0x004dc048",
-      "0x004dc050"
+      "0x004dc068"
      ],
      "generated": [
       "0x004dc048",
-      "0x004dc04e"
+      "0x004dc066"
      ],
      "generated_by": [
+      "lookupArray",
       "resolveNativeMethod"
      ],
      "c_owned_symbols": [
-      "D_004DC048"
-     ],
-     "also_referenced_by_c": [
+      "D_004DC048",
       "D_004DC050",
       "D_004DC058",
       "D_004DC060"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/find_native_method.o"
+      "object": "build/main/build/c/find_native_method.o"
      }
     }
    ]

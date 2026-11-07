@@ -335,7 +335,6 @@ static void nmlModelSetFilterGunosys(int *modelArg, int flags, int count)
 struct NmlStealthTint {
     float channels[4];
 } __attribute__((aligned(16)));
-extern const struct NmlStealthTint D_004D30D0;
 #define NML_STEALTH_VERTEX(vertex, entryIndex, clipFlags) { \
     struct NmlFilterGsPair *uvEntry = &packet[entryIndex]; \
     uvEntry->payload.value = (u64)geometry->uv[vertex].u | \
@@ -354,7 +353,7 @@ extern const struct NmlStealthTint D_004D30D0;
 
 static void nmlModelSetFilterStealth(const LayoutStore *model, int flags)
 {
-    struct NmlStealthTint baseTint = D_004D30D0;
+    struct NmlStealthTint baseTint = {{0.5f, 1.0f, 0.8f, 1.0f}};
     float outlineColor[3];
     struct NmlFilterGsPair *packet = (struct NmlFilterGsPair *)0x70000000;
     struct NmlFilterGsPair *entry;
@@ -1373,7 +1372,10 @@ void nmlFilterSetTexFillDraw(int frameBase, LayoutStore *model)
 struct NmlFilterCubeFaces {
     int vertices[6][4];
 };
-extern const struct NmlFilterCubeFaces D_004D30E0;
+static const struct NmlFilterCubeFaces D_004D30E0 = {{
+    {1, 0, 5, 4}, {3, 2, 7, 6}, {0, 3, 4, 7},
+    {2, 1, 6, 5}, {0, 1, 3, 2}, {6, 5, 7, 4},
+}};
 typedef union NmlFilterPositionView {
     Vector4 vector;
     unsigned long long words[2];

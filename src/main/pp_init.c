@@ -14,14 +14,12 @@ typedef struct PpParticle {
     float damping;
 } PpParticle;
 
-extern const float D_004D8290;
-extern const float D_004D8294;
 
 void ppInit(PpParticle *particle)
 {
     float zero = 0.0f;
-    const float gravity = D_004D8290;
-    const float damping = D_004D8294;
+    float gravity = -0.05f;
+    float damping = 0.8f;
 
     particle->damping = damping;
     particle->gravity = gravity;
