@@ -172,6 +172,32 @@
     }
    ]
   },
+  "main/tu089": {
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc2b0",
+      "0x004dc2b6"
+     ],
+     "generated": [
+      "0x004dc2b0",
+      "0x004dc2b6"
+     ],
+     "generated_by": [
+      "xglPadRead"
+     ],
+     "c_owned_symbols": [
+      "act_align_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_pad.o"
+     }
+    }
+   ]
+  },
   "main/tu093": {
    ".rodata": [
     {
@@ -2706,6 +2732,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/db_light_write.o"
+     }
+    }
+   ]
+  },
+  "main/tu151": {
+   ".data": [
+    {
+     "range": [
+      "0x0036b170",
+      "0x0036b174"
+     ],
+     "generated": [
+      "0x0036b170",
+      "0x0036b174"
+     ],
+     "generated_by": [
+      "FX_call"
+     ],
+     "c_owned_symbols": [
+      "fxFunction"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/fx_screen_mask.o"
      }
     }
    ]
@@ -8128,6 +8180,34 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/sdv.o"
+     }
+    }
+   ]
+  },
+  "main/tu218": {
+   ".rodata": [
+    {
+     "range": [
+      "0x004cca40",
+      "0x004cca70"
+     ],
+     "generated": [
+      "0x004cca40",
+      "0x004cca6d"
+     ],
+     "generated_by": [
+      "MOutputDebugString",
+      "MOutputDebugStringWarn"
+     ],
+     "c_owned_symbols": [
+      "D_004CCA40",
+      "D_004CCA58"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/m_output_debug_string.o"
      }
     }
    ]

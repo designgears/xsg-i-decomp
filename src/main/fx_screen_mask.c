@@ -64,6 +64,10 @@ void FX_ScreenMask(int unused, int color, int duration, int mode)
     task->mode = mode;
 }
 
+static int (*fxFunction[])(XglTaskPrefix *task) = {
+    (int (*)(XglTaskPrefix *))screenMask,
+};
+
 void FX_call(int command, int effect_index, const void *arguments,
              int argument_count)
 {
