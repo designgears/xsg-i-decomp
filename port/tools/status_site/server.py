@@ -80,36 +80,67 @@ def commits():
         return []
 
 
-PAGE = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117"><meta name="color-scheme" content="dark">
 <title>Xenosaga PC Port</title><style>
-:root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--card:#161b22;--line:#30363d;--acc:#58a6ff}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
-header{padding:14px 16px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:18px}
-main{display:grid;gap:16px;padding:16px;grid-template-columns:minmax(0,640px) minmax(0,1fr)}
-@media(max-width:900px){main{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}
-h2{margin:0 0 8px;font-size:15px}#live{width:100%;image-rendering:pixelated;background:#000;border-radius:4px}
-.mut{color:var(--mut)}pre{white-space:pre-wrap;word-break:break-all;max-height:300px;overflow:auto;font-size:12px;margin:0}
-ul{margin:0;padding-left:18px}a{color:var(--acc)}.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-.gal figure{margin:0}.gal img{width:100%;background:#000;border-radius:4px}.gal figcaption{font-size:11px;color:var(--mut);word-break:break-all}
-code{color:var(--acc)}</style></head><body>
-<header><h1>Xenosaga Episode I &mdash; native PC port</h1><div class="mut" id="sub"></div></header>
-<main><section><div class="card"><h2>Live screen</h2><img id="live" alt="live frame"><div class="mut" id="run"></div></div>
-<div class="card" style="margin-top:16px"><h2>Game log (tail)</h2><pre id="log"></pre></div></section>
-<section><div class="card"><h2>Progress (pc-port commits)</h2><ul id="commits"></ul></div>
-<div class="card" style="margin-top:16px"><h2>Stage docs</h2><ul id="docs"></ul></div>
-<div class="card" style="margin-top:16px"><h2>Screenshots</h2><div class="gal" id="gal"></div></div></section></main>
+:root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--card:#161b22;--line:#30363d;--acc:#58a6ff;--ok:#3fb950;--bad:#f85149}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,sans-serif;
+padding:0 max(12px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px,env(safe-area-inset-left))}
+header{padding:12px 0 8px}h1{margin:0;font-size:18px;line-height:1.25}
+.sub{color:var(--mut);font-size:13px}
+.live{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0;margin:0 -12px;padding-left:12px;padding-right:12px}
+#live{display:block;width:100%;aspect-ratio:8/7;object-fit:contain;background:#000;border-radius:8px;image-rendering:pixelated}
+.bar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);margin-top:6px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mut);flex:none}.dot.on{background:var(--ok)}.dot.off{background:var(--bad)}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0}
+summary{list-style:none;cursor:pointer;padding:14px;min-height:48px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}summary::after{content:"\\25B8";color:var(--mut);transition:transform .15s}
+details[open] summary::after{transform:rotate(90deg)}.body{padding:0 14px 14px}
+.count{color:var(--mut);font-weight:400;font-size:13px;margin-left:auto;margin-right:8px}
+ul{margin:0;padding:0;list-style:none}li{padding:10px 0;border-top:1px solid var(--line);font-size:14px}li:first-child{border-top:0}
+code{color:var(--acc);font-size:13px}.mut{color:var(--mut);font-size:12px;display:block}
+a{color:var(--acc)}.docs a{display:block;padding:12px 0;min-height:44px;text-decoration:none}
+pre{white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto;font-size:12px;margin:0;-webkit-overflow-scrolling:touch}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gal figure{margin:0}.gal img{display:block;width:100%;aspect-ratio:8/7;object-fit:cover;background:#000;border-radius:6px}
+.gal figcaption{font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-top:2px}
+#viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+#viewer.on{display:flex}#viewer img{max-width:100%;max-height:85vh;image-rendering:pixelated}
+#viewer p{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:var(--mut);font-size:13px;margin:0}
+@media(min-width:720px){body{max-width:1200px;margin:0 auto}.gal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1000px){.wrap{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:16px;align-items:start}.live{position:sticky;top:8px;margin:0;padding:0}}
+</style></head><body>
+<header><h1>Xenosaga Ep. I &mdash; PC port</h1><div class="sub" id="sub">loading&hellip;</div></header>
+<div class="wrap"><div class="live"><img id="live" alt="Live game frame">
+<div class="bar"><span class="dot" id="dot"></span><span id="run"></span></div></div>
+<div>
+<details open><summary>Screenshots<span class="count" id="gc"></span></summary><div class="body"><div class="gal" id="gal"></div></div></details>
+<details><summary>Progress<span class="count" id="cc"></span></summary><div class="body"><ul id="commits"></ul></div></details>
+<details><summary>Game log</summary><div class="body"><pre id="log"></pre></div></details>
+<details><summary>Stage docs</summary><div class="body"><ul class="docs" id="docs"></ul></div></details>
+</div></div>
+<div id="viewer"><img alt=""><p>tap to close</p></div>
 <script>
-const $=id=>document.getElementById(id);const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function tick(){$('live').src='/live.png?'+Date.now();}
-async function status(){try{const s=await (await fetch('/api/status')).json();
-$('sub').textContent='branch pc-port · updated '+new Date().toLocaleTimeString();
-$('run').textContent=s.runner.running?`running (run #${s.runner.runs}, ${Math.round(s.runner.uptime)}s)`:`stopped, exit ${s.runner.exit}`;
-$('log').textContent=s.runner.log.join('\\n');$('log').scrollTop=1e9;
-$('commits').innerHTML=s.commits.map(c=>`<li><code>${c.hash}</code> ${esc(c.subject)} <span class="mut">${c.when}</span></li>`).join('');
-$('docs').innerHTML=s.docs.map(d=>`<li><a href="/doc/${d}" target="_blank">${d}</a></li>`).join('');
-const g=s.gallery.map(x=>`<figure><a href="/shot/${x.name}" target="_blank"><img loading="lazy" src="/shot/${x.name}?${x.mtime}"></a><figcaption>${esc(x.name)}</figcaption></figure>`).join('');
+const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let busy=false;function tick(){if(document.hidden||busy)return;busy=true;const i=new Image();
+i.onload=()=>{$('live').src=i.src;busy=false};i.onerror=()=>{busy=false};i.src='/live.png?'+Date.now();}
+async function status(){if(document.hidden)return;try{const s=await (await fetch('/api/status')).json();
+$('sub').textContent='branch pc-port \\u00b7 '+new Date().toLocaleTimeString();
+const r=s.runner;$('dot').className='dot '+(r.running?'on':'off');
+$('run').textContent=r.running?`running \\u00b7 run #${r.runs} \\u00b7 ${Math.round(r.uptime)}s`:`stopped (exit ${r.exit})`;
+const L=$('log');const atEnd=L.scrollTop+L.clientHeight>=L.scrollHeight-20;L.textContent=r.log.join('\\n');if(atEnd)L.scrollTop=1e9;
+$('cc').textContent=s.commits.length;
+$('commits').innerHTML=s.commits.map(c=>`<li><code>${esc(c.hash)}</code> ${esc(c.subject)}<span class="mut">${esc(c.when)}</span></li>`).join('');
+$('docs').innerHTML=s.docs.map(d=>`<li><a href="/doc/${encodeURIComponent(d)}">${esc(d)}</a></li>`).join('');
+$('gc').textContent=s.gallery.length;
+const g=s.gallery.map(x=>`<figure><img loading="lazy" data-full="/shot/${esc(x.name)}" src="/shot/${esc(x.name)}?${x.mtime}" alt="${esc(x.name)}"><figcaption>${esc(x.name.split('/').pop())}</figcaption></figure>`).join('');
 if($('gal').dataset.k!==g){$('gal').innerHTML=g;$('gal').dataset.k=g;}}catch(e){}}
+$('gal').addEventListener('click',e=>{const im=e.target.closest('img');if(!im)return;const v=$('viewer');v.querySelector('img').src=im.dataset.full;v.classList.add('on');});
+$('viewer').addEventListener('click',()=>$('viewer').classList.remove('on'));
+$('live').addEventListener('click',()=>{const v=$('viewer');v.querySelector('img').src=$('live').src;v.classList.add('on');});
+document.addEventListener('visibilitychange',()=>{tick();status();});
 tick();status();setInterval(tick,1000);setInterval(status,5000);
 </script></body></html>"""
 
