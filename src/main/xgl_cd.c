@@ -986,6 +986,12 @@ typedef struct CdFilePositionView {
     unsigned char source;
     unsigned char unmodeled_25[3];
     int descriptor;
+#ifdef PORT_HOST
+    /* xglCdGetFilePos writes the whole 0x30-byte record (CdPosView.size_bytes
+     * at 0x2c). On the PS2 the frame's padding absorbed it; on the host it
+     * overwrote the next stack slot (seen at -O2: a smashed return path). */
+    int size_bytes;
+#endif
 } CdFilePositionView;
 extern int sceCdStInit(int bufmax, int nbuf, int buffer);
 extern int sceCdStStart(int lbn, CdReadMode *read_mode);

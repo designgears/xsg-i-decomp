@@ -29,13 +29,21 @@ void dataBltBoxDec(int bullet_id);
 
 int dataAccBoxChk(int accessory_id);
 
+#ifdef PORT_HOST
+int dataAccBoxInc(int accessory_id);
+#else
 void dataAccBoxInc(int accessory_id);
+#endif
 
 void dataAccBoxDec(int accessory_id);
 
 int dataEvtBoxChk(int event_id);
 
+#ifdef PORT_HOST
+int dataEvtBoxInc(int event_id);
+#else
 void dataEvtBoxInc(int event_id);
+#endif
 
 void dataEvtBoxDec(int event_id);
 

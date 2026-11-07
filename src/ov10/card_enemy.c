@@ -110,6 +110,18 @@ void CardEnemySet(int side, CardGameWork *work) {
 extern int CardPlayHandCnt(CardHand *hand);
 
 /* AI command-request handler; defined in ov10/tu010 (still assembler). */
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+extern int CC_Kara_CommRequest(int side, CardGameWork *work);
+
+int CardEnemyCommandRequest(int side, CardGameWork *work) {
+    CardPlayHandCnt(side == 0
+        ? &work->player.hand
+        : &work->enemy.hand);
+    return CC_Kara_CommRequest(side, work);
+}
+#else
 extern void CC_Kara_CommRequest(int side, CardGameWork *work);
 
 void CardEnemyCommandRequest(int side, CardGameWork *work) {
@@ -118,6 +130,7 @@ void CardEnemyCommandRequest(int side, CardGameWork *work) {
         : &work->enemy.hand);
     CC_Kara_CommRequest(side, work);
 }
+#endif
 
 /*
  * The operation slot CGPEnemyExecOperation acts on: its first field picks the
@@ -214,6 +227,18 @@ void CardEnemyCommandPlay(int side, CardGameWork *work) {
 }
 
 /* AI first-answer handler; defined in ov10/tu010 (still assembler). */
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+extern int CC_Kara_1stAnswer(int side, CardGameWork *work);
+
+int CardEnemy1stAnswer(int side, CardGameWork *work) {
+    CardPlayHandCnt(side == 0
+        ? &work->player.hand
+        : &work->enemy.hand);
+    return CC_Kara_1stAnswer(side, work);
+}
+#else
 extern void CC_Kara_1stAnswer(int side, CardGameWork *work);
 
 void CardEnemy1stAnswer(int side, CardGameWork *work) {
@@ -222,6 +247,7 @@ void CardEnemy1stAnswer(int side, CardGameWork *work) {
         : &work->enemy.hand);
     CC_Kara_1stAnswer(side, work);
 }
+#endif
 
 /* The draw pile's non-negative entries (ov10/card_fread.c). */
 extern int CardPlayYamaCnt(CardPlaySide *side);

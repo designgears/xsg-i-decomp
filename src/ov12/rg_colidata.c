@@ -309,6 +309,17 @@ void RgColiDataAddTriangle(RgColiData *pData, void *pV0, void *pV1, void *pV2)
     _AddTriangle(pData, pV0, pV1, pV2);
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+int RgColiDataVsBall(RgColiData *pPoly, void *pArg, void *pResult)
+{
+    if (pPoly == 0 || pArg == 0 || pResult == 0) {
+        assert_prog(D_00A55670, D_00A55500, 0x18D);
+    }
+    return _CheckIntersectBall(pPoly, pArg, pResult);
+}
+#else
 void RgColiDataVsBall(RgColiData *pPoly, void *pArg, void *pResult)
 {
     if (pPoly == 0 || pArg == 0 || pResult == 0) {
@@ -316,6 +327,7 @@ void RgColiDataVsBall(RgColiData *pPoly, void *pArg, void *pResult)
     }
     _CheckIntersectBall(pPoly, pArg, pResult);
 }
+#endif
 
 typedef struct { float x, y, z, w; } __attribute__((aligned(16))) AlignedVector4;
 typedef struct RgColiSegment {

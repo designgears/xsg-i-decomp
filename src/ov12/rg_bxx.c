@@ -235,10 +235,19 @@ static RgBxxPic *_GetPicTop(RgBxx *pBxx)
     return (RgBxxPic *)(header + 1);
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+RgBxxHeader *RgBxxGetHeader(RgBxx *pBxx)
+{
+    return _GetHeader(pBxx);
+}
+#else
 void RgBxxGetHeader(RgBxx *pBxx)
 {
     _GetHeader(pBxx);
 }
+#endif
 
 int RgBxxGetTexNum(RgBxx *pBxx)
 {
@@ -322,6 +331,20 @@ RgBxxPic *RgBxxGetPic(RgBxx *pBxx, const char *pszName)
     return (RgBxxPic *)((char *)picTop + index * 0x60);
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+void *RgBxxGetXtx(RgBxx *pBxx)
+{
+    if (pBxx == 0) {
+        assert_prog(D_00A56F90, D_00A56FA0, 212);
+    }
+    if (pBxx->m_pLink == 0) {
+        assert_prog(D_00A57078, D_00A56FA0, 213);
+    }
+    return RgLinkDataGetIndex(pBxx->m_pLink, 1);
+}
+#else
 void RgBxxGetXtx(RgBxx *pBxx)
 {
     if (pBxx == 0) {
@@ -332,3 +355,4 @@ void RgBxxGetXtx(RgBxx *pBxx)
     }
     RgLinkDataGetIndex(pBxx->m_pLink, 1);
 }
+#endif

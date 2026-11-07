@@ -105,10 +105,19 @@ int dataAccBoxChk(int accessory_id)
     return dataBoxChk(3, accessory_id);
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+int dataAccBoxInc(int accessory_id)
+{
+    return dataBoxInc(3, accessory_id);
+}
+#else
 void dataAccBoxInc(int accessory_id)
 {
     dataBoxInc(3, accessory_id);
 }
+#endif
 
 void dataAccBoxDec(int accessory_id)
 {
@@ -120,10 +129,19 @@ int dataEvtBoxChk(int event_id)
     return dataBoxChk(10, event_id);
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+int dataEvtBoxInc(int event_id)
+{
+    return dataBoxInc(10, event_id);
+}
+#else
 void dataEvtBoxInc(int event_id)
 {
     dataBoxInc(10, event_id);
 }
+#endif
 
 void dataEvtBoxDec(int event_id)
 {

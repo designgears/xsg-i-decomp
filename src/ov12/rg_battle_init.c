@@ -146,6 +146,17 @@ unsigned int RgBattleInitCreatePlayers(RgBattleInitState *pInfo,
 /* Defined later in this TU (a local sibling still in asm). */
 static void *_CreateBg(int bgId, void *dst);
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+void *RgBattleInitCreateBg(RgBattleInitInfo *pInfo, int bgId)
+{
+    if (pInfo == 0) {
+        assert_prog(D_00A54E18, D_00A54E28, 0x83);
+    }
+    return _CreateBg(bgId, pInfo->bg);
+}
+#else
 void RgBattleInitCreateBg(RgBattleInitInfo *pInfo, int bgId)
 {
     if (pInfo == 0) {
@@ -153,6 +164,7 @@ void RgBattleInitCreateBg(RgBattleInitInfo *pInfo, int bgId)
     }
     _CreateBg(bgId, pInfo->bg);
 }
+#endif
 
 extern const char D_00A54E70[];
 extern const char D_00A54E80[];

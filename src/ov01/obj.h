@@ -132,7 +132,11 @@ extern void objExecSub(void *manager);
 
 void objExec2(void);
 
+#ifdef PORT_HOST
+ObjectTask *objEntry(void *argument);
+#else
 void objEntry(void *argument);
+#endif
 
 ObjectTask *objEntry2(void *argument, ObjectTaskCallback callback);
 

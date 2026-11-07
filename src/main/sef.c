@@ -7048,9 +7048,19 @@ extern unsigned char *sefCreateEffectCf2(int cf_id, int effect_no, void *value3,
  * this file's other Cf functions (sefLoadEffectCf above). value3 is
  * forwarded unchanged; this allocation has no further evidence for it.
  */
+#ifdef PORT_HOST
+/* The callers (toolkit.c getPeer_Effect, ...) use the result: on the PS2 the
+ * tail call left sefCreateEffectCf2's v0 in place. On the host a void return
+ * leaves %eax to chance (it survived at -O0 only by luck; with
+ * -fstack-protector or -O2 the effect peer came back NULL). */
+unsigned char *sefCreateEffectCf(int cf_id, int effect_no, int value3) {
+    return sefCreateEffectCf2(cf_id, effect_no, value3, -1);
+}
+#else
 void sefCreateEffectCf(int cf_id, int effect_no, int value3) {
     sefCreateEffectCf2(cf_id, effect_no, value3, -1);
 }
+#endif
 
 /*
  * sefDeleteEffectCf (main:0x002e7930) is another tail call to

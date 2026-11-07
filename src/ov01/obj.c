@@ -61,9 +61,17 @@ void objExec2(void) {
     }
 }
 
+#ifdef PORT_HOST
+/* PORT_HOST: callers use this result (on the PS2 the tail call left the
+ * callee's v0 in place); a void return leaves %eax to chance on the host. */
+ObjectTask *objEntry(void *argument) {
+    return objEntrySub(&taskMan, argument, 0);
+}
+#else
 void objEntry(void *argument) {
     objEntrySub(&taskMan, argument, 0);
 }
+#endif
 
 ObjectTask *objEntry2(void *argument, ObjectTaskCallback callback) {
     ObjectTask *task;
