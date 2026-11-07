@@ -12994,6 +12994,37 @@
    ]
   },
   "ov10/tu010_00a34190": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4bb88",
+      "0x00a4bb8c"
+     ],
+     "generated": [
+      "0x00a4bb88",
+      "0x00a4bb8c"
+     ],
+     "generated_by": [
+      "CC_Kara_CommPlay",
+      "CC_Kara_CommRequest"
+     ],
+     "c_owned_symbols": [
+      "commplay"
+     ],
+     "also_referenced_by_c": [
+      "play413",
+      "playteppeki",
+      "cardno_0",
+      "no_1",
+      "timer_2"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/battle_area_check_enemy.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -13022,7 +13053,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/battle_area_check_enemy.o"
+      "object": "build/ov10/build/scaffold/src/ov10/battle_area_check_enemy.o"
      }
     }
    ]

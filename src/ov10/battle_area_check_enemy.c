@@ -3239,7 +3239,7 @@ s32 CC_Kara_DisposeEvent(s32 side, CardGameWork *work)
     return 0;
 }
 
-extern s32 commplay;
+s32 commplay = 0;
 s32 CheckExtCommand(s32 side, CardGameWork *work);
 s32 CheckCurryCommand(s32 side, CardGameWork *work);
 s32 CheckTentCommand(s32 side, CardGameWork *work);
