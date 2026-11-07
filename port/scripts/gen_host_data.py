@@ -92,7 +92,9 @@ def convert(src, unit, unit_dir):
             m = re.match(r"\s*/\*\s*([0-9A-Fa-f]+)(?:\s+([0-9A-Fa-f]+))?", raw)
             if m:
                 vram = int(m.group(2) or m.group(1), 16)
-                out.append("\t.balign 16\n\t.skip %d" % (vram % 16))
+                # insert right after the .section line, ahead of any label
+                # that precedes the first addressed line
+                out.insert(pending_align, "\t.balign 16\n\t.skip %d" % (vram % 16))
                 pending_align = False
         line = COMMENT_RE.sub("", raw).strip()
         if not line or line.startswith("#"):
@@ -100,7 +102,7 @@ def convert(src, unit, unit_dir):
         m = SEC_RE.match(line)
         if m:
             out.append(section_directive(host_section(unit, m.group(1))))
-            pending_align = True
+            pending_align = len(out)
             continue
         if line.startswith(".include"):
             continue
