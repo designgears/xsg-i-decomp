@@ -887,12 +887,22 @@ static int errorCallback(int event, MpegErrorInfo *error, MpegCallbackState *sta
     return 1;
 }
 
+#ifdef PORT_HOST
+/* game_movie.c passes the file name as a second argument; on the EE it is
+ * still in $a1 when xglCdStreamOpen(stream, path) is reached. */
+int xglMpeg2Open(XglMovieInfo *info, const char *name)
+#else
 int xglMpeg2Open(XglMovieInfo *info)
+#endif
 {
     int result;
     int retry;
 
+#ifdef PORT_HOST
+    if (((int (*)(struct CdStreamParam *, const char *)) xglCdStreamOpen)((struct CdStreamParam *) info, name) < 0) {
+#else
     if (xglCdStreamOpen((struct CdStreamParam *) info) < 0) {
+#endif
         return -1;
     }
     xglCdStreamReadRing((struct CdStreamParam *) info, info->ringCapacity / 2);
