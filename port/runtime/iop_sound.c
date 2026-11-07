@@ -359,10 +359,10 @@ int ssdiop_sceSdSetEffectAttr(int core, SdEffectAttr *a)
     int mode = a->mode & 0xff;
     effect[core] = *a;
     effect[core].mode = mode;
-    spu2_set_effect(core, mode, a->depth_l, a->depth_r);
+    spu2_set_effect(core, mode, a->depth_l, a->depth_r, a->delay, a->feedback);
     if (a->mode & 0x100)
         spu2_clear_effect_area(core, mode);
-    SLOG("[ssd] effect core %d mode %d depth %d/%d\n", core, mode, a->depth_l, a->depth_r);
+    SLOG("[ssd] effect core %d mode %d depth %d/%d delay %d feedback %d\n", core, mode, a->depth_l, a->depth_r, a->delay, a->feedback);
     return 0;
 }
 void ssdiop_sceSdGetEffectAttr(int core, SdEffectAttr *a) { *a = effect[core & 1]; }
@@ -496,6 +496,46 @@ static void wav_header(void)
     fseek(wav, pos, SEEK_SET);
 }
 
+/* Live output when the game runs slower than real time (§4 of
+ * STAGE10_SOUND.md): the IOP clock is gated to game frames, so the device
+ * would run dry.  Instead of an xrun (a hard gap and a click), the queue is
+ * kept at a floor with "filler": the last output sample decaying to zero
+ * (~1 ms time constant), and the next real audio ramps in over 2 ms.  Every
+ * time filler is needed the target queue grows by 20 ms (up to 200 ms), so
+ * a game that stutters regularly is absorbed by the buffer; it shrinks back
+ * by 1 ms a second.  Only the device sees this: XSG_WAV keeps game time. */
+#define FADE_FRAMES 96
+#define ALSA_BUF_MS 250
+#define FILL_FLOOR_MS 20
+static double target_ms = 60;
+static int fade_in, in_gap;
+static int16_t last_out[2];
+static double fill_level[2];
+static unsigned long long filled_frames, fill_events;
+
+static void output_fill(int frames)
+{
+    static int16_t buf[2 * 2048];
+    if (frames > 2048)
+        frames = 2048;
+    if (!in_gap) {
+        fill_level[0] = last_out[0];
+        fill_level[1] = last_out[1];
+        in_gap = 1;
+        fill_events++;
+    }
+    for (int i = 0; i < frames; i++) {
+        fill_level[0] *= 0.98;
+        fill_level[1] *= 0.98;
+        buf[2 * i] = (int16_t)fill_level[0];
+        buf[2 * i + 1] = (int16_t)fill_level[1];
+    }
+
+    xsg_alsa_write(pcm, buf, (unsigned)frames);
+    filled_frames += frames;
+    fade_in = FADE_FRAMES;
+}
+
 static void output(const int16_t *s, int frames)
 {
     pthread_mutex_lock(&wav_lock);
@@ -510,6 +550,19 @@ static void output(const int16_t *s, int frames)
     }
     pthread_mutex_unlock(&wav_lock);
     if (pcm) {
+        /* after a filled gap the device resumes from silence: ramp in over 2 ms */
+        static int16_t ramp_buf[2 * 2048];
+        if (fade_in > 0 && frames <= 2048) {
+            for (int i = 0; i < frames; i++) {
+                int g = fade_in > 0 ? (FADE_FRAMES - fade_in--) : FADE_FRAMES;
+                ramp_buf[2 * i] = (int16_t)(s[2 * i] * g / FADE_FRAMES);
+                ramp_buf[2 * i + 1] = (int16_t)(s[2 * i + 1] * g / FADE_FRAMES);
+            }
+            s = ramp_buf;
+        }
+        in_gap = 0;
+        last_out[0] = s[2 * (frames - 1)];
+        last_out[1] = s[2 * (frames - 1) + 1];
         long r = xsg_alsa_write(pcm, s, (unsigned)frames);
         if (r == -11)
             alsa_dropped += frames;
@@ -585,21 +638,26 @@ static void *audio_thread(void *p)
         if (late > 100000000LL) /* > 100 ms behind (stopped in a debugger...): resync */
             next = now;
         budget += RATE * 0.002;
-        /* keep the ALSA queue near 60 ms: the device clock drifts against
-         * CLOCK_MONOTONIC, so render a little more or less */
+        /* keep the ALSA queue near the target (60 ms, more after gaps, see
+         * output_fill): the device clock drifts against CLOCK_MONOTONIC, so
+         * render a little more or less */
+        long queued = -1;
         if (pcm) {
             long avail = xsg_alsa_avail(pcm);
             if (avail < 0)
                 alsa_underruns++; /* xrun: the next write recovers */
-            long queued = avail >= 0 ? (long)(RATE / 10) - avail : 0; /* 100 ms buffer */
-            if (avail >= 0 && queued < RATE * 40 / 1000)
+            queued = avail >= 0 ? (long)(RATE * ALSA_BUF_MS / 1000) - avail : 0;
+            long tgt = (long)(RATE * target_ms / 1000);
+            if (avail >= 0 && queued < tgt - RATE * 20 / 1000)
                 budget += 8;
-            else if (avail >= 0 && queued > RATE * 80 / 1000)
+            else if (avail >= 0 && queued > tgt + RATE * 20 / 1000)
                 budget -= 8;
+            if (target_ms > 60)
+                target_ms -= 0.002; /* 1 ms a second */
         }
         if (budget > RATE / 10) /* never burst more than 100 ms */
             budget = RATE / 10;
-        int frames = budget > 0 ? (int)budget : 0;
+        int frames = budget > 0 ? (int)budget : 0, gated = 0;
         /* The game clock: the EE feeds streams and starts sounds per game
          * frame, so the IOP must not run ahead of the EE's vblanks (800
          * samples each, 2 vblanks of slack).  When the game runs at full
@@ -610,6 +668,7 @@ static void *audio_thread(void *p)
             if (allow < frames) {
                 frames = allow > 0 ? (int)allow : 0;
                 clock_waits++;
+                gated = 1;
             }
         }
         if (frames > 2048)
@@ -628,12 +687,32 @@ static void *audio_thread(void *p)
         rendered += frames;
         if (frames)
             output(buf, frames);
+        /* the game is behind real time and the device is about to run dry */
+        if (pcm && gated && queued >= 0 && queued + frames < RATE * FILL_FLOOR_MS / 1000) {
+            output_fill(RATE * FILL_FLOOR_MS / 1000 - (int)(queued + frames));
+            target_ms = target_ms + 20 > 200 ? 200 : target_ms + 20;
+        }
         if (++ticks % 2500 == 0) /* every ~5 s */
             SLOG("[sound] %.1f s rendered, %d voices active, %u keyons, timer ticks %llu, "
                  "stream: %u data blocks, %u IRQs; game-clock waits %llu; ALSA dropped %llu frames, "
-                 "%llu underruns\n",
+                 "%llu underruns, gap fill %llu frames in %llu gaps (target %.0f ms)\n",
                  rendered / (double)RATE, spu2_active_voices(), spu2_keyons(), T.count,
-                 stream_blocks, stream_irqs, clock_waits, alsa_dropped, alsa_underruns);
+                 stream_blocks, stream_irqs, clock_waits, alsa_dropped, alsa_underruns, filled_frames,
+                 fill_events, target_ms);
+        if (log_on >= 2 && ticks % 2500 == 0) { /* XSG_SOUND_LOG=2: every voice that is on */
+            pthread_mutex_lock(&L);
+            for (int c = 0; c < 2; c++)
+                for (int v = 0; v < 24; v++) {
+                    spu2_voice_info_t vi;
+                    if (spu2_voice_info(c, v, &vi))
+                        xsg_logf("[sound]   c%d v%02d ph %d env %04x pitch %04x adsr %04x/%04x vol %6d/%6d "
+                                 "ssa %06x lsa %06x nax %06x%s%s%s\n",
+                                 c, v, vi.phase, vi.env, vi.pitch, vi.adsr1, vi.adsr2, vi.vol_l, vi.vol_r,
+                                 vi.ssa, vi.lsa, vi.nax, vi.noise ? " NOISE" : "", vi.pmod ? " PMOD" : "",
+                                 vi.wet ? " wet" : "");
+                }
+            pthread_mutex_unlock(&L);
+        }
     }
     return NULL;
 }
@@ -652,7 +731,7 @@ void xsg_sound_start(void)
         return;
     started = 1;
     const char *e = getenv("XSG_SOUND_LOG");
-    log_on = e && atoi(e) != 0;
+    log_on = e ? atoi(e) : 0;
     trace_dir = getenv("XSG_SPU_TRACE");
     const char *ck = getenv("XSG_SOUND_CLOCK");
     game_clock = !(ck && !strcmp(ck, "real"));
@@ -665,7 +744,7 @@ void xsg_sound_start(void)
             xsg_logf("[sound] recording the mix to %s (48 kHz stereo s16)\n", w);
         }
     }
-    pcm = xsg_alsa_open(RATE, 100000);
+    pcm = xsg_alsa_open(RATE, ALSA_BUF_MS * 1000);
     pthread_mutex_lock(&L);
     ssdiop_sceSdInit(0);
     ssdiop_start();

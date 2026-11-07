@@ -28,7 +28,9 @@ int spu2_get_core_attr(int entry);
 
 /* reverb: libsd effect mode 0..9 (off, room, studio A/B/C, hall, space,
  * echo, delay, pipe).  The work area ends at the core's EEA. */
-void spu2_set_effect(int core, int mode, int16_t depth_l, int16_t depth_r);
+/* delay, feedback: libsd's, used by echo (7) and delay (8) only */
+void spu2_set_effect(int core, int mode, int16_t depth_l, int16_t depth_r, int delay, int feedback);
+uint16_t spu2_get_reverb_reg(int core, int index); /* preset order */
 void spu2_clear_effect_area(int core, int mode);
 uint32_t spu2_effect_size(int mode); /* bytes */
 
@@ -59,5 +61,16 @@ void spu2_render(int16_t *out, int frames);
 /* Debug: active voice count, keyon count since reset. */
 int spu2_active_voices(void);
 unsigned spu2_keyons(void);
+
+/* Debug: one voice's state (phase 0 off, 1 attack, 2 decay, 3 sustain,
+ * 4 release); returns nonzero when the voice is on. */
+typedef struct {
+    int phase, env;
+    uint16_t pitch, adsr1, adsr2;
+    int16_t vol_l, vol_r;
+    uint32_t ssa, lsa, nax; /* byte addresses */
+    int noise, pmod, wet;
+} spu2_voice_info_t;
+int spu2_voice_info(int core, int voice, spu2_voice_info_t *out);
 
 #endif

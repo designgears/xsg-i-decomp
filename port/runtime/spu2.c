@@ -27,7 +27,9 @@ typedef struct spu2_reverb_preset {
     uint16_t regs[32];
 } spu2_reverb_preset;
 extern const int16_t spu2_gauss[512];
-extern const spu2_reverb_preset spu2_reverb_presets[10];
+extern const spu2_reverb_preset spu2_libsd_presets[10];
+extern const int16_t spu2_reverb_fir[39];
+#define RV_HIST 64 /* power of two >= 39: the resampling rings */
 
 enum { PH_OFF, PH_ATTACK, PH_DECAY, PH_SUSTAIN, PH_RELEASE };
 
@@ -65,8 +67,9 @@ typedef struct {
     int effect_mode;
     uint16_t rv[32]; /* reverb registers (preset order) */
     uint32_t rvb_pos;
-    int32_t rvb_in[2], rvb_out[2], rvb_prev[2];
-    int rvb_phase;
+    int16_t rvb_in[2][RV_HIST], rvb_out[2][RV_HIST]; /* 48 kHz rings of the FIR */
+    uint32_t rvb_t;                                  /* 48 kHz frame count */
+    int delay, feedback;                             /* libsd echo/delay parameters */
     int32_t noise_timer;
     uint16_t noise;
     int32_t out[2];
@@ -263,7 +266,7 @@ void spu2_reset(void)
     memset(C, 0, sizeof C);
     for (int c = 0; c < 2; c++) {
         C[c].noise = 1;
-        C[c].eea = c ? 0xeffff : 0xfffff;
+        C[c].eea = c ? 0xfffff : 0xeffff; /* libsd: core 0 0x1dffff, core 1 0x1fffff */
         C[c].esa = C[c].eea;
     }
     keyons = 0;
@@ -367,7 +370,8 @@ void spu2_set_addr(int e, uint32_t a)
     uint32_t hw = (a >> 1) & RAM_MASK;
     switch (e & 0xff00) {
     case 0x1c00: k->esa = hw; break;
-    case 0x1d00: k->eea = hw | 0x1ffff; break;
+    /* EEA keeps only A20..A17: the end of a 128 KiB (0x10000-halfword) page */
+    case 0x1d00: k->eea = hw | 0xffff; break;
     case 0x1f00: k->irqa = hw; break;
     case 0x2000: v->ssa = hw & ~7u; break;
     case 0x2100: v->lsa = hw & ~7u; break;
@@ -418,23 +422,54 @@ int spu2_get_core_attr(int e)
 }
 
 /* ---- reverb --------------------------------------------------------- */
+enum {
+    dAPF1, dAPF2, vIIR, vCOMB1, vCOMB2, vCOMB3, vCOMB4, vWALL, vAPF1, vAPF2,
+    mLSAME, mRSAME, mLCOMB1, mRCOMB1, mLCOMB2, mRCOMB2, dLSAME, dRSAME,
+    mLDIFF, mRDIFF, mLCOMB3, mRCOMB3, mLCOMB4, mRCOMB4, dLDIFF, dRDIFF,
+    mLAPF1, mRAPF1, mLAPF2, mRAPF2, vLIN, vRIN
+};
+
 uint32_t spu2_effect_size(int mode)
 {
-    return mode >= 0 && mode < 10 ? spu2_reverb_presets[mode].size : 0;
+    return mode >= 0 && mode < 10 ? spu2_libsd_presets[mode].size : 0;
 }
 
-void spu2_set_effect(int core, int mode, int16_t dl, int16_t dr)
+/* sceSdSetEffectAttr: the mode's libsd preset.  For echo (7) and delay (8)
+ * libsd then rewrites the delay lines and the feedback from the caller's
+ * delay and feedback (0..127; delay 127 gives the preset's own lines):
+ * d = (delay + 1) * 32 (8-byte units), vWALL = feedback * 258,
+ * mLSAME = 2d - dAPF1, mRSAME = d - dAPF2, dLSAME = dRSAME + d,
+ * mLCOMB1 = mRCOMB1 + d, mLAPF1 = mLAPF2 + d, mRAPF1 = mRAPF2 + d
+ * (as ps2-port-engine's Spu2::SetEffectAttr, MIT, programs them). */
+void spu2_set_effect(int core, int mode, int16_t dl, int16_t dr, int delay, int feedback)
 {
     core_t *k = &C[core & 1];
     if (mode < 0 || mode > 9)
         mode = 0;
     k->effect_mode = mode;
-    memcpy(k->rv, spu2_reverb_presets[mode].regs, sizeof k->rv);
-    k->esa = (k->eea - spu2_reverb_presets[mode].size / 2 + 1) & RAM_MASK;
+    memcpy(k->rv, spu2_libsd_presets[mode].regs, sizeof k->rv);
+    k->delay = k->feedback = 0;
+    if (mode == 7 || mode == 8) {
+        delay &= 0x7f;
+        feedback &= 0x7f;
+        uint16_t d = (uint16_t)((delay + 1) << 5);
+        k->rv[vWALL] = (uint16_t)(((feedback << 7) + feedback) << 1);
+        k->rv[mLSAME] = (uint16_t)((d << 1) - k->rv[dAPF1]);
+        k->rv[mRSAME] = (uint16_t)(d - k->rv[dAPF2]);
+        k->rv[dLSAME] = (uint16_t)(k->rv[dRSAME] + d);
+        k->rv[mLCOMB1] = (uint16_t)(k->rv[mRCOMB1] + d);
+        k->rv[mRAPF1] = (uint16_t)(k->rv[mRAPF2] + d);
+        k->rv[mLAPF1] = (uint16_t)(k->rv[mLAPF2] + d);
+        k->delay = delay;
+        k->feedback = feedback;
+    }
+    k->esa = (k->eea - spu2_libsd_presets[mode].size / 2 + 1) & RAM_MASK;
     k->rvb_pos = k->esa;
     k->evol[0] = dl;
     k->evol[1] = dr;
 }
+
+uint16_t spu2_get_reverb_reg(int core, int i) { return C[core & 1].rv[i & 31]; }
 
 void spu2_clear_effect_area(int core, int mode)
 {
@@ -444,13 +479,6 @@ void spu2_clear_effect_area(int core, int mode)
     for (uint32_t i = 0; i < n; i++)
         ram[(start + i) & RAM_MASK] = 0;
 }
-
-enum {
-    dAPF1, dAPF2, vIIR, vCOMB1, vCOMB2, vCOMB3, vCOMB4, vWALL, vAPF1, vAPF2,
-    mLSAME, mRSAME, mLCOMB1, mRCOMB1, mLCOMB2, mRCOMB2, dLSAME, dRSAME,
-    mLDIFF, mRDIFF, mLCOMB3, mRCOMB3, mLCOMB4, mRCOMB4, dLDIFF, dRDIFF,
-    mLAPF1, mRAPF1, mLAPF2, mRAPF2, vLIN, vRIN
-};
 
 static uint32_t rv_addr(core_t *k, int32_t off_hw)
 {
@@ -466,29 +494,87 @@ static uint32_t rv_addr(core_t *k, int32_t off_hw)
 #define M(a, b) ((int32_t)(a) * (int32_t)(int16_t)(b) >> 15)
 #define OFF(r) ((int32_t)k->rv[r] * 4)
 
+/* One 24 kHz step: psx-spx's "Reverb Formula" with every register (the
+ * same/different-side reflections with their IIR and wall, the four combs,
+ * the two all-pass stages).  The work area is written only while the
+ * core's effect enable (ATTR bit 7) is set; the read side always runs. */
 static void reverb_tick(core_t *k, int32_t lin, int32_t rin, int32_t *lout, int32_t *rout)
 {
-    int32_t L = M(lin, k->rv[vLIN]), R = M(rin, k->rv[vRIN]);
-    int32_t lsame = OFF(mLSAME), rsame = OFF(mRSAME), ldiff = OFF(mLDIFF), rdiff = OFF(mRDIFF);
-    int32_t prevLs = RD(lsame - 1), prevRs = RD(rsame - 1), prevLd = RD(ldiff - 1), prevRd = RD(rdiff - 1);
-    WR(lsame, M(L + M(RD(OFF(dLSAME)), k->rv[vWALL]) - prevLs, k->rv[vIIR]) + prevLs);
-    WR(rsame, M(R + M(RD(OFF(dRSAME)), k->rv[vWALL]) - prevRs, k->rv[vIIR]) + prevRs);
-    WR(ldiff, M(L + M(RD(OFF(dRDIFF)), k->rv[vWALL]) - prevLd, k->rv[vIIR]) + prevLd);
-    WR(rdiff, M(R + M(RD(OFF(dLDIFF)), k->rv[vWALL]) - prevRd, k->rv[vIIR]) + prevRd);
-    int32_t lo = M(RD(OFF(mLCOMB1)), k->rv[vCOMB1]) + M(RD(OFF(mLCOMB2)), k->rv[vCOMB2]) +
-                 M(RD(OFF(mLCOMB3)), k->rv[vCOMB3]) + M(RD(OFF(mLCOMB4)), k->rv[vCOMB4]);
-    int32_t ro = M(RD(OFF(mRCOMB1)), k->rv[vCOMB1]) + M(RD(OFF(mRCOMB2)), k->rv[vCOMB2]) +
-                 M(RD(OFF(mRCOMB3)), k->rv[vCOMB3]) + M(RD(OFF(mRCOMB4)), k->rv[vCOMB4]);
-    int32_t a;
-    a = RD(OFF(mLAPF1) - OFF(dAPF1)); lo = clamp16(lo - M(a, k->rv[vAPF1])); WR(OFF(mLAPF1), lo); lo = M(lo, k->rv[vAPF1]) + a;
-    a = RD(OFF(mRAPF1) - OFF(dAPF1)); ro = clamp16(ro - M(a, k->rv[vAPF1])); WR(OFF(mRAPF1), ro); ro = M(ro, k->rv[vAPF1]) + a;
-    a = RD(OFF(mLAPF2) - OFF(dAPF2)); lo = clamp16(lo - M(a, k->rv[vAPF2])); WR(OFF(mLAPF2), lo); lo = M(lo, k->rv[vAPF2]) + a;
-    a = RD(OFF(mRAPF2) - OFF(dAPF2)); ro = clamp16(ro - M(a, k->rv[vAPF2])); WR(OFF(mRAPF2), ro); ro = M(ro, k->rv[vAPF2]) + a;
-    *lout = clamp16(lo);
-    *rout = clamp16(ro);
+    const uint16_t *r = k->rv;
+    int wr = (k->attr & 0x80) != 0;
+    int32_t in[2] = {M(lin, r[vLIN]), M(rin, r[vRIN])};
+    for (int ch = 0; ch < 2; ch++) {
+        int32_t msame = OFF(mLSAME + ch), mdiff = OFF(mLDIFF + ch);
+        int32_t dsame = OFF(dLSAME + ch), ddiff = OFF(ch ? dLDIFF : dRDIFF); /* crossed */
+        int32_t prev = RD(msame - 1);
+        int32_t t = clamp16(in[ch] + M(RD(dsame), r[vWALL]) - prev);
+        int32_t vs = clamp16(M(t, r[vIIR]) + prev);
+        prev = RD(mdiff - 1);
+        t = clamp16(in[ch] + M(RD(ddiff), r[vWALL]) - prev);
+        int32_t vd = clamp16(M(t, r[vIIR]) + prev);
+        if (wr) {
+            WR(msame, vs);
+            WR(mdiff, vd);
+        }
+    }
+    int32_t out[2];
+    for (int ch = 0; ch < 2; ch++) {
+        int32_t o = M(RD(OFF(mLCOMB1 + ch)), r[vCOMB1]) + M(RD(OFF(mLCOMB2 + ch)), r[vCOMB2]) +
+                    M(RD(OFF(mLCOMB3 + ch)), r[vCOMB3]) + M(RD(OFF(mLCOMB4 + ch)), r[vCOMB4]);
+        o = clamp16(o);
+        int32_t a = RD(OFF(mLAPF1 + ch) - OFF(dAPF1));
+        o = clamp16(o - M(a, r[vAPF1]));
+        if (wr)
+            WR(OFF(mLAPF1 + ch), o);
+        o = clamp16(M(o, r[vAPF1]) + a);
+        a = RD(OFF(mLAPF2 + ch) - OFF(dAPF2));
+        o = clamp16(o - M(a, r[vAPF2]));
+        if (wr)
+            WR(OFF(mLAPF2 + ch), o);
+        out[ch] = clamp16(M(o, r[vAPF2]) + a);
+    }
+    *lout = out[0];
+    *rout = out[1];
     k->rvb_pos = (k->rvb_pos + 1) & RAM_MASK;
     if (((k->rvb_pos - k->esa) & RAM_MASK) > ((k->eea - k->esa) & RAM_MASK))
         k->rvb_pos = k->esa;
+}
+
+/* The 48 <-> 24 kHz conversion around the reverb: psx-spx's 39-tap half-band
+ * FIR (spu2_reverb_fir: symmetric, the odd taps zero except the centre
+ * 0x4000).  Down: on odd frames, the filter over the last 39 wet inputs.
+ * Up: the reverb output zero-stuffed to 48 kHz through the same filter at
+ * gain 2, so odd frames meet only the even taps and even frames only the
+ * centre.  The layout of this follows ico-pc's reverb_frame (MIT). */
+static int32_t fir_even(const int16_t *h, uint32_t p)
+{
+    int32_t acc = 0;
+    for (int i = 0; i < 19; i += 2)
+        acc += spu2_reverb_fir[i] * ((int32_t)h[(p - (uint32_t)i) & (RV_HIST - 1)] +
+                                     h[(p - 38u + (uint32_t)i) & (RV_HIST - 1)]);
+    return acc;
+}
+
+static void reverb_frame(core_t *k, int32_t wl, int32_t wr, int32_t out[2])
+{
+    uint32_t p = k->rvb_t++ & (RV_HIST - 1);
+    k->rvb_in[0][p] = (int16_t)wl;
+    k->rvb_in[1][p] = (int16_t)wr;
+    if (p & 1) {
+        int32_t in[2], o[2];
+        for (int ch = 0; ch < 2; ch++)
+            in[ch] = clamp16((fir_even(k->rvb_in[ch], p) + 0x4000 * k->rvb_in[ch][(p - 19u) & (RV_HIST - 1)]) >> 15);
+        reverb_tick(k, in[0], in[1], &o[0], &o[1]);
+        for (int ch = 0; ch < 2; ch++) {
+            k->rvb_out[ch][p] = (int16_t)o[ch];
+            out[ch] = clamp16(fir_even(k->rvb_out[ch], p) >> 14);
+        }
+    } else {
+        for (int ch = 0; ch < 2; ch++) {
+            k->rvb_out[ch][p] = 0;
+            out[ch] = k->rvb_out[ch][(p - 19u) & (RV_HIST - 1)];
+        }
+    }
 }
 
 /* ---- DMA ------------------------------------------------------------ */
@@ -645,21 +731,11 @@ static void core_sample(int c, int32_t ext_l, int32_t ext_r)
     if (m & 0x010) wr += ir;
     /* reverb at 24 kHz */
     int32_t rl = 0, rr = 0;
-    if (k->attr & 0x80 && k->effect_mode) {
-        k->rvb_in[0] += clamp16(wl);
-        k->rvb_in[1] += clamp16(wr);
-        if (++k->rvb_phase == 2) {
-            k->rvb_phase = 0;
-            k->rvb_prev[0] = k->rvb_out[0];
-            k->rvb_prev[1] = k->rvb_out[1];
-            reverb_tick(k, k->rvb_in[0] / 2, k->rvb_in[1] / 2, &k->rvb_out[0], &k->rvb_out[1]);
-            k->rvb_in[0] = k->rvb_in[1] = 0;
-            rl = (k->rvb_prev[0] + k->rvb_out[0]) / 2;
-            rr = (k->rvb_prev[1] + k->rvb_out[1]) / 2;
-        } else {
-            rl = k->rvb_out[0];
-            rr = k->rvb_out[1];
-        }
+    if (k->effect_mode) {
+        int32_t o[2];
+        reverb_frame(k, clamp16(wl), clamp16(wr), o);
+        rl = o[0];
+        rr = o[1];
         rl = rl * k->evol[0] >> 15;
         rr = rr * k->evol[1] >> 15;
     }
@@ -692,3 +768,24 @@ int spu2_active_voices(void)
 }
 
 unsigned spu2_keyons(void) { return keyons; }
+
+int spu2_voice_info(int core, int vi, spu2_voice_info_t *o)
+{
+    const core_t *k = &C[core & 1];
+    const voice_t *v = &k->v[vi % 24];
+    uint32_t bit = 1u << (vi % 24);
+    o->phase = v->phase;
+    o->env = v->env;
+    o->pitch = v->pitch;
+    o->adsr1 = v->adsr1;
+    o->adsr2 = v->adsr2;
+    o->vol_l = (int16_t)v->vol[0].level;
+    o->vol_r = (int16_t)v->vol[1].level;
+    o->ssa = v->ssa << 1;
+    o->lsa = v->lsa << 1;
+    o->nax = v->nax << 1;
+    o->noise = (k->non & bit) != 0;
+    o->pmod = (k->pmon & bit) != 0;
+    o->wet = ((k->vmixel | k->vmixer) & bit) != 0;
+    return v->phase != PH_OFF;
+}

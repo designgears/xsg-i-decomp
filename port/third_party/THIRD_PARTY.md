@@ -8,6 +8,7 @@
 | SDL3 | Zlib | system library (`pkg-config sdl3`), linked only into `xsg-gpu` for its window | system |
 | FFmpeg | LGPL/GPL | separate executable over pipes, not linked (Stage 8) | user's `ffmpeg` |
 | ico-pc (the ico decompilation contributors) | MIT | Stage 10: the SPU2 hardware tables (4-point Gaussian interpolation table, reverb FIR, the ten libsd reverb presets; transcribed there from psx-spx) copied into `port/runtime/spu2_tables.c` with the licence notice kept. The rest of the software SPU2 (`spu2.c`) is our own code | https://github.com/nathanialf/ico-pc, `port/audio/spu2_tables.c` |
+| ps2-port-engine (Daniel Gomes Vieira) | MIT | Stage 10: libsd's ten reverb presets and work-area sizes (`kEffectParams`/`kEffectSizes`), copied into `port/runtime/spu2_libsd_tables.c` with the licence notice kept; the echo/delay rewrite of the delay and feedback registers follows its `Spu2::SetEffectAttr` | https://github.com/ (ps2-port-engine), `host/src/spu2.cpp` |
 
 ## The LGPL boundary (Stage 9)
 

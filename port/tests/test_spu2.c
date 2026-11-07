@@ -184,7 +184,7 @@ int main(void)
 
     /* reverb (hall) on core 1 */
     spu2_set_addr(0x1d01, 0x1fffff);
-    spu2_set_effect(1, 5, 0x3000, 0x3000);
+    spu2_set_effect(1, 5, 0x3000, 0x3000, 0, 0);
     spu2_clear_effect_area(1, 5);
     spu2_set_core_attr(2 | 1, 1);
     spu2_set_switch(0x1901, 1);
@@ -198,6 +198,46 @@ int main(void)
         clipped += out[i] == 32767 || out[i] == -32768;
     CHECK(tail > 50 && clipped < N / 100, "reverb tail after key off (RMS %.0f), %d clipped samples", tail,
           clipped);
+
+    /* the resampling FIR passes 1 kHz at unity: a wet-only 1 kHz tone through a
+     * reverb whose only path is in -> mLSAME -> comb (vLIN/vCOMB1 0x7fff, the
+     * rest zero) comes out at the dry level */
+    spu2_set_effect(1, 8, 0x7fff, 0x7fff, 127, 0); /* delay mode: d = 0x1000 */
+    CHECK(spu2_get_reverb_reg(1, 10) == 0x1ffd && spu2_get_reverb_reg(1, 11) == 0x0ffd &&
+              spu2_get_reverb_reg(1, 7) == 0,
+          "delay 127 reproduces libsd's preset (mLSAME 0x%04x mRSAME 0x%04x vWALL 0x%04x)",
+          spu2_get_reverb_reg(1, 10), spu2_get_reverb_reg(1, 11), spu2_get_reverb_reg(1, 7));
+    spu2_set_effect(1, 7, 0x7fff, 0x7fff, 63, 64);
+    CHECK(spu2_get_reverb_reg(1, 10) == 0x0ffd && spu2_get_reverb_reg(1, 7) == 64 * 258 &&
+              spu2_get_reverb_reg(1, 16) == (uint16_t)(spu2_get_reverb_reg(1, 17) + 0x800),
+          "echo delay 63 feedback 64: mLSAME 0x%04x vWALL 0x%04x dLSAME 0x%04x",
+          spu2_get_reverb_reg(1, 10), spu2_get_reverb_reg(1, 7), spu2_get_reverb_reg(1, 16));
+    /* delay mode, delay 63: mLSAME - mLCOMB1 = d - 12 units, plus the two all-pass
+     * stages (dAPF 3 units each, vAPF 0: pure delays): (0x800 - 6) * 4 = 8168
+     * 24 kHz steps = 0.3403 s, plus the FIR's 2 x 19 samples: 0.3411 s.  Dry off, a 1 kHz tone keyed on at t = 0. */
+    static short big[2 * 48000];
+    spu2_set_switch(0x1801, 0);
+    spu2_set_switch(0x1a01, 0);
+    spu2_set_effect(1, 8, 0x7fff, 0x7fff, 63, 0);
+    spu2_set_param(0x0500 | 1, 0); /* end the hall test's release */
+    spu2_render(big, 2400);        /* and flush the resampling rings */
+    spu2_clear_effect_area(1, 8);
+    spu2_set_param(0x0200 | 1, 0x1000);
+    spu2_set_switch(0x1501, 1);
+    spu2_render(big, 48000);
+    int onset = -1;
+    for (int i = 0; i < 48000 && onset < 0; i++)
+        if (abs(big[2 * i]) > 2000)
+            onset = i;
+    CHECK(onset >= 0 && fabs(onset / 48000.0 - 0.3411) < 0.002, "delay 63 echo onset at %.4f s (0.3411)",
+          onset / 48000.0);
+    double wet = rms(big + 2 * 24000, 24000);
+    CHECK(fabs(wet / r_full - 1.0) < 0.03, "1 kHz through the FIR and the delay line: %.3f of the dry level",
+          wet / r_full);
+    int16_t hi = 0;
+    for (int i = 0; i < onset - 40; i++)
+        hi = abs(big[2 * i]) > hi ? (int16_t)abs(big[2 * i]) : hi;
+    CHECK(hi < 4, "nothing before the echo (peak %d)", hi);
 
     printf("%s (%d failure%s)\n", fails ? "FAILED" : "all passed", fails, fails == 1 ? "" : "s");
     return fails != 0;
