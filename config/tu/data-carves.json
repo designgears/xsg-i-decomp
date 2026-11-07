@@ -7744,6 +7744,32 @@
    ]
   },
   "main/tu205": {
+   ".data": [
+    {
+     "range": [
+      "0x003b2660",
+      "0x003b2d10"
+     ],
+     "generated": [
+      "0x003b2660",
+      "0x003b2d10"
+     ],
+     "generated_by": [
+      "HairTest",
+      "InitTest_002DA1D8",
+      "PrintDisp_002DA3F8"
+     ],
+     "c_owned_symbols": [
+      "list"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/hair_test.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -7771,7 +7797,36 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/hair_test.o"
+      "object": "build/main/build/c/hair_test.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004cbbe0",
+      "0x004cbc30"
+     ],
+     "generated": [
+      "0x004cbbe0",
+      "0x004cbc2b"
+     ],
+     "generated_by": [
+      "InitTest_002DA1D8",
+      "PrintDisp_002DA3F8"
+     ],
+     "c_owned_symbols": [
+      "D_004CBBE0",
+      "D_004CBBF0",
+      "D_004CBC00",
+      "D_004CBC10",
+      "D_004CBC20"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/hair_test.o"
      }
     }
    ]
