@@ -2354,27 +2354,53 @@
    ]
   },
   "main/tu143": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ae50",
+      "0x0036ae60"
+     ],
+     "generated": [
+      "0x0036ae50",
+      "0x0036ae60"
+     ],
+     "generated_by": [
+      "TW_setPos"
+     ],
+     "c_owned_symbols": [
+      "vSample"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/twsys_init.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
-      "0x004d7c98",
+      "0x004d7c94",
       "0x004d7c9c"
      ],
      "generated": [
-      "0x004d7c98",
+      "0x004d7c94",
       "0x004d7c9c"
      ],
      "generated_by": [
-      "TWIN_create2"
+      "TWIN_create2",
+      "TW_setPos"
      ],
      "c_owned_symbols": [
+      "D_004D7C94",
       "D_004D7C98"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/twsys_init.o"
+      "object": "build/main/build/c/twsys_init.o"
      }
     }
    ],
@@ -2382,13 +2408,16 @@
     {
      "range": [
       "0x004c1b00",
-      "0x004c1c48"
+      "0x004c1d18"
      ],
      "generated": [
       "0x004c1b00",
-      "0x004c1c48"
+      "0x004c1d18"
      ],
      "generated_by": [
+      "TMENU_updateDefault",
+      "TWIN_draw2",
+      "TWIN_drawScene2",
       "TWIN_popCF",
       "TWIN_popScene",
       "TWIN_update2",
@@ -2403,31 +2432,9 @@
       "jtbl_004C1B70",
       "jtbl_004C1B90",
       "jtbl_004C1BB0",
-      "jtbl_004C1C00"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004C1C00",
       "D_004C1C48",
-      "D_004C1C60"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/twsys_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c1c80",
-      "0x004c1d18"
-     ],
-     "generated": [
-      "0x004c1c80",
-      "0x004c1d18"
-     ],
-     "generated_by": [
-      "TMENU_updateDefault"
-     ],
-     "c_owned_symbols": [
+      "D_004C1C60",
       "jtbl_004C1C80",
       "jtbl_004C1CC0",
       "jtbl_004C1D00"
@@ -2436,7 +2443,33 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/twsys_init.o"
+      "object": "build/main/build/c/twsys_init.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da420",
+      "0x004da430"
+     ],
+     "generated": [
+      "0x004da420",
+      "0x004da42a"
+     ],
+     "generated_by": [
+      "TWIN_draw2",
+      "TWSYS_draw"
+     ],
+     "c_owned_symbols": [
+      "D_004DA420",
+      "D_004DA428"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/twsys_init.o"
      }
     }
    ]
