@@ -16,7 +16,7 @@ UNPACK codes) and a few lines to `vu1.cpp`.
 | `port/tools/vu1_features.py` | static scan per program: size, subroutine calls, building blocks |
 | `port/tools/vu1cap_stats.py` | capture summary: runs per entry/loop, GIF prim types, UNPACK formats |
 | `port/runtime/vu1_capture.{h,cpp}` | `XSG_VU1_CAPTURE=dir`: records VU1 runs and their XGKICK output |
-| `port/render/vu1_ref/` | C references: `vu1_ref.h` (API), `vu_float.h` (VU float rules), `vu1_ref.c` (dispatch + common programs), `vu1_set0.c`, `vu1_set2.c` |
+| `port/render/vu1_ref/` | C references: `vu1_ref.h` (API), `vu_float.h` (VU float rules), `vu1_ref.c` (dispatch + common programs), `vu1_set0.c`, `vu1_set2.c` (+ `vu1_set2_int.h` shared header/skin/facing, `vu1_set2_spec.c`, `vu1_set2_rigid.c`, `vu1_set2_blend.c`) |
 | `port/render/vu1_ref.cmake` | `xsg_vu1_ref` library and `test_vu1_ref`; included from `port/CMakeLists.txt`, not built by default |
 | `port/tests/test_vu1_ref.c` | runs the references against captures |
 
@@ -95,20 +95,22 @@ sub-batch.
 | 0 | 0x0f90 → 0x0fd0 *strip_face* | 13 | 34 (with 0x12d8) | 228 | tstrip 0x05c | ✔ |
 | 0 | 0x12d8 → 0x0fd0 *strip_back* | 13 | (shared) | | | ✔ |
 | 2 | 0x05b0 → 0x05f0 *skin_lit* | 85 | 6,308 | 31,625 | tstrip 0x03c/0x07c | ✔ |
-| 2 | 0x08e0 → 0x0920 skin_lit_spec | 20 | 810 | 4,887 | 0x01c/0x05c | – |
-| 2 | 0x0d60 → 0x0da0 skin_lit_spec_2pass | 48 | 5,971 | 40,683 | 0x01c + 0x24c (pass 2, CTXT 2, ABE) | – |
-| 2 | 0x1228 → 0x1268 skin_lit_spec ×6 kicks | 12 | 310 | 1,619 | | – |
-| 2 | 0x1790 → 0x17d0 rigid_lit | 73 | 1,817 | 9,632 | 0x03c | – |
-| 2 | 0x1a88 → 0x1ac8 rigid_lit_spec | 13 | 367 | 1,502 | | – |
-| 2 | 0x1ec0 → 0x1f00 rigid_lit_spec_2pass | 55 | 1,817 | 11,484 | 0x24c/0x26c | – |
-| 2 | 0x2338 → 0x2378 rigid_lit_spec ×6 | 24 | 1,408 | 7,885 | | – |
-| 2 | 0x2850 → 0x2890 lit (blend 8) | 155 | 5,949 | 26,165 | | – |
-| 2 | 0x2be8 → 0x2c28 lit_spec (blend 8) | 40 | 3,798 | 14,886 | | – |
-| 2 | 0x3058 → 0x3098 lit_spec_2pass (blend 8) | 52 | 2,071 | 13,752 | | – |
-| 2 | 0x3510 → 0x3550 lit_spec ×6 (blend 8) | 34 | 842 | 5,090 | | – |
-| 2 | 0x2fe8 / 0x3020 (Face/Back of 0x2be8) | 4 / 4 | (shared) | | | – |
+| 2 | 0x08e0 → 0x0920 skin_lit_spec | 20 | 810 | 4,887 | 0x01c/0x05c | ✔ `skin_lit_spec` |
+| 2 | 0x0d60 → 0x0da0 skin_lit_spec_2pass | 48 | 5,971 | 40,683 | 0x01c + 0x24c (pass 2, CTXT 2, ABE) | ✔ `skin_lit_spec_2pass` |
+| 2 | 0x1228 → 0x1268 skin_lit_spec ×6 kicks | 12 | 310 | 1,619 | | ✔ `skin_lit_spec6` |
+| 2 | 0x1790 → 0x17d0 rigid_lit | 73 | 1,817 | 9,632 | 0x03c | ✔ `rigid_lit` |
+| 2 | 0x1a88 → 0x1ac8 rigid_lit_spec | 13 | 367 | 1,502 | | ✔ `rigid_lit_spec` |
+| 2 | 0x1ec0 → 0x1f00 rigid_lit_spec_2pass | 55 | 1,817 | 11,484 | 0x24c/0x26c | ✔ `rigid_lit_spec_2pass` |
+| 2 | 0x2338 → 0x2378 rigid_lit_spec ×6 | 24 | 1,408 | 7,885 | | ✔ `rigid_lit_spec_6k` |
+| 2 | 0x2850 → 0x2890 lit (blend 8) | 155 | 5,949 | 26,165 | | ✔ `blend_lit` |
+| 2 | 0x2be8 → 0x2c28 lit_spec (blend 8) | 40 | 3,798 | 14,886 | | ✔ `blend_lit_spec` |
+| 2 | 0x3058 → 0x3098 lit_spec_2pass (blend 8) | 52 | 2,071 | 13,752 | | ✔ `blend_lit_spec_2pass` |
+| 2 | 0x3510 → 0x3550 lit_spec ×6 (blend 8) | 34 | 842 | 5,090 | | ✔ `blend_lit_spec_env` |
+| 2 | 0x2fe8 / 0x3020 (Face/Back of 0x2be8) | 4 / 4 | (shared) | | | ✔ (face/back) |
 
-A reference exists for 27,999 of the 53,693 runs and for about 114k of the about 250k vertices.
+A reference now exists for every one of the 53,693 runs (all set-0 and set-2 programs that
+ran). "blend 8" is a **two-bone** blend: B.x/B.y are the two bone addresses, B.z/B.w their
+weights, packed into one quadword (skin_lit uses four addresses + a separate weight qw).
 
 The names come from the static scan (`vu1_features.py --set 2 --entries …`). Within each
 group of four in `s_aUcodeEnvAdr`, the programs grow from plain lighting to a specular power
@@ -207,11 +209,34 @@ If every vertex of a batch ends with ADC set, the program kicks qw 0 instead of 
 (`999.x` = 0x8000). The GIF walker then reads whatever tag is at qw 0. This shows up as the
 "nreg 16, no PRE" tags in the stats, which are not real draws.
 
-The specular variants (unreferenced so far) also compute the reflection of the eye vector
+The specular variants (references in `vu1_set2_spec.c`, `vu1_set2_rigid.c`, `vu1_set2_blend.c`) also compute the reflection of the eye vector
 (`erleng` of `eye − pos`), raise `max(R·L, 0)` to the power 2^(1008.x) by repeated squaring,
 and either add it to the colour (one pass) or write it as a second strip. The second strip
 reuses the vertices' STQ/XYZ with GIF tag 1012, and its colour is `M977 · spec · (970 ×
 1008.y)`.
+
+Details from the references (same for the skinned, rigid and two-bone groups):
+
+* **specular**: `v = 976 − pos`, `p = 1/|v|`, `d = (973.w, 974.w, 975.w) − pos`,
+  `R = 2·(nrm·d)·p·nrm − v·p`; `S = max(M973·R, 0)` squared `1008.x + 1` times;
+  `sp = (M977·S)·(970·1008.y)`.
+* **one pass** (0x0920, 0x1ac8, 0x2c28): `RGB = min(min(lit·C, I) + sp·C, 255)`. The first
+  vertex of a batch clamps with whatever the I register held at entry (no LOI before it);
+  later vertices use 255. The references carry `regs.I` for that.
+* **two pass** (0x0da0, 0x1f00, 0x3098): pass 1 is the plain lit strip; pass 2 is a second
+  strip at `out+1+3n` with tag 1012 (header NLOOP/EOP), the same STQ/XYZF2, colour
+  `min(sp·C·(970·1008.y), 255)`, alpha `min(C.w, 128)`. Kicks: 1017.x, then the pass-2 tag.
+* **six kicks** (0x1268, 0x2378, 0x3550): pass-1 RGB = `min(min(lit·C,255) + 128·sp·(970·1008.y), 255)`.
+  Pass 2 (tag 1010, constant colour qw 1009) is **environment-mapped**:
+  `e = M1004·(M973·R)` (before the clamp), `s = ((e.x+1)·0.5·vf24.y + vf24.x)·q`,
+  `t = ((e.y+1)·0.5·vf24.w + vf24.z)·q`; the STQ w lane is `vf8.w`. Kicks: 1017.x, 0x3fa,
+  0x3da (A+D state for the env pass), the pass-2 packet, 0x3d5, 0x3fd (state restore).
+* **rigid** (0x17d0…): one matrix per vertex, addressed by the bone stream's x lane, no weights.
+* **two-bone** (0x2890…): `pos = Bz·M_Bx(P) + Bw·M_By(P)`; the lit loop blends both even when
+  B.y = 0 (then qw 0..3 is read as a matrix); the specular loops skip bone 1 when B.y = 0.
+* Face/Back entries of every group (0x0cf0/0x0d28, 0x11b8/0x11f0, 0x1720/0x1758, 0x1a18/0x1a50,
+  0x1e50/0x1e88, 0x22c8/0x2300, 0x27e0/0x2818, 0x2b78/0x2bb0, 0x2fe8/0x3020, 0x34a0/0x34d8,
+  0x39f8/0x3a30) run the constant loader and set 995.y; only 0x2fe8/0x3020 ran in the captures.
 
 ### GIF output
 
@@ -238,11 +263,16 @@ port/build-wt/test_vu1_ref /tmp/vu1cap/vu1cap_00*.bin          # exit 0 = no mis
 port/build-wt/test_vu1_ref --tol 2 --verbose ...               # shader-tolerance mode
 ```
 
-**Result (frames 1300–1700, 53,693 runs):** every run that has a reference is **bit-exact**
-with the interpreter. That is 27,999 runs and 114,106 geometry vertices, in 11 program/entry kinds:
-`nop`, `gs_flush_3d5`, set 0 `strip` (19,720 batches), `strip_face`, the three set-0 entries,
-set 2 `skin_lit` (6,308 batches) and its entry. 0 failures. 25,694 runs (the set-2 specular,
-rigid and two-pass loops) report "no reference" and are listed per loop.
+**Result (fresh captures, 2026-11-07, `XSG_GS=gpu XSG_FAST=1`):** every run has a reference
+and every run is **bit-exact** with the interpreter, 0 failures, 0 "no reference":
+
+| capture | runs | GIF loops kicked (vertices + A+D) | programs seen |
+|---|---|---|---|
+| cutscene 1400 / 1550 / 1700 + the older 1300 | 42,233 | 260,823 | set 0: strip, strip_face (+ entries); set 2: all 12 loops + 0x2fe8/0x3020 |
+| field (tutorial room) 6001 | 11,460 | 53,633 | set 0 strip; set 2 skin_lit, skin_lit_spec_2pass, rigid_lit(_spec, _spec_2pass), blend_lit(_spec_2pass) |
+
+That is 35 program/entry kinds: `nop`, `gs_flush_3d5`, set 0 `strip`, `strip_face` and the three
+set-0 entries, and set 2's 12 loops with their entries.
 
 **Tolerance.** References compare bit-exact (`--tol 0`) because they repeat the
 interpreter's rounding. The `--tol N` mode is for GPU ports, which round to nearest, may
@@ -310,8 +340,12 @@ Caveats:
 
 ## Next
 
-* References for the remaining set-2 loops. They share `header_0188`, `skin()` and
-  `facing_0440()`, so each one is only its lighting tail.
+* Native renderer: [NATIVE_RENDERER.md](NATIVE_RENDERER.md) (set-0 strip slice done).
 * Shaders: `skin_lit` and `strip` cover 2/3 of the captured vertices; test them through
   `test_vu1_ref --tol`.
-* Capture other scenes for sets 1, 3, 4, 5 and 6.
+* Sets 1 and 3–6 are still unseen. With the standard pad script the game reaches the
+  hangar cutscene (vsync ~1300–1500) and then the *Virtual Tutorial* field (from ~1550 on;
+  vsync 6001 is the same room with the minimap). Both use only sets 0 and 2 (two `MICR`
+  images per frame). Reaching the projection (3), additive (4, 5) or drop/tex-env (1, 6)
+  families needs a scene with those materials, past the tutorial; no quick pad route was
+  found within this pass.
