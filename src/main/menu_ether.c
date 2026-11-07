@@ -2858,7 +2858,11 @@ extern int PartyAttackerCheck(int id);
 extern int MenuMainCharCheck(int chrNo);
 extern int MenuCharHpCheck(int chrNo);
 extern int MenuSelectMove(int cursor, int count, int wrap);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+extern short WindowSPSelect(void *window, int repeat);
+#else
 extern int WindowSPSelect(void *window, int repeat);
+#endif
 extern void WindowSPKeepSelect(void *window, unsigned char *keep);
 extern void WindowSPKeepSelectCheck(unsigned char *keep);
 extern void WindowSPSelectJump(void *window, int index);

@@ -657,8 +657,16 @@ typedef struct DebugGrowRecord {
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void xglSleep(void);
 extern void dataThinkLoad(int thinkNo);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEncountGet(void);
+#else
 extern int cfEncountGet(void);
+#endif
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 extern int mapNoGet(void);
 extern int monsSetNoGet(void);
 extern int thinkNoGet(void);

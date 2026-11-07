@@ -939,9 +939,19 @@ struct FontRealDigits {
 static void xglFontFlushCore(struct FontDrawCursor *cursor, const unsigned char *text)
 {
     /* xglSRand as the original call site saw it (no prototype: an int result). */
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+    extern unsigned short xglSRandWord(void) __asm__("xglSRand");
+#else
     extern int xglSRandWord(void) __asm__("xglSRand");
+#endif
     /* xglFontAscii2Euc's full-word result (the TU's definition below returns a halfword). */
+#ifdef PORT_HOST
+    /* The callee returns a halfword; the PS2 callee leaves it zero-extended in
+       v0, but on i386 the upper half of %eax is undefined.  Read it as what it is. */
+    extern unsigned short xglFontAscii2EucWord(signed char character, signed char **text) __asm__("xglFontAscii2Euc");
+#else
     extern unsigned int xglFontAscii2EucWord(signed char character, signed char **text) __asm__("xglFontAscii2Euc");
+#endif
     /* FS read through its typed view (the TU declares it as bytes). */
 #ifdef PORT_HOST
     extern FontStateStorage xsg_view_xglFontStateView __asm__("FS");

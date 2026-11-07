@@ -359,14 +359,22 @@ extern int menuTimeGet(void);
  * encounter-configuration flags; cmdCfEncountGet (0x00a22250) is the only
  * claimed caller here.
  */
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEncountGet(void);
+#else
 extern int cfEncountGet(void);
+#endif
 
 /*
  * cfEventGet (src/ov01/battle_init.c, still asm) returns the active
  * event-configuration flags; cmdCfEventGet (0x00a222a8) is the only claimed
  * caller here.
  */
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 
 /*
  * thinkNoGet (src/ov01/battle_init.c) returns the current AI script

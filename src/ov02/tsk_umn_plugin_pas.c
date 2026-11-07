@@ -258,7 +258,11 @@ extern const char D_00A13460[];
 void WindowSPSet(void *window);
 void WindowSPMain(void *window);
 void WindowSPItemChange(void *window);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short WindowSPSelect(void *window, int pad);
+#else
 int WindowSPSelect(void *window, int pad);
+#endif
 struct UmnPluginListItem {
     const char *text;
     int value;

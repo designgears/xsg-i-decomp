@@ -3,6 +3,11 @@
 #include "shared.h"
 
 #include "init_class_db.h"
+#ifdef PORT_HOST
+/* Called without a prototype (int result); the callee returns a byte, and on
+   i386 the upper bits of eax are undefined. */
+unsigned char DataBuffer_getUByteAt(struct DataBuffer *buffer);
+#endif
 
 extern int classDB[8];
 

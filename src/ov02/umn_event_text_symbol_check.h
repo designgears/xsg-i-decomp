@@ -56,7 +56,11 @@ typedef struct UmnMailList {
 } UmnMailList;
 
 extern const char D_00A13640[];
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char xglFontGetSPcodeSize(int code, unsigned char *text);
+#else
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
+#endif
 extern void eMessageCpy(char *destination, char *source);
 
 extern char *umn_text;

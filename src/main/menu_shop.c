@@ -113,7 +113,11 @@ extern MenuShopListRow *MenuListMake(int list, int mode);
 extern void MenuShopSortSet(int list, int type, int order, int option);
 extern void WindowSPItemChange(MenuShopWindowSP *window);
 extern void WindowSPSetSelect(MenuShopWindowSP *window, unsigned char *saved_selection);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+extern short WindowSPSelect(MenuShopWindowSP *window, int input);
+#else
 extern int WindowSPSelect(MenuShopWindowSP *window, int input);
+#endif
 
 /* ---- Types ported from the derwetterfrosch fork (2026-10-19); layouts
  * match the fork's matched code for this TU.  Not yet used by our C. ---- */
@@ -1362,7 +1366,13 @@ typedef struct MenuShopSortPair {
 } MenuShopSortPair;
 extern const char *msg00_4_0036DB60[];
 
+#ifdef PORT_HOST
+/* Callers use the result (MenuShopListChange00I): on the PS2 the final
+   WindowSPSelect call leaves it in v0. */
+int MenuShopListChange00(void)
+#else
 void MenuShopListChange00(void)
+#endif
 {
   MenuShopWorkData **new_var2;
   MenuShopWindowSP **new_var;
@@ -1396,7 +1406,11 @@ void MenuShopListChange00(void)
     {
       MenuShopWinSP->state = 6;
     }
+#ifdef PORT_HOST
+    return WindowSPSelect(MenuShopWinSP, 0);
+#else
     WindowSPSelect(MenuShopWinSP, 0);
+#endif
   }
 }
 

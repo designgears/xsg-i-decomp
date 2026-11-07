@@ -519,7 +519,11 @@ void WindowSPItemChange(SkillSPWindow *window);
 
 void WindowSPSetSelect(SkillSPWindow *window, unsigned char *savedSelection);
 
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short WindowSPSelect(SkillSPWindow *window, int input);
+#else
 int WindowSPSelect(SkillSPWindow *window, int input);
+#endif
 
 extern const char D_004DB640[];
 
@@ -659,7 +663,11 @@ void MenuSkillEquip(int character_id, int accessory, int slot);
 
 void ChangeTopLevel(int level);
 
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short WindowSPSelect(SkillSPWindow *window, int pad);
+#else
 int WindowSPSelect(SkillSPWindow *window, int pad);
+#endif
 
 void WindowSPKeepSelect(SkillSPWindow *window, unsigned char *keep);
 

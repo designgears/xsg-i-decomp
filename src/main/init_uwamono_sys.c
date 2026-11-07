@@ -1908,9 +1908,16 @@ int HitCheckMapUnitReverse(void *actor)
     return -1;
 }
 
+#ifdef PORT_HOST
+/* get.c uses the result: on the PS2 the tail call leaves it in v0. */
+int HitCheckMapUnitPos(int unit) {
+    return HitCheckMapUnitPosSize(unit, 0.0f);
+}
+#else
 void HitCheckMapUnitPos(int unit) {
     HitCheckMapUnitPosSize(unit, 0.0f);
 }
+#endif
 
 int HitCheckMapUnitPosSize(Vector4 *pos, float size)
 {

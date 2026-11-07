@@ -1401,7 +1401,11 @@ int calcHitMotChk(ObjectTask *unit)
 extern int calcHit(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
 extern int calcDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out);
 extern int plIchigekiGet(void);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 
 int calcHitDmg(ObjectTask *attacker, CalcHitDmgArg *arg, CalcHitDmgOut *out)
 {
@@ -3138,7 +3142,11 @@ int calcEthEnableChk(ObjectTask *unit, int id)
 }
 
 extern int calcTgtUnitTbl(int, int, int);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 
 int calcItmEnableChk(int unit, int itm)
 {

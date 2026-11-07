@@ -48,7 +48,11 @@ typedef struct PADKeyResult {
 
 extern PADControllerState PadData[];
 
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+extern unsigned short xglFontGetFlags(void);
+#else
 extern int xglFontGetFlags(void);
+#endif
 
 typedef char *va_list;
 

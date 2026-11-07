@@ -258,7 +258,11 @@ extern s32 calcStatGet(ObjectTask *unit, s32 kind, s32 mask);
 extern int menuEtherNumChk(ObjectTask *unit);
 extern int dataItmBoxChk(int id);
 extern int curPosProcInit(ObjectTask *unit, int mode);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 extern int calcDblActChk(ObjectTask *unit);
 
 s32 menuCmdExecChk(ObjectTask *arg0, s32 arg1) {

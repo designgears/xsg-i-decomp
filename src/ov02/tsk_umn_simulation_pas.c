@@ -273,7 +273,11 @@ extern PadPrefix PadData;
 extern const char D_00A13238[];
 extern void WindowSPSet(void *window);
 extern void WindowSPMain(void *window);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+extern short WindowSPSelect(void *window, int pad);
+#else
 extern int WindowSPSelect(void *window, int pad);
+#endif
 typedef struct UmnSimListItem {
     char *text;
     int value;
