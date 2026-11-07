@@ -218,7 +218,14 @@ typedef struct AgwsInfoText {
 extern AgwsInfoWork *AgwsInfo;
 extern char *msg00_1_0036D988[];
 extern char *msg01_2_0036D990[];
+#ifdef PORT_HOST
+/* AgwsInfoMain reads msg01_2_0036D990[5] and [weaponHand + 2]: past its 4
+ * entries, into msg02_3_0036D9A0 (= msg01_2_0036D990 + 4 on the PS2).  One
+ * C object for both, so GCC does not treat them as disjoint (Stage 11). */
+#define msg02_3_0036D9A0 (msg01_2_0036D990 + 4)
+#else
 extern char *msg02_3_0036D9A0[];
+#endif
 extern char *msg03_4_0036D9B8[];
 extern char *msg04_5[];
 extern char *msg05_6[];

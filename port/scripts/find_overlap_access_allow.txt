@@ -1,0 +1,39 @@
+# find_overlap_access.py: pairs reviewed as harmless.
+#   <file.c> <A> <B>  # why GCC treating A and B as disjoint changes nothing
+#
+# EXTENT = the C type of A is larger than the PS2 gap to B.  A hazard needs a
+# store through one name and a load through the other in the same function
+# (no call in between); none of these files store to either object.
+game_defocus.c        Head_8               rate_9            # u64[12] GIF packet read by sceVif1PkAddDataN; rate_9 read-only
+game_id_light_set.c   GameBgDrawType2Param GameIdLight       # both read-only light preset tables in GameIdLightSet
+init_uwamono_sys.c    D_004DB6E8           D_004DB6F0        # const char[32] method name over-declared; strings read-only
+init_uwamono_sys.c    D_004DB6E8           D_004DB6F8        # same
+init_uwamono_sys.c    D_004DB6E8           D_004DB700        # same
+menu_1.c              f_ukn_name_16        f_char_mot_17     # char *[4] name table, read-only (strcat source)
+sc_get.c              D_004DBB40           D_004DBB48        # int[4] id table / format string, read-only
+set_path.c            D_004DBA28           cur_7             # char[0x10] format string, read-only; cur_7 never reached through it
+set_path.c            D_004DBA28           handle_9          # same
+data_unit_org_get.c   thinkMapTbl          specTbl           # read-only character tables
+menu.c                D_00A46890           D_00A46898        # u8[16] colour copied 8 bytes; format string read-only
+tsk_umn_mail_pas.c    text_3_00A10650      text2_4           # int[4] / char *[4] read-only text tables
+# batDatBuf (0x10000-byte battle data file) holds the fields D_426F48..D_426F8C.
+# dataFileLoad() fills it (a call: GCC reloads every global after it); the
+# file only reads the fields afterwards and never stores to batDatBuf.
+data_unit_org_get.c   batDatBuf            D_426F48
+data_unit_org_get.c   batDatBuf            D_426F4C
+data_unit_org_get.c   batDatBuf            D_426F50
+data_unit_org_get.c   batDatBuf            D_426F54
+data_unit_org_get.c   batDatBuf            D_426F58
+data_unit_org_get.c   batDatBuf            D_426F5C
+data_unit_org_get.c   batDatBuf            D_426F60
+data_unit_org_get.c   batDatBuf            D_426F64
+data_unit_org_get.c   batDatBuf            D_426F68
+data_unit_org_get.c   batDatBuf            D_426F6C
+data_unit_org_get.c   batDatBuf            D_426F70
+data_unit_org_get.c   batDatBuf            D_426F74
+data_unit_org_get.c   batDatBuf            D_426F78
+data_unit_org_get.c   batDatBuf            D_426F7C
+data_unit_org_get.c   batDatBuf            D_426F80
+data_unit_org_get.c   batDatBuf            D_426F84
+data_unit_org_get.c   batDatBuf            D_426F88
+data_unit_org_get.c   batDatBuf            D_426F8C

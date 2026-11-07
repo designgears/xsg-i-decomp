@@ -154,8 +154,13 @@ add_custom_command(
           ${XSG_ROOT}/build/main/main.elf.ld
   COMMENT "Converting PS2 game data for the host")
 
+# Stage 11: fail if a game file reaches one PS2 data symbol through another
+# that GCC treats as a separate object (find_overlap_access.py; needs the
+# compiled objects, so it runs here rather than at configure time).
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/xsg
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
+          ${CMAKE_BINARY_DIR} --root ${XSG_ROOT}
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
           --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
           --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o --libs=-lm --libs=-lstdc++ --libs=-pthread
@@ -163,6 +168,8 @@ add_custom_command(
           ${CMAKE_BINARY_DIR}/iop_sound_driver.o
           ${CMAKE_BINARY_DIR}/data/data_sources.cmake
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_overlap_access_allow.txt
   COMMAND_EXPAND_LISTS
   COMMENT "Linking host executable xsg")
 add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg)
