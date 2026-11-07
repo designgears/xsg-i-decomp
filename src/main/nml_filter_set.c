@@ -201,7 +201,11 @@ float xglSin(float);
 float xglCos(float);
 void nmlPacketGsInit(void);
 void packet_gs_entry64(int, void *);
+#ifndef PORT_HOST
 void nmlPacketAddGsFrame(int, int);
+#else
+void nmlPacketAddGsFrame(unsigned short, unsigned long long);
+#endif
 void nmlPacketAddGsFBA(int);
 void nmlPacketAddGsFlushWide(void);
 
@@ -1019,7 +1023,11 @@ void nmlFilterSetBufferRender(float f)
 }
 
 typedef struct { u64 data; u64 addr; } FfacGsReg;
+#ifndef PORT_HOST
 void nmlPacketAddGsFrame(int, int);
+#else
+void nmlPacketAddGsFrame(unsigned short, unsigned long long);
+#endif
 void nmlPacketAddGsFBA(int);
 
 void nmlFilterSetFrameAlphaClear(void)
@@ -1082,8 +1090,16 @@ void nmlFilterSetTexClear(void)
 }
 
 void nmlPacketGsInit(void);
+#ifndef PORT_HOST
 void nmlPacketAddGsZbuf(int);
+#else
+void nmlPacketAddGsZbuf(unsigned long long);
+#endif
+#ifndef PORT_HOST
 void nmlPacketAddGsFrame(int, int);
+#else
+void nmlPacketAddGsFrame(unsigned short, unsigned long long);
+#endif
 void packet_gs_entry64(int, void *);
 void nmlPacketAddGsFlush(void);
 typedef struct { u64 data; u64 addr; } FbcGsReg;

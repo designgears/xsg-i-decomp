@@ -704,7 +704,11 @@ void *func_A191C0(int);
 extern MenuTextEntry *func_A2C918(unsigned int itemId);
 extern MenuTextEntry *func_A2C968(unsigned int itemId);
 extern const char *MenuCharNameGet(int unitId);
+#ifndef PORT_HOST
 extern const char *MenuNumberTextGet(long value, int digits, int flag);
+#else
+extern const char *MenuNumberTextGet(long long value, int digits, int flag);
+#endif
 
 static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
 {

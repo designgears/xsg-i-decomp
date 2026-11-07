@@ -1209,7 +1209,11 @@ void grPacketSend(int packet);
 extern void grCloseSpr(void);
 extern void grOpenSpr(int packet);
 void menuATBEnvMake(int packet);
+#ifndef PORT_HOST
 void grGsRegSet(int packet, int reg, unsigned long long value);
+#else
+void grGsRegSet(int packet, unsigned long long reg, unsigned long long value);
+#endif
 void menuATBEnvPalSet(int packet, int palette);
 void faceUVGet(ObjectTask *arg0, s32 *arg1, s32 *arg2);
 extern void xglVectorMulMat(float *dst, float mtx[4][4], void *src);
@@ -1575,7 +1579,11 @@ void menuMapHSet(int enable)
 
 extern unsigned char D_00A46890[16];
 int curSelGrpGet(void);
+#ifndef PORT_HOST
 void grGsRegSet(int packet, int reg, unsigned long long value);
+#else
+void grGsRegSet(int packet, unsigned long long reg, unsigned long long value);
+#endif
 void menuATBEnvPalSet(int packet, int palette);
 void menuATBEnvMake(int packet);
 void menuStatSprite2(int packet, int x, int y, int w, int h, int u0, int v0, int u1, int v1);
@@ -1640,7 +1648,11 @@ void menuMapDisp(ObjectTask *task, int packet)
  * until that TU publishes its header.
  */
 extern void grCloseSpr(void);
+#ifndef PORT_HOST
 extern void grGsRegSet(int packet, int reg, unsigned long long value);
+#else
+extern void grGsRegSet(int packet, unsigned long long reg, unsigned long long value);
+#endif
 extern void grOpenSpr(int packet);
 
 void menuATBEnvPalSet(int packet, int palette);

@@ -55,7 +55,11 @@ extern void XrgCopyVector(RgVector destination, RgVector source);
 extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
 extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
+#ifndef PORT_HOST
 extern void XrgNormalizeVector(RgVector destination, RgVector source);
+#else
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+#endif
 extern float XrgLengthVector(RgVector vector);
 extern float XrgInnerVector(RgVector first, RgVector second);
 extern void XrgCalcMatrixXtoY(RgMatrix destination, RgVector x_axis,

@@ -182,7 +182,11 @@ void tskUmnMailPas(UmnMailPasTask *task, UmnMailPasWork *work)
 extern void *memset(void *dest, int value, unsigned int size);
 extern void eMessageCpy(char *destination, char *source);
 extern void eMessageCat(char *source);
+#ifndef PORT_HOST
 extern char *MenuNumberTextGet(int value, int digits, int mode);
+#else
+extern char *MenuNumberTextGet(long long value, int digits, int mode);
+#endif
 extern unsigned char *UmnMailDataGet(int box_id);
 extern signed char *UmnHistoryTreeGet(unsigned int history_id);
 extern char *UmnMailHeaderGet(int index);

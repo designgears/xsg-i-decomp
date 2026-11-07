@@ -401,6 +401,13 @@ extern float srsAtan2(float deltaX, float deltaZ);
  * (this compiler otherwise folds a trailing call with nothing after it into
  * a sibling jump).
  */
+#ifdef PORT_HOST
+/* srsAtan2's result stays in $f0 on the EE; callers read it as the return. */
+float MMathCalcDir(const Vector4 *from, const Vector4 *to)
+{
+    return srsAtan2(to->x - from->x, to->z - from->z);
+}
+#else
 void MMathCalcDir(const Vector4 *from, const Vector4 *to)
 {
     float toX;
@@ -408,6 +415,7 @@ void MMathCalcDir(const Vector4 *from, const Vector4 *to)
     srsAtan2(to->x - from->x, to->z - from->z);
     toX = to->x;
 }
+#endif
 
 Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
 {

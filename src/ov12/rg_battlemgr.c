@@ -471,7 +471,11 @@ extern void RgCameraControl(RgCamera *pCamera, float deltaTime);
 extern void RgCameraLocal(RgCamera *pCamera, RgMatrix matrix);
 extern void RgCameraGetTarget(RgCamera *pCamera, RgVector position);
 extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
+#ifndef PORT_HOST
 extern void XrgNormalizeVector(RgVector destination, RgVector source);
+#else
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+#endif
 extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
 extern void XrgSubVectorXYZ(RgVector destination, RgVector first,
                             RgVector second);

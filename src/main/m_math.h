@@ -19,7 +19,11 @@ float MMathMakeRandom2PI(void);
  */
 extern const float D_004D8374;
 
+#ifndef PORT_HOST
 void MMathCalcDir(const Vector4 *from, const Vector4 *to);
+#else
+float MMathCalcDir(const Vector4 *from, const Vector4 *to);
+#endif
 
 extern float MMathCalcRotNear(float first, float second);
 

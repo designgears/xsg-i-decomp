@@ -1100,7 +1100,11 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
 
 extern u8 D_00A56F10;
 extern void nmlModelSetToumei(int enabled);
+#ifndef PORT_HOST
 extern void nmlModelSetAlpha(unsigned int alpha);
+#else
+extern void nmlModelSetAlpha(unsigned long long alpha);
+#endif
 extern void nmlModelEntry(int entry);
 extern int CardPlayYamaCnt(void *side);
 extern void CGPRefreshFieldHP(CardGameWork *work);

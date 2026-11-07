@@ -1,0 +1,3 @@
+# name  reason   (findings for these names are not errors; see check_call_types.py)
+dpmul   mini_g.c's u64 view is bound to xsg_dpmul_bits (u64 result) under PORT_HOST
+litodp  mini_g.c's u64 view is bound to xsg_litodp_bits (u64 result) under PORT_HOST

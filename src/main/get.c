@@ -638,7 +638,12 @@ void Get_HeightAttr(const Point4 *position, int mapIndex, int attrMask,
     UnduCheck(position, 0, param);
 }
 
+#ifdef PORT_HOST
+/* The EE leaves UnduCheck's float result in $f0 and callers read it there. */
+float Get_Height(const Point4 *position, int mapIndex, int attrMask)
+#else
 void Get_Height(const Point4 *position, int mapIndex, int attrMask)
+#endif
 {
     UnduParamInit(&UnduTest);
     UnduTest.queryFlags = 0;
@@ -648,7 +653,11 @@ void Get_Height(const Point4 *position, int mapIndex, int attrMask)
     } else {
         UnduTest.header = UnduDataGetHeader(mapIndex, 0x8000);
     }
+#ifdef PORT_HOST
+    return UnduCheck(position, 0, &UnduTest);
+#else
     UnduCheck(position, 0, &UnduTest);
+#endif
 }
 
 int Get_Attr(const Point4 *position, int mapIndex, int attrMask)

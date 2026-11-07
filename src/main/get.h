@@ -159,7 +159,11 @@ typedef struct UnduParam {
 } UnduParam;
 
 extern void UnduParamInit(UnduParam *param);
+#ifndef PORT_HOST
 extern void UnduCheck(const Point4 *position, void *exclude, UnduParam *param);
+#else
+extern float UnduCheck(const Point4 *position, void *exclude, UnduParam *param);
+#endif
 
 /* Original symbol UnduTest, main VA 0x003b2610, size 0x40
    (config/symbols/main.txt); Undulate.c has no header of its own yet. */
@@ -168,7 +172,11 @@ extern UnduParam UnduTest;
 void Get_HeightAttr(const Point4 *position, int mapIndex, int attrMask,
                     UnduParam *param);
 
+#ifndef PORT_HOST
 void Get_Height(const Point4 *position, int mapIndex, int attrMask);
+#else
+float Get_Height(const Point4 *position, int mapIndex, int attrMask);
+#endif
 
 int Get_Rnd(int min, int max);
 

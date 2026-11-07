@@ -6168,7 +6168,11 @@ void objDispCurSubEn(void *packet, ObjectTask *task, int line)
 
 extern char cur1[];
 extern void grCalcMatrix(void *command, void *destination);
+#ifndef PORT_HOST
 extern void grGsRegSet(void *packet, int reg, int value);
+#else
+extern void grGsRegSet(void *packet, unsigned long long reg, unsigned long long value);
+#endif
 extern void grOpenFT4STQ(void *packet);
 extern void grCloseFT4STQ(void);
 extern void grPutFT4STQ(void *packet, void *prim, void *matrix);
@@ -6208,7 +6212,11 @@ void curPutSub(void *packet, ObjectTask *task) {
  * the owner's struct.
  */
 extern void grGpInit(void *packet);
+#ifndef PORT_HOST
 extern void grGsRegSet(void *packet, int reg, int value);
+#else
+extern void grGsRegSet(void *packet, unsigned long long reg, unsigned long long value);
+#endif
 extern void grPacketSend(void *packet);
 
 /*

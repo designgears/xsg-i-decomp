@@ -89,11 +89,20 @@ extern IdLightSet GameIdLight[];
 extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
 extern void UnduParamInit(void *param);
 extern void *xglStudioGetLight2(void);
+#ifndef PORT_HOST
 extern void UnduCheck(void *position, void *exclude, void *param);
+#else
+extern float UnduCheck(void *position, void *exclude, void *param);
+#endif
 extern float I2F(int value);
 
+#ifndef PORT_HOST
 extern void xglVectorInter(IdLightQuadword *destination, IdLightQuadword *start,
                            const IdLightQuadword *end, float fraction);
+#else
+extern void xglVectorInter(float, void *, const void *, const void *);
+#define xglVectorInter(a0, a1, a2, a3) xglVectorInter((a3), (a0), (a1), (a2))
+#endif
 
 void GameIdLightSet(IdLightActor *actor, IdLightQuery *query) {
     int id;

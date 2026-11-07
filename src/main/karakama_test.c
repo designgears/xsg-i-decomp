@@ -301,7 +301,12 @@ extern void xglFontDebugHex(int x, int y, int value, int digits);
 
 extern void TexTrans(TextureTransferHeader *texture);
 
+#ifndef PORT_HOST
 extern void CreateUwamono(int unit_id, float x, float y, float z, float rotation_y);
+#else
+extern void *CreateUwamono(float, float, float, float, int);
+#define CreateUwamono(a0, a1, a2, a3, a4) CreateUwamono((a1), (a2), (a3), (a4), (a0))
+#endif
 
 extern const char D_004C9D80[];
 

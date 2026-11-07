@@ -67,7 +67,11 @@ typedef struct XrgDispModelImpl {
 } XrgDispModelImpl;
 
 extern void nmlModelEntry(const char *pLexData);
+#ifndef PORT_HOST
 extern void nmlModelSetAlpha(int alpha);
+#else
+extern void nmlModelSetAlpha(unsigned long long alpha);
+#endif
 extern void nmlModelSetFogCol(float *);
 extern void nmlModelSetFogDist(float, float, float, float);
 extern void nmlModelSetMapClip(int enabled);

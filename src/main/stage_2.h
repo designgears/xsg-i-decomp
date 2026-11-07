@@ -187,7 +187,12 @@ extern void nmlModelSetFadeInCancel(int frames);
 extern void nmlModelSetFadeOutCancel(int frames);
 extern void nmlModelSetEffectWrite(int enabled);
 extern void EnemySound_StopAll(int clear);
+#ifndef PORT_HOST
 extern void nmlModelSetFadeInInterrupt(int frames, float red, float green, float blue);
+#else
+extern void nmlModelSetFadeInInterrupt(float, float, float, int);
+#define nmlModelSetFadeInInterrupt(a0, a1, a2, a3) nmlModelSetFadeInInterrupt((a1), (a2), (a3), (a0))
+#endif
 extern void SCRIPT_fade(int frames);
 extern void SCRIPT_load_DBG(const char *text);
 extern void SCRIPT_exec(void);

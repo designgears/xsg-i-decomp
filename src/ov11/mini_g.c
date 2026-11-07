@@ -1741,10 +1741,19 @@ static void NgTimePrint(int time)
  * IEEE-754 double-precision encoding of the literal 2.0. */
 #define DOUBLE_TWO 0x4000000000000000ULL
 
+#ifndef PORT_HOST
 extern unsigned long long litodp(int value);
+#else
+extern unsigned long long litodp(int value) __asm__("xsg_litodp_bits");
+#endif
 extern int dptoli(unsigned long long value);
 extern double pow(unsigned long long base, unsigned long long exponent);
+#ifndef PORT_HOST
 extern unsigned long long dpmul(unsigned long long a, double b);
+#else
+/* the u64 view of a double result: the bits come back in %edx:%eax */
+extern unsigned long long dpmul(unsigned long long a, double b) __asm__("xsg_dpmul_bits");
+#endif
 
 /* pow returns a real double; the factor is handed to dptoli as its raw
  * 64-bit encoding (a double-typed argument schedules differently). */

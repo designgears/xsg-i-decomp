@@ -1574,7 +1574,11 @@ static int _DashVRExecCmd(RgRobotStatus *status, RgBody *body, RgCmd *command)
 
 extern void RgGeomRobotSetRotate(RgGeomPoint *point, float rot);
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+#ifndef PORT_HOST
 extern void RgRobSubTargetting(RgGeomPoint *geometry, struct RgPointVector *target, float speed, float dt);
+#else
+extern float RgRobSubTargetting(RgGeomPoint *geometry, struct RgPointVector *target, float speed, float dt);
+#endif
 extern float sinf(float x);
 extern float cosf(float x);
 extern const char D_00A519F8[];

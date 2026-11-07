@@ -538,7 +538,11 @@ extern void JNT_animSetFlags(unsigned int flags);
 void ACT_setMotion2(Actor *actor, int motionId, unsigned int flags);
 extern char *strstr(const char *haystack, const char *needle);
 extern void JNT_startProduction(void *producer, Actor *a, float frame);
+#ifndef PORT_HOST
 extern void JNT_getRootTrans(void *v);
+#else
+extern struct xsg_jnt_root_ret { unsigned int w[4]; } JNT_getRootTrans(void *v);
+#endif
 extern void JNT_setFCurve(void *anim, int x);
 extern void JNT_setClipR(float clip_radius);
 extern void JNT_setInterpMatrix(void *m, float interpolation);

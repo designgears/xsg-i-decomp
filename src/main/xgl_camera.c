@@ -131,20 +131,26 @@ extern void xglVectorMulMat(Vector4 *destination, Matrix4 matrix,
                             const Vector4 *vector);
 extern void xglPlaneParameter(Vector4 *destination, const Vector4 *p0,
                               const Vector4 *p1, const Vector4 *p2);
+#ifndef PORT_HOST
 extern void xglVectorScale(Vector4 *destination, const Vector4 *source,
                            float scale);
-#ifdef PORT_HOST
+#else
 /* EE ABI: a float argument travels in $f12 whatever its position, so this
  * (destination, source, scale) view and xgl_2.c's (scale, destination, source)
- * definition are the same call on the PS2.  On i386 the order matters. */
-extern void xglVectorScale_def(float scale, Vector4 *destination,
-                               const Vector4 *source) __asm__("xglVectorScale");
-#define xglVectorScale(d, s, k) xglVectorScale_def((k), (d), (s))
+ * definition are the same call on the PS2.  On i386 the order matters.
+ * (port/scripts/check_call_types.py finds these.) */
+extern void xglVectorScale(float scale, Vector4 *destination, const Vector4 *source);
+#define xglVectorScale(d, s, k) xglVectorScale((k), (d), (s))
 #endif
 extern float xglSin(float angle);
 extern float xglCos(float angle);
+#ifndef PORT_HOST
 extern void xglVectorScaleAddXYZ(Vector4 *destination, const Vector4 *source,
                                  const Vector4 *other, float scale);
+#else
+extern void xglVectorScaleAddXYZ(float, Vector4 *, const Vector4 *, const Vector4 *);
+#define xglVectorScaleAddXYZ(a0, a1, a2, a3) xglVectorScaleAddXYZ((a3), (a0), (a1), (a2))
+#endif
 
 static void xglCameraTravelInit(StudioCamera *studio)
 {
@@ -239,7 +245,12 @@ static void xglCameraTravelFocus(float *focus)
 
 extern float D_004D8868;
 extern float D_004D886C;
+#ifndef PORT_HOST
 void xglVectorScaleXYZ(Vector4 *destination, const Vector4 *source, float scale);
+#else
+void xglVectorScaleXYZ(float, Vector4 *, const Vector4 *);
+#define xglVectorScaleXYZ(a0, a1, a2) xglVectorScaleXYZ((a2), (a0), (a1))
+#endif
 
 static void xglCameraTravelScale(float *focus)
 {

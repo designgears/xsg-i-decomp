@@ -86,9 +86,14 @@ extern void Set_Motion(EnemyActionActor *actor, short motion_id, short blend);
 extern void EnemySound(EnemyActionActor *actor, short sound_index,
                        signed char play, signed char ignore_type);
 extern void EnemySoundEnd(EnemyActionActor *actor, short sound_offset);
+#ifndef PORT_HOST
 extern void Check_Wall(float distance_scale, float wall_parameter,
                        float *position, signed char wall_status[16],
                        int status_count, int wall_mask, u8 actor_number, int mode);
+#else
+extern void Check_Wall(const void *, void *, short, int, int, int, float, float);
+#define Check_Wall(a0, a1, a2, a3, a4, a5, a6, a7) Check_Wall((a2), (a3), (a4), (a5), (a6), (a7), (a0), (a1))
+#endif
 extern float xglFRand(void);
 extern EnemyActionEffect *sefCreateEffectCf(int effect_id, int effect_number,
                                              int value);

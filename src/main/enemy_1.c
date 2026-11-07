@@ -623,10 +623,20 @@ typedef struct EcWork {
     unsigned char unmodeled_37e4[0xc];
     EnemyVector4 last_player_position;
 } EcWork;
+#ifndef PORT_HOST
 int CrossPointUwamono(float radius, const Vector4 *from, const Vector4 *to,
                       Vector4 *point);
+#else
+int CrossPointUwamono(const void *, const void *, float, void *);
+#define CrossPointUwamono(a0, a1, a2, a3) CrossPointUwamono((a1), (a2), (a0), (a3))
+#endif
+#ifndef PORT_HOST
 int Check_MoveSquare(float radius, const Vector4 *to, const Vector4 *from,
                      Vector4 *square, int map_index);
+#else
+int Check_MoveSquare(const void *, const void *, void *, int, float);
+#define Check_MoveSquare(a0, a1, a2, a3, a4) Check_MoveSquare((a1), (a2), (a3), (a4), (a0))
+#endif
 void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
 void Enemy_Chase(EcActor *self)
@@ -981,12 +991,22 @@ int TM_Check_Move(EnemyActor *arg0);
 #define D_004D8030 6.2831855f
 void GetBSplineLoopDummy(short parameter, short point_count, int stride,
                          Vector4 *points, Vector4 *result, EnemyActor *actor);
+#ifndef PORT_HOST
 void Check_Wall(float scale, float radius, const Vector4 *origin,
                 signed char directions[16], int status_count, int map_index,
                 unsigned char number, int territory);
+#else
+void Check_Wall(const void *, void *, short, int, int, int, float, float);
+#define Check_Wall(a0, a1, a2, a3, a4, a5, a6, a7) Check_Wall((a2), (a3), (a4), (a5), (a6), (a7), (a0), (a1))
+#endif
+#ifndef PORT_HOST
 short Check_Straight(float radius, const Vector4 *from, const Vector4 *to,
                     int mask, Vector4 *hit, int map_index, int number,
                     int territory);
+#else
+int Check_Straight(const void *, const void *, short, void *, float, int, int, short);
+#define Check_Straight(a0, a1, a2, a3, a4, a5, a6, a7) Check_Straight((a1), (a2), (a3), (a4), (a0), (a5), (a6), (a7))
+#endif
 void BSpline_Add(short parameter, short point_count, short stride,
                  Vector4 *points, const Vector4 *point, short offset);
 
@@ -1421,12 +1441,22 @@ void Check_Locater(EnemyActorAU *actor);
 void Script_Action(EnemyActorAU *actor);
 void Get_EnemyIDPos(const Vector4 *origin, Vector4 *destination);
 void Start_Enemy_Command(EnemyActorAU *actor);
+#ifndef PORT_HOST
 int Check_InsideFan(float facing, float radius, float fan_width_degrees,
                     float crossing_radius, const Vector4 *origin,
                     const Vector4 *target, int map_index);
+#else
+int Check_InsideFan(const void *, const void *, int, float, float, float, float);
+#define Check_InsideFan(a0, a1, a2, a3, a4, a5, a6) Check_InsideFan((a4), (a5), (a6), (a0), (a1), (a2), (a3))
+#endif
+#ifndef PORT_HOST
 int Check_InsideFan_Wooo(float facing, float radius, float fan_width_degrees,
                          float crossing_radius, const Vector4 *origin,
                          const Vector4 *target, int map_index);
+#else
+int Check_InsideFan_Wooo(const void *, const void *, float, float, float);
+#define Check_InsideFan_Wooo(a0, a1, a2, a3, a4, a5, a6) Check_InsideFan_Wooo((a4), (a5), (a0), (a1), (a2))
+#endif
 void Check_Discovery(EnemyActorAU *actor);
 void Sound_FootStep(EnemyActorAU *actor);
 int RES_GetEnemySeType(short sound_effect_id);
@@ -1889,7 +1919,11 @@ void TM_Check_Move_at_GoBack(EnemyActor *actor)
 
 extern long long EneTerritoryID[];
 int Get_Attr(const Vector4 *position, int map_index, int attr_mask);
+#ifndef PORT_HOST
 int Check_Undu(Vector4 *from, Vector4 *to, int map_index, int *out, int a, int b, int c);
+#else
+int Check_Undu(const void *, const void *, int, void *, long long, long long, int);
+#endif
 int Check_Actor(const Vector4 *position, short number);
 int HitCheckMapUnitPosSize(const Vector4 *position, float radius);
 int CheckBrokenMapUnit(void *unit);

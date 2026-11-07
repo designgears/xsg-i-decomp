@@ -202,7 +202,11 @@ extern void RgMatricesEffectorSetActivity(MatrixEffector *effector, int activity
 extern void RgMatEffConstraintSetTarget(MatrixConstraint *constraint, RgVector target);
 extern void XrgClearVector(RgVector vector);
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
+#ifndef PORT_HOST
 extern void XrgNormalizeVector(RgVector destination, RgVector source);
+#else
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+#endif
 extern void XrgScaleVector(RgVector destination, RgVector source, float scale);
 extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
 /* Opaque here: rg_geom_point.c (ov12/tu052) owns the RgPointVector definition. */

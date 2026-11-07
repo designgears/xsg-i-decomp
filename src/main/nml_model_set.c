@@ -2664,7 +2664,12 @@ static void nmlModelLexBlockDoit(NmlModel *model)
 
 extern float tanf(float);
 extern float D_004D88E4, D_004D88E8, D_004D88EC;
+#ifndef PORT_HOST
 extern void nmlFilterStealthMake(int index, float scale, char *camera, LayoutSlot *layout);
+#else
+extern void nmlFilterStealthMake(int, void *, void *, float);
+#define nmlFilterStealthMake(a0, a1, a2, a3) nmlFilterStealthMake((a0), (a2), (a3), (a1))
+#endif
 typedef struct {
     char pad0[0xC];
     float z;
@@ -3204,7 +3209,12 @@ static void nmlModelCalcEntryProjectCircle(NmlModel *model)
 
 static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
 {
+#ifndef PORT_HOST
     extern void xglVectorScale(Vector4 *, const Vector4 *, float);
+#else
+    extern void xglVectorScale(float, Vector4 *, const Vector4 *);
+#define xglVectorScale(a0, a1, a2) xglVectorScale((a2), (a0), (a1))
+#endif
     extern float atan2f(float, float);
     extern void xglVectorScaleXYZPtrFirst(Vector4 *, const Vector4 *, float) __asm__("xglVectorScaleXYZ");
     extern const NmlOvCp D_004D28E0;
@@ -4895,7 +4905,11 @@ void nmlPacketAddExecProg();
 void nmlPacketAddGifTagStandard(int, int);
 void nmlPacketAddGsAlpha(unsigned long long a);
 void nmlPacketAddGsFlush(void);
+#ifndef PORT_HOST
 extern void nmlPacketAddGsFrame(int fbp, int mask);
+#else
+extern void nmlPacketAddGsFrame(unsigned short fbp, unsigned long long mask);
+#endif
 void nmlPacketAddGsPixeltest(unsigned int test);
 extern void nmlPacketAddGsTexture(void);
 void nmlPacketAddGsZbuf(unsigned long long mask);
@@ -5284,7 +5298,11 @@ typedef struct {
 extern int *s_nStencilVal;
 extern const char D_004DC478[];
 void nmlPacketClrModelCache(void);
+#ifndef PORT_HOST
 extern void nmlPacketAddGsFrame(int fbp, int mask);
+#else
+extern void nmlPacketAddGsFrame(unsigned short fbp, unsigned long long mask);
+#endif
 void nmlPacketAddGsFogCol(float *color);
 void nmlPacketAddGifTag(NmlMaterialRenderState *material, NmlModelRenderState *model, int flag);
 int nmlPacketAddTexture(NmlModelRenderState *model);
@@ -5422,7 +5440,11 @@ typedef struct NmlPartFlagData {
     unsigned int flags; /* +0x1c */
     unsigned char unmodeled_20[0x40 - 0x20];
 } NmlPartFlagData;
+#ifndef PORT_HOST
 extern void nmlPacketAddGsFrame1(int fbp, int mask);
+#else
+extern void nmlPacketAddGsFrame1(unsigned short fbp, unsigned long long mask);
+#endif
 extern void nmlPacketAddGsFBA1(int a);
 extern void nmlFilterSetFrameToBuffer(unsigned short dbp);
 extern void nmlFilterSetPacket(LayoutStore *model, int count);
@@ -5956,8 +5978,16 @@ extern void nmlPacketAddGsFBA(int a);
 extern void nmlPacketAddGsFBA1(int a);
 extern void nmlPacketAddGsPixeltest(unsigned int test);
 extern void nmlPacketAddGsPixeltest1(unsigned int test);
+#ifndef PORT_HOST
 extern void nmlPacketAddGsFrame(int fbp, int mask);
+#else
+extern void nmlPacketAddGsFrame(unsigned short fbp, unsigned long long mask);
+#endif
+#ifndef PORT_HOST
 extern void nmlPacketAddGsFrame1(int fbp, int mask);
+#else
+extern void nmlPacketAddGsFrame1(unsigned short fbp, unsigned long long mask);
+#endif
 extern void nmlPacketAddGsAlpha1(unsigned long long a);
 extern void nmlPacketAddGsAlpha(unsigned long long a);
 extern void nmlPacketAddGsFlush(void);

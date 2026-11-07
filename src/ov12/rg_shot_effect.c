@@ -348,7 +348,12 @@ extern void RgParticleEffectDisp(RgParticleEffect *particle);
 extern void *InstanceOfXrgPaint2D(void);
 extern void XrgPaint2DAlpha(void *paint, int blendMode);
 extern void XrgPaint2DUseTexture(void *paint, int texture);
+#ifndef PORT_HOST
 extern void InitXrgPaint2DLine3D(ShotLine3D *line, int mode, float width);
+#else
+extern void InitXrgPaint2DLine3D(void *, float);
+#define InitXrgPaint2DLine3D(a0, a1, a2) InitXrgPaint2DLine3D((a0), (a2))
+#endif
 extern void XrgSubVector(RgVector destination, RgVector first, RgVector second);
 extern void XrgScaleVectorXYZ(RgVector destination, RgVector source, float scale);
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);

@@ -193,7 +193,11 @@ extern void UnduParamInit(BeltUndulation *param);
 
 extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
 
+#ifndef PORT_HOST
 extern void UnduCheck(const Vector4 *position, void *exclude, BeltUndulation *param);
+#else
+extern float UnduCheck(const Vector4 *position, void *exclude, BeltUndulation *param);
+#endif
 
 typedef struct EnemyDiscoveryState {
     unsigned char unmodeled_00[0x48];
@@ -269,9 +273,14 @@ extern float LocaterAngle[16];
 
 extern short PhCunt[1];
 
+#ifndef PORT_HOST
 extern int Check_Straight_ID(float heading, float *previous,
                              unsigned char *enemy_state, int limit,
                              float *result, int stride);
+#else
+extern short Check_Straight_ID(void *, void *, short, void *, int);
+#define Check_Straight_ID(a0, a1, a2, a3, a4, a5) Check_Straight_ID((a1), (a2), (a3), (a4), (a5))
+#endif
 
 typedef struct EnemyHomingState {
     unsigned char unmodeled_00[0x30a0];

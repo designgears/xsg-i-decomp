@@ -12,7 +12,11 @@ static const char D_00A51E18[32] = "../rg_robot_subcon.euc.c";
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 extern void RgGeomPointAddForce(RgGeomPoint *point, RgVector force);
+#ifndef PORT_HOST
 extern void XrgNormalizeVector(RgVector destination, RgVector source);
+#else
+extern float XrgNormalizeVector(RgVector destination, RgVector source);
+#endif
 extern void XrgScaleVectorXYZ(RgVector destination, RgVector source,
                               float scale);
 extern float atan2f(float y, float x);

@@ -940,7 +940,11 @@ void eMessageCpy(char *destination, char *source);
 void eMessageCat(char *source);
 char *MenuCharNameGet(int chrNo);
 char *MenuParaNameGet(int statIndex);
+#ifndef PORT_HOST
 char *MenuNumberTextGet(int value, int width, int mode);
+#else
+char *MenuNumberTextGet(long long value, int width, int mode);
+#endif
 MenuTextRecord *MenuTextGet(int index);
 int MenuSortGet(int listIndex, int entryIndex);
 int PartyAttackPosCheck(int attackPosition);

@@ -410,7 +410,11 @@ extern int F2I(float value);
 
 extern void UnduParamInit(void *collision);
 
+#ifndef PORT_HOST
 extern void UnduCheck(const float *position, void *unused, void *collision);
+#else
+extern float UnduCheck(const float *position, void *unused, void *collision);
+#endif
 
 extern void *UnduDataGetHeader(int map_index, int unit_index);
 

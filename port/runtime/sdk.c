@@ -33,6 +33,9 @@ double dpsub(double a, double b) { return a - b; }
 double dpmul(double a, double b) { return a * b; }
 double dpdiv(double a, double b) { return a / b; }
 double litodp(long l) { return (double)l; }
+/* mini_g.c (ov11) declares these with a u64 result; it gets the double's bits. */
+unsigned long long xsg_dpmul_bits(double a, double b) { union { double d; unsigned long long u; } v; v.d = a * b; return v.u; }
+unsigned long long xsg_litodp_bits(long l) { union { double d; unsigned long long u; } v; v.d = (double)l; return v.u; }
 long dptoli(double d) { return (long)d; }
 int dpcmp(double a, double b) { return a < b ? -1 : a > b; }
 

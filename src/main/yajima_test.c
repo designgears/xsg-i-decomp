@@ -2031,7 +2031,11 @@ extern void xglMenuInitial(void);
 extern void xglMenuOpen(int mode, YajimaMenuState *menu);
 extern void xglMenuDraw(void);
 extern void xglClockRead(XglClock *clock);
+#ifndef PORT_HOST
 extern int xglFRand(void);
+#else
+extern float xglFRand(void);
+#endif
 extern YajimaMenuState m_54;
 extern void (*func_51[7])(void);
 extern char D_004DA3A0[];
