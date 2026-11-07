@@ -115,6 +115,11 @@ inline u32 Out(float f, int lane, u32* flags) {
 
 inline float Fv(const V& v, int l) { return In(v.u[l]); }
 
+/* sqrtss under the run's MXCSR (round toward zero). std::sqrt may become a
+   call to i386 libm sqrtf (x87 fsqrt, round to nearest) depending on
+   inlining, which differs in the last bit. */
+inline float SqrtF(float v) { return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(v))); }
+
 /* ------------------------------------------------------------ flags */
 
 void PushFlags(u32 mac, bool set_mac, u32 clip, bool set_clip) {
@@ -530,7 +535,7 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
         H("SQRT");
         float b = Fv(T, int(ftf));
         DivFlags(b < 0, false);
-        StartQ(std::sqrt(std::fabs(b)), 7);
+        StartQ(SqrtF(std::fabs(b)), 7);
         break;
     }
     case 0x3a: {   // RSQRT Q, fs.fsf / sqrt(ft.ftf)
@@ -541,7 +546,7 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
             u32 r = (S.u[fsf] & 0x80000000u) | 0x7f7fffffu;
             float f; std::memcpy(&f, &r, 4);
             StartQ(f, 13);
-        } else { DivFlags(b < 0, false); StartQ(a / std::sqrt(std::fabs(b)), 13); }
+        } else { DivFlags(b < 0, false); StartQ(a / SqrtF(std::fabs(b)), 13); }
         break;
     }
     case 0x3b: H("WAITQ"); if (s.q_busy) { s.Q = s.q_next; s.q_busy = false; } break;
@@ -577,13 +582,13 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
     case 0x6c: H("XGKICK"); Kick(s.vi[is]); break;
     case 0x70: { H("ESADD"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(x * x + y * y + z * z, 11); break; }
     case 0x71: { H("ERSADD"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(1.0f / (x * x + y * y + z * z), 18); break; }
-    case 0x72: { H("ELENG"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(std::sqrt(x * x + y * y + z * z), 18); break; }
-    case 0x73: { H("ERLENG"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(1.0f / std::sqrt(x * x + y * y + z * z), 24); break; }
+    case 0x72: { H("ELENG"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(SqrtF(x * x + y * y + z * z), 18); break; }
+    case 0x73: { H("ERLENG"); float x = Fv(S, 0), y = Fv(S, 1), z = Fv(S, 2); StartP(1.0f / SqrtF(x * x + y * y + z * z), 24); break; }
     case 0x74: { H("EATANxy"); StartP(std::atan2(Fv(S, 1), Fv(S, 0)), 54); break; }
     case 0x75: { H("EATANxz"); StartP(std::atan2(Fv(S, 2), Fv(S, 0)), 54); break; }
     case 0x76: { H("ESUM"); StartP(Fv(S, 0) + Fv(S, 1) + Fv(S, 2) + Fv(S, 3), 12); break; }
-    case 0x78: { H("ESQRT"); StartP(std::sqrt(std::fabs(Fv(S, int(fsf)))), 12); break; }
-    case 0x79: { H("ERSQRT"); StartP(1.0f / std::sqrt(std::fabs(Fv(S, int(fsf)))), 18); break; }
+    case 0x78: { H("ESQRT"); StartP(SqrtF(std::fabs(Fv(S, int(fsf)))), 12); break; }
+    case 0x79: { H("ERSQRT"); StartP(1.0f / SqrtF(std::fabs(Fv(S, int(fsf)))), 18); break; }
     case 0x7a: { H("ERCPR"); StartP(1.0f / Fv(S, int(fsf)), 12); break; }
     case 0x7b: H("WAITP"); if (s.p_busy) { s.P = s.p_next; s.p_busy = false; } break;
     case 0x7c: { H("ESIN"); StartP(std::sin(Fv(S, int(fsf))), 29); break; }
@@ -592,6 +597,507 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
     default: H("lower-special?"); stats.bad++; break;
     }
     return false;
+}
+
+/* ------------------------------------------------------------ Stage 10b: decoded fast path
+ *
+ * The micro memory is decoded once per content (keyed by a hash of the 16 KB,
+ * looked up whenever an executed pair no longer matches its decoded words)
+ * into one DP record per pair: an upper and a lower handler plus their
+ * pre-extracted operands. Pairs whose two halves interact (the lower op reads
+ * or writes the upper's target VF, or touches the flags / DIV unit) run the
+ * reference sequence Upper/Lower/Commit (PairSlow), as do the rare ops.
+ *
+ * Flag liveness: an FMAC/CLIP result is queued for the lower unit (PushFlags)
+ * only if some lower reader (op7 0x10-0x1c, DIV/SQRT/RSQRT) or the end of
+ * the program could see it as the newest landed entry. It is skipped when the
+ * next flag write follows in straight-line code and no reader lands in
+ * between (see Liveness). mac_l/status_l/clip_l, which hold the sticky bits,
+ * are always updated, so every entry that is queued has the same contents.
+ */
+
+struct DP;
+using UpFn = void (*)(const DP&);
+using LoFn = u32 (*)(const DP&);   // returns the branch target, or kNoBr
+constexpr u32 kNoBr = ~0u;
+
+struct alignas(16) DP {
+    __m128i udmask;      // upper dest lanes as a blend mask
+    __m128i ldmask;      // lower dest lanes
+    UpFn up;
+    LoFn lo;
+    V* udst;             // upper target (vf[fd], acc, or a sink for vf0)
+    V* ldst;             // lower VF target (sink for vf0)
+    const V* ua;         // upper fs
+    const V* ub;         // upper ft
+    u32 wlo, whi;        // the raw words (validation)
+    u32 pc;              // byte address
+    u32 limm;            // lower immediate / precomputed branch target / link
+    u32 udm16;           // upper dest replicated over the 4 MAC groups
+    u8 ubc, ufsf;        // bc lane
+    u8 lis, lit, lid, lfs, lft, lfsf, lilane;
+    u8 pre;              // 1 WAITQ, 2 WAITP stall before the upper op
+    u8 ebit;
+    u8 push;             // queue this pair's flag write (liveness)
+    u8 is_push;          // upper writes flags (mac or clip)
+    u8 is_event;         // lower reads / lands flags
+    u8 leave;            // 1: control may leave after this pair (delay slot / end)
+    u8 is_branch;
+};
+
+V g_sink;   // writes to vf0
+u64 g_limit = u64(1) << 22;   // pair cap (DebugLimit)
+int g_fast = -1;
+
+inline __m128i DestMaskV(u32 dest) { return DestMask(dest); }
+inline void Blend(V* d, __m128i v, __m128i m) {
+    __m128i* p = reinterpret_cast<__m128i*>(d->u);
+    _mm_storeu_si128(p, _mm_blendv_epi8(_mm_loadu_si128(p), v, m));
+}
+
+/* OutV with the MAC bits in one movemask: z, s, u, o packed to bytes, lanes
+   reversed per group (x = bit 3). */
+inline __m128i OutM(__m128 f, u32 dm16, u32* mac) {
+    __m128i b = _mm_castps_si128(f);
+    const __m128i sign = _mm_and_si128(b, Bits(0x80000000u));
+    const __m128i e = _mm_and_si128(b, Bits(0x7f800000u));
+    const __m128i mant0 = _mm_cmpeq_epi32(_mm_and_si128(b, Bits(0x7fffffu)), _mm_setzero_si128());
+    const __m128i is_max = _mm_cmpeq_epi32(e, Bits(0x7f800000u));
+    const __m128i is_den = _mm_andnot_si128(mant0, _mm_cmpeq_epi32(e, _mm_setzero_si128()));
+    const __m128i pos_nan = _mm_andnot_si128(mant0, _mm_cmpeq_epi32(sign, _mm_setzero_si128()));
+    const __m128i maxv = _mm_blendv_epi8(_mm_or_si128(sign, Bits(0x7f7fffffu)), Bits(0x7f7fffffu), pos_nan);
+    b = _mm_blendv_epi8(b, maxv, is_max);
+    b = _mm_blendv_epi8(b, sign, is_den);
+    const __m128i z = _mm_cmpeq_epi32(_mm_and_si128(b, Bits(0x7fffffffu)), _mm_setzero_si128());
+    const __m128i sg = _mm_srai_epi32(b, 31);
+    const __m128i p = _mm_packs_epi16(_mm_packs_epi32(z, sg), _mm_packs_epi32(is_den, is_max));
+    const __m128i rev = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+    *mac = u32(_mm_movemask_epi8(_mm_shuffle_epi8(p, rev))) & dm16;
+    return b;
+}
+
+inline __m128i OutN(__m128 f) { return OutV(f, 0, nullptr); }
+
+/* PushFlags(mac, true, 0, false), with the queue write only when live. */
+inline void MacWrite(const DP& d, u32 mac) {
+    const u32 st = (mac & 0x000f ? 1u : 0u) | (mac & 0x00f0 ? 2u : 0u) | (mac & 0x0f00 ? 4u : 0u) | (mac & 0xf000 ? 8u : 0u);
+    s.mac_l = mac;
+    s.status_l = (s.status_l & 0xff0) | st | (st << 6);
+    if (d.push) {
+        if (s.fq_n == 16) {
+            auto& w = s.fq[s.fq_head];
+            s.mac = w.mac; s.status = w.status; s.clip = w.clip;
+            s.fq_head = (s.fq_head + 1) & 15; s.fq_n--;
+        }
+        auto& w = s.fq[(s.fq_head + s.fq_n) & 15];
+        w.ready = s.cycle + u64(flag_latency);
+        w.mac = s.mac_l; w.status = s.status_l; w.clip = s.clip_l;
+        s.fq_n++;
+    }
+}
+
+enum BM { BVEC, BBC, BQ, BI };
+
+template <int B>
+inline __m128 OperandB(const DP& d) {
+    if (B == BVEC) return InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ub->u)));
+    if (B == BBC) return _mm_set1_ps(In(d.ub->u[d.ubc]));
+    if (B == BQ) return _mm_set1_ps(In(s.Q));
+    return _mm_set1_ps(In(s.I));
+}
+
+template <int OP, int B>
+void UpF(const DP& d) {
+    const __m128 x = InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(d.ua->u)));
+    const __m128 y = OperandB<B>(d);
+    __m128 z;
+    if (OP == ADD) z = _mm_add_ps(x, y);
+    else if (OP == SUB) z = _mm_sub_ps(x, y);
+    else if (OP == MUL) z = _mm_mul_ps(x, y);
+    else if (OP == MADD || OP == MSUB) {
+        const __m128 m = InV(OutN(_mm_mul_ps(x, y)));
+        const __m128 acc = InV(_mm_loadu_si128(reinterpret_cast<const __m128i*>(s.acc.u)));
+        z = OP == MADD ? _mm_add_ps(acc, m) : _mm_sub_ps(acc, m);
+    } else if (OP == MAX) z = _mm_max_ps(x, y);
+    else z = _mm_min_ps(x, y);
+    if (OP == MAX || OP == MIN) {
+        Blend(d.udst, OutN(z), d.udmask);
+    } else {
+        u32 mac;
+        Blend(d.udst, OutM(z, d.udm16, &mac), d.udmask);
+        MacWrite(d, mac);
+    }
+}
+
+void UpNop(const DP&) {}
+
+/* the reference upper (rare ops), committed at once: only for pairs whose
+   lower half does not interact with it */
+void UpGeneric(const DP& d) {
+    UpRes r;
+    Upper(d.whi, r);
+    if (r.target == 1) {
+        if (r.reg != 0) StoreLanes(s.vf[r.reg], r.val, r.dest);
+    } else if (r.target == 2) {
+        StoreLanes(s.acc, r.val, r.dest);
+    }
+    if (r.set_mac || r.set_clip) {
+        if (d.push) PushFlags(r.mac, r.set_mac, r.clip, r.set_clip);
+        else {
+            // PushFlags without the queue write
+            if (r.set_mac) {
+                u32 st = 0;
+                if (r.mac & 0x000f) st |= 1;
+                if (r.mac & 0x00f0) st |= 2;
+                if (r.mac & 0x0f00) st |= 4;
+                if (r.mac & 0xf000) st |= 8;
+                s.mac_l = r.mac;
+                s.status_l = (s.status_l & 0xff0) | st | (st << 6);
+            }
+            if (r.set_clip) s.clip_l = r.clip;
+        }
+    }
+}
+
+/* the whole pair in reference order (lower between upper compute and commit) */
+u32 PairSlow(const DP& d) {
+    UpRes r;
+    Upper(d.whi, r);
+    u32 t = 0;
+    const bool br = Lower(d.wlo, d.pc, &t);
+    Commit(r);
+    return br ? t : kNoBr;
+}
+
+/* --- lower */
+inline u8* QA(u32 q) { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + 0xC000)) + ((q & 0x3ff) << 4); }
+inline void LoadQV(const DP& d, u32 q) {
+    Blend(d.ldst, _mm_loadu_si128(reinterpret_cast<const __m128i*>(QA(q))), d.ldmask);
+}
+inline void StoreQV(const DP& d, u32 q) {
+    __m128i* p = reinterpret_cast<__m128i*>(QA(q));
+    const __m128i v = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s.vf[d.lfs].u));
+    _mm_storeu_si128(p, _mm_blendv_epi8(_mm_loadu_si128(p), v, d.ldmask));
+}
+
+u32 LoNop(const DP&) { return kNoBr; }
+u32 LoI(const DP& d) { s.I = d.wlo; return kNoBr; }
+u32 LoSlow(const DP& d) { u32 t = 0; return Lower(d.wlo, d.pc, &t) ? t : kNoBr; }
+u32 LoLQ(const DP& d) { LoadQV(d, u32(s.vi[d.lis] + d.limm)); return kNoBr; }
+u32 LoSQ(const DP& d) { StoreQV(d, u32(s.vi[d.lit] + d.limm)); return kNoBr; }
+u32 LoLQI(const DP& d) { LoadQV(d, s.vi[d.lis]); SetVi(d.lis, s.vi[d.lis] + 1); return kNoBr; }
+u32 LoSQI(const DP& d) { StoreQV(d, s.vi[d.lit]); SetVi(d.lit, s.vi[d.lit] + 1); return kNoBr; }
+u32 LoILW(const DP& d) {
+    u32 v; std::memcpy(&v, QA(u32(s.vi[d.lis] + d.limm)) + 4 * d.lilane, 4); SetVi(d.lit, v); return kNoBr;
+}
+u32 LoISW(const DP& d) {
+    u8* p = QA(u32(s.vi[d.lis] + d.limm));
+    const u32 v = s.vi[d.lit];
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(p),
+                     _mm_blendv_epi8(_mm_loadu_si128(reinterpret_cast<const __m128i*>(p)), Bits(v), d.ldmask));
+    return kNoBr;
+}
+u32 LoIADDIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }   // lit != 0
+u32 LoISUBIU(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] - d.limm); return kNoBr; }
+u32 LoIADD(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] + s.vi[d.lit]); return kNoBr; }  // lid != 0
+u32 LoISUB(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] - s.vi[d.lit]); return kNoBr; }
+u32 LoIAND(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] & s.vi[d.lit]); return kNoBr; }
+u32 LoIOR(const DP& d) { s.vi[d.lid] = u16(s.vi[d.lis] | s.vi[d.lit]); return kNoBr; }
+u32 LoIADDI(const DP& d) { s.vi[d.lit] = u16(s.vi[d.lis] + d.limm); return kNoBr; }
+u32 LoMOVE(const DP& d) {
+    Blend(d.ldst, _mm_loadu_si128(reinterpret_cast<const __m128i*>(s.vf[d.lfs].u)), d.ldmask); return kNoBr;
+}
+u32 LoMR32(const DP& d) {
+    const __m128i v = _mm_shuffle_epi32(_mm_loadu_si128(reinterpret_cast<const __m128i*>(s.vf[d.lfs].u)), _MM_SHUFFLE(0, 3, 2, 1));
+    Blend(d.ldst, v, d.ldmask); return kNoBr;
+}
+u32 LoMFIR(const DP& d) { Blend(d.ldst, Bits(u32(s32(std::int16_t(s.vi[d.lis])))), d.ldmask); return kNoBr; }
+u32 LoMTIR(const DP& d) { SetVi(d.lit, s.vf[d.lfs].u[d.lfsf] & 0xffff); return kNoBr; }
+u32 LoMFP(const DP& d) { Blend(d.ldst, Bits(s.P), d.ldmask); return kNoBr; }
+u32 LoB(const DP& d) { return d.limm; }
+u32 LoBAL(const DP& d) { SetVi(d.lit, (d.pc + 16) / 8); return d.limm; }
+u32 LoJR(const DP& d) { return (u32(s.vi[d.lis]) * 8) & 0x3ff8; }
+u32 LoJALR(const DP& d) { const u32 t = (u32(s.vi[d.lis]) * 8) & 0x3ff8; SetVi(d.lit, (d.pc + 16) / 8); return t; }
+u32 LoIBEQ(const DP& d) { return s.vi[d.lit] == s.vi[d.lis] ? d.limm : kNoBr; }
+u32 LoIBNE(const DP& d) { return s.vi[d.lit] != s.vi[d.lis] ? d.limm : kNoBr; }
+u32 LoIBLTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) < 0 ? d.limm : kNoBr; }
+u32 LoIBGTZ(const DP& d) { return std::int16_t(s.vi[d.lis]) > 0 ? d.limm : kNoBr; }
+u32 LoIBLEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) <= 0 ? d.limm : kNoBr; }
+u32 LoIBGEZ(const DP& d) { return std::int16_t(s.vi[d.lis]) >= 0 ? d.limm : kNoBr; }
+u32 LoXGKICK(const DP& d) { Kick(s.vi[d.lis]); return kNoBr; }
+u32 LoXTOP(const DP& d) { SetVi(d.lit, s.top); return kNoBr; }
+u32 LoXITOP(const DP& d) { SetVi(d.lit, s.itop); return kNoBr; }
+
+constexpr u32 kRd = 1, kWr = 2;   // lower VF access
+
+/* Decode one upper word: handler, operands, whether it writes flags, and
+   which VF register it targets (-1 none, 32 acc). Rare forms -> UpGeneric. */
+void DecodeUpper(DP& d, u32 w, int* target, bool* flags) {
+    const u32 dest = (w >> 21) & 15, ft = (w >> 16) & 31, fs = (w >> 11) & 31, fd = (w >> 6) & 31;
+    const u32 op = w & 0x3f;
+    d.ua = &s.vf[fs]; d.ub = &s.vf[ft]; d.ubc = u8(w & 3);
+    d.udmask = DestMaskV(dest);
+    d.udm16 = dest * 0x1111u;
+    d.up = UpGeneric;
+    *target = -1; *flags = false;
+    auto set = [&](UpFn f, int tgt, bool fl) {
+        d.up = f; *target = tgt; *flags = fl;
+        d.udst = tgt == 32 ? &s.acc : tgt == 0 ? &g_sink : &s.vf[tgt];
+    };
+#define UPC(OPN, BMODE) UpF<OPN, BMODE>
+    if (op < 0x3c) {
+        if (op < 0x1c) {
+            static const UpFn bc[7] = {UPC(ADD, BBC), UPC(SUB, BBC), UPC(MADD, BBC), UPC(MSUB, BBC), UPC(MAX, BBC), UPC(MIN, BBC), UPC(MUL, BBC)};
+            const u32 k = op >> 2;
+            set(bc[k], int(fd), k != 4 && k != 5);
+            return;
+        }
+        switch (op) {
+        case 0x1c: set(UPC(MUL, BQ), int(fd), true); return;
+        case 0x1d: set(UPC(MAX, BI), int(fd), false); return;
+        case 0x1e: set(UPC(MUL, BI), int(fd), true); return;
+        case 0x1f: set(UPC(MIN, BI), int(fd), false); return;
+        case 0x20: set(UPC(ADD, BQ), int(fd), true); return;
+        case 0x21: set(UPC(MADD, BQ), int(fd), true); return;
+        case 0x22: set(UPC(ADD, BI), int(fd), true); return;
+        case 0x23: set(UPC(MADD, BI), int(fd), true); return;
+        case 0x24: set(UPC(SUB, BQ), int(fd), true); return;
+        case 0x25: set(UPC(MSUB, BQ), int(fd), true); return;
+        case 0x26: set(UPC(SUB, BI), int(fd), true); return;
+        case 0x27: set(UPC(MSUB, BI), int(fd), true); return;
+        case 0x28: set(UPC(ADD, BVEC), int(fd), true); return;
+        case 0x29: set(UPC(MADD, BVEC), int(fd), true); return;
+        case 0x2a: set(UPC(MUL, BVEC), int(fd), true); return;
+        case 0x2b: set(UPC(MAX, BVEC), int(fd), false); return;
+        case 0x2c: set(UPC(SUB, BVEC), int(fd), true); return;
+        case 0x2d: set(UPC(MSUB, BVEC), int(fd), true); return;
+        case 0x2e: *target = int(fd); *flags = true; return;              // OPMSUB (generic)
+        case 0x2f: set(UPC(MIN, BVEC), int(fd), false); return;
+        default: *target = 99; return;                                  // bad: generic
+        }
+    }
+    const u32 sp = (w & 3) | ((w >> 4) & 0x7c);
+    if (sp < 0x10 || (sp >= 0x18 && sp < 0x1c)) {
+        static const UpFn bc[7] = {UPC(ADD, BBC), UPC(SUB, BBC), UPC(MADD, BBC), UPC(MSUB, BBC), UPC(ADD, BBC), UPC(ADD, BBC), UPC(MUL, BBC)};
+        set(bc[sp >> 2], 32, true);
+        return;
+    }
+    switch (sp) {
+    case 0x1c: set(UPC(MUL, BQ), 32, true); return;
+    case 0x1e: set(UPC(MUL, BI), 32, true); return;
+    case 0x20: set(UPC(ADD, BQ), 32, true); return;
+    case 0x21: set(UPC(MADD, BQ), 32, true); return;
+    case 0x22: set(UPC(ADD, BI), 32, true); return;
+    case 0x23: set(UPC(MADD, BI), 32, true); return;
+    case 0x24: set(UPC(SUB, BQ), 32, true); return;
+    case 0x25: set(UPC(MSUB, BQ), 32, true); return;
+    case 0x26: set(UPC(SUB, BI), 32, true); return;
+    case 0x27: set(UPC(MSUB, BI), 32, true); return;
+    case 0x28: set(UPC(ADD, BVEC), 32, true); return;
+    case 0x29: set(UPC(MADD, BVEC), 32, true); return;
+    case 0x2a: set(UPC(MUL, BVEC), 32, true); return;
+    case 0x2c: set(UPC(SUB, BVEC), 32, true); return;
+    case 0x2d: set(UPC(MSUB, BVEC), 32, true); return;
+    case 0x10: case 0x11: case 0x12: case 0x13:
+    case 0x14: case 0x15: case 0x16: case 0x17:
+    case 0x1d: *target = int(ft); return;                              // ITOF/FTOI/ABS (generic)
+    case 0x1f: *flags = true; return;                                    // CLIP (generic)
+    case 0x2e: *target = 32; *flags = true; return;                      // OPMULA (generic)
+    case 0x2f: d.up = UpNop; return;                                     // NOP
+    default: *target = 99; return;
+    }
+#undef UPC
+}
+
+/* Decode one lower word. *vf: lower VF register accesses per index (kRd/kWr),
+   *slow: needs the reference order, *event: lands flags. */
+void DecodeLower(DP& d, u32 w, u32 pc, u8* vf, bool* slow, bool* event) {
+    const u32 op7 = w >> 25;
+    const u32 dest = (w >> 21) & 15, ft = (w >> 16) & 31, fs = (w >> 11) & 31, fd = (w >> 6) & 31;
+    const u32 it = ft & 15, is = fs & 15, id = fd & 15;
+    d.lis = u8(is); d.lit = u8(it); d.lid = u8(id); d.lfs = u8(fs); d.lft = u8(ft);
+    d.lfsf = u8((w >> 21) & 3);
+    d.ldmask = DestMaskV(dest);
+    d.ldst = ft ? &s.vf[ft] : &g_sink;
+    d.lilane = 0;
+    for (int l = 0; l < 4; ++l) if (Lane(dest, l)) { d.lilane = u8(l); break; }
+    const u32 imm11 = u32(Imm11(w));
+    const u32 btgt = (pc + 8 + imm11 * 8) & 0x3ff8;
+    d.lo = LoSlow;
+    *slow = false; *event = false;
+    auto rd = [&](u32 r) { vf[r] |= kRd; };
+    auto wr = [&](u32 r) { vf[r] |= kWr; };
+    auto all = [&] { for (int i = 0; i < 32; ++i) vf[i] = kRd | kWr; };
+    if (op7 >= 0x10 && op7 <= 0x1c) { *slow = true; *event = true; return; }
+    switch (op7) {
+    case 0x00: d.lo = LoLQ; d.limm = imm11; wr(ft); return;
+    case 0x01: d.lo = LoSQ; d.limm = imm11; rd(fs); return;
+    case 0x04: d.limm = imm11; d.lo = dest ? LoILW : LoNop; return;
+    case 0x05: d.limm = imm11; d.lo = LoISW; return;
+    case 0x08: d.limm = ((w >> 10) & 0x7800) | (w & 0x7ff); d.lo = it ? LoIADDIU : LoNop; return;
+    case 0x09: d.limm = ((w >> 10) & 0x7800) | (w & 0x7ff); d.lo = it ? LoISUBIU : LoNop; return;
+    case 0x20: d.lo = LoB; d.limm = btgt; d.is_branch = 1; return;
+    case 0x21: d.lo = LoBAL; d.limm = btgt; d.is_branch = 1; return;
+    case 0x24: d.lo = LoJR; d.is_branch = 1; return;
+    case 0x25: d.lo = LoJALR; d.is_branch = 1; return;
+    case 0x28: d.lo = LoIBEQ; d.limm = btgt; d.is_branch = 1; return;
+    case 0x29: d.lo = LoIBNE; d.limm = btgt; d.is_branch = 1; return;
+    case 0x2c: d.lo = LoIBLTZ; d.limm = btgt; d.is_branch = 1; return;
+    case 0x2d: d.lo = LoIBGTZ; d.limm = btgt; d.is_branch = 1; return;
+    case 0x2e: d.lo = LoIBLEZ; d.limm = btgt; d.is_branch = 1; return;
+    case 0x2f: d.lo = LoIBGEZ; d.limm = btgt; d.is_branch = 1; return;
+    case 0x40: break;
+    default: all(); *slow = true; return;   // undecoded: reference path counts it
+    }
+    const u32 sub = w & 0x3f;
+    if (sub < 0x3c) {
+        switch (sub) {
+        case 0x30: d.lo = id ? LoIADD : LoNop; return;
+        case 0x31: d.lo = id ? LoISUB : LoNop; return;
+        case 0x32: d.limm = u32(s32(fd << 27) >> 27); d.lo = it ? LoIADDI : LoNop; return;
+        case 0x34: d.lo = id ? LoIAND : LoNop; return;
+        case 0x35: d.lo = id ? LoIOR : LoNop; return;
+        default: all(); *slow = true; return;
+        }
+    }
+    const u32 sp = (w & 3) | ((w >> 4) & 0x7c);
+    switch (sp) {
+    case 0x30: d.lo = ft ? LoMOVE : LoNop; rd(fs); wr(ft); return;
+    case 0x31: d.lo = ft ? LoMR32 : LoNop; rd(fs); wr(ft); return;
+    case 0x34: d.lo = LoLQI; wr(ft); return;
+    case 0x35: d.lo = LoSQI; rd(fs); return;
+    case 0x38: case 0x39: case 0x3a:   // DIV/SQRT/RSQRT: status write
+        *slow = true; *event = true; rd(fs); rd(ft); return;
+    case 0x3b: d.pre = 1; d.lo = LoNop; return;      // WAITQ (stalled before the upper)
+    case 0x7b: d.pre = 2; d.lo = LoNop; return;      // WAITP
+    case 0x3c: d.lo = LoMTIR; rd(fs); return;
+    case 0x3d: d.lo = ft ? LoMFIR : LoNop; wr(ft); return;
+    case 0x64: d.lo = ft ? LoMFP : LoNop; wr(ft); return;
+    case 0x68: d.lo = LoXTOP; return;
+    case 0x69: d.lo = LoXITOP; return;
+    case 0x6c: d.lo = LoXGKICK; return;
+    case 0x36: case 0x37:                       // LQD/SQD
+    case 0x3e: case 0x3f:                       // ILWR/ISWR
+    case 0x40: case 0x41: case 0x42: case 0x43: // R*
+    case 0x70: case 0x71: case 0x72: case 0x73: case 0x74: case 0x75: case 0x76:
+    case 0x78: case 0x79: case 0x7a: case 0x7c: case 0x7d: case 0x7e:
+        d.lo = LoSlow; rd(fs); rd(ft); wr(ft); return;
+    default: all(); *slow = true; return;
+    }
+}
+
+struct Prog {
+    u32 words[4096];
+    DP dp[2048];
+};
+
+void Decode(Prog& p, const u8* micro) {
+    std::memcpy(p.words, micro, sizeof p.words);
+    for (u32 i = 0; i < 2048; ++i) {
+        DP& d = p.dp[i];
+        std::memset(static_cast<void*>(&d), 0, sizeof d);
+        const u32 lo = p.words[2 * i], hi = p.words[2 * i + 1];
+        d.wlo = lo; d.whi = hi; d.pc = i * 8;
+        d.ebit = (hi >> 30) & 1;
+        int tgt; bool fl;
+        DecodeUpper(d, hi, &tgt, &fl);
+        d.is_push = fl;
+        if (hi & 0x80000000u) { d.lo = LoI; continue; }
+        u8 vf[32] = {};
+        bool slow, ev;
+        DecodeLower(d, lo, i * 8, vf, &slow, &ev);
+        d.is_event = ev;
+        if (tgt == 99) slow = true;
+        if (tgt >= 0 && tgt < 32 && vf[tgt]) slow = true;   // lower reads/writes the upper's target
+        if (slow) { d.up = UpNop; d.lo = PairSlow; }
+    }
+    // control may leave after a branch's delay slot and after the pair that follows an E bit
+    for (u32 i = 0; i < 2048; ++i) {
+        if (p.dp[i].is_branch || p.dp[i].ebit) p.dp[(i + 1) & 2047].leave = 1;
+    }
+    /* Liveness: the flag write at p is dead if the next write q follows in
+       straight-line code (no leave in [p, q+lat-2]) and no event lands in
+       [p+lat, q+lat-1]. Slow pairs always push (reference Commit). */
+    const int lat = flag_latency;
+    for (u32 i = 0; i < 2048; ++i) {
+        DP& d = p.dp[i];
+        if (!d.is_push) continue;
+        d.push = 1;
+        if (d.lo == PairSlow) continue;
+        for (int k = 1; k < 32; ++k) {
+            if (p.dp[(i + u32(k) - 1) & 2047].leave) break;   // control may not reach offset k
+            if (!p.dp[(i + u32(k)) & 2047].is_push) continue;
+            // the next write q is at offset k
+            bool ok = true;
+            for (int j = 0; j <= k + lat - 2 && ok; ++j) if (p.dp[(i + u32(j)) & 2047].leave) ok = false;
+            for (int j = lat; j <= k + lat - 1 && ok; ++j) if (p.dp[(i + u32(j)) & 2047].is_event) ok = false;
+            if (ok) d.push = 0;
+            break;
+        }
+    }
+}
+
+std::map<u64, Prog*> g_progs;
+Prog* g_prog = nullptr;
+
+u64 HashMicro(const u8* m) {
+    u64 h = 1469598103934665603ull;
+    const u64* w = reinterpret_cast<const u64*>(m);
+    for (int i = 0; i < 2048; ++i) { h ^= w[i]; h *= 1099511628211ull; h ^= h >> 29; }
+    return h;
+}
+
+Prog* Lookup(const u8* micro) {
+    const u64 h = HashMicro(micro);
+    auto it = g_progs.find(h);
+    if (it != g_progs.end()) {
+        if (!std::memcmp(it->second->words, micro, sizeof it->second->words)) return it->second;
+        Decode(*it->second, micro);   // collision: re-decode in place
+        return it->second;
+    }
+    if (g_progs.size() >= 64) { for (auto& kv : g_progs) delete kv.second; g_progs.clear(); }
+    Prog* p = new Prog;
+    Decode(*p, micro);
+    g_progs[h] = p;
+    return p;
+}
+
+u64 RunFast(u32& pc) {
+    const u8* micro = Micro();
+    const u32* mw = reinterpret_cast<const u32*>(micro);
+    if (!g_prog) g_prog = Lookup(micro);
+    const DP* P = g_prog->dp;
+    s.vf[0].u[0] = s.vf[0].u[1] = s.vf[0].u[2] = 0; s.vf[0].f[3] = 1.0f;
+    u64 n = 0;
+    bool branch = false, ending = false;
+    u32 btarget = 0;
+    const u64 limit = g_limit;
+    for (; n < limit; ++n) {
+        const DP* d = &P[pc >> 3];
+        if (__builtin_expect(d->wlo != mw[pc >> 2] || d->whi != mw[(pc >> 2) + 1], 0)) {
+            g_prog = Lookup(micro);
+            P = g_prog->dp;
+            d = &P[pc >> 3];
+        }
+        s.cycle++;
+        if (s.q_busy | s.p_busy) LandQP(false);
+        pc = (pc + 8) & 0x3ff8;
+        const bool take_branch = branch;
+        const u32 target = btarget;
+        if (d->pre) {
+            if (d->pre == 1 && s.q_busy) { s.Q = s.q_next; s.q_busy = false; }
+            if (d->pre == 2 && s.p_busy) { s.P = s.p_next; s.p_busy = false; }
+        }
+        d->up(*d);
+        const u32 bt = d->lo(*d);
+        branch = bt != kNoBr;
+        btarget = bt;
+        if (take_branch) pc = target;
+        if (ending) { ++n; break; }
+        if (d->ebit) ending = true;
+    }
+    s.vf[0].u[0] = s.vf[0].u[1] = s.vf[0].u[2] = 0; s.vf[0].f[3] = 1.0f;
+    return n;
 }
 
 }  // namespace
@@ -617,6 +1123,7 @@ void SaveRegs(Vu1CapRegs& r) {
     r.mac = s.mac; r.status = s.status; r.clip = s.clip;
 }
 u32 Resume() { return s.resume; }
+void DebugSet(int fast, unsigned long long limit) { g_fast = fast; g_limit = limit ? limit : (u64(1) << 22); }
 Stats& GetStats() { return stats; }
 
 void DumpHistogram() {
@@ -651,10 +1158,15 @@ u64 Run(u32 pc, u32 top, u32 itop) {
        latency every queued entry has landed before the queue can overflow,
        so landing on demand gives exactly the per-cycle values. */
     const bool lazy_flags = flag_latency < 16;
+    if (g_fast < 0) g_fast = !std::getenv("XSG_VU_FAST") || std::atoi(std::getenv("XSG_VU_FAST"));
+    const bool fast_on = g_fast;
     u64 n = 0;
+    const u64 limit = g_limit;
+    if (fast_on && g_data_off == 0xC000 && flag_latency >= 1 && lazy_flags && !trace_left && !hist_on) {
+        n = RunFast(pc);
+    } else {
     bool branch = false, ending = false;
     u32 btarget = 0;
-    const u64 limit = u64(1) << 22;
     const u8* micro = Micro();
     for (; n < limit; ++n) {
         s.cycle++;
@@ -690,6 +1202,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
         if (take_branch) pc = target;
         if (ending) { ++n; break; }
         if (hi & 0x40000000u) ending = true;
+    }
     }
     if (n >= limit) {
         stats.limit_hits++;

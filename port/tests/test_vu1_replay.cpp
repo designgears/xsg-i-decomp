@@ -66,11 +66,12 @@ static void OnKick(const std::uint8_t* data, std::uint32_t q) {
 struct Rec { uint32_t tag, bytes; const unsigned char* p; };
 
 int main(int argc, char** argv) {
-    int bench = 0, verbose = 0;
+    int bench = 0, verbose = 0, bisect = 0;
     std::vector<const char*> files;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--bench") && i + 1 < argc) bench = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--verbose")) verbose = 1;
+        else if (!std::strcmp(argv[i], "--bisect")) bisect = 1;   // old vs fast path, first differing pair
         else files.push_back(argv[i]);
     }
     if (mmap(reinterpret_cast<void*>(0x11000000), 0x10000, PROT_READ | PROT_WRITE,
@@ -130,6 +131,41 @@ int main(int argc, char** argv) {
                             std::printf("\n");
                         }
                     }
+                }
+                if (bisect && pass == 0) {
+                    static std::vector<unsigned char> d0(16384), d1(16384);
+                    auto one = [&](int fast, unsigned long long lim, Vu1CapRegs& out, std::vector<unsigned char>& dm) {
+                        std::memcpy(kData, r.p + sizeof h, 16384);
+                        xsgvu::LoadRegs(h.regs);
+                        xsgvu::DebugSet(fast, lim);
+                        g_record = false;
+                        xsgvu::Run(h.pc, h.top, h.itop);
+                        xsgvu::SaveRegs(out);
+                        std::memcpy(dm.data(), kData, 16384);
+                    };
+                    Vu1CapRegs a, b;
+                    one(0, h.pairs, a, d0); one(1, h.pairs, b, d1);
+                    if (std::memcmp(&a, &b, sizeof a) || d0 != d1) {
+                        unsigned lo = 0, hi = h.pairs;   // lo agrees, hi differs
+                        while (hi - lo > 1) {
+                            unsigned mid = (lo + hi) / 2;
+                            one(0, mid, a, d0); one(1, mid, b, d1);
+                            if (std::memcmp(&a, &b, sizeof a) || d0 != d1) hi = mid; else lo = mid;
+                        }
+                        one(0, hi, a, d0); one(1, hi, b, d1);
+                        std::printf("%s run %u pc 0x%x: first difference after pair %u:", fn, h.seq, h.pc, hi);
+                        const uint32_t* x = reinterpret_cast<const uint32_t*>(&a);
+                        const uint32_t* y = reinterpret_cast<const uint32_t*>(&b);
+                        for (size_t w = 0; w < sizeof a / 4; ++w) if (x[w] != y[w]) std::printf(" [w%zu %08x/%08x]", w, x[w], y[w]);
+                        if (d0 != d1) std::printf(" [data]");
+                        std::printf("\n");
+                        xsgvu::DebugSet(0, hi);   // trace the last pairs with the reference path
+                        setenv("XSG_VU_TRACE_DUMMY", "1", 1);
+                        return 1;
+                    }
+                    xsgvu::DebugSet(-1, 0);
+                    std::memcpy(kData, r.p + sizeof h, 16384);
+                    g_record = true;
                 }
                 xsgvu::LoadRegs(h.regs);
                 g_kicks.clear();

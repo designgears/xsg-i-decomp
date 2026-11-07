@@ -41,6 +41,8 @@ void SaveRegs(struct ::Vu1CapRegs& r);
 u64 Run(u32 pc, u32 top, u32 itop);
 /* Where the last run stopped (MSCNT continues there). */
 u32 Resume();
+/* tests: force the decoded fast path on/off (-1 = XSG_VU_FAST) and cap the pairs (0 = default) */
+void DebugSet(int fast, unsigned long long limit);
 Stats& GetStats();
 /* XSG_VU_HIST=1: count each instruction kind executed; dumped by DumpHistogram. */
 void DumpHistogram();
