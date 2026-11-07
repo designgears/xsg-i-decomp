@@ -453,7 +453,15 @@ extern const char D_00A4E6D0[];
 
 int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
 {
+#ifdef PORT_HOST
+    /* PORT_HOST: dataSndSeNameGet writes a whole file name here ("...ons0");
+     * a single char let it overwrite the saved %esi/%ebx of the caller
+     * (dataSndSeRegLoad then stored through a garbage record). */
+    char name_buf[64];
+#define name (*name_buf) /* name / &name keep their meaning */
+#else
     char name;
+#endif
     int fileSize;
     int withSlack;
     int clamped;
@@ -480,6 +488,9 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
     work->seType = seType;
     return 1;
 }
+#ifdef PORT_HOST
+#undef name
+#endif
 
 extern const char D_00A4E6E8[];
 typedef struct {

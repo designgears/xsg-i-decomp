@@ -2445,7 +2445,11 @@ struct MenuStatObjWork {
 };
 
 void menuStatObjDraw(ObjectTask *task) {
+#ifdef PORT_HOST
+    int packet[2]; /* PORT_HOST: grGpInit fills a two-word GrPacket (data, count); a lone int let it overwrite a saved register (%ebx) */
+#else
     int packet;
+#endif
     MenuStatObjWork *work;
     BattleUnit *unit;
 
@@ -3428,7 +3432,11 @@ extern int *dataXtxFileGet(int index);
 extern void xglPacketTextureTrans(int textureId);
 
 void menuTexTrans(void) {
+#ifdef PORT_HOST
+    int packet[2]; /* PORT_HOST: grGpInit fills a two-word GrPacket (data, count); a lone int let it overwrite a saved register (%ebx) */
+#else
     int packet;
+#endif
 
     xglPacketTextureTrans(dataXtxFileGet(1)[1]);
     grGpInit((int)&packet);
@@ -3437,7 +3445,11 @@ void menuTexTrans(void) {
 }
 
 void menuStatTexTrans(void) {
+#ifdef PORT_HOST
+    int packet[2]; /* PORT_HOST: grGpInit fills a two-word GrPacket (data, count); a lone int let it overwrite a saved register (%ebx) */
+#else
     int packet;
+#endif
 
     xglPacketTextureTrans(dataXtxFileGet(0)[1]);
     grGpInit((int)&packet);
