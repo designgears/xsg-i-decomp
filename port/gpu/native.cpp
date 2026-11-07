@@ -997,6 +997,7 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
 namespace {
 /* The GS state a batch draws with (PRIM from its GIF tag, the registers of that
    context), and its texture. */
+uint64_t PageHash(uint32_t page);
 void Snap(Stored& s, const uint32_t* tagw) {
     xsgprof::Scope ps(xsgprof::BatchSnap);
     uint64_t tag = uint64_t(tagw[0]) | uint64_t(tagw[1]) << 32;
@@ -1033,10 +1034,7 @@ void Snap(Stored& s, const uint32_t* tagw) {
         Ver& vv = ver[{t0, s.texa}];
         if (!vv.hash || vv.gen != gen) {
             uint64_t h = 1469598103934665603ull;
-            auto mix = [&](uint32_t page) {
-                const uint64_t* q = reinterpret_cast<const uint64_t*>(g_mem.data() + size_t(page & 511) * 8192);
-                for (int i = 0; i < 1024; ++i) h = (h ^ q[i]) * 1099511628211ull;
-            };
+            auto mix = [&](uint32_t page) { h = (h ^ PageHash(page & 511)) * 1099511628211ull; };
             for (uint32_t i = 0; i < np; ++i) mix(p0 + i);
             if (Bits(t0, 20, 6) >= 0x13) { mix(cpage); mix(cpage + 1); }   // CLUT formats
             vv.gen = gen;
@@ -1054,6 +1052,26 @@ void Snap(Stored& s, const uint32_t* tagw) {
         s.tex = it->second;
     }
 }
+/* A content hash per 8 KB page of the mirror, recomputed only after an upload
+   touched the page (g_page_gen).  Four independent lanes (the one-lane FNV
+   chain was latency-bound), folded at the end. */
+uint64_t PageHash(uint32_t page) {
+    static uint64_t hash[512];
+    static uint32_t at[512];
+    static bool valid[512];
+    if (valid[page] && at[page] == g_page_gen[page]) return hash[page];
+    const uint64_t* q = reinterpret_cast<const uint64_t*>(g_mem.data() + size_t(page) * 8192);
+    uint64_t l[4] = {1469598103934665603ull, 0x9e3779b97f4a7c15ull, 0xc2b2ae3d27d4eb4full, 0x165667b19e3779f9ull};
+    for (int i = 0; i < 1024; i += 4)
+        for (int k = 0; k < 4; ++k) l[k] = (l[k] ^ q[i + k]) * 1099511628211ull;
+    uint64_t h = 0;
+    for (int k = 0; k < 4; ++k) h = (h ^ (l[k] + (h << 6) + (h >> 2))) * 0x100000001b3ull;
+    hash[page] = h;
+    at[page] = g_page_gen[page];
+    valid[page] = true;
+    return h;
+}
+
 void Push(Stored&& s) {
     FbFrame& f = g_fb[Bits(s.frame, 0, 9)];
     if (f.vsync != g_vsyncs) {

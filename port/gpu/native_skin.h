@@ -26,7 +26,6 @@ namespace xsgskin {
 
 struct Draw {
     GpuNativeSkin b;
-    std::vector<GpuNativeSkinVertex> v;
     uint32_t nidx = 0;                      // the strip triangles the GS draws (ADC clear), as an index list
     uint64_t vofs = 0, iofs = 0, uofs = 0;  // vertices / indices / constants in the GPU arena (written once, at arrival)
     uint64_t pal = 0, ppal = 0;             // palette serials (GPU palette ring), this / last frame; 0 = none

@@ -193,8 +193,8 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
         return nullptr;
     d->variant = Variant(d->b.loop);
     d->group = Group(d->b.loop);
-    d->v.resize(n);
-    std::memcpy(d->v.data(), payload + sizeof d->b, n * sizeof(GpuNativeSkinVertex));
+    // The vertices are read in place (the ring payload), written once into the arena below.
+    const GpuNativeSkinVertex* sv = reinterpret_cast<const GpuNativeSkinVertex*>(payload + sizeof d->b);
     const uint32_t* adc = reinterpret_cast<const uint32_t*>(payload + sizeof d->b + n * sizeof(GpuNativeSkinVertex));
     d->pal = g_pal;
     static std::vector<uint16_t> idx;
@@ -210,7 +210,8 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
     g_nvert += n;
     g_ntri += d->nidx / 3;
     // Bones outside the palette with a non-zero weight would be dropped by the shader.
-    for (const auto& v : d->v) {
+    for (uint32_t i = 0; i < n; ++i) {
+        const GpuNativeSkinVertex& v = sv[i];
         auto bad = [&](uint32_t a, float w) {
             const int i = int(a & 0x3ff) - int(GPU_SKIN_PAL_QW0);
             if (w != 0.0f && (i < 0 || i + 3 >= int(GPU_SKIN_PAL_NQW))) g_nbadbone++;
@@ -247,7 +248,7 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
         d->iofs = Alloc(d->nidx * 2);
         GpuVertex* vp = reinterpret_cast<GpuVertex*>(g_arenamap + d->vofs % kArena);
         for (uint32_t i = 0; i < n; ++i) {
-            const GpuNativeSkinVertex& s = d->v[i];
+            const GpuNativeSkinVertex& s = sv[i];
             GpuVertex g;
             std::memcpy(g.p, s.p, 16);
             std::memcpy(g.n, s.n, 16);
@@ -265,7 +266,7 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
         h.frame = d->b.frame;
         std::memcpy(h.m, d->b.m, sizeof h.m);
         h.p.resize(size_t(n) * 4);
-        for (uint32_t i = 0; i < n; ++i) std::memcpy(&h.p[size_t(i) * 4], d->v[i].p, 16);
+        for (uint32_t i = 0; i < n; ++i) std::memcpy(&h.p[size_t(i) * 4], sv[i].p, 16);
         h.pal = d->pal;
         std::memcpy(&h.mirror, &d->b.mirror[2], 4);
         h.mirror_on = d->b.mirror_on != 0;
