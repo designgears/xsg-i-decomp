@@ -202,13 +202,16 @@ int sceCdRead(uint32_t lsn, uint32_t sectors, void *buf, void *mode)
 
 /* streaming */
 static uint32_t st_lsn;
-int sceCdStInit(uint32_t bufmax, uint32_t bankmax, void *buf) { STUB_LOG("%u %u %p", bufmax, bankmax, buf); return 1; }
+/* The stream ring holds bufmax sectors; sceCdStStat reports how many are
+ * buffered, which is never more than that (the game sizes its reads by it). */
+static uint32_t st_bufmax = 16;
+int sceCdStInit(uint32_t bufmax, uint32_t bankmax, void *buf) { STUB_LOG("%u %u %p", bufmax, bankmax, buf); st_bufmax = bufmax; return 1; }
 int sceCdStStart(uint32_t lsn, void *mode) { (void)mode; STUB_LOG("lsn=%u", lsn); st_lsn = lsn; return 1; }
 int sceCdStSeek(uint32_t lsn) { STUB_LOG("lsn=%u", lsn); st_lsn = lsn; return 1; }
 int sceCdStStop(void) { return 1; }
 int sceCdStPause(void) { return 1; }
 int sceCdStResume(void) { return 1; }
-int sceCdStStat(void) { return 0x7fff; }
+int sceCdStStat(void) { return (int)st_bufmax; }
 int sceCdStRead(uint32_t sectors, void *buf, uint32_t mode, uint32_t *err)
 {
     (void)mode;

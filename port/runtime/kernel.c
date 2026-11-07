@@ -51,6 +51,8 @@ struct thread {
     void *arg;
     ucontext_t ctx;
     void *host_stack;
+    void *bt[12]; /* where it last blocked (for the timeout dump) */
+    int nbt;
 };
 static struct thread th[MAX_THREADS];
 static int cur = 1;
@@ -109,9 +111,39 @@ static void switch_to(int next)
 static void dump_threads(void)
 {
     for (int i = 1; i < MAX_THREADS; i++)
-        if (th[i].state != TS_FREE)
+        if (th[i].state != TS_FREE) {
             xsg_logf("  thread %2d prio %3d %-9s sema %d wakeups %d func %p\n", i, th[i].prio,
                      ts_name[th[i].state], th[i].wait_sema, th[i].wakeups, (void *)th[i].func);
+            if (th[i].state != TS_READY && th[i].nbt) {
+                xsg_logf("    blocked at:");
+                for (int k = 1; k < th[i].nbt; k++)
+                    xsg_logf(" %p", th[i].bt[k]);
+                xsg_logf("\n");
+            }
+        }
+}
+
+/* Record where the current thread blocks: a frame-pointer walk (the game is
+ * built at -O0, so every frame has one), bounded to the thread's own host
+ * stack so a smashed frame cannot fault.  glibc backtrace() can crash on
+ * such a frame. */
+static void note_block(void)
+{
+    char *lo = th[cur].host_stack, *hi = lo + HOST_STACK;
+    void **fp = __builtin_frame_address(0);
+    int n = 0;
+    if (!lo) { /* main thread: the process stack */
+        lo = (char *)fp;
+        hi = lo + (8u << 20);
+    }
+    while (n < 12 && (char *)fp >= lo && (char *)fp + 8 <= hi) {
+        th[cur].bt[n++] = fp[1];
+        void **next = fp[0];
+        if (next <= fp)
+            break;
+        fp = next;
+    }
+    th[cur].nbt = n;
 }
 
 void xsg_kernel_dump(void)
@@ -189,6 +221,7 @@ int sceGsSyncV(int mode)
     STUB_LOG("mode=%d frame=%u", mode, xsg_frame);
     vsync_waiters[cur] = 1;
     th[cur].state = TS_SLEEP;
+    note_block();
     xsg_schedule();
     return xsg_frame & 1; /* field */
 }
@@ -246,6 +279,7 @@ int SleepThread(void)
         return cur;
     }
     th[cur].state = TS_SLEEP;
+    note_block();
     xsg_schedule();
     return cur;
 }
@@ -339,6 +373,7 @@ int WaitSema(int id)
     th[cur].state = TS_WAIT_SEMA;
     th[cur].wait_sema = id;
     th[cur].seq = seq_counter++;
+    note_block();
     xsg_schedule();
     return id;
 }

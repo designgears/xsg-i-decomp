@@ -42,7 +42,9 @@ static struct overlay ovl[] = {OVE(1, ov01), OVE(2, ov02), OVE(10, ov10), OVE(11
                                OVE(12, ov12)};
 #define NOV (int)(sizeof ovl / sizeof ovl[0])
 
-int xsg_active_overlay = -1;
+/* ov02 is part of the main ELF image (it sits at 0xA00000 from boot) and
+ * xglCdInitial sets loaded_overlay = 2, so it is active from the start. */
+int xsg_active_overlay = 2;
 
 void xsg_overlay_init(void)
 {
