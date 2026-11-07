@@ -45,6 +45,7 @@ def runner(shot_every, run_seconds, pad):
                    XSG_MC_DIR=str(LIVE_DIR / "mc"), XSG_TIMEOUT=str(run_seconds))
         if pad:
             env["XSG_PAD"] = pad
+        env.setdefault("XSG_GPU_BIN", str(ROOT / "port/build/gpu/xsg-gpu"))  # the live copy runs from /tmp
         if STREAM_FIFO.exists():
             env["XSG_STREAM"] = str(STREAM_FIFO)
         p = subprocess.Popen([str(exe)], cwd=str(ROOT), env=env, stdout=subprocess.PIPE,
