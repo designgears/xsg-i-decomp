@@ -905,7 +905,12 @@ static char *command_dummy(int command, char *cursor, int mode)
     if (GameResource[command + 1].address == 0) {
         ((void *(*)(int, int))GameResourceAlloc)(0, 0);
     } else {
+#ifdef PORT_HOST
+        /* The PS2 call leaves $a1 = 0 (set in the branch delay slot). */
+        GameResourceRealloc(GameResource[command].address, 0);
+#else
         ((int (*)())GameResourceRealloc)(GameResource[command].address);
+#endif
     }
     return cursor;
 }
