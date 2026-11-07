@@ -1197,7 +1197,12 @@ void SGsRestoreEnv(void)
     SGsAddReg_i(&_packet, 0x4E, 0x31000000);
     SGsAddReg_i(&_packet, 0x14, 0);
     SGsSendPacket((SGsPacketReset *)&_packet);
+#ifndef PORT_HOST
     nmlModelSetLight(_defMatLcMod, _defMatLn);
+#else
+    /* EE EABI passes these 64-byte structs by reference; i386 pushes them. */
+    nmlModelSetLight(&_defMatLcMod, &_defMatLn);
+#endif
 }
 
 static void sefInitClipViewVolume(void *view) {
