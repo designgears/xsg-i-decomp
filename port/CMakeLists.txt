@@ -116,3 +116,6 @@ target_include_directories(test_vu0 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 target_compile_options(test_vu0 PRIVATE -m32 -O1 -g -fno-pic -msse2 -mfpmath=sse)
 target_link_options(test_vu0 PRIVATE -m32 -no-pie)
 target_link_libraries(test_vu0 m stdc++)
+
+# VU1 C references + capture test (native renderer groundwork).
+include(${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref.cmake)
