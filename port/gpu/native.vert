@@ -18,6 +18,8 @@ layout(std140, set = 0, binding = 0) uniform Batch {
     vec4 fogcol;        // FOGCOL 0..255
     ivec4 mode;         // x: TFX | TCC<<2 | TME<<3 | FGE<<4, y: ATE|ATST<<1|AFAIL<<4, z: AREF, w: alpha source (0 As, 2 FIX)
     vec4 fix;           // x: ALPHA.FIX
+    ivec4 wrap;         // x: CLAMP.WMS, y: CLAMP.WMT, z: TEX1.MMAG (1 = linear)
+    ivec4 region;       // CLAMP MINU/MSKU, MAXU/FIXU, MINV/MSKV, MAXV/FIXV
 } b;
 
 layout(location = 0) out vec4 v_col;
@@ -31,6 +33,11 @@ void main() {
     v_col = floor(min(a_c * b.cscale, vec4(255.0)));       // ftoi0(min(C*vf24, 255))
     v_fog = floor(clamp(b.fog.z + b.fog.w * q, b.fog.x, b.fog.y));
     vec3 scr = b.offset.xyz + clip.xyz * q * b.scale.xyz;  // GS X/Y (pixels incl. offset), Z
+    // The VU writes XYZF2 as ftoi4 (12.4 fixed point, truncated) and the GS
+    // rasterises from that.  Snapping here makes vertices that two batches share
+    // (computed with different part matrices) land on the same point, so no
+    // cracks open between them at high resolution.
+    scr.xy = trunc(scr.xy * 16.0) / 16.0;
     // GS samples a pixel at its integer corner, Vulkan at its centre: +0.5.
     vec2 px = scr.xy - b.target.xy + 0.5;
     vec2 ndc = px * b.target.zw * 2.0 - 1.0;

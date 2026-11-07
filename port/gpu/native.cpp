@@ -1,7 +1,7 @@
 /*
- * xsg-gpu native renderer, first slice: set-0 strip batches (VU1 loop 0x0c18)
- * drawn by our own Vulkan pipeline.  See native.h and
- * port/docs/NATIVE_RENDERER.md.
+ * xsg-gpu native renderer: set-0 strip batches (VU1 loop 0x0c18) drawn by our
+ * own Vulkan pipeline at XSG_GPU_NATIVE_SCALE and composited live over the
+ * paraLLEl-GS frame.  See native.h and port/docs/NATIVE_RENDERER.md.
  */
 #include "native.h"
 
@@ -37,6 +37,9 @@ const uint32_t kVert[] = {
 };
 const uint32_t kFrag[] = {
 #include "native.frag.inc"
+};
+const uint32_t kComp[] = {
+#include "composite.comp.inc"
 };
 
 void Log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -165,19 +168,31 @@ struct Stored {
     std::vector<GpuNativeVertex> v;
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
-std::vector<Stored> g_batches, g_prev;   // this vsync's batches; the last vsync that had any
+/* The batches of the last frame drawn into each frame buffer (FRAME.FBP).  A
+   frame's DMA kick is synchronous, so all its batches arrive within one vsync
+   interval: the first batch for a buffer in a new interval starts it over. */
+struct FbFrame {
+    std::vector<Stored> b;
+    uint32_t vsync = ~0u;
+};
+std::map<uint32_t, FbFrame> g_fb;
 
 /* ---------------------------------------------------------------- Vulkan */
 Vulkan::Device* g_dev;
 Vulkan::Program* g_prog;
-bool g_on;
+Vulkan::Program* g_comp;
+bool g_on, g_live = true;
 int g_scale = 2;
+int g_thr = 12;
 std::set<uint32_t> g_shots;
 std::string g_dir = "/tmp/xsg_native";
-uint64_t g_nbatch, g_nvert, g_ntex;
-uint32_t g_last_vsync;
-/* Batches are kept (and textured) only in the few vsyncs before a shot. */
+uint64_t g_nbatch, g_nvert, g_ntex, g_live_frames;
+uint32_t g_last_vsync, g_vsyncs;
+Vulkan::ImageHandle g_live_img;     // the composite of the displayed buffer, scale g_scale
+uint32_t g_live_w, g_live_h;        // its frame-buffer size (pixels at 1x)
+/* Without the live path, batches are kept (and textured) only in the few vsyncs before a shot. */
 bool Near() {
+    if (g_live) return true;
     auto it = g_shots.upper_bound(g_last_vsync);
     return it != g_shots.end() && *it <= g_last_vsync + 3;
 }
@@ -188,6 +203,8 @@ struct Ubo {
     float target[4], zscale[4], fogcol[4];
     int32_t mode[4];
     float fix[4];
+    int32_t wrap[4];
+    int32_t region[4];
 };
 
 uint32_t ReadU32(const uint8_t* vram, uint32_t a) {
@@ -256,27 +273,56 @@ struct Target {
     std::vector<uint32_t> color;    // RGBA8
     std::vector<float> depth;       // 0 = nothing drawn
 };
+struct GpuTarget {
+    uint32_t w, h;
+    Vulkan::ImageHandle color, depth;   // SHADER_READ_ONLY_OPTIMAL after RenderGpu
+};
 
 struct Region {
     uint32_t fbp, fbw, fpsm, zbp, zpsm, w, h;
     float ofx, ofy, zscale;
 };
 
-/* Draw the batches drawn into `rg` at `scale`, read color and depth back. */
-Target Render(const std::vector<const Stored*>& list, const Region& rg, int scale, const uint8_t* vram,
-              std::map<const Tex*, Vulkan::ImageHandle>& texcache) {
-    Target t;
+Region MakeRegion(const Stored& f) {
+    Region rg;
+    rg.fbp = Bits(f.frame, 0, 9);
+    rg.fbw = std::max(1u, Bits(f.frame, 16, 6));
+    rg.fpsm = Bits(f.frame, 24, 6);
+    rg.zbp = Bits(f.zbuf, 0, 9);
+    rg.zpsm = Bits(f.zbuf, 24, 4);
+    rg.w = std::min(Bits(f.scissor, 16, 11) + 1, rg.fbw * 64);
+    rg.h = Bits(f.scissor, 48, 11) + 1;
+    rg.ofx = float(Bits(f.xyoff, 0, 16)) / 16.0f;
+    rg.ofy = float(Bits(f.xyoff, 32, 16)) / 16.0f;
+    const uint32_t zpsm = 0x30 | rg.zpsm;
+    rg.zscale = zpsm == 0x30 ? 1.0f / 4294967296.0f : (zpsm == 0x31 ? 1.0f / 16777216.0f : 1.0f / 65536.0f);
+    return rg;
+}
+
+/* Textures as GPU images, kept across frames (keyed by the decoded Tex, which
+   is itself cached per TEX0/TEXA/upload generation). */
+std::unordered_map<const Tex*, std::pair<std::shared_ptr<Tex>, Vulkan::ImageHandle>> g_teximg;
+
+/* Record the batches drawn into `rg` at `scale`; colour and depth end up
+   readable by shaders and transfers (SHADER_READ_ONLY_OPTIMAL). */
+GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*>& list, const Region& rg, int scale,
+                    unsigned* odd_blend_out) {
+    GpuTarget t;
     t.w = rg.w * scale;
     t.h = rg.h * scale;
     auto& dev = *g_dev;
+    auto* cmd = &cmdr;
     auto ci = Vulkan::ImageCreateInfo::render_target(t.w, t.h, VK_FORMAT_R8G8B8A8_UNORM);
-    ci.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    auto color = dev.create_image(ci);
+    ci.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    ci.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    t.color = dev.create_image(ci);
     auto di = Vulkan::ImageCreateInfo::render_target(t.w, t.h, VK_FORMAT_D32_SFLOAT);
-    di.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    auto depth = dev.create_image(di);
+    di.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    di.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    t.depth = dev.create_image(di);
+    auto& color = t.color;
+    auto& depth = t.depth;
 
-    auto cmd = dev.request_command_buffer();
     cmd->image_barrier(*color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -296,7 +342,7 @@ Target Render(const std::vector<const Stored*>& list, const Region& rg, int scal
     cmd->set_program(g_prog);
     cmd->set_cull_mode(VK_CULL_MODE_NONE);
     cmd->set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
-    unsigned drawn = 0, blended = 0, odd_blend = 0;
+    unsigned odd_blend = 0;
     for (const Stored* s : list) {
         const uint32_t n = uint32_t(s->v.size());
         auto* vp = static_cast<GpuNativeVertex*>(cmd->allocate_vertex_data(0, n * sizeof(GpuNativeVertex), sizeof(GpuNativeVertex)));
@@ -331,7 +377,6 @@ Target Render(const std::vector<const Stored*>& list, const Region& rg, int scal
         u->fix[0] = float(Bits(s->alpha, 32, 8));
         cmd->set_blend_enable(false);
         if (abe) {
-            blended++;
             if (A == 0 && B == 1 && D == 1 && C != 1) {
                 cmd->set_blend_enable(true);
                 cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
@@ -352,23 +397,26 @@ Target Render(const std::vector<const Stored*>& list, const Region& rg, int scal
         const bool zte = Bits(s->test, 16, 1);
         const uint32_t ztst = Bits(s->test, 17, 2);
         const bool zmsk = Bits(s->zbuf, 32, 1);
-        cmd->set_depth_test(zte, !zmsk);
+        cmd->set_depth_test(true, !zmsk);
         cmd->set_depth_compare(!zte || ztst == 1 ? VK_COMPARE_OP_ALWAYS : ztst == 0 ? VK_COMPARE_OP_NEVER
                                : ztst == 2 ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_GREATER);
-        if (!zte) cmd->set_depth_test(true, !zmsk), cmd->set_depth_compare(VK_COMPARE_OP_ALWAYS);
         cmd->set_color_write_mask(Bits(s->frame, 32, 32) == 0xffffffffu ? 0 : 0xf);
         // Texture.
-        auto it = texcache.find(s->tex.get());
-        if (it == texcache.end()) {
+        auto it = g_teximg.find(s->tex.get());
+        if (it == g_teximg.end()) {
             auto ti = Vulkan::ImageCreateInfo::immutable_2d_image(s->tex->w, s->tex->h, VK_FORMAT_R8G8B8A8_UNORM);
             Vulkan::ImageInitialData init = {s->tex->px.data(), 0, 0};
-            it = texcache.emplace(s->tex.get(), dev.create_image(ti, &init)).first;
+            it = g_teximg.emplace(s->tex.get(), std::make_pair(s->tex, dev.create_image(ti, &init))).first;
         }
-        const bool linear = Bits(s->tex1, 5, 1);
-        const bool clampu = Bits(s->clamp, 0, 2) != 0;
-        cmd->set_texture(0, 1, it->second->get_view(),
-                         linear ? (clampu ? Vulkan::StockSampler::LinearClamp : Vulkan::StockSampler::LinearWrap)
-                                : (clampu ? Vulkan::StockSampler::NearestClamp : Vulkan::StockSampler::NearestWrap));
+        // Addressing and filtering are done in the shader, the GS way (CLAMP, TEX1.MMAG).
+        u->wrap[0] = int(Bits(s->clamp, 0, 2));
+        u->wrap[1] = int(Bits(s->clamp, 2, 2));
+        u->wrap[2] = int(Bits(s->tex1, 5, 1));
+        u->region[0] = int(Bits(s->clamp, 4, 10));
+        u->region[1] = int(Bits(s->clamp, 14, 10));
+        u->region[2] = int(Bits(s->clamp, 24, 10));
+        u->region[3] = int(Bits(s->clamp, 34, 10));
+        cmd->set_texture(0, 1, it->second.second->get_view(), Vulkan::StockSampler::NearestClamp);
         // GS scissor, in this target's pixels.
         const int sx0 = int(Bits(s->scissor, 0, 11)), sx1 = int(Bits(s->scissor, 16, 11));
         const int sy0 = int(Bits(s->scissor, 32, 11)), sy1 = int(Bits(s->scissor, 48, 11));
@@ -378,34 +426,57 @@ Target Render(const std::vector<const Stored*>& list, const Region& rg, int scal
                      uint32_t(std::max(0, std::min(sy1 + 1, int(rg.h)) - sy0) * scale)};
         cmd->set_scissor(sc);
         cmd->draw(n);
-        drawn++;
     }
     cmd->end_render_pass();
-    cmd->image_barrier(*color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    cmd->image_barrier(*color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                       VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-    cmd->image_barrier(*depth, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                       VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
+    cmd->image_barrier(*depth, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                       VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                       VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
+    if (odd_blend_out) *odd_blend_out = odd_blend;
+    return t;
+}
+
+/* Copy an RGBA8 / D32 image (SHADER_READ_ONLY_OPTIMAL) to the host; waits. */
+template <typename T>
+std::vector<T> Readback(Vulkan::Image& img, VkImageAspectFlags aspect, VkImageLayout layout) {
+    auto& dev = *g_dev;
+    const uint32_t w = img.get_width(), h = img.get_height();
     Vulkan::BufferCreateInfo bi = {};
     bi.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     bi.domain = Vulkan::BufferDomain::CachedHost;
-    bi.size = VkDeviceSize(t.w) * t.h * 4;
-    auto cbuf = dev.create_buffer(bi);
-    auto dbuf = dev.create_buffer(bi);
-    cmd->copy_image_to_buffer(*cbuf, *color, 0, {}, {t.w, t.h, 1}, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1});
-    cmd->copy_image_to_buffer(*dbuf, *depth, 0, {}, {t.w, t.h, 1}, 0, 0, {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1});
+    bi.size = VkDeviceSize(w) * h * 4;
+    auto buf = dev.create_buffer(bi);
+    auto cmd = dev.request_command_buffer();
+    cmd->image_barrier(img, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                       VK_ACCESS_2_MEMORY_WRITE_BIT, VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+    cmd->copy_image_to_buffer(*buf, img, 0, {}, {w, h, 1}, 0, 0, {aspect, 0, 0, 1});
+    cmd->image_barrier(img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout, VK_PIPELINE_STAGE_2_COPY_BIT, 0,
+                       VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_READ_BIT);
     cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                  VK_ACCESS_HOST_READ_BIT);
     Vulkan::Fence fence;
     dev.submit(cmd, &fence);
     fence->wait();
-    t.color.resize(size_t(t.w) * t.h);
-    t.depth.resize(size_t(t.w) * t.h);
-    std::memcpy(t.color.data(), dev.map_host_buffer(*cbuf, Vulkan::MEMORY_ACCESS_READ_BIT), t.color.size() * 4);
-    std::memcpy(t.depth.data(), dev.map_host_buffer(*dbuf, Vulkan::MEMORY_ACCESS_READ_BIT), t.depth.size() * 4);
-    Log("  %ux: %u batches drawn (%u blended, %u with an unsupported blend drawn opaque)", unsigned(scale), drawn,
-        blended, odd_blend);
+    std::vector<T> out(size_t(w) * h);
+    std::memcpy(out.data(), dev.map_host_buffer(*buf, Vulkan::MEMORY_ACCESS_READ_BIT), out.size() * 4);
+    return out;
+}
+
+Target Render(const std::vector<const Stored*>& list, const Region& rg, int scale) {
+    auto cmd = g_dev->request_command_buffer();
+    unsigned odd = 0;
+    GpuTarget g = RenderGpu(*cmd, list, rg, scale, &odd);
+    g_dev->submit(cmd);
+    Target t;
+    t.w = g.w;
+    t.h = g.h;
+    t.color = Readback<uint32_t>(*g.color, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    t.depth = Readback<float>(*g.depth, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    Log("  %ux: %zu batches drawn (%u with an unsupported blend drawn opaque)", unsigned(scale), list.size(), odd);
     return t;
 }
 
@@ -446,56 +517,117 @@ int ChanDiff(uint32_t a, uint32_t b) {
     return m;
 }
 
-void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
-    if (g_batches.empty()) g_batches.swap(g_prev);   // 30 fps: the frame was drawn before the last vsync
-    if (g_batches.empty()) { Log("vsync %u: no native batches", vsync); return; }
-    // The buffer most batches went to.
-    std::map<uint32_t, unsigned> fbps;
-    for (auto& s : g_batches) fbps[Bits(s.frame, 0, 9)]++;
-    uint32_t fbp = 0;
-    unsigned best = 0;
-    for (auto& [k, c] : fbps) if (c > best) { best = c; fbp = k; }
+/* The frame buffer on display (DISPFB of the enabled read circuit). */
+uint32_t DisplayFbp(ParallelGS::GSInterface& gs) {
+    const auto& priv = gs.get_priv_register_state();
+    auto P = [&](uint32_t off) { return priv.qwords_lo[(off >> 4) * 2]; };
+    const uint64_t pmode = P(0x00);
+    const int circ = (pmode & 1) ? 1 : (pmode & 2) ? 2 : 1;
+    uint64_t dispfb = P(circ == 1 ? 0x70 : 0x90), display = P(circ == 1 ? 0x80 : 0xA0);
+    if (circ == 1 && dispfb == 0 && display == 0) dispfb = P(0x90);
+    return uint32_t(dispfb & 0x1ff);
+}
+
+/* The native batches of the displayed buffer (empty when it has none). */
+std::vector<const Stored*> DisplayList(ParallelGS::GSInterface& gs, uint32_t* fbp_out) {
     std::vector<const Stored*> list;
-    for (auto& s : g_batches) if (Bits(s.frame, 0, 9) == fbp) list.push_back(&s);
-    const Stored& f = *list.front();
-    Region rg;
-    rg.fbp = fbp;
-    rg.fbw = std::max(1u, Bits(f.frame, 16, 6));
-    rg.fpsm = Bits(f.frame, 24, 6);
-    rg.zbp = Bits(f.zbuf, 0, 9);
-    rg.zpsm = Bits(f.zbuf, 24, 4);
-    rg.w = std::min(Bits(f.scissor, 16, 11) + 1, rg.fbw * 64);
-    rg.h = Bits(f.scissor, 48, 11) + 1;
-    rg.ofx = float(Bits(f.xyoff, 0, 16)) / 16.0f;
-    rg.ofy = float(Bits(f.xyoff, 32, 16)) / 16.0f;
+    const uint32_t fbp = DisplayFbp(gs);
+    *fbp_out = fbp;
+    auto it = g_fb.find(fbp);
+    // A frame more than a few vsyncs old is stale (the game stopped drawing 3D into it).
+    if (it == g_fb.end() || it->second.b.empty() || g_vsyncs - it->second.vsync > 4) return list;
+    for (auto& s : it->second.b) list.push_back(&s);
+    return list;
+}
+
+/* The GS colour (RGBA8, A = 0xff) and Z of the region, from a VRAM copy. */
+void DecodeGs(const uint8_t* vram, const Region& rg, std::vector<uint32_t>& out) {
+    const size_t n = size_t(rg.w) * rg.h;
+    out.resize(2 * n);
+    for (uint32_t y = 0; y < rg.h; ++y)
+        for (uint32_t x = 0; x < rg.w; ++x) {
+            out[size_t(y) * rg.w + x] = GsPixel(vram, rg.fbp, rg.fbw, rg.fpsm, x, y) | 0xff000000u;
+            out[n + size_t(y) * rg.w + x] = GsZ(vram, rg.zbp, rg.fbw, rg.zpsm, x, y);
+        }
+}
+
+/* Live path: draw the displayed buffer's native batches at 1x and g_scale and
+   composite them over the paraLLEl-GS frame on the GPU (composite.comp). */
+void Live(ParallelGS::GSInterface& gs) {
+    uint32_t fbp;
+    auto list = DisplayList(gs, &fbp);
+    if (list.empty()) { g_live_img.reset(); return; }
+    // At 30 fps the same frame is on display for two vsyncs: keep its composite.
+    static uint32_t last_fbp = ~0u, last_gen = ~0u;
+    const uint32_t gen = g_fb[fbp].vsync;
+    if (g_live_img && fbp == last_fbp && gen == last_gen) return;
+    last_fbp = fbp;
+    last_gen = gen;
+    const Region rg = MakeRegion(*list.front());
+    gs.flush();
+    const uint8_t* vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    static std::vector<uint32_t> gsbuf;
+    DecodeGs(vram, rg, gsbuf);
+    auto& dev = *g_dev;
+    Vulkan::BufferCreateInfo bi = {};
+    bi.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    bi.domain = Vulkan::BufferDomain::LinkedDeviceHost;
+    bi.size = gsbuf.size() * 4;
+    auto gsb = dev.create_buffer(bi, gsbuf.data());
+
+    auto cmd = dev.request_command_buffer();
+    GpuTarget n1 = RenderGpu(*cmd, list, rg, 1, nullptr);
+    GpuTarget ns = g_scale > 1 ? RenderGpu(*cmd, list, rg, g_scale, nullptr) : n1;
+    auto oi = Vulkan::ImageCreateInfo::immutable_2d_image(ns.w, ns.h, VK_FORMAT_R8G8B8A8_UNORM);
+    oi.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    oi.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    auto out = dev.create_image(oi);
+    cmd->image_barrier(*out, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_2_NONE, 0,
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+    cmd->set_program(g_comp);
+    cmd->set_texture(0, 0, ns.color->get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd->set_texture(0, 1, ns.depth->get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd->set_texture(0, 2, n1.color->get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd->set_texture(0, 3, n1.depth->get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd->set_storage_buffer(0, 4, *gsb);
+    cmd->set_storage_texture(0, 5, out->get_view());
+    struct { int32_t w, h, s, thr; float zmul; } pc = {int32_t(rg.w), int32_t(rg.h), g_scale, g_thr, 1.0f / rg.zscale};
+    cmd->push_constants(&pc, 0, sizeof pc);
+    cmd->dispatch((ns.w + 7) / 8, (ns.h + 7) / 8, 1);
+    cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                       VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+    dev.submit(cmd);
+    g_live_img = out;
+    g_live_w = rg.w;
+    g_live_h = rg.h;
+    g_live_frames++;
+}
+
+void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
+    uint32_t fbp;
+    auto list = DisplayList(gs, &fbp);
+    if (list.empty()) { Log("vsync %u: no native batches for the displayed FBP 0x%x", vsync, fbp); return; }
+    const Region rg = MakeRegion(*list.front());
     const uint32_t zpsm = 0x30 | rg.zpsm;
-    rg.zscale = zpsm == 0x30 ? 1.0f / 4294967296.0f : (zpsm == 0x31 ? 1.0f / 16777216.0f : 1.0f / 65536.0f);
-    Log("vsync %u: %zu batches (%zu to FBP 0x%x of %zu buffers), %ux%u, FBW %u PSM 0x%x, ZBP 0x%x ZPSM 0x%x, "
+    Log("vsync %u: %zu batches to the displayed FBP 0x%x, %ux%u, FBW %u PSM 0x%x, ZBP 0x%x ZPSM 0x%x, "
         "XYOFFSET (%.1f, %.1f)",
-        vsync, g_batches.size(), list.size(), fbp, fbps.size(), rg.w, rg.h, rg.fbw, rg.fpsm, rg.zbp, zpsm, rg.ofx,
-        rg.ofy);
+        vsync, list.size(), fbp, rg.w, rg.h, rg.fbw, rg.fpsm, rg.zbp, zpsm, rg.ofx, rg.ofy);
 
     gs.flush();
     std::vector<uint8_t> vram(4u << 20);
     std::memcpy(vram.data(), gs.map_vram_read(0, 4u << 20), vram.size());
-    std::map<const Tex*, Vulkan::ImageHandle> texcache;
-    Target n1 = Render(list, rg, 1, vram.data(), texcache);
-    Target ns = g_scale > 1 ? Render(list, rg, g_scale, vram.data(), texcache) : n1;
-    Log("  %zu textures (%llu decoded so far)", texcache.size(), (unsigned long long)g_ntex);
+    Target n1 = Render(list, rg, 1);
+    Target ns = g_scale > 1 ? Render(list, rg, g_scale) : n1;
+    Log("  %zu texture images (%llu decoded so far)", g_teximg.size(), (unsigned long long)g_ntex);
 
     // The paraLLEl-GS frame and depth at 1x.
-    std::vector<uint32_t> gsc(size_t(rg.w) * rg.h);
-    std::vector<uint32_t> gsz(gsc.size());
-    for (uint32_t y = 0; y < rg.h; ++y)
-        for (uint32_t x = 0; x < rg.w; ++x) {
-            gsc[size_t(y) * rg.w + x] = GsPixel(vram.data(), rg.fbp, rg.fbw, rg.fpsm, x, y) | 0xff000000u;
-            gsz[size_t(y) * rg.w + x] = GsZ(vram.data(), rg.zbp, rg.fbw, rg.zpsm, x, y);
-        }
+    std::vector<uint32_t> gsbuf;
+    DecodeGs(vram.data(), rg, gsbuf);
+    std::vector<uint32_t> gsc(gsbuf.begin(), gsbuf.begin() + size_t(rg.w) * rg.h);
+    const uint32_t* gsz = gsbuf.data() + gsc.size();
     const float zmul = 1.0f / rg.zscale;
-    // Composite: a native sample replaces the GS pixel under it when it is not
-    // behind the GS depth there, and (where the native 1x render covers that
-    // pixel) the GS kept the colour the native pass predicts - so 2D, effects
-    // and anything else drawn over the scenery stay.
+    // The same rule as composite.comp, on the CPU.
     auto composite = [&](const Target& t, int s, uint64_t* covered, uint64_t* used) {
         std::vector<uint32_t> out(size_t(t.w) * t.h);
         for (uint32_t y = 0; y < t.h; ++y)
@@ -509,7 +641,7 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
                     const double zn = double(d) * zmul, zg = double(gsz[gi]);
                     const double eps = std::max(64.0, zg * 2e-4);
                     bool ok = zn + eps >= zg;
-                    if (ok && n1.depth[gi] > 0.0f) ok = ChanDiff(n1.color[gi], gsc[gi]) <= 24;
+                    if (ok && n1.depth[gi] > 0.0f) ok = ChanDiff(n1.color[gi], gsc[gi]) <= g_thr;
                     if (ok) { c = t.color[ti] | 0xff000000u; ++*used; }
                 }
                 out[ti] = c;
@@ -527,6 +659,12 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
     uint64_t cov1 = 0, use1 = 0;
     auto c1 = composite(n1, 1, &cov1, &use1);
     WritePng(path("comp_1x"), n1.w, n1.h, c1);
+    // The 1x composite against the paraLLEl-GS frame, over the whole frame.
+    uint64_t hc[4] = {};
+    for (size_t i = 0; i < gsc.size(); ++i) {
+        const int dd = ChanDiff(c1[i], gsc[i]);
+        hc[dd == 0 ? 0 : dd <= 2 ? 1 : dd <= 8 ? 2 : 3]++;
+    }
     // 1x diff: native-only vs GS where native covers. Exact / within 2 / within 8 / worse,
     // all covered pixels (h) and those where the GS depth is the native surface's (hz:
     // nothing non-native in front of it).
@@ -549,6 +687,8 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
         (unsigned long long)h[2], (unsigned long long)h[3]);
     Log("  1x: where the GS depth is the native surface's: exact %llu, <=2 %llu, <=8 %llu, >8 %llu",
         (unsigned long long)hz[0], (unsigned long long)hz[1], (unsigned long long)hz[2], (unsigned long long)hz[3]);
+    Log("  1x composite vs paraLLEl-GS, whole frame (%zu px): exact %llu, <=2 %llu, <=8 %llu, >8 %llu", gsc.size(),
+        (unsigned long long)hc[0], (unsigned long long)hc[1], (unsigned long long)hc[2], (unsigned long long)hc[3]);
     if (g_scale > 1) {
         uint64_t cov = 0, use = 0;
         auto cs = composite(ns, g_scale, &cov, &use);
@@ -559,6 +699,34 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
         WritePng(path(what), ns.w, ns.h, ns.color);
         Log("  %dx: native covers %llu samples, composite takes %llu", g_scale, (unsigned long long)cov,
             (unsigned long long)use);
+    }
+    // What the window shows: the live GPU composite of this vsync.
+    if (g_live && g_live_img) {
+        auto live = Readback<uint32_t>(*g_live_img, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        char what[32];
+        std::snprintf(what, sizeof what, "live_%dx", g_scale);
+        WritePng(path(what), g_live_img->get_width(), g_live_img->get_height(), live);
+        // Box-downsampled to 1x, against the paraLLEl-GS frame.
+        const int s = g_scale;
+        std::vector<uint32_t> down(gsc.size());
+        uint64_t hl[4] = {};
+        for (uint32_t y = 0; y < rg.h; ++y)
+            for (uint32_t x = 0; x < rg.w; ++x) {
+                uint32_t acc[3] = {};
+                for (int j = 0; j < s; ++j)
+                    for (int i = 0; i < s; ++i) {
+                        const uint32_t c = live[size_t(y * s + j) * rg.w * s + x * s + i];
+                        for (int k = 0; k < 3; ++k) acc[k] += (c >> (8 * k)) & 255;
+                    }
+                uint32_t c = 0xff000000u;
+                for (int k = 0; k < 3; ++k) c |= ((acc[k] + s * s / 2) / (s * s)) << (8 * k);
+                down[size_t(y) * rg.w + x] = c;
+                const int dd = ChanDiff(c, gsc[size_t(y) * rg.w + x]);
+                hl[dd == 0 ? 0 : dd <= 2 ? 1 : dd <= 8 ? 2 : 3]++;
+            }
+        WritePng(path("live_down_1x"), rg.w, rg.h, down);
+        Log("  live %dx composite, box-downsampled to 1x vs paraLLEl-GS: exact %llu, <=2 %llu, <=8 %llu, >8 %llu", s,
+            (unsigned long long)hl[0], (unsigned long long)hl[1], (unsigned long long)hl[2], (unsigned long long)hl[3]);
     }
     Log("  images: %s/native_%06u_*.png", g_dir.c_str(), vsync);
 }
@@ -571,6 +739,8 @@ bool Init(Vulkan::Device* dev) {
     if (!g_on) return false;
     g_dev = dev;
     if (const char* s = std::getenv("XSG_GPU_NATIVE_SCALE")) g_scale = std::max(1, std::min(8, std::atoi(s)));
+    if (const char* s = std::getenv("XSG_GPU_NATIVE_LIVE"); s && *s) g_live = std::atoi(s) != 0;
+    if (const char* s = std::getenv("XSG_GPU_NATIVE_THR"); s && *s) g_thr = std::atoi(s);
     if (const char* s = std::getenv("XSG_GPU_NATIVE_DIR"); s && *s) g_dir = s;
     if (const char* s = std::getenv("XSG_GPU_NATIVE_SHOT"))
         for (const char* q = s; *q;) {
@@ -580,7 +750,7 @@ bool Init(Vulkan::Device* dev) {
             g_shots.insert(uint32_t(v));
             q = *end ? end + 1 : end;
         }
-    Vulkan::ResourceLayout vl, fl;
+    Vulkan::ResourceLayout vl, fl, cl;
     vl.input_mask = 7;
     vl.sets[0].uniform_buffer_mask = 1;
     vl.sets[0].meta[0].array_size = 1;
@@ -592,8 +762,16 @@ bool Init(Vulkan::Device* dev) {
     auto* vs = dev->request_shader(kVert, sizeof kVert, &vl);
     auto* fs = dev->request_shader(kFrag, sizeof kFrag, &fl);
     g_prog = dev->request_program(vs, fs);
-    Log("on: set-0 strip batches, scale %dx, %zu shot vsyncs -> %s", g_scale, g_shots.size(), g_dir.c_str());
-    return g_prog != nullptr;
+    cl.sets[0].sampled_image_mask = 0xf;
+    cl.sets[0].storage_buffer_mask = 1u << 4;
+    cl.sets[0].storage_image_mask = 1u << 5;
+    for (int i = 0; i < 6; ++i) cl.sets[0].meta[i].array_size = 1;
+    cl.push_constant_size = 32;
+    auto* cs = dev->request_shader(kComp, sizeof kComp, &cl);
+    g_comp = dev->request_program(cs);
+    Log("on: set-0 strip batches, scale %dx, live %s, %zu shot vsyncs -> %s", g_scale, g_live ? "on" : "off",
+        g_shots.size(), g_dir.c_str());
+    return g_prog != nullptr && g_comp != nullptr;
 }
 
 bool On() { return g_on; }
@@ -632,7 +810,7 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     s.tex = white;
     if (Bits(prim, 4, 1)) {
         static std::map<std::tuple<uint64_t, uint64_t, uint32_t>, std::shared_ptr<Tex>> cache;
-        if (cache.size() > 4096) cache.clear();
+        if (cache.size() > 512) cache.clear();
         auto key = std::make_tuple(s.tex0 & ((1ull << 61) - 1), s.texa, g_upload_gen);
         auto it = cache.find(key);
         if (it == cache.end()) {
@@ -643,17 +821,35 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
         }
         s.tex = it->second;
     }
-    g_batches.push_back(std::move(s));
+    FbFrame& f = g_fb[Bits(s.frame, 0, 9)];
+    if (f.vsync != g_vsyncs) {
+        f.b.clear();
+        f.vsync = g_vsyncs;
+    }
+    f.b.push_back(std::move(s));
 }
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
+    g_last_vsync = frame;
+    if (g_live) Live(gs);
     if (g_shots.count(frame)) Shot(frame, gs);
     if (frame % 600 == 0)
-        Log("vsync %u: %llu batches, %llu vertices so far", frame, (unsigned long long)g_nbatch,
-            (unsigned long long)g_nvert);
-    if (!g_batches.empty()) g_prev.swap(g_batches);
-    g_batches.clear();
-    g_last_vsync = frame;
+        Log("vsync %u: %llu batches, %llu vertices, %llu live composites so far", frame, (unsigned long long)g_nbatch,
+            (unsigned long long)g_nvert, (unsigned long long)g_live_frames);
+    // Texture images whose decoded texture only the image cache still holds are gone.
+    if (g_teximg.size() > 512)
+        for (auto it = g_teximg.begin(); it != g_teximg.end();)
+            it = it->second.first.use_count() <= 1 ? g_teximg.erase(it) : std::next(it);
+    if (g_fb.size() > 8) g_fb.clear();
+    g_vsyncs++;
 }
+
+const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h) {
+    *fb_w = g_live_w;
+    *fb_h = g_live_h;
+    return g_live_img;
+}
+
+int Scale() { return g_scale; }
 
 }  // namespace xsgnative

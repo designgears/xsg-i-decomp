@@ -1,0 +1,42 @@
+#version 450
+// Live native composite (port/docs/NATIVE_RENDERER.md §3): for every sample of
+// the high-resolution output, take the native sample when the paraLLEl-GS
+// pixel under it still holds the native surface, else the GS pixel.
+//   GS pixel owned by native  <=>  the 1x native render covers it, the GS kept
+//   the colour the 1x render predicts (nothing was drawn over it later without
+//   Z: UI, translucent effects, post-processing) and the GS Z is not in front
+//   of the native depth (characters).  Where the 1x render does not cover the
+//   pixel (silhouette edges) only the depth rule applies.
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0) uniform sampler2D hc;   // native colour, scale s
+layout(set = 0, binding = 1) uniform sampler2D hd;   // native depth, scale s (0 = nothing drawn)
+layout(set = 0, binding = 2) uniform sampler2D lc;   // native colour, 1x
+layout(set = 0, binding = 3) uniform sampler2D ld;   // native depth, 1x
+layout(std430, set = 0, binding = 4) readonly buffer Gs { uint gs[]; };   // w*h colours (RGBA8), then w*h Z
+layout(rgba8, set = 0, binding = 5) writeonly uniform image2D o_img;
+layout(push_constant) uniform P {
+    int w, h, s, thr;
+    float zmul;
+} p;
+
+void main() {
+    ivec2 o = ivec2(gl_GlobalInvocationID.xy);
+    if (o.x >= p.w * p.s || o.y >= p.h * p.s) return;
+    ivec2 g = o / p.s;
+    int gi = g.y * p.w + g.x;
+    vec3 gc = unpackUnorm4x8(gs[gi]).rgb;
+    float zg = float(gs[p.w * p.h + gi]);
+    vec3 res = gc;
+    float nd = texelFetch(hd, o, 0).r;
+    if (nd > 0.0) {
+        float eps = max(64.0, zg * 2e-4);
+        bool ok = nd * p.zmul + eps >= zg;
+        float d1 = texelFetch(ld, g, 0).r;
+        if (ok && d1 > 0.0) {
+            vec3 dc = abs(texelFetch(lc, g, 0).rgb - gc) * 255.0;
+            ok = max(dc.r, max(dc.g, dc.b)) <= float(p.thr) + 0.5;
+        }
+        if (ok) res = texelFetch(hc, o, 0).rgb;
+    }
+    imageStore(o_img, o, vec4(res, 1.0));
+}

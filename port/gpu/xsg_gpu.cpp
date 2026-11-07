@@ -29,8 +29,9 @@
  *   XSG_GPU_STREAM=fifo  the 512x448 RGB24 live stream (set by the game from
  *                        XSG_STREAM when it does not run the soft GS itself)
  *   XSG_GPU_VVL=1        allow the Vulkan validation layer
- *   XSG_GPU_NATIVE=1     native renderer slice (native.cpp, port/docs/NATIVE_RENDERER.md),
- *                        with XSG_GPU_NATIVE_SCALE / _SHOT / _DIR
+ *   XSG_GPU_NATIVE=1     native renderer (native.cpp, port/docs/NATIVE_RENDERER.md): the
+ *                        window shows the live composite at XSG_GPU_NATIVE_SCALE (default 2);
+ *                        XSG_GPU_NATIVE_LIVE=0 (shots only), _THR, _SHOT, _DIR
  */
 #include "gpu_ipc.h"
 #include "xsg_input.h"
@@ -207,7 +208,7 @@ struct Renderer {
     Vulkan::Device* dev = nullptr;
     GSInterface gs;
     bool windowed = false;
-    uint64_t vsyncs = 0, gif_bytes = 0, presents = 0;
+    uint64_t vsyncs = 0, gif_bytes = 0, presents = 0, native_presents = 0;
     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     uint32_t hires = 0;
     std::string aspect = "4:3";
@@ -354,15 +355,38 @@ struct Renderer {
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
         VkClearValue clear = {};
         cmd->clear_image(bb, clear);
-        if (so.image) {
+        // The native layer (XSG_GPU_NATIVE): the high-resolution composite of the
+        // displayed buffer, cropped to the scanned-out rectangle, replaces the
+        // paraLLEl-GS scanout.  Frames without native batches show the scanout.
+        uint32_t nfw = 0, nfh = 0;
+        const Vulkan::ImageHandle* live = xsgnative::On() ? &xsgnative::LiveImage(&nfw, &nfh) : nullptr;
+        const Vulkan::Image* src = so.image.get();
+        int sx0 = 0, sy0 = 0, sw = src ? int(src->get_width()) : 0, sh = src ? int(src->get_height()) : 0, src_h = sh;
+        if (live && *live && so.image) {
+            const int s = xsgnative::Scale();
+            const auto& priv = gs.get_priv_register_state();
+            const uint64_t pmode = priv.qwords_lo[0];
+            const uint64_t dispfb = priv.qwords_lo[((pmode & 1) || !(pmode & 2) ? 0x70 : 0x90) >> 4 << 1];
+            const int dbx = int(dispfb >> 32) & 0x7ff, dby = int(dispfb >> 43) & 0x7ff;
+            const int w = std::min(int(so.internal_width), int(nfw) - dbx), h = std::min(int(so.internal_height), int(nfh) - dby);
+            if (w > 0 && h > 0) {
+                src = live->get();
+                sx0 = dbx * s;
+                sy0 = dby * s;
+                sw = w * s;
+                sh = h * s;
+                src_h = h;
+            }
+        }
+        if (src) {
             int dw, dh;
-            Fit(int(bb.get_width()), int(bb.get_height()), int(so.image->get_height()), &dw, &dh);
+            Fit(int(bb.get_width()), int(bb.get_height()), src_h, &dw, &dh);
             const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
             cmd->barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                          VK_ACCESS_2_TRANSFER_WRITE_BIT);
-            cmd->blit_image(bb, *so.image, {x0, y0, 0}, {dw, dh, 1}, {0, 0, 0},
-                            {int(so.image->get_width()), int(so.image->get_height()), 1}, 0, 0, 0, 0, 1,
+            cmd->blit_image(bb, *src, {x0, y0, 0}, {dw, dh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
                             nearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
+            native_presents += src != so.image.get();
         }
         cmd->image_barrier(bb, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
@@ -425,8 +449,8 @@ struct Renderer {
         __atomic_store_n(&shm->vsyncs_done, uint32_t(vsyncs), __ATOMIC_RELEASE);
         if (vsyncs % 600 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents", frame, 600.0 / s, gif_bytes / s / 1e6,
-                (unsigned long long)presents);
+            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native)", frame, 600.0 / s,
+                gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents);
             t0 = std::chrono::steady_clock::now();
             gif_bytes = 0;
         }
