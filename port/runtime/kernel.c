@@ -68,10 +68,12 @@ static int (*vsync_cb)(int);
 static struct { int cause; int (*fn)(int); int used; } intc[32];
 /* Frame pacing: vblanks are spaced frame_ns apart in real time (60 Hz by
  * default; XSG_FRAME_US overrides the period, XSG_FAST=1 or XSG_FRAME_US=0
- * runs unthrottled).  Deadlines are absolute, so time spent running the game
+ * runs unthrottled; XSG_FAST_UNTIL=N runs unthrottled up to vblank N).  Deadlines are absolute, so time spent running the game
  * between vblanks counts toward the frame; if the host falls more than a few
  * frames behind, the schedule restarts from now instead of bursting. */
 static long frame_ns = 16666667;
+int xsg_skip_events;        /* XSG_SKIP_EVENTS=1: script sleeps collapse to one tick (src/main/system.c) */
+static unsigned fast_until; /* XSG_FAST_UNTIL=N: unthrottled before vblank N */
 static struct timespec next_vblank;
 
 void xsg_kernel_init(void)
@@ -85,6 +87,11 @@ void xsg_kernel_init(void)
         frame_ns = atol(fp) * 1000;
     if (fast && fast[0] && fast[0] != '0')
         frame_ns = 0;
+    const char *se = getenv("XSG_SKIP_EVENTS");
+    xsg_skip_events = se && se[0] && se[0] != '0';
+    const char *fu = getenv("XSG_FAST_UNTIL");
+    if (fu)
+        fast_until = (unsigned)strtoul(fu, NULL, 0);
     clock_gettime(CLOCK_MONOTONIC, &next_vblank);
 }
 
@@ -210,7 +217,9 @@ void xsg_vblank(void)
 {
     xsg_frame++;
     xsg_gs_vblank(xsg_frame);
-    if (frame_ns) {
+    if (frame_ns && xsg_frame < fast_until) {
+        clock_gettime(CLOCK_MONOTONIC, &next_vblank); /* fast-forward; real-time pacing resumes at N */
+    } else if (frame_ns) {
         struct timespec now;
         next_vblank.tv_nsec += frame_ns;
         while (next_vblank.tv_nsec >= 1000000000L) {

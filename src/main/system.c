@@ -108,6 +108,13 @@ void Java_xeno_vm_System_sleep__I(JThread *thread, union { int i; void *p; } *ar
     thread->resume_frames = thread->frame_depth;
     n = arguments->i;
     thread->wait_parameter = n < 0 ? 0 : n;
+#ifdef PORT_HOST
+    {   /* XSG_SKIP_EVENTS=1: script sleeps take one tick, so cutscenes rush through */
+        extern int xsg_skip_events;
+        if (xsg_skip_events)
+            thread->wait_parameter = 0;
+    }
+#endif
 }
 
 static char *getStrIndex(char *string, int length, int ch)
