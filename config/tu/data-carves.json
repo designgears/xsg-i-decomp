@@ -6881,6 +6881,30 @@
    ]
   },
   "main/tu195": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8150",
+      "0x004d8154"
+     ],
+     "generated": [
+      "0x004d8150",
+      "0x004d8154"
+     ],
+     "generated_by": [
+      "Enemy_ActionReady"
+     ],
+     "c_owned_symbols": [
+      "D_004D8150"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/enemy_3.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -6897,7 +6921,12 @@
      "c_owned_symbols": [
       "jtbl_004CADF0"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/enemy_3.o"
+     }
     }
    ]
   },
@@ -8192,7 +8221,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_class_db.o"
+      "object": "build/main/build/c/init_class_db.o"
      }
     }
    ],
@@ -8200,23 +8229,24 @@
     {
      "range": [
       "0x004dbfd0",
-      "0x004dbfd8"
+      "0x004dbfdc"
      ],
      "generated": [
       "0x004dbfd0",
-      "0x004dbfd7"
+      "0x004dbfdc"
      ],
      "generated_by": [
       "findClass"
      ],
      "c_owned_symbols": [
-      "D_004DBFD0"
+      "D_004DBFD0",
+      "constStringTable"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_class_db.o"
+      "object": "build/main/build/c/init_class_db.o"
      }
     }
    ]
@@ -8338,6 +8368,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/find_native_method.o"
+     }
+    }
+   ]
+  },
+  "main/tu229": {
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc068",
+      "0x004dc070"
+     ],
+     "generated": [
+      "0x004dc068",
+      "0x004dc06a"
+     ],
+     "generated_by": [
+      "PDB_findFile"
+     ],
+     "c_owned_symbols": [
+      "D_004DC068"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pdb.o"
      }
     }
    ]
@@ -8939,6 +8995,33 @@
     }
    ]
   },
+  "main/tu251": {
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc208",
+      "0x004dc210"
+     ],
+     "generated": [
+      "0x004dc208",
+      "0x004dc20d"
+     ],
+     "generated_by": [
+      "Java_xeno_Stage_start__ILjava_lang_Object_",
+      "Java_xeno_Stage_stop__"
+     ],
+     "c_owned_symbols": [
+      "D_004DC208"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/stage_2.o"
+     }
+    }
+   ]
+  },
   "main/tu253": {
    ".rodata": [
     {
@@ -9134,7 +9217,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tcamera.o"
+      "object": "build/main/build/c/tcamera.o"
      }
     }
    ],
@@ -9171,7 +9254,31 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tcamera.o"
+      "object": "build/main/build/c/tcamera.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc240",
+      "0x004dc244"
+     ],
+     "generated": [
+      "0x004dc240",
+      "0x004dc244"
+     ],
+     "generated_by": [
+      "TCAMERA_update"
+     ],
+     "c_owned_symbols": [
+      "camDisp"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tcamera.o"
      }
     }
    ]
@@ -9348,20 +9455,22 @@
    ".lit4": [
     {
      "range": [
-      "0x004d8530",
+      "0x004d852c",
       "0x004d8550"
      ],
      "generated": [
-      "0x004d8530",
+      "0x004d852c",
       "0x004d8550"
      ],
      "generated_by": [
       "ANM_reset",
+      "ANM_resetDefault",
       "ANM_resetPack",
       "ANM_resetTime",
       "ANM_resetTimeInterp"
      ],
      "c_owned_symbols": [
+      "D_004D852C",
       "D_004D8530",
       "D_004D8534",
       "D_004D8538",
@@ -9371,13 +9480,11 @@
       "D_004D8548",
       "D_004D854C"
      ],
-     "also_referenced_by_c": [
-      "D_004D852C"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/anm.o"
+      "object": "build/main/build/c/anm.o"
      }
     }
    ]
