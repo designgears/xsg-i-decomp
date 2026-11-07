@@ -1,7 +1,7 @@
 #include "common.h"
 #include "shared.h"
 
-extern int s_nIgnoreCulling;
+static int s_nIgnoreCulling = 0;
 
 typedef int s32;
 
