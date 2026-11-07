@@ -13,10 +13,6 @@ extern SceneType *TYPE_Void;
 extern SceneClass *classJava_xeno_Chr;
 extern SceneClass *classJava_xeno_Stage;
 extern unsigned char tcamera[];
-extern char D_004DA628[];
-extern char D_004DA630[];
-extern char D_004DA638[];
-extern char D_004C2420[];
 extern JavaField *lookupClassField(void *class_object, void *name, int flags);
 extern SceneClass *getClassFromSignature(const char *signature, void *class_loader);
 extern int instanceOf(SceneClass *scene_class, SceneClass *parent_class);
@@ -47,10 +43,10 @@ void STAGE_instance(SceneVm *vm, SceneObject stage_object)
         JNI_callMethod(vm, method, arguments, 0);
     }
 
-    field = (SceneField *)lookupClassField(classJava_xeno_Stage, loadConstString(D_004DA628, -1), 0);
+    field = (SceneField *)lookupClassField(classJava_xeno_Stage, loadConstString("cam0", -1), 0);
     if (field != 0) {
         *(int *)tcamera =
-            (int)loadClass(loadConstString(D_004C2420, -1), 0)->instance_class_ref;
+            (int)loadClass(loadConstString("xeno/Camera", -1), 0)->instance_class_ref;
         *(unsigned char **)(stage_object + field->instance_offset) = tcamera;
     }
 
@@ -73,8 +69,8 @@ void STAGE_instance(SceneVm *vm, SceneObject stage_object)
             SceneMethod *init_method;
             SceneObject field_object;
 
-            init_method = findMethod((SceneClass *)field->type_or_descriptor, loadConstString(D_004DA630, -1),
-                                     loadConstString(D_004DA638, -1));
+            init_method = findMethod((SceneClass *)field->type_or_descriptor, loadConstString("init", -1),
+                                     loadConstString("()V", -1));
             if (init_method != 0) {
                 SceneClass *component_class;
                 SceneField *nested;
@@ -113,7 +109,7 @@ void STAGE_instance(SceneVm *vm, SceneObject stage_object)
 
     stage_object = self;
     stage_class = ((SceneObjectHeader *)self)->class_ref->scene_class;
-    method = findMethod(stage_class, loadConstString(D_004DA630, -1), loadConstString(D_004DA638, -1));
+    method = findMethod(stage_class, loadConstString("init", -1), loadConstString("()V", -1));
     if (method != 0) {
         arguments[0] = stage_object;
         JNI_initThread(vm);
