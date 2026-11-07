@@ -9,10 +9,13 @@
  * 12 pressure bytes) in GpuPad (gpu_ipc.h); the game's scePadRead
  * (port/runtime/sdk.c) reads it and ORs in its XSG_PAD script.
  *
- * Config: $XSG_INPUT_INI, else $XDG_CONFIG_HOME/xsg/input.ini, else
- * ~/.config/xsg/input.ini.  Format and defaults: port/docs/STAGE10_INPUT.md.
+ * Config: the [keyboard] / [gamepad] / [video] sections of
+ * ~/.config/xsg/settings.ini (menu/cfg.cpp; input.ini is migrated into it).
+ * Format and defaults: port/docs/STAGE10_INPUT.md, port/docs/MENU.md.
+ * While the in-game menu is open the game gets a neutral pad.
  */
 #include "xsg_input.h"
+#include "menu/cfg.h"
 
 #ifdef XSG_GPU_SDL
 #include <SDL3/SDL.h>
@@ -87,42 +90,15 @@ bool ParseTargets(const std::string& v, uint32_t* out) {
 
 GpuPad* g_pad;
 bool g_sdl;
-std::map<std::string, std::map<std::string, std::string>> g_ini;  // section -> key -> value (keys as written)
+bool g_menu_open;
 int g_deadzone = 8000;
 int g_trigger = 8000;
-
-void LoadIni() {
-    std::string path;
-    if (const char* p = std::getenv("XSG_INPUT_INI"); p && *p) path = p;
-    else if (const char* x = std::getenv("XDG_CONFIG_HOME"); x && *x) path = std::string(x) + "/xsg/input.ini";
-    else if (const char* h = std::getenv("HOME"); h && *h) path = std::string(h) + "/.config/xsg/input.ini";
-    if (path.empty()) return;
-    FILE* f = std::fopen(path.c_str(), "r");
-    if (!f) return;
-    char line[512];
-    std::string sec;
-    int n = 0;
-    while (std::fgets(line, sizeof line, f)) {
-        std::string l = Trim(line);
-        if (l.empty() || l[0] == '#' || l[0] == ';') continue;
-        if (l[0] == '[') { sec = Upper(Trim(l.substr(1, l.find(']') - 1))); continue; }
-        size_t eq = l.find('=');
-        if (eq == std::string::npos) continue;
-        g_ini[sec][Trim(l.substr(0, eq))] = Trim(l.substr(eq + 1));
-        n++;
-    }
-    std::fclose(f);
-    Log("%s: %d entries", path.c_str(), n);
-}
-bool g_ini_loaded;
-void EnsureIni() {
-    if (!g_ini_loaded) { g_ini_loaded = true; LoadIni(); }
-}
 
 #ifdef XSG_GPU_SDL
 std::map<SDL_Scancode, uint32_t> g_keymap;
 std::map<int, uint32_t> g_padmap;          // SDL_GamepadButton -> mask
 uint32_t g_lt = L2, g_rt = R2;             // trigger axes -> mask
+constexpr int kLT = SDL_GAMEPAD_BUTTON_COUNT, kRT = SDL_GAMEPAD_BUTTON_COUNT + 1;   // pseudo buttons (binds API)
 bool g_keys[SDL_SCANCODE_COUNT];
 struct PadState {
     SDL_Gamepad* gp = nullptr;
@@ -148,7 +124,7 @@ void DefaultMaps() {
     K(SDL_SCANCODE_W, UP); K(SDL_SCANCODE_S, DOWN); K(SDL_SCANCODE_A, LEFT); K(SDL_SCANCODE_D, RIGHT);
     K(SDL_SCANCODE_RETURN, STA); K(SDL_SCANCODE_KP_ENTER, STA); K(SDL_SCANCODE_BACKSPACE, SEL);
     K(SDL_SCANCODE_K, CRO); K(SDL_SCANCODE_L, CIR); K(SDL_SCANCODE_J, SQU); K(SDL_SCANCODE_I, TRI);
-    K(SDL_SCANCODE_SPACE, CIR); K(SDL_SCANCODE_ESCAPE, CRO);
+    K(SDL_SCANCODE_SPACE, CIR);   // Esc opens the in-game menu (MENU.md), no longer CROSS
     K(SDL_SCANCODE_Q, L1); K(SDL_SCANCODE_E, R1); K(SDL_SCANCODE_1, L2); K(SDL_SCANCODE_3, R2);
     K(SDL_SCANCODE_Z, L3); K(SDL_SCANCODE_C, R3);
     K(SDL_SCANCODE_KP_8, RS_UP); K(SDL_SCANCODE_KP_5, RS_DOWN); K(SDL_SCANCODE_KP_4, RS_LEFT); K(SDL_SCANCODE_KP_6, RS_RIGHT);
@@ -162,19 +138,23 @@ void DefaultMaps() {
     P(SDL_GAMEPAD_BUTTON_DPAD_LEFT, LEFT); P(SDL_GAMEPAD_BUTTON_DPAD_RIGHT, RIGHT);
 }
 
+std::map<SDL_Scancode, uint32_t> g_def_keymap;
+std::map<int, uint32_t> g_def_padmap;
+
 void ApplyIni() {
-    for (auto& [k, v] : g_ini["KEYBOARD"]) {
+    g_deadzone = xsgcfg::GetInt("gamepad.deadzone");
+    g_trigger = xsgcfg::GetInt("gamepad.trigger_threshold");
+    for (auto& [k, v] : xsgcfg::Raw("keyboard")) {
         SDL_Scancode sc = SDL_GetScancodeFromName(k.c_str());
         uint32_t m;
         if (sc == SDL_SCANCODE_UNKNOWN) { Log("[keyboard] unknown key \"%s\"", k.c_str()); continue; }
         if (!ParseTargets(v, &m)) { Log("[keyboard] %s: unknown button \"%s\"", k.c_str(), v.c_str()); continue; }
         g_keymap[sc] = m;
     }
-    for (auto& [k, v] : g_ini["GAMEPAD"]) {
+    for (auto& [k, v] : xsgcfg::Raw("gamepad")) {
         std::string lk = k;
         for (auto& c : lk) c = char(std::tolower((unsigned char)c));
-        if (lk == "deadzone") { g_deadzone = std::atoi(v.c_str()); continue; }
-        if (lk == "trigger_threshold") { g_trigger = std::atoi(v.c_str()); continue; }
+        if (lk == "deadzone" || lk == "trigger_threshold" || lk == "layout") continue;   // cfg table keys
         uint32_t m;
         if (!ParseTargets(v, &m)) { Log("[gamepad] %s: unknown button \"%s\"", k.c_str(), v.c_str()); continue; }
         if (lk == "lefttrigger") { g_lt = m; continue; }
@@ -254,6 +234,7 @@ void Push(const TestEv& t, bool down) {
     if (t.kind == 0) {
         e.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
         e.key.scancode = SDL_Scancode(t.code);
+        e.key.key = SDL_GetKeyFromScancode(SDL_Scancode(t.code), SDL_KMOD_NONE, false);   // for the menu (ImGui)
         e.key.down = down;
     } else if (t.kind == 1) {
         e.type = down ? SDL_EVENT_GAMEPAD_BUTTON_DOWN : SDL_EVENT_GAMEPAD_BUTTON_UP;
@@ -279,23 +260,23 @@ uint8_t AxisByte(int v) {
 }  // namespace
 
 std::string Option(const char* key, const char* env, const char* def) {
-    if (env) if (const char* v = std::getenv(env); v && *v) return v;
-    EnsureIni();
-    auto& sec = g_ini["VIDEO"];
-    for (auto& [k, v] : sec)
-        if (Upper(k) == Upper(key)) return v;
-    return def;
+    (void)env;
+    (void)def;
+    return xsgcfg::Get(("video." + std::string(key)).c_str());   // env > settings.ini > default (menu/cfg.cpp)
 }
 
 void Init(GpuPad* pad, bool sdl) {
     g_pad = pad;
     std::memset((void*)pad, 0, sizeof *pad);
-    EnsureIni();
 #ifdef XSG_GPU_SDL
     g_sdl = sdl;
-    if (!sdl) return;
-    DefaultMaps();
+    DefaultMaps();   // also without SDL events: the menu shows and edits the bindings
+    g_def_keymap = g_keymap;
+    g_def_padmap = g_padmap;
+    g_def_padmap[kLT] = L2;
+    g_def_padmap[kRT] = R2;
     ApplyIni();
+    if (!sdl) return;
     if (const char* t = std::getenv("XSG_GPU_INPUT_TEST"); t && *t) ParseTest(t);
     int n = 0;
     if (SDL_JoystickID* ids = SDL_GetGamepads(&n)) {
@@ -370,6 +351,19 @@ void Publish() {
     if (!g_pad) return;
 #ifdef XSG_GPU_SDL
     if (!g_sdl) return;  // never active: the game keeps a neutral pad
+    if (g_menu_open) {   // the in-game menu has the input: a neutral pad
+        GpuPad* p = g_pad;
+        const uint32_t s = p->seq;
+        __atomic_store_n(&p->seq, s + 1, __ATOMIC_RELAXED);
+        __atomic_thread_fence(__ATOMIC_RELEASE);
+        p->buttons = 0;
+        for (int i = 0; i < 4; ++i) p->stick[i] = 0x80;
+        for (int i = 0; i < 12; ++i) p->press[i] = 0;
+        p->updates = p->updates + 1;
+        p->active = 1;
+        __atomic_store_n(&p->seq, s + 2, __ATOMIC_RELEASE);
+        return;
+    }
     uint32_t m = 0;
     for (int s = 0; s < SDL_SCANCODE_COUNT; ++s)
         if (g_keys[s]) {
@@ -419,5 +413,119 @@ void Publish() {
     __atomic_store_n(&p->seq, s + 2, __ATOMIC_RELEASE);
 #endif
 }
+
+/* ---------------------------------------------------------------- in-game menu */
+void SetMenuOpen(bool open) {
+    g_menu_open = open;
+#ifdef XSG_GPU_SDL
+    std::memset(g_keys, 0, sizeof g_keys);   // no key held across the menu
+#endif
+}
+
+bool MenuOpen() { return g_menu_open; }
+
+uint32_t TargetMask(const char* name) {
+    uint32_t m = 0;
+    return ParseTargets(name, &m) ? m : 0;
+}
+
+std::string TargetNames(uint32_t m) {
+    if (!m) return "NONE";
+    std::string r;
+    for (auto& k : kTargets) {
+        if (!k.mask || !std::strcmp(k.name, "X") || !std::strcmp(k.name, "O")) continue;
+        if ((m & k.mask) == k.mask) { r += r.empty() ? "" : "+"; r += k.name; m &= ~k.mask; }
+    }
+    return r;
+}
+
+void SetDeadzone(int dz, int trig) {
+    g_deadzone = dz;
+    g_trigger = trig;
+}
+
+#ifdef XSG_GPU_SDL
+bool MenuPad(uint32_t* buttons, int* lx, int* ly) {
+    uint32_t b = 0;
+    int x = 0, y = 0;
+    bool any = false;
+    for (auto& [id, p] : g_pads) {
+        any = any || p.gp != nullptr || id == kTestPad;
+        for (int i = 0; i < SDL_GAMEPAD_BUTTON_COUNT && i < 32; ++i)
+            if (p.btn[i]) b |= 1u << i;
+        if (std::abs(p.axis[SDL_GAMEPAD_AXIS_LEFTX]) > std::abs(x)) x = p.axis[SDL_GAMEPAD_AXIS_LEFTX];
+        if (std::abs(p.axis[SDL_GAMEPAD_AXIS_LEFTY]) > std::abs(y)) y = p.axis[SDL_GAMEPAD_AXIS_LEFTY];
+    }
+    *buttons = b;
+    *lx = x;
+    *ly = y;
+    return any;
+}
+
+std::vector<std::pair<int, uint32_t>> KeyBinds() { return {g_keymap.begin(), g_keymap.end()}; }
+std::vector<std::pair<int, uint32_t>> PadBinds() {
+    std::vector<std::pair<int, uint32_t>> v(g_padmap.begin(), g_padmap.end());
+    v.push_back({kLT, g_lt});
+    v.push_back({kRT, g_rt});
+    return v;
+}
+void SetKeyBind(int scancode, uint32_t mask) {
+    if (mask) g_keymap[SDL_Scancode(scancode)] = mask;
+    else g_keymap.erase(SDL_Scancode(scancode));
+}
+void SetPadBind(int button, uint32_t mask) {
+    if (button == kLT) g_lt = mask;
+    else if (button == kRT) g_rt = mask;
+    else if (mask) g_padmap[button] = mask;
+    else g_padmap.erase(button);
+}
+const char* PadButtonName(int b) {
+    if (b == kLT) return "lefttrigger";
+    if (b == kRT) return "righttrigger";
+    static const char* kPos[] = {"south", "east", "west", "north"};
+    if (b >= 0 && b < 4) return kPos[b];
+    const char* n = SDL_GetGamepadStringForButton(SDL_GamepadButton(b));
+    return n ? n : "?";
+}
+
+/* The remapping as settings.ini entries: only what differs from the defaults
+   (NONE for an unbound default), so the defaults can change later. */
+void SaveBinds() {
+    auto& kb = xsgcfg::Raw("keyboard");
+    kb.clear();
+    for (auto& [sc, m] : g_def_keymap)
+        if (!g_keymap.count(sc)) kb[SDL_GetScancodeName(sc)] = "NONE";
+    for (auto& [sc, m] : g_keymap) {
+        auto d = g_def_keymap.find(sc);
+        if (d == g_def_keymap.end() || d->second != m) kb[SDL_GetScancodeName(sc)] = TargetNames(m);
+    }
+    auto& gp = xsgcfg::Raw("gamepad");
+    for (auto it = gp.begin(); it != gp.end();) {   // keep the cfg table keys (deadzone, layout...)
+        std::string l = it->first;
+        for (auto& c : l) c = char(std::tolower((unsigned char)c));
+        it = (l == "deadzone" || l == "trigger_threshold" || l == "layout") ? std::next(it) : gp.erase(it);
+    }
+    auto cur = g_padmap;
+    cur[kLT] = g_lt;
+    cur[kRT] = g_rt;
+    for (auto& [b, m] : g_def_padmap)
+        if (!cur.count(b) || (cur[b] == 0 && m)) gp[PadButtonName(b)] = "NONE";
+    for (auto& [b, m] : cur) {
+        auto d = g_def_padmap.find(b);
+        if (m && (d == g_def_padmap.end() || d->second != m)) gp[PadButtonName(b)] = TargetNames(m);
+    }
+    xsgcfg::RawChanged();
+}
+
+void ResetBinds() {
+    g_keymap = g_def_keymap;
+    g_padmap = g_def_padmap;
+    g_padmap.erase(kLT);
+    g_padmap.erase(kRT);
+    g_lt = L2;
+    g_rt = R2;
+    SaveBinds();
+}
+#endif
 
 }  // namespace xsginput

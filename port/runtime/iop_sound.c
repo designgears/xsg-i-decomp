@@ -718,6 +718,23 @@ static void *audio_thread(void *p)
 }
 
 /* ---- entry points (iop.c) ------------------------------------------- */
+/* In-game menu (kernel.c, per vblank when changed): audio on/off and the
+ * master / music / effects / voice volumes in percent. */
+void xsg_sound_set_volume(int on, const int vol[4])
+{
+    int q[4];
+    for (int i = 0; i < 4; i++) {
+        int v = vol[i] < 0 ? 0 : vol[i] > 100 ? 100 : vol[i];
+        /* a perceptual curve: percent squared (50 % = -12 dB) */
+        q[i] = v * v * 32768 / 10000;
+    }
+    if (!on)
+        q[0] = 0;
+    spu2_set_mix_gains(q[0], q[1], q[2], q[3]);
+    xsg_logf("[settings] audio %s, volume master %d music %d effects %d voice %d (Q15 %d/%d/%d/%d)\n",
+             on ? "on" : "muted", vol[0], vol[1], vol[2], vol[3], q[0], q[1], q[2], q[3]);
+}
+
 int xsg_sound_enabled(void)
 {
     const char *e = getenv("XSG_SOUND");

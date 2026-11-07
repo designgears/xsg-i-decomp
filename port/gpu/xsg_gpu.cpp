@@ -24,7 +24,9 @@
  *   XSG_GPU_FILTER=linear|nearest            blit filter (default linear)
  *   XSG_GPU_FULLSCREEN=1 start fullscreen (F11 toggles)
  *   XSG_GPU_INPUT_TEST   synthetic SDL input events (STAGE10_INPUT.md)
- * The same video options can be set in [video] of ~/.config/xsg/input.ini.
+ * The same video options can be set in [video] of ~/.config/xsg/settings.ini
+ * (menu/cfg.cpp; input.ini is migrated) and in the in-game menu (F1,
+ * menu/menu.cpp, port/docs/MENU.md).
  * Keyboard/gamepad input: xsg_input.cpp, port/docs/STAGE10_INPUT.md.
  *   XSG_GPU_STREAM=fifo  the 512x448 RGB24 live stream (set by the game from
  *                        XSG_STREAM when it does not run the soft GS itself)
@@ -36,6 +38,8 @@
 #include "gpu_ipc.h"
 #include "xsg_input.h"
 #include "native.h"
+#include "menu/cfg.h"
+#include "menu/menu.h"
 
 #include "context.hpp"
 #include "device.hpp"
@@ -61,11 +65,21 @@
 #include <mutex>
 #include <string>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
+
+// File-local stb_image_write (static): the menu's screenshots and test shots.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#pragma GCC diagnostic pop
 
 using namespace ParallelGS;
 
@@ -183,8 +197,10 @@ struct SdlPlatform final : Vulkan::WSIPlatform {
             if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_F11 && !e.key.repeat) {
                 fullscreen = !fullscreen;
                 SDL_SetWindowFullscreen(win, fullscreen);
+                xsgcfg::Set("video.fullscreen", fullscreen ? "1" : "0");
                 continue;
             }
+            if (xsgmenu::Event(e)) continue;   // F1 / Esc / F10, and everything while the menu is open
             if (xsginput::Event(e)) continue;
             if (e.type == SDL_EVENT_QUIT || e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) is_alive = false;
             if (e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
@@ -209,6 +225,10 @@ struct Renderer {
     GSInterface gs;
     bool windowed = false;
     uint64_t vsyncs = 0, gif_bytes = 0, presents = 0, native_presents = 0;
+    uint32_t native_msgs = 0, native_last = 0;   // GPU_MSG_NATIVE this / last vsync (menu overlay)
+    std::string shot_path;                        // the menu's screenshot request
+    int window_scale = 2;
+    bool pmode_raw = EnvOn("XSG_GPU_PMODE_RAW"), pmode_logged = false;
     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     uint32_t hires = 0;
     std::string aspect = "4:3";
@@ -221,8 +241,9 @@ struct Renderer {
     bool InitWindow() {
 #ifdef XSG_GPU_SDL
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) { Log("SDL_Init: %s", SDL_GetError()); return false; }
-        int scale = std::getenv("XSG_GPU_SCALE") ? std::atoi(std::getenv("XSG_GPU_SCALE")) : 2;
+        int scale = xsgcfg::GetInt("video.window_scale");
         if (scale < 1) scale = 1;
+        window_scale = scale;
         platform = std::make_unique<SdlPlatform>();
         platform->win = SDL_CreateWindow("Xenosaga Episode I (xsg-gpu)", 512 * scale, 448 * scale,
                                          SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
@@ -247,11 +268,7 @@ struct Renderer {
         // present (fifo) paces the whole pipeline to the display; mailbox (the
         // default) never blocks and the game's own vblank timer paces it.
         std::string pm = xsginput::Option("present", "XSG_GPU_PRESENT", EnvOn("XSG_GPU_VSYNC") ? "fifo" : "mailbox");
-        Vulkan::PresentMode mode = Vulkan::PresentMode::UnlockedNoTearing;
-        if (pm == "fifo" || pm == "vsync") mode = Vulkan::PresentMode::SyncToVBlank;
-        else if (pm == "immediate") mode = Vulkan::PresentMode::UnlockedForceTearing;
-        else if (pm == "auto") mode = Vulkan::PresentMode::UnlockedMaybeTear;
-        wsi->set_present_mode(mode);
+        wsi->set_present_mode(PresentModeOf(pm));
         aspect = xsginput::Option("aspect", "XSG_GPU_ASPECT", "4:3");
         integer_scale = xsginput::Option("scale_mode", "XSG_GPU_SCALEMODE", "fit") == "integer";
         nearest = xsginput::Option("filter", "XSG_GPU_FILTER", "linear") == "nearest";
@@ -270,6 +287,52 @@ struct Renderer {
 #else
         return false;
 #endif
+    }
+
+    static Vulkan::PresentMode PresentModeOf(const std::string& pm) {
+        if (pm == "fifo" || pm == "vsync") return Vulkan::PresentMode::SyncToVBlank;
+        if (pm == "immediate") return Vulkan::PresentMode::UnlockedForceTearing;
+        if (pm == "auto") return Vulkan::PresentMode::UnlockedMaybeTear;
+        return Vulkan::PresentMode::UnlockedNoTearing;
+    }
+
+    /* The in-game menu changed a video.* setting: follow it (between frames). */
+    void ApplyVideo() {
+        aspect = xsginput::Option("aspect", "XSG_GPU_ASPECT", "4:3");
+        integer_scale = xsginput::Option("scale_mode", "XSG_GPU_SCALEMODE", "fit") == "integer";
+        nearest = xsginput::Option("filter", "XSG_GPU_FILTER", "linear") == "nearest";
+#ifdef XSG_GPU_SDL
+        if (!windowed) return;
+        bool fs = xsgcfg::GetBool("video.fullscreen");
+        if (fs != platform->fullscreen) {
+            platform->fullscreen = fs;
+            SDL_SetWindowFullscreen(platform->win, fs);
+        }
+        int sc = std::max(1, xsgcfg::GetInt("video.window_scale"));
+        if (sc != window_scale) {
+            window_scale = sc;
+            if (!fs) SDL_SetWindowSize(platform->win, 512 * sc, 448 * sc);
+        }
+        auto mode = PresentModeOf(xsgcfg::Get("video.present"));
+        if (mode != wsi->get_present_mode()) {
+            Log("present mode -> %s (swapchain recreated)", xsgcfg::Get("video.present").c_str());
+            wsi->set_present_mode(mode);
+        }
+#endif
+    }
+
+    const char* PresentName() const {
+#ifdef XSG_GPU_SDL
+        if (windowed) {
+            switch (wsi->get_present_mode()) {
+            case Vulkan::PresentMode::SyncToVBlank: return "FIFO (vsync)";
+            case Vulkan::PresentMode::UnlockedForceTearing: return "Immediate";
+            case Vulkan::PresentMode::UnlockedMaybeTear: return "Auto";
+            default: return "Mailbox";
+            }
+        }
+#endif
+        return "headless";
     }
 
     bool InitHeadless() {
@@ -308,6 +371,7 @@ struct Renderer {
         hires = ss >= 4 && EnvOn("XSG_GPU_HIRES");
         if (!gs.init(dev, o)) { Log("GSInterface::init failed"); return false; }
         xsgnative::Init(dev);
+        InitMenu();
         const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
@@ -318,6 +382,19 @@ struct Renderer {
     void Priv(uint32_t off, uint64_t v) {
         auto& priv = const_cast<PrivRegisterState&>(gs.get_priv_register_state());
         off &= 0x1ff0;
+        // PMODE as the software GS and the screenshots read it (gs_bridge.cpp):
+        // circuit 1 (or 2 when only EN2 is set), opaque.  The game's PMODE
+        // (from the libgraph stubs in sdk.c, e.g. 0x8004: EN1/EN2 off, MMOD 0)
+        // made paraLLEl-GS scan out black or near-black.  XSG_GPU_PMODE_RAW=1
+        // passes the register through as written.
+        if (off == 0 && !pmode_raw && !((v & 3) == 2)) {
+            const uint64_t nv = (v & ~uint64_t(0xffe3)) | 1 | 0x20 | 0xff00;   // EN1, MMOD (use ALP), ALP 0xff
+            if (!pmode_logged && nv != v) {
+                Log("PMODE 0x%llx -> 0x%llx (circuit 1 opaque, as the software GS shows it)", (unsigned long long)v, (unsigned long long)nv);
+                pmode_logged = true;
+            }
+            v = nv;
+        }
         if (off < 0x1000) priv.qwords_lo[(off >> 4) * 2] = v;
         else priv.qwords_hi[((off - 0x1000) >> 4) * 2] = v;
     }
@@ -339,7 +416,60 @@ struct Renderer {
         *dh = h;
     }
 
-    void Present(const ScanoutResult& so) {
+    void InitMenu();
+
+    /* The game image a present shows: the native composite (cropped to the
+       scanned-out rectangle) when this vsync has one, else the scanout. */
+    const Vulkan::Image* Source(const ScanoutResult& so, int* sx0, int* sy0, int* sw, int* sh, int* src_h) {
+        uint32_t nfw = 0, nfh = 0;
+        const Vulkan::ImageHandle* live = xsgnative::On() ? &xsgnative::LiveImage(&nfw, &nfh) : nullptr;
+        const Vulkan::Image* src = so.image.get();
+        *sx0 = 0;
+        *sy0 = 0;
+        *sw = src ? int(src->get_width()) : 0;
+        *sh = src ? int(src->get_height()) : 0;
+        *src_h = *sh;
+        if (live && *live && so.image) {
+            const int s = xsgnative::Scale();
+            const auto& priv = gs.get_priv_register_state();
+            const uint64_t pmode = priv.qwords_lo[0];
+            const uint64_t dispfb = priv.qwords_lo[((pmode & 1) || !(pmode & 2) ? 0x70 : 0x90) >> 4 << 1];
+            const int dbx = int(dispfb >> 32) & 0x7ff, dby = int(dispfb >> 43) & 0x7ff;
+            const int w = std::min(int(so.internal_width), int(nfw) - dbx), h = std::min(int(so.internal_height), int(nfh) - dby);
+            if (w > 0 && h > 0) {
+                src = live->get();
+                *sx0 = dbx * s;
+                *sy0 = dby * s;
+                *sw = w * s;
+                *sh = h * s;
+                *src_h = h;
+            }
+        }
+        return src;
+    }
+
+    /* Clear bb (TRANSFER_DST) and blit the game image into it, fitted. */
+    void BlitGame(Vulkan::CommandBuffer& cmd, const Vulkan::Image& bb, const ScanoutResult& so, bool fit, bool* native) {
+        VkClearValue clear = {};
+        cmd.clear_image(bb, clear);
+        int sx0, sy0, sw, sh, src_h;
+        const Vulkan::Image* src = Source(so, &sx0, &sy0, &sw, &sh, &src_h);
+        if (native) *native = false;
+        if (!src) return;
+        int dw = int(bb.get_width()), dh = int(bb.get_height());
+        if (fit) Fit(int(bb.get_width()), int(bb.get_height()), src_h, &dw, &dh);
+        const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
+        cmd.barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT);
+        cmd.blit_image(bb, *src, {x0, y0, 0}, {dw, dh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
+                       nearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
+        if (native) *native = src != so.image.get();
+        last_image_w = uint32_t(sw);
+        last_image_h = uint32_t(sh);
+    }
+    uint32_t last_image_w = 0, last_image_h = 0;
+
+    void Present(const ScanoutResult& so, bool menu) {
 #ifdef XSG_GPU_SDL
         if (!windowed) return;
         if (!platform->is_alive) {
@@ -353,48 +483,101 @@ struct Renderer {
         cmd->image_barrier(bb, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, 0,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
-        VkClearValue clear = {};
-        cmd->clear_image(bb, clear);
         // The native layer (XSG_GPU_NATIVE): the high-resolution composite of the
         // displayed buffer, cropped to the scanned-out rectangle, replaces the
         // paraLLEl-GS scanout.  Frames without native batches show the scanout.
-        uint32_t nfw = 0, nfh = 0;
-        const Vulkan::ImageHandle* live = xsgnative::On() ? &xsgnative::LiveImage(&nfw, &nfh) : nullptr;
-        const Vulkan::Image* src = so.image.get();
-        int sx0 = 0, sy0 = 0, sw = src ? int(src->get_width()) : 0, sh = src ? int(src->get_height()) : 0, src_h = sh;
-        if (live && *live && so.image) {
-            const int s = xsgnative::Scale();
-            const auto& priv = gs.get_priv_register_state();
-            const uint64_t pmode = priv.qwords_lo[0];
-            const uint64_t dispfb = priv.qwords_lo[((pmode & 1) || !(pmode & 2) ? 0x70 : 0x90) >> 4 << 1];
-            const int dbx = int(dispfb >> 32) & 0x7ff, dby = int(dispfb >> 43) & 0x7ff;
-            const int w = std::min(int(so.internal_width), int(nfw) - dbx), h = std::min(int(so.internal_height), int(nfh) - dby);
-            if (w > 0 && h > 0) {
-                src = live->get();
-                sx0 = dbx * s;
-                sy0 = dby * s;
-                sw = w * s;
-                sh = h * s;
-                src_h = h;
-            }
-        }
-        if (src) {
-            int dw, dh;
-            Fit(int(bb.get_width()), int(bb.get_height()), src_h, &dw, &dh);
-            const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
-            cmd->barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
-                         VK_ACCESS_2_TRANSFER_WRITE_BIT);
-            cmd->blit_image(bb, *src, {x0, y0, 0}, {dw, dh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
-                            nearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
-            native_presents += src != so.image.get();
-        }
+        bool native = false;
+        BlitGame(*cmd, bb, so, true, &native);
+        native_presents += native;
+        // The in-game menu / overlay (menu/menu.cpp) is drawn over the game image.
+        const bool draw_menu = menu && xsgmenu::Visible();
         cmd->image_barrier(bb, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                           VK_PIPELINE_STAGE_2_NONE, 0);
+                           draw_menu ? VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_2_NONE,
+                           draw_menu ? VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT : 0);
+        if (draw_menu) {
+            Vulkan::RenderPassInfo rp;
+            rp.num_color_attachments = 1;
+            rp.color_attachments[0] = &dev->get_swapchain_view();
+            rp.load_attachments = 1;
+            rp.store_attachments = 1;
+            cmd->begin_render_pass(rp);
+            xsgmenu::Draw(*cmd, bb.get_width(), bb.get_height());
+            cmd->end_render_pass();
+        }
         dev->submit(cmd);
         wsi->end_frame();
         presents++;
 #endif
+    }
+
+    /* The game image (fitted into w x h, or at its own size when w = 0),
+       optionally with the menu over it, as a PNG.  Waits for the GPU. */
+    void WritePngOf(const ScanoutResult& so, const std::string& path, uint32_t w, uint32_t h, bool menu) {
+        gs.flush();   // submits paraLLEl-GS's vsync command buffer (the scanout) before ours reads it
+        int sx0, sy0, sw, sh, src_h;
+        if (!Source(so, &sx0, &sy0, &sw, &sh, &src_h)) { Log("screenshot: no image yet"); return; }
+        if (!w || !h) {   // the game image at the window's display aspect, at least its own size
+            h = uint32_t(sh);
+            int dw, dh;
+            Fit(1 << 20, int(h), int(h), &dw, &dh);
+            w = aspect == "stretch" ? uint32_t(sw) : uint32_t(dw);
+        }
+        Vulkan::ImageCreateInfo ii = Vulkan::ImageCreateInfo::render_target(w, h, VK_FORMAT_R8G8B8A8_UNORM);
+        ii.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        ii.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        auto img = dev->create_image(ii);
+        Vulkan::BufferCreateInfo bi = {};
+        bi.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        bi.domain = Vulkan::BufferDomain::CachedHost;
+        bi.size = VkDeviceSize(w) * h * 4;
+        auto buf = dev->create_buffer(bi);
+        auto cmd = dev->request_command_buffer();
+        cmd->image_barrier(*img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
+                           VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+        BlitGame(*cmd, *img, so, true, nullptr);
+        if (menu && xsgmenu::Visible()) {
+            cmd->image_barrier(*img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                               VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+            Vulkan::RenderPassInfo rp;
+            rp.num_color_attachments = 1;
+            rp.color_attachments[0] = &img->get_view();
+            rp.load_attachments = 1;
+            rp.store_attachments = 1;
+            cmd->begin_render_pass(rp);
+            xsgmenu::Draw(*cmd, w, h);
+            cmd->end_render_pass();
+            cmd->image_barrier(*img, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                               VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+        } else {
+            cmd->image_barrier(*img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                               VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+        }
+        cmd->copy_image_to_buffer(*buf, *img, 0, {}, {w, h, 1}, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1});
+        cmd->barrier(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                     VK_ACCESS_HOST_READ_BIT);
+        Vulkan::Fence fence;
+        dev->submit(cmd, &fence);
+        fence->wait();
+        const uint8_t* px = static_cast<const uint8_t*>(dev->map_host_buffer(*buf, Vulkan::MEMORY_ACCESS_READ_BIT));
+        std::vector<uint8_t> rgb(size_t(w) * h * 3);
+        for (size_t i = 0; i < size_t(w) * h; ++i) {
+            rgb[i * 3] = px[i * 4];
+            rgb[i * 3 + 1] = px[i * 4 + 1];
+            rgb[i * 3 + 2] = px[i * 4 + 2];
+        }
+        dev->unmap_host_buffer(*buf, Vulkan::MEMORY_ACCESS_READ_BIT);
+        if (size_t sl = path.rfind('/'); sl != std::string::npos && sl > 0) {
+            std::string d = path.substr(0, sl);
+            for (size_t i = 1; i <= d.size(); ++i)
+                if (i == d.size() || d[i] == '/') ::mkdir(d.substr(0, i).c_str(), 0755);
+        }
+        bool ok = stbi_write_png(path.c_str(), int(w), int(h), 3, rgb.data(), int(w * 3)) != 0;
+        Log("%s %s (%ux%u)", ok ? "wrote" : "FAILED to write", path.c_str(), w, h);
     }
 
     /* The displayed buffer as 512x448 RGB24, decoded from local memory the way
@@ -439,10 +622,50 @@ struct Renderer {
         xsginput::BeginFrame(frame);
 #ifdef XSG_GPU_SDL
         if (windowed) platform->poll_input();
-        else xsginput::PumpHeadless();
+        else {   // headless: the test hooks' synthetic events, through the menu first like the window's
+            SDL_Event e;
+            if (SDL_WasInit(SDL_INIT_EVENTS))
+                while (SDL_PollEvent(&e))
+                    if (!xsgmenu::Event(e)) xsginput::Event(e);
+        }
 #endif
         xsginput::Publish();
-        Present(so);
+        // the in-game menu: input, settings, layout for this frame's target
+        uint32_t tw = 0, th = 0;
+        const bool test = xsgmenu::TestRunning(&tw, &th);
+        xsgmenu::Stats st;
+        st.windowed = windowed && !test;
+#ifdef XSG_GPU_SDL
+        if (st.windowed) {
+            st.target_w = platform->w;
+            st.target_h = platform->h;
+        }
+#endif
+        if (!st.windowed) {
+            st.target_w = tw;
+            st.target_h = th;
+        }
+        st.image_w = last_image_w;
+        st.image_h = last_image_h;
+        st.scan_w = so.image ? so.image->get_width() : 0;
+        st.scan_h = so.image ? so.image->get_height() : 0;
+        st.present = PresentName();
+        st.ring_used = __atomic_load_n(&shm->wpos, __ATOMIC_RELAXED) - __atomic_load_n(&shm->rpos, __ATOMIC_RELAXED);
+        st.ring_size = XSG_GPU_RING;
+        st.vsyncs = vsyncs;
+        st.presents = windowed ? presents : vsyncs;
+        st.native_presents = native_presents;
+        native_last = native_msgs;
+        native_msgs = 0;
+        st.native_batches = native_last;
+        st.native_on = xsgnative::On();
+        xsgmenu::Frame(frame, st);
+        Present(so, !test);
+        if (std::string p = xsgmenu::TestShot(&tw, &th); !p.empty()) WritePngOf(so, p, tw, th, true);
+        if (!shot_path.empty()) {
+            WritePngOf(so, shot_path, 0, 0, false);
+            shot_path.clear();
+        }
         if (!windowed) dev->next_frame_context();
         if (StreamWants()) Stream();
         vsyncs++;
@@ -461,6 +684,29 @@ struct Renderer {
         Futex(&shm->reply_seq, FUTEX_WAKE, INT32_MAX, nullptr);
     }
 };
+
+Renderer* g_r;
+
+void Renderer::InitMenu() {
+    g_r = this;
+    xsgmenu::Host host;
+    host.apply_video = [] { g_r->ApplyVideo(); };
+    host.screenshot = [](const std::string& p) { g_r->shot_path = p; };
+    host.quit = [] {
+#ifdef XSG_GPU_SDL
+        if (g_r->platform) g_r->platform->is_alive = false;   // as the window's close button
+        else std::_Exit(0);
+#else
+        std::_Exit(0);
+#endif
+    };
+    auto* settings = reinterpret_cast<GpuSettings*>(reinterpret_cast<uint8_t*>(shm) + XSG_GPU_SETTINGS_OFF);
+#ifdef XSG_GPU_SDL
+    xsgmenu::Init(dev, platform ? platform->win : nullptr, settings, host);
+#else
+    xsgmenu::Init(dev, nullptr, settings, host);
+#endif
+}
 
 }  // namespace
 
@@ -484,6 +730,7 @@ int main(int argc, char** argv) {
         Log("stream 512x448 rgb24 -> %s", s);
     }
 
+    xsgcfg::Load();   // settings.ini (and the legacy input.ini) before anything reads a setting
     static Renderer r;
     if (!r.Init()) {
         __atomic_store_n(&shm->ready, 2u, __ATOMIC_RELEASE);
@@ -528,7 +775,7 @@ int main(int argc, char** argv) {
             break;
         }
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
-        case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); break;
+        case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); r.native_msgs++; break;
         case GPU_MSG_READ_VRAM: {
             r.gs.flush();
             const void* v = r.gs.map_vram_read(0, 4u << 20);

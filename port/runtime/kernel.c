@@ -75,6 +75,29 @@ static long frame_ns = 16666667;
 int xsg_skip_events;        /* XSG_SKIP_EVENTS=1: script sleeps collapse to one tick (src/main/system.c) */
 static unsigned fast_until; /* XSG_FAST_UNTIL=N: unthrottled before vblank N */
 static struct timespec next_vblank;
+static int frame_env;       /* XSG_FRAME_US / XSG_FAST set: the menu's FPS limit does not apply */
+int xsg_gpu_settings_poll(unsigned *frame_us, int *audio_on, int vol[4]); /* gpu_client.cpp */
+void xsg_sound_set_volume(int on, const int vol[4]);                       /* iop_sound.c */
+
+/* In-game menu (port/docs/MENU.md): xsg-gpu publishes the FPS limit and the
+ * volumes in shared memory; applied at the vblank after they change. */
+static void settings_poll(void)
+{
+    unsigned fu;
+    int on, vol[4];
+    if (!xsg_gpu_settings_poll(&fu, &on, vol))
+        return;
+    if (fu != 0xffffffffu && !frame_env) {
+        long ns = (fu == 16666 || fu == 16667) ? 16666667L : (long)fu * 1000; /* 60: the default period */
+        if (ns != frame_ns) {
+            xsg_logf("[settings] frame %u: vblank period %ld us -> %u us%s\n", xsg_frame, frame_ns / 1000, fu,
+                     fu ? "" : " (uncapped)");
+            frame_ns = ns;
+            clock_gettime(CLOCK_MONOTONIC, &next_vblank);
+        }
+    }
+    xsg_sound_set_volume(on, vol);
+}
 
 void xsg_kernel_init(void)
 {
@@ -85,6 +108,7 @@ void xsg_kernel_init(void)
     const char *fast = getenv("XSG_FAST");
     if (fp)
         frame_ns = atol(fp) * 1000;
+    frame_env = (fp && *fp) || (fast && *fast);
     if (fast && fast[0] && fast[0] != '0')
         frame_ns = 0;
     const char *se = getenv("XSG_SKIP_EVENTS");
@@ -218,6 +242,7 @@ void xsg_vblank(void)
 {
     xsg_frame++;
     xsg_gs_vblank(xsg_frame);
+    settings_poll();
     if (frame_ns && xsg_frame < fast_until) {
         clock_gettime(CLOCK_MONOTONIC, &next_vblank); /* fast-forward; real-time pacing resumes at N */
     } else if (frame_ns) {

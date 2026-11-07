@@ -52,15 +52,50 @@ foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.co
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp native_prof.cpp ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
+# In-game menu (menu/, port/docs/MENU.md): Dear ImGui (MIT, vendored in
+# port/third_party/imgui) with its SDL3 platform backend, drawn through Granite.
+set(XSG_IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/imgui)
+foreach(src imgui.vert imgui.frag)
+  set(out ${CMAKE_CURRENT_BINARY_DIR}/${src}.inc)
+  add_custom_command(OUTPUT ${out}
+    COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/menu/${src}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/menu/${src} VERBATIM)
+  list(APPEND XSG_NATIVE_INC ${out})
+endforeach()
+# The menu font (Rajdhani, SIL OFL 1.1, menu/fonts/OFL.txt) embedded as byte lists.
+foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf)
+  set(out ${CMAKE_CURRENT_BINARY_DIR}/${font}.inc)
+  add_custom_command(OUTPUT ${out}
+    COMMAND ${CMAKE_COMMAND} -DIN=${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} -DOUT=${out}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/menu/embed.cmake
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} ${CMAKE_CURRENT_SOURCE_DIR}/menu/embed.cmake VERBATIM)
+  list(APPEND XSG_NATIVE_INC ${out})
+endforeach()
+set(XSG_MENU_SRCS menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
+  ${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
+  ${XSG_IMGUI_DIR}/imgui_widgets.cpp)
+find_package(Git QUIET)
+set(XSG_BUILD_VERSION "unknown")
+if(GIT_FOUND)
+  execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty --tags
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE XSG_BUILD_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+endif()
+string(TIMESTAMP XSG_BUILD_DATE "%Y-%m-%d")
+set_source_files_properties(menu/menu.cpp PROPERTIES COMPILE_DEFINITIONS
+  "XSG_BUILD_VERSION=\"${XSG_BUILD_VERSION} (${XSG_BUILD_DATE})\"")
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp native_prof.cpp ${XSG_MENU_SRCS} ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
-  ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb)
+  ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb ${XSG_IMGUI_DIR} ${XSG_IMGUI_DIR}/backends)
 target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan pthread)
 if(SDL3_FOUND)
   target_compile_definitions(xsg-gpu PRIVATE XSG_GPU_SDL=1)
+  target_sources(xsg-gpu PRIVATE ${XSG_IMGUI_DIR}/backends/imgui_impl_sdl3.cpp)
   target_link_libraries(xsg-gpu PRIVATE PkgConfig::SDL3)
 else()
   message(WARNING "xsg-gpu: SDL3 not found (pkg-config sdl3); headless only")
 endif()
 target_compile_options(xsg-gpu PRIVATE -O2 -g -Wall -Wno-unused-parameter)
+set_source_files_properties(${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
+  ${XSG_IMGUI_DIR}/imgui_widgets.cpp ${XSG_IMGUI_DIR}/backends/imgui_impl_sdl3.cpp PROPERTIES COMPILE_OPTIONS "-w")
