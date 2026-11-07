@@ -2089,7 +2089,11 @@ extern const char D_004DA548[];
 void updateLight(int mode)
 {
     /* drawCircle2 with the radius/color order of this call site. */
+#ifdef PORT_HOST /* MIPS passes the float in $f12 whatever its position; x86 does not */
+#define drawCircle2RadiusFirst(m, r, c) drawCircle2((m), (c), (r))
+#else
     extern void drawCircle2RadiusFirst(Matrix4 *matrix, float radius, int color_index) __asm__("drawCircle2");
+#endif
     /* lightCol as rows of RgVector (the TU declares it as Vector4). */
     extern RgVector lightColRows[6] __asm__("lightCol");
     const struct CursorPadKeyResult *keys =

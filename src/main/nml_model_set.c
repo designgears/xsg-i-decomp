@@ -3882,7 +3882,12 @@ static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
 #define xglVectorScale(a0, a1, a2) xglVectorScale((a2), (a0), (a1))
 #endif
     extern float atan2f(float, float);
+#ifdef PORT_HOST /* MIPS passes the float in $f12 whatever its position; x86 does not */
+    extern void xglVectorScaleXYZ(float, Vector4 *, const Vector4 *);
+#define xglVectorScaleXYZPtrFirst(d, s, f) xglVectorScaleXYZ((f), (d), (s))
+#else
     extern void xglVectorScaleXYZPtrFirst(Vector4 *, const Vector4 *, float) __asm__("xglVectorScaleXYZ");
+#endif
     extern const NmlOvCp D_004D28E0;
     extern const NmlOvCp D_004D28F0;
     extern const NmlOvCp D_004D2900;
@@ -5732,7 +5737,12 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
     extern NmlParentBuffer *parent_buf_entryUp(NmlLayoutRp *inLayout) __asm__("parent_buf_entry");
     extern int nmlModelCalcEntryClipUp(NmlModelSampleView *model, StudioCamera *camera) __asm__("nmlModelCalcEntryClip");
     extern void nmlModelCalcDropShadowUp(NmlModelRp *model) __asm__("nmlModelCalcDropShadow");
+#ifdef PORT_HOST /* MIPS passes the float in $f12 whatever its position; x86 does not */
+    extern void xglVectorScaleXYZ(float, Vector4 *, const Vector4 *);
+#define xglVectorScaleXYZUp(d, s, f) xglVectorScaleXYZ((f), (d), (s))
+#else
     extern void xglVectorScaleXYZUp(Vector4 *destination, const Vector4 *source, float scale) __asm__("xglVectorScaleXYZ");
+#endif
     extern void nmlModelSetProrealUp(NmlProRealRp *input) __asm__("nmlModelSetProreal");
     int groupIndex;
     int index;
