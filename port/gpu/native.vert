@@ -5,6 +5,7 @@
 layout(location = 0) in vec4 a_p;      // xyz, w = S
 layout(location = 1) in vec4 a_c;      // RGBA 0..255 (after ITOF)
 layout(location = 2) in float a_t;     // T
+layout(location = 3) in vec3 a_pp;     // previous frame's position (xyz; morph applied)
 
 layout(std140, set = 0, binding = 0) uniform Batch {
     vec4 m[4];          // qw 962-965: clip = m0*x + m1*y + m2*z + m3
@@ -20,11 +21,15 @@ layout(std140, set = 0, binding = 0) uniform Batch {
     vec4 fix;           // x: ALPHA.FIX
     ivec4 wrap;         // x: CLAMP.WMS, y: CLAMP.WMT, z: TEX1.MMAG (1 = linear)
     ivec4 region;       // CLAMP MINU/MSKU, MAXU/FIXU, MINV/MSKV, MAXV/FIXV
+    vec4 mprev[4];      // previous frame's qw 962-965 (motion vectors)
+    vec4 mv;            // xy: qw 966.xy * target scale (clip -> high-res pixels), z: 1 = has previous
 } b;
 
 layout(location = 0) out vec4 v_col;
 layout(location = 1) out vec2 v_st;
 layout(location = 2) out float v_fog;
+layout(location = 3) out vec4 v_cur;
+layout(location = 4) out vec4 v_prev;
 
 void main() {
     vec4 clip = b.m[0] * a_p.x + b.m[1] * a_p.y + b.m[2] * a_p.z + b.m[3];
@@ -44,4 +49,7 @@ void main() {
     float depth = clamp(floor(scr.z) * b.zscale.x, 0.0, 1.0);
     float w = clip.w;
     gl_Position = vec4(ndc * w, depth * w, w);
+    // Motion vectors: current minus previous clip position (no jitter anywhere).
+    v_cur = clip;
+    v_prev = b.mv.z != 0.0 ? b.mprev[0] * a_pp.x + b.mprev[1] * a_pp.y + b.mprev[2] * a_pp.z + b.mprev[3] : clip;
 }

@@ -4,6 +4,7 @@
  * paraLLEl-GS frame.  See native.h and port/docs/NATIVE_RENDERER.md.
  */
 #include "native.h"
+#include "native_skin.h"
 
 #include "gpu_ipc.h"
 #include "device.hpp"
@@ -70,6 +71,22 @@ uint64_t g_reg[256];
    not see local->local copies or render-to-texture. */
 ps2host::gs::Memory g_mem;
 uint32_t g_upload_gen;
+/* Per 8 KB GS page: the upload generation that last wrote it (conservative
+   page ranges), so a texture is re-hashed only when its pages changed and
+   re-decoded only when their content changed (characters re-upload the same
+   texture slots for every material). */
+uint32_t g_page_gen[512];
+/* Pages [first, first + count) that a (base block, buffer width, PSM, rows) area may touch. */
+void PageRange(uint32_t bp, uint32_t bw, uint32_t psm, uint32_t rows, uint32_t* first, uint32_t* count) {
+    using namespace ps2host::gs;
+    uint32_t pw = 64, ph = 32;
+    if (psm == PSMCT16 || psm == PSMCT16S || psm == 0x32 || psm == 0x3a) ph = 64;
+    else if (psm == PSMT8) { pw = 128; ph = 64; }
+    else if (psm == PSMT4) { pw = 128; ph = 128; }
+    const uint32_t ppr = std::max(1u, bw * 64 / pw);
+    *first = bp / 32;
+    *count = std::min(512u, ((rows + ph - 1) / ph + 1) * ppr + 1);
+}
 struct Xfer {
     bool on = false;
     uint32_t dbp, dbw, psm, x0, y0, w, h, x, y;
@@ -119,7 +136,12 @@ void SetReg(uint32_t a, uint64_t v) {
         t.pend = 0;
         t.pend_bits = 0;
         t.on = (v & 3) == 0 && t.w && t.h;
-        if (t.on) g_upload_gen++;
+        if (t.on) {
+            g_upload_gen++;
+            uint32_t p0, np;
+            PageRange(t.dbp, t.dbw, t.psm, t.y0 + t.h, &p0, &np);
+            for (uint32_t i = 0; i < np; ++i) g_page_gen[(p0 + i) & 511] = g_upload_gen;
+        }
     }
 }
 
@@ -166,6 +188,10 @@ struct Stored {
     std::shared_ptr<Tex> tex;
     GpuNativeBatch b;
     std::vector<GpuNativeVertex> v;
+    std::shared_ptr<const xsgskin::Draw> skin;   // set 2 (native_skin.cpp); v unused
+    int pass = 0;                                // set 2: 0 tag 1011, 1 specular strip (1012), 2 env strip (1010)
+    float mprev[16];                             // set 0: last frame's M962 (v[i].pad = last frame's position)
+    bool hasprev = false;
     uint64_t prim, tex0, clamp, tex1, xyoff, texa, fogcol, scissor, alpha, test, frame, zbuf;
 };
 /* The batches of the last frame drawn into each frame buffer (FRAME.FBP).  A
@@ -205,6 +231,8 @@ struct Ubo {
     float fix[4];
     int32_t wrap[4];
     int32_t region[4];
+    float mprev[4][4];
+    float mv[4];
 };
 
 uint32_t ReadU32(const uint8_t* vram, uint32_t a) {
@@ -275,7 +303,7 @@ struct Target {
 };
 struct GpuTarget {
     uint32_t w, h;
-    Vulkan::ImageHandle color, depth;   // SHADER_READ_ONLY_OPTIMAL after RenderGpu
+    Vulkan::ImageHandle color, depth, mv;   // SHADER_READ_ONLY_OPTIMAL after RenderGpu (mv: RG16F motion vectors)
 };
 
 struct Region {
@@ -320,6 +348,13 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
     di.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     di.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     t.depth = dev.create_image(di);
+    auto mi = Vulkan::ImageCreateInfo::render_target(t.w, t.h, VK_FORMAT_R16G16_SFLOAT);
+    mi.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    mi.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    t.mv = dev.create_image(mi);
+    cmd->image_barrier(*t.mv, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
     auto& color = t.color;
     auto& depth = t.depth;
 
@@ -330,11 +365,12 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
                        VK_PIPELINE_STAGE_2_NONE, 0, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
                        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     Vulkan::RenderPassInfo rp;
-    rp.num_color_attachments = 1;
+    rp.num_color_attachments = 2;
     rp.color_attachments[0] = &color->get_view();
+    rp.color_attachments[1] = &t.mv->get_view();
     rp.depth_stencil = &depth->get_view();
-    rp.clear_attachments = 1;
-    rp.store_attachments = 1;
+    rp.clear_attachments = 3;
+    rp.store_attachments = 3;
     rp.op_flags = Vulkan::RENDER_PASS_OP_CLEAR_DEPTH_STENCIL_BIT | Vulkan::RENDER_PASS_OP_STORE_DEPTH_STENCIL_BIT;
     rp.clear_depth_stencil.depth = 0.0f;
     cmd->begin_render_pass(rp);
@@ -343,14 +379,24 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
     cmd->set_cull_mode(VK_CULL_MODE_NONE);
     cmd->set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
     unsigned odd_blend = 0;
+    xsgskin::Begin();
     for (const Stored* s : list) {
-        const uint32_t n = uint32_t(s->v.size());
-        auto* vp = static_cast<GpuNativeVertex*>(cmd->allocate_vertex_data(0, n * sizeof(GpuNativeVertex), sizeof(GpuNativeVertex)));
-        std::memcpy(vp, s->v.data(), n * sizeof(GpuNativeVertex));
-        cmd->set_vertex_attrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, p));
-        cmd->set_vertex_attrib(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, c));
-        cmd->set_vertex_attrib(2, 0, VK_FORMAT_R32_SFLOAT, offsetof(GpuNativeVertex, t));
-        auto* u = static_cast<Ubo*>(cmd->allocate_constant_data(0, 0, sizeof(Ubo)));
+        uint32_t n = uint32_t(s->v.size());
+        if (s->skin) {   // set 2: native_skin.vert, indexed triangle list
+            n = xsgskin::Bind(*cmd, *s->skin, s->pass);
+            if (!n) continue;
+        } else {
+            cmd->set_program(g_prog);
+            cmd->set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+            auto* vp = static_cast<GpuNativeVertex*>(cmd->allocate_vertex_data(0, n * sizeof(GpuNativeVertex), sizeof(GpuNativeVertex)));
+            std::memcpy(vp, s->v.data(), n * sizeof(GpuNativeVertex));
+            cmd->set_vertex_attrib(0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, p));
+            cmd->set_vertex_attrib(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(GpuNativeVertex, c));
+            cmd->set_vertex_attrib(2, 0, VK_FORMAT_R32_SFLOAT, offsetof(GpuNativeVertex, t));
+            cmd->set_vertex_attrib(3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(GpuNativeVertex, pad));
+        }
+        Ubo uu;   // built on the stack, copied to the (write-combined) constant buffer in one go
+        Ubo* u = &uu;
         std::memset(u, 0, sizeof *u);
         std::memcpy(u->m, s->b.m, sizeof u->m);
         std::memcpy(u->scale, s->b.scale, 16);
@@ -366,6 +412,11 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         u->fogcol[0] = float(Bits(s->fogcol, 0, 8));
         u->fogcol[1] = float(Bits(s->fogcol, 8, 8));
         u->fogcol[2] = float(Bits(s->fogcol, 16, 8));
+        if (s->hasprev) std::memcpy(u->mprev, s->mprev, sizeof u->mprev);
+        u->mv[0] = s->b.scale[0] * float(scale);
+        u->mv[1] = s->b.scale[1] * float(scale);
+        u->mv[2] = s->hasprev ? 1.0f : 0.0f;
+        u->mv[3] = float(s->pass);
         const uint64_t prim = s->prim;
         const bool tme = Bits(prim, 4, 1), fge = Bits(prim, 5, 1), abe = Bits(prim, 6, 1);
         u->mode[0] = int(Bits(s->tex0, 35, 2) | Bits(s->tex0, 34, 1) << 2 | uint32_t(tme) << 3 | uint32_t(fge) << 4);
@@ -376,17 +427,21 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         u->mode[3] = int(C);
         u->fix[0] = float(Bits(s->alpha, 32, 8));
         cmd->set_blend_enable(false);
+        bool blended = false;
         if (abe) {
             if (A == 0 && B == 1 && D == 1 && C != 1) {
                 cmd->set_blend_enable(true);
+                blended = true;
                 cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
                 cmd->set_blend_op(VK_BLEND_OP_ADD);
             } else if (A == 0 && B == 2 && D == 1 && C != 1) {
                 cmd->set_blend_enable(true);
+                blended = true;
                 cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE);
                 cmd->set_blend_op(VK_BLEND_OP_ADD);
             } else if (A == 1 && B == 0 && D == 1 && C != 1) {   // Cd - (Cs - ... ) : (Cd - Cs) * a + Cd ~ subtract
                 cmd->set_blend_enable(true);
+                blended = true;
                 cmd->set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE);
                 cmd->set_blend_op(VK_BLEND_OP_REVERSE_SUBTRACT);
             } else {
@@ -400,7 +455,9 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         cmd->set_depth_test(true, !zmsk);
         cmd->set_depth_compare(!zte || ztst == 1 ? VK_COMPARE_OP_ALWAYS : ztst == 0 ? VK_COMPARE_OP_NEVER
                                : ztst == 2 ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_GREATER);
-        cmd->set_color_write_mask(Bits(s->frame, 32, 32) == 0xffffffffu ? 0 : 0xf);
+        // Motion vectors: written by opaque draws that write colour (translucent layers keep what is under them).
+        const bool cw = Bits(s->frame, 32, 32) != 0xffffffffu;
+        cmd->set_color_write_mask((cw ? 0xf : 0) | (cw && !blended ? 0x30 : 0));
         // Texture.
         auto it = g_teximg.find(s->tex.get());
         if (it == g_teximg.end()) {
@@ -425,9 +482,15 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         sc.extent = {uint32_t(std::max(0, std::min(sx1 + 1, int(rg.w)) - sx0) * scale),
                      uint32_t(std::max(0, std::min(sy1 + 1, int(rg.h)) - sy0) * scale)};
         cmd->set_scissor(sc);
-        cmd->draw(n);
+        std::memcpy(cmd->allocate_constant_data(0, 0, sizeof(Ubo)), &uu, sizeof uu);
+        if (s->skin) cmd->draw_indexed(n);
+        else cmd->draw(n);
     }
     cmd->end_render_pass();
+    cmd->image_barrier(*t.mv, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                       VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                       VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
     cmd->image_barrier(*color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
@@ -594,6 +657,7 @@ void Live(ParallelGS::GSInterface& gs) {
     struct { int32_t w, h, s, thr; float zmul; } pc = {int32_t(rg.w), int32_t(rg.h), g_scale, g_thr, 1.0f / rg.zscale};
     cmd->push_constants(&pc, 0, sizeof pc);
     cmd->dispatch((ns.w + 7) / 8, (ns.h + 7) / 8, 1);
+    xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale);   // motion vectors (+ XSG_GPU_MV_VIEW)
     cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -728,6 +792,10 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
         Log("  live %dx composite, box-downsampled to 1x vs paraLLEl-GS: exact %llu, <=2 %llu, <=8 %llu, >8 %llu", s,
             (unsigned long long)hl[0], (unsigned long long)hl[1], (unsigned long long)hl[2], (unsigned long long)hl[3]);
     }
+    if (g_live) {
+        std::snprintf(p, sizeof p, "%s/native_%06u_", g_dir.c_str(), vsync);
+        xsgskin::ShotMv(p);
+    }
     Log("  images: %s/native_%06u_*.png", g_dir.c_str(), vsync);
 }
 
@@ -751,10 +819,10 @@ bool Init(Vulkan::Device* dev) {
             q = *end ? end + 1 : end;
         }
     Vulkan::ResourceLayout vl, fl, cl;
-    vl.input_mask = 7;
+    vl.input_mask = 15;
     vl.sets[0].uniform_buffer_mask = 1;
     vl.sets[0].meta[0].array_size = 1;
-    fl.output_mask = 1;
+    fl.output_mask = 3;
     fl.sets[0].uniform_buffer_mask = 1;
     fl.sets[0].sampled_image_mask = 2;
     fl.sets[0].meta[0].array_size = 1;
@@ -769,6 +837,7 @@ bool Init(Vulkan::Device* dev) {
     cl.push_constant_size = 32;
     auto* cs = dev->request_shader(kComp, sizeof kComp, &cl);
     g_comp = dev->request_program(cs);
+    if (!xsgskin::Init(dev)) return false;
     Log("on: set-0 strip batches, scale %dx, live %s, %zu shot vsyncs -> %s", g_scale, g_live ? "on" : "off",
         g_shots.size(), g_dir.c_str());
     return g_prog != nullptr && g_comp != nullptr;
@@ -781,16 +850,11 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len) {
     for (uint32_t i = 0; i + 16 <= len; i += 16) GifQword(p, data + i);
 }
 
-void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
-    if (kind != GPU_NATIVE_SET0_STRIP || len < sizeof(GpuNativeBatch) + nvert * sizeof(GpuNativeVertex)) return;
-    g_nbatch++;
-    g_nvert += nvert;
-    if (!Near()) return;
-    Stored s;
-    std::memcpy(&s.b, payload, sizeof s.b);
-    s.v.resize(nvert);
-    std::memcpy(s.v.data(), payload + sizeof s.b, nvert * sizeof(GpuNativeVertex));
-    uint64_t tag = uint64_t(s.b.tag[0]) | uint64_t(s.b.tag[1]) << 32;
+namespace {
+/* The GS state a batch draws with (PRIM from its GIF tag, the registers of that
+   context), and its texture. */
+void Snap(Stored& s, const uint32_t* tagw) {
+    uint64_t tag = uint64_t(tagw[0]) | uint64_t(tagw[1]) << 32;
     uint64_t prim = Bits(tag, 46, 1) ? Bits(tag, 47, 11) : g_reg[R_PRIM];
     if (!(g_reg[R_PRMODECONT] & 1)) prim = (prim & 7) | (g_reg[R_PRMODE] & 0x7f8);
     const int c = Bits(prim, 9, 1);
@@ -809,9 +873,31 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     static auto white = std::make_shared<Tex>();
     s.tex = white;
     if (Bits(prim, 4, 1)) {
-        static std::map<std::tuple<uint64_t, uint64_t, uint32_t>, std::shared_ptr<Tex>> cache;
-        if (cache.size() > 512) cache.clear();
-        auto key = std::make_tuple(s.tex0 & ((1ull << 61) - 1), s.texa, g_upload_gen);
+        // (TEX0, TEXA) -> the newest generation of its pages and their content hash.
+        struct Ver { uint32_t gen; uint64_t hash; };
+        static std::map<std::pair<uint64_t, uint64_t>, Ver> ver;
+        static std::map<std::tuple<uint64_t, uint64_t, uint64_t>, std::shared_ptr<Tex>> cache;
+        if (cache.size() > 1024) cache.clear();
+        if (ver.size() > 4096) ver.clear();
+        const uint64_t t0 = s.tex0 & ((1ull << 61) - 1);
+        uint32_t p0, np, gen = 0;
+        PageRange(Bits(t0, 0, 14), std::max(1u, Bits(t0, 14, 6)), Bits(t0, 20, 6), 1u << std::min(10u, Bits(t0, 30, 4)), &p0, &np);
+        const uint32_t cpage = Bits(t0, 37, 14) / 32;
+        for (uint32_t i = 0; i < np; ++i) gen = std::max(gen, g_page_gen[(p0 + i) & 511]);
+        gen = std::max(gen, std::max(g_page_gen[cpage & 511], g_page_gen[(cpage + 1) & 511]));
+        Ver& vv = ver[{t0, s.texa}];
+        if (!vv.hash || vv.gen != gen) {
+            uint64_t h = 1469598103934665603ull;
+            auto mix = [&](uint32_t page) {
+                const uint64_t* q = reinterpret_cast<const uint64_t*>(g_mem.data() + size_t(page & 511) * 8192);
+                for (int i = 0; i < 1024; ++i) h = (h ^ q[i]) * 1099511628211ull;
+            };
+            for (uint32_t i = 0; i < np; ++i) mix(p0 + i);
+            if (Bits(t0, 20, 6) >= 0x13) { mix(cpage); mix(cpage + 1); }   // CLUT formats
+            vv.gen = gen;
+            vv.hash = h | 1;
+        }
+        auto key = std::make_tuple(t0, s.texa, vv.hash);
         auto it = cache.find(key);
         if (it == cache.end()) {
             auto t = std::make_shared<Tex>();
@@ -821,6 +907,8 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
         }
         s.tex = it->second;
     }
+}
+void Push(Stored&& s) {
     FbFrame& f = g_fb[Bits(s.frame, 0, 9)];
     if (f.vsync != g_vsyncs) {
         f.b.clear();
@@ -828,9 +916,60 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     }
     f.b.push_back(std::move(s));
 }
+std::shared_ptr<const xsgskin::Draw> g_env_pending;   // a six-kick set-2 batch waiting for its env pass state
+}  // namespace
+
+void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
+    if (kind == GPU_NATIVE_SET2_ENV) {   // the env pass's A+D state has been kicked: snapshot it now
+        if (g_env_pending && Near()) {
+            Stored s;
+            s.skin = g_env_pending;
+            s.pass = 2;
+            s.b = {};
+            std::memcpy(s.b.scale, s.skin->b.scale, 16);
+            Snap(s, s.skin->b.tag1010);
+            Push(std::move(s));
+        }
+        g_env_pending.reset();
+        return;
+    }
+    if (kind == GPU_NATIVE_SET2 || kind == GPU_NATIVE_SET2_PALETTE) {
+        auto d = xsgskin::Message(kind, nvert, payload, len);
+        g_env_pending.reset();
+        if (!d) return;
+        g_nbatch++;
+        g_nvert += nvert;
+        if (d->variant == 3) g_env_pending = d;
+        if (!Near()) return;
+        for (int pass = 0; pass < (d->variant == 2 ? 2 : 1); ++pass) {
+            Stored s;
+            s.skin = d;
+            s.pass = pass;
+            s.b = {};
+            std::memcpy(s.b.scale, d->b.scale, 16);
+            Snap(s, pass ? d->b.tag1012 : d->b.tag1011);
+            Push(std::move(s));
+        }
+        return;
+    }
+    if (kind != GPU_NATIVE_SET0_STRIP || len < sizeof(GpuNativeBatch) + nvert * sizeof(GpuNativeVertex)) return;
+    g_nbatch++;
+    g_nvert += nvert;
+    const GpuNativeBatch* pb = reinterpret_cast<const GpuNativeBatch*>(payload);
+    const GpuNativeVertex* pv = reinterpret_cast<const GpuNativeVertex*>(payload + sizeof(GpuNativeBatch));
+    if (!Near()) { xsgskin::Set0Prev(*pb, pv, nvert, nullptr, nullptr); return; }
+    Stored s;
+    std::memcpy(&s.b, payload, sizeof s.b);
+    s.v.resize(nvert);
+    std::memcpy(s.v.data(), pv, nvert * sizeof(GpuNativeVertex));
+    s.hasprev = xsgskin::Set0Prev(s.b, pv, nvert, s.v.data(), s.mprev);
+    Snap(s, s.b.tag);
+    Push(std::move(s));
+}
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
     g_last_vsync = frame;
+    xsgskin::Vsync(frame);
     if (g_live) Live(gs);
     if (g_shots.count(frame)) Shot(frame, gs);
     if (frame % 600 == 0)

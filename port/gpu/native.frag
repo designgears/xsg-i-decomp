@@ -15,13 +15,18 @@ layout(std140, set = 0, binding = 0) uniform Batch {
     vec4 fix;
     ivec4 wrap;         // x: CLAMP.WMS, y: CLAMP.WMT, z: TEX1.MMAG (1 = linear)
     ivec4 region;       // CLAMP MINU/MSKU, MAXU/FIXU, MINV/MSKV, MAXV/FIXV
+    vec4 mprev[4];      // previous frame's qw 962-965 (motion vectors)
+    vec4 mv;            // xy: qw 966.xy * target scale (clip -> high-res pixels), z: 1 = has previous
 } b;
 layout(set = 0, binding = 1) uniform sampler2D tex;   // RGBA8, alpha = the GS byte (0x80 = 1.0)
 
 layout(location = 0) in vec4 v_col;
 layout(location = 1) in vec2 v_st;
 layout(location = 2) in float v_fog;
+layout(location = 3) in vec4 v_cur;    // VU clip position, this frame
+layout(location = 4) in vec4 v_prev;   // the same point last frame
 layout(location = 0) out vec4 o_col;
+layout(location = 1) out vec2 o_mv;    // motion vector, high-res pixels (current - previous)
 
 // One texel with the GS wrap modes (CLAMP): 0 repeat, 1 clamp, 2 region clamp
 // (MIN..MAX), 3 region repeat ((i & MSK) | FIX).
@@ -79,4 +84,5 @@ void main() {
     if (fge) c.rgb = floor((v_fog * c.rgb + (255.0 - v_fog) * b.fogcol.rgb) / 256.0);
     float a = b.mode.w == 2 ? b.fix.x : c.a;
     o_col = vec4(c.rgb / 255.0, min(a / 128.0, 1.0));
+    o_mv = v_prev.w > 0.0 && v_cur.w > 0.0 ? (v_cur.xy / v_cur.w - v_prev.xy / v_prev.w) * b.mv.xy : vec2(0.0);
 }

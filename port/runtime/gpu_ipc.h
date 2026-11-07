@@ -53,7 +53,12 @@ enum {
  * of one VU1 geometry batch, taken from VU1 data memory after the batch ran.
  * The VU1 output is still kicked to the GS as before; the renderer redraws
  * the batch natively from these inputs. */
-enum { GPU_NATIVE_SET0_STRIP = 1 };   /* set 0, loop 0x0c18 (entry 0x0bd8) */
+enum {
+    GPU_NATIVE_SET0_STRIP = 1,     /* set 0, loop 0x0c18 (entry 0x0bd8) */
+    GPU_NATIVE_SET2 = 2,           /* set 2 (skinned/rigid/blend characters): GpuNativeSkin + vertices + ADC bits */
+    GPU_NATIVE_SET2_PALETTE = 3,   /* b = palette seq; payload: qw 732..961 of VU1 data (the bone palette) */
+    GPU_NATIVE_SET2_ENV = 4,       /* the env pass of the last set-2 batch starts (its A+D state is now set) */
+};
 typedef struct {
     float m[4][4];      /* qw 962-965: object -> clip (rows as VU1 holds them: m[k] multiplies coordinate k) */
     float scale[4];     /* qw 966 */
@@ -62,7 +67,8 @@ typedef struct {
     float uv[4];        /* qw 972: .xy UV offset */
     float fog[4];       /* qw 1007: x min, y max, z bias, w scale */
     uint32_t tag[4];    /* qw 1011: GIF tag template (PRIM in bits 47..57) */
-    uint32_t frame, seq, pad[2];
+    uint32_t frame, seq;
+    uint32_t key, occ;  /* draw identity for motion vectors: VIF address of the MSCNT, occurrence in this frame */
 } GpuNativeBatch;
 /* followed by `b` vertices of GpuNativeVertex */
 typedef struct {
@@ -70,6 +76,37 @@ typedef struct {
     float c[4];         /* RGBA (0..255 floats, after ITOF) */
     float t, pad[3];    /* T */
 } GpuNativeVertex;
+
+/* Set 2 (VU1_PROGRAMS.md §2): the constants of one batch, as the program used
+ * them (registers after the run, data memory). */
+#define GPU_SKIN_PAL_QW0 732u
+#define GPU_SKIN_PAL_NQW 230u
+typedef struct {
+    uint32_t loop;      /* vi15*8: the program's vertex loop */
+    uint32_t n, key, occ;
+    uint32_t frame, seq, pal, fogw;   /* pal: palette seq (GPU_NATIVE_SET2_PALETTE); fogw: qw 998.w */
+    float m[4][4];      /* vf28-31: object -> clip */
+    float scale[4], offset[4];        /* vf26, vf27 */
+    float lmat[4][4];   /* vf17-19 (row 3 unused): normal -> light; .w = eye (973-975.w) */
+    float lcol[4][4];   /* vf20-22 light colours, vf23 ambient */
+    float diffuse[4];   /* vf25 */
+    float env[4];       /* vf24 (qw 969): env-map ST scale/offset */
+    float eye[4];       /* qw 976 */
+    float c970[4], uv[4], c1008[4], mirror[4];   /* 970, 972, 1008, 1017 */
+    float e1004[4][4];  /* qw 1004-1006 (row 3 unused) */
+    uint32_t c1009[4];  /* env-pass colour */
+    uint32_t tag1010[4], tag1011[4], tag1012[4];
+    uint32_t facing, ifirst, mirror_on, pad;   /* 995.y; I at entry; 1017.z != 0 (ILW) */
+} GpuNativeSkin;
+/* followed by n GpuNativeSkinVertex, then (n+31)/32 u32 of ADC bits (from the
+   reference's XYZF2: bit set = the triangle ending at this vertex is not drawn) */
+typedef struct {
+    float p[4];         /* xyz, w = S */
+    float n[4];         /* normal xyz, w = T */
+    float c[4];         /* colour (float RGBA) */
+    uint32_t b[4];      /* bone stream (qw addresses; "blend 8": x/y addresses, z/w float weights) */
+    float w[4];         /* bone weights (skin_lit) */
+} GpuNativeSkinVertex;
 
 typedef struct {
     uint32_t type, len; /* len = payload bytes (multiple of 16) */

@@ -20,7 +20,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <mutex>
+#include <unordered_map>
 #include <set>
 #include <string>
 #include <sys/stat.h>
@@ -249,6 +251,32 @@ void Path1Kick(const u8* data, u32 q) {
    comes first, so xsg-gpu knows the PATH1 packet that follows is the native
    batch's own output.  XSG_GPU_NATIVE unset or 0: this is never reached and
    RunVu1 is unchanged.  XSG_GPU_NATIVE_VU1=1 keeps the interpreter (A/B). */
+/* Motion-vector draw identity: the host address of the VIF code being run (the
+   MSCNT inside the model's prebuilt geometry REF, stable per material batch),
+   plus its occurrence count within the frame (instances sharing geometry). */
+u32 g_vif_code_at;
+u32 g_micro_gen = 1;
+void NativeKey(u32* key, u32* occ) {
+    static std::unordered_map<u32, u32> seen;
+    static u32 frame = ~0u;
+    if (frame != xsg_frame) { frame = xsg_frame; seen.clear(); }
+    *key = g_vif_code_at;
+    *occ = seen[g_vif_code_at]++;
+}
+
+/* The reference's kick k, fed to the GS as Path1Kick would. */
+void KickRef(const Vu1Ref* R, u32 k) {
+    const Vu1RefKick& kk = R->kick[k];
+    st.p1_packets++;
+    for (u32 i = 0; i < kk.nqw; ++i) {
+        u64 lo, hi;
+        std::memcpy(&lo, kk.qw + 16 * i, 8);
+        std::memcpy(&hi, kk.qw + 16 * i + 8, 8);
+        GsQword(1, lo, hi);
+    }
+    st.p1_qw += kk.nqw;
+}
+
 int NativeOn() {
     static const int on = std::getenv("XSG_GPU_NATIVE") ? std::atoi(std::getenv("XSG_GPU_NATIVE")) : 0;
     return on;
@@ -326,7 +354,7 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
     static u32 seq;
     b->frame = xsg_frame;
     b->seq = seq++;
-    b->pad[0] = b->pad[1] = 0;
+    NativeKey(&b->key, &b->occ);
     GpuNativeVertex* v = reinterpret_cast<GpuNativeVertex*>(b + 1);
     for (u32 i = 0; i < n; ++i) {
         std::memcpy(v[i].p, Q(top + 1 + i), 16);
@@ -336,16 +364,122 @@ bool NativeStrip(u32 pc, u32 top, u32 itop) {
     }
     xsggpu::Native(GPU_NATIVE_SET0_STRIP, n, buf.data(), u32(buf.size()));
     /* XGKICK of the packet(s), as Path1Kick feeds them. */
-    for (u32 k = 0; k < R->nkick; ++k) {
-        const Vu1RefKick& kk = R->kick[k];
-        st.p1_packets++;
-        for (u32 i = 0; i < kk.nqw; ++i) {
-            u64 lo, hi;
-            std::memcpy(&lo, kk.qw + 16 * i, 8);
-            std::memcpy(&hi, kk.qw + 16 * i + 8, 8);
-            GsQword(1, lo, hi);
+    for (u32 k = 0; k < R->nkick; ++k) KickRef(R, k);
+    return true;
+}
+
+u32 Crc(const u8* p, size_t n, u32 c = 0xffffffffu);
+
+/* XSG_GPU_NATIVE=1, set 2 (characters; VU1_PROGRAMS.md §2): every MSCNT batch
+   (resume 0x0188) into one of the twelve set-2 vertex loops runs the C
+   reference (vu1_set2*.c, bit-exact) in place of the interpreter, as
+   NativeStrip does for set 0.  Vertex batches also send GPU_MSG_NATIVE
+   GPU_NATIVE_SET2: the streams after the header (morph and constant colour
+   applied), the constants the loop used, and the ADC bit of every vertex
+   (facing test, guard band) taken from the reference's own XYZF2.  The bone
+   palette (qw 732..961) goes as GPU_NATIVE_SET2_PALETTE only when it changed;
+   VU memory carries it forward across the s_pMatrixCache skip, and so does
+   this.  The six-kick env programs get GPU_NATIVE_SET2_ENV after their env A+D
+   kicks (0x3fa, 0x3da), so xsg-gpu snapshots the env pass's GS state. */
+bool NativeSkin(u32 pc, u32 top, u32 itop) {
+    if ((pc & 0x3ff8) != 0x188) return false;
+    /* XSG_GPU_NATIVE_SKIN=0: set 2 stays on the interpreter (as does everything with XSG_GPU_NATIVE_VU1=1). */
+    static const bool on = !(std::getenv("XSG_GPU_NATIVE_SKIN") && !std::atoi(std::getenv("XSG_GPU_NATIVE_SKIN"))) &&
+                           !(std::getenv("XSG_GPU_NATIVE_VU1") && std::atoi(std::getenv("XSG_GPU_NATIVE_VU1")));
+    if (!on) return false;
+    static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
+    static u32 gen = 0;
+    static bool is_set2 = false;
+    if (gen != g_micro_gen) {   /* re-identify the microcode after every MPG */
+        gen = g_micro_gen;
+        is_set2 = (Crc(Vu1Micro(), 0x3a68, 0xffffffffu) ^ 0xffffffffu) == 0x9d68d149u;
+    }
+    if (!is_set2) return false;
+    xsgvu::SaveRegs(R->regs);
+    const u32 loop = (R->regs.vi[15] & 0xffff) * 8;
+    static const u32 loops[] = {0x05f0, 0x0920, 0x0da0, 0x1268, 0x17d0, 0x1ac8, 0x1f00, 0x2378,
+                                0x2890, 0x2c28, 0x3098, 0x3550};
+    if (std::find(std::begin(loops), std::end(loops), loop) == std::end(loops)) return false;
+    u8* d = Vu1Data();
+    auto Q = [&](u32 q) { return d + (q & 0x3ff) * 16; };
+    auto ilw = [&](u32 q, int l) { u32 v; std::memcpy(&v, Q(q) + 4 * l, 4); return v & 0xffff; };
+    const u32 hx = ilw(top, 0), hy = ilw(top, 1);
+    const bool vb = hy != 0x4000 && (hx & 0x7fff);
+    const u32 ifirst = R->regs.I;
+    R->memp = d;
+    R->set = 2;
+    R->pc = pc;
+    R->top = top;
+    R->itop = itop;
+    const unsigned csr = vu_ref_fpu_enter();
+    const int rc = vu1_ref_run(R, nullptr);
+    vu_ref_fpu_leave(csr);
+    if (rc != VU1REF_OK) {
+        xsg_logf("[native] set-2 reference refused pc 0x%x loop 0x%x\n", pc, loop);
+        return false;
+    }
+    xsgvu::LoadRegs(R->regs);
+    xsgvu::GetStats().runs++;
+    const bool env = loop == 0x1268 || loop == 0x2378 || loop == 0x3550;
+    if (vb) {
+        static u8 pal[GPU_SKIN_PAL_NQW * 16];
+        static u32 palseq;
+        if (!palseq || std::memcmp(pal, Q(GPU_SKIN_PAL_QW0), sizeof pal)) {
+            std::memcpy(pal, Q(GPU_SKIN_PAL_QW0), sizeof pal);
+            xsggpu::Native(GPU_NATIVE_SET2_PALETTE, ++palseq, pal, sizeof pal);
         }
-        st.p1_qw += kk.nqw;
+        const u32 n = hx & 0x7fff;
+        static std::vector<u8> buf;
+        const u32 nbits = (n + 31) / 32;
+        buf.assign(sizeof(GpuNativeSkin) + n * sizeof(GpuNativeSkinVertex) + nbits * 4, 0);
+        GpuNativeSkin* b = reinterpret_cast<GpuNativeSkin*>(buf.data());
+        const Vu1CapRegs& g = R->regs;
+        b->loop = loop;
+        b->n = n;
+        NativeKey(&b->key, &b->occ);
+        static u32 seq;
+        b->frame = xsg_frame;
+        b->seq = seq++;
+        b->pal = palseq;
+        b->fogw = ilw(998, 3);
+        std::memcpy(b->m, g.vf[28], 64);
+        std::memcpy(b->scale, g.vf[26], 16);
+        std::memcpy(b->offset, g.vf[27], 16);
+        std::memcpy(b->lmat, g.vf[17], 48);
+        std::memcpy(b->lcol, g.vf[20], 64);
+        std::memcpy(b->diffuse, g.vf[25], 16);
+        std::memcpy(b->env, g.vf[24], 16);
+        std::memcpy(b->eye, Q(976), 16);
+        std::memcpy(b->c970, Q(970), 16);
+        std::memcpy(b->uv, Q(972), 16);
+        std::memcpy(b->c1008, Q(1008), 16);
+        std::memcpy(b->mirror, Q(1017), 16);
+        std::memcpy(b->e1004, Q(1004), 48);
+        std::memcpy(b->c1009, Q(1009), 16);
+        std::memcpy(b->tag1010, Q(1010), 16);
+        std::memcpy(b->tag1011, Q(1011), 16);
+        std::memcpy(b->tag1012, Q(1012), 16);
+        b->facing = ilw(995, 1);
+        b->ifirst = ifirst;
+        b->mirror_on = ilw(1017, 2);
+        GpuNativeSkinVertex* v = reinterpret_cast<GpuNativeSkinVertex*>(b + 1);
+        u32* adc = reinterpret_cast<u32*>(v + n);
+        const u32 p = top + 1, out = ilw(1017, 0);
+        for (u32 i = 0; i < n; ++i) {
+            std::memcpy(v[i].p, Q(p + i), 16);
+            std::memcpy(v[i].n, Q(p + n + i), 16);
+            std::memcpy(v[i].c, Q(p + 2 * n + i), 16);
+            std::memcpy(v[i].b, Q(p + 4 * n + i), 16);
+            std::memcpy(v[i].w, Q(p + 5 * n + i), 16);
+            u32 xw;
+            std::memcpy(&xw, Q(out + 1 + 3 * i + 2) + 12, 4);
+            if (xw & 0x8000) adc[i >> 5] |= 1u << (i & 31);
+        }
+        xsggpu::Native(GPU_NATIVE_SET2, n, buf.data(), u32(buf.size()));
+    }
+    for (u32 k = 0; k < R->nkick; ++k) {
+        if (vb && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
+        KickRef(R, k);
     }
     return true;
 }
@@ -358,7 +492,7 @@ void RunVu1(u32 pc) {
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = std::getenv("XSG_VU1") && !std::atoi(std::getenv("XSG_VU1"));
-    if (!off && g_mode == Mode::Gpu && NativeOn() && NativeStrip(pc, top, itop)) return;
+    if (!off && g_mode == Mode::Gpu && NativeOn() && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop))) return;
     if (!off) xsgvu::Run(pc, top, itop);
 }
 
@@ -422,6 +556,7 @@ void VifCode(u32 w) {
         st.mpg++;
         { static int n = 0; static const bool t = std::getenv("XSG_MPG_TRACE") != nullptr;
           if (t && n++ < 40) xsg_logf("[vif1] MPG addr 0x%x num %u\n", imm * 8, num ? num : 256); }
+        g_micro_gen++;
         vif.kind = 2; vif.addr = imm * 8; vif.want = (num ? num : 256) * 2;
         break;
     case 0x50: case 0x51:
@@ -510,6 +645,7 @@ void VifWords(const u8* p, u32 words) {
         } else {
             u32 w;
             std::memcpy(&w, p + i * 4, 4);
+            g_vif_code_at = u32(uintptr_t(p + i * 4));
             VifCode(w);
         }
         ++i;
@@ -586,7 +722,7 @@ void RunChannel(int ch, u32 base) {
 
 /* ---------------------------------------------------------------- PNG */
 
-u32 Crc(const u8* p, size_t n, u32 c = 0xffffffffu) {
+u32 Crc(const u8* p, size_t n, u32 c) {
     static u32 table[256];
     if (!table[1])
         for (u32 i = 0; i < 256; ++i) {
