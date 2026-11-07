@@ -406,9 +406,19 @@ int SsdCheckWaveData(int wave)
     return 0;
 }
 
+#ifdef PORT_HOST
+/* port/runtime/iop.c: on the PS2 the SIF interrupt wakes the EE RPC thread,
+ * which preempts a thread spinning here; the host's EE threads are
+ * cooperative, so the spinner hands over explicitly. */
+extern void xsg_iop_yield(void);
+#endif
 int SsdSpuDmaCompleted(int wait)
 {
     int busy = (RssdWork.flags >> 2) & 1;
+#ifdef PORT_HOST
+    if (busy && !wait)
+        xsg_iop_yield();
+#endif
 
     if (wait) {
         while (busy) {

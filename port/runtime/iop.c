@@ -21,14 +21,24 @@
  *              0x25   SPU DMA of a wave chunk finished (arg0 status, < 0 = error)
  *              0xda/0xdb sampling DMA done / key-off, 0x0a stream end (arg0 channel mask)
  *              0x102/0x103 voice envelope / sequence play info (answers to 0x102/0x103)
+ *
+ * Stage 10: by default the real driver runs (iop_sound.c, the src/audio C
+ * built for the host): loading RSSD.IRX starts it, server 0x900 calls go to
+ * it, and its IOP -> EE calls come from its own host threads, so the queue
+ * below is locked and the EE side is woken from the EE thread (after each
+ * call and at every vblank, xsg_iop_poll).  The model further down is the
+ * XSG_SOUND=0 fallback.
  */
 #define _GNU_SOURCE
+#include <pthread.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 
 #include "xsg_rt.h"
 
 extern int WakeupThread(int id);
+extern int iWakeupThread(int id);
 extern int GetThreadId(void);
 extern int SleepThread(void);
 
@@ -47,10 +57,19 @@ int sceSifRebootIop(const char *img) { STUB_LOG("%s", img); return 1; }
 int sceSifSyncIop(void) { return 1; }
 int sceSifInitIopHeap(void) { STUB_LOG(""); return 0; }
 int sceSifLoadFileReset(void) { STUB_LOG(""); return 0; }
+void xsg_sound_start(void);
+int xsg_sound_enabled(void);
+int xsg_sound_rpc(unsigned fno, const void *send, int ssize, void *recv, int rsize);
+
 int sceSifLoadModule(const char *path, int alen, const char *args)
 {
-    xsg_logf("[sif] LoadModule %s (args %d bytes) -> pretend loaded\n", path, alen);
     (void)args;
+    if (strstr(path, "RSSD.IRX") && xsg_sound_enabled()) {
+        xsg_logf("[sif] LoadModule %s -> host build of the sound driver\n", path);
+        xsg_sound_start();
+        return 1;
+    }
+    xsg_logf("[sif] LoadModule %s (args %d bytes) -> pretend loaded\n", path, alen);
     return 1;
 }
 static unsigned iop_heap = 0x00100000;
@@ -77,33 +96,72 @@ static struct { unsigned rpc; void *(*fn)(unsigned, void *, int); void *buf; } s
 static int nservers;
 static int loop_thread = -1;
 
-#define QMAX 64
-#define QDATA 0x400
+#define QMAX 256
+#define QDATA 0x10040
 struct iop_req {
     unsigned rpc, command;
     int size;
-    unsigned char data[QDATA] __attribute__((aligned(16)));
+    unsigned char *data; /* malloc'ed, QDATA bytes */
 };
 static struct iop_req queue[QMAX];
 static int qhead, qtail;
+static pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER;
 
-static void iop_call_ee(unsigned rpc, unsigned command, const void *data, int size)
+/* Any host thread (the sound driver's IOP threads call it).  The EE thread
+ * parked in sceSifRpcLoop is woken by xsg_iop_poll on the EE side. */
+void xsg_iop_call_ee(unsigned rpc, unsigned command, const void *data, int size)
 {
+    pthread_mutex_lock(&qlock);
     if ((qtail + 1) % QMAX == qhead) {
+        pthread_mutex_unlock(&qlock);
         xsg_logf("[iop] queue full, dropped 0x%x/%u\n", rpc, command);
         return;
     }
     struct iop_req *r = &queue[qtail];
+    if (!r->data)
+        r->data = aligned_alloc(16, QDATA);
     r->rpc = rpc;
     r->command = command;
-    r->size = size > QDATA ? QDATA : size;
-    memset(r->data, 0, sizeof r->data);
+    r->size = size > QDATA ? QDATA : size < 0 ? 0 : size;
+    memset(r->data, 0, 64);
     if (data)
         memcpy(r->data, data, r->size);
     qtail = (qtail + 1) % QMAX;
+    pthread_mutex_unlock(&qlock);
     STUB_LOG("-> EE server 0x%x command 0x%x", rpc, command);
-    if (loop_thread > 0)
+}
+
+static void iop_call_ee(unsigned rpc, unsigned command, const void *data, int size)
+{
+    xsg_iop_call_ee(rpc, command, data, size);
+}
+
+static int queue_pending(void)
+{
+    pthread_mutex_lock(&qlock);
+    int r = qhead != qtail;
+    pthread_mutex_unlock(&qlock);
+    return r;
+}
+
+/* EE thread: wake the sceSifRpcLoop thread if the IOP has called. */
+void xsg_iop_poll(void)
+{
+    if (loop_thread > 0 && queue_pending())
+        iWakeupThread(loop_thread);
+}
+
+/* EE thread busy-waiting on the IOP (SsdSpuDmaCompleted(0) under PORT_HOST):
+ * wake the RPC loop thread with preemption, as the SIF interrupt would; with
+ * nothing queued yet, let the IOP threads run for a moment. */
+void xsg_iop_yield(void)
+{
+    if (loop_thread > 0 && queue_pending()) {
         WakeupThread(loop_thread);
+        return;
+    }
+    struct timespec ts = {0, 100000};
+    nanosleep(&ts, NULL);
 }
 
 static void exec_req(struct iop_req *r)
@@ -119,13 +177,24 @@ static void exec_req(struct iop_req *r)
     xsg_logf("[iop] no EE server 0x%x for command 0x%x\n", r->rpc, r->command);
 }
 
-static struct iop_req *dequeue(void)
+/* Copies the request out of the ring (into *out, which owns its buffer). */
+static int dequeue(struct iop_req *out)
 {
-    if (qhead == qtail)
-        return NULL;
+    pthread_mutex_lock(&qlock);
+    if (qhead == qtail) {
+        pthread_mutex_unlock(&qlock);
+        return 0;
+    }
     struct iop_req *r = &queue[qhead];
+    if (!out->data)
+        out->data = aligned_alloc(16, QDATA);
+    out->rpc = r->rpc;
+    out->command = r->command;
+    out->size = r->size;
+    memcpy(out->data, r->data, r->size > 64 ? r->size : 64);
     qhead = (qhead + 1) % QMAX;
-    return r;
+    pthread_mutex_unlock(&qlock);
+    return 1;
 }
 
 void sceSifSetRpcQueue(void *q, int tid) { STUB_LOG("%p %d", q, tid); }
@@ -147,10 +216,8 @@ void *sceSifGetNextRequest(void *q)
 {
     (void)q;
     static struct iop_req cur;
-    struct iop_req *r = dequeue();
-    if (!r)
+    if (!dequeue(&cur))
         return NULL;
-    cur = *r;
     return &cur;
 }
 void sceSifExecRequest(void *s) { exec_req((struct iop_req *)s); }
@@ -159,9 +226,9 @@ void sceSifRpcLoop(void *q)
     STUB_LOG("%p: serving IOP -> EE calls", q);
     loop_thread = GetThreadId();
     for (;;) {
-        void *r;
-        while ((r = sceSifGetNextRequest(q)) != NULL)
-            sceSifExecRequest(r);
+        static struct iop_req cur; /* own buffer: the poller may dequeue too */
+        while (dequeue(&cur))
+            exec_req(&cur);
         SleepThread();
     }
 }
@@ -242,6 +309,8 @@ static void rssd_exec(unsigned fno, rssd_packet *p, const void *data)
 
 static void iop_module_call(unsigned rpc, unsigned fno, void *send, int ssize, void *recv, int rsize)
 {
+    if (rpc == 0x900 && xsg_sound_rpc(fno, send, ssize, recv, rsize) == 0)
+        return;
     if (rpc == 0x900 && send && ssize >= (int)sizeof(rssd_packet)) {
         rssd_packet p;
         memcpy(&p, send, sizeof p);
@@ -269,7 +338,7 @@ int sceSifCallRpc(sceSifClientData *c, unsigned fno, unsigned mode, void *send, 
     if (end)
         end(ep);
     loop_thread = lt;
-    if (qhead != qtail && loop_thread > 0)
+    if (loop_thread > 0 && queue_pending())
         WakeupThread(loop_thread);
     return 0;
 }

@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Emit the initialised data of the IOP sound driver (SSD.IRX / RSSD.IRX) as
+i386 assembly for the host build of src/audio (Stage 10, port/docs/STAGE10_SOUND.md).
+
+The driver's C (src/audio) compiles natively, but its tables and work areas
+(SsdWork, SsdAllPitchTable, SsdSeqFuncTrap, ...) are not recovered as C.  This
+copies each module's .rodata + .data + .bss image verbatim, labels the objects
+the C references, and turns every R_MIPS_32 word of .rel.data into a host
+`.long` (a function name + offset for text targets, a label + offset for data
+targets).  Labels are weak, so an object the C defines itself wins.
+
+usage: gen_iop_sound_data.py SSD.IRX RSSD.IRX out.S
+"""
+import struct
+import sys
+
+# Objects the C names that have no symbol in the IRX (found from the HI16/LO16
+# relocation pairs of the functions that use them).
+EXTRA = {
+    "ssd": {
+        "WaveformTable": 0xE940,          # SsdInitLfoParam
+        "SsdSeqFuncLength": 0xEFC0,       # SsdEffectTrackSequence
+        "SpuReverbWorkSize": 0xEC20,      # SsdInit (reads [4] at 0xec30)
+        "SsdSpuMemTypeTextTable": 0xEBEC, # SsdCheckSpuMemory
+    },
+    "rssd": {},
+}
+SKIP = {"Module", "_fdata", "_gp", "edata", "_edata", "end", "_end", "_fbss", "etext", "_etext", "_ftext"}
+
+
+class Irx:
+    def __init__(self, path):
+        d = self.d = open(path, "rb").read()
+        shoff, = struct.unpack_from("<I", d, 0x20)
+        shnum, shstr = struct.unpack_from("<HH", d, 0x30)
+        secs = [struct.unpack_from("<10I", d, shoff + i * 40) for i in range(shnum)]
+        so = secs[shstr][4]
+        self.sec = {}
+        for i, s in enumerate(secs):
+            self.sec[self.cstr(so + s[0])] = dict(idx=i, addr=s[3], off=s[4], size=s[5])
+        sym, strt = self.sec[".symtab"], self.sec[".strtab"]["off"]
+        self.funcs, self.objs = [], {}
+        for i in range(sym["size"] // 16):
+            n, v, sz, info, _, ndx = struct.unpack_from("<IIIBBH", d, sym["off"] + i * 16)
+            name = self.cstr(strt + n)
+            if info & 15 == 2:
+                self.funcs.append((v, name))
+            elif ndx in (self.sec[".rodata"]["idx"], self.sec[".data"]["idx"], self.sec[".bss"]["idx"]):
+                if name and name not in SKIP:
+                    self.objs[v] = name
+        self.funcs.sort()
+        rel = self.sec[".rel.data"]
+        self.rel = {}
+        for i in range(rel["size"] // 8):
+            off, info = struct.unpack_from("<II", d, rel["off"] + i * 8)
+            assert info & 0xFF == 2, hex(info)
+            self.rel[off] = True
+
+    def cstr(self, o):
+        return self.d[o:self.d.index(b"\0", o)].decode()
+
+    def func_at(self, a):
+        best = None
+        for v, n in self.funcs:
+            if v <= a:
+                best = (v, n)
+        return best
+
+
+def emit(irx, mod, out):
+    ro, da, bs = irx.sec[".rodata"], irx.sec[".data"], irx.sec[".bss"]
+    lo, hi = ro["addr"], bs["addr"] + bs["size"]
+    image = bytearray(hi - lo)
+    image[ro["addr"] - lo:ro["addr"] - lo + ro["size"]] = irx.d[ro["off"]:ro["off"] + ro["size"]]
+    image[da["addr"] - lo:da["addr"] - lo + da["size"]] = irx.d[da["off"]:da["off"] + da["size"]]
+    labels = dict(irx.objs)
+    for n, v in EXTRA[mod].items():
+        labels[v] = n
+    labels[ro["addr"]] = labels.get(ro["addr"]) or f"{mod}_fdata"
+    fdata = f"{mod}_fdata"
+    data_names = sorted(labels.items())
+
+    def data_ref(a):
+        best = None
+        for v, n in data_names:
+            if v <= a:
+                best = (v, n)
+        if best is None:
+            return f".L{mod}_base+{a - lo:#x}"
+        return f"{best[1]}+{a - best[0]:#x}"
+
+    out.append(f"/* {mod.upper()}.IRX .rodata/.data/.bss image, {hi - lo:#x} bytes from {lo:#x} */")
+    out.append("\t.data\n\t.balign 16")
+    out.append(f".L{mod}_base:")
+    out.append(f"\t.globl {fdata}\n{fdata}:")
+    a = lo
+    while a < hi:
+        if a in labels and labels[a] != fdata:
+            out.append(f"\t.weak {labels[a]}\n{labels[a]}:")
+        if a in irx.rel:
+            w, = struct.unpack_from("<I", image, a - lo)
+            if irx.sec[".text"]["addr"] <= w < irx.sec[".text"]["addr"] + irx.sec[".text"]["size"]:
+                v, n = irx.func_at(w)
+                out.append(f"\t.long {n}+{w - v:#x}")
+            elif lo <= w <= hi:
+                out.append(f"\t.long {data_ref(w)}")
+            else:
+                raise SystemExit(f"{mod}: reloc at {a:#x} -> {w:#x} outside the image")
+            a += 4
+            continue
+        nxt = min([x for x in list(labels) + list(irx.rel) if x > a] + [hi])
+        chunk = image[a - lo:nxt - lo]
+        if any(chunk):
+            for i in range(0, len(chunk), 16):
+                out.append("\t.byte " + ",".join(str(b) for b in chunk[i:i + 16]))
+        else:
+            out.append(f"\t.zero {len(chunk)}")
+        a = nxt
+
+
+def main():
+    ssd, rssd, dst = sys.argv[1:4]
+    out = ["/* generated by port/scripts/gen_iop_sound_data.py -- do not edit */"]
+    emit(Irx(ssd), "ssd", out)
+    emit(Irx(rssd), "rssd", out)
+    out.append('\t.section .note.GNU-stack,"",@progbits')
+    open(dst, "w").write("\n".join(out) + "\n")
+
+
+if __name__ == "__main__":
+    main()

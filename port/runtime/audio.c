@@ -14,6 +14,10 @@
  * Decoded samples go to ALSA when the 32-bit libasound.so.2 can be dlopen'ed
  * (nothing is linked; XSG_AUDIO=0 disables it).  If the host device falls
  * behind, samples are dropped rather than slowing the game.
+ *
+ * Stage 10: this model is only used with XSG_SOUND=0.  By default the real
+ * sound driver (iop_sound.c) plays the streams through the software SPU2 and
+ * uses the xsg_alsa_* helpers below for its output.
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
@@ -38,10 +42,11 @@ static struct {
 } V;
 
 /* ---- ALSA through dlopen ------------------------------------------- */
+/* Shared with iop_sound.c (Stage 10): xsg_alsa_* open independent PCMs. */
 typedef struct snd_pcm snd_pcm_t;
 static struct {
     int tried, ok;
-    snd_pcm_t *pcm;
+    snd_pcm_t *pcm; /* the VAG-stream model's PCM (XSG_SOUND=0 only) */
     unsigned rate;
     int (*open)(snd_pcm_t **, const char *, int, int);
     int (*set_params)(snd_pcm_t *, int, int, unsigned, unsigned, int, unsigned);
@@ -49,19 +54,20 @@ static struct {
     int (*recover)(snd_pcm_t *, int, int);
     int (*close)(snd_pcm_t *);
     int (*drop)(snd_pcm_t *);
+    long (*avail)(snd_pcm_t *);
 } A;
 
-static void alsa_open(unsigned rate)
+static int alsa_load(void)
 {
     if (!A.tried) {
         A.tried = 1;
         const char *e = getenv("XSG_AUDIO");
         if (e && atoi(e) == 0)
-            return;
+            return 0;
         void *h = dlopen("libasound.so.2", RTLD_NOW);
         if (!h) {
-            xsg_logf("[audio] no 32-bit libasound.so.2 (%s): streams are timed, not heard\n", dlerror());
-            return;
+            xsg_logf("[audio] no 32-bit libasound.so.2 (%s): no host audio output\n", dlerror());
+            return 0;
         }
         A.open = dlsym(h, "snd_pcm_open");
         A.set_params = dlsym(h, "snd_pcm_set_params");
@@ -69,43 +75,79 @@ static void alsa_open(unsigned rate)
         A.recover = dlsym(h, "snd_pcm_recover");
         A.close = dlsym(h, "snd_pcm_close");
         A.drop = dlsym(h, "snd_pcm_drop");
+        A.avail = dlsym(h, "snd_pcm_avail_update");
         A.ok = A.open && A.set_params && A.writei && A.recover && A.close;
     }
-    if (!A.ok)
+    return A.ok;
+}
+
+/* Non-blocking S16LE stereo PCM on "default"; NULL when there is none. */
+void *xsg_alsa_open(unsigned rate, unsigned latency_us)
+{
+    snd_pcm_t *pcm = NULL;
+    if (!alsa_load())
+        return NULL;
+    /* SND_PCM_STREAM_PLAYBACK 0, SND_PCM_NONBLOCK 1, FORMAT_S16_LE 2,
+     * ACCESS_RW_INTERLEAVED 3; 2 channels, resample */
+    if (A.open(&pcm, "default", 0, 1) < 0) {
+        xsg_logf("[audio] snd_pcm_open failed\n");
+        return NULL;
+    }
+    if (A.set_params(pcm, 2, 3, 2, rate, 1, latency_us) < 0) {
+        xsg_logf("[audio] snd_pcm_set_params(%u Hz) failed\n", rate);
+        A.close(pcm);
+        return NULL;
+    }
+    xsg_logf("[audio] ALSA output %u Hz stereo, %u us buffer\n", rate, latency_us);
+    return pcm;
+}
+
+/* Frames written; never blocks.  A full device drops the rest (EAGAIN);
+ * an underrun (EPIPE) or suspend is recovered and the write retried once. */
+long xsg_alsa_write(void *pcm, const short *s, unsigned frames)
+{
+    if (!pcm)
+        return 0;
+    long r = A.writei(pcm, s, frames);
+    if (r < 0 && r != -11) {
+        A.recover(pcm, (int)r, 1);
+        r = A.writei(pcm, s, frames);
+    }
+    return r;
+}
+
+/* Frames the device can take now (< 0: error, e.g. -EPIPE after an underrun). */
+long xsg_alsa_avail(void *pcm)
+{
+    if (!pcm || !A.avail)
+        return -1;
+    return A.avail(pcm);
+}
+
+void xsg_alsa_close(void *pcm)
+{
+    if (!pcm)
         return;
+    if (A.drop)
+        A.drop(pcm);
+    A.close(pcm);
+}
+
+static void alsa_open(unsigned rate)
+{
     if (A.pcm && A.rate == rate)
         return;
     if (A.pcm) {
         A.close(A.pcm);
         A.pcm = NULL;
     }
-    /* SND_PCM_STREAM_PLAYBACK 0, SND_PCM_NONBLOCK 1, FORMAT_S16_LE 2,
-     * ACCESS_RW_INTERLEAVED 3; 2 channels, resample, 200 ms latency */
-    if (A.open(&A.pcm, "default", 0, 1) < 0) {
-        xsg_logf("[audio] snd_pcm_open failed\n");
-        A.ok = 0;
-        A.pcm = NULL;
-        return;
-    }
-    if (A.set_params(A.pcm, 2, 3, 2, rate, 1, 200000) < 0) {
-        xsg_logf("[audio] snd_pcm_set_params(%u Hz) failed\n", rate);
-        A.close(A.pcm);
-        A.pcm = NULL;
-        return;
-    }
-    A.rate = rate;
-    xsg_logf("[audio] ALSA output %u Hz stereo\n", rate);
+    A.pcm = xsg_alsa_open(rate, 200000);
+    A.rate = A.pcm ? rate : 0;
 }
 
 static void alsa_write(const short *s, unsigned frames)
 {
-    if (!A.pcm)
-        return;
-    long r = A.writei(A.pcm, s, frames);
-    if (r < 0 && r != -11 /* EAGAIN: device full, drop */) {
-        A.recover(A.pcm, (int)r, 1);
-        A.writei(A.pcm, s, frames);
-    }
+    xsg_alsa_write(A.pcm, s, frames);
 }
 
 /* ---- SPU ADPCM ------------------------------------------------------ */
