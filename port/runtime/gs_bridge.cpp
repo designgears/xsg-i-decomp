@@ -31,6 +31,11 @@
 #include "gpu_client.h"
 #include "gpu_ipc.h"
 #include "vu1_capture.h"
+#include <xmmintrin.h>
+extern "C" {
+#include "../render/vu1_ref/vu1_ref.h"
+#include "../render/vu1_ref/vu_float.h"
+}
 
 namespace ps2host { std::uint32_t g_dma_source = 0; }
 
@@ -234,32 +239,87 @@ void Path1Kick(const u8* data, u32 q) {
     }
 }
 
-/* XSG_GPU_NATIVE=1 (port/docs/NATIVE_RENDERER.md): after a set-0 strip batch
-   (MSCNT 0x170 into loop 0x0c18) ran, send its inputs to xsg-gpu.  The batch
-   header has already morphed P and converted C to floats in place. */
-void NativeBatch(u32 pc, u32 top) {
+/* XSG_GPU_NATIVE=1 (port/docs/NATIVE_RENDERER.md): set-0 strip batches (MSCNT
+   0x170 into loop 0x0c18) do not run on the VU1 interpreter.  The C reference
+   (port/render/vu1_ref/vu1_set0.c, bit-exact with the interpreter) runs in
+   place on VU1 data memory and the register file instead, the batch's inputs go
+   to xsg-gpu as GPU_MSG_NATIVE, and then the reference's GIF packet is kicked
+   to the GS exactly as XGKICK would have (so paraLLEl-GS still receives the
+   same bytes and keeps its frame and Z buffer complete).  The NATIVE message
+   comes first, so xsg-gpu knows the PATH1 packet that follows is the native
+   batch's own output.  XSG_GPU_NATIVE unset or 0: this is never reached and
+   RunVu1 is unchanged.  XSG_GPU_NATIVE_VU1=1 keeps the interpreter (A/B). */
+int NativeOn() {
     static const int on = std::getenv("XSG_GPU_NATIVE") ? std::atoi(std::getenv("XSG_GPU_NATIVE")) : 0;
-    if (!on || (pc & 0x3ff8) != 0x170) return;
+    return on;
+}
+
+bool NativeStrip(u32 pc, u32 top, u32 itop) {
+    if ((pc & 0x3ff8) != 0x170) return false;
     static const u8 sig[16] = {0x7c, 0x13, 0xe2, 0x81, 0x03, 0x01, 0x40, 0x00,
                                0x7c, 0x1b, 0xf0, 0x81, 0xff, 0x02, 0x00, 0x00};   /* set 0 @ 0x0c18 */
-    Vu1CapRegs r;
-    xsgvu::SaveRegs(r);
-    if ((r.vi[15] & 0xffff) * 8 != 0xc18 || std::memcmp(Vu1Micro() + 0xc18, sig, 16)) return;
-    const u8* d = Vu1Data();
+    static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
+    static const bool interp = std::getenv("XSG_GPU_NATIVE_VU1") && std::atoi(std::getenv("XSG_GPU_NATIVE_VU1"));
+    xsgvu::SaveRegs(R->regs);
+    if ((R->regs.vi[15] & 0xffff) * 8 != 0xc18 || std::memcmp(Vu1Micro() + 0xc18, sig, 16)) return false;
+    u8* d = Vu1Data();
     auto Q = [&](u32 q) { return d + (q & 0x3ff) * 16; };
     u32 hx, hy;
     std::memcpy(&hx, Q(top), 4);
     std::memcpy(&hy, Q(top) + 4, 4);
-    if ((hy & 0xffff) == 0x4000) return;   /* register batch */
+    if ((hy & 0xffff) == 0x4000) return false;   /* register batch: interpreter */
     const u32 n = hx & 0x7fff;
-    if (!n) return;
+    if (!n) return false;
+    /* The inputs as the batch header leaves them (morph applied, colours as
+       floats) are only there after the run, but the message must precede the
+       kick: run first, then build the message, then kick. */
+    if (interp) {
+        static std::vector<u8> kicks;
+        kicks.clear();
+        static std::vector<u8>* sink;
+        sink = &kicks;
+        xsgvu::SetKick([](const u8* data, u32 q) {
+            for (u32 guard = 0; guard < 1024; ++guard) {
+                u64 lo;
+                std::memcpy(&lo, data + (q & 0x3ff) * 16, 8);
+                const u32 nloop = u32(lo & 0x7fff), eop = u32(lo >> 15) & 1, flg = u32(lo >> 58) & 3;
+                u32 nreg = u32(lo >> 60) & 15;
+                if (!nreg) nreg = 16;
+                const u32 body = flg == 0 ? nloop * nreg : flg == 1 ? (nloop * nreg + 1) / 2 : nloop;
+                if (body > 1024) break;
+                for (u32 i = 0; i <= body; ++i, ++q) sink->insert(sink->end(), data + (q & 0x3ff) * 16, data + (q & 0x3ff) * 16 + 16);
+                if (eop) break;
+            }
+        });
+        xsgvu::Run(pc, top, itop);
+        xsgvu::SetKick(Path1Kick);
+        R->nkick = 1;
+        R->kick[0].qw = kicks.data();
+        R->kick[0].nqw = u32(kicks.size() / 16);
+    } else {
+        R->memp = d;
+        R->set = 0;
+        R->pc = pc;
+        R->top = top;
+        R->itop = itop;
+        const unsigned csr = vu_ref_fpu_enter();
+        const int rc = vu1_ref_run(R, nullptr);
+        vu_ref_fpu_leave(csr);
+        if (rc != VU1REF_OK) {   /* cannot happen for loop 0x0c18 */
+            xsg_logf("[native] set-0 reference refused pc 0x%x\n", pc);
+            return false;
+        }
+        xsgvu::LoadRegs(R->regs);
+        xsgvu::GetStats().runs++;
+    }
+
     static std::vector<u8> buf;
     buf.resize(sizeof(GpuNativeBatch) + n * sizeof(GpuNativeVertex));
     GpuNativeBatch* b = reinterpret_cast<GpuNativeBatch*>(buf.data());
     std::memcpy(b->m, Q(962), 64);
     std::memcpy(b->scale, Q(966), 16);
     std::memcpy(b->offset, Q(967), 16);
-    std::memcpy(b->cscale, r.vf[24], 16);
+    std::memcpy(b->cscale, Q(971), 16);   /* vf24 = qw 971 (loaded by the header) */
     std::memcpy(b->uv, Q(972), 16);
     std::memcpy(b->fog, Q(1007), 16);
     std::memcpy(b->tag, Q(1011), 16);
@@ -274,18 +334,20 @@ void NativeBatch(u32 pc, u32 top) {
         std::memcpy(&v[i].t, Q(top + 1 + n + i) + 12, 4);
         v[i].pad[0] = v[i].pad[1] = v[i].pad[2] = 0;
     }
-    if (on == 2 && b->seq % 2000 == 0) {   // debug: vertex 0 recomputed vs the VU1 output
-        const float* P = v[0].p;
-        float c[4], sx[3];
-        for (int l = 0; l < 4; ++l) c[l] = b->m[0][l] * P[0] + b->m[1][l] * P[1] + b->m[2][l] * P[2] + b->m[3][l];
-        for (int l = 0; l < 3; ++l) sx[l] = b->offset[l] + c[l] / c[3] * b->scale[l];
-        int32_t o[4];
-        std::memcpy(o, Q(top + 0xf3 + 3), 16);
-        xsg_logf("[native] seq %u n %u: P %g %g %g  scr %g %g %g  vu1 %g %g %u  col %g %g %g %g tag %08x%08x\n", b->seq, n, P[0],
-                 P[1], P[2], sx[0], sx[1], sx[2], o[0] / 16.0, o[1] / 16.0, unsigned(o[2]) >> 4, v[0].c[0], v[0].c[1], v[0].c[2],
-                 v[0].c[3], b->tag[1], b->tag[0]);
-    }
     xsggpu::Native(GPU_NATIVE_SET0_STRIP, n, buf.data(), u32(buf.size()));
+    /* XGKICK of the packet(s), as Path1Kick feeds them. */
+    for (u32 k = 0; k < R->nkick; ++k) {
+        const Vu1RefKick& kk = R->kick[k];
+        st.p1_packets++;
+        for (u32 i = 0; i < kk.nqw; ++i) {
+            u64 lo, hi;
+            std::memcpy(&lo, kk.qw + 16 * i, 8);
+            std::memcpy(&hi, kk.qw + 16 * i + 8, 8);
+            GsQword(1, lo, hi);
+        }
+        st.p1_qw += kk.nqw;
+    }
+    return true;
 }
 
 void RunVu1(u32 pc) {
@@ -296,8 +358,8 @@ void RunVu1(u32 pc) {
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = std::getenv("XSG_VU1") && !std::atoi(std::getenv("XSG_VU1"));
+    if (!off && g_mode == Mode::Gpu && NativeOn() && NativeStrip(pc, top, itop)) return;
     if (!off) xsgvu::Run(pc, top, itop);
-    if (g_mode == Mode::Gpu) NativeBatch(pc, top);
 }
 
 void VifData(u32 w) {

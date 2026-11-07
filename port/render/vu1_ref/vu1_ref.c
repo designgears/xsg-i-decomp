@@ -6,7 +6,7 @@
 
 #include <string.h>
 
-uint8_t* vu1_ref_qw(Vu1Ref* r, uint32_t q) { return r->mem + (q & (VU1REF_MEM_QW - 1)) * 16; }
+uint8_t* vu1_ref_qw(Vu1Ref* r, uint32_t q) { return (r->memp ? r->memp : r->mem) + (q & (VU1REF_MEM_QW - 1)) * 16; }
 
 uint32_t vu1_ref_ilw(Vu1Ref* r, uint32_t q, int lane) {
     uint32_t v;

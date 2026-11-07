@@ -31,6 +31,7 @@ typedef struct Vu1Ref {
     uint32_t pc;                /* entry byte address (MSCAL imm*8, or the MSCNT resume point) */
     uint32_t top, itop;
     Vu1CapRegs regs;            /* register file at entry; updated by the run */
+    uint8_t* memp;              /* NULL: `mem`; else run in place on this 16 KB (the port's fast path) */
     uint8_t mem[VU1REF_MEM_QW * 16];  /* data memory; updated by the run */
     /* outputs */
     uint32_t nkick;

@@ -100,7 +100,11 @@ add_custom_command(
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py
           ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o ${CMAKE_BINARY_DIR}/vu0_microcode.c
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o)
-add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+# XSG_GPU_NATIVE fast path (gs_bridge.cpp): set-0 strip batches run the VU1 C
+# reference in place instead of the interpreter.  Same float rules as vu1.cpp.
+file(GLOB XSG_VU1REF_FAST CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/render/vu1_ref/*.c")
+add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${CMAKE_BINARY_DIR}/vu0_microcode.c ${XSG_VU1REF_FAST})
+set_source_files_properties(${XSG_VU1REF_FAST} PROPERTIES COMPILE_OPTIONS "-O2;-msse2;-mfpmath=sse;-ffp-contract=off")
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
 target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
   -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
