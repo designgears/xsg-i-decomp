@@ -721,6 +721,10 @@ bool Init(Vulkan::Device* dev) {
             ParallelGS::GSOptions o = {};
             if (!g_own->init(g_own_dev.get(), o)) g_own.reset();
         }
+        // Granite loads instance-level entry points into volk's globals: creating the
+        // second instance (no surface extensions) left the window's surface and
+        // swapchain functions null (xsg-gpu crashed in WSI::begin_frame with a window).
+        volkLoadInstance(g_dev->get_instance());
         if (!g_own) { Log("ownership GS: init failed"); g_own_on = false; }
         const char* th = std::getenv("XSG_GPU_OWNER_THREAD");
         if (g_own && !(th && *th && std::atoi(th) == 0)) {
