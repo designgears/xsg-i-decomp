@@ -207,7 +207,8 @@ target_link_options(test_vu1_replay PRIVATE -m32 -no-pie)
 target_link_libraries(test_vu1_replay m stdc++)
 # Stage 10: software SPU2 checks (port/tests/test_spu2.c); run port/build*/test_spu2.
 add_executable(test_spu2 EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_spu2.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2_tables.c)
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2_tables.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/spu2_libsd_tables.c)
 target_include_directories(test_spu2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 target_compile_options(test_spu2 PRIVATE -m32 -O1 -g -Wall)
 target_link_options(test_spu2 PRIVATE -m32)
