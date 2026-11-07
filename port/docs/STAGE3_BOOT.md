@@ -1,5 +1,9 @@
 # PC port, Stage 3: a linked host executable that boots headless
 
+> **Superseded in part by [STAGE4_BOOT.md](STAGE4_BOOT.md)**: boot now reaches the title
+> screen and overlay 1; blockers 1, 2, 4 and 5 below are resolved there, and vblanks are paced
+> at 60 Hz by default (`XSG_FAST=1` for unthrottled).
+
 Branch `pc-port`, 2026-11-06/07, gcc 16, i386 (`-m32`), non-PIE.
 
 **Result:** `port/build/xsg` links the whole game (main + ov01/ov02/ov10/ov11/ov12, all
