@@ -16,6 +16,11 @@ true per-vertex motion vectors for DLSS. paraLLEl-GS stays for everything that i
 are fixed (§2). Screenshots and the `XSG_STREAM` stream still read paraLLEl-GS VRAM at 512×448.
 `XSG_GPU_NATIVE=0` (or unset) is byte-identical to the old path.
 
+**Update (characters + motion vectors, 2026-11-07):** set-2 batches (skinned, rigid and two-bone
+characters, all twelve vertex loops) also run the C reference instead of VU1 and are drawn
+natively with GPU skinning (§7), so character edges are high-res in the composite. Both the
+scenery and the character shaders write an RG16F motion-vector target (§8). Speed: §9.
+
 ## 1. Where to intercept
 
 ### Target design: the EE builder
@@ -93,7 +98,7 @@ native target's own alpha.
 
 ## 3. Hybrid: what stays on paraLLEl-GS, and compositing
 
-Characters (set 2), UI (`xgl_*` builders over PATH2/3), fonts, movies (IPU → PATH3 image
+UI (`xgl_*` builders over PATH2/3), fonts, movies (IPU → PATH3 image
 uploads) and full-screen effects (buffer copies and blurs through GS texture reads of the
 frame buffer) all stay on paraLLEl-GS. The slice keeps sending **all** GS traffic to
 paraLLEl-GS, including the VU1 output of native batches, so the GS frame and its Z buffer
@@ -142,7 +147,8 @@ Trade-offs:
   scenery that leaves it within 12 levels would still show native scenery under it; at
   silhouette edges (1× not covered) only the depth rule applies.
 * PMODE circuit blending (two-circuit fades) is not applied to the native image.
-* Characters (set 2) depth-test against the 1× GS Z, so their silhouettes stay 1×.
+* ~~Characters (set 2) depth-test against the 1× GS Z, so their silhouettes stay 1×.~~ Characters
+  are native now (§7), and their silhouettes are S× as well.
 
 ## 4. Running it
 
@@ -158,12 +164,17 @@ XSG_PAD='300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60' port/build-wt/xsg  
 | `XSG_GPU_NATIVE_SCALE` | 1–8 (default 2) |
 | `XSG_GPU_NATIVE_LIVE=0` | no live composite (shots only) |
 | `XSG_GPU_NATIVE_THR` | rule-2 colour threshold (default 12) |
-| `XSG_GPU_NATIVE_VU1=1` | keep the VU1 interpreter for native batches (A/B) |
+| `XSG_GPU_NATIVE_VU1=1` | keep the VU1 interpreter for native set-0 batches (A/B); set 2 then stays on the interpreter too |
+| `XSG_GPU_NATIVE_SKIN=0` | set 2 (characters) stays on VU1 + paraLLEl-GS (A/B) |
+| `XSG_GPU_MV_VIEW=1` | the window shows the motion vectors as colour (hue = direction, brightness = length, full at 16 px at 1×; `=N` sets that length) |
 | `XSG_GPU_NATIVE_SHOT`, `_DIR` | diagnostic images per listed vsync |
 
 Per shot vsync: `native_VVVVVV_{gs_1x, native_only_1x, comp_1x, diff_1x, native_only_Sx,
 comp_Sx, live_Sx, live_down_1x}.png`. `live_Sx` is a readback of what the window shows;
 `live_down_1x` is it box-downsampled. The `[xsg-gpu]` stats line counts native presents.
+With the live path there are also `_mv.{png,f32}` (the resolved motion vectors of the live
+composite) and `_rawmv.{png,f32}` (the native render's own, before the GS-ownership resolve);
+`.f32` is `u32 w, h`, then `w·h` RG float pairs in high-res pixels.
 
 ## 5. Validation (live slice, 2026-11-07, RTX 5090)
 
@@ -232,15 +243,169 @@ target back into GS VRAM before such effects instead of compositing afterwards.
 
 ## 6. Next steps
 
-1. Characters: port set 2 (`skin_lit` and family; the references exist for all 12 loops) the
-   same way (reference in place of VU1, native draw), with the specular second pass (CTXT 2,
-   tag 1012) and the env-map forms. Then characters get S× depth against the scenery.
+1. ~~Characters~~ done (§7). ~~Motion vectors~~ done (§8).
 2. Effects at S×: detect GS draws that sample the displayed frame/Z (TEX0.TBP0 in the FRAME/ZBUF
    range) and redo the hangar DOF and fades on the native target, so post-processed frames stay
    high-res. Replace rule 2 with an exact last-writer plane once more of the frame is native.
-3. Motion vectors: keep last frame's M962 and bone palette per `(model, parts, material,
-   batch)` key (VU1_PROGRAMS.md §5) and output `clip_prev` from the vertex shader.
+3. DLSS: feed `xsgskin::MvImage()` (RG16F, high-res pixels, current − previous) plus the native
+   depth. Add sub-pixel jitter to the S× projection (there is none today) and take it out of the
+   vectors; the 1× pass must stay unjittered because rule 2 compares it with the GS.
 4. Move the message build to the EE builder and cache geometry per REF as GPU buffers; drop the
    per-frame VRAM readback by reading paraLLEl-GS VRAM on the GPU.
 5. Mirror completeness (local→local, render-to-texture, CSM2), Ad blending, dithering.
 6. Widescreen: widen M962's projection and the GS scissor/guard band.
+7. Speed of the live path with characters (§9): record the 1× and S× renders once (multiview or
+   two subpasses), or in two threads; move the scenery's vertices and constants into the arena as
+   set 2 does.
+
+## 7. Characters (set 2), natively
+
+**Game side** (`gs_bridge.cpp`, `NativeSkin`, next to `NativeStrip`). The path runs at every VIF1
+MSCNT that resumes at 0x0188 while set 2 is loaded and `vi15` is one of the twelve loops
+(0x05f0 … 0x3550). Set 2 is recognised by the CRC32 of micro memory 0..0x3a68 (0x9d68d149),
+checked again after every MPG. `vu1_ref_run` (`vu1_set2*.c`, bit-exact) then runs in place on VU1
+memory and the register file. Register batches go through the same reference. For vertex
+batches the game then sends:
+
+* `GPU_NATIVE_SET2_PALETTE`: qw 732–961 (230 qw, about 57 bones), only when it differs from the
+  last palette sent. VU memory carries the palette (and M962/973) forward across the
+  `s_pMatrixCache` skip, so the message does too.
+* `GPU_NATIVE_SET2` (`GpuNativeSkin` + `GpuNativeSkinVertex[n]` + ADC bits). It holds the streams
+  P, N, C, B and W as the header leaves them (morph and constant colour applied), and the
+  constants the loop reads: vf17–31, 970, 972, 976, 1004–1006, 1008, 1009, 1017, tags
+  1010/1011/1012, 995.y and the entry I. It also holds the fog word, the draw key, and **one ADC
+  bit per vertex, taken from the reference's own XYZF2**. The facing test (995.y and the ring of
+  skinned positions) and the guard-band rejection are therefore exactly the VU's.
+* The reference's kicks, in order. For the six-kick env programs, `GPU_NATIVE_SET2_ENV` goes
+  between kick 3 (0x3da, the env pass's A+D state) and kick 4 (the env strip). That way xsg-gpu
+  snapshots that pass's GS state at the right point in the ring.
+
+paraLLEl-GS gets the same bytes as before. Game screenshots at vsync 1550, 4000 and 6000 are
+byte-identical between `XSG_GPU_NATIVE=0` and `=1`. At 1401 two of three run pairs matched. That
+frame is timing-dependent (the GPU-side screenshot read), not a difference of the native path.
+
+**xsg-gpu side** (`native_skin.{h,cpp}`, `native_skin.vert`; `native.frag` is shared). Each batch
+becomes one `Stored` per pass in the displayed buffer's list, in ring order with the scenery:
+
+* pass 0 (tag 1011);
+* the specular strip (tag 1012, GS context 2) of the two-pass loops;
+* the env strip (tag 1010) of the six-kick loops, with its state snapshotted at `SET2_ENV`.
+
+When a batch arrives, its strip becomes an index list without the triangles whose last vertex
+has ADC set. `native_skin.vert` repeats the loops of VU1_PROGRAMS.md §2 in IEEE floats:
+
+| loops | skinning |
+|---|---|
+| 0x05f0 / 0920 / 0da0 / 1268 | up to 4 bones (B = qw addresses, W = weights), stop at the first zero address |
+| 0x17d0 / 1ac8 / 1f00 / 2378 | rigid: one matrix (B.x) |
+| 0x2890 | "blend 8": bones B.x/B.y, weights B.z/B.w (floats), always both |
+| 0x2c28 / 3098 / 3550 | as 0x2890, bone 1 only when B.y ≠ 0 |
+
+After skinning, the shader does the following:
+
+* optional renormalisation (ILW 1008.z) and mirror (1017.z);
+* `L = max(M973·n, 0)`, `rgb = (980 + M977·L·968)·C`, alpha `968.w·C.w`;
+* specular power `max(M973·R, 0)^(2^(1008.x+1))`, where `R` is the reflected eye vector;
+* the one-pass specular colour, `min(min(lit, I) + sp·C, 255)`, with I = the entry I for
+  vertex 0;
+* the two-pass second strip, `min(sp·C·(970·1008.y), 255)`, alpha `min(C.w, 128)`;
+* the env programs: pass 1 adds `128·sp·(970·1008.y)`; pass 2 uses colour 1009 and
+  ST = `((e.xy+1)/2)·vf24.yw + vf24.xz` with `e = M1004·(M973·R)`;
+* fog is the constant F of 998.w.
+
+XYZ snapping, depth, the texture function, alpha test, blending and fog are the scenery path's.
+
+When a message arrives, everything its batch needs on the GPU is written **once** into a 256 MB
+host-visible ring: the vertices with last frame's positions, the indices and the 0x2a0-byte
+constant block. Palettes go to a ring of 16,384 slots that the shader indexes (`cfg2.w`, `cfg3.x`).
+The 1× and S× renders then only bind offsets. The main cost before this change was filling
+constant blocks field by field in Granite's write-combined UBO memory, which halved the field
+speed. They are now built on the stack and copied in one go, the scenery `Ubo` too. The texture
+cache is now keyed by a content hash of the GS pages a texture spans, re-hashed only when an
+upload touched those pages. Characters re-upload the same slots for every material, and the old
+key (the global upload generation) made every character batch decode its texture again.
+
+**Validation, 1×, native-only vs paraLLEl-GS.** Character pixels are the pixels where the
+native-only render changes when set 2 is drawn natively. They include pixels that the GS later
+covers with the dialogue box and the minimap, which explains most of the > 8 at 1550 and 4000.
+
+| vsync | character px | exact | ±1–2 | ±3–8 | > 8 | composite takes |
+|---|---|---|---|---|---|---|
+| 1350 hangar cutscene (close-up) | 84,398 | 17,149 | 64,091 | 3,019 | 139 | 60,205 |
+| 1550 field + dialogue box | 14,315 | 935 | 9,678 | 840 | 2,862 | 11,971 |
+| 4000 field + minimap | 14,153 | 795 | 7,882 | 857 | 4,619 | 10,094 |
+
+Over the whole frame, the composite now takes 188,881 px at 1550 (176,931 with set 0 only),
+209,519 at 4000 (199,428) and 168,775 at 1350 (113,837).
+
+The 1× composite vs paraLLEl-GS at 1550 gives exact 51,998, ±2 175,068, ±8 1,584 and > 8 726.
+With set 0 only it was 63,013 / 165,425 / 760 / 178. The character pixels it takes are within the
+rule-2 threshold (12) but not exact, because of lighting in IEEE floats and the `(t·c)>>7`
+rounding. 1401 still falls back to the GS frame (the DOF blur).
+
+Run log: 84,311 set-2 batches by vsync 1200, 7,608 triangles culled by ADC or facing, and no bone
+outside the palette with a non-zero weight.
+
+Images are in `port/docs/screenshots/skin_*`. `live_4x` is the window at 4×.
+`skin_001550_edges_gs1x_vs_live4x.png` shows a character's edges at 1× GS next to live 4×.
+
+## 8. Motion vectors
+
+* **Draw key.** The key is `(VIF address of the batch's MSCNT, occurrence in this frame)`. The
+  MSCNT sits inside the model's prebuilt geometry chain, which `nmlPacketAddTransData` `REF`s, so
+  its host address is stable per (material, batch). Instances that share a mesh are told apart by
+  the occurrence count, which is stable as long as the game draws them in the same order. Unlike
+  the EE-side key of VU1_PROGRAMS.md §5, this needs no `src/` hook.
+* **History** (xsg-gpu, `native_skin.cpp`). Per key it keeps last frame's M962 and positions. For
+  set 0 the positions are after morphing, so morph weights need no separate tracking. For set 2 it
+  keeps P before skinning, the palette serial and the mirror plane. A key is new, and gets zero
+  motion, when its history is older than 6 vblanks or its vertex count changed. Last frame's
+  positions ride in the vertex stream: `GpuNativeVertex.pad` for set 0 (filled in xsg-gpu) and
+  `GpuVertex.pp` for set 2.
+* **Shaders.** `native.vert` and `native_skin.vert` compute the previous clip position with last
+  frame's matrix (and palette). `native.frag` writes `(cur.xy/cur.w − prev.xy/prev.w) · 966.xy · S`
+  to colour attachment 1 (RG16F): current − previous, in high-res pixels. Nothing is jittered, so
+  this is the jitter-free projection. Blended draws and draws without colour writes leave the
+  vector of what is under them.
+* **Resolve** (`native_mv.comp`, run after `composite.comp`, which is unchanged). A sample keeps
+  its native vector only where the composite took the native sample (the same colour; where that
+  is also the GS colour, composite rule 1 decides). Everything the GS owns gets zero: UI, 2D,
+  dialogue box, minimap and post-processed frames. At 1401 (the DOF fallback) the resolved field
+  is all zero.
+* `XSG_GPU_MV_VIEW=1` replaces the window image with the colour view.
+
+**Validation.** Frame A is warped by frame B's vectors and compared with B (`B(p) ≈ A(p − mv(p))`),
+on the native-only 4× images with the raw vectors:
+
+| pair (vsync) | what moves | samples with \|mv\| ≥ 0.5 | mean \|mv\| | mean abs error, no warp → warped | warp better / worse |
+|---|---|---|---|---|---|
+| 1350 → 1351 hangar | Shion turns (camera static) | 1,026,580 | 10.3 px | 14.98 → 4.40 | 73% / 17% |
+| 1352 → 1353 hangar | same | 1,010,003 | 11.3 px | 15.88 → 4.24 | 74% / 17% |
+| 4002 → 4003 field | idle animation | 7,028 | 0.56 px | 6.30 → 4.47 | 64% / 19% |
+| 1550 → 1551 field | nothing moves ≥ 0.5 px | 0 | – | 0.12 → 0.13 | – |
+
+0.95% of the samples (1350) and 0.75–0.90% (field) changed between the frames but have no vector,
+mostly animated textures and shading changes. The rest of "worse" is disocclusion at
+silhouettes, where no single vector can be right.
+
+Images: `skin_001351_rawmv.png` shows Shion turning; the static scenery and KOS-MOS are grey
+(zero). `skin_004003_mv.png` is the resolved field: idle characters, and zero in the minimap area.
+
+## 9. Speed with characters native
+
+Windowed, with the task recipe (`XSG_FPS=600 XSG_GS=gpu XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4 …`),
+both `XSG_GPU_NATIVE=1` and `=0` hold 60.0 vblanks/s and 30.0 game frames/s in the field (vblank
+1800–4200). In the hangar the `=0` run dipped once to 55.8 vblanks/s; the `=1` run did not.
+
+Headless, `XSG_FAST=1`, sequential runs, field (`[fps]` lines, vblank ~3600–8400):
+
+| run | vblanks/s |
+|---|---|
+| `XSG_GPU_NATIVE=0` | 77.3 |
+| native set 0 + set 2, live 4× | 68–71 |
+| native set 0 only (`XSG_GPU_NATIVE_SKIN=0`), live 4× | 87.2 |
+| native set 0 + set 2, no live composite (`XSG_GPU_NATIVE_LIVE=0`) | 108.0 |
+
+The game thread gains from skipping VU1 for characters too (108 vs 77 without the composite), but
+with the live composite xsg-gpu is now the bottleneck. It records the displayed list twice (1× and
+4×), about 12,400 draws per frame in the field instead of about 5,400. Next steps, item 7.
