@@ -47,7 +47,12 @@ typedef struct MvRenderControl {
     u16 movie_gif_control;
 } MvRenderControl;
 
+#ifndef PORT_HOST
 #define MV_RENDER_STATE ((MvRenderControl *) 0x004a90e0)
+#else
+/* 0x004A90E0 is sRender (declared below); the host's copy lives elsewhere */
+#define MV_RENDER_STATE (&sRender)
+#endif
 extern PadPrefix PadData;
 extern void FlushCache(int mode);
 extern void xglDmaDirectNormal(u32 channel, u32 address, u32 count);

@@ -74,6 +74,30 @@ def read_symbol_txt(path):
     return out
 
 
+def read_data_symbols(path):
+    """(addr, size, name) of every sized non-function symbol, by address"""
+    out = []
+    for line in open(path):
+        m = re.match(r"\s*(\S+)\s*=\s*0x([0-9A-Fa-f]+);(.*)", line)
+        if not m or "type:func" in m.group(3):
+            continue
+        z = re.search(r"size:0x([0-9A-Fa-f]+)", m.group(3))
+        if z:
+            out.append((int(m.group(2), 16), int(z.group(1), 16), m.group(1)))
+    return sorted(out)
+
+
+def containing_symbol(table, defined, addr):
+    """the host-defined symbol whose PS2 extent holds addr, as (name, offset)"""
+    best = None
+    for a, n, name in table:
+        if a > addr:
+            break
+        if addr < a + n and name in defined:
+            best = (name, addr - a)
+    return best
+
+
 def read_alias_scripts(root):
     """name -> expression from the PS2 link's alias/undefined-symbol scripts."""
     al = {}
@@ -224,7 +248,8 @@ def main():
 
     aliases = read_alias_scripts(root)
     OVL_EXTERNALS = {n for n, (e, u) in aliases.items() if u == "main" and n.startswith("data")}
-    defsyms, tramp, fstubs, dstubs = [], [], [], []
+    defsyms, tramp, fstubs, dstubs, aliased = [], [], [], [], []
+    main_data = read_data_symbols(os.path.join(root, "config/symbols/main.txt"))
     all_defined = set().union(*gl.values())
     for name in sorted(undef):
         expr = aliases.get(name, (None, None))[0]
@@ -237,9 +262,18 @@ def main():
         in_ovl = addr is not None and 0xA00000 <= addr < 0xC00000
         if in_ovl and (name.startswith("func_") or name in OVL_EXTERNALS):
             tramp.append((name, addr))
+        elif addr is not None and 0x338600 <= addr < 0xA00000 and \
+                containing_symbol(main_data, gl["main"], addr):
+            # a bare PS2 address inside an object the host defines (ov01's
+            # D_426F48 is batDatBuf+8): alias it to the host object, so reads
+            # and writes through either name hit the same storage
+            sym, off = containing_symbol(main_data, gl["main"], addr)
+            defsyms.append("-Wl,--defsym,%s=%s+%d" % (name, sym, off))
+            aliased.append("%s = %s+0x%x" % (name, sym, off))
         elif addr is not None:
-            # a bare PS2 address (data the host has no symbol for); it points
-            # into the mapped PS2 RAM image
+            # a bare PS2 address the host has no object for: it points into
+            # the mapped PS2 RAM image (or is a constant, e.g. D_2A007F8 =
+            # the title screen's "overlay 2, entry 0xA007F8" return code)
             defsyms.append("-Wl,--defsym,%s=0x%x" % (name, addr))
         elif False:
             defsyms.append("-Wl,--defsym,%s=0x%x" % (name, addr))
@@ -276,6 +310,7 @@ def main():
         fh.write("# defsym\n" + "\n".join(defsyms) + "\n# trampolines\n" +
                  "\n".join("%s 0x%x" % t for t in tramp) + "\n# function stubs\n" +
                  "\n".join(fstubs) + "\n# data stubs\n" + "\n".join(dstubs) + "\n")
+    open(os.path.join(b, "address_aliases.txt"), "w").write("\n".join(aliased) + "\n")
     r = link([so, to] + defsyms)
     open(os.path.join(b, "link.log"), "w").write(r.stdout + r.stderr)
     if r.returncode:
