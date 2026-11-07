@@ -180,10 +180,20 @@ typedef struct MEfGsPacket {
 #define SCE_GS_ALPHA_1 0x42
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
+#ifndef PORT_HOST
 #define QuadwordCopyT0(destination, source) \
     PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#else
+#define QuadwordCopyT0(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0SetOrigin(destination) \
     PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+#else
+#define Vu0SetOrigin(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); vu0_sqc2(0, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -212,9 +222,14 @@ extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camer
                                  Matrix4 *matrix, const Vector4 *point);
 extern Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles);
 extern Vector4 *ECM01ApplyMatrix(Vector4 *destination, const Matrix4 *matrix, const Vector4 *point) __asm__("MMathApplyMatrix");
+#ifndef PORT_HOST
 #define Vu0SefAddVectorXYZ(destination, first, second) \
     PS2_ASMV("lqc2 vf1, 0(%1)\n" "lqc2 vf2, 0(%2)\n" "vadd.xyz vf1, vf1, vf2\n" "sqc2 vf1, 0(%0)\n" \
         : : "r" (destination), "r" (first), "r" (second) : "memory")
+#else
+#define Vu0SefAddVectorXYZ(destination, first, second) \
+    ({ { XsgGpr r_2 = XSG_IN(second); XsgGpr r_1 = XSG_IN(first); XsgGpr r_0 = XSG_IN(destination); vu0_lqc2(1, XSG_EA(r_1, 0)); vu0_lqc2(2, XSG_EA(r_2, 0)); vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC); vu0_sqc2(1, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 #define ECMW ((ECM01DWork *)vwork)
 static inline MEfGsQword *ecm01OpenTag(MEfGsPacket *packet, int pre, int prim, int reg_count,
                                        u64 registers)
@@ -297,13 +312,25 @@ static void fnECM01_DP000(void *self, void *vwork)
                     colour[0].channel[3] = colour[0].channel[3] * (60 - ECMW->frame_age[segment]) / 20;
                 }
                 MMathRotateMatrixYX(&matrix, 0, &ECMW->angles);
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
                                      :
                                      : "r"(&currentPosition), "r"(&matrix)
                                      : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&matrix);
+                    XsgGpr r_0 = XSG_IN(&currentPosition);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    vu0_move(1, 1, 0);
+                    vu0_sqc2(1, XSG_EA(r_1, 48));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 target = &point;
                 angle = ECMW->initial_angle + ECMW->angle_step * (float)(ECMW->frame - segment);
                 Vu0SetOrigin(target);
+#ifndef PORT_HOST
                 PS2_ASMV("mfc1 $8, %1\n\t"
                                      "qmtc2.ni $8, vf4\n\t"
                                      "vcallms 0x20\n\t"
@@ -312,16 +339,51 @@ static void fnECM01_DP000(void *self, void *vwork)
                                      : "=f"(angle)
                                      : "f"(angle)
                                      : "$8", "memory");
+#else
+                {
+                    XsgFpr f_1 = XSG_FIN(angle);
+                    XsgFpr f_0 = {0};
+                    xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                    vu0_qmtc2(4, &xsg_ee_gpr[8]);
+                    vu0_callms(32);
+                    vu0_qmfc2(&xsg_ee_gpr[8], 1);
+                    f_0.u = xsg_ee_gpr[8].w[0];
+                    xsg_vu0_blocks++;
+                    angle = f_0.f;
+                }
+#endif
                 point.y = radius * angle;
                 ECM01ApplyMatrix(target, &matrix, target);
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 0(%0)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 48(%1)"
                                      :
                                      : "r"(target), "r"(&matrix)
                                      : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&matrix);
+                    XsgGpr r_0 = XSG_IN(target);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    vu0_move(1, 1, 0);
+                    vu0_sqc2(1, XSG_EA(r_1, 48));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 48(%1)\n\tvmove.w vf1, vf0\n\tsqc2 vf1, 0(%0)"
                                      :
                                      : "r"(target), "r"(&matrix)
                                      : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&matrix);
+                    XsgGpr r_0 = XSG_IN(target);
+                    vu0_lqc2(1, XSG_EA(r_1, 48));
+                    vu0_move(1, 1, 0);
+                    vu0_sqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 if (MMathRotTransPersClip(&vertex[0].vector, screen, view, target)) {
                     clip = 2;
                 } else if (clip != 0) {

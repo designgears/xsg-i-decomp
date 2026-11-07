@@ -236,6 +236,7 @@ void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right)
     register void *m PS2_REG("$5") = left;
     register void *s PS2_REG("$6") = right;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         ".set noreorder\n\t"
         "lqc2 vf4, 0x0(%2)\n\t"
@@ -257,6 +258,33 @@ void XrgMulMatrix(RgMatrix destination, RgMatrix left, RgMatrix right)
         "nop\n\t"
         ".set reorder"
         : "+r"(d), "+r"(s) : "r"(m) : "$7", "memory");
+#else
+    {
+        xsg_ee_gpr[4] = XSG_IN(d);
+        xsg_ee_gpr[6] = XSG_IN(s);
+        xsg_ee_gpr[5] = XSG_IN(m);
+        vu0_lqc2(4, XSG_EA(xsg_ee_gpr[5], 0));
+        vu0_lqc2(5, XSG_EA(xsg_ee_gpr[5], 16));
+        vu0_lqc2(6, XSG_EA(xsg_ee_gpr[5], 32));
+        vu0_lqc2(7, XSG_EA(xsg_ee_gpr[5], 48));
+        xsg_ee_set32(&xsg_ee_gpr[7], xsg_ee_zero.w[0] + (unsigned int)(4));
+        xsg_Lxrg_rand_int_239_0:;
+        vu0_lqc2(8, XSG_EA(xsg_ee_gpr[6], 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 4, 8, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 8, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 6, 8, 2);
+        vu0_arith(VU0_MADD, 15, 9, 7, 8, 3);
+        vu0_sqc2(9, XSG_EA(xsg_ee_gpr[4], 0));
+        xsg_ee_set32(&xsg_ee_gpr[7], xsg_ee_gpr[7].w[0] + (unsigned int)(-1));
+        xsg_ee_set32(&xsg_ee_gpr[6], xsg_ee_gpr[6].w[0] + (unsigned int)(16));
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] + (unsigned int)(16));
+        { int xsg_c_ = xsg_ee_zero.d[0] != xsg_ee_gpr[7].d[0];
+          if (xsg_c_) goto xsg_Lxrg_rand_int_239_0; }
+        xsg_vu0_blocks++;
+        XSG_OUT(d, xsg_ee_gpr[4]);
+        XSG_OUT(s, xsg_ee_gpr[6]);
+    }
+#endif
 }
 
 void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector);
@@ -334,6 +362,7 @@ void XrgRandVectorRange(RgVector destination, float xRange, float yRange)
  * xglVectorMulMat (src/main/xgl_2.c). */
 void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -350,12 +379,31 @@ void XrgApplyVector(RgVector destination, RgMatrix matrix, RgVector vector)
         : "r"(vector), "r"(matrix), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 31, 3);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /* Unlike XrgApplyVector, the final vmaddw writes only vf31's xyz lanes, so
  * the result keeps the source vector's own w component unchanged. */
 void XrgRotVector(RgVector destination, RgMatrix matrix, RgVector vector)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -372,6 +420,24 @@ void XrgRotVector(RgVector destination, RgMatrix matrix, RgVector vector)
         : "r"(vector), "r"(matrix), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern float XrgNormalizeVector(RgVector destination, RgVector source);

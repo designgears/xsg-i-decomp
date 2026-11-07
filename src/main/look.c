@@ -102,12 +102,22 @@ typedef struct LookActor {
 void *xglStudioGetActiveCamera(void);
 static inline void look_copy_place(void *from, void *to)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%0)\n\t"
         "sq $2, 0(%1)"
         :
         : "r"(from), "r"(to)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(to);
+        XsgGpr r_0 = XSG_IN(from);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int look_get_place(LookActor *actor, LookVector *place)
@@ -270,11 +280,20 @@ float xglAsin(float value);
 #define D_004D8574 0.2f
 static inline void look_zero_vector(Vector4 *destination)
 {
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)"
                          : : "r" (destination) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void look_copy_matrix(Matrix4 destination, Matrix4 source)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n"
                          "sq $2, 0(%0)\n"
                          "lq $2, 16(%1)\n"
@@ -284,6 +303,21 @@ static inline void look_copy_matrix(Matrix4 destination, Matrix4 source)
                          "lq $2, 48(%1)\n"
                          "sq $2, 48(%0)\n"
                          : : "r" (destination), "r" (source) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void *LOOK_sebo_cont(LookJointWork *work, void *channels, LookCharacter *actor)
@@ -369,16 +403,34 @@ void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
             MATRIX_convert4(rootMatrix, work->rootMatrix);
             xglMatrixMul(matrix, rootMatrix, matrix);
             /* The SDK copies the joint's translated row through one scratch register. */
+#ifndef PORT_HOST
             PS2_ASMV("lq $2, 0(%1)\n"
                                  "sq $2, 0(%0)\n"
                                  : : "r" (&actor->headPosition), "r" (matrix[3])
                                  : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(matrix[3]);
+                XsgGpr r_0 = XSG_IN(&actor->headPosition);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             actor->headPositionValid = 1;
             actor->headPosition.y += D_004D857C;
             if (look_get_place((LookActor *)actor, (LookVector *)&place) == 0) {
                 place.v.w = 1.0f;
+#ifndef PORT_HOST
                 PS2_ASMV("sq $0, 0(%0)\n"
                                      : : "r" (&rotation) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&rotation);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 xglMatrixInverse(matrix, matrix);
                 xglVectorMulMat(&localPlace, matrix, &place.v);
                 rotation.y = xglAtan2(localPlace.z, localPlace.x);

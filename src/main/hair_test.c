@@ -451,6 +451,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
     frame = joint->currentFrame;
     {
         Matrix *rootSource = joint->matrixBuffer;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
@@ -464,9 +465,25 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
             : "r"(rootMatrix), "r"(rootSource)
             : "$2", "memory"
         );
+#else
+        {
+            XsgGpr r_1 = XSG_IN(rootSource);
+            XsgGpr r_0 = XSG_IN(rootMatrix);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     {
         matrixBase = joint->matrixBuffer;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
@@ -480,6 +497,21 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
             : "r"(&savedRoot), "r"(matrixBase)
             : "$2", "memory"
         );
+#else
+        {
+            XsgGpr r_1 = XSG_IN(matrixBase);
+            XsgGpr r_0 = XSG_IN(&savedRoot);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     xglMatrixUnit4s(joint->matrixBuffer);
 
@@ -581,6 +613,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
         }
         {
             Matrix *rootRestore = joint->matrixBuffer;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $2,0(%1)\n\t"
                 "sq $2,0(%0)\n\t"
@@ -594,6 +627,21 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 : "r"(rootRestore), "r"(&savedRoot)
                 : "$2", "memory"
             );
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&savedRoot);
+                XsgGpr r_0 = XSG_IN(rootRestore);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         animationState = joint->animationFlags;
         if (animationState < 0) {
@@ -673,6 +721,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 {
                     matrixIndex = joint->currentIndex;
                     matrixBase = joint->matrixBuffer;
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lq $2,0(%0)\n\t"
                         "sq $2,0(%1)\n\t"
@@ -686,6 +735,21 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                         : "r"(composedSource), "r"((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase))
                         : "$2", "memory"
                     );
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase));
+                        XsgGpr r_0 = XSG_IN(composedSource);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 16), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 32), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 48), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[2], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
                 index = joint->currentIndex + 1;
                 joint->currentIndex = index;
@@ -799,6 +863,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
             rootDestination = joint->matrixBuffer;
         }
         {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $2,0(%1)\n\t"
                 "sq $2,0(%0)\n\t"
@@ -812,6 +877,21 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 : "r"(rootDestination), "r"(&savedRoot)
                 : "$2", "memory"
             );
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&savedRoot);
+                XsgGpr r_0 = XSG_IN(rootDestination);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         MATRIX_convert4(&savedRoot, &savedRoot);
         joint->currentIndex = index;
@@ -824,6 +904,7 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                 {
                     matrixIndex = joint->currentIndex;
                     matrixBase = joint->matrixBuffer;
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lq $2,0(%0)\n\t"
                         "sq $2,0(%1)\n\t"
@@ -837,6 +918,21 @@ JointChannel *__JNT_computeMatrix(JntHairJoint *joint, JointChannel *first, int 
                         : "r"(composedSource), "r"((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase))
                         : "$2", "memory"
                     );
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN((Matrix *)((((unsigned int)matrixIndex) << 6) + (unsigned int)matrixBase));
+                        XsgGpr r_0 = XSG_IN(composedSource);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 16), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 32), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[2], 16);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 48), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[2], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
                 index = joint->currentIndex + 1;
                 joint->currentIndex = index;

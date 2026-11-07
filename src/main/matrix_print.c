@@ -124,6 +124,7 @@ void MATRIX_convert4s(Matrix4 destination, const Matrix4 source)
 
 void MATRIX_convert4MulMatrix(Matrix4 destination, Matrix4 matrix, Matrix4 other)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
@@ -167,10 +168,57 @@ void MATRIX_convert4MulMatrix(Matrix4 destination, Matrix4 matrix, Matrix4 other
         : "r"(matrix), "r"(other), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(other);
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 14, 27, 27, 27, 3);
+        vu0_arith(VU0_MUL, 14, 28, 28, 28, 3);
+        vu0_arith(VU0_MUL, 14, 29, 29, 29, 3);
+        vu0_arith(VU0_SUB, 1, 27, 27, 27, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 28, 28, 28, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 29, 29, 29, VU0_VEC);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 16));
+        vu0_lqc2(4, XSG_EA(r_1, 32));
+        vu0_lqc2(5, XSG_EA(r_1, 48));
+        vu0_sqc2(27, XSG_EA(r_0, 0));
+        vu0_sqc2(28, XSG_EA(r_0, 16));
+        vu0_sqc2(29, XSG_EA(r_0, 32));
+        vu0_sqc2(30, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 30, 2, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 3, 2);
+        vu0_arith(VU0_MADD, 15, 3, 30, 3, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 4, 2);
+        vu0_arith(VU0_MADD, 15, 4, 30, 4, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 5, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 5, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 5, 2);
+        vu0_arith(VU0_MADD, 15, 30, 30, 5, 3);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        vu0_sqc2(3, XSG_EA(r_2, 16));
+        vu0_sqc2(4, XSG_EA(r_2, 32));
+        vu0_sqc2(30, XSG_EA(r_2, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void MATRIX_convert4MulMatrixRev(Matrix4 destination, Matrix4 matrix, Matrix4 other)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
@@ -210,6 +258,48 @@ void MATRIX_convert4MulMatrixRev(Matrix4 destination, Matrix4 matrix, Matrix4 ot
         : "r"(matrix), "r"(other), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(other);
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 14, 27, 27, 27, 3);
+        vu0_arith(VU0_MUL, 14, 28, 28, 28, 3);
+        vu0_arith(VU0_MUL, 14, 29, 29, 29, 3);
+        vu0_arith(VU0_SUB, 1, 27, 27, 27, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 28, 28, 28, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 29, 29, 29, VU0_VEC);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 16));
+        vu0_lqc2(4, XSG_EA(r_1, 32));
+        vu0_lqc2(5, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 27, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 27, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 27, 2);
+        vu0_arith(VU0_MADD, 15, 27, 5, 27, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 28, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 28, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 28, 2);
+        vu0_arith(VU0_MADD, 15, 28, 5, 28, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 29, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 29, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 29, 2);
+        vu0_arith(VU0_MADD, 15, 29, 5, 29, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 30, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 30, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 30, 2);
+        vu0_arith(VU0_MADD, 15, 30, 5, 30, 3);
+        vu0_sqc2(27, XSG_EA(r_2, 0));
+        vu0_sqc2(28, XSG_EA(r_2, 16));
+        vu0_sqc2(29, XSG_EA(r_2, 32));
+        vu0_sqc2(30, XSG_EA(r_2, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void MATRIX_mul3x4(Matrix4 destination, Matrix4 source, Matrix4 rotation)
@@ -674,6 +764,7 @@ void QUAT_interpL(float destination[4], const float first[4], const float second
 
 void CUR_MATRIX_Unit(void)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmove.xyzw vf30, vf0\n\t"
         "vmr32.xyzw vf29, vf0\n\t"
@@ -683,10 +774,20 @@ void CUR_MATRIX_Unit(void)
         :
         : "memory"
     );
+#else
+    {
+        vu0_move(15, 30, 0);
+        vu0_mr32(15, 29, 0);
+        vu0_mr32(15, 28, 29);
+        vu0_mr32(15, 27, 28);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Unit4s(void)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmove.xyzw vf30, vf0\n\t"
         "vmr32.xyzw vf29, vf0\n\t"
@@ -699,10 +800,23 @@ void CUR_MATRIX_Unit4s(void)
         :
         : "memory"
     );
+#else
+    {
+        vu0_move(15, 30, 0);
+        vu0_mr32(15, 29, 0);
+        vu0_mr32(15, 28, 29);
+        vu0_mr32(15, 27, 28);
+        vu0_move(1, 27, 0);
+        vu0_move(1, 28, 0);
+        vu0_move(1, 29, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Set(Matrix4 matrix)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf27, 0(%0)\n\t"
         "lqc2 vf28, 16(%0)\n\t"
@@ -712,10 +826,21 @@ void CUR_MATRIX_Set(Matrix4 matrix)
         : "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Get(Matrix4 matrix)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "sqc2 vf27, 0(%0)\n\t"
         "sqc2 vf28, 16(%0)\n\t"
@@ -725,10 +850,21 @@ void CUR_MATRIX_Get(Matrix4 matrix)
         : "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(27, XSG_EA(r_0, 0));
+        vu0_sqc2(28, XSG_EA(r_0, 16));
+        vu0_sqc2(29, XSG_EA(r_0, 32));
+        vu0_sqc2(30, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_GetT(Vector4 *translation)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmove.xyz vf20, vf30\n\t"
         "vmove.w vf20, vf0\n\t"
@@ -737,10 +873,20 @@ void CUR_MATRIX_GetT(Vector4 *translation)
         : "r"(translation)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(translation);
+        vu0_move(14, 20, 30);
+        vu0_move(1, 20, 0);
+        vu0_sqc2(20, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_SetT(const Vector4 *translation)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "vmove.xyz vf30, vf1\n\t"
@@ -748,10 +894,19 @@ void CUR_MATRIX_SetT(const Vector4 *translation)
         : "r"(translation)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(translation);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_move(14, 30, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_SetR(Matrix4 rotation)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 16(%0)\n\t"
@@ -763,10 +918,23 @@ void CUR_MATRIX_SetR(Matrix4 rotation)
         : "r"(rotation)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(rotation);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_0, 16));
+        vu0_lqc2(22, XSG_EA(r_0, 32));
+        vu0_move(14, 27, 20);
+        vu0_move(14, 28, 21);
+        vu0_move(14, 29, 22);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_4s3(Matrix4 local)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 16(%0)\n\t"
@@ -796,10 +964,41 @@ void CUR_MATRIX_4s3(Matrix4 local)
         : "r"(local)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(local);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_0, 16));
+        vu0_lqc2(22, XSG_EA(r_0, 32));
+        vu0_lqc2(23, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 20, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 20, 1);
+        vu0_arith(VU0_MADD, 14, 20, 29, 20, 2);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 21, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 21, 1);
+        vu0_arith(VU0_MADD, 14, 21, 29, 21, 2);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 22, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 22, 1);
+        vu0_arith(VU0_MADD, 14, 22, 29, 22, 2);
+        vu0_arith(VU0_MUL, 14, 24, 27, 27, 3);
+        vu0_arith(VU0_MUL, 14, 25, 28, 28, 3);
+        vu0_arith(VU0_MUL, 14, 26, 29, 29, 3);
+        vu0_move(1, 30, 0);
+        vu0_move(14, 27, 20);
+        vu0_move(14, 28, 21);
+        vu0_move(14, 29, 22);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 24, 23, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 25, 23, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 26, 23, 2);
+        vu0_arith(VU0_MADD, 14, 30, 30, 0, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Txyz4s(const Vector4 *displacement)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf4, 0(%0)\n\t"
         "vmulx.w vf20, vf27, vf4x\n\t"
@@ -813,12 +1012,27 @@ void CUR_MATRIX_Txyz4s(const Vector4 *displacement)
         : "r"(displacement)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(displacement);
+        vu0_lqc2(4, XSG_EA(r_0, 0));
+        vu0_arith(VU0_MUL, 1, 20, 27, 4, 0);
+        vu0_arith(VU0_MUL, 1, 21, 28, 4, 1);
+        vu0_arith(VU0_MUL, 1, 22, 29, 4, 2);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 20, 3);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 21, 3);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 22, 3);
+        vu0_arith(VU0_MADD, 14, 30, 30, 0, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Rx4s(const int *angle)
 {
     int bits = *angle;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -835,12 +1049,30 @@ void CUR_MATRIX_Rx4s(const int *angle)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 20, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 28, 20, 0);
+        vu0_arith(VU0_MADD, 14, 9, 29, 1, 0);
+        vu0_move(1, 30, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 29, 20, 0);
+        vu0_arith(VU0_MSUB, 14, 29, 28, 1, 0);
+        vu0_move(14, 28, 9);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Ry4s(const int *angle)
 {
     int bits = *angle;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -857,12 +1089,30 @@ void CUR_MATRIX_Ry4s(const int *angle)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 20, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 20, 0);
+        vu0_arith(VU0_MSUB, 14, 9, 29, 1, 0);
+        vu0_move(1, 30, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 29, 20, 0);
+        vu0_arith(VU0_MADD, 14, 29, 27, 1, 0);
+        vu0_move(14, 27, 9);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Rz4s(const int *angle)
 {
     int bits = *angle;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -879,6 +1129,23 @@ void CUR_MATRIX_Rz4s(const int *angle)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 22, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 22, 0);
+        vu0_arith(VU0_MADD, 14, 9, 28, 1, 0);
+        vu0_move(1, 30, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 28, 22, 0);
+        vu0_arith(VU0_MSUB, 14, 28, 27, 1, 0);
+        vu0_move(14, 27, 9);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Rzyx4s(const int *angles)
@@ -886,6 +1153,7 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
     int bits;
 
     bits = angles[2];
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -897,8 +1165,21 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 20, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 20, 0, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     bits = angles[1];
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -910,8 +1191,21 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 21, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 21, 0, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     bits = angles[0];
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmtc2.ni %0, vf4\n\t"
         "vcallms 0xE8\n\t"
@@ -937,10 +1231,37 @@ void CUR_MATRIX_Rzyx4s(const int *angles)
         : "r"(bits)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(bits);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(232);
+        vu0_move(8, 22, 1);
+        vu0_qmtc2(4, &r_0);
+        vu0_callms(32);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 22, 0);
+        vu0_arith(VU0_MADD, 14, 9, 28, 1, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 28, 22, 0);
+        vu0_arith(VU0_MSUB, 14, 28, 27, 1, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 9, 21, 0);
+        vu0_arith(VU0_MSUB, 14, 8, 29, 21, 1);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 29, 21, 0);
+        vu0_arith(VU0_MADD, 14, 29, 9, 21, 1);
+        vu0_move(14, 27, 8);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 28, 20, 0);
+        vu0_arith(VU0_MADD, 14, 9, 29, 20, 1);
+        vu0_move(1, 30, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 29, 20, 0);
+        vu0_arith(VU0_MSUB, 14, 29, 28, 20, 1);
+        vu0_move(14, 28, 9);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void CUR_MATRIX_Sxyz4s(const Vector4 *scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf19, 0(%0)\n\t"
         "vmulx.w vf27, vf27, vf19x\n\t"
@@ -950,4 +1271,14 @@ void CUR_MATRIX_Sxyz4s(const Vector4 *scale)
         : "r"(scale)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(scale);
+        vu0_lqc2(19, XSG_EA(r_0, 0));
+        vu0_arith(VU0_MUL, 1, 27, 27, 19, 0);
+        vu0_arith(VU0_MUL, 1, 28, 28, 19, 1);
+        vu0_arith(VU0_MUL, 1, 29, 29, 19, 2);
+        xsg_vu0_blocks++;
+    }
+#endif
 }

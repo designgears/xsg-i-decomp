@@ -59,6 +59,7 @@ int MEfCreate_ECM02(void *self)
 
     state->frame = 0;
     /* Preserve the original four-word vector before replacing its second float. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "sq $8, 0(%0)"
@@ -66,6 +67,15 @@ int MEfCreate_ECM02(void *self)
         : "r"(&state->copied_vector), "r"(&state->source_vector)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->source_vector);
+        XsgGpr r_0 = XSG_IN(&state->copied_vector);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     state->copied_vector.y = 11.0f;
     memset(state->visible, 0, sizeof(state->visible));
     memset(state->radius, 0, sizeof(state->radius));
@@ -103,12 +113,21 @@ static void makeCoord(void *destination, float radius, float angle, void *effect
      * materializes that constant into "local" in one quadword store instead of
      * four scalar stores. Only z (0.0) and w (1.0) survive from this store: x
      * and y are overwritten immediately below. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "sqc2 $vf0, 0(%1)"
         : "=m"(local)
         : "r"(&local)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&local);
+        void *m_0 = (void *)&(local);
+        vu0_sqc2(0, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     local.x = radius * 0.454545468f + 0.5f;
     local.y = -radius;

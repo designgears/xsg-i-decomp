@@ -41,6 +41,7 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
 {
     float lengthSq;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf10,0(%1)\n\t"
         "lqc2 $vf11,0(%2)\n\t"
@@ -55,6 +56,24 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
         : "r"(first), "r"(second)
         : "$2", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(10, XSG_EA(r_1, 0));
+        vu0_lqc2(11, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 10, 11, 10, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 10, 10, 10, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 10, 10, 10, 2);
+        vu0_arith(VU0_ADD, 8, 10, 10, 10, 1);
+        vu0_qmfc2(&xsg_ee_gpr[2], 10);
+        xsg_ee_fpr[2].u = xsg_ee_gpr[2].w[0];
+        f_0.u = xsg_ee_gpr[2].w[0];
+        xsg_vu0_blocks++;
+        lengthSq = f_0.f;
+    }
+#endif
     return lengthSq;
 }
 
@@ -65,6 +84,7 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
  */
 static void _CurSetMatrix(float matrix[4][4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf27,0(%0)\n\t"
         "lqc2 $vf28,16(%0)\n\t"
@@ -75,6 +95,16 @@ static void _CurSetMatrix(float matrix[4][4])
         : "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -84,6 +114,7 @@ static void _CurSetMatrix(float matrix[4][4])
  */
 static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTrans[4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf25,0(%0)\n\t"
         "lqc2 $vf26,0(%1)\n\t"
@@ -92,10 +123,20 @@ static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTran
         : "r"(viewScale), "r"(viewTrans)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(viewTrans);
+        XsgGpr r_0 = XSG_IN(viewScale);
+        vu0_lqc2(25, XSG_EA(r_0, 0));
+        vu0_lqc2(26, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
     int clip;
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
@@ -124,6 +165,34 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
         : "r"(destination), "r"(vector)
         : "$2", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(vector);
+        XsgGpr r_1 = XSG_IN(destination);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_clip(31, 31);
+        vu0_div(0, 3, 31, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 15, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 31, 31, 25, VU0_VEC);
+        vu0_ftoi(4, 13, 23, 31);
+        vu0_ftoi(0, 2, 23, 31);
+        vu0_arith(VU0_SUB, 1, 23, 23, 23, VU0_VEC);
+        vu0_sqc2(23, XSG_EA(r_1, 0));
+        vu0_cfc2(&xsg_ee_gpr[2], 18);
+        xsg_ee_gpr[2].d[0] = xsg_ee_gpr[2].d[0] & (unsigned long long)(unsigned short)(63);
+        r_0.d[0] = xsg_ee_gpr[2].d[0] + xsg_ee_zero.d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(clip, r_0);
+    }
+#endif
     return clip;
 }
 
@@ -134,6 +203,7 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector) {
  * _CurApplyMatrix below.
  */
 static void _CurRotTransPersFog(Vector4 *destination, const Vector4 *vector, const Vector4 *fog) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "lqc2 vf4, 0(%2)\n\t"
@@ -154,6 +224,28 @@ static void _CurRotTransPersFog(Vector4 *destination, const Vector4 *vector, con
         : "r"(destination), "r"(vector), "r"(fog)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(fog);
+        XsgGpr r_1 = XSG_IN(vector);
+        XsgGpr r_0 = XSG_IN(destination);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_lqc2(4, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_div(0, 3, 31, 3);
+        vu0_arith(VU0_MUL, 1, 1, 0, 4, 2);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 1, VU0_ACC, 1, 0, VU0_VEC);
+        vu0_arith(VU0_MADD, 1, 31, 4, 0, VU0_BQ);
+        vu0_arith(VU0_MAX, 1, 31, 31, 4, 0);
+        vu0_arith(VU0_MINI, 1, 31, 31, 4, 1);
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -162,6 +254,7 @@ static void _CurRotTransPersFog(Vector4 *destination, const Vector4 *vector, con
  * src/main/face_point.c's _ApplyMatrix.
  */
 static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "vmulax.xyzw ACC, vf27, vf31x\n\t"
@@ -174,6 +267,19 @@ static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
         : "r"(vector), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(destination);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -183,6 +289,7 @@ static void _CurApplyMatrix(Vector4 *destination, const Vector4 *vector) {
  */
 static void _WeightToGlobalVec(Vector4 *destination, float matrix[4][4], float weight[4][4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%2)\n\t"
         "lq $3, 16(%2)\n\t"
@@ -230,10 +337,60 @@ static void _WeightToGlobalVec(Vector4 *destination, float matrix[4][4], float w
         : "r"(destination), "r"(matrix), "r"(weight)
         : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(weight);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_2, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_2, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[4], XSG_EA(r_2, 32), 16);
+        vu0_lqc2(3, XSG_EA(r_2, 48));
+        vu0_qmfc2(&xsg_ee_gpr[5], 0);
+        xsg_mmi_pextlw(&xsg_ee_gpr[6], &xsg_ee_gpr[3], &xsg_ee_gpr[2]);
+        xsg_mmi_pextuw(&xsg_ee_gpr[7], &xsg_ee_gpr[3], &xsg_ee_gpr[2]);
+        xsg_mmi_pextlw(&xsg_ee_gpr[8], &xsg_ee_gpr[5], &xsg_ee_gpr[4]);
+        xsg_mmi_pextuw(&xsg_ee_gpr[9], &xsg_ee_gpr[5], &xsg_ee_gpr[4]);
+        xsg_mmi_pcpyld(&xsg_ee_gpr[2], &xsg_ee_gpr[8], &xsg_ee_gpr[6]);
+        xsg_mmi_pcpyud(&xsg_ee_gpr[3], &xsg_ee_gpr[6], &xsg_ee_gpr[8]);
+        xsg_mmi_pcpyld(&xsg_ee_gpr[4], &xsg_ee_gpr[9], &xsg_ee_gpr[7]);
+        vu0_qmtc2(5, &xsg_ee_gpr[2]);
+        vu0_qmtc2(6, &xsg_ee_gpr[3]);
+        vu0_qmtc2(7, &xsg_ee_gpr[4]);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 5, 3, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 6, 3, 1);
+        vu0_arith(VU0_MADD, 14, 2, 7, 3, 2);
+        vu0_move(1, 2, 0);
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_SUB, 14, 2, 0, 2, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 5, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 5, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 5, 2);
+        vu0_arith(VU0_MADD, 15, 5, 30, 5, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 6, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 6, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 6, 2);
+        vu0_arith(VU0_MADD, 15, 3, 30, 6, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 7, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 7, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 7, 2);
+        vu0_arith(VU0_MADD, 15, 4, 30, 7, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_arith(VU0_MADD, 15, 30, 30, 2, 3);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /* Stores componentwise minima in the first vector and maxima in the second. */
 static void _MinMaxSort(Vector4 *min, Vector4 *max) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 0(%1)\n\t"
@@ -246,6 +403,19 @@ static void _MinMaxSort(Vector4 *min, Vector4 *max) {
         : "r"(min), "r"(max)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(max);
+        XsgGpr r_0 = XSG_IN(min);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MINI, 14, 22, 20, 21, VU0_VEC);
+        vu0_arith(VU0_MAX, 14, 23, 20, 21, VU0_VEC);
+        vu0_sqc2(22, XSG_EA(r_0, 0));
+        vu0_sqc2(23, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern void xglStudioChange(int);
@@ -262,10 +432,68 @@ static void CLEAR_LAYOUT_MODEL(LayoutStore *arg0)
     xglStudioChange(0);
     xglStudioGetLight((void *)&light);
     xglLightCalcMatrix((void *)light);
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst), "r"(light + 0xB0) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(light + 0xB0);
+        XsgGpr r_0 = XSG_IN(dst);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(dst + 0x40), "r"(light + 0x70) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(light + 0x70);
+        XsgGpr r_0 = XSG_IN(dst + 0x40);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)" : : "r"(s_inGblPlace), "r"(dst + 0x80) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dst + 0x80);
+        XsgGpr r_0 = XSG_IN(s_inGblPlace);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inGblPos), "r"(dst + 0x1F0) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dst + 0x1F0);
+        XsgGpr r_0 = XSG_IN(&s_inGblPos);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     arg0->slots[0x88].f = 1.0f;
     arg0->slots[0x89].f = 2.0f;
     arg0->slots[0xB0].f = 1.0f;
@@ -310,9 +538,36 @@ static void CLEAR_LAYOUT_MODEL(LayoutStore *arg0)
     arg0->slots[0xBE].f = 1.0f;
     arg0->slots[0xBF].f = 1.0f;
     arg0->slots[0xB1].f = 0.0f;
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)\n\tsq $0, 16(%0)\n\tsq $0, 32(%0)\n\tsq $0, 48(%0)" : : "r"(dst + 0x140) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(dst + 0x140);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(dst + 0x1F0) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(dst + 0x1F0);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((unsigned char *)arg0 + 0x210) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((unsigned char *)arg0 + 0x210);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void set_circle_shadow_ratio(int scale);
@@ -589,14 +844,41 @@ static void CONSTRUCT_MODELSYSTEM(void)
     s_nMenu = 0;
     g_aSubWindow[3] = g_aSubWindow[2] = g_aSubWindow[1] = inactiveWindow;
     s_nEffectWrite = 1;
+#ifndef PORT_HOST
     PS2_ASMV(
         "sq $0, 0(%0)\n"
         "sq $0, 16(%0)\n"
         "sq $0, 32(%0)\n"
         "sq $0, 48(%0)"
         : : "r"(s_inGblPointC) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(s_inGblPointC);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(&s_inGblFogCol) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&s_inGblFogCol);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(&s_inGblFogPara) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&s_inGblFogPara);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /* CONSTRUCT_MODELSYSTEM (above) is still INCLUDE_ASM; declare it so its
@@ -638,18 +920,38 @@ static void FLUSH_MODELSYSTEM(void) {
     s_nFrameLockOff = 0;
     cam = xglStudioSelectGetActiveCamera(0);
     if (cam != 0) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r"(&s_inMainCameraPos), "r"(cam + 0xd0)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(cam + 0xd0);
+            XsgGpr r_0 = XSG_IN(&s_inMainCameraPos);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r"(&s_inMainCameraAng), "r"(cam + 0xa0)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(cam + 0xa0);
+            XsgGpr r_0 = XSG_IN(&s_inMainCameraAng);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         s_nMainCameraWarp = 0;
     }
 }
@@ -1186,6 +1488,7 @@ int nmlModelAskNonLinearCamera(void) {
             } else {
                 ang_ptr = (float *)&s_inMainCameraAng;
                 cam_ptr = (float *)(camera + 0xA0);
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf3,0(%1)\n\t"
                     "lqc2 $vf2,0(%2)\n\t"
@@ -1194,6 +1497,18 @@ int nmlModelAskNonLinearCamera(void) {
                     :
                     : "r"(vu_result), "r"(cam_ptr), "r"(ang_ptr)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(ang_ptr);
+                    XsgGpr r_1 = XSG_IN(cam_ptr);
+                    XsgGpr r_0 = XSG_IN(vu_result);
+                    vu0_lqc2(3, XSG_EA(r_1, 0));
+                    vu0_lqc2(2, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                    vu0_sqc2(2, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 y_diff = __builtin_fabsf(vu_result[1]);
                 if (D_004D88D8 < y_diff && y_diff < D_004D88DC) {
                     s_nMainCameraWarp = 2;
@@ -1207,6 +1522,7 @@ int nmlModelAskNonLinearCamera(void) {
 
 void nmlModelGetGblPosition(Vector4 *position)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
@@ -1214,6 +1530,15 @@ void nmlModelGetGblPosition(Vector4 *position)
         : "r"(position), "r"(&s_inGblPos)
         : "$2", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&s_inGblPos);
+        XsgGpr r_0 = XSG_IN(position);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     position->w = 1.0f;
 }
 
@@ -1223,7 +1548,13 @@ void nmlModelSetBackBufferToBattle(int ownerIndex)
     int one = 1;
     p[6] = 0x28;
     p[0] = one;
+#ifndef PORT_HOST
     PS2_ASMV("" ::: "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     p[4] = ownerIndex;
     p[5] = one;
     p[8] = 0;
@@ -1241,7 +1572,13 @@ void nmlModelSetBackBufferToEventSkip(int ownerIndex)
     int one = 1;
     p[6] = 0x28;
     p[0] = one;
+#ifndef PORT_HOST
     PS2_ASMV("" ::: "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     p[4] = ownerIndex;
     p[5] = one;
     p[8] = 0;
@@ -1294,10 +1631,20 @@ void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source)
 void nmlModelSetGlobalPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
 {
     if (idx < 3) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&s_inGblPointP[idx]);
+            XsgGpr r_0 = XSG_IN(pos);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         xglVectorScaleXYZ(128.0f, (Vector4 *)&((qword_t *)s_inGblPointC)[idx], col);
         s_inLayout.slots[0x250 / 4].i |= 0x2000000;
     }
@@ -1314,10 +1661,20 @@ void nmlModelSetGlobalPointLightCol(unsigned int idx, Vector4 *col)
 void nmlModelSetGlobalPointLightPos(unsigned int idx, qword_t *pos)
 {
     if (idx < 3) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&s_inGblPointP[idx]) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&s_inGblPointP[idx]);
+            XsgGpr r_0 = XSG_IN(pos);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         s_inLayout.slots[0x250 / 4].i |= 0x2000000;
     }
 }
@@ -1325,21 +1682,42 @@ void nmlModelSetGlobalPointLightPos(unsigned int idx, qword_t *pos)
 void nmlModelSetGlobalPointLightReset(void)
 {
     s_inLayout.slots[0x250 / 4].i &= ~0x2000000;
+#ifndef PORT_HOST
     PS2_ASMV(
         "sq $0, 0x0(%0)\n"
         "sq $0, 0x10(%0)\n"
         "sq $0, 0x20(%0)\n"
         "sq $0, 0x30(%0)\n"
         : : "r"(s_inGblPointC) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(s_inGblPointC);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_zero, 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void nmlModelSetPointLight(unsigned int idx, qword_t *pos, Vector4 *col)
 {
     if (idx < 3) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0x0(%0)\n"
             "sq $2, 0x0(%1)\n"
             : : "r"(pos), "r"(&((qword_t *)&s_inLayout.slots[0x100 / 4])[idx]) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&((qword_t *)&s_inLayout.slots[0x100 / 4])[idx]);
+            XsgGpr r_0 = XSG_IN(pos);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         xglVectorScaleXYZ(128.0f, (Vector4 *)&((qword_t *)&s_inLayout.slots[0x140 / 4])[idx], col);
         s_inLayout.slots[0x250 / 4].i |= 0x1000;
     }
@@ -1363,6 +1741,7 @@ void nmlModelSetShadowHeight(float height)
 
 void nmlModelSetShadowVec(const Vector4 *shadowVector)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2,0(%0)\n\t"
         "sq $2,0(%1)"
@@ -1370,6 +1749,15 @@ void nmlModelSetShadowVec(const Vector4 *shadowVector)
         : "r"(shadowVector), "r"(&s_inShadowVec)
         : "$2", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&s_inShadowVec);
+        XsgGpr r_0 = XSG_IN(shadowVector);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     s_nShadowVec = 1;
 }
 
@@ -1479,6 +1867,7 @@ void nmlModelSetProreal(NmlProRealState *state)
     xglVectorMulMat(&input->fields.transformOrigin, (const float (*)[4])scaledTransform,
                     (const Vector4 *)transformOrigin);
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n"
         "lqc2 vf2, 0(%1)\n"
@@ -1488,6 +1877,18 @@ void nmlModelSetProreal(NmlProRealState *state)
         : "r"(&scaledTransform[3]), "r"(&input->fields.transformOrigin),
           "r"(&input->fields.unmodeled_160)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&input->fields.unmodeled_160);
+        XsgGpr r_1 = XSG_IN(&input->fields.transformOrigin);
+        XsgGpr r_0 = XSG_IN(&scaledTransform[3]);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     xglMatrixInverse(input->fields.inverseTransform, scaledTransform);
     xglVectorNormal(&input->fields.unmodeled_160, &input->fields.unmodeled_160);
@@ -1539,22 +1940,68 @@ void nmlModelSetProreal(NmlProRealState *state)
     input->fields.textureVOffset = (float)input->fields.unmodeled_104 / (float)screenHeight -
                             input->fields.textureVScale * 0.5f;
 
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[0]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[0])
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[0]);
+        XsgGpr r_0 = XSG_IN(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[0]);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[1]) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[1]);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[2]) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[2]);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[3]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[1])
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_170[1]);
+        XsgGpr r_0 = XSG_IN(&((NmlProRealUpFull *)input)->fields.unmodeled_0c0[3]);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                          : : "r"(&((NmlProRealUpFull *)input)->fields.unmodeled_080[0]),
                              "r"(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_160)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&((NmlProRealUp *)s_inProReal)->fields.unmodeled_160);
+        XsgGpr r_0 = XSG_IN(&((NmlProRealUpFull *)input)->fields.unmodeled_080[0]);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     input->fields.unmodeled_11c = 0;
     s_inLayout.slots[0x250 / 4].i |= 0x800;
     *(NmlProRealUp *)s_inProReal = *input;
@@ -1664,12 +2111,22 @@ extern Vector4 s_inScale;
 
 void nmlModelSetScale(Vector4 *scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%0)\n"
         "sq $2, 0(%1)\n"
         :
         : "r"(scale), "r"(&s_inScale)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&s_inScale);
+        XsgGpr r_0 = XSG_IN(scale);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (s_inScale.x < s_inScale.y) s_inScale.x = s_inScale.y;
     if (s_inScale.x < s_inScale.z) s_inScale.x = s_inScale.z;
     if (s_inScale.x < 1.0f) s_inScale.x = 1.0f;
@@ -1736,6 +2193,7 @@ void nmlModelSetToumei(int enabled)
 
 static inline void _CopyMatrix(void *s, void *d)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0x0(%0)\n"
         "sq $2, 0x0(%1)\n"
@@ -1746,6 +2204,21 @@ static inline void _CopyMatrix(void *s, void *d)
         "lq $2, 0x30(%0)\n"
         "sq $2, 0x30(%1)\n"
         : : "r"(s), "r"(d) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(d);
+        XsgGpr r_0 = XSG_IN(s);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 16), 16);
+        __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 32), 16);
+        __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 48), 16);
+        __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void nmlModelSetLight(void *normal, void *color)
@@ -1801,6 +2274,7 @@ void xglMatrixInverse(void *dst, void *src);
 void nmlModelSetPlace(void *m)
 {
     char *p = (char *)&s_inLayout + 0x80;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
@@ -1811,6 +2285,21 @@ void nmlModelSetPlace(void *m)
         "lq $2, 0x30(%1)\n"
         "sq $2, 0x30(%0)\n"
         : : "r"(p), "r"(m) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(m);
+        XsgGpr r_0 = XSG_IN(p);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     xglMatrixInverse(p + 0x40, m);
     s_inLayout.slots[0x250 / 4].i |= 1;
 }
@@ -1841,27 +2330,57 @@ void nmlModelSetMatOffset(MatName32 *name, MulColor16 *color)
 {
     *(MatName32 *)s_aMatName = *name;
     s_aMatName[31] = 0;
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%0)\n\tsq $2, 0(%1)" :: "r"(color), "r"(&s_inMulColor) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&s_inMulColor);
+        XsgGpr r_0 = XSG_IN(color);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void nmlModelSetMulColor(const float *color)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r"(&s_inLayout.slots[0x200 / 4]), "r"(color)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(color);
+        XsgGpr r_0 = XSG_IN(&s_inLayout.slots[0x200 / 4]);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void nmlModelSetFogCol(const float *color)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r"(&s_inLayout.slots[0x1c0 / 4]), "r"(color)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(color);
+        XsgGpr r_0 = XSG_IN(&s_inLayout.slots[0x1c0 / 4]);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     s_inLayout.fields.render_status |= 0x2;
 }
 
@@ -1909,12 +2428,22 @@ void nmlModelSetFogDist(float fogNear, float fogFar, float fogMin, float fogMax)
 void nmlModelSetGlobalFogCol(const float *color)
 {
     extern Vector4 s_inGblFogCol;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r"(&s_inGblFogCol), "r"(color)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(color);
+        XsgGpr r_0 = XSG_IN(&s_inGblFogCol);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     s_inLayout.fields.render_status |= 0x1000000;
 }
 
@@ -2363,6 +2892,7 @@ static void AlphaGroupLastEntry(void)
  */
 static void AlphaGroupSort(int *unused)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         ".set push\n\t"
         ".set noreorder\n\t"
@@ -2400,6 +2930,43 @@ static void AlphaGroupSort(int *unused)
         :
         :
         : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$f0", "$f1", "memory");
+#else
+    {
+        extern char xsg_sym_s_nAlphaGroup[] __asm__("s_nAlphaGroup");
+        extern char xsg_sym_s_aAlphaGroup[] __asm__("s_aAlphaGroup");
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, (xsg_sym_s_nAlphaGroup + 0), sizeof xsg_v_); xsg_ee_gpr[8].sd[0] = xsg_v_; }
+        xsg_ee_gpr[2].d[0] = xsg_ee_gpr[8].sd[0] < (long long)(2);
+        { int xsg_c_ = xsg_ee_gpr[2].d[0] != 0;
+          xsg_ee_set32(&xsg_ee_gpr[7], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_s_aAlphaGroup + 0x8000u) >> 16)) << 16);
+          if (xsg_c_) goto xsg_Lnml_model_set_2366_3; }
+        xsg_ee_set32(&xsg_ee_gpr[7], xsg_ee_gpr[7].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_s_aAlphaGroup & 0xffffu)));
+        xsg_Lnml_model_set_2366_0:;
+        xsg_ee_gpr[5].d[0] = xsg_ee_zero.d[0] + xsg_ee_zero.d[0];
+        xsg_ee_gpr[4].d[0] = xsg_ee_gpr[8].d[0] + xsg_ee_zero.d[0];
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] + (unsigned int)(-1));
+        xsg_ee_gpr[6].d[0] = xsg_ee_gpr[7].d[0] + xsg_ee_zero.d[0];
+        xsg_Lnml_model_set_2366_1:;
+        __builtin_memcpy(&xsg_ee_fpr[1], XSG_EA(xsg_ee_gpr[6], 4), 4);
+        __builtin_memcpy(&xsg_ee_fpr[0], XSG_EA(xsg_ee_gpr[6], 20), 4);
+        xsg_ee_fcc = xsg_ee_fpr[0].f <= xsg_ee_fpr[1].f;
+        { int xsg_c_ = xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lnml_model_set_2366_2; }
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(xsg_ee_gpr[6], 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(xsg_ee_gpr[6], 16), 16);
+        __builtin_memcpy(XSG_EA(xsg_ee_gpr[6], 0), &xsg_ee_gpr[3], 16);
+        __builtin_memcpy(XSG_EA(xsg_ee_gpr[6], 16), &xsg_ee_gpr[2], 16);
+        xsg_ee_set32(&xsg_ee_gpr[5], xsg_ee_gpr[5].w[0] + (unsigned int)(1));
+        xsg_Lnml_model_set_2366_2:;
+        xsg_ee_set32(&xsg_ee_gpr[6], xsg_ee_gpr[6].w[0] + (unsigned int)(16));
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] + (unsigned int)(-1));
+        { int xsg_c_ = xsg_ee_zero.d[0] != xsg_ee_gpr[4].d[0];
+          if (xsg_c_) goto xsg_Lnml_model_set_2366_1; }
+        { int xsg_c_ = xsg_ee_zero.d[0] != xsg_ee_gpr[5].d[0];
+          if (xsg_c_) goto xsg_Lnml_model_set_2366_0; }
+        xsg_Lnml_model_set_2366_3:;
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int is_shadow_map_parts(void *m, int id)
@@ -2595,6 +3162,7 @@ static void nmlModelLexBlockDoit(NmlModel *model)
 
         if (s_aMatName[0] != '\0') {
             if (strcmp(s_aMatName, block->materialName) == 0) {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $2, 0(%1)\n\t"
                     "sq $2, 0(%0)"
@@ -2602,8 +3170,18 @@ static void nmlModelLexBlockDoit(NmlModel *model)
                     : "r"(&block->multiplyColor), "r"(&s_inMulColor)
                     : "$2", "memory"
                 );
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&s_inMulColor);
+                    XsgGpr r_0 = XSG_IN(&block->multiplyColor);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
         } else {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)"
@@ -2612,6 +3190,15 @@ static void nmlModelLexBlockDoit(NmlModel *model)
                   "r"((char *)&s_inLayout + 0x200)
                 : "$2", "memory"
             );
+#else
+            {
+                XsgGpr r_1 = XSG_IN((char *)&s_inLayout + 0x200);
+                XsgGpr r_0 = XSG_IN(&block->multiplyColor);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
 
         if ((u32)(block->shapeFlags - 2) < 2) {
@@ -2734,11 +3321,32 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
         if (s_inLayout.slots[0x230 / 4].i & 1) {
             s_inLayout.slots[0x1F4 / 4].f = s_inLayout.slots[0x230 / 4].f - s_inLayout.slots[0x1F4 / 4].f;
         }
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"(&s_inLayout.slots[0x1F0 / 4]) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&s_inLayout.slots[0x1F0 / 4]);
+            XsgGpr r_0 = XSG_IN(&s_inLayout.slots[0x210 / 4]);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         if (arg1 != 0) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(&s_inLayout.slots[0x210 / 4]), "r"((char *)*arg1 + 0x210) : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN((char *)*arg1 + 0x210);
+                XsgGpr r_0 = XSG_IN(&s_inLayout.slots[0x210 / 4]);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
     } else {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
@@ -2747,6 +3355,17 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
             :
             : "r"(&s_inLayout.slots[0x1F0 / 4]), "r"(model + 0x90)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(model + 0x90);
+            XsgGpr r_0 = XSG_IN(&s_inLayout.slots[0x1F0 / 4]);
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_0, 0));
+            vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     _CurSetMatrix((float (*)[4])&s_inLayout.slots[0x80 / 4]);
     _CurApplyMatrix((Vector4 *)&s_inLayout.slots[0x1F0 / 4], (Vector4 *)&s_inLayout.slots[0x1F0 / 4]);
@@ -2803,6 +3422,7 @@ static int nmlModelCalcEntryClip(NmlModelSampleView *model)
     do {
     } while (0);
     if (s_nClip != clipDisabled) {
+#ifndef PORT_HOST
         PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)"
@@ -2810,6 +3430,15 @@ static int nmlModelCalcEntryClip(NmlModelSampleView *model)
             : "r"(&clip), "r"(&s_inLayout.slots[0x7C])
                 : "$2", "memory"
         );
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&s_inLayout.slots[0x7C]);
+            XsgGpr r_0 = XSG_IN(&clip);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         clip.w *= D_004D88F4;
 
         if (model->sampleCount != 0) {
@@ -2856,15 +3485,37 @@ static float deapth_for_studio(int studio, const Vector4 *vector, float size)
     camera = xglStudioSelectGetActiveCamera(studio);
     new_var = (Vector4 *)screen;
     result = 0.0f;
+#ifndef PORT_HOST
     PS2_ASMV("" : "+f"(result));
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(result);
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     mat = (float (*)[4])(camera + 0x470);
+#ifndef PORT_HOST
     PS2_ASMV("" : : "r"(mat));
+#else
+    {
+        XsgGpr r_0 = XSG_IN(mat);
+        xsg_vu0_blocks++;
+    }
+#endif
     ret = result;
     if (camera != 0) {
         _CurSetMatrix(mat);
         _CurSetViewScaleTrans((const float *)(camera + 0x80), (const float *)(camera + 0x70));
         _CurRotTransPersClip(new_var, vector);
+#ifndef PORT_HOST
         PS2_ASMV("" : : "f"(result));
+#else
+        {
+            XsgFpr f_0 = XSG_FIN(result);
+            xsg_vu0_blocks++;
+        }
+#endif
         ret = ((float)screen[2] * size) / tanf(*(float *)(camera + 0x94) * 0.5f);
     }
     return ret;
@@ -3002,16 +3653,31 @@ static void nmlModelCalcDropShadow(void)
     }
 }
 
+#ifndef PORT_HOST
 #define QuadwordCopy(destination, source) \
     PS2_ASMV("lq $2, 0(%1)\n" "sq $2, 0(%0)\n" \
         : : "r" (destination), "r" (source) : "$2", "memory")
+#else
+#define QuadwordCopy(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define QuadwordZeroMatrix(destination) \
     PS2_ASMV("sq $0, 0(%0)\n" "sq $0, 16(%0)\n" \
         "sq $0, 32(%0)\n" "sq $0, 48(%0)\n" : : "r" (destination) : "memory")
+#else
+#define QuadwordZeroMatrix(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16); __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_zero, 16); __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_zero, 16); __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_zero, 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0AddVectorXYZ(destination, first, second) \
     PS2_ASMV("lqc2 $vf3, 0(%2)\n\tlqc2 $vf2, 0(%1)\n\t" \
         "vadd.xyz vf2, vf2, vf3\n\tsqc2 $vf2, 0(%0)\n\t.set noreorder\n\t.set reorder" \
         : : "r" (destination), "r" (first), "r" (second) : "memory")
+#else
+#define Vu0AddVectorXYZ(destination, first, second) \
+    ({ { XsgGpr r_2 = XSG_IN(second); XsgGpr r_1 = XSG_IN(first); XsgGpr r_0 = XSG_IN(destination); vu0_lqc2(3, XSG_EA(r_2, 0)); vu0_lqc2(2, XSG_EA(r_1, 0)); vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC); vu0_sqc2(2, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 #define NML_RENDER_PROREAL_CP 0x800u
 typedef struct { float x, y, z; } NmlVec3Cp;
 typedef union { float elements[16]; Matrix4 rows; } NmlMatrixCp;
@@ -4006,12 +4672,64 @@ void nmlModelEntry(U_NmlModel *model)
             (U_s_inLayout.slots[(0x25c) / 4].i) = U_s_nModel;
             U_s_inLayout.fields.mapShadowPartCount = U_s_nMapShadowParts;
             if ((U_s_inLayout.qwords[0x250 / 8] & (U_NML_RENDER_GLOBAL_FOG | U_NML_RENDER_FOG)) == U_NML_RENDER_GLOBAL_FOG) {
+#ifndef PORT_HOST
                 PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogPara), "r" (&U_s_inGblFogPara) : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&U_s_inGblFogPara);
+                    XsgGpr r_0 = XSG_IN(&U_s_inLayout.fields.fogPara);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&U_s_inLayout.fields.fogColor), "r" (U_s_inGblFogCol) : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(U_s_inGblFogCol);
+                    XsgGpr r_0 = XSG_IN(&U_s_inLayout.fields.fogColor);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             if ((U_s_inLayout.qwords[0x250 / 8] & (U_NML_RENDER_GLOBAL_POINT_LIGHT | U_NML_RENDER_POINT_LIGHT)) == U_NML_RENDER_GLOBAL_POINT_LIGHT) {
+#ifndef PORT_HOST
                 PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointPosition[0]), "r" (&U_s_inGblPointP[0]) : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&U_s_inGblPointP[0]);
+                    XsgGpr r_0 = XSG_IN(&U_s_inLayout.fields.pointPosition[0]);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" "lq $2, 16(%1)\n" "sq $2, 16(%0)\n" "lq $2, 32(%1)\n" "sq $2, 32(%0)\n" "lq $2, 48(%1)\n" "sq $2, 48(%0)\n" : : "r" (&U_s_inLayout.fields.pointColor[0]), "r" (&U_s_inGblPointC[0]) : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&U_s_inGblPointC[0]);
+                    XsgGpr r_0 = XSG_IN(&U_s_inLayout.fields.pointColor[0]);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             if (parent != 0) {
                 U_s_inLayout.fields.render_status |= parent->layout->fields.render_status & (U_NML_RENDER_TEXMAP_CIRCLE | U_NML_RENDER_TEXMAP_TEXTURE);
@@ -4085,7 +4803,15 @@ void nmlModelEntry(U_NmlModel *model)
                 }
                 U_s_inLayout.fields.clipMasks = U_nmlPacketSetAttributeAlloc16N(quadCount / 16);
                 for (quadIndex = 0; quadIndex < quadCount / 16; quadIndex++) {
+#ifndef PORT_HOST
                     PS2_ASMV( "sq $0, 0(%0)\n" : : "r" (quadIndex * 16 + (int)U_s_inLayout.fields.clipMasks) : "memory");
+#else
+                    {
+                        XsgGpr r_0 = XSG_IN(quadIndex * 16 + (int)U_s_inLayout.fields.clipMasks);
+                        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
 #ifdef PORT_HOST
                 __builtin_memset(U_s_inLayout.fields.clipMasks, 0, quadCount);
@@ -4240,7 +4966,17 @@ void nmlModelEntry(U_NmlModel *model)
                 }
                 if (alphaAdded != 0 && (U_s_nParent == 0 || alphaParentAdded != 0) &&
                     U_s_nAlphaGroup < (512 - 1)) {
+#ifndef PORT_HOST
                     PS2_ASMV( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&sortPos), "r" (&layout->fields.center) : "$2", "memory");
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN(&layout->fields.center);
+                        XsgGpr r_0 = XSG_IN(&sortPos);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     first = (U_NmlModelBlock *)((char *)model + blockOffsets[0]);
                     if (first->materialFlags & 0x10u) {
                         float far = U_k10000;
@@ -4474,6 +5210,7 @@ void nmlModelEntryEffect(NmlModelEc *model)
         LAYOUT_S32(0x25c) = s_nModel;
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
@@ -4482,6 +5219,17 @@ void nmlModelEntryEffect(NmlModelEc *model)
             :
             : "r"(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0), "r"(&model->entryTranslation)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&model->entryTranslation);
+            XsgGpr r_0 = XSG_IN(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0);
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_0, 0));
+            vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         _CurSetMatrix((*(NmlLayoutEc *)&s_inLayout).fields.place);
         _CurApplyMatrix(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v, &(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v);
         (*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v.w = model->entryTranslation.w;
@@ -4498,8 +5246,16 @@ void nmlModelEntryEffect(NmlModelEc *model)
         }
         (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
         for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
+#ifndef PORT_HOST
             PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
 #ifdef PORT_HOST
         __builtin_memset((*(NmlLayoutEc *)&s_inLayout).fields.clipMasks, 0, paddedBlockCount);
@@ -4553,8 +5309,18 @@ void nmlModelEntryEffect(NmlModelEc *model)
         nextModel = s_nModel + 1;
         __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
         if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                 : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&layout->fields.unmodeled_1f0);
+                XsgGpr r_0 = XSG_IN(&sortPos);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             AlphaGroupSortEntry(&sortPos);
             s_nAlphaGroup = s_nAlphaGroup + 1;
         }
@@ -4589,6 +5355,7 @@ void nmlModelEntryCard(NmlModelEc *model)
         LAYOUT_S32(0x25c) = s_nModel;
         s_fSortOffset = s_fSortOffsetEntry;
         (*(NmlLayoutEc *)&s_inLayout).fields.parent = (int)model;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3, 0(%1)\n\t"
             "lqc2 vf2, 0(%0)\n\t"
@@ -4597,6 +5364,17 @@ void nmlModelEntryCard(NmlModelEc *model)
             :
             : "r"(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0), "r"(&model->entryTranslation)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&model->entryTranslation);
+            XsgGpr r_0 = XSG_IN(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0);
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_0, 0));
+            vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         _CurSetMatrix((*(NmlLayoutEc *)&s_inLayout).fields.place);
         _CurApplyMatrix(&(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v, &(*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v);
         (*(NmlLayoutEc *)&s_inLayout).fields.unmodeled_1f0.v.w = model->entryTranslation.w;
@@ -4615,8 +5393,16 @@ void nmlModelEntryCard(NmlModelEc *model)
         }
         (*(NmlLayoutEc *)&s_inLayout).fields.clipMasks = nmlPacketSetAttributeAlloc16N(paddedBlockCount / 16);
         for (quadIndex = 0; quadIndex < paddedBlockCount / 16; quadIndex++) {
+#ifndef PORT_HOST
             PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
 #ifdef PORT_HOST
         __builtin_memset((*(NmlLayoutEc *)&s_inLayout).fields.clipMasks, 0, paddedBlockCount);
@@ -4669,8 +5455,18 @@ void nmlModelEntryCard(NmlModelEc *model)
         nextModel = s_nModel + 1;
         __builtin_memcpy(&s_nModel, &nextModel, sizeof(nextModel));
         if (alphaAdded != 0 && s_nAlphaGroup < 0x1ff) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)"
                 : : "r"(&sortPos), "r"(&layout->fields.unmodeled_1f0) : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&layout->fields.unmodeled_1f0);
+                XsgGpr r_0 = XSG_IN(&sortPos);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             AlphaGroupSortEntry(&sortPos);
             s_nAlphaGroup = s_nAlphaGroup + 1;
         }
@@ -4976,12 +5772,25 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                 bound->x < model->fields.volume->boundsMin.x || bound->z < model->fields.volume->boundsMin.z) {
                 continue;
             }
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n\t"
                 "lqc2 vf2, 0(%2)\n\t"
                 "vsub.xyz vf2, vf2, vf3\n\t"
                 "sqc2 vf2, 0(%0)"
                 : : "r"(&pointA), "r"(bound), "r"(&model->fields.volume->origin) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(&model->fields.volume->origin);
+                XsgGpr r_1 = XSG_IN(bound);
+                XsgGpr r_0 = XSG_IN(&pointA);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             if (pointA.x * model->fields.volume->planeNormalX + pointA.z * model->fields.volume->planeNormalZ < 0.0f) {
                 continue;
             }
@@ -5024,6 +5833,7 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                     Vector4 *minCorner = &pointB;
                     float *matrixRow = layout->fields.weightedMatrices[entry->block.matrixIndices[0] - 1][3];
 
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf3, 0(%1)\n\t"
                         "lqc2 vf2, 0(%2)\n\t"
@@ -5032,6 +5842,19 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         : : "r"(&pointA),
                             "r"(matrixRow),
                             "r"(&entry->bounds.boxMaxOffset) : "memory");
+#else
+                    {
+                        XsgGpr r_2 = XSG_IN(&entry->bounds.boxMaxOffset);
+                        XsgGpr r_1 = XSG_IN(matrixRow);
+                        XsgGpr r_0 = XSG_IN(&pointA);
+                        vu0_lqc2(3, XSG_EA(r_1, 0));
+                        vu0_lqc2(2, XSG_EA(r_2, 0));
+                        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                        vu0_sqc2(2, XSG_EA(r_0, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf3, 0(%2)\n\t"
                         "lqc2 vf2, 0(%3)\n\t"
@@ -5040,12 +5863,26 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         : "=m"(*minCorner) : "r"(minCorner),
                             "r"(matrixRow),
                             "r"(&entry->bounds.boxMinOffset) : "memory");
+#else
+                    {
+                        XsgGpr r_3 = XSG_IN(&entry->bounds.boxMinOffset);
+                        XsgGpr r_2 = XSG_IN(matrixRow);
+                        XsgGpr r_1 = XSG_IN(minCorner);
+                        void *m_0 = (void *)&(*minCorner);
+                        vu0_lqc2(3, XSG_EA(r_2, 0));
+                        vu0_lqc2(2, XSG_EA(r_3, 0));
+                        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                        vu0_sqc2(2, XSG_EA(r_1, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     if (model->fields.volume->boundsMax.x < pointA.x || pointA.y > model->fields.volume->boundsMax.y ||
                         pointA.z > model->fields.volume->boundsMax.z || pointB.x < model->fields.volume->boundsMin.x ||
                         pointB.y < model->fields.volume->boundsMin.y || pointB.z < model->fields.volume->boundsMin.z) {
                         continue;
                     }
                 } else {
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf3, 0(%1)\n\t"
                         "lqc2 vf2, 0(%2)\n\t"
@@ -5053,6 +5890,19 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         "sqc2 vf2, 0(%0)"
                         : : "r"(worldMax),"r"(&layout->fields.place[3]),
                             "r"(&((NmlLayoutRp *)layout->fields.parent)->fields.place[0]) : "memory");
+#else
+                    {
+                        XsgGpr r_2 = XSG_IN(&((NmlLayoutRp *)layout->fields.parent)->fields.place[0]);
+                        XsgGpr r_1 = XSG_IN(&layout->fields.place[3]);
+                        XsgGpr r_0 = XSG_IN(worldMax);
+                        vu0_lqc2(3, XSG_EA(r_1, 0));
+                        vu0_lqc2(2, XSG_EA(r_2, 0));
+                        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                        vu0_sqc2(2, XSG_EA(r_0, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf3, 0(%2)\n\t"
                         "lqc2 vf2, 0(%3)\n\t"
@@ -5060,6 +5910,19 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
                         "sqc2 vf2, 0(%1)"
                         : "=m"(*worldMin) : "r"(worldMin),"r"(&layout->fields.place[3]),
                             "r"(&((NmlLayoutRp *)layout->fields.parent)->fields.lightColor[3]) : "memory");
+#else
+                    {
+                        XsgGpr r_3 = XSG_IN(&((NmlLayoutRp *)layout->fields.parent)->fields.lightColor[3]);
+                        XsgGpr r_2 = XSG_IN(&layout->fields.place[3]);
+                        XsgGpr r_1 = XSG_IN(worldMin);
+                        void *m_0 = (void *)&(*worldMin);
+                        vu0_lqc2(3, XSG_EA(r_2, 0));
+                        vu0_lqc2(2, XSG_EA(r_3, 0));
+                        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                        vu0_sqc2(2, XSG_EA(r_1, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     if (model->fields.volume->boundsMax.x < pointC.x || pointC.y > model->fields.volume->boundsMax.y ||
                         pointC.z > model->fields.volume->boundsMax.z || pointD.x < model->fields.volume->boundsMin.x ||
                         pointD.y < model->fields.volume->boundsMin.y || pointD.z < model->fields.volume->boundsMin.z) {

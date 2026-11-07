@@ -1073,7 +1073,11 @@ extern const char D_004D2718[];
 extern const char D_004D2730[];
 extern const char D_004D2790[];
 extern const char D_004D27B0[];
+#ifndef PORT_HOST
 #define DEBUG_BREAK() PS2_ASMV("break 0")
+#else
+#define DEBUG_BREAK() ({ { xsg_vu0_blocks++; } })
+#endif
 
 float UnduCheck(float *sample, void *output, UnduQuery *query)
 {
@@ -1090,7 +1094,15 @@ float UnduCheck(float *sample, void *output, UnduQuery *query)
     float y;
     float z;
 
+#ifndef PORT_HOST
     PS2_ASMV("sw $31,%0" : "=m"(caller));
+#else
+    {
+        void *m_0 = (void *)&(caller);
+        __builtin_memcpy(m_0, &xsg_ee_gpr[31], 4);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (work == 0)
         work = (UnduWork *)0x70000000;
     if (CurrentColiHead == 0)

@@ -7,6 +7,7 @@
 
 /* 64-byte four-row matrix copy through the R5900 128-bit GPRs
  * (sceVu0CopyMatrix idiom). */
+#ifndef PORT_HOST
 #define QuadwordCopyMatrix(destination, source) \
     PS2_ASMV( \
         "lq $2, 0(%1)\n" \
@@ -20,6 +21,10 @@
         : \
         : "r" (destination), "r" (source) \
         : "$2", "memory")
+#else
+#define QuadwordCopyMatrix(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16); __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16); __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16); __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16); xsg_vu0_blocks++; } })
+#endif
 
 /* Joint-animation work types (jnt.c), as JC_face and the chain filters use them. */
 typedef struct JntMatrix JntMatrix;

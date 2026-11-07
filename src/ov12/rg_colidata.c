@@ -97,6 +97,7 @@ static void _AllocDataMemory(RgColiData *pData, int nCapa)
 extern void XrgAddVector(RgVector destination, RgVector first, RgVector second);
 static inline void _ColiApply(float *dst, float *mtx, float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
@@ -109,6 +110,24 @@ static inline void _ColiApply(float *dst, float *mtx, float *src)
         "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
         "sqc2 $vf2,0(%0)"
         : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(src);
+        XsgGpr r_1 = XSG_IN(mtx);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(4, XSG_EA(r_1, 16));
+        vu0_lqc2(5, XSG_EA(r_1, 32));
+        vu0_lqc2(6, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult)
@@ -132,10 +151,20 @@ static int _CheckIntersectBall(RgColiData *pPoly, void *pArg, void *pResult)
     for (i = 0; i < pPoly->m_nTriangles; i++) {
         mtx = pPoly->m_pTriangles[i].m_planeMatrix;
         radius = ((float *)pArg)[4];
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf31, 0(%1)\n\t"
             "sqc2 $vf31, 0(%0)\n\t"
             : : "r"(pos), "r"(pArg) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(pArg);
+            XsgGpr r_0 = XSG_IN(pos);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         pos[3] = 1.0f;
         _ColiApply(local, mtx, pos);
         if (local[3] < -radius || radius < local[3]) {
@@ -344,6 +373,7 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
         float t;
         float *pVertex1 = pTriangle->m_vertices[1];
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
@@ -351,6 +381,19 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&edges[0]), "r"(pVertex1),
                 "r"(pTriangle->m_vertices[0]) : "memory", "$2");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(pTriangle->m_vertices[0]);
+            XsgGpr r_1 = XSG_IN(pVertex1);
+            XsgGpr r_0 = XSG_IN(&edges[0]);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
@@ -358,6 +401,19 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&edges[1]), "r"(pTriangle->m_vertices[2]),
                 "r"(pVertex1) : "memory", "$2");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(pVertex1);
+            XsgGpr r_1 = XSG_IN(pTriangle->m_vertices[2]);
+            XsgGpr r_0 = XSG_IN(&edges[1]);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
@@ -365,7 +421,20 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&edges[2]), "r"(pTriangle->m_vertices[0]),
                 "r"(pTriangle->m_vertices[2]) : "memory", "$2");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(pTriangle->m_vertices[2]);
+            XsgGpr r_1 = XSG_IN(pTriangle->m_vertices[0]);
+            XsgGpr r_0 = XSG_IN(&edges[2]);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
@@ -374,6 +443,20 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&cross), "r"(&edges[0]), "r"(pVector)
             : "memory", "$2");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(pVector);
+            XsgGpr r_1 = XSG_IN(&edges[0]);
+            XsgGpr r_0 = XSG_IN(&cross);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_opmula(14, 30, 31);
+            vu0_opmsub(14, 30, 31, 30);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
@@ -381,9 +464,22 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(&offset), "r"(pSegment->m_start),
                 "r"(pTriangle->m_vertices[0]) : "memory", "$2");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(pTriangle->m_vertices[0]);
+            XsgGpr r_1 = XSG_IN(pSegment->m_start);
+            XsgGpr r_0 = XSG_IN(&offset);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
             status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
         } else {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf30, 0(%1)\n\t"
                 "lqc2 $vf31, 0(%2)\n\t"
@@ -392,6 +488,20 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                 "sqc2 $vf30, 0(%0)\n\t"
                 : : "r"(&cross), "r"(&edges[1]), "r"(pVector)
                 : "memory", "$2");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(pVector);
+                XsgGpr r_1 = XSG_IN(&edges[1]);
+                XsgGpr r_0 = XSG_IN(&cross);
+                vu0_lqc2(30, XSG_EA(r_1, 0));
+                vu0_lqc2(31, XSG_EA(r_2, 0));
+                vu0_opmula(14, 30, 31);
+                vu0_opmsub(14, 30, 31, 30);
+                vu0_sqc2(30, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf30, 0(%1)\n\t"
                 "lqc2 $vf31, 0(%2)\n\t"
@@ -399,9 +509,22 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                 "sqc2 $vf30, 0(%0)\n\t"
                 : : "r"(&offset), "r"(pSegment->m_start),
                     "r"(pVertex1) : "memory", "$2");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(pVertex1);
+                XsgGpr r_1 = XSG_IN(pSegment->m_start);
+                XsgGpr r_0 = XSG_IN(&offset);
+                vu0_lqc2(30, XSG_EA(r_1, 0));
+                vu0_lqc2(31, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+                vu0_sqc2(30, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
                 status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
             } else {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf30, 0(%1)\n\t"
                     "lqc2 $vf31, 0(%2)\n\t"
@@ -410,6 +533,20 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                     "sqc2 $vf30, 0(%0)\n\t"
                     : : "r"(&cross), "r"(&edges[2]), "r"(pVector)
                     : "memory", "$2");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(pVector);
+                    XsgGpr r_1 = XSG_IN(&edges[2]);
+                    XsgGpr r_0 = XSG_IN(&cross);
+                    vu0_lqc2(30, XSG_EA(r_1, 0));
+                    vu0_lqc2(31, XSG_EA(r_2, 0));
+                    vu0_opmula(14, 30, 31);
+                    vu0_opmsub(14, 30, 31, 30);
+                    vu0_sqc2(30, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf30, 0(%1)\n\t"
                     "lqc2 $vf31, 0(%2)\n\t"
@@ -417,6 +554,18 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
                     "sqc2 $vf30, 0(%0)\n\t"
                     : : "r"(&offset), "r"(pSegment->m_start),
                         "r"(pTriangle->m_vertices[2]) : "memory", "$2");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(pTriangle->m_vertices[2]);
+                    XsgGpr r_1 = XSG_IN(pSegment->m_start);
+                    XsgGpr r_0 = XSG_IN(&offset);
+                    vu0_lqc2(30, XSG_EA(r_1, 0));
+                    vu0_lqc2(31, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+                    vu0_sqc2(30, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 if (offset.x * cross.x + offset.y * cross.y + offset.z * cross.z <= -RG_COLI_EPSILON) {
                     status = RG_COLI_MISS_OUTSIDE_TRIANGLE;
                 } else {
@@ -441,10 +590,20 @@ int RgColiDataVsRay(RgColiData *pData, RgColiSegment *pSegment,
             }
         }
         if (status >= 0) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf31, 0(%1)\n\t"
                 "sqc2 $vf31, 0(%0)\n\t"
                 : : "r"(pResult), "r"(pPlane) : "memory", "$2");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(pPlane);
+                XsgGpr r_0 = XSG_IN(pResult);
+                vu0_lqc2(31, XSG_EA(r_1, 0));
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             pResult->m_fraction = fraction;
             return 1;
         }

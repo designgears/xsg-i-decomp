@@ -232,8 +232,18 @@ void RgShotEffectSetTexLineModelColor(RgShotEffect *pEff, const int *color)
     if (pEff == 0) {
         assert_prog(D_00A53418, D_00A53428, 177);
     }
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(color), "r"(pEff->texLineModelColor) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pEff->texLineModelColor);
+        XsgGpr r_0 = XSG_IN(color);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void RgShotEffectSetPos(RgShotEffect *pEff, RgVector startPos, RgVector endPos)
@@ -244,16 +254,37 @@ void RgShotEffectSetPos(RgShotEffect *pEff, RgVector startPos, RgVector endPos)
     if (pEff == 0) {
         assert_prog(D_00A53418, D_00A53428, 189);
     }
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\t"
                          "sqc2 vf31, 0(%1)"
                          :
                          : "r"(startPos), "r"(pEff->startPos)
                          : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pEff->startPos);
+        XsgGpr r_0 = XSG_IN(startPos);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\t"
                          "sqc2 vf31, 0(%1)"
                          :
                          : "r"(endPos), "r"(pEff->endPos)
                          : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pEff->endPos);
+        XsgGpr r_0 = XSG_IN(endPos);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf30, 0(%1)\n\t"
                          "lqc2 vf31, 0(%2)\n\t"
                          "vsub.xyzw vf30, vf30, vf31\n\t"
@@ -261,6 +292,18 @@ void RgShotEffectSetPos(RgShotEffect *pEff, RgVector startPos, RgVector endPos)
                          :
                          : "r"(direction), "r"(endPos), "r"(startPos)
                          : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(startPos);
+        XsgGpr r_1 = XSG_IN(endPos);
+        XsgGpr r_0 = XSG_IN(direction);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (direction[0] * direction[0] + direction[1] * direction[1] +
             direction[2] * direction[2] < 0.005f) {
         XrgSetVectorXYZ(direction, 1.0f, 0.0f, 0.0f);
@@ -391,8 +434,18 @@ void RgShotEffectDisp(RgShotEffect *pEff)
         XrgPaint2DAlpha(paint, 1);
         XrgPaint2DUseTexture(paint, pEff->texLinePicId);
         InitXrgPaint2DLine3D(&line, 1, pEff->texLineModelHeight);
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                              : : "r"(pEff->endPos), "r"(line.start) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(line.start);
+            XsgGpr r_0 = XSG_IN(pEff->endPos);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_sqc2(31, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         XrgSubVector(dir, pEff->startPos, pEff->endPos);
         XrgScaleVectorXYZ(dir, dir, pEff->texLineModelWidth);
         XrgAddVector(line.end, line.start, dir);

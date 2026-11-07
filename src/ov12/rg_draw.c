@@ -363,15 +363,47 @@ static void _SetScreenSplitMode(RgDraw *pDraw, int splitMode)
     if (pDraw->m_FullScreenMode == 0) {
         if (_GetSplitRect(splitMode, 0, &rect) != 0) {
             pScreenRect0 = &pDraw->m_pStudios[0]->m_pView->screenRect;
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&rect);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(pScreenRect0) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(pScreenRect0);
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglCameraSetWindow(xglStudioSelectGetActiveCamera(0), rect.x0,
                                rect.y0, rect.x1, rect.y1);
         }
         if (_GetSplitRect(splitMode, 1, &rect) != 0) {
             pScreenRect1 = &pDraw->m_pStudios[1]->m_pView->screenRect;
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(&rect) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&rect);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(pScreenRect1) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(pScreenRect1);
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglCameraSetWindow(xglStudioSelectGetActiveCamera(1), rect.x0,
                                rect.y0, rect.x1, rect.y1);
         }

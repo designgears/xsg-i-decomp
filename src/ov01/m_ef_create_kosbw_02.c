@@ -118,6 +118,7 @@ int MEfCreate_KOSBW02(void *storage)
     MEfCalcAngle(&angle_vector, &state->target_point, &state->start_point);
     angle_vector.z = (float)state->rotation_degrees * 0.017453292f;
     MMathRotateMatrixYXZ(state->matrix, 0, &angle_vector);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n"
         "vmove.w $vf1, $vf0\n"
@@ -125,20 +126,50 @@ int MEfCreate_KOSBW02(void *storage)
         :
         : "r"(state->matrix), "r"(&state->midpoint)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->midpoint);
+        XsgGpr r_0 = XSG_IN(state->matrix);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
     state->angle = 0.0f;
     state->angle_step = 0.12566371f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r"(&state->position), "r"(&state->start_point)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->start_point);
+        XsgGpr r_0 = XSG_IN(&state->position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r"(&state->previous_position), "r"(&state->start_point)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->start_point);
+        XsgGpr r_0 = XSG_IN(&state->previous_position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     MEfCalcAngle(&state->rotation, &state->target_point, &state->start_point);
     MGsGPInit(state->draw_packet, 0, 0);
     svGetPrmFromName(D_00A51880, &parameter);
@@ -170,16 +201,35 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
     Vector4 *trail_point;
 
     if (work->frame < 25) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&work->previous_position), "r"(&work->position)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&work->position);
+            XsgGpr r_0 = XSG_IN(&work->previous_position);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)"
                              :
                              : "r"(&work_vector)
                              : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&work_vector);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n"
             "qmtc2 $8, $vf4\n"
@@ -189,7 +239,21 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
             : "=f"(sine)
             : "f"(work->angle)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(work->angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            sine = f_0.f;
+        }
+#endif
         work_vector.x = work->half_length * sine;
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n"
             "qmtc2 $8, $vf4\n"
@@ -199,6 +263,19 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
             : "=f"(cosine)
             : "f"(work->angle)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(work->angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(232);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            cosine = f_0.f;
+        }
+#endif
         work_vector.z = work->half_length * cosine;
         MMathApplyMatrix(&work->position, work->matrix, &work_vector);
         work->angle = work->angle + work->angle_step;
@@ -212,12 +289,22 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
             point_index = trail * 3 + point;
             shifted_point = &work->points[point_index + 3];
             source_point = &work->points[point_index];
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n"
                 "sq $8, 0(%0)\n"
                 :
                 : "r"(shifted_point), "r"(source_point)
                 : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(source_point);
+                XsgGpr r_0 = XSG_IN(shifted_point);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             work->twist[point_index + 3] = work->twist[point_index];
         }
     }
@@ -225,10 +312,18 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
     work->active[0] = 0;
     for (point = 0; point < 3; point++) {
         trail_point = &work->points[point];
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)"
                              :
                              : "r"(trail_point)
                              : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(trail_point);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
     if (work->frame < 25) {
@@ -238,6 +333,7 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
                                      &work->previous_position,
                                      (float)point / 3.0f);
             MMathRotateMatrixYX(matrix, 0, &work->rotation);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1, $vf0\n"
@@ -245,10 +341,28 @@ static void fnKOSBW02_PR000(void *task, Kosbw02CreateState *work)
                 :
                 : "r"(matrix), "r"(&work_vector)
                 : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&work_vector);
+                XsgGpr r_0 = XSG_IN(matrix);
+                vu0_lqc2(1, XSG_EA(r_1, 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 $vf0, 0(%0)"
                                  :
                                  : "r"(&work_vector)
                                  : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&work_vector);
+                vu0_sqc2(0, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             work_vector.x = MMathMakeRandom() * 0.06f - 0.03f;
             work_vector.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&work->points[point], matrix, &work_vector);
@@ -263,6 +377,7 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
 
     if (work->frame < 25) {
         MMathRotateMatrixYXZ(matrix, 0, &work->rotation);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
@@ -270,6 +385,16 @@ static void fnKOSBW02_DM000(void *task, Kosbw02DrawWork *work)
             :
             : "r"(matrix), "r"(&work->position)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&work->position);
+            XsgGpr r_0 = XSG_IN(matrix);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_move(1, 1, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 48));
+            xsg_vu0_blocks++;
+        }
+#endif
         MEfDrawModel(matrix, work->model_entry, work->texture);
     }
 }
@@ -406,7 +531,173 @@ static void fnKOSBW02_DP000(void *task, void *state)
                     gp->count += n2;
                 }
             }
-             PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM(""); PS2_ASM("");
+#ifndef PORT_HOST
+             PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
+ 
+#ifndef PORT_HOST
+PS2_ASM("");
+#else
+             {
+                 xsg_vu0_blocks++;
+             }
+#endif
         }
     }
     if (effect->frame < 26) {

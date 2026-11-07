@@ -772,12 +772,22 @@ static void _JobEnemy(RgEnemyControl *pCtrl)
             RgRobotAccelarate(pRobot, move);
         }
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n"
         "sqc2 $vf31, 0(%0)\n"
         :
         : "r" (pCtrl->lastVelocity), "r" (velocity)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(velocity);
+        XsgGpr r_0 = XSG_IN(pCtrl->lastVelocity);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (wait > 0) {
         wait--;
     }

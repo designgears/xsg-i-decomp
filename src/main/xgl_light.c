@@ -76,10 +76,20 @@ void xglLightAngle(XglLightSet *lightSet, unsigned int index, const float *angle
         xglMatrixStackRotY(angle[1]);
         xglMatrixStackRotX(angle[0]);
         xglMatrixStackSave(m);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             : : "r"((index << 5) + (unsigned int)lightSet + 32), "r"(&m[2]) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&m[2]);
+            XsgGpr r_0 = XSG_IN((index << 5) + (unsigned int)lightSet + 32);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 }
 
@@ -98,6 +108,7 @@ extern char Vu0CallLightCalcMatrix[];
 
 void xglLightCalcMatrix(XglLightSet *lightSet)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2.i %0,$vi27\n\t"
         "lqc2 vf4,0(%1)\n\t"
@@ -122,6 +133,31 @@ void xglLightCalcMatrix(XglLightSet *lightSet)
         : "r"((unsigned int)Vu0CallLightCalcMatrix / 8), "r"(lightSet)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(lightSet);
+        XsgGpr r_0 = XSG_IN((unsigned int)Vu0CallLightCalcMatrix / 8);
+        vu0_ctc2(27, &r_0);
+        vu0_lqc2(4, XSG_EA(r_1, 0));
+        vu0_lqc2(5, XSG_EA(r_1, 16));
+        vu0_lqc2(6, XSG_EA(r_1, 32));
+        vu0_lqc2(7, XSG_EA(r_1, 48));
+        vu0_lqc2(8, XSG_EA(r_1, 64));
+        vu0_lqc2(9, XSG_EA(r_1, 80));
+        vu0_lqc2(10, XSG_EA(r_1, 96));
+        vu0_callmsr();
+        vu0_cfc2(&xsg_ee_sink, 0);
+        vu0_sqc2(20, XSG_EA(r_1, 112));
+        vu0_sqc2(21, XSG_EA(r_1, 128));
+        vu0_sqc2(22, XSG_EA(r_1, 144));
+        vu0_sqc2(23, XSG_EA(r_1, 160));
+        vu0_sqc2(24, XSG_EA(r_1, 176));
+        vu0_sqc2(25, XSG_EA(r_1, 192));
+        vu0_sqc2(26, XSG_EA(r_1, 208));
+        vu0_sqc2(27, XSG_EA(r_1, 224));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern Vector4 sIntensity1_3;

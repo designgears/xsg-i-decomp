@@ -95,12 +95,32 @@ int MEfCreate_AMP02(Amp02Object *object)
     MMathApplyMatrix(&work->spawn_position, actor_matrix, &work->source_offset);
     MEfGetActorCoord(actor_coordinate, work->coordinate_actor, work->coordinate_part);
     MEfCalcCircumXZ(&work->circumference_position, actor_coordinate, 1.0f);
+#ifndef PORT_HOST
     PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->position), "r"(&work->spawn_position)
                          : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&work->spawn_position);
+        XsgGpr r_0 = XSG_IN(&work->position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(&work->previous_position), "r"(&work->spawn_position)
                          : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&work->spawn_position);
+        XsgGpr r_0 = XSG_IN(&work->previous_position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     MMathSubVectorDivS(&work->velocity, &work->circumference_position,
                        &work->spawn_position, 30.0f);
 
@@ -146,11 +166,22 @@ static void fnAMP02_PR000(void *self, void *arg)
     int z;
 
     if (work->frame < 30) {
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\n\t"
                              "sq $8, 0(%0)"
                              :
                              : "r"(&work->previous_position), "r"(&work->position)
                              : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&work->position);
+            XsgGpr r_0 = XSG_IN(&work->previous_position);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf1, 0(%0)\n\t"
                              "lqc2 vf2, 0(%1)\n\t"
                              "vadd.xyz vf1, vf1, vf2\n\t"
@@ -158,6 +189,17 @@ static void fnAMP02_PR000(void *self, void *arg)
                              :
                              : "r"(&work->position), "r"(&work->velocity)
                              : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&work->velocity);
+            XsgGpr r_0 = XSG_IN(&work->position);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         ((Vector4 *)&work->position)->y += MMathCalcLengthXZ(&work->velocity) * tanf(work->facing.x);
         work->facing.x += work->target_packet.target_x;
     }
@@ -166,11 +208,21 @@ static void fnAMP02_PR000(void *self, void *arg)
     do {
         work->target_packet.active[i + 1] = work->target_packet.active[i];
         for (j = 0; j < 1; j++) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%1)\n\t"
                                  "sq $8, 0(%0)"
                                  :
                                  : "r"((char *)(off + (int)work + 0x130 + j * 16)), "r"((char *)(off + (int)work + 0x120 + j * 16))
                                  : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN((char *)(off + (int)work + 0x120 + j * 16));
+                XsgGpr r_0 = XSG_IN((char *)(off + (int)work + 0x130 + j * 16));
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             work->target_packet.twist[(i + 1) + j] = work->target_packet.twist[i + j];
         }
         off -= 0x10;
@@ -178,7 +230,15 @@ static void fnAMP02_PR000(void *self, void *arg)
     } while (i >= 0);
     work->target_packet.active[0] = 0;
     for (j = 0; j < 1; j++) {
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&work->target_packet.points[j]) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&work->target_packet.points[j]);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     z = 0;
     if (work->frame < 30) {
@@ -188,10 +248,41 @@ static void fnAMP02_PR000(void *self, void *arg)
             MMathVectorInterpolation(&offset, &work->position, &work->previous_position,
                                      (float)z);
             MMathRotateMatrixYX(matrix, 0, &work->facing);
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&offset) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&offset);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+#else
+            {
+                vu0_move(1, 1, 0);
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(matrix);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf0, 0(%0)\n\tnop" : : "r"(&offset) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&offset);
+                vu0_sqc2(0, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             offset.x = MMathMakeRandom() * 0.06f - 0.03f;
             offset.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&work->target_packet.points[j], matrix, &offset);
@@ -242,9 +333,32 @@ static void fnAMP02_DM000(void *self, Amp02DrawState *work) {
         MEfCalcAngle(&angles, &work->position, &work->target);
         MMathRotateMatrixYX(matrix, (const Vector4 *)0, &angles);
         MMathScaleMatrix(matrix, matrix, &scale_0_00A515A0);
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&work->position) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&work->position);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+#else
+        {
+            vu0_move(1, 1, 0);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(matrix);
+            vu0_sqc2(1, XSG_EA(r_0, 48));
+            xsg_vu0_blocks++;
+        }
+#endif
         MEfDrawModel(matrix, work->entry, work->texture);
     }
 }

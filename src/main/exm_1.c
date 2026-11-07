@@ -2338,6 +2338,7 @@ ExMotionChannel_XM *EXM_CalcExMotion(ExMotionJointWork_XM *work, ExMotionChannel
         if (index < jointCount) {
             do {
                 Matrix_XM *current = ExMotionMatrices(work) + work->saved_index + index;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf20,0(%0)\n\t"
                     "lqc2 $vf21,0(%1)\n\t"
@@ -2345,6 +2346,18 @@ ExMotionChannel_XM *EXM_CalcExMotion(ExMotionJointWork_XM *work, ExMotionChannel
                     "sqc2 $vf20,0(%2)"
                     : : "r"(&current[1].elements[12]), "r"(&current->elements[12]), "r"(&direction)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(&direction);
+                    XsgGpr r_1 = XSG_IN(&current->elements[12]);
+                    XsgGpr r_0 = XSG_IN(&current[1].elements[12]);
+                    vu0_lqc2(20, XSG_EA(r_0, 0));
+                    vu0_lqc2(21, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                    vu0_sqc2(20, XSG_EA(r_2, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 OrientExMotionJoint(work, index, &direction);
                 if (flags & 1) {
                     MATRIX_rotX4s(&ExMotionMatrices(work)[work->saved_index + index],

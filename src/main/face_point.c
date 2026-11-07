@@ -67,6 +67,7 @@ typedef struct CullingVolumeView {
 } CullingVolumeView;
 static inline void apply_point(void *destination, float (*matrix)[4], const void *vector)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -82,6 +83,24 @@ static inline void apply_point(void *destination, float (*matrix)[4], const void
         : "r"(vector), "r"(matrix), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void culling_matrix(CullingVolumeView *volume)
@@ -102,6 +121,7 @@ static void culling_matrix(CullingVolumeView *volume)
     xglMatrixStackSave(volume->inverse);
     axis = D_004D4A10;
     dst = &volume->normal;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -116,6 +136,23 @@ static void culling_matrix(CullingVolumeView *volume)
         : "r"(&axis), "r"(matrix), "r"(dst)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(dst);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(&axis);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, 31, 29, 31, 2);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorNormal(dst, dst);
     points[0] = D_004D4A20;
     points[1] = D_004D4A30;
@@ -145,6 +182,7 @@ static void culling_cell_disp(void)
  */
 void _FacePoint(Vector4 *destination, const Vector4 *lineStart, const Vector4 *lineEnd,
                 const Vector4 *normal, const Vector4 *planePoint) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf22, 0(%0)\n\t"
         "lqc2 vf20, 0(%1)\n\t"
@@ -178,6 +216,43 @@ void _FacePoint(Vector4 *destination, const Vector4 *lineStart, const Vector4 *l
         : "r"(normal), "r"(lineStart), "r"(lineEnd), "r"(planePoint), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_4 = XSG_IN(destination);
+        XsgGpr r_3 = XSG_IN(planePoint);
+        XsgGpr r_2 = XSG_IN(lineEnd);
+        XsgGpr r_1 = XSG_IN(lineStart);
+        XsgGpr r_0 = XSG_IN(normal);
+        vu0_lqc2(22, XSG_EA(r_0, 0));
+        vu0_lqc2(20, XSG_EA(r_1, 0));
+        vu0_lqc2(21, XSG_EA(r_2, 0));
+        vu0_lqc2(23, XSG_EA(r_3, 0));
+        vu0_arith(VU0_MUL, 14, 14, 22, 22, 3);
+        vu0_arith(VU0_MUL, 14, 14, 14, 20, 3);
+        vu0_arith(VU0_ADD, 14, 23, 23, 14, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 10, 0, 22, 0);
+        vu0_arith(VU0_ADD, 8, 11, 0, 22, 1);
+        vu0_arith(VU0_ADD, 8, 12, 0, 22, 2);
+        vu0_arith(VU0_SUB, 14, 19, 21, 20, VU0_VEC);
+        vu0_arith(VU0_MUL, 8, VU0_ACC, 10, 21, 0);
+        vu0_arith(VU0_MADD, 8, VU0_ACC, 11, 21, 1);
+        vu0_arith(VU0_MADD, 8, 17, 12, 21, 2);
+        vu0_arith(VU0_MUL, 8, VU0_ACC, 10, 19, 0);
+        vu0_arith(VU0_MADD, 8, VU0_ACC, 11, 19, 1);
+        vu0_arith(VU0_MADD, 8, 18, 12, 19, 2);
+        vu0_arith(VU0_MUL, 8, VU0_ACC, 10, 23, 0);
+        vu0_arith(VU0_MADD, 8, VU0_ACC, 11, 23, 1);
+        vu0_arith(VU0_MADD, 8, 16, 12, 23, 2);
+        vu0_div(0, 3, 18, 0);
+        vu0_arith(VU0_SUB, 8, 16, 17, 16, VU0_VEC);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 8, 16, 16, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 15, 19, 16, 0);
+        vu0_arith(VU0_SUB, 14, 15, 21, 15, VU0_VEC);
+        vu0_sqc2(15, XSG_EA(r_4, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 const char D_004D4598[16] = "MC_UTK05";
@@ -275,6 +350,7 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
     xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedStart, offsetStart);
     xglVectorScaleXYZ(planePoint->w * 0.5f, &adjustedEnd, offsetEnd);
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -283,7 +359,19 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         :
         : "r"(&adjustedStart), "r"(endpointStart)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(endpointStart);
+        XsgGpr r_0 = XSG_IN(&adjustedStart);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -292,7 +380,19 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         :
         : "r"(&adjustedEnd), "r"(endpointEnd)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(endpointEnd);
+        XsgGpr r_0 = XSG_IN(&adjustedEnd);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%0)\n\t"
@@ -301,7 +401,19 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         :
         : "r"(&adjustedStart), "r"(&normalOffset)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&normalOffset);
+        XsgGpr r_0 = XSG_IN(&adjustedStart);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%0)\n\t"
@@ -310,7 +422,19 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         :
         : "r"(&adjustedEnd), "r"(&normalOffset)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&normalOffset);
+        XsgGpr r_0 = XSG_IN(&adjustedEnd);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -320,7 +444,20 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedStart), "r"(&adjustedEnd),
           "r"(&endpointDelta)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&endpointDelta);
+        XsgGpr r_1 = XSG_IN(&adjustedEnd);
+        XsgGpr r_0 = XSG_IN(&adjustedStart);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -330,6 +467,18 @@ float _CheckLine(const Vector4 *offsetStart, const Vector4 *offsetEnd,
         : "r"(&adjustedStart), "r"(planePoint),
           "r"(&pointFromStart)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&pointFromStart);
+        XsgGpr r_1 = XSG_IN(planePoint);
+        XsgGpr r_0 = XSG_IN(&adjustedStart);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     return endpointDelta.x * pointFromStart.x +
            endpointDelta.y * pointFromStart.y +
@@ -398,7 +547,15 @@ void setup_occlusion(CullingVolume *volume, s32 camera)
     if (b.z < v->depth) v->depth = b.z;
     if (c.z < v->depth) v->depth = c.z;
     if (d.z < v->depth) v->depth = d.z;
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(po) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(po);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     plane_from_points(&a, &b, &c, &v->planes[0]);
     if (v->planes[0].w > 0.0f) {
         plane_from_points(po, &a, &b, &v->planes[1]);
@@ -729,21 +886,86 @@ void xglCullingMapDebug(void)
  */
 static void _ModelCalcClipInit(const Matrix4 clip[2])
 {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf12, 0(%0)"   :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(12, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf13, 16(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(13, XSG_EA(r_0, 16));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf14, 32(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(14, XSG_EA(r_0, 32));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf15, 48(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(15, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf16, 64(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(16, XSG_EA(r_0, 64));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf17, 80(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(17, XSG_EA(r_0, 80));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf18, 96(%0)"  :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(18, XSG_EA(r_0, 96));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf19, 112(%0)\n\t"
                          "nop"                 :: "r"(clip) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(clip);
+        vu0_lqc2(19, XSG_EA(r_0, 112));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static s32 _ModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2)
 {
     s32 clipped;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "lqc2 vf27,0(%2)\n\t"
@@ -832,6 +1054,100 @@ static s32 _ModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2)
         : "=r"(clipped)
         : "r"(model), "r"(matrix1), "r"(matrix2)
         : "$2", "$f0", "$f1", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(matrix2);
+        XsgGpr r_2 = XSG_IN(matrix1);
+        XsgGpr r_1 = XSG_IN(model);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_lqc2(10, XSG_EA(r_1, 0));
+        vu0_lqc2(27, XSG_EA(r_2, 0));
+        vu0_lqc2(28, XSG_EA(r_2, 16));
+        vu0_lqc2(29, XSG_EA(r_2, 32));
+        vu0_lqc2(30, XSG_EA(r_2, 48));
+        vu0_arith(VU0_SUB, 1, 27, 27, 27, 3);
+        vu0_arith(VU0_SUB, 1, 28, 28, 28, 3);
+        vu0_arith(VU0_SUB, 1, 29, 29, 29, 3);
+        vu0_lqc2(20, XSG_EA(r_3, 0));
+        vu0_lqc2(21, XSG_EA(r_3, 16));
+        vu0_lqc2(22, XSG_EA(r_3, 32));
+        vu0_lqc2(23, XSG_EA(r_3, 48));
+        vu0_arith(VU0_SUB, 1, 20, 20, 20, 3);
+        vu0_arith(VU0_SUB, 1, 21, 21, 21, 3);
+        vu0_arith(VU0_SUB, 1, 22, 22, 22, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 20, 2);
+        vu0_arith(VU0_MADD, 15, 20, 30, 20, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 21, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 21, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 21, 2);
+        vu0_arith(VU0_MADD, 15, 21, 30, 21, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 22, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 22, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 22, 2);
+        vu0_arith(VU0_MADD, 15, 22, 30, 22, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 23, 0);
+        vu0_move(15, 27, 20);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 23, 1);
+        vu0_move(15, 28, 21);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 23, 2);
+        vu0_move(15, 29, 22);
+        vu0_arith(VU0_MADD, 15, 30, 30, 23, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 10, 2);
+        vu0_arith(VU0_MADD, 15, 20, 30, 0, 3);
+        vu0_arith(VU0_ADD, 8, 2, 0, 10, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 2);
+        xsg_ee_fpr[1].u = xsg_ee_gpr[2].w[0];
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 16, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 17, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 18, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 19, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 12, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 13, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 15, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_747_0;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        if (1) goto xsg_Lface_point_747_1;
+        xsg_Lface_point_747_0:;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] + (unsigned int)(1));
+        xsg_Lface_point_747_1:;
+        r_0.d[0] = xsg_ee_gpr[2].d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(clipped, r_0);
+    }
+#endif
     return clipped;
 }
 
@@ -840,6 +1156,7 @@ static s32 _ModelCalcClipMat1(s32 model, s32 matrix)
 {
     s32 clipped;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "lqc2 vf27,0(%2)\n\t"
@@ -902,6 +1219,73 @@ static s32 _ModelCalcClipMat1(s32 model, s32 matrix)
         : "=r"(clipped)
         : "r"(model), "r"(matrix)
         : "$2", "$f0", "$f1", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(matrix);
+        XsgGpr r_1 = XSG_IN(model);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_lqc2(10, XSG_EA(r_1, 0));
+        vu0_lqc2(27, XSG_EA(r_2, 0));
+        vu0_lqc2(28, XSG_EA(r_2, 16));
+        vu0_lqc2(29, XSG_EA(r_2, 32));
+        vu0_lqc2(30, XSG_EA(r_2, 48));
+        vu0_arith(VU0_SUB, 1, 27, 27, 27, 3);
+        vu0_arith(VU0_SUB, 1, 28, 28, 28, 3);
+        vu0_arith(VU0_SUB, 1, 29, 29, 29, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 10, 2);
+        vu0_arith(VU0_MADD, 15, 20, 30, 0, 3);
+        vu0_arith(VU0_ADD, 8, 2, 0, 10, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 2);
+        xsg_ee_fpr[1].u = xsg_ee_gpr[2].w[0];
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 16, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 17, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 18, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 19, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 12, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 13, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 15, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_843_0;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        if (1) goto xsg_Lface_point_843_1;
+        xsg_Lface_point_843_0:;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] + (unsigned int)(1));
+        xsg_Lface_point_843_1:;
+        r_0.d[0] = xsg_ee_gpr[2].d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(clipped, r_0);
+    }
+#endif
     return clipped;
 }
 
@@ -910,6 +1294,7 @@ static s32 _ModelCalcClip(s32 model)
 {
     s32 clipped;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf10,0(%1)\n\t"
         "vaddw.x vf2x,vf0x,vf10w\n\t"
@@ -961,6 +1346,61 @@ static s32 _ModelCalcClip(s32 model)
         : "=r"(clipped)
         : "r"(model)
         : "$2", "$f0", "$f1", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(model);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_lqc2(10, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 8, 2, 0, 10, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 2);
+        xsg_ee_fpr[1].u = xsg_ee_gpr[2].w[0];
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 16, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 17, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 18, 10, 2);
+        vu0_arith(VU0_MADD, 15, 9, 19, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 12, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 13, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 10, 2);
+        vu0_arith(VU0_MADD, 15, 9, 15, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[2], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        if (!xsg_ee_fcc) goto xsg_Lface_point_913_0;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        if (1) goto xsg_Lface_point_913_1;
+        xsg_Lface_point_913_0:;
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] - xsg_ee_gpr[2].w[0]);
+        xsg_ee_set32(&xsg_ee_gpr[2], xsg_ee_gpr[2].w[0] + (unsigned int)(1));
+        xsg_Lface_point_913_1:;
+        r_0.d[0] = xsg_ee_gpr[2].d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(clipped, r_0);
+    }
+#endif
     return clipped;
 }
 
@@ -1020,6 +1460,7 @@ s32 nmlModelCalcClipMat1(s32 model, s32 matrix) {
     s32 camera = xglStudioGetActiveCamera();
 
     if (camera != 0) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "lqc2 vf27, 0(%1)\n\t"
@@ -1035,6 +1476,24 @@ s32 nmlModelCalcClipMat1(s32 model, s32 matrix) {
             : "r"(model), "r"(matrix), "r"(&bounds)
             : "memory"
         );
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&bounds);
+            XsgGpr r_1 = XSG_IN(matrix);
+            XsgGpr r_0 = XSG_IN(model);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_lqc2(27, XSG_EA(r_1, 0));
+            vu0_lqc2(28, XSG_EA(r_1, 16));
+            vu0_lqc2(29, XSG_EA(r_1, 32));
+            vu0_lqc2(30, XSG_EA(r_1, 48));
+            vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+            vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+            vu0_sqc2(31, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         _ModelCalcClipInit((const Matrix4 *) (camera + 0x4F0));
         clip = _ModelCalcClip((s32) &bounds);
         clip |= xglCullingCheck(camera, (s32) &bounds);
@@ -1058,6 +1517,7 @@ s32 nmlModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2) {
     s32 camera = xglStudioGetActiveCamera();
 
     if (camera != 0) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "lqc2 vf27, 0(%1)\n\t"
@@ -1081,6 +1541,33 @@ s32 nmlModelCalcClipMat2(s32 model, s32 matrix1, s32 matrix2) {
             : "r"(model), "r"(matrix1), "r"(matrix2), "r"(&bounds)
             : "memory"
         );
+#else
+        {
+            XsgGpr r_3 = XSG_IN(&bounds);
+            XsgGpr r_2 = XSG_IN(matrix2);
+            XsgGpr r_1 = XSG_IN(matrix1);
+            XsgGpr r_0 = XSG_IN(model);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_lqc2(27, XSG_EA(r_1, 0));
+            vu0_lqc2(28, XSG_EA(r_1, 16));
+            vu0_lqc2(29, XSG_EA(r_1, 32));
+            vu0_lqc2(30, XSG_EA(r_1, 48));
+            vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+            vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+            vu0_lqc2(27, XSG_EA(r_2, 0));
+            vu0_lqc2(28, XSG_EA(r_2, 16));
+            vu0_lqc2(29, XSG_EA(r_2, 32));
+            vu0_lqc2(30, XSG_EA(r_2, 48));
+            vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+            vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+            vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+            vu0_sqc2(31, XSG_EA(r_3, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         _ModelCalcClipInit((const Matrix4 *) (camera + 0x4F0));
         clip = _ModelCalcClip((s32) &bounds);
         clip |= xglCullingCheck(camera, (s32) &bounds);
@@ -1157,6 +1644,7 @@ s32 nmlModelCalcClipMat1AllCam(s32 model, s32 matrix)
             return camera;
         }
         if (g_aSubWindow[i] != 0) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "lqc2 vf27, 0(%1)\n\t"
@@ -1172,6 +1660,24 @@ s32 nmlModelCalcClipMat1AllCam(s32 model, s32 matrix)
                 : "r"(model), "r"(matrix), "r"(&bounds)
                 : "memory"
             );
+#else
+            {
+                XsgGpr r_2 = XSG_IN(&bounds);
+                XsgGpr r_1 = XSG_IN(matrix);
+                XsgGpr r_0 = XSG_IN(model);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_lqc2(27, XSG_EA(r_1, 0));
+                vu0_lqc2(28, XSG_EA(r_1, 16));
+                vu0_lqc2(29, XSG_EA(r_1, 32));
+                vu0_lqc2(30, XSG_EA(r_1, 48));
+                vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+                vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+                vu0_sqc2(31, XSG_EA(r_2, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             _ModelCalcClipInit((const Matrix4 *) (camera + 0x4F0));
             clip = _ModelCalcClip((s32) &bounds);
             clip |= xglCullingCheck(camera, (s32) &bounds);
@@ -1209,6 +1715,7 @@ s32 nmlModelCalcClipMat2AllCam(s32 model, s32 matrix1, s32 matrix2)
                 return camera;
             }
             _ModelCalcClipInit((const Matrix4 *) (camera + 0x4F0));
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "lqc2 vf27, 0(%1)\n\t"
@@ -1232,6 +1739,33 @@ s32 nmlModelCalcClipMat2AllCam(s32 model, s32 matrix1, s32 matrix2)
                 : "r"(model), "r"(matrix1), "r"(matrix2), "r"(&bounds)
                 : "memory"
             );
+#else
+            {
+                XsgGpr r_3 = XSG_IN(&bounds);
+                XsgGpr r_2 = XSG_IN(matrix2);
+                XsgGpr r_1 = XSG_IN(matrix1);
+                XsgGpr r_0 = XSG_IN(model);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_lqc2(27, XSG_EA(r_1, 0));
+                vu0_lqc2(28, XSG_EA(r_1, 16));
+                vu0_lqc2(29, XSG_EA(r_1, 32));
+                vu0_lqc2(30, XSG_EA(r_1, 48));
+                vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+                vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+                vu0_lqc2(27, XSG_EA(r_2, 0));
+                vu0_lqc2(28, XSG_EA(r_2, 16));
+                vu0_lqc2(29, XSG_EA(r_2, 32));
+                vu0_lqc2(30, XSG_EA(r_2, 48));
+                vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+                vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+                vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+                vu0_sqc2(31, XSG_EA(r_3, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             clip = _ModelCalcClip((s32) &bounds);
             tested++;
             clipMask |= clip << i;
@@ -1255,6 +1789,7 @@ s32 nmlModelCalcClipMat2AllCam(s32 model, s32 matrix1, s32 matrix2)
  * from vector->w.
  */
 void _ApplyMatrix33(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -1270,6 +1805,23 @@ void _ApplyMatrix33(Vector4 *destination, const Matrix4 matrix, const Vector4 *v
         : "r"(vector), "r"(matrix), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, 31, 29, 31, 2);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1280,6 +1832,7 @@ void _ApplyMatrix33(Vector4 *destination, const Matrix4 matrix, const Vector4 *v
  * the first lqc2 loaded from vector->w.
  */
 void _ApplyMatrix(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -1296,6 +1849,24 @@ void _ApplyMatrix(Vector4 *destination, const Matrix4 matrix, const Vector4 *vec
         : "r"(vector), "r"(matrix), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1307,6 +1878,7 @@ void _ApplyMatrix(Vector4 *destination, const Matrix4 matrix, const Vector4 *vec
  * loaded from vector->w.
  */
 void _ApplyMatrix2Mat(Vector4 *destination, const Matrix4 matrix1, const Matrix4 matrix2, const Vector4 *vector) {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n\t"
         "lqc2 vf27, 0(%1)\n\t"
@@ -1331,4 +1903,31 @@ void _ApplyMatrix2Mat(Vector4 *destination, const Matrix4 matrix1, const Matrix4
         : "r"(vector), "r"(matrix1), "r"(matrix2), "r"(destination)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgGpr r_2 = XSG_IN(matrix2);
+        XsgGpr r_1 = XSG_IN(matrix1);
+        XsgGpr r_0 = XSG_IN(vector);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+        vu0_lqc2(27, XSG_EA(r_2, 0));
+        vu0_lqc2(28, XSG_EA(r_2, 16));
+        vu0_lqc2(29, XSG_EA(r_2, 32));
+        vu0_lqc2(30, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 14, 31, 30, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }

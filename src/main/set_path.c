@@ -762,7 +762,15 @@ static void seffectDebugCf(void)
 
     handle_9 = 0;
     memset(&dmyActor_12, 0, 0xA70);
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&dmyActor_12.scale_x) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&dmyActor_12.scale_x);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     dmyActor_12.rotation_w = 1.0f;
     dmyActor_12.scale_w = 1.0f;
     dmyActor_12.scale_z = 1.0f;

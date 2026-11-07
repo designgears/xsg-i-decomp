@@ -684,6 +684,7 @@ void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
     ((DebugLineScratch *)0x70000000)->input[0].z = position->z;
     ((DebugLineScratch *)0x70000000)->input[0].w = 1.0f;
     transformVector(((DebugLineScratch *)0x70000000)->output, ((DebugLineScratch *)0x70000000)->input, 1, &((DebugLineScratch *)0x70000000)->transform);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -696,6 +697,21 @@ void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
         :
         : "r"(&rotation), "r"((char *)*camera + 0x170)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN((char *)*camera + 0x170);
+        XsgGpr r_0 = XSG_IN(&rotation);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     rotation.elements[12] = 0.0f;
     rotation.elements[13] = 0.0f;
     rotation.elements[14] = 0.0f;
@@ -947,6 +963,7 @@ void updateCursorMode1(void)
     xglVectorLength(&len, &vel);
     if (len > 40.0f) {
         {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $2, 0(%1)\n\t"
                 "sq $2, 0(%0)\n\t"
@@ -957,6 +974,21 @@ void updateCursorMode1(void)
                 "lq $2, 48(%1)\n\t"
                 "sq $2, 48(%0)"
                 : : "r"(&mat), "r"((char *)camera->unmodeled_e0 + 0x90) : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN((char *)camera->unmodeled_e0 + 0x90);
+                XsgGpr r_0 = XSG_IN(&mat);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         ((volatile int *)&mat)[12] = 0;
         ((volatile int *)&mat)[13] = 0;
@@ -1139,6 +1171,7 @@ void updateCursorModePlane(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
@@ -1151,6 +1184,21 @@ void updateCursorModePlane(void)
             :
             : "r"(&rotation), "r"(DB_CAMERA_TO_WORLD(camera))
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(DB_CAMERA_TO_WORLD(camera));
+            XsgGpr r_0 = XSG_IN(&rotation);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         rotation.m[3][0] = zero;
         rotation.m[3][1] = zero;
         rotation.m[3][2] = zero;
@@ -1195,6 +1243,7 @@ void updateCursorModePlane(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
@@ -1207,6 +1256,21 @@ void updateCursorModePlane(void)
             :
             : "r"(&rotation), "r"(DB_CAMERA_TO_WORLD(camera))
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(DB_CAMERA_TO_WORLD(camera));
+            XsgGpr r_0 = XSG_IN(&rotation);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         rotation.m[3][0] = 0.0f;
         rotation.m[3][1] = 0.0f;
         rotation.m[3][2] = 0.0f;
@@ -1304,6 +1368,7 @@ void updateCursorMode0(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
@@ -1316,6 +1381,21 @@ void updateCursorMode0(void)
             :
             : "r"(&rotation), "r"(DB_CAMERA_TO_WORLD(camera))
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(DB_CAMERA_TO_WORLD(camera));
+            XsgGpr r_0 = XSG_IN(&rotation);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         rotation.m[3][0] = zero;
         rotation.m[3][1] = zero;
         rotation.m[3][2] = zero;
@@ -1360,6 +1440,7 @@ void updateCursorMode0(void)
     if (length > 40.0f) {
         /* Copy the origin-relative camera-to-world transform through one scratch
          * register; remove translation below to transform a movement direction. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
@@ -1372,6 +1453,21 @@ void updateCursorMode0(void)
             :
             : "r"(&rotation), "r"(DB_CAMERA_TO_WORLD(camera))
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(DB_CAMERA_TO_WORLD(camera));
+            XsgGpr r_0 = XSG_IN(&rotation);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         rotation.m[3][0] = 0.0f;
         rotation.m[3][1] = 0.0f;
         rotation.m[3][2] = 0.0f;
@@ -2147,6 +2243,7 @@ void updateLight(int mode)
     translation.y = 0.0f;
     translation.z = 5.0f;
     translation.w = 1.0f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2,0(%0)\n\t"
         "sq $2,0(%1)\n\t"
@@ -2159,6 +2256,21 @@ void updateLight(int mode)
         :
         : "r" (((char *)camera->unmodeled_e0 + 0x90)), "r" (cameraMatrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(cameraMatrix);
+        XsgGpr r_0 = XSG_IN(((char *)camera->unmodeled_e0 + 0x90));
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 16), 16);
+        __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 32), 16);
+        __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 48), 16);
+        __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     xglMatrixStackUnit();
     xglMatrixStackMul((const float (*)[4])cameraMatrix);
     xglMatrixStackTrans(&translation.x);

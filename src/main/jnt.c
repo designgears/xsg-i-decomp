@@ -854,6 +854,7 @@ void CUR_MATRIX_GetT(Vector4 *translation);
 void CUR_MATRIX_SetR(Matrix4 matrix);
 void CUR_MATRIX_SetT(const Vector4 *translation);
 void CUR_MATRIX_Sxyz4s(const Vector4 *scale);
+#ifndef PORT_HOST
 #define Vu0SubVector(destination, minuend, subtrahend) \
     PS2_ASMV( \
         "lqc2 vf20, 0(%1)\n" \
@@ -863,6 +864,10 @@ void CUR_MATRIX_Sxyz4s(const Vector4 *scale);
         : \
         : "r" (destination), "r" (minuend), "r" (subtrahend) \
         : "memory")
+#else
+#define Vu0SubVector(destination, minuend, subtrahend) \
+    ({ { XsgGpr r_2 = XSG_IN(subtrahend); XsgGpr r_1 = XSG_IN(minuend); XsgGpr r_0 = XSG_IN(destination); vu0_lqc2(20, XSG_EA(r_1, 0)); vu0_lqc2(21, XSG_EA(r_2, 0)); vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC); vu0_sqc2(20, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 static inline JntMatrix *jcmMatrixAt(void *base, int index)
 {
     return (JntMatrix *)((index << 6) + (unsigned int)base);
@@ -1761,6 +1766,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                 float lane_z;
 
                 /* sums - slot0 translation, computed as one VU0 vector subtract. */
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf20, 0(%1)\n"
                     "lqc2 $vf21, 0(%2)\n"
@@ -1769,6 +1775,18 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                     :
                     : "r"(&axis_a), "r"(&sums_pair[1]), "r"(&jntChainAt(work, 0)->translation)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(&jntChainAt(work, 0)->translation);
+                    XsgGpr r_1 = XSG_IN(&sums_pair[1]);
+                    XsgGpr r_0 = XSG_IN(&axis_a);
+                    vu0_lqc2(20, XSG_EA(r_1, 0));
+                    vu0_lqc2(21, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                    vu0_sqc2(20, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 lane_x = axis_a.x;
                 lane_y = axis_a.y;
                 lane_z = axis_a.z;
@@ -1863,6 +1881,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                     CUR_MATRIX_Get(work->transform_basis);
                     CUR_MATRIX_GetT(&mid_b);
                     /* sums - end translation, computed as one VU0 vector subtract. */
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 $vf20, 0(%0)\n"
                         "lqc2 $vf21, 0(%1)\n"
@@ -1871,6 +1890,18 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                         :
                         : "r"(&sums_pair[1]), "r"(&mid_b), "r"(&axis_a)
                         : "memory");
+#else
+                    {
+                        XsgGpr r_2 = XSG_IN(&axis_a);
+                        XsgGpr r_1 = XSG_IN(&mid_b);
+                        XsgGpr r_0 = XSG_IN(&sums_pair[1]);
+                        vu0_lqc2(20, XSG_EA(r_0, 0));
+                        vu0_lqc2(21, XSG_EA(r_1, 0));
+                        vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                        vu0_sqc2(20, XSG_EA(r_2, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     lane_x = axis_a.x;
                     lane_y = axis_a.y;
                     lane_z = axis_a.z;
@@ -1920,6 +1951,7 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                 float direction_z;
 
                 /* sums - slot0 translation, computed as one VU0 vector subtract. */
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 $vf20, 0(%0)\n"
                     "lqc2 $vf21, 0(%1)\n"
@@ -1928,6 +1960,18 @@ JntStaticChannel *JNT_getVal2(JntWork *work, JntStaticChannel *channel, float fr
                     :
                     : "r"(&sums_pair[1]), "r"(&jntChainAt(work, 0)->translation), "r"(cp)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(cp);
+                    XsgGpr r_1 = XSG_IN(&jntChainAt(work, 0)->translation);
+                    XsgGpr r_0 = XSG_IN(&sums_pair[1]);
+                    vu0_lqc2(20, XSG_EA(r_0, 0));
+                    vu0_lqc2(21, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                    vu0_sqc2(20, XSG_EA(r_2, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 lane_x = axis_c[0];
                 lane_y = axis_c[1];
                 lane_z = axis_c[2];
@@ -2539,6 +2583,7 @@ JntStaticChannel *JNT_getVal_HOGE2(JntWork *work, JntStaticChannel *channel, flo
 
 static void liner_interpolate(float *a, float *b, float t)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $3, %2\n"
         "qmtc2.ni $3, $vf31\n"
@@ -2559,6 +2604,31 @@ static void liner_interpolate(float *a, float *b, float t)
         "sqc2 $vf24, 0x30(%0)\n"
         "nop\n"
         : : "r"(a), "r"(b), "f"(t) : "$3", "memory");
+#else
+    {
+        XsgFpr f_2 = XSG_FIN(t);
+        XsgGpr r_1 = XSG_IN(b);
+        XsgGpr r_0 = XSG_IN(a);
+        xsg_ee_set32(&xsg_ee_gpr[3], f_2.u);
+        vu0_qmtc2(31, &xsg_ee_gpr[3]);
+        vu0_lqc2(22, XSG_EA(r_0, 48));
+        vu0_lqc2(23, XSG_EA(r_1, 48));
+        vu0_lqc2(19, XSG_EA(r_0, 0));
+        vu0_lqc2(20, XSG_EA(r_0, 16));
+        vu0_lqc2(21, XSG_EA(r_0, 32));
+        vu0_arith(VU0_SUB, 14, 24, 22, 23, VU0_VEC);
+        vu0_move(1, 19, 0);
+        vu0_move(1, 20, 0);
+        vu0_move(1, 21, 0);
+        vu0_arith(VU0_MUL, 14, 24, 24, 31, 0);
+        vu0_arith(VU0_ADD, 14, 24, 24, 23, VU0_VEC);
+        vu0_sqc2(19, XSG_EA(r_0, 0));
+        vu0_sqc2(20, XSG_EA(r_0, 16));
+        vu0_sqc2(21, XSG_EA(r_0, 32));
+        vu0_sqc2(24, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 #include "shared.h"
@@ -2592,6 +2662,7 @@ void xglQuaternionInterpolateLinear(Vector4 *destination, const Vector4 *left, c
 void xglVectorLength(float *length, const Vector4 *vector);
 static inline void jntInterpCopyMatrix(JntInterpMatrix *destination, const JntInterpMatrix *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
@@ -2602,13 +2673,38 @@ static inline void jntInterpCopyMatrix(JntInterpMatrix *destination, const JntIn
         "lq $2, 48(%1)\n\t"
         "sq $2, 48(%0)"
         : : "r"(destination), "r"(source) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void jntInterpCopyMatrixRow(float destination[4], const float source[4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         : : "r"(destination), "r"(source) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void jntCopyTranslation(float destination[3], const float translation[3])
 {
@@ -2877,6 +2973,7 @@ static inline JntInterpMatrix *jntMatrixAt(void *base, int index)
 }
 static inline void jntCopyMatrix(JntInterpMatrix *destination, const JntInterpMatrix *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
@@ -2887,6 +2984,21 @@ static inline void jntCopyMatrix(JntInterpMatrix *destination, const JntInterpMa
         "lq $2, 48(%1)\n\t"
         "sq $2, 48(%0)"
         : : "r"(destination), "r"(source) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 void MATRIX_convert4(float destination[4][4], float source[4][4]);
 void xglMatrixMul(float destination[4][4], float left[4][4], float right[4][4]);
@@ -3531,6 +3643,7 @@ void MATRIX_convert4(float destination[4][4], float source[4][4]);
 void xglMatrixUnit4s(float destination[4][4]);
 static inline void jntResetCopyMatrix(JntMatrixRows *destination, const JntMatrixRows *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)\n\t"
@@ -3541,6 +3654,21 @@ static inline void jntResetCopyMatrix(JntMatrixRows *destination, const JntMatri
         "lq $2, 48(%1)\n\t"
         "sq $2, 48(%0)"
         : : "r"(destination), "r"(source) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 JntStaticChannel *JNT_resetMatrix(JntResetWork *work, JntStaticChannel *channel)

@@ -3333,12 +3333,22 @@ s32 CardMainProc(CardGameWork *work) {
         float *eye = &xglStudioSelectGetActiveCamera(0)->position.x;
 
         /* sceVu0CopyVector: the original copies the quadword with lq/sq. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (eye), "r" (position)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(position);
+            XsgGpr r_0 = XSG_IN(eye);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     return 1;
 }

@@ -93,10 +93,26 @@ static void fnEAD00_PR000(void *self, void *work)
     int part_id;
 
     /* VU0's constant vf0 supplies zero xyz and unit w for both local points. */
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&first_point) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&first_point);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     first_point.x = -0.1f;
     first_point.z = -0.2f;
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&second_point) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&second_point);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     actor_id = state->actor_id;
     second_point.x = -9.0f;
     part_id = state->part_id;
@@ -114,17 +130,37 @@ static void fnEAD00_PR000(void *self, void *work)
     matrix_input = &transformed_point;
     for (point_index = 0, remaining = 2; remaining >= 0; ) {
         /* Copy the complete aligned vector through the original scratch GPR. */
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)"
                              : : "r"(matrix_input), "r"(&first_point)
                              : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&first_point);
+            XsgGpr r_0 = XSG_IN(matrix_input);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         transformed_point.x *= frame_scale;
         MMathApplyMatrix(&state->start[point_index], (const Matrix4 *)&actor_matrix,
                          matrix_input);
         first_point.x += 0.1f;
 
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)"
                              : : "r"(matrix_input), "r"(&second_point)
                              : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&second_point);
+            XsgGpr r_0 = XSG_IN(matrix_input);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         remaining--;
         transformed_point.x *= frame_scale;
         MMathApplyMatrix(&state->end[point_index], (const Matrix4 *)&actor_matrix,
@@ -181,10 +217,20 @@ typedef struct EAD00DrawWork {
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
 #define EAD00_FADE_START 62
+#ifndef PORT_HOST
 #define QuadwordCopyT0(destination, source) \
     PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#else
+#define QuadwordCopyT0(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0SetOrigin(destination) \
     PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+#else
+#define Vu0SetOrigin(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); vu0_sqc2(0, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 typedef struct EAD00CamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -303,16 +349,93 @@ static void fnEAD00_DP000(void *self, void *work)
                 QuadwordCopyT0(&angles, angle);
                 angles.z = ray_angle + (float)segment * 0.5235988f;
                 MMathRotateMatrixYXZ(&rotation, 0, &angles);
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&position);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+#else
+                {
+                    vu0_move(1, 1, 0);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&rotation);
+                    vu0_sqc2(1, XSG_EA(r_0, 48));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&position);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(displacement) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(displacement);
+                    vu0_lqc2(2, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+#else
+                {
+                    vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&position) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&position);
+                    vu0_sqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf1, 48(%0)" : : "r"(&rotation) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&rotation);
+                    vu0_lqc2(1, XSG_EA(r_0, 48));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+#else
+                {
+                    vu0_move(1, 1, 0);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&point) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&point);
+                    vu0_sqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
 
                 if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &point)) {
                     clip = 2;

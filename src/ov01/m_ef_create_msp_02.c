@@ -156,9 +156,19 @@ static void fnMSP02_DP000();
 static void fnMSP02_PO000(void *self, MspEffect *effect);
 static inline void msp02Copy(Vector4 *destination, Vector4 *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lq $8,0(%1)\n\tsq $8,0(%0)"
                          : : "r"(destination), "r"(source)
                          : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 int MEfCreate_MSP02(Msp02Object *object)
@@ -220,13 +230,24 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
     if (effect->frame < 20) {
         /* Quadword copy: previousPosition = position (VU0 library copy). */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&effect->previousPosition), "r"(&effect->position)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&effect->position);
+            XsgGpr r_0 = XSG_IN(&effect->previousPosition);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         /* position.xyz += velocity.xyz, leaving position.w alone. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
@@ -235,13 +256,35 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(&effect->position), "r"(&effect->position), "r"(&effect->velocity)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&effect->velocity);
+            XsgGpr r_1 = XSG_IN(&effect->position);
+            XsgGpr r_0 = XSG_IN(&effect->position);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_2, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         /* Quadword copy: previousTarget = target. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&effect->previousTarget), "r"(&effect->target)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&effect->target);
+            XsgGpr r_0 = XSG_IN(&effect->previousTarget);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
 
         /* Every seventh frame the emitter picks a new swing. */
         if (effect->frame % 7 == 0) {
@@ -256,6 +299,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
         MMathRotateMatrixYX(matrix, 0, &effect->rotation);
         /* matrix[3] = position, keeping the W lane of vf0. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
@@ -263,9 +307,27 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(matrix), "r"(&effect->position)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&effect->position);
+            XsgGpr r_0 = XSG_IN(matrix);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_move(1, 1, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 48));
+            xsg_vu0_blocks++;
+        }
+#endif
 
         /* work = vf0, the VU0 constant (0, 0, 0, 1). */
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&work);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         {
             /* The swing offset in the rotated frame, in polar form: the two
              * circular components of the current angle, scaled by the spread.
@@ -280,6 +342,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             float cosine;
             float sine;
 
+#ifndef PORT_HOST
             PS2_ASMV(
                 "mfc1 $8, %1\n"
                 "qmtc2.ni $8, $vf4\n"
@@ -289,8 +352,22 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                 : "=f"(cosine)
                 : "f"(effect->angle)
                 : "$8", "memory");
+#else
+            {
+                XsgFpr f_1 = XSG_FIN(effect->angle);
+                XsgFpr f_0 = {0};
+                xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                vu0_qmtc2(4, &xsg_ee_gpr[8]);
+                vu0_callms(232);
+                vu0_qmfc2(&xsg_ee_gpr[8], 1);
+                f_0.u = xsg_ee_gpr[8].w[0];
+                xsg_vu0_blocks++;
+                cosine = f_0.f;
+            }
+#endif
             work.x = cosine * effect->spread;
 
+#ifndef PORT_HOST
             PS2_ASMV(
                 "mfc1 $8, %1\n"
                 "qmtc2.ni $8, $vf4\n"
@@ -300,6 +377,19 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                 : "=f"(sine)
                 : "f"(effect->angle)
                 : "$8", "memory");
+#else
+            {
+                XsgFpr f_1 = XSG_FIN(effect->angle);
+                XsgFpr f_0 = {0};
+                xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                vu0_qmtc2(4, &xsg_ee_gpr[8]);
+                vu0_callms(32);
+                vu0_qmfc2(&xsg_ee_gpr[8], 1);
+                f_0.u = xsg_ee_gpr[8].w[0];
+                xsg_vu0_blocks++;
+                sine = f_0.f;
+            }
+#endif
             work.y = sine * effect->spread;
         }
 
@@ -317,7 +407,16 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
         effect->turn.y = work.y;
 
         /* lead = vf0; work = tip - target (xyz). */
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&lead) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&lead);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
@@ -326,6 +425,18 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(&work), "r"(&tip), "r"(&effect->target)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&effect->target);
+            XsgGpr r_1 = XSG_IN(&tip);
+            XsgGpr r_0 = XSG_IN(&work);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
         /* How far the target has to travel sideways to reach the new heading:
          * the distance left to cover, times the tangent of the angle still to
@@ -337,6 +448,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
         /* work = target + velocity (xyz), and that becomes the translation the
          * lead offset is rotated about. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "lqc2 $vf2, 0(%2)\n"
@@ -345,6 +457,19 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(&work), "r"(&effect->target), "r"(&effect->velocity)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&effect->velocity);
+            XsgGpr r_1 = XSG_IN(&effect->target);
+            XsgGpr r_0 = XSG_IN(&work);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_2, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%1)\n"
             "vmove.w $vf1, $vf0\n"
@@ -352,6 +477,16 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             :
             : "r"(matrix), "r"(&work)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&work);
+            XsgGpr r_0 = XSG_IN(matrix);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            vu0_move(1, 1, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 48));
+            xsg_vu0_blocks++;
+        }
+#endif
         MMathApplyMatrix(&effect->target, matrix, &lead);
     }
 
@@ -365,6 +500,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
          trail >= 0; slotOffset -= MSP02_SLOT_BYTES, trail--) {
         effect->active[trail + 1] = effect->active[trail];
         for (point = 0; point < MSP02_TRAIL_POINTS; point++) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n"
                 "sq $8, 0(%0)\n"
@@ -373,13 +509,31 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                               + point * MSP02_POINT_BYTES]),
                   "r"(&record[slotOffset + MSP02_POINTS_OFFSET + point * MSP02_POINT_BYTES])
                 : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&record[slotOffset + MSP02_POINTS_OFFSET + point * MSP02_POINT_BYTES]);
+                XsgGpr r_0 = XSG_IN(&record[slotOffset + MSP02_POINTS_OFFSET + MSP02_SLOT_BYTES
+                              + point * MSP02_POINT_BYTES]);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             effect->twist[trail + 1][point] = effect->twist[trail][point];
         }
     }
 
     effect->active[0] = 0;
     for (point = 0; point < MSP02_TRAIL_POINTS; point++)
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&effect->points[0][point]) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&effect->points[0][point]);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
     if (effect->frame < 20) {
         effect->active[0] = 1;
@@ -387,6 +541,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
             MMathVectorInterpolation(&work, &effect->target, &effect->previousTarget,
                                      (float)point * 0.5f);
             MMathRotateMatrixYX(matrix, 0, &effect->rotation);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1, $vf0\n"
@@ -394,9 +549,27 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
                 :
                 : "r"(matrix), "r"(&work)
                 : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&work);
+                XsgGpr r_0 = XSG_IN(matrix);
+                vu0_lqc2(1, XSG_EA(r_1, 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
 
             /* A small random spray around the interpolated trail point. */
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&work) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&work);
+                vu0_sqc2(0, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             work.x = MMathMakeRandom() * 0.06f - 0.03f;
             work.y = MMathMakeRandom() * 0.06f - 0.03f;
             MMathApplyMatrix(&effect->points[0][point], matrix, &work);
@@ -415,12 +588,22 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
     if (effect->frame < 20) {
         parameters = (struct MspCreationParameters *)effect->creationParameters;
         /* The draw orientation is the trail turn with a half-turn on Y. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%1)\n"
             "sq $8, 0(%0)\n"
             :
             : "r"(&angles), "r"(&effect->turn)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&effect->turn);
+            XsgGpr r_0 = XSG_IN(&angles);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         angles.y += 3.14159274f;
 
         MMathRotateMatrixYX(matrix, 0, &angles);
@@ -433,6 +616,7 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
             /* Keep the target translation's address in v1, as the original does. */
             register Vector4 *target PS2_REG("$3") = &effect->target;
 
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
@@ -440,6 +624,16 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
                 :
                 : "r"(matrix), "r"(target)
                 : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(matrix);
+                xsg_ee_gpr[3] = XSG_IN(target);
+                vu0_lqc2(1, XSG_EA(xsg_ee_gpr[3], 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
 
         MEfDrawModel((const Vector4 *)matrix,

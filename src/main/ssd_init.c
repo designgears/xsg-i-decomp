@@ -433,8 +433,20 @@ void RssdSifRpcCallback(void)
 
     RssdWork.complete_callback = 0;
     iSignalSema(RssdWork.sema_id);
+#ifndef PORT_HOST
     PS2_ASMV("sync.l" : : : "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("ei" : : : "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     return;
 }
 

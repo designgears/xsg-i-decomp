@@ -96,10 +96,20 @@ int RgDispWpnDat_GetNameUVWH(const char *name, u64 *uvwh)
 
     for (i = 0; i < 36; i++) {
         if (strcasecmp(s_aWepPicTbl_0[i].name, name) == 0) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf31, 0(%1)\n\t"
                 "sqc2 $vf31, 0(%0)\n\t"
                 : : "r"(uvwh), "r"(s_aWepPicTbl_0[i].uvwh) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(s_aWepPicTbl_0[i].uvwh);
+                XsgGpr r_0 = XSG_IN(uvwh);
+                vu0_lqc2(31, XSG_EA(r_1, 0));
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             return 1;
         }
     }

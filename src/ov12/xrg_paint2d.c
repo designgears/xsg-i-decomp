@@ -168,8 +168,18 @@ static void _CalcUV(XrgPaint2DVertex corners[4], const XrgIntRect *base,
 {
     XrgIntRect rect;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(base), "r"(&rect) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&rect);
+        XsgGpr r_0 = XSG_IN(base);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (mode & 1) {
         rect.x += override->x;
         rect.y += override->y;
@@ -193,6 +203,7 @@ static int _CalcPosOnScreen(void *destination, const void *position, float *offs
     float x;
     float scale;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui %0, %%hi(s_pCurView_00A51220)\n\t"
         "addiu %0, %0, %%lo(s_pCurView_00A51220)\n\t"
@@ -213,14 +224,62 @@ static int _CalcPosOnScreen(void *destination, const void *position, float *offs
         : "=&r"(addr), "=&r"(offset), "=&r"(view2), "=&r"(view)
         : "r"(offsetWork)
         : "memory");
+#else
+    {
+        extern char xsg_sym_s_pCurView_00A51220[] __asm__("s_pCurView_00A51220");
+        XsgGpr r_4 = XSG_IN(offsetWork);
+        XsgGpr r_3 = {{0, 0}};
+        XsgGpr r_2 = {{0, 0}};
+        XsgGpr r_1 = {{0, 0}};
+        XsgGpr r_0 = {{0, 0}};
+        xsg_ee_set32(&r_0, (unsigned int)((((unsigned int)(unsigned long)xsg_sym_s_pCurView_00A51220 + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&r_0, r_0.w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_s_pCurView_00A51220 & 0xffffu)));
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_0, 0), sizeof xsg_v_); r_3.sd[0] = xsg_v_; }
+        vu0_lqc2(27, XSG_EA(r_3, 0));
+        vu0_lqc2(28, XSG_EA(r_3, 16));
+        vu0_lqc2(29, XSG_EA(r_3, 32));
+        vu0_lqc2(30, XSG_EA(r_3, 48));
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_0, 0), sizeof xsg_v_); r_2.sd[0] = xsg_v_; }
+        xsg_ee_set32(&r_1, r_2.w[0] + (unsigned int)(80));
+        xsg_ee_set32(&r_2, r_2.w[0] + (unsigned int)(64));
+        vu0_lqc2(25, XSG_EA(r_2, 0));
+        vu0_lqc2(26, XSG_EA(r_1, 0));
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_0, 0), sizeof xsg_v_); r_3.sd[0] = xsg_v_; }
+        xsg_ee_set32(&r_3, r_3.w[0] + (unsigned int)(64));
+        vu0_lqc2(31, XSG_EA(r_3, 0));
+        vu0_sqc2(31, XSG_EA(r_4, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(addr, r_0);
+        XSG_OUT(offset, r_1);
+        XSG_OUT(view2, r_2);
+        XSG_OUT(view, r_3);
+    }
+#endif
 
     x = offsetWork[0];
+#ifndef PORT_HOST
     PS2_ASMV("" : : "f"(x) : "$f0");
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(x);
+        xsg_vu0_blocks++;
+    }
+#endif
     scale = 0.375f;
+#ifndef PORT_HOST
     PS2_ASMV("" : "+f"(scale) : "f"(x));
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(x);
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_vu0_blocks++;
+        scale = f_0.f;
+    }
+#endif
     offsetWork[0] = x * scale;
     offsetWork[1] *= scale;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
@@ -247,6 +306,33 @@ static int _CalcPosOnScreen(void *destination, const void *position, float *offs
         : "=r"(clip)
         : "r"(destination), "r"(position)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(position);
+        XsgGpr r_1 = XSG_IN(destination);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_clip(31, 31);
+        vu0_div(0, 3, 31, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 15, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 31, 31, 25, VU0_VEC);
+        vu0_ftoi(4, 15, 20, 31);
+        vu0_arith(VU0_SUB, 1, 20, 20, 20, VU0_VEC);
+        vu0_sqc2(20, XSG_EA(r_1, 0));
+        vu0_cfc2(&xsg_ee_gpr[2], 18);
+        xsg_ee_gpr[2].d[0] = xsg_ee_gpr[2].d[0] & (unsigned long long)(unsigned short)(63);
+        r_0.d[0] = xsg_ee_gpr[2].d[0] + xsg_ee_zero.d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(clip, r_0);
+    }
+#endif
     return clip == 0;
 }
 
@@ -259,6 +345,7 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
     void *offset;
     void *addr;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui %1, %%hi(s_pCurView_00A51220)\n\t"
         "addiu %1, %1, %%lo(s_pCurView_00A51220)\n\t"
@@ -292,6 +379,47 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
         : "=&r"(offset), "=&r"(addr), "=&r"(view2), "=&r"(view)
         : "r"(position), "r"(destination)
         : "memory");
+#else
+    {
+        extern char xsg_sym_s_pCurView_00A51220[] __asm__("s_pCurView_00A51220");
+        XsgGpr r_5 = XSG_IN(destination);
+        XsgGpr r_4 = XSG_IN(position);
+        XsgGpr r_3 = {{0, 0}};
+        XsgGpr r_2 = {{0, 0}};
+        XsgGpr r_1 = {{0, 0}};
+        XsgGpr r_0 = {{0, 0}};
+        xsg_ee_set32(&r_1, (unsigned int)((((unsigned int)(unsigned long)xsg_sym_s_pCurView_00A51220 + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&r_1, r_1.w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_s_pCurView_00A51220 & 0xffffu)));
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 0), sizeof xsg_v_); r_3.sd[0] = xsg_v_; }
+        vu0_lqc2(27, XSG_EA(r_3, 0));
+        vu0_lqc2(28, XSG_EA(r_3, 16));
+        vu0_lqc2(29, XSG_EA(r_3, 32));
+        vu0_lqc2(30, XSG_EA(r_3, 48));
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 0), sizeof xsg_v_); r_2.sd[0] = xsg_v_; }
+        xsg_ee_set32(&r_0, r_2.w[0] + (unsigned int)(80));
+        xsg_ee_set32(&r_2, r_2.w[0] + (unsigned int)(64));
+        vu0_lqc2(25, XSG_EA(r_2, 0));
+        vu0_lqc2(26, XSG_EA(r_0, 0));
+        vu0_lqc2(31, XSG_EA(r_4, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_clip(31, 31);
+        vu0_div(0, 3, 31, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 15, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 31, 31, 25, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 31, 31, 31, VU0_VEC);
+        vu0_sqc2(31, XSG_EA(r_5, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(offset, r_0);
+        XSG_OUT(addr, r_1);
+        XSG_OUT(view2, r_2);
+        XSG_OUT(view, r_3);
+    }
+#endif
 }
 
 extern int s_anHomePos[];
@@ -372,18 +500,38 @@ static int _CalcOffset(int *out, int mode, const XrgPaint2DOffset *anchor, XrgPa
                 ptr->flag = 0;
             }
         }
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf11, 0(%0)\n\t"
                              "vftoi4.xyzw $vf11, $vf11\n\t"
                              "sqc2 $vf11, 0(%0)"
                              : : "r"(&tmp) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&tmp);
+            vu0_lqc2(11, XSG_EA(r_0, 0));
+            vu0_ftoi(4, 15, 11, 11);
+            vu0_sqc2(11, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         out[0] = tmp.i.x;
         out[1] = tmp.i.y;
         if (ptr != 0) {
+#ifndef PORT_HOST
             PS2_ASMV(".set noreorder\n\t"
                                  "lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)\n\t"
                                  ".set reorder"
                                  : : "r"(&vec), "r"(&ptr->vec) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&ptr->vec);
+                XsgGpr r_0 = XSG_IN(&vec);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_sqc2(31, XSG_EA(r_1, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         } else {
             goto done;
         }
@@ -511,6 +659,7 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         XrgUnitMatrix(w.matrix);
         XrgRotMatrixZ(w.matrix, w.matrix, req->angle);
         for (i = 0; i < 4; i++) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf2, 0(%0)\n\t"
                 "lqc2 vf3, 0(%1)\n\t"
@@ -523,6 +672,23 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
                 "vmaddw.xyzw vf2, vf6, vf2w\n\t"
                 "sqc2 vf2, 0(%0)"
                 : : "r"(&w.quad[i].f.x), "r"(w.matrix) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(w.matrix);
+                XsgGpr r_0 = XSG_IN(&w.quad[i].f.x);
+                vu0_lqc2(2, XSG_EA(r_0, 0));
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(4, XSG_EA(r_1, 16));
+                vu0_lqc2(5, XSG_EA(r_1, 32));
+                vu0_lqc2(6, XSG_EA(r_1, 48));
+                vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+                vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         status = XRG_PAINT2D_GEOM_QUAD;
     }
@@ -536,11 +702,22 @@ static unsigned int _Geom2D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         }
     }
     for (i = 0; i < 4; i++) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vftoi0.xyzw vf11, vf11\n\t"
             "sqc2 vf11, 0(%1)"
             : : "r"(&w.quad[i].f.x), "r"(&corners[i]) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&corners[i]);
+            XsgGpr r_0 = XSG_IN(&w.quad[i].f.x);
+            vu0_lqc2(11, XSG_EA(r_0, 0));
+            vu0_ftoi(0, 15, 11, 11);
+            vu0_sqc2(11, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     for (i = 0; i < 4; i++) {
         corners[i].x += w.offset.i.x;
@@ -595,11 +772,21 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         *flag = visible;
         dst->f.y = halfWidth;
         dst->f.x = halfWidth;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vmulq.xyzw vf11, vf11, Q\n\t"
             "sqc2 vf11, 0(%0)"
             : : "r"(quad) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(quad);
+            vu0_lqc2(11, XSG_EA(r_0, 0));
+            vu0_arith(VU0_MUL, 15, 11, 11, 0, VU0_BQ);
+            vu0_sqc2(11, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         quad->f.x = quad->f.x * quad[-2].f.x;
         quad->f.y = quad->f.y * quad[-2].f.y;
         quad->f.z = quad->f.z * quad[-2].f.z;
@@ -624,11 +811,22 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
         ((Quadword *) &delta)[0] = PS2_QZERO;
         delta.i.x = screen[0].i.x - screen[1].i.x;
         delta.i.y = screen[0].i.y - screen[1].i.y;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf11, 0(%0)\n\t"
             "vitof4.xyzw vf11, vf11\n\t"
             "sqc2 vf11, 0(%1)"
             : : "r"(&delta), "r"(&delta) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&delta);
+            XsgGpr r_0 = XSG_IN(&delta);
+            vu0_lqc2(11, XSG_EA(r_0, 0));
+            vu0_itof(4, 15, 11, 11);
+            vu0_sqc2(11, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         normal.f.x = -delta.f.y;
         normal.f.y = delta.f.x;
         normal.i.z = 0;
@@ -641,30 +839,80 @@ static int _Line3D(XrgPaint2DDrawReq *req, Quadword *cornersQ)
             out->f.y = normal.f.y * len;
             out->f.z = normal.f.z * len;
             out->f.w = normal.f.w * len;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf11, 0(%0)\n\t"
                 "vftoi4.xyzw vf11, vf11\n\t"
                 "sqc2 vf11, 0(%0)"
                 : : "r"(out) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(out);
+                vu0_lqc2(11, XSG_EA(r_0, 0));
+                vu0_ftoi(4, 15, 11, 11);
+                vu0_sqc2(11, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             out++;
             dst++;
         }
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[0]), "r"((idx[0] * 16 + (int) corners)) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN((idx[0] * 16 + (int) corners));
+            XsgGpr r_0 = XSG_IN(&screen[0]);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_sqc2(31, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[0]), "r"((idx[1] * 16 + (int) corners)) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN((idx[1] * 16 + (int) corners));
+            XsgGpr r_0 = XSG_IN(&screen[0]);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_sqc2(31, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[1]), "r"((idx[2] * 16 + (int) corners)) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN((idx[2] * 16 + (int) corners));
+            XsgGpr r_0 = XSG_IN(&screen[1]);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_sqc2(31, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%0)\n\t"
             "sqc2 vf31, 0(%1)"
             : : "r"(&screen[1]), "r"((idx[3] * 16 + (int) corners)) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN((idx[3] * 16 + (int) corners));
+            XsgGpr r_0 = XSG_IN(&screen[1]);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            vu0_sqc2(31, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         dx0 = offset[0].i.x;
         dy0 = offset[0].i.y;
         {
@@ -704,8 +952,18 @@ static void _DrawNoTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v)
     Quadword col;
     unsigned int prim = 4;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(req->color), "r"(&col) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&col);
+        XsgGpr r_0 = XSG_IN(req->color);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (req->alpha != 0) {
         _openVifGifAD(pk);
         sceVif1PkAddGsAD(pk, 0x42, req->alpha);
@@ -731,8 +989,18 @@ static void _DrawWithTex(XrgPaint2DDrawReq *req, XglPacket *pk, Quadword *v, uns
     u64 flag = 0;
 
     _CalcUV(loc.corners, (const XrgIntRect *)&req->uLow, req->uvMode, (const XrgIntRect *)&req->uOffset);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(req->color), "r"(&loc.col) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&loc.col);
+        XsgGpr r_0 = XSG_IN(req->color);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (mode == 1) {
         prim = 6;
     }
@@ -896,8 +1164,18 @@ void XrgPaint2DOffset3D(XrgPaint2D *paint, const XrgPaint2DOffset *anchor)
     }
     req = paint->request;
     req->offsetMode = 2;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(anchor), "r"(&req->offsetAnchor) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&req->offsetAnchor);
+        XsgGpr r_0 = XSG_IN(anchor);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -916,8 +1194,18 @@ void XrgPaint2DOffset3DForce(XrgPaint2D *paint, const XrgPaint2DOffset *anchor,
     }
     req = paint->request;
     req->offsetMode = 3;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(anchor), "r"(&req->offsetAnchor) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&req->offsetAnchor);
+        XsgGpr r_0 = XSG_IN(anchor);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     paint->request->offsetResult.f.x = force;
 }
 
@@ -956,8 +1244,24 @@ void XrgPaint2DColor(XrgPaint2D *paint, const unsigned int *color)
         assert_prog(D_00A59098, D_00A59058, 843);
     }
     dst = paint->request->color;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(color) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(color);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(dst) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1110,8 +1414,18 @@ void XrgPaint2DDrawRect(XrgPaint2D *paint, XrgPaint2DRect *rect)
     }
     req = paint->request;
     *(int *)((char *)req + 8) = rect->mode;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&rect->x), "r"((char *)req + 0x10) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN((char *)req + 0x10);
+        XsgGpr r_0 = XSG_IN(&rect->x);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     ((union { int i; float f; } *)((char *)req + 0x24))->f = rect->angle;
     ((union { int i; float f; } *)((char *)req + 0x20))->f = rect->scale;
     {
@@ -1163,10 +1477,30 @@ void XrgPaint2DDrawLine(XrgPaint2D *paint, XrgPaint2DLine3D *line)
     req = paint->request;
     *(void **)req = (void *)_Line3D;
     *(int *)((char *)req + 8) = line->mode;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&line->start), "r"((char *)req + 0x10) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN((char *)req + 0x10);
+        XsgGpr r_0 = XSG_IN(&line->start);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)"
                          : : "r"(&line->end), "r"((char *)req + 0x20) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN((char *)req + 0x20);
+        XsgGpr r_0 = XSG_IN(&line->end);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     ((union { int i; float f; } *)((char *)req + 0x30))->f = line->width * 0.5f;
     {
         int n = paint->reqCount + 1;

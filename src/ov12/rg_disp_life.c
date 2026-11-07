@@ -58,12 +58,22 @@ static int _GetAgwsNameUVWH(int nameIndex, struct AgwsNameUvwh *uvwh)
              * at +0x10. VF31 carries those four words into the output object;
              * it is scratch VU state for this transfer.
              */
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf31, 0(%0)\n\t"
                 "sqc2 vf31, 0(%1)\n\t"
                 :
                 : "r"(&s_aCharIDToUVWH_0[index].texture_u), "r"(uvwh)
                 : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(uvwh);
+                XsgGpr r_0 = XSG_IN(&s_aCharIDToUVWH_0[index].texture_u);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_sqc2(31, XSG_EA(r_1, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             return 1;
         }
     }

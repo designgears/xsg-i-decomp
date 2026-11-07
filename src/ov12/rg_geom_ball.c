@@ -145,35 +145,108 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
     float s;
     float t;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                          "sqc2 $vf31, 0(%0)\n\t"
                          : : "r"(oldPosition1), "r"(((float *)ball1->unmodeled_30)) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(((float *)ball1->unmodeled_30));
+        XsgGpr r_0 = XSG_IN(oldPosition1);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                          "sqc2 $vf31, 0(%0)\n\t"
                          : : "r"(oldPosition2), "r"(((float *)ball2->unmodeled_30)) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(((float *)ball2->unmodeled_30));
+        XsgGpr r_0 = XSG_IN(oldPosition2);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(motion1), "r"(ball1->position), "r"(oldPosition1) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(oldPosition1);
+        XsgGpr r_1 = XSG_IN(ball1->position);
+        XsgGpr r_0 = XSG_IN(motion1);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(motion2), "r"(ball2->position), "r"(oldPosition2) : "memory", "$2");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(oldPosition2);
+        XsgGpr r_1 = XSG_IN(ball2->position);
+        XsgGpr r_0 = XSG_IN(motion2);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(startOffset), "r"(oldPosition1), "r"(oldPosition2) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(oldPosition2);
+        XsgGpr r_1 = XSG_IN(oldPosition1);
+        XsgGpr r_0 = XSG_IN(startOffset);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     /* The outer product of the two motions is computed and stored, and
        nothing reads it back. */
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                          "lqc2 $vf31, 0(%2)\n\t"
                          "vopmula.xyz ACC, vf30, vf31\n\t"
                          "vopmsub.xyz vf30, vf31, vf30\n\t"
                          "sqc2 $vf30, 0(%0)\n\t"
                          : : "r"(motionNormal), "r"(motion1), "r"(motion2) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(motion2);
+        XsgGpr r_1 = XSG_IN(motion1);
+        XsgGpr r_0 = XSG_IN(motionNormal);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_opmula(14, 30, 31);
+        vu0_opmsub(14, 30, 31, 30);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     speedSq1 = motion1[0] * motion1[0] + motion1[1] * motion1[1] +
                motion1[2] * motion1[2];
@@ -212,34 +285,101 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         motion1[1] *= s;
         motion1[2] *= s;
         motion1[3] *= s;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%1)\n\t"
                              : : "r"(motion1), "r"(oldPosition1) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition1);
+            XsgGpr r_0 = XSG_IN(motion1);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         motion2[0] *= t;
         motion2[1] *= t;
         motion2[2] *= t;
         motion2[3] *= t;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%1)\n\t"
                              : : "r"(motion2), "r"(oldPosition2) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition2);
+            XsgGpr r_0 = XSG_IN(motion2);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%1)\n\t"
                              "lqc2 $vf31, 0(%2)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(motion1), "r"(oldPosition1), "r"(oldPosition2) : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(oldPosition2);
+            XsgGpr r_1 = XSG_IN(oldPosition1);
+            XsgGpr r_0 = XSG_IN(motion1);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(oldPosition1) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition1);
+            XsgGpr r_0 = XSG_IN(contact->position1);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(oldPosition2) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition2);
+            XsgGpr r_0 = XSG_IN(contact->position2);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(motion1) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(motion1);
+            XsgGpr r_0 = XSG_IN(contact->penetration);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         contact->distance = XrgLengthVector(motion1);
     } else if (RG_GEOM_BALL_MIN_MOTION_SQ <= speedSq1) {
         RgVector closest;
@@ -260,26 +400,80 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         closest[1] = motion1[1] * s;
         closest[2] = motion1[2] * s;
         closest[3] = motion1[3] * s;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(oldPosition1) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition1);
+            XsgGpr r_0 = XSG_IN(closest);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(closest) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(closest);
+            XsgGpr r_0 = XSG_IN(contact->position1);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(ball2->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball2->position);
+            XsgGpr r_0 = XSG_IN(contact->position2);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(ball2->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball2->position);
+            XsgGpr r_0 = XSG_IN(closest);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         contact->distance = XrgLengthVector(closest);
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(closest) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(closest);
+            XsgGpr r_0 = XSG_IN(contact->penetration);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     } else if (RG_GEOM_BALL_MIN_MOTION_SQ <= speedSq2) {
         RgVector closest;
         float one = 1.0f;
@@ -299,34 +493,108 @@ int RgGeomBallCheckBall(RgGeomBall *ball1, RgGeomBall *ball2,
         closest[1] = motion2[1] * s;
         closest[2] = motion2[2] * s;
         closest[3] = motion2[3] * s;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vadd.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(oldPosition2) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(oldPosition2);
+            XsgGpr r_0 = XSG_IN(closest);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(ball1->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball1->position);
+            XsgGpr r_0 = XSG_IN(contact->position1);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(closest) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(closest);
+            XsgGpr r_0 = XSG_IN(contact->position2);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                              "lqc2 $vf31, 0(%1)\n\t"
                              "vsub.xyzw $vf30, $vf30, $vf31\n\t"
                              "sqc2 $vf30, 0(%0)\n\t"
                              : : "r"(closest), "r"(ball1->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball1->position);
+            XsgGpr r_0 = XSG_IN(closest);
+            vu0_lqc2(30, XSG_EA(r_0, 0));
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         contact->distance = XrgLengthVector(closest);
         XrgNegateVector(contact->penetration, closest);
     } else {
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position1), "r"(ball1->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball1->position);
+            XsgGpr r_0 = XSG_IN(contact->position1);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->position2), "r"(ball2->position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(ball2->position);
+            XsgGpr r_0 = XSG_IN(contact->position2);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf31, 0(%1)\n\t"
                              "sqc2 $vf31, 0(%0)\n\t"
                              : : "r"(contact->penetration), "r"(startOffset) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(startOffset);
+            XsgGpr r_0 = XSG_IN(contact->penetration);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         contact->distance = XrgLengthVector(startOffset);
     }
 
@@ -353,6 +621,7 @@ int RgGeomBallCheckBallDist(RgGeomBall *ball1, RgGeomBall *ball2,
 
     /* The position begins at byte 0x20 in the point body of each ball.
        Both operands are loaded before the difference overwrites VF30. */
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf30, 0(%0)\n\t"
                          "lqc2 $vf31, 0(%1)\n\t"
                          "vsub.xyzw $vf30, $vf30, $vf31\n\t"
@@ -361,6 +630,18 @@ int RgGeomBallCheckBallDist(RgGeomBall *ball1, RgGeomBall *ball2,
                          : "r"(&ball1->position), "r"(&ball2->position),
                            "r"(direction)
                          : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(direction);
+        XsgGpr r_1 = XSG_IN(&ball2->position);
+        XsgGpr r_0 = XSG_IN(&ball1->position);
+        vu0_lqc2(30, XSG_EA(r_0, 0));
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     {
         float distance = XrgNormalizeVector(direction, direction);
 
@@ -373,32 +654,73 @@ int RgGeomBallCheckBallDist(RgGeomBall *ball1, RgGeomBall *ball2,
                 float y_component = direction[1];
 
                 y_component *= penetration;
+#ifndef PORT_HOST
                 PS2_ASMV("" : : "f"(y_component));
+#else
+                {
+                    XsgFpr f_0 = XSG_FIN(y_component);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 x_component *= penetration;
                 (*penetration_vector)[1] = y_component;
                 (*penetration_vector)[0] = x_component;
             }
             /* Keep each pair's store order and its scalar inputs visible. */
+#ifndef PORT_HOST
             PS2_ASMV("" : : "r"(penetration_vector));
+#else
+            {
+                XsgGpr r_0 = XSG_IN(penetration_vector);
+                xsg_vu0_blocks++;
+            }
+#endif
             {
                 float z_component = direction[2] * penetration;
 
                 (*penetration_vector)[2] = z_component;
+#ifndef PORT_HOST
                 PS2_ASMV("" : : "f"(z_component));
+#else
+                {
+                    XsgFpr f_0 = XSG_FIN(z_component);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 (*penetration_vector)[3] = direction[3] * penetration;
             }
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)"
                                  :
                                  : "r"(&ball1->position),
                                    "r"(contact->position1)
                                  : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(contact->position1);
+                XsgGpr r_0 = XSG_IN(&ball1->position);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_sqc2(31, XSG_EA(r_1, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 $vf31, 0(%0)\n\t"
                                  "sqc2 $vf31, 0(%1)"
                                  :
                                  : "r"(&ball2->position),
                                    "r"(contact->position2)
                                  : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(contact->position2);
+                XsgGpr r_0 = XSG_IN(&ball2->position);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                vu0_sqc2(31, XSG_EA(r_1, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             contact->distance = distance;
             return 1;
         }

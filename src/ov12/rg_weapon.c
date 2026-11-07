@@ -1544,6 +1544,7 @@ void _CheckLockOn(RgWeapon *weapon)
         target = RgRobotGetTarget(robotId);
         if (target != 0) {
             __RgGeomPointGetPos((RgGeomPoint *) target, (RgPointVector *) targetWorld, D_00A53658, 1819);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf2, 0(%0)\n\t"
                 "lqc2 $vf3, 0(%1)\n\t"
@@ -1556,6 +1557,24 @@ void _CheckLockOn(RgWeapon *weapon)
                 "vmaddw.xyzw vf2xyzw, vf6xyzw, vf2w\n\t"
                 "sqc2 $vf2, 0(%2)\n\t"
                 : : "r"(targetWorld), "r"(invLocal), "r"(targetLocal) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(targetLocal);
+                XsgGpr r_1 = XSG_IN(invLocal);
+                XsgGpr r_0 = XSG_IN(targetWorld);
+                vu0_lqc2(2, XSG_EA(r_0, 0));
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(4, XSG_EA(r_1, 16));
+                vu0_lqc2(5, XSG_EA(r_1, 32));
+                vu0_lqc2(6, XSG_EA(r_1, 48));
+                vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+                vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+                vu0_sqc2(2, XSG_EA(r_2, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             angle = atan2f(targetLocal[0], targetLocal[2]) + 3.1415927f;
             while (angle > 3.1415927f) {
                 angle -= 6.2831855f;

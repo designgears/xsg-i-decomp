@@ -1870,7 +1870,16 @@ int subRoboPartsCheck(int arg0)
         flag = xglFlagsGet(0xCE8, 1);
         {
             int hi = 0x230;
+#ifndef PORT_HOST
             PS2_ASM("xori %0, %0, 0" : "+r"(flag));
+#else
+            {
+                XsgGpr r_0 = XSG_IN(flag);
+                r_0.d[0] = r_0.d[0] ^ (unsigned long long)(unsigned short)(0);
+                xsg_vu0_blocks++;
+                XSG_OUT(flag, r_0);
+            }
+#endif
             var_16 = 0x20;
             if (flag) {
                 var_16 = hi;

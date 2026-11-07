@@ -30,6 +30,7 @@
 #define ID_LIGHT_BLEND_STEPS 4
 
 /* 16-byte copy through the R5900 128-bit GPRs (sceVu0CopyVector idiom). */
+#ifndef PORT_HOST
 #define QuadwordCopy(destination, source) \
     PS2_ASMV( \
         "lq $2, 0(%1)\n" \
@@ -37,6 +38,10 @@
         : \
         : "r" (destination), "r" (source) \
         : "$2", "memory")
+#else
+#define QuadwordCopy(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16); xsg_vu0_blocks++; } })
+#endif
 
 PS2_TI_TYPEDEF(unsigned int, IdLightQuadword);
 

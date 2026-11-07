@@ -630,7 +630,13 @@ void GameCfPlayerLoadResource(int use_cache)
     if (GameResource[1].address == 0) {
         GameResourceAlloc(0x12a000);
     } else if (GameResource[0].size != 0x12a000) {
+#ifndef PORT_HOST
         PS2_ASMV("break 0");
+#else
+        {
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if (GameResource[2].address == 0) {
         GameResourceAlloc(0);

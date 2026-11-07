@@ -231,7 +231,13 @@ void EXM_SetDirectionalWind(Vector4 *dir)
     if (dir != 0) {
         *(Vector4 *)&w->direction = *dir;
     } else {
+#ifndef PORT_HOST
         PS2_ASMV("");
+#else
+        {
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     w->mode = 1;
 }
@@ -244,7 +250,13 @@ void EXM_SetPointWind(Vector4 *pos)
     if (pos != 0) {
         *(Vector4 *)&w->direction = *pos;
     } else {
+#ifndef PORT_HOST
         PS2_ASMV("");
+#else
+        {
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     w->mode = 2;
 }

@@ -31,6 +31,7 @@ void alignXAxisEuler(const Vector4 *direction, Vector4 *euler) {
     Vector4 components;
     float pitch;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.y vf11, vf0, vf0w\n\t"
@@ -63,6 +64,31 @@ void alignXAxisEuler(const Vector4 *direction, Vector4 *euler) {
         "sqc2 vf10, 0(%0)"
         : : "r"(&components), "r"(direction)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(direction);
+        XsgGpr r_0 = XSG_IN(&components);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 4, 11, 0, 0, 3);
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 4, 1, 1, 11, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 3, 2, 2, 1);
+        vu0_rsqrt(0, 3, 3, 0);
+        vu0_arith(VU0_ADD, 8, 4, 3, 2, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 5, 0, 0, VU0_BQ);
+        vu0_rsqrt(0, 3, 4, 0);
+        vu0_arith(VU0_MUL, 12, 10, 1, 5, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 1, 5, 0, 0, VU0_BQ);
+        vu0_div(0, 3, 5, 0);
+        vu0_arith(VU0_MUL, 2, 10, 1, 5, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 1, 10, 5, 0, VU0_BQ);
+        vu0_sqc2(10, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     euler->w = 1.0f;
     euler->z = xglAtan2(components.y, components.x);
@@ -78,6 +104,7 @@ void alignXAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.y vf11, vf0, vf0w\n\t"
@@ -111,6 +138,31 @@ void alignXAxis(const Vector4 *direction, Matrix4 matrix) {
         :
         : "r"(&components), "r"(direction)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(direction);
+        XsgGpr r_0 = XSG_IN(&components);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 4, 11, 0, 0, 3);
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 4, 1, 1, 11, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 3, 2, 2, 1);
+        vu0_rsqrt(0, 3, 3, 0);
+        vu0_arith(VU0_ADD, 8, 4, 3, 2, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 5, 0, 0, VU0_BQ);
+        vu0_rsqrt(0, 3, 4, 0);
+        vu0_arith(VU0_MUL, 12, 10, 1, 5, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 1, 5, 0, 0, VU0_BQ);
+        vu0_div(0, 3, 5, 0);
+        vu0_arith(VU0_MUL, 2, 10, 1, 5, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 1, 10, 5, 0, VU0_BQ);
+        vu0_sqc2(10, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     rotation_angles[0] = 0.0f;
     rotation_angles[1] = xglAtan2(components.z, components.w);
@@ -127,6 +179,7 @@ void alignYAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.z vf11, vf0, vf0w\n\t"
@@ -160,6 +213,31 @@ void alignYAxis(const Vector4 *direction, Matrix4 matrix) {
         :
         : "r"(&components), "r"(direction)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(direction);
+        XsgGpr r_0 = XSG_IN(&components);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 2, 11, 0, 0, 3);
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 2, 1, 1, 11, VU0_VEC);
+        vu0_arith(VU0_ADD, 2, 3, 2, 2, 1);
+        vu0_rsqrt(0, 3, 3, 2);
+        vu0_arith(VU0_ADD, 8, 4, 2, 3, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 5, 0, 0, VU0_BQ);
+        vu0_rsqrt(0, 3, 4, 0);
+        vu0_arith(VU0_MUL, 6, 10, 1, 5, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 1, 5, 0, 0, VU0_BQ);
+        vu0_div(0, 3, 5, 0);
+        vu0_arith(VU0_MUL, 8, 10, 1, 5, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 1, 10, 5, 0, VU0_BQ);
+        vu0_sqc2(10, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     rotation_angles[0] = xglAtan2(components.z, components.y);
     rotation_angles[1] = 0.0f;
@@ -176,6 +254,7 @@ void alignZAxis(const Vector4 *direction, Matrix4 matrix) {
     float rotation_angles[3];
     Vector4 components;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%1)\n\t"
         "vsubw.x vf11, vf0, vf0w\n\t"
@@ -209,6 +288,31 @@ void alignZAxis(const Vector4 *direction, Matrix4 matrix) {
         :
         : "r"(&components), "r"(direction)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(direction);
+        XsgGpr r_0 = XSG_IN(&components);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 8, 11, 0, 0, 3);
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 8, 1, 1, 11, VU0_VEC);
+        vu0_arith(VU0_ADD, 2, 3, 2, 2, 1);
+        vu0_rsqrt(0, 3, 3, 2);
+        vu0_arith(VU0_ADD, 8, 4, 2, 3, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 5, 0, 0, VU0_BQ);
+        vu0_rsqrt(0, 3, 4, 0);
+        vu0_arith(VU0_MUL, 6, 10, 1, 5, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 1, 5, 0, 0, VU0_BQ);
+        vu0_div(0, 3, 5, 0);
+        vu0_arith(VU0_MUL, 8, 10, 1, 5, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 1, 10, 5, 0, VU0_BQ);
+        vu0_sqc2(10, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     rotation_angles[0] = xglAtan2(components.y, components.z);
     rotation_angles[1] = xglAtan2(components.x, components.w);

@@ -150,6 +150,7 @@ int RgGeomPolyCheckBall(RgGeom *pPoly, float *pOrgArg, float *pResult)
 extern int RgColiDataVsRay(RgColiData *pPoly, void *pArg, void *pResult);
 static inline void RgGeomPolyApply(float *dst, float *mtx, float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
@@ -162,6 +163,24 @@ static inline void RgGeomPolyApply(float *dst, float *mtx, float *src)
         "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
         "sqc2 $vf2,0(%0)"
         : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(src);
+        XsgGpr r_1 = XSG_IN(mtx);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(4, XSG_EA(r_1, 16));
+        vu0_lqc2(5, XSG_EA(r_1, 32));
+        vu0_lqc2(6, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 int RgGeomPolyCheckRay(RgGeom *pPoly, float *pOrgArg, float *pResult)

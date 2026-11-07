@@ -35,15 +35,26 @@ int MEfCreate_BP00(BP00Object *object)
     memset(work->trail, 0, sizeof(work->trail));
     work->visibility[0].flag[0] = 1;
     /* Quadword copy: the first trail point starts at the current position. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
         : "r"(work->trail[0].point), "r"(&work->position)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&work->position);
+        XsgGpr r_0 = XSG_IN(work->trail[0].point);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     MMathCalcVectorMatrix(&direction, (const Matrix4 *)&actorMatrix);
     /* vectorOrigin[0].xyz = direction.xyz * -0.65, the first strand's
        per-frame step back along the actor's facing. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "mfc1 $8,%2\n\t"
@@ -53,6 +64,19 @@ int MEfCreate_BP00(BP00Object *object)
         :
         : "r"(&work->vectorOrigin[0]), "r"(&direction), "f"(-0.65f)
         : "$8", "memory");
+#else
+    {
+        XsgFpr f_2 = XSG_FIN(-0.65f);
+        XsgGpr r_1 = XSG_IN(&direction);
+        XsgGpr r_0 = XSG_IN(&work->vectorOrigin[0]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     MGsGPInit(work->packet, 0, 0);
 
     object->processCallback = fnBP00_PR000;
@@ -66,6 +90,7 @@ extern float MMathMakeRandom(void);
 extern Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scale);
 static __inline__ void bp00AddVectorXYZ(Vector4 *destination, const Vector4 *left, const Vector4 *right)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%2)\n\t"
@@ -74,9 +99,22 @@ static __inline__ void bp00AddVectorXYZ(Vector4 *destination, const Vector4 *lef
         :
         : "r"(destination), "r"(left), "r"(right)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(right);
+        XsgGpr r_1 = XSG_IN(left);
+        XsgGpr r_0 = XSG_IN(destination);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static __inline__ void bp00SubVectorXYZ(Vector4 *destination, const Vector4 *left, const Vector4 *right)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%2)\n\t"
@@ -85,20 +123,43 @@ static __inline__ void bp00SubVectorXYZ(Vector4 *destination, const Vector4 *lef
         :
         : "r"(destination), "r"(left), "r"(right)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(right);
+        XsgGpr r_1 = XSG_IN(left);
+        XsgGpr r_0 = XSG_IN(destination);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static __inline__ void bp00CopyVector(Vector4 *destination, const Vector4 *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
         :
         : "r"(destination), "r"(source)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static __inline__ float bp00Cos(float angle)
 {
     float cosine;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -108,12 +169,26 @@ static __inline__ float bp00Cos(float angle)
         : "=f"(cosine)
         : "f"(angle)
         : "$8", "memory");
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        cosine = f_0.f;
+    }
+#endif
     return cosine;
 }
 static __inline__ float bp00Sin(float angle)
 {
     float sine;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -123,6 +198,19 @@ static __inline__ float bp00Sin(float angle)
         : "=f"(sine)
         : "f"(angle)
         : "$8", "memory");
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        sine = f_0.f;
+    }
+#endif
     return sine;
 }
 static void fnBP00_PR010(void *self, BP00Work *work);
@@ -173,12 +261,25 @@ static void fnBP00_PR000(void *self, void *data)
 
 static inline void fnBP00_vaddxyz(Vector4 *src, Vector4 *dst)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
         "vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz\n\t"
         "sqc2 $vf1, 0(%2)"
         : : "r"(dst), "r"(src), "r"(dst) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(dst);
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void fnBP00_PR010(void *self, BP00Work *work)

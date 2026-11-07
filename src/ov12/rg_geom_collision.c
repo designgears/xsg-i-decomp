@@ -82,12 +82,25 @@ dispatched:
             XrgSubVector(moved, contact.position2, scaled);
             RgGeomPointSetPos((RgGeomPoint *) b, moved);
         }
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf30, 0(%1)\n\t"
             "lqc2 $vf31, 0(%2)\n\t"
             "vadd.xyzw $vf30, $vf30, $vf31\n\t"
             "sqc2 $vf30, 0(%0)\n\t"
             : : "r"(hit.contact), "r"(contact.position1), "r"(contact.position2) : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(contact.position2);
+            XsgGpr r_1 = XSG_IN(contact.position1);
+            XsgGpr r_0 = XSG_IN(hit.contact);
+            vu0_lqc2(30, XSG_EA(r_1, 0));
+            vu0_lqc2(31, XSG_EA(r_2, 0));
+            vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+            vu0_sqc2(30, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         hit.contact[0] *= 0.5f;
         hit.contact[1] *= 0.5f;
         hit.contact[2] *= 0.5f;
@@ -128,10 +141,21 @@ typedef struct {
 } RgBallVsPolyFrame;
 static inline void BvpCopy(void *dst, const void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf31, 0(%0)\n\tsqc2 $vf31, 0(%1)" : : "r"(src), "r"(dst) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dst);
+        XsgGpr r_0 = XSG_IN(src);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void BvpXform(void *dst, const void *src, const void *m)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
@@ -144,24 +168,68 @@ static inline void BvpXform(void *dst, const void *src, const void *m)
         "vmaddw.xyzw $vf2, $vf6, $vf2w\n\t"
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(dst), "r"(src), "r"(m) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(m);
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_2, 0));
+        vu0_lqc2(4, XSG_EA(r_2, 16));
+        vu0_lqc2(5, XSG_EA(r_2, 32));
+        vu0_lqc2(6, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void BvpSub(void *dst, const void *a, const void *b)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vsub.xyzw $vf30, $vf30, $vf31\n\t"
         "sqc2 $vf30, 0(%0)\n\t"
         : : "r"(dst), "r"(a), "r"(b) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(b);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void BvpAdd(void *dst, const void *a, const void *b)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vadd.xyzw $vf30, $vf30, $vf31\n\t"
         "sqc2 $vf30, 0(%0)\n\t"
         : : "r"(dst), "r"(a), "r"(b) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(b);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int _BallVsPoly(unsigned int *pArg)
@@ -305,8 +373,24 @@ static int _RobotVsPoly(unsigned int *pArg)
     if (point->flags & 0x10) {
         __RgGeomPointGetPos((RgGeomPoint *) point, f.moved, D_00A552F8, 0xB9);
         copyp = f.copy;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.normal) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(f.normal);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(copyp) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(copyp);
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         XrgAddVector(f.moved, f.moved, f.copy);
         RgGeomPointSetPos((RgGeomPoint *) point, f.moved);
     }
@@ -455,8 +539,24 @@ static int _BallVsPillar(RgGeomColiArg *pArg)
     result = RgGeomPillarCheckPoint(pillar, point, contact);
     hitContactPtr = hitContact;
     if (result != 0) {
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(contact) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(contact);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(hitContactPtr) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(hitContactPtr);
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         XrgClearVector(hit.normal);
         callback = (RgGeomColiCallback) pArg->data[1];
         hit.normal[1] = 1.0f;
@@ -518,8 +618,24 @@ static int _RobVsTray(unsigned int *pArg)
     result = RgGeomTrayCheckBall(tray, point, &res);
     if (result != 0) {
         hitp = &hit;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(res.contact) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(res.contact);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(hitp) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(hitp);
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         if (res.count >= 2) {
             XrgClearVector(sum);
             for (i = 0; i < res.count; i++) {
@@ -529,8 +645,24 @@ static int _RobVsTray(unsigned int *pArg)
             XrgNormalizeVector(normal, sum);
         } else {
             normal = hit.normal;
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(res.normals[0]) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(res.normals[0]);
+                vu0_lqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(normal) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(normal);
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         callback = (void (*)(void *, void *)) pArg[1];
         if (callback != 0) {
@@ -549,7 +681,17 @@ static int _RobVsTray(unsigned int *pArg)
         if (res.count != 0) {
             m = (float *) res.normals;
             do {
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf31, 0(%0)\n\tsqc2 vf31, 0(%1)" : : "r"(point->velocity), "r"(vel) : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(vel);
+                    XsgGpr r_0 = XSG_IN(point->velocity);
+                    vu0_lqc2(31, XSG_EA(r_0, 0));
+                    vu0_sqc2(31, XSG_EA(r_1, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 dot = m[0] * vel[0] + m[1] * vel[1] + m[2] * vel[2];
                 if (dot < 0) {
                     XrgScaleVector(sum, (float *) m, dot);
@@ -604,11 +746,43 @@ static int _RobVsPillar(RgGeomColiArg *pArg)
     result = RgGeomPillarCheckBall(pillar, (RgGeomPoint *) point, f.c0);
     if (result != 0) {
         contactp = f.hit.contact;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.c0) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(f.c0);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(contactp) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(contactp);
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         normalp = f.hit.normal;
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 vf31, 0(%0)" : : "r"(f.c20) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(f.c20);
+            vu0_lqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf31, 0(%0)" : : "r"(normalp) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(normalp);
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         hitp = &f.hit;
         if (pArg->data[1] != 0) {
             f.hit.otherObject = pillar;

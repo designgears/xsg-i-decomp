@@ -1544,12 +1544,24 @@ void MenuModelNavelMove(MenuModelUnit *unit)
     actor->position.value.z = control->position.value.z - matrix[3][2];
     actor->position.value.w = 1.0f;
     /* VF2 retains position.w; VF2/VF3 and arithmetic flags are scratch here. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3,0(%0)\n\t"
         "lqc2 vf2,0(%1)\n\t"
         "vadd.xyz vf2,vf2,vf3\n\t"
         "sqc2 vf2,0(%1)\n\t"
         : : "r"(&control->offset), "r"(&actor->position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&actor->position);
+        XsgGpr r_0 = XSG_IN(&control->offset);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglFontDebugPrintf(98, 32, D_004C38F0, (double)actor->rotation.value.x);
     xglFontDebugPrintf(98, 40, D_004C3900, (double)actor->rotation.value.y);
     xglFontDebugPrintf(98, 48, D_004C3910, (double)actor->rotation.value.z);

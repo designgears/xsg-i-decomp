@@ -1885,7 +1885,13 @@ void Java_xeno_Chr_setShadow__aB(JThread *thread, ChrSplCall *arguments)
             slot = def;
     }
     if (slot == 0) {
+#ifndef PORT_HOST
         PS2_ASMV("break 0");
+#else
+        {
+            xsg_vu0_blocks++;
+        }
+#endif
     } else {
         slot->id = id;
         slot->kind = -1;
@@ -2159,7 +2165,15 @@ void Java_xeno_Chr_setPointLightReset__(JThread *thread, ChrTalkCall *arguments)
     peer = *(u8 **)(object + peer_field->offset);
     p = (peer + 0x970);
     for (i = 2; i >= 0; i--) {
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"(p) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(p);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         p += 16;
     }
     *(int *)(peer + 0x9A0) &= ~0x20;
@@ -2339,12 +2353,60 @@ void Java_xeno_Chr_look_default__(JThread *thread, ChrScaleCall *arguments)
     peer->look_mode = 1;
     peer->look_eye_control = 0;
     peer->look_target = 0;
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x600) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x600);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x610) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x610);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x620) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x620);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x640) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x640);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x650) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x650);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"((u8 *)peer + 0x660) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN((u8 *)peer + 0x660);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     peer->look_speed = 1.0f;
     peer->look_eye_speed = 1.0f;
 }

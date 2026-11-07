@@ -75,6 +75,7 @@ static void nmlModelSetFilterStealth(const LayoutStore *model, int flags);
  */
 static void _CurSetMatrix(float matrix[4][4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf27,0(%0)\n\t"
         "lqc2 $vf28,16(%0)\n\t"
@@ -85,6 +86,16 @@ static void _CurSetMatrix(float matrix[4][4])
         : "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -94,6 +105,7 @@ static void _CurSetMatrix(float matrix[4][4])
  */
 static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTrans[4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf25,0(%0)\n\t"
         "lqc2 $vf26,0(%1)\n\t"
@@ -102,6 +114,15 @@ static void _CurSetViewScaleTrans(const float viewScale[4], const float viewTran
         : "r"(viewScale), "r"(viewTrans)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(viewTrans);
+        XsgGpr r_0 = XSG_IN(viewScale);
+        vu0_lqc2(25, XSG_EA(r_0, 0));
+        vu0_lqc2(26, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -122,6 +143,7 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
     register int clipFlags PS2_REG("$2");
     register int returnedFlags PS2_REG("$4");
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2 $0,$vi18\n\t"
         "lqc2 $vf31,0(%2)\n\t"
@@ -148,9 +170,42 @@ static int _CurRotTransPersClip(Vector4 *destination, const Vector4 *vector)
         : "r"(destination), "r"(vector)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(vector);
+        XsgGpr r_1 = XSG_IN(destination);
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+        vu0_clip(31, 31);
+        vu0_div(0, 3, 31, 3);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 15, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 31, 31, 25, VU0_VEC);
+        vu0_ftoi(4, 13, 23, 31);
+        vu0_ftoi(0, 2, 23, 31);
+        vu0_arith(VU0_SUB, 1, 23, 23, 23, VU0_VEC);
+        vu0_sqc2(23, XSG_EA(r_1, 0));
+        vu0_cfc2(&xsg_ee_gpr[2], 18);
+        xsg_vu0_blocks++;
+        XSG_OUT(clipFlags, xsg_ee_gpr[2]);
+    }
+#endif
     clipFlags &= 0x3f;
     returnedFlags = clipFlags;
+#ifndef PORT_HOST
     PS2_ASMV("" : : "r"(returnedFlags), "r"(clipFlags));
+#else
+    {
+        xsg_ee_gpr[4] = XSG_IN(returnedFlags);
+        xsg_ee_gpr[2] = XSG_IN(clipFlags);
+        xsg_vu0_blocks++;
+    }
+#endif
     return returnedFlags;
 }
 
@@ -488,6 +543,7 @@ static void nmlModelSetFilterStealth(const LayoutStore *model, int flags)
  */
 static void _WeightToGlobalPlaceInit(float matrix[4][4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf10,0(%0)\n\t"
         "lqc2 $vf11,16(%0)\n\t"
@@ -498,10 +554,21 @@ static void _WeightToGlobalPlaceInit(float matrix[4][4])
         : "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(10, XSG_EA(r_0, 0));
+        vu0_lqc2(11, XSG_EA(r_0, 16));
+        vu0_lqc2(12, XSG_EA(r_0, 32));
+        vu0_lqc2(13, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void _WeightToGlobalPlaceVec(Vector4 *destination, float placeMatrix[4][4], float weightMatrix[4][4])
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2,0(%2)\n\t"
         "lq $3,16(%2)\n\t"
@@ -541,6 +608,47 @@ static void _WeightToGlobalPlaceVec(Vector4 *destination, float placeMatrix[4][4
         : "r"(destination), "r"(placeMatrix), "r"(weightMatrix)
         : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(weightMatrix);
+        XsgGpr r_1 = XSG_IN(placeMatrix);
+        XsgGpr r_0 = XSG_IN(destination);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_2, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_2, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[4], XSG_EA(r_2, 32), 16);
+        vu0_lqc2(3, XSG_EA(r_2, 48));
+        vu0_qmfc2(&xsg_ee_gpr[5], 0);
+        xsg_mmi_pextlw(&xsg_ee_gpr[6], &xsg_ee_gpr[3], &xsg_ee_gpr[2]);
+        xsg_mmi_pextuw(&xsg_ee_gpr[7], &xsg_ee_gpr[3], &xsg_ee_gpr[2]);
+        xsg_mmi_pextlw(&xsg_ee_gpr[8], &xsg_ee_gpr[5], &xsg_ee_gpr[4]);
+        xsg_mmi_pextuw(&xsg_ee_gpr[9], &xsg_ee_gpr[5], &xsg_ee_gpr[4]);
+        xsg_mmi_pcpyld(&xsg_ee_gpr[2], &xsg_ee_gpr[8], &xsg_ee_gpr[6]);
+        xsg_mmi_pcpyud(&xsg_ee_gpr[3], &xsg_ee_gpr[6], &xsg_ee_gpr[8]);
+        xsg_mmi_pcpyld(&xsg_ee_gpr[4], &xsg_ee_gpr[9], &xsg_ee_gpr[7]);
+        vu0_qmtc2(5, &xsg_ee_gpr[2]);
+        vu0_qmtc2(6, &xsg_ee_gpr[3]);
+        vu0_qmtc2(7, &xsg_ee_gpr[4]);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 5, 3, 0);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 6, 3, 1);
+        vu0_arith(VU0_MADD, 14, 2, 7, 3, 2);
+        vu0_move(1, 2, 0);
+        vu0_lqc2(27, XSG_EA(r_1, 0));
+        vu0_lqc2(28, XSG_EA(r_1, 16));
+        vu0_lqc2(29, XSG_EA(r_1, 32));
+        vu0_lqc2(30, XSG_EA(r_1, 48));
+        vu0_arith(VU0_SUB, 14, 2, 0, 2, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_arith(VU0_MADD, 15, 31, 30, 2, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 10, 31, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 11, 31, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 12, 31, 2);
+        vu0_arith(VU0_MADD, 15, 31, 13, 0, 3);
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -553,6 +661,7 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
 {
     register float lengthSq PS2_REG("$f0");
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf10,0(%1)\n\t"
         "lqc2 $vf11,0(%2)\n\t"
@@ -567,6 +676,23 @@ static float _VectorLengthSQ(const Vector4 *first, const Vector4 *second)
         : "r"(first), "r"(second)
         : "$2", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        vu0_lqc2(10, XSG_EA(r_1, 0));
+        vu0_lqc2(11, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 10, 11, 10, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 10, 10, 10, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 10, 10, 10, 2);
+        vu0_arith(VU0_ADD, 8, 10, 10, 10, 1);
+        vu0_qmfc2(&xsg_ee_gpr[2], 10);
+        xsg_ee_fpr[2].u = xsg_ee_gpr[2].w[0];
+        xsg_ee_fpr[0].u = xsg_ee_gpr[2].w[0];
+        xsg_vu0_blocks++;
+        lengthSq = xsg_ee_fpr[0].f;
+    }
+#endif
     return lengthSq;
 }
 
@@ -697,50 +823,119 @@ void nmlFilterStealthMake(int partIndex, StudioCamera *camera,
                 jointData->jointAuxMatrixOffset))[descriptor->secondJoint]);
     } else {
         descriptor = &s_inStealthUnitDat;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(&fallback), "r"(&model->fields.fallbackSphere) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&model->fields.fallbackSphere);
+            XsgGpr r_0 = XSG_IN(&fallback);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         fallback.y -= fallback.w * 0.3f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(firstEndpoint), "r"(&fallback) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&fallback);
+            XsgGpr r_0 = XSG_IN(firstEndpoint);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         fallback.y += fallback.w * 0.6f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)"
             : : "r"(&geometry->endpoints[1]), "r"(&fallback) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&fallback);
+            XsgGpr r_0 = XSG_IN(&geometry->endpoints[1]);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3,0(%1)\n\t"
         "lqc2 $vf2,0(%0)\n\t"
         "vadd.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
         "sqc2 $vf2,0(%2)"
         : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&center) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&center);
+        XsgGpr r_1 = XSG_IN(&geometry->endpoints[1]);
+        XsgGpr r_0 = XSG_IN(firstEndpoint);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorScaleXYZ(0.5f, &center, &center);
     geometry->sortClass = (float)descriptor->sortClass;
     firstEndpoint->w = _VectorLengthSQ(&camera->position, &center);
     if (descriptor->firstExtension != 0.0f) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf3,0(%0)\n\t"
             "lqc2 $vf2,0(%1)\n\t"
             "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
             "sqc2 $vf2,0(%2)"
             : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&direction) : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&direction);
+            XsgGpr r_1 = XSG_IN(&geometry->endpoints[1]);
+            XsgGpr r_0 = XSG_IN(firstEndpoint);
+            vu0_lqc2(3, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         xglVectorNormal(&direction, &direction);
         firstEndpoint->x -= direction.x * descriptor->firstExtension;
         firstEndpoint->y -= direction.y * descriptor->firstExtension;
         firstEndpoint->z -= direction.z * descriptor->firstExtension;
     }
     if (descriptor->secondExtension != 0.0f) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf3,0(%0)\n\t"
             "lqc2 $vf2,0(%1)\n\t"
             "vsub.xyz vf2xyz,vf2xyz,vf3xyz\n\t"
             "sqc2 $vf2,0(%2)"
             : : "r"(firstEndpoint), "r"(&geometry->endpoints[1]), "r"(&direction) : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&direction);
+            XsgGpr r_1 = XSG_IN(&geometry->endpoints[1]);
+            XsgGpr r_0 = XSG_IN(firstEndpoint);
+            vu0_lqc2(3, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         xglVectorNormal(&direction, &direction);
         geometry->endpoints[1].x += direction.x * descriptor->secondExtension;
         geometry->endpoints[1].y += direction.y * descriptor->secondExtension;

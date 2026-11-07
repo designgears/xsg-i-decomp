@@ -766,11 +766,21 @@ void Java_xeno_Camera_setCFAngle__IFFFF(JavaEnvironment *environment,
         float *source = angles;
 
         definition->pedestal_mode = 0;
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->angles), "r" (source)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(source);
+            XsgGpr r_0 = XSG_IN(definition->angles);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         definition->current_yaw = definition->angles[1];
         definition++;
     }
@@ -824,11 +834,21 @@ void Java_xeno_Camera_setCFAnglePers__IFFFFF(JavaEnvironment *environment,
         float *source = angles;
 
         definition->pedestal_mode = 0;
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->angles), "r" (source)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(source);
+            XsgGpr r_0 = XSG_IN(definition->angles);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         definition->perspective = perspective;
         definition->current_yaw = definition->angles[1];
         definition++;
@@ -1071,16 +1091,36 @@ void Java_xeno_Camera_setFog__IFFFFIIII(VMThread *thread,
         float *source_parameters = fog_parameters;
         float *source_color = fog_color;
 
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->fog_parameters), "r" (source_parameters)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(source_parameters);
+            XsgGpr r_0 = XSG_IN(definition->fog_parameters);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n"
                              "sq $2, 0(%0)\n"
                              :
                              : "r" (definition->fog_color), "r" (source_color)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(source_color);
+            XsgGpr r_0 = XSG_IN(definition->fog_color);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         definition++;
     }
 }
@@ -1104,8 +1144,24 @@ void Java_xeno_Camera_resetFog__I(JavaEnvironment *environment,
     }
     p = &CfCameraDefine[start];
     for (; start < end; start++) {
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)p + 0x60) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN((char *)p + 0x60);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)p + 0x70) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN((char *)p + 0x70);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         p++;
     }
 }

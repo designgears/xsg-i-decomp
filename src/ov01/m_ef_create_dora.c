@@ -39,7 +39,17 @@ int MEfCreate_DORA(void *self)
     memset(base + 0xC0, 0, 0x44);
     memset(base + 0x104, 0, 0x44);
     memset(trail, 0, 0x220);
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(trail), "r"(weapon) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(weapon);
+        XsgGpr r_0 = XSG_IN(trail);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     *(short *)(state + 0x350) = 0;
     *(short *)(state + 0x352) = 0;
     makePath((struct DoraHermiteState *)state);
@@ -111,7 +121,16 @@ static void makePath(DoraHermiteState *state)
     }
     scale = MMathMakeRandom() + 0.05f;
     for (i = 0; i < 4; i++) {
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&v) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&v);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
@@ -119,7 +138,21 @@ static void makePath(DoraHermiteState *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(s) : "f"(angle) : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(232);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            s = f_0.f;
+        }
+#endif
         v.x = s * rtbl_1_00A51830[i] * scale;
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
@@ -127,6 +160,19 @@ static void makePath(DoraHermiteState *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(c) : "f"(angle) : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            c = f_0.f;
+        }
+#endif
         v.z = disttbl_0_00A51820[i];
         v.y = c * rtbl_1_00A51830[i] * scale;
         MMathApplyMatrix((Vector4 *)&state->control_points[i], &matrix, &v);
@@ -187,10 +233,28 @@ static void fnDORA_PR000(void *self, DoraHermiteState *state)
     for (i = 32; i >= 0; i--) {
         state->trail_active[i + 1] = state->trail_active[i];
         state->trail_segment[i + 1] = state->trail_segment[i];
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&state->trail[i]);
+            XsgGpr r_0 = XSG_IN(&state->trail[i + 1]);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     state->trail_active[0] = 0;
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&state->trail[0]);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (state->frame < 15) {
         state->trail_active[0] = 1;
         state->trail_segment[0] = state->segment;
@@ -235,10 +299,20 @@ typedef struct MEfGsPacket {
 #define SCE_GS_ALPHA_1 0x42
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
+#ifndef PORT_HOST
 #define QuadwordCopyT0(destination, source) \
     PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#else
+#define QuadwordCopyT0(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0SetOrigin(destination) \
     PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+#else
+#define Vu0SetOrigin(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); vu0_sqc2(0, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
@@ -358,6 +432,7 @@ static void fnDORA_DP000(void *self, DoraHermiteState *work)
                 MEfCalcAngle(&angle, &state->trail[slot], &state->trail[slot + 1]);
                 angle.z = state->path_progress[state->trail_segment[slot]];
                 MMathRotateMatrixYXZ((Matrix4 *)matrix, 0, &angle);
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf1, 0(%1)\n"
                     "vmove.w vf1, vf0\n"
@@ -365,6 +440,16 @@ static void fnDORA_DP000(void *self, DoraHermiteState *work)
                     :
                     : "r"(matrix), "r"(&state->trail[slot])
                     : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&state->trail[slot]);
+                    XsgGpr r_0 = XSG_IN(matrix);
+                    vu0_lqc2(1, XSG_EA(r_1, 0));
+                    vu0_move(1, 1, 0);
+                    vu0_sqc2(1, XSG_EA(r_0, 48));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 MMathApplyMatrix(&angle, matrix, &offset[0].vector);
                 if (MMathRotTransPersClip(&vertex[0].vector, screen, view, &angle)) {
                     clip = 2;

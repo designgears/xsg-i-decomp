@@ -27,18 +27,38 @@ static void xglCameraScreenInit(StudioCamera *camera)
 
     *(int *)(s + 0x0) = 0xFFFFFF;
     *(int *)(s + 0x4) = 0;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"(s + 0x10), "r"(sClipRange_0)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(sClipRange_0);
+        XsgGpr r_0 = XSG_IN(s + 0x10);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"(s + 0x20), "r"(sPortEffect_1)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(sPortEffect_1);
+        XsgGpr r_0 = XSG_IN(s + 0x20);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     ((CamFloatU *)(s + 0x30))->f = sRender.width;
     ((CamFloatU *)(s + 0x34))->f = sRender.height;
     ((CamFloatU *)(s + 0x38))->f = sRender.width;
@@ -161,40 +181,120 @@ static void xglCameraTravelInit(StudioCamera *studio)
     travel->fov = 0.69813174f;
     travel->fov_velocity = 0.0f;
     travel->scale = 0.0f;
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->rotation), "r"(&sShootAngleR_2)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootAngleR_2);
+        XsgGpr r_0 = XSG_IN(&travel->rotation);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->angle_velocity), "r"(&sShootAngleV_3)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootAngleV_3);
+        XsgGpr r_0 = XSG_IN(&travel->angle_velocity);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->angle_delta), "r"(&sShootAngleA_4)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootAngleA_4);
+        XsgGpr r_0 = XSG_IN(&travel->angle_delta);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->position), "r"(&sShootPlaceR_5)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootPlaceR_5);
+        XsgGpr r_0 = XSG_IN(&travel->position);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->place_velocity), "r"(&sShootPlaceV_6)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootPlaceV_6);
+        XsgGpr r_0 = XSG_IN(&travel->place_velocity);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->place_delta), "r"(&sShootPlaceA_7)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sShootPlaceA_7);
+        XsgGpr r_0 = XSG_IN(&travel->place_delta);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     travel->chase_yaw = travel->rotation.y;
     travel->chase_distance = travel->position.z;
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->chase_reference), "r"(&sChaseRefPos_8)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sChaseRefPos_8);
+        XsgGpr r_0 = XSG_IN(&travel->chase_reference);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&travel->chase_position), "r"(&sChaseIntPos_9)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&sChaseIntPos_9);
+        XsgGpr r_0 = XSG_IN(&travel->chase_position);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern float sShootAngleA_10[4];
@@ -203,18 +303,38 @@ extern float sShootPlaceA_11[4];
 static void xglCameraTravelReset(StudioCamera *camera)
 {
     *(int *)((char *)camera + 0xC) = 0;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"((char *)camera + 0x30), "r"(sShootAngleA_10)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(sShootAngleA_10);
+        XsgGpr r_0 = XSG_IN((char *)camera + 0x30);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"((char *)camera + 0x60), "r"(sShootPlaceA_11)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(sShootPlaceA_11);
+        XsgGpr r_0 = XSG_IN((char *)camera + 0x60);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 typedef struct CameraPadView {
@@ -318,6 +438,7 @@ static void xglCameraTravelManual(XglCamera *camera)
     travel->fov += travel->fov_velocity;
     xglVectorScaleXYZ(&travel->angle_velocity, &travel->angle_velocity, damping);
     xglVectorScaleXYZ(&travel->place_velocity, &travel->place_velocity, damping);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
@@ -325,22 +446,57 @@ static void xglCameraTravelManual(XglCamera *camera)
                          "nop"
                          : : "r"(&travel->angle_velocity), "r"(&travel->angle_delta)
                          : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&travel->angle_delta);
+        XsgGpr r_0 = XSG_IN(&travel->angle_velocity);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglMatrixStackUnit();
     xglMatrixStackRotY(travel->rotation.y);
     xglMatrixStackSave((float (*)[4])axes);
     xglVectorScaleAddXYZ(&travel->place_velocity, &axes[0], &travel->place_velocity, travel->place_delta.x);
     travel->place_velocity.y += travel->place_delta.y;
     xglVectorScaleAddXYZ(&travel->place_velocity, &axes[2], &travel->place_velocity, travel->place_delta.z);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->rotation), "r"(&travel->angle_velocity) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&travel->angle_velocity);
+        XsgGpr r_0 = XSG_IN(&travel->rotation);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->position), "r"(&travel->place_velocity) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&travel->place_velocity);
+        XsgGpr r_0 = XSG_IN(&travel->position);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void xglCameraTravelChase(XglCamera *camera)
@@ -377,16 +533,40 @@ static void xglCameraTravelChase(XglCamera *camera)
     travel->fov += travel->fov_velocity;
     xglVectorScaleXYZ(&travel->angle_velocity, &travel->angle_velocity, damping);
     xglVectorScaleXYZ(&travel->place_velocity, &travel->place_velocity, damping);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->angle_velocity), "r"(&travel->angle_delta) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&travel->angle_delta);
+        XsgGpr r_0 = XSG_IN(&travel->angle_velocity);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vadd.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%0)"
                          : : "r"(&travel->place_velocity), "r"(&travel->place_delta) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&travel->place_delta);
+        XsgGpr r_0 = XSG_IN(&travel->place_velocity);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     travel->chase_distance += travel->place_velocity.z;
     travel->chase_yaw += travel->angle_velocity.y;
     if (travel->chase_distance < 0.4f) {
@@ -395,20 +575,43 @@ static void xglCameraTravelChase(XglCamera *camera)
     if (travel->chase_distance > 100.0f) {
         travel->chase_distance = 100.0f;
     }
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)"
                          : : "r"(&travel->chase_reference), "r"(&travel->chase_position), "r"(&offset)
                          : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&offset);
+        XsgGpr r_1 = XSG_IN(&travel->chase_position);
+        XsgGpr r_0 = XSG_IN(&travel->chase_reference);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorLength(&offset.w, &offset);
     if (offset.w < 1.0f) {
         xglVectorScaleAddXYZ(&travel->chase_position, &offset, &travel->chase_position, 0.2f);
     } else {
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n\t"
                              "sq $2, 0(%0)"
                              : : "r"(&travel->chase_position), "r"(&travel->chase_reference)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&travel->chase_reference);
+            XsgGpr r_0 = XSG_IN(&travel->chase_position);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     offset.x = 0.0f;
     offset.y = 0.0f;
@@ -428,12 +631,25 @@ static void xglCameraTravelChase(XglCamera *camera)
     if (travel->position.y > 100.0f) {
         travel->position.y = 100.0f;
     }
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)"
                          : : "r"(&travel->chase_position), "r"(&travel->position), "r"(&offset)
                          : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&offset);
+        XsgGpr r_1 = XSG_IN(&travel->position);
+        XsgGpr r_0 = XSG_IN(&travel->chase_position);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorNormal(&offset, &offset);
     offset.z = -offset.z;
     travel->rotation.y = atan2f(offset.x, offset.z);
@@ -512,10 +728,20 @@ static void xglCameraViewScreen(StudioCamera *studio)
     }
     screen->clipRange.z = screen->projection.x * (scaled.z / screen->resolution.z);
     screen->clipRange.w = screen->projection.y * (scaled.w / screen->resolution.w);
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\t"
                          "sq $2, 0(%0)"
                          : : "r"(&screen->projection), "r"(&screen->resolution)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&screen->resolution);
+        XsgGpr r_0 = XSG_IN(&screen->projection);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     screen->projection.x *= aspect;
     screen->screenOffset.x = centerX + 2048.0f;
     screen->projection.z *= aspect;
@@ -549,24 +775,81 @@ static void xglCameraViewTravel(StudioCamera *studio, Vector4 *offset)
     travel->frustum[3].x = nearClip;
     travel->frustum[3].w = travel->frustum[3].y = screen->clipRange.y;
     travel->frustum[3].z = nearClip;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(frustum);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf21, 0(%0)" : : "r"(&extent) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent);
+        vu0_lqc2(21, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmul.xyzw vf20, vf20, vf21" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 15, 20, 20, 21, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf20, 0(%0)" : : "r"(frustum) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(frustum);
+        vu0_sqc2(20, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorScale(&camera->travel.frustum[2], frustum, -1.0f);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf20, 0(%1)\n\t"
                          "lqc2 vf21, 0(%2)\n\t"
                          "vmul.xyzw vf20, vf20, vf21\n\t"
                          "sqc2 vf20, 0(%0)"
                          : : "r"(&camera->travel.frustum[1]), "r"(frustum), "r"(&ratio) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&ratio);
+        XsgGpr r_1 = XSG_IN(frustum);
+        XsgGpr r_0 = XSG_IN(&camera->travel.frustum[1]);
+        vu0_lqc2(20, XSG_EA(r_1, 0));
+        vu0_lqc2(21, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, 20, 20, 21, VU0_VEC);
+        vu0_sqc2(20, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorScale(&camera->travel.frustum[0], &camera->travel.frustum[1], -1.0f);
     xglMatrixStackUnit();
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf3, 0(%1)\n\t"
                          "lqc2 vf2, 0(%0)\n\t"
                          "vsub.xyz vf2, vf2, vf3\n\t"
                          "sqc2 vf2, 0(%2)\n\t"
                          "nop"
                          : : "r"(&travel->position), "r"(offset), "r"(&shift) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&shift);
+        XsgGpr r_1 = XSG_IN(offset);
+        XsgGpr r_0 = XSG_IN(&travel->position);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglMatrixStackTrans(&shift.x);
     xglMatrixStackRotY(travel->rotation.y);
     xglMatrixStackRotX(travel->rotation.x);
@@ -599,6 +882,7 @@ static void xglCameraViewVolume(StudioCamera *studio, Vector4 *offset)
     transform = camera->transform;
     for (; i < 1; i++) {
         volume = &camera->volume[i];
+#ifndef PORT_HOST
         PS2_ASMV("lq $2, 0(%1)\n\t"
                              "sq $2, 0(%0)\n\t"
                              "lq $2, 16(%1)\n\t"
@@ -609,6 +893,21 @@ static void xglCameraViewVolume(StudioCamera *studio, Vector4 *offset)
                              "sq $2, 48(%0)"
                              : : "r"(volume->frustum), "r"(travelFrustum)
                              : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(travelFrustum);
+            XsgGpr r_0 = XSG_IN(volume->frustum);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         xglMatrixStackUnit();
         xglMatrixStackFrustum(volume->frustum[0][2], volume->frustum[1][2],
                               volume->frustum[2][2], volume->frustum[3][2],

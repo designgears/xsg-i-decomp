@@ -68,14 +68,40 @@ Vector4 *MCamGetCurrentBaseCoord(Vector4 *out, int type)
 {
     Vector4 *src;
 
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     src = &D_00A5B200;
+#ifndef PORT_HOST
     PS2_ASMV("" : "+r"(src));
+#else
+    {
+        XsgGpr r_0 = XSG_IN(src);
+        xsg_vu0_blocks++;
+        XSG_OUT(src, r_0);
+    }
+#endif
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B210;
 copy:
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(src);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 end:
     return out;
 }
@@ -87,14 +113,40 @@ Vector4 *MCamGetCurrentCoord(Vector4 *out, int type)
 {
     Vector4 *src;
 
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     src = &D_00A5B230;
+#ifndef PORT_HOST
     PS2_ASMV("" : "+r"(src));
+#else
+    {
+        XsgGpr r_0 = XSG_IN(src);
+        xsg_vu0_blocks++;
+        XSG_OUT(src, r_0);
+    }
+#endif
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B240;
 copy:
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(src);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 end:
     out->w = 1.0f;
     return out;
@@ -111,14 +163,40 @@ Vector4 *MCamGetCurrentAngle(Vector4 *out, int type)
 {
     Vector4 *src;
 
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     src = &D_00A5B1E0;
+#ifndef PORT_HOST
     PS2_ASMV("" : "+r"(src));
+#else
+    {
+        XsgGpr r_0 = XSG_IN(src);
+        xsg_vu0_blocks++;
+        XSG_OUT(src, r_0);
+    }
+#endif
     if (type == 0) goto copy;
     if (type != 1) goto end;
     src = &D_00A5B1F0;
 copy:
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(src), "r"(out) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(src);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 end:
     return out;
 }
@@ -127,6 +205,7 @@ extern Vector4 D_00A5B250;
 
 Vector4 *MCamGetCurrentEye(Vector4 *out)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
@@ -134,6 +213,15 @@ Vector4 *MCamGetCurrentEye(Vector4 *out)
         : "r"(out), "r"(&D_00A5B250)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&D_00A5B250);
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
@@ -281,12 +369,24 @@ int MCamTakeControl(void)
     MCAM_VU0_TRIG(0xe8, cosY, saved->rotation.y);
     MCAM_VU0_TRIG(0xe8, cosX2, saved->rotation.x);
     direction.z = -cosY * cosX2;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2    $vf1, 0(%0)\n\t"
         "lqc2    $vf2, 0(%1)\n\t"
         "vadd.xyz $vf1, $vf1, $vf2\n\t"
         "sqc2    $vf1, 0(%0)\n\t"
         : : "r"(&direction), "r"(&saved->position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&saved->position);
+        XsgGpr r_0 = XSG_IN(&direction);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     dlo = ((unsigned long long *)&direction)[0];
     dhi = ((unsigned long long *)&direction)[1];
     camFlags |= 1;
@@ -318,12 +418,36 @@ void MCamStoreParams(void)
 
     /* 12-byte ld/lw copies: the original's block-move template with 8-byte
      * alignment, which cc1 only emits as move_by_pieces from C. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
         : : "r"(sysCamBuff + 0xD0), "r"(camParams + 0x1B0) : "$8", "$9", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(camParams + 0x1B0);
+        XsgGpr r_0 = XSG_IN(sysCamBuff + 0xD0);
+        { unsigned long long xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 0), sizeof xsg_v_); xsg_ee_gpr[8].d[0] = xsg_v_; }
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 8), sizeof xsg_v_); xsg_ee_gpr[9].sd[0] = xsg_v_; }
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 8);
+        __builtin_memcpy(XSG_EA(r_0, 8), &xsg_ee_gpr[9], 4);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "ld $8, 0(%1)\n\tlw $9, 8(%1)\n\tsd $8, 0(%0)\n\tsw $9, 8(%0)"
         : : "r"(sysCamBuff + 0xA0), "r"(camParams + 0x1E0) : "$8", "$9", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(camParams + 0x1E0);
+        XsgGpr r_0 = XSG_IN(sysCamBuff + 0xA0);
+        { unsigned long long xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 0), sizeof xsg_v_); xsg_ee_gpr[8].d[0] = xsg_v_; }
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 8), sizeof xsg_v_); xsg_ee_gpr[9].sd[0] = xsg_v_; }
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 8);
+        __builtin_memcpy(XSG_EA(r_0, 8), &xsg_ee_gpr[9], 4);
+        xsg_vu0_blocks++;
+    }
+#endif
     cam = sysCamBuff;
     params = camParams;
     baseX = *(float *)(params + 0x1F0);
@@ -541,13 +665,31 @@ typedef struct MCamActorView {
 
 static Vector4 *MCamGetActorCoord(Vector4 *out, MCamActorView *actor, int null)
 {
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (actor == 0) {
         MOutputDebugStringWarn(D_00A50FD8);
         return out;
     }
     if (null == 0) {
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&actor->position), "r"(out) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(out);
+            XsgGpr r_0 = XSG_IN(&actor->position);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else {
         sefGetNullPosition(out, actor, null - 1, 0);
     }
@@ -585,10 +727,28 @@ static float MCamCalcBaseCoord(Vector4 *out, MCamBaseParams *params)
     float t;
 
     dist = 0.0f;
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     switch (params->type) {
     case 0:
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&params->position), "r"(out) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(out);
+            XsgGpr r_0 = XSG_IN(&params->position);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         out->w = dist;
         break;
     case 1:
@@ -607,7 +767,17 @@ static float MCamCalcBaseCoord(Vector4 *out, MCamBaseParams *params)
         dist = MMathCalcDistXZ(&a, &b);
         t = (dist + MCamGetAtkRange(params->idA) - MCamGetDefRange(params->idB)) * 0.5f;
         if (dist == 0.0f || t == 0.0f) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&a), "r"(out) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(out);
+                XsgGpr r_0 = XSG_IN(&a);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         } else {
             MMathVectorInterpolation(out, &a, &b, t / dist);
         }
@@ -702,7 +872,17 @@ static int MCamMoveProc_Pers(MCamMoveState *state);
 static void MCamShakeProc(void);
 static inline void mcam_quad_copy(void *dst, const void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(dst), "r"(src) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void MCamExec_Control(void)
@@ -763,11 +943,23 @@ static void MCamExec_Control(void)
 extern Vector4 *MMathCalcDirVector(Vector4 *out, Vector4 *from, Vector4 *to);
 static inline void mcam_copy_vec3(void *dst, const void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("ld $8,0(%1)\n\t"
                          "lw $9,8(%1)\n\t"
                          "sd $8,0(%0)\n\t"
                          "sw $9,8(%0)"
                          : : "r"(dst), "r"(src) : "$8", "$9", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        { unsigned long long xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 0), sizeof xsg_v_); xsg_ee_gpr[8].d[0] = xsg_v_; }
+        { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_1, 8), sizeof xsg_v_); xsg_ee_gpr[9].sd[0] = xsg_v_; }
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 8);
+        __builtin_memcpy(XSG_EA(r_0, 8), &xsg_ee_gpr[9], 4);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void MCamExec_SetParams(void)
@@ -809,7 +1001,17 @@ static void MCamExec_SetParams_Base(void)
     MCamCalcCoord((Vector4 *)(base + 0x1B0), (MCamCoordParams *)base);
     MCamCalcCoord((Vector4 *)(base + 0x1C0), (MCamCoordParams *)(base + 0xB0));
     MMathCalcAngleCam((Vector4 *)(base + 0x160), (Vector4 *)(base + 0x1B0), (Vector4 *)(base + 0x1C0));
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(base + 0x160), "r"(base + 0x1E0) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(base + 0x1E0);
+        XsgGpr r_0 = XSG_IN(base + 0x160);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     *(float *)(base + 0x1E8) = *(float *)(base + 0x1F0);
     MMathCalcAngleCam((Vector4 *)(base + 0x170), (Vector4 *)(base + 0x1C0), (Vector4 *)(base + 0x1B0));
 }
@@ -857,7 +1059,17 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
     MCamCalcCoord(&m->other, other);
     MCamCalcCoord(&m->start, &m->from.p);
     MCamCalcCoord(&m->end, &m->to.p);
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->start), "r"(&m->current) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&m->current);
+        XsgGpr r_0 = XSG_IN(&m->start);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     {
         int z = req->extra[2];
         int x = req->extra[0];
@@ -868,7 +1080,17 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
         m->extra[3] = 0;
     }
     cur->p.base.type = 0;
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&m->current), "r"(&cur->p.base.position) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&cur->p.base.position);
+        XsgGpr r_0 = XSG_IN(&m->current);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     shake = req->shake;
     {
         int *flags = &camFlags;
@@ -982,6 +1204,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     case 1: {
         float sine1;
         ratio = ratio * 3.14159265f + 4.712389f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
@@ -992,6 +1215,19 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
             : "f"(ratio)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(ratio);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            sine1 = f_0.f;
+        }
+#endif
         ratio = (sine1 + 1.0f) * 0.5f;
         break;
     }
@@ -1000,6 +1236,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     case 2: {
         float sine2;
         ratio = ratio * 1.57079633f + 4.712389f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
@@ -1010,12 +1247,26 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
             : "f"(ratio)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(ratio);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            sine2 = f_0.f;
+        }
+#endif
         ratio = sine2 + 1.0f;
         break;
     }
     case 3: {
         float sine3;
         ratio = ratio * 1.57079633f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1    $8, %1\n\t"
             "qmtc2   $8, $vf4\n\t"
@@ -1026,6 +1277,19 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
             : "f"(ratio)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(ratio);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            sine3 = f_0.f;
+        }
+#endif
         ratio = sine3;
         break;
     }
@@ -1042,15 +1306,29 @@ extern float MMathCalcDist(const Vector4 *first, const Vector4 *second);
 extern float MMathCalcRotNear(float first, float second);
 static inline void MCamVecSub(Vector4 *dst, Vector4 *a, Vector4 *b)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vsub.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
         "sqc2 vf1,0(%0)"
         : : "r"(dst), "r"(a), "r"(b) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(b);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void MCamVecScale(Vector4 *dst, Vector4 *a, float t)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "mfc1 $8,%2\n\t"
@@ -1058,15 +1336,41 @@ static inline void MCamVecScale(Vector4 *dst, Vector4 *a, float t)
         "vmulx.xyz vf1xyz,vf1xyz,vf2x\n\t"
         "sqc2 vf1,0(%0)"
         : : "r"(dst), "r"(a), "f"(t) : "$8", "memory");
+#else
+    {
+        XsgFpr f_2 = XSG_FIN(t);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void MCamVecAdd(Vector4 *dst, Vector4 *a, Vector4 *b)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
         "vadd.xyz vf1xyz,vf1xyz,vf2xyz\n\t"
         "sqc2 vf1,0(%0)"
         : : "r"(dst), "r"(a), "r"(b) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(b);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int MCamMoveProc_Coord(MCamCoordMove *m)
@@ -1088,18 +1392,46 @@ static int MCamMoveProc_Coord(MCamCoordMove *m)
         MCamVecAdd(&m->current, &cur, &step);
         break;
     case 1:
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"(&origin) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&origin);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "ld $8, 0(%0)\n\t"
             "lw $9, 8(%0)\n\t"
             "sd $8, 0(%1)\n\t"
             "sw $9, 8(%1)"
             : : "r"(&m->other), "r"(&origin) : "$8", "$9", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&origin);
+            XsgGpr r_0 = XSG_IN(&m->other);
+            { unsigned long long xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_0, 0), sizeof xsg_v_); xsg_ee_gpr[8].d[0] = xsg_v_; }
+            { int xsg_v_; __builtin_memcpy(&xsg_v_, XSG_EA(r_0, 8), sizeof xsg_v_); xsg_ee_gpr[9].sd[0] = xsg_v_; }
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 8);
+            __builtin_memcpy(XSG_EA(r_1, 8), &xsg_ee_gpr[9], 4);
+            xsg_vu0_blocks++;
+        }
+#endif
         MMathCalcAngle(&cur, &origin, &m->start);
         cur.w = MMathCalcDist(&origin, &m->start);
         MMathCalcAngle(&tmp, &origin, &m->end);
         tmp.w = MMathCalcDist(&origin, &m->end);
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"(&offs) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&offs);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         offs.x = cur.x + MMathCalcRotNear(cur.x, tmp.x) * ratio;
         offs.y = cur.y + MMathCalcRotNear(cur.y, tmp.y) * ratio;
         offs.w = cur.w + (tmp.w - cur.w) * ratio;

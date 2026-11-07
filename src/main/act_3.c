@@ -885,6 +885,7 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
      * vertices 2..5 and the remaining points (in $3) from projected[1..4].
      * Plain 128-bit C copies emit the same lq/sq but cannot reproduce the
      * original $2/$3 allocation around the packet trailer. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "lq $3, 16(%1)\n\t"
@@ -906,6 +907,29 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
         : "r"(&scratchpad->packet.vertices[0].color),
           "r"(scratchpad->projected)
         : "$2", "$3", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(scratchpad->projected);
+        XsgGpr r_0 = XSG_IN(&scratchpad->packet.vertices[0].color);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[3], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_0, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 160), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(XSG_EA(r_0, 176), &xsg_ee_gpr[3], 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 64), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(XSG_EA(r_0, 80), &xsg_ee_gpr[3], 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 96), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(XSG_EA(r_0, 112), &xsg_ee_gpr[3], 16);
+        __builtin_memcpy(&xsg_ee_gpr[3], XSG_EA(r_1, 64), 16);
+        __builtin_memcpy(XSG_EA(r_0, 128), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(XSG_EA(r_0, 144), &xsg_ee_gpr[3], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     scratchpad->packet.trailer[0] = 0x31000000;
     scratchpad->packet.trailer[1] = 0x4e;
     nmlModelDirectSend(1, (u8 *)&scratchpad->packet, 0x12);
@@ -934,12 +958,28 @@ static void DrawZeldaShadow(char *obj) {
         }
     }
     *(int *)0x7000013C = i;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\tsq $2, 0(%0)\n\t"
         "lq $2, 16(%1)\n\tsq $2, 16(%0)\n\t"
         "lq $2, 32(%1)\n\tsq $2, 32(%0)\n\t"
         "lq $2, 48(%1)\n\tsq $2, 48(%0)"
         : : "r"((void *)0x70000010), "r"(*(void **)(obj + 0x824)) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(*(void **)(obj + 0x824));
+        XsgGpr r_0 = XSG_IN((void *)0x70000010);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     dir = (float *)(obj + 0xA0);
     *(float *)0x70000138 = __builtin_sqrtf(1.0f - dir[1] * dir[1]) * 0.5f;
     if (*(float *)0x70000138 < D_004D85F4) {
@@ -1196,6 +1236,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             /* Each VU block loads both complete vectors, changes XYZ, and retains
                the VF2 input's W. VF2/VF3 and arithmetic flags are scratch here;
                no incoming ACC/Q state is used and this compiler has no VF allocator. */
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1203,6 +1244,18 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(work->temporary), "r"(first_position),
                     "r"(second_position) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(second_position);
+                XsgGpr r_1 = XSG_IN(first_position);
+                XsgGpr r_0 = XSG_IN(work->temporary);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorOuter(perpendicular, (const Vector4 *)(const void *)work->temporary,
                              light_direction);
             xglVectorLength(&length, perpendicular);
@@ -1218,6 +1271,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             work->temporary[0] = first_position[0];
             work->temporary[1] = first_position[1];
             work->temporary[2] = first_position[2];
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1225,9 +1279,22 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[0]), "r"(&work->outer_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(&work->outer_offset);
+                XsgGpr r_0 = XSG_IN(&points[0]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[8], work->flatten, &points[0]);
             points[0].w = 1.0f;
             points[8].w = 1.0f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1235,9 +1302,22 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[1]), "r"(&work->outer_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(&work->outer_offset);
+                XsgGpr r_0 = XSG_IN(&points[1]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[9], work->flatten, &points[1]);
             points[1].w = 1.0f;
             points[9].w = 1.0f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1245,6 +1325,18 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[4]), "r"(axial_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(axial_offset);
+                XsgGpr r_0 = XSG_IN(&points[4]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[12], work->flatten, &points[4]);
             points[4].w = 1.0f;
             points[12].w = 1.0f;
@@ -1252,6 +1344,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             work->temporary[0] = second_position[0];
             work->temporary[1] = second_position[1];
             work->temporary[2] = second_position[2];
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1259,9 +1352,22 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[2]), "r"(&work->outer_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(&work->outer_offset);
+                XsgGpr r_0 = XSG_IN(&points[2]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[10], work->flatten, &points[2]);
             points[2].w = 1.0f;
             points[10].w = 1.0f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1269,9 +1375,22 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[3]), "r"(&work->outer_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(&work->outer_offset);
+                XsgGpr r_0 = XSG_IN(&points[3]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[11], work->flatten, &points[3]);
             points[3].w = 1.0f;
             points[11].w = 1.0f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1279,6 +1398,18 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[5]), "r"(axial_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(axial_offset);
+                XsgGpr r_0 = XSG_IN(&points[5]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[13], work->flatten, &points[5]);
             points[5].w = 1.0f;
             points[13].w = 1.0f;
@@ -1289,6 +1420,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 (first_position[1] + second_position[1]) * 0.5f;
             work->temporary[2] =
                 (first_position[2] + second_position[2]) * 0.5f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1296,9 +1428,22 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[6]), "r"(inner_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(inner_offset);
+                XsgGpr r_0 = XSG_IN(&points[6]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[14], work->flatten, &points[6]);
             points[6].w = 1.0f;
             points[14].w = 1.0f;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3,0(%1)\n\t"
                 "lqc2 vf2,0(%2)\n\t"
@@ -1306,6 +1451,18 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 "sqc2 vf2,0(%0)"
                 : : "r"(&points[7]), "r"(inner_offset),
                     "r"(work->temporary) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(work->temporary);
+                XsgGpr r_1 = XSG_IN(inner_offset);
+                XsgGpr r_0 = XSG_IN(&points[7]);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorMulMat(&points[15], work->flatten, &points[7]);
             points[7].w = 1.0f;
             points[15].w = 1.0f;
@@ -1409,6 +1566,7 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
         ActShadowMatrix *matrix = actor->shadow_matrices;
         ActShadowMatrix *destination = &work->model;
         /* Match the original four aligned SDK copies through its scratch GPR. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2,0(%1)\n\t"
             "sq $2,0(%0)\n\t"
@@ -1419,6 +1577,21 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
             "lq $2,48(%1)\n\t"
             "sq $2,48(%0)"
             : : "r"(destination), "r"(matrix) : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(matrix);
+            XsgGpr r_0 = XSG_IN(destination);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     {
         float light_x = actor->light_direction.x;
@@ -1631,11 +1804,21 @@ void ACT_DrawShadow(ActDrawShadowActor *actor)
         light = xglStudioGetLight2();
     }
     /* sceVu0CopyVector shape: one quadword through a fixed scratch register. */
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n"
                          "sq $2, 0(%0)\n"
                          :
                          : "r"(&actor->direction), "r"(&light->direction)
                          : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&light->direction);
+        XsgGpr r_0 = XSG_IN(&actor->direction);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if ((actor->kind & 0xf000) == 0 && (actor->flags & 0x100) == 0) {
         Footstep((ActShadowActor *)actor);
     }

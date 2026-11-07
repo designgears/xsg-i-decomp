@@ -893,6 +893,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             matrices = (Matrix4 *)(model + *(int *)(model + 0x50));
 
             /* Aligned matrix copies use the SDK's scratch-register quartet. */
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $2, 0(%1)\n"
                 "sq $2, 0(%0)\n"
@@ -904,6 +905,21 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
                 "sq $2, 48(%0)\n"
                 : : "r" (local), "r" (unit->matrix)
                 : "$2", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(unit->matrix);
+                XsgGpr r_0 = XSG_IN(local);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             local[3][0] = 0.0f;
             local[3][3] = 1.0f;
             local[3][1] = 0.0f;
@@ -924,6 +940,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             xglMatrixStackSave(inverse);
             xglMatrixStackLoad(aligned);
             xglMatrixStackMul((const float (*)[4])local);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf20, 0(%1)\n"
                 "lqc2 $vf21, 0(%2)\n"
@@ -931,6 +948,18 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
                 "sqc2 $vf20, 0(%0)\n"
                 : : "r" (&delta), "r" ((unsigned char *)sequence_entry + 0x240), "r" (unit->matrix[3])
                 : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(unit->matrix[3]);
+                XsgGpr r_1 = XSG_IN((unsigned char *)sequence_entry + 0x240);
+                XsgGpr r_0 = XSG_IN(&delta);
+                vu0_lqc2(20, XSG_EA(r_1, 0));
+                vu0_lqc2(21, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                vu0_sqc2(20, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             rot_x = unit->rotation.x;
             rot_y = unit->rotation.y;
             rz = unit->rotation.z;
@@ -972,6 +1001,7 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
             local[3][1] = local[3][1] + angles.y + unit->matrix[3][1];
             local[3][2] = local[3][2] + angles.z + unit->matrix[3][2];
             if (*(short *)((unsigned char *)unit + 0xA4) < *(int *)(*(unsigned char **)(display + 4) + 0x40)) {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
@@ -983,6 +1013,21 @@ void MAP_updateUnitPartsSequence2(MapUnitRecord *unit)
                     "sq $2, 48(%0)\n"
                     : : "r" (*(short *)((unsigned char *)unit + 0xA4) * sizeof(Matrix4) + (unsigned int)matrices), "r" (local)
                     : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(local);
+                    XsgGpr r_0 = XSG_IN(*(short *)((unsigned char *)unit + 0xA4) * sizeof(Matrix4) + (unsigned int)matrices);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
         }
     }

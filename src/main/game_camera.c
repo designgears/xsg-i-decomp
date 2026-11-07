@@ -273,7 +273,17 @@ extern StudioCamera save_cam;
 extern unsigned char CfCameraDefine[];
 static inline void QCopy(void *dst, void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void GameCameraStateSave(void) {
@@ -433,15 +443,26 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
            this site and the matching one below as identical and folds them
            into one shared unaligned ldl/ldr/sdl/sdr block reached by two
            jumps -- which the original does not do. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (current), "r" (target)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(target);
+            XsgGpr r_0 = XSG_IN(current);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         return;
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n"
         "lqc2 vf21, 0(%1)\n"
@@ -450,6 +471,18 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
         :
         : "r" (current), "r" (target), "r" (&difference)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&difference);
+        XsgGpr r_1 = XSG_IN(target);
+        XsgGpr r_0 = XSG_IN(current);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+        vu0_sqc2(20, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     distance = sqrtBuiltinBoundary(difference.x * difference.x
                                    + difference.y * difference.y
@@ -460,12 +493,22 @@ static void MoveHokan(void *unused, float step, const Vector4 *target,
         *remaining = 0.0f;
 
     if (*remaining == 0.0f) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (current), "r" (target)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(target);
+            XsgGpr r_0 = XSG_IN(current);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else {
         xglVectorScaleAddXYZ(*remaining, current, &difference, target);
     }
@@ -597,6 +640,7 @@ typedef struct CalcLookAtCamera {
 } CalcLookAtCamera;
 static __inline__ void CalcLookAtDelta(float *delta, float *center, float *pos)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n"
         "lqc2 vf21, 0(%1)\n"
@@ -605,6 +649,18 @@ static __inline__ void CalcLookAtDelta(float *delta, float *center, float *pos)
         :
         : "r" (center), "r" (pos), "r" (delta)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(delta);
+        XsgGpr r_1 = XSG_IN(pos);
+        XsgGpr r_0 = XSG_IN(center);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+        vu0_sqc2(20, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void CalcLookAt(CalcLookAtCamera *camera)
@@ -892,6 +948,7 @@ static void CameraType0(void)
     }
     MoveHokan(scratchpad, HKN.position_step, (Vector4 *)CamPosPos,
               &scratchpad->view->position, &HKN.position_remaining);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n"
         "lqc2 vf2, 0(%0)\n"
@@ -900,16 +957,38 @@ static void CameraType0(void)
         :
         : "r" (&scratchpad->view->look_at), "r" (&scratchpad->view->position), "r" (&scratchpad->look_at_delta)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&scratchpad->look_at_delta);
+        XsgGpr r_1 = XSG_IN(&scratchpad->view->position);
+        XsgGpr r_0 = XSG_IN(&scratchpad->view->look_at);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     scratchpad->view->rotation.y = xglAtan2(scratchpad->look_at_delta.x, scratchpad->look_at_delta.z) + 3.1415927f;
     scratchpad->view->rotation.x = xglAtan2(scratchpad->look_at_delta.y,
         __builtin_sqrtf(scratchpad->look_at_delta.x * scratchpad->look_at_delta.x
                             + scratchpad->look_at_delta.z * scratchpad->look_at_delta.z));
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r" (&scratchpad->view->focus), "r" (&scratchpad->look_at)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&scratchpad->look_at);
+        XsgGpr r_0 = XSG_IN(&scratchpad->view->focus);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern float D_004D7BF0;
@@ -998,6 +1077,7 @@ static void CameraType1(void)
         const Vector4 *view_look_at = &view->look_at;
         const Vector4 *view_position = &view->position;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3, 0(%2)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
@@ -1007,6 +1087,18 @@ static void CameraType1(void)
             : "r" (look_at_delta), "r" (view_look_at),
               "r" (view_position)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(view_position);
+            XsgGpr r_1 = XSG_IN(view_look_at);
+            XsgGpr r_0 = XSG_IN(look_at_delta);
+            vu0_lqc2(3, XSG_EA(r_2, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
     scratchpad->view->rotation.y =
@@ -1059,12 +1151,22 @@ static void CameraType1(void)
         }
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r" (&scratchpad->view->focus), "r" (&scratchpad->look_at)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&scratchpad->look_at);
+        XsgGpr r_0 = XSG_IN(&scratchpad->view->focus);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern float D_004D7C08;
@@ -1105,6 +1207,7 @@ static void CameraType4(void)
         if (mode < 2) {
             MoveHokan((void *)0x70000000, HokanNow[1], (Vector4 *)(scratch + 0x20),
                       (Vector4 *)(*(unsigned char **)(scratch + 0xC) + 0x90), &HokanNow[3]);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n"
                 "lqc2 vf2, 0(%0)\n"
@@ -1113,6 +1216,18 @@ static void CameraType4(void)
                 :
                 : "r"(*(unsigned char **)(scratch + 0xC) + 0x90), "r"(*(unsigned char **)(scratch + 0xC) + 0x40), "r"(scratch + 0xB0)
                 : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(scratch + 0xB0);
+                XsgGpr r_1 = XSG_IN(*(unsigned char **)(scratch + 0xC) + 0x40);
+                XsgGpr r_0 = XSG_IN(*(unsigned char **)(scratch + 0xC) + 0x90);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_0, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_2, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             *(float *)(*(unsigned char **)(scratch + 0xC) + 0x14) = xglAtan2(*(float *)(scratch + 0xB0), *(float *)(scratch + 0xB8)) + D_004D7C08;
             horizontal = sqrtBuiltinBoundary(*(float *)(scratch + 0xB0) * *(float *)(scratch + 0xB0)
                                              + *(float *)(scratch + 0xB8) * *(float *)(scratch + 0xB8));
@@ -1316,12 +1431,22 @@ void GameCamera(void)
         CPS.attribute_mask = 2;
     }
     if (GLS.camera_flags & 0x20) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (&CamPlyPosOld), "r" (&scratchpad->target->position)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&scratchpad->target->position);
+            XsgGpr r_0 = XSG_IN(&CamPlyPosOld);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if ((unsigned)(enepc[scratchpad->target->enemy_index].state - 3) >= 5) {
         scratchpad->previous_mode = GLS.camera_mode;
@@ -1331,6 +1456,7 @@ void GameCamera(void)
             GLS.camera_id = 0x8000;
         } else {
             if (CamPlayer.header != 0 && !(GLS.camera_flags & 2)) {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf20, 0(%0)\n"
                     "lqc2 vf21, 0(%1)\n"
@@ -1339,14 +1465,36 @@ void GameCamera(void)
                     :
                     : "r" (&scratchpad->target->position), "r" (&CamPlyPosOld), "r" (&scratchpad->look_at_delta)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(&scratchpad->look_at_delta);
+                    XsgGpr r_1 = XSG_IN(&CamPlyPosOld);
+                    XsgGpr r_0 = XSG_IN(&scratchpad->target->position);
+                    vu0_lqc2(20, XSG_EA(r_0, 0));
+                    vu0_lqc2(21, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_SUB, 15, 20, 20, 21, VU0_VEC);
+                    vu0_sqc2(20, XSG_EA(r_2, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 UnduCheck((float *)&CamPlyPosOld, &scratchpad->look_at_delta, (struct CamLookAtQuery *)&CamPlayer);
                 if (CamPlayer.height == -1000.0f) {
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lq $2, 0(%1)\n"
                         "sq $2, 0(%0)\n"
                         :
                         : "r" (&CamPlyPosOld), "r" (&scratchpad->target->position)
                         : "$2", "memory");
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN(&scratchpad->target->position);
+                        XsgGpr r_0 = XSG_IN(&CamPlyPosOld);
+                        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     CamPlayer.query_cursor = 0;
                     CamPlayer.query_flags = 0;
                     UnduCheck((float *)&CamPlyPosOld, 0, (struct CamLookAtQuery *)&CamPlayer);
@@ -1422,18 +1570,38 @@ void GameCamera(void)
         }
     }
     if (GLS.camera_flags & 0x80) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (&CamPlyPosOld), "r" (&scratchpad->target->position)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&scratchpad->target->position);
+            XsgGpr r_0 = XSG_IN(&CamPlyPosOld);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (&CLAP), "r" (&scratchpad->target->position)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&scratchpad->target->position);
+            XsgGpr r_0 = XSG_IN(&CLAP);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         if (scratchpad->definition->pedestal_mode == 0) {
             ((CamAnglesU *)scratchpad->definition->angles)->values[1] = scratchpad->definition->current_yaw;
             GetCameraPos(&CPP.x, &CLAP.x, scratchpad->definition->angles);
@@ -1476,6 +1644,7 @@ void GameCamera(void)
             xglMatrixStackRotY(scratchpad->target->facing_angle);
             xglMatrixStackTrans(scratchpad->translation);
             xglMatrixStackSave(scratchpad->matrix);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf3, 0(%1)\n"
                 "lqc2 vf2, 0(%2)\n"
@@ -1484,6 +1653,18 @@ void GameCamera(void)
                 :
                 : "r" (scratchpad->translation), "r" (CfCameraOfsNow), "r" (scratchpad->matrix[3])
                 : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(scratchpad->matrix[3]);
+                XsgGpr r_1 = XSG_IN(CfCameraOfsNow);
+                XsgGpr r_0 = XSG_IN(scratchpad->translation);
+                vu0_lqc2(3, XSG_EA(r_1, 0));
+                vu0_lqc2(2, XSG_EA(r_2, 0));
+                vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+                vu0_sqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             xglVectorScaleAddXYZ(scratchpad->definition->parameters.offset.first_value,
                                  (Vector4 *)CfCameraOfsNow, (Vector4 *)scratchpad->translation,
                                  (Vector4 *)CfCameraOfsNow);

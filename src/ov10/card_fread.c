@@ -1063,6 +1063,7 @@ void CardDisp(float (*place)[4], s16 no, s16 flag, s16 disp)
         nmlModelSetTexture((char *)0x01C9BB70);
         nmlModelEntryCard(model);
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
@@ -1073,6 +1074,21 @@ void CardDisp(float (*place)[4], s16 no, s16 flag, s16 disp)
         "lq $2, 0x30(%1)\n"
         "sq $2, 0x30(%0)\n"
         : : "r"(mat), "r"(place) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(place);
+        XsgGpr r_0 = XSG_IN(mat);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (!(flag & 1)) {
         nmlModelSetPlace(mat);
         nmlModelSetTexture((char *)0x01C74000);
@@ -2725,6 +2741,7 @@ s32 CardPlayCntPower(CardGameWork *work, CardLayerStack *slot)
     return power;
 }
 
+#ifndef PORT_HOST
 #define QuadwordCopyMatrix(destination, source) \
     PS2_ASMV( \
         "lq $2, 0(%1)\n" \
@@ -2738,6 +2755,10 @@ s32 CardPlayCntPower(CardGameWork *work, CardLayerStack *slot)
         : \
         : "r" (destination), "r" (source) \
         : "$2", "memory")
+#else
+#define QuadwordCopyMatrix(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16); __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16); __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16); __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16); __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16); xsg_vu0_blocks++; } })
+#endif
 extern float CardStackPos[3];
 extern float CPSInfoPos[][2];
 extern Matrix4 Player1Color;
@@ -4625,6 +4646,7 @@ void CGCPYamaDispSub(CardPlaySide *side, int index, int count, unsigned short bu
             CardDispCard(mat, side->deck[i], 1);
         }
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0x0(%1)\n"
         "sq $2, 0x0(%0)\n"
@@ -4635,6 +4657,21 @@ void CGCPYamaDispSub(CardPlaySide *side, int index, int count, unsigned short bu
         "lq $2, 0x30(%1)\n"
         "sq $2, 0x30(%0)\n"
         : : "r"(mat), "r"(base) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(base);
+        XsgGpr r_0 = XSG_IN(mat);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (count == 1) {
         trans[0] = -2.0f;
         trans[1] = trans[2] = 0.0f;

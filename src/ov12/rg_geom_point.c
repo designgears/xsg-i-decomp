@@ -245,10 +245,20 @@ void RgGeomPointPassTime(RgGeomPoint *pPoint, float deltaTime)
         assert_prog(rg_point_assert_expression, D_00A55100, 172);
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(pPoint->oldPosition), "r"(pPoint->position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pPoint->position);
+        XsgGpr r_0 = XSG_IN(pPoint->oldPosition);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     XrgScaleVector(delta, pPoint->force, deltaTime / pPoint->weight);
     XrgAddVectorXYZ(pPoint->velocity, pPoint->velocity, delta);
@@ -258,10 +268,20 @@ void RgGeomPointPassTime(RgGeomPoint *pPoint, float deltaTime)
         pPoint->maxXYSpd * pPoint->maxXYSpd) {
         RgVector horizontal;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf31, 0(%1)\n\t"
             "sqc2 $vf31, 0(%0)\n\t"
             : : "r"(horizontal), "r"(pPoint->velocity) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(pPoint->velocity);
+            XsgGpr r_0 = XSG_IN(horizontal);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         horizontal[1] = 0.0f;
         XrgNormalizeVector(horizontal, horizontal);
         horizontal[0] *= pPoint->maxXYSpd;

@@ -2857,6 +2857,7 @@ void CalcNearCrossPointCircle(const Vector4 *from, const Vector4 *to,
     if (CrossCheckMapUnitCircle(from, to, unit)) {
         delta = *from;
         delta.y = unit->position.y;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3,0(%0)\n\t"
             "lqc2 vf2,0(%1)\n\t"
@@ -2865,6 +2866,18 @@ void CalcNearCrossPointCircle(const Vector4 *from, const Vector4 *to,
             :
             : "r"(from), "r"(&unit->position), "r"(&delta)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&delta);
+            XsgGpr r_1 = XSG_IN(&unit->position);
+            XsgGpr r_0 = XSG_IN(from);
+            vu0_lqc2(3, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         xglVectorLength(&distance, &delta);
         xglVectorNormal(&direction, &delta);
         distance -= unit->radius;
@@ -2952,6 +2965,7 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
     float lenA;
     float lenB;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3,0(%1)\n\t"
         "lqc2 vf2,0(%0)\n\t"
@@ -2961,8 +2975,21 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
         : "r"(origin), "r"(candA), "r"(&delta)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&delta);
+        XsgGpr r_1 = XSG_IN(candA);
+        XsgGpr r_0 = XSG_IN(origin);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorLength(&lenA, &delta);
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3,0(%1)\n\t"
         "lqc2 vf2,0(%0)\n\t"
@@ -2972,6 +2999,18 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
         : "r"(origin), "r"(candB), "r"(&delta)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&delta);
+        XsgGpr r_1 = XSG_IN(candB);
+        XsgGpr r_0 = XSG_IN(origin);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorLength(&lenB, &delta);
 
     if (lenA < lenB)

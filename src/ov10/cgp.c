@@ -8326,6 +8326,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     xglMatrixTrans(matrix.m, (const float (*)[4]) matrix.m, vec);
     xglMatrixRotX(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[1] / 180.0f * PI_F);
     xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, work->rotStageVector[2] / 180.0f * PI_F);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -8338,6 +8339,22 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[4].matrix), "r" (&matrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&matrix);
+        XsgGpr r_0 = XSG_IN((CardEffectMatrix *) work->models[4].matrix);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -8350,7 +8367,23 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[5].matrix), "r" (&matrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&matrix);
+        XsgGpr r_0 = XSG_IN((CardEffectMatrix *) work->models[5].matrix);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     xglMatrixRotZ(work->models[15].matrix, (const float (*)[4]) matrix.m, -work->rotStageVector[2] / 180.0f * PI_F);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -8363,6 +8396,21 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" (&cursorMatrix), "r" (&matrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&matrix);
+        XsgGpr r_0 = XSG_IN(&cursorMatrix);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     faceUp = 0;
     if (!(work->flags & CGP_FLAG_HIDE_HANDS)) {
         if (work->flags & CGP_FLAG_SIDE0_AUTO) {
@@ -8399,6 +8447,7 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
     CardPlayDispJunk(0, &work->player, matrix.m);
     CardDispEffect(0, work, &matrix);
     xglMatrixRotZ(matrix.m, (const float (*)[4]) matrix.m, PI_F);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -8411,6 +8460,22 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[6].matrix), "r" (&matrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&matrix);
+        XsgGpr r_0 = XSG_IN((CardEffectMatrix *) work->models[6].matrix);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
@@ -8423,6 +8488,21 @@ s32 CardGameProc(s32 mode, CardListWindow *window, CardGameWork *work, s32 round
         :
         : "r" ((CardEffectMatrix *) work->models[7].matrix), "r" (&matrix)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&matrix);
+        XsgGpr r_0 = XSG_IN((CardEffectMatrix *) work->models[7].matrix);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     faceUp = 0;
     if (!(work->flags & CGP_FLAG_HIDE_HANDS)) {
         if (work->flags & CGP_FLAG_SIDE1_AUTO) {

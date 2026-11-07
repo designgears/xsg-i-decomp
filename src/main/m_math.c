@@ -67,6 +67,7 @@ float *MMathCalcHermite(float *destination, float parameter,
 {
     register int scratch PS2_REG("$10");
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 %0,%1\n\t"
         "qmtc2 %2,$vf1\n\t"
@@ -98,6 +99,44 @@ float *MMathCalcHermite(float *destination, float parameter,
         : "f"(parameter), "r"(scratch), "r"(destination), "r"(tangent_first),
           "r"(tangent_second), "r"(endpoint_first), "r"(endpoint_second)
         : "memory");
+#else
+    {
+        XsgGpr r_7 = XSG_IN(endpoint_second);
+        XsgGpr r_6 = XSG_IN(endpoint_first);
+        XsgGpr r_5 = XSG_IN(tangent_second);
+        XsgGpr r_4 = XSG_IN(tangent_first);
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgFpr f_1 = XSG_FIN(parameter);
+        xsg_ee_gpr[10] = XSG_IN(scratch);
+        xsg_ee_set32(&xsg_ee_gpr[10], f_1.u);
+        vu0_qmtc2(1, &xsg_ee_gpr[10]);
+        vu0_arith(VU0_ADD, 14, 2, 0, 1, 0);
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_arith(VU0_MUL, 4, 2, 2, 1, 0);
+        vu0_arith(VU0_ADD, 15, 3, 0, 0, 3);
+        vu0_arith(VU0_ADD, 15, 3, 3, 0, 3);
+        vu0_mr32(15, 3, 3);
+        vu0_arith(VU0_MUL, 14, 3, 3, 2, VU0_VEC);
+        vu0_arith(VU0_SUB, 4, 5, 3, 3, 2);
+        vu0_arith(VU0_ADD, 4, 5, 5, 0, 3);
+        vu0_arith(VU0_SUB, 2, 6, 3, 3, 1);
+        vu0_arith(VU0_SUB, 4, 7, 2, 3, 0);
+        vu0_arith(VU0_ADD, 4, 7, 7, 1, 0);
+        vu0_arith(VU0_SUB, 4, 8, 2, 2, 0);
+        vu0_lqc2(1, XSG_EA(r_4, 0));
+        vu0_lqc2(2, XSG_EA(r_5, 0));
+        vu0_lqc2(3, XSG_EA(r_6, 0));
+        vu0_lqc2(4, XSG_EA(r_7, 0));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 1, 7, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 2, 8, 1);
+        vu0_arith(VU0_MADD, 14, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 14, 1, 4, 6, 2);
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(scratch, xsg_ee_gpr[10]);
+    }
+#endif
     return destination;
 }
 
@@ -111,6 +150,7 @@ void MMathCalcHermitePrm(HermiteVector *tangent_start, HermiteVector *tangent_en
                           const HermiteVector *point_prev, const HermiteVector *point_start,
                           const HermiteVector *point_end, const HermiteVector *point_next)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%2)\n\t"
         "lqc2 vf2,0(%3)\n\t"
@@ -131,6 +171,30 @@ void MMathCalcHermitePrm(HermiteVector *tangent_start, HermiteVector *tangent_en
           "r"(point_end), "r"(point_next)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_5 = XSG_IN(point_next);
+        XsgGpr r_4 = XSG_IN(point_end);
+        XsgGpr r_3 = XSG_IN(point_start);
+        XsgGpr r_2 = XSG_IN(point_prev);
+        XsgGpr r_1 = XSG_IN(tangent_end);
+        XsgGpr r_0 = XSG_IN(tangent_start);
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_lqc2(2, XSG_EA(r_3, 0));
+        vu0_lqc2(3, XSG_EA(r_4, 0));
+        vu0_lqc2(4, XSG_EA(r_5, 0));
+        vu0_iaddi(5, 0, 8);
+        vu0_mfir(8, 5, 5);
+        vu0_itof(4, 8, 5, 5);
+        vu0_arith(VU0_SUB, 14, 6, 3, 1, VU0_VEC);
+        vu0_arith(VU0_SUB, 14, 7, 4, 2, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 6, 6, 5, 0);
+        vu0_arith(VU0_MUL, 14, 7, 7, 5, 0);
+        vu0_sqc2(6, XSG_EA(r_0, 0));
+        vu0_sqc2(7, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -153,6 +217,7 @@ void *MMathDeg2RadVector(void *destination, const Vector4 *source)
 {
     register void *result PS2_REG("$2") = destination;
     register float scale PS2_REG("$f8") = 0.01745329238f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
@@ -164,6 +229,20 @@ void *MMathDeg2RadVector(void *destination, const Vector4 *source)
         : "r"(source), "f"(scale)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        xsg_ee_gpr[2] = XSG_IN(result);
+        xsg_ee_fpr[8] = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+        vu0_qmtc2(1, &xsg_ee_gpr[8]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_sqc2(2, XSG_EA(xsg_ee_gpr[2], 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(result, xsg_ee_gpr[2]);
+    }
+#endif
     return result;
 }
 
@@ -171,6 +250,7 @@ void *MMathDeg2RadVectorI(void *destination, const Vector4 *source)
 {
     register void *result PS2_REG("$2") = destination;
     register float scale PS2_REG("$f8") = 0.01745329238f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
@@ -183,6 +263,21 @@ void *MMathDeg2RadVectorI(void *destination, const Vector4 *source)
         : "r"(source), "f"(scale)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        xsg_ee_gpr[2] = XSG_IN(result);
+        xsg_ee_fpr[8] = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+        vu0_qmtc2(1, &xsg_ee_gpr[8]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_itof(0, 14, 2, 2);
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_sqc2(2, XSG_EA(xsg_ee_gpr[2], 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(result, xsg_ee_gpr[2]);
+    }
+#endif
     return result;
 }
 
@@ -190,6 +285,7 @@ void *MMathRad2DegVector(void *destination, const Vector4 *source)
 {
     register void *result PS2_REG("$2") = destination;
     register float scale PS2_REG("$f8") = 57.29578018f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
@@ -201,6 +297,20 @@ void *MMathRad2DegVector(void *destination, const Vector4 *source)
         : "r"(source), "f"(scale)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        xsg_ee_gpr[2] = XSG_IN(result);
+        xsg_ee_fpr[8] = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+        vu0_qmtc2(1, &xsg_ee_gpr[8]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_sqc2(2, XSG_EA(xsg_ee_gpr[2], 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(result, xsg_ee_gpr[2]);
+    }
+#endif
     return result;
 }
 
@@ -208,6 +318,7 @@ void *MMathRad2DegVectorI(void *destination, const Vector4 *source)
 {
     register void *result PS2_REG("$2") = destination;
     register float scale PS2_REG("$f8") = 57.29578018f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,vf1\n\t"
@@ -220,6 +331,21 @@ void *MMathRad2DegVectorI(void *destination, const Vector4 *source)
         : "r"(source), "f"(scale)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        xsg_ee_gpr[2] = XSG_IN(result);
+        xsg_ee_fpr[8] = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+        vu0_qmtc2(1, &xsg_ee_gpr[8]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_ftoi(0, 14, 2, 2);
+        vu0_sqc2(2, XSG_EA(xsg_ee_gpr[2], 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(result, xsg_ee_gpr[2]);
+    }
+#endif
     return result;
 }
 
@@ -230,6 +356,7 @@ void *MMathRad2DegVectorI(void *destination, const Vector4 *source)
  */
 void *MMathNormalizeVector2(void *destination, const Vector4 *source)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xyz vf2xyz,vf1xyz,vf1xyz\n\t"
@@ -245,6 +372,23 @@ void *MMathNormalizeVector2(void *destination, const Vector4 *source)
         : "r"(source)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(destination);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 2, 2, 2, 1);
+        vu0_arith(VU0_ADD, 8, 2, 2, 2, 2);
+        vu0_rsqrt(0, 3, 2, 0);
+        vu0_move(1, 2, 0);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 2, 1, 0, VU0_BQ);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(destination, r_0);
+    }
+#endif
     return destination;
 }
 
@@ -258,6 +402,7 @@ void *MMathNormalizeVector2(void *destination, const Vector4 *source)
 float MMathCalcLength(const Vector4 *vector)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xyz vf1xyz,vf1xyz,vf1xyz\n\t"
@@ -272,12 +417,30 @@ float MMathCalcLength(const Vector4 *vector)
         : "r"(vector)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(vector);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 1);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 2);
+        vu0_sqrt(1, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 float MMathCalcLengthXY(const Vector4 *vector)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xy vf1xy,vf1xy,vf1xy\n\t"
@@ -291,12 +454,29 @@ float MMathCalcLengthXY(const Vector4 *vector)
         : "r"(vector)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(vector);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 12, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 1);
+        vu0_sqrt(1, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 float MMathCalcLengthXZ(const Vector4 *vector)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.xz vf1xz,vf1xz,vf1xz\n\t"
@@ -310,12 +490,29 @@ float MMathCalcLengthXZ(const Vector4 *vector)
         : "r"(vector)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(vector);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 10, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 2);
+        vu0_sqrt(1, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 float MMathCalcLengthYZ(const Vector4 *vector)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "vmul.yz vf1yz,vf1yz,vf1yz\n\t"
@@ -329,12 +526,29 @@ float MMathCalcLengthYZ(const Vector4 *vector)
         : "r"(vector)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(vector);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 6, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 4, 1, 1, 1, 2);
+        vu0_sqrt(1, 1);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 float MMathCalcDist(const Vector4 *first, const Vector4 *second)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
@@ -351,12 +565,33 @@ float MMathCalcDist(const Vector4 *first, const Vector4 *second)
         : "r"(first), "r"(second)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 1, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 1);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 2);
+        vu0_sqrt(1, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 float MMathCalcDistXZ(const Vector4 *first, const Vector4 *second)
 {
     float result;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
@@ -372,6 +607,25 @@ float MMathCalcDistXZ(const Vector4 *first, const Vector4 *second)
         : "r"(first), "r"(second)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = {0};
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 10, 1, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 10, 1, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 2);
+        vu0_sqrt(1, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
@@ -379,6 +633,7 @@ Vector4 *MMathCalcDirVector(Vector4 *destination, const Vector4 *source,
                             const Vector4 *target)
 {
     register Vector4 *normalized_destination PS2_REG("$2") = destination;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1,0(%1)\n\t"
         "lqc2 vf2,0(%2)\n\t"
@@ -387,6 +642,19 @@ Vector4 *MMathCalcDirVector(Vector4 *destination, const Vector4 *source,
         : "+r"(normalized_destination)
         : "r"(source), "r"(target)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(target);
+        XsgGpr r_1 = XSG_IN(source);
+        xsg_ee_gpr[2] = XSG_IN(normalized_destination);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 1, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(xsg_ee_gpr[2], 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(normalized_destination, xsg_ee_gpr[2]);
+    }
+#endif
     MMathNormalizeVector2(destination, normalized_destination);
     return normalized_destination;
 }
@@ -422,6 +690,7 @@ Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
@@ -443,6 +712,34 @@ Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
         : "r"(from), "r"(to), "r"(&delta), "r"(out)
         : "memory", "$8"
     );
+#else
+    {
+        extern char xsg_sym_McMathUnitVector[] __asm__("McMathUnitVector");
+        XsgGpr r_4 = XSG_IN(out);
+        XsgGpr r_3 = XSG_IN(&delta);
+        XsgGpr r_2 = XSG_IN(to);
+        XsgGpr r_1 = XSG_IN(from);
+        XsgFpr f_0 = XSG_FIN(length);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitVector + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitVector & 0xffffu)));
+        if (r_1.d[0] == 0) r_1.d[0] = xsg_ee_gpr[8].d[0];
+        if (r_2.d[0] == 0) r_2.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 3, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 10, 4, 3, 3, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 4, 4, 4, 2);
+        vu0_sqrt(4, 0);
+        vu0_sqc2(3, XSG_EA(r_3, 0));
+        vu0_sqc2(0, XSG_EA(r_4, 0));
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        length = f_0.f;
+    }
+#endif
 #ifdef PORT_HOST
     {
         /* Host stand-in for the VU0 block above (McMathUnitVector for null inputs). */
@@ -466,6 +763,7 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
@@ -488,6 +786,37 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
         : "r"(&delta), "r"(out)
         : "memory", "$8"
     );
+#else
+    {
+        extern char xsg_sym_McMathUnitVector[] __asm__("McMathUnitVector");
+        XsgGpr r_4 = XSG_IN(out);
+        XsgGpr r_3 = XSG_IN(&delta);
+        XsgGpr r_2 = XSG_IN(to);
+        XsgGpr r_1 = XSG_IN(from);
+        XsgFpr f_0 = XSG_FIN(length);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitVector + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitVector & 0xffffu)));
+        if (r_1.d[0] == 0) r_1.d[0] = xsg_ee_gpr[8].d[0];
+        if (r_2.d[0] == 0) r_2.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 3, 1, 2, VU0_VEC);
+        vu0_arith(VU0_MUL, 10, 4, 3, 3, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 4, 4, 4, 2);
+        vu0_sqrt(4, 0);
+        vu0_arith(VU0_SUB, 4, 3, 2, 1, VU0_VEC);
+        vu0_sqc2(3, XSG_EA(r_3, 0));
+        vu0_sqc2(0, XSG_EA(r_4, 0));
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        length = f_0.f;
+        XSG_OUT(from, r_1);
+        XSG_OUT(to, r_2);
+    }
+#endif
 #ifdef PORT_HOST
     {
         /* Host stand-in for the VU0 block above (McMathUnitVector for null inputs). */
@@ -513,6 +842,7 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
  */
 Vector4 *MMathAddRotateVectorY(Vector4 *destination, float angle, const Vector4 *base, const Vector4 *offset)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf6\n\t"
@@ -532,6 +862,31 @@ Vector4 *MMathAddRotateVectorY(Vector4 *destination, float angle, const Vector4 
         "sqc2 vf2, 0(%3)\n\t"
         "nop"
         : : "f"(angle), "r"(base), "r"(offset), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgGpr r_2 = XSG_IN(offset);
+        XsgGpr r_1 = XSG_IN(base);
+        XsgFpr f_0 = XSG_FIN(angle);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(6, &xsg_ee_gpr[8]);
+        vu0_move(8, 4, 6);
+        vu0_callms(232);
+        vu0_move(8, 5, 1);
+        vu0_move(8, 4, 6);
+        vu0_callms(32);
+        vu0_move(8, 6, 1);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 3, 2);
+        vu0_arith(VU0_SUB, 2, 4, 0, 3, 0);
+        vu0_arith(VU0_MUL, 10, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MADD, 10, 3, 4, 6, 0);
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
@@ -543,6 +898,7 @@ Vector4 *MMathAddRotateVectorY(Vector4 *destination, float angle, const Vector4 
  */
 Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf5, 0(%0)\n\t"
         "lqc2 vf6, 0(%1)\n\t"
@@ -564,6 +920,32 @@ Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vecto
         "sqc2 vf5, 0(%2)\n\t"
         "nop"
         : : "r"(first), "r"(second), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(5, XSG_EA(r_0, 0));
+        vu0_lqc2(6, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 1, 7, 5, 6, 1);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 3);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 2, 7, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 3);
+        vu0_callms(32);
+        vu0_move(8, 7, 1);
+        vu0_move(8, 4, 6);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 7, 0, 1, 0);
+        vu0_move(8, 4, 6);
+        vu0_callms(232);
+        vu0_arith(VU0_MUL, 10, 7, 7, 1, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 7, 6, 3);
+        vu0_arith(VU0_MADD, 14, 5, 5, 0, 3);
+        vu0_sqc2(5, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
@@ -573,6 +955,7 @@ Vector4 *MMathCalcOffset(Vector4 *destination, const Vector4 *first, const Vecto
  */
 Vector4 *MMathCalcOffsetXYZ(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf5, 0(%0)\n\t"
         "lqc2 vf6, 0(%1)\n\t"
@@ -589,12 +972,34 @@ Vector4 *MMathCalcOffsetXYZ(Vector4 *destination, const Vector4 *first, const Ve
         "sqc2 vf5, 0(%2)\n\t"
         "nop"
         : : "r"(first), "r"(second), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(5, XSG_EA(r_0, 0));
+        vu0_lqc2(6, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 5, 3);
+        vu0_callms(232);
+        vu0_move(8, 7, 1);
+        vu0_arith(VU0_ADD, 8, 4, 0, 5, 3);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 2, 0, 6, 2);
+        vu0_arith(VU0_SUB, 2, 2, 0, 6, 0);
+        vu0_arith(VU0_MUL, 10, VU0_ACC, 6, 7, 0);
+        vu0_arith(VU0_MADD, 10, 6, 2, 1, 0);
+        vu0_arith(VU0_ADD, 14, 5, 5, 6, VU0_VEC);
+        vu0_sqc2(5, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathSubVectorMulS: destination = (first - second) * scale (xyz only). */
 Vector4 *MMathSubVectorMulS(Vector4 *destination, const Vector4 *first, const Vector4 *second, float scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
@@ -605,12 +1010,29 @@ Vector4 *MMathSubVectorMulS(Vector4 *destination, const Vector4 *first, const Ve
         "sqc2 vf1, 0(%3)\n\t"
         "nop"
         : : "f"(scale), "r"(first), "r"(second), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(3, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 1, 1, 3, 0);
+        vu0_sqc2(1, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathSubVectorDivS: destination = (first - second) / scale (xyz only). */
 Vector4 *MMathSubVectorDivS(Vector4 *destination, const Vector4 *first, const Vector4 *second, float scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
@@ -623,6 +1045,24 @@ Vector4 *MMathSubVectorDivS(Vector4 *destination, const Vector4 *first, const Ve
         "sqc2 vf1, 0(%3)\n\t"
         "nop"
         : : "f"(scale), "r"(first), "r"(second), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(3, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_div(0, 3, 3, 0);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 1, 1, 0, VU0_BQ);
+        vu0_sqc2(1, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
@@ -632,6 +1072,7 @@ Vector4 *MMathSubVectorDivS(Vector4 *destination, const Vector4 *first, const Ve
  */
 Vector4 *MMathDivVector(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -648,12 +1089,34 @@ Vector4 *MMathDivVector(Vector4 *destination, const Vector4 *first, const Vector
         "sqc2 vf3, 0(%2)\n\t"
         "nop"
         : : "r"(first), "r"(second), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_div(1, 0, 2, 0);
+        vu0_move(1, 3, 1);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 3, 0, 0, VU0_BQ);
+        vu0_div(1, 1, 2, 1);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 4, 3, 0, 0, VU0_BQ);
+        vu0_div(1, 2, 2, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 2, 3, 0, 0, VU0_BQ);
+        vu0_sqc2(3, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathDivVectorS: destination.xyz = source.xyz / scale. */
 Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf2\n\t"
@@ -664,12 +1127,28 @@ Vector4 *MMathDivVectorS(Vector4 *destination, const Vector4 *source, float scal
         "sqc2 vf1, 0(%2)\n\t"
         "nop"
         : : "f"(scale), "r"(source), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(source);
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_div(0, 3, 2, 0);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 1, 1, 0, VU0_BQ);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathDivVector4: destination = first / second, all four lanes. */
 Vector4 *MMathDivVector4(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -689,12 +1168,37 @@ Vector4 *MMathDivVector4(Vector4 *destination, const Vector4 *first, const Vecto
         "sqc2 vf3, 0(%2)\n\t"
         "nop"
         : : "r"(first), "r"(second), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_div(1, 0, 2, 0);
+        vu0_arith(VU0_SUB, 1, 3, 3, 3, VU0_VEC);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 3, 0, 0, VU0_BQ);
+        vu0_div(1, 1, 2, 1);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 4, 3, 0, 0, VU0_BQ);
+        vu0_div(1, 2, 2, 2);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 2, 3, 0, 0, VU0_BQ);
+        vu0_div(1, 3, 2, 3);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 1, 3, 3, 0, VU0_BQ);
+        vu0_sqc2(3, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathDivVectorS4: destination = source / scale, all four lanes. */
 Vector4 *MMathDivVectorS4(Vector4 *destination, const Vector4 *source, float scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf2\n\t"
@@ -705,6 +1209,21 @@ Vector4 *MMathDivVectorS4(Vector4 *destination, const Vector4 *source, float sca
         "sqc2 vf1, 0(%2)\n\t"
         "nop"
         : : "f"(scale), "r"(source), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(source);
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_div(0, 3, 2, 0);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 15, 1, 1, 0, VU0_BQ);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
@@ -712,6 +1231,7 @@ short MMathIsVectorEqual(const Vector4 *first, const Vector4 *second)
 {
     int result;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0(%2)\n\t"
@@ -723,6 +1243,22 @@ short MMathIsVectorEqual(const Vector4 *first, const Vector4 *second)
         : "=r"(result)
         : "r"(first), "r"(second)
         : "$8", "$9", "$10");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgGpr r_0 = {{0, 0}};
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_2, 0), 16);
+        xsg_mmi_pxor(&xsg_ee_gpr[10], &xsg_ee_gpr[8], &xsg_ee_gpr[9]);
+        xsg_ee_set32(&r_0, xsg_ee_zero.w[0] + (unsigned int)(1));
+        if (xsg_ee_gpr[10].d[0] != 0) r_0.d[0] = xsg_ee_zero.d[0];
+        xsg_mmi_pexew(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[10]);
+        if (xsg_ee_gpr[10].d[0] != 0) r_0.d[0] = xsg_ee_zero.d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(result, r_0);
+    }
+#endif
     return result;
 }
 
@@ -730,6 +1266,7 @@ short MMathIsVectorEqual4(const Vector4 *first, const Vector4 *second)
 {
     int result;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0(%2)\n\t"
@@ -741,6 +1278,22 @@ short MMathIsVectorEqual4(const Vector4 *first, const Vector4 *second)
         : "=r"(result)
         : "r"(first), "r"(second)
         : "$8", "$9", "$10");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgGpr r_0 = {{0, 0}};
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_2, 0), 16);
+        xsg_mmi_pxor(&xsg_ee_gpr[10], &xsg_ee_gpr[8], &xsg_ee_gpr[9]);
+        xsg_ee_set32(&r_0, xsg_ee_zero.w[0] + (unsigned int)(1));
+        if (xsg_ee_gpr[10].d[0] != 0) r_0.d[0] = xsg_ee_zero.d[0];
+        xsg_mmi_pcpyud(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_zero);
+        if (xsg_ee_gpr[10].d[0] != 0) r_0.d[0] = xsg_ee_zero.d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(result, r_0);
+    }
+#endif
     return result;
 }
 
@@ -749,21 +1302,69 @@ float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second)
 {
     float result;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(first) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(second) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(second);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmul.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vaddy.x vf1, vf1, vf1y" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vaddz.x vf1, vf1, vf1z" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_ADD, 8, 1, 1, 1, 2);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "qmfc2.ni $8, vf1\n\t"
         "mtc1 $8, %0"
         : "=f"(result) :  : "$8", "memory");
+#else
+    {
+        XsgFpr f_0 = {0};
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        result = f_0.f;
+    }
+#endif
     return result;
 }
 
 /* MMathVectorCrossProduct: destination.xyz = first x second, w forced to 1.0. */
 Vector4 *MMathVectorCrossProduct(Vector4 *destination, const Vector4 *first, const Vector4 *second)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -773,12 +1374,27 @@ Vector4 *MMathVectorCrossProduct(Vector4 *destination, const Vector4 *first, con
         "sqc2 vf1, 0(%2)\n\t"
         "nop"
         : : "r"(first), "r"(second), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(destination);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_opmula(14, 1, 2);
+        vu0_opmsub(14, 1, 2, 1);
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 /* MMathVectorInterpolation: destination = first * (1 - parameter) + second * parameter. */
 Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %0\n\t"
         "qmtc2.ni $8, vf3\n\t"
@@ -790,11 +1406,29 @@ Vector4 *MMathVectorInterpolation(Vector4 *destination, const Vector4 *first, co
         "sqc2 vf1, 0(%3)\n\t"
         "nop"
         : : "f"(parameter), "r"(first), "r"(second), "r"(destination) : "$8", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(destination);
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgFpr f_0 = XSG_FIN(parameter);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(3, &xsg_ee_gpr[8]);
+        vu0_arith(VU0_SUB, 1, 3, 0, 3, 0);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 1, 3, 3);
+        vu0_arith(VU0_MADD, 14, 1, 2, 3, 0);
+        vu0_sqc2(1, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return destination;
 }
 
 Vector4 *MMathSpecialVectorSub(Vector4 *destination, const Vector4 *first, const Vector4 *second, float parameter)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitVector)\n\t"
         "addiu $8,$8,%%lo(McMathUnitVector)\n\t"
@@ -812,11 +1446,37 @@ Vector4 *MMathSpecialVectorSub(Vector4 *destination, const Vector4 *first, const
         "sqc2 $vf1,0(%1)\n\t"
         "nop"
         : "+r"(second) : "r"(destination), "r"(first), "f"(parameter) : "$8", "$f8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitVector[] __asm__("McMathUnitVector");
+        XsgFpr f_3 = XSG_FIN(parameter);
+        XsgGpr r_2 = XSG_IN(first);
+        XsgGpr r_1 = XSG_IN(destination);
+        XsgGpr r_0 = XSG_IN(second);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitVector + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitVector & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        xsg_ee_fpr[8].f = 0.001953125f;
+        xsg_ee_fpr[8].f = xsg_ee_fpr[8].f * f_3.f;
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_mr32(15, 3, 0);
+        vu0_arith(VU0_SUB, 14, 1, 3, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 1, 4, 0);
+        vu0_arith(VU0_MADD, 14, 1, 2, 0, 3);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(second, r_0);
+    }
+#endif
     return destination;
 }
 
 Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -842,11 +1502,44 @@ Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle)
         "sqc2 $vf1,32(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "f"(angle) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgFpr f_2 = XSG_FIN(angle);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_move(8, 5, 1);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_move(8, 6, 1);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 1, 3, 6, 0);
+        vu0_sqc2(1, XSG_EA(r_1, 16));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 1, 2, 6, 0);
+        vu0_sqc2(1, XSG_EA(r_1, 32));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixY(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -872,11 +1565,44 @@ Matrix4 *MMathRotateMatrixY(Matrix4 *out, const Matrix4 *matrix, float angle)
         "sqc2 $vf2,32(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "f"(angle) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgFpr f_2 = XSG_FIN(angle);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_move(8, 5, 1);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_move(8, 6, 1);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_sqc2(2, XSG_EA(r_1, 16));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 2, 3, 6, 0);
+        vu0_sqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MADD, 15, 2, 1, 6, 0);
+        vu0_sqc2(2, XSG_EA(r_1, 32));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixZ(Matrix4 *out, const Matrix4 *matrix, float angle)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -902,11 +1628,44 @@ Matrix4 *MMathRotateMatrixZ(Matrix4 *out, const Matrix4 *matrix, float angle)
         "sqc2 $vf3,16(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "f"(angle) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgFpr f_2 = XSG_FIN(angle);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_move(8, 5, 1);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_move(8, 6, 1);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_sqc2(3, XSG_EA(r_1, 32));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 0);
+        vu0_arith(VU0_MADD, 15, 3, 2, 6, 0);
+        vu0_sqc2(3, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 1, 6, 0);
+        vu0_sqc2(3, XSG_EA(r_1, 16));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixXY(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -942,11 +1701,54 @@ Matrix4 *MMathRotateMatrixXY(Matrix4 *out, const Matrix4 *matrix, const Vector4 
         "sqc2 $vf4,48(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "r"(angles) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgGpr r_2 = XSG_IN(angles);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(7, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 4, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 6, 0, 1, 0);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 7, 3, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 2, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 1);
+        vu0_arith(VU0_MSUB, 15, 8, 3, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 15, 3, 1, 6, 1);
+        vu0_sqc2(8, XSG_EA(r_1, 0));
+        vu0_sqc2(7, XSG_EA(r_1, 16));
+        vu0_sqc2(3, XSG_EA(r_1, 32));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -982,11 +1784,54 @@ Matrix4 *MMathRotateMatrixYX(Matrix4 *out, const Matrix4 *matrix, const Vector4 
         "sqc2 $vf4,48(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "r"(angles) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgGpr r_2 = XSG_IN(angles);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(7, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 4, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 6, 0, 1, 0);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 1);
+        vu0_arith(VU0_MSUB, 15, 7, 3, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 15, 3, 1, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 8, 3, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 2, 6, 0);
+        vu0_sqc2(7, XSG_EA(r_1, 0));
+        vu0_sqc2(8, XSG_EA(r_1, 16));
+        vu0_sqc2(3, XSG_EA(r_1, 32));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixXYZ(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -1032,11 +1877,64 @@ Matrix4 *MMathRotateMatrixXYZ(Matrix4 *out, const Matrix4 *matrix, const Vector4
         "sqc2 $vf4,48(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "r"(angles) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgGpr r_2 = XSG_IN(angles);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(7, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 4, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 2);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 2, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 2);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 2, 6, 0, 1, 0);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 7, 3, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 2, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 1);
+        vu0_arith(VU0_MSUB, 15, 8, 3, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 15, 3, 1, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 8, 5, 2);
+        vu0_arith(VU0_MADD, 15, 1, 7, 6, 2);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 7, 5, 2);
+        vu0_arith(VU0_MSUB, 15, 2, 8, 6, 2);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        vu0_sqc2(2, XSG_EA(r_1, 16));
+        vu0_sqc2(3, XSG_EA(r_1, 32));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, const Matrix4 *matrix, const Vector4 *angles)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $8,%%hi(McMathUnitMatrix)\n\t"
         "addiu $8,$8,%%lo(McMathUnitMatrix)\n\t"
@@ -1082,11 +1980,64 @@ Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, const Matrix4 *matrix, const Vector4
         "sqc2 $vf4,48(%1)\n\t"
         "nop"
         : "+r"(matrix) : "r"(out), "r"(angles) : "$8", "memory");
+#else
+    {
+        extern char xsg_sym_McMathUnitMatrix[] __asm__("McMathUnitMatrix");
+        XsgGpr r_2 = XSG_IN(angles);
+        XsgGpr r_1 = XSG_IN(out);
+        XsgGpr r_0 = XSG_IN(matrix);
+        xsg_ee_set32(&xsg_ee_gpr[8], (unsigned int)((((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix + 0x8000u) >> 16)) << 16);
+        xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_gpr[8].w[0] + (unsigned int)((int)(short)((unsigned int)(unsigned long)xsg_sym_McMathUnitMatrix & 0xffffu)));
+        if (r_0.d[0] == 0) r_0.d[0] = xsg_ee_gpr[8].d[0];
+        vu0_lqc2(7, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 4, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 2);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 2, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 2);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 2, 6, 0, 1, 0);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 1);
+        vu0_arith(VU0_MSUB, 15, 7, 3, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 15, 3, 1, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 8, 3, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 2, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 7, 5, 2);
+        vu0_arith(VU0_MADD, 15, 1, 8, 6, 2);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 8, 5, 2);
+        vu0_arith(VU0_MSUB, 15, 2, 7, 6, 2);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        vu0_sqc2(2, XSG_EA(r_1, 16));
+        vu0_sqc2(3, XSG_EA(r_1, 32));
+        vu0_sqc2(4, XSG_EA(r_1, 48));
+        xsg_vu0_blocks++;
+        XSG_OUT(matrix, r_0);
+    }
+#endif
     return out;
 }
 
 Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%2)\n\t"
         "lqc2 $vf2,0(%1)\n\t"
@@ -1100,11 +2051,30 @@ Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *ve
         "sqc2 $vf1,0(%0)\n\t"
         "nop"
         : : "r"(out), "r"(matrix), "r"(vector) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(vector);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 16));
+        vu0_lqc2(4, XSG_EA(r_1, 32));
+        vu0_lqc2(5, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 1, 5, 1, 3);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2,0(%1)\n\t"
         "lqc2 $vf3,16(%1)\n\t"
@@ -1136,11 +2106,48 @@ Matrix4 *MMathMulMatrix(Matrix4 *out, const Matrix4 *left, const Matrix4 *right)
         "sqc2 $vf6,48(%0)\n\t"
         "nop"
         : : "r"(out), "r"(left), "r"(right) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(right);
+        XsgGpr r_1 = XSG_IN(left);
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 16));
+        vu0_lqc2(4, XSG_EA(r_1, 32));
+        vu0_lqc2(5, XSG_EA(r_1, 48));
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 6, 5, 1, 3);
+        vu0_sqc2(6, XSG_EA(r_0, 0));
+        vu0_lqc2(1, XSG_EA(r_2, 16));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 6, 5, 1, 3);
+        vu0_sqc2(6, XSG_EA(r_0, 16));
+        vu0_lqc2(1, XSG_EA(r_2, 32));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 6, 5, 1, 3);
+        vu0_sqc2(6, XSG_EA(r_0, 32));
+        vu0_lqc2(1, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 6, 5, 1, 3);
+        vu0_sqc2(6, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathScaleMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf5,0(%2)\n\t"
         "lqc2 $vf1,0(%1)\n\t"
@@ -1157,11 +2164,33 @@ Matrix4 *MMathScaleMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *sc
         "sqc2 $vf4,48(%0)\n\t"
         "nop"
         : : "r"(out), "r"(matrix), "r"(scale) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(scale);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_lqc2(5, XSG_EA(r_2, 0));
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 16));
+        vu0_lqc2(3, XSG_EA(r_1, 32));
+        vu0_lqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, 1, 1, 5, 0);
+        vu0_arith(VU0_MUL, 15, 2, 2, 5, 1);
+        vu0_arith(VU0_MUL, 15, 3, 3, 5, 2);
+        vu0_arith(VU0_MUL, 15, 4, 4, 5, 3);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 32));
+        vu0_sqc2(4, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathScaleMatrixS(Matrix4 *out, const Matrix4 *matrix, float scale)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%2\n\t"
         "qmtc2 $8,$vf5\n\t"
@@ -1179,11 +2208,34 @@ Matrix4 *MMathScaleMatrixS(Matrix4 *out, const Matrix4 *matrix, float scale)
         "sqc2 $vf4,48(%0)\n\t"
         "nop"
         : : "r"(out), "r"(matrix), "f"(scale) : "$8", "memory");
+#else
+    {
+        XsgFpr f_2 = XSG_FIN(scale);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(out);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(5, &xsg_ee_gpr[8]);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 16));
+        vu0_lqc2(3, XSG_EA(r_1, 32));
+        vu0_lqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, 1, 1, 5, 0);
+        vu0_arith(VU0_MUL, 15, 2, 2, 5, 0);
+        vu0_arith(VU0_MUL, 15, 3, 3, 5, 0);
+        vu0_arith(VU0_MUL, 15, 4, 4, 5, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 32));
+        vu0_sqc2(4, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
 Matrix4 *MMathTranslateMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *translation)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf5,0(%2)\n\t"
         "lqc2 $vf1,0(%1)\n\t"
@@ -1200,6 +2252,27 @@ Matrix4 *MMathTranslateMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4
         "sqc2 $vf4,48(%0)\n\t"
         "nop"
         : : "r"(out), "r"(matrix), "r"(translation) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(translation);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_lqc2(5, XSG_EA(r_2, 0));
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 16));
+        vu0_lqc2(3, XSG_EA(r_1, 32));
+        vu0_lqc2(4, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 2, 5, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 5, 2);
+        vu0_arith(VU0_MADD, 15, 4, 4, 0, 3);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 32));
+        vu0_sqc2(4, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
@@ -1216,13 +2289,66 @@ Matrix4 *MMathCalcMatrixVector(Matrix4 *out, const Vector4 *direction)
 {
     float directionX;
 
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf1, vf0" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf2, vf1" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 2, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 3, 2);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 48(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(0, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 32(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(1, XSG_EA(r_0, 32));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf2, 16(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf3, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(3, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     directionX = direction->x;
     if (directionX == 0.0f && direction->z == 0.0f) {
@@ -1241,12 +2367,23 @@ Matrix4 *MMathCalcMatrixVector(Matrix4 *out, const Vector4 *direction)
  */
 Vector4 *MMathCalcVectorMatrix(Vector4 *out, const Matrix4 *matrix)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,32(%1)\n\t"
         "vsub.xyzw $vf2xyzw,$vf0xyzw,$vf1xyzw\n\t"
         "sqc2 $vf2,0(%0)\n\t"
         "nop"
         : : "r"(out), "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_lqc2(1, XSG_EA(r_1, 32));
+        vu0_arith(VU0_SUB, 15, 2, 0, 1, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
@@ -1261,7 +2398,15 @@ Vector4 *MMathCalcAngleMatrix(Vector4 *out, const Matrix4 *matrix)
     Vector4 direction;
 
     MMathCalcVectorMatrix(&direction, matrix);
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     out->x = srsAtan2(direction.y, MMathCalcLengthXZ(&direction));
     out->y = srsAtan2(direction.x, direction.z);
     return out;
@@ -1275,6 +2420,7 @@ Vector4 *MMathCalcAngleMatrix(Vector4 *out, const Matrix4 *matrix)
  */
 void MMathRotTransPers(Vector4 *destination, const StudioCamera *camera, const Matrix4 *matrix, const Vector4 *point)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -1298,6 +2444,36 @@ void MMathRotTransPers(Vector4 *destination, const StudioCamera *camera, const M
         "sqc2 vf1, 0(%4)\n\t"
         "nop"
         : : "r"(point), "r"(matrix), "r"(&camera->screenScale), "r"(&camera->screenOffset), "r"(destination) : "memory");
+#else
+    {
+        XsgGpr r_4 = XSG_IN(destination);
+        XsgGpr r_3 = XSG_IN(&camera->screenOffset);
+        XsgGpr r_2 = XSG_IN(&camera->screenScale);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(point);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 16));
+        vu0_lqc2(4, XSG_EA(r_1, 32));
+        vu0_lqc2(5, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 1, 5, 1, 3);
+        vu0_div(0, 3, 1, 3);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_lqc2(3, XSG_EA(r_3, 0));
+        vu0_arith(VU0_SUB, 15, 4, 0, 0, VU0_VEC);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 1, 1, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 1, 2, VU0_VEC);
+        vu0_arith(VU0_MADD, 14, 4, 3, 0, 3);
+        vu0_ftoi(4, 12, 1, 4);
+        vu0_ftoi(0, 3, 1, 4);
+        vu0_sqc2(1, XSG_EA(r_4, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1321,6 +2497,7 @@ void MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera, con
     register int flag PS2_REG("$2");
     register int clipped PS2_REG("$9");
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%2)\n\t"
         "lqc2 vf2, 0(%3)\n\t"
@@ -1353,4 +2530,42 @@ void MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera, con
         : "=r"(flag), "=&r"(clipped)
         : "r"(point), "r"(matrix), "r"(&camera->screenScale), "r"(&camera->screenOffset), "r"(destination)
         : "memory");
+#else
+    {
+        XsgGpr r_6 = XSG_IN(destination);
+        XsgGpr r_5 = XSG_IN(&camera->screenOffset);
+        XsgGpr r_4 = XSG_IN(&camera->screenScale);
+        XsgGpr r_3 = XSG_IN(matrix);
+        XsgGpr r_2 = XSG_IN(point);
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_lqc2(2, XSG_EA(r_3, 0));
+        vu0_lqc2(3, XSG_EA(r_3, 16));
+        vu0_lqc2(4, XSG_EA(r_3, 32));
+        vu0_lqc2(5, XSG_EA(r_3, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 1, 2);
+        vu0_arith(VU0_MADD, 15, 1, 5, 1, 3);
+        vu0_div(0, 3, 1, 3);
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_lqc2(2, XSG_EA(r_4, 0));
+        vu0_lqc2(3, XSG_EA(r_5, 0));
+        xsg_ee_gpr[9].d[0] = xsg_ee_zero.d[0] | (unsigned long long)(unsigned short)(32768);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 4, 1, 0, VU0_BQ);
+        vu0_clip(4, 0);
+        vu0_arith(VU0_MUL, 14, VU0_ACC, 4, 2, VU0_VEC);
+        vu0_arith(VU0_MADD, 14, 5, 3, 0, 3);
+        vu0_ftoi(4, 12, 1, 5);
+        vu0_ftoi(0, 2, 1, 5);
+        vu0_cfc2(&xsg_ee_gpr[2], 18);
+        if (xsg_ee_gpr[2].d[0] != 0) xsg_ee_gpr[2].d[0] = xsg_ee_gpr[9].d[0];
+        vu0_qmtc2(2, &xsg_ee_gpr[2]);
+        vu0_mr32(1, 1, 2);
+        vu0_sqc2(1, XSG_EA(r_6, 0));
+        xsg_vu0_blocks++;
+        XSG_OUT(flag, xsg_ee_gpr[2]);
+        XSG_OUT(clipped, xsg_ee_gpr[9]);
+    }
+#endif
 }

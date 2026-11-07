@@ -557,7 +557,17 @@ void GameStateRestoreCameraLight(void)
 extern void GameStateSaveCameraLight(void);
 static inline void GameQCopy(void *dst, void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void GameStateSave(void)
@@ -657,18 +667,38 @@ void GamePushSaveDataUser(void)
     for (i = 0; i < 8; i++) {
         save->params[i] = state->params[i];
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r" (&save->actor_position), "r" (&state->saved_actor_position)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->saved_actor_position);
+        XsgGpr r_0 = XSG_IN(&save->actor_position);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n"
         "sq $2, 0(%0)\n"
         :
         : "r" (&save->actor_rotation), "r" (&state->saved_actor_rotation)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&state->saved_actor_rotation);
+        XsgGpr r_0 = XSG_IN(&save->actor_rotation);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     org = save->org;
     players = save->players;
     for (i = 0; i < 33; i++) {
@@ -2622,12 +2652,22 @@ void Game(void)
         GamePopSaveDataUser();
         position_dst = (Quadword *)&player->position;
         Java_xeno_util_Runtime_jump_sub(gameLoopCG.current_event_id, -1);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
             :
             : "r" (position_dst), "r" (&gameLoopCG.saved_actor_position)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&gameLoopCG.saved_actor_position);
+            XsgGpr r_0 = XSG_IN(position_dst);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         gameLoopCG.move_mode |= 0xa0;
     } else {
         Java_xeno_util_Runtime_jump_sub(gameLoopCG.current_event_id, -1);

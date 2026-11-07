@@ -247,15 +247,83 @@ extern Matrix4 *MMathScaleMatrix(Matrix4 *out, Matrix4 *matrix, Vector4 *scale);
  */
 void sefCalcRotTransSMatrix(Vector4 *angles, Vector4 *translation, Vector4 *scale, Matrix4 *matrix)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(translation) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(translation);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmove.w vf1, vf0" : : : "memory");
+#else
+    {
+        vu0_move(1, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf2, vf0" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 2, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 3, 2);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf4, vf3" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 4, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf2, 32(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(2, XSG_EA(r_0, 32));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf3, 16(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(3, XSG_EA(r_0, 16));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf4, 0(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(4, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     MMathRotateMatrixXYZ(matrix, matrix, angles);
     MMathScaleMatrix(matrix, matrix, scale);
 }
@@ -274,13 +342,66 @@ extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, Matrix4 *matrix, Vector4 *ang
 static void sefCalcInvView(Matrix4 *matrix) {
     StudioCamera *camera = xglStudioGetActiveCamera();
 
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf1, vf0" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf2, vf1" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 2, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmr32.xyzw vf3, vf2" : : : "memory");
+#else
+    {
+        vu0_mr32(15, 3, 2);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 48(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(0, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 32(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(1, XSG_EA(r_0, 32));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf2, 16(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf3, 0(%0)" : : "r"(matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_sqc2(3, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     MMathRotateMatrixYXZ(matrix, matrix, &camera->rotation);
 }
 
@@ -512,6 +633,7 @@ static SefKey5 *sefProgressKey5(SefKey5 *keys, SefProgressState *state)
  */
 static void sefLerpVectorA(void *keys, Vector4 *dest)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "ldl $9, 7(%0)\n\t"
         "ldr $9, 0(%0)\n\t"
@@ -527,6 +649,22 @@ static void sefLerpVectorA(void *keys, Vector4 *dest)
         : "r"(keys), "r"(dest)
         : "$9", "$10", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dest);
+        XsgGpr r_0 = XSG_IN(keys);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_0, 0), 8);
+        xsg_ee_gpr[9].d[0] = xsg_ee_gpr[9].d[0] >> ((16));
+        vu0_move(1, 2, 0);
+        xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[9]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[9]);
+        vu0_qmtc2(1, &xsg_ee_gpr[10]);
+        vu0_itof(0, 14, 2, 1);
+        vu0_sqc2(2, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 int sefLerpVector(SefKey5 *keys, SefProgressState *state)
@@ -542,6 +680,7 @@ int sefLerpVector(SefKey5 *keys, SefProgressState *state)
     key = sefProgressKey5(keys, state);
     if (key->end_frame != key[1].end_frame) {
         fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $9, %2\n\t"
             "qmtc2.ni $9, $vf3\n\t"
@@ -566,6 +705,35 @@ int sefLerpVector(SefKey5 *keys, SefProgressState *state)
             :
             : "r"(key), "r"(key + 1), "f"(fraction), "r"(dest)
             : "$8", "$9", "$10", "$11", "memory");
+#else
+        {
+            XsgGpr r_3 = XSG_IN(dest);
+            XsgFpr f_2 = XSG_FIN(fraction);
+            XsgGpr r_1 = XSG_IN(key + 1);
+            XsgGpr r_0 = XSG_IN(key);
+            xsg_ee_set32(&xsg_ee_gpr[9], f_2.u);
+            vu0_qmtc2(3, &xsg_ee_gpr[9]);
+            __builtin_memcpy(&xsg_ee_gpr[8].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+            __builtin_memcpy(&xsg_ee_gpr[8].d[0], XSG_EA(r_0, 0), 8);
+            __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_1, 7) - 7), 8);
+            __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_1, 0), 8);
+            xsg_ee_gpr[8].d[0] = xsg_ee_gpr[8].d[0] >> ((16));
+            xsg_ee_gpr[9].d[0] = xsg_ee_gpr[9].d[0] >> ((16));
+            xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[8]);
+            xsg_mmi_pcgth(&xsg_ee_gpr[11], &xsg_ee_zero, &xsg_ee_gpr[9]);
+            xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[8]);
+            xsg_mmi_pextlh(&xsg_ee_gpr[11], &xsg_ee_gpr[11], &xsg_ee_gpr[9]);
+            vu0_qmtc2(1, &xsg_ee_gpr[10]);
+            vu0_qmtc2(2, &xsg_ee_gpr[11]);
+            vu0_itof(0, 15, 1, 1);
+            vu0_itof(0, 15, 2, 2);
+            vu0_arith(VU0_SUB, 14, 2, 2, 1, VU0_VEC);
+            vu0_arith(VU0_MUL, 14, 2, 2, 3, 0);
+            vu0_arith(VU0_ADD, 14, 2, 2, 1, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_3, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         dest->w = 1.0f;
     } else {
         sefLerpVectorA(key, dest);
@@ -601,11 +769,19 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
     int status = sefLerpVector(keys, vectors);
     float scale = effect_scale_literal_0_1;
 
+#ifndef PORT_HOST
     PS2_ASMV("" : : "f"(scale));
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(scale);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     if (status != 0) {
         vectors++;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -616,6 +792,18 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
             : "r"(vectors), "f"(scale)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(scale);
+            XsgGpr r_0 = XSG_IN(vectors);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
     return status;
@@ -623,6 +811,7 @@ static int sefLerpVectorSC(void *keys, Vector4 *vectors)
 
 void sefLerpIVectorA(void *keys, Vector4 *dest)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "ldl $9, 7(%0)\n\t"
         "ldr $9, 0(%0)\n\t"
@@ -634,6 +823,18 @@ void sefLerpIVectorA(void *keys, Vector4 *dest)
         : "r"(keys), "r"(dest)
         : "$9", "$10", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dest);
+        XsgGpr r_0 = XSG_IN(keys);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_0, 0), 8);
+        xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[9]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[9]);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[10], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void sefLerpIVector(SefKey5 *keys, SefProgressState *state)
@@ -649,6 +850,7 @@ void sefLerpIVector(SefKey5 *keys, SefProgressState *state)
     key = sefProgressKey5(keys, state);
     if (key->end_frame != key[1].end_frame) {
         fraction = (float)(state->frame - key->end_frame) / (float)(key[1].end_frame - key->end_frame);
+#ifndef PORT_HOST
         PS2_ASMV(
             "ldl $8, 7(%0)\n\t"
             "ldr $8, 0(%0)\n\t"
@@ -672,6 +874,34 @@ void sefLerpIVector(SefKey5 *keys, SefProgressState *state)
             :
             : "r"((char *)key + 2), "r"((char *)key + 12), "f"(fraction), "r"(dest)
             : "$8", "$9", "$10", "$11", "memory");
+#else
+        {
+            XsgGpr r_3 = XSG_IN(dest);
+            XsgFpr f_2 = XSG_FIN(fraction);
+            XsgGpr r_1 = XSG_IN((char *)key + 12);
+            XsgGpr r_0 = XSG_IN((char *)key + 2);
+            __builtin_memcpy(&xsg_ee_gpr[8].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+            __builtin_memcpy(&xsg_ee_gpr[8].d[0], XSG_EA(r_0, 0), 8);
+            __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_1, 7) - 7), 8);
+            __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_1, 0), 8);
+            xsg_ee_set32(&xsg_ee_gpr[10], f_2.u);
+            vu0_qmtc2(3, &xsg_ee_gpr[10]);
+            xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[8]);
+            xsg_mmi_pcgth(&xsg_ee_gpr[11], &xsg_ee_zero, &xsg_ee_gpr[9]);
+            xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[8]);
+            xsg_mmi_pextlh(&xsg_ee_gpr[11], &xsg_ee_gpr[11], &xsg_ee_gpr[9]);
+            vu0_qmtc2(1, &xsg_ee_gpr[10]);
+            vu0_qmtc2(2, &xsg_ee_gpr[11]);
+            vu0_itof(0, 15, 1, 1);
+            vu0_itof(0, 15, 2, 2);
+            vu0_arith(VU0_SUB, 14, 2, 2, 1, VU0_VEC);
+            vu0_arith(VU0_MUL, 14, 2, 2, 3, 0);
+            vu0_arith(VU0_ADD, 14, 2, 2, 1, VU0_VEC);
+            vu0_ftoi(0, 15, 2, 2);
+            vu0_sqc2(2, XSG_EA(r_3, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         return;
     }
     sefLerpIVectorA((char *)key + 2, dest);
@@ -782,6 +1012,7 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
         if (joint >= 0) {
             mats = *(int *)(actor + 0x824);
             if (mats != 0) {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $8, 0(%0)\n\t"
                     "lq $9, 16(%0)\n\t"
@@ -794,6 +1025,21 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
                     :
                     : "r"((joint << 6) + mats), "r"(matrix)
                     : "$8", "$9", "$10", "$11", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(matrix);
+                    XsgGpr r_0 = XSG_IN((joint << 6) + mats);
+                    __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_0, 16), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_0, 32), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_0, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                    __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[9], 16);
+                    __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[10], 16);
+                    __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[11], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 if (sefMatrixHasOffset((unsigned char *)matrix + 0x30)) {
                     return;
                 }
@@ -804,6 +1050,7 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
         return;
     }
     /* Identity: rotate $vf0 = (0,0,0,1) one lane at a time, rows back to front. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
         "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
@@ -815,6 +1062,19 @@ void sefGetMotionNullMatrix(Matrix4 *matrix, unsigned char *actor, unsigned int 
         :
         : "r"(matrix)
         : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_mr32(15, 1, 0);
+        vu0_mr32(15, 2, 1);
+        vu0_mr32(15, 3, 2);
+        vu0_sqc2(0, XSG_EA(r_0, 48));
+        vu0_sqc2(1, XSG_EA(r_0, 32));
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern int ACT_jointGetAccessories(void *actor, unsigned int id);
@@ -830,12 +1090,22 @@ void sefGetNullPosition(SefQuadBlock *out, void *actor, unsigned int id, int fla
         if (joint < 0 || mats == 0) {
             ((float *)out)[1] = 20.0f;
         } else {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%0)\n\t"
                 "sq $8, 0(%1)"
                 :
                 : "r"((joint << 6) + mats + 0x30), "r"(out)
                 : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(out);
+                XsgGpr r_0 = XSG_IN((joint << 6) + mats + 0x30);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
     }
 }
@@ -851,12 +1121,22 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
         if (joint < 0 || mats == 0) {
             ((float *)out)[1] = 20.0f;
         } else {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%0)\n\t"
                 "sq $8, 0(%1)"
                 :
                 : "r"((joint << 6) + mats + 0x30), "r"(out)
                 : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(out);
+                XsgGpr r_0 = XSG_IN((joint << 6) + mats + 0x30);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
     }
 }
@@ -871,6 +1151,7 @@ static inline short sefPointHasOffset(unsigned char *source)
 }
 static inline void sefLoadPointMatrix(Vector4 *dst, unsigned char *rows, Vector4 *position)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "lq $9, 0x10(%0)\n\t"
@@ -881,6 +1162,22 @@ static inline void sefLoadPointMatrix(Vector4 *dst, unsigned char *rows, Vector4
         "sq $10, 0x20(%2)\n\t"
         "sq $11, 0x30(%2)"
         : : "r"(rows), "r"(position), "r"(dst) : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(dst);
+        XsgGpr r_1 = XSG_IN(position);
+        XsgGpr r_0 = XSG_IN(rows);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_0, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_0, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_2, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_2, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_2, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_2, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void sefGetPoint(Vector4 *position, unsigned char *source, int target)
@@ -892,7 +1189,15 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 
     matrix = 0;
     offset = sefPointHasOffset(source);
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     battle = _battleData;
     if (*(int *)(battle + 0x224) & 2) {
         if ((unsigned int)(target - 0x101) < 0x10) {
@@ -929,14 +1234,34 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
                     parent = 0;
                 }
                 if (parent != 0) {
+#ifndef PORT_HOST
                     PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(parent + 0xC0), "r"(position) : "$8", "memory");
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN(position);
+                        XsgGpr r_0 = XSG_IN(parent + 0xC0);
+                        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
             } else if (target & 0x400) {
                 sefGetWeaponPosition((SefQuadBlock *)position, *(void **)(battle + 8), target - 0x400);
                 sefLoadPointMatrix(local, battle + 0x80, position);
                 matrix = (unsigned char *)local;
             } else if (target == 5) {
+#ifndef PORT_HOST
                 PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(D_00795100), "r"(position) : "$8", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(position);
+                    XsgGpr r_0 = XSG_IN(D_00795100);
+                    __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
             } else if (target & 0x800) {
                 sefGetNullPosition((SefQuadBlock *)position, *(void **)battle, target - 0x801, 1);
                 MMathApplyMatrix(position, battle + 0x80, position);
@@ -947,15 +1272,37 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
         if (offset != 0) {
             MMathApplyMatrix(position, matrix, (Vector4 *)source);
         } else {
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(matrix + 0x30), "r"(position) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(position);
+                XsgGpr r_0 = XSG_IN(matrix + 0x30);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+                __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
     } else {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
             "vadd.xyz $vf1, $vf1, $vf2\n\t"
             "sqc2 $vf1, 0(%0)"
             : : "r"(position), "r"(source) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(source);
+            XsgGpr r_0 = XSG_IN(position);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 }
 
@@ -995,6 +1342,7 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     float x_unit;
     float z_unit;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %1\n\t"
         "qmtc2 $8, $vf4\n\t"
@@ -1005,8 +1353,22 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
         : "f"(angle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        x_unit = f_0.f;
+    }
+#endif
     pos->x = x_unit * radius;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %1\n\t"
         "qmtc2 $8, $vf4\n\t"
@@ -1017,6 +1379,19 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
         : "f"(angle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        z_unit = f_0.f;
+    }
+#endif
 
     pos->y = 0.0f;
     pos->w = 1.0f;
@@ -1041,6 +1416,7 @@ static void sefGetSpherePos(Vector4 *pos, float radius)
     sefRandSeed = (int)t5;
     vals[2] = (t5 >> 16) & 0x7FFF;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "mfc1 $2, %2\n\t"
@@ -1064,6 +1440,34 @@ static void sefGetSpherePos(Vector4 *pos, float radius)
         :
         : "r"(pos), "r"(vals), "f"(half), "f"(radius)
         : "$2", "memory");
+#else
+    {
+        XsgFpr f_3 = XSG_FIN(radius);
+        XsgFpr f_2 = XSG_FIN(half);
+        XsgGpr r_1 = XSG_IN(vals);
+        XsgGpr r_0 = XSG_IN(pos);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        xsg_ee_set32(&xsg_ee_gpr[2], f_2.u);
+        vu0_itof(0, 15, 1, 1);
+        vu0_qmtc2(2, &xsg_ee_gpr[2]);
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, 0);
+        vu0_arith(VU0_MUL, 14, 2, 1, 1, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 2, 2, 2, 1);
+        vu0_arith(VU0_ADD, 8, 2, 2, 2, 2);
+        vu0_sqrt(2, 0);
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 2, 0, 0, VU0_BQ);
+        vu0_div(0, 3, 2, 0);
+        vu0_move(1, 2, 0);
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 2, 1, 0, VU0_BQ);
+        xsg_ee_set32(&xsg_ee_gpr[2], f_3.u);
+        vu0_qmtc2(1, &xsg_ee_gpr[2]);
+        vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /* Types ported from the derwetterfrosch fork (2026-10-19). */
@@ -1170,9 +1574,32 @@ static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
     float final_scale;
     float half_scale;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(extent);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vitof0.xyzw vf1, vf1" : : : "memory");
+#else
+    {
+        vu0_itof(0, 15, 1, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     random_vector.w = 0.0f;
     random_position = &random_vector;
 
@@ -1188,27 +1615,147 @@ static void sefGetCubePosBtm(Vector4 *pos, const int *extent)
     random_vector.y = (float)random_y * random_scale;
     random_vector.z = (float)random_z * random_scale;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(random_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmul.xyz vf1, vf1, vf2\n\tsqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(random_position);
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     extent_vector.y = 0.0f;
 
     half_scale = 0.5f;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(half_scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(random_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vsub.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(random_position);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     final_scale = 0.1f;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(random_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(random_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(final_scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(pos);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1247,9 +1794,32 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     float final_scale;
     float half_scale;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(extent) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(extent);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vitof0.xyzw vf1, vf1" : : : "memory");
+#else
+    {
+        vu0_itof(0, 15, 1, 1);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     random_vector.w = 0.0f;
 
     random_scale = D_004D82F4;
@@ -1264,27 +1834,153 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     random_vector.y = (float)random_y * random_scale;
     random_vector.z = (float)random_z * random_scale;
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&random_vector);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmul.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&random_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     half_scale = 0.5f;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(half_scale) : "$8", "memory");
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(half_scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&random_vector);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&extent_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&extent_vector);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vsub.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&random_vector);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     final_scale = D_004D82F8;
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&random_vector);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
+#else
+    {
+        XsgFpr f_0 = XSG_FIN(final_scale);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(pos);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern const float D_004D82FC;
@@ -1302,7 +1998,15 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
 {
     const int *offsets = offset_table;
 
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     if (index == 0) {
         float radius;
@@ -1338,6 +2042,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         Vector4 circle_position;
 
         sefGetCirclePos(&circle_position, (float)offsets[0] * D_004D8304);
+#ifndef PORT_HOST
         PS2_ASMV(
             "vmr32.xyzw vf1, vf0\n\t"
             "vmr32.xyzw vf2, vf1\n\t"
@@ -1349,6 +2054,19 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
             :
             : "r"(&rotation)
             : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&rotation);
+            vu0_mr32(15, 1, 0);
+            vu0_mr32(15, 2, 1);
+            vu0_mr32(15, 3, 2);
+            vu0_sqc2(0, XSG_EA(r_0, 48));
+            vu0_sqc2(1, XSG_EA(r_0, 32));
+            vu0_sqc2(2, XSG_EA(r_0, 16));
+            vu0_sqc2(3, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
         if (offsets[1] != 0) {
             MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * D_004D8308);
@@ -1381,6 +2099,7 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
     float angle[4];
     float len;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "vsub.xyz $vf2, $vf0, $vf1\n\t"
@@ -1393,7 +2112,24 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
         :
         : "r"(dir), "r"(angle), "r"(&neg)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&neg);
+        XsgGpr r_1 = XSG_IN(angle);
+        XsgGpr r_0 = XSG_IN(dir);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 14, 2, 0, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 10, 4, 2, 2, VU0_VEC);
+        vu0_sqc2(0, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 8, 3, 4, 4, 2);
+        vu0_move(4, 2, 1);
+        vu0_sqrt(3, 0);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     angle[1] = srsAtan2(neg.x, neg.z);
+#ifndef PORT_HOST
     PS2_ASMV(
         "vwaitq\n\t"
         "vaddq.x $vf1, $vf0, Q\n\t"
@@ -1401,7 +2137,18 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
         : "=r"(len)
         :
         : "memory");
+#else
+    {
+        XsgGpr r_0 = {{0, 0}};
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&r_0, 1);
+        xsg_vu0_blocks++;
+        XSG_OUT(len, r_0);
+    }
+#endif
     angle[0] = srsAtan2(neg.y, len);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf7, 0(%1)\n\t"
         "vaddx.x $vf4, $vf0, $vf7x\n\t"
@@ -1435,6 +2182,42 @@ static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
         :
         : "r"(dest), "r"(angle)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(angle);
+        XsgGpr r_0 = XSG_IN(dest);
+        vu0_lqc2(7, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 4, 5, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 0);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 6, 0, 1, 0);
+        vu0_arith(VU0_ADD, 8, 4, 0, 7, 1);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 4, 6, 0, 1, 0);
+        vu0_move(15, 4, 0);
+        vu0_mr32(15, 3, 4);
+        vu0_mr32(15, 2, 3);
+        vu0_mr32(15, 1, 2);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 5, 1);
+        vu0_arith(VU0_MSUB, 15, 7, 3, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 1);
+        vu0_arith(VU0_MADD, 15, 3, 1, 6, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 2, 5, 0);
+        vu0_arith(VU0_MADD, 15, 8, 3, 6, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 5, 0);
+        vu0_arith(VU0_MSUB, 15, 3, 2, 6, 0);
+        vu0_sqc2(7, XSG_EA(r_0, 0));
+        vu0_sqc2(8, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 32));
+        vu0_sqc2(4, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1449,6 +2232,7 @@ void sefGetVecMatrix(Matrix4 *dest, Vector4 *source_a, Vector4 *source_b)
 {
     Vector4 dir;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -1458,6 +2242,18 @@ void sefGetVecMatrix(Matrix4 *dest, Vector4 *source_a, Vector4 *source_b)
         : "r"(source_a), "r"(source_b), "r"(&dir)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&dir);
+        XsgGpr r_1 = XSG_IN(source_b);
+        XsgGpr r_0 = XSG_IN(source_a);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     sefGetDirMatrix(dest, &dir);
 }
 
@@ -1472,7 +2268,22 @@ void sefGetVecMatrix(Matrix4 *dest, Vector4 *source_a, Vector4 *source_b)
  * before this call; this function neither reads nor writes them as C state.
  */
 static void sefGetDirVector(void *dest, void *source) {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)\n\tvsub.z vf1, vf0, vf1\n\tvmulax.xyzw ACC, vf7, vf1x\n\tvmadday.xyzw ACC, vf8, vf1y\n\tvmaddaz.xyzw ACC, vf3, vf1z\n\tvmaddw.xyzw vf1, vf4, vf1w\n\tsqc2 vf1, 0(%1)\n\tnop" :  : "r"(source), "r"(dest) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dest);
+        XsgGpr r_0 = XSG_IN(source);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_arith(VU0_SUB, 2, 1, 0, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 7, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 8, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 1, 2);
+        vu0_arith(VU0_MADD, 15, 1, 4, 1, 3);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static void sefGetOfsRange(Vector4 *position, const void *offset_table, int index);
@@ -1508,10 +2319,41 @@ typedef struct SefParticleOffset {
  */
 static void sefGetStartPos(Vector4 *position, SefParticleOffset *record) {
     sefGetOfsRange(position, record->start_offset_table, *record->start_index);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&record->start_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&record->start_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1521,10 +2363,41 @@ static void sefGetStartPos(Vector4 *position, SefParticleOffset *record) {
  */
 static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     sefGetOfsRange(position, record->target_offset_table, *record->target_index);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&record->target_position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&record->target_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+#else
+    {
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern int _parentLine;
@@ -1541,13 +2414,31 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
     speed = *(float *)(record + 0x270) + *(float *)(record + 0x150);
     velocity = (Vector4 *)(record + 0x200);
     if (speed == 0.0f) {
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(speed_out) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(speed_out);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         return;
     }
     if (frame != 0 && type != 0) {
         MMathSpecialVectorSub(&dir, velocity, velocity, (float)frame);
     } else {
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(velocity), "r"(&dir) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&dir);
+            XsgGpr r_0 = XSG_IN(velocity);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if (type >= 5) {
         sefGetVecMatrix((Matrix4 *)record, (Vector4 *)(record + 0xD0), (Vector4 *)(record + 0xC0));
@@ -1566,12 +2457,23 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         }
     } else if (type == 3) {
         speed *= 10.0f;
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%0)\n\tsq $8, 0(%1)" : : "r"(&dir), "r"(&dir) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&dir);
+            XsgGpr r_0 = XSG_IN(&dir);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else if (type == 1) {
         if (*(int *)_battleData != 0) {
             MMathApplyMatrix(&dir, _battleData + 0x80, &dir);
         }
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "mfc1 $8, %2\n\t"
@@ -1582,6 +2484,21 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         :
         : "r"(&dir), "r"(record + 0x120), "f"(speed), "r"(speed_out)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(speed_out);
+        XsgFpr f_2 = XSG_FIN(speed);
+        XsgGpr r_1 = XSG_IN(record + 0x120);
+        XsgGpr r_0 = XSG_IN(&dir);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        vu0_sqc2(1, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 extern float _gravity;
@@ -1607,6 +2524,7 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
             target += 0x700;
         }
         if ((_nowScheduler->flags & 0x1400) == 0x1000) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
@@ -1619,11 +2537,27 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
                 :
                 : "r"(particle + 0x40), "r"(battle + 0x180)
                 : "$8", "$9", "$10", "$11", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(battle + 0x180);
+                XsgGpr r_0 = XSG_IN(particle + 0x40);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             *(float *)(particle + 0x154) = *(float *)(battle + 0x220);
         }
     }
     if (*(signed char *)(particle + 0x163) == 0) {
         sefGetSpeed(&speed, particle, target, frame);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
@@ -1632,8 +2566,20 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
             :
             : "r"(particle + 0xC0), "r"(&speed)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&speed);
+            XsgGpr r_0 = XSG_IN(particle + 0xC0);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     *(float *)(particle + 0x114) -= _gravity;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -1642,8 +2588,20 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
         :
         : "r"(particle + 0xC0), "r"(particle + 0x110)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(particle + 0x110);
+        XsgGpr r_0 = XSG_IN(particle + 0xC0);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (_colision != 0.0f && *(float *)(particle + 0xC4) <= _height) {
         if (*(signed char *)(particle + 0x163) == 0) {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%0)\n\t"
                 "lqc2 $vf2, 0(%1)\n\t"
@@ -1652,11 +2610,23 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
                 :
                 : "r"(&speed), "r"(particle + 0x110)
                 : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(particle + 0x110);
+                XsgGpr r_0 = XSG_IN(&speed);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                vu0_lqc2(2, XSG_EA(r_1, 0));
+                vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                vu0_sqc2(1, XSG_EA(r_1, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         *(signed char *)(particle + 0x163) = 1;
         height = _height;
         scale = _colision;
         *(float *)(particle + 0xC4) = height;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -1666,6 +2636,18 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
             :
             : "r"(particle + 0x110), "f"(scale)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(scale);
+            XsgGpr r_0 = XSG_IN(particle + 0x110);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         if (*(float *)(particle + 0x114) < 0.0f) {
             *(float *)(particle + 0x114) = -*(float *)(particle + 0x114);
         }
@@ -1749,6 +2731,7 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     } else if (target == 1) {
         /* The base matrix becomes the local one: the four quadword moves the
          * original performs inline through the EE's own scratch GPRs. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%0)\n\t"
             "lq $9, 16(%0)\n\t"
@@ -1761,10 +2744,26 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
             :
             : "r"(record + SEF_LOCAL_BASE_MATRIX), "r"(record)
             : "$8", "$9", "$10", "$11", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(record);
+            XsgGpr r_0 = XSG_IN(record + SEF_LOCAL_BASE_MATRIX);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+            __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_0, 16), 16);
+            __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_0, 32), 16);
+            __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_0, 48), 16);
+            __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+            __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[9], 16);
+            __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[10], 16);
+            __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[11], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         return;
     } else if (in_battle != 0 && (target & 0x200) != 0) {
         Vector4 direction;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "lqc2 $vf2, 0(%1)\n\t"
@@ -1774,6 +2773,18 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
             : "r"(record + SEF_LOCAL_ROTATION), "r"((unsigned char *)_nowScheduler + 0x80),
               "r"(&direction)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&direction);
+            XsgGpr r_1 = XSG_IN((unsigned char *)_nowScheduler + 0x80);
+            XsgGpr r_0 = XSG_IN(record + SEF_LOCAL_ROTATION);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         sefGetVecMatrix((Matrix4 *)record, (Vector4 *)(battle + SEF_BATTLE_MATRIX_SOURCE),
                         &direction);
     } else if (target >= 5) {
@@ -1782,6 +2793,7 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     } else {
         /* The identity matrix, built by rotating $vf0 = (0,0,0,1) one lane at
          * a time and storing the rows back to front. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
             "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
@@ -1793,6 +2805,19 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
             :
             : "r"(record)
             : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(record);
+            vu0_mr32(15, 1, 0);
+            vu0_mr32(15, 2, 1);
+            vu0_mr32(15, 3, 2);
+            vu0_sqc2(0, XSG_EA(r_0, 48));
+            vu0_sqc2(1, XSG_EA(r_0, 32));
+            vu0_sqc2(2, XSG_EA(r_0, 16));
+            vu0_sqc2(3, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
     if (*(long long *)(record + SEF_LOCAL_OFFSET) != 0 ||
@@ -1862,11 +2887,20 @@ extern Matrix4 *MMathRotateMatrixYXZ(Matrix4 *out, Matrix4 *matrix, Vector4 *ang
 
 static void sefCalcRotChange(unsigned char *record, int flags, int update)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(record + SEF_ROTCHANGE_DELTA) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(record + SEF_ROTCHANGE_DELTA);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     {
         register float degToRad PS2_REG("$f8") = D_004D8318;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf1\n\t"
@@ -1875,8 +2909,20 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
             :
             : "r"(record + SEF_ROTCHANGE_DELTA), "f"(degToRad)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(record + SEF_ROTCHANGE_DELTA);
+            xsg_ee_fpr[8] = XSG_FIN(degToRad);
+            xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+            vu0_qmtc2(1, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "lqc2 $vf2, 0(%2)\n\t"
@@ -1886,6 +2932,18 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
         : "r"(record + SEF_LOCAL_OFFSET), "r"(record + SEF_ROTCHANGE_OFFSET_BASE),
           "r"(record + SEF_ROTCHANGE_DELTA)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(record + SEF_ROTCHANGE_DELTA);
+        XsgGpr r_1 = XSG_IN(record + SEF_ROTCHANGE_OFFSET_BASE);
+        XsgGpr r_0 = XSG_IN(record + SEF_LOCAL_OFFSET);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     if (update == 0) {
         return;
@@ -2162,6 +3220,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                     if (line_data->size_vector_keys != 0 &&
                         sefLerpVector(line_data->size_vector_keys,
                                       (SefProgressState *)((unsigned char *)particle + 0x230)) && update_scaled_size) {
+#ifndef PORT_HOST
                         PS2_ASMV(
                             "lqc2 $vf1, 0(%0)\n\t"
                             "mfc1 $8, %1\n\t"
@@ -2170,6 +3229,18 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                             "sqc2 $vf1, 0(%0)"
                             : : "r"(&particle->size), "f"(D_004D831C)
                             : "$8", "memory");
+#else
+                        {
+                            XsgFpr f_1 = XSG_FIN(D_004D831C);
+                            XsgGpr r_0 = XSG_IN(&particle->size);
+                            vu0_lqc2(1, XSG_EA(r_0, 0));
+                            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+                            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+                            vu0_sqc2(1, XSG_EA(r_0, 0));
+                            xsg_vu0_blocks++;
+                        }
+#endif
                     }
                     sefLerpFloat(float_keys, (SefProgressState *)&particle->float_progress);
                     if (sefLerpVector(color_keys,
@@ -2188,6 +3259,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                     }
 
                     _nowParentLocal = particle->kind;
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 $vf21, 0(%0)\n\t"
                         "lqc2 $vf1, 0(%2)\n\t"
@@ -2211,23 +3283,61 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                           "r"(&particle->color), "r"(&particle->random_translation),
                           "f"(0.015625f)
                         : "$2", "memory");
+#else
+                    {
+                        XsgFpr f_4 = XSG_FIN(0.015625f);
+                        XsgGpr r_3 = XSG_IN(&particle->random_translation);
+                        XsgGpr r_2 = XSG_IN(&particle->color);
+                        XsgGpr r_1 = XSG_IN(particle->animated_color_xyz);
+                        XsgGpr r_0 = XSG_IN(&particle->color_offset);
+                        vu0_lqc2(21, XSG_EA(r_0, 0));
+                        vu0_lqc2(1, XSG_EA(r_2, 0));
+                        vu0_lqc2(3, XSG_EA(r_3, 0));
+                        vu0_arith(VU0_MUL, 14, 22, 21, 21, VU0_VEC);
+                        xsg_ee_set32(&xsg_ee_gpr[2], f_4.u);
+                        vu0_qmtc2(2, &xsg_ee_gpr[2]);
+                        vu0_arith(VU0_ADD, 8, 22, 22, 22, 1);
+                        vu0_itof(0, 15, 1, 1);
+                        vu0_arith(VU0_ADD, 8, 22, 22, 22, 2);
+                        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+                        vu0_sqrt(22, 0);
+                        vu0_arith(VU0_ADD, 14, 3, 1, 3, VU0_VEC);
+                        vu0_sqc2(3, XSG_EA(r_1, 0));
+                        vu0_waitq();
+                        vu0_arith(VU0_ADD, 8, 22, 0, 0, VU0_BQ);
+                        vu0_div(0, 3, 22, 0);
+                        vu0_move(1, 22, 0);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     /* Copy the packed integer scale lanes, then replace the
                      * fourth word with the animation value. */
                     particle->animated_scale = particle->color_scale_bits;
                     particle->animated_scale_words[3] = particle->first_integer_progress.value;
                     sefAnimate((unsigned char *)line_data, (unsigned char *)particle,
                                particle->animate_advance);
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "vwaitq\n\t"
                         "vmulq.xyz vf22xyz, vf21xyz, Q\n\t"
                         "sqc2 $vf22, 0(%0)"
                         : : "r"(&particle->color_offset) : "memory");
+#else
+                    {
+                        XsgGpr r_0 = XSG_IN(&particle->color_offset);
+                        vu0_waitq();
+                        vu0_arith(VU0_MUL, 14, 22, 21, 0, VU0_BQ);
+                        vu0_sqc2(22, XSG_EA(r_0, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     if (line_data->second_integer_keys_local != 0) {
                         sefLerpInt(line_data->second_integer_keys_local,
                                    (SefProgressState *)&particle->second_integer_progress);
                         component_result = particle->second_integer_progress.value;
                     }
                     if (update_parent) {
+#ifndef PORT_HOST
                         PS2_ASMV(
                             "lqc2 $vf1, 0(%1)\n\t"
                             "lqc2 $vf2, 0(%2)\n\t"
@@ -2237,6 +3347,18 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                                 "r"(&particle->start_position),
                                 "r"(&line_data->position_delta)
                             : "memory");
+#else
+                        {
+                            XsgGpr r_2 = XSG_IN(&line_data->position_delta);
+                            XsgGpr r_1 = XSG_IN(&particle->start_position);
+                            XsgGpr r_0 = XSG_IN(&particle->start_position);
+                            vu0_lqc2(1, XSG_EA(r_1, 0));
+                            vu0_lqc2(2, XSG_EA(r_2, 0));
+                            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                            vu0_sqc2(1, XSG_EA(r_0, 0));
+                            xsg_vu0_blocks++;
+                        }
+#endif
                     }
                     sefMoveParticle((unsigned char *)particle, (unsigned char *)&line_data->scale_keys,
                                     component_result);
@@ -2427,6 +3549,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     if (line_data->scale_keys != 0 && ((short *)line_data->scale_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->scale_keys + 8, &line_data->global_position_source);
         vector_scale = D_004D8328;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2436,10 +3559,23 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
             :
             : "r"(&line_data->global_position_source), "f"(vector_scale)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(vector_scale);
+            XsgGpr r_0 = XSG_IN(&line_data->global_position_source);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if (line_data->rotation_keys != 0 && ((short *)line_data->rotation_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->rotation_keys + 8, &line_data->parent_position_source);
         vector_scale = D_004D832C;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2449,11 +3585,24 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
             :
             : "r"(&line_data->parent_position_source), "f"(vector_scale)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(vector_scale);
+            XsgGpr r_0 = XSG_IN(&line_data->parent_position_source);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if (line_data->position_keys != 0 && line_data->position_keys[9] == 0x400) {
         sefLerpVectorA(line_data->position_keys + 4,
                        (Vector4 *)line_data->position_source);
         vector_scale = D_004D8330;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2463,6 +3612,18 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
             :
             : "r"((Vector4 *)line_data->position_source), "f"(vector_scale)
             : "$8", "memory");
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(vector_scale);
+            XsgGpr r_0 = XSG_IN((Vector4 *)line_data->position_source);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 
     line_data->script_parameters[0] = line_table[0];
@@ -2769,12 +3930,25 @@ int sefCreateParticle(SefLocalData *data, int kind)
                 jitter.y = sefRandf();
                 jitter.z = sefRandf();
                 jitter.w = 0.0f;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vmul.xyz vf1, vf1, vf2\n\t"
                     "sqc2 vf1, 0(%0)"
                     : : "r"(&jitter), "r"(&spread) : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(&spread);
+                    XsgGpr r_0 = XSG_IN(&jitter);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    vu0_lqc2(2, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_MUL, 14, 1, 1, 2, VU0_VEC);
+                    vu0_sqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "mfc1 $8, %1\n\t"
@@ -2782,12 +3956,38 @@ int sefCreateParticle(SefLocalData *data, int kind)
                     "vmulx.xyz vf1, vf1, vf2x\n\t"
                     "sqc2 vf1, 0(%0)"
                     : : "r"(&spread), "f"(0.5f) : "$8", "memory");
+#else
+                {
+                    XsgFpr f_1 = XSG_FIN(0.5f);
+                    XsgGpr r_0 = XSG_IN(&spread);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                    vu0_qmtc2(2, &xsg_ee_gpr[8]);
+                    vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+                    vu0_sqc2(1, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vsub.xyz vf1, vf1, vf2\n\t"
                     "sqc2 vf1, 0(%2)"
                     : : "r"(&jitter), "r"(&spread), "r"(&particle->random_rotation) : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(&particle->random_rotation);
+                    XsgGpr r_1 = XSG_IN(&spread);
+                    XsgGpr r_0 = XSG_IN(&jitter);
+                    vu0_lqc2(1, XSG_EA(r_0, 0));
+                    vu0_lqc2(2, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+                    vu0_sqc2(1, XSG_EA(r_2, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf2, 0(%0)\n\t"
                     "lwc1 $f8, %1\n\t"
@@ -2796,8 +3996,22 @@ int sefCreateParticle(SefLocalData *data, int kind)
                     "vmulx.xyz vf2, vf2, vf1x\n\t"
                     "sqc2 vf2, 0(%0)"
                     : : "r"(&particle->random_rotation), "m"(D_004D8338) : "$8", "$f8", "memory");
+#else
+                {
+                    void *m_1 = (void *)&(D_004D8338);
+                    XsgGpr r_0 = XSG_IN(&particle->random_rotation);
+                    vu0_lqc2(2, XSG_EA(r_0, 0));
+                    __builtin_memcpy(&xsg_ee_fpr[8], m_1, 4);
+                    xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+                    vu0_qmtc2(1, &xsg_ee_gpr[8]);
+                    vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+                    vu0_sqc2(2, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 battle = _battleData;
                 if (*(int *)(battle + 0x22C) != 0) {
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lq $8, 0(%1)\n\t"
                         "lq $9, 16(%1)\n\t"
@@ -2808,6 +4022,21 @@ int sefCreateParticle(SefLocalData *data, int kind)
                         "sq $10, 32(%0)\n\t"
                         "sq $11, 48(%0)"
                         : : "r"(&particle->transform), "r"(battle + 0x180) : "$8", "$9", "$10", "$11", "memory");
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN(battle + 0x180);
+                        XsgGpr r_0 = XSG_IN(&particle->transform);
+                        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+                        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+                        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+                        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+                        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+                        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     particle->battle_scale = *(float *)(battle + 0x220);
                 } else if (*(short *)data->spread_rotation_keys == 1) {
                     MMathRotateMatrixYXZ(&particle->transform, 0, &particle->random_rotation);
@@ -2839,6 +4068,7 @@ int sefCreateParticle(SefLocalData *data, int kind)
             if (data->rotation_keys != 0 && *(short *)(data->rotation_keys + 10) == 1024) {
                 sefLerpVectorA(data->rotation_keys, &particle->size);
                 if (*(short *)data->color_keys != 3) {
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf1, 0(%3)\n\t"
                         "mfc1 $8, %2\n\t"
@@ -2848,6 +4078,20 @@ int sefCreateParticle(SefLocalData *data, int kind)
                         : "=m"(particle->size)
                         : "m"(particle->size), "f"(D_004D8340), "r"(&particle->size)
                         : "$8", "memory");
+#else
+                    {
+                        XsgGpr r_3 = XSG_IN(&particle->size);
+                        XsgFpr f_2 = XSG_FIN(D_004D8340);
+                        void *m_1 = (void *)&(particle->size);
+                        void *m_0 = (void *)&(particle->size);
+                        vu0_lqc2(1, XSG_EA(r_3, 0));
+                        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+                        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+                        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+                        vu0_sqc2(1, XSG_EA(r_3, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
             }
 
@@ -2862,12 +4106,25 @@ int sefCreateParticle(SefLocalData *data, int kind)
                 }
                 sefCalcRotChange((unsigned char *)particle, angle, update);
             }
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf1, 0(%0)\n\t"
                 "lqc2 vf2, 0(%1)\n\t"
                 "vadd.xyz vf1, vf1, vf2\n\t"
                 "sqc2 vf1, 0(%2)"
                 : : "r"(&particle->random_rotation), "r"(&particle->rotation), "r"(&particle->rotated_position) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(&particle->rotated_position);
+                XsgGpr r_1 = XSG_IN(&particle->rotation);
+                XsgGpr r_0 = XSG_IN(&particle->random_rotation);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                vu0_lqc2(2, XSG_EA(r_1, 0));
+                vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                vu0_sqc2(1, XSG_EA(r_2, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
 
             if (data->signal_keys != 0) {
                 particle->signal = *data->signal_keys;
@@ -2974,14 +4231,25 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             sefGetParentMatrix(_nowScheduler, (short)scale_mode - 0x1000, &parent_matrix);
         }
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "sq $8, 0(%1)"
         :
         : "r"(&global->global_position), "r"(&initial_position)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&initial_position);
+        XsgGpr r_0 = XSG_IN(&global->global_position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     if (!scale_is_fixed) {
         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
@@ -2990,6 +4258,17 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             :
             : "r"(&global->global_position), "r"(&line_data->origin_offset)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&line_data->origin_offset);
+            XsgGpr r_0 = XSG_IN(&global->global_position);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     if (!rotation_is_fixed) {
         sefGetPosition(&global->parent_position, (unsigned char *)&global->parent_position_source, keys[2][0]);
@@ -3000,7 +4279,15 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             SefLocalData *parent_data = (SefLocalData *)&_lineData[_parentLine * SEF_LINE_DATA_RECORD_SIZE];
 
             if (parent_data == 0) {
+#ifndef PORT_HOST
                 PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&global->position_delta) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&global->position_delta);
+                    vu0_sqc2(0, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 return 1;
             }
             for (parent_line = 0; parent_line < 0x100; parent_line++) {
@@ -3009,10 +4296,41 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
                     _nowParentLocal = point_handle;
                     if (scale_is_fixed) {
                         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
+#ifndef PORT_HOST
                         PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+#else
+                        {
+                            XsgGpr r_0 = XSG_IN(&global->global_position);
+                            vu0_lqc2(1, XSG_EA(r_0, 0));
+                            xsg_vu0_blocks++;
+                        }
+#endif
+#ifndef PORT_HOST
                         PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(&line_data->origin_offset) : "memory");
+#else
+                        {
+                            XsgGpr r_0 = XSG_IN(&line_data->origin_offset);
+                            vu0_lqc2(2, XSG_EA(r_0, 0));
+                            xsg_vu0_blocks++;
+                        }
+#endif
+#ifndef PORT_HOST
                         PS2_ASMV("vadd.xyz vf1, vf1, vf2");
+#else
+                        {
+                            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                            xsg_vu0_blocks++;
+                        }
+#endif
+#ifndef PORT_HOST
                         PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
+#else
+                        {
+                            XsgGpr r_0 = XSG_IN(&global->global_position);
+                            vu0_sqc2(1, XSG_EA(r_0, 0));
+                            xsg_vu0_blocks++;
+                        }
+#endif
                     }
                     if (rotation_is_fixed) {
                         sefGetPosition(&global->parent_position, (unsigned char *)&global->parent_position_source, keys[2][0]);
@@ -3034,6 +4352,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             }
         }
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -3042,6 +4361,18 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
         :
         : "r"(&global->global_position), "r"(&initial_position), "r"(&global->position_delta)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&global->position_delta);
+        XsgGpr r_1 = XSG_IN(&initial_position);
+        XsgGpr r_0 = XSG_IN(&global->global_position);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return 1;
 }
 
@@ -3837,8 +5168,26 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     if (origin == 0) {
         origin = (void *)_zeroPos_004CBF00;
     }
+#ifndef PORT_HOST
     PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(origin);
+        XsgGpr r_0 = XSG_IN(&sefSchedulerCreateTable[scheduler_index].position);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&sefSchedulerCreateTable[scheduler_index].rotation);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     sefSchedulerCreateTable[scheduler_index].savedActive = 0;
     sefSchedulerCreateTable[scheduler_index].scriptAddress = (unsigned char *)table;
     sefSchedulerCreateTable[scheduler_index].delayFrames = (short)flags;
@@ -3861,9 +5210,18 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     effect_block[1] = table;
     effect_block[0] = value2;
     sdvSelectCamera(camera_block, table, value1);
+#ifndef PORT_HOST
     PS2_ASMV("vmaxw.xyzw vf1, vf0, vf0w\n\t"
                          "sqc2 vf1, 0(%0)"
                          : : "r"(&sefSchedulerCreateTable[scheduler_index].scale) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&sefSchedulerCreateTable[scheduler_index].scale);
+        vu0_arith(VU0_MAX, 15, 1, 0, 0, 3);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     sefSchedulerCreateTable[scheduler_index].display = 1;
     sefSchedulerCreateTable[scheduler_index].effectSpeed = 3.0f;
     work = &_scriptWork[sefSchedulerCreateTable[scheduler_index].scriptBinding.script_id].status;
@@ -4037,6 +5395,7 @@ extern void xglMatrixStackSave(float matrix[4][4]);
 extern void xglMatrixInverse(void *dst, void *src);
 static inline void sefCopyMatrix(void *dst, void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%0)\n\t"
         "lq $9, 16(%0)\n\t"
@@ -4049,6 +5408,21 @@ static inline void sefCopyMatrix(void *dst, void *src)
         :
         : "r"(src), "r"(dst)
         : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(dst);
+        XsgGpr r_0 = XSG_IN(src);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_0, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_0, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_0, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_0, 48), 16);
+        __builtin_memcpy(XSG_EA(r_1, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_1, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_1, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_1, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *matrix)
@@ -4114,6 +5488,7 @@ void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *mat
             *(float *)(D_00794290 + 0xA0) = sefGetMatrixScale((float *)D_00794290);
         } else {
                 inverse = 0;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "vmr32.xyzw $vf1xyzw, $vf0xyzw\n\t"
                     "vmr32.xyzw $vf2xyzw, $vf1xyzw\n\t"
@@ -4125,6 +5500,19 @@ void sefGetParentMatrix(SchedulerState *scheduler, unsigned int id, Matrix4 *mat
                     :
                     : "r"(matrix)
                     : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(matrix);
+                    vu0_mr32(15, 1, 0);
+                    vu0_mr32(15, 2, 1);
+                    vu0_mr32(15, 3, 2);
+                    vu0_sqc2(0, XSG_EA(r_0, 48));
+                    vu0_sqc2(1, XSG_EA(r_0, 32));
+                    vu0_sqc2(2, XSG_EA(r_0, 16));
+                    vu0_sqc2(3, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 sefCopyMatrix(D_00794290, matrix);
                 *(float *)(D_00794290 + 0xA0) = 1.0f;
         }
@@ -4246,13 +5634,55 @@ int sefExecScheduler(void)
             sefCalcRotTransSMatrix(&scheduler->vectors[1], &scheduler->vectors[0],
                                    &scheduler->vectors[2], (Matrix4 *)&scheduler->localMatrix);
 
+#ifndef PORT_HOST
             PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->targetMatrix) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&BATTLE->targetMatrix);
+                vu0_mr32(15, 1, 0);
+                vu0_mr32(15, 2, 1);
+                vu0_mr32(15, 3, 2);
+                vu0_sqc2(0, XSG_EA(r_0, 48));
+                vu0_sqc2(1, XSG_EA(r_0, 32));
+                vu0_sqc2(2, XSG_EA(r_0, 16));
+                vu0_sqc2(3, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&BATTLE->sourceMatrix) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&BATTLE->sourceMatrix);
+                vu0_mr32(15, 1, 0);
+                vu0_mr32(15, 2, 1);
+                vu0_mr32(15, 3, 2);
+                vu0_sqc2(0, XSG_EA(r_0, 48));
+                vu0_sqc2(1, XSG_EA(r_0, 32));
+                vu0_sqc2(2, XSG_EA(r_0, 16));
+                vu0_sqc2(3, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
 
             if (running != 0) {
                 sefGetParentMatrix(scheduler, 0, (Matrix4 *)&scheduler->worldMatrix);
             } else {
+#ifndef PORT_HOST
                 PS2_ASMV("vmr32.xyzw vf1, vf0\n\tvmr32.xyzw vf2, vf1\n\tvmr32.xyzw vf3, vf2\n\tsqc2 vf0, 48(%0)\n\tsqc2 vf1, 32(%0)\n\tsqc2 vf2, 16(%0)\n\tsqc2 vf3, 0(%0)" : : "r"(&scheduler->worldMatrix) : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(&scheduler->worldMatrix);
+                    vu0_mr32(15, 1, 0);
+                    vu0_mr32(15, 2, 1);
+                    vu0_mr32(15, 3, 2);
+                    vu0_sqc2(0, XSG_EA(r_0, 48));
+                    vu0_sqc2(1, XSG_EA(r_0, 32));
+                    vu0_sqc2(2, XSG_EA(r_0, 16));
+                    vu0_sqc2(3, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 if (SLOT(targetActor) != 0) {
                     sefCalcRotTransSMatrix(&SLOT(targetActor)->rotation, &SLOT(targetActor)->position,
                                            &SLOT(targetActor)->scale, &BATTLE->targetMatrix);
@@ -4456,7 +5886,15 @@ static void sefInitBattlePrm(void)
     int count = 0;
     int i;
 
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(D_00795100) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(D_00795100);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     for (i = 0; i < sefBattleTbl()->count; i++) {
         record = &sefBattleTbl()->actors[i];
         actor = record->actor;
@@ -4465,10 +5903,41 @@ static void sefInitBattlePrm(void)
         record->seSignal = 0;
         if (actor != 0 && *(short *)((char *)record + 0x84) == 0) {
             position = (Vector4 *)((char *)actor + 0x10);
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(D_00795100);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(position);
+                vu0_lqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+#else
+            {
+                vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(D_00795100) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(D_00795100);
+                vu0_sqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             count++;
         }
     }
@@ -4485,16 +5954,55 @@ void sefCaclAllTarget(Vector4 *target)
     int count = 0;
     int i;
 
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(target) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(target);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     for (i = 0; i < _battleActor->count; i++) {
         record = &_battleActor->actors[i];
         actor = record->actor;
         if (actor != 0 && record->excluded == 0) {
             position = (Vector4 *)((char *)actor + 0x10);
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(target);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf2, 0(%0)" : : "r"(position) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(position);
+                vu0_lqc2(2, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("vadd.xyz vf1, vf1, vf2" : : : "memory");
+#else
+            {
+                vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf1, 0(%0)" : : "r"(target) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(target);
+                vu0_sqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             count++;
         }
     }
@@ -4639,6 +6147,7 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
         }
 
         sefGetNullPosition(&actor_position, battle_actor->actor, 0, 1);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
@@ -4647,6 +6156,18 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
             :
             : "r"(position), "r"(&actor_position), "r"(&difference)
             : "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&difference);
+            XsgGpr r_1 = XSG_IN(&actor_position);
+            XsgGpr r_0 = XSG_IN(position);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_SUB, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         distance_squared = MMathVectorDotProduct(&difference, &difference);
         if (!(distance_squared < range_squared)) {
             continue;
@@ -4656,14 +6177,53 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
         weight = (range_squared - distance_squared) / range_squared * 0.0078125f;
         if (battle_actor->lightCount == 0) {
             *(SefLightSet *)lights = *(SefLightSet *)_defLight;
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(&battle_actor->light_accumulator) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&battle_actor->light_accumulator);
+                vu0_sqc2(0, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             MMathNormalizeVector2(&battle_actor->light_direction, &difference);
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&lights[6]), "r"(&battle_actor->light_direction) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&battle_actor->light_direction);
+                XsgGpr r_0 = XSG_IN(&lights[6]);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->light_position), "r"(position) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(position);
+                XsgGpr r_0 = XSG_IN(&battle_actor->light_position);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&battle_actor->actor_position), "r"(&actor_position) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&actor_position);
+                XsgGpr r_0 = XSG_IN(&battle_actor->actor_position);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $2, %2\n\t"
             "lqc2 vf1, 0(%0)\n\t"
@@ -4676,7 +6236,24 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
             :
             : "r"(light), "r"(&battle_actor->light_accumulator), "f"(weight)
             : "$2", "memory");
+#else
+        {
+            XsgFpr f_2 = XSG_FIN(weight);
+            XsgGpr r_1 = XSG_IN(&battle_actor->light_accumulator);
+            XsgGpr r_0 = XSG_IN(light);
+            xsg_ee_set32(&xsg_ee_gpr[2], f_2.u);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_itof(0, 15, 1, 1);
+            vu0_qmtc2(2, &xsg_ee_gpr[2]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_arith(VU0_ADD, 14, 3, 1, 3, VU0_VEC);
+            vu0_sqc2(3, XSG_EA(r_1, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         battle_actor->actor->flags |= SEF_ACTOR_LIGHT_FLAG;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf1, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
@@ -4684,6 +6261,18 @@ static void sefAddLightActor(const Vector4 *position, const SefLightInput *light
             "sqc2 vf1, 0(%2)"
             :
             : "r"(&lights[5]), "r"(&battle_actor->light_accumulator), "r"(&lights[5]));
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&lights[5]);
+            XsgGpr r_1 = XSG_IN(&battle_actor->light_accumulator);
+            XsgGpr r_0 = XSG_IN(&lights[5]);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            vu0_sqc2(1, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         battle_actor->lightCount++;
     }
 }
@@ -5278,7 +6867,15 @@ void sefCreateEffect(SefEffectRequest *request)
         }
         script_request = (SefEffectRequest *)_battleData;
         *script_request = *request;
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(_battleData + 0x30) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(_battleData + 0x30);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         sefCnvDeathEffectNo(script_request);
         scCreateScript(script_request);
     }
@@ -5426,7 +7023,17 @@ static unsigned char *sefCreateEffectCf2(int effectNo, int position, void *orien
         scheduler = (SchedulerState *)((unsigned char *)_scheduler + index * 0xab0);
         scheduler->flags |= 0x412;
         if (orientation != 0) {
+#ifndef PORT_HOST
             PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"((char *)scheduler + 0x90), "r"(orientation) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(orientation);
+                XsgGpr r_0 = XSG_IN((char *)scheduler + 0x90);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
     }
     return (unsigned char *)scheduler;
@@ -5729,22 +7336,52 @@ void sefPushEffect(void)
         if (SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(inUse)) != 0) {
             destination_position = &_savePrm[index].position;
             scheduler_vector0 = scheduler + 0x80;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_position), "r"(scheduler_offset + (int)scheduler_vector0) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(scheduler_offset + (int)scheduler_vector0);
+                XsgGpr r_0 = XSG_IN(destination_position);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             destination_orientation = &_savePrm[index].orientation;
             scheduler_vector1 = scheduler + 0x90;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_orientation), "r"(scheduler_offset + (int)scheduler_vector1) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(scheduler_offset + (int)scheduler_vector1);
+                XsgGpr r_0 = XSG_IN(destination_orientation);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             destination_vector = &_savePrm[index].saved_vector;
             scheduler_vector2 = scheduler + 0xA0;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(destination_vector), "r"(scheduler_offset + (int)scheduler_vector2) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(scheduler_offset + (int)scheduler_vector2);
+                XsgGpr r_0 = XSG_IN(destination_vector);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             SEF_BACK_FIELD(SefSaveActive, save_cursor, -SEF_SAVE_REL(active)) = SEF_BACK_FIELD(SefSaveActive, scheduler_cursor, -SEF_SCHED_REL(savedActive));
             SEF_REL_FIELD(int, save_cursor, SEF_SAVE_REL(saved_words[0])) = SEF_REL_FIELD(int, scheduler_cursor, SEF_SCHED_REL(targetActor));
             SEF_REL_FIELD(int, save_cursor, SEF_SAVE_REL(saved_words[1])) = SEF_REL_FIELD(int, scheduler_cursor, 0);
@@ -5783,10 +7420,20 @@ void sefPopEffect(void)
             sefCreateEffectCf2(*(short *)(save_cursor + 0x08),
                                record_offset + (int)save_params,
                                (void *)(record_offset + (int)save_params_10), index);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "sq $8, 0(%0)"
                 : : "r"(effect_offset + (int)effect_data), "r"(record_offset + (int)save_params_20) : "$8", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(record_offset + (int)save_params_20);
+                XsgGpr r_0 = XSG_IN(effect_offset + (int)effect_data);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             *(SefSaveActive *)(effect_cursor - 0x08) = *(SefSaveActive *)(save_cursor - 0x10);
             *(int *)(effect_cursor - 0x04) = *(int *)(save_cursor - 0x0C);
             *(int *)(effect_cursor + 0x00) = *(int *)(save_cursor - 0x08);
@@ -5892,7 +7539,24 @@ unsigned char *sefGetParentLine(int line, int parent_local)
  * no evidenced caller in this allocation.
  */
 void sefScaleIVectorAdd(void *dest, void *scale_source, void *addend, float scale) {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)\n\tlqc2 vf3, 0(%1)\n\tvitof0.xyzw vf1, vf1\n\tqmtc2.ni %2, vf2\n\tvmulx.xyz vf1, vf1, vf2x\n\tvadd.xyz vf3, vf1, vf3\n\tsqc2 vf3, 0(%3)\n\tnop" :  : "r"(scale_source), "r"(addend), "r"(scale), "r"(dest) : "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(dest);
+        XsgGpr r_2 = XSG_IN(scale);
+        XsgGpr r_1 = XSG_IN(addend);
+        XsgGpr r_0 = XSG_IN(scale_source);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_itof(0, 15, 1, 1);
+        vu0_qmtc2(2, &r_2);
+        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+        vu0_arith(VU0_ADD, 14, 3, 1, 3, VU0_VEC);
+        vu0_sqc2(3, XSG_EA(r_3, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -5905,11 +7569,20 @@ void sefScaleIVectorAdd(void *dest, void *scale_source, void *addend, float scal
  */
 void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(src);
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     {
         register float degToRad PS2_REG("$f8") = lit4_004d8354;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf1\n\t"
@@ -5920,11 +7593,23 @@ void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
             : "r"(dst), "f"(degToRad)
             : "$8", "memory"
         );
+#else
+        {
+            XsgGpr r_0 = XSG_IN(dst);
+            xsg_ee_fpr[8] = XSG_FIN(degToRad);
+            xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[8].u);
+            vu0_qmtc2(1, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
 }
 
 void sefMergeMatrixPos(Matrix4 dest, Matrix4 matrix, Vector4 *pos)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 0x10(%1)\n\t"
@@ -5937,6 +7622,22 @@ void sefMergeMatrixPos(Matrix4 dest, Matrix4 matrix, Vector4 *pos)
         :
         : "r"(dest), "r"(matrix), "r"(pos)
         : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(pos);
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(dest);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_2, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -5956,6 +7657,7 @@ void sefLerpVectorB(void *first, Vector4 *dest, float factor)
 {
     void *second = (char *)first + 10;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $9, %3\n\t"
         "qmtc2.ni $9, $vf3\n\t"
@@ -5982,6 +7684,35 @@ void sefLerpVectorB(void *first, Vector4 *dest, float factor)
         : "r"(first), "r"(second), "r"(dest), "f"(factor)
         : "$8", "$9", "$10", "$11", "memory"
     );
+#else
+    {
+        XsgFpr f_3 = XSG_FIN(factor);
+        XsgGpr r_2 = XSG_IN(dest);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        xsg_ee_set32(&xsg_ee_gpr[9], f_3.u);
+        vu0_qmtc2(3, &xsg_ee_gpr[9]);
+        __builtin_memcpy(&xsg_ee_gpr[8].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[8].d[0], XSG_EA(r_0, 0), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_1, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_1, 0), 8);
+        xsg_ee_gpr[8].d[0] = xsg_ee_gpr[8].d[0] >> ((16));
+        xsg_ee_gpr[9].d[0] = xsg_ee_gpr[9].d[0] >> ((16));
+        xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[8]);
+        xsg_mmi_pcgth(&xsg_ee_gpr[11], &xsg_ee_zero, &xsg_ee_gpr[9]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[8]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[11], &xsg_ee_gpr[11], &xsg_ee_gpr[9]);
+        vu0_qmtc2(1, &xsg_ee_gpr[10]);
+        vu0_qmtc2(2, &xsg_ee_gpr[11]);
+        vu0_itof(0, 15, 1, 1);
+        vu0_itof(0, 15, 2, 2);
+        vu0_arith(VU0_SUB, 14, 2, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 2, 2, 3, 0);
+        vu0_arith(VU0_ADD, 14, 2, 2, 1, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -6007,6 +7738,7 @@ void sefLerpIVectorB(void *first, Vector4 *dest, float factor)
 {
     void *second = (char *)first + 10;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "ldl $8, 7(%0)\n\t"
         "ldr $8, 0(%0)\n\t"
@@ -6032,4 +7764,32 @@ void sefLerpIVectorB(void *first, Vector4 *dest, float factor)
         : "r"(first), "r"(second), "r"(dest), "f"(factor)
         : "$8", "$9", "$10", "$11", "memory"
     );
+#else
+    {
+        XsgFpr f_3 = XSG_FIN(factor);
+        XsgGpr r_2 = XSG_IN(dest);
+        XsgGpr r_1 = XSG_IN(second);
+        XsgGpr r_0 = XSG_IN(first);
+        __builtin_memcpy(&xsg_ee_gpr[8].d[0], ((char *)XSG_EA(r_0, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[8].d[0], XSG_EA(r_0, 0), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], ((char *)XSG_EA(r_1, 7) - 7), 8);
+        __builtin_memcpy(&xsg_ee_gpr[9].d[0], XSG_EA(r_1, 0), 8);
+        xsg_ee_set32(&xsg_ee_gpr[10], f_3.u);
+        vu0_qmtc2(3, &xsg_ee_gpr[10]);
+        xsg_mmi_pcgth(&xsg_ee_gpr[10], &xsg_ee_zero, &xsg_ee_gpr[8]);
+        xsg_mmi_pcgth(&xsg_ee_gpr[11], &xsg_ee_zero, &xsg_ee_gpr[9]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[10], &xsg_ee_gpr[10], &xsg_ee_gpr[8]);
+        xsg_mmi_pextlh(&xsg_ee_gpr[11], &xsg_ee_gpr[11], &xsg_ee_gpr[9]);
+        vu0_qmtc2(1, &xsg_ee_gpr[10]);
+        vu0_qmtc2(2, &xsg_ee_gpr[11]);
+        vu0_itof(0, 15, 1, 1);
+        vu0_itof(0, 15, 2, 2);
+        vu0_arith(VU0_SUB, 14, 2, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 14, 2, 2, 3, 0);
+        vu0_arith(VU0_ADD, 14, 2, 2, 1, VU0_VEC);
+        vu0_ftoi(0, 15, 2, 2);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }

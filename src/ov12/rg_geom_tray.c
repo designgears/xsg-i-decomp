@@ -142,14 +142,34 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
 
     hit_axes = 0;
     hit_count = 0;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(current_position), "r"(end_position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(end_position);
+        XsgGpr r_0 = XSG_IN(current_position);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(current_position);
+        XsgGpr r_0 = XSG_IN(last_contact);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     XrgSubVectorXYZ(&movement.x, current_position, start_position);
     if (movement.z < -0.001f) {
@@ -167,10 +187,20 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 1) == 0 && current_position[2] < radius - height) {
         current_position[2] = radius - height;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(current_position);
+            XsgGpr r_0 = XSG_IN(last_contact);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         last_contact[2] -= radius;
         XrgSetVectorXYZ(normals[hit_count], 0.0f, 0.0f, 1.0f);
         hit_count++;
@@ -193,10 +223,20 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 2) == 0 && current_position[2] > height - radius) {
         current_position[2] = height - radius;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(current_position);
+            XsgGpr r_0 = XSG_IN(last_contact);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         last_contact[2] += radius;
         XrgSetVectorXYZ(normals[hit_count], 0.0f, 0.0f, -1.0f);
         hit_count++;
@@ -219,10 +259,20 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 4) == 0 && current_position[0] < radius - width) {
         current_position[0] = radius - width;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(current_position);
+            XsgGpr r_0 = XSG_IN(last_contact);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         last_contact[0] -= radius;
         XrgSetVectorXYZ(normals[hit_count], 1.0f, 0.0f, 0.0f);
         hit_count++;
@@ -245,10 +295,20 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     }
     if ((hit_axes & 8) == 0 && current_position[0] > width - radius) {
         current_position[0] = width - radius;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(current_position);
+            XsgGpr r_0 = XSG_IN(last_contact);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         last_contact[0] += radius;
         XrgSetVectorXYZ(normals[hit_count], -1.0f, 0.0f, 0.0f);
         hit_count++;
@@ -257,19 +317,39 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
 
     if ((hit_axes & 0x10) == 0 && current_position[1] < radius) {
         current_position[1] = radius;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf31, 0(%1)\n\t"
             "sqc2 vf31, 0(%0)\n\t"
             : : "r"(last_contact), "r"(current_position) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(current_position);
+            XsgGpr r_0 = XSG_IN(last_contact);
+            vu0_lqc2(31, XSG_EA(r_1, 0));
+            vu0_sqc2(31, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         last_contact[1] = 0.0f;
         XrgSetVectorXYZ(normals[hit_count], 0.0f, 1.0f, 0.0f);
         hit_count++;
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(clipped_position), "r"(current_position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(current_position);
+        XsgGpr r_0 = XSG_IN(clipped_position);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return hit_count;
 }
 
@@ -277,6 +357,7 @@ extern const char D_00A55240[];
 extern const char D_00A55250[];
 static inline void RgGeomTrayApply(float *dst, float *mtx, float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2,0(%2)\n\t"
         "lqc2 $vf3,0(%1)\n\t"
@@ -289,6 +370,24 @@ static inline void RgGeomTrayApply(float *dst, float *mtx, float *src)
         "vmaddw.xyzw $vf2xyzw,$vf6xyzw,$vf2w\n\t"
         "sqc2 $vf2,0(%0)"
         : : "r"(dst), "r"(mtx), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(src);
+        XsgGpr r_1 = XSG_IN(mtx);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(4, XSG_EA(r_1, 16));
+        vu0_lqc2(5, XSG_EA(r_1, 32));
+        vu0_lqc2(6, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 int RgGeomTrayCheckBall(void *pTray, float *pCheck, float *pResult)
@@ -311,14 +410,34 @@ int RgGeomTrayCheckBall(void *pTray, float *pCheck, float *pResult)
     if (pResult == 0) {
         assert_prog(D_00A55250, D_00A55228, 0xE4);
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(start), "r"(pCheck + 12) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pCheck + 12);
+        XsgGpr r_0 = XSG_IN(start);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%1)\n\t"
         "sqc2 vf31, 0(%0)\n\t"
         : : "r"(end), "r"(pCheck + 8) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pCheck + 8);
+        XsgGpr r_0 = XSG_IN(end);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     RgGeomTrayApply(start, (float *)tray->inverse_local, start);
     RgGeomTrayApply(end, (float *)tray->inverse_local, end);
     normals = pResult + 8;

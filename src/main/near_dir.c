@@ -537,6 +537,7 @@ void SEQ_moveSPL(Actor *actor)
         Vector4 delta;
         float length;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf3,0(%1)\n\t"
             "lqc2 $vf2,0(%2)\n\t"
@@ -546,6 +547,18 @@ void SEQ_moveSPL(Actor *actor)
             : "r"(&delta), "r"(&actor->position), "r"(&sample)
             : "memory"
         );
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&sample);
+            XsgGpr r_1 = XSG_IN(&actor->position);
+            XsgGpr r_0 = XSG_IN(&delta);
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_lqc2(2, XSG_EA(r_2, 0));
+            vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
         /* The original computes the distance and never reads it: `length` is
          * written by the call and dead afterwards. The call is the observable
@@ -1027,6 +1040,7 @@ void ACT_updatePlayer(Actor *actor)
 
         /* sceVu0CopyMatrix shape: the camera basis is copied as four quadwords
          * through a fixed scratch register. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n"
             "sq $2, 0(%0)\n"
@@ -1039,6 +1053,21 @@ void ACT_updatePlayer(Actor *actor)
             :
             : "r"(&matrix), "r"(&((CameraBasis *)camera)->matrix)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&((CameraBasis *)camera)->matrix);
+            XsgGpr r_0 = XSG_IN(&matrix);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         matrix[3][0] = 0.0f;
         matrix[3][1] = 0.0f;
         matrix[3][2] = 0.0f;

@@ -129,7 +129,13 @@ void MenuEtherCapSet(void)
 
         org[0x17] = 0;
         j = 0;
+#ifndef PORT_HOST
         PS2_ASM(".align 3");
+#else
+        {
+            xsg_vu0_blocks++;
+        }
+#endif
     lp:
         if (j >= 12)
             goto end;

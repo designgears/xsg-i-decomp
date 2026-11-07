@@ -119,14 +119,34 @@ int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact)
     RgVector *corners[4];
     int hit;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(D_00A5AB80), "r"(point->oldPosition) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(point->oldPosition);
+        XsgGpr r_0 = XSG_IN(D_00A5AB80);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(D_00A5AB90), "r"(point->position) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(point->position);
+        XsgGpr r_0 = XSG_IN(D_00A5AB90);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     {
         const float *inverseLocal = pillar->inverseLocal;
@@ -154,6 +174,7 @@ int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact)
         const float *local = pillar->local;
 
         contact[3] = 1.0f;
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 $vf2, 0(%0)\n\t"
             "lqc2 $vf3, 0(%1)\n\t"
@@ -166,6 +187,23 @@ int RgGeomPillarCheckPoint(RgGeom *pillar, RgGeomPoint *point, RgVector contact)
             "vmaddw.xyzw vf2xyzw, vf6xyzw, vf2w\n\t"
             "sqc2 $vf2, 0(%0)\n\t"
             : : "r"(contact), "r"(local) : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(local);
+            XsgGpr r_0 = XSG_IN(contact);
+            vu0_lqc2(2, XSG_EA(r_0, 0));
+            vu0_lqc2(3, XSG_EA(r_1, 0));
+            vu0_lqc2(4, XSG_EA(r_1, 16));
+            vu0_lqc2(5, XSG_EA(r_1, 32));
+            vu0_lqc2(6, XSG_EA(r_1, 48));
+            vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+            vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     return hit;
 }
@@ -266,10 +304,20 @@ static int CheckInBox(const RgVector point, const RgVector lower,
 static int CheckIntersect(const RgVector from, const RgVector to, float *lower, float *upper);
 static inline void BoxCopy(float *dst, const float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(dst), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int CheckBallBoxCollision(RgVector contact, RgVector *corners[4], int flag)
@@ -461,6 +509,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
     RgVector localCorrection;
     int hit;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2, 0(%2)\n\t"
         "lqc2 $vf3, 0(%1)\n\t"
@@ -474,6 +523,24 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(localPosition), "r"(pillar->inverseLocal),
             "r"(point->position) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(point->position);
+        XsgGpr r_1 = XSG_IN(pillar->inverseLocal);
+        XsgGpr r_0 = XSG_IN(localPosition);
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(4, XSG_EA(r_1, 16));
+        vu0_lqc2(5, XSG_EA(r_1, 32));
+        vu0_lqc2(6, XSG_EA(r_1, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     hit = _CheckPillarBall(localPosition, localNormal, localContact,
                            localCorrection, pillar->halfWidth,
@@ -482,6 +549,7 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         return hit;
     }
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
@@ -495,6 +563,25 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(worldResults[0]), "r"(localContact),
             "r"(pillar->local) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(pillar->local);
+        XsgGpr r_1 = XSG_IN(localContact);
+        XsgGpr r_0 = XSG_IN(worldResults[0]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_2, 0));
+        vu0_lqc2(4, XSG_EA(r_2, 16));
+        vu0_lqc2(5, XSG_EA(r_2, 32));
+        vu0_lqc2(6, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
@@ -508,7 +595,26 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(worldResults[1]), "r"(localNormal),
             "r"(pillar->local) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(pillar->local);
+        XsgGpr r_1 = XSG_IN(localNormal);
+        XsgGpr r_0 = XSG_IN(worldResults[1]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_2, 0));
+        vu0_lqc2(4, XSG_EA(r_2, 16));
+        vu0_lqc2(5, XSG_EA(r_2, 32));
+        vu0_lqc2(6, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     localCorrection[3] = 0.0f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf2, 0(%1)\n\t"
         "lqc2 $vf3, 0(%2)\n\t"
@@ -522,34 +628,87 @@ int RgGeomPillarCheckBall(RgGeom *pillar, RgGeomPoint *point,
         "sqc2 $vf2, 0(%0)\n\t"
         : : "r"(worldResults[2]), "r"(localCorrection),
             "r"(pillar->local) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(pillar->local);
+        XsgGpr r_1 = XSG_IN(localCorrection);
+        XsgGpr r_0 = XSG_IN(worldResults[2]);
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_lqc2(3, XSG_EA(r_2, 0));
+        vu0_lqc2(4, XSG_EA(r_2, 16));
+        vu0_lqc2(5, XSG_EA(r_2, 32));
+        vu0_lqc2(6, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 3, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 4, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 5, 2, 2);
+        vu0_arith(VU0_MADD, 15, 2, 6, 2, 3);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return hit;
 }
 
 extern float XrgNormalizeVector(RgVector destination, RgVector source);
 static inline void PillarCopy(float *dst, const float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf31, 0(%1)\n\t"
         "sqc2 $vf31, 0(%0)\n\t"
         : : "r"(dst), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void PillarSub(float *dst, const float *a, const float *b)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf30, 0(%1)\n\t"
         "lqc2 $vf31, 0(%2)\n\t"
         "vsub.xyzw $vf30, $vf30, $vf31\n\t"
         "sqc2 $vf30, 0(%0)\n\t"
         : : "r"(dst), "r"(a), "r"(b) : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(b);
+        XsgGpr r_1 = XSG_IN(a);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(30, XSG_EA(r_1, 0));
+        vu0_lqc2(31, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void PillarAdd(float *dst, const float *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf30, 0(%0)\n\t"
         "lqc2 $vf31, 0(%1)\n\t"
         "vadd.xyzw $vf30, $vf30, $vf31\n\t"
         "sqc2 $vf30, 0(%0)\n\t"
         : : "r"(dst), "r"(src) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(30, XSG_EA(r_0, 0));
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+        vu0_sqc2(30, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 static int _CheckPillarBall(const RgVector localPosition,

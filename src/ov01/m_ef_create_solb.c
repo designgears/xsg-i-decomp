@@ -63,10 +63,34 @@ static void makePath(void *work)
 
     MEfGetActorMatrix(&actorMatrix, state->actor, state->coord);
     MMathApplyMatrix(&worldOrigin, &actorMatrix, &state->localOffset);
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&worldOrigin) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&worldOrigin);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmove.w $vf1, $vf0" : : : "memory");
+#else
+    {
+        vu0_move(1, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf1, 48(%0)" : : "r"(&actorMatrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&actorMatrix);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
@@ -78,10 +102,56 @@ static void makePath(void *work)
         "sq $11, 48(%0)"
         : : "r"(&matrix), "r"(&actorMatrix)
         : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&actorMatrix);
+        XsgGpr r_0 = XSG_IN(&matrix);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&direction) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&direction);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&direction);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("vmove.w $vf1, $vf0" : : : "memory");
+#else
+    {
+        vu0_move(1, 1, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf1, 48(%0)" : : "r"(&matrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&matrix);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     direction.x = 1.0f;
     MMathApplyMatrix(&direction, &matrix, &direction);
@@ -99,10 +169,41 @@ static void makePath(void *work)
         MMathApplyMatrix(&direction, &headingMatrix, &offset_0[i]);
         MMathApplyMatrix(&direction, &pitchMatrix, &direction);
         MMathApplyMatrix(&direction, &yawMatrix, &direction);
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&direction);
+            vu0_lqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("lqc2 $vf2, 0(%0)" : : "r"(&worldOrigin) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&worldOrigin);
+            vu0_lqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("vadd.xyz $vf1xyz, $vf1xyz, $vf2xyz" : : : "memory");
+#else
+        {
+            vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf1, 0(%0)" : : "r"(&state->control[i]) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&state->control[i]);
+            vu0_sqc2(1, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         MMathRotateMatrixY(&yawMatrix, &yawMatrix, sweepStep);
     }
 }
@@ -179,11 +280,29 @@ static void fnSOLB_PR000(void *self, void *work)
     for (i = SOLB_TRAIL_LENGTH - 2; i >= 0; i--) {
         state->active[i + 1] = state->active[i];
         state->birth_age[i + 1] = state->birth_age[i];
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\n\tsq $8, 0(%0)" : : "r"(&state->trail[i + 1]), "r"(&state->trail[i]) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&state->trail[i]);
+            XsgGpr r_0 = XSG_IN(&state->trail[i + 1]);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     state->active[0] = 0;
     state->birth_age[0] = 0;
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0, 0(%0)" : : "r"(&state->trail[0]) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&state->trail[0]);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (state->age < 23) {
         state->birth_age[0] = state->age;
         state->active[0] = 1;
@@ -229,14 +348,25 @@ typedef struct MEfGsPacket {
 #define SCE_GS_ALPHA_1 0x42
 #define SCE_GS_TEST_1 0x47
 #define SCE_GS_ZBUF_1 0x4E
+#ifndef PORT_HOST
 #define QuadwordCopyT0(destination, source) \
     PS2_ASMV("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r" (destination), "r" (source) : "$8", "memory")
+#else
+#define QuadwordCopyT0(destination, source) \
+    ({ { XsgGpr r_1 = XSG_IN(source); XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16); xsg_vu0_blocks++; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0SetOrigin(destination) \
     PS2_ASMV("sqc2 vf0, 0(%0)\n" : : "r" (destination) : "memory")
+#else
+#define Vu0SetOrigin(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); vu0_sqc2(0, XSG_EA(r_0, 0)); xsg_vu0_blocks++; } })
+#endif
 typedef struct MEfGsCamParams {
     StudioCamera *screen;
     Matrix4 *matrix;
 } MEfGsCamParams;
+#ifndef PORT_HOST
 #define Vu0Sin(result, angle) \
     PS2_ASMV( \
         "mfc1 $8, %1\n" \
@@ -247,6 +377,11 @@ typedef struct MEfGsCamParams {
         : "=f" (result) \
         : "f" (angle) \
         : "$8", "memory")
+#else
+#define Vu0Sin(result, angle) \
+    ({ { XsgFpr f_1 = XSG_FIN(angle); XsgFpr f_0 = {0}; xsg_ee_set32(&xsg_ee_gpr[8], f_1.u); vu0_qmtc2(4, &xsg_ee_gpr[8]); vu0_callms(32); vu0_qmfc2(&xsg_ee_gpr[8], 1); f_0.u = xsg_ee_gpr[8].w[0]; xsg_vu0_blocks++; result = f_0.f; } })
+#endif
+#ifndef PORT_HOST
 #define Vu0Cos(result, angle) \
     PS2_ASMV( \
         "mfc1 $8, %1\n" \
@@ -257,6 +392,10 @@ typedef struct MEfGsCamParams {
         : "=f" (result) \
         : "f" (angle) \
         : "$8", "memory")
+#else
+#define Vu0Cos(result, angle) \
+    ({ { XsgFpr f_1 = XSG_FIN(angle); XsgFpr f_0 = {0}; xsg_ee_set32(&xsg_ee_gpr[8], f_1.u); vu0_qmtc2(4, &xsg_ee_gpr[8]); vu0_callms(232); vu0_qmfc2(&xsg_ee_gpr[8], 1); f_0.u = xsg_ee_gpr[8].w[0]; xsg_vu0_blocks++; result = f_0.f; } })
+#endif
 typedef struct SolbDrawState {
     unsigned int : 32;                  /* +0x000 */
     SolbActorAngle *actorAngle;         /* +0x004 */
@@ -410,11 +549,22 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[i];
             MEfCalcAngle(&aim, point, &state->trail[i + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"
                 : : "r"(&matrix), "r"(point) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(point);
+                XsgGpr r_0 = XSG_IN(&matrix);
+                vu0_lqc2(1, XSG_EA(r_1, 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
 
             (&lead.x)[pass] = width;
             MMathApplyMatrix(&aim, &matrix, &lead);
@@ -475,11 +625,22 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[j];
             MEfCalcAngle(&aim, point, &state->trail[j + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"
                 : : "r"(&matrix), "r"(point) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(point);
+                XsgGpr r_0 = XSG_IN(&matrix);
+                vu0_lqc2(1, XSG_EA(r_1, 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
             point = &state->trail[j + 2];
             {
                 float x = point->x;
@@ -543,11 +704,22 @@ static void fnSOLB_DP000(void *self, void *work)
             point = &state->trail[j];
             MEfCalcAngle(&aim, point, &state->trail[j + 1]);
             MMathRotateMatrixYXZ(&matrix, 0, &aim);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf1, 0(%1)\n"
                 "vmove.w $vf1w, $vf0w\n"
                 "sqc2 $vf1, 48(%0)\n"
                 : : "r"(&matrix), "r"(point) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(point);
+                XsgGpr r_0 = XSG_IN(&matrix);
+                vu0_lqc2(1, XSG_EA(r_1, 0));
+                vu0_move(1, 1, 0);
+                vu0_sqc2(1, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
             point = &state->trail[j + 2];
             {
                 float x = point->x;

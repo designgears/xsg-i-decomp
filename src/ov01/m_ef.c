@@ -36,6 +36,7 @@ void *MEfCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
     Vector4 delta;
     float length = 0.0f;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1, 0(%1)\n\t"
         "lqc2 $vf2, 0(%2)\n\t"
@@ -54,6 +55,30 @@ void *MEfCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
         : "r"(from), "r"(to), "r"(&delta), "r"(out)
         : "memory", "$8"
     );
+#else
+    {
+        XsgGpr r_4 = XSG_IN(out);
+        XsgGpr r_3 = XSG_IN(&delta);
+        XsgGpr r_2 = XSG_IN(to);
+        XsgGpr r_1 = XSG_IN(from);
+        XsgFpr f_0 = XSG_FIN(length);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 10, 3, 2, 1, VU0_VEC);
+        vu0_arith(VU0_MUL, 10, 4, 3, 3, VU0_VEC);
+        vu0_arith(VU0_ADD, 8, 4, 4, 4, 2);
+        vu0_sqrt(4, 0);
+        vu0_arith(VU0_SUB, 4, 3, 1, 2, VU0_VEC);
+        vu0_sqc2(3, XSG_EA(r_3, 0));
+        vu0_sqc2(0, XSG_EA(r_4, 0));
+        vu0_waitq();
+        vu0_arith(VU0_ADD, 8, 1, 0, 0, VU0_BQ);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        length = f_0.f;
+    }
+#endif
     out->x = srsAtan2(delta.y, length);
     out->y = srsAtan2(delta.x, delta.z);
     return out;
@@ -73,6 +98,7 @@ Vector4 *MEfCalcAngleMatrix(Vector4 *out, const Vector4 *matrix)
 {
     Vector4 direction;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmove.xyzw vf1, vf0\n\t"
         "vsubw.z vf1, vf0, vf0w\n\t"
@@ -81,8 +107,25 @@ Vector4 *MEfCalcAngleMatrix(Vector4 *out, const Vector4 *matrix)
         : "r"(&direction)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&direction);
+        vu0_move(15, 1, 0);
+        vu0_arith(VU0_SUB, 2, 1, 0, 0, 3);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     MMathApplyMatrix(&direction, matrix, &direction);
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(out) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     out->x = srsAtan2(direction.y, -MMathCalcLengthXZ(&direction));
     out->y = srsAtan2(direction.x, direction.z);
     return out;
@@ -95,6 +138,7 @@ extern void *MMathRotateMatrixY(void *out, const void *matrix, float angle);
 extern int ACT_jointGetAccessories(void *actor, unsigned int id);
 static inline void MEfUnitMatrix(void *out)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmr32.xyzw vf1, vf0\n\t"
         "vmr32.xyzw vf2, vf1\n\t"
@@ -107,9 +151,23 @@ static inline void MEfUnitMatrix(void *out)
         : "r"(out)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_0 = XSG_IN(out);
+        vu0_mr32(15, 1, 0);
+        vu0_mr32(15, 2, 1);
+        vu0_mr32(15, 3, 2);
+        vu0_sqc2(0, XSG_EA(r_0, 48));
+        vu0_sqc2(1, XSG_EA(r_0, 32));
+        vu0_sqc2(2, XSG_EA(r_0, 16));
+        vu0_sqc2(3, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void MEfSetTrans(void *m, void *pos)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
@@ -118,9 +176,20 @@ static inline void MEfSetTrans(void *m, void *pos)
         : "r"(m), "r"(pos)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pos);
+        XsgGpr r_0 = XSG_IN(m);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 static inline void MEfCopyMatrix(void *d, void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
                 "lq $8,0(%1)\n\t"
                 "lq $9,16(%1)\n\t"
@@ -134,6 +203,21 @@ static inline void MEfCopyMatrix(void *d, void *src)
                 : "r"(d), "r"(src)
                 : "$8", "$9", "$10", "$11", "memory"
             );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(d);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void *MEfGetActorMatrix(void *destination, void *actor, u32 coordinate)
@@ -169,6 +253,7 @@ Vector4 *MEfGetActorCoord(Vector4 *dst, void *actor, u32 coord)
     Vector4 matrix[4];
 
     MEfGetActorMatrix(matrix, actor, coord);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,48(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
@@ -177,6 +262,16 @@ Vector4 *MEfGetActorCoord(Vector4 *dst, void *actor, u32 coord)
         : "r"(dst), "r"(matrix)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(matrix);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(1, XSG_EA(r_1, 48));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     return dst;
 }
 
@@ -209,6 +304,7 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
 
     /* The R5900's native 128-bit copy of the four basis rows; the original
        loads all four before storing any of them. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "lq $9,16(%1)\n\t"
@@ -222,9 +318,25 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
         : "r"(corner), "r"(cam->basis)
         : "$8", "$9", "$10", "$11", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(cam->basis);
+        XsgGpr r_0 = XSG_IN(corner);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* Put source in the translation row, forcing that row's w lane to the
        architectural VF0.w = 1 rather than keeping source's own w. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
@@ -233,11 +345,29 @@ int MEfMake4Vertex(Vector4 *dst, const Vector4 *source, float size)
         : "r"(corner), "r"(source)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(corner);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     vertex = dst;
     for (i = 0; i < 4; i++) {
         /* Clear the offset to the origin with w = 1 (VF0). */
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&offset);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
         offset.x = (i & 2) ? -size : size;
         offset.y = (i & 1) ? -size : size;
@@ -269,6 +399,7 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
 
     angleTable = mefVertex2CornerTable;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "lq $9,16(%1)\n\t"
@@ -282,7 +413,23 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
         : "r"(corner), "r"(cam->basis)
         : "$8", "$9", "$10", "$11", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(cam->basis);
+        XsgGpr r_0 = XSG_IN(corner);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
@@ -291,6 +438,16 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
         : "r"(corner), "r"(source)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(source);
+        XsgGpr r_0 = XSG_IN(corner);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* The corners sit on the diagonal, so the radius that reaches the same
        extent as MEfMake4Vertex's axis-aligned square is size times sqrt(2). */
@@ -300,8 +457,17 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
     for (i = 0; i < 4; i++) {
         float angle = angleBase + angleTable.angle[i];
 
+#ifndef PORT_HOST
         PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(&offset);
+            vu0_sqc2(0, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8,%1\n\t"
             "qmtc2.ni $8,$vf4\n\t"
@@ -312,8 +478,22 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
             : "f"(angle)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(232);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            cosine = f_0.f;
+        }
+#endif
         offset.x = size * cosine;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "mfc1 $8,%1\n\t"
             "qmtc2.ni $8,$vf4\n\t"
@@ -324,6 +504,19 @@ int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angle
             : "f"(angle)
             : "$8", "memory"
         );
+#else
+        {
+            XsgFpr f_1 = XSG_FIN(angle);
+            XsgFpr f_0 = {0};
+            xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+            vu0_qmtc2(4, &xsg_ee_gpr[8]);
+            vu0_callms(32);
+            vu0_qmfc2(&xsg_ee_gpr[8], 1);
+            f_0.u = xsg_ee_gpr[8].w[0];
+            xsg_vu0_blocks++;
+            sine = f_0.f;
+        }
+#endif
         offset.y = size * sine;
 
         MMathApplyMatrix(&offset, corner, &offset);
@@ -351,13 +544,22 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
 
     /* Clear offset to the origin and set its w lane to 1 in one instruction:
        sqc2 stores the architectural quadword constant VF0 = (0,0,0,1). */
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&offset) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&offset);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* Move the angle into VF4 through a GPR (uninterlocked: nothing is
        pending), launch the resident VU0 cosine microprogram at its fixed
        instruction-pair entry, then read VF1 back with an interlocked transfer,
        which waits for the microprogram to finish. The EE has no scalar cosine
        or sine instruction. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -368,9 +570,23 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
         : "f"(angle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        cosine = f_0.f;
+    }
+#endif
     offset.x = radius * cosine;
 
     /* The same launch at the resident sine entry. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -381,10 +597,24 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
         : "f"(angle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        sine = f_0.f;
+    }
+#endif
     offset.z = radius * sine;
 
     /* Translate the point to center. The lane mask is the operation: only xyz
        is summed, so the w lane keeps the 1 stored above. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "lqc2 $vf2,0(%0)\n\t"
@@ -394,9 +624,21 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
         : "r"(&offset), "r"(center)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(center);
+        XsgGpr r_0 = XSG_IN(&offset);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 0));
+        vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+        vu0_sqc2(1, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* The R5900's native 128-bit copy, the shape the SDK's own vector copy
        uses. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8,0(%1)\n\t"
         "sq $8,0(%0)\n\t"
@@ -404,6 +646,15 @@ Vector4 *MEfCalcCircumXZ(Vector4 *out, Vector4 *center, float radius)
         : "r"(out), "r"(&offset)
         : "$8", "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&offset);
+        XsgGpr r_0 = XSG_IN(out);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     return out;
 }
 
@@ -429,6 +680,7 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
        The trailing nop is the delay-slot filler the original assembler left
        before the call below: without it the assembler in reorder mode moves
        this sqc2 into that call's delay slot. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf1,0(%1)\n\t"
         "vmove.w $vf1w,$vf0w\n\t"
@@ -438,15 +690,34 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
         : "r"(matrix), "r"(actor)
         : "memory"
     );
+#else
+    {
+        XsgGpr r_1 = XSG_IN(actor);
+        XsgGpr r_0 = XSG_IN(matrix);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_move(1, 1, 0);
+        vu0_sqc2(1, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     randomAngle = MMathMakeRandom2PI();
     randomLength = spread * MMathMakeRandom();
 
     /* Clear the offset to the origin with w = 1 (VF0). */
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 $vf0,0(%0)" : : "r"(&angles) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&angles);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* The resident VU0 cosine and sine microprogram launches; the EE has no
        scalar cosine or sine instruction. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -457,8 +728,22 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
         : "f"(randomAngle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(randomAngle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        cosine = f_0.f;
+    }
+#endif
     angles.x = randomLength * cosine;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8,%1\n\t"
         "qmtc2.ni $8,$vf4\n\t"
@@ -469,6 +754,19 @@ Vector4 *MEfScatterXY(Vector4 *out, const Vector4 *source, const Vector4 *actor,
         : "f"(randomAngle)
         : "$8", "memory"
     );
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(randomAngle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        sine = f_0.f;
+    }
+#endif
     angles.y = randomLength * sine;
 
     MMathApplyMatrix(out, matrix, &angles);

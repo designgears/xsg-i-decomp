@@ -496,6 +496,7 @@ void TW_setPos(TComponent *component_)
 
     /* Original VU0 operation: distance from the anchor to the camera.
      * vf2/vf3 are local VU scratch state; the stored vector feeds length. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3,0(%1)\n"
         "lqc2 $vf2,0(%2)\n"
@@ -503,6 +504,18 @@ void TW_setPos(TComponent *component_)
         "sqc2 $vf2,0(%0)"
         : : "r"(&cameraDelta), "r"(cameraPosition), "r"(&anchorPosition)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&anchorPosition);
+        XsgGpr r_1 = XSG_IN(cameraPosition);
+        XsgGpr r_0 = XSG_IN(&cameraDelta);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorLength(&projected->z, &cameraDelta);
     if (projected->z > 2.5f)
         projected->z = 2.5f;

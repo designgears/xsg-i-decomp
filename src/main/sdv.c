@@ -152,18 +152,38 @@ void sdvSaveAmbient(void)
     void *ambient = xglStudioGetLight2();
     void *map_rgb = func_A2C3F8();
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r" (_sdvAmbient), "r" (ambient)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(ambient);
+        XsgGpr r_0 = XSG_IN(_sdvAmbient);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n"
         "sq $8, 0(%0)\n"
         :
         : "r" (_sdvMapRgb), "r" (map_rgb)
         : "$8", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(map_rgb);
+        XsgGpr r_0 = XSG_IN(_sdvMapRgb);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     _sdvAmbFrame = 0;
     _sdvAmbState = 0;
 }
@@ -239,6 +259,7 @@ void sdvExecAmbient(void)
 
         parameter = (float)_sdvAmbFrame / divisor;
         /* These constrained operations implement the eight evidenced COP2 instructions. */
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf1, 0(%1)\n\t"
             "mfc1 $8, %0\n\t"
@@ -248,6 +269,20 @@ void sdvExecAmbient(void)
             :
             : "f"(half), "r"(&_sdvMapRgb[0]), "r"(&map_rgb)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&map_rgb);
+            XsgGpr r_1 = XSG_IN(&_sdvMapRgb[0]);
+            XsgFpr f_0 = XSG_FIN(half);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf1, 0(%1)\n\t"
             "mfc1 $8, %0\n\t"
@@ -257,6 +292,19 @@ void sdvExecAmbient(void)
             :
             : "f"(half), "r"(&_sdvAmbient[0]), "r"(&ambient)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(&ambient);
+            XsgGpr r_1 = XSG_IN(&_sdvAmbient[0]);
+            XsgFpr f_0 = XSG_FIN(half);
+            vu0_lqc2(1, XSG_EA(r_1, 0));
+            xsg_ee_set32(&xsg_ee_gpr[8], f_0.u);
+            vu0_qmtc2(2, &xsg_ee_gpr[8]);
+            vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+            vu0_sqc2(1, XSG_EA(r_2, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
         MMathVectorInterpolation(&map_rgb, (const Vector4 *)_sdvMapRgb,
                                  &map_rgb, parameter);
         MMathVectorInterpolation(&ambient, (const Vector4 *)_sdvAmbient,
@@ -458,12 +506,24 @@ static void sdvSetCameraParam(void *camera_data, int selection, const short *pos
         camera->position.y = y;
         if (selection == 5) {
             sefGetPosition(&origin, 0, 5);
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf1, 0(%0)\n\t"
                 "lqc2 vf2, 0(%1)\n\t"
                 "vadd.xyz vf1, vf1, vf2\n\t"
                 "sqc2 vf1, 0(%0)"
                 : : "r"(&camera->position), "r"(&origin) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(&origin);
+                XsgGpr r_0 = XSG_IN(&camera->position);
+                vu0_lqc2(1, XSG_EA(r_0, 0));
+                vu0_lqc2(2, XSG_EA(r_1, 0));
+                vu0_arith(VU0_ADD, 14, 1, 1, 2, VU0_VEC);
+                vu0_sqc2(1, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         return;
     }
@@ -665,14 +725,35 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
 
     type = *(short *)(*(int *)((char *)mtx + 0x54) + 2);
     if (type == 3) {
+#ifndef PORT_HOST
         PS2_ASMV("lq $8, 0(%1)\nsq $8, 0(%0)\n" : : "r"(out), "r"(src) : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(src);
+            XsgGpr r_0 = XSG_IN(out);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         out[0] += 0x100;
         out[1] += 0xE0;
         out[2] = arg3[1] << 16;
         return 1;
     }
     sched = sefGetNowScheduler();
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(tmp);
+        XsgGpr r_0 = XSG_IN(src);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_itof(0, 15, 1, 1);
+        vu0_sqc2(1, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     tmp[2] *= D_004D836C;
     tmp[3] = 1.0f;
     sefGetPosition(pos, tmp, type);
@@ -680,6 +761,7 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
         MMathMulMatrix(m, mtx, sched + 0x40);
         MMathApplyMatrix(pos, m, pos);
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf1, 0(%0)\n\t"
         "vmove.w vf1, vf0\n\t"
@@ -690,9 +772,33 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
         "sqc2 vf2, 0x20(%1)\n\t"
         "sqc2 vf3, 0x10(%1)\n\t"
         "sqc2 vf4, 0(%1)\n\tnop" : : "r"(pos), "r"(m) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(m);
+        XsgGpr r_0 = XSG_IN(pos);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_move(1, 1, 0);
+        vu0_mr32(15, 2, 0);
+        vu0_mr32(15, 3, 2);
+        vu0_mr32(15, 4, 3);
+        vu0_sqc2(1, XSG_EA(r_1, 48));
+        vu0_sqc2(2, XSG_EA(r_1, 32));
+        vu0_sqc2(3, XSG_EA(r_1, 16));
+        vu0_sqc2(4, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     cam = xglStudioGetActiveCamera();
     MMathMulMatrix(m2, cam + 0x470, m);
+#ifndef PORT_HOST
     PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(pos) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(pos);
+        vu0_sqc2(0, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     if (MMathRotTransPersClip(out, cam, m2, pos) != 0) {
         return 0;
     }
@@ -833,6 +939,7 @@ void sdvExecSpecial(SdvSpecial *special)
                     1);
                 slot->frame = 0;
                 slot->index = 0;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $8, 0(%1)\n\t"
                     "lq $9, 16(%1)\n\t"
@@ -845,6 +952,21 @@ void sdvExecSpecial(SdvSpecial *special)
                     :
                     : "r"(slot->matrix), "r"(scheduler->base_matrix)
                     : "$8", "$9", "$10", "$11", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(scheduler->base_matrix);
+                    XsgGpr r_0 = XSG_IN(slot->matrix);
+                    __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 break;
             }
         }
@@ -1296,7 +1418,15 @@ void sdvExecAlter(SdvAlter *alter)
             void *actor;
             Vector4 *slot = &a->trail[i][a->samples];
 
+#ifndef PORT_HOST
             PS2_ASMV("sqc2 vf0, 0(%0)" : : "r"(slot) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(slot);
+                vu0_sqc2(0, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
             if (selector == 529)
                 selector = sefGetDmgNull();
             if (selector == 256) {
@@ -1306,12 +1436,22 @@ void sdvExecAlter(SdvAlter *alter)
                 actor = a->p.request.target_actor;
             copy:
                 if (actor != 0) {
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lq $8, 0(%1)\n\t"
                         "sq $8, 0(%0)"
                         :
                         : "r"(slot), "r"((char *)actor + 0x10)
                         : "$8", "memory");
+#else
+                    {
+                        XsgGpr r_1 = XSG_IN((char *)actor + 0x10);
+                        XsgGpr r_0 = XSG_IN(slot);
+                        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                        xsg_vu0_blocks++;
+                    }
+#endif
                 }
             } else if (selector & 0x100) {
                 sefGetNullPosition(slot, a->p.request.source_actor,
@@ -1494,6 +1634,7 @@ void sdvDrawAlter(SdvAlter *alter_in, void *packet_in)
     SGsAddReg(packet, 66, alphaTbl_004CC8D8[alter->parameters.blend]);
     packet->loop_count = 1;
     SGsCloseGifPacket(packet);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
@@ -1506,6 +1647,21 @@ void sdvDrawAlter(SdvAlter *alter_in, void *packet_in)
         :
         : "r"(view), "r"(camera->viewMatrix)
         : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(camera->viewMatrix);
+        XsgGpr r_0 = XSG_IN(view);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
     for (i = 0; i < count - 1; i++) {
         current = (head - i) & 0x7f;
         if (i == 0)

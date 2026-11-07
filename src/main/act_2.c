@@ -224,6 +224,7 @@ void ACT_resetMatrix(Actor *actor)
         CUR_MATRIX_Rz4s((int *)&actor->rotation.z);
         CUR_MATRIX_Sxyz4s(&actor->scale);
         CUR_MATRIX_Get(matrix);
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $2, 0(%1)\n\t"
             "sq $2, 0(%0)\n\t"
@@ -236,6 +237,21 @@ void ACT_resetMatrix(Actor *actor)
             :
             : "r"(((ActMatrixView *)actor)->parentMatrix), "r"(matrix)
             : "$2", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(matrix);
+            XsgGpr r_0 = XSG_IN(((ActMatrixView *)actor)->parentMatrix);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+            __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+            __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+            __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+            __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         JNT_setFlags(0x8000);
         work = ((ActMatrixView *)actor)->rootElement;
         JNT_setModel(jointMatrix, model);
@@ -634,7 +650,23 @@ block_12:
                 sw = (unsigned int)actor->staticValueRecords;
                 actor->staticValueRecords = temp_5;
                 actor->valueRecords = (void *)sw;
+#ifndef PORT_HOST
                 PS2_ASMV("lq $2, 0(%1)\n\tsq $2, 0(%0)\n\tlq $2, 16(%1)\n\tsq $2, 16(%0)\n\tlq $2, 32(%1)\n\tsq $2, 32(%0)\n\tlq $2, 48(%1)\n\tsq $2, 48(%0)\n" : : "r"(actor->jointMatrices), "r"(actor->previousJointMatrices) : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(actor->previousJointMatrices);
+                    XsgGpr r_0 = XSG_IN(actor->jointMatrices);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
 
             }
             FCV2_setStep(anim->slot.speed);
@@ -886,6 +918,7 @@ static void ACT_modelDrawSub(Actor *actor)
     scaleVector[0].words[0] = actor->scale.words[0];
     scaleVector[0].words[1] = actor->scale.words[1];
     if (parent != 0) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf3, 0(%0)\n\t"
             "lqc2 vf2, 0(%1)\n\t"
@@ -895,6 +928,17 @@ static void ACT_modelDrawSub(Actor *actor)
             :
             : "r"(scaleVector), "r"(&parent->scale)
             : "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&parent->scale);
+            XsgGpr r_0 = XSG_IN(scaleVector);
+            vu0_lqc2(3, XSG_EA(r_0, 0));
+            vu0_lqc2(2, XSG_EA(r_1, 0));
+            vu0_arith(VU0_MUL, 14, 2, 2, 3, VU0_VEC);
+            vu0_sqc2(2, XSG_EA(r_0, 0));
+            xsg_vu0_blocks++;
+        }
+#endif
     }
     nmlModelSetScale(scaleVector);
     if (((actor->drawEnv.renderLevel & 0x80) != 0) && nmlModelAskNonLinearCamera() != 0) {
@@ -1100,8 +1144,13 @@ extern void *LOOK_sebo_cont(void *work, void *channels, int argument);
 extern void *LOOK_head_cont(void *work, void *channels, int argument);
 extern void *LOOK_eyeL_cont(void *work, void *channels, int argument);
 extern void *LOOK_eyeR_cont(void *work, void *channels, int argument);
+#ifndef PORT_HOST
 #define ACT_IM_ZERO_QW(destination) \
     PS2_ASMV("sq $0, 0(%0)\n" : : "r" (destination) : "memory")
+#else
+#define ACT_IM_ZERO_QW(destination) \
+    ({ { XsgGpr r_0 = XSG_IN(destination); __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16); xsg_vu0_blocks++; } })
+#endif
 #define ACT_IM_ADD(producer, order, fn, arg) \
     ((int (*)(void *, int, void *(*)(void *, void *, int), int))JNT_addConsumer)( \
         (producer), order, fn, (int)(arg))
@@ -1252,6 +1301,7 @@ void ACT_setMotion2(Actor *actor, int motionId, unsigned int flags)
                 slotFlags = (unsigned int)actor->staticValueRecords;
                 actor->staticValueRecords = valueTmp;
                 actor->valueRecords = (void *)slotFlags;
+#ifndef PORT_HOST
                 PS2_ASMV("lq $2, 0(%1)\n"
                                      "sq $2, 0(%0)\n"
                                      "lq $2, 16(%1)\n"
@@ -1263,6 +1313,21 @@ void ACT_setMotion2(Actor *actor, int motionId, unsigned int flags)
                                      :
                                      : "r"(actor->jointMatrices), "r"(actor->previousJointMatrices)
                                      : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(actor->previousJointMatrices);
+                    XsgGpr r_0 = XSG_IN(actor->jointMatrices);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 animation->previousDataId = slot->currentDataId;
                 slot->nextDataId = 0xffff;
                 slot->currentDataId = motionId & 0x7ff;

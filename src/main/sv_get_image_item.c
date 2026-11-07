@@ -1107,6 +1107,7 @@ extern SGsLightBackup _defLight;
 extern Matrix _defMatLc;
 static inline void SGsCopyMat4(void *dst, void *src)
 {
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $8, 0(%1)\n\t"
         "lq $9, 16(%1)\n\t"
@@ -1119,6 +1120,21 @@ static inline void SGsCopyMat4(void *dst, void *src)
         :
         : "r"(dst), "r"(src)
         : "$8", "$9", "$10", "$11", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(src);
+        XsgGpr r_0 = XSG_IN(dst);
+        __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+        __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+        __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+        __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+        __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+        __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void SGsInitEnv(void)
@@ -1185,7 +1201,22 @@ void SGsRestoreEnv(void)
 }
 
 static void sefInitClipViewVolume(void *view) {
+#ifndef PORT_HOST
     PS2_ASMV("lqc2 vf12, 0(%0)\n\tlqc2 vf13, 16(%0)\n\tlqc2 vf14, 32(%0)\n\tlqc2 vf15, 48(%0)\n\tlqc2 vf16, 64(%0)\n\tlqc2 vf17, 80(%0)\n\tlqc2 vf18, 96(%0)\n\tlqc2 vf19, 112(%0)\n\tnop" :  : "r"(view) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(view);
+        vu0_lqc2(12, XSG_EA(r_0, 0));
+        vu0_lqc2(13, XSG_EA(r_0, 16));
+        vu0_lqc2(14, XSG_EA(r_0, 32));
+        vu0_lqc2(15, XSG_EA(r_0, 48));
+        vu0_lqc2(16, XSG_EA(r_0, 64));
+        vu0_lqc2(17, XSG_EA(r_0, 80));
+        vu0_lqc2(18, XSG_EA(r_0, 96));
+        vu0_lqc2(19, XSG_EA(r_0, 112));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 /*
@@ -1200,6 +1231,7 @@ static int sefClipViewVolumeA(void *scheduler)
     register void *arg PS2_REG("$4") = scheduler;
     register int result PS2_REG("$2");
 
+#ifndef PORT_HOST
     PS2_ASMV(
         ".set push\n\t"
         ".set noreorder\n\t"
@@ -1281,6 +1313,69 @@ static int sefClipViewVolumeA(void *scheduler)
         : "=r"(result), "+r"(arg)
         :
         : "$f0", "$f1", "memory");
+#else
+    {
+        xsg_ee_gpr[4] = XSG_IN(arg);
+        xsg_ee_gpr[2].d[0] = xsg_ee_gpr[4].d[0];
+        vu0_lqc2(20, XSG_EA(xsg_ee_gpr[2], 0));
+        vu0_arith(VU0_ADD, 8, 2, 0, 20, 3);
+        vu0_qmfc2(&xsg_ee_gpr[4], 2);
+        xsg_ee_fpr[1].u = xsg_ee_gpr[4].w[0];
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 16, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 17, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 18, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 19, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 12, 20, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 13, 20, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 20, 2);
+        vu0_arith(VU0_MADD, 15, 9, 15, 0, 3);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        vu0_mr32(15, 9, 9);
+        vu0_qmfc2(&xsg_ee_gpr[4], 9);
+        xsg_ee_fpr[0].u = xsg_ee_gpr[4].w[0];
+        xsg_ee_fcc = xsg_ee_fpr[0].f < xsg_ee_fpr[1].f;
+        { int xsg_c_ = !xsg_ee_fcc;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_0; }
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] - xsg_ee_gpr[4].w[0]);
+        { int xsg_c_ = 1;
+          if (xsg_c_) goto xsg_Lsv_get_image_item_1203_1; }
+        xsg_Lsv_get_image_item_1203_0:;
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] - xsg_ee_gpr[4].w[0]);
+        xsg_ee_set32(&xsg_ee_gpr[4], xsg_ee_gpr[4].w[0] + (unsigned int)(1));
+        xsg_Lsv_get_image_item_1203_1:;
+        xsg_ee_gpr[2].d[0] = xsg_ee_gpr[4].d[0];
+        xsg_vu0_blocks++;
+        XSG_OUT(result, xsg_ee_gpr[2]);
+        XSG_OUT(arg, xsg_ee_gpr[4]);
+    }
+#endif
     return result;
 }
 
@@ -1391,14 +1486,42 @@ void sefDrawParticle2D(SvSpriteParticle *particle, SGsPacket *packet,
     offsetY *= scaleY;
     halfWidth *= 100.0f;
     angle = particle->angle;
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0x20\n\t"
         "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
         : "=f"(sine) : "f"(angle) : "$8", "memory");
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        sine = f_0.f;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "mfc1 $8, %1\n\tqmtc2 $8, vf4\n\tvcallms 0xE8\n\t"
         "qmfc2.i $8, vf1\n\tmtc1 $8, %0"
         : "=f"(cosine) : "f"(angle) : "$8", "memory");
+#else
+    {
+        XsgFpr f_1 = XSG_FIN(angle);
+        XsgFpr f_0 = {0};
+        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_qmfc2(&xsg_ee_gpr[8], 1);
+        f_0.u = xsg_ee_gpr[8].w[0];
+        xsg_vu0_blocks++;
+        cosine = f_0.f;
+    }
+#endif
 
     cornerX = offsetX - halfWidth;
     cornerY = offsetY - halfHeight;
@@ -1430,6 +1553,7 @@ static void svRotMatrixScale(void *dst, const void *src)
     const char *contrib = base + 0xC0;
     const char *scale = base + 0x100;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf8, 0(%2)\n\t"
         "lqc2 vf1, 0(%1)\n\t"
@@ -1463,6 +1587,45 @@ static void svRotMatrixScale(void *dst, const void *src)
         "sqc2 vf12, 48(%0)\n\t"
         "nop"
         : : "r"(dst), "r"(base), "r"(contrib), "r"(scale) : "memory");
+#else
+    {
+        XsgGpr r_3 = XSG_IN(scale);
+        XsgGpr r_2 = XSG_IN(contrib);
+        XsgGpr r_1 = XSG_IN(base);
+        XsgGpr r_0 = XSG_IN(dst);
+        vu0_lqc2(8, XSG_EA(r_2, 0));
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 16));
+        vu0_lqc2(3, XSG_EA(r_1, 32));
+        vu0_lqc2(4, XSG_EA(r_1, 48));
+        vu0_lqc2(5, XSG_EA(r_3, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 1, 2);
+        vu0_arith(VU0_MADD, 15, 9, 8, 1, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 2, 2);
+        vu0_arith(VU0_MADD, 15, 10, 8, 2, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 3, 2);
+        vu0_arith(VU0_MADD, 15, 11, 8, 3, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 4, 2);
+        vu0_arith(VU0_MADD, 15, 12, 8, 4, 3);
+        vu0_arith(VU0_MUL, 15, 9, 9, 5, 0);
+        vu0_arith(VU0_MUL, 15, 10, 10, 5, 1);
+        vu0_arith(VU0_MUL, 15, 11, 11, 5, 2);
+        vu0_arith(VU0_MUL, 15, 12, 12, 5, 3);
+        vu0_sqc2(9, XSG_EA(r_0, 0));
+        vu0_sqc2(10, XSG_EA(r_0, 16));
+        vu0_sqc2(11, XSG_EA(r_0, 32));
+        vu0_sqc2(12, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 typedef struct SvModelPosition {
@@ -1530,6 +1693,7 @@ void svDrawModel(SvModelDrawItem *model, void *place)
         }
         {
             unsigned char light[4][16];
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
@@ -1542,9 +1706,25 @@ void svDrawModel(SvModelDrawItem *model, void *place)
                 :
                 : "r"(light), "r"(material)
                 : "$8", "$9", "$10", "$11", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(material);
+                XsgGpr r_0 = XSG_IN(light);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             {
                 unsigned char *dst = light[3];
                 unsigned char *src = (unsigned char *)model + 0x140;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     ".set noat\n\t"
                     "lui $1, 0x3C00\n\t"
@@ -1560,6 +1740,21 @@ void svDrawModel(SvModelDrawItem *model, void *place)
                     :
                     : "r"(dst), "r"(src)
                     : "$1", "$f0", "$8", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(src);
+                    XsgGpr r_0 = XSG_IN(dst);
+                    xsg_ee_set32(&xsg_ee_gpr[1], (unsigned int)(15360) << 16);
+                    xsg_ee_fpr[0].u = xsg_ee_gpr[1].w[0];
+                    xsg_ee_set32(&xsg_ee_gpr[8], xsg_ee_fpr[0].u);
+                    vu0_qmtc2(1, &xsg_ee_gpr[8]);
+                    vu0_lqc2(2, XSG_EA(r_1, 0));
+                    vu0_itof(0, 15, 2, 2);
+                    vu0_arith(VU0_MUL, 14, 2, 2, 1, 0);
+                    vu0_sqc2(2, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             nmlModelSetLight(light, &_defMatLn);
         }
@@ -1631,6 +1826,7 @@ static inline int sefClipQuad(SGsGifRecord *v)
 {
     int cfc;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2.ni $0, $vi18\n\t"
         "vmulax.xyzw ACC, vf27, vf1x\n\t"
@@ -1704,6 +1900,84 @@ static inline int sefClipQuad(SGsGifRecord *v)
         "cfc2.ni %0, $vi18\n\t"
         "nop\n\t"
         : "=r"(cfc) : "r"(v) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(v);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 1, 2);
+        vu0_arith(VU0_MADD, 15, 9, 30, 0, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_clip(9, 9);
+        vu0_div(0, 3, 9, 3);
+        vu0_arith(VU0_MADD, 15, 10, 30, 0, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 3, 2);
+        vu0_arith(VU0_MADD, 15, 11, 30, 0, 3);
+        vu0_clip(10, 10);
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 9, 9, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 10, 3);
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 4, 2);
+        vu0_arith(VU0_MADD, 15, 12, 30, 0, 3);
+        vu0_clip(11, 11);
+        vu0_lqc2(31, XSG_EA(r_1, 48));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 10, 10, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 11, 3);
+        vu0_sqc2(31, XSG_EA(r_1, 48));
+        vu0_clip(12, 12);
+        vu0_lqc2(31, XSG_EA(r_1, 96));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 11, 11, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 12, 3);
+        vu0_sqc2(31, XSG_EA(r_1, 96));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 1, 9, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 2, 10, 25, VU0_VEC);
+        vu0_lqc2(31, XSG_EA(r_1, 144));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 12, 12, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 3, 11, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 4, 12, 25, VU0_VEC);
+        vu0_sqc2(31, XSG_EA(r_1, 144));
+        vu0_ftoi(4, 12, 9, 1);
+        vu0_ftoi(4, 12, 10, 2);
+        vu0_ftoi(4, 12, 11, 3);
+        vu0_ftoi(4, 12, 12, 4);
+        vu0_ftoi(0, 3, 9, 1);
+        vu0_ftoi(0, 3, 10, 2);
+        vu0_ftoi(0, 3, 11, 3);
+        vu0_ftoi(0, 3, 12, 4);
+        vu0_arith(VU0_SUB, 1, 9, 9, 9, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 10, 10, 10, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 11, 11, 11, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 12, 12, 12, VU0_VEC);
+        vu0_sqc2(9, XSG_EA(r_1, 32));
+        vu0_sqc2(10, XSG_EA(r_1, 80));
+        vu0_sqc2(11, XSG_EA(r_1, 128));
+        vu0_sqc2(12, XSG_EA(r_1, 176));
+        vu0_cfc2(&r_0, 18);
+        xsg_vu0_blocks++;
+        XSG_OUT(cfc, r_0);
+    }
+#endif
     return cfc;
 }
 
@@ -1722,6 +1996,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
     vertices = &header[3];
     scale = context->scale;
     /* The render basis and viewport registers are live on entry. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf8, 0(%0)\n\t"
         "lqc2 vf31, 0(%1)\n\t"
@@ -1751,7 +2026,42 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         "vmulw.xyzw vf12xyzw, vf12xyzw, vf31w"
         : : "r"(position), "r"(scale), "r"(&particle->localTransform)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&particle->localTransform);
+        XsgGpr r_1 = XSG_IN(scale);
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_lqc2(8, XSG_EA(r_0, 0));
+        vu0_lqc2(31, XSG_EA(r_1, 0));
+        vu0_lqc2(1, XSG_EA(r_2, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 16));
+        vu0_lqc2(3, XSG_EA(r_2, 32));
+        vu0_lqc2(4, XSG_EA(r_2, 48));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 1, 2);
+        vu0_arith(VU0_MADD, 15, 9, 8, 1, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 2, 2);
+        vu0_arith(VU0_MADD, 15, 10, 8, 2, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 3, 2);
+        vu0_arith(VU0_MADD, 15, 11, 8, 3, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 4, 2);
+        vu0_arith(VU0_MADD, 15, 12, 8, 4, 3);
+        vu0_arith(VU0_MUL, 15, 9, 9, 31, 0);
+        vu0_arith(VU0_MUL, 15, 10, 10, 31, 1);
+        vu0_arith(VU0_MUL, 15, 11, 11, 31, 2);
+        vu0_arith(VU0_MUL, 15, 12, 12, 31, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
     /* Project the four transformed and scaled matrix rows. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "vmulax.xyzw ACCxyzw, vf21xyzw, vf9x\n\t"
         "vmadday.xyzw ACCxyzw, vf22xyzw, vf9y\n\t"
@@ -1770,6 +2080,27 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         "vmaddaz.xyzw ACCxyzw, vf23xyzw, vf12z\n\t"
         "vmaddw.xyzw vf30xyzw, vf24xyzw, vf12w"
         : : );
+#else
+    {
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 9, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 9, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 9, 2);
+        vu0_arith(VU0_MADD, 15, 27, 24, 9, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 10, 2);
+        vu0_arith(VU0_MADD, 15, 28, 24, 10, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 11, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 11, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 11, 2);
+        vu0_arith(VU0_MADD, 15, 29, 24, 11, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 12, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 12, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 12, 2);
+        vu0_arith(VU0_MADD, 15, 30, 24, 12, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     {
         unsigned long long gifRegisters = 0x00512512512512eeULL;
@@ -1793,6 +2124,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
@@ -1805,11 +2137,37 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
             "vsubx.y vf3y, vf5y, vf7x\n\tvsubx.y vf4y, vf5y, vf7x"
             : : "f"(halfWidth), "f"(halfHeight), "r"(plane)
             : "$2", "$3", "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(plane);
+            XsgFpr f_1 = XSG_FIN(halfHeight);
+            XsgFpr f_0 = XSG_FIN(halfWidth);
+            vu0_lqc2(5, XSG_EA(r_2, 0));
+            xsg_ee_set32(&xsg_ee_gpr[2], f_0.u);
+            xsg_ee_set32(&xsg_ee_gpr[3], f_1.u);
+            vu0_qmtc2(6, &xsg_ee_gpr[2]);
+            vu0_qmtc2(7, &xsg_ee_gpr[3]);
+            vu0_move(3, 1, 5);
+            vu0_move(3, 2, 5);
+            vu0_move(3, 3, 5);
+            vu0_move(3, 4, 5);
+            vu0_arith(VU0_SUB, 8, 1, 5, 6, 0);
+            vu0_arith(VU0_ADD, 8, 2, 5, 6, 0);
+            vu0_arith(VU0_SUB, 8, 3, 5, 6, 0);
+            vu0_arith(VU0_ADD, 8, 4, 5, 6, 0);
+            vu0_arith(VU0_ADD, 4, 1, 5, 7, 0);
+            vu0_arith(VU0_ADD, 4, 2, 5, 7, 0);
+            vu0_arith(VU0_SUB, 4, 3, 5, 7, 0);
+            vu0_arith(VU0_SUB, 4, 4, 5, 7, 0);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else if (drawVariant & 2) {
         float halfWidth = image->halfWidth;
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
@@ -1822,11 +2180,37 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
             "vsubx.z vf3z, vf5z, vf7x\n\tvsubx.z vf4z, vf5z, vf7x"
             : : "f"(halfWidth), "f"(halfHeight), "r"(plane)
             : "$2", "$3", "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(plane);
+            XsgFpr f_1 = XSG_FIN(halfHeight);
+            XsgFpr f_0 = XSG_FIN(halfWidth);
+            vu0_lqc2(5, XSG_EA(r_2, 0));
+            xsg_ee_set32(&xsg_ee_gpr[2], f_0.u);
+            xsg_ee_set32(&xsg_ee_gpr[3], f_1.u);
+            vu0_qmtc2(6, &xsg_ee_gpr[2]);
+            vu0_qmtc2(7, &xsg_ee_gpr[3]);
+            vu0_move(5, 1, 5);
+            vu0_move(5, 2, 5);
+            vu0_move(5, 3, 5);
+            vu0_move(5, 4, 5);
+            vu0_arith(VU0_SUB, 8, 1, 5, 6, 0);
+            vu0_arith(VU0_ADD, 8, 2, 5, 6, 0);
+            vu0_arith(VU0_SUB, 8, 3, 5, 6, 0);
+            vu0_arith(VU0_ADD, 8, 4, 5, 6, 0);
+            vu0_arith(VU0_ADD, 2, 1, 5, 7, 0);
+            vu0_arith(VU0_ADD, 2, 2, 5, 7, 0);
+            vu0_arith(VU0_SUB, 2, 3, 5, 7, 0);
+            vu0_arith(VU0_SUB, 2, 4, 5, 7, 0);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else if (drawVariant & 4) {
         float halfWidth = image->halfWidth;
         float halfHeight = image->halfHeight;
         const Vector4 *plane = &particle->planeOffset;
 
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf5, 0(%2)\n\t"
             "mfc1 $2, %0\n\tmfc1 $3, %1\n\t"
@@ -1839,6 +2223,31 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
             "vsubx.z vf3z, vf5z, vf7x\n\tvsubx.z vf4z, vf5z, vf7x"
             : : "f"(halfWidth), "f"(halfHeight), "r"(plane)
             : "$2", "$3", "memory");
+#else
+        {
+            XsgGpr r_2 = XSG_IN(plane);
+            XsgFpr f_1 = XSG_FIN(halfHeight);
+            XsgFpr f_0 = XSG_FIN(halfWidth);
+            vu0_lqc2(5, XSG_EA(r_2, 0));
+            xsg_ee_set32(&xsg_ee_gpr[2], f_0.u);
+            xsg_ee_set32(&xsg_ee_gpr[3], f_1.u);
+            vu0_qmtc2(6, &xsg_ee_gpr[2]);
+            vu0_qmtc2(7, &xsg_ee_gpr[3]);
+            vu0_move(9, 1, 5);
+            vu0_move(9, 2, 5);
+            vu0_move(9, 3, 5);
+            vu0_move(9, 4, 5);
+            vu0_arith(VU0_SUB, 4, 1, 5, 6, 0);
+            vu0_arith(VU0_ADD, 4, 2, 5, 6, 0);
+            vu0_arith(VU0_SUB, 4, 3, 5, 6, 0);
+            vu0_arith(VU0_ADD, 4, 4, 5, 6, 0);
+            vu0_arith(VU0_ADD, 2, 1, 5, 7, 0);
+            vu0_arith(VU0_ADD, 2, 2, 5, 7, 0);
+            vu0_arith(VU0_SUB, 2, 3, 5, 7, 0);
+            vu0_arith(VU0_SUB, 2, 4, 5, 7, 0);
+            xsg_vu0_blocks++;
+        }
+#endif
     } else {
         return;
     }
@@ -1854,6 +2263,7 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
     vertices[10].quad = particle->packedColor.quad;
 
     /* Project each corner, divide ST by W, then write the packed XYZ2 lanes. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2 $0, $vi18\n\t"
         "vmulax.xyzw ACCxyzw, vf27xyzw, vf1x\n\t"
@@ -1906,7 +2316,91 @@ void sefDrawParticle2(SvQuadParticle *particle, const Vector4 *position,
         "sqc2 vf9, 32(%0)\n\tsqc2 vf10, 80(%0)\n\t"
         "sqc2 vf11, 128(%0)\n\tsqc2 vf12, 176(%0)"
         : : "r"(vertices) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(vertices);
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 1, 2);
+        vu0_arith(VU0_MADD, 15, 9, 30, 0, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_clip(9, 9);
+        vu0_div(0, 3, 9, 3);
+        vu0_arith(VU0_MADD, 15, 10, 30, 0, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 3, 2);
+        vu0_arith(VU0_MADD, 15, 11, 30, 0, 3);
+        vu0_clip(10, 10);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 9, 9, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 10, 3);
+        vu0_sqc2(31, XSG_EA(r_0, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 4, 2);
+        vu0_arith(VU0_MADD, 15, 12, 30, 0, 3);
+        vu0_clip(11, 11);
+        vu0_lqc2(31, XSG_EA(r_0, 48));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 10, 10, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 11, 3);
+        vu0_sqc2(31, XSG_EA(r_0, 48));
+        vu0_clip(12, 12);
+        vu0_lqc2(31, XSG_EA(r_0, 96));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 11, 11, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_div(0, 3, 12, 3);
+        vu0_sqc2(31, XSG_EA(r_0, 96));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 1, 9, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 2, 10, 25, VU0_VEC);
+        vu0_lqc2(31, XSG_EA(r_0, 144));
+        vu0_waitq();
+        vu0_arith(VU0_MUL, 14, 12, 12, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 31, 31, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 3, 11, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 4, 12, 25, VU0_VEC);
+        vu0_sqc2(31, XSG_EA(r_0, 144));
+        vu0_ftoi(4, 12, 9, 1);
+        vu0_ftoi(4, 12, 10, 2);
+        vu0_ftoi(4, 12, 11, 3);
+        vu0_ftoi(4, 12, 12, 4);
+        vu0_ftoi(0, 3, 9, 1);
+        vu0_ftoi(0, 3, 10, 2);
+        vu0_ftoi(0, 3, 11, 3);
+        vu0_ftoi(0, 3, 12, 4);
+        vu0_arith(VU0_SUB, 1, 9, 9, 9, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 10, 10, 10, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 11, 11, 11, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 12, 12, 12, VU0_VEC);
+        vu0_sqc2(9, XSG_EA(r_0, 32));
+        vu0_sqc2(10, XSG_EA(r_0, 80));
+        vu0_sqc2(11, XSG_EA(r_0, 128));
+        vu0_sqc2(12, XSG_EA(r_0, 176));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV("cfc2.ni %0, $vi18" : "=r"(registerWord));
+#else
+    {
+        XsgGpr r_0 = {{0, 0}};
+        vu0_cfc2(&r_0, 18);
+        xsg_vu0_blocks++;
+        XSG_OUT(registerWord, r_0);
+    }
+#endif
     if (registerWord == 0) {
         packet->tagIndex = packet->count;
         packet->count += 15;
@@ -1949,6 +2443,7 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
     header = &packet->base[packet->count];
     vertices = &header[4];
     angle = particle->angle;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf8, 0(%0)\n\t"
         "vmulax.xyzw ACCxyzw, vf13xyzw, vf16x\n\t"
@@ -1997,12 +2492,77 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
         "vmaddw.xyzw vf30xyzw, vf24xyzw, vf12w"
         : : "r"(position), "r"(scale), "f"(angle)
         : "$8", "memory");
+#else
+    {
+        XsgFpr f_2 = XSG_FIN(angle);
+        XsgGpr r_1 = XSG_IN(scale);
+        XsgGpr r_0 = XSG_IN(position);
+        vu0_lqc2(8, XSG_EA(r_0, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 16, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 16, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 16, 2);
+        vu0_arith(VU0_MADD, 15, 9, 8, 16, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 17, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 17, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 17, 2);
+        vu0_arith(VU0_MADD, 15, 10, 8, 17, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 18, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 18, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 18, 2);
+        vu0_arith(VU0_MADD, 15, 11, 8, 18, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 13, 19, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 14, 19, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 15, 19, 2);
+        vu0_arith(VU0_MADD, 15, 12, 8, 19, 3);
+        xsg_ee_set32(&xsg_ee_gpr[8], f_2.u);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(232);
+        vu0_arith(VU0_ADD, 8, 7, 0, 1, 0);
+        vu0_qmtc2(4, &xsg_ee_gpr[8]);
+        vu0_callms(32);
+        vu0_arith(VU0_ADD, 8, 8, 0, 1, 0);
+        vu0_lqc2(1, XSG_EA(r_1, 0));
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 9, 7, 0);
+        vu0_arith(VU0_MADD, 15, 5, 10, 8, 0);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 10, 7, 0);
+        vu0_arith(VU0_MSUB, 15, 6, 9, 8, 0);
+        vu0_arith(VU0_MUL, 15, 11, 11, 1, 2);
+        vu0_arith(VU0_MUL, 15, 12, 12, 1, 3);
+        vu0_arith(VU0_MUL, 15, 9, 5, 1, 0);
+        vu0_arith(VU0_MUL, 15, 10, 6, 1, 1);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 9, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 9, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 9, 2);
+        vu0_arith(VU0_MADD, 15, 27, 24, 9, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 10, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 10, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 10, 2);
+        vu0_arith(VU0_MADD, 15, 28, 24, 10, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 11, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 11, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 11, 2);
+        vu0_arith(VU0_MADD, 15, 29, 24, 11, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 12, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 12, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 12, 2);
+        vu0_arith(VU0_MADD, 15, 30, 24, 12, 3);
+        xsg_vu0_blocks++;
+    }
+#endif
 
+#ifndef PORT_HOST
     PS2_ASMV("" : : "r"(vertices));
+#else
+    {
+        XsgGpr r_0 = XSG_IN(vertices);
+        xsg_vu0_blocks++;
+    }
+#endif
     image = svPrepareParticleImage(header, particle, *context->gifRegisters,
                                    6, 66);
     halfWidth = image->halfWidth;
     halfHeight = image->halfHeight;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf5, 0(%2)\n\tmfc1 $2, %0\n\tmfc1 $3, %1\n\t"
         "qmtc2 $2, vf6\n\tqmtc2 $3, vf7\n\t"
@@ -2014,6 +2574,31 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
         "vsubx.y vf3y, vf5y, vf7x\n\tvsubx.y vf4y, vf5y, vf7x"
         : : "f"(halfWidth), "f"(halfHeight), "r"(&particle->planeOffset)
         : "$2", "$3", "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&particle->planeOffset);
+        XsgFpr f_1 = XSG_FIN(halfHeight);
+        XsgFpr f_0 = XSG_FIN(halfWidth);
+        vu0_lqc2(5, XSG_EA(r_2, 0));
+        xsg_ee_set32(&xsg_ee_gpr[2], f_0.u);
+        xsg_ee_set32(&xsg_ee_gpr[3], f_1.u);
+        vu0_qmtc2(6, &xsg_ee_gpr[2]);
+        vu0_qmtc2(7, &xsg_ee_gpr[3]);
+        vu0_move(3, 1, 5);
+        vu0_move(3, 2, 5);
+        vu0_move(3, 3, 5);
+        vu0_move(3, 4, 5);
+        vu0_arith(VU0_SUB, 8, 1, 5, 6, 0);
+        vu0_arith(VU0_ADD, 8, 2, 5, 6, 0);
+        vu0_arith(VU0_SUB, 8, 3, 5, 6, 0);
+        vu0_arith(VU0_ADD, 8, 4, 5, 6, 0);
+        vu0_arith(VU0_ADD, 4, 1, 5, 7, 0);
+        vu0_arith(VU0_ADD, 4, 2, 5, 7, 0);
+        vu0_arith(VU0_SUB, 4, 3, 5, 7, 0);
+        vu0_arith(VU0_SUB, 4, 4, 5, 7, 0);
+        xsg_vu0_blocks++;
+    }
+#endif
 
     textureCoordinates = context->textureCoordinates;
     xyzVertices = &vertices[1];
@@ -2022,6 +2607,7 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
     vertices[4].quad = textureCoordinates[2];
     vertices[6].quad = textureCoordinates[3];
     /* All XYZ2 stores finish before the clip flags are returned to C. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "ctc2 $0, $vi18\n\t"
         "vmulax.xyzw ACCxyzw, vf27xyzw, vf1x\n\t"
@@ -2063,6 +2649,65 @@ void sefDrawParticle(SvQuadParticle *particle, const Vector4 *position,
         "sqc2 vf9, 0(%1)\n\tsqc2 vf10, 32(%1)\n\t"
         "sqc2 vf11, 64(%1)\n\tsqc2 vf12, 96(%1)\n\tcfc2.ni %0, $vi18"
         : "=r"(clipFlags) : "r"(xyzVertices) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(xyzVertices);
+        XsgGpr r_0 = {{0, 0}};
+        vu0_ctc2(18, &xsg_ee_zero);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 1, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 1, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 1, 2);
+        vu0_arith(VU0_MADD, 15, 9, 30, 0, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 2, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 2, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 2, 2);
+        vu0_arith(VU0_MADD, 15, 10, 30, 0, 3);
+        vu0_clip(9, 9);
+        vu0_div(0, 3, 9, 3);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 3, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 3, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 3, 2);
+        vu0_arith(VU0_MADD, 15, 11, 30, 0, 3);
+        vu0_clip(10, 10);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 4, 0);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 4, 1);
+        vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 4, 2);
+        vu0_arith(VU0_MADD, 15, 12, 30, 0, 3);
+        vu0_clip(11, 11);
+        vu0_arith(VU0_MUL, 14, 9, 9, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 10, 10, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 14, 11, 11, 0, VU0_BQ);
+        vu0_clip(12, 12);
+        vu0_arith(VU0_MUL, 14, 12, 12, 0, VU0_BQ);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 1, 9, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 2, 10, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 3, 11, 25, VU0_VEC);
+        vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+        vu0_arith(VU0_MADD, 15, 4, 12, 25, VU0_VEC);
+        vu0_ftoi(4, 12, 9, 1);
+        vu0_ftoi(4, 12, 10, 2);
+        vu0_ftoi(4, 12, 11, 3);
+        vu0_ftoi(4, 12, 12, 4);
+        vu0_ftoi(0, 3, 9, 1);
+        vu0_ftoi(0, 3, 10, 2);
+        vu0_ftoi(0, 3, 11, 3);
+        vu0_ftoi(0, 3, 12, 4);
+        vu0_arith(VU0_SUB, 1, 9, 0, 0, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 10, 0, 0, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 11, 0, 0, VU0_VEC);
+        vu0_arith(VU0_SUB, 1, 12, 0, 0, VU0_VEC);
+        vu0_sqc2(9, XSG_EA(r_1, 0));
+        vu0_sqc2(10, XSG_EA(r_1, 32));
+        vu0_sqc2(11, XSG_EA(r_1, 64));
+        vu0_sqc2(12, XSG_EA(r_1, 96));
+        vu0_cfc2(&r_0, 18);
+        xsg_vu0_blocks++;
+        XSG_OUT(clipFlags, r_0);
+    }
+#endif
     if (clipFlags == 0) {
         int tagIndex = packet->count;
 
@@ -2128,13 +2773,34 @@ void sefDrawParticleList(SvParticleEffect *effect)
             context.textureCoordinates = stqTbl_004CBEA0;
             context.gifRegisters = &_svRegData;
             context.drawVariant = drawVariant;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf16, 0(%0)\n\tlqc2 vf17, 16(%0)\n\t"
                 "lqc2 vf18, 32(%0)\n\tlqc2 vf19, 48(%0)"
                 : : "r"(&_invView) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&_invView);
+                vu0_lqc2(16, XSG_EA(r_0, 0));
+                vu0_lqc2(17, XSG_EA(r_0, 16));
+                vu0_lqc2(18, XSG_EA(r_0, 32));
+                vu0_lqc2(19, XSG_EA(r_0, 48));
+                xsg_vu0_blocks++;
+            }
+#endif
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf13, 0(%0)\n\tlqc2 vf14, 16(%0)\n\tlqc2 vf15, 32(%0)"
                 : : "r"(&_svUnitMatrix) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN(&_svUnitMatrix);
+                vu0_lqc2(13, XSG_EA(r_0, 0));
+                vu0_lqc2(14, XSG_EA(r_0, 16));
+                vu0_lqc2(15, XSG_EA(r_0, 32));
+                xsg_vu0_blocks++;
+            }
+#endif
             packet->loopCount = 1;
             packet->base = (SGsGifRecord *)0x70000000;
             packet->count = 0;
@@ -2281,13 +2947,34 @@ void sefDrawParticleListCf(SvParticleEffect *effect,
         drawVariant = effect->scriptWords[-1];
     }
     /* The draw helpers consume the persistent camera and unit-matrix VF banks. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf16, 0(%0)\n\tlqc2 vf17, 16(%0)\n\t"
         "lqc2 vf18, 32(%0)\n\tlqc2 vf19, 48(%0)"
         : : "r"(&_invView) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&_invView);
+        vu0_lqc2(16, XSG_EA(r_0, 0));
+        vu0_lqc2(17, XSG_EA(r_0, 16));
+        vu0_lqc2(18, XSG_EA(r_0, 32));
+        vu0_lqc2(19, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf13, 0(%0)\n\tlqc2 vf14, 16(%0)\n\tlqc2 vf15, 32(%0)"
         : : "r"(&_svUnitMatrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&_svUnitMatrix);
+        vu0_lqc2(13, XSG_EA(r_0, 0));
+        vu0_lqc2(14, XSG_EA(r_0, 16));
+        vu0_lqc2(15, XSG_EA(r_0, 32));
+        xsg_vu0_blocks++;
+    }
+#endif
     _packet.loopCount = 1;
     scaleOutput = &scaledScale;
     particleIndex = effect->particleIndices;
@@ -2326,6 +3013,7 @@ void sefDrawParticleListCf(SvParticleEffect *effect,
             default:
                 if (item->position.alpha != 0 && item->renderType == 4) {
                     MMathApplyMatrix(&position, context->place, &item->origin);
+#ifndef PORT_HOST
                     PS2_ASMV(
                         "lqc2 vf1, 0(%0)\n\t"
                         "mfc1 $8, %1\n\t"
@@ -2334,6 +3022,19 @@ void sefDrawParticleListCf(SvParticleEffect *effect,
                         "sqc2 vf1, 0(%2)"
                         : : "r"(&item->scale), "f"(context->scaleMultiplier),
                             "r"(scaleOutput) : "$8", "memory");
+#else
+                    {
+                        XsgGpr r_2 = XSG_IN(scaleOutput);
+                        XsgFpr f_1 = XSG_FIN(context->scaleMultiplier);
+                        XsgGpr r_0 = XSG_IN(&item->scale);
+                        vu0_lqc2(1, XSG_EA(r_0, 0));
+                        xsg_ee_set32(&xsg_ee_gpr[8], f_1.u);
+                        vu0_qmtc2(2, &xsg_ee_gpr[8]);
+                        vu0_arith(VU0_MUL, 14, 1, 1, 2, 0);
+                        vu0_sqc2(1, XSG_EA(r_2, 0));
+                        xsg_vu0_blocks++;
+                    }
+#endif
                     if (context->drawVariant == 0) {
                         sefDrawParticle((SvQuadParticle *)item, &position, drawPacket,
                                         (SvParticleDrawContext *)context);
@@ -2387,25 +3088,56 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
     }
 
     camera = xglStudioGetActiveCamera();
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf21, 0(%0)\n\t"
         "lqc2 vf22, 16(%0)\n\t"
         "lqc2 vf23, 32(%0)\n\t"
         "lqc2 vf24, 48(%0)"
         : : "r"(&camera->viewMatrix) : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(&camera->viewMatrix);
+        vu0_lqc2(21, XSG_EA(r_0, 0));
+        vu0_lqc2(22, XSG_EA(r_0, 16));
+        vu0_lqc2(23, XSG_EA(r_0, 32));
+        vu0_lqc2(24, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf25, 0(%0)\n\t"
         "lqc2 vf26, 0(%1)"
         : : "r"(&camera->screenScale), "r"(&camera->screenOffset) : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&camera->screenOffset);
+        XsgGpr r_0 = XSG_IN(&camera->screenScale);
+        vu0_lqc2(25, XSG_EA(r_0, 0));
+        vu0_lqc2(26, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     battleData->flags = scheduler->flags;
     battleData->partialFlags = scheduler->flags & 2;
     if ((scheduler->flags & 2) == 0 || (drawMode = _draw3D) == 1) {
+#ifndef PORT_HOST
         PS2_ASMV(
             "lq $8, 0(%1)\n\t"
             "sq $8, 0(%0)"
             : : "r"(&battleData->packetInfo), "r"(&scheduler->packetInfo)
             : "$8", "memory");
+#else
+        {
+            XsgGpr r_1 = XSG_IN(&scheduler->packetInfo);
+            XsgGpr r_0 = XSG_IN(&battleData->packetInfo);
+            __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         for (groupIndex = 0; groupIndex < 32; groupIndex++) {
             SvSchedulerEffectGroup *group = &scheduler->groups[groupIndex];
 
@@ -2438,6 +3170,7 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
                            (const Matrix4 *)scheduler->localTransform);
             matrixScale = sefGetMatrixScale((float *)localTransform);
         } else {
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lq $8, 0(%1)\n\t"
                 "lq $9, 16(%1)\n\t"
@@ -2449,6 +3182,21 @@ static void sefDrawSchedulerEffect(int schedulerIndex)
                 "sq $11, 48(%0)"
                 : : "r"(localTransform), "r"(scheduler->localTransform)
                 : "$8", "$9", "$10", "$11", "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(scheduler->localTransform);
+                XsgGpr r_0 = XSG_IN(localTransform);
+                __builtin_memcpy(&xsg_ee_gpr[8], XSG_EA(r_1, 0), 16);
+                __builtin_memcpy(&xsg_ee_gpr[9], XSG_EA(r_1, 16), 16);
+                __builtin_memcpy(&xsg_ee_gpr[10], XSG_EA(r_1, 32), 16);
+                __builtin_memcpy(&xsg_ee_gpr[11], XSG_EA(r_1, 48), 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[8], 16);
+                __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[9], 16);
+                __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[10], 16);
+                __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[11], 16);
+                xsg_vu0_blocks++;
+            }
+#endif
             matrixScale = scheduler->localScale;
         }
         battleData->scaleMultiplier = scheduler->scaleMultiplier * matrixScale;

@@ -952,6 +952,7 @@ static void FFIDCT(float block[8][8])
         stage[5] = block[3][i];
         stage[6] = block[5][i];
         stage[7] = block[7][i];
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf9,0(%0)\n"
             "lqc2 vf10,16(%0)\n"
@@ -968,6 +969,24 @@ static void FFIDCT(float block[8][8])
             :
             : "r"(stage)
             : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(stage);
+            vu0_lqc2(9, XSG_EA(r_0, 0));
+            vu0_lqc2(10, XSG_EA(r_0, 16));
+            vu0_arith(VU0_MUL, 15, VU0_ACC, 1, 9, 0);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 2, 9, 1);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 3, 9, 2);
+            vu0_arith(VU0_MADD, 15, 19, 4, 9, 3);
+            vu0_arith(VU0_MUL, 15, VU0_ACC, 5, 10, 0);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 6, 10, 1);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 7, 10, 2);
+            vu0_arith(VU0_MADD, 15, 20, 8, 10, 3);
+            vu0_sqc2(19, XSG_EA(r_0, 0));
+            vu0_sqc2(20, XSG_EA(r_0, 16));
+            xsg_vu0_blocks++;
+        }
+#endif
         work = sw;
         line = work->idct_block[i];
         line[0] = stage[0] + stage[2] + stage[4];
@@ -1004,6 +1023,7 @@ transform_column:
         stage[5] = column[3 * 8];
         stage[6] = column[5 * 8];
         stage[7] = column[7 * 8];
+#ifndef PORT_HOST
         PS2_ASMV(
             "lqc2 vf9,0(%0)\n"
             "lqc2 vf10,16(%0)\n"
@@ -1020,6 +1040,24 @@ transform_column:
             :
             : "r"(stage)
             : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN(stage);
+            vu0_lqc2(9, XSG_EA(r_0, 0));
+            vu0_lqc2(10, XSG_EA(r_0, 16));
+            vu0_arith(VU0_MUL, 15, VU0_ACC, 11, 9, 0);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 12, 9, 1);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 13, 9, 2);
+            vu0_arith(VU0_MADD, 15, 19, 14, 9, 3);
+            vu0_arith(VU0_MUL, 15, VU0_ACC, 15, 10, 0);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 16, 10, 1);
+            vu0_arith(VU0_MADD, 15, VU0_ACC, 17, 10, 2);
+            vu0_arith(VU0_MADD, 15, 20, 18, 10, 3);
+            vu0_sqc2(19, XSG_EA(r_0, 0));
+            vu0_sqc2(20, XSG_EA(r_0, 16));
+            xsg_vu0_blocks++;
+        }
+#endif
         out = block[i];
         out[0] = stage[0] + stage[2] + stage[4];
         out[1] = stage[1] + stage[3] + stage[5];
@@ -1104,6 +1142,7 @@ static void ConvertYUV2RGB(int w, int h) {
         n = w;
         do {
             int v;
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 $vf10,0(%1)\n"
                 "vmulax.xyzw ACCxyzw,$vf21xyzw,$vf10x\n"
@@ -1122,6 +1161,29 @@ static void ConvertYUV2RGB(int w, int h) {
                 : "=&r"(v)
                 : "r"(src), "r"(dst)
                 : "$3", "$8", "$9", "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(dst);
+                XsgGpr r_1 = XSG_IN(src);
+                XsgGpr r_0 = {{0, 0}};
+                vu0_lqc2(10, XSG_EA(r_1, 0));
+                vu0_arith(VU0_MUL, 15, VU0_ACC, 21, 10, 0);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 22, 10, 1);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 23, 10, 2);
+                vu0_arith(VU0_MADD, 15, 9, 24, 0, 3);
+                vu0_qmfc2(&xsg_ee_gpr[8], 25);
+                vu0_ftoi(0, 15, 10, 9);
+                vu0_qmfc2(&xsg_ee_gpr[9], 26);
+                vu0_qmfc2(&r_0, 10);
+                xsg_mmi_pmaxw(&xsg_ee_gpr[3], &r_0, &xsg_ee_gpr[8]);
+                xsg_mmi_pminw(&r_0, &xsg_ee_gpr[3], &xsg_ee_gpr[9]);
+                xsg_mmi_ppach(&xsg_ee_gpr[3], &xsg_ee_zero, &r_0);
+                xsg_mmi_ppacb(&r_0, &xsg_ee_zero, &xsg_ee_gpr[3]);
+                __builtin_memcpy(XSG_EA(r_2, 0), &r_0, 4);
+                xsg_vu0_blocks++;
+                XSG_OUT(v, r_0);
+            }
+#endif
             n--;
             src += 4;
             dst++;
@@ -1149,6 +1211,7 @@ static u8 *StartOfScan(u8 *segment, void *requestAddress)
 
     /* VU0 setup: the I register is loaded with 0.125f through $2 (hence the clobber),
      * vf1-vf8 are scaled into vf11-vf18 and vf21-vf26 are loaded. */
+#ifndef PORT_HOST
     PS2_ASMV(
         "lui $2,0x3e00\n\t"
         "ctc2 $2,$vi21\n\t"
@@ -1171,6 +1234,31 @@ static u8 *StartOfScan(u8 *segment, void *requestAddress)
         :
         : "r"(imm0_3)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(imm0_3);
+        xsg_ee_set32(&xsg_ee_gpr[2], (unsigned int)(15872) << 16);
+        vu0_ctc2(21, &xsg_ee_gpr[2]);
+        vu0_lqc2(1, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_0, 16));
+        vu0_lqc2(3, XSG_EA(r_0, 32));
+        vu0_lqc2(4, XSG_EA(r_0, 48));
+        vu0_lqc2(5, XSG_EA(r_0, 64));
+        vu0_lqc2(6, XSG_EA(r_0, 80));
+        vu0_lqc2(7, XSG_EA(r_0, 96));
+        vu0_lqc2(8, XSG_EA(r_0, 112));
+        vu0_arith(VU0_MUL, 15, 11, 1, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 12, 2, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 13, 3, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 14, 4, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 15, 5, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 16, 6, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 17, 7, 0, VU0_BI);
+        vu0_arith(VU0_MUL, 15, 18, 8, 0, VU0_BI);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf21,0(%0)\n\t"
         "lqc2 vf22,16(%0)\n\t"
@@ -1181,6 +1269,18 @@ static u8 *StartOfScan(u8 *segment, void *requestAddress)
         :
         : "r"(imm1_4)
         : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(imm1_4);
+        vu0_lqc2(21, XSG_EA(r_0, 0));
+        vu0_lqc2(22, XSG_EA(r_0, 16));
+        vu0_lqc2(23, XSG_EA(r_0, 32));
+        vu0_lqc2(24, XSG_EA(r_0, 48));
+        vu0_lqc2(25, XSG_EA(r_0, 64));
+        vu0_lqc2(26, XSG_EA(r_0, 80));
+        xsg_vu0_blocks++;
+    }
+#endif
 
     /* Skip the scan header (length, component count, selectors, spectral range). */
     segment += 12;

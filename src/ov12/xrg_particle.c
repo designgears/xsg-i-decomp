@@ -179,17 +179,56 @@ static void _Calc(XrgParticle *particle, int count, float rate,
             {
                 float *dst = _ScaleFor(e->velocity.vec, tmp, e->acceleration.vec, elapsed);
 
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(scratch);
+                    XsgGpr r_1 = XSG_IN(dst);
+                    XsgGpr r_0 = XSG_IN(dst);
+                    vu0_lqc2(30, XSG_EA(r_1, 0));
+                    vu0_lqc2(31, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                    vu0_sqc2(30, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             {
                 float *dst = _ScaleFor(e->position.vec, tmp, e->velocity.vec, elapsed);
 
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(scratch);
+                    XsgGpr r_1 = XSG_IN(dst);
+                    XsgGpr r_0 = XSG_IN(dst);
+                    vu0_lqc2(30, XSG_EA(r_1, 0));
+                    vu0_lqc2(31, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                    vu0_sqc2(30, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             {
                 float *dst = _ScaleFor(e->appearance.vec, tmp, e->appearanceRate.vec, elapsed);
 
+#ifndef PORT_HOST
                 PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (scratch) : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(scratch);
+                    XsgGpr r_1 = XSG_IN(dst);
+                    XsgGpr r_0 = XSG_IN(dst);
+                    vu0_lqc2(30, XSG_EA(r_1, 0));
+                    vu0_lqc2(31, XSG_EA(r_2, 0));
+                    vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                    vu0_sqc2(30, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
             }
             _ClampState(e, zero, sizeMax, one);
             e++;
@@ -201,17 +240,56 @@ static void _Calc(XrgParticle *particle, int count, float rate,
         {
             float *dst = _ScaleFor(e->velocity.vec, tmp, e->acceleration.vec, elapsed);
 
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(tmp);
+                XsgGpr r_1 = XSG_IN(dst);
+                XsgGpr r_0 = XSG_IN(dst);
+                vu0_lqc2(30, XSG_EA(r_1, 0));
+                vu0_lqc2(31, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                vu0_sqc2(30, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         {
             float *dst = _ScaleFor(e->position.vec, tmp, e->velocity.vec, elapsed);
 
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(tmp);
+                XsgGpr r_1 = XSG_IN(dst);
+                XsgGpr r_0 = XSG_IN(dst);
+                vu0_lqc2(30, XSG_EA(r_1, 0));
+                vu0_lqc2(31, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                vu0_sqc2(30, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         {
             float *dst = _ScaleFor(e->appearance.vec, tmp, e->appearanceRate.vec, elapsed);
 
+#ifndef PORT_HOST
             PS2_ASMV("lqc2 vf30, 0(%1)\n" "lqc2 vf31, 0(%2)\n" "vadd.xyzw vf30xyzw, vf30xyzw, vf31xyzw\n" "sqc2 vf30, 0(%0)\n" : : "r" (dst), "r" (dst), "r" (tmp) : "memory");
+#else
+            {
+                XsgGpr r_2 = XSG_IN(tmp);
+                XsgGpr r_1 = XSG_IN(dst);
+                XsgGpr r_0 = XSG_IN(dst);
+                vu0_lqc2(30, XSG_EA(r_1, 0));
+                vu0_lqc2(31, XSG_EA(r_2, 0));
+                vu0_arith(VU0_ADD, 15, 30, 30, 31, VU0_VEC);
+                vu0_sqc2(30, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         _Damp(e->velocity.vec, factor);
         _ClampState(e, zero, sizeMax, one);
@@ -280,6 +358,7 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
     sceVif1PkAddGsAD((XglPacket *)packet, SCE_GS_TEX0_1, (unsigned long long)tex0);
     _closeVifGif((sceVif1Packet *)packet);
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf27, 0(%0)\n"
         "lqc2 vf28, 16(%0)\n"
@@ -288,18 +367,48 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
         :
         : "r"(pView->viewMatrix)
         : "memory");
+#else
+    {
+        XsgGpr r_0 = XSG_IN(pView->viewMatrix);
+        vu0_lqc2(27, XSG_EA(r_0, 0));
+        vu0_lqc2(28, XSG_EA(r_0, 16));
+        vu0_lqc2(29, XSG_EA(r_0, 32));
+        vu0_lqc2(30, XSG_EA(r_0, 48));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf25, 0(%0)\n"
         "lqc2 vf26, 0(%1)\n"
         :
         : "r"(pView->axisX), "r"(pView->axisY)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(pView->axisY);
+        XsgGpr r_0 = XSG_IN(pView->axisX);
+        vu0_lqc2(25, XSG_EA(r_0, 0));
+        vu0_lqc2(26, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf31, 0(%0)\n"
         "sqc2 vf31, 0(%1)\n"
         :
         : "r"(pView->axisX), "r"(&work[4])
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&work[4]);
+        XsgGpr r_0 = XSG_IN(pView->axisX);
+        vu0_lqc2(31, XSG_EA(r_0, 0));
+        vu0_sqc2(31, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     work[4].vec[0] *= 0.375f;
     work[4].vec[1] *= 0.375f;
     XrgUnitVector(work[3].vec);
@@ -317,6 +426,7 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
             XrgParticleRow *pSprite = &work[12];
             XrgParticleRow *pConst = &work[2];
 
+#ifndef PORT_HOST
             PS2_ASMV(
                 "ctc2 $0,$vi18\n"
                 "lqc2 vf31, 0(%1)\n"
@@ -344,6 +454,35 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
                 : "=r"(mask)
                 : "r"(pPoints), "r"(pScratch), "r"(pStore)
                 : "$2", "memory");
+#else
+            {
+                XsgGpr r_3 = XSG_IN(pStore);
+                XsgGpr r_2 = XSG_IN(pScratch);
+                XsgGpr r_1 = XSG_IN(pPoints);
+                XsgGpr r_0 = {{0, 0}};
+                vu0_ctc2(18, &xsg_ee_zero);
+                vu0_lqc2(31, XSG_EA(r_1, 0));
+                vu0_arith(VU0_MUL, 15, VU0_ACC, 27, 31, 0);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 28, 31, 1);
+                vu0_arith(VU0_MADD, 15, VU0_ACC, 29, 31, 2);
+                vu0_arith(VU0_MADD, 15, 31, 30, 0, 3);
+                vu0_clip(31, 31);
+                vu0_div(0, 3, 31, 3);
+                vu0_waitq();
+                vu0_arith(VU0_MUL, 15, 31, 31, 0, VU0_BQ);
+                vu0_arith(VU0_MUL, 15, VU0_ACC, 26, 0, 3);
+                vu0_arith(VU0_MADD, 15, 31, 31, 25, VU0_VEC);
+                vu0_arith(VU0_SUB, 1, 31, 31, 31, VU0_VEC);
+                vu0_sqc2(31, XSG_EA(r_2, 0));
+                vu0_ftoi(4, 15, 20, 31);
+                vu0_sqc2(20, XSG_EA(r_3, 0));
+                vu0_cfc2(&xsg_ee_gpr[2], 18);
+                xsg_ee_gpr[2].d[0] = xsg_ee_gpr[2].d[0] & (unsigned long long)(unsigned short)(63);
+                r_0.d[0] = xsg_ee_gpr[2].d[0];
+                xsg_vu0_blocks++;
+                XSG_OUT(mask, r_0);
+            }
+#endif
             if (mask != 0) {
                 continue;
             }
@@ -355,17 +494,34 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
                 Quadword corner;
 
                 work[3].vec[1] = work[3].vec[0] = pPoints->appearance.vec[0] * 0.5f;
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf11, 0(%0)\n"
                     "vmulq.xyzw vf11, vf11, Q\n"
                     :
                     : "r"(pDir)
                     : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(pDir);
+                    vu0_lqc2(11, XSG_EA(r_0, 0));
+                    vu0_arith(VU0_MUL, 15, 11, 11, 0, VU0_BQ);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "sqc2 vf11, 0(%0)\n"
                     :
                     : "r"(pDir)
                     : "memory");
+#else
+                {
+                    XsgGpr r_0 = XSG_IN(pDir);
+                    vu0_sqc2(11, XSG_EA(r_0, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 work[7].vec[0] = work[3].vec[0] * work[4].vec[0];
                 work[7].vec[1] = work[3].vec[1] * work[4].vec[1];
                 work[7].vec[2] = work[3].vec[2] * work[4].vec[2];
@@ -376,6 +532,7 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
                 if (pPoints->appearance.word[3] != 0) {
                     work[7].vec[1] *= cosf(pPoints->appearance.vec[3]);
                 }
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf11, 0(%0)\n"
                     "vftoi4.xyzw vf11, vf11\n"
@@ -383,11 +540,22 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
                     :
                     : "r"(pScale), "r"(pScale)
                     : "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(pScale);
+                    XsgGpr r_0 = XSG_IN(pScale);
+                    vu0_lqc2(11, XSG_EA(r_0, 0));
+                    vu0_ftoi(4, 15, 11, 11);
+                    vu0_sqc2(11, XSG_EA(r_1, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 ix = work[7].word[0];
                 if ((unsigned int)(ix - 1) >= XRG_PARTICLE_SPRITE_HALF_MAX) {
                     continue;
                 }
                 work[12].vec[0] = pPoints->appearance.vec[1];
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lqc2 vf10, 0(%0)\n"
                     "lqc2 vf11, 0(%1)\n"
@@ -397,6 +565,19 @@ static void _Disp(struct XrgParticle *pPoints, int count, long long tex0, XrgPar
                     :
                     : "r"(pConst), "r"(pSprite), "r"(pSprite)
                     : "memory");
+#else
+                {
+                    XsgGpr r_2 = XSG_IN(pSprite);
+                    XsgGpr r_1 = XSG_IN(pSprite);
+                    XsgGpr r_0 = XSG_IN(pConst);
+                    vu0_lqc2(10, XSG_EA(r_0, 0));
+                    vu0_lqc2(11, XSG_EA(r_1, 0));
+                    vu0_arith(VU0_MUL, 15, 10, 10, 11, 0);
+                    vu0_ftoi(0, 15, 10, 10);
+                    vu0_sqc2(10, XSG_EA(r_2, 0));
+                    xsg_vu0_blocks++;
+                }
+#endif
                 corner = work[5].quad;
                 work[8].quad = corner;
                 work[9].quad = corner;

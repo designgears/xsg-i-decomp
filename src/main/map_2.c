@@ -229,6 +229,7 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
         if (matrixIndex >= 0) {
             /* Aligned matrix copies use the SDK's scratch-register quartet. */
             if (matrixIndex & 0x8000) {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
@@ -240,12 +241,28 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
                     "sq $2, 48(%0)\n"
                     : : "r" (joint), "r" ((matrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices)
                     : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN((matrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices);
+                    XsgGpr r_0 = XSG_IN(joint);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 homogeneousZero = 0.0f;
                 joint[2][3] = homogeneousZero;
                 joint[1][3] = homogeneousZero;
                 joint[0][3] = homogeneousZero;
                 xglMatrixStackLoad(joint);
             } else {
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
@@ -257,6 +274,22 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
                     "sq $2, 48(%0)\n"
                     : : "r" (root), "r" (matrices[0])
                     : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN(matrices[0]);
+                    XsgGpr r_0 = XSG_IN(root);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
+#ifndef PORT_HOST
                 PS2_ASMV(
                     "lq $2, 0(%1)\n"
                     "sq $2, 0(%0)\n"
@@ -268,6 +301,21 @@ void MAP_drawUnitAt(MapUnitSlot *unit)
                     "sq $2, 48(%0)\n"
                     : : "r" (joint), "r" ((unit->parentMatrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices)
                     : "$2", "memory");
+#else
+                {
+                    XsgGpr r_1 = XSG_IN((unit->parentMatrixIndex & 0x7FFF) * sizeof(Matrix4) + (unsigned int)matrices);
+                    XsgGpr r_0 = XSG_IN(joint);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 16), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 16), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 32), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 32), &xsg_ee_gpr[2], 16);
+                    __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 48), 16);
+                    __builtin_memcpy(XSG_EA(r_0, 48), &xsg_ee_gpr[2], 16);
+                    xsg_vu0_blocks++;
+                }
+#endif
                 homogeneousZero = 0.0f;
                 joint[2][3] = homogeneousZero;
                 joint[1][3] = homogeneousZero;

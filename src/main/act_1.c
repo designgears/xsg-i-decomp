@@ -145,7 +145,15 @@ void ACT_init(void)
             ((char *)a + 0x6e0)[i] = 0;
         }
         for (i = 0; i < 3; i++) {
+#ifndef PORT_HOST
             PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x970 + i * 16) : "memory");
+#else
+            {
+                XsgGpr r_0 = XSG_IN((char *)a + 0x970 + i * 16);
+                __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         for (i = 10; i >= 0; i--) {
             ((int *)((char *)a + 0x8d0))[i] = 0;
@@ -158,9 +166,33 @@ void ACT_init(void)
         AF(int, a, 0x678) = 0;
         AF(short, a, 0x674) = 1;
         AF(int, a, 0x67c) = 0;
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x640) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN((char *)a + 0x640);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x650) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN((char *)a + 0x650);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
+#ifndef PORT_HOST
         PS2_ASMV("sq $0, 0(%0)" : : "r"((char *)a + 0x660) : "memory");
+#else
+        {
+            XsgGpr r_0 = XSG_IN((char *)a + 0x660);
+            __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_zero, 16);
+            xsg_vu0_blocks++;
+        }
+#endif
         AF(float, a, 0x66c) = 1.0f;
         AF(float, a, 0x62c) = 1.0f;
         AF(float, a, 0x670) = 1.0f;

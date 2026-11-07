@@ -558,7 +558,13 @@ void xglRenderDrawFlip(void)
     scratch[4] = frame;
     scratch[5] = 77;
     sRender.vram.row.flip_base = previous_base;
+#ifndef PORT_HOST
     PS2_ASMV("sync" : : : "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     FlushCache(0);
     xglDmaDirectNormal(2, 0x70000000, 3);
 }
@@ -590,7 +596,13 @@ void xglRenderCopyDisp2Draw(void)
     trxdir->dword[0] = 2;
     trxdir->dword[1] = 83;
     header->dword[0] = ((u64)0x10000000 << 32) | 0x8005;
+#ifndef PORT_HOST
     PS2_ASMV("sync" : : : "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     FlushCache(0);
     xglDmaDirectNormal(2, 0x70000000, 6);
 }
@@ -622,7 +634,13 @@ void xglRenderDrawFlipPk(XglPacket *packet)
     trxdir->dword[0] = 2;
     trxdir->dword[1] = 83;
     header->dword[0] = ((u64)0x10000000 << 32) | 0x8005;
+#ifndef PORT_HOST
     PS2_ASMV("sync" : : : "memory");
+#else
+    {
+        xsg_vu0_blocks++;
+    }
+#endif
     sceVif1PkCnt(packet, 0);
     sceVif1PkOpenDirectHLCode(packet, 0);
     sceVif1PkAddDirectDataN(packet, (void *)0x70000000, 6);

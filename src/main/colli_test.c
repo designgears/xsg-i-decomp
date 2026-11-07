@@ -136,9 +136,19 @@ static int CheckBallBoxCollision(CollisionPoint *hit_position,
              * no ACC/Q/VI/flags are read or modified. The compiler does not
              * allocate C values in VF registers. Caller point storage is
              * 16-byte aligned and the memory clobber covers the full copy. */
+#ifndef PORT_HOST
             PS2_ASMV(
                 "lqc2 vf31, 0(%1)\n\tsqc2 vf31, 0(%0)"
                 : : "r"(hit_position), "r"(args->line_start) : "memory");
+#else
+            {
+                XsgGpr r_1 = XSG_IN(args->line_start);
+                XsgGpr r_0 = XSG_IN(hit_position);
+                vu0_lqc2(31, XSG_EA(r_1, 0));
+                vu0_sqc2(31, XSG_EA(r_0, 0));
+                xsg_vu0_blocks++;
+            }
+#endif
         }
         return 1;
     }

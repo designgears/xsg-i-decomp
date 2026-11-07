@@ -30,6 +30,7 @@ void CalcVerticalVector(const Vector4 *first, const Vector4 *second,
     Vector4 second_edge;
     Vector4 normal;
 
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
@@ -38,6 +39,19 @@ void CalcVerticalVector(const Vector4 *first, const Vector4 *second,
         :
         : "r"(&first_edge), "r"(first), "r"(second)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(second);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgGpr r_0 = XSG_IN(&first_edge);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
@@ -46,6 +60,18 @@ void CalcVerticalVector(const Vector4 *first, const Vector4 *second,
         :
         : "r"(&second_edge), "r"(first), "r"(third)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(third);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgGpr r_0 = XSG_IN(&second_edge);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorOuter(&normal, &first_edge, &second_edge);
     xglVectorOuter(vertical, &first_edge, &normal);
 }
@@ -63,6 +89,7 @@ float CalcLength(const Vector4 *first, const Vector4 *second, const Vector4 *thi
 
     CalcVerticalVector(first, second, third, &vertical);
     xglVectorNormal(&vertical, &vertical);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%0)\n\t"
         "lqc2 vf2, 0(%1)\n\t"
@@ -71,6 +98,18 @@ float CalcLength(const Vector4 *first, const Vector4 *second, const Vector4 *thi
         :
         : "r"(third), "r"(first), "r"(&delta)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&delta);
+        XsgGpr r_1 = XSG_IN(first);
+        XsgGpr r_0 = XSG_IN(third);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorInner(&length, &vertical, &delta);
     return length;
 }
@@ -85,6 +124,7 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
     intersection_values[1] = CalcLength(first, second, third);
     CalcVerticalVector(first, second, third, &normal);
     xglVectorNormal(&normal, &normal);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf3, 0(%1)\n\t"
         "lqc2 vf2, 0(%2)\n\t"
@@ -93,6 +133,18 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
         :
         : "r"(cross_point), "r"(third), "r"(fourth)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(fourth);
+        XsgGpr r_1 = XSG_IN(third);
+        XsgGpr r_0 = XSG_IN(cross_point);
+        vu0_lqc2(3, XSG_EA(r_1, 0));
+        vu0_lqc2(2, XSG_EA(r_2, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     xglVectorInner(&intersection_values[0], cross_point, &normal);
     intersection_values[0] = intersection_values[1] / intersection_values[0];
     xglVectorLength(&intersection_values[1], cross_point);
@@ -100,6 +152,7 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
     cross_point->x *= intersection_values[0] * intersection_values[1];
     cross_point->y *= intersection_values[0] * intersection_values[1];
     cross_point->z *= intersection_values[0] * intersection_values[1];
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 vf20, 0(%0)\n\t"
         "lqc2 vf21, 0(%1)\n\t"
@@ -108,6 +161,17 @@ void CalcCrossPoint(const Vector4 *first, const Vector4 *second,
         :
         : "r"(cross_point), "r"(third)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(third);
+        XsgGpr r_0 = XSG_IN(cross_point);
+        vu0_lqc2(20, XSG_EA(r_0, 0));
+        vu0_lqc2(21, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 15, 20, 20, 21, VU0_VEC);
+        vu0_sqc2(20, XSG_EA(r_0, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 int CheckPointLine(const Vector4 *first, const Vector4 *second,

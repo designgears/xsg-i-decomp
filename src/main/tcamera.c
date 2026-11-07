@@ -193,6 +193,7 @@ void TCAMERA_transMPack(TCamera *camera, void *source, float frame)
     interest[0] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
     interest[1] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
     interest[2] = FCV_getPackValue(TCAMERA_MPACK_SCRATCH, frame) * positionScale;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -201,6 +202,18 @@ void TCAMERA_transMPack(TCamera *camera, void *source, float frame)
         :
         : "r"(interest), "r"(translation), "r"(&direction)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&direction);
+        XsgGpr r_1 = XSG_IN(translation);
+        XsgGpr r_0 = XSG_IN(interest);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     yaw = xglAtan2(direction.x, direction.z);
     radiansPerDegree = 3.1415927f;
     rotation->y = yaw;
@@ -232,12 +245,23 @@ void TCAMERA_transMPack2(TCamera *camera, void *source, float frame)
     interest.vector.y = FCV2_getPackValue(TCAMERA_MPACK_SCRATCH, frame);
     interest.vector.z = FCV2_getPackValue(TCAMERA_MPACK_SCRATCH, frame);
     interest.vector.w = 1.0f;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lq $2, 0(%1)\n\t"
         "sq $2, 0(%0)"
         :
         : "r"(&mpack_interest.storage), "r"(&interest.storage)
         : "$2", "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(&interest.storage);
+        XsgGpr r_0 = XSG_IN(&mpack_interest.storage);
+        __builtin_memcpy(&xsg_ee_gpr[2], XSG_EA(r_1, 0), 16);
+        __builtin_memcpy(XSG_EA(r_0, 0), &xsg_ee_gpr[2], 16);
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -246,6 +270,18 @@ void TCAMERA_transMPack2(TCamera *camera, void *source, float frame)
         :
         : "r"(&interest.vector), "r"(translation), "r"(&direction)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&direction);
+        XsgGpr r_1 = XSG_IN(translation);
+        XsgGpr r_0 = XSG_IN(&interest.vector);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     rotation->y = xglAtan2(direction.x, direction.z);
     rotation->x = -xglAtan2(direction.y,
                             direction.x * xglSin(rotation->y) +
@@ -302,6 +338,7 @@ void TCAMERA_setView(TCamera *camera, float x, float y, float z)
     home[0] = x;
     home[1] = y;
     home[2] = z;
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -310,6 +347,18 @@ void TCAMERA_setView(TCamera *camera, float x, float y, float z)
         :
         : "r"(home), "r"(translation), "r"(&dir)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&dir);
+        XsgGpr r_1 = XSG_IN(translation);
+        XsgGpr r_0 = XSG_IN(home);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     yaw = xglAtan2(dir.x, dir.z);
     rotation->y = yaw;
     sine = xglSin(yaw);
@@ -346,6 +395,7 @@ void TCAMERA_viewSPL(TCamera *camera, void *spline, float frame)
     float pitchDenominator;
 
     SPL_getValueXYZ(point, spline, frame);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -354,6 +404,18 @@ void TCAMERA_viewSPL(TCamera *camera, void *spline, float frame)
         :
         : "r"(point), "r"(translation), "r"(&direction)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&direction);
+        XsgGpr r_1 = XSG_IN(translation);
+        XsgGpr r_0 = XSG_IN(point);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     yaw = xglAtan2(direction.x, direction.z);
     rotation->y = yaw;
     sine = xglSin(yaw);
@@ -380,6 +442,7 @@ void TCAMERA_transCNS(TCamera *camera, float **constraint, Vector4 *offset, int 
         point[1] = (*constraint)[5];
         point[2] = (*constraint)[6];
     }
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -388,6 +451,18 @@ void TCAMERA_transCNS(TCamera *camera, float **constraint, Vector4 *offset, int 
         :
         : "r"(offset), "r"(point), "r"(translation)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(translation);
+        XsgGpr r_1 = XSG_IN(point);
+        XsgGpr r_0 = XSG_IN(offset);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
 }
 
 void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int mode)
@@ -414,6 +489,7 @@ void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int m
         point[2] = (*constraint)[6];
     }
     camera = (TCamera *)((u8 *)camera + 0xd0);
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -422,6 +498,18 @@ void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int m
         :
         : "r"(offset), "r"(point)
         : "memory");
+#else
+    {
+        XsgGpr r_1 = XSG_IN(point);
+        XsgGpr r_0 = XSG_IN(offset);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_ADD, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_1, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
+#ifndef PORT_HOST
     PS2_ASMV(
         "lqc2 $vf3, 0(%0)\n\t"
         "lqc2 $vf2, 0(%1)\n\t"
@@ -430,6 +518,18 @@ void TCAMERA_viewCNS(TCamera *camera, float **constraint, Vector4 *offset, int m
         :
         : "r"(point), "r"(camera), "r"(&direction)
         : "memory");
+#else
+    {
+        XsgGpr r_2 = XSG_IN(&direction);
+        XsgGpr r_1 = XSG_IN(camera);
+        XsgGpr r_0 = XSG_IN(point);
+        vu0_lqc2(3, XSG_EA(r_0, 0));
+        vu0_lqc2(2, XSG_EA(r_1, 0));
+        vu0_arith(VU0_SUB, 14, 2, 2, 3, VU0_VEC);
+        vu0_sqc2(2, XSG_EA(r_2, 0));
+        xsg_vu0_blocks++;
+    }
+#endif
     yaw = xglAtan2(direction.x, direction.z);
     rotation->y = yaw;
     sine = xglSin(yaw);
