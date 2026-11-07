@@ -4,6 +4,8 @@
 #include "common.h"
 #include "map_disp.h"
 
+const char *mapPartsName[2] = { "ten", "yuka" };
+
 void mapInit(void) {
     mapDispWork[1] = 0;
     mapMul.components[0] = 1.0f;

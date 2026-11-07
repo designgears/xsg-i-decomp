@@ -10963,6 +10963,61 @@
     }
    ]
   },
+  "ov01/tu010_00a2c3a0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a3f7e0",
+      "0x00a3f7e8"
+     ],
+     "generated": [
+      "0x00a3f7e0",
+      "0x00a3f7e8"
+     ],
+     "generated_by": [
+      "mapDisp"
+     ],
+     "c_owned_symbols": [
+      "mapPartsName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/map_disp.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a46c18",
+      "0x00a46c28"
+     ],
+     "generated": [
+      "0x00a46c18",
+      "0x00a46c24"
+     ],
+     "generated_by": [
+      "mapDisp"
+     ],
+     "c_owned_symbols": [
+      "D_00A46C18",
+      "D_00A46C20"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A46C18": "mapPartsName",
+      "D_00A46C20": "mapPartsName"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/map_disp.o"
+     }
+    }
+   ]
+  },
   "ov01/tu013_00a2c9f8": {
    ".rodata": [
     {
@@ -11146,6 +11201,37 @@
    ]
   },
   "ov01/tu019_00a32e78": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43690",
+      "0x00a43724"
+     ],
+     "generated": [
+      "0x00a43690",
+      "0x00a43724"
+     ],
+     "generated_by": [
+      "MMvExec",
+      "MMvGetTime",
+      "MMvInit",
+      "MMvIsPlaying",
+      "MMvPlay2",
+      "MMvSkipEnabled",
+      "MMvStop"
+     ],
+     "c_owned_symbols": [
+      "mvEnv",
+      "mvFlags_00A43720"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_mv.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -11169,7 +11255,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/m_mv.o"
+      "object": "build/ov01/build/scaffold/src/ov01/m_mv.o"
      }
     }
    ]
@@ -11495,17 +11581,20 @@
    ".rodata": [
     {
      "range": [
-      "0x00a11ee0",
+      "0x00a11e60",
       "0x00a11f10"
      ],
      "generated": [
-      "0x00a11ee0",
+      "0x00a11e60",
       "0x00a11f10"
      ],
      "generated_by": [
-      "DrawUmnInterface2"
+      "DrawUmnInterface2",
+      "tskUmnBgCubeMain"
      ],
      "c_owned_symbols": [
+      "D_00A11E60",
+      "D_00A11E70",
       "D_00A11EE0",
       "D_00A11EF8"
      ],
@@ -11513,7 +11602,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_interface2.o"
+      "object": "build/ov02/build/scaffold/src/ov02/umn_interface2.o"
      }
     }
    ]
