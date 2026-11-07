@@ -2090,27 +2090,48 @@
    ".data": [
     {
      "range": [
-      "0x0036a9e0",
-      "0x0036aa00"
+      "0x0036a938",
+      "0x0036a96e"
      ],
      "generated": [
-      "0x0036a9e0",
-      "0x0036a9fa"
+      "0x0036a938",
+      "0x0036a96e"
      ],
      "generated_by": [
-      "tyaCaptureStart"
+      "tyaBmpOutput"
      ],
      "c_owned_symbols": [
-      "head_1"
+      "BmpHeader"
      ],
-     "also_referenced_by_c": [
-      "BmpHeader",
-      "SiPicHeader"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tya.o"
+      "object": "build/main/build/c/tya.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036a970",
+      "0x0036aa00"
+     ],
+     "generated": [
+      "0x0036a970",
+      "0x0036a9fa"
+     ],
+     "generated_by": [
+      "tyaCaptureStart",
+      "tyaSiPicOutput"
+     ],
+     "c_owned_symbols": [
+      "SiPicHeader",
+      "head_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tya.o"
      }
     }
    ],
@@ -2142,7 +2163,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tya.o"
+      "object": "build/main/build/c/tya.o"
      }
     }
    ]
