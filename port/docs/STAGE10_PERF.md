@@ -85,6 +85,11 @@ within 31 px of -O2, so the -O3 difference is a deviation. It could be another
 UB pattern that -O3 exposes, or a float or vectorisation change. It was not chased, so
 -O3 stays off.
 
+**Update (STAGE11_UB.md §3):** after the drop-shadow fix, -O3 is pixel-identical to -O2 (41
+frames, one every 250 vblanks). The difference was the drop-shadow bug at -O2, not -O3. -O3 is
+safe but not measurably faster, so -O2 stays the default. 5b (narrow results read as int) and
+5c (opcodes that do not advance) are covered in STAGE11_UB.md §1–2.
+
 ## 2. Build
 
 ```
