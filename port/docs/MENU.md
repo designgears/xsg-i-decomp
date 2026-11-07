@@ -378,3 +378,8 @@ CRTMD). That was not investigated further.
   scale > 1.
 * The volume classes are a heuristic based on voice allocation; see above.
 * Only Latin-1 glyphs; the menu is English only.
+
+## Status site (web controller)
+
+`port/tools/status_site/server.py` runs the game headless and serves the live video with a virtual
+DualShock 2. It feeds the game through `[debug] remote_pad`. See STATUS_SITE.md.
