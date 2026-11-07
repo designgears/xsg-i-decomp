@@ -11340,6 +11340,35 @@
     }
    ]
   },
+  "ov01/tu023_00a33f08": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51380",
+      "0x00a51460"
+     ],
+     "generated": [
+      "0x00a51380",
+      "0x00a51458"
+     ],
+     "generated_by": [
+      "fnMSP00_DM000",
+      "fnMSP00_DP000"
+     ],
+     "c_owned_symbols": [
+      "scale_0_00A51380",
+      "coltbl_1_00A51390",
+      "sztbl_2_00A51430"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_msp_00.o"
+     }
+    }
+   ]
+  },
   "ov01/tu024_00a346c8": {
    ".rodata": [
     {
@@ -11366,6 +11395,88 @@
     }
    ]
   },
+  "ov01/tu029_00a36be8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43780",
+      "0x00a437b0"
+     ],
+     "generated": [
+      "0x00a43780",
+      "0x00a437b0"
+     ],
+     "generated_by": [
+      "fnSOLB_DP000"
+     ],
+     "c_owned_symbols": [
+      "coltbl_1_00A43780"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_solb.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51780",
+      "0x00a517d0"
+     ],
+     "generated": [
+      "0x00a51780",
+      "0x00a517d0"
+     ],
+     "generated_by": [
+      "fnSOLB_PR000",
+      "makeHermiteCoord_00A36F28",
+      "makePath_00A36CB8"
+     ],
+     "c_owned_symbols": [
+      "timetbl",
+      "offset_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_solb.o"
+     }
+    }
+   ]
+  },
+  "ov01/tu032_00a387a8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a517d0",
+      "0x00a51820"
+     ],
+     "generated": [
+      "0x00a517d0",
+      "0x00a51820"
+     ],
+     "generated_by": [
+      "fnGAMERA_DP000",
+      "makePath_00A388A0"
+     ],
+     "c_owned_symbols": [
+      "disttbl_0_00A517D0",
+      "rtbl_1_00A517E0",
+      "coltbl_2_00A517F0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_gamera.o"
+     }
+    }
+   ]
+  },
   "ov01/tu033_00a39088": {
    ".data": [
     {
@@ -11388,6 +11499,35 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_ead_00.o"
+     }
+    }
+   ]
+  },
+  "ov01/tu035_00a397c8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51820",
+      "0x00a51880"
+     ],
+     "generated": [
+      "0x00a51820",
+      "0x00a51880"
+     ],
+     "generated_by": [
+      "fnDORA_DP000",
+      "makePath_00A398B8"
+     ],
+     "c_owned_symbols": [
+      "disttbl_0_00A51820",
+      "rtbl_1_00A51830",
+      "coltbl_2_00A51840"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_dora.o"
      }
     }
    ]
