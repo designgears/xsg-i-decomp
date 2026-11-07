@@ -185,7 +185,13 @@ static void rssd_notify(unsigned command, int a0, int a1, int a2, int a3)
 
 /* Runs the command the way RssdExecFunc would (results only, no sound) and
  * returns the IOP -> EE calls it causes through rssd_notify. */
-static void rssd_exec(unsigned fno, rssd_packet *p)
+void xsg_vagstream_init(void);
+void xsg_vagstream_play(int pitch);
+void xsg_vagstream_stop(void);
+void xsg_vagstream_data(const void *data, int size);
+int xsg_vagstream_status(void);
+
+static void rssd_exec(unsigned fno, rssd_packet *p, const void *data)
 {
     p->error = 0;
     switch (fno) {
@@ -214,7 +220,16 @@ static void rssd_exec(unsigned fno, rssd_packet *p)
         break;
     case 0x80: case 0x81: case 0x82: /* check play effect: nothing playing */
     case 0x24: case 0x62:            /* check wave/effect data: present */
-    case 0xa5: case 0xb7: case 0xb8: case 0xbe: /* stream status: idle */
+    /* stereo VAG stream (audio.c) */
+    case 0xb0: xsg_vagstream_init(); break;
+    case 0xb2: case 0xb4: xsg_vagstream_stop(); break;
+    case 0xb3: xsg_vagstream_play(p->arg[2]); break;
+    case 0xb5:
+        if (data && p->data_size > 0)
+            xsg_vagstream_data(data, p->data_size);
+        break;
+    case 0xb7: p->value = xsg_vagstream_status(); break;
+    case 0xa5: case 0xb8: case 0xbe: /* stream status: idle */
         p->value = 0;
         break;
     case 0x100: /* check SPU memory */
@@ -232,7 +247,7 @@ static void iop_module_call(unsigned rpc, unsigned fno, void *send, int ssize, v
         memcpy(&p, send, sizeof p);
         STUB_LOG("rssd cmd 0x%x args %x %x %x %x data %d", fno, p.arg[0], p.arg[1], p.arg[2],
                  p.arg[3], p.data_size);
-        rssd_exec(fno, &p);
+        rssd_exec(fno, &p, ssize > (int)sizeof p ? (const char *)send + sizeof p : NULL);
         if (recv && rsize > 0)
             memcpy(recv, &p, rsize < (int)sizeof p ? rsize : (int)sizeof p);
         return;

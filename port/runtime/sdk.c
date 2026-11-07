@@ -370,12 +370,3 @@ void sceIpuInit(void) { STUB_LOG(""); }
  * waiting for input that will never come (the end of the stream). */
 int xsg_ipu_busy(void);
 int sceIpuSync(int mode, unsigned short timeout) { (void)timeout; return mode ? xsg_ipu_busy() : (xsg_ipu_busy() ? -1 : 0); }
-int sceMpegInit(void) { STUB_LOG(""); return 0; }
-int sceMpegCreate(void *mp, void *work, int size) { STUB_LOG("%p %p %d", mp, work, size); return 0; }
-int sceMpegDelete(void *mp) { (void)mp; return 0; }
-int sceMpegReset(void *mp) { (void)mp; return 0; }
-int sceMpegIsEnd(void *mp) { (void)mp; return 1; }
-int sceMpegGetPicture(void *mp, void *rgb, int mbcount) { STUB_LOG("-> end of stream"); (void)mp; (void)rgb; (void)mbcount; return -1; }
-int sceMpegAddCallback(void *mp, int type, void *cb, void *data) { (void)mp; (void)type; (void)cb; (void)data; return 0; }
-int sceMpegAddStrCallback(void *mp, int type, int ch, void *cb, void *data) { (void)mp; (void)type; (void)ch; (void)cb; (void)data; return 0; }
-int sceMpegDemuxPss(void *mp, void *buf, int size) { (void)mp; (void)buf; return size; }
