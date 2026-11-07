@@ -366,8 +366,10 @@ int scePadEnterPressMode(int port, int slot) { (void)port; (void)slot; return 1;
 
 /* ---- IPU / MPEG: every movie ends immediately ------------------------ */
 void sceIpuInit(void) { STUB_LOG(""); }
-/* No IPU: report a timeout, so xglMoviePlay returns -1 and the movie ends. */
-int sceIpuSync(int mode, unsigned short timeout) { (void)mode; (void)timeout; return -1; }
+/* The IPU model (ipu.cpp) runs commands synchronously; -1 only if one is still
+ * waiting for input that will never come (the end of the stream). */
+int xsg_ipu_busy(void);
+int sceIpuSync(int mode, unsigned short timeout) { (void)timeout; return mode ? xsg_ipu_busy() : (xsg_ipu_busy() ? -1 : 0); }
 int sceMpegInit(void) { STUB_LOG(""); return 0; }
 int sceMpegCreate(void *mp, void *work, int size) { STUB_LOG("%p %p %d", mp, work, size); return 0; }
 int sceMpegDelete(void *mp) { (void)mp; return 0; }

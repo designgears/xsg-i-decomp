@@ -149,6 +149,8 @@ static void *dmac_thread(void *arg)
             /* VIF1 and GIF run synchronously on the game's thread (xsg_dma_kick
                from xglDmaDirect*, gs_bridge.cpp); XSG_DMA_THREAD=1 brings back
                Stage 5's asynchronous run here. */
+            if (i == 3 || i == 4)   /* fromIPU/toIPU: the IPU model (ipu.cpp) owns them */
+                continue;
             if (i == 1 || i == 2) {
                 if (async_gfx && (*r & 0x100))
                     xsg_dma_run(i, chcr[i]);
