@@ -861,7 +861,11 @@ void ACT_updateSequence(Actor *actor)
     do {
         unsigned int address = (unsigned int)*handler++;
 
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+        if (XSG_HOST_IS_CODE(address))
+#else
         if (address >= 0x1f0000 && address < 0x2000000 && (address & 0x3) == 0)
+#endif
             ((void (*)(Actor *))address)(actor);
     } while (--remaining >= 0);
 
@@ -911,7 +915,11 @@ void ACT_updateNPC(Actor *actor)
     for (remaining = 0; remaining < 4; remaining++) {
         unsigned int address = (unsigned int)sequence->handler[remaining];
 
+#ifdef PORT_HOST /* EE-RAM code check, see XSG_HOST_IS_CODE */
+        if (XSG_HOST_IS_CODE(address))
+#else
         if (address >= 0x1f0000 && address < 0x2000000 && (address & 0x3) == 0)
+#endif
             ((void (*)(Actor *))address)(actor);
     }
 

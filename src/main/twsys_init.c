@@ -113,6 +113,17 @@ void TWSYS_update(void)
 
     component = tcomponent;
     slotIndex = 0;
+#ifdef PORT_HOST
+    {
+        /* XSG_TWIN_LOG: trace text-window component state changes */
+        extern void xsg_twin_trace(int slot, unsigned flags, unsigned state, unsigned kg, unsigned grp);
+        int i;
+        for (i = 0; i < 4; i++)
+            xsg_twin_trace(i, tcomponent[i].flags, *(unsigned short *)((char *)&tcomponent[i] + 0x14),
+                           tcomponent[i].kindAndGroup,
+                           groupStatus[(tcomponent[i].kindAndGroup >> 4) & 3]);
+    }
+#endif
     do {
         group = (component->kindAndGroup >> 4) & 3;
         if (!(groupStatus[group] & 1)) {

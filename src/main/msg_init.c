@@ -1217,7 +1217,15 @@ unsigned int MSG_convert(unsigned char *destination, int capacity, const char *t
                             {
                                 char *(*handler)(char *, int, const Mif2Argument *) = entry->handler;
                                 unsigned int address = (unsigned int)handler;
+#ifdef PORT_HOST
+                                /* the PS2 sanity check accepts only EE RAM
+                                 * (0x1F0000..0x1FFFFFF); host code lives elsewhere,
+                                 * so every MIF2 command (waitkey, wait, close...)
+                                 * was silently dropped */
+                                if (XSG_HOST_IS_CODE(address))
+#else
                                 if (address - 0x1F0000U <= 0x1E0FFFFU && !(address & 3))
+#endif
                                     output = (unsigned char *)handler((char *)output, argc, args);
                             }
                             if (!token)

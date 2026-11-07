@@ -308,50 +308,143 @@ int scePadGetState(int port, int slot) { (void)port; (void)slot; return 6; /* st
 int scePadGetReqState(int port, int slot) { (void)port; (void)slot; return 0; /* complete */ }
 int scePadRead(int port, int slot, unsigned char *data)
 {
+    /* DualShock 2 reply: 2 status bytes, 2 active-low button bytes, 4 stick
+     * bytes, then 12 pressure bytes (right, left, up, down, triangle, circle,
+     * cross, square, L1, R1, L2, R2), filled for held buttons. */
+    static const unsigned short press_bit[12] = {
+        0x2000, 0x8000, 0x1000, 0x4000, 0x0010, 0x0020,
+        0x0040, 0x0080, 0x0004, 0x0008, 0x0001, 0x0002,
+    };
     (void)slot;
-    memset(data, 0xff, 32);
-    data[0] = 0;
-    data[1] = 0x73; /* DualShock 2 analog */
+    memset(data, 0, 32);
+    data[1] = 0x73; /* DualShock 2 analog (xglPadRead derives pressures) */
+    data[2] = data[3] = 0xff;
     data[4] = data[5] = data[6] = data[7] = 0x80;
-    for (int i = 8; i < 20; i++)
-        data[i] = 0;
     if (port == 0) {
         unsigned m = xsg_pad_script_buttons();
         data[2] &= ~(m >> 8);  /* buttons are active low; SCE_PAD masks are */
         data[3] &= ~(m & 0xff); /* 0xffff ^ (data[2] << 8 | data[3]) */
+        for (int i = 0; i < 12; i++)
+            data[8 + i] = (m & press_bit[i]) ? 0xff : 0;
     }
     return 32;
 }
 
-/* XSG_PAD="frame:mask[:hold],..." presses SCE_PAD button masks (0x0800
- * START, 0x0040 CROSS, 0x0020 CIRCLE, 0x1000 UP, 0x4000 DOWN...) on port 0
- * from vblank `frame` for `hold` frames (default 6). */
+/* XSG_PAD: scripted input on port 0, a comma-separated list of
+ *   FRAME:BUTTONS[:HOLD][*COUNT[@EVERY]]
+ * FRAME   vblank of the first press (decimal or 0x hex)
+ * BUTTONS '+'-joined names (CROSS, CIRCLE, SQUARE, TRIANGLE, START, SELECT,
+ *         UP, DOWN, LEFT, RIGHT, L1, L2, L3, R1, R2, R3; aliases X, O, OK,
+ *         TRI, SQ) or a numeric SCE_PAD mask (0x0040 CROSS, 0x0020 CIRCLE...)
+ * HOLD    vblanks held (default 6)
+ * COUNT   number of presses (default 1), EVERY vblanks apart (default 60)
+ * e.g. XSG_PAD=300:START,11000:CROSS*20@90,20000:UP+CROSS:10
+ * XSG_PAD_LOG=1 logs every change of the scripted mask. */
+static const struct { const char *name; unsigned mask; } pad_names[] = {
+    {"SELECT", 0x0100}, {"L3", 0x0200}, {"R3", 0x0400}, {"START", 0x0800},
+    {"UP", 0x1000}, {"RIGHT", 0x2000}, {"DOWN", 0x4000}, {"LEFT", 0x8000},
+    {"L2", 0x0001}, {"R2", 0x0002}, {"L1", 0x0004}, {"R1", 0x0008},
+    {"TRIANGLE", 0x0010}, {"CIRCLE", 0x0020}, {"CROSS", 0x0040}, {"SQUARE", 0x0080},
+    {"TRI", 0x0010}, {"O", 0x0020}, {"OK", 0x0020}, {"X", 0x0040}, {"SQ", 0x0080},
+};
+#define PAD_NNAMES (int)(sizeof pad_names / sizeof pad_names[0])
+
+/* local helpers: libc's ctype/str* may be shadowed by game symbols */
+static int pad_alnum(int c) { return (c >= '0' && c <= '9') || ((c | 0x20) >= 'a' && (c | 0x20) <= 'z'); }
+static int pad_name_eq(const char *name, const char *s, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        if (!name[i] || (name[i] | 0x20) != (s[i] | 0x20))
+            return 0;
+    return name[n] == 0;
+}
+
+static int pad_parse_mask(const char **sp, unsigned *mask)
+{
+    const char *s = *sp;
+    *mask = 0;
+    for (;;) {
+        if (*s >= '0' && *s <= '9') {
+            char *e;
+            *mask |= strtoul(s, &e, 0);
+            s = e;
+        } else {
+            int n = 0, i;
+            while (pad_alnum((unsigned char)s[n]))
+                n++;
+            for (i = 0; i < PAD_NNAMES; i++)
+                if (pad_name_eq(pad_names[i].name, s, n))
+                    break;
+            if (!n || i == PAD_NNAMES)
+                return 0;
+            *mask |= pad_names[i].mask;
+            s += n;
+        }
+        if (*s != '+')
+            break;
+        s++;
+    }
+    *sp = s;
+    return 1;
+}
+
 unsigned xsg_pad_script_buttons(void)
 {
-    static struct { unsigned frame, mask, hold; } ev[64];
+    typedef struct { unsigned frame, mask, hold, count, every; } PadEv;
+    static PadEv ev[512];
     static int nev = -1;
+    static int log_on;
+    static unsigned last;
     if (nev < 0) {
+        const char *s = getenv("XSG_PAD"), *l = getenv("XSG_PAD_LOG");
+        log_on = l && *l && *l != '0';
         nev = 0;
-        const char *s = getenv("XSG_PAD");
-        while (s && *s && nev < 64) {
-            char *e;
-            ev[nev].frame = strtoul(s, &e, 0);
-            if (*e != ':')
+        while (s && *s && nev < 512) {
+            PadEv e = {0, 0, 6, 1, 60};
+            char *end;
+            e.frame = strtoul(s, &end, 0);
+            s = end;
+            if (*s != ':' || (s++, !pad_parse_mask(&s, &e.mask))) {
+                xsg_logf("[pad] XSG_PAD: bad entry at \"%s\"\n", s);
                 break;
-            ev[nev].mask = strtoul(e + 1, &e, 0);
-            ev[nev].hold = 6;
-            if (*e == ':')
-                ev[nev].hold = strtoul(e + 1, &e, 0);
-            nev++;
-            s = *e == ',' ? e + 1 : e;
+            }
+            while (*s == ':' || *s == '*' || *s == '@') {
+                char c = *s++;
+                unsigned v = strtoul(s, &end, 0);
+                s = end;
+                if (c == ':') e.hold = v;
+                else if (c == '*') e.count = v ? v : 1;
+                else e.every = v;
+            }
+            ev[nev++] = e;
+            if (*s != ',')
+                break;
+            s++;
         }
         if (nev)
-            xsg_logf("[pad] %d scripted presses\n", nev);
+            xsg_logf("[pad] %d scripted entries\n", nev);
     }
-    unsigned m = 0;
-    for (int i = 0; i < nev; i++)
-        if (xsg_frame >= ev[i].frame && xsg_frame < ev[i].frame + ev[i].hold)
+    unsigned m = 0, f = xsg_frame;
+    for (int i = 0; i < nev; i++) {
+        if (f < ev[i].frame)
+            continue;
+        unsigned k = ev[i].every ? (f - ev[i].frame) / ev[i].every : 0;
+        if (k >= ev[i].count)
+            k = ev[i].count - 1;
+        if (f - (ev[i].frame + k * ev[i].every) < ev[i].hold)
             m |= ev[i].mask;
+    }
+    if (log_on && m != last) {
+        /* the game's pad record (xgl_pad.h): +0x28 buttons, +0x2a pressed
+         * (after the button_map remap of the low byte), +0x58 button_map */
+        extern unsigned char PadData[];
+        const unsigned char *bm = PadData + 0x58;
+        xsg_logf("[pad] vblank %u: buttons 0x%04x (game: held 0x%04x, map %02x %02x %02x %02x %02x %02x %02x %02x)\n",
+                 f, m, *(unsigned short *)(PadData + 0x28),
+                 bm[0], bm[1], bm[2], bm[3], bm[4], bm[5], bm[6], bm[7]);
+    }
+    last = m;
     return m;
 }
 int scePadInfoMode(int port, int slot, int term, int offs) { (void)port; (void)slot; (void)offs; return term == 1 ? 7 : term == 2 ? 1 : 0; }
@@ -379,3 +472,22 @@ int sceMpegGetPicture(void *mp, void *rgb, int mbcount) { STUB_LOG("-> end of st
 int sceMpegAddCallback(void *mp, int type, void *cb, void *data) { (void)mp; (void)type; (void)cb; (void)data; return 0; }
 int sceMpegAddStrCallback(void *mp, int type, int ch, void *cb, void *data) { (void)mp; (void)type; (void)ch; (void)cb; (void)data; return 0; }
 int sceMpegDemuxPss(void *mp, void *buf, int size) { (void)mp; (void)buf; return size; }
+
+/* XSG_TWIN_LOG=1: TWSYS_update (src/main/twsys_init.c, PORT_HOST) reports each
+ * text-window component's flags/state every frame; log the changes. */
+void xsg_twin_trace(int slot, unsigned flags, unsigned state, unsigned kg, unsigned grp)
+{
+    static int on = -1;
+    static unsigned last[4][4];
+    if (on < 0) {
+        const char *e = getenv("XSG_TWIN_LOG");
+        on = e && *e && *e != '0';
+    }
+    if (!on || slot < 0 || slot > 3)
+        return;
+    if (last[slot][0] == flags && last[slot][1] == state && last[slot][2] == kg && last[slot][3] == grp)
+        return;
+    last[slot][0] = flags, last[slot][1] = state, last[slot][2] = kg, last[slot][3] = grp;
+    xsg_logf("[twin] vblank %u slot %d: flags 0x%x state %u kind/group 0x%x group status 0x%x\n",
+             xsg_frame, slot, flags, state, kg, grp);
+}
