@@ -28,6 +28,15 @@
 
 extern "C" {
 #include "xsg_rt.h"
+#include "vu1_capture.h"
+}
+
+namespace xsgvu {
+bool CapOn();
+void CapBegin(unsigned pc, unsigned top, unsigned itop, const Vu1CapRegs& regs,
+              const unsigned char* micro, const unsigned char* data);
+void CapKick(const unsigned char* data, unsigned q);
+void CapEnd(unsigned pairs, unsigned end_pc);
 }
 
 namespace xsgvu {
@@ -362,6 +371,7 @@ void DivFlags(bool inv, bool dz) {
 
 void Kick(u32 qaddr) {
     stats.kicks++;
+    if (g_data_off == 0xC000 && CapOn()) CapKick(Data(), qaddr & 0x3ff);
     if (kick_fn) kick_fn(Data(), qaddr & 0x3ff);
 }
 
@@ -548,6 +558,17 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     const bool trace_left = trace_runs > 0;
     if (trace_runs > 0) { trace_runs--; xsg_logf("[vu1t] run at 0x%x top %x itop %x\n", pc, top, itop); }
     s.top = top; s.itop = itop;
+    const bool cap = g_data_off == 0xC000 && CapOn();
+    if (cap) {
+        Vu1CapRegs r;
+        std::memset(&r, 0, sizeof r);
+        std::memcpy(r.vf, s.vf, sizeof r.vf);
+        std::memcpy(r.acc, s.acc.u, 16);
+        for (int i = 0; i < 16; ++i) r.vi[i] = s.vi[i];
+        r.I = s.I; r.Q = s.Q; r.P = s.P; r.R = s.R;
+        r.mac = s.mac; r.status = s.status; r.clip = s.clip;
+        CapBegin(pc & g_pc_mask, top, itop, r, Micro(), Data());
+    }
     const unsigned csr = _mm_getcsr();
     _mm_setcsr((csr & ~0x6000u) | 0x6000u | 0x8040u);   // round toward zero, FTZ, DAZ
     pc &= g_pc_mask;
@@ -598,6 +619,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     LandFlags(true);
     LandQP(true);
     s.resume = pc;
+    if (cap) CapEnd(unsigned(n), pc);
     stats.pairs += n;
     _mm_setcsr(csr);
     return n;

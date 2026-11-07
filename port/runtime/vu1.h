@@ -35,6 +35,8 @@ u32 Resume();
 Stats& GetStats();
 /* XSG_VU_HIST=1: count each instruction kind executed; dumped by DumpHistogram. */
 void DumpHistogram();
+/* XSG_VU1_CAPTURE (vu1_capture.cpp): note an UNPACK VIF code for the next run's record. */
+void CapUnpack(u32 vifcode, u32 cycle_mode);
 
 }  // namespace xsgvu
 

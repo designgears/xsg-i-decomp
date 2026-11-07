@@ -273,6 +273,7 @@ void VifCode(u32 w) {
     default:
         if ((cmd & 0x60) == 0x60) {                         // UNPACK
             st.unpack++;
+            xsgvu::CapUnpack(w, vif.cl | vif.wl << 8 | vif.mode << 16);   // XSG_VU1_CAPTURE
             u32 vn = (cmd >> 2) & 3, vl = cmd & 3;
             u32 n = num ? num : 256;
             u32 bits = (32u >> vl) * (vn + 1);
