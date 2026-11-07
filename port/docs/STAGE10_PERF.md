@@ -9,6 +9,11 @@ takes about 75% of the game thread in 3D. The interpreter is now about 20% faste
 and its output is bit-identical. The cutscene runs at about 36 vblanks/s in real time,
 up from 30. 60/s is **not** reached yet: VU1 is still the limit (see §4).
 
+**Update (§6):** with a pre-decoded VU1 interpreter, flag-liveness elision and bulk VIF1
+UNPACK, the cutscene and the field now hold **60 vblanks/s in real time** (75/s with
+XSG_FAST). The output is still bit-identical. VU1 was not moved off the game thread: that
+was not needed.
+
 ## 1. The Release crash: root causes
 
 | # | symptom | cause | fix |
@@ -109,3 +114,113 @@ the field part is in the same range (vblank 4500+).
 | field (4500–7000) | 30.3 / 15.1 | 36.4 / 18.2 | 40.3 / 20.2 |
 
 That is +20% in 3D, and still short of 60.
+
+## 6. Decoded VU1 interpreter, flag liveness, bulk UNPACK (Stage 10b)
+
+### Decode cache (port/runtime/vu1.cpp, `RunFast`)
+
+* The 16 KB of micro memory is decoded into one 64-byte `DP` record per pair. Each record
+  holds the upper and lower handler ids, the operands already extracted (VF/VI register
+  pointers, dest masks as blend vectors, the dest mask repeated over the 4 MAC groups,
+  immediates, precomputed branch targets), and the raw words.
+* **Cache:** a map from a 64-bit hash of the micro memory to the decoded program. Each executed
+  pair compares its two raw words with micro memory. On a mismatch (MPG upload, a different
+  set) the program is looked up again by hash (memcmp guards against collisions) or decoded
+  afresh. No hook in the VIF is needed. There are 4 lookups across the 4 capture frames,
+  because the seven microcode sets are re-uploaded with the same contents.
+* **Dispatch:** two `switch`es over always-inline handlers in one loop. They replaced two
+  indirect calls per pair, which on i386 pass the record on the stack.
+* **Specialised:** the FMAC ops are templates per op (ADD SUB MUL MADD MSUB MAX MINI, and
+  the ACC forms) and per operand form (vector, bc, q, i). They use one dest blend. The MAC
+  bits come from a single pack + pshufb + movemask. Also specialised: ITOF/FTOI (cvtdq2ps /
+  cvttps2dq with saturation), CLIP, LQ/SQ/LQI/SQI, ILW/ISW, IADDIU/ISUBIU/IADD/ISUB/IADDI/
+  IAND/IOR, MOVE/MR32/MFIR/MTIR/MFP, all branches, XGKICK/XTOP/XITOP and the flag readers.
+  The rare ops (EFU, LQD/SQD, R*, OPMULA/OPMSUB, ABS, DIV) call the reference
+  `Upper`/`Lower` from the fast loop.
+* **Pair ordering:** the fast path runs the upper op first and commits it straight away.
+  That is equivalent unless the lower op reads or writes the upper's target VF register, or
+  is FSSET/FCSET (they write the flags that the upper's write would snapshot). Such pairs,
+  2% of those executed, run the reference Upper → Lower → Commit sequence. DIV/SQRT/RSQRT
+  and the flag readers can stay in direct order, for two reasons: queued entries' I/D bits
+  are masked when they land, and an entry pushed in the same pair is never due yet
+  (latency ≥ 1).
+
+### Flag liveness
+
+A flag write `p` (FMAC MAC/status, CLIP) is put on the latency queue only when something
+could observe it. It is skipped when both of these hold:
+
+* the next flag write `q` follows in straight-line code, with no branch delay slot and no
+  end-of-program pair in `[p, q+lat-2]`;
+* no lower reader lands the queue in `[p+lat, q+lat-1]`. The readers are op7 0x10–0x1c and
+  DIV/SQRT/RSQRT.
+
+In that case no reader can see `p` as the newest landed entry, and neither can the end of
+the program. `mac_l`/`status_l`/`clip_l`, which carry the sticky bits, are always updated,
+so every queued snapshot keeps the same contents. 74% of the queue pushes are skipped. The
+4-pair latency model is unchanged: the fast path is used for `XSG_VU_FLAGLAT` 1–15, and
+latency 0 or ≥ 16 runs the reference loop.
+
+### Found on the way
+
+`std::sqrt` in `Lower` was inlined as `sqrtss` only by luck of inlining. Once `Lower` had
+more callers, GCC emitted a call to i386 libm `sqrtf` instead. That is x87 `fsqrt`, which
+rounds to nearest and not with MXCSR round-toward-zero, so ERLENG's P changed in the last
+bit. It is now `_mm_sqrt_ss` explicitly (`SqrtF`).
+
+### VIF1 UNPACK
+
+`VifData` fed UNPACK data to `UnpackElement` one byte at a time, which was 15% of the game
+thread. `VifWords` now passes whole runs of elements to `VifBulk`. A run starts on an element
+boundary at a word boundary; a partial word at the end is carried into `upk_buf`. Plain
+V4-32 (no mask, mode 0) is a 16-byte copy. MPG data is copied in bulk as well.
+
+### Checks
+
+* `test_vu1_replay` now also checks the **full register state**: the registers after run i
+  must equal the entry registers of run i+1 (vf, acc, vi, I/Q/P/R, MAC/status/clip). On 4
+  frames captured with the old interpreter (vblanks 1400, 2600, 3800, 5000; 43,805 runs;
+  16.2 M pairs) there are **0 differences** in pairs, stop pc, XGKICK packets and state. This
+  holds for the fast path and for `XSG_VU_FAST=0` (the reference loop).
+  `--bisect` runs both paths per run and reports the first pair that differs.
+* **In-game end to end:** two cutscene frames captured with the old and the new binary
+  (18,850 runs) have identical run headers, entry registers and XGKICK packets
+  (`XSG_VU1_CAPTURE`, compared record by record). The only bytes that differ in the data
+  memory are host pointers inside DMA tags, which move with the binary layout.
+* `test_vu1_ref` on the new captures: every supported program is exact, 0 fail.
+* Replay speed: 70 → 115 (cutscene ~135) → ~127 M pairs/s.
+
+### Speed (field recipe, XSG_FPS=600, gpu headless, Release)
+
+| scene | before (§5 build), real time | after, real time | before, XSG_FAST | after, XSG_FAST |
+|---|---|---|---|---|
+| title | 60 | 60 | 310–490 | 310–730 |
+| cutscene (1800–3600) | 30.0–33.3 | **60.0** | 33.5–38.1 | 74.5–75.7 |
+| field (4200–9600) | 28.1–34.8 | **60.0** (59.5 once) | 32.6–38.2 | 73.2–75.9 |
+
+The real-time window that contains the scene load (1200–1800) shows 54.5.
+
+### Profile after (XSG_FAST, vblank 2000+, 85k samples)
+
+| self | function |
+|---|---|
+| 72% | `RunFast` (VU1, handlers inlined) |
+| 7% | `VifWords` (UNPACK, inlined) + 1.6% `UnpackElement` |
+| 5.6% | GIF ring (`xsggpu::GifBlock`/`Gif`/`Room`) |
+| 1.7% | `LandFlags` |
+| ~3% | reference `Upper`/`Lower`/`Arith`/`Commit` (slow pairs, rare ops) |
+| 1.2% | `vu0_arith` |
+
+Inclusive: `xsgvu::Run` 83%. VU1 is still most of the frame, but at 75 vblanks/s there is
+about 25% headroom over 60. What remains:
+
+1. More of the FMAC cost (InV on both operands, the MAC pack) for MADDbc/MULbc, the hottest
+   forms. The FMAC handlers are about half of `RunFast`.
+2. The non-UNPACK VIF paths (DIRECT goes through `GsQword` one qword at a time).
+3. Off-thread VU1 is still possible if more headroom is needed. A worker would have to own
+   the whole VIF1 stream (UNPACK writes race with a running program), PATH3/ch2 would go
+   through the same queue to keep the GS order, and there would be a sync at vsync. It was
+   not needed for 60.
+
+`XSG_VU_FAST=0` selects the reference loop (for checks). `XSG_VU_TRACE`/`XSG_VU_HIST` also
+use it.
