@@ -3045,7 +3045,12 @@ typedef struct MenuShopWorkDataP1 {
     short unitId;
     short equipmentId;
 } MenuShopWorkDataP1;
+#ifdef PORT_HOST
+extern MenuShopWorkDataP1 *xsg_view_MenuShopWorkP1 __asm__("MenuShopWork");
+#define MenuShopWorkP1 XSG_VIEW(xsg_view_MenuShopWorkP1)
+#else
 extern MenuShopWorkDataP1 *MenuShopWorkP1 __asm__("MenuShopWork");
+#endif
 typedef struct MenuShopWeaponP1 {
     unsigned short shopParameter1;
     unsigned char unmodeled_02[4];
@@ -3258,8 +3263,18 @@ extern const char *msg01_10[];
 
 static void MenuShopParameter(TskObject *task, void *data)
 {
+#ifdef PORT_HOST
+    extern MsParaV xsg_view_MenuShopParaV __asm__("MenuShopPara");
+#define MenuShopParaV XSG_VIEW(xsg_view_MenuShopParaV)
+#else
     extern MsParaV MenuShopParaV __asm__("MenuShopPara");
+#endif
+#ifdef PORT_HOST
+    extern MsParaV xsg_view_MenuShopPara2V __asm__("MenuShopPara2");
+#define MenuShopPara2V XSG_VIEW(xsg_view_MenuShopPara2V)
+#else
     extern MsParaV MenuShopPara2V __asm__("MenuShopPara2");
+#endif
     struct MenuShopParameterDisplay *work = data;
     struct MenuShopParameterDigits8 characterDigits = D_004DB220[0];
     struct MenuShopParameterDigits7 agwsDigits = D_004DB228[0];

@@ -296,8 +296,18 @@ extern void MenuInfoWindow(void);
 
 void MenuItemInfoMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuItemWorkData xsg_view_MenuWorkAlias __asm__("MenuWork");
+#define MenuWorkAlias XSG_VIEW(xsg_view_MenuWorkAlias)
+#else
     extern MenuItemWorkData MenuWorkAlias __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuItemInfoPad xsg_view_PadDataAlias __asm__("PadData");
+#define PadDataAlias XSG_VIEW(xsg_view_PadDataAlias)
+#else
     extern MenuItemInfoPad PadDataAlias __asm__("PadData");
+#endif
     MenuItemInfoWork *info = MenuItemInfo;
     MenuItemInfoLabels labels = D_004C4ED0;
     MenuItemInfoHelpLabels helpLabels = D_004DAAC8[0];
@@ -661,7 +671,12 @@ void MenuStatusDisp();
 
 void MenuItemStatusMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuItemWorkData_SM xsg_view_MenuWork_SM __asm__("MenuWork");
+#define MenuWork_SM XSG_VIEW(xsg_view_MenuWork_SM)
+#else
     extern MenuItemWorkData_SM MenuWork_SM __asm__("MenuWork");
+#endif
     MenuItemPartyStatusWork *status = MenuItemStatus;
     short targetX[8];
     short targetY[8];
@@ -953,7 +968,12 @@ extern MenuItemHpParametersSA *func_00A11108(int character, int *attack, int *de
 
 void MenuItemStatusAgwsMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuItemWorkDataSA xsg_view_MenuWorkSA __asm__("MenuWork");
+#define MenuWorkSA XSG_VIEW(xsg_view_MenuWorkSA)
+#else
     extern MenuItemWorkDataSA MenuWorkSA __asm__("MenuWork");
+#endif
     MenuItemAgwsStatusWorkSA *status = MenuItemStatusAgws;
     short targetX[6];
     int attack[3];
@@ -1630,7 +1650,12 @@ extern const float D_004D7E0C;
 
 void MenuItemIconMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuItemWorkData_P3 xsg_view_MenuWork_P3 __asm__("MenuWork");
+#define MenuWork_P3 XSG_VIEW(xsg_view_MenuWork_P3)
+#else
     extern MenuItemWorkData_P3 MenuWork_P3 __asm__("MenuWork");
+#endif
     MenuItemIconWork *icon = MenuItemIcon;
     signed char *tabBounce;
     signed char *tabBounceIterator;
@@ -2143,8 +2168,18 @@ extern void eRibbonSet(void *ribbon, int mode);
 void MenuItemSegmentMain(void)
 {
     /* menuWorkView/padDataView as this function reads them. */
+#ifdef PORT_HOST
+    extern MenuItemWorkData xsg_view_menuWorkView __asm__("MenuWork");
+#define menuWorkView XSG_VIEW(xsg_view_menuWorkView)
+#else
     extern MenuItemWorkData menuWorkView __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuItemInfoPad xsg_view_padDataView __asm__("PadData");
+#define padDataView XSG_VIEW(xsg_view_padDataView)
+#else
     extern MenuItemInfoPad padDataView __asm__("PadData");
+#endif
     MenuItemSegmentWork *segment = MenuItemSegment;
     int i;
     MenuItemSegmentAlignedWork *aligned = (MenuItemSegmentAlignedWork *)segment;
@@ -2596,8 +2631,18 @@ void MenuItemSegmentMain(void)
 }
 int MenuItem(void)
 {
+#ifdef PORT_HOST
+    extern MenuItemWorkData_MI xsg_view_MenuWork_MI __asm__("MenuWork");
+#define MenuWork_MI XSG_VIEW(xsg_view_MenuWork_MI)
+#else
     extern MenuItemWorkData_MI MenuWork_MI __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuItemInfoPad xsg_view_PadData_MI __asm__("PadData");
+#define PadData_MI XSG_VIEW(xsg_view_PadData_MI)
+#else
     extern MenuItemInfoPad PadData_MI __asm__("PadData");
+#endif
     MenuItemWorkData_MI *menu;
     MenuItemUseData *item;
     int characters[8];

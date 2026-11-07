@@ -860,7 +860,12 @@ typedef union SeisanNumberCoordinates {
 
 static void tskSeisanStatus(TskObject *task, void *data)
 {
+#ifdef PORT_HOST
+    extern unsigned char * xsg_view_SeisanWork_SS __asm__("SeisanWork");
+#define SeisanWork_SS XSG_VIEW(xsg_view_SeisanWork_SS)
+#else
     extern unsigned char * SeisanWork_SS __asm__("SeisanWork");
+#endif
     SeisanStatusPanel *panel = data;
     short targetX;
     int i;
@@ -1516,7 +1521,12 @@ typedef struct SeisanRenderPrefix {
 } SeisanRenderPrefix;
 extern SeisanRenderPrefix sRender;
 extern unsigned int GameLoopState[];
+#ifdef PORT_HOST
+extern SeisanFadeData *xsg_view_SeisanFadeView __asm__("SeisanFade");
+#define SeisanFadeView XSG_VIEW(xsg_view_SeisanFadeView)
+#else
 extern SeisanFadeData *SeisanFadeView __asm__("SeisanFade");
+#endif
 extern SeisanMoneyDataTE *func_00A0F110(void);
 static inline int SeisanRewardCharacter(int partySlot)
 {

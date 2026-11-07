@@ -148,11 +148,36 @@ typedef union WindVectorBlock {
     Vector4 vector;
     u64 words[2];
 } WindVectorBlock;
+#ifdef PORT_HOST
+extern WindPadRecord xsg_view_PadDataRec[2] __asm__("PadData");
+#define PadDataRec XSG_VIEW(xsg_view_PadDataRec)
+#else
 extern WindPadRecord PadDataRec[2] __asm__("PadData");
+#endif
+#ifdef PORT_HOST
+extern WindParticle xsg_view_cpos __asm__("cpos_00585140");
+#define cpos XSG_VIEW(xsg_view_cpos)
+#else
 extern WindParticle cpos __asm__("cpos_00585140");
+#endif
+#ifdef PORT_HOST
+extern float xsg_view_crx __asm__("crx_004DC618");
+#define crx XSG_VIEW(xsg_view_crx)
+#else
 extern float crx __asm__("crx_004DC618");
+#endif
+#ifdef PORT_HOST
+extern float xsg_view_cry __asm__("cry_004DC61C");
+#define cry XSG_VIEW(xsg_view_cry)
+#else
 extern float cry __asm__("cry_004DC61C");
+#endif
+#ifdef PORT_HOST
+extern StudioCamera *xsg_view_pCamera __asm__("pCamera_004DC614");
+#define pCamera XSG_VIEW(xsg_view_pCamera)
+#else
 extern StudioCamera *pCamera __asm__("pCamera_004DC614");
+#endif
 extern float crvx;
 extern float crvy;
 extern double fptodp(float value);

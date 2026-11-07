@@ -1265,7 +1265,12 @@ extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern int MenuSelectWindow();
 void MoveSlide(short *current, short *target, float rate);
+#ifdef PORT_HOST
+extern FileWorkBlockFS2 *xsg_view_FileWorkFS2 __asm__("FileWork");
+#define FileWorkFS2 XSG_VIEW(xsg_view_FileWorkFS2)
+#else
 extern FileWorkBlockFS2 *FileWorkFS2 __asm__("FileWork");
+#endif
 
 extern char D_004C4858[];
 extern char D_004C4870[];

@@ -241,7 +241,12 @@ typedef struct GameActorCopy { u64 w[0xA70 / 8]; } GameActorCopy;
 
 void Game_Data_Push(void)
 {
+#ifdef PORT_HOST
+    extern GameActorCopy xsg_view_actor_copy[] __asm__("actor");
+#define actor_copy XSG_VIEW(xsg_view_actor_copy)
+#else
     extern GameActorCopy actor_copy[] __asm__("actor");
+#endif
     GameActorCopy *src = actor_copy;
     u8 *gs = (u8 *)&GameLoopState;
     short i;
@@ -368,8 +373,18 @@ typedef struct GameLoopStateU {
     u8 _unmodeled_1e4[0x250 - 0x1e4];
     ActorHeadU saved_actors[64];
 } GameLoopStateU;
+#ifdef PORT_HOST
+extern ActorHeadU xsg_view_actorU[ACTOR_COUNT] __asm__("actor");
+#define actorU XSG_VIEW(xsg_view_actorU)
+#else
 extern ActorHeadU actorU[ACTOR_COUNT] __asm__("actor");
+#endif
+#ifdef PORT_HOST
+extern MapUnitSlotU xsg_view_mapUnitU[64] __asm__("MapUnit");
+#define mapUnitU XSG_VIEW(xsg_view_mapUnitU)
+#else
 extern MapUnitSlotU mapUnitU[64] __asm__("MapUnit");
+#endif
 #define gameLoopStateP ((GameLoopStateU *)&GameLoopState)
 
 void Game_Data_Pop(void)
@@ -466,7 +481,12 @@ void Game_Data_Pop(void)
 
 void MenuGameDataPush(void)
 {
+#ifdef PORT_HOST
+    extern GameActorCopy xsg_view_actor_copy[] __asm__("actor");
+#define actor_copy XSG_VIEW(xsg_view_actor_copy)
+#else
     extern GameActorCopy actor_copy[] __asm__("actor");
+#endif
     GameActorCopy *src = actor_copy;
     u8 *gs = (u8 *)&GameLoopState;
     short i;

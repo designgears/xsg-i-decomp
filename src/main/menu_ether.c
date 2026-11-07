@@ -201,7 +201,12 @@ typedef struct MenuEtherPasWorkView {
     signed char menuCursor; /* +0x31 */
 } MenuEtherPasWorkView;
 extern EtherPasWork *MenuEtherPas;
+#ifdef PORT_HOST
+extern MenuEtherPasWorkView xsg_view_MenuWorkPM __asm__("MenuWork");
+#define MenuWorkPM XSG_VIEW(xsg_view_MenuWorkPM)
+#else
 extern MenuEtherPasWorkView MenuWorkPM __asm__("MenuWork");
+#endif
 extern const char *msg_0_0036DC00[6];
 extern void MoveSlide(short *current, short *target, float rate);
 extern void WindowDXSet(void *window);
@@ -506,8 +511,18 @@ static inline EtherInfoWork *EtherInfoWorkGetIM(EtherScreenWork **slot) {
 }
 
 void MenuEtherInfoMain(void) {
+#ifdef PORT_HOST
+    extern MenuEtherWorkIM xsg_view_MenuWork_IM __asm__("MenuWork");
+#define MenuWork_IM XSG_VIEW(xsg_view_MenuWork_IM)
+#else
     extern MenuEtherWorkIM MenuWork_IM __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuEtherPadDataIM xsg_view_PadData_IM __asm__("PadData");
+#define PadData_IM XSG_VIEW(xsg_view_PadData_IM)
+#else
     extern MenuEtherPadDataIM PadData_IM __asm__("PadData");
+#endif
     EtherInfoWork *screen = EtherInfoWorkGetIM(&MenuEtherInfo);
     const char *capHelp = D_004C8060;
     EtherInfoCharacterHelp characterHelp = D_004DB278[0];
@@ -771,7 +786,12 @@ typedef struct MenuEtherMenuWorkView {
     signed char confirmCursor; /* +0x34 */
 } MenuEtherMenuWorkView;
 extern EtherMenuScreen *MenuEtherMenu;
+#ifdef PORT_HOST
+extern MenuEtherMenuWorkView xsg_view_MenuWorkMM __asm__("MenuWork");
+#define MenuWorkMM XSG_VIEW(xsg_view_MenuWorkMM)
+#else
 extern MenuEtherMenuWorkView MenuWorkMM __asm__("MenuWork");
+#endif
 extern char D_004DB2C8[];
 extern char D_004DB2D0[];
 extern char *msg00_1_0036DC18[];
@@ -936,9 +956,19 @@ void eNumberMain(void *number);
 
 void MenuEtherExMain(void)
 {
+#ifdef PORT_HOST
+  extern void *xsg_view_MenuEtherExU __asm__("MenuEtherEx");
+#define MenuEtherExU XSG_VIEW(xsg_view_MenuEtherExU)
+#else
   extern void *MenuEtherExU __asm__("MenuEtherEx");
+#endif
 
+#ifdef PORT_HOST
+  extern struct { unsigned char pad[3]; unsigned char state; unsigned char pad4[0x40 - 4]; signed char chrNo; } xsg_view_MenuWorkU __asm__("MenuWork");
+#define MenuWorkU XSG_VIEW(xsg_view_MenuWorkU)
+#else
   extern struct { unsigned char pad[3]; unsigned char state; unsigned char pad4[0x40 - 4]; signed char chrNo; } MenuWorkU __asm__("MenuWork");
+#endif
   extern EtherCharRecord *ld19210U(int chrNo) __asm__("func_A19210");
   extern EtherUnitRecord *ld191U(int chrNo) __asm__("func_A191C0");
   EtherDetailWork *screen = (void *) MenuEtherExU;
@@ -1101,9 +1131,24 @@ typedef struct EtherL1R1SlideStep {
 extern const EtherL1R1SlideStep D_004DB2F0[];
 
 typedef struct { unsigned char pad[0x2a]; unsigned short half_2a; } PadDataL1R1View;
+#ifdef PORT_HOST
+extern EtherL1R1WorkBody *xsg_view_MenuEtherL1R1Ptr __asm__("MenuEtherL1R1");
+#define MenuEtherL1R1Ptr XSG_VIEW(xsg_view_MenuEtherL1R1Ptr)
+#else
 extern EtherL1R1WorkBody *MenuEtherL1R1Ptr __asm__("MenuEtherL1R1");
+#endif
+#ifdef PORT_HOST
+extern unsigned char xsg_view_MenuWorkBytesL1R1[] __asm__("MenuWork");
+#define MenuWorkBytesL1R1 XSG_VIEW(xsg_view_MenuWorkBytesL1R1)
+#else
 extern unsigned char MenuWorkBytesL1R1[] __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+extern PadDataL1R1View xsg_view_PadDataL1R1 __asm__("PadData");
+#define PadDataL1R1 XSG_VIEW(xsg_view_PadDataL1R1)
+#else
 extern PadDataL1R1View PadDataL1R1 __asm__("PadData");
+#endif
 
 void MenuEtherL1R1Main(void)
 {
@@ -1248,8 +1293,18 @@ char *MenuTagTextGet(int kind);
 
 void MenuEtherStatusMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuEtherMwView xsg_view_MenuEtherMw __asm__("MenuWork");
+#define MenuEtherMw XSG_VIEW(xsg_view_MenuEtherMw)
+#else
     extern MenuEtherMwView MenuEtherMw __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuEtherStWork *xsg_view_MenuEtherStatusP __asm__("MenuEtherStatus");
+#define MenuEtherStatusP XSG_VIEW(xsg_view_MenuEtherStatusP)
+#else
     extern MenuEtherStWork *MenuEtherStatusP __asm__("MenuEtherStatus");
+#endif
     MenuEtherStWork *status = MenuEtherStatusP;
     short targetX[8];
     short targetY[8];
@@ -1535,8 +1590,18 @@ typedef struct EtherTargetStatusWork {
 
 void MenuEtherStatusMain2(void)
 {
+#ifdef PORT_HOST
+    extern MenuEtherWorkS2 xsg_view_MenuWorkS2 __asm__("MenuWork");
+#define MenuWorkS2 XSG_VIEW(xsg_view_MenuWorkS2)
+#else
     extern MenuEtherWorkS2 MenuWorkS2 __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern void *xsg_view_MenuEtherStatus2S2 __asm__("MenuEtherStatus2");
+#define MenuEtherStatus2S2 XSG_VIEW(xsg_view_MenuEtherStatus2S2)
+#else
     extern void *MenuEtherStatus2S2 __asm__("MenuEtherStatus2");
+#endif
 #define MenuWork MenuWorkS2
     EtherTargetStatusWork *screen = (void *)MenuEtherStatus2S2;
     int i;
@@ -1961,9 +2026,24 @@ typedef struct EtherMenuListsWork {
 
 void MenuEtherListMain(void)
 {
+#ifdef PORT_HOST
+    extern MenuEtherWork_L1 xsg_view_MenuWork_L1 __asm__("MenuWork");
+#define MenuWork_L1 XSG_VIEW(xsg_view_MenuWork_L1)
+#else
     extern MenuEtherWork_L1 MenuWork_L1 __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuEtherPadData_L1 xsg_view_PadData_L1 __asm__("PadData");
+#define PadData_L1 XSG_VIEW(xsg_view_PadData_L1)
+#else
     extern MenuEtherPadData_L1 PadData_L1 __asm__("PadData");
+#endif
+#ifdef PORT_HOST
+    extern void * xsg_view_MenuEtherList_L1 __asm__("MenuEtherList");
+#define MenuEtherList_L1 XSG_VIEW(xsg_view_MenuEtherList_L1)
+#else
     extern void * MenuEtherList_L1 __asm__("MenuEtherList");
+#endif
     short targetX[2];
     EtherMenuListsWork *screen = (void *)MenuEtherList_L1;
     int i;
@@ -2261,8 +2341,18 @@ typedef struct EtherResultWork {
 extern const char D_004C8810[];
 
 void MenuEtherListMain2(void) {
+#ifdef PORT_HOST
+    extern MenuEtherWork_L2 xsg_view_MenuWork_L2 __asm__("MenuWork");
+#define MenuWork_L2 XSG_VIEW(xsg_view_MenuWork_L2)
+#else
     extern MenuEtherWork_L2 MenuWork_L2 __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern MenuEtherPadData_L2 xsg_view_PadData_L2 __asm__("PadData");
+#define PadData_L2 XSG_VIEW(xsg_view_PadData_L2)
+#else
     extern MenuEtherPadData_L2 PadData_L2 __asm__("PadData");
+#endif
     EtherResultWork *screen = (void *)MenuEtherList2;
     EtherResultWindowDX *window;
     short targetX;
@@ -2495,7 +2585,12 @@ void MenuEtherListMake02(int list)
 }
 
 extern void MenuSortSet(int list, int mode, int who);
+#ifdef PORT_HOST
+extern struct { char pad[0x44]; signed char unk44; char pad45; signed char unk46; } xsg_view_MenuWork3 __asm__("MenuWork");
+#define MenuWork3 XSG_VIEW(xsg_view_MenuWork3)
+#else
 extern struct { char pad[0x44]; signed char unk44; char pad45; signed char unk46; } MenuWork3 __asm__("MenuWork");
+#endif
 
 void MenuEtherListMake03(int list)
 {
@@ -2558,7 +2653,12 @@ typedef struct MenuEtherWorkUP3 {
 } MenuEtherWorkUP3;
 
 int MenuEtherEquip(void) {
+#ifdef PORT_HOST
+    extern MenuEtherWorkUP3 xsg_view_MenuWork_UP3 __asm__("MenuWork");
+#define MenuWork_UP3 XSG_VIEW(xsg_view_MenuWork_UP3)
+#else
     extern MenuEtherWorkUP3 MenuWork_UP3 __asm__("MenuWork");
+#endif
     EtherListRow *rows = (EtherListRow *)MenuListGet(0);
     int *sortRow = MenuSortAddrGet(0);
     EtherUnitRecord *unit = ((EtherUnitRecord *(*)(int))func_A191C0)(MenuWork_UP3.chrNo);
@@ -2771,8 +2871,18 @@ extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
 void MenuEther(void)
 {
+#ifdef PORT_HOST
+    extern MenuEtherWorkME xsg_view_MenuWorkME __asm__("MenuWork");
+#define MenuWorkME XSG_VIEW(xsg_view_MenuWorkME)
+#else
     extern MenuEtherWorkME MenuWorkME __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+    extern EtherMenuPadData xsg_view_PadDataME __asm__("PadData");
+#define PadDataME XSG_VIEW(xsg_view_PadDataME)
+#else
     extern EtherMenuPadData PadDataME __asm__("PadData");
+#endif
     extern unsigned char D_004DB300[];
     extern char D_004DB308[];
     extern char D_004DB310[];

@@ -2037,8 +2037,18 @@ typedef struct {
     u16 mappedPressed;
     u16 mappedRepeat;
 } AgwsMenuPadView;
+#ifdef PORT_HOST
+extern AgwsMenuWorkUp xsg_view_MenuWorkUp __asm__("MenuWork");
+#define MenuWorkUp XSG_VIEW(xsg_view_MenuWorkUp)
+#else
 extern AgwsMenuWorkUp MenuWorkUp __asm__("MenuWork");
+#endif
+#ifdef PORT_HOST
+extern AgwsMenuPadView xsg_view_AgwsMenuPad __asm__("PadData");
+#define AgwsMenuPad XSG_VIEW(xsg_view_AgwsMenuPad)
+#else
 extern AgwsMenuPadView AgwsMenuPad __asm__("PadData");
+#endif
 typedef struct WeaponWaglDataUp {
     unsigned char unmodeled_00[0x12];
     short wagl;

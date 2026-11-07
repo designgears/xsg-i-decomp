@@ -57,7 +57,12 @@ void UmnDataBaseMonsterSet(int monster_id);
 
 int UmnDataBaseMonsterCheck(int monster_id);
 
+#ifdef PORT_HOST
+/* the link alias as an offset into the one real object (STAGE10_PERF.md cause 4) */
+#define UmnDataBaseStateData (SaveData + 66140)
+#else
 extern unsigned char UmnDataBaseStateData[0x9c];
+#endif
 
 int MenuLoadSync(void);
 

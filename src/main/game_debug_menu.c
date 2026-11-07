@@ -68,8 +68,18 @@ typedef struct {
     u32 flags;
     u8 unmodeled_04[0x300 - 0x04];
 } MapUnitHead;
+#ifdef PORT_HOST
+extern PauseFlagsPageState xsg_view_PauseFlagsState __asm__("GameLoopState");
+#define PauseFlagsState XSG_VIEW(xsg_view_PauseFlagsState)
+#else
 extern PauseFlagsPageState PauseFlagsState __asm__("GameLoopState");
+#endif
+#ifdef PORT_HOST
+extern PauseFlagsPadView xsg_view_PauseFlagsPad __asm__("PadData");
+#define PauseFlagsPad XSG_VIEW(xsg_view_PauseFlagsPad)
+#else
 extern PauseFlagsPadView PauseFlagsPad __asm__("PadData");
+#endif
 extern MapUnitHead MapUnit[MAP_UNIT_COUNT];
 extern unsigned char SnapDrawCreditFlag;
 extern u8 GameDiskChangeT10K;
@@ -349,9 +359,24 @@ typedef struct {
 typedef struct {
     float components[4];
 } DebugLayoutHeader;
+#ifdef PORT_HOST
+extern DebugMenuPageState xsg_view_GameLoopPage __asm__("GameLoopState");
+#define GameLoopPage XSG_VIEW(xsg_view_GameLoopPage)
+#else
 extern DebugMenuPageState GameLoopPage __asm__("GameLoopState");
+#endif
+#ifdef PORT_HOST
+extern PadDebugView xsg_view_PadDataDbg __asm__("PadData");
+#define PadDataDbg XSG_VIEW(xsg_view_PadDataDbg)
+#else
 extern PadDebugView PadDataDbg __asm__("PadData");
+#endif
+#ifdef PORT_HOST
+extern DebugResourceSlot xsg_view_GameResourceDbg[GAME_RESOURCE_COUNT] __asm__("GameResource");
+#define GameResourceDbg XSG_VIEW(xsg_view_GameResourceDbg)
+#else
 extern DebugResourceSlot GameResourceDbg[GAME_RESOURCE_COUNT] __asm__("GameResource");
+#endif
 extern unsigned char ModelPath;
 extern unsigned char ScenePath;
 extern u8 UseTestPath;

@@ -452,7 +452,12 @@ static void TitleHddInstallSubUninstall(void)
 }
 
 extern const char *sztmp_6[];
+#ifdef PORT_HOST
+extern int xsg_view_WorkEnd_w[] __asm__("WorkEnd");
+#define WorkEnd_w XSG_VIEW(xsg_view_WorkEnd_w)
+#else
 extern int WorkEnd_w[] __asm__("WorkEnd");
+#endif
 extern int xglJpegDecode(void *request_address);
 extern const char D_00A11C60[];
 extern const char D_00A11C90[];

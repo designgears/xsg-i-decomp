@@ -352,8 +352,18 @@ typedef struct MCamParamsView {
 
 int MCamTakeControl(void)
 {
+#ifdef PORT_HOST
+    extern MCamParamsView xsg_view_camParamsView __asm__("camParams");
+#define camParamsView XSG_VIEW(xsg_view_camParamsView)
+#else
     extern MCamParamsView camParamsView __asm__("camParams");
+#endif
+#ifdef PORT_HOST
+    extern MCamSavedCamera xsg_view_sysCamBuffView __asm__("sysCamBuff");
+#define sysCamBuffView XSG_VIEW(xsg_view_sysCamBuffView)
+#else
     extern MCamSavedCamera sysCamBuffView __asm__("sysCamBuff");
+#endif
     MCamSavedCamera *saved;
     MCamVec direction;
     float sinY;

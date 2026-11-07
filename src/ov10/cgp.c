@@ -5775,7 +5775,12 @@ typedef struct CGPCFStackSlot {
     float nextShunt[3];
 } CGPCFStackSlot;
 extern s16 D_00A57DF0[1];
+#ifdef PORT_HOST
+extern s16 xsg_view_D_00A57DF2[1] __asm__("D_00A57DF0+2");
+#define D_00A57DF2 XSG_VIEW(xsg_view_D_00A57DF2)
+#else
 extern s16 D_00A57DF2[1] __asm__("D_00A57DF0+2");
+#endif
 extern CGPCFPair D_00A57DF8;
 extern s32 D_00A57E00;
 extern s32 D_00A57E04;

@@ -1067,8 +1067,18 @@ typedef struct ScriptSceneTask {
     int fade_started;
     int elapsed_frames;
 } ScriptSceneTask;
+#ifdef PORT_HOST
+extern ScriptGameLoopState xsg_view_GameLoopStateV __asm__("GameLoopState");
+#define GameLoopStateV XSG_VIEW(xsg_view_GameLoopStateV)
+#else
 extern ScriptGameLoopState GameLoopStateV __asm__("GameLoopState");
+#endif
+#ifdef PORT_HOST
+extern ScriptRenderState xsg_view_sRenderV __asm__("sRender");
+#define sRenderV XSG_VIEW(xsg_view_sRenderV)
+#else
 extern ScriptRenderState sRenderV __asm__("sRender");
+#endif
 extern void nmlModelSetFadeOut(int frames, int option);
 extern void nmlModelSetFadeIn(int frames, int option);
 extern void FX_ScreenMask(int unused, int color, int frames, int mode);

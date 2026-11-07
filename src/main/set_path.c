@@ -96,9 +96,24 @@ typedef struct CfSelectStateU {
     unsigned char selectedPath[1];
     unsigned char unmodeled_11d[0x268 - 0x11d];
 } CfSelectStateU;
+#ifdef PORT_HOST
+extern CfSelectStateU xsg_view_cfsU __asm__("cfs");
+#define cfsU XSG_VIEW(xsg_view_cfsU)
+#else
 extern CfSelectStateU cfsU __asm__("cfs");
+#endif
+#ifdef PORT_HOST
+extern char *xsg_view_filelistP __asm__("filelist");
+#define filelistP XSG_VIEW(xsg_view_filelistP)
+#else
 extern char *filelistP __asm__("filelist");
+#endif
+#ifdef PORT_HOST
+extern char *xsg_view_cfScriptP __asm__("cfScript");
+#define cfScriptP XSG_VIEW(xsg_view_cfScriptP)
+#else
 extern char *cfScriptP __asm__("cfScript");
+#endif
 extern char basepath[0x17];
 
 void initFileSelect(void)
@@ -859,7 +874,12 @@ extern void sefHitEffect(void);
 
 static void seffectDebugBattle(void)
 {
+#ifdef PORT_HOST
+    extern PadDataMenuLayoutSB xsg_view_PadDataSB[2] __asm__("PadData");
+#define PadDataSB XSG_VIEW(xsg_view_PadDataSB)
+#else
     extern PadDataMenuLayoutSB PadDataSB[2] __asm__("PadData");
+#endif
     int effect;
     struct {
         int kind;

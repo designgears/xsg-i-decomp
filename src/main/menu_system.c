@@ -318,7 +318,12 @@ typedef struct MenuSystemWorkUp {
 } MenuSystemWorkUp;
 typedef const char *MenuSystemOptionNamesUp[2];
 extern MenuSystemOptionNamesUp *const D_004C9530[];
+#ifdef PORT_HOST
+extern MenuSystemWorkUp xsg_view_MenuWorkUp __asm__("MenuWork");
+#define MenuWorkUp XSG_VIEW(xsg_view_MenuWorkUp)
+#else
 extern MenuSystemWorkUp MenuWorkUp __asm__("MenuWork");
+#endif
 
 void MenuSystemMenuMain(void)
 {

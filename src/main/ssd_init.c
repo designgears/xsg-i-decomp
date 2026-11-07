@@ -212,7 +212,12 @@ typedef struct RssdWorkRS {
     void (*stream_end_callback)(int channel, void *arg);
     void *stream_end_callback_arg;
 } RssdWorkRS;
+#ifdef PORT_HOST
+extern RssdWorkRS xsg_view_RssdWorkAliasRS __asm__("RssdWork");
+#define RssdWorkAliasRS XSG_VIEW(xsg_view_RssdWorkAliasRS)
+#else
 extern RssdWorkRS RssdWorkAliasRS __asm__("RssdWork");
+#endif
 extern void RssdBusy();
 extern void RssdSpuRead();
 extern void RssdBackgroundNextWave();

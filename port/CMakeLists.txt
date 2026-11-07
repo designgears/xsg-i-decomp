@@ -9,13 +9,14 @@
 # static archive libxsg_game.a.  Nothing is linked into an executable yet.
 cmake_minimum_required(VERSION 3.20)
 
-# Stage 10: optimised by default. Game C is -O2 except the files that give one
-# symbol two C names (see scripts/find_alias_views.py), which stay -O0.
+# Stage 10: optimised by default (-O2). Files that give one symbol two C names
+# go through XSG_VIEW (see scripts/find_alias_views.py).
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Debug (-O0) or Release (-O2, default)" FORCE)
 endif()
-set(CMAKE_C_FLAGS_RELEASE "-O2 -g" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g" CACHE STRING "" FORCE)
+set(XSG_OPT "-O2" CACHE STRING "Release optimisation level (-O2; -O3 also works, see STAGE10_PERF.md)")
+set(CMAKE_C_FLAGS_RELEASE "${XSG_OPT} -g" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "${XSG_OPT} -g" CACHE STRING "" FORCE)
 project(xsg_port C CXX)
 
 get_filename_component(XSG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
@@ -51,13 +52,16 @@ if(NOT PORT_WERROR_C)
 endif()
 
 set(XSG_OBJECTS)
-option(XSG_ALIAS_VIEWS_O0 "Build game files with two C names for one symbol at -O0" ON)
-set(XSG_ALIAS_VIEW_FILES "")
-if(XSG_ALIAS_VIEWS_O0)
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_alias_views.py
-                          ${XSG_ROOT}/src --cmake
-                  OUTPUT_VARIABLE XSG_ALIAS_VIEW_FILES)
+# Every game file is optimised.  A file that gives one symbol two C names
+# (`extern T FS_view __asm__("FS")` next to `FS`) must route the second name
+# through XSG_VIEW() on the PORT_HOST side, or GCC caches loads across stores
+# (STAGE10_PERF.md cause 4).  The checker fails the configure if one is left.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/find_alias_views.py
+                        ${XSG_ROOT}/src
+                RESULT_VARIABLE XSG_ALIAS_RC OUTPUT_VARIABLE XSG_ALIAS_OUT)
+if(NOT XSG_ALIAS_RC EQUAL 0)
+  message(FATAL_ERROR "unguarded alias views (wrap them in XSG_VIEW):\n${XSG_ALIAS_OUT}")
 endif()
 foreach(unit IN LISTS XSG_UNITS)
   file(GLOB_RECURSE srcs CONFIGURE_DEPENDS "${XSG_ROOT}/src/${unit}/*.c")
@@ -65,9 +69,9 @@ foreach(unit IN LISTS XSG_UNITS)
   # nml_packet_add.c already defines; the PS2 build does not compile it.
   list(FILTER srcs EXCLUDE REGEX "/src/main/nml_packet_add/")
   list(SORT srcs)
-  # Alias-view files at -O0; bisection aid: -DXSG_O0_REGEX=<regex> adds more.
+  # Bisection aid: -DXSG_O0_REGEX=<regex> builds matching files at -O0.
   foreach(f IN LISTS srcs)
-    if(f IN_LIST XSG_ALIAS_VIEW_FILES OR (XSG_O0_REGEX AND f MATCHES "${XSG_O0_REGEX}"))
+    if(XSG_O0_REGEX AND f MATCHES "${XSG_O0_REGEX}")
       set_source_files_properties(${f} PROPERTIES COMPILE_OPTIONS "-O0")
     endif()
   endforeach()

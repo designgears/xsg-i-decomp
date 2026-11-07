@@ -21,29 +21,81 @@ was not needed.
 | 1 | SIGSEGV at 0x3, frame 16 | Data tables name file-static functions (`_BallVsBall`, `_IsAction*`, …). link_xsg.py globalises those functions. At -O1 and above, GCC drops or inlines the unreferenced statics, so the link resolved the table entries to raw PS2 addresses (`--defsym …=0x2..`). | `-fkeep-static-functions -fkeep-static-consts` for game C. autostubs.txt is now the same as in the -O0 build. |
 | 2 | smashed return path / jump into the middle of an instruction (frame ~1194). `-fstack-protector-all` reports it in `xglCdStreamOpen`. | `CdFilePositionView` (0x2c bytes) receives `xglCdGetFilePos`'s 0x30-byte record. The write of `size_bytes` overran the frame. The PS2 frame padding absorbed it. | xgl_cd.c: add the field (`PORT_HOST`). |
 | 3 | `Java_xeno_Effect_setRotate__` writes to 0x90 (frame 1166; this is also the old -O3 crash in `virtualMachine`) | `void sefCreateEffectCf(…) { sefCreateEffectCf2(…); }`, but `getPeer_Effect` uses the result. On the PS2 the tail call leaves v0 in place. On the host %eax survived at -O0 only by luck. | Return the value (`PORT_HOST`). `tools/scan_void_results.py` lists every void definition whose result a caller uses. The forwarders with real callers are fixed the same way: `objEntry`, `dataAccBoxInc`, `dataEvtBoxInc`, `RgBxxGetHeader`, `RgBxxGetXtx`, `RgColiDataVsBall`, `RgBattleInitCreateBg`, `CardEnemyCommandRequest`, `CardEnemy1stAnswer`. |
-| 4 | endless loop in `xglFontFlushCore` (frame 1106) | Several C names for one symbol: `extern FontStateViewStorage FS_view __asm__("FS")` next to `extern unsigned char FS[]`, `D_queue` = `D_008811A0`. GCC treats distinct declarations as distinct objects and reorders or forwards loads and stores between them. `-fno-strict-aliasing` does not cover this. Minimal repro: `A[0]=1; B.x=2; return A[0];` with `B __asm__("A")` returns 1 at -O2. | `scripts/find_alias_views.py` finds the 33 game files that declare an object through an `__asm__` label, or that use a link alias (`D_426F48 = batDatBuf+8`) together with its base symbol. CMake builds those at -O0 and the rest at -O2. |
+| 4 | endless loop in `xglFontFlushCore` (frame 1106) | Several C names for one symbol: `extern FontStateViewStorage FS_view __asm__("FS")` next to `extern unsigned char FS[]`, `D_queue` = `D_008811A0`. GCC treats distinct declarations as distinct objects and reorders or forwards loads and stores between them. `-fno-strict-aliasing` does not cover this. Minimal repro: `A[0]=1; B.x=2; return A[0];` with `B __asm__("A")` returns 1 at -O2. | PORT_HOST side of every view: `extern T xsg_view_X __asm__("sym"); #define X XSG_VIEW(xsg_view_X)` (port/include/ps2_host_compat.h). XSG_VIEW goes through a pointer laundered by an empty asm, which GCC must assume aliases every global. Link aliases become offsets into the base (`#define UmnDataBaseStateData (SaveData + 66140)`); labels inside FS become `FS + off` (see §1a). `scripts/find_alias_views.py` fails the configure if an unguarded view is left. All game files are -O2. |
 
 How they were found: per-file -O0 bisection (`-DXSG_O0_REGEX=…`, `tools/o0_bisect_try.sh`)
 showed that the failures moved with layout. `-ftrivial-auto-var-init=zero` and
 `-DXSG_SSP=-fstack-protector-all` turned the heisenbugs into deterministic faults (#2, #3).
 Fibers, volatile and the DMA flags were not involved.
 
-Open points: the alias-view files stay at -O0. Rewriting their views (for example a
-laundered pointer instead of a second declaration) would let them be optimised.
-`CardEnemyCommandPlay` → `CC_Kara_CommPlay` is void at both levels and was left alone.
--O3 was not retested.
+Open points: `CardEnemyCommandPlay` → `CC_Kara_CommPlay` is void at both levels and was left alone.
+
+### 1a. Alias views at -O2 (2026-11-07)
+
+The 33 files that were built at -O0 (about 120 declarations: arrays, structs,
+pointers, block-scope externs, `__asm__("D_28-0x28")` and `"D_00A57DF0+2"`
+labels with offsets) are rewritten mechanically on the PORT_HOST side:
+
+```
+#ifdef PORT_HOST
+extern FontStateViewStorage xsg_view_FS_view __asm__("FS");
+#define FS_view XSG_VIEW(xsg_view_FS_view)   /* (*(__typeof__(v) *)xsg_launder(&v)) */
+#else
+extern FontStateViewStorage FS_view __asm__("FS");
+#endif
+```
+
+`__typeof__` keeps the declared type, so `sizeof`, array indexing, `&X` and
+assignment to pointer views behave as before. The PS2 side is the original
+text. The minimal repro (`A[0]=1; B.x=2; return A[0];`) returns 2 at -O3 with it.
+Function aliases (`int f(void) __asm__("g")`) are left alone: they name code,
+not storage, so GCC caches nothing across them.
+
+`scripts/find_alias_views.py src` is now a checker (CMake runs it at configure
+time, `FATAL_ERROR` on failure). On the host side of each file (PS2 branches of
+`#ifdef/#ifndef PORT_HOST` are dropped) it reports any `extern` object with an
+asm label that is not `xsg_view_*`/`xsg_sym_*`, a labelled definition whose
+symbol has another C name in the file, an `xsg_view_*` used outside
+`XSG_VIEW()`, and a link alias from `build/*/aliases.ld` used next to its base
+(unless a host-side `#define` replaces it). It found three views the old list
+missed (`lightColRows` in db_light_write.c, `D_00A57DF2` = `"D_00A57DF0+2"` in
+ov10/cgp.c, the host-only `_srsMemResMap` in sef.c).
+
+**A second form of the same bug: labels inside an object.** With every view
+laundered, -O2 still hung in `xglFontFlushCore` (frame 1211). xgl_font.c also
+declares `D_00881188`, `D_0088119C` and `D_008811A0`. These are separate
+symbols from the PS2 symbol list, but they sit at FS+0x08, +0x1c and +0x20. The
+queue cursor is written as `*D_0088119C` in one place and as `*(FS + 0x1c)` in
+another, and GCC assumes that distinct objects never overlap. On the host they
+are now `#define D_0088119C ((unsigned char **)(FS + 0x1C))` and so on. No
+checker covers this form. `nm` shows 258 game objects that use two data symbols
+less than 0x40 bytes apart. Most are separate arrays, but any one of them that
+indexes past its own symbol into the next one has this bug.
+
+Verification (field recipe, `XSG_FAST=1`, frames 140/1000/1400/1550/1700/6000,
+`compare -metric AE` against the pre-change Release build): -O2 has 0 differing
+pixels in every frame. A long run (1500 s, 58953 vblanks, field idle) has no hang or crash.
+Speed is unchanged within noise: 4485 against 4507 vblanks in 90 s with `XSG_FAST`,
+because VU1 is still the limit (§4).
+
+**-O3** (`-DXSG_OPT=-O3`) runs as well: frames 140–1400 are identical, and from 1550 on
+about 625 pixels differ. The translucent grey box around Shion that the -O2 build
+draws (field, 6000) is missing at -O3. A Debug (-O0) build has the box and is
+within 31 px of -O2, so the -O3 difference is a deviation. It could be another
+UB pattern that -O3 exposes, or a float or vectorisation change. It was not chased, so
+-O3 stays off.
 
 ## 2. Build
 
 ```
 cmake -S port -B port/build -G Ninja     # Release (-O2 -g) by default
 cmake -S port -B port/build-dbg -DCMAKE_BUILD_TYPE=Debug   # all -O0
-#   -DXSG_ALIAS_VIEWS_O0=OFF   optimise the alias-view files too (unsafe)
+#   -DXSG_OPT=-O3              optimisation level for Release (default -O2)
 #   -DXSG_SSP=-fstack-protector-all   find frame overruns
 #   -DXSG_O0_REGEX=<regex>     build more game files at -O0 (bisection)
 ```
 
-The alias-view list is computed at configure time. Re-run cmake after adding such a declaration.
+The alias-view check runs at configure time. Re-run cmake after adding such a declaration.
 
 ## 3. Profiling
 

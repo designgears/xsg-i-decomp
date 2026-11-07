@@ -991,7 +991,12 @@ typedef struct PadDataU {
     unsigned char pad_00[0x2A];
     unsigned short pressed;
 } PadDataU;
+#ifdef PORT_HOST
+extern PadDataU xsg_view_PadDataAlias[] __asm__("PadData");
+#define PadDataAlias XSG_VIEW(xsg_view_PadDataAlias)
+#else
 extern PadDataU PadDataAlias[] __asm__("PadData");
+#endif
 typedef struct EwMaskStateU {
     int blend;
     int fix;
