@@ -431,7 +431,6 @@ typedef struct XglMoviePlayView {
 } XglMoviePlayView;
 #define IPU_BP    ((volatile u32 *) 0x10002020)
 extern int printf(const char *format, ...);
-extern char D_004D2580[];
 extern void xglDmaDirectSrcChain(u32 channel, u32 address);
 extern int xglCdStreamRewind(struct CdStreamParam *stream);
 
@@ -461,7 +460,7 @@ int xglMoviePlay(XglMoviePlayView *info)
         setD4_CHCR(info->dmaChcr);
     }
     if (info->streamOpen != 0 && checkdma((XglMovieDmaView *)info) != 0) {
-        printf(D_004D2580);
+        printf("frame drop\n");
         return -1;
     }
     if (info->transMode != 0xff) {
@@ -966,11 +965,18 @@ extern int SsdGetVagStreamStatusStereo(void);
 extern int sceGsSyncPath(int mode, unsigned short timeout);
 extern void xglDmaDirectSrcChain(unsigned int channel, unsigned int address);
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
-extern u64 TestEnv_0_004A7B60[];
 #define MPEG(p) ((XglMpegView *) (p)->mpeg)
 
 int xglMpeg2Play(XglMovieInfo *info)
 {
+    static u64 TestEnv[24] __attribute__((aligned(16))) = {
+        0x0000000000000000, 0x5100000B00000000, 0xA08B400000008001, 0x00000053531EEEEE,
+        0x0000000000000000, 0x000000000000003F, 0x0000000000000060, 0x0000000000000014,
+        0x0000000000000000, 0x0000000000000006, 0x0000000000000000, 0x0000000000000008,
+        0x000000000007000D, 0x0000000000000047, 0x0000008000000080, 0x0000008000000080,
+        0x0000000000000000, 0x0000000000000000, 0x000071F700006FF8, 0x0000000000F00000,
+        0x00001C0000002000, 0x0000000000000000, 0x00008DF700008FF8, 0x0000000000F00000,
+    };
     int status[1];
     int stat;
     int diff;
@@ -1031,8 +1037,8 @@ int xglMpeg2Play(XglMovieInfo *info)
     ((u64 *) UNCACHED(buf))[4] = ((u64) sRender.w14 << 37) | ((u64) 0x8000 << 36);
     xglDmaDirectSrcChain(2, (unsigned int) buf);
     sceGsSyncPath(0, 0);
-    TestEnv_0_004A7B60[8] = (0x24020000 | (sRender.w14 << 5)) | 0x2000000640000000;
-    nmlModelDirectSend(5, (u8 *) TestEnv_0_004A7B60, 0xC);
+    TestEnv[8] = (0x24020000 | (sRender.w14 << 5)) | 0x2000000640000000;
+    nmlModelDirectSend(5, (u8 *) TestEnv, 0xC);
     return 0;
 }
 

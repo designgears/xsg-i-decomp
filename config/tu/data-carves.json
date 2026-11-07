@@ -231,25 +231,49 @@
    ]
   },
   "main/tu094": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x004d2590",
-      "0x004d25b0"
+      "0x004a7b60",
+      "0x004a7c20"
      ],
      "generated": [
-      "0x004d2590",
-      "0x004d25aa"
+      "0x004a7b60",
+      "0x004a7c20"
      ],
      "generated_by": [
       "xglMpeg2Play"
      ],
      "c_owned_symbols": [
+      "TestEnv_0_004A7B60"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_1.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d2580",
+      "0x004d25b0"
+     ],
+     "generated": [
+      "0x004d2580",
+      "0x004d25aa"
+     ],
+     "generated_by": [
+      "xglMoviePlay",
+      "xglMpeg2Play"
+     ],
+     "c_owned_symbols": [
+      "D_004D2580",
       "D_004D2590"
      ],
-     "also_referenced_by_c": [
-      "D_004D2580"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -1513,9 +1537,29 @@
       "snapname",
       "quality_table"
      ],
-     "also_referenced_by_c": [
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_snap_shot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00366ea0",
+      "0x00366f60"
+     ],
+     "generated": [
+      "0x00366ea0",
+      "0x00366f60"
+     ],
+     "generated_by": [
+      "GameSnapShotSaveThumbnail"
+     ],
+     "c_owned_symbols": [
       "TestPrim_0_00366EA0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
