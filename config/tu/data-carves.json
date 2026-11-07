@@ -15755,11 +15755,11 @@
     {
      "range": [
       "0x00a542c8",
-      "0x00a54308"
+      "0x00a543a8"
      ],
      "generated": [
       "0x00a542c8",
-      "0x00a54308"
+      "0x00a543a8"
      ],
      "generated_by": [
       "CreateRgParticleEffect",
@@ -15787,40 +15787,10 @@
      "c_owned_symbols": [
       "D_00A542C8",
       "D_00A542D8",
-      "D_00A542F8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A542F8",
       "D_00A54308",
       "D_00A54318",
-      "D_00A54338"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_particle_effect.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a54368",
-      "0x00a543a8"
-     ],
-     "generated": [
-      "0x00a54368",
-      "0x00a543a8"
-     ],
-     "generated_by": [
-      "InitRgParticleEffectControlData",
-      "InitRgParticleEffectEssence",
-      "RgParticleEffectEssenceResume",
-      "RgParticleEffectEssenceSerialize",
-      "RgParticleEffectSetControlData",
-      "_DestructPtclChar",
-      "_DispPtclChar",
-      "_InitPtclChar",
-      "_PassTimePtclChar"
-     ],
-     "c_owned_symbols": [
+      "D_00A54338",
       "D_00A54368",
       "D_00A54378",
       "D_00A54388",
@@ -16951,22 +16921,21 @@
    ]
   },
   "ov12/tu058_00a2f650": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a552f8",
-      "0x00a55318"
+      "0x00a50090",
+      "0x00a50120"
      ],
      "generated": [
-      "0x00a552f8",
-      "0x00a55318"
+      "0x00a50090",
+      "0x00a50120"
      ],
      "generated_by": [
-      "InitRgGeomColiArg",
       "RgGeomCollisionJob"
      ],
      "c_owned_symbols": [
-      "D_00A552F8"
+      "s_apJobFuncTbl"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -16974,21 +16943,27 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/ov12/build/scaffold/src/ov12/rg_geom_collision.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x00a55328",
+      "0x00a552e8",
       "0x00a55338"
      ],
      "generated": [
-      "0x00a55328",
+      "0x00a552e8",
       "0x00a55338"
      ],
      "generated_by": [
       "InitRgGeomColiArg",
-      "RgGeomCollisionJob"
+      "RgGeomCollisionJob",
+      "_RobotVsPoly"
      ],
      "c_owned_symbols": [
+      "D_00A552E8",
+      "D_00A552F8",
+      "D_00A55318",
       "D_00A55328"
      ],
      "also_referenced_by_c": [],
@@ -17291,11 +17266,11 @@
     {
      "range": [
       "0x00a55988",
-      "0x00a559c0"
+      "0x00a55c48"
      ],
      "generated": [
       "0x00a55988",
-      "0x00a559c0"
+      "0x00a55c48"
      ],
      "generated_by": [
       "DisposeRgFileSysData_sub",
@@ -17318,40 +17293,10 @@
      "c_owned_symbols": [
       "rg_filesys_source_file",
       "pSys_not_nil",
-      "D_00A559B0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A559B0",
       "D_00A559C0",
       "D_00A559D0",
-      "D_00A559D8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_filesys.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a559f0",
-      "0x00a55c48"
-     ],
-     "generated": [
-      "0x00a559f0",
-      "0x00a55c48"
-     ],
-     "generated_by": [
-      "DisposeRgFileSysData_sub",
-      "RgFileSysClear",
-      "RgFileSysDataGetName",
-      "RgFileSysDisposePrepares",
-      "RgFileSysDump",
-      "RgFileSysDup",
-      "RgFileSysOnMemory",
-      "RgFileSysPrepareFile",
-      "RgFileSysRead"
-     ],
-     "c_owned_symbols": [
+      "D_00A559D8",
       "D_00A559F0",
       "D_00A55A10",
       "D_00A55A30",
