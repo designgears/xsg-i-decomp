@@ -205,11 +205,23 @@ def decl_sizes(obj):
 
 def game_objects(build):
     out = []
-    with open(os.path.join(build, "build.ninja")) as f:
-        for line in f:
-            m = re.match(r"build (\S+\.c\.o): C_COMPILER\S* (\S+/src/(\w+)/\S+\.c)", line)
-            if m and m.group(3) in UNITS:
-                out.append((os.path.join(build, m.group(1)), m.group(2), m.group(3)))
+    ninja = os.path.join(build, "build.ninja")
+    if os.path.exists(ninja):
+        with open(ninja) as f:
+            for line in f:
+                m = re.match(r"build (\S+\.c\.o): C_COMPILER\S* (\S+/src/(\w+)/\S+\.c)", line)
+                if m and m.group(3) in UNITS:
+                    out.append((os.path.join(build, m.group(1)), m.group(2), m.group(3)))
+        return out
+    # Makefile generators: objects live at CMakeFiles/<tgt>.dir/<abs source path>.o
+    for dirpath, _dirs, files in os.walk(os.path.join(build, "CMakeFiles")):
+        for fn in files:
+            if not fn.endswith(".c.o"):
+                continue
+            obj = os.path.join(dirpath, fn)
+            m = re.search(r"\.dir(/.*?/src/(\w+)/.+\.c)\.o$", obj)
+            if m and m.group(2) in UNITS and os.path.exists(m.group(1)):
+                out.append((obj, m.group(1), m.group(2)))
     return out
 
 
