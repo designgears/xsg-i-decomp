@@ -1747,6 +1747,9 @@ u8 *nmlPacketSetAttributeData64(const void *data)
     dst = *(u8 **)&s_pPacket->cursor;
     PS2_ASMV("lq $2,0x0(%1)\n\tsq $2,0x0(%0)\n\tlq $2,0x10(%1)\n\tsq $2,0x10(%0)\n\tlq $2,0x20(%1)\n\tsq $2,0x20(%0)\n\tlq $2,0x30(%1)\n\tsq $2,0x30(%0)"
                  : : "r"(dst), "r"(data) : "$2", "memory");
+#ifdef PORT_HOST
+    memcpy(dst, data, 0x40);
+#endif
     return *(u8 **)&s_pPacket->cursor;
 }
 
@@ -1781,6 +1784,9 @@ u8 *nmlPacketSetAttributeData64N(const void *data, u32 count)
         : "+r"(dst), "+r"(data), "+r"(count)
         :
         : "$2", "memory");
+#ifdef PORT_HOST
+    memcpy(dst, data, count << 6);
+#endif
     return *(u8 **)&s_pPacket->cursor;
 }
 
@@ -1809,6 +1815,9 @@ u8 *nmlPacketSetAttributeData16N(const void *data, u32 count)
         : "+r"(dst), "+r"(data), "+r"(count)
         :
         : "$2", "memory");
+#ifdef PORT_HOST
+    memcpy(dst, data, count << 4);
+#endif
     return *(u8 **)&s_pPacket->cursor;
 }
 

@@ -62,7 +62,26 @@ void xsg_map_ps2_memory(void)
     }
     min_addr = (min_addr + 0xfff) & ~0xfffUL;
     xsg_ram_low = (uint32_t)min_addr;
-    map_fixed(xsg_ram_low, PS2_RAM_SIZE - xsg_ram_low, "EE main RAM");
+    /* Main RAM is a memfd so that the uncached (0x20000000) and uncached-
+     * accelerated (0x30000000) views can alias it, as game data holds such
+     * pointers (e.g. sef's atanTbl_0 = 0x2040FAC0). */
+    int ram_fd = memfd_create("xsg-ee-ram", 0);
+    if (ram_fd < 0 || ftruncate(ram_fd, PS2_RAM_SIZE) != 0) {
+        fprintf(stderr, "xsg: memfd for EE RAM: %s\n", strerror(errno));
+        exit(1);
+    }
+    for (int view = 0; view < 3; view++) {
+        static const uint32_t bases[3] = {0, 0x20000000u, 0x30000000u};
+        void *p = mmap((void *)(uintptr_t)(bases[view] + xsg_ram_low), PS2_RAM_SIZE - xsg_ram_low,
+                       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED_NOREPLACE, ram_fd, xsg_ram_low);
+        if (p != (void *)(uintptr_t)(bases[view] + xsg_ram_low)) {
+            if (view == 0) {
+                fprintf(stderr, "xsg: cannot map EE main RAM at 0x%08x\n", xsg_ram_low);
+                exit(1);
+            }
+            xsg_logf("[mem] RAM view at 0x%08x not mapped\n", bases[view]);
+        }
+    }
     map_fixed(PS2_EEHW_BASE, PS2_EEHW_SIZE, "EE hardware registers");
     map_fixed(PS2_VU_BASE, PS2_VU_SIZE, "VU0/VU1 micro and data memory");
     map_fixed(PS2_GSPRIV_BASE, PS2_GSPRIV_SIZE, "GS privileged registers");

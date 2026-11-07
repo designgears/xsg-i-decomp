@@ -116,6 +116,11 @@ float srsAtan2(float x, float y)
     float result = 0.0f;
     float angle;
 
+#ifdef PORT_HOST
+    /* The EE has no NaN; a NaN here (from stubbed VU0 maths) would index the table at INT_MIN. */
+    if (x != x || y != y)
+        return 0.0f;
+#endif
     y_is_positive = y >= 0.0f;
     x_is_positive = x >= 0.0f;
 

@@ -1215,6 +1215,12 @@ static void xglFontFlushCore(struct FontDrawCursor *cursor, const unsigned char 
                 command->argument_low;
             text += 8;
             cursor->flags &= 0xbf;
+#ifdef PORT_HOST
+            /* The text stream holds 24 bits of the function address (PS2 code
+               is below 16 MB); host code is not, so restore the top byte. */
+            callback = (void (*)(struct FontDrawCursor *, int))((unsigned int)callback |
+                ((unsigned int)(void *)xglFontPrintExtFunc & 0xff000000U));
+#endif
             callback(cursor, argument);
             break;
         }

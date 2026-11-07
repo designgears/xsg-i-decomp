@@ -443,6 +443,19 @@ Vector4 *MMathCalcAngle(Vector4 *out, const Vector4 *from, const Vector4 *to)
         : "r"(from), "r"(to), "r"(&delta), "r"(out)
         : "memory", "$8"
     );
+#ifdef PORT_HOST
+    {
+        /* Host stand-in for the VU0 block above (McMathUnitVector for null inputs). */
+        extern const Vector4 McMathUnitVector;
+        if (!from) from = &McMathUnitVector;
+        if (!to) to = &McMathUnitVector;
+        delta.x = to->x - from->x;
+        delta.y = to->y - from->y;
+        delta.z = to->z - from->z;
+        length = __builtin_sqrtf(delta.x * delta.x + delta.z * delta.z);
+        out->x = 0.0f; out->y = 0.0f; out->z = 0.0f; out->w = 1.0f;
+    }
+#endif
     out->x = srsAtan2(delta.y, length);
     out->y = srsAtan2(delta.x, delta.z);
     return out;
@@ -475,6 +488,19 @@ Vector4 *MMathCalcAngleCam(Vector4 *out, const Vector4 *from, const Vector4 *to)
         : "r"(&delta), "r"(out)
         : "memory", "$8"
     );
+#ifdef PORT_HOST
+    {
+        /* Host stand-in for the VU0 block above (McMathUnitVector for null inputs). */
+        extern const Vector4 McMathUnitVector;
+        if (!from) from = &McMathUnitVector;
+        if (!to) to = &McMathUnitVector;
+        delta.x = from->x - to->x;
+        delta.y = to->y - from->y;
+        delta.z = from->z - to->z;
+        length = __builtin_sqrtf(delta.x * delta.x + delta.z * delta.z);
+        out->x = 0.0f; out->y = 0.0f; out->z = 0.0f; out->w = 1.0f;
+    }
+#endif
     out->x = srsAtan2(delta.y, length);
     out->y = srsAtan2(delta.x, delta.z);
     return out;

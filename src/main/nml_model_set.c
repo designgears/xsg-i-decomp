@@ -4087,6 +4087,9 @@ void nmlModelEntry(U_NmlModel *model)
                 for (quadIndex = 0; quadIndex < quadCount / 16; quadIndex++) {
                     PS2_ASMV( "sq $0, 0(%0)\n" : : "r" (quadIndex * 16 + (int)U_s_inLayout.fields.clipMasks) : "memory");
                 }
+#ifdef PORT_HOST
+                __builtin_memset(U_s_inLayout.fields.clipMasks, 0, quadCount);
+#endif
                 if ((U_s_inLayout.fields.render_status & (U_NML_RENDER_TEXMAP_CIRCLE | U_NML_RENDER_TEXMAP_TEXTURE | U_NML_RENDER_PROREAL)) != 0) {
                     (U_s_inLayout.slots[(0x260) / 4].i) = (int)U_nmlPacketSetAttributeData16N(U_s_inProReal, 0x1e);
                 }
@@ -4498,6 +4501,9 @@ void nmlModelEntryEffect(NmlModelEc *model)
             PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
         }
+#ifdef PORT_HOST
+        __builtin_memset((*(NmlLayoutEc *)&s_inLayout).fields.clipMasks, 0, paddedBlockCount);
+#endif
         layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
         alphaAdded = 0;
         nonAlphaAdded = 0;
@@ -4612,6 +4618,9 @@ void nmlModelEntryCard(NmlModelEc *model)
             PS2_ASMV("sq $0, 0(%0)"
                 : : "r"(quadIndex * 16 + (int)(*(NmlLayoutEc *)&s_inLayout).fields.clipMasks) : "memory");
         }
+#ifdef PORT_HOST
+        __builtin_memset((*(NmlLayoutEc *)&s_inLayout).fields.clipMasks, 0, paddedBlockCount);
+#endif
         layout = (NmlLayoutEc *)nmlPacketSetAttributeData16N(&(*(NmlLayoutEc *)&s_inLayout), 0x32);
         __builtin_memset(&alphaAdded, 0, sizeof(alphaAdded));
         __builtin_memset(&nonAlphaAdded, 0, sizeof(nonAlphaAdded));

@@ -21,6 +21,10 @@ set(XSG_FLAGS
   -m32 -std=gnu89 -fno-strict-aliasing -fwrapv -ffp-contract=off -fsigned-char
   -fno-common -fgnu89-inline -fno-builtin -fno-pic -fno-stack-protector
   -fno-delete-null-pointer-checks
+  # Stage 6: no SSE in game code. Quadword-aligned struct copies became
+  # movdqa/movaps, which fault where a caller's Vector4 (or the i386 stack)
+  # is not 16-byte aligned (Java_xeno_Light_setColor -> xglLightIntensityAmbient).
+  -mno-sse -mno-sse2
   # ee-gcc 2.96 accepted these; modern gcc makes them errors.
   -Wno-error=implicit-function-declaration -Wno-error=implicit-int
   -Wno-error=int-conversion -Wno-error=incompatible-pointer-types
