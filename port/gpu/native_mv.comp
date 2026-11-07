@@ -1,7 +1,8 @@
 #version 450
 // Motion-vector resolve (port/docs/NATIVE_RENDERER.md §8), run after the live
 // composite: a high-res output sample keeps the native motion vector only when
-// the composite took the native sample there; everything the GS kept (UI, 2D,
+// the composite took the native sample there (the exact ownership plane, or
+// without it the colour/depth test) and no post effect changed it since; everything the GS kept (UI, 2D,
 // post effects, pixels without a native surface) gets zero motion.
 // XSG_GPU_MV_VIEW=1 also overwrites the composite with a colour view of the
 // vectors (hue = direction, brightness = length, grey = zero).
@@ -11,12 +12,13 @@ layout(set = 0, binding = 1) uniform sampler2D hd;    // native depth, scale s
 layout(set = 0, binding = 2) uniform sampler2D hmv;   // native motion vectors, scale s
 layout(rgba8, set = 0, binding = 3) uniform image2D o_img;   // the composite (GENERAL)
 layout(rg16f, set = 0, binding = 4) writeonly uniform image2D o_mv;
-layout(std430, set = 0, binding = 5) readonly buffer Gs { uint gs[]; };   // as composite.comp: 1x colours, then Z
+layout(std430, set = 0, binding = 5) readonly buffer Gs { uint gs[]; };   // as composite.comp: 1x colours, Z, owner
 layout(push_constant) uniform P {
     int w, h, view;
     float full;         // vector length shown at full brightness (pixels)
     int s;              // scale
     float zmul;         // native depth -> GS Z
+    int own;            // 1: the exact ownership plane follows the Z in gs[]
 } p;
 
 vec3 Hue(float h) {
@@ -33,8 +35,12 @@ void main() {
         // Native owns the sample when the composite wrote the native colour; if
         // that is also the GS pixel's colour, decide with the depth rule.
         vec3 d = abs(texelFetch(hc, o, 0).rgb - c.rgb) * 255.0;
-        if (max(d.r, max(d.g, d.b)) < 0.5) {
-            int w1 = p.w / p.s, gi = (o.y / p.s) * w1 + o.x / p.s;
+        int w1 = p.w / p.s, gi = (o.y / p.s) * w1 + o.x / p.s;
+        if (p.own != 0) {
+            // Exact: the composite took the sample (native owns the pixel) and no
+            // post effect changed it since.
+            if (gs[2 * w1 * (p.h / p.s) + gi] != 0u && max(d.r, max(d.g, d.b)) < 0.5) mv = texelFetch(hmv, o, 0).rg;
+        } else if (max(d.r, max(d.g, d.b)) < 0.5) {
             vec3 g = abs(unpackUnorm4x8(gs[gi]).rgb - c.rgb) * 255.0;
             float zg = float(gs[w1 * (p.h / p.s) + gi]);
             if (max(g.r, max(g.g, g.b)) >= 0.5 || nd * p.zmul + max(64.0, zg * 2e-4) >= zg) mv = texelFetch(hmv, o, 0).rg;

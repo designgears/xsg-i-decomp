@@ -716,9 +716,10 @@ void Live(ParallelGS::GSInterface& gs) {
     auto cmd = dev.request_command_buffer();
     Vulkan::QueryPoolHandle ts[4];
     if (xsgprof::g_on) ts[0] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
-    GpuTarget n1 = RenderGpu(*cmd, list, rg, 1, nullptr);
+    // The 1x render only feeds the colour rule; with the exact ownership plane only Sx is drawn.
+    GpuTarget ns = RenderGpu(*cmd, list, rg, g_scale, nullptr);
     if (xsgprof::g_on) ts[1] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
-    GpuTarget ns = g_scale > 1 ? RenderGpu(*cmd, list, rg, g_scale, nullptr) : n1;
+    GpuTarget n1 = own ? ns : g_scale > 1 ? RenderGpu(*cmd, list, rg, 1, nullptr) : ns;
     if (xsgprof::g_on) ts[2] = cmd->write_timestamp(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     auto oi = Vulkan::ImageCreateInfo::immutable_2d_image(ns.w, ns.h, VK_FORMAT_R8G8B8A8_UNORM);
     oi.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -756,7 +757,7 @@ void Live(ParallelGS::GSInterface& gs) {
     cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
     // Motion vectors last, so they see the final composite (+ XSG_GPU_MV_VIEW).
-    xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale);
+    xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale, own);
     cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);

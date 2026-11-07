@@ -156,7 +156,7 @@ bool Init(Vulkan::Device* dev) {
     cl.sets[0].storage_image_mask = 8 | 16;
     cl.sets[0].storage_buffer_mask = 32;
     for (int i = 0; i < 6; ++i) cl.sets[0].meta[i].array_size = 1;
-    cl.push_constant_size = 24;
+    cl.push_constant_size = 28;
     g_mvprog = dev->request_program(dev->request_shader(kMv, sizeof kMv, &cl));
     Vulkan::BufferCreateInfo bi = {};
     bi.domain = Vulkan::BufferDomain::LinkedDeviceHost;
@@ -315,7 +315,7 @@ uint32_t Bind(Vulkan::CommandBuffer& cmd, const Draw& d, int pass) {
 }
 
 void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& color, Vulkan::Image& depth,
-               const Vulkan::ImageHandle& mv, const Vulkan::Buffer& gs, int scale, float zmul) {
+               const Vulkan::ImageHandle& mv, const Vulkan::Buffer& gs, int scale, float zmul, bool own) {
     g_rawmv = mv;
     const uint32_t w = out.get_width(), h = out.get_height();
     if (!g_mv || g_mv->get_width() != w || g_mv->get_height() != h) {
@@ -339,8 +339,8 @@ void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& co
     cmd.set_storage_buffer(0, 5, gs);
     cmd.set_storage_texture(0, 3, out.get_view());
     cmd.set_storage_texture(0, 4, g_mv->get_view());
-    struct { int32_t w, h, view; float full; int32_t s; float zmul; } pc = {int32_t(w), int32_t(h), g_view ? 1 : 0,
-                                                                         g_view_full * float(scale), scale, zmul};
+    struct { int32_t w, h, view; float full; int32_t s; float zmul; int32_t own; } pc = {
+        int32_t(w), int32_t(h), g_view ? 1 : 0, g_view_full * float(scale), scale, zmul, own ? 1 : 0};
     cmd.push_constants(&pc, 0, sizeof pc);
     cmd.dispatch((w + 7) / 8, (h + 7) / 8, 1);
     cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
