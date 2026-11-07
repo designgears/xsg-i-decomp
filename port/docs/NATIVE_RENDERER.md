@@ -1,4 +1,4 @@
-# Native renderer: design and first slice
+# Native renderer: design and live slice
 
 Branch `pc-port` (agent worktree), 2026-11-07. Builds on [VU1_PROGRAMS.md](VU1_PROGRAMS.md)
 (programs, I/O, C references, the motion-vector plan), [STAGE9_GPU.md](STAGE9_GPU.md) (xsg-gpu,
@@ -9,11 +9,12 @@ emulating VU1 + GS at 512×448. That gives real high resolution, room for widesc
 true per-vertex motion vectors for DLSS. paraLLEl-GS stays for everything that is not
 (yet) native.
 
-**Status of the slice:** `XSG_GPU_NATIVE=1` redraws every set-0 strip batch (program 0x0bd8,
-loop 0x0c18: static scenery) natively, at any `XSG_GPU_NATIVE_SCALE`. In the tutorial field it
-matches paraLLEl-GS to ±2 per channel on 97.0% of the pixels where the native surface is
-visible (dialogue-box frame; the rest is polygon edges). On the vsyncs listed in `XSG_GPU_NATIVE_SHOT` it composites over the paraLLEl-GS
-frame and writes images. There is no live presentation of the composite yet (§4).
+**Status (live slice, 2026-11-07):** `XSG_GPU_NATIVE=1` redraws every set-0 strip batch
+(program 0x0bd8, loop 0x0c18: static scenery) natively and **shows it live in the window** at
+`XSG_GPU_NATIVE_SCALE` (default 2), composited per pixel over the paraLLEl-GS frame on the GPU
+(§3). Those batches no longer run on the VU1 interpreter (§1). The window seams at x≈256 / y≈339
+are fixed (§2). Screenshots and the `XSG_STREAM` stream still read paraLLEl-GS VRAM at 512×448.
+`XSG_GPU_NATIVE=0` (or unset) is byte-identical to the old path.
 
 ## 1. Where to intercept
 
@@ -38,19 +39,26 @@ means:
 * skipping the VIF1 MSCAL/MSCNT for natively drawn programs, so VU1 does not run at all.
   That is where the CPU win is.
 
-### What the slice does instead: VU1 run boundary
+### What is implemented: the MSCNT boundary, with the C reference instead of VU1
 
-For the first slice the hook is one level lower, in `gs_bridge.cpp` `RunVu1`. After an
-MSCNT batch into loop 0x0c18 (checked by `vi15` and a 16-byte micro-memory signature of set
-0), it copies the batch's inputs out of VU1 data memory: qw 962–967, 971 (vf24), 972, 1007,
-1011, and the P/T/C streams at TOP+1…. They are the same values the EE uploaded. They are
-taken after the 0x0170 batch header, so morph is already applied and colours are already
-floats. Nothing in `src/` changes, the VU1 output is still kicked to paraLLEl-GS, and the
-references prove the data contract (test_vu1_ref). The cost is that VU1 still runs, so this
-is a correctness slice, not a speed one.
+The hook stays at the VIF1 MSCNT in `gs_bridge.cpp` (`RunVu1` → `NativeStrip`), not in
+`nml_packet_add.c`: the EE builder only `REF`s prebuilt UNPACK chains, so building the native
+message there means re-walking VIF code that the bridge already decodes, and `src/` would need a
+`PORT_HOST` hook. At the MSCNT the UNPACKed inputs are in VU1 data memory, and that is enough to
+skip the interpreter:
 
-Moving the hook up to the EE builder changes only where the message is built. The renderer
-side is the same.
+* a batch into loop 0x0c18 (vi15 + micro-memory signature; register batches excluded) runs
+  `vu1_ref_run` (`port/render/vu1_ref/vu1_set0.c`, bit-exact with the interpreter per
+  test_vu1_ref) **in place** on VU1 data memory and the register file (`Vu1Ref::memp`; the
+  references are now linked into the game, compiled with the interpreter's float flags);
+* then `GPU_MSG_NATIVE` (inputs after the header: morph applied, colours as floats);
+* then the reference's GIF packet goes to the GS exactly as XGKICK would. paraLLEl-GS still
+  receives the same bytes (see §3 for why).
+
+Screenshots at vsync 1401/1550/2500/4000 are byte-identical between `XSG_GPU_NATIVE=0`, `=1`
+and `=1 XSG_GPU_NATIVE_VU1=1` (the interpreter kept, for A/B). No file in `src/` changed.
+Moving the message build up to the EE builder (and caching geometry per REF) is still the way to
+drop the remaining per-batch copy; it no longer buys the VU1 time.
 
 ## 2. Reproducing the GS state of a batch
 
@@ -70,7 +78,8 @@ FRAME, ZBUF, plus TEXA and FOGCOL. PRMODECONT/PRMODE are honoured.
 | textures | decoded on the CPU into RGBA8 (alpha = the GS byte), all PSMs (CT32/24/16/16S, T8, T4, T8H, T4HL/HH), CLUT CSM1 CT32/CT16, TEXA. Cached per (TEX0, TEXA, upload generation) |
 | texture source | **our own GS-memory mirror**: `ps2host::gs::Memory` (the software GS's swizzle), written by every host→local IMAGE transfer (BITBLTBUF/TRXPOS/TRXREG/TRXDIR). The textures are decoded when the batch arrives. The game re-uploads a few texture slots for every material (decoding from paraLLEl-GS VRAM at the end of the frame gave 5 garbage textures for 5,399 batches), so the decode must happen at batch time. paraLLEl-GS's VRAM is not usable mid-frame without a flush |
 | texture function | TFX modulate/decal/highlight/highlight2, TCC; `(t·c)>>7` with floor |
-| sampling | TEX1.MMAG nearest/linear; CLAMP repeat/clamp (region modes → clamp) |
+| sampling | in the shader, the GS way: TEX1.MMAG nearest/bilinear (4-bit fraction), CLAMP WMS and WMT separately, incl. REGION_CLAMP/REGION_REPEAT. The old "WMS for both axes" sampler wrapped the floor texture in V and caused **both one-pixel seams** (x≈256, y≈339); they are gone |
+| vertex snapping | X/Y truncated to 1/16 pixel like XYZF2 (ftoi4), so shared vertices of different batches coincide at high resolution |
 | alpha test | ATE/ATST/AREF; AFAIL KEEP/ZB_ONLY → discard, FB_ONLY → pass (approximation) |
 | fog | FGE: `(F·C + (255−F)·FOGCOL) >> 8`, F = floor(clamp(1007.z + 1007.w·q)) |
 | blending | ABE with ALPHA (A,B,C,D) = (Cs,Cd,As/FIX,Cd) → SRC_ALPHA/1−SRC_ALPHA; (Cs,0,·,Cd) → additive; (Cd,Cs,·,Cd) → reverse-subtract. Ad (C = 1) and others are drawn opaque and counted. As/FIX scale 0x80 = 1.0 |
@@ -103,47 +112,93 @@ was drawn over the scenery later without depth: UI, the dialogue box, transparen
 and post-processing. At silhouette edges, where the 1× render does not cover the pixel, rule 1
 alone decides, so edges get the high-resolution native geometry.
 
-**Target design (live).** The composite rule is a validation tool. Real hybrid rendering
-must interleave instead of overlaying, because post effects read the frame buffer (see the
-cutscene result in §5):
+**Chosen live design: the GS stays authoritative, native owns pixels it provably still holds.**
 
-* Render the native batches into a high-resolution colour + depth target, in ring order, at
-  the point the GS would have drawn them. The GS still receives a cheap
-  **depth/coverage-only** version of each native batch, so its Z buffer stays right for the
-  characters drawn after it. Characters then depth-test against the low-resolution Z, which
-  is fine for a first step.
-* When the GS reads the frame buffer as a texture (post effects, detected by TEX0.TBP0 inside
-  the FRAME range), or at the end of the frame, resolve: downsample the native target into
-  paraLLEl-GS VRAM (a `GSInterface` hook, or a compute pass on its VRAM buffer) so GS-side
-  effects see the native pixels.
-* At vsync, present `native high-res ⊕ GS non-native layer`. The GS layer is upscaled, and
-  the mask comes from a per-pixel "last writer was native" bit (a stencil-like plane kept in
-  the native pass and invalidated by GS draws that touch the pixel). That replaces the
-  colour heuristic.
-* Movies and 2D-only frames have no native batches. The present path then shows the
-  paraLLEl-GS scanout unchanged, as today.
-* Depth sharing at high resolution, in the other direction (characters native too), comes
-  for free once set 2 is native. Then only 2D and effects remain on the GS.
+* paraLLEl-GS keeps receiving the full GIF stream, including the native batches' own output
+  (from the C reference). Its frame and Z buffer are therefore exactly what they were, and every
+  GS-side effect that reads them back (the hangar depth-of-field blur at ~1401, copies, fades)
+  works unchanged. No resolve into GS VRAM is needed, because GS VRAM already holds the same
+  content at 1×.
+* At each vsync xsg-gpu takes the native batches of the **displayed** buffer (DISPFB.FBP; a
+  frame's batches are grouped per FRAME.FBP and per vsync interval), draws them at 1× and at S×,
+  decodes the GS colour + Z of that buffer from VRAM, and runs `composite.comp`: a native S×
+  sample replaces the GS pixel under it when (1) it is not behind the GS Z there and (2) where
+  the 1× native render covers the pixel, the GS colour is within `XSG_GPU_NATIVE_THR` (12) of it.
+  Rule 1 keeps characters; rule 2 keeps everything drawn later without Z (UI, dialogue box,
+  translucent minimap) and every post effect. The result is blitted to the swapchain, cropped to
+  the DISPFB rectangle. A frame on screen for two vsyncs (30 fps) is composited once.
+* This replaces "interleave native batches in ring order": ordering can never be wrong,
+  because any later GS write that changes a pixel hands that pixel back to the GS.
+
+Trade-offs:
+
+* Post-processed frames fall back to 1×. In the hangar cutscene the whole frame is a GS-side
+  DOF pass, so the composite takes nothing and the window shows the paraLLEl-GS frame (correct,
+  but not high-res; the blurred background loses little). Doing the effect natively at S× is the
+  only way around it (next steps).
+* paraLLEl-GS still rasterises the scenery (cheap on the GPU) and the composite needs a VRAM
+  readback + CPU decode of the displayed buffer per new frame (~1.8 MB).
+* Rule 2 is a colour comparison, not an exact "last writer" bit. Something drawn over the
+  scenery that leaves it within 12 levels would still show native scenery under it; at
+  silhouette edges (1× not covered) only the depth rule applies.
+* PMODE circuit blending (two-circuit fades) is not applied to the native image.
+* Characters (set 2) depth-test against the 1× GS Z, so their silhouettes stay 1×.
 
 ## 4. Running it
 
 ```
-XSG_GS=gpu XSG_GPU_HEADLESS=1 XSG_AUDIO=0 XSG_MPEG=0 XSG_SKIP_EVENTS=1 XSG_FAST=1 \
-XSG_PAD='300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60' \
-XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4 XSG_GPU_NATIVE_SHOT=1401,1550,6001 \
-XSG_GPU_NATIVE_DIR=/tmp/native port/build-wt/xsg
+XSG_GS=gpu XSG_GPU_NATIVE=1 XSG_GPU_NATIVE_SCALE=4 XSG_AUDIO=0 XSG_MPEG=0 XSG_SKIP_EVENTS=1 \
+XSG_PAD='300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60' port/build-wt/xsg      # window
+# headless captures: + XSG_GPU_HEADLESS=1 XSG_GPU_NATIVE_SHOT=1401,1550,4001 XSG_GPU_NATIVE_DIR=/tmp/native
 ```
 
-For each shot vsync it writes `native_VVVVVV_{gs_1x, native_only_1x, comp_1x, diff_1x,
-native_only_Sx, comp_Sx}.png`. `diff_1x` is black or dim green for exact matches, grey
-scaled ×8 for differences, and the dimmed GS frame where nothing native covers. The log
-gives per-shot statistics. At 30 fps a shot on a vsync with no batches uses the previous
-vsync's frame. Batches and textures are kept only in the 3 vsyncs before a shot. Otherwise
-only the GIF tracker and the GS-memory mirror run (the mirror costs one `Memory::Write`
-per uploaded pixel). `XSG_GPU_NATIVE=2` also logs vertex 0 of every 2000th batch, recomputed
-on the CPU against the VU1 output. They agree to 1/16 pixel.
+| variable | meaning |
+|---|---|
+| `XSG_GPU_NATIVE=1` | native set-0 path (game: skip VU1; xsg-gpu: live composite) |
+| `XSG_GPU_NATIVE_SCALE` | 1–8 (default 2) |
+| `XSG_GPU_NATIVE_LIVE=0` | no live composite (shots only) |
+| `XSG_GPU_NATIVE_THR` | rule-2 colour threshold (default 12) |
+| `XSG_GPU_NATIVE_VU1=1` | keep the VU1 interpreter for native batches (A/B) |
+| `XSG_GPU_NATIVE_SHOT`, `_DIR` | diagnostic images per listed vsync |
 
-## 5. Validation (2026-11-07)
+Per shot vsync: `native_VVVVVV_{gs_1x, native_only_1x, comp_1x, diff_1x, native_only_Sx,
+comp_Sx, live_Sx, live_down_1x}.png`. `live_Sx` is a readback of what the window shows;
+`live_down_1x` is it box-downsampled. The `[xsg-gpu]` stats line counts native presents.
+
+## 5. Validation (live slice, 2026-11-07, RTX 5090)
+
+Screenshots: `port/docs/screenshots/live_native_*` (headless, scale 4) and
+`live_window_4x*.png` (grim captures of the Wayland window, 1100×760, field at ~vsync 5000).
+
+**1× composite vs paraLLEl-GS, whole frame (229,376 px)**
+
+| vsync | composite takes | exact | ±1–2 | ±3–8 | >8 |
+|---|---|---|---|---|---|
+| 1401 hangar (DOF blur) | 0 | 229,376 | 0 | 0 | 0 |
+| 1550 field + dialogue box | 176,931 | 63,013 | 165,425 | 760 | 178 |
+| 4001 field + minimap | 199,428 | 44,152 | 184,318 | 728 | 178 |
+
+The live 4× composite, box-downsampled to 1×: 1550 exact 62,197 / ±2 163,867 / ±8 3,038 / >8 274;
+4001 exact 43,306 / ±2 182,650 / ±8 3,132 / >8 288 (the extra differences are 4× edges).
+Where the GS depth is the native surface's, native-only vs GS at 1550: exact 10,568, ±2
+165,425, ±8 760, >8 4,098 (was 1,065 at ±8 before the GS-style sampler). The remaining >8 pixels
+are polygon edges. The longest >8 run in a row outside the minimap at 4001 is now 42 px (was a
+249-px row at y=339; the x≈256 column is gone too).
+
+**Speed** (headless, `XSG_FAST=1`, sequential runs, mean of the `XSG_FPS=100` samples):
+
+| run | field (vblank 2500–6000) | hangar cutscene (1300–1500) |
+|---|---|---|
+| `XSG_GPU_NATIVE=0` | 77.7 vblanks/s | 57.9 |
+| old slice (VU1 interpreter + capture), no live | 70.7 | 56.6 |
+| VU1 skipped, no live | 87.3 (+12% vs off, +23% vs old slice) | 60.2 |
+| VU1 skipped, live 4× | 85.2 | 60.2 |
+| VU1 skipped, live 2× | 83.6 | 61.0 |
+
+Windowed (mailbox, live 4×): 81–82 vsyncs/s in the field, 7,221 of 8,400 presents native.
+
+## 5a. Validation of the first slice (CPU composite only)
+
 
 Screenshots are in `port/docs/screenshots/native_*` (git-ignored).
 
@@ -177,16 +232,15 @@ target back into GS VRAM before such effects instead of compositing afterwards.
 
 ## 6. Next steps
 
-1. Live path: native pass in ring order + depth-only GS stand-ins + resolve-before-effects +
-   presentation of the high-resolution target (§3 "target design"). Drop the CPU composite.
-2. Move the hook to the EE builder (§1) and stop running VU1 for native programs. Send each
-   model's geometry once and cache it as a GPU buffer, keyed by the REF.
-3. Port set 2 (`skin_lit` and family, the references exist for all 12 loops). This puts
-   characters on the native path, with the specular second pass as a second draw (CTXT 2,
-   GIF tag 1012) and env-map 6-kick forms as a third.
-4. Motion vectors: keep last frame's M962 and bone palette per `(model, parts, material,
+1. Characters: port set 2 (`skin_lit` and family; the references exist for all 12 loops) the
+   same way (reference in place of VU1, native draw), with the specular second pass (CTXT 2,
+   tag 1012) and the env-map forms. Then characters get S× depth against the scenery.
+2. Effects at S×: detect GS draws that sample the displayed frame/Z (TEX0.TBP0 in the FRAME/ZBUF
+   range) and redo the hangar DOF and fades on the native target, so post-processed frames stay
+   high-res. Replace rule 2 with an exact last-writer plane once more of the frame is native.
+3. Motion vectors: keep last frame's M962 and bone palette per `(model, parts, material,
    batch)` key (VU1_PROGRAMS.md §5) and output `clip_prev` from the vertex shader.
-5. Mirror completeness: local→local copies and render-to-texture, CSM2, Ad blending and
-   dithering; then shader tests through `test_vu1_ref --tol`.
-6. Widescreen: widen M962's projection, so the screen scale in 966 changes, and the GS
-   scissor/guard band for the non-native layer.
+4. Move the message build to the EE builder and cache geometry per REF as GPU buffers; drop the
+   per-frame VRAM readback by reading paraLLEl-GS VRAM on the GPU.
+5. Mirror completeness (local→local, render-to-texture, CSM2), Ad blending, dithering.
+6. Widescreen: widen M962's projection and the GS scissor/guard band.
