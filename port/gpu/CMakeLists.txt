@@ -42,7 +42,7 @@ pkg_check_modules(SDL3 IMPORTED_TARGET sdl3)
 
 # The software GS's local-memory swizzle (MIT, ours) decodes VRAM for the stream.
 set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
-add_executable(xsg-gpu xsg_gpu.cpp ${XSG_GS_DIR}/src/gs_memory.cpp)
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include)
 target_link_libraries(xsg-gpu PRIVATE parallel-gs granite-vulkan pthread)

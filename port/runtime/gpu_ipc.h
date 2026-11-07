@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 1u
+#define XSG_GPU_VERSION 2u
 #define XSG_GPU_FD 3
 #define XSG_GPU_HDR 4096u
 #define XSG_GPU_RING (64u << 20)
@@ -72,5 +72,24 @@ typedef struct {
     volatile uint32_t dropped_never; /* always 0; kept for the stats line */
     uint32_t pad3[11];
 } GpuShm;
+
+/* Stage 10: live controller state, written by xsg-gpu (SDL3 keyboard and
+ * gamepad, port/docs/STAGE10_INPUT.md) and read by the game's scePadRead
+ * once per call.  At XSG_GPU_PAD_OFF inside the 4096-byte header page.
+ * Seqlock: the writer makes `seq` odd, writes, then makes it even again;
+ * the reader retries while seq is odd or changed under it.  All zero (the
+ * memfd's initial state, and what a headless xsg-gpu leaves it at) means
+ * no live input: the game uses a neutral pad. */
+#define XSG_GPU_PAD_OFF 1024u
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t active;      /* 1 once xsg-gpu publishes input */
+    volatile uint32_t buttons;     /* SCE_PAD mask, active high (0x0040 CROSS...) */
+    volatile uint32_t stick[4];    /* rx, ry, lx, ly as the DS2 sends them, 0x80 = centre */
+    volatile uint32_t press[12];   /* DS2 pressure order: R L U D tri O X sq L1 R1 L2 R2 */
+    volatile uint32_t gamepads;    /* number of open SDL gamepads */
+    volatile uint32_t updates;     /* bumped on every publish (diagnostics) */
+    uint32_t reserved[11];
+} GpuPad;
 
 #endif

@@ -5,6 +5,7 @@
  */
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -317,6 +318,86 @@ int scePadInit(int m) { STUB_LOG("%d", m); return 1; }
 int scePadPortOpen(int port, int slot, void *buf) { STUB_LOG("%d %d %p", port, slot, buf); return 1; }
 int scePadGetState(int port, int slot) { (void)port; (void)slot; return 6; /* stable */ }
 int scePadGetReqState(int port, int slot) { (void)port; (void)slot; return 0; /* complete */ }
+int xsg_gpu_pad_read(unsigned *buttons, unsigned char stick[4], unsigned char press[12]); /* gpu_client.cpp */
+static int pad_live_on(void)
+{
+    static int on = -1;
+    if (on < 0) {
+        const char *v = getenv("XSG_PAD_LIVE");
+        on = !(v && v[0] == '0' && !v[1]);
+    }
+    return on;
+}
+/* XSG_PAD_STICK=FROM-TO:LX,LY[:RX,RY],... (vblanks, bytes 0..255, 128 =
+ * centre): scripted analog sticks for automation; while an entry is active
+ * it replaces the live sticks. */
+static int pad_script_sticks(unsigned char *st)
+{
+    typedef struct { unsigned from, to; int v[4]; } StickEv;
+    static StickEv ev[64];
+    static int nev = -1;
+    int i;
+    if (nev < 0) {
+        const char *s = getenv("XSG_PAD_STICK");
+        char *e;
+        nev = 0;
+        while (s && *s && nev < 64) {
+            StickEv x = {0, 0, {128, 128, 128, 128}};
+            int k;
+            x.from = strtoul(s, &e, 0);
+            s = e;
+            if (*s++ != '-') break;
+            x.to = strtoul(s, &e, 0);
+            s = e;
+            for (k = 0; k < 4 && (*s == ':' || *s == ','); k++) {
+                s++;
+                x.v[k] = (int)strtol(s, &e, 0);
+                s = e;
+            }
+            ev[nev++] = x;
+            if (*s != ',' && *s != ';') break;
+            s++;
+        }
+    }
+    for (i = 0; i < nev; i++)
+        if (xsg_frame >= ev[i].from && xsg_frame < ev[i].to) {
+            st[2] = (unsigned char)ev[i].v[0]; /* left x, y */
+            st[3] = (unsigned char)ev[i].v[1];
+            st[0] = (unsigned char)ev[i].v[2]; /* right x, y */
+            st[1] = (unsigned char)ev[i].v[3];
+            return 1;
+        }
+    return 0;
+}
+/* XSG_PAD_LOG=1: also log each change of the live buttons/sticks, and every
+ * 60 vblanks the player actor's position (GameLoopState[1] + 0x10) while
+ * it is set, so a movement test can be read off the log. */
+static void pad_log_live(unsigned live, const unsigned char *data)
+{
+    static int log_on = -1;
+    static unsigned last_b = ~0u, last_s;
+    unsigned s;
+    if (log_on < 0) {
+        const char *l = getenv("XSG_PAD_LOG");
+        log_on = l && *l && *l != '0';
+    }
+    if (!log_on)
+        return;
+    s = data[4] | data[5] << 8 | data[6] << 16 | (unsigned)data[7] << 24;
+    if (live != last_b || s != last_s)
+        xsg_logf("[pad] vblank %u: live 0x%04x sticks R %02x,%02x L %02x,%02x\n", xsg_frame, live, data[4], data[5],
+                 data[6], data[7]);
+    last_b = live;
+    last_s = s;
+    static unsigned last_pos = ~0u;
+    if (xsg_frame % 60 == 0 && xsg_frame != last_pos) {
+        last_pos = xsg_frame;
+        extern unsigned int GameLoopState[];
+        const float *p = (const float *)(uintptr_t)GameLoopState[1];
+        if (p)
+            xsg_logf("[pad] vblank %u: player at %.2f %.2f %.2f\n", xsg_frame, p[4], p[5], p[6]);
+    }
+}
 int scePadRead(int port, int slot, unsigned char *data)
 {
     /* DualShock 2 reply: 2 status bytes, 2 active-low button bytes, 4 stick
@@ -332,11 +413,21 @@ int scePadRead(int port, int slot, unsigned char *data)
     data[2] = data[3] = 0xff;
     data[4] = data[5] = data[6] = data[7] = 0x80;
     if (port == 0) {
-        unsigned m = xsg_pad_script_buttons();
-        data[2] &= ~(m >> 8);  /* buttons are active low; SCE_PAD masks are */
-        data[3] &= ~(m & 0xff); /* 0xffff ^ (data[2] << 8 | data[3]) */
+        unsigned m = xsg_pad_script_buttons(), live = 0;
+        unsigned char stick[4], press[12];
+        /* Stage 10: live keyboard/gamepad from xsg-gpu (STAGE10_INPUT.md),
+         * OR'ed with the XSG_PAD script; XSG_PAD_LIVE=0 ignores it. */
+        if (pad_live_on() && xsg_gpu_pad_read(&live, stick, press)) {
+            memcpy(data + 4, stick, 4);
+            memcpy(data + 8, press, 12);
+        }
+        pad_script_sticks(data + 4); /* XSG_PAD_STICK overrides the sticks */
+        data[2] &= ~((m | live) >> 8);  /* buttons are active low; SCE_PAD masks are */
+        data[3] &= ~((m | live) & 0xff); /* 0xffff ^ (data[2] << 8 | data[3]) */
         for (int i = 0; i < 12; i++)
-            data[8 + i] = (m & press_bit[i]) ? 0xff : 0;
+            if (m & press_bit[i])
+                data[8 + i] = 0xff;
+        pad_log_live(live, data);
     }
     return 32;
 }
