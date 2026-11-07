@@ -25,23 +25,11 @@
  */
 #include "vu1_ref.h"
 #include "vu_float.h"
+#include "vu1_set2_int.h"
 
 #include <string.h>
 
-typedef struct { vu_f v[4]; } Q4;
-
-static Q4 ld(Vu1Ref* r, uint32_t q) { Q4 o; memcpy(o.v, vu1_ref_qw(r, q), 16); return o; }
-static void st(Vu1Ref* r, uint32_t q, const vu_f* v, unsigned mask) {
-    uint8_t* p = vu1_ref_qw(r, q);
-    for (int l = 0; l < 4; ++l)
-        if (mask >> (3 - l) & 1) memcpy(p + 4 * l, &v[l], 4);
-}
-#define VF(n) (r->regs.vf[n])
-#define VI(n) (r->regs.vi[n])
-static const vu_f ONE = 0x3f800000u;
-static const vu_f F255 = 0x437f0000u, F128 = 0x43000000u;
-
-static void init_0050(Vu1Ref* r) {
+void set2_init_0050(Vu1Ref* r) {
     static const struct { int vf, q; } ld_tab[] = {
         {8, 976}, {12, 732}, {13, 733}, {14, 734}, {15, 735}, {16, 970}, {17, 973}, {18, 974},
         {19, 975}, {20, 977}, {21, 978}, {22, 979}, {23, 980}, {24, 971}, {25, 968}, {26, 966},
@@ -67,7 +55,7 @@ static void init_0050(Vu1Ref* r) {
  *   N  TOP+1+n   normal xyz, w = T          W  TOP+1+5n  bone weights (float x4)
  *   C  TOP+1+2n  colour (float RGBA)        (TOP+1+3n: unused by skin_lit)
  */
-static int header_0188(Vu1Ref* r) {
+int set2_header_0188(Vu1Ref* r) {
     const uint32_t top = r->top;
     uint32_t hy = vu1_ref_ilw(r, top, 1), hz = vu1_ref_ilw(r, top, 2);
     uint32_t w967 = vu1_ref_ilw(r, 967, 3);
@@ -129,7 +117,7 @@ static int header_0188(Vu1Ref* r) {
 
 /* 0x0440: optional y mirror, then the per-triangle facing test on the strip.
    Returns the ADC word to OR into the vertex's shift register. */
-static uint32_t facing_0440(Vu1Ref* r, vu_f pos[4]) {
+uint32_t set2_facing_0440(Vu1Ref* r, vu_f pos[4]) {
     if (vu1_ref_ilw(r, 1017, 2)) {
         vu_f mz = ((vu_f*)vu1_ref_qw(r, 1017))[2];
         vu_f acc = vu_mul(pos[1], vu_sub(0, ONE));
@@ -165,7 +153,7 @@ static uint32_t facing_0440(Vu1Ref* r, vu_f pos[4]) {
 
 /* Bone blend of one vertex: pos/nrm = sum_k w_k * (M_k (P,1)) / (M_k3 N), k < 4,
    stopping at the first zero bone address after the first. */
-static void skin(Vu1Ref* r, const Q4* P, const Q4* N, const Q4* B, const Q4* W, vu_f pos[4], vu_f nrm[4]) {
+void set2_skin(Vu1Ref* r, const Q4* P, const Q4* N, const Q4* B, const Q4* W, vu_f pos[4], vu_f nrm[4]) {
     pos[0] = pos[1] = pos[2] = 0; pos[3] = ONE;
     nrm[0] = nrm[1] = nrm[2] = 0; nrm[3] = ONE;
     uint32_t bone = B->v[0] & 0xffff;
@@ -223,8 +211,8 @@ static void skin_lit_loop(Vu1Ref* r) {
         s4[0] = vu_add(s4[0], uv[0]);
         s4[1] = vu_add(s4[1], uv[1]);
         vu_f pos[4], nrm[4];
-        skin(r, &P, &N, &B, &W, pos, nrm);
-        uint32_t face = facing_0440(r, pos);
+        set2_skin(r, &P, &N, &B, &W, pos, nrm);
+        uint32_t face = set2_facing_0440(r, pos);
         vu_f L[3], col[4], clip[4];
         for (int l = 0; l < 3; ++l) {
             vu_f acc = vu_mul(VF(17)[l], nrm[0]);
@@ -277,16 +265,19 @@ int vu1_ref_set2(Vu1Ref* r, const char** variant) {
     switch (r->pc) {
     case 0x05b0:
         if (variant) *variant = "set2_entry_skin_lit";
-        init_0050(r); VI(14) = 0x2f; VI(15) = 0x5f0 / 8;
+        set2_init_0050(r); VI(14) = 0x2f; VI(15) = 0x5f0 / 8;
         return VU1REF_OK;
     case 0x0188: {
         uint32_t loop = VI(15) * 8u;
-        if (loop != 0x5f0) return VU1REF_UNSUPPORTED;
+        if (loop != 0x5f0) break;
         if (variant) *variant = "set2_skin_lit";
-        if (!header_0188(r)) return VU1REF_OK;
+        if (!set2_header_0188(r)) return VU1REF_OK;
         skin_lit_loop(r);
         return VU1REF_OK;
     }
     }
-    return VU1REF_UNSUPPORTED;
+    int rc = set2_spec(r, variant);
+    if (rc == VU1REF_UNSUPPORTED) rc = set2_rigid(r, variant);
+    if (rc == VU1REF_UNSUPPORTED) rc = set2_blend(r, variant);
+    return rc;
 }
