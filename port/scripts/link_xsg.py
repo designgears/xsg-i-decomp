@@ -163,7 +163,7 @@ def main():
         g, loc, und = nm(p)
         want = set(und)
         tab = []
-        if u in OVERLAYS:
+        if True:  # main too: the title returns main entry points (0x01245C58)
             for addr, name in read_symbol_txt(os.path.join(root, "config/symbols/%s.txt" % u)):
                 if name in g or loc.get(name) == 1:
                     tab.append((addr, name))

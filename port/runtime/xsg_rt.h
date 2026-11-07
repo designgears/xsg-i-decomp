@@ -53,4 +53,7 @@ uint32_t xsg_ps2_addr_of(void *host_fn);
 /* ---- disc ----------------------------------------------------------- */
 void xsg_disc_init(void);
 
+/* ---- input --------------------------------------------------------- */
+unsigned xsg_pad_script_buttons(void); /* XSG_PAD script, SCE_PAD mask */
+
 #endif

@@ -29,6 +29,7 @@ struct ovtab_ent {
     extern const struct ovtab_ent xsg_ovtab_##name[] __attribute__((weak));          \
     SEC(xsgd, name) SEC(xsgb, name) SEC(xsgcd, name) SEC(xsgcb, name)
 OV(ov01) OV(ov02) OV(ov10) OV(ov11) OV(ov12)
+extern const struct ovtab_ent xsg_ovtab_main[] __attribute__((weak));
 
 /* [0] the converted data (xsgd_/xsgb_), [1] the overlay's compiled-C
  * .data/.bss, renamed to xsgcd_/xsgcb_ by link_xsg.py */
@@ -118,6 +119,12 @@ void *xsg_ps2_func(uint32_t addr)
             if (f)
                 return f;
         }
+    if (addr < 0xA00000) { /* main executable text */
+        struct overlay m = {0, "main", xsg_ovtab_main};
+        void *f = lookup(&m, addr);
+        if (f)
+            return f;
+    }
     for (int i = 0; i < NOV; i++) {
         void *f = lookup(&ovl[i], addr);
         if (f) {

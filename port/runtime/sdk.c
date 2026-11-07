@@ -213,8 +213,44 @@ int scePadRead(int port, int slot, unsigned char *data)
     data[4] = data[5] = data[6] = data[7] = 0x80;
     for (int i = 8; i < 20; i++)
         data[i] = 0;
-    (void)port;
+    if (port == 0) {
+        unsigned m = xsg_pad_script_buttons();
+        data[2] &= ~(m >> 8);  /* buttons are active low; SCE_PAD masks are */
+        data[3] &= ~(m & 0xff); /* 0xffff ^ (data[2] << 8 | data[3]) */
+    }
     return 32;
+}
+
+/* XSG_PAD="frame:mask[:hold],..." presses SCE_PAD button masks (0x0800
+ * START, 0x0040 CROSS, 0x0020 CIRCLE, 0x1000 UP, 0x4000 DOWN...) on port 0
+ * from vblank `frame` for `hold` frames (default 6). */
+unsigned xsg_pad_script_buttons(void)
+{
+    static struct { unsigned frame, mask, hold; } ev[64];
+    static int nev = -1;
+    if (nev < 0) {
+        nev = 0;
+        const char *s = getenv("XSG_PAD");
+        while (s && *s && nev < 64) {
+            char *e;
+            ev[nev].frame = strtoul(s, &e, 0);
+            if (*e != ':')
+                break;
+            ev[nev].mask = strtoul(e + 1, &e, 0);
+            ev[nev].hold = 6;
+            if (*e == ':')
+                ev[nev].hold = strtoul(e + 1, &e, 0);
+            nev++;
+            s = *e == ',' ? e + 1 : e;
+        }
+        if (nev)
+            xsg_logf("[pad] %d scripted presses\n", nev);
+    }
+    unsigned m = 0;
+    for (int i = 0; i < nev; i++)
+        if (xsg_frame >= ev[i].frame && xsg_frame < ev[i].frame + ev[i].hold)
+            m |= ev[i].mask;
+    return m;
 }
 int scePadInfoMode(int port, int slot, int term, int offs) { (void)port; (void)slot; (void)offs; return term == 1 ? 7 : term == 2 ? 1 : 0; }
 int scePadSetMainMode(int port, int slot, int mode, int lock) { STUB_LOG("%d %d", mode, lock); (void)port; (void)slot; return 1; }
