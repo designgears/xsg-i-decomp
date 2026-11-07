@@ -540,7 +540,11 @@ extern void tyaUmlDispInit2(unsigned char *base);
 extern int tyaUmlDispParamReset(void *disp, int mode);
 extern void tyaUmlDispMain(void *disp);
 extern int xglFontLoad(int font, void (*callback)(int));
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char xglFontGetSPcodeSize(int code, char *text);
+#else
 extern int xglFontGetSPcodeSize(int code, char *text);
+#endif
 
 static void UmlDispTest(void)
 {

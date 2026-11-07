@@ -125,7 +125,11 @@ extern long long moneyBox;
 /* UmnSimulationNo: 4-byte .sdata value at 0x004da814 (sw -21340(gp)). */
 extern int UmnSimulationNo;
 
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short dataCidGet(int chara_id);
+#else
 int dataCidGet(int chara_id);
+#endif
 
 int MenuMaryIdChange(int id);
 

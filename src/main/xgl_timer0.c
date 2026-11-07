@@ -48,7 +48,12 @@ static u32 getbits(ArxBitReader *reader, u32 n)
 
     if (bc < n) {
         n -= bc;
+#ifdef PORT_HOST
+        /* bc == 0 gives a shift of 32: srlv uses the low 5 bits (shift 0), C says UB. */
+        result = reader->value >> ((32 - bc) & 31);
+#else
         result = reader->value >> (32 - bc);
+#endif
         reader->value = *reader->data++;
         reader->bit_count = 32;
         bc = 32;

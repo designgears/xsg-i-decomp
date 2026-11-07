@@ -6,6 +6,11 @@
 #include "shared.h"
 #include "ov10/cgp.h"
 #include "card_fread.h"
+#ifdef PORT_HOST
+/* Called without a prototype (int result); the callee returns a byte, and on
+   i386 the upper bits of eax are undefined. */
+unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char *text);
+#endif
 
 /* The card-model fade state in CardGameWork (+0x7100..+0x71A0, ov10/cgp.h):
  * four model slots, of whose four color channels the fades touch 0..2. */

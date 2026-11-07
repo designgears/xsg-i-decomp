@@ -12,7 +12,11 @@
 
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 extern int calcStatGet(ObjectTask *unit, int category, int flag);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+extern short dataCidGet(int chara_id);
+#else
 extern int dataCidGet(int chara_id);
+#endif
 
 /*
  * The battle actor object an ObjectTask's own `work` slot (include/shared.h)

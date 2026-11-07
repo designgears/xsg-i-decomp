@@ -47,6 +47,15 @@ set(XSG_FLAGS
 if(PORT_ASM_TRAP)
   list(APPEND XSG_FLAGS -DPORT_ASM_TRAP)
 endif()
+# Stage 11: -DXSG_SANITIZE=undefined,float-cast-overflow instruments the game C
+# (and the runtime's C) with UBSan; see STAGE11_UB.md.  The link adds the
+# runtime library, otherwise link_xsg.py would autostub the __ubsan_* handlers.
+set(XSG_SANITIZE "" CACHE STRING "Game C sanitizers (e.g. undefined,float-cast-overflow)")
+set(XSG_SANITIZE_LIBS)
+if(XSG_SANITIZE)
+  list(APPEND XSG_FLAGS -fsanitize=${XSG_SANITIZE})
+  set(XSG_SANITIZE_LIBS --libs=-fsanitize=${XSG_SANITIZE})
+endif()
 if(NOT PORT_WERROR_C)
   list(APPEND XSG_FLAGS -w)
 endif()
@@ -167,7 +176,7 @@ add_custom_command(
           ${CMAKE_BINARY_DIR} --root ${XSG_ROOT}
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/link_xsg.py
           --build ${CMAKE_BINARY_DIR} --out ${CMAKE_BINARY_DIR}/xsg --cc ${CMAKE_C_COMPILER}
-          --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o --libs=-lm --libs=-lstdc++ --libs=-pthread
+          --runtime $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs> ${CMAKE_BINARY_DIR}/iop_sound_driver.o --libs=-lm --libs=-lstdc++ --libs=-pthread ${XSG_SANITIZE_LIBS}
   DEPENDS xsg_game xsg_runtime xsg_gs $<TARGET_OBJECTS:xsg_runtime> $<TARGET_OBJECTS:xsg_gs>
           ${CMAKE_BINARY_DIR}/iop_sound_driver.o
           ${CMAKE_BINARY_DIR}/data/data_sources.cmake

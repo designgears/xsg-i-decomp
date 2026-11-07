@@ -24,7 +24,11 @@ int eMessageHalfSpaseCheck(unsigned char *text)
     return half_spaces;
 }
 
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char xglFontGetSPcodeSize(int code, unsigned char *text);
+#else
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
+#endif
 
 char *eMessageNextGyou(char *text)
 {

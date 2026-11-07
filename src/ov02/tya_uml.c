@@ -128,7 +128,11 @@ typedef struct TyaUmlTexEntry {
 extern char name_0[18];
 extern const u8 D_00A13310[];
 extern int xglJpegDecode(void *request_address);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char xglFontGetSPcodeSize(int code, unsigned char *text);
+#else
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
+#endif
 extern unsigned short xglSRand(void);
 extern TyaUmlImage image[8];
 
@@ -599,7 +603,11 @@ done:
 }
 
 extern const char D_00A133B0[];
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char xglFontGetSPcodeSize(int code, unsigned char *text);
+#else
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
+#endif
 typedef struct DbHeaderWork {
     u8 unmodeled_00[0x52];
     s16 count;

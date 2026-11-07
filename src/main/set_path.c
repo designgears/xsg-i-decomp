@@ -865,7 +865,11 @@ extern const char D_004CBDC8[];
 static void dummyMapLoad(void);
 extern void func_A31840(void);
 extern void sefDestroyEffectCf(void);
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+extern short srsEftNo2WeaponID(int effect);
+#else
 extern int srsEftNo2WeaponID(int effect);
+#endif
 extern int srsAnalyzeEftNo(int effect, int *kind, int *variant);
 extern void sefSetupPlayer(int charaId, int weaponId, int setupParam1, int setupParam2);
 extern void sefSetupEnemy(int charaId);

@@ -4588,7 +4588,11 @@ void MenuModelExtFuncSet(int model, void (*func)(void), int argument);
 void MenuModelAllBreak(void);
 void ChangeTopLevel(int level);
 
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short WindowSPSelect(CharListSPWindow *window, int pad);
+#else
 int WindowSPSelect(CharListSPWindow *window, int pad);
+#endif
 void WindowSPKeepSelect(CharListSPWindow *window, unsigned char *keep);
 void WindowSPKeepSelectCheck(unsigned char *keep);
 

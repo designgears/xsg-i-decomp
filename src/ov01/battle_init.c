@@ -304,7 +304,11 @@ extern const char D_00A43CB8[];
 extern const char D_00A43CC8[];
 extern const char D_00A43CD8[];
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+extern unsigned short dataPadRead(int padNo);
+#else
 extern int dataPadRead(int padNo);
+#endif
 extern void menuStatDispRemove(void);
 extern void objCurRemove(void);
 extern int busyUnitChk(int side);
@@ -400,7 +404,11 @@ int battleAfter(void)
 
 }
 
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+extern unsigned short dataPadRead(int padNo);
+#else
 extern int dataPadRead(int padNo);
+#endif
 int battleCtrlBoostPl(void);
 int battleCtrlConfusion(BattleUnit *unit);
 int battleCtrlMan(BattleUnit *unit, int *inp);
@@ -869,7 +877,11 @@ extern int unitTblGet(int side, BattleUnit ***table);
 extern int calcBoostChk(BattleUnit *unit, int mode);
 extern int calcBoost(BattleUnit *unit, int mode);
 
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+extern unsigned short dataPadRead(int padNo);
+#else
 extern int dataPadRead(int padNo);
+#endif
 extern const char D_00A43D78[];
 void menuBoostDisp(int enabled);
 
@@ -5575,7 +5587,11 @@ typedef struct CursorSelectList {
  * dataPadRead is defined by ov01/tu005 data_unit_org_get.c (still asm);
  * declared here to call it from this TU.
  */
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+extern unsigned short dataPadRead(int padNo);
+#else
 extern int dataPadRead(int padNo);
+#endif
 
 /*
  * curMove2Pos is defined later in this TU (still asm); forward-declared to

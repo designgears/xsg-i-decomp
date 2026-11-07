@@ -191,8 +191,14 @@ void RssdInitIop(void)
     }
     w->flags = 1;
     sceSifSetRpcQueue(w->rpc_queue, GetThreadId());
+#ifdef PORT_HOST
+    /* +0x38 + 0x6c = +0xa4 (server_buffer): indexing _unmodeled_038[0x6c] is past its 0x48 bytes. */
+    sceSifRegisterRpc(w->rpc_server, 0x901, RssdSifRpcServer,
+                      *(void **)((unsigned char *)w + 0xa4), 0, 0, w->rpc_queue);
+#else
     sceSifRegisterRpc(w->rpc_server, 0x901, RssdSifRpcServer,
                       *(void **)&w->_unmodeled_038[0x6c], 0, 0, w->rpc_queue);
+#endif
     request.arg[0].value = *(int *)((unsigned char *)&w->init_parameter);
     RssdCallFunc(1, &request, 0, 0);
 }

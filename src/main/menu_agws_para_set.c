@@ -2074,7 +2074,11 @@ typedef struct AgwsUnitOrgUp {
     short accessoryId[3];         /* +0x64 */
     unsigned short ammoId[3];     /* +0x6a */
 } AgwsUnitOrgUp;
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short WindowSPSelect(void *cursor, int button_flags);
+#else
 int WindowSPSelect(void *cursor, int button_flags);
+#endif
 void WindowSPKeepSelect(void *cursor, unsigned char *keep);
 void MenuKeepSelectReset(void);
 extern void xglSoundEffectNormalID(int sound_id, int variant);

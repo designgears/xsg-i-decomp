@@ -6788,7 +6788,11 @@ typedef struct {
     char pad8e[2];
 } SefSeEnt;
 extern unsigned short steftTbl[];
+#ifdef PORT_HOST  /* the callee returns short; on i386 the upper bits of eax are undefined */
+short srsGetBossWaitEftNo(int no);
+#else
 int srsGetBossWaitEftNo(int no);
+#endif
 
 static void sefCnvWaitEffectNo(char *p)
 {

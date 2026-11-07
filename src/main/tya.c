@@ -140,7 +140,11 @@ int printf(const char *format, ...);
 
 float I2F(int value);
 
+#ifdef PORT_HOST  /* the callee returns unsigned short; on i386 the upper bits of eax are undefined */
+unsigned short xglFontGetFlags(void);
+#else
 int xglFontGetFlags(void);
+#endif
 
 void xglFontSetFlags(int flags);
 

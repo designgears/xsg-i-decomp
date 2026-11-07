@@ -206,7 +206,11 @@ int lastBossBtlChk(void) {
     return mapNoGet() == MAP_NO_LAST_BOSS;
 }
 
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEventGet(void);
+#else
 extern int cfEventGet(void);
+#endif
 
 int bossBtlChk(void)
 {
@@ -240,7 +244,11 @@ extern void MCamTakeControl(void);
 extern int monsSetNoGet(void);
 extern int thinkMonsTblNumGet(void);
 extern int thinkNoGet(void);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEncountGet(void);
+#else
 extern int cfEncountGet(void);
+#endif
 extern const char D_00A46620[];
 extern int printf(const char *format, ...);
 extern void GameDefocusQuickSet(int first, int second, int third, int fourth);
@@ -537,7 +545,11 @@ int entryPhase36(void)
     return 1;
 }
 
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+extern unsigned char cfEncountGet(void);
+#else
 extern int cfEncountGet(void);
+#endif
 extern void calcCfEncount(int flags);
 extern void thinkInitExec(void);
 extern void sdvSaveAmbient(void);
@@ -651,7 +663,11 @@ int entryPhase60(void) {
 
 int entryPhase70(void) {
     extern int battleRetCodeGet(void);
+#ifdef PORT_HOST  /* the callee returns unsigned char; on i386 the upper bits of eax are undefined */
+    extern unsigned char cfEventGet(void);
+#else
     extern int cfEventGet(void);
+#endif
     extern void calcPara2Org(void);
     extern void resultProcInit(void);
     extern int entryPhase80(void);
