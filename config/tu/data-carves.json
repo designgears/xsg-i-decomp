@@ -8629,6 +8629,32 @@
     }
    ]
   },
+  "main/tu244": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d83b8",
+      "0x004d83bc"
+     ],
+     "generated": [
+      "0x004d83b8",
+      "0x004d83bc"
+     ],
+     "generated_by": [
+      "Java_xeno_PlayControl_init__IIIIF"
+     ],
+     "c_owned_symbols": [
+      "D_004D83B8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/playcontrol.o"
+     }
+    }
+   ]
+  },
   "main/tu245": {
    ".lit4": [
     {
@@ -9250,6 +9276,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/near_dir.o"
+     }
+    }
+   ]
+  },
+  "main/tu258": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d84fc",
+      "0x004d8500"
+     ],
+     "generated": [
+      "0x004d84fc",
+      "0x004d8500"
+     ],
+     "generated_by": [
+      "SPL_cardinalInit"
+     ],
+     "c_owned_symbols": [
+      "D_004D84FC"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/spl.o"
      }
     }
    ]
@@ -9917,40 +9969,20 @@
     {
      "range": [
       "0x004d8784",
-      "0x004d8788"
+      "0x004d8794"
      ],
      "generated": [
       "0x004d8784",
-      "0x004d8788"
-     ],
-     "generated_by": [
-      "MAP_createUnitPeer"
-     ],
-     "c_owned_symbols": [
-      "D_004D8784"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8788"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/map_create_unit_peer.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d878c",
-      "0x004d8794"
-     ],
-     "generated": [
-      "0x004d878c",
       "0x004d8794"
      ],
      "generated_by": [
-      "SEQ_motionUnit"
+      "MAP_createUnitPeer",
+      "SEQ_motionUnit",
+      "SEQ_rotateUnitSPL"
      ],
      "c_owned_symbols": [
+      "D_004D8784",
+      "D_004D8788",
       "D_004D878C",
       "D_004D8790"
      ],

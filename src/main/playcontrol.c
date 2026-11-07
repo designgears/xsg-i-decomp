@@ -163,7 +163,6 @@ typedef struct PlayControlInitFHandle {
     float unk40;
     float a2;                    /* +0x44 */
 } PlayControlInitFHandle;
-extern float D_004D83B8;
 
 void Java_xeno_PlayControl_init__IIIIF(JThread *thread,
                                        PlayControlInitFWord *arguments)
@@ -173,9 +172,9 @@ void Java_xeno_PlayControl_init__IIIIF(JThread *thread,
     play->cameraIndex = arguments[1].h;
     play->flags = arguments[2].i;
     PLAY_setup((PlayControlHandle *)play);
-    play->a = (float)arguments[3].i * D_004D83B8;
-    play->b = (float)arguments[4].i * D_004D83B8;
-    play->c = arguments[5].f * D_004D83B8;
+    play->a = (float)arguments[3].i * 0.033333335f;
+    play->b = (float)arguments[4].i * 0.033333335f;
+    play->c = arguments[5].f * 0.033333335f;
     play->a2 = play->a;
 }
 
