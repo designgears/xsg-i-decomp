@@ -37,8 +37,10 @@ using u8 = std::uint8_t;
 using u16 = std::uint16_t;
 using s32 = std::int32_t;
 
-u8* Micro() { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + 0x8000)); }
-u8* Data() { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + 0xC000)); }
+/* VU1 by default; RunVu0 (Stage 7) swaps these for VU0's 4 KB memories. */
+u32 g_micro_off = 0x8000, g_data_off = 0xC000, g_pc_mask = 0x3ff8, g_q_mask = 0x3ff;
+u8* Micro() { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + g_micro_off)); }
+u8* Data() { return reinterpret_cast<u8*>(uintptr_t(PS2_VU_BASE + g_data_off)); }
 
 union V { u32 u[4]; float f[4]; s32 i[4]; };
 
@@ -326,7 +328,7 @@ void Commit(const UpRes& r) {
 
 /* ------------------------------------------------------------ lower */
 
-inline u8* QAddr(u32 q) { return Data() + ((q & 0x3ff) << 4); }
+inline u8* QAddr(u32 q) { return Data() + ((q & g_q_mask) << 4); }
 inline void SetVi(u32 r, u32 v) { if (r & 15) s.vi[r & 15] = u16(v); }
 inline s32 Imm11(u32 w) { return s32(w << 21) >> 21; }
 
@@ -368,7 +370,7 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
     const u32 op7 = w >> 25;
     const u32 dest = (w >> 21) & 15, ft = (w >> 16) & 31, fs = (w >> 11) & 31, fd = (w >> 6) & 31;
     const u32 it = ft & 15, is = fs & 15, id = fd & 15;
-    auto br = [&](bool take) { if (take) *tgt = (pc + 8 + u32(Imm11(w) * 8)) & 0x3fff; return take; };
+    auto br = [&](bool take) { if (take) *tgt = (pc + 8 + u32(Imm11(w) * 8)) & g_pc_mask; return take; };
     switch (op7) {
     case 0x00: H("LQ"); LoadQ(ft, dest, u32(s.vi[is] + Imm11(w))); return false;
     case 0x01: H("SQ"); StoreQ(fs, dest, u32(s.vi[it] + Imm11(w))); return false;
@@ -406,8 +408,8 @@ bool Lower(u32 w, u32 pc, u32* tgt) {
     case 0x1c: H("FCGET"); stats.clip_reads++; SetVi(it, s.clip & 0xfff); return false;
     case 0x20: H("B"); return br(true);
     case 0x21: H("BAL"); SetVi(it, (pc + 16) / 8); return br(true);
-    case 0x24: H("JR"); *tgt = (u32(s.vi[is]) * 8) & 0x3fff; return true;
-    case 0x25: H("JALR"); *tgt = (u32(s.vi[is]) * 8) & 0x3fff; SetVi(it, (pc + 16) / 8); return true;
+    case 0x24: H("JR"); *tgt = (u32(s.vi[is]) * 8) & g_pc_mask; return true;
+    case 0x25: H("JALR"); *tgt = (u32(s.vi[is]) * 8) & g_pc_mask; SetVi(it, (pc + 16) / 8); return true;
     case 0x28: H("IBEQ"); return br(s.vi[it] == s.vi[is]);
     case 0x29: H("IBNE"); return br(s.vi[it] != s.vi[is]);
     case 0x2c: H("IBLTZ"); return br(std::int16_t(s.vi[is]) < 0);
@@ -548,7 +550,7 @@ u64 Run(u32 pc, u32 top, u32 itop) {
     s.top = top; s.itop = itop;
     const unsigned csr = _mm_getcsr();
     _mm_setcsr((csr & ~0x6000u) | 0x6000u | 0x8040u);   // round toward zero, FTZ, DAZ
-    pc &= 0x3ff8;
+    pc &= g_pc_mask;
     u64 n = 0;
     bool branch = false, ending = false;
     u32 btarget = 0;
@@ -562,11 +564,18 @@ u64 Run(u32 pc, u32 top, u32 itop) {
         u32 lo, hi;
         std::memcpy(&lo, micro + cur, 4);
         std::memcpy(&hi, micro + cur + 4, 4);
-        pc = (pc + 8) & 0x3ff8;
+        pc = (pc + 8) & g_pc_mask;
         if (trace_left) xsg_logf("[vu1t] %04x %08x %08x vi1-4 %x %x %x %x\n", cur, hi, lo, s.vi[1], s.vi[2], s.vi[3], s.vi[4]);
         const bool take_branch = branch;
         const u32 target = btarget;
         branch = false;
+        // A WAITQ/WAITP in the lower slot stalls the whole pair, so the upper
+        // op of the same pair already sees the new Q/P (mulq.xyz ... | waitq).
+        if (!(hi & 0x80000000u) && (lo >> 25) == 0x40) {
+            const u32 lsp = (lo & 3) | ((lo >> 4) & 0x7c);
+            if (lsp == 0x3b && s.q_busy) { s.Q = s.q_next; s.q_busy = false; }
+            if (lsp == 0x7b && s.p_busy) { s.P = s.p_next; s.p_busy = false; }
+        }
         UpRes r;
         Upper(hi, r);
         if (hi & 0x80000000u) {
@@ -595,3 +604,30 @@ u64 Run(u32 pc, u32 top, u32 itop) {
 }
 
 }  // namespace xsgvu
+
+/* Stage 7: run a VU0 microprogram (vcallms) on the VU0 register file of the
+   macro-mode model (vu0.c), with VU0's micro/data memories. */
+#include "vu0.h"
+extern "C" unsigned long long xsg_vu1_run_vu0(unsigned int pc) {
+    using namespace xsgvu;
+    State saved = s;
+    static_assert(sizeof(xsg_vu0.vf) == sizeof(s.vf), "vf layout");
+    std::memcpy(s.vf, xsg_vu0.vf, sizeof s.vf);
+    std::memcpy(&s.acc, &xsg_vu0.acc, 16);
+    for (int i = 0; i < 16; ++i) s.vi[i] = u16(xsg_vu0.vi[i]);
+    s.I = xsg_vu0.I; s.Q = xsg_vu0.Q; s.P = xsg_vu0.P; s.R = xsg_vu0.R;
+    s.mac = s.mac_l = xsg_vu0.mac; s.status = s.status_l = xsg_vu0.status; s.clip = s.clip_l = xsg_vu0.clip;
+    s.fq_n = 0; s.q_busy = s.p_busy = false;
+    g_micro_off = 0x0000; g_data_off = 0x4000; g_pc_mask = 0xff8; g_q_mask = 0xff;
+    Stats st = stats;
+    u64 n = Run(pc, 0, 0);
+    stats = st;   /* keep the VU1 statistics VU1-only */
+    g_micro_off = 0x8000; g_data_off = 0xC000; g_pc_mask = 0x3ff8; g_q_mask = 0x3ff;
+    std::memcpy(xsg_vu0.vf, s.vf, sizeof s.vf);
+    std::memcpy(&xsg_vu0.acc, &s.acc, 16);
+    for (int i = 0; i < 16; ++i) xsg_vu0.vi[i] = s.vi[i];
+    xsg_vu0.I = s.I; xsg_vu0.Q = s.Q; xsg_vu0.P = s.P; xsg_vu0.R = s.R;
+    xsg_vu0.mac = s.mac; xsg_vu0.status = s.status; xsg_vu0.clip = s.clip;
+    s = saved;
+    return n;
+}

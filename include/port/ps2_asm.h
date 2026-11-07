@@ -30,6 +30,8 @@
 #define PS2_ASMV(args...) PS2_ASM_STUB()
 #define PS2_ASM(args...) PS2_ASM_STUB()
 #define PS2_REG(r)
+/* Stage 7: translated asm blocks call into the host VU0/EE model. */
+#include "port/runtime/vu0.h"
 #endif
 
 #endif

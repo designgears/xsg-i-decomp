@@ -64,7 +64,14 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(XSG_GAME_DIR "${XSG_ROOT}/game" CACHE PATH "Default game directory (iso/, extracted-iso/)")
 
 file(GLOB XSG_RUNTIME_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/runtime/*.c")
-add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS})
+# Stage 7: the resident VU0 microprogram, from the PS2 build's DVP object.
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/vu0_microcode.c
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py
+          ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o ${CMAKE_BINARY_DIR}/vu0_microcode.c
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen_vu0_microcode.py ${XSG_ROOT}/build/main/build/vu0/Vu0MicroCode.o)
+add_library(xsg_runtime OBJECT ${XSG_RUNTIME_SRCS} ${CMAKE_BINARY_DIR}/vu0_microcode.c)
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c" PROPERTIES COMPILE_OPTIONS "-msse2;-mfpmath=sse")
 target_compile_options(xsg_runtime PRIVATE -m32 -std=gnu11 -D_FILE_OFFSET_BITS=64 -O1 -g -Wall -Wno-unused-parameter
   -fno-pic -fno-stack-protector -fno-omit-frame-pointer)
 target_compile_definitions(xsg_runtime PRIVATE "XSG_DEFAULT_GAME_DIR=\"${XSG_GAME_DIR}\"")
@@ -97,3 +104,15 @@ add_custom_command(
   COMMAND_EXPAND_LISTS
   COMMENT "Linking host executable xsg")
 add_custom_target(xsg_exe ALL DEPENDS ${CMAKE_BINARY_DIR}/xsg)
+
+# Stage 7: VU0 model unit tests (port/tests/test_vu0.c); run port/build*/test_vu0.
+add_executable(test_vu0 EXCLUDE_FROM_ALL
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_vu0.c ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu0.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/runtime/vu1.cpp ${CMAKE_BINARY_DIR}/vu0_microcode.c
+  ${XSG_ROOT}/src/main/m_math.c)
+set_source_files_properties(${XSG_ROOT}/src/main/m_math.c TARGET_DIRECTORY test_vu0 PROPERTIES
+  COMPILE_OPTIONS "${XSG_FLAGS};-DPORT_HOST;-I${XSG_ROOT}/include;-I${XSG_ROOT}")
+target_include_directories(test_vu0 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
+target_compile_options(test_vu0 PRIVATE -m32 -O1 -g -fno-pic -msse2 -mfpmath=sse)
+target_link_options(test_vu0 PRIVATE -m32 -no-pie)
+target_link_libraries(test_vu0 m stdc++)
