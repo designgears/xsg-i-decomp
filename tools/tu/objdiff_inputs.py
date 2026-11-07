@@ -25,14 +25,17 @@ def run(argv, cwd):
                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def compile_source(root, unit_dir, source, output, ccdir, assembler, flags, skip_asm):
+def compile_source(root, unit_dir, source, output, ccdir, assembler, flags, skip_asm,
+                   as_flags=()):
     common = [ccdir / 'ee-gcc', f'-B{ccdir}/', '-nostdinc', '-fno-builtin']
     preprocessed, assembly = Path(str(output) + '.i'), Path(str(output) + '.s')
     run([*common, '-E', *flags, *(['-DSKIP_ASM'] if skip_asm else []), '-Iinclude', '-I.',
          f'-I{root / "include"}', f'-I{source.parent}', source, '-o', preprocessed], unit_dir)
     run([*NOASLR, *common, '-S', *flags, preprocessed, '-o', assembly], unit_dir)
     gflag = next(flag for flag in flags if flag.startswith('-G'))
-    run([assembler, '-EL', '-m5900', '-mabi=eabi', gflag, '-I.',
+    # as_flags: the TU's extra ee-as options (config/tu/as-flags.json), as the
+    # published build passes them (tools/tu/ninja_main.py, ninja_ovl.py).
+    run([assembler, '-EL', '-m5900', '-mabi=eabi', gflag, *as_flags, '-I.',
          '-Iinclude', '-o', output, assembly], unit_dir)
     return assembly
 
@@ -75,6 +78,38 @@ def strip_debug(prefix, source, destination, cwd, iop_reference=False):
     identity = lambda elf: {(s.name, s.value, s.size, s.bind, s.type)
                            for s in elf.symbols if s.type == 2 and s.size}
     verification.require(identity(before) == identity(after), f'{source}: FUNC identity changed')
+
+
+def pair_verified_names(prefix, target, base_elf, verified, cwd):
+    """Give a verified function's target symbol the C object's name and binding.
+
+    A scaffold (INCLUDE_ASM) build of an overlay TU names a file-local function
+    by its unique splat label (`makeHermiteCoord_00A36F28`, GLOBAL), while the
+    C object defines it as `static makeHermiteCoord` (LOCAL). objdiff pairs
+    functions by name, so it never compares them. verify_report has already
+    proven the linked bytes identical; this only renames the report-local copy
+    so the pair is measured. Only same-offset, same-size pairs are renamed.
+    """
+    base = {s.name: s for s in base_elf.symbols
+            if s.type == 2 and s.shndx not in (0, 0xfff1) and s.size}
+    elf = Elf(Path(target).read_bytes())
+    have = {s.name: s for s in elf.symbols
+            if s.type == 2 and s.shndx not in (0, 0xfff1) and s.size}
+    args = []
+    for function in verified:
+        old = function['name']
+        new = function.get('c_symbol', function['original_symbol'])
+        if old == new or old not in have or new in have or new not in base:
+            continue
+        t, b = have[old], base[new]
+        if (t.value, t.size) != (b.value, b.size):
+            continue
+        args += [f'--redefine-sym={old}={new}']
+        if b.bind == 0 and t.bind != 0:
+            args += [f'--localize-symbol={new}']
+    if args:
+        # objcopy applies --redefine-sym before --localize-symbol.
+        run([str(prefix) + 'objcopy', *args, target], cwd)
 
 
 def preserve_gp0(source, target):
@@ -148,8 +183,11 @@ def prepare(root, evidence):
         [main_elf] + ([] if unit == 'main' else [build / unit / f'build/{unit}.rom.elf']))
         for unit in ('main', *cov.OVERLAY_UNITS)}
 
+    tu_as_flags = verification.read(root / 'config/tu/as-flags.json')
+
     def prepare_object(obj):
         unit, stem = obj['unit'], Path(obj['source']).stem
+        as_flags = tu_as_flags.get(f'{unit}/{stem}', [])
         unit_dir, name = build / unit, f'{unit}/{stem}'
         destination = project / name
         destination.mkdir(parents=True, exist_ok=True)
@@ -179,7 +217,8 @@ def prepare(root, evidence):
             data_sources = sorted((unit_dir / f'asm/data/{unit}').glob(stem + '.*.s'))
             if tu['kind'] == 'c':
                 compile_source(root, unit_dir, unit_dir / f'scaffold/src/{unit}/{stem}.c',
-                               target_text, ccdir, assembler, flags, skip_asm=False)
+                               target_text, ccdir, assembler, flags, skip_asm=False,
+                               as_flags=as_flags)
             else:
                 target_text = build_target(unit_dir, stem, unit)
         unit_config = dict(name=name, target_path=str(destination / 'target.o'), metadata=dict(
@@ -189,7 +228,8 @@ def prepare(root, evidence):
         if allowed:
             base = destination / 'base.o'
             assembly = compile_source(root, unit_dir, root / obj['source'], base,
-                                      ccdir, assembler, flags, skip_asm=True)
+                                      ccdir, assembler, flags, skip_asm=True,
+                                      as_flags=as_flags)
             emitted = verification.compiler_functions(assembly.read_text())
             actual = functions(base)
             # Removing inline scaffold blocks can change scheduling/alignment.
@@ -257,6 +297,8 @@ def prepare(root, evidence):
         run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
              '-o', target, stripped, *data], unit_dir)
         preserve_gp0(stripped, target)
+        if base_elf is not None:
+            pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
         if literal_labels:
             mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
