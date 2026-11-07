@@ -20,6 +20,7 @@
 #include <cstring>
 #include <condition_variable>
 #include <deque>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -101,11 +102,19 @@ struct PostFrame {
     std::string why, trigger;
     uint64_t texels = 0;
     uint32_t fbw = 8, psm = 0, zbp = 0, zpsm = 0;
-    std::vector<uint8_t> pre_main, pre_own;   // 4 MB each
+    bool snapped = false;                     // g_snap[fbp] holds the pre-effect VRAM
+    uint32_t nat_zbp[4], nzbp = 0;            // Z buffers of its native batches (the composite decodes them)
     std::vector<GpuPrim> prims;
     std::vector<std::shared_ptr<Tex>> texs;   // per prim (null: none / frame)
 };
 std::map<uint32_t, PostFrame> g_post;
+/* The VRAM of both GSes at the post-phase trigger, per FBP.  4 MB images of
+   which only the frame buffer's (and for the main GS the Z buffer's) pages
+   are copied; kept across frames so they are not reallocated. */
+struct SnapVram {
+    std::vector<uint8_t> main, own;
+};
+std::map<uint32_t, SnapVram> g_snap;
 std::set<uint32_t> g_drawn;   // FBPs drawn this interval
 
 /* ---------------------------------------------------------------- GIF parse with vertices */
@@ -426,13 +435,20 @@ void OwnAd(uint32_t reg, uint64_t v) {
 }
 /* The ownership GS runs on its own thread: it has its own Vulkan device, and
    nothing on the main thread waits for it except the owner-plane reads
-   (OwnSync).  Work items are GIF data (path 0-3) or a flush (kOwnFlush). */
-constexpr uint32_t kOwnFlush = 0xff;
+   (OwnSync).  Work items are GIF data (path 0-3), a flush (kOwnFlush) or a
+   function (kOwnCall: the effect snapshot of its VRAM). */
+constexpr uint32_t kOwnFlush = 0xff, kOwnCall = 0xfe;
+struct OwnItem {
+    uint32_t first;
+    std::vector<uint8_t> second;
+    std::function<void()> fn;
+    OwnItem(uint32_t p, std::vector<uint8_t>&& d) : first(p), second(std::move(d)) {}
+};
 struct OwnWorker {
     std::thread th;
     std::mutex m;
     std::condition_variable cv, idle_cv;
-    std::deque<std::pair<uint32_t, std::vector<uint8_t>>> q;
+    std::deque<OwnItem> q;
     std::vector<std::vector<uint8_t>> pool;   // recycled buffers
     bool busy = false;
     void Run() {
@@ -445,6 +461,7 @@ struct OwnWorker {
             busy = true;
             l.unlock();
             if (item.first == kOwnFlush) g_own->flush();
+            else if (item.first == kOwnCall) item.fn();
             else g_own->gif_transfer(item.first, item.second.data(), item.second.size());
             item.second.clear();
             l.lock();
@@ -463,6 +480,14 @@ struct OwnWorker {
         cv.notify_one();
         data = std::move(next);
         data.clear();
+    }
+    void Call(std::function<void()> fn) {
+        {
+            std::lock_guard<std::mutex> l(m);
+            q.emplace_back(kOwnCall, std::vector<uint8_t>());
+            q.back().fn = std::move(fn);
+        }
+        cv.notify_one();
     }
     void Sync() {
         std::unique_lock<std::mutex> l(m);
@@ -602,15 +627,33 @@ void Qword(uint32_t path, PathParse& p, const uint8_t* q, uint8_t* oq) {
 void Snapshot(ParallelGS::GSInterface& gs) {
     xsgprof::Scope ps(xsgprof::Snapshot);
     for (auto& [fbp, pf] : g_post) {
-        if (!pf.active || !pf.pre_main.empty()) continue;
+        if (!pf.active || pf.snapped) continue;
+        pf.snapped = true;
+        SnapVram& sv = g_snap[fbp];
+        // A buffer's pages: 16 page rows (512 lines at 32 bits per pixel) of FBW pages.
+        const uint32_t npages = std::min(512u, pf.fbw * 16);
+        auto copy = [npages](ParallelGS::GSInterface& g, std::vector<uint8_t>& dst, uint32_t page0) {
+            dst.resize(4u << 20);
+            for (uint32_t i = 0; i < npages;) {   // in runs up to the 4 MB wrap
+                const uint32_t p = (page0 + i) & 511, n = std::min(npages - i, 512 - p);
+                std::memcpy(dst.data() + size_t(p) * 8192, g.map_vram_read(size_t(p) * 8192, size_t(n) * 8192),
+                            size_t(n) * 8192);
+                i += n;
+            }
+        };
         gs.flush();
-        pf.pre_main.resize(4u << 20);
-        std::memcpy(pf.pre_main.data(), gs.map_vram_read(0, 4u << 20), 4u << 20);
-        if (g_own) {
-            OwnSync();
+        copy(gs, sv.main, fbp);
+        copy(gs, sv.main, pf.zbp);
+        for (uint32_t i = 0; i < pf.nzbp; ++i)
+            if (pf.nat_zbp[i] != pf.zbp) copy(gs, sv.main, pf.nat_zbp[i]);
+        if (g_worker) {   // on the ownership thread, after the data before the trigger
+            OwnHandOff();
+            std::vector<uint8_t>* dst = &sv.own;
+            const uint32_t f = fbp;
+            g_worker->Call([copy, dst, f] { g_own->flush(); copy(*g_own, *dst, f); });
+        } else if (g_own) {
             g_own->flush();
-            pf.pre_own.resize(4u << 20);
-            std::memcpy(pf.pre_own.data(), g_own->map_vram_read(0, 4u << 20), 4u << 20);
+            copy(*g_own, sv.own, fbp);
         }
     }
 }
@@ -737,7 +780,7 @@ void NativeNext(uint32_t ntags) {
     g_native_next = ntags;
 }
 
-void NativeFbp(uint32_t fbp) {
+void NativeFbp(uint32_t fbp, uint32_t zbp) {
     PostFrame& pf = g_post[fbp];
     if (pf.nat_frame != g_frame) {
         pf = PostFrame();
@@ -746,10 +789,16 @@ void NativeFbp(uint32_t fbp) {
         // The "effect" was mid-scene after all: the GS keeps it (the ownership
         // plane sees what it changed); start over at the next trigger.
         const uint32_t nf = pf.nat_frame;
+        const PostFrame old = pf;
         pf = PostFrame();
         pf.nat_frame = nf;
+        std::memcpy(pf.nat_zbp, old.nat_zbp, sizeof pf.nat_zbp);
+        pf.nzbp = old.nzbp;
         g_ncancel++;
     }
+    bool seen = false;
+    for (uint32_t i = 0; i < pf.nzbp; ++i) seen |= pf.nat_zbp[i] == zbp;
+    if (!seen && pf.nzbp < 4) pf.nat_zbp[pf.nzbp++] = zbp;
 }
 
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
@@ -775,8 +824,8 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
 
 const uint8_t* PreVram(uint32_t fbp) {
     auto it = g_post.find(fbp);
-    if (it == g_post.end() || !it->second.done || it->second.pre_main.empty()) return nullptr;
-    return it->second.pre_main.data();
+    if (it == g_post.end() || !it->second.done || !it->second.snapped) return nullptr;
+    return g_snap[fbp].main.data();
 }
 
 const char* PostTrigger(uint32_t fbp) {
@@ -800,7 +849,10 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     if (!g_own) return false;
     const uint8_t* v = nullptr;
     auto it = g_post.find(sf.fbp);
-    if (it != g_post.end() && it->second.done && !it->second.pre_own.empty()) v = it->second.pre_own.data();
+    if (it != g_post.end() && it->second.done && it->second.snapped && g_own) {
+        OwnSync();   // the snapshot may still be running on the ownership thread
+        v = g_snap[sf.fbp].own.data();
+    }
     if (!v) {
         OwnSync();
         g_own->flush();
@@ -811,11 +863,14 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
     const uint32_t mask = c16 ? 0xf8f8f8u : 0xffffffu;
     const size_t base = out.size();
     out.resize(base + size_t(sf.w) * sf.h);
-    for (uint32_t y = 0; y < sf.h; ++y)
-        for (uint32_t x = 0; x < sf.w; ++x) {
-            const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, x, y) & mask;
-            out[base + size_t(y) * sf.w + x] = c == (m & mask) || c == (m2 & mask);
-        }
+    uint32_t* o = out.data() + base;
+    xsgnative::ParallelRows(sf.h, [&](uint32_t y0, uint32_t y1) {
+        for (uint32_t y = y0; y < y1; ++y)
+            for (uint32_t x = 0; x < sf.w; ++x) {
+                const uint32_t c = GsPixel(v, sf.fbp, sf.fbw, sf.psm, x, y) & mask;
+                o[size_t(y) * sf.w + x] = c == (m & mask) || c == (m2 & mask);
+            }
+    });
     return true;
 }
 
@@ -914,14 +969,15 @@ bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s,
 
 bool Validate1x(const Surface& sf, const uint8_t* final_vram, uint64_t hist[4], std::vector<uint32_t>* img) {
     auto it = g_post.find(sf.fbp);
-    if (it == g_post.end() || !it->second.done || it->second.pre_main.empty()) return false;
+    if (it == g_post.end() || !it->second.done || !it->second.snapped) return false;
+    const uint8_t* pre = g_snap[sf.fbp].main.data();
     PostFrame& pf = it->second;
     const size_t n = size_t(sf.w) * sf.h;
     std::vector<uint32_t> c(n), z(n);
     for (uint32_t y = 0; y < sf.h; ++y)
         for (uint32_t x = 0; x < sf.w; ++x) {
-            c[size_t(y) * sf.w + x] = GsPixel(pf.pre_main.data(), sf.fbp, sf.fbw, sf.psm, x, y);
-            z[size_t(y) * sf.w + x] = GsZ(pf.pre_main.data(), sf.zbp, sf.fbw, sf.zpsm, x, y);
+            c[size_t(y) * sf.w + x] = GsPixel(pre, sf.fbp, sf.fbw, sf.psm, x, y);
+            z[size_t(y) * sf.w + x] = GsZ(pre, sf.zbp, sf.fbw, sf.zpsm, x, y);
         }
     auto ci = Storage(sf.w, sf.h, VK_FORMAT_R8G8B8A8_UNORM, c.data());
     auto zi = Storage(sf.w, sf.h, VK_FORMAT_R32_UINT, z.data());

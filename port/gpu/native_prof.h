@@ -20,6 +20,8 @@ enum Stage {
     OwnWait,      // waiting for the ownership GS thread
     Batch,        // GPU_MSG_NATIVE handling (textures, skin arena)
     TexDecode,    // CPU texture decode (part of Batch)
+    BatchSkin,    // set-2 message: arena, history (part of Batch)
+    BatchSnap,    // GS state + texture lookup per stored pass (part of Batch)
     Snapshot,     // effect snapshot at the post-phase trigger
     FxVsync,      // xsgfx::Vsync (ownership flush)
     LiveWait,     // Live: GS flush + VRAM wait

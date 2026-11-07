@@ -14,6 +14,7 @@
 #define XSG_GPU_NATIVE_H
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include "image.hpp"
@@ -36,6 +37,8 @@ int Scale();
 /* A TEX0 texture decoded from the GS-memory mirror (RGBA8), and the mirror's upload generation. */
 std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h);
 uint32_t MirrorGen();
+/* fn(y0, y1) over [0, h) split across a few threads (frame decodes). */
+void ParallelRows(uint32_t h, const std::function<void(uint32_t, uint32_t)>& fn);
 
 }  // namespace xsgnative
 

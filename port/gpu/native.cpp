@@ -31,6 +31,7 @@
 #include <set>
 #include <string>
 #include <sys/stat.h>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -644,11 +645,14 @@ xsgfx::Surface Surf(const Region& rg) { return {rg.fbp, rg.fbw, rg.fpsm, rg.zbp,
 void DecodeGs(const uint8_t* vram, const Region& rg, std::vector<uint32_t>& out) {
     const size_t n = size_t(rg.w) * rg.h;
     out.resize(2 * n);
-    for (uint32_t y = 0; y < rg.h; ++y)
-        for (uint32_t x = 0; x < rg.w; ++x) {
-            out[size_t(y) * rg.w + x] = GsPixel(vram, rg.fbp, rg.fbw, rg.fpsm, x, y);
-            out[n + size_t(y) * rg.w + x] = GsZ(vram, rg.zbp, rg.fbw, rg.zpsm, x, y);
-        }
+    uint32_t* o = out.data();
+    ParallelRows(rg.h, [&](uint32_t y0, uint32_t y1) {
+        for (uint32_t y = y0; y < y1; ++y)
+            for (uint32_t x = 0; x < rg.w; ++x) {
+                o[size_t(y) * rg.w + x] = GsPixel(vram, rg.fbp, rg.fbw, rg.fpsm, x, y);
+                o[n + size_t(y) * rg.w + x] = GsZ(vram, rg.zbp, rg.fbw, rg.zpsm, x, y);
+            }
+    });
 }
 
 /* GPU timestamps of the live passes, read once Granite has resolved them. */
@@ -994,6 +998,7 @@ namespace {
 /* The GS state a batch draws with (PRIM from its GIF tag, the registers of that
    context), and its texture. */
 void Snap(Stored& s, const uint32_t* tagw) {
+    xsgprof::Scope ps(xsgprof::BatchSnap);
     uint64_t tag = uint64_t(tagw[0]) | uint64_t(tagw[1]) << 32;
     uint64_t prim = Bits(tag, 46, 1) ? Bits(tag, 47, 11) : g_reg[R_PRIM];
     if (!(g_reg[R_PRMODECONT] & 1)) prim = (prim & 7) | (g_reg[R_PRMODE] & 0x7f8);
@@ -1065,7 +1070,7 @@ void FxNative(const uint32_t* tagw, uint32_t ntags) {
     if (ntags) xsgfx::NativeNext(ntags);
     const uint64_t tg = uint64_t(tagw[0]) | uint64_t(tagw[1]) << 32;
     const uint64_t pr = Bits(tg, 46, 1) ? Bits(tg, 47, 11) : g_reg[R_PRIM];
-    xsgfx::NativeFbp(Bits(g_reg[R_FRAME_1 + Bits(pr, 9, 1)], 0, 9));
+    xsgfx::NativeFbp(Bits(g_reg[R_FRAME_1 + Bits(pr, 9, 1)], 0, 9), Bits(g_reg[R_ZBUF_1 + Bits(pr, 9, 1)], 0, 9));
 }
 }  // namespace
 
@@ -1086,7 +1091,11 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
         return;
     }
     if (kind == GPU_NATIVE_SET2 || kind == GPU_NATIVE_SET2_PALETTE) {
-        auto d = xsgskin::Message(kind, nvert, payload, len);
+        std::shared_ptr<const xsgskin::Draw> d;
+        {
+            xsgprof::Scope ps(xsgprof::BatchSkin);
+            d = xsgskin::Message(kind, nvert, payload, len);
+        }
         g_env_pending.reset();
         if (!d) return;
         g_nbatch++;
@@ -1159,5 +1168,16 @@ std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t
     return DecodeTexture(g_mem.data(), tex0, texa, w, h);
 }
 uint32_t MirrorGen() { return g_upload_gen; }
+
+void ParallelRows(uint32_t h, const std::function<void(uint32_t, uint32_t)>& fn) {
+    constexpr uint32_t kThreads = 4;
+    if (h < 64) { fn(0, h); return; }
+    std::thread th[kThreads - 1];
+    const uint32_t step = (h + kThreads - 1) / kThreads;
+    for (uint32_t i = 1; i < kThreads; ++i)
+        th[i - 1] = std::thread([&fn, i, step, h] { fn(std::min(h, i * step), std::min(h, (i + 1) * step)); });
+    fn(0, std::min(h, step));
+    for (auto& t : th) t.join();
+}
 
 }  // namespace xsgnative

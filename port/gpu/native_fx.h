@@ -40,8 +40,8 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
 /* GPU_MSG_NATIVE arrived: the next `ntags` PATH1 GIF tags are that batch's
    output (set 0: one; set-2 two-pass programs: both tags of their packet). */
 void NativeNext(uint32_t ntags = 1);
-/* ... and the frame buffer it draws into (native.cpp knows it). */
-void NativeFbp(uint32_t fbp);
+/* ... and the frame and Z buffer it draws into (native.cpp knows them). */
+void NativeFbp(uint32_t fbp, uint32_t zbp);
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs);
 
 struct Surface { uint32_t fbp, fbw, psm, zbp, zpsm, w, h; };

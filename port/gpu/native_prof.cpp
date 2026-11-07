@@ -12,7 +12,7 @@ double g_gpu_ms[4];
 uint64_t g_gpu_n;
 
 namespace {
-const char* kName[kStages] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "own-wait", "batch", "tex-decode", "snapshot", "fx-vsync",
+const char* kName[kStages] = {"gif-parse", "gif-fx", "gif-main", "gif-own", "own-wait", "batch", "tex-decode", "batch-skin", "batch-snap", "snapshot", "fx-vsync",
                               "live-wait", "live-decode", "live-record", "live-submit", "other"};
 uint64_t g_last;
 }  // namespace
@@ -31,7 +31,7 @@ void Vsync(uint32_t frame) {
     int o = std::snprintf(b, sizeof b, "[prof] vsync %u: wall %.2f ms/vsync;", frame, wall);
     double sum = 0;
     for (int i = 0; i < kStages; ++i) {
-        if (i != TexDecode && i != OwnWait) sum += double(g_ns[i]) * per;   // inside batch / snapshot / live-decode
+        if (i != TexDecode && i != OwnWait && i != BatchSkin && i != BatchSnap) sum += double(g_ns[i]) * per;   // inside batch / snapshot / live-decode
         o += std::snprintf(b + o, sizeof b - o, " %s %.2f", kName[i], double(g_ns[i]) * per);
         g_ns[i] = 0;
     }
