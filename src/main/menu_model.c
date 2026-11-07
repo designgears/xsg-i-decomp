@@ -1421,9 +1421,24 @@ typedef struct MenuModelActorC2 {
 
 void MenuModelControl2(MenuModelUnit *unit, int preset)
 {
+#ifdef PORT_HOST
+    extern MenuModelPadRecordC2 xsg_view_PadDataC2[2] __asm__("PadData");
+#define PadDataC2 XSG_VIEW(xsg_view_PadDataC2)
+#else
     extern MenuModelPadRecordC2 PadDataC2[2] __asm__("PadData");
+#endif
+#ifdef PORT_HOST
+    extern const MenuModelScaleLimitsC2 xsg_view_D_004DA938C2[] __asm__("D_004DA938");
+#define D_004DA938C2 XSG_VIEW(xsg_view_D_004DA938C2)
+#else
     extern const MenuModelScaleLimitsC2 D_004DA938C2[] __asm__("D_004DA938");
+#endif
+#ifdef PORT_HOST
+    extern const MenuModelScaleLimitsC2 xsg_view_D_004DA940C2[] __asm__("D_004DA940");
+#define D_004DA940C2 XSG_VIEW(xsg_view_D_004DA940C2)
+#else
     extern const MenuModelScaleLimitsC2 D_004DA940C2[] __asm__("D_004DA940");
+#endif
     MenuModelActorC2 *actor = (MenuModelActorC2 *)unit->actor;
     MenuModelTransformVectorC2 *rotation = &actor->menu.rotation;
     MenuModelTransformVectorC2 *scale = &actor->menu.scale;

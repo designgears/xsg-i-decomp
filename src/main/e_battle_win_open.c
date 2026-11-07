@@ -391,7 +391,12 @@ typedef struct UpBattleWindow3 {
     BattleWinNumber numbers[5];
     BattleWinMessage messages2[4];
 } UpBattleWindow3;
+#ifdef PORT_HOST
+extern UpBattleWindow3 *xsg_view_UBW3 __asm__("BW3");
+#define UBW3 XSG_VIEW(xsg_view_UBW3)
+#else
 extern UpBattleWindow3 *UBW3 __asm__("BW3");
+#endif
 
 void eBattleWinOpen3(void *data)
 {

@@ -43,4 +43,19 @@ extern char __executable_start[], etext[];
 #define XSG_HOST_IS_CODE(a) ((unsigned int)(a) >= (unsigned int)__executable_start && \
                              (unsigned int)(a) < (unsigned int)etext)
 
+/* Alias views (STAGE10_PERF.md, cause 4).  The PS2 sources give one symbol a
+ * second C name: `extern T FS_view __asm__("FS");` next to `extern char FS[];`.
+ * GCC treats the two declarations as distinct objects and caches loads across
+ * stores to the other name.  Under PORT_HOST each view is renamed to
+ * `xsg_view_<name>` and `<name>` becomes XSG_VIEW(xsg_view_<name>): every
+ * access goes through a pointer laundered by an empty asm, which GCC must
+ * assume points to any global, so it aliases the real declaration.  The
+ * renamed declaration is never accessed directly (scripts/find_alias_views.py
+ * checks this). */
+static inline __attribute__((always_inline)) void *xsg_launder(void *p) {
+    __asm__("" : "+r"(p));
+    return p;
+}
+#define XSG_VIEW(v) (*(__typeof__(v) *)xsg_launder((void *)&(v)))
+
 #endif /* PS2_HOST_COMPAT_H */

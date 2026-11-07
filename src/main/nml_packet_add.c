@@ -489,13 +489,48 @@ static void _CurSetMatrix(const Matrix4 matrix)
 #endif
 }
 
+#ifdef PORT_HOST
+extern char xsg_view_FD_28[] __asm__("D_28-0x28");
+#define FD_28 XSG_VIEW(xsg_view_FD_28)
+#else
 extern char FD_28[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_1[] __asm__("D_28-0x28");
+#define FD_28_1 XSG_VIEW(xsg_view_FD_28_1)
+#else
 extern char FD_28_1[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_2[] __asm__("D_28-0x28");
+#define FD_28_2 XSG_VIEW(xsg_view_FD_28_2)
+#else
 extern char FD_28_2[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_3[] __asm__("D_28-0x28");
+#define FD_28_3 XSG_VIEW(xsg_view_FD_28_3)
+#else
 extern char FD_28_3[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_4[] __asm__("D_28-0x28");
+#define FD_28_4 XSG_VIEW(xsg_view_FD_28_4)
+#else
 extern char FD_28_4[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_5[] __asm__("D_28-0x28");
+#define FD_28_5 XSG_VIEW(xsg_view_FD_28_5)
+#else
 extern char FD_28_5[] __asm__("D_28-0x28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_FD_28_6[] __asm__("D_28-0x28");
+#define FD_28_6 XSG_VIEW(xsg_view_FD_28_6)
+#else
 extern char FD_28_6[] __asm__("D_28-0x28");
+#endif
 
 void nmlPacketAddGsFlush(void)
 {
@@ -539,12 +574,42 @@ void nmlPacketAddGsFlush(void)
 }
 
 extern char D_28[];
+#ifdef PORT_HOST
+extern char xsg_view_D_28_1[] __asm__("D_28");
+#define D_28_1 XSG_VIEW(xsg_view_D_28_1)
+#else
 extern char D_28_1[] __asm__("D_28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_D_28_2[] __asm__("D_28");
+#define D_28_2 XSG_VIEW(xsg_view_D_28_2)
+#else
 extern char D_28_2[] __asm__("D_28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_D_28_3[] __asm__("D_28");
+#define D_28_3 XSG_VIEW(xsg_view_D_28_3)
+#else
 extern char D_28_3[] __asm__("D_28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_D_28_4[] __asm__("D_28");
+#define D_28_4 XSG_VIEW(xsg_view_D_28_4)
+#else
 extern char D_28_4[] __asm__("D_28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_D_28_5[] __asm__("D_28");
+#define D_28_5 XSG_VIEW(xsg_view_D_28_5)
+#else
 extern char D_28_5[] __asm__("D_28");
+#endif
+#ifdef PORT_HOST
+extern char xsg_view_D_28_6[] __asm__("D_28");
+#define D_28_6 XSG_VIEW(xsg_view_D_28_6)
+#else
 extern char D_28_6[] __asm__("D_28");
+#endif
 
 void nmlPacketAddGsFlushWide(void)
 {

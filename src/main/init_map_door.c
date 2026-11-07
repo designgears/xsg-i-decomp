@@ -217,7 +217,12 @@ void DoubleDoorFunc();
 
 void MAP_updateUnitDoor(DoorUnit *door)
 {
+#ifdef PORT_HOST
+    extern UDMapUnit xsg_view_MapUnitUD[64] __asm__("MapUnit");
+#define MapUnitUD XSG_VIEW(xsg_view_MapUnitUD)
+#else
     extern UDMapUnit MapUnitUD[64] __asm__("MapUnit");
+#endif
     UpDoorParams *params = (UpDoorParams *)&door->params;
 
     /* Case 5 is written before case 4: the original emitted the HalfAutoDoorFunc block first. */

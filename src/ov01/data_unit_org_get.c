@@ -672,7 +672,12 @@ typedef struct CmdEntry {
     unsigned char unmodeled_0c[8]; /* +0x0C: unwritten by this call */
 } CmdEntry;
 
+#ifdef PORT_HOST
+extern BattleUnitInfo xsg_view_playerData2[7] __asm__("playerData");
+#define playerData2 XSG_VIEW(xsg_view_playerData2)
+#else
 extern BattleUnitInfo playerData2[7] __asm__("playerData");
+#endif
 extern const char D_00A457F0[];
 extern const char D_00A45810[];
 extern const char D_00A45830[];
@@ -1061,7 +1066,12 @@ typedef struct UnitFileInfoView {
     UfiEntry tex[3][3];   /* +0x0A0 */
     UfiEntry face[3];     /* +0x10C */
 } UnitFileInfoView;
+#ifdef PORT_HOST
+extern UnitFileInfoView xsg_view_ufiView[6] __asm__("unitFileInfo");
+#define ufiView XSG_VIEW(xsg_view_ufiView)
+#else
 extern UnitFileInfoView ufiView[6] __asm__("unitFileInfo");
+#endif
 #define U ufiView
 extern void *motAdrTbl[];
 extern unsigned char *mdlAdrTbl[];

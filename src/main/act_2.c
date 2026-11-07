@@ -1143,7 +1143,12 @@ typedef struct ActInitMotionEnemy {
     ActInitMotionLookLimits look_limits; /* +0x3880 */
     unsigned char unmodeled_3888[0x38b0 - 0x3888];
 } ActInitMotionEnemy;
+#ifdef PORT_HOST
+extern ActInitMotionEnemy xsg_view_act_im_enepc[16] __asm__("enepc");
+#define act_im_enepc XSG_VIEW(xsg_view_act_im_enepc)
+#else
 extern ActInitMotionEnemy act_im_enepc[16] __asm__("enepc");
+#endif
 extern const char D_004DC238[];
 extern float min_0[];
 extern float max_1[];

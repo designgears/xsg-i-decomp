@@ -2568,7 +2568,12 @@ void nmlModelSetMapShadowParts(int partId)
 
 void nmlModelSetMapLastEntry(void *map, int blockId)
 {
+#ifdef PORT_HOST
+    extern void *xsg_view_s_pMapLastPtr __asm__("s_pMapLast");
+#define s_pMapLastPtr XSG_VIEW(xsg_view_s_pMapLastPtr)
+#else
     extern void *s_pMapLastPtr __asm__("s_pMapLast");
+#endif
     extern int s_aMapLast[];
 
     if (s_nMapLast < 12) {
@@ -3742,9 +3747,24 @@ typedef struct {
     unsigned char unmodeled_08[0x1a - 0x08];
     u16 texture_buffer_base;
 } NmlRenderCp;
+#ifdef PORT_HOST
+extern NmlProRealCp xsg_view_s_inProRealCp[] __asm__("s_inProReal");
+#define s_inProRealCp XSG_VIEW(xsg_view_s_inProRealCp)
+#else
 extern NmlProRealCp s_inProRealCp[] __asm__("s_inProReal");
+#endif
+#ifdef PORT_HOST
+extern NmlLayoutCp xsg_view_s_inLayoutCp __asm__("s_inLayout");
+#define s_inLayoutCp XSG_VIEW(xsg_view_s_inLayoutCp)
+#else
 extern NmlLayoutCp s_inLayoutCp __asm__("s_inLayout");
+#endif
+#ifdef PORT_HOST
+extern NmlRenderCp xsg_view_sRenderCp __asm__("sRender");
+#define sRenderCp XSG_VIEW(xsg_view_sRenderCp)
+#else
 extern NmlRenderCp sRenderCp __asm__("sRender");
+#endif
 extern void xglMatrixStackInverse(void);
 extern void xglMatrixStackMul(Matrix4 matrix);
 extern void xglMatrixStackRotY(float angle);
@@ -5192,9 +5212,24 @@ void xglMatrixReverse(Matrix4 destination, const Matrix4 source);
 
 void nmlModelEntryEffect(NmlModelEc *model)
 {
+#ifdef PORT_HOST
+    extern NmlAlphaGroupEc xsg_view_s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+#define s_aAlphaGroupView XSG_VIEW(xsg_view_s_aAlphaGroupView)
+#else
     extern NmlAlphaGroupEc s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern NmlNonAlphaGroupEc xsg_view_s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+#define s_aNonAlphaGroupView XSG_VIEW(xsg_view_s_aNonAlphaGroupView)
+#else
     extern NmlNonAlphaGroupEc s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern XglRenderStateEc xsg_view_sRenderView __asm__("sRender");
+#define sRenderView XSG_VIEW(xsg_view_sRenderView)
+#else
     extern XglRenderStateEc sRenderView __asm__("sRender");
+#endif
     NmlLayoutEc *layout;
     NmlModelBlockEc *block;
     int *blockTable;
@@ -5338,9 +5373,24 @@ void nmlModelEntryEffect(NmlModelEc *model)
 
 void nmlModelEntryCard(NmlModelEc *model)
 {
+#ifdef PORT_HOST
+    extern NmlAlphaGroupEc xsg_view_s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+#define s_aAlphaGroupView XSG_VIEW(xsg_view_s_aAlphaGroupView)
+#else
     extern NmlAlphaGroupEc s_aAlphaGroupView[] __asm__("s_aAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern NmlNonAlphaGroupEc xsg_view_s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+#define s_aNonAlphaGroupView XSG_VIEW(xsg_view_s_aNonAlphaGroupView)
+#else
     extern NmlNonAlphaGroupEc s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern XglRenderStateEc xsg_view_sRenderView __asm__("sRender");
+#define sRenderView XSG_VIEW(xsg_view_sRenderView)
+#else
     extern XglRenderStateEc sRenderView __asm__("sRender");
+#endif
     NmlLayoutEc *layout;
     NmlModelBlockEc *block;
     int *blockTable;
@@ -5732,8 +5782,18 @@ void nmlPacketGsInit(void);
 
 static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
 {
+#ifdef PORT_HOST
+    extern int xsg_view_s_inMapHandleView[4] __asm__("s_inMapHandle");
+#define s_inMapHandleView XSG_VIEW(xsg_view_s_inMapHandleView)
+#else
     extern int s_inMapHandleView[4] __asm__("s_inMapHandle");
+#endif
+#ifdef PORT_HOST
+    extern NmlNonAlphaGroupRp xsg_view_s_aNonAlphaGroupViewRp[] __asm__("s_aNonAlphaGroup");
+#define s_aNonAlphaGroupViewRp XSG_VIEW(xsg_view_s_aNonAlphaGroupViewRp)
+#else
     extern NmlNonAlphaGroupRp s_aNonAlphaGroupViewRp[] __asm__("s_aNonAlphaGroup");
+#endif
     extern NmlParentBuffer *parent_buf_entryUp(NmlLayoutRp *inLayout) __asm__("parent_buf_entry");
     extern int nmlModelCalcEntryClipUp(NmlModelSampleView *model, StudioCamera *camera) __asm__("nmlModelCalcEntryClip");
     extern void nmlModelCalcDropShadowUp(NmlModelRp *model) __asm__("nmlModelCalcDropShadow");
@@ -6639,9 +6699,24 @@ extern void sefDrawEffect(void);
 
 static int nmlModelFlushSub(int viewport)
 {
+#ifdef PORT_HOST
+    extern NmlNonAlphaGroupUp xsg_view_s_aNonAlphaGroupViewUp[] __asm__("s_aNonAlphaGroup");
+#define s_aNonAlphaGroupViewUp XSG_VIEW(xsg_view_s_aNonAlphaGroupViewUp)
+#else
     extern NmlNonAlphaGroupUp s_aNonAlphaGroupViewUp[] __asm__("s_aNonAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern NmlAlphaGroupUp xsg_view_s_aAlphaGroupViewUp[] __asm__("s_aAlphaGroup");
+#define s_aAlphaGroupViewUp XSG_VIEW(xsg_view_s_aAlphaGroupViewUp)
+#else
     extern NmlAlphaGroupUp s_aAlphaGroupViewUp[] __asm__("s_aAlphaGroup");
+#endif
+#ifdef PORT_HOST
+    extern XglRenderStateUp xsg_view_sRenderViewUp __asm__("sRender");
+#define sRenderViewUp XSG_VIEW(xsg_view_sRenderViewUp)
+#else
     extern XglRenderStateUp sRenderViewUp __asm__("sRender");
+#endif
     int result;
     StudioCamera *camera;
     int index;

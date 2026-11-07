@@ -1432,7 +1432,12 @@ typedef struct MenuTecMwView {
     signed char partyCount;
     signed char partyCursor;
 } MenuTecMwView;
+#ifdef PORT_HOST
+extern MenuTecMwView xsg_view_MenuTecMw __asm__("MenuWork");
+#define MenuTecMw XSG_VIEW(xsg_view_MenuTecMw)
+#else
 extern MenuTecMwView MenuTecMw __asm__("MenuWork");
+#endif
 extern short MenuTecParty[];
 extern MenuTecStatusWork *MenuTecStatus;
 extern void MenuStatusDisp(MenuTecStatRecord *record);
@@ -1790,7 +1795,12 @@ extern const char *msg01_5[];
 
 void MenuTecListMain2(void)
 {
+#ifdef PORT_HOST
+    extern MenuTecList2Work *xsg_view_MenuTecList2L2 __asm__("MenuTecList2");
+#define MenuTecList2L2 XSG_VIEW(xsg_view_MenuTecList2L2)
+#else
     extern MenuTecList2Work *MenuTecList2L2 __asm__("MenuTecList2");
+#endif
     int i;
     int j;
     MenuTecList2Work *work = MenuTecList2L2;

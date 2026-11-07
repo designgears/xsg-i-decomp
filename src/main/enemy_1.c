@@ -288,8 +288,18 @@ float UnduCheck(const Vector4 *position, void *velocity,
 
 void Enemy_Init(EnemyActorEI *self)
 {
+#ifdef PORT_HOST
+    extern EnemyWorkEntryEI xsg_view_enepc_EI[16] __asm__("enepc");
+#define enepc_EI XSG_VIEW(xsg_view_enepc_EI)
+#else
     extern EnemyWorkEntryEI enepc_EI[16] __asm__("enepc");
+#endif
+#ifdef PORT_HOST
+    extern EnemyGameLoopStateEI xsg_view_GameLoopState_EI __asm__("GameLoopState");
+#define GameLoopState_EI XSG_VIEW(xsg_view_GameLoopState_EI)
+#else
     extern EnemyGameLoopStateEI GameLoopState_EI __asm__("GameLoopState");
+#endif
     EnemyParamsEI *params = &self->params;
     EnemyWorkEntryEI *work = &enepc_EI[self->number];
     short i;
@@ -1417,9 +1427,24 @@ typedef struct EnemyPadViewAU {
     unsigned short held;
     unsigned short pressed;
 } EnemyPadViewAU;
+#ifdef PORT_HOST
+extern EnemyActorAU xsg_view_actor_AU[64] __asm__("actor");
+#define actor_AU XSG_VIEW(xsg_view_actor_AU)
+#else
 extern EnemyActorAU actor_AU[64] __asm__("actor");
+#endif
+#ifdef PORT_HOST
+extern EnemyWorkEntryAU xsg_view_enepc_AU[16] __asm__("enepc");
+#define enepc_AU XSG_VIEW(xsg_view_enepc_AU)
+#else
 extern EnemyWorkEntryAU enepc_AU[16] __asm__("enepc");
+#endif
+#ifdef PORT_HOST
+extern EnemyGameLoopStateAU xsg_view_GameLoopState_AU __asm__("GameLoopState");
+#define GameLoopState_AU XSG_VIEW(xsg_view_GameLoopState_AU)
+#else
 extern EnemyGameLoopStateAU GameLoopState_AU __asm__("GameLoopState");
+#endif
 extern EnemyPadViewAU PadData;
 extern short DebugActor;
 extern short NowTester;
@@ -1885,8 +1910,18 @@ typedef struct EnemyWorkMoveUP3 {
 unsigned char TM_Enemy_Move_Step(int actor_number, Vector4 *step_limit,
                                  float goback_x)
 {
+#ifdef PORT_HOST
+    extern EnemyActorMoveUP3 xsg_view_actor_UP3[64] __asm__("actor");
+#define actor_UP3 XSG_VIEW(xsg_view_actor_UP3)
+#else
     extern EnemyActorMoveUP3 actor_UP3[64] __asm__("actor");
+#endif
+#ifdef PORT_HOST
+    extern EnemyWorkMoveUP3 xsg_view_enepc_UP3[16] __asm__("enepc");
+#define enepc_UP3 XSG_VIEW(xsg_view_enepc_UP3)
+#else
     extern EnemyWorkMoveUP3 enepc_UP3[16] __asm__("enepc");
+#endif
     EnemyActorMoveUP3 *self = &actor_UP3[actor_number];
     EnemyVector4AU old = self->position_pair;
 

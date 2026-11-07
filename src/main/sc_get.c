@@ -209,7 +209,12 @@ typedef struct ScriptRecordUp {
     short event;
     unsigned char unmodeled_44C[4];
 } ScriptRecordUp;
+#ifdef PORT_HOST
+extern ScriptRecordUp xsg_view_ScriptWorkRec[] __asm__("_scriptWork");
+#define ScriptWorkRec XSG_VIEW(xsg_view_ScriptWorkRec)
+#else
 extern ScriptRecordUp ScriptWorkRec[] __asm__("_scriptWork");
+#endif
 
 static void scExecScript(void)
 {

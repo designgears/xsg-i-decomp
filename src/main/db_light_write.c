@@ -2095,7 +2095,12 @@ void updateLight(int mode)
     extern void drawCircle2RadiusFirst(Matrix4 *matrix, float radius, int color_index) __asm__("drawCircle2");
 #endif
     /* lightCol as rows of RgVector (the TU declares it as Vector4). */
+#ifdef PORT_HOST
+    extern RgVector xsg_view_lightColRows[6] __asm__("lightCol");
+#define lightColRows XSG_VIEW(xsg_view_lightColRows)
+#else
     extern RgVector lightColRows[6] __asm__("lightCol");
+#endif
     const struct CursorPadKeyResult *keys =
         (const struct CursorPadKeyResult *)(const void *)&keyData;
     Matrix4 matrix;

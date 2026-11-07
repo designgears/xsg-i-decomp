@@ -426,8 +426,8 @@ int sefSearchMapperIndex2(int effect_id, int number, int category) {
 #ifndef PORT_HOST
     extern SefMapTbl__df _srsMemRes;
 #else /* file scope declares _srsMemRes as SefMemRes; alias this view */
-    extern SefMapTbl__df _srsMemResMap __asm__("_srsMemRes");
-#define _srsMemRes _srsMemResMap
+    extern SefMapTbl__df xsg_view__srsMemResMap __asm__("_srsMemRes");
+#define _srsMemRes XSG_VIEW(xsg_view__srsMemResMap)
 #endif
     extern unsigned char _battlePrm[];
     int o, i, n, j;
@@ -4899,7 +4899,12 @@ typedef struct SefScriptReference {
     SefScriptStatus status;
 } SefScriptReference;
 extern SefScriptReference _scriptWork[16];
+#ifdef PORT_HOST
+extern SchedulerState xsg_view_sefSchedulerTable[] __asm__("_scheduler");
+#define sefSchedulerTable XSG_VIEW(xsg_view_sefSchedulerTable)
+#else
 extern SchedulerState sefSchedulerTable[] __asm__("_scheduler");
+#endif
 
 void sefFreeScheduler(unsigned int scheduler_index)
 {
@@ -5117,7 +5122,12 @@ typedef struct SefSchedulerCreateView {
     short mapperIndex;
     unsigned char unmodeled_aa6[0xab0 - 0xaa6];
 } SefSchedulerCreateView;
+#ifdef PORT_HOST
+extern SefSchedulerCreateView xsg_view_sefSchedulerCreateTable[] __asm__("_scheduler");
+#define sefSchedulerCreateTable XSG_VIEW(xsg_view_sefSchedulerCreateTable)
+#else
 extern SefSchedulerCreateView sefSchedulerCreateTable[] __asm__("_scheduler");
+#endif
 int sefCreateScheduler2(int effect_no, int parameters, int position, int table, int flags, int index)
 {
     int number;

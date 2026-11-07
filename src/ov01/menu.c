@@ -691,7 +691,12 @@ typedef struct MsdStatObjWork {
 } MsdStatObjWork;
 enum { MSD_CRIT_HIDDEN = 0x4, MSD_STOCK_HIDDEN = 0x4 };
 enum MenuStatStartZ { MENU_STAT_START_Z = -88 };
+#ifdef PORT_HOST
+extern const enum MenuStatStartZ xsg_view_menuStatStartZ __asm__("D_00A46774");
+#define menuStatStartZ XSG_VIEW(xsg_view_menuStatStartZ)
+#else
 extern const enum MenuStatStartZ menuStatStartZ __asm__("D_00A46774");
+#endif
 static __inline__ MsdCritWork *msdCritWorkGet(ObjectTask *task)
 { return (MsdCritWork *)*(u32 *)&task->work; }
 static __inline__ MsdStockWork *msdStockWorkGet(ObjectTask *task)
@@ -1910,7 +1915,12 @@ static __inline__ MenuStockWork *menuStockWorkGet(ObjectTask *task)
 
 void menuStockBoost(void)
 {
+#ifdef PORT_HOST
+    extern MenuStockPos xsg_view_stockPosTblView[5] __asm__("stockPosTbl");
+#define stockPosTblView XSG_VIEW(xsg_view_stockPosTblView)
+#else
     extern MenuStockPos stockPosTblView[5] __asm__("stockPosTbl");
+#endif
     ObjectTask *task;
     MenuObjTransform *transform;
     MenuCmdEntryView *entry;

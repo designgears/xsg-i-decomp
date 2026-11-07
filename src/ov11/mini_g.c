@@ -3415,7 +3415,12 @@ union CasinoWorkU {
     int words[148];
     struct PokerDealWorkU poker_deal;
 };
+#ifdef PORT_HOST
+extern union CasinoWorkU xsg_view_GworkU __asm__("Gwork");
+#define GworkU XSG_VIEW(xsg_view_GworkU)
+#else
 extern union CasinoWorkU GworkU __asm__("Gwork");
+#endif
 extern int init_99;
 extern int PokerCoinRate[4];
 #define CASINO_MENU 0

@@ -1,6 +1,16 @@
 #include "common.h"
 
 extern unsigned char FS[];
+#ifdef PORT_HOST
+/* D_00881188, D_0088119C and D_008811A0 are labels inside FS (+0x08, +0x1c,
+ * +0x20: the queue cursor at FS+0x1c is written both as `*D_0088119C` and as
+ * `*(FS + 0x1c)`).  As separate declarations GCC assumes they do not overlap
+ * FS and caches the cursor across stores (STAGE10_PERF.md cause 4), so on the
+ * host they are offsets into the one object. */
+#define D_00881188 (FS + 0x08)
+#define D_0088119C ((unsigned char **)(FS + 0x1C))
+#define D_008811A0 ((FontQueueSlot *)(FS + 0x20))
+#endif
 extern unsigned PS2_LONG ModeEnv[];
 
 void xglFontDebugMode(int mode)
@@ -70,7 +80,9 @@ typedef struct FontQueueSlot {
     unsigned short selfOffset;
 } FontQueueSlot;
 
+#ifndef PORT_HOST
 extern FontQueueSlot D_008811A0[16];
+#endif
 
 static void set_ot(int ot)
 {
@@ -146,7 +158,9 @@ unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char *text)
     return size;
 }
 
+#ifndef PORT_HOST
 extern unsigned char *D_0088119C[];
+#endif
 
 static void xglFontPrintSub(void *args)
 {
@@ -281,7 +295,9 @@ static void xglFontPrintSub(void *args)
   *((*((unsigned char **) (fs + 0x1C)))++) = 0;
 }
 
+#ifndef PORT_HOST
 extern unsigned char *D_0088119C[];
+#endif
 
 static void xglFontPrintDirectCore(const char *text)
 {
@@ -316,7 +332,9 @@ static void xglFontPrintDirectCore(const char *text)
   *((*((unsigned char **) (fs + 0x1C)))++) = 0;
 }
 
+#ifndef PORT_HOST
 extern unsigned char D_00881188[];
+#endif
 
 static void set_xyz(int x, int y, int color);
 static void xglFontPrintSub(void *args);
@@ -687,7 +705,12 @@ extern signed char tbl_1_004DC2A8[4][2];
 static void xglFontFlushSub(int texture_u, int texture_v, int size, int flags)
 {
     /* FS read through its typed view (the TU declares it as bytes). */
+#ifdef PORT_HOST
+    extern FontStateStorage xsg_view_xglFontStateView __asm__("FS");
+#define xglFontStateView XSG_VIEW(xsg_view_xglFontStateView)
+#else
     extern FontStateStorage xglFontStateView __asm__("FS");
+#endif
     struct FontDrawCursor *cursor = (struct FontDrawCursor *)0x70000000;
     struct FontSpritePacket *sprite = (struct FontSpritePacket *)0x70000100;
     int glyph_width = size >> 8;
@@ -920,7 +943,12 @@ static void xglFontFlushCore(struct FontDrawCursor *cursor, const unsigned char 
     /* xglFontAscii2Euc's full-word result (the TU's definition below returns a halfword). */
     extern unsigned int xglFontAscii2EucWord(signed char character, signed char **text) __asm__("xglFontAscii2Euc");
     /* FS read through its typed view (the TU declares it as bytes). */
+#ifdef PORT_HOST
+    extern FontStateStorage xsg_view_xglFontStateView __asm__("FS");
+#define xglFontStateView XSG_VIEW(xsg_view_xglFontStateView)
+#else
     extern FontStateStorage xglFontStateView __asm__("FS");
+#endif
     struct FontRealDigits real_digits;
     signed char integer_digits[32];
     unsigned char kana[96];
@@ -1565,13 +1593,23 @@ typedef union FontStateViewStorage {
     struct FontStateView state;
     unsigned char bytes[0x20];
 } FontStateViewStorage;
+#ifdef PORT_HOST
+extern FontStateViewStorage xsg_view_FS_view __asm__("FS");
+#define FS_view XSG_VIEW(xsg_view_FS_view)
+#else
 extern FontStateViewStorage FS_view __asm__("FS");
+#endif
 typedef union FontQueueViewStorage {
     unsigned long long alignment;
     FontQueueSlot slots[16];
     unsigned char bytes[0x2860];
 } FontQueueViewStorage;
+#ifdef PORT_HOST
+extern FontQueueViewStorage xsg_view_D_queue __asm__("D_008811A0");
+#define D_queue XSG_VIEW(xsg_view_D_queue)
+#else
 extern FontQueueViewStorage D_queue __asm__("D_008811A0");
+#endif
 struct FontQueueRecord {
     unsigned char next_low;
     unsigned char next_high;
@@ -1778,7 +1816,9 @@ void *xglFontGetLoadAddress(void)
 /* The font module's flags word (scaffold-owned splat name; xglFontGetFlags
  * and xglFontSetFlags are its only accessors in this allocation, and its
  * further extent is not evidenced here). */
+#ifndef PORT_HOST
 extern unsigned char D_00881188[];
+#endif
 
 unsigned short xglFontGetFlags(void)
 {
