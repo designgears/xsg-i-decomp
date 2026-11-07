@@ -45,6 +45,7 @@ const char D_00A543A8[] = "pReader != NIL";
  * "../rg_read_text.euc.c".
  */
 const char D_00A543B8[] = "../rg_read_text.euc.c";
+const char D_00A543D0[] = "data\\nisimori\\";
 
 /*
  * ov12:0x00a543e0, 54 bytes, contains the range-check message
@@ -53,6 +54,7 @@ const char D_00A543B8[] = "../rg_read_text.euc.c";
 const char D_00A543E0[] = "pCur - pReader->m_pszBuf = %d\npReader->m_nSize = %d\n";
 
 const char D_00A54418[] = "pCur != NIL";
+const char D_00A54428[] = "nCapa > 0";
 const char D_00A54438[] = "true";
 const char D_00A54440[] = "on";
 const char D_00A54448[] = "pszUngetToken != NIL";
@@ -68,7 +70,6 @@ extern void XrgFileSysPopMode(void);
 extern RgFileSys *InstanceOfRgFileSys(void);
 extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName,
                                     const char *pszDir);
-extern const char D_00A543D0[];
 
 static int _InitReader(RgReadText *pReader, const char *pszName)
 {
@@ -175,7 +176,6 @@ static int _IsEOF(RgReadText *pReader)
     return _SkipWhiteSpace(pReader) == 0;
 }
 
-extern const char D_00A54428[];
 extern char *strcpy(char *dest, const char *src);
 
 static void _GetString(RgReadText *pReader, char *pszOut, unsigned int nCapacity)

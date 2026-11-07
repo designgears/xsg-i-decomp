@@ -14338,11 +14338,11 @@
    ".rodata": [
     {
      "range": [
-      "0x00a52378",
+      "0x00a52358",
       "0x00a523f0"
      ],
      "generated": [
-      "0x00a52378",
+      "0x00a52358",
       "0x00a523ef"
      ],
      "generated_by": [
@@ -14361,19 +14361,20 @@
       "RgRobotEffectTermJet",
       "_AddEffect",
       "_DestructRobEff",
+      "_InitDashDefault",
+      "_InitJetDefault",
       "_InitRobEff",
       "_SetShootLocalGenEffect"
      ],
      "c_owned_symbols": [
+      "D_00A52358",
+      "D_00A52368",
       "D_00A52378",
       "D_00A523A0",
       "D_00A523C0",
       "D_00A523E0"
      ],
-     "also_referenced_by_c": [
-      "D_00A52358",
-      "D_00A52368"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -15839,11 +15840,11 @@
     {
      "range": [
       "0x00a543a8",
-      "0x00a543d0"
+      "0x00a54480"
      ],
      "generated": [
       "0x00a543a8",
-      "0x00a543d0"
+      "0x00a54480"
      ],
      "generated_by": [
       "CreateRgReadText",
@@ -15868,61 +15869,11 @@
      ],
      "c_owned_symbols": [
       "D_00A543A8",
-      "D_00A543B8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A543D0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_read_text.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a543e0",
-      "0x00a54428"
-     ],
-     "generated": [
-      "0x00a543e0",
-      "0x00a54428"
-     ],
-     "generated_by": [
-      "_GetBool",
-      "_GetFloat",
-      "_GetInt",
-      "_GetString",
-      "_SetCurrent"
-     ],
-     "c_owned_symbols": [
+      "D_00A543B8",
+      "D_00A543D0",
       "D_00A543E0",
-      "D_00A54418"
-     ],
-     "also_referenced_by_c": [
-      "D_00A54428"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_read_text.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a54438",
-      "0x00a54480"
-     ],
-     "generated": [
-      "0x00a54438",
-      "0x00a54480"
-     ],
-     "generated_by": [
-      "RgReadTextNextParagraph",
-      "RgReadTextUnget",
-      "_GetBool"
-     ],
-     "c_owned_symbols": [
+      "D_00A54418",
+      "D_00A54428",
       "D_00A54438",
       "D_00A54440",
       "D_00A54448",
@@ -16635,11 +16586,11 @@
     {
      "range": [
       "0x00a54ca0",
-      "0x00a54d20"
+      "0x00a54e18"
      ],
      "generated": [
       "0x00a54ca0",
-      "0x00a54d20"
+      "0x00a54e18"
      ],
      "generated_by": [
       "CreateRgBattleMgr",
@@ -16685,6 +16636,7 @@
       "_GetInPlayerList",
       "_GetNumOfPlayerList",
       "_GetStudioBattleField",
+      "_InitBattle",
       "_InitBattleField",
       "_InitBattleMgr",
       "_InitDispInfo",
@@ -16702,66 +16654,9 @@
       "D_00A54CE0",
       "D_00A54CE8",
       "D_00A54CF8",
-      "D_00A54D08"
-     ],
-     "also_referenced_by_c": [
+      "D_00A54D08",
       "D_00A54D20",
-      "D_00A54D30"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_battlemgr.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a54d50",
-      "0x00a54e18"
-     ],
-     "generated": [
-      "0x00a54d50",
-      "0x00a54e18"
-     ],
-     "generated_by": [
-      "CreateRgBattleMgr",
-      "DisposeRgBattleMgr",
-      "RgBattleMgrActivateTimer",
-      "RgBattleMgrControl",
-      "RgBattleMgrDisp",
-      "RgBattleMgrGetDispLife",
-      "RgBattleMgrGetMode",
-      "RgBattleMgrGetPlayTime",
-      "RgBattleMgrGetPlayerDamage",
-      "RgBattleMgrGetResult",
-      "RgBattleMgrInitBattle",
-      "RgBattleMgrPassTime",
-      "RgBattleMgrSetPlayerControl",
-      "_BattleMgrActivateTime",
-      "_BattleMgrPlayerControl",
-      "_ClearBattleField",
-      "_ControlBattle",
-      "_DestructBattleField",
-      "_DestructDispInfo",
-      "_DispBattle",
-      "_DisposeBattleField",
-      "_DisposeBattleMgr",
-      "_DisposeDispInfo",
-      "_DoubleScreenBattleField",
-      "_DrawDispInfo",
-      "_DrawDispInfoOnePlayer",
-      "_FullScreenBattleField",
-      "_GetCameraBattleField",
-      "_GetGeomGroupBattleField",
-      "_GetStudioBattleField",
-      "_InitBattleField",
-      "_InitBattleMgr",
-      "_InitDispInfo",
-      "_PassTimeBattle",
-      "_PassTimeBattleField",
-      "_SetDispInfo"
-     ],
-     "c_owned_symbols": [
+      "D_00A54D30",
       "D_00A54D50",
       "D_00A54D60",
       "D_00A54D78",
@@ -17028,29 +16923,29 @@
    ".rodata": [
     {
      "range": [
-      "0x00a55290",
+      "0x00a55260",
       "0x00a552e8"
      ],
      "generated": [
-      "0x00a55290",
+      "0x00a55260",
       "0x00a552e4"
      ],
      "generated_by": [
       "CheckBallBoxCollision_00A2EB18",
+      "InitRgGeomPillar",
       "_CheckPillarBall"
      ],
      "c_owned_symbols": [
+      "D_00A55260",
+      "D_00A55270",
       "jtbl_00A55290",
       "jtbl_00A552C0"
      ],
-     "also_referenced_by_c": [
-      "D_00A55260",
-      "D_00A55270"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_geom_pillar.o"
+      "object": "build/ov12/build/scaffold/src/ov12/rg_geom_pillar.o"
      }
     }
    ]
@@ -17240,14 +17135,15 @@
     {
      "range": [
       "0x00a554f0",
-      "0x00a55590"
+      "0x00a556c0"
      ],
      "generated": [
       "0x00a554f0",
-      "0x00a55590"
+      "0x00a556c0"
      ],
      "generated_by": [
       "CreateRgColiData",
+      "CreateRgColiDataQuadPrism",
       "DisposeRgColiData",
       "RgColiDataAddTriangle",
       "RgColiDataInitTriangles",
@@ -17265,32 +17161,9 @@
       "D_00A55518",
       "D_00A55528",
       "D_00A55548",
-      "D_00A55560"
-     ],
-     "also_referenced_by_c": [
+      "D_00A55560",
       "D_00A55590",
-      "D_00A55610"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_colidata.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a55670",
-      "0x00a556c0"
-     ],
-     "generated": [
-      "0x00a55670",
-      "0x00a556c0"
-     ],
-     "generated_by": [
-      "RgColiDataVsBall",
-      "RgColiDataVsRay"
-     ],
-     "c_owned_symbols": [
+      "D_00A55610",
       "D_00A55670",
       "D_00A556A0",
       "D_00A556B0"
@@ -17299,7 +17172,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov12/build/scaffold/src/ov12/rg_colidata.o"
+      "object": "build/ov12/build/scaffold/src/ov12/rg_colidata.o"
      }
     }
    ]

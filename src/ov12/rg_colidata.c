@@ -27,7 +27,7 @@ const char D_00A55518[] = "nCapa > 0";
 const char D_00A55528[] = "pData->m_pTriangles != NIL";
 const char D_00A55548[] = "nNumOfTriangles > 0";
 const char D_00A55560[] = "pData->m_nCapaOfTri > pData->m_nNumOfTri";
-const char D_00A55670[] = "pPoly != NIL && pArg != NIL && pResult != NIL";
+extern const char D_00A55670[];
 
 static void _InitTriColi(void *pTri, void *pV0, void *pV1, void *pV2)
 {
@@ -253,6 +253,26 @@ RgColiData *CreateRgColiDataQuadPrism(float fWidth, float fHeight)
     }
     return pData;
 }
+
+const QuadPrismVerts D_00A55590 = {{
+    {-1.0f, 0.0f, -1.0f, 1.0f},
+    {1.0f, 0.0f, -1.0f, 1.0f},
+    {-1.0f, 0.0f, 1.0f, 1.0f},
+    {1.0f, 0.0f, 1.0f, 1.0f},
+    {-1.0f, 1.0f, -1.0f, 1.0f},
+    {1.0f, 1.0f, -1.0f, 1.0f},
+    {-1.0f, 1.0f, 1.0f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f}
+}};
+const QuadPrismIdx D_00A55610 = {{
+    {1, 0, 3, 2},
+    {4, 5, 6, 7},
+    {5, 4, 1, 0},
+    {7, 5, 3, 1},
+    {6, 7, 2, 3},
+    {4, 6, 0, 2}
+}};
+const char D_00A55670[] = "pPoly != NIL && pArg != NIL && pResult != NIL";
 
 void DisposeRgColiData(RgColiData *pData)
 {
