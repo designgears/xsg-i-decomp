@@ -65,7 +65,17 @@ typedef struct CameraRecord {
     unsigned char unmodeled_12b8[8]; /* +0x12b8 to the established 0x12c0 stride */
 } CameraRecord;
 
-extern CameraRecord tcamera[8];
+static unsigned int tblHand[9] = {
+    0x54453030, 0x54453031, 0x54453032, 0x54453033,
+    0x54453034, 0x54453035, 0x54453036, 0x54453037, 0
+};
+CameraRecord tcamera[8] = {0};
+float newsToDirection[16] = {
+    0.0f, 3.141592741f, 1.570796371f, 2.356194496f,
+    -1.570796371f, -2.356194496f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.7853981853f, 0.0f,
+    -0.7853981853f, 0.0f, 0.0f, 0.0f
+};
 
 
 extern void ACT_resetParent(Actor *actor, Actor *other);
@@ -106,7 +116,6 @@ extern void MDL_setGroupVisible(void *model, int part, int visible);
 
 extern void MDL_setVisible(void *model, int part, int visible);
 
-extern unsigned int tblHand[9];
 
 
 struct JntProducer;
@@ -542,9 +551,6 @@ extern void JNT_setCurve(void *static_value_records, void *value_records);
 extern void ANM_update(void *anim);
 extern void FCV2_setStep(float frame_step);
 extern unsigned char enepc[];
-extern const char D_004D1800[];
-extern const char D_004DC230[];
-extern const char D_004D1810[];
 
 static void ACT_updateMotionSub(Actor *actor, int pause)
 {
@@ -642,10 +648,10 @@ block_12:
                 }
                 if (temp_20 != 0) {
                     char *name = (char *)temp_20 + 0x10;
-                    if (strstr(name, D_004DC230) != 0) {
+                    if (strstr(name, "chaos") != 0) {
                         var_18 |= 0x40000;
                     }
-                    if ((strstr(name, D_004D1800) != 0) || (strstr(name, D_004D1810) != 0)) {
+                    if ((strstr(name, "boss_016") != 0) || (strstr(name, "boss_019") != 0)) {
                         var_18 |= 0x20000;
                     }
                 }
@@ -1084,7 +1090,6 @@ typedef struct ActInitMotionEnemy {
     unsigned char unmodeled_3888[0x38b0 - 0x3888];
 } ActInitMotionEnemy;
 extern ActInitMotionEnemy act_im_enepc[16] __asm__("enepc");
-extern const char D_004DC238[];
 extern float min_0[];
 extern float max_1[];
 extern void *JNT_computeMatrix(void *work, void *channels, int argument);
@@ -1125,7 +1130,7 @@ void ACT_initMotion(Actor *actor)
     ACT_IM_ADD(actor->jointProducer, 0, JNT_computeMatrix, 0);
 
     do {
-        if (actor->modelResource != 0 && strstr((char *)actor->modelResource + 0x10, D_004DC238) != 0) {
+        if (actor->modelResource != 0 && strstr((char *)actor->modelResource + 0x10, "_face") != 0) {
             ACT_IM_ADD(actor->jointProducer, 5, LOOK_eyeL_cont, actor);
             ACT_IM_ADD(actor->jointProducer, 8, LOOK_eyeR_cont, actor);
             break;

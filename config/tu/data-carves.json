@@ -6100,6 +6100,35 @@
    ]
   },
   "main/tu186": {
+   ".data": [
+    {
+     "range": [
+      "0x0036f8e8",
+      "0x00378b30"
+     ],
+     "generated": [
+      "0x0036f8e8",
+      "0x00378b30"
+     ],
+     "generated_by": [
+      "SetItemSymbolRsrc",
+      "dataEvtItmNameGet",
+      "taskItemGet"
+     ],
+     "c_owned_symbols": [
+      "ItemBoxTbl",
+      "EvtItemTbl"
+     ],
+     "also_referenced_by_c": [
+      "strno"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/create_evt_item_get_task.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -6124,7 +6153,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+      "object": "build/main/build/c/create_evt_item_get_task.o"
      }
     },
     {
@@ -6152,7 +6181,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+      "object": "build/main/build/c/create_evt_item_get_task.o"
      }
     }
    ],
@@ -6187,7 +6216,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+      "object": "build/main/build/c/create_evt_item_get_task.o"
      }
     },
     {
@@ -6215,7 +6244,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/create_evt_item_get_task.o"
+      "object": "build/main/build/c/create_evt_item_get_task.o"
      }
     }
    ]
@@ -9145,6 +9174,51 @@
    ]
   },
   "main/tu255": {
+   ".data": [
+    {
+     "range": [
+      "0x00465de0",
+      "0x00465e04"
+     ],
+     "generated": [
+      "0x00465de0",
+      "0x00465e04"
+     ],
+     "generated_by": [
+      "ACT_setHumanHand"
+     ],
+     "c_owned_symbols": [
+      "tblHand"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_2.o"
+     }
+    },
+    {
+     "range": [
+      "0x00465e10",
+      "0x0046f450"
+     ],
+     "generated": [
+      "0x00465e10",
+      "0x0046f450"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "tcamera",
+      "newsToDirection"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_2.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -9175,34 +9249,60 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/act_2.o"
+      "object": "build/main/build/c/act_2.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004d1820",
+      "0x004d1800",
       "0x004d1838"
      ],
      "generated": [
-      "0x004d1820",
+      "0x004d1800",
       "0x004d1838"
      ],
      "generated_by": [
-      "ACT_modelDrawSub"
+      "ACT_modelDrawSub",
+      "ACT_updateMotionSub"
      ],
      "c_owned_symbols": [
+      "D_004D1800",
+      "D_004D1810",
       "jtbl_004D1820"
      ],
-     "also_referenced_by_c": [
-      "D_004D1800",
-      "D_004D1810"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/act_2.o"
+      "object": "build/main/build/c/act_2.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc230",
+      "0x004dc240"
+     ],
+     "generated": [
+      "0x004dc230",
+      "0x004dc23e"
+     ],
+     "generated_by": [
+      "ACT_initMotion",
+      "ACT_updateMotionSub"
+     ],
+     "c_owned_symbols": [
+      "D_004DC230",
+      "D_004DC238"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_2.o"
      }
     }
    ]

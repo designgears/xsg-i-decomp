@@ -83,7 +83,8 @@ typedef struct ItemBoxEntry {
     int special;
 } ItemBoxEntry;
 
-extern ItemBoxEntry ItemBoxTbl[];
+ItemBoxEntry ItemBoxTbl[601] = {{0}};
+unsigned char EvtItemTbl[0xFF * 0x80] = {0};
 
 extern char *strno[];
 extern const char D_004CA4D0[];
