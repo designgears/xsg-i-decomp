@@ -6,7 +6,10 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include "xsg_settings.h"
+#include <fcntl.h>
 #include <stdint.h>
+#include <time.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -399,6 +402,56 @@ static void pad_log_live(unsigned live, const unsigned char *data)
             xsg_logf("[pad] vblank %u: player at %.2f %.2f %.2f\n", xsg_frame, p[4], p[5], p[6]);
     }
 }
+/* [debug] remote_pad = PATH (the status site's web controller,
+ * STATUS_SITE.md): a 32-byte little-endian record, replaced atomically
+ * (temp file + rename) by the writer:
+ *   0  "XSGP" magic                    4  u32 sequence
+ *   8  u32 SCE_PAD button mask         12 u8 lx, ly, rx, ry (128 = centre)
+ *   16 u8 pressure[12] (scePadRead order; 0 = full for held buttons)
+ *   28 u32 writer time, CLOCK_REALTIME milliseconds (low 32 bits)
+ * Re-opened every vblank (a rename gives a new inode; open+pread+close is a
+ * few us); a missing, short or bad record, or one older than 1 s (the writer
+ * refreshes it every 200 ms), reads as a released pad. */
+static int pad_remote(unsigned *buttons, unsigned char st[4], unsigned char press[12])
+{
+    static const char *path;
+    static int init, warned;
+    unsigned char r[32];
+    int fd, n;
+    if (!init) {
+        init = 1;
+        path = xsg_cfg("debug.remote_pad");
+        if (path && !*path)
+            path = 0;
+        if (path)
+            xsg_logf("[pad] remote pad file %s\n", path);
+    }
+    if (!path || (fd = open(path, O_RDONLY | O_CLOEXEC)) < 0)
+        return 0;
+    n = (int)pread(fd, r, sizeof r, 0);
+    close(fd);
+    if (n != 32 || r[0] != 'X' || r[1] != 'S' || r[2] != 'G' || r[3] != 'P') {
+        if (n > 0 && !warned++)
+            xsg_logf("[pad] remote pad: bad record (%d bytes)\n", n);
+        return 0;
+    }
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    unsigned now = (unsigned)((unsigned long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+    unsigned t = r[28] | r[29] << 8 | r[30] << 16 | (unsigned)r[31] << 24;
+    int age = (int)(now - t);
+    if (age > 1000 || age < -5000)
+        return 0; /* stale: the writer is gone */
+    *buttons = (r[8] | r[9] << 8) & 0xffff;
+    st[0] = r[14], st[1] = r[15], st[2] = r[12], st[3] = r[13]; /* scePadRead order: RX RY LX LY */
+    memcpy(press, r + 16, 12);
+    return 1;
+}
+static int stick_off_centre(const unsigned char *s)
+{
+    int x = s[0] - 128, y = s[1] - 128;
+    return x > 24 || x < -24 || y > 24 || y < -24;
+}
 int scePadRead(int port, int slot, unsigned char *data)
 {
     /* DualShock 2 reply: 2 status bytes, 2 active-low button bytes, 4 stick
@@ -421,6 +474,21 @@ int scePadRead(int port, int slot, unsigned char *data)
         if (pad_live_on() && xsg_gpu_pad_read(&live, stick, press)) {
             memcpy(data + 4, stick, 4);
             memcpy(data + 8, press, 12);
+        }
+        /* remote pad (web controller): buttons OR'ed; per stick, the
+         * remote one wins while it is off centre */
+        unsigned rb = 0;
+        unsigned char rst[4], rpr[12];
+        if (pad_remote(&rb, rst, rpr)) {
+            for (int k = 0; k < 4; k += 2)
+                if (stick_off_centre(rst + k))
+                    data[4 + k] = rst[k], data[5 + k] = rst[k + 1];
+            for (int i = 0; i < 12; i++) {
+                unsigned char v = rpr[i] ? rpr[i] : 0xff;
+                if ((rb & press_bit[i]) && data[8 + i] < v)
+                    data[8 + i] = v;
+            }
+            live |= rb;
         }
         pad_script_sticks(data + 4); /* XSG_PAD_STICK overrides the sticks */
         data[2] &= ~((m | live) >> 8);  /* buttons are active low; SCE_PAD masks are */

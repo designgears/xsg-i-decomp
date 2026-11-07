@@ -88,6 +88,7 @@ XSG_SETTING("debug.pad", "XSG_PAD", "", 0, 0, "Scripted pad input, e.g. 300:STAR
 XSG_SETTING("debug.pad_log", "XSG_PAD_LOG", "", 0, 0, "Log pad reads.")
 XSG_SETTING("debug.pad_live", "XSG_PAD_LIVE", "", 0, 0, "Live pad command file.")
 XSG_SETTING("debug.pad_stick", "XSG_PAD_STICK", "", 0, 0, "Scripted analog stick input.")
+XSG_SETTING("debug.remote_pad", 0, "", 0, 0, "Remote pad state file (32-byte record, STATUS_SITE.md), read each vblank.")
 XSG_SETTING("debug.twin_log", "XSG_TWIN_LOG", "", 0, 0, "Twin (pad lock-step) log.")
 /* ---- debug: screenshots / captures */
 XSG_SETTING("debug.shot", "XSG_SHOT", "", 0, 0, "Frames to screenshot (list).")

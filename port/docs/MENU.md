@@ -168,7 +168,7 @@ remapping syntax is unchanged. When a binding is edited in the menu, the
 
 ### settings.ini reference
 
-Generated from `port/runtime/xsg_settings_table.h` (31 user settings, 62 `[debug]`
+Generated from `port/runtime/xsg_settings_table.h` (31 user settings, 63 `[debug]`
 switches; plus the free-form binding entries of `[keyboard]`/`[gamepad]`). "replaces" is the
 environment variable the setting took over; it is no longer read.
 
@@ -222,6 +222,7 @@ environment variable the setting took over; it is no longer read.
 | `[debug] pad_log` | (empty) | text | restart | `XSG_PAD_LOG` | Log pad reads. |
 | `[debug] pad_live` | (empty) | text | restart | `XSG_PAD_LIVE` | Live pad command file. |
 | `[debug] pad_stick` | (empty) | text | restart | `XSG_PAD_STICK` | Scripted analog stick input. |
+| `[debug] remote_pad` | (empty) | text | restart | | Remote pad state file (32-byte record, STATUS_SITE.md), read each vblank. |
 | `[debug] twin_log` | (empty) | text | restart | `XSG_TWIN_LOG` | Twin (pad lock-step) log. |
 | `[debug] shot` | (empty) | text | restart | `XSG_SHOT` | Frames to screenshot (list). |
 | `[debug] shot_every` | (empty) | text | restart | `XSG_SHOT_EVERY` | Screenshot every N frames. |
