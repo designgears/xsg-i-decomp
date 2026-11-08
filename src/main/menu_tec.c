@@ -410,11 +410,9 @@ int func_A197E8(int chrNo, int tecNo);
 
 void *MenuSortAddrGet(int list);
 
-extern const unsigned char D_004C92E8[28];
+static unsigned char MenuTecTrgTbl00[] = { 0, 1, 0, 0, 1, 0 };
 
-extern const unsigned char MenuTecTrgTbl00[];
-
-extern const unsigned char MenuTecTrgTbl01[];
+static unsigned char MenuTecTrgTbl01[] = { 1, 1, 1, 1, 1, 1 };
 
 MenuTecSaveRecord *MenuTecSaveDataGet(int chrNo)
 {
@@ -1581,7 +1579,6 @@ void MenuTecStatusMain(void)
 }
 
 extern unsigned char MenuKeepSelect[];
-extern char D_004C90F0[];
 typedef struct MenuTecSPWindowView {
     unsigned char state;                /* +0x00 */
     unsigned char drawFlags;             /* +0x01 */
@@ -1652,7 +1649,7 @@ void MenuTecListMain(void)
                     work->window.rows = 5;
                     work->window.drawFlags = 7;
                     work->window.x = 528;
-                    work->window.title = D_004C90F0;
+                    work->window.title = "List\003P\003>Eqp";
                     work->window.columns = 1;
                     work->window.items = MenuListGet(0);
                     WindowSPItemChange(window);
@@ -1771,8 +1768,6 @@ typedef struct MenuTecList2MessageIds {
     int id[6];
 } MenuTecList2MessageIds;
 
-extern const MenuTecList2MessageIds D_004C91D8;
-extern const MenuTecList2SpriteIds D_004C9210;
 
 
 void MenuTecListMain2(void)
@@ -1795,7 +1790,7 @@ void MenuTecListMain2(void)
                 }
             }
         } else {
-            MenuTecList2MessageIds messageIds = D_004C91D8;
+            MenuTecList2MessageIds messageIds = { { 0, 1, 0, 0, 1, 0 } };
 
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < i * 2 + 2; j++) {
@@ -1856,7 +1851,7 @@ void MenuTecListMain2(void)
                 work->row[i].equipmentName[j].color = work->color + 2;
             }
             {
-                spriteIds = D_004C9210;
+                spriteIds = (MenuTecList2SpriteIds){ { 0x201, 0x202, 0x201, 0x201, 0x201, 0x202, 0x202, 0x202, 0x202, 0x201 } };
 
                 for (j = 0; j < i * 6 + 2; j++) {
                     eSpriteSet(&work->row[i].icon[j], spriteIds.id[j + i * 2]);
@@ -2177,7 +2172,7 @@ void MenuTecSortSet00(void)
     } range[7];
     int tecNo;
 
-    __builtin_memcpy(range, D_004C92E8, sizeof(range));
+    __builtin_memcpy(range, (short[14]){ 45, 52, 53, 59, 60, 67, 68, 75, 76, 82, 83, 90, 91, 98 }, sizeof(range));
     for (tecNo = range[MenuWork.characterNo - 1].first; tecNo <= range[MenuWork.characterNo - 1].last; tecNo++) {
         if (func_A197E8(MenuWork.characterNo, tecNo) != 0)
             *sortRow++ = 0xA0000 + (tecNo & 0xFFFF);
@@ -2296,11 +2291,6 @@ typedef struct MenuTecList2WorkMT {
 } MenuTecList2WorkMT;
 extern MenuTecList2WorkMT *MenuTecList2;
 extern unsigned char *MainMenuWorkEnd;
-extern signed char D_004DB4E8[];
-extern char D_004DB4F8[];
-extern char D_004DB500[];
-extern char D_004DB508[];
-extern char D_004DB510[];
 int PartyAttackerCheck(int characterNo);
 void MenuKeepSelectReset(void);
 int MenuMaryIdChange(int id);
@@ -2485,7 +2475,7 @@ void MenuTec(void)
         MenuWork.listCursor = MenuSelectMove(MenuWork.listCursor, 3, 0);
         if (MenuWork.listCursor == oldCursor) {
             if (PadData.half_2a == 0x20) {
-                __builtin_memcpy(nextMenu, D_004DB4E8, sizeof(nextMenu));
+                __builtin_memcpy(nextMenu, (signed char[3]){ 0x30, 0x50, 0x10 }, sizeof(nextMenu));
                 MenuWork.inputDelay = 8;
                 MenuWork.nextState = nextMenu[MenuWork.listCursor];
                 if (!MenuCursorKeepCheck()) {
@@ -2699,12 +2689,23 @@ void MenuTec(void)
     MenuTecL1R1Main();
     MenuWork.resetFlags |= 2;
     xglFontDebugPrintf(0, 64, "\013tec");
-    xglFontDebugPrintf(0, 80, D_004DB4F8, MenuWork.listCursor);
-    xglFontDebugPrintf(0, 88, D_004DB500, MenuWork.mode);
-    xglFontDebugPrintf(0, 96, D_004DB508, MenuWork.selectedTechnique);
-    xglFontDebugPrintf(0, 104, D_004DB510, MenuWork.rowCursor);
+    xglFontDebugPrintf(0, 80, "\013ms %2d", MenuWork.listCursor);
+    xglFontDebugPrintf(0, 88, "\013sli%2d", MenuWork.mode);
+    xglFontDebugPrintf(0, 96, "\013lst%2d", MenuWork.selectedTechnique);
+    xglFontDebugPrintf(0, 104, "\013sct%2d", MenuWork.rowCursor);
 }
 
 /* Defined after MenuTec: the original .sdata holds it at 0x004DB518, after
  * every string literal of the TU's functions (MenuTec's ends at 0x004DB517). */
 extern MenuTecData *MenuTecDataBuf;
+
+MenuTecData *MenuTecDataBuf = 0;
+MenuTecPasWork *MenuTecPas = 0;
+MenuTecInfoWorkMT *MenuTecInfo = 0;
+MenuTecMenuWork *MenuTecMenu = 0;
+MenuTecExWork *MenuTecEx = 0;
+MenuTecL1R1Work *MenuTecL1R1 = 0;
+MenuTecStatusWork *MenuTecStatus = 0;
+MenuTecListWork *MenuTecList = 0;
+MenuTecList2WorkMT *MenuTecList2 = 0;
+MenuTecSetWinWork *MenuTecSetWin = 0;
