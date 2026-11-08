@@ -124,7 +124,6 @@ typedef struct TyaUmlTexEntry {
     u16 x;
     u16 y;
 } TyaUmlTexEntry;
-extern char name_0[18];
 extern const u8 D_00A13310[];
 extern int xglJpegDecode(void *request_address);
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
@@ -133,6 +132,7 @@ extern TyaUmlImage image[8];
 
 static int tyaUmlDispLoad(TyaUmlDispParam *parameter)
 {
+    static char name_0[18] __asm__("name.0") = "data\\umn\\0000.uml";
     int i;
     int j;
     u32 n;
@@ -276,10 +276,14 @@ extern void sceVif1PkOpenDirectHLCode(XglPacket *packet, int mode);
  * each transfer) is touched here, so the remaining template bytes are
  * supplied by the reference image, not generated here.
  */
-extern u64 TestEnv_1_00A108B0[12];
 
 static void texture_trans(XglPacket **packet, TyaUmlImage *texture)
 {
+    static u64 TestEnv_1_00A108B0[12] __asm__("TestEnv.1") __attribute__((aligned(16))) = {
+        0x0000000000000000ULL, 0x5100000500000000ULL, 0x1000000000000004ULL, 0x000000000000000EULL,
+        0x0208380000000000ULL, 0x0000000000000050ULL, 0x0000000000000000ULL, 0x0000000000000051ULL,
+        0x0000000000000000ULL, 0x0000000000000052ULL, 0x0000000000000000ULL, 0x0000000000000053ULL,
+    };
     long long dimensions;
 
     /*
@@ -298,15 +302,43 @@ static void texture_trans(XglPacket **packet, TyaUmlImage *texture)
 }
 
 extern void xglFontReloadTexture(void *context, int mode);
-extern u64 TestEnv_2[];
-extern int TestEnv_4[];
-extern int InitEnv_3[];
-extern int TestEnv_5[];
-extern int TestEnv_6[];
 extern TyaUmlImage image[8];
 
 static void tyaUmlDispType3Sub0(void *context, void *argument)
 {
+    static u64 TestEnv_2[14] __asm__("TestEnv.2") __attribute__((aligned(16))) = {
+        0x1000000000008006ULL, 0x000000000000000EULL, 0x0000000000070000ULL, 0x0000000000000047ULL,
+        0x0000000000000044ULL, 0x0000000000000042ULL, 0x0000000664223800ULL, 0x0000000000000006ULL,
+        0x0000000000000000ULL, 0x0000000000000014ULL, 0x0000000000000000ULL, 0x0000000000000008ULL,
+        0x0000000000000000ULL, 0x0000000000000040ULL,
+    };
+    static int InitEnv_3[8] __asm__("InitEnv.3") __attribute__((aligned(16))) = {
+        0x00008001, 0x10000000, 0x0000000E, 0x00000000,
+        0x00000000, 0x00000000, 0x0000003F, 0x00000000,
+    };
+    static int TestEnv_4[24] __asm__("TestEnv.4") __attribute__((aligned(16))) = {
+        0x00008001, 0x508B4000, 0x00053531, 0x00000000,
+        0x00000080, 0x00000080, 0x00000080, 0x00000080,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00007C00, 0x00007BF8, 0x10000000, 0x00000000,
+        0x00000800, 0x00000800, 0x00000000, 0x00000000,
+        0x00008400, 0x000083F8, 0x10000000, 0x00000000,
+    };
+    static int TestEnv_5[16] __asm__("TestEnv.5") __attribute__((aligned(16))) = {
+        0x00008001, 0x30034000, 0x00000551, 0x00000000,
+        0x00000080, 0x00000080, 0x00000080, 0x00000080,
+        0x00007C00, 0x00007BF8, 0x10000000, 0x00000000,
+        0x00008400, 0x000083F8, 0x10000000, 0x00000000,
+    };
+    static int TestEnv_6[28] __asm__("TestEnv.6") __attribute__((aligned(16))) = {
+        0x00008001, 0x608B4000, 0x0053531E, 0x00000000,
+        0x00000000, 0x00000000, 0x0000003F, 0x00000000,
+        0x00000080, 0x00000080, 0x00000080, 0x00000080,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00007C00, 0x00007BF8, 0x10000000, 0x00000000,
+        0x00000800, 0x00000800, 0x00000000, 0x00000000,
+        0x00008400, 0x000083F8, 0x10000000, 0x00000000,
+    };
     TyaUmlImage *img = image;
     TyaUmlDispParam *parameter = argument;
     XglPacket **packet = (XglPacket **)context;
@@ -707,8 +739,6 @@ static void dbheader_load(DbHeaderWork *work)
 
 }
 
-extern char *idx_7;
-extern char msg_8[];
 extern const char D_00A13400[];
 typedef struct DispIndexWork {
     u8 unmodeled_00[8];
@@ -723,6 +753,8 @@ typedef struct DispIndexWork {
 
 static void disp_index(DispIndexWork *work, int value)
 {
+    static char *idx_7 __asm__("idx.7") = "A\0B\0C\0D\0E\0F\0G\0H\0I\0J\0K\0L\0M\0N\0O\0P\0R\0S\0T\0U\0V\0W\0Y\0Z\0##";
+    static char msg_8[5] __asm__("msg.8") = "\x08\x88";
     int i;
     int color;
 
@@ -1046,3 +1078,6 @@ void tyaUmlDispInit(void)
 {
     tyaUmlDispInit2((u8 *)0x01000000);
 }
+
+unsigned char UmnMailData[256] = { 0 };
+TyaUmlImage image[8] = { { 0 } };

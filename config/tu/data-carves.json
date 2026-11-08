@@ -19642,6 +19642,109 @@
    ]
   },
   "ov02/tu012_00a0c488": {
+   ".data": [
+    {
+     "range": [
+      "0x00a10890",
+      "0x00a108a2"
+     ],
+     "generated": [
+      "0x00a10890",
+      "0x00a108a2"
+     ],
+     "generated_by": [
+      "tyaUmlDispLoad"
+     ],
+     "c_owned_symbols": [
+      "name_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a108b0",
+      "0x00a10ab4"
+     ],
+     "generated": [
+      "0x00a108b0",
+      "0x00a10ab4"
+     ],
+     "generated_by": [
+      "disp_index",
+      "texture_trans",
+      "tyaUmlDispType3Sub0"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_1_00A108B0",
+      "TestEnv_2",
+      "InitEnv_3",
+      "TestEnv_4",
+      "TestEnv_5",
+      "TestEnv_6",
+      "idx_7"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10ab8",
+      "0x00a10abd"
+     ],
+     "generated": [
+      "0x00a10ab8",
+      "0x00a10abd"
+     ],
+     "generated_by": [
+      "disp_index"
+     ],
+     "c_owned_symbols": [
+      "msg_8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10ac0",
+      "0x00a10c40"
+     ],
+     "generated": [
+      "0x00a10ac0",
+      "0x00a10c40"
+     ],
+     "generated_by": [
+      "dbheader_load",
+      "tyaUmlDispInit2",
+      "tyaUmlDispLoad",
+      "tyaUmlDispMain",
+      "tyaUmlDispType3Sub0"
+     ],
+     "c_owned_symbols": [
+      "UmnMailData",
+      "image"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -19671,23 +19774,28 @@
     {
      "range": [
       "0x00a13398",
-      "0x00a133c8"
+      "0x00a13400"
      ],
      "generated": [
       "0x00a13398",
-      "0x00a133c8"
+      "0x00a13400"
      ],
      "generated_by": [
       "dbfileno_load",
-      "dbheader_load"
+      "dbheader_load",
+      "disp_index"
      ],
      "c_owned_symbols": [
       "db_fileno_path",
-      "D_00A133B0"
+      "D_00A133B0",
+      "D_00A133C8"
      ],
      "also_referenced_by_c": [
       "D_00A13400"
      ],
+     "reached_through": {
+      "D_00A133C8": "idx_7"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -19697,19 +19805,39 @@
     {
      "range": [
       "0x00a13410",
-      "0x00a13440"
+      "0x00a13420"
      ],
      "generated": [
       "0x00a13410",
-      "0x00a1343c"
+      "0x00a13420"
      ],
      "generated_by": [
-      "disp_index",
-      "tyaUmlDatabaseMain"
+      "disp_index"
      ],
      "c_owned_symbols": [
       "D_00A13410",
-      "D_00A13418",
+      "D_00A13418"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a13420",
+      "0x00a13440"
+     ],
+     "generated": [
+      "0x00a13420",
+      "0x00a1343c"
+     ],
+     "generated_by": [
+      "tyaUmlDatabaseMain"
+     ],
+     "c_owned_symbols": [
       "jtbl_00A13420"
      ],
      "also_referenced_by_c": [],
