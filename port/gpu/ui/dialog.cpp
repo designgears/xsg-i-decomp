@@ -146,7 +146,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     y0 += rise; y1 += rise;
     Panel(dl, ImVec2(x0, y0), ImVec2(x1, y1), k, t, false, 0, d.name[0] ? 14 : 15);   // the speaker plate takes the top-left
     dl->AddRect(ImVec2(x0 + 2 * k, y0 + 2 * k), ImVec2(x1 - 2 * k, y1 - 2 * k), IM_COL32(150, 180, 235, int(36 * t)), 0, 0, 1.0f);
-    const float fs = 21.0f * sy;   // body text size
+    const float fs = 25.5f * sy;   // body text: the original's proportions (its font is ~1.25x the UI font's width)
     // speaker: a plate on the frame's top edge, a cyan rule under the name
     if (d.name[0]) {
         const std::string name = Decode(d.name);
@@ -355,7 +355,10 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
     using namespace xsgmenu;
     LayoutBegin(gx, gy, gw, gh);
     const float k = LayoutK(), kx = LayoutKx();
-    auto P = [&](float x, float y) { return Map(x, y, kLeft); };
+    // the key guide and name plate (channels 0, 1) sit at the left; captured art elsewhere
+    // (party portraits: channel 3) anchors like the panel it belongs to
+    int anchor = kLeft;
+    auto P = [&](float x, float y) { return Map(x, y, anchor); };
     static const int kPos[] = {2, 3, 0, 1};   // id 1..4 -> west, north, south, east
     static const ImU32 kAccent[] = {IM_COL32(118, 170, 255, 255), IM_COL32(255, 96, 170, 255), IM_COL32(110, 220, 150, 255)};
     char b[16];
@@ -384,6 +387,7 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
     }
     for (uint32_t i = 0; i < uint32_t(ops.size()); ++i) {
         const GpuUiKgOp& o = ops[i];
+        if (!rows && akey != 0x4B47000000000000ull + (1ull << 32)) anchor = AnchorFor(float(o.x), float(o.x) + 0x92);
         // each row (keyed by its y) eases in from the left, a beat after the one above
         AnimState& ra = Anim(rows ? akey + uint32_t(o.y / 28) : akey, rows ? -18.0f : 0.0f, 0);
         if (rows && AnimNow() - ra.born < (o.y / 28 % 8) * 0.04) ra.a = 0;
@@ -434,8 +438,10 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             const bool add = ((o.a >> 2) & 3) == 2;
             const float fix = ((o.a >> 4) & 3) == 2 ? float(o.b) / 128.0f : 1.0f;
             if (add) dl->AddCallback(xsgmenu::BlendAdd, nullptr);
+            uint32_t set;
+            std::memcpy(&set, o.text + 4, 4);
             ArtSprite(dl, uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32, 0, float(o.u), float(o.v), float(o.w), float(o.h), P(x, y), P(x + o.dw, y + o.dh), o.rgba,
-                      rt * fix, false);
+                      rt * fix, false, set);
             if (add) dl->AddCallback(xsgmenu::BlendAlpha, nullptr);
             break;
         }

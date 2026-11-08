@@ -1423,6 +1423,18 @@ void TWIN_drawScene2(TComponent *component)
     *(short *)(b + 0x12) = 0x1A;
     *(volatile unsigned short *)b |= 0x4000;
     ((volatile union { short s; char *p; } *)(b + 0x20))->p = D_004C1C60;
+#ifdef PORT_HOST
+    {   /* rebuilt UI: the caption's frame is xsg-gpu's (a window in the frame's UI list); its
+           centred lines reach it through xglFontPrint */
+        extern int xsg_ui_rebuilt(void);
+        extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
+        if (xsg_ui_rebuilt()) {
+            xsg_ui_mop(11, x, y, *(short *)(w + 0xC), *(short *)(w + 0xE), 0xFFFFF0, 0x80806040u, 1);
+            *(unsigned short *)a &= 0xBFFF;
+            *(unsigned short *)*(char **)(w + 0xD0) &= 0xBFFF;
+        }
+    }
+#endif
     s = *(unsigned short *)(w + 0x14);
     b = *(char **)(w + 0xE4);
     if (s == 0xB || s == 8 || s == 0xC || s == 0x11) {

@@ -42,6 +42,7 @@ extern int MenuFileMain(int mode);
 extern void MenuShopMain(int shop);
 extern void *TMENU_create(int slot);
 extern void TMENU_addItem(void *menu, const char *text);
+extern int CreateEvtItemGetTask(int category, int id);
 extern void PartyTakeAgwsOn(int id);
 extern int dataMoneyBoxInc(int amount);
 extern unsigned char itmBox[0x1FE], wpnBox[0x1FE], bltBox[0x1FE], accBox[0x1FE];
@@ -61,11 +62,12 @@ volatile unsigned xsg_room_frame;
    call: once walking (+ROOM_CALL_AT), open a screen the way the field loop
    does (game.c checkTalkPoint): ROOM_SAVE the save point's file menu,
    ROOM_SHOP + n shop n (1..20, the shop file's records). */
-enum { ROOM_SAVE = 1, ROOM_CHOICE = 2, ROOM_SHOP = 0x100 };
+enum { ROOM_SAVE = 1, ROOM_CHOICE = 2, ROOM_ITEM_GET = 3, ROOM_SHOP = 0x100 };
 #define ROOM_CALL_AT 450
 static const struct { const char *name, *scene, *pad, *what; int give, call; } rooms[] = {
     {"battle_tutorial", "cf9001", 0, "Shion + KOS-MOS vs attack drones, tutorial pages and dialog"},
     {"battle_kosmos", "cf9002", 0, "KOS-MOS vs Drone SPX: full command menu, AP, boost"},
+    {"battle_win", "cf9002", "+650:SQUARE*900@40,+670:TRIANGLE*900@40,+690:CIRCLE*900@40", "battle_kosmos fought to the end (attacks, then the results)"},
     {"battle_kosmos2", "cf9003", 0, "KOS-MOS vs Drone GX"},
     {"battle_boss", "cf9005", 0, "boss in a corridor, three-member turn list"},
     {"battle", "cf9011", 0, "Shion + KOS-MOS vs U-TIC soldier"},
@@ -84,6 +86,7 @@ static const struct { const char *name, *scene, *pad, *what; int give, call; } r
     {"menu_umn", "cf9051", MENU_ROW(7), "main menu, U.M.N. row (still locked: a story flag)", 1},
     {"menu_options", "cf9051", MENU_ROW(8), "main menu > Game Options", 1},
     {"save", "cf9051", 0, "a save point's file screen", 1, ROOM_SAVE},
+    {"item_get", "cf9051", 0, "the item-get popup (a Med Kit)", 0, ROOM_ITEM_GET},
     {"choice", "cf9051", 0, "a choice menu (twsys TMENU), as scripts open them", 0, ROOM_CHOICE},
     {"save_files", "cf9051", "+560:CIRCLE", "save point > memory card slot 1", 1, ROOM_SAVE},
     {"shop", "cf9051", 0, "shop 1", 1, ROOM_SHOP + 1},
@@ -186,6 +189,8 @@ void xsg_room_tick(int kind, unsigned event_id)
             xsg_logf("[room] vblank %u: file menu\n", xsg_frame);
             GameStateSave();
             MenuFileMain(0);
+        } else if (ri >= 0 && rooms[ri].call == ROOM_ITEM_GET) {
+            xsg_logf("[room] vblank %u: item get %d\n", xsg_frame, CreateEvtItemGetTask(0, 1));
         } else if (ri >= 0 && rooms[ri].call == ROOM_CHOICE) {
             void *menu = TMENU_create(-1);
             xsg_logf("[room] vblank %u: choice menu %p\n", xsg_frame, menu);
