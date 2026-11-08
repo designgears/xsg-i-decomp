@@ -181,7 +181,6 @@ int unitCidGet(ObjectTask *unit)
 }
 
 extern int unitAgwsPilotGet(int charaId);
-extern const char D_00A438F0[];
 extern int printf(const char *format, ...);
 void unitPlFunc(ObjectTask *unit);
 
@@ -216,7 +215,7 @@ ObjectTask *unitPlCreate(s16 *pl)
             pilotUnit = unitCreate(pilotPl, 0, unitPlFunc);
             calcUPGet(unit)->linkedUnit = calcUPGet(pilotUnit);
         }
-        printf(D_00A438F0, pilotId);
+        printf("unitPlCreate: AGWS (pilot %d)\n", pilotId);
     }
     return unit;
 }
@@ -269,7 +268,6 @@ int unitAgwsPilotGet(int charaId)
     return 0;
 }
 
-extern char D_00A43910[];
 typedef union {
     float f;
     int i;
@@ -359,7 +357,7 @@ loop:
     for (i = 0; i < 3; i++) {
         *(int *)((char *)unit + 0x1C + (i & 3) * 4) = 0;
     }
-    printf(D_00A43910, charaId, unit, act, calcUPGet(unit), *(void **)((char *)unit + 0x10));
+    printf("** Create (ID=%d) U=%X A=%X P=%X O=%X **\n", charaId, unit, act, calcUPGet(unit), *(void **)((char *)unit + 0x10));
     return unit;
 }
 
@@ -386,7 +384,6 @@ void unitRemoveActor(UnitRecord *unit)
 }
 
 extern void objRemove(ObjectTask *task);
-extern char D_00A43940[];
 extern void sefReleaseID(int id);
 extern int sndSeRegRemove(int id);
 extern void sefDeleteEffect2(void *p);
@@ -409,7 +406,7 @@ void unitRemove(UnitRecord *unit, int mode)
     int n;
 
     actor = unit->motionActor;
-    printf(D_00A43940, calcUPGet(&unit->task)->charaId, unit, actor, calcUPGet(&unit->task), unit->task.work);
+    printf("** Remove (%d) U=%X A=%X P=%X O=%X **\n", calcUPGet(&unit->task)->charaId, unit, actor, calcUPGet(&unit->task), unit->task.work);
     unit->motionActor->flags |= 8;
     cid = calcUPGet(&unit->task)->charaId;
     flag = *(unsigned int *)unit->task.work & 0x40;
@@ -561,7 +558,6 @@ void unitPlInit(short *plTbl)
     } while (count >= 0);
 }
 
-extern char D_00A43968[];
 
 void unitEnInit(s16 *tbl)
 {
@@ -569,7 +565,7 @@ void unitEnInit(s16 *tbl)
 
     for (i = 0; *tbl != 0; tbl += 4) {
         if (i >= 5) {
-            printf(D_00A43968);
+            printf("** unitEnInit: EN over\n");
             break;
         }
         i++;
@@ -718,7 +714,6 @@ int unitCmdAtk(ObjectTask *unit)
 
 extern void scenarioBatInit(void);
 extern int unitJobTypeAtk(ObjectTask *unit, int *cmd, char *tec, int type);
-extern char D_00A43980[];
 
 void unitCmdAtkSub(ObjectTask *unit, int *cmd)
 {
@@ -734,7 +729,7 @@ void unitCmdAtkSub(ObjectTask *unit, int *cmd)
             return;
         }
     }
-    printf(D_00A43980, (char)(unsigned char)tec[4], *cmd);
+    printf("** JobType err -> %d tid=%d\n", (char)(unsigned char)tec[4], *cmd);
     for (;;) {
         break;
     }
@@ -3285,8 +3280,6 @@ void unitMotSet(ObjectTask *unit, int motion)
     unitMotSetEx(unit, motion, 0);
 }
 
-extern char D_00A43B98[];
-extern char D_00A43BC8[];
 extern int ACT_setMotion2(Actor *actor, int motion, int flags);
 
 void unitMotSetEx(ObjectTask *unit, int motion, int arg2)
@@ -3332,9 +3325,9 @@ void unitMotSetEx(ObjectTask *unit, int motion, int arg2)
         if (calcUPGet(unit)->charaId == 0xB4) {
             flags |= 0xC0000000;
         }
-        printf(D_00A43B98, motion, arg2, flags, unit);
+        printf("** MotSet: Mot=%d Pack=%d flag=%X (%X) **\n", motion, arg2, flags, unit);
         if ((flags & 1) != 0) {
-            printf(D_00A43BC8, actor->interpTime);
+            printf("** Intr=%f\n", actor->interpTime);
         }
         actor->moveFlags &= 0xDFFFFFF6;
         ACT_setMotion2(actor, (arg2 << 8) + motion - 1, flags);
@@ -3426,14 +3419,12 @@ int unitNoGet(ObjectTask *unit)
         }
     }
     {
-        extern const char D_00A43BD8[];
 
-        printf(D_00A43BD8, unit);
+        printf("** unitNoGet: err -> %X\n", unit);
     }
     return -1;
 }
 
-extern const char D_00A43BF8[];
 extern int printf(const char *format, ...);
 
 /*
@@ -3445,7 +3436,7 @@ int unitPtrGet(int index)
     if (index < 8) {
         return ((int *)unitTbl)[index];
     }
-    printf(D_00A43BF8, index);
+    printf("** unitPtrGet: err -> %d\n", index);
     return 0;
 }
 
@@ -3615,3 +3606,248 @@ void unitDispOnOff(int flag)
         } while (index < count);
     }
 }
+
+/* Command dispatch table and per-character position adjustment curves. */
+int (*unitCmdTbl[49])(ObjectTask *, int) = {
+    (int (*)(ObjectTask *, int))unitCmdFree,
+    (int (*)(ObjectTask *, int))unitCmdAtk,
+    (int (*)(ObjectTask *, int))unitCmdEther,
+    (int (*)(ObjectTask *, int))unitCmdItem,
+    (int (*)(ObjectTask *, int))unitCmdGuard,
+    (int (*)(ObjectTask *, int))unitCmdAgws,
+    (int (*)(ObjectTask *, int))unitCmdMove,
+    (int (*)(ObjectTask *, int))unitCmdStand,
+    (int (*)(ObjectTask *, int))unitCmdEnd,
+    (int (*)(ObjectTask *, int))unitCmdDmg,
+    (int (*)(ObjectTask *, int))unitCmdEva,
+    (int (*)(ObjectTask *, int))unitCmdDef,
+    (int (*)(ObjectTask *, int))unitCmdDead,
+    (int (*)(ObjectTask *, int))unitCmdMot,
+    (int (*)(ObjectTask *, int))unitCmdTgtSet,
+    (int (*)(ObjectTask *, int))unitCmdTurn,
+    (int (*)(ObjectTask *, int))unitCmdTurn,
+    (int (*)(ObjectTask *, int))unitCmdMoveCha,
+    (int (*)(ObjectTask *, int))unitCmdMovePos,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaNorm,
+    (int (*)(ObjectTask *, int))unitCmdMovePosNorm,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaRun,
+    (int (*)(ObjectTask *, int))unitCmdMovePosRun,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaJump,
+    (int (*)(ObjectTask *, int))unitCmdMovePosJump,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaHover,
+    (int (*)(ObjectTask *, int))unitCmdMovePosHover,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaWarp,
+    (int (*)(ObjectTask *, int))unitCmdMovePosWarp,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaJump2,
+    (int (*)(ObjectTask *, int))unitCmdMovePosJump,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaHover2,
+    (int (*)(ObjectTask *, int))unitCmdMovePosHover2,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaFloat,
+    (int (*)(ObjectTask *, int))unitCmdMovePosFloat,
+    (int (*)(ObjectTask *, int))unitCmdMoveChaHover3,
+    (int (*)(ObjectTask *, int))unitCmdMovePosHover3,
+    (int (*)(ObjectTask *, int))unitCmdBtst,
+    (int (*)(ObjectTask *, int))unitCmdBted,
+    (int (*)(ObjectTask *, int))unitCmdRec,
+    (int (*)(ObjectTask *, int))unitCmdWake,
+    (int (*)(ObjectTask *, int))unitCmdStat,
+    (int (*)(ObjectTask *, int))unitCmdReadWait,
+    (int (*)(ObjectTask *, int))unitCmdUnitChange,
+    (int (*)(ObjectTask *, int))unitCmdTurn,
+    (int (*)(ObjectTask *, int))unitCmdAgws2,
+    (int (*)(ObjectTask *, int))unitCmdEscape,
+    (int (*)(ObjectTask *, int))unitCmdFadeIn,
+    (int (*)(ObjectTask *, int))unitCmdFadeOut
+};
+float chaosF1[5] = {-0.02f, -0.05f, 0.0f, 0.18f, 0.49f};
+float chaosF5[9] = {0.21f, 0.38f, 0.51f, 0.61f, 0.69f, 0.74f, 0.77f, 0.79f, 0.8f};
+float chaosB1[5] = {0.02f, 0.07f, 0.16f, 0.31f, 0.52f};
+float chaosB5[9] = {0.3f, 0.52f, 0.64f, 0.71f, 0.75f, 0.78f, 0.79f, 0.8f, 0.8f};
+float kosmosF1[5] = {0.0f, 0.03f, 0.09f, 0.21f, 0.44f};
+float kosmosF5[9] = {0.22f, 0.39f, 0.53f, 0.63f, 0.7f, 0.75f, 0.78f, 0.79f, 0.8f};
+float kosmosB1[5] = {0.01f, 0.06f, 0.16f, 0.34f, 0.57f};
+float kosmosB5[9] = {0.25f, 0.45f, 0.59f, 0.67f, 0.72f, 0.76f, 0.78f, 0.79f, 0.8f};
+float shionF1[5] = {0.01f, 0.03f, 0.07f, 0.14f, 0.26f};
+float shionF5[9] = {0.2f, 0.37f, 0.53f, 0.63f, 0.69f, 0.73f, 0.76f, 0.79f, 0.8f};
+float shionB1[5] = {0.03f, 0.1f, 0.2f, 0.32f, 0.45f};
+float shionB5[9] = {0.21f, 0.35f, 0.47f, 0.57f, 0.65f, 0.71f, 0.75f, 0.78f, 0.8f};
+float ziggyF1[5] = {0.01f, 0.03f, 0.08f, 0.15f, 0.26f};
+float ziggyF5[9] = {0.18f, 0.34f, 0.5f, 0.6f, 0.67f, 0.72f, 0.75f, 0.78f, 0.8f};
+float ziggyB1[5] = {0.01f, 0.04f, 0.09f, 0.18f, 0.3f};
+float ziggyB5[9] = {0.17f, 0.33f, 0.48f, 0.6f, 0.7f, 0.76f, 0.79f, 0.8f, 0.8f};
+float momoF1[5] = {0.02f, 0.07f, 0.17f, 0.33f, 0.5f};
+float momoF5[9] = {0.21f, 0.39f, 0.52f, 0.62f, 0.7f, 0.75f, 0.77f, 0.79f, 0.8f};
+float momoB1[5] = {0.04f, 0.13f, 0.26f, 0.41f, 0.58f};
+float momoB5[9] = {0.21f, 0.38f, 0.51f, 0.62f, 0.69f, 0.74f, 0.77f, 0.79f, 0.8f};
+float jrF1[5] = {0.01f, 0.06f, 0.13f, 0.24f, 0.56f};
+float jrF5[9] = {0.26f, 0.44f, 0.56f, 0.64f, 0.69f, 0.73f, 0.76f, 0.78f, 0.8f};
+float jrB1[5] = {0.04f, 0.14f, 0.28f, 0.45f, 0.63f};
+float jrB5[9] = {0.21f, 0.37f, 0.48f, 0.56f, 0.63f, 0.69f, 0.74f, 0.77f, 0.79f};
+float virgilF1[5] = {-0.08f, -0.05f, 0.08f, 0.27f, 0.52f};
+float virgilF5[10] = {0.34f, 0.59f, 0.75f, 0.85f, 0.89f, 0.91f, 0.89f, 0.85f, 0.82f, 0.82f};
+float virgilB1[5] = {-0.02f, -0.05f, 0.01f, 0.18f, 0.44f};
+float virgilB5[10] = {0.32f, 0.52f, 0.63f, 0.69f, 0.74f, 0.77f, 0.79f, 0.8f, 0.8f, 0.8f};
+float vx01F1[37] = {-0.01f, -0.02f, -0.05f, -0.09f, -0.13f, -0.18f, -0.23f, -0.28f, -0.34f, -0.39f, -0.44f, -0.49f, -0.54f, -0.58f, -0.61f, -0.64f, -0.66f, -0.67f, -0.68f, -0.69f, -0.69f, -0.69f, -0.69f, -0.69f, -0.69f, -0.68f, -0.66f, -0.64f, -0.6f, -0.54f, -0.47f, -0.38f, -0.26f, -0.1f, 0.09f, 0.33f, 0.63f};
+float vx01F5[23] = {0.3f, 0.5f, 0.66f, 0.79f, 0.89f, 0.96f, 1.0f, 1.04f, 1.05f, 1.06f, 1.06f, 1.06f, 1.06f, 1.05f, 1.05f, 1.04f, 1.03f, 1.02f, 1.01f, 1.0f, 1.0f, 1.0f, 1.0f};
+float vx01B1[27] = {0.0f, -0.02f, -0.03f, -0.06f, -0.08f, -0.11f, -0.14f, -0.17f, -0.19f, -0.21f, -0.22f, -0.24f, -0.25f, -0.25f, -0.26f, -0.26f, -0.26f, -0.26f, -0.26f, -0.26f, -0.23f, -0.19f, -0.11f, -0.01f, 0.18f, 0.39f, 0.66f};
+float vx01B5[24] = {0.34f, 0.59f, 0.75f, 0.88f, 0.98f, 1.06f, 1.12f, 1.16f, 1.19f, 1.21f, 1.22f, 1.22f, 1.22f, 1.22f, 1.21f, 1.19f, 1.17f, 1.14f, 1.11f, 1.08f, 1.06f, 1.03f, 1.02f, 1.0f};
+float vx02F1[13] = {0.01f, 0.01f, 0.03f, 0.04f, 0.07f, 0.1f, 0.14f, 0.19f, 0.26f, 0.33f, 0.43f, 0.55f, 0.73f};
+float vx02F5[32] = {0.17f, 0.5f, 0.79f, 1.03f, 1.24f, 1.4f, 1.54f, 1.64f, 1.71f, 1.76f, 1.79f, 1.8f, 1.79f, 1.75f, 1.7f, 1.64f, 1.57f, 1.49f, 1.41f, 1.33f, 1.26f, 1.19f, 1.12f, 1.06f, 0.99f, 0.93f, 0.88f, 0.84f, 0.81f, 0.79f, 0.78f, 0.79f};
+float vx02B1[13] = {-0.02f, -0.08f, -0.14f, -0.21f, -0.25f, -0.27f, -0.27f, -0.25f, -0.18f, -0.06f, 0.12f, 0.35f, 0.64f};
+float vx02B5[32] = {0.17f, 0.46f, 0.71f, 0.92f, 1.08f, 1.22f, 1.31f, 1.39f, 1.44f, 1.47f, 1.48f, 1.49f, 1.49f, 1.49f, 1.47f, 1.44f, 1.41f, 1.37f, 1.32f, 1.27f, 1.22f, 1.17f, 1.11f, 1.06f, 1.01f, 0.96f, 0.92f, 0.88f, 0.85f, 0.83f, 0.81f, 0.8f};
+float vx03F1[34] = {0.0f, -0.02f, -0.05f, -0.1f, -0.18f, -0.27f, -0.37f, -0.48f, -0.59f, -0.7f, -0.79f, -0.88f, -0.94f, -0.98f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -0.97f, -0.94f, -0.9f, -0.84f, -0.77f, -0.67f, -0.54f, -0.39f, -0.2f, 0.03f, 0.3f, 0.63f};
+float vx03F5[29] = {0.32f, 0.5f, 0.61f, 0.7f, 0.77f, 0.84f, 0.89f, 0.92f, 0.95f, 0.97f, 0.99f, 0.99f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float vx03B1[29] = {0.0f, -0.02f, -0.05f, -0.1f, -0.18f, -0.27f, -0.36f, -0.47f, -0.57f, -0.67f, -0.77f, -0.85f, -0.92f, -0.97f, -1.0f, -1.01f, -1.0f, -0.98f, -0.95f, -0.9f, -0.84f, -0.77f, -0.67f, -0.54f, -0.39f, -0.2f, 0.03f, 0.31f, 0.63f};
+float vx03B5[29] = {0.37f, 0.67f, 0.91f, 1.1f, 1.25f, 1.36f, 1.43f, 1.47f, 1.49f, 1.5f, 1.5f, 1.5f, 1.5f, 1.48f, 1.44f, 1.37f, 1.29f, 1.21f, 1.13f, 1.06f, 1.02f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float vx06F1[29] = {-0.03f, -0.1f, -0.2f, -0.32f, -0.47f, -0.63f, -0.8f, -0.97f, -1.14f, -1.3f, -1.42f, -1.48f, -1.5f, -1.5f, -1.5f, -1.49f, -1.47f, -1.43f, -1.37f, -1.3f, -1.2f, -1.07f, -0.92f, -0.74f, -0.54f, -0.3f, -0.03f, 0.28f, 0.62f};
+float vx06F5[29] = {0.36f, 0.64f, 0.85f, 1.02f, 1.04f, 1.24f, 1.32f, 1.4f, 1.47f, 1.52f, 1.56f, 1.58f, 1.59f, 1.6f, 1.6f, 1.59f, 1.57f, 1.54f, 1.5f, 1.45f, 1.4f, 1.34f, 1.28f, 1.23f, 1.17f, 1.12f, 1.08f, 1.04f, 1.01f};
+float vx06B1[29] = {-0.01f, -0.05f, -0.11f, -0.18f, -0.26f, -0.35f, -0.44f, -0.52f, -0.59f, -0.65f, -0.69f, -0.72f, -0.74f, -0.75f, -0.75f, -0.75f, -0.75f, -0.75f, -0.74f, -0.73f, -0.7f, -0.65f, -0.57f, -0.47f, -0.33f, -0.16f, 0.05f, 0.32f, 0.63f};
+float vx06B5[29] = {0.36f, 0.65f, 0.88f, 1.05f, 1.17f, 1.26f, 1.32f, 1.35f, 1.37f, 1.4f, 1.42f, 1.43f, 1.45f, 1.46f, 1.47f, 1.48f, 1.49f, 1.5f, 1.5f, 1.5f, 1.49f, 1.45f, 1.39f, 1.32f, 1.25f, 1.18f, 1.11f, 1.05f, 1.01f};
+float ag04F1[55] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.02f, -0.07f, -0.14f, -0.22f, -0.29f, -0.34f, -0.38f, -0.41f, -0.43f, -0.44f, -0.46f, -0.47f, -0.48f, -0.48f, -0.49f, -0.49f, -0.49f, -0.49f, -0.49f, -0.49f, -0.48f, -0.47f, -0.45f, -0.42f, -0.37f, -0.3f, -0.24f, -0.16f, -0.09f, -0.04f, 0.0f, 0.02f, 0.03f, 0.03f, 0.03f, 0.03f, 0.02f, 0.01f, 0.0f, 0.0f, 0.02f, 0.08f, 0.2f, 0.39f, 0.65f};
+float ag04F5[10] = {0.33f, 0.56f, 0.7f, 0.8f, 0.89f, 0.94f, 0.97f, 0.99f, 1.0f, 1.0f};
+float ag04B1[15] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.04f, 0.17f, 0.43f};
+float ag04B5[44] = {0.36f, 0.64f, 0.84f, 0.96f, 1.0f, 1.02f, 1.07f, 1.14f, 1.22f, 1.29f, 1.34f, 1.38f, 1.41f, 1.43f, 1.44f, 1.46f, 1.47f, 1.47f, 1.48f, 1.49f, 1.49f, 1.49f, 1.49f, 1.49f, 1.49f, 1.49f, 1.48f, 1.46f, 1.44f, 1.41f, 1.39f, 1.35f, 1.32f, 1.28f, 1.25f, 1.21f, 1.17f, 1.14f, 1.11f, 1.08f, 1.05f, 1.03f, 1.01f, 1.0f};
+float fema005F1[34] = {-0.01f, -0.04f, -0.1f, -0.17f, -0.26f, -0.36f, -0.47f, -0.59f, -0.72f, -0.85f, -0.97f, -1.1f, -1.22f, -1.33f, -1.43f, -1.52f, -1.6f, -1.65f, -1.69f, -1.7f, -1.7f, -1.7f, -1.7f, -1.68f, -1.61f, -1.5f, -1.36f, -1.17f, -0.95f, -0.7f, -0.41f, -0.1f, 0.24f, 0.61f};
+float fema005F5[34] = {0.37f, 0.7f, 1.0f, 1.21f, 1.4f, 1.57f, 1.7f, 1.8f, 1.87f, 1.93f, 1.96f, 1.98f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 1.97f, 1.94f, 1.9f, 1.86f, 1.8f, 1.73f, 1.65f, 1.57f, 1.5f, 1.4f, 1.33f, 1.25f, 1.18f, 1.12f, 1.07f, 1.03f, 1.0f};
+float fema005B1[34] = {-0.01f, -0.04f, -0.1f, -0.17f, -0.26f, -0.36f, -0.47f, -0.59f, -0.72f, -0.85f, -0.97f, -1.1f, -1.22f, -1.33f, -1.43f, -1.52f, -1.6f, -1.65f, -1.69f, -1.7f, -1.7f, -1.7f, -1.7f, -1.68f, -1.61f, -1.5f, -1.36f, -1.17f, -0.95f, -0.7f, -0.41f, -0.1f, 0.24f, 0.61f};
+float fema005B5[34] = {0.37f, 0.7f, 0.98f, 1.2f, 1.4f, 1.55f, 1.66f, 1.74f, 1.79f, 1.8f, 1.8f, 1.79f, 1.78f, 1.76f, 1.73f, 1.7f, 1.66f, 1.62f, 1.58f, 1.52f, 1.46f, 1.4f, 1.34f, 1.28f, 1.23f, 1.18f, 1.14f, 1.1f, 1.08f, 1.05f, 1.03f, 1.02f, 1.01f, 1.0f};
+float guno001F1[11] = {-0.03f, -0.09f, -0.15f, -0.18f, -0.17f, -0.15f, -0.09f, 0.0f, 0.14f, 0.35f, 0.62f};
+float guno001F5[11] = {0.23f, 0.52f, 0.72f, 0.84f, 0.87f, 0.87f, 0.86f, 0.84f, 0.83f, 0.81f, 0.8f};
+float guno001B1[11] = {-0.02f, -0.06f, -0.12f, -0.16f, -0.18f, -0.18f, -0.17f, -0.11f, 0.01f, 0.23f, 0.57f};
+float guno001B5[11] = {0.24f, 0.6f, 0.85f, 1.0f, 1.08f, 1.1f, 1.08f, 1.02f, 0.95f, 0.88f, 0.82f};
+float guno004B1[5] = {-0.03f, -0.06f, -0.08f, 0.06f, 0.39f};
+float guno004B5[9] = {0.35f, 0.6f, 0.77f, 0.86f, 0.9f, 0.9f, 0.87f, 0.84f, 0.81f};
+float guno005B1[11] = {-0.01f, -0.04f, -0.08f, -0.11f, -0.12f, -0.12f, -0.1f, -0.04f, 0.07f, 0.27f, 0.57f};
+float guno005B5[11] = {0.41f, 0.66f, 0.8f, 0.88f, 0.94f, 0.98f, 1.01f, 1.02f, 1.02f, 1.01f, 1.0f};
+float guno006B1[11] = {-0.03f, -0.09f, -0.15f, -0.18f, -0.18f, -0.15f, -0.1f, -0.01f, 0.14f, 0.35f, 0.64f};
+float guno006B5[11] = {0.17f, 0.42f, 0.62f, 0.77f, 0.87f, 0.91f, 0.9f, 0.88f, 0.85f, 0.83f, 0.81f};
+float guno010B1[12] = {0.0f, 0.0f, -0.01f, -0.02f, -0.03f, -0.04f, -0.04f, -0.03f, -0.01f, 0.03f, 0.08f, 0.15f};
+float guno010B5[11] = {0.2f, 0.36f, 0.5f, 0.62f, 0.72f, 0.8f, 0.87f, 0.92f, 0.96f, 0.98f, 1.0f};
+float guno013F1[34] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.04f, -0.16f, -0.3f, -0.44f, -0.55f, -0.63f, -0.68f, -0.7f, -0.65f, -0.53f, -0.32f, -0.06f, 0.25f, 0.6f};
+float guno013F5[29] = {0.36f, 0.64f, 0.84f, 0.96f, 1.0f, 0.99f, 0.95f, 0.9f, 0.85f, 0.81f, 0.8f, 0.8f, 0.82f, 0.85f, 0.88f, 0.92f, 0.95f, 0.97f, 0.99f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float guno013B1[34] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.04f, -0.16f, -0.3f, -0.44f, -0.55f, -0.63f, -0.68f, -0.7f, -0.65f, -0.53f, -0.32f, -0.06f, 0.25f, 0.6f};
+float guno013B5[29] = {0.36f, 0.64f, 0.84f, 0.96f, 1.0f, 0.99f, 0.95f, 0.9f, 0.85f, 0.81f, 0.8f, 0.8f, 0.82f, 0.85f, 0.88f, 0.92f, 0.95f, 0.97f, 0.99f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float guno015B1[11] = {0.01f, 0.03f, 0.06f, 0.11f, 0.16f, 0.22f, 0.29f, 0.36f, 0.44f, 0.52f, 0.61f};
+float guno015B5[11] = {0.19f, 0.35f, 0.49f, 0.61f, 0.71f, 0.79f, 0.85f, 0.9f, 0.95f, 0.98f, 0.99f};
+float guno017F1[11] = {-0.03f, -0.09f, -0.15f, -0.18f, -0.17f, -0.15f, -0.09f, 0.0f, 0.14f, 0.35f, 0.62f};
+float guno017F5[11] = {0.23f, 0.52f, 0.72f, 0.84f, 0.87f, 0.87f, 0.86f, 0.84f, 0.83f, 0.81f, 0.8f};
+float guno017B1[11] = {-0.02f, -0.06f, -0.12f, -0.16f, -0.18f, -0.18f, -0.17f, -0.11f, 0.01f, 0.23f, 0.57f};
+float guno017B5[11] = {0.24f, 0.6f, 0.85f, 1.0f, 1.08f, 1.1f, 1.08f, 1.02f, 0.95f, 0.88f, 0.82f};
+float guno018F1[11] = {-0.02f, -0.06f, -0.12f, -0.18f, -0.22f, -0.24f, -0.24f, -0.21f, -0.13f, 0.03f, 0.31f};
+float guno018F5[11] = {0.76f, 1.2f, 1.41f, 1.45f, 1.43f, 1.38f, 1.31f, 1.23f, 1.14f, 1.07f, 1.02f};
+float guno018B1[11] = {-0.03f, -0.09f, -0.18f, -0.27f, -0.33f, -0.36f, -0.35f, -0.32f, -0.22f, -0.07f, 0.28f};
+float guno018B5[11] = {0.76f, 1.14f, 1.27f, 1.28f, 1.27f, 1.23f, 1.2f, 1.14f, 1.09f, 1.04f, 1.01f};
+float guno025B1[11] = {0.01f, 0.03f, 0.06f, 0.11f, 0.16f, 0.22f, 0.29f, 0.37f, 0.45f, 0.53f, 0.61f};
+float guno025B5[11] = {0.29f, 0.5f, 0.66f, 0.77f, 0.86f, 0.92f, 0.96f, 0.99f, 1.0f, 1.0f, 1.0f};
+float utma006F1[29] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.04f, -0.14f, -0.27f, -0.42f, -0.56f, -0.66f, -0.69f, -0.7f, -0.69f, -0.69f, -0.66f, -0.62f, -0.55f, -0.44f, -0.3f, -0.11f, 0.13f, 0.43f};
+float utma006F5[28] = {0.39f, 0.73f, 1.0f, 1.18f, 1.24f, 1.19f, 1.06f, 0.9f, 0.77f, 0.72f, 0.73f, 0.76f, 0.79f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f};
+float utma006B1[29] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.04f, -0.16f, -0.3f, -0.45f, -0.56f, -0.6f, -0.61f, -0.6f, -0.59f, -0.55f, -0.5f, -0.4f, -0.27f, -0.09f, 0.14f, 0.44f};
+float utma006B5[28] = {0.37f, 0.68f, 0.92f, 1.07f, 1.12f, 1.09f, 1.0f, 0.9f, 0.78f, 0.7f, 0.66f, 0.67f, 0.7f, 0.73f, 0.76f, 0.79f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f};
+float utma007B1[5] = {0.03f, 0.08f, 0.16f, 0.28f, 0.44f};
+float utma007B5[9] = {0.46f, 0.76f, 0.9f, 0.94f, 0.93f, 0.91f, 0.87f, 0.84f, 0.81f};
+float utre002B1[5] = {-0.01f, -0.01f, 0.05f, 0.2f, 0.45f};
+float utre002B5[5] = {0.36f, 0.62f, 0.75f, 0.79f, 0.8f};
+float utre003B1[5] = {-0.07f, -0.16f, -0.19f, -0.08f, 0.27f};
+float utre003B5[9] = {0.52f, 0.82f, 0.94f, 0.96f, 0.95f, 0.92f, 0.88f, 0.84f, 0.81f};
+float utre005B1[5] = {0.0f, 0.02f, 0.07f, 0.16f, 0.33f};
+float utre005B5[9] = {0.34f, 0.57f, 0.71f, 0.78f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f};
+float utro001B1[11] = {0.0f, 0.02f, 0.04f, 0.08f, 0.13f, 0.19f, 0.27f, 0.37f, 0.48f, 0.62f, 0.85f};
+float utro001B5[11] = {0.23f, 0.38f, 0.52f, 0.66f, 0.77f, 0.86f, 0.92f, 0.96f, 0.98f, 0.99f, 1.0f};
+float utro002F1[11] = {0.0f, 0.01f, 0.02f, 0.05f, 0.08f, 0.12f, 0.18f, 0.26f, 0.35f, 0.46f, 0.66f};
+float utro002F5[11] = {0.16f, 0.3f, 0.44f, 0.57f, 0.69f, 0.78f, 0.85f, 0.9f, 0.95f, 0.98f, 0.99f};
+float utro002B1[11] = {0.0f, 0.02f, 0.04f, 0.08f, 0.13f, 0.19f, 0.27f, 0.37f, 0.48f, 0.62f, 0.85f};
+float utro002B5[11] = {0.23f, 0.38f, 0.52f, 0.66f, 0.77f, 0.86f, 0.92f, 0.96f, 0.98f, 0.99f, 1.0f};
+float utso006B1[5] = {0.0f, 0.01f, 0.06f, 0.16f, 0.33f};
+float utso006B5[9] = {0.34f, 0.58f, 0.73f, 0.8f, 0.83f, 0.82f, 0.82f, 0.81f, 0.81f};
+float boss001B1[11] = {0.01f, 0.02f, 0.05f, 0.09f, 0.14f, 0.2f, 0.26f, 0.33f, 0.4f, 0.48f, 0.56f};
+float boss001B5[11] = {0.27f, 0.48f, 0.64f, 0.76f, 0.84f, 0.9f, 0.94f, 0.97f, 0.99f, 1.0f, 1.0f};
+float boss004F1[9] = {-0.02f, -0.06f, -0.09f, -0.09f, -0.07f, 0.0f, 0.15f, 0.37f, 0.66f};
+float boss004F5[14] = {0.24f, 0.42f, 0.55f, 0.66f, 0.74f, 0.81f, 0.87f, 0.91f, 0.94f, 0.97f, 0.98f, 0.99f, 1.0f, 1.0f};
+float boss004B1[11] = {0.0f, -0.01f, -0.02f, -0.03f, -0.02f, 0.01f, 0.06f, 0.15f, 0.28f, 0.46f, 0.7f};
+float boss004B5[14] = {0.28f, 0.48f, 0.61f, 0.7f, 0.79f, 0.85f, 0.9f, 0.94f, 0.96f, 0.98f, 0.99f, 1.0f, 1.0f, 1.0f};
+float boss007B1[11] = {-0.02f, -0.06f, -0.12f, -0.17f, -0.21f, -0.23f, -0.2f, -0.11f, 0.07f, 0.31f, 0.63f};
+float boss007B5[11] = {0.35f, 0.61f, 0.8f, 0.92f, 0.98f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float boss012F1[24] = {-0.17f, -0.31f, -0.44f, -0.55f, -0.64f, -0.72f, -0.79f, -0.85f, -0.89f, -0.92f, -0.94f, -0.95f, -0.96f, -0.95f, -0.94f, -0.9f, -0.85f, -0.77f, -0.64f, -0.48f, -0.27f, -0.02f, 0.28f, 0.62f};
+float boss012F5[29] = {0.23f, 0.37f, 0.49f, 0.59f, 0.67f, 0.74f, 0.79f, 0.83f, 0.88f, 0.9f, 0.93f, 0.95f, 0.96f, 0.97f, 0.98f, 0.99f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+float boss012B1[24] = {-0.01f, -0.02f, -0.05f, -0.08f, -0.11f, -0.15f, -0.2f, -0.24f, -0.28f, -0.31f, -0.35f, -0.37f, -0.39f, -0.39f, -0.39f, -0.37f, -0.33f, -0.28f, -0.2f, -0.09f, 0.04f, 0.19f, 0.39f, 0.65f};
+float boss012B5[39] = {0.38f, 0.71f, 1.0f, 1.26f, 1.47f, 1.65f, 1.81f, 1.95f, 2.07f, 2.18f, 2.27f, 2.33f, 2.38f, 2.41f, 2.42f, 2.42f, 2.42f, 2.41f, 2.4f, 2.37f, 2.34f, 2.31f, 2.27f, 2.22f, 2.15f, 2.08f, 1.99f, 1.9f, 1.8f, 1.7f, 1.6f, 1.5f, 1.4f, 1.31f, 1.22f, 1.15f, 1.09f, 1.04f, 1.01f};
+float boss013B1[11] = {0.02f, -0.03f, -0.1f, -0.17f, -0.23f, -0.25f, -0.21f, -0.1f, 0.08f, 0.32f, 0.63f};
+float boss013B5[11] = {0.37f, 0.68f, 0.93f, 1.1f, 1.2f, 1.25f, 1.23f, 1.2f, 1.14f, 1.09f, 1.05f};
+float boss014F1[11] = {-0.01f, -0.04f, -0.07f, -0.1f, -0.12f, -0.11f, -0.06f, 0.03f, 0.17f, 0.37f, 0.64f};
+float boss014F5[11] = {0.44f, 0.93f, 1.39f, 1.75f, 1.94f, 2.0f, 2.0f, 1.75f, 1.38f, 1.15f, 1.03f};
+float boss014B1[11] = {-0.01f, -0.05f, -0.1f, -0.15f, -0.2f, -0.24f, -0.25f, -0.18f, 0.0f, 0.27f, 0.61f};
+float boss014B5[11] = {0.43f, 0.9f, 1.34f, 1.7f, 1.94f, 2.0f, 1.89f, 1.69f, 1.46f, 1.23f, 1.06f};
+float boss016F1[25] = {-0.01f, -0.02f, -0.05f, -0.08f, -0.12f, -0.16f, -0.21f, -0.25f, -0.3f, -0.34f, -0.38f, -0.41f, -0.43f, -0.45f, -0.46f, -0.46f, -0.45f, -0.43f, -0.39f, -0.32f, -0.22f, -0.08f, 0.1f, 0.34f, 0.64f};
+float boss016F5[26] = {0.37f, 0.67f, 0.92f, 1.1f, 1.22f, 1.28f, 1.3f, 1.31f, 1.3f, 1.27f, 1.24f, 1.19f, 1.15f, 1.1f, 1.06f, 1.02f, 1.0f, 0.99f, 0.98f, 0.98f, 0.98f, 0.98f, 0.99f, 0.99f, 1.0f, 1.0f};
+float boss016B1[24] = {0.0f, -0.01f, -0.02f, -0.04f, -0.05f, -0.07f, -0.09f, -0.11f, -0.13f, -0.15f, -0.17f, -0.18f, -0.19f, -0.2f, -0.2f, -0.2f, -0.21f, -0.2f, -0.16f, -0.1f, -0.0f, 0.15f, 0.36f, 0.64f};
+float boss016B5[27] = {0.39f, 0.76f, 1.08f, 1.34f, 1.5f, 1.56f, 1.56f, 1.53f, 1.49f, 1.44f, 1.38f, 1.32f, 1.26f, 1.19f, 1.13f, 1.08f, 1.03f, 1.0f, 0.98f, 0.97f, 0.96f, 0.97f, 0.97f, 0.98f, 0.99f, 1.0f, 1.0f};
+float boss017F1[24] = {-0.16f, -0.31f, -0.45f, -0.57f, -0.68f, -0.77f, -0.85f, -0.91f, -0.95f, -0.98f, -0.99f, -0.99f, -0.96f, -0.92f, -0.87f, -0.8f, -0.72f, -0.62f, -0.5f, -0.35f, -0.17f, 0.04f, 0.3f, 0.63f};
+float boss017F5[24] = {0.33f, 0.6f, 0.81f, 0.95f, 1.04f, 1.1f, 1.13f, 1.15f, 1.16f, 1.16f, 1.16f, 1.16f, 1.15f, 1.14f, 1.12f, 1.1f, 1.09f, 1.07f, 1.06f, 1.04f, 1.03f, 1.02f, 1.01f, 1.0f};
+float boss017B1[24] = {-0.01f, -0.04f, -0.08f, -0.13f, -0.19f, -0.26f, -0.33f, -0.4f, -0.46f, -0.52f, -0.58f, -0.62f, -0.64f, -0.65f, -0.64f, -0.61f, -0.55f, -0.47f, -0.37f, -0.23f, -0.08f, 0.1f, 0.33f, 0.63f};
+float boss017B5[24] = {0.31f, 0.56f, 0.76f, 0.91f, 1.02f, 1.11f, 1.17f, 1.23f, 1.26f, 1.28f, 1.3f, 1.3f, 1.29f, 1.28f, 1.26f, 1.23f, 1.2f, 1.17f, 1.13f, 1.1f, 1.07f, 1.04f, 1.02f, 1.01f};
+float boss019F1[54] = {0.01f, 0.03f, 0.07f, 0.12f, 0.17f, 0.22f, 0.26f, 0.3f, 0.33f, 0.34f, 0.32f, 0.29f, 0.23f, 0.13f, 0.0f, -0.21f, -0.53f, -0.93f, -1.39f, -1.87f, -2.37f, -2.84f, -3.28f, -3.64f, -3.91f, -4.12f, -4.3f, -4.45f, -4.58f, -4.67f, -4.74f, -4.78f, -4.79f, -4.76f, -4.71f, -4.62f, -4.5f, -4.34f, -4.14f, -3.91f, -3.65f, -3.38f, -3.08f, -2.77f, -2.45f, -2.11f, -1.77f, -1.42f, -1.07f, -0.72f, -0.37f, -0.03f, 0.32f, 0.65f};
+float boss019F5[29] = {0.23f, 0.44f, 0.66f, 0.86f, 1.0f, 1.1f, 1.18f, 1.24f, 1.3f, 1.34f, 1.36f, 1.38f, 1.39f, 1.39f, 1.38f, 1.36f, 1.34f, 1.32f, 1.29f, 1.25f, 1.22f, 1.18f, 1.15f, 1.12f, 1.08f, 1.06f, 1.03f, 1.02f, 1.0f};
+float boss019B1[19] = {-0.01f, -0.05f, -0.11f, -0.17f, -0.25f, -0.32f, -0.4f, -0.46f, -0.5f, -0.52f, -0.51f, -0.45f, -0.35f, -0.22f, -0.06f, 0.13f, 0.33f, 0.55f, 0.78f};
+float boss019B5[19] = {0.38f, 0.74f, 1.07f, 1.32f, 1.48f, 1.55f, 1.59f, 1.6f, 1.59f, 1.56f, 1.51f, 1.45f, 1.37f, 1.3f, 1.23f, 1.16f, 1.09f, 1.04f, 1.01f};
+float boss020F1[5] = {0.0f, 0.02f, 0.07f, 0.14f, 0.25f};
+float boss020F5[9] = {0.23f, 0.47f, 0.66f, 0.75f, 0.77f, 0.79f, 0.8f, 0.8f, 0.8f};
+float boss020B1[5] = {0.0f, 0.01f, 0.03f, 0.09f, 0.2f};
+float boss020B5[9] = {0.17f, 0.39f, 0.61f, 0.73f, 0.76f, 0.79f, 0.8f, 0.8f, 0.8f};
+float boss029F1[19] = {0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.03f, 0.03f, 0.04f, 0.04f, 0.03f, 0.01f, -0.01f, -0.02f, 0.0f, 0.06f, 0.22f, 0.46f, 0.67f, 0.77f};
+float boss029F5[29] = {0.1f, 0.25f, 0.4f, 0.55f, 0.72f, 0.88f, 1.0f, 1.07f, 1.12f, 1.14f, 1.15f, 1.14f, 1.11f, 1.08f, 1.05f, 1.01f, 0.97f, 0.94f, 0.92f, 0.91f, 0.9f, 0.91f, 0.92f, 0.93f, 0.95f, 0.96f, 0.98f, 0.99f, 1.0f};
+float boss029B1[19] = {-0.01f, -0.02f, -0.03f, -0.04f, -0.05f, -0.06f, -0.06f, -0.06f, -0.04f, -0.01f, 0.02f, 0.07f, 0.14f, 0.21f, 0.31f, 0.43f, 0.57f, 0.73f, 0.89f};
+float boss029B5[29] = {0.25f, 0.41f, 0.55f, 0.68f, 0.71f, 0.86f, 0.92f, 0.97f, 1.01f, 1.04f, 1.06f, 1.07f, 1.07f, 1.07f, 1.07f, 1.07f, 1.06f, 1.06f, 1.06f, 1.07f, 1.07f, 1.07f, 1.07f, 1.06f, 1.04f, 1.03f, 1.02f, 1.01f, 1.0f};
+AdjTbl adjTblPl[8] = {
+    {1, {chaosF1, chaosF5, chaosB1, chaosB5}},
+    {2, {kosmosF1, kosmosF5, kosmosB1, kosmosB5}},
+    {3, {shionF1, shionF5, shionB1, shionB5}},
+    {5, {ziggyF1, ziggyF5, ziggyB1, ziggyB5}},
+    {6, {momoF1, momoF5, momoB1, momoB5}},
+    {7, {jrF1, jrF5, jrB1, jrB5}},
+    {10, {virgilF1, virgilF5, virgilB1, virgilB5}},
+    {0, {0, 0, 0, 0}}
+};
+AdjTbl adjTblEn[42] = {
+    {17, {vx01F1, vx01F5, vx01B1, vx01B5}},
+    {18, {vx02F1, vx02F5, vx02B1, vx02B5}},
+    {19, {vx03F1, vx03F5, vx03B1, vx03B5}},
+    {22, {vx06F1, vx06F5, vx06B1, vx06B5}},
+    {26, {ag04F1, ag04F5, ag04B1, ag04B5}},
+    {67, {fema005F1, fema005F5, fema005B1, fema005B5}},
+    {34, {guno001F1, guno001F5, guno001B1, guno001B5}},
+    {50, {guno001F1, guno001F5, guno001B1, guno001B5}},
+    {59, {guno001F1, guno001F5, guno001B1, guno001B5}},
+    {37, {0, 0, guno004B1, guno004B5}},
+    {38, {0, 0, guno005B1, guno005B5}},
+    {39, {0, 0, guno006B1, guno006B5}},
+    {43, {0, 0, guno010B1, guno010B5}},
+    {46, {guno013F1, guno013F5, guno013B1, guno013B5}},
+    {48, {0, 0, guno015B1, guno015B5}},
+    {50, {guno017F1, guno017F5, guno017B1, guno017B5}},
+    {51, {guno018F1, guno018F5, guno018B1, guno018B5}},
+    {58, {0, 0, guno025B1, guno025B5}},
+    {82, {utma006F1, utma006F5, utma006B1, utma006B5}},
+    {83, {0, 0, utma007B1, utma007B5}},
+    {92, {0, 0, utre002B1, utre002B5}},
+    {93, {0, 0, utre003B1, utre003B5}},
+    {95, {0, 0, utre005B1, utre005B5}},
+    {97, {0, 0, utro001B1, utro001B5}},
+    {98, {utro002F1, utro002F5, utro002B1, utro002B5}},
+    {104, {0, 0, utso006B1, utso006B5}},
+    {151, {0, 0, boss001B1, boss001B5}},
+    {154, {boss004F1, boss004F5, boss004B1, boss004B5}},
+    {159, {boss004F1, boss004F5, boss004B1, boss004B5}},
+    {160, {boss004F1, boss004F5, boss004B1, boss004B5}},
+    {161, {boss004F1, boss004F5, boss004B1, boss004B5}},
+    {185, {boss004F1, boss004F5, boss004B1, boss004B5}},
+    {157, {0, 0, boss007B1, boss007B5}},
+    {162, {boss012F1, boss012F5, boss012B1, boss012B5}},
+    {163, {0, 0, boss013B1, boss013B5}},
+    {164, {boss014F1, boss014F5, boss014B1, boss014B5}},
+    {166, {boss016F1, boss016F5, boss016B1, boss016B5}},
+    {167, {boss017F1, boss017F5, boss017B1, boss017B5}},
+    {169, {boss019F1, boss019F5, boss019B1, boss019B5}},
+    {170, {boss020F1, boss020F5, boss020B1, boss020B5}},
+    {179, {boss029F1, boss029F5, boss029B1, boss029B5}},
+    {0, {0, 0, 0, 0}}
+};

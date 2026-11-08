@@ -185,9 +185,8 @@ typedef struct UnduQuery {
 extern unsigned char *CurrentColiHead;
 
 
-int StudioEntrySkip = 0;
-
-signed char FLAG_FRAME_60 = 0;
+extern int StudioEntrySkip;
+extern signed char FLAG_FRAME_60;
 
 static float UnduCheckSub(UnduWork *work, int subOffset);
 
@@ -584,7 +583,6 @@ static int CheckWallAttr(UnduWork *work, const unsigned short *wallAttribute)
 extern float atan2f(float y, float x);
 extern float xglSin(float x);
 extern float xglCos(float x);
-extern const float D_004DC3B4[];
 extern float D_004D8804;
 extern float D_004D8808;
 extern float D_004D880C;
@@ -924,7 +922,7 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
                 if (moveDx > nearZeroMin && moveDx < nearZeroMax)
                     moveSlope = 0.0f;
                 else if (nearZeroMin < moveDz && moveDz < nearZeroMax)
-                    moveSlope = D_004DC3B4[0];
+                    moveSlope = -0.0f;
                 else
                     moveSlope = moveDz / moveDx;
                 edgeDx = edgeEnd->x - startX;
@@ -932,7 +930,7 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
                 if (nearZeroMin < edgeDx && edgeDx < nearZeroMax)
                     edgeSlope = 0.0f;
                 else if (nearZeroMin < edgeDz && edgeDz < nearZeroMax)
-                    edgeSlope = D_004DC3B4[0];
+                    edgeSlope = -0.0f;
                 else
                     edgeSlope = edgeDz / edgeDx;
                 if (unduSlopeBits(&moveSlope) == 0) {
@@ -1016,6 +1014,10 @@ static void UnduCheckSubCrossCheck(UnduWorkUp *work, UnduQuery *query, int subOf
         work->hitPoint[2] = work->collisionPoint[2];
     }
 }
+
+int StudioEntrySkip = 0;
+
+signed char FLAG_FRAME_60 = 0;
 
 static float UnduCheckResultCheck(UnduWork *work, UnduResult *result, float *point)
 {

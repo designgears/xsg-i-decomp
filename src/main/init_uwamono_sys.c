@@ -403,7 +403,8 @@ typedef struct UwamonoMapUnitState {
     int timer;                         /* +0x44 */
 } UwamonoMapUnitState;
 
-typedef struct UwamonoKowareDimensions {
+typedef union UwamonoKowareDimensions {
+    float size[4];                     /* x, y, z extents (w unused) */
     unsigned long long lanes[2];
 } UwamonoKowareDimensions;
 
@@ -412,7 +413,8 @@ typedef struct UwamonoKowareKind {
     unsigned char unmodeled_01[0xf];
     UwamonoKowareDimensions dimensions;
     signed char target;
-    unsigned char unmodeled_21[7];
+    unsigned char unmodeled_21[3];
+    int resourceId;                    /* +0x24 */
     unsigned long long unmodeled_28;
 } UwamonoKowareKind;
 
@@ -620,7 +622,7 @@ typedef struct UwamonoSpritePacket {
 } UwamonoSpritePacket;
 
 typedef struct UwamonoLinePacket {
-    unsigned char unmodeled_00[0x20];
+    unsigned int header[8];            /* +0x00: GIF tag + register setup */
     UwamonoScreenPoint color0;
     UwamonoScreenPoint position0;
     UwamonoScreenPoint color1;
@@ -742,8 +744,6 @@ extern unsigned char *WorkEnd;
 extern int xglCdReadFile(const char *name, void *buffer, int offset, int mode);
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
-extern char D_004DB6D8[];
-extern char D_004DB6E0[];
 typedef struct UwamonoNameTbl { unsigned char b[0x38]; } UwamonoNameTbl;
 extern UwamonoNameTbl D_004C9F20;
 extern const char D_004C9F58[];
@@ -765,13 +765,13 @@ void InitUwamonoSys(void)
     for (i = 0; i < 14; i++) {
         memset(sp, 0, 0x80);
         strcpy(sp, names[i]);
-        strcat(sp, D_004DB6D8);
+        strcat(sp, ".lex");
         uwares_tbl[i] = (int)cur;
         cur += xglCdReadFile(sp, cur, 0, 1);
         cur = (unsigned char *)(((int)cur + 0xF) & ~0xF);
         memset(sp, 0, 0x80);
         strcpy(sp, names[i]);
-        strcat(sp, D_004DB6E0);
+        strcat(sp, ".xtx");
         xtxres_tbl[i] = (int)cur;
         cur += xglCdReadFile(sp, cur, 0, 1);
         cur = (unsigned char *)(((int)cur + 0xF) & ~0xF);
@@ -1510,7 +1510,6 @@ extern void *sefCreateEffectCf(int, int, int);
 extern void SetUwaWind(UwamonoWindUnit *unit);
 extern void CallMethod_I(const char *name, int arg);
 extern void EXM_ClearWindStruct(void);
-extern const char D_004DB6E8[32];
 extern const char D_004CA1F8[32];
 
 void MAP_updateUnitKoware(void *unit) {
@@ -1544,7 +1543,7 @@ void MAP_updateUnitKoware(void *unit) {
             temp_5_2 = *(short *)(temp_17 + 0x30);
             if (temp_5_2 != -1) {
                 GameLoopState.enemyUpdateState = 0;
-                CallMethod_I(D_004DB6E8, (int) temp_5_2);
+                CallMethod_I("broken", (int) temp_5_2);
                 return;
             }
         }
@@ -2186,13 +2185,6 @@ extern const char D_004CA220[];
 extern const char D_004CA230[];
 extern const char D_004CA240[];
 extern const char D_004CA250[];
-extern const char D_004DB6F0[];
-extern const char D_004DB6F8[];
-extern const char D_004DB700[];
-extern const char D_004DB708[];
-extern const char D_004DB710[];
-extern const char D_004DB718[];
-extern const char D_004DB720[];
 typedef struct UwamonoCornerCollisionUnit {
     unsigned char unmodeled_00[0x10];
     UwamonoAlignedVector position;
@@ -2292,7 +2284,7 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
     nearestY = actor->position.y - center.value.y;
     nearestZ = actor->position.z - center.value.z;
     distance = (nearestX * basis[0][0]) + (nearestY * basis[0][1]) + (nearestZ * basis[0][2]);
-    xglFontDebugPrintf(8, 0x3C, D_004DB6F0, distance);
+    xglFontDebugPrintf(8, 0x3C, "len=%f", distance);
 
     if (distance < 0.0f) {
         return 0;
@@ -2303,18 +2295,18 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
     nearestX = distance * basis[0][0] + center.value.x;
     nearestY = distance * basis[0][1] + center.value.y;
     nearestZ = distance * basis[0][2] + center.value.z;
-    xglFontDebugPrintf(8, 0x18, D_004DB6F8, nearestX);
-    xglFontDebugPrintf(8, 0x20, D_004DB700, nearestY);
-    xglFontDebugPrintf(8, 0x28, D_004DB708, nearestZ);
+    xglFontDebugPrintf(8, 0x18, "x=%f", nearestX);
+    xglFontDebugPrintf(8, 0x20, "y=%f", nearestY);
+    xglFontDebugPrintf(8, 0x28, "z=%f", nearestZ);
 
     dx = actor->position.x - nearestX;
     dy = actor->position.y - nearestY;
     dz = actor->position.z - nearestZ;
     radiusSquared = unit->dimensions.value.z * unit->dimensions.value.z;
     distance = (dx * dx) + (dy * dy) + (dz * dz);
-    xglFontDebugPrintf(8, 0x54, D_004DB710, dx);
-    xglFontDebugPrintf(8, 0x5C, D_004DB718, dy);
-    xglFontDebugPrintf(8, 0x64, D_004DB720, dz);
+    xglFontDebugPrintf(8, 0x54, "u=%f", dx);
+    xglFontDebugPrintf(8, 0x5C, "v=%f", dy);
+    xglFontDebugPrintf(8, 0x64, "w=%f", dz);
     xglFontDebugPrintf(8, 0x6C, D_004CA240,
                        distance, radiusSquared);
     if (distance < radiusSquared) {
@@ -3811,9 +3803,17 @@ void DrawRadar(void) {
     } while (i < 0x40);
 }
 
-extern int sPoint_0[];
 
 void DrawSprite(int *pos, int *spr, int w, int h) {
+    static int sPoint_0[28] __asm__("sPoint.0") __attribute__((aligned(16))) = {
+        0x8001, 0x60234000, 0x5151EE, 0x0,
+        0x31003, 0x0, 0x47, 0x0,
+        0x44, 0x0, 0x42, 0x0,
+        0x0, 0x0, 0xFF, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0xFF, 0x0,
+        0x0, 0x0, 0x0, 0x0
+    };
     union { long long d[2]; int w[4]; } v;
     union { long long d[2]; int w[4]; } *p = (void *)pos;
 
@@ -3838,12 +3838,15 @@ void DrawSprite(int *pos, int *spr, int w, int h) {
     xglPrimAddGifTagDirect(0, sPoint_0, 7);
 }
 
-extern UwamonoLinePacket sSortLine_1;
 extern signed char lineflg;
 
 void SortLine(const UwamonoAlignedScreenPointSL *from,
               const UwamonoAlignedScreenPointSL *to, int mode)
 {
+    static UwamonoLinePacket sSortLine_1 __asm__("sSortLine.1") __attribute__((aligned(16))) = {
+        {0x0, 0x0, 0x0, 0x51000005, 0x8001, 0x40014000, 0x5151, 0x0},
+        {0, 0, 255, 0}, {0, 0, 0, 0}, {0, 0, 255, 0}, {0, 0, 0, 0},
+    };
     UwamonoAlignedScreenPointSL first;
     UwamonoAlignedScreenPointSL second;
 
@@ -3885,3 +3888,136 @@ void SortLine(const UwamonoAlignedScreenPointSL *from,
         nmlModelDirectSend(5, (unsigned char *)&sSortLine_1, 6);
     }
 }
+
+int uwares_tbl[14] = {0};
+int xtxres_tbl[14] = {0};
+UwamonoWind uwaWind = {0};
+UwamonoKowareKind KowareKind_t[127] = {
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 602, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 603, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 604, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 605, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 606, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 607, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 608, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 609, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 628, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 629, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 630, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 631, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 632, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 633, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 634, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 635, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 636, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 0, {0}, 637, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 658, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 659, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 660, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 0, {0}, 661, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 0, {0}, 662, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 0, {0}, 663, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 0, {0}, 664, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 0, {0}, 665, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 0, {0}, 666, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 0, {0}, 667, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 0, {0}, 688, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 0, {0}, 689, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 0, {0}, 690, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 0, {0}, 691, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 0, {0}, 692, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 0, {0}, 693, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 0, {0}, 694, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 0, {0}, 695, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 0, {0}, 696, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 0, {0}, 697, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 0, {0}, 718, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 0, {0}, 719, 0},
+    {2, {0}, {{0.5f, 4.0f, 0.5f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.875f, 4.0f, 0.3f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.375f, 2.25f, 0.125f, 0.0f}}, 0, {0}, 601, 0},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 610, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 611, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 612, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 613, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 614, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 615, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 616, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 617, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 618, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 638, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 639, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 640, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 641, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 642, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 643, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 644, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 645, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 646, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 1, {0}, 647, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 668, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 669, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 670, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 1, {0}, 671, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 1, {0}, 672, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 1, {0}, 673, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 1, {0}, 674, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 1, {0}, 675, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 1, {0}, 676, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 1, {0}, 677, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 1, {0}, 698, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 1, {0}, 699, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 1, {0}, 700, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 1, {0}, 701, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 1, {0}, 702, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 1, {0}, 703, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 1, {0}, 704, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 1, {0}, 705, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 1, {0}, 706, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 1, {0}, 707, 0},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 619, 0},
+    {2, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 620, 0},
+    {2, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 621, 0},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 622, 0},
+    {2, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 623, 0},
+    {2, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 624, 0},
+    {2, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 625, 0},
+    {2, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 626, 0},
+    {2, {0}, {{3.0f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 627, 0},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 648, 0},
+    {1, {0}, {{0.5f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 649, 0},
+    {1, {0}, {{0.5f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 650, 0},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 651, 0},
+    {1, {0}, {{1.0f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 652, 0},
+    {1, {0}, {{1.0f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 653, 0},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 654, 0},
+    {1, {0}, {{1.5f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 655, 0},
+    {1, {0}, {{1.5f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 656, 0},
+    {1, {0}, {{2.5f, 2.0f, 2.5f, 0.0f}}, 2, {0}, 657, 0},
+    {2, {0}, {{0.25f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 678, 0},
+    {2, {0}, {{0.25f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 679, 0},
+    {2, {0}, {{0.25f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 680, 0},
+    {2, {0}, {{0.5f, 1.0f, 1.0f, 0.0f}}, 2, {0}, 681, 0},
+    {2, {0}, {{0.5f, 2.0f, 1.0f, 0.0f}}, 2, {0}, 682, 0},
+    {2, {0}, {{0.5f, 3.0f, 1.0f, 0.0f}}, 2, {0}, 683, 0},
+    {2, {0}, {{0.75f, 1.0f, 1.5f, 0.0f}}, 2, {0}, 684, 0},
+    {2, {0}, {{0.75f, 2.0f, 1.5f, 0.0f}}, 2, {0}, 685, 0},
+    {2, {0}, {{0.75f, 3.0f, 1.5f, 0.0f}}, 2, {0}, 686, 0},
+    {2, {0}, {{1.25f, 2.0f, 2.0f, 0.0f}}, 2, {0}, 687, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.25f, 0.0f}}, 2, {0}, 708, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.25f, 0.0f}}, 2, {0}, 709, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.25f, 0.0f}}, 2, {0}, 710, 0},
+    {2, {0}, {{1.0f, 1.0f, 0.5f, 0.0f}}, 2, {0}, 711, 0},
+    {2, {0}, {{1.0f, 2.0f, 0.5f, 0.0f}}, 2, {0}, 712, 0},
+    {2, {0}, {{1.0f, 3.0f, 0.5f, 0.0f}}, 2, {0}, 713, 0},
+    {2, {0}, {{1.5f, 1.0f, 0.75f, 0.0f}}, 2, {0}, 714, 0},
+    {2, {0}, {{1.5f, 2.0f, 0.75f, 0.0f}}, 2, {0}, 715, 0},
+    {2, {0}, {{1.5f, 3.0f, 0.75f, 0.0f}}, 2, {0}, 716, 0},
+    {2, {0}, {{2.0f, 2.0f, 1.25f, 0.0f}}, 2, {0}, 717, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 1, {0}, 601, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 1, {0}, 601, 0},
+    {2, {0}, {{0.125f, 2.25f, 0.75f, 0.0f}}, 2, {0}, 601, 0},
+    {2, {0}, {{0.75f, 2.25f, 0.125f, 0.0f}}, 2, {0}, 601, 0},
+    {2, {0}, {{2.866f, 2.859f, 0.025f, 0.0f}}, 2, {0}, 601, 0},
+};
