@@ -1222,11 +1222,19 @@
         },
         {
           "c_split": false,
-          "end": "0x0043C188",
+          "end": "0x0043C140",
           "ordinal": 238,
           "piece": "runtime",
           "start": "0x0043B450",
           "tu": "runtime"
+        },
+        {
+          "c_split": false,
+          "end": "0x0043C188",
+          "ordinal": 253,
+          "piece": "jthread",
+          "start": "0x0043C140",
+          "tu": "jthread"
         },
         {
           "c_split": false,
@@ -3036,7 +3044,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004D15B0",
+          "end": "0x004D1540",
           "ordinal": 238,
           "piece": "runtime",
           "start": "0x004CD8B0",
@@ -3047,7 +3055,7 @@
           "end": "0x004D1658",
           "ordinal": 253,
           "piece": "jthread",
-          "start": "0x004D15B0",
+          "start": "0x004D1540",
           "tu": "jthread"
         },
         {
@@ -71058,20 +71066,20 @@
           ],
           "bounds": [
             "0x00422922",
-            "0x0043C188"
+            "0x0043C140"
           ],
-          "end": "0x0043C188",
+          "end": "0x0043C140",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x0043C188",
+              "end": "0x0043C140",
               "name": "runtime",
               "start": "0x0043B450"
             }
           ],
           "rule": "anchored start",
-          "size": 3384,
+          "size": 3312,
           "splat_type": "data",
           "start": "0x0043B450"
         },
@@ -71082,20 +71090,20 @@
           ],
           "bounds": [
             "0x004CD8B0",
-            "0x004D15B0"
+            "0x004D1540"
           ],
-          "end": "0x004D15B0",
+          "end": "0x004D1540",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004D15B0",
+              "end": "0x004D1540",
               "name": "runtime",
               "start": "0x004CD8B0"
             }
           ],
           "rule": "anchored start",
-          "size": 15616,
+          "size": 15504,
           "splat_type": "rodata",
           "start": "0x004CD8B0"
         },
@@ -75763,6 +75771,7 @@
       "name_confidence": "low",
       "ordinal": 253,
       "owners": {
+        ".data": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
         ".text": "c"
@@ -75770,9 +75779,33 @@
       "path": "src/main/jthread.c",
       "scaffold_path": "scaffold/src/main/jthread.c",
       "sections": {
+        ".data": {
+          "anchored": [
+            "0x0043C140",
+            "0x0043C188"
+          ],
+          "bounds": [
+            "0x0043C140",
+            "0x0043C188"
+          ],
+          "end": "0x0043C188",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x0043C188",
+              "name": "jthread",
+              "start": "0x0043C140"
+            }
+          ],
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 72,
+          "splat_type": "data",
+          "start": "0x0043C140"
+        },
         ".rodata": {
           "anchored": [
-            "0x004D15B0",
+            "0x004D1540",
             "0x004D15CC"
           ],
           "bounds": [
@@ -75786,13 +75819,13 @@
               "c_split": false,
               "end": "0x004D1658",
               "name": "jthread",
-              "start": "0x004D15B0"
+              "start": "0x004D1540"
             }
           ],
-          "rule": "anchored start",
-          "size": 168,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 280,
           "splat_type": "rodata",
-          "start": "0x004D15B0"
+          "start": "0x004D1540"
         },
         ".sdata": {
           "anchored": [

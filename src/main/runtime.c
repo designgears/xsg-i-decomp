@@ -743,19 +743,24 @@ void Java_xeno_util_Runtime_setPartyData__II(JThread *thread, unsigned int *argu
     }
 }
 
-/* The zero-terminated character-id table cid2bic searches, in the order the
-   battle party uses (config/symbols/main.txt, 0x42 bytes). */
-extern unsigned short tbl_0_0043B450[];
-
 /* Converts a Java character id to its battle-member index, as every
    Party*Check/On/Off callee below expects: the one-based position of the id in
    the table, or zero when the table does not list it. */
 static int cid2bic(int character_id)
 {
+    /* The zero-terminated character-id table, in the order the battle party
+       uses (tbl.0, 0x42 bytes). */
+    static unsigned short tbl[] = {
+        0x0003, 0x0002, 0x0001, 0x0007, 0x0006, 0x0004, 0x0005, 0x0127,
+        0x0128, 0x010C, 0x0120, 0x0121, 0xF013, 0xF014, 0xF015, 0xF016,
+        0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2101, 0x2102,
+        0x2103, 0x2104, 0x2105, 0x210A, 0x2201, 0xF014, 0xF015, 0xF016,
+        0x0000,
+    };
     int index;
 
-    for (index = 0; tbl_0_0043B450[index] != 0; index++) {
-        if (tbl_0_0043B450[index] == character_id) {
+    for (index = 0; tbl[index] != 0; index++) {
+        if (tbl[index] == character_id) {
             return index + 1;
         }
     }
@@ -947,9 +952,7 @@ void Java_xeno_util_Runtime_setWindParam__IFFFF(void *env, union { int i; float 
     }
 }
 
-extern int s_nMpeg2ReserveCrossFade;
-extern char base_1[];
-extern char ext_2_004DC078[5];
+static int s_nMpeg2ReserveCrossFade = 0;
 extern int SCRIPT_fadeGet(void);
 extern int GameMpeg2Play(char *name, int mode);
 
@@ -957,9 +960,11 @@ void Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_(JThread *thread,
                                                       StringArgCall *arguments,
                                                       unsigned int *result)
 {
+    static char base[] = "data\\movie\\mpeg2\\";
+    static char ext[] = ".pss";
     char path[64];
     char *dst = path;
-    char *src = base_1;
+    char *src = base;
     int mode;
 
     while ((*dst = *src) != 0) {
@@ -971,7 +976,7 @@ void Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_(JThread *thread,
         src++;
         dst++;
     }
-    src = ext_2_004DC078;
+    src = ext;
     while ((*dst = *src) != 0) {
         src++;
         dst++;
@@ -988,7 +993,6 @@ void Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_(JThread *thread,
 }
 
 extern void nmlModelSetMpeg2CrossFadeTime(int time);
-extern int s_nMpeg2ReserveCrossFade;
 
 void Java_xeno_util_Runtime_mpeg2AfterCrossFade__I(JThread *thread, int *arguments,
                                                     unsigned int *result)
@@ -1177,3 +1181,745 @@ void Java_xeno_util_Runtime_AGWSAllRecovery__(JThread *thread, void *arguments,
 {
     AgwsAllRecovery();
 }
+
+extern void Java_xeno_vm_System_arraycopy__Ljava_lang_Object_ILjava_lang_Object_II();
+extern void Java_xeno_vm_System_sleep__I();
+extern void Java_xeno_vm_System_println__Ljava_lang_String_();
+extern void Java_xeno_vm_System_waitFor__Ljava_lang_Object_();
+extern void Java_xeno_vm_System_methodSignal__I();
+extern void Java_xeno_vm_Thread_create__();
+extern void Java_xeno_vm_Thread_setTarget__Ljava_lang_Object_Ljava_lang_String_();
+extern void Java_xeno_vm_Thread_start__();
+extern void Java_xeno_vm_Thread_stop__();
+extern void Java_xeno_vm_Math_random__();
+extern void Java_xeno_vm_Math_atan2__FF();
+extern void Java_xeno_vm_Math_cos__F();
+extern void Java_xeno_vm_Math_sin__F();
+extern void Java_xeno_util_Spline_create__();
+extern void Java_xeno_util_Spline_setCtrlVertex__aFIII();
+extern void Java_xeno_util_Spline_getValue__I();
+extern void Java_xeno_util_Format_floatToIntBits__F();
+extern void Java_xeno_util_Format_intBitsToFloat__I();
+extern void Java_xeno_util_Format_toInt__Ljava_lang_String_();
+extern void Java_xeno_util_Format_toString__C();
+extern void Java_xeno_util_Format_toString__F();
+extern void Java_xeno_util_Format_toString__I();
+extern void Java_xeno_util_Format_toString__Z();
+extern void Java_xeno_util_Input_create__I();
+extern void Java_xeno_util_Input_getButton__();
+extern void Java_xeno_util_Input_getEdge__();
+extern void Java_xeno_util_Input_getRepeat__();
+extern void Java_xeno_util_Layout_set__Ljava_lang_Object_I();
+extern void Java_xeno_util_Layout_getManager__I();
+extern void Java_xeno_util_Window_getSignal__();
+extern void Java_xeno_util_Window_signal__I();
+extern void Java_xeno_util_Window_clear__();
+extern void Java_xeno_util_Window_close__();
+extern void Java_xeno_util_Window_waitkey__I();
+extern void Java_xeno_util_Window_wait__I();
+extern void Java_xeno_util_Window_create__I();
+extern void Java_xeno_util_Window_setSize__II();
+extern void Java_xeno_util_Window_setLocation__II();
+extern void Java_xeno_util_Window_print__Ljava_lang_String_();
+extern void Java_xeno_util_Window_print__aLjava_lang_String_I();
+extern void Java_xeno_util_Window_setName__Ljava_lang_String_();
+extern void Java_xeno_util_Window_closeWaitKey__();
+extern void Java_xeno_util_Menu_addQuery__Ljava_lang_String_();
+extern void Java_xeno_util_Menu_addQuery__aLjava_lang_String_I();
+extern void Java_xeno_util_Menu_addItem__Ljava_lang_String_();
+extern void Java_xeno_util_Menu_create__();
+extern void Java_xeno_util_Menu_getSelected__();
+extern void Java_xeno_util_Menu_setLocation__II();
+extern void Java_xeno_util_Menu_setVisible__Z();
+extern void Java_xeno_util_Menu_setCursor__I();
+extern void Java_xeno_util_Toolkit_getPeer__Ljava_lang_Object_();
+extern void Java_xeno_util_Toolkit_call__Ljava_lang_Object_Ljava_lang_String_();
+extern void Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_I();
+extern void Java_xeno_util_Toolkit_loadResource__Ljava_lang_String_();
+extern void Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_Ljava_lang_Object_I();
+extern void Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_II();
+extern void Java_xeno_util_Toolkit_peerSetGroup__II();
+extern void Java_xeno_Sound_sequencePlay__I();
+extern void Java_xeno_Sound_sequencePlay__II();
+extern void Java_xeno_Sound_sequenceStop__I();
+extern void Java_xeno_Sound_sequenceStop__II();
+extern void Java_xeno_Sound_effectPlay__III();
+extern void Java_xeno_Sound_effectStop__I();
+extern void Java_xeno_Sound_streamPlay__IIII();
+extern void Java_xeno_Movie_init__I();
+extern void Java_xeno_Movie_start__I();
+extern void Java_xeno_Movie_stop__();
+extern void Java_xeno_Movie_update__();
+extern void Java_xeno_PlayControl_create__();
+extern void Java_xeno_PlayControl_getSignal__();
+extern void Java_xeno_PlayControl_signal__I();
+extern void Java_xeno_PlayControl_init__II();
+extern void Java_xeno_PlayControl_init__IIIIF();
+extern void Java_xeno_PlayControl_loadCamera__Ljava_lang_Object_();
+extern void Java_xeno_PlayControl_loadTimeChart__Ljava_lang_Object_();
+extern void Java_xeno_PlayControl_start__();
+extern void Java_xeno_PlayControl_stop__();
+extern void Java_xeno_PlayControl_setObserver__IILjava_lang_Object_Ljava_lang_String_();
+extern void Java_xeno_PlayControl_setObserver__ILjava_lang_String_Ljava_lang_Object_Ljava_lang_String_();
+extern void Java_xeno_PlayControl_getParams__();
+extern void Java_xeno_Effect_call__I();
+extern void Java_xeno_Effect_disp__Z();
+extern void Java_xeno_Effect_setScale__FFF();
+extern void Java_xeno_Effect_getScale__();
+extern void Java_xeno_Effect_getTranslate__();
+extern void Java_xeno_Effect_setTranslate__();
+extern void Java_xeno_Effect_getRotate__();
+extern void Java_xeno_Effect_setRotate__();
+extern void Java_xeno_Effect_setCaster__Lxeno_Chr_();
+extern void Java_xeno_Effect_setTarget__Lxeno_Chr_();
+extern void Java_xeno_Effect_setCaster__Lxeno_Unit_();
+extern void Java_xeno_Effect_setTarget__Lxeno_Unit_();
+extern void Java_xeno_Effect_setTransOffset__FFF();
+extern void Java_xeno_Effect_getForceLoop__();
+extern void Java_xeno_Effect_setForceLoop__Z();
+extern void Java_xeno_Effect_getClip__();
+extern void Java_xeno_Effect_setClip__Z();
+extern void Java_xeno_Effect_clearEffect__();
+extern void Java_xeno_Effect_setMotion__Z();
+extern void Java_xeno_Effect_noAttach__Z();
+extern void Java_xeno_Camera_getRotateX__();
+extern void Java_xeno_Camera_getRotateY__();
+extern void Java_xeno_Camera_getRotateZ__();
+extern void Java_xeno_Camera_getTranslateX__();
+extern void Java_xeno_Camera_getTranslateY__();
+extern void Java_xeno_Camera_getTranslateZ__();
+extern void Java_xeno_Camera_fovSPL__aFI();
+extern void Java_xeno_Camera_change__();
+extern void Java_xeno_Camera_rotateSPL__aFI();
+extern void Java_xeno_Camera_rotateSPL__aFIII();
+extern void Java_xeno_Camera_setActive__Z();
+extern void Java_xeno_Camera_create__I();
+extern void Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF();
+extern void Java_xeno_Camera_transSPL__aFI();
+extern void Java_xeno_Camera_transSPL__aFIII();
+extern void Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF();
+extern void Java_xeno_Camera_viewSPL__aFI();
+extern void Java_xeno_Camera_viewSPL__aFIII();
+extern void Java_xeno_Camera_rollSPL__aFI();
+extern void Java_xeno_Camera_setRotate__FFF();
+extern void Java_xeno_Camera_setRoll__F();
+extern void Java_xeno_Camera_setTranslate__FFF();
+extern void Java_xeno_Camera_setFov__F();
+extern void Java_xeno_Camera_getFov__();
+extern void Java_xeno_Camera_setView__FFF();
+extern void Java_xeno_Camera_start__ILjava_lang_Object_();
+extern void Java_xeno_Camera_setCFAngle__IFFFF();
+extern void Java_xeno_Camera_setCFAnglePers__IFFFFF();
+extern void Java_xeno_Camera_setCFHokan__IFF();
+extern void Java_xeno_Camera_setCFLock__IIFFF();
+extern void Java_xeno_Camera_setCFOffset__IFFFIFIF();
+extern void Java_xeno_Camera_setMode__I();
+extern void Java_xeno_Camera_getMode__();
+extern void Java_xeno_Camera_setCFPedestal__IFFFFFFFF();
+extern void Java_xeno_Camera_setCFPedestalHokan__II();
+extern void Java_xeno_Camera_changeID__III();
+extern void Java_xeno_Camera_setFog__IFFFFIIII();
+extern void Java_xeno_Camera_resetFog__I();
+extern void Java_xeno_Camera_setClipRange__FF();
+extern void Java_xeno_Light_setColor__FFF();
+extern void Java_xeno_Light_setDirection__FFF();
+extern void Java_xeno_Light_setDirection2__FFF();
+extern void Java_xeno_Light_setGlobalPointLightCol__IFFF();
+extern void Java_xeno_Light_setGlobalPointLightPos__IFFF();
+extern void Java_xeno_Light_setGlobalPointLightReset__();
+extern void Java_xeno_Chr_getPlayer__();
+extern void Java_xeno_Chr_setPlayer__();
+extern void Java_xeno_Chr_move__IFFZ();
+extern void Java_xeno_Chr_move__FFFZ();
+extern void Java_xeno_Chr_move__ILjava_lang_Object_Z();
+extern void Java_xeno_Chr_move__Ljava_lang_Object_FZ();
+extern void Java_xeno_Chr_move__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Chr_rotX__FFZ();
+extern void Java_xeno_Chr_rotX__IFZ();
+extern void Java_xeno_Chr_rotX__ILjava_lang_Object_Z();
+extern void Java_xeno_Chr_rotX__Ljava_lang_Object_FZ();
+extern void Java_xeno_Chr_rotY__FFZ();
+extern void Java_xeno_Chr_rotY__IFZ();
+extern void Java_xeno_Chr_rotY__ILjava_lang_Object_Z();
+extern void Java_xeno_Chr_rotY__Ljava_lang_Object_FZ();
+extern void Java_xeno_Chr_rotZ__FFZ();
+extern void Java_xeno_Chr_rotZ__IFZ();
+extern void Java_xeno_Chr_rotZ__ILjava_lang_Object_Z();
+extern void Java_xeno_Chr_rotZ__Ljava_lang_Object_FZ();
+extern void Java_xeno_Chr_start__ILjava_lang_Object_();
+extern void Java_xeno_Chr_stop__();
+extern void Java_xeno_Chr_mtn__IIIIIFZ();
+extern void Java_xeno_Chr_mtn__IIFZ();
+extern void Java_xeno_Chr_signal__I();
+extern void Java_xeno_Chr_getSignal__();
+extern void Java_xeno_Chr_setRotate__();
+extern void Java_xeno_Chr_setTranslate__();
+extern void Java_xeno_Chr_getRotate__();
+extern void Java_xeno_Chr_getTranslate__();
+extern void Java_xeno_Chr_setVisible__Z();
+extern void Java_xeno_Chr_setVisible__IZ();
+extern void Java_xeno_Chr_setCollision__Z();
+extern void Java_xeno_Chr_setHand__I();
+extern void Java_xeno_Chr_setArgs__III();
+extern void Java_xeno_Chr_getArgs__II();
+extern void Java_xeno_Chr_setArgs__ILjava_lang_Object_I();
+extern void Java_xeno_Chr_getSerial__();
+extern void Java_xeno_Chr_getState__();
+extern void Java_xeno_Chr_mtnGetRoot__ILxeno_util_Vector4f_();
+extern void Java_xeno_Chr_setScale__FFF();
+extern void Java_xeno_Chr_getScale__();
+extern void Java_xeno_Chr_scale__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Chr_sclX__FFZ();
+extern void Java_xeno_Chr_sclX__IFZ();
+extern void Java_xeno_Chr_sclY__FFZ();
+extern void Java_xeno_Chr_sclY__IFZ();
+extern void Java_xeno_Chr_sclZ__FFZ();
+extern void Java_xeno_Chr_sclZ__IFZ();
+extern void Java_xeno_Chr_rotCNS__ILjava_lang_Object_();
+extern void Java_xeno_Chr_rotCNS__IFFF();
+extern void Java_xeno_Chr_setRotCNSParam__IFFFFF();
+extern void Java_xeno_Chr_relax__II();
+extern void Java_xeno_Chr_getFlags__();
+extern void Java_xeno_Chr_setFlags__I();
+extern void Java_xeno_Chr_setEdgeFall__I();
+extern void Java_xeno_Chr_setShadow__II();
+extern void Java_xeno_Chr_setShadow__aB();
+extern void Java_xeno_Chr_setID__I();
+extern void Java_xeno_Chr_setElevatorMode__I();
+extern void Java_xeno_Chr_setParent__Lxeno_Chr_III();
+extern void Java_xeno_Chr_setMotionFlags__IZ();
+extern void Java_xeno_Chr_setFilter__I();
+extern void Java_xeno_Chr_setFilterParam__aF();
+extern void Java_xeno_Chr_setClip__I();
+extern void Java_xeno_Chr_setSymmetryY__I();
+extern void Java_xeno_Chr_setSortOffset__F();
+extern void Java_xeno_Chr_setPointLightCol__IFFF();
+extern void Java_xeno_Chr_setPointLightPos__IFFF();
+extern void Java_xeno_Chr_setPointLightReset__();
+extern void Java_xeno_Chr_talkto__Ljava_lang_String_();
+extern void Java_xeno_Chr_touchto__Ljava_lang_String_();
+extern void Java_xeno_Chr_childGetPeer__II();
+extern void Java_xeno_Chr_setPeer__Ljava_lang_Object_();
+extern void Java_xeno_Chr_dispRadar__Z();
+extern void Java_xeno_Chr_look_camera__();
+extern void Java_xeno_Chr_look_char__Ljava_lang_Object_();
+extern void Java_xeno_Chr_look_unit__Ljava_lang_Object_();
+extern void Java_xeno_Chr_look_default__();
+extern void Java_xeno_Chr_look_point__FFF();
+extern void Java_xeno_Chr_look_eye_set__FF();
+extern void Java_xeno_Chr_look_eye_control__I();
+extern void Java_xeno_Chr_look_speed__F();
+extern void Java_xeno_Chr_look_eye_speed__F();
+extern void Java_xeno_Chr_renderCommand__I();
+extern void Java_xeno_Chr_shadow_clip_scale__F();
+extern void Java_xeno_Chr_shadow_map_id__I();
+extern void Java_xeno_Chr_shadow_map_reset__();
+extern void Java_xeno_Chr_hairStop__II();
+extern void Java_xeno_Chr_pixelAlpha__I();
+extern void Java_xeno_Chr_pixelAlphaParts__II();
+extern void Java_xeno_Chr_pixelAlphaPartsReset__();
+extern void Java_xeno_Chr_setMotNoUpdate__I();
+extern void Java_xeno_Chr_setWeaponR__Lxeno_Chr_();
+extern void Java_xeno_Chr_resetWeaponR__Lxeno_Chr_();
+extern void Java_xeno_Chr_resetHand__();
+extern void Java_xeno_Chr_resetEnv__();
+extern void Java_xeno_Chr_ignoreShape__I();
+extern void Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF();
+extern void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF();
+extern void Java_xeno_Unit_getRotate__();
+extern void Java_xeno_Unit_getSignal__();
+extern void Java_xeno_Unit_getTranslate__();
+extern void Java_xeno_Unit_invalidate__();
+extern void Java_xeno_Unit_move__FFFZ();
+extern void Java_xeno_Unit_move__IFFZ();
+extern void Java_xeno_Unit_move__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Unit_move__ILjava_lang_Object_Z();
+extern void Java_xeno_Unit_move__Ljava_lang_Object_FZ();
+extern void Java_xeno_Unit_mtn__IIFZ();
+extern void Java_xeno_Unit_mtn__IIIIIFZ();
+extern void Java_xeno_Unit_rotX__FFZ();
+extern void Java_xeno_Unit_rotX__IFZ();
+extern void Java_xeno_Unit_rotX__ILjava_lang_Object_Z();
+extern void Java_xeno_Unit_rotX__Ljava_lang_Object_FZ();
+extern void Java_xeno_Unit_rotY__FFZ();
+extern void Java_xeno_Unit_rotY__IFZ();
+extern void Java_xeno_Unit_rotY__ILjava_lang_Object_Z();
+extern void Java_xeno_Unit_rotY__Ljava_lang_Object_FZ();
+extern void Java_xeno_Unit_rotZ__FFZ();
+extern void Java_xeno_Unit_rotZ__IFZ();
+extern void Java_xeno_Unit_rotZ__ILjava_lang_Object_Z();
+extern void Java_xeno_Unit_rotZ__Ljava_lang_Object_FZ();
+extern void Java_xeno_Unit_scale__Lxeno_util_Spline_IZ();
+extern void Java_xeno_Unit_sclX__FFZ();
+extern void Java_xeno_Unit_sclX__IFZ();
+extern void Java_xeno_Unit_sclY__FFZ();
+extern void Java_xeno_Unit_sclY__IFZ();
+extern void Java_xeno_Unit_sclZ__FFZ();
+extern void Java_xeno_Unit_sclZ__IFZ();
+extern void Java_xeno_Unit_setCollision__Z();
+extern void Java_xeno_Unit_setRotate__();
+extern void Java_xeno_Unit_setTranslate__();
+extern void Java_xeno_Unit_setVisible__IZ();
+extern void Java_xeno_Unit_setVisible__Z();
+extern void Java_xeno_Unit_signal__I();
+extern void Java_xeno_Unit_start__ILjava_lang_Object_();
+extern void Java_xeno_Unit_stop__();
+extern void Java_xeno_Unit_validate__();
+extern void Java_xeno_Unit_setParent__Ljava_lang_Object_I();
+extern void Java_xeno_Unit_setArgs__III();
+extern void Java_xeno_Unit_getArgs__II();
+extern void Java_xeno_Unit_setArgs__ILjava_lang_Object_I();
+extern void Java_xeno_Unit_setArgs__IIIII();
+extern void Java_xeno_Unit_getScale__();
+extern void Java_xeno_Unit_setScale__FFF();
+extern void Java_xeno_Unit_getSerial__();
+extern void Java_xeno_Unit_mtnSetMask__I();
+extern void Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_();
+extern void Java_xeno_Unit_getState__();
+extern void Java_xeno_Unit_getPivot__Lxeno_util_Vector4f_();
+extern void Java_xeno_Unit_setPivot__FFF();
+extern void Java_xeno_Unit_getAxis__Lxeno_util_Vector4f_();
+extern void Java_xeno_Unit_setAxis__FFFF();
+extern void Java_xeno_Unit_suspend__I();
+extern void Java_xeno_Unit_resume__I();
+extern void Java_xeno_Unit_initElevatorFunc__();
+extern void Java_xeno_Unit_map_shadow__I();
+extern void Java_xeno_Unit_renderCommand__I();
+extern void Java_xeno_Unit_setFilter__I();
+extern void Java_xeno_Unit_setFilterParam__aF();
+extern void Java_xeno_Unit_setShadow__II();
+extern void Java_xeno_Unit_shadow_clip_scale__F();
+extern void Java_xeno_Unit_shadow_map_id__I();
+extern void Java_xeno_Unit_shadow_map_reset__();
+extern void Java_xeno_Unit_setSortOffset__F();
+extern void Java_xeno_Unit_setClip__I();
+extern void Java_xeno_Unit_setMonitorPrio__I();
+extern void Java_xeno_Scene_start__ILjava_lang_Object_();
+extern void Java_xeno_Scene_stop__();
+extern void Java_xeno_Stage_start__ILjava_lang_Object_();
+extern void Java_xeno_Stage_stop__();
+extern void Java_xeno_Stage_play__Ljava_lang_String_();
+extern void Java_xeno_Stage_setPartsLast__I();
+extern void Java_xeno_Stage_setPartsLastReset__();
+extern void Java_xeno_Stage_setColor__FFF();
+extern void Java_xeno_Stage_setFade__IIFFF();
+extern void Java_xeno_Stage_setEventFade__IFFFIFFF();
+extern void Java_xeno_Stage_setFrameRender__II();
+extern void Java_xeno_Stage_setFadeCancel__I();
+extern void Java_xeno_Stage_setVisible__IZ();
+extern void Java_xeno_Stage_setCFBG__II_F();
+extern void Java_xeno_Stage_setEffectRender__I();
+extern void Java_xeno_Stage_renderCommand__I();
+extern void Java_xeno_Stage_setBgColor__FFF();
+extern void Java_xeno_Stage_setBgClip__I();
+extern void Java_xeno_Stage_clrBackBuffer__();
+
+/* The native-method table findNativeMethod (main's find_native_method TU)
+   searches: each Java native's exported name and its entry point, closed by
+   a NULL name. */
+RuntimeNativeBinding default_native[] = {
+    { "Java_xeno_vm_System_arraycopy__Ljava_lang_Object_ILjava_lang_Object_II", (void (*)())Java_xeno_vm_System_arraycopy__Ljava_lang_Object_ILjava_lang_Object_II },
+    { "Java_xeno_vm_System_sleep__I", (void (*)())Java_xeno_vm_System_sleep__I },
+    { "Java_xeno_vm_System_println__Ljava_lang_String_", (void (*)())Java_xeno_vm_System_println__Ljava_lang_String_ },
+    { "Java_xeno_vm_System_waitFor__Ljava_lang_Object_", (void (*)())Java_xeno_vm_System_waitFor__Ljava_lang_Object_ },
+    { "Java_xeno_vm_System_methodSignal__I", (void (*)())Java_xeno_vm_System_methodSignal__I },
+    { "Java_xeno_vm_Thread_create__", (void (*)())Java_xeno_vm_Thread_create__ },
+    { "Java_xeno_vm_Thread_setTarget__Ljava_lang_Object_Ljava_lang_String_", (void (*)())Java_xeno_vm_Thread_setTarget__Ljava_lang_Object_Ljava_lang_String_ },
+    { "Java_xeno_vm_Thread_start__", (void (*)())Java_xeno_vm_Thread_start__ },
+    { "Java_xeno_vm_Thread_stop__", (void (*)())Java_xeno_vm_Thread_stop__ },
+    { "Java_xeno_vm_Math_random__", (void (*)())Java_xeno_vm_Math_random__ },
+    { "Java_xeno_vm_Math_atan2__FF", (void (*)())Java_xeno_vm_Math_atan2__FF },
+    { "Java_xeno_vm_Math_cos__F", (void (*)())Java_xeno_vm_Math_cos__F },
+    { "Java_xeno_vm_Math_sin__F", (void (*)())Java_xeno_vm_Math_sin__F },
+    { "Java_xeno_util_Spline_create__", (void (*)())Java_xeno_util_Spline_create__ },
+    { "Java_xeno_util_Spline_setCtrlVertex__aFIII", (void (*)())Java_xeno_util_Spline_setCtrlVertex__aFIII },
+    { "Java_xeno_util_Spline_getValue__I", (void (*)())Java_xeno_util_Spline_getValue__I },
+    { "Java_xeno_util_Format_floatToIntBits__F", (void (*)())Java_xeno_util_Format_floatToIntBits__F },
+    { "Java_xeno_util_Format_intBitsToFloat__I", (void (*)())Java_xeno_util_Format_intBitsToFloat__I },
+    { "Java_xeno_util_Format_toInt__Ljava_lang_String_", (void (*)())Java_xeno_util_Format_toInt__Ljava_lang_String_ },
+    { "Java_xeno_util_Format_toString__C", (void (*)())Java_xeno_util_Format_toString__C },
+    { "Java_xeno_util_Format_toString__F", (void (*)())Java_xeno_util_Format_toString__F },
+    { "Java_xeno_util_Format_toString__I", (void (*)())Java_xeno_util_Format_toString__I },
+    { "Java_xeno_util_Format_toString__Z", (void (*)())Java_xeno_util_Format_toString__Z },
+    { "Java_xeno_util_Input_create__I", (void (*)())Java_xeno_util_Input_create__I },
+    { "Java_xeno_util_Input_getButton__", (void (*)())Java_xeno_util_Input_getButton__ },
+    { "Java_xeno_util_Input_getEdge__", (void (*)())Java_xeno_util_Input_getEdge__ },
+    { "Java_xeno_util_Input_getRepeat__", (void (*)())Java_xeno_util_Input_getRepeat__ },
+    { "Java_xeno_util_Layout_set__Ljava_lang_Object_I", (void (*)())Java_xeno_util_Layout_set__Ljava_lang_Object_I },
+    { "Java_xeno_util_Layout_getManager__I", (void (*)())Java_xeno_util_Layout_getManager__I },
+    { "Java_xeno_util_Runtime_execBattle__II", (void (*)())Java_xeno_util_Runtime_execBattle__II },
+    { "Java_xeno_util_Runtime_getFlags__II", (void (*)())Java_xeno_util_Runtime_getFlags__II },
+    { "Java_xeno_util_Runtime_setFlags__III", (void (*)())Java_xeno_util_Runtime_setFlags__III },
+    { "Java_xeno_util_Runtime_setLocation__III", (void (*)())Java_xeno_util_Runtime_setLocation__III },
+    { "Java_xeno_util_Runtime_getLocation__", (void (*)())Java_xeno_util_Runtime_getLocation__ },
+    { "Java_xeno_util_Runtime_setRegister__II", (void (*)())Java_xeno_util_Runtime_setRegister__II },
+    { "Java_xeno_util_Runtime_getRegister__I", (void (*)())Java_xeno_util_Runtime_getRegister__I },
+    { "Java_xeno_util_Runtime_getEntrance__", (void (*)())Java_xeno_util_Runtime_getEntrance__ },
+    { "Java_xeno_util_Runtime_setPlayerControl__Z", (void (*)())Java_xeno_util_Runtime_setPlayerControl__Z },
+    { "Java_xeno_util_Runtime_setPlayerMoveParam__FFF", (void (*)())Java_xeno_util_Runtime_setPlayerMoveParam__FFF },
+    { "Java_xeno_util_Runtime_disable__I", (void (*)())Java_xeno_util_Runtime_disable__I },
+    { "Java_xeno_util_Runtime_enable__I", (void (*)())Java_xeno_util_Runtime_enable__I },
+    { "Java_xeno_util_Runtime_getGameState__", (void (*)())Java_xeno_util_Runtime_getGameState__ },
+    { "Java_xeno_util_Runtime_CaptureEnd__", (void (*)())Java_xeno_util_Runtime_CaptureEnd__ },
+    { "Java_xeno_util_Runtime_CaptureStart__Ljava_lang_String_I", (void (*)())Java_xeno_util_Runtime_CaptureStart__Ljava_lang_String_I },
+    { "Java_xeno_util_Runtime_jumpCF__II", (void (*)())Java_xeno_util_Runtime_jumpCF__II },
+    { "Java_xeno_util_Runtime_jumpEvent__I", (void (*)())Java_xeno_util_Runtime_jumpEvent__I },
+    { "Java_xeno_util_Runtime_setDefocusQuick__IIII", (void (*)())Java_xeno_util_Runtime_setDefocusQuick__IIII },
+    { "Java_xeno_util_Runtime_setDefocus__IIaI", (void (*)())Java_xeno_util_Runtime_setDefocus__IIaI },
+    { "Java_xeno_util_Runtime_setDefocusParam__III", (void (*)())Java_xeno_util_Runtime_setDefocusParam__III },
+    { "Java_xeno_util_Runtime_setEventTimer__Ljava_lang_String_I", (void (*)())Java_xeno_util_Runtime_setEventTimer__Ljava_lang_String_I },
+    { "Java_xeno_util_Runtime_setMap__II", (void (*)())Java_xeno_util_Runtime_setMap__II },
+    { "Java_xeno_util_Runtime_setShootFlag__Z", (void (*)())Java_xeno_util_Runtime_setShootFlag__Z },
+    { "Java_xeno_util_Runtime_setShootHeightCheck__Z", (void (*)())Java_xeno_util_Runtime_setShootHeightCheck__Z },
+    { "Java_xeno_util_Runtime_setShootIDCheck__Z", (void (*)())Java_xeno_util_Runtime_setShootIDCheck__Z },
+    { "Java_xeno_util_Runtime_setShootUwaCheck__Z", (void (*)())Java_xeno_util_Runtime_setShootUwaCheck__Z },
+    { "Java_xeno_util_Runtime_setShootRange__F", (void (*)())Java_xeno_util_Runtime_setShootRange__F },
+    { "Java_xeno_util_Runtime_addItem__II", (void (*)())Java_xeno_util_Runtime_addItem__II },
+    { "Java_xeno_util_Runtime_addItemWin__II", (void (*)())Java_xeno_util_Runtime_addItemWin__II },
+    { "Java_xeno_util_Runtime_removeItem__II", (void (*)())Java_xeno_util_Runtime_removeItem__II },
+    { "Java_xeno_util_Runtime_checkItem__II", (void (*)())Java_xeno_util_Runtime_checkItem__II },
+    { "Java_xeno_util_Runtime_getItemName__II", (void (*)())Java_xeno_util_Runtime_getItemName__II },
+    { "Java_xeno_util_Runtime_addGold__I", (void (*)())Java_xeno_util_Runtime_addGold__I },
+    { "Java_xeno_util_Runtime_removeGold__I", (void (*)())Java_xeno_util_Runtime_removeGold__I },
+    { "Java_xeno_util_Runtime_checkGold__", (void (*)())Java_xeno_util_Runtime_checkGold__ },
+    { "Java_xeno_util_Runtime_progressEffect__I", (void (*)())Java_xeno_util_Runtime_progressEffect__I },
+    { "Java_xeno_util_Runtime_enterShop__I", (void (*)())Java_xeno_util_Runtime_enterShop__I },
+    { "Java_xeno_util_Runtime_getLeader__", (void (*)())Java_xeno_util_Runtime_getLeader__ },
+    { "Java_xeno_util_Runtime_getPartyData__I", (void (*)())Java_xeno_util_Runtime_getPartyData__I },
+    { "Java_xeno_util_Runtime_setPartyData__II", (void (*)())Java_xeno_util_Runtime_setPartyData__II },
+    { "Java_xeno_util_Runtime_setFriend__I", (void (*)())Java_xeno_util_Runtime_setFriend__I },
+    { "Java_xeno_util_Runtime_resetFriend__I", (void (*)())Java_xeno_util_Runtime_resetFriend__I },
+    { "Java_xeno_util_Runtime_checkFriend__I", (void (*)())Java_xeno_util_Runtime_checkFriend__I },
+    { "Java_xeno_util_Runtime_setLockParty__I", (void (*)())Java_xeno_util_Runtime_setLockParty__I },
+    { "Java_xeno_util_Runtime_resetLockParty__I", (void (*)())Java_xeno_util_Runtime_resetLockParty__I },
+    { "Java_xeno_util_Runtime_checkLockParty__I", (void (*)())Java_xeno_util_Runtime_checkLockParty__I },
+    { "Java_xeno_util_Runtime_setOutFriend__I", (void (*)())Java_xeno_util_Runtime_setOutFriend__I },
+    { "Java_xeno_util_Runtime_resetOutFriend__I", (void (*)())Java_xeno_util_Runtime_resetOutFriend__I },
+    { "Java_xeno_util_Runtime_checkOutFriend__I", (void (*)())Java_xeno_util_Runtime_checkOutFriend__I },
+    { "Java_xeno_util_Runtime_setTakeAgws__I", (void (*)())Java_xeno_util_Runtime_setTakeAgws__I },
+    { "Java_xeno_util_Runtime_resetTakeAgws__I", (void (*)())Java_xeno_util_Runtime_resetTakeAgws__I },
+    { "Java_xeno_util_Runtime_checkTakeAgws__I", (void (*)())Java_xeno_util_Runtime_checkTakeAgws__I },
+    { "Java_xeno_util_Runtime_battleChangeParty__I", (void (*)())Java_xeno_util_Runtime_battleChangeParty__I },
+    { "Java_xeno_util_Runtime_setIdLightCol__IIFFF", (void (*)())Java_xeno_util_Runtime_setIdLightCol__IIFFF },
+    { "Java_xeno_util_Runtime_setIdLightDir__IIFFF", (void (*)())Java_xeno_util_Runtime_setIdLightDir__IIFFF },
+    { "Java_xeno_util_Runtime_setIdLightVec__IIFFF", (void (*)())Java_xeno_util_Runtime_setIdLightVec__IIFFF },
+    { "Java_xeno_util_Runtime_setWindParam__IFFFF", (void (*)())Java_xeno_util_Runtime_setWindParam__IFFFF },
+    { "Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_", (void (*)())Java_xeno_util_Runtime_mpeg2__Ljava_lang_String_ },
+    { "Java_xeno_util_Runtime_mpeg2AfterCrossFade__I", (void (*)())Java_xeno_util_Runtime_mpeg2AfterCrossFade__I },
+    { "Java_xeno_util_Runtime_mailFlag__I", (void (*)())Java_xeno_util_Runtime_mailFlag__I },
+    { "Java_xeno_util_Runtime_mailExec__I", (void (*)())Java_xeno_util_Runtime_mailExec__I },
+    { "Java_xeno_util_Runtime_minigameExec__I", (void (*)())Java_xeno_util_Runtime_minigameExec__I },
+    { "Java_xeno_util_Runtime_setMenuLock__", (void (*)())Java_xeno_util_Runtime_setMenuLock__ },
+    { "Java_xeno_util_Runtime_evsSetRetPoint__", (void (*)())Java_xeno_util_Runtime_evsSetRetPoint__ },
+    { "Java_xeno_util_Runtime_evsExit__", (void (*)())Java_xeno_util_Runtime_evsExit__ },
+    { "Java_xeno_util_Runtime_etherTecSet__I", (void (*)())Java_xeno_util_Runtime_etherTecSet__I },
+    { "Java_xeno_util_Runtime_charAllRecovery__", (void (*)())Java_xeno_util_Runtime_charAllRecovery__ },
+    { "Java_xeno_util_Runtime_AGWSAllRecovery__", (void (*)())Java_xeno_util_Runtime_AGWSAllRecovery__ },
+    { "Java_xeno_util_Window_getSignal__", (void (*)())Java_xeno_util_Window_getSignal__ },
+    { "Java_xeno_util_Window_signal__I", (void (*)())Java_xeno_util_Window_signal__I },
+    { "Java_xeno_util_Window_clear__", (void (*)())Java_xeno_util_Window_clear__ },
+    { "Java_xeno_util_Window_close__", (void (*)())Java_xeno_util_Window_close__ },
+    { "Java_xeno_util_Window_waitkey__I", (void (*)())Java_xeno_util_Window_waitkey__I },
+    { "Java_xeno_util_Window_wait__I", (void (*)())Java_xeno_util_Window_wait__I },
+    { "Java_xeno_util_Window_create__I", (void (*)())Java_xeno_util_Window_create__I },
+    { "Java_xeno_util_Window_setSize__II", (void (*)())Java_xeno_util_Window_setSize__II },
+    { "Java_xeno_util_Window_setLocation__II", (void (*)())Java_xeno_util_Window_setLocation__II },
+    { "Java_xeno_util_Window_print__Ljava_lang_String_", (void (*)())Java_xeno_util_Window_print__Ljava_lang_String_ },
+    { "Java_xeno_util_Window_print__aLjava_lang_String_I", (void (*)())Java_xeno_util_Window_print__aLjava_lang_String_I },
+    { "Java_xeno_util_Window_setName__Ljava_lang_String_", (void (*)())Java_xeno_util_Window_setName__Ljava_lang_String_ },
+    { "Java_xeno_util_Window_closeWaitKey__", (void (*)())Java_xeno_util_Window_closeWaitKey__ },
+    { "Java_xeno_util_Menu_addQuery__Ljava_lang_String_", (void (*)())Java_xeno_util_Menu_addQuery__Ljava_lang_String_ },
+    { "Java_xeno_util_Menu_addQuery__aLjava_lang_String_I", (void (*)())Java_xeno_util_Menu_addQuery__aLjava_lang_String_I },
+    { "Java_xeno_util_Menu_addItem__Ljava_lang_String_", (void (*)())Java_xeno_util_Menu_addItem__Ljava_lang_String_ },
+    { "Java_xeno_util_Menu_create__", (void (*)())Java_xeno_util_Menu_create__ },
+    { "Java_xeno_util_Menu_getSelected__", (void (*)())Java_xeno_util_Menu_getSelected__ },
+    { "Java_xeno_util_Menu_setLocation__II", (void (*)())Java_xeno_util_Menu_setLocation__II },
+    { "Java_xeno_util_Menu_setVisible__Z", (void (*)())Java_xeno_util_Menu_setVisible__Z },
+    { "Java_xeno_util_Menu_setCursor__I", (void (*)())Java_xeno_util_Menu_setCursor__I },
+    { "Java_xeno_util_Toolkit_getPeer__Ljava_lang_Object_", (void (*)())Java_xeno_util_Toolkit_getPeer__Ljava_lang_Object_ },
+    { "Java_xeno_util_Toolkit_call__Ljava_lang_Object_Ljava_lang_String_", (void (*)())Java_xeno_util_Toolkit_call__Ljava_lang_Object_Ljava_lang_String_ },
+    { "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_I", (void (*)())Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_I },
+    { "Java_xeno_util_Toolkit_loadResource__Ljava_lang_String_", (void (*)())Java_xeno_util_Toolkit_loadResource__Ljava_lang_String_ },
+    { "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_Ljava_lang_Object_I", (void (*)())Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_Ljava_lang_Object_I },
+    { "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_II", (void (*)())Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_II },
+    { "Java_xeno_util_Toolkit_peerSetGroup__II", (void (*)())Java_xeno_util_Toolkit_peerSetGroup__II },
+    { "Java_xeno_Sound_sequencePlay__I", (void (*)())Java_xeno_Sound_sequencePlay__I },
+    { "Java_xeno_Sound_sequencePlay__II", (void (*)())Java_xeno_Sound_sequencePlay__II },
+    { "Java_xeno_Sound_sequenceStop__I", (void (*)())Java_xeno_Sound_sequenceStop__I },
+    { "Java_xeno_Sound_sequenceStop__II", (void (*)())Java_xeno_Sound_sequenceStop__II },
+    { "Java_xeno_Sound_effectPlay__III", (void (*)())Java_xeno_Sound_effectPlay__III },
+    { "Java_xeno_Sound_effectStop__I", (void (*)())Java_xeno_Sound_effectStop__I },
+    { "Java_xeno_Sound_streamPlay__IIII", (void (*)())Java_xeno_Sound_streamPlay__IIII },
+    { "Java_xeno_Movie_init__I", (void (*)())Java_xeno_Movie_init__I },
+    { "Java_xeno_Movie_start__I", (void (*)())Java_xeno_Movie_start__I },
+    { "Java_xeno_Movie_stop__", (void (*)())Java_xeno_Movie_stop__ },
+    { "Java_xeno_Movie_update__", (void (*)())Java_xeno_Movie_update__ },
+    { "Java_xeno_PlayControl_create__", (void (*)())Java_xeno_PlayControl_create__ },
+    { "Java_xeno_PlayControl_getSignal__", (void (*)())Java_xeno_PlayControl_getSignal__ },
+    { "Java_xeno_PlayControl_signal__I", (void (*)())Java_xeno_PlayControl_signal__I },
+    { "Java_xeno_PlayControl_init__II", (void (*)())Java_xeno_PlayControl_init__II },
+    { "Java_xeno_PlayControl_init__IIIIF", (void (*)())Java_xeno_PlayControl_init__IIIIF },
+    { "Java_xeno_PlayControl_loadCamera__Ljava_lang_Object_", (void (*)())Java_xeno_PlayControl_loadCamera__Ljava_lang_Object_ },
+    { "Java_xeno_PlayControl_loadTimeChart__Ljava_lang_Object_", (void (*)())Java_xeno_PlayControl_loadTimeChart__Ljava_lang_Object_ },
+    { "Java_xeno_PlayControl_start__", (void (*)())Java_xeno_PlayControl_start__ },
+    { "Java_xeno_PlayControl_stop__", (void (*)())Java_xeno_PlayControl_stop__ },
+    { "Java_xeno_PlayControl_setObserver__IILjava_lang_Object_Ljava_lang_String_", (void (*)())Java_xeno_PlayControl_setObserver__IILjava_lang_Object_Ljava_lang_String_ },
+    { "Java_xeno_PlayControl_setObserver__ILjava_lang_String_Ljava_lang_Object_Ljava_lang_String_", (void (*)())Java_xeno_PlayControl_setObserver__ILjava_lang_String_Ljava_lang_Object_Ljava_lang_String_ },
+    { "Java_xeno_PlayControl_getParams__", (void (*)())Java_xeno_PlayControl_getParams__ },
+    { "Java_xeno_Effect_call__I", (void (*)())Java_xeno_Effect_call__I },
+    { "Java_xeno_Effect_disp__Z", (void (*)())Java_xeno_Effect_disp__Z },
+    { "Java_xeno_Effect_setScale__FFF", (void (*)())Java_xeno_Effect_setScale__FFF },
+    { "Java_xeno_Effect_getScale__", (void (*)())Java_xeno_Effect_getScale__ },
+    { "Java_xeno_Effect_getTranslate__", (void (*)())Java_xeno_Effect_getTranslate__ },
+    { "Java_xeno_Effect_setTranslate__", (void (*)())Java_xeno_Effect_setTranslate__ },
+    { "Java_xeno_Effect_getRotate__", (void (*)())Java_xeno_Effect_getRotate__ },
+    { "Java_xeno_Effect_setRotate__", (void (*)())Java_xeno_Effect_setRotate__ },
+    { "Java_xeno_Effect_setCaster__Lxeno_Chr_", (void (*)())Java_xeno_Effect_setCaster__Lxeno_Chr_ },
+    { "Java_xeno_Effect_setTarget__Lxeno_Chr_", (void (*)())Java_xeno_Effect_setTarget__Lxeno_Chr_ },
+    { "Java_xeno_Effect_setCaster__Lxeno_Unit_", (void (*)())Java_xeno_Effect_setCaster__Lxeno_Unit_ },
+    { "Java_xeno_Effect_setTarget__Lxeno_Unit_", (void (*)())Java_xeno_Effect_setTarget__Lxeno_Unit_ },
+    { "Java_xeno_Effect_setTransOffset__FFF", (void (*)())Java_xeno_Effect_setTransOffset__FFF },
+    { "Java_xeno_Effect_getForceLoop__", (void (*)())Java_xeno_Effect_getForceLoop__ },
+    { "Java_xeno_Effect_setForceLoop__Z", (void (*)())Java_xeno_Effect_setForceLoop__Z },
+    { "Java_xeno_Effect_getClip__", (void (*)())Java_xeno_Effect_getClip__ },
+    { "Java_xeno_Effect_setClip__Z", (void (*)())Java_xeno_Effect_setClip__Z },
+    { "Java_xeno_Effect_clearEffect__", (void (*)())Java_xeno_Effect_clearEffect__ },
+    { "Java_xeno_Effect_setMotion__Z", (void (*)())Java_xeno_Effect_setMotion__Z },
+    { "Java_xeno_Effect_noAttach__Z", (void (*)())Java_xeno_Effect_noAttach__Z },
+    { "Java_xeno_Camera_getRotateX__", (void (*)())Java_xeno_Camera_getRotateX__ },
+    { "Java_xeno_Camera_getRotateY__", (void (*)())Java_xeno_Camera_getRotateY__ },
+    { "Java_xeno_Camera_getRotateZ__", (void (*)())Java_xeno_Camera_getRotateZ__ },
+    { "Java_xeno_Camera_getTranslateX__", (void (*)())Java_xeno_Camera_getTranslateX__ },
+    { "Java_xeno_Camera_getTranslateY__", (void (*)())Java_xeno_Camera_getTranslateY__ },
+    { "Java_xeno_Camera_getTranslateZ__", (void (*)())Java_xeno_Camera_getTranslateZ__ },
+    { "Java_xeno_Camera_fovSPL__aFI", (void (*)())Java_xeno_Camera_fovSPL__aFI },
+    { "Java_xeno_Camera_change__", (void (*)())Java_xeno_Camera_change__ },
+    { "Java_xeno_Camera_rotateSPL__aFI", (void (*)())Java_xeno_Camera_rotateSPL__aFI },
+    { "Java_xeno_Camera_rotateSPL__aFIII", (void (*)())Java_xeno_Camera_rotateSPL__aFIII },
+    { "Java_xeno_Camera_setActive__Z", (void (*)())Java_xeno_Camera_setActive__Z },
+    { "Java_xeno_Camera_create__I", (void (*)())Java_xeno_Camera_create__I },
+    { "Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF", (void (*)())Java_xeno_Camera_transCNS__Ljava_lang_Object_FFF },
+    { "Java_xeno_Camera_transSPL__aFI", (void (*)())Java_xeno_Camera_transSPL__aFI },
+    { "Java_xeno_Camera_transSPL__aFIII", (void (*)())Java_xeno_Camera_transSPL__aFIII },
+    { "Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF", (void (*)())Java_xeno_Camera_viewCNS__Ljava_lang_Object_FFF },
+    { "Java_xeno_Camera_viewSPL__aFI", (void (*)())Java_xeno_Camera_viewSPL__aFI },
+    { "Java_xeno_Camera_viewSPL__aFIII", (void (*)())Java_xeno_Camera_viewSPL__aFIII },
+    { "Java_xeno_Camera_rollSPL__aFI", (void (*)())Java_xeno_Camera_rollSPL__aFI },
+    { "Java_xeno_Camera_setRotate__FFF", (void (*)())Java_xeno_Camera_setRotate__FFF },
+    { "Java_xeno_Camera_setRoll__F", (void (*)())Java_xeno_Camera_setRoll__F },
+    { "Java_xeno_Camera_setTranslate__FFF", (void (*)())Java_xeno_Camera_setTranslate__FFF },
+    { "Java_xeno_Camera_setFov__F", (void (*)())Java_xeno_Camera_setFov__F },
+    { "Java_xeno_Camera_getFov__", (void (*)())Java_xeno_Camera_getFov__ },
+    { "Java_xeno_Camera_setView__FFF", (void (*)())Java_xeno_Camera_setView__FFF },
+    { "Java_xeno_Camera_start__ILjava_lang_Object_", (void (*)())Java_xeno_Camera_start__ILjava_lang_Object_ },
+    { "Java_xeno_Camera_setCFAngle__IFFFF", (void (*)())Java_xeno_Camera_setCFAngle__IFFFF },
+    { "Java_xeno_Camera_setCFAnglePers__IFFFFF", (void (*)())Java_xeno_Camera_setCFAnglePers__IFFFFF },
+    { "Java_xeno_Camera_setCFHokan__IFF", (void (*)())Java_xeno_Camera_setCFHokan__IFF },
+    { "Java_xeno_Camera_setCFLock__IIFFF", (void (*)())Java_xeno_Camera_setCFLock__IIFFF },
+    { "Java_xeno_Camera_setCFOffset__IFFFIFIF", (void (*)())Java_xeno_Camera_setCFOffset__IFFFIFIF },
+    { "Java_xeno_Camera_setMode__I", (void (*)())Java_xeno_Camera_setMode__I },
+    { "Java_xeno_Camera_getMode__", (void (*)())Java_xeno_Camera_getMode__ },
+    { "Java_xeno_Camera_setCFPedestal__IFFFFFFFF", (void (*)())Java_xeno_Camera_setCFPedestal__IFFFFFFFF },
+    { "Java_xeno_Camera_setCFPedestalHokan__II", (void (*)())Java_xeno_Camera_setCFPedestalHokan__II },
+    { "Java_xeno_Camera_changeID__III", (void (*)())Java_xeno_Camera_changeID__III },
+    { "Java_xeno_Camera_setFog__IFFFFIIII", (void (*)())Java_xeno_Camera_setFog__IFFFFIIII },
+    { "Java_xeno_Camera_resetFog__I", (void (*)())Java_xeno_Camera_resetFog__I },
+    { "Java_xeno_Camera_setClipRange__FF", (void (*)())Java_xeno_Camera_setClipRange__FF },
+    { "Java_xeno_Light_setColor__FFF", (void (*)())Java_xeno_Light_setColor__FFF },
+    { "Java_xeno_Light_setDirection__FFF", (void (*)())Java_xeno_Light_setDirection__FFF },
+    { "Java_xeno_Light_setDirection2__FFF", (void (*)())Java_xeno_Light_setDirection2__FFF },
+    { "Java_xeno_Light_setGlobalPointLightCol__IFFF", (void (*)())Java_xeno_Light_setGlobalPointLightCol__IFFF },
+    { "Java_xeno_Light_setGlobalPointLightPos__IFFF", (void (*)())Java_xeno_Light_setGlobalPointLightPos__IFFF },
+    { "Java_xeno_Light_setGlobalPointLightReset__", (void (*)())Java_xeno_Light_setGlobalPointLightReset__ },
+    { "Java_xeno_Chr_getPlayer__", (void (*)())Java_xeno_Chr_getPlayer__ },
+    { "Java_xeno_Chr_setPlayer__", (void (*)())Java_xeno_Chr_setPlayer__ },
+    { "Java_xeno_Chr_move__IFFZ", (void (*)())Java_xeno_Chr_move__IFFZ },
+    { "Java_xeno_Chr_move__FFFZ", (void (*)())Java_xeno_Chr_move__FFFZ },
+    { "Java_xeno_Chr_move__ILjava_lang_Object_Z", (void (*)())Java_xeno_Chr_move__ILjava_lang_Object_Z },
+    { "Java_xeno_Chr_move__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Chr_move__Ljava_lang_Object_FZ },
+    { "Java_xeno_Chr_move__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Chr_move__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Chr_rotX__FFZ", (void (*)())Java_xeno_Chr_rotX__FFZ },
+    { "Java_xeno_Chr_rotX__IFZ", (void (*)())Java_xeno_Chr_rotX__IFZ },
+    { "Java_xeno_Chr_rotX__ILjava_lang_Object_Z", (void (*)())Java_xeno_Chr_rotX__ILjava_lang_Object_Z },
+    { "Java_xeno_Chr_rotX__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Chr_rotX__Ljava_lang_Object_FZ },
+    { "Java_xeno_Chr_rotY__FFZ", (void (*)())Java_xeno_Chr_rotY__FFZ },
+    { "Java_xeno_Chr_rotY__IFZ", (void (*)())Java_xeno_Chr_rotY__IFZ },
+    { "Java_xeno_Chr_rotY__ILjava_lang_Object_Z", (void (*)())Java_xeno_Chr_rotY__ILjava_lang_Object_Z },
+    { "Java_xeno_Chr_rotY__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Chr_rotY__Ljava_lang_Object_FZ },
+    { "Java_xeno_Chr_rotZ__FFZ", (void (*)())Java_xeno_Chr_rotZ__FFZ },
+    { "Java_xeno_Chr_rotZ__IFZ", (void (*)())Java_xeno_Chr_rotZ__IFZ },
+    { "Java_xeno_Chr_rotZ__ILjava_lang_Object_Z", (void (*)())Java_xeno_Chr_rotZ__ILjava_lang_Object_Z },
+    { "Java_xeno_Chr_rotZ__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Chr_rotZ__Ljava_lang_Object_FZ },
+    { "Java_xeno_Chr_start__ILjava_lang_Object_", (void (*)())Java_xeno_Chr_start__ILjava_lang_Object_ },
+    { "Java_xeno_Chr_stop__", (void (*)())Java_xeno_Chr_stop__ },
+    { "Java_xeno_Chr_mtn__IIIIIFZ", (void (*)())Java_xeno_Chr_mtn__IIIIIFZ },
+    { "Java_xeno_Chr_mtn__IIFZ", (void (*)())Java_xeno_Chr_mtn__IIFZ },
+    { "Java_xeno_Chr_signal__I", (void (*)())Java_xeno_Chr_signal__I },
+    { "Java_xeno_Chr_getSignal__", (void (*)())Java_xeno_Chr_getSignal__ },
+    { "Java_xeno_Chr_setRotate__", (void (*)())Java_xeno_Chr_setRotate__ },
+    { "Java_xeno_Chr_setTranslate__", (void (*)())Java_xeno_Chr_setTranslate__ },
+    { "Java_xeno_Chr_getRotate__", (void (*)())Java_xeno_Chr_getRotate__ },
+    { "Java_xeno_Chr_getTranslate__", (void (*)())Java_xeno_Chr_getTranslate__ },
+    { "Java_xeno_Chr_setVisible__Z", (void (*)())Java_xeno_Chr_setVisible__Z },
+    { "Java_xeno_Chr_setVisible__IZ", (void (*)())Java_xeno_Chr_setVisible__IZ },
+    { "Java_xeno_Chr_setCollision__Z", (void (*)())Java_xeno_Chr_setCollision__Z },
+    { "Java_xeno_Chr_setHand__I", (void (*)())Java_xeno_Chr_setHand__I },
+    { "Java_xeno_Chr_setArgs__III", (void (*)())Java_xeno_Chr_setArgs__III },
+    { "Java_xeno_Chr_getArgs__II", (void (*)())Java_xeno_Chr_getArgs__II },
+    { "Java_xeno_Chr_setArgs__ILjava_lang_Object_I", (void (*)())Java_xeno_Chr_setArgs__ILjava_lang_Object_I },
+    { "Java_xeno_Chr_getSerial__", (void (*)())Java_xeno_Chr_getSerial__ },
+    { "Java_xeno_Chr_getState__", (void (*)())Java_xeno_Chr_getState__ },
+    { "Java_xeno_Chr_mtnGetRoot__ILxeno_util_Vector4f_", (void (*)())Java_xeno_Chr_mtnGetRoot__ILxeno_util_Vector4f_ },
+    { "Java_xeno_Chr_setScale__FFF", (void (*)())Java_xeno_Chr_setScale__FFF },
+    { "Java_xeno_Chr_getScale__", (void (*)())Java_xeno_Chr_getScale__ },
+    { "Java_xeno_Chr_scale__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Chr_scale__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Chr_sclX__FFZ", (void (*)())Java_xeno_Chr_sclX__FFZ },
+    { "Java_xeno_Chr_sclX__IFZ", (void (*)())Java_xeno_Chr_sclX__IFZ },
+    { "Java_xeno_Chr_sclY__FFZ", (void (*)())Java_xeno_Chr_sclY__FFZ },
+    { "Java_xeno_Chr_sclY__IFZ", (void (*)())Java_xeno_Chr_sclY__IFZ },
+    { "Java_xeno_Chr_sclZ__FFZ", (void (*)())Java_xeno_Chr_sclZ__FFZ },
+    { "Java_xeno_Chr_sclZ__IFZ", (void (*)())Java_xeno_Chr_sclZ__IFZ },
+    { "Java_xeno_Chr_rotCNS__ILjava_lang_Object_", (void (*)())Java_xeno_Chr_rotCNS__ILjava_lang_Object_ },
+    { "Java_xeno_Chr_rotCNS__IFFF", (void (*)())Java_xeno_Chr_rotCNS__IFFF },
+    { "Java_xeno_Chr_setRotCNSParam__IFFFFF", (void (*)())Java_xeno_Chr_setRotCNSParam__IFFFFF },
+    { "Java_xeno_Chr_relax__II", (void (*)())Java_xeno_Chr_relax__II },
+    { "Java_xeno_Chr_getFlags__", (void (*)())Java_xeno_Chr_getFlags__ },
+    { "Java_xeno_Chr_setFlags__I", (void (*)())Java_xeno_Chr_setFlags__I },
+    { "Java_xeno_Chr_setEdgeFall__I", (void (*)())Java_xeno_Chr_setEdgeFall__I },
+    { "Java_xeno_Chr_setShadow__II", (void (*)())Java_xeno_Chr_setShadow__II },
+    { "Java_xeno_Chr_setShadow__aB", (void (*)())Java_xeno_Chr_setShadow__aB },
+    { "Java_xeno_Chr_setID__I", (void (*)())Java_xeno_Chr_setID__I },
+    { "Java_xeno_Chr_setElevatorMode__I", (void (*)())Java_xeno_Chr_setElevatorMode__I },
+    { "Java_xeno_Chr_setParent__Lxeno_Chr_III", (void (*)())Java_xeno_Chr_setParent__Lxeno_Chr_III },
+    { "Java_xeno_Chr_setMotionFlags__IZ", (void (*)())Java_xeno_Chr_setMotionFlags__IZ },
+    { "Java_xeno_Chr_setFilter__I", (void (*)())Java_xeno_Chr_setFilter__I },
+    { "Java_xeno_Chr_setFilterParam__aF", (void (*)())Java_xeno_Chr_setFilterParam__aF },
+    { "Java_xeno_Chr_setClip__I", (void (*)())Java_xeno_Chr_setClip__I },
+    { "Java_xeno_Chr_setSymmetryY__I", (void (*)())Java_xeno_Chr_setSymmetryY__I },
+    { "Java_xeno_Chr_setSortOffset__F", (void (*)())Java_xeno_Chr_setSortOffset__F },
+    { "Java_xeno_Chr_setPointLightCol__IFFF", (void (*)())Java_xeno_Chr_setPointLightCol__IFFF },
+    { "Java_xeno_Chr_setPointLightPos__IFFF", (void (*)())Java_xeno_Chr_setPointLightPos__IFFF },
+    { "Java_xeno_Chr_setPointLightReset__", (void (*)())Java_xeno_Chr_setPointLightReset__ },
+    { "Java_xeno_Chr_talkto__Ljava_lang_String_", (void (*)())Java_xeno_Chr_talkto__Ljava_lang_String_ },
+    { "Java_xeno_Chr_touchto__Ljava_lang_String_", (void (*)())Java_xeno_Chr_touchto__Ljava_lang_String_ },
+    { "Java_xeno_Chr_childGetPeer__II", (void (*)())Java_xeno_Chr_childGetPeer__II },
+    { "Java_xeno_Chr_setPeer__Ljava_lang_Object_", (void (*)())Java_xeno_Chr_setPeer__Ljava_lang_Object_ },
+    { "Java_xeno_Chr_dispRadar__Z", (void (*)())Java_xeno_Chr_dispRadar__Z },
+    { "Java_xeno_Chr_look_camera__", (void (*)())Java_xeno_Chr_look_camera__ },
+    { "Java_xeno_Chr_look_char__Ljava_lang_Object_", (void (*)())Java_xeno_Chr_look_char__Ljava_lang_Object_ },
+    { "Java_xeno_Chr_look_unit__Ljava_lang_Object_", (void (*)())Java_xeno_Chr_look_unit__Ljava_lang_Object_ },
+    { "Java_xeno_Chr_look_default__", (void (*)())Java_xeno_Chr_look_default__ },
+    { "Java_xeno_Chr_look_point__FFF", (void (*)())Java_xeno_Chr_look_point__FFF },
+    { "Java_xeno_Chr_look_eye_set__FF", (void (*)())Java_xeno_Chr_look_eye_set__FF },
+    { "Java_xeno_Chr_look_eye_control__I", (void (*)())Java_xeno_Chr_look_eye_control__I },
+    { "Java_xeno_Chr_look_speed__F", (void (*)())Java_xeno_Chr_look_speed__F },
+    { "Java_xeno_Chr_look_eye_speed__F", (void (*)())Java_xeno_Chr_look_eye_speed__F },
+    { "Java_xeno_Chr_renderCommand__I", (void (*)())Java_xeno_Chr_renderCommand__I },
+    { "Java_xeno_Chr_shadow_clip_scale__F", (void (*)())Java_xeno_Chr_shadow_clip_scale__F },
+    { "Java_xeno_Chr_shadow_map_id__I", (void (*)())Java_xeno_Chr_shadow_map_id__I },
+    { "Java_xeno_Chr_shadow_map_reset__", (void (*)())Java_xeno_Chr_shadow_map_reset__ },
+    { "Java_xeno_Chr_hairStop__II", (void (*)())Java_xeno_Chr_hairStop__II },
+    { "Java_xeno_Chr_pixelAlpha__I", (void (*)())Java_xeno_Chr_pixelAlpha__I },
+    { "Java_xeno_Chr_pixelAlphaParts__II", (void (*)())Java_xeno_Chr_pixelAlphaParts__II },
+    { "Java_xeno_Chr_pixelAlphaPartsReset__", (void (*)())Java_xeno_Chr_pixelAlphaPartsReset__ },
+    { "Java_xeno_Chr_setMotNoUpdate__I", (void (*)())Java_xeno_Chr_setMotNoUpdate__I },
+    { "Java_xeno_Chr_setWeaponR__Lxeno_Chr_", (void (*)())Java_xeno_Chr_setWeaponR__Lxeno_Chr_ },
+    { "Java_xeno_Chr_resetWeaponR__Lxeno_Chr_", (void (*)())Java_xeno_Chr_resetWeaponR__Lxeno_Chr_ },
+    { "Java_xeno_Chr_resetHand__", (void (*)())Java_xeno_Chr_resetHand__ },
+    { "Java_xeno_Chr_resetEnv__", (void (*)())Java_xeno_Chr_resetEnv__ },
+    { "Java_xeno_Chr_ignoreShape__I", (void (*)())Java_xeno_Chr_ignoreShape__I },
+    { "Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF", (void (*)())Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF },
+    { "Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF", (void (*)())Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF },
+    { "Java_xeno_Unit_getRotate__", (void (*)())Java_xeno_Unit_getRotate__ },
+    { "Java_xeno_Unit_getSignal__", (void (*)())Java_xeno_Unit_getSignal__ },
+    { "Java_xeno_Unit_getTranslate__", (void (*)())Java_xeno_Unit_getTranslate__ },
+    { "Java_xeno_Unit_invalidate__", (void (*)())Java_xeno_Unit_invalidate__ },
+    { "Java_xeno_Unit_move__FFFZ", (void (*)())Java_xeno_Unit_move__FFFZ },
+    { "Java_xeno_Unit_move__IFFZ", (void (*)())Java_xeno_Unit_move__IFFZ },
+    { "Java_xeno_Unit_move__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Unit_move__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Unit_move__ILjava_lang_Object_Z", (void (*)())Java_xeno_Unit_move__ILjava_lang_Object_Z },
+    { "Java_xeno_Unit_move__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Unit_move__Ljava_lang_Object_FZ },
+    { "Java_xeno_Unit_mtn__IIFZ", (void (*)())Java_xeno_Unit_mtn__IIFZ },
+    { "Java_xeno_Unit_mtn__IIIIIFZ", (void (*)())Java_xeno_Unit_mtn__IIIIIFZ },
+    { "Java_xeno_Unit_rotX__FFZ", (void (*)())Java_xeno_Unit_rotX__FFZ },
+    { "Java_xeno_Unit_rotX__IFZ", (void (*)())Java_xeno_Unit_rotX__IFZ },
+    { "Java_xeno_Unit_rotX__ILjava_lang_Object_Z", (void (*)())Java_xeno_Unit_rotX__ILjava_lang_Object_Z },
+    { "Java_xeno_Unit_rotX__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Unit_rotX__Ljava_lang_Object_FZ },
+    { "Java_xeno_Unit_rotY__FFZ", (void (*)())Java_xeno_Unit_rotY__FFZ },
+    { "Java_xeno_Unit_rotY__IFZ", (void (*)())Java_xeno_Unit_rotY__IFZ },
+    { "Java_xeno_Unit_rotY__ILjava_lang_Object_Z", (void (*)())Java_xeno_Unit_rotY__ILjava_lang_Object_Z },
+    { "Java_xeno_Unit_rotY__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Unit_rotY__Ljava_lang_Object_FZ },
+    { "Java_xeno_Unit_rotZ__FFZ", (void (*)())Java_xeno_Unit_rotZ__FFZ },
+    { "Java_xeno_Unit_rotZ__IFZ", (void (*)())Java_xeno_Unit_rotZ__IFZ },
+    { "Java_xeno_Unit_rotZ__ILjava_lang_Object_Z", (void (*)())Java_xeno_Unit_rotZ__ILjava_lang_Object_Z },
+    { "Java_xeno_Unit_rotZ__Ljava_lang_Object_FZ", (void (*)())Java_xeno_Unit_rotZ__Ljava_lang_Object_FZ },
+    { "Java_xeno_Unit_scale__Lxeno_util_Spline_IZ", (void (*)())Java_xeno_Unit_scale__Lxeno_util_Spline_IZ },
+    { "Java_xeno_Unit_sclX__FFZ", (void (*)())Java_xeno_Unit_sclX__FFZ },
+    { "Java_xeno_Unit_sclX__IFZ", (void (*)())Java_xeno_Unit_sclX__IFZ },
+    { "Java_xeno_Unit_sclY__FFZ", (void (*)())Java_xeno_Unit_sclY__FFZ },
+    { "Java_xeno_Unit_sclY__IFZ", (void (*)())Java_xeno_Unit_sclY__IFZ },
+    { "Java_xeno_Unit_sclZ__FFZ", (void (*)())Java_xeno_Unit_sclZ__FFZ },
+    { "Java_xeno_Unit_sclZ__IFZ", (void (*)())Java_xeno_Unit_sclZ__IFZ },
+    { "Java_xeno_Unit_setCollision__Z", (void (*)())Java_xeno_Unit_setCollision__Z },
+    { "Java_xeno_Unit_setRotate__", (void (*)())Java_xeno_Unit_setRotate__ },
+    { "Java_xeno_Unit_setTranslate__", (void (*)())Java_xeno_Unit_setTranslate__ },
+    { "Java_xeno_Unit_setVisible__IZ", (void (*)())Java_xeno_Unit_setVisible__IZ },
+    { "Java_xeno_Unit_setVisible__Z", (void (*)())Java_xeno_Unit_setVisible__Z },
+    { "Java_xeno_Unit_signal__I", (void (*)())Java_xeno_Unit_signal__I },
+    { "Java_xeno_Unit_start__ILjava_lang_Object_", (void (*)())Java_xeno_Unit_start__ILjava_lang_Object_ },
+    { "Java_xeno_Unit_stop__", (void (*)())Java_xeno_Unit_stop__ },
+    { "Java_xeno_Unit_validate__", (void (*)())Java_xeno_Unit_validate__ },
+    { "Java_xeno_Unit_setParent__Ljava_lang_Object_I", (void (*)())Java_xeno_Unit_setParent__Ljava_lang_Object_I },
+    { "Java_xeno_Unit_setArgs__III", (void (*)())Java_xeno_Unit_setArgs__III },
+    { "Java_xeno_Unit_getArgs__II", (void (*)())Java_xeno_Unit_getArgs__II },
+    { "Java_xeno_Unit_setArgs__ILjava_lang_Object_I", (void (*)())Java_xeno_Unit_setArgs__ILjava_lang_Object_I },
+    { "Java_xeno_Unit_setArgs__IIIII", (void (*)())Java_xeno_Unit_setArgs__IIIII },
+    { "Java_xeno_Unit_getScale__", (void (*)())Java_xeno_Unit_getScale__ },
+    { "Java_xeno_Unit_setScale__FFF", (void (*)())Java_xeno_Unit_setScale__FFF },
+    { "Java_xeno_Unit_getSerial__", (void (*)())Java_xeno_Unit_getSerial__ },
+    { "Java_xeno_Unit_mtnSetMask__I", (void (*)())Java_xeno_Unit_mtnSetMask__I },
+    { "Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_", (void (*)())Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_ },
+    { "Java_xeno_Unit_getState__", (void (*)())Java_xeno_Unit_getState__ },
+    { "Java_xeno_Unit_getPivot__Lxeno_util_Vector4f_", (void (*)())Java_xeno_Unit_getPivot__Lxeno_util_Vector4f_ },
+    { "Java_xeno_Unit_setPivot__FFF", (void (*)())Java_xeno_Unit_setPivot__FFF },
+    { "Java_xeno_Unit_getAxis__Lxeno_util_Vector4f_", (void (*)())Java_xeno_Unit_getAxis__Lxeno_util_Vector4f_ },
+    { "Java_xeno_Unit_setAxis__FFFF", (void (*)())Java_xeno_Unit_setAxis__FFFF },
+    { "Java_xeno_Unit_suspend__I", (void (*)())Java_xeno_Unit_suspend__I },
+    { "Java_xeno_Unit_resume__I", (void (*)())Java_xeno_Unit_resume__I },
+    { "Java_xeno_Unit_initElevatorFunc__", (void (*)())Java_xeno_Unit_initElevatorFunc__ },
+    { "Java_xeno_Unit_map_shadow__I", (void (*)())Java_xeno_Unit_map_shadow__I },
+    { "Java_xeno_Unit_renderCommand__I", (void (*)())Java_xeno_Unit_renderCommand__I },
+    { "Java_xeno_Unit_setFilter__I", (void (*)())Java_xeno_Unit_setFilter__I },
+    { "Java_xeno_Unit_setFilterParam__aF", (void (*)())Java_xeno_Unit_setFilterParam__aF },
+    { "Java_xeno_Unit_setShadow__II", (void (*)())Java_xeno_Unit_setShadow__II },
+    { "Java_xeno_Unit_shadow_clip_scale__F", (void (*)())Java_xeno_Unit_shadow_clip_scale__F },
+    { "Java_xeno_Unit_shadow_map_id__I", (void (*)())Java_xeno_Unit_shadow_map_id__I },
+    { "Java_xeno_Unit_shadow_map_reset__", (void (*)())Java_xeno_Unit_shadow_map_reset__ },
+    { "Java_xeno_Unit_setSortOffset__F", (void (*)())Java_xeno_Unit_setSortOffset__F },
+    { "Java_xeno_Unit_setClip__I", (void (*)())Java_xeno_Unit_setClip__I },
+    { "Java_xeno_Unit_setMonitorPrio__I", (void (*)())Java_xeno_Unit_setMonitorPrio__I },
+    { "Java_xeno_Scene_start__ILjava_lang_Object_", (void (*)())Java_xeno_Scene_start__ILjava_lang_Object_ },
+    { "Java_xeno_Scene_stop__", (void (*)())Java_xeno_Scene_stop__ },
+    { "Java_xeno_Stage_start__ILjava_lang_Object_", (void (*)())Java_xeno_Stage_start__ILjava_lang_Object_ },
+    { "Java_xeno_Stage_stop__", (void (*)())Java_xeno_Stage_stop__ },
+    { "Java_xeno_Stage_play__Ljava_lang_String_", (void (*)())Java_xeno_Stage_play__Ljava_lang_String_ },
+    { "Java_xeno_Stage_setPartsLast__I", (void (*)())Java_xeno_Stage_setPartsLast__I },
+    { "Java_xeno_Stage_setPartsLastReset__", (void (*)())Java_xeno_Stage_setPartsLastReset__ },
+    { "Java_xeno_Stage_setColor__FFF", (void (*)())Java_xeno_Stage_setColor__FFF },
+    { "Java_xeno_Stage_setFade__IIFFF", (void (*)())Java_xeno_Stage_setFade__IIFFF },
+    { "Java_xeno_Stage_setEventFade__IFFFIFFF", (void (*)())Java_xeno_Stage_setEventFade__IFFFIFFF },
+    { "Java_xeno_Stage_setFrameRender__II", (void (*)())Java_xeno_Stage_setFrameRender__II },
+    { "Java_xeno_Stage_setFadeCancel__I", (void (*)())Java_xeno_Stage_setFadeCancel__I },
+    { "Java_xeno_Stage_setVisible__IZ", (void (*)())Java_xeno_Stage_setVisible__IZ },
+    { "Java_xeno_Stage_setCFBG__II_F", (void (*)())Java_xeno_Stage_setCFBG__II_F },
+    { "Java_xeno_Stage_setEffectRender__I", (void (*)())Java_xeno_Stage_setEffectRender__I },
+    { "Java_xeno_Stage_renderCommand__I", (void (*)())Java_xeno_Stage_renderCommand__I },
+    { "Java_xeno_Stage_setBgColor__FFF", (void (*)())Java_xeno_Stage_setBgColor__FFF },
+    { "Java_xeno_Stage_setBgClip__I", (void (*)())Java_xeno_Stage_setBgClip__I },
+    { "Java_xeno_Stage_clrBackBuffer__", (void (*)())Java_xeno_Stage_clrBackBuffer__ },
+    { 0, 0 },
+};
