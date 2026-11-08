@@ -347,6 +347,95 @@ float RichTextWidth(ImFont* font, float size, const char* s) {
 }
 
 namespace {
+/* The attack panel laid out from the captured key guide (channel 0): one glass row per
+   command with its button inside, the label left-aligned, the kind stripe, the cost box
+   joined to its row, and the LB / RB footer in a container under the stack. */
+void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
+    using namespace xsgmenu;
+    const float k = LayoutK(), kx = LayoutKx();
+    auto P = [&](float x, float y) { return Map(x, y, kLeft); };
+    static const int kPos[] = {2, 3, 0, 1};
+    static const ImU32 kAccent[] = {IM_COL32(118, 170, 255, 255), IM_COL32(255, 96, 170, 255), IM_COL32(110, 220, 150, 255)};
+    struct Row { int y, btn = 0, kind = 0; std::string label; std::vector<const GpuUiKgOp*> cost; };
+    std::vector<Row> rows;
+    const GpuUiKgOp* strip = nullptr;
+    for (uint32_t i = 0; i < g.nops; ++i) {
+        const GpuUiKgOp& o = g.op[i];
+        if (o.type == GPU_KG_SPRITE && o.a == 0x4c && o.b == 0xaf) { strip = &o; continue; }
+        if (o.type == GPU_KG_BUTTON) { rows.push_back(Row{o.y}); rows.back().btn = o.a; continue; }
+        if (rows.empty()) continue;
+        Row& r = rows.back();
+        if (o.type == GPU_KG_FRAME && o.y == r.y && r.label.empty() && r.cost.empty()) r.kind = std::clamp(o.b, 0, 2);
+        else if (o.type == GPU_KG_TEXT && r.label.empty()) r.label = Decode(o.text);
+        else if (o.type == GPU_KG_NUMBER || (o.type == GPU_KG_SPRITE && o.v == 0xAE)) r.cost.push_back(&o);
+    }
+    if (rows.empty()) return;
+    const float ls = 13.0f * k, rh = 22.0f, x0 = 8.0f;
+    float labelW = 0;
+    for (const Row& r : rows) labelW = std::max(labelW, font->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str()).x / kx);
+    const float rw = std::max(96.0f, labelW + 40.0f);
+    const double now = AnimNow();
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const Row& r = rows[i];
+        AnimState& ra = Anim(0x4B52000000000000ull + i, -18, 0);
+        if (now - ra.born < double(i) * 0.04) ra.a = 0;
+        const float t = FadeIn(ra, 8.0f), dx = Spring(ra, 0, 0, 16.0f).x;
+        const bool off = r.btn > 4;
+        const float rx = x0 + 2.0f * float(i) + dx, ry = float(r.y) + 2;
+        float right = rx + rw;
+        const float costW = r.cost.empty() ? 0.0f : 92.0f;
+        const ImVec2 a = P(rx, ry), b = P(right + costW, ry + rh);
+        Panel(dl, a, b, k, t * (off ? 0.75f : 1.0f));
+        const ImU32 acc = kAccent[size_t(r.kind)];
+        dl->AddRectFilledMultiColor(a, P(rx + 40, ry + rh), Alpha(acc, 0.20f * t), Alpha(acc, 0), Alpha(acc, 0), Alpha(acc, 0.20f * t));
+        dl->AddRectFilled(a, P(rx + 3, ry + rh), Alpha(acc, t));
+        if (r.btn >= 1) {
+            const ImVec2 c = P(rx + 15, ry + rh * 0.5f);
+            Glyph(dl, font, c.x, c.y, 7.5f * k, kPos[(r.btn - 1) & 3], off);
+        }
+        const ImVec2 lsz = font->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str());
+        HaloText(dl, font, ls, ImVec2(P(rx + 28, 0).x, P(0, ry + rh * 0.5f).y - lsz.y * 0.5f), off ? col::kTextOff : col::kText,
+                 r.label.c_str(), t);
+        if (!r.cost.empty()) {   // cost box: ammo, EP cost, AP cost
+            dl->AddLine(P(right, ry + 3), P(right, ry + rh - 3), Alpha(col::kFrame, 0.4f * t), 1.0f);
+            int nums[3] = {-1, -1, -1}, ni = 0;
+            for (const GpuUiKgOp* c : r.cost)
+                if (c->type == GPU_KG_NUMBER && ni < 3) nums[ni++] = c->a;
+            if (ni == 2) nums[2] = nums[1], nums[1] = nums[0], nums[0] = -1;   // no ammo count
+            char buf[16];
+            const float cy = P(0, ry + rh * 0.5f).y, ns = 14.0f * k, ts = 9.5f * k;
+            auto num = [&](float xr, int v, int digits) {
+                if (v < 0) return;
+                std::snprintf(buf, sizeof buf, "%0*d", digits, v);
+                const ImVec2 sz = font->CalcTextSizeA(ns, 1e9f, 0, buf);
+                HaloText(dl, font, ns, ImVec2(P(xr, 0).x - sz.x, cy - sz.y * 0.5f), col::kText, buf, t);
+            };
+            auto tag = [&](float xl, const char* s) {
+                const ImVec2 sz = font->CalcTextSizeA(ts, 1e9f, 0, s);
+                dl->AddText(font, ts, ImVec2(P(xl, 0).x, cy - sz.y * 0.5f + 1), Alpha(col::kTextDim, t), s);
+            };
+            num(right + 22, nums[0], 2);
+            tag(right + 30, "EP");
+            num(right + 56, nums[1], 2);
+            tag(right + 64, "AP");
+            num(right + 84, nums[2], 1);
+        }
+    }
+    if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
+        const float fy = float(strip->y) - 2, fw = rw + 2.0f * float(rows.size() - 1) + 6;
+        const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 16);
+        Panel(dl, a, b, k, 0.85f, false, 0, 0);
+        const float cy = (a.y + b.y) * 0.5f, h = 11.0f * k, ts = 10.0f * k;
+        float cx = a.x + 4 * kx;
+        cx += ShoulderGlyph(dl, font, cx, cy, h, 0) + 5 * kx;
+        const ImVec2 cs = font->CalcTextSizeA(ts, 1e9f, 0, "Change"), bs = font->CalcTextSizeA(ts, 1e9f, 0, "Boost");
+        dl->AddText(font, ts, ImVec2(cx, cy - cs.y * 0.5f), col::kTextDim, "Change");
+        const float w = font->CalcTextSizeA(h * 0.78f, 1e9f, 0, "RB").x + h * 0.7f;
+        ShoulderGlyph(dl, font, b.x - 4 * kx - w, cy, h, 1);
+        dl->AddText(font, ts, ImVec2(b.x - 4 * kx - w - 5 * kx - bs.x, cy - bs.y * 0.5f), col::kTextDim, "Boost");
+    }
+}
+
 /* The key guide (menuKeyGuideDisp, captured): one row per button, the
    technique in a frame coloured by kind, the weapon's ammo / EP / AP, and the
    L1 / R1 strip.  Icon ids (uvTbl): 1 square, 2 triangle, 3 cross, 4 circle,
@@ -433,10 +522,24 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             const int style = o.text[0] ? o.text[0] - '0' : 0;
             const float nh = (style == 2 || o.b >= 4) ? 20.0f : 13.0f;   // four-digit counters (the radar's distance): large
             std::snprintf(b, sizeof b, "%0*d", std::max(1, std::min(6, o.b)), o.a);
-            HaloText(dl, font, nh * k, P(x, y + (style == 2 ? -4.0f : -2.0f)), col::kText, b, rt);
+            float base = y + (style == 2 ? 16.0f : 11.0f);   // the baseline, game pixels
+            for (const GpuUiKgOp& u : ops)   // a unit label right of the number (the radar's "M"): share its baseline
+                if (u.type == GPU_KG_ART && u.x > o.x && u.x < o.x + 90 && std::abs(u.y - o.y) < 12) { base = float(u.y + u.dh) - 1; break; }
+            HaloText(dl, font, nh * k, ImVec2(P(x, 0).x, P(0, base).y - nh * k * 0.86f), col::kText, b, rt);
             break;
         }
         case GPU_KG_ART: {
+            if (o.u == 0xC8 && o.v == 0xA0) break;   // the game's turn glow (a blue box): the panel's own glow replaces it
+            if (o.w == 0x28 && o.h == 0x50 && o.dw == 0x28) {   // a party portrait: framed like the panel
+                const ImVec2 pa = P(x, y), pb = P(x + o.dw, y + o.dh);
+                Shadow(dl, pa, pb, k, rt);
+                uint32_t set;
+                std::memcpy(&set, o.text + 4, 4);
+                ArtSprite(dl, uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32, 0, float(o.u), float(o.v), float(o.w), float(o.h), pa, pb,
+                          o.rgba, rt, false, set);
+                dl->AddRect(ImVec2(pa.x - 1, pa.y - 1), ImVec2(pb.x + 1, pb.y + 1), Alpha(col::kFrame, 0.8f * rt), 0, 0, 1.0f * k);
+                break;
+            }
             // the game's own art, in the game's order; ALPHA B = 2 (0): additive, C = 2: FIX alpha
             const bool add = ((o.a >> 2) & 3) == 2;
             const float fix = ((o.a >> 4) & 3) == 2 ? float(o.b) / 128.0f : 1.0f;
@@ -595,7 +698,8 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     char b[32];
     DmgDraw(dl, font, gx, gy, gw, gh, vsync);
     for (int ch = 0; ch < XSG_GPU_UI_KG_CHANNELS; ++ch)
-        if (Fresh(vsync, g_ksnap[ch].frame)) KgDraw(dl, font, gx, gy, gw, gh, g_ksnap[ch], 0x4B47000000000000ull + (uint64_t(ch) << 32), ch == 0);
+        if (ch == 0 && Fresh(vsync, g_ksnap[0].frame)) { LayoutBegin(gx, gy, gw, gh); KeyGuideRows(dl, font, g_ksnap[0]); continue; }
+        else if (Fresh(vsync, g_ksnap[ch].frame)) KgDraw(dl, font, gx, gy, gw, gh, g_ksnap[ch], 0x4B47000000000000ull + (uint64_t(ch) << 32), ch == 0);
     if (Fresh(vsync, g_csnap.frame)) CmdDraw(dl, font, gx, gy, gw, gh);
     for (const GpuUiUnit& u : g_bsnap.unit) {
         if (!Fresh(vsync, u.frame)) continue;

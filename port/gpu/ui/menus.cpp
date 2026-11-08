@@ -113,6 +113,37 @@ bool MenuActive(uint32_t vsync) {
     return g_snap->frame && age <= 4 && age >= -2000 && g_snap->nops;   // the game may run far ahead (uncapped)
 }
 
+bool MenuWantsSettings() {
+    if (!g_snap) return false;
+    int windows = 0;
+    for (uint32_t i = 0; i < g_snap->nops; ++i) {
+        if (g_snap->op[i].type == GPU_KG_PAUSE) return true;
+        if (g_snap->op[i].type == GPU_KG_WINDOW && g_snap->op[i].b && g_snap->op[i].dw >= 100) windows++;
+    }
+    return windows >= 2;   // a full menu screen (not a lone choice box)
+}
+
+namespace {
+// "[View] Settings": a capsule with the layout's button name, at the top right of the UI area
+void SettingsHint(ImDrawList* dl, ImFont* font, float t) {
+    using namespace xsgmenu;
+    const float k = LayoutK(), kx = LayoutKx();
+    const std::string lay = xsgcfg::Get("gamepad.layout");
+    const char* btn = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
+    const float hs = 11.0f * k, ph = hs + 7 * k;
+    const ImVec2 bw = font->CalcTextSizeA(hs, 1e9f, 0, btn), lw = font->CalcTextSizeA(hs, 1e9f, 0, "Settings");
+    const float pill = bw.x + 12 * kx, total = 10 * kx + pill + 6 * kx + lw.x + 12 * kx;
+    const ImVec2 r1 = Map(512 - 14, 418, kRight);   // inside the help bar's empty right end
+    const ImVec2 a(r1.x - total, r1.y), b(r1.x, r1.y + ph + 6 * k);
+    const float cy = (a.y + b.y) * 0.5f;
+    const ImVec2 p0(a.x + 10 * kx, cy - ph * 0.5f);
+    dl->AddRectFilled(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(IM_COL32(12, 12, 30, 240), t), ph * 0.5f);
+    dl->AddRect(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
+    dl->AddText(font, hs, ImVec2(p0.x + (pill - bw.x) * 0.5f, cy - bw.y * 0.5f), Alpha(col::kText, t), btn);
+    dl->AddText(font, hs, ImVec2(p0.x + pill + 6 * kx, cy - lw.y * 0.5f), Alpha(col::kTextDim, t), "Settings");
+}
+}  // namespace
+
 void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
     using namespace xsgmenu;
     LayoutBegin(gx, gy, gw, gh);
@@ -499,20 +530,32 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float fs = 34.0f * k;
             const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, title);
             HaloText(dl, font, fs, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), col::kText, title, t);
-            const float gap = ts.x * 0.5f + 18 * kx, len = 150 * kx;
+            const float gap = ts.x * 0.5f + 24 * kx, len = 150 * kx;   // the rules stop short of the title
             SweepRule(dl, ImVec2(c.x + gap, c.y), ImVec2(c.x + gap + len, c.y), k, t, age, col::kCyan);
             SweepRule(dl, ImVec2(c.x - gap, c.y), ImVec2(c.x - gap - len, c.y), k, t, age, col::kCyan);
-            // "Start  Resume", the start button named for the layout
+            // two hints: [Start] Resume   [View] Settings, the buttons named for the layout
             const std::string lay = xsgcfg::Get("gamepad.layout");
-            const char* start = lay == "playstation" ? "START" : lay == "nintendo" ? "+" : "MENU";
-            const float hs = 13.0f * k;
-            const ImVec2 sw = font->CalcTextSizeA(hs, 1e9f, 0, start), rw = font->CalcTextSizeA(hs, 1e9f, 0, "Resume");
-            const float pill = sw.x + 14 * kx, total = pill + 8 * kx + rw.x;
-            const ImVec2 h0(c.x - total * 0.5f, c.y + 30 * k);
-            dl->AddRectFilled(h0, ImVec2(h0.x + pill, h0.y + hs + 6 * k), Alpha(IM_COL32(12, 12, 30, 230), t), (hs + 6 * k) * 0.5f);
-            dl->AddRect(h0, ImVec2(h0.x + pill, h0.y + hs + 6 * k), Alpha(col::kFrame, 0.7f * t), (hs + 6 * k) * 0.5f, 0, 1.0f);
-            dl->AddText(font, hs, ImVec2(h0.x + 7 * kx, h0.y + 3 * k), Alpha(col::kText, t), start);
-            dl->AddText(font, hs, ImVec2(h0.x + pill + 8 * kx, h0.y + 3 * k), Alpha(col::kTextDim, t), "Resume");
+            const char* start = lay == "playstation" ? "OPTIONS" : lay == "nintendo" ? "+" : "MENU";
+            const char* view = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
+            const float hs = 12.0f * k, ph = hs + 8 * k, hgap = 18 * kx;
+            struct H { const char *b, *l; float pw, lw; } hint[2] = {{start, "Resume", 0, 0}, {view, "Settings", 0, 0}};
+            float total = 0;
+            for (H& h : hint) {
+                h.pw = font->CalcTextSizeA(hs, 1e9f, 0, h.b).x + 14 * kx;
+                h.lw = font->CalcTextSizeA(hs, 1e9f, 0, h.l).x;
+                total += h.pw + 7 * kx + h.lw;
+            }
+            total += hgap;
+            float hx = c.x - total * 0.5f;
+            const float hy = c.y + 26 * k;
+            for (const H& h : hint) {
+                dl->AddRectFilled(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(IM_COL32(12, 12, 30, 235), t), ph * 0.5f);
+                dl->AddRect(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
+                const ImVec2 bs = font->CalcTextSizeA(hs, 1e9f, 0, h.b);
+                dl->AddText(font, hs, ImVec2(hx + (h.pw - bs.x) * 0.5f, hy + (ph - bs.y) * 0.5f), Alpha(col::kText, t), h.b);
+                HaloText(dl, font, hs, ImVec2(hx + h.pw + 7 * kx, hy + (ph - bs.y) * 0.5f), col::kTextDim, h.l, t);
+                hx += h.pw + 7 * kx + h.lw + hgap;
+            }
             break;
         }
         default:
@@ -521,6 +564,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         if (clipped) dl->PopClipRect();
     }
     dl->PopClipRect();
+    bool pause = false;
+    for (uint32_t i = 0; i < m.nops; ++i) pause |= m.op[i].type == GPU_KG_PAUSE;
+    if (!pause && MenuWantsSettings()) SettingsHint(dl, font, tw);   // the pause screen names it in its own row
 }
 
 }  // namespace xsgui

@@ -1097,6 +1097,7 @@ bool Event(const SDL_Event& ev) {
 }
 #endif
 
+static bool g_game_menu_up;   // a rebuilt game menu / the pause screen is showing
 static void PadFrame() {
 #ifdef XSG_GPU_SDL
     uint32_t b = 0;
@@ -1108,6 +1109,12 @@ static void PadFrame() {
     // the open combo: Back + Start (or Guide), on the press
     bool combo = ((b >> SDL_GAMEPAD_BUTTON_BACK) & 1) && ((b >> SDL_GAMEPAD_BUTTON_START) & 1);
     combo = combo || ((b >> SDL_GAMEPAD_BUTTON_GUIDE) & 1);
+    // with a game menu or the pause screen up (rebuilt UI), View / Back alone opens the settings
+    // (the menus show it as a "Settings" hint)
+    static bool back_prev;
+    const bool back = (b >> SDL_GAMEPAD_BUTTON_BACK) & 1;
+    if (back && !back_prev && !((b >> SDL_GAMEPAD_BUTTON_START) & 1) && g_game_menu_up && !g_open && !g_cap) SetOpen(true);
+    back_prev = back;
     if (combo && !g_combo_prev && !g_cap) SetOpen(!g_open);
     g_combo_prev = combo;
     if (g_cap == CAP_PAD) {
@@ -1195,6 +1202,7 @@ void Frame(uint32_t vsync, const Stats& s) {
     const bool dialog = rebuilt && xsgui::DialogActive(vsync);
     const bool battle = rebuilt && xsgui::BattleActive(vsync);
     const bool menus = rebuilt && xsgui::MenuActive(vsync);
+    g_game_menu_up = menus && xsgui::MenuWantsSettings();
     if (!g_open && !g_overlay && !dialog && !battle && !menus) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();
