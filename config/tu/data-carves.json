@@ -8211,25 +8211,25 @@
    ".data": [
     {
      "range": [
-      "0x0036f8e8",
+      "0x0036f8c0",
       "0x00378b30"
      ],
      "generated": [
-      "0x0036f8e8",
+      "0x0036f8c0",
       "0x00378b30"
      ],
      "generated_by": [
+      "HexToStr",
       "SetItemSymbolRsrc",
       "dataEvtItmNameGet",
       "taskItemGet"
      ],
      "c_owned_symbols": [
+      "strno",
       "ItemBoxTbl",
       "EvtItemTbl"
      ],
-     "also_referenced_by_c": [
-      "strno"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -8241,51 +8241,31 @@
     {
      "range": [
       "0x004d7f58",
-      "0x004d7f60"
+      "0x004d7f80"
      ],
      "generated": [
       "0x004d7f58",
-      "0x004d7f60"
+      "0x004d7f80"
      ],
      "generated_by": [
-      "InitItemBox"
-     ],
-     "c_owned_symbols": [
-      "D_004D7F58",
-      "D_004D7F5C"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7F60",
-      "D_004D7F64"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/create_evt_item_get_task.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7f68",
-      "0x004d7f7c"
-     ],
-     "generated": [
-      "0x004d7f68",
-      "0x004d7f7c"
-     ],
-     "generated_by": [
+      "InitItemBox",
+      "MAP_updateUnitItem",
+      "MAP_updateUnitItemSymbol",
       "MAP_updateUnitSpecialSymbol"
      ],
      "c_owned_symbols": [
+      "D_004D7F58",
+      "D_004D7F5C",
+      "D_004D7F60",
+      "D_004D7F64",
       "D_004D7F68",
       "D_004D7F6C",
       "D_004D7F70",
       "D_004D7F74",
-      "D_004D7F78"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7F78",
       "D_004D7F7C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -8296,20 +8276,24 @@
    ".rodata": [
     {
      "range": [
-      "0x004ca580",
-      "0x004ca5b0"
+      "0x004ca4d0",
+      "0x004ca698"
      ],
      "generated": [
-      "0x004ca580",
-      "0x004ca5b0"
+      "0x004ca4d0",
+      "0x004ca698"
      ],
      "generated_by": [
-      "GetItemName"
+      "GetItemName",
+      "InitItemBox",
+      "InitItemSymbol",
+      "MAP_updateUnitItem",
+      "MAP_updateUnitSpecialSymbol",
+      "SetItemSymbolRsrc",
+      "taskEvtItemGet",
+      "taskItemGet"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA580"
-     ],
-     "also_referenced_by_c": [
       "D_004CA4D0",
       "evt_item_format_special",
       "evt_item_format_normal",
@@ -8318,37 +8302,43 @@
       "D_004CA530",
       "D_004CA550",
       "D_004CA568",
+      "jtbl_004CA580",
       "D_004CA5B0",
-      "D_004CA5D0"
+      "D_004CA5D0",
+      "jtbl_004CA5F0",
+      "jtbl_004CA610",
+      "D_004CA640",
+      "D_004CA648",
+      "D_004CA650",
+      "D_004CA680"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/create_evt_item_get_task.o"
      }
-    },
+    }
+   ],
+   ".sdata": [
     {
      "range": [
-      "0x004ca5f0",
-      "0x004ca650"
+      "0x004db780",
+      "0x004db790"
      ],
      "generated": [
-      "0x004ca5f0",
-      "0x004ca650"
+      "0x004db780",
+      "0x004db78d"
      ],
      "generated_by": [
-      "MAP_updateUnitSpecialSymbol",
-      "SetItemSymbolRsrc"
+      "GetItemName",
+      "taskItemGet"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA5F0",
-      "jtbl_004CA610",
-      "D_004CA640",
-      "D_004CA648"
+      "D_004DB780",
+      "deb_0"
      ],
-     "also_referenced_by_c": [
-      "D_004CA650"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

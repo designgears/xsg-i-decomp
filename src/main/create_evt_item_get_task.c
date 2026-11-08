@@ -61,7 +61,6 @@ extern void SetItemSymbolRsrc(ItemMapUnit *unit);
 extern int xglFlagsGet1(int bitOffset);
 extern int printf(const char *format, ...);
 extern void sefDeleteEffectCf(int effectId);
-extern const char D_004CA5D0[];
 
 typedef struct ItemOwnerUnit {
     unsigned char unmodeled_00[0xa4];
@@ -71,9 +70,7 @@ typedef struct ItemOwnerUnit {
 extern ItemOwnerUnit MapUnit[64];
 extern void nmlModelSetPartsVisible(void *model, short partsNo, int visible);
 extern void DrawActiveCursol(ItemMapUnit *unit);
-extern const float D_004D7F7C;
 extern signed char printflg;
-extern const char D_004CA650[];
 
 typedef struct ItemBoxEntry {
     signed char kind;
@@ -83,16 +80,23 @@ typedef struct ItemBoxEntry {
     int special;
 } ItemBoxEntry;
 
+extern const char D_004DB778[], D_004DB770[], D_004DB768[], D_004DB760[], D_004DB758[];
+extern const char D_004DB750[], D_004DB748[], D_004DB740[], D_004DB738[], D_004DB730[];
+static char *strno[10] = {
+    (char *) D_004DB778, (char *) D_004DB770, (char *) D_004DB768, (char *) D_004DB760,
+    (char *) D_004DB758, (char *) D_004DB750, (char *) D_004DB748, (char *) D_004DB740,
+    (char *) D_004DB738, (char *) D_004DB730
+};
 ItemBoxEntry ItemBoxTbl[601] = {{0}};
 unsigned char EvtItemTbl[0xFF * 0x80] = {0};
 
-extern char *strno[];
-extern const char D_004CA4D0[];
-extern const char D_004CA508[];
-extern const char D_004CA520[];
-extern const char D_004CA530[];
-extern const char D_004CA550[];
-extern char D_004DB780[];
+const char D_004CA4D0[16] = "Obtained %d G.";
+const char evt_item_format_special[24] = "Obtained \x0c" "2\x9b\xbe%s\x0c\x80\x80\x80.";
+const char evt_item_format_normal[16] = "Obtained %s.";
+const char D_004CA508[24] = "Obtained %s \x0c" "2\x9b\xbe%s\x0c\x80\x80\x80.";
+const char D_004CA520[16] = "Obtained %s %s.";
+const char D_004CA530[32] = "Obtained %s%s \x0c" "2\x9b\xbe%s\x0c\x80\x80\x80";
+const char D_004CA550[24] = "Obtained %s%s %s";
 extern int xglFlagsSet1(int bit_offset, int value);
 extern int dataMoneyBoxInc(int amount);
 extern void CallMethod_I(const char *, int);
@@ -224,7 +228,7 @@ static int taskItemGet(XglTaskPrefix *t)
     GameLoopState[0x10 / (sizeof(unsigned int))] &= 0xfffdffffu;
     if (method != (-1))
     {
-      CallMethod_I(D_004DB780, method);
+      CallMethod_I("itemget", method);
     }
     unit = o[5];
     if (unit != (-1))
@@ -276,8 +280,7 @@ int CreateEvtItemGetTask(int item, int count)
     return 1;
 }
 
-extern char deb_0[8];
-extern const char D_004CA568[];
+const char D_004CA568[24] = "Illegal grp %d\n";
 extern char **func_A2C5F8(int id);
 extern char **func_A2C6E8(int id);
 extern char **func_A2C738(int id);
@@ -286,11 +289,12 @@ extern char *dataEvtItmNameGet(int index);
 
 char *GetItemName(int category, int id)
 {
+    static char deb[] __asm__("deb.0") = "NULL";
     char **p;
     char *s;
 
     if (id == 0) {
-        return deb_0;
+        return deb;
     }
     switch (category) {
     case 0:
@@ -308,11 +312,11 @@ char *GetItemName(int category, int id)
         if (p != 0) {
             return *p;
         }
-        return deb_0;
+        return deb;
     case 10:
         s = dataEvtItmNameGet(id);
         if (s == 0) {
-            s = deb_0;
+            s = deb;
         }
         return s;
     default:
@@ -342,7 +346,6 @@ static int Pow(int base, int exponent)
     return result;
 }
 
-extern char *strno[];
 extern char *strcat(char *, const char *);
 
 int HexToStr(int n, char *buf)
@@ -371,7 +374,7 @@ int HexToStr(int n, char *buf)
 
 extern int uwares_tbl[];
 extern int xtxres_tbl[];
-extern const char D_004CA5B0[];
+const char D_004CA5B0[32] = "ItemBox serial error!! %d\n";
 extern void MAP_updateUnitItemBox();
 extern void MAP_drawUnitItemBox();
 #define IIB_RSRC(n) \
@@ -456,6 +459,8 @@ void InitItemBox(ItemMapUnit *unit)
         }
     }
 }
+
+const char D_004CA5D0[32] = "ItemSymbol serial error!! %d\n";
 
 void InitItemSymbol(ItemMapUnit *unit)
 {
@@ -688,8 +693,6 @@ void MAP_drawUnitItemBox(UnitItemBox *box)
     xglMatrixStackSave(*box->saved_matrix);
 }
 
-extern float D_004D7F60;
-extern float D_004D7F64;
 extern float CheckDist3D(Vector4 *a, Vector4 *b);
 void MAP_updateUnitItemSymbol(ItemMapUnit *unit)
 {
@@ -698,11 +701,11 @@ void MAP_updateUnitItemSymbol(ItemMapUnit *unit)
     unsigned short itemNo;
     ItemUnitInfo *info = &unit->info;
 
-    unit->rotation.y += D_004D7F60;
+    unit->rotation.y += 0.05f;
     UwamonoCommonFunc(unit);
     switch (unit->actionSub) {
     case 0:
-        if (CheckDist3D((Vector4 *) (GameLoopState[1] + 0x10), &unit->position) < D_004D7F64
+        if (CheckDist3D((Vector4 *) (GameLoopState[1] + 0x10), &unit->position) < 0.8f
             && !(GameLoopState[4] & 0x20000)) {
             scheduler = (XglTaskScheduler *) GameLoopState[2];
             task = (ItemGetTask *) xglTaskEntryNext(scheduler, taskItemGet,
@@ -810,6 +813,8 @@ void MAP_updateUnitSpecialSymbol(ItemMapUnit *arg)
     }
 }
 
+const char D_004CA650[48] = "unit koware delete id=0x%x serial=%d\n";
+
 void MAP_updateUnitItem(ItemMapUnit *unit)
 {
     unsigned short nextSequenceNo;
@@ -819,7 +824,7 @@ void MAP_updateUnitItem(ItemMapUnit *unit)
     }
     unit->flags &= ~4;
     DrawActiveCursol(unit);
-    unit->rotation.y = unit->rotation.y + D_004D7F7C;
+    unit->rotation.y = unit->rotation.y + 0.05f;
     switch (unit->actionSub) {
     case 0:
         if (unit->actionNo == 1) {
@@ -850,3 +855,5 @@ void MAP_updateUnitItem(ItemMapUnit *unit)
         break;
     }
 }
+
+const char D_004CA680[24] = "\xbe\xe5\xca\xaa\xcd\xd1\xa5\xc7\xa5\xd0\xa5\xc3\xa5\xb0\xa5\xe1\xa5\xcb\xa5\xe5\xa1\xbc";
