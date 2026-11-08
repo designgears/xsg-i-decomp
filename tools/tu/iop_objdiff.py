@@ -283,6 +283,27 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
         verification.require(original.payload(old_section)[old_at:old_at+span['size']] ==
                              reference.payload(new_section)[new_at:new_at+span['size']],
                              'IOP original data reference differs')
+    # A mapped BSS range may end in the link's alignment fill before the next
+    # object (gas rounds a TU's sections to 16; ld aligns the next COMMON).
+    # The gate already proved the composed module identical with this map; the
+    # fill is accounted to the map only when it is under 16 bytes, holds no
+    # original symbol and directly follows this group's last object.
+    for p in group.get('generated_data', []):
+        if p['section'] not in ('.bss', '.sbss'):
+            continue
+        inside = [s for s in spans if s['section'] == p['section'] and
+                  p['offset'] <= s['offset'] < p['offset'] + p['size']]
+        if not inside:
+            continue
+        last = max(s['offset'] + s['size'] for s in inside)
+        stop = p['offset'] + p['size']
+        if last < stop:
+            verification.require(stop - last < 16 and not any(
+                sym['size'] and sym['name'] and last <= sym['value'] < stop and
+                0 < sym['section_index'] < len(original.sections) and
+                original.sections[sym['section_index']]['name'] == p['section']
+                for sym in original.symbols), 'IOP BSS map extends past alignment fill')
+            spans = spans + [dict(section=p['section'], offset=last, size=stop - last, alignment_fill=True)]
     proof = dict(original_sha256=iop_module.sha(original.raw), target_sha256=verification.digest(obj),
                  reference_link_sha256=verification.digest(linked), original_function_bytes_equal=True,
                  functions=funcs, data_spans=spans, source_credit=False)

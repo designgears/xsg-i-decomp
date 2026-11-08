@@ -73,10 +73,7 @@ typedef struct ModuleInfo {
     unsigned short version;
 } ModuleInfo;
 
-/* The module name is the first .rodata string ("PS2_SuzukiSoundDriver"),
- * still provided by the original .rodata scaffold through _fdata. */
-extern const char _fdata[];
-ModuleInfo Module = { _fdata, 0x0205 };
+ModuleInfo Module = { "PS2_SuzukiSoundDriver", 0x0205 };
 
 SsdWorkState SsdWork;
 extern int StopHardTimer(int timer);
@@ -140,7 +137,7 @@ void *SsdQuit(void);
 
 int SsdStart(int argc, char **argv)
 {
-    printf(&_fdata[0x18], 96, 1);
+    printf("SSD Ver 2.5.0.020108,%04x.%02x\n", 96, 1);
     RegisterLibraryEntries(&ssd_entry);
     return 0;
 }
@@ -154,7 +151,7 @@ void *SsdInit(void *memory, unsigned int size, int mode) {
     int flags;
     SsdReverbState *reverb;
     unsigned int reverb_size;
-    printf(&_fdata[0x38]);
+    printf("Ssd init  Suzuki sound driver  version 2.5\n");
     if (SsdWork.flags < 0) {
         SsdErrorProc(-128, 0);
         return 0;
@@ -259,7 +256,7 @@ void SsdQuitInterrupt(void) {
 
 void SsdQuitTimer(void) {
     StopHardTimer(SsdWork.timer_id);
-    printf(&_fdata[0x64]);
+    printf("SSD2 - Release timer interrupt.\n");
 }
 
 void SsdResume(void) {
@@ -273,7 +270,7 @@ void SsdResume(void) {
     sceSdSetParam(2689, 16383);
     SsdWork.flags &= ~0x80U;
     CpuEnableIntr();
-    printf(&_fdata[0x88]);
+    printf("Ssd resume\n");
 }
 
 void SsdSuspend(void) {
@@ -287,7 +284,7 @@ void SsdSuspend(void) {
     sceSdSetParam(2689, 0);
     SsdWork.flags |= 0x80;
     CpuEnableIntr();
-    printf(&_fdata[0x94]);
+    printf("Ssd suspend\n");
 }
 
 void SsdEnable(void) {

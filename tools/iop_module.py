@@ -351,6 +351,10 @@ def normalize_candidates(candidates, original):
                 name = ".rodata" if section["name"] == ".rdata" else section["name"]
                 require(any(m["section"] == name for m in maps),
                         f"unmapped source-generated allocation {section['name']}")
+                if section["type"] != 8:
+                    # The map is the object's whole section, alignment fill included.
+                    require(all(m["size"] == section["size"] for m in maps if m["section"] == name),
+                            f"generated-data map size differs from compiled {section['name']}")
         item["data_maps"] = maps
         require(len({m["section"] for m in maps}) == len(maps),
                 "one contiguous mapping is required per compiler data section")
@@ -422,7 +426,12 @@ def generate_assembly(original, module, original_bytes, candidates, disassembly)
     source = ["/* Original scaffold plus compiler streams with private symbol namespaces. */",
               ".set noreorder", ".set noat", ".globl _iop_module_base"]
     provenance = []
-    for name in (".text", ".rodata", ".data", ".sdata", ".sbss", ".bss"):
+    # Each compiler emits its string constants into .rdata ahead of the
+    # function that uses them, so GAS sees those labels already defined when
+    # it expands `la` (a forward local reference becomes a relaxable fragment
+    # that blocks delay-slot filling). Assemble .rodata first to keep that
+    # order; section placement is fixed by .org and the link script.
+    for name in (".rodata", ".text", ".data", ".sdata", ".sbss", ".bss"):
         if name not in original.by_name:
             continue
         section = original.by_name[name]

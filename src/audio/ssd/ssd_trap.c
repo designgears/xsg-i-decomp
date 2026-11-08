@@ -149,7 +149,6 @@ extern void SsdInitLfoWork(SsdLfoWork *);
 extern void SsdSeqErrorProc(int error, unsigned char *events);
 extern void SsdCutoffChannel(SsdChannel *channel);
 extern int Kprintf(const char *format, ...);
-extern char _fdata[];
 extern void SsdSetChannelWave(SsdChannel *channel, int wave);
 extern void SsdSetChannelProgram(SsdChannel *channel, int program);
 extern void SsdSendChannelKeyoffEvent(SsdChannel *channel);
@@ -172,7 +171,7 @@ unsigned char *SsdSeqDummy(SsdSequence *sequence, SsdSequenceTrack *track,
     track->flags &= 0x7fff;
     SsdCutoffChannel(track->channel);
     events--;
-    Kprintf(&_fdata[0xd0]);
+    Kprintf("Ssd exec dummy trap\n");
     return events;
 }
 
