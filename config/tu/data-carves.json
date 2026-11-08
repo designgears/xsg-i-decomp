@@ -9472,21 +9472,52 @@
    ]
   },
   "main/tu248": {
+   ".data": [
+    {
+     "range": [
+      "0x0043c1c0",
+      "0x0043c1d0"
+     ],
+     "generated": [
+      "0x0043c1c0",
+      "0x0043c1d0"
+     ],
+     "generated_by": [
+      "CHR_moveXZ",
+      "CHR_rotX",
+      "CHR_rotY",
+      "CHR_rotZ",
+      "CHR_sclX",
+      "CHR_sclY",
+      "CHR_sclZ"
+     ],
+     "c_owned_symbols": [
+      "defaultOffset"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/chr.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d83f0",
-      "0x004d841c"
+      "0x004d8420"
      ],
      "generated": [
       "0x004d83f0",
-      "0x004d841c"
+      "0x004d8420"
      ],
      "generated_by": [
       "CHR_rotX",
       "CHR_rotY",
       "CHR_rotZ",
       "Java_xeno_Chr_getRotate__",
+      "Java_xeno_Chr_look_eye_set__FF",
       "Java_xeno_Chr_setRotate__"
      ],
      "c_owned_symbols": [
@@ -9500,41 +9531,158 @@
       "D_004D840C",
       "D_004D8410",
       "D_004D8414",
-      "D_004D8418"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8418",
       "D_004D841C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/chr.o"
+      "object": "build/main/build/c/chr.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004d16e0",
+      "0x004d16d0",
       "0x004d16f8"
      ],
      "generated": [
-      "0x004d16e0",
+      "0x004d16d0",
       "0x004d16f8"
      ],
      "generated_by": [
+      "CHR_moveXZ",
+      "CHR_rotX",
+      "CHR_rotY",
+      "CHR_rotZ",
+      "CHR_sclX",
+      "CHR_sclY",
+      "CHR_sclZ",
+      "Java_xeno_Chr_move__Lxeno_util_Spline_IZ",
+      "Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ",
+      "Java_xeno_Chr_scale__Lxeno_util_Spline_IZ",
       "Java_xeno_Chr_start__ILjava_lang_Object_"
      ],
      "c_owned_symbols": [
+      "chr_algorithm_string",
       "jtbl_004D16E0"
      ],
-     "also_referenced_by_c": [
-      "chr_algorithm_string"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/chr.o"
+      "object": "build/main/build/c/chr.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc190",
+      "0x004dc1d0"
+     ],
+     "generated": [
+      "0x004dc190",
+      "0x004dc1cb"
+     ],
+     "generated_by": [
+      "CHR_motion",
+      "CHR_moveXZ",
+      "CHR_rotX",
+      "CHR_rotY",
+      "CHR_rotZ",
+      "CHR_sclX",
+      "CHR_sclY",
+      "CHR_sclZ",
+      "Java_xeno_Chr_childGetPeer__II",
+      "Java_xeno_Chr_dispRadar__Z",
+      "Java_xeno_Chr_getArgs__II",
+      "Java_xeno_Chr_getFlags__",
+      "Java_xeno_Chr_getPlayer__",
+      "Java_xeno_Chr_getRotate__",
+      "Java_xeno_Chr_getScale__",
+      "Java_xeno_Chr_getSerial__",
+      "Java_xeno_Chr_getSignal__",
+      "Java_xeno_Chr_getState__",
+      "Java_xeno_Chr_getTranslate__",
+      "Java_xeno_Chr_hairStop__II",
+      "Java_xeno_Chr_ignoreShape__I",
+      "Java_xeno_Chr_look_camera__",
+      "Java_xeno_Chr_look_char__Ljava_lang_Object_",
+      "Java_xeno_Chr_look_default__",
+      "Java_xeno_Chr_look_eye_control__I",
+      "Java_xeno_Chr_look_eye_set__FF",
+      "Java_xeno_Chr_look_eye_speed__F",
+      "Java_xeno_Chr_look_point__FFF",
+      "Java_xeno_Chr_look_speed__F",
+      "Java_xeno_Chr_look_unit__Ljava_lang_Object_",
+      "Java_xeno_Chr_move__Lxeno_util_Spline_IZ",
+      "Java_xeno_Chr_mtnGetRoot__ILxeno_util_Vector4f_",
+      "Java_xeno_Chr_pixelAlphaPartsReset__",
+      "Java_xeno_Chr_pixelAlphaParts__II",
+      "Java_xeno_Chr_pixelAlpha__I",
+      "Java_xeno_Chr_relax__II",
+      "Java_xeno_Chr_renderCommand__I",
+      "Java_xeno_Chr_resetWeaponR__Lxeno_Chr_",
+      "Java_xeno_Chr_rotCNS__IFFF",
+      "Java_xeno_Chr_rotate__Lxeno_util_Spline_IZ",
+      "Java_xeno_Chr_scale__Lxeno_util_Spline_IZ",
+      "Java_xeno_Chr_setArgs__III",
+      "Java_xeno_Chr_setArgs__ILjava_lang_Object_I",
+      "Java_xeno_Chr_setClip__I",
+      "Java_xeno_Chr_setCollision__Z",
+      "Java_xeno_Chr_setEdgeFall__I",
+      "Java_xeno_Chr_setElevatorMode__I",
+      "Java_xeno_Chr_setFilterParam__aF",
+      "Java_xeno_Chr_setFilter__I",
+      "Java_xeno_Chr_setFlags__I",
+      "Java_xeno_Chr_setHand__I",
+      "Java_xeno_Chr_setID__I",
+      "Java_xeno_Chr_setMotNoUpdate__I",
+      "Java_xeno_Chr_setMotionFlags__IZ",
+      "Java_xeno_Chr_setParent__Lxeno_Chr_III",
+      "Java_xeno_Chr_setPeer__Ljava_lang_Object_",
+      "Java_xeno_Chr_setPlayer__",
+      "Java_xeno_Chr_setPointLightCol__IFFF",
+      "Java_xeno_Chr_setPointLightPos__IFFF",
+      "Java_xeno_Chr_setPointLightReset__",
+      "Java_xeno_Chr_setRotCNSParam__IFFFFF",
+      "Java_xeno_Chr_setRotate__",
+      "Java_xeno_Chr_setScale__FFF",
+      "Java_xeno_Chr_setShadow__II",
+      "Java_xeno_Chr_setShadow__aB",
+      "Java_xeno_Chr_setSortOffset__F",
+      "Java_xeno_Chr_setSymmetryY__I",
+      "Java_xeno_Chr_setTranslate__",
+      "Java_xeno_Chr_setVisible__IZ",
+      "Java_xeno_Chr_setVisible__Z",
+      "Java_xeno_Chr_setWeaponR__Lxeno_Chr_",
+      "Java_xeno_Chr_shadow_clip_scale__F",
+      "Java_xeno_Chr_shadow_map_id__I",
+      "Java_xeno_Chr_shadow_map_reset__",
+      "Java_xeno_Chr_signal__I",
+      "Java_xeno_Chr_start__ILjava_lang_Object_",
+      "Java_xeno_Chr_stop__",
+      "Java_xeno_Chr_talkto__Ljava_lang_String_",
+      "Java_xeno_Chr_touchto__Ljava_lang_String_"
+     ],
+     "c_owned_symbols": [
+      "chr_peer_string",
+      "D_004DC198",
+      "D_004DC1A0",
+      "D_004DC1A8",
+      "D_004DC1B0",
+      "D_004DC1B8",
+      "D_004DC1C0",
+      "D_004DC1C8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/chr.o"
      }
     }
    ]
