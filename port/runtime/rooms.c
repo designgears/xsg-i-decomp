@@ -72,6 +72,7 @@ static const struct { const char *name, *scene, *pad, *what; int give, call; } r
     {"menu", "cf9051", MENU, "field, then the main menu", 1},
     {"menu_items", "cf9051", MENU ",+800:CIRCLE", "main menu > Items", 1},
     {"menu_ether", "cf9051", MENU_PICK(1), "main menu > Ether > Shion", 1},
+    {"menu_ether_tree", "cf9051", MENU_PICK(1) ",+1000:DOWN*2@12,+1100:CIRCLE", "main menu > Ether > Shion > Use E.Pts (the Ether tree)", 1},
     {"menu_tech", "cf9051", MENU_PICK(2), "main menu > Tech Attacks > Shion", 1},
     {"menu_skills", "cf9051", MENU_PICK(3), "main menu > Skills > Shion", 1},
     {"menu_characters", "cf9051", MENU_PICK(4), "main menu > Characters > Shion", 1},

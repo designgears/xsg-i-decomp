@@ -393,6 +393,7 @@ The log shows every scene change as `[room] vblank V scene cfNNNN map NAME`.
 | `field`, `menu` | cf9051 | free walking in MC_KOU01; the main menu |
 | `menu_items`, `menu_agws`, `menu_options`, `menu_formation` | cf9051 | those main-menu pages |
 | `menu_ether`, `menu_tech`, `menu_skills`, `menu_characters` | cf9051 | those pages, with Shion picked |
+| `menu_ether_tree` | cf9051 | Ether > Shion > Use E.Pts (the Ether tree) |
 | `save`, `save_files` | cf9051 | a save point's file menu, opened the way the field loop opens it; slot 1's file list |
 | `shop`, `shop2`, `shop3`, `shop_buy`, `shop_sell` | cf9051 | shops 1-3 (`MenuShopMain`); shop 1's Buy and Sell lists |
 
