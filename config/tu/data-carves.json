@@ -12070,31 +12070,77 @@
    ]
   },
   "ov02/tu007_00a03450": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a12030",
-      "0x00a12050"
+      "0x00a104a8",
+      "0x00a10618"
      ],
      "generated": [
-      "0x00a12030",
-      "0x00a12050"
+      "0x00a104a8",
+      "0x00a10618"
      ],
      "generated_by": [
       "taskUmnTopWin"
      ],
      "c_owned_symbols": [
-      "D_00A12030",
-      "D_00A12038",
-      "D_00A12048"
+      "moji00_0",
+      "moji01_1",
+      "UmnManzaiText",
+      "UmnManzaiFlag",
+      "UmnManzaiWin"
      ],
-     "also_referenced_by_c": [
-      "D_00A12050"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/task_umn_top_win.o"
+      "object": "build/ov02/build/scaffold/src/ov02/task_umn_top_win.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a11f10",
+      "0x00a12060"
+     ],
+     "generated": [
+      "0x00a11f10",
+      "0x00a12053"
+     ],
+     "generated_by": [
+      "UmnTopMenu",
+      "taskUmnTopWin"
+     ],
+     "c_owned_symbols": [
+      "D_00A11F10",
+      "D_00A11F20",
+      "D_00A11F40",
+      "D_00A11F50",
+      "D_00A11F58",
+      "D_00A11F88",
+      "D_00A11FC0",
+      "D_00A12000",
+      "D_00A12030",
+      "D_00A12038",
+      "D_00A12048",
+      "D_00A12050"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A11F10": "moji00_0",
+      "D_00A11F20": "moji00_0",
+      "D_00A11F40": "moji00_0",
+      "D_00A11F50": "moji00_0",
+      "D_00A11F58": "moji01_1",
+      "D_00A11F88": "moji01_1",
+      "D_00A11FC0": "moji01_1",
+      "D_00A12000": "moji01_1"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/task_umn_top_win.o"
      }
     }
    ]
