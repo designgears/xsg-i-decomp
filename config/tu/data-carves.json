@@ -23734,6 +23734,204 @@
     }
    ]
   },
+  "ov12/tu080_00a454f8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50920",
+      "0x00a50974"
+     ],
+     "generated": [
+      "0x00a50920",
+      "0x00a50974"
+     ],
+     "generated_by": [
+      "_ActJntToAccID_sub"
+     ],
+     "c_owned_symbols": [
+      "s_aJntIDToAccID_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_actor.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a50978",
+      "0x00a50b0c"
+     ],
+     "generated": [
+      "0x00a50978",
+      "0x00a50b0c"
+     ],
+     "generated_by": [
+      "_ActorDrawFunction",
+      "_DrawActor",
+      "_GetXenoDatEntry"
+     ],
+     "c_owned_symbols": [
+      "s_aDatTbl_1",
+      "s_pUseFog"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_actor.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a50b10",
+      "0x00a511d0"
+     ],
+     "generated": [
+      "0x00a50b10",
+      "0x00a511d0"
+     ],
+     "generated_by": [
+      "_FindRawJntData"
+     ],
+     "c_owned_symbols": [
+      "s_aRawJntData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_actor.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a587b0",
+      "0x00a58d10"
+     ],
+     "generated": [
+      "0x00a587b0",
+      "0x00a58d10"
+     ],
+     "generated_by": [
+      "CreateXrgActor",
+      "DisposeXrgActor",
+      "DuplicateXrgActor",
+      "InitXrgActorEssence",
+      "XrgActorAttachChild",
+      "XrgActorCheckPakaPaka",
+      "XrgActorCreateEffArmCombine",
+      "XrgActorCreateEffConstraint",
+      "XrgActorDebugDisp",
+      "XrgActorDeriveMotion",
+      "XrgActorDettachChild",
+      "XrgActorDisposeEffector",
+      "XrgActorEssenceGetFileName",
+      "XrgActorGetAttachedJoint",
+      "XrgActorGetJointLocal",
+      "XrgActorGetLocal",
+      "XrgActorGetMotionLength",
+      "XrgActorGetPlayingMotTime",
+      "XrgActorIsEndOfMotion",
+      "XrgActorJntIDtoAccID",
+      "XrgActorPassTime",
+      "XrgActorSetDraw",
+      "XrgActorSetDropWeapon",
+      "XrgActorSetLight",
+      "XrgActorSetLightCost",
+      "XrgActorSetLocal",
+      "XrgActorSetLoopPlay",
+      "XrgActorSetMotion",
+      "XrgActorSetMotionFrame",
+      "XrgActorSetPlayMotionComaStep",
+      "XrgActorSetSmoothPlay",
+      "XrgActorSetTransparent",
+      "_AccIDToJoint",
+      "_ActJntToAccID_sub",
+      "_ActJntToJoint",
+      "_AttachChildUseXenoActor",
+      "_CreateAccMani_sub",
+      "_CreateSkeMani_sub",
+      "_DetachChildUseXenoActor",
+      "_DisposeUseXenoActor",
+      "_DrawActor",
+      "_DupLoadXenoActor",
+      "_DupXenoActor",
+      "_GetPakaPakaBaseJnt",
+      "_GetXenoDatEntry",
+      "_InitAfterLoadXenoActor",
+      "_InitSkeMani",
+      "_InitXenoActor",
+      "_LoadXenoActor",
+      "_LoadXenoActorMdl",
+      "_PassTime_00A45D30",
+      "_SetBattleCommonWepMotion",
+      "_SetMotUseXenoActor"
+     ],
+     "c_owned_symbols": [
+      "D_00A587B0",
+      "D_00A587E0",
+      "D_00A587F8",
+      "D_00A58808",
+      "D_00A58820",
+      "D_00A58840",
+      "D_00A58858",
+      "D_00A58878",
+      "D_00A58890",
+      "D_00A588B0",
+      "D_00A588C8",
+      "D_00A588E8",
+      "D_00A58900",
+      "D_00A58920",
+      "D_00A58938",
+      "D_00A58958",
+      "D_00A58978",
+      "D_00A589A0",
+      "D_00A589B8",
+      "D_00A589C8",
+      "D_00A589F8",
+      "D_00A58A10",
+      "D_00A58A30",
+      "D_00A58A50",
+      "D_00A58A98",
+      "D_00A58AB0",
+      "D_00A58AB8",
+      "D_00A58AC0",
+      "D_00A58AC8",
+      "D_00A58AE0",
+      "D_00A58B00",
+      "D_00A58B10",
+      "D_00A58B20",
+      "D_00A58B40",
+      "D_00A58B50",
+      "D_00A58B68",
+      "D_00A58B88",
+      "D_00A58BC0",
+      "D_00A58BE0",
+      "D_00A58BE8",
+      "D_00A58BF0",
+      "D_00A58C10",
+      "D_00A58C20",
+      "D_00A58C38",
+      "D_00A58C68",
+      "D_00A58C88",
+      "D_00A58C98",
+      "D_00A58CB0",
+      "D_00A58CD0",
+      "D_00A58CF0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_actor.o"
+     }
+    }
+   ]
+  },
   "ov12/tu081_00a48548": {
    ".rodata": [
     {
