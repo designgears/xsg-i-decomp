@@ -160,7 +160,7 @@ def section_relative_data_relocs(target, base_elf):
     Path(target).write_bytes(bytes(data))
 
 
-def size_bss_symbols(path, real_names=None, base_elf=None):
+def size_bss_symbols(path, real_names=None, base_elf=None, overlay_inner=False):
     """Size every BSS/SBSS label up to the next label (or the section end), on both sides.
 
     splat's `dlabel` + `.space` and cc1's `.lcomm` both leave uninitialised
@@ -179,8 +179,8 @@ def size_bss_symbols(path, real_names=None, base_elf=None):
         labels = sorted((y for y in elf.symbols if y.shndx == section.index and y.type != 3
                          and y.name and not y.name.endswith('.NON_MATCHING')),
                         key=lambda y: y.value)
-        if base_elf is not None:
-            bsec = [x for x in base_elf.sections if x.name == section.name]
+        bsec = [x for x in base_elf.sections if x.name == section.name] if base_elf else []
+        if base_elf is not None and overlay_inner:
             starts_c = {y.value for y in base_elf.symbols
                         if bsec and y.shndx == bsec[0].index and y.type != 3 and y.name}
             inner = [y for y in labels if y.value not in starts_c
@@ -199,10 +199,15 @@ def size_bss_symbols(path, real_names=None, base_elf=None):
         starts = sorted({y.value for y in labels})
         for y in labels:
             nxt = next((v for v in starts if v > y.value), None)
-            # the last object runs to the section end, which differs by the
-            # link fill (up to the next object's 16-byte alignment): round it
-            # to 16 bytes on both sides
-            size = nxt - y.value if nxt is not None else (section.size - y.value + 15) & ~15
+            size = nxt - y.value if nxt is not None else section.size - y.value
+            if nxt is None and bsec:
+                # the original's last object runs to the next object's
+                # alignment (link fill, < 16 bytes): where the C's last object
+                # starts at the same offset, that fill is not compared
+                c_last = [b for b in base_elf.symbols if b.shndx == bsec[0].index
+                          and b.value == y.value and b.size and b.type != 3]
+                if c_last and c_last[0].size <= size < c_last[0].size + 16:
+                    size = c_last[0].size
             struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, size)
             if y.type == 0:
                 at = symtab.offset + 16 * y.index + 12
@@ -629,12 +634,12 @@ def prepare(root, evidence):
              '-o', target, stripped, *data], unit_dir)
         preserve_gp0(stripped, target)
         if unit == 'main':
-            size_bss_symbols(target, original_names)
+            size_bss_symbols(target, original_names, base_elf)
         else:
             # overlays have no original symbol table: a splat `D_<addr>` BSS
             # label where the C object starts no object lies inside the C's
             # object before it (whose size is then compared as one)
-            size_bss_symbols(target, None, base_elf)
+            size_bss_symbols(target, None, base_elf, overlay_inner=True)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
             trim_leading_fill(target, base_elf)
