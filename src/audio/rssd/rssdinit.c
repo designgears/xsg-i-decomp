@@ -354,7 +354,7 @@ extern void sceSifRpcLoop(SifRpcQueueData *queue);
 
 extern SsdGlobalWork *SsdGetGlobalWorkPtr(void);
 
-extern RssdGlobalWork RssdWork;
+RssdGlobalWork RssdWork;
 void RssdExecFunc(RssdRpcPacket *packet);
 void *RssdSifRpcServer(int command, void *buffer, int size);
 int RssdSifServerThread(void *argument);

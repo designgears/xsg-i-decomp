@@ -49,7 +49,7 @@ typedef struct SsdMidiNote {
 
 typedef void (*SsdMidiController)(SsdMidiChannel *, int);
 
-extern SsdMidiState SsdMidi;
+SsdMidiState SsdMidi;
 
 extern SsdMidiDevice *SsdNewMidiDevice(int channel, int mode, int options);
 

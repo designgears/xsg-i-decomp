@@ -101,7 +101,7 @@ enum {
 
 enum { SSD_VAG_FADE_MESSAGE = 0x304 };
 
-extern SsdVagWork SsdVagStrWork;
+SsdVagWork SsdVagStrWork;
 
 extern const char _fdata[];
 

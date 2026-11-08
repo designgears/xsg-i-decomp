@@ -139,7 +139,7 @@ typedef struct SsdEffectPlayParameters {
 
 extern SsdGlobalWork SsdWork;
 
-extern SsdDebugState SsdDebWork;
+SsdDebugState SsdDebWork;
 
 extern const char *SsdSpuMemTypeTextTable[13];
 

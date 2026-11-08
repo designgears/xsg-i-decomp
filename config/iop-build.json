@@ -89,9 +89,16 @@
             "size": 20
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 12368,
+            "section": ".bss",
+            "sha256": "5341e6b2646979a70e57653007a1f310169421ec9bdd9f1a5648f75ade005af1",
+            "size": 256
+          }
+        ],
         "source": "src/audio/rssd/rssdinit.c",
-        "source_sha256": "093ce91cc4b64e838fa86c03802d7db70da681e8d0c2ad5f3fbbc9c8b4dae3a1"
+        "source_sha256": "83a711cd8d39f2db6f35134efd2d8123b9adef2e813a74f2a6a5c1ed9f3c9fc2"
       },
       {
         "fdr_filename": "rssdfunc.c",
@@ -1225,9 +1232,16 @@
             "size": 200
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 80704,
+            "section": ".bss",
+            "sha256": "b33e76357c515a25091049d146d7acf2ace055261b0fb28aff0572f8c448efb6",
+            "size": 244
+          }
+        ],
         "source": "src/audio/ssd/ssd_smpl.c",
-        "source_sha256": "b1063929633f5114952563c02c67c3b0f84d4a1bf3759b945c120745d363b155"
+        "source_sha256": "03fcca7b04fee2f5568ce5f7f3c29226b6a1296fcd5286c0a2966b6dd7a6d61c"
       },
       {
         "fdr_filename": "ssd_main.c",
@@ -2458,10 +2472,16 @@
             "section": ".rodata",
             "sha256": "5e705c311e18932fddcb1d4dc038aab9732ce8eea3c511f449ea0a2a9c0f2c7e",
             "size": 51
+          },
+          {
+            "offset": 80960,
+            "section": ".bss",
+            "sha256": "8889eb3cdd3d0ac94711b47ce78b430d8e23a7b31ecc994c56d0c3310c87674a",
+            "size": 528
           }
         ],
         "source": "src/audio/ssd/ssd_midi.c",
-        "source_sha256": "5b4e450b86bb4fc63fb4c9820ad0d7b6bb52001be2ad7c225855cb76e0b18e31"
+        "source_sha256": "488fe3c72961351c534cf3c007a0a7cbbf7ef742937cf345a59a18cafe6213bf"
       },
       {
         "fdr_filename": "ssd_dbg.c",
@@ -2530,10 +2550,16 @@
             "section": ".rodata",
             "sha256": "02d80c492266341e87e3724289180c7848031ff2c45ec1f030f30dd553b30cd1",
             "size": 172
+          },
+          {
+            "offset": 81488,
+            "section": ".bss",
+            "sha256": "de2ca1d3d1c0862b06e5e5e33aefe44a2d0290e4ef6228128a1e797e35d3457c",
+            "size": 1048
           }
         ],
         "source": "src/audio/ssd/ssd_dbg.c",
-        "source_sha256": "76e97757b696daf064b908662d27b8dd3b8195c13ec22cb8b6ef00b683437253"
+        "source_sha256": "c0ee3da61d1ddc6511339a21fec766b2925954086430dd7c5042eb4c4c3000a6"
       },
       {
         "fdr_filename": "ssd_pcm.c",
@@ -2617,10 +2643,16 @@
             "section": ".rodata",
             "sha256": "038b33e4abcc579c6ab9faf50cc13a34733e95506889e6b55cfb88c583cfaa92",
             "size": 64
+          },
+          {
+            "offset": 82544,
+            "section": ".bss",
+            "sha256": "5dcc1b5872dd9ff1c234501f1fefda01f664164e1583c3e1bb3dbea47588ab31",
+            "size": 60
           }
         ],
         "source": "src/audio/ssd/ssd_pcm.c",
-        "source_sha256": "dcd4c9bd8902ab2817b9505b85c8f42382800f9daa25901f0bd17da298d7005a"
+        "source_sha256": "63ab31c63d5522af7b64ef13be4d21582795f8df069121a4a44bc77c46d9a78f"
       },
       {
         "fdr_filename": "ssd_vag.c",
@@ -2783,9 +2815,16 @@
             "size": 104
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 82608,
+            "section": ".bss",
+            "sha256": "d489001ff88ed206b56f44bd0789a8332510f33bf40a312a7b2e5d60c3fe3e03",
+            "size": 276
+          }
+        ],
         "source": "src/audio/ssd/ssd_vag.c",
-        "source_sha256": "21a18b2578aa986e15ccf4ede5f226ef2e349c36550be7aa90502456abbaa9ce"
+        "source_sha256": "1cb3848cdea14e16265fca930ba11c6279296dfa6fc0a65a0860e32b1edd502d"
       }
     ]
   }

@@ -48,7 +48,7 @@ typedef struct {
     SamplingProcess process;
 } SamplingWork;
 
-extern SamplingWork SsdSampleWork;
+SamplingWork SsdSampleWork;
 extern void SsdCalcDirectVoiceVolume(short *, int, int);
 extern void SsdUnlinkProc(SamplingProcess *);
 extern void CpuDisableIntr(void);
