@@ -94,6 +94,13 @@ typedef struct GameLoopMovieStatePrefix {
  * this allocation touches are modeled; scriptDB's element stride (0x1C bytes,
  * evidenced by *7*4 in every CallMethod family function) is fixed by that
  * indexing arithmetic, not invented. */
+typedef struct ScriptEventDebugState {
+    int mode;
+    unsigned int flags;
+    int selected;
+} ScriptEventDebugState;
+static ScriptEventDebugState evtDebug;
+
 typedef struct ScriptDbEntry {
     u8 unmodeled_00[0]; /* +0x0: zero-length alias of the former padding member, kept for saved bodies */
     void *class_image;   /* +0x0: class database image read from the script file */
@@ -105,7 +112,10 @@ typedef struct ScriptDbEntry {
     int class_slot;      /* +0x14: class database slot the image is loaded into */
     int skip_count;      /* +0x18: class-name skip count JNI_searchClasses reported */
 } ScriptDbEntry;
-extern ScriptDbEntry scriptDB[];
+static ScriptDbEntry scriptDB[2];
+static int lightActFlags[4];
+static int heapInfo[0x22];
+static char dbgWind[0x30];
 
 /* The database pointer is at scriptDB + 8. This interior scaffold symbol
  * starts at that pointer and each entry retains the evidenced 0x1C stride. */
@@ -113,7 +123,7 @@ typedef struct ScriptDbPdbSlot {
     void *pdb;
     u8 unmodeled_04[0x1C - 4];
 } ScriptDbPdbSlot;
-extern ScriptDbPdbSlot D_004DEDE8[];
+#define D_004DEDE8 ((ScriptDbPdbSlot *)&scriptDB[0].pdb)
 
 typedef struct ScriptPdbFile {
     u8 unmodeled_00[8];
@@ -341,7 +351,7 @@ void SCRIPT_reset(void)
 extern int xglCdReadFile(const char *path, void *buf, int a, int b);
 extern void JNI_initSystem(void *heap, int size);
 extern int JNI_loadClassDB(int class_id, int value);
-extern int D_004DEDD4[];
+#define D_004DEDD4 ((int *)&evtDebug.flags)
 typedef struct ScriptInitEntry {
     char *script;
     void *lo;
@@ -472,7 +482,7 @@ extern void TWIN_initCF(void *window);
 extern void Before_Talk(void *actor);
 extern void talktoObserver(ScriptObserverTask *task);
 typedef struct ScriptDbThreadSlot { SceneThread *thread; u8 pad[0x18]; } ScriptDbThreadSlot;
-extern ScriptDbThreadSlot D_004DEDF0[];
+#define D_004DEDF0 ((ScriptDbThreadSlot *)&scriptDB[0].thread)
 
 void createTalkTask(void *actor, const char *method_name)
 {
@@ -1414,7 +1424,6 @@ typedef struct DbLightOwner {
 } DbLightOwner;
 extern ScriptActorRecord actor[64];
 extern int lightSave;
-extern int lightActFlags[];
 extern void initLight2(void);
 extern void initLight3(void);
 extern int updateLight(int mode);
@@ -1691,7 +1700,6 @@ extern int sprintf(char *buf, const char *fmt, ...);
 extern unsigned int xheap_info(int *info);
 extern void drawRect2(float m[4][4], int mode);
 extern void drawBox2(float m[4][4], int mode);
-extern int heapInfo[];
 extern unsigned int heapUsed;
 
 static void DB_memory(DbSsTask *task)
@@ -1901,7 +1909,6 @@ static void DB_scriptFileSelect(DbSfsTask *task)
 }
 
 typedef unsigned int DbWindQuad __attribute__((mode(TI)));
-extern char dbgWind[];
 extern void EXM_GetWindPara(void *para);
 extern void EXM_SetWindStruct(void *state);
 extern void EXM_ClearWindStruct(void);
@@ -2204,12 +2211,6 @@ int loadScript(ScriptDbEntry *entry_, const char *base, const char *path)
     return cls;
 }
 
-typedef struct ScriptEventDebugState {
-    int mode;
-    unsigned int flags;
-    int selected;
-} ScriptEventDebugState;
-extern ScriptEventDebugState evtDebug;
 typedef struct ScriptCallFrame {
     unsigned short program_counter;
     unsigned char unmodeled_02[2];

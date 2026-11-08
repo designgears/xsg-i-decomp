@@ -43,7 +43,31 @@ typedef struct SefBattleActorTbl {
     int count;
     unsigned char unmodeled_d94[0x0c];
 } SefBattleActorTbl;
-extern SefBattleActorTbl _battleActor[];
+typedef struct SefSavePrm {
+    Vector4 position;
+    Vector4 orientation;
+    Vector4 saved_vector;
+    int active;
+    int saved_words[5];
+    short effect_no;
+    unsigned char saved_flags;
+    unsigned char unmodeled_4b[5];
+} SefSavePrm;
+#define SEF_SAVE_PRM_COUNT 0x80
+
+static unsigned char _eftBuffer[0xD4800];
+static unsigned char _scheduler[0xAB0 * 0x80];
+static unsigned char _lineData[0x41000];
+static unsigned char _ptAlloc[0xA0810];
+static SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
+static unsigned char _battleData[0x230];
+static unsigned char _battlePrm[0x40];
+static SefBattleActorTbl _battleActor[1];
+
+extern SchedulerState *_nowScheduler;
+extern int _nowScriptAdr;
+extern int _nowParentLocal;
+extern int _sefLoadEftQue;
 
 #define SEF_LINE_DATA_RECORD_SIZE 0x820
 #define SEF_LINE_DATA_COUNT 0x80
@@ -56,7 +80,6 @@ typedef struct SefLineDataTable {
     unsigned char unmodeled_000[0x810];
     SefLineDataEntry entries[SEF_LINE_DATA_COUNT];
 } SefLineDataTable;
-extern unsigned char _lineData[];
 
 typedef struct GameLoopFlagsView {
     unsigned char unmodeled_00[0x10];
@@ -364,8 +387,6 @@ int sefSearchMapperIndex(int effect_id) {
     return sefSearchMapperIndex2(effect_id, number, category);
 }
 
-extern unsigned char _battleData[];
-extern unsigned char _ptAlloc[];
 
 /*
  * sevInitPtAllocator (main:0x002e1580): clears the whole _ptAlloc particle
@@ -850,7 +871,6 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
     }
 }
 
-extern int _nowParentLocal;
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 extern unsigned char D_00795100[];
 static inline short sefPointHasOffset(unsigned char *source)
@@ -1514,7 +1534,6 @@ static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
-extern int _nowParentLocal;
 extern void MMathSpecialVectorSub(Vector4 *destination, Vector4 *left, Vector4 *right, float scale);
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 
@@ -1693,9 +1712,6 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 #define SEF_LOCAL_OFFSET_Z       0x0f8
 #define SEF_PARENT_DIR_MATRIX    0x120
 
-extern unsigned char _battleData[];
-extern int _nowParentLocal;
-extern unsigned char _ptAlloc[];
 /* _battleData + 0x200, still owned by the scaffold, so it keeps the original
  * object's own name for the address (docs/naming.md). The two callees below
  * materialise the same address differently, which is why both spellings are
@@ -2300,7 +2316,6 @@ static void sefDestroyLocalData(unsigned char *line_data) {
     }
 }
 
-extern int _nowScriptAdr;
 extern void *scGetImmAdrImmIdx2(int script, void *table, int index);
 static inline float sefLineRandomOffset(short *range_word)
 {
@@ -3652,7 +3667,6 @@ typedef struct SefEffectDescriptor {
     unsigned short script_offset;
     short setting;
 } SefEffectDescriptor;
-extern int _nowScriptAdr;
 static inline void sefInitializeDescriptorEffect(EffectData *effect,
                                                   SefEffectDescriptor *entry,
                                                   int scheduler_index,
@@ -4674,9 +4688,6 @@ extern void scInitScript(void);
 extern void sdvInitSpecialWork(void);
 extern void sdvInitAmbient(void);
 extern void sresLoadCommonMemory(void);
-extern unsigned char _eftBuffer[];
-extern unsigned char _battlePrm[];
-extern int _sefLoadEftQue;
 
 /*
  * sefInitEffect (main:0x002e6b60): the effect subsystem's one-time
@@ -4892,7 +4903,6 @@ void sefReleaseID(int id)
 }
 
 extern void sresLoadBattleData(unsigned char *battle_prm);
-extern unsigned char _battlePrm[];
 
 /*
  * sefSetupEffect (main:0x002e6fe0): loads battle effect resources into
@@ -4921,8 +4931,6 @@ extern void scDestroyScriptAll(void);
 extern void sdvDestroyAlters(void);
 extern void sdvInitAmbient(void);
 extern void sresFreeReloaderMemory(int reload_bgm);
-extern SefBattleActorTbl _battleActor[];
-extern int _sefLoadEftQue;
 void sefKillEffect(int effect_no);
 
 /*
@@ -4998,7 +5006,6 @@ void sefLoadEffect(int effect_no, int character_id)
 }
 
 extern int srsLeaveCdRead(void);
-extern int _sefLoadEftQue;
 
 int sefCheckLoad(void)
 {
@@ -5635,16 +5642,6 @@ typedef enum SefSaveTail {
     SEF_SAVE_TAIL_NONE
 } SefSaveTail;
 
-typedef struct SefSavePrm {
-    Vector4 position;
-    Vector4 orientation;
-    Vector4 saved_vector;
-    int active;
-    int saved_words[5];
-    short effect_no;
-    unsigned char saved_flags;
-    unsigned char unmodeled_4b[5];
-} SefSavePrm;
 typedef struct SefSavedEffect {
     Vector4 saved_vector;
     unsigned char unmodeled_010[0x608];
@@ -5656,8 +5653,6 @@ typedef struct SefSavedEffect {
     unsigned char saved_flags;
     unsigned char unmodeled_9fb[0xB5];
 } SefSavedEffect;
-#define SEF_SAVE_PRM_COUNT 0x80
-extern SefSavePrm _savePrm[SEF_SAVE_PRM_COUNT];
 extern SefSavedEffect D_0065A9A0[];
 
 #ifndef offsetof

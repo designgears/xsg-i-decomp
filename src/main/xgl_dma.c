@@ -36,7 +36,7 @@ static XglDmaChannel *tbl[10] = {
 /* Pad state and the menu table live in this TU's data; their users declare them. */
 unsigned char PadData[0xD0] __attribute__((aligned(16))) = {0};
 unsigned int menutbl[0x200] = {0};
-extern XglDmaChannel *mfifo_drain;
+static XglDmaChannel *mfifo_drain;
 
 extern void FlushCache(int mode);
 extern int sceGsSyncPath(int mode, int timeout);

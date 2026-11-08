@@ -10,11 +10,9 @@ typedef struct SchedulerState SchedulerState;
 int sefIsDeadSchduler(unsigned int scheduler_index);
 
 /* The original scheduler table is an array of 0xab0-byte records. */
-extern unsigned char _scheduler[];
 
 SchedulerState *sefGetNowScheduler(void);
 
-extern SchedulerState *_nowScheduler;
 
 /*
  * SchedulerState's flags word, the only field of the 0xab0-byte record this
@@ -147,7 +145,6 @@ extern const float D_004D8318;
 
 /* sefGetLineAdr (main:0x002e7ea0): the line-effect table, scaffold-owned like
  * _scheduler/_ptAlloc/_battleData above; only its pointer accessor is C. */
-extern unsigned char _lineData[];
 
 /*
  * sefGetDmgNull (main:0x002e7e40): 0x0079411C is _battleData + SEF_BATTLE_PHASE
