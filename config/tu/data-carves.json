@@ -10590,11 +10590,11 @@
     {
      "range": [
       "0x004228f0",
-      "0x00422922"
+      "0x0043b450"
      ],
      "generated": [
       "0x004228f0",
-      "0x00422922"
+      "0x0043b450"
      ],
      "generated_by": [
       "sdvDrawSpecial",
@@ -10605,28 +10605,25 @@
      "c_owned_symbols": [
       "_sdvMapRgb",
       "_sdvAmbient",
-      "blksiz_2"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sdv.o"
-     }
-    },
-    {
-     "range": [
-      "0x00422940",
-      "0x00426540"
-     ],
-     "generated": [
-      "0x00422940",
-      "0x00426540"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "blksiz_2",
+      "D_00422922",
       "orgData",
-      "plChaData"
+      "plChaData",
+      "itmBox",
+      "D_0042673E",
+      "wpnBox",
+      "D_0042693E",
+      "bltBox",
+      "D_00426B3E",
+      "accBox",
+      "D_00426D3E",
+      "evtBox",
+      "D_00426F3E",
+      "batDatBuf",
+      "thinkBuf",
+      "mefCamParams",
+      "mdstr",
+      "instructionCodeName"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -10693,21 +10690,24 @@
     {
      "range": [
       "0x004cc8b0",
-      "0x004cc8d8"
+      "0x004cc990"
      ],
      "generated": [
       "0x004cc8b0",
-      "0x004cc8d4"
+      "0x004cc990"
      ],
      "generated_by": [
+      "sdvDrawAlter",
       "sdvDrawSpecial"
      ],
      "c_owned_symbols": [
-      "jtbl_004CC8B0"
+      "jtbl_004CC8B0",
+      "alphaTbl_004CC8D8",
+      "stqTbl_004CC900",
+      "McMathUnitVector",
+      "McMathUnitMatrix"
      ],
-     "also_referenced_by_c": [
-      "alphaTbl_004CC8D8"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
