@@ -304,12 +304,13 @@ def main():
                 # is still reported below, and the whole-file gate compares the bytes.
                 if sec == ".text" and 0 < gap < align_of(hi, 16) and original_zero_fill(orig, sec, c_end, hi):
                     piece["zero_fill_16"] = True
-                elif sec in (".bss", ".sbss") and 0 < gap < align_of(hi, 128) and not any(
-                        c_end <= s.value < hi for s in inside):
-                    # uninitialised storage: the next object is aligned further
-                    # (e.g. a 64-byte DMA buffer); no original object starts in
-                    # the gap, so it is the linker's alignment fill
-                    piece["bss_alignment_fill"] = gap
+                elif 0 < gap < align_of(hi, 128) and not any(c_end <= s.value < hi for s in inside) and (
+                        sec in (".bss", ".sbss") or original_zero_fill(orig, sec, c_end, hi)):
+                    # the next object is aligned further (a 64-byte DMA buffer or
+                    # table); no original object starts in the gap and (for
+                    # initialised data) its original bytes are zero: the
+                    # linker's alignment fill
+                    piece["alignment_fill"] = gap
                 else:
                     problems.append(dict(kind="C piece gap is not alignment padding", tu=n, section=sec, **piece))
             for s in inside:
