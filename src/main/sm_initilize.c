@@ -21,9 +21,9 @@ typedef struct SmMemInfo {
 #define MC_TAG_USED 0x5678
 #define SM_ALLOC_ALIGNMENT 2048U
 
-extern MemCell *pmcHead;
+static MemCell *pmcHead;
 
-extern unsigned int nMemCell;
+static unsigned int nMemCell;
 
 static void smInitMemInfo(unsigned char *memory_info)
 {
@@ -40,8 +40,7 @@ static void smInitMemInfo(unsigned char *memory_info)
 
 static void smInitMemInfo(unsigned char *info);
 
-extern unsigned int nMemCell;
-extern unsigned char stMemInfo[];
+static unsigned char stMemInfo[0x20];
 
 void smInitilize(MemCell *pool, unsigned int poolSize)
 {

@@ -190,7 +190,7 @@ typedef struct { int v; } TyaAlpha;
 
 extern int transparency;
 
-extern char outpath[256];
+static char outpath[256];
 
 
 static u8 BmpHeader[0x36] = {
