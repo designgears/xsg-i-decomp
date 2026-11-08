@@ -849,8 +849,6 @@ typedef struct SoundStreamMainState {
     unsigned char segment_index;
     int playback_buffer;
 } SoundStreamMainState;
-/* anim.4 stays scaffold: the original reaches it only through an unsymbolized gp offset. */
-extern char anim_4_004DC358[4];
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 void SsdGetVagStreamStatusAll(void);
 int SsdGetResultParam(int *param);
@@ -861,13 +859,14 @@ int xglSoundStreamMain(void)
 {
     SoundStreamMainState *state = (SoundStreamMainState *) &SoundWork.effect_banks[16];
     static unsigned char count_3 __asm__("count.3");
+    static char anim[4] __asm__("anim.4") = { '-', 0x7F, '|', '/' };
     int param[8];
     int result;
     int ret;
 
     if (state->type != 0) {
         count_3++;
-        xglFontDebugPrintf(0xF4, 8, "%c", anim_4_004DC358[(count_3 >> 3) & 3]);
+        xglFontDebugPrintf(0xF4, 8, "%c", anim[(count_3 >> 3) & 3]);
     }
     ret = -1;
     switch (state->type) {

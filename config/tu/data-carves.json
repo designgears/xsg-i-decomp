@@ -838,34 +838,10 @@
     {
      "range": [
       "0x004a8130",
-      "0x004a813c"
-     ],
-     "generated": [
-      "0x004a8130",
-      "0x004a813c"
-     ],
-     "generated_by": [
-      "xglSoundLoadEffect",
-      "xglSoundLoadRequestSmd",
-      "xglSoundLoadSwd"
-     ],
-     "c_owned_symbols": [
-      "SoundDataPath"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/xgl_sound.o"
-     }
-    },
-    {
-     "range": [
-      "0x004a8140",
       "0x004a89e4"
      ],
      "generated": [
-      "0x004a8140",
+      "0x004a8130",
       "0x004a89e4"
      ],
      "generated_by": [
@@ -881,6 +857,9 @@
       "xglSoundEffectStopDirect",
       "xglSoundEffectStopID",
       "xglSoundInitial",
+      "xglSoundLoadEffect",
+      "xglSoundLoadRequestSmd",
+      "xglSoundLoadSwd",
       "xglSoundReset",
       "xglSoundSendSed",
       "xglSoundSendSmd2",
@@ -895,6 +874,8 @@
       "xglSoundStreamStop"
      ],
      "c_owned_symbols": [
+      "SoundDataPath",
+      "D_004A813C",
       "SoundWork"
      ],
      "also_referenced_by_c": [],
@@ -936,86 +917,29 @@
     {
      "range": [
       "0x004dc330",
-      "0x004dc345"
+      "0x004dc368"
      ],
      "generated": [
       "0x004dc330",
-      "0x004dc345"
+      "0x004dc363"
      ],
      "generated_by": [
       "xglSoundLoadEffect",
       "xglSoundLoadRequestSmd",
-      "xglSoundLoadSwd"
+      "xglSoundLoadSwd",
+      "xglSoundStreamMain"
      ],
      "c_owned_symbols": [
       "SoundEffectPath",
       "SoundSequencePath",
-      "ext_0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/xgl_sound.o"
-     }
-    },
-    {
-     "range": [
-      "0x004dc348",
-      "0x004dc34d"
-     ],
-     "generated": [
-      "0x004dc348",
-      "0x004dc34d"
-     ],
-     "generated_by": [
-      "xglSoundLoadEffect"
-     ],
-     "c_owned_symbols": [
-      "ext_1"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/xgl_sound.o"
-     }
-    },
-    {
-     "range": [
-      "0x004dc350",
-      "0x004dc355"
-     ],
-     "generated": [
-      "0x004dc350",
-      "0x004dc355"
-     ],
-     "generated_by": [
-      "xglSoundLoadRequestSmd"
-     ],
-     "c_owned_symbols": [
-      "ext_2_004DC350"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/xgl_sound.o"
-     }
-    },
-    {
-     "range": [
-      "0x004dc360",
-      "0x004dc368"
-     ],
-     "generated": [
-      "0x004dc360",
-      "0x004dc363"
-     ],
-     "generated_by": [
-      "xglSoundStreamMain"
-     ],
-     "c_owned_symbols": [
+      "ext_0",
+      "D_004DC345",
+      "ext_1",
+      "D_004DC34D",
+      "ext_2_004DC350",
+      "D_004DC355",
+      "anim_4_004DC358",
+      "D_004DC35C",
       "D_004DC360"
      ],
      "also_referenced_by_c": [],

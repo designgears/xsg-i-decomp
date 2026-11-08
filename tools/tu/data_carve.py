@@ -1268,7 +1268,12 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
         gen, also = set(), set()
         for i, it in enumerate(items):
             labels = set(it['labels'])
-            if labels & names_def:
+            # GCC names a function-local static `name.N`; splat spells that
+            # label `name_N`, address-suffixed when duplicated (`anim_4_004DC358`).
+            # A C-defined local static owns its item even when the original
+            # code reaches it only through an unnamed gp offset.
+            labels |= {re.sub(r'_[0-9A-F]{8}$', '', lab) for lab in labels}
+            if labels & (names_def | {n.replace('.', '_') for n in names_def if '.' in n}):
                 gen.add(i)
             elif labels & c_refs:
                 (also if labels & extern else gen).add(i)
