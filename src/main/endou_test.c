@@ -210,29 +210,17 @@ typedef struct EndouClearEnvironment {
 
 extern EndouClearEnvironment ClearEnv;
 
-extern const char D_004C2440[];
 
-extern const char D_004C2458[];
 
-extern const char D_004C2468[];
 
-extern const char D_004C2480[];
 
-extern const char D_004C2498[];
 
-extern const char D_004C24B0[];
 
-extern const char D_004C24C8[];
 
-extern const char D_004C24E0[];
 
-extern const char D_004C24F8[];
 
-extern const char D_004C2510[];
 
-extern const char D_004C2528[];
 
-extern const char D_004C2540[];
 
 extern const char D_004DA660[];
 
@@ -319,7 +307,6 @@ extern const char *msg_45[5];
 
 extern const char text00_46[];
 
-extern const char D_004C2C70[];
 
 #include "main/control_entry.h"
 
@@ -327,11 +314,8 @@ extern const char D_004C2C70[];
 
 #include "main/xgl_font.h"
 
-extern const char D_004C2CF0[];
 
-extern const char D_004C2D08[];
 
-extern const char D_004C2D18[];
 
 extern void xglFontPrintExtFunc(unsigned int mask,
                                 void (*callback)(ETestContext *),
@@ -360,7 +344,6 @@ extern UmnEventTextRecord *UmnEventTextNextGet(int index);
 
 extern void eMessageModeChange(void *message, u8 mode);
 
-extern const char D_004C2558[];
 
 typedef struct UmnMailDisplayParams {
     int mode;
@@ -383,7 +366,6 @@ extern void tyaUmlDispParamReset(UmnMailDisplayParams *params, int mode);
 
 extern void tyaUmlDispMain(UmnMailDisplayParams *params);
 
-extern const char D_004C2CD0[];
 
 typedef struct JpegTestDecodeRequest {
     void *source;
@@ -473,62 +455,62 @@ void EndouTest(void)
         }
 
         xglFontDebugPrintf(0, 0, D_004DA660);
-        xglFontDebugPrintf(0, 0x10, D_004C2440);
+        xglFontDebugPrintf(0, 0x10, "\013\300\266\273\273\262\350\314\314\245\306\245\271\245\310\241\241\241\241\242\244");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x10) != 0) {
             SeisanTest();
         }
 
-        xglFontDebugPrintf(0, 0x20, D_004C2458);
+        xglFontDebugPrintf(0, 0x20, "\013\245\306\245\255\245\271\245\310\241\241\242\242");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_28 & 0x80) != 0) {
             TextTest();
         }
 
-        xglFontDebugPrintf(0, 0x30, D_004C2468);
+        xglFontDebugPrintf(0, 0x30, "\013\245\341\245\303\245\273\241\274\245\270\245\306\245\271\245\310\241\241\241\337");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x40) != 0) {
             eMessageTest();
         }
 
-        xglFontDebugPrintf(0, 0x40, D_004C2480);
+        xglFontDebugPrintf(0, 0x40, "\013\244\244\244\355\244\244\244\355\245\306\245\271\245\310\241\241\241\241\241\373");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x20) != 0) {
             eNumberTest();
         }
 
-        xglFontDebugPrintf(0, 0x50, D_004C2498);
+        xglFontDebugPrintf(0, 0x50, "\013\245\342\245\307\245\353\245\306\245\271\245\310\241\241\241\241\243\314\243\261");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x4) != 0) {
             eModelTest();
         }
 
-        xglFontDebugPrintf(0, 0x60, D_004C24B0);
+        xglFontDebugPrintf(0, 0x60, "\013\245\355\241\274\245\311\245\306\245\271\245\310\241\241\241\241\243\314\243\262");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x1) != 0) {
             MenuFileMain(1);
         }
 
-        xglFontDebugPrintf(0, 0x70, D_004C24C8);
+        xglFontDebugPrintf(0, 0x70, "\013\245\306\245\257\245\271\245\301\245\343\245\306\245\271\245\310\243\322\243\261");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x8) != 0) {
             TexturTest();
         }
 
-        xglFontDebugPrintf(0, 0x80, D_004C24E0);
+        xglFontDebugPrintf(0, 0x80, "\013\243\312\243\320\243\305\243\307\245\306\245\271\245\310\241\241\243\322\243\262");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x2) != 0) {
             JpegTest();
         }
 
-        xglFontDebugPrintf(0, 0x90, D_004C24F8);
+        xglFontDebugPrintf(0, 0x90, "\013\245\320\245\310\245\353\245\246\245\243\245\363\245\311\241\274\241\241\242\254");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x1000) != 0) {
             BattleWindowTest();
         }
 
-        xglFontDebugPrintf(0, 0xa0, D_004C2510);
+        xglFontDebugPrintf(0, 0xa0, "\013\245\273\241\274\245\326\245\306\245\271\245\310\241\241\241\241\241\241\242\255");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x4000) != 0) {
             MenuFileMain(0);
         }
 
-        xglFontDebugPrintf(0, 0xb0, D_004C2528);
+        xglFontDebugPrintf(0, 0xb0, "\013\245\342\245\307\245\353\245\306\245\271\245\310\241\241\241\241\241\241\242\252");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x2000) != 0) {
             ModelTest();
         }
 
-        xglFontDebugPrintf(0, 0xc0, D_004C2540);
+        xglFontDebugPrintf(0, 0xc0, "\013\245\267\245\347\245\303\245\327\245\306\245\271\245\310\241\241\241\241\242\253");
         if ((ENDOU_PAD_INPUT->buttons.halves.half_2a & 0x8000) != 0) {
             ShopTest();
         }
@@ -560,7 +542,7 @@ void TextTest(void)
     message.page_state = 2;
     eMessageModeChange(&message, 0x22);
 
-    while (xglFontDebugPrintf(0, 0x10, D_004C2558),
+    while (xglFontDebugPrintf(0, 0x10, "\013\245\306\245\255\245\271\245\310\245\306\245\271\245\310"),
            (PadData.buttons.button_state & 0x08000100U) != 0x08000100U) {
         eMessageMain(&message);
         if ((PadData.buttons.input.pressed & 8U) != 0 &&
@@ -652,10 +634,8 @@ typedef struct TexturTestDrawEnvironment {
 extern void func_A22628(void);
 extern int dataMoneyBoxInc(int amount);
 extern void MenuShopMain(int menu_selection);
-extern const char D_004C2568[], D_004C2588[], D_004C2598[], D_004C25B0[], D_004C25C8[];
 extern const char D_004DA668[], D_004DA670[], D_004DA678[], D_004DA680[], D_004DA688[];
 extern const char D_004DA690[], D_004DA698[], D_004DA6A0[], D_004DA6A8[], D_004DA6B0[];
-extern const char D_004DA6B8[];
 static inline void endouShopHeading(int y, const char *format, int shop_number)
 {
     xglFontDebugPrintf(0, y, format, shop_number);
@@ -678,7 +658,7 @@ void ShopTest(void)
     ACT_init();
 
     shop_file = (ShopFile *)(((u32)WorkEnd + 0x7fU) & 0xffffff80U);
-    WorkEnd = (u8 *)shop_file + xglCdReadFile(D_004C2568, shop_file, 0, 1);
+    WorkEnd = (u8 *)shop_file + xglCdReadFile("data\\endou\\shop\\shopdata.bin", shop_file, 0, 1);
     PartyFriendOn(3);
     PartyFriendOn(2);
     menu_open = 0;
@@ -692,7 +672,7 @@ void ShopTest(void)
     xglRenderClearFrame();
 
     for (;;) {
-        xglFontDebugPrintf(0, 0x10, D_004C2588);
+        xglFontDebugPrintf(0, 0x10, "\013\245\267\245\347\245\303\245\327\245\306\245\271\245\310");
         if ((PadData.buttons.button_state & 0x08000100U) == 0x08000100U)
             break;
         pressed = PadData.buttons.input.pressed;
@@ -714,9 +694,9 @@ void ShopTest(void)
                 menu_selection = menu_selection == 0x14 ? 1 : menu_selection + 1;
             if ((pressed & 0x20) != 0)
                 menu_open = 1;
-            xglFontDebugPrintf(0, 0x20, D_004C2598);
-            xglFontDebugPrintf(0x80, 0x20, D_004C25B0);
-            endouShopHeading(0x30, D_004C25C8, menu_selection);
+            xglFontDebugPrintf(0, 0x20, "\013\245\312\245\363\245\320\241\274\245\301\245\247\245\363\245\270\241\241\242\254\242\255");
+            xglFontDebugPrintf(0x80, 0x20, "\013\274\302\271\324\241\241\241\373\241\241\241\241\275\252\316\273\241\241\241\337");
+            endouShopHeading(0x30, "\013ShopNo = %2d", menu_selection);
 
             {
             u16 (*const page)[0xb8] =
@@ -741,39 +721,39 @@ void ShopTest(void)
 
             do {
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x40, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x40, "%3d",
                                    *entry_values);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x50, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x50, "%3d",
                                    neighbor_values[-0x78]);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x60, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x60, "%3d",
                                    entry_values[0x28]);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x70, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x70, "%3d",
                                    neighbor_values[-0x50]);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x80, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x80, "%3d",
                                    entry_values[0x50]);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0x90, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0x90, "%3d",
                                    neighbor_values[-0x28]);
                 ab_column_offset = 6 * 20;
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0xa0, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0xa0, "%3d",
                                    entry_values[ab_column_offset]);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0xb0, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0xb0, "%3d",
                                    *neighbor_values++);
                 xglFontDebugPrintf((row_index % 10) * 0x18 + 0x10,
-                                   (row_index / 10) * 8 + 0xc0, D_004DA6B8,
+                                   (row_index / 10) * 8 + 0xc0, "%3d",
                                    (entry_values++)[0xa0]);
             } while (++row_index < 0x14);
             for (row_index = 0; row_index < 4; row_index++) {
                 int x = (row_index % 10) * 0x18 + 0x10;
                 int y = (row_index / 10) * 8;
 
-                xglFontDebugPrintf(x, y + 0xd0, D_004DA6B8,
+                xglFontDebugPrintf(x, y + 0xd0, "%3d",
                                    extra_values[0xb0 + row_index]);
             }
             }
@@ -916,11 +896,9 @@ extern void xglMatrixStackUnit(void);
 extern void xglRotTransPersN(void *destination, Matrix4 *matrix, const void *points, int count, int cameraId);
 extern const EndouTestLighting D_004C25E0;
 extern const char D_004C2658[];
-extern const char D_004C26F0[];
 extern const EndouDwordVector4 D_004C2720[4];
 extern const char D_004DA6C0[8];
 extern const char D_004DA6C8[8];
-extern const char D_004DA6D0[];
 extern unsigned char D_004DA6E0[];
 extern unsigned char D_004DA6E8[];
 extern float ang_0[4];
@@ -940,11 +918,11 @@ extern EndouModelLinePoint line12_9[7];
 extern EndouModelBackQuad bsp_12;
 #define modelTestLighting D_004C25E0
 #define modelTestFpkName D_004C2658
-#define modelTestMotionName D_004C26F0
+#define modelTestMotionName "newd\\motion\\chaos_cf.fpk"
 #define modelTestQuadWordTable D_004C2720
 #define modelTestLexExtension D_004DA6C0
 #define modelTestXtxExtension D_004DA6C8
-#define modelTestJntExtension D_004DA6D0
+#define modelTestJntExtension ".jnt"
 #define modelTestColumnAlphaTable D_004DA6E0
 #define modelTestRowAlphaTable D_004DA6E8
 #define GAME_RESOURCE_BASE_ADDRESS 0x07000000
@@ -1465,8 +1443,6 @@ extern char text_17[];
 extern char tag_20[];
 extern void *msg_19[];
 extern char D_004DA720[];
-extern const char D_004C2A70[];
-extern const char D_004C2A88[];
 extern const char D_004DA730[];
 extern int count_18;
 typedef struct EndouBwArg0 {
@@ -1534,7 +1510,7 @@ void BattleWindowTest(void)
     if ((PadData.buttons.button_state & 0x08000100) != 0x08000100) {
         mp = msg_19;
         do {
-            xglFontDebugPrintf(0, 0, D_004C2A70);
+            xglFontDebugPrintf(0, 0, "\013\245\320\245\310\245\353\245\246\245\243\245\363\245\311\241\274\245\306\245\271\245\310");
             if (PadData.buttons.input.pressed & 0x10) {
                 s30.a = 0x10;
                 s30.c = 0xFFFFFD;
@@ -1561,7 +1537,7 @@ void BattleWindowTest(void)
                 s50.l = 5;
                 s50.m = 0xA;
                 s50.c = 0xFFFFF0;
-                s50.d = D_004C2A88;
+                s50.d = "\243\305\245\263\245\363\245\311\245\353\245\321\245\265\241\274";
                 eBattleWinOpen3(&s50);
             }
             if (PadData.buttons.input.pressed & 0x80) {
@@ -1834,8 +1810,7 @@ extern void xglClockRead(XglClock *clock);
 extern void xglStudioChange(int studio_index);
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern void xglStudioGetCamera(StudioCamera **camera_out, int camera_index);
-extern const char D_004C2AD8[16];
-#define eNumberTestLabel D_004C2AD8
+#define eNumberTestLabel "\013\244\244\244\355\244\244\244\355\245\306\245\271\245\310"
 extern char moji_26[27];
 extern char moji2_27[27];
 extern EndouPrintPoint line_34[6];
@@ -2319,7 +2294,7 @@ void eMessageTest(void)
 
     if ((PadData.buttons.button_state & 0x08000100U) != 0x08000100U) {
         do {
-            xglFontDebugPrintf(0, 0, D_004C2C70);
+            xglFontDebugPrintf(0, 0, "\013\245\341\245\303\245\273\241\274\245\270\245\306\245\271\245\310");
             if ((PadData.buttons.input.pressed & 0x20U) != 0) {
                 eMessageNextPage(&current, 0);
             }
@@ -2408,9 +2383,6 @@ extern void xglRenderClearDepth(void);
 extern TexturTestTexEnv eNumberTexEnv_48;
 extern TexturTestEnv TestEnv_52;
 extern int x_53;
-extern const char D_004C2C88[];
-extern const char D_004C2CA0[];
-extern const char D_004C2CB8[];
 static inline void TexturTestEnvSend(XglPacket *packet)
 {
     int x;
@@ -2442,13 +2414,13 @@ void TexturTest(void)
 
     save = WorkEnd;
     data = (u8 *)(((int)WorkEnd + 0xF) & ~0xF);
-    size = xglCdReadFile(D_004C2C88, data, 0, 0);
+    size = xglCdReadFile("newd\\endou\\menu01.xtx", data, 0, 0);
     if (size < 0) {
         return;
     }
     WorkEnd = data + size;
     data2 = (u8 *)(((int)WorkEnd + 0xF) & ~0xF);
-    size = xglCdReadFile(D_004C2CA0, data2, 0, 0);
+    size = xglCdReadFile("data\\endou\\menu01.xtx", data2, 0, 0);
     if (size < 0) {
         return;
     }
@@ -2456,7 +2428,7 @@ void TexturTest(void)
     xglRenderClearDepth();
     for (;;) {
         BgTest();
-        xglFontDebugPrintf(0, 0, D_004C2CB8);
+        xglFontDebugPrintf(0, 0, "\013\245\306\245\257\245\271\245\301\245\343\241\274\245\306\245\271\245\310");
         if ((PadData.buttons.button_state & 0x08000100U) == 0x08000100U) {
             break;
         }
@@ -2521,7 +2493,7 @@ void UmnMailDispTest(void)
     windows[1].view_height = 0x180;
 
     while ((PadData.buttons.button_state & 0x08000100U) != 0x08000100U) {
-        xglFontDebugPrintf(0, 0, D_004C2CD0);
+        xglFontDebugPrintf(0, 0, "\013\243\325\241\245\243\315\241\245\243\316\241\245\243\315\243\341\243\351\243\354\243\304\243\351\243\363\243\360");
         if ((PadData.buttons.input.repeat & 0x1000U) != 0) {
             windows[0].scroll_y -= 8;
         }
@@ -2576,13 +2548,13 @@ void ReLoadTest(void)
     xglSleep();
     test_data = (void *)(((u32)WorkEnd + 0x0fU) & 0xfffffff0U);
     WorkEnd = (u8 *)test_data +
-        xglCdReadFile(D_004C2CF0, test_data, 0, 0);
+        xglCdReadFile("data\\endou\\floor.xtx", test_data, 0, 0);
 
     while ((PadData.buttons.button_state & 0x08000100U) != 0x08000100U) {
-        xglFontDebugPrintf(0, 0, D_004C2D08);
-        xglFontPrint(0x40, 0x28, 0x00ffffff, D_004C2D18);
+        xglFontDebugPrintf(0, 0, "\013\245\352\245\355\241\274\245\311\245\306\245\271\245\310");
+        xglFontPrint(0x40, 0x28, 0x00ffffff, "\264\301\273\372\244\316\245\306\245\271\245\310\243\260\243\261\243\262\243\263\243\301\243\302\243\303\243\304");
         xglFontPrintExtFunc(0x01ffffffU, e_test, 0);
-        xglFontPrint(0x40, 0x48, 0x02ffffff, D_004C2D18);
+        xglFontPrint(0x40, 0x48, 0x02ffffff, "\264\301\273\372\244\316\245\306\245\271\245\310\243\260\243\261\243\262\243\263\243\301\243\302\243\303\243\304");
         xglSleep();
     }
 }

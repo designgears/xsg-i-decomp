@@ -7780,27 +7780,26 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c2650",
-      "0x004c2658"
+      "0x004c2440",
+      "0x004c25e0"
      ],
      "generated": [
-      "0x004c2650",
-      "0x004c2658"
+      "0x004c2440",
+      "0x004c25d8"
      ],
      "generated_by": [
-      "ModelTest"
+      "EndouTest",
+      "ShopTest",
+      "TextTest"
      ],
      "c_owned_symbols": [
-      "D_004C2650"
-     ],
-     "also_referenced_by_c": [
       "D_004C2440",
       "D_004C2458",
       "D_004C2468",
@@ -7818,30 +7817,55 @@
       "D_004C2588",
       "D_004C2598",
       "D_004C25B0",
-      "D_004C25C8",
-      "D_004C25E0",
-      "D_004C2658",
-      "D_004C26F0"
+      "D_004C25C8"
+     ],
+     "also_referenced_by_c": [
+      "D_004C25E0"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     },
     {
      "range": [
-      "0x004c2710",
+      "0x004c2650",
+      "0x004c2658"
+     ],
+     "generated": [
+      "0x004c2650",
+      "0x004c2658"
+     ],
+     "generated_by": [
+      "ModelTest"
+     ],
+     "c_owned_symbols": [
+      "D_004C2650"
+     ],
+     "also_referenced_by_c": [
+      "D_004C2658"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c26f0",
       "0x004c2720"
      ],
      "generated": [
-      "0x004c2710",
+      "0x004c26f0",
       "0x004c2720"
      ],
      "generated_by": [
       "ModelTest"
      ],
      "c_owned_symbols": [
+      "D_004C26F0",
       "D_004C2710"
      ],
      "also_referenced_by_c": [
@@ -7850,7 +7874,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     },
     {
@@ -7869,33 +7893,76 @@
       "D_004C27A0",
       "D_004C27A8"
      ],
-     "also_referenced_by_c": [
-      "D_004C2A70",
-      "D_004C2A88",
-      "D_004C2AD8"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     },
     {
      "range": [
-      "0x004c2ae8",
+      "0x004c2a70",
+      "0x004c2aa0"
+     ],
+     "generated": [
+      "0x004c2a70",
+      "0x004c2aa0"
+     ],
+     "generated_by": [
+      "BattleWindowTest"
+     ],
+     "c_owned_symbols": [
+      "D_004C2A70",
+      "D_004C2A88"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c2ad8",
       "0x004c2af8"
      ],
      "generated": [
-      "0x004c2ae8",
+      "0x004c2ad8",
       "0x004c2af8"
      ],
      "generated_by": [
-      "eModelTest"
+      "eModelTest",
+      "eNumberTest"
      ],
      "c_owned_symbols": [
+      "D_004C2AD8",
       "D_004C2AE8"
      ],
-     "also_referenced_by_c": [
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c2c70",
+      "0x004c2d38"
+     ],
+     "generated": [
+      "0x004c2c70",
+      "0x004c2d38"
+     ],
+     "generated_by": [
+      "ReLoadTest",
+      "TexturTest",
+      "UmnMailDispTest",
+      "eMessageTest"
+     ],
+     "c_owned_symbols": [
       "D_004C2C70",
       "D_004C2C88",
       "D_004C2CA0",
@@ -7903,14 +7970,16 @@
       "D_004C2CD0",
       "D_004C2CF0",
       "D_004C2D08",
-      "D_004C2D18",
+      "D_004C2D18"
+     ],
+     "also_referenced_by_c": [
       "not_found_format",
       "read_error_format"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     },
     {
@@ -7950,7 +8019,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
      }
     },
     {
@@ -7972,7 +8041,86 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/endou_test.o"
+      "object": "build/main/build/c/endou_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da6b8",
+      "0x004da6c0"
+     ],
+     "generated": [
+      "0x004da6b8",
+      "0x004da6c0"
+     ],
+     "generated_by": [
+      "ShopTest"
+     ],
+     "c_owned_symbols": [
+      "D_004DA6B8"
+     ],
+     "also_referenced_by_c": [
+      "D_004DA668",
+      "D_004DA670",
+      "D_004DA678",
+      "D_004DA680",
+      "D_004DA688",
+      "D_004DA690",
+      "D_004DA698",
+      "D_004DA6A0",
+      "D_004DA6A8",
+      "D_004DA6B0",
+      "D_004DA6C0",
+      "D_004DA6C8"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/endou_test.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da6d0",
+      "0x004da6d8"
+     ],
+     "generated": [
+      "0x004da6d0",
+      "0x004da6d5"
+     ],
+     "generated_by": [
+      "ModelTest"
+     ],
+     "c_owned_symbols": [
+      "D_004DA6D0"
+     ],
+     "also_referenced_by_c": [
+      "pipo_2",
+      "D_004DA6E0",
+      "D_004DA6E8",
+      "time_10",
+      "no_13",
+      "D_004DA720",
+      "count_18",
+      "D_004DA730",
+      "time_37",
+      "x_53",
+      "x_71",
+      "Select_74",
+      "D_004DA768",
+      "Select_76",
+      "Select_78",
+      "Select_80",
+      "Select_82",
+      "TopMode_86",
+      "test_data"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/endou_test.o"
      }
     }
    ]
