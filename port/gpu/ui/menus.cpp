@@ -493,7 +493,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_TAG: {   // title letters; 0x03 n advances n pixels
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
-            const float fs = 15.0f * k;
+            const float fs = 14.0f * k;
+            ImFont* const lf = UiFont(kFontLabel, font);   // the original's wide small caps, pale teal
+            const ImU32 kLabelCol = IM_COL32(168, 218, 220, 255);
             struct Seg { std::string t; float dx; };
             std::vector<Seg> segs(1);
             float width = 0;
@@ -504,14 +506,13 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     i++;
                 } else segs.back().t += char(c);
             }
-            for (const Seg& g : segs) width += g.dx + font->CalcTextSizeA(fs, 1e9f, 0, g.t.c_str()).x;
+            for (const Seg& g : segs) width += g.dx + SmallCaps(dl, lf, fs, ImVec2(0, 0), 0, Decode(g.t.c_str()).c_str(), 0, false);
             ImVec2 p = P(x, y + 1);
             if (o.w) p.x -= width;
             for (const Seg& g : segs) {
                 p.x += g.dx;
                 const std::string u = Decode(g.t.c_str());
-                HaloText(dl, font, fs, p, col::kText, u.c_str(), tw);
-                p.x += font->CalcTextSizeA(fs, 1e9f, 0, u.c_str()).x;
+                p.x += SmallCaps(dl, lf, fs, p, kLabelCol, u.c_str(), tw);
             }
             break;
         }
@@ -531,12 +532,21 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float fs = ghgt * 1.12f * k;
             const ImVec2 sz = font->CalcTextSizeA(fs, 1e9f, 0, buf);
             const ImVec2 c0 = P(px, y), c1 = P(px + gwid * float(digits), y + ghgt);
-            // right-aligned numbers hug their span's end, the others its start (no stray gaps)
-            const float nx = (o.v & 0x10) ? c1.x - sz.x : c0.x + (c1.x - c0.x - sz.x) * 0.15f;
-            HaloText(dl, font, fs, ImVec2(nx, c1.y - fs * 0.95f), Ps2(o.rgba) | 0xff000000u, buf, tw);
+            {   // the original's square digits (Orbitron), outlined; width fitted to the game's digit span
+                ImFont* const nf = UiFont(kFontNumber, font);
+                float nfs = fs * 0.98f;
+                const float nw = nf->CalcTextSizeA(nfs, 1e9f, 0, buf).x, span = c1.x - c0.x;
+                if (nw > span * 1.02f) nfs *= span * 1.02f / nw;
+                const ImVec2 nsz = nf->CalcTextSizeA(nfs, 1e9f, 0, buf);
+                const float nx2 = (o.v & 0x10) ? c1.x - nsz.x : c0.x;
+                ImU32 nc = Ps2(o.rgba) | 0xff000000u;
+                if (((nc & 0xff) > 0xe0) && (((nc >> 8) & 0xff) > 0xe0)) nc = IM_COL32(236, 240, 232, 255);   // white -> the original's warm white
+                OutlineText(dl, nf, nfs, ImVec2(nx2, c1.y - nfs * 0.92f), nc, buf, tw);
+            }
             break;
         }
         case GPU_KG_TEXT: {
+            ImFont* const tfont = UiFont(kFontBody, font);   // Exo 2, the original's clean wide sans
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
             // proportions: when the game measured the string (o.dw), the widest line takes the same width
             float fs = 18.0f * k;
@@ -547,14 +557,14 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 std::string line;
                 for (int q = 0; q <= o.u; ++q) {
                     const unsigned char c = q < o.u ? static_cast<unsigned char>(s[q]) : '\n';
-                    if (c == '\n') { widest = std::max(widest, RichTextWidth(font, fs, Decode(line.c_str()).c_str())); line.clear(); }
+                    if (c == '\n') { widest = std::max(widest, RichTextWidth(tfont, fs, Decode(line.c_str()).c_str())); line.clear(); }
                     else if (c == 1 || c == 4 || c == 5) q += c == 1 ? 3 : 2;
                     else if (c == 2) q += 1;
                     else line += char(c);
                 }
                 if (widest > 0) fs *= std::clamp(float(o.dw) * kx / widest, 0.6f, 1.6f);
             }
-            DrawText(dl, font, s, o.u, P(x, y + 2), fs, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
+            DrawText(dl, tfont, s, o.u, P(x, y + 2), fs, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
                 for (uint32_t j = 0; j < m.nops; ++j) {
                     const GpuUiKgOp& ic = m.op[j];
                     if (ic.type != GPU_KG_ART || ic.text[0] != 1 || ic.text[1] != slot) continue;

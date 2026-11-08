@@ -6,6 +6,8 @@
 #include <unordered_map>
 
 namespace xsgui {
+
+ImFont* g_ui_font[kFontCount];
 namespace {
 double g_now, g_dt = 1 / 60.0;
 std::unordered_map<uint64_t, AnimState> g_anim;
@@ -145,6 +147,33 @@ void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, con
     dl->AddText(font, size, ImVec2(p.x + o, p.y + o), h, s);
     dl->AddText(font, size, ImVec2(p.x - o * 0.5f, p.y + o * 0.5f), IM_COL32(4, 4, 20, int(70 * t)), s);
     dl->AddText(font, size, p, Alpha(col, t), s);
+}
+
+void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
+    const float o = std::max(1.0f, size * 0.06f);
+    const ImU32 oc = IM_COL32(4, 6, 18, int(230 * t));
+    for (int i = 0; i < 8; ++i) {
+        const float a = float(i) * 0.785398f;
+        dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
+    }
+    dl->AddText(font, size, p, Alpha(col, t), s);
+}
+
+float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw) {
+    float x = p.x;
+    bool start = true;
+    char one[2] = {0, 0};
+    for (const char* c = s; *c; ++c) {
+        const bool big = start || (*c >= 'A' && *c <= 'Z' && !start && false);
+        const char up = (*c >= 'a' && *c <= 'z') ? char(*c - 32) : *c;
+        one[0] = up;
+        const float fs = (big || !((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z'))) ? size : size * 0.78f;
+        const ImVec2 w = font->CalcTextSizeA(fs, 1e9f, 0, one);
+        if (draw && *c != ' ') OutlineText(dl, font, fs, ImVec2(x, p.y + (size - fs) * 0.82f), col, one, t);
+        x += w.x + size * 0.02f;
+        start = *c == ' ';
+    }
+    return x - p.x;
 }
 
 }  // namespace xsgui

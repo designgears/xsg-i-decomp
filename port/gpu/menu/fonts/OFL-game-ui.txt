@@ -1,0 +1,8 @@
+Fonts used by the rebuilt game UI (port/gpu/ui/), all under the SIL Open Font License 1.1
+(the license text is in OFL.txt):
+
+Exo 2       Copyright 2013 The Exo 2 Project Authors (https://github.com/NDISCOVER/Exo-2.0)
+Michroma    Copyright 2011 The Michroma Project Authors (https://github.com/googlefonts/michroma-font)
+Orbitron    Copyright 2018 The Orbitron Project Authors (https://github.com/theleagueof/orbitron)
+
+Static instances taken from fontsource (cdn.jsdelivr.net/fontsource), Latin subset.

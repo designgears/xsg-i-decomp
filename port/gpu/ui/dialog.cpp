@@ -731,14 +731,21 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             dl->AddRect(ImVec2(a.x - 3 * k, a.y - 3 * k), ImVec2(c.x + 3 * k, c.y + 3 * k), Alpha(col::kCyan, 0.25f * br * t), 0, 0, 2.0f * k);
         }
         const float ls = 10.0f * k, vs = 14.0f * k, ss = 10.0f * k;
-        auto label = [&](float ly, const char* t) { dl->AddText(font, ls, P(x + 0x40, ly + 1), col::kTextDim, t); };
+        // the original's colours: HP / EP cyan, AP / BG blue; numbers in square digits, outlined
+        ImFont* const lf = UiFont(kFontLabel, font);
+        ImFont* const nf = UiFont(kFontNumber, font);
+        auto label = [&](float ly, const char* t) {
+            const bool blue = t[0] == 'A' || t[0] == 'B';
+            SmallCaps(dl, lf, ls * 0.95f, P(x + 0x40, ly + 1), blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t, an.a);
+        };
         auto value = [&](float ly, int v, int vmax, bool warn) {
             std::snprintf(b, sizeof b, "%d", v);
-            const ImVec2 w = font->CalcTextSizeA(vs, 1e9f, 0, b);
-            const ImVec2 r = P(x + 0x7a, ly - 2);
-            dl->AddText(font, vs, ImVec2(r.x - w.x, r.y), warn ? col::kWarn : col::kText, b);
+            const float nvs = vs * 0.82f;
+            const ImVec2 w = nf->CalcTextSizeA(nvs, 1e9f, 0, b);
+            const ImVec2 r = P(x + 0x7a, ly - 1);
+            OutlineText(dl, nf, nvs, ImVec2(r.x - w.x, r.y), warn ? col::kWarn : IM_COL32(236, 240, 232, 255), b, an.a);
             std::snprintf(b, sizeof b, "/%d", vmax);
-            dl->AddText(font, ss, P(x + 0x7c, ly + 1), col::kTextDim, b);
+            OutlineText(dl, nf, ss * 0.8f, P(x + 0x7c, ly + 2), col::kTextDim, b, an.a);
         };
         label(y, "HP");
         value(y, u.hp, u.hp_max, u.idol || (u.hp_max > 0 && u.hp * 4 <= u.hp_max));
@@ -759,7 +766,7 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
                           IM_COL32(255, 60, 150, 230));
         std::snprintf(b, sizeof b, "%d", u.bg);
-        dl->AddText(font, vs, P(x + 0x92, y + 0x2d), col::kText, b);
+        OutlineText(dl, nf, vs * 0.82f, P(x + 0x92, y + 0x2e), IM_COL32(236, 240, 232, 255), b, an.a);
     }
 }
 

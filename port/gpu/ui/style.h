@@ -13,6 +13,18 @@
 
 namespace xsgui {
 
+/* The game UI's fonts, rasterised large (set by menu.cpp FontsUp): body text (Exo 2), labels and
+   tags (Michroma, the original's wide small caps), numbers (Orbitron, its square digits).  Any of
+   them may be null before the first frame: callers fall back to the font they are given. */
+enum UiFontKind { kFontBody, kFontBodyBold, kFontLabel, kFontNumber, kFontCount };
+extern ImFont* g_ui_font[kFontCount];
+inline ImFont* UiFont(UiFontKind k, ImFont* fallback) { return g_ui_font[k] ? g_ui_font[k] : fallback; }
+/* Small caps the way the original sets its labels: the first letter of each word at full size,
+   the rest uppercase at 78%.  Returns the width. */
+float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw = true);
+/* Text with a crisp dark outline (the original's style for numbers and labels). */
+void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t);
+
 /* Per-frame clock (seconds) and step; call once per frame before drawing. */
 void AnimFrame(double now);
 double AnimNow();

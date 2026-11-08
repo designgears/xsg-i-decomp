@@ -59,6 +59,18 @@ const unsigned char kFontBody[] = {
 const unsigned char kFontHead[] = {
 #include "Rajdhani-SemiBold.ttf.inc"
 };
+const unsigned char kGameBody[] = {
+#include "Exo2-Medium.ttf.inc"
+};
+const unsigned char kGameBold[] = {
+#include "Exo2-SemiBold.ttf.inc"
+};
+const unsigned char kGameLabel[] = {
+#include "Michroma-Regular.ttf.inc"
+};
+const unsigned char kGameNumber[] = {
+#include "Orbitron-SemiBold.ttf.inc"
+};
 
 void Log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 void Log(const char* fmt, ...) {
@@ -329,6 +341,13 @@ void FontsUp(float scale, float fb) {
     io.Fonts->AddFontFromMemoryTTF((void*)kFontBody, int(sizeof kFontBody), px, &cfg, kRanges);
     g_head = io.Fonts->AddFontFromMemoryTTF((void*)kFontHead, int(sizeof kFontHead), std::round(44.0f * scale * fb), &cfg, kRanges);
     g_small = io.Fonts->AddFontFromMemoryTTF((void*)kFontHead, int(sizeof kFontHead), std::round(20.0f * scale * fb), &cfg, kRanges);
+    {   // the game UI's fonts: rasterised at the game image's text size (window height / 448 * 18)
+        const float gpx = std::round(std::clamp(io.DisplaySize.y * fb / 448.0f * 20.0f, 24.0f, 96.0f));
+        xsgui::g_ui_font[xsgui::kFontBody] = io.Fonts->AddFontFromMemoryTTF((void*)kGameBody, int(sizeof kGameBody), gpx, &cfg, kRanges);
+        xsgui::g_ui_font[xsgui::kFontBodyBold] = io.Fonts->AddFontFromMemoryTTF((void*)kGameBold, int(sizeof kGameBold), gpx, &cfg, kRanges);
+        xsgui::g_ui_font[xsgui::kFontLabel] = io.Fonts->AddFontFromMemoryTTF((void*)kGameLabel, int(sizeof kGameLabel), gpx, &cfg, kRanges);
+        xsgui::g_ui_font[xsgui::kFontNumber] = io.Fonts->AddFontFromMemoryTTF((void*)kGameNumber, int(sizeof kGameNumber), gpx, &cfg, kRanges);
+    }
     io.Fonts->Build();
     io.FontGlobalScale = 1.0f / fb;
     RenderFonts();
