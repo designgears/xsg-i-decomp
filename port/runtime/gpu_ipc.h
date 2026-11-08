@@ -267,6 +267,7 @@ enum {
     GPU_KG_PAUSE = 14,   /* the pause screen (game_pause_disp.c): the rebuilt title */
     GPU_KG_QUAD = 16,    /* a textured quad (strip order): corners (x, y) + text as int16 x1 y1 x2 y2 x3 y3, uvs
                             u v / w h / dw dh / a (u3 | v3 << 16), b = texture set, text[12] ALPHA, text[13] FIX */
+    GPU_KG_TITLE = 17,   /* the title choices (ov02 title.c): a = selected, b = install row (-1 none, 1 uninstall), rgba = fade */
     GPU_KG_SELECT = 15,  /* a selected row (x, y, dw, dh) (twsys TMENU): glow bar and chevron; b = the item */
 };
 /* GPU_MSG_UI_TEX: one host->local upload of a texture directory (xtx), replayed by xsg-gpu

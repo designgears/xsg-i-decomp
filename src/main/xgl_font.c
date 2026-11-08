@@ -377,6 +377,13 @@ static void set_ot(int ot);
 void xglFontPrintDirectOT(int ot, const char *text)
 {
     if (*(unsigned short *)D_00881188 & 1 & 0xFFFF) {
+#ifdef PORT_HOST
+        {   /* rebuilt UI: appended to the last captured xglFontPrint (its position) */
+            extern int xsg_ui_font_append(const char *text);
+            if (xsg_ui_font_append(text))
+                return;
+        }
+#endif
         set_ot(ot);
         xglFontPrintDirectCore(text);
     }

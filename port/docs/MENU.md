@@ -345,8 +345,18 @@ texture set, so the art is exactly what the GS would sample there. With the nati
 the capture falls back to sending the atlas files themselves (`GPU_MSG_UI_TEX`); portraits the
 game patches in VRAM are not covered by that fallback.
 
+Also captured: every `xglFontPrint` / `xglFontPrintDirect` string (results, subtitles, game over,
+boot messages; direct prints join the positioned print before them), choice menus (twsys
+TMENU), scene captions (TWIN_drawScene2), the pause screen, the title choices, and the battle
+HUD's sprite parts (portraits, radar, turn order, boost gauge: capture channels 2-3, with
+per-texture snapshots so art whose VRAM is reused later in the frame stays right).
+
+Layout (`[display] ui_layout`, `port/gpu/ui/layout.cpp`): every element is placed with an anchor
+(left, right, centre, stretch) at the 4:3 display's proportions. `game` keeps the UI on the
+picture; `wide` moves edge UI out to the window's edges, the groundwork for a widescreen picture.
+
 Not captured (still the game's): the menu background (the frozen frame), 3D models (camp menu,
-shop, formation), save thumbnails, the battle radar (rendered into VRAM each frame).
+shop, formation), save thumbnails, the minigames (ov10 Xenocard, ov11 casino, ov12 robot battle: their own 2D painters), and the HDD install screen.
 
 Capture mode: the key guide runs its own code unchanged while its drawing helpers (`keyGideDisp`,
 `menuGuideFrameDisp`, `menuFontPut`, `menuNumPut`, `menuStatSprite`) record what they would draw.

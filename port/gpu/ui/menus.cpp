@@ -458,6 +458,37 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             Chevron(dl, P(q.x - 2, q.y + o.dh * 0.5f), 6 * k, tw, now);
             break;
         }
+        case GPU_KG_TITLE: {   // the title choices: the original's place and spacing (y 288 + 18 per row)
+            static const char* const kItem[] = {"New Game", "Continue", "Install to HDD", "Uninstall from HDD"};
+            anchor = kCentre;
+            const float t = tw * (1.0f - std::clamp(float(o.rgba) / 128.0f, 0.0f, 1.0f));
+            int rows[3], n = 0;
+            rows[n++] = 0;
+            rows[n++] = 1;
+            if (o.b != -1) rows[n++] = o.b == 1 ? 3 : 2;
+            const float fs = 17.0f * k, rowh = 18.0f;
+            float wmax = 0;
+            for (int r = 0; r < n; ++r) wmax = std::max(wmax, font->CalcTextSizeA(fs, 1e9f, 0, kItem[rows[r]]).x);
+            const float half = wmax * 0.5f / kx + 26.0f;
+            const ImVec2 a = P(256 - half, 288 - 6), b = P(256 + half, 288 + rowh * float(n) + 4);
+            Panel(dl, a, b, k, t * 0.92f);
+            for (int r = 0; r < n; ++r) {
+                const int item = r == 2 ? 2 : r;   // the game's selection index (row 2 = the install row)
+                const bool sel = o.a == item;
+                const float ry = 288 + rowh * float(r);
+                if (sel) {
+                    AnimState& cu = Anim(0x5449544Cull, 0, ry);
+                    const float yy = Spring(cu, 0, ry, 22.0f).y;
+                    GlowBar(dl, P(256 - half + 4, yy - 1), P(256 + half - 4, yy + rowh - 1), k, t, now, col::kCyan);
+                    Chevron(dl, P(256 - half + 14, yy + rowh * 0.5f - 1), 6 * k, t, now);
+                }
+                const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, kItem[rows[r]]);
+                const ImVec2 c = P(256, ry + rowh * 0.5f - 1);
+                HaloText(dl, font, fs, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), sel ? col::kText : col::kTextDim,
+                         kItem[rows[r]], t);
+            }
+            break;
+        }
         case GPU_KG_PAUSE: {   // a centred title between two rules that sweep outward, and a resume hint
             AnimState& pa = Anim(0x50415553ull, 0, 0);
             const float t = FadeIn(pa, 5.0f) * tw;

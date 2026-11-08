@@ -529,6 +529,16 @@ sel_done:
             sceVif1PkRef(packet, (void *)(*(s32 *)(rec + 0x10) + 0x01001000), *(s32 *)(rec + 0xC), 0, 0, 0);
             rec += 0x14;
         }
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the title choices are xsg-gpu's (a menu in the frame's UI list) */
+            extern int xsg_ui_rebuilt(void);
+            extern void xsg_ui_title(int sel, int hdd, int fade);
+            if (xsg_ui_rebuilt()) {
+                xsg_ui_title(sel, hdd, fade);
+                goto title_items_done;
+            }
+        }
+#endif
         for (k = 0; k < 4; k++) {
             x0 = 0xA6;
             y0 = k * 0x12 + 0x120;
@@ -563,6 +573,9 @@ sel_done:
                 sceVif1PkAddDataN(packet, TestEnv_11, 0x34);
             }
         }
+#ifdef PORT_HOST
+    title_items_done:
+#endif
         {
             u64 gs_frame_address_bits = 0xc800;
             TestEnv_12[6] = (0x24120000 | (sRender.framebuffer_page << 5)) | (gs_frame_address_bits << 0x13);

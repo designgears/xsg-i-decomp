@@ -647,7 +647,10 @@ GpuUiKgOp g_mops[XSG_GPU_UI_MENU_OPS];
 uint32_t g_mop_n;
 uint32_t g_mop_start;    // the frame the buffer started filling
 uint32_t g_menu_last;    // the frame of the last captured flush
+uint32_t g_published_frame;
 int g_last_text_op = -1;
+uint32_t g_last_text_frame;
+int g_last_x, g_last_y, g_last_param;
 char g_mpool[XSG_GPU_UI_MENU_POOL];
 uint32_t g_mpool_n;
 }  // namespace
@@ -712,6 +715,8 @@ extern "C" int xsg_ui_font_text(int x, int y, int color, const char* text) {
         else i += t[i] >= 0x80 ? 2 : 1;
     }
     g_last_text_op = -1;
+    g_last_text_frame = xsg_frame;
+    g_last_x = x; g_last_y = y; g_last_param = color;
     const int r = xsg_ui_menu_text(x, y, color, t, i);
     // the game's own width for the string (the font engine's metrics: its scale, monospace or
     // proportional), so xsg-gpu can match the original proportions
@@ -719,10 +724,39 @@ extern "C" int xsg_ui_font_text(int x, int y, int color, const char* text) {
     if (r && g_last_text_op >= 0) g_mops[g_last_text_op].dw = int16_t(std::min(2047, xglFontGetStringWidth(text)));
     return r || i == 0;
 }
+/* xglFontPrintDirect after an xglFontPrint (subtitles: a style prefix, then the line): the text
+   joins that record.  Without one captured this frame it goes to the GS as before. */
+extern "C" int xsg_ui_font_append(const char* text) {
+    if (!xsg_ui_rebuilt() || !text || g_last_text_frame != xsg_frame) return 0;
+    // the prefix's record (style codes only) is replaced by one at its position with the text
+    if (g_last_text_op >= 0 && g_last_text_op < int(g_mop_n) && g_mops[g_last_text_op].type == GPU_KG_TEXT)
+        g_mops[g_last_text_op].type = 0;
+    const unsigned char* t = reinterpret_cast<const unsigned char*>(text);
+    int i = 0;
+    while (t[i] && i < 4096) {
+        if (t[i] < 0x20) i += 1 + std::max(0, int(xglFontGetSPcodeSize(t[i], const_cast<unsigned char*>(t + i))));
+        else i += t[i] >= 0x80 ? 2 : 1;
+    }
+    xsg_ui_menu_text(g_last_x, g_last_y, g_last_param, t, i);
+    return 1;
+}
+
+/* The title screen draws its choices from baked text images; the rebuilt UI gets the state.
+   Its frame has no font flush, so it is published here. */
+extern "C" void xsg_ui_menu_end(void);
+extern "C" void xsg_ui_title(int sel, int hdd, int fade) {
+    g_mop_n = 0;
+    g_mpool_n = 0;
+    const int op = xsg_ui_mop(GPU_KG_TITLE, 0, 0, 0, 0, 0xffffff, uint32_t(fade), hdd);
+    if (op >= 0) g_mops[op].a = sel;
+    xsg_ui_menu_end();
+}
+
 /* The end of the frame's font flush: publish whatever was captured (possibly nothing). */
 extern "C" void xsg_ui_menu_end(void);
 extern "C" void xsg_ui_frame_end(void) {
-    if (xsg_ui_rebuilt()) xsg_ui_menu_end();
+    // an empty flush does not replace a list published earlier in the same frame (the title)
+    if (xsg_ui_rebuilt() && (g_mop_n || g_published_frame != xsg_frame)) xsg_ui_menu_end();
 }
 extern "C" void xsg_ui_menu_end(void) {
     if (xsggpu::shm) {
@@ -737,6 +771,7 @@ extern "C" void xsg_ui_menu_end(void) {
         m->frame = xsg_frame;
         __atomic_store_n(&m->seq, s + 2, __ATOMIC_RELEASE);
     }
+    if (g_mop_n) g_published_frame = xsg_frame;
     g_mop_n = 0;
     g_mpool_n = 0;
     g_menu_last = xsg_frame;
