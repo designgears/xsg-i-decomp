@@ -63,13 +63,13 @@ const unsigned char kGameBody[] = {
 #include "Exo2-Medium.ttf.inc"
 };
 const unsigned char kGameBold[] = {
-#include "Exo2-ExtraBold.ttf.inc"   // the original's heavy game text
+#include "Exo2-Medium.ttf.inc"   // the original's game text is a regular weight
 };
 const unsigned char kGameLabel[] = {
-#include "SairaSemiCondensed-ExtraBold.ttf.inc"   // the original's tall, heavy, condensed labels
+#include "SairaSemiCondensed-Medium.ttf.inc"   // the original's tall, condensed labels (regular weight)
 };
 const unsigned char kGameNumber[] = {
-#include "SairaSemiCondensed-ExtraBold.ttf.inc"   // and its tall rounded-square digits
+#include "SairaSemiCondensed-Medium.ttf.inc"   // and its tall rounded-square digits
 };
 
 void Log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));

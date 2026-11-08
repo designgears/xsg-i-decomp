@@ -87,7 +87,7 @@ foreach(src imgui.vert imgui.frag)
 endforeach()
 # The menu font (Rajdhani, SIL OFL 1.1, menu/fonts/OFL.txt) embedded as byte lists.
 # The rebuilt game UI's fonts (Exo 2, Saira Semi Condensed; SIL OFL 1.1, menu/fonts/OFL-game-ui.txt).
-foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf Exo2-Medium.ttf Exo2-SemiBold.ttf Exo2-ExtraBold.ttf SairaSemiCondensed-ExtraBold.ttf)
+foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf Exo2-Medium.ttf Exo2-SemiBold.ttf Exo2-ExtraBold.ttf SairaSemiCondensed-ExtraBold.ttf SairaSemiCondensed-Medium.ttf)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/${font}.inc)
   add_custom_command(OUTPUT ${out}
     COMMAND ${CMAKE_COMMAND} -DIN=${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} -DOUT=${out}

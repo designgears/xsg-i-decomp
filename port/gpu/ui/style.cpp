@@ -169,12 +169,12 @@ void StrokedText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, 
 
 // the original's game text: a drop shadow down-right, a crisp dark outline, then the glyphs
 void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    StrokedText(dl, font, size, p, col, s, t, size * 0.012f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
+    StrokedText(dl, font, size, p, col, s, t, 0.0f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
 }
 
-// labels and numbers: the same (the label face, Saira Semi Condensed ExtraBold, carries the weight itself)
+// labels and numbers: the same; no stroke widening (the original's type is not bold, only outlined)
 void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    StrokedText(dl, font, size, p, col, s, t, size * 0.014f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
+    StrokedText(dl, font, size, p, col, s, t, 0.0f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
 }
 
 float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw) {
