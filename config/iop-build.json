@@ -2494,6 +2494,12 @@
             "size": 51
           },
           {
+            "offset": 59776,
+            "section": ".data",
+            "sha256": "6364c3a9670444808815f3d70ef6ceef76971c08ed7aac075c407f22c58acbcc",
+            "size": 512
+          },
+          {
             "offset": 80960,
             "section": ".bss",
             "sha256": "8889eb3cdd3d0ac94711b47ce78b430d8e23a7b31ecc994c56d0c3310c87674a",
@@ -2501,7 +2507,7 @@
           }
         ],
         "source": "src/audio/ssd/ssd_midi.c",
-        "source_sha256": "488fe3c72961351c534cf3c007a0a7cbbf7ef742937cf345a59a18cafe6213bf"
+        "source_sha256": "2fc4c96b3b3a856900824b80db7030ed07d95e2b05129b349d808fea91c5235d"
       },
       {
         "fdr_filename": "ssd_dbg.c",
