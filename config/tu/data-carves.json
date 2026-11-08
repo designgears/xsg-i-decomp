@@ -331,7 +331,7 @@
     {
      "range": [
       "0x00491660",
-      "0x00491770"
+      "0x00491768"
      ],
      "generated": [
       "0x00491660",
@@ -362,8 +362,7 @@
       "D_00491705",
       "head_10",
       "D_00491711",
-      "system_cnf",
-      "D_00491768"
+      "system_cnf"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -410,7 +409,7 @@
     {
      "range": [
       "0x004dc2e8",
-      "0x004dc328"
+      "0x004dc327"
      ],
      "generated": [
       "0x004dc2e8",
@@ -434,8 +433,7 @@
       "D_004DC310",
       "tail_9",
       "D_004DC31F",
-      "tail_11",
-      "D_004DC327"
+      "tail_11"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -2457,7 +2455,7 @@
     {
      "range": [
       "0x003626b0",
-      "0x00362790"
+      "0x00362783"
      ],
      "generated": [
       "0x003626b0",
@@ -2475,8 +2473,7 @@
       "D_0036272D",
       "msg1_1",
       "D_0036275C",
-      "msg2_2",
-      "D_00362783"
+      "msg2_2"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -12260,11 +12257,11 @@
     {
      "range": [
       "0x003b2e00",
-      "0x0040d670"
+      "0x00410ac8"
      ],
      "generated": [
       "0x003b2e00",
-      "0x0040d670"
+      "0x00410ac8"
      ],
      "generated_by": [
       "SGsInitEnv",
@@ -12279,8 +12276,10 @@
       "svDrawModel",
       "svDrawScheduler3D",
       "svDrawSchedulerParticle",
+      "svGetImageItem",
       "svGetScript",
       "svGetTypeList",
+      "svImageListCreate",
       "svInitImageMapper",
       "svInitRefImage",
       "svLoadMapperList"
@@ -12295,49 +12294,10 @@
       "_defMatLn",
       "_svViewMtx",
       "_svScreenMtx",
-      "_svViewScreenMtx"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sv_get_image_item.o"
-     }
-    },
-    {
-     "range": [
-      "0x0040d680",
-      "0x0040fa9c"
-     ],
-     "generated": [
-      "0x0040d680",
-      "0x0040fa9c"
-     ],
-     "generated_by": [
-      "svGetImageItem",
-      "svImageListCreate"
-     ],
-     "c_owned_symbols": [
-      "_imageList"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sv_get_image_item.o"
-     }
-    },
-    {
-     "range": [
-      "0x0040fac0",
-      "0x00410ac8"
-     ],
-     "generated": [
-      "0x0040fac0",
-      "0x00410ac8"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "_svViewScreenMtx",
+      "D_0040D670",
+      "_imageList",
+      "D_0040FA9C",
       "sefAtanTbl",
       "D_00410AC4"
      ],

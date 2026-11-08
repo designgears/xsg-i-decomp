@@ -948,7 +948,7 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 }
 
 extern void sefGetPoint(Vector4 *position, unsigned char *source, int target);
-static const float _zeroPos[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static const float _zeroPos[4] __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 1.0f};
 static const float _zeroAng[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 /*
