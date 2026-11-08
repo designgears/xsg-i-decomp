@@ -185,6 +185,7 @@ pad = 300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60
 | `[debug] native_thr` (`XSG_GPU_NATIVE_THR`) | rule-2 colour threshold (default 12) |
 | `[debug] native_vu1 = 1` (`XSG_GPU_NATIVE_VU1`) | keep the VU1 interpreter for native set-0 batches (A/B); set 2 then stays on the interpreter too |
 | `[debug] native_skin = 0` (`XSG_GPU_NATIVE_SKIN`) | set 2 (characters) stays on VU1 + paraLLEl-GS (A/B) |
+| `[debug] native_set0_lit = 0` (`XSG_GPU_NATIVE_SET0_LIT`) | set-0 lit loops 0x1458 / 0x1fa0 stay on VU1 + paraLLEl-GS (A/B); default on: `NativeSet0Lit` → `GPU_NATIVE_SET0_LIT`, drawn by `native_skin.vert` group 4 (no bones, per-vertex 1007/vf9 fog) |
 | `[debug] mv_view = 1` (`XSG_GPU_MV_VIEW`) | the window shows the motion vectors as colour (hue = direction, brightness = length, full at 16 px at 1×; `=N` sets that length) |
 | `[debug] gpu_prof = 1` (`XSG_GPU_PROF`) | xsg-gpu per-stage CPU timers and GPU timestamps, a `[prof]` line every 600 vsyncs (§9) |
 | `[debug] owner_thread = 0` (`XSG_GPU_OWNER_THREAD`) | run the ownership GS on the main thread (default: its own thread, §9) |

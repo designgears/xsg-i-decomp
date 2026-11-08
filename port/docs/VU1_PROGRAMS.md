@@ -112,6 +112,8 @@ sub-batch.
 | 2 | 0x3058 → 0x3098 lit_spec_2pass (blend 8) | 52 | 2,071 | 13,752 | | ✔ `blend_lit_spec_2pass` |
 | 2 | 0x3510 → 0x3550 lit_spec ×6 (blend 8) | 34 | 842 | 5,090 | | ✔ `blend_lit_spec_env` |
 | 2 | 0x2fe8 / 0x3020 (Face/Back of 0x2be8) | 4 / 4 | (shared) | | | ✔ (face/back) |
+| 0 | 0x1418 → 0x1458 *lit* (+ Face/Back 0x1648 / 0x16a0) | 11 + 2 | 81 | 312 | tstrip | ✔ `set0_lit` (battle cf9002, vblank 2300) |
+| 0 | 0x1f60 → 0x1fa0 *lit_env*, 6 kicks (+ 0x23a8 / 0x2400) | 12 | 232 | 1,812 | + env strip, tag 1010 | ✔ `set0_lit_env` (same capture) |
 
 A reference now exists for every one of the 53,693 runs (all set-0 and set-2 programs that
 ran). "blend 8" is a **two-bone** blend: B.x/B.y are the two bone addresses, B.z/B.w their
@@ -126,9 +128,19 @@ loop (`mul vf5,vf5,vf5` repeated `1008.x` times), then to a second strip with GI
 triangle-facing mode, and branch into the main loop.
 
 **Set 0, other entries** (`vu1_features.py --set 0`): 0x0de0 rigid strip with the 0x408 header
-(no morph); 0x11e0/0x1320 per-vertex subroutine form (calls 0x888, 0x900/0x9f8); 0x1418
-lit + fog; 0x16f8 lit + specular; 0x1b08 two-pass; 0x1f60 six kicks; plus their Face/Back
-stubs. None of these ran in the captured frames.
+(no morph); 0x11e0/0x1320 per-vertex subroutine form (calls 0x888, 0x900/0x9f8); 0x16f8 lit +
+specular; 0x1b08 two-pass; plus their Face/Back stubs. None of these ran in the captured frames.
+
+**Set 0 lit loops** (`vu1_set0_lit.c`; they ran in the battle room cf9002, vblank 2300): entries
+0x1418 and 0x1f60 run 0x0050 and then stop at 0x05d8. The MSCNT resume is **0x05e8**, which is
+set 2's 0x0188 header with streams P +1, N +1+n (w = T), C +1+2n (float), facing normal +1+3n,
+and morph keys at +1+6n. 0x1458 is set 2's `rigid_lit` without the bone step: P and N are in
+object space, there is no renormalise and no mirror. Its fog is the strip's
+`clamp(1007.z + 1007.w·q)`. The facing test (subroutine 0x0af0, when 995.y ≠ 0) is
+`mem[1013 + 2·(dot(976 − P, Nf) < 0)].w`. 0x1fa0 is `rigid_lit_spec_6k` on object-space P/N,
+with one difference: its fog comes from **register vf9** (left by an earlier loop). The
+`ilw 998.w` is dead, and pass 2's ST.w = vf9.z. 0x16a0 is the Back entry of all four lit slots,
+and it runs the plain lit loop.
 
 ## 2. Per-program I/O
 
