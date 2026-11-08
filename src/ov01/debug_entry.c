@@ -160,7 +160,7 @@ void debugCmdPrint(ObjectTask *unit, int cmd)
     }
 }
 
-extern char D_00A5AA40[];
+static char D_00A5AA40[0x10];
 extern const char D_00A50550[];
 extern const char D_00A50558[];
 extern const char D_00A50560[];
@@ -588,7 +588,8 @@ typedef struct DebugPadView {
 #define DEBUG_CHARA_ID_MAX 0xC2
 #define PAD_CIRCLE 0x0020
 #define PAD_CROSS 0x0040
-extern int configSeq, statId, equipId, gainId, equipPosX, slot, monsSet, mapNo, cfEncount, cfEvent, D_00A5AA60;
+extern int configSeq, statId, equipId, gainId, equipPosX, slot;
+static int monsSet, mapNo, cfEncount, cfEvent, D_00A5AA60;
 typedef struct DbcOrg {
     short maxHp;               /* +0x00 */
     short maxEp;                /* +0x02 */
