@@ -10,7 +10,6 @@ static u32 *arcfileaddr;
 static u8 arcno;
 static int arcfilepreload;
 static u8 GameResourceWorkReloadLeader;
-extern char scene_txt_buffer[];
 extern void SCRIPT_fade(int time);
 static char *command_mpeg2_core(int command, char *cursor, int mode);
 static int next_arc_size(void *address);
@@ -37,7 +36,13 @@ typedef struct {
     char name[16];
 } EnemySeEntry;
 
-extern EnemySeEntry EnemySeBank[8];
+/* .bss (file-local, original order) */
+static EnemySeEntry EnemySeBank[8];
+static char foot_name[0x10];
+static char env_name[0x10];
+static char scene_txt_buffer[0x800];
+static u32 archeader[0x40];
+static u8 GameResourceWorkReloadTable[0x80];
 extern u8 ScenePath;
 /* Resource-key tables: {key, table, extension}; `table` is a NULL-terminated
  * name list or (CID/RID/... in `model`) another key table. */
@@ -805,7 +810,6 @@ unsigned int GameResourceGetFreeAddr(void)
 }
 
 
-extern u8 GameResourceWorkReloadTable[];
 
 int GameResourceWorkAlloc(int size)
 {
@@ -908,7 +912,6 @@ int GameResourceRealloc(int resource, int size)
     return 0;
 }
 
-extern u32 archeader[];
 extern int xglArxExtract(void *destination, void *source);
 extern void *memcpy(void *destination, const void *source, unsigned int count);
 
@@ -1445,7 +1448,6 @@ static char *command_dummy(int command, char *cursor, int mode)
 }
 
 extern unsigned char SaveData[];
-extern char foot_name[];
 
 void RES_GetLeaderSeName(char *dst)
 {
@@ -1464,7 +1466,6 @@ void RES_GetLeaderSeName(char *dst)
     }
 }
 
-extern char env_name[];
 
 void RES_GetMapEnvSeName(char *name)
 {
