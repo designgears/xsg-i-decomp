@@ -23199,28 +23199,327 @@
    ]
   },
   "ov10/tu006_00a1e5d8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43bcc",
+      "0x00a43bd0"
+     ],
+     "generated": [
+      "0x00a43bcc",
+      "0x00a43bd0"
+     ],
+     "generated_by": [
+      "CardDispFieldPoint",
+      "CardDispFieldPointScale",
+      "CardDispHelpCard",
+      "CardDispHelpSlide1",
+      "CardDispHelpSlide2",
+      "CardDispHelpSlide3",
+      "CardDispPhase",
+      "CardDispTejyun"
+     ],
+     "c_owned_symbols": [
+      "ChangeCnt"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a43bd0",
+      "0x00a43bf0"
+     ],
+     "generated": [
+      "0x00a43bd0",
+      "0x00a43be8"
+     ],
+     "generated_by": [
+      "CardDispHelpSlide1"
+     ],
+     "c_owned_symbols": [
+      "list16_0",
+      "list17_1",
+      "D_00A43BDE",
+      "list18_2",
+      "D_00A43BE6"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a43bf0",
+      "0x00a487c8"
+     ],
+     "generated": [
+      "0x00a43bf0",
+      "0x00a487c8"
+     ],
+     "generated_by": [
+      "CardDispComm",
+      "CardDispCtr",
+      "CardDispDeckMake",
+      "CardDispField",
+      "CardDispFieldPoint",
+      "CardDispFieldPointScale",
+      "CardDispH1P2P",
+      "CardDispHelpSlide1",
+      "CardDispHelpSlide2",
+      "CardDispHelpSlide3",
+      "CardDispPhase",
+      "CardDispTejyun",
+      "CardDispTurn",
+      "CardHelpFileLoad",
+      "CardHelpProc"
+     ],
+     "c_owned_symbols": [
+      "trans_3",
+      "list19_4",
+      "D_00A43C06",
+      "list20_5",
+      "D_00A43C0E",
+      "list21_6",
+      "D_00A43C16",
+      "list22_7",
+      "D_00A43C24",
+      "list25_8",
+      "D_00A43C34",
+      "list26_9",
+      "D_00A43C44",
+      "list27_10",
+      "D_00A43C54",
+      "list28_11",
+      "list45_12",
+      "D_00A43C6C",
+      "list46_13",
+      "D_00A43C7C",
+      "list47_14",
+      "list23_15",
+      "D_00A43C8E",
+      "list24_16",
+      "D_00A43C96",
+      "Help1_01_txt",
+      "Help1_02_txt",
+      "Help1_03_txt",
+      "Help1_04_txt",
+      "Help1_05_txt",
+      "Help1_06_txt",
+      "Help2_01_txt",
+      "Help2_02_txt",
+      "Help2_03_txt",
+      "Help2_04_txt",
+      "Help2_05_txt",
+      "Help2_06_txt",
+      "Help2_07_txt",
+      "Help2_08_txt",
+      "Help2_09_txt",
+      "Help3_01_txt",
+      "Help3_02_txt",
+      "Help3_03_txt",
+      "Help3_04_txt",
+      "Help3_05_txt",
+      "Help3_06_txt",
+      "Help3_07_txt",
+      "Help3_08_txt",
+      "Help3_09_txt",
+      "Help3_10_txt",
+      "Help3_11_txt",
+      "Help3_12_txt",
+      "Help3_13_txt",
+      "Help3_14_txt",
+      "Help3_15_txt",
+      "Help4_01_txt",
+      "Help4_02_txt",
+      "Help4_03_txt",
+      "Help4_04_txt",
+      "Help4_05_txt",
+      "Help4_06_txt",
+      "Help4_07_txt",
+      "Help4_08_txt",
+      "Help4_09_txt",
+      "Help4_10_txt",
+      "Help4_11_txt",
+      "Help4_12_txt",
+      "Help4_13_txt",
+      "Help4_14_txt",
+      "Help5_01_txt",
+      "Help5_02_txt",
+      "Help5_03_txt",
+      "Help5_04_txt",
+      "Help6_01_txt",
+      "Help6_02_txt",
+      "Help6_03_txt",
+      "Help6_04_txt",
+      "Help6_05_txt",
+      "Help7_01_txt",
+      "Help7_02_txt",
+      "Help7_03_txt",
+      "Help7_04_txt",
+      "Help7_05_txt",
+      "Help7_06_txt",
+      "Title1_01_txt",
+      "Title1_02_txt",
+      "Title1_03_txt",
+      "Title1_04_txt",
+      "Title1_05_txt",
+      "Title1_06_txt",
+      "Title2_01_txt",
+      "Title2_02_txt",
+      "Title2_03_txt",
+      "Title2_04_txt",
+      "Title2_05_txt",
+      "Title2_06_txt",
+      "Title2_07_txt",
+      "Title2_08_txt",
+      "Title2_09_txt",
+      "Title3_01_txt",
+      "Title3_02_txt",
+      "Title3_03_txt",
+      "Title3_04_txt",
+      "Title3_05_txt",
+      "Title3_06_txt",
+      "Title3_07_txt",
+      "Title3_08_txt",
+      "Title3_09_txt",
+      "Title3_10_txt",
+      "Title3_11_txt",
+      "Title3_12_txt",
+      "Title3_13_txt",
+      "Title3_14_txt",
+      "Title3_15_txt",
+      "Title4_01_txt",
+      "Title4_02_txt",
+      "Title4_03_txt",
+      "Title4_04_txt",
+      "Title4_05_txt",
+      "Title4_06_txt",
+      "Title4_07_txt",
+      "Title4_08_txt",
+      "Title4_09_txt",
+      "Title4_10_txt",
+      "Title4_11_txt",
+      "Title4_12_txt",
+      "Title4_13_txt",
+      "Title4_14_txt",
+      "Title5_01_txt",
+      "Title5_02_txt",
+      "Title5_03_txt",
+      "Title5_04_txt",
+      "Title6_01_txt",
+      "Title6_02_txt",
+      "Title6_03_txt",
+      "Title6_04_txt",
+      "Title6_05_txt",
+      "Title7_01_txt",
+      "Title7_02_txt",
+      "Title7_03_txt",
+      "Title7_04_txt",
+      "Title7_05_txt",
+      "Title7_06_txt",
+      "BookMark1_txt",
+      "BookMark2_txt",
+      "BookMark3_txt",
+      "BookMark4_txt",
+      "BookMark5_txt",
+      "BookMark6_txt",
+      "BookMark7_txt",
+      "CardHelpTxtLst",
+      "D_00A483E4",
+      "CardTitleTxtLst",
+      "D_00A484D4",
+      "CardSkipTitleTxtLst",
+      "CardBookMarkTxtLst",
+      "D_00A485C4",
+      "cardlex_tbl",
+      "cardxtx_tbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a4e010",
-      "0x00a4e090"
+      "0x00a4ddb0",
+      "0x00a4e320"
      ],
      "generated": [
-      "0x00a4e010",
-      "0x00a4e090"
+      "0x00a4ddb0",
+      "0x00a4e319"
      ],
      "generated_by": [
-      "CardDispHelpSlide2"
+      "CardDispAttr",
+      "CardDispComm",
+      "CardDispCtr",
+      "CardDispDeckMake",
+      "CardDispGun",
+      "CardDispGuno",
+      "CardDispHelpCard",
+      "CardDispHelpSlide2",
+      "CardDispHelpSlide3",
+      "CardDispNazo",
+      "CardDispOnce",
+      "CardDispPhase",
+      "CardDispShineCurry",
+      "CardDispTejyun",
+      "CardDispTurn",
+      "CardHelpFileLoad",
+      "CardHelpProc"
      ],
      "c_owned_symbols": [
-      "jtbl_00A4E010"
-     ],
-     "also_referenced_by_c": [
       "D_00A4DDB0",
+      "D_00A4DDC8",
+      "D_00A4DDD8",
+      "D_00A4DDE0",
+      "D_00A4DDE8",
+      "D_00A4DDF0",
+      "D_00A4DDF8",
+      "D_00A4DE08",
+      "D_00A4DE18",
+      "D_00A4DE20",
+      "D_00A4DE28",
+      "D_00A4DE38",
+      "D_00A4DE40",
+      "D_00A4DE50",
+      "D_00A4DE60",
+      "D_00A4DE68",
+      "D_00A4DE70",
+      "D_00A4DE78",
+      "D_00A4DE80",
+      "D_00A4DE88",
+      "D_00A4DE90",
+      "D_00A4DE98",
+      "D_00A4DEA0",
+      "D_00A4DEA8",
+      "D_00A4DEB0",
+      "D_00A4DEC0",
+      "D_00A4DED0",
+      "D_00A4DEE0",
+      "D_00A4DEF0",
+      "D_00A4DF00",
+      "D_00A4DF10",
+      "D_00A4DF20",
+      "D_00A4DF30",
+      "D_00A4DF40",
+      "D_00A4DF50",
       "D_00A4DF60",
       "D_00A4DFF0",
       "D_00A4DFF8",
       "D_00A4E000",
+      "jtbl_00A4E010",
       "D_00A4E090",
       "D_00A4E0A0",
       "D_00A4E0B0",
@@ -23229,55 +23528,11 @@
       "D_00A4E0E0",
       "D_00A4E0F0",
       "D_00A4E100",
-      "D_00A4E110"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e120",
-      "0x00a4e140"
-     ],
-     "generated": [
-      "0x00a4e120",
-      "0x00a4e140"
-     ],
-     "generated_by": [
-      "CardDispTejyun"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A4E120"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E110",
+      "jtbl_00A4E120",
       "D_00A4E140",
-      "D_00A4E150"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e160",
-      "0x00a4e170"
-     ],
-     "generated": [
-      "0x00a4e160",
-      "0x00a4e170"
-     ],
-     "generated_by": [
-      "CardDispGun"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E160"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E150",
+      "D_00A4E160",
       "D_00A4E170",
       "D_00A4E180",
       "D_00A4E190",
@@ -23286,36 +23541,15 @@
       "D_00A4E1C0",
       "D_00A4E1D0",
       "D_00A4E1E0",
-      "D_00A4E1F0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e200",
-      "0x00a4e2f0"
-     ],
-     "generated": [
-      "0x00a4e200",
-      "0x00a4e2ec"
-     ],
-     "generated_by": [
-      "CardDispHelpCard"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A4E200"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E1F0",
+      "jtbl_00A4E200",
       "D_00A4E2F0",
       "D_00A4E2F8",
       "D_00A4E300",
       "D_00A4E310",
       "D_00A4E318"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
