@@ -2159,23 +2159,29 @@
    ".sdata": [
     {
      "range": [
-      "0x004dc4d4",
+      "0x004dc4d0",
       "0x004dc4d8"
      ],
      "generated": [
-      "0x004dc4d4",
+      "0x004dc4d0",
       "0x004dc4d8"
      ],
      "generated_by": [
+      "check_culling_map",
       "xglCullingCheck",
       "xglCullingIgnore",
       "xglCullingIgnoreOff",
-      "xglCullingMapInit"
+      "xglCullingMapInit",
+      "xglCullingMapSet"
      ],
      "c_owned_symbols": [
+      "D_004DC4D0",
       "s_nIgnoreCulling"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DC4D0": "s_aCullingMap"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

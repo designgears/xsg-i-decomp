@@ -960,7 +960,7 @@ segments:
       - [0x2DD3C0, sdata, xgl_render]
       - [0x2DD3E0, sdata, nml_model_set]
       - [0x2DD488, sdata, nml_packet_add]
-      - [0x2DD4D4, sdata, face_point]
+      - [0x2DD4D0, sdata, face_point]
       - { type: sbss, vram: 0x004DC500, name: game }
       - { type: sbss, vram: 0x004DC51C, name: game_camera }
       - { type: sbss, vram: 0x004DC528, name: look_at_player }
