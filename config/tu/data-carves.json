@@ -6865,51 +6865,163 @@
    ]
   },
   "main/tu160": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x004c3200",
-      "0x004c3220"
+      "0x0036c170",
+      "0x0036c298"
      ],
      "generated": [
-      "0x004c3200",
-      "0x004c3220"
+      "0x0036c170",
+      "0x0036c298"
      ],
      "generated_by": [
-      "menuCallback"
+      "ChangeTopLevel",
+      "MainMenu",
+      "MenuCfTaikiPop",
+      "MenuCfTaikiPush",
+      "MenuKeepSelectReset",
+      "WindowTexLoad"
      ],
      "c_owned_symbols": [
-      "jtbl_004C3200"
+      "file_name_0",
+      "D_0036C17C",
+      "MenuWork",
+      "MenuKeepSelect",
+      "D_0036C264",
+      "MenuModelOut",
+      "MenuCfTaiki"
      ],
-     "also_referenced_by_c": [
-      "D_004C3220",
-      "D_004C3240"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/window_tex_load.o"
      }
-    },
+    }
+   ],
+   ".lit4": [
     {
      "range": [
-      "0x004c32b0",
-      "0x004c32f8"
+      "0x004d7d58",
+      "0x004d7d64"
      ],
      "generated": [
-      "0x004c32b0",
-      "0x004c32f4"
+      "0x004d7d58",
+      "0x004d7d64"
      ],
      "generated_by": [
-      "MainMenu"
+      "MenuBgTaskInit"
      ],
      "c_owned_symbols": [
-      "D_004C32B0",
-      "jtbl_004C32C0"
+      "D_004D7D58",
+      "D_004D7D5C",
+      "D_004D7D60"
      ],
-     "also_referenced_by_c": [
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/window_tex_load.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c3200",
+      "0x004c3310"
+     ],
+     "generated": [
+      "0x004c3200",
+      "0x004c330e"
+     ],
+     "generated_by": [
+      "MainMenu",
+      "MenuTairetuLoad",
+      "UmnInterface",
+      "menuCallback"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C3200",
+      "D_004C3220",
+      "D_004C3240",
+      "D_004C32B0",
+      "jtbl_004C32C0",
       "D_004C32F8"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/window_tex_load.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da810",
+      "0x004da88c"
+     ],
+     "generated": [
+      "0x004da810",
+      "0x004da88c"
+     ],
+     "generated_by": [
+      "MainMenu",
+      "MenuBgTaskBreak",
+      "MenuBgTaskInit",
+      "MenuBgTaskMain",
+      "MenuBibrationMain",
+      "MenuBibrationSet",
+      "MenuLoadCancel",
+      "MenuLoadInit",
+      "MenuLoadSync",
+      "MenuTairetuLoad",
+      "UmnInterface",
+      "UmnkosmosSpecialInit",
+      "UmnkosmosSpecialSet",
+      "WindowTexAddrGet",
+      "WindowTexLoad",
+      "menuCallback"
+     ],
+     "c_owned_symbols": [
+      "D_004DA810",
+      "UmnSimulationNo",
+      "MenuDrillCall",
+      "MenuTask_BG",
+      "MenuScenarioNo",
+      "MenuModelWorkTop",
+      "mini_game_no",
+      "MenuHddCheck",
+      "UmnGunoDataBaseTop",
+      "D_004DA834",
+      "UmnKosmosSpecialBox",
+      "MenuTairetuModelXtxAddr",
+      "MenuTairetuModelLexAddr",
+      "MenuTairetuModelPointerXtxAddr",
+      "MenuTairetuModelPointerLexAddr",
+      "debug_flag",
+      "MenuTask",
+      "MenuTask_XMX",
+      "MainMenuWorkEnd",
+      "model_work",
+      "D_004DA864",
+      "MenuBackRgba",
+      "MenuWinAddr",
+      "MenuLoadCount",
+      "MenuBibrationCount",
+      "MenuBibrationAct",
+      "MenuBibrationSpeed",
+      "MenuBibrationPad",
+      "MenuBgTask",
+      "MenuBgParam",
+      "MenuBgCameraId",
+      "MenuBgKeepCamera",
+      "MenuBgRgba"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

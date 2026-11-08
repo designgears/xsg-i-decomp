@@ -126,7 +126,6 @@ typedef union {
     } light;
     unsigned long long words[14];
 } MenuLightConfig;
-extern const MenuLightConfig D_004C3240;
 
 /* The external data witness covers these 0x9c bytes; the spans around the
  * two evidenced bit sets remain unmodelled (see UmnDataBase). */
@@ -136,6 +135,8 @@ extern unsigned char Menu02Tex[0x40800];
 
 int WindowTexLoad(unsigned char *buffer, unsigned int request)
 {
+    extern const char D_004C31B0[], D_004C31C8[], D_004C31E0[];
+    static const char *file_name_0[3] __asm__("file_name.0") = { D_004C31E0, D_004C31C8, D_004C31B0 };
     int texture_slot = request & 0xffff;
     unsigned int asynchronous = request >> 16;
     int result = 0;
@@ -474,9 +475,9 @@ unsigned char *MenuBgTaskInit(unsigned char *work, int camera_id)
     MenuBgParam->initialization_values[1] = 0x1b;
     MenuBgParam->initialization_values[2] = 0x19;
     MenuBgParam->initialization_values[3] = 0x80;
-    camera_rotation_x = D_004D7D58;
-    camera_rotation_z = D_004D7D5C;
-    camera_position_z = D_004D7D60;
+    camera_rotation_x = -0.4247988f;
+    camera_rotation_z = 2.7841938f;
+    camera_position_z = 7.055951f;
     MenuBgParam->rotation_x = camera_rotation_x;
     MenuBgParam->rotation_z = camera_rotation_z;
     MenuBgParam->camera_position_z = camera_position_z;
@@ -518,13 +519,12 @@ void MenuBgTaskBreak(void)
 
 unsigned char *MenuTairetuLoad(unsigned char *buffer, int load_flags)
 {
-    MenuModelPath filename;
+    MenuModelPath filename = { "data\\endou\\poly\\tai00.xtx" };
     unsigned char *destination;
 
     (void)load_flags;
     MenuTairetuModelXtxAddr =
         (unsigned char *)(((unsigned int)buffer + 0x7f) & ~0x7f);
-    filename = D_004C3220;
     filename.path[20] = '0';
     filename.path[22] = 'x';
     filename.path[23] = 't';
@@ -552,7 +552,6 @@ unsigned char *MenuTairetuLoad(unsigned char *buffer, int load_flags)
 
 void MainMenu(void)
 {
-    MenuLightConfig lighting;
     void *light;
     int *out;
     int index;
@@ -573,7 +572,13 @@ void MainMenu(void)
     MenuBibrationInit();
     xglStudioChange(0);
     light = xglStudioGetLight2();
-    lighting = D_004C3240;
+    {
+    MenuLightConfig lighting = { {
+        { 0.3f, 0.3f, 0.3f, 1.0f },
+        { { 0.5f, 0.5f, 0.5f, 1.0f }, { 0.5f, 0.5f, 0.5f, 1.0f }, { 0.5f, 0.5f, 0.5f, 1.0f } },
+        { { 1.0f, 1.0f, 0.5f, 1.0f }, { -1.0f, 1.0f, 0.5f, 1.0f }, { 0.0f, 1.0f, 0.5f, 1.0f } },
+    } };
+
     xglLightIntensityAmbient(light, lighting.light.ambient);
     xglLightIntensityParallel(light, 0, lighting.light.parallel[0]);
     xglLightDirection(light, 0, lighting.light.direction[0]);
@@ -581,6 +586,7 @@ void MainMenu(void)
     xglLightDirection(light, 1, lighting.light.direction[1]);
     xglLightIntensityParallel(light, 2, lighting.light.parallel[2]);
     xglLightDirection(light, 2, lighting.light.direction[2]);
+    }
     MenuModelWorkTop = (int)GameResourceWorkAlloc(0x500000);
     MainMenuWorkEnd = (unsigned char *)MenuModelWorkTop + 0x480000;
     MainMenuWorkEnd = (unsigned char *)MenuModelInit((int)MainMenuWorkEnd);
@@ -772,9 +778,7 @@ void UmnkosmosSpecialSet(void)
 
 void UmnInterface(void)
 {
-    UmnTextPageMap text_pages;
     UmnGunoRecord *record;
-    unsigned char default_character;
     int unit_id;
 
     endPrintExtFunc(0, 100, 0);
@@ -785,8 +789,10 @@ void UmnInterface(void)
     MenuModelMain();
     xglSleep();
 
-    text_pages = D_004C32F8;
-    default_character = D_004DA810[0];
+    {
+    UmnTextPageMap text_pages = { { 1, 3, 4, 5, 0, 0, 0, 0, 0, 0, 2 } };
+    unsigned char default_character[] = "";
+
     record = UmnGunoDataBaseTop;
 
     for (unit_id = 0x22; unit_id < 0x3f; ++unit_id, ++record) {
@@ -816,7 +822,7 @@ void UmnInterface(void)
             text = MenuTextGet(text_id);
             strcpy(record->name, text->text);
         } else {
-            record->name[0] = default_character;
+            record->name[0] = default_character[0];
         }
 
         if (unit_text->description_id != 0) {
@@ -825,8 +831,9 @@ void UmnInterface(void)
             text = MenuTextGet(text_id);
             strcpy(record->description, text->text);
         } else {
-            record->description[0] = default_character;
+            record->description[0] = default_character[0];
         }
+    }
     }
 
     UmnkosmosSpecialInit();
@@ -845,6 +852,44 @@ void UmnInterface(void)
     UmnkosmosSpecialSet();
     MenuModelMemoryInit((void *)MenuModelWorkTop, 0x480000);
 }
+
+/* Menu globals; the original emits them after UmnInterface. */
+int UmnSimulationNo = 0;
+int MenuDrillCall = 0;
+void *MenuTask_BG = 0;
+int MenuScenarioNo = 0;
+int MenuModelWorkTop = 0;
+int mini_game_no = 0;
+int MenuHddCheck = 0;
+void *UmnGunoDataBaseTop = 0;
+short UmnKosmosSpecialBox[4] = { 0, 0, 0, 0 };
+unsigned char *MenuTairetuModelXtxAddr = 0;
+unsigned char *MenuTairetuModelLexAddr = 0;
+unsigned char *MenuTairetuModelPointerXtxAddr = 0;
+unsigned char *MenuTairetuModelPointerLexAddr = 0;
+int debug_flag = 0;
+XglTaskScheduler *MenuTask = 0;
+XglTaskScheduler *MenuTask_XMX = 0;
+unsigned char *MainMenuWorkEnd = 0;
+void *model_work = 0;
+unsigned char MenuBackRgba[4] = { 0, 0, 0, 0 };
+unsigned char *MenuWinAddr = 0;
+int MenuLoadCount = 0;
+unsigned char MenuBibrationCount = 0;
+unsigned char MenuBibrationAct = 0;
+unsigned char MenuBibrationSpeed = 0;
+unsigned char MenuBibrationPad = 0;
+XglTaskScheduler *MenuBgTask = 0;
+MenuBgTaskParameters *MenuBgParam = 0;
+int MenuBgCameraId = 0;
+u64 *MenuBgKeepCamera = 0;
+MenuBgColor MenuBgRgba = { 0, 0, 0, 0 };
+
+/* MenuWork holds TImode fields (MenuWorkState); cc1 cannot initialize those. */
+u32 MenuWork_words[32] __asm__("MenuWork") __attribute__((aligned(16))) = { 0 };
+unsigned char MenuKeepSelect[0x64] = { 0 };
+int MenuModelOut[4] = { 0, 0, 0, 0 };
+XglRenderFadeCallback MenuCfTaiki[8] = { 0 };
 
 void UmnMailMain(int menuId)
 {
