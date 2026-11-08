@@ -60336,7 +60336,7 @@
       "name_confidence": "low",
       "ordinal": 204,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
         ".sbss": "c",

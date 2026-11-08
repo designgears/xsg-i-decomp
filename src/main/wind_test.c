@@ -21,9 +21,9 @@ extern void ACT_allocMatrix(WtAct *, int);
 extern void ACT_setModelWrapper(WtAct *, int);
 extern void EXM_SetPointWind(void *);
 extern void EXM_SetShakeTime(float);
-extern float cpos_00585140[];
-extern float wpos[];
-extern float wvec[];
+static float cpos_00585140[16] __asm__("cpos") __attribute__((aligned(16)));
+static float wpos[16] __attribute__((aligned(16)));
+static float wvec[16] __attribute__((aligned(16)));
 static signed char wtype;
 static WtCam *pCamera_004DC614 __asm__("pCamera");
 static float crx_004DC618 __asm__("crx");
@@ -148,7 +148,7 @@ typedef union WindVectorBlock {
     u64 words[2];
 } WindVectorBlock;
 extern WindPadRecord PadDataRec[2] __asm__("PadData");
-extern WindParticle cpos __asm__("cpos_00585140");
+#define cpos (*(WindParticle *)cpos_00585140)
 extern float crx __asm__("crx");
 extern float cry __asm__("cry");
 extern StudioCamera *pCamera __asm__("pCamera");
@@ -228,7 +228,6 @@ static void MoveCamera(void)
     pCamera->rotation.z = 0.0f;
 }
 
-extern float wpos[];
 static void MoveWind(void)
 {
     float x;
@@ -258,7 +257,6 @@ static void MoveWind(void)
     ppNextEnd(wpos);
 }
 
-extern float wvec[];
 
 static void MoveWind2(void)
 {
@@ -291,7 +289,6 @@ static void MoveWind2(void)
 
 extern signed char wtype;
 extern float shake;
-extern float D_0058518C[];
 extern double fptodp(float value);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
@@ -306,7 +303,7 @@ static void PrintDisp(void)
         xglFontDebugPrintf(8, 8, "\x0B" "directional");
     }
     position_format = "\x0B\x1B\x18\x1B\x1E\x1B\x1FWindPow:%f";
-    xglFontDebugPrintf(0x64, 0xC8, position_format, fptodp(D_0058518C[0]));
+    xglFontDebugPrintf(0x64, 0xC8, position_format, fptodp(wpos[3]));
     xglFontDebugPrintf(0x64, 0xD0, "\x0B\x1B\x18\x1B\x1D\x1B\x1CRandPow:%f", fptodp(shake));
 }
 
