@@ -42,7 +42,7 @@ int xglHddUninstall(void);
 
 extern int sceRemove(const char *path);
 
-extern char partitionname[];
+
 
 extern u8 system_cnf[];
 

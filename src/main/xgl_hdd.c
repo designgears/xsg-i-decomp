@@ -3,6 +3,9 @@
 #include "main/xgl_hdd.h"
 #include "xgl_hdd.h"
 
+/* HDD partition path ("hdd0:PP.SLPS-...") stored XOR 0x80; decrypt() restores it. */
+static char partitionname[] = "\xE8\xE4\xE4\xB0\xBA\xD0\xD0\xAE\xD3\xCC\xD0\xD3\xAD\xB2\xB9\xB0\xB0\xB2\xAE\xD8\xC5\xCE\xCF\xD3\xC1\xC7\xC1\xB1\xAE\xC4\xC9\xD3\xC3\xB1\xAC\xF8\xE5\xEE\xEF\xB1\xE4\xB1\xAC\xF8\xE5\xEE\xEF\xB1\xE4\xB1";
+
 static char hddname[] = "pfs0:/xenosaga.00";
 static u8 hddcheck[] = "pfs0:/xenosaga.hdd";
 static char commonname[] = "hdd0:__common";

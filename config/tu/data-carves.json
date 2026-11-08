@@ -772,6 +772,31 @@
    ".data": [
     {
      "range": [
+      "0x004a89f0",
+      "0x004a8a23"
+     ],
+     "generated": [
+      "0x004a89f0",
+      "0x004a8a23"
+     ],
+     "generated_by": [
+      "decrypt",
+      "xglHddInstall",
+      "xglHddMount",
+      "xglHddUninstall"
+     ],
+     "c_owned_symbols": [
+      "partitionname"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    },
+    {
+     "range": [
       "0x004a8a28",
       "0x004a8a79"
      ],
@@ -796,9 +821,7 @@
       "commonname",
       "yoursaves"
      ],
-     "also_referenced_by_c": [
-      "partitionname"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -1055,16 +1078,17 @@
     {
      "range": [
       "0x004a8c20",
-      "0x004a8ce0"
+      "0x004a8cf2"
      ],
      "generated": [
       "0x004a8c20",
-      "0x004a8ce0"
+      "0x004a8cf2"
      ],
      "generated_by": [
       "xglCameraScreenInit",
       "xglCameraTravelInit",
-      "xglCameraTravelReset"
+      "xglCameraTravelReset",
+      "xglCameraViewVolume"
      ],
      "c_owned_symbols": [
       "sClipRange_0",
@@ -1078,11 +1102,10 @@
       "sChaseRefPos_8",
       "sChaseIntPos_9",
       "sShootAngleA_10",
-      "sShootPlaceA_11"
-     ],
-     "also_referenced_by_c": [
+      "sShootPlaceA_11",
       "aaiVertexIndex"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

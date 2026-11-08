@@ -553,7 +553,9 @@ static void xglCameraViewTravel(StudioCamera *studio, Vector4 *offset)
     xglMatrixStackSave(camera->inverseTransform);
 }
 
-extern signed char aaiVertexIndex[6][3];
+static signed char aaiVertexIndex[6][3] = {
+    { 0, 2, 4 }, { 1, 0, 5 }, { 0, 1, 2 }, { 3, 1, 7 }, { 2, 3, 6 }, { 4, 6, 5 },
+};
 
 static void xglCameraViewVolume(StudioCamera *studio, Vector4 *offset)
 {
