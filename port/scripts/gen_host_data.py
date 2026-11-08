@@ -187,15 +187,18 @@ def ld_objects(ld_path, stop_at_section=None):
 def host_section(unit, sec):
     kind = {".data": "d", ".sdata": "d", ".rodata": "r", ".lit4": "r",
             ".bss": "b", ".sbss": "b", ".vudata": "r"}[sec]
+    # The game writes into some of its "read-only" data (menu_item.c and the
+    # other menus recolour their help strings in place), which the PS2 allows,
+    # so the game's rodata goes to a writable section of its own.
     if unit == "main":
-        return {"d": ".data", "r": ".rodata", "b": ".bss"}[kind]
+        return {"d": ".data", "r": "xsgr_main", "b": ".bss"}[kind]
     return "xsg%s_%s" % (kind, unit)
 
 
 def section_directive(name):
-    if name in (".data", ".rodata", ".bss"):
+    if name in (".data", ".bss"):
         return "\t.section %s" % name
-    flags = {"d": '"aw",@progbits', "r": '"a",@progbits', "b": '"aw",@nobits'}[name[3]]
+    flags = {"d": '"aw",@progbits', "r": '"aw",@progbits', "b": '"aw",@nobits'}[name[3]]
     return "\t.section %s,%s" % (name, flags)
 
 
