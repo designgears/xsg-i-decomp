@@ -11437,7 +11437,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ],
@@ -11484,7 +11484,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ]
@@ -11612,20 +11612,48 @@
    ".rodata": [
     {
      "range": [
-      "0x004ca028",
-      "0x004ca040"
+      "0x004c9dd0",
+      "0x004ca280"
      ],
      "generated": [
-      "0x004ca028",
-      "0x004ca040"
+      "0x004c9dd0",
+      "0x004ca276"
      ],
      "generated_by": [
-      "MAP_LoadUwamonoResource"
+      "CreateKowaremono",
+      "CreateUwamono",
+      "GetPartsSize",
+      "HitCheckBoxTest",
+      "InitEvsSymbol",
+      "InitMapKoware",
+      "InitMapParts",
+      "InitRetSymbol",
+      "InitSaveSymbol",
+      "InitShopSymbol",
+      "InitUwamono",
+      "InitUwamonoSys",
+      "MAP_LoadUwamonoResource",
+      "MAP_updateUnitHide",
+      "MAP_updateUnitKoware",
+      "SetHideObject",
+      "ShootMapUnit",
+      "Unit_CreateUwamono"
      ],
      "c_owned_symbols": [
-      "D_004CA028"
-     ],
-     "also_referenced_by_c": [
+      "D_004C9DD0",
+      "D_004C9DE8",
+      "D_004C9E00",
+      "D_004C9E18",
+      "D_004C9E30",
+      "D_004C9E48",
+      "D_004C9E60",
+      "D_004C9E78",
+      "D_004C9E90",
+      "D_004C9EA8",
+      "D_004C9EC0",
+      "D_004C9ED8",
+      "D_004C9EF0",
+      "D_004C9F08",
       "D_004C9F20",
       "D_004C9F58",
       "D_004C9F88",
@@ -11633,86 +11661,18 @@
       "D_004C9FD0",
       "D_004C9FF0",
       "D_004CA008",
+      "D_004CA028",
       "D_004CA040",
-      "D_004CA050"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/init_uwamono_sys.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca060",
-      "0x004ca0b0"
-     ],
-     "generated": [
-      "0x004ca060",
-      "0x004ca0b0"
-     ],
-     "generated_by": [
-      "InitUwamono"
-     ],
-     "c_owned_symbols": [
+      "D_004CA050",
       "D_004CA060",
-      "D_004CA088"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/init_uwamono_sys.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca0b0",
-      "0x004ca0e8"
-     ],
-     "generated": [
-      "0x004ca0b0",
-      "0x004ca0e8"
-     ],
-     "generated_by": [
-      "InitMapParts",
-      "InitUwamono"
-     ],
-     "c_owned_symbols": [
+      "D_004CA088",
       "jtbl_004CA0B0",
-      "D_004CA0D0"
-     ],
-     "also_referenced_by_c": [
+      "D_004CA0D0",
       "D_004CA0E8",
       "D_004CA108",
-      "D_004CA138"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/init_uwamono_sys.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca170",
-      "0x004ca1b0"
-     ],
-     "generated": [
-      "0x004ca170",
-      "0x004ca1b0"
-     ],
-     "generated_by": [
-      "InitEvsSymbol",
-      "InitRetSymbol",
-      "InitSaveSymbol",
-      "InitShopSymbol"
-     ],
-     "c_owned_symbols": [
+      "D_004CA138",
       "D_004CA170",
-      "D_004CA190"
-     ],
-     "also_referenced_by_c": [
+      "D_004CA190",
       "D_004CA1B0",
       "D_004CA1D0",
       "D_004CA1F8",
@@ -11722,6 +11682,23 @@
       "D_004CA250",
       "D_004CA260"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C9DD0": "D_004C9F20",
+      "D_004C9DE8": "D_004C9F20",
+      "D_004C9E00": "D_004C9F20",
+      "D_004C9E18": "D_004C9F20",
+      "D_004C9E30": "D_004C9F20",
+      "D_004C9E48": "D_004C9F20",
+      "D_004C9E60": "D_004C9F20",
+      "D_004C9E78": "D_004C9F20",
+      "D_004C9E90": "D_004C9F20",
+      "D_004C9EA8": "D_004C9F20",
+      "D_004C9EC0": "D_004C9F20",
+      "D_004C9ED8": "D_004C9F20",
+      "D_004C9EF0": "D_004C9F20",
+      "D_004C9F08": "D_004C9F20"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
