@@ -271,7 +271,7 @@ def finish(root, build, snapshot, iop_report=None):
     return dict(schema='verified-progress/1', inputs=snapshot, artifacts=artifacts,
                 objects=results, units=iop_units,
                 iop=dict(build_report=str(iop_report.relative_to(root)),
-                         build_report_sha256=digest(iop_report), functions=495, original_objects=24,
+                         build_report_sha256=digest(iop_report), functions=495, original_objects=25,
                          data_credit=0),
                 note='IOP credit requires complete raw SSD.IRX/RSSD.IRX equality from the '
                 'published C. Original TU data and standalone ASM earn no C matching or '

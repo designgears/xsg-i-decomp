@@ -2863,6 +2863,22 @@
         ],
         "source": "src/audio/ssd/ssd_vag.c",
         "source_sha256": "1cb3848cdea14e16265fca930ba11c6279296dfa6fc0a65a0860e32b1edd502d"
+      },
+      {
+        "fdr_filename": "ssd_data.c",
+        "fdr_index": 20,
+        "float_mode": "soft",
+        "functions": [],
+        "generated_data": [
+          {
+            "offset": 60448,
+            "section": ".data",
+            "sha256": "0df8a3b032358f35b8ed41b9eccaaa777600604953f02810024d446d94591aa9",
+            "size": 7296
+          }
+        ],
+        "source": "src/audio/ssd/ssd_data.c",
+        "source_sha256": "df5407f6aab2fc406d6ac171600b9a623c2a78357362747b7f37e1de4f8642bb"
       }
     ]
   }

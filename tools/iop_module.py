@@ -286,11 +286,17 @@ def normalize_candidates(candidates, original):
         obj = Elf(item["object"])
         require(obj.header[1] == 1 and obj.header[7] in (0, 1),
                 "candidate object must be native MIPS-I ET_REL flags=0 or noreorder=1")
-        claims = item.get("functions") or [dict(name=item["function"], offset=item["offset"], size=item["size"])]
+        claims = item.get("functions")
+        if claims is None:
+            claims = [dict(name=item["function"], offset=item["offset"], size=item["size"])]
         claims = [dict(name=f.get("name", f.get("function")), offset=integer(f["offset"]),
                        size=integer(f["size"])) for f in claims]
         claims.sort(key=lambda f: f["offset"])
-        require(claims, "candidate has no function claims")
+        # A data-only translation unit claims no functions; it must then emit no
+        # text at all and own at least one mapped generated-data span.
+        data_only = not claims
+        require(not data_only or item.get("generated_data"),
+                "candidate has neither function claims nor generated data")
         for claim in claims:
             original_symbol = original.named_symbol(claim["name"])
             emitted = obj.named_symbol(claim["name"])
@@ -313,16 +319,21 @@ def normalize_candidates(candidates, original):
         extra_functions = [s["name"] for s in obj.symbols if s["type"] == 2 and s["size"] and
                            s["name"] not in {f["name"] for f in claims}]
         require(not extra_functions, f"unclaimed compiler functions: {extra_functions}")
-        start = claims[0]["offset"]
-        end = max(f["offset"] + f["size"] for f in claims)
-        object_start = claims[0]["object_symbol"]["value"]
+        if data_only:
+            text = [x for x in obj.sections if x["name"] == ".text" and x["size"]]
+            require(not text, "data-only candidate emitted .text")
+            start = end = object_start = None
+        else:
+            start = claims[0]["offset"]
+            end = max(f["offset"] + f["size"] for f in claims)
+            object_start = claims[0]["object_symbol"]["value"]
         for claim in claims:
             require(claim["offset"] - start == claim["object_symbol"]["value"] - object_start,
                     "candidate function ordering/internal spacing differs from original scope")
         # No original function may be hidden inside a compiler-owned contiguous span.
         claim_names = {f["name"] for f in claims}
         for symbol in functions:
-            if start <= symbol["value"] < end:
+            if not data_only and start <= symbol["value"] < end:
                 require(symbol["name"] in claim_names, "compiler text span crosses an unclaimed function")
         streams, namespace = namespace_streams(
             compiler_streams(item["assembly"].read_text(), obj), obj, original, index)
@@ -421,7 +432,8 @@ def generate_assembly(original, module, original_bytes, candidates, disassembly)
         blocks = []
         for c in candidates:
             if name == ".text":
-                blocks.append((c["start"], c["end"], c["streams"].get(name, []), c))
+                if c["start"] is not None:
+                    blocks.append((c["start"], c["end"], c["streams"].get(name, []), c))
             else:
                 for mapping in c["data_maps"]:
                     if mapping["section"] == name:

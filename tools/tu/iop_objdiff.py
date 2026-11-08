@@ -34,9 +34,9 @@ def load_evidence(root, report_path, *, reporting=False):
     verification.require(report.get('mode', 'exact') == ('reporting' if reporting else 'exact'),
                          'IOP evidence reporting mode differs')
     verification.require(report.get('ok' if reporting else 'gate_passed') is True and report.get('functions_expected') == 495 and
-                         report.get('unique_source_groups') == 24 and
+                         report.get('unique_source_groups') == 25 and
                          report.get('manifest_sha256') == verification.digest(root / 'config/iop-build.json'),
-                         'IOP report is not a current complete 24-object build')
+                         'IOP report is not a current complete 25-object build')
     contract, tools, pins = iop_module.load_contract(root)
     verification.require(report.get('compiler_profile_sha256') ==
                          verification.digest(root / manifest['compiler_profile']), 'IOP report profile changed')
@@ -64,18 +64,26 @@ def load_evidence(root, report_path, *, reporting=False):
                                  ('SSD.IRX' if unit == 'iop_ssd' else 'RSSD.IRX')),
                              unit + ': actual IOP comparison flags/hashes differ')
         inputs = {tuple((f['name'], f['offset'], f['size']) for f in c['functions']): c
-                  for c in module['compiler_inputs']}
+                  for c in module['compiler_inputs'] if c['functions']}
+        data_only_inputs = {c['object_sha256']: c for c in module['compiler_inputs'] if not c['functions']}
+        verification.require(len(data_only_inputs) == sum(not c['functions'] for c in module['compiler_inputs']),
+                             unit + ': ambiguous data-only compiler inputs')
         for group in entries:
             scope = tuple((f['name'], f['offset'], f['size']) for f in group['functions'])
             record = registered[(unit, group['fdr_index'])]
+            if scope:
+                code_equal = (min(f[1] for f in scope) == int(record['code']['start'], 16) and
+                              max(f[1]+f[2] for f in scope) == int(record['code']['end'], 16))
+            else:
+                # A data-only FDR: no code range in the registry, and the group
+                # must own at least one generated-data span instead.
+                code_equal = 'code' not in record and bool(group.get('generated_data'))
             verification.require(group['fdr_filename'] in record['attested_source_files'] and
-                                 len(scope) == record['function_count'] and
-                                 min(f[1] for f in scope) == int(record['code']['start'], 16) and
-                                 max(f[1]+f[2] for f in scope) == int(record['code']['end'], 16) and
+                                 len(scope) == record['function_count'] and code_equal and
                                  record.get('source', group['source']) == group['source'],
                                  'IOP build group differs from the original FDR registry')
             emitted = emissions[(unit, group['source'])]
-            candidate = dict(inputs[scope])
+            candidate = dict(inputs[scope] if scope else data_only_inputs[emitted['object_sha256']])
             candidate['linked_functions'] = {}
             verification.require(verification.digest(root / group['source']) == group['source_sha256'] ==
                                  emitted['source_sha256'], 'IOP source changed: ' + group['source'])
@@ -111,7 +119,7 @@ def load_evidence(root, report_path, *, reporting=False):
                                          audits[0].get('exact') == proof['exact'],
                                          'IOP actual function bytes differ from fresh module-link evidence')
             groups.append((unit, group, candidate, original))
-    verification.require(len(groups) == 24 and len(identities) == 495, 'IOP original-object scope drift')
+    verification.require(len(groups) == 25 and len(identities) == 495, 'IOP original-object scope drift')
     return groups, contract, tools, report
 
 
@@ -159,8 +167,9 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
     from tools import iop_module
     destination.mkdir(parents=True, exist_ok=True)
     funcs = group['functions']
-    start = min(f['offset'] for f in funcs)
-    end = max(f['offset'] + f['size'] for f in funcs)
+    # a data-only group has no text: an empty range, no .text origin
+    start = min((f['offset'] for f in funcs), default=0)
+    end = max((f['offset'] + f['size'] for f in funcs), default=0)
     pools = [p for p in group.get('generated_data', []) if p['section'] not in ('.bss', '.sbss')]
     # a C-owned BSS range (COMMON or static storage mapped in iop-build.json)
     # is measured as the original's objects in it, like the EXTR-owned ones
@@ -229,7 +238,7 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
             operands = re.sub(r'(?:0x)?([0-9a-f]+)\s+<[^>]+>', branch, operands)
         source.append(opcode + (' ' + operands if operands else ''))
     spans = list(pools) + bss
-    section_origins = {'.text': start}
+    section_origins = {'.text': start} if funcs else {}
     for index, pool in enumerate(pools):
         section = original.by_name[pool['section']]
         section_origins[pool['section']] = pool['offset']
@@ -331,7 +340,7 @@ def resolve_base_pointers(base, target, original, group):
     for sym in original.symbols:
         if sym['name'] and 0 < sym['section_index'] < len(original.sections):
             named.setdefault(sym['name'], sym['value'])
-    homes = {'.text': min(f['offset'] for f in group['functions'])}
+    homes = {'.text': min(f['offset'] for f in group['functions'])} if group['functions'] else {}
     for m in group.get('generated_data', []):
         homes[m['section']] = m['offset']
         if m['section'] == '.rodata':
@@ -439,7 +448,9 @@ def prepare(root, project, report_path, *, reporting=False):
                              name + ': native object function scope differs')
         units.append(dict(name=name, target_path=str(target), base_path=str(base),
                           metadata=dict(complete=False, source_path=group['source'], progress_categories=[unit])))
-        expected[name] = dict(functions=scope, allowed=scope, complete=False,
+        # a published-C compiler object (base.o), not scaffolding, even when the
+        # group is data-only and so has no functions to allow
+        expected[name] = dict(functions=scope, allowed=scope, complete=False, c_object=True,
                               exact={name: row['exact'] for name, row in candidate['linked_functions'].items()})
     accounting = {}
     for unit, original in originals.items():
@@ -485,5 +496,5 @@ def prepare(root, project, report_path, *, reporting=False):
         accounting[unit] = dict(totals=totals, residual_spans=residual)
         (destination / 'reference-proof.json').write_text(json.dumps(accounting[unit], indent=2)+'\n')
     return units, expected, dict(build_report=str(report_path), build_report_sha256=verification.digest(report_path),
-                                 assigned_data=assigned, original_objects=24, functions=495,
+                                 assigned_data=assigned, original_objects=25, functions=495,
                                  data_accounting=accounting, data_ownership_complete=False)
