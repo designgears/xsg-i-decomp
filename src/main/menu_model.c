@@ -277,7 +277,7 @@ typedef struct MenuModelMemoryStateBuffer {
     MenuModelResourceAccess regions[16]; /* +0xC */
 } MenuModelMemoryStateBuffer;
 
-extern MenuModelMemoryStateBuffer MenuModelMemoryState;
+MenuModelMemoryStateBuffer MenuModelMemoryState = {0};
 
 
 /* Record zero is the active request; the remaining fifteen records are queued.
@@ -296,13 +296,14 @@ typedef struct MenuModelResourceStateBuffer {
     int motionHandle;
 } MenuModelResourceStateBuffer;
 
-extern MenuModelResourceStateBuffer MenuModelResourceState;
+MenuModelResourceStateBuffer MenuModelResourceState = {0};
 
 
+/* Still scaffold data: all-zero, so the carve cannot place it after
+ * MenuModelResourceState unambiguously. */
 extern MenuModelSubWindowAccess MenuModelSubWindow[3];
 
 
-extern const char D_004C3828[0x18];
 
 
 typedef struct MenuModelResource {
@@ -330,16 +331,12 @@ void ACT_dispose(MenuModelActor *actor);
 
 /* Shared fade-step values used by the draw-type routines below. */
 
-extern float D_004D7DF8;
 
 
-extern float D_004D7DFC;
 
 
-extern float D_004D7E00;
 
 
-extern float D_004D7E04;
 
 
 void MenuModelMemorySet(int mode)
@@ -644,7 +641,7 @@ void MenuModelResourceLoad(int resourceId, MenuModelResourceAccess *buffers,
 
     motionPackageOffset = (unsigned int)resourceId - 0x3007U;
     if (motionPackageOffset < 4U) {
-        MenuLoadFile(D_004C3828, buffers->file[3]);
+        MenuLoadFile("data\\motion\\wp_meqp.fpk", buffers->file[3]);
     }
 
     {
@@ -1332,7 +1329,6 @@ void MenuModelWeaponActorSet(MenuModelUnit *unit, MenuModelWeaponWA *weapon)
     actor->actorFlags &= ~8;
 }
 
-extern float D_004D7DC0;
 extern PadPrefix PadData;
 typedef float f32;
 typedef struct { unsigned char pad_00[0x30]; unsigned short movement; } MenuPadView;
@@ -1376,7 +1372,7 @@ void MenuModelControl(void *arg0)
             }
         }
         if ((((MenuPadView *)&PadData)->movement & 2) != 0) {
-            f32 c2 = D_004D7DC0;
+            f32 c2 = 0.9799995f;
             *temp_5 = *temp_5 + 0.02f;
             if (c2 <= *(f32 *)((char *)temp_7 + 0x60)) {
                 *temp_5 = c2;
@@ -1474,6 +1470,9 @@ void MenuModelControl2(MenuModelUnit *unit, int preset)
     }
 }
 
+XglTaskScheduler *MenuModelTask = 0;
+int MenuModelFlag = 0;
+
 typedef union NMVector {
     struct {
         float x;
@@ -1512,10 +1511,6 @@ typedef struct NMActor {
     NMControl menu;
 } NMActor;
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern const char D_004C38F0[16];
-extern const char D_004C3900[16];
-extern const char D_004C3910[16];
-extern const char D_004C3920[16];
 extern void xglMatrixStackUnit(void);
 extern void xglMatrixStackRotX(float angle);
 extern void xglMatrixStackRotY(float angle);
@@ -1548,10 +1543,10 @@ void MenuModelNavelMove(MenuModelUnit *unit)
         "vadd.xyz vf2,vf2,vf3\n\t"
         "sqc2 vf2,0(%1)\n\t"
         : : "r"(&control->offset), "r"(&actor->position) : "memory");
-    xglFontDebugPrintf(98, 32, D_004C38F0, (double)actor->rotation.value.x);
-    xglFontDebugPrintf(98, 40, D_004C3900, (double)actor->rotation.value.y);
-    xglFontDebugPrintf(98, 48, D_004C3910, (double)actor->rotation.value.z);
-    xglFontDebugPrintf(98, 56, D_004C3920, (double)actor->scale.value.x);
+    xglFontDebugPrintf(98, 32, "rot : x=%f", (double)actor->rotation.value.x);
+    xglFontDebugPrintf(98, 40, "    : y=%f", (double)actor->rotation.value.y);
+    xglFontDebugPrintf(98, 48, "    : z=%f", (double)actor->rotation.value.z);
+    xglFontDebugPrintf(98, 56, "scl :   %f", (double)actor->scale.value.x);
 }
 
 void MenuModelMotionSet(MenuModelMotionTarget *target, unsigned int dataId)
@@ -1569,7 +1564,7 @@ void ModelDrawTypeOpen01(MenuModelActor *actor)
     float progress;
 
     state = MENU_MODEL_ACTOR_DRAW_STATE(actor);
-    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) + D_004D7DF8;
+    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) + 0.1f;
     *MENU_MODEL_DRAW_STATE_PROGRESS(state) = progress;
     if (progress >= 1.0f) {
         *MENU_MODEL_DRAW_STATE_PROGRESS(state) = 1.0f;
@@ -1583,7 +1578,7 @@ void ModelDrawTypeClose01(MenuModelActor *actor)
     float progress;
 
     state = MENU_MODEL_ACTOR_DRAW_STATE(actor);
-    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) - D_004D7DFC;
+    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) - 0.1f;
     *MENU_MODEL_DRAW_STATE_PROGRESS(state) = progress;
     if (progress <= 0.0f) {
         *MENU_MODEL_DRAW_STATE_PROGRESS(state) = 0.0f;
@@ -1598,8 +1593,8 @@ void ModelDrawTypeClose02(MenuModelActor *actor)
     float progress;
 
     state = MENU_MODEL_ACTOR_DRAW_STATE(actor);
-    minProgress = D_004D7E04;
-    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) - D_004D7E00;
+    minProgress = 0.2f;
+    progress = *MENU_MODEL_DRAW_STATE_PROGRESS(state) - 0.1f;
     *MENU_MODEL_DRAW_STATE_PROGRESS(state) = progress;
     if (progress <= minProgress) {
         *MENU_MODEL_DRAW_STATE_PROGRESS(state) = minProgress;

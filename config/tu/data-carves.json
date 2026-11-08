@@ -3902,18 +3902,83 @@
    ]
   },
   "main/tu165": {
+   ".data": [
+    {
+     "range": [
+      "0x0036d330",
+      "0x0036d4fc"
+     ],
+     "generated": [
+      "0x0036d330",
+      "0x0036d4fc"
+     ],
+     "generated_by": [
+      "MenuModelCreate",
+      "MenuModelMemoryGet",
+      "MenuModelMemoryInit",
+      "MenuModelMemorySet",
+      "MenuModelMenuMotionCheck",
+      "MenuModelMenuMotionLoad",
+      "MenuModelResourceCancel3",
+      "MenuModelUnitActorSet"
+     ],
+     "c_owned_symbols": [
+      "MenuModelMemoryState"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_model.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036d500",
+      "0x0036d5cc"
+     ],
+     "generated": [
+      "0x0036d500",
+      "0x0036d5cc"
+     ],
+     "generated_by": [
+      "MenuModelMenuMotionGet",
+      "MenuModelMenuMotionLoad",
+      "MenuModelResourceCancel",
+      "MenuModelResourceCancel3",
+      "MenuModelResourceInit",
+      "MenuModelResourceMain",
+      "MenuModelResourceRequest"
+     ],
+     "c_owned_symbols": [
+      "MenuModelResourceState"
+     ],
+     "also_referenced_by_c": [
+      "MenuModelSubWindow"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_model.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d7da8",
-      "0x004d7dc0"
+      "0x004d7e08"
      ],
      "generated": [
       "0x004d7da8",
-      "0x004d7dc0"
+      "0x004d7e08"
      ],
      "generated_by": [
-      "MenuModelControl"
+      "MenuModelControl",
+      "MenuModelControl2",
+      "ModelDrawTypeClose01",
+      "ModelDrawTypeClose02",
+      "ModelDrawTypeOpen01"
      ],
      "c_owned_symbols": [
       "D_004D7DA8",
@@ -3921,30 +3986,8 @@
       "D_004D7DB0",
       "D_004D7DB4",
       "D_004D7DB8",
-      "D_004D7DBC"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7DC0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7dc4",
-      "0x004d7df8"
-     ],
-     "generated": [
-      "0x004d7dc4",
-      "0x004d7df8"
-     ],
-     "generated_by": [
-      "MenuModelControl2"
-     ],
-     "c_owned_symbols": [
+      "D_004D7DBC",
+      "D_004D7DC0",
       "D_004D7DC4",
       "D_004D7DC8",
       "D_004D7DCC",
@@ -3957,18 +4000,17 @@
       "D_004D7DE8",
       "D_004D7DEC",
       "D_004D7DF0",
-      "D_004D7DF4"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7DF4",
       "D_004D7DF8",
       "D_004D7DFC",
       "D_004D7E00",
       "D_004D7E04"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
+      "object": "build/main/build/c/menu_model.o"
      }
     }
    ],
@@ -3976,99 +4018,38 @@
     {
      "range": [
       "0x004c37d0",
-      "0x004c3828"
+      "0x004c3950"
      ],
      "generated": [
       "0x004c37d0",
-      "0x004c3828"
+      "0x004c3948"
      ],
      "generated_by": [
-      "MenuModelMemorySet"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C37D0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C3828"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c3840",
-      "0x004c3880"
-     ],
-     "generated": [
-      "0x004c3840",
-      "0x004c3878"
-     ],
-     "generated_by": [
+      "MenuModelDrawTypeSet",
+      "MenuModelMemorySet",
+      "MenuModelNavelMove",
+      "MenuModelResourceLoad",
       "MenuModelResourceMain",
       "MenuModelUnitActorSet"
      ],
      "c_owned_symbols": [
+      "jtbl_004C37D0",
+      "D_004C3828",
       "D_004C3840",
       "D_004C3858",
-      "D_004C3868"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c3880",
-      "0x004c38f0"
-     ],
-     "generated": [
-      "0x004c3880",
-      "0x004c38f0"
-     ],
-     "generated_by": [
-      "MenuModelUnitActorSet"
-     ],
-     "c_owned_symbols": [
-      "D_004C3880"
-     ],
-     "also_referenced_by_c": [
+      "D_004C3868",
+      "D_004C3880",
       "D_004C38F0",
       "D_004C3900",
       "D_004C3910",
-      "D_004C3920"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c3930",
-      "0x004c3950"
-     ],
-     "generated": [
-      "0x004c3930",
-      "0x004c3948"
-     ],
-     "generated_by": [
-      "MenuModelDrawTypeSet"
-     ],
-     "c_owned_symbols": [
+      "D_004C3920",
       "jtbl_004C3930"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
+      "object": "build/main/build/c/menu_model.o"
      }
     },
     {
@@ -4090,7 +4071,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
+      "object": "build/main/build/c/menu_model.o"
      }
     }
    ],
@@ -4102,7 +4083,7 @@
      ],
      "generated": [
       "0x004da930",
-      "0x004da935"
+      "0x004da938"
      ],
      "generated_by": [
       "MenuModelWeaponActorSet"
@@ -4112,14 +4093,46 @@
      ],
      "also_referenced_by_c": [
       "D_004DA938",
-      "D_004DA940",
-      "MenuModelTask",
-      "MenuModelFlag"
+      "D_004DA940"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_model.o"
+      "object": "build/main/build/c/menu_model.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da948",
+      "0x004da950"
+     ],
+     "generated": [
+      "0x004da948",
+      "0x004da950"
+     ],
+     "generated_by": [
+      "MenuModelAllBreak",
+      "MenuModelCreate",
+      "MenuModelInit",
+      "MenuModelMain",
+      "MenuModelMemorySet",
+      "MenuModelMenuMotionGet",
+      "MenuModelMenuMotionLoad",
+      "MenuModelResourceMain",
+      "MenuModelSubWindowMainSub",
+      "MenuModelWeaponCreate",
+      "tskMenuModelTaskMain",
+      "tskMenuModelWeaponTaskMain"
+     ],
+     "c_owned_symbols": [
+      "MenuModelTask",
+      "MenuModelFlag"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_model.o"
      }
     }
    ]
