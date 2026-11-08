@@ -68,8 +68,6 @@ extern void JS_classSetup(int class_id, JSNativeMethod get_peer);
 extern void JS_classAddMethod(int class_id, const char *name,
                               JSNativeMethod method);
 extern const char D_004DA460[];
-extern const char D_004C1D50[];
-extern const char D_004C1D60[];
 extern void JS_classLight_getPeer(void);
 extern void JS_classLight_setColor(void);
 extern void JS_classLight_setDirection2(void);
@@ -188,8 +186,8 @@ static void initJS(int state)
     JS_init(state, 0x40, 8);
     class_id = JS_loadClass(D_004DA460);
     JS_classSetup(class_id, JS_classLight_getPeer);
-    JS_classAddMethod(class_id, D_004C1D50, JS_classLight_setColor);
-    JS_classAddMethod(class_id, D_004C1D60, JS_classLight_setDirection2);
+    JS_classAddMethod(class_id, "setColor", JS_classLight_setColor);
+    JS_classAddMethod(class_id, "setDirection2", JS_classLight_setDirection2);
 }
 
 void SCRIPT_test(SceneObject argument, SceneMethod *method)
@@ -340,8 +338,6 @@ extern int xglCdReadFile(const char *path, void *buf, int a, int b);
 extern void JNI_initSystem(void *heap, int size);
 extern int JNI_loadClassDB(int class_id, int value);
 extern int D_004DEDD4[];
-extern const char D_004C1D70[];
-extern const char D_004C1D80[];
 typedef struct ScriptInitEntry {
     char *script;
     void *lo;
@@ -389,14 +385,14 @@ char *SCRIPT_init(char *heap)
     db->thread = 0;
     db->active = 0;
     p += 0x2D000;
-    fa = D_004C1D70;
+    fa = "data\\system.evt";
     db++;
     D_004DEDD4[0] = 0;
     *(float *)&currentScriptDB = 0.0f;
     setEntry(db, p, (void *)0x06500000, (void *)0x06900000, 3);
     p += 0x2D000;
     xglCdReadFile(fa, sys, 0, 0);
-    xglCdReadFile(D_004C1D80, base, 0, 0);
+    xglCdReadFile("data\\base.evt", base, 0, 0);
     JNI_initSystem(heap, 0x40000);
     JNI_loadClassDB(0, (int)sys);
     JNI_loadClassDB(1, (int)base);
@@ -465,8 +461,6 @@ void SCRIPT_execTouchto(void *actor)
     }
 }
 
-extern const char sig0_0[];
-extern const char sig1_1[];
 extern SceneClass *classJava_xeno_util_Window;
 typedef struct TalkTaskWin { int class_ref; char pad[0xC]; unsigned int flags; } TalkTaskWin;
 extern TalkTaskWin *TWIN_create2(int component_id);
@@ -478,6 +472,8 @@ extern ScriptDbThreadSlot D_004DEDF0[];
 
 void createTalkTask(void *actor, const char *method_name)
 {
+    static char sig0_0[] __asm__("sig0.0") = "(Lxeno/Enepc;)V";
+    static char sig1_1[] __asm__("sig1.1") = "(Lxeno/Enepc;Lxeno/util/Window;)V";
     SceneObject receiver;
     SceneClass *scene_class;
     SceneMethod *method;
@@ -831,6 +827,8 @@ void funcObserver(ScriptObserverTask *task)
     }
     ((GameLoopFlagsPrefix *)GameLoopState)->flags |= 0x200000;
 }
+
+const char func_observer_debug_text[16] = "\xA5\xA4\xA5\xD9\xA5\xF3\xA5\xC8\xBC\xC2\xB9\xD4\xC3\xE6";
 
 int getEmptyVM(ScriptObserverTask *observer)
 {
@@ -1508,7 +1506,20 @@ extern void TMENU_setItem(DbVmMenu *menu, int index, char *text);
 extern void TWSYS_setGRPStatus(int group, int status);
 extern int DB_evtMonitor(XglTaskPrefix *task);
 extern int vmDebugMask;
-extern char *vmSwitchStr[];
+
+static char *vmSwitchStr[12] = {
+    "\xA3\xCD\xA3\xC5\xA3\xCD\xA3\xCF\xA3\xD2\xA3\xD9\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xC6\xA3\xC6",
+    "\xA3\xCD\xA3\xC5\xA3\xCD\xA3\xCF\xA3\xD2\xA3\xD9\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xCE",
+    "\xA3\xC9\xA3\xCE\xA3\xC9\xA3\xD4\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xC6\xA3\xC6",
+    "\xA3\xC9\xA3\xCE\xA3\xC9\xA3\xD4\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xCE",
+    "\xA3\xC6\xA3\xC9\xA3\xCC\xA3\xC5\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xC6\xA3\xC6",
+    "\xA3\xC6\xA3\xC9\xA3\xCC\xA3\xC5\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xCE",
+    "\xA3\xC5\xA3\xD8\xA3\xC5\xA3\xC3\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xC6\xA3\xC6",
+    "\xA3\xC5\xA3\xD8\xA3\xC5\xA3\xC3\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA3\xCF\xA3\xCE",
+    "\xA3\xCD\xA3\xCF\xA3\xCE\xA3\xC9\xA3\xD4\xA3\xCF\xA3\xD2\xA1\xA1\xA3\xCF\xA3\xC6\xA3\xC6",
+    "\xA3\xCD\xA3\xCF\xA3\xCE\xA3\xC9\xA3\xD4\xA3\xCF\xA3\xD2\xA1\xA1\xA3\xCF\xA3\xCE",
+    0, 0
+};
 
 static void DB_vmSwitch(DbVmTask *task)
 {
@@ -1600,7 +1611,6 @@ extern void *TSLIDER_create(int requestedSlot);
 extern char *MapGetName(int map_id);
 extern void LoadMap2(int map_id, int event_index);
 extern void TWSYS_setGRPStatus(int group, int status);
-extern char D_004C1E90[];
 
 static void DB_stageSelect(DbSsTask *task)
 {
@@ -1653,7 +1663,7 @@ static void DB_stageSelect(DbSsTask *task)
         }
         break;
     case 1:
-        xglFontDebugPrintf(8, 0x20, D_004C1E90);
+        xglFontDebugPrintf(8, 0x20, "Entrance:");
         if (slider->state == 2) {
             int v = slider->value;
             if (v >= 0) {
@@ -1679,7 +1689,6 @@ extern void drawRect2(float m[4][4], int mode);
 extern void drawBox2(float m[4][4], int mode);
 extern int heapInfo[];
 extern unsigned int heapUsed;
-extern char D_004C1EA0[];
 
 static void DB_memory(DbSsTask *task)
 {
@@ -1694,7 +1703,7 @@ static void DB_memory(DbSsTask *task)
         task->flags |= 1;
         heapUsed = xheap_info(heapInfo);
     }
-    sprintf(buf, D_004C1EA0, heapUsed >> 10, 0x100);
+    sprintf(buf, "MEM %3d / %d K\n", heapUsed >> 10, 0x100);
     xglFontDebugPrintf(0x10, 0x40, buf);
     f = (float)heapUsed * 128.0f * 3.8146973e-06f;
     scale[1] = 24.0f;
@@ -1759,10 +1768,6 @@ extern int sprintf(char *buf, const char *fmt, ...);
 extern int sceOpen(const char *path, int flags, ...);
 extern int sceClose(int fd);
 extern void DB_lightWrite(int fd);
-extern char D_004C1EB0[];
-extern char D_004C1EC8[];
-extern char D_004C1EE0[];
-extern char D_004C1EF0[];
 
 int DB_lightSave(DbLightSel *sel)
 {
@@ -1796,11 +1801,11 @@ int DB_lightSave(DbLightSel *sel)
             lightFileNum = 0;
         }
         DB_reset(0x20, 0xA0);
-        DB_println(D_004C1EB0);
-        DB_println(D_004C1EC8);
-        DB_println(D_004C1EE0, lightFileNum);
+        DB_println("\xA1\xFC\xA5\xDC\xA5\xBF\xA5\xF3\xA1\xA7\xA5\xED\xA1\xBC\xA5\xC9");
+        DB_println("\xA2\xA3\xA5\xDC\xA5\xBF\xA5\xF3\xA1\xA7\xA5\xBB\xA1\xBC\xA5\xD6");
+        DB_println("lgt%02d.rc", lightFileNum);
         if (pad->half_2a & 0x80) {
-            sprintf(buf, D_004C1EF0, sel->path, sel->selectedPath, lightFileNum);
+            sprintf(buf, "%s%slgt%02d.rc", sel->path, sel->selectedPath, lightFileNum);
             fd = sceOpen(buf, 0x602);
             if (fd >= 0) {
                 DB_lightWrite(fd);
@@ -1960,7 +1965,6 @@ typedef struct DbMenuTask {
 static void DB_light(XglTaskPrefix *task);
 extern void initCursor();
 extern void TMENU_addItem(DbMenuView *menu, char *text);
-extern char D_004C1F00[];
 static inline void dbSpawn(void *func)
 {
     XglTaskScheduler *scheduler = GameLoopState[2];
@@ -1983,7 +1987,7 @@ void SCRIPT_debugMenu(DbMenuTask *task)
         menu = (DbMenuView *)TMENU_create(-1);
         menu->value = 0;
         menu->mode |= 0x10;
-        TMENU_addItem(menu, D_004C1F00);
+        TMENU_addItem(menu, "ScriptExec\nBgChange\nVirtualM\nTool\nLight\nMemoryInfo\nWind");
         menu->flags &= ~0x40;
         task->menu = menu;
         task->flags |= 1;
@@ -2037,7 +2041,6 @@ void SCRIPT_debugMenu(DbMenuTask *task)
 }
 
 extern int DebugMenuResourceSizeAdd;
-extern char D_004C1F60[];
 extern char D_004DA4B0[];
 extern char D_004DA4B8[];
 extern char *MAP_getPath(void);
@@ -2072,7 +2075,7 @@ void loadScriptCD(ScriptDbEntry *entry_, const char *path)
         return;
     }
     {
-    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, count);
+    cls = JNI_searchClasses(entry->script, "xeno/Scene:xeno/Stage", 2, count);
     replacePathExt(buf, D_004DA4B0);
     size = xglCdReadFile(buf, entry->fpk, 0, 1);
     if (size < 0) {
@@ -2094,7 +2097,6 @@ void loadScriptCD(ScriptDbEntry *entry_, const char *path)
 extern int RES_loadFile(int command, int callback, int resource_id, int flags);
 extern char *strrchr(const char *s, int c);
 extern void *memcpy(void *d, const void *s, unsigned int n);
-extern char D_004C1F78[] __attribute__((aligned(8)));
 
 int loadScriptCD2(ScriptDbEntry *entry_, const char *path)
 {
@@ -2114,12 +2116,12 @@ int loadScriptCD2(ScriptDbEntry *entry_, const char *path)
         *(char **)&entry->active = 0;
         return ret;
     }
-    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, &count);
+    cls = JNI_searchClasses(entry->script, "xeno/Scene:xeno/Stage", 2, &count);
     p = strrchr(path, '\\');
     if (p == 0) {
         p = strrchr(path, '/');
     }
-    __builtin_memcpy(buf, D_004C1F78, 9);
+    __builtin_memcpy(buf, "mtnpack\\", 9);
     if (p != 0) {
         strcat(buf, p + 1);
     }
@@ -2192,7 +2194,7 @@ int loadScript(ScriptDbEntry *entry_, const char *base, const char *path)
             DebugMenuResourceSizeAdd += size2;
         }
     }
-    cls = JNI_searchClasses(entry->script, D_004C1F60, 2, &count);
+    cls = JNI_searchClasses(entry->script, "xeno/Scene:xeno/Stage", 2, &count);
     entry->active = cls;
     entry->count = count;
     return cls;
@@ -2253,17 +2255,10 @@ extern EvtMapUnitSlot MapUnit[64];
 extern EvtUnitSequenceEntry unitSequence[64];
 extern void DB_cmode(int mode);
 extern void RES_GetMdlFileName(char *path, int resource_id);
-extern char D_004C1F88[];
-extern char D_004C1FA8[];
-extern char D_004C1FC0[];
-extern char D_004C1FD0[];
-extern char D_004C1FF0[];
-extern char D_004C2010[];
 extern char D_004DA4C8[];
 extern char D_004DA4D0[];
 extern char D_004DA4D8[];
 extern char D_004DA4E0[];
-extern char D_004C1F98[];
 extern char D_004DA4C0[];
 
 int DB_evtMonitor(XglTaskPrefix *task_prefix)
@@ -2291,7 +2286,7 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
         debug->flags |= 1;
     }
     DB_reset(0, 0);
-    DB_println(D_004C1F88);
+    DB_println("evtMonitor");
     thread = (EvtSceneThread *)D_004DEDF0[currentScriptDB].thread;
     {
     EvtSceneThread *debug_thread = ((thread));
@@ -2310,7 +2305,7 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
                      ++frame_index) {
                     ScriptCallFrame *frame =
                         &((debug_thread))->frames[frame_index];
-                    DB_println(D_004C1F98, frame->program_counter,
+                    DB_println("%04x: %s ", frame->program_counter,
                                ((EvtConstString *)((EvtSceneMethod *)frame->method)->name)->bytes);
                 }
             } else {
@@ -2349,13 +2344,13 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
             base_name = D_004DA4C8;
         ++base_name;
         DB_reset(0, 10);
-        DB_println(D_004C1FA8, debug->selected, actor_record->in_use_id,
+        DB_println("CHR[%02x] %04x:%s", debug->selected, actor_record->in_use_id,
                    base_name);
         half_turn = 3.1415927f;
-        DB_println(D_004C1FC0, actor_record->flags);
-        DB_println(D_004C1FD0, actor_record->position[0],
+        DB_println("flags %08x", actor_record->flags);
+        DB_println("pos(%6.3f, %6.3f, %6.3f)", actor_record->position[0],
                    actor_record->position[1], actor_record->position[2]);
-        DB_println(D_004C1FF0,
+        DB_println("rot(%6.3f, %6.3f, %6.3f)",
                    actor_record->rotation[0] / half_turn * 180.0f,
                    actor_record->rotation[1] / half_turn * 180.0f,
                    actor_record->rotation[2] / half_turn * 180.0f);
@@ -2379,7 +2374,7 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
                      ++frame_index) {
                     ScriptCallFrame *frame =
                         &((thread))->frames[frame_index];
-                    DB_println(D_004C1F98, frame->program_counter,
+                    DB_println("%04x: %s ", frame->program_counter,
                                ((EvtConstString *)((EvtSceneMethod *)frame->method)->name)->bytes);
                 }
             } else {
@@ -2414,16 +2409,16 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
         unit = &MapUnit[selected];
         DB_reset(0, 10);
         sequence = &unitSequence[unit->slot];
-        DB_println(D_004C2010, debug->selected, unit->serial);
-        DB_println(D_004C1FC0, unit->flags);
+        DB_println("UNIT[%02x] %04x", debug->selected, unit->serial);
+        DB_println("flags %08x", unit->flags);
         DB_println(D_004DA4D0);
         if (sequence->state & 1)
             DB_println(D_004DA4D8);
         else
             DB_println(D_004DA4E0);
         half_turn = 3.1415927f;
-        DB_println(D_004C1FD0, unit->position[0], unit->position[1], unit->position[2]);
-        DB_println(D_004C1FF0, unit->rotation[0] / half_turn * 180.0f,
+        DB_println("pos(%6.3f, %6.3f, %6.3f)", unit->position[0], unit->position[1], unit->position[2]);
+        DB_println("rot(%6.3f, %6.3f, %6.3f)", unit->rotation[0] / half_turn * 180.0f,
                    unit->rotation[1] / half_turn * 180.0f,
                    unit->rotation[2] / half_turn * 180.0f);
         object = unit->sequence;
@@ -2446,7 +2441,7 @@ int DB_evtMonitor(XglTaskPrefix *task_prefix)
                      ++frame_index) {
                     ScriptCallFrame *frame =
                         &((thread))->frames[frame_index];
-                    DB_println(D_004C1F98, frame->program_counter,
+                    DB_println("%04x: %s ", frame->program_counter,
                                ((EvtConstString *)((EvtSceneMethod *)frame->method)->name)->bytes);
                 }
             } else {

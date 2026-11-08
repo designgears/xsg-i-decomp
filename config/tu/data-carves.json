@@ -5940,6 +5940,33 @@
    ]
   },
   "main/tu148": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ae60",
+      "0x0036aec8"
+     ],
+     "generated": [
+      "0x0036ae60",
+      "0x0036aec8"
+     ],
+     "generated_by": [
+      "DB_vmSwitch",
+      "createTalkTask"
+     ],
+     "c_owned_symbols": [
+      "sig0_0",
+      "sig1_1",
+      "vmSwitchStr"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/script.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -5966,32 +5993,50 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/script.o"
+      "object": "build/main/build/c/script.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c1f40",
-      "0x004c1f60"
+      "0x004c1d50",
+      "0x004c2020"
      ],
      "generated": [
-      "0x004c1f40",
-      "0x004c1f5c"
+      "0x004c1d50",
+      "0x004c2020"
      ],
      "generated_by": [
-      "SCRIPT_debugMenu"
+      "DB_evtMonitor",
+      "DB_lightSave",
+      "DB_memory",
+      "DB_stageSelect",
+      "DB_vmSwitch",
+      "SCRIPT_debugMenu",
+      "SCRIPT_init",
+      "funcObserver",
+      "initJS",
+      "loadScript",
+      "loadScriptCD",
+      "loadScriptCD2"
      ],
      "c_owned_symbols": [
-      "jtbl_004C1F40"
-     ],
-     "also_referenced_by_c": [
       "D_004C1D50",
       "D_004C1D60",
       "D_004C1D70",
       "D_004C1D80",
       "func_observer_debug_text",
+      "D_004C1DA0",
+      "D_004C1DB8",
+      "D_004C1DD0",
+      "D_004C1DE8",
+      "D_004C1E00",
+      "D_004C1E18",
+      "D_004C1E30",
+      "D_004C1E48",
+      "D_004C1E60",
+      "D_004C1E78",
       "D_004C1E90",
       "D_004C1EA0",
       "D_004C1EB0",
@@ -5999,6 +6044,7 @@
       "D_004C1EE0",
       "D_004C1EF0",
       "D_004C1F00",
+      "jtbl_004C1F40",
       "D_004C1F60",
       "D_004C1F78",
       "D_004C1F88",
@@ -6009,10 +6055,23 @@
       "D_004C1FF0",
       "D_004C2010"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C1DA0": "vmSwitchStr",
+      "D_004C1DB8": "vmSwitchStr",
+      "D_004C1DD0": "vmSwitchStr",
+      "D_004C1DE8": "vmSwitchStr",
+      "D_004C1E00": "vmSwitchStr",
+      "D_004C1E18": "vmSwitchStr",
+      "D_004C1E30": "vmSwitchStr",
+      "D_004C1E48": "vmSwitchStr",
+      "D_004C1E60": "vmSwitchStr",
+      "D_004C1E78": "vmSwitchStr"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/script.o"
+      "object": "build/main/build/c/script.o"
      }
     }
    ]
