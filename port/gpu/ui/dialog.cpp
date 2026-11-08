@@ -381,7 +381,7 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         if (now - ra.born < double(i) * 0.04) ra.a = 0;
         const float t = FadeIn(ra, 8.0f), dx = Spring(ra, 0, 0, 16.0f).x;
         const bool off = r.btn > 4;
-        const float rx = x0 + 2.0f * float(i) + dx, ry = float(r.y) + 2;
+        const float rx = x0 + dx, ry = float(r.y) + 2;   // aligned, no stagger
         float right = rx + rw;
         const float costW = r.cost.empty() ? 0.0f : 92.0f;
         const ImVec2 a = P(rx, ry), b = P(right + costW, ry + rh);
@@ -422,7 +422,7 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         }
     }
     if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
-        const float fy = float(strip->y) - 2, fw = rw + 2.0f * float(rows.size() - 1) + 6;
+        const float fy = float(strip->y) - 2, fw = rw;
         const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 16);
         Panel(dl, a, b, k, 0.85f, false, 0, 0);
         const float cy = (a.y + b.y) * 0.5f, h = 11.0f * k, ts = 10.0f * k;
