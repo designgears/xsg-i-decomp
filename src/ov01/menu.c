@@ -2533,6 +2533,36 @@ void menuPlStatPut(ObjectTask *task, int packet, BattleUnit *unit)
     iconSlot = *(int *)(work + 0x7C);
     pA0 = (float *)(work + 0xA0);
     chrId = menuStatChrIdGet((ObjectTask *)unit);
+#ifdef PORT_HOST
+    {   /* rebuilt UI ([display] ui = rebuilt): the stats go to xsg-gpu (port/gpu/ui/); the game keeps
+           drawing the portrait and the turn glow (painted art) */
+        extern int xsg_ui_rebuilt(void);
+        extern void xsg_ui_battle_unit(int key, int x, int y, int active, int hp, int hp_max, int ep, int ep_max,
+                                       int ap, int bg, int bp, int idol);
+        if (xsg_ui_rebuilt()) {
+            cx = (chrId % 6) * 0x28;
+            cy = (chrId / 6) * 0x50;
+            xsg_ui_battle_unit((int)unit, x, y, actUnitGet() == unit, (int)*pA4, *(short *)up, (int)*pA8, up->maxEp,
+                               (int)*pA0, (signed char)up->unmodeled_3a[2], (int)*pC0, calcIdol2Chk((ObjectTask *)unit) != 0);
+            menuFaceEnvMake(packet);
+            frame = (frameCntGet() * 2) & 0xFF;
+            if (frame >= 0x80) {
+                frame = 0xFF - frame;
+            }
+            grGsRegSet(packet, 0x42, ((unsigned long long)(frame + 0xA) << 32) | 0x68);
+            grOpenSpr(packet);
+            if (actUnitGet() == unit) {
+                menuStatSprite2(packet, x + 0xC, y - 0xC, 0xA0, 0x58, 0xC8, 0xA0, 0xFF, 0xF0);
+            }
+            grCloseSpr();
+            grGsRegSet(packet, 0x42, 0ULL);
+            grOpenSpr(packet);
+            menuStatSprite(packet, x + 0x10, y - 8, 0x28, 0x50, cx, cy);
+            grCloseSpr();
+            return;
+        }
+    }
+#endif
     cx = (chrId % 6) * 0x28;
     cy = (chrId / 6) * 0x50;
     menuFaceEnvMake(packet);

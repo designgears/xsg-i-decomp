@@ -183,6 +183,24 @@ typedef struct {
     char line[XSG_GPU_UI_LINES][XSG_GPU_UI_LINE];   /* the lines typed out so far */
 } GpuUiDialog;
 
+/* Rebuilt UI: the battle party panels (ov01 menu.c menuPlStatPut, PORT_HOST). */
+#define XSG_GPU_UI_BATTLE_OFF 3328u
+#define XSG_GPU_UI_UNITS 4
+typedef struct {
+    volatile uint32_t frame;        /* game vblank of the last publish (0: unused) */
+    int32_t key;                    /* the unit (address), to keep a slot per unit */
+    int32_t x, y;                   /* the panel origin, PS2 pixels (the game's layout) */
+    int32_t active;                 /* this unit's turn */
+    int32_t hp, hp_max, ep, ep_max; /* displayed (animated) values */
+    int32_t ap;                     /* 0..6 chevrons */
+    int32_t bg, bp;                 /* boost count, boost gauge (0..60) */
+    int32_t idol;                   /* hp shown in the warning colour */
+} GpuUiUnit;
+typedef struct {
+    volatile uint32_t seq;
+    GpuUiUnit unit[XSG_GPU_UI_UNITS];
+} GpuUiBattle;
+
 #define XSG_GPU_SETTINGS_OFF 2048u
 #define XSG_GPU_FRAME_US_KEEP 0xffffffffu /* frame_us: leave the game's pacing alone */
 typedef struct {

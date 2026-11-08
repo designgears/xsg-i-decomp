@@ -1183,8 +1183,10 @@ void Frame(uint32_t vsync, const Stats& s) {
     xsgcfg::SaveTick(false);
     if (g_open) g_fade = float(std::min(1.0, (Now() - g_open_t) / 0.16));
     g_visible = false;
-    const bool dialog = xsgcfg::Get("display.ui") == "rebuilt" && xsgui::DialogActive(vsync) && s.game_w > 0;
-    if (!g_open && !g_overlay && !dialog) { PadFrame(); return; }
+    const bool rebuilt = xsgcfg::Get("display.ui") == "rebuilt" && s.game_w > 0;
+    const bool dialog = rebuilt && xsgui::DialogActive(vsync);
+    const bool battle = rebuilt && xsgui::BattleActive(vsync);
+    if (!g_open && !g_overlay && !dialog && !battle) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();
     float fb = 1.0f;
@@ -1223,6 +1225,9 @@ void Frame(uint32_t vsync, const Stats& s) {
         opt_focus_first();
     }
     ImGui::NewFrame();
+    if (battle)
+        xsgui::BattleDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
+                          s.game_h / fb, vsync);
     if (dialog)   // the rebuilt game UI (port/gpu/ui/), under the menu
         xsgui::DialogDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                           s.game_h / fb, Now());

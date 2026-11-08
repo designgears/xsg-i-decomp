@@ -18,6 +18,8 @@ namespace xsgui {
 namespace {
 
 GpuUiDialog* g_d;
+GpuUiBattle* g_b;
+GpuUiBattle g_bsnap;
 GpuUiDialog g_snap;   // the last consistent copy
 
 /* The game's own 0xD1xx symbols (font page 0x51): the ones seen in English text. */
@@ -90,6 +92,7 @@ std::string Decode(const char* s) {
 
 void Init(void* shm_base) {
     g_d = reinterpret_cast<GpuUiDialog*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_OFF);
+    g_b = reinterpret_cast<GpuUiBattle*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_BATTLE_OFF);
 }
 
 bool DialogActive(uint32_t vsync) {
@@ -157,4 +160,74 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     }
 }
 
+namespace {
+bool Fresh(uint32_t vsync, uint32_t frame) {
+    const int32_t age = int32_t(vsync - frame);
+    return frame && age <= 3 && age >= -120;
+}
+}  // namespace
+
+bool BattleActive(uint32_t vsync) {
+    if (!g_b) return false;
+    for (int tries = 0; tries < 4; ++tries) {
+        const uint32_t s0 = __atomic_load_n(&g_b->seq, __ATOMIC_ACQUIRE);
+        if (s0 & 1) continue;
+        GpuUiBattle c;
+        std::memcpy(&c, const_cast<const GpuUiBattle*>(g_b), sizeof c);
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&g_b->seq, __ATOMIC_ACQUIRE) == s0) { g_bsnap = c; break; }
+    }
+    for (const GpuUiUnit& u : g_bsnap.unit)
+        if (Fresh(vsync, u.frame)) return true;
+    return false;
+}
+
+void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, uint32_t vsync) {
+    using namespace xsgmenu;
+    const float k = gh / 448.0f, kx = gw / 512.0f;
+    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    char b[32];
+    for (const GpuUiUnit& u : g_bsnap.unit) {
+        if (!Fresh(vsync, u.frame)) continue;
+        const float x = float(u.x), y = float(u.y);
+        // the stats panel to the right of the portrait (portrait: x+16..x+56)
+        const ImVec2 a = P(x + 0x3a, y - 5), c = P(x + 0xa2, y + 0x40);
+        dl->AddRectFilledMultiColor(a, c, IM_COL32(26, 25, 66, 215), IM_COL32(26, 25, 66, 215), IM_COL32(14, 13, 40, 228),
+                                    IM_COL32(14, 13, 40, 228));
+        dl->AddRect(a, c, u.active ? col::kCyan : IM_COL32(150, 180, 235, 130), 0, 0, (u.active ? 1.4f : 1.0f) * k);
+        if (u.active) DrawBrackets(dl, ImVec2(a.x - 2 * k, a.y - 2 * k), ImVec2(c.x + 2 * k, c.y + 2 * k), col::kCyan, 7 * k, 1.2f * k);
+        const float ls = 10.0f * k, vs = 14.0f * k, ss = 10.0f * k;
+        auto label = [&](float ly, const char* t) { dl->AddText(font, ls, P(x + 0x40, ly + 1), col::kTextDim, t); };
+        auto value = [&](float ly, int v, int vmax, bool warn) {
+            std::snprintf(b, sizeof b, "%d", v);
+            const ImVec2 w = font->CalcTextSizeA(vs, 1e9f, 0, b);
+            const ImVec2 r = P(x + 0x7a, ly - 2);
+            dl->AddText(font, vs, ImVec2(r.x - w.x, r.y), warn ? col::kWarn : col::kText, b);
+            std::snprintf(b, sizeof b, "/%d", vmax);
+            dl->AddText(font, ss, P(x + 0x7c, ly + 1), col::kTextDim, b);
+        };
+        label(y, "HP");
+        value(y, u.hp, u.hp_max, u.idol || (u.hp_max > 0 && u.hp * 4 <= u.hp_max));
+        label(y + 0x11, "EP");
+        value(y + 0x11, u.ep, u.ep_max, false);
+        // AP: six chevrons
+        label(y + 0x22, "AP");
+        for (int i = 0; i < 6; ++i) {
+            const ImVec2 o = P(x + 0x52 + i * 10.5f, y + 0x22);
+            const float h = 9 * k, w = 6 * kx;
+            const ImU32 cc = i < u.ap ? col::kCyan : IM_COL32(118, 214, 255, 45);
+            dl->AddTriangleFilled(o, ImVec2(o.x + w, o.y + h / 2), ImVec2(o.x, o.y + h), cc);
+        }
+        // BG: the boost count and its gauge
+        label(y + 0x30, "BG");
+        const ImVec2 g0 = P(x + 0x52, y + 0x33), g1 = P(x + 0x52 + 60, y + 0x37);
+        dl->AddRectFilled(g0, g1, IM_COL32(255, 32, 128, 50));
+        dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
+                          IM_COL32(255, 60, 150, 230));
+        std::snprintf(b, sizeof b, "%d", u.bg);
+        dl->AddText(font, vs, P(x + 0x92, y + 0x2d), col::kText, b);
+    }
+}
+
 }  // namespace xsgui
+

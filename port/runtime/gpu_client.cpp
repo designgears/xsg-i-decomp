@@ -488,3 +488,24 @@ extern "C" void xsg_ui_dialog_lines(const char* const* lines, int first, int end
     d->nlines = uint32_t(n);
     __atomic_store_n(&d->seq, s + 2, __ATOMIC_RELEASE);
 }
+
+/* Rebuilt UI: one battle party panel (ov01 menu.c, PORT_HOST). */
+extern "C" void xsg_ui_battle_unit(int key, int x, int y, int active, int hp, int hp_max, int ep, int ep_max, int ap,
+                                   int bg, int bp, int idol) {
+    if (!xsggpu::shm) return;
+    GpuUiBattle* b = reinterpret_cast<GpuUiBattle*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_BATTLE_OFF);
+    int slot = -1;
+    for (int i = 0; i < XSG_GPU_UI_UNITS && slot < 0; ++i)
+        if (b->unit[i].key == key && b->unit[i].frame) slot = i;
+    for (int i = 0; i < XSG_GPU_UI_UNITS && slot < 0; ++i)   // a free or stale slot
+        if (!b->unit[i].frame || xsg_frame - b->unit[i].frame > 30) slot = i;
+    if (slot < 0) return;
+    const uint32_t s = b->seq;
+    __atomic_store_n(&b->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    GpuUiUnit& u = b->unit[slot];
+    u.key = key; u.x = x; u.y = y; u.active = active;
+    u.hp = hp; u.hp_max = hp_max; u.ep = ep; u.ep_max = ep_max; u.ap = ap; u.bg = bg; u.bp = bp; u.idol = idol;
+    u.frame = xsg_frame;
+    __atomic_store_n(&b->seq, s + 2, __ATOMIC_RELEASE);
+}
