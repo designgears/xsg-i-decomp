@@ -221,7 +221,7 @@ typedef struct AlignedLightBlock {
     AlignedLightVector vectors[4];
 } AlignedLightBlock;
 extern const AlignedLightBlock D_00A56E10;
-AlignedLightBlock asDirection_0 = {{
+AlignedLightBlock asDirection_0 __attribute__((aligned(16))) = {{
     {{0.0f, 0.0f, 0.0f, 1.0f}},
     {{-0.26195645f, 0.53120846f, -0.019844394f, 1.0f}},
     {{2.3561945f, 1.2733574f, 3.1415927f, 1.0f}},
