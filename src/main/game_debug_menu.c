@@ -15,7 +15,7 @@ static void PauseMenuPage0(void)
 
     y = 64;
     for (i = 0; i < 16; i++) {
-        xglFontDebugPrintf(8, y, D_004D9EF8, actor[i].inUseId);
+        xglFontDebugPrintf(8, y, "%4x", actor[i].inUseId);
         y += 8;
     }
 
@@ -73,10 +73,6 @@ extern PauseFlagsPadView PauseFlagsPad __asm__("PadData");
 extern MapUnitHead MapUnit[MAP_UNIT_COUNT];
 extern unsigned char SnapDrawCreditFlag;
 extern u8 GameDiskChangeT10K;
-extern char D_004C03A8[];
-extern char D_004D9F00[];
-extern char D_004D9F08[];
-extern char D_004D9F10[];
 extern char *tbl_0_00367A50[];
 
 static void PauseMenuPage2(void)
@@ -238,37 +234,37 @@ static void PauseMenuPage2(void)
         break;
     }
 
-    xglFontDebugPrintf(8, 52, D_004C03A8);
+    xglFontDebugPrintf(8, 52, "\241\341\241\341\241\241\245\307\245\320\245\303\245\260\245\325\245\351\245\260\241\241\241\341\241\341");
     y = 64;
     for (i = 0; i < DEBUG_FLAG_COUNT; i++) {
         if (i == PauseFlagsState.debugCursor) {
-            xglFontDebugPrintf(16, y, D_004D9F00);
+            xglFontDebugPrintf(16, y, "\241\344");
         }
         xglFontDebugPrintf(32, y, tbl_0_00367A50[i]);
         switch (i) {
         case 0:
-            xglFontDebugPrintf(128, y + 3, D_004D9F08,
+            xglFontDebugPrintf(128, y + 3, "%1x",
                                (PauseFlagsState.cfCameraFlags >> 1) & 1);
             break;
         case 1:
-            xglFontDebugPrintf(128, y + 3, D_004D9F08,
+            xglFontDebugPrintf(128, y + 3, "%1x",
                                (PauseFlagsState.runtimeFlags >> 2) & 1);
             break;
         case 2:
-            xglFontDebugPrintf(128, y + 3, D_004D9F08, SnapDrawCreditFlag);
+            xglFontDebugPrintf(128, y + 3, "%1x", SnapDrawCreditFlag);
             break;
         case 3:
-            xglFontDebugPrintf(128, y + 3, D_004D9F10, PauseFlagsState.snapQuality);
+            xglFontDebugPrintf(128, y + 3, "%3d", PauseFlagsState.snapQuality);
             break;
         case 4:
-            xglFontDebugPrintf(128, y + 3, D_004D9EF8, PauseFlagsState.target.modelNumberCheck);
+            xglFontDebugPrintf(128, y + 3, "%4x", PauseFlagsState.target.modelNumberCheck);
             break;
         case 5:
-            xglFontDebugPrintf(128, y + 3, D_004D9F08,
+            xglFontDebugPrintf(128, y + 3, "%1x",
                                (PauseFlagsState.runtimeFlags >> 25) & 1);
             break;
         case 6:
-            xglFontDebugPrintf(128, y + 3, D_004D9F08, GameDiskChangeT10K);
+            xglFontDebugPrintf(128, y + 3, "%1x", GameDiskChangeT10K);
             break;
         }
         y += 12;
@@ -358,16 +354,6 @@ extern u8 UseTestPath;
 extern int ScanLineInterpolate;
 extern int DebugMenuResourceSizeAdd;
 extern char *tbl_1_00367A70[];
-extern char D_004C04B0[];
-extern char D_004D9F18[];
-extern char D_004D9F20[];
-extern char D_004C0528[];
-extern char D_004C0538[];
-extern char D_004D9F48[];
-extern char D_004C0548[];
-extern char D_004D9F28[];
-extern char D_004D9F30[];
-extern char D_004D9F38[];
 extern char *MapGetName(int mapId);
 extern void MapChange(int mapId);
 extern DebugLayoutHeader *UnduDataGetHeader(int mapIndex, int unitIndex);
@@ -521,7 +507,7 @@ static void PauseMenuPage3(void)
         PadDataDbg.half_2a = 0;
     }
 
-    xglFontDebugPrintf(8, 52, D_004C04B0);
+    xglFontDebugPrintf(8, 52, "\241\341\241\241\245\307\245\320\245\303\245\260\245\341\245\313\245\345\241\274\241\241\241\341");
     last = GAME_RESOURCE_COUNT - 1;
     while (GameResourceDbg[last].address == 0 && last != 0) {
         last--;
@@ -533,23 +519,23 @@ static void PauseMenuPage3(void)
     }
     xglFontDebugPrintf(136, 48, "USED  :%9d", used + DebugMenuResourceSizeAdd);
     if (DebugMenuResourceSizeAdd != 0) {
-        xglFontDebugPrintf(246, 48, D_004D9F18);
+        xglFontDebugPrintf(246, 48, "\033\021");
     }
     xglFontDebugPrintf(136, 56, "REMAIN:%9d", remain);
 
     y = 64;
     for (i = 0; i < DEBUG_ROW_COUNT; i++) {
         if (i == GameLoopPage.debugCursor) {
-            xglFontDebugPrintf(8, y + 3, D_004D9F20);
+            xglFontDebugPrintf(8, y + 3, ">");
         }
         xglFontDebugPrintf(16, y, tbl_1_00367A70[i]);
         switch (i) {
         case 0:
-            xglFontDebugPrintf(80, y + 3, D_004D9F28, GameLoopPage.target.mapChangeId,
+            xglFontDebugPrintf(80, y + 3, "%4d.%s", GameLoopPage.target.mapChangeId,
                                MapGetName(GameLoopPage.target.mapChangeId));
             break;
         case 1:
-            xglFontDebugPrintf(80, y + 3, D_004D9EF8, GameLoopPage.leaderBattleId);
+            xglFontDebugPrintf(80, y + 3, "%4x", GameLoopPage.leaderBattleId);
             break;
         case 3:
             xglFontDebugPrintf(72, y + 3, "game%c000", GameSnapShotNumber(-1) + '0');
@@ -562,16 +548,16 @@ static void PauseMenuPage3(void)
             }
             break;
         case 5:
-            xglFontDebugPrintf(92, y + 3, D_004D9F30, MAP_getPath());
+            xglFontDebugPrintf(92, y + 3, "%s", MAP_getPath());
             break;
         case 6:
-            xglFontDebugPrintf(92, y + 3, D_004D9F30, RES_getPath());
+            xglFontDebugPrintf(92, y + 3, "%s", RES_getPath());
             break;
         case 7:
-            xglFontDebugPrintf(88, y + 3, D_004D9F38, GameLoopPage.scratch.scriptJump.cfId);
+            xglFontDebugPrintf(88, y + 3, "%4d", GameLoopPage.scratch.scriptJump.cfId);
             break;
         case 8:
-            xglFontDebugPrintf(88, y + 3, D_004D9F38, GameLoopPage.scratch.scriptJump.eventId);
+            xglFontDebugPrintf(88, y + 3, "%4d", GameLoopPage.scratch.scriptJump.eventId);
             {
                 char fileName[7] = "cf0000";
                 int scriptId = GameLoopPage.scriptId;
@@ -598,13 +584,13 @@ static void PauseMenuPage3(void)
             switch (ScanLineInterpolate) {
             case 0:
             default:
-                text = D_004D9F48;
+                text = "\244\312\244\267";
                 break;
             case 1:
-                text = D_004C0528;
+                text = "\244\242\244\352(DISP1)";
                 break;
             case 2:
-                text = D_004C0538;
+                text = "\244\242\244\352(SOFT)";
                 break;
             }
             xglFontDebugPrintf(80, y, text);
@@ -614,7 +600,7 @@ static void PauseMenuPage3(void)
     }
 
     player = GameLoopPage.player;
-    xglFontDebugPrintf(176, 160, D_004C0548);
+    xglFontDebugPrintf(176, 160, "\245\327\245\354\245\244\245\344\241\274\260\314\303\326");
     xglFontDebugPrintf(176, 172, "%f\n%f\n%f", player->x, player->y, player->z);
 }
 

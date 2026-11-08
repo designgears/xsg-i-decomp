@@ -79,7 +79,6 @@ extern int dataEvtBoxChk(int event_id);
 
 extern void MoveSlide(short *current, short *target, float rate);
 
-extern const char D_004DB230[];
 extern void WindowDXSet(MenuShopWindowDX *window);
 extern void WindowDXMain(MenuShopWindowDX *window);
 extern void eMessageSet(MenuShopMessage *message, int text);
@@ -104,7 +103,6 @@ typedef struct MenuShopWindowSP {
 
 extern MenuShopWindowSP *MenuShopWinSP;
 extern unsigned char MenuKeepSelect[0x64];
-extern const char D_004C7858[];
 extern MenuShopListRow *MenuListMake(int list, int mode);
 extern void MenuShopSortSet(int list, int type, int order, int option);
 extern void WindowSPItemChange(MenuShopWindowSP *window);
@@ -698,8 +696,6 @@ extern const char *D_004C75A0[3];
 extern const char *D_004C7650[8];
 extern const char *D_004DB138[];
 extern const char D_004DB140[];
-extern const char D_004DB148[];
-extern const char D_004DB150[];
 void *func_A191C0(int);
 extern MenuTextEntry *func_A2C918(unsigned int itemId);
 extern MenuTextEntry *func_A2C968(unsigned int itemId);
@@ -853,7 +849,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
                 if (MenuShopWork->equipmentId != 0)
                     eMessageCat(func_A2C918(MenuShopWork->equipmentId)->name);
             }
-            eMessageCat(D_004DB148);
+            eMessageCat(".");
         } else {
             eMessageCpy(work->message, D_004DB140);
         }
@@ -871,7 +867,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
             if (MenuShopWork->equipmentId != 0)
                 eMessageCat(func_A2C918(MenuShopWork->equipmentId)->name);
         }
-        eMessageCat(D_004DB150);
+        eMessageCat(". \037");
         break;
     default:
         targetY = 480;
@@ -928,7 +924,7 @@ static void MenuShopSelect(TskObject *task, void *data)
             work->menus[i].window.height = 102;
             work->menus[i].window.close_callback_arg = &work->menus[i].panel;
             work->menus[i].window.close_callback = (void (*)(MenuShopSelectWindow *, void *))MenuSelectWindow;
-            work->menus[i].window.tag_id = D_004DB168;
+            work->menus[i].window.tag_id = "Menu";
             work->menus[i].panel.cursor = 0;
             work->menus[i].panel.commands = ListMake(i);
             work->menus[i].panel.displayMode = 2;
@@ -942,7 +938,7 @@ static void MenuShopSelect(TskObject *task, void *data)
             work->choices[i].window.width = 169;
             work->choices[i].window.height = 102;
             work->choices[i].window.style = work->depth;
-            work->choices[i].window.tag_id = D_004DB170;
+            work->choices[i].window.tag_id = "Select";
             work->choices[i].panel.choices = msg01_2_0036DB50[3];
             work->choices[i].panel.prompt = msg01_2_0036DB50[0];
             work->choices[i].window.close_callback_arg = &work->choices[i].panel;
@@ -1407,7 +1403,7 @@ int MenuShopListChange01(void)
     window->height = 222;
     window->width = window_width;
     MenuShopWinSP->columns = 1;
-    MenuShopWinSP->title = D_004C7858;
+    MenuShopWinSP->title = "List                   Price";
     MenuShopWinSP->row_count = 7;
     MenuShopWinSP->items = MenuListGet(0);
     WindowSPItemChange(MenuShopWinSP);
@@ -2353,7 +2349,6 @@ static void MenuShopSeisan(TskObject *arg0, void *arg1) {
     }
 }
 
-extern char D_004DB1A0[];
 extern void eTagFontSet(void *tag, const char *text);
 extern void eTagFontMain(void *tag);
 extern void eNumberSet(void *num, int value);
@@ -2389,7 +2384,7 @@ static void MenuShopSeisan02(TskObject *arg0, void *arg1) {
             *(int *)(p + 0xC) = *(int *)(p + 0x4);
             *(unsigned short *)(p + 0xA) = 0x50;
             *(unsigned short *)(p + 0x10) = 0xD0;
-            *(int *)(p + 0x14) = (int)D_004DB1A0;
+            *(int *)(p + 0x14) = (int)"Pay";
             q = p + 0x14;
             *(unsigned short *)(p + 0x12) = 0x50;
             p[0x18] = 1;
@@ -2585,7 +2580,6 @@ extern unsigned short MenuFaceEpidGet(int unitId, int smallPortrait);
 int MenuCharHpCheck(short);
 int MenuEngineEquipCheck(int, int);
 int MenuFrameEquipCheck(int, int);
-extern const char D_004DB1B8[];
 typedef struct MsRibbonV {
     short x;
     short y;
@@ -2657,7 +2651,7 @@ static void MenuShopEx02(TskObject *task, struct MenuShopUnitPanel *work)
         work->ribbon.style = work->depth;
         work->ribbon.width = 0x100;
         work->ribbon.height = 0x90;
-        eTagFontSet((void *)(&work->label), D_004DB1B8);
+        eTagFontSet((void *)(&work->label), "Target");
         work->label.style = work->depth + 2;
         for (i = 0; i < MenuShopWork->unitCount; i++) {
             unitIds = MenuShopWork->unitIds;
@@ -3435,7 +3429,7 @@ static void MenuShopEx2(TskObject *task, MenuShopEx2Work *work)
         work->window.y = 0x100;
         work->window.width = 0xA6;
         work->window.height = 0x1E;
-        work->window.title = D_004DB230;
+        work->window.title = "Bullet";
         work->window.state = 1;
         WindowDXMain(&work->window);
         work->window.state = 3;
@@ -4244,10 +4238,10 @@ void MenuShopCore(void) {
     MenuShopWork->stateFlags &= 0xFD;
     xglFontDebugHex(0, 0x48, MenuShopWork->state, 2);
     xglFontDebugHex(0, 0x50, MenuShopWork->nextState, 2);
-    xglFontDebugPrintf(0, 0x60, D_004C7A68, MenuShopWork->mode);
-    xglFontDebugPrintf(0, 0x68, D_004C7A78, MenuShopWork->category);
-    xglFontDebugPrintf(0, 0x70, D_004C7A88, MenuShopWork->listIndex);
-    xglFontDebugPrintf(0, 0x80, D_004C7A98, MenuShopWork->unitSelection);
+    xglFontDebugPrintf(0, 0x60, "tra  %3d", MenuShopWork->mode);
+    xglFontDebugPrintf(0, 0x68, "cate %3d", MenuShopWork->category);
+    xglFontDebugPrintf(0, 0x70, "list %3d", MenuShopWork->listIndex);
+    xglFontDebugPrintf(0, 0x80, "ag_sl %3d", MenuShopWork->unitSelection);
 }
 
 extern void MenuShopSelect(TskObject *task, void *data);
@@ -4261,7 +4255,6 @@ extern int ShopDataBufTop;
 extern unsigned int GameLoopState[];
 typedef struct MenuShopRenderView { unsigned char pad[0x10]; unsigned short u10; unsigned short u12; unsigned short u14; } MenuShopRenderView;
 extern MenuShopRenderView sRender;
-extern const char D_004C7AA8[];
 extern void endPrintDirectFrameCopy(XglPacket *, int, int);
 extern void MenuGameDataPush(void);
 extern void MenuGameDataPop(void);
@@ -4457,7 +4450,7 @@ void MenuShopMain(int shopType)
     MenuFontLoad(1, 1);
     WindowTexLoad(0, 0x10001);
     WindowTexLoad(0, 0x10002);
-    MenuLoadFile(D_004C7AA8, (void *)ShopDataBufTop);
+    MenuLoadFile("data\134endou\134shop\134shopdata.bin", (void *)ShopDataBufTop);
     xglSoundEffectNormalID(1, 0);
 
     while (MenuLoadSync() != 0) {

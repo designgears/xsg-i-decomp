@@ -247,7 +247,6 @@ typedef struct MenuItemInfoPad {
     unsigned short activity;
 } MenuItemInfoPad;
 extern const unsigned char D_004DAAD0[];
-extern const char D_004DAAD8[];
 typedef struct MenuItemInfoRow {
     unsigned char unmodeled_00[9];
     signed char state;
@@ -376,7 +375,7 @@ void MenuItemInfoMain(void)
         } else {
             strcpy(info->buffer, labels.sortPrefix);
             strcat(info->buffer, labels.sortMethods[MenuWorkAlias.sortSelection]);
-            strcat(info->buffer, D_004DAAD8);
+            strcat(info->buffer, ".");
         }
         break;
     case 48:
@@ -940,7 +939,6 @@ typedef struct MenuItemWorkDataSA {
 } MenuItemWorkDataSA;
 extern void *MenuItemStatusAgws;
 extern short MenuItemAgws[];
-extern const char D_004DAAE0[];
 extern const char *MenuCharNameGet(int character);
 extern void eTagFontSet(void *tag, const char *text);
 extern void eTagFontMain(void *tag);
@@ -975,7 +973,7 @@ void MenuItemStatusAgwsMain(void)
             eMessageSet(&status->rows[i].name, MenuCharNameGet(MenuItemAgws[i]));
             status->rows[i].name.mode = 32;
             status->rows[i].name.color = status->rows[i].window.color + 2;
-            eTagFontSet(&status->rows[i].hpLabel, D_004DAAE0);
+            eTagFontSet(&status->rows[i].hpLabel, "\001FHP");
             status->rows[i].hpLabel.work = status->color + 2;
             status->rows[i].hpLabel.color[0] = 112;
             eNumberSet(&status->rows[i].hpNumber, 0);
@@ -1090,7 +1088,6 @@ extern void WindowSPItemChange(MenuItemListWindow *window);
 
 extern void WindowSPSetSelect(MenuItemListWindow *window, unsigned char *saved_selection);
 
-extern const char D_004C4F50[];
 extern int *MenuSortAddrGet(int list);
 extern int MenuSortCheck(int list);
 
@@ -1131,7 +1128,7 @@ void MenuItemListMake00(void)
   next:
     row++;
   }
-  MenuItemList->window.title = D_004C4F50;
+  MenuItemList->window.title = "List\003\215Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 1;
   MenuItemList->window.rows = 0xB;
@@ -1172,7 +1169,7 @@ void MenuItemListMake00_1(void) {
         }
         row++;
     }
-    MenuItemList->window.title = D_004C4F50;
+    MenuItemList->window.title = "List\003\215Num";
     MenuItemList->window.row_count = 7;
     MenuItemList->window.columns = 1;
     MenuItemList->window.rows = 0xB;
@@ -1183,7 +1180,6 @@ void MenuItemListMake00_1(void) {
     WindowSPSetSelect(&MenuItemList->window, MenuKeepSelect);
 }
 
-extern const char D_004C4F60[];
 
 void MenuItemListMake01(unsigned int type)
 {
@@ -1210,7 +1206,7 @@ void MenuItemListMake01(unsigned int type)
   MenuSortChange(0, 0);
   MenuSortChange(0, ((signed char *)&MenuWork)[0x33 + type]);
   MenuListMake(0, 0);
-  MenuItemList->window.title = D_004C4F60;
+  MenuItemList->window.title = "List\003\231Num\003\231\0033Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 2;
   MenuItemList->window.rows = 0xB;
@@ -1227,7 +1223,7 @@ void MenuItemListMake02(void)
   MenuSortChange(0, 0);
   MenuSortChange(0, MenuWork.menuCount);
   MenuListMake(0, 0);
-  MenuItemList->window.title = &D_004C4F60;
+  MenuItemList->window.title = &"List\003\231Num\003\231\0033Num";
   MenuItemList->window.row_count = 7;
   MenuItemList->window.columns = 2;
   MenuItemList->window.rows = 0xB;
@@ -2073,8 +2069,6 @@ extern MenuItemCharacterPoints *func_A19210(int character);
 extern int func_00A114C0(int character, int itemId);
 extern void ChangeTopLevel(int level);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern const char D_004DAB00[];
-extern const char D_004DAB08[];
 short WindowSPSelect(void *, int);
 void WindowSPKeepSelect(void *cursor, unsigned char *keep);
 void WindowSPKeepSelectCheck(unsigned char *keep);
@@ -2121,7 +2115,6 @@ typedef struct MenuItemSegmentAlignedWork {
     int texture;
 } __attribute__((aligned(32))) MenuItemSegmentAlignedWork;
 extern const char *tag_msg_5[];
-extern const char D_004DAAF8[];
 extern const char *MenuSegmentInfoTextGet(int segment);
 extern const char *MenuSegmentItemNameGet(int segment);
 extern const char *MenuSegmentMapNameGet(int segment);
@@ -2219,7 +2212,7 @@ void MenuItemSegmentMain(void)
                 WindowDXMain(&segment->windows[i]);
                 segment->windows[i].state = 3;
                 eSpriteSet(&segment->labels[i], labelSpriteIds[i]);
-                eMessageSet(&segment->text[i], D_004DAAF8);
+                eMessageSet(&segment->text[i], "\262\276");
                 segment->text[i].mode = 32;
             }
         }
@@ -3005,8 +2998,8 @@ int MenuItem(void)
     MenuItemExMain();
     MenuItemLineMain();
     MenuItemSegmentMain();
-    xglFontDebugPrintf(0, 0x40, D_004DAB00);
-    xglFontDebugPrintf(0, 0x48, D_004DAB08, MenuWork_MI.selectDir);
-    xglFontDebugPrintf(0, 0x50, D_004DAB08, MenuWork_MI.selectionMode);
+    xglFontDebugPrintf(0, 0x40, "item");
+    xglFontDebugPrintf(0, 0x48, "lst%2d", MenuWork_MI.selectDir);
+    xglFontDebugPrintf(0, 0x50, "lst%2d", MenuWork_MI.selectionMode);
     return 0;
 }
