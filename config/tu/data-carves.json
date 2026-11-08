@@ -6388,11 +6388,11 @@
     {
      "range": [
       "0x004d9f60",
-      "0x004da358"
+      "0x004da3a8"
      ],
      "generated": [
       "0x004d9f60",
-      "0x004da358"
+      "0x004da3a7"
      ],
      "generated_by": [
       "DatabaseTest",
@@ -6411,7 +6411,9 @@
       "MemcardTest",
       "UmlDispTest",
       "XenoMovieCheck",
-      "mt_GetPortName"
+      "YajimaTest",
+      "mt_GetPortName",
+      "xtxdec_sub"
      ],
      "c_owned_symbols": [
       "rate_2_004D9F60",
@@ -6544,7 +6546,19 @@
       "D_004DA338",
       "D_004DA340",
       "D_004DA348",
-      "D_004DA350"
+      "D_004DA350",
+      "tbl_48",
+      "D_004DA35C",
+      "D_004DA360",
+      "tbl_49",
+      "D_004DA36C",
+      "h_50",
+      "D_004DA378",
+      "D_004DA380",
+      "D_004DA388",
+      "D_004DA390",
+      "D_004DA398",
+      "D_004DA3A0"
      ],
      "also_referenced_by_c": [],
      "reached_through": {
@@ -6650,60 +6664,7 @@
       "D_004DA2C0": "name_43",
       "D_004DA2C8": "name_43",
       "D_004DA308": "menu_46",
-      "D_004DA320": "name_47"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da360",
-      "0x004da368"
-     ],
-     "generated": [
-      "0x004da360",
-      "0x004da368"
-     ],
-     "generated_by": [
-      "MemcardTest"
-     ],
-     "c_owned_symbols": [
-      "D_004DA360"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da370",
-      "0x004da3a8"
-     ],
-     "generated": [
-      "0x004da370",
-      "0x004da3a7"
-     ],
-     "generated_by": [
-      "YajimaTest",
-      "xtxdec_sub"
-     ],
-     "c_owned_symbols": [
-      "h_50",
-      "D_004DA378",
-      "D_004DA380",
-      "D_004DA388",
-      "D_004DA390",
-      "D_004DA398",
-      "D_004DA3A0"
-     ],
-     "also_referenced_by_c": [],
-     "reached_through": {
+      "D_004DA320": "name_47",
       "D_004DA378": "i1_52",
       "D_004DA380": "i1_52",
       "D_004DA388": "i1_52",

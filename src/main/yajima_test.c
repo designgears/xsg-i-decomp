@@ -1255,10 +1255,6 @@ extern int xglHddMcSave(HddMcRequestParam *request);
 #define MC_TEXT_LOAD "\xA5\xED\xA1\xBC\xA5\xC9"
 #define MC_TEXT_SAVE "\xA5\xBB\xA1\xBC\xA5\xD6"
 
-/* MemcardTest's state tables (original tbl.48/tbl.49); MemcardTest reads them
-   gp-relative with a raw offset, so they stay scaffold-owned */
-extern unsigned char tbl_48[4];
-extern unsigned char tbl_49[4];
 
 static void MemcardTest(void)
 {
@@ -1398,13 +1394,15 @@ static void MemcardTest(void)
             }
             xglFontDebugPrintf(8, work.result * 16 + 48, ">");
             if (PAD_U16_AT(42) & 0x20) {
+                static unsigned char tbl[4] __asm__("tbl.48") = { 0x20, 0x30, 0x40, 0x50 };
+
                 if (PAD_U16_AT(40) & 0x8) {
                     state = 0;
                     sceMcSync(0, &sync_command, &sync_result);
                     printf("%d %d\n", sync_command, sync_result);
                     xglMcEasySave("/BISLPS-99999Dummy", (void *)0x01000000, 0x77D800);
                 } else {
-                    state = tbl_48[work.result];
+                    state = tbl[work.result];
                 }
             }
             if (PAD_U16_AT(42) & 0x40) {
@@ -1644,7 +1642,9 @@ static void MemcardTest(void)
             }
             xglFontDebugPrintf(8, work.result * 16 + 48, ">");
             if (PAD_U16_AT(42) & 0x20) {
-                state = tbl_49[work.result];
+                static unsigned char tbl[4] __asm__("tbl.49") = { 0x70, 0x80, 0x00, 0x00 };
+
+                state = tbl[work.result];
             }
             if (PAD_U16_AT(42) & 0x40) {
                 state = 0;
