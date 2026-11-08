@@ -5467,6 +5467,26 @@
    ".data": [
     {
      "range": [
+      "0x0036d2f0",
+      "0x0036d32a"
+     ],
+     "generated": [
+      "0x0036d2f0",
+      "0x0036d32a"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "guno_eid_tbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_model.o"
+     }
+    },
+    {
+     "range": [
       "0x0036d330",
       "0x0036d4fc"
      ],
