@@ -6,6 +6,8 @@
 //   group 1: rigid, one matrix (B.x)
 //   group 2: "blend 8", two bones (B.x, B.y), weights B.z/B.w, always both
 //   group 3: as 2, bone 1 only when B.y != 0
+//   group 4: set 0 lit loops (vu1_set0_lit.c): no bones, P/N already object space;
+//            per-vertex fog (cfg.w & 16) as the set-0 strip
 //   variant 0 lit, 1 one-pass specular, 2 specular second strip (pass 1), 3 env second strip (pass 2)
 // The facing test and the guard-band ADC are not recomputed: the CPU reference
 // already decided them and xsg-gpu drops those triangles from the index list.
@@ -54,6 +56,7 @@ layout(std140, set = 0, binding = 2) uniform SkinConst {
     ivec4 cfg3;         // x previous palette base
     vec4 pm[4];         // previous frame's vf28-31
     vec4 pmirror;
+    vec4 fog;           // group 4: x min, y max, z bias, w scale
 } s;
 // All bone palettes (qw 732..961 of VU1 data memory) received recently, 230 qw each.
 layout(std430, set = 0, binding = 3) readonly buffer Pal { vec4 q[]; } pal;
@@ -95,7 +98,10 @@ void Skin(bool prev, vec3 p, vec3 n, out vec3 pos, out vec3 nrm) {
     pos = vec3(0.0);
     nrm = vec3(0.0);
     int g = s.cfg.x;
-    if (g == 0) {
+    if (g == 4) {
+        pos = p;
+        nrm = n;
+    } else if (g == 0) {
         uint bone = a_b.x & 0xffffu;
         for (int k = 0; k < 4; ++k) {
             Bone(prev, bone, a_w[k], p, n, pos, nrm);
@@ -161,7 +167,7 @@ void main() {
     v_p = pos;
     v_c = a_c;
     v_st = st;
-    v_fog = float(s.cfg2.z);
+    v_fog = (s.cfg.w & 16) != 0 ? floor(clamp(s.fog.z + s.fog.w * q, s.fog.x, s.fog.y)) : float(s.cfg2.z);
 
     vec3 scr = s.offset.xyz + S(S(clip.xyz * q) * s.scale.xyz);
     scr.xy = trunc(scr.xy * 16.0) / 16.0;

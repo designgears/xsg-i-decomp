@@ -1390,7 +1390,7 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
         g_env_pending.reset();
         return;
     }
-    if (kind == GPU_NATIVE_SET2 || kind == GPU_NATIVE_SET2_PALETTE) {
+    if (kind == GPU_NATIVE_SET2 || kind == GPU_NATIVE_SET2_PALETTE || kind == GPU_NATIVE_SET0_LIT) {
         std::shared_ptr<const xsgskin::Draw> d;
         {
             xsgprof::Scope ps(xsgprof::BatchSkin);

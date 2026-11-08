@@ -54,7 +54,7 @@ uint64_t Alloc(uint64_t n) {
 }
 bool PalLive(uint64_t serial) { return serial && g_pal - serial < kPalSlots - 1024; }
 bool ArenaLive(uint64_t at) { return g_arena_head - at < kArena - (16ull << 20); }
-uint64_t g_nbatch, g_nvert, g_ntri, g_nculled, g_nbadbone, g_nprev, g_nset0prev, g_nset0;
+uint64_t g_nbatch, g_nvert, g_ntri, g_nculled, g_nbadbone, g_nprev, g_nset0prev, g_nset0, g_nset0lit;
 
 /* Motion history per draw key (VIF address of the batch's MSCNT, occurrence). */
 struct Hist {
@@ -81,12 +81,13 @@ struct SkinUbo {
         c1008[4], mirror[4], e1004[3][4], c1009[4];
     int32_t cfg[4], cfg2[4], cfg3[4];
     float pm[4][4], pmirror[4];
+    float fog[4];   // set-0 lit (group 4): per-vertex fog clamp(z + w q, x, y)
 };
 
 
 /* The draw's constants (native_skin.vert binding 2). */
 void BuildUbo(const Draw& d, SkinUbo* u) {
-    const bool prev = d.prev && PalLive(d.ppal);
+    const bool prev = d.prev && (d.group == 4 || PalLive(d.ppal));
     std::memset(u, 0, sizeof *u);
     const GpuNativeSkin& b = d.b;
     std::memcpy(u->m, b.m, 64);
@@ -110,7 +111,9 @@ void BuildUbo(const Draw& d, SkinUbo* u) {
     u->cfg[0] = d.group;
     u->cfg[1] = d.variant;
     u->cfg[2] = xsgcfg::Get("renderer.lighting") == "perpixel" ? 1 : 0;
-    u->cfg[3] = ((c1008z & 0xffff) ? 1 : 0) | (b.mirror_on ? 2 : 0) | (prev ? 4 : 0) | (prev && d.pmirror_on ? 8 : 0);
+    u->cfg[3] = ((c1008z & 0xffff) ? 1 : 0) | (b.mirror_on ? 2 : 0) | (prev ? 4 : 0) | (prev && d.pmirror_on ? 8 : 0) |
+                (d.group == 4 ? 16 : 0);
+    std::memcpy(u->fog, b.fog, 16);
     u->cfg2[0] = int32_t(std::min<uint32_t>(c1008x & 0xffff, 16));
     u->cfg2[1] = int32_t(b.ifirst);
     u->cfg2[2] = int32_t((b.fogw >> 4) & 0xff);
@@ -137,6 +140,9 @@ int Variant(uint32_t loop) {
     }
     return -1;
 }
+
+/* Set 0 (GPU_NATIVE_SET0_LIT): 0x1458 lit, 0x1fa0 lit + specular + env strip. */
+static int Set0Variant(uint32_t loop) { return loop == 0x1458 ? 0 : loop == 0x1fa0 ? 3 : -1; }
 
 static int Group(uint32_t loop) {
     if (loop < 0x1790) return 0;
@@ -193,14 +199,15 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
         std::memcpy(g_palmap + (g_pal % kPalSlots) * GPU_SKIN_PAL_NQW * 16, payload, GPU_SKIN_PAL_NQW * 16);
         return nullptr;
     }
-    if (kind != GPU_NATIVE_SET2 || len < sizeof(GpuNativeSkin)) return nullptr;
+    if ((kind != GPU_NATIVE_SET2 && kind != GPU_NATIVE_SET0_LIT) || len < sizeof(GpuNativeSkin)) return nullptr;
+    const bool set0 = kind == GPU_NATIVE_SET0_LIT;
     auto d = std::make_shared<Draw>();
     std::memcpy(&d->b, payload, sizeof d->b);
     const uint32_t n = d->b.n;
-    if (n != nvert || len < sizeof(GpuNativeSkin) + n * sizeof(GpuNativeSkinVertex) + (n + 31) / 32 * 4 ||
-        Variant(d->b.loop) < 0)
+    const int variant = set0 ? Set0Variant(d->b.loop) : Variant(d->b.loop);
+    if (n != nvert || len < sizeof(GpuNativeSkin) + n * sizeof(GpuNativeSkinVertex) + (n + 31) / 32 * 4 || variant < 0)
         return nullptr;
-    d->variant = Variant(d->b.loop);
+    d->variant = variant;
     {   // the key light (KeyLight): light k's object-space direction is (lmat[0][k], lmat[1][k], lmat[2][k]),
         // its colour lcol[k]; the brightest one, through this batch's object -> clip matrix
         const GpuNativeSkin& b = d->b;
@@ -220,7 +227,8 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
             g_light.valid = std::isfinite(g_light.dir[0] + g_light.dir[1] + g_light.dir[2] + g_light.dir[3]);
         }
     }
-    d->group = Group(d->b.loop);
+    d->group = set0 ? 4 : Group(d->b.loop);   // 4: no bones (P/N in object space)
+    if (set0) g_nset0lit++;
     // The vertices are read in place (the ring payload), written once into the arena below.
     const GpuNativeSkinVertex* sv = reinterpret_cast<const GpuNativeSkinVertex*>(payload + sizeof d->b);
     const uint32_t* adc = reinterpret_cast<const uint32_t*>(payload + sizeof d->b + n * sizeof(GpuNativeSkinVertex));
@@ -244,6 +252,7 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
             const int i = int(a & 0x3ff) - int(GPU_SKIN_PAL_QW0);
             if (w != 0.0f && (i < 0 || i + 3 >= int(GPU_SKIN_PAL_NQW))) g_nbadbone++;
         };
+        if (d->group == 4) break;
         if (d->group == 1) bad(v.b[0], 1.0f);
         else if (d->group == 0) {
             for (int k = 0; k < 4; ++k) {
@@ -261,8 +270,8 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
     // Motion history.
     Hist& h = g_hist2[Key(d->b.key, d->b.occ)];
     const float* pp = nullptr;
-    if (h.frame && h.frame != d->b.frame && d->b.frame - h.frame <= kMaxAge && PalLive(h.pal) && d->pal &&
-        h.p.size() == size_t(n) * 4) {
+    if (h.frame && h.frame != d->b.frame && d->b.frame - h.frame <= kMaxAge &&
+        (set0 || (PalLive(h.pal) && d->pal)) && h.p.size() == size_t(n) * 4) {
         d->prev = true;
         std::memcpy(d->pm, h.m, sizeof d->pm);
         pp = h.p.data();
@@ -329,7 +338,7 @@ uint32_t Bind(Vulkan::CommandBuffer& cmd, const Draw& d, int pass) {
     const uint32_t ni = d.nidx;
     cmd.set_program(g_prog);
     cmd.set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    if (!ni || !PalLive(d.pal) || !ArenaLive(d.vofs)) return 0;
+    if (!ni || (d.group != 4 && !PalLive(d.pal)) || !ArenaLive(d.vofs)) return 0;
     cmd.set_vertex_binding(0, *g_arenabuf, d.vofs % kArena, sizeof(GpuVertex));
     cmd.set_index_buffer(*g_arenabuf, d.iofs % kArena, VK_INDEX_TYPE_UINT16);
     cmd.set_storage_buffer(0, 3, *g_palbuf);
@@ -460,9 +469,10 @@ void Vsync(uint32_t frame) {
     if (frame % 600 == 0)
         std::fprintf(stderr,
                      "[native] vsync %u: set 2: %llu batches, %llu vertices, %llu triangles (%llu ADC/facing-culled), "
-                     "%llu with history, %llu off-palette bones; set 0: %llu/%llu with history\n",
+                     "%llu with history, %llu off-palette bones, %llu set-0 lit batches; set 0: %llu/%llu with history\n",
                      frame, (unsigned long long)g_nbatch, (unsigned long long)g_nvert, (unsigned long long)g_ntri,
                      (unsigned long long)g_nculled, (unsigned long long)g_nprev, (unsigned long long)g_nbadbone,
+                     (unsigned long long)g_nset0lit,
                      (unsigned long long)g_nset0prev, (unsigned long long)g_nset0);
     if (frame % 60 == 0) {
         for (auto* m : {&g_hist0, &g_hist2})
