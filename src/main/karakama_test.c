@@ -182,7 +182,7 @@ extern float I2F(int value);
 
 extern void xglPrimAddGouraudStripN(void *buffer, int count);
 
-extern CfActor *tActor;
+static CfActor *tActor;
 
 
 extern signed char printflg;
