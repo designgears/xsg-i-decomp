@@ -7465,17 +7465,18 @@
     {
      "range": [
       "0x0036dd90",
-      "0x0036ddac"
+      "0x0036ddb0"
      ],
      "generated": [
       "0x0036dd90",
-      "0x0036ddac"
+      "0x0036ddb0"
      ],
      "generated_by": [
       "EtherTreeFirstDataGet"
      ],
      "c_owned_symbols": [
-      "EtherTreeFirstData"
+      "EtherTreeFirstData",
+      "D_0036DDAC"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -7523,7 +7524,7 @@
      ],
      "generated": [
       "0x004c9ab0",
-      "0x004c9bbc"
+      "0x004c9bc0"
      ],
      "generated_by": [
       "EtherTreeLineColorGet",
@@ -7549,11 +7550,11 @@
     {
      "range": [
       "0x004db680",
-      "0x004db6a4"
+      "0x004db6a8"
      ],
      "generated": [
       "0x004db680",
-      "0x004db6a4"
+      "0x004db6a8"
      ],
      "generated_by": [
       "EtherTreeBlackDraw",
@@ -7605,7 +7606,8 @@
       "EtherTreeLine",
       "EtherTreeLine2",
       "EtherTreeRight",
-      "EtherTreeBlack"
+      "EtherTreeBlack",
+      "D_004DB6A4"
      ],
      "also_referenced_by_c": [],
      "basis": {

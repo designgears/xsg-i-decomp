@@ -1824,3 +1824,12 @@ EtherTreeLineData *EtherTreeLine = 0;
 struct EtherTreeLine2Data *EtherTreeLine2 = 0;
 struct EtherTreeRightData *EtherTreeRight = 0;
 EtherTreeBlackData *EtherTreeBlack = 0;
+
+/* Unreferenced zero fill that ends the original .data (alignment of the next TU). */
+static int D_0036DDAC __attribute__((section(".data"))) = 0;
+
+/* Unreferenced zero fill that ends the original .rodata (alignment of the next TU). */
+static const int D_004C9BBC __attribute__((section(".rodata"))) = 0;
+
+/* Unreferenced zero fill that ends the original .sdata (alignment of the next TU). */
+static int D_004DB6A4 = 0;
