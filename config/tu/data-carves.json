@@ -10254,25 +10254,41 @@
     {
      "range": [
       "0x0046f450",
-      "0x0046f460"
+      "0x00478c60"
      ],
      "generated": [
       "0x0046f450",
-      "0x0046f460"
+      "0x00478c60"
      ],
      "generated_by": [
-      "SEQ_setMotion"
+      "ACT_createChr",
+      "ACT_createNPC",
+      "ACT_initSequence",
+      "ACT_initSequenceAt",
+      "ACT_updateNPC",
+      "ACT_updateSequence",
+      "SEQ_motion",
+      "SEQ_moveChr",
+      "SEQ_moveNPC_XZ",
+      "SEQ_moveSPL",
+      "SEQ_moveXZ",
+      "SEQ_rotate",
+      "SEQ_rotateSPL",
+      "SEQ_scale",
+      "SEQ_scaleSPL",
+      "SEQ_setMotion",
+      "SEQ_setPositionRAND",
+      "SEQ_setRotY2Player"
      ],
      "c_owned_symbols": [
-      "mtnIDLE_0"
-     ],
-     "also_referenced_by_c": [
+      "mtnIDLE_0",
       "actSequence"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/near_dir.o"
+      "object": "build/main/build/c/near_dir.o"
      }
     }
    ],
@@ -10322,7 +10338,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/near_dir.o"
+      "object": "build/main/build/c/near_dir.o"
      }
     }
    ]

@@ -643,6 +643,10 @@ void SEQ_setMotion(Actor *actor)
     track->blend = 8;
 }
 
+/* 64 actor sequence records (0x260 bytes each), all zero until a sequence
+ * starts; emitted after SEQ_setMotion's mtnIDLE.0, as in the original. */
+ActSequenceEntry actSequence[64] = { { 0 } };
+
 void SEQ_setPositionRAND(Actor *actor)
 {
     ActSequenceEntry *sequence = &actSequence[actor->number];
