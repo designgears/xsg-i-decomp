@@ -22937,6 +22937,55 @@
     }
    ]
   },
+  "ov12/tu073_00a3ea10": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a56f90",
+      "0x00a57118"
+     ],
+     "generated": [
+      "0x00a56f90",
+      "0x00a57118"
+     ],
+     "generated_by": [
+      "CreateRgBxx_sub",
+      "DisposeRgBxx_sub",
+      "LoadRgBxx_sub",
+      "RgBxxGetFindPic",
+      "RgBxxGetPicID",
+      "RgBxxGetXtx",
+      "RgBxxSetData",
+      "_DestructBxx",
+      "_FindPicByName",
+      "_GetHeader",
+      "_GetPicTop",
+      "_InitBxx"
+     ],
+     "c_owned_symbols": [
+      "D_00A56F90",
+      "D_00A56FA0",
+      "D_00A56FB0",
+      "D_00A56FE0",
+      "D_00A57010",
+      "D_00A57018",
+      "D_00A57028",
+      "D_00A57038",
+      "D_00A57050",
+      "D_00A57078",
+      "D_00A570C8",
+      "D_00A570F0",
+      "D_00A57100"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_bxx.o"
+     }
+    }
+   ]
+  },
   "ov12/tu074_00a3f230": {
    ".data": [
     {
