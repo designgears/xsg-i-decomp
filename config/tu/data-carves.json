@@ -1963,6 +1963,73 @@
     }
    ]
   },
+  "main/tu130": {
+   ".data": [
+    {
+     "range": [
+      "0x00369cc0",
+      "0x00369ee5"
+     ],
+     "generated": [
+      "0x00369cc0",
+      "0x00369ee5"
+     ],
+     "generated_by": [
+      "DrawBack",
+      "DrawImage",
+      "GameEnd",
+      "GameOver",
+      "Intermission"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_00369CC0",
+      "TransEnv_1_00369D20",
+      "FlushEnv_2_00369D40",
+      "TestEnv_3_00369D70",
+      "TestEnv_4_00369E10",
+      "TestEnv_5_00369E70",
+      "name_6"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_over.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c0638",
+      "0x004c0790"
+     ],
+     "generated": [
+      "0x004c0638",
+      "0x004c078c"
+     ],
+     "generated_by": [
+      "GameEnd",
+      "GameOver",
+      "Intermission"
+     ],
+     "c_owned_symbols": [
+      "GameEndImagePath",
+      "GameEndSaveQuestion",
+      "GameEndQuestion",
+      "GameOverImagePath",
+      "GameOverStreamPath",
+      "D_004C0738"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_over.o"
+     }
+    }
+   ]
+  },
   "main/tu132": {
    ".rodata": [
     {
