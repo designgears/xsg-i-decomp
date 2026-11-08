@@ -28,7 +28,6 @@ typedef struct MenuSystemWork {
 extern MenuSystemWork MenuWork;
 
 extern unsigned char *MenuSystemPas;
-extern char *msg00_0_0036DCF8[];
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern void MoveSlide(short *value, short *destination, float speed);
@@ -61,6 +60,7 @@ typedef struct MenuSystemPasWork {
 
 void MenuSystemPasMain(void)
 {
+    static char *msg00[] = { "Game Options" };
     MenuSystemPasWork *w = (MenuSystemPasWork *)MenuSystemPas;
     short *win;
     short target[8];
@@ -84,7 +84,7 @@ void MenuSystemPasMain(void)
         w->transition = 1;
         WindowDXMain(win);
         w->transition = 3;
-        eMessageSet(w->message, msg00_0_0036DCF8[0]);
+        eMessageSet(w->message, msg00[0]);
         m = (unsigned char *)w + 0x190;
         m[0xD] = c20;
         *(short *)(m + 0x10) = c120;
@@ -176,7 +176,6 @@ typedef struct MenuSystemMessageTable {
     int messages[7];
 } MenuSystemMessageTable;
 extern MenuSystemInfoBlock *MenuSystemInfo;
-extern const MenuSystemMessageTable D_004C9480;
 extern void MenuInfoWindow(void);
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
@@ -187,7 +186,15 @@ extern void *memset(void *destination, int value, unsigned int count);
 void MenuSystemInfoMain(void)
 {
     MenuSystemInfoBlock *info = MenuSystemInfo;
-    MenuSystemMessageTable messageTable = D_004C9480;
+    MenuSystemMessageTable messageTable = { {
+        (int)"Set all sound output during game to stereo or mono. \nDefault: Stereo",
+        (int)"Remember cursor location.\nDefault: On",
+        (int)"Set vibration On/Off.\nDefault: On",
+        (int)"Set radar display On/Off.\nDefault: On",
+        (int)"Adjust game display position on TV monitor.",
+        (int)"Set data location.\nOn: Hard Disk Drive\nOff: DVD-ROM",
+        (int)"Return to default settings.",
+    } };
     short targetY;
 
     if (info->state != 0) {
@@ -239,12 +246,6 @@ extern unsigned char *MenuSystemMenu;
 extern void eCursolSet(void *cursol, signed char width);
 extern void eCursolMain(void *cursol);
 extern void MenuSelectWindow(void);
-extern char D_004C9510[];
-extern char D_004C9520[];
-extern char *msg00_1_0036DD00[];
-extern char *msg01_2_0036DD20[];
-extern char *msg02_3_0036DD28[];
-extern char *msg03_4_0036DD30[];
 typedef struct WindowDXUp {
     short x;
     short y;
@@ -322,6 +323,13 @@ extern MenuSystemWorkUp MenuWorkUp __asm__("MenuWork");
 
 void MenuSystemMenuMain(void)
 {
+    static char *msg00[] = {
+        "Sound Output", "Cursor Location Memory", "Vibration", "Radar Display",
+        "Monitor Settings", "HDD", "Default",
+    };
+    static char *msg01[] = { "Stereo", "Mono" };
+    static char *msg02[] = { "On", "Off" };
+    static char *msg03[] = { " Proceed?", "Yes\nNo" };
     MenuSystemMenuBlockUp *menu = (MenuSystemMenuBlockUp *)MenuSystemMenu;
     short titleTarget;
     short choiceTarget;
@@ -341,7 +349,7 @@ void MenuSystemMenuMain(void)
         menu->titleWindow.style = menu->color;
         menu->titleWindow.width = 397;
         menu->titleWindow.height = 174;
-        menu->titleWindow.tag_id = D_004C9510;
+        menu->titleWindow.tag_id = "Configuration";
         menu->titleWindow.state = 1;
         WindowDXMain(&menu->titleWindow);
         menu->titleWindow.state = 3;
@@ -372,12 +380,12 @@ void MenuSystemMenuMain(void)
         menu->choiceWindow.style = menu->color;
         menu->choiceWindow.width = 113;
         menu->choiceWindow.height = 70;
-        menu->choiceWindow.tag_id = D_004C9520;
+        menu->choiceWindow.tag_id = "Selection";
         menu->choiceWindow.state = 1;
         WindowDXMain(choiceWindow);
         menu->choiceWindow.state = 3;
         for (row = 0; row < 3; row++) {
-            eMessageSet(&menu->choiceLabel[row], msg01_2_0036DD20[0]);
+            eMessageSet(&menu->choiceLabel[row], msg01[0]);
             menu->choiceLabel[row].flag = 0x20;
             menu->choiceLabel[row].color = menu->color + 2;
         }
@@ -392,11 +400,11 @@ void MenuSystemMenuMain(void)
         menu->confirmWindow.style = menu->color;
         menu->confirmWindow.width = 169;
         menu->confirmWindow.height = 102;
-        menu->confirmWindow.tag_id = D_004C9520;
-        menu->confirm.choices = msg03_4_0036DD30[1];
+        menu->confirmWindow.tag_id = "Selection";
+        menu->confirm.choices = msg03[1];
         menu->confirmWindow.close_callback = (void (*)(WindowDXUp *, void *))MenuSelectWindow;
         menu->confirmWindow.close_callback_arg = &menu->confirm;
-        menu->confirm.question = msg03_4_0036DD30[0];
+        menu->confirm.question = msg03[0];
         menu->confirm.cursor = 0;
         menu->confirmWindow.state = menu->confirm.enabled = 1;
         WindowDXMain(confirmWindow);
@@ -423,8 +431,8 @@ void MenuSystemMenuMain(void)
     case 0x20:
         if ((unsigned char)(MenuWorkUp.flags & 1)) {
             menu->choiceWindow.height = 54;
-            menu->choiceLabel[0].text = msg01_2_0036DD20[0];
-            menu->choiceLabel[1].text = msg01_2_0036DD20[1];
+            menu->choiceLabel[0].text = msg01[0];
+            menu->choiceLabel[1].text = msg01[1];
             menu->choiceLabel[2].text = 0;
         }
         titleTarget = 0;
@@ -436,8 +444,8 @@ void MenuSystemMenuMain(void)
     case 0x70:
         if ((unsigned char)(MenuWorkUp.flags & 1)) {
             menu->choiceWindow.height = 54;
-            menu->choiceLabel[0].text = msg02_3_0036DD28[0];
-            menu->choiceLabel[1].text = msg02_3_0036DD28[1];
+            menu->choiceLabel[0].text = msg02[0];
+            menu->choiceLabel[1].text = msg02[1];
             menu->choiceLabel[2].text = 0;
         }
         titleTarget = 0;
@@ -460,12 +468,12 @@ void MenuSystemMenuMain(void)
             if (row == 5)
                 continue;
             menu->label[row].x = menu->titleWindow.x + 19;
-            menu->label[row].text = msg00_1_0036DD00[row];
+            menu->label[row].text = msg00[row];
             menu->label[row].y = menu->titleWindow.y + row * 24 + 3;
             eMessageMain(&menu->label[row]);
             if (row != 4 && row != 6) {
                 if (row == 5 && MenuWorkUp.hddMounted == 0)
-                    menu->value[5].text = msg02_3_0036DD28[1];
+                    menu->value[5].text = msg02[1];
                 else
                     menu->value[row].text = (*settingLabels[row])[MenuWorkUp.options[row]];
                 menu->value[row].x = menu->titleWindow.x + 303;
