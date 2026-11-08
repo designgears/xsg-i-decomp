@@ -278,6 +278,61 @@ def resolve_external_data_relocs(target, base_elf, addresses):
     Path(target).write_bytes(bytes(data))
 
 
+def trim_leading_fill(target, base_elf):
+    """Drop the link fill splat puts at the start of a target data section.
+
+    When the previous object's section ends short of this object's alignment
+    (a 16-aligned first item), splat gives the fill to this TU as an
+    unreferenced pad item; the compiled object starts at the aligned item.
+    Fewer than 16 zero bytes, holding no relocation and only unreferenced
+    `D_<addr>` pad labels, are removed: the section's bytes, symbols and
+    relocations move down by that amount.
+    """
+    elf = Elf(Path(target).read_bytes())
+    data = bytearray(elf.data)
+    base = {x.name: x for x in base_elf.sections}
+    symtab = next(x for x in elf.sections if x.type == 2)
+    referenced = {struct.unpack_from('<I', elf.data, at + 4)[0] >> 8
+                  for r in elf.sections if r.type == 9
+                  for at in range(r.offset, r.offset + r.size, 8)}
+    changed = False
+    for section in elf.sections:
+        if section.type != 1 or section.name not in base or not section.flags & 2 \
+                or section.flags & 4 or section.size <= base[section.name].size:
+            continue
+        labels = [y for y in elf.symbols if y.shndx == section.index and y.type != 3
+                  and not y.name.endswith('.NON_MATCHING')]
+        fill = [y for y in labels if y.value == 0]
+        rest = [y.value for y in labels if y.value > 0]
+        if not fill or not rest:
+            continue
+        n = min(rest)
+        if not 0 < n < 16 or any(elf.data[section.offset:section.offset + n]) or any(
+                not re.fullmatch(r'D_[0-9A-F]{8}', y.name) or y.index in referenced for y in fill):
+            continue
+        rels = [r for r in elf.sections if r.type == 9 and r.info == section.index]
+        if any(struct.unpack_from('<I', elf.data, at)[0] < n
+               for r in rels for at in range(r.offset, r.offset + r.size, 8)):
+            continue
+        data[section.offset:section.offset + section.size - n] = \
+            elf.data[section.offset + n:section.offset + section.size]
+        struct.pack_into('<I', data, elf.shoff + section.index * elf.shentsize + 20,
+                         section.size - n)
+        for y in elf.symbols:
+            if y.shndx == section.index and y.type != 3:
+                at = symtab.offset + 16 * y.index
+                if y.value < n:
+                    struct.pack_into('<II', data, at + 4, 0, 0)
+                else:
+                    struct.pack_into('<I', data, at + 4, y.value - n)
+        for r in rels:
+            for at in range(r.offset, r.offset + r.size, 8):
+                struct.pack_into('<I', data, at, struct.unpack_from('<I', elf.data, at)[0] - n)
+        changed = True
+    if changed:
+        Path(target).write_bytes(bytes(data))
+
+
 def trim_link_padding(target, base_elf):
     """End a target data section's last symbol where the C object's section ends.
 
@@ -521,6 +576,7 @@ def prepare(root, evidence):
         preserve_gp0(stripped, target)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
+            trim_leading_fill(target, base_elf)
             trim_link_padding(target, base_elf)
             section_relative_data_relocs(target, base_elf)
             fold_constant_labels(target)
