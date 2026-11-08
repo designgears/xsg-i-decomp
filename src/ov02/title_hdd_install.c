@@ -15,7 +15,8 @@ struct HddInstallRenderState {
     u16 buffer_select;
 };
 
-extern struct HddInstallParams *HddInstallParam;
+static u8 D_00A13654;
+static struct HddInstallParams *HddInstallParam;
 extern struct HddInstallRenderState sRender;
 extern u64 TestEnv_0_00A0FE10[];
 extern u8 TransEnv_1_00A0FE70[];
@@ -73,7 +74,6 @@ extern const char D_00A11828[];
 extern char sztmp_5[];
 extern const char *sztmp_6[];
 extern char anim_4[];
-extern u8 D_00A13654;
 extern void tyaDrawGauge(void *g);
 extern void xglFontPrintf(int x, int y, unsigned int color, void *arg);
 extern int xglJpegDecode(void *request_address);

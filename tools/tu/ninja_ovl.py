@@ -70,6 +70,12 @@ def fix_bss_pins(ld_text, unit):
     if not vram:
         return ld_text
     base = min(vram.values())      # `.` inside the NOLOAD section counts from its start
+    # the section starts at its first object's original address: an output
+    # section is otherwise aligned to its most aligned input (an 8-aligned C
+    # .bss moved ov02's start from 0xA13654 to 0xA13658)
+    head = f".{unit}_bss (NOLOAD) :"
+    if ld_text.count(head) == 1:
+        ld_text = ld_text.replace(head, f".{unit}_bss 0x{base:X} (NOLOAD) :")
     obj = re.compile(r"^(\s*)build/(?:asm/data|scaffold/src|src)/" + re.escape(unit)
                      + r"/([\w\-]+)(?:\.bss)?(?:\.carved)?\.o\(\.bss\);\s*$")
     out = []

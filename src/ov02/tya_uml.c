@@ -8,10 +8,10 @@ typedef unsigned char u8;
 typedef signed short s16;
 extern int xglCdGetFileSize(const char *name);
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
-extern u8 *buffer;
-extern s16 base_tbl[];
+static u8 *buffer;
+static s16 base_tbl[0x140];
 
-extern s16 *tbl;
+static s16 *tbl;
 extern void tyaUmlDispInit2(u8 *work_buffer);
 
 typedef struct TyaUmlDispParam {
