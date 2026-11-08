@@ -3691,7 +3691,7 @@ extern void xglCameraInit(StudioCamera *camera);
 extern void *memset(void *, int, unsigned int);
 typedef struct { Vector4 v; } MenuCamVec1 __attribute__((aligned(8)));
 typedef struct { MenuCamVec1 v[2]; } MenuCamVec2;
-typedef struct { Vector4 v[2]; } MenuCamVec2B __attribute__((aligned(8)));
+typedef struct { Vector4 v[2]; } MenuCamVec2B __attribute__((aligned(16)));
 static MenuCamVec1 TairetuRot;
 static MenuCamVec1 TairetuPos;
 

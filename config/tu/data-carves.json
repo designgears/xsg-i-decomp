@@ -9580,11 +9580,11 @@
     {
      "range": [
       "0x004c5510",
-      "0x004c6580"
+      "0x004c6bc0"
      ],
      "generated": [
       "0x004c5510",
-      "0x004c6578"
+      "0x004c6bc0"
      ],
      "generated_by": [
       "CharCategoryMain",
@@ -9596,9 +9596,16 @@
       "CharStatusMain",
       "CharSwitchMain",
       "CharWeaponMain",
+      "MenuBattleModelMain",
+      "MenuCharCameraMove",
+      "MenuCharCameraSet",
       "MenuCharEquipCalcPointGet",
+      "MenuCharModelMain",
+      "MenuCharactor",
       "MenuParaPtNowGet",
-      "MenuParaUp"
+      "MenuParaUp",
+      "tskCharLineField",
+      "tskCharSpotLight"
      ],
      "c_owned_symbols": [
       "jtbl_004C5510",
@@ -9657,7 +9664,23 @@
       "jtbl_004C63B0",
       "jtbl_004C64D0",
       "D_004C6550",
-      "D_004C6568"
+      "D_004C6568",
+      "D_004C6580",
+      "D_004C65A0",
+      "D_004C65C0",
+      "D_004C65E0",
+      "D_004C65F0",
+      "D_004C6610",
+      "D_004C6630",
+      "D_004C6650",
+      "D_004C6670",
+      "D_004C6680",
+      "jtbl_004C66E0",
+      "D_004C6760",
+      "D_004C6770",
+      "D_004C67D0",
+      "D_004C67F0",
+      "jtbl_004C6800"
      ],
      "also_referenced_by_c": [],
      "reached_through": {
@@ -9702,70 +9725,6 @@
       "D_004C6550": "msg_6",
       "D_004C6568": "msg_7_0036D938"
      },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_para_pt_rate_get.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c6580",
-      "0x004c66e0"
-     ],
-     "generated": [
-      "0x004c6580",
-      "0x004c66e0"
-     ],
-     "generated_by": [
-      "MenuBattleModelMain",
-      "MenuCharCameraMove",
-      "MenuCharCameraSet",
-      "MenuCharModelMain"
-     ],
-     "c_owned_symbols": [
-      "D_004C6580",
-      "D_004C65A0",
-      "D_004C65C0",
-      "D_004C65E0",
-      "D_004C65F0",
-      "D_004C6610",
-      "D_004C6630",
-      "D_004C6650",
-      "D_004C6670",
-      "D_004C6680"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_para_pt_rate_get.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c66e0",
-      "0x004c6bc0"
-     ],
-     "generated": [
-      "0x004c66e0",
-      "0x004c6bc0"
-     ],
-     "generated_by": [
-      "MenuBattleModelMain",
-      "MenuCharactor",
-      "tskCharLineField",
-      "tskCharSpotLight"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C66E0",
-      "D_004C6760",
-      "D_004C6770",
-      "D_004C67D0",
-      "D_004C67F0",
-      "jtbl_004C6800"
-     ],
-     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
