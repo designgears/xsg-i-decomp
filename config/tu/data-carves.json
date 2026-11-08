@@ -7136,34 +7136,75 @@
    ".data": [
     {
      "range": [
-      "0x0036d050",
-      "0x0036d0b0"
+      "0x0036c390",
+      "0x0036d2f0"
      ],
      "generated": [
-      "0x0036d050",
-      "0x0036d0b0"
+      "0x0036c390",
+      "0x0036d2f0"
      ],
      "generated_by": [
-      "endPrintDirectFrameCopy"
+      "FontTexChange",
+      "PrintFrame",
+      "PrintSprite00",
+      "PrintSprite01",
+      "PrintThumbnail",
+      "PrintWindow",
+      "endPrintDirectFrameCopy",
+      "endPrintExtFunc",
+      "endPrintJpeg",
+      "endPrintWinTexLoad",
+      "endSpriteSet",
+      "subPrintSprite"
      ],
      "c_owned_symbols": [
-      "FrameCopyEnv_6"
-     ],
-     "also_referenced_by_c": [
+      "cur_uv",
+      "others_uv",
+      "icom_uv",
+      "pad_uv",
+      "face_agws_uv",
+      "tag_uv",
+      "win_uv",
+      "num_uv",
+      "pad2_uv",
+      "name_uv",
+      "others2_uv",
+      "face00_uv",
+      "face01_uv",
+      "face02_uv",
+      "face03_uv",
+      "face04_uv",
+      "face_puti_uv",
+      "thumnail_uv",
+      "ether_uv",
+      "seg_uv",
+      "umn_uv",
+      "umn2_uv",
+      "umn3_uv",
+      "btl_msg_uv",
+      "btl_msg_uv2",
+      "btl_msg_uv3",
       "uv_clut",
+      "D_0036CDE8",
       "ePrintEnv_0",
       "ThumImageEnv_1",
       "ThumDrawEnv_2",
       "Env_3",
+      "func_tbl_4",
+      "D_0036D02C",
+      "func_tbl2_5",
+      "D_0036D048",
+      "FrameCopyEnv_6",
       "sJpegEnv00_7",
       "JpegEnv01_8",
       "JpegEnv10_9",
       "JpegEnv11_10"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/end_print.o"
+      "object": "build/main/build/c/end_print.o"
      }
     }
    ],
@@ -7187,7 +7228,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/end_print.o"
+      "object": "build/main/build/c/end_print.o"
      }
     }
    ],
@@ -7211,7 +7252,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/end_print.o"
+      "object": "build/main/build/c/end_print.o"
      }
     }
    ]
