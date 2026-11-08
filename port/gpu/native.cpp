@@ -289,6 +289,7 @@ uint64_t g_nbatch, g_nvert, g_ntex, g_live_frames;
 uint32_t g_last_vsync, g_vsyncs;
 Vulkan::ImageHandle g_live_img;     // the composite of the displayed buffer, scale g_scale
 uint32_t g_live_w, g_live_h;        // its frame-buffer size (pixels at 1x)
+uint32_t g_live_mx;                 // widescreen: its side bands (1x pixels each side; the image is w + 2 mx wide)
 /* Without the live path, batches are kept (and textured) only in the few vsyncs before a shot. */
 bool Near() {
     if (g_live) return true;
@@ -382,7 +383,19 @@ struct GpuTarget {
 struct Region {
     uint32_t fbp, fbw, fpsm, zbp, zpsm, w, h;
     float ofx, ofy, zscale;
+    uint32_t mx = 0;   // widescreen: native-only columns on each side of the GS frame (1x pixels)
+    uint32_t W() const { return w + 2 * mx; }   // the native target's width (1x pixels)
 };
+
+/* [display] widescreen: the margin that widens a 512-wide frame to 684 PS2 pixels (16:9 at the
+   4:3 display's pixel aspect; the game's culling is widened by the same 684/512,
+   runtime/settings.c xsg_widescreen_cull).  0 for anything but a full-width frame scissor
+   (split views, other resolutions keep 4:3). */
+uint32_t WideMargin(const Stored& f, const Region& rg) {
+    if (!xsgcfg::GetBool("display.widescreen")) return 0;
+    if (rg.w != 512 || Bits(f.scissor, 0, 11) != 0) return 0;
+    return 86;
+}
 
 Region MakeRegion(const Stored& f) {
     Region rg;
@@ -420,7 +433,7 @@ const float kShadowZo = 8388608.0f, kShadowZs = 8388608.0f * 0.98f;
 GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*>& list, const Region& rg, int scale,
                     unsigned* odd_blend_out) {
     GpuTarget t;
-    t.w = rg.w * scale;
+    t.w = rg.W() * scale;
     t.h = rg.h * scale;
     auto& dev = *g_dev;
     auto* cmd = &cmdr;
@@ -501,9 +514,9 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         std::memcpy(u->cscale, s->b.cscale, 16);
         std::memcpy(u->uv, s->b.uv, 16);
         std::memcpy(u->fog, s->b.fog, 16);
-        u->target[0] = rg.ofx;
+        u->target[0] = rg.ofx - float(rg.mx);
         u->target[1] = rg.ofy;
-        u->target[2] = 1.0f / float(rg.w);
+        u->target[2] = 1.0f / float(rg.W());
         u->target[3] = 1.0f / float(rg.h);
         u->zscale[0] = rg.zscale;
         u->fogcol[0] = float(Bits(s->fogcol, 0, 8));
@@ -577,9 +590,14 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         const int sx0 = int(Bits(s->scissor, 0, 11)), sx1 = int(Bits(s->scissor, 16, 11));
         const int sy0 = int(Bits(s->scissor, 32, 11)), sy1 = int(Bits(s->scissor, 48, 11));
         VkRect2D sc;
-        sc.offset = {sx0 * scale, sy0 * scale};
+        sc.offset = {(sx0 + int(rg.mx)) * scale, sy0 * scale};
         sc.extent = {uint32_t(std::max(0, std::min(sx1 + 1, int(rg.w)) - sx0) * scale),
                      uint32_t(std::max(0, std::min(sy1 + 1, int(rg.h)) - sy0) * scale)};
+        // widescreen: the full-width frame scissor opens onto the side bands too
+        if (rg.mx && sx0 == 0 && sx1 + 1 >= int(rg.w)) {
+            sc.offset.x = 0;
+            sc.extent.width = rg.W() * scale;
+        }
         if (shadow) sc = {{0, 0}, {rg.w, rg.h}};
         cmd->set_scissor(sc);
         std::memcpy(cmd->allocate_constant_data(0, 0, sizeof(Ubo)), &uu, sizeof uu);
@@ -817,6 +835,7 @@ void ShadowPass(Vulkan::CommandBuffer& cmd, const std::vector<const Stored*>& li
     srg.h = S;
     srg.ofx = 0;
     srg.ofy = 0;
+    srg.mx = 0;
     srg.zscale = 1.0f / 16777216.0f;
     sm.on = true;
     GpuTarget st = RenderGpu(cmd, list, srg, 1, nullptr);
@@ -843,11 +862,11 @@ void ShadowPass(Vulkan::CommandBuffer& cmd, const std::vector<const Stored*>& li
     std::memcpy(pc.lvp, sm.lvp, 64);
     std::memcpy(pc.cscale, cam->scale, 16);
     std::memcpy(pc.coffset, cam->offset, 16);
-    pc.origin[0] = rg.ofx;
+    pc.origin[0] = rg.ofx - float(rg.mx);
     pc.origin[1] = rg.ofy;
     pc.zmul = 1.0f / rg.zscale;
     pc.strength = std::min(100, strength) * 0.01f;
-    pc.w = int32_t(rg.w);
+    pc.w = int32_t(rg.W());
     pc.h = int32_t(rg.h);
     pc.s = g_scale;
     pc.size = int32_t(S);
@@ -866,7 +885,7 @@ void ShadowPass(Vulkan::CommandBuffer& cmd, const std::vector<const Stored*>& li
     }
     pc.lup[1] = upsign;
     std::memcpy(cmd.allocate_constant_data(0, 3, sizeof pc), &pc, sizeof pc);
-    cmd.dispatch((rg.w * g_scale + 7) / 8, (rg.h * g_scale + 7) / 8, 1);
+    cmd.dispatch((rg.W() * g_scale + 7) / 8, (rg.h * g_scale + 7) / 8, 1);
     cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                 VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -884,7 +903,8 @@ void Live(ParallelGS::GSInterface& gs) {
     if (g_live_img && fbp == last_fbp && gen == last_gen) return;
     last_fbp = fbp;
     last_gen = gen;
-    const Region rg = MakeRegion(*list.front());
+    Region rg = MakeRegion(*list.front());
+    rg.mx = WideMargin(*list.front(), rg);
     // A post-processed frame the replay cannot redo: the paraLLEl-GS frame (1x).
     const char* why = "";
     const xsgfx::Post post = xsgfx::PostState(fbp, &why);
@@ -951,8 +971,8 @@ void Live(ParallelGS::GSInterface& gs) {
     cmd->set_storage_buffer(0, 4, *gsb);
     cmd->set_storage_texture(0, 5, out->get_view());
     cmd->set_storage_texture(0, 6, zimg->get_view());
-    struct { int32_t w, h, s, thr; float zmul; int32_t own; } pc = {int32_t(rg.w), int32_t(rg.h), g_scale, g_thr,
-                                                                     1.0f / rg.zscale, own ? 1 : 0};
+    struct { int32_t w, h, s, thr; float zmul; int32_t own, mx; } pc = {int32_t(rg.w), int32_t(rg.h), g_scale, g_thr,
+                                                                         1.0f / rg.zscale, own ? 1 : 0, int32_t(rg.mx)};
     cmd->push_constants(&pc, 0, sizeof pc);
     cmd->dispatch((ns.w + 7) / 8, (ns.h + 7) / 8, 1);
     cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -962,12 +982,13 @@ void Live(ParallelGS::GSInterface& gs) {
     if (const int strength = xsgcfg::GetInt("renderer.shadows"); strength > 0 && g_shadow)
         ShadowPass(*cmd, list, rg, *ns.depth, *out, *zimg, strength);
     // Effects after the scenery (native_fx.cpp), then the PMODE circuit blend, at scale g_scale.
-    if (post == xsgfx::Post::Replay) xsgfx::Replay(*cmd, fbp, g_scale, rg.w, rg.h, *out, *zimg);
-    xsgfx::Pmode(*cmd, gs, g_scale, rg.w, rg.h, *out, *zimg);
+    if (post == xsgfx::Post::Replay) xsgfx::Replay(*cmd, fbp, g_scale, rg.w, rg.h, *out, *zimg, rg.mx);
+    xsgfx::Pmode(*cmd, gs, g_scale, rg.W(), rg.h, *out, *zimg);
     cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
     // Motion vectors last, so they see the final composite (+ XSG_GPU_MV_VIEW).
-    xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale, own);
+    xsgskin::ResolveMv(*cmd, *out, *ns.color, *ns.depth, ns.mv, *gsb, g_scale, 1.0f / rg.zscale, own, int(rg.w),
+                       int(rg.mx));
     cmd->image_barrier(*out, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                        VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -984,6 +1005,7 @@ void Live(ParallelGS::GSInterface& gs) {
     g_live_img = out;
     g_live_w = rg.w;
     g_live_h = rg.h;
+    g_live_mx = rg.mx;
     g_live_frames++;
 }
 
@@ -1133,6 +1155,23 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
         WritePng(path(what), g_live_img->get_width(), g_live_img->get_height(), live);
         // Box-downsampled to 1x, against the paraLLEl-GS frame.
         const int s = g_scale;
+        const uint32_t lw = g_live_img->get_width() / s, lm = lw > rg.w ? (lw - rg.w) / 2 : 0;
+        if (lm) {   // widescreen: the whole picture box-downsampled too
+            std::vector<uint32_t> wide(size_t(lw) * rg.h);
+            for (uint32_t y = 0; y < rg.h; ++y)
+                for (uint32_t x = 0; x < lw; ++x) {
+                    uint32_t acc[3] = {};
+                    for (int j = 0; j < s; ++j)
+                        for (int i = 0; i < s; ++i) {
+                            const uint32_t c = live[size_t(y * s + j) * lw * s + x * s + i];
+                            for (int k = 0; k < 3; ++k) acc[k] += (c >> (8 * k)) & 255;
+                        }
+                    uint32_t c = 0xff000000u;
+                    for (int k = 0; k < 3; ++k) c |= ((acc[k] + s * s / 2) / (s * s)) << (8 * k);
+                    wide[size_t(y) * lw + x] = c;
+                }
+            WritePng(path("live_wide_1x"), lw, rg.h, wide);
+        }
         std::vector<uint32_t> down(gsc.size());
         uint64_t hl[4] = {};
         for (uint32_t y = 0; y < rg.h; ++y)
@@ -1140,7 +1179,7 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
                 uint32_t acc[3] = {};
                 for (int j = 0; j < s; ++j)
                     for (int i = 0; i < s; ++i) {
-                        const uint32_t c = live[size_t(y * s + j) * rg.w * s + x * s + i];
+                        const uint32_t c = live[size_t(y * s + j) * lw * s + (x + lm) * s + i];
                         for (int k = 0; k < 3; ++k) acc[k] += (c >> (8 * k)) & 255;
                     }
                 uint32_t c = 0xff000000u;
@@ -1456,9 +1495,10 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs, bool show) {
     xsgprof::Vsync(frame);
 }
 
-const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h) {
+const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h, uint32_t* margin) {
     *fb_w = g_live_w;
     *fb_h = g_live_h;
+    if (margin) *margin = g_live_mx;
     return g_live_img;
 }
 

@@ -61,8 +61,10 @@ const char* PostTrigger(uint32_t fbp);   // the draw that started the post phase
    in GENERAL layout, and they stay there. */
 /* The renderer turned on mid-game: the ownership GS starts from the main GS memory. */
 void SeedOwn(const uint8_t* vram);
+/* mx ([display] widescreen): the images have mx native-only columns on each side
+   ((w + 2 mx) * s wide); full-width sprites (fades, the defocus blur) are stretched across them. */
 void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
-            const Vulkan::Image& z);
+            const Vulkan::Image& z, uint32_t mx = 0);
 /* The PMODE circuit blend over `color`, when the read circuits ask for one. */
 bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s, uint32_t w, uint32_t h,
            const Vulkan::Image& color, const Vulkan::Image& z);

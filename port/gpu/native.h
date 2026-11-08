@@ -35,8 +35,10 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len);
    composite (the expensive part) is skipped, the bookkeeping is not. */
 void Vsync(uint32_t frame, ParallelGS::GSInterface& gs, bool show = true);
 /* The live composite of the displayed buffer (GENERAL layout, frame
-   buffer size x Scale()), or null when this vsync had no native layer. */
-const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h);
+   buffer size x Scale()), or null when this vsync had no native layer.
+   *margin ([display] widescreen): native-only columns on each side (1x pixels); the
+   image is then (fb_w + 2 margin) x Scale() wide, the GS frame starting at margin. */
+const Vulkan::ImageHandle& LiveImage(uint32_t* fb_w, uint32_t* fb_h, uint32_t* margin = nullptr);
 int Scale();
 /* A TEX0 texture decoded from the GS-memory mirror (RGBA8), and the mirror's upload generation. */
 std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h);

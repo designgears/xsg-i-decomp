@@ -62,7 +62,8 @@ void Begin();
 uint32_t Bind(Vulkan::CommandBuffer& cmd, const Draw& d, int pass);
 /* After composite.comp wrote `out` (GENERAL): the motion-vector target. */
 void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& color, Vulkan::Image& depth,
-               const Vulkan::ImageHandle& mv, const Vulkan::Buffer& gs, int scale, float zmul, bool own);
+               const Vulkan::ImageHandle& mv, const Vulkan::Buffer& gs, int scale, float zmul, bool own, int gw = 0,
+               int mx = 0);   // gw: the GS frame's width (1x); mx: widescreen side bands (1x, each side)
 /* The resolved motion vectors of the last live composite (RG16F, high-res pixels). */
 const Vulkan::ImageHandle& MvImage();
 /* Diagnostic: <prefix>mv.png (colour view) and <prefix>mv.f32 (w, h, then RG floats) of the

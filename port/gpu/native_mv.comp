@@ -19,6 +19,8 @@ layout(push_constant) uniform P {
     int s;              // scale
     float zmul;         // native depth -> GS Z
     int own;            // 1: the exact ownership plane follows the Z in gs[]
+    int gw;             // the GS frame's width (1x)
+    int mx;             // widescreen: native-only columns each side (1x)
 } p;
 
 vec3 Hue(float h) {
@@ -35,8 +37,11 @@ void main() {
         // Native owns the sample when the composite wrote the native colour; if
         // that is also the GS pixel's colour, decide with the depth rule.
         vec3 d = abs(texelFetch(hc, o, 0).rgb - c.rgb) * 255.0;
-        int w1 = p.w / p.s, gi = (o.y / p.s) * w1 + o.x / p.s;
-        if (p.own != 0) {
+        int w1 = p.gw, gx = o.x / p.s - p.mx, gi = (o.y / p.s) * w1 + gx;
+        if (gx < 0 || gx >= w1) {
+            // a side band: native only, unless a post effect changed the sample
+            if (max(d.r, max(d.g, d.b)) < 0.5) mv = texelFetch(hmv, o, 0).rg;
+        } else if (p.own != 0) {
             // Exact: the composite took the sample (native owns the pixel) and no
             // post effect changed it since.
             if (gs[2 * w1 * (p.h / p.s) + gi] != 0u && max(d.r, max(d.g, d.b)) < 0.5) mv = texelFetch(hmv, o, 0).rg;

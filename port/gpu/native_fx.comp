@@ -28,7 +28,7 @@ layout(r32ui, set = 0, binding = 2) uniform uimage2D o_z;
 layout(set = 0, binding = 3) uniform sampler2D src;    // texture (1x texels) or the surface copy (s x)
 layout(push_constant) uniform P {
     int prim, s, w, h;          // w, h: surface at 1x
-    int ox, oy, pad0, pad1;     // bbox origin (s x samples)
+    int ox, oy, mx, pad1;       // bbox origin (s x samples); mx: widescreen side bands (1x, each side)
     uint pmode, bgcolor, zmax, pad2;
 } p;
 
@@ -42,6 +42,9 @@ ivec4 Fetch(ivec2 t, Prim r) {
     uint wms = Bits(r.tex.z, 0, 2), wmt = Bits(r.tex.z, 2, 2);
     ivec2 lo = ivec2(0), hi = (frame ? r.tsz.xy * p.s : r.tsz.xy) - 1;
     ivec2 tl = r.tsz.xy * sc;
+    // Widescreen frame read: the copy has the side bands; x is clamped to it, not wrapped.
+    const bool band = frame && p.mx > 0;
+    if (band) wms = 4u;
     // REGION_CLAMP limits (in 1x texels).
     int minu = int(Bits(r.tex.z, 4, 10)), maxu = int(Bits(r.tex.z, 14, 10));
     int minv = int(Bits(r.tex.z, 24, 8) | (Bits(r.tex.w, 0, 2) << 8)), maxv = int(Bits(r.tex.w, 2, 10));
@@ -54,7 +57,12 @@ ivec4 Fetch(ivec2 t, Prim r) {
     if (wmt == 0u) t.y = t.y & (tl.y - 1);
     else if (wmt == 1u) t.y = clamp(t.y, 0, tl.y - 1);
     else if (wmt == 2u) t.y = clamp(t.y, minv * sc, (maxv + 1) * sc - 1);
-    t = clamp(t, ivec2(0), size - 1);
+    if (band) {
+        t.x = clamp(t.x + p.mx * p.s, 0, (p.w + 2 * p.mx) * p.s - 1);
+        t.y = clamp(t.y, 0, size.y - 1);
+    } else {
+        t = clamp(t, ivec2(0), size - 1);
+    }
     return ivec4(round(texelFetch(src, t, 0) * 255.0));
 }
 
@@ -102,11 +110,11 @@ void PmodePass(ivec2 o) {
 
 void main() {
     ivec2 o = ivec2(gl_GlobalInvocationID.xy) + ivec2(p.ox, p.oy);
-    if (o.x >= p.w * p.s || o.y >= p.h * p.s) return;
+    if (o.x >= (p.w + 2 * p.mx) * p.s || o.y >= p.h * p.s) return;
     if (p.prim < 0) { PmodePass(o); return; }
     Prim r = prims[p.prim];
     // Sample point in 1x pixel space: pixel X samples at X.0 (the GS corner).
-    vec2 pt = (vec2(o) + 0.5) / float(p.s) - 0.5;
+    vec2 pt = (vec2(o) + 0.5) / float(p.s) - 0.5 - vec2(float(p.mx), 0.0);
     if (pt.x < float(r.sc.x) - 0.5 / p.s || pt.y < float(r.sc.y) - 0.5 / p.s ||
         pt.x > float(r.sc.z) + 0.5 - 0.5 / p.s || pt.y > float(r.sc.w) + 0.5 - 0.5 / p.s) return;
     const uint type = r.kind.x, prim = r.kind.y;

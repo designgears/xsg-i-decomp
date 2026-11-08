@@ -963,18 +963,44 @@ bool OwnerPlane(const Surface& sf, std::vector<uint32_t>& out) {
 }
 
 void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
-            const Vulkan::Image& z) {
+            const Vulkan::Image& z, uint32_t mx) {
     auto it = g_post.find(fbp);
     if (it == g_post.end() || it->second.prims.empty()) return;
     PostFrame& pf = it->second;
     auto& dev = *g_dev;
+    // Widescreen: a sprite over the whole width under a full-width scissor (fade, flash, the
+    // defocus blur's frame reads) is stretched across the side bands.  A frame read keeps its
+    // texel-per-pixel mapping (its UVs are extended, and read the bands of the copy);
+    // other textures are stretched.  Everything else stays in the centre (its scissor).
+    static std::vector<GpuPrim> wide;
+    const GpuPrim* prims = pf.prims.data();
+    if (mx) {
+        wide = pf.prims;
+        const float m = float(mx), fw = float(w);
+        for (GpuPrim& p : wide) {
+            if (p.kind[0] != 6 || p.sc[0] > 0 || p.sc[2] < int(w) - 1) continue;
+            const int l = p.xy[0][0] <= p.xy[1][0] ? 0 : 1, r = 1 - l;
+            if (p.xy[l][0] > 0.0f || p.xy[r][0] < fw) continue;
+            const float x0 = p.xy[l][0], x1 = p.xy[r][0];
+            if (p.kind[2] == 2 && x1 > x0) {
+                const float du = (p.xy[r][2] - p.xy[l][2]) / (x1 - x0);
+                p.xy[l][2] += (-m - x0) * du;
+                p.xy[r][2] += (fw + m - x1) * du;
+            }
+            p.xy[l][0] = -m;
+            p.xy[r][0] = fw + m;
+            p.sc[0] = -int(mx);
+            p.sc[2] = int(w + mx) - 1;
+        }
+        prims = wide.data();
+    }
     Vulkan::BufferCreateInfo bi = {};
     bi.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     bi.domain = Vulkan::BufferDomain::LinkedDeviceHost;
     bi.size = pf.prims.size() * sizeof(GpuPrim);
-    auto buf = dev.create_buffer(bi, pf.prims.data());
+    auto buf = dev.create_buffer(bi, prims);
     // The frame-read source: a copy of the surface, refreshed before each frame-reading primitive.
-    Vulkan::ImageHandle copy = Storage(w * s, h * s, VK_FORMAT_R8G8B8A8_UNORM, nullptr);
+    Vulkan::ImageHandle copy = Storage((w + 2 * mx) * s, h * s, VK_FORMAT_R8G8B8A8_UNORM, nullptr);
     static Vulkan::ImageHandle white;
     if (!white) { const uint32_t px = 0xffffffffu; white = Storage(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &px); }
     cmd.set_program(g_prog);
@@ -993,7 +1019,7 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
         pending.clear();
     };
     for (size_t i = 0; i < pf.prims.size(); ++i) {
-        const GpuPrim& p = pf.prims[i];
+        const GpuPrim& p = prims[i];
         const Vulkan::Image* src = white.get();
         // The game's soft-focus feedback: the frame itself blended back full-screen at
         // (nearly) its own size.  At 1x it is a faint glow; at native scale it shows as a
@@ -1037,8 +1063,10 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
             x0 = std::min(x0, p.xy[k][0]); y0 = std::min(y0, p.xy[k][1]);
             x1 = std::max(x1, p.xy[k][0]); y1 = std::max(y1, p.xy[k][1]);
         }
+        x0 += float(mx);
+        x1 += float(mx);
         const int bx0 = std::max(0, int(std::floor(x0 * s)) - 1), by0 = std::max(0, int(std::floor(y0 * s)) - 1);
-        const int bx1 = std::min(int(w * s), int(std::ceil(x1 * s)) + s + 1);
+        const int bx1 = std::min(int((w + 2 * mx) * s), int(std::ceil(x1 * s)) + s + 1);
         const int by1 = std::min(int(h * s), int(std::ceil(y1 * s)) + s + 1);
         if (bx1 <= bx0 || by1 <= by0) continue;
         const uint32_t zmax = p.fb[3] == 0 ? 0xffffffffu : (p.fb[3] == 1 ? 0xffffffu : 0xffffu);
@@ -1048,8 +1076,8 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
         for (const Rect& q : pending)
             if (!hit && r.x0 < q.x1 && q.x0 < r.x1 && r.y0 < q.y1 && q.y0 < r.y1) hit = true;
         if (hit) flush_pending();
-        struct { int32_t prim, s, w, h, ox, oy, pad0, pad1; uint32_t pmode, bg, zmax, pad2; } pc = {
-            int32_t(i), s, int32_t(w), int32_t(h), bx0, by0, 0, 0, 0, 0, zmax, 0};
+        struct { int32_t prim, s, w, h, ox, oy, mx, pad1; uint32_t pmode, bg, zmax, pad2; } pc = {
+            int32_t(i), s, int32_t(w), int32_t(h), bx0, by0, int32_t(mx), 0, 0, 0, zmax, 0};
         cmd.push_constants(&pc, 0, sizeof pc);
         cmd.dispatch((bx1 - bx0 + 7) / 8, (by1 - by0 + 7) / 8, 1);
         pending.push_back(r);
