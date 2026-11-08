@@ -10851,6 +10851,61 @@
     }
    ]
   },
+  "ov01/tu008_00a24a98": {
+   ".data": [
+    {
+     "range": [
+      "0x00a3f000",
+      "0x00a3f038"
+     ],
+     "generated": [
+      "0x00a3f000",
+      "0x00a3f038"
+     ],
+     "generated_by": [
+      "grBBIdxGet",
+      "grDBIdxGet",
+      "grFBAdrGet"
+     ],
+     "c_owned_symbols": [
+      "fb",
+      "stockPosTbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/gr_gp_init.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a466e8",
+      "0x00a46730"
+     ],
+     "generated": [
+      "0x00a466e8",
+      "0x00a46728"
+     ],
+     "generated_by": [
+      "grVramCopyFBtoFB"
+     ],
+     "c_owned_symbols": [
+      "D_00A466E8",
+      "D_00A466F0",
+      "D_00A46708"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/gr_gp_init.o"
+     }
+    }
+   ]
+  },
   "ov01/tu009_00a26018": {
    ".rodata": [
     {
@@ -12435,6 +12490,60 @@
     }
    ]
   },
+  "ov10/tu000_00a00000": {
+   ".data": [
+    {
+     "range": [
+      "0x00a42034",
+      "0x00a42040"
+     ],
+     "generated": [
+      "0x00a42034",
+      "0x00a42040"
+     ],
+     "generated_by": [
+      "CardGameRoot",
+      "yNewRenderInit"
+     ],
+     "c_owned_symbols": [
+      "s_nMode",
+      "s_nPause_00A42038",
+      "s_nDebMode"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/calc_vert_out_vec_edge.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a4bba0",
+      "0x00a4bbd0"
+     ],
+     "generated": [
+      "0x00a4bba0",
+      "0x00a4bbca"
+     ],
+     "generated_by": [
+      "CardGameRoot"
+     ],
+     "c_owned_symbols": [
+      "D_00A4BBA0",
+      "D_00A4BBB0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/calc_vert_out_vec_edge.o"
+     }
+    }
+   ]
+  },
   "ov10/tu001_00a00410": {
    ".rodata": [
     {
@@ -13455,26 +13564,31 @@
     {
      "range": [
       "0x00a4bb88",
-      "0x00a4bb8c"
+      "0x00a4bba0"
      ],
      "generated": [
       "0x00a4bb88",
-      "0x00a4bb8c"
+      "0x00a4bba0"
      ],
      "generated_by": [
+      "CC_Kara_CommFase",
       "CC_Kara_CommPlay",
-      "CC_Kara_CommRequest"
+      "CC_Kara_CommRequest",
+      "CC_Kara_SetFase",
+      "CC_Kara_SetOpe",
+      "Check413Command",
+      "CheckComboMove",
+      "CheckTeppekiCommand"
      ],
      "c_owned_symbols": [
-      "commplay"
-     ],
-     "also_referenced_by_c": [
+      "commplay",
       "play413",
       "playteppeki",
       "cardno_0",
       "no_1",
       "timer_2"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

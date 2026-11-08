@@ -876,7 +876,9 @@ s32 CheckEnemyGuno(s32 side, CardGameWork *work)
     return 0;
 }
 
-extern s32 play413;
+s32 commplay = 0;
+s32 play413 = 0;
+s32 playteppeki = 0;
 extern s32 CardPlayOperationCnt(CardPlaySide *side);
 extern s32 CGPDispoSub0(s32 side, CardGameWork *work, s32 index);
 extern void CardPlayDisployment(u16 side, CardGameWork *work, void *field, s32 index);
@@ -1707,14 +1709,14 @@ int CC_Kara_SetFase_1(int side, u8 *a1)
     return 0;
 }
 
-extern s32 cardno_0;
-extern s32 no_1;
 extern s32 CardPlaySuteCnt(CardPlaySide *side);
 extern s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work, s16 operand, s16 target);
 extern void CGPCommFinishSub(CardGameWork *work, CardPlaySide *side, s32 index);
 
 s32 CC_Kara_CommFase(s32 side, CardGameWork *work)
 {
+  static s32 cardno = 0;
+  static s32 no = 0;
   CardPlaySide *sideData_t;
   s16 **new_var;
   s32 i;
@@ -1748,8 +1750,8 @@ s32 CC_Kara_CommFase(s32 side, CardGameWork *work)
         case 0x57:
           if (CheckCommandPlay(side, work, *card) && (CardPlaySuteCnt(sideData_t) >= 5))
         {
-          no_1 = i;
-          cardno_0 = *(*new_var);
+          no = i;
+          cardno = *(*new_var);
           work->unmodeled_59B8[1] = 1;
           return 0;
           work->unmodeled_59B8[1] = 0;
@@ -1760,8 +1762,8 @@ s32 CC_Kara_CommFase(s32 side, CardGameWork *work)
           if ((CheckCommandPlay(side, work, 0x5D) && (CardPlayYamaCnt(sideData_t) >= 11)) && (7 > count))
         {
           new_var2 = i;
-          no_1 = new_var2;
-          cardno_0 = *card;
+          no = new_var2;
+          cardno = *card;
           work->unmodeled_59B8[1] = 1;
           return 0;
         }
@@ -1771,9 +1773,9 @@ s32 CC_Kara_CommFase(s32 side, CardGameWork *work)
           new_var2 = count;
           if ((CheckCommandPlay(side, work, 0x5E) && (CardPlaySuteCnt(sideData_t) >= 2)) && (new_var2 < 7))
         {
-          cardno_0 = *card;
-          no_1 = new_var2;
-          no_1 = i;
+          cardno = *card;
+          no = new_var2;
+          no = i;
           work->unmodeled_59B8[1] = 1;
           return 0;
         }
@@ -1787,11 +1789,11 @@ s32 CC_Kara_CommFase(s32 side, CardGameWork *work)
       return 1;
 
     case 1:
-      if (CardPlayCommandPlay(side, work->commandIds[cardno_0], work, 0, 0) == 0)
+      if (CardPlayCommandPlay(side, work->commandIds[cardno], work, 0, 0) == 0)
     {
       return 0;
     }
-      CGPCommFinishSub(work, sideData_t, no_1);
+      CGPCommFinishSub(work, sideData_t, no);
       work->unmodeled_59B8[1] = 0;
       return 0;
 
@@ -3239,7 +3241,7 @@ s32 CC_Kara_DisposeEvent(s32 side, CardGameWork *work)
     return 0;
 }
 
-s32 commplay = 0;
+extern s32 commplay;
 s32 CheckExtCommand(s32 side, CardGameWork *work);
 s32 CheckCurryCommand(s32 side, CardGameWork *work);
 s32 CheckTentCommand(s32 side, CardGameWork *work);
@@ -3609,24 +3611,24 @@ void CC_Kara_CommPlay(s32 side, CardGameWork *work)
     CGPEnemyExecCommand(side, work, command, 0);
 }
 
-extern int timer_2[];
 int CC_Kara_SetFase_1(int a0, u8 *a1);
 
 int CC_Kara_SetFase(int a0, u8 *a1)
 {
+    static int timer = 0;
     if (a1[0x59B9] == 0) {
         a1[0x59B9] = 1;
-        timer_2[0] = 15;
+        timer = 15;
     }
-    if (timer_2[0] == 0) {
+    if (timer == 0) {
         a1[0x59B9]++;
         if (a1[0x59B9] > 0x28) {
             return 0;
         }
-        timer_2[0] = 15;
+        timer = 15;
         return CC_Kara_SetFase_1(a0, a1);
     }
-    timer_2[0]--;
+    timer--;
     return 1;
 }
 
