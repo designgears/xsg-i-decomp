@@ -1453,7 +1453,7 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
 extern DropShadowHeadPacket Head_6_00478E30;
 extern u8 TestEnv_7[48];
 extern ActShadowEndPacket Tail_8;
-extern const DrawDropCircleIndexTable D_004D1DD8;
+const DrawDropCircleIndexTable D_004D1DD8 = { 4, 0, 1, 6, 1, 6, 7, 2, 7, 2, 3, 5, 0xC, 9, 8, 0xF, 8, 0xF, 0xE, 0xB, 0xE, 0xB, 0xA, 0xD, 0, 4, 8, 0xC, 4, 1, 0xC, 9, 1, 7, 9, 0xF, 7, 3, 0xF, 0xB, 3, 5, 0xB, 0xD, 5, 2, 0xD, 0xA, 2, 6, 0xA, 0xE, 6, 0, 0xE, 8 };
 
 static void DrawDropCircle(ActShadowActor *actor)
 {

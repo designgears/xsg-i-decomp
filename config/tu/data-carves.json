@@ -15699,40 +15699,20 @@
     {
      "range": [
       "0x004d1da0",
-      "0x004d1dd8"
-     ],
-     "generated": [
-      "0x004d1da0",
-      "0x004d1dd8"
-     ],
-     "generated_by": [
-      "DrawDropShadowSub"
-     ],
-     "c_owned_symbols": [
-      "D_004D1DA0"
-     ],
-     "also_referenced_by_c": [
-      "D_004D1DD8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/act_3.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d1e10",
       "0x004d1e40"
      ],
      "generated": [
-      "0x004d1e10",
+      "0x004d1da0",
       "0x004d1e3c"
      ],
      "generated_by": [
-      "ACT_DrawShadow"
+      "ACT_DrawShadow",
+      "DrawDropCircle",
+      "DrawDropShadowSub"
      ],
      "c_owned_symbols": [
+      "D_004D1DA0",
+      "D_004D1DD8",
       "jtbl_004D1E10"
      ],
      "also_referenced_by_c": [],
