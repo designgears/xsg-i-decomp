@@ -3850,7 +3850,6 @@ typedef struct MCUnit {
     unsigned char unmodeled_1a[6];
     MCActor *actor;                  /* +0x20 */
 } MCUnit;
-extern MCVector D_004C6670;
 extern int MenuModelOut[];
 static inline void MCClearSwapOut(void)
 {
@@ -3861,7 +3860,6 @@ void MenuCharModelMain(void *unit_arg, void *argument)
 {
     MCVector position;
     MCVector rotation;
-    MCVector scale;
     unsigned char slot;
     unsigned char st;
     MCUnit *unit = (MCUnit *)unit_arg;
@@ -3936,7 +3934,9 @@ void MenuCharModelMain(void *unit_arg, void *argument)
         position.vector.w = 1.0f;
         memset(&rotation, 0, 16);
         rotation.vector.w = 1.0f;
-        scale = D_004C6670;
+        {
+        MCVector scale = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+
         {
             Vector4 *current = &transform->position.vector;
             float x = current->x;
@@ -3963,6 +3963,7 @@ void MenuCharModelMain(void *unit_arg, void *argument)
             current->x = x + (scale.vector.x - x) * 0.2f;
             current->y = y + (scale.vector.y - y) * 0.2f;
             current->z = z + (scale.vector.z - z) * 0.2f;
+        }
         }
     }
     }

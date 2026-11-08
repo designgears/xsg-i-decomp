@@ -9730,8 +9730,7 @@
       "D_004C65F0",
       "D_004C6610",
       "D_004C6630",
-      "D_004C6650",
-      "D_004C6670"
+      "D_004C6650"
      ],
      "basis": {
       "kind": "derived",
@@ -9741,17 +9740,19 @@
     },
     {
      "range": [
-      "0x004c6680",
+      "0x004c6670",
       "0x004c66e0"
      ],
      "generated": [
-      "0x004c6680",
+      "0x004c6670",
       "0x004c66e0"
      ],
      "generated_by": [
-      "MenuBattleModelMain"
+      "MenuBattleModelMain",
+      "MenuCharModelMain"
      ],
      "c_owned_symbols": [
+      "D_004C6670",
       "D_004C6680"
      ],
      "also_referenced_by_c": [],
