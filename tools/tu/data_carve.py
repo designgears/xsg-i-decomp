@@ -839,6 +839,7 @@ def section_references(elf, csec):
         tdata = elf.section_bytes(tgt)
         entries = _rel_entries(elf, rs)
         paired = {}
+        last_hi = {}
         for i, (off, rtype, symi, add) in enumerate(entries):
             if symi >= len(syms) or syms[symi].shndx != csec.index:
                 continue
@@ -861,8 +862,14 @@ def section_references(elf, csec):
                     low = struct.unpack_from('<I', tdata, entries[j][0])[0]
                     addend = ((word & 0xffff) << 16) + _sext16(low)
                     paired[j] = addend
+                    last_hi[symi] = word & 0xffff
                 elif rtype == 6:                                 # R_MIPS_LO16
                     addend = paired.get(i)
+                    if addend is None and csec.size >= 0x10000 and symi in last_hi:
+                        # GCC loads several fields through one `lui`: the later
+                        # LO16s take the high half of the latest HI16 of the
+                        # same symbol (the MIPS ABI rule gas and ld apply).
+                        addend = (last_hi[symi] << 16) + _sext16(word)
                     if addend is None:
                         if csec.size >= 0x10000:
                             raise CarveError(f'unpaired R_MIPS_LO16 at {where}: {csec.name} is 64 KiB or larger')

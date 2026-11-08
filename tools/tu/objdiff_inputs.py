@@ -6,6 +6,7 @@ credit. IOP originals have no base. All binary inputs remain local.
 """
 from concurrent.futures import ThreadPoolExecutor
 import json
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -146,6 +147,44 @@ def section_relative_data_relocs(target, base_elf):
             struct.pack_into('<I', data, applies.offset + offset,
                              (word + symbol.value) & 0xffffffff)
             struct.pack_into('<I', data, at + 4, (section_symbol[symbol.shndx] << 8) | 2)
+    Path(target).write_bytes(bytes(data))
+
+
+def fold_constant_labels(target):
+    """Undo splat's reading of data constants as addresses (`.word D_8000 + 0x1`).
+
+    Where a data word's value is not an address of the loaded images, splat
+    still emits it as `D_<hex> + addend` against an undefined absolute symbol
+    (undefined_syms_auto.txt: `D_8000 = 0x8000`). The original holds the plain
+    constant and the linked image is identical; the report's target carries an
+    R_MIPS_32 the compiled C correctly lacks. Such a relocation is resolved into
+    the word and removed. Only undefined `D_<hex>` symbols outside the EE image
+    range [0x00100000, 0x02000000) are folded.
+    """
+    elf = Elf(Path(target).read_bytes())
+    data = bytearray(elf.data)
+    for rel in elf.sections:
+        if rel.type != 9:
+            continue
+        applies = elf.sections[rel.info]
+        if not applies.flags & 2 or applies.flags & 4:
+            continue
+        kept = []
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            symbol = elf.symbols[info >> 8]
+            match = re.fullmatch(r'D_([0-9A-F]+)', symbol.name)
+            value = int(match.group(1), 16) if match else None
+            if (info & 255 == 2 and symbol.shndx == 0 and value is not None
+                    and not 0x00100000 <= value < 0x02000000):
+                word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+                struct.pack_into('<I', data, applies.offset + offset, (word + value) & 0xffffffff)
+            else:
+                kept.append((offset, info))
+        if len(kept) * 8 != rel.size:
+            for k, entry in enumerate(kept):
+                struct.pack_into('<II', data, rel.offset + 8 * k, *entry)
+            struct.pack_into('<I', data, elf.shoff + rel.index * elf.shentsize + 20, len(kept) * 8)
     Path(target).write_bytes(bytes(data))
 
 
@@ -367,6 +406,7 @@ def prepare(root, evidence):
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
             trim_link_padding(target, base_elf)
             section_relative_data_relocs(target, base_elf)
+            fold_constant_labels(target)
         if literal_labels:
             mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
