@@ -10,7 +10,7 @@ extern struct { char pad[0x2A]; unsigned short trg; unsigned short btn; } PadDat
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
-extern int debmode;
+static int debmode = 0;
 
 extern char D_004CA788[];
 
@@ -20,12 +20,12 @@ extern void DebDispEvtItem(void);
 extern void DebDispItemBox(void);
 extern void UnlockMapUnit(void);
 extern struct { char pad[0x20]; int flags; } GameLoopState;
-extern int cursol_0;
 extern char lineflg, dispflg, printflg, collflg;
-extern char D_004CA680[], D_004DB798[], D_004CA698[], D_004CA6B0[], D_004CA6C8[], D_004CA6E0[];
+extern char D_004CA680[], D_004CA698[], D_004CA6B0[], D_004CA6C8[], D_004CA6E0[];
 extern char D_004CA6F8[], D_004CA710[], D_004CA728[], D_004CA740[], D_004CA758[], D_004CA770[];
 
 void PauseMenuPageUwamono(void) {
+    static int cursol_0 __asm__("cursol.0") = 0;
     int c;
 
     if (debmode == 1) {
@@ -37,7 +37,7 @@ void PauseMenuPageUwamono(void) {
         return;
     }
     xglFontDebugPrintf(0x10, 0x10, D_004CA680);
-    xglFontDebugPrintf(0x30, cursol_0 * 0x10 + 0x20, D_004DB798);
+    xglFontDebugPrintf(0x30, cursol_0 * 0x10 + 0x20, "\241\344");
     if (lineflg) xglFontDebugPrintf(0x40, 0x20, D_004CA698);
     else xglFontDebugPrintf(0x40, 0x20, D_004CA6B0);
     if (dispflg) xglFontDebugPrintf(0x40, 0x30, D_004CA6C8);
@@ -86,12 +86,11 @@ void PauseMenuPageUwamono(void) {
 
 extern char D_004CA7E8[];
 extern char D_004CA7F8[];
-extern char D_004DB7A0[];
 extern char EvtItemTbl[][0x80];
-extern int page_1;
 
 void DebDispEvtItem(void)
 {
+    static int page_1 __asm__("page.1") = 0;
     int i;
     int n;
     int y1, y2;
@@ -106,7 +105,7 @@ void DebDispEvtItem(void)
         xglFontDebugPrintf(4, i * 0x22 + 0x3C, D_004CA7F8, n + 1, p, *p);
         while (*p++ != 0) {
         }
-        xglFontDebugPrintf(0x10, i * 0x22 + 0x48, D_004DB7A0, p);
+        xglFontDebugPrintf(0x10, i * 0x22 + 0x48, "%s", p);
     }
     if (PadData.btn & 0x1000) {
         if (--page_1 < 0) {
@@ -127,16 +126,11 @@ extern int xglFlagsGet1(int bit_offset);
 extern void *memset(void *, int, unsigned int);
 typedef struct { signed char kind; unsigned char id; signed char c; signed char d; int e; } ItemBoxEnt;
 extern ItemBoxEnt ItemBoxTbl[];
-extern int page_2;
 extern char D_004CA808[];
-extern char D_004DB7A8[];
-extern char D_004DB7B0[];
-extern char D_004DB7B8[];
-extern char D_004DB7C0[];
-extern char D_004DB7C8[];
 
 void DebDispItemBox(void)
 {
+    static int page_2 __asm__("page.2") = 0;
     char buf1[16];
     char buf2[16];
     int i;
@@ -160,22 +154,22 @@ void DebDispItemBox(void)
         d = p->d;
         name = GetItemName(p->kind, p->id);
         if (name == 0) {
-            name = D_004DB7A8;
+            name = "NULL";
         }
         if (e == 0) {
             HexToStr(c, buf1);
-            xglFontDebugPrintf(4, i * 0x10 + 0x3C, D_004DB7B0, n, name);
-            xglFontDebugPrintf(0x80, i * 0x10 + 0x3C, D_004DB7B8, buf1);
+            xglFontDebugPrintf(4, i * 0x10 + 0x3C, "%3d %s", n, name);
+            xglFontDebugPrintf(0x80, i * 0x10 + 0x3C, "%s\270\304", buf1);
         } else {
             HexToStr(e, buf1);
             xglFontDebugPrintf(4, i * 0x10 + 0x3C, D_004CA808, n, buf1);
         }
         if (xglFlagsGet1(n + 0x79EC7) == 1) {
-            xglFontDebugPrintf(0x98, i * 0x10 + 0x3C, D_004DB7C0);
+            xglFontDebugPrintf(0x98, i * 0x10 + 0x3C, "\274\350\306\300\272\321");
         }
         if (d != 0) {
             HexToStr(d, buf2);
-            xglFontDebugPrintf(0xBA, i * 0x10 + 0x3C, D_004DB7C8, buf2);
+            xglFontDebugPrintf(0xBA, i * 0x10 + 0x3C, "\263\316\316\250%s", buf2);
         }
     }
     if (PadData.btn & 0x1000) {
@@ -230,8 +224,6 @@ extern UwamonoDebugUnit MapUnit[64];
 extern float xglRotTransPers(int *result, float matrix[4][4], void *position, int camera);
 extern char D_004CA818[];
 extern char D_004CA828[];
-extern char D_004DB7D0[];
-extern char D_004DB7D8[];
 extern char D_004CA838[];
 extern char D_004CA848[];
 extern char D_004CA858[];
@@ -295,7 +287,7 @@ void DispDebugUwamono(void)
         }
         switch (info->kind) {
         case 1:
-            xglFontDebugPrintf(x, y + 12, D_004DB7D0);
+            xglFontDebugPrintf(x, y + 12, "\015\000\245\311\245\242");
             break;
         case 2:
             xglFontDebugPrintf(x, y + 12, D_004CA838);
@@ -327,7 +319,7 @@ void DispDebugUwamono(void)
                 xglFontDebugPrintf(x, y + 36, D_004CA878);
             break;
         case 4:
-            xglFontDebugPrintf(x, y + 12, D_004DB7D8);
+            xglFontDebugPrintf(x, y + 12, "\015\000\312\365\310\242");
             {
                 int item = info->item;
 
