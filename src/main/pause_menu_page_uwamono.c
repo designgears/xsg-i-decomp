@@ -1,10 +1,6 @@
 #include "common.h"
 #include "shared.h"
 
-/* DispPillar's two angle steps: the same value twice in the original pool
-   (a C literal would be merged into one), so they stay scaffold-owned */
-extern float D_004D7F88;
-extern float D_004D7F8C;
 extern float xglSin(float angle);
 extern float xglCos(float angle);
 
@@ -438,19 +434,20 @@ void DispPillar(Vector4 *base, Vector4 *step)
     } corners[4];
     int segment = 0;
     float angle;
-    float angle_increment;
+    float cos_angle;
 
     base->w = 1.0f;
     do {
         /* Compute four local corners for each angular segment. */
         corners[0].vector = *base;
         corners[1].vector = *base;
-        angle_increment = D_004D7F88;
-        angle = (float)segment * angle_increment;
+        angle = 0.39269909f;
+        angle = (float)segment * angle;
         corners[0].vector.x += xglSin(angle) * step->x;
-        angle_increment = D_004D7F8C;
-        corners[0].vector.z += xglCos(angle) * step->x;
-        angle = (float)(segment + 1) * angle_increment;
+        cos_angle = angle;
+        angle = 0.39269909f;
+        corners[0].vector.z += xglCos(cos_angle) * step->x;
+        angle = (float)(segment + 1) * angle;
         corners[1].vector.x += xglSin(angle) * step->x;
         corners[1].vector.z += xglCos(angle) * step->x;
         corners[2] = corners[0];

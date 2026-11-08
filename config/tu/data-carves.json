@@ -13550,23 +13550,23 @@
     {
      "range": [
       "0x004d7f80",
-      "0x004d7f88"
+      "0x004d7f90"
      ],
      "generated": [
       "0x004d7f80",
-      "0x004d7f88"
+      "0x004d7f90"
      ],
      "generated_by": [
-      "DispCollUwamono"
+      "DispCollUwamono",
+      "DispPillar"
      ],
      "c_owned_symbols": [
       "D_004D7F80",
-      "D_004D7F84"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7F84",
       "D_004D7F88",
       "D_004D7F8C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -19706,14 +19706,16 @@
     {
      "range": [
       "0x004d8500",
-      "0x004d8518"
+      "0x004d852c"
      ],
      "generated": [
       "0x004d8500",
-      "0x004d8518"
+      "0x004d852c"
      ],
      "generated_by": [
+      "FCV2_getKey",
       "FCV2_getVal",
+      "FCV2_resetPack",
       "FCV_getPackVal2s"
      ],
      "c_owned_symbols": [
@@ -19722,33 +19724,11 @@
       "D_004D8508",
       "D_004D850C",
       "D_004D8510",
-      "D_004D8514"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8514",
       "D_004D8518",
       "D_004D851C",
       "D_004D8520",
-      "D_004D8524"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/fcv2.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8528",
-      "0x004d852c"
-     ],
-     "generated": [
-      "0x004d8528",
-      "0x004d852c"
-     ],
-     "generated_by": [
-      "FCV2_getKey"
-     ],
-     "c_owned_symbols": [
+      "D_004D8524",
       "D_004D8528"
      ],
      "also_referenced_by_c": [],
@@ -20348,20 +20328,22 @@
     {
      "range": [
       "0x004d860c",
-      "0x004d8614"
+      "0x004d8770"
      ],
      "generated": [
       "0x004d860c",
-      "0x004d8614"
+      "0x004d8770"
      ],
      "generated_by": [
-      "EXM_PresetHair"
+      "CheckSkirtCollisionSub",
+      "EXM_CalcExMotion",
+      "EXM_CheckExCollision",
+      "EXM_PresetHair",
+      "GetHairTypeSelection"
      ],
      "c_owned_symbols": [
       "D_004D860C",
-      "D_004D8610"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8610",
       "D_004D8614",
       "D_004D8618",
       "D_004D861C",
@@ -20379,54 +20361,10 @@
       "D_004D864C",
       "D_004D8650",
       "D_004D8654",
-      "D_004D8658"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d865c",
-      "0x004d8660"
-     ],
-     "generated": [
-      "0x004d865c",
-      "0x004d8660"
-     ],
-     "generated_by": [
-      "EXM_PresetHair"
-     ],
-     "c_owned_symbols": [
-      "D_004D865C"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8660"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8664",
-      "0x004d8668"
-     ],
-     "generated": [
-      "0x004d8664",
-      "0x004d8668"
-     ],
-     "generated_by": [
-      "EXM_PresetHair"
-     ],
-     "c_owned_symbols": [
-      "D_004D8664"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8658",
+      "D_004D865C",
+      "D_004D8660",
+      "D_004D8664",
       "D_004D8668",
       "D_004D866C",
       "D_004D8670",
@@ -20435,59 +20373,15 @@
       "D_004D867C",
       "D_004D8680",
       "D_004D8684",
-      "D_004D8688"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d868c",
-      "0x004d869c"
-     ],
-     "generated": [
-      "0x004d868c",
-      "0x004d869c"
-     ],
-     "generated_by": [
-      "EXM_PresetHair"
-     ],
-     "c_owned_symbols": [
+      "D_004D8688",
       "D_004D868C",
       "D_004D8690",
       "D_004D8694",
-      "D_004D8698"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8698",
       "D_004D869C",
-      "D_004D86A0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d86a4",
-      "0x004d86ac"
-     ],
-     "generated": [
-      "0x004d86a4",
-      "0x004d86ac"
-     ],
-     "generated_by": [
-      "EXM_PresetHair"
-     ],
-     "c_owned_symbols": [
+      "D_004D86A0",
       "D_004D86A4",
-      "D_004D86A8"
-     ],
-     "also_referenced_by_c": [
+      "D_004D86A8",
       "D_004D86AC",
       "D_004D86B0",
       "D_004D86B4",
@@ -20497,55 +20391,10 @@
       "D_004D86C4",
       "D_004D86C8",
       "D_004D86CC",
-      "D_004D86D0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d86d4",
-      "0x004d86d8"
-     ],
-     "generated": [
-      "0x004d86d4",
-      "0x004d86d8"
-     ],
-     "generated_by": [
-      "GetHairTypeSelection"
-     ],
-     "c_owned_symbols": [
-      "D_004D86D4"
-     ],
-     "also_referenced_by_c": [
+      "D_004D86D0",
+      "D_004D86D4",
       "D_004D86D8",
-      "D_004D86DC"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/exm_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d86e0",
-      "0x004d8770"
-     ],
-     "generated": [
-      "0x004d86e0",
-      "0x004d8770"
-     ],
-     "generated_by": [
-      "CheckSkirtCollisionSub",
-      "EXM_CalcExMotion",
-      "EXM_CheckExCollision",
-      "GetHairTypeSelection"
-     ],
-     "c_owned_symbols": [
+      "D_004D86DC",
       "D_004D86E0",
       "D_004D86E4",
       "D_004D86E8",

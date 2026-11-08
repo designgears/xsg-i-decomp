@@ -904,10 +904,6 @@ void FCV2_setStep(f32 step)
     fcv2Step = __builtin_fabsf(step) * 0.5f;
 }
 
-extern f32 D_004D8518;
-extern f32 D_004D851C;
-extern f32 D_004D8520;
-extern f32 D_004D8524;
 typedef struct FCV2Curve {
     u32 signature;
     u16 type;
@@ -937,11 +933,11 @@ void FCV2_resetPack(FcvAttribute *pack, FCV2Curve *curve)
 
     if (curve != 0) {
         if (curve->type >= 2) {
-            b = curve->scale * D_004D851C;
-            a = curve->count * D_004D8518 * D_004D851C;
+            a = curve->count * 1.5259022e-05f * 0.033333335f;
+            b = curve->scale * 0.033333335f;
         } else {
             b = 0.0f;
-            a = (curve->end - curve->start) * D_004D8520 * D_004D8524;
+            a = (curve->end - curve->start) * 1.5259022e-05f * 0.033333335f;
         }
         type = curve->type;
         pack->value_c = 0;
