@@ -88,7 +88,7 @@ extern void endPrintExtFunc(int kind, int id, void *data);
 
 void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
 {
-    static const char *msg00 = "Environmental Simulator";
+    static const char *msg00 __attribute__((aligned(8))) = "Environmental Simulator";
     unsigned char simulation_state = UmnWork.simulation_state;
 
     if (simulation_state != 3) {
@@ -199,7 +199,6 @@ typedef struct UmnSimInfoWork {
     } str;
 } UmnSimInfoWork;
 extern void MenuInfoWindow(void);
-extern char D_00A13218;
 extern char *strcat(char *, const char *);
 
 void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
@@ -219,7 +218,7 @@ void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
     switch (task->command) {
     case 0:
         work->color = 0x00FF0000;
-        work->str.buf[0] = D_00A13218;
+        __builtin_memcpy(work->str.buf, "", 1);
         work->opened = 0;
         work->state = 0;
         WindowDXSet(&work->window);
@@ -339,7 +338,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
                 }
                 work->item[i].value = 0;
             }
-            work->item[i].text = &D_00A13218;
+            work->item[i].text = "";
             work->item[i].value = 0;
             work->item[i].flag = 0;
             work->item[i + 1].text = 0;

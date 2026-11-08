@@ -16128,13 +16128,14 @@
     {
      "range": [
       "0x00a13180",
-      "0x00a13218"
+      "0x00a13310"
      ],
      "generated": [
       "0x00a13180",
-      "0x00a13218"
+      "0x00a13309"
      ],
      "generated_by": [
+      "UmnSimulation",
       "tskUmnSimulationInfo",
       "tskUmnSimulationList",
       "tskUmnSimulationPas"
@@ -16147,11 +16148,15 @@
       "D_00A131D0",
       "D_00A131D8",
       "D_00A131E8",
-      "D_00A13200"
+      "D_00A13200",
+      "D_00A13218",
+      "D_00A13220",
+      "D_00A13230",
+      "D_00A13238",
+      "jtbl_00A13250",
+      "D_00A132F8"
      ],
-     "also_referenced_by_c": [
-      "D_00A13218"
-     ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_00A13180": "ListText",
       "D_00A13198": "ListText",
@@ -16162,55 +16167,6 @@
       "D_00A131E8": "ListText",
       "D_00A13200": "msg00_0_00A10888"
      },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13220",
-      "0x00a13250"
-     ],
-     "generated": [
-      "0x00a13220",
-      "0x00a13248"
-     ],
-     "generated_by": [
-      "tskUmnSimulationInfo",
-      "tskUmnSimulationList"
-     ],
-     "c_owned_symbols": [
-      "D_00A13220",
-      "D_00A13230",
-      "D_00A13238"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13250",
-      "0x00a13310"
-     ],
-     "generated": [
-      "0x00a13250",
-      "0x00a13309"
-     ],
-     "generated_by": [
-      "UmnSimulation",
-      "tskUmnSimulationList"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A13250",
-      "D_00A132F8"
-     ],
-     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
