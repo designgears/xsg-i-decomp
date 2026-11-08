@@ -58,7 +58,6 @@ typedef struct FileObjectEntryView {
 } FileObjectEntryView;
 
 extern void FileJpegDecode(int number);
-extern char *name_0_0036D628[];
 
 static void VersionUpDate(SaveDataHeader *save_data)
 {
@@ -605,7 +604,13 @@ void FileSaveDataPush(void)
 
 char *FileSlotNameGet(int slot)
 {
-    return name_0_0036D628[slot];
+    static char *name[] __asm__("name.0") = {
+        "slot 1",
+        "slot 2",
+        "Hard Disk Drive",
+    };
+
+    return name[slot];
 }
 
 void TskObjectSet(TskObject *task, TskObjectWorker worker, void *data)
@@ -635,7 +640,7 @@ void tskTskMain(TskObject *task)
     worker(task, task->data);
 }
 
-FileWorkBlock *FileWork = 0;
+extern FileWorkBlock *FileWork;
 
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
@@ -643,7 +648,6 @@ void eMessageSet(void *message, const char *text);
 void eMessageMain(void *message);
 void MoveSlide(short *current, short *target, float rate);
 extern void endPrintExtFunc(int color, int mode, void *rectangle);
-extern char *msg00_1_0036D638[6];
 extern int MenuPasLengthGet(const char *text);
 struct FilePasWindowUp {
     short x;
@@ -689,6 +693,14 @@ typedef struct FilePasWork {
 
 static void MenuFilePas(TskObject *task, void *data)
 {
+    static char *msg00[6] __asm__("msg00.1") = {
+        "Save",
+        "Load",
+        "/MEMORY CARD slot 1",
+        "/MEMORY CARD slot 2",
+        "/Hard Disk Drive",
+        "Format",
+    };
     FilePasWork *work = data;
     int i;
     int lengths[6];
@@ -697,7 +709,7 @@ static void MenuFilePas(TskObject *task, void *data)
     int card_target;
 
     for (i = 0; i < 6; ++i)
-        lengths[i] = MenuPasLengthGet(msg00_1_0036D638[i]);
+        lengths[i] = MenuPasLengthGet(msg00[i]);
 
     switch (task->state) {
     case 0:
@@ -714,7 +726,7 @@ static void MenuFilePas(TskObject *task, void *data)
         WindowDXMain((void *)(&work->window));
         work->window.state = 3;
         for (i = 0; i < 6; ++i) {
-            eMessageSet((void *)(&work->messages[i]), msg00_1_0036D638[i]);
+            eMessageSet((void *)(&work->messages[i]), msg00[i]);
             work->messages[i].mode = 32;
             work->messages[i].x = 288;
             work->messages[i].color = work->color + 2;
@@ -839,6 +851,7 @@ struct FileRequestTexts { char *text[9]; };
 struct FileFormatTexts { char *text[3]; };
 struct FileFinishTexts { char *text[2]; };
 struct FileProgressTexts { char *text[4]; };
+
 extern char *D_004C3D48[3];
 extern char *D_004C3DF0[3];
 extern char *D_004C3EA0[4];
@@ -929,7 +942,7 @@ static void MenuFileInfo(TskObject *task, void *data)
                 case 130:
                     eMessageCpy(view->text, selection_text[2]);
                     eMessageCat(FileSlotNameGet(FileWork->device_selection));
-                    eMessageCat(D_004DAA40);
+                    eMessageCat(".");
                     break;
                 }
                 break;
@@ -993,7 +1006,7 @@ static void MenuFileInfo(TskObject *task, void *data)
                         if (((UpFileObjectSystem *)FileObjectDataSystem)->state[card_slot] == 2) {
                             eMessageCpy(view->text, confirmation_text[0]);
                             eMessageCat(FileSlotNameGet(FileWork->card_number));
-                            eMessageCat(D_004DAA40);
+                            eMessageCat(".");
                         } else {
                             eMessageCpy(view->text, confirmation_text[1]);
                         }
@@ -1002,11 +1015,11 @@ static void MenuFileInfo(TskObject *task, void *data)
                     if (FileWork->use_hdd) {
                         eMessageCpy(view->text, slot_text[2]);
                         eMessageCat(FileSlotNameGet(2));
-                        eMessageCat(D_004DAA40);
+                        eMessageCat(".");
                     } else {
                         eMessageCpy(view->text, slot_text[0]);
                         eMessageCat(FileSlotNameGet(FileWork->card_number));
-                        eMessageCat(D_004DAA40);
+                        eMessageCat(".");
                     }
                 }
             }
@@ -1068,7 +1081,7 @@ static void MenuFileInfo(TskObject *task, void *data)
             if (FileWork->input_flags & 1) {
                 eMessageCpy(view->text, card_text[1]);
                 eMessageCat(FileSlotNameGet(FileWork->card_number));
-                eMessageCat(D_004DAA40);
+                eMessageCat(".");
             }
             break;
         case 134:
@@ -1087,7 +1100,7 @@ static void MenuFileInfo(TskObject *task, void *data)
             if (FileWork->input_flags & 1) {
                 eMessageCpy(view->text, request_text[4]);
                 eMessageCat(FileSlotNameGet(FileWork->card_number));
-                eMessageCat(D_004DAA48);
+                eMessageCat(". \037");
             }
             break;
         case 146:
@@ -1158,7 +1171,7 @@ static void MenuFileInfo(TskObject *task, void *data)
                 if (FileWork->use_hdd) {
                     eMessageCpy(view->text, finish_text[1]);
                     eMessageCat(FileSlotNameGet(2));
-                    eMessageCat(D_004DAA48);
+                    eMessageCat(". \037");
                 } else {
                     eMessageCpy(view->text, finish_text[0]);
                 }
@@ -1267,15 +1280,13 @@ extern int MenuSelectWindow();
 void MoveSlide(short *current, short *target, float rate);
 extern FileWorkBlockFS2 *FileWorkFS2 __asm__("FileWork");
 
-extern char D_004C4858[];
-extern char D_004C4870[];
-extern char D_004DAA58[];
-extern char D_004DAA60[];
-extern struct FileSelectSource msg01_2_0036D650[];
 
 /* nested ListColorChage, as upstream (diag run 8) */
 static void tskFileSelect(TskObject *task, void *data)
 {
+    static struct FileSelectSource msg01[] __asm__("msg01.2") = {
+        { "Is this okay?", "Yes\nNo" },
+    };
     struct FileSelectContext *const view = data;
     int i;
 
@@ -1302,11 +1313,11 @@ static void tskFileSelect(TskObject *task, void *data)
         struct FileSelectSource *confirmation;
 
         view->work = 0xfffff0;
-        view->entries[0].text = D_004C4858;
-        view->entries[1].text = D_004C4870;
+        view->entries[0].text = "MEMORY CARD slot 1";
+        view->entries[1].text = "MEMORY CARD slot 2";
         for (i = 0; i < 2; ++i)
             view->entries[i].color_state = 0;
-        view->entries[i].text = D_004DAA58;
+        view->entries[i].text = "Cancel";
         view->entries[i].color_state = 0;
         view->entries[i + 1].text = 0;
         ListColorChage();
@@ -1319,18 +1330,18 @@ static void tskFileSelect(TskObject *task, void *data)
             view->windows[i].height = 78;
             view->lists[i].selected = 0;
             view->lists[i].items = view->entries;
-            view->windows[i].parameters = D_004DAA60;
+            view->windows[i].parameters = "Select";
             view->lists[i].layout_mode = 2;
         }
         view->windows[i].height = 102;
-        confirmation = msg01_2_0036D650;
+        confirmation = msg01;
         for (i = 2; i < 4; ++i) {
             WindowDXSet(&view->windows[i]);
             view->windows[i].color = view->work;
             view->windows[i].data = &view->lists[i];
             view->windows[i].draw = MenuSelectWindow;
             view->windows[i].width = 207;
-            view->windows[i].parameters = D_004DAA60;
+            view->windows[i].parameters = "Select";
             view->lists[i].title = confirmation->title;
             view->windows[i].height = 102;
             view->lists[i].selected = 0;
@@ -1416,13 +1427,18 @@ typedef struct FileExWork {
     u8 unmodeled_18[0x0c];
     char *text;
 } FileExWork;
-extern char *msg00_4_0036D658[];
 void MoveSlide(short *current, short *target, float rate);
 void eMessageSet(void *message, const char *text);
 void eMessageMain(void *message);
 
 static void tskFileEx(TskObject *task, FileExWork *work)
 {
+    static char *msg00[] __asm__("msg00.4") = {
+        "Saving...",
+        "Loading...",
+        "Formatting...",
+    };
+
     switch (task->state) {
     case 0:
         work->color = 0xffffff;
@@ -1444,12 +1460,12 @@ static void tskFileEx(TskObject *task, FileExWork *work)
             work->current = 0x220;
             if (FileWork->state == 0x84) {
                 work->target = 0xc0;
-                work->text = msg00_4_0036D658[2];
+                work->text = msg00[2];
                 work->y = 0xc0;
             } else {
                 work->target = 0xe0;
                 work->y = 0x100;
-                work->text = msg00_4_0036D658[FileWork->text_index];
+                work->text = msg00[FileWork->text_index];
             }
         }
         break;
@@ -1625,16 +1641,13 @@ extern void eRibbonSet(void *ribbon, int style);
 extern void eRibbonMain(void *ribbon);
 extern int MenuFaceEpidGet(int sort_entry, int kind);
 extern void endPrintExtFunc(int color, int mode, void *rectangle);
-extern char D_004C48B8[];
-extern char D_004C48C8[];
-extern char D_004C48D8[];
-extern char D_004C48E8[];
-extern char D_004C48F8[];
-extern char D_004DAA78[];
-extern char *msg00_5_0036D668[];
 
 void FileThumbnailDisp(struct FileThumbnailContext *panel)
 {
+    static char *msg00[] __asm__("msg00.5") = {
+        "\001Time",
+        "\001Money",
+    };
     int i;
     int party_index;
     int party_count;
@@ -1657,7 +1670,7 @@ void FileThumbnailDisp(struct FileThumbnailContext *panel)
         panel->window.x = 576;
         panel->window.color = panel->color;
         panel->window.width = 336;
-        panel->window.parameters = D_004C48B8;
+        panel->window.parameters = "Shion:Lv";
         layer_anchor = (unsigned char *)panel + ((unsigned char *)&panel->window.parameters - (unsigned char *)panel);
         panel->window.height = 96;
         panel->window.state = 1;
@@ -1681,7 +1694,7 @@ void FileThumbnailDisp(struct FileThumbnailContext *panel)
         }
         {
             struct FileTagFont *label = panel->labels;
-            char **text = msg00_5_0036D668;
+            char **text = msg00;
             unsigned char *layer = layer_anchor +
                 ((unsigned char *)&panel->labels[0].color - (unsigned char *)panel) - ((unsigned char *)&panel->window.parameters - (unsigned char *)panel);
             for (i = 0; i < 2; ++i) {
@@ -1701,7 +1714,7 @@ void FileThumbnailDisp(struct FileThumbnailContext *panel)
             }
         }
         slot_layer = &panel->slot_label.color;
-        eTagFontSet((struct ETagFont *)&panel->slot_label, D_004DAA78);
+        eTagFontSet((struct ETagFont *)&panel->slot_label, "No.");
         *slot_layer = panel->color + 2;
         slot_number_layer = (int *)(window_origin + ((unsigned char *)&panel->slot_number.color - (unsigned char *)panel) - ((unsigned char *)&panel->window - (unsigned char *)panel));
         ribbon_width = 144;
@@ -1745,17 +1758,17 @@ void FileThumbnailDisp(struct FileThumbnailContext *panel)
         switch (((FileObjectSystem *)FileObjectDataSystem)->state[panel->slot]) {
         case 2:
             panel->messages[1].text = 0;
-            panel->messages[0].text = D_004C48C8;
+            panel->messages[0].text = "New file";
             break;
         case 4:
             panel->messages[1].text = 0;
-            panel->messages[0].text = D_004C48D8;
+            panel->messages[0].text = "Corrupt data";
             break;
         case 3:
             if (((FileWorkBlockTN *)FileWork)->text_index == 0)
-                panel->messages[0].text = D_004C48E8;
+                panel->messages[0].text = "Cannot save";
             else
-                panel->messages[0].text = D_004C48F8;
+                panel->messages[0].text = "Cannot load";
             panel->messages[1].text = 0;
             break;
         default:
@@ -2404,12 +2417,9 @@ typedef struct MfFileObjectSystem { unsigned char unmodeled_00[2]; unsigned char
 #define FileObjectData ((FileObjectEntryView *)FileObjectData)
 #define FileSaveRecord FileChecksumData
 extern void *FileCardDataBuf;
-extern const char D_004DAA80[];
-extern const char D_004DAA88[];
-extern const char D_004DAA90[];
-#define shortNumberFormat D_004DAA80
-#define memoryCardMarkerText D_004DAA88
-#define wideNumberFormat D_004DAA90
+#define shortNumberFormat "%3d"
+#define memoryCardMarkerText "-MC-"
+#define wideNumberFormat "%6d"
 typedef union FileCardNumber {
     int number;
 } FileCardNumber;
@@ -3599,10 +3609,6 @@ extern void MenuFile(void);
 extern int GameSnapShotSaveThumbnail(int quality, unsigned int buffer);
 void endPrintDirectFrameCopy(void *, int, int);
 void endPrintInit(void);
-extern const char D_004C4D80[];
-extern const char D_004C4D98[];
-extern const char D_004C4DB0[];
-extern const char D_004C4DC8[];
 typedef struct { int pad[4]; int flags; } MfmLoopState;
 typedef struct { unsigned char pad0[0x1007]; unsigned char a; unsigned char b; unsigned char pad1[0x47]; long long c; unsigned char pad2[8]; } MfmSlot;
 extern void exit(int) __attribute__((noreturn));
@@ -3694,11 +3700,11 @@ int MenuFileMain(int arg0)
     WindowTexLoad(NULL, 0x10002);
     work = (void *)MenuSaveMapTextLoad((int)work, 1);
     if (arg0 == 0) {
-        MenuLoadFile(D_004C4D80, FileCardDataBuf);
+        MenuLoadFile("data\\carddata.new", FileCardDataBuf);
     }
-    MenuLoadFile(D_004C4D98, FileObjectData + 0x65524);
-    MenuLoadFile(D_004C4DB0, FileObjectData + 0x66584);
-    MenuLoadFile(D_004C4DC8, FileObjectData + 0x675E4);
+    MenuLoadFile("data\\endou\\new_d.jpg", FileObjectData + 0x65524);
+    MenuLoadFile("data\\endou\\n_use.jpg", FileObjectData + 0x66584);
+    MenuLoadFile("data\\endou\\brk_d.jpg", FileObjectData + 0x675E4);
     MenuWorkEndCheck(work);
     if (arg0 == 0) {
         xglSoundEffectNormalID(1, 0);
@@ -3733,3 +3739,17 @@ loop_23_test:
     ((MfmLoopState *)GameLoopState)->flags &= 0xFBFFFFFF;
     return FileWork->unmodeled_04[1] == 0;
 }
+
+/* The file menu's globals (.sdata, in the original's order). */
+#undef FileWork
+#undef FileObjectData
+#undef FileObjectDataSystem
+FileWorkBlock *FileWork = 0;
+u8 *FileTask = 0;
+void *FileWorkEndTop = 0;
+void *FileCardDataBuf = 0;
+FileChecksumData *FileSaveData = 0;
+u8 *FileExistCheckWork = 0;
+byte *FileJpegDec = 0;
+byte *FileObjectData = 0;
+u8 *FileObjectDataSystem = 0;

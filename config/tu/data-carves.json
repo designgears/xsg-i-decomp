@@ -8817,11 +8817,15 @@
      "c_owned_symbols": [
       "jtbl_004C3970"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004C3960",
+      "D_004C39A8",
+      "D_004C39D0"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_battle_win_open.o"
+      "object": "build/main/build/c/e_battle_win_open.o"
      }
     },
     {
@@ -8849,26 +8853,65 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_battle_win_open.o"
+      "object": "build/main/build/c/e_battle_win_open.o"
      }
     }
    ]
   },
   "main/tu167": {
+   ".data": [
+    {
+     "range": [
+      "0x0036d628",
+      "0x0036d670"
+     ],
+     "generated": [
+      "0x0036d628",
+      "0x0036d670"
+     ],
+     "generated_by": [
+      "FileSlotNameGet",
+      "FileThumbnailDisp",
+      "MenuFilePas",
+      "tskFileEx",
+      "tskFileSelect"
+     ],
+     "c_owned_symbols": [
+      "name_0_0036D628",
+      "D_0036D634",
+      "msg00_1_0036D638",
+      "msg01_2_0036D650",
+      "msg00_4_0036D658",
+      "D_0036D664",
+      "msg00_5_0036D668"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/file.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004c3af0",
+      "0x004c3a90",
       "0x004c3d48"
      ],
      "generated": [
-      "0x004c3af0",
+      "0x004c3a90",
       "0x004c3d48"
      ],
      "generated_by": [
+      "FileSlotNameGet",
       "MenuFilePas"
      ],
      "c_owned_symbols": [
+      "D_004C3A90",
+      "D_004C3AA0",
+      "D_004C3AB8",
+      "D_004C3AD0",
       "jtbl_004C3AF0"
      ],
      "also_referenced_by_c": [
@@ -8884,86 +8927,126 @@
       "D_004C4418",
       "D_004C45E0"
      ],
+     "reached_through": {
+      "D_004C3A90": "name_0_0036D628",
+      "D_004C3AA0": "msg00_1_0036D638",
+      "D_004C3AB8": "msg00_1_0036D638",
+      "D_004C3AD0": "msg00_1_0036D638"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     },
     {
      "range": [
       "0x004c45f0",
-      "0x004c4848"
+      "0x004c4de0"
      ],
      "generated": [
       "0x004c45f0",
-      "0x004c4848"
+      "0x004c4ddd"
      ],
      "generated_by": [
-      "MenuFileInfo"
+      "FileThumbnailDisp",
+      "MenuFile",
+      "MenuFileInfo",
+      "MenuFileMain",
+      "tskFileData",
+      "tskFileEx",
+      "tskFileSelect"
      ],
      "c_owned_symbols": [
-      "jtbl_004C45F0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004C45F0",
+      "D_004C4848",
       "D_004C4858",
       "D_004C4870",
+      "D_004C4888",
+      "D_004C4898",
+      "D_004C48A8",
       "D_004C48B8",
       "D_004C48C8",
       "D_004C48D8",
       "D_004C48E8",
-      "D_004C48F8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c4910",
-      "0x004c4d80"
-     ],
-     "generated": [
-      "0x004c4910",
-      "0x004c4d80"
-     ],
-     "generated_by": [
-      "MenuFile",
-      "tskFileData"
-     ],
-     "c_owned_symbols": [
+      "D_004C48F8",
       "jtbl_004C4910",
-      "jtbl_004C4A10"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004C4A10",
       "D_004C4D80",
       "D_004C4D98",
       "D_004C4DB0",
       "D_004C4DC8"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C4848": "msg01_2_0036D650",
+      "D_004C4888": "msg00_4_0036D658",
+      "D_004C4898": "msg00_4_0036D658",
+      "D_004C48A8": "msg00_4_0036D658"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     }
    ],
    ".sdata": [
     {
      "range": [
-      "0x004daa94",
-      "0x004daa98"
+      "0x004da9f8",
+      "0x004daa20"
      ],
      "generated": [
-      "0x004daa94",
-      "0x004daa98"
+      "0x004da9f8",
+      "0x004daa20"
+     ],
+     "generated_by": [
+      "FileSlotNameGet",
+      "MenuFilePas"
+     ],
+     "c_owned_symbols": [
+      "D_004DA9F8",
+      "D_004DAA00",
+      "D_004DAA08",
+      "D_004DAA10",
+      "D_004DAA18"
+     ],
+     "also_referenced_by_c": [
+      "D_004DAA28",
+      "D_004DAA38"
+     ],
+     "reached_through": {
+      "D_004DA9F8": "name_0_0036D628",
+      "D_004DAA00": "name_0_0036D628",
+      "D_004DAA08": "msg00_1_0036D638",
+      "D_004DAA10": "msg00_1_0036D638",
+      "D_004DAA18": "msg00_1_0036D638"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/file.o"
+     }
+    },
+    {
+     "range": [
+      "0x004daa40",
+      "0x004daab8"
+     ],
+     "generated": [
+      "0x004daa40",
+      "0x004daab8"
      ],
      "generated_by": [
       "FileJpegCheck",
+      "FileJpegDecode",
       "FileObjectAllLoad",
+      "FileObjectDataClear",
+      "FileObjectDataInput",
+      "FileObjectJpegDecChange",
       "FileObjectJpegSet",
+      "FileSaveDataPush",
       "FileThumbnailDisp",
       "ListColorChage_3",
       "MenuFile",
@@ -8976,20 +9059,20 @@
       "tskTskMain"
      ],
      "c_owned_symbols": [
-      "FileWork"
-     ],
-     "also_referenced_by_c": [
-      "D_004DAA28",
-      "D_004DAA38",
       "D_004DAA40",
       "D_004DAA48",
+      "D_004DAA50",
       "D_004DAA58",
       "D_004DAA60",
+      "D_004DAA68",
+      "D_004DAA70",
       "D_004DAA78",
       "D_004DAA80",
       "D_004DAA88",
       "D_004DAA90",
+      "FileWork",
       "FileTask",
+      "FileWorkEndTop",
       "FileCardDataBuf",
       "FileSaveData",
       "FileExistCheckWork",
@@ -8997,10 +9080,16 @@
       "FileObjectData",
       "FileObjectDataSystem"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DAA50": "msg01_2_0036D650",
+      "D_004DAA68": "msg00_5_0036D668",
+      "D_004DAA70": "msg00_5_0036D668"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/file.o"
+      "object": "build/main/build/c/file.o"
      }
     }
    ]
