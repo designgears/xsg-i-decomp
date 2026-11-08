@@ -275,15 +275,12 @@ void xglMcWriteMapName(char *buffer, int slot)
     buffer[227] = value % 10 + 'O';
 }
 
-extern char base_0_00491770[];
-extern char n_1[];
-extern char n_2[];
 extern char D_0093E0C0[];
 
 /*
  * xglMcSetFullPath (main:0x0021fed8): builds "<base><card 2 digits>" in
  * D_0093E0C0, then appends a suffix chosen by `path`: 0 repeats the
- * prefix, -1 nothing, 1/2 the fixed names n_1/n_2, anything else is a
+ * prefix, -1 nothing, 1/2 the fixed names n.1/n.2 ("/icon.sys", "/xenosaga.ico"), anything else is a
  * string appended after a '/'.
  */
 char *xglMcSetFullPath(int card, char *path)
@@ -292,7 +289,9 @@ char *xglMcSetFullPath(int card, char *path)
     char *d;
     char *e;
 
-    s = base_0_00491770;
+    static char base[] = "/BASLUS-20469Xeno";
+
+    s = base;
     d = D_0093E0C0;
     while ((*d = *s) != 0) {
         s++;
@@ -313,20 +312,26 @@ char *xglMcSetFullPath(int card, char *path)
         }
         *d = 0;
         break;
-    case 1:
-        s = n_1;
+    case 1: {
+        static char n[] = "/icon.sys";
+
+        s = n;
         while ((*d = *s) != 0) {
             s++;
             d++;
         }
         break;
-    case 2:
-        s = n_2;
+    }
+    case 2: {
+        static char n[] = "/xenosaga.ico";
+
+        s = n;
         while ((*d = *s) != 0) {
             s++;
             d++;
         }
         break;
+    }
     case -1:
         *d = 0;
         break;
@@ -341,6 +346,9 @@ char *xglMcSetFullPath(int card, char *path)
     }
     return D_0093E0C0;
 }
+
+/* The save image (all zero until loaded); xgl_mc owns its storage. */
+unsigned char SaveData[0x163B0] = { 0 };
 
 int sceMcGetDir(int port, int slot, const char *name, unsigned mode, int maxent, void *table);
 int sceMcMkdir(int port, int slot, const char *name);
@@ -476,7 +484,6 @@ typedef struct McWorkspaceView {
     unsigned char map_name[36];
     XglMcQueue request;
 } McWorkspaceView;
-extern float D_004D8794;
 float xglFRand(void);
 int sceMcDelete(int port, int slot, const char *name);
 void FlushCache(int mode);
@@ -530,7 +537,7 @@ static int create_sub2(int result)
             trailer = (McSaveChecksum *)((unsigned char *)payload + (payload->entry_count * 8 + 16) * payload->group_count);
             checksum = &trailer->checksum;
             size = save->end - save->start - 40;
-            *checksum = (xglFRand() - 1.5f) * D_004D8794 + 1.0f;
+            *checksum = (xglFRand() - 1.5f) * 0.6f + 1.0f;
             FlushCache(0);
             sceMcWrite(MC_WORKSPACE->state.descriptor, write_data, size);
             break;

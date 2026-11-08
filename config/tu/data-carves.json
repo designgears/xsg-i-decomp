@@ -199,6 +199,118 @@
    ]
   },
   "main/tu093": {
+   ".data": [
+    {
+     "range": [
+      "0x00491770",
+      "0x00491782"
+     ],
+     "generated": [
+      "0x00491770",
+      "0x00491782"
+     ],
+     "generated_by": [
+      "xglMcSetFullPath"
+     ],
+     "c_owned_symbols": [
+      "base_0_00491770"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_mc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00491788",
+      "0x00491792"
+     ],
+     "generated": [
+      "0x00491788",
+      "0x00491792"
+     ],
+     "generated_by": [
+      "xglMcSetFullPath"
+     ],
+     "c_owned_symbols": [
+      "n_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_mc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00491798",
+      "0x004917a6"
+     ],
+     "generated": [
+      "0x00491798",
+      "0x004917a6"
+     ],
+     "generated_by": [
+      "xglMcSetFullPath"
+     ],
+     "c_owned_symbols": [
+      "n_2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_mc.o"
+     }
+    },
+    {
+     "range": [
+      "0x004917b0",
+      "0x004a7b60"
+     ],
+     "generated": [
+      "0x004917b0",
+      "0x004a7b60"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "SaveData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_mc.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8794",
+      "0x004d8798"
+     ],
+     "generated": [
+      "0x004d8794",
+      "0x004d8798"
+     ],
+     "generated_by": [
+      "create_sub2"
+     ],
+     "c_owned_symbols": [
+      "D_004D8794"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_mc.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -225,7 +337,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_mc.o"
+      "object": "build/main/build/c/xgl_mc.o"
      }
     }
    ]
