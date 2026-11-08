@@ -433,7 +433,7 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
             if (ni == 2) nums[2] = nums[1], nums[1] = nums[0], nums[0] = -1;   // no ammo count
             char buf[16];
             const float cy = P(0, ry + rh * 0.5f).y, ns = 20.0f * k, ts = 15.0f * k;
-            ImFont* const font = rf;   // the cost box in the original's digits
+            ImFont* const font = UiFont(kFontNumber, rf);   // the cost box: heavy, as the original
             auto num = [&](float xr, int v, int digits) {
                 if (v < 0) return;
                 std::snprintf(buf, sizeof buf, "%0*d", digits, v);
@@ -582,7 +582,7 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             float base = y + (style == 2 ? 16.0f : 11.0f);   // the baseline, game pixels
             for (const GpuUiKgOp& u : ops)   // a unit label right of the number (the radar's "M"): share its baseline
                 if (u.type == GPU_KG_ART && u.x > o.x && u.x < o.x + 90 && std::abs(u.y - o.y) < 12) { base = float(u.y + u.dh) - 1; break; }
-            HaloText(dl, font, nh * k, ImVec2(P(x, 0).x, P(0, base).y - nh * k * 0.86f), col::kText, b, rt);
+            OutlineText(dl, UiFont(kFontNumber, font), nh * k, ImVec2(P(x, 0).x, P(0, base).y - nh * k * 0.86f), col::kText, b, rt);
             break;
         }
         case GPU_KG_ART: {
@@ -774,8 +774,8 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         }
         const float ls = 17.0f * k, vs = 38.0f * k, ss = 20.0f * k;   // the original's large digits (~14 px caps)
         // the original's colours: HP / EP cyan, AP / BG blue; numbers in square digits, outlined
-        ImFont* const lf = UiFont(kFontLabel, font);
-        ImFont* const nf = UiFont(kFontLabel, font);
+        ImFont* const lf = UiFont(kFontNumber, font);   // the original's battle HUD: heavy blocky labels and digits
+        ImFont* const nf = UiFont(kFontNumber, font);
         auto label = [&](float ly, const char* t) {
             const bool blue = t[0] == 'A' || t[0] == 'B';
             SmallCaps(dl, lf, ls * 0.95f, P(x + 0x40, ly + 1), blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t, an.a);

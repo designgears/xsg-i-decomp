@@ -69,7 +69,7 @@ const unsigned char kGameLabel[] = {
 #include "SairaSemiCondensed-Medium.ttf.inc"   // the original's tall, condensed labels (regular weight)
 };
 const unsigned char kGameNumber[] = {
-#include "SairaSemiCondensed-Medium.ttf.inc"   // and its tall rounded-square digits
+#include "SairaSemiCondensed-ExtraBold.ttf.inc"   // the battle HUD's heavy labels and digits (kFontNumber)
 };
 
 void Log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
