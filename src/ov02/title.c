@@ -454,19 +454,48 @@ sel_done:
     wait = 4;
     for (;;) {
         packet = xglPacketGetCurrent();
+#ifdef PORT_HOST
+        {   /* the port's settings menu open over the title: no idle timeout meanwhile */
+            extern int xsg_ui_settings_open(void);
+            if (xsg_ui_settings_open())
+                timer = 600;
+        }
+#endif
         if (--timer <= 0) {
             return &D_2A007F8;
         }
         if (wait > 0) {
             wait -= 1;
         } else if (fade == 0 && (((TitlePadView *)&PadData)->trigger & 0x820)) {
+#ifdef PORT_HOST
+            {   /* rebuilt UI: the last row is Settings (the port's settings menu) */
+                extern int xsg_ui_rebuilt(void);
+                extern void xsg_ui_open_settings(void);
+                if (xsg_ui_rebuilt() && sel == 4) {   /* Settings: index 4 (0-3 are the game's, 2 skipped without HDD) */
+                    xsg_ui_open_settings();
+                    xglSoundEffectNormalID(1, 0);
+                    wait = 8;
+                    goto title_settings_done;
+                }
+            }
+#endif
             if (sel == 2 && hdd < 0) {
                 xglSoundEffectNormalID(5, 0);
             } else {
                 break;
             }
         }
+#ifdef PORT_HOST
+    title_settings_done:
+#endif
         lim = (hdd < 0) ? 1 : 2;
+#ifdef PORT_HOST
+        {
+            extern int xsg_ui_rebuilt(void);
+            if (xsg_ui_rebuilt())
+                lim = 4;   /* the Settings row (index 4; 3 is the game's uninstall variant, never reached by moving) */
+        }
+#endif
         dir = 0;
         if (((TitlePadView *)&PadData)->repeat & 0x1000) {
             dir = (sel > 0) ? -1 : 0;
@@ -477,6 +506,10 @@ sel_done:
         if (dir != 0) {
             while (dir != 0) {
                 sel += dir;
+#ifdef PORT_HOST
+                if (sel == 3 && lim == 4)   /* the rebuilt UI's Settings is 4; 3 is never a row */
+                    continue;
+#endif
                 if (sel != 2 || hdd != -1) {
                     break;
                 }

@@ -541,7 +541,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             break;
         }
         case GPU_KG_TITLE: {   // the title choices: the original's place and spacing (y 288 + 18 per row)
-            static const char* const kItem[] = {"New Game", "Continue", "Install to HDD", "Uninstall from HDD"};
+            static const char* const kItem[] = {"New Game", "Continue", "Install to HDD", "Uninstall from HDD", "Settings"};
             anchor = kCentre;
             // the picture, upscaled once (art.cpp ArtImageSet), then a starfield drifting over it
             uint32_t lw = 0, lh = 0;
@@ -603,10 +603,11 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 dl->AddText(font, s1, ImVec2(lx + wa + wt, c.y - w1.y), c1, b1);
                 dl->AddText(font, s2, ImVec2(c.x - w2.x * 0.5f, c.y + 3 * k), c2, l2);
             }
-            int rows[3], n = 0;
-            rows[n++] = 0;
-            rows[n++] = 1;
-            if (o.b != -1) rows[n++] = o.b == 1 ? 3 : 2;
+            int rows[4], idx[4], n = 0;
+            rows[n] = 0, idx[n++] = 0;
+            rows[n] = 1, idx[n++] = 1;
+            if (o.b != -1) rows[n] = o.b == 1 ? 3 : 2, idx[n++] = 2;
+            rows[n] = 4, idx[n] = 4, n++;   // Settings (title.c: index 4)
             const float fs = 17.0f * k, rowh = 18.0f;
             float wmax = 0;
             for (int r = 0; r < n; ++r) wmax = std::max(wmax, font->CalcTextSizeA(fs, 1e9f, 0, kItem[rows[r]]).x);
@@ -614,7 +615,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const ImVec2 a = P(256 - half, 288 - 6), b = P(256 + half, 288 + rowh * float(n) + 4);
             Panel(dl, a, b, k, t * 0.92f);
             for (int r = 0; r < n; ++r) {
-                const int item = r == 2 ? 2 : r;   // the game's selection index (row 2 = the install row)
+                const int item = idx[r];   // the game's selection index
                 const bool sel = o.a == item;
                 const float ry = 288 + rowh * float(r);
                 if (sel) {

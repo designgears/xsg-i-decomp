@@ -312,7 +312,8 @@ typedef struct {
     volatile uint32_t vol[4];      /* master, music, effects, voice: 0..100 (percent) */
     volatile uint32_t restart;     /* nonzero: the game restarts itself (re-exec) */
     volatile uint32_t menu_open;   /* diagnostics: the menu is open (game input neutral) */
-    uint32_t reserved[22];
+    volatile uint32_t open_req;    /* the game asks for the settings menu: bumped per request (title Settings) */
+    uint32_t reserved[21];
 } GpuSettings;
 
 #ifdef __cplusplus

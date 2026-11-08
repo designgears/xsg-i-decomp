@@ -208,6 +208,7 @@ void TestParse() {
     }
 }
 
+void Publish(bool restart = false);
 /* ------------------------------------------------------------- open / close */
 void SetOpen(bool open) {
     if (open == g_open) return;
@@ -222,6 +223,7 @@ void SetOpen(bool open) {
         xsgcfg::SaveTick(true);   // the last change goes to settings.ini now
     }
     xsginput::SetMenuOpen(open);
+    Publish();   // menu_open: the game reads it (the title's idle timer)
     Log("%s", open ? "open (game input neutral)" : "closed");
 }
 
@@ -234,7 +236,7 @@ uint32_t FrameUs() {
     return uint32_t(1000000 / fps);   // 60 -> 16666 (kernel.c maps it to its default 16666667 ns)
 }
 
-void Publish(bool restart = false) {
+void Publish(bool restart) {
     if (!g_shared) return;
     GpuSettings* p = g_shared;
     const uint32_t s = p->seq;
@@ -248,6 +250,7 @@ void Publish(bool restart = false) {
     p->vol[2] = uint32_t(xsgcfg::GetInt("audio.effects"));
     p->vol[3] = uint32_t(xsgcfg::GetInt("audio.voice"));
     p->menu_open = g_open;
+
     if (restart) p->restart = 1;
     p->valid = 1;
     __atomic_store_n(&p->seq, s + 2, __ATOMIC_RELEASE);
@@ -1212,6 +1215,12 @@ void Frame(uint32_t vsync, const Stats& s) {
     const bool battle = rebuilt && xsgui::BattleActive(vsync);
     const bool menus = rebuilt && xsgui::MenuActive(vsync);
     g_game_menu_up = menus && xsgui::MenuWantsSettings();
+    if (g_shared) {   // the game asked for the settings menu (the title's Settings choice)
+        static uint32_t seen = ~0u;
+        const uint32_t r = __atomic_load_n(&g_shared->open_req, __ATOMIC_ACQUIRE);
+        if (seen == ~0u) seen = r;
+        else if (r != seen) { seen = r; if (!g_open) SetOpen(true); }
+    }
     if (!g_open && !g_overlay && !dialog && !battle && !menus) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();

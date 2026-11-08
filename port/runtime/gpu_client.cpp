@@ -888,3 +888,17 @@ extern "C" void xsg_ui_image(int id, const void* rgba, int w, int h) {
     if (!xsggpu::shm || !rgba || w <= 0 || h <= 0) return;
     xsggpu::Send(GPU_MSG_UI_IMAGE, uint32_t(id), uint32_t(w) | uint32_t(h) << 16, rgba, uint32_t(w * h * 4));
 }
+
+/* The title's Settings choice: ask xsg-gpu to open its settings menu. */
+extern "C" void xsg_ui_open_settings(void) {
+    if (!xsggpu::shm) return;
+    GpuSettings* p = reinterpret_cast<GpuSettings*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_SETTINGS_OFF);
+    __atomic_add_fetch(&p->open_req, 1u, __ATOMIC_RELEASE);
+}
+
+/* The port's settings menu is open (the title keeps its idle timer from running out meanwhile). */
+extern "C" int xsg_ui_settings_open(void) {
+    if (!xsggpu::shm) return 0;
+    const GpuSettings* p = reinterpret_cast<const GpuSettings*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_SETTINGS_OFF);
+    return __atomic_load_n(&p->menu_open, __ATOMIC_ACQUIRE) != 0;
+}
