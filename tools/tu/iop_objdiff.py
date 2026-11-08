@@ -281,7 +281,7 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
     return obj, spans
 
 
-def measured_pair(prefix, target, base, root):
+def measured_pair(prefix, target, base, root, original=None, group=None):
     """Make the reference's attributed data and the C object comparable, byte for byte.
 
     The reference keeps the original's attributed pools in `<sec>.iop_original`
@@ -307,11 +307,66 @@ def measured_pair(prefix, target, base, root):
             args.append(f'--rename-section={x}={plain}')
     run([str(prefix) + 'objcopy', *args, target, measured], root)
     objdiff_inputs.anchor_data_sections(prefix, base, root)
+    if original is not None:
+        resolve_base_pointers(base, measured, original, group)
     place_common(base, measured)
     trim_base_fill(base, measured)
     objdiff_inputs.size_bss_symbols(measured)
     objdiff_inputs.size_bss_symbols(base)
     return measured
+
+
+def resolve_base_pointers(base, target, original, group):
+    """C data pointers compared at their linked value, as the reference holds them.
+
+    The reference carries the original's data as linked bytes (no relocation);
+    the C object writes `&func`/`"str"` as R_MIPS_32. Each such word is resolved
+    to its link-time address (a named symbol through the original IRX's symbol
+    table; a section-relative one through this group's text start or data map)
+    and stored, only where the reference holds exactly that word.
+    """
+    from tu.elfinfo import Elf
+    belf, telf = Elf(Path(base).read_bytes()), Elf(Path(target).read_bytes())
+    named = {}
+    for sym in original.symbols:
+        if sym['name'] and 0 < sym['section_index'] < len(original.sections):
+            named.setdefault(sym['name'], sym['value'])
+    homes = {'.text': min(f['offset'] for f in group['functions'])}
+    for m in group.get('generated_data', []):
+        homes[m['section']] = m['offset']
+        if m['section'] == '.rodata':
+            homes['.rdata'] = m['offset']
+    tsecs = {x.name: x for x in telf.sections}
+    data = bytearray(belf.data)
+    for rel in belf.sections:
+        if rel.type != 9:
+            continue
+        applies = belf.sections[rel.info]
+        t = tsecs.get(applies.name)
+        if not applies.flags & 2 or applies.flags & 4 or t is None or t.type == 8:
+            continue
+        tdata = telf.section_bytes(t)
+        kept = []
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            sym = belf.symbols[info >> 8]
+            word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+            value = None
+            if info & 255 == 2 and offset + 4 <= len(tdata):
+                if sym.type == 3 and 0 < sym.shndx < len(belf.sections):
+                    home = homes.get(belf.sections[sym.shndx].name)
+                    value = None if home is None else home + word
+                elif sym.name in named:
+                    value = named[sym.name] + word
+            if value is not None and (value & 0xffffffff) == struct.unpack_from('<I', tdata, offset)[0]:
+                struct.pack_into('<I', data, applies.offset + offset, value & 0xffffffff)
+                continue
+            kept.append((offset, info))
+        if len(kept) * 8 != rel.size:
+            for k, entry in enumerate(kept):
+                struct.pack_into('<II', data, rel.offset + 8 * k, *entry)
+            struct.pack_into('<I', data, belf.shoff + rel.index * belf.shentsize + 20, len(kept) * 8)
+    Path(base).write_bytes(bytes(data))
 
 
 def place_common(base, target):
@@ -378,7 +433,7 @@ def prepare(root, project, report_path, *, reporting=False):
         assigned.setdefault(unit, []).extend(spans)
         base = destination / 'base.o'
         objdiff_inputs.strip_debug(prefix, Path(candidate['object']), base, root)
-        target = measured_pair(prefix, target, base, root)
+        target = measured_pair(prefix, target, base, root, original, group)
         scope = {f['name']: f['size'] for f in group['functions']}
         verification.require(objdiff_inputs.functions(target) == scope == objdiff_inputs.functions(base),
                              name + ': native object function scope differs')
