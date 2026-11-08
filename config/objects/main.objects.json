@@ -20482,9 +20482,9 @@
       "name_confidence": "low",
       "ordinal": 86,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_thread.c",
@@ -22527,10 +22527,10 @@
       "name_confidence": "low",
       "ordinal": 92,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -49079,7 +49079,7 @@
       "name_confidence": "low",
       "ordinal": 169,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
