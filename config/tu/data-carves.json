@@ -10700,6 +10700,107 @@
     }
    ]
   },
+  "main/tu268": {
+   ".data": [
+    {
+     "range": [
+      "0x0047acf0",
+      "0x00490520"
+     ],
+     "generated": [
+      "0x0047acf0",
+      "0x00490520"
+     ],
+     "generated_by": [
+      "EXM_ClearWindStruct",
+      "EXM_InitWind"
+     ],
+     "c_owned_symbols": [
+      "_wind",
+      "MapUnit",
+      "unitSequence"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_2.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8770",
+      "0x004d8784"
+     ],
+     "generated": [
+      "0x004d8770",
+      "0x004d8784"
+     ],
+     "generated_by": [
+      "EXM_GetWindPower",
+      "EXM_SetShakeTime",
+      "EXM_StepShakeWind"
+     ],
+     "c_owned_symbols": [
+      "D_004D8770",
+      "D_004D8774",
+      "D_004D8778",
+      "D_004D877C",
+      "D_004D8780"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_2.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc290",
+      "0x004dc29c"
+     ],
+     "generated": [
+      "0x004dc290",
+      "0x004dc29c"
+     ],
+     "generated_by": [
+      "EXM_ClearWindStruct",
+      "EXM_GetShakeRad",
+      "EXM_GetWaveRad",
+      "EXM_GetWindPara",
+      "EXM_GetWindPower",
+      "EXM_InitWind",
+      "EXM_ResetWave",
+      "EXM_ResetWind",
+      "EXM_SetDirectionalWind",
+      "EXM_SetPointWind",
+      "EXM_SetShakePower",
+      "EXM_SetShakeTime",
+      "EXM_SetShakeWind",
+      "EXM_SetWindPara",
+      "EXM_SetWindStruct",
+      "EXM_StepShakeWind",
+      "EXM_StopWind"
+     ],
+     "c_owned_symbols": [
+      "wind",
+      "wave",
+      "waverad"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_2.o"
+     }
+    }
+   ]
+  },
   "main/tu269": {
    ".rodata": [
     {
