@@ -12917,11 +12917,11 @@
     {
      "range": [
       "0x004db6a8",
-      "0x004db6c8"
+      "0x004db6d0"
      ],
      "generated": [
       "0x004db6a8",
-      "0x004db6c8"
+      "0x004db6cc"
      ],
      "generated_by": [
       "CfTest",
@@ -12933,11 +12933,11 @@
       "D_004DB6A8",
       "D_004DB6B0",
       "D_004DB6B8",
-      "rgba_0"
+      "rgba_0",
+      "MapNo",
+      "D_004DB6CC"
      ],
-     "also_referenced_by_c": [
-      "MapNo"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -13140,22 +13140,6 @@
       "D_004CA260"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "D_004C9DD0": "D_004C9F20",
-      "D_004C9DE8": "D_004C9F20",
-      "D_004C9E00": "D_004C9F20",
-      "D_004C9E18": "D_004C9F20",
-      "D_004C9E30": "D_004C9F20",
-      "D_004C9E48": "D_004C9F20",
-      "D_004C9E60": "D_004C9F20",
-      "D_004C9E78": "D_004C9F20",
-      "D_004C9E90": "D_004C9F20",
-      "D_004C9EA8": "D_004C9F20",
-      "D_004C9EC0": "D_004C9F20",
-      "D_004C9ED8": "D_004C9F20",
-      "D_004C9EF0": "D_004C9F20",
-      "D_004C9F08": "D_004C9F20"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -13166,19 +13150,32 @@
    ".sdata": [
     {
      "range": [
-      "0x004db6d8",
+      "0x004db6d0",
       "0x004db728"
      ],
      "generated": [
-      "0x004db6d8",
+      "0x004db6d0",
       "0x004db725"
      ],
      "generated_by": [
+      "GetPartsSize",
       "HitCheckBoxTest",
+      "InitEvsSymbol",
+      "InitMapKoware",
+      "InitRetSymbol",
+      "InitSaveSymbol",
+      "InitShopSymbol",
       "InitUwamonoSys",
-      "MAP_updateUnitKoware"
+      "MAP_updateUnitKoware",
+      "ShootMapUnit",
+      "SortLine",
+      "Unit_CreateUwamono"
      ],
      "c_owned_symbols": [
+      "dispflg",
+      "lineflg",
+      "printflg",
+      "collflg",
       "D_004DB6D8",
       "D_004DB6E0",
       "D_004DB6E8",

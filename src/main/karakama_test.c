@@ -815,5 +815,4 @@ static TexTestPacket TestEnv_2_0036DE40 __asm__("TestEnv.2") = {
 };
 static u64 rgba_0 __asm__("rgba.0") = 0x0000FF00000000FFULL;
 
-/* MapNo and dispflg/lineflg/printflg/collflg stay scaffold-owned: the original
-   has 4 unexplained zero bytes between MapNo (+0x20) and dispflg (+0x28). */
+int MapNo = 0;

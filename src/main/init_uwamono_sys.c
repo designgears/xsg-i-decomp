@@ -2,6 +2,11 @@
 
 #include "shared.h"
 
+signed char dispflg = 0;
+signed char lineflg = 0;
+signed char printflg = 0;
+signed char collflg = 0;
+
 /*
  * UwamonoMapUnit is this TU's local view of the same MapUnit[] record that
  * src/main/init_drill.c also touches; only the fields SendBrokenSignal,

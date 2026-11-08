@@ -900,7 +900,7 @@ segments:
       - [0x2DC5D0, sdata, menu_skill]
       - [0x2DC680, sdata, ether_tree]
       - [0x2DC6A8, sdata, karakama_test]
-      - [0x2DC6D8, sdata, init_uwamono_sys]
+      - [0x2DC6D0, sdata, init_uwamono_sys]
       - [0x2DC728, sdata, init_map_trap]
       - [0x2DC780, sdata, create_evt_item_get_task]
       - [0x2DC790, sdata, pause_menu_page_uwamono]
