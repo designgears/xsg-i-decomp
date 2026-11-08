@@ -19510,6 +19510,114 @@
     }
    ]
   },
+  "ov12/tu019_00a13260": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f63c",
+      "0x00a4f648"
+     ],
+     "generated": [
+      "0x00a4f63c",
+      "0x00a4f648"
+     ],
+     "generated_by": [
+      "InstanceOfRgHeap",
+      "InstanceOfRgHeapData",
+      "_IsCollectMagicString",
+      "_SetMagicString"
+     ],
+     "c_owned_symbols": [
+      "s_szMagicString",
+      "s_bInit1_0",
+      "s_bInit2_3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_heap.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a52a40",
+      "0x00a53008"
+     ],
+     "generated": [
+      "0x00a52a40",
+      "0x00a53008"
+     ],
+     "generated_by": [
+      "ClearRgHeap",
+      "InitRgHeap",
+      "RgHeapAlloc",
+      "RgHeapDumpBlock",
+      "RgHeapDump_sub",
+      "RgHeapFree",
+      "RgHeapIsInSelf",
+      "_Error_00A13260",
+      "_SetHeapHead"
+     ],
+     "c_owned_symbols": [
+      "D_00A52A40",
+      "D_00A52A68",
+      "D_00A52A80",
+      "D_00A52A98",
+      "D_00A52AB8",
+      "D_00A52AC8",
+      "D_00A52AD8",
+      "D_00A52AF0",
+      "D_00A52B08",
+      "D_00A52B18",
+      "D_00A52B48",
+      "D_00A52B60",
+      "D_00A52B68",
+      "D_00A52B90",
+      "D_00A52BA0",
+      "D_00A52BB8",
+      "D_00A52BE8",
+      "D_00A52BF8",
+      "D_00A52C30",
+      "D_00A52C40",
+      "D_00A52C80",
+      "D_00A52C90",
+      "D_00A52CD0",
+      "D_00A52CF8",
+      "D_00A52D08",
+      "D_00A52D38",
+      "D_00A52D50",
+      "D_00A52D60",
+      "D_00A52D80",
+      "D_00A52D90",
+      "D_00A52DD0",
+      "D_00A52DF0",
+      "D_00A52E28",
+      "D_00A52E58",
+      "D_00A52E88",
+      "D_00A52EB0",
+      "D_00A52ED0",
+      "D_00A52EF8",
+      "D_00A52F18",
+      "D_00A52F40",
+      "D_00A52F70",
+      "D_00A52F90",
+      "D_00A52FA8",
+      "D_00A52FB8",
+      "D_00A52FD0",
+      "D_00A52FE8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_heap.o"
+     }
+    }
+   ]
+  },
   "ov12/tu020_00a140a0": {
    ".rodata": [
     {
