@@ -44,20 +44,26 @@ extern float I2F(int value);
 extern void xglCameraMove(StudioCamera *camera);
 extern int xglTaskRemove(XglTaskPrefix *task);
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
-extern const float D_004D7C88;
-extern const float D_004D7C8C;
-extern const float D_004D7C90;
-extern u8 TestEnv_2_0036AAA0[];
-extern u8 TestEnv_3_0036AB50[];
 static int task_menubg(XglTaskPrefix *task);
 static void task_menubg_sub(XglTaskPrefix *task, float scale);
 
 extern void xglRotTransPersN(void *out, void *matrix, void *in, int count, int camera);
-extern float model_0[8][4];
-extern u8 index_1[];
 
 static void task_menubg_sub(XglTaskPrefix *task_prefix, float scale)
 {
+    static float model[8][4] = {
+        {0.0f, 0.4f, -0.8f, 1.0f}, {7.0f, 0.4f, -0.8f, 1.0f},
+        {0.0f, 0.4f, 0.0f, 1.0f}, {7.0f, 0.4f, 0.0f, 1.0f},
+        {0.0f, -0.4f, 0.0f, 1.0f}, {7.0f, -0.4f, 0.0f, 1.0f},
+        {0.0f, -0.4f, -0.8f, 1.0f}, {7.0f, -0.4f, -0.8f, 1.0f},
+    };
+    /* Per-face colour (r, g, b, a) and vertex indices. */
+    static u8 index[32] = {
+        0xB0, 0xB0, 0xB0, 0x80, 1, 3, 0, 2,
+        0x80, 0x80, 0x80, 0x80, 3, 5, 2, 4,
+        0x50, 0x50, 0x50, 0x80, 5, 7, 4, 6,
+        0x40, 0x40, 0x40, 0x80, 0, 2, 6, 4,
+    };
     MenuBgTask *task = (MenuBgTask *)task_prefix;
     float *src;
     float *dst;
@@ -83,7 +89,7 @@ static void task_menubg_sub(XglTaskPrefix *task_prefix, float scale)
     xglMatrixStackRotZ(task->work->rotation_z);
     xglMatrixStackTrans((float *)0x70000100);
     xglMatrixStackSave((float (*)[4])0x70000000);
-    src = model_0[0];
+    src = model[0];
     dst = (float *)0x7000010C;
     for (i = 7; i >= 0; i--) {
         if (src[0] == 0.0f) {
@@ -103,7 +109,7 @@ static void task_menubg_sub(XglTaskPrefix *task_prefix, float scale)
         if (((int (*)[4])0x70000180)[i][1] & 0xFFFF0000) return;
         if (((int (*)[4])0x70000180)[i][2] < 0) return;
     }
-    idx = index_1;
+    idx = index;
     x = task->position_x;
     y = task->position_y;
     if (scale < 0.0f) {
@@ -181,7 +187,7 @@ static int task_menubg(XglTaskPrefix *task_prefix)
     switch (task->state) {
     case 0:
         task->horizontal_offset = 2.0f * (xglFRand() - 1.5f);
-        task->vertical_offset = I2F((8 - task->index) * 2) * D_004D7C88;
+        task->vertical_offset = I2F((8 - task->index) * 2) * 0.4f;
         task->depth_offset = (xglFRand() - 1.5f) * 0.5f;
         task->horizontal_scale = 2.0f * xglFRand() + 7.0f;
         task->mirrored_depth_offset = (xglFRand() - 1.5f) * 0.5f;
@@ -197,8 +203,8 @@ static int task_menubg(XglTaskPrefix *task_prefix)
         task->state = 2;
         /* fall through */
     case 2:
-        task->horizontal_scale *= D_004D7C8C;
-        if (task->horizontal_scale < D_004D7C90) {
+        task->horizontal_scale *= 0.7f;
+        if (task->horizontal_scale < 0.001f) {
             task->horizontal_scale = 0.0f;
             task->state = 3;
         }
@@ -207,8 +213,21 @@ static int task_menubg(XglTaskPrefix *task_prefix)
 
     if (task->index == 0) {
         StudioCamera *camera;
+        static u64 TestEnv[22] __attribute__((aligned(16))) = {
+            0x0000000000000000ULL, 0x5100000500000000ULL,
+            0x1000000000008004ULL, 0x000000000000000EULL,
+            0x0008380000000000ULL, 0x0000000000000050ULL,
+            0x0000000000000000ULL, 0x0000000000000051ULL,
+            0x0000000800000040ULL, 0x0000000000000052ULL,
+            0x0000000000000000ULL, 0x0000000000000053ULL,
+            0x0000000000000000ULL, 0x0000000000000000ULL,
+            0x0000000000000000ULL, 0x0000000000000000ULL,
+            0x0000000000000000ULL, 0x0000000000000000ULL,
+            0x0000000000000000ULL, 0x0000000000000000ULL,
+            0x0000000000000000ULL, 0x0000000000000000ULL,
+        };
 
-        nmlModelDirectSend(2, TestEnv_2_0036AAA0, 11);
+        nmlModelDirectSend(2, (u8 *)TestEnv, 11);
         nmlModelDirectSend(1, (u8 *)task->work, 130);
         camera = xglStudioGetCamera2(task->work->camera_id);
         camera->position.x = 0.0f;
@@ -222,7 +241,19 @@ static int task_menubg(XglTaskPrefix *task_prefix)
         xglCameraMove(camera);
     }
 
-    nmlModelDirectSend(2, TestEnv_3_0036AB50, 7);
+    {
+        static u64 TestEnv[14] __attribute__((aligned(16))) = {
+            0x0000000000000000ULL, 0x5100000600000000ULL,
+            0x5000000000008001ULL, 0x00000000000EEEEEULL,
+            0x0000000000070000ULL, 0x0000000000000047ULL,
+            0x0000000000000060ULL, 0x0000000000000014ULL,
+            0x20000004D8023800ULL, 0x0000000000000006ULL,
+            0x0000000000000044ULL, 0x0000000000000042ULL,
+            0x0000000000000000ULL, 0x0000000000000008ULL,
+        };
+
+        nmlModelDirectSend(2, (u8 *)TestEnv, 7);
+    }
     task_menubg_sub(task_prefix, 1.0f);
     task_menubg_sub(task_prefix, -1.0f);
     if (task->work->tasks_finished == 0) {

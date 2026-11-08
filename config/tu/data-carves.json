@@ -2249,6 +2249,62 @@
     }
    ]
   },
+  "main/tu134": {
+   ".data": [
+    {
+     "range": [
+      "0x0036aa00",
+      "0x0036abc0"
+     ],
+     "generated": [
+      "0x0036aa00",
+      "0x0036abc0"
+     ],
+     "generated_by": [
+      "task_menubg",
+      "task_menubg_sub"
+     ],
+     "c_owned_symbols": [
+      "model_0",
+      "index_1",
+      "TestEnv_2_0036AAA0",
+      "TestEnv_3_0036AB50"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tya_menu_bg_entry.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7c88",
+      "0x004d7c94"
+     ],
+     "generated": [
+      "0x004d7c88",
+      "0x004d7c94"
+     ],
+     "generated_by": [
+      "task_menubg"
+     ],
+     "c_owned_symbols": [
+      "D_004D7C88",
+      "D_004D7C8C",
+      "D_004D7C90"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tya_menu_bg_entry.o"
+     }
+    }
+   ]
+  },
   "main/tu139": {
    ".rodata": [
     {
