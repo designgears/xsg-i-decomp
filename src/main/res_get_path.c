@@ -36,7 +36,6 @@ typedef struct {
 
 extern EnemySeEntry EnemySeBank[8];
 extern u8 ScenePath;
-extern const char *tbl_0_00366420[20];
 /* Resource-key tables: {key, table, extension}; `table` is a NULL-terminated
  * name list or (CID/RID/... in `model`) another key table. */
 typedef struct ResKeyTable {
@@ -1304,8 +1303,42 @@ static void default_callback(void)
     xglSleep();
 }
 
+extern const char D_004C0098[];
+extern const char D_004C0080[];
+extern const char D_004C0068[];
+extern const char D_004C0058[];
+extern const char D_004C0040[];
+extern const char D_004C0028[];
+extern const char D_004C0010[];
+extern const char D_004BFFF8[];
+extern const char D_004BFFE0[];
+extern const char D_004BFFC8[];
+extern const char D_004BFFB0[];
+extern const char D_004BFF98[];
+extern const char D_004BFF80[];
+extern const char D_004BFF68[];
+extern const char D_004BFF50[];
+extern const char D_004BFF38[];
+extern const char D_004BFF20[];
+extern const char D_004BFF08[];
+extern const char D_004BFEF0[];
+extern const char D_004BFED8[];
+extern const char D_004D9E20[];
+extern const char D_004D9E18[];
+extern const char D_004D9E10[];
+extern const char D_004D9E08[];
+extern const char D_004D9E00[];
+extern const char D_004D9DF8[];
+
 const char *RES_getPath(void)
 {
+    static const char *tbl_0_00366420[20] __asm__("tbl.0") = {
+        D_004C0098, D_004C0080, D_004C0068, D_004C0058,
+        D_004C0040, D_004C0028, D_004C0010, D_004BFFF8,
+        D_004BFFE0, D_004BFFC8, D_004BFFB0, D_004BFF98,
+        D_004BFF80, D_004BFF68, D_004BFF50, D_004BFF38,
+        D_004BFF20, D_004BFF08, D_004BFEF0, D_004BFED8
+    };
     if (ScenePath >= 20)
         ScenePath = 0;
     return tbl_0_00366420[ScenePath];
@@ -2165,10 +2198,12 @@ static char *command_dummy(int command, char *cursor, int mode)
 
 extern unsigned char SaveData[];
 extern char foot_name[];
-extern char *tbl_1_00366470[];
 
 void RES_GetLeaderSeName(char *dst)
 {
+    static char *tbl_1_00366470[7] __asm__("tbl.1") = {
+        (char *)D_004D95D0, (char *)D_004D9E20, (char *)D_004D9E18, (char *)D_004D9E10, (char *)D_004D9E08, (char *)D_004D9E00, (char *)D_004D9DF8
+    };
     char *src = tbl_1_00366470[*(u16 *)(SaveData + 0x100A4)];
     dst[0] = src[0];
     dst[1] = src[1];
@@ -2196,9 +2231,6 @@ void RES_GetMapEnvSeName(char *name)
 #include "main/xgl_sound.h"
 extern struct SoundWork SoundWork;
 int sprintf(char *buffer, const char *format, ...);
-extern const char D_004C00A8[];
-extern const char D_004C00C0[];
-extern const char D_004C00D8[];
 extern int SsdGetResultValue(int *result);
 extern int SsdGetSeqPlayStatus(int sequence_id);
 extern int SsdCheckPlayEffectFileID(u16 file_id);
@@ -2317,10 +2349,10 @@ environment_name_done:
             second_address = (void *)(address + first_size);
             second_size = next_arc_size(second_address);
         } else {
-            sprintf(path, D_004C00A8, env_name);
+            sprintf(path, "data\\sound\\sed\\%s.SWD", env_name);
             first_size = xglCdReadFile(path, (void *)address, 0, 0);
             second_address = (void *)(address + first_size);
-            sprintf(path, D_004C00C0, env_name);
+            sprintf(path, "data\\sound\\sed\\%s.SED", env_name);
             second_size = xglCdReadFile(path, second_address, 0, 0);
         }
         if (file_id != ((SoundLoadBuffer *)address)->sequence_id) {
@@ -2350,7 +2382,7 @@ environment_name_done:
             if (arcfileaddr != 0) {
                 size = next_arc_size((void *)address);
             } else {
-                sprintf(path, D_004C00D8, sequence_name);
+                sprintf(path, "data\\sound\\smd\\%s.SMD", sequence_name);
                 size = xglCdReadFile(path, (void *)address, 0, 0);
             }
             if (size != 0) {
@@ -2422,7 +2454,7 @@ static u8 *command_loadsmd(int command, u8 *cursor)
             if (arcfileaddr != 0) {
                 file_size = next_arc_size((void *)address);
             } else {
-                const char *sequence_format = D_004C00D8;
+                const char *sequence_format = "data\\sound\\smd\\%s.SMD";
 
                 sprintf(path, sequence_format, name);
                 file_size = xglCdReadFile(path, (void *)address, 0, 0);
@@ -2460,11 +2492,11 @@ static u8 *command_loadsmd(int command, u8 *cursor)
     return cursor;
 }
 
-extern char base_2[];
 extern void GameMpeg2Play(char *name, int mode);
 
 static char *command_mpeg2_core(int command, char *cursor, int mode)
 {
+    static char base_2[] __asm__("base.2") = "data\\movie\\mpeg2\\";
     char path[256];
     char *s = base_2;
     char *d = path;
@@ -2668,7 +2700,48 @@ typedef struct {
     char *(*callback)(int, char *);
     void *unmodeled_08;
 } GameResourceCommand;
-extern GameResourceCommand command[];
+extern const char D_004D9EA0[];
+extern const char D_004D9E98[];
+extern const char D_004D9E90[];
+extern const char D_004D9E88[];
+extern const char D_004D9E80[];
+extern const char D_004D9E78[];
+extern const char D_004D9E70[];
+extern const char D_004D9E68[];
+extern const char D_004D9E60[];
+extern const char D_004D9E58[];
+extern const char D_004D9E50[];
+extern const char D_004D9E48[];
+extern const char D_004D9E40[];
+extern const char D_004D9E38[];
+extern const char D_004D9E30[];
+extern const char D_004D9E28[];
+static GameResourceCommand command[24] = {
+    {D_004D9EA0, (char *(*)(int, char *))command_reset, 0},
+    {D_004D9E98, (char *(*)(int, char *))command_loadmap, 0},
+    {D_004D9E90, (char *(*)(int, char *))command_loadact, 0},
+    {"loadface", (char *(*)(int, char *))command_loadface, 0},
+    {D_004D9E88, (char *(*)(int, char *))command_loadmot, 0},
+    {D_004D9E80, (char *(*)(int, char *))command_loadtex, 0},
+    {"loadmovie", (char *(*)(int, char *))command_loadmovie, 0},
+    {"loadeffect", (char *(*)(int, char *))command_loadeffect, 0},
+    {D_004D9E78, (char *(*)(int, char *))command_loadene, 0},
+    {D_004D9E70, (char *(*)(int, char *))command_script, 0},
+    {D_004D9E68, (char *(*)(int, char *))command_player, 0},
+    {D_004D9E60, (char *(*)(int, char *))command_dummy, 0},
+    {D_004D9E58, (char *(*)(int, char *))command_loadse, 0},
+    {D_004D9E50, (char *(*)(int, char *))command_loadsmd, 0},
+    {D_004D9E48, (char *(*)(int, char *))command_mpeg2, 0},
+    {"mpeg2_btl", (char *(*)(int, char *))command_mpeg2battle, 0},
+    {"mpeg2_nofade", (char *(*)(int, char *))command_mpeg2nofade, 0},
+    {D_004D9E40, (char *(*)(int, char *))command_enese, 0},
+    {D_004D9E38, (char *(*)(int, char *))command_npcse, 0},
+    {"event_btl", (char *(*)(int, char *))command_event2battle, 0},
+    {D_004D9E30, (char *(*)(int, char *))command_disk, 0},
+    {D_004D9E28, (char *(*)(int, char *))command_save, 0},
+    {"player_lock", (char *(*)(int, char *))command_player_lock, 0},
+    {0, 0, 0}
+};
 
 void GameResourceLoad(int scene_id)
 {
@@ -2765,10 +2838,10 @@ void GameResourceLoad(int scene_id)
 }
 
 extern char *MAP_getPath(void);
-extern char dummy_3[];
 
 static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
 {
+    static char dummy_3[] __asm__("dummy.3") = "data\\map\\dummy";
     char path[256];
     char *d = path;
     char *s;
@@ -2802,9 +2875,6 @@ static int RES_loadFileSubMapSub(char *dir, char *name, void *buffer)
     return size;
 }
 
-extern char D_004D9EA8[];
-extern char D_004D9EB0[];
-extern char D_004D9EB8[];
 extern int func_A1CF18(char *, int);
 extern char *MapGetName(int map_id);
 typedef struct RESMapView {
@@ -2841,7 +2911,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EA8, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".lex", (void *) var_16);
   }
   var_16 = ((var_16 + var_4) + 0xF) & (~0xF);
   af = arcfileaddr != 0;
@@ -2852,7 +2922,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB0, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".xtx", (void *) var_16);
   }
   if (var_4 <= 0)
   {
@@ -2870,7 +2940,7 @@ static int RES_loadFileSubMap(void *arg0, int arg1)
   }
   else
   {
-    var_4 = RES_loadFileSubMapSub(arg0, D_004D9EB8, (void *) var_16);
+    var_4 = RES_loadFileSubMapSub(arg0, ".id", (void *) var_16);
   }
   if (var_4 <= 0)
   {
@@ -2932,9 +3002,6 @@ char *RES_GetMotBaseName(u16 id)
   return cfMtnList->name;
 }
 
-extern char root_4[6];
-extern char dummy_5[6];
-extern char D_004D9ED0[];
 static int convert_face(int id);
 static inline char *scopy(char *d, char *s)
 {
@@ -2947,6 +3014,8 @@ static inline char *scopy(char *d, char *s)
 
 static int RES_GetMdlFileNameSub(char *name, int key)
 {
+    static char root_4[6] __asm__("root.4") = "data\\";
+    static char dummy_5[6] __asm__("dummy.5") = "dummy";
     char *suffix = 0;
     int id = key & 0xFFFF;
     int n;
@@ -2961,7 +3030,7 @@ static int RES_GetMdlFileNameSub(char *name, int key)
     unsigned char u;
 
     if ((key & 0xFFFF0000) == 0x10000) {
-        suffix = D_004D9ED0;
+        suffix = "_face";
         id = convert_face(id);
     }
     top = (ResourceKeyEntry *)model + ((id & 0x7000) >> 12);
@@ -3082,21 +3151,18 @@ void RES_GetMdlFileName(char *name, int charaId)
     }
 }
 
-extern const char D_004D9ED8[];
 typedef struct {
     void *first_file;
     void *second_file;
     void *third_file;
     u8 unmodeled_0c[4];
 } ResourceFileSet;
-extern const char D_004C0160[];
-extern const char base_6[];
-extern const char base_7[];
-extern const char base_8[];
-extern const char base_9[6];
 
 static int RES_loadFileSub(int callback, int resource_id, int address_word)
 {
+    static char base_6[] __asm__("base.6") = "data\\motion\\";
+    static char base_7[] __asm__("base.7") = "data\\movie\\small\\mvs0000.ipu";
+    static char base_8[] __asm__("base.8") = "data\\texture\\fm0000.xtx";
     void *address = (void *)address_word;
     char single_path[256];
     char model_path[256];
@@ -3124,7 +3190,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             size = next_arc_size(address);
             break;
         }
-        __builtin_memcpy(single_end, D_004D9ED8, 5);
+        __builtin_memcpy(single_end, ".jnt", 5);
         size = xglCdGetFileSize(single_path);
         if (size > 0)
             readreq(single_path, (void *)address);
@@ -3150,7 +3216,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (size <= 0)
                 break;
         } else {
-            __builtin_memcpy(model_end, D_004D9EA8, 5);
+            __builtin_memcpy(model_end, ".lex", 5);
             size = xglCdGetFileSize(model_path);
             if (size <= 0)
                 break;
@@ -3162,7 +3228,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (arcfileaddr != 0) {
                 size = next_arc_size(next);
             } else {
-                __builtin_memcpy(model_end, D_004D9EB0, 5);
+                __builtin_memcpy(model_end, ".xtx", 5);
                 size = xglCdGetFileSize(model_path);
                 if (size > 0)
                     readreq(model_path, next);
@@ -3176,7 +3242,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             if (arcfileaddr != 0) {
                 size = next_arc_size(next);
             } else {
-                __builtin_memcpy(model_end, D_004D9ED8, 5);
+                __builtin_memcpy(model_end, ".jnt", 5);
                 size = xglCdGetFileSize(model_path);
                 if (size > 0)
                     readreq(model_path, next);
@@ -3197,7 +3263,7 @@ static int RES_loadFileSub(int callback, int resource_id, int address_word)
             size = next_arc_size(address);
             break;
         }
-        sprintf(motion_path, D_004C0160, ((char *(*)(int))RES_GetMotBaseName)(resource_id));
+        sprintf(motion_path, "data\\motion\\%s.fpk", ((char *(*)(int))RES_GetMotBaseName)(resource_id));
         size = xglCdGetFileSize(motion_path);
         if (size > 0) {
             size = xglCdGetFileSize(motion_path);
@@ -3289,6 +3355,7 @@ format_numbered_path:
     case 5: {
         char *texture_end;
         const char *texture_source;
+        static char base_9[6] __asm__("base.9") = "data\\";
 
         texture_end = texture_path;
         texture_source = base_9;
@@ -3399,7 +3466,6 @@ int GameResourceGetIndex(int id)
 }
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern char D_004C01B0[];
 
 void GameResourceDump(int dump)
 {
@@ -3422,7 +3488,7 @@ void GameResourceDump(int dump)
         if (i < 0) i = 0;
 
         for (n = 0; n < 16; n++) {
-            xglFontDebugPrintf(0x40, 0x40 + n * 8, D_004C01B0, i, GameResource[i].address, GameResource[i].size, GameResource[i].state, GameResource[i].handle);
+            xglFontDebugPrintf(0x40, 0x40 + n * 8, "%2d:%8x,%9d,%2d,%4x", i, GameResource[i].address, GameResource[i].size, GameResource[i].state, GameResource[i].handle);
             i++;
 
         }
@@ -3481,3 +3547,8 @@ void GameResourceInit(u32 addr, int size)
     *(int *)0x010E6000 = 0;
     *(int *)0x010E7000 = 0;
 }
+
+GameResourceEntry GameResource[128] = {{0}};
+u8 ModelPath = 0;
+u8 ScenePath = 0;
+void (*GameResourceReadFileCallback)(void) = 0;

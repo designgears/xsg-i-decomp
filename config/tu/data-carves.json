@@ -2779,29 +2779,128 @@
     {
      "range": [
       "0x003663e8",
-      "0x00366420"
+      "0x0036648c"
      ],
      "generated": [
       "0x003663e8",
-      "0x00366420"
+      "0x0036648c"
      ],
      "generated_by": [
+      "RES_GetLeaderSeName",
+      "RES_getPath",
       "convert_face"
      ],
      "c_owned_symbols": [
-      "faceTbl"
-     ],
-     "also_referenced_by_c": [
+      "faceTbl",
       "tbl_0_00366420",
-      "tbl_1_00366470",
-      "base_2",
+      "tbl_1_00366470"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x00366490",
+      "0x003664a2"
+     ],
+     "generated": [
+      "0x00366490",
+      "0x003664a2"
+     ],
+     "generated_by": [
+      "command_mpeg2_core"
+     ],
+     "c_owned_symbols": [
+      "base_2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x003664a8",
+      "0x003665e5"
+     ],
+     "generated": [
+      "0x003664a8",
+      "0x003665e5"
+     ],
+     "generated_by": [
+      "GameResourceLoad",
+      "RES_loadFileSub",
+      "RES_loadFileSubMapSub"
+     ],
+     "c_owned_symbols": [
       "command",
       "dummy_3",
-      "base_6",
-      "base_7",
+      "base_6"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x003665e8",
+      "0x00366605"
+     ],
+     "generated": [
+      "0x003665e8",
+      "0x00366605"
+     ],
+     "generated_by": [
+      "RES_loadFileSub"
+     ],
+     "c_owned_symbols": [
+      "base_7"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x00366608",
+      "0x00366e20"
+     ],
+     "generated": [
+      "0x00366608",
+      "0x00366e20"
+     ],
+     "generated_by": [
+      "GameResourceAlloc",
+      "GameResourceDump",
+      "GameResourceGetFreeAddr",
+      "GameResourceGetIndex",
+      "GameResourceInit",
+      "GameResourceRealloc",
+      "GameResourceReset",
+      "GameResourceSearch",
+      "GameResourceWorkAlloc",
+      "RES_loadFile",
+      "RES_loadFileSub",
+      "command_dummy",
+      "resource_get_free"
+     ],
+     "c_owned_symbols": [
       "base_8",
       "GameResource"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -2812,26 +2911,148 @@
    ".rodata": [
     {
      "range": [
-      "0x004c0180",
-      "0x004c01b0"
+      "0x004c00a8",
+      "0x004c0180"
      ],
      "generated": [
-      "0x004c0180",
-      "0x004c01b0"
+      "0x004c00a8",
+      "0x004c0178"
      ],
      "generated_by": [
-      "RES_loadFileSub"
+      "GameResourceLoad",
+      "RES_loadFileSub",
+      "command_loadse",
+      "command_loadsmd"
      ],
      "c_owned_symbols": [
-      "jtbl_004C0180"
-     ],
-     "also_referenced_by_c": [
       "D_004C00A8",
       "D_004C00C0",
       "D_004C00D8",
-      "D_004C0160",
+      "D_004C00F0",
+      "D_004C0100",
+      "D_004C0110",
+      "D_004C0120",
+      "D_004C0130",
+      "D_004C0140",
+      "D_004C0150",
+      "D_004C0160"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C00F0": "command",
+      "D_004C0100": "command",
+      "D_004C0110": "command",
+      "D_004C0120": "command",
+      "D_004C0130": "command",
+      "D_004C0140": "command",
+      "D_004C0150": "command"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c0180",
+      "0x004c01c8"
+     ],
+     "generated": [
+      "0x004c0180",
+      "0x004c01c4"
+     ],
+     "generated_by": [
+      "GameResourceDump",
+      "RES_loadFileSub"
+     ],
+     "c_owned_symbols": [
+      "jtbl_004C0180",
       "D_004C01B0"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004d9ea8",
+      "0x004d9ec6"
+     ],
+     "generated": [
+      "0x004d9ea8",
+      "0x004d9ec6"
+     ],
+     "generated_by": [
+      "RES_GetMdlFileNameSub",
+      "RES_loadFileSub",
+      "RES_loadFileSubMap"
+     ],
+     "c_owned_symbols": [
+      "D_004D9EA8",
+      "D_004D9EB0",
+      "D_004D9EB8",
+      "root_4"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d9ec8",
+      "0x004d9ece"
+     ],
+     "generated": [
+      "0x004d9ec8",
+      "0x004d9ece"
+     ],
+     "generated_by": [
+      "RES_GetMdlFileNameSub"
+     ],
+     "c_owned_symbols": [
+      "dummy_5"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/res_get_path.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d9ed0",
+      "0x004d9eec"
+     ],
+     "generated": [
+      "0x004d9ed0",
+      "0x004d9eec"
+     ],
+     "generated_by": [
+      "GameResourceInit",
+      "RES_GetMdlFileName",
+      "RES_GetMdlFileNameSub",
+      "RES_getPath",
+      "RES_loadFileSub"
+     ],
+     "c_owned_symbols": [
+      "D_004D9ED0",
+      "D_004D9ED8",
+      "base_9",
+      "ModelPath",
+      "ScenePath",
+      "GameResourceReadFileCallback"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
