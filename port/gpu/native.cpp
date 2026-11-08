@@ -982,6 +982,23 @@ void Live(ParallelGS::GSInterface& gs) {
 }
 
 void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
+    if (const char* t = xsgcfg::CStr("debug.dump_tex"); t && *t) {   // TEX0 values (hex, comma list) -> PNGs
+        gs.flush();
+        const uint8_t* vram = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+        for (const char* q = t; *q;) {
+            char* end;
+            const uint64_t tex0 = std::strtoull(q, &end, 16);
+            if (end == q) break;
+            uint32_t w, h;
+            auto px = DecodeTexture(vram, tex0, 0, &w, &h);
+            for (auto& c : px) c |= 0xff000000u;
+            char name[256];
+            std::snprintf(name, sizeof name, "%s/tex_%06u_%llx.png", g_dir.c_str(), vsync, (unsigned long long)tex0);
+            WritePng(name, w, h, px);
+            Log("  texture %llx -> %s", (unsigned long long)tex0, name);
+            q = *end ? end + 1 : end;
+        }
+    }
     uint32_t fbp;
     auto list = DisplayList(gs, &fbp);
     if (list.empty()) { Log("vsync %u: no native batches for the displayed FBP 0x%x", vsync, fbp); return; }

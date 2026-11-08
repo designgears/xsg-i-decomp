@@ -25,6 +25,7 @@
 #include "gpu_ipc.h"
 #include "xsg_input.h"
 #include "native.h"
+#include "glyphs.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
@@ -369,6 +370,8 @@ struct Renderer {
         InitMenu();
         InitCrt();
         const auto& p = dev->get_gpu_properties();
+        xsgglyph::Init();
+        xsgglyph::SetGs(&gs);
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
             o.super_sampled_textures ? " +textures" : "", hires ? " +hires scanout" : "");
@@ -964,7 +967,7 @@ int main(int argc, char** argv) {
         uint32_t adv = 16 + h.len;
         switch (h.type) {
         case GPU_MSG_PAD: adv = XSG_GPU_RING - (rpos & mask); break;
-        case GPU_MSG_GIF:
+        case GPU_MSG_GIF: {
             if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len, r.gs);   // transfers too (native_fx.cpp)
             else r.gs.gif_transfer(h.a, payload, h.len);
             r.gif_bytes += h.len;
@@ -972,8 +975,16 @@ int main(int argc, char** argv) {
         case GPU_MSG_PRIV: {
             uint64_t v;
             std::memcpy(&v, payload, 8);
+            // button glyphs: replacement uploads right after the icon they replace (glyphs.cpp)
+            static std::vector<uint8_t> inj;
+            inj.clear();
+            xsgglyph::Feed(h.a, payload, h.len, inj);
+            if (!inj.empty()) {
+                if (xsgnative::On()) xsgnative::Gif(2, inj.data(), uint32_t(inj.size()), r.gs);
+                else r.gs.gif_transfer(2, inj.data(), inj.size());
             r.Priv(h.a, v);
             break;
+        }
         }
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
         case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); r.native_msgs++; break;

@@ -107,7 +107,7 @@ endif()
 string(TIMESTAMP XSG_BUILD_DATE "%Y-%m-%d")
 set_source_files_properties(menu/menu.cpp PROPERTIES COMPILE_DEFINITIONS
   "XSG_BUILD_VERSION=\"${XSG_BUILD_VERSION} (${XSG_BUILD_DATE})\"")
-add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp native.cpp native_skin.cpp native_fx.cpp native_prof.cpp ${XSG_MENU_SRCS} ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
+add_executable(xsg-gpu xsg_gpu.cpp xsg_input.cpp glyphs.cpp native.cpp native_skin.cpp native_fx.cpp native_prof.cpp ${XSG_MENU_SRCS} ${XSG_NATIVE_INC} ${XSG_GS_DIR}/src/gs_memory.cpp)
 set_source_files_properties(${XSG_GS_DIR}/src/gs_memory.cpp PROPERTIES COMPILE_OPTIONS "-msse4.1;-w")
 target_include_directories(xsg-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../runtime ${XSG_GS_DIR}/include
   ${CMAKE_CURRENT_BINARY_DIR} ${parallel_gs_SOURCE_DIR}/Granite/third_party/stb/stb ${XSG_IMGUI_DIR} ${XSG_IMGUI_DIR}/backends)
