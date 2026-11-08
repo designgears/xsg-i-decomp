@@ -263,10 +263,12 @@ def resolve_external_data_relocs(target, base_elf, addresses):
                                      (word + function.value) & 0xffffffff)
                     kept.append((offset, (section_symbol[function.shndx] << 8) | 2))
                     continue
-                if (symbol.name in addresses and offset + 4 <= len(bdata)
+                hexname = re.fullmatch(r'D_([0-9A-F]{1,8})', symbol.name)
+                address = addresses.get(symbol.name, int(hexname.group(1), 16) if hexname else None)
+                if (address is not None and offset + 4 <= len(bdata)
                         and offset not in base_relocs.get(applies.name, ())):
                     word = struct.unpack_from('<I', data, applies.offset + offset)[0]
-                    value = (addresses[symbol.name] + word) & 0xffffffff
+                    value = (address + word) & 0xffffffff
                     if value == struct.unpack_from('<I', bdata, offset)[0]:
                         struct.pack_into('<I', data, applies.offset + offset, value)
                         continue
