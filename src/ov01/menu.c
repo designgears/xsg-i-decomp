@@ -16,22 +16,52 @@ extern const signed char *font_0;
 extern const signed char *font_1;
 extern void menuStatSprite();
 
-extern ObjectTask *pMenuBat;
+typedef struct { float a; float b; } SplPt;
+typedef struct MenuEthEntry {
+    int name;
+    int help;
+    signed char disabled;
+    unsigned char ep;
+    short id;
+} MenuEthEntry;
+typedef struct MenuItmEntry {
+    int name;
+    int help;
+    signed char disabled;
+    unsigned char count;
+    short id;
+} MenuItmEntry;
+
+/* This TU's file-local work (BSS), in original address order. */
+static ObjectTask *pMenuBat;
+static ObjectTask *pPreObj, *pAtbObj, *pKeyGuideObj, *pBoostObj, *pCritObj;
+static ObjectTask *pStatObj[4];
+static ObjectTask *pStockObj[5];
+static int selX;
+static int selY;
+static int eventTimer;
+static int eventTimerX;
+static float ETRot, ETRotDist, RingRot;
+static int mapH, mapHDist;
+static int menuSel;
+static int menuSelCnt;
+static int menuResBat;
+static int D_00A5A310[8];
+static SplPt D_00A5A330[8];
+static unsigned char ethWin[0x28];
+static MenuEthEntry ethBw[13];      /* 12 ether slots + terminator */
+static unsigned char itmWin[0x28];
+static MenuItmEntry itmBw[101];
+
 
 void menuInitBat(void) {
     pMenuBat = 0;
 }
 
-extern int menuSel;
-extern int menuSelCnt;
-extern int menuResBat;
 void menuBatObj(ObjectTask *task);
 void menuBatObjDraw(ObjectTask *task);
 extern ObjectTask *objEntry2(void *argument, void (*callback)(ObjectTask *task));
 extern void objStdInit(ObjectTask *task);
-extern int D_00A5A310[];
-typedef struct { float a; float b; } SplPt;
-extern SplPt D_00A5A330[];
 extern char chaTbl_00A3F038[];
 extern char agwsTbl_00A3F088[];
 extern void calcSplineInit(void *a, void *b, int c, int d);
@@ -74,7 +104,6 @@ void menuOpenBat(ObjectTask *unit) {
     sndSysSePlay(7);
 }
 
-extern int menuResBat;
 void objRemove(ObjectTask *task);
 int sndSysSePlay(int soundId);
 
@@ -169,7 +198,6 @@ void menuBatObjDraw(ObjectTask *task)
   extern void menuStatSpriteRGB(int packet, int x, int y, int w, int h, int u, int v, unsigned char *col);
   extern void calcSpline();
   extern unsigned char D_00A46730[];
-  extern int D_00A5A310[];
   extern char chaTbl_00A3F038[];
   extern char agwsTbl_00A3F088[];
 
@@ -346,13 +374,6 @@ int menuEtherNumChk(ObjectTask *unit)
     return count;
 }
 
-typedef struct MenuEthEntry {
-    int name;
-    int help;
-    signed char disabled;
-    unsigned char ep;
-    short id;
-} MenuEthEntry;
 typedef struct MenuEthWin {
     int x;
     int y;
@@ -362,9 +383,7 @@ typedef struct MenuEthWin {
     MenuEthEntry *list;
     char *title;
 } MenuEthWin;
-extern MenuEthEntry ethBw[];
 extern char D_00A46758[];
-extern unsigned char ethWin[];
 int *dataEthNameGet(int id);
 unsigned char *dataEthGet(int id);
 int calcTakeEpGet(ObjectTask *unit, int ep);
@@ -415,7 +434,6 @@ void menuOpenEth(ObjectTask *unit) {
     sndSysSePlay(7);
 }
 
-extern unsigned char ethWin[];
 void eBattleWinClose(void *window);
 
 void menuCloseEth(void) {
@@ -470,13 +488,6 @@ s32 menuResultEth(s32 *arg0)
   return temp_17;
 }
 
-typedef struct MenuItmEntry {
-    int name;
-    int help;
-    signed char disabled;
-    unsigned char count;
-    short id;
-} MenuItmEntry;
 typedef struct MenuItmWin {
     int x;
     int y;
@@ -486,9 +497,7 @@ typedef struct MenuItmWin {
     MenuItmEntry *list;
     char *title;
 } MenuItmWin;
-extern MenuItmEntry itmBw[];
 extern char D_00A46768[];
-extern unsigned char itmWin[];
 int dataItmBoxChk(int id);
 int *dataItmNameGet(int id);
 int calcItmEnableChk(ObjectTask *unit, int id);
@@ -539,7 +548,6 @@ void menuOpenItm(ObjectTask *unit) {
     sndSysSePlay(7);
 }
 
-extern unsigned char itmWin[];
 
 void menuCloseItm(void) {
     eBattleWinClose(itmWin);
@@ -698,11 +706,6 @@ static __inline__ MsdStockWork *msdStockWorkGet(ObjectTask *task)
 static __inline__ MsdStatObjWork *msdStatWorkGet(ObjectTask *task)
 { return (MsdStatObjWork *)*(u32 *)&task->work; }
 void *objCmdPush(ObjectTask *task);
-extern ObjectTask *pPreObj, *pAtbObj, *pKeyGuideObj, *pBoostObj, *pCritObj;
-extern ObjectTask *pStockObj[5];
-extern ObjectTask *pStatObj[4];
-extern int mapH, mapHDist;
-extern float RingRot, ETRot, ETRotDist;
 extern int rnd(int max);
 void menuTimeSet(int time);
 void menuStatPreObj(void);
@@ -855,13 +858,6 @@ void menuStatDispCreate(void)
     }
 }
 
-extern ObjectTask *pPreObj;
-extern ObjectTask *pAtbObj;
-extern ObjectTask *pKeyGuideObj;
-extern ObjectTask *pBoostObj;
-extern ObjectTask *pCritObj;
-extern ObjectTask *pStatObj[4];
-extern ObjectTask *pStockObj[5];
 
 void menuStatDispRemove(void) {
     int i;
@@ -915,10 +911,6 @@ void menuStatPreObjDraw(void) {
     menuStatTexTrans();
 }
 
-extern f32 ETRot;
-extern float ETRotDist;
-extern int mapHDist;
-extern int mapH;
 int objCmdNext(ObjectTask *task);
 int objHatoVec(ObjectTask *task, int direction);
 int objStdMove(ObjectTask *task);
@@ -1169,7 +1161,6 @@ lerp3:
     cmd[1]--;
 }
 
-extern float RingRot;
 
 void menuBoostObj(ObjectTask *task) {
     float twoPi;
@@ -1358,7 +1349,6 @@ void menuBoostObjDrawSel(ObjectTask *task) {
  * name).
  * Its work record's first word is a flag set; bit 2 (0x4) hides the object.
  */
-extern ObjectTask *pBoostObj;
 
 void menuBoostDisp(int enabled)
 {
@@ -1432,7 +1422,6 @@ void menuCritDispOn(ObjectTask *target)
  * The critical-indicator display object (data still asm-owned; original
  * ELF symbol name). Its work record's first word is a flag set; bit 2 (0x4) hides it.
  */
-extern ObjectTask *pCritObj;
 
 void menuCritDispOff(void)
 {
@@ -1489,7 +1478,6 @@ int menuCritObj(ObjectTask *task)
     return result;
 }
 
-extern int mapH;
 void grGpInit(int packet);
 void grPacketSend(int packet);
 extern void grCloseSpr(void);
@@ -1528,9 +1516,6 @@ void menuCritObjDraw(ObjectTask *task)
     }
 }
 
-extern int selY;
-extern int selX;
-extern int mapH;
 void grGpInit(int packet);
 void grPacketSend(int packet);
 void menuEventTimerDisp(ObjectTask *task, int packet);
@@ -1561,7 +1546,6 @@ void menuATBObjDraw(ObjectTask *task)
  * The battle map's height-scan distance (data still asm-owned; original
  * ELF symbol name).
  */
-extern int mapHDist;
 
 void menuMapHSet(int enable)
 {
@@ -2347,9 +2331,6 @@ void menuEventTimerDispSub(ObjectTask *task, int packet)
 }
 
 extern int rnd(int max);
-extern int eventTimer;
-extern int eventTimerX;
-extern float ETRotDist;
 
 void menuTimeSet(int time) {
     int r;
@@ -2371,7 +2352,6 @@ void menuTimeSet(int time) {
 
 /* menuTimeSet (this TU, still asm) applies a new menu time setting. */
 void menuTimeSet(int time);
-extern int eventTimer;
 
 int menuTimeNext(void) {
     eventTimer++;
@@ -2386,7 +2366,6 @@ int menuTimeGet(void) {
     return eventTimer;
 }
 
-extern int eventTimerX;
 
 int menuTimeXGet(void) {
     return eventTimerX;
