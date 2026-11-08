@@ -53,6 +53,36 @@ def fix_bss(ld_text, unit):
     return ld_text.replace(sec, sec + f"        . += SIZEOF(.{unit}_bss); /* ovl-tu: bss bytes of the file image */\n")
 
 
+BSS_PIN_MARK = "/* ovl-tu: bss pin */"
+
+
+def fix_bss_pins(ld_text, unit):
+    """Pin each TU's .bss at its original address (splat subsegment vram).
+
+    An asm .bss piece carries no alignment, so after a C-owned .bss that ends
+    short of the next object (alignment fill the original linker inserted
+    because the next object was aligned) it would pack early and move every
+    later object. A pin per piece keeps each one where the original has it; a C
+    object that does not fit fails the link instead of shifting silently."""
+    yaml_text = (ROOT / "config/split" / f"{unit}.yaml").read_text()
+    vram = {m.group(2): int(m.group(1), 16) for m in re.finditer(
+        rf"\{{ type: \.?bss, vram: (0x[0-9A-Fa-f]+), name: {re.escape(unit)}/([\w\-]+) \}}", yaml_text)}
+    if not vram:
+        return ld_text
+    base = min(vram.values())      # `.` inside the NOLOAD section counts from its start
+    obj = re.compile(r"^(\s*)build/(?:asm/data|scaffold/src|src)/" + re.escape(unit)
+                     + r"/([\w\-]+)(?:\.bss)?(?:\.carved)?\.o\(\.bss\);\s*$")
+    out = []
+    for line in ld_text.splitlines(keepends=True):
+        if BSS_PIN_MARK in line:
+            continue
+        m = obj.match(line)
+        if m and m.group(2) in vram:
+            out.append(f"{m.group(1)}. = 0x{vram[m.group(2)] - base:X}; {BSS_PIN_MARK}\n")
+        out.append(line)
+    return "".join(out)
+
+
 TAIL_ALIGN_MARK = "declared tail alignment of "
 
 
@@ -157,7 +187,7 @@ def main():
     if "ovl-tu: bss bytes of the file image" not in text:
         text = fix_bss(text, unit)
         ld.write_text(text)
-    aligned = fix_tail_align(text, unit)
+    aligned = fix_tail_align(fix_bss_pins(text, unit), unit)
     if aligned != text:
         text = aligned
         ld.write_text(text)

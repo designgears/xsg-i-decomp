@@ -465,9 +465,10 @@ def main(argv=None):
                           and (owner == "c" or (owner == "split" and p["c_split"]))) else "asm"
             if own == "c":
                 csec = p.get("c_section")
-                if csec:
-                    # one run of a split section: pinned at its original address
-                    out.append(f". = 0x{int(p['start'], 16) - S[sec].addr:X}; /* pin: C run {p['piece']} */")
+                # pinned at its original address (a split run, or a whole C-owned
+                # piece: its start symbol, which c_aliases.ld offsets are measured
+                # from, must not precede the C object's own alignment fill)
+                out.append(f". = 0x{int(p['start'], 16) - S[sec].addr:X}; /* pin: C {'run ' if csec else ''}{p['piece']} */")
                 out.append(f"{piece_sym(n, csec or sec)} = .;")
                 out.append(f"{c_link(n)}({csec or sec});")
                 prev_c = True
