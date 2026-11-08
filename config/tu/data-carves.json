@@ -6497,29 +6497,115 @@
    ]
   },
   "main/tu185": {
+   ".data": [
+    {
+     "range": [
+      "0x0036f7d0",
+      "0x0036f8c0"
+     ],
+     "generated": [
+      "0x0036f7d0",
+      "0x0036f8c0"
+     ],
+     "generated_by": [
+      "InitMapTrap"
+     ],
+     "c_owned_symbols": [
+      "TrapKind_t_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/init_map_trap.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7f54",
+      "0x004d7f58"
+     ],
+     "generated": [
+      "0x004d7f54",
+      "0x004d7f58"
+     ],
+     "generated_by": [
+      "InitMapTrap"
+     ],
+     "c_owned_symbols": [
+      "D_004D7F54"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/init_map_trap.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004ca470",
+      "0x004ca3f8",
       "0x004ca4d0"
      ],
      "generated": [
-      "0x004ca470",
+      "0x004ca3f8",
       "0x004ca4d0"
      ],
      "generated_by": [
-      "GivesEnemyDamage"
+      "GivesEnemyDamage",
+      "InitMapTrap",
+      "MAP_updateUnitTrap"
      ],
      "c_owned_symbols": [
+      "D_004CA3F8",
+      "D_004CA408",
+      "D_004CA418",
+      "D_004CA448",
       "D_004CA470",
       "D_004CA488",
       "D_004CA4A0",
       "D_004CA4B0",
       "D_004CA4C0"
      ],
-     "also_referenced_by_c": [
-      "D_004CA448"
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/init_map_trap.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db728",
+      "0x004db780"
      ],
+     "generated": [
+      "0x004db728",
+      "0x004db77a"
+     ],
+     "generated_by": [
+      "MAP_updateUnitTrap"
+     ],
+     "c_owned_symbols": [
+      "D_004DB728",
+      "D_004DB730",
+      "D_004DB738",
+      "D_004DB740",
+      "D_004DB748",
+      "D_004DB750",
+      "D_004DB758",
+      "D_004DB760",
+      "D_004DB768",
+      "D_004DB770",
+      "D_004DB778"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
