@@ -521,7 +521,7 @@ extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
 extern int xglCdGetFileSize(const char *name);
 extern int printf(const char *format, ...);
-extern char fileName[];
+static char fileName[0x100];
 extern char *sndSeNameBase;
 extern char *sndSeNameExt;
 
