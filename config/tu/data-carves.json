@@ -11446,6 +11446,102 @@
     }
    ]
   },
+  "ov01/tu025_00a34e90": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51480",
+      "0x00a51580"
+     ],
+     "generated": [
+      "0x00a51480",
+      "0x00a51578"
+     ],
+     "generated_by": [
+      "MEfCreate_SMP01",
+      "fnSMP01_DM000",
+      "fnSMP01_DP000"
+     ],
+     "c_owned_symbols": [
+      "D_00A51480",
+      "D_00A51490",
+      "scale_0_00A514A0",
+      "coltbl_1_00A514B0",
+      "sztbl_2_00A51550"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_smp_01.o"
+     }
+    }
+   ]
+  },
+  "ov01/tu027_00a358a8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51580",
+      "0x00a51680"
+     ],
+     "generated": [
+      "0x00a51580",
+      "0x00a51678"
+     ],
+     "generated_by": [
+      "MEfCreate_AMP02",
+      "fnAMP02_DM000",
+      "fnAMP02_DP000"
+     ],
+     "c_owned_symbols": [
+      "D_00A51580",
+      "D_00A51590",
+      "scale_0_00A515A0",
+      "coltbl_1_00A515B0",
+      "sztbl_2_00A51650"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_amp_02.o"
+     }
+    }
+   ]
+  },
+  "ov01/tu028_00a360e0": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a51680",
+      "0x00a51780"
+     ],
+     "generated": [
+      "0x00a51680",
+      "0x00a51778"
+     ],
+     "generated_by": [
+      "MEfCreate_MSP02",
+      "fnMSP02_DM000",
+      "fnMSP02_DP000"
+     ],
+     "c_owned_symbols": [
+      "D_00A51680",
+      "D_00A51690",
+      "scale_0_00A516A0",
+      "coltbl_1_00A516B0",
+      "sztbl_2_00A51750"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create_msp_02.o"
+     }
+    }
+   ]
+  },
   "ov01/tu029_00a36be8": {
    ".data": [
     {
