@@ -21819,6 +21819,47 @@
    ]
   },
   "ov02/tu002_00a00858": {
+   ".data": [
+    {
+     "range": [
+      "0x00a0f720",
+      "0x00a0fe10"
+     ],
+     "generated": [
+      "0x00a0f720",
+      "0x00a0fe10"
+     ],
+     "generated_by": [
+      "Title"
+     ],
+     "c_owned_symbols": [
+      "TitleMenuSelect",
+      "D_00A0F721",
+      "title_dummy_table",
+      "D_00A0F77C",
+      "TestEnv_0_00A0F780",
+      "TransEnv_1_00A0F7E0",
+      "FlushEnv_2_00A0F800",
+      "TestEnv_3",
+      "image_4",
+      "FlushEnv_5",
+      "TestEnvOrg_6",
+      "x_7",
+      "y_8",
+      "D_00A0FAA8",
+      "TestEnv_9",
+      "TestEnv_10",
+      "TestEnv_11",
+      "TestEnv_12"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/title.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
