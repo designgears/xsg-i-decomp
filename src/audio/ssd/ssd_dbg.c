@@ -141,7 +141,32 @@ extern SsdGlobalWork SsdWork;
 
 SsdDebugState SsdDebWork;
 
-extern const char *SsdSpuMemTypeTextTable[13];
+char SsdSpuMemUnuseText[] = "Unuse";
+char SsdSpuMemSystemText[] = "System";
+char SsdSpuMemDriverText[] = "Driver";
+char SsdSpuMemStreamText[] = "Stream";
+char SsdSpuMemRevCore0Text[] = "RevCore0";
+char SsdSpuMemRevCore1Text[] = "RevCore1";
+char SsdSpuMemRevCore2Text[] = "RevCore2";
+char SsdSpuMemRevCore3Text[] = "RevCore3";
+char SsdSpuMemOWBlockText[] = "OWBlock";
+char SsdSpuMemWaveText[] = "Wave";
+char SsdSpuMemSampleText[] = "Sampling";
+
+/* Names of the SPU memory block types, indexed by block type. */
+const char *SsdSpuMemTypeTextTable[13] = {
+    SsdSpuMemUnuseText,
+    SsdSpuMemSystemText,
+    SsdSpuMemDriverText,
+    SsdSpuMemStreamText,
+    SsdSpuMemRevCore0Text,
+    SsdSpuMemRevCore1Text,
+    SsdSpuMemRevCore2Text,
+    SsdSpuMemRevCore3Text,
+    SsdSpuMemOWBlockText,
+    SsdSpuMemWaveText,
+    SsdSpuMemSampleText
+};
 
 extern int sprintf(char *, const char *, ...);
 

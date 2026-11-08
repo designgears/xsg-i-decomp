@@ -2578,6 +2578,12 @@
             "size": 172
           },
           {
+            "offset": 60288,
+            "section": ".data",
+            "sha256": "8d24fc97f8c25e83fb0428d97a7031262c0f73198ba0afeeb13333687ef17a96",
+            "size": 160
+          },
+          {
             "offset": 81488,
             "section": ".bss",
             "sha256": "de2ca1d3d1c0862b06e5e5e33aefe44a2d0290e4ef6228128a1e797e35d3457c",
@@ -2585,7 +2591,7 @@
           }
         ],
         "source": "src/audio/ssd/ssd_dbg.c",
-        "source_sha256": "c0ee3da61d1ddc6511339a21fec766b2925954086430dd7c5042eb4c4c3000a6"
+        "source_sha256": "e1d535107fc7c6c62c9fbf060aaf96ced46c64bc634a331f7a464efa2a58a36a"
       },
       {
         "fdr_filename": "ssd_pcm.c",
