@@ -10420,6 +10420,30 @@
    ]
   },
   "ov01/tu004_00a10bb8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a3d8f8",
+      "0x00a3d978"
+     ],
+     "generated": [
+      "0x00a3d8f8",
+      "0x00a3d978"
+     ],
+     "generated_by": [
+      "calcStatDefTurnGet"
+     ],
+     "c_owned_symbols": [
+      "turn_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/calc.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

@@ -3509,15 +3509,24 @@ void calcStatReset(ObjectTask *unit, int category, int mask, int unused)
     }
 }
 
-extern signed char turn_1[8][16];
 
 int calcStatDefTurnGet(ObjectTask *unit, int category, int mask)
 {
+    static signed char turn_tbl[8][16] = {
+        { 5, 5, 5, -1, 5, -1, 5, -1, -1, -1, -1, -1, 5, 5, 0, 0 },
+        { 0, 1, -1, -1, -1, -1, -1, 5, 1, 3, -1, -1, -1, -1, 5, 0 },
+        { -1, 0, 0, -1, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, -1, 0 },
+        { 0, -1, 5, 5, 5, 5, 3, -1, -1, 5, 5, -1, 5, 5, 5, 0 },
+        { 5, 5, 5, 0, -1, 5, 5, -1, 5, 5, -1, 5, -1, 5, 0, 0 },
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, 0 },
+        { -1, -1, -1, -1, -1, 0, 0, 0, -1, -1, -1, 3, 2, 3, 3, 0 },
+        { 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    };
     int turn;
     int idx;
 
     idx = calcStatBit2Idx(mask);
-    turn = turn_1[category][idx];
+    turn = turn_tbl[category][idx];
     if (category == 7 && (mask & 3)) {
         turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 2;
         turn += (short)calcUPGet(unit)->currentHp < *(short *)calcUPGet(unit) / 4;
