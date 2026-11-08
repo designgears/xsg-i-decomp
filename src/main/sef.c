@@ -99,10 +99,20 @@ extern volatile const float D_004D82C8;
 extern volatile const float D_004D82CC;
 extern volatile const float D_004D82D0;
 extern volatile const float D_004D82D4;
-extern float *atanTbl_0;
+static int _parentLine = -1;
+static float _gravity = 0.0f;
+static float _colision = 0.0f;
+static float _height = 0.0f;
+static short _revDirZ = 0;
+static short _initialize = 0;
+short _hitFlag = 0;
+short _hitSignal = 0;
+short _seSignal = 0;
+short _sefBattleMode = 0;
 
 float srsAtan2(float x, float y)
 {
+    static float *atanTbl_0 __asm__("atanTbl.0") = (float *)0x2040FAC0;
     int y_is_positive;
     int x_is_positive;
     float result = 0.0f;
@@ -166,9 +176,10 @@ float srsAtan2(float x, float y)
     return angle;
 }
 
+static int sefRandSeed = 0x12345678;
+
 static float sefRandf(void)
 {
-    extern int sefRandSeed;
     extern const float sef_rand_unit_scale_literal;
     int bits;
 
@@ -840,7 +851,6 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
     }
 }
 
-extern int _parentLine;
 extern int _nowParentLocal;
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 extern unsigned char D_00795100[];
@@ -1002,7 +1012,6 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     pos->z = z_unit * radius;
 }
 
-extern int sefRandSeed;
 
 static void sefGetSpherePos(Vector4 *pos, float radius)
 {
@@ -1506,7 +1515,6 @@ static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
-extern int _parentLine;
 extern int _nowParentLocal;
 extern void MMathSpecialVectorSub(Vector4 *destination, Vector4 *left, Vector4 *right, float scale);
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
@@ -1563,9 +1571,6 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         : "$8", "memory");
 }
 
-extern float _gravity;
-extern float _colision;
-extern float _height;
 
 void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 {
@@ -1690,7 +1695,6 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 #define SEF_PARENT_DIR_MATRIX    0x120
 
 extern unsigned char _battleData[];
-extern int _parentLine;
 extern int _nowParentLocal;
 extern unsigned char _ptAlloc[];
 /* _battleData + 0x200, still owned by the scaffold, so it keeps the original
@@ -2063,7 +2067,6 @@ typedef struct SefLineData {
 
 extern float D_004D831C;
 extern int D_00794334[];
-extern short _revDirZ;
 static int sefFreeLocalData(unsigned char *line_data, unsigned int index);
 static int sefAnimate(unsigned char *object, unsigned char *state, int advance);
 static void sefAddLightActor(const Vector4 *position, const SefLightInput *light);
@@ -2672,7 +2675,6 @@ found:
     return result;
 }
 
-extern short _revDirZ;
 
 typedef struct SefLocalData {
     unsigned char *position_keys;                    /* +0x000 */
@@ -3254,8 +3256,6 @@ typedef struct SefEffectCommand {
     short count;                     /* +0x8 */
     short flags;                     /* +0xa */
 } SefEffectCommand;
-extern short _hitSignal;
-extern short _seSignal;
 extern const char D_004CBF38[];
 extern void tracePrint(char *fmt, ...);
 static void sefSetSeSignal(SefActor *actor);
@@ -3460,10 +3460,10 @@ void sefInitScheduler(void)
 
 extern const volatile struct { unsigned short value, pad; } _nowEvent;
 extern int _nowScript;
-extern int _schridx_1;
 
 static int sefAllocScheduler(int arg0)
 {
+    static int _schridx_1 __asm__("_schridx.1") = 0;
     int start = _schridx_1;
     int end = (start + 0x7f) % 0x80;
     int i = start;
@@ -4139,8 +4139,7 @@ extern unsigned char D_0065B030[];
 #ifndef offsetof
 #define offsetof(type, member) ((unsigned int)&((type *)0)->member)
 #endif
-extern short _hitFlag;
-extern int _nowEftNo;
+int _nowEftNo = 0;
 #define SLOT(f) (*(__typeof__(((SchedulerState *)0)->f) *)(control_address + (offsetof(SchedulerState, f) - 0xa80)))
 #define BATTLE ((SefBattleStatus *)_battleData)
 
@@ -4679,7 +4678,6 @@ extern void sresLoadCommonMemory(void);
 extern unsigned char _eftBuffer[];
 extern unsigned char _battlePrm[];
 extern int _sefLoadEftQue;
-extern short _initialize;
 
 /*
  * sefInitEffect (main:0x002e6b60): the effect subsystem's one-time
@@ -4721,7 +4719,6 @@ typedef struct {
     short pendingHandle;                      /* +0x10c */
 } SefMemRes;
 extern SefMemRes _srsMemRes;
-extern short _sefBattleMode;
 extern void sdvInitAlters(void);
 extern void sefDestroyEffect(void);
 extern void sefDestroyEffectCf(void);
@@ -5017,9 +5014,6 @@ int sefCheckLoad(void)
 
 extern void scExecEffect(void);
 extern void sdvExecAlters(void);
-extern short _hitFlag;
-extern short _hitSignal;
-extern short _seSignal;
 
 void sefExecEffect(void)
 {
@@ -5071,7 +5065,6 @@ void sefDrawEffect(void)
 }
 
 extern void svDrawScheduler3D(int flags);
-extern short _initialize;
 
 /*
  * sefDrawEffect3D (main:0x002e7220): while `_initialize` is set and
