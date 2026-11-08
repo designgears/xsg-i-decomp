@@ -166,8 +166,7 @@ void tyaDisplaySetting(u8 *buf)
             xglSoundEffectNormalDirect(2);
             break;
         }
-        xglFontDebugPrintf(8, 8, "%04x %04x
-%04x %04x", (int)DispEnv.display.raw & 0xFFF, (int)(DispEnv.display.raw >> 12) & 0x7FF, ((TyaSaveDataView *)SaveData)->disp_x, ((TyaSaveDataView *)SaveData)->disp_y);
+        xglFontDebugPrintf(8, 8, "%04x %04x\n%04x %04x", (int)DispEnv.display.raw & 0xFFF, (int)(DispEnv.display.raw >> 12) & 0x7FF, ((TyaSaveDataView *)SaveData)->disp_x, ((TyaSaveDataView *)SaveData)->disp_y);
         DrawImage(buf);
         xglSleep();
     }
