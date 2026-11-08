@@ -273,12 +273,8 @@ typedef struct GCPadView {
 } GCPadView;
 extern GCPadView PadData;
 extern float I2F(int value);
-extern float rate_0[4];
 extern const float D_004D7C14;
 extern const float D_004D7C18;
-extern float rate_1[4];
-extern unsigned char idx_2[16];
-extern float vec_3[9][2];
 extern int HitCheckMapUnit(LookAtPlayerActor *a);
 static short HitCheckActor(LookAtPlayerActor *self);
 #define GC_LOOP (*(GCLoopState *)&GameLoopState)
@@ -288,6 +284,13 @@ float Get_Cursol_by_Reduce_Speed_Angle_Loop(float, float, float);
 
 void GameCfPlayerMove(void)
 {
+    static float rate_0[4] __asm__("rate.0") = {1.0f, 2.0f, 0.5f, 3.0f};
+    static float rate_1[4] __asm__("rate.1") = {1.0f, 2.0f, 0.5f, 3.0f};
+    static unsigned char idx_2[16] __asm__("idx.2") = {0, 1, 3, 2, 5, 0, 4, 0, 7, 8, 0, 0, 6, 0, 0, 0};
+    static float vec_3[9][2] __asm__("vec.3") = {
+        {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, -1.0f},
+        {0.0f, -1.0f}, {-1.0f, -1.0f}, {-1.0f, 0.0f}, {-1.0f, 1.0f},
+    };
     GCPlayer *player = (GCPlayer *)GC_LOOP.player_actor;
     float run_scale = 1.0f;
     float speed;
