@@ -3358,29 +3358,81 @@
    ]
   },
   "main/tu159": {
-   ".rodata": [
+   ".lit4": [
     {
      "range": [
-      "0x004c2fe0",
-      "0x004c31b0"
+      "0x004d7d40",
+      "0x004d7d58"
      ],
      "generated": [
-      "0x004c2fe0",
-      "0x004c31a8"
+      "0x004d7d40",
+      "0x004d7d58"
      ],
      "generated_by": [
-      "eCursolMain"
+      "CloseSubType00",
+      "OpenSubType00"
      ],
      "c_owned_symbols": [
-      "jtbl_004C2FE0"
+      "D_004D7D40",
+      "D_004D7D44",
+      "D_004D7D48",
+      "D_004D7D4C",
+      "D_004D7D50",
+      "D_004D7D54"
      ],
-     "also_referenced_by_c": [
-      "D_004C2FD0"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/open_close_main.o"
+      "object": "build/main/build/c/open_close_main.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c2fd0",
+      "0x004c31b0"
+     ],
+     "generated": [
+      "0x004c2fd0",
+      "0x004c31a8"
+     ],
+     "generated_by": [
+      "OpenCloseMain",
+      "eCursolMain"
+     ],
+     "c_owned_symbols": [
+      "D_004C2FD0",
+      "jtbl_004C2FE0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/open_close_main.o"
+     }
+    },
+    {
+     "range": [
+      "0x004c31b0",
+      "0x004c3200"
+     ],
+     "generated": [
+      "0x004c31b0",
+      "0x004c31f5"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "D_004C31B0",
+      "D_004C31C8",
+      "D_004C31E0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/open_close_main.o"
      }
     }
    ]
