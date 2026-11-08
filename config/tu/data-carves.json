@@ -10879,25 +10879,27 @@
    ]
   },
   "ov01/tu007_00a22628": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a465e0",
-      "0x00a465f8"
+      "0x00a3ef60",
+      "0x00a3ef68"
      ],
      "generated": [
-      "0x00a465e0",
-      "0x00a465f8"
+      "0x00a3ef60",
+      "0x00a3ef68"
      ],
      "generated_by": [
-      "battleProc"
+      "battleProc",
+      "battleProcEnd",
+      "cameraFlagGet",
+      "cameraFlagSet"
      ],
      "c_owned_symbols": [
-      "D_00A465E0"
+      "pauseFlag",
+      "cameraFlag"
      ],
-     "also_referenced_by_c": [
-      "D_00A465F8"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10906,31 +10908,60 @@
     },
     {
      "range": [
-      "0x00a46608",
-      "0x00a466c8"
+      "0x00a3ef70",
+      "0x00a3f000"
      ],
      "generated": [
-      "0x00a46608",
-      "0x00a466c7"
+      "0x00a3ef70",
+      "0x00a3f000"
+     ],
+     "generated_by": [
+      "encEffObjInit",
+      "entryPhase00"
+     ],
+     "c_owned_symbols": [
+      "sIntPararel2_0",
+      "sIntAmbient_1",
+      "ft4Base"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/entry_first_init.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a465e0",
+      "0x00a466e8"
+     ],
+     "generated": [
+      "0x00a465e0",
+      "0x00a466e4"
      ],
      "generated_by": [
       "battleProc",
       "encEffObjInit",
+      "encEffVramCopy",
       "entryPhase00",
       "entryPhase80"
      ],
      "c_owned_symbols": [
+      "D_00A465E0",
+      "D_00A465F8",
       "D_00A46608",
       "D_00A46620",
       "D_00A46660",
       "D_00A46678",
       "D_00A46698",
-      "D_00A466B0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A466B0",
       "D_00A466C8",
       "D_00A466D0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
