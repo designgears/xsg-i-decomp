@@ -194,7 +194,6 @@ typedef struct MenuEtherPasWorkView {
 } MenuEtherPasWorkView;
 extern EtherPasWork *MenuEtherPas;
 extern MenuEtherPasWorkView MenuWorkPM __asm__("MenuWork");
-extern const char *msg_0_0036DC00[6];
 extern void MoveSlide(short *current, short *target, float rate);
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
@@ -205,6 +204,7 @@ extern void eMessageSet(void *message, const char *text);
 extern void eMessageMain(void *message);
 
 void MenuEtherPasMain(void) {
+    static const char *msg[] __asm__("msg.0") = {"Ether", "/Use", "/Set", "/Use E.Pts", "/Evolve", "/Transfer"};
     EtherPasWork *pas = MenuEtherPas;
     int tabLength[6];
     short tabTarget[6];
@@ -212,7 +212,7 @@ void MenuEtherPasMain(void) {
     int i;
 
     for (i = 0; i < 6; i++) {
-        tabLength[i] = MenuPasLengthGet(msg_0_0036DC00[i]);
+        tabLength[i] = MenuPasLengthGet(msg[i]);
     }
 
     switch (pas->state) {
@@ -230,7 +230,7 @@ void MenuEtherPasMain(void) {
         WindowDXMain(&pas->window);
         pas->window.state = 3;
         for (i = 0; i < 6; i++) {
-            eMessageSet(&pas->messages[i], msg_0_0036DC00[i]);
+            eMessageSet(&pas->messages[i], msg[i]);
             pas->messages[i].mode = 0x20;
             pas->messages[i].x = 288;
             pas->messages[i].y = 11;
@@ -431,14 +431,6 @@ extern int func_A19578(int chrNo, int etherId);
 extern short MenuEtherParty[];
 int MenuInfoWindow();
 typedef struct EtherInfoCharacterHelp { const char *text[2]; } EtherInfoCharacterHelp;
-extern EtherInfoCharacterHelp D_004DB278[];
-extern char D_004DB288[];
-extern char D_004DB288[8];
-extern char D_004DB298[];
-extern char D_004DB2A0[];
-extern char D_004DB2A8[];
-extern char D_004DB2B0[];
-extern char D_004DB2B8[];
 typedef struct EtherInfoCommandHelp {
     const char *text[5];
 } EtherInfoCommandHelp;
@@ -484,12 +476,6 @@ typedef struct EtherInfoWork {
     EtherInfoMessage message;
     char text[256];
 } EtherInfoWork;
-extern const EtherInfoCommandHelp D_004C7DC8;
-extern const EtherInfoActionHelp D_004C7E50;
-extern const EtherInfoAcquireHelp D_004C7F98;
-extern const EtherInfoTransferHelp D_004C8040;
-extern const char D_004C8060[];
-extern const char D_004C80A0[];
 extern char *MenuCharNameGet(unsigned int charId);
 extern void eMessageCpy(char *message, const char *text);
 extern void eMessageCat(const char *text);
@@ -501,12 +487,40 @@ void MenuEtherInfoMain(void) {
     extern MenuEtherWorkIM MenuWork_IM __asm__("MenuWork");
     extern MenuEtherPadDataIM PadData_IM __asm__("PadData");
     EtherInfoWork *screen = EtherInfoWorkGetIM(&MenuEtherInfo);
-    const char *capHelp = D_004C8060;
-    EtherInfoCharacterHelp characterHelp = D_004DB278[0];
-    EtherInfoCommandHelp commandHelp = D_004C7DC8;
-    EtherInfoActionHelp actionHelp = D_004C7E50;
-    EtherInfoAcquireHelp acquireHelp = D_004C7F98;
-    EtherInfoTransferHelp transferHelp = D_004C8040;
+    EtherInfoCharacterHelp characterHelp = {{"Choose a character.", " cannot be chosen."}};
+    EtherInfoCommandHelp commandHelp = {{
+        "Utilize Ether available to ",
+        "Set Ether. Caution: You must complete this step in order to utilize any Ether skill.",
+        "Use E.Pts to obtain new Ether skills and/or transfer them to other characters.",
+        "Cancel.",
+        ".",
+    }};
+    EtherInfoActionHelp actionHelp = {{
+        "Use E.Pts to obtain new Ether skills.",
+        "Use E.Pts to transfer Ether skills to other characters.\n(Uses 1/2 E.Pt)",
+        "Cancel.",
+    }};
+    EtherInfoAcquireHelp acquireHelp = {{
+        "Acquire new Ether skill, ",
+        "You acquired ",
+        "Not enough E.Pts.",
+        "This is the highest level of evolution.",
+        "You have already acquired ",
+        "Not enough E.Pts.",
+        "Transferred Ether skills cannot be evolved or transferred to others.",
+        "This Ether skill is only available during battle.",
+        "This Ether skill cannot be transferred.",
+    }};
+    EtherInfoTransferHelp transferHelp = {{
+        "Transfer ",
+        "Transfer ",
+        " to ",
+        " to ",
+        "Cannot be transferred.",
+        "This character has already acquired ",
+        ".\nSelect a recipient for this Ether skill.",
+    }};
+    const char *capHelp = "The maximum allotment \nfor Ether skills has been reached.";
     short targetY;
     EtherInfoWindow *window;
     char *text;
@@ -580,7 +594,7 @@ void MenuEtherInfoMain(void) {
         break;
     case 48:
         if (MenuWork_IM.listSelect < 0) {
-            eMessageCpy(text, D_004DB298);
+            eMessageCpy(text, "");
         } else {
             eMessageCpy(text, ((MenuTextEntryIM *(*)(int))MenuTextGet)(MenuSortGet(0, MenuWork_IM.listSelect))->auxiliary);
             if (screen->helpHeld == 1) {
@@ -595,14 +609,14 @@ void MenuEtherInfoMain(void) {
         break;
     case 50:
         if (MenuWork_IM.listSelect < 0) {
-            eMessageCpy(text, D_004DB298);
+            eMessageCpy(text, "");
         } else {
             eMessageCpy(text, ((MenuTextEntryIM *(*)(int))MenuTextGet)(MenuSortGet(0, MenuWork_IM.listSelect))->auxiliary);
         }
         break;
     case 80:
         if (MenuWork_IM.listSelect < 0) {
-            eMessageCpy(text, D_004DB298);
+            eMessageCpy(text, "");
         } else {
             eMessageCpy(text, ((MenuTextEntryIM *(*)(int))MenuTextGet)(MenuSortGet(0, MenuWork_IM.listSelect))->auxiliary);
             if (screen->helpHeld == 1) {
@@ -623,7 +637,7 @@ void MenuEtherInfoMain(void) {
                 eMessageCpy(text, acquireHelp.text[6]);
             }
         } else {
-            eMessageCpy(text, D_004DB298);
+            eMessageCpy(text, "");
         }
         break;
     case 114:
@@ -656,12 +670,12 @@ void MenuEtherInfoMain(void) {
     case 116:
         eMessageCpy(text, acquireHelp.text[0]);
         eMessageCat(func_A2C5A8(MenuWork_IM.slotEther)->name);
-        eMessageCat(D_004DB2A0);
+        eMessageCat(".\n");
         eMessageCat(func_A2C5A8(MenuWork_IM.slotEther)->auxiliary);
         if (screen->helpHeld == 1 && func_A19578(MenuWork_IM.chrNo, MenuWork_IM.slotEther) != 0) {
             eMessageCpy(text, acquireHelp.text[4]);
             eMessageCat(func_A2C5A8(MenuWork_IM.slotEther)->name);
-            eMessageCat(D_004DB288);
+            eMessageCat(".");
         }
         break;
     case 118:
@@ -673,19 +687,19 @@ void MenuEtherInfoMain(void) {
         }
         eMessageCat(func_A2C5A8(MenuWork_IM.slotEther)->name);
         if (MenuWork_IM.state == 118) {
-            eMessageCat(D_004DB288);
+            eMessageCat(".");
         } else {
-            eMessageCat(D_004DB2A8);
+            eMessageCat(". \x1f");
         }
         break;
     case 130:
         eMessageCpy(text, transferHelp.text[0]);
         eMessageCat(func_A2C5A8(MenuWork_IM.etherId)->name);
-        eMessageCat(D_004DB288);
+        eMessageCat(".");
         if (screen->helpHeld == 1 && func_A19578(MenuWork_IM.targetChrNo, MenuWork_IM.etherId) != 0) {
             eMessageCpy(text, transferHelp.text[5]);
             eMessageCat(func_A2C5A8(MenuWork_IM.etherId)->name);
-            eMessageCat(D_004DB288);
+            eMessageCat(".");
         }
         break;
     case 132:
@@ -694,9 +708,9 @@ void MenuEtherInfoMain(void) {
             short chrNo = MenuEtherParty[MenuWork_IM.targetList[MenuWork_IM.targetCursor]];
             eMessageCpy(text, transferHelp.text[1]);
             if (MenuWork_IM.state == 132) {
-                eMessageCat(D_004DB298);
+                eMessageCat("");
             } else {
-                eMessageCat(D_004DB2B0);
+                eMessageCat("of ");
             }
             eMessageCat(func_A2C5A8(MenuWork_IM.etherId)->name);
             if (MenuWork_IM.state == 132) {
@@ -706,9 +720,9 @@ void MenuEtherInfoMain(void) {
             }
             eMessageCat(MenuCharNameGet(chrNo));
             if (MenuWork_IM.state == 132) {
-                eMessageCat(D_004DB2B8);
+                eMessageCat("?");
             } else {
-                eMessageCat(D_004C80A0);
+                eMessageCat(" complete. \x1f");
             }
         }
         break;
@@ -764,16 +778,14 @@ typedef struct MenuEtherMenuWorkView {
 } MenuEtherMenuWorkView;
 extern EtherMenuScreen *MenuEtherMenu;
 extern MenuEtherMenuWorkView MenuWorkMM __asm__("MenuWork");
-extern char D_004DB2C8[];
-extern char D_004DB2D0[];
-extern char *msg00_1_0036DC18[];
-extern char *msg01_2_0036DC20[];
 extern void MenuSelectWindow();
 extern void MoveSlide(short *current, short *target, float rate);
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 
 void MenuEtherMenuMain(void) {
+    static char *msg00[] __asm__("msg00.1") = {"Use\nSet\nUse E.Pts\nCancel", "Evolve\nTransfer\nCancel"};
+    static char *msg01[] __asm__("msg01.2") = {"Yes\nNo", " Is this okay?"};
     EtherMenuScreen *work = MenuEtherMenu;
     short target[2];
     int i;
@@ -783,11 +795,11 @@ void MenuEtherMenuMain(void) {
         work->color = 0x00FFFFF0;
         WindowDXSet(&work->window[0]);
         work->window[0].x = 528;
-        work->window[0].title = D_004DB2C8;
+        work->window[0].title = "Menu";
         work->window[0].color = work->color;
         work->window[0].width = 145;
         work->window[0].selectArg = &work->list[0];
-        work->list[0].items = msg00_1_0036DC18[0];
+        work->list[0].items = msg00[0];
         work->window[0].state = 1;
         work->window[0].y = 192;
         work->window[0].height = 102;
@@ -798,12 +810,12 @@ void MenuEtherMenuMain(void) {
         work->window[0].state = 3;
         WindowDXSet(&work->window[1]);
         work->window[1].x = 528;
-        work->window[1].title = D_004DB2D0;
+        work->window[1].title = "Select";
         work->window[1].y = 192;
         work->window[1].color = work->color;
         work->window[1].width = 169;
-        work->list[1].items = msg01_2_0036DC20[0];
-        work->list[1].prompt = msg01_2_0036DC20[1];
+        work->list[1].items = msg01[0];
+        work->list[1].prompt = msg01[1];
         work->window[1].height = 102;
         work->window[1].select = MenuSelectWindow;
         work->window[1].selectArg = &work->list[1];
@@ -824,7 +836,7 @@ void MenuEtherMenuMain(void) {
                 work->window[0].x = 528;
                 work->window[0].width = 145;
                 work->window[0].height = 102;
-                work->list[0].items = msg00_1_0036DC18[0];
+                work->list[0].items = msg00[0];
                 work->list[0].cursor = 0;
             }
             target[0] = 192;
@@ -836,7 +848,7 @@ void MenuEtherMenuMain(void) {
                 work->window[0].y = 288;
                 work->window[0].width = 125;
                 work->window[0].height = 78;
-                work->list[0].items = msg00_1_0036DC18[1];
+                work->list[0].items = msg00[1];
                 work->list[0].cursor = 0;
             }
             target[0] = 131;
@@ -917,8 +929,6 @@ typedef struct EtherDetailWork {
     EtherDetailRow rows[2];
     EtherPasMessage message;
 } EtherDetailWork;
-extern const char *msg00_3_0036DC28[];
-extern char *msg01_4_0036DC30[];
 void eRibbonSet(void *ribbon, int mode);
 void eRibbonMain(void *ribbon);
 void eTagFontSet(void *font, const char *text);
@@ -928,6 +938,8 @@ void eNumberMain(void *number);
 
 void MenuEtherExMain(void)
 {
+  static const char *msg00[] __asm__("msg00.3") = {"\x01" "E.Pts", "\x01Wt"};
+  static char *msg01[] __asm__("msg01.4") = {"\x0c\x80\x80\x80\x1e\0\xa1\xa7 Set Search"};
   extern void *MenuEtherExU __asm__("MenuEtherEx");
 
   extern struct { unsigned char pad[3]; unsigned char state; unsigned char pad4[0x40 - 4]; signed char chrNo; } MenuWorkU __asm__("MenuWork");
@@ -952,13 +964,13 @@ void MenuEtherExMain(void)
       screen->rows[i].ribbon.y = 48;
       screen->rows[i].ribbon.width = 256;
       screen->rows[i].ribbon.height = 24;
-      eTagFontSet(&screen->rows[i].font, msg00_3_0036DC28[i]);
+      eTagFontSet(&screen->rows[i].font, msg00[i]);
       screen->rows[i].font.work = screen->work + 2;
       eNumberSet(&screen->rows[i].number, 0);
       screen->rows[i].number.work = screen->work + 2;
     }
 
-      eMessageSet(&screen->message, msg01_4_0036DC30[0]);
+      eMessageSet(&screen->message, msg01[0]);
       screen->message.mode = 32;
       screen->message.x = 528;
       screen->message.y = 120;
@@ -1044,7 +1056,7 @@ void MenuEtherExMain(void)
   }
 
   equippedSum = 0;
-  messageColor = &msg01_4_0036DC30[0][1];
+  messageColor = &msg01[0][1];
   unit = ld191U(MenuWorkU.chrNo);
   for (i = 0; i < 12; i++)
   {
@@ -1086,11 +1098,9 @@ void eSpriteMain(void *sprite);
 typedef struct EtherL1R1SpriteIdPair {
     short id[2];
 } EtherL1R1SpriteIdPair;
-extern const EtherL1R1SpriteIdPair D_004DB2E8[];
 typedef struct EtherL1R1SlideStep {
     signed char side[2];
 } EtherL1R1SlideStep;
-extern const EtherL1R1SlideStep D_004DB2F0[];
 
 typedef struct { unsigned char pad[0x2a]; unsigned short half_2a; } PadDataL1R1View;
 extern EtherL1R1WorkBody *MenuEtherL1R1Ptr __asm__("MenuEtherL1R1");
@@ -1105,7 +1115,7 @@ void MenuEtherL1R1Main(void)
 
     switch (self->state) {
     case 0: {
-        EtherL1R1SpriteIdPair spriteIds = D_004DB2E8[0];
+        EtherL1R1SpriteIdPair spriteIds = {{0x112, 0x110}};
 
         self->spriteWork = 0x00FFFFFF;
         for (i = 0; i < 2; i++) {
@@ -1145,7 +1155,7 @@ void MenuEtherL1R1Main(void)
         }
 
         {
-            EtherL1R1SlideStep step = D_004DB2F0[0];
+            EtherL1R1SlideStep step = {{1, -1}};
             for (i = 0; i < 2; i++) {
                 if (self->slideOffset[i] != 0) {
                     self->slideOffset[i] = self->slideOffset[i] + step.side[i];
@@ -1905,10 +1915,6 @@ extern int MenuSortCheck(int list);
 extern void WindowSPSelectJump(void *window, int index);
 extern void WindowSPItemChange(void *window);
 void WindowSPSetSelect(void *window, unsigned char *keep);
-extern const char D_004C8670[16];
-extern const char D_004C8680[16];
-extern const char D_004C8690[16];
-extern const char D_004C86A0[16];
 typedef struct EtherMenuListWindow {
     unsigned char state;
     unsigned char itemType;
@@ -2006,7 +2012,7 @@ void MenuEtherListMain(void)
             screen->window[0].window.height = 222;
             screen->window[0].window.lineCount = 9;
             screen->window[0].window.width = 232;
-            screen->window[0].window.title = D_004C8670;
+            screen->window[0].window.title = "List\x03\x9c" "Ep";
             screen->window[0].window.active = 1;
             screen->window[0].window.items = MenuListGet(0);
             screen->window[0].window.itemType = 7;
@@ -2031,7 +2037,7 @@ void MenuEtherListMain(void)
             screen->window[0].window.height = 198;
             screen->window[0].window.lineCount = 8;
             screen->window[0].window.width = 256;
-            screen->window[0].window.title = D_004C8680;
+            screen->window[0].window.title = "List\x03\x9dWt";
             screen->window[0].window.active = 1;
             screen->window[0].window.items = MenuListGet(0);
             screen->window[0].window.itemType = 3;
@@ -2052,7 +2058,7 @@ void MenuEtherListMain(void)
             screen->window[0].window.y = 92;
             screen->window[0].window.height = 174;
             screen->window[0].window.width = 246;
-            screen->window[0].window.title = D_004C8690;
+            screen->window[0].window.title = "List\x03\x9c" "E.Pts";
             screen->window[0].window.lineCount = 7;
             screen->window[0].window.active = 1;
             screen->window[0].window.items = MenuListGet(0);
@@ -2088,7 +2094,7 @@ void MenuEtherListMain(void)
             screen->window[1].window.itemType = 7;
             screen->window[1].window.active = 1;
             screen->window[1].window.lineCount = 7;
-            screen->window[1].window.title = D_004C86A0;
+            screen->window[1].window.title = "List\x03\x9a" "E.Pts";
             screen->window[1].window.items = MenuListGet(1);
             WindowSPItemChange((void *)((void *)window));
             screen->window[1].window.selectionMode = 4;
@@ -2215,7 +2221,6 @@ typedef struct EtherPasMessage_L2 {
     const char *text; /* +0x18 */
     unsigned char unmodeled_1c[0x44 - 0x1C];
 } EtherPasMessage_L2;
-extern char D_004DB2F8[];
 typedef struct EtherListCursor {
     unsigned char state;
     unsigned char unmodeled_01[3];
@@ -2250,7 +2255,6 @@ typedef struct EtherResultWork {
     EtherDetailNumber numbers[3];
     EtherListCursor cursor;
 } EtherResultWork;
-extern const char D_004C8810[];
 
 void MenuEtherListMain2(void) {
     extern MenuEtherWork_L2 MenuWork_L2 __asm__("MenuWork");
@@ -2271,7 +2275,7 @@ void MenuEtherListMain2(void) {
         screen->window.width = 185;
         screen->window.height = 78;
         screen->window.color = screen->work;
-        screen->window.title = D_004DB2F8;
+        screen->window.title = "Result";
         screen->window.state = 1;
         WindowDXMain((void *)(&screen->window));
         screen->window.state = 3;
@@ -2315,7 +2319,7 @@ void MenuEtherListMain2(void) {
             screen->window.x = -240;
             screen->window.y = 288;
             screen->window.height = 78;
-            screen->window.renderTitle = D_004DB2F8;
+            screen->window.renderTitle = "Result";
             screen->rightPanel = 0;
             slotEthers = MenuEtherDataGet(MenuSortGet(0, MenuWork_L2.listSelect));
             for (i = 0; i < 3; i++) {
@@ -2346,7 +2350,7 @@ void MenuEtherListMain2(void) {
             screen->window.x = 528;
             screen->window.y = 144;
             screen->window.height = 30;
-            screen->window.renderTitle = D_004C8810;
+            screen->window.renderTitle = "TransferEther";
             {
                 MenuTextEntryL2 *entry;
                 int next;
@@ -2715,7 +2719,6 @@ extern EtherScreenWork *MenuEtherEx;
 extern EtherL1R1Work *MenuEtherL1R1;
 extern short MenuEtherParty[16];
 extern int MainMenuWorkEnd;
-extern char D_004C8870[];
 extern void xglCdReadFile(const char *name, void *buf, int offset, int size);
 extern void xglSoundEffectNormalID(int id, int arg);
 extern void MenuWorkEndCheck(unsigned char *p);
@@ -2765,16 +2768,6 @@ void MenuEther(void)
 {
     extern MenuEtherWorkME MenuWorkME __asm__("MenuWork");
     extern EtherMenuPadData PadDataME __asm__("PadData");
-    extern unsigned char D_004DB300[];
-    extern char D_004DB308[];
-    extern char D_004DB310[];
-    extern char D_004DB318[];
-    extern char D_004C8890[];
-    extern char D_004DB320[];
-    extern char D_004DB328[];
-    extern char D_004DB330[];
-    extern char D_004DB338[];
-    extern char D_004DB340[];
     extern int MenuEtherUseCheckS(short id) __asm__("MenuEtherUseCheck");
     extern EtherUnitRecordME *ld191c0_me(int) __asm__("func_A191C0");
     extern EtherCharRecordME *ld19210_me(int) __asm__("func_A19210");
@@ -2789,7 +2782,7 @@ void MenuEther(void)
 
         heap = MainMenuWorkEnd;
         MenuEtherDataBuf = (unsigned char *)((heap + 0x7FF) & ~0x7FF);
-        xglCdReadFile(D_004C8870, MenuEtherDataBuf, 0, 1);
+        xglCdReadFile("data\\endou\\ether\\etree.bin", MenuEtherDataBuf, 0, 1);
         heap = (int)MenuEtherDataBuf + ETHER_DATA_SIZE;
         MenuEtherPas = (EtherPasWork *)heap;
         heap = (int)MenuEtherPas + ETHER_PAS_SIZE;
@@ -2951,9 +2944,7 @@ void MenuEther(void)
                 break;
             }
             if (PadDataME.pressed & 0x0020) {
-                unsigned char commandState[4];
-
-                __builtin_memcpy(commandState, D_004DB300, 4);
+                unsigned char commandState[4] = {0x30, 0x50, 0x70, 0x10};
 
                 MenuWorkME.nextState = commandState[cursor];
                 MenuWorkME.targetChrNo = MenuEtherParty[0];
@@ -3427,13 +3418,25 @@ void MenuEther(void)
     MenuEtherListMain2();
     MenuEtherExMain();
     MenuEtherL1R1Main();
-    xglFontDebugPrintf(0, 0x40, D_004DB308);
-    xglFontDebugPrintf(0, 0x50, D_004DB310, MenuWorkME.commandCursor);
-    xglFontDebugPrintf(0, 0x58, D_004DB318, MenuWorkME.menuCursor);
-    xglFontDebugPrintf(0, 0x60, D_004C8890, MenuWorkME.partyCursor, MenuWorkME.partyCount);
-    xglFontDebugPrintf(0, 0x68, D_004DB320, MenuWorkME.targetCursor);
-    xglFontDebugPrintf(0, 0x70, D_004DB328, MenuWorkME.listSelect);
-    xglFontDebugPrintf(0, 0x78, D_004DB330, MenuWorkME.confirmCursor);
-    xglFontDebugPrintf(0, 0x80, D_004DB338, MenuWorkME.slotCursor);
-    xglFontDebugPrintf(0, 0x88, D_004DB340, MenuWorkME.slotCount);
+    xglFontDebugPrintf(0, 0x40, "\x0b" "ether");
+    xglFontDebugPrintf(0, 0x50, "\x0bms %2d", MenuWorkME.commandCursor);
+    xglFontDebugPrintf(0, 0x58, "\x0bms2%2d", MenuWorkME.menuCursor);
+    xglFontDebugPrintf(0, 0x60, "\x0b" "cs %2d/%2d", MenuWorkME.partyCursor, MenuWorkME.partyCount);
+    xglFontDebugPrintf(0, 0x68, "\x0b" "cs2%2d", MenuWorkME.targetCursor);
+    xglFontDebugPrintf(0, 0x70, "\x0blst%2d", MenuWorkME.listSelect);
+    xglFontDebugPrintf(0, 0x78, "\x0byn %2d", MenuWorkME.confirmCursor);
+    xglFontDebugPrintf(0, 0x80, "\x0bum %2d", MenuWorkME.slotCursor);
+    xglFontDebugPrintf(0, 0x88, "\x0bumm%2d", MenuWorkME.slotCount);
 }
+
+short MenuEtherParty[16] = {0};
+unsigned char *MenuEtherDataBuf = 0;
+EtherPasWork *MenuEtherPas = 0;
+EtherScreenWork *MenuEtherInfo = 0;
+EtherMenuScreen *MenuEtherMenu = 0;
+EtherScreenWork *MenuEtherEx = 0;
+EtherL1R1Work *MenuEtherL1R1 = 0;
+EtherScreenWork *MenuEtherStatus = 0;
+EtherScreenWork *MenuEtherStatus2 = 0;
+EtherListWork *MenuEtherList = 0;
+EtherScreenWork *MenuEtherList2 = 0;

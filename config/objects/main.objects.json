@@ -2732,7 +2732,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C7AF0",
+          "end": "0x004C7AD0",
           "ordinal": 173,
           "piece": "menu_shop",
           "start": "0x004C7390",
@@ -2740,10 +2740,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004C88C0",
+          "end": "0x004C88A0",
           "ordinal": 174,
           "piece": "menu_ether",
-          "start": "0x004C7AF0",
+          "start": "0x004C7AD0",
           "tu": "menu_ether"
         },
         {
@@ -2751,7 +2751,7 @@
           "end": "0x004C9480",
           "ordinal": 175,
           "piece": "menu_tec",
-          "start": "0x004C88C0",
+          "start": "0x004C88A0",
           "tu": "menu_tec"
         },
         {
@@ -4416,7 +4416,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB278",
+          "end": "0x004DB258",
           "ordinal": 173,
           "piece": "menu_shop",
           "start": "0x004DB138",
@@ -4424,10 +4424,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB378",
+          "end": "0x004DB370",
           "ordinal": 174,
           "piece": "menu_ether",
-          "start": "0x004DB278",
+          "start": "0x004DB258",
           "tu": "menu_ether"
         },
         {
@@ -4435,7 +4435,7 @@
           "end": "0x004DB578",
           "ordinal": 175,
           "piece": "menu_tec",
-          "start": "0x004DB378",
+          "start": "0x004DB370",
           "tu": "menu_tec"
         },
         {
@@ -50856,20 +50856,20 @@
           ],
           "bounds": [
             "0x004C7351",
-            "0x004C7AF0"
+            "0x004C7AD0"
           ],
-          "end": "0x004C7AF0",
+          "end": "0x004C7AD0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C7AF0",
+              "end": "0x004C7AD0",
               "name": "menu_shop",
               "start": "0x004C7390"
             }
           ],
           "rule": "anchored start",
-          "size": 1888,
+          "size": 1856,
           "splat_type": "rodata",
           "start": "0x004C7390"
         },
@@ -50904,20 +50904,20 @@
           ],
           "bounds": [
             "0x004DB0B9",
-            "0x004DB278"
+            "0x004DB258"
           ],
-          "end": "0x004DB278",
+          "end": "0x004DB258",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB278",
+              "end": "0x004DB258",
               "name": "menu_shop",
               "start": "0x004DB138"
             }
           ],
           "rule": "anchored start",
-          "size": 320,
+          "size": 288,
           "splat_type": "sdata",
           "start": "0x004DB138"
         }
@@ -51195,51 +51195,51 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C7AF0",
+            "0x004C7AD0",
             "0x004C8891"
           ],
           "bounds": [
             "0x004C7AA9",
-            "0x004C88C0"
+            "0x004C88A0"
           ],
-          "end": "0x004C88C0",
+          "end": "0x004C88A0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C88C0",
+              "end": "0x004C88A0",
               "name": "menu_ether",
-              "start": "0x004C7AF0"
+              "start": "0x004C7AD0"
             }
           ],
-          "rule": "anchored start",
+          "rule": "moved boundary (data ownership by reference)",
           "size": 3536,
           "splat_type": "rodata",
-          "start": "0x004C7AF0"
+          "start": "0x004C7AD0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DB278",
+            "0x004DB258",
             "0x004DB341"
           ],
           "bounds": [
             "0x004DB251",
-            "0x004DB378"
+            "0x004DB370"
           ],
-          "end": "0x004DB378",
+          "end": "0x004DB370",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB378",
+              "end": "0x004DB370",
               "name": "menu_ether",
-              "start": "0x004DB278"
+              "start": "0x004DB258"
             }
           ],
-          "rule": "anchored start",
-          "size": 256,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 280,
           "splat_type": "sdata",
-          "start": "0x004DB278"
+          "start": "0x004DB258"
         }
       },
       "shared_contract": {
@@ -51627,7 +51627,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C88C0",
+            "0x004C88A0",
             "0x004C9309"
           ],
           "bounds": [
@@ -51641,17 +51641,17 @@
               "c_split": false,
               "end": "0x004C9480",
               "name": "menu_tec",
-              "start": "0x004C88C0"
+              "start": "0x004C88A0"
             }
           ],
-          "rule": "anchored start",
-          "size": 3008,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 3040,
           "splat_type": "rodata",
-          "start": "0x004C88C0"
+          "start": "0x004C88A0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DB378",
+            "0x004DB370",
             "0x004DB511"
           ],
           "bounds": [
@@ -51665,13 +51665,13 @@
               "c_split": false,
               "end": "0x004DB578",
               "name": "menu_tec",
-              "start": "0x004DB378"
+              "start": "0x004DB370"
             }
           ],
-          "rule": "anchored start",
-          "size": 512,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 520,
           "splat_type": "sdata",
-          "start": "0x004DB378"
+          "start": "0x004DB370"
         }
       },
       "shared_contract": {
