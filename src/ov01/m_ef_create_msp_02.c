@@ -19,7 +19,6 @@ extern void MMathScaleMatrix(Vector4 *destination, const Vector4 *matrix,
                              const Vector4 *scale);
 extern void MMathApplyMatrix(Vector4 *destination, Matrix4 matrix, Vector4 *source);
 extern void MEfDrawModel(const Vector4 *place, int entry, const char *texture);
-extern Vector4 scale_0_00A516A0;
 extern float tanf(float value);
 
 /*
@@ -146,8 +145,6 @@ extern Vector4 *MMathSubVectorDivS(void *destination, const void *first, const v
 extern void MGsGPInit(void *packet, void *address, int size);
 extern Msp02GsParameter *svGetPrmFromName(const char *name, Msp02GsParameter *output);
 extern void *memset(void *destination, int value, unsigned int size);
-extern const char D_00A51680[];
-extern const char D_00A51690[];
 static void fnMSP02_PR000(void *task, MspEffect *effect);
 static void fnMSP02_DM000(void *task, MspEffect *effect);
 extern void fnMSP02_DP000();
@@ -182,9 +179,9 @@ int MEfCreate_MSP02(Msp02Object *object)
     work->spread = 0.2f;
     work->angle = MMathMakeRandom2PI();
     MGsGPInit(work->drawPacket, 0, 0);
-    svGetPrmFromName(D_00A51680, &parameter);
+    svGetPrmFromName("de_cld01", &parameter);
     *(unsigned long *)(work->drawPacket + 0x18) = parameter.primitive_tag;
-    svGetPrmFromName(D_00A51690, &parameter);
+    svGetPrmFromName("de_cld02", &parameter);
     *(unsigned long *)(work->drawPacket + 0x20) = parameter.primitive_tag;
     memset(work->active, 0, sizeof(work->active));
     memset(work->points, 0, sizeof(work->points));
@@ -405,6 +402,7 @@ static void fnMSP02_PR000(void *task, MspEffect *effect)
 
 static void fnMSP02_DM000(void *task, MspEffect *effect)
 {
+    static const Vector4 scale = { 0.05f, 0.05f, 0.22f, 1.0f };
     Vector4 angles;
     Matrix4 matrix;
     Matrix4 *matrix_destination;
@@ -425,7 +423,7 @@ static void fnMSP02_DM000(void *task, MspEffect *effect)
         matrix_destination = &matrix;
         MMathScaleMatrix((Vector4 *)matrix_destination,
                          (const Vector4 *)matrix_destination,
-                         &scale_0_00A516A0);
+                         &scale);
 
         {
             /* Keep the target translation's address in v1, as the original does. */
@@ -458,8 +456,6 @@ typedef union Msp02QW {
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
 extern void MGsGPTerm(void *packet);
 extern Msp02Quad McEfSTQtbl[];
-extern Msp02Quad coltbl_1_00A516B0[];
-extern float sztbl_2_00A51750[];
 typedef struct Msp02Packet {
     void *data;
     int capacity;
@@ -472,6 +468,21 @@ typedef struct Msp02Packet {
 
 static void fnMSP02_DP000(void *task, MspEffect *effect)
 {
+    static const Msp02QW coltbl[10] = {
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001000000080UL } },
+    };
+    static const float sztbl[10] = {
+        0.12f, 0.15f, 0.18f, 0.2f, 0.22f, 0.24f, 0.26f, 0.28f, 0.3f, 0.27f,
+    };
     int i;
     long regs;
     int nreg;
@@ -522,8 +533,8 @@ static void fnMSP02_DP000(void *task, MspEffect *effect)
     pk->count += n;
     for (i = 0; i < 10; i++) {
         if (((short *)effect->active)[i] != 0) {
-            color = coltbl_1_00A516B0[i];
-            szp = &sztbl_2_00A51750[i];
+            color = coltbl[i].q;
+            szp = &sztbl[i];
             lo = i < 6;
             off = 0x138;
             if (lo) {

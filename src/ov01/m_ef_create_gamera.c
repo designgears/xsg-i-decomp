@@ -85,11 +85,11 @@ float MMathMakeRandom(void);
 float MMathMakeRandom2PI(void);
 extern void MEfGetActorMatrix(Matrix4 *matrix, int actor_id, int part_id);
 extern Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector);
-extern float rtbl_1_00A517E0[4];
-extern float disttbl_0_00A517D0[4];
 
 static void makePath(GameraWork *state)
 {
+    static const float disttbl[4] = { 0.0f, 2.0f, 9.0f, 20.0f };
+    static const float rtbl[4] = { 0.0f, 5.0f, 7.0f, 8.0f };
     Matrix4 matrix;
     Vector4 v;
     float step;
@@ -117,7 +117,7 @@ static void makePath(GameraWork *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(s) : "f"(angle) : "$8", "memory");
-        v.x = s * rtbl_1_00A517E0[i] * scale;
+        v.x = s * rtbl[i] * scale;
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
@@ -125,8 +125,8 @@ static void makePath(GameraWork *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(c) : "f"(angle) : "$8", "memory");
-        v.z = disttbl_0_00A517D0[i];
-        v.y = c * rtbl_1_00A517E0[i] * scale;
+        v.z = disttbl[i];
+        v.y = c * rtbl[i] * scale;
         MMathApplyMatrix((Vector4 *)&state->control_points[i], &matrix, &v);
         ((float *)&state->control_points[4])[i] = angle;
         angle += step;
@@ -303,7 +303,6 @@ typedef struct GameraCamParams {
 } GameraCamParams;
 extern GameraCamParams mefCamParams;
 extern void MGsGPTerm(MEfGsPacket *packet);
-extern const MEfGsQword coltbl_2_00A517F0[3];
 extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera,
                                  Matrix4 *matrix, const Vector4 *point);
 extern Vector4 *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
@@ -339,6 +338,11 @@ typedef struct GameraOffsets {
 
 static void fnGAMERA_DP000(void *self, struct GameraTrailState *work)
 {
+    static const MEfGsQword coltbl[3] = {
+        { rgba: { 0x10, 0x30, 0xA0, 0xFF } },
+        { rgba: { 0x00, 0x10, 0x80, 0xFF } },
+        { rgba: { 0x20, 0x20, 0x00, 0xFF } },
+    };
     GameraDrawWork *state = (GameraDrawWork *)work;
     MEfGsQword colour[2];
     Matrix4 matrix;
@@ -394,8 +398,8 @@ static void fnGAMERA_DP000(void *self, struct GameraTrailState *work)
                 if (state->trail_active[segment] == 0) {
                     continue;
                 }
-                colour[0].whole = coltbl_2_00A517F0[0].whole;
-                colour[1].whole = coltbl_2_00A517F0[1].whole;
+                colour[0].whole = coltbl[0].whole;
+                colour[1].whole = coltbl[1].whole;
                 if (segment == 0 || segment == GAMERA_DRAWN_SEGMENTS - 1) {
                     colour[0].rgba.a = colour[1].rgba.a = 0;
                     slots->inner[line] = slots->outer[line] = 0.0f;

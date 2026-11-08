@@ -72,8 +72,6 @@ extern float MMathCalcDir(const void *first, const void *second);
 extern void MGsGPInit(void *packet, void *address, int size);
 extern Amp02GsParameter *svGetPrmFromName(const char *name, Amp02GsParameter *output);
 extern void *memset(void *destination, int value, unsigned int size);
-extern const char D_00A51580[];
-extern const char D_00A51590[];
 
 static void fnAMP02_PR000(void *self, void *work);
 static void fnAMP02_DP000(void *self, void *work);
@@ -109,9 +107,9 @@ int MEfCreate_AMP02(Amp02Object *object)
     work->target_packet.target_x = -work->facing.x * 0.06666667f;
 
     MGsGPInit(work->target_packet.packet, 0, 0);
-    svGetPrmFromName(D_00A51580, &parameter);
+    svGetPrmFromName("de_cld01", &parameter);
     work->target_packet.parameter_first = parameter.primitive_tag;
-    svGetPrmFromName(D_00A51590, &parameter);
+    svGetPrmFromName("de_cld02", &parameter);
     work->target_packet.parameter_second = parameter.primitive_tag;
     memset(work->target_packet.active, 0, sizeof(work->target_packet.active));
     memset(work->target_packet.points, 0, sizeof(work->target_packet.points));
@@ -202,7 +200,6 @@ extern void *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vecto
 extern void MMathRotateMatrixYX(Vector4 *destination, const Vector4 *source, const Vector4 *angles);
 extern void MMathScaleMatrix(Vector4 *out, const Vector4 *matrix, const Vector4 *scale);
 extern void MEfDrawModel(const Vector4 *place, int entry, const char *texture);
-extern Vector4 scale_0_00A515A0;
 
 /* Same hit-frame threshold fnAMP02_PO000 (below) checks; DM000 stops drawing
    once that frame is reached. */
@@ -233,13 +230,14 @@ typedef struct Amp02DrawState {
  * draws the model.
  */
 static void fnAMP02_DM000(void *self, Amp02DrawState *work) {
+    static const Vector4 scale = { 0.08f, 0.08f, 0.25f, 1.0f };
     Vector4 angles;
     Vector4 matrix[4];
 
     if (work->frame < AMP02_DRAW_FRAME) {
         MEfCalcAngle(&angles, &work->position, &work->target);
         MMathRotateMatrixYX(matrix, (const Vector4 *)0, &angles);
-        MMathScaleMatrix(matrix, matrix, &scale_0_00A515A0);
+        MMathScaleMatrix(matrix, matrix, &scale);
         __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&work->position) : "memory");
         __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
         __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
@@ -258,8 +256,6 @@ typedef union Amp02QW {
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
 extern void MGsGPTerm(void *packet);
 extern Amp02Quadword McEfSTQtbl[];
-extern Amp02Quadword coltbl_1_00A515B0[];
-extern float sztbl_2_00A51650[];
 typedef struct Amp02Packet {
     void *data;
     int capacity;
@@ -279,6 +275,21 @@ typedef struct Amp02Draw {
 
 static void fnAMP02_DP000(void *self, void *work)
 {
+    static const Amp02QW coltbl[10] = {
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000003000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001000000080UL } },
+    };
+    static const float sztbl[10] = {
+        0.15f, 0.2f, 0.24f, 0.27f, 0.3f, 0.32f, 0.34f, 0.36f, 0.35f, 0.32f,
+    };
     Amp02Draw *effect = (Amp02Draw *)work;
     int i;
     long regs;
@@ -332,7 +343,7 @@ static void fnAMP02_DP000(void *self, void *work)
     pk->count += n;
     for (i = 0; i < 10; i++) {
         if ((sub = (void *)((char *)work + 8))->active[i] != 0) {
-            color = coltbl_1_00A515B0[i];
+            color = coltbl[i].q;
             lo = i < 6;
             off = 0xF8;
             if (lo) {
@@ -340,7 +351,7 @@ static void fnAMP02_DP000(void *self, void *work)
             }
             tex = (unsigned long *)((char *)sub + off);
             for (j = 0; j < 1; j++) {
-                if (MEfMake4Vertex2(verts, (Vector4 *)((char *)effect + (i << 4) + 0x120 + j * 16), sztbl_2_00A51650[i], effect->twist[i + j]) == 0) {
+                if (MEfMake4Vertex2(verts, (Vector4 *)((char *)effect + (i << 4) + 0x120 + j * 16), sztbl[i], effect->twist[i + j]) == 0) {
                     Amp02QW *t;
                     Amp02QW *g;
                     unsigned long texVal;

@@ -22,9 +22,6 @@ void entryFirstInit(void) {
     mapNoSet(1);
 }
 
-extern const char D_00A465E0[];
-extern const char D_00A465F8[];
-extern const char D_00A46608[];
 extern int printf(const char *format, ...);
 extern int rnd(int n);
 extern int pauseFlag;
@@ -56,7 +53,7 @@ void battleProc(void) {
     XglClock clk;
     int mask;
 
-    printf(D_00A465E0);
+    printf("** Battle Start! **\n");
     xglClockRead(&clk);
     clk.second = clk.second * 100;
     while (--clk.second != 0xFF) {
@@ -85,7 +82,7 @@ void battleProc(void) {
             ACT_update();
             sefExecEffect();
         } else {
-            xglFontDebugPrintf(0x6C, 0, D_00A465F8);
+            xglFontDebugPrintf(0x6C, 0, "\x0B\x0D\0PAUSE");
             ACT_pauseUpdate();
         }
         nmlModelSendPauseSignal(pauseFlag);
@@ -96,7 +93,7 @@ void battleProc(void) {
     }
 end:
     battleSeq = entryPhase00;
-    printf(D_00A46608);
+    printf("** Battle End! **\n");
 }
 
 extern int pauseFlag;
@@ -241,16 +238,17 @@ extern int monsSetNoGet(void);
 extern int thinkMonsTblNumGet(void);
 extern int thinkNoGet(void);
 extern int cfEncountGet(void);
-extern const char D_00A46620[];
 extern int printf(const char *format, ...);
 extern void GameDefocusQuickSet(int first, int second, int third, int fourth);
 extern int sndSysSePlay(int soundId);
 int entryPhase10(void);
 extern int battleDispMode;
-extern Vector4 sIntPararel2_0;
-extern Vector4 sIntAmbient_1;
+int pauseFlag = 0;
+int cameraFlag = 1;
 
 int entryPhase00(void) {
+    static Vector4 sIntPararel2 = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sIntAmbient = { 0.5f, 0.5f, 0.5f, 1.0f };
     StudioLight *light;
     int cfEncount;
     int thinkNo;
@@ -272,8 +270,8 @@ int entryPhase00(void) {
     xglStudioChange(0);
     xglStudioGetLight(&light);
     xglLightSetDefault(light);
-    xglLightIntensityParallel(light, 2, &sIntPararel2_0);
-    xglLightIntensityAmbient(light, &sIntAmbient_1);
+    xglLightIntensityParallel(light, 2, &sIntPararel2);
+    xglLightIntensityAmbient(light, &sIntAmbient);
     cfSnap();
     eBattleWinInit();
     thinkInit();
@@ -285,7 +283,7 @@ int entryPhase00(void) {
     thinkMonsTblNum = thinkMonsTblNumGet();
     thinkNo = thinkNoGet();
     cfEncount = cfEncountGet();
-    printf(D_00A46620, mapNo, monsSetNo, thinkMonsTblNum, thinkNo, cfEncount, cfEventGet());
+    printf("** map=%d monsSet=%d/%d Think=%d cfEncount=%X cfEvent=%X**\n", mapNo, monsSetNo, thinkMonsTblNum, thinkNo, cfEncount, cfEventGet());
     GameDefocusQuickSet(0, 1, 0xFFFFFF, 0);
     sndSysSePlay(0x25);
     battleSeq = entryPhase10;
@@ -675,9 +673,6 @@ int entryPhase70(void) {
     return 1;
 }
 
-extern const char D_00A46660[];
-extern const char D_00A46678[];
-extern const char D_00A46698[];
 extern int entryPhase90(void);
 typedef struct {
     int exp, tp, ep, sp, money;
@@ -693,10 +688,10 @@ int entryPhase80(void) {
 
     i = 0;
     g = monsGainPtrGet();
-    printf(D_00A46660, g->exp, g->money);
-    printf(D_00A46678, g->tp, g->ep, g->sp);
+    printf("** Exp = %d Money = %d\n", g->exp, g->money);
+    printf("** Tp = %d Ep = %d Sp = %d\n", g->tp, g->ep, g->sp);
     for (; i < g->num; i++) {
-        printf(D_00A46698, i, g->grp[i], g->item[i]);
+        printf("** %d: grp=%d item=%d\n", i, g->grp[i], g->item[i]);
     }
     battleSeq = entryPhase90;
     return 1;
@@ -980,7 +975,6 @@ void encEnvMake(void *packet)
     GS_REG_SET(packet, 0x14, 0x60);
 }
 
-extern const char D_00A466B0[];
 extern float thetaInc;
 extern float theta;
 extern int encObjCnt;
@@ -995,13 +989,23 @@ typedef struct EncGridPt {
     int pad[3];
 } EncGridPt;
 typedef struct EncInitPrim {
-    char pad[0x40];
+    Vector4 vertex[4];
     int w40;
     float u[4];
     float v[4];
     char pad2[0x0C];
 } EncInitPrim;
-extern EncInitPrim ft4Base;
+EncInitPrim ft4Base = {
+    {
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+    },
+    0x80808080,
+    { 0.0f, 8.0f, 0.0f, 8.0f },
+    { 0.0f, 0.0f, 7.0f, 7.0f },
+};
 typedef struct EncInitObj {
     short active;
     short idx[4];
@@ -1163,7 +1167,7 @@ void encEffObjInit(void)
 
   }
 
-  printf(D_00A466B0, 0x01D9E000, obj);
+  printf("** free top=%X end=%X\n", 0x01D9E000, obj);
   task = (FadeObjTask *) objEntry2(encEffObj, (void (*)(ObjectTask *)) encEffObjDraw);
   task->life = 0x80;
   task->speed = 8;
@@ -1439,15 +1443,13 @@ typedef struct EncVramCopyParams {
     unsigned short width;
     unsigned short height;
 } EncVramCopyParams;
-extern const EncFrameBaseTable D_00A466C8;
-extern const EncVramCopyParams D_00A466D0;
 extern void grVramCopy(EncVramCopyParams *params);
 extern void grGsRegSet(EncPacket *packet, unsigned long long register_id, unsigned long long value);
 void encEffVramCopy(int size)
 {
     EncPacket packet;
-    EncFrameBaseTable bases = D_00A466C8;
-    EncVramCopyParams params = D_00A466D0;
+    EncFrameBaseTable bases = { { 0x0E00, 0x1C00, 0x2A00 } };
+    EncVramCopyParams params = { 0, 8, 0, 8, 0, 0, 0, 0, 0x200, 0x1C0 };
     int dispIdx;
     int unused;
     int bb;

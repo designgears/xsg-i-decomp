@@ -13,7 +13,7 @@
  * handle at 0x00a5b630/0x00a5b6d0 have no ledger entry and keep the splat
  * default.
  */
-extern int mvFlags_00A43720;
+static int mvFlags_00A43720;
 
 #define MV_FLAG_INITIALIZED 0x1
 #define MV_FLAG_PLAYING 0x2
@@ -35,12 +35,23 @@ extern MvParams D_00A5B630;
 /* Movie playback handle MMvPlay opens and MMvStop closes; still opaque. */
 extern unsigned char D_00A5B6D0[];
 
+/* GS environment packet sent through DMA channel 2 (9 qwords). */
 typedef struct MvGifEnvironment {
-    unsigned char unmodeled_00[0x30];
-    u64 transfer_tag;
+    u64 setup[6];      /* GIFtag + A+D register writes */
+    u64 transfer_tag;  /* +0x30 */
+    u64 registers[11];
 } MvGifEnvironment;
 
-extern MvGifEnvironment mvEnv;
+MvGifEnvironment mvEnv = {
+    { 0x808B400000008001ULL, 0x53531EEEULL, 0, 0x3F, 0x007FFFF0, 0x8 },
+    0,
+    {
+        0x6, 0x0000008000000080ULL, 0x0000008000000080ULL, 0, 0,
+        0x000071F700006FF8ULL, 0x80000000, 0x00001C0000002000ULL, 0,
+        0x00008DF700008FF8ULL, 0x80000000,
+    },
+};
+static int mvFlags_00A43720 = 0;
 
 typedef struct MvRenderControl {
     unsigned char unmodeled_00[0x14];

@@ -55,8 +55,6 @@ extern float MMathMakeRandom2PI(void);
 extern void MGsGPInit(void *packet, void *address, int size);
 extern Smp01GsParameter *svGetPrmFromName(const char *name, Smp01GsParameter *output);
 extern void *memset(void *destination, int value, unsigned int size);
-extern const char D_00A51480[];
-extern const char D_00A51490[];
 static void fnSMP01_PR000(Smp01Object *object, Smp01Work *work);
 static void fnSMP01_DM000(Smp01Object *self, Smp01Work *work);
 static void fnSMP01_PO000(void *object, void *work);
@@ -85,9 +83,9 @@ int MEfCreate_SMP01(Smp01CreateObject *object)
     MEfCalcAngle(&work->angles, &work->targetPosition, &work->spawnPoint);
     work->phaseAngle = MMathMakeRandom2PI();
     MGsGPInit(work->packet, 0, 0);
-    svGetPrmFromName(D_00A51480, &parameter);
+    svGetPrmFromName("de_cld01", &parameter);
     work->parameter_first = parameter.primitive_tag;
-    svGetPrmFromName(D_00A51490, &parameter);
+    svGetPrmFromName("de_cld02", &parameter);
     work->parameter_second = parameter.primitive_tag;
     memset(work->active, 0, sizeof(work->active));
     memset(work->points, 0, sizeof(work->points));
@@ -267,16 +265,16 @@ static void fnSMP01_PR010(Smp01Object *object, Smp01Work *work)
 extern Vector4 *MMathRotateMatrixYXZ(Vector4 *out, const Vector4 *matrix, const Vector4 *angles);
 extern Vector4 *MMathScaleMatrix(Vector4 *out, const Vector4 *matrix, const Vector4 *scale);
 extern void MEfDrawModel(const Vector4 *place, int entry, const char *texture);
-extern Vector4 scale_0_00A514A0;
 
 static void fnSMP01_DM000(Smp01Object *self, Smp01Work *work)
 {
+    static const Vector4 scale = { 0.038f, 0.038f, 0.15f, 1.0f };
     Vector4 matrix[4];
 
     (void)self;
     if (work->frame < SMP01_DRAW_FRAME_LIMIT) {
         MMathRotateMatrixYXZ(matrix, 0, &work->angles);
-        MMathScaleMatrix(matrix, matrix, &scale_0_00A514A0);
+        MMathScaleMatrix(matrix, matrix, &scale);
         __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&work->position) : "memory");
         __asm__ __volatile__("vmove.w vf1, vf0" : : : "memory");
         __asm__ __volatile__("sqc2 vf1, 48(%0)" : : "r"(matrix) : "memory");
@@ -311,8 +309,6 @@ typedef union Smp01xQW {
 extern int MEfMake4Vertex2(Vector4 *dst, const Vector4 *source, float size, float angleBase);
 extern void MGsGPTerm(void *packet);
 extern Smp01xQuad McEfSTQtbl[];
-extern Smp01xQuad coltbl_1_00A514B0[];
-extern float sztbl_2_00A51550[];
 typedef struct Smp01xPacket {
     void *data;
     int capacity;
@@ -338,6 +334,21 @@ typedef struct Smp01Draw {
 
 static void fnSMP01_DP000(void *task, Smp01Draw *effect)
 {
+    static const Smp01xQW coltbl[10] = {
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002400000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000002000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001800000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000001000000080UL } },
+        { ul: { 0x0000008000000080UL, 0x0000000800000080UL } },
+    };
+    static const float sztbl[10] = {
+        0.1f, 0.13f, 0.16f, 0.18f, 0.2f, 0.22f, 0.24f, 0.26f, 0.28f, 0.25f,
+    };
   int i;
   long regs;
   int nreg;
@@ -392,7 +403,7 @@ static void fnSMP01_DP000(void *task, Smp01Draw *effect)
     sub = (Smp01Sub *)((char *)effect + 8);
     if (((short *)sub->active)[i] != 0)
     {
-      color = coltbl_1_00A514B0[i];
+      color = coltbl[i].q;
       lo = i < 5;
       off = 0xF8;
       if (lo)
@@ -402,7 +413,7 @@ static void fnSMP01_DP000(void *task, Smp01Draw *effect)
       tex = (unsigned long *) (((char *) sub) + off);
       for (j = 0; j < 3; j++)
       {
-        if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl_2_00A51550[i], effect->twist[i][j]) == 0)
+        if (MEfMake4Vertex2(verts, &effect->points[i][j], sztbl[i], effect->twist[i][j]) == 0)
         {
           Smp01xQW *t;
           Smp01xQW *g;

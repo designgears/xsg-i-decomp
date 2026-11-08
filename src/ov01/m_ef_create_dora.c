@@ -83,11 +83,11 @@ extern void MEfGetActorMatrix(Matrix4 *matrix, int actor_id, int part_id);
 extern Matrix4 *MMathTranslateMatrix(Matrix4 *out, const Matrix4 *matrix, const Vector4 *translation);
 extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, const Matrix4 *matrix, float angle);
 extern Vector4 *MMathApplyMatrix(Vector4 *out, const Matrix4 *matrix, const Vector4 *vector);
-extern float rtbl_1_00A51830[4];
-extern float disttbl_0_00A51820[4];
 
 static void makePath(DoraHermiteState *state)
 {
+    static const float disttbl[4] = { 0.0f, 3.0f, 9.0f, 20.0f };
+    static const float rtbl[4] = { 0.0f, 3.0f, 6.0f, 9.0f };
     Matrix4 matrix;
     Vector4 v;
     float step;
@@ -117,7 +117,7 @@ static void makePath(DoraHermiteState *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(s) : "f"(angle) : "$8", "memory");
-        v.x = s * rtbl_1_00A51830[i] * scale;
+        v.x = s * rtbl[i] * scale;
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"
             "qmtc2.ni $8, $vf4\n\t"
@@ -125,8 +125,8 @@ static void makePath(DoraHermiteState *state)
             "qmfc2.i $8, $vf1\n\t"
             "mtc1 $8, %0\n\t"
             : "=f"(c) : "f"(angle) : "$8", "memory");
-        v.z = disttbl_0_00A51820[i];
-        v.y = c * rtbl_1_00A51830[i] * scale;
+        v.z = disttbl[i];
+        v.y = c * rtbl[i] * scale;
         MMathApplyMatrix((Vector4 *)&state->control_points[i], &matrix, &v);
         state->path_progress[i] = angle;
         angle += step;
@@ -263,7 +263,6 @@ typedef struct DoraCamParams {
 } DoraCamParams;
 extern DoraCamParams mefCamParams;
 extern void MGsGPTerm(MEfGsPacket *packet);
-extern const MEfGsQword coltbl_2_00A51840[4];
 extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera,
                                  Matrix4 *matrix, const Vector4 *point);
 extern Vector4 *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
@@ -296,6 +295,12 @@ static inline void doraCloseTag(MEfGsPacket *packet, int nloop)
 
 static void fnDORA_DP000(void *self, DoraHermiteState *work)
 {
+    static const MEfGsQword coltbl[4] = {
+        { rgba: { 0x60, 0x18, 0x18, 0xFF } },
+        { rgba: { 0x00, 0x00, 0x00, 0xFF } },
+        { rgba: { 0x40, 0x40, 0x40, 0xFF } },
+        { rgba: { 0xFF, 0xFF, 0x60, 0xFF } },
+    };
     DoraDrawState *state = (DoraDrawState *)work;
     MEfGsQword colour[2];
     MEfGsQword matrix[4];
@@ -344,8 +349,8 @@ static void fnDORA_DP000(void *self, DoraHermiteState *work)
                 if (state->trail_active[slot] == 0) {
                     continue;
                 }
-                colour[0].whole = coltbl_2_00A51840[0].whole;
-                colour[1].whole = coltbl_2_00A51840[1].whole;
+                colour[0].whole = coltbl[0].whole;
+                colour[1].whole = coltbl[1].whole;
                 if (slot == 0 || slot == DORA_STRIP_SEGMENTS - 1) {
                     colour[0].channel[3] = colour[1].channel[3] = 0;
                     offset[0].element[axis] = offset[1].element[axis] = 0.0f;

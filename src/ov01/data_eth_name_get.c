@@ -4,7 +4,6 @@
 #include "common.h"
 
 extern int printf(const char *format, ...);
-extern const char D_00A4DFA8[];
 
 /*
  * Sibling of the dataItmNameGet/dataWepNameGet/dataBltNameGet/dataAccNameGet
@@ -24,91 +23,84 @@ const char **dataEthNameGet(int ethId)
 {
     if (ethId <= 0)
     {
-        printf(D_00A4DFA8, ethId);
+        printf("** dataEthnameGet: err %d\n", ethId);
         return 0;
     }
     return &ethNameTbl[ethId - 1].name;
 }
 
-extern const char D_00A4DFC8[];
 extern EthName itmNameTbl[72];
 
 const char **dataItmNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4DFC8, index);
+        printf("** dataItmNameGet: err %d\n", index);
         return 0;
     }
     return &itmNameTbl[index - 1].name;
 }
 
-extern const char D_00A4DFE8[];
 extern EthName sklNameTbl[67];
 
 const char **dataSklNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4DFE8, index);
+        printf("** dataSklNameGet: err %d\n", index);
         return 0;
     }
     return &sklNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E008[];
 extern EthName accNameTbl[180];
 
 const char **dataAccNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E008, index);
+        printf("** dataAccNameGet: err %d\n", index);
         return 0;
     }
     return &accNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E028[];
 extern EthName wepNameTbl[114];
 
 const char **dataWepNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E028, index);
+        printf("** dataWepNameGet: err %d\n", index);
         return 0;
     }
     return &wepNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E048[];
 extern EthName bltNameTbl[178];
 
 const char **dataBltNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E048, index);
+        printf("** dataBltNameGet: err %d\n", index);
         return 0;
     }
     return &bltNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E068[];
 extern EthName nrmNameTbl[44];
 
 const char **dataNrmNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E068, index);
+        printf("** dataNrmNameGet: err %d\n", index);
         return 0;
     }
     return &nrmNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E088[];
 /*
  * spcNameTbl (0x27C bytes, 53 entries) is laid out right after nrmNameTbl
  * (0x210 bytes, 44 entries): special item ids continue the normal item id
@@ -120,13 +112,12 @@ const char **dataSpcNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E088, index);
+        printf("** dataSpcNameGet: err %d\n", index);
         return 0;
     }
     return &spcNameTbl[index - 45].name;
 }
 
-extern const char D_00A4E0A8[];
 /* enemyNameTbl holds 154 name pointers (0x268 bytes, stride 4); enemy ids start at 33. */
 extern const char *enemyNameTbl[154];
 
@@ -134,7 +125,7 @@ const char **dataEnemyNameGet(int index)
 {
     if (index < 33)
     {
-        printf(D_00A4E0A8, index);
+        printf("** dataEnemyNameGet: err %d\n", index);
         return 0;
     }
     return &enemyNameTbl[index - 33];
@@ -156,7 +147,6 @@ const char **dataStatNameGet(int statType, int index)
 }
 
 extern int MenuScenarioNoGet(void);
-extern const char D_00A4E0C8[];
 extern const char *ziggyName;
 extern const char *playerNameTbl[32];
 
@@ -166,7 +156,7 @@ const char **dataPlayerNameGet(int id)
 
     if (id >= 33)
     {
-        printf(D_00A4E0C8, id);
+        printf("** dataPlayerNameGet: err %d\n", id);
         return 0;
     }
     if (id == 5)
@@ -180,27 +170,25 @@ const char **dataPlayerNameGet(int id)
     return &playerNameTbl[id - 1];
 }
 
-extern const char D_00A4E0E8[];
 extern EthName engNameTbl[40];
 
 const char **dataEngNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E0E8, index);
+        printf("** dataEngNameGet: err %d\n", index);
         return 0;
     }
     return &engNameTbl[index - 1].name;
 }
 
-extern const char D_00A4E108[];
 extern EthName frmNameTbl[40];
 
 const char **dataFrmNameGet(int index)
 {
     if (index <= 0)
     {
-        printf(D_00A4E108, index);
+        printf("** dataFrmNameGet: err %d\n", index);
         return 0;
     }
     return &frmNameTbl[index - 1].name;

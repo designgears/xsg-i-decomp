@@ -5,11 +5,6 @@
 #include "shared.h"
 
 extern void MOutputDebugStringWarn(const char *format, ...);
-extern const char zero_duration_message[];
-extern const char invalid_interpolation_message[];
-extern const char D_00A50EF0[];
-extern const char D_00A51000[];
-extern const char D_00A51028[];
 
 extern void bcopy(const void *source, void *destination, unsigned int count);
 /*
@@ -208,7 +203,6 @@ typedef struct MCamPointParams {
 
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern void xglCameraInit(StudioCamera *camera);
-extern const char D_00A50EC8[];
 typedef Vector4 MCamVec __attribute__((aligned(16)));
 typedef struct MCamSavedCamera {
     unsigned char unmodeled_000[0xA0];
@@ -259,7 +253,7 @@ int MCamTakeControl(void)
     unsigned long long dhi;
 
     if (camFlags & 1) {
-        MOutputDebugStringWarn(D_00A50EC8);
+        MOutputDebugStringWarn("MCamTakeControl: \xB4\xFB\xA4\xCB\xA5\xAB\xA5\xE1\xA5\xE9\xA4\xCF\xC0\xA9\xB8\xE6\xC3\xE6");
         return 0;
     }
     sysCam = xglStudioGetCamera2(0);
@@ -300,7 +294,7 @@ int MCamTakeControl(void)
 int MCamReleaseControl(void)
 {
     if (!(camFlags & CAM_FLAG_ACTIVE)) {
-        MOutputDebugStringWarn(D_00A50EF0);
+        MOutputDebugStringWarn("MCamReleaseControl: \xA5\xAB\xA5\xE1\xA5\xE9\xA4\xCF\xC0\xA9\xB8\xE6\xC3\xE6\xA4\xC7\xA4\xCF\xA4\xCA\xA4\xA4");
         return 0;
     }
 
@@ -336,7 +330,6 @@ int MCamIsActive(void)
     return camFlags & CAM_FLAG_ACTIVE;
 }
 
-extern const char D_00A50F20[];
 extern float D_00A5B270;
 static void MCamExec_SetParams_Base(void);
 typedef struct MCamSetBlock {
@@ -388,7 +381,7 @@ void MCamSet(unsigned int point, MCamSetPoint *src)
         view->pers = f;
         break;
     default:
-        MOutputDebugStringWarn(D_00A50F20);
+        MOutputDebugStringWarn("MCamSet: Invalid point");
         return;
     }
     MCamExec_SetParams_Base();
@@ -397,8 +390,6 @@ void MCamSet(unsigned int point, MCamSetPoint *src)
 struct MCamCoordRequest;
 struct MCamBankRequest;
 struct MCamMoveRequest;
-extern char D_00A50F38[];
-extern char D_00A50F60[];
 static void MCamMove_Coord(int which, struct MCamCoordRequest *req);
 static void MCamMove_Bank(struct MCamBankRequest *request);
 static void MCamMove_Pers(struct MCamMoveRequest *request);
@@ -410,7 +401,7 @@ typedef struct {
 void MCamMove(unsigned int point, struct MCamCoordRequest *req)
 {
     if (((MCamMoveFrames *)req)->frames == 0) {
-        MOutputDebugStringWarn(D_00A50F38);
+        MOutputDebugStringWarn("MCamMove: frame < 1, adjusted to 1");
         ((MCamMoveFrames *)req)->frames = 1;
     }
     switch (point) {
@@ -427,12 +418,17 @@ void MCamMove(unsigned int point, struct MCamCoordRequest *req)
         MCamMove_Pers((struct MCamMoveRequest *)req);
         break;
     default:
-        MOutputDebugStringWarn(D_00A50F60);
+        MOutputDebugStringWarn("MCamMove: Invalid point");
         break;
     }
 }
 
-extern char D_00A50F98[];
+
+/* Move-point names (0..3); unreferenced by the code, kept in .rodata. */
+const char MCamMovePointPov[] = "POV";
+const char MCamMovePointPla[] = "PLA";
+const char MCamMovePointBank[] = "BANK";
+const char MCamMovePointPers[] = "PERS";
 
 void MCamStopMove(unsigned int type)
 {
@@ -443,13 +439,12 @@ void MCamStopMove(unsigned int type)
     case 2: mask = 0x400; break;
     case 3: mask = 0x800; break;
     default:
-        MOutputDebugStringWarn(D_00A50F98);
+        MOutputDebugStringWarn("MCamStopMove: Invalid point");
         return;
     }
     camFlags &= ~mask;
 }
 
-extern const char D_00A50FB8[];
 
 int MCamIsMoving(unsigned int type)
 {
@@ -460,7 +455,7 @@ int MCamIsMoving(unsigned int type)
     case 2: mask = 0x400; break;
     case 3: mask = 0x800; break;
     default:
-        MOutputDebugStringWarn(D_00A50FB8);
+        MOutputDebugStringWarn("MCamIsMoving: Invalid point");
         return 0;
     }
     return (camFlags & mask) != 0;
@@ -530,7 +525,6 @@ int MCamIsShaking(void)
 
 extern void sefGetNullPosition(Vector4 *out, void *actor, unsigned int id, int flag);
 extern float fmodf(float x, float y);
-extern const char D_00A50FD8[];
 typedef struct MCamActorView {
     unsigned char unmodeled_00[0x10];
     Vector4 position;
@@ -542,7 +536,7 @@ static Vector4 *MCamGetActorCoord(Vector4 *out, MCamActorView *actor, int null)
 {
     __asm__ __volatile__("sq $0, 0(%0)" : : "r"(out) : "memory");
     if (actor == 0) {
-        MOutputDebugStringWarn(D_00A50FD8);
+        MOutputDebugStringWarn("MCamGetActorCoord: actor is NULL");
         return out;
     }
     if (null == 0) {
@@ -660,7 +654,7 @@ static float MCamGetAtkRange(int id)
     UnitInitData *unit = dataUnitInitGet(id);
 
     if (unit == 0) {
-        MOutputDebugStringWarn(D_00A51000, id);
+        MOutputDebugStringWarn("MCamGetAtkRange: Invalid ID (%d)", id);
         return 0.0f;
     }
     return (float)unit->atkRange / 100.0f;
@@ -671,7 +665,7 @@ static float MCamGetDefRange(int id)
     UnitInitData *unit = dataUnitInitGet(id);
 
     if (unit == 0) {
-        MOutputDebugStringWarn(D_00A51028, id);
+        MOutputDebugStringWarn("MCamGetDefRange: Invalid ID (%d)", id);
         return 0.0f;
     }
     return (float)unit->defRange / 100.0f;
@@ -879,7 +873,6 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
     }
 }
 
-extern char D_00A50F98[];
 extern MCamMoveState D_00A5B5E0;
 typedef struct MCamBankRequest {
     unsigned char unmodeled_00[0xA0];
@@ -971,7 +964,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
     float ratio;
 
     if (duration == 0) {
-        MOutputDebugStringWarn(zero_duration_message, mode);
+        MOutputDebugStringWarn("MCamMoveProc_CalcRatio: d == 0 (IP:%d)", mode);
         return 0.0f;
     }
 
@@ -1029,7 +1022,7 @@ static float MCamMoveProc_CalcRatio(unsigned int mode, unsigned int elapsed, uns
         break;
     }
     default:
-        MOutputDebugStringWarn(invalid_interpolation_message);
+        MOutputDebugStringWarn("MCamMoveProc_CalcRatio: Invalid IPTYPE");
         break;
     }
 

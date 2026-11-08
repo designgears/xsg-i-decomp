@@ -95,7 +95,7 @@ void xglMatrixScale(Matrix4 destination, const Matrix4 source,
 extern void nmlModelSetPlace(float matrix[4][4]);
 extern void nmlModelSetTexture(void *texture);
 extern void nmlModelEntryCard(void *model);
-extern const char D_00A4D7C8[];
+
 extern void CCC04ExecSub(int side, CardGameWork *work, CardHand *hand);
 extern void CCC03ExecSub(int side, CardGameWork *work, CardHand *hand, CardLayerStack *card);
 extern void CCC07ExecSub(CardGameWork *work, CardHand *hand, CardCursorPosition *position);
@@ -2710,7 +2710,7 @@ s32 CardPlayCommandPlay(u16 side, u16 command, CardGameWork *work,
                 CardCommandAdvance(work);
                 xglSoundEffectNormalID(1, 0);
             }
-            xglFontPrint(143, 213, 0xFFF8, D_00A4D7C8);
+            xglFontPrint(143, 213, 0xFFF8, "\x0B\x19\x03\x0D\0Select card to discard.");
             scale[0] = 1.5f;
             scale[1] = scale[2] = scale[3] = 1.0f;
             translation[0] = translation[1] = 0.0f;

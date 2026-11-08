@@ -29,8 +29,6 @@ typedef struct {
     float place[4][4];
 } UmnBgCubeData;
 extern unsigned char UmnWork[];
-extern UmnBgVec D_00A11E60;
-extern UmnBgLightParam D_00A11E70;
 extern void *memset(void *dest, int value, unsigned int size);
 extern float xglFRand(void);
 extern int xglTaskWaitRemove(void *task);
@@ -51,6 +49,20 @@ extern void nmlModelSetPlace(float matrix[4][4]);
 extern void nmlModelEntry(int model);
 
 void tskUmnBgCubeMain(void *arg) {
+    static const UmnBgVec scale_init = { 1.0f, 1.0f, 1.0f, 1.0f };
+    static const UmnBgLightParam light_param = {
+        { 1.0f, 1.0f, 1.0f, 1.0f },
+        {
+            { 0.8f, 0.8f, 0.8f, 1.0f },
+            { 0.8f, 0.8f, 0.8f, 1.0f },
+            { 0.8f, 0.8f, 0.8f, 1.0f },
+        },
+        {
+            { 1.0f, 1.0f, 0.5f, 1.0f },
+            { -1.0f, 1.0f, 0.0f, 1.0f },
+            { 0.0f, 1.0f, -1.0f, 1.0f },
+        },
+    };
     UmnBgCubeTask *t = arg;
     UmnBgCubeData *d;
     UmnBgVec *rot;
@@ -77,7 +89,7 @@ void tskUmnBgCubeMain(void *arg) {
         t->unk11 = 1;
         memset(&v, 0, 0x10);
         v.w = 1.0f;
-        s = D_00A11E60;
+        s = scale_init;
         d->trans = v;
         *rot = v;
         *rot2 = v;
@@ -109,7 +121,7 @@ void tskUmnBgCubeMain(void *arg) {
         xglMatrixStackRotY(rot->y);
         xglMatrixStackRotX(rot->x);
         xglMatrixStackSave(d->place);
-        lp = D_00A11E70;
+        lp = light_param;
         xglLightIntensityAmbient(&light, &lp.ambient);
         xglLightIntensityParallel(&light, 0, &lp.intensity[0]);
         xglLightDirection(&light, 0, &lp.direction[0]);

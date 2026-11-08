@@ -5,11 +5,10 @@
 #include "shared.h"
 #include "ov10/cgp.h"
 
-extern int s_nDebMode;
-extern int s_nMode;
+int s_nMode = 0;
+int s_nPause_00A42038 = 0;
+int s_nDebMode = 0;
 extern CardGameWork D_00A4FA10;
-extern char D_00A4BBA0[];
-extern char D_00A4BBB0[];
 extern void xglRenderClearFrame(void);
 extern void xglRenderGlobalFadeInit(void);
 extern void xglSleep(void);
@@ -77,7 +76,6 @@ extern float s_fvInt[4];
 extern float s_fvPos[4];
 extern float s_inMulCol[4];
 extern float s_inMulColAdd[4];
-extern int s_nPause_00A42038;
 extern void xglStudioInit(void);
 extern void xglStudioChange(int studio_index);
 extern void xglStudioGetLight(StudioLight **light_out);
@@ -144,9 +142,9 @@ void CardGameRoot(void)
     s_nMode = 1;
     s_nDebMode = 0;
     xglRenderGlobalFadeInit();
-    xglSoundLoadEffect(D_00A4BBA0, (void *)0x01B00000, 2);
+    xglSoundLoadEffect("Minicard", (void *)0x01B00000, 2);
     if (CardMainInit(&D_00A4FA10) < 0)
-        printf(D_00A4BBB0);
+        printf("Card Inisialize ERROR!!!\n");
 
     while (CardMainProc(&D_00A4FA10))
         xglSleep();

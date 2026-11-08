@@ -74,13 +74,11 @@ typedef struct {
 
 extern CsdPad PadData;
 
-extern char D_00A4DA68[];
 
 extern char D_00A4DA70[];
 
 extern char D_00A4DAA0[];
 
-extern char D_00A4DAD0[];
 
 extern char D_00A4DAD8[];
 
@@ -664,11 +662,11 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
                 if (title != 0) {
                     xglFontPrint(0x18, 0x138, 0xFFF0, title);
                 }
-                xglFontPrint(0, 0, 0, D_00A4DA68);
+                xglFontPrint(0, 0, 0, "\x19\x03");
                 xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
                 xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DA78);
                 xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+                xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
                 if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                     xglSoundEffectNormalID(1, 0);
                     (*(s16 *)((u8 *)work + 0x5AC6))++;
@@ -800,11 +798,11 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         CardDeckListDisp(cursor);
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
-            xglFontPrint(0, 0, 0, D_00A4DA68);
+            xglFontPrint(0, 0, 0, "\x19\x03");
             xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
             xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
             xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
                 ret = (cursor->cursor & 0x7F) + 1;
@@ -967,14 +965,14 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         }
         CardDeckDisp(list, work->definitions);
         if (ActiveCursol_4 == 0 && exiting == 0) {
-            xglFontPrint(0, 0, 0, D_00A4DA68);
+            xglFontPrint(0, 0, 0, "\x19\x03");
             xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
             if (title != 0) {
                 xglFontPrint(0x18, 0x138, 0xFFF0, title);
             }
             xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAF0);
             xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
                 (*(s16 *)((u8 *)work + 0x5AC6))++;
@@ -988,11 +986,11 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         CardDeckListDisp(cursor);
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
-            xglFontPrint(0, 0, 0, D_00A4DA68);
+            xglFontPrint(0, 0, 0, "\x19\x03");
             xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
             xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
             xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
                 ret = (cursor->cursor & 0x7F) + 1;
@@ -1054,13 +1052,13 @@ int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work
         if (ActiveCursol_6 == 0) {
             if (exiting == 0 && disp == 0) {
                 if (title != 0) {
-                    xglFontPrint(0, 0, 0, D_00A4DA68);
+                    xglFontPrint(0, 0, 0, "\x19\x03");
                     xglFontPrint(0x18, 0x138, 0xFFF0, title);
                 }
                 xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
                 xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DB10);
                 xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+                xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
                 if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                     xglSoundEffectNormalID(1, 0);
                     (*(s16 *)((u8 *)work + 0x5AC6))++;
@@ -1192,11 +1190,11 @@ int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work
         CardDeckListDisp(cursor);
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
-            xglFontPrint(0, 0, 0, D_00A4DA68);
+            xglFontPrint(0, 0, 0, "\x19\x03");
             xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
             xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
             xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DAD0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
                 ret = (cursor->cursor & 0x7F) + 1;

@@ -80,9 +80,6 @@ typedef struct GrVramCopyParams {
     unsigned short height;
 } GrVramCopyParams;
 
-extern const GrFrameBaseTable D_00A466E8;
-extern const GrVramCopyParams D_00A466F0;
-extern const char D_00A46708[];
 extern int printf(const char *format, ...);
 extern void grVramCopy(GrVramCopyParams *params);
 
@@ -94,7 +91,10 @@ typedef struct GrRenderState {
 extern GrRenderState sRender;
 
 /* Framebuffer base addresses; grFBAdrGet indexes this table. */
-extern int fb[4];
+int fb[4] = { 0x70, 0xE0, 0x150, 0xFFFFF };
+
+/* Party stock positions (x, y); read by menu.c. */
+int stockPosTbl[5][2] = { { 16, 60 }, { 41, 60 }, { 66, 60 }, { 91, 60 }, { -76, 70 } };
 
 /* EE scratchpad RAM base. */
 #define SCRATCHPAD_BASE ((void *)0x70000000)
@@ -245,11 +245,11 @@ int grDBIdxGet(int *drawing_index, int *current_index)
 
 void grVramCopyFBtoFB(int source, int destination)
 {
-    GrFrameBaseTable bases = D_00A466E8;
-    GrVramCopyParams params = D_00A466F0;
+    GrFrameBaseTable bases = { { 0x0E00, 0x1C00, 0x2A00 } };
+    GrVramCopyParams params = { 0, 8, 0, 8, 0, 0, 0, 0, 0x200, 0x1C0 };
 
     if (source >= 3 || destination >= 3 || source == destination) {
-        printf(D_00A46708, source, destination);
+        printf("** grVramCopyFBtoFB: err %d %d\n", source, destination);
         return;
     }
 

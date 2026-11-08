@@ -257,7 +257,6 @@ typedef struct UmnMain2LightTable {
     UmnMain2LightVector color[3];
     UmnMain2LightVector direction[3];
 } UmnMain2LightTable;
-extern const UmnMain2LightTable D_00A11DF0;
 extern void MenuCfTaikiPush(void);
 extern void MenuCfTaikiPop(void);
 extern void MenuGameDataPush(void);
@@ -277,6 +276,19 @@ extern void GameResourceWorkReload(void);
 extern void GameCfPlayerLoadResource(int flag);
 
 void UmnMain2(int menu_id) {
+    static const UmnMain2LightTable light_table = {
+        { value: { 0.3f, 0.3f, 0.3f, 1.0f } },
+        {
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+            { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
+        },
+        {
+            { value: { 1.0f, 1.0f, 0.5f, 1.0f } },
+            { value: { -1.0f, 1.0f, 0.5f, 1.0f } },
+            { value: { 0.0f, 1.0f, 0.5f, 1.0f } },
+        },
+    };
     UmnMain2LightTable table;
     void *light;
     void *mem;
@@ -291,7 +303,7 @@ void UmnMain2(int menu_id) {
     MenuLoadInit();
     xglStudioChange(0);
     light = xglStudioGetLight2();
-    table = D_00A11DF0;
+    table = light_table;
     xglLightIntensityAmbient(light, &table.ambient.value);
     xglLightIntensityParallel(light, 0, &table.color[0].value);
     xglLightDirection(light, 0, &table.direction[0].value);

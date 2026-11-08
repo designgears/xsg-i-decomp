@@ -43,10 +43,16 @@ extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixY(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
 extern float srsAtan2(float deltaX, float deltaZ);
-extern Vector4 offset_0[SOLB_CONTROL_POINTS];
+const int timetbl[4] = { 5, 6, 12, 23 };
 
 static void makePath(void *work)
 {
+    static const Vector4 offset[SOLB_CONTROL_POINTS] = {
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+        { 1.7f, 0.0f, 0.5f, 1.0f },
+        { 2.0f, 0.0f, 3.6f, 1.0f },
+        { 2.0f, 0.0f, 20.0f, 1.0f },
+    };
     SolbState *state = (SolbState *)work;
     Vector4 direction;
     Matrix4 matrix;
@@ -94,7 +100,7 @@ static void makePath(void *work)
     MMathRotateMatrixZ(&headingMatrix, (Matrix4 *)0, heading);
 
     for (i = 0; i < SOLB_CONTROL_POINTS; i++) {
-        MMathApplyMatrix(&direction, &headingMatrix, &offset_0[i]);
+        MMathApplyMatrix(&direction, &headingMatrix, &offset[i]);
         MMathApplyMatrix(&direction, &pitchMatrix, &direction);
         MMathApplyMatrix(&direction, &yawMatrix, &direction);
         __asm__ __volatile__("lqc2 $vf1, 0(%0)" : : "r"(&direction) : "memory");
@@ -297,7 +303,6 @@ typedef struct SolbDrawState {
     HermiteVector tangent_at_segment_end;           /* +0x340 */
     MEfGsPacket packet;                             /* +0x350 */
 } SolbDrawState;
-extern Quadword coltbl_1_00A43780[3];
 extern Vector4 *MEfCalcAngle(Vector4 *destination, const Vector4 *from, const Vector4 *to);
 extern float MMathMakeRandom2PI(void);
 extern int MMathRotTransPersClip(Vector4 *destination, const StudioCamera *camera,
@@ -335,6 +340,8 @@ static inline void solbCloseTag(MEfGsPacket *packet, int nloop)
     packet->current += size;
     packet->count += size;
 }
+
+extern Quadword coltbl_1_00A43780[3];
 
 static void fnSOLB_DP000(void *self, void *work)
 {
@@ -611,3 +618,9 @@ static void fnSOLB_PO000(void *self, void *work)
         MEfObjDestroy(self);
     }
 }
+
+u32 coltbl_1_def[3][4] __asm__("coltbl_1_00A43780") = {
+    { 0xA0, 0xA0, 0xA0, 0xFF },
+    { 0x00, 0x20, 0xA0, 0xFF },
+    { 0xC0, 0x80, 0x20, 0xFF },
+};
