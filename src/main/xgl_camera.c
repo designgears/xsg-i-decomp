@@ -772,6 +772,17 @@ static void xglCameraViewTravel(StudioCamera *studio, Vector4 *offset)
     ratio.y = ratio.x = screen->projection.x / screen->projection.y;
     nearClip = screen->clipRange.x;
     ratio.w = ratio.z = screen->clipRange.z / screen->clipRange.w;
+#ifdef PORT_HOST
+    {
+        /* PC port, [display] widescreen: widen the screen-edge culling planes (the x row,
+           columns 0/1: near/far at the screen edge) so objects in the native renderer's
+           side bands are sent.  Projection and guard band are untouched. */
+        extern float xsg_widescreen_cull(void);
+        float k = xsg_widescreen_cull();
+        ratio.x *= k;
+        ratio.y *= k;
+    }
+#endif
     travel->frustum[3].x = nearClip;
     travel->frustum[3].w = travel->frustum[3].y = screen->clipRange.y;
     travel->frustum[3].z = nearClip;

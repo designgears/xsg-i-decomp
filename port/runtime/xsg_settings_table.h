@@ -34,6 +34,7 @@ XSG_SETTING("display.ui", "XSG_GPU_UI", "original", "original|rebuilt", 1, "Game
 XSG_SETTING("display.prompts", 0, "auto", "auto|xbox|playstation|nintendo|keyboard", 1, "Button prompts in the rebuilt UI (auto: the connected controller, or the keyboard).")
 XSG_SETTING("display.prompt_style", 0, "default", "default|light|retro|alt|alt2|drawn", 1, "Prompt icon style (JulioCacko Free Input Prompts, CC0); drawn: simple vector glyphs.")
 XSG_SETTING("display.ui_layout", 0, "game", "game|wide", 1, "Rebuilt UI layout: on the picture (game) or anchored to the window edges (wide).")
+XSG_SETTING("display.widescreen", 0, "0", "0|1", 1, "Native 16:9 widescreen (native renderer): the 3D scene drawn wider, the PS2 2D pillarboxed in the centre.")
 XSG_SETTING("display.crt", "XSG_GPU_CRT", "off", "off|scanlines|consumer|trinitron|pvm|shadow", 1, "CRT filter style (the picture as on a tube TV).")
 XSG_SETTING("display.crt_strength", "XSG_GPU_CRT_STRENGTH", "100", "0..100", 1, "CRT filter strength (percent).")
 XSG_SETTING("display.crt_interlace", "XSG_GPU_CRT_INTERLACE", "1", "0|1", 1, "CRT: one beam per field line, blending odd and even lines as an interlaced TV.")

@@ -157,6 +157,21 @@ int xsg_cfg_on(const char *key)
     return v && strcmp(v, "0") && strcasecmp(v, "off") && strcasecmp(v, "false") && strcasecmp(v, "no");
 }
 
+/* [display] widescreen with the native renderer on: the factor xglCameraViewTravel
+   widens the screen-edge culling planes by (the native picture is 684 PS2 px wide
+   instead of 512, port/gpu/native.cpp WideMargin).  1 otherwise.  Live. */
+float xsg_widescreen_cull(void)
+{
+    static unsigned gen = ~0u;
+    static float k = 1.0f;
+    const unsigned g = __atomic_load_n(&xsg_cfg_gen, __ATOMIC_ACQUIRE);
+    if (g != gen) {
+        gen = g;
+        k = xsg_cfg_on("display.widescreen") && xsg_cfg_on("renderer.native") ? 684.0f / 512.0f : 1.0f;
+    }
+    return k;
+}
+
 const char *xsg_cfg_path(void)
 {
     pthread_once(&g_once, load);
