@@ -8,7 +8,11 @@
 int s_nMode = 0;
 int s_nPause_00A42038 = 0;
 int s_nDebMode = 0;
-extern CardGameWork D_00A4FA10;
+static CardGameWork D_00A4FA10;
+static float s_inMulCol[4];
+static float s_inMulColAdd[4];
+static float s_fvInt[4];
+static float s_fvPos[4];
 extern void xglRenderClearFrame(void);
 extern void xglRenderGlobalFadeInit(void);
 extern void xglSleep(void);
@@ -71,11 +75,7 @@ typedef struct {
 } YModel;
 typedef struct StudioLight StudioLight;
 extern YClearEnv ClearEnv;
-extern YModel s_aModel[10];
-extern float s_fvInt[4];
-extern float s_fvPos[4];
-extern float s_inMulCol[4];
-extern float s_inMulColAdd[4];
+static YModel s_aModel[10];
 extern void xglStudioInit(void);
 extern void xglStudioChange(int studio_index);
 extern void xglStudioGetLight(StudioLight **light_out);
