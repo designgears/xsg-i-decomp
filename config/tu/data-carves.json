@@ -707,6 +707,147 @@
     }
    ]
   },
+  "main/tu105": {
+   ".data": [
+    {
+     "range": [
+      "0x004a8dc0",
+      "0x004a8ee0"
+     ],
+     "generated": [
+      "0x004a8dc0",
+      "0x004a8ee0"
+     ],
+     "generated_by": [
+      "xglRenderClear",
+      "xglRenderSetReso"
+     ],
+     "c_owned_symbols": [
+      "asDispReso",
+      "asVramBase",
+      "TestEnv_0_004A8E80"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_render.o"
+     }
+    },
+    {
+     "range": [
+      "0x004a8f00",
+      "0x004a9050"
+     ],
+     "generated": [
+      "0x004a8f00",
+      "0x004a9050"
+     ],
+     "generated_by": [
+      "xglRenderDispEnvInit",
+      "xglRenderDispEnvMove",
+      "xglRenderDispOff",
+      "xglRenderDispOn",
+      "xglRenderDrawEnvInit",
+      "xglRenderDrawEnvMove"
+     ],
+     "c_owned_symbols": [
+      "DrawEnv",
+      "DispEnv"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_render.o"
+     }
+    },
+    {
+     "range": [
+      "0x004a9080",
+      "0x004a913c"
+     ],
+     "generated": [
+      "0x004a9080",
+      "0x004a913c"
+     ],
+     "generated_by": [
+      "xglRenderClear",
+      "xglRenderClearColor",
+      "xglRenderClearDepth",
+      "xglRenderClearEnvInit",
+      "xglRenderClearEnvMove",
+      "xglRenderClearFrame",
+      "xglRenderCopyDisp2Draw",
+      "xglRenderDispEnvInit",
+      "xglRenderDispEnvMove",
+      "xglRenderDrawEnvInit",
+      "xglRenderDrawEnvMove",
+      "xglRenderDrawFlip",
+      "xglRenderDrawFlipPk",
+      "xglRenderFinalPacket",
+      "xglRenderGlobalFade",
+      "xglRenderGlobalFadeInit",
+      "xglRenderInit",
+      "xglRenderMove",
+      "xglRenderSetReso",
+      "xglRenderSwapBase",
+      "xglRenderSyncMove",
+      "xglRenderVSyncCallback"
+     ],
+     "c_owned_symbols": [
+      "ClearEnv",
+      "sRender"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_render.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc3c0",
+      "0x004dc3dc"
+     ],
+     "generated": [
+      "0x004dc3c0",
+      "0x004dc3dc"
+     ],
+     "generated_by": [
+      "xglRenderClearOff",
+      "xglRenderClearOn",
+      "xglRenderDispEnvMove",
+      "xglRenderGlobalFade",
+      "xglRenderGlobalFadeInit",
+      "xglRenderGlobalFadeSet",
+      "xglRenderInit",
+      "xglRenderMove",
+      "xglRenderSyncInit",
+      "xglRenderSyncMove",
+      "xglRenderVSyncCallback"
+     ],
+     "c_owned_symbols": [
+      "s_nGblFadeInit",
+      "s_nGblFade",
+      "s_nClearFrame",
+      "FrameCount",
+      "LoopCount",
+      "VSyncCount",
+      "ScanLineInterpolate"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_render.o"
+     }
+    }
+   ]
+  },
   "main/tu106": {
    ".lit4": [
     {

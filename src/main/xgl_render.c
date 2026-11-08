@@ -363,27 +363,27 @@ extern void xglDmaDirectNormal(u32 channel, u32 address, u32 count);
 
 #define VIF1_ERR_ADDRESS 0x10003C20
 
-extern int s_nGblFadeInit;
+static int s_nGblFadeInit = 0;
 
 
-extern int s_nGblFade;
+static int s_nGblFade = 0;
 
 
-extern int s_nClearFrame;
+static int s_nClearFrame = 0;
 
 
-extern int FrameCount;
+int FrameCount = 0;
 
 
-extern int LoopCount;
+int LoopCount = 0;
 
 
 /* The GS VSync interrupt callback increments this counter while
  * xglRenderSyncMove polls it on the render thread. */
-extern volatile int VSyncCount;
+volatile int VSyncCount = 0;
 
 
-extern int ScanLineInterpolate;
+int ScanLineInterpolate = 0;
 
 
 extern GsDrawEnv DrawEnv;
@@ -463,7 +463,15 @@ typedef struct TestEnvironmentPacket {
 
 /* VIF DIRECT sends one GIFtag, one A+D PRIM, one RGBAQ and two XYZ2 values. */
 
-extern XglRenderReso asDispReso[6];
+/* depth PSM, frame PSM, width, height for each display resolution. */
+static XglRenderReso asDispReso[6] = {
+    {0x31, 0, 0x280, 0x1C0},
+    {0x31, 0, 0x200, 0x1C0},
+    {0x31, 0, 0x1C0, 0x1C0},
+    {0x31, 0, 0x180, 0x1C0},
+    {0x31, 0, 0x140, 0x1C0},
+    {0x31, 0, 0x100, 0x1C0},
+};
 
 
 extern GsDispEnv DispEnv;
@@ -515,10 +523,16 @@ extern void sceGsPutDispEnv(GsDispEnv *env);
 
 #define GS_CSR ((volatile u64 *)0x12001000)
 
-extern XglRenderVram asVramBase[6];
+static XglRenderVram asVramBase[6] = {
+    {0x0000, {0x008C, 0x0118, 0x01A4}, 0x008C, 0x0118, 0x01A4, {0x0230, 0x02BC, 0x01A4, 0x01C4, 0x01E4}},
+    {0x0000, {0x0070, 0x00E0, 0x0150}, 0x0070, 0x00E0, 0x0150, {0x01C0, 0x0230, 0x01C0, 0x01E0, 0x0200}},
+    {0x0000, {0x0062, 0x00C4, 0x0126}, 0x0062, 0x00C4, 0x0126, {0x0188, 0x01EA, 0x0188, 0x01A8, 0x01C8}},
+    {0x0000, {0x0054, 0x00A8, 0x00FC}, 0x0054, 0x00A8, 0x00FC, {0x0150, 0x01A4, 0x01A4, 0x01C4, 0x01E4}},
+    {0x0000, {0x0046, 0x008C, 0x00D2}, 0x0046, 0x008C, 0x00D2, {0x0118, 0x015E, 0x01A4, 0x01C4, 0x01E4}},
+    {0x0000, {0x0038, 0x0070, 0x00A8}, 0x0038, 0x0070, 0x00A8, {0x00E0, 0x0118, 0x0150, 0x0170, 0x0190}},
+};
 
 
-extern TestEnvironmentPacket TestEnv_0_004A8E80;
 
 
 /*
@@ -1055,11 +1069,23 @@ void xglRenderClearOff(void)
 
 static void xglRenderClear(void)
 {
-    TestEnv_0_004A8E80.color.red_green.words.low = ClearEnv.color_r;
-    TestEnv_0_004A8E80.color.red_green.words.high = ClearEnv.color_g;
-    TestEnv_0_004A8E80.color.blue = ClearEnv.color_b;
-    TestEnv_0_004A8E80.color.alpha = 0x80;
-    sceVif1PkRef(xglPacketGetCurrent(), &TestEnv_0_004A8E80, 6, 0, 0, 0);
+    /* DMA ref packet: VIF DIRECT, GIFtag, PRIM (sprite), RGBAQ, two XYZ2. */
+    static TestEnvironmentPacket TestEnv = {
+        0,
+        0,
+        0x51000005,
+        {0x00008001, 0x40034000, 0x0000551E, 0x00000000},
+        {{0x0000000000071001ULL}, 0x47, 0},
+        {{0}, 0, 0},
+        {0x6FF8, 0, 0x71F7, 0, 0x40000000, 0},
+        {0x8FF8, 0, 0x8DF7, 0, 0x40000000, 0},
+    };
+
+    TestEnv.color.red_green.words.low = ClearEnv.color_r;
+    TestEnv.color.red_green.words.high = ClearEnv.color_g;
+    TestEnv.color.blue = ClearEnv.color_b;
+    TestEnv.color.alpha = 0x80;
+    sceVif1PkRef(xglPacketGetCurrent(), &TestEnv, 6, 0, 0, 0);
 }
 
 static void xglRenderMove(void)
@@ -1112,3 +1138,10 @@ void xglRenderEntry(void)
         xglSleep();
     }
 }
+
+/* GS environments handed to sceGsPut*Env and the render state; zero until
+ * xglRenderInit fills them. */
+GsDrawEnv DrawEnv __attribute__((aligned(64))) = {{0}};
+GsDispEnv DispEnv __attribute__((aligned(64))) = {{0}};
+GsClearEnv ClearEnv __attribute__((aligned(64))) = {0};
+XglRenderState sRender = {{{0}}};
