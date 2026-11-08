@@ -12103,84 +12103,86 @@
    ".rodata": [
     {
      "range": [
-      "0x00a12090",
+      "0x00a12060",
       "0x00a120f0"
      ],
      "generated": [
-      "0x00a12090",
-      "0x00a120f0"
+      "0x00a12060",
+      "0x00a120e8"
      ],
      "generated_by": [
+      "UmnManzaiControl",
       "tskUmnManzaiWin"
      ],
      "c_owned_symbols": [
-      "jtbl_00A12090"
-     ],
-     "also_referenced_by_c": [
       "D_00A12060",
       "D_00A12070",
       "D_00A12078",
       "D_00A12080",
+      "jtbl_00A12090"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/umn_procurator.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a120f0",
+      "0x00a121a0"
+     ],
+     "generated": [
+      "0x00a120f0",
+      "0x00a12198"
+     ],
+     "generated_by": [
+      "LocalLightSet",
+      "UmnProcuratorManzai",
+      "UmnProcuratorManzai2"
+     ],
+     "c_owned_symbols": [
       "D_00A120F0",
       "D_00A12160",
       "D_00A12170",
       "D_00A12180",
       "D_00A12190"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_procurator.o"
+      "object": "build/ov02/build/scaffold/src/ov02/umn_procurator.o"
      }
     },
     {
      "range": [
       "0x00a121a0",
-      "0x00a121d0"
+      "0x00a12240"
      ],
      "generated": [
       "0x00a121a0",
-      "0x00a121d0"
+      "0x00a12240"
      ],
      "generated_by": [
+      "UmnProcuratorMail",
+      "UmnProcuratorManzai",
       "UmnProcuratorManzai2"
      ],
      "c_owned_symbols": [
-      "jtbl_00A121A0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A121A0",
       "D_00A121D0",
       "D_00A121E0",
-      "D_00A121F0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_procurator.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a12200",
-      "0x00a12230"
-     ],
-     "generated": [
-      "0x00a12200",
-      "0x00a12230"
-     ],
-     "generated_by": [
-      "UmnProcuratorManzai"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A12200"
-     ],
-     "also_referenced_by_c": [
+      "D_00A121F0",
+      "jtbl_00A12200",
       "D_00A12230"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_procurator.o"
+      "object": "build/ov02/build/scaffold/src/ov02/umn_procurator.o"
      }
     }
    ]

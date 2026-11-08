@@ -10,7 +10,6 @@ extern PadPrefix PadData;
 extern int eMessageNextPage(void *message, int arg);
 extern void xglSoundEffectNormalID(int sound_id, int variant);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern char D_00A12060[];
 
 int UmnManzaiControl(void)
 {
@@ -41,7 +40,7 @@ int UmnManzaiControl(void)
     } else if (!(UmnManzaiFlag & 0x30)) {
         return 0;
     }
-    xglFontDebugPrintf(0x80, 0x40, D_00A12060, UmnManzaiFlag);
+    xglFontDebugPrintf(0x80, 0x40, "flag %4x", UmnManzaiFlag);
     return 1;
 }
 
@@ -79,9 +78,6 @@ int UmnManzaiInit(void)
 typedef struct ManzaiSlideTarget {
     short v[2];
 } ManzaiSlideTarget;
-extern const ManzaiSlideTarget D_00A12070;
-extern const ManzaiSlideTarget D_00A12078;
-extern char D_00A12080[];
 typedef struct ManzaiWinElem {
     short x;
     short y;
@@ -129,6 +125,8 @@ extern void eMessageTextChange(void *message, int text);
 
 void tskUmnManzaiWin(void *task_opaque, void *work_opaque)
 {
+    static const ManzaiSlideTarget slide_in __attribute__((aligned(8))) = { { 0x1D0, 0x30 } };
+    static const ManzaiSlideTarget slide_out __attribute__((aligned(8))) = { { 0, 0x200 } };
     ManzaiTask *task = task_opaque;
     ManzaiWinWork *w = work_opaque;
     ManzaiSlideTarget t;
@@ -223,7 +221,7 @@ void tskUmnManzaiWin(void *task_opaque, void *work_opaque)
         w->state = 11;
         w->active = 1;
     case 11:
-        t = D_00A12070;
+        t = slide_in;
         old = w->elem[4].x;
         MoveSlide(&w->elem[4].x, &t.v[w->index - 1], 3.0f);
         w->elem[5].x = w->elem[4].x;
@@ -238,7 +236,7 @@ void tskUmnManzaiWin(void *task_opaque, void *work_opaque)
         w->state = 0x15;
         eMessageModeChange(&w->message, 0x70);
     case 21:
-        t2 = D_00A12078;
+        t2 = slide_out;
         old2 = w->elem[4].x;
         MoveSlide(&w->elem[4].x, &t2.v[w->index - 1], 3.0f);
         w->elem[5].x = w->elem[4].x;
@@ -263,7 +261,7 @@ void tskUmnManzaiWin(void *task_opaque, void *work_opaque)
         w->message.y = w->y + 4;
         eMessageMain(&w->message);
     }
-    xglFontDebugPrintf(0x80, w->index * 8 + 0x20, D_00A12080, w->state);
+    xglFontDebugPrintf(0x80, w->index * 8 + 0x20, "man_win %2d", w->state);
 }
 
 extern void xglLightIntensityAmbient(void *light, const Vector4 *intensity);
@@ -278,14 +276,26 @@ typedef struct LocalLightTable {
     LocalLightVector color[3];
     LocalLightVector direction[3];
 } LocalLightTable;
-extern const LocalLightTable D_00A120F0;
 
 static void LocalLightSet(unsigned int *model)
 {
+    static const LocalLightTable light_table = {
+        { value: { 0.3f, 0.3f, 0.3f, 1.0f } },
+        {
+            { value: { 0.55f, 0.55f, 0.55f, 1.0f } },
+            { value: { 0.35f, 0.35f, 0.35f, 1.0f } },
+            { value: { 0.55f, 0.55f, 0.55f, 1.0f } },
+        },
+        {
+            { value: { 0.171f, 0.023f, -0.985f, 1.0f } },
+            { value: { 0.688f, 0.643f, 0.336f, 1.0f } },
+            { value: { -0.156f, 0.022f, 0.988f, 1.0f } },
+        },
+    };
     LocalLightTable table;
     void *light;
 
-    table = D_00A120F0;
+    table = light_table;
     light = (char *)model + 0x510;
     xglLightIntensityAmbient(light, &table.ambient.value);
     xglLightIntensityParallel(light, 0, &table.color[0].value);
@@ -300,10 +310,6 @@ static void LocalLightSet(unsigned int *model)
 extern void MenuModelSubWindowSet(void *unit, int studioId, int mode);
 extern void MenuModelSubWindowBreak(void *unit);
 extern void MenuModelMotionSet(void *unit, int motion);
-extern LocalLightVector D_00A12160;
-extern LocalLightVector D_00A12170;
-extern LocalLightVector D_00A12180;
-extern char D_00A12190[];
 typedef struct Manzai2Win {
     int unk0;
     short cx;
@@ -315,6 +321,9 @@ typedef struct Manzai2Win {
 
 void UmnProcuratorManzai2(void *task)
 {
+    static const LocalLightVector m2_v0 = { value: { 0.0f, 0.0f, 2.5f, 1.0f } };
+    static const LocalLightVector m2_v1 = { value: { 0.5f, 0.5f, 0.5f, 1.0f } };
+    static const LocalLightVector m2_v1b = { value: { 0.0f, 0.88f, 0.5f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
@@ -359,8 +368,8 @@ void UmnProcuratorManzai2(void *task)
             if (((unsigned char *)UmnModelUkn)[0x13] < 2) {
                 break;
             }
-            v0 = D_00A12160;
-            v1 = D_00A12170;
+            v0 = m2_v0;
+            v1 = m2_v1;
             *(LocalLightVector *)c = v1;
             a[0] = ua[0];
             a[1] = ua[1];
@@ -397,7 +406,7 @@ void UmnProcuratorManzai2(void *task)
             }
             break;
         case 2:
-            v1 = D_00A12180;
+            v1 = m2_v1b;
             MenuModelSubWindowSet(task, 2, 2);
             win = *(Manzai2Win **)(t + 0x4C);
             r = (float *)(win->model + 0xA0);
@@ -488,7 +497,7 @@ void UmnProcuratorManzai2(void *task)
         default:
             break;
         }
-        xglFontDebugPrintf(0x80, 0x20, D_00A12190, st);
+        xglFontDebugPrintf(0x80, 0x20, "%2d", st);
     }
 }
 
@@ -511,10 +520,6 @@ static void Rotation(float *out, float *position, float *base, float *rotation)
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern void MenuModelSubWindowSet(void *unit, int studioId, int mode);
 extern void MenuModelSubWindowBreak(void *unit);
-extern LocalLightVector D_00A121D0;
-extern LocalLightVector D_00A121E0;
-extern LocalLightVector D_00A121F0;
-extern char D_00A12190[];
 typedef struct ManzaiSubWindow {
     int unk0;
     short x;
@@ -526,6 +531,9 @@ typedef struct ManzaiSubWindow {
 
 void UmnProcuratorManzai(void *task)
 {
+    static const LocalLightVector m_rot = { value: { -0.13090007f, -2.1264544f, -0.055850357f, 1.0f } };
+    static const LocalLightVector m_pos = { value: { -1.165374f, 1.183991f, 0.2238139f, 1.0f } };
+    static const LocalLightVector m_pos2 = { value: { 0.04f, 1.0f, 2.25f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
@@ -556,8 +564,8 @@ void UmnProcuratorManzai(void *task)
             t[0x13] = 1;
             ((void (*)(unsigned int *, int))LocalLightSet)(model, 0);
             cam = xglStudioGetCamera2(0);
-            rot = D_00A121D0;
-            pos = D_00A121E0;
+            rot = m_rot;
+            pos = m_pos;
             *(LocalLightVector *)&cam->position = pos;
             *(LocalLightVector *)&cam->rotation = rot;
         case 1:
@@ -600,7 +608,7 @@ void UmnProcuratorManzai(void *task)
             if (!(UmnManzaiFlag & 0x100)) {
                 break;
             }
-            pos = D_00A121F0;
+            pos = m_pos2;
             MenuModelSubWindowSet(task, 1, 2);
             win = *(ManzaiSubWindow **)(t + 0x4C);
             r = (float *)(win->model + 0xA0);
@@ -673,15 +681,15 @@ void UmnProcuratorManzai(void *task)
             st = t[0x13];
             break;
         }
-        xglFontDebugPrintf(0x80, 0x18, D_00A12190, st);
+        xglFontDebugPrintf(0x80, 0x18, "%2d", st);
     }
 }
 
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
-extern LocalLightVector D_00A12230;
 
 void UmnProcuratorMail(void *task)
 {
+    static const LocalLightVector mail_pos = { value: { 0.0f, 0.0f, 4.0f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
@@ -704,7 +712,7 @@ void UmnProcuratorMail(void *task)
             cam = xglStudioGetCamera2(0);
             memset(&rot, 0, 0x10);
             rot.value.w = 1.0f;
-            pos = D_00A12230;
+            pos = mail_pos;
             *(LocalLightVector *)&cam->position = pos;
             *(LocalLightVector *)&cam->rotation = rot;
             MenuModelUnitOpen(task, 2);
