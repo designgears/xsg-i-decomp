@@ -25442,12 +25442,12 @@
    ".rodata": [
     {
      "range": [
-      "0x00a4bcc0",
-      "0x00a4c778"
+      "0x00a4bbd0",
+      "0x00a4c780"
      ],
      "generated": [
-      "0x00a4bcc0",
-      "0x00a4c778"
+      "0x00a4bbd0",
+      "0x00a4c780"
      ],
      "generated_by": [
       "CMIBGInit",
@@ -25455,10 +25455,20 @@
       "CardGraphicLoad",
       "CardMainInit",
       "CardMainProc",
+      "CardPlaySound1",
+      "CardPlaySound2",
+      "CardPlaySound3",
+      "CardPlaySound4",
       "CardTitleInit",
       "NewCMPGameModeExit"
      ],
      "c_owned_symbols": [
+      "D_00A4BBD0",
+      "D_00A4BBF8",
+      "D_00A4BC20",
+      "D_00A4BC48",
+      "D_00A4BC70",
+      "D_00A4BC98",
       "D_00A4BCC0",
       "D_00A4BCD0",
       "D_00A4BCF0",
@@ -25620,18 +25630,11 @@
       "D_00A4C718",
       "D_00A4C730",
       "D_00A4C748",
-      "D_00A4C758"
+      "D_00A4C758",
+      "D_00A4C778"
      ],
      "also_referenced_by_c": [
-      "D_00A4BBD0",
-      "D_00A4BBF8",
-      "D_00A4BC20",
-      "D_00A4BC48",
-      "D_00A4BC70",
-      "D_00A4BC98",
-      "D_00A4C778",
-      "D_00A4C780",
-      "D_00A4C788"
+      "D_00A4C780"
      ],
      "basis": {
       "kind": "derived",
@@ -25641,18 +25644,20 @@
     },
     {
      "range": [
-      "0x00a4c790",
+      "0x00a4c788",
       "0x00a4c7c8"
      ],
      "generated": [
-      "0x00a4c790",
+      "0x00a4c788",
       "0x00a4c7c8"
      ],
      "generated_by": [
+      "CMTSetFontColor",
       "CardMainProc",
       "NewCMPGameModeExit"
      ],
      "c_owned_symbols": [
+      "D_00A4C788",
       "D_00A4C790",
       "D_00A4C798",
       "D_00A4C7A8",
@@ -25671,13 +25676,15 @@
     {
      "range": [
       "0x00a4c7d8",
-      "0x00a4c868"
+      "0x00a4d130"
      ],
      "generated": [
       "0x00a4c7d8",
-      "0x00a4c868"
+      "0x00a4d128"
      ],
      "generated_by": [
+      "CaedGameWinMode",
+      "CardMainProc",
       "NewCMPGameModeExit"
      ],
      "c_owned_symbols": [
@@ -25688,32 +25695,9 @@
       "D_00A4C818",
       "D_00A4C830",
       "D_00A4C848",
-      "D_00A4C858"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4C858",
       "D_00A4C868",
-      "D_00A4C870"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4c880",
-      "0x00a4d130"
-     ],
-     "generated": [
-      "0x00a4c880",
-      "0x00a4d128"
-     ],
-     "generated_by": [
-      "CaedGameWinMode",
-      "CardMainProc"
-     ],
-     "c_owned_symbols": [
+      "D_00A4C870",
       "jtbl_00A4C880",
       "D_00A4C930",
       "D_00A4C938",
