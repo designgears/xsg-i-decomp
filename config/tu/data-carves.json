@@ -11216,24 +11216,19 @@
    ".rodata": [
     {
      "range": [
-      "0x004cd140",
-      "0x004cd628"
+      "0x004cd0c0",
+      "0x004cd670"
      ],
      "generated": [
-      "0x004cd140",
-      "0x004cd624"
+      "0x004cd0c0",
+      "0x004cd669"
      ],
      "generated_by": [
+      "initBaseClasses",
+      "initVM",
       "virtualMachine"
      ],
      "c_owned_symbols": [
-      "jtbl_004CD140",
-      "jtbl_004CD470",
-      "jtbl_004CD4E0",
-      "jtbl_004CD550",
-      "jtbl_004CD5C0"
-     ],
-     "also_referenced_by_c": [
       "D_004CD0C0",
       "D_004CD0D0",
       "D_004CD0E0",
@@ -11241,10 +11236,59 @@
       "D_004CD100",
       "D_004CD110",
       "D_004CD120",
+      "jtbl_004CD140",
+      "jtbl_004CD470",
+      "jtbl_004CD4E0",
+      "jtbl_004CD550",
+      "jtbl_004CD5C0",
       "D_004CD628",
       "D_004CD640",
       "D_004CD658"
-     ]
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/init_vm.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dbfe0",
+      "0x004dc048"
+     ],
+     "generated": [
+      "0x004dbfe0",
+      "0x004dc048"
+     ],
+     "generated_by": [
+      "initPrimitiveTypes",
+      "initVM"
+     ],
+     "c_owned_symbols": [
+      "D_004DBFE0",
+      "D_004DBFE8",
+      "D_004DBFF0",
+      "D_004DBFF8",
+      "D_004DC000",
+      "D_004DC008",
+      "D_004DC010",
+      "D_004DC018",
+      "D_004DC020",
+      "D_004DC028",
+      "D_004DC030",
+      "D_004DC038",
+      "classBoolean",
+      "classClass"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/init_vm.o"
+     }
     }
    ]
   },
