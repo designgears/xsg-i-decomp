@@ -9483,20 +9483,48 @@
    ]
   },
   "main/tu254": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8450",
+      "0x004d845c"
+     ],
+     "generated": [
+      "0x004d8450",
+      "0x004d845c"
+     ],
+     "generated_by": [
+      "ACT_create",
+      "ACT_info_00306090"
+     ],
+     "c_owned_symbols": [
+      "D_004D8450",
+      "D_004D8454",
+      "D_004D8458"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_1.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004d1718",
+      "0x004d1708",
       "0x004d1800"
      ],
      "generated": [
-      "0x004d1718",
+      "0x004d1708",
       "0x004d17f5"
      ],
      "generated_by": [
       "ACT_info_00306090"
      ],
      "c_owned_symbols": [
+      "D_004D1708",
       "D_004D1718",
       "D_004D1728",
       "D_004D1738",
@@ -9511,13 +9539,62 @@
       "D_004D17D8",
       "D_004D17E8"
      ],
-     "also_referenced_by_c": [
-      "D_004D1708"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/act_1.o"
+      "object": "build/main/build/c/act_1.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc210",
+      "0x004dc214"
+     ],
+     "generated": [
+      "0x004dc210",
+      "0x004dc214"
+     ],
+     "generated_by": [
+      "ACT_allocBlock",
+      "ACT_allocMatrix",
+      "ACT_dispose2",
+      "ACT_matrixInit"
+     ],
+     "c_owned_symbols": [
+      "actMatrixHeap"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004dc218",
+      "0x004dc230"
+     ],
+     "generated": [
+      "0x004dc218",
+      "0x004dc22c"
+     ],
+     "generated_by": [
+      "ACT_info_00306090"
+     ],
+     "c_owned_symbols": [
+      "D_004DC218",
+      "D_004DC220",
+      "D_004DC228"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_1.o"
      }
     }
    ]
