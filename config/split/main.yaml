@@ -524,7 +524,7 @@ segments:
       - [0x1B3D10, data, colli_test]
       - [0x1B3D40, data, set_path]
       - [0x1B3E00, data, sv_get_image_item]
-      - [0x211AC8, data, sef]
+      - [0x210AC0, data, sef]
       - [0x211D80, data, srs]
       - [0x21F290, data, sc_get]
       - [0x2238D0, data, sc_wait_parse_script]

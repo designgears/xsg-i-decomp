@@ -1182,7 +1182,7 @@
         },
         {
           "c_split": false,
-          "end": "0x00410AC8",
+          "end": "0x0040FAC0",
           "ordinal": 210,
           "piece": "sv_get_image_item",
           "start": "0x003B2E00",
@@ -1193,7 +1193,7 @@
           "end": "0x00410D80",
           "ordinal": 211,
           "piece": "sef",
-          "start": "0x00410AC8",
+          "start": "0x0040FAC0",
           "tu": "sef"
         },
         {
@@ -62358,20 +62358,20 @@
           ],
           "bounds": [
             "0x003B2DD0",
-            "0x00410AC8"
+            "0x0040FAC0"
           ],
-          "end": "0x00410AC8",
+          "end": "0x0040FAC0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x00410AC8",
+              "end": "0x0040FAC0",
               "name": "sv_get_image_item",
               "start": "0x003B2E00"
             }
           ],
           "rule": "anchored start",
-          "size": 384200,
+          "size": 380096,
           "splat_type": "data",
           "start": "0x003B2E00"
         },
@@ -63955,7 +63955,7 @@
         },
         ".data": {
           "anchored": [
-            "0x00410AC8",
+            "0x0040FAC0",
             "0x00410BA2"
           ],
           "bounds": [
@@ -63969,13 +63969,13 @@
               "c_split": false,
               "end": "0x00410D80",
               "name": "sef",
-              "start": "0x00410AC8"
+              "start": "0x0040FAC0"
             }
           ],
-          "rule": "anchored start",
-          "size": 696,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 4800,
           "splat_type": "data",
-          "start": "0x00410AC8"
+          "start": "0x0040FAC0"
         },
         ".lit4": {
           "anchored": [

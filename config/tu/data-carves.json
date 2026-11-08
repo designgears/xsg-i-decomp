@@ -15697,11 +15697,11 @@
     {
      "range": [
       "0x003b2e00",
-      "0x00410ac8"
+      "0x0040fac0"
      ],
      "generated": [
       "0x003b2e00",
-      "0x00410ac8"
+      "0x0040faa0"
      ],
      "generated_by": [
       "SGsInitEnv",
@@ -15737,9 +15737,7 @@
       "_svViewScreenMtx",
       "D_0040D670",
       "_imageList",
-      "D_0040FA9C",
-      "sefAtanTbl",
-      "D_00410AC4"
+      "D_0040FA9C"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -15849,6 +15847,44 @@
    ]
   },
   "main/tu211": {
+   ".data": [
+    {
+     "range": [
+      "0x0040fac0",
+      "0x00410d80"
+     ],
+     "generated": [
+      "0x0040fac0",
+      "0x00410d80"
+     ],
+     "generated_by": [
+      "sefAddLightActor",
+      "sefCnvDeathEffectNo",
+      "sefCnvWaitEffectNo",
+      "sefDrawEffect",
+      "sefSetReverseDir"
+     ],
+     "c_owned_symbols": [
+      "sefAtanTbl",
+      "D_00410AC4",
+      "revEft_3",
+      "_sefBossDeathPrm_4",
+      "steftTbl",
+      "D_00410BA2",
+      "_invView",
+      "_defLight",
+      "D_00410CE0",
+      "sefDummy",
+      "sefDummy2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sef.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
