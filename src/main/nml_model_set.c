@@ -6124,6 +6124,13 @@ static int nmlModelRenderCircle(void *arg0, int arg1, int arg2)
     LayoutStore *var_16;
     int var_6;
     int var_9;
+#ifdef PORT_HOST
+    {   /* the native renderer's real shadows replace the game's circle shadow */
+        extern int xsg_native_real_shadows(void);
+        if (xsg_native_real_shadows())
+            return 0;
+    }
+#endif
 
     var_16 = 0;
     var_9 = 0;
@@ -6157,6 +6164,13 @@ static int nmlModelRenderDropCircle(short *arg0, int arg1, void *arg2)
 {
     LayoutStore *layout;
     int i;
+#ifdef PORT_HOST
+    {   /* the native renderer's real shadows replace the game's drop / circle shadows */
+        extern int xsg_native_real_shadows(void);
+        if (xsg_native_real_shadows())
+            return 0;
+    }
+#endif
 
     layout = 0;
     do {
@@ -6192,6 +6206,13 @@ static int nmlModelRenderDrop(DropRect *rect, int step, StudioCamera *camera, in
 {
     int result;
     int index;
+#ifdef PORT_HOST
+    {   /* the native renderer's real shadows replace the game's drop / circle shadows */
+        extern int xsg_native_real_shadows(void);
+        if (xsg_native_real_shadows())
+            return 0;
+    }
+#endif
 
     result = 0;
     nmlFilterSetFrameAlphaClear();
