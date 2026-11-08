@@ -1616,5 +1616,3 @@ int _nowDataIdx = 0;
  * Labels for the alignment fill after _cmdPut and _scFuncHandler (splat pad
  * items), so the data carve owns the whole sections.
  */
-__asm__("D_004DBB32 = _cmdPut + 2");
-__asm__("D_0041E3C4 = _scFuncHandler + 0x124");

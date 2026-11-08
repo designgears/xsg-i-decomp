@@ -119,7 +119,4 @@ void GamePauseDispEvent(void)
  * Labels for the alignment fill after the first two messages (splat pad
  * items), so the data carve owns the whole section.
  */
-__asm__("D_0036272D = pause.0 + 13");
-__asm__("D_0036275C = msg1.1 + 44");
 /* The zero fill that ends the original .data (to its 16-byte end). */
-__asm__(".data\nD_00362783:\n\t.space 13\n\t.previous");

@@ -783,6 +783,12 @@ def section_items(ctx, sec):
 COMMENT = re.compile(r'/\*.*?\*/')
 
 
+def _is_pad(item):
+    """splat marks the fill between two objects it found no reference to."""
+    return any('Automatically generated and unreferenced pad' in line
+               for line in item['block']['lines'])
+
+
 def item_references(item):
     """Identifiers an item's own data names (the labels a pointer table points at)."""
     names = set()
@@ -800,7 +806,9 @@ def run_specs(items, spans):
         its = [it for it in items if lo <= it['start'] < hi]
         if not its or its[0]['start'] != lo:
             raise CarveError(f'the run {h8(lo)}-{h8(hi)} does not start at an item')
-        out.append(dict(lo=lo, hi=hi, last=its[-1]['start'], first_end=its[0]['end'],
+        # trailing splat pads (alignment fill) need not come from the C object
+        real = [it for it in its if 'block' not in it or not _is_pad(it)] or its
+        out.append(dict(lo=lo, hi=hi, last=real[-1]['start'], first_end=its[0]['end'],
                         items=[(it['start'], it['end']) for it in its]))
     return out
 
@@ -1296,6 +1304,28 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
                            and set(items[i]['labels']) & x['refs'][j]})
         if shared:
             detail['shared_with_scaffold'] = shared
+        # splat's "unreferenced pad" items are the fill cc1's alignment leaves
+        # between (or after) the C object's own items: no code names them, so
+        # the reference walk above never reaches them. A zero pad right after a
+        # C-generated item, followed by another C-generated item or by the end
+        # of the section, belongs to that C run (plan_split's item check still
+        # places every following item against the C object).
+        if orig is None:
+            orig = Elf(Path(ctx['orig']).read_bytes())
+        gset = set(gen)
+        for i in range(len(items)):
+            if i in gset or i - 1 not in gset:
+                continue
+            j = i
+            while j < len(items) and j not in gset and _is_pad(items[j]) and not any(
+                    va_bytes(orig, items[j]['start'], items[j]['end'] - items[j]['start']) or b''):
+                j += 1
+            if j > i and (j == len(items) or j in gset):
+                gset.update(range(i, j))
+        absorbed = sorted(gset - set(gen))
+        if absorbed:
+            detail['pads_in_runs'] = [items[i]['name'] for i in absorbed]
+        gen = sorted(gset)
         groups = []
         for i in gen:
             if groups and groups[-1][-1] == i - 1:

@@ -1921,14 +1921,3 @@ void xglCdInitial(void)
  * the data carve owns the whole sections, and the zero fill that ends the
  * original .data and .sdata.
  */
-__asm__("D_0049169C = arcname.1 + 12");
-__asm__("D_004916AC = arcname.2 + 12");
-__asm__("D_004916BC = arcname.3 + 12");
-__asm__("D_004916CC = arcname.4 + 12");
-__asm__("D_00491705 = head.8 + 13");
-__asm__("D_00491711 = head.10 + 9");
-__asm__("D_004DC2EE = root.0 + 6");
-__asm__("D_004DC2F7 = hdd_head.6 + 7");
-__asm__("D_004DC31F = tail.9 + 7");
-__asm__(".data\nD_00491768:\n\t.space 8\n\t.previous");
-__asm__(".section .sdata\nD_004DC327:\n\t.space 1\n\t.previous");
