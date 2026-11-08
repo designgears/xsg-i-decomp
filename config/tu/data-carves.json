@@ -20331,6 +20331,40 @@
    ]
   },
   "ov12/tu034_00a20040": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f6a8",
+      "0x00a4faf0"
+     ],
+     "generated": [
+      "0x00a4f6a8",
+      "0x00a4faf0"
+     ],
+     "generated_by": [
+      "_CreateAnnounceNumFont",
+      "_CreateBulletFont",
+      "_CreateDispWpnFont",
+      "_CreateTimeFont"
+     ],
+     "c_owned_symbols": [
+      "s_aBulletFontTbl_0",
+      "D_00A4F75E",
+      "s_aFontTbl_1",
+      "D_00A4F824",
+      "s_aFontTbl_2",
+      "D_00A4FA4A",
+      "s_aBulletFontTbl_3",
+      "D_00A4FAEA"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_battle_common_data.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
