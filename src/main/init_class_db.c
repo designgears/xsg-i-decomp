@@ -496,7 +496,7 @@ void setupClass(ClassDescriptor *class_info, u32 this_class_index,
 }
 
 const char D_004DBFD0[] = ".class";
-extern ConstString **constStringTable;
+ConstString **constStringTable = 0;
 
 
 

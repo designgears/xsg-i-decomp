@@ -117,13 +117,13 @@ static void xglMenuDrawType1Sub(XglMenuEntry *entry,
         row = &node->rows[row_index];
         if (row_index == node->selected_item) {
             xglFontDebugPrintf(context->x, context->y,
-                               D_004DC2B8, row->text);
+                               "\f\x80\0\0%s", row->text);
         } else if (row->next == (XglMenuNode *)-1) {
             xglFontDebugPrintf(context->x, context->y,
-                               D_004DC2C0, row->text);
+                               "\f000%s", row->text);
         } else {
             xglFontDebugPrintf(context->x, context->y,
-                               D_004DC2C8, row->text);
+                               "\v%s", row->text);
         }
 
         context->y += list->row_offsets[level];
@@ -168,6 +168,8 @@ typedef struct XglMenuEntV {
     unsigned char pad14[0xC];
     XglMenuListData list;
 } XglMenuEntV;
+
+int ActiveMenuNo = 0;
 
 static void xglMenuDrawType1(XglMenuEntry *entry, XglMenuDrawContext *context)
 {
@@ -306,3 +308,8 @@ void xglMenuInitial(void)
         menutbl[i].active = 0;
     }
 }
+
+/* Device prefixes kept in this TU's .sdata; no code here refers to them. */
+const char D_004DC2D0[] = "pfs0:";
+const char D_004DC2D8[] = "pfs1:";
+const char D_004DC2E0[] = "hdd:";

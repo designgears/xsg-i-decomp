@@ -5,12 +5,8 @@
 
 /* The object-pool storage remains scaffold-owned; its record layout is unresolved. */
 extern u8 mefObjBuff[];
-extern u32 mefObjSysFlags;
+static u32 mefObjSysFlags = 0;
 extern void MOutputDebugStringWarn(const char *format, ...);
-extern const char D_004CC990[];
-extern const char D_004CC9C0[];
-extern const char D_004CC9F0[];
-extern const char D_004CCA20[];
 
 void MEfObjInit(void)
 {
@@ -107,7 +103,7 @@ void *MEfObjCreate(void)
 
     object = (MEfObj *)mefObjBuff;
     if ((mefObjSysFlags & MEFOBJ_SYS_READY) == 0) {
-        MOutputDebugStringWarn(D_004CC990);
+        MOutputDebugStringWarn("MEfObjCreate: MEfObj is not be initialized");
         return 0;
     }
 
@@ -123,7 +119,7 @@ void *MEfObjCreate(void)
         object = &object[1];
     }
 
-    MOutputDebugStringWarn(D_004CC9C0);
+    MOutputDebugStringWarn("MEfObjCreate: Failed to create an Object");
     return 0;
 }
 
@@ -132,12 +128,12 @@ int MEfObjDestroy(void *object)
     MEfObj *effect = object;
 
     if ((mefObjSysFlags & MEFOBJ_SYS_READY) == 0) {
-        MOutputDebugStringWarn(D_004CC9F0);
+        MOutputDebugStringWarn("MEfObjDestroy: MEfObj is not be initialized");
         return 0;
     }
 
     if ((effect->flags & MEFOBJ_ACTIVE) == 0) {
-        MOutputDebugStringWarn(D_004CCA20);
+        MOutputDebugStringWarn("MEfObjDestroy: Not alive");
         return 0;
     }
 

@@ -46,7 +46,7 @@ void Java_xeno_Stage_start__ILjava_lang_Object_(StageThread *thread,
         *failure_result = 0;
         return;
     }
-    field = lookupClassField(cls, loadConstString(D_004DC208, -1), 0);
+    field = lookupClassField(cls, loadConstString("peer", -1), 0);
     peer = *(SceneObject *)(object + field->offset);
     if (args[1].i == 0) {
         return;
@@ -83,7 +83,7 @@ void Java_xeno_Stage_stop__(StageThread *thread, StageObjectCall *arguments,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Stage,
-                                  loadConstString(D_004DC208, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(SceneObject *)(object + peer_field->offset);
     peer_thread = JTHREAD_get(peer);
     if (peer_thread != 0) {

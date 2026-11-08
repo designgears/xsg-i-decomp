@@ -108,7 +108,7 @@ extern void EW_setDrawEnv(int context);
 
 extern void xglFontReloadTexture(int context, int mode);
 
-extern int ew_send_mode;
+static int ew_send_mode = 0;
 
 
 /* The font queue invokes callbacks with its render context and the saved
@@ -163,7 +163,10 @@ typedef struct EwLabelWidget {
     unsigned char unmodeled_10[0x18];
 } EwLabelWidget;
 
-extern u64 sprt_base_register[4];
+static u64 sprt_base_register[4] = {
+    0x2007EF0669343C00ULL, 0x2007EF0669343C00ULL,
+    0x2007EF0669343C00ULL, 0x2007EF0669343C00ULL,
+};
 
 
 extern void xglPrimAddGifTagDirect(XglPacket *packet, const void *data, int count);
@@ -252,7 +255,6 @@ extern void sprt_put(int context, EwSpriteWidget *widget);
 
 extern void xglFontPrint(int x, int y, int color, const char *text);
 
-extern char *tmp_0;
 
 /* Retail maps ewComponent as a GLOBAL OBJECT at 0x0099CA30 with size 0xA00.
  * This table has 64 observed 0x28-byte slots; only flags are modeled here. */
@@ -266,7 +268,12 @@ extern char *tmp_0;
  * vertical to horizontal.
  */
 
-extern unsigned int frameUV[8][4];
+static unsigned int frameUV[8][4] = {
+    {0x000, 0x800, 0x800, 0x900}, {0x000, 0x900, 0x800, 0xA00},
+    {0x800, 0x000, 0x900, 0x800}, {0x900, 0x000, 0xA00, 0x800},
+    {0x800, 0x800, 0x900, 0x900}, {0x900, 0x800, 0xA00, 0x900},
+    {0x800, 0x900, 0x900, 0xA00}, {0x900, 0x900, 0xA00, 0xA00},
+};
 
 
 /*
@@ -515,6 +522,8 @@ void EW_drawContainer(int context, EwContainerState *container)
 
 void EW_drawComoponent(int context, EwWidget *widget)
 {
+    static char *tmp = "\x0F" "D\0\x80";
+
     switch (widget->type)
     {
     case 0:
@@ -639,8 +648,8 @@ void EW_drawComoponent(int context, EwWidget *widget)
                      (const char *) fontStyle);
         if (colorScale != 128)
         {
-            tmp_0[1] = 0x11;
-            xglFontPrint(0, 0, textWidget->header.drawValue, tmp_0);
+            tmp[1] = 0x11;
+            xglFontPrint(0, 0, textWidget->header.drawValue, tmp);
         }
         for (i = firstLine; i < endLine; i++)
         {
@@ -1312,3 +1321,6 @@ static void label_put(EwDrawContext *context, EwLabelWidget *widget)
     }
     xglPrimAddGifTagDirect(context->packet, gif, (qword - gif) / 4);
 }
+
+/* Capture directory string kept in this TU's .rodata; nothing here uses it. */
+const char D_004C23C0[] = "host0:/home/xeno/work/";

@@ -1,8 +1,12 @@
 #include "common.h"
 #include "shared.h"
 #include "game.h"
+
+/* The original image has crtstuff's zero-size force_to_data label at the start
+ * of this TU's .data (the linker placed the empty crtbegin .data there); keep
+ * it at the same address now that this TU's first data item comes from C. */
+__asm__(".section .data\nforce_to_data:\n.previous");
 extern u8 actSequence[0x9800];
-extern float D_004D7BA0;
 
 /*
  * GNU EE native TI storage/copy type. Used only for the
@@ -773,10 +777,10 @@ void GamePopSaveDataUser(void)
 }
 
 extern int UseVMFlag;
-extern int saveEffe;
-extern int shopEffe;
-extern int evsEffe;
-extern int retEffe;
+static int saveEffe = 0;
+static int shopEffe = 0;
+static int evsEffe = 0;
+static int retEffe = 0;
 extern char GameIdLight[];
 extern void xglLightSetDefault(void *light);
 int xglFontLoad(int, int);
@@ -1020,7 +1024,6 @@ static ActorHead *checkTalk(ActorHead *self)
     return best;
 }
 
-extern float D_004D7B8C;
 static ActorHead *checkTouch(ActorHead *self)
 {
     TouchActorView *me = (TouchActorView *)self;
@@ -1051,7 +1054,7 @@ static ActorHead *checkTouch(ActorHead *self)
         dx -= pos[0];
         dz = v->z;
         dz -= pos[2];
-        k = D_004D7B8C;
+        k = 0.48999998f;
         d = __builtin_fabsf(pos[3] + k);
         lim = dx * dx;
         lim += dz * dz;
@@ -1099,9 +1102,6 @@ int checkItemBoxDir(u8 *actor, ItemBoxView *box)
     return CheckPointLine(&v1, &v2, (Vector4 *)(actor + 0x10)) == 2;
 }
 
-extern float D_004D7B90;
-extern float D_004D7B94;
-extern float D_004D7B98;
 extern u8 MapUnit[];
 static ItemBoxView *checkItemBox(u8 *self)
 {
@@ -1112,13 +1112,13 @@ static ItemBoxView *checkItemBox(u8 *self)
     int i;
 
     best = 0;
-    bestDist = D_004D7B90;
+    bestDist = 65535.0f;
     pos[0] = *(float *)(self + 0x10);
     pos[1] = *(float *)(self + 0x14);
     pos[2] = *(float *)(self + 0x18);
     for (i = 0; i < 64; i++) {
         ItemBoxView *u = (ItemBoxView *)(MapUnit + i * 0x300);
-        if (__builtin_fabsf(*(float *)(self + 0x14) - u->position.v.y) > D_004D7B94) continue;
+        if (__builtin_fabsf(*(float *)(self + 0x14) - u->position.v.y) > 1.8f) continue;
         if (*(short *)((u8 *)u + 0xA4) == -1) continue;
         if (!(*(u32 *)u & 0x08000000)) continue;
         if (*((u8 *)u + 0xA2) != 0) continue;
@@ -1132,7 +1132,7 @@ static ItemBoxView *checkItemBox(u8 *self)
         else pos[3] = ez * ez;
         lim = __builtin_fabsf(lim);
         if (!(lim < __builtin_fabsf(pos[3] + k))) continue;
-        if (!(__builtin_fabsf(nearDir(atan2f(dx, dz), *(float *)(self + 0x54))) < D_004D7B98)) continue;
+        if (!(__builtin_fabsf(nearDir(atan2f(dx, dz), *(float *)(self + 0x54))) < 1.0471976f)) continue;
         if (!(lim < bestDist)) continue;
         if (checkItemBoxDir(self, u) == 0) continue;
         bestDist = lim;
@@ -1700,9 +1700,6 @@ extern void xglMatrixStackRotY(float angle);
 extern void xglMatrixStackRotZ(float angle);
 extern void xglMatrixStackSave(float matrix[4][4]);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
-extern char str_0[];
-extern char str_1[];
-extern char D_004D8A60[];
 typedef int gdt_q __attribute__((mode(TI)));
 typedef union { float m[4][4]; gdt_q q[4]; } GdtMtx;
 typedef struct { gdt_q q[4]; } GdtQ4;
@@ -1727,6 +1724,8 @@ static void GameDispTag(void)
     for (i = 0; i < 64; i++) {
         ActorHead *a = &actor[i];
         ActorHead *p;
+        static char str[] = "\x0C\0\0\0%4x\n%6x"; /* colour escape + id/depth */
+
         if (a->inUseId == 0) continue;
         p = *(ActorHead **)((u8 *)a + 0x8FC);
         if (!(a->inUseId & 0xF000)) {
@@ -1772,14 +1771,16 @@ static void GameDispTag(void)
                     break;
                 }
             }
-            str_0[1] = color >> 16;
-            str_0[2] = color >> 8;
-            str_0[3] = color;
-            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, str_0, i + 0x200, scr[2]);
+            str[1] = color >> 16;
+            str[2] = color >> 8;
+            str[3] = color;
+            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, str, i + 0x200, scr[2]);
         }
     }
     for (i = 0; i < 64; i++) {
         u8 *u = MapUnit + i * 0x300;
+        static char str[] = "\x0C\0\0\0%4x\n%6x"; /* colour escape + id/depth */
+
         if (*(short *)(u + 0xA4) < 0) continue;
         xglMatrixStackUnit();
         xglMatrixStackScale((float *)(u + 0x30));
@@ -1802,10 +1803,10 @@ static void GameDispTag(void)
                 color = 0xFFFF00;
                 break;
             }
-            str_1[1] = color >> 16;
-            str_1[2] = color >> 8;
-            str_1[3] = color;
-            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, D_004D8A60, i + 0x300, scr[2]);
+            str[1] = color >> 16;
+            str[2] = color >> 8;
+            str[3] = color;
+            xglFontDebugPrintf(((scr[0] >> 4) - 0x700) >> 1, ((scr[1] >> 4) - 0x720) >> 1, "%4x\n%6x", i + 0x300, scr[2]);
         }
     }
 }
@@ -1854,7 +1855,6 @@ typedef struct GameClearEnvColor {
     u32 color_a;
 } GameClearEnvColor;
 extern GameClearEnvColor ClearEnv;
-extern u32 TestEnv_2_00338620[];
 extern int StudioEntrySkip;
 typedef struct GameDrawSyncView {
     u8 unmodeled_00[0x10];
@@ -1888,6 +1888,15 @@ extern void nmlModelSetGlobalFogReset(void);
 
 void GameDrawSync(void)
 {
+    /* DMA ref packet: VIF DIRECT, GIFtag, PRIM (sprite), RGBAQ, two XYZ2. */
+    static u32 TestEnv[24] = {
+        0x00000000, 0x00000000, 0x00000000, 0x51000005,
+        0x00008001, 0x40034000, 0x0000551E, 0x00000000,
+        0x00071001, 0x00000000, 0x00000047, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00006FF8, 0x000071F7, 0x40000000, 0x00000000,
+        0x00008FF8, 0x00008DF7, 0x40000000, 0x00000000,
+    };
 
 
 
@@ -1901,11 +1910,11 @@ void GameDrawSync(void)
         if (((GameDrawSyncView *)&GameLoopState)->clear_hook != 0) {
             ((GameDrawSyncView *)&GameLoopState)->clear_hook();
         } else {
-            TestEnv_2_00338620[12] = ClearEnv.color_r;
-            TestEnv_2_00338620[13] = ClearEnv.color_g;
-            TestEnv_2_00338620[14] = ClearEnv.color_b;
-            TestEnv_2_00338620[15] = 0x80;
-            sceVif1PkRef(xglPacketGetCurrent(), TestEnv_2_00338620, 6, 0, 0, 0);
+            TestEnv[12] = ClearEnv.color_r;
+            TestEnv[13] = ClearEnv.color_g;
+            TestEnv[14] = ClearEnv.color_b;
+            TestEnv[15] = 0x80;
+            sceVif1PkRef(xglPacketGetCurrent(), TestEnv, 6, 0, 0, 0);
         }
         TWSYS_draw();
         if (((GameDrawSyncView *)&GameLoopState)->map_hook != 0) {
@@ -2083,9 +2092,6 @@ typedef struct EnemyWorkPostTalk_CG2 {
     u8 unmodeled_3832[0x38b0 - 0x3832];
 } EnemyWorkPostTalk_CG2;
 extern void *const stageVM;
-extern const char D_004D8A68[];
-extern const char D_004BE2D0[];
-extern const char D_004BE2C0[];
 #define PadDataCG (*(PadDataDebugLayout_CG2 *)&PadData)
 extern short NowTester;
 extern signed char FLAG_FRAME_60;
@@ -2259,19 +2265,19 @@ int GameModeCfMain(void)
         Game_Data_Pop();
         xglFontLoad(1, 0);
         WindowTexLoad(0, 0);
-        always_method = D_004BE2C0;
+        always_method = "EOB_Always";
         battle_enemies = enepc;
         CallMethod_I(always_method,
             battle_enemies[((ActorHead_CG *)gameLoopCG.battle_enemy)->number].enemy_id);
         switch (battle_result) {
         case 1:
             Enemy_After_Battle(1);
-            CallMethod_I(D_004D8A68,
+            CallMethod_I("EOB",
                 battle_enemies[((ActorHead_CG *)gameLoopCG.battle_enemy)->number].enemy_id);
             break;
         case 3:
             Enemy_After_Battle(3);
-            CallMethod_I(D_004BE2D0,
+            CallMethod_I("EOB_Escape",
                 battle_enemies[((ActorHead_CG *)gameLoopCG.battle_enemy)->number].enemy_id);
             break;
         default:
@@ -2460,7 +2466,7 @@ talk:
 void actSequenceClear(u8 *actor) {
     u32 *seq;
     u32 *flags = (u32 *)actor;
-    float speed = D_004D7BA0;
+    float speed = 0.033333335f;
 
     *flags &= ~2;
     *(float *)(actor + 0x6f8) = speed;
@@ -2691,3 +2697,9 @@ void Game(void)
     xglSleep();
     xglSleep();
 }
+
+unsigned char SnapDrawCreditFlag = 0;
+u8 UseTestPath = 0;
+/* Unreferenced: eight zero bytes and a test-path tag in this TU's .sdata. */
+long long D_004D8A80 = 0;
+const char D_004D8A88[] = "MC_TEST";

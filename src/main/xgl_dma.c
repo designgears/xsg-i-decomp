@@ -20,7 +20,22 @@ typedef struct XglDmaBuffer {
     u32 *current;
 } XglDmaBuffer;
 
-extern XglDmaChannel *tbl[10];
+static XglDmaChannel *tbl[10] = {
+    (XglDmaChannel *)0x10008000,
+    (XglDmaChannel *)0x10009000,
+    (XglDmaChannel *)0x1000A000,
+    (XglDmaChannel *)0x1000B000,
+    (XglDmaChannel *)0x1000B400,
+    (XglDmaChannel *)0x1000C000,
+    (XglDmaChannel *)0x1000C400,
+    (XglDmaChannel *)0x1000C800,
+    (XglDmaChannel *)0x1000D000,
+    (XglDmaChannel *)0x1000D400,
+};
+
+/* Pad state and the menu table live in this TU's data; their users declare them. */
+unsigned char PadData[0xD0] __attribute__((aligned(16))) = {0};
+unsigned int menutbl[0x200] = {0};
 extern XglDmaChannel *mfifo_drain;
 
 extern void FlushCache(int mode);
