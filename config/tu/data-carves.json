@@ -5928,32 +5928,57 @@
    ]
   },
   "main/tu179": {
+   ".data": [
+    {
+     "range": [
+      "0x0036dd90",
+      "0x0036ddac"
+     ],
+     "generated": [
+      "0x0036dd90",
+      "0x0036ddac"
+     ],
+     "generated_by": [
+      "EtherTreeFirstDataGet"
+     ],
+     "c_owned_symbols": [
+      "EtherTreeFirstData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ether_tree.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d7e7c",
-      "0x004d7e84"
+      "0x004d7e8c"
      ],
      "generated": [
       "0x004d7e7c",
-      "0x004d7e84"
+      "0x004d7e8c"
      ],
      "generated_by": [
       "EtherTreeCenterMove",
-      "EtherTreeObjectSet"
+      "EtherTreeObjectDraw",
+      "EtherTreeObjectSet",
+      "subRightDraw"
      ],
      "c_owned_symbols": [
       "D_004D7E7C",
-      "D_004D7E80"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7E80",
       "D_004D7E84",
       "D_004D7E88"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ether_tree.o"
+      "object": "build/main/build/c/ether_tree.o"
      }
     }
    ],
@@ -5961,49 +5986,29 @@
     {
      "range": [
       "0x004c9ab0",
-      "0x004c9ad0"
+      "0x004c9bc0"
      ],
      "generated": [
       "0x004c9ab0",
-      "0x004c9ad0"
+      "0x004c9bbc"
      ],
      "generated_by": [
       "EtherTreeLineColorGet",
+      "EtherTreeLineDraw",
+      "EtherTreeMain",
       "subTreeLineDraw"
      ],
      "c_owned_symbols": [
       "D_004C9AB0",
-      "D_004C9AC0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C9AD0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ether_tree.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c9ae0",
-      "0x004c9bc0"
-     ],
-     "generated": [
-      "0x004c9ae0",
-      "0x004c9bbc"
-     ],
-     "generated_by": [
-      "EtherTreeMain"
-     ],
-     "c_owned_symbols": [
+      "D_004C9AC0",
+      "D_004C9AD0",
       "jtbl_004C9AE0"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ether_tree.o"
+      "object": "build/main/build/c/ether_tree.o"
      }
     }
    ],
@@ -6011,19 +6016,56 @@
     {
      "range": [
       "0x004db680",
-      "0x004db688"
+      "0x004db6a4"
      ],
      "generated": [
       "0x004db680",
-      "0x004db686"
+      "0x004db6a4"
      ],
      "generated_by": [
-      "EtherTreeObjectDraw"
+      "EtherTreeBlackDraw",
+      "EtherTreeBlackMain",
+      "EtherTreeBlackModeChange",
+      "EtherTreeBlackSet",
+      "EtherTreeCenterMove",
+      "EtherTreeCenterSet",
+      "EtherTreeCursolDraw",
+      "EtherTreeDraw",
+      "EtherTreeFirstDataGet",
+      "EtherTreeInit",
+      "EtherTreeLine2Draw",
+      "EtherTreeLine2Main",
+      "EtherTreeLine2ModeChange",
+      "EtherTreeLine2SelectChange",
+      "EtherTreeLine2Set",
+      "EtherTreeLineDraw",
+      "EtherTreeLineSet",
+      "EtherTreeMain",
+      "EtherTreeObjectDraw",
+      "EtherTreeObjectGet",
+      "EtherTreeObjectGetClear",
+      "EtherTreeObjectSet",
+      "EtherTreeObjectWorkGet",
+      "EtherTreeParaSet",
+      "EtherTreeRightDraw",
+      "EtherTreeRightMain",
+      "EtherTreeRightModeChange",
+      "EtherTreeRightSet",
+      "EtherTreeRightTargetChange",
+      "EtherTreeTargetChange",
+      "EtherTreeToCenterSet",
+      "EtherTreeWorkClear",
+      "sub2ObjectLampDraw",
+      "subEtherTreeRightMain",
+      "subJoutoPosSet",
+      "subLine2_DrawType_1",
+      "subPosSet",
+      "subPosSet3",
+      "subRightDraw",
+      "subTreeLineDraw"
      ],
      "c_owned_symbols": [
-      "D_004DB680"
-     ],
-     "also_referenced_by_c": [
+      "D_004DB680",
       "EtherTreeSystem",
       "EtherTreeObject",
       "EtherTreeObjectP",
@@ -6032,10 +6074,11 @@
       "EtherTreeRight",
       "EtherTreeBlack"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ether_tree.o"
+      "object": "build/main/build/c/ether_tree.o"
      }
     }
    ]

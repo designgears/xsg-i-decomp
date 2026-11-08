@@ -80,7 +80,15 @@ typedef struct EtherTreeFirstDataEntry {
     unsigned char unmodeled_03;
 } EtherTreeFirstDataEntry;
 
-extern EtherTreeFirstDataEntry EtherTreeFirstData[7];
+static EtherTreeFirstDataEntry EtherTreeFirstData[7] = {
+    { { 0x1B, 0x00, 0x00 }, 0x00 },
+    { { 0x11, 0x00, 0x00 }, 0x00 },
+    { { 0x01, 0x00, 0x00 }, 0x00 },
+    { { 0x3B, 0x00, 0x00 }, 0x00 },
+    { { 0x48, 0x00, 0x00 }, 0x00 },
+    { { 0x25, 0x2B, 0x2E }, 0x00 },
+    { { 0x31, 0x39, 0x00 }, 0x00 },
+};
 
 
 struct EtherTreeColorTable {
@@ -815,7 +823,6 @@ void EtherTreeRightMain(void)
     }
 }
 
-extern float D_004D7E84;
 typedef struct EtherTreeRightDrawView {
     unsigned char unmodeled_00[0x10];
     float x;
@@ -830,7 +837,7 @@ typedef struct EtherTreeRightDrawView {
 void subRightDraw(EtherTreeRightData *record)
 {
     EtherTreeRightDrawView *view = (EtherTreeRightDrawView *)record;
-    float rate = D_004D7E84;
+    float rate = 0.2f;
     EtherTreeSystemData *sys = EtherTreeSystem;
     float *px = &view->x;
     float *py = &view->y;
@@ -1322,7 +1329,6 @@ typedef struct EtherTreeLineGeometry {
     EtherTreeGeometrySegment segments[6];
 } EtherTreeLineGeometry;
 
-extern const float D_004D7E88;
 
 void EtherTreeObjectDraw(void)
 {
@@ -1331,7 +1337,7 @@ void EtherTreeObjectDraw(void)
     EtherTreeSprite *sprite;
     const Vector4 *objectPosition;
     int i;
-    const float fade = D_004D7E88;
+    const float fade = 0.4f;
 
     i = 0;
     do {
@@ -1540,7 +1546,12 @@ void subTreeLineDraw_type_3(TLWork3 *w)
 }
 
 typedef struct { void (*f[4])(); } LineFnTbl;
-extern const LineFnTbl D_004C9AD0;
+const LineFnTbl D_004C9AD0 = { {
+    subTreeLineDraw_type_0,
+    subTreeLineDraw_type_1,
+    subTreeLineDraw_type_2,
+    subTreeLineDraw_type_3,
+} };
 
 void EtherTreeLineDraw(void)
 {
@@ -1803,3 +1814,13 @@ void EtherTreeMain(void)
     EtherTreeBlackMain();
     EtherTreeDraw();
 }
+
+/* The tree's work-area pointers (.sdata, after the function-local constant
+ * the TU's code emits there). */
+EtherTreeSystemData *EtherTreeSystem = 0;
+EtherTreeObjectData *EtherTreeObject = 0;
+EtherTreeObjectData *EtherTreeObjectP = 0;
+EtherTreeLineData *EtherTreeLine = 0;
+struct EtherTreeLine2Data *EtherTreeLine2 = 0;
+struct EtherTreeRightData *EtherTreeRight = 0;
+EtherTreeBlackData *EtherTreeBlack = 0;
