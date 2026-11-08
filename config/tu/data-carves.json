@@ -1549,6 +1549,98 @@
    ]
   },
   "main/tu106": {
+   ".data": [
+    {
+     "range": [
+      "0x004a9140",
+      "0x004a9500"
+     ],
+     "generated": [
+      "0x004a9140",
+      "0x004a9500"
+     ],
+     "generated_by": [
+      "AlphaGroupSortEntry",
+      "CONSTRUCT_MODELSYSTEM",
+      "nmlModelCalcDropShadow",
+      "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryPartsClip",
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
+      "nmlModelCalcSample",
+      "nmlModelCalcSpecularClip",
+      "nmlModelClear",
+      "nmlModelConstruct",
+      "nmlModelDirectXtxSub",
+      "nmlModelEntry",
+      "nmlModelEntryCard",
+      "nmlModelEntryEffect",
+      "nmlModelFlush",
+      "nmlModelFlushSubAlpha",
+      "nmlModelFlushSubNonAlpha",
+      "nmlModelGetFogPara",
+      "nmlModelGetFogParaStudio",
+      "nmlModelInit",
+      "nmlModelLexBlockDoit",
+      "nmlModelSetAlpha",
+      "nmlModelSetAxisSymmetry",
+      "nmlModelSetFaceModel",
+      "nmlModelSetFilter",
+      "nmlModelSetFogCancel",
+      "nmlModelSetFogCol",
+      "nmlModelSetFogDist",
+      "nmlModelSetGlobalFogCol",
+      "nmlModelSetGlobalFogDist",
+      "nmlModelSetGlobalFogReset",
+      "nmlModelSetGlobalPointLight",
+      "nmlModelSetGlobalPointLightCol",
+      "nmlModelSetGlobalPointLightPos",
+      "nmlModelSetGlobalPointLightReset",
+      "nmlModelSetHumanModel",
+      "nmlModelSetLight",
+      "nmlModelSetMapEntry",
+      "nmlModelSetMapShadowParts",
+      "nmlModelSetMatrix",
+      "nmlModelSetMulColor",
+      "nmlModelSetPartsPixelAlpha",
+      "nmlModelSetPixelAlpha",
+      "nmlModelSetPlace",
+      "nmlModelSetPointLight",
+      "nmlModelSetProreal",
+      "nmlModelSetReflTransparency",
+      "nmlModelSetRenderLevel",
+      "nmlModelSetRenderStatus",
+      "nmlModelSetScale",
+      "nmlModelSetShadowHeight",
+      "nmlModelSetShadowMapEntry",
+      "nmlModelSetSpecularOff",
+      "nmlModelSetStencil",
+      "nmlModelSetTexMap",
+      "nmlModelSetTexProreal",
+      "nmlModelSetTexfunc",
+      "nmlModelSetTexture",
+      "nmlModelSetToumei",
+      "nmlModelSetTransparency",
+      "nmlModelSetWindow",
+      "nmlModelSetZwrite",
+      "nmlModelStealthEntry",
+      "nmlModelUseSubWindow"
+     ],
+     "c_owned_symbols": [
+      "s_aShapeMathPara",
+      "D_004A9168",
+      "TestEnv_0_004A9170",
+      "g_aSubWindow",
+      "s_inLayout"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_model_set.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -1638,68 +1730,28 @@
     {
      "range": [
       "0x004d2800",
-      "0x004d2820"
+      "0x004d2910"
      ],
      "generated": [
       "0x004d2800",
-      "0x004d2820"
+      "0x004d2910"
      ],
      "generated_by": [
-      "nmlModelSendSignalMovieFinish"
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
+      "nmlModelCalcSample",
+      "nmlModelDirectSend",
+      "nmlModelLexDataCheck",
+      "nmlModelSendSignalMovieFinish",
+      "nmlModelSetProreal"
      ],
      "c_owned_symbols": [
-      "jtbl_004D2800"
-     ],
-     "also_referenced_by_c": [
-      "D_004D2820"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d2830",
-      "0x004d2890"
-     ],
-     "generated": [
-      "0x004d2830",
-      "0x004d2890"
-     ],
-     "generated_by": [
-      "nmlModelDirectSend"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004D2800",
+      "D_004D2820",
       "jtbl_004D2830",
-      "jtbl_004D2860"
-     ],
-     "also_referenced_by_c": [
-      "D_004D2890"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d28a0",
-      "0x004d28b0"
-     ],
-     "generated": [
-      "0x004d28a0",
-      "0x004d28a9"
-     ],
-     "generated_by": [
-      "nmlModelCalcSample"
-     ],
-     "c_owned_symbols": [
-      "D_004D28A0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004D2860",
+      "D_004D2890",
+      "D_004D28A0",
       "D_004D28B0",
       "D_004D28C0",
       "D_004D28D0",
@@ -1707,6 +1759,7 @@
       "D_004D28F0",
       "D_004D2900"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

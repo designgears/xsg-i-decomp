@@ -3,6 +3,10 @@
 #include "nml_model_set.h"
 #include "nml_packet_add.h"
 
+static int s_aShapeMathPara[10] = {
+    0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x800,
+};
+
 typedef struct {
     int data;
     short attr;
@@ -1511,17 +1515,18 @@ typedef struct NmlProRealOrigin {
     u64 word0;
     u64 word8;
 } NmlProRealOrigin;
-extern NmlProRealOrigin D_004D2820;
 extern unsigned char s_inProReal[];
 void xglMatrixScale(Matrix4 destination, const Matrix4 source, const float scale[4]);
 extern void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix, const Vector4 *source);
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
 void xglMatrixInverse(void *dst, void *src);
 
+typedef Vector4 NmlProRealVector __attribute__((aligned(16)));
+
 void nmlModelSetProreal(NmlProRealState *state)
 {
     NmlProRealUp *input = (NmlProRealUp *)state;
-    u64 transformOrigin[2];
+    NmlProRealVector transformOrigin = { 0.0f, 0.0f, 1000.0f, 1.0f };
     Vector4 scale;
     Matrix4 scaledTransform;
     int textureStartX;
@@ -1538,13 +1543,11 @@ void nmlModelSetProreal(NmlProRealState *state)
     screenHeight = 0x200;
     scale.x = (float)input->fields.unmodeled_108 * 0.015625f * input->fields.unmodeled_120;
     scale.y = (float)input->fields.unmodeled_10c * 0.015625f * input->fields.unmodeled_124;
-    transformOrigin[0] = D_004D2820.word0;
-    transformOrigin[1] = D_004D2820.word8;
     scale.w = 1.0f;
     scale.z = 1.0f;
     xglMatrixScale(scaledTransform, (const float (*)[4])input->fields.matrix_000, &scale.x);
     xglVectorMulMat(&input->fields.transformOrigin, (const float (*)[4])scaledTransform,
-                    (const Vector4 *)transformOrigin);
+                    &transformOrigin);
 
     __asm__ __volatile__(
         "lqc2 vf3, 0(%0)\n"
@@ -2250,7 +2253,6 @@ void nmlModelDirectSend(int type, void *data, int attr) {
     }
 }
 
-extern char TestEnv_0_004A9170[];
 typedef struct {
     int unk0;
     int unk4;
@@ -2271,6 +2273,15 @@ typedef struct {
 
 static void nmlModelDirectXtxSub(void *data, int modelId, int nextModelId)
 {
+    /* GIF tag + BITBLTBUF/TRXPOS/TRXREG/TRXDIR (0x50..0x53) qwords sent ahead of each image. */
+    static u64 TestEnv[12] __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        0x0000000000000000ULL, 0x5100000500000000ULL,
+        0x4000000000008001ULL, 0x000000000000EEEEULL,
+        0x0000000000000000ULL, 0x0000000000000050ULL,
+        0x0000000000000000ULL, 0x0000000000000051ULL,
+        0x0000000000000000ULL, 0x0000000000000052ULL,
+        0x0000000000000000ULL, 0x0000000000000053ULL,
+    };
     XtxHeader *hdr = data;
     XtxEntry *p;
     char *base;
@@ -2281,7 +2292,7 @@ static void nmlModelDirectXtxSub(void *data, int modelId, int nextModelId)
 
     p =(XtxEntry *)((char *)data + hdr->entryOff);
     if (hdr->count > 0) {
-        base = TestEnv_0_004A9170;
+        base = (char *)TestEnv;
         do {
             lo = p->key & 0xFFFF;
             hi = p->key >> 16;
@@ -2570,7 +2581,6 @@ static void set_circle_shadow_ratio(int scale)
     }
 }
 
-extern const char D_004D2890[];
 
 int nmlModelLexDataCheck(NmlModel *model)
 {
@@ -2597,7 +2607,7 @@ int nmlModelLexDataCheck(NmlModel *model)
         if (*(int *)(base + 0xA0) != 0) {
             name += model->blockCount * 0x10;
         }
-        if (strstr(name + *(int *)(block + 0x28), D_004D2890) == 0) {
+        if (strstr(name + *(int *)(block + 0x28), "MagicCarpetCome") == 0) {
             goto done;
         }
     }
@@ -2608,7 +2618,6 @@ done:
 
 extern int s_nCount;
 
-extern int s_aShapeMathPara[10];
 
 static void nmlModelLexBlockDoit(NmlModel *model)
 {
@@ -3117,15 +3126,12 @@ extern void xglMatrixStackRotZ(float angle);
 
 static void nmlModelCalcEntryProjectCircle(NmlModel *model)
 {
-    extern NmlDwVector4Cp D_004D28B0;
-    extern NmlDwVector4Cp D_004D28C0;
-    extern NmlDwVector4Cp D_004D28D0;
     
     NmlVec3Cp projectionAngles;
     NmlMatrixCp savedMatrix;
-    NmlDwVector4Cp screenScaleStorage = D_004D28B0;
-    NmlDwVector4Cp screenCenter = D_004D28C0;
-    NmlDwVector4Cp screenOffsetStorage = D_004D28D0;
+    NmlDwVector4Cp screenScaleStorage = { 64.0f, -64.0f, 8000.0f, 1.0f };
+    NmlDwVector4Cp screenCenter = { 64.0f, 64.0f, 1.0f, 1.0f };
+    NmlDwVector4Cp screenOffsetStorage = { 2048.0f, 2048.0f, 0.0f, 1.0f };
     Vector4 cameraTranslation;
     Vector4 normal;
     Vector4 spare;
@@ -3243,9 +3249,6 @@ static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
     extern void xglVectorScale(Vector4 *, const Vector4 *, float);
     extern float atan2f(float, float);
     extern void xglVectorScaleXYZPtrFirst(Vector4 *, const Vector4 *, float) __asm__("xglVectorScaleXYZ");
-    extern const NmlOvCp D_004D28E0;
-    extern const NmlOvCp D_004D28F0;
-    extern const NmlOvCp D_004D2900;
     NmlVec3Cp angles;
     NmlMatrixCp savedMatrix;
     NmlOvCp projectionScale;
@@ -3263,9 +3266,9 @@ static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
     /* Empty loop kept from the original: its loop notes order the prologue
      * (callee saves before the projection constant loads). */
     do { } while (0);
-    projectionScale = D_004D28E0;
-    screenCenter = D_004D28F0;
-    screenOffset = D_004D2900;
+    projectionScale = (NmlOvCp){ { 128.0f, -128.0f, 8000.0f, 1.0f } };
+    screenCenter = (NmlOvCp){ { 256.0f, 224.0f, 1.0f, 1.0f } };
+    screenOffset = (NmlOvCp){ { 2045.5f, 2046.0f, 0.0f, 1.0f } };
     denom = model->entryTranslation.w;
     if (5.0f + camera->position.y < s_inLayoutCp.slots[0x7d].f) {
         if (5.0f + camera->position.y < s_inLayoutCp.slots[0x2d].f) {
@@ -6174,3 +6177,6 @@ void nmlModelFlushClear(void) {
     FLUSH_BACK_BUFFER();
     nmlModelClear();
 }
+
+int g_aSubWindow[4] = { 0 };
+LayoutStore s_inLayout = { 0 };
