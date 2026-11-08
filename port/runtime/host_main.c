@@ -39,6 +39,12 @@ void xsg_logf(const char *fmt, ...)
     fflush(xsg_log_fp);
 }
 
+void xsg_vlogf(const char *fmt, va_list ap)
+{
+    vfprintf(xsg_log_fp, fmt, ap);
+    fflush(xsg_log_fp);
+}
+
 static void *map_fixed(uint32_t addr, uint32_t size, const char *what)
 {
     void *p = mmap((void *)(uintptr_t)addr, size, PROT_READ | PROT_WRITE,

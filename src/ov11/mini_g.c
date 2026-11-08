@@ -82,7 +82,14 @@ void dprintf(const char *fmt, ...)
     va_list args;
 
     va_start(args, fmt);
+#ifdef PORT_HOST
+    {   /* the PS2 newlib reent's stderr is not a host FILE: the port's log */
+        extern void xsg_vlogf(const char *fmt, va_list args);
+        xsg_vlogf(fmt, args);
+    }
+#else
     vfprintf(_impure_ptr->stderr_file, fmt, args);
+#endif
     va_end(args);
 }
 
