@@ -70455,7 +70455,7 @@
       "ordinal": 237,
       "owners": {
         ".lit4": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },

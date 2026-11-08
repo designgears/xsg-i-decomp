@@ -139,12 +139,14 @@ void Java_xeno_util_Layout_set__Ljava_lang_Object_I(JThread *thread,
     }
 }
 
-void Java_xeno_util_Layout_getManager__I(JThread *thread, int *id,
-                                         void **result)
-{
-    int *manager = &defaultLayout;
+static LayoutManager defaultLayout;
 
-    *manager = *(int *)((u8 *)classJava_xeno_util_Layout + 0x18);
-    D_004DC6B4 = *id;
-    *result = manager;
+void Java_xeno_util_Layout_getManager__I(JThread *thread, int *id,
+                                         int *result)
+{
+    LayoutManager *manager = &defaultLayout;
+
+    manager->cls = *(int *)((u8 *)classJava_xeno_util_Layout + 0x18);
+    manager->id = *id;
+    *result = (int)manager;
 }
