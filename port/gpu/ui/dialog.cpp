@@ -5,6 +5,7 @@
 #include "../menu/option_rows.h"
 #include "style.h"
 #include "layout.h"
+#include "prompts.h"
 #include "art.h"
 #include "../menu/menu_render.h"
 
@@ -246,6 +247,7 @@ int Layout() {   // 0 xbox, 1 playstation, 2 nintendo
 }  // namespace
 
 void Glyph(ImDrawList* dl, ImFont* font, float cx, float cy, float r, int pos, bool dim) {
+    if (PromptDraw(dl, pos & 3, ImVec2(cx, cy), r * 2.3f, dim ? 0.4f : 1.0f)) return;   // the icon pack
     const int lay = Layout();
     const int a = dim ? 110 : 255;
     const ImVec2 c(cx, cy);
@@ -278,6 +280,11 @@ void Glyph(ImDrawList* dl, ImFont* font, float cx, float cy, float r, int pos, b
 }
 
 float ShoulderGlyph(ImDrawList* dl, ImFont* font, float x, float cy, float h, int side) {
+    if (PromptIcon(side ? kRB : kLB)) {   // the icon pack (square art, drawn a little taller than the tag)
+        const float s2 = h * 1.7f;
+        PromptDraw(dl, side ? kRB : kLB, ImVec2(x + s2 * 0.5f, cy), s2, 1.0f);
+        return s2;
+    }
     const int lay = Layout();
     static const char* const k[3][2] = {{"LB", "RB"}, {"L1", "R1"}, {"L", "R"}};
     const char* t = k[lay][side & 1];

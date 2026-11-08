@@ -1,0 +1,2 @@
+Input prompt icons: "FREE Input Prompts Pack" by JulioCacko (https://juliocacko.itch.io/free-input-prompts),
+CC0 1.0 Universal (public domain dedication). Resized subset; vendored by port/tools/vendor_prompts.py.

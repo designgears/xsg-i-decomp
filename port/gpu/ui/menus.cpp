@@ -12,6 +12,7 @@
 #include "dialog.h"
 #include "style.h"
 #include "layout.h"
+#include "prompts.h"
 #include "gpu_ipc.h"
 #include "../menu/option_rows.h"
 #include "../menu/cfg.h"
@@ -132,14 +133,19 @@ void SettingsHint(ImDrawList* dl, ImFont* font, float t) {
     const char* btn = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
     const float hs = 11.0f * k, ph = hs + 7 * k;
     const ImVec2 bw = font->CalcTextSizeA(hs, 1e9f, 0, btn), lw = font->CalcTextSizeA(hs, 1e9f, 0, "Settings");
-    const float pill = bw.x + 12 * kx, total = 10 * kx + pill + 6 * kx + lw.x + 12 * kx;
+    const bool icon = PromptIcon(kBack) != 0;
+    const float pill = icon ? ph * 1.5f : bw.x + 12 * kx, total = 10 * kx + pill + 6 * kx + lw.x + 12 * kx;
     const ImVec2 r1 = Map(512 - 14, 418, kRight);   // inside the help bar's empty right end
     const ImVec2 a(r1.x - total, r1.y), b(r1.x, r1.y + ph + 6 * k);
     const float cy = (a.y + b.y) * 0.5f;
     const ImVec2 p0(a.x + 10 * kx, cy - ph * 0.5f);
-    dl->AddRectFilled(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(IM_COL32(12, 12, 30, 240), t), ph * 0.5f);
-    dl->AddRect(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
-    dl->AddText(font, hs, ImVec2(p0.x + (pill - bw.x) * 0.5f, cy - bw.y * 0.5f), Alpha(col::kText, t), btn);
+    if (icon) {
+        PromptDraw(dl, kBack, ImVec2(p0.x + pill * 0.5f, cy), pill, t);
+    } else {
+        dl->AddRectFilled(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(IM_COL32(12, 12, 30, 240), t), ph * 0.5f);
+        dl->AddRect(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
+        dl->AddText(font, hs, ImVec2(p0.x + (pill - bw.x) * 0.5f, cy - bw.y * 0.5f), Alpha(col::kText, t), btn);
+    }
     dl->AddText(font, hs, ImVec2(p0.x + pill + 6 * kx, cy - lw.y * 0.5f), Alpha(col::kTextDim, t), "Settings");
 }
 }  // namespace
@@ -583,10 +589,10 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const char* start = lay == "playstation" ? "OPTIONS" : lay == "nintendo" ? "+" : "MENU";
             const char* view = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
             const float hs = 12.0f * k, ph = hs + 8 * k, hgap = 18 * kx;
-            struct H { const char *b, *l; float pw, lw; } hint[2] = {{start, "Resume", 0, 0}, {view, "Settings", 0, 0}};
+            struct H { const char *b, *l; float pw, lw; int icon; } hint[2] = {{start, "Resume", 0, 0, kStart}, {view, "Settings", 0, 0, kBack}};
             float total = 0;
             for (H& h : hint) {
-                h.pw = font->CalcTextSizeA(hs, 1e9f, 0, h.b).x + 14 * kx;
+                h.pw = PromptIcon(h.icon) ? ph * 1.5f : font->CalcTextSizeA(hs, 1e9f, 0, h.b).x + 14 * kx;
                 h.lw = font->CalcTextSizeA(hs, 1e9f, 0, h.l).x;
                 total += h.pw + 7 * kx + h.lw;
             }
@@ -594,6 +600,13 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             float hx = c.x - total * 0.5f;
             const float hy = c.y + 26 * k;
             for (const H& h : hint) {
+                if (PromptIcon(h.icon)) {
+                    PromptDraw(dl, h.icon, ImVec2(hx + h.pw * 0.5f, hy + ph * 0.5f), ph * 1.5f, t);
+                    const ImVec2 ls = font->CalcTextSizeA(hs, 1e9f, 0, h.l);
+                    HaloText(dl, font, hs, ImVec2(hx + h.pw + 7 * kx, hy + (ph - ls.y) * 0.5f), col::kTextDim, h.l, t);
+                    hx += h.pw + 7 * kx + h.lw + hgap;
+                    continue;
+                }
                 dl->AddRectFilled(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(IM_COL32(12, 12, 30, 235), t), ph * 0.5f);
                 dl->AddRect(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
                 const ImVec2 bs = font->CalcTextSizeA(hs, 1e9f, 0, h.b);

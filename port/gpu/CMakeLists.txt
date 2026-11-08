@@ -94,7 +94,7 @@ foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf)
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} ${CMAKE_CURRENT_SOURCE_DIR}/menu/embed.cmake VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp ui/layout.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
+set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp ui/layout.cpp ui/prompts.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
   ${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
   ${XSG_IMGUI_DIR}/imgui_widgets.cpp)
 find_package(Git QUIET)
@@ -122,3 +122,6 @@ endif()
 target_compile_options(xsg-gpu PRIVATE -O2 -g -Wall -Wno-unused-parameter)
 set_source_files_properties(${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
   ${XSG_IMGUI_DIR}/imgui_widgets.cpp ${XSG_IMGUI_DIR}/backends/imgui_impl_sdl3.cpp PROPERTIES COMPILE_OPTIONS "-w")
+
+# Input prompt icons (port/assets/prompts, CC0): read from the source tree.
+set_source_files_properties(ui/prompts.cpp PROPERTIES COMPILE_DEFINITIONS "XSG_PROMPTS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/prompts\"")

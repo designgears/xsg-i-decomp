@@ -351,6 +351,11 @@ TMENU), scene captions (TWIN_drawScene2), the pause screen, the title choices, a
 HUD's sprite parts (portraits, radar, turn order, boost gauge: capture channels 2-3, with
 per-texture snapshots so art whose VRAM is reused later in the frame stays right).
 
+Button prompts: `[display] prompts` (auto, xbox, playstation, nintendo, keyboard; auto follows the
+connected controller and falls back to the keyboard's default binds) and `[display] prompt_style`
+(default, light, retro, alt, alt2, drawn) pick icons from JulioCacko's "FREE Input Prompts Pack"
+(CC0), vendored as a 96 px subset in `port/assets/prompts` by `port/tools/vendor_prompts.py`.
+
 Layout (`[display] ui_layout`, `port/gpu/ui/layout.cpp`): every element is placed with an anchor
 (left, right, centre, stretch) at the 4:3 display's proportions. `game` keeps the UI on the
 picture; `wide` moves edge UI out to the window's edges, the groundwork for a widescreen picture.

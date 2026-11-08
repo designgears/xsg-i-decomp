@@ -24,6 +24,7 @@
 #include "../ui/style.h"
 #include "../ui/art.h"
 #include "../ui/menus.h"
+#include "../ui/prompts.h"
 #ifdef XSG_GPU_SDL
 #include "imgui_impl_sdl3.h"
 #include <SDL3/SDL.h>
@@ -397,6 +398,13 @@ void TabDisplay(float scale) {
                "Original: the game's own 2D, drawn for a TV at 512 x 448.\n"
                "Rebuilt: redrawn by the port, sharp at any window size: dialog, menus, shops, save screens and the "
                "battle HUD.");
+    static const char* kPrompts[] = {"Auto", "Xbox", "PlayStation", "Nintendo", "Keyboard"};
+    opt_choice("display.prompts", "Button prompts", kPrompts,
+               "Which buttons the game's prompts show. Auto: the connected controller ([gamepad] layout), the keyboard "
+               "when none is connected.");
+    static const char* kPromptStyle[] = {"Default", "Light", "Retro", "Alt", "Alt 2", "Drawn"};
+    opt_choice("display.prompt_style", "Prompt style", kPromptStyle,
+               "The icon set's style (JulioCacko's Free Input Prompts, CC0). Drawn: the port's own simple glyphs.");
     static const char* kLayout[] = {"Game", "Wide"};
     opt_choice("display.ui_layout", "UI layout", kLayout,
                "Game: the rebuilt UI sits on the picture, as on the PS2.\n"
@@ -1103,6 +1111,7 @@ static void PadFrame() {
     uint32_t b = 0;
     int lx = 0, ly = 0;
     bool have = xsginput::MenuPad(&b, &lx, &ly);
+    xsgui::PromptsFrame(have);
     ImGuiIO& io = ImGui::GetIO();
     if (have) io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
     else io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
