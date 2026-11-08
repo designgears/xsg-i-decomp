@@ -11,8 +11,8 @@ void PLAY_setupDefault(Play *play)
     int i;
 
     play->cameraIndex = -1;
-    play->endTime = D_004D7D14;
-    play->frameStep = D_004D7D18;
+    play->endTime = 3.3333335f;
+    play->frameStep = 0.033333335f;
     play->state = 0;
     play->startTime = 0.0f;
     play->currentTime = 0.0f;
@@ -50,8 +50,8 @@ void PLAY_setup(Play *play)
 
     play->state = 0;
     if (play->source != 0) {
-        start_time = (float)play->source->startFrame * D_004D7D1C;
-        end_time = (float)play->source->endFrame * D_004D7D1C;
+        start_time = (float)play->source->startFrame * 0.033333335f;
+        end_time = (float)play->source->endFrame * 0.033333335f;
         play->endTime = end_time;
         play->startTime = start_time;
         play->currentTime = start_time;
@@ -153,12 +153,12 @@ void PLAY_ctrl(void)
 
             if (stick.w > 40.0f ||
                 (pad_data->buttons.half_28 & PLAY_PAD_SHOW_FRAME)) {
-                debug_frame_step = D_004D7D20;
+                debug_frame_step = 0.033333335f;
                 current_frame = (int)(play->currentTime / debug_frame_step);
                 start_frame = (int)(play->startTime / debug_frame_step);
                 end_frame = (int)(play->endTime / debug_frame_step);
                 DB_reset(4, 8);
-                DB_println(D_004C2308, current_frame, start_frame, end_frame);
+                DB_println("FRAME %6d (%6d, %6d)\n", current_frame, start_frame, end_frame);
             }
         } else {
             play->currentTime = play->currentTime + play->frameStep;
@@ -186,7 +186,7 @@ void PLAY_ctrl(void)
             }
         }
 
-        observer_frame_step = D_004D7D24;
+        observer_frame_step = 0.033333335f;
         for (observer = play->observers, observer_index = 31;
              observer_index >= 0; observer_index--, observer++) {
             if (observer->argument != 0) {

@@ -2091,6 +2091,61 @@
    ]
   },
   "main/tu129": {
+   ".data": [
+    {
+     "range": [
+      "0x00369ba0",
+      "0x00369cc0"
+     ],
+     "generated": [
+      "0x00369ba0",
+      "0x00369cc0"
+     ],
+     "generated_by": [
+      "DrawActorPoint",
+      "DrawRadarPing",
+      "GameRadarDraw"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_00369BA0",
+      "TestEnv_1_00369C10",
+      "sPoint_3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_radar.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7c7c",
+      "0x004d7c88"
+     ],
+     "generated": [
+      "0x004d7c7c",
+      "0x004d7c88"
+     ],
+     "generated_by": [
+      "DrawActorPoint",
+      "DrawRadarPing"
+     ],
+     "c_owned_symbols": [
+      "D_004D7C7C",
+      "D_004D7C80",
+      "D_004D7C84"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_radar.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -2111,7 +2166,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_radar.o"
+      "object": "build/main/build/c/game_radar.o"
      }
     }
    ]
@@ -2414,6 +2469,59 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tya.o"
+     }
+    }
+   ]
+  },
+  "main/tu136": {
+   ".data": [
+    {
+     "range": [
+      "0x0036abc0",
+      "0x0036ac70"
+     ],
+     "generated": [
+      "0x0036abc0",
+      "0x0036ac70"
+     ],
+     "generated_by": [
+      "DrawImage_00259C38"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_0036ABC0",
+      "TransEnv_1_0036AC20",
+      "FlushEnv_2_0036AC40"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tya_display_setting.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c15e8",
+      "0x004c1620"
+     ],
+     "generated": [
+      "0x004c15e8",
+      "0x004c1614"
+     ],
+     "generated_by": [
+      "tyaDisplaySetting"
+     ],
+     "c_owned_symbols": [
+      "D_004C15E8",
+      "D_004C1600"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/tya_display_setting.o"
      }
     }
    ]
@@ -2975,6 +3083,62 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/db_light_write.o"
+     }
+    }
+   ]
+  },
+  "main/tu150": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7d14",
+      "0x004d7d28"
+     ],
+     "generated": [
+      "0x004d7d14",
+      "0x004d7d28"
+     ],
+     "generated_by": [
+      "PLAY_ctrl",
+      "PLAY_setup",
+      "PLAY_setupDefault"
+     ],
+     "c_owned_symbols": [
+      "D_004D7D14",
+      "D_004D7D18",
+      "D_004D7D1C",
+      "D_004D7D20",
+      "D_004D7D24"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/play.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c2308",
+      "0x004c2320"
+     ],
+     "generated": [
+      "0x004c2308",
+      "0x004c231e"
+     ],
+     "generated_by": [
+      "PLAY_ctrl"
+     ],
+     "c_owned_symbols": [
+      "D_004C2308"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/play.o"
      }
     }
    ]
@@ -9915,20 +10079,48 @@
    ]
   },
   "main/tu259": {
+   ".data": [
+    {
+     "range": [
+      "0x00478c60",
+      "0x00478c70"
+     ],
+     "generated": [
+      "0x00478c60",
+      "0x00478c70"
+     ],
+     "generated_by": [
+      "FCV2_getPackAttribute"
+     ],
+     "c_owned_symbols": [
+      "defaultAttr"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/fcv2.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
-      "0x004d850c",
+      "0x004d8500",
       "0x004d8518"
      ],
      "generated": [
-      "0x004d850c",
+      "0x004d8500",
       "0x004d8518"
      ],
      "generated_by": [
-      "FCV2_getVal"
+      "FCV2_getVal",
+      "FCV_getPackVal2s"
      ],
      "c_owned_symbols": [
+      "D_004D8500",
+      "D_004D8504",
+      "D_004D8508",
       "D_004D850C",
       "D_004D8510",
       "D_004D8514"
@@ -9937,9 +10129,30 @@
       "D_004D8518",
       "D_004D851C",
       "D_004D8520",
-      "D_004D8524",
+      "D_004D8524"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/fcv2.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d8528",
+      "0x004d852c"
+     ],
+     "generated": [
+      "0x004d8528",
+      "0x004d852c"
+     ],
+     "generated_by": [
+      "FCV2_getKey"
+     ],
+     "c_owned_symbols": [
       "D_004D8528"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10043,6 +10256,60 @@
    ]
   },
   "main/tu261": {
+   ".data": [
+    {
+     "range": [
+      "0x00478c70",
+      "0x00478ca0"
+     ],
+     "generated": [
+      "0x00478c70",
+      "0x00478ca0"
+     ],
+     "generated_by": [
+      "JNT_getStaticVal",
+      "JNT_getVal",
+      "JNT_getVal2",
+      "JNT_getVal_staticChain",
+      "JNT_readAttribute"
+     ],
+     "c_owned_symbols": [
+      "dummyAttr",
+      "dummyCntFree",
+      "dummyName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/jnt.o"
+     }
+    }
+   ],
+   ".lit4": [
+    {
+     "range": [
+      "0x004d8550",
+      "0x004d8554"
+     ],
+     "generated": [
+      "0x004d8550",
+      "0x004d8554"
+     ],
+     "generated_by": [
+      "JNT_computeMatrix"
+     ],
+     "c_owned_symbols": [
+      "D_004D8550"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/jnt.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -10075,7 +10342,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/jnt.o"
+      "object": "build/main/build/c/jnt.o"
      }
     }
    ],
@@ -10101,7 +10368,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/main/build/c/jnt.o"
+      "object": "build/main/build/c/jnt.o"
      }
     }
    ]

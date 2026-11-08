@@ -184,8 +184,7 @@ void RssdInitIop(void)
         ;
     w = &RssdWork;
     if (*(int *)&w->rpc_client_serve == 0) {
-        printf("Rssd(%04x) bind error !
-", 0x900);
+        printf("Rssd(%04x) bind error !\n", 0x900);
         return;
     }
     w->flags = 1;
@@ -384,8 +383,7 @@ int RssdCallFunc(int command, RssdRequest *request, void *data, int size)
     buf->error_code = command;
     buf->data_size = size;
     if (total > 0x10020) {
-        printf("Rssd sif transfer size over !!
-");
+        printf("Rssd sif transfer size over !!\n");
         RssdWork.flags &= ~8;
         SignalSema(RssdWork.sema_id);
         return -1;

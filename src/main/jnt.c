@@ -326,7 +326,7 @@ void get_fcvpack_flag(unsigned char *element, int enable, float t)
     }
 }
 
-extern int dummyAttr[];
+static int dummyAttr[4] = {0};
 typedef struct JntSvDst {
     float s[4];
     float b[4];
@@ -2766,8 +2766,8 @@ void *JNT_getAccessories(JntMoveResource *move)
     return 0;
 }
 
-extern char dummyCntFree[];
-extern char dummyName[];
+char dummyCntFree[16] = {0};
+char dummyName[16] = {0};
 char *strncpy(char *dst, const char *src, unsigned int n);
 typedef struct JntAttributeWork {
     unsigned char unmodeled_000[0x7F0];
@@ -3628,7 +3628,6 @@ JntStaticChannel *JNT_computeMatrix(JntWork *work, JntStaticChannel *channel)
     int nmlModelCalcClip(Vector4 *position);
     typedef struct JntHairJoint JntHairJoint;
     void EXM_PresetHair(JntHairJoint *joint);
-    extern float D_004D8550;
     struct JntGameLoopState {
         unsigned char unmodeled_00[0x0c];
         unsigned short mode;
@@ -3688,7 +3687,7 @@ JntStaticChannel *JNT_computeMatrix(JntWork *work, JntStaticChannel *channel)
             speed = 0.0f;
             distance = speed;
         }
-        owner->movement.y = (speed - owner->movement.w) * D_004D8550;
+        owner->movement.y = (speed - owner->movement.w) * 0.8f;
         owner->movement.w = distance;
         owner->movement.x = owner->position.x;
         owner->movement.z = owner->position.z;
