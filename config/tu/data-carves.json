@@ -8801,55 +8801,151 @@
    ]
   },
   "main/tu166": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x004c3970",
-      "0x004c3988"
+      "0x0036d600",
+      "0x0036d624"
      ],
      "generated": [
-      "0x004c3970",
-      "0x004c3988"
+      "0x0036d600",
+      "0x0036d624"
      ],
      "generated_by": [
-      "eBattleWinMain2"
+      "eBattleWinOpen3"
      ],
      "c_owned_symbols": [
-      "jtbl_004C3970"
+      "msg00_1_0036D600",
+      "D_0036D60C",
+      "msg01_2_0036D610"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_battle_win_open.o"
+      "object": "build/main/build/c/e_battle_win_open.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x004c39e0",
+      "0x004c3960",
       "0x004c3a90"
      ],
      "generated": [
-      "0x004c39e0",
+      "0x004c3960",
       "0x004c3a84"
      ],
      "generated_by": [
       "WindowDXMain",
       "WindowSPMain",
+      "eBattleWinMain2",
       "eBattleWinMain3",
-      "eBattleWinMain4"
+      "eBattleWinMain4",
+      "eBattleWinOpen",
+      "eBattleWinOpen3"
      ],
      "c_owned_symbols": [
+      "D_004C3960",
+      "jtbl_004C3970",
+      "D_004C3988",
+      "D_004C3998",
+      "D_004C39A8",
+      "D_004C39D0",
       "jtbl_004C39E0",
       "jtbl_004C3A00",
       "jtbl_004C3A20",
       "jtbl_004C3A70"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C3988": "msg00_1_0036D600",
+      "D_004C3998": "msg00_1_0036D600"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_battle_win_open.o"
+      "object": "build/main/build/c/e_battle_win_open.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da950",
+      "0x004da9f4"
+     ],
+     "generated": [
+      "0x004da950",
+      "0x004da9f4"
+     ],
+     "generated_by": [
+      "eBattleWinClose",
+      "eBattleWinClose2",
+      "eBattleWinClose3",
+      "eBattleWinClose4",
+      "eBattleWinInit2",
+      "eBattleWinMain",
+      "eBattleWinMain2",
+      "eBattleWinMain3",
+      "eBattleWinMain4",
+      "eBattleWinOpen",
+      "eBattleWinOpen2",
+      "eBattleWinOpen3",
+      "eBattleWinOpen4",
+      "eBattleWinPageCheck4"
+     ],
+     "c_owned_symbols": [
+      "text_0",
+      "D_004DA951",
+      "D_004DA958",
+      "D_004DA960",
+      "D_004DA968",
+      "D_004DA970",
+      "D_004DA978",
+      "D_004DA980",
+      "D_004DA988",
+      "D_004DA990",
+      "D_004DA998",
+      "D_004DA9A0",
+      "D_004DA9A8",
+      "D_004DA9B0",
+      "D_004DA9B8",
+      "D_004DA9C0",
+      "D_004DA9C8",
+      "D_004DA9D0",
+      "D_004DA9D8",
+      "BW3BattleOrDataBase",
+      "BW",
+      "BW_item",
+      "BW2",
+      "BW3",
+      "BW4"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA958": "msg00_1_0036D600",
+      "D_004DA960": "msg01_2_0036D610",
+      "D_004DA968": "msg01_2_0036D610",
+      "D_004DA970": "msg01_2_0036D610",
+      "D_004DA978": "msg01_2_0036D610",
+      "D_004DA980": "msg01_2_0036D610",
+      "D_004DA988": "D_004C39A8",
+      "D_004DA990": "D_004C39A8",
+      "D_004DA998": "D_004C39A8",
+      "D_004DA9A0": "D_004C39A8",
+      "D_004DA9A8": "D_004C39A8",
+      "D_004DA9B0": "D_004C39A8",
+      "D_004DA9B8": "D_004C39A8",
+      "D_004DA9C0": "D_004C39A8",
+      "D_004DA9C8": "D_004C39A8",
+      "D_004DA9D0": "D_004C39A8"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/e_battle_win_open.o"
      }
     }
    ]
