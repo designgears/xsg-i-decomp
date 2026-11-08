@@ -318,8 +318,6 @@ extern void xglSoundEffectNormalID(int, int);
 int xglCdSync(void);
 void sceVif1PkAddDataN(void *, void *, int);
 void FlushCache(int);
-extern const char D_00A115D0[];
-extern const char D_00A115F0[];
 typedef struct {
     u8 unk00[0x2A];
     u16 trigger;
@@ -432,10 +430,10 @@ sel_done:
         hdd = -1;
         break;
     }
-    size = xglCdReadFile(D_00A115D0, (void *)0x01001000, 0, 1);
+    size = xglCdReadFile("data\\yajima\\title_obj.xtx", (void *)0x01001000, 0, 1);
     jpg = size + 0x010E1000;
     buf = (u8 *)size + 0x01001000;
-    xglCdReadFile(D_00A115F0, (void *)jpg, 0, 1);
+    xglCdReadFile("data\\title.jpg", (void *)jpg, 0, 1);
     memset(F.sp40, 0, 0x20U);
     F.sp40[0] = (void *)jpg;
     F.sp40[1] = buf;

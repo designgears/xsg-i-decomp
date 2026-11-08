@@ -21,7 +21,6 @@ extern void CardListDisp(void *w, void *src);
 extern unsigned int CardCntList(void *o, int idx);
 extern char ModeEndMess0[];
 extern char ModeEndMess1[];
-extern char D_00A4DB30[];
 typedef struct { unsigned char pad[0x2A]; unsigned short trg; unsigned short rpt; unsigned char pad2[0xA2]; } CVPad;
 extern CVPad PadData[];
 typedef struct {
@@ -65,7 +64,7 @@ void CardViewProc(void *work, CVList *list, short *exiting)
   int m;
   int i;
   int all;
-  xglFontDebugPrintf(0x54, 0, D_00A4DB30);
+  xglFontDebugPrintf(0x54, 0, "View Cards");
   *((unsigned char *) (((char *) work) + 0x59BF)) = 0x36;
   pos[0] = -1.0f;
   pos[1] = 0.6f;

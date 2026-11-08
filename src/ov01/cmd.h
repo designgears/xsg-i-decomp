@@ -145,7 +145,6 @@ void MCamSet(int mode, void *params);
  * unitNoChk hands to printf when its argument is out of the zero-to-seven
  * unit range. */
 extern int printf(const char *format, ...);
-extern const char D_00A46578[];
 
 /*
  * Camera reference/view mode selector. cmdCamRefMode/cmdCamCamMode/
@@ -339,7 +338,6 @@ extern int thinkProcessKindChk(int kind);
 /* "** reg err %d\n" at 0x00a461e8 (ov01 .rodata), the format string regChk
  * (0x00a1dfc8) hands to printf when the operand's high bit (0x8000) is not
  * set. */
-extern const char D_00A461E8[];
 
 /*
  * dataVPadSet (src/ov01/data_unit_org_get.c, still asm) installs the
@@ -406,13 +404,11 @@ extern void dataVPadModeSet(int enable);
  * when the decoded register index requests indirect addressing (bit 0x4000
  * set).
  */
-extern const char D_00A46300[];
 
 /*
  * "R%02d = %d\n" at 0x00a46308 (ov01 .rodata), the format string cmdRput
  * (0x00a1ead8) hands to printf with the register index and its value.
  */
-extern const char D_00A46308[];
 
 /*
  * Script command-trace flag. cmdCmdputon/cmdCmdputoff (0x00a1ed10,
@@ -435,22 +431,18 @@ extern int unitLiveNumGet(int side);
 /* "** thinkTurnStart ** %X\n" at 0x00a46160 (ov01 .rodata), the format
  * string thinkTurnStartExec (0x00a1dab0) hands to printf with the script
  * offset it is about to run. */
-extern const char D_00A46160[];
 
 /* "** thinkTurnEnd ** %X\n" at 0x00a46180 (ov01 .rodata), the format string
  * thinkTurnEndExec (0x00a1db78) hands to printf with the script offset it is
  * about to run. */
-extern const char D_00A46180[];
 
 /* "** think Atk (%d) ** %X\n" at 0x00a46198 (ov01 .rodata), the format
  * string thinkUnitAtkExec (0x00a1dc40) hands to printf with the acting
  * unit's number and the script offset it is about to run. */
-extern const char D_00A46198[];
 
 /* "** think Dmg (%d) ** %X\n" at 0x00a461b8 (ov01 .rodata), the format
  * string thinkUnitDmgExec (0x00a1dd28) hands to printf with the damaged
  * unit's number and the script offset it is about to run. */
-extern const char D_00A461B8[];
 
 /*
  * cmdUnitpara (this TU, still asm) reads (mode 0) or writes (mode 1) one of

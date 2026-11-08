@@ -10,7 +10,6 @@ extern int xglCdGetFileSize(const char *name);
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
 extern u8 *buffer;
 extern s16 base_tbl[];
-extern char db_fileno_path[];
 
 extern s16 *tbl;
 extern void tyaUmlDispInit2(u8 *work_buffer);
@@ -568,8 +567,8 @@ static void dbfileno_load(void)
     s16 *destination = base_tbl;
     int length;
 
-    length = xglCdGetFileSize(db_fileno_path);
-    xglCdReadFile(db_fileno_path, source, 0, 1);
+    length = xglCdGetFileSize("data\\umn\\db_fileno.txt");
+    xglCdReadFile("data\\umn\\db_fileno.txt", source, 0, 1);
     source[length] = 0;
 
     while (*source != 0) {
@@ -598,7 +597,6 @@ done:
     *destination = -2;
 }
 
-extern const char D_00A133B0[];
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
 typedef struct DbHeaderWork {
     u8 unmodeled_00[0x52];
@@ -630,7 +628,7 @@ static void dbheader_load(DbHeaderWork *work)
   s16 v;
   dbfileno_load();
   new_var3 = 0x7FF;
-  name = D_00A133B0;
+  name = "data\\umn\\dbheader.lst";
   size = xglCdGetFileSize(name);
   new_var = (size + new_var3) & (~0x7FF);
   t = (s16 *) buffer;
@@ -712,8 +710,6 @@ static void dbheader_load(DbHeaderWork *work)
 extern char *idx_7;
 extern char msg_8[];
 extern const char D_00A13400[];
-extern const char D_00A13410[];
-extern const char D_00A13418[];
 typedef struct DispIndexWork {
     u8 unmodeled_00[8];
     s16 x0;
@@ -734,9 +730,9 @@ static void disp_index(DispIndexWork *work, int value)
     xglFontPrint(work->x0 + work->x1 - 0x824, work->y0 + work->y1 - 0x71C, color, D_00A13400);
     for (i = 0; i < 26; i++) {
         if (i == work->cursor) {
-            xglFontPrintDirectOT(color, D_00A13410);
+            xglFontPrintDirectOT(color, "\x0C\x80  ");
         } else {
-            xglFontPrintDirectOT(color, D_00A13418);
+            xglFontPrintDirectOT(color, "\x0C\x80\x80\x80");
         }
         xglFontPrintDirectOT(color, idx_7 + i * 2);
         if (value != 0) {

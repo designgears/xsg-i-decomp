@@ -38,7 +38,6 @@ int thinkAdrGet(short offset)
     return pDataTop + (unsigned int)offset / 2 * 2;
 }
 
-extern const char D_00A46050[];
 
 int thinkProcessAdd(ThinkProcess *proc)
 {
@@ -53,7 +52,7 @@ int thinkProcessAdd(ThinkProcess *proc)
         }
         p = (ThinkProcess *)((unsigned char *)p + 0x24);
     }
-    printf(D_00A46050);
+    printf("thinkProcessAdd: over\n");
     return 0;
 }
 
@@ -116,7 +115,6 @@ int thinkProcessExec(void)
 }
 
 extern int thinkExecSub(ThinkProcess *proc);
-extern const char D_00A46068[];
 
 int thinkProcessExecSub(ThinkProcess *proc)
 {
@@ -130,7 +128,7 @@ int thinkProcessExecSub(ThinkProcess *proc)
     if (status == 1) {
         thinkProcessDel(&proc->dataTop);
     } else if (status != 2) {
-        printf(D_00A46068, status);
+        printf("thinkProcessExecSub: err -> %d\n", status);
     }
     return 1;
 }
@@ -138,7 +136,6 @@ int thinkProcessExecSub(ThinkProcess *proc)
 extern int msgPosX;
 extern int msgPosY;
 extern int mapNoGet(void);
-extern const char D_00A46088[];
 
 void thinkInit(void)
 {
@@ -158,7 +155,7 @@ void thinkInit(void)
     bankMode = 2;
     monsSetNo = monsSetNoGet();
     if (monsSetNo >= thinkMonsTblNumGet() || monsSetNo < 0) {
-        printf(D_00A46088, monsSetNo);
+        printf("** monsSet: over -> %d\n", monsSetNo);
         monsSetNoSet(0);
     }
     mapNo = *(short *)pMonsSetTop[monsSetNoGet()].unmodeled_2;
@@ -218,7 +215,6 @@ int thinkCamTblNumGet(void)
 
 extern int camExec(short scriptOffset);
 extern int cameraFlagGet(void);
-extern const char D_00A460A0[];
 extern unsigned char D_00A59AF8;
 
 int camInitExec(void)
@@ -228,13 +224,12 @@ int camInitExec(void)
     thinkContextSet((int)&D_00A59AF8);
     if (script != 0) {
         thinkRegSet(0x801B, cameraFlagGet() & 0xFFFF);
-        printf(D_00A460A0, script);
+        printf("** camInit ** %X\n", script);
         return camExec(script);
     }
     return 1;
 }
 
-extern const char D_00A460B8[];
 typedef struct {
     int type;
     unsigned short arg;
@@ -279,13 +274,12 @@ int camEventExec(CamEvent *ev)
         thinkRegSet(0x8019, unitLiveNumGet(0) & 0xFFFF);
         thinkRegSet(0x801A, unitLiveNumGet(1) & 0xFFFF);
         thinkRegSet(0x801B, cameraFlagGet() & 0xFFFF);
-        printf(D_00A460B8, ev->type, script);
+        printf("** camEventExec %d ** %X\n", ev->type, script);
         return camExec(script);
     }
     return 1;
 }
 
-extern const char D_00A46148[];
 
 int thinkInitExec(void)
 {
@@ -293,7 +287,7 @@ int thinkInitExec(void)
 
     thinkContextSet((int)context);
     if (script != 0) {
-        printf(D_00A46148, script);
+        printf("** thinkInit ** %X\n", script);
         return thinkExec(script);
     }
     return 1;
@@ -308,7 +302,7 @@ int thinkTurnStartExec(ObjectTask *unit)
         thinkRegSet(0x8010, unitNoGet(unit) & 0xFFFF);
         thinkRegSet(0x8019, unitLiveNumGet(0) & 0xFFFF);
         thinkRegSet(0x801A, unitLiveNumGet(1) & 0xFFFF);
-        printf(D_00A46160, script);
+        printf("** thinkTurnStart ** %X\n", script);
         return thinkExec(script);
     }
     return 1;
@@ -323,7 +317,7 @@ int thinkTurnEndExec(ObjectTask *unit)
         thinkRegSet(0x8010, unitNoGet(unit) & 0xFFFF);
         thinkRegSet(0x8019, unitLiveNumGet(0) & 0xFFFF);
         thinkRegSet(0x801A, unitLiveNumGet(1) & 0xFFFF);
-        printf(D_00A46180, script);
+        printf("** thinkTurnEnd ** %X\n", script);
         return thinkExec(script);
     }
     return 1;
@@ -343,7 +337,7 @@ int thinkUnitAtkExec(ObjectTask *unit)
         thinkRegSet(0x8013, 0);
         thinkRegSet(0x8019, unitLiveNumGet(0) & 0xFFFF);
         thinkRegSet(0x801A, unitLiveNumGet(1) & 0xFFFF);
-        printf(D_00A46198, unitNoGet(unit), script);
+        printf("** think Atk (%d) ** %X\n", unitNoGet(unit), script);
         return thinkExec(script);
     }
     return 1;
@@ -364,7 +358,7 @@ int thinkUnitDmgExec(ObjectTask *unit, UnitDmgInfo *info)
         thinkRegSet(0x8017, info->reg8017);
         thinkRegSet(0x8019, unitLiveNumGet(0) & 0xFFFF);
         thinkRegSet(0x801A, unitLiveNumGet(1) & 0xFFFF);
-        printf(D_00A461B8, unitNoGet(unit), script);
+        printf("** think Dmg (%d) ** %X\n", unitNoGet(unit), script);
         return thinkExec(script);
     }
     return 1;
@@ -404,7 +398,6 @@ int thinkExecChk(void)
 }
 
 extern int (*cmdTbl[])(ThinkProcess *proc, int cmd);
-extern char D_00A461D8[];
 extern void debugThinkPrint(short cmd, short pc, short newPc);
 
 int thinkExecSub(ThinkProcess *proc)
@@ -428,7 +421,7 @@ int thinkExecSub(ThinkProcess *proc)
             proc->waitActive = 0;
         }
     } else {
-        printf(D_00A461D8);
+        printf("** cmd err %d\n");
         result = 1;
     }
     return result;
@@ -439,7 +432,7 @@ int regChk(int operand)
     unsigned short reg = operand;
 
     if (!(reg & 0x8000)) {
-        printf(D_00A461E8, reg);
+        printf("** reg err %d\n", reg);
         return 0;
     }
     return 1;
@@ -529,7 +522,6 @@ int cmdGo(ThinkProcess *proc)
     return 0;
 }
 
-extern const char D_00A461F8[];
 
 int cmdGosub(ThinkProcess *proc)
 {
@@ -540,14 +532,13 @@ int cmdGosub(ThinkProcess *proc)
         *(short *)(ctx + *sp * 2 + 0x80) = (unsigned short)proc->pc + 2;
         (*sp)++;
     } else {
-        printf(D_00A461F8);
+        printf("** GOSUB stack err\n");
         return 1;
     }
     proc->pc = cmdNum(proc->pc);
     return 0;
 }
 
-extern const char D_00A46210[];
 
 int cmdReturn(ThinkProcess *proc)
 {
@@ -558,7 +549,7 @@ int cmdReturn(ThinkProcess *proc)
         *(int *)(ctx + 0xA0) = sp;
         proc->pc = *(short *)(ctx + sp * 2 + 0x80);
     } else {
-        printf(D_00A46210);
+        printf("** RETURN stack err\n");
         return 1;
     }
     return 0;
@@ -625,7 +616,6 @@ int cmdBra(ThinkProcess *proc)
     return 0;
 }
 
-extern const char D_00A46248[];
 
 int cmdOngo(ThinkProcess *proc)
 {
@@ -636,15 +626,13 @@ int cmdOngo(ThinkProcess *proc)
     v = cmdNum(proc->pc);
     proc->pc = (unsigned short)proc->pc + 2;
     if (v < n) {
-        printf(D_00A46248);
+        printf("** ONGO err\n");
         return 1;
     }
     proc->pc = cmdNum((short)(proc->pc + n * 2));
     return 0;
 }
 
-extern const char D_00A46258[];
-extern const char D_00A46268[];
 
 int cmdOngosub(ThinkProcess *proc)
 {
@@ -656,7 +644,7 @@ int cmdOngosub(ThinkProcess *proc)
     idx = cmdNum(proc->pc);
     proc->pc += 2;
     if (idx < n) {
-        printf(D_00A46258);
+        printf("** ONGOSUB err\n");
         return 1;
     }
     ctx = pContext;
@@ -665,7 +653,7 @@ int cmdOngosub(ThinkProcess *proc)
         *(short *)(ctx + *sp * 2 + 0x80) = proc->pc + idx * 2;
         (*sp)++;
     } else {
-        printf(D_00A46268);
+        printf("** ONGOSUB stack err\n");
         return 1;
     }
     proc->pc = cmdNum(proc->pc + n * 2);
@@ -684,7 +672,6 @@ int cmdRset(ThinkProcess *proc)
     return 0;
 }
 
-extern const char D_00A46280[];
 
 int cmdRmath1(ThinkProcess *proc)
 {
@@ -712,14 +699,13 @@ int cmdRmath1(ThinkProcess *proc)
         r = t;
         break;
     default:
-        printf(D_00A46280);
+        printf("** Rmath1 err\n");
         return 1;
     }
     thinkRegSet(regNo, r & 0xFFFF);
     return 0;
 }
 
-extern const char D_00A46290[];
 
 int cmdRmath2(ThinkProcess *proc)
 {
@@ -761,14 +747,13 @@ int cmdRmath2(ThinkProcess *proc)
         n = (short)(rnd(n));
         break;
     default:
-        printf(D_00A46290);
+        printf("** Rmath2 err\n");
         return 1;
     }
     thinkRegSet(regNo, n & 0xFFFF);
     return 0;
 }
 
-extern const char D_00A462D0[];
 
 int cmdRpush(ThinkProcess *proc)
 {
@@ -782,7 +767,7 @@ int cmdRpush(ThinkProcess *proc)
         *(short *)(ctx + *sp * 2 + 0xA4) = v;
         (*sp)++;
     } else {
-        printf(D_00A462D0);
+        printf("** RPUSH stack err\n");
         return 1;
     }
     return 0;
@@ -793,8 +778,6 @@ typedef struct ThinkProcessChkSlot {
     unsigned char unmodeled[0x20];
 } ThinkProcessChkSlot;
 extern ThinkProcessChkSlot D_00A597AC[];
-extern const char D_00A462D0[];
-extern const char D_00A462E8[];
 
 int cmdRpop(ThinkProcess *proc)
 {
@@ -810,7 +793,7 @@ int cmdRpop(ThinkProcess *proc)
         *(int *)(ctx + 0xE4) = n;
         val = *(short *)(ctx + n * 2 + 0xA4);
     } else {
-        printf(D_00A462E8);
+        printf("** RPOP stack err\n");
         return 1;
     }
     thinkRegSet(regNo & 0xFFFF, val & 0xFFFF);
@@ -858,17 +841,16 @@ int cmdRput(ThinkProcess *proc)
 
     proc->pc += 2;
     if (regNo & 0x4000) {
-        printf(D_00A46300);
+        printf("@");
     }
     /* regNo's low 16 bits, kept in its own register separately from the raw
      * value the indirect-addressing test above reads. */
     reg = 0xFFFF;
     reg = regNo & reg;
-    printf(D_00A46308, reg & 0x3FFF, thinkRegGet(reg));
+    printf("R%02d = %d\n", reg & 0x3FFF, thinkRegGet(reg));
     return 0;
 }
 
-extern const char D_00A46318[];
 
 int cmdPrint(ThinkProcess *proc)
 {
@@ -877,7 +859,7 @@ int cmdPrint(ThinkProcess *proc)
     int pc;
 
     s = (char *)thinkAdrGet(proc->pc);
-    printf(D_00A46318, s);
+    printf("%s\n", s);
     while (s[n++] != 0) {
     }
     if (n & 1) {
@@ -1077,11 +1059,6 @@ void cmdThinkset2(ThinkProcess *proc)
     cmdThinksetSub(proc);
 }
 
-extern const char D_00A463A0[];
-extern const char D_00A463C0[];
-extern const char D_00A463E0[];
-extern const char D_00A46400[];
-extern const char D_00A46420[];
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 typedef struct { char pad[6]; short tecId; } ThinksetEth;
 extern ThinksetEth *dataEthGet(int id);
@@ -1097,7 +1074,7 @@ int cmdThinksetSub(ThinkProcess *proc)
     short id;
 
     if (unit == 0) {
-        printf(D_00A463A0, tgt);
+        printf("** THINKSET: err -> tgt %d\n", tgt);
         unit = unitPtrGet(0);
     }
     switch (cmd) {
@@ -1111,13 +1088,13 @@ int cmdThinksetSub(ThinkProcess *proc)
             list[3] = -1;
             unitCmdListSet(pThinkUnit, list);
         } else {
-            printf(D_00A463C0, arg);
+            printf("** ThinkSet: err -> norm %d\n", arg);
         }
         }
         break;
     case 2:
         if (calcStatGet(pThinkUnit, 1, 0x1000) != 0) {
-            printf(D_00A463E0, arg);
+            printf("** ThinkSet: ether LOST %d\n", arg);
         } else {
             id = ((short *)((char *)calcUPGet(pThinkUnit) + 0x8E))[arg];
             if (id != 0) {
@@ -1128,7 +1105,7 @@ int cmdThinksetSub(ThinkProcess *proc)
                 list[3] = id;
                 unitCmdListSet(pThinkUnit, list);
             } else {
-                printf(D_00A46400, arg);
+                printf("** ThinkSet: err -> ether %d\n", arg);
             }
         }
         break;
@@ -1161,7 +1138,7 @@ int cmdThinksetSub(ThinkProcess *proc)
         unitCmdListSet(pThinkUnit, list);
         break;
     default:
-        printf(D_00A46420, cmd);
+        printf("** THINKSET: err -> cmd %d\n", cmd);
     case 0:
         break;
     }
@@ -1181,7 +1158,6 @@ ObjectTask *thinkUnitPtrGetReg(int reg)
 extern int calcBoost(ObjectTask *unit, int mode);
 extern int calcBoostChk(ObjectTask *unit, int mode);
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
-extern const char D_00A46468[];
 
 int cmdCounterBoost(void)
 {
@@ -1189,7 +1165,7 @@ int cmdCounterBoost(void)
 
     if (calcBoostChk(unit, 0) != 0) {
         calcBoost(unit, 0);
-        printf(D_00A46468, calcUPGet(unit)->charaId);
+        printf("** COUNTER BOOST CHR=%d\n", calcUPGet(unit)->charaId);
     }
     return 0;
 }
@@ -1896,7 +1872,7 @@ void myMCamSet(int mode, void *params)
 int unitNoChk(int unitNo)
 {
     if (unitNo >= 8) {
-        printf(D_00A46578, unitNo);
+        printf("** unit No err -> %d\n", unitNo);
         unitNo = 0;
     }
     return unitNo;
@@ -1950,7 +1926,6 @@ int cmdCamBankMoveMode(void)
     return 0;
 }
 
-extern const char D_00A46590[];
 typedef struct {
     void *mode;
     int pad4[3];
@@ -1967,7 +1942,7 @@ int cmdCamLock(void)
     CamLockView *cam;
 
     if (camMode < 0) {
-        printf(D_00A46590, camMode);
+        printf("** CamLock err **\n", camMode);
         return 0;
     }
     ((Vector4 *(*)(Vector4 *))MCamGetCurrentCoord)(&v);   /* original passes only &v */
@@ -2320,7 +2295,6 @@ int cmdCamShake(ThinkProcess *proc)
 }
 
 extern float MCamGetLengthActor(int selector);
-extern const char D_00A465C0[];
 
 int cmdCamCenterLength(ThinkProcess *proc)
 {
@@ -2328,7 +2302,7 @@ int cmdCamCenterLength(ThinkProcess *proc)
 
     proc->pc += 2;
     if (camMode < 0) {
-        printf(D_00A465C0);
+        printf("** camCenterLength err **\n");
         return 0;
     }
     thinkRegSet(regNo, (int)(MCamGetLengthActor(camMode) * 100.0f));

@@ -446,8 +446,6 @@ extern int printf(const char *format, ...);
 extern char fileName[];
 extern char *sndSeNameBase;
 extern char *sndSeNameExt;
-extern const char D_00A4E6A8[];
-extern const char D_00A4E6D0[];
 
 int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
 {
@@ -459,7 +457,7 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
 
     dataSndSeNameGet(&name, unit, seType);
     if (name == 0) {
-        printf(D_00A4E6A8, calcUPGet(unit)->charaId, seType);
+        printf("** dataSndSeLoadSub: err -> (%d) %d\n", calcUPGet(unit)->charaId, seType);
         work->seType = 0;
         return 0;
     }
@@ -474,12 +472,11 @@ int dataSndSeLoadSub(ObjectTask *unit, int seType, SndSeLoadWork *work)
     clamped = (withSlack < 0) ? (fileSize + 0xFFE) : withSlack;
     roundedSize = (clamped >> 0xB) << 0xB;
     work->size = roundedSize;
-    printf(D_00A4E6D0, roundedSize);
+    printf("** SND read Size = %d\n", roundedSize);
     work->seType = seType;
     return 1;
 }
 
-extern const char D_00A4E6E8[];
 typedef struct {
     int seType;
     int pad4[2];
@@ -501,7 +498,7 @@ int dataSndSeLoad(ObjectTask *unit, int seType)
     dat = ((SndSeLoadDat *(*)(int))sndSeAdrGet)(charaId);
     w = &dat->work;
     if (dat->id == charaId && w->seType == seType) {
-        printf(D_00A4E6E8, charaId, seType);
+        printf("** dataSndSeLoad: skip %d %d\n", charaId, seType);
         return 1;
     }
     w->b = 0;
@@ -531,7 +528,6 @@ void dataSndSeLoad2(ObjectTask *unit)
     }
 }
 
-extern const char D_00A4E708[];
 
 /*
  * ov01:0x00a2d6a0. Claims a unit sound registration, loads its base bank,
@@ -547,7 +543,7 @@ int dataSndSeRegLoad(ObjectTask *unit)
 
     charaId = calcUPGet(unit)->charaId;
     if (sndSeRegAdrChk(charaId) != 0) {
-        printf(D_00A4E708, charaId);
+        printf("** dataSndSeRegLoad: skip %d\n", charaId);
         return 1;
     }
     record = sndSeRegAdrGet(charaId);
@@ -615,12 +611,8 @@ void dataSndSeRegLoad2(ObjectTask *unit)
 extern int sndConvRegNo(int id);
 extern int xglSoundSendSed(void *sed, int bank);
 extern void SsdCheckSpuMemory(int mode);
-extern const char D_00A4E728[];
-extern const char D_00A4E740[];
 extern const char D_00A4E768[];
 extern const char D_00A4E788[];
-extern const char D_00A4E7B0[];
-extern const char D_00A4E7C8[];
 
 int sndSeTrans(int seId, int volume)
 {
@@ -644,12 +636,12 @@ int sndSeTrans(int seId, int volume)
     if (bank->work.seType != 0) {
         b = sndBankGet(seId, volume);
         if (volume == 2 && dmgBankOffs[b] != 0) {
-            printf(D_00A4E728);
+            printf(">>>> SetTrans err\n");
             return 0;
         }
         sed = *(int **)&bank->unmodeled_0c[0];
         if (sed[0] != 0x73646573) {
-            printf(D_00A4E740, sed[0], sed);
+            printf("** sndSeTrans: err! sedType %X %X\n", sed[0], sed);
             return 0;
         }
         if (sed[2] > 0x10000) {
@@ -663,13 +655,13 @@ int sndSeTrans(int seId, int volume)
         }
         r1 = xglSoundSendSed(sed, b);
         r2 = xglSoundSendSwd(*(int **)&bank->unmodeled_0c[4], b);
-        printf(D_00A4E7B0, r1, r2);
+        printf("** sndSeTrans: %d %d\n", r1, r2);
         if (r1 < 0 || r2 < 0) {
             SsdCheckSpuMemory(1);
         }
         return 1;
     }
-    printf(D_00A4E7C8, charaId, volume);
+    printf("** sndSeTrans: err -> (%d) %d\n", charaId, volume);
     return 0;
 }
 
@@ -689,7 +681,6 @@ int sndSysSePlay(int soundId)
 extern int ctrlId;
 extern int dmgBankOffs[3];
 extern void xglSoundEffectNormalID(int soundId, int ctrlId);
-extern const char D_00A4E7E8[];
 
 /*
  * ov01:0x00a2dab0. Starts sound-effect id on the unit's bank. sndBankGet
@@ -716,7 +707,7 @@ int sndSePlay(int unit, int id, int no)
         dmgBankOffs[bank] = 1;
     }
     xglSoundEffectNormalID((bank << 16) | no, ctrlId);
-    printf(D_00A4E7E8, bank, id, no, ctrlId);
+    printf("<< SE Play bank=%d id=%d no=%d %d >>\n", bank, id, no, ctrlId);
     if (id != 2) {
         ctrlId++;
     }
