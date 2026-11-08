@@ -10611,84 +10611,46 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_drill.o"
+      "object": "build/main/build/c/init_drill.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004ca960",
-      "0x004ca970"
-     ],
-     "generated": [
-      "0x004ca960",
-      "0x004ca970"
-     ],
-     "generated_by": [
-      "SetContainer"
-     ],
-     "c_owned_symbols": [
-      "D_004CA960"
-     ],
-     "also_referenced_by_c": [
-      "D_004CA940",
-      "D_004CA970",
-      "D_004CA9A0",
-      "D_004CA9B8",
-      "D_004CA9C8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_drill.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca9e0",
-      "0x004caa00"
-     ],
-     "generated": [
-      "0x004ca9e0",
-      "0x004caa00"
-     ],
-     "generated_by": [
-      "MAP_updateUnitDrill"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004CA9E0"
-     ],
-     "also_referenced_by_c": [
-      "D_004CAA00",
-      "D_004CAA10",
-      "D_004CAA20",
-      "D_004CAA30"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_drill.o"
-     }
-    },
-    {
-     "range": [
-      "0x004caa40",
+      "0x004ca940",
       "0x004caac0"
      ],
      "generated": [
-      "0x004caa40",
+      "0x004ca940",
       "0x004caabf"
      ],
      "generated_by": [
+      "CreateContainer",
       "DrillCameraControlFunc",
       "DrillCrashFunc",
+      "DrillPowerOffFunc",
       "DrillReturnFunc",
+      "DrillStandbyFunc",
       "DrillXMoveFunc",
       "DrillZMoveFunc",
-      "DrillZStopFunc"
+      "DrillZStopFunc",
+      "InitDrill",
+      "MAP_updateUnitDrill",
+      "SetContainer"
      ],
      "c_owned_symbols": [
+      "D_004CA940",
+      "D_004CA960",
+      "D_004CA970",
+      "D_004CA9A0",
+      "D_004CA9B8",
+      "D_004CA9C8",
+      "jtbl_004CA9E0",
+      "D_004CAA00",
+      "D_004CAA10",
+      "D_004CAA20",
+      "D_004CAA30",
       "D_004CAA40",
       "D_004CAA50",
       "D_004CAA60",
@@ -10702,7 +10664,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/init_drill.o"
+      "object": "build/main/build/c/init_drill.o"
      }
     }
    ]
