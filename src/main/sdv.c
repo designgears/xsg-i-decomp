@@ -14,22 +14,16 @@ static float _sdvAmbient[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
 
 
 
-extern short _sdvSpecialBuf[8];
+static short _sdvSpecialBuf[8];
 
 
-extern SdvAlter _sdvAlter[16];
+static SdvAlter _sdvAlter[16];
 
 
 static int _sdvAmbFrame = 0;
 
 
 static int _sdvAmbState = 0;
-
-
-extern unsigned char charID_0;
-
-
-extern int eftCate_1;
 
 
 extern unsigned short itmBox[255];
@@ -164,6 +158,9 @@ void sdvSaveAmbient(void)
 
 static void sdvSetAmbStateSub(int state, int effect_no, int force)
 {
+    static unsigned char charID_0 __asm__("charID.0");
+    static int eftCate_1 __asm__("eftCate.1");
+
     if (force != 0) {
         _sdvAmbState = state;
         return;
