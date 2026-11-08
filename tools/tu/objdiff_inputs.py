@@ -202,11 +202,12 @@ def size_bss_symbols(path, real_names=None, base_elf=None, overlay_inner=False):
             size = nxt - y.value if nxt is not None else section.size - y.value
             if nxt is None and bsec:
                 # the original's last object runs to the next object's
-                # alignment (link fill, < 16 bytes): where the C's last object
+                # alignment (link fill, < 128 bytes, as mapcheck accepts when no
+                # original object starts in it): where the C's last object
                 # starts at the same offset, that fill is not compared
                 c_last = [b for b in base_elf.symbols if b.shndx == bsec[0].index
                           and b.value == y.value and b.size and b.type != 3]
-                if c_last and c_last[0].size <= size < c_last[0].size + 16:
+                if c_last and c_last[0].size <= size < c_last[0].size + 128:
                     size = c_last[0].size
             struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, size)
             if y.type == 0:

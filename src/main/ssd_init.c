@@ -40,10 +40,10 @@ typedef struct SsdThreadCreateInfo {
 #define RSSD_BUFFER_ALIGN 64
 #define RSSD_THREAD_STACK_BYTES 16384
 #define RSSD_THREAD_PRIORITY 6
-extern unsigned char MYclientPtr[];
-extern unsigned char MYserverPtr[];
-extern unsigned char MYthreadStack[];
-extern unsigned char MYwaveTransThStack[];
+static unsigned char MYclientPtr[0x10040];
+static unsigned char MYserverPtr[0x10020];
+static unsigned char MYthreadStack[0x4000];
+static unsigned char MYwaveTransThStack[0x4000];
 extern void *_gp;
 extern int CreateSema(SsdSemaCreateInfo *sema);
 extern int CreateThread(SsdThreadCreateInfo *thread);
