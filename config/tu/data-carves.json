@@ -7846,40 +7846,22 @@
     {
      "range": [
       "0x004d81f4",
-      "0x004d81f8"
+      "0x004d824c"
      ],
      "generated": [
       "0x004d81f4",
-      "0x004d81f8"
+      "0x004d824c"
      ],
      "generated_by": [
-      "InitTest_002D9430"
+      "InitTest_002D9430",
+      "MoveCamera",
+      "MoveWind",
+      "MoveWind2",
+      "WindTest"
      ],
      "c_owned_symbols": [
-      "D_004D81F4"
-     ],
-     "also_referenced_by_c": [
-      "D_004D81F8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/wind_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d81fc",
-      "0x004d8228"
-     ],
-     "generated": [
-      "0x004d81fc",
-      "0x004d8228"
-     ],
-     "generated_by": [
-      "MoveCamera"
-     ],
-     "c_owned_symbols": [
+      "D_004D81F4",
+      "D_004D81F8",
       "D_004D81FC",
       "D_004D8200",
       "D_004D8204",
@@ -7890,35 +7872,13 @@
       "D_004D8218",
       "D_004D821C",
       "D_004D8220",
-      "D_004D8224"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8224",
       "D_004D8228",
       "D_004D822C",
       "D_004D8230",
       "D_004D8234",
       "D_004D8238",
-      "D_004D823C"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/wind_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8240",
-      "0x004d824c"
-     ],
-     "generated": [
-      "0x004d8240",
-      "0x004d824c"
-     ],
-     "generated_by": [
-      "WindTest"
-     ],
-     "c_owned_symbols": [
+      "D_004D823C",
       "D_004D8240",
       "D_004D8244",
       "D_004D8248"
@@ -7927,7 +7887,63 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/wind_test.o"
+      "object": "build/main/build/c/wind_test.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004cbb60",
+      "0x004cbbd0"
+     ],
+     "generated": [
+      "0x004cbb60",
+      "0x004cbbca"
+     ],
+     "generated_by": [
+      "InitTest_002D9430",
+      "PrintDisp_002D9E90"
+     ],
+     "c_owned_symbols": [
+      "D_004CBB60",
+      "D_004CBB70",
+      "D_004CBB80",
+      "D_004CBB90",
+      "D_004CBBA0",
+      "D_004CBBB8"
+     ],
+     "also_referenced_by_c": [
+      "D_004CBBD0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/wind_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db9d0",
+      "0x004db9d8"
+     ],
+     "generated": [
+      "0x004db9d0",
+      "0x004db9d7"
+     ],
+     "generated_by": [
+      "PrintDisp_002D9E90"
+     ],
+     "c_owned_symbols": [
+      "D_004DB9D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/wind_test.o"
      }
     }
    ]
