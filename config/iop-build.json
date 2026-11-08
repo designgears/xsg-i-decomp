@@ -2147,9 +2147,16 @@
             "size": 36
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 59712,
+            "section": ".data",
+            "sha256": "7a25754c56fd7351f0b2ab5df5de4492abb9640b963662b629398315fbf52d22",
+            "size": 64
+          }
+        ],
         "source": "src/audio/ssd/ssd_lfo.c",
-        "source_sha256": "6c43c16fa327b83caa34757229b0860b0b65c75d6cfd4db3250fba4101ed6b75"
+        "source_sha256": "a7f6d73d2007627f54b5bfd7f07413be86d1abb877556ac0cba66da4f1ab813f"
       },
       {
         "fdr_filename": "ssd_voic.c",
