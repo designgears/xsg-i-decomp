@@ -181,7 +181,10 @@ static void _CalcUV(XrgPaint2DVertex corners[4], const XrgIntRect *base,
     _CalcRectangle(corners, &rect, 0, 0);
 }
 
-extern void *s_pCurView_00A51220;
+int s_anHomePos[2] = {0x7000, 0x7200};
+float s_aSizeRatio[2] = {1.0f, 1.0f};
+float s_aCurCenterPos[4] = {2048.0f, 2048.0f, 0.0f, 0.0f};
+void *s_pCurView_00A51220 = 0;
 
 static int _CalcPosOnScreen(void *destination, const void *position, float *offsetWork)
 {
@@ -294,9 +297,6 @@ static void _CalcPosOnScreenFloat(void *destination, const void *position)
         : "memory");
 }
 
-extern int s_anHomePos[];
-extern float s_aCurCenterPos[];
-extern float s_aSizeRatio[];
 extern float XrgNormalizeVector(RgVector destination, RgVector source);
 extern void XrgSubVectorXYZ(RgVector destination, RgVector first, RgVector second);
 extern void RgError(const char *message, const char *source_file, int line, ...);

@@ -19051,6 +19051,36 @@
    ]
   },
   "ov12/tu086_00a4a620": {
+   ".data": [
+    {
+     "range": [
+      "0x00a51200",
+      "0x00a51224"
+     ],
+     "generated": [
+      "0x00a51200",
+      "0x00a51224"
+     ],
+     "generated_by": [
+      "_CalcOffset",
+      "_CalcPosOnScreen",
+      "_CalcPosOnScreenFloat",
+      "_Paint2DFlush"
+     ],
+     "c_owned_symbols": [
+      "s_anHomePos",
+      "s_aSizeRatio",
+      "s_aCurCenterPos",
+      "s_pCurView_00A51220"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_paint2d.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
