@@ -648,3 +648,8 @@ void GameDebugMenu(void)
         break;
     }
 }
+
+int DebugMenuResourceSizeAdd = 0;
+
+/* Unreferenced zero fill that ends the original .sdata (alignment of the next TU). */
+static int D_004D9F54 = 0;

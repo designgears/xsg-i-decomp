@@ -2747,11 +2747,11 @@
     {
      "range": [
       "0x004d9ef8",
-      "0x004d9f50"
+      "0x004d9f58"
      ],
      "generated": [
       "0x004d9ef8",
-      "0x004d9f4d"
+      "0x004d9f58"
      ],
      "generated_by": [
       "PauseMenuPage0",
@@ -2769,11 +2769,11 @@
       "D_004D9F30",
       "D_004D9F38",
       "D_004D9F40",
-      "D_004D9F48"
+      "D_004D9F48",
+      "DebugMenuResourceSizeAdd",
+      "D_004D9F54"
      ],
-     "also_referenced_by_c": [
-      "DebugMenuResourceSizeAdd"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
