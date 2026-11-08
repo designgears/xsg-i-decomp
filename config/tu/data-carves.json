@@ -21893,6 +21893,202 @@
    ]
   },
   "ov10/tu008_00a21768": {
+   ".data": [
+    {
+     "range": [
+      "0x00a488f0",
+      "0x00a4bb88"
+     ],
+     "generated": [
+      "0x00a488f0",
+      "0x00a4bb88"
+     ],
+     "generated_by": [
+      "CGPCFSDispSub",
+      "CGPChkPlayable",
+      "CGPCursorMove2",
+      "CGPDispErrorMessCore",
+      "CGPNextTurnSub",
+      "CGPSetMessage",
+      "CGPSetPermanentMess",
+      "CardGameProc",
+      "CardPlayDispInfo"
+     ],
+     "c_owned_symbols": [
+      "CPISMdlLst",
+      "CPIPhaseMdlLst",
+      "Player1Color",
+      "Player2Color",
+      "PermMess000Txt",
+      "PermMess001Txt",
+      "PermMess002Txt",
+      "PermMess003Txt",
+      "PermMess004Txt",
+      "PermMess005Txt",
+      "PermMess006Txt",
+      "PermMess007Txt",
+      "PermMess008Txt",
+      "PermMess009Txt",
+      "PermMess010Txt",
+      "PermMess011Txt",
+      "PermMess012Txt",
+      "PermMess013Txt",
+      "PermMess014Txt",
+      "PermMessTbl",
+      "OLMess0000Txt",
+      "OLMess0010Txt",
+      "OLMess0011Txt",
+      "OLMess0020Txt",
+      "OLMess0030Txt",
+      "OLMess0040Txt",
+      "OLMess0041Txt",
+      "OLMess0042Txt",
+      "OLMess0050Txt",
+      "OLMess0060Txt",
+      "OLMess0061Txt",
+      "OLMess0070Txt",
+      "OLMess0080Txt",
+      "OLMess0090Txt",
+      "OLMessTbl",
+      "EMTitle00Txt",
+      "EMTitle01Txt",
+      "EMTitle02Txt",
+      "EMTitle03Txt",
+      "EMTitle04Txt",
+      "EMTitle90Txt",
+      "EMTitle91Txt",
+      "EMTitle92Txt",
+      "EMTitle93Txt",
+      "EMTitle94Txt",
+      "EMTitle95Txt",
+      "EMTitle99Txt",
+      "EMMess000Txt",
+      "EMMess001Txt",
+      "EMMess002Txt",
+      "EMMess003Txt",
+      "EMMess010Txt",
+      "EMMess011Txt",
+      "EMMess012Txt",
+      "EMMess013Txt",
+      "EMMess014Txt",
+      "EMMess015Txt",
+      "EMMess016Txt",
+      "EMMess017Txt",
+      "EMMess018Txt",
+      "EMMess019Txt",
+      "EMMess020Txt",
+      "EMMess022Txt",
+      "EMMess030Txt",
+      "EMMess031Txt",
+      "EMMess040Txt",
+      "EMMess041Txt",
+      "EMMess050Txt",
+      "EMMess051Txt",
+      "EMMess052Txt",
+      "EMMess053Txt",
+      "EMMess054Txt",
+      "EMMess055Txt",
+      "EMMess056Txt",
+      "EMMess057Txt",
+      "EMMess060Txt",
+      "EMMess061Txt",
+      "EMMess062Txt",
+      "EMMess063Txt",
+      "EMMess070Txt",
+      "EMMess071Txt",
+      "EMMess072Txt",
+      "EMMess073Txt",
+      "EMMess074Txt",
+      "EMMess075Txt",
+      "EMMess076Txt",
+      "EMMess077Txt",
+      "EMMess078Txt",
+      "EMMess080Txt",
+      "EMMess081Txt",
+      "EMMess082Txt",
+      "EMMess083Txt",
+      "EMMess084Txt",
+      "EMMess090Txt",
+      "EMMess091Txt",
+      "EMMess092Txt",
+      "EMMess093Txt",
+      "EMMess094Txt",
+      "EMMess100Txt",
+      "EMMess101Txt",
+      "EMMess102Txt",
+      "EMMess103Txt",
+      "EMMess110Txt",
+      "EMMess111Txt",
+      "EMMess900Txt",
+      "EMMess901Txt",
+      "EMMess902Txt",
+      "EMMess903Txt",
+      "EMMess910Txt",
+      "EMMess990Txt",
+      "EMMess991Txt",
+      "ErrorMessTbl",
+      "D_00A49B44",
+      "HelpPageList",
+      "D_00A49B56",
+      "CursorTbl_00A49B58",
+      "CGPCPTbl",
+      "D_00A49BEA",
+      "SampleDeck0",
+      "DeckData0",
+      "DeckGene0",
+      "D_00A49C46",
+      "SampleDeck1",
+      "DeckData1",
+      "DeckGene1",
+      "D_00A49C9E",
+      "SampleDeck2",
+      "DeckData2",
+      "DeckGene2",
+      "D_00A49CF6",
+      "SampleDeck3",
+      "DeckData3",
+      "DeckGene3",
+      "D_00A49D4E",
+      "SampleDeck4",
+      "DeckData4",
+      "DeckGene4",
+      "D_00A49DA6",
+      "SampleDeck5",
+      "DeckData5",
+      "DeckGene5",
+      "D_00A49DFE",
+      "SampleDeck6",
+      "DeckData6",
+      "DeckGene6",
+      "D_00A49E56",
+      "SampleDeck7",
+      "DeckData7",
+      "DeckGene7",
+      "D_00A49EAE",
+      "SampleDeck8",
+      "DeckData8",
+      "DeckGene8",
+      "D_00A49F06",
+      "SampleDeck9",
+      "DeckData9",
+      "DeckGene9",
+      "D_00A49F5E",
+      "EnemyDebugDeckLst",
+      "EnemyDeckLst",
+      "DeckDataLst",
+      "DeckGeneLst",
+      "EnemyDeckListStr",
+      "cpudeck",
+      "CardDat"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -22014,7 +22210,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/cgp.o"
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
      }
     },
     {
@@ -22052,7 +22248,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/cgp.o"
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
      }
     },
     {
@@ -22077,7 +22273,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/cgp.o"
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
      }
     },
     {
@@ -22105,7 +22301,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/cgp.o"
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
      }
     },
     {
@@ -22139,7 +22335,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/cgp.o"
+      "object": "build/ov10/build/scaffold/src/ov10/cgp.o"
      }
     }
    ]
