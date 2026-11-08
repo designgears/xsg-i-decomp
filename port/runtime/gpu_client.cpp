@@ -792,6 +792,26 @@ extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* te
     for (int i = 0; i + 5 < len; ++i)
         if (text[i] == 0x19 && text[i + 1] == 0 && text[i + 4] == 0x19) icons++, i += 5;
     int slot = msg_spr_count - icons;
+    // the font engine's wrap width persists across prints (a style-only print sets it, later ones
+    // inherit it; 0x0B resets it): follow it, and start each string with the width in effect
+    static int s_wrap;
+    {
+        int scan = s_wrap;
+        for (int i = 0; i < len;) {
+            const unsigned char c = text[i];
+            if (c >= 0x80) { i += 2; continue; }
+            if (c >= 0x20) { i++; continue; }
+            if (c == 0x0b) scan = 0;
+            if (c == 0x15 && i + 4 < len && text[i + 1] == 3 && text[i + 2] == 3) scan = (text[i + 3] << 8) | text[i + 4];
+            i += 1 + std::max(0, int(xglFontGetSPcodeSize(c, const_cast<unsigned char*>(text + i))));
+        }
+        if (s_wrap > 0 && !(len > 0 && text[0] == 0x0b)) {
+            out[n++] = 6;
+            out[n++] = char((s_wrap >> 7) | 0x80);
+            out[n++] = char((s_wrap & 0x7f) | 0x80);
+        }
+        s_wrap = scan;
+    }
     for (int i = 0; i < len && n < int(sizeof out) - 8;) {
         const unsigned char c = text[i];
         if (c == 0x19 && i + 5 < len && text[i + 1] == 0 && text[i + 4] == 0x19) {
@@ -815,6 +835,11 @@ extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* te
                 out[n++] = char(c <= 3 ? 4 : 5);
                 out[n++] = char((d >> 7) | 0x80);
                 out[n++] = char((d & 0x7f) | 0x80);
+            } else if (c == 0x15 && i + 4 < len && text[i + 1] == 3 && text[i + 2] == 3) {   // wrap width (px)
+                const int w = (text[i + 3] << 8) | text[i + 4];
+                out[n++] = 6;
+                out[n++] = char((w >> 7) | 0x80);
+                out[n++] = char((w & 0x7f) | 0x80);
             } else if (c == 0x0a) out[n++] = '\n';
             else if (c == 0x09) out[n++] = '\t';
             else if (c == 0x0c && i + 3 < len) {

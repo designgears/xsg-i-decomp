@@ -51,11 +51,24 @@ void DrawText(ImDrawList* dl, ImFont* font, const char* s, int len, ImVec2 p, fl
     using namespace xsgmenu;
     ImU32 colr = col::kText;
     std::string seg;
-    float x = p.x, y = p.y;
+    float x = p.x, y = p.y, wrap = 0;   // wrap: the game's wrap width on screen (0: none)
     auto flush = [&]() {
         if (seg.empty()) return;
         const std::string u = Decode(seg.c_str());
-        x += RichText(dl, font, fs, x, y, colr, u.c_str(), t);
+        if (wrap <= 0) {
+            x += RichText(dl, font, fs, x, y, colr, u.c_str(), t);
+        } else {   // word by word, to the next line at the wrap width
+            size_t i = 0;
+            while (i < u.size()) {
+                size_t j = u.find(' ', i);
+                j = j == std::string::npos ? u.size() : j + 1;
+                const std::string w = u.substr(i, j - i);
+                const float ww = RichTextWidth(font, fs, w.c_str());
+                if (x > p.x && x + ww - fs * 0.3f > p.x + wrap) { x = p.x; y += lh; }
+                x += RichText(dl, font, fs, x, y, colr, w.c_str(), t);
+                i = j;
+            }
+        }
         seg.clear();
     };
     for (int i = 0; i < len; ++i) {
@@ -70,6 +83,11 @@ void DrawText(ImDrawList* dl, ImFont* font, const char* s, int len, ImVec2 p, fl
             colr = (r >= 0x7e && g >= 0x7e && b >= 0x7e) ? col::kText
                                                           : IM_COL32(std::min(255, r * 2), std::min(255, g * 2), std::min(255, b * 2), 255);
             i += 3;
+        } else if (c == 6 && i + 2 < len) {   // the wrap width, game pixels
+            flush();
+            const int w = ((static_cast<unsigned char>(s[i + 1]) & 0x7f) << 7) | (static_cast<unsigned char>(s[i + 2]) & 0x7f);
+            wrap = float(w) * lh / 24.0f * (LayoutKx() / LayoutK());
+            i += 2;
         } else if ((c == 4 || c == 5) && i + 2 < len) {   // set x / y (an offset from the origin, game pixels)
             flush();
             const int d = (((static_cast<unsigned char>(s[i + 1]) & 0x7f) << 7) | (static_cast<unsigned char>(s[i + 2]) & 0x7f)) - 0x4000;
@@ -522,7 +540,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
             // proportions: when the game measured the string (o.dw), the widest line takes the same width
             float fs = 18.0f * k;
-            if (o.dw > 8) {
+            bool wraps = false;
+            for (int q = 0; q < o.u; ++q) wraps |= s[q] == 6;
+            if (o.dw > 8 && !wraps) {
                 float widest = 0;
                 std::string line;
                 for (int q = 0; q <= o.u; ++q) {
@@ -532,7 +552,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     else if (c == 2) q += 1;
                     else line += char(c);
                 }
-                if (widest > 0) fs *= std::clamp(float(o.dw) * kx / widest, 0.85f, 1.6f);
+                if (widest > 0) fs *= std::clamp(float(o.dw) * kx / widest, 0.6f, 1.6f);
             }
             DrawText(dl, font, s, o.u, P(x, y + 2), fs, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
                 for (uint32_t j = 0; j < m.nops; ++j) {
