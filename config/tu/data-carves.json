@@ -11854,6 +11854,69 @@
     }
    ]
   },
+  "ov02/tu000_00a00000": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a10d28",
+      "0x00a115d0"
+     ],
+     "generated": [
+      "0x00a10d28",
+      "0x00a115ca"
+     ],
+     "generated_by": [
+      "Logo",
+      "LogoFirst",
+      "device_check_sync",
+      "hdd_check",
+      "mc_check"
+     ],
+     "c_owned_symbols": [
+      "D_00A10D28",
+      "D_00A10D30",
+      "D_00A10E38",
+      "D_00A10E98",
+      "D_00A10EE8",
+      "D_00A10F58",
+      "D_00A10FC8",
+      "D_00A11048",
+      "D_00A11058",
+      "D_00A11098",
+      "D_00A110E0",
+      "D_00A11148",
+      "D_00A11158",
+      "D_00A11250",
+      "D_00A112F0",
+      "D_00A11338",
+      "D_00A11358",
+      "D_00A113C8",
+      "D_00A113E8",
+      "D_00A11430",
+      "D_00A11478",
+      "D_00A114C8",
+      "D_00A11520",
+      "D_00A115A0",
+      "D_00A115A8",
+      "D_00A115B8"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A10EE8": "D_00A11048",
+      "D_00A10F58": "D_00A11048",
+      "D_00A10FC8": "D_00A11048",
+      "D_00A11058": "D_00A11148",
+      "D_00A11098": "D_00A11148",
+      "D_00A110E0": "D_00A11148"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/logo.o"
+     }
+    }
+   ]
+  },
   "ov02/tu002_00a00858": {
    ".rodata": [
     {
