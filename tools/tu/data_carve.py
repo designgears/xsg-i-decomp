@@ -975,6 +975,15 @@ def plan_split(elf, csec, specs, want, check_items=False):
                 f'(anchors {[hex(a) for a in cands]} in +0x{low:x}..+0x{high:x}; none holds the bytes of its '
                 f'first item): the C functions do not emit the items of that run where the original has them')
         if len(fit) > 1:
+            # Bytes alone cannot place an all-zero first item: a field
+            # reference inside the previous object (`State+0xc8`) fits too.
+            # Prefer an offset where a C object starts and that lies inside no
+            # other C object.
+            starts = {s.value for s in own if s.size}
+            inside = lambda a: any(s.value < a < s.value + s.size for s in own if s.size)
+            better = [a for a in fit if a in starts and not inside(a)]
+            if better:
+                fit = better + [a for a in fit if a not in better]
             notes.append(f'run {h8(cur["lo"])}: offsets {[hex(a) for a in fit]} fit; +0x{fit[0]:x} taken')
         offsets.append(fit[0])
         if check_items:
