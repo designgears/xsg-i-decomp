@@ -14663,7 +14663,27 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/map_2.o"
+      "object": "build/main/build/c/map_2.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d2170",
+      "0x004d2188"
+     ],
+     "generated": [
+      "0x004d2170",
+      "0x004d2186"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "D_004D2170"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/map_2.o"
      }
     }
    ]
@@ -21449,25 +21469,50 @@
    ".data": [
     {
      "range": [
-      "0x00a437c0",
-      "0x00a437d4"
+      "0x00a437a0",
+      "0x00a43a94"
      ],
      "generated": [
-      "0x00a437c0",
-      "0x00a437d4"
+      "0x00a437a0",
+      "0x00a43a91"
      ],
-     "generated_by": [],
+     "generated_by": [
+      "CardLoadDeckProc",
+      "CardLoadDeckProc2",
+      "CardMakeDeckProc",
+      "CardSaveDeckProc"
+     ],
      "c_owned_symbols": [
-      "ZenkakuListA"
-     ],
-     "also_referenced_by_c": [
       "TypeMaskLst",
+      "D_00A437A4",
       "AttriMaskLst",
+      "D_00A437AF",
       "ActiveCursol_0",
       "ActiveCursol_2",
       "ActiveCursol_4",
-      "ActiveCursol_6"
+      "ActiveCursol_6",
+      "ZenkakuListA",
+      "D_00A437D4",
+      "ZenkakuListB",
+      "D_00A437EC",
+      "CardConvertNameLst",
+      "ST1RariLst",
+      "D_00A439D6",
+      "ST1CardLst",
+      "D_00A439FF",
+      "BS1RariLst",
+      "BS1UncoLst",
+      "D_00A43A27",
+      "BS1ComoLst",
+      "D_00A43A54",
+      "BS2RariLst",
+      "D_00A43A6C",
+      "BS2UncoLst",
+      "D_00A43A79",
+      "BS2ComoLst",
+      "D_00A43A91"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -21479,11 +21524,11 @@
     {
      "range": [
       "0x00a4da50",
-      "0x00a4da70"
+      "0x00a4db30"
      ],
      "generated": [
       "0x00a4da50",
-      "0x00a4da70"
+      "0x00a4db2a"
      ],
      "generated_by": [
       "CardLoadDeckProc",
@@ -21493,41 +21538,16 @@
      ],
      "c_owned_symbols": [
       "jtbl_00A4DA50",
-      "D_00A4DA68"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4DA68",
       "D_00A4DA70",
       "D_00A4DA78",
-      "D_00A4DAA0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_deck_chk.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4dad0",
-      "0x00a4dad8"
-     ],
-     "generated": [
-      "0x00a4dad0",
-      "0x00a4dad2"
-     ],
-     "generated_by": [
-      "CardLoadDeckProc",
-      "CardLoadDeckProc2",
-      "CardSaveDeckProc"
-     ],
-     "c_owned_symbols": [
-      "D_00A4DAD0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4DAA0",
+      "D_00A4DAD0",
       "D_00A4DAD8",
       "D_00A4DAF0",
       "D_00A4DB10"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

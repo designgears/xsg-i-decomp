@@ -3,7 +3,44 @@
  */
 #include "common.h"
 
+unsigned char TypeMaskLst[4] = { 0x07, 0x01, 0x02, 0x04 };
+unsigned char AttriMaskLst[7] = { 0x7F, 0x01, 0x02, 0x10, 0x04, 0x08, 0x60 };
+int ActiveCursol_0 = 0;
+int ActiveCursol_2 = 0;
+int ActiveCursol_4 = 0;
+int ActiveCursol_6 = 0;
 char ZenkakuListA[20] = "\xA1\xA1" "1 2 3 4 5 6 7 8 9 ";
+char ZenkakuListB[20] = "0 1 2 3 4 5 6 7 8 9 ";
+char CardConvertNameLst[20][24] = {
+    "\x19\x03PM Card A",
+    "\x19\x03PM Card B",
+    "\x19\x03PM Card C",
+    "\x19\x03PM Card D",
+    "\x19\x03PM Card E",
+    "\x19\x03PM Card F",
+    "\x19\x03PM Card G",
+    "\x19\x03PM Card H",
+    "\x19\x03PM Card I",
+    "\x19\x03PM Card J",
+    "\x19\x03PM Card K",
+    "\x19\x03PM Card L",
+    "\x19\x03PM Card M",
+    "\x19\x03PM Card N",
+    "\x19\x03PM Card O",
+    "\x19\x03PM Card P",
+    "\x19\x03PM Card Q",
+    "\x19\x03Starter Set",
+    "\x19\x03" "Card Pack #821",
+    "\x19\x03" "Card Pack #822",
+};
+unsigned char ST1RariLst[6] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06 };
+unsigned char ST1CardLst[39] = { 0x10, 0x10, 0x11, 0x11, 0x12, 0x12, 0x13, 0x13, 0x16, 0x17, 0x17, 0x18, 0x19, 0x19, 0x24, 0x24, 0x24, 0x21, 0x21, 0x21, 0x2B, 0x30, 0x31, 0x31, 0x31, 0x32, 0x32, 0x32, 0x53, 0x53, 0x53, 0x54, 0x54, 0x54, 0x5B, 0x5B, 0x5B, 0x6F, 0x6F };
+unsigned char BS1RariLst[16] = { 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x2C, 0x3B, 0x41, 0x4A, 0x57, 0x65, 0x6B, 0x73, 0x84 };
+unsigned char BS1UncoLst[23] = { 0x0F, 0x16, 0x1A, 0x1B, 0x1C, 0x1F, 0x21, 0x27, 0x2E, 0x36, 0x37, 0x38, 0x3C, 0x4B, 0x56, 0x59, 0x5C, 0x61, 0x62, 0x64, 0x6D, 0x75, 0x81 };
+unsigned char BS1ComoLst[44] = { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x17, 0x18, 0x19, 0x24, 0x2A, 0x2B, 0x2F, 0x30, 0x31, 0x32, 0x35, 0x3D, 0x3E, 0x43, 0x45, 0x53, 0x54, 0x55, 0x58, 0x5B, 0x60, 0x67, 0x69, 0x6A, 0x6C, 0x6F, 0x74, 0x78, 0x79, 0x7C, 0x7E, 0x82, 0x88, 0x8A, 0x8C, 0x91, 0x92, 0x93 };
+unsigned char BS2RariLst[20] = { 0x09, 0x0A, 0x0C, 0x0E, 0x20, 0x28, 0x2D, 0x40, 0x4C, 0x4D, 0x4E, 0x4F, 0x50, 0x51, 0x52, 0x5D, 0x5E, 0x63, 0x6E, 0x7F };
+unsigned char BS2UncoLst[9] = { 0x25, 0x26, 0x29, 0x39, 0x42, 0x7D, 0x83, 0x86, 0x77 };
+unsigned char BS2ComoLst[17] = { 0x33, 0x3F, 0x44, 0x46, 0x47, 0x48, 0x49, 0x5F, 0x68, 0x7A, 0x7B, 0x85, 0x87, 0x89, 0x5A, 0x70, 0x72 };
 #include "shared.h"
 
 int CardDeckChk(s16 *cards) {
@@ -75,12 +112,9 @@ typedef struct {
 extern CsdPad PadData;
 
 
-extern char D_00A4DA70[];
-
-extern char D_00A4DAA0[];
 
 
-extern char D_00A4DAD8[];
+
 
 extern void xglSoundEffectNormalID(int sound_id, int variant);
 
@@ -100,7 +134,6 @@ extern void CardDeckDisp(CsdList *list, void *info);
 
 extern CsdList *D_00A5783C;
 extern int ActiveCursol_2;
-extern char D_00A4DA78[];
 extern void xglMatrixScale(float (*destination)[4], float (*source)[4], const float scale[4]);
 
 #define CARD_PAD_ATTR_PREV 0x0001      /* L2 */
@@ -173,8 +206,8 @@ enum {
 #define CARD_DIGIT_TEXTURE 0x01C990A0
 extern int ActiveCursol_0;
 extern CsdList *D_00A57838;
-extern u8 TypeMaskLst[];
-extern u8 AttriMaskLst[];
+extern unsigned char TypeMaskLst[];
+extern unsigned char AttriMaskLst[];
 extern void CardListDisp(void *list, CsdWork *work);
 extern int CardGetDeckCardCnt(int cardId, void *deck);
 extern int CardAddDeck(void *deck, int cardId);
@@ -663,9 +696,9 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
                     xglFontPrint(0x18, 0x138, 0xFFF0, title);
                 }
                 xglFontPrint(0, 0, 0, "\x19\x03");
-                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
-                xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DA78);
-                xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+                xglFontPrint(0x78, 0x120, 0xFFF0, "");
+                xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Please select a deck to load.");
+                xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
                 xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
                 if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                     xglSoundEffectNormalID(1, 0);
@@ -799,9 +832,9 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
             xglFontPrint(0, 0, 0, "\x19\x03");
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
-            xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
-            xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "");
+            xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Is this deck okay?");
+            xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
             xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
@@ -818,7 +851,6 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
 
 extern CsdList *D_00A57840;
 extern int ActiveCursol_4;
-extern char D_00A4DAF0[];
 int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
 {
     float trans[4];
@@ -966,12 +998,12 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         CardDeckDisp(list, work->definitions);
         if (ActiveCursol_4 == 0 && exiting == 0) {
             xglFontPrint(0, 0, 0, "\x19\x03");
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "");
             if (title != 0) {
                 xglFontPrint(0x18, 0x138, 0xFFF0, title);
             }
-            xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAF0);
-            xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+            xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Select deck to save in.");
+            xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
             xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
@@ -987,9 +1019,9 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
             xglFontPrint(0, 0, 0, "\x19\x03");
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
-            xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
-            xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "");
+            xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Is this deck okay?");
+            xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
             xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
@@ -1006,7 +1038,6 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
 
 extern CsdList *D_00A57844;
 extern int ActiveCursol_6;
-extern char D_00A4DB10[];
 extern u8 *EnemyDeckLst[48];
 
 int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
@@ -1055,9 +1086,9 @@ int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work
                     xglFontPrint(0, 0, 0, "\x19\x03");
                     xglFontPrint(0x18, 0x138, 0xFFF0, title);
                 }
-                xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
-                xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DB10);
-                xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+                xglFontPrint(0x78, 0x120, 0xFFF0, "");
+                xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Select deck to load.");
+                xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
                 xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
                 if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                     xglSoundEffectNormalID(1, 0);
@@ -1191,9 +1222,9 @@ int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work
         CardDeckDisp(list, work->definitions);
         if (exiting == 0) {
             xglFontPrint(0, 0, 0, "\x19\x03");
-            xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4DA70);
-            xglFontPrint(0x18, 0x150, 0xFFF0, D_00A4DAD8);
-            xglFontPrint(0x18, 0x168, 0xFFF0, D_00A4DAA0);
+            xglFontPrint(0x78, 0x120, 0xFFF0, "");
+            xglFontPrint(0x18, 0x150, 0xFFF0, "\x0b\x19\x03\r\0Is this deck okay?");
+            xglFontPrint(0x18, 0x168, 0xFFF0, CARD_PROMPT_ACCEPT_CANCEL);
             xglFontPrint(0x78, 0x120, 0xFFF0, "\x0B");
             if (*(u16 *)((u8 *)work + 0x5AD2) & 0x20) {
                 xglSoundEffectNormalID(1, 0);
