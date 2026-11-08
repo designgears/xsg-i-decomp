@@ -84,11 +84,9 @@ struct SkinUbo {
 };
 
 
-/* The draw's constants (native_skin.vert binding 2), written once into the arena. */
-void FillUbo(const Draw& d) {
+/* The draw's constants (native_skin.vert binding 2). */
+void BuildUbo(const Draw& d, SkinUbo* u) {
     const bool prev = d.prev && PalLive(d.ppal);
-    SkinUbo uu;
-    SkinUbo* u = &uu;
     std::memset(u, 0, sizeof *u);
     const GpuNativeSkin& b = d.b;
     std::memcpy(u->m, b.m, 64);
@@ -109,9 +107,9 @@ void FillUbo(const Draw& d) {
     std::memcpy(&c1008x, &b.c1008[0], 4);
     uint32_t c1008z;
     std::memcpy(&c1008z, &b.c1008[2], 4);
-    u->cfg[2] = xsgcfg::Get("renderer.lighting") == "perpixel" ? 1 : 0;
     u->cfg[0] = d.group;
     u->cfg[1] = d.variant;
+    u->cfg[2] = xsgcfg::Get("renderer.lighting") == "perpixel" ? 1 : 0;
     u->cfg[3] = ((c1008z & 0xffff) ? 1 : 0) | (b.mirror_on ? 2 : 0) | (prev ? 4 : 0) | (prev && d.pmirror_on ? 8 : 0);
     u->cfg2[0] = int32_t(std::min<uint32_t>(c1008x & 0xffff, 16));
     u->cfg2[1] = int32_t(b.ifirst);
@@ -120,7 +118,12 @@ void FillUbo(const Draw& d) {
     u->cfg3[0] = int32_t(((prev ? d.ppal : d.pal) % kPalSlots) * GPU_SKIN_PAL_NQW);
     if (prev) std::memcpy(u->pm, d.pm, 64);
     u->pmirror[2] = d.pmirror;
-    std::memcpy(g_arenamap + d.uofs % kArena, u, sizeof *u);
+}
+/* ... written once into the arena. */
+void FillUbo(const Draw& d) {
+    SkinUbo u;
+    BuildUbo(d, &u);
+    std::memcpy(g_arenamap + d.uofs % kArena, &u, sizeof u);
 }
 
 }  // namespace
@@ -153,10 +156,10 @@ bool Init(Vulkan::Device* dev) {
     fl.sets[0].sampled_image_mask = 2;
     fl.sets[0].meta[0].array_size = 1;
     fl.sets[0].meta[1].array_size = 1;
+    fl.sets[0].meta[2].array_size = 1;
     g_prog = dev->request_program(dev->request_shader(kVert, sizeof kVert, &vl), dev->request_shader(kFrag, sizeof kFrag, &fl));
     cl.sets[0].sampled_image_mask = 7;
     cl.sets[0].storage_image_mask = 8 | 16;
-    fl.sets[0].meta[2].array_size = 1;
     cl.sets[0].storage_buffer_mask = 32;
     for (int i = 0; i < 6; ++i) cl.sets[0].meta[i].array_size = 1;
     cl.push_constant_size = 28;
@@ -180,6 +183,9 @@ bool Init(Vulkan::Device* dev) {
     return g_prog && g_mvprog;
 }
 
+KeyLight g_light;
+const KeyLight& Light() { return g_light; }
+
 std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
     if (kind == GPU_NATIVE_SET2_PALETTE) {
         if (len < GPU_SKIN_PAL_NQW * 16) return nullptr;
@@ -195,6 +201,25 @@ std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t
         Variant(d->b.loop) < 0)
         return nullptr;
     d->variant = Variant(d->b.loop);
+    {   // the key light (KeyLight): light k's object-space direction is (lmat[0][k], lmat[1][k], lmat[2][k]),
+        // its colour lcol[k]; the brightest one, through this batch's object -> clip matrix
+        const GpuNativeSkin& b = d->b;
+        int best = -1;
+        float bl = 0.0f;
+        for (int k = 0; k < 3; ++k) {
+            const float l = b.lcol[k][0] + b.lcol[k][1] + b.lcol[k][2];
+            const float len2 = b.lmat[0][k] * b.lmat[0][k] + b.lmat[1][k] * b.lmat[1][k] + b.lmat[2][k] * b.lmat[2][k];
+            if (l > bl && len2 > 1e-8f && std::isfinite(l)) { bl = l; best = k; }
+        }
+        if (best >= 0) {
+            const float L[3] = {b.lmat[0][best], b.lmat[1][best], b.lmat[2][best]};
+            for (int c = 0; c < 4; ++c) g_light.dir[c] = b.m[0][c] * L[0] + b.m[1][c] * L[1] + b.m[2][c] * L[2];
+            std::memcpy(g_light.scale, b.scale, 16);
+            std::memcpy(g_light.offset, b.offset, 16);
+            g_light.frame = b.frame;
+            g_light.valid = std::isfinite(g_light.dir[0] + g_light.dir[1] + g_light.dir[2] + g_light.dir[3]);
+        }
+    }
     d->group = Group(d->b.loop);
     // The vertices are read in place (the ring payload), written once into the arena below.
     const GpuNativeSkinVertex* sv = reinterpret_cast<const GpuNativeSkinVertex*>(payload + sizeof d->b);
@@ -318,6 +343,22 @@ uint32_t Bind(Vulkan::CommandBuffer& cmd, const Draw& d, int pass) {
     return ni;
 }
 
+uint32_t BindShadow(Vulkan::CommandBuffer& cmd, const Draw& d, const float m[4][4], const float scale[4],
+                    const float offset[4]) {
+    const uint32_t n = Bind(cmd, d, 0);
+    if (!n) return 0;
+    SkinUbo u;
+    BuildUbo(d, &u);
+    std::memcpy(u.m, m, 64);
+    std::memcpy(u.scale, scale, 16);
+    std::memcpy(u.offset, offset, 16);
+    u.cfg[3] &= ~(2 | 4 | 8);   // no mirror (folded into m), no motion history
+    u.cfg[2] = 0;
+    void* p = cmd.allocate_constant_data(0, 2, sizeof u);
+    std::memcpy(p, &u, sizeof u);
+    return n;
+}
+
 void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& color, Vulkan::Image& depth,
                const Vulkan::ImageHandle& mv, const Vulkan::Buffer& gs, int scale, float zmul, bool own) {
     g_rawmv = mv;
@@ -343,7 +384,6 @@ void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& co
     cmd.set_storage_buffer(0, 5, gs);
     cmd.set_storage_texture(0, 3, out.get_view());
     cmd.set_storage_texture(0, 4, g_mv->get_view());
-    u.cfg[2] = 0;
     struct { int32_t w, h, view; float full; int32_t s; float zmul; int32_t own; } pc = {
         int32_t(w), int32_t(h), g_view ? 1 : 0, g_view_full * float(scale), scale, zmul, own ? 1 : 0};
     cmd.push_constants(&pc, 0, sizeof pc);

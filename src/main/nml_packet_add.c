@@ -1651,6 +1651,14 @@ int nmlPacketAddParts(u8 *parts, NmlModelRenderState *model, StudioCamera *camer
             _CurMatrixSet((const float (*)[4])((u8 *)model + 0x180));
         } else {
             _CurMatrixSet((const float (*)[4])camera->viewMatrix);
+#ifdef PORT_HOST
+            {   /* the scene camera for the native renderer (port/runtime/gpu_ipc.h GpuNativeCamera) */
+                extern int xsg_native_camera_mark(const float *vp, const float *scale, const float *offset);
+                if (xsg_native_camera_mark((const float *)camera->viewMatrix, &camera->screenScale.x,
+                                           &camera->screenOffset.x))
+                    sceVif1PkAddCode(s_pPacket, 0x07000000u | 0xCA4Eu);   /* MARK */
+            }
+#endif
             if (model->render_status & 0x80000)
                 _CurMatrixMul((const float (*)[4])((u8 *)model + 0x180));
         }

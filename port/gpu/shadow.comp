@@ -1,0 +1,85 @@
+#version 450
+// Shadow-map receiver for the native layer ([renderer] shadows): each sample the
+// native render covers is taken back to world space (the scene camera's inverse,
+// GpuNativeCamera) and looked up in the key light's shadow map (native.cpp
+// ShadowMap: an orthographic view along the light, depth growing toward it).  A
+// sample with nearer-to-the-light geometry in front of it is darkened; 3x3 PCF.
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(set = 0, binding = 0) uniform sampler2D hd;     // native depth (scale s; 0 = nothing drawn)
+layout(set = 0, binding = 1) uniform sampler2D smap;   // shadow map depth (D32)
+layout(rgba8, set = 0, binding = 2) uniform image2D img;
+layout(r32ui, set = 0, binding = 4) readonly uniform uimage2D cz;   // the composite's Z (native Z where it took the native sample)
+
+layout(std140, set = 0, binding = 3) uniform P {   // (over 128 bytes: a uniform buffer, not push constants)
+    vec4 inv[4];     // camera clip -> world (row vectors: world = clip * inv)
+    vec4 lvp[4];     // world -> light clip
+    vec4 cscale;     // camera screen transform (vf26)
+    vec4 coffset;    // (vf27)
+    vec2 origin;     // GS pixel of the image's (0, 0)
+    float zmul;      // native depth -> GS Z
+    float strength;  // 0..1
+    int w, h, s, size;
+    float bias;      // in shadow-map depth units
+    int nchars;
+    vec4 lup;        // world up (the floor's normal)
+    vec4 chars[32];  // character origins (xyz) and radius (w), world: no shadows received inside
+} p;
+
+void main() {
+    ivec2 o = ivec2(gl_GlobalInvocationID.xy);
+    if (o.x >= p.w * p.s || o.y >= p.h * p.s) return;
+    float nd = texelFetch(hd, o, 0).r;
+    if (nd <= 0.0) return;
+    // a GS-drawn pixel over native geometry (something the native layer does not draw,
+    // e.g. a weapon at 1x): not the surface the native depth describes, leave it alone
+    if (abs(float(imageLoad(cz, o).r) - nd * p.zmul) > max(64.0, nd * p.zmul * 2e-4)) return;
+    const vec2 px = p.origin + (vec2(o) + 0.5) / float(p.s);
+    const vec3 ndc = vec3((px - p.coffset.xy) / p.cscale.xy, (nd * p.zmul - p.coffset.z) / p.cscale.z);
+    vec4 wh = p.inv[0] * ndc.x + p.inv[1] * ndc.y + p.inv[2] * ndc.z + p.inv[3];
+    if (abs(wh.w) < 1e-12) return;
+    const vec3 wp = wh.xyz / wh.w;
+    // Characters cast shadows but do not receive them: the game's light is a vertex
+    // light from overhead, so self-shadowing blotched faces and laid shapes over weapons.
+    // A sample within a character's radius and above its feet is the character itself.
+    for (int i = 0; i < p.nchars; ++i) {
+        vec3 d = wp - p.chars[i].xyz;
+        float up = dot(d, p.lup.xyz);
+        if (up > p.chars[i].w * 0.06 && length(d - up * p.lup.xyz) < p.chars[i].w) return;
+    }
+    const vec4 lc = p.lvp[0] * wp.x + p.lvp[1] * wp.y + p.lvp[2] * wp.z + p.lvp[3];
+    const vec2 uv = lc.xy * 0.5 + 0.5;
+    if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return;
+    const float dr = 0.5 + lc.z * 0.49;   // as the shadow render's depth (kShadowZo / kShadowZs)
+    const ivec2 c = ivec2(uv * float(p.size));
+    // Slope-scaled bias: the receiver's depth change across one shadow-map texel (from
+    // its neighbours in the native depth), so surfaces at a grazing angle to the light
+    // (trousers, arms) do not shadow themselves.
+    float slope = 0.0;
+    for (int k = 0; k < 2; ++k) {
+        ivec2 n = clamp(o + (k == 0 ? ivec2(p.s, 0) : ivec2(0, p.s)), ivec2(0), ivec2(p.w * p.s - 1, p.h * p.s - 1));
+        float nn = texelFetch(hd, n, 0).r;
+        if (nn <= 0.0) continue;
+        vec2 pn = p.origin + (vec2(n) + 0.5) / float(p.s);
+        vec3 qn = vec3((pn - p.coffset.xy) / p.cscale.xy, (nn * p.zmul - p.coffset.z) / p.cscale.z);
+        vec4 hn = p.inv[0] * qn.x + p.inv[1] * qn.y + p.inv[2] * qn.z + p.inv[3];
+        if (abs(hn.w) < 1e-12) continue;
+        vec4 ln = p.lvp[0] * (hn.x / hn.w) + p.lvp[1] * (hn.y / hn.w) + p.lvp[2] * (hn.z / hn.w) + p.lvp[3];
+        float texels = max(length((ln.xy - lc.xy) * 0.5 * float(p.size)), 1e-3);
+        slope = max(slope, abs(ln.z - lc.z) * 0.49 / texels);
+    }
+    const float bias = p.bias + slope * 3.0;
+    // 5x5 PCF with a tent weight: soft edges at the map's ~3 mm texels
+    float occl = 0.0, ws = 0.0;
+    for (int y = -2; y <= 2; ++y)
+        for (int x = -2; x <= 2; ++x) {
+            const float wgt = float((3 - abs(x)) * (3 - abs(y)));
+            float d = texelFetch(smap, clamp(c + ivec2(x, y), ivec2(0), ivec2(p.size - 1)), 0).r;
+            occl += wgt * (d > dr + bias ? 1.0 : 0.0);
+            ws += wgt;
+        }
+    occl /= ws;
+    if (occl > 0.0) {
+        vec4 col = imageLoad(img, o);
+        imageStore(img, o, vec4(col.rgb * (1.0 - p.strength * occl), col.a));
+    }
+}

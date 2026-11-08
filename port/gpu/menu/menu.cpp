@@ -438,10 +438,22 @@ void TabRenderer(float scale) {
     opt_slider("renderer.native_scale", "Native internal scale", 1, 8, 1, "%dx",
                "The native renderer's resolution as a multiple of the PS2 frame. 4x is about 2048 x 1792.");
     static const char* kLighting[] = {"PS2 (per vertex)", "Per pixel"};
+    if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
     opt_choice("renderer.lighting", "Character lighting", kLighting,
                "PS2: the game's lights evaluated per vertex, as the VU1 programs did.\n"
                "Per pixel: the same lights, colours and specular evaluated for every pixel from the interpolated "
                "normal: smoother shading on characters, the same look otherwise.");
+    if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
+    opt_slider("renderer.shadows", "Real shadows", 0, 100, 5, "%d%%",
+               "Characters cast real shadows (a shadow map from the scene's key light) onto the floor, each other "
+               "and themselves; the game's round blob shadows are turned off. 0: off (the game's blobs).");
+    if (!xsgcfg::GetBool("renderer.native") || xsgcfg::GetInt("renderer.shadows") == 0) opt_disable_next("Only with real shadows.");
+    opt_slider("renderer.shadow_angle", "Shadow light angle", 0, 85, 5, "%d\xc2\xb0",
+               "The game lights characters from straight above, which would put every shadow under their feet. "
+               "The shadow light leans this far from vertical, so shadows fall beside them.");
+    if (!xsgcfg::GetBool("renderer.native") || xsgcfg::GetInt("renderer.shadows") == 0) opt_disable_next("Only with real shadows.");
+    opt_slider("renderer.shadow_azimuth", "Shadow light direction", 0, 355, 5, "%d\xc2\xb0",
+               "Which way the shadows fall (one light for every character, fixed in the world).");
     opt_group("PARALLEL-GS");
     static const char* kSsaa[] = {"Off", "2x", "4x", "8x", "16x"};
     opt_choice("renderer.ssaa", "Super-sampling", kSsaa,

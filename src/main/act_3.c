@@ -1772,6 +1772,12 @@ void ACT_DrawShadow(ActDrawShadowActor *actor)
 {
     ActShadowLight *light;
 
+#ifdef PORT_HOST
+    {   /* the native renderer's real shadows replace the blob shadow ([renderer] shadows) */
+        extern int xsg_native_real_shadows(void);
+        if (xsg_native_real_shadows()) return;
+    }
+#endif
     if (actor->flags & 0x1000) return;
     if (actor->shadow_matrices == 0) return;
 

@@ -62,7 +62,7 @@ set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
 # Native renderer shaders (native.vert/.frag, composite.comp) -> SPIR-V word lists included by native.cpp.
 find_program(XSG_GLSLC glslc REQUIRED)
 set(XSG_NATIVE_INC)
-foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp crt.vert crt.frag)
+foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp crt.vert crt.frag shadow.comp)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/${src}.inc)
   add_custom_command(OUTPUT ${out}
     COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/${src}

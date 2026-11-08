@@ -41,6 +41,16 @@ bool Init(Vulkan::Device* dev);
 int Variant(uint32_t loop);
 /* GPU_NATIVE_SET2 -> a draw; GPU_NATIVE_SET2_PALETTE -> nullptr (kept). */
 std::shared_ptr<const Draw> Message(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len);
+/* Bind for the shadow map: as Bind (pass 0), with the object -> clip matrix and
+   screen transform replaced (the light's). */
+uint32_t BindShadow(Vulkan::CommandBuffer& cmd, const Draw& d, const float m[4][4], const float scale[4],
+                    const float offset[4]);
+/* The scene's key light for screen-space shadows: the brightest of a character
+   batch's three directional lights, as a homogeneous clip-space direction (the
+   object -> clip matrix applied to its object-space direction, which is the same
+   for every batch of a frame), with that batch's screen transform (vf26/vf27). */
+struct KeyLight { float dir[4], scale[4], offset[4]; uint32_t frame; bool valid; };
+const KeyLight& Light();
 /* Set 0 motion history: records this batch; when `out` is given and the key
    was drawn last frame, writes last frame's positions into out[i].pad and its
    matrix into mprev (returns true). */

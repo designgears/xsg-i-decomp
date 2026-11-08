@@ -544,6 +544,11 @@ void VifData(u32 w) {
     vif.want--;
 }
 
+/* The scene camera (GpuNativeCamera): queued by the game at packet build
+   (xsg_native_camera_mark), sent when the VIF stream reaches its MARK. */
+GpuNativeCamera g_cam_q[64];
+u32 g_cam_head, g_cam_tail;
+
 void VifCode(u32 w) {
     const u32 cmd = (w >> 24) & 0x7f, num = (w >> 16) & 0xff, imm = w & 0xffff;
     vif.code = w;
@@ -556,7 +561,12 @@ void VifCode(u32 w) {
     case 0x04: vif.itops = imm & 0x3ff; break;              // ITOP
     case 0x05: vif.mode = imm & 3; break;
     case 0x06: break;                                       // MSKPATH3
-    case 0x07: break;                                       // MARK
+    case 0x07:                                              // MARK
+        if (imm == 0xCA4E && g_cam_tail != g_cam_head) {   // the scene camera (xsg_native_camera_mark)
+            const GpuNativeCamera c = g_cam_q[g_cam_tail++ & 63];
+            if (g_mode == Mode::Gpu && NativeOn()) xsggpu::Native(GPU_NATIVE_CAMERA, 0, &c, sizeof c);
+        }
+        break;
     case 0x10: case 0x11: case 0x13: break;                 // FLUSHE/FLUSH/FLUSHA
     case 0x14: case 0x15: st.mscal++; RunVu1(imm * 8); break;   // MSCAL/MSCALF
     case 0x17: st.mscnt++; RunVu1(xsgvu::Resume()); break;     // MSCNT
@@ -1209,3 +1219,34 @@ void xsg_gs_vblank(unsigned frame) {
 }
 
 }  // extern "C"
+
+/* nmlPacketAddParts (PORT_HOST): the scene camera for the native renderer's shadows.
+   Queued only when it changes; the MARK in the packet sends it in stream order. */
+extern "C" int xsg_native_camera_mark(const float* vp, const float* scale, const float* offset) {
+    static GpuNativeCamera last;
+    static bool have;
+    GpuNativeCamera c;
+    std::memcpy(c.vp, vp, 64);
+    std::memcpy(c.scale, scale, 16);
+    std::memcpy(c.offset, offset, 16);
+    if (have && !std::memcmp(&c, &last, sizeof c)) return 0;
+    if (g_cam_head - g_cam_tail >= 64) return 0;
+    last = c;
+    have = true;
+    g_cam_q[g_cam_head++ & 63] = c;
+    return 1;
+}
+
+/* ACT_DrawShadow (PORT_HOST): the blob shadow is skipped while the native renderer
+   draws real shadows. */
+extern "C" int xsg_native_real_shadows(void) {
+    static unsigned gen = ~0u;
+    static int on;
+    const unsigned g = __atomic_load_n(&xsg_cfg_gen, __ATOMIC_ACQUIRE);
+    if (g != gen) {
+        gen = g;
+        const char* s = xsg_cfg("renderer.shadows");
+        on = s && std::atoi(s) > 0;
+    }
+    return on && g_mode == Mode::Gpu && NativeOn();
+}

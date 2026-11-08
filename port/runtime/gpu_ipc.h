@@ -58,7 +58,16 @@ enum {
     GPU_NATIVE_SET2 = 2,           /* set 2 (skinned/rigid/blend characters): GpuNativeSkin + vertices + ADC bits */
     GPU_NATIVE_SET2_PALETTE = 3,   /* b = palette seq; payload: qw 732..961 of VU1 data (the bone palette) */
     GPU_NATIVE_SET2_ENV = 4,       /* the env pass of the last set-2 batch starts (its A+D state is now set) */
+    GPU_NATIVE_CAMERA = 5,         /* GpuNativeCamera: the world -> clip camera the following batches were built with */
 };
+/* The scene camera (StudioCamera.viewMatrix: frustum x inverse camera transform),
+ * queued by nmlPacketAddParts at packet build and sent when the VIF stream reaches
+ * the packet's MARK 0xCA4E, so it arrives in order with the batches it applies to.
+ * A batch's object -> world is inverse(vp) x its qw 962-965 matrix. */
+typedef struct {
+    float vp[4][4];     /* rows as VU0 holds them: vp[k] multiplies coordinate k */
+    float scale[4], offset[4];   /* screenScale / screenOffset (vf26 / vf27 of the batches) */
+} GpuNativeCamera;
 typedef struct {
     float m[4][4];      /* qw 962-965: object -> clip (rows as VU1 holds them: m[k] multiplies coordinate k) */
     float scale[4];     /* qw 966 */

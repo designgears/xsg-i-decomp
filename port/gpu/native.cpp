@@ -219,11 +219,43 @@ struct Tex {
     uint32_t w = 1, h = 1;
     std::vector<uint32_t> px{0xffffffffu};
 };
+/* The scene camera (GPU_NATIVE_CAMERA) the batches arriving after it were built with;
+   inv: its inverse (row vectors: clip = p * vp, so world = clip * inv). */
+struct Camera { float vp[4][4], inv[4][4], scale[4], offset[4]; bool valid; };
+std::shared_ptr<const Camera> g_cam;   // the current one (null: none yet)
+
+bool Invert4(const float m[4][4], float out[4][4]) {
+    double a[4][8];
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 8; ++c) a[r][c] = c < 4 ? m[r][c] : (c - 4 == r ? 1.0 : 0.0);
+    for (int c = 0; c < 4; ++c) {
+        int piv = c;
+        for (int r = c + 1; r < 4; ++r) if (std::fabs(a[r][c]) > std::fabs(a[piv][c])) piv = r;
+        if (std::fabs(a[piv][c]) < 1e-20) return false;
+        if (piv != c) for (int k = 0; k < 8; ++k) std::swap(a[c][k], a[piv][k]);
+        const double d = a[c][c];
+        for (int k = 0; k < 8; ++k) a[c][k] /= d;
+        for (int r = 0; r < 4; ++r)
+            if (r != c && a[r][c] != 0.0) {
+                const double f = a[r][c];
+                for (int k = 0; k < 8; ++k) a[r][k] -= f * a[c][k];
+            }
+    }
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c) out[r][c] = float(a[r][c + 4]);
+    return true;
+}
+void Mul4(const float a[4][4], const float b[4][4], float o[4][4]) {   // row vectors: p * (a * b)
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c) o[r][c] = a[r][0] * b[0][c] + a[r][1] * b[1][c] + a[r][2] * b[2][c] + a[r][3] * b[3][c];
+}
+
 struct Stored {
     std::shared_ptr<Tex> tex;
     GpuNativeBatch b;
     std::vector<GpuNativeVertex> v;
     std::shared_ptr<const xsgskin::Draw> skin;   // set 2 (native_skin.cpp); v unused
+    std::shared_ptr<const Camera> cam;           // the scene camera it was built with (shadows), or null
     int pass = 0;                                // set 2: 0 tag 1011, 1 specular strip (1012), 2 env strip (1010)
     float mprev[16];                             // set 0: last frame's M962 (v[i].pad = last frame's position)
     bool hasprev = false;
@@ -368,6 +400,17 @@ std::unordered_map<const Tex*, std::pair<std::shared_ptr<Tex>, Vulkan::ImageHand
 
 /* Record the batches drawn into `rg` at `scale`; colour and depth end up
    readable by shaders and transfers (SHADER_READ_ONLY_OPTIMAL). */
+/* Shadow-map mode for RenderGpu: every batch's object -> clip matrix becomes
+   object -> world (the scene camera's inverse) -> light (lvp, orthographic, w = 1),
+   into an S x S target whose depth grows toward the light; blended, colour-masked,
+   reflected (mirror) and secondary character passes do not cast. */
+struct ShadowMode { bool on = false; float lvp[4][4]; } g_shadow_mode;
+Vulkan::Program* g_shadow;
+const uint32_t kShadow[] = {
+#include "shadow.comp.inc"
+};
+const float kShadowZo = 8388608.0f, kShadowZs = 8388608.0f * 0.98f;
+
 GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*>& list, const Region& rg, int scale,
                     unsigned* odd_blend_out) {
     GpuTarget t;
@@ -415,10 +458,23 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
     cmd->set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
     unsigned odd_blend = 0;
     xsgskin::Begin();
+    const bool shadow = g_shadow_mode.on;
+    const float sh_scale[4] = {float(rg.w) * 0.5f, float(rg.h) * 0.5f, kShadowZs, 0.0f};
+    const float sh_offset[4] = {float(rg.w) * 0.5f, float(rg.h) * 0.5f, kShadowZo, 0.0f};
     for (const Stored* s : list) {
         uint32_t n = uint32_t(s->v.size());
+        float sh_m[4][4];
+        if (shadow) {
+            // casters: the characters (set 2) only; the scenery's own shading is baked into
+            // its textures, and a room's ceiling would otherwise shadow everything under it
+            if (!s->skin || !s->cam || Bits(s->prim, 6, 1) || Bits(s->frame, 32, 32) == 0xffffffffu) continue;
+            if (s->skin && (s->pass != 0 || s->skin->b.mirror_on)) continue;
+            float w[4][4];
+            Mul4(s->skin ? s->skin->b.m : s->b.m, s->cam->inv, w);
+            Mul4(w, g_shadow_mode.lvp, sh_m);
+        }
         if (s->skin) {   // set 2: native_skin.vert, indexed triangle list
-            n = xsgskin::Bind(*cmd, *s->skin, s->pass);
+            n = shadow ? xsgskin::BindShadow(*cmd, *s->skin, sh_m, sh_scale, sh_offset) : xsgskin::Bind(*cmd, *s->skin, s->pass);
             if (!n) continue;
         } else {
             cmd->set_program(g_prog);
@@ -433,9 +489,9 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         Ubo uu;   // built on the stack, copied to the (write-combined) constant buffer in one go
         Ubo* u = &uu;
         std::memset(u, 0, sizeof *u);
-        std::memcpy(u->m, s->b.m, sizeof u->m);
-        std::memcpy(u->scale, s->b.scale, 16);
-        std::memcpy(u->offset, s->b.offset, 16);
+        std::memcpy(u->m, shadow ? &sh_m[0][0] : &s->b.m[0][0], sizeof u->m);
+        std::memcpy(u->scale, shadow ? sh_scale : s->b.scale, 16);
+        std::memcpy(u->offset, shadow ? sh_offset : s->b.offset, 16);
         std::memcpy(u->cscale, s->b.cscale, 16);
         std::memcpy(u->uv, s->b.uv, 16);
         std::memcpy(u->fog, s->b.fog, 16);
@@ -487,9 +543,11 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         const bool zte = Bits(s->test, 16, 1);
         const uint32_t ztst = Bits(s->test, 17, 2);
         const bool zmsk = Bits(s->zbuf, 32, 1);
-        cmd->set_depth_test(true, !zmsk);
-        cmd->set_depth_compare(!zte || ztst == 1 ? VK_COMPARE_OP_ALWAYS : ztst == 0 ? VK_COMPARE_OP_NEVER
+        cmd->set_depth_test(true, shadow || !zmsk);
+        cmd->set_depth_compare(shadow ? VK_COMPARE_OP_GREATER_OR_EQUAL
+                               : !zte || ztst == 1 ? VK_COMPARE_OP_ALWAYS : ztst == 0 ? VK_COMPARE_OP_NEVER
                                : ztst == 2 ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_GREATER);
+        if (shadow) cmd->set_blend_enable(false);
         // Motion vectors: written by opaque draws that write colour (translucent layers keep what is under them).
         const bool cw = Bits(s->frame, 32, 32) != 0xffffffffu;
         cmd->set_color_write_mask((cw ? 0xf : 0) | (cw && !blended ? 0x30 : 0));
@@ -516,6 +574,7 @@ GpuTarget RenderGpu(Vulkan::CommandBuffer& cmdr, const std::vector<const Stored*
         sc.offset = {sx0 * scale, sy0 * scale};
         sc.extent = {uint32_t(std::max(0, std::min(sx1 + 1, int(rg.w)) - sx0) * scale),
                      uint32_t(std::max(0, std::min(sy1 + 1, int(rg.h)) - sy0) * scale)};
+        if (shadow) sc = {{0, 0}, {rg.w, rg.h}};
         cmd->set_scissor(sc);
         std::memcpy(cmd->allocate_constant_data(0, 0, sizeof(Ubo)), &uu, sizeof uu);
         if (s->skin) cmd->draw_indexed(n);
@@ -670,6 +729,143 @@ void ProfGpu() {
     while (g_ts.size() > 64) g_ts.pop_front();
 }
 
+/* Shadows: the key light (the brightest of a character's three lights, taken from
+   object to world space), an orthographic shadow map fitted around the characters,
+   rendered from the same batches (RenderGpu in shadow mode), then shadow.comp. */
+void ShadowPass(Vulkan::CommandBuffer& cmd, const std::vector<const Stored*>& list, const Region& rg,
+                const Vulkan::Image& depth, const Vulkan::Image& out, const Vulkan::Image& czimg, int strength) {
+    float L[3] = {0, 0, 0};
+    bool have_light = false;
+    std::vector<std::array<float, 3>> pos;
+    std::shared_ptr<const Camera> cam;
+    for (const Stored* s : list) {
+        if (!s->skin || !s->cam || s->pass != 0 || s->skin->b.mirror_on) continue;
+        const GpuNativeSkin& b = s->skin->b;
+        float w[4][4];
+        Mul4(b.m, s->cam->inv, w);
+        pos.push_back({w[3][0], w[3][1], w[3][2]});
+        cam = s->cam;
+        if (have_light) continue;
+        int best = -1;
+        float bl = 0;
+        for (int k = 0; k < 3; ++k) {
+            const float l = b.lcol[k][0] + b.lcol[k][1] + b.lcol[k][2];
+            const float n2 = b.lmat[0][k] * b.lmat[0][k] + b.lmat[1][k] * b.lmat[1][k] + b.lmat[2][k] * b.lmat[2][k];
+            if (l > bl && n2 > 1e-8f) { bl = l; best = k; }
+        }
+        if (best < 0) continue;
+        const float lo[3] = {b.lmat[0][best], b.lmat[1][best], b.lmat[2][best]};
+        for (int c = 0; c < 3; ++c) L[c] = lo[0] * w[0][c] + lo[1] * w[1][c] + lo[2] * w[2][c];
+        const float n = std::sqrt(L[0] * L[0] + L[1] * L[1] + L[2] * L[2]);
+        if (n > 1e-6f && std::isfinite(n)) {
+            for (float& v : L) v /= n;
+            have_light = true;
+        }
+    }
+    if (!have_light || pos.empty() || !cam) return;
+    double cx = 0, cy = 0, cz = 0;
+    for (auto& q : pos) { cx += q[0]; cy += q[1]; cz += q[2]; }
+    const int nc = int(pos.size());
+    const float c[3] = {float(cx / nc), float(cy / nc), float(cz / nc)};
+    float upsign = 1.0f;
+    // One light for the whole scene.  Every character carries its own light set (the
+    // player party and the enemies differ), so taking any one batch's light made the
+    // shadow direction depend on which character came first.  The shadow light is the
+    // world's vertical (the game's key lights are overhead) leaned by shadow_angle toward
+    // a fixed world azimuth (shadow_azimuth): a sun that does not move between camera
+    // cuts or characters.
+    {
+        upsign = L[1] >= 0 ? 1.0f : -1.0f;
+        const float up = upsign;
+        const double ang = std::max(0, std::min(85, xsgcfg::GetInt("renderer.shadow_angle"))) * 3.14159265 / 180.0;
+        const double az = xsgcfg::GetInt("renderer.shadow_azimuth") * 3.14159265 / 180.0;
+        L[0] = float(std::sin(ang) * std::cos(az));
+        L[1] = float(up * std::cos(ang));
+        L[2] = float(std::sin(ang) * std::sin(az));
+    }
+    float R = 0;
+    for (auto& q : pos)
+        R = std::max(R, std::sqrt((q[0] - c[0]) * (q[0] - c[0]) + (q[1] - c[1]) * (q[1] - c[1]) + (q[2] - c[2]) * (q[2] - c[2])));
+    R += float(std::max(1, xsgcfg::GetInt("debug.shadow_margin"))) * 0.1f;
+    // the light's basis: r = up x L, u = L x r
+    float up[3] = {0, 1, 0};
+    if (std::fabs(L[1]) > 0.95f) { up[0] = 1; up[1] = 0; }
+    float r[3] = {up[1] * L[2] - up[2] * L[1], up[2] * L[0] - up[0] * L[2], up[0] * L[1] - up[1] * L[0]};
+    const float rn = std::sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+    for (float& v : r) v /= rn;
+    const float u[3] = {L[1] * r[2] - L[2] * r[1], L[2] * r[0] - L[0] * r[2], L[0] * r[1] - L[1] * r[0]};
+    ShadowMode& sm = g_shadow_mode;
+    for (int k = 0; k < 3; ++k) {
+        sm.lvp[k][0] = r[k] / R;
+        sm.lvp[k][1] = u[k] / R;
+        sm.lvp[k][2] = L[k] / (2.0f * R);
+        sm.lvp[k][3] = 0;
+    }
+    sm.lvp[3][0] = -(c[0] * r[0] + c[1] * r[1] + c[2] * r[2]) / R;
+    sm.lvp[3][1] = -(c[0] * u[0] + c[1] * u[1] + c[2] * u[2]) / R;
+    sm.lvp[3][2] = -(c[0] * L[0] + c[1] * L[1] + c[2] * L[2]) / (2.0f * R);
+    sm.lvp[3][3] = 1;
+    const uint32_t S = 2048;
+    Region srg = rg;
+    srg.w = S;
+    srg.h = S;
+    srg.ofx = 0;
+    srg.ofy = 0;
+    srg.zscale = 1.0f / 16777216.0f;
+    sm.on = true;
+    GpuTarget st = RenderGpu(cmd, list, srg, 1, nullptr);
+    sm.on = false;
+    static uint32_t logn;
+    if (logn++ % 600 == 0)
+        Log("shadows: light (%.2f %.2f %.2f), %d characters, centre (%.2f %.2f %.2f) radius %.2f", L[0], L[1], L[2], nc,
+            c[0], c[1], c[2], R);
+    cmd.set_program(g_shadow);
+    cmd.set_texture(0, 0, depth.get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd.set_texture(0, 1, st.depth->get_view(), Vulkan::StockSampler::NearestClamp);
+    cmd.set_storage_texture(0, 2, out.get_view());
+    cmd.set_storage_texture(0, 4, czimg.get_view());
+    struct {
+        float inv[4][4], lvp[4][4], cscale[4], coffset[4], origin[2], zmul, strength;
+        int32_t w, h, s, size;
+        float bias;
+        int32_t nchars;
+        int32_t pad_[2];   // std140: the vec4 below starts on 16 bytes
+        float lup[4];
+        float chars[32][4];
+    } pc = {};
+    std::memcpy(pc.inv, cam->inv, 64);
+    std::memcpy(pc.lvp, sm.lvp, 64);
+    std::memcpy(pc.cscale, cam->scale, 16);
+    std::memcpy(pc.coffset, cam->offset, 16);
+    pc.origin[0] = rg.ofx;
+    pc.origin[1] = rg.ofy;
+    pc.zmul = 1.0f / rg.zscale;
+    pc.strength = std::min(100, strength) * 0.01f;
+    pc.w = int32_t(rg.w);
+    pc.h = int32_t(rg.h);
+    pc.s = g_scale;
+    pc.size = int32_t(S);
+    pc.bias = std::max(1, xsgcfg::GetInt("debug.shadow_bias")) * 1e-5f;
+    // character origins (deduplicated): no shadows received within their radius
+    for (auto& q : pos) {
+        bool dup = false;
+        for (int i = 0; i < pc.nchars && !dup; ++i)
+            dup = std::fabs(pc.chars[i][0] - q[0]) + std::fabs(pc.chars[i][1] - q[1]) + std::fabs(pc.chars[i][2] - q[2]) < 1e-3f;
+        if (dup || pc.nchars >= 32) continue;
+        pc.chars[pc.nchars][0] = q[0];
+        pc.chars[pc.nchars][1] = q[1];
+        pc.chars[pc.nchars][2] = q[2];
+        pc.chars[pc.nchars][3] = std::max(1, xsgcfg::GetInt("debug.shadow_char_radius")) * 0.01f;
+        pc.nchars++;
+    }
+    pc.lup[1] = upsign;
+    std::memcpy(cmd.allocate_constant_data(0, 3, sizeof pc), &pc, sizeof pc);
+    cmd.dispatch((rg.w * g_scale + 7) / 8, (rg.h * g_scale + 7) / 8, 1);
+    cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
+}
+
 /* Live path: draw the displayed buffer's native batches at 1x and g_scale and
    composite them over the paraLLEl-GS frame on the GPU (composite.comp). */
 void Live(ParallelGS::GSInterface& gs) {
@@ -756,6 +952,9 @@ void Live(ParallelGS::GSInterface& gs) {
     cmd->barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_COPY_BIT,
                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT | VK_ACCESS_2_TRANSFER_READ_BIT);
+    // Shadows from the key light ([renderer] shadows): shadow map + receiver, before the effects.
+    if (const int strength = xsgcfg::GetInt("renderer.shadows"); strength > 0 && g_shadow)
+        ShadowPass(*cmd, list, rg, *ns.depth, *out, *zimg, strength);
     // Effects after the scenery (native_fx.cpp), then the PMODE circuit blend, at scale g_scale.
     if (post == xsgfx::Post::Replay) xsgfx::Replay(*cmd, fbp, g_scale, rg.w, rg.h, *out, *zimg);
     xsgfx::Pmode(*cmd, gs, g_scale, rg.w, rg.h, *out, *zimg);
@@ -1014,6 +1213,14 @@ bool InitResources() {
     cl.push_constant_size = 32;
     auto* cs = dev->request_shader(kComp, sizeof kComp, &cl);
     g_comp = dev->request_program(cs);
+    {
+        Vulkan::ResourceLayout sl;
+        sl.sets[0].sampled_image_mask = 3;
+        sl.sets[0].storage_image_mask = 4 | 16;
+        sl.sets[0].uniform_buffer_mask = 8;
+        for (int i = 0; i < 5; ++i) sl.sets[0].meta[i].array_size = 1;
+        g_shadow = dev->request_program(dev->request_shader(kShadow, sizeof kShadow, &sl));
+    }
     if (!xsgskin::Init(dev)) return false;
     xsgfx::Init(dev);
     Log("on: set-0 strip batches, scale %dx, live %s, %zu shot vsyncs -> %s", g_scale, g_live ? "on" : "off",
@@ -1113,6 +1320,7 @@ uint64_t PageHash(uint32_t page) {
 }
 
 void Push(Stored&& s) {
+    s.cam = g_cam;
     FbFrame& f = g_fb[Bits(s.frame, 0, 9)];
     if (f.vsync != g_vsyncs) {
         f.b.clear();
@@ -1134,6 +1342,17 @@ void FxNative(const uint32_t* tagw, uint32_t ntags) {
 
 void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) {
     xsgprof::Scope ps(xsgprof::Batch);
+    if (kind == GPU_NATIVE_CAMERA) {
+        if (len < sizeof(GpuNativeCamera)) return;
+        const GpuNativeCamera* c = reinterpret_cast<const GpuNativeCamera*>(payload);
+        auto cam = std::make_shared<Camera>();
+        std::memcpy(cam->vp, c->vp, 64);
+        std::memcpy(cam->scale, c->scale, 16);
+        std::memcpy(cam->offset, c->offset, 16);
+        cam->valid = Invert4(cam->vp, cam->inv);
+        g_cam = cam->valid ? cam : nullptr;
+        return;
+    }
     if (kind == GPU_NATIVE_SET2_ENV) {   // the env pass's A+D state has been kicked: snapshot it now
         if (g_env_pending) FxNative(g_env_pending->b.tag1010, 1);   // the env pass packet is kicked next
         if (g_env_pending && Near()) {
