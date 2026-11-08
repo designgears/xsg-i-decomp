@@ -19748,99 +19748,37 @@
    ".rodata": [
     {
      "range": [
-      "0x00a13320",
-      "0x00a13380"
+      "0x00a13310",
+      "0x00a13440"
      ],
      "generated": [
-      "0x00a13320",
-      "0x00a13380"
-     ],
-     "generated_by": [
-      "tyaUmlDispLoad"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A13320"
-     ],
-     "also_referenced_by_c": [
-      "D_00A13310",
-      "D_00A13380"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13398",
-      "0x00a13400"
-     ],
-     "generated": [
-      "0x00a13398",
-      "0x00a13400"
+      "0x00a13310",
+      "0x00a1343c"
      ],
      "generated_by": [
       "dbfileno_load",
       "dbheader_load",
-      "disp_index"
+      "disp_index",
+      "tyaUmlDatabaseMain",
+      "tyaUmlDispLoad",
+      "tyaUmlDispType3"
      ],
      "c_owned_symbols": [
+      "D_00A13310",
+      "jtbl_00A13320",
+      "D_00A13380",
       "db_fileno_path",
       "D_00A133B0",
-      "D_00A133C8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A13400"
-     ],
-     "reached_through": {
-      "D_00A133C8": "idx_7"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13410",
-      "0x00a13420"
-     ],
-     "generated": [
-      "0x00a13410",
-      "0x00a13420"
-     ],
-     "generated_by": [
-      "disp_index"
-     ],
-     "c_owned_symbols": [
+      "D_00A133C8",
+      "D_00A13400",
       "D_00A13410",
-      "D_00A13418"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tya_uml.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13420",
-      "0x00a13440"
-     ],
-     "generated": [
-      "0x00a13420",
-      "0x00a1343c"
-     ],
-     "generated_by": [
-      "tyaUmlDatabaseMain"
-     ],
-     "c_owned_symbols": [
+      "D_00A13418",
       "jtbl_00A13420"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A133C8": "idx_7"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

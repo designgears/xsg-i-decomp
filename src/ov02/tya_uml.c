@@ -49,7 +49,6 @@ extern void tyaUmlDispType3Sub0(void *context, void *argument);
 extern void xglFontPrintExtFunc(unsigned int flags,
                                 void (*draw)(void *context, void *argument),
                                 void *argument);
-extern const char D_00A13380[];
 
 /*
  * The parser cursor mark() and tail() read from: only the two columns they
@@ -124,7 +123,6 @@ typedef struct TyaUmlTexEntry {
     u16 x;
     u16 y;
 } TyaUmlTexEntry;
-extern const u8 D_00A13310[];
 extern int xglJpegDecode(void *request_address);
 extern int xglFontGetSPcodeSize(int code, unsigned char *text);
 extern unsigned short xglSRand(void);
@@ -216,7 +214,7 @@ static int tyaUmlDispLoad(TyaUmlDispParam *parameter)
             dst[9] = 0x13;
             dst[10] = 0;
             dst[11] = 0;
-            dst[8] = D_00A13310[r & 3];
+            dst[8] = "OQVY"[r & 3];
             dst += 0xC;
         } else {
             *dst++ = *text++;
@@ -476,7 +474,7 @@ static void tyaUmlDispType3(TyaUmlDispParam *parameter)
     parameter->render_pending = 0;
     xglFontPrintExtFunc((unsigned int)(parameter->color + 1),
                         tyaUmlDispType3Sub0, parameter);
-    xglFontPrint(0, 0, (int)(parameter->color + 15), D_00A13380);
+    xglFontPrint(0, 0, (int)(parameter->color + 15), "\r\0\x15\x02\x01\x0C\x0C\x80\x80\x80\x15\x02\x02\x04\x19\x03\x15\x03\x03");
 
     x = render_x - parameter->clip_x;
     y = render_y - parameter->clip_y;
@@ -739,7 +737,6 @@ static void dbheader_load(DbHeaderWork *work)
 
 }
 
-extern const char D_00A13400[];
 typedef struct DispIndexWork {
     u8 unmodeled_00[8];
     s16 x0;
@@ -759,7 +756,7 @@ static void disp_index(DispIndexWork *work, int value)
     int color;
 
     color = (int)(work->color + 4);
-    xglFontPrint(work->x0 + work->x1 - 0x824, work->y0 + work->y1 - 0x71C, color, D_00A13400);
+    xglFontPrint(work->x0 + work->x1 - 0x824, work->y0 + work->y1 - 0x71C, color, "\x0E\x01\x02\0\0\0\x0D\x02");
     for (i = 0; i < 26; i++) {
         if (i == work->cursor) {
             xglFontPrintDirectOT(color, "\x0C\x80  ");
