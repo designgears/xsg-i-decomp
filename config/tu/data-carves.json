@@ -2556,6 +2556,32 @@
       "object": "build/main/build/c/game_movie.o"
      }
     }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c0290",
+      "0x004c0300"
+     ],
+     "generated": [
+      "0x004c0290",
+      "0x004c0300"
+     ],
+     "generated_by": [
+      "GameMpeg2Play",
+      "caption_convert"
+     ],
+     "c_owned_symbols": [
+      "D_004C0290",
+      "D_004C02A8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_movie.o"
+     }
+    }
    ]
   },
   "main/tu126": {
@@ -5060,11 +5086,11 @@
     {
      "range": [
       "0x004c2fd0",
-      "0x004c31b0"
+      "0x004c3200"
      ],
      "generated": [
       "0x004c2fd0",
-      "0x004c31a8"
+      "0x004c3200"
      ],
      "generated_by": [
       "OpenCloseMain",
@@ -5072,26 +5098,7 @@
      ],
      "c_owned_symbols": [
       "D_004C2FD0",
-      "jtbl_004C2FE0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/open_close_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c31b0",
-      "0x004c3200"
-     ],
-     "generated": [
-      "0x004c31b0",
-      "0x004c31f5"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "jtbl_004C2FE0",
       "D_004C31B0",
       "D_004C31C8",
       "D_004C31E0"
@@ -5574,11 +5581,11 @@
     {
      "range": [
       "0x004c37d0",
-      "0x004c3950"
+      "0x004c3960"
      ],
      "generated": [
       "0x004c37d0",
-      "0x004c3948"
+      "0x004c3960"
      ],
      "generated_by": [
       "MenuModelDrawTypeSet",
@@ -5586,7 +5593,8 @@
       "MenuModelNavelMove",
       "MenuModelResourceLoad",
       "MenuModelResourceMain",
-      "MenuModelUnitActorSet"
+      "MenuModelUnitActorSet",
+      "tskMenuModelTaskMain"
      ],
      "c_owned_symbols": [
       "jtbl_004C37D0",
@@ -5599,28 +5607,7 @@
       "D_004C3900",
       "D_004C3910",
       "D_004C3920",
-      "jtbl_004C3930"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c3950",
-      "0x004c3960"
-     ],
-     "generated": [
-      "0x004c3950",
-      "0x004c3960"
-     ],
-     "generated_by": [
-      "tskMenuModelTaskMain"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004C3930",
       "D_004C3950"
      ],
      "also_referenced_by_c": [],
@@ -8371,25 +8358,25 @@
    ".data": [
     {
      "range": [
-      "0x0036f8e8",
+      "0x0036f8c0",
       "0x00378b30"
      ],
      "generated": [
-      "0x0036f8e8",
+      "0x0036f8c0",
       "0x00378b30"
      ],
      "generated_by": [
+      "HexToStr",
       "SetItemSymbolRsrc",
       "dataEvtItmNameGet",
       "taskItemGet"
      ],
      "c_owned_symbols": [
+      "strno",
       "ItemBoxTbl",
       "EvtItemTbl"
      ],
-     "also_referenced_by_c": [
-      "strno"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -8401,51 +8388,31 @@
     {
      "range": [
       "0x004d7f58",
-      "0x004d7f60"
+      "0x004d7f80"
      ],
      "generated": [
       "0x004d7f58",
-      "0x004d7f60"
+      "0x004d7f80"
      ],
      "generated_by": [
-      "InitItemBox"
-     ],
-     "c_owned_symbols": [
-      "D_004D7F58",
-      "D_004D7F5C"
-     ],
-     "also_referenced_by_c": [
-      "D_004D7F60",
-      "D_004D7F64"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/create_evt_item_get_task.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7f68",
-      "0x004d7f7c"
-     ],
-     "generated": [
-      "0x004d7f68",
-      "0x004d7f7c"
-     ],
-     "generated_by": [
+      "InitItemBox",
+      "MAP_updateUnitItem",
+      "MAP_updateUnitItemSymbol",
       "MAP_updateUnitSpecialSymbol"
      ],
      "c_owned_symbols": [
+      "D_004D7F58",
+      "D_004D7F5C",
+      "D_004D7F60",
+      "D_004D7F64",
       "D_004D7F68",
       "D_004D7F6C",
       "D_004D7F70",
       "D_004D7F74",
-      "D_004D7F78"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7F78",
       "D_004D7F7C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -8456,20 +8423,24 @@
    ".rodata": [
     {
      "range": [
-      "0x004ca580",
-      "0x004ca5b0"
+      "0x004ca4d0",
+      "0x004ca698"
      ],
      "generated": [
-      "0x004ca580",
-      "0x004ca5b0"
+      "0x004ca4d0",
+      "0x004ca698"
      ],
      "generated_by": [
-      "GetItemName"
+      "GetItemName",
+      "InitItemBox",
+      "InitItemSymbol",
+      "MAP_updateUnitItem",
+      "MAP_updateUnitSpecialSymbol",
+      "SetItemSymbolRsrc",
+      "taskEvtItemGet",
+      "taskItemGet"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA580"
-     ],
-     "also_referenced_by_c": [
       "D_004CA4D0",
       "evt_item_format_special",
       "evt_item_format_normal",
@@ -8478,37 +8449,43 @@
       "D_004CA530",
       "D_004CA550",
       "D_004CA568",
+      "jtbl_004CA580",
       "D_004CA5B0",
-      "D_004CA5D0"
+      "D_004CA5D0",
+      "jtbl_004CA5F0",
+      "jtbl_004CA610",
+      "D_004CA640",
+      "D_004CA648",
+      "D_004CA650",
+      "D_004CA680"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/create_evt_item_get_task.o"
      }
-    },
+    }
+   ],
+   ".sdata": [
     {
      "range": [
-      "0x004ca5f0",
-      "0x004ca650"
+      "0x004db780",
+      "0x004db790"
      ],
      "generated": [
-      "0x004ca5f0",
-      "0x004ca650"
+      "0x004db780",
+      "0x004db78d"
      ],
      "generated_by": [
-      "MAP_updateUnitSpecialSymbol",
-      "SetItemSymbolRsrc"
+      "GetItemName",
+      "taskItemGet"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA5F0",
-      "jtbl_004CA610",
-      "D_004CA640",
-      "D_004CA648"
+      "D_004DB780",
+      "deb_0"
      ],
-     "also_referenced_by_c": [
-      "D_004CA650"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -9092,6 +9069,144 @@
    ]
   },
   "main/tu193": {
+   ".data": [
+    {
+     "range": [
+      "0x003b1e30",
+      "0x003b2018"
+     ],
+     "generated": [
+      "0x003b1e30",
+      "0x003b2018"
+     ],
+     "generated_by": [
+      "Move_BeltConveyer",
+      "Sound_FootStep"
+     ],
+     "c_owned_symbols": [
+      "FootStep",
+      "idx_0",
+      "vec_1",
+      "rate_2_003B2008"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2020",
+      "0x003b254e"
+     ],
+     "generated": [
+      "0x003b2020",
+      "0x003b254e"
+     ],
+     "generated_by": [
+      "Set_PlayerHistory"
+     ],
+     "c_owned_symbols": [
+      "PlayHis",
+      "BackPos",
+      "TabEnemy_Ang",
+      "LocaterAngle",
+      "EneTerritoryID",
+      "EfTab_Code"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2550",
+      "0x003b256e"
+     ],
+     "generated": [
+      "0x003b2550",
+      "0x003b256e"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Intr"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2570",
+      "0x003b25ac"
+     ],
+     "generated": [
+      "0x003b2570",
+      "0x003b25ac"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Scal"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b25b0",
+      "0x003b25ce"
+     ],
+     "generated": [
+      "0x003b25b0",
+      "0x003b25ce"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Loop"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b25d0",
+      "0x003b2650"
+     ],
+     "generated": [
+      "0x003b25d0",
+      "0x003b2650"
+     ],
+     "generated_by": [
+      "Move_BeltConveyer"
+     ],
+     "c_owned_symbols": [
+      "UnduTemp",
+      "UnduTest"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -9132,7 +9247,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/set_motion.o"
+      "object": "build/main/build/c/set_motion.o"
      }
     }
    ],
@@ -9158,7 +9273,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/set_motion.o"
+      "object": "build/main/build/c/set_motion.o"
      }
     }
    ]

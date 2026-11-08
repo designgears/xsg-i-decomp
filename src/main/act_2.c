@@ -69,7 +69,7 @@ static unsigned int tblHand[9] = {
     0x54453030, 0x54453031, 0x54453032, 0x54453033,
     0x54453034, 0x54453035, 0x54453036, 0x54453037, 0
 };
-CameraRecord tcamera[8] = {0};
+CameraRecord tcamera[8] __attribute__((aligned(16))) = {0};
 float newsToDirection[16] = {
     0.0f, 3.141592741f, 1.570796371f, 2.356194496f,
     -1.570796371f, -2.356194496f, 0.0f, 0.0f,
