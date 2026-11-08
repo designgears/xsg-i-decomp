@@ -580,6 +580,25 @@ void grPutFT4(GrPacket *packet, GrFT4 *prim, const Matrix4 matrix)
     Vector4 *w;
 
     clip = 0;
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture) {   /* rebuilt UI: the quad, in screen pixels, is recorded */
+        extern void xsg_ui_cap_quad(const int *xs, const int *ys, const float *us, const float *vs, const unsigned char *col);
+        int xs[4], ys[4];
+        for (i = 0; i < 4; i++) {
+            if (matrix == 0) {
+                xs[i] = (int)prim->vertex[i].x;
+                ys[i] = (int)prim->vertex[i].y;
+            } else {
+                GrScreenVertex sv;
+                grRotTransPers(&sv, matrix, &prim->vertex[i], &clip);
+                xs[i] = (sv.x - 0x7000) >> 4;
+                ys[i] = (sv.y - 0x7200) >> 4;
+            }
+        }
+        xsg_ui_cap_quad(xs, ys, prim->u, prim->v, prim->col);
+        return;
+    }
+#endif
     count = &packet->count;
     v = prim->vertex;
     w = v;

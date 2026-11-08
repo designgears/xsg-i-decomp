@@ -429,8 +429,11 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             break;
         }
         case GPU_KG_NUMBER: {
+            // menuNumPut styles: 1 small (10 x 13), 2 large (12 x 16+), others 13 px
+            const int style = o.text[0] ? o.text[0] - '0' : 0;
+            const float nh = (style == 2 || o.b >= 4) ? 20.0f : 13.0f;   // four-digit counters (the radar's distance): large
             std::snprintf(b, sizeof b, "%0*d", std::max(1, std::min(6, o.b)), o.a);
-            HaloText(dl, font, 13.0f * k, P(x, y - 2), col::kText, b, rt);
+            HaloText(dl, font, nh * k, P(x, y + (style == 2 ? -4.0f : -2.0f)), col::kText, b, rt);
             break;
         }
         case GPU_KG_ART: {
@@ -442,6 +445,29 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             std::memcpy(&set, o.text + 4, 4);
             ArtSprite(dl, uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32, 0, float(o.u), float(o.v), float(o.w), float(o.h), P(x, y), P(x + o.dw, y + o.dh), o.rgba,
                       rt * fix, false, set);
+            if (add) dl->AddCallback(xsgmenu::BlendAlpha, nullptr);
+            break;
+        }
+        case GPU_KG_QUAD: {   // a textured quad (the boost gauge); strip order 0 1 2 3 -> perimeter 0 1 3 2
+            int16_t c[6];
+            std::memcpy(c, o.text, sizeof c);
+            const int al = static_cast<unsigned char>(o.text[12]), fix = static_cast<unsigned char>(o.text[13]);
+            const bool add = ((al >> 2) & 3) == 2;
+            const float fa = ((al >> 4) & 3) == 2 ? float(fix) / 128.0f : 1.0f;
+            const uint64_t t0 = uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32;
+            uint32_t tw = 0, th = 0;
+            const ImTextureID id = ArtTexture(t0, 0, &tw, &th, uint32_t(o.b));
+            if (!id || !tw || !th) break;
+            const float dx = x - float(o.x);
+            const ImVec2 p0 = P(float(o.x) + dx, float(o.y)), p1 = P(float(c[0]) + dx, float(c[1])), p2 = P(float(c[2]) + dx, float(c[3])),
+                         p3 = P(float(c[4]) + dx, float(c[5]));
+            auto uv = [&](float u, float v) { return ImVec2(u / float(tw), v / float(th)); };
+            const ImVec2 t0v = uv(o.u, o.v), t1v = uv(o.w, o.h), t2v = uv(o.dw, o.dh),
+                         t3v = uv(float(int16_t(o.a & 0xffff)), float(int16_t(uint32_t(o.a) >> 16)));
+            auto ch = [&](int sh) { return std::min(255u, ((o.rgba >> sh) & 0xffu) * 2); };
+            const ImU32 colr = IM_COL32(ch(0), ch(8), ch(16), int(float(ch(24)) * rt * fa));
+            if (add) dl->AddCallback(xsgmenu::BlendAdd, nullptr);
+            dl->AddImageQuad(id, p0, p1, p3, p2, t0v, t1v, t3v, t2v, colr);
             if (add) dl->AddCallback(xsgmenu::BlendAlpha, nullptr);
             break;
         }

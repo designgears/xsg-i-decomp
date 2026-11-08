@@ -550,6 +550,23 @@ extern "C" void xsg_ui_cap_spr(int x0, int y0, int x1, int y1, int u0, int v0, i
     o.b = int32_t((g_cap_alpha >> 32) & 0xff);   // FIX
     o.rgba = uint32_t(col[0]) | uint32_t(col[1]) << 8 | uint32_t(col[2]) << 16 | uint32_t(col[3]) << 24;
 }
+extern "C" void xsg_ui_cap_quad(const int* xs, const int* ys, const float* us, const float* vs, const unsigned char* col) {
+    if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
+    GpuUiKgOp& o = g_kg[g_kg_n++];
+    std::memset(&o, 0, sizeof o);
+    o.type = GPU_KG_QUAD;
+    o.x = xs[0]; o.y = ys[0];
+    int16_t c[6] = {int16_t(xs[1]), int16_t(ys[1]), int16_t(xs[2]), int16_t(ys[2]), int16_t(xs[3]), int16_t(ys[3])};
+    std::memcpy(o.text, c, sizeof c);
+    o.text[12] = char(g_cap_alpha & 0xff);
+    o.text[13] = char((g_cap_alpha >> 32) & 0xff);
+    o.u = int16_t(us[0]); o.v = int16_t(vs[0]); o.w = int16_t(us[1]); o.h = int16_t(vs[1]);
+    o.dw = int16_t(us[2]); o.dh = int16_t(vs[2]);
+    o.a = int32_t(uint16_t(int16_t(us[3]))) | int32_t(uint32_t(uint16_t(int16_t(vs[3]))) << 16);
+    o.b = xsg_ui_mirror_on() ? int32_t(g_cap_set) : 0;
+    o.tex0_lo = uint32_t(g_cap_tex0); o.tex0_hi = uint32_t(g_cap_tex0 >> 32);
+    o.rgba = uint32_t(col[0]) | uint32_t(col[1]) << 8 | uint32_t(col[2]) << 16 | uint32_t(col[3]) << 24;
+}
 extern "C" void xsg_ui_cap_line(int x0, int y0, int x1, int y1, const unsigned char* col) {
     if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
     GpuUiKgOp& o = g_kg[g_kg_n++];

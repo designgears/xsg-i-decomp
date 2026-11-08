@@ -1239,6 +1239,22 @@ void menuBoostObjDrawCha(ObjectTask *task);
 void menuBoostObjDrawSel(ObjectTask *task);
 
 void menuBoostObjDraw(ObjectTask *task) {
+#ifdef PORT_HOST
+    {   /* rebuilt UI: the boost gauge joins the radar's capture (channel 2) */
+        extern int xsg_ui_rebuilt(void);
+        extern void xsg_ui_cap_append(int channel);
+        extern void xsg_ui_kg_end(void);
+        if (xsg_ui_rebuilt()) {
+            xsg_ui_cap_append(2);
+            if (actStockGet()[4] == 0 && actStockGet()[5] == 0)
+                menuBoostObjDrawSel(task);
+            else
+                menuBoostObjDrawCha(task);
+            xsg_ui_kg_end();
+            return;
+        }
+    }
+#endif
     if (actStockGet()[4] == 0 && actStockGet()[5] == 0) {
         menuBoostObjDrawSel(task);
         return;
@@ -1591,6 +1607,30 @@ void menuATBObjDraw(ObjectTask *task)
     int h;
 
     grGpInit((int)packet);
+#ifdef PORT_HOST
+    {   /* rebuilt UI ([display] ui = rebuilt): the radar / turn display is captured (channel 2); the
+           packet keeps only state and texture markers */
+        extern int xsg_ui_rebuilt(void);
+        extern void xsg_ui_cap_begin(int channel);
+        extern void xsg_ui_cap_end(void);
+        if (xsg_ui_rebuilt()) {
+            extern void xsg_ui_cap_append(int channel);
+            xsg_ui_cap_append(2);
+            selX = selY = 0;
+            menuEventTimerDisp(task, (int)packet);
+            menuMapDisp(task, (int)packet);
+            h = mapH;
+            if (h == 0x40) {
+                menuMapItemDisp(task, (int)packet);
+                if (mapH == h)
+                    menuTgtLineDisp(task, (int)packet);
+            }
+            xsg_ui_cap_end();
+            grPacketSend((int)packet);
+            return;
+        }
+    }
+#endif
     selX = selY = 0;
     menuEventTimerDisp(task, (int)packet);
     menuMapDisp(task, (int)packet);
@@ -2097,6 +2137,14 @@ void menuStockObjDraw(ObjectTask *task)
         ay = (int) (((float) (ay = (int) (*((float *) (((char *) task->work) + 0x90))))) + (*((float *) (work + 0x90))));
         ax = (int) (((float) (ax = (int) (*((float *) (((char *) task->work) + 0x98))))) + (*((float *) (work + 0x98))));
         grGpInit((int) packet);
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the turn-order icons join the radar's capture (channel 2) */
+            extern int xsg_ui_rebuilt(void);
+            extern void xsg_ui_cap_append(int channel);
+            if (xsg_ui_rebuilt())
+                xsg_ui_cap_append(2);
+        }
+#endif
         menuATBEnvMake((int) packet);
         faceUVGet(v, &sp30, &sp34);
         flip = ((((int) v) ^ ((int) tgtUnitGet())) != 0) ? (0) : (-4);
@@ -2128,6 +2176,14 @@ void menuStockObjDraw(ObjectTask *task)
           menuStatSprite2((int) packet, y - 2, x - 2, w + 4, 0x1C, 0xC0, 0x20, 0xD9, 0x3D);
         }
         grCloseSpr();
+#ifdef PORT_HOST
+        {
+            extern int xsg_ui_kg_capture;
+            extern void xsg_ui_kg_end(void);
+            if (xsg_ui_kg_capture)
+                xsg_ui_kg_end();
+        }
+#endif
         grPacketSend((int) packet);
       }
     }
@@ -2656,7 +2712,7 @@ int menuNumPut(int packet, int x, int y, int value, int digits, int style)
     NumCol2 col = D_00A468E0;
 #ifdef PORT_HOST
     if (xsg_ui_kg_capture) {
-        xsg_ui_kg_op(4, x, y, value, digits, 0);
+        { char st[2]; st[0] = (char)('0' + (style & 7)); st[1] = 0; xsg_ui_kg_op(4, x, y, value, digits, st); }   /* style in text[0] */
         return 0;
     }
 #endif
