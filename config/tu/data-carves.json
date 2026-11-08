@@ -12413,11 +12413,11 @@
     {
      "range": [
       "0x004ca4d0",
-      "0x004ca698"
+      "0x004ca680"
      ],
      "generated": [
       "0x004ca4d0",
-      "0x004ca698"
+      "0x004ca680"
      ],
      "generated_by": [
       "GetItemName",
@@ -12445,8 +12445,7 @@
       "jtbl_004CA610",
       "D_004CA640",
       "D_004CA648",
-      "D_004CA650",
-      "D_004CA680"
+      "D_004CA650"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -12484,24 +12483,52 @@
    ]
   },
   "main/tu187": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7f80",
+      "0x004d7f88"
+     ],
+     "generated": [
+      "0x004d7f80",
+      "0x004d7f88"
+     ],
+     "generated_by": [
+      "DispCollUwamono"
+     ],
+     "c_owned_symbols": [
+      "D_004D7F80",
+      "D_004D7F84"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7F88",
+      "D_004D7F8C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pause_menu_page_uwamono.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004ca7b0",
-      "0x004ca7e8"
+      "0x004ca680",
+      "0x004ca940"
      ],
      "generated": [
-      "0x004ca7b0",
-      "0x004ca7e8"
+      "0x004ca680",
+      "0x004ca93c"
      ],
      "generated_by": [
+      "DebDispEvtItem",
+      "DebDispItemBox",
+      "DispDebugUwamono",
       "PauseMenuPageUwamono"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA7B0",
-      "jtbl_004CA7D0"
-     ],
-     "also_referenced_by_c": [
+      "D_004CA680",
       "D_004CA698",
       "D_004CA6B0",
       "D_004CA6C8",
@@ -12514,6 +12541,8 @@
       "D_004CA770",
       "D_004CA788",
       "D_004CA7A0",
+      "jtbl_004CA7B0",
+      "jtbl_004CA7D0",
       "D_004CA7E8",
       "D_004CA7F8",
       "D_004CA808",
@@ -12532,27 +12561,7 @@
       "D_004CA8D8",
       "D_004CA8E8",
       "D_004CA8F8",
-      "D_004CA908"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/pause_menu_page_uwamono.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca920",
-      "0x004ca940"
-     ],
-     "generated": [
-      "0x004ca920",
-      "0x004ca93c"
-     ],
-     "generated_by": [
-      "DispDebugUwamono"
-     ],
-     "c_owned_symbols": [
+      "D_004CA908",
       "jtbl_004CA920"
      ],
      "also_referenced_by_c": [],

@@ -650,7 +650,7 @@ segments:
       - [0x2CB280, rodata, init_map_door]
       - [0x2CB3F8, rodata, init_map_trap]
       - [0x2CB4D0, rodata, create_evt_item_get_task]
-      - [0x2CB698, rodata, pause_menu_page_uwamono]
+      - [0x2CB680, rodata, pause_menu_page_uwamono]
       - [0x2CB940, rodata, init_drill]
       - [0x2CBAC0, rodata, enemy_1]
       - [0x2CBC20, rodata, get_ladder]

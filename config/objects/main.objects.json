@@ -2828,7 +2828,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004CA698",
+          "end": "0x004CA680",
           "ordinal": 186,
           "piece": "create_evt_item_get_task",
           "start": "0x004CA4D0",
@@ -2839,7 +2839,7 @@
           "end": "0x004CA940",
           "ordinal": 187,
           "piece": "pause_menu_page_uwamono",
-          "start": "0x004CA698",
+          "start": "0x004CA680",
           "tu": "pause_menu_page_uwamono"
         },
         {
@@ -56044,20 +56044,20 @@
           ],
           "bounds": [
             "0x004CA4C1",
-            "0x004CA698"
+            "0x004CA680"
           ],
-          "end": "0x004CA698",
+          "end": "0x004CA680",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004CA698",
+              "end": "0x004CA680",
               "name": "create_evt_item_get_task",
               "start": "0x004CA4D0"
             }
           ],
           "rule": "anchored start",
-          "size": 456,
+          "size": 432,
           "splat_type": "rodata",
           "start": "0x004CA4D0"
         },
@@ -56239,7 +56239,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004CA698",
+            "0x004CA680",
             "0x004CA93C"
           ],
           "bounds": [
@@ -56253,13 +56253,13 @@
               "c_split": false,
               "end": "0x004CA940",
               "name": "pause_menu_page_uwamono",
-              "start": "0x004CA698"
+              "start": "0x004CA680"
             }
           ],
-          "rule": "anchored start",
-          "size": 680,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 704,
           "splat_type": "rodata",
-          "start": "0x004CA698"
+          "start": "0x004CA680"
         },
         ".sdata": {
           "anchored": [
