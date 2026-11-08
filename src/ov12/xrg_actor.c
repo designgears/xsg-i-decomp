@@ -382,7 +382,6 @@ typedef struct PtXrg {
     RgMatrix pakaBaseMatrix;          /* 0x120 */
     int pakaBaseMatrixSet;            /* 0x160 */
 } PtXrg;
-extern int D_00A5ACE4;
 extern const char D_00A589F8[];
 extern const char D_00A58A10[];
 extern void ACT_updateMotion(void *pXenoAct);
@@ -391,6 +390,7 @@ extern double atan2(double, double);
 
 void _PassTime(XrgActor *pActorArg, float dt)
 {
+    static int D_00A5ACE4 __asm__("D_00A5ACE4");
     RgMatrix locals[64];
     RgMatrix a;
     RgMatrix b;

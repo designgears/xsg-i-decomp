@@ -284,7 +284,7 @@ segments:
       - { type: .bss, vram: 0x00A5AB80, name: ov12/rg_geom_pillar }
       - { type: .bss, vram: 0x00A5ABC0, name: ov12/rg_matrices_effector }
       - { type: .bss, vram: 0x00A5ABC8, name: ov12/rg_select_robot }
-      - { type: bss, vram: 0x00A5ACE4, name: ov12/xrg_actor }
+      - { type: .bss, vram: 0x00A5ACE4, name: ov12/xrg_actor }
       - { type: .bss, vram: 0x00A5ACF0, name: ov12/xrg_rand_int }
   - [0x5A490, pad, ov12_bss_file_image]
   - [0x5C0F4, bin, elf_shstrtab]
