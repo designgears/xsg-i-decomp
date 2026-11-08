@@ -3204,7 +3204,6 @@ typedef struct CharParaRow {
     unsigned char unmodeled_09[0x0C - 0x09];
 } CharParaRow;
 char *MenuParaNameGet2(int statIndex);
-extern unsigned char D_004DAE50[];
 
 /* The parameter-up list: one row per improvable parameter, flagged while the
  * shown character can still raise it, then the cost row and a terminating
@@ -3230,7 +3229,7 @@ void CharListMake_Para(void)
     window->columns = 1;
     window->rows = 8;
     window->rowCount = 3;
-    window->flags = (int)D_004DAE50;
+    window->flags = (int)"List";
     window->width = 105;
     window->height = 198;
     window->items = (CharListRow *)CharList->paraItems;
@@ -3694,19 +3693,12 @@ extern void *memset(void *, int, unsigned int);
 typedef struct { Vector4 v; } MenuCamVec1 __attribute__((aligned(8)));
 typedef struct { MenuCamVec1 v[2]; } MenuCamVec2;
 typedef struct { Vector4 v[2]; } MenuCamVec2B __attribute__((aligned(8)));
-extern MenuCamVec2B D_004C6580;
-extern MenuCamVec2 D_004C65A0;
-extern MenuCamVec2 D_004C65C0;
-extern MenuCamVec1 D_004C65E0;
 static MenuCamVec1 TairetuRot;
 static MenuCamVec1 TairetuPos;
 
 void MenuCharCameraSet(void) {
-    MenuCamVec2B pos = D_004C6580;
-    MenuCamVec2 rot = D_004C65A0;
-    MenuCamVec2 trot;
-    MenuCamVec1 tpos;
-    MenuCamVec1 r;
+    MenuCamVec2B pos = { { { 0.45f, 0.9f, 2.3f, 1.0f }, { -1.5f, 0.8f, 6.5f, 1.0f } } };
+    MenuCamVec2 rot = { { { { -0.4f, 0.0f, 0.0f, 1.0f } }, { { 0.0f, 0.0f, 0.0f, 1.0f } } } };
     StudioCamera *camera;
 
     camera = xglStudioGetCamera2(0);
@@ -3714,13 +3706,20 @@ void MenuCharCameraSet(void) {
     camera->rotation = rot.v[MenuWork.partyMode].v;
     camera->position = pos.v[MenuWork.partyMode];
     camera->state = 1;
-    trot = D_004C65C0;
-    TairetuRot.v = trot.v[MenuWork.partyMode].v;
-    tpos = D_004C65E0;
-    memset(&r, 0, sizeof(r));
-    r.v.x = (-0.7853982f);
-    TairetuPos = tpos;
-    TairetuRot = r;
+    {
+        MenuCamVec2 trot = { { { { 0.0f, 0.0f, 0.0f, 1.0f } }, { { 0.5235988f, 0.0f, 0.0f, 1.0f } } } };
+
+        TairetuRot.v = trot.v[MenuWork.partyMode].v;
+    }
+    {
+        MenuCamVec1 tpos = { { -1.7f, -0.2f, 1.5f, 0.0f } };
+        MenuCamVec1 r;
+
+        memset(&r, 0, sizeof(r));
+        r.v.x = (-0.7853982f);
+        TairetuPos = tpos;
+        TairetuRot = r;
+    }
 }
 
 extern inline float ldf_off(void *base, unsigned int o) { return *(float *)((char *)base + o); }
