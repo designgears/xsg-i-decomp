@@ -71,10 +71,10 @@ extern int xglHddMcCheck(HddChkReq *req);
 extern void xglFontPrint(int x, int y, int color, const char *text);
 extern void xglSoundEffectNormalDirect(int effect_id);
 extern PadPrefix PadData;
-extern char carddata_0[];
 
 static int hdd_check(void)
 {
+    static int carddata[4] = { 8, 0x400, 0x11AC0, 0 };
     HddMsgTbl msgs;
     HddMsgTbl infos;
     HddChkReq req;
@@ -118,7 +118,7 @@ static int hdd_check(void)
             if (xglHddMcExist(&req) > 0)
                 return 0;
             req.size = 0x163B0;
-            req.work = carddata_0;
+            req.work = carddata;
             ret = xglHddMcCheck(&req);
             if (ret == -1) {
                 for (;;) {
@@ -326,14 +326,14 @@ typedef struct LogoMovieInfo {
     u8 unmodeled_ca[6];
 } LogoMovieInfo;
 typedef struct LogoTestEnvironment {
-    u8 unmodeled_00[0x30];
-    u64 command;
+    u64 setup[6];      /* GIFtag + A+D register writes */
+    u64 command;       /* +0x30 */
+    u64 registers[11];
 } LogoTestEnvironment;
 typedef struct LogoRenderState {
     u8 unmodeled_00[0x14];
     u16 display_buffer;
 } LogoRenderState;
-extern LogoTestEnvironment TestEnv_1_00A0F690;
 extern LogoRenderState sRender;
 extern void xglSoundEffectNormalDirect(int effect_id);
 extern PadPrefix PadData;
@@ -347,6 +347,14 @@ extern void xglDmaDirectNormal(u32 channel, u32 address, u32 count);
 
 static int ipuplay(char *path)
 {
+    static LogoTestEnvironment TestEnv = {
+        { 0x808B400000008001ULL, 0x53531EEE, 0x0, 0x3F, 0x7FFFF0, 0x8 },
+        0x0,
+        {
+            0x6, 0x8000000080ULL, 0x8000000080ULL, 0x0, 0x0,
+            0x71F700006FF8ULL, 0x40000000, 0x1C0000002000ULL, 0x0, 0x8DF700008FF8ULL, 0x40000000,
+        },
+    };
     LogoMovieInfo movie;
     int skipped;
     u32 frame_buffer_base;
@@ -381,10 +389,10 @@ static int ipuplay(char *path)
         }
 
         /* The display-buffer value occupies bits 5 and above of the low command word. */
-        TestEnv_1_00A0F690.command = 0x2000000640000000ULL |
+        TestEnv.command = 0x2000000640000000ULL |
                                      (u64)~(~0x24020000U & ~((u32)sRender.display_buffer << 5));
         FlushCache(0);
-        xglDmaDirectNormal(2, (u32)&TestEnv_1_00A0F690, 9);
+        xglDmaDirectNormal(2, (u32)&TestEnv, 9);
         xglSleep();
     }
 

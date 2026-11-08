@@ -11855,6 +11855,32 @@
    ]
   },
   "ov02/tu000_00a00000": {
+   ".data": [
+    {
+     "range": [
+      "0x00a0f680",
+      "0x00a0f720"
+     ],
+     "generated": [
+      "0x00a0f680",
+      "0x00a0f720"
+     ],
+     "generated_by": [
+      "hdd_check",
+      "ipuplay"
+     ],
+     "c_owned_symbols": [
+      "carddata_0",
+      "TestEnv_1_00A0F690"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/logo.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
