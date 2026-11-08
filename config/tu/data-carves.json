@@ -7931,97 +7931,51 @@
     {
      "range": [
       "0x004d8164",
-      "0x004d8174"
+      "0x004d81f4"
      ],
      "generated": [
       "0x004d8164",
-      "0x004d8174"
+      "0x004d81f4"
      ],
      "generated_by": [
-      "Get_Decimal_Surplus_for_Radius"
+      "Check_InsideFan",
+      "Check_InsideFan_Wooo",
+      "Check_MoveSquare",
+      "Check_Octpus",
+      "Check_Undu",
+      "Check_Wall",
+      "Get_Angle_Relative",
+      "Get_Cursol_by_Reduce_Speed_Angle_Loop",
+      "Get_Decimal_Surplus_for_Radius",
+      "Get_EnemyIDPos",
+      "Get_WallSpace"
      ],
      "c_owned_symbols": [
       "radius_neg_pi",
       "radius_two_pi_a",
       "radius_two_pi_b",
-      "radius_pi"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8198",
-      "0x004d819c"
-     ],
-     "generated": [
-      "0x004d8198",
-      "0x004d819c"
-     ],
-     "generated_by": [
-      "Check_Wall"
-     ],
-     "c_owned_symbols": [
-      "D_004D8198"
-     ],
-     "also_referenced_by_c": [
+      "radius_pi",
+      "D_004D8174",
+      "D_004D8178",
+      "D_004D817C",
+      "D_004D8180",
+      "D_004D8184",
+      "D_004D8188",
+      "D_004D818C",
+      "D_004D8190",
+      "D_004D8194",
+      "D_004D8198",
+      "D_004D819C",
       "D_004D81A0",
-      "D_004D81A4"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d81a8",
-      "0x004d81b8"
-     ],
-     "generated": [
-      "0x004d81a8",
-      "0x004d81b8"
-     ],
-     "generated_by": [
-      "Get_Angle_Relative"
-     ],
-     "c_owned_symbols": [
+      "D_004D81A4",
       "k_negative_pi",
       "kFullCircleAdd",
       "k_positive_pi",
-      "kFullCircleSub"
-     ],
-     "also_referenced_by_c": [
+      "kFullCircleSub",
       "D_004D81B8",
       "D_004D81BC",
       "D_004D81C0",
-      "D_004D81C4"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d81c8",
-      "0x004d81ec"
-     ],
-     "generated": [
-      "0x004d81c8",
-      "0x004d81ec"
-     ],
-     "generated_by": [
-      "Check_InsideFan_Wooo",
-      "Get_Cursol_by_Reduce_Speed_Angle_Loop"
-     ],
-     "c_owned_symbols": [
+      "D_004D81C4",
       "D_004D81C8",
       "kAbsBoundPi",
       "kNegPi",
@@ -8030,16 +7984,42 @@
       "kNegPiLimit",
       "kTwoPiWrapLo",
       "kPiLimit",
-      "kTwoPiWrapHi"
-     ],
-     "also_referenced_by_c": [
+      "kTwoPiWrapHi",
       "D_004D81EC",
       "D_004D81F0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get.o"
+      "object": "build/main/build/c/get.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db9a8",
+      "0x004db9bc"
+     ],
+     "generated": [
+      "0x004db9a8",
+      "0x004db9bc"
+     ],
+     "generated_by": [
+      "Check_MoveSquare",
+      "GetBSplineLoop"
+     ],
+     "c_owned_symbols": [
+      "D_004DB9A8",
+      "D_004DB9B0",
+      "DataSpline"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/get.o"
      }
     }
    ]
