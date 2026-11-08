@@ -336,8 +336,6 @@ extern DrillHitActor actor[64];
 extern DrillEnemyWork enepc[16];
 
 /* These unchanged data records are supplied by the original scaffolding. */
-extern char D_004DB7E0[];
-extern char D_004DB7E8[];
 
 int xglFlagsGet1(int bit_offset);
 unsigned short xglSRand(void);
@@ -747,7 +745,7 @@ void MAP_updateUnitDrill(Drill *drill)
                 length = HexToStr(seconds, text);
                 xglFontPrint(336, 24, 0xFFF0, "\x0D\x00\x19\x03""Elapsed Time\x15\x02\x04\x01");
                 xglFontPrint(472 - length * 10, 24, 0xFFF0, text);
-                xglFontPrintDirectOT(0xFFF0, D_004DB7E0);
+                xglFontPrintDirectOT(0xFFF0, "\x15\x02\x04");
             } else {
                 seconds = (int)((float)(save->frameLimit - save->frameCount) / 30.0f);
                 seconds = seconds < 1000 ? seconds : 999;
@@ -770,7 +768,7 @@ void MAP_updateUnitDrill(Drill *drill)
                 length = HexToStr(seconds, text);
                 xglFontPrint(328, 24, 0xFFF0, "\x0D\x00\x19\x03Time Remaining\x15\x02\x04\x01");
                 xglFontPrint(480 - length * 10, 24, 0xFFF0, text);
-                xglFontPrintDirectOT(0xFFF0, D_004DB7E0);
+                xglFontPrintDirectOT(0xFFF0, "\x15\x02\x04");
             }
         }
         if (save->command != 2) {
@@ -1415,9 +1413,46 @@ int HitCheckEnemy(Vector4 *position, float radius)
             sefCreateEffectCf(635, &target->position, 0);
             xglSoundEffectNormalID(0x10003, 0);
             Enemy_Command_Freeze(target, 1);
-            CallMethod_I(D_004DB7E8, target->methodArg);
+            CallMethod_I("broken", target->methodArg);
             return i;
         }
     }
     return -1;
 }
+
+DrillContainerDef container[31] = {
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 501, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 503, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 505, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 507, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 509, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 511, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 513, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 602, 515, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 517, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 519, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 521, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {2, {0}, 648, 523, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 525, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 527, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 529, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 602, 531, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 614, 533, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 614, 535, 0}},
+    {1, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 642, 537, 0}},
+    {1, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {1, {0}, 642, 539, 0}},
+    {1, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {0, {0}, 629, 1, 0}},
+    {1, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, {0, {0}, 632, 3, 0}},
+    {1, {0}, {{1.5f, 1.0f, 1.5f, 0.0f}}, {0, {0}, 635, 5, 0}},
+    {2, {0}, {{0.5f, 1.0f, 0.5f, 0.0f}}, {0, {0}, 601, 7, 0}},
+    {2, {0}, {{1.0f, 1.0f, 1.0f, 0.0f}}, {0, {0}, 604, 9, 0}},
+    {2, {0}, {{0.15f, 1.5f, 0.15f, 0.0f}}, {0, {0}, 601, 1, 0}},
+    {2, {0}, {{0.25f, 1.5f, 0.25f, 0.0f}}, {0, {0}, 601, 3, 0}},
+    {2, {0}, {{0.4f, 1.5f, 0.4f, 0.0f}}, {0, {0}, 601, 7, 0}},
+    {2, {0}, {{0.5f, 1.5f, 0.5f, 0.0f}}, {0, {0}, 601, 8, 0}},
+    {2, {0}, {{1.0f, 1.5f, 1.0f, 0.0f}}, {0, {0}, 604, 9, 0}},
+    {1, {0}, {{0.15f, 1.0f, 0.15f, 0.0f}}, {0, {0}, 628, 10, 0}},
+};
+
+short Times = 0;
+short NowTester = 0;
