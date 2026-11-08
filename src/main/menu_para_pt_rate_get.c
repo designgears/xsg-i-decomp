@@ -5626,3 +5626,17 @@ void MenuCharactor(int partyMode)
     xglFontDebugHex(0, 0xD8, MenuWork.partyCount, 2);
     xglFontDebugHex(0x20, 0xB0, MenuWork.weaponChanged, 8);
 }
+
+unsigned short *ParaDataBuf = 0;
+CharPasWork *CharPas = 0;
+CharInfoWork *CharInfo = 0;
+CharCategoryWork *CharCategory = 0;
+CharMenuWork *CharMenu = 0;
+CharExWork *CharEx = 0;
+CharL1R1Work *CharL1R1 = 0;
+CharStatusWork *CharStatus = 0;
+CharParameterWork *CharParameter = 0;
+CharWeaponWork *CharWeapon = 0;
+CharListWork *CharList = 0;
+CharSwitchWork *CharSwitch = 0;
+CharPointWork *CharPoint = 0;

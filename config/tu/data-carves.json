@@ -9857,21 +9857,32 @@
     {
      "range": [
       "0x004dadb8",
-      "0x004dae78"
+      "0x004daeac"
      ],
      "generated": [
       "0x004dadb8",
-      "0x004dae76"
+      "0x004daeac"
      ],
      "generated_by": [
+      "CharCategoryMain",
       "CharExMain",
       "CharInfoMain",
       "CharL1R1Main",
+      "CharListMain",
+      "CharListMake_Acc",
+      "CharListMake_Gun",
       "CharListMake_Para",
+      "CharListMake_Wpn",
       "CharMenuMain",
       "CharParameterMain",
+      "CharPasMain",
       "CharPointMain",
+      "CharStatusMain",
+      "CharSwitchMain",
       "CharWeaponMain",
+      "MenuCharactor",
+      "MenuParaPtBaseGet",
+      "MenuParaPtRateGet",
       "tskCharLineField"
      ],
      "c_owned_symbols": [
@@ -9898,9 +9909,7 @@
       "D_004DAE58",
       "D_004DAE60",
       "D_004DAE68",
-      "D_004DAE70"
-     ],
-     "also_referenced_by_c": [
+      "D_004DAE70",
       "ParaDataBuf",
       "CharPas",
       "CharInfo",
@@ -9915,6 +9924,7 @@
       "CharSwitch",
       "CharPoint"
      ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_004DADC0": "msg01_3",
       "D_004DADD8": "msg00_4_0036D900",
