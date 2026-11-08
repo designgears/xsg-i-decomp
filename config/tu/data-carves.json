@@ -16468,29 +16468,143 @@
    ]
   },
   "ov01/tu003_00a07770": {
+   ".data": [
+    {
+     "range": [
+      "0x00a3d440",
+      "0x00a3d8f8"
+     ],
+     "generated": [
+      "0x00a3d440",
+      "0x00a3d8f8"
+     ],
+     "generated_by": [
+      "curPosProcInit",
+      "curPutSub",
+      "decoEffCall",
+      "keyBuffChk",
+      "keyBuffSet",
+      "keyCmdApGet",
+      "scenarioBatExecPhase25",
+      "specHensinProc",
+      "specInoriProc",
+      "statEffProc"
+     ],
+     "c_owned_symbols": [
+      "mvFname",
+      "D_00A3D454",
+      "keyItemTblCha",
+      "keyItemTblAgws",
+      "keyCmd01",
+      "D_00A3D46C",
+      "keyCmd02",
+      "D_00A3D474",
+      "keyCmd03",
+      "D_00A3D47E",
+      "keyCmd04",
+      "D_00A3D486",
+      "keyCmd05",
+      "D_00A3D48E",
+      "keyCmd06",
+      "D_00A3D496",
+      "keyCmd07",
+      "D_00A3D49E",
+      "keyCmd08",
+      "D_00A3D4A6",
+      "keyCmd09",
+      "keyCmd10",
+      "keyCmd11",
+      "keyCmd12",
+      "keyCmd13",
+      "keyCmd14",
+      "keyCmd15",
+      "D_00A3D4DC",
+      "keyCmd16",
+      "D_00A3D4E6",
+      "keyCmd17",
+      "D_00A3D4EE",
+      "keyCmd18",
+      "D_00A3D4F6",
+      "keyCmdTblCha",
+      "keyCmdTblAgws",
+      "D_00A3D654",
+      "itemGrp1",
+      "itemGrp2",
+      "D_00A3D68C",
+      "itemGrp3",
+      "D_00A3D6A4",
+      "itemGrp4",
+      "inoriTbl",
+      "decoEff",
+      "effId",
+      "D_00A3D75C",
+      "effTbl",
+      "chaTbl_00A3D7E0",
+      "D_00A3D7FC",
+      "agwsTbl_00A3D800",
+      "cur1",
+      "moveTbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/battle_init.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a43dc0",
-      "0x00a43e78"
+      "0x00a43c20",
+      "0x00a44310"
      ],
      "generated": [
-      "0x00a43dc0",
-      "0x00a43e78"
+      "0x00a43c20",
+      "0x00a44304"
      ],
      "generated_by": [
+      "actStockMake",
+      "actStockPick",
+      "battleAfter",
+      "battleCtrlBoostEn",
+      "battleCtrlBoostPl",
+      "battleCtrlJunk",
       "battleExec",
+      "battleExecDead",
       "convKey2unit",
-      "manInput"
+      "counterProc",
+      "curEnProcInit",
+      "curPosProcInit",
+      "curTgtProcInit",
+      "decoEffCall",
+      "dmgValPut",
+      "flowSpecProcInit",
+      "itemNameGet",
+      "keyBuffSet",
+      "keyCmd2wno",
+      "keyCmdApGet",
+      "keyCmdChk",
+      "manInput",
+      "monsGainSet",
+      "objDispCurSubEn",
+      "scenarioBatEnd",
+      "scenarioBatExecDst",
+      "scenarioBatExecPhase25",
+      "scenarioBatExecPhase30",
+      "specHensinProc",
+      "specInoriProc",
+      "specNusumuProc",
+      "specSyoukanProc",
+      "stat1Proc",
+      "stat2Proc"
      ],
      "c_owned_symbols": [
-      "jtbl_00A43DC0",
-      "jtbl_00A43E00",
-      "D_00A43E18",
-      "jtbl_00A43E30",
-      "jtbl_00A43E50"
-     ],
-     "also_referenced_by_c": [
+      "D_00A43C20",
+      "D_00A43C38",
+      "D_00A43C58",
+      "D_00A43C78",
+      "D_00A43C98",
       "D_00A43CB8",
       "D_00A43CC8",
       "D_00A43CD8",
@@ -16504,163 +16618,34 @@
       "D_00A43D78",
       "D_00A43D90",
       "D_00A43DB0",
+      "jtbl_00A43DC0",
+      "jtbl_00A43E00",
+      "D_00A43E18",
+      "jtbl_00A43E30",
+      "jtbl_00A43E50",
       "D_00A43E78",
       "D_00A43E90",
       "D_00A43EA8",
       "D_00A43EC0",
-      "D_00A43ED0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43ee0",
-      "0x00a43ef8"
-     ],
-     "generated": [
-      "0x00a43ee0",
-      "0x00a43ef8"
-     ],
-     "generated_by": [
-      "keyCmdApGet"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A43EE0"
-     ],
-     "also_referenced_by_c": [
-      "D_00A43EF8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43f10",
-      "0x00a43f60"
-     ],
-     "generated": [
-      "0x00a43f10",
-      "0x00a43f60"
-     ],
-     "generated_by": [
-      "keyCmd2wno"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A43F10"
-     ],
-     "also_referenced_by_c": [
-      "D_00A43F60"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43f80",
-      "0x00a43f98"
-     ],
-     "generated": [
-      "0x00a43f80",
-      "0x00a43f98"
-     ],
-     "generated_by": [
-      "scenarioBatExecPhase25"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A43F80"
-     ],
-     "also_referenced_by_c": [
+      "D_00A43ED0",
+      "jtbl_00A43EE0",
+      "D_00A43EF8",
+      "jtbl_00A43F10",
+      "D_00A43F60",
+      "jtbl_00A43F80",
       "D_00A43F98",
-      "D_00A43FB8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43fd0",
-      "0x00a44010"
-     ],
-     "generated": [
-      "0x00a43fd0",
-      "0x00a44010"
-     ],
-     "generated_by": [
-      "specHensinProc",
-      "specSyoukanProc"
-     ],
-     "c_owned_symbols": [
+      "D_00A43FB8",
       "jtbl_00A43FD0",
-      "jtbl_00A43FF0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A43FF0",
       "D_00A44010",
-      "D_00A44028"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a44038",
-      "0x00a44080"
-     ],
-     "generated": [
-      "0x00a44038",
-      "0x00a44080"
-     ],
-     "generated_by": [
-      "specNusumuProc"
-     ],
-     "c_owned_symbols": [
+      "D_00A44028",
       "D_00A44038",
       "D_00A44058",
-      "D_00A44060"
-     ],
-     "also_referenced_by_c": [
+      "D_00A44060",
       "D_00A44080",
-      "D_00A44098"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a440c0",
-      "0x00a44168"
-     ],
-     "generated": [
-      "0x00a440c0",
-      "0x00a44168"
-     ],
-     "generated_by": [
-      "decoEffCall",
-      "scenarioBatExecDst"
-     ],
-     "c_owned_symbols": [
+      "D_00A44098",
       "jtbl_00A440C0",
-      "jtbl_00A44150"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A44150",
       "D_00A44168",
       "D_00A44178",
       "D_00A44188",
@@ -16679,39 +16664,18 @@
       "D_00A44228",
       "D_00A44238",
       "D_00A44248",
-      "D_00A44258"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a44270",
-      "0x00a442a0"
-     ],
-     "generated": [
-      "0x00a44270",
-      "0x00a4429c"
-     ],
-     "generated_by": [
-      "dmgValPut"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A44270"
-     ],
-     "also_referenced_by_c": [
+      "D_00A44258",
+      "jtbl_00A44270",
       "D_00A442A0",
       "D_00A442C8",
       "D_00A442E0",
       "D_00A442F8"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/battle_init.o"
+      "object": "build/ov01/build/scaffold/src/ov01/battle_init.o"
      }
     }
    ]

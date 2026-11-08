@@ -300,9 +300,66 @@ void battleMain(void)
     battleEndChk();
 }
 
-extern const char D_00A43CB8[];
-extern const char D_00A43CC8[];
-extern const char D_00A43CD8[];
+typedef struct {
+    unsigned short *keys;
+    int arg;
+    int cmd;
+} KeyCmdEnt;
+typedef struct { int thr; int cnt; int *tab; } InoriEnt;
+typedef struct DecoEffEntry {
+    int charaId;
+    int subId[2];
+} DecoEffEntry;
+typedef struct {
+    unsigned short id;
+    unsigned short pad;
+} StatEffIdEnt;
+
+/* ---- initialized .data (original order) ---- */
+const char D_00A43C20[] = "data\\yamamoto\\mv\\gr.pss";
+const char D_00A43C38[] = "data\\yamamoto\\mv\\kiss.pss";
+const char D_00A43C58[] = "data\\yamamoto\\mv\\gamera.pss";
+const char D_00A43C78[] = "data\\yamamoto\\mv\\momo_b.pss";
+const char D_00A43C98[] = "data\\yamamoto\\mv\\momo_a.pss";
+char *mvFname[5] = { D_00A43C98, D_00A43C78, D_00A43C58, D_00A43C38, D_00A43C20 };
+unsigned short keyItemTblCha[4] = { 0x80, 0x10, 0x20, 0 };
+unsigned short keyItemTblAgws[4] = { 0x80, 0x10, 0x20, 0 };
+unsigned short keyCmd01[2] = { 1, 0x80 };
+unsigned short keyCmd02[2] = { 1, 0x10 };
+unsigned short keyCmd03[3] = { 2, 0x80, 0x80 };
+unsigned short keyCmd04[3] = { 2, 0x80, 0x10 };
+unsigned short keyCmd05[3] = { 2, 0x10, 0x10 };
+unsigned short keyCmd06[3] = { 2, 0x10, 0x80 };
+unsigned short keyCmd07[3] = { 2, 0x80, 0x20 };
+unsigned short keyCmd08[3] = { 2, 0x10, 0x20 };
+unsigned short keyCmd09[4] = { 3, 0x80, 0x80, 0x20 };
+unsigned short keyCmd10[4] = { 3, 0x80, 0x10, 0x20 };
+unsigned short keyCmd11[4] = { 3, 0x10, 0x10, 0x20 };
+unsigned short keyCmd12[4] = { 3, 0x10, 0x80, 0x20 };
+unsigned short keyCmd13[4] = { 3, 0x80, 0x20, 0x20 };
+unsigned short keyCmd14[4] = { 3, 0x10, 0x20, 0x20 };
+unsigned short keyCmd15[2] = { 1, 0x20 };
+unsigned short keyCmd16[3] = { 2, 0x20, 0x80 };
+unsigned short keyCmd17[3] = { 2, 0x20, 0x10 };
+unsigned short keyCmd18[3] = { 2, 0x20, 0x20 };
+KeyCmdEnt keyCmdTblCha[16] = { keyCmd13, 2, 0x11, keyCmd14, 2, 0x12, keyCmd07, 2, 0xB, keyCmd08, 2, 0xC, keyCmd09, 2, 0xD, keyCmd10, 2, 0xE, keyCmd11, 2, 0xF, keyCmd12, 2, 0x10, keyCmd03, 2, 3, keyCmd04, 2, 4, keyCmd05, 2, 5, keyCmd06, 2, 6, keyCmd01, 2, 1, keyCmd02, 2, 2, keyCmd15, 6, 7, 0, 0, 0 };
+KeyCmdEnt keyCmdTblAgws[13] = { keyCmd03, 0, 3, keyCmd04, 0, 4, keyCmd07, 0, 0xB, keyCmd05, 0, 5, keyCmd06, 0, 6, keyCmd08, 0, 0xC, keyCmd16, 0, 8, keyCmd17, 0, 9, keyCmd18, 0, 0xA, keyCmd01, 0, 1, keyCmd02, 0, 2, keyCmd15, 0, 7, 0, 0, 0 };
+int itemGrp1[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+int itemGrp2[5] = { 0xA, 0xC, 0xD, 0xE, 0x10 };
+int itemGrp3[5] = { 0xF, 0x11, 0x14, 0x18, 0x19 };
+int itemGrp4[2] = { 9, 0xB };
+InoriEnt inoriTbl[4] = { 4, 2, itemGrp4, 0xC, 5, itemGrp3, 0x32, 5, itemGrp2, 0x64, 8, itemGrp1 };
+DecoEffEntry decoEff[8] = { 1, 0x9CD, 0x9D0, 2, 0x9C9, 0x9CC, 3, 0x9C5, 0x9C8, 4, 0x9DD, 0x9E0, 5, 0x9D5, 0x9D8, 6, 0x9D1, 0x9D4, 7, 0x9D9, 0x9DC, 0, 0, 0 };
+StatEffIdEnt effId[7] = { 0xA4C, 0, 0xA4B, 0, 0xA4A, 0, 0xA49, 0, 0xA48, 0, 0xA47, 0, 0xA46, 0 };
+signed char effTbl[128] = { 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 4, 5, 3, -1, -1, -1, -1, 6, 6, 6, -1, 6, 6, -1, -1, 4, 5, 6, 0, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 6, 6, 6, -1, 6, 6, 6, 6, 5, 5, 5, 6, 5, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+char chaTbl_00A3D7E0[28] = { 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0 };
+char agwsTbl_00A3D800[16] = { 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0 };
+char cur1[112] = { 0, 0, 0, -0x41, 0, 0, 0, 0, 0, 0, 0, -0x41, 0, 0, -0x80, 0x3F, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0, -0x41, 0, 0, -0x80, 0x3F, 0, 0, 0, -0x41, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, -0x80, 0x3F, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, -0x80, 0x3F, -0x80, -0x80, -0x80, -0x80, 0x50, -0x73, 0x47, 0x3F, 0, 0, -0x80, 0x3F, 0x50, -0x73, 0x47, 0x3F, 0, 0, -0x80, 0x3F, 0x50, -0x73, 0x47, 0x3F, 0x50, -0x73, 0x47, 0x3F, 0, 0, -0x80, 0x3F, 0, 0, -0x80, 0x3F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int moveTbl[6][5] = { 2, 4, 5, -1, -1, 1, 3, 4, 5, 6, 2, 5, 6, -1, -1, 1, 2, 5, -1, -1, 1, 2, 3, 4, 6, 2, 3, 5, -1, -1 };
+
+const char D_00A43CB8[] = "** PL Win!\n";
+const char D_00A43CC8[] = "** PL Esc!\n";
+const char D_00A43CD8[] = "** EN Win!\n";
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
 extern int dataPadRead(int padNo);
 extern void menuStatDispRemove(void);
@@ -606,7 +663,7 @@ typedef struct MsgText {
     signed char text[0x23];
 } MsgText;
 extern MsgText msgWork;
-extern const MsgText D_00A43CE8;
+const MsgText D_00A43CE8 = { 0x55, 0x6E, 0x61, 0x62, 0x6C, 0x65, 0x20, 0x74, 0x6F, 0x20, 0x6D, 0x6F, 0x76, 0x65, 0x20, 0x64, 0x75, 0x65, 0x20, 0x74, 0x6F, 0x20, 0x22, 0x50, 0x6F, 0x77, 0x65, 0x72, 0x20, 0x4C, 0x6F, 0x73, 0x73, 0x22, 0 };
 void battleMsg(int msgId);
 int unitCmdListSet(ObjectTask *unit, int *cmd);
 
@@ -691,9 +748,9 @@ int actStockMaxGet(void)
   return (valid < 5) ? (valid) : (4);
 }
 
-extern const char D_00A43D10[];
-extern const char D_00A43D30[];
-extern const char D_00A43D40[];
+const char D_00A43D10[] = "** Make Max=%d Num=%d **\n** ";
+const char D_00A43D30[] = "%d:U=%X(ID=%d) ";
+const char D_00A43D40[] = "\n";
 extern int calcWctDec(ObjectTask *unit);
 
 void actStockMake(void)
@@ -752,9 +809,9 @@ done:
     printf(D_00A43D40);
 }
 
-extern const char D_00A43D48[];
-extern const char D_00A43D50[];
-extern const char D_00A43D58[];
+const char D_00A43D48[] = "** SP0:";
+const char D_00A43D50[] = "** SP1:";
+const char D_00A43D58[] = "** Pick=%X(ID=%d) %d/%d\n";
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 void actStockMake(void);
 
@@ -870,7 +927,7 @@ extern int calcBoostChk(BattleUnit *unit, int mode);
 extern int calcBoost(BattleUnit *unit, int mode);
 
 extern int dataPadRead(int padNo);
-extern const char D_00A43D78[];
+const char D_00A43D78[] = "** BOOST PL=%d (%d)\n";
 void menuBoostDisp(int enabled);
 
 int battleCtrlBoostPl(void)
@@ -908,7 +965,7 @@ int battleCtrlBoostPl(void)
 }
 
 extern int rnd(int max);
-extern const char D_00A43D90[];
+const char D_00A43D90[] = "** BOOST EN=%d %d%% (%d)\n";
 
 int battleCtrlBoostEn(void)
 {
@@ -1048,7 +1105,7 @@ enum ManSelectState {
     MAN_SELECT_MOVE_POS = 0xE,     /* position select for MOVE (curPosProc mode 6) */
     MAN_SELECT_ATTACK_TARGET = 0xF /* enemy target select for the attack entry */
 };
-extern const char D_00A43DB0[];
+const char D_00A43DB0[] = "** MENU_EXIT\n";
 #define PAD_CIRCLE 0x0020
 typedef struct MIWork {
     int tgtSelect; int field04; int selection; int controlPhase;
@@ -1803,7 +1860,7 @@ extern int menuTimeGet(void);
 extern int menuTimeXGet(void);
 extern void menuCritDispOn(int mode);
 extern void *dataSpecDataGet(int id, int tid);
-extern const char D_00A43E78[];
+const char D_00A43E78[] = "** DEAD! ->%d /TID=%d\n";
 extern void UmnDataBaseMonsterSet(void);
 
 int battleExecDead(void)
@@ -1915,7 +1972,7 @@ int battleExecDead(void)
 
 typedef struct { BattleUnit *unit; int cmd; int hpBonus; } S1Stat;
 typedef struct { int selector; int argument; int extra; unsigned char pad[8]; } S1Cmd;
-extern const char D_00A43E90[];
+const char D_00A43E90[] = "** Stat Dmg: SAFE\n";
 extern void unitCmdClear(ObjectTask *unit);
 extern int calcHp(ObjectTask *unit, int v);
 extern int dmgValPut(int, BattleUnit **);
@@ -2078,7 +2135,9 @@ extern int calcHp(ObjectTask *unit, int v);
 extern int dmgValPut(int, BattleUnit **);
 extern const char D_00A43EC0[];
 extern const char D_00A43ED0[];
-extern const char D_00A43EA8[];
+const char D_00A43EA8[] = "** item change=%d %d\n";
+const char D_00A43EC0[] = "Changed to ";
+const char D_00A43ED0[] = "!";
 extern int itemGrpChk(int grp, int id);
 extern int dataGainGet(int id);
 extern void dataBoxInc(int a, int b);
@@ -2276,11 +2335,7 @@ int keyCmdGet(ObjectTask *unit)
     return cmd;
 }
 
-typedef struct {
-    unsigned short *keys;
-    int arg;
-    int cmd;
-} KeyCmdEnt;
+
 extern KeyCmdEnt keyCmdTblCha[];
 extern int keyCmd2wno(ObjectTask *unit, int key);
 extern char *dataWpnGet(int no);
@@ -2343,7 +2398,7 @@ int keyCmdApGet(ObjectTask *arg0, int arg1)
     return result;
 }
 
-extern const char D_00A43EF8[];
+const char D_00A43EF8[] = "** pTGT NULL\n";
 extern int calcStatGet(BattleUnit *unit, int stat, int mask);
 extern int calcWpnEnableChk(ObjectTask *unit, int wno);
 extern int calcSpecChk(ObjectTask *unit, int tid);
@@ -2580,7 +2635,7 @@ int keyBuffIdxGet(void)
 
 extern u16 keyItemTblCha[4];
 extern u16 keyItemTblAgws[4];
-extern char D_00A43F60[];
+const char D_00A43F60[] = "** keyBuffSet: error\n";
 
 int keyBuffSet(ObjectTask *arg0, int arg1)
 {
@@ -3495,7 +3550,7 @@ phase30:
     scenarioBatExecPhase30(arg0, arg1);
 }
 
-extern char D_00A43F98[];
+const char D_00A43F98[] = "** Mot Pack=%d mot=%d act=%d\n";
 extern short *dataTecGet(int id);
 void scenarioBatExecPhase40();
 int scenarioEffCall(ScenarioBatExec *, u8 *);
@@ -3764,7 +3819,7 @@ int nusumeGet(void)
 }
 
 extern int jtypeIdx;
-extern const char D_00A43FB8[];
+const char D_00A43FB8[] = "** FLOW_SPEC %d\n";
 extern int calcBc(ObjectTask *unit, int value);
 void specAnalyzeProc(ObjectTask *arg0);
 void specEscapeProc(void);
@@ -4294,9 +4349,9 @@ void specEscapeProc(void)
 }
 
 typedef struct { signed char s[9]; } InoriAq;
-typedef struct { int thr; int cnt; int *tab; } InoriEnt;
-extern const char D_00A44010[];
-extern const char D_00A44028[];
+
+const char D_00A44010[] = "** Inori item=%d\n";
+const char D_00A44028[] = "Aquired ";
 extern char *strcat(char *dst, const char *src);
 extern InoriEnt inoriTbl[4];
 
@@ -4374,6 +4429,8 @@ int specNusumuProc(void *arg0, ObjectTask **arg1)
     return 0;
 }
 
+const char D_00A44080[] = "itemNameGet: err=%d %d\n";
+
 const char *itemNameGet(int group, int index)
 {
     const char *name;
@@ -4404,7 +4461,7 @@ void battleMsg(int msgId)
     battleMsgPut(0x10, 0x15C, msgId, 0x1E);
 }
 
-extern const char D_00A44098[];
+const char D_00A44098[] = "** scenarioBatExecDst err: %d\n";
 
 int scenarioBatExecDst(int *arg0, int *arg1)
 {
@@ -4456,10 +4513,7 @@ int scenarioBatExecDst(int *arg0, int *arg1)
     return 1;
 }
 
-typedef struct DecoEffEntry {
-    int charaId;
-    int subId[2];
-} DecoEffEntry;
+
 extern DecoEffEntry decoEff[];
 void decoEffCallSub(BattleUnit *unit, int subId);
 
@@ -4888,7 +4942,7 @@ int scenarioSrcEndChk(int *exec, int unused, int dflt)
 }
 
 extern int D_00A57B5C;
-extern char D_00A44168[];
+const char D_00A44168[] = "** Dmg: SAFE\n";
 extern int calcIdol2Chk(ObjectTask *unit);
 extern int calcUseItem(ObjectTask *a, ObjectTask *b, int c);
 extern int calcHpDmg(void *a, ObjectTask *b, int c, int d);
@@ -4979,7 +5033,7 @@ block_30:
 }
 
 extern int pCounterUnit;
-extern char D_00A44178[];
+const char D_00A44178[] = "** Counter =%d\n";
 extern int calcCounter(BattleUnit *unit, int tec);
 extern int calcStatGet(BattleUnit *unit, int stat, int mask);
 extern void calcBp(BattleUnit *unit, int bp);
@@ -5018,23 +5072,23 @@ boost:
 }
 
 void *objDmgNumCreate(void *target, int value, int flags);
-extern char D_00A44188[];
-extern char D_00A44190[];
-extern char D_00A44198[];
-extern char D_00A441A0[];
-extern char D_00A441A8[];
-extern char D_00A441B0[];
-extern char D_00A441B8[];
-extern char D_00A441C8[];
-extern char D_00A441D8[];
-extern char D_00A441E8[];
-extern char D_00A441F8[];
-extern char D_00A44208[];
-extern char D_00A44218[];
-extern char D_00A44228[];
-extern char D_00A44238[];
-extern char D_00A44248[];
-extern char D_00A44258[];
+const char D_00A44188[] = "** ";
+const char D_00A44190[] = "CRIT ";
+const char D_00A44198[] = "DEF ";
+const char D_00A441A0[] = "STAT ";
+const char D_00A441A8[] = "WAKE ";
+const char D_00A441B0[] = "MISS !\n";
+const char D_00A441B8[] = "HP DMG = %d\n";
+const char D_00A441C8[] = "HP REC = %d\n";
+const char D_00A441D8[] = "EP DMG = %d\n";
+const char D_00A441E8[] = "EP REC = %d\n";
+const char D_00A441F8[] = "STAT SET\n";
+const char D_00A44208[] = "STAT REC\n";
+const char D_00A44218[] = "HP DRAIN = %d\n";
+const char D_00A44228[] = "HP DRAIN2 = %d\n";
+const char D_00A44238[] = "EP DRAIN = %d\n";
+const char D_00A44248[] = "EP DRAIN2 = %d\n";
+const char D_00A44258[] = "Dmg Type err\n";
 
 int dmgValPut(int arg0, BattleUnit **arg1) {
     int *d = (int *)arg1;
@@ -5132,7 +5186,7 @@ void monsGainInit(void)
 }
 
 extern int calcSkill(ObjectTask *unit, int a, int b);
-extern const char D_00A442A0[];
+const char D_00A442A0[] = "** POINT up: EventTimer B (x%d)\n";
 
 void monsGainSet(int unit)
 {
@@ -5236,17 +5290,14 @@ typedef struct {
     unsigned short u14;
     unsigned char tail[0x24 - 0x16];
 } StatEffArg;
-typedef struct {
-    unsigned short id;
-    unsigned short pad;
-} StatEffIdEnt;
+
 typedef struct {
     unsigned char pad0[0x6F0];
     volatile int flags6F0;
     float elapsed6F4;
     float rate6F8;
 } StatEffActor;
-extern StatEffIdEnt effId[8];
+extern StatEffIdEnt effId[];
 extern signed char effTbl[128];
 extern void *sefCreateEffect2(void *arg);
 extern void sefDeleteEffect2(void *p);
@@ -5680,7 +5731,7 @@ typedef struct CurEnList {
     int curIdx;
 } CurEnList;
 extern struct CurSelGrp curMove;
-extern char D_00A442C8[];
+const char D_00A442C8[] = "curEnProc: no Tgt\n";
 
 int curEnProcInit(ObjectTask **target, int side)
 {
@@ -5758,7 +5809,7 @@ typedef struct CurPosList {
 extern char chaTbl_00A3D7E0[];
 extern char agwsTbl_00A3D800[];
 extern int calcMoveChk(ObjectTask *unit, int move);
-extern char D_00A442E0[];
+const char D_00A442E0[] = "curPosProc: no Tgt\n";
 
 int curPosProcInit(ObjectTask *arg0, int arg1)
 {
@@ -6119,7 +6170,7 @@ typedef struct CurSubEnSpr {
 typedef struct CurSubEnCol {
     CurSubEnRgba c[3];
 } CurSubEnCol;
-extern CurSubEnCol D_00A442F8;
+const CurSubEnCol D_00A442F8 = { 0x80, 0x80, 0x80, 0x80, 0x30, 0x30, 0x30, 0x80, 0x60, 0xD0, 0xB0, 0x80 };
 extern int grBBCalc(ObjectTask *task, int *x, int *y);
 extern void grOpenSpr(void *packet);
 extern void grPutSpr(void *packet, CurSubEnSpr *spr, int flag);
