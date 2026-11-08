@@ -768,6 +768,166 @@
     }
    ]
   },
+  "main/tu099": {
+   ".data": [
+    {
+     "range": [
+      "0x004a8a28",
+      "0x004a8a79"
+     ],
+     "generated": [
+      "0x004a8a28",
+      "0x004a8a79"
+     ],
+     "generated_by": [
+      "make_fullpath",
+      "xglHddInstall",
+      "xglHddMcCheck",
+      "xglHddMcCheckYourSaves",
+      "xglHddMcCreate",
+      "xglHddMcExist",
+      "xglHddMcLoadMount",
+      "xglHddMcSave",
+      "xglHddMount"
+     ],
+     "c_owned_symbols": [
+      "hddname",
+      "hddcheck",
+      "commonname",
+      "yoursaves"
+     ],
+     "also_referenced_by_c": [
+      "partitionname"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    },
+    {
+     "range": [
+      "0x004a8a80",
+      "0x004a8ae4"
+     ],
+     "generated": [
+      "0x004a8a80",
+      "0x004a8ae4"
+     ],
+     "generated_by": [
+      "xglHddErrorScreen",
+      "xglHddMcCreate"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_004A8A80",
+      "tbl_1_004A8AE0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    },
+    {
+     "range": [
+      "0x004a8ae8",
+      "0x004a8af4"
+     ],
+     "generated": [
+      "0x004a8ae8",
+      "0x004a8af4"
+     ],
+     "generated_by": [
+      "xglHddInstall"
+     ],
+     "c_owned_symbols": [
+      "dvdname_2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d2628",
+      "0x004d26f8"
+     ],
+     "generated": [
+      "0x004d2628",
+      "0x004d26f4"
+     ],
+     "generated_by": [
+      "xglHddErrorScreen",
+      "xglHddInstall",
+      "xglHddMount"
+     ],
+     "c_owned_symbols": [
+      "D_004D2628",
+      "D_004D26C8",
+      "D_004D26D8",
+      "cd_filename"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc368",
+      "0x004dc3b4"
+     ],
+     "generated": [
+      "0x004dc368",
+      "0x004dc3b4"
+     ],
+     "generated_by": [
+      "Judge_MakeNewFolder",
+      "Judge_MakeNewSavedata",
+      "xglHddCheckCore",
+      "xglHddInstall",
+      "xglHddInstallReadCB",
+      "xglHddMcCheck",
+      "xglHddMcCheckCore",
+      "xglHddMcCreate",
+      "xglHddMcGetFree",
+      "xglHddMcLoadMount",
+      "xglHddMcSave",
+      "xglHddMcUmount",
+      "xglHddMount",
+      "xglHddUninstall"
+     ],
+     "c_owned_symbols": [
+      "xgl_hdd_device",
+      "hdd_mc_path",
+      "D_004DC378",
+      "D_004DC380",
+      "D_004DC388",
+      "D_004DC390",
+      "mount_device",
+      "D_004DC3A0",
+      "D_004DC3A8",
+      "HddInstallCBparam"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_hdd.o"
+     }
+    }
+   ]
+  },
   "main/tu100": {
    ".data": [
     {

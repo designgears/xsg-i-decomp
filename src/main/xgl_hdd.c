@@ -3,6 +3,14 @@
 #include "main/xgl_hdd.h"
 #include "xgl_hdd.h"
 
+static char hddname[] = "pfs0:/xenosaga.00";
+static u8 hddcheck[] = "pfs0:/xenosaga.hdd";
+static char commonname[] = "hdd0:__common";
+static char yoursaves[] = "pfs1:/Your Saves";
+
+/* HDD error screen message (EUC-JP text with message control codes). */
+const char D_004D2628[] = "\x0B\x0E\x01\x01\x00\x00\x00\x0D\x03\xA5\xCF\xA1\xBC\xA5\xC9\xA5\xC7\xA5\xA3\xA5\xB9\xA5\xAF\xA5\xC9\xA5\xE9\xA5\xA4\xA5\xD6\xA4\xCB\xA4\xA2\xA4\xEB\xA5\xBC\xA5\xCE\xA5\xB5\xA1\xBC\xA5\xAC\xA4\xCE\n\n\xA5\xA2\xA5\xD7\xA5\xEA\xA5\xB1\xA1\xBC\xA5\xB7\xA5\xE7\xA5\xF3\xA5\xC7\xA1\xBC\xA5\xBF\xA4\xAC\xC6\xC9\xA4\xDF\xB9\xFE\xA4\xE1\xA4\xDE\xA4\xBB\xA4\xF3\xA1\xA3\n\n\xA4\xB3\xA4\xEC\xB0\xCA\xB9\xDF\xA4\xCF\xA3\xC4\xA3\xD6\xA3\xC4\xA4\xAB\xA4\xE9\xC6\xC9\xA4\xDF\xB9\xFE\xA4\xDF\xA4\xF2\xB9\xD4\xA4\xA4\xA4\xDE\xA4\xB9\xA1\xA3\n\n\n\n\x0C\x80  \xA1\xFB\x0C\x80\x80\x80\xA5\xDC\xA5\xBF\xA5\xF3\xA1\xA7\xC2\xB3\xB9\xD4";
+
 static int xglHddDummyCB(int event, int value)
 {
     return 0;
@@ -74,11 +82,18 @@ int xglHddCheck(void)
 
 void xglHddErrorScreen(void)
 {
+    static HddErrorPacket TestEnv __asm__("TestEnv.0") = {
+        0, 0, 0, 0x50000005,
+        { 0x8001, 0x40034000, 0x551E },
+        { 0x30000, 0x47 },
+        { 0, 0x40, 0, 0x80 },
+        { { 0x6FF8, 0x71F7, 0xFFFFF0 }, { 0x8FF8, 0x8DF7, 0xFFFFF0 } },
+    };
     int waitFrames = 30;
 
     sRender.errorScreenActive = 1;
     for (;;) {
-        xglDmaDirectNormal(2, TestEnv_0_004A8A80, 6);
+        xglDmaDirectNormal(2, &TestEnv, 6);
         xglFontPrint(48, 64, 0xffffff, D_004D2628);
         if (waitFrames > 0) {
             waitFrames--;
@@ -456,11 +471,11 @@ extern int sceIoctl2(int handle, int command, const void *input, unsigned int in
                      void *output, unsigned int output_size);
 extern int sceMkdir(const char *path, int mode);
 extern void xglMcWriteMapName(char *buffer, int slot);
-extern unsigned char tbl_1_004A8AE0[];
 extern char D_004DC390[];
 
 int xglHddMcCreate(struct HddCheckState *state)
 {
+    static unsigned char tbl[] __asm__("tbl.1") = { 0x0E, 0x09, 0x0D, 0x0F };
     char path[256];
     struct HddIoStat stat;
     struct HddTransferInfo *transfer;
@@ -481,7 +496,7 @@ int xglHddMcCreate(struct HddCheckState *state)
     } else {
         result = xglHddMcCheckCore(state);
         if (result < 0) {
-            ret = -tbl_1_004A8AE0[~result];
+            ret = -tbl[~result];
             goto end;
         }
         if (result == 1) {
@@ -608,15 +623,12 @@ extern int xglCdReadFilePart(const char *name, void *buffer, int mode,
                              void *callback, int offset, int length);
 extern int xglCdGetFileSize(const char *name);
 extern int sceFormat(char *device, char *block_device, void *argument, int argument_size);
-extern char D_004D26C8[];
-extern char D_004D26D8[];
 extern char D_004DC3A0[];
 extern char D_004DC3A8[];
-extern char dvdname_2[];
-extern char hddname[];
 
 int xglHddInstall(int (*callback)(int, int, int), int param)
 {
+  static char dvdname[] __asm__("dvdname.2") = "xenosaga.00";
   HddInstallCBParam ctx;
   char path[256];
   int format_arg[4];
@@ -639,7 +651,7 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
   ctx.param = param;
   ctx.status = 0;
   callback(0, 0, param);
-  if (xglCdReadFile(D_004D26C8, (void *) 0x1000000, 0, 1) < 0)
+  if (xglCdReadFile("data\\hdd.res", (void *) 0x1000000, 0, 1) < 0)
   {
     callback(-1, 0, param);
     return -1;
@@ -655,7 +667,7 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
   }
   size = (((*((int *) 0x1000028)) + (*((int *) 0x100002C))) + 0x1FF) & (~0x1FF);
   callback(1, 0, param);
-  sprintf(path, D_004D26D8, partitionname);
+  sprintf(path, "%s,256M,PFS", partitionname);
   fd = sceOpen(path, 0x203);
   if (fd < 0)
   {
@@ -718,16 +730,16 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
     return -1;
   }
   base = 0;
-  dvdname_2[10] = '0';
-  while ((size = xglCdGetFileSize(dvdname_2)) >= 0)
+  dvdname[10] = '0';
+  while ((size = xglCdGetFileSize(dvdname)) >= 0)
   {
     base += (size + 0xFFFFFF) / 0x1000000;
-    dvdname_2[10]++;
+    dvdname[10]++;
   }
 
   base <<= 16;
-  dvdname_2[10] = '0';
-  while ((size = xglCdGetFileSize(dvdname_2)) >= 0)
+  dvdname[10] = '0';
+  while ((size = xglCdGetFileSize(dvdname)) >= 0)
   {
     for (offset = 0; offset < size;)
     {
@@ -737,7 +749,7 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
         chunk = 0x1000000;
       }
       ctx.base = base++;
-      xglCdReadFilePart(dvdname_2, (void *) 0x1000000, 2, xglHddInstallReadCB, offset, chunk);
+      xglCdReadFilePart(dvdname, (void *) 0x1000000, 2, xglHddInstallReadCB, offset, chunk);
       offset += chunk;
       if (ctx.status != 0)
       {
@@ -762,7 +774,7 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
       }
     }
 
-    dvdname_2[10]++;
+    dvdname[10]++;
   }
 
   result = sceClose(fd2);
@@ -818,6 +830,8 @@ int xglHddInstall(int (*callback)(int, int, int), int param)
   callback(8, 0, param);
   return 0;
 }
+
+const char cd_filename[] = "xenosaga.00";
 
 int xglHddActivate(int state)
 {
@@ -920,3 +934,14 @@ int xglHddMount(void)
     HddActive = 1;
     return 1;
 }
+
+char xgl_hdd_device[] = "hdd0:";
+char hdd_mc_path[] = "pfs1:";
+char D_004DC378[] = "pfs1:/";
+char D_004DC380[] = ".";
+char D_004DC388[] = "..";
+char D_004DC390[] = "1G";
+u8 mount_device[] = "pfs0:";
+char D_004DC3A0[] = "256M";
+char D_004DC3A8[] = "pfs:";
+HddInstallCBParam *HddInstallCBparam = 0;
