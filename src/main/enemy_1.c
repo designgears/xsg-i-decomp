@@ -1203,7 +1203,7 @@ void Enemy_Escape(EnemyActor *actor)
         actor->target_angle = Get_Angle(&actor->position, &point);
     }
 
-    if (D_004D8034 <= Get_Distance(&actor->position, &point) ||
+    if (0.012f <= Get_Distance(&actor->position, &point) ||
         (short)CoolDown_0 > 0) {
         motion = Get_DefaultMotion(actor, 2);
     } else {
@@ -1211,7 +1211,7 @@ void Enemy_Escape(EnemyActor *actor)
     }
     Set_Motion(actor, motion, 9);
 
-    actor->speed = D_004D8038;
+    actor->speed = 0.06666667f;
     work->goback_x = point.x - actor->position.x;
     work->goback_z = point.z - actor->position.z;
     actor->position.x = point.x;
@@ -1260,7 +1260,7 @@ void Enemy_Route_Chase(EnemyActor *self)
         self->target_angle = Get_Angle(&self->position, &point);
     }
 
-    if (D_004D803C <= Get_Distance(&self->position, &point) ||
+    if (0.012f <= Get_Distance(&self->position, &point) ||
         (short)CoolDown_1 > 0) {
         motion = Get_DefaultMotion(self, 2);
     } else {
@@ -1268,7 +1268,7 @@ void Enemy_Route_Chase(EnemyActor *self)
     }
     Set_Motion(self, motion, 9);
 
-    self->speed = D_004D8040;
+    self->speed = 0.06666667f;
     work->goback_x = point.x - self->position.x;
     work->goback_z = point.z - self->position.z;
     self->position.x = point.x;

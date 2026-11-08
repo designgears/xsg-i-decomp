@@ -487,13 +487,9 @@ struct UwamonoBoxUnit;
 
 int HitCheckBox(UwamonoCollisionActor *actor, struct UwamonoBoxUnit *unit);
 
-extern const float D_004D7ED0;
 
-extern const float D_004D7ED4;
 
-extern const float D_004D7ED8;
 
-extern const float D_004D7EDC;
 
 typedef struct UwamonoBoxBasis {
     float x;
@@ -579,7 +575,6 @@ typedef struct UwamonoCrossActor {
 
 extern UwamonoCrossActor actor[64];
 
-extern const float D_004D7F18;
 
 extern int CheckCrossCircle(float radius, const Vector4 *from, const Vector4 *to, const Vector4 *center);
 
@@ -1723,8 +1718,6 @@ void UwamonoBrokenSe(UwamonoBrokenSoundUnit *unit)
 }
 
 extern void *sefCreateEffectCf(int, int, int);
-extern f32 D_004D7EC8;
-extern f32 D_004D7ECC;
 
 void DrawActiveCursol(void *arg0) {
     void *var_4;
@@ -1750,7 +1743,7 @@ void DrawActiveCursol(void *arg0) {
             var_4 = sefCreateEffectCf(0x2E3, 0, 0);
             if (var_4 != 0) {
                 avg = (((*(f32 *)((char *)(arg0) + 0xB0)) + (*(f32 *)((char *)(arg0) + 0xB4))) + (*(f32 *)((char *)(arg0) + 0xB8)));
-                scale = D_004D7EC8;
+                scale = 0.55f;
                 var_f1 = avg / 3.0f;
                 var_f1 = var_f1 * scale;
                 *(void **)((char *)(var_4) + 0x6C4) = arg0;
@@ -1774,7 +1767,7 @@ void DrawActiveCursol(void *arg0) {
             var_4 = sefCreateEffectCf(0x2E2, 0, 0);
             if (var_4 != 0) {
                 avg = (((*(f32 *)((char *)(arg0) + 0xB0)) + (*(f32 *)((char *)(arg0) + 0xB4))) + (*(f32 *)((char *)(arg0) + 0xB8)));
-                scale = D_004D7ECC;
+                scale = 0.55f;
                 var_f1 = avg / 3.0f;
                 var_f1 = var_f1 * scale;
                 *(void **)((char *)(var_4) + 0x6C4) = arg0;
@@ -1952,12 +1945,12 @@ int HitCheckMapUnitAt(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit)
 {
     UwamonoMapUnitState *state;
 
-    if (unit->position.y + unit->height * D_004D7ED0 < actor->position.y) {
+    if (unit->position.y + unit->height * 0.9f < actor->position.y) {
         return 0;
     }
 
     state = &unit->state;
-    if (actor->position.y < unit->position.y - D_004D7ED4) {
+    if (actor->position.y < unit->position.y - 1.8f) {
         return 0;
     }
 
@@ -1983,10 +1976,10 @@ unsigned int HitCheckMapUnitPosAt(UwamonoCollisionActor *actor, UwamonoCollision
     float actorY = actor->position.y;
     signed char shape;
 
-    if (unitY + unit->height * D_004D7ED8 < actorY) {
+    if (unitY + unit->height * 0.9f < actorY) {
         return 0;
     }
-    if (actorY < unitY - D_004D7EDC) {
+    if (actorY < unitY - 1.8f) {
         return 0;
     }
     shape = state->state;
@@ -2369,7 +2362,6 @@ int HitCheckNyuru(void *pos, void *unit)
 
 extern float xglSin(float angle);
 extern float xglCos(float angle);
-extern float D_004D7EE8;
 static int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit) {
     Vector4 tmp;
     Vector4 nrm;
@@ -2403,7 +2395,7 @@ static int NyuruCircle(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit) {
             ang = ang + t;
         }
     }
-    r = ((UwamonoCollisionActor *)actor)->radius + unit->radius + D_004D7EE8;
+    r = ((UwamonoCollisionActor *)actor)->radius + unit->radius + 0.01f;
     tmp.x = unit->position.x - r * xglSin(ang);
     tmp.z = unit->position.z - r * xglCos(ang);
     actor->displacement.x = tmp.x - actor->position.x;
@@ -2422,8 +2414,6 @@ typedef struct NyuruMat44 {
     float m[4][4];
 } NyuruMat44;
 
-extern float D_004D7EEC;
-extern float D_004D7EF0;
 
 static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int mode) {
     UwamonoAlignedVector dim;
@@ -2468,7 +2458,7 @@ static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int
             s = nrm.x * m[0] + nrm.z * m[2];
             actor->displacement.x = s * m[0] * len;
             actor->displacement.z = s * m[2] * len;
-            if (__builtin_fabsf(actor->displacement.x) < D_004D7EEC && __builtin_fabsf(actor->displacement.z) < D_004D7EEC && mode == 0) {
+            if (__builtin_fabsf(actor->displacement.x) < 0.001f && __builtin_fabsf(actor->displacement.z) < 0.001f && mode == 0) {
                 if (dim.value.x < dot) {
                     actor->displacement.x = m[0] * len * 0.5f;
                     actor->displacement.z = m[2] * len * 0.5f;
@@ -2481,7 +2471,7 @@ static int NyuruMatrix(UwamonoNyuruActor *actor, UwamonoCollisionUnit *unit, int
             s = nrm.x * m[8] + nrm.z * m[10];
             actor->displacement.x = s * m[8] * len;
             actor->displacement.z = s * m[10] * len;
-            if (__builtin_fabsf(actor->displacement.x) < D_004D7EF0 && __builtin_fabsf(actor->displacement.z) < D_004D7EF0 && mode == 0) {
+            if (__builtin_fabsf(actor->displacement.x) < 0.001f && __builtin_fabsf(actor->displacement.z) < 0.001f && mode == 0) {
                 dot = (ddx * m[8]) + (ddz * m[10]);
                 if (dim.value.z < dot) {
                     actor->displacement.x = m[8] * len * 0.5f;
@@ -2563,7 +2553,6 @@ int NyuruBox(UwamonoCollisionActor *actor, UwamonoCollisionUnit *unit, int arg2)
     return 0;
 }
 
-extern float D_004D7EF4;
 typedef struct NyuruUnitCopy {
     UwamonoAlignedVector a[0x30];
 } NyuruUnitCopy;
@@ -2610,7 +2599,7 @@ static int NyuruCorner(UwamonoCollisionActor *arg0, UwamonoCollisionUnit *arg1) 
     local = *(NyuruUnitCopy *)arg1;
     radius = arg0->radius;
     r15 = radius * 1.5f;
-    arg0->radius = D_004D7EF4;
+    arg0->radius = 0.01f;
     local.a[1] = corner;
     local.a[11].value.z = r15;
     local.a[11].value.x = r15;
@@ -2978,8 +2967,6 @@ void CheckNearPoint(const Vector4 *origin, const Vector4 *candA, const Vector4 *
         *out = *candB;
 }
 
-extern float D_004D7F10;
-extern float D_004D7F14;
 
 int UwamonoAreaCheck(Vector4 *arg0, char *arg1, float r) {
     char *p;
@@ -2990,10 +2977,10 @@ int UwamonoAreaCheck(Vector4 *arg0, char *arg1, float r) {
     p = arg1 + 0x1A0;
     top = *(float *)(arg1 + 0x14);
     y = arg0->y;
-    if (top + *(float *)(arg1 + 0xB4) * D_004D7F10 < y) {
+    if (top + *(float *)(arg1 + 0xB4) * 0.9f < y) {
         return 0;
     }
-    if (y < top - D_004D7F14) {
+    if (y < top - 1.8f) {
         return 0;
     }
     switch (p[0x2D]) {
@@ -3119,7 +3106,7 @@ int CrossCheckActor(UwamonoCrossActor *source, const Vector4 *to)
 {
     int index;
     for (index = 0; index < 64; ++index) {
-        if (!(D_004D7F18 < __builtin_fabsf(source->position.y - actor[index].position.y)) &&
+        if (!(0.3f < __builtin_fabsf(source->position.y - actor[index].position.y)) &&
             actor[index].resourceId >= 0 && !(actor[index].flags & 8) &&
             actor[index].collisionObject != 0 && index != source->actorIndex &&
             CheckCrossCircle(actor[index].radius, &source->position, to, &actor[index].position)) {
@@ -3179,7 +3166,6 @@ int CrossCheckMapUnitCircle(const Vector4 *from, const Vector4 *to, UwamonoColli
 
 extern int CheckCrossLine(const Vector4 *first_start, const Vector4 *first_end,
                           const Vector4 *second_start, const Vector4 *second_end);
-extern f32 D_004D7F20;
 
 int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second, UwamonoCrossUnit *unit) {
     Vector4 c1;
@@ -3193,8 +3179,8 @@ int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second, UwamonoCrossUnit *unit
     dim.words[0] = *(long long *)((char *)unit + 0xB0);
     dim.words[1] = zw;
     m = *(float **)((char *)unit + 0x80);
-    dim.value.x += D_004D7F20;
-    dim.value.z += D_004D7F20;
+    dim.value.x += 0.1f;
+    dim.value.z += 0.1f;
 
     c1.x = pos.value.x + (dim.value.x * m[0] + dim.value.z * m[8]);
     c1.y = pos.value.y;
@@ -3446,7 +3432,6 @@ int AimMapUnit(void)
     return candidates[0].unitIndex;
 }
 
-extern f32 D_004D7F28;
 typedef struct AimVec16 {
     long long a;
     long long b;
@@ -3496,10 +3481,10 @@ int AimMapUnitLookCheck(unsigned char *arg0)
     if (r == -1000.0f) {
         return 0;
     }
-    if (!(__builtin_fabsf(center.v.x - *(float *)(arg0 + 0x10)) < D_004D7F28)) {
+    if (!(__builtin_fabsf(center.v.x - *(float *)(arg0 + 0x10)) < 0.01f)) {
         return 0;
     }
-    if (__builtin_fabsf(center.v.z - *(float *)(arg0 + 0x18)) < D_004D7F28) {
+    if (__builtin_fabsf(center.v.z - *(float *)(arg0 + 0x18)) < 0.01f) {
         return 1;
     }
     return 0;

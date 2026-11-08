@@ -646,7 +646,6 @@ typedef struct {
 extern void MATRIX_transpose3(Matrix4 matrix);
 extern void xglMatrixMul(Matrix4 destination, Matrix4 left, Matrix4 right);
 extern float dptofp(double value);
-extern const float D_004D7CB8;
 
 void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
 {
@@ -735,7 +734,7 @@ void drawCircle3(const Vector4 *position, Matrix4 *matrix, int color_index)
         write += 4;
         write[0] = (centre->x + xglSin(angle) * radius) * 16.0f;
         write[1] = (centre->y + xglCos(angle) * radius) * 16.0f;
-        angle += D_004D7CB8;
+        angle += 0.3926991f;
         write[2] = 0xffffffffU;
         write[3] = 0;
         write += 4;
@@ -881,7 +880,6 @@ ActorHead *nextActor(register int startIndex)
 
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
 extern void xglVectorMulMat(Vector4 *destination, Matrix4 matrix, const Vector4 *vector);
-extern float D_004D7CBC;
 typedef struct {
     unsigned short unk0;
     unsigned short buttons;
@@ -961,7 +959,7 @@ void updateCursorMode1(void)
         ((volatile int *)&mat)[14] = 0;
         xglVectorMulMat(&out, mat.m, &vel);
         xglVectorNormal(&out, &out);
-        len = D_004D7CBC;
+        len = 0.13333334f;
         pos->x += out.x * len;
         pos->y += out.y * len;
         pos->z += out.z * len;
@@ -1103,8 +1101,6 @@ typedef struct DbCursorView {
 } DbCursorView;
 #define DB_CAMERA_TO_WORLD(camera) ((float *)((unsigned char *)(camera) + 0x170))
 extern float cursorSpeed[];
-extern const float D_004D7CD0;
-extern const float D_004D7CD4;
 extern const char D_004C20B8[];
 extern const char D_004C20C8[];
 extern float UnduGet(float x, float z);
@@ -1241,10 +1237,10 @@ void updateCursorModePlane(void)
         }
     }
     if (keys[0] & 0x2000) {
-        camera->rotation.z -= D_004D7CD0;
+        camera->rotation.z -= 0.011635529f;
     }
     if (keys[0] & 0x8000) {
-        camera->rotation.z += D_004D7CD4;
+        camera->rotation.z += 0.011635529f;
     }
     length = cursorSpeed[((DbCursorView *)cursor)->step];
     if (keys[0] & 4) {
@@ -1271,8 +1267,6 @@ void updateCursorModePlane(void)
     }
 }
 
-extern const float D_004D7CD8;
-extern const float D_004D7CDC;
 
 void updateCursorMode0(void)
 {
@@ -1412,10 +1406,10 @@ void updateCursorMode0(void)
         }
     }
     if (keys[0] & 0x2000) {
-        camera->rotation.z -= D_004D7CD8;
+        camera->rotation.z -= 0.011635529f;
     }
     if (keys[0] & 0x8000) {
-        camera->rotation.z += D_004D7CDC;
+        camera->rotation.z += 0.011635529f;
     }
     length = cursorSpeed[((DbCursorView *)cursor)->step];
     if (keys[0] & 4) {
