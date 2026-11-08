@@ -3015,24 +3015,87 @@
     {
      "range": [
       "0x00369ef0",
-      "0x00369f50"
+      "0x00369f87"
      ],
      "generated": [
       "0x00369ef0",
-      "0x00369f50"
+      "0x00369f87"
      ],
      "generated_by": [
+      "GameDiskChange",
       "drawbg"
      ],
      "c_owned_symbols": [
-      "TestEnv_0_00369EF0"
+      "TestEnv_0_00369EF0",
+      "mes00_1"
      ],
-     "also_referenced_by_c": [
-      "mes00_1",
-      "mes01_2",
-      "mes02_3",
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_disk_change.o"
+     }
+    },
+    {
+     "range": [
+      "0x00369f88",
+      "0x00369fdd"
+     ],
+     "generated": [
+      "0x00369f88",
+      "0x00369fdd"
+     ],
+     "generated_by": [
+      "GameDiskChange"
+     ],
+     "c_owned_symbols": [
+      "mes01_2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_disk_change.o"
+     }
+    },
+    {
+     "range": [
+      "0x00369fe0",
+      "0x0036a009"
+     ],
+     "generated": [
+      "0x00369fe0",
+      "0x0036a009"
+     ],
+     "generated_by": [
+      "GameDiskChange"
+     ],
+     "c_owned_symbols": [
+      "mes02_3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_disk_change.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036a010",
+      "0x0036a030"
+     ],
+     "generated": [
+      "0x0036a010",
+      "0x0036a030"
+     ],
+     "generated_by": [
+      "GameDiskChange"
+     ],
+     "c_owned_symbols": [
       "tbl_4"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -3044,41 +3107,26 @@
     {
      "range": [
       "0x004c0790",
-      "0x004c07a8"
-     ],
-     "generated": [
-      "0x004c0790",
-      "0x004c07a8"
-     ],
-     "generated_by": [
-      "GameDiskChange"
-     ],
-     "c_owned_symbols": [
-      "D_004C0790"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/game_disk_change.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c07c8",
       "0x004c07f0"
      ],
      "generated": [
-      "0x004c07c8",
+      "0x004c0790",
       "0x004c07e1"
      ],
      "generated_by": [
       "GameDiskChange"
      ],
      "c_owned_symbols": [
+      "D_004C0790",
+      "D_004C07A8",
+      "D_004C07B8",
       "D_004C07C8"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C07A8": "tbl_4",
+      "D_004C07B8": "tbl_4"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

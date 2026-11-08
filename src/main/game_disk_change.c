@@ -85,17 +85,14 @@ extern void xglFontPrint(int x, int y, int color, const char *text);
 extern void xglFontPrintDirectOT(int ot, const char *text);
 
 extern u8 GameDiskChangeT10K;
-/* Still scaffold data: the odd-sized splat pads between these items (after
- * mes00.1 at 0x369F87, after mes01.2 at 0x369FDD) start scaffold pieces at
- * unaligned addresses, which the carve link cannot pin. */
-extern u8 mes00_1[];
-extern u8 mes01_2[];
-extern u8 mes02_3[];
-extern char *tbl_4[];
 extern PadPrefix PadData;
 
 int GameDiskChange(int disk_number)
 {
+    /* EUC-JP messages; replace() patches the disc digits in place. */
+    static u8 mes00_1[] __asm__("mes00.1") = "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB1\xA4\xF2\xBC\xE8\xA4\xEA\xBD\xD0\xA4\xB7\xA4\xC6\xA1\xA2\n\n\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
+    static u8 mes01_2[] __asm__("mes01.2") = "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA4\xAC\xB0\xE3\xA4\xA4\xA4\xDE\xA4\xB9\xA1\xA3\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA4\xF2\xBC\xE8\xA4\xEA\xBD\xD0\xA4\xB7\xA4\xC6\xA1\xA2\n\n\xA5\xBC\xA5\xCE\xA5\xB5\xA1\xBC\xA5\xAC\xA4\xCE\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
+    static u8 mes02_3[] __asm__("mes02.3") = "\xA5\xBC\xA5\xCE\xA5\xB5\xA1\xBC\xA5\xAC\xA4\xCE\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xC3\xA3\xB2\xA4\xF2\xC1\xDE\xC6\xFE\xA4\xB7\xA4\xC6\xB2\xBC\xA4\xB5\xA4\xA4\xA1\xA3";
     int disk_check;
     int retry;
 
@@ -139,6 +136,15 @@ int GameDiskChange(int disk_number)
         if (retry == 0) {
             xglFontPrint(0x40, 0x40, 0xFFFFFF, (const char *)mes00_1);
         } else {
+            /* Indexed by xglCdDiskCheck() + 3. */
+            static char *tbl_4[] __asm__("tbl.4") = {
+                "\xC7\xA7\xBC\xB1\xC3\xE6\xA1\xC4",
+                (char *)mes02_3, (char *)mes01_2, (char *)mes02_3,
+                (char *)mes01_2, (char *)mes01_2,
+                "\xA3\xC4\xA3\xC9\xA3\xD3\xA3\xCB\xA3\xB1\xA1\xF5\xA3\xB2",
+                (char *)mes01_2,
+            };
+
             xglFontPrint(0x40, 0x40, 0xFFFFFF, tbl_4[disk_check + 3]);
         }
         xglFontPrint(0x40, 0x100, 0xFFFFFF, "\x19\x01\xA3\xD3\xA3\xD4\xA3\xC1\xA3\xD2\xA3\xD4\x19\x00\xA4\xC7\xB6\xAF\xC0\xA9\xC2\xB3\xB9\xD4");
