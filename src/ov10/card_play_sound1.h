@@ -80,15 +80,6 @@ extern CardPadEntry PadData[2];
 #define CARD_SAVE_LARGE_CARDS 0x20   /* toggled from the title menu */
 #define CARD_SAVE_PROMO_GIVEN 0x40   /* the promotional card was awarded */
 
-extern CardListWindow D_00A56F18;
-extern CardListWindow D_00A57188;
-extern CardListWindow D_00A573F8;
-extern int D_00A57668[];
-extern int D_00A57728;
-extern int D_00A57730[4];
-extern int D_00A57740[];
-extern int D_00A57744;
-extern int D_00A57748;
 
 /* Font colour strings the earlier title functions emitted first. */
 typedef struct CardFontCode5 {

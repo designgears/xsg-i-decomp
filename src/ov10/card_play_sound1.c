@@ -5,6 +5,18 @@
 #include "shared.h"
 #include "card_play_sound1.h"
 
+/* .bss (file-local, original order) */
+static u8 D_00A56F10;
+static CardListWindow D_00A56F18 __attribute__((aligned(8)));
+static CardListWindow D_00A57188;
+static CardListWindow D_00A573F8;
+static int D_00A57668[48];
+static int D_00A57728;
+static int D_00A57730[4];
+static int D_00A57740[1];
+static int D_00A57744;
+static int D_00A57748;
+
 struct CardSoundPath {
     char name[34];
 };
@@ -1096,7 +1108,6 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
     return ret;
 }
 
-extern u8 D_00A56F10;
 extern void nmlModelSetToumei(int enabled);
 extern void nmlModelSetAlpha(unsigned int alpha);
 extern void nmlModelEntry(int entry);

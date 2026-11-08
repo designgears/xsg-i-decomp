@@ -1,6 +1,10 @@
 #include "common.h"
 
-extern unsigned char FS[];
+/* .bss (file-local, original order) */
+static unsigned char FS[0x2880] __attribute__((aligned(16)));
+static unsigned char FontImage[0x78800];
+static unsigned char WindowImage[0x40800];
+
 static unsigned long ModeEnv[32] = {
     0x0000000000000000ULL, 0x5100000700000000ULL,
     0x1000000000008006ULL, 0x000000000000000EULL,
@@ -127,7 +131,8 @@ typedef struct FontQueueSlot {
     unsigned short selfOffset;
 } FontQueueSlot;
 
-extern FontQueueSlot D_008811A0[16];
+/* the print queue lives in FS after its 0x20-byte header */
+#define D_008811A0 ((FontQueueSlot *)(FS + 0x20))
 
 static void set_ot(int ot)
 {
@@ -207,7 +212,6 @@ unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char *text)
     return size;
 }
 
-extern unsigned char *D_0088119C[];
 
 static void xglFontPrintSub(void *args)
 {
@@ -248,7 +252,7 @@ static void xglFontPrintSub(void *args)
         {
           do
           {
-            *((*D_0088119C)++) = *text;
+            *((*((unsigned char **)(FS + 0x1C)))++) = *text;
             text++;
           }
           while ((--size) >= 0);
@@ -313,7 +317,7 @@ static void xglFontPrintSub(void *args)
               s = (unsigned char *) ((int) (*(ap++)));
               while ((st = *s) != 0)
               {
-                *((*D_0088119C)++) = *s;
+                *((*((unsigned char **)(FS + 0x1C)))++) = *s;
                 s++;
               }
               break;
@@ -342,7 +346,6 @@ static void xglFontPrintSub(void *args)
   *((*((unsigned char **) (fs + 0x1C)))++) = 0;
 }
 
-extern unsigned char *D_0088119C[];
 
 static void xglFontPrintDirectCore(const char *text)
 {
@@ -361,14 +364,14 @@ static void xglFontPrintDirectCore(const char *text)
         {
           do
           {
-            *((*D_0088119C)++) = (unsigned char) ((long) (*text));
+            *((*((unsigned char **)(FS + 0x1C)))++) = (unsigned char) ((long) (*text));
             text++;
           }
           while ((--size) > 0);
         }
       }
       fs = FS;
-      *((*D_0088119C)++) = (unsigned char) (*text);
+      *((*((unsigned char **)(FS + 0x1C)))++) = (unsigned char) (*text);
       text++;
     }
     while ((*text) != 0);
@@ -377,14 +380,13 @@ static void xglFontPrintDirectCore(const char *text)
   *((*((unsigned char **) (fs + 0x1C)))++) = 0;
 }
 
-extern unsigned char D_00881188[];
 
 static void set_xyz(int x, int y, int color);
 static void xglFontPrintSub(void *args);
 
 void xglFontPrintf(int x, int y, unsigned int color, void *arg)
 {
-    if (*(unsigned short *)D_00881188 & 1 & 0xFFFF) {
+    if (*(unsigned short *)(FS + 8) & 1 & 0xFFFF) {
         set_xyz(x, y, color);
         xglFontPrintSub(arg);
     }
@@ -394,7 +396,7 @@ static void xglFontPrintDirectCore(const char *text);
 
 void xglFontPrint(int x, int y, int color, const char *text)
 {
-    if (*(unsigned short *)D_00881188 & 1 & 0xFFFF) {
+    if (*(unsigned short *)(FS + 8) & 1 & 0xFFFF) {
         set_xyz(x, y, color);
         xglFontPrintDirectCore(text);
     }
@@ -412,7 +414,7 @@ static void set_ot(int ot);
 
 void xglFontPrintDirectOT(int ot, const char *text)
 {
-    if (*(unsigned short *)D_00881188 & 1 & 0xFFFF) {
+    if (*(unsigned short *)(FS + 8) & 1 & 0xFFFF) {
         set_ot(ot);
         xglFontPrintDirectCore(text);
     }
@@ -748,7 +750,8 @@ static void xglFontFlushSub(int texture_u, int texture_v, int size, int flags)
 {
     static signed char tbl_1_004DC2A8[4][2] __asm__("tbl.1") = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
     /* FS read through its typed view (the TU declares it as bytes). */
-    extern FontStateStorage xglFontStateView __asm__("FS");
+#undef xglFontStateView
+#define xglFontStateView (*(FontStateStorage *)FS)
     struct FontDrawCursor *cursor = (struct FontDrawCursor *)0x70000000;
     struct FontSpritePacket *sprite = (struct FontSpritePacket *)0x70000100;
     int glyph_width = size >> 8;
@@ -1001,7 +1004,8 @@ static void xglFontFlushCore(struct FontDrawCursor *cursor, const unsigned char 
     /* xglFontAscii2Euc's full-word result (the TU's definition below returns a halfword). */
     extern unsigned int xglFontAscii2EucWord(signed char character, signed char **text) __asm__("xglFontAscii2Euc");
     /* FS read through its typed view (the TU declares it as bytes). */
-    extern FontStateStorage xglFontStateView __asm__("FS");
+#undef xglFontStateView
+#define xglFontStateView (*(FontStateStorage *)FS)
     struct FontRealDigits real_digits;
     signed char integer_digits[32];
 
@@ -1449,7 +1453,6 @@ struct FontImage {
 };
 
 
-extern unsigned char FS[];
 
 unsigned int xglFontGetProportionalSize(int code)
 {
@@ -1681,13 +1684,13 @@ typedef union FontStateViewStorage {
     struct FontStateView state;
     unsigned char bytes[0x20];
 } FontStateViewStorage;
-extern FontStateViewStorage FS_view __asm__("FS");
+#define FS_view (*(FontStateViewStorage *)FS)
 typedef union FontQueueViewStorage {
     unsigned long long alignment;
     FontQueueSlot slots[16];
     unsigned char bytes[0x2860];
 } FontQueueViewStorage;
-extern FontQueueViewStorage D_queue __asm__("D_008811A0");
+#define D_queue (*(FontQueueViewStorage *)(FS + 0x20))
 struct FontQueueRecord {
     unsigned char next_low;
     unsigned char next_high;
@@ -1894,7 +1897,6 @@ int xglFontGetStringWidth(const char *text)
 /* The font resource's load address (scaffold-owned real symbol, offset 0:
  * xglFontGetLoadAddress reads its whole first word; the object's further
  * extent is not evidenced within this allocation). */
-extern unsigned char FS[];
 
 void *xglFontGetLoadAddress(void)
 {
@@ -1904,16 +1906,15 @@ void *xglFontGetLoadAddress(void)
 /* The font module's flags word (scaffold-owned splat name; xglFontGetFlags
  * and xglFontSetFlags are its only accessors in this allocation, and its
  * further extent is not evidenced here). */
-extern unsigned char D_00881188[];
 
 unsigned short xglFontGetFlags(void)
 {
-    return *(unsigned short *)D_00881188;
+    return *(unsigned short *)(FS + 8);
 }
 
 void xglFontSetFlags(int flags)
 {
-    *(unsigned short *)D_00881188 = flags & 0xFFFD;
+    *(unsigned short *)(FS + 8) = flags & 0xFFFD;
 }
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
@@ -1949,8 +1950,6 @@ int xglFontLoad(int type, int callback)
   return old;
 }
 
-extern unsigned char FontImage[];
-extern unsigned char WindowImage[];
 extern void WindowTexLoad(void *window, int texture_set);
 extern void buffer_reset(void);
 

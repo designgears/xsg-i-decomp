@@ -89,7 +89,7 @@ segments:
       - [0x50850, rodata, ov10/battle_area_check_enemy]
       - [0x50A10]
       - { type: .bss, vram: 0x00A4FA10, name: ov10/calc_vert_out_vec_edge }
-      - { type: bss, vram: 0x00A56F10, name: ov10/card_play_sound1 }
+      - { type: .bss, vram: 0x00A56F10, name: ov10/card_play_sound1 }
       - { type: .bss, vram: 0x00A57750, name: ov10/ccu_038_exec_sub }
       - { type: .bss, vram: 0x00A57838, name: ov10/card_deck_chk }
       - { type: .bss, vram: 0x00A57848, name: ov10/card_view_proc }
