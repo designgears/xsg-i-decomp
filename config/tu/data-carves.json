@@ -17078,9 +17078,29 @@
      "c_owned_symbols": [
       "msg00_0_00A10C40"
      ],
-     "also_referenced_by_c": [
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10c48",
+      "0x00a10c4d"
+     ],
+     "generated": [
+      "0x00a10c48",
+      "0x00a10c4d"
+     ],
+     "generated_by": [
+      "tskUmnPluginExWin"
+     ],
+     "c_owned_symbols": [
       "msg00_1_00A10C48"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
