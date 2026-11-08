@@ -22333,82 +22333,112 @@
    ]
   },
   "ov02/tu010_00a097d8": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a12da0",
-      "0x00a12ea8"
+      "0x00a106f8",
+      "0x00a10848"
      ],
      "generated": [
-      "0x00a12da0",
-      "0x00a12ea8"
+      "0x00a106f8",
+      "0x00a10848"
      ],
      "generated_by": [
+      "UmnDataBase",
+      "tskUmnDataBaseExWin",
+      "tskUmnDataBaseInfo",
+      "tskUmnDataBaseKeyWord",
+      "tskUmnDataBaseMenu",
+      "tskUmnDataBaseName",
       "tskUmnDataBasePas"
      ],
      "c_owned_symbols": [
-      "jtbl_00A12DA0"
+      "msg00_0_00A106F8",
+      "D_00A106FC",
+      "msg00_1_00A10700",
+      "D_00A1070C",
+      "text2_2",
+      "D_00A1071C",
+      "text_3_00A10720",
+      "D_00A10734",
+      "msg00_4",
+      "monster_folder"
      ],
-     "also_referenced_by_c": [
-      "D_00A12F18",
-      "D_00A12F20"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_guno_data_base_get.o"
+      "object": "build/ov02/build/scaffold/src/ov02/umn_guno_data_base_get.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x00a12f30",
-      "0x00a13008"
+      "0x00a12d90",
+      "0x00a13180"
      ],
      "generated": [
-      "0x00a12f30",
-      "0x00a13008"
+      "0x00a12d90",
+      "0x00a13177"
      ],
      "generated_by": [
+      "UmnDataBase",
       "tskUmnDataBaseAnalisis",
-      "tskUmnDataBaseName"
+      "tskUmnDataBaseExWin",
+      "tskUmnDataBaseInfo",
+      "tskUmnDataBaseKeyWord",
+      "tskUmnDataBaseMenu",
+      "tskUmnDataBaseName",
+      "tskUmnDataBasePas"
      ],
      "c_owned_symbols": [
+      "D_00A12D90",
+      "jtbl_00A12DA0",
+      "D_00A12EA8",
+      "D_00A12EB0",
+      "D_00A12EE0",
+      "D_00A12F18",
+      "D_00A12F20",
       "jtbl_00A12F30",
-      "jtbl_00A12FB0"
-     ],
-     "also_referenced_by_c": [
-      "D_00A13028"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_guno_data_base_get.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13030",
-      "0x00a130d8"
-     ],
-     "generated": [
-      "0x00a13030",
-      "0x00a130d4"
-     ],
-     "generated_by": [
-      "tskUmnDataBaseMenu"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A13030"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A12FB0",
+      "D_00A13008",
+      "D_00A13010",
+      "D_00A13020",
+      "D_00A13028",
+      "jtbl_00A13030",
+      "D_00A130D8",
+      "D_00A130F0",
+      "D_00A13108",
+      "D_00A13118",
+      "D_00A13128",
       "D_00A13138",
       "D_00A13140",
-      "D_00A13148"
+      "D_00A13148",
+      "D_00A13150",
+      "D_00A13158",
+      "D_00A13160",
+      "D_00A13170"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A12D90": "msg00_0_00A106F8",
+      "D_00A12EA8": "msg00_1_00A10700",
+      "D_00A12EB0": "msg00_1_00A10700",
+      "D_00A12EE0": "msg00_1_00A10700",
+      "D_00A13008": "text2_2",
+      "D_00A13010": "text2_2",
+      "D_00A13020": "text2_2",
+      "D_00A130D8": "text_3_00A10720",
+      "D_00A130F0": "text_3_00A10720",
+      "D_00A13108": "text_3_00A10720",
+      "D_00A13118": "text_3_00A10720",
+      "D_00A13128": "text_3_00A10720"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/umn_guno_data_base_get.o"
+      "object": "build/ov02/build/scaffold/src/ov02/umn_guno_data_base_get.o"
      }
     }
    ]
