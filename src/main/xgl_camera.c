@@ -16,12 +16,12 @@ typedef struct RenderWindowLimits {
 
 extern RenderWindowLimits sRender;
 
-extern float sClipRange_0[4];
-extern float sPortEffect_1[4];
 typedef union { float f; int i; } CamFloatU;
 
 static void xglCameraScreenInit(StudioCamera *camera)
 {
+    static float sClipRange_0[4] __asm__("sClipRange.0") = { 0.01f, 9.9e+04f, 0.0f, 0.0f };
+    static float sPortEffect_1[4] __asm__("sPortEffect.1") = { 1.0f, 1.0f, 1.0f, 1e+02f };
     unsigned char *s = (unsigned char *)camera + 0x10;
 
     *(int *)(s + 0x0) = 0xFFFFFF;
@@ -110,15 +110,6 @@ typedef struct CameraDisplayEnv {
     u8 unmodeled_20[0x30];
 } CameraDisplayEnv;
 extern CameraDisplayEnv DispEnv;
-extern signed char aaiVertexIndex[6][3];
-extern Vector4 sShootAngleR_2;
-extern Vector4 sShootAngleV_3;
-extern Vector4 sShootAngleA_4;
-extern Vector4 sShootPlaceR_5;
-extern Vector4 sShootPlaceV_6;
-extern Vector4 sShootPlaceA_7;
-extern Vector4 sChaseRefPos_8;
-extern Vector4 sChaseIntPos_9;
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
 extern float atan2f(float y, float x);
 extern float tanf(float angle);
@@ -139,6 +130,14 @@ extern void xglVectorScaleAddXYZ(Vector4 *destination, const Vector4 *source,
 
 static void xglCameraTravelInit(StudioCamera *studio)
 {
+    static Vector4 sShootAngleR_2 __asm__("sShootAngleR.2") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sShootAngleV_3 __asm__("sShootAngleV.3") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sShootAngleA_4 __asm__("sShootAngleA.4") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sShootPlaceR_5 __asm__("sShootPlaceR.5") = { 0.0f, 1.0f, 4.0f, 1.0f };
+    static Vector4 sShootPlaceV_6 __asm__("sShootPlaceV.6") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sShootPlaceA_7 __asm__("sShootPlaceA.7") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sChaseRefPos_8 __asm__("sChaseRefPos.8") = { 0.0f, 1.0f, 0.0f, 1.0f };
+    static Vector4 sChaseIntPos_9 __asm__("sChaseIntPos.9") = { 0.0f, 1.0f, 0.0f, 1.0f };
     XglCamera *camera = (XglCamera *)studio;
     CameraTravel *travel = &camera->travel;
 
@@ -182,11 +181,11 @@ static void xglCameraTravelInit(StudioCamera *studio)
                          : "$2", "memory");
 }
 
-extern float sShootAngleA_10[4];
-extern float sShootPlaceA_11[4];
 
 static void xglCameraTravelReset(StudioCamera *camera)
 {
+    static float sShootAngleA_10[4] __asm__("sShootAngleA.10") = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static float sShootPlaceA_11[4] __asm__("sShootPlaceA.11") = { 0.0f, 0.0f, 0.0f, 1.0f };
     *(int *)((char *)camera + 0xC) = 0;
     __asm__ __volatile__(
         "lq $2, 0(%1)\n\t"
@@ -228,8 +227,6 @@ static void xglCameraTravelFocus(float *focus)
     }
 }
 
-extern float D_004D8868;
-extern float D_004D886C;
 void xglVectorScaleXYZ(Vector4 *destination, const Vector4 *source, float scale);
 
 static void xglCameraTravelScale(float *focus)
@@ -242,10 +239,10 @@ static void xglCameraTravelScale(float *focus)
 		xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x60), (Vector4 *)((char *)focus + 0x60), 4.0f);
 	}
 
-	scale = (focus[0] - 5.0f) * D_004D8868 + 1.0f;
+	scale = (focus[0] - 5.0f) * 0.08f + 1.0f;
 	focus[3] *= scale;
 	xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x30), (Vector4 *)((char *)focus + 0x30), scale);
-	xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x60), (Vector4 *)((char *)focus + 0x60), (focus[0] - 5.0f) * D_004D886C + 1.0f);
+	xglVectorScaleXYZ((Vector4 *)((char *)focus + 0x60), (Vector4 *)((char *)focus + 0x60), (focus[0] - 5.0f) * 0.24f + 1.0f);
 }
 
 static void xglCameraTravelManual(XglCamera *camera)
@@ -555,6 +552,8 @@ static void xglCameraViewTravel(StudioCamera *studio, Vector4 *offset)
     xglMatrixStackInverse();
     xglMatrixStackSave(camera->inverseTransform);
 }
+
+extern signed char aaiVertexIndex[6][3];
 
 static void xglCameraViewVolume(StudioCamera *studio, Vector4 *offset)
 {

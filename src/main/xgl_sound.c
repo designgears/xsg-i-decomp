@@ -161,7 +161,8 @@ end:
     entry->file_handle = result;
 }
 
-extern const char SoundDataPath[];
+static char SoundDataPath[] = "data\\sound\\";
+struct SoundWork SoundWork = {0};
 extern const unsigned char ext_0[5];
 
 int xglSoundLoadSwd(const char *file_name, void *buffer)

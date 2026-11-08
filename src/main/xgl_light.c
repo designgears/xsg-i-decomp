@@ -18,11 +18,25 @@ typedef struct {
 void xglLightIntensityAmbient(volatile XglPackedLightSet *lightSet, const XglLightQuadword *intensity);
 void xglLightIntensityParallel(XglPackedLightSet *lightSet, unsigned int index, const XglLightQuadword *intensity);
 void xglLightAngle(XglLightSet *lightSet, unsigned int index, const float *angle);
-extern XglLightQuadword asIntensity_0[4];
-extern float asDirection_1[4][4];
 
 void xglLightSetDefault(XglPackedLightSet *lightSet)
 {
+    /* Ambient, then three parallel intensities (r, g, b, 1.0). */
+    /* asIntensity.0 holds four float quadwords (ambient, then the three
+     * parallel intensities); the code reads them as XglLightQuadword. */
+    static float asIntensityData[4][4] __asm__("asIntensity.0") __attribute__((aligned(16))) = {
+        { 0.25f, 0.25f, 0.25f, 1.0f },
+        { 0.8f, 0.8f, 0.8f, 1.0f },
+        { 0.5f, 0.5f, 0.5f, 1.0f },
+        { 0.5f, 0.5f, 0.5f, 1.0f }
+    };
+    extern XglLightQuadword asIntensity_0[4] __asm__("asIntensity.0");
+    static float asDirection_1[4][4] __asm__("asDirection.1") = {
+        { 0.0f, 0.0f, 0.0f, 1.0f },
+        { -0.26195645f, 0.53120846f, -0.019844394f, 1.0f },
+        { 2.3561945f, 1.2733574f, 3.1415927f, 1.0f },
+        { 0.36123082f, 3.775898f, 0.028536133f, 1.0f }
+    };
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -122,11 +136,11 @@ void xglLightCalcMatrix(XglLightSet *lightSet)
     );
 }
 
-extern Vector4 sIntensity1_3;
-extern Vector4 sIntensity0_2;
 
 void xglLightInit(XglLightSet *lightSet)
 {
+    static Vector4 sIntensity0_2 __asm__("sIntensity0.2") __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 0.0f };
+    static Vector4 sIntensity1_3 __asm__("sIntensity1.3") __attribute__((aligned(16))) = { 1.0f, 1.0f, 1.0f, 1.0f };
     int i;
 
     xglLightIntensityAmbient(lightSet, &sIntensity1_3);

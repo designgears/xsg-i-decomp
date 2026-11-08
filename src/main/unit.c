@@ -205,7 +205,8 @@ void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCN
 
 extern int SEQ_moveUnitXZ();
 extern int SEQ_moveChr();
-extern float defaultOffset_0043C1D0[];
+static float defaultOffset[4] = {0};
+UnitActorStorage actor[64] = {0};
 typedef struct UnitMoveCall {
     u8 *object;
     union { int i; float f; u8 *p; } a;
@@ -268,7 +269,7 @@ static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
     field = lookupClassField(classJava_xeno_Unit,
                              loadConstString(D_004D16F8, -1), 0);
     offset = (*(u32 *)(object + field->offset) & 1)
-        ? (float *)((u8 *)peer + 0x10) : defaultOffset_0043C1D0;
+        ? (float *)((u8 *)peer + 0x10) : defaultOffset;
 
     switch (mode) {
     case 0:
@@ -341,7 +342,6 @@ static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
 }
 
 extern int SEQ_rotateUnit();
-extern float defaultOffset_0043C1D0[];
 typedef struct UnitRotCall {
     u8 *object;
     union { int i; float f; u8 *p; } first;
@@ -403,7 +403,7 @@ static void UNIT_rotX(int mode, JThread *thread, void *arguments_,
                              loadConstString(D_004D16F8, -1), 0);
     rot_source = (float *)((u8 *)peer + 0x20);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
-        rot_source = defaultOffset_0043C1D0;
+        rot_source = defaultOffset;
 
     entry = &unitSequence[peer->serial];
     rot = (UnitRotState *)((u8 *)entry + 0xb8);
@@ -503,7 +503,7 @@ static void UNIT_rotY(int mode, JThread *thread, void *arguments_,
     field = lookupClassField(classJava_xeno_Unit,
                              loadConstString(D_004D16F8, -1), 0);
     rot_source = (*(u32 *)(object + field->offset) & 1)
-        ? (float *)((u8 *)peer + 0x20) : defaultOffset_0043C1D0;
+        ? (float *)((u8 *)peer + 0x20) : defaultOffset;
 
     entry = &unitSequence[peer->serial];
     rot = (UnitRotYState *)((u8 *)entry + 0xb8);
@@ -615,7 +615,7 @@ static void UNIT_rotZ(int mode, JThread *thread, void *arguments_,
                              loadConstString(D_004D16F8, -1), 0);
     rot_source = (float *)((u8 *)peer + 0x20);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
-        rot_source = defaultOffset_0043C1D0;
+        rot_source = defaultOffset;
 
     entry = &unitSequence[peer->serial];
     rot = (UnitRotZState *)((u8 *)entry + 0xb8);
@@ -1155,7 +1155,6 @@ void Java_xeno_Unit_scale__Lxeno_util_Spline_IZ(JThread *thread, UnitScaleSplCal
 }
 
 extern int SEQ_scaleUnit();
-extern float defaultOffset_0043C1D0[];
 typedef struct UnitSclCall {
     u8 *object;
     union { int i; float f; } first;
@@ -1189,7 +1188,7 @@ static void UNIT_sclX(int mode, JThread *thread, void *arguments_,
                                        loadConstString(D_004D16F8, -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
-        scale_source = defaultOffset_0043C1D0;
+        scale_source = defaultOffset;
 
     entry = &unitSequence[peer->serial];
     *(void **)((u8 *)entry + 0x30) = SEQ_scaleUnit;
@@ -1254,7 +1253,7 @@ static void UNIT_sclY(int mode, JThread *thread, void *arguments_,
                                        loadConstString(D_004D16F8, -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
-        scale_source = defaultOffset_0043C1D0;
+        scale_source = defaultOffset;
 
     entry = &unitSequence[peer->serial];
     *(void **)((u8 *)entry + 0x30) = SEQ_scaleUnit;
@@ -1319,7 +1318,7 @@ static void UNIT_sclZ(int mode, JThread *thread, void *arguments_,
                                        loadConstString(D_004D16F8, -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
-        scale_source = defaultOffset_0043C1D0;
+        scale_source = defaultOffset;
 
     entry = &unitSequence[peer->serial];
     *(void **)((u8 *)entry + 0x30) = SEQ_scaleUnit;

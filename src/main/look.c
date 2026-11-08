@@ -1,6 +1,54 @@
 #include "common.h"
 #include "look.h"
 
+static const float s_aEyeIdling[22][4] = {
+    { 0.0f, 0.017453294f, 3e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 45.0f, 0.005235988f },
+    { 0.0f, 0.008726647f, 5e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 4e+01f, 0.005235988f },
+    { 0.008726647f, 0.0f, 2e+01f, 0.005235988f },
+    { 0.0f, 0.0017453294f, 1e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 1e+01f, 0.005235988f },
+    { 0.0017453294f, 0.0017453294f, 25.0f, 0.005235988f },
+    { 0.0f, 0.0017453294f, 1e+01f, 0.005235988f },
+    { 0.0017453294f, 0.0f, 15.0f, 0.005235988f },
+    { 0.0f, 0.0034906587f, 2e+01f, 0.005235988f },
+    { 0.0017453294f, 0.0017453294f, 1e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 1e+01f, 0.005235988f },
+    { 0.0f, 0.03490659f, 1e+02f, 0.005235988f },
+    { 0.0f, 0.008726647f, 5e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 4e+01f, 0.005235988f },
+    { 0.008726647f, 0.0f, 2e+01f, 0.005235988f },
+    { 0.0f, 0.0f, 1e+02f, 0.005235988f },
+    { 0.0f, 0.03490659f, 15.0f, 0.0069813174f },
+    { 0.0f, 0.0f, 8.0f, 0.005235988f },
+    { 0.0f, 0.0f, 1.5e+02f, 0.005235988f },
+    { 0.0f, 0.0f, -1.0f, 0.0008726647f }
+};
+
+static const float s_aEyeControl[15][4] = {
+    { 0.0f, 0.0f, 0.0f, 0.010471976f },
+    { 0.0f, 0.0f, 0.0f, 0.010471976f },
+    { 0.0f, 0.08726647f, 0.0f, 0.010471976f },
+    { 0.13962635f, 0.08726647f, 0.0f, 0.010471976f },
+    { -0.13962635f, 0.08726647f, 0.0f, 0.010471976f },
+    { 0.13962635f, 0.0f, 0.0f, 0.010471976f },
+    { -0.13962635f, 0.0f, 0.0f, 0.010471976f },
+    { 0.13962635f, 0.0f, 0.0f, 0.010471976f },
+    { 0.13962635f, -0.08726647f, 0.0f, 0.010471976f },
+    { 0.13962635f, 0.08726647f, 0.0f, 0.010471976f },
+    { 0.0f, -0.08726647f, 0.0f, 0.010471976f },
+    { 0.13962635f, -0.08726647f, 0.0f, 0.010471976f },
+    { -0.13962635f, -0.08726647f, 0.0f, 0.010471976f },
+    { 0.0f, 0.0f, 0.0f, 0.010471976f },
+    { 0.0f, 0.017453294f, 0.0f, 0.010471976f }
+};
+
+static const float s_aEyeDefault[1][4] = {
+    { 0.0f, 0.0f, 0.0f, 0.0034906587f }
+};
+
+
                                               /* MARK provisional: .lit4 0x004d8564 */
 
 float xglAsin(float value)
@@ -10,10 +58,10 @@ float xglAsin(float value)
      * reproduce this (S2 evidence). */
     float root = __builtin_sqrtf(1.0f - value);
     float result;
-    float cubic = xglAsin_cubic;
-    float quadratic = xglAsin_quadratic;
-    float linear = xglAsin_linear;
-    float pi_over_two_approx = xglAsin_pi_over_two_approx;
+    float cubic = (-0.0187293f);
+    float quadratic = 0.074261f;
+    float linear = 0.2121144f;
+    float pi_over_two_approx = 1.5707288f;
 
     result = value * cubic;
     result += quadratic;
@@ -21,7 +69,7 @@ float xglAsin(float value)
     result -= linear;
     result *= value;
     result += pi_over_two_approx;
-    return xglAsin_pi_over_two - root * result;
+    return 1.5707964f - root * result;
 }
 
 void look_limit(float *angle, float limit)
@@ -416,17 +464,17 @@ void *LOOK_head_cont(LookJointWork *work, void *channels, LookCharacter *actor)
 }
 
 void *LOOK_eye_cont(LookJointWork *work, void *channels, LookCharacter *actor, int side);
-extern float s_fEyeOffset;
+static float s_fEyeOffset = 0.0f;
 
 void LOOK_eyeL_cont(int model, int target, int step)
 {
-    s_fEyeOffset = D_004D85A8;
+    s_fEyeOffset = 0.04f;
     LOOK_eye_cont(model, target, step, 0);
 }
 
 void LOOK_eyeR_cont(int model, int target, int step)
 {
-    s_fEyeOffset = D_004D85AC;
+    s_fEyeOffset = (-0.04f);
     LOOK_eye_cont(model, target, step, 1);
 }
 
@@ -436,15 +484,9 @@ typedef struct LookAngleView {
     unsigned char unmodeled_620[0x20];
     float eyeAngles[2][4];
 } LookAngleView;
-extern const char D_004DC258[];
-extern const char D_004DC260[];
-extern const char D_004DC268[];
 #define D_004D85B0 0.4f
-extern float s_aEyeIdling[22][4];
 enum LookEyeComponent { EYE_YAW, EYE_PITCH, EYE_DURATION, EYE_STEP };
 #define D_004D85B4 0.005235988f
-extern float s_aEyeControl[15][4];
-extern float s_aEyeDefault[1][4];
 #define D_004D85B8 0.13962634f
 #define D_004D85C0 0.3f
 #define D_004D85C4 0.6f
@@ -486,9 +528,9 @@ void *LOOK_eye_cont(LookJointWork *work, void *channels, LookCharacter *actor, i
     model = actor->model;
     if (model != 0) {
         const char *name = model->name;
-        if (strstr(name, D_004DC258) ||
-            strstr(name, D_004DC260) ||
-            strstr(name, D_004DC268)) {
+        if (strstr(name, "shion") ||
+            strstr(name, "kosmos") ||
+            strstr(name, "momo")) {
             pitchScale *= D_004D85B0;
             yawScale *= D_004D85B0;
         }

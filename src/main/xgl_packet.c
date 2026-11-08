@@ -68,10 +68,23 @@ extern void sceVif1PkAddCode(XglPacket *p, u32 code);
 extern void sceVif1PkOpenDirectHLCode(XglPacket *p, int i);
 extern void sceVif1PkAddDirectDataN(XglPacket *p, void *data, u32 n);
 extern void sceVif1PkCloseDirectCode(XglPacket *p);
-extern u64 TestPrim_0_004A8D00[];
 
 void xglPacketInterpolate(void)
 {
+    static u64 TestPrim_0_004A8D00[24] __asm__("TestPrim.0") __attribute__((aligned(16))) = {
+        0xB0AB400000008001ULL, 0x53531EEEEEEULL,
+        0x0ULL, 0x3FULL,
+        0x6FC007FC00AULL, 0x8ULL,
+        0x60ULL, 0x14ULL,
+        0x0ULL, 0x6ULL,
+        0x31001ULL, 0x47ULL,
+        0x4000000064ULL, 0x42ULL,
+        0x8000000080ULL, 0x8000000080ULL,
+        0x1000000000ULL, 0x0ULL,
+        0x71F700006FF8ULL, 0x0ULL,
+        0x1C1000002000ULL, 0x0ULL,
+        0x8DF700008FF8ULL, 0x0ULL
+    };
     XglPacket *pkt = pCurrentPacket;
     u64 *spr;
 
