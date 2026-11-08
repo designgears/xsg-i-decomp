@@ -1645,21 +1645,25 @@
     {
      "range": [
       "0x004d88d8",
-      "0x004d8940"
+      "0x004d8950"
      ],
      "generated": [
       "0x004d88d8",
-      "0x004d8940"
+      "0x004d8950"
      ],
      "generated_by": [
       "nmlModelAskNonLinearCamera",
       "nmlModelCalcDropShadow",
       "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryPartsClip",
       "nmlModelCalcEntryProjectCircle",
       "nmlModelCalcEntryProjectMap",
       "nmlModelCalcSample",
       "nmlModelCalcSpecularClip",
+      "nmlModelEntry",
       "nmlModelLexBlockDoit",
+      "nmlModelRenderCircle",
+      "nmlModelRenderTexture",
       "nmlModelStealthEntry"
      ],
      "c_owned_symbols": [
@@ -1688,32 +1692,8 @@
       "D_004D8930",
       "D_004D8934",
       "D_004D8938",
-      "D_004D893C"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8940"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8944",
-      "0x004d8950"
-     ],
-     "generated": [
-      "0x004d8944",
-      "0x004d8950"
-     ],
-     "generated_by": [
-      "nmlModelEntry",
-      "nmlModelRenderCircle",
-      "nmlModelRenderTexture"
-     ],
-     "c_owned_symbols": [
+      "D_004D893C",
+      "D_004D8940",
       "D_004D8944",
       "D_004D8948",
       "D_004D894C"
@@ -1974,16 +1954,17 @@
     {
      "range": [
       "0x004d8950",
-      "0x004d8970"
+      "0x004d8978"
      ],
      "generated": [
       "0x004d8950",
-      "0x004d8970"
+      "0x004d8978"
      ],
      "generated_by": [
       "nmlPacketAddBlockMaterial",
       "nmlPacketAddScreen",
-      "nmlPacketAddTransMicrocodeInit"
+      "nmlPacketAddTransMicrocodeInit",
+      "nmlPacketMakeCircleTexture"
      ],
      "c_owned_symbols": [
       "D_004D8950",
@@ -1993,12 +1974,11 @@
       "D_004D8960",
       "D_004D8964",
       "D_004D8968",
-      "D_004D896C"
-     ],
-     "also_referenced_by_c": [
+      "D_004D896C",
       "D_004D8970",
       "D_004D8974"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -16071,11 +16051,11 @@
    ".lit4": [
     {
      "range": [
-      "0x004d82d8",
+      "0x004d82b4",
       "0x004d8358"
      ],
      "generated": [
-      "0x004d82d8",
+      "0x004d82b4",
       "0x004d8358"
      ],
      "generated_by": [
@@ -16093,9 +16073,19 @@
       "sefInitLineData",
       "sefLerpFloat",
       "sefLerpVectorSC",
-      "sefRandf"
+      "sefRandf",
+      "srsAtan2"
      ],
      "c_owned_symbols": [
+      "D_004D82B4",
+      "D_004D82B8",
+      "D_004D82BC",
+      "D_004D82C0",
+      "D_004D82C4",
+      "D_004D82C8",
+      "D_004D82CC",
+      "D_004D82D0",
+      "D_004D82D4",
       "sef_rand_unit_scale_literal",
       "effect_scale_literal_0_1",
       "D_004D82E0",
@@ -16129,17 +16119,7 @@
       "D_004D8350",
       "lit4_004d8354"
      ],
-     "also_referenced_by_c": [
-      "D_004D82B4",
-      "D_004D82B8",
-      "D_004D82BC",
-      "D_004D82C0",
-      "D_004D82C4",
-      "D_004D82C8",
-      "D_004D82CC",
-      "D_004D82D0",
-      "D_004D82D4"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -16794,45 +16774,25 @@
     {
      "range": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated_by": [
+      "sdvDrawAlter",
       "sdvProgressPrm",
       "sdvSetCameraOffset",
-      "sdvSetCameraParam"
+      "sdvSetCameraParam",
+      "sdvTransOffset"
      ],
      "c_owned_symbols": [
       "D_004D835C",
       "D_004D8360",
       "D_004D8364",
-      "D_004D8368"
-     ],
-     "also_referenced_by_c": [
-      "D_004D836C"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sdv.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated_by": [
-      "sdvDrawAlter"
-     ],
-     "c_owned_symbols": [
+      "D_004D8368",
+      "D_004D836C",
       "D_004D8370"
      ],
      "also_referenced_by_c": [],

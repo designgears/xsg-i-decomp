@@ -3429,7 +3429,6 @@ static void nmlModelCalcEntryProjectMap(NmlModel *model, StudioCamera *camera)
     }
 }
 
-extern float D_004D8940;
 extern Vector4 D_70000010;
 extern LayoutStore s_inLayout;
 int nmlModelCalcClip(int model);
@@ -3506,7 +3505,7 @@ static void nmlModelCalcEntryPartsClip(char *arg0, char *arg1)
         hit = 0;
         if ((*((unsigned short *) (e + 0x32))) != 0)
         {
-          do
+          loop:
           {
             float *p;
             flag = cnt * 2;
@@ -3517,7 +3516,7 @@ static void nmlModelCalcEntryPartsClip(char *arg0, char *arg1)
             {
               typeof(p[3]) i;
               float f;
-            } *) (&p[3]))->i = (*((float *) (e + 0x9C))) * D_004D8940;
+            } *) (&p[3]))->i = (*((float *) (e + 0x9C))) * 1.2f;
             if (nmlModelCalcClipNoCulling((int) p))
             {
               hit = (unsigned char) (hit + 1);
@@ -3527,7 +3526,7 @@ static void nmlModelCalcEntryPartsClip(char *arg0, char *arg1)
             flag = new_var;
             q = (unsigned char *) (flag + ((int) e));
           }
-          while ((*((unsigned short *) (q + 0x32))) != 0);
+          if ((*((unsigned short *) (q + 0x32))) != 0) goto loop;
         }
         if ((hit != 0) && (hit == cnt))
         {

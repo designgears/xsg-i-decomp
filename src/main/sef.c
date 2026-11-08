@@ -284,20 +284,6 @@ typedef struct SefProgressState {
 
 float MMathCalcLength(float *vec);
 
-/*
- * The original routine keeps each literal-pool access as a distinct volatile
- * read across its quadrant branches; the pool addresses and load order are
- * evidenced by the function's original instructions.
- */
-extern volatile const float D_004D82B4;
-extern volatile const float D_004D82B8;
-extern volatile const float D_004D82BC;
-extern volatile const float D_004D82C0;
-extern volatile const float D_004D82C4;
-extern volatile const float D_004D82C8;
-extern volatile const float D_004D82CC;
-extern volatile const float D_004D82D0;
-extern volatile const float D_004D82D4;
 static int _parentLine = -1;
 static float _gravity = 0.0f;
 static float _colision = 0.0f;
@@ -322,9 +308,9 @@ float srsAtan2(float x, float y)
 
     if (y == 0.0f) {
         if (x != 0.0f) {
-            result = D_004D82B4;
+            result = 1.5707964f;
             if (!x_is_positive) {
-                return D_004D82B8;
+                result = -1.5707964f;
             }
         }
         return result;
@@ -332,7 +318,7 @@ float srsAtan2(float x, float y)
 
     if (x == 0.0f) {
         if (!y_is_positive) {
-            return D_004D82BC;
+            result = 3.1415927f;
         }
         return result;
     }
@@ -352,23 +338,23 @@ float srsAtan2(float x, float y)
                 angle = -angle;
             }
         } else if (x_is_positive) {
-            angle = D_004D82C0 - angle;
+            angle = 3.1415927f - angle;
         } else {
-            angle += D_004D82C4;
+            angle += 3.1415927f;
         }
     } else {
         angle = atanTbl_0[(int)(y * 1024.0f / x)];
 
         if (y_is_positive) {
             if (x_is_positive) {
-                angle = D_004D82C8 - angle;
+                angle = 1.5707964f - angle;
             } else {
-                angle = -(D_004D82CC - angle);
+                angle = -(1.5707964f - angle);
             }
         } else if (x_is_positive) {
-            angle += D_004D82D0;
+            angle += 1.5707964f;
         } else {
-            angle = D_004D82D4 - angle;
+            angle = 4.712389f - angle;
         }
     }
 
