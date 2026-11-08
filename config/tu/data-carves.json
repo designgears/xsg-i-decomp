@@ -9438,21 +9438,39 @@
     {
      "range": [
       "0x00379100",
-      "0x00379110"
+      "0x003b1c10"
      ],
      "generated": [
       "0x00379100",
-      "0x00379110"
+      "0x003b1c10"
      ],
      "generated_by": [
-      "ACT_updateEnemy"
+      "ACT_updateEnemy",
+      "Enemy_Chase",
+      "Enemy_Damage_Electric",
+      "Enemy_Damage_Explosion",
+      "Enemy_Damage_Seal",
+      "Enemy_Escape",
+      "Enemy_Found",
+      "Enemy_Init",
+      "Enemy_Pause",
+      "Enemy_Route",
+      "Enemy_Route_Chase",
+      "Enemy_Stiff",
+      "Enemy_Tentacle",
+      "Enemy_Threat",
+      "Enemy_Unique",
+      "Set_EnemyMark",
+      "TM_Check_Before_Eyes",
+      "TM_Check_Move",
+      "TM_Check_Move_at_GoBack",
+      "TM_Enemy_Move_Step"
      ],
      "c_owned_symbols": [
-      "EnemyTarget"
-     ],
-     "also_referenced_by_c": [
+      "EnemyTarget",
       "enepc"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

@@ -1400,6 +1400,7 @@ extern EnemyPadViewAU PadData;
 extern short DebugActor;
 extern short NowTester;
 EnemyVector4AU EnemyTarget = {0};
+EnemyWorkEntry enepc[16] = {0};
 extern short EfTab_Code[];
 extern short EfTab_Intr[];
 extern float EfTab_Scal[];
