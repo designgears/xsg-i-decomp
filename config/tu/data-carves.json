@@ -22846,29 +22846,94 @@
    ]
   },
   "ov02/tu014_00a0e938": {
+   ".data": [
+    {
+     "range": [
+      "0x00a10c60",
+      "0x00a10d24"
+     ],
+     "generated": [
+      "0x00a10c60",
+      "0x00a10d24"
+     ],
+     "generated_by": [
+      "UmnEventEndMailCheck",
+      "UmnEventTextInit",
+      "UmnEventTextMake",
+      "UmnEventTextNextGet",
+      "UmnHistoryTreeGet",
+      "UmnHistoryTreeLoad",
+      "UmnKosmosSpecialGetCheck",
+      "UmnMailAttachGet",
+      "UmnMailCompulsionDownLoadCheck",
+      "UmnMailEventCheck",
+      "UmnMailHeaderCreate",
+      "UmnMailHeaderGet",
+      "UmnPluginTextGet",
+      "UmnTextLoad"
+     ],
+     "c_owned_symbols": [
+      "umn_attach_tbl",
+      "D_00A10CA5",
+      "event_tbl",
+      "D_00A10CBA",
+      "event_end_mail",
+      "D_00A10CC2",
+      "kosmos_special_tbl",
+      "f_name_0",
+      "compulsion_down_load_tbl",
+      "D_00A10D05",
+      "UmnEventTextMakeWork",
+      "uet_text_buf",
+      "uet_flag",
+      "uet_file_end",
+      "UmnHistoryTreeBuf",
+      "UmnMailHeaderBuf",
+      "umn_text"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/umn_event_text_symbol_check.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a13600",
-      "0x00a13620"
+      "0x00a13550",
+      "0x00a13654"
      ],
      "generated": [
-      "0x00a13600",
-      "0x00a1361c"
+      "0x00a13550",
+      "0x00a13654"
      ],
      "generated_by": [
-      "UmnEventTextMake"
+      "UmnEventTextCharCheck",
+      "UmnEventTextMake",
+      "UmnEventTextSymbolCheck",
+      "UmnHistoryTreeLoad",
+      "UmnMailHeaderCreate"
      ],
      "c_owned_symbols": [
-      "jtbl_00A13600"
-     ],
-     "also_referenced_by_c": [
+      "D_00A13550",
+      "D_00A13558",
+      "D_00A13560",
+      "D_00A13568",
+      "D_00A13570",
+      "D_00A13578",
+      "D_00A13580",
       "D_00A13588",
+      "D_00A135C0",
+      "D_00A135C8",
       "D_00A135D0",
       "D_00A135E0",
+      "jtbl_00A13600",
       "D_00A13620",
       "D_00A13640"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
