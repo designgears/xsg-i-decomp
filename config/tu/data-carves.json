@@ -14328,45 +14328,22 @@
     {
      "range": [
       "0x00a51e68",
-      "0x00a51e90"
-     ],
-     "generated": [
-      "0x00a51e68",
-      "0x00a51e90"
-     ],
-     "generated_by": [
-      "InitRgRobotSpec",
-      "RgRobotSpecDump",
-      "_AnaAutoHoming"
-     ],
-     "c_owned_symbols": [
-      "D_00A51E68",
-      "D_00A51E78"
-     ],
-     "also_referenced_by_c": [
-      "D_00A51E90"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_spec.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51e98",
       "0x00a52280"
      ],
      "generated": [
-      "0x00a51e98",
+      "0x00a51e68",
       "0x00a52279"
      ],
      "generated_by": [
+      "InitRgRobotSpec",
       "RgRobotSpecDump",
       "RgRobotSpecReadFromText",
       "_AnaAutoHoming"
      ],
      "c_owned_symbols": [
+      "D_00A51E68",
+      "D_00A51E78",
+      "D_00A51E90",
       "D_00A51E98",
       "D_00A51EE0",
       "D_00A51EF0",
@@ -18649,11 +18626,11 @@
     {
      "range": [
       "0x00a57bb0",
-      "0x00a586a0"
+      "0x00a58720"
      ],
      "generated": [
       "0x00a57bb0",
-      "0x00a586a0"
+      "0x00a5871e"
      ],
      "generated_by": [
       "CreateRgAnnounce",
@@ -18665,7 +18642,10 @@
       "RgAnnounceSetGameClear",
       "RgAnnounceSetStageClear",
       "_DestructAnn",
-      "_InitAnn"
+      "_InitAnn",
+      "_damage_disp",
+      "_damage_disp_title",
+      "_time_disp_title"
      ],
      "c_owned_symbols": [
       "D_00A57BB0",
@@ -18770,33 +18750,8 @@
       "D_00A58630",
       "D_00A58640",
       "D_00A58668",
-      "D_00A58678"
-     ],
-     "also_referenced_by_c": [
-      "D_00A586A0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_announce.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a586b0",
-      "0x00a58720"
-     ],
-     "generated": [
-      "0x00a586b0",
-      "0x00a5871e"
-     ],
-     "generated_by": [
-      "RgAnnounceSetGameClear",
-      "_damage_disp",
-      "_damage_disp_title",
-      "_time_disp_title"
-     ],
-     "c_owned_symbols": [
+      "D_00A58678",
+      "D_00A586A0",
       "D_00A586B0",
       "D_00A586C0",
       "D_00A586D0",

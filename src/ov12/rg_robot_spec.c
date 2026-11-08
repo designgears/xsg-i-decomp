@@ -70,6 +70,9 @@ void InitRgRobotSpec(RgRobotSpecFull *pSpec)
     pSpec->type = 0;
 }
 
+/* "UNARMED" */
+const RgSpecName D_00A51E90[1] = {{0x0044454D52414E55LL}};
+
 static void _ResetAnaAutoHoming(void)
 {
     s_nAnaAutoHomingID = -1;

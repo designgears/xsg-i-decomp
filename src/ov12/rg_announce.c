@@ -628,6 +628,8 @@ void RgAnnounceDisp(RgAnnounce *pAnn)
   _paint_flush(pAnn);
 }
 
+const Pal D_00A586A0 = {0x0000008000000080LL, 0x0000007F00000080LL};
+
 /*
  * The stack copy _time_disp_title and _damage_disp_title hand to _paint_uvwh.
  * Both titles move their rectangle a word pair at a time: uvOffset is the
