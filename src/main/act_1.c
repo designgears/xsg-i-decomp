@@ -87,6 +87,10 @@ void *ACT_allocBlock(int tag, int blockCount)
  * intentionally stops at the six evidenced offsets.
  */
 
+static MatrixHeap matrixHeap;
+static unsigned char actMatrix[0xC0000] __attribute__((aligned(16)));
+static unsigned char matrixHeapBlock[0x400];
+
 void ACT_matrixInit(void)
 {
     matrixHeap.heap_bound = 0xC0000;
@@ -358,7 +362,7 @@ void ACT_pauseUpdate(void)
 typedef struct { char pad[0x28]; unsigned short held; unsigned short pressed; unsigned short sh; } ActInfoPad;
 typedef struct { int on; int idx; int page; } ActInfoState;
 extern ActInfoPad PadData;
-extern ActInfoState actInfo;
+static ActInfoState actInfo;
 /* DB_params style block: 0x0D,0x02 / 0x0E,0x02 / 0x02, zero-filled to 16. */
 static const unsigned char D_004D1708[16] = {0x0D, 0x02, 0x0E, 0x02, 0x02};
 extern void DB_params(char *);

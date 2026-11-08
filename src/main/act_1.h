@@ -16,11 +16,8 @@ typedef struct MatrixHeap {
 
 void ACT_matrixInit(void);
 
-extern MatrixHeap matrixHeap;
 
-extern unsigned char actMatrix[];
 
-extern unsigned char matrixHeapBlock[];
 
 
 /*
