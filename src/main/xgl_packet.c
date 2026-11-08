@@ -2,12 +2,13 @@
 #include "shared.h"
 #include "xgl_packet.h"
 
-extern XglPacket asPacketSource[];
+static XglPacket asPacketSource[2];
+static XglPacket *pCurrentPacket;
+static XglPacket *pSendPacket;
 extern void sceVif1PkInit(XglPacket *packet, u32 buffer_address);
 
 extern struct { char pad[0x20]; u16 fbp; char pad2[0x1e]; } sRender;
 
-extern XglPacket *pCurrentPacket;
 
 extern void sceVif1PkCnt(XglPacket *p, u32 flag);
 extern void sceVif1PkAddCode(XglPacket *p, u32 code);
@@ -100,14 +101,12 @@ void xglPacketInterpolate(void)
     sceVif1PkCloseDirectCode(pkt);
 }
 
-extern XglPacket *pCurrentPacket;
 
 XglPacket *xglPacketGetCurrent(void)
 {
     return pCurrentPacket;
 }
 
-extern XglPacket *pSendPacket;
 
 void xglPacketInit(void)
 {
@@ -126,7 +125,8 @@ extern void sceVif1PkEnd(void *pkt, u32 irq);
 extern void sceVif1PkTerminate(void *pkt);
 extern void sceVif1PkReset(void *pkt);
 extern void FlushCache(int mode);
-extern XglPacket D_00942228;
+/* the second packet buffer */
+#define D_00942228 asPacketSource[1]
 
 void xglPacketMove(void)
 {
@@ -143,7 +143,6 @@ void xglPacketMove(void)
     sceVif1PkReset(pCurrentPacket);
 }
 
-extern XglPacket *pSendPacket;
 extern void xglDmaDirectSrcChain(u32 channel, u32 address);
 
 void xglPacketSend(void)

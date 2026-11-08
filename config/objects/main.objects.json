@@ -26999,9 +26999,9 @@
       "name_confidence": "low",
       "ordinal": 103,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_packet.c",
