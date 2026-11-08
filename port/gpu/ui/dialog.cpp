@@ -377,10 +377,11 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         else if (o.type == GPU_KG_NUMBER || (o.type == GPU_KG_SPRITE && o.v == 0xAE)) r.cost.push_back(&o);
     }
     if (rows.empty()) return;
-    const float ls = 13.0f * k, rh = 22.0f, x0 = 8.0f;
+    ImFont* const rf = UiFont(kFontLabel, font);   // the original's wide caps
+    const float ls = 15.0f * k, rh = 24.0f, x0 = 8.0f;
     float labelW = 0;
-    for (const Row& r : rows) labelW = std::max(labelW, font->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str()).x / kx);
-    const float rw = std::max(96.0f, labelW + 40.0f);
+    for (const Row& r : rows) labelW = std::max(labelW, rf->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str()).x / kx);
+    const float rw = std::max(150.0f, labelW + 60.0f);
     const double now = AnimNow();
     for (size_t i = 0; i < rows.size(); ++i) {
         const Row& r = rows[i];
@@ -390,19 +391,25 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         const bool off = r.btn > 4;
         const float rx = x0 + dx, ry = float(r.y) + 2;   // aligned, no stagger
         float right = rx + rw;
-        const float costW = r.cost.empty() ? 0.0f : 92.0f;
+        const float costW = r.cost.empty() ? 0.0f : 116.0f;
         const ImVec2 a = P(rx, ry), b = P(right + costW, ry + rh);
         Panel(dl, a, b, k, t * (off ? 0.75f : 1.0f));
         const ImU32 acc = kAccent[size_t(r.kind)];
         dl->AddRectFilledMultiColor(a, P(rx + 40, ry + rh), Alpha(acc, 0.20f * t), Alpha(acc, 0), Alpha(acc, 0), Alpha(acc, 0.20f * t));
         dl->AddRectFilled(a, P(rx + 3, ry + rh), Alpha(acc, t));
         if (r.btn >= 1) {
-            const ImVec2 c = P(rx + 15, ry + rh * 0.5f);
-            Glyph(dl, font, c.x, c.y, 7.5f * k, kPos[(r.btn - 1) & 3], off);
+            const ImVec2 c = P(rx + 17, ry + rh * 0.5f);
+            Glyph(dl, font, c.x, c.y, 10.0f * k, kPos[(r.btn - 1) & 3], off);
         }
-        const ImVec2 lsz = font->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str());
-        HaloText(dl, font, ls, ImVec2(P(rx + 28, 0).x, P(0, ry + rh * 0.5f).y - lsz.y * 0.5f), off ? col::kTextOff : col::kText,
-                 r.label.c_str(), t);
+        {   // centred in the row right of the button, as the original
+            std::string up = r.label;
+            for (char& ch : up) if (ch >= 'a' && ch <= 'z') ch = char(ch - 32);
+            if (r.label == "Menu") up = "Menu";
+            const ImVec2 lsz = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str());
+            const float lx = (P(rx + 28, 0).x + P(right, 0).x - lsz.x) * 0.5f;
+            OutlineText(dl, rf, ls, ImVec2(lx, P(0, ry + rh * 0.5f).y - lsz.y * 0.5f), off ? col::kTextOff : IM_COL32(236, 240, 232, 255),
+                        up.c_str(), t);
+        }
         if (!r.cost.empty()) {   // cost box: ammo, EP cost, AP cost
             dl->AddLine(P(right, ry + 3), P(right, ry + rh - 3), Alpha(col::kFrame, 0.4f * t), 1.0f);
             int nums[3] = {-1, -1, -1}, ni = 0;
@@ -410,33 +417,34 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
                 if (c->type == GPU_KG_NUMBER && ni < 3) nums[ni++] = c->a;
             if (ni == 2) nums[2] = nums[1], nums[1] = nums[0], nums[0] = -1;   // no ammo count
             char buf[16];
-            const float cy = P(0, ry + rh * 0.5f).y, ns = 14.0f * k, ts = 9.5f * k;
+            const float cy = P(0, ry + rh * 0.5f).y, ns = 15.0f * k, ts = 12.0f * k;
+            ImFont* const font = rf;   // the cost box in the original's wide digits
             auto num = [&](float xr, int v, int digits) {
                 if (v < 0) return;
                 std::snprintf(buf, sizeof buf, "%0*d", digits, v);
                 const ImVec2 sz = font->CalcTextSizeA(ns, 1e9f, 0, buf);
-                HaloText(dl, font, ns, ImVec2(P(xr, 0).x - sz.x, cy - sz.y * 0.5f), col::kText, buf, t);
+                OutlineText(dl, font, ns, ImVec2(P(xr, 0).x - sz.x, cy - sz.y * 0.5f), IM_COL32(236, 240, 232, 255), buf, t);
             };
             auto tag = [&](float xl, const char* s) {
                 const ImVec2 sz = font->CalcTextSizeA(ts, 1e9f, 0, s);
-                dl->AddText(font, ts, ImVec2(P(xl, 0).x, cy - sz.y * 0.5f + 1), Alpha(col::kTextDim, t), s);
+                OutlineText(dl, font, ts, ImVec2(P(xl, 0).x, cy - sz.y * 0.5f + 1), s[0] == 'E' ? IM_COL32(110, 236, 240, 255) : IM_COL32(90, 160, 255, 255), s, t);
             };
-            num(right + 22, nums[0], 2);
-            tag(right + 30, "EP");
-            num(right + 56, nums[1], 2);
-            tag(right + 64, "AP");
-            num(right + 84, nums[2], 1);
+            num(right + 26, nums[0], 2);
+            tag(right + 34, "EP");
+            num(right + 70, nums[1], 2);
+            tag(right + 78, "AP");
+            num(right + 106, nums[2], 1);
         }
     }
     if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
         const float fy = float(strip->y) - 3, fw = rw;
         const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 20);
         Panel(dl, a, b, k, 0.85f, false, 0, 0);
-        const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 5 * kx, ts = 10.0f * k;
+        const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 6 * kx, ts = 13.0f * k;
         // the glyph fills the bar's height less a margin; the icon art is square with a wide
         // shoulder shape inside, so it is drawn at that height and measured by what it returns
         const float h = (b.y - a.y) - 8 * k;
-        const ImVec2 cs = font->CalcTextSizeA(ts, 1e9f, 0, "Change"), bs = font->CalcTextSizeA(ts, 1e9f, 0, "Boost");
+        const ImVec2 cs = UiFont(kFontLabel, font)->CalcTextSizeA(ts, 1e9f, 0, "CHANGE"), bs = UiFont(kFontLabel, font)->CalcTextSizeA(ts, 1e9f, 0, "BOOST");
         // measure RB without drawing it, by drawing into a scratch list
         static ImDrawList* scratch = nullptr;
         if (!scratch) scratch = IM_NEW(ImDrawList)(ImGui::GetDrawListSharedData());
@@ -445,9 +453,9 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         scratch->PushTextureID(ImGui::GetIO().Fonts->TexID);
         const float rbw = ShoulderGlyph(scratch, font, 0, 0, h, 1);
         const float lbw = ShoulderGlyph(dl, font, a.x + pad, cy, h, 0);
-        dl->AddText(font, ts, ImVec2(a.x + pad + lbw + gap, cy - cs.y * 0.5f), col::kTextDim, "Change");
+        OutlineText(dl, UiFont(kFontLabel, font), ts, ImVec2(a.x + pad + lbw + gap, cy - cs.y * 0.5f), col::kText, "CHANGE", 1.0f);
         ShoulderGlyph(dl, font, b.x - pad - rbw, cy, h, 1);
-        dl->AddText(font, ts, ImVec2(b.x - pad - rbw - gap - bs.x, cy - bs.y * 0.5f), col::kTextDim, "Boost");
+        OutlineText(dl, UiFont(kFontLabel, font), ts, ImVec2(b.x - pad - rbw - gap - bs.x, cy - bs.y * 0.5f), col::kText, "BOOST", 1.0f);
     }
 }
 
@@ -455,8 +463,9 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
    technique in a frame coloured by kind, the weapon's ammo / EP / AP, and the
    L1 / R1 strip.  Icon ids (uvTbl): 1 square, 2 triangle, 3 cross, 4 circle,
    +4 the unavailable variant. */
-void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, const GpuUiKeyGuide& g, uint64_t akey, bool rows) {
+void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float gh, const GpuUiKeyGuide& g, uint64_t akey, bool rows) {
     using namespace xsgmenu;
+    ImFont* font = font_in;
     LayoutBegin(gx, gy, gw, gh);
     const float k = LayoutK(), kx = LayoutKx();
     // the key guide and name plate (channels 0, 1) sit at the left; captured art elsewhere
@@ -478,7 +487,9 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             if (tx.type == GPU_KG_FRAME) break;
             if (tx.type != GPU_KG_TEXT || tx.y < fr.y || tx.y >= fr.y + 24 || tx.x < fx0 || tx.x >= fx1) continue;
             const std::string u = Decode(tx.text);
-            const float want = RichTextWidth(font, 13.0f * k, u.c_str()) / kx + 30.0f;
+            // measured in the plate's own type (Michroma 15 px with tracking, KgDraw GPU_KG_TEXT)
+            const float want = (UiFont(kFontLabel, font)->CalcTextSizeA(15.0f * k, 1e9f, 0, u.c_str()).x +
+                                15.0f * k * 0.18f * float(u.size())) / kx + 32.0f;
             const int half = std::min(fr.a, std::max(44, int(std::ceil(want * 0.5f))));
             const int delta = 2 * (fr.a - half);
             fr.a = half;
@@ -515,9 +526,12 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
         }
         case GPU_KG_TEXT: {
             // centred in the captured frame it sits in (the game centres it by character count)
+            // the original sets names in wide, letter-spaced type: Michroma with tracking
             const std::string t = Decode(o.text);
-            const float fs = 13.0f * k;
-            const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t.c_str());
+            ImFont* const font = UiFont(kFontLabel, font_in);
+            const float fs = 15.0f * k, track = fs * 0.18f;
+            ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t.c_str());
+            ts.x += track * float(t.size() > 0 ? t.size() - 1 : 0);
             float fl = float(o.x) - 2, fr = fl + 10 * float(std::strlen(o.text)) + 4;
             for (uint32_t j = i; j-- > 0;) {
                 const GpuUiKgOp& f = ops[j];
@@ -529,7 +543,16 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             }
             const float dx = x - float(o.x);
             const ImVec2 l = P(fl + dx, y), r = P(fr + dx, y);
-            HaloText(dl, font, fs, ImVec2((l.x + r.x - ts.x) * 0.5f, P(x, y + 9).y - ts.y * 0.5f), col::kText, t.c_str(), rt);
+            {
+                float cx = (l.x + r.x - ts.x) * 0.5f;
+                const float cy = P(x, y + 12).y - ts.y * 0.5f;
+                char one[2] = {0, 0};
+                for (char ch : t) {
+                    one[0] = ch;
+                    OutlineText(dl, font, fs, ImVec2(cx, cy), IM_COL32(236, 240, 232, 255), one, rt);
+                    cx += font->CalcTextSizeA(fs, 1e9f, 0, one).x + track;
+                }
+            }
             break;
         }
         case GPU_KG_NUMBER: {
@@ -730,10 +753,10 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             const float br = 0.5f + 0.5f * float(std::sin(AnimNow() * 3.2));
             dl->AddRect(ImVec2(a.x - 3 * k, a.y - 3 * k), ImVec2(c.x + 3 * k, c.y + 3 * k), Alpha(col::kCyan, 0.25f * br * t), 0, 0, 2.0f * k);
         }
-        const float ls = 10.0f * k, vs = 14.0f * k, ss = 10.0f * k;
+        const float ls = 13.0f * k, vs = 21.0f * k, ss = 13.0f * k;   // the original's large digits
         // the original's colours: HP / EP cyan, AP / BG blue; numbers in square digits, outlined
         ImFont* const lf = UiFont(kFontLabel, font);
-        ImFont* const nf = UiFont(kFontNumber, font);
+        ImFont* const nf = UiFont(kFontLabel, font);
         auto label = [&](float ly, const char* t) {
             const bool blue = t[0] == 'A' || t[0] == 'B';
             SmallCaps(dl, lf, ls * 0.95f, P(x + 0x40, ly + 1), blue ? IM_COL32(90, 160, 255, 255) : IM_COL32(110, 236, 240, 255), t, an.a);

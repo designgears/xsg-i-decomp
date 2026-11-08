@@ -244,8 +244,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const GpuUiKgOp& c = m.op[j];
             if ((c.type != GPU_KG_TEXT && c.type != GPU_KG_TAG) || c.y < w.y - 4 || c.y > w.y + w.dh || c.x < w.x || c.x > w.x + w.dw) continue;
             const char* t = m.pool + std::min<uint32_t>(uint32_t(c.b), XSG_GPU_UI_MENU_POOL - 1);
-            const float tw2 = font->CalcTextSizeA(15.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
-            right = std::max(right, float(c.x) + tw2 * (448.0f / 512.0f) * 1.1f);
+            // in game px, as drawn: the body font at 22 game px
+            const float tw2 = UiFont(kFontBody, font)->CalcTextSizeA(22.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
+            right = std::max(right, float(c.x) + tw2 / 1.1667f * 1.05f + 4);   // screen / kx, k = 1
         }
         if (right > 0 && right + 24 < w.x + w.dw) fitRight[i] = int(std::max(right + 24, float(w.x) + 120));
     }
@@ -394,6 +395,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             if (o.text[0] == 1) break;   // an inline text icon: drawn with its text
             if (o.text[2] == 1 + 1 && o.text[3] >= 9 && o.text[3] <= 22 && o.w == 29 && o.h == 20) {
                 // others_uv shoulder tabs (L1 / R1 arrows): the layout's shoulder button with an outward chevron
+                if (((o.rgba >> 24) & 0xff) < 0x40) break;   // a faded copy (mid-slide)
                 const bool right = o.text[3] == 16 || o.text[3] == 14 || o.text[3] == 12 || o.text[3] == 10 || o.text[3] == 20 || o.text[3] == 22;
                 const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
                 const float h = 13.0f * k;
@@ -431,7 +433,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 break;
             }
             if (o.text[2] == 1 + 2 && o.text[3] >= 0 && o.text[3] < 4) {   // pad_uv[0..3]: the face buttons
-                static const int kPad[4] = {1, 0, 3, 2};   // pad_uv: circle, cross, triangle, square (u 0, 22, 44, 66)
+                static const int kPad[4] = {1, 2, 3, 0};   // pad_uv: circle, square, triangle, cross (u 0, 22, 44, 66)
                 const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
                 Glyph(dl, font, c.x, c.y, std::min(o.dw * kx, o.dh * k) * 0.46f, kPad[size_t(o.text[3])], false);
                 break;
@@ -475,7 +477,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                         if (w.type != GPU_KG_WINDOW || !w.b || mx < w.x - 4 || mx > w.x + w.dw || my < w.y || my > w.y + w.dh) continue;
                         if (w.dw * w.dh < area) area = w.dw * w.dh, best = int(j);
                     }
-                    if (best >= 0) cxp = float(std::max(8, m.op[best].x - o.dw - 1));
+                    (void)best;   // the game's own place: snapping outside misplaced cursors (two windows, sliding)
                 }
                 const float x = cxp;
                 AnimState& cu = Anim(0x43555253ull + uint64_t(ord[size_t(it.order)]) * 0, x, y);
@@ -493,7 +495,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_TAG: {   // title letters; 0x03 n advances n pixels
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
-            const float fs = 14.0f * k;
+            const float fs = 19.0f * k;   // the original's tag caps are 16 px tall
             ImFont* const lf = UiFont(kFontLabel, font);   // the original's wide small caps, pale teal
             const ImU32 kLabelCol = IM_COL32(168, 218, 220, 255);
             struct Seg { std::string t; float dx; };
@@ -507,7 +509,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 } else segs.back().t += char(c);
             }
             for (const Seg& g : segs) width += g.dx + SmallCaps(dl, lf, fs, ImVec2(0, 0), 0, Decode(g.t.c_str()).c_str(), 0, false);
-            ImVec2 p = P(x, y + 1);
+            ImVec2 p = P(x, y + 16);   // the game's tags sit on a 16 px baseline
+            p.y -= fs * 1.0f;
             if (o.w) p.x -= width;
             for (const Seg& g : segs) {
                 p.x += g.dx;
@@ -533,8 +536,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const ImVec2 sz = font->CalcTextSizeA(fs, 1e9f, 0, buf);
             const ImVec2 c0 = P(px, y), c1 = P(px + gwid * float(digits), y + ghgt);
             {   // the original's square digits (Orbitron), outlined; width fitted to the game's digit span
-                ImFont* const nf = UiFont(kFontNumber, font);
-                float nfs = fs * 0.98f;
+                ImFont* const nf = UiFont(kFontLabel, font);   // Michroma: the original's wide Eurostile-like digits
+                float nfs = fs * 1.02f;
                 const float nw = nf->CalcTextSizeA(nfs, 1e9f, 0, buf).x, span = c1.x - c0.x;
                 if (nw > span * 1.02f) nfs *= span * 1.02f / nw;
                 const ImVec2 nsz = nf->CalcTextSizeA(nfs, 1e9f, 0, buf);
@@ -549,7 +552,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             ImFont* const tfont = UiFont(kFontBody, font);   // Exo 2, the original's clean wide sans
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
             // proportions: when the game measured the string (o.dw), the widest line takes the same width
-            float fs = 18.0f * k;
+            float fs = 22.0f * k;   // the original's text: 16 px capitals at 2x
             bool wraps = false;
             for (int q = 0; q < o.u; ++q) wraps |= s[q] == 6;
             if (o.dw > 8 && !wraps) {
@@ -562,7 +565,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     else if (c == 2) q += 1;
                     else line += char(c);
                 }
-                if (widest > 0) fs *= std::clamp(float(o.dw) * kx / widest, 0.6f, 1.6f);
+                // as tall as the original; narrower only when it would run well past the game's width
+                if (widest > float(o.dw) * kx * 1.08f) fs *= std::max(0.6f, float(o.dw) * kx * 1.08f / widest);
             }
             DrawText(dl, tfont, s, o.u, P(x, y + 2), fs, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
                 for (uint32_t j = 0; j < m.nops; ++j) {
@@ -571,10 +575,10 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     const float iw = float(ic.dw) * kx, ih = float(ic.dh) * k;
                     const float cy = at.y + h * 0.55f;
                     if (ic.text[2] == 1 + 2 && ic.text[3] >= 0 && ic.text[3] < 4) {   // a pad button: the controller's
-                        static const int kPad[4] = {1, 0, 3, 2};
-                        const float r = h * 0.42f;
+                        static const int kPad[4] = {1, 2, 3, 0};
+                        const float r = h * 0.55f;
                         Glyph(dl, font, at.x + r + h * 0.08f, cy, r, kPad[size_t(ic.text[3])], false);
-                        return 2 * r + h * 0.16f;
+                        return 2 * r + h * 0.22f;
                     }
                     const uint64_t t0 = uint64_t(ic.tex0_lo) | uint64_t(ic.tex0_hi) << 32;
                     ArtSprite(dl, t0, 0, float(ic.u), float(ic.v), float(ic.w), float(ic.h), ImVec2(at.x + 1 * kx, cy - ih * 0.5f),
