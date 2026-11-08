@@ -2852,6 +2852,74 @@
    ]
   },
   "main/tu153": {
+   ".data": [
+    {
+     "range": [
+      "0x0036b178",
+      "0x0036b184"
+     ],
+     "generated": [
+      "0x0036b178",
+      "0x0036b184"
+     ],
+     "generated_by": [
+      "JS_findObject"
+     ],
+     "c_owned_symbols": [
+      "js_type_int"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/js_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036b188",
+      "0x0036b194"
+     ],
+     "generated": [
+      "0x0036b188",
+      "0x0036b194"
+     ],
+     "generated_by": [
+      "JS_findObject"
+     ],
+     "c_owned_symbols": [
+      "js_type_float"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/js_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036b198",
+      "0x0036b1a4"
+     ],
+     "generated": [
+      "0x0036b198",
+      "0x0036b1a4"
+     ],
+     "generated_by": [
+      "JS_findObject"
+     ],
+     "c_owned_symbols": [
+      "js_type_string"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/js_init.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -2872,7 +2940,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/js_init.o"
+      "object": "build/main/build/c/js_init.o"
      }
     }
    ],
@@ -2880,27 +2948,27 @@
     {
      "range": [
       "0x004da590",
-      "0x004da598"
+      "0x004da5a8"
      ],
      "generated": [
       "0x004da590",
-      "0x004da598"
+      "0x004da5a8"
      ],
      "generated_by": [
       "JS_callMethod",
+      "JS_checkArgs",
       "JS_exec"
      ],
      "c_owned_symbols": [
-      "D_004DA590"
-     ],
-     "also_referenced_by_c": [
+      "D_004DA590",
       "D_004DA598",
       "D_004DA5A0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/js_init.o"
+      "object": "build/main/build/c/js_init.o"
      }
     }
    ]

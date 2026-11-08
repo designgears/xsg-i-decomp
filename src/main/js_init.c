@@ -52,13 +52,13 @@ JSClassRecord *classes;
 
 int numPrimitive;
 
-extern JSPrimitive js_type_int;
+static JSPrimitive js_type_int = { 3 };
 
 
-extern JSPrimitive js_type_float;
+static JSPrimitive js_type_float = { 4 };
 
 
-extern JSPrimitive js_type_string;
+static JSPrimitive js_type_string = { 5 };
 
 
 extern char D_004DA590[];
@@ -118,8 +118,10 @@ typedef struct JSClass {
 } JSClass;
 
 extern char D_004DA598[];
+char D_004DA598[8] = ",()";
 
 extern char D_004DA5A0[];
+char D_004DA5A0[8] = ".[]";
 
 extern double atof(const char *text);
 
