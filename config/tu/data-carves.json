@@ -8508,27 +8508,117 @@
    ]
   },
   "main/tu172": {
+   ".data": [
+    {
+     "range": [
+      "0x0036da90",
+      "0x0036daf0"
+     ],
+     "generated": [
+      "0x0036da90",
+      "0x0036daf0"
+     ],
+     "generated_by": [
+      "SeisanTimeEx",
+      "tskSeisanButton",
+      "tskSeisanItem",
+      "tskSeisanStatus"
+     ],
+     "c_owned_symbols": [
+      "msg_number",
+      "msg00_0_0036DAB8",
+      "D_0036DAC4",
+      "msg00_1_0036DAC8",
+      "msg00_2_0036DAD0",
+      "msg00_3_0036DAD8",
+      "msg01_4_0036DAE8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/seisan_count_init1.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004c7350",
+      "0x004c7340",
       "0x004c7390"
      ],
      "generated": [
-      "0x004c7350",
+      "0x004c7340",
       "0x004c738c"
      ],
      "generated_by": [
-      "SeisanDisp"
+      "SeisanDisp",
+      "tskSeisanStatus"
      ],
      "c_owned_symbols": [
+      "D_004C7340",
       "D_004C7350"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/seisan_count_init1.o"
+      "object": "build/main/build/c/seisan_count_init1.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db090",
+      "0x004db0dc"
+     ],
+     "generated": [
+      "0x004db090",
+      "0x004db0dc"
+     ],
+     "generated_by": [
+      "SeisanCountInit2",
+      "SeisanCountMain",
+      "SeisanDisp",
+      "SeisanFadeMain",
+      "SeisanInit",
+      "SeisanMain",
+      "SeisanTimeEx",
+      "subSeisanCheck",
+      "subSeisanHissatuCheck00",
+      "subSeisanHissatuCheck01",
+      "subSeisanMain",
+      "tskSeisanButton",
+      "tskSeisanItem",
+      "tskSeisanStatus",
+      "tskTskMain2"
+     ],
+     "c_owned_symbols": [
+      "D_004DB090",
+      "D_004DB098",
+      "D_004DB0A0",
+      "D_004DB0A8",
+      "D_004DB0B0",
+      "D_004DB0B8",
+      "SeisanWork",
+      "SeisanBgTask",
+      "SeisanTask",
+      "SeisanResult",
+      "SeisanMg",
+      "SeisanItemBox",
+      "SeisanFade"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DB0A0": "msg00_3_0036DAD8",
+      "D_004DB0A8": "msg00_3_0036DAD8",
+      "D_004DB0B0": "msg00_3_0036DAD8"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/seisan_count_init1.o"
      }
     }
    ]

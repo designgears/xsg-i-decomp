@@ -6,6 +6,7 @@
 
 #include "seisan_count_init1.h"
 
+const char D_004C7340[] = "Combatant";
 const SeisanRibbonData D_004C7350 = {
     { 0x00000000, 0x0000FFFF, 0x80000000, 0x01C00000,
       0x0000FFFF, 0x80000000, 0x00000200, 0x0000FFFF,
@@ -30,7 +31,7 @@ extern SeisanCountData SeisanCN;
 
 /* The original eight-byte prompt-pointer table remains in data scaffolding. */
 
-extern const char *msg00_1_0036DAC8[];
+extern const char *msg00_1_0036DAC8[] __asm__("msg00.1");
 
 void SeisanCountInit1(void)
 {
@@ -355,7 +356,7 @@ typedef struct SeisanTimePanelTE {
     SeisanTimeNumberTE numbers[3];
     SeisanTimeSpriteTE sprites[2];
 } SeisanTimePanelTE;
-extern const char *msg00_0_0036DAB8[3];
+extern const char *msg00_0_0036DAB8[3] __asm__("msg00.0");
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern void eTagFontSet(void *tag, const char *title);
@@ -526,7 +527,7 @@ typedef struct SeisanLabelBytesSI {
     unsigned char bytes[5];
 } SeisanLabelBytesSI;
 extern SeisanItemEntrySI *SeisanItemBox;
-extern const char *msg00_2_0036DAD0[];
+extern const char *msg00_2_0036DAD0[] __asm__("msg00.2");
 extern const unsigned short *msg_number[10];
 extern const char D_004DB090[];
 extern const char D_004DB098[];
@@ -836,8 +837,8 @@ extern void MenuStatusDisp(SeisanTimeWindow *window, void *argument);
 extern void endSpriteSet(void *sprite, int flags);
 extern SeisanItemTextEntry *func_A2C7D8(int abilityId);
 extern const char D_004C7340[];
-extern const char *msg00_3_0036DAD8[];
-extern const char *msg01_4_0036DAE8[];
+extern const char *msg00_3_0036DAD8[] __asm__("msg00.3");
+extern const char *msg01_4_0036DAE8[] __asm__("msg01.4");
 static inline int SeisanLearnedCount(int partySlot)
 {
     const SeisanHissatuEntry_SS *results = ((SeisanResultData_SS *)SeisanResult)->entries;
@@ -1709,3 +1710,54 @@ void SeisanInit(void)
     GameResourcePreLoad(GameLoopState[6]);
     MenuWorkEndCheck(work);
 }
+
+
+/* ---- initialized .data / .sdata (original order) ----
+ * The strings the message tables point at, other than msg00.3's, sit in
+ * menu_agws_para_set's .sdata/.rodata in the split. The labels below are
+ * defined under their own C names so the functions above keep reading them
+ * from memory. */
+const char s_ordinalPad_004DB090[] __asm__("D_004DB090") = "\241\241\241\246";
+const char s_quantityPad_004DB098[] __asm__("D_004DB098") = "\241\337\241\241";
+extern const char D_004DB068[];
+extern const char D_004DB060[];
+extern const char D_004DB058[];
+extern const char D_004DB050[];
+extern const char D_004DB048[];
+extern const char D_004DB040[];
+extern const char D_004DB038[];
+extern const char D_004DB030[];
+extern const char D_004DB028[];
+extern const char D_004DB020[];
+extern const char D_004DB078[];
+extern const char D_004C72E0[];
+extern const char D_004DB070[];
+extern const char D_004DB088[];
+extern const char D_004DB080[];
+extern const char D_004C7300[];
+extern const char D_004C72F0[];
+extern const char D_004C7310[];
+extern const char D_004C7330[];
+extern const char D_004C7320[];
+
+static const unsigned short *msg_number[10] = {
+    (const unsigned short *)D_004DB068, (const unsigned short *)D_004DB060, (const unsigned short *)D_004DB058,
+    (const unsigned short *)D_004DB050, (const unsigned short *)D_004DB048, (const unsigned short *)D_004DB040,
+    (const unsigned short *)D_004DB038, (const unsigned short *)D_004DB030, (const unsigned short *)D_004DB028,
+    (const unsigned short *)D_004DB020,
+};
+static const char *msg00_0_0036DAB8[3] __asm__("msg00.0") = { D_004DB078, D_004C72E0, D_004DB070 };
+static const char *msg00_1_0036DAC8[2] __asm__("msg00.1") __attribute__((section(".data"))) = { D_004DB088, D_004DB080 };
+static const char *msg00_2_0036DAD0[2] __asm__("msg00.2") __attribute__((section(".data"))) = { D_004C7300, D_004C72F0 };
+static const char *msg00_3_0036DAD8[4] __asm__("msg00.3") = { "\001T.Pts", "\001E.Pts", "\001S.Pts", D_004C7310 };
+static const char *msg01_4_0036DAE8[2] __asm__("msg01.4") __attribute__((section(".data"))) = { D_004C7330, D_004C7320 };
+
+const SeisanItemCategoryTable s_itemGroups_004DB0B8[1] __asm__("D_004DB0B8") = { { 1, 3, 4, 5 } };
+unsigned char *SeisanWork = 0;
+XglTaskScheduler *SeisanBgTask = 0;
+XglTaskScheduler *SeisanTask = 0;
+#undef SeisanResult
+SeisanResultData *SeisanResult = 0;
+SeisanMoneyDataTE *SeisanMg = 0;
+SeisanItemEntrySI *SeisanItemBox = 0;
+unsigned char *SeisanFade = 0;
