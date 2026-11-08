@@ -16256,22 +16256,73 @@
    ]
   },
   "ov02/tu013_00a0de20": {
+   ".data": [
+    {
+     "range": [
+      "0x00a10c40",
+      "0x00a10c44"
+     ],
+     "generated": [
+      "0x00a10c40",
+      "0x00a10c44"
+     ],
+     "generated_by": [
+      "tskUmnPluginPas"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_00A10C40"
+     ],
+     "also_referenced_by_c": [
+      "msg00_1_00A10C48"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10c50",
+      "0x00a10c60"
+     ],
+     "generated": [
+      "0x00a10c50",
+      "0x00a10c60"
+     ],
+     "generated_by": [
+      "UmnPlugin",
+      "tskUmnPluginList"
+     ],
+     "c_owned_symbols": [
+      "plugin_folder"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a13450",
+      "0x00a13440",
       "0x00a13550"
      ],
      "generated": [
-      "0x00a13450",
+      "0x00a13440",
       "0x00a1354b"
      ],
      "generated_by": [
       "UmnPlugin",
       "tskUmnPluginInfo",
-      "tskUmnPluginList"
+      "tskUmnPluginList",
+      "tskUmnPluginPas"
      ],
      "c_owned_symbols": [
+      "D_00A13440",
       "D_00A13450",
       "D_00A13458",
       "D_00A13460",
@@ -16279,6 +16330,9 @@
       "D_00A13540"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A13440": "msg00_0_00A10C40"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
