@@ -208,7 +208,7 @@ typedef struct CameraDefocusLayer {
     int parameters[16];
 } CameraDefocusLayer;
 
-extern unsigned char CfCameraDefine[];
+extern CameraDefinition CfCameraDefine[33];
 struct CameraArea;
 typedef struct CamQueryBlk {
     int flags0;                         /* +0x00 */
@@ -244,7 +244,7 @@ static float CamPosPos[4];
 static float HokanNow[12];
 extern void GameCamera(void);
 void GameCameraChangeID(int id, int id2, int id3);
-#define CFD ((CameraDefinition *)CfCameraDefine)
+#define CFD CfCameraDefine
 #define HKN (*(HokanState *)HokanNow)
 #define GLS (*(GameLoopCameraView *)GameLoopState)
 
@@ -300,7 +300,6 @@ void GameCameraReset(void)
 
 typedef struct { long long b[0x5F0 / 8]; } CamBlob;
 extern StudioCamera save_cam;
-extern unsigned char CfCameraDefine[];
 static inline void QCopy(void *dst, void *src)
 {
     __asm__ __volatile__("lq $2, 0(%1)\n\tsq $2, 0(%0)" : : "r"(dst), "r"(src) : "$2", "memory");
@@ -311,7 +310,7 @@ void GameCameraStateSave(void) {
     StudioCamera *cam = xglStudioGetCamera2(0);
     *(CamBlob *)&save_cam = *(CamBlob *)cam;
     q = GameLoopState + 0x240;
-    QCopy(q, CfCameraDefine + 0x30);
+    QCopy(q, (unsigned char *)CfCameraDefine + 0x30);
     q -= 0x240;
     *(int *)(q + 0x230) = *(int *)(q + 0x28);
 }
@@ -330,7 +329,7 @@ void GameCameraStateRestore(void) {
 
     cam->state = 4;
     cam->rotation.z = 0.0f;
-    d = CfCameraDefine + 0x30;
+    d = (unsigned char *)CfCameraDefine + 0x30;
     q = GameLoopState + 0x240;
     QCopy(d, q);
     q -= 0x240;
@@ -1512,3 +1511,8 @@ void GameCamera(void)
     }
     GLS.camera_flags &= 0x3f;
 }
+
+/* The CF-camera definition records and the saved studio camera
+ * (main 0x00362E80..0x00364910), zero until the game fills them. */
+CameraDefinition CfCameraDefine[33] __attribute__((aligned(16))) = { { 0 } };
+StudioCamera save_cam = { 0 };
