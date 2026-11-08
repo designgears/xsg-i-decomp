@@ -982,7 +982,7 @@ def plan_split(elf, csec, specs, want, check_items=False):
             starts = {s.value for s in own if s.size}
             inside = lambda a: any(s.value < a < s.value + s.size for s in own if s.size)
             better = [a for a in fit if a in starts and not inside(a)]
-            if better:
+            if better and not ref:          # first item all zero: bytes decide nothing
                 fit = better + [a for a in fit if a not in better]
             notes.append(f'run {h8(cur["lo"])}: offsets {[hex(a) for a in fit]} fit; +0x{fit[0]:x} taken')
         offsets.append(fit[0])
