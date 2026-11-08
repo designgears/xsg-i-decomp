@@ -33651,7 +33651,7 @@
       "name_confidence": "low",
       "ordinal": 120,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
         ".sbss": "asm",
