@@ -9176,14 +9176,17 @@
     {
      "range": [
       "0x004d7d64",
-      "0x004d7d98"
+      "0x004d7da4"
      ],
      "generated": [
       "0x004d7d64",
-      "0x004d7d98"
+      "0x004d7da4"
      ],
      "generated_by": [
-      "tskMenuTai"
+      "MenuBackModelSet",
+      "MenuStatusDisp",
+      "tskMenuTai",
+      "tskMenuTaiPointa"
      ],
      "c_owned_symbols": [
       "D_004D7D64",
@@ -9198,31 +9201,9 @@
       "D_004D7D88",
       "D_004D7D8C",
       "D_004D7D90",
-      "D_004D7D94"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7D94",
       "D_004D7D98",
-      "D_004D7D9C"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_top_command_check.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7da0",
-      "0x004d7da4"
-     ],
-     "generated": [
-      "0x004d7da0",
-      "0x004d7da4"
-     ],
-     "generated_by": [
-      "MenuStatusDisp"
-     ],
-     "c_owned_symbols": [
+      "D_004D7D9C",
       "D_004D7DA0"
      ],
      "also_referenced_by_c": [],
@@ -9237,16 +9218,18 @@
     {
      "range": [
       "0x004c3380",
-      "0x004c3640"
+      "0x004c37c0"
      ],
      "generated": [
       "0x004c3380",
-      "0x004c3631"
+      "0x004c37c0"
      ],
      "generated_by": [
       "TopFaceExWinMain",
       "TopInfoMain",
-      "TopMenuWinMain"
+      "TopMenuWinMain",
+      "tskMenuTai",
+      "tskMenuTaiPointa"
      ],
      "c_owned_symbols": [
       "D_004C3380",
@@ -9265,15 +9248,14 @@
       "D_004C35F8",
       "D_004C3608",
       "D_004C3618",
-      "D_004C3628"
-     ],
-     "also_referenced_by_c": [
+      "D_004C3628",
       "D_004C3640",
       "D_004C3650",
       "D_004C36C0",
       "D_004C3720",
       "D_004C3790"
      ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_004C3380": "text",
       "D_004C33D8": "text",
