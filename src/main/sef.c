@@ -64,10 +64,12 @@ static unsigned char _battleData[0x230];
 static unsigned char _battlePrm[0x40];
 static SefBattleActorTbl _battleActor[1];
 
-extern SchedulerState *_nowScheduler;
-extern int _nowScriptAdr;
-extern int _nowParentLocal;
-extern int _sefLoadEftQue;
+static SchedulerState *_nowScheduler;
+static int _nowScriptAdr;
+/* 8 bytes in the original (cc1 emits each .lcomm label before its .align, so the
+ * unused word at 0x004DC67C is the tail of this object); only word 0 is used. */
+static int _nowParentLocal[2];
+static int _sefLoadEftQue;
 
 #define SEF_LINE_DATA_RECORD_SIZE 0x820
 #define SEF_LINE_DATA_COUNT 0x80
@@ -608,7 +610,7 @@ int sefLerpVector(SefKey5 *keys, SefProgressState *state)
 static int sefLerpVectorSC(void *keys, Vector4 *vectors)
 {
     int status = sefLerpVector(keys, vectors);
-    float scale = effect_scale_literal_0_1;
+    float scale = 0.1f;
 
     __asm__ __volatile__("" : : "f"(scale));
 
@@ -930,8 +932,8 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
             if (target == 4) {
                 unsigned char *parent;
 
-                if (_parentLine >= 0 && _nowParentLocal >= 0) {
-                    parent = &_ptAlloc[_nowParentLocal * 640];
+                if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+                    parent = &_ptAlloc[_nowParentLocal[0] * 640];
                 } else {
                     parent = 0;
                 }
@@ -999,7 +1001,7 @@ void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
  */
 static void sefGetCirclePos(Vector4 *pos, float radius)
 {
-    float angle = sefRandf() * 360.0f * circle_angle_scale_literal;
+    float angle = sefRandf() * 360.0f * 0.017453292f;
     float x_unit;
     float z_unit;
 
@@ -1550,8 +1552,8 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
     } else if (type == 4) {
         unsigned char *parent;
 
-        if (_parentLine >= 0 && _nowParentLocal >= 0) {
-            parent = &_ptAlloc[_nowParentLocal * 640];
+        if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+            parent = &_ptAlloc[_nowParentLocal[0] * 640];
         } else {
             parent = 0;
         }
@@ -1726,8 +1728,8 @@ static void sefCalcLocalMatrix(unsigned char *record, int target, int previous_t
     if (target == 4) {
         unsigned char *parent;
 
-        if (_parentLine >= 0 && _nowParentLocal >= 0) {
-            parent = &_ptAlloc[_nowParentLocal * 640];
+        if (_parentLine >= 0 && _nowParentLocal[0] >= 0) {
+            parent = &_ptAlloc[_nowParentLocal[0] * 640];
         } else {
             parent = 0;
         }
@@ -1853,7 +1855,7 @@ static void sefCalcRotChange(unsigned char *record, int flags, int update)
     __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(record + SEF_ROTCHANGE_DELTA) : "memory");
 
     {
-        register float degToRad asm("$f8") = D_004D8318;
+        register float degToRad asm("$f8") = 0.017453292f;
 
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"
@@ -2173,7 +2175,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                         }
                     }
 
-                    _nowParentLocal = particle->kind;
+                    _nowParentLocal[0] = particle->kind;
                     __asm__ __volatile__(
                         "lqc2 $vf21, 0(%0)\n\t"
                         "lqc2 $vf1, 0(%2)\n\t"
@@ -2691,7 +2693,6 @@ typedef struct SefLocalData {
     unsigned char unmodeled_800[0x80e - 0x800];
     short cursor;                                      /* +0x80e */
 } SefLocalData;
-extern float D_004D8338;
 #define D_004D833C (0.009999999776482582f)
 #define D_004D8340 (0.009999999776482582f)
 #define D_004D8344 (3.0518509447574615e-05f)
@@ -2764,16 +2765,19 @@ int sefCreateParticle(SefLocalData *data, int kind)
                     "lqc2 vf1, 0(%0)\n\t"
                     "lqc2 vf2, 0(%1)\n\t"
                     "vsub.xyz vf1, vf1, vf2\n\t"
-                    "sqc2 vf1, 0(%2)"
+                    "sqc2 vf1, 0(%2)\n\t"
+                    "lqc2 vf2, 0(%2)"
                     : : "r"(&jitter), "r"(&spread), "r"(&particle->random_rotation) : "memory");
-                __asm__ __volatile__(
-                    "lqc2 vf2, 0(%0)\n\t"
-                    "lwc1 $f8, %1\n\t"
-                    "mfc1 $8, $f8\n\t"
-                    "qmtc2 $8, vf1\n\t"
-                    "vmulx.xyz vf2, vf2, vf1x\n\t"
-                    "sqc2 vf2, 0(%0)"
-                    : : "r"(&particle->random_rotation), "m"(D_004D8338) : "$8", "$f8", "memory");
+                {
+                    register float degToRad asm("$f8") = 0.017453292f;
+
+                    __asm__ __volatile__(
+                        "mfc1 $8, %1\n\t"
+                        "qmtc2 $8, vf1\n\t"
+                        "vmulx.xyz vf2, vf2, vf1x\n\t"
+                        "sqc2 vf2, 0(%0)"
+                        : : "r"(&particle->random_rotation), "f"(degToRad) : "$8", "memory");
+                }
                 battle = _battleData;
                 if (*(int *)(battle + 0x22C) != 0) {
                     __asm__ __volatile__(
@@ -2984,7 +2988,7 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
             for (parent_line = 0; parent_line < 0x100; parent_line++) {
                 point_handle = parent_data->pointHandles[parent_line];
                 if (point_handle >= 0) {
-                    _nowParentLocal = point_handle;
+                    _nowParentLocal[0] = point_handle;
                     if (scale_is_fixed) {
                         sefGetPosition(&global->global_position, (unsigned char *)&global->global_position_source, keys[0][0]);
                         __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&global->global_position) : "memory");
@@ -5095,6 +5099,7 @@ typedef struct {
     short id;
     short effectNo;
 } SefBossDeathEnt;
+
 extern SefBossDeathEnt _sefBossDeathPrm_4[];
 
 static void sefCnvDeathEffectNo(SefDeathPrm *p) {
@@ -5852,7 +5857,7 @@ void sefDeg2RadVector(Vector4 *dst, Vector4 *src)
     __asm__ __volatile__("lqc2 $vf2, 0(%0)" : : "r"(src) : "memory");
 
     {
-        register float degToRad asm("$f8") = lit4_004d8354;
+        register float degToRad asm("$f8") = 0.017453292f;
 
         __asm__ __volatile__(
             "mfc1 $8, %1\n\t"

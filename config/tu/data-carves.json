@@ -15783,76 +15783,35 @@
     {
      "range": [
       "0x004d82d8",
-      "0x004d82dc"
+      "0x004d8358"
      ],
      "generated": [
       "0x004d82d8",
-      "0x004d82dc"
+      "0x004d8358"
      ],
      "generated_by": [
+      "sefAddLightActor",
+      "sefAnalyzeAnim",
+      "sefCalcRotChange",
+      "sefCreateParticle",
+      "sefDeg2RadVector",
+      "sefExecLineData",
+      "sefExecLineLocalData",
+      "sefGetCirclePos",
+      "sefGetCubePos",
+      "sefGetCubePosBtm",
+      "sefGetOfsRange",
+      "sefInitLineData",
+      "sefLerpFloat",
+      "sefLerpVectorSC",
       "sefRandf"
      ],
      "c_owned_symbols": [
-      "sef_rand_unit_scale_literal"
-     ],
-     "also_referenced_by_c": [
-      "D_004D82B4",
-      "D_004D82B8",
-      "D_004D82BC",
-      "D_004D82C0",
-      "D_004D82C4",
-      "D_004D82C8",
-      "D_004D82CC",
-      "D_004D82D0",
-      "D_004D82D4",
-      "effect_scale_literal_0_1"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d82e0",
-      "0x004d82e8"
-     ],
-     "generated": [
-      "0x004d82e0",
-      "0x004d82e8"
-     ],
-     "generated_by": [
-      "sefLerpFloat"
-     ],
-     "c_owned_symbols": [
+      "sef_rand_unit_scale_literal",
+      "effect_scale_literal_0_1",
       "D_004D82E0",
-      "D_004D82E4"
-     ],
-     "also_referenced_by_c": [
-      "circle_angle_scale_literal"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d82ec",
-      "0x004d8318"
-     ],
-     "generated": [
-      "0x004d82ec",
-      "0x004d8318"
-     ],
-     "generated_by": [
-      "sefGetCubePos",
-      "sefGetCubePosBtm",
-      "sefGetOfsRange"
-     ],
-     "c_owned_symbols": [
+      "D_004D82E4",
+      "circle_angle_scale_literal",
       "D_004D82EC",
       "D_004D82F0",
       "D_004D82F4",
@@ -15863,73 +15822,34 @@
       "D_004D8308",
       "D_004D830C",
       "D_004D8310",
-      "D_004D8314"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8318"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d831c",
-      "0x004d8338"
-     ],
-     "generated": [
-      "0x004d831c",
-      "0x004d8338"
-     ],
-     "generated_by": [
-      "sefAnalyzeAnim",
-      "sefExecLineLocalData",
-      "sefInitLineData"
-     ],
-     "c_owned_symbols": [
+      "D_004D8314",
+      "D_004D8318",
       "D_004D831C",
       "D_004D8320",
       "D_004D8324",
       "D_004D8328",
       "D_004D832C",
       "D_004D8330",
-      "D_004D8334"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8338"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d833c",
-      "0x004d8354"
-     ],
-     "generated": [
-      "0x004d833c",
-      "0x004d8354"
-     ],
-     "generated_by": [
-      "sefAddLightActor",
-      "sefCreateParticle",
-      "sefExecLineData"
-     ],
-     "c_owned_symbols": [
+      "D_004D8334",
+      "D_004D8338",
       "D_004D833C",
       "D_004D8340",
       "D_004D8344",
       "D_004D8348",
       "D_004D834C",
-      "D_004D8350"
+      "D_004D8350",
+      "lit4_004d8354"
      ],
      "also_referenced_by_c": [
-      "lit4_004d8354"
+      "D_004D82B4",
+      "D_004D82B8",
+      "D_004D82BC",
+      "D_004D82C0",
+      "D_004D82C4",
+      "D_004D82C8",
+      "D_004D82CC",
+      "D_004D82D0",
+      "D_004D82D4"
      ],
      "basis": {
       "kind": "derived",
