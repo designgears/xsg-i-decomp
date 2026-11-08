@@ -1067,11 +1067,6 @@ typedef struct UnduQueryParameters {
 } UnduQueryParameters;
 
 extern int printf(const char *format, ...);
-extern const char D_004D26F8[];
-extern const char D_004D2718[];
-extern const char D_004D2730[];
-extern const char D_004D2790[];
-extern const char D_004D27B0[];
 #define DEBUG_BREAK() __asm__ __volatile__("break 0")
 
 float UnduCheck(float *sample, void *output, UnduQuery *query)
@@ -1140,9 +1135,9 @@ float UnduCheck(float *sample, void *output, UnduQuery *query)
         attribute = query->prefix.parameters.previousAttribute;
     if ((unsigned int)attribute < (unsigned int)work->subListOffset
         && (unsigned int)attribute >= work->subListOffset + work->subCount * 0x18) {
-        printf(D_004D26F8, caller);
-        if (D_004D2718 != 0) {
-            printf(D_004D2730, D_004D2790, D_004D27B0, 1269);
+        printf("\nUnduCheck() call from %08x\n", caller);
+        if ("sUnduParam->undu error" != 0) {
+            printf("\n\n************************\n\nAssert(%s)\n    file = %s  line = %d\n\n************************\n\n\n", "!\"sUnduParam->undu error\"", "../Undulate.euc.c", 1269);
             DEBUG_BREAK();
         }
     }
