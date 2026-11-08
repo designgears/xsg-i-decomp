@@ -15563,22 +15563,22 @@
    ".data": [
     {
      "range": [
-      "0x00a4f688",
+      "0x00a4f668",
       "0x00a4f6a8"
      ],
      "generated": [
-      "0x00a4f688",
+      "0x00a4f668",
       "0x00a4f6a8"
      ],
      "generated_by": [
-      "RgEquipPosToJntID"
+      "RgEquipPosToJntID",
+      "RgEquipSetDefault"
      ],
      "c_owned_symbols": [
+      "s_aePosToType",
       "s_aePosToJntID"
      ],
-     "also_referenced_by_c": [
-      "s_aePosToType"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

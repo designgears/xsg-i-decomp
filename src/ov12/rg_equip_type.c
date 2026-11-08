@@ -8,6 +8,7 @@
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 
+static int s_aePosToType[8] = {0, 0, 0, 1, 1, 1, 2, 2};
 static int s_aePosToJntID[8] = {0, 2, 4, 1, 3, 5, 6, 7};
 const char D_00A53E10[] = "(RG_EQUIP_POS_LEFT_HAND <= (ePos) && (ePos) <= RG_EQUIP_POS_BACK_RIGHT) || (ePos) == RG_EQUIP_POS_INVALID";
 const char D_00A53E80[] = "../rg_equip_type.euc.c";
@@ -91,7 +92,6 @@ int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask)
     ((RgEquipRecordView *)pEquip)->mounts[n].mask = mask;
 }
 
-extern int s_aePosToType[8];
 const char D_00A53F38[] = "nMount >= 0";
 const char D_00A53F48[] = "apEquip != NIL";
 const char D_00A53F58[] = "RG_EQUIP_TYPE_MIN <= eType && eType < RG_EQUIP_TYPE_NUM";
