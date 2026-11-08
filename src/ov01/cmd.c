@@ -6,6 +6,43 @@
 #include "ov01/calc.h"
 #include "ov01/obj.h"
 #include "cmd.h"
+typedef struct MbankParams {
+    unsigned char unmodeled_0[0xA0];
+    float angle;                      /* +0xA0: bank angle in radians */
+    unsigned char unmodeled_a4[0xB0 - 0xA4]; /* 0xB0-byte camera block */
+} MbankParams;
+typedef struct MpersParams {
+    unsigned char unmodeled_0[0xA4];
+    float value;                      /* +0xA4: tenths-scaled perspective value */
+    unsigned char unmodeled_a8[0xB0 - 0xA8]; /* 0xB0-byte camera block */
+} MpersParams;
+
+static unsigned char processBuf[0x240];
+static unsigned char context[0x1D0];
+#define D_00A59AF8 (context[0xE8])
+static int pDataTop;
+static int pContext;
+static int pThinkTop;
+static MonsTblEntry *pMonsSetTop;
+static ObjectTask *pThinkUnit;
+static CamTopEntry *pCamTop;
+static short *pCamSetTop;
+static short camTblIdx;
+static int cmdPutFlag;
+static int msgPosX;
+static int msgPosY;
+static int camMode;
+static int persMode;
+static int bankMode;
+static McamParams mcamView __attribute__((aligned(16)));
+static McamParams mcamLookAt;
+static McamParams mcamViewMove;
+static McamParams mcamLookAtMove;
+static MpersParams mcamPers;
+static MbankParams mcamBank;
+static MpersParams mcamPersMove;
+static MbankParams mcamBankMove;
+static short D_00A5A1A0[36];
 
 typedef union {
     unsigned char byteValue;
@@ -133,8 +170,6 @@ int thinkProcessExecSub(ThinkProcess *proc)
     return 1;
 }
 
-extern int msgPosX;
-extern int msgPosY;
 extern int mapNoGet(void);
 
 void thinkInit(void)
@@ -165,7 +200,6 @@ void thinkInit(void)
     mapNoSet(mapNo);
 }
 
-extern short *pCamSetTop;
 extern int mapNoGet(void);
 extern void *dataMapCameraAdrGet(int mapNo);
 
@@ -197,7 +231,6 @@ int thinkMonsTblGet(int monsSetNo)
     return thinkAdrGet(pMonsSetTop[monsSetNo].script_offset);
 }
 
-extern short *pCamSetTop;
 
 int thinkCamTblNumGet(void)
 {
@@ -215,7 +248,6 @@ int thinkCamTblNumGet(void)
 
 extern int camExec(short scriptOffset);
 extern int cameraFlagGet(void);
-extern unsigned char D_00A59AF8;
 
 int camInitExec(void)
 {
@@ -908,8 +940,6 @@ int cmdCmdputoff(void)
     return 0;
 }
 
-extern int msgPosX;
-extern int msgPosY;
 static inline void rd(ThinkProcess *proc, int *dst)
 {
     *dst = cmdNum(proc->pc);
@@ -1325,7 +1355,6 @@ int cmdUnittbl(ThinkProcess *proc)
     return 0;
 }
 
-extern short D_00A5A1A0[36];
 
 int cmdUnitCreate(ThinkProcess *proc)
 {
@@ -1815,10 +1844,6 @@ int cmdLightDir(ThinkProcess *proc)
     return 0;
 }
 
-extern McamParams mcamView;
-extern McamParams mcamLookAt;
-extern McamParams mcamViewMove;
-extern McamParams mcamLookAtMove;
 
 McamParams *mcamPtrGet(void)
 {
@@ -1845,8 +1870,6 @@ McamParams *mcamPtrGet(void)
 }
 
 struct MpersParams;
-extern struct MpersParams mcamPers;
-extern struct MpersParams mcamPersMove;
 
 struct MpersParams *mpersPtrGet(void)
 {
@@ -1854,8 +1877,6 @@ struct MpersParams *mpersPtrGet(void)
 }
 
 struct MbankParams;
-extern struct MbankParams mcamBank;
-extern struct MbankParams mcamBankMove;
 
 struct MbankParams *mbankPtrGet(void)
 {
@@ -2355,10 +2376,6 @@ int cmdCamCoordGet(ThinkProcess *proc)
  * mbankPtrGet (this TU, still asm) returns the bank parameter block
  * cmdCamBank fills in; only the member that function touches is modeled.
  */
-typedef struct MbankParams {
-    unsigned char unmodeled_0[0xA0];
-    float angle;                      /* +0xA0: bank angle in radians */
-} MbankParams;
 
 extern MbankParams *mbankPtrGet(void);
 
@@ -2380,10 +2397,6 @@ int cmdCamBank(ThinkProcess *proc)
  * mpersPtrGet (this TU, still asm) returns the perspective parameter block
  * cmdCamPers fills in; only the member that function touches is modeled.
  */
-typedef struct MpersParams {
-    unsigned char unmodeled_0[0xA4];
-    float value;                      /* +0xA4: tenths-scaled perspective value */
-} MpersParams;
 
 extern MpersParams *mpersPtrGet(void);
 
