@@ -132,7 +132,6 @@ extern void CardDeckListDisp(CsdList *list);
 
 extern void CardDeckDisp(CsdList *list, void *info);
 
-extern CsdList *D_00A5783C;
 extern int ActiveCursol_2;
 extern void xglMatrixScale(float (*destination)[4], float (*source)[4], const float scale[4]);
 
@@ -205,7 +204,6 @@ enum {
 #define CARD_DIGIT_MODEL_SHIFT 10
 #define CARD_DIGIT_TEXTURE 0x01C990A0
 extern int ActiveCursol_0;
-extern CsdList *D_00A57838;
 extern unsigned char TypeMaskLst[];
 extern unsigned char AttriMaskLst[];
 extern void CardListDisp(void *list, CsdWork *work);
@@ -220,6 +218,7 @@ extern void nmlModelEntryCard(int entry);
 
 int CardMakeDeckProc(int exiting, CsdList *list, CsdList *deck, CsdWork *work)
 {
+    static CsdList *D_00A57838 __asm__("D_00A57838");
     float matrix[4][4];
     float offset[4];
     float scale[4];
@@ -652,6 +651,7 @@ int CardMakeDeckProc(int exiting, CsdList *list, CsdList *deck, CsdWork *work)
 
 int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
 {
+    static CsdList *D_00A5783C __asm__("D_00A5783C");
     float trans[4];
     float mat[4][4];
     float trans2[4];
@@ -849,10 +849,10 @@ int CardLoadDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
     return ret;
 }
 
-extern CsdList *D_00A57840;
 extern int ActiveCursol_4;
 int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
 {
+    static CsdList *D_00A57840 __asm__("D_00A57840");
     float trans[4];
     float mat[4][4];
     int ret;
@@ -1036,12 +1036,12 @@ int CardSaveDeckProc(int exiting, CsdList *cursor, CsdList *list, CsdWork *work,
     return ret;
 }
 
-extern CsdList *D_00A57844;
 extern int ActiveCursol_6;
 extern u8 *EnemyDeckLst[48];
 
 int CardLoadDeckProc2(int exiting, CsdList *cursor, CsdList *list, CsdWork *work, char *title)
 {
+    static CsdList *D_00A57844 __asm__("D_00A57844");
     float trans[4];
     float mat[4][4];
     float trans2[4];
