@@ -10097,17 +10097,23 @@
     {
      "range": [
       "0x003b2e00",
-      "0x0040d4e0"
+      "0x0040d670"
      ],
      "generated": [
       "0x003b2e00",
-      "0x0040d4e0"
+      "0x0040d670"
      ],
      "generated_by": [
+      "SGsInitEnv",
+      "SGsRestoreEnv",
+      "SGsSetZTestEnv",
+      "SGsTexFlush",
       "sefDrawParticleList",
+      "sefDrawParticleListCf",
       "sefDrawSchedulerEffect",
       "svDeleteImageMapperData",
       "svDeleteImageMapperID",
+      "svDrawModel",
       "svDrawScheduler3D",
       "svDrawSchedulerParticle",
       "svGetScript",
@@ -10119,15 +10125,59 @@
      "c_owned_symbols": [
       "siz_0",
       "top_1",
-      "_imageMapper"
-     ],
-     "also_referenced_by_c": [
+      "_imageMapper",
       "_packet",
       "_defMatLcMod",
       "_defMatLc",
       "_defMatLn",
+      "_svViewMtx",
+      "_svScreenMtx",
+      "_svViewScreenMtx"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sv_get_image_item.o"
+     }
+    },
+    {
+     "range": [
+      "0x0040d680",
+      "0x0040fa9c"
+     ],
+     "generated": [
+      "0x0040d680",
+      "0x0040fa9c"
+     ],
+     "generated_by": [
+      "svGetImageItem",
+      "svImageListCreate"
+     ],
+     "c_owned_symbols": [
       "_imageList"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sv_get_image_item.o"
+     }
+    },
+    {
+     "range": [
+      "0x0040fac0",
+      "0x00410ac4"
+     ],
+     "generated": [
+      "0x0040fac0",
+      "0x00410ac4"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "sefAtanTbl"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10162,26 +10212,32 @@
    ".rodata": [
     {
      "range": [
-      "0x004cbe50",
-      "0x004cbe78"
+      "0x004cbe00",
+      "0x004cbf00"
      ],
      "generated": [
-      "0x004cbe50",
-      "0x004cbe78"
+      "0x004cbe00",
+      "0x004cbef8"
      ],
      "generated_by": [
-      "svAnalyzeChunk"
+      "sefDrawParticle",
+      "sefDrawParticle2",
+      "sefDrawParticle2D",
+      "sefDrawParticleList",
+      "sefDrawParticleListCf",
+      "sefDrawSchedulerEffect",
+      "svAnalyzeChunk",
+      "svDrawModel"
      ],
      "c_owned_symbols": [
-      "jtbl_004CBE50"
-     ],
-     "also_referenced_by_c": [
       "_svUnitMatrix",
       "_svRegData",
+      "jtbl_004CBE50",
       "alphaTbl_004CBE78",
       "stqTbl_004CBEA0",
       "alphaTbl_2"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10192,25 +10248,34 @@
    ".sdata": [
     {
      "range": [
-      "0x004dba50",
-      "0x004dba60"
+      "0x004dba48",
+      "0x004dba64"
      ],
      "generated": [
-      "0x004dba50",
-      "0x004dba60"
+      "0x004dba48",
+      "0x004dba64"
      ],
      "generated_by": [
+      "sefDrawParticleList",
+      "sefDrawParticleListCf",
+      "sefDrawSchedulerEffect",
+      "svDrawAlters",
+      "svDrawMissile",
+      "svDrawScheduler",
+      "svDrawScheduler2D",
+      "svDrawScheduler3D",
+      "svDrawSchedulerBlk",
+      "svDrawSchedulerParticle",
       "svGetPrmFromName"
      ],
      "c_owned_symbols": [
-      "D_004DBA50",
-      "D_004DBA58"
-     ],
-     "also_referenced_by_c": [
       "_draw3D",
       "_nEffect2D",
+      "D_004DBA50",
+      "D_004DBA58",
       "eft_5"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
