@@ -315,6 +315,13 @@ def piece_lines(items, start):
     a block (padding that is not an item) is left as it was."""
     room = (start & -start).bit_length() - 1 if start else 30
     out = []
+    if start and start % 4:
+        # A piece at an odd/halfword address (the pad after a C run that ends
+        # unaligned): MIPS gas aligns each `.half`/`.word` to its size and so
+        # raises the section to 2**2, and the linker would move the piece. Every
+        # byte is written out at its original offset, so `.align 0` (gas: no
+        # automatic alignment of the data that follows) changes no byte.
+        out.append('.align 0')
     for it in items:
         lead = True
         for line in it['block']['lines']:
