@@ -18390,15 +18390,39 @@
    ]
   },
   "ov12/tu075_00a40008": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50508",
+      "0x00a5050c"
+     ],
+     "generated": [
+      "0x00a50508",
+      "0x00a5050c"
+     ],
+     "generated_by": [
+      "_draw_nontex"
+     ],
+     "c_owned_symbols": [
+      "s_nColor_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x00a57310",
-      "0x00a57418"
+      "0x00a57550"
      ],
      "generated": [
       "0x00a57310",
-      "0x00a57418"
+      "0x00a57548"
      ],
      "generated_by": [
       "CreateRgPic",
@@ -18452,83 +18476,17 @@
       "D_00A573B8",
       "D_00A573C8",
       "D_00A573E0",
-      "D_00A573F8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A573F8",
       "D_00A57418",
-      "D_00A57440"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a57458",
-      "0x00a57470"
-     ],
-     "generated": [
-      "0x00a57458",
-      "0x00a57470"
-     ],
-     "generated_by": [
-      "RgPicDebugDisp"
-     ],
-     "c_owned_symbols": [
-      "D_00A57458"
-     ],
-     "also_referenced_by_c": [
-      "D_00A57470"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a57490",
-      "0x00a574a0"
-     ],
-     "generated": [
-      "0x00a57490",
-      "0x00a574a0"
-     ],
-     "generated_by": [
-      "RgPicDebugDisp"
-     ],
-     "c_owned_symbols": [
-      "D_00A57490"
-     ],
-     "also_referenced_by_c": [
+      "D_00A57440",
+      "D_00A57458",
+      "D_00A57470",
+      "D_00A57490",
       "D_00A574A0",
       "D_00A574B8",
       "D_00A574D0",
       "D_00A574E8",
-      "D_00A57500"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_piclist.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a57520",
-      "0x00a57550"
-     ],
-     "generated": [
-      "0x00a57520",
-      "0x00a57548"
-     ],
-     "generated_by": [
-      "RgPicDebugDisp"
-     ],
-     "c_owned_symbols": [
+      "D_00A57500",
       "D_00A57520",
       "jtbl_00A57530"
      ],
