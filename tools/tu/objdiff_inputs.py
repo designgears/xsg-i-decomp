@@ -130,6 +130,14 @@ def section_relative_data_relocs(target, base_elf):
     elf = Elf(Path(target).read_bytes())
     data = bytearray(elf.data)
     named = {s.name for s in base_elf.symbols if s.shndx}
+    # offsets where the C object itself writes a section-relative pointer
+    base_section_relative = {}
+    for r in base_elf.sections:
+        if r.type == 9 and r.info < len(base_elf.sections):
+            for at in range(r.offset, r.offset + r.size, 8):
+                off, inf = struct.unpack_from('<II', base_elf.data, at)
+                if inf & 255 == 2 and base_elf.symbols[inf >> 8].type == 3:
+                    base_section_relative.setdefault(base_elf.sections[r.info].name, set()).add(off)
     section_symbol = {s.shndx: s.index for s in elf.symbols if s.type == 3}
     for rel in elf.sections:
         if rel.type != 9:
@@ -140,7 +148,9 @@ def section_relative_data_relocs(target, base_elf):
         for at in range(rel.offset, rel.offset + rel.size, 8):
             offset, info = struct.unpack_from('<II', data, at)
             symbol = elf.symbols[info >> 8]
-            if (info & 255 != 2 or symbol.type == 3 or symbol.name in named
+            if (info & 255 != 2 or symbol.type == 3
+                    or (symbol.name in named
+                        and offset not in base_section_relative.get(applies.name, ()))
                     or symbol.shndx not in section_symbol):
                 continue
             word = struct.unpack_from('<I', data, applies.offset + offset)[0]
