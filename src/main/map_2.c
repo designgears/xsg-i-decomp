@@ -373,3 +373,6 @@ void MAP_getHeight(MapPosition *position)
 }
 
 
+
+/* Used by unit6003_update (unit6003.c); the split places it in this TU. */
+const char D_004D2170[] = "frame_type error(%d)\n";
