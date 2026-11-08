@@ -3140,6 +3140,77 @@
     }
    ]
   },
+  "main/tu156": {
+   ".data": [
+    {
+     "range": [
+      "0x0036b248",
+      "0x0036b288"
+     ],
+     "generated": [
+      "0x0036b248",
+      "0x0036b288"
+     ],
+     "generated_by": [
+      "RSRC_info"
+     ],
+     "c_owned_symbols": [
+      "markedSTR",
+      "selectedSTR",
+      "unselectedSTR",
+      "normalSTR"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/rsrc.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da5c8",
+      "0x004da5f8"
+     ],
+     "generated": [
+      "0x004da5c8",
+      "0x004da5f8"
+     ],
+     "generated_by": [
+      "RSRC_getDefaultPath",
+      "RSRC_info",
+      "RSRC_loadFile",
+      "RSRC_setDefaultPath",
+      "RSRC_setPrintParam"
+     ],
+     "c_owned_symbols": [
+      "infoIndex",
+      "infoLength",
+      "D_004DA5D0",
+      "D_004DA5D8",
+      "D_004DA5E0",
+      "D_004DA5E8",
+      "D_004DA5F0",
+      "rsrcDefaultPath"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA5D0": "normalSTR",
+      "D_004DA5D8": "markedSTR",
+      "D_004DA5E0": "unselectedSTR",
+      "D_004DA5E8": "selectedSTR",
+      "D_004DA5F0": "normalSTR"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/rsrc.o"
+     }
+    }
+   ]
+  },
   "main/tu157": {
    ".lit4": [
     {
