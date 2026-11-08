@@ -72,3 +72,7 @@ bool PromptDraw(ImDrawList* dl, int button, ImVec2 c, float h, float alpha) {
 }
 
 }  // namespace xsgui
+
+/* stb_image for the rest of the UI (art.cpp overrides): compiled once, here. */
+unsigned char* xsgui_stbi_load(const char* path, int* w, int* h, int* n, int want) { return stbi_load(path, w, h, n, want); }
+void xsgui_stbi_free(unsigned char* p) { stbi_image_free(p); }

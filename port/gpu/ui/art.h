@@ -25,6 +25,9 @@ void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem);
    and kept as image `id`; ArtImage returns it (0: none yet). */
 void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len);
 ImTextureID ArtImage(uint32_t id);
+/* A user override picture, $XDG_CONFIG_HOME/xsg/art/<name>.png (~/.config/xsg/art): art the user
+   supplies (not shipped).  0 when absent; *w / *h its size. */
+ImTextureID ArtOverride(const char* name, uint32_t* w, uint32_t* h);
 /* Once per frame, before drawing (counts frames for the re-check). */
 void ArtFrame();
 /* The ImGui texture for a TEX0 (0: not available); *w / *h: its size in texels.  texset:

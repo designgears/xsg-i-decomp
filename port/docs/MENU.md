@@ -356,6 +356,11 @@ connected controller and falls back to the keyboard's default binds) and `[displ
 (default, light, retro, alt, alt2, drawn) pick icons from JulioCacko's "FREE Input Prompts Pack"
 (CC0), vendored as a 96 px subset in `port/assets/prompts` by `port/tools/vendor_prompts.py`.
 
+Art overrides: pictures the user supplies in `$XDG_CONFIG_HOME/xsg/art/` (`~/.config/xsg/art`),
+never shipped. `title_logo.png` (a transparent logo, e.g. the release's clear logo) rebuilds the
+title screen: the picture's side bands, the copyright lines, and that logo in the original's
+place. Without it the title picture is shown upscaled.
+
 Layout (`[display] ui_layout`, `port/gpu/ui/layout.cpp`): every element is placed with an anchor
 (left, right, centre, stretch) at the 4:3 display's proportions. `game` keeps the UI on the
 picture; `wide` moves edge UI out to the window's edges, the groundwork for a widescreen picture.

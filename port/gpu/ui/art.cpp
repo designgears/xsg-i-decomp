@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <cstdio>
 #include <cmath>
+#include <cstdlib>
+#include <string>
+extern "C++" unsigned char* xsgui_stbi_load(const char* path, int* w, int* h, int* n, int want);
+extern "C++" void xsgui_stbi_free(unsigned char* p);
 #include <cstring>
 #include <unordered_map>
 #include <vector>
@@ -134,7 +138,7 @@ void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t
         x = std::clamp(x, 0, int(w) - 1);
         y = std::clamp(y, 0, int(h) - 1);
         float v = float(src[(size_t(y) * w + x) * 4 + c]);
-        return c == 3 ? std::min(255.0f, v * 2.0f) : v;   // PS2 alpha: 0x80 = opaque
+        return c == 3 ? 255.0f : v;   // a whole picture: opaque (its alpha is the GS blend's, not coverage)
     };
     auto cub = [](float t, float a, float b, float c, float d) {   // Catmull-Rom
         return b + 0.5f * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
@@ -177,6 +181,29 @@ void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t
             out[size_t(y) * W + x] = o;
         }
     g_images[id] = ImTextureID(xsgmenu::RenderTexture(uint64_t(g_images[id]), out.data(), W, H));
+}
+
+ImTextureID ArtOverride(const char* name, uint32_t* w, uint32_t* h) {
+    struct O { ImTextureID id = 0; uint32_t w = 0, h = 0; bool tried = false; };
+    static std::unordered_map<std::string, O> cache;
+    O& o = cache[name];
+    if (!o.tried) {
+        o.tried = true;
+        const char* xdg = std::getenv("XDG_CONFIG_HOME");
+        const char* home = std::getenv("HOME");
+        const std::string dir = xdg && *xdg ? std::string(xdg) + "/xsg/art" : std::string(home ? home : ".") + "/.config/xsg/art";
+        int iw = 0, ih = 0, n = 0;
+        if (unsigned char* px = xsgui_stbi_load((dir + "/" + name + ".png").c_str(), &iw, &ih, &n, 4)) {
+            o.id = ImTextureID(xsgmenu::RenderTexture(0, reinterpret_cast<const uint32_t*>(px), uint32_t(iw), uint32_t(ih)));
+            o.w = uint32_t(iw);
+            o.h = uint32_t(ih);
+            xsgui_stbi_free(px);
+            std::fprintf(stderr, "[ui] art override %s: %dx%d\n", name, iw, ih);
+        }
+    }
+    if (w) *w = o.w;
+    if (h) *h = o.h;
+    return o.id;
 }
 
 ImTextureID ArtImage(uint32_t id) {

@@ -544,8 +544,18 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             static const char* const kItem[] = {"New Game", "Continue", "Install to HDD", "Uninstall from HDD"};
             anchor = kCentre;
             // the picture, upscaled once (art.cpp ArtImageSet), then a starfield drifting over it
+            uint32_t lw = 0, lh = 0;
+            const ImTextureID logo = ArtOverride("title_logo", &lw, &lh);
             if (ImTextureID pic = ArtImage(1)) {
-                dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+                if (logo && lw && lh) {
+                    // rebuilt: the picture's side bands (a logo-free row, stretched), the copyright lines,
+                    // then the user's high-resolution logo where the original sat
+                    const float row = 272.0f / 448.0f;
+                    dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, row), ImVec2(1, row), IM_COL32(255, 255, 255, 255));
+                    dl->AddImage(pic, P(0, 380), P(512, 448), ImVec2(0, 380.0f / 448.0f), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+                } else {
+                    dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+                }
                 static float sx[160], sy[160], sp[160], ph[160];
                 static bool init = false;
                 if (!init) {
@@ -568,6 +578,12 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 }
             }
             const float t = tw * (1.0f - std::clamp(float(o.rgba) / 128.0f, 0.0f, 1.0f));
+            if (logo && lw && lh && ArtImage(1)) {   // the logo: 380 px wide, centred over the original's place
+                const float w2 = 344.0f, h2 = w2 * float(lh) / float(lw) * (LayoutKx() / LayoutK());
+                const float top = 34.0f + std::max(0.0f, (200.0f - h2) * 0.5f);
+                dl->AddImage(logo, P(256 - w2 * 0.5f, top), P(256 + w2 * 0.5f, top + h2), ImVec2(0, 0), ImVec2(1, 1),
+                             IM_COL32(255, 255, 255, int(255 * std::min(1.0f, tw))));
+            }
             int rows[3], n = 0;
             rows[n++] = 0;
             rows[n++] = 1;
