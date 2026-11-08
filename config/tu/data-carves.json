@@ -1464,47 +1464,27 @@
     {
      "range": [
       "0x004d88d8",
-      "0x004d88e4"
+      "0x004d88fc"
      ],
      "generated": [
       "0x004d88d8",
-      "0x004d88e4"
+      "0x004d88fc"
      ],
      "generated_by": [
       "nmlModelAskNonLinearCamera",
-      "nmlModelLexBlockDoit"
+      "nmlModelCalcEntryClip",
+      "nmlModelCalcSample",
+      "nmlModelCalcSpecularClip",
+      "nmlModelLexBlockDoit",
+      "nmlModelStealthEntry"
      ],
      "c_owned_symbols": [
       "D_004D88D8",
       "D_004D88DC",
-      "D_004D88E0"
-     ],
-     "also_referenced_by_c": [
+      "D_004D88E0",
       "D_004D88E4",
       "D_004D88E8",
-      "D_004D88EC"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d88f0",
-      "0x004d88fc"
-     ],
-     "generated": [
-      "0x004d88f0",
-      "0x004d88fc"
-     ],
-     "generated_by": [
-      "nmlModelCalcEntryClip",
-      "nmlModelCalcSample",
-      "nmlModelCalcSpecularClip"
-     ],
-     "c_owned_symbols": [
+      "D_004D88EC",
       "D_004D88F0",
       "D_004D88F4",
       "D_004D88F8"

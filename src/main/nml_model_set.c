@@ -2658,7 +2658,6 @@ static void nmlModelLexBlockDoit(NmlModel *model)
 }
 
 extern float tanf(float);
-extern float D_004D88E4, D_004D88E8, D_004D88EC;
 extern void nmlFilterStealthMake(int index, float scale, char *camera, LayoutSlot *layout);
 typedef struct {
     char pad0[0xC];
@@ -2678,7 +2677,7 @@ static void nmlModelStealthEntry(char *model, char *camera)
     _CurSetMatrix((float (*)[4])(camera + 0x470));
     _CurSetViewScaleTrans((const float *)(camera + 0x80), (const float *)(camera + 0x70));
     _CurRotTransPersClip((Vector4 *)screen, (Vector4 *)((char *)&s_inLayout + 0x1f0));
-    scale = ((float)screen[2] * D_004D88E4) / tanf(*(float *)(camera + 0x94) * 0.5f);
+    scale = ((float)screen[2] * 0.019f) / tanf(*(float *)(camera + 0x94) * 0.5f);
     if (*(int *)(model + 0x48) != 0) {
         for (i = 0; i < 10; i++) {
             nmlFilterStealthMake(i, scale, camera, s_inLayout.slots);
@@ -2691,9 +2690,9 @@ static void nmlModelStealthEntry(char *model, char *camera)
             p = (StealthEnt **)s_inLayout.slots;
             for (i = 0xa1; i < 0xaa; i++) {
                 StealthEnt *a = p[i - 1];
-                if (a->alpha > D_004D88E8) {
+                if (a->alpha > 0.01f) {
                     StealthEnt *b = p[i];
-                    if (a->z + D_004D88EC < b->z) {
+                    if (a->z + 0.1f < b->z) {
                         p[i - 1] = b;
                         swapped = 1;
                         p[i] = a;
