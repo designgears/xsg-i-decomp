@@ -45,6 +45,7 @@ struct Stats {
     uint32_t native_batches = 0;           // GPU_MSG_NATIVE in the last vsync
     bool native_on = false;
     bool windowed = false;
+    float game_x = 0, game_y = 0, game_w = 0, game_h = 0;   // the game image on screen (last present)
 };
 
 struct Host {

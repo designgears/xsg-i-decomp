@@ -166,6 +166,23 @@ typedef struct {
  * once per vblank (kernel.c -> gpu_client.cpp xsg_gpu_settings_poll).  Same
  * seqlock as GpuPad.  All zero (valid = 0) = no menu: the game keeps its
  * environment / built-in defaults. */
+/* Rebuilt UI ([display] ui = rebuilt, port/gpu/ui/): the game's dialog window,
+ * published by the game each vblank it draws one (twsys_init.c / EW text widget,
+ * PORT_HOST) and drawn by xsg-gpu with Dear ImGui.  Text is the game's encoding
+ * (EUC-style full width + its own 0xD1xx symbols and 0x19 control codes). */
+#define XSG_GPU_UI_OFF 2560u
+#define XSG_GPU_UI_LINES 3
+#define XSG_GPU_UI_LINE 192
+typedef struct {
+    volatile uint32_t seq;          /* seqlock (odd while writing) */
+    volatile uint32_t frame;        /* the game vblank of the last publish (0: never) */
+    volatile int32_t x, y, w, h;    /* window rectangle, PS2 pixels (512 x 448) */
+    volatile uint32_t state;        /* TWIN state (8, 0xB, 0x11: waiting for a key: page arrow) */
+    volatile uint32_t nlines;
+    char name[64];                  /* speaker (ASCII), "" = none */
+    char line[XSG_GPU_UI_LINES][XSG_GPU_UI_LINE];   /* the lines typed out so far */
+} GpuUiDialog;
+
 #define XSG_GPU_SETTINGS_OFF 2048u
 #define XSG_GPU_FRAME_US_KEEP 0xffffffffu /* frame_us: leave the game's pacing alone */
 typedef struct {

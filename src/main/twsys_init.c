@@ -1354,6 +1354,24 @@ void TWIN_draw2(TComponent *component)
   x = component->width + 16.0f;
   y = component->height + 16.0f;
   new_var = 0xA8;
+#ifdef PORT_HOST
+  {   /* rebuilt UI ([display] ui = rebuilt): the window is xsg-gpu's (port/gpu/ui/); the game
+         keeps its text widget for the typed-out lines (EW_drawComoponent publishes them) */
+    extern int xsg_ui_rebuilt(void);
+    extern void xsg_ui_dialog_window(int x, int y, int w, int h, unsigned state, const char *name);
+    extern void *xsg_ui_dialog_widget;
+    if (xsg_ui_rebuilt()) {
+      xsg_ui_dialog_window(x, y, *((short *) (w + 0xC)), *((short *) (w + 0xE)), *((unsigned short *) (w + 0x14)),
+                           *((char **) (w + new_var)));
+      xsg_ui_dialog_widget = *((char **) (w + 0xD8));
+      *((unsigned short *) *((char **) (w + 0xD4))) &= 0xBFFF;
+      *((unsigned short *) *((char **) (w + 0xE0))) &= 0xBFFF;
+      *((unsigned short *) *((char **) (w + 0xD0))) &= 0xBFFF;
+      *((unsigned short *) *((char **) (w + 0xE4))) &= 0xBFFF;
+      return;
+    }
+  }
+#endif
   xglFontPrintDirectOT(0xFFFFF0, D_004C1C48);
   xglFontPrint(x, y, 0xFFFFF0, *((char **) (w + new_var)));
   xglFontPrintDirectOT(0xFFFFF0, D_004DA428);

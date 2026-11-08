@@ -445,3 +445,46 @@ extern "C" int xsg_gpu_settings_poll(unsigned* frame_us, int* audio_on, int vol[
     for (int i = 0; i < 4; ++i) vol[i] = int(s.vol[i]);
     return 1;
 }
+
+/* Rebuilt UI (gpu_ipc.h GpuUiDialog): the dialog window, from twsys_init.c /
+   ew_sprt_set_cursor_uv.c under PORT_HOST.  ui_on: [display] ui = rebuilt. */
+extern "C" { void* xsg_ui_dialog_widget; }
+extern "C" int xsg_ui_rebuilt(void) {
+    static unsigned gen = ~0u;
+    static int on;
+    const unsigned g = __atomic_load_n(&xsg_cfg_gen, __ATOMIC_ACQUIRE);
+    if (g != gen) {
+        gen = g;
+        const char* v = xsg_cfg("display.ui");
+        on = v && !std::strcmp(v, "rebuilt");
+    }
+    return on && xsggpu::shm;
+}
+static GpuUiDialog* UiDialog() {
+    return reinterpret_cast<GpuUiDialog*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_OFF);
+}
+extern "C" void xsg_ui_dialog_window(int x, int y, int w, int h, unsigned state, const char* name) {
+    if (!xsggpu::shm) return;
+    GpuUiDialog* d = UiDialog();
+    const uint32_t s = d->seq;
+    __atomic_store_n(&d->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    d->x = x; d->y = y; d->w = w; d->h = h;
+    d->state = state;
+    std::strncpy(const_cast<char*>(d->name), name ? name : "", sizeof d->name - 1);
+    d->frame = xsg_frame;
+    __atomic_store_n(&d->seq, s + 2, __ATOMIC_RELEASE);
+}
+extern "C" void xsg_ui_dialog_lines(const char* const* lines, int first, int end) {
+    if (!xsggpu::shm) return;
+    GpuUiDialog* d = UiDialog();
+    const uint32_t s = d->seq;
+    __atomic_store_n(&d->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    int n = 0;
+    for (int i = first; i < end && n < XSG_GPU_UI_LINES; ++i, ++n)
+        std::strncpy(d->line[n], lines[i] ? lines[i] : "", XSG_GPU_UI_LINE - 1);
+    for (int k = n; k < XSG_GPU_UI_LINES; ++k) d->line[k][0] = 0;
+    d->nlines = uint32_t(n);
+    __atomic_store_n(&d->seq, s + 2, __ATOMIC_RELEASE);
+}

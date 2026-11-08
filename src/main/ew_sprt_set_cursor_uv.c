@@ -642,6 +642,17 @@ void EW_drawComoponent(int context, EwWidget *widget)
             tmp_0[1] = 0x11;
             xglFontPrint(0, 0, textWidget->header.drawValue, tmp_0);
         }
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the dialog window's lines go to xsg-gpu instead (twsys_init.c) */
+            extern int xsg_ui_rebuilt(void);
+            extern void xsg_ui_dialog_lines(const char *const *lines, int first, int end);
+            extern void *xsg_ui_dialog_widget;
+            if (xsg_ui_rebuilt() && (void *)textWidget == xsg_ui_dialog_widget) {
+                xsg_ui_dialog_lines((const char *const *)lines, firstLine, endLine);
+                return;
+            }
+        }
+#endif
         for (i = firstLine; i < endLine; i++)
         {
             x = textWidget->header.x;

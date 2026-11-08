@@ -26,6 +26,7 @@
 #include "xsg_input.h"
 #include "native.h"
 #include "glyphs.h"
+#include "ui/dialog.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
@@ -369,9 +370,10 @@ struct Renderer {
         xsgnative::Init(dev);
         InitMenu();
         InitCrt();
-        const auto& p = dev->get_gpu_properties();
         xsgglyph::Init();
         xsgglyph::SetGs(&gs);
+        xsgui::Init(shm);
+        const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
             o.super_sampled_textures ? " +textures" : "", hires ? " +hires scanout" : "");
@@ -517,6 +519,7 @@ struct Renderer {
         cmd.barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT);
         if (native) *native = src != so.image.get();
+        game_rect[0] = float(x0); game_rect[1] = float(y0); game_rect[2] = float(dw); game_rect[3] = float(dh);
         last_image_w = uint32_t(sw);
         last_image_h = uint32_t(sh);
         // A source larger than the target (the native layer at 4-8x in a window) is
@@ -576,6 +579,7 @@ struct Renderer {
     }
     uint32_t last_image_w = 0, last_image_h = 0;
     double worst_ms = 0;
+    float game_rect[4] = {0, 0, 0, 0};
     const Vulkan::Image* last_live = nullptr;
     uint64_t repeats = 0;
     uint32_t worst_at = 0, slow_frames = 0;
@@ -835,6 +839,7 @@ struct Renderer {
         native_msgs = 0;
         st.native_batches = native_last;
         st.native_on = xsgnative::On();
+        st.game_x = game_rect[0]; st.game_y = game_rect[1]; st.game_w = game_rect[2]; st.game_h = game_rect[3];
         xsgmenu::Frame(frame, st);
         // A 30 fps scene shows each frame for two vsyncs: the native composite is then the
         // same image, and presenting it again only doubles the present work (and, with DLSS 5,
@@ -970,11 +975,6 @@ int main(int argc, char** argv) {
         case GPU_MSG_GIF: {
             if (xsgnative::On()) xsgnative::Gif(h.a, payload, h.len, r.gs);   // transfers too (native_fx.cpp)
             else r.gs.gif_transfer(h.a, payload, h.len);
-            r.gif_bytes += h.len;
-            break;
-        case GPU_MSG_PRIV: {
-            uint64_t v;
-            std::memcpy(&v, payload, 8);
             // button glyphs: replacement uploads right after the icon they replace (glyphs.cpp)
             static std::vector<uint8_t> inj;
             inj.clear();
@@ -982,9 +982,15 @@ int main(int argc, char** argv) {
             if (!inj.empty()) {
                 if (xsgnative::On()) xsgnative::Gif(2, inj.data(), uint32_t(inj.size()), r.gs);
                 else r.gs.gif_transfer(2, inj.data(), inj.size());
-            r.Priv(h.a, v);
+            }
+            r.gif_bytes += h.len;
             break;
         }
+        case GPU_MSG_PRIV: {
+            uint64_t v;
+            std::memcpy(&v, payload, 8);
+            r.Priv(h.a, v);
+            break;
         }
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
         case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); r.native_msgs++; break;

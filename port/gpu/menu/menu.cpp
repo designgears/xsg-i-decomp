@@ -20,6 +20,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "../ui/dialog.h"
 #ifdef XSG_GPU_SDL
 #include "imgui_impl_sdl3.h"
 #include <SDL3/SDL.h>
@@ -387,6 +388,12 @@ void TabDisplay(float scale) {
                "(sharp pixels; falls back to fit below 1x).");
     static const char* kFilter[] = {"Linear", "Nearest"};
     opt_choice("display.filter", "Filter", kFilter, "How the picture is scaled to the window: smooth (linear) or sharp (nearest).");
+    opt_group("GAME UI");
+    static const char* kUi[] = {"Original", "Rebuilt"};
+    opt_choice("display.ui", "Game UI", kUi,
+               "Original: the game's own 2D, drawn for a TV at 512 x 448.\n"
+               "Rebuilt: redrawn by the port, sharp at any window size. Screens done so far: the dialog window; "
+               "the rest stay original.");
     opt_group("CRT FILTER");
     static const char* kCrt[] = {"Off", "Scanlines", "Consumer TV", "Trinitron", "PVM", "Shadow mask"};
     const std::string crt_before = xsgcfg::Get("display.crt");
@@ -1176,7 +1183,8 @@ void Frame(uint32_t vsync, const Stats& s) {
     xsgcfg::SaveTick(false);
     if (g_open) g_fade = float(std::min(1.0, (Now() - g_open_t) / 0.16));
     g_visible = false;
-    if (!g_open && !g_overlay) { PadFrame(); return; }
+    const bool dialog = xsgcfg::Get("display.ui") == "rebuilt" && xsgui::DialogActive(vsync) && s.game_w > 0;
+    if (!g_open && !g_overlay && !dialog) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();
     float fb = 1.0f;
@@ -1215,6 +1223,9 @@ void Frame(uint32_t vsync, const Stats& s) {
         opt_focus_first();
     }
     ImGui::NewFrame();
+    if (dialog)   // the rebuilt game UI (port/gpu/ui/), under the menu
+        xsgui::DialogDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
+                          s.game_h / fb, Now());
     if (g_open) LayoutMenu(scale);
     OverlayDraw(scale);
     ImGui::Render();
