@@ -19478,6 +19478,40 @@
     }
    ]
   },
+  "main/tu266": {
+   ".data": [
+    {
+     "range": [
+      "0x00478fb0",
+      "0x004797e0"
+     ],
+     "generated": [
+      "0x00478fb0",
+      "0x004797e0"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "human_default",
+      "D_0047900A",
+      "debug0",
+      "debug1",
+      "debug2",
+      "debug3",
+      "debug4",
+      "debug5",
+      "debug6",
+      "debug7",
+      "DropShadowDefineTable"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/debug.o"
+     }
+    }
+   ]
+  },
   "main/tu267": {
    ".data": [
     {
