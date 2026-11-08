@@ -144,27 +144,37 @@ bool MenuWantsSettings() {
 
 namespace {
 // "[View] Settings": a capsule with the layout's button name, at the top right of the UI area
-void SettingsHint(ImDrawList* dl, ImFont* font, float t) {
+// "[View] Settings" as part of the help bar: right-aligned inside it, vertically centred, set off
+// by a thin divider, in the help text's own type and colour (barTop / barBottom / barRight: game px;
+// barTop < 0: no help bar, the top-right corner instead)
+void SettingsHint(ImDrawList* dl, ImFont* font, float t, float barTop, float barBottom, float barRight) {
     using namespace xsgmenu;
     const float k = LayoutK(), kx = LayoutKx();
+    ImFont* const bf = UiFont(kFontBody, font);
     const std::string lay = xsgcfg::Get("gamepad.layout");
     const char* btn = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
-    const float hs = 11.0f * k, ph = hs + 7 * k;
-    const ImVec2 bw = font->CalcTextSizeA(hs, 1e9f, 0, btn), lw = font->CalcTextSizeA(hs, 1e9f, 0, "Settings");
+    const float hs = 17.0f * k;                       // a little under the help text's 22
+    const float ih = hs * 1.35f;                      // the button icon's height
     const bool icon = PromptIcon(kBack) != 0;
-    const float pill = icon ? ph * 1.5f : bw.x + 12 * kx, total = 10 * kx + pill + 6 * kx + lw.x + 12 * kx;
-    const ImVec2 r1 = Map(512 - 14, 418, kRight);   // inside the help bar's empty right end
-    const ImVec2 a(r1.x - total, r1.y), b(r1.x, r1.y + ph + 6 * k);
-    const float cy = (a.y + b.y) * 0.5f;
-    const ImVec2 p0(a.x + 10 * kx, cy - ph * 0.5f);
+    const ImVec2 lw = bf->CalcTextSizeA(hs, 1e9f, 0, "Settings");
+    const float bw = icon ? ih : bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn).x + 12 * kx;
+    float top = barTop, bottom = barBottom, right = barRight;
+    if (barTop < 0) { top = 6; bottom = 28; right = 506; }
+    const float cy = Map(0, (top + bottom) * 0.5f, kRight).y;
+    const float rx = Map(right - 20, 0, kRight).x;
+    const float lx = rx - lw.x, bx = lx - 7 * kx - bw;
+    // divider
+    const float dx = bx - 10 * kx, dh = (bottom - top) * 0.32f * k;
+    dl->AddLine(ImVec2(dx, cy - dh), ImVec2(dx, cy + dh), Alpha(col::kFrame, 0.55f * t), std::max(1.0f, k));
     if (icon) {
-        PromptDraw(dl, kBack, ImVec2(p0.x + pill * 0.5f, cy), pill, t);
+        PromptDraw(dl, kBack, ImVec2(bx + bw * 0.5f, cy), ih, t);
     } else {
-        dl->AddRectFilled(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(IM_COL32(12, 12, 30, 240), t), ph * 0.5f);
-        dl->AddRect(p0, ImVec2(p0.x + pill, p0.y + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
-        dl->AddText(font, hs, ImVec2(p0.x + (pill - bw.x) * 0.5f, cy - bw.y * 0.5f), Alpha(col::kText, t), btn);
+        const float ph = hs * 0.95f;
+        dl->AddRect(ImVec2(bx, cy - ph * 0.5f), ImVec2(bx + bw, cy + ph * 0.5f), Alpha(col::kFrame, 0.7f * t), ph * 0.5f, 0, 1.0f);
+        const ImVec2 b = bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn);
+        dl->AddText(bf, hs * 0.7f, ImVec2(bx + (bw - b.x) * 0.5f, cy - b.y * 0.5f), Alpha(col::kText, t), btn);
     }
-    dl->AddText(font, hs, ImVec2(p0.x + pill + 6 * kx, cy - lw.y * 0.5f), Alpha(col::kTextDim, t), "Settings");
+    HaloText(dl, bf, hs, ImVec2(lx, cy - lw.y * 0.5f), col::kTextDim, "Settings", t);
 }
 }  // namespace
 
@@ -802,7 +812,15 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     dl->PopClipRect();
     bool pause = false;
     for (uint32_t i = 0; i < m.nops; ++i) pause |= m.op[i].type == GPU_KG_PAUSE;
-    if (!pause && MenuWantsSettings()) SettingsHint(dl, font, tw);   // the pause screen names it in its own row
+    if (!pause && MenuWantsSettings()) {   // the pause screen names it in its own row
+        float bt = -1, bb = -1, br = 504;
+        for (uint32_t i = 0; i < m.nops; ++i) {
+            const GpuUiKgOp& w = m.op[i];
+            if (w.type == GPU_KG_WINDOW && w.b && w.y > 330 && w.dw >= 400 && (bt < 0 || w.y < bt))
+                bt = float(w.y), bb = float(std::min(w.y + w.dh, 444)), br = float(std::min(w.x + w.dw, 504));
+        }
+        SettingsHint(dl, font, tw, bt, bb, br);
+    }
 }
 
 }  // namespace xsgui
