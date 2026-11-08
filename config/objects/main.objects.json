@@ -2740,7 +2740,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C88C0",
+          "end": "0x004C88A0",
           "ordinal": 174,
           "piece": "menu_ether",
           "start": "0x004C7AF0",
@@ -2751,7 +2751,7 @@
           "end": "0x004C9328",
           "ordinal": 175,
           "piece": "menu_tec",
-          "start": "0x004C88C0",
+          "start": "0x004C88A0",
           "tu": "menu_tec"
         },
         {
@@ -4424,7 +4424,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB378",
+          "end": "0x004DB370",
           "ordinal": 174,
           "piece": "menu_ether",
           "start": "0x004DB278",
@@ -4435,7 +4435,7 @@
           "end": "0x004DB540",
           "ordinal": 175,
           "piece": "menu_tec",
-          "start": "0x004DB378",
+          "start": "0x004DB370",
           "tu": "menu_tec"
         },
         {
@@ -51200,20 +51200,20 @@
           ],
           "bounds": [
             "0x004C7AA9",
-            "0x004C88C0"
+            "0x004C88A0"
           ],
-          "end": "0x004C88C0",
+          "end": "0x004C88A0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C88C0",
+              "end": "0x004C88A0",
               "name": "menu_ether",
               "start": "0x004C7AF0"
             }
           ],
           "rule": "anchored start",
-          "size": 3536,
+          "size": 3504,
           "splat_type": "rodata",
           "start": "0x004C7AF0"
         },
@@ -51224,20 +51224,20 @@
           ],
           "bounds": [
             "0x004DB251",
-            "0x004DB378"
+            "0x004DB370"
           ],
-          "end": "0x004DB378",
+          "end": "0x004DB370",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB378",
+              "end": "0x004DB370",
               "name": "menu_ether",
               "start": "0x004DB278"
             }
           ],
           "rule": "anchored start",
-          "size": 256,
+          "size": 248,
           "splat_type": "sdata",
           "start": "0x004DB278"
         }
@@ -51627,7 +51627,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C88C0",
+            "0x004C88A0",
             "0x004C9309"
           ],
           "bounds": [
@@ -51641,17 +51641,17 @@
               "c_split": false,
               "end": "0x004C9328",
               "name": "menu_tec",
-              "start": "0x004C88C0"
+              "start": "0x004C88A0"
             }
           ],
-          "rule": "anchored start",
-          "size": 2664,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 2696,
           "splat_type": "rodata",
-          "start": "0x004C88C0"
+          "start": "0x004C88A0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DB378",
+            "0x004DB370",
             "0x004DB511"
           ],
           "bounds": [
@@ -51665,13 +51665,13 @@
               "c_split": false,
               "end": "0x004DB540",
               "name": "menu_tec",
-              "start": "0x004DB378"
+              "start": "0x004DB370"
             }
           ],
-          "rule": "anchored start",
-          "size": 456,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 464,
           "splat_type": "sdata",
-          "start": "0x004DB378"
+          "start": "0x004DB370"
         }
       },
       "shared_contract": {
