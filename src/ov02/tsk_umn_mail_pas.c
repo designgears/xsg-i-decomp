@@ -67,7 +67,6 @@ typedef struct UmnMailState {
     unsigned char saved_visible_folder_index;
 } UmnMailState;
 extern UmnMailState UmnWork;
-extern const char *msg00_0_00A10618[5];
 extern int MenuPasLengthGet(const char *text);
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
@@ -78,6 +77,9 @@ extern void endPrintExtFunc(int kind, int id, void *data);
 
 void tskUmnMailPas(UmnMailPasTask *task, UmnMailPasWork *work)
 {
+    static const char *msg00_0_00A10618[5] __asm__("msg00.0") = {
+        "Mail", "/Folder", "/Read", "/Reply", "/History"
+    };
     int caption_widths[5];
     int i;
     unsigned char mail_mode;
@@ -187,15 +189,9 @@ extern unsigned char *UmnMailDataGet(int box_id);
 extern signed char *UmnHistoryTreeGet(unsigned int history_id);
 extern char *UmnMailHeaderGet(int index);
 extern void MenuInfoWindow(void *window, void *text);
-extern char D_00A12548[];
-extern char D_00A12550[];
-extern char D_00A12558[];
 typedef struct { char *p[6]; } UmnMailInfoCap;
 typedef struct { char *p[4]; } UmnMailInfoTab;
 typedef struct { char *p[7]; } UmnMailInfoMsg;
-extern UmnMailInfoCap D_00A12408;
-extern UmnMailInfoTab D_00A12478;
-extern UmnMailInfoMsg D_00A12528;
 typedef struct { unsigned char pad[0x60]; int v60; } UmnMailInfoState60;
 typedef struct UmnMailInfoWindow {
     short x;
@@ -237,9 +233,13 @@ void tskUmnMailInfo(void *task_opaque, void *work_opaque)
     unsigned char mail_mode;
     short target;
 
-    cap = D_00A12408;
-    tab = D_00A12478;
-    msg = D_00A12528;
+    cap = (UmnMailInfoCap){ { "Old/", "New/", "File attached.", "No attachments.",
+                              "Mail from ", "Reply to " } };
+    tab = (UmnMailInfoTab){ { "View selected mail.", "View history of selected mail.",
+                              "Download attachment.", "Cancel." } };
+    msg = (UmnMailInfoMsg){ { "Select the reply mail to ", "Will reply with the selected mail.",
+                              "Sent reply. \x1F", "Saved attachment. \x1F",
+                              "Investment amount: ", "Amount needed: ", "G" } };
     mail_mode = UmnWork.mail_mode;
     if (mail_mode != 1) {
         task->command = -1;
@@ -299,12 +299,12 @@ void tskUmnMailInfo(void *task_opaque, void *work_opaque)
                     if (hdr != 0) {
                         eMessageCpy(work->msg, cap.p[4]);
                         eMessageCat(hdr);
-                        eMessageCat(D_00A12548);
+                        eMessageCat(".\n");
                         eMessageCat(cap.p[5]);
                         eMessageCat(hdr + 0x40);
-                        eMessageCat(D_00A12548);
+                        eMessageCat(".\n");
                     } else {
-                        eMessageCpy(work->msg, D_00A12550);
+                        eMessageCpy(work->msg, "");
                     }
                 } else {
                     if (flags & 2) {
@@ -337,7 +337,7 @@ void tskUmnMailInfo(void *task_opaque, void *work_opaque)
                     eMessageCpy(work->msg, msg.p[4]);
                     eMessageCat(MenuNumberTextGet(num, 8, 1));
                     eMessageCat(msg.p[6]);
-                    eMessageCat(D_00A12558);
+                    eMessageCat("\n");
                     eMessageCat(msg.p[5]);
                     eMessageCat(MenuNumberTextGet(n, 8, 1));
                     eMessageCat(msg.p[6]);
@@ -356,7 +356,7 @@ void tskUmnMailInfo(void *task_opaque, void *work_opaque)
                 eMessageCpy(work->msg, msg.p[3]);
                 break;
             default:
-                eMessageCpy(work->msg, D_00A12550);
+                eMessageCpy(work->msg, "");
                 target = 0x200;
                 break;
             }
@@ -377,9 +377,6 @@ extern void eSpriteMain(void *sprite);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern int UmnTexAddr;
 extern unsigned char mail_folder[0x80];
-extern unsigned char D_00A126B8[];
-extern char D_00A126A8[];
-extern char D_00A126C0[];
 typedef struct UmnFolderSprite {
     unsigned char unmodeled_00[4];
     short x;
@@ -779,7 +776,7 @@ void tskUmnMailFolder(void *task_opaque, void *work_opaque)
                     work->item[i].window.color = work->color - 0x10;
                 }
                 WindowDXMain(&work->item[i].window);
-                xglFontDebugPrintf(work->item[i].x / 2, work->item[i].y / 2, D_00A126A8, work->item[i].id);
+                xglFontDebugPrintf(work->item[i].x / 2, work->item[i].y / 2, "MailId = %2d", work->item[i].id);
             }
             {
                 int n = folderS()[0x42];
@@ -808,7 +805,6 @@ void tskUmnMailFolder(void *task_opaque, void *work_opaque)
                 endPrintExtFunc(work->color, 0x65, &work->box);
             }
             for (i = 0; i < work->count + extra; i++) {
-                short ids[2];
                 int spr;
                 hdr = (unsigned char *)UmnMailHeaderGet(work->item[i].id);
                 spr = 0x1408;
@@ -822,13 +818,16 @@ void tskUmnMailFolder(void *task_opaque, void *work_opaque)
                 work->item[i].spr[0].y = work->item[i].window.y + 3;
                 work->item[i].spr[0].color = work->item[i].window.color + 1;
                 eSpriteMain(&work->item[i].spr[0]);
-                __builtin_memcpy(ids, D_00A126B8, 4);
-                for (k = 0; k < 2; k++) {
-                    eSpriteSet(&work->item[i].spr[k + 1], ids[k]);
-                    work->item[i].spr[k + 1].x = work->item[i].spr[0].x + 0x26;
-                    work->item[i].spr[k + 1].color = work->item[i].spr[0].color;
-                    work->item[i].spr[k + 1].y = work->item[i].spr[0].y + k * 0x18;
-                    eSpriteMain(&work->item[i].spr[k + 1]);
+                {
+                    short ids[2] = { 0x1405, 0x1404 };
+
+                    for (k = 0; k < 2; k++) {
+                        eSpriteSet(&work->item[i].spr[k + 1], ids[k]);
+                        work->item[i].spr[k + 1].x = work->item[i].spr[0].x + 0x26;
+                        work->item[i].spr[k + 1].color = work->item[i].spr[0].color;
+                        work->item[i].spr[k + 1].y = work->item[i].spr[0].y + k * 0x18;
+                        eSpriteMain(&work->item[i].spr[k + 1]);
+                    }
                 }
                 eMessageSet(&work->item[i].msg[0], (char *)hdr + 0x40);
                 eMessageSet(&work->item[i].msg[1], (char *)hdr);
@@ -862,7 +861,7 @@ void tskUmnMailFolder(void *task_opaque, void *work_opaque)
         }
         break;
     }
-    xglFontDebugPrintf(0, 0x10, D_00A126C0, work->state);
+    xglFontDebugPrintf(0, 0x10, "Folder : %2d", work->state);
 }
 
 extern void eCursolSet(void *cursor, int n);
@@ -875,10 +874,6 @@ extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void *UmnModelUkn;
 extern int UmnTexAddr;
 extern unsigned char PadData[0xD0];
-extern unsigned char sikaku_1[16];
-extern unsigned char D_00A12840[8];
-extern const char D_00A12848[];
-extern const char D_00A12860[];
 static inline unsigned char *dispPad(void) {
     return PadData;
 }
@@ -888,6 +883,7 @@ static inline unsigned char *dispUmn(void) {
 
 void tskUmnMailDisp(void *arg0, void *arg1)
 {
+    static unsigned char sikaku_1[16] __asm__("sikaku.1") = "\x1E\0:Topic Search";
     unsigned char *w = arg1;
     int mode;
 
@@ -930,9 +926,8 @@ void tskUmnMailDisp(void *arg0, void *arg1)
         *(short *)(w + 0x1B6) = 0x120;
         *(unsigned long long *)(w + 0x1B8) = (unsigned int)(*(int *)(w + 0xC) + 2);
         {
-            short tmp[4];
+            short tmp[4] = { 0x1901, 0x1900, 0x1902, 0x1903 };
             int i;
-            ({ typedef struct __attribute__((packed)) { short w[4]; } Mc_; *(Mc_ *)(tmp) = *(Mc_ *)(D_00A12840); });
             for (i = 0; i < 4; i++) {
                 eSpriteSet(w + 0x27C + i * 0x28, tmp[i]);
                 *(int *)(win + 0x270 + i * 0x28) = 0xF00000;
@@ -1286,8 +1281,8 @@ void tskUmnMailDisp(void *arg0, void *arg1)
         }
         break;
     }
-    xglFontDebugPrintf(0x10, 0x80, D_00A12848, (signed char)w[5]);
-    xglFontDebugPrintf(0x10, 0x88, D_00A12860, (signed char)w[3]);
+    xglFontDebugPrintf(0x10, 0x80, "scrol_type : %2d", (signed char)w[5]);
+    xglFontDebugPrintf(0x10, 0x88, "now_page : %2d", (signed char)w[3]);
 }
 
 extern void eCursolSet(void *cursol, int value);
@@ -1295,7 +1290,6 @@ extern void eCursolModeChange(void *cursol, int mode);
 extern void eCursolMain(void *cursol);
 extern void eMessageModeChange(void *message, int mode);
 extern char *UmnMailHeaderGet(int index);
-extern char text_2[];
 static inline unsigned char *umnHensinLit(void) {
     unsigned char *m = (unsigned char *)&UmnWork;
     return m;
@@ -1303,6 +1297,7 @@ static inline unsigned char *umnHensinLit(void) {
 
 void tskUmnMailHensin(UmnMailPasTask *task, void *work)
 {
+    static char text_2[] __asm__("text.2") = "1:\n2:\n3:";
     unsigned char *w = (unsigned char *)work;
     short sp[2];
 
@@ -1413,8 +1408,6 @@ void tskUmnMailHensin(UmnMailPasTask *task, void *work)
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern int MenuSelectWindow;
-extern const char *text2_4[4];
-extern int text_3_00A10650[4];
 static inline unsigned char *umnBase(void) {
     return (unsigned char *)&UmnWork;
 }
@@ -1424,6 +1417,8 @@ static inline unsigned char *umnLit(void) {
 }
 
 void tskUmnMailMenu(UmnMailPasTask *arg0, unsigned char *arg1) {
+    static const char *text_3_00A10650[2] __asm__("text.3") = { "Is this okay?", "Yes\nNo" };
+    static const char *text2_4[4] __asm__("text2.4") = { "Read", "History", "Download", "Cancel" };
     unsigned char *w = arg1;
     unsigned char *base;
     short sp[4];
@@ -1450,7 +1445,7 @@ void tskUmnMailMenu(UmnMailPasTask *arg0, unsigned char *arg1) {
         t = *(int *)(w + 0x8);
         *(volatile const char * volatile *)(w + 0x1C) = "Select";
         *(short *)(w + 0x1A) = 0x56;
-        t3 = text_3_00A10650;
+        t3 = (int *)text_3_00A10650;
         *(volatile int *)(w + 0x1AC) = *(volatile int *)&t3[1];
         *(void **)(w + 0x28) = w + 0x1A4;
         *(short *)(w + 0x1A6) = 3;
@@ -1592,8 +1587,6 @@ extern void eTagFontMain(void *tag);
 extern void eNumberSet(void *number, int mode);
 extern void eNumberMain(void *number);
 extern unsigned char *UmnMailDataGet(int box_id);
-extern char D_00A12C60[];
-extern char *text_5[3];
 struct UmnMailExWinMsg {
     short slide_x;
     short slide_y;
@@ -1642,6 +1635,11 @@ struct UmnMailExWinWork {
 
 void tskUmnMailExWin(void *task_opaque, void *work_opaque)
 {
+    static char *text_5[3] __asm__("text.5") = {
+        "\x1E\x02:History",
+        "\x0C@@@\x1E\x01:Reply  \x0C\x80\x80\x80\x1E\x03:Back",
+        "\x0C@@@\x1E\x01:Set    \x0C\x80\x80\x80\x1E\x03:Cancel",
+    };
     UmnMailPasTask *task = task_opaque;
     struct UmnMailExWinWork *work = work_opaque;
     int i;
@@ -1667,7 +1665,7 @@ void tskUmnMailExWin(void *task_opaque, void *work_opaque)
             eRibbonSet(&work->item[i].ribbon, 3);
             work->item[i].ribbon.width = 0x100;
             work->item[i].ribbon.height = 0x18;
-            eTagFontSet(&work->item[i].tag, D_00A12C60);
+            eTagFontSet(&work->item[i].tag, "\x01Num");
             eNumberSet(&work->item[i].number, 0);
         }
         work->state = 0;
@@ -1765,7 +1763,7 @@ void tskUmnMailExWin(void *task_opaque, void *work_opaque)
 extern signed char *UmnHistoryTreeGet(unsigned int history_id);
 extern unsigned char *UmnMailDataGet(int box_id);
 extern signed char D_4A1A0C;
-extern unsigned char mail_folder[0x80];
+unsigned char mail_folder[0x80] = { 0 };
 
 void UmnMailFolderSet(void)
 {
