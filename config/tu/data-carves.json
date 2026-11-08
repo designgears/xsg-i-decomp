@@ -12730,35 +12730,102 @@
    ]
   },
   "main/tu212": {
+   ".data": [
+    {
+     "range": [
+      "0x00410d80",
+      "0x0041e288"
+     ],
+     "generated": [
+      "0x00410d80",
+      "0x0041e288"
+     ],
+     "generated_by": [
+      "sefGetEffectName",
+      "sresDataMapping",
+      "sresFreeMemoryRes",
+      "sresFreeReloaderMemory",
+      "sresFreeReloaderMemoryNo",
+      "sresInitMemoryRes",
+      "sresLoadBattleData",
+      "sresLoadCfMemory",
+      "sresLoadCommonMemory",
+      "srsAnalyzeEftNo",
+      "srsEftNo2WeaponID",
+      "srsEftNoWeaponEffectID",
+      "srsFileLoadCf",
+      "srsGetBossWaitEftNo",
+      "srsGetComboData",
+      "srsGetEffect2Idx",
+      "srsGetEsdData",
+      "srsGetEsdData2",
+      "srsGetWeaponEffectIdx",
+      "srsMakeFileName",
+      "srsMemoryLoadCf",
+      "srsSetViewPath",
+      "srsWeapon2EffectID"
+     ],
+     "c_owned_symbols": [
+      "srsViewPath",
+      "_loadComboData",
+      "D_0041118C",
+      "_srsEffect2IndexTbl",
+      "D_00411205",
+      "_srsChrEfTbl",
+      "_srsChrEfTbl2",
+      "D_004116A6",
+      "_srsChrEfTbl3",
+      "_weaponTbl",
+      "_srsMemRes",
+      "_loadEsdData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/srs.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004cc6d0",
-      "0x004cc6f0"
+      "0x004cc680",
+      "0x004cc790"
      ],
      "generated": [
-      "0x004cc6d0",
-      "0x004cc6ec"
+      "0x004cc680",
+      "0x004cc786"
      ],
      "generated_by": [
-      "srsCdReadCallback"
+      "sresLoadCfMemory",
+      "sresLoadCommonMemory",
+      "srsCdReadCallback",
+      "srsFileLoadCf",
+      "srsGetComboName",
+      "srsGetEffectName",
+      "srsGetEffectName2",
+      "srsMakeFileName",
+      "srsMemoryLoadCf"
      ],
      "c_owned_symbols": [
-      "jtbl_004CC6D0"
-     ],
-     "also_referenced_by_c": [
       "D_004CC680",
       "D_004CC690",
       "D_004CC6A8",
       "D_004CC6B8",
+      "jtbl_004CC6D0",
       "D_004CC6F0",
       "D_004CC700",
-      "D_004CC710"
+      "D_004CC710",
+      "D_004CC720",
+      "D_004CC748",
+      "D_004CC768"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/srs.o"
+      "object": "build/main/build/c/srs.o"
      }
     }
    ]

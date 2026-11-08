@@ -2,9 +2,185 @@
 #include "shared.h"
 #include "srs.h"
 
+extern char D_004CBFC0[];
+extern char D_004CBFD0[];
+extern char D_004CBFE0[];
+extern char D_004CBFF0[];
+extern char D_004CC000[];
+extern char D_004CC010[];
+extern char D_004CC020[];
+extern char D_004CC030[];
+extern char D_004CC040[];
+extern char D_004CC050[];
+extern char D_004CC060[];
+extern char D_004CC070[];
+extern char D_004CC080[];
+extern char D_004CC090[];
+extern char D_004CC0A0[];
+extern char D_004CC0B0[];
+extern char D_004CC0C0[];
+extern char D_004CC0D0[];
+extern char D_004CC0E0[];
+extern char D_004CC0F0[];
+extern char D_004CC100[];
+extern char D_004CC110[];
+extern char D_004CC120[];
+extern char D_004CC130[];
+extern char D_004CC140[];
+extern char D_004CC150[];
+extern char D_004CC160[];
+extern char D_004CC170[];
+extern char D_004CC180[];
+extern char D_004CC190[];
+extern char D_004CC1A0[];
+extern char D_004CC1B0[];
+extern char D_004CC1C0[];
+extern char D_004CC1D0[];
+extern char D_004CC1E0[];
+extern char D_004CC1F0[];
+extern char D_004CC200[];
+extern char D_004CC210[];
+extern char D_004CC220[];
+extern char D_004CC230[];
+extern char D_004CC240[];
+extern char D_004CC250[];
+extern char D_004CC260[];
+extern char D_004CC270[];
+extern char D_004CC280[];
+extern char D_004CC290[];
+extern char D_004CC2A0[];
+extern char D_004CC2B0[];
+extern char D_004CC2C0[];
+extern char D_004CC2D0[];
+extern char D_004CC2E0[];
+extern char D_004CC2F0[];
+extern char D_004CC300[];
+extern char D_004CC310[];
+extern char D_004CC320[];
+extern char D_004CC330[];
+extern char D_004CC340[];
+extern char D_004CC350[];
+extern char D_004CC360[];
+extern char D_004CC370[];
+extern char D_004CC380[];
+extern char D_004CC390[];
+extern char D_004CC3A0[];
+extern char D_004CC3B0[];
+extern char D_004CC3C0[];
+extern char D_004CC3D0[];
+extern char D_004CC3E0[];
+extern char D_004CC3F0[];
+extern char D_004CC400[];
+extern char D_004CC410[];
+extern char D_004CC420[];
+extern char D_004CC430[];
+extern char D_004CC440[];
+extern char D_004CC450[];
+extern char D_004CC460[];
+extern char D_004CC470[];
+extern char D_004CC480[];
+extern char D_004CC490[];
+extern char D_004CC4A0[];
+extern char D_004CC4B0[];
+extern char D_004CC4C0[];
+extern char D_004CC4D0[];
+extern char D_004CC4E0[];
+extern char D_004CC4F0[];
+extern char D_004CC500[];
+extern char D_004CC510[];
+extern char D_004CC520[];
+extern char D_004CC530[];
+extern char D_004CC540[];
+extern char D_004CC550[];
+extern char D_004CC560[];
+extern char D_004CC570[];
+extern char D_004CC580[];
+extern char D_004CC590[];
+extern char D_004CC5A0[];
+extern char D_004CC5B0[];
+extern char D_004CC5C0[];
+extern char D_004CC5D0[];
+extern char D_004CC5E0[];
+extern char D_004CC5F0[];
+extern char D_004CC600[];
+extern char D_004CC610[];
+extern char D_004CC620[];
+extern char D_004CC630[];
+extern char D_004CC640[];
+extern char D_004CC650[];
+extern char D_004CC660[];
+extern char D_004CC670[];
+extern char D_004DBAA0[];
+extern char D_004DBAB8[];
+extern char D_004DBAC0[];
+extern char D_004DBAC8[];
+extern char D_004DBAD0[];
+extern char D_004DBAD8[];
+extern char D_004DBAE0[];
+extern char D_004DBAE8[];
+extern char D_004DBAF0[];
+extern char D_004DBAF8[];
+extern char D_004DBB00[];
+extern char D_004DBB08[];
+extern char D_004DBB10[];
+
+static unsigned char srsViewPath[256] = { 0 };
+
+char *_loadComboData[195] = {
+    D_004DBAA0, D_004DBB10, D_004DBB08, D_004DBB00,
+    D_004DBAF8, D_004DBAF0, D_004DBAE8, D_004DBAE0,
+    D_004DBAD8, D_004CC670, D_004DBAD0, D_004DBAC8,
+    D_004DBAC0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, D_004CC660, D_004CC660, D_004CC650,
+    D_004CC640, D_004CC630, D_004CC620, D_004CC610,
+    D_004CC600, D_004CC5F0, D_004CC5E0, D_004CC5D0,
+    D_004CC5C0, D_004CC5B0, D_004CC5A0, D_004CC590,
+    D_004CC580, D_004CC570, D_004CC560, D_004CC550,
+    D_004CC540, D_004CC530, D_004CC520, D_004CC510,
+    D_004CC500, D_004CC4F0, D_004CC4E0, D_004CC660,
+    D_004CC650, D_004CC640, D_004CC4D0, D_004CC4C0,
+    D_004CC4B0, D_004CC4A0, D_004CC490, D_004CC480,
+    D_004CC470, D_004CC460, D_004CC450, D_004CC440,
+    D_004CC430, D_004CC420, D_004CC410, D_004CC400,
+    D_004CC3F0, D_004CC3E0, D_004CC3D0, D_004CC3C0,
+    D_004CC3B0, D_004CC3A0, D_004CC390, D_004CC380,
+    D_004CC370, D_004CC360, D_004CC350, D_004CC340,
+    D_004CC330, D_004CC320, D_004CC310, D_004CC300,
+    D_004CC2F0, D_004CC2E0, D_004CC2D0, D_004CC2C0,
+    D_004CC2B0, D_004CC2A0, D_004CC290, D_004CC280,
+    D_004CC270, D_004CC260, D_004CC250, D_004CC240,
+    D_004CC230, D_004CC220, D_004CC210, D_004CC200,
+    D_004CC1F0, D_004CC1E0, D_004CC1D0, D_004CC3D0,
+    D_004CC3D0, D_004CC390, D_004CC610, D_004CC4C0,
+    D_004CC420, D_004CC410, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, D_004CC420, D_004CC420,
+    D_004CC420, D_004CC420, D_004CC420, D_004CC1C0,
+    D_004CC1B0, D_004CC1A0, D_004CC190, D_004CC180,
+    D_004CC170, D_004CC160, D_004CC150, D_004CC140,
+    D_004CC130, D_004CC120, D_004CC110, D_004CC100,
+    D_004CC0F0, D_004CC0E0, D_004CC0D0, D_004CC0C0,
+    D_004CC0B0, D_004CC0A0, D_004CC090, D_004CC080,
+    D_004CC070, D_004CC060, D_004CC050, D_004CC040,
+    D_004CC030, D_004CC020, D_004CC010, D_004CC000,
+    D_004CBFF0, D_004CBFE0, D_004CBFD0, D_004CBFC0,
+    D_004CC1A0, D_004CC190, D_004CC090, D_004DBAB8,
+    D_004DBAB8, D_004DBAB8, D_004DBAB8, D_004DBAB8,
+    D_004DBAB8, D_004DBAB8, D_004DBAB8,
+};
+
 extern char _loadEsdData[]; /* 0xC800-byte effect-name table. */ /* 0xC800-byte table (config/symbols/main.txt) */
 
-extern signed char _srsEffect2IndexTbl[];
+static signed char _srsEffect2IndexTbl[117];
 
 int srsGetEffect2Idx(int effectNo)
 {
@@ -73,8 +249,8 @@ typedef struct SrsChrEf2Entry {
     short min;
     short max;
 } SrsChrEf2Entry;
-extern SrsChrEfEntry _srsChrEfTbl[];
-extern SrsChrEf2Entry _srsChrEfTbl2[];
+static SrsChrEfEntry _srsChrEfTbl[12];
+static SrsChrEf2Entry _srsChrEfTbl2[161];
 extern char *_loadCfCommonData;
 extern char *_loadComboData[];
 
@@ -181,7 +357,7 @@ typedef struct SrsChrEfTbl3Entry {
     unsigned char unmodeled_04[2];
 } SrsChrEfTbl3Entry;
 
-extern SrsChrEfTbl3Entry _srsChrEfTbl3[];
+static SrsChrEfTbl3Entry _srsChrEfTbl3[36];
 
 short srsGetBossWaitEftNo(int effectNo)
 {
@@ -213,7 +389,6 @@ int srsGetLoadMode(void)
     return srsLoadMode;
 }
 
-extern unsigned char srsViewPath[];
 extern unsigned char *strcpy(unsigned char *destination, const unsigned char *source);
 
 void srsSetViewPath(unsigned char *path)
@@ -225,8 +400,6 @@ extern char *strcat(char *destination, const char *source);
 typedef struct { char s[15]; } SrsPath15;
 typedef struct { char s[23]; } SrsPath23;
 typedef struct { char s[7]; } SrsPath7;
-extern SrsPath15 D_004CC680;
-extern SrsPath23 D_004CC690;
 extern char D_004DBB18[];
 
 static int srsMakeFileName(char *path, char *name)
@@ -236,10 +409,10 @@ static int srsMakeFileName(char *path, char *name)
         return 0;
     }
     if (srsLoadMode == 0) {
-        *(SrsPath15 *)path = D_004CC680;
+        *(SrsPath15 *)path = *(SrsPath15 *)"data/simajiri/";
         strcat(path, name);
     } else if (srsLoadMode == 1) {
-        *(SrsPath23 *)path = D_004CC690;
+        *(SrsPath23 *)path = *(SrsPath23 *)"host0:/home/xeno/work/";
         strcat(path, (char *)srsViewPath);
         strcat(path, name);
     } else if (srsLoadMode == 2) {
@@ -386,7 +559,6 @@ char **srsGetComboData(int index)
 }
 
 extern char msg_0_00795120[];
-extern char D_004CC6A8[]; /* "esd/%s%s" */
 extern char D_004DBB20[]; /* ".esd" */
 
 char *srsGetEffectName(int effectNo)
@@ -400,7 +572,7 @@ char *srsGetEffectName(int effectNo)
     if (*name == 0) {
         return 0;
     }
-    sprintf(msg_0_00795120, D_004CC6A8, name, D_004DBB20);
+    sprintf(msg_0_00795120, "esd/%s%s", name, D_004DBB20);
     return msg_0_00795120;
 }
 
@@ -415,7 +587,7 @@ typedef struct WeaponTblEntry {
     unsigned char unmodeled_04[4];
 } WeaponTblEntry;
 
-extern WeaponTblEntry _weaponTbl[];
+static WeaponTblEntry _weaponTbl[45];
 
 int srsGetWeaponEffectIdx(int id)
 {
@@ -477,7 +649,6 @@ short srsEftNo2WeaponID(void)
 }
 
 extern char msg_1_007951A0[];
-extern char D_004CC6B8[]; /* "esp/%s%s" */
 extern char D_004DBB28[]; /* ".esp" */
 
 char *srsGetEffectName2(int effectNo)
@@ -488,7 +659,7 @@ char *srsGetEffectName2(int effectNo)
     if (name == 0) {
         return name;
     }
-    sprintf(msg_1_007951A0, D_004CC6B8, name, D_004DBB28);
+    sprintf(msg_1_007951A0, "esp/%s%s", name, D_004DBB28);
     return msg_1_007951A0;
 }
 
@@ -507,7 +678,7 @@ static char *srsGetComboName(int index)
     if (value == 0) {
         return 0;
     }
-    sprintf(msg_2_00795220, D_004CC6B8, value, D_004DBB28);
+    sprintf(msg_2_00795220, "esp/%s%s", value, D_004DBB28);
     return msg_2_00795220;
 }
 
@@ -632,9 +803,6 @@ extern void *smAlloc(int size);
  * from its first entry, which is the only one these two loaders fill.
  */
 extern void svAddImageMapper(int type, int width, void *chunk, int height);
-extern char D_004CC6F0[]; /* "esp/default.esp" */
-extern char D_004CC700[]; /* "seffect.esp" */
-extern char D_004CC710[]; /* "esp/cf_def.esp" */
 
 void sresLoadCommonMemory(void)
 {
@@ -646,7 +814,7 @@ void sresLoadCommonMemory(void)
     if (memRes->image == 0) {
         memRes->image = smAlloc(0x25800);
         if (memRes->image != 0) {
-            size = fileLoad(memRes->image, D_004CC6F0, 0);
+            size = fileLoad(memRes->image, "esp/default.esp", 0);
             if (size >= 0) {
                 if (size <= 0x25800) {
                     chunk[0] = memRes->image;
@@ -655,7 +823,7 @@ void sresLoadCommonMemory(void)
             }
         }
         memset(_loadEsdData, 0, 0xC800);
-        fileLoad(_loadEsdData, D_004CC700, 0);
+        fileLoad(_loadEsdData, "seffect.esp", 0);
     }
 }
 
@@ -669,7 +837,7 @@ void sresLoadCfMemory(void)
     if (memRes->cfImage == 0) {
         memRes->cfImage = smAlloc(0x3E000);
         if (memRes->cfImage != 0) {
-            size = fileLoad(memRes->cfImage, D_004CC710, 0);
+            size = fileLoad(memRes->cfImage, "esp/cf_def.esp", 0);
             if (size >= 0) {
                 chunk[0] = memRes->cfImage;
                 svAddImageMapper(15, 0, chunk, 3500);
@@ -1016,9 +1184,6 @@ int srsFileLoad(void *buffer, const char *name, int mode)
     return fileLoad(buffer, name, mode);
 }
 
-extern char D_004CC720[];
-extern char D_004CC748[];
-extern char D_004CC768[];
 extern void tracePrint();
 
 int srsFileLoadCf(int cfId, int effectNo)
@@ -1053,7 +1218,7 @@ int srsFileLoadCf(int cfId, int effectNo)
                 buffer = smAlloc(size);
                 ((SrsResFlat *) _srsMemRes)->effectData[i] = buffer;
                 if (buffer == 0) {
-                    tracePrint(D_004CC720);
+                    tracePrint("#### \xA3\xC3\xA3\xC6\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xA5\xE1\xA5\xE2\xA5\xEA\xA4\xAC\xC2\xAD\xA4\xEA\xA4\xDE\xA4\xBB\xA4\xF3!!");
                     return -1;
                 }
                 size = srsFileLoad(buffer, name, 0);
@@ -1067,9 +1232,9 @@ int srsFileLoadCf(int cfId, int effectNo)
             }
         }
     } else {
-        tracePrint(D_004CC748, effectType, effectNo);
+        tracePrint("-- err category(%d) eft(%d)", effectType, effectNo);
     }
-    tracePrint(D_004CC768);
+    tracePrint("-- err : eftNo is not cf load");
     return -1;
 }
 
@@ -1100,7 +1265,7 @@ int srsMemoryLoadCf(void *data, int effectNo, int size)
                 buffer = smAlloc(size);
                 ((SrsResFlat *) _srsMemRes)->effectData[i] = buffer;
                 if (buffer == 0) {
-                    tracePrint(D_004CC720);
+                    tracePrint("#### \xA3\xC3\xA3\xC6\xA5\xA8\xA5\xD5\xA5\xA7\xA5\xAF\xA5\xC8\xA5\xE1\xA5\xE2\xA5\xEA\xA4\xAC\xC2\xAD\xA4\xEA\xA4\xDE\xA4\xBB\xA4\xF3!!");
                     return -1;
                 }
                 memcpy(buffer, data, size);
@@ -1111,9 +1276,9 @@ int srsMemoryLoadCf(void *data, int effectNo, int size)
             }
         }
     } else {
-        tracePrint(D_004CC748, effectType, effectNo);
+        tracePrint("-- err category(%d) eft(%d)", effectType, effectNo);
     }
-    tracePrint(D_004CC768);
+    tracePrint("-- err : eftNo is not cf load");
     return -1;
 }
 
@@ -1135,3 +1300,284 @@ int srsEffectNameToID(char *effectName)
     }
     return 0;
 }
+
+static signed char _srsEffect2IndexTbl[117] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6,
+    7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4,
+    5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6,
+    7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2,
+    3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4,
+    5, 6, 7, 8, 9,
+};
+
+static SrsChrEfEntry _srsChrEfTbl[12] = {
+    { 0x0001, 0x001C, 0x0021, 0x0022, 0x0029, 0x07EE, 0x07F9, 0x09CD, 0x09D0 },
+    { 0x0002, 0x000F, 0x0014, 0x0015, 0x0017, 0x07E1, 0x07ED, 0x09C9, 0x09CC },
+    { 0x0003, 0x0001, 0x0006, 0x0007, 0x000E, 0x07D1, 0x07E0, 0x09C5, 0x09C8 },
+    { 0x0004, 0x0052, 0x0057, 0x0058, 0x005F, 0x0818, 0x0824, 0x09DD, 0x09E0 },
+    { 0x0005, 0x0038, 0x003D, 0x003E, 0x0044, 0x0806, 0x080D, 0x09D5, 0x09D8 },
+    { 0x0006, 0x002A, 0x002F, 0x0030, 0x0037, 0x07FA, 0x0805, 0x09D1, 0x09D4 },
+    { 0x0007, 0x0045, 0x004A, 0x004B, 0x0051, 0x080E, 0x0817, 0x09D9, 0x09DC },
+    { 0x0008, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    { 0x0009, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    { 0x000A, 0x0060, 0x0062, 0x0000, 0x0000, 0x0000, 0x0000, 0x09E1, 0x09E4 },
+    { 0x000B, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    { 0x000C, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+};
+
+static SrsChrEf2Entry _srsChrEfTbl2[161] = {
+    { 0x0022, 0x010B, 0x010B },
+    { 0x0023, 0x010C, 0x010D },
+    { 0x0024, 0x010E, 0x010F },
+    { 0x0025, 0x0110, 0x0112 },
+    { 0x0026, 0x0113, 0x0115 },
+    { 0x0027, 0x0116, 0x0118 },
+    { 0x0028, 0x0119, 0x0119 },
+    { 0x0029, 0x011A, 0x011B },
+    { 0x002A, 0x011C, 0x011D },
+    { 0x002B, 0x011E, 0x0120 },
+    { 0x002C, 0x0121, 0x0122 },
+    { 0x002D, 0x0123, 0x0125 },
+    { 0x002E, 0x0126, 0x0127 },
+    { 0x002F, 0x0128, 0x0129 },
+    { 0x0030, 0x012A, 0x012C },
+    { 0x0031, 0x012D, 0x012F },
+    { 0x0032, 0x0130, 0x0131 },
+    { 0x0033, 0x0132, 0x0133 },
+    { 0x0034, 0x0134, 0x0136 },
+    { 0x0035, 0x0137, 0x0138 },
+    { 0x0036, 0x0139, 0x013A },
+    { 0x0037, 0x013B, 0x013C },
+    { 0x0038, 0x013D, 0x013D },
+    { 0x0039, 0x013E, 0x013E },
+    { 0x003A, 0x013F, 0x013F },
+    { 0x003B, 0x010B, 0x010B },
+    { 0x003C, 0x010C, 0x010D },
+    { 0x003D, 0x010E, 0x010F },
+    { 0x003E, 0x0145, 0x0146 },
+    { 0x003F, 0x00F1, 0x00F2 },
+    { 0x0040, 0x00F3, 0x00F5 },
+    { 0x0041, 0x00F6, 0x00F6 },
+    { 0x0042, 0x00F8, 0x00F9 },
+    { 0x0043, 0x00FA, 0x00FB },
+    { 0x0044, 0x00FC, 0x00FE },
+    { 0x0045, 0x00FF, 0x00FF },
+    { 0x0046, 0x0100, 0x0102 },
+    { 0x0047, 0x0103, 0x0105 },
+    { 0x0048, 0x0106, 0x0106 },
+    { 0x0049, 0x0107, 0x0107 },
+    { 0x004A, 0x0108, 0x0108 },
+    { 0x004B, 0x0109, 0x0109 },
+    { 0x004C, 0x010A, 0x010A },
+    { 0x004D, 0x0147, 0x0147 },
+    { 0x004E, 0x0148, 0x0148 },
+    { 0x004F, 0x0149, 0x014A },
+    { 0x0050, 0x014B, 0x014C },
+    { 0x0051, 0x014D, 0x014E },
+    { 0x0052, 0x014F, 0x0151 },
+    { 0x0053, 0x0152, 0x0153 },
+    { 0x0054, 0x0154, 0x0156 },
+    { 0x0055, 0x0157, 0x0159 },
+    { 0x0056, 0x015A, 0x015B },
+    { 0x0057, 0x015C, 0x015D },
+    { 0x0058, 0x015E, 0x015F },
+    { 0x0059, 0x0160, 0x0161 },
+    { 0x005A, 0x0162, 0x0164 },
+    { 0x005B, 0x0165, 0x0165 },
+    { 0x005C, 0x0166, 0x0168 },
+    { 0x005D, 0x0169, 0x016B },
+    { 0x005E, 0x016C, 0x016E },
+    { 0x005F, 0x016F, 0x0171 },
+    { 0x0060, 0x0172, 0x0174 },
+    { 0x0061, 0x0175, 0x0175 },
+    { 0x0062, 0x0176, 0x0176 },
+    { 0x0063, 0x0177, 0x0177 },
+    { 0x0064, 0x0178, 0x0178 },
+    { 0x0065, 0x0179, 0x017B },
+    { 0x0066, 0x017C, 0x017E },
+    { 0x0067, 0x017F, 0x0180 },
+    { 0x0068, 0x0181, 0x0181 },
+    { 0x0069, 0x0182, 0x0182 },
+    { 0x006A, 0x0183, 0x0184 },
+    { 0x006B, 0x0185, 0x0185 },
+    { 0x006C, 0x0186, 0x0187 },
+    { 0x006D, 0x0188, 0x0189 },
+    { 0x006E, 0x018A, 0x018B },
+    { 0x0097, 0x0916, 0x091A },
+    { 0x0098, 0x091B, 0x091F },
+    { 0x0099, 0x0907, 0x090B },
+    { 0x009A, 0x0902, 0x0906 },
+    { 0x009B, 0x0925, 0x0929 },
+    { 0x009C, 0x0920, 0x0924 },
+    { 0x009D, 0x08FD, 0x0901 },
+    { 0x009E, 0x092A, 0x092E },
+    { 0x009F, 0x092F, 0x0933 },
+    { 0x00A0, 0x0934, 0x0938 },
+    { 0x00A1, 0x0939, 0x093D },
+    { 0x00A2, 0x093E, 0x0942 },
+    { 0x00A3, 0x0943, 0x0947 },
+    { 0x00A4, 0x0948, 0x094C },
+    { 0x00A5, 0x094D, 0x0951 },
+    { 0x00A6, 0x0952, 0x0956 },
+    { 0x00A7, 0x0957, 0x095B },
+    { 0x00A8, 0x095C, 0x0960 },
+    { 0x00A9, 0x0961, 0x0965 },
+    { 0x00AA, 0x0966, 0x096A },
+    { 0x00AB, 0x096B, 0x096F },
+    { 0x00AC, 0x0970, 0x0974 },
+    { 0x00AD, 0x097A, 0x097E },
+    { 0x00AE, 0x097F, 0x0983 },
+    { 0x00AF, 0x0984, 0x0988 },
+    { 0x00B0, 0x0989, 0x098D },
+    { 0x00B1, 0x098E, 0x0992 },
+    { 0x00B2, 0x0993, 0x0997 },
+    { 0x00B3, 0x0998, 0x099C },
+    { 0x00B4, 0x099D, 0x09A1 },
+    { 0x00B5, 0x09A2, 0x09A6 },
+    { 0x00B6, 0x09AC, 0x09B0 },
+    { 0x00B7, 0x0975, 0x0979 },
+    { 0x00B8, 0x0907, 0x090B },
+    { 0x00B9, 0x0902, 0x0906 },
+    { 0x00BA, 0x0966, 0x096A },
+    { 0x0097, 0x0A79, 0x0A7B },
+    { 0x0098, 0x0A7C, 0x0A7E },
+    { 0x0099, 0x0A7F, 0x0A81 },
+    { 0x009A, 0x0A82, 0x0A84 },
+    { 0x009B, 0x0A85, 0x0A87 },
+    { 0x009C, 0x0A88, 0x0A8A },
+    { 0x009D, 0x0A8B, 0x0A8D },
+    { 0x009E, 0x0A8E, 0x0A90 },
+    { 0x009F, 0x0A91, 0x0A93 },
+    { 0x00A0, 0x0A94, 0x0A96 },
+    { 0x00A1, 0x0A97, 0x0A99 },
+    { 0x00A2, 0x0A9A, 0x0A9C },
+    { 0x00A3, 0x0A9D, 0x0A9F },
+    { 0x00A4, 0x0AA0, 0x0AA2 },
+    { 0x00A5, 0x0AA3, 0x0AA5 },
+    { 0x00A6, 0x0AA6, 0x0AA8 },
+    { 0x00A7, 0x0AA9, 0x0AAB },
+    { 0x00A8, 0x0AAC, 0x0AAE },
+    { 0x00A9, 0x0AAF, 0x0AB1 },
+    { 0x00AA, 0x0AB2, 0x0AB4 },
+    { 0x00AB, 0x0AB5, 0x0AB7 },
+    { 0x00AC, 0x0AB8, 0x0ABA },
+    { 0x00AD, 0x0ABB, 0x0ABD },
+    { 0x00AE, 0x0ABE, 0x0AC0 },
+    { 0x00AF, 0x0AC1, 0x0AC3 },
+    { 0x00B0, 0x0AC4, 0x0AC6 },
+    { 0x00B1, 0x0AC7, 0x0AC9 },
+    { 0x00B2, 0x0ACA, 0x0ACC },
+    { 0x00B3, 0x0ACD, 0x0ACF },
+    { 0x00B4, 0x0AD0, 0x0AD2 },
+    { 0x00B5, 0x0AD3, 0x0AD5 },
+    { 0x00B6, 0x0AD6, 0x0AD8 },
+    { 0x00B7, 0x0AD9, 0x0ADB },
+    { 0x00B8, 0x0A7F, 0x0A81 },
+    { 0x00B9, 0x0A82, 0x0A84 },
+    { 0x00BA, 0x0AB2, 0x0AB4 },
+    { 0x006F, 0x0148, 0x0148 },
+    { 0x0070, 0x0148, 0x0148 },
+    { 0x0071, 0x014F, 0x0151 },
+    { 0x0072, 0x0116, 0x0118 },
+    { 0x003F, 0x00F1, 0x00F2 },
+    { 0x0049, 0x0107, 0x0107 },
+    { 0x004A, 0x0108, 0x0108 },
+    { 0x0092, 0x0107, 0x0107 },
+    { 0x0093, 0x0107, 0x0107 },
+    { 0x0094, 0x0107, 0x0107 },
+    { 0x0095, 0x0107, 0x0107 },
+    { 0x0096, 0x0107, 0x0107 },
+};
+
+static SrsChrEfTbl3Entry _srsChrEfTbl3[36] = {
+    { 0x0097, 0x0A79, { 0x7B, 0x0A } },
+    { 0x0098, 0x0A7C, { 0x7E, 0x0A } },
+    { 0x0099, 0x0A7F, { 0x81, 0x0A } },
+    { 0x009A, 0x0A82, { 0x84, 0x0A } },
+    { 0x009B, 0x0A85, { 0x87, 0x0A } },
+    { 0x009C, 0x0A88, { 0x8A, 0x0A } },
+    { 0x009D, 0x0A8B, { 0x8D, 0x0A } },
+    { 0x009E, 0x0A8E, { 0x90, 0x0A } },
+    { 0x009F, 0x0A91, { 0x93, 0x0A } },
+    { 0x00A0, 0x0A94, { 0x96, 0x0A } },
+    { 0x00A1, 0x0A97, { 0x99, 0x0A } },
+    { 0x00A2, 0x0A9A, { 0x9C, 0x0A } },
+    { 0x00A3, 0x0A9D, { 0x9F, 0x0A } },
+    { 0x00A4, 0x0AA0, { 0xA2, 0x0A } },
+    { 0x00A5, 0x0AA3, { 0xA5, 0x0A } },
+    { 0x00A6, 0x0AA6, { 0xA8, 0x0A } },
+    { 0x00A7, 0x0AA9, { 0xAB, 0x0A } },
+    { 0x00A8, 0x0AAC, { 0xAE, 0x0A } },
+    { 0x00A9, 0x0AAF, { 0xB1, 0x0A } },
+    { 0x00AA, 0x0AB2, { 0xB4, 0x0A } },
+    { 0x00AB, 0x0AB5, { 0xB7, 0x0A } },
+    { 0x00AC, 0x0AB8, { 0xBA, 0x0A } },
+    { 0x00AD, 0x0ABB, { 0xBD, 0x0A } },
+    { 0x00AE, 0x0ABE, { 0xC0, 0x0A } },
+    { 0x00AF, 0x0AC1, { 0xC3, 0x0A } },
+    { 0x00B0, 0x0AC4, { 0xC6, 0x0A } },
+    { 0x00B1, 0x0AC7, { 0xC9, 0x0A } },
+    { 0x00B2, 0x0ACA, { 0xCC, 0x0A } },
+    { 0x00B3, 0x0ACD, { 0xCF, 0x0A } },
+    { 0x00B4, 0x0AD0, { 0xD2, 0x0A } },
+    { 0x00B5, 0x0AD3, { 0xD5, 0x0A } },
+    { 0x00B6, 0x0AD6, { 0xD8, 0x0A } },
+    { 0x00B7, 0x0AD9, { 0xDB, 0x0A } },
+    { 0x00B8, 0x0A7F, { 0x81, 0x0A } },
+    { 0x00B9, 0x0A82, { 0x84, 0x0A } },
+    { 0x00BA, 0x0AB2, { 0xB4, 0x0A } },
+};
+
+static WeaponTblEntry _weaponTbl[45] = {
+    { 0x0046, 0x0AF1, { 0xF2, 0x0A, 0xF1, 0x0A } },
+    { 0x0047, 0x0AF3, { 0xF3, 0x0A, 0xF4, 0x0A } },
+    { 0x0048, 0x0AF5, { 0xF6, 0x0A, 0xF7, 0x0A } },
+    { 0x0049, 0x0AF8, { 0x2E, 0x0B, 0x2F, 0x0B } },
+    { 0x004A, 0x0AF9, { 0xF9, 0x0A, 0xFA, 0x0A } },
+    { 0x004B, 0x0AFB, { 0xFC, 0x0A, 0xFD, 0x0A } },
+    { 0x004C, 0x0AFE, { 0x30, 0x0B, 0x31, 0x0B } },
+    { 0x004D, 0x0AFF, { 0xFF, 0x0A, 0x00, 0x0B } },
+    { 0x004E, 0x0B01, { 0x01, 0x0B, 0x33, 0x0B } },
+    { 0x004F, 0x0B02, { 0x02, 0x0B, 0x02, 0x0B } },
+    { 0x0050, 0x0B03, { 0x03, 0x0B, 0x04, 0x0B } },
+    { 0x0051, 0x0B05, { 0x05, 0x0B, 0x32, 0x0B } },
+    { 0x0052, 0x0B06, { 0x06, 0x0B, 0x07, 0x0B } },
+    { 0x0053, 0x0B08, { 0x08, 0x0B, 0x2D, 0x0B } },
+    { 0x0054, 0x0B09, { 0x09, 0x0B, 0x09, 0x0B } },
+    { 0x0055, 0x0B0A, { 0x0A, 0x0B, 0x0B, 0x0B } },
+    { 0x0056, 0x0B0C, { 0x0C, 0x0B, 0x0D, 0x0B } },
+    { 0x0057, 0x0B0E, { 0x0E, 0x0B, 0x0F, 0x0B } },
+    { 0x0058, 0x0B10, { 0x10, 0x0B, 0x10, 0x0B } },
+    { 0x0059, 0x0B11, { 0x11, 0x0B, 0x12, 0x0B } },
+    { 0x005A, 0x0B13, { 0x13, 0x0B, 0x14, 0x0B } },
+    { 0x005B, 0x0B15, { 0x15, 0x0B, 0x16, 0x0B } },
+    { 0x0070, 0x0B15, { 0x15, 0x0B, 0x16, 0x0B } },
+    { 0x005C, 0x0B17, { 0x17, 0x0B, 0x18, 0x0B } },
+    { 0x0071, 0x0B17, { 0x17, 0x0B, 0x18, 0x0B } },
+    { 0x005D, 0x0B19, { 0x19, 0x0B, 0x19, 0x0B } },
+    { 0x005E, 0x0B1A, { 0x1A, 0x0B, 0x1A, 0x0B } },
+    { 0x0072, 0x0B1A, { 0x1A, 0x0B, 0x1A, 0x0B } },
+    { 0x005F, 0x0B1B, { 0x1B, 0x0B, 0x1B, 0x0B } },
+    { 0x0060, 0x0B1C, { 0x1C, 0x0B, 0x1C, 0x0B } },
+    { 0x0061, 0x0B1D, { 0x1D, 0x0B, 0x1D, 0x0B } },
+    { 0x0062, 0x0B1E, { 0x1E, 0x0B, 0x1E, 0x0B } },
+    { 0x0063, 0x0B1F, { 0x1F, 0x0B, 0x1F, 0x0B } },
+    { 0x0064, 0x0B20, { 0x20, 0x0B, 0x20, 0x0B } },
+    { 0x0065, 0x0B21, { 0x21, 0x0B, 0x21, 0x0B } },
+    { 0x0066, 0x0B22, { 0x22, 0x0B, 0x22, 0x0B } },
+    { 0x0067, 0x0B23, { 0x23, 0x0B, 0x23, 0x0B } },
+    { 0x0068, 0x0B24, { 0x24, 0x0B, 0x24, 0x0B } },
+    { 0x0069, 0x0B25, { 0x25, 0x0B, 0x25, 0x0B } },
+    { 0x006C, 0x0B26, { 0x26, 0x0B, 0x26, 0x0B } },
+    { 0x006E, 0x0B27, { 0x27, 0x0B, 0x27, 0x0B } },
+    { 0x006A, 0x0B28, { 0x28, 0x0B, 0x28, 0x0B } },
+    { 0x006B, 0x0B29, { 0x29, 0x0B, 0x29, 0x0B } },
+    { 0x006F, 0x0B2A, { 0x2A, 0x0B, 0x2A, 0x0B } },
+    { 0x006D, 0x0B2B, { 0x2B, 0x0B, 0x2C, 0x0B } },
+};
+
+unsigned char _srsMemRes[0x1A0] = { 0 };
+
+char _loadEsdData[0xC800] = { 0 };
