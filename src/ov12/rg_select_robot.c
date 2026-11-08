@@ -21,6 +21,7 @@ static void _JobAct(RgSelectRobot *pCont, float deltaTime);
 /* Linker witness: this TU's own source-file name, used by every assert here. */
 /* Linker witness for the original literal at ov12:0x00a56ef8 ("pCont != NIL"). */
 /* Linker witness for the original literal at ov12:0x00a56d90 ("who are you ?"). */
+int s_bLoading = 0;
 const char D_00A56D90[] = "who are you ?";
 const char D_00A56DA0[] = "../rg_select_robot.euc.c";
 const char D_00A56DC0[] = "uFileNum <= DAT_MAX";
@@ -212,15 +213,20 @@ extern void xglLightIntensityParallel(StudioLight *light, unsigned int index,
 extern void xglLightAngle(StudioLight *light, unsigned int index,
                          const Vector4 *direction);
 typedef union AlignedLightVector {
+    float components[4];
     double alignment; /* Preserve 8-byte alignment for the original copy. */
     Vector4 value;
-    float components[4];
 } AlignedLightVector;
 typedef struct AlignedLightBlock {
     AlignedLightVector vectors[4];
 } AlignedLightBlock;
 extern const AlignedLightBlock D_00A56E10;
-extern AlignedLightBlock asDirection_0;
+AlignedLightBlock asDirection_0 = {{
+    {{0.0f, 0.0f, 0.0f, 1.0f}},
+    {{-0.26195645f, 0.53120846f, -0.019844394f, 1.0f}},
+    {{2.3561945f, 1.2733574f, 3.1415927f, 1.0f}},
+    {{0.36123082f, 3.775898f, 0.028536133f, 1.0f}},
+}};
 
 void _select_light(StudioLight *light)
 {
@@ -250,12 +256,22 @@ void _select_light(StudioLight *light)
     }
 }
 
+const AlignedLightBlock D_00A56E10 = {{
+    {{0.25f, 0.25f, 0.25f, 1.0f}},
+    {{0.8f, 0.8f, 0.8f, 1.0f}},
+    {{0.5f, 0.5f, 0.5f, 1.0f}},
+    {{0.5f, 0.5f, 0.5f, 1.0f}},
+}};
+
 extern void XrgLinearIntpVector(RgVector destination, RgVector first,
                                  RgVector second, float weight);
 /* The two positions _ActorPos interpolates between, weighted by
    RgSelectRobot::screenPos: index 1 is the weighted argument, index 0 the
    complement-weighted one. */
-extern RgVector s_aPos_1[2];
+RgVector s_aPos_1[2] = {
+    {2.4f, -1.5f, -6.6f, 0.0f},
+    {-2.4f, -1.5f, -6.6f, 0.0f},
+};
 
 static void _ActorPos(RgSelectRobot *pCont, RgVector position)
 {

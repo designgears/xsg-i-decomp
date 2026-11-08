@@ -18169,15 +18169,67 @@
    ]
   },
   "ov12/tu071_00a3cd10": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50480",
+      "0x00a50484"
+     ],
+     "generated": [
+      "0x00a50480",
+      "0x00a50484"
+     ],
+     "generated_by": [
+      "_InitLoad",
+      "_IsEndOfLoad",
+      "_JobLoad",
+      "_KillLoad",
+      "_ReadCallback"
+     ],
+     "c_owned_symbols": [
+      "s_bLoading"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_select_robot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a50490",
+      "0x00a504f0"
+     ],
+     "generated": [
+      "0x00a50490",
+      "0x00a504f0"
+     ],
+     "generated_by": [
+      "_ActorPos",
+      "_select_light"
+     ],
+     "c_owned_symbols": [
+      "asDirection_0",
+      "s_aPos_1"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_select_robot.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x00a56d90",
-      "0x00a56e10"
+      "0x00a56f20"
      ],
      "generated": [
       "0x00a56d90",
-      "0x00a56e10"
+      "0x00a56f1b"
      ],
      "generated_by": [
       "CreateRgSelectRobot",
@@ -18196,7 +18248,8 @@
       "_JobAct",
       "_ReadCallback",
       "_ReqAct",
-      "_ReqLoad"
+      "_ReqLoad",
+      "_select_light"
      ],
      "c_owned_symbols": [
       "D_00A56D90",
@@ -18205,40 +18258,8 @@
       "D_00A56DD8",
       "D_00A56DE8",
       "D_00A56DF8",
-      "D_00A56E08"
-     ],
-     "also_referenced_by_c": [
-      "D_00A56E10"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_robot.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56e50",
-      "0x00a56f20"
-     ],
-     "generated": [
-      "0x00a56e50",
-      "0x00a56f1b"
-     ],
-     "generated_by": [
-      "DisposeRgSelectRobot",
-      "RgSelectRobotDisp",
-      "RgSelectRobotPassTime",
-      "RgSelectRobotScreenPos",
-      "RgSelectRobotSet",
-      "RgSelectRobotSetMode",
-      "_ActivateAct",
-      "_DestructSelRob",
-      "_InitSelRob",
-      "_JobAct",
-      "_ReqAct"
-     ],
-     "c_owned_symbols": [
+      "D_00A56E08",
+      "D_00A56E10",
       "D_00A56E50",
       "D_00A56E68",
       "D_00A56E80",
