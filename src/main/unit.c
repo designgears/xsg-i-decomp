@@ -79,7 +79,6 @@ static void UNIT_rotX(int mode, JThread *thread, void *arguments,
 void UNIT_motion(int mode, JThread *thread, void *arguments,
                  u32 *failure_result);
 
-extern const char D_004D16F8[];
 extern void MAP_updateUnitPartsSequence(void *);
 extern void MAP_updateUnitPartsSequence2(void *);
 extern void MAP_updateUnitSequence(void *);
@@ -101,7 +100,7 @@ static void UNIT_setUpdate(u8 *object, UnitUpdateState *state)
     int mode;
 
     algorithm_field = lookupClassField(classJava_xeno_Unit,
-                                       loadConstString(D_004D16F8, -1), 0);
+                                       loadConstString("algorithm", -1), 0);
     mode = (*(int *)(object + algorithm_field->offset) >> 8) & 0xF;
 
     switch (mode) {
@@ -130,7 +129,6 @@ static void UNIT_setUpdate(u8 *object, UnitUpdateState *state)
 
 /* The "peer" field name every lookupClassField(classJava_xeno_Unit, ...)
  * call below looks up. */
-extern const char D_004DC1D0[];
 
 extern SceneClass *classJava_xeno_Chr;
 
@@ -159,7 +157,7 @@ void Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCNS
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     UNIT_setUpdate(object, (UnitUpdateState *)peer);
     entry = &unitSequence[peer->serial];
@@ -167,7 +165,7 @@ void Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCNS
     *(void **)((u8 *)entry + 0x28) = SEQ_rotYCNSUnitChr;
     entry->state |= 4;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     args[0].p = *(void **)(arguments->chr + peer_field->offset);
     args[5].i = arguments->frames;
     args[12].f = arguments->x;
@@ -187,7 +185,7 @@ void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCN
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     UNIT_setUpdate(object, (UnitUpdateState *)peer);
     entry = &unitSequence[peer->serial];
@@ -195,7 +193,7 @@ void Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF(JThread *thread, UnitRotYCN
     *(void **)((u8 *)entry + 0x24) = SEQ_transCNSUnitChr;
     entry->state |= 1;
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     args[0].p = *(void **)(arguments->chr + peer_field->offset);
     args[16].i = arguments->frames;
     args[4].f = arguments->x;
@@ -261,13 +259,13 @@ static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
         return;
     }
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + field->offset);
     entry = &unitSequence[peer->serial];
     move = (UnitMoveState *)((u8 *)entry + 0x38);
     entry->state |= 1;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004D16F8, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     offset = (*(u32 *)(object + field->offset) & 1)
         ? (float *)((u8 *)peer + 0x10) : defaultOffset;
 
@@ -296,7 +294,7 @@ static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
         break;
     case 2:
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(D_004DC1D0, -1), 0);
+                                 loadConstString("peer", -1), 0);
         {
             u8 *o = ((UnitMoveObjCall *)arguments)->b.p + field->offset;
             int fr = ((UnitMoveObjCall *)arguments)->a.i;
@@ -309,7 +307,7 @@ static void UNIT_moveXZ(int mode, JThread *thread, void *arguments_,
         break;
     case 3:
         field = lookupClassField(classJava_xeno_Chr,
-                                 loadConstString(D_004DC1D0, -1), 0);
+                                 loadConstString("peer", -1), 0);
         {
             u8 *o = ((UnitMoveObjCall *)arguments)->a.p + field->offset;
             move->frames = -1;
@@ -397,10 +395,10 @@ static void UNIT_rotX(int mode, JThread *thread, void *arguments_,
     wait = 0;
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004D16F8, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (float *)((u8 *)peer + 0x20);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
         rot_source = defaultOffset;
@@ -498,10 +496,10 @@ static void UNIT_rotY(int mode, JThread *thread, void *arguments_,
     wait = 0;
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004D16F8, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (*(u32 *)(object + field->offset) & 1)
         ? (float *)((u8 *)peer + 0x20) : defaultOffset;
 
@@ -532,7 +530,7 @@ static void UNIT_rotY(int mode, JThread *thread, void *arguments_,
             int off;
             u8 *o;
             field = lookupClassField(classJava_xeno_Chr,
-                                     loadConstString(D_004DC1D0, -1), 0);
+                                     loadConstString("peer", -1), 0);
             off = field->offset;
             o = ((UnitRotObjCall *)arguments)->other;
             rot->frames = ((UnitRotObjCall *)arguments)->frames;
@@ -548,7 +546,7 @@ static void UNIT_rotY(int mode, JThread *thread, void *arguments_,
             int off;
             u8 *o;
             field = lookupClassField(classJava_xeno_Chr,
-                                     loadConstString(D_004DC1D0, -1), 0);
+                                     loadConstString("peer", -1), 0);
             off = field->offset;
             o = ((UnitRotObjCall2 *)arguments)->other;
             rot->frames = -1;
@@ -609,10 +607,10 @@ static void UNIT_rotZ(int mode, JThread *thread, void *arguments_,
         return;
     }
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + field->offset);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004D16F8, -1), 0);
+                             loadConstString("algorithm", -1), 0);
     rot_source = (float *)((u8 *)peer + 0x20);
     if ((*(u32 *)(object + field->offset) & 1) == 0)
         rot_source = defaultOffset;
@@ -683,9 +681,6 @@ static void UNIT_rotZ(int mode, JThread *thread, void *arguments_,
     }
 }
 
-extern const char D_004DC1D8[];
-extern const char D_004DC1E0[];
-extern const char D_004DC1E8[];
 
 void Java_xeno_Unit_getRotate__(JThread *thread, UnitObjectCall *arguments)
 {
@@ -695,16 +690,16 @@ void Java_xeno_Unit_getRotate__(JThread *thread, UnitObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     rot = (float *)(*(u8 **)(object + field->offset) + 0x20);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D8, -1), 0);
+                             loadConstString("rx", -1), 0);
     *(float *)(object + field->offset) = rot[0] / 3.1415927f * 180.0f;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E0, -1), 0);
+                             loadConstString("ry", -1), 0);
     *(float *)(object + field->offset) = rot[1] / 3.1415927f * 180.0f;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E8, -1), 0);
+                             loadConstString("rz", -1), 0);
     *(float *)(object + field->offset) = rot[2] / 3.1415927f * 180.0f;
 }
 
@@ -721,14 +716,11 @@ void Java_xeno_Unit_getSignal__(JThread *thread, UnitObjectCall *arguments,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     *failure_result = peer->signal;
 }
 
-extern const char D_004DC1F0[];
-extern const char D_004DC1F8[];
-extern const char D_004DC200[];
 
 void Java_xeno_Unit_getTranslate__(JThread *thread, UnitObjectCall *arguments)
 {
@@ -738,16 +730,16 @@ void Java_xeno_Unit_getTranslate__(JThread *thread, UnitObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     pos = (float *)(*(u8 **)(object + field->offset) + 0x10);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F0, -1), 0);
+                             loadConstString("px", -1), 0);
     *(float *)(object + field->offset) = pos[0];
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F8, -1), 0);
+                             loadConstString("py", -1), 0);
     *(float *)(object + field->offset) = pos[1];
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC200, -1), 0);
+                             loadConstString("pz", -1), 0);
     *(float *)(object + field->offset) = pos[2];
 }
 
@@ -831,12 +823,12 @@ void Java_xeno_Unit_move__Lxeno_util_Spline_IZ(JThread *thread, UnitMoveSplCall 
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     sargs = (u8 *)entry + 0x38;
     entry->state |= 1;
-    lookupClassField(classJava_xeno_Unit, loadConstString(D_004D16F8, -1), 0);
+    lookupClassField(classJava_xeno_Unit, loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     nf = arguments->pad;
@@ -870,12 +862,12 @@ void Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ(JThread *thread, UnitMoveSplCal
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     sargs = (u8 *)entry + 0xb8;
     entry->state |= 0xE;
-    lookupClassField(classJava_xeno_Unit, loadConstString(D_004D16F8, -1), 0);
+    lookupClassField(classJava_xeno_Unit, loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     nf = arguments->pad;
@@ -933,7 +925,7 @@ void UNIT_motion(int mode, JThread *thread, void *arguments_,
     wait = 0;
     object = (u8 *)arguments[0].i;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + field->offset);
     entry = &unitSequence[peer->serial];
     mot = (UnitMotionState *)((u8 *)entry + 0x138);
@@ -1137,12 +1129,12 @@ void Java_xeno_Unit_scale__Lxeno_util_Spline_IZ(JThread *thread, UnitScaleSplCal
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     sargs = (u8 *)entry + 0x1b8;
     entry->state |= 0xE0;
-    lookupClassField(classJava_xeno_Unit, loadConstString(D_004D16F8, -1), 0);
+    lookupClassField(classJava_xeno_Unit, loadConstString("algorithm", -1), 0);
     spline = arguments->spline;
     wait = arguments->wait;
     *(void **)((u8 *)entry + 0x30) = SEQ_scaleUnitSPL;
@@ -1182,10 +1174,10 @@ static void UNIT_sclX(int mode, JThread *thread, void *arguments_,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     algorithm_field = lookupClassField(classJava_xeno_Unit,
-                                       loadConstString(D_004D16F8, -1), 0);
+                                       loadConstString("algorithm", -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
         scale_source = defaultOffset;
@@ -1247,10 +1239,10 @@ static void UNIT_sclY(int mode, JThread *thread, void *arguments_,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     algorithm_field = lookupClassField(classJava_xeno_Unit,
-                                       loadConstString(D_004D16F8, -1), 0);
+                                       loadConstString("algorithm", -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
         scale_source = defaultOffset;
@@ -1312,10 +1304,10 @@ static void UNIT_sclZ(int mode, JThread *thread, void *arguments_,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     algorithm_field = lookupClassField(classJava_xeno_Unit,
-                                       loadConstString(D_004D16F8, -1), 0);
+                                       loadConstString("algorithm", -1), 0);
     scale_source = &peer->scale_x;
     if ((*(u32 *)(object + algorithm_field->offset) & 1) == 0)
         scale_source = defaultOffset;
@@ -1369,7 +1361,7 @@ void Java_xeno_Unit_setCollision__Z(JThread *thread, UnitBoolCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     if (arguments->flag != 0) {
         peer->flags |= 0x100;
@@ -1386,16 +1378,16 @@ void Java_xeno_Unit_setRotate__(JThread *thread, UnitObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     rot = (float *)(*(u8 **)(object + field->offset) + 0x20);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D8, -1), 0);
+                             loadConstString("rx", -1), 0);
     rot[0] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E0, -1), 0);
+                             loadConstString("ry", -1), 0);
     rot[1] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E8, -1), 0);
+                             loadConstString("rz", -1), 0);
     rot[2] = *(float *)(object + field->offset) / 180.0f * 3.14159265f;
 }
 
@@ -1407,16 +1399,16 @@ void Java_xeno_Unit_setTranslate__(JThread *thread, UnitObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     pos = (float *)(*(u8 **)(object + field->offset) + 0x10);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F0, -1), 0);
+                             loadConstString("px", -1), 0);
     pos[0] = *(float *)(object + field->offset);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F8, -1), 0);
+                             loadConstString("py", -1), 0);
     pos[1] = *(float *)(object + field->offset);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC200, -1), 0);
+                             loadConstString("pz", -1), 0);
     pos[2] = *(float *)(object + field->offset);
 }
 
@@ -1428,7 +1420,7 @@ void Java_xeno_Unit_setVisible__IZ(JThread *thread, UnitVisibleCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     MDL_setVisible(peer->model, arguments->mode, arguments->visible);
 }
@@ -1442,7 +1434,7 @@ void Java_xeno_Unit_setVisible__Z(JThread *thread, UnitBoolCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     if (arguments->flag != 0) {
         peer->flags &= ~4;
@@ -1464,7 +1456,7 @@ void Java_xeno_Unit_signal__I(JThread *thread, UnitSignalCall *arguments,
         return;
     }
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     peer->signal = arguments->value;
 }
@@ -1511,7 +1503,7 @@ void Java_xeno_Unit_start__ILjava_lang_Object_(JThread *thread, UnitStartCall *a
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     mode = arguments->mode;
     peer = *(UnitPeer **)(object + field->offset);
     entry = (int *)&unitSequence[peer->serial];
@@ -1562,29 +1554,29 @@ void Java_xeno_Unit_stop__(JThread *thread, UnitObjectCall *arguments)
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D0, -1), 0);
+                             loadConstString("peer", -1), 0);
     peer = *(u8 **)(object + field->offset);
     t = JTHREAD_get(object);
     if (t != 0) {
         t->flags &= ~0x10;
     }
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F0, -1), 0);
+                             loadConstString("px", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x10);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1F8, -1), 0);
+                             loadConstString("py", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x14);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC200, -1), 0);
+                             loadConstString("pz", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x18);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1D8, -1), 0);
+                             loadConstString("rx", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x20);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E0, -1), 0);
+                             loadConstString("ry", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x24);
     field = lookupClassField(classJava_xeno_Unit,
-                             loadConstString(D_004DC1E8, -1), 0);
+                             loadConstString("rz", -1), 0);
     *(float *)(object + field->offset) = *(float *)(peer + 0x28);
 }
 
@@ -1612,10 +1604,10 @@ void Java_xeno_Unit_setParent__Ljava_lang_Object_I(JThread *thread, UnitSetParen
     chr = arguments->chr;
     rel = arguments->rel;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(u32 **)(object + peer_field->offset);
     peer_field = lookupClassField(classJava_xeno_Chr,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     parent = *(void **)(chr + peer_field->offset);
     peer[0xFC / 4] = (u32)parent;
     if (rel & 0x8000) {
@@ -1665,7 +1657,7 @@ void Java_xeno_Unit_setArgs__III(JThread *thread, UnitArgsWordCall *arguments)
     offset = arguments->offset;
     size = arguments->size;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     if ((unsigned int)(size - 1) < 4U) {
         copyArgs(peer->args + offset, (u8 *)&value, size);
@@ -1687,7 +1679,7 @@ void Java_xeno_Unit_getArgs__II(JThread *thread, UnitArgsGetCall *arguments,
     object = arguments->object;
     offset = arguments->offset;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     check = (unsigned int)(size - 1);
     if (check < 4U) {
@@ -1714,7 +1706,7 @@ void Java_xeno_Unit_setArgs__ILjava_lang_Object_I(JThread *thread,
     source = arguments->source;
     size = arguments->size;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     if (size > 0) {
         copyArgs(peer->args, source->data, size);
@@ -1737,7 +1729,7 @@ void Java_xeno_Unit_setArgs__IIIII(JThread *thread, UnitArgs5Call *arguments)
     object = arguments->object;
     index = arguments->index;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     *(int *)(index * 16 + peer->args) = arguments->a;
     unitPutArg(peer, index * 16 + 4, arguments->b);
@@ -1759,7 +1751,7 @@ void Java_xeno_Unit_getScale__(JThread *thread, UnitObjectCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     scale_0_007C0A58.class_ref = classJava_xeno_util_Vector4f->instance_class_ref;
     scale_0_007C0A58.x = peer->scale_x;
@@ -1778,7 +1770,7 @@ void Java_xeno_Unit_setScale__FFF(JThread *thread, UnitVector3Call *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     peer->scale_x = arguments->x;
     peer->scale_y = arguments->y;
@@ -1795,7 +1787,7 @@ void Java_xeno_Unit_getSerial__(JThread *thread, UnitObjectCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     *failure_result = peer->serial;
 }
@@ -1811,7 +1803,7 @@ void Java_xeno_Unit_mtnSetMask__I(JThread *thread, UnitIntCall *arguments)
     mask = arguments->value;
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     peer->motion_mask = mask;
 }
@@ -1832,7 +1824,7 @@ void Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_(JThread *thread,
     object = arguments->object;
     vector = arguments->vector;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     root = (float *)*(u8 **)(object + peer_field->offset);
     if (vector != 0) {
         switch (index) {
@@ -1867,7 +1859,7 @@ void Java_xeno_Unit_getState__(JThread *thread, UnitObjectCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     *failure_result = entry->state;
@@ -1887,7 +1879,7 @@ void Java_xeno_Unit_getPivot__Lxeno_util_Vector4f_(JThread *thread,
     object = arguments->object;
     if (vector != 0) {
         peer_field = lookupClassField(classJava_xeno_Unit,
-                                      loadConstString(D_004DC1D0, -1), 0);
+                                      loadConstString("peer", -1), 0);
         peer = *(UnitPeer **)(object + peer_field->offset);
         entry = &unitSequence[peer->serial];
         vector->x = entry->pivot_x;
@@ -1906,7 +1898,7 @@ void Java_xeno_Unit_setPivot__FFF(JThread *thread, UnitVector3Call *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     entry->pivot_x = arguments->x;
@@ -1929,7 +1921,7 @@ void Java_xeno_Unit_getAxis__Lxeno_util_Vector4f_(JThread *thread,
     object = arguments->object;
     if (vector != 0) {
         peer_field = lookupClassField(classJava_xeno_Unit,
-                                      loadConstString(D_004DC1D0, -1), 0);
+                                      loadConstString("peer", -1), 0);
         peer = *(UnitPeer **)(object + peer_field->offset);
         entry = &unitSequence[peer->serial];
         vector->x = entry->axis_x;
@@ -1949,7 +1941,7 @@ void Java_xeno_Unit_setAxis__FFFF(JThread *thread, UnitAxisCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     entry = &unitSequence[peer->serial];
     entry->axis_x = arguments->x;
@@ -1993,7 +1985,6 @@ void Java_xeno_Unit_resume__I(JThread *thread, UnitGroupCall *arguments)
 /* The "py" field name initElevatorFunc__ looks up: a field on the same
  * Java xeno.Unit object, reused as backing storage for the elevator
  * callback's own state instead of the field's ordinary role. */
-extern const char D_004DC1F8[];
 
 /* Unconditional, like setCollision__Z above. */
 void Java_xeno_Unit_initElevatorFunc__(JThread *thread,
@@ -2007,10 +1998,10 @@ void Java_xeno_Unit_initElevatorFunc__(JThread *thread,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     py_field = lookupClassField(classJava_xeno_Unit,
-                                loadConstString(D_004DC1F8, -1), 0);
+                                loadConstString("py", -1), 0);
     py_offset = py_field->offset;
     peer->elevator_task = tyaElevatorTask;
     peer->elevator_state = 0;
@@ -2027,7 +2018,7 @@ void Java_xeno_Unit_map_shadow__I(JThread *thread, UnitIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     if (arguments->value != 0) {
         peer->flags |= 0x20;
@@ -2045,7 +2036,7 @@ void Java_xeno_Unit_renderCommand__I(JThread *thread, UnitIntCall *arguments)
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(object + peer_field->offset);
     peer->render_command = arguments->value;
 }
@@ -2062,7 +2053,7 @@ void Java_xeno_Unit_setFilter__I(JThread *thread, UnitIntCall *arguments,
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     offset = peer_field->offset;
     value = arguments->value;
     peer = *(UnitPeer **)(object + offset);
@@ -2096,7 +2087,7 @@ void Java_xeno_Unit_setFilterParam__aF(JThread *thread, UnitFArrayCall *argument
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     n = arguments->array->length;
     peer = *(u8 **)(object + peer_field->offset);
     dst = (float *)(peer + 0x2f0);
@@ -2113,7 +2104,7 @@ void Java_xeno_Unit_setShadow__II(JThread *thread, UnitShadowCall *arguments)
     UnitPeer *peer;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(arguments->object + peer_field->offset);
     peer->shadow_x = arguments->x;
     peer->shadow_y = arguments->y;
@@ -2127,7 +2118,7 @@ void Java_xeno_Unit_shadow_clip_scale__F(JThread *thread,
     UnitPeer *peer;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(arguments->object + peer_field->offset);
     peer->shadow_clip_scale = arguments->value;
 }
@@ -2139,7 +2130,7 @@ void Java_xeno_Unit_shadow_map_id__I(JThread *thread, UnitIntCall *arguments)
     int *count;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(arguments->object + peer_field->offset);
     if (peer->shadow_map_count < 8) {
         count = &peer->shadow_map_count;
@@ -2156,7 +2147,7 @@ void Java_xeno_Unit_shadow_map_reset__(JThread *thread,
     UnitPeer *peer;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(arguments->object + peer_field->offset);
     peer->shadow_map_count = 0;
 }
@@ -2168,7 +2159,7 @@ void Java_xeno_Unit_setSortOffset__F(JThread *thread, UnitFloatCall *arguments)
     UnitPeer *peer;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     peer = *(UnitPeer **)(arguments->object + peer_field->offset);
     peer->sort_offset = (int) arguments->value;
 }
@@ -2182,7 +2173,7 @@ void Java_xeno_Unit_setClip__I(JThread *thread, UnitIntCall *arguments)
     int value;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     value = arguments->value;
     object = arguments->object;
     peer = *(UnitPeer **)(object + peer_field->offset);
@@ -2203,7 +2194,7 @@ void Java_xeno_Unit_setMonitorPrio__I(JThread *thread, UnitIntCall *arguments)
     int offset;
 
     peer_field = lookupClassField(classJava_xeno_Unit,
-                                  loadConstString(D_004DC1D0, -1), 0);
+                                  loadConstString("peer", -1), 0);
     value = arguments->value;
     offset = peer_field->offset;
     object = arguments->object;

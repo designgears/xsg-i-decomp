@@ -12218,6 +12218,120 @@
       "object": "build/main/build/c/unit.o"
      }
     }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d16f8",
+      "0x004d1708"
+     ],
+     "generated": [
+      "0x004d16f8",
+      "0x004d1702"
+     ],
+     "generated_by": [
+      "Java_xeno_Unit_move__Lxeno_util_Spline_IZ",
+      "Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ",
+      "Java_xeno_Unit_scale__Lxeno_util_Spline_IZ",
+      "UNIT_moveXZ",
+      "UNIT_rotX",
+      "UNIT_rotY",
+      "UNIT_rotZ",
+      "UNIT_sclX",
+      "UNIT_sclY",
+      "UNIT_sclZ",
+      "UNIT_setUpdate"
+     ],
+     "c_owned_symbols": [
+      "D_004D16F8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/unit.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc1d0",
+      "0x004dc208"
+     ],
+     "generated": [
+      "0x004dc1d0",
+      "0x004dc203"
+     ],
+     "generated_by": [
+      "Java_xeno_Unit_getArgs__II",
+      "Java_xeno_Unit_getAxis__Lxeno_util_Vector4f_",
+      "Java_xeno_Unit_getPivot__Lxeno_util_Vector4f_",
+      "Java_xeno_Unit_getRotate__",
+      "Java_xeno_Unit_getScale__",
+      "Java_xeno_Unit_getSerial__",
+      "Java_xeno_Unit_getSignal__",
+      "Java_xeno_Unit_getState__",
+      "Java_xeno_Unit_getTranslate__",
+      "Java_xeno_Unit_initElevatorFunc__",
+      "Java_xeno_Unit_map_shadow__I",
+      "Java_xeno_Unit_move__Lxeno_util_Spline_IZ",
+      "Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_",
+      "Java_xeno_Unit_mtnSetMask__I",
+      "Java_xeno_Unit_renderCommand__I",
+      "Java_xeno_Unit_rotYCNS__Ljava_lang_Object_IFFF",
+      "Java_xeno_Unit_rotate__Lxeno_util_Spline_IZ",
+      "Java_xeno_Unit_scale__Lxeno_util_Spline_IZ",
+      "Java_xeno_Unit_setArgs__III",
+      "Java_xeno_Unit_setArgs__IIIII",
+      "Java_xeno_Unit_setArgs__ILjava_lang_Object_I",
+      "Java_xeno_Unit_setAxis__FFFF",
+      "Java_xeno_Unit_setClip__I",
+      "Java_xeno_Unit_setCollision__Z",
+      "Java_xeno_Unit_setFilterParam__aF",
+      "Java_xeno_Unit_setFilter__I",
+      "Java_xeno_Unit_setMonitorPrio__I",
+      "Java_xeno_Unit_setParent__Ljava_lang_Object_I",
+      "Java_xeno_Unit_setPivot__FFF",
+      "Java_xeno_Unit_setRotate__",
+      "Java_xeno_Unit_setScale__FFF",
+      "Java_xeno_Unit_setShadow__II",
+      "Java_xeno_Unit_setSortOffset__F",
+      "Java_xeno_Unit_setTranslate__",
+      "Java_xeno_Unit_setVisible__IZ",
+      "Java_xeno_Unit_setVisible__Z",
+      "Java_xeno_Unit_shadow_clip_scale__F",
+      "Java_xeno_Unit_shadow_map_id__I",
+      "Java_xeno_Unit_shadow_map_reset__",
+      "Java_xeno_Unit_signal__I",
+      "Java_xeno_Unit_start__ILjava_lang_Object_",
+      "Java_xeno_Unit_stop__",
+      "Java_xeno_Unit_transCNS__Ljava_lang_Object_IFFF",
+      "UNIT_motion",
+      "UNIT_moveXZ",
+      "UNIT_rotX",
+      "UNIT_rotY",
+      "UNIT_rotZ",
+      "UNIT_sclX",
+      "UNIT_sclY",
+      "UNIT_sclZ"
+     ],
+     "c_owned_symbols": [
+      "D_004DC1D0",
+      "D_004DC1D8",
+      "D_004DC1E0",
+      "D_004DC1E8",
+      "D_004DC1F0",
+      "D_004DC1F8",
+      "D_004DC200"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/unit.o"
+     }
+    }
    ]
   },
   "main/tu251": {
