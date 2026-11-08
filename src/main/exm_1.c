@@ -35,9 +35,6 @@ typedef struct HairSelectionActor {
     signed char *hair_joint_name;
 } HairSelectionActor;
 
-extern int humancol[];
-extern int shelleycol[];
-extern int kosmoscol[];
 extern float skirtColliSize;
 extern float skirtColliSizeB;
 extern float skirtColliSizeS;
@@ -100,27 +97,154 @@ typedef struct ExMotionJointWork_XP {
 extern void *collibuf[1];
 extern int ibuf;
 extern int startjnt;
-extern unsigned char abelcol[];
-extern unsigned char albeltcol[];
-extern unsigned char allencol[];
-extern unsigned char chaoscol[];
-extern unsigned char ellycol[];
-extern unsigned char gaignuncol[];
-extern unsigned char helmercol[];
-extern unsigned char hyakucol[];
-extern unsigned char kebincol[];
-extern unsigned char kebinhcol[];
-extern unsigned char mamcol[];
-extern unsigned char miyukicol[];
-extern unsigned char momo1col[];
-extern unsigned char momo4col[];
-extern unsigned char momocol[];
-extern unsigned char offcol[];
-extern unsigned char robotcol[];
-extern unsigned char shionchcol[];
-extern unsigned char shioncol[];
-extern unsigned char shitancol[];
-extern unsigned char tonnycol[];
+/* Joint collision entries: joint number, shape kind, then two float[4]
+ * shape parameters; a zero joint ends the table. */
+typedef struct ExCollisionEntry {
+    s16 joint;
+    s16 kind;
+    unsigned char unmodeled_04[12];
+    float a[4];
+    float b[4];
+} ExCollisionEntry;
+
+static ExCollisionEntry shioncol[5] = {
+    {48, 1, {0}, {0.03f, -0.1f, 0.0f, 0.11f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {-0.05f, 0.01f, 0.01f, 0.075f}, {0.14f, -0.01f, -0.01f, 0.06f}},
+    {45, 4, {0}, {0.0f, 0.48f, 0.0f, 0.6f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 6, {0}, {0.0f, 0.26f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kosmoscol[7] = {
+    {48, 1, {0}, {0.025f, -0.07f, 0.0f, 0.125f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {48, 5, {0}, {-0.035f, -0.1f, 0.0f, 0.13f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {39, 4, {0}, {0.1f, 0.45f, 0.0f, 0.55f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {13, 4, {0}, {0.1f, -0.37f, 0.0f, 0.5f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry chaoscol[2] = {
+    {48, 1, {0}, {0.01f, -0.09f, 0.0f, 0.115f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momocol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momo1col[8] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {16, 2, {0}, {0.0f, 0.0f, -0.0f, 0.13f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {26, 2, {0}, {0.0f, 0.0f, 0.0f, 0.13f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {17, 2, {0}, {0.0f, 0.0f, -0.0f, 0.1f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {27, 2, {0}, {0.0f, 0.0f, 0.0f, 0.1f}, {0.4f, 0.0f, 0.0f, 0.13f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry momo4col[5] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.09f}, {0.1f, 0.0f, 0.0f, 0.07f}},
+    {39, 4, {0}, {0.12f, 0.4f, 0.0f, 0.55f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry hyakucol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.05f, 0.0f, 0.0f, 0.06f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.05f, 0.0f, 0.0f, 0.06f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shitancol[4] = {
+    {48, 1, {0}, {0.04f, -0.05f, 0.0f, 0.07f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {-0.1f, 0.63f, 0.0f, 0.8f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 1, {0}, {0.05f, -0.15f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry ellycol[5] = {
+    {48, 1, {0}, {0.01f, -0.08f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.08f, 0.0f, 0.0f, 0.06f}},
+    {63, 2, {0}, {0.0f, 0.0f, 0.0f, 0.08f}, {0.08f, 0.0f, 0.0f, 0.06f}},
+    {42, 4, {0}, {-0.08f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry tonnycol[4] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {16, 2, {0}, {-0.1f, 0.0f, -0.02f, 0.15f}, {0.4f, 0.0f, 0.0f, 0.14f}},
+    {26, 2, {0}, {-0.1f, 0.0f, 0.02f, 0.15f}, {0.4f, 0.0f, 0.0f, 0.14f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shelleycol[7] = {
+    {48, 1, {0}, {0.03f, -0.08f, 0.0f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {51, 2, {0}, {-0.02f, 0.0f, 0.0f, 0.1f}, {0.1f, 0.0f, 0.0f, 0.075f}},
+    {63, 2, {0}, {-0.02f, 0.0f, 0.0f, 0.1f}, {0.1f, 0.0f, 0.0f, 0.075f}},
+    {39, 1, {0}, {0.1f, 0.01f, 0.05f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 1, {0}, {0.1f, 0.01f, -0.05f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 4, {0}, {0.1f, 0.52f, 0.0f, 0.65f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry albeltcol[3] = {
+    {48, 1, {0}, {0.05f, -0.08f, 0.0f, 0.08f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {36, 4, {0}, {-0.05f, 0.2f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kebincol[3] = {
+    {48, 1, {0}, {0.04f, -0.06f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {48, 3, {0}, {0.042f, -0.06f, 0.0f, 0.11f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry kebinhcol[2] = {
+    {48, 1, {0}, {0.015f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry shionchcol[3] = {
+    {48, 1, {0}, {0.01f, -0.08f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {-0.08f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry helmercol[3] = {
+    {55, 6, {0}, {0.35f, 0.0f, -0.22f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {67, 7, {0}, {0.35f, 0.0f, 0.22f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry allencol[2] = {
+    {48, 1, {0}, {0.03f, -0.09f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry abelcol[3] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.0f, 0.2f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry mamcol[4] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.05f, 0.15f, 0.0f, 0.28f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 6, {0}, {0.05f, -0.15f, 0.0f, 0.28f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry gaignuncol[2] = {
+    {48, 6, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry offcol[2] = {
+    {42, 4, {0}, {0.05f, 0.18f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry miyukicol[3] = {
+    {48, 1, {0}, {0.04f, -0.1f, 0.0f, 0.09f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {39, 4, {0}, {0.12f, 0.3f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry robotcol[2] = {
+    {39, 4, {0}, {0.08f, -0.2f, 0.0f, 0.4f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
+static ExCollisionEntry humancol[3] = {
+    {48, 1, {0}, {0.01f, -0.07f, 0.0f, 0.1f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {42, 4, {0}, {0.05f, 0.15f, 0.0f, 0.3f}, {0.0f, 0.0f, 0.0f, 0.0f}},
+    {0, 0, {0}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}}
+};
 extern const float D_004D8614;
 extern const float D_004D8618;
 extern const float D_004D861C;
@@ -904,9 +1028,6 @@ extern const float D_004D86D4;
 extern const float D_004D86D8;
 extern const float D_004D86DC;
 extern const float D_004D86E0;
-extern int humancol[];
-extern int shelleycol[];
-extern int kosmoscol[];
 extern float skirtColliSize;
 extern float skirtColliSizeB;
 extern float skirtColliSizeS;
@@ -2030,8 +2151,31 @@ typedef struct ExGroundQuery_XM {
     unsigned char unmodeled_0a[0x40 - 10];
 } ExGroundQuery_XM;
 float UnduCheck(const void *position, void *velocity, ExGroundQuery_XM *query);
-extern ExHairParameters_XM hairpara[];
-extern float JR_coatAdjust[];
+static ExHairParameters_XM hairpara[22] = {
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.5f, {0}},
+    {0.0f, 1.0f, {0}, {1.0f, 1.0f, 1.0f}, {0}, 1e+02f, {0}},
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.5f, {0}},
+    {0.03f, 1.0f, {0}, {0.7f, 0.7f, 0.7f}, {0}, 0.6f, {0}},
+    {0.02f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.3f, {0}},
+    {0.01f, 0.9f, {0}, {0.9f, 1.0f, 0.9f}, {0}, 0.7f, {0}},
+    {0.01f, 0.9f, {0}, {0.9f, 1.0f, 0.9f}, {0}, 1.2f, {0}},
+    {0.01f, 0.9f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 2.0f, {0}},
+    {0.0f, 0.8f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 1.0f, {0}},
+    {0.0f, 1.0f, {0}, {0.8f, 0.8f, 0.8f}, {0}, 1.7f, {0}},
+    {0.03f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 2.0f, {0}},
+    {0.05f, 1.0f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}},
+    {0.05f, 1.0f, {0}, {0.2f, 0.2f, 0.2f}, {0}, 0.5f, {0}},
+    {0.04f, 0.9f, {0}, {0.7f, 0.7f, 0.7f}, {0}, 0.2f, {0}},
+    {0.05f, 1.0f, {0}, {0.5f, 0.5f, 0.5f}, {0}, 0.1f, {0}},
+    {0.5f, 1.0f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 1.0f, {0}},
+    {0.01f, 0.8f, {0}, {0.2f, 0.2f, 0.2f}, {0}, 1.0f, {0}},
+    {0.0f, 0.9f, {0}, {0.9f, 0.9f, 0.9f}, {0}, 0.3f, {0}},
+    {0.05f, 0.8f, {0}, {0.75f, 0.75f, 0.75f}, {0}, 0.5f, {0}},
+    {0.0f, 0.8f, {0}, {0.95f, 0.95f, 0.95f}, {0}, 2.0f, {0}},
+    {0.05f, 0.1f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}},
+    {0.0f, 0.01f, {0}, {0.0f, 0.0f, 0.0f}, {0}, 0.5f, {0}}
+};
+static float JR_coatAdjust[3] = {0.0985f, 0.1285f, 0.1985f};
 void EXM_GetWindPower(float output[3], ExMotionJointWork_XM *work, const float input[3],
                       const float parent_position[4]);
 typedef struct HairSelectionWork_XM {

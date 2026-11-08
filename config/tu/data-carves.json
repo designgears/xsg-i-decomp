@@ -14166,6 +14166,57 @@
    ]
   },
   "main/tu267": {
+   ".data": [
+    {
+     "range": [
+      "0x004797e0",
+      "0x0047acec"
+     ],
+     "generated": [
+      "0x004797e0",
+      "0x0047acec"
+     ],
+     "generated_by": [
+      "EXM_CalcExMotion",
+      "EXM_PresetHair",
+      "GetHairTypeSelection"
+     ],
+     "c_owned_symbols": [
+      "shioncol",
+      "kosmoscol",
+      "chaoscol",
+      "momocol",
+      "momo1col",
+      "momo4col",
+      "hyakucol",
+      "shitancol",
+      "ellycol",
+      "tonnycol",
+      "shelleycol",
+      "albeltcol",
+      "kebincol",
+      "kebinhcol",
+      "shionchcol",
+      "helmercol",
+      "allencol",
+      "abelcol",
+      "mamcol",
+      "gaignuncol",
+      "offcol",
+      "miyukicol",
+      "robotcol",
+      "humancol",
+      "hairpara",
+      "JR_coatAdjust"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -14219,7 +14270,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+      "object": "build/main/build/c/exm_1.o"
      }
     },
     {
@@ -14246,7 +14297,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+      "object": "build/main/build/c/exm_1.o"
      }
     },
     {
@@ -14284,7 +14335,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+      "object": "build/main/build/c/exm_1.o"
      }
     },
     {
@@ -14342,7 +14393,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+      "object": "build/main/build/c/exm_1.o"
      }
     }
    ],
@@ -14377,7 +14428,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/exm_1.o"
+      "object": "build/main/build/c/exm_1.o"
      }
     }
    ]
