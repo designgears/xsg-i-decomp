@@ -451,7 +451,8 @@ def trim_link_padding(target, base_elf):
     splat gives a data item the zero fill the original linker inserted to align
     the next object's section, so the target section is a few bytes longer than
     the compiled one. Only zero bytes past the compiled section's size, fewer
-    than 16 and with no relocation, are dropped: the covering symbol and the
+    than 128 (alignment fill before a further-aligned object) and with no
+    relocation, are dropped: the covering symbol and the
     section end where the compiled section ends. objdiff still compares every
     byte both objects contain.
     """
@@ -464,7 +465,7 @@ def trim_link_padding(target, base_elf):
                 or section.flags & 4:
             continue
         size = base[section.name].size
-        if not 0 < section.size - size < 16 or any(
+        if not 0 < section.size - size < 128 or any(
                 elf.data[section.offset + size:section.offset + section.size]):
             continue
         referenced = {struct.unpack_from('<I', elf.data, at + 4)[0] >> 8
