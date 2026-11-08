@@ -256,7 +256,15 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float tw2 = UiFont(kFontBodyBold, font)->CalcTextSizeA(22.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
             right = std::max(right, float(c.x) + tw2 / 1.1667f * 1.05f + 4);   // screen / kx, k = 1
         }
-        (void)right;   // title windows keep the game's width: they span the header bar behind them
+        (void)right;
+        // the title window spans the header bar behind it (the game's ribbon often runs past the window)
+        int bar = w.x + w.dw;
+        for (uint32_t j = 0; j < m.nops; ++j) {
+            const GpuUiKgOp& r = m.op[j];
+            if (r.type == GPU_KG_RECT && r.dw > 40 && r.y < w.y + w.dh && r.y + r.dh > w.y && r.x <= w.x + w.dw)
+                bar = std::max(bar, std::min(r.x + r.dw, 496));
+        }
+        if (bar > w.x + w.dw) fitRight[i] = bar;
     }
     char buf[32];
     // the GS clipped at the screen edge (windows wait off-screen for their slide-in)
