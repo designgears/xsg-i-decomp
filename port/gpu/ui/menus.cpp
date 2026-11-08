@@ -524,8 +524,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_TAG: {   // title letters; 0x03 n advances n pixels
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
-            const float fs = 19.0f * k;   // the original's tag caps are 16 px tall
-            ImFont* const lf = UiFont(kFontLabel, font);   // the original's wide small caps, pale teal
+            const float fs = 28.0f * k;   // the original's tag caps are ~14 px tall (Saira's caps are 0.44 of the ImGui size)
+            ImFont* const lf = UiFont(kFontLabel, font);   // the original's heavy condensed small caps, pale teal
             const ImU32 kLabelCol = IM_COL32(200, 224, 224, 255);   // the original's pale grey-teal
             struct Seg { std::string t; float dx; };
             std::vector<Seg> segs(1);
@@ -539,7 +539,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             }
             for (const Seg& g : segs) width += g.dx + SmallCaps(dl, lf, fs, ImVec2(0, 0), 0, Decode(g.t.c_str()).c_str(), 0, false);
             ImVec2 p = P(x, y + 16);   // the game's tags sit on a 16 px baseline
-            p.y -= fs * 1.0f;
+            p.y -= fs * (lf->Ascent / lf->FontSize);   // ImGui draws from the ascender line
             if (o.w) p.x -= width;
             for (const Seg& g : segs) {
                 p.x += g.dx;
@@ -561,19 +561,19 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             if (o.v & 0x10) px -= gwid * float(digits);
             // one digit per game cell, so the game's separators (':', '/') still line up
             // the number as one string inside the game's digit span (natural spacing)
-            const float fs = ghgt * 1.12f * k;
+            const float fs = ghgt * 1.9f * k;   // digits are ~0.44 of the size: ~5/6 of the cell height, as the original's
             const ImVec2 sz = font->CalcTextSizeA(fs, 1e9f, 0, buf);
             const ImVec2 c0 = P(px, y), c1 = P(px + gwid * float(digits), y + ghgt);
-            {   // the original's square digits (Orbitron), outlined; width fitted to the game's digit span
-                ImFont* const nf = UiFont(kFontLabel, font);   // Michroma: the original's wide Eurostile-like digits
-                float nfs = fs * 1.02f;
+            {   // the original's tall rounded-square digits, outlined; width fitted to the game's digit span
+                ImFont* const nf = UiFont(kFontLabel, font);   // Saira Semi Condensed: the original's heavy condensed digits
+                float nfs = fs;
                 const float nw = nf->CalcTextSizeA(nfs, 1e9f, 0, buf).x, span = c1.x - c0.x;
                 if (nw > span * 1.02f) nfs *= span * 1.02f / nw;
                 const ImVec2 nsz = nf->CalcTextSizeA(nfs, 1e9f, 0, buf);
                 const float nx2 = (o.v & 0x10) ? c1.x - nsz.x : c0.x;
                 ImU32 nc = Ps2(o.rgba) | 0xff000000u;
                 if (((nc & 0xff) > 0xe0) && (((nc >> 8) & 0xff) > 0xe0)) nc = IM_COL32(236, 240, 232, 255);   // white -> the original's warm white
-                OutlineText(dl, nf, nfs, ImVec2(nx2, c1.y - nfs * 0.92f), nc, buf, tw);
+                OutlineText(dl, nf, nfs, ImVec2(nx2, c1.y - nfs * (nf->Ascent / nf->FontSize)), nc, buf, tw);   // baseline on the cell's bottom
             }
             break;
         }

@@ -377,8 +377,8 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         else if (o.type == GPU_KG_NUMBER || (o.type == GPU_KG_SPRITE && o.v == 0xAE)) r.cost.push_back(&o);
     }
     if (rows.empty()) return;
-    ImFont* const rf = UiFont(kFontLabel, font);   // the original's wide caps
-    const float ls = 15.0f * k, rh = 24.0f, x0 = 8.0f;
+    ImFont* const rf = UiFont(kFontLabel, font);   // the original's tall condensed caps
+    const float ls = 26.0f * k, rh = 24.0f, x0 = 8.0f;
     float labelW = 0;
     for (const Row& r : rows) labelW = std::max(labelW, rf->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str()).x / kx);
     const float rw = std::max(150.0f, labelW + 60.0f);
@@ -405,10 +405,19 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
             std::string up = r.label;
             for (char& ch : up) if (ch >= 'a' && ch <= 'z') ch = char(ch - 32);
             if (r.label == "Menu") up = "Menu";
+            // letter-spaced, as the original's plates
+            const float track = ls * 0.22f;
             const ImVec2 lsz = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str());
-            const float lx = (P(rx + 28, 0).x + P(right, 0).x - lsz.x) * 0.5f;
-            OutlineText(dl, rf, ls, ImVec2(lx, P(0, ry + rh * 0.5f).y - lsz.y * 0.5f), off ? col::kTextOff : IM_COL32(236, 240, 232, 255),
-                        up.c_str(), t);
+            const float tw = lsz.x + track * float(std::max<size_t>(up.size(), 1) - 1);
+            float lx = (P(rx + 28, 0).x + P(right, 0).x - tw) * 0.5f;
+            const float ly = P(0, ry + rh * 0.5f).y - lsz.y * 0.5f;
+            const ImU32 lc = off ? col::kTextOff : IM_COL32(236, 240, 232, 255);
+            char one[2] = {0, 0};
+            for (char ch : up) {
+                one[0] = ch;
+                OutlineText(dl, rf, ls, ImVec2(lx, ly), lc, one, t);
+                lx += rf->CalcTextSizeA(ls, 1e9f, 0, one).x + track;
+            }
         }
         if (!r.cost.empty()) {   // cost box: ammo, EP cost, AP cost
             dl->AddLine(P(right, ry + 3), P(right, ry + rh - 3), Alpha(col::kFrame, 0.4f * t), 1.0f);
@@ -417,8 +426,8 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
                 if (c->type == GPU_KG_NUMBER && ni < 3) nums[ni++] = c->a;
             if (ni == 2) nums[2] = nums[1], nums[1] = nums[0], nums[0] = -1;   // no ammo count
             char buf[16];
-            const float cy = P(0, ry + rh * 0.5f).y, ns = 15.0f * k, ts = 12.0f * k;
-            ImFont* const font = rf;   // the cost box in the original's wide digits
+            const float cy = P(0, ry + rh * 0.5f).y, ns = 20.0f * k, ts = 15.0f * k;
+            ImFont* const font = rf;   // the cost box in the original's digits
             auto num = [&](float xr, int v, int digits) {
                 if (v < 0) return;
                 std::snprintf(buf, sizeof buf, "%0*d", digits, v);
@@ -440,7 +449,7 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         const float fy = float(strip->y) - 3, fw = rw;
         const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 20);
         Panel(dl, a, b, k, 0.85f, false, 0, 0);
-        const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 6 * kx, ts = 13.0f * k;
+        const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 6 * kx, ts = 17.0f * k;
         // the glyph fills the bar's height less a margin; the icon art is square with a wide
         // shoulder shape inside, so it is drawn at that height and measured by what it returns
         const float h = (b.y - a.y) - 8 * k;
@@ -487,7 +496,7 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             if (tx.type == GPU_KG_FRAME) break;
             if (tx.type != GPU_KG_TEXT || tx.y < fr.y || tx.y >= fr.y + 24 || tx.x < fx0 || tx.x >= fx1) continue;
             const std::string u = Decode(tx.text);
-            // measured in the plate's own type (Michroma 15 px with tracking, KgDraw GPU_KG_TEXT)
+            // measured in the plate's own type (a condensed face at 15 px with tracking, KgDraw GPU_KG_TEXT)
             const float want = (UiFont(kFontLabel, font)->CalcTextSizeA(15.0f * k, 1e9f, 0, u.c_str()).x +
                                 15.0f * k * 0.18f * float(u.size())) / kx + 32.0f;
             const int half = std::min(fr.a, std::max(44, int(std::ceil(want * 0.5f))));
@@ -526,7 +535,7 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
         }
         case GPU_KG_TEXT: {
             // centred in the captured frame it sits in (the game centres it by character count)
-            // the original sets names in wide, letter-spaced type: Michroma with tracking
+            // the original sets names in letter-spaced type: the label face with tracking
             const std::string t = Decode(o.text);
             ImFont* const font = UiFont(kFontLabel, font_in);
             const float fs = 15.0f * k, track = fs * 0.18f;
@@ -753,7 +762,7 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
             const float br = 0.5f + 0.5f * float(std::sin(AnimNow() * 3.2));
             dl->AddRect(ImVec2(a.x - 3 * k, a.y - 3 * k), ImVec2(c.x + 3 * k, c.y + 3 * k), Alpha(col::kCyan, 0.25f * br * t), 0, 0, 2.0f * k);
         }
-        const float ls = 13.0f * k, vs = 21.0f * k, ss = 13.0f * k;   // the original's large digits
+        const float ls = 17.0f * k, vs = 38.0f * k, ss = 20.0f * k;   // the original's large digits (~14 px caps)
         // the original's colours: HP / EP cyan, AP / BG blue; numbers in square digits, outlined
         ImFont* const lf = UiFont(kFontLabel, font);
         ImFont* const nf = UiFont(kFontLabel, font);
@@ -763,12 +772,13 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         };
         auto value = [&](float ly, int v, int vmax, bool warn) {
             std::snprintf(b, sizeof b, "%d", v);
-            const float nvs = vs * 0.82f;
+            // both numbers share the row's baseline (13 px below the row top, as the original's digits)
+            const float nvs = vs * 0.82f, asc = nf->Ascent / nf->FontSize;
             const ImVec2 w = nf->CalcTextSizeA(nvs, 1e9f, 0, b);
-            const ImVec2 r = P(x + 0x7a, ly - 1);
-            OutlineText(dl, nf, nvs, ImVec2(r.x - w.x, r.y), warn ? col::kWarn : IM_COL32(236, 240, 232, 255), b, an.a);
+            const ImVec2 r = P(x + 0x7a, ly + 13);
+            OutlineText(dl, nf, nvs, ImVec2(r.x - w.x, r.y - nvs * asc), warn ? col::kWarn : IM_COL32(236, 240, 232, 255), b, an.a);
             std::snprintf(b, sizeof b, "/%d", vmax);
-            OutlineText(dl, nf, ss * 0.8f, P(x + 0x7c, ly + 2), col::kTextDim, b, an.a);
+            OutlineText(dl, nf, ss * 0.8f, ImVec2(P(x + 0x7c, 0).x, r.y - ss * 0.8f * asc), col::kTextDim, b, an.a);
         };
         label(y, "HP");
         value(y, u.hp, u.hp_max, u.idol || (u.hp_max > 0 && u.hp * 4 <= u.hp_max));
@@ -789,7 +799,8 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         dl->AddRectFilled(g0, ImVec2(g0.x + (g1.x - g0.x) * std::min(1.0f, std::max(0, u.bp) / 60.0f), g1.y),
                           IM_COL32(255, 60, 150, 230));
         std::snprintf(b, sizeof b, "%d", u.bg);
-        OutlineText(dl, nf, vs * 0.82f, P(x + 0x92, y + 0x2e), IM_COL32(236, 240, 232, 255), b, an.a);
+        OutlineText(dl, nf, vs * 0.82f, ImVec2(P(x + 0x92, 0).x, P(0, y + 0x30 + 13).y - vs * 0.82f * (nf->Ascent / nf->FontSize)),
+                    IM_COL32(236, 240, 232, 255), b, an.a);
     }
 }
 

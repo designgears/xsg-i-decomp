@@ -141,34 +141,40 @@ void SweepRule(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float age, 
     if (u < 1) dl->AddCircleFilled(ImVec2(x, b.y), 2.2f * k, Alpha(IM_COL32(220, 245, 255, 255), t));
 }
 
+namespace {
+// The original's text is a light glyph on a hard dark edge: the two together read as the stroke.
+// Drawn as: a drop shadow down-right; the dark outline, as the glyphs stamped in a ring of 8 at
+// `grow + edge` from the origin; the stroke expansion, the glyphs in their own colour stamped in a
+// ring at `grow` (a real widening of the stroke by 2*grow, proportional to the size: the earlier
+// sub-pixel double strike only blurred the anti-aliased edge); then the glyphs themselves.  The
+// outline sits outside the widened stroke so it does not eat into it.
+void StrokedText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, float grow,
+                 float edge, float shadow) {
+    const ImU32 c = Alpha(col, t);
+    dl->AddText(font, size, ImVec2(p.x + shadow, p.y + shadow), IM_COL32(0, 0, 6, int(170 * t)), s);
+    const ImU32 oc = IM_COL32(4, 6, 16, int(240 * t));
+    const float o = grow + edge;
+    for (int i = 0; i < 8; ++i) {
+        const float a = float(i) * 0.785398f;
+        dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
+    }
+    if (grow > 0.2f)
+        for (int i = 0; i < 8; ++i) {
+            const float a = float(i) * 0.785398f;
+            dl->AddText(font, size, ImVec2(p.x + std::cos(a) * grow, p.y + std::sin(a) * grow), c, s);
+        }
+    dl->AddText(font, size, p, c, s);
+}
+}  // namespace
+
 // the original's game text: a drop shadow down-right, a crisp dark outline, then the glyphs
 void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    const float sh = std::max(1.0f, size * 0.085f), o = std::max(1.0f, size * 0.05f);
-    dl->AddText(font, size, ImVec2(p.x + sh, p.y + sh), IM_COL32(0, 0, 6, int(190 * t)), s);
-    const ImU32 oc = IM_COL32(6, 8, 20, int(225 * t));
-    for (int i = 0; i < 8; ++i) {
-        const float a = float(i) * 0.785398f;
-        dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
-    }
-    const float bold = std::max(0.5f, size * 0.03f);
-    dl->AddText(font, size, p, Alpha(col, t), s);
-    dl->AddText(font, size, ImVec2(p.x + bold, p.y), Alpha(col, t), s);
+    StrokedText(dl, font, size, p, col, s, t, size * 0.012f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
 }
 
-// labels and numbers: shadow, outline and a faux-bold double strike (Michroma has one weight)
+// labels and numbers: the same (the label face, Saira Semi Condensed ExtraBold, carries the weight itself)
 void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    const float sh = std::max(1.0f, size * 0.08f), o = std::max(1.0f, size * 0.06f), bold = std::max(0.8f, size * 0.045f);
-    dl->AddText(font, size, ImVec2(p.x + sh, p.y + sh), IM_COL32(0, 0, 6, int(190 * t)), s);
-    const ImU32 oc = IM_COL32(4, 6, 18, int(235 * t));
-    for (int i = 0; i < 8; ++i) {
-        const float a = float(i) * 0.785398f;
-        dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
-        dl->AddText(font, size, ImVec2(p.x + bold + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
-    }
-    dl->AddText(font, size, p, Alpha(col, t), s);
-    dl->AddText(font, size, ImVec2(p.x + bold, p.y), Alpha(col, t), s);
-    dl->AddText(font, size, ImVec2(p.x + bold * 0.5f, p.y + bold * 0.5f), Alpha(col, t), s);
-    dl->AddText(font, size, ImVec2(p.x + bold * 1.6f, p.y), Alpha(col, t), s);
+    StrokedText(dl, font, size, p, col, s, t, size * 0.014f, std::max(1.0f, size * 0.045f), std::max(1.0f, size * 0.07f));
 }
 
 float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw) {

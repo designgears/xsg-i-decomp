@@ -14,7 +14,8 @@
 namespace xsgui {
 
 /* The game UI's fonts, rasterised large (set by menu.cpp FontsUp): body text (Exo 2), labels and
-   tags (Michroma, the original's wide small caps), numbers (Orbitron, its square digits).  Any of
+   tags and numbers (Saira Semi Condensed ExtraBold: the original's tall, heavy, condensed small caps
+   and rounded-square digits).  Any of
    them may be null before the first frame: callers fall back to the font they are given. */
 enum UiFontKind { kFontBody, kFontBodyBold, kFontLabel, kFontNumber, kFontCount };
 extern ImFont* g_ui_font[kFontCount];
