@@ -2911,10 +2911,6 @@ static float deapth_for_studio(int studio, const Vector4 *vector, float size)
 }
 
 extern const char D_004DC470[];
-extern volatile float D_004D88FC;
-extern volatile float D_004D8904;
-extern volatile float D_004D8908;
-extern volatile float D_004D8918;
 
 static void nmlModelCalcSpecularClip(void *arg0, int arg1)
 {
@@ -2942,7 +2938,7 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
         if (!(s_inLayout.slots[0xAC].i & 0x20)) {
             if (f3 < 62582.0f) {
                 s_inLayout.slots[0xAC].i |= 2;
-            } else if (f3 <= D_004D88FC) {
+            } else if (f3 <= 147523.0f) {
                 s_inLayout.slots[0x8A].f = (s_inLayout.slots[0x8A].f * (f3 - 62582.0f)) / 84941.0f;
             }
             if (*(float *)((char *)arg0 + 0x9C) > 10.0f) {
@@ -2950,10 +2946,10 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
                 s_inLayout.slots[0xAC].i &= ~2;
             }
         }
-        temp_f2 = D_004D8904;
+        temp_f2 = 10000.0f;
         if (f3 < temp_f2) {
             s_inLayout.slots[0x9B].f = 0.0f;
-        } else if (f3 <= D_004D8908) {
+        } else if (f3 <= 20000.0f) {
             s_inLayout.slots[0x9B].f = (s_inLayout.slots[0x9B].f * (f3 - temp_f2)) / temp_f2;
         }
         if (s_inLayout.slots[0x89].f <= 0.0f) {
@@ -2991,7 +2987,7 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
     }
     if ((s_inLayout.slots[0x94].i & 0x100040) != 0) {
         temp_f3 = __builtin_fabsf(f4);
-        if (temp_f3 < D_004D8918) {
+        if (temp_f3 < 32582.0f) {
             s_inLayout.slots[0xAC].i |= 0x800;
         }
     }
@@ -3506,7 +3502,6 @@ static void nmlModelCalcEntryPartsClip(char *arg0, char *arg1)
 }
 
 #define NMLE_SYM(name) __asm__(#name)
-extern volatile float U_k10000 NMLE_SYM(D_004D8944);
 typedef unsigned char U_u8;
 typedef unsigned int U_u32;
 typedef unsigned short U_u16;
@@ -4270,7 +4265,7 @@ void nmlModelEntry(U_NmlModel *model)
                     __asm__ __volatile__( "lq $2, 0(%1)\n" "sq $2, 0(%0)\n" : : "r" (&sortPos), "r" (&layout->fields.center) : "$2", "memory");
                     first = (U_NmlModelBlock *)((char *)model + blockOffsets[0]);
                     if (first->materialFlags & 0x10u) {
-                        float far = U_k10000;
+                        float far = 10000.0f;
                         sortPos.z = far;
                         sortPos.y = far;
                         sortPos.x = far;
@@ -5104,7 +5099,6 @@ static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
     return result;
 }
 
-extern float D_004D8948;
 void nmlPacketAddGifTagStandard(int, int);
 void nmlPacketAddExecProg();
 
@@ -5128,7 +5122,7 @@ static void *nmlModelRenderTexture(void *arg0, int arg1, int arg2)
     if (camera == 0) {
         goto done;
     }
-    while (var_19 = 0, !(*(float *)(*(int *)((char *)arg0 + 0xC) + 0x26C) <= D_004D8948)) {
+    while (var_19 = 0, !(*(float *)(*(int *)((char *)arg0 + 0xC) + 0x26C) <= 0.001f)) {
         sp4 = temp_16 & 0xFFFF;
         nmlPacketGsInit();
         nmlPacketAddGsZbuf(1);

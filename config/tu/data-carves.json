@@ -1553,15 +1553,18 @@
     {
      "range": [
       "0x004d88d8",
-      "0x004d88fc"
+      "0x004d8940"
      ],
      "generated": [
       "0x004d88d8",
-      "0x004d88fc"
+      "0x004d8940"
      ],
      "generated_by": [
       "nmlModelAskNonLinearCamera",
+      "nmlModelCalcDropShadow",
       "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
       "nmlModelCalcSample",
       "nmlModelCalcSpecularClip",
       "nmlModelLexBlockDoit",
@@ -1576,83 +1579,15 @@
       "D_004D88EC",
       "D_004D88F0",
       "D_004D88F4",
-      "D_004D88F8"
-     ],
-     "also_referenced_by_c": [
-      "D_004D88FC"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8900",
-      "0x004d8904"
-     ],
-     "generated": [
-      "0x004d8900",
-      "0x004d8904"
-     ],
-     "generated_by": [
-      "nmlModelCalcSpecularClip"
-     ],
-     "c_owned_symbols": [
-      "D_004D8900"
-     ],
-     "also_referenced_by_c": [
+      "D_004D88F8",
+      "D_004D88FC",
+      "D_004D8900",
       "D_004D8904",
-      "D_004D8908"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d890c",
-      "0x004d8918"
-     ],
-     "generated": [
-      "0x004d890c",
-      "0x004d8918"
-     ],
-     "generated_by": [
-      "nmlModelCalcSpecularClip"
-     ],
-     "c_owned_symbols": [
+      "D_004D8908",
       "D_004D890C",
       "D_004D8910",
-      "D_004D8914"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8918"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d891c",
-      "0x004d8940"
-     ],
-     "generated": [
-      "0x004d891c",
-      "0x004d8940"
-     ],
-     "generated_by": [
-      "nmlModelCalcDropShadow",
-      "nmlModelCalcEntryProjectCircle",
-      "nmlModelCalcEntryProjectMap"
-     ],
-     "c_owned_symbols": [
+      "D_004D8914",
+      "D_004D8918",
       "D_004D891C",
       "D_004D8920",
       "D_004D8924",
@@ -1664,9 +1599,7 @@
       "D_004D893C"
      ],
      "also_referenced_by_c": [
-      "D_004D8940",
-      "D_004D8944",
-      "D_004D8948"
+      "D_004D8940"
      ],
      "basis": {
       "kind": "derived",
@@ -1676,17 +1609,21 @@
     },
     {
      "range": [
-      "0x004d894c",
+      "0x004d8944",
       "0x004d8950"
      ],
      "generated": [
-      "0x004d894c",
+      "0x004d8944",
       "0x004d8950"
      ],
      "generated_by": [
-      "nmlModelRenderCircle"
+      "nmlModelEntry",
+      "nmlModelRenderCircle",
+      "nmlModelRenderTexture"
      ],
      "c_owned_symbols": [
+      "D_004D8944",
+      "D_004D8948",
       "D_004D894C"
      ],
      "also_referenced_by_c": [],
