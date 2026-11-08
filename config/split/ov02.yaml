@@ -74,6 +74,8 @@ segments:
       - [0x10674, data, ov02/logo]
       - [0x10720, data, ov02/title]
       - [0x10E10, data, ov02/title_hdd_install]
+      - [0x10EF0, data, ov02/tsk_umn_object_task_main]
+      - [0x114A0, data, ov02/umn_interface2]
       - [0x114A8, data, ov02/task_umn_top_win]
       - [0x11618, data, ov02/tsk_umn_mail_pas]
       - [0x116F8, data, ov02/umn_guno_data_base_get]

@@ -142,7 +142,7 @@ segments:
       - [0x52970]
       - { type: .bss, vram: 0x00A51970, name: ov01/obj }
       - { type: .bss, vram: 0x00A57240, name: ov01/unit_cmd }
-      - { type: bss, vram: 0x00A57300, name: ov01/battle_init }
+      - { type: .bss, vram: 0x00A57300, name: ov01/battle_init }
       - { type: .bss, vram: 0x00A57CE8, name: ov01/calc }
       - { type: .bss, vram: 0x00A57E90, name: ov01/data_unit_org_get }
       - { type: .bss, vram: 0x00A597D0, name: ov01/cmd }

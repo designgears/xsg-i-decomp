@@ -23,7 +23,6 @@
 #define CALC_PARAM_BOOST_CHANCE_OFF 0x20
 #define CALC_PARAM_BOOST_LEVEL_OFF 0x3C
 
-extern int escapeFlag;
 extern const char D_00A44080[];
 extern int printf(const char *format, ...);
 
@@ -100,7 +99,6 @@ typedef struct CamEvent {
     BattleUnit *unit;     /* +0x08 */
     BattleUnit *target;   /* +0x0C */
 } CamEvent;
-extern CamEvent D_00A57B80;
 
 extern void camEventExec(CamEvent *event, BattleUnit *unit);
 
@@ -138,14 +136,11 @@ extern void transWepOutDraw(Actor *actor);
  * The battle AI script identifier (data still asm-owned: the extern keeps
  * its splat name until the owning data TU recovers it, docs/naming.md).
  */
-extern int D_00A57C80;
 
 /*
  * The unit currently executing a battle action / the unit that most
  * recently acted (data still asm-owned; original ELF symbol names).
  */
-extern BattleUnit *pActUnit;
-extern BattleUnit *pLastUnit;
 BattleUnit **tgtUnitAdrGet(void);
 BattleUnit *tgtUnitGet(void);
 
@@ -159,8 +154,8 @@ typedef struct ManWork {
     unsigned char unmodeled_00[0xc];
     int controlPhase;     /* +0xc */
     ObjectTask *unitTask; /* +0x10 */
+    unsigned char unmodeled_14[4]; /* original named span continues to +0x18 */
 } ManWork;
-extern ManWork manWk;
 
 /*
  * Opaque battle-control record. batCtrlGet is its only reference in the
@@ -168,7 +163,6 @@ extern ManWork manWk;
  * (data still asm-owned; original ELF symbol name).
  */
 typedef struct BatCtrl BatCtrl;
-extern BatCtrl batCtrl;
 
 /*
  * Scenario-battle phase-dispatch record. scenarioBatInit and every
@@ -209,19 +203,111 @@ typedef struct ScenarioBatState {
     ScenarioPhaseFunc nextPhase; /* +0x10 */
     int phaseTimer;              /* +0x14 */
 } ScenarioBatState;
-extern ScenarioBatState scenarioPtr;
 
-extern BattleUnit *pExecUnit;
-extern BattleUnit *pManUnit;
-extern int thinkWk;
-extern int helpFlag;
-extern int menuFlag;
-extern int batMainFlag;
-extern int fifoCmd;
-extern int pCounterUnit;
-extern BattleUnit *pTgtUnit2;
-extern BattleUnit *pTgtUnit;
-extern ObjectTask *pTaskEnCur;
+typedef struct ConfTgt {
+    int slot;
+    int wpn;
+    BattleUnit *tgt;
+} ConfTgt;
+
+typedef struct MsgText {
+    signed char text[0x23];
+} MsgText;
+
+typedef struct {
+    int a[4];
+    int b[2];
+    int max;
+    int c;
+    int d;
+    int e;
+} ActStockView;
+
+typedef struct { int w[5]; } CmdListBody;
+
+typedef struct { int unit; CmdListBody body; } CmdListEntry;
+
+/*
+ * plTbl (data still asm-owned; original ELF symbol name): three 8-byte
+ * entries. plUnitTblGet writes only the first two fields of each; the
+ * remaining four bytes are written by plUnitTblSet (still INCLUDE_ASM).
+ */
+typedef struct PlUnitEntry {
+    short partyId;         /* +0x0 */
+    short attackPosition;  /* +0x2 */
+    unsigned char unmodeled_04[4];
+} PlUnitEntry;
+
+/*
+ * Battle monster-gain tallies (original ELF symbol name; only its total size is
+ * evidenced, by monsGainInit's own memset call).
+ */
+typedef struct MonsGain {
+    unsigned char unmodeled_00[0x58];
+} MonsGain;
+
+/*
+ * The battle cursor's selection-group record (data still asm-owned, splat
+ * name kept); curSelGrpSet is the only known writer of the evidenced word.
+ */
+typedef struct CurSelGrp {
+    unsigned char unmodeled_00[0x58];
+    u32 group; /* +0x58: written 0 or 1 by curSelGrpSet */
+} CurSelGrp;
+
+/*
+ * This TU's file-local battle work areas, in their original address order
+ * (ov01 .bss 0x00A57300-0x00A57CE8). cc1 8-aligns records and arrays, which
+ * accounts for the fill after pLastUnit, escapeFlag, nusumuFlag and
+ * D_00A57C80. Splat's interior labels are fields: D_00A5756C is
+ * batCtrl.unk4, D_00A57B5C..D_00A57B6C are scenarioPtr.index..phaseTimer,
+ * D_00A57C48 is curMove.group and D_00A57C7C is actStock.e.
+ */
+struct BatCtrl { int unk0; int unk4; int unk8; int unkC; };
+typedef struct StatUnit { BattleUnit *unit; int cmd; } StatUnit;
+typedef union MsgWork {
+    MsgText tmpl;           /* battleCtrlJunk copies a whole template in */
+    signed char text[0x40]; /* battle message buffer strcat appends to */
+} MsgWork;
+
+static ConfTgt D_00A57300[48];
+static ObjectTask *pTaskEnCur;
+static BattleUnit *pActUnit;
+static BattleUnit *pExecUnit;
+static BattleUnit *pManUnit;
+static BattleUnit *pTgtUnit;
+static BattleUnit *pTgtUnit2;
+static int oldCurGrp;
+static int pCounterUnit;
+static BattleUnit *pLastUnit;
+static BatCtrl batCtrl;
+static ManWork manWk;
+static int thinkWk;
+static int keyBuffIdx;
+static int keyBuff[8];
+static int fifoCmd[6];
+static CmdListEntry cmdList[32];
+static int batMainFlag;
+static int menuFlag;
+static unsigned char scenarioSrc[0xA0];
+static unsigned char scenarioDst[0x1E0];
+static ScenarioBatState scenarioPtr;
+static StatUnit statUnit;
+static int D_00A57B78;
+static int helpFlag;
+static CamEvent D_00A57B80;
+static MonsGain monsGain;
+static int escapeFlag;
+static CurSelGrp curMove;
+static int D_00A57C4C;
+static int nusumuFlag;
+static ActStockView actStock;
+static int D_00A57C80;
+static PlUnitEntry plTbl[3];
+static MsgWork msgWork;
+static int batRetCode;
+static int jtypeIdx;
+
 ObjectTask *objEnCurCreate(float x, float y, float z);
 void keyBuffClear(void);
 void actStockInit(void);
@@ -249,7 +335,7 @@ void battleInit(void)
   pManUnit = 0;
   pCounterUnit = 0;
   pLastUnit = 0;
-  fifoInit(&fifoCmd, 0x20);
+  fifoInit(fifoCmd, 0x20);
   keyBuffClear();
   ((struct ManWkL *) (&manWk))->unitTask = 0;
   thinkWk = 0;
@@ -288,7 +374,6 @@ int battleEndChk(void);
  * Set unconditionally at the start of every battleMain tick (data still
  * asm-owned; original ELF symbol name); no other write is evidenced in this TU.
  */
-extern int batMainFlag;
 
 void battleMain(void)
 {
@@ -479,7 +564,6 @@ void thinkTurnStartExec(BattleUnit *unit);
 void camEventTurnStartSet(void);
 int thinkExecChk(void);
 int battleMsgEndChk(void);
-extern int D_00A57C7C;
 
 void battleCtrl(void)
 {
@@ -537,9 +621,9 @@ void battleCtrl(void)
                 break;
             }
         }
-        if (D_00A57C7C == 0) {
+        if (actStock.e == 0) {
             menuStockNext();
-        } else if (D_00A57C7C == 1) {
+        } else if (actStock.e == 1) {
             menuStockStart();
         } else {
             menuStockBoost();
@@ -575,12 +659,6 @@ void battleCtrl(void)
     }
 }
 
-typedef struct ConfTgt {
-    int slot;
-    int wpn;
-    BattleUnit *tgt;
-} ConfTgt;
-extern ConfTgt D_00A57300[];
 extern char *dataWpnGet(int no);
 extern int unitTblGet(int side, BattleUnit ***table);
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
@@ -659,10 +737,6 @@ int battleCtrlConfusion(BattleUnit *unit)
     return 0;
 }
 
-typedef struct MsgText {
-    signed char text[0x23];
-} MsgText;
-extern MsgText msgWork;
 const MsgText D_00A43CE8 = { 0x55, 0x6E, 0x61, 0x62, 0x6C, 0x65, 0x20, 0x74, 0x6F, 0x20, 0x6D, 0x6F, 0x76, 0x65, 0x20, 0x64, 0x75, 0x65, 0x20, 0x74, 0x6F, 0x20, 0x22, 0x50, 0x6F, 0x77, 0x65, 0x72, 0x20, 0x4C, 0x6F, 0x73, 0x73, 0x22, 0 };
 void battleMsg(int msgId);
 int unitCmdListSet(ObjectTask *unit, int *cmd);
@@ -671,24 +745,15 @@ int battleCtrlJunk(ObjectTask *unit)
 {
     int cmd[8];
 
-    msgWork = D_00A43CE8;
+    msgWork.tmpl = D_00A43CE8;
     battleMsg((int)&msgWork);
     cmd[0] = 8;
     unitCmdListSet(unit, cmd);
     return 0;
 }
 
-extern int actStock;
 
 int actStockMaxGet(void);
-typedef struct {
-    int a[4];
-    int b[2];
-    int max;
-    int c;
-    int d;
-    int e;
-} ActStockView;
 
 void actStockInit(void)
 {
@@ -897,18 +962,16 @@ done:
  * actStockRemove (still INCLUDE_ASM here) read and write through the
  * address this returns (data still asm-owned; original ELF symbol name).
  */
-extern int actStock;
 
 int *actStockGet(void)
 {
-    return &actStock;
+    return (int *)&actStock;
 }
 
 /*
  * The battle help page index, cycled 0..2 (data still asm-owned, splat
  * name kept).
  */
-extern int helpFlag;
 
 int battleCtrlHelp(void)
 {
@@ -1494,18 +1557,14 @@ void camEventTurnStartSet(void)
  * original ELF symbol names); cmdListPtrGet is the only place both addresses are
  * taken together.
  */
-extern int fifoCmd;
-extern int cmdList;
 
 void cmdListPtrGet(int **list, int **altList)
 {
-    *list = &fifoCmd;
-    *altList = &cmdList;
+    *list = fifoCmd;
+    *altList = (int *)cmdList;
 }
 
-typedef struct { int w[5]; } CmdListBody;
 
-typedef struct { int unit; CmdListBody body; } CmdListEntry;
 
 int fifoEdGet(void *fifo);
 void fifoPush(void *fifo);
@@ -1706,7 +1765,6 @@ int battleCtrlThink(ObjectTask *unit)
     return 0;
 }
 
-extern struct { BattleUnit *unit; int cmd; } statUnit;
 
 extern unsigned char *scenarioDstGet(int offset);
 extern int scenarioBatExec(void);
@@ -1718,7 +1776,6 @@ extern void menuTimeNext(void);
 extern void sndInit2(void);
 extern int battleExecNorm(void);
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
-extern int D_00A57B78;
 struct BatCtrlX { int unk0; int unk4; int unk8; int unkC; };
 
 void battleExec(void)
@@ -1799,7 +1856,6 @@ extern void menuCritDispOff(void);
 extern void thinkTurnEndExec(BattleUnit *unit);
 extern void calcTurnEnd(BattleUnit *unit);
 extern void unitCmdSet(ObjectTask *unit, int *cmd);
-extern int D_00A5756C;
 
 int battleExecNorm(void)
 {
@@ -1847,7 +1903,7 @@ int battleExecNorm(void)
     BC->unk8 = 4;
     goto out;
 set:
-    D_00A5756C = 2;
+    batCtrl.unk4 = 2;
 out:
     return 1;
 }
@@ -2275,7 +2331,6 @@ int stat2Proc(void)
   return ret;
 }
 
-extern int keyBuffIdx;
 int keyBuffSet(ObjectTask *unit, int key);
 int keyBuffChk(ObjectTask *unit, int *out);
 int keyCmdChk(ObjectTask *unit, BattleUnit *tgt, int cmd);
@@ -2619,8 +2674,6 @@ int keyCmd2wno(ObjectTask *unit, int key)
  * Buffered battle-input queue (data still asm-owned; original ELF symbol names):
  * keyBuffIdx is the current insertion index into the keyBuff queue.
  */
-extern int keyBuffIdx;
-extern int keyBuff[8];
 
 void keyBuffClear(void)
 {
@@ -2807,7 +2860,6 @@ BattleUnit *tgtUnitPick(BattleUnit **table, int count)
     return 0;
 }
 
-extern int batRetCode;
 u8 cfEventGet(void);
 
 int battleEndChk(void) {
@@ -2819,7 +2871,7 @@ int battleEndChk(void) {
     if (busyUnitChk(2) > 0) {
         return 1;
     }
-    mode = D_00A5756C;
+    mode = batCtrl.unk4;
     if (mode != 1) {
         return 1;
     }
@@ -2849,7 +2901,6 @@ int battleEndChk(void) {
  * The battle result code consumed by phase transitions and shutdown
  * processing (data still asm-owned; original ELF symbol name).
  */
-extern int batRetCode;
 
 int battleRetCodeGet(void)
 {
@@ -2881,17 +2932,6 @@ typedef struct PartyAttackSlot {
     signed char attackPosition;  /* +0x2 */
 } PartyAttackSlot;
 
-/*
- * plTbl (data still asm-owned; original ELF symbol name): three 8-byte
- * entries. plUnitTblGet writes only the first two fields of each; the
- * remaining four bytes are written by plUnitTblSet (still INCLUDE_ASM).
- */
-typedef struct PlUnitEntry {
-    short partyId;         /* +0x0 */
-    short attackPosition;  /* +0x2 */
-    unsigned char unmodeled_04[4];
-} PlUnitEntry;
-extern PlUnitEntry plTbl[3];
 
 PlUnitEntry *plUnitTblGet(void) {
     PartyAttackSlot *slot;
@@ -3019,8 +3059,6 @@ BattleUnit *lastUnitGet(void)
     return pLastUnit;
 }
 
-extern BattleUnit *pTgtUnit;
-extern BattleUnit *pTgtUnit2;
 ManWork *manWorkGet(void);
 
 BattleUnit **tgtUnitAdrGet(void)
@@ -3049,7 +3087,6 @@ ManWork *manWorkGet(void)
 }
 
 extern int menuOpenChkBat(void);
-extern int menuFlag;
 
 int menuChk(void)
 {
@@ -3072,8 +3109,6 @@ void scenarioPtrFuncSet(ScenarioPhaseFunc func)
 
 void scenarioBatExecPhase10();
 extern void sndInit2(void);
-extern unsigned char scenarioDst[];
-extern unsigned char scenarioSrc[];
 
 void scenarioBatInit(void)
 {
@@ -3087,8 +3122,7 @@ void scenarioBatInit(void)
 
 int scenarioSrcSet(const ScenarioStep *source)
 {
-    extern int D_00A57B64;
-    ScenarioStep *destination = (ScenarioStep *)D_00A57B64;
+    ScenarioStep *destination = scenarioPtr.source;
 
     *destination = *source;
     return 1;
@@ -3106,15 +3140,9 @@ int scenarioDstSet(ScenarioDstRec *src)
     return 1;
 }
 
-/*
- * The scenario source index (data still asm-owned, splat name kept); a
- * different object from the ScenarioBatState record above.
- */
-extern int D_00A57B64;
-
 int scenarioSrcGet(void)
 {
-    return D_00A57B64;
+    return (int)scenarioPtr.source;
 }
 
 unsigned char *scenarioDstGet(int offset)
@@ -3191,7 +3219,6 @@ void scenarioCam(void *arg0, int arg1)
   }
 }
 
-extern void (*D_00A57B68)(int, unsigned char *);
 void scenarioBatEnd(void);
 
 int scenarioBatExec(void)
@@ -3200,7 +3227,7 @@ int scenarioBatExec(void)
     int src = ((int (*)(int))scenarioSrcGet)(0);
 
     if (dst != 0) {
-        D_00A57B68(src, dst);
+        ((void (*)(int, unsigned char *))scenarioPtr.nextPhase)(src, dst);
         if (scenarioDstGet(0) != 0) {
             return 0;
         }
@@ -3323,7 +3350,6 @@ void hairWindOff(BattleUnit *unit)
     }
 }
 
-extern int D_00A57B6C[];
 void scenarioBatExecPhase20();
 void scenarioCam(void *, int);
 extern void statEffOff(ObjectTask *unit);
@@ -3336,7 +3362,7 @@ void scenarioBatExecPhase10(ScenarioBatExec *arg0, int arg1)
     short var_16;
     int temp_2;
 
-    if (D_00A57B6C[0] == 0) {
+    if (scenarioPtr.phaseTimer == 0) {
         statEffOff(arg0->unit);
         scenarioCam(arg0, arg1);
         if (*(int *)((char *)arg0 + 0x4) != 3) {
@@ -3486,7 +3512,6 @@ skip:
     return;
 }
 
-extern int D_00A57C4C[];
 void scenarioBatExecPhase30();
 void mapDispOffAll(void);
 void unitDispOffAll(void);
@@ -3521,7 +3546,7 @@ void scenarioBatExecPhase25(void *arg0, int arg1) {
         case 2:
             if (MMv2IsPlaying() == 0) {
                 MMv2Stop();
-                D_00A57C4C[0] = dataCdSync();
+                D_00A57C4C = dataCdSync();
                 dataMapLoad(mapNoGet());
                 scenarioPtr.phaseTimer++;
             }
@@ -3529,7 +3554,7 @@ void scenarioBatExecPhase25(void *arg0, int arg1) {
         case 3:
             {
                 int cd = dataCdSync();
-                if (D_00A57C4C[0] >= cd) {
+                if (D_00A57C4C >= cd) {
                 fadeIn(4, 0);
                 mapDispOnAll();
                 unitDispOnAll();
@@ -3806,7 +3831,6 @@ dmg:
  * The stolen-item state nusumeSet/nusumeGet share (data still asm-owned;
  * original ELF symbol name).
  */
-extern int nusumuFlag;
 
 void nusumeSet(int value)
 {
@@ -3818,7 +3842,6 @@ int nusumeGet(void)
     return nusumuFlag;
 }
 
-extern int jtypeIdx;
 const char D_00A43FB8[] = "** FLOW_SPEC %d\n";
 extern int calcBc(ObjectTask *unit, int value);
 void specAnalyzeProc(ObjectTask *arg0);
@@ -3914,7 +3937,6 @@ int flowSpecProcInit(ScenarioBatExec *exec, void **arg1)
   return 0;
 }
 
-extern int jtypeIdx;
 int specSyoukanProc(SyoukanRec *rec, int arg1, unsigned int *state, int arg3);
 int specHensinProc(void *arg0, int arg1, unsigned int *arg2);
 void specInoriProc(void);
@@ -4217,7 +4239,6 @@ extern void dataMapLoad(int no);
 extern int MMv2IsPlaying(void);
 extern void MMv2Stop(void);
 extern int MMv2Play(const char *filename);
-extern int D_00A57C4C[];
 extern char *mvFname[5];
 
 int specHensinProc(void *arg0, int arg1, unsigned int *arg2)
@@ -4278,13 +4299,13 @@ int specHensinProc(void *arg0, int arg1, unsigned int *arg2)
         if (MMv2IsPlaying() == 0) {
             s++;
             MMv2Stop();
-            D_00A57C4C[0] = dataCdSync();
+            D_00A57C4C = dataCdSync();
             dataMapLoad(mapNoGet());
         }
         break;
     case 6:
         v = dataCdSync();
-        if (D_00A57C4C[0] >= v) {
+        if (D_00A57C4C >= v) {
             fadeIn(4, 0);
             s++;
             mapDispOnAll();
@@ -4941,7 +4962,6 @@ int scenarioSrcEndChk(int *exec, int unused, int dflt)
     return ret != 0;
 }
 
-extern int D_00A57B5C;
 const char D_00A44168[] = "** Dmg: SAFE\n";
 extern int calcIdol2Chk(ObjectTask *unit);
 extern int calcUseItem(ObjectTask *a, ObjectTask *b, int c);
@@ -4963,7 +4983,7 @@ void scenarioBatEnd(void)
     CalcUnitParam *up2;
     int wct;
 
-    D_00A57B5C = 0;
+    scenarioPtr.index = 0;
     if (scenarioDstGet(0) != 0) {
         i = 0;
         src = (int *)((int (*)(int))scenarioSrcGet)(0);
@@ -5032,7 +5052,6 @@ block_30:
     }
 }
 
-extern int pCounterUnit;
 const char D_00A44178[] = "** Counter =%d\n";
 extern int calcCounter(BattleUnit *unit, int tec);
 extern int calcStatGet(BattleUnit *unit, int stat, int mask);
@@ -5166,14 +5185,6 @@ int dmgValPut(int arg0, BattleUnit **arg1) {
     }
 }
 
-/*
- * Battle monster-gain tallies (original ELF symbol name; only its total size is
- * evidenced, by monsGainInit's own memset call).
- */
-typedef struct MonsGain {
-    unsigned char unmodeled_00[0x58];
-} MonsGain;
-extern MonsGain monsGain;
 
 MonsGain *monsGainPtrGet(void)
 {
@@ -5486,7 +5497,6 @@ ObjectTask *objEnCurCreate(float x, float y, float z)
  * TU-local header and is not includable here).
  */
 extern void objRemove(ObjectTask *task);
-extern ObjectTask *pTaskEnCur;
 
 void objCurRemove(void)
 {
@@ -5730,7 +5740,6 @@ typedef struct CurEnList {
     int count;
     int curIdx;
 } CurEnList;
-extern struct CurSelGrp curMove;
 const char D_00A442C8[] = "curEnProc: no Tgt\n";
 
 int curEnProcInit(ObjectTask **target, int side)
@@ -5863,7 +5872,6 @@ next:
     return ret;
 }
 
-extern struct CurSelGrp curMove;
 int curPosProc(CursorObject *unused, int *pos)
 {
     ObjectTask *task = pTaskEnCur;
@@ -5893,7 +5901,6 @@ typedef struct CurTgtInitList {
     u32 group;         /* +0x58 */
 } CurTgtInitList;
 extern int calcTgtUnitTbl(ObjectTask *self, int flags, ObjectTask **table);
-extern int oldCurGrp;
 
 int curTgtProcInit(ObjectTask **target, ObjectTask *self, int flags)
 {
@@ -6031,22 +6038,12 @@ int curTgtProc(int *pos, int flags)
   return ret;
 }
 
-/*
- * The battle cursor's selection-group record (data still asm-owned, splat
- * name kept); curSelGrpSet is the only known writer of the evidenced word.
- */
-typedef struct CurSelGrp {
-    unsigned char unmodeled_00[0x58];
-    u32 group; /* +0x58: written 0 or 1 by curSelGrpSet */
-} CurSelGrp;
-extern CurSelGrp curMove;
 
 /*
  * Written -1 whenever curSelGrpSet derives the group from flags instead of
  * receiving it directly (data still asm-owned; original ELF symbol name); no other
  * reference is evidenced in this TU.
  */
-extern int oldCurGrp;
 
 void curSelGrpSet(u32 group, int flags)
 {
@@ -6066,15 +6063,10 @@ void curSelGrpSet(u32 group, int flags)
     oldCurGrp = -1;
 }
 
-/*
- * The current selection group (data still asm-owned, splat name kept); a
- * different object from CurSelGrp above, whose writer is not in this TU.
- */
-extern int D_00A57C48;
-
+/* curMove.group (0x00A57C48, splat's D_00A57C48). */
 int curSelGrpGet(void)
 {
-    return D_00A57C48;
+    return curMove.group;
 }
 
 void objDispPlCur(void)

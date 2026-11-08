@@ -2630,7 +2630,7 @@ static void _BodyDisp(RgRobotStatus *robotStatus, RgBody *body)
     RgRobotEffectDisp(body->effect);
 }
 
-extern RgRobotSpec D_00A59920;
+static RgRobotSpec D_00A59920;
 extern void InitRgRobotSpec(RgRobotSpec *pSpec);
 extern void *CreateRgGeomRobot(void);
 extern void *CreateRgGeomBall(float radius, float weight);

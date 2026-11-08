@@ -8,6 +8,7 @@
 #include "shared.h"
 #include "main/find_native_method.h"
 #include "main/init_vm.h"
+#include "java_class.h"
 
 typedef signed char s8;
 typedef struct ClassNameKey ClassNameKey;
@@ -31,10 +32,6 @@ typedef struct ElementType {
 
 extern JavaClass *lookupArray(ElementType *elementType);
 
-/* Header word every heap object newObject creates begins with. */
-typedef struct ObjectHeader {
-    void *classPointer;
-} ObjectHeader;
 
 /* Header every heap array newArray creates begins with. */
 typedef struct ArrayHeader {

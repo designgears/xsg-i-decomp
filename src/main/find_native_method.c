@@ -71,43 +71,6 @@ void *classFromSig(const char **cursor, void *classLoader);
 
 static int sizeofDescripter(u8 **cursor);
 
-typedef struct JavaMethod JavaMethod;
-
-typedef struct JavaFieldEntry FieldEntry;
-
-typedef struct DispatchTable DispatchTable;
-
-typedef union ConstantPoolEntry ConstantPoolEntry;
-
-/*
- * The full layout of the VM class record (include/shared.h's SceneClass is
- * the shared view of the same 0x40 bytes).
- */
-struct JavaClass {
-    ObjectHeader header;
-    ClassNameKey *name;
-    u16 accessFlags;
-    u16 flags;
-    void *classLoader;
-    JavaClass *superClass;
-    ConstantPoolEntry *constants;
-    DispatchTable *classPointer;
-    FieldEntry *fields;
-    JavaMethod *methods;
-    JavaClass **interfaces;
-    u16 constantCount;
-    u16 dispatchSize;
-    u16 methodCount;
-    u16 interfaceCount;
-    u16 fieldCount;
-    u16 staticFieldCount;
-    u16 declaredInterfaceCount;
-    s16 state;
-    int instanceSize;
-    ElementType *elementClass;
-};
-
-extern JavaClass _dummyClass;
 
 
 char *strcpy(char *, const char *);

@@ -27794,24 +27794,59 @@
    ]
   },
   "ov02/tu004_00a017f0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a0fe10",
+      "0x00a0fee4"
+     ],
+     "generated": [
+      "0x00a0fe10",
+      "0x00a0fee4"
+     ],
+     "generated_by": [
+      "HddInstallCB",
+      "HddInstallSync",
+      "TitleHddInstall"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_00A0FE10",
+      "TransEnv_1_00A0FE70",
+      "FlushEnv_2_00A0FE90",
+      "anim_4",
+      "D_00A0FEC4",
+      "sztmp_5",
+      "D_00A0FECB",
+      "sztmp_6",
+      "D_00A0FED6",
+      "mes_7"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/title_hdd_install.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a11840",
-      "0x00a118b8"
+      "0x00a11620",
+      "0x00a11d40"
      ],
      "generated": [
-      "0x00a11840",
-      "0x00a118b8"
+      "0x00a11620",
+      "0x00a11d38"
      ],
      "generated_by": [
-      "HddInstallCB"
+      "HddInstallCB",
+      "HddInstallSync",
+      "TitleHddInstall",
+      "TitleHddInstallSubInstall",
+      "TitleHddInstallSubUninstall"
      ],
      "c_owned_symbols": [
-      "jtbl_00A11840",
-      "jtbl_00A118A0"
-     ],
-     "also_referenced_by_c": [
       "D_00A11620",
       "D_00A11628",
       "D_00A11688",
@@ -27831,61 +27866,27 @@
       "D_00A11800",
       "D_00A11818",
       "D_00A11828",
+      "jtbl_00A11840",
+      "jtbl_00A118A0",
       "D_00A118B8",
       "D_00A11928",
       "D_00A11970",
       "D_00A119E0",
       "D_00A11A58",
-      "D_00A11AA8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/title_hdd_install.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a11b20",
-      "0x00a11b38"
-     ],
-     "generated": [
-      "0x00a11b20",
-      "0x00a11b38"
-     ],
-     "generated_by": [
-      "TitleHddInstall"
-     ],
-     "c_owned_symbols": [
-      "D_00A11B20"
-     ],
-     "also_referenced_by_c": [
+      "D_00A11AA8",
+      "D_00A11B20",
+      "D_00A11B38",
+      "D_00A11C28",
       "D_00A11C60",
       "D_00A11C90",
-      "D_00A11CD8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/title_hdd_install.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a11d20",
-      "0x00a11d40"
-     ],
-     "generated": [
-      "0x00a11d20",
-      "0x00a11d38"
-     ],
-     "generated_by": [
-      "TitleHddInstall"
-     ],
-     "c_owned_symbols": [
+      "D_00A11CD8",
       "jtbl_00A11D20"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A11B38": "mes_7",
+      "D_00A11C28": "mes_7"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -27895,6 +27896,48 @@
    ]
   },
   "ov02/tu005_00a023a8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a0fef0",
+      "0x00a1049c"
+     ],
+     "generated": [
+      "0x00a0fef0",
+      "0x00a1049c"
+     ],
+     "generated_by": [
+      "UmnChangeTopLevel",
+      "UmnFirstLoad",
+      "UmnInit",
+      "UmnMain",
+      "UmnMain2",
+      "UmnObjectTaskCreate",
+      "tskUmnObjectTaskMain"
+     ],
+     "c_owned_symbols": [
+      "UmnWorkEnd",
+      "UmnTexAddr",
+      "UmnBgCubeXtx",
+      "UmnBgCubeLex",
+      "UmnModelUkn",
+      "UmnModelSon",
+      "task_xmx",
+      "UmnVecMat",
+      "UmnModel",
+      "UmnWork",
+      "umn_task",
+      "UmnMemory",
+      "UmnWorkEndTop"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_object_task_main.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -27930,6 +27973,32 @@
    ]
   },
   "ov02/tu006_00a02d68": {
+   ".data": [
+    {
+     "range": [
+      "0x00a104a0",
+      "0x00a104a8"
+     ],
+     "generated": [
+      "0x00a104a0",
+      "0x00a104a8"
+     ],
+     "generated_by": [
+      "UmnInterface2Init",
+      "UmnInterface2Main"
+     ],
+     "c_owned_symbols": [
+      "UmnBackRgba",
+      "UmnInterface2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/umn_interface2.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

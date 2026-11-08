@@ -297,3 +297,8 @@ void *UmnInterface2Init(void *memory) {
     color_b_state->color_b[0] = 0x80;
     return result;
 }
+
+/* This TU's globals (ov02 .data 0x00A104A0-0x00A104A8, zero-initialized;
+ * original symbol names). UmnBackRgba has no reference in the overlay. */
+unsigned int UmnBackRgba = 0;
+UmnInterface2State *UmnInterface2 = 0;

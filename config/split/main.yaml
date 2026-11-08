@@ -1039,7 +1039,7 @@ segments:
       - { type: bss, vram: 0x007A7AB0, name: sm_initilize }
       - { type: bss, vram: 0x007A7AD0, name: m_ef_obj }
       - { type: bss, vram: 0x007C06D0, name: m_output_debug_string }
-      - { type: bss, vram: 0x007C07D0, name: find_native_method }
+      - { type: bss, vram: 0x007C07D0, name: init_vm }
       - { type: bss, vram: 0x007C0810, name: system }
       - { type: bss, vram: 0x007C0A10, name: spline }
       - { type: bss, vram: 0x007C0A28, name: effect }

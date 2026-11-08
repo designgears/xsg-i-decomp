@@ -376,10 +376,10 @@
         {
           "c_split": false,
           "end": "0x007C0810",
-          "ordinal": 227,
-          "piece": "find_native_method",
+          "ordinal": 226,
+          "piece": "init_vm",
           "start": "0x007C07D0",
-          "tu": "find_native_method"
+          "tu": "init_vm"
         },
         {
           "c_split": false,
@@ -68527,6 +68527,7 @@
       "name_confidence": "low",
       "ordinal": 226,
       "owners": {
+        ".bss": "c",
         ".rodata": "asm",
         ".sdata": "asm",
         ".text": "c"
@@ -68534,6 +68535,30 @@
       "path": "src/main/init_vm.c",
       "scaffold_path": "scaffold/src/main/init_vm.c",
       "sections": {
+        ".bss": {
+          "anchored": [
+            "0x007C07D0",
+            "0x007C07D1"
+          ],
+          "bounds": [
+            "0x007C06D1",
+            "0x007C0810"
+          ],
+          "end": "0x007C0810",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x007C0810",
+              "name": "init_vm",
+              "start": "0x007C07D0"
+            }
+          ],
+          "rule": "moved piece (local _dummyClass referenced by init_vm .sdata classClass)",
+          "size": 64,
+          "splat_type": "bss",
+          "start": "0x007C07D0"
+        },
         ".rodata": {
           "anchored": [
             "0x004CD0C0",
@@ -68847,7 +68872,6 @@
       "name_confidence": "low",
       "ordinal": 227,
       "owners": {
-        ".bss": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
         ".text": "c"
@@ -68855,30 +68879,6 @@
       "path": "src/main/find_native_method.c",
       "scaffold_path": "scaffold/src/main/find_native_method.c",
       "sections": {
-        ".bss": {
-          "anchored": [
-            "0x007C07D0",
-            "0x007C07D1"
-          ],
-          "bounds": [
-            "0x007C06D1",
-            "0x007C0810"
-          ],
-          "end": "0x007C0810",
-          "evidence_source": "map",
-          "pieces": [
-            {
-              "c_split": false,
-              "end": "0x007C0810",
-              "name": "find_native_method",
-              "start": "0x007C07D0"
-            }
-          ],
-          "rule": "anchored start",
-          "size": 64,
-          "splat_type": "bss",
-          "start": "0x007C07D0"
-        },
         ".rodata": {
           "anchored": [
             "0x004CD670",
@@ -70455,7 +70455,7 @@
       "ordinal": 237,
       "owners": {
         ".lit4": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
