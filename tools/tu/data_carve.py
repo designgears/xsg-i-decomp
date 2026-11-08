@@ -1307,8 +1307,9 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
         # splat's "unreferenced pad" items are the fill cc1's alignment leaves
         # between (or after) the C object's own items: no code names them, so
         # the reference walk above never reaches them. A zero pad right after a
-        # C-generated item, followed by another C-generated item or by the end
-        # of the section, belongs to that C run (plan_split's item check still
+        # C-generated item and followed by another one belongs to that C run
+        # (a trailing pad stays a scaffold piece: cc1 emits no trailing fill,
+        # and the next piece is placed right after the run) (plan_split's item check still
         # places every following item against the C object).
         if orig is None:
             orig = Elf(Path(ctx['orig']).read_bytes())
@@ -1320,7 +1321,7 @@ def derive(root, unit, unit_dir, tu_id, source, obj):
             while j < len(items) and j not in gset and _is_pad(items[j]) and not any(
                     va_bytes(orig, items[j]['start'], items[j]['end'] - items[j]['start']) or b''):
                 j += 1
-            if j > i and (j == len(items) or j in gset):
+            if j > i and j in gset:
                 gset.update(range(i, j))
         absorbed = sorted(gset - set(gen))
         if absorbed:
