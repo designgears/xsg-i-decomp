@@ -995,6 +995,16 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
     for (size_t i = 0; i < pf.prims.size(); ++i) {
         const GpuPrim& p = pf.prims[i];
         const Vulkan::Image* src = white.get();
+        // The game's soft-focus feedback: the frame itself blended back full-screen at
+        // (nearly) its own size.  At 1x it is a faint glow; at native scale it shows as a
+        // doubled outline around every figure, so the native layer leaves it out.
+        if (p.kind[2] == 2 && p.kind[0] == 6) {
+            const float rw = std::fabs(p.xy[1][0] - p.xy[0][0]), rh = std::fabs(p.xy[1][1] - p.xy[0][1]);
+            const float tw = std::fabs(p.xy[1][2] - p.xy[0][2]), th = std::fabs(p.xy[1][3] - p.xy[0][3]);
+            if (rw >= 0.9f * float(w) && rh >= 0.9f * float(h) && tw > 0 && th > 0 && std::fabs(rw / tw - 1.0f) < 0.05f &&
+                std::fabs(rh / th - 1.0f) < 0.05f)
+                continue;
+        }
         if (p.kind[2] == 2) {
             pending.clear();   // the copy's barrier below orders everything before it
             cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
