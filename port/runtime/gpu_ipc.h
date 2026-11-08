@@ -265,6 +265,7 @@ enum {
     GPU_KG_TAG = 12,     /* the bitmap title letters (ASCII) */
     GPU_KG_CIRCLE = 13,  /* (x, y), radius dw, rgba centre, b rim colour */
     GPU_KG_PAUSE = 14,   /* the pause screen (game_pause_disp.c): the rebuilt title */
+    GPU_KG_SELECT = 15,  /* a selected row (x, y, dw, dh) (twsys TMENU): glow bar and chevron; b = the item */
 };
 /* GPU_MSG_UI_TEX: one host->local upload of a texture directory (xtx), replayed by xsg-gpu
    into a private GS memory image per set (the menus swap sets at one VRAM address). */

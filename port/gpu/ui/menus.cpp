@@ -387,7 +387,21 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_TEXT: {
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
-            DrawText(dl, font, s, o.u, P(x, y + 2), 18.0f * k, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
+            // proportions: when the game measured the string (o.dw), the widest line takes the same width
+            float fs = 18.0f * k;
+            if (o.dw > 8) {
+                float widest = 0;
+                std::string line;
+                for (int q = 0; q <= o.u; ++q) {
+                    const unsigned char c = q < o.u ? static_cast<unsigned char>(s[q]) : '\n';
+                    if (c == '\n') { widest = std::max(widest, RichTextWidth(font, fs, Decode(line.c_str()).c_str())); line.clear(); }
+                    else if (c == 1 || c == 4 || c == 5) q += c == 1 ? 3 : 2;
+                    else if (c == 2) q += 1;
+                    else line += char(c);
+                }
+                if (widest > 0) fs *= std::clamp(float(o.dw) * kx / widest, 0.85f, 1.6f);
+            }
+            DrawText(dl, font, s, o.u, P(x, y + 2), fs, 24.0f * k, tw, [&](int slot, ImVec2 at, float h) -> float {
                 for (uint32_t j = 0; j < m.nops; ++j) {
                     const GpuUiKgOp& ic = m.op[j];
                     if (ic.type != GPU_KG_ART || ic.text[0] != 1 || ic.text[1] != slot) continue;
@@ -434,6 +448,14 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const ImVec2 c = P(x, y);
             dl->AddCircleFilled(c, float(o.dw) * k, Ps2(uint32_t(o.b), tw), 32);
             dl->AddCircleFilled(c, float(o.dw) * k * 0.4f, Ps2(o.rgba, tw), 24);
+            break;
+        }
+        case GPU_KG_SELECT: {   // a choice menu's selected row: the cursor glides, the bar glows
+            AnimState& cu = Anim(0x53454C00ull, x, y);
+            const ImVec2 q = Spring(cu, x, y, 22.0f);
+            const ImVec2 a = P(q.x, q.y), b = P(q.x + o.dw, q.y + o.dh);
+            GlowBar(dl, a, b, k, tw, now, col::kCyan);
+            Chevron(dl, P(q.x - 2, q.y + o.dh * 0.5f), 6 * k, tw, now);
             break;
         }
         case GPU_KG_PAUSE: {   // a centred title between two rules that sweep outward, and a resume hint

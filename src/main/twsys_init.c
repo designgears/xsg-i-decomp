@@ -2505,4 +2505,23 @@ void TMENU_drawDefault(TComponent *component)
     widget->y = y;
     EW_sprtSetCursorUV((unsigned char *)widget, 0, menu->frameCounter);
     widget->flags |= 0x4000;
+#ifdef PORT_HOST
+    {   /* rebuilt UI: the frame and cursor are xsg-gpu's (a window and a selected row in the frame's
+           UI list); the labels reach it through xglFontPrint */
+        extern int xsg_ui_rebuilt(void);
+        extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
+        if (xsg_ui_rebuilt()) {
+            int wx = (int)menu->x + 16, wy = (int)menu->y + 16;
+            xsg_ui_mop(11, wx, wy, (int)menu->width, (int)menu->height, 0xFFFFE0, 0x80806040u, 1);
+            if (queryHeight)
+                xsg_ui_mop(10, wx + 8, wy + queryHeight - 4, (int)menu->width - 16, 0, 0xFFFFE1, 0x80808080u, 0);
+            if (menu->selectedItem >= 0)
+                xsg_ui_mop(15, wx + 4, y - 6, (int)menu->width - 8, 24, 0xFFFFE1, 0, menu->selectedItem);
+            ((EwWidget_TD2 *)menu->widgets[0])->flags &= 0xBFFF;
+            ((EwWidget_TD2 *)menu->widgets[1])->flags &= 0xBFFF;
+            ((EwWidget_TD2 *)menu->widgets[5])->flags &= 0xBFFF;
+            ((EwWidget_TD2 *)menu->widgets[8])->flags &= 0xBFFF;
+        }
+    }
+#endif
 }

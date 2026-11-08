@@ -40,6 +40,8 @@ extern void GameStateSaveCameraLight(void);
 extern void GameStateRestoreCameraLight(void);
 extern int MenuFileMain(int mode);
 extern void MenuShopMain(int shop);
+extern void *TMENU_create(int slot);
+extern void TMENU_addItem(void *menu, const char *text);
 extern void PartyTakeAgwsOn(int id);
 extern int dataMoneyBoxInc(int amount);
 extern unsigned char itmBox[0x1FE], wpnBox[0x1FE], bltBox[0x1FE], accBox[0x1FE];
@@ -59,7 +61,7 @@ volatile unsigned xsg_room_frame;
    call: once walking (+ROOM_CALL_AT), open a screen the way the field loop
    does (game.c checkTalkPoint): ROOM_SAVE the save point's file menu,
    ROOM_SHOP + n shop n (1..20, the shop file's records). */
-enum { ROOM_SAVE = 1, ROOM_SHOP = 0x100 };
+enum { ROOM_SAVE = 1, ROOM_CHOICE = 2, ROOM_SHOP = 0x100 };
 #define ROOM_CALL_AT 450
 static const struct { const char *name, *scene, *pad, *what; int give, call; } rooms[] = {
     {"battle_tutorial", "cf9001", 0, "Shion + KOS-MOS vs attack drones, tutorial pages and dialog"},
@@ -82,6 +84,7 @@ static const struct { const char *name, *scene, *pad, *what; int give, call; } r
     {"menu_umn", "cf9051", MENU_ROW(7), "main menu, U.M.N. row (still locked: a story flag)", 1},
     {"menu_options", "cf9051", MENU_ROW(8), "main menu > Game Options", 1},
     {"save", "cf9051", 0, "a save point's file screen", 1, ROOM_SAVE},
+    {"choice", "cf9051", 0, "a choice menu (twsys TMENU), as scripts open them", 0, ROOM_CHOICE},
     {"save_files", "cf9051", "+560:CIRCLE", "save point > memory card slot 1", 1, ROOM_SAVE},
     {"shop", "cf9051", 0, "shop 1", 1, ROOM_SHOP + 1},
     {"shop_buy", "cf9051", "+560:CIRCLE", "shop 1 > Buy", 1, ROOM_SHOP + 1},
@@ -183,6 +186,14 @@ void xsg_room_tick(int kind, unsigned event_id)
             xsg_logf("[room] vblank %u: file menu\n", xsg_frame);
             GameStateSave();
             MenuFileMain(0);
+        } else if (ri >= 0 && rooms[ri].call == ROOM_CHOICE) {
+            void *menu = TMENU_create(-1);
+            xsg_logf("[room] vblank %u: choice menu %p\n", xsg_frame, menu);
+            if (menu) {
+                TMENU_addItem(menu, "Save the game");
+                TMENU_addItem(menu, "Keep exploring");
+                TMENU_addItem(menu, "Check the U.M.N. terminal");
+            }
         } else if (ri >= 0 && rooms[ri].call >= ROOM_SHOP) {
             xsg_logf("[room] vblank %u: shop %d\n", xsg_frame, rooms[ri].call - ROOM_SHOP);
             GameStateSaveCameraLight();

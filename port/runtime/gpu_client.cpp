@@ -602,6 +602,7 @@ GpuUiKgOp g_mops[XSG_GPU_UI_MENU_OPS];
 uint32_t g_mop_n;
 uint32_t g_mop_start;    // the frame the buffer started filling
 uint32_t g_menu_last;    // the frame of the last captured flush
+int g_last_text_op = -1;
 char g_mpool[XSG_GPU_UI_MENU_POOL];
 uint32_t g_mpool_n;
 }  // namespace
@@ -656,6 +657,7 @@ extern "C" void xsg_ui_mop_text(int op, const char* text, int len) {
    may hold zero bytes), then the same capture as the menu text. */
 extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* text, int len);
 extern "C" unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char* text);
+extern "C" int xglFontGetStringWidth(const char* text);
 extern "C" int xsg_ui_font_text(int x, int y, int color, const char* text) {
     if (!xsg_ui_rebuilt() || !text) return 0;
     const unsigned char* t = reinterpret_cast<const unsigned char*>(text);
@@ -664,7 +666,13 @@ extern "C" int xsg_ui_font_text(int x, int y, int color, const char* text) {
         if (t[i] < 0x20) i += 1 + std::max(0, int(xglFontGetSPcodeSize(t[i], const_cast<unsigned char*>(t + i))));
         else i += t[i] >= 0x80 ? 2 : 1;
     }
-    return xsg_ui_menu_text(x, y, color, t, i) || i == 0;
+    g_last_text_op = -1;
+    const int r = xsg_ui_menu_text(x, y, color, t, i);
+    // the game's own width for the string (the font engine's metrics: its scale, monospace or
+    // proportional), so xsg-gpu can match the original proportions
+    
+    if (r && g_last_text_op >= 0) g_mops[g_last_text_op].dw = int16_t(std::min(2047, xglFontGetStringWidth(text)));
+    return r || i == 0;
 }
 /* The end of the frame's font flush: publish whatever was captured (possibly nothing). */
 extern "C" void xsg_ui_menu_end(void);
@@ -738,6 +746,7 @@ extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* te
     }
     const int op = xsg_ui_mop(GPU_KG_TEXT, x, y, 0, 0, param & 0xffffff, 0x80808080u, 0);
     xsg_ui_mop_text(op, out, n);
+    g_last_text_op = op;
     return 1;
 }
 
