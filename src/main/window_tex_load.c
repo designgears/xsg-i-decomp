@@ -354,6 +354,7 @@ static void menuCallback(int event)
 
 void MenuFontLoad(int original_font, int asynchronous)
 {
+    static int original_font_no_1 __asm__("original_font_no.1");
     void (*callback)(int) = 0;
 
     if (asynchronous)

@@ -6,7 +6,7 @@ typedef char *va_list;
 #define va_end(ap) ((void)0)
 
 extern int vprintf(const char *format, va_list args);
-extern char dstr[0x100];
+static char dstr[0x100];
 
 void MOutputDebugString(const char *format, ...)
 {

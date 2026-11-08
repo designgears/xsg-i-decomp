@@ -85,7 +85,7 @@ typedef union {
     CameraVectorStorage storage;
 } MpackInterest;
 
-extern MpackInterest mpack_interest;
+static MpackInterest mpack_interest;
 
 
 /*

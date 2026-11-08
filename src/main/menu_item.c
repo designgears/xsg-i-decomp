@@ -650,7 +650,7 @@ typedef struct MenuItemPartyStatusWork {
     /* Two backgrounds, two outlines, then the clipping rectangle. */
     MenuItemPasBox boxes[5];
 } MenuItemPartyStatusWork;
-extern short MenuItemParty[];
+static short MenuItemParty[8];
 extern char *MenuTagTextGet(int index);
 extern int PartyAttackerCheck(int characterId);
 extern void eCursolSet(void *cursor, int mode);
@@ -938,7 +938,7 @@ typedef struct MenuItemWorkDataSA {
     signed char sortSelection; /* +0x72 */
 } MenuItemWorkDataSA;
 extern void *MenuItemStatusAgws;
-extern short MenuItemAgws[];
+static short MenuItemAgws[8];
 extern const char *MenuCharNameGet(int character);
 extern void eTagFontSet(void *tag, const char *text);
 extern void eTagFontMain(void *tag);
