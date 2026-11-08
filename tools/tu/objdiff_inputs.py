@@ -209,6 +209,65 @@ def fold_constant_labels(target):
     Path(target).write_bytes(bytes(data))
 
 
+def resolve_external_data_relocs(target, base_elf, addresses):
+    """Express the target's data words the way the compiled object does, where both link the same.
+
+    Two splat artifacts, both decided word by word against the C object:
+    * a pointer to a static function of this TU is an R_MIPS_32 against its
+      name, undefined in the data object, while cc1 writes `.text` + offset:
+      retarget it to the target's own `.text` at that function;
+    * a constant splat read as `symbol + offset` (`.word _imageMapper +
+      0x490C0` for 0x003FC000) where the C object holds a plain word with no
+      relocation: fold it only when the linked address plus addend equals that
+      word exactly.
+    """
+    elf = Elf(Path(target).read_bytes())
+    data = bytearray(elf.data)
+    base_sections = {x.name: x for x in base_elf.sections}
+    base_relocs = {}
+    for r in base_elf.sections:
+        if r.type == 9 and r.info < len(base_elf.sections):
+            name = base_elf.sections[r.info].name
+            base_relocs.setdefault(name, set()).update(
+                struct.unpack_from('<I', base_elf.data, at)[0]
+                for at in range(r.offset, r.offset + r.size, 8))
+    local_functions = {y.name: y for y in elf.symbols if y.type == 2 and y.shndx}
+    section_symbol = {y.shndx: y.index for y in elf.symbols if y.type == 3}
+    for rel in elf.sections:
+        if rel.type != 9:
+            continue
+        applies = elf.sections[rel.info]
+        if not applies.flags & 2 or applies.flags & 4 or applies.name not in base_sections:
+            continue
+        bsec = base_sections[applies.name]
+        bdata = base_elf.section_bytes(bsec)
+        kept = []
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            symbol = elf.symbols[info >> 8]
+            if info & 255 == 2 and symbol.shndx == 0:
+                function = local_functions.get(symbol.name)
+                if function is not None and function.shndx in section_symbol:
+                    word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+                    struct.pack_into('<I', data, applies.offset + offset,
+                                     (word + function.value) & 0xffffffff)
+                    kept.append((offset, (section_symbol[function.shndx] << 8) | 2))
+                    continue
+                if (symbol.name in addresses and offset + 4 <= len(bdata)
+                        and offset not in base_relocs.get(applies.name, ())):
+                    word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+                    value = (addresses[symbol.name] + word) & 0xffffffff
+                    if value == struct.unpack_from('<I', bdata, offset)[0]:
+                        struct.pack_into('<I', data, applies.offset + offset, value)
+                        continue
+            kept.append((offset, info))
+        if len(kept) * 8 != rel.size or kept:
+            for k, entry in enumerate(kept):
+                struct.pack_into('<II', data, rel.offset + 8 * k, *entry)
+            struct.pack_into('<I', data, elf.shoff + rel.index * elf.shentsize + 20, len(kept) * 8)
+    Path(target).write_bytes(bytes(data))
+
+
 def trim_link_padding(target, base_elf):
     """End a target data section's last symbol where the C object's section ends.
 
@@ -322,6 +381,15 @@ def prepare(root, evidence):
     linked = {unit: Elf((build / 'main/build/carve/main.rom.elf' if unit == 'main' else
                          build / unit / f'build/{unit}.rom.elf').read_bytes())
               for unit in ('main', *cov.OVERLAY_UNITS)}
+    def symbol_addresses(*elves):
+        out = {}
+        for elf in elves:
+            for sym in elf.symbols:
+                if sym.shndx and sym.type != 3 and sym.name:
+                    out.setdefault(sym.name, sym.value)
+        return out
+    addresses = {unit: symbol_addresses(linked[unit], *([] if unit == 'main' else [linked['main']]))
+                 for unit in linked}
     symtabs = {unit: target_symbolize.SymbolTable(
         [main_elf] + ([] if unit == 'main' else [build / unit / f'build/{unit}.rom.elf']))
         for unit in ('main', *cov.OVERLAY_UNITS)}
@@ -446,6 +514,7 @@ def prepare(root, evidence):
             trim_link_padding(target, base_elf)
             section_relative_data_relocs(target, base_elf)
             fold_constant_labels(target)
+            resolve_external_data_relocs(target, base_elf, addresses[unit])
         if literal_labels:
             mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
