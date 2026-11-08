@@ -11029,6 +11029,40 @@
    ]
   },
   "main/tu178": {
+   ".data": [
+    {
+     "range": [
+      "0x0036dd58",
+      "0x0036dd8c"
+     ],
+     "generated": [
+      "0x0036dd58",
+      "0x0036dd8c"
+     ],
+     "generated_by": [
+      "MenuSkillExMain",
+      "MenuSkillMenuMain",
+      "MenuSkillPasMain",
+      "MenuSkillSetListMain"
+     ],
+     "c_owned_symbols": [
+      "msg_0_0036DD58",
+      "D_0036DD64",
+      "msg00_1_0036DD68",
+      "D_0036DD6C",
+      "msg01_2_0036DD70",
+      "msg00_3_0036DD78",
+      "D_0036DD84",
+      "msg00_4_0036DD88"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_skill.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -11057,19 +11091,27 @@
    ".rodata": [
     {
      "range": [
-      "0x004c95a0",
-      "0x004c9918"
+      "0x004c9590",
+      "0x004c9ab0"
      ],
      "generated": [
-      "0x004c95a0",
-      "0x004c9918"
+      "0x004c9590",
+      "0x004c9aa6"
      ],
      "generated_by": [
+      "MenuSkill",
+      "MenuSkillCategoryMain",
+      "MenuSkillExMain",
       "MenuSkillInfoMain",
+      "MenuSkillListChange00",
+      "MenuSkillListMain",
+      "MenuSkillMenuMain",
       "MenuSkillPasMain",
+      "MenuSkillSetListMain",
       "MenuSkillStatusMain"
      ],
      "c_owned_symbols": [
+      "D_004C9590",
       "jtbl_004C95A0",
       "D_004C9668",
       "D_004C9698",
@@ -11079,66 +11121,31 @@
       "D_004C96F8",
       "D_004C9710",
       "jtbl_004C9780",
-      "jtbl_004C9850"
+      "jtbl_004C9850",
+      "D_004C9918",
+      "D_004C9930",
+      "D_004C9940",
+      "jtbl_004C9960",
+      "D_004C99E8",
+      "D_004C99F8",
+      "D_004C9A08",
+      "D_004C9A18",
+      "jtbl_004C9A30",
+      "D_004C9A88"
      ],
      "also_referenced_by_c": [],
      "reached_through": {
+      "D_004C9590": "msg_0_0036DD58",
       "D_004C9668": "D_004DB5E0",
       "D_004C9698": "D_004C96D8",
       "D_004C96C0": "D_004C96D8",
       "D_004C96E8": "D_004C9710",
-      "D_004C96F8": "D_004C9710"
+      "D_004C96F8": "D_004C9710",
+      "D_004C9918": "msg00_1_0036DD68",
+      "D_004C9930": "msg01_2_0036DD70",
+      "D_004C9940": "msg00_3_0036DD78",
+      "D_004C99E8": "msg00_4_0036DD88"
      },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_skill.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c9960",
-      "0x004c99e8"
-     ],
-     "generated": [
-      "0x004c9960",
-      "0x004c99e8"
-     ],
-     "generated_by": [
-      "MenuSkillExMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C9960"
-     ],
-     "also_referenced_by_c": [
-      "D_004C99F8",
-      "D_004C9A08",
-      "D_004C9A18"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_skill.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c9a30",
-      "0x004c9a88"
-     ],
-     "generated": [
-      "0x004c9a30",
-      "0x004c9a88"
-     ],
-     "generated_by": [
-      "MenuSkillListMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C9A30"
-     ],
-     "also_referenced_by_c": [
-      "D_004C9A88"
-     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -11149,57 +11156,48 @@
    ".sdata": [
     {
      "range": [
-      "0x004db5e0",
-      "0x004db600"
+      "0x004db5d0",
+      "0x004db680"
      ],
      "generated": [
-      "0x004db5e0",
-      "0x004db600"
+      "0x004db5d0",
+      "0x004db680"
      ],
      "generated_by": [
-      "MenuSkillInfoMain"
+      "MenuSkill",
+      "MenuSkillCategoryMain",
+      "MenuSkillExMain",
+      "MenuSkillInfoMain",
+      "MenuSkillL1R1Main",
+      "MenuSkillListChange00",
+      "MenuSkillListChange01",
+      "MenuSkillListMain",
+      "MenuSkillMenuMain",
+      "MenuSkillPasMain",
+      "MenuSkillSetListMain",
+      "MenuSkillStatusMain",
+      "SkillGetPtGet",
+      "SkillNextLvGet",
+      "SkillSetLvGet"
      ],
      "c_owned_symbols": [
+      "D_004DB5D0",
+      "D_004DB5D8",
       "D_004DB5E0",
       "D_004DB5E8",
       "D_004DB5F0",
-      "D_004DB5F8"
-     ],
-     "also_referenced_by_c": [
+      "D_004DB5F8",
       "D_004DB600",
+      "D_004DB608",
       "D_004DB610",
+      "D_004DB618",
+      "D_004DB620",
       "D_004DB628",
       "D_004DB630",
       "D_004DB638",
-      "D_004DB640"
-     ],
-     "reached_through": {
-      "D_004DB5E8": "D_004C96D8",
-      "D_004DB5F0": "D_004C9710"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_skill.o"
-     }
-    },
-    {
-     "range": [
-      "0x004db648",
-      "0x004db658"
-     ],
-     "generated": [
-      "0x004db648",
-      "0x004db657"
-     ],
-     "generated_by": [
-      "MenuSkill"
-     ],
-     "c_owned_symbols": [
+      "D_004DB640",
       "D_004DB648",
-      "D_004DB650"
-     ],
-     "also_referenced_by_c": [
+      "D_004DB650",
       "SkillDataBuf",
       "MenuSkillPas",
       "MenuSkillInfo",
@@ -11211,6 +11209,16 @@
       "MenuSkillCategory",
       "MenuSkillList"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DB5D0": "msg_0_0036DD58",
+      "D_004DB5D8": "msg_0_0036DD58",
+      "D_004DB5E8": "D_004C96D8",
+      "D_004DB5F0": "D_004C9710",
+      "D_004DB608": "msg01_2_0036DD70",
+      "D_004DB618": "msg00_3_0036DD78",
+      "D_004DB620": "msg00_3_0036DD78"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

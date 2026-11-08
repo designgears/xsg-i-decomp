@@ -107,6 +107,7 @@ int SkillCharPointPlus(int character_id, int point_delta)
 
 void MenuSkillPasMain(void)
 {
+    static const char *msg[] = { "Skills", "/Extract", "/Set" };
     SkillPasWork *work = MenuSkillPas;
     int length[3];
     short target[3];
@@ -114,7 +115,7 @@ void MenuSkillPasMain(void)
     int i;
 
     for (i = 0; i < 3; i++)
-        length[i] = MenuPasLengthGet(msg_0_0036DD58[i]);
+        length[i] = MenuPasLengthGet(msg[i]);
 
     switch (work->state) {
     case 0:
@@ -131,7 +132,7 @@ void MenuSkillPasMain(void)
         WindowDXMain(&work->window);
         work->window.state = 3;
         for (i = 0; i < 3; i++) {
-            eMessageSet(&work->message[i], msg_0_0036DD58[i]);
+            eMessageSet(&work->message[i], msg[i]);
             work->message[i].mode = 32;
             work->message[i].x = 288;
             work->message[i].y = 11;
@@ -250,7 +251,6 @@ char *MenuCharNameGet(int characterNo);
 void eMessageCpy(char *destination, const char *source);
 void eMessageCat(const char *source);
 SkillMenuText *func_A2C648(int skillId);
-extern const char D_004DB600[];
 
 void MenuSkillInfoMain(void)
 {
@@ -329,7 +329,7 @@ void MenuSkillInfoMain(void)
         if (MenuWork.flags & MENU_FLAG_ENTER)
             work->selected = -1;
         if (MenuWork.list_select < 0) {
-            eMessageCpy(work->message, D_004DB600);
+            eMessageCpy(work->message, "");
         } else if ((short)MenuSortGet(0, MenuWork.list_select) != 0) {
             SkillRecord *skill = func_A1A548((short)MenuSortGet(0, MenuWork.list_select));
 
@@ -362,7 +362,7 @@ void MenuSkillInfoMain(void)
         if (MenuWork.list_select >= 0)
             eMessageCpy(work->message, MenuTextGet(MenuSortGet(0, MenuWork.list_select))->description);
         else
-            eMessageCpy(work->message, D_004DB600);
+            eMessageCpy(work->message, "");
         break;
     default:
         target = 512;
@@ -524,6 +524,8 @@ void MenuSkillStatusMain(void)
 
 void MenuSkillMenuMain(void)
 {
+    static const char *msg00[] = { "Extract\nSet\nCancel" };
+    static const char *msg01[] = { "Yes\nNo", " Extract skill?" };
     MenuSkillMenuWork *self = MenuSkillMenu;
     short target[2];
     int i;
@@ -537,20 +539,20 @@ void MenuSkillMenuMain(void)
             self->window[i].width = 129;
             self->window[i].height = 78;
             self->window[i].color = self->color;
-            self->window[i].title = D_004DB610;
+            self->window[i].title = "Menu";
             self->window[i].select = MenuSelectWindow;
             self->window[i].selectArg = &self->list[i];
             self->list[i].cursor = 0;
             if (i != 1) {
                 self->list[i].hasPrompt = 0;
-                self->list[i].items = msg00_1_0036DD68[0];
+                self->list[i].items = msg00[0];
             } else {
                 self->window[i].x = -182;
                 self->window[i].width = 169;
                 self->window[i].height = 102;
                 self->list[i].hasPrompt = 1;
-                self->list[i].items = msg01_2_0036DD70[0];
-                self->list[i].prompt = msg01_2_0036DD70[1];
+                self->list[i].items = msg01[0];
+                self->list[i].prompt = msg01[1];
             }
             self->window[i].state = 1;
             WindowDXMain(&self->window[i]);
@@ -582,7 +584,6 @@ void MenuSkillMenuMain(void)
     }
 }
 
-extern char *msg00_3_0036DD78[];
 extern void *func_A19210(int);
 void eRibbonSet(void *ribbon, int style);
 void eRibbonMain(void *ribbon);
@@ -642,6 +643,7 @@ typedef struct MenuSkillExWorkUp {
 
 void MenuSkillExMain(void)
 {
+    static char *msg00[] = { "\001S.Lv", "\001S.Pts", "\014\200\200\200\036\000: Set Search" };
     int i;
     MenuSkillExWorkUp *work = (MenuSkillExWorkUp *)MenuSkillEx;
     short ribbonTarget[2];
@@ -659,12 +661,12 @@ void MenuSkillExMain(void)
             work->ribbon[i].color = work->color;
             work->ribbon[i].width = 256;
             work->ribbon[i].height = 24;
-            eTagFontSet(&work->tag[i], msg00_3_0036DD78[i]);
+            eTagFontSet(&work->tag[i], msg00[i]);
             work->tag[i].color = work->color + 2;
             eNumberSet(&work->number[i], 0);
             work->number[i].color = work->color + 2;
         }
-        eMessageSet(&work->message, msg00_3_0036DD78[2]);
+        eMessageSet(&work->message, msg00[2]);
         work->message.mode = 32;
         work->message.x = 528;
         work->message.y = 120;
@@ -709,7 +711,7 @@ void MenuSkillExMain(void)
         }
         eNumberMain(&work->number[i]);
     }
-    messageColor = msg00_3_0036DD78[2] + 1;
+    messageColor = msg00[2] + 1;
     unit = func_A191C0(MenuWork.characterNo);
     if (MenuWork.list_select < 0 || unit->setSkill[0] + unit->setSkill[1] + unit->setSkill[2] == 0) {
         messageColor[2] = 64;
@@ -733,7 +735,7 @@ void MenuSkillL1R1Main(void)
 
     switch (self->state) {
     case 0: {
-        SkillL1R1SpriteIdPair spriteIds = D_004DB628[0];
+        SkillL1R1SpriteIdPair spriteIds = { { 0x0112, 0x0110 } };
 
         self->spriteWork = 0x00FFFFFF;
         for (side_index = 0; side_index < 2; side_index++) {
@@ -775,7 +777,7 @@ void MenuSkillL1R1Main(void)
         }
 
         {
-            SkillL1R1SlideStep step = D_004DB630[0];
+            SkillL1R1SlideStep step = { { 1, -1 } };
 
             for (side_index = 0; side_index < 2; side_index++) {
                 if (self->slideOffset[side_index] != 0) {
@@ -794,6 +796,7 @@ void MenuSkillL1R1Main(void)
 
 void MenuSkillSetListMain(void)
 {
+    static const char *msg00[] = { " 1\241\246\n 2\241\246\n 3\241\246" };
     MenuSkillSetListWork *self = MenuSkillSetList;
     SkillUnitOrg *unit;
     short targetX;
@@ -808,7 +811,7 @@ void MenuSkillSetListMain(void)
         self->window.y = 280;
         self->window.width = 209;
         self->window.height = 78;
-        self->window.title = D_004C99F8;
+        self->window.title = "Set Skills";
         self->window.state = 1;
         WindowDXMain(&self->window);
         self->window.state = 3;
@@ -817,7 +820,7 @@ void MenuSkillSetListMain(void)
             self->message[i].mode = 32;
             self->message[i].color = self->color + 2;
         }
-        self->message[3].text = msg00_4_0036DD88[0];
+        self->message[3].text = msg00[0];
         self->state = 2;
         /* fall through */
     case 2:
@@ -851,7 +854,7 @@ void MenuSkillCategoryMain(void)
 
     switch (work->state) {
     case 0: {
-        SkillCategoryIconIds ids = D_004C9A08;
+        SkillCategoryIconIds ids = { { 0x0109, 0x010A, 0x0304, 0x0305, 0x0306 } };
 
         work->iconResetWork = 0x00FFFFFE;
         for (icon_index = 0; icon_index < 5; icon_index++) {
@@ -919,7 +922,7 @@ void MenuSkillCategoryMain(void)
         }
 
         {
-            SkillCategoryEdgeStep step = D_004DB638[0];
+            SkillCategoryEdgeStep step = { { 1, -1 } };
 
             for (icon_index = 0; icon_index < 2; icon_index++) {
                 if (work->edgeDelta[icon_index] != 0) {
@@ -1014,7 +1017,7 @@ static int MenuSkillListChange00(void)
         if (character->skill_points < cost)
             rows[i].locked = 1;
     }
-    window->title = D_004C9A18;
+    window->title = "List\003\220S.Lv\003\007S.Pts";
     window->rowCount = 7;
     window->columns = 1;
     window->rows = 8;
@@ -1045,7 +1048,7 @@ static int MenuSkillListChange01(void)
         else
             rows[i].level = 0;
     }
-    window->title = D_004DB640;
+    window->title = "Set";
     window->rowCount = 3;
     window->columns = 1;
     window->rows = 8;
@@ -1058,7 +1061,6 @@ static int MenuSkillListChange01(void)
 }
 
 void WindowSPSet(void *window);
-extern const char D_004DB600[];
 void WindowSPMain(void *window);
 void eNumberSet(void *number, int value);
 void eNumberMain(void *number);
@@ -1140,7 +1142,7 @@ void MenuSkillListMain(void)
         work->color = 0x00fffff8;
         work->window.color = 0x00fffff8;
         work->window.rowCount = 7;
-        work->window.title = D_004DB600;
+        work->window.title = "";
         work->window.rows = 11;
         work->window.height = 270;
         work->window.state = 0;
@@ -1266,7 +1268,7 @@ void MenuSkill(void)
 
         heap = MainMenuWorkEnd;
         SkillDataBuf = (unsigned char *)(((int)heap + 0x7FF) & ~0x7FF);
-        xglCdReadFile(D_004C9A88, SkillDataBuf, 0, 1);
+        xglCdReadFile("data\\endou\\skill\\skilldat.bin", SkillDataBuf, 0, 1);
         heap = SkillDataBuf + SKILL_DATA_SIZE;
         MenuSkillPas = (SkillPasWork *)heap;
         heap = (unsigned char *)MenuSkillPas + SKILL_PAS_SIZE;
@@ -1630,3 +1632,14 @@ void MenuSkill(void)
  * MenuSkill's "\x0bskill" literal at 0x004DB650. */
 extern unsigned char *SkillDataBuf;
 
+
+unsigned char *SkillDataBuf = 0;
+SkillPasWork *MenuSkillPas = 0;
+SkillScreenState *MenuSkillInfo = 0;
+MenuSkillStatusWork *MenuSkillStatus = 0;
+MenuSkillMenuWork *MenuSkillMenu = 0;
+SkillScreenState *MenuSkillEx = 0;
+MenuSkillL1R1Work *MenuSkillL1R1 = 0;
+MenuSkillSetListWork *MenuSkillSetList = 0;
+MenuSkillCategoryWork *MenuSkillCategory = 0;
+MenuSkillListWork *MenuSkillList = 0;
