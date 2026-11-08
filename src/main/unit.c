@@ -1808,7 +1808,6 @@ void Java_xeno_Unit_mtnSetMask__I(JThread *thread, UnitIntCall *arguments)
     peer->motion_mask = mask;
 }
 
-extern const float D_004D844C;
 typedef struct { u8 *object; int index; float *vector; } UnitMtnRootCall;
 
 void Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_(JThread *thread,
@@ -1834,9 +1833,9 @@ void Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_(JThread *thread,
             vector[1] = root[0x178 / 4];
             break;
         case 1: {
-            vector[3] = root[0x180 / 4] / D_004D844C * 180.0f;
-            vector[2] = root[0x184 / 4] / D_004D844C * 180.0f;
-            vector[1] = root[0x188 / 4] / D_004D844C * 180.0f;
+            vector[3] = root[0x180 / 4] / 3.1415927f * 180.0f;
+            vector[2] = root[0x184 / 4] / 3.1415927f * 180.0f;
+            vector[1] = root[0x188 / 4] / 3.1415927f * 180.0f;
             break;
         }
         case 2:

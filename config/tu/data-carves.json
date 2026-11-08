@@ -14571,14 +14571,15 @@
     {
      "range": [
       "0x004d8420",
-      "0x004d844c"
+      "0x004d8450"
      ],
      "generated": [
       "0x004d8420",
-      "0x004d844c"
+      "0x004d8450"
      ],
      "generated_by": [
       "Java_xeno_Unit_getRotate__",
+      "Java_xeno_Unit_mtnGetRoot__ILxeno_util_Vector4f_",
       "Java_xeno_Unit_setRotate__",
       "UNIT_rotX",
       "UNIT_rotY",
@@ -14595,11 +14596,10 @@
       "D_004D843C",
       "D_004D8440",
       "D_004D8444",
-      "D_004D8448"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8448",
       "D_004D844C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
