@@ -67,7 +67,18 @@ typedef struct UmnSharedWork {
     int pending_script;
 } UmnSharedWork;
 extern UmnSharedWork UmnWork;
-extern const char *msg00_0_00A10888;
+char *ListText[] = {
+    "KOS-MOS Simulator",
+    "Woglinde",
+    "Pleroma",
+    "U-TIC Battleship",
+    "Cathedral Ship",
+    "Encephalon",
+    "Song of Nephilim",
+};
+int UmnSimulationScriptNoTbl[] = {
+    0x000300EF, 0x00040149, 0x00010333, 0x00010419, 0x0001058B, 0x0001097D, 0x00010B35,
+};
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern void MoveSlide(short *current, short *target, float rate);
@@ -77,6 +88,7 @@ extern void endPrintExtFunc(int kind, int id, void *data);
 
 void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
 {
+    static const char *msg00 = "Environmental Simulator";
     unsigned char simulation_state = UmnWork.simulation_state;
 
     if (simulation_state != 3) {
@@ -100,7 +112,7 @@ void tskUmnSimulationPas(UmnTaskCommand *task, UmnSimulationPasWork *work)
             work->window.state = opening_state;
             WindowDXMain(&work->window);
             work->window.state = simulation_state;
-            eMessageSet(&work->message.control, msg00_0_00A10888);
+            eMessageSet(&work->message.control, msg00);
             message = &work->message;
             message->control.mode = 0x20;
             message->control.x = message_x;
@@ -188,7 +200,6 @@ typedef struct UmnSimInfoWork {
 } UmnSimInfoWork;
 extern void MenuInfoWindow(void);
 extern char D_00A13218;
-extern char *ListText[];
 extern char *strcat(char *, const char *);
 
 void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
@@ -389,7 +400,6 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
 }
 
 extern int UmnWorkEnd;
-extern int UmnSimulationScriptNoTbl[];
 extern int UmnSimulationNo;
 extern int MenuScenarioNoGet(void);
 extern void tskUmnSimulationInfo(UmnTaskCommand *task, void *work);

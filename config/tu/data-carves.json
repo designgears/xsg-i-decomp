@@ -12642,31 +12642,162 @@
    ]
   },
   "ov02/tu011_00a0baf8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a10848",
+      "0x00a10864"
+     ],
+     "generated": [
+      "0x00a10848",
+      "0x00a10864"
+     ],
+     "generated_by": [
+      "tskUmnSimulationInfo",
+      "tskUmnSimulationList"
+     ],
+     "c_owned_symbols": [
+      "ListText"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10868",
+      "0x00a10884"
+     ],
+     "generated": [
+      "0x00a10868",
+      "0x00a10884"
+     ],
+     "generated_by": [
+      "UmnSimulation"
+     ],
+     "c_owned_symbols": [
+      "UmnSimulationScriptNoTbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10888",
+      "0x00a1088c"
+     ],
+     "generated": [
+      "0x00a10888",
+      "0x00a1088c"
+     ],
+     "generated_by": [
+      "tskUmnSimulationPas"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_00A10888"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
+      "0x00a13180",
+      "0x00a13218"
+     ],
+     "generated": [
+      "0x00a13180",
+      "0x00a13218"
+     ],
+     "generated_by": [
+      "tskUmnSimulationInfo",
+      "tskUmnSimulationList",
+      "tskUmnSimulationPas"
+     ],
+     "c_owned_symbols": [
+      "D_00A13180",
+      "D_00A13198",
+      "D_00A131A8",
+      "D_00A131B8",
+      "D_00A131D0",
+      "D_00A131D8",
+      "D_00A131E8",
+      "D_00A13200"
+     ],
+     "also_referenced_by_c": [
+      "D_00A13218"
+     ],
+     "reached_through": {
+      "D_00A13180": "ListText",
+      "D_00A13198": "ListText",
+      "D_00A131A8": "ListText",
+      "D_00A131B8": "ListText",
+      "D_00A131D0": "ListText",
+      "D_00A131D8": "ListText",
+      "D_00A131E8": "ListText",
+      "D_00A13200": "msg00_0_00A10888"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    },
+    {
+     "range": [
       "0x00a13220",
-      "0x00a13310"
+      "0x00a13250"
      ],
      "generated": [
       "0x00a13220",
-      "0x00a13309"
+      "0x00a13248"
      ],
      "generated_by": [
-      "UmnSimulation",
       "tskUmnSimulationInfo",
       "tskUmnSimulationList"
      ],
      "c_owned_symbols": [
       "D_00A13220",
       "D_00A13230",
-      "D_00A13238",
+      "D_00A13238"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a13250",
+      "0x00a13310"
+     ],
+     "generated": [
+      "0x00a13250",
+      "0x00a13309"
+     ],
+     "generated_by": [
+      "UmnSimulation",
+      "tskUmnSimulationList"
+     ],
+     "c_owned_symbols": [
       "jtbl_00A13250",
       "D_00A132F8"
      ],
-     "also_referenced_by_c": [
-      "D_00A13218"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
