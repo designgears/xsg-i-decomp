@@ -279,6 +279,126 @@
     }
    ]
   },
+  "main/tu092": {
+   ".data": [
+    {
+     "range": [
+      "0x00491660",
+      "0x00491770"
+     ],
+     "generated": [
+      "0x00491660",
+      "0x00491770"
+     ],
+     "generated_by": [
+      "FileSelectListReload",
+      "xglCdGetFilePos",
+      "xglCdInitial",
+      "xglCdLoadOverlay",
+      "xglCdSifLoadModule",
+      "xglClockDayTime2UInt",
+      "xglClockUInt2DayTime"
+     ],
+     "c_owned_symbols": [
+      "monthday",
+      "arcname_1",
+      "D_0049169C",
+      "arcname_2",
+      "D_004916AC",
+      "arcname_3",
+      "D_004916BC",
+      "arcname_4",
+      "D_004916CC",
+      "vcd_head_5",
+      "listname_7",
+      "head_8",
+      "D_00491705",
+      "head_10",
+      "D_00491711",
+      "system_cnf",
+      "D_00491768"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_cd.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d2468",
+      "0x004d24e0"
+     ],
+     "generated": [
+      "0x004d2468",
+      "0x004d24db"
+     ],
+     "generated_by": [
+      "xglCdArcInit",
+      "xglCdDiskCheck",
+      "xglCdFileSelect",
+      "xglCdInitial"
+     ],
+     "c_owned_symbols": [
+      "D_004D2468",
+      "D_004D2478",
+      "D_004D2488",
+      "D_004D2498",
+      "D_004D24A8",
+      "D_004D24C0",
+      "D_004D24D0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_cd.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc2e8",
+      "0x004dc328"
+     ],
+     "generated": [
+      "0x004dc2e8",
+      "0x004dc328"
+     ],
+     "generated_by": [
+      "xglCdFileSelect",
+      "xglCdGetFilePos",
+      "xglCdGetFilePosSub",
+      "xglCdLoadOverlay",
+      "xglCdSifLoadModule"
+     ],
+     "c_owned_symbols": [
+      "root_0",
+      "D_004DC2EE",
+      "hdd_head_6",
+      "D_004DC2F7",
+      "D_004DC2F8",
+      "D_004DC300",
+      "D_004DC308",
+      "D_004DC310",
+      "tail_9",
+      "D_004DC31F",
+      "tail_11",
+      "D_004DC327"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_cd.o"
+     }
+    }
+   ]
+  },
   "main/tu093": {
    ".data": [
     {
