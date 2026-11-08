@@ -1,7 +1,6 @@
 #include "common.h"
 #include "shared.h"
 #include "sef.h"
-extern int offset_2[];
 
 typedef struct SefActor {
     unsigned int flags;
@@ -949,7 +948,8 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 }
 
 extern void sefGetPoint(Vector4 *position, unsigned char *source, int target);
-extern unsigned char _zeroPos_004CBF00[];
+static const float _zeroPos[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static const float _zeroAng[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 /*
  * sefGetPosition (main:0x002e2240): fills `position`'s XYZ via sefGetPoint
@@ -960,7 +960,7 @@ void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
     unsigned char *point = source;
 
     if (point == 0) {
-        point = _zeroPos_004CBF00;
+        point = (unsigned char *)_zeroPos;
     }
     sefGetPoint(position, point, target);
     position->w = 1.0f;
@@ -1282,7 +1282,6 @@ extern const float D_004D8308;
 extern const float D_004D830C;
 extern const float D_004D8310;
 extern const float D_004D8314;
-extern const char D_004CBF20[];
 extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
 
@@ -1360,7 +1359,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         position->y = sefRandf() * (float)offsets[1] * D_004D8314;
         return;
     }
-    tracePrint(D_004CBF20, index);
+    tracePrint("bad range prm : %d", index);
 }
 
 static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
@@ -2106,7 +2105,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
     reverse_direction = _revDirZ;
     point_part = loop_mode & ~0xe000;
     if (point_part >= 5) {
-        sefGetPoint((Vector4 *)D_00794310, _zeroPos_004CBF00, point_part);
+        sefGetPoint((Vector4 *)D_00794310, (unsigned char *)_zeroPos, point_part);
     }
 
     index = 0;
@@ -3256,7 +3255,6 @@ typedef struct SefEffectCommand {
     short count;                     /* +0x8 */
     short flags;                     /* +0xa */
 } SefEffectCommand;
-extern const char D_004CBF38[];
 extern void tracePrint(char *fmt, ...);
 static void sefSetSeSignal(SefActor *actor);
 
@@ -3369,7 +3367,7 @@ int sefExecEffectData(EffectData *effect, int frame, short *active_count)
                                     continue;
                                 }
                             } else {
-                                tracePrint(D_004CBF38);
+                                tracePrint("line empty!!");
                             }
                         }
                     }
@@ -3814,7 +3812,7 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     sefSchedulerCreateTable[scheduler_index].casterUnit = 0;
     sefSchedulerCreateTable[scheduler_index].target = ((SefEffectRequest *)parameters)->target;
     if (origin == 0) {
-        origin = (void *)_zeroPos_004CBF00;
+        origin = (void *)_zeroPos;
     }
     __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
     __asm__ __volatile__("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
@@ -3877,6 +3875,7 @@ int sefCreateScheduler(int effect_no, int value2, int value3, int value4, int va
  * ints); sefCreateReactionEffect and sefCnvDeathEffectNo are its callers.
  */
 static int sefGetSizeOffset(int index) {
+    static const int offset_2[5] __asm__("offset.2") = {0, 0, 1, 2, 2};
     return offset_2[index];
 }
 
@@ -4762,7 +4761,6 @@ void sefInitEffectCf(void)
     sRender.cfDrawCallback = sefDrawEffect2D;
 }
 
-extern char D_004CBF60[];
 extern void tracePrint(char *fmt, ...);
 void sefSetupEffect(void);
 typedef struct {
@@ -4806,10 +4804,9 @@ void sefSetupPlayer(int id, int a, int b, int c)
     }
   }
 
-  tracePrint(D_004CBF60, id);
+  tracePrint("\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363", id);
 }
 
-extern char D_004CBF78[];
 extern void sresFreeReloaderMemoryNo(int no);
 typedef struct {
     s16 pid[3];
@@ -4857,10 +4854,9 @@ void sefSetupEnemy(int id)
     }
   }
 
-  tracePrint(D_004CBF78, id);
+  tracePrint("\305\250\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363 : %d", id);
 }
 
-extern char D_004CBF98[];
 
 void sefReleaseID(int id)
 {
@@ -4892,7 +4888,7 @@ void sefReleaseID(int id)
     }
   }
 
-  tracePrint(D_004CBF98, id);
+  tracePrint("\273\330\304\352\243\311\243\304\244\316\245\255\245\343\245\351(%d)\244\317\302\270\272\337\244\267\244\336\244\273\244\363!!", id);
 }
 
 extern void sresLoadBattleData(unsigned char *battle_prm);

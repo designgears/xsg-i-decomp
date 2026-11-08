@@ -11804,15 +11804,33 @@
    ".rodata": [
     {
      "range": [
-      "0x004cbfc0",
+      "0x004cbf00",
       "0x004cc680"
      ],
      "generated": [
-      "0x004cbfc0",
+      "0x004cbf00",
       "0x004cc680"
      ],
-     "generated_by": [],
+     "generated_by": [
+      "sefCreateScheduler2",
+      "sefExecEffectData",
+      "sefExecLineLocalData",
+      "sefGetOfsRange",
+      "sefGetPosition",
+      "sefGetSizeOffset",
+      "sefReleaseID",
+      "sefSetupEnemy",
+      "sefSetupPlayer"
+     ],
      "c_owned_symbols": [
+      "_zeroPos_004CBF00",
+      "_zeroAng",
+      "D_004CBF20",
+      "D_004CBF38",
+      "offset_2",
+      "D_004CBF60",
+      "D_004CBF78",
+      "D_004CBF98",
       "D_004CBFC0",
       "D_004CBFD0",
       "D_004CBFE0",
@@ -11922,15 +11940,7 @@
       "D_004CC660",
       "D_004CC670"
      ],
-     "also_referenced_by_c": [
-      "_zeroPos_004CBF00",
-      "D_004CBF20",
-      "D_004CBF38",
-      "offset_2",
-      "D_004CBF60",
-      "D_004CBF78",
-      "D_004CBF98"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
