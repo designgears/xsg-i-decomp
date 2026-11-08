@@ -15136,11 +15136,11 @@
     {
      "range": [
       "0x00a53450",
-      "0x00a535e8"
+      "0x00a53648"
      ],
      "generated": [
       "0x00a53450",
-      "0x00a535e8"
+      "0x00a53642"
      ],
      "generated_by": [
       "RgShotDBClear",
@@ -15183,9 +15183,7 @@
       "D_00A535B0",
       "D_00A535B8",
       "D_00A535C8",
-      "D_00A535D8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A535D8",
       "D_00A535E8",
       "D_00A53600",
       "D_00A53608",
@@ -15194,6 +15192,7 @@
       "D_00A53620",
       "D_00A53628"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
