@@ -293,6 +293,25 @@ static int _ExecDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _ExecWeakDamageCmd(RgRobotStatus *status, RgBody *body, RgCmd *command);
 static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command);
 
+const char D_00A51830[] = "pThread != NIL";
+const char D_00A51840[] = "../rg_robot.euc.c";
+const char D_00A51858[] = "fBaseSpeed > RG_FCONST(0.0)";
+const char D_00A51878[] __attribute__((weak)) = "H_BB";
+const char D_00A51880[] __attribute__((weak)) = "B_NB";
+const char D_00A51888[] __attribute__((weak)) = "B_HB";
+const char D_00A51890[] __attribute__((weak)) = "INVA";
+const char D_00A51898[] __attribute__((weak)) = "HITW";
+const char D_00A518A0[] __attribute__((weak)) = "WEAK";
+const char D_00A518A8[] __attribute__((weak)) = "DMG ";
+const char D_00A518B0[] __attribute__((weak)) = "DROP";
+const char D_00A518B8[] __attribute__((weak)) = "DSHC";
+const char D_00A518C0[] __attribute__((weak)) = "DASH";
+const char D_00A518C8[] __attribute__((weak)) = "BRK ";
+const char D_00A518D0[] __attribute__((weak)) = "TGT ";
+const char D_00A518D8[] __attribute__((weak)) = "ATK ";
+const char D_00A518E0[] __attribute__((weak)) = "ROT ";
+const char D_00A518E8[] __attribute__((weak)) = "ACC ";
+const char D_00A518F0[] = "pStatus != NIL";
 static int _AllowAllCmdInMoving(RgRobotStatus *status, int param, RgBody *cmd)
 {
     RgBody *body = (RgBody *)param;
@@ -664,6 +683,7 @@ extern void RgRobotEffectStartJet(RgRobotEffect *effect, float stopTime);
 extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
 extern void RgWeaponSetFree(void *weapon);
 
+const char D_00A51940[] = "pMotInfo != NIL";
 static int _HissatuPassTime(RgRobotStatus *status, RgBody *body, float deltaTime)
 {
     void *shots[16];
@@ -1090,6 +1110,7 @@ static void _InitShieldStatus(RgRobotStatus *status, RgBody *body, int motion,
 
 extern float RgWeaponGetShotNum(void *weapon);
 
+const char D_00A51968[] = "unknown shield status %d";
 static int _ExecCmdInTargetting(RgRobotStatus *status, RgBody *body, RgCmd *command)
 {
     int result;
@@ -1408,6 +1429,8 @@ extern const char D_00A519C0[];
 static int _DashPassTime();
 extern void RgRobotEffectStartDash(RgRobotEffect *effect, float stopTime);
 
+const char D_00A519A8[] = "unknown dash status %d";
+const char D_00A519C0[] = "unknown dash mode %d";
 static int _InitDashStatus(RgRobotStatus *status, RgBody *body, RgCmd *command)
 {
     RgRobotSpec *spec = body->spec;
@@ -3692,3 +3715,44 @@ void RgRobotNearBG(RgStatus *pRobot, RgVector direction)
         XrgCopyVector((float *) command, direction);
     }
 }
+
+const char D_00A519F8[] = "unknown VRDASH cmd mode %d";
+const char D_00A51A18[] = "unknown VR dash mode %d";
+const char D_00A51A30[] = "cannot transit to VR dash mode %d";
+const char D_00A51A58[] = "pQ != NIL";
+const char D_00A51A68[] = "pBody != NIL";
+const char D_00A51A78[] = "pGeom != NIL";
+const char D_00A51A88[] = "RG_EQUIP_TYPE_MIN <= (eType) && (eType) < RG_EQUIP_TYPE_NUM";
+const char D_00A51AC8[] = "";
+const char D_00A51AD0[] = "eEquipPos != RG_EQUIP_POS_INVALID";
+const char D_00A51AF8[] = "eJntID != RG_ACTOR_JNT_NUL";
+const char D_00A51B18[] = "check pakapaka\n";
+const char D_00A51B28[] = "check pakapaka end\n";
+const char D_00A51B40[] = "???\n";
+const char D_00A51B48[] = "pCmd != NIL";
+const char D_00A51B58[] = "already disposed body %p";
+const char D_00A51B78[] = "unknown equip type (drop weapon) %d";
+const char s_str_00A51BA0[] __asm__("D_00A51BA0") = "eff06.ptcl";
+const char D_00A51BB0[] = "pRobot != NIL";
+const char D_00A51BC0[] = "already disposed robot %p\n";
+/* Sized to keep the original trailing section pad. */
+const char D_00A51BE0[64] = "RG_EQUIP_TYPE_MIN <= (eSide) && (eSide) < RG_EQUIP_TYPE_NUM";
+const char *s_aszCommandName[15] = {
+    D_00A518E8,
+    D_00A518E0,
+    D_00A518D8,
+    D_00A518D0,
+    D_00A518C8,
+    D_00A518C0,
+    D_00A518B8,
+    D_00A518B0,
+    D_00A518A8,
+    D_00A518A0,
+    D_00A51898,
+    D_00A51890,
+    D_00A51888,
+    D_00A51880,
+    D_00A51878,
+};
+
+int s_anCmdLevel[15] = { 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 2, 1, 1, 1, 2 };

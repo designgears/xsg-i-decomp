@@ -18633,100 +18633,195 @@
    ]
   },
   "ov12/tu004_00a02510": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f520",
+      "0x00a4f55c"
+     ],
+     "generated": [
+      "0x00a4f520",
+      "0x00a4f55c"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "s_aszCommandName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a4f560",
+      "0x00a4f59c"
+     ],
+     "generated": [
+      "0x00a4f560",
+      "0x00a4f59c"
+     ],
+     "generated_by": [
+      "_EntryCmdQueue"
+     ],
+     "c_owned_symbols": [
+      "s_anCmdLevel"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a51900",
-      "0x00a51940"
+      "0x00a51830",
+      "0x00a51c20"
      ],
      "generated": [
-      "0x00a51900",
-      "0x00a51940"
+      "0x00a51830",
+      "0x00a51c20"
      ],
      "generated_by": [
-      "_AllowAllCmdInMoving"
+      "CreateRgRobot",
+      "DisposeRgRobot",
+      "RgRobotAccelarate",
+      "RgRobotAccelarateRotate",
+      "RgRobotBreak",
+      "RgRobotDash",
+      "RgRobotDashContinue",
+      "RgRobotDisp",
+      "RgRobotDropWeapon",
+      "RgRobotGetActor",
+      "RgRobotGetCharID",
+      "RgRobotGetDashTime",
+      "RgRobotGetGeom",
+      "RgRobotGetLife",
+      "RgRobotGetLifeMax",
+      "RgRobotGetSpec",
+      "RgRobotGetStatusFlags",
+      "RgRobotGetTarget",
+      "RgRobotGetWeapon",
+      "RgRobotGiveDamage",
+      "RgRobotGiveWeakDamage",
+      "RgRobotHitBG",
+      "RgRobotHitByBody",
+      "RgRobotHitWeaponAttack",
+      "RgRobotInvalidAttack",
+      "RgRobotIsAcceptedCommand",
+      "RgRobotIsConfused",
+      "RgRobotIsDead",
+      "RgRobotIsInvalidAttack",
+      "RgRobotNearBG",
+      "RgRobotPassTime",
+      "RgRobotSetActor",
+      "RgRobotSetAdvanceGeom",
+      "RgRobotSetConfuse",
+      "RgRobotSetEyeGeom",
+      "RgRobotSetGeom",
+      "RgRobotSetMotSmooth",
+      "RgRobotSetRgDrawView",
+      "RgRobotSetSoundDriver",
+      "RgRobotSetSpareWeapon",
+      "RgRobotSetSpec",
+      "RgRobotSetTarget",
+      "RgRobotSetWeapon",
+      "RgRobotShot",
+      "RgRobotTargetting",
+      "_AdvanceGeomPassTime",
+      "_AllowAllCmdInMoving",
+      "_BodyAutoHomingPassTime",
+      "_BodyDisp",
+      "_BodyDropWeapon",
+      "_BodyEquipWeapon",
+      "_BodyExecCmd",
+      "_BodyGetTargetPos",
+      "_BodyPassTime",
+      "_BodySetActor",
+      "_BodySetAdvanceGeom",
+      "_BodySetAutoHomingEnv",
+      "_BodySetEyeGeom",
+      "_BodySetGeom",
+      "_BodySetSpareWeapon",
+      "_BodySetSpec",
+      "_BodySetTarget",
+      "_CalcMaxSpeed",
+      "_ClearCmdQueue",
+      "_CreateBody",
+      "_CreateCmdQueue",
+      "_CreateHomingThread",
+      "_CreateStatue",
+      "_DashPassTime",
+      "_DashVRPassTime",
+      "_DestructBody",
+      "_DestructRobot",
+      "_DispRobot",
+      "_DisposeBody",
+      "_DisposeCmdQueue",
+      "_DisposeHomingThread",
+      "_DisposeStatus",
+      "_EntryCmdQueue",
+      "_ExecCmdInTargetting",
+      "_ExecHitByBody",
+      "_EyeGeomPassTime",
+      "_GetDropMotion",
+      "_GetSleepTimeHomingThread",
+      "_GetStatHomingThread",
+      "_HissatuPassTime",
+      "_InitAttackStatus",
+      "_InitBody",
+      "_InitCmdQueue",
+      "_InitDamageStatus",
+      "_InitDashStatus",
+      "_InitDashVRStatus",
+      "_InitHomingThread",
+      "_InitRobot",
+      "_InitShieldStatus",
+      "_InitStatus",
+      "_InitTargettingStatus",
+      "_IsBackWeaponReady",
+      "_PassTimeHomingThread",
+      "_SetStatus",
+      "_ShieldPassTime",
+      "_StartHomingThread",
+      "_StatusDisp",
+      "_StatusExecCmd",
+      "_StatusPassTime",
+      "_StopHomingThread"
      ],
      "c_owned_symbols": [
-      "jtbl_00A51900"
-     ],
-     "also_referenced_by_c": [
       "D_00A51830",
       "D_00A51840",
       "D_00A51858",
+      "D_00A51878",
+      "D_00A51880",
+      "D_00A51888",
+      "D_00A51890",
+      "D_00A51898",
+      "D_00A518A0",
+      "D_00A518A8",
+      "D_00A518B0",
+      "D_00A518B8",
+      "D_00A518C0",
+      "D_00A518C8",
+      "D_00A518D0",
+      "D_00A518D8",
+      "D_00A518E0",
+      "D_00A518E8",
       "D_00A518F0",
-      "D_00A51940"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_robot.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51950",
-      "0x00a51968"
-     ],
-     "generated": [
-      "0x00a51950",
-      "0x00a51968"
-     ],
-     "generated_by": [
-      "_HissatuPassTime"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A51950"
-     ],
-     "also_referenced_by_c": [
-      "D_00A51968"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_robot.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51990",
-      "0x00a519a8"
-     ],
-     "generated": [
-      "0x00a51990",
-      "0x00a519a8"
-     ],
-     "generated_by": [
-      "_ExecCmdInTargetting"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A51990"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A51900",
+      "D_00A51940",
+      "jtbl_00A51950",
+      "D_00A51968",
+      "jtbl_00A51990",
       "D_00A519A8",
-      "D_00A519C0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_robot.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a519e0",
-      "0x00a519f8"
-     ],
-     "generated": [
-      "0x00a519e0",
-      "0x00a519f4"
-     ],
-     "generated_by": [
-      "_InitDashStatus"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A519E0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A519C0",
+      "jtbl_00A519E0",
       "D_00A519F8",
       "D_00A51A18",
       "D_00A51A30",
@@ -18748,6 +18843,7 @@
       "D_00A51BC0",
       "D_00A51BE0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
