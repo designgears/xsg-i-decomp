@@ -41845,11 +41845,11 @@
       "name_confidence": "low",
       "ordinal": 149,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
