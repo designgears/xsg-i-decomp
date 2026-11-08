@@ -35,9 +35,8 @@ typedef struct TComponent {
     unsigned char unmodeled_a4[0x5B0 - 0xA4];
 } TComponent;
 
-extern TComponent tcomponent[4];
-extern unsigned char groupStatus[3];
-extern unsigned char D_004DC593;
+static TComponent tcomponent[4];
+static unsigned char groupStatus[4];
 
 void EW_init(unsigned char *freeSpace);
 void MBUF_init(void);
@@ -57,7 +56,7 @@ void TWSYS_init(void)
         component++;
     } while ((int)component < (int)end);
     count = 3;
-    groupByte = &D_004DC593;
+    groupByte = &groupStatus[3];
     do {
         count -= 1;
         *groupByte = 0;

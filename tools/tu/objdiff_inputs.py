@@ -160,7 +160,7 @@ def section_relative_data_relocs(target, base_elf):
     Path(target).write_bytes(bytes(data))
 
 
-def size_bss_symbols(path):
+def size_bss_symbols(path, real_names=None):
     """Size every BSS/SBSS label up to the next label (or the section end), on both sides.
 
     splat's `dlabel` + `.space` and cc1's `.lcomm` both leave uninitialised
@@ -179,12 +179,21 @@ def size_bss_symbols(path):
         labels = sorted((y for y in elf.symbols if y.shndx == section.index and y.type != 3
                          and y.name and not y.name.endswith('.NON_MATCHING')),
                         key=lambda y: y.value)
+        if real_names is not None:
+            # splat labels the code's references into the middle of an object
+            # (`D_<addr>`); the original symbol table names the objects
+            inner = [y for y in labels if y.name not in real_names
+                     and re.fullmatch(r'D_[0-9A-F]{8}', y.name)]
+            for y in inner:
+                struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, 0)
+            labels = [y for y in labels if y not in inner]
         starts = sorted({y.value for y in labels})
         for y in labels:
             nxt = next((v for v in starts if v > y.value), None)
             # the last object runs to the section end, which differs by the
-            # link fill: round it to a word on both sides
-            size = nxt - y.value if nxt is not None else (section.size - y.value + 3) & ~3
+            # link fill (up to the next object's 16-byte alignment): round it
+            # to 16 bytes on both sides
+            size = nxt - y.value if nxt is not None else (section.size - y.value + 15) & ~15
             struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, size)
             if y.type == 0:
                 at = symtab.offset + 16 * y.index + 12
@@ -477,6 +486,7 @@ def prepare(root, evidence):
     expected = {}
     main_elf = build / 'main/build/carve/main.rom.elf'
     registry = data_carve.load_registry(root)
+    original_names = {y.name for y in Elf((build / 'main/orig/SLUS_204.69').read_bytes()).symbols}
     linked = {unit: Elf((build / 'main/build/carve/main.rom.elf' if unit == 'main' else
                          build / unit / f'build/{unit}.rom.elf').read_bytes())
               for unit in ('main', *cov.OVERLAY_UNITS)}
@@ -609,7 +619,7 @@ def prepare(root, evidence):
         run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
              '-o', target, stripped, *data], unit_dir)
         preserve_gp0(stripped, target)
-        size_bss_symbols(target)
+        size_bss_symbols(target, original_names if unit == 'main' else None)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
             trim_leading_fill(target, base_elf)

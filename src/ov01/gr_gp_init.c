@@ -291,6 +291,17 @@ void grVramCopy(GrVramCopyParams *params)
     grPacketSend(&packet);
 }
 
+static int f2Num;
+static GrPacket f2GpSave;
+static int f4Num;
+static GrPacket f4GpSave;
+static int ft4Num;
+static GrPacket ft4GpSave;
+static int ft4STQNum;
+static GrPacket ft4STQGpSave;
+static int sprNum;
+static GrPacket sprGpSave;
+
 void grOpenF2(GrPacket *packet)
 {
     extern GrPacket f2GpSave;

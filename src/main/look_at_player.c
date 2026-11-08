@@ -144,11 +144,11 @@ void Player_System_Init(LookAtPlayerActor *player_actor)
 
 /* Player-movement speed thresholds and vector scaling rate GameCfPlayerMove
  * compares/applies each frame; GameCfPlayerMoveInit restores their defaults. */
-extern int WALK_THRESHOLD_I;
-extern float WALK_THRESHOLD_F;
-extern int RUN_THRESHOLD_I;
-extern float RUN_THRESHOLD_F;
-extern float VECTOR_RATE;
+static int WALK_THRESHOLD_I;
+static float WALK_THRESHOLD_F;
+static int RUN_THRESHOLD_I;
+static float RUN_THRESHOLD_F;
+static float VECTOR_RATE;
 
 extern int F2I(float value);
 
@@ -581,8 +581,8 @@ void PlayerLookAtAim(void)
     Actor_LookAt(player_actor);
 }
 
-extern u16 GameCfPlayerLoadResource_preCID;
-extern u8 GameCfPlayerLoadResource_preCurry;
+static u16 GameCfPlayerLoadResource_preCID;
+static u8 GameCfPlayerLoadResource_preCurry;
 typedef struct LookAtSavedPartyPrefix {
     unsigned char unmodeled_00[0x100a4];
     u16 player_character_id;
