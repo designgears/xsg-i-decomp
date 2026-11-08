@@ -20,10 +20,10 @@ extern short _sdvSpecialBuf[8];
 extern SdvAlter _sdvAlter[16];
 
 
-extern int _sdvAmbFrame;
+static int _sdvAmbFrame = 0;
 
 
-extern int _sdvAmbState;
+static int _sdvAmbState = 0;
 
 
 extern unsigned char charID_0;
@@ -1506,25 +1506,24 @@ void sdvInitAlter(SdvAlter *alter)
     sefMemZero(alter, sizeof(*alter));
 }
 
-extern int serial_3;
-
 int sdvCreateAlter(SdvAlterParameters *parameters)
 {
+    static int serial __asm__("serial.3") = 0;
     int index;
     int unavailable = -1;
 
     index = 0;
     do {
         if (_sdvAlter[index].active == 0) {
-            int serial = (serial_3 + 1) & 255;
-            serial_3 = serial;
+            int next = (serial + 1) & 255;
+            serial = next;
             _sdvAlter[index].parameters = *parameters;
-            _sdvAlter[index].serial = serial_3;
+            _sdvAlter[index].serial = serial;
             _sdvAlter[index].active = 1;
             _sdvAlter[index].samples = 0;
             _sdvAlter[index].phase = 0.0f;
             _sdvAlter[index].cursor = 0;
-            return (serial << 16) | index;
+            return (next << 16) | index;
         }
         ++index;
     } while (index < 16);

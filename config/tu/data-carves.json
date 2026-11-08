@@ -1873,48 +1873,96 @@
    ".rodata": [
     {
      "range": [
-      "0x004d3030",
-      "0x004d3090"
+      "0x004d2910",
+      "0x004d30d0"
      ],
      "generated": [
-      "0x004d3030",
-      "0x004d3090"
+      "0x004d2910",
+      "0x004d30cc"
      ],
      "generated_by": [
+      "add_exec_prog",
       "nmlPacketAddGsFlush",
       "nmlPacketAddGsFlushWide",
-      "nmlPacketAddTransMicrocode"
+      "nmlPacketAddTransMicrocode",
+      "nmlPacketMakeCircleTexture"
      ],
      "c_owned_symbols": [
+      "s_aNormalTbl",
       "jtbl_004D3030",
       "jtbl_004D3050",
-      "jtbl_004D3070"
-     ],
-     "also_referenced_by_c": [
-      "s_aNormalTbl",
+      "jtbl_004D3070",
       "D_004D3090",
-      "D_004D30A0"
+      "D_004D30A0",
+      "jtbl_004D30B0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/nml_packet_add.o"
      }
-    },
+    }
+   ],
+   ".sdata": [
     {
      "range": [
-      "0x004d30b0",
-      "0x004d30d0"
+      "0x004dc488",
+      "0x004dc4d0"
      ],
      "generated": [
-      "0x004d30b0",
-      "0x004d30cc"
+      "0x004dc488",
+      "0x004dc4cd"
      ],
      "generated_by": [
-      "add_exec_prog"
+      "add_exec_prog",
+      "nmlPacketAddBlockMaterial",
+      "nmlPacketAddFog",
+      "nmlPacketAddGifTag",
+      "nmlPacketAddGifTagStandard",
+      "nmlPacketAddGsFlush",
+      "nmlPacketAddGsFlushWide",
+      "nmlPacketAddParts",
+      "nmlPacketAddPixelControl",
+      "nmlPacketAddPixelTestPacket",
+      "nmlPacketAddReflRot",
+      "nmlPacketAddReflectParam",
+      "nmlPacketAddScreen",
+      "nmlPacketAddTexture",
+      "nmlPacketAddTextureParam",
+      "nmlPacketAddTransData",
+      "nmlPacketAddTransMicrocode",
+      "nmlPacketAddTransMicrocodeInit",
+      "nmlPacketAddWaitMicrocode",
+      "nmlPacketClrModelCache",
+      "nmlPacketClrTextureCache",
+      "nmlPacketDirectData",
+      "nmlPacketSendCircleTexture",
+      "nmlPacketSetAttributeAlloc16N",
+      "nmlPacketSetAttributeData",
+      "nmlPacketSetAttributeData16N",
+      "nmlPacketSetAttributeData64",
+      "nmlPacketSetAttributeData64N",
+      "nmlPacketSetCurrent",
+      "nmlPacketTextureTrans"
      ],
      "c_owned_symbols": [
-      "jtbl_004D30B0"
+      "s_pPacket",
+      "s_pCacheTexture",
+      "s_pMatrixCache",
+      "s_pModelCache",
+      "s_pModelLayout",
+      "s_nModelParts",
+      "s_pLightLayout",
+      "s_nLightPara",
+      "s_nProgType",
+      "s_nPixelTestType",
+      "s_nReflRotType",
+      "s_inReflRotX",
+      "s_inReflRotY",
+      "D_004DC4BC",
+      "eye_name",
+      "lenz_name"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -11063,70 +11111,75 @@
     {
      "range": [
       "0x004caac0",
-      "0x004cab00"
+      "0x004cac20"
      ],
      "generated": [
       "0x004caac0",
-      "0x004cab00"
+      "0x004cac20"
      ],
      "generated_by": [
+      "ACT_updateEnemy",
+      "Enemy_Init",
+      "Enemy_Pause",
       "Get_EffectCode"
      ],
      "c_owned_symbols": [
-      "D_004CAAC0"
-     ],
-     "also_referenced_by_c": [
-      "D_004CAB00"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/enemy_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004cab10",
-      "0x004cab48"
-     ],
-     "generated": [
-      "0x004cab10",
-      "0x004cab48"
-     ],
-     "generated_by": [
-      "Enemy_Pause"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004CAB10"
-     ],
-     "also_referenced_by_c": [
+      "D_004CAAC0",
+      "D_004CAB00",
+      "jtbl_004CAB10",
       "D_004CAB48",
       "D_004CAB60",
       "D_004CAB78",
       "D_004CAB90",
       "D_004CABA8",
-      "D_004CABC0"
+      "D_004CABC0",
+      "jtbl_004CABE0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/enemy_1.o"
      }
-    },
+    }
+   ],
+   ".sdata": [
     {
      "range": [
-      "0x004cabe0",
-      "0x004cac20"
+      "0x004db7f8",
+      "0x004db848"
      ],
      "generated": [
-      "0x004cabe0",
-      "0x004cac20"
+      "0x004db7f8",
+      "0x004db848"
      ],
      "generated_by": [
-      "ACT_updateEnemy"
+      "Disp_EnemyMark",
+      "Enemy_Chase",
+      "Enemy_Escape",
+      "Enemy_Init",
+      "Enemy_Route_Chase",
+      "Enemy_Tentacle"
      ],
      "c_owned_symbols": [
-      "jtbl_004CABE0"
+      "D_004DB7F8",
+      "D_004DB800",
+      "D_004DB808",
+      "D_004DB810",
+      "D_004DB818",
+      "CoolDown_0",
+      "CoolDown_1",
+      "D_004DB822",
+      "AdrsEnemyPreset",
+      "AdrsEnemySpline",
+      "AdrsEnemyExclamation",
+      "AdrsEnemyQuestion",
+      "AdrsEnemySphere",
+      "AdrsEnemySquare",
+      "AdrsEnemy",
+      "MostNearActor",
+      "D_004DB842",
+      "MostNear"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -13183,35 +13236,173 @@
    ]
   },
   "main/tu212": {
+   ".data": [
+    {
+     "range": [
+      "0x00410d80",
+      "0x0041e288"
+     ],
+     "generated": [
+      "0x00410d80",
+      "0x0041e288"
+     ],
+     "generated_by": [
+      "sefGetEffectName",
+      "sresDataMapping",
+      "sresFreeMemoryRes",
+      "sresFreeReloaderMemory",
+      "sresFreeReloaderMemoryNo",
+      "sresInitMemoryRes",
+      "sresLoadBattleData",
+      "sresLoadCfMemory",
+      "sresLoadCommonMemory",
+      "srsAnalyzeEftNo",
+      "srsEftNo2WeaponID",
+      "srsEftNoWeaponEffectID",
+      "srsFileLoadCf",
+      "srsGetBossWaitEftNo",
+      "srsGetComboData",
+      "srsGetEffect2Idx",
+      "srsGetEsdData",
+      "srsGetEsdData2",
+      "srsGetWeaponEffectIdx",
+      "srsMakeFileName",
+      "srsMemoryLoadCf",
+      "srsSetViewPath",
+      "srsWeapon2EffectID"
+     ],
+     "c_owned_symbols": [
+      "srsViewPath",
+      "_loadComboData",
+      "D_0041118C",
+      "_srsEffect2IndexTbl",
+      "D_00411205",
+      "_srsChrEfTbl",
+      "_srsChrEfTbl2",
+      "D_004116A6",
+      "_srsChrEfTbl3",
+      "_weaponTbl",
+      "_srsMemRes",
+      "_loadEsdData"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/srs.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004cc6d0",
-      "0x004cc6f0"
+      "0x004cc680",
+      "0x004cc790"
      ],
      "generated": [
-      "0x004cc6d0",
-      "0x004cc6ec"
+      "0x004cc680",
+      "0x004cc786"
      ],
      "generated_by": [
-      "srsCdReadCallback"
+      "sresLoadCfMemory",
+      "sresLoadCommonMemory",
+      "srsCdReadCallback",
+      "srsFileLoadCf",
+      "srsGetComboName",
+      "srsGetEffectName",
+      "srsGetEffectName2",
+      "srsMakeFileName",
+      "srsMemoryLoadCf"
      ],
      "c_owned_symbols": [
-      "jtbl_004CC6D0"
-     ],
-     "also_referenced_by_c": [
       "D_004CC680",
       "D_004CC690",
       "D_004CC6A8",
       "D_004CC6B8",
+      "jtbl_004CC6D0",
       "D_004CC6F0",
       "D_004CC700",
-      "D_004CC710"
+      "D_004CC710",
+      "D_004CC720",
+      "D_004CC748",
+      "D_004CC768"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/srs.o"
+      "object": "build/main/build/c/srs.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dba90",
+      "0x004dbb30"
+     ],
+     "generated": [
+      "0x004dba90",
+      "0x004dbb2d"
+     ],
+     "generated_by": [
+      "fileLoad",
+      "srsAnalyzeEftNo",
+      "srsGetComboData",
+      "srsGetComboName",
+      "srsGetEffectName",
+      "srsGetEffectName2",
+      "srsGetFileLen",
+      "srsGetLoadMode",
+      "srsMakeFileName",
+      "srsSetLoadMode"
+     ],
+     "c_owned_symbols": [
+      "srsLoadMode",
+      "D_004DBA94",
+      "_loadCommonData",
+      "D_004DBA9C",
+      "D_004DBAA0",
+      "_loadCfCommonData",
+      "D_004DBAAC",
+      "D_004DBAB0",
+      "D_004DBAB8",
+      "D_004DBAC0",
+      "D_004DBAC8",
+      "D_004DBAD0",
+      "D_004DBAD8",
+      "D_004DBAE0",
+      "D_004DBAE8",
+      "D_004DBAF0",
+      "D_004DBAF8",
+      "D_004DBB00",
+      "D_004DBB08",
+      "D_004DBB10",
+      "D_004DBB18",
+      "D_004DBB20",
+      "D_004DBB28"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DBAA0": "_loadComboData",
+      "D_004DBAB0": "_loadCfCommonData",
+      "D_004DBAB8": "_loadComboData",
+      "D_004DBAC0": "_loadComboData",
+      "D_004DBAC8": "_loadComboData",
+      "D_004DBAD0": "_loadComboData",
+      "D_004DBAD8": "_loadComboData",
+      "D_004DBAE0": "_loadComboData",
+      "D_004DBAE8": "_loadComboData",
+      "D_004DBAF0": "_loadComboData",
+      "D_004DBAF8": "_loadComboData",
+      "D_004DBB00": "_loadComboData",
+      "D_004DBB08": "_loadComboData",
+      "D_004DBB10": "_loadComboData"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/srs.o"
      }
     }
    ]
@@ -13549,6 +13740,36 @@
       "stqTbl_004CC900",
       "McMathUnitVector",
       "McMathUnitMatrix"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sdv.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dbb5c",
+      "0x004dbb68"
+     ],
+     "generated": [
+      "0x004dbb5c",
+      "0x004dbb68"
+     ],
+     "generated_by": [
+      "sdvCreateAlter",
+      "sdvExecAmbient",
+      "sdvInitAmbient",
+      "sdvSaveAmbient",
+      "sdvSetAmbStateSub"
+     ],
+     "c_owned_symbols": [
+      "_sdvAmbFrame",
+      "_sdvAmbState",
+      "serial_3"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -22245,105 +22466,36 @@
    ]
   },
   "ov02/tu009_00a05738": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a12270",
-      "0x00a123b8"
+      "0x00a10618",
+      "0x00a106f8"
      ],
      "generated": [
-      "0x00a12270",
-      "0x00a123b8"
+      "0x00a10618",
+      "0x00a106f8"
      ],
      "generated_by": [
+      "UmnMail",
+      "UmnMailFolderSet",
+      "tskUmnMailDisp",
+      "tskUmnMailExWin",
+      "tskUmnMailFolder",
+      "tskUmnMailHensin",
+      "tskUmnMailMenu",
       "tskUmnMailPas"
      ],
      "c_owned_symbols": [
-      "jtbl_00A12270"
-     ],
-     "also_referenced_by_c": [
-      "D_00A12408",
-      "D_00A12478",
-      "D_00A12528",
-      "D_00A12548",
-      "D_00A12550",
-      "D_00A12558"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_mail_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a12560",
-      "0x00a126a8"
-     ],
-     "generated": [
-      "0x00a12560",
-      "0x00a126a8"
-     ],
-     "generated_by": [
-      "tskUmnMailInfo"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A12560"
-     ],
-     "also_referenced_by_c": [
-      "D_00A126A8",
-      "D_00A126B8",
-      "D_00A126C0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_mail_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a126d0",
-      "0x00a12840"
-     ],
-     "generated": [
-      "0x00a126d0",
-      "0x00a12840"
-     ],
-     "generated_by": [
-      "tskUmnMailFolder"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A126D0"
-     ],
-     "also_referenced_by_c": [
-      "D_00A12840",
-      "D_00A12848",
-      "D_00A12860"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_mail_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a12870",
-      "0x00a12a88"
-     ],
-     "generated": [
-      "0x00a12870",
-      "0x00a12a88"
-     ],
-     "generated_by": [
-      "tskUmnMailDisp",
-      "tskUmnMailHensin"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A12870",
-      "jtbl_00A129C0",
-      "jtbl_00A129E0"
+      "msg00_0_00A10618",
+      "D_00A1062C",
+      "sikaku_1",
+      "text_2",
+      "text_3_00A10650",
+      "text2_4",
+      "text_5",
+      "D_00A10674",
+      "mail_folder"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -22351,54 +22503,122 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_mail_pas.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x00a12ac8",
-      "0x00a12c10"
-     ],
-     "generated": [
-      "0x00a12ac8",
-      "0x00a12c10"
-     ],
-     "generated_by": [
-      "tskUmnMailMenu"
-     ],
-     "c_owned_symbols": [
-      "D_00A12AC8",
-      "D_00A12AD0",
-      "D_00A12AD8",
-      "jtbl_00A12AF0"
-     ],
-     "also_referenced_by_c": [
-      "D_00A12C60"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_mail_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a12c70",
+      "0x00a12240",
       "0x00a12d90"
      ],
      "generated": [
-      "0x00a12c70",
+      "0x00a12240",
       "0x00a12d8c"
      ],
      "generated_by": [
       "UmnMail",
-      "tskUmnMailExWin"
+      "tskUmnMailDisp",
+      "tskUmnMailExWin",
+      "tskUmnMailFolder",
+      "tskUmnMailHensin",
+      "tskUmnMailInfo",
+      "tskUmnMailMenu",
+      "tskUmnMailPas"
      ],
      "c_owned_symbols": [
+      "D_00A12240",
+      "D_00A12250",
+      "D_00A12258",
+      "D_00A12260",
+      "D_00A12268",
+      "jtbl_00A12270",
+      "D_00A123B8",
+      "D_00A123C0",
+      "D_00A123C8",
+      "D_00A123D8",
+      "D_00A123E8",
+      "D_00A123F8",
+      "D_00A12408",
+      "D_00A12420",
+      "D_00A12438",
+      "D_00A12458",
+      "D_00A12470",
+      "D_00A12478",
+      "D_00A12488",
+      "D_00A124A8",
+      "D_00A124D0",
+      "D_00A124E0",
+      "D_00A124F8",
+      "D_00A12510",
+      "D_00A12520",
+      "D_00A12528",
+      "D_00A12548",
+      "D_00A12550",
+      "D_00A12558",
+      "jtbl_00A12560",
+      "D_00A126A8",
+      "D_00A126B8",
+      "D_00A126C0",
+      "jtbl_00A126D0",
+      "D_00A12840",
+      "D_00A12848",
+      "D_00A12860",
+      "jtbl_00A12870",
+      "jtbl_00A129C0",
+      "jtbl_00A129E0",
+      "D_00A12A88",
+      "D_00A12A90",
+      "D_00A12AA0",
+      "D_00A12AA8",
+      "D_00A12AB8",
+      "D_00A12AC0",
+      "D_00A12AC8",
+      "D_00A12AD0",
+      "D_00A12AD8",
+      "jtbl_00A12AF0",
+      "D_00A12C10",
+      "D_00A12C30",
+      "D_00A12C50",
+      "D_00A12C60",
       "jtbl_00A12C70",
       "D_00A12D78",
       "D_00A12D80",
       "D_00A12D88"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A12240": "msg00_0_00A10618",
+      "D_00A12250": "msg00_0_00A10618",
+      "D_00A12258": "msg00_0_00A10618",
+      "D_00A12260": "msg00_0_00A10618",
+      "D_00A12268": "msg00_0_00A10618",
+      "D_00A123B8": "D_00A12408",
+      "D_00A123C0": "D_00A12408",
+      "D_00A123C8": "D_00A12408",
+      "D_00A123D8": "D_00A12408",
+      "D_00A123E8": "D_00A12408",
+      "D_00A123F8": "D_00A12408",
+      "D_00A12420": "D_00A12478",
+      "D_00A12438": "D_00A12478",
+      "D_00A12458": "D_00A12478",
+      "D_00A12470": "D_00A12478",
+      "D_00A12488": "D_00A12528",
+      "D_00A124A8": "D_00A12528",
+      "D_00A124D0": "D_00A12528",
+      "D_00A124E0": "D_00A12528",
+      "D_00A124F8": "D_00A12528",
+      "D_00A12510": "D_00A12528",
+      "D_00A12520": "D_00A12528",
+      "D_00A12A88": "text_3_00A10650",
+      "D_00A12A90": "text_3_00A10650",
+      "D_00A12AA0": "text2_4",
+      "D_00A12AA8": "text2_4",
+      "D_00A12AB8": "text2_4",
+      "D_00A12AC0": "text2_4",
+      "D_00A12C10": "text_5",
+      "D_00A12C30": "text_5",
+      "D_00A12C50": "text_5"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -23797,73 +24017,158 @@
    ]
   },
   "ov10/tu007_00a21348": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a4e498",
-      "0x00a4e4a0"
+      "0x00a487c8",
+      "0x00a488e8"
      ],
      "generated": [
-      "0x00a4e498",
-      "0x00a4e4a0"
+      "0x00a487c8",
+      "0x00a488e8"
      ],
      "generated_by": [
       "CardTutorialFileLoad",
-      "CardTutorialInit"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E498"
-     ],
-     "also_referenced_by_c": [
-      "D_00A4E4B0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e4b8",
-      "0x00a4e4d0"
-     ],
-     "generated": [
-      "0x00a4e4b8",
-      "0x00a4e4d0"
-     ],
-     "generated_by": [
-      "CardTutorialInit"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E4B8",
-      "D_00A4E4C8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A4E4D0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e4e0",
-      "0x00a4e4f0"
-     ],
-     "generated": [
-      "0x00a4e4e0",
-      "0x00a4e4e9"
-     ],
-     "generated_by": [
+      "CardTutorialInit",
       "CardTutorialProc"
      ],
      "c_owned_symbols": [
+      "tutopage",
+      "D_00A487CC",
+      "datapath",
+      "D_00A487E4",
+      "tutoxtx_tbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a4e320",
+      "0x00a4e4f0"
+     ],
+     "generated": [
+      "0x00a4e320",
+      "0x00a4e4e9"
+     ],
+     "generated_by": [
+      "CardTutorialFileLoad",
+      "CardTutorialInit",
+      "CardTutorialProc"
+     ],
+     "c_owned_symbols": [
+      "D_00A4E320",
+      "D_00A4E328",
+      "D_00A4E330",
+      "D_00A4E338",
+      "D_00A4E340",
+      "D_00A4E348",
+      "D_00A4E350",
+      "D_00A4E358",
+      "D_00A4E360",
+      "D_00A4E368",
+      "D_00A4E370",
+      "D_00A4E378",
+      "D_00A4E380",
+      "D_00A4E388",
+      "D_00A4E390",
+      "D_00A4E398",
+      "D_00A4E3A0",
+      "D_00A4E3A8",
+      "D_00A4E3B0",
+      "D_00A4E3B8",
+      "D_00A4E3C0",
+      "D_00A4E3C8",
+      "D_00A4E3D0",
+      "D_00A4E3D8",
+      "D_00A4E3E0",
+      "D_00A4E3E8",
+      "D_00A4E3F0",
+      "D_00A4E3F8",
+      "D_00A4E400",
+      "D_00A4E408",
+      "D_00A4E410",
+      "D_00A4E418",
+      "D_00A4E420",
+      "D_00A4E428",
+      "D_00A4E430",
+      "D_00A4E438",
+      "D_00A4E440",
+      "D_00A4E448",
+      "D_00A4E450",
+      "D_00A4E458",
+      "D_00A4E460",
+      "D_00A4E468",
+      "D_00A4E470",
+      "D_00A4E478",
+      "D_00A4E480",
+      "D_00A4E488",
+      "D_00A4E490",
+      "D_00A4E498",
+      "D_00A4E4A0",
+      "D_00A4E4B0",
+      "D_00A4E4B8",
+      "D_00A4E4C8",
+      "D_00A4E4D0",
       "D_00A4E4E0"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A4E320": "tutoxtx_tbl",
+      "D_00A4E328": "tutoxtx_tbl",
+      "D_00A4E330": "tutoxtx_tbl",
+      "D_00A4E338": "tutoxtx_tbl",
+      "D_00A4E340": "tutoxtx_tbl",
+      "D_00A4E348": "tutoxtx_tbl",
+      "D_00A4E350": "tutoxtx_tbl",
+      "D_00A4E358": "tutoxtx_tbl",
+      "D_00A4E360": "tutoxtx_tbl",
+      "D_00A4E368": "tutoxtx_tbl",
+      "D_00A4E370": "tutoxtx_tbl",
+      "D_00A4E378": "tutoxtx_tbl",
+      "D_00A4E380": "tutoxtx_tbl",
+      "D_00A4E388": "tutoxtx_tbl",
+      "D_00A4E390": "tutoxtx_tbl",
+      "D_00A4E398": "tutoxtx_tbl",
+      "D_00A4E3A0": "tutoxtx_tbl",
+      "D_00A4E3A8": "tutoxtx_tbl",
+      "D_00A4E3B0": "tutoxtx_tbl",
+      "D_00A4E3B8": "tutoxtx_tbl",
+      "D_00A4E3C0": "tutoxtx_tbl",
+      "D_00A4E3C8": "tutoxtx_tbl",
+      "D_00A4E3D0": "tutoxtx_tbl",
+      "D_00A4E3D8": "tutoxtx_tbl",
+      "D_00A4E3E0": "tutoxtx_tbl",
+      "D_00A4E3E8": "tutoxtx_tbl",
+      "D_00A4E3F0": "tutoxtx_tbl",
+      "D_00A4E3F8": "tutoxtx_tbl",
+      "D_00A4E400": "tutoxtx_tbl",
+      "D_00A4E408": "tutoxtx_tbl",
+      "D_00A4E410": "tutoxtx_tbl",
+      "D_00A4E418": "tutoxtx_tbl",
+      "D_00A4E420": "tutoxtx_tbl",
+      "D_00A4E428": "tutoxtx_tbl",
+      "D_00A4E430": "tutoxtx_tbl",
+      "D_00A4E438": "tutoxtx_tbl",
+      "D_00A4E440": "tutoxtx_tbl",
+      "D_00A4E448": "tutoxtx_tbl",
+      "D_00A4E450": "tutoxtx_tbl",
+      "D_00A4E458": "tutoxtx_tbl",
+      "D_00A4E460": "tutoxtx_tbl",
+      "D_00A4E468": "tutoxtx_tbl",
+      "D_00A4E470": "tutoxtx_tbl",
+      "D_00A4E478": "tutoxtx_tbl",
+      "D_00A4E480": "tutoxtx_tbl",
+      "D_00A4E488": "tutoxtx_tbl",
+      "D_00A4E490": "tutoxtx_tbl",
+      "D_00A4E4A0": "D_00A4E4B0"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
