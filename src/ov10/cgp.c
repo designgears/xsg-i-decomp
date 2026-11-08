@@ -114,8 +114,6 @@ extern float asColor[4][4];
 extern float asDir[4][4];
 extern float CLP1Color[4][4];
 extern float CLP2Color[4][4];
-extern char D_00A4E530[];
-extern char D_00A4E538[];
 
 /*
  * Shunt one side's cards aside before the computer opponent moves
@@ -252,10 +250,10 @@ void CCO143ExecSub(s32 side, CardGameWork *work, CardPlaySide *ownSide,
 }
 
 extern int printf(const char *format, ...);
-extern char D_00A4E4F0[]; /* "Yama[%2d]:" */
-extern char D_00A4E500[]; /* "%3d," */
-extern char D_00A4E508[]; /* "\n" */
-extern char D_00A4E510[]; /* "Junk[%2d]:" */
+const char D_00A4E4F0[] = "Yama[%2d]:";
+const char D_00A4E500[] = "%3d,";
+const char D_00A4E508[] = "\n";
+const char D_00A4E510[] = "Junk[%2d]:";
 
 void CGPPrintYama(CardPlaySide *side)
 {
@@ -298,9 +296,9 @@ void CGPPrintJunk(CardPlaySide *side)
 }
 
 extern int printf(const char *format, ...);
-extern char D_00A4E500[]; /* "%3d," */
-extern char D_00A4E508[]; /* "\n" */
-extern char D_00A4E520[]; /* "Sute[%2d]:" */
+const char D_00A4E520[] = "Sute[%2d]:";
+const char D_00A4E530[] = "\013\015";
+const char D_00A4E538[] = "\031\003";
 
 void CGPPrintSute(CardPlaySide *side)
 {
@@ -2190,20 +2188,90 @@ void CGPCommFinishSub(CGPCardDefSource *src, CardPlayHand *work, s32 index)
 
 extern void CardCursorPassive(void *cursor);
 extern int CardFread(unsigned int mode, char *filename);
-extern char D_00A4E758[], D_00A4E768[], D_00A4E778[], D_00A4E788[], D_00A4E798[], D_00A4E7A8[];
-extern char D_00A4E7B8[], D_00A4E7D0[], D_00A4E7E0[], D_00A4E7F0[], D_00A4E800[], D_00A4E810[];
-extern char D_00A4E820[], D_00A4E830[], D_00A4E840[], D_00A4E850[], D_00A4E860[], D_00A4E870[];
-extern char D_00A4E880[], D_00A4E890[], D_00A4E8A0[], D_00A4E8B0[], D_00A4E8C0[], D_00A4E8D8[];
-extern char D_00A4E8F0[], D_00A4E900[], D_00A4E910[], D_00A4E920[], D_00A4E930[], D_00A4E940[];
-extern char D_00A4E958[], D_00A4E970[], D_00A4E980[], D_00A4E990[], D_00A4E9A0[], D_00A4E9B0[];
-extern char D_00A4E9C0[], D_00A4E9D0[], D_00A4E9E0[], D_00A4E9F0[], D_00A4EA00[], D_00A4EA10[];
-extern char D_00A4EA20[], D_00A4EA30[], D_00A4EA40[], D_00A4EA50[], D_00A4EA68[], D_00A4EA80[];
-extern char D_00A4EA98[], D_00A4EAB0[], D_00A4EAC8[], D_00A4EAE0[], D_00A4EAF8[], D_00A4EB10[];
-extern char D_00A4EB20[], D_00A4EB30[], D_00A4EB40[], D_00A4EB58[], D_00A4EB70[], D_00A4EB80[];
-extern char D_00A4EB98[], D_00A4EBB0[], D_00A4EBC8[], D_00A4EBE0[], D_00A4EBF8[], D_00A4EC10[];
-extern char D_00A4EC28[], D_00A4EC40[], D_00A4EC58[], D_00A4EC70[], D_00A4EC88[], D_00A4ECA0[];
-extern char D_00A4ECB8[], D_00A4ECD0[], D_00A4ECE8[], D_00A4ED00[], D_00A4ED18[], D_00A4ED28[];
-extern char D_00A4ED38[], D_00A4ED48[], D_00A4ED58[], D_00A4ED68[], D_00A4ED78[], D_00A4ED90[];
+const char D_00A4E758[] = "game\\E_L.lex";
+const char D_00A4E768[] = "game\\E_S.lex";
+const char D_00A4E778[] = "game\\down_L.lex";
+const char D_00A4E788[] = "game\\down_s.lex";
+const char D_00A4E798[] = "game\\on.lex";
+const char D_00A4E7A8[] = "game\\off.lex";
+const char D_00A4E7B8[] = "game\\NewYama.lex";
+const char D_00A4E7D0[] = "game\\Ptern.lex";
+const char D_00A4E7E0[] = "game\\Etern.lex";
+const char D_00A4E7F0[] = "game\\P1tern.lex";
+const char D_00A4E800[] = "game\\P2tern.lex";
+const char D_00A4E810[] = "game\\Pwin.lex";
+const char D_00A4E820[] = "game\\Ewin.lex";
+const char D_00A4E830[] = "game\\P1win.lex";
+const char D_00A4E840[] = "game\\P2win.lex";
+const char D_00A4E850[] = "game\\dlow.lex";
+const char D_00A4E860[] = "game\\move.lex";
+const char D_00A4E870[] = "game\\set.lex";
+const char D_00A4E880[] = "game\\event.lex";
+const char D_00A4E890[] = "game\\battle.lex";
+const char D_00A4E8A0[] = "game\\adjust.lex";
+const char D_00A4E8B0[] = "game\\block.lex";
+const char D_00A4E8C0[] = "game\\NewYama1P.lex";
+const char D_00A4E8D8[] = "game\\NewYama2P.lex";
+const char D_00A4E8F0[] = "game\\HPbar.lex";
+const char D_00A4E900[] = "game\\dlow2.lex";
+const char D_00A4E910[] = "game\\move2.lex";
+const char D_00A4E920[] = "game\\set2.lex";
+const char D_00A4E930[] = "game\\event2.lex";
+const char D_00A4E940[] = "game\\battle2.lex";
+const char D_00A4E958[] = "game\\adjust2.lex";
+const char D_00A4E970[] = "game\\block2.lex";
+const char D_00A4E980[] = "game\\tern.lex";
+const char D_00A4E990[] = "game\\phase1.lex";
+const char D_00A4E9A0[] = "game\\phase2.lex";
+const char D_00A4E9B0[] = "game\\phase3.lex";
+const char D_00A4E9C0[] = "game\\phase4.lex";
+const char D_00A4E9D0[] = "game\\phase5.lex";
+const char D_00A4E9E0[] = "game\\phase6.lex";
+const char D_00A4E9F0[] = "game\\phase7.lex";
+const char D_00A4EA00[] = "game\\up_R.lex";
+const char D_00A4EA10[] = "game\\up_L.lex";
+const char D_00A4EA20[] = "game\\up_LR.bin";
+const char D_00A4EA30[] = "game\\yama.xtx";
+const char D_00A4EA40[] = "game\\HPbar.xtx";
+const char D_00A4EA50[] = "game\\mat_mojiJ.lex";
+const char D_00A4EA68[] = "game\\mat_mojiJ.xtx";
+const char D_00A4EA80[] = "deckmake\\battlewin1.lex";
+const char D_00A4EA98[] = "deckmake\\battlewin2.lex";
+const char D_00A4EAB0[] = "deckmake\\battlewin3.lex";
+const char D_00A4EAC8[] = "deckmake\\battlewin4.lex";
+const char D_00A4EAE0[] = "deckmake\\battlewin5.lex";
+const char D_00A4EAF8[] = "deckmake\\battlewin.bin";
+const char D_00A4EB10[] = "game\\pop1.lex";
+const char D_00A4EB20[] = "game\\pop2.lex";
+const char D_00A4EB30[] = "game\\pop.xtx";
+const char D_00A4EB40[] = "game\\NewPop1P.lex";
+const char D_00A4EB58[] = "game\\NewPop2P.lex";
+const char D_00A4EB70[] = "game\\NewPop.xtx";
+const char D_00A4EB80[] = "game\\victory1.lex";
+const char D_00A4EB98[] = "game\\victory2.lex";
+const char D_00A4EBB0[] = "game\\victory3.lex";
+const char D_00A4EBC8[] = "game\\victory4.lex";
+const char D_00A4EBE0[] = "game\\victory5.lex";
+const char D_00A4EBF8[] = "game\\victory6.lex";
+const char D_00A4EC10[] = "game\\victory7.lex";
+const char D_00A4EC28[] = "game\\NewLost1.lex";
+const char D_00A4EC40[] = "game\\NewLost2.lex";
+const char D_00A4EC58[] = "game\\victory.bin";
+const char D_00A4EC70[] = "game\\NewLost1.xtx";
+const char D_00A4EC88[] = "game\\NewLost2.xtx";
+const char D_00A4ECA0[] = "game\\NewLost3.xtx";
+const char D_00A4ECB8[] = "effect\\effect0.lex";
+const char D_00A4ECD0[] = "effect\\effect1.lex";
+const char D_00A4ECE8[] = "effect\\atac_a.bin";
+const char D_00A4ED00[] = "effect\\atac_b.bin";
+const char D_00A4ED18[] = "effect\\bom.bin";
+const char D_00A4ED28[] = "effect\\flas.bin";
+const char D_00A4ED38[] = "effect\\misl.bin";
+const char D_00A4ED48[] = "effect\\rang.bin";
+const char D_00A4ED58[] = "effect\\shot.bin";
+const char D_00A4ED68[] = "effect\\zan.bin";
+const char D_00A4ED78[] = "effect\\atac_c.bin";
+const char D_00A4ED90[] = "effect\\atac_d.bin";
 
 void CardGameInit(CardGameWork *arg0)
 {
@@ -5329,8 +5397,8 @@ extern float BattlePos1P[][3];
 extern CGPCursorPosition D_00A57DD8;
 extern s32 D_00A57DE0;
 extern char ZenkakuListB[];
-extern const char D_00A4F068[];
-extern const char D_00A4F088[];
+const char D_00A4F068[] = "\013\031\003\015\000Cards to be discarded:";
+const char D_00A4F088[] = "\013\031\003\015\000Where do you want to put it?";
 #define HANDPOS(own, idx) (((CardPlayField *)(own))->handMove[idx].position)
 #define DEF_OF_HAND(work, own, idx) (work->definitions[own->hand.cards[idx]])
 
@@ -5778,8 +5846,8 @@ extern CGPCFPair D_00A57DF8;
 extern s32 D_00A57E00;
 extern s32 D_00A57E04;
 extern s32 D_00A57E08;
-extern char D_00A4F108[];
-extern char D_00A4F128[];
+const char D_00A4F108[] = "\013\031\003\015\000Cards to be discarded: \243\262";
+const char D_00A4F128[] = "\013\031\003\015\000Cards to be discarded: \243\261";
 
 s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
 {
@@ -6258,9 +6326,9 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
 extern void xglMatrixRotZ(Matrix4 destination, const Matrix4 source, float angle);
 extern void CardDispCard(float (*place)[4], s16 no, s16 flag);
 extern void xglFontPrint(int x, int y, int color, const char *text);
-extern char D_00A4F2F0[];
-extern char D_00A4F308[];
-extern char D_00A4F330[];
+const char D_00A4F2F0[] = "\013\031\003\015\000Block this event?";
+const char D_00A4F308[] = "\013\031\003\015\000Event blocked. Block further?";
+const char D_00A4F330[] = "\013\031\003\015\000If yes, select card: \015\004\014\200@@\241\373 \013\031\003\015\000No: \015\004\014@@\200\241\337";
 typedef struct CFSSide {
     u8 unmodeled_00[8];
     s16 pile[5][40];
