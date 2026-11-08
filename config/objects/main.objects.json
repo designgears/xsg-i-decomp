@@ -2532,7 +2532,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C1D50",
+          "end": "0x004C1D30",
           "ordinal": 144,
           "piece": "tslider_create",
           "start": "0x004C1D18",
@@ -2543,7 +2543,7 @@
           "end": "0x004C2020",
           "ordinal": 148,
           "piece": "script",
-          "start": "0x004C1D50",
+          "start": "0x004C1D30",
           "tu": "script"
         },
         {
@@ -4248,7 +4248,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DA518",
+          "end": "0x004DA4F0",
           "ordinal": 148,
           "piece": "script",
           "start": "0x004DA430",
@@ -4259,7 +4259,7 @@
           "end": "0x004DA590",
           "ordinal": 149,
           "piece": "db_light_write",
-          "start": "0x004DA518",
+          "start": "0x004DA4F0",
           "tu": "db_light_write"
         },
         {
@@ -40051,20 +40051,20 @@
           ],
           "bounds": [
             "0x004C1D18",
-            "0x004C1D50"
+            "0x004C1D30"
           ],
-          "end": "0x004C1D50",
+          "end": "0x004C1D30",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C1D50",
+              "end": "0x004C1D30",
               "name": "tslider_create",
               "start": "0x004C1D18"
             }
           ],
           "rule": "anchored start",
-          "size": 56,
+          "size": 24,
           "splat_type": "rodata",
           "start": "0x004C1D18"
         }
@@ -41384,7 +41384,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C1D50",
+            "0x004C1D30",
             "0x004C2011"
           ],
           "bounds": [
@@ -41398,13 +41398,13 @@
               "c_split": false,
               "end": "0x004C2020",
               "name": "script",
-              "start": "0x004C1D50"
+              "start": "0x004C1D30"
             }
           ],
-          "rule": "anchored start",
-          "size": 720,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 752,
           "splat_type": "rodata",
-          "start": "0x004C1D50"
+          "start": "0x004C1D30"
         },
         ".sbss": {
           "anchored": [
@@ -41437,20 +41437,20 @@
           ],
           "bounds": [
             "0x004DA429",
-            "0x004DA518"
+            "0x004DA4F0"
           ],
-          "end": "0x004DA518",
+          "end": "0x004DA4F0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DA518",
+              "end": "0x004DA4F0",
               "name": "script",
               "start": "0x004DA430"
             }
           ],
           "rule": "anchored start",
-          "size": 232,
+          "size": 192,
           "splat_type": "sdata",
           "start": "0x004DA430"
         }
@@ -41986,7 +41986,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DA518",
+            "0x004DA4F0",
             "0x004DA589"
           ],
           "bounds": [
@@ -42000,13 +42000,13 @@
               "c_split": false,
               "end": "0x004DA590",
               "name": "db_light_write",
-              "start": "0x004DA518"
+              "start": "0x004DA4F0"
             }
           ],
-          "rule": "anchored start",
-          "size": 120,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 160,
           "splat_type": "sdata",
-          "start": "0x004DA518"
+          "start": "0x004DA4F0"
         }
       },
       "shared_contract": {

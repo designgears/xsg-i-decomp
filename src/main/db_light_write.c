@@ -202,9 +202,7 @@ static float cursorSpeed[9] = { 0.010000001f, 0.016666668f, 0.06666667f, 0.13333
 static Vector4 vGridXZ[5] = { { -0.5f, 0.0f, -0.5f, 1.0f }, { 0.5f, 0.0f, -0.5f, 1.0f }, { 0.5f, 0.0f, 0.5f, 1.0f }, { -0.5f, 0.0f, 0.5f, 1.0f }, { -0.5f, 0.0f, -0.5f, 1.0f } };
 static Vector4 vCursor[6] = { { -0.5f, 0.0f, 0.0f, 1.0f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 0.0f, -0.5f, 0.0f, 1.0f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f, -0.5f, 1.0f }, { 0.0f, 0.0f, 0.5f, 1.0f } };
 unsigned char cCursor[24] = { 0xC0, 0xC0, 0xC0, 0x80, 0xC0, 0x00, 0x00, 0x80, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0xC0, 0x00, 0x80, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0x00, 0xC0, 0x80 };
-/* The mode names sit in .sdata just before this TU's own, where the split puts them in script. */
-extern char D_004DA4F0[], D_004DA4F8[], D_004DA500[], D_004DA508[], D_004DA510[];
-static char *cursorModeName[5] = { D_004DA510, D_004DA508, D_004DA500, D_004DA4F8, D_004DA4F0 };
+static char *cursorModeName[5] = { "FREE", "YZ  ", "XZ  ", "XY  ", "FCV " };
 static Vector4 vRect[4] = { { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f, 1.0f }, { 1.0f, -1.0f, 0.0f, 1.0f } };
 extern Vector4 lightDir[6];
 extern Vector4 lightCol[6];

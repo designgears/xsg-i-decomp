@@ -6838,11 +6838,11 @@
     {
      "range": [
       "0x004c1d18",
-      "0x004c1d50"
+      "0x004c1d30"
      ],
      "generated": [
       "0x004c1d18",
-      "0x004c1d50"
+      "0x004c1d2e"
      ],
      "generated_by": [
       "createItemGetWin"
@@ -6854,7 +6854,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/tslider_create.o"
+      "object": "build/main/build/c/tslider_create.o"
      }
     }
    ]
@@ -7027,11 +7027,11 @@
    ".rodata": [
     {
      "range": [
-      "0x004c1d50",
+      "0x004c1d30",
       "0x004c2020"
      ],
      "generated": [
-      "0x004c1d50",
+      "0x004c1d30",
       "0x004c2020"
      ],
      "generated_by": [
@@ -7042,6 +7042,7 @@
       "DB_vmSwitch",
       "SCRIPT_debugMenu",
       "SCRIPT_init",
+      "SCRIPT_load_DBG",
       "funcObserver",
       "initJS",
       "loadScript",
@@ -7049,6 +7050,7 @@
       "loadScriptCD2"
      ],
      "c_owned_symbols": [
+      "D_004C1D30",
       "D_004C1D50",
       "D_004C1D60",
       "D_004C1D70",
@@ -7084,6 +7086,7 @@
      ],
      "also_referenced_by_c": [],
      "reached_through": {
+      "D_004C1D30": "debugBasePath",
       "D_004C1DA0": "vmSwitchStr",
       "D_004C1DB8": "vmSwitchStr",
       "D_004C1DD0": "vmSwitchStr",
@@ -7095,6 +7098,102 @@
       "D_004C1E60": "vmSwitchStr",
       "D_004C1E78": "vmSwitchStr"
      },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/script.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da430",
+      "0x004da4ec"
+     ],
+     "generated": [
+      "0x004da430",
+      "0x004da4ec"
+     ],
+     "generated_by": [
+      "CallMethod",
+      "CallMethod_I",
+      "CallMethod_II",
+      "DB_evtMonitor",
+      "DB_light",
+      "DB_scriptFileSelect",
+      "PauseSkipCheck",
+      "SCRIPT_clrEventActiveFlag",
+      "SCRIPT_eventFinish",
+      "SCRIPT_exec",
+      "SCRIPT_exec2",
+      "SCRIPT_execTalkto",
+      "SCRIPT_execTouchto",
+      "SCRIPT_fade",
+      "SCRIPT_fadeGet",
+      "SCRIPT_frameLock2Battle",
+      "SCRIPT_getCfTime",
+      "SCRIPT_getEventActiveFlag",
+      "SCRIPT_getFadeTime",
+      "SCRIPT_incCfTime",
+      "SCRIPT_load_DBG",
+      "SCRIPT_methodClearGet",
+      "SCRIPT_methodClearSet",
+      "SCRIPT_sceneChangeTimeDec",
+      "SCRIPT_sceneChangeTimeGet",
+      "SCRIPT_sceneChangeTimeInit",
+      "SCRIPT_sceneChangeTimeSet",
+      "SCRIPT_sendMovieSkipSignal",
+      "SCRIPT_setEventActiveFlag",
+      "SCRIPT_talkIgnoreClr",
+      "SCRIPT_talkIgnoreGet",
+      "SCRIPT_talkIgnoreSet",
+      "XTK_getWindowOwner",
+      "XTK_setWindowOwner",
+      "attrObserver",
+      "initJS",
+      "loadScript",
+      "loadScriptCD",
+      "loadScriptCD2",
+      "sceneObserver",
+      "sceneObserver2"
+     ],
+     "c_owned_symbols": [
+      "debugBasePath",
+      "s_nScriptFadeOutTime",
+      "s_nScriptFadeRequest",
+      "s_nScriptChangeTime",
+      "D_004DA43D",
+      "s_nScriptSequenceReset",
+      "s_nScriptFrameLockEntry",
+      "s_nScriptEventSkipEntry",
+      "s_nScriptCfTime",
+      "s_nScriptEventFin",
+      "s_nScriptEventActive",
+      "s_nScriptTalkLock",
+      "D_004DA45C",
+      "D_004DA460",
+      "sig_2",
+      "D_004DA46C",
+      "sig_3",
+      "sig_4",
+      "D_004DA480",
+      "D_004DA488",
+      "D_004DA490",
+      "lightSave",
+      "D_004DA49C",
+      "D_004DA4A0",
+      "D_004DA4A8",
+      "D_004DA4B0",
+      "D_004DA4B8",
+      "D_004DA4C0",
+      "D_004DA4C8",
+      "D_004DA4D0",
+      "D_004DA4D8",
+      "D_004DA4E0",
+      "windowOwner"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -7269,19 +7368,25 @@
    ".sdata": [
     {
      "range": [
-      "0x004da518",
+      "0x004da4f0",
       "0x004da590"
      ],
      "generated": [
-      "0x004da518",
+      "0x004da4f0",
       "0x004da58b"
      ],
      "generated_by": [
       "MAP_serach",
+      "updateCursor",
       "updateLight",
       "updateWind"
      ],
      "c_owned_symbols": [
+      "D_004DA4F0",
+      "D_004DA4F8",
+      "D_004DA500",
+      "D_004DA508",
+      "D_004DA510",
       "visible_0",
       "D_004DA51C",
       "D_004DA520",
@@ -7304,6 +7409,13 @@
       "D_004DA588"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA4F0": "cursorModeName",
+      "D_004DA4F8": "cursorModeName",
+      "D_004DA500": "cursorModeName",
+      "D_004DA508": "cursorModeName",
+      "D_004DA510": "cursorModeName"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
