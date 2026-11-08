@@ -62,7 +62,13 @@ typedef struct MenuShopWeapon {
     unsigned short shopParameter2;
 } MenuShopWeapon;
 
-extern ShopDataCategory ShopData[];
+/* 0x170 bytes: nine 0x28-byte categories, then the 8-byte AGWS tail (count at +0x168). */
+typedef struct ShopDataBlock {
+    ShopDataCategory cat[9];
+    ShopDataTail tail;
+} ShopDataBlock;
+
+static ShopDataBlock ShopData;
 extern int MenuScenarioNo;
 
 extern int *MenuSortAddrGet(void);
@@ -101,7 +107,10 @@ typedef struct MenuShopWindowSP {
     unsigned char state;
 } MenuShopWindowSP;
 
-extern MenuShopWindowSP *MenuShopWinSP;
+static MenuShopWorkData *MenuShopWork;
+static XglTaskScheduler *MenuShopTask;
+static MenuShopWindowSP *MenuShopWinSP;
+static int ShopDataBufTop;
 extern unsigned char MenuKeepSelect[0x64];
 extern MenuShopListRow *MenuListMake(int list, int mode);
 extern void MenuShopSortSet(int list, int type, int order, int option);
@@ -302,7 +311,6 @@ static inline MenuShopParty *MenuShopPartyGet(void)
 }
 /* ---- end of fork-ported types ---- */
 
-extern unsigned short D_00534FB8[];
 extern int PartyTakeAgwsCheck(int id);
 
 void MenuShopAgwsListChange(void)
@@ -319,7 +327,7 @@ void MenuShopAgwsListChange(void)
   int j;
   int k;
   unsigned short v;
-  base = (char *) ShopData;
+  base = (char *) &ShopData;
   i = 0;
   p = (unsigned short *) (base + 0x168);
   i = 3;
@@ -336,7 +344,7 @@ void MenuShopAgwsListChange(void)
     p++;
   }
   while (i >= 0);
-  new_var = D_00534FB8;
+  new_var = (unsigned short *)&ShopData.cat[0].unmodeled_02[6];
   d = (base = new_var);
   tb = ((char *) d) - 8;
   for (i = 0; i < 3; i++)
@@ -350,7 +358,7 @@ void MenuShopAgwsListChange(void)
         do
         {
           v = *((unsigned short *) ((tb + (2 * k)) + 0x168));
-          d = D_00534FB8;
+          d = (unsigned short *)&ShopData.cat[0].unmodeled_02[6];
           if (v != 0)
           {
             d[i + 0xB0] = v;
@@ -3027,7 +3035,7 @@ typedef struct MenuShopWorkDataP1 {
     short unitId;
     short equipmentId;
 } MenuShopWorkDataP1;
-extern MenuShopWorkDataP1 *MenuShopWorkP1 __asm__("MenuShopWork");
+#define MenuShopWorkP1 ((MenuShopWorkDataP1 *)MenuShopWork)
 typedef struct MenuShopWeaponP1 {
     unsigned short shopParameter1;
     unsigned char unmodeled_02[4];
@@ -3548,21 +3556,21 @@ void MenuShopInfoSet(void)
     if (MenuShopWork->mode == 0) {
         if (MenuShopWork->noCategories != 0)
             return;
-        if (ShopData[0].count != 0)
+        if (ShopData.cat[0].count != 0)
             MenuShopWork->categoryMask = 1;
-        if (ShopData[1].count != 0)
+        if (ShopData.cat[1].count != 0)
             MenuShopWork->categoryMask |= 0x2;
-        if (ShopData[2].count != 0)
+        if (ShopData.cat[2].count != 0)
             MenuShopWork->categoryMask |= 0x4;
-        if (ShopData[3].count != 0)
+        if (ShopData.cat[3].count != 0)
             MenuShopWork->categoryMask |= 0x8;
-        if (ShopData[4].count != 0)
+        if (ShopData.cat[4].count != 0)
             MenuShopWork->categoryMask |= 0x10;
-        if (ShopData[5].count != 0)
+        if (ShopData.cat[5].count != 0)
             MenuShopWork->categoryMask |= 0x20;
-        if (ShopData[6].count != 0)
+        if (ShopData.cat[6].count != 0)
             MenuShopWork->categoryMask |= 0x40;
-        if (ShopData[9].count != 0)
+        if (ShopData.tail.count != 0)
             MenuShopWork->categoryMask |= 0x80;
         if (MenuScenarioNo >= 115)
             MenuShopWork->categoryMask |= 0x100;
@@ -4458,7 +4466,7 @@ void MenuShopMain(int shopType)
         xglSleep();
     }
 
-    *(MenuShopBlk170 *)ShopData = ((MenuShopBlk170 *)ShopDataBufTop)[shopType - 1];
+    *(MenuShopBlk170 *)&ShopData = ((MenuShopBlk170 *)ShopDataBufTop)[shopType - 1];
     if (shopType == 20)
         MenuShopWork->noCategories = 1;
     if (shopType == 6 && MenuEquipStealMaskCheck() == 1)
@@ -4489,11 +4497,11 @@ void MenuShopMain(int shopType)
         unitCount = MenuShopWork->unitCount;
     }
 
-    if (unitCount != 0 && ShopData[7].count != 0)
+    if (unitCount != 0 && ShopData.cat[7].count != 0)
         MenuShopWork->equipmentStatus = 1;
     else
         MenuShopWork->equipmentStatus = 0;
-    if (ShopData[9].count != 0)
+    if (ShopData.tail.count != 0)
         MenuShopWork->modelBreakPending = 1;
     else
         MenuShopWork->modelBreakPending = 0;
