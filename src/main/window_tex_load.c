@@ -6,7 +6,6 @@
 
 /* MenuWorkEndGet clears and returns this entire 64 KiB work region. */
 
-extern unsigned char MenuWorkEndTop[0x10000];
 
 
 typedef unsigned int Quadword __attribute__((mode(TI)));
@@ -130,7 +129,8 @@ typedef union {
 /* The external data witness covers these 0x9c bytes; the spans around the
  * two evidenced bit sets remain unmodelled (see UmnDataBase). */
 
-extern unsigned char Menu02Tex[0x40800];
+static unsigned char Menu02Tex[0x40800];
+static unsigned char MenuWorkEndTop[0x10000];
 
 
 int WindowTexLoad(unsigned char *buffer, unsigned int request)
