@@ -275,14 +275,14 @@ segments:
       - [0x5A250, rodata, ov12/xrg_sound]
       - [0x5A2F0, rodata, ov12/xrg_event]
       - [0x5A490]
-      - { type: bss, vram: 0x00A59490, name: ov12/rg_main }
+      - { type: .bss, vram: 0x00A59490, name: ov12/rg_main }
       - { type: bss, vram: 0x00A59920, name: ov12/rg_robot }
       - { type: bss, vram: 0x00A599D8, name: ov12/rg_enemy }
       - { type: bss, vram: 0x00A599E0, name: ov12/rg_robot_db }
       - { type: bss, vram: 0x00A59AA0, name: ov12/rg_heap }
-      - { type: bss, vram: 0x00A5AAC0, name: ov12/rg_singleton_id }
+      - { type: .bss, vram: 0x00A5AAC0, name: ov12/rg_singleton_id }
       - { type: bss, vram: 0x00A5AB80, name: ov12/rg_geom_pillar }
-      - { type: bss, vram: 0x00A5ABC0, name: ov12/rg_matrices_effector }
+      - { type: .bss, vram: 0x00A5ABC0, name: ov12/rg_matrices_effector }
       - { type: bss, vram: 0x00A5ABC8, name: ov12/rg_select_robot }
       - { type: bss, vram: 0x00A5ACE4, name: ov12/xrg_actor }
       - { type: bss, vram: 0x00A5ACF0, name: ov12/xrg_rand_int }
