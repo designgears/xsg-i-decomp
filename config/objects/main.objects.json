@@ -36096,7 +36096,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/game_radar.c",
@@ -56705,7 +56705,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
