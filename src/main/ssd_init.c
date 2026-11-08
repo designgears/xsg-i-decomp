@@ -2,6 +2,8 @@
 #include "shared.h"
 #include "ssd_init.h"
 
+RssdWorkFlags RssdWork = { 0 };
+
 /*
  * libkernel syscall stub (main:0x00200550).
  */

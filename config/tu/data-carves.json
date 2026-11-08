@@ -1883,6 +1883,93 @@
    ]
   },
   "main/tu107": {
+   ".data": [
+    {
+     "range": [
+      "0x004a9500",
+      "0x004a9e20"
+     ],
+     "generated": [
+      "0x004a9500",
+      "0x004a9e20"
+     ],
+     "generated_by": [
+      "add_exec_prog",
+      "nmlPacketAddGsAlpha",
+      "nmlPacketAddGsAlpha1",
+      "nmlPacketAddGsClamp",
+      "nmlPacketAddGsFBA",
+      "nmlPacketAddGsFBA1",
+      "nmlPacketAddGsFba",
+      "nmlPacketAddGsFlush",
+      "nmlPacketAddGsFlushWide",
+      "nmlPacketAddGsFogCol",
+      "nmlPacketAddGsFrame",
+      "nmlPacketAddGsFrame1",
+      "nmlPacketAddGsPAbe",
+      "nmlPacketAddGsPixeltest",
+      "nmlPacketAddGsPixeltest1",
+      "nmlPacketAddGsPrmode",
+      "nmlPacketAddGsPrmodecont",
+      "nmlPacketAddGsScissor",
+      "nmlPacketAddGsScissor1",
+      "nmlPacketAddGsTexture",
+      "nmlPacketAddGsZbuf",
+      "nmlPacketAddGsZbuf1",
+      "nmlPacketAddPixelControl",
+      "nmlPacketAddScreenClear",
+      "nmlPacketAddTextureParam",
+      "nmlPacketMakeCircleTexture",
+      "packet_gs_entry32",
+      "packet_gs_entry64"
+     ],
+     "c_owned_symbols": [
+      "s_aUcodeDropNull",
+      "D_004A9514",
+      "s_aUcodeDrop",
+      "D_004A952C",
+      "s_aUcodeTexEnvNull",
+      "D_004A9544",
+      "s_aUcodeTexEnv",
+      "D_004A955C",
+      "s_aUcodeAddAdr",
+      "D_004A9574",
+      "s_aUcodeAddAdrZbuf",
+      "D_004A958C",
+      "s_aUcodeAddFaceAdr",
+      "D_004A95A4",
+      "s_aUcodeAddBackAdr",
+      "D_004A95BC",
+      "s_aUcodeAddEnvAdr",
+      "s_aUcodeAddEnvAdrZbuf",
+      "s_aUcodeAddEnvNullAdr",
+      "s_aUcodeAddEnvFaceAdr",
+      "s_aUcodeAddEnvBackAdr",
+      "s_aUcodeProAdr",
+      "s_aUcodeProSkipAdr",
+      "D_004A96E4",
+      "s_aUcodeProFaceAdr",
+      "s_aUcodeProBackAdr",
+      "s_aUcodeEnvAdr",
+      "s_aUcodeEnvAdrZbuf",
+      "s_aUcodeEnvFaceAdr",
+      "s_aUcodeEnvBackAdr",
+      "s_aUcodeEnvNullAdr",
+      "s_aUcodeAdr",
+      "s_aUcodeAdrZbuf",
+      "s_aUcodeFaceAdr",
+      "s_aUcodeBackAdr",
+      "s_aUcodeTbl",
+      "g_aGsTag"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_packet_add.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -2049,6 +2136,32 @@
    ]
   },
   "main/tu108": {
+   ".data": [
+    {
+     "range": [
+      "0x004a9e20",
+      "0x004aa080"
+     ],
+     "generated": [
+      "0x004a9e20",
+      "0x004aa030"
+     ],
+     "generated_by": [
+      "nmlFilterStealthMake"
+     ],
+     "c_owned_symbols": [
+      "s_aStealthDat",
+      "s_inStealthUnitDat",
+      "D_004AA030"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_filter_set.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -2321,6 +2434,48 @@
    ]
   },
   "main/tu110": {
+   ".data": [
+    {
+     "range": [
+      "0x004aa080",
+      "0x004aa280"
+     ],
+     "generated": [
+      "0x004aa080",
+      "0x004aa280"
+     ],
+     "generated_by": [
+      "RSsdSifRpcThread",
+      "RssdBackNextWaveThread",
+      "RssdBackgroundNextWave",
+      "RssdBusy",
+      "RssdCallFunc",
+      "RssdGetCallCompletedCode",
+      "RssdInitIop",
+      "RssdSifRpcCallback",
+      "RssdSifRpcServer",
+      "RssdSpuRead",
+      "SsdGetResultParam",
+      "SsdGetResultValue",
+      "SsdInit",
+      "SsdQuit",
+      "SsdResume",
+      "SsdSetFuncCallback",
+      "SsdSetServerCallback",
+      "SsdSetStreamEndCallback",
+      "SsdSuspend"
+     ],
+     "c_owned_symbols": [
+      "RssdWork"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ssd_init.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -2378,6 +2533,34 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ssd_1.o"
+     }
+    }
+   ]
+  },
+  "main/tu114": {
+   ".data": [
+    {
+     "range": [
+      "0x004aa280",
+      "0x004aa2a0"
+     ],
+     "generated": [
+      "0x004aa280",
+      "0x004aa2a0"
+     ],
+     "generated_by": [
+      "SsdInitPcmStream",
+      "SsdInitVagStreamMono",
+      "SsdInitVagStreamStereo"
+     ],
+     "c_owned_symbols": [
+      "RssdStrWork"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ssd_3.o"
      }
     }
    ]

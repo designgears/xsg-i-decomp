@@ -174,7 +174,90 @@ typedef struct UcodeTableRow {
     u32 *programs[7];
 } UcodeTableRow;
 
-extern UcodeTableRow s_aUcodeTbl[];
+/* VU1 program byte addresses per microcode family, one list per variant. */
+static u32 s_aUcodeDropNull[5] = { 0 };
+static u32 s_aUcodeDrop[5] = {
+    0x0C80, 0x0000, 0x06F0, 0x08F8, 0x0A98,
+};
+static u32 s_aUcodeTexEnvNull[5] = { 0 };
+static u32 s_aUcodeTexEnv[5] = {
+    0x0D68, 0x0000, 0x06F0, 0x08B0, 0x0AB8,
+};
+static u32 s_aUcodeAddAdr[5] = {
+    0x0CA0, 0x1170, 0x13B8, 0x1718, 0x1AE0,
+};
+static u32 s_aUcodeAddAdrZbuf[5] = { 0 };
+static u32 s_aUcodeAddFaceAdr[5] = {
+    0x0EE0, 0x1F48, 0x2070, 0x2198, 0x2438,
+};
+static u32 s_aUcodeAddBackAdr[5] = {
+    0x1128, 0x2620, 0x2620, 0x2620, 0x2620,
+};
+static u32 s_aUcodeAddEnvAdr[12] = {
+    0x06F8, 0x0A48, 0x0EE8, 0x13D0, 0x1958, 0x1C70,
+    0x20C8, 0x2560, 0x2A98, 0x2E50, 0x32E0, 0x37B8,
+};
+static u32 s_aUcodeAddEnvAdrZbuf[12] = {
+    0x06F8, 0x06F8, 0x06F8, 0x06F8, 0x1958, 0x1958,
+    0x1958, 0x1958, 0x2A98, 0x2A98, 0x2A98, 0x2A98,
+};
+static u32 s_aUcodeAddEnvNullAdr[12] = { 0 };
+static u32 s_aUcodeAddEnvFaceAdr[12] = {
+    0x09D8, 0x0E78, 0x1360, 0x18E8, 0x1C00, 0x2058,
+    0x24F0, 0x2A28, 0x2DE0, 0x3270, 0x3748, 0x3CC0,
+};
+static u32 s_aUcodeAddEnvBackAdr[12] = {
+    0x0A10, 0x0EB0, 0x1398, 0x1920, 0x1C38, 0x2090,
+    0x2528, 0x2A60, 0x2E18, 0x32A8, 0x3780, 0x3CF8,
+};
+static u32 s_aUcodeProAdr[6] = {
+    0x08A8, 0x0BB8, 0x0E78, 0x11E8, 0x1498, 0x1838,
+};
+static u32 s_aUcodeProSkipAdr[7] = { 0 };
+static u32 s_aUcodeProFaceAdr[6] = {
+    0x08A8, 0x0BB8, 0x0E78, 0x11E8, 0x1498, 0x1838,
+};
+static u32 s_aUcodeProBackAdr[6] = { 0 };
+static u32 s_aUcodeEnvAdr[12] = {
+    0x05B0, 0x08E0, 0x0D60, 0x1228, 0x1790, 0x1A88,
+    0x1EC0, 0x2338, 0x2850, 0x2BE8, 0x3058, 0x3510,
+};
+static u32 s_aUcodeEnvAdrZbuf[12] = {
+    0x05B0, 0x05B0, 0x05B0, 0x05B0, 0x1790, 0x1790,
+    0x1790, 0x1790, 0x2850, 0x2850, 0x2850, 0x2850,
+};
+static u32 s_aUcodeEnvFaceAdr[12] = {
+    0x0870, 0x0CF0, 0x11B8, 0x1720, 0x1A18, 0x1E50,
+    0x22C8, 0x27E0, 0x2B78, 0x2FE8, 0x34A0, 0x39F8,
+};
+static u32 s_aUcodeEnvBackAdr[12] = {
+    0x08A8, 0x0D28, 0x11F0, 0x1758, 0x1A50, 0x1E88,
+    0x2300, 0x2818, 0x2BB0, 0x3020, 0x34D8, 0x3A30,
+};
+static u32 s_aUcodeEnvNullAdr[12] = { 0 };
+static u32 s_aUcodeAdr[6] = {
+    0x0BD8, 0x0DE0, 0x1418, 0x16F8, 0x1B08, 0x1F60,
+};
+static u32 s_aUcodeAdrZbuf[6] = {
+    0x0BD8, 0x0DE0, 0x1418, 0x1418, 0x1418, 0x1418,
+};
+static u32 s_aUcodeFaceAdr[6] = {
+    0x0F90, 0x11E0, 0x1648, 0x1A58, 0x1EB0, 0x23A8,
+};
+static u32 s_aUcodeBackAdr[6] = {
+    0x12D8, 0x1320, 0x16A0, 0x16A0, 0x16A0, 0x16A0,
+};
+
+static UcodeTableRow s_aUcodeTbl[6] = {
+    { { s_aUcodeEnvAdrZbuf, s_aUcodeAdrZbuf, s_aUcodeProSkipAdr, s_aUcodeAddEnvAdrZbuf, s_aUcodeAddAdrZbuf, s_aUcodeTexEnvNull, s_aUcodeDropNull } },
+    { { s_aUcodeEnvFaceAdr, s_aUcodeFaceAdr, s_aUcodeProFaceAdr, s_aUcodeAddEnvFaceAdr, s_aUcodeAddFaceAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvBackAdr, s_aUcodeBackAdr, s_aUcodeProBackAdr, s_aUcodeAddEnvBackAdr, s_aUcodeAddBackAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvAdr, s_aUcodeAdr, s_aUcodeProAdr, s_aUcodeAddEnvAdr, s_aUcodeAddAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvAdr, s_aUcodeFaceAdr, s_aUcodeProFaceAdr, s_aUcodeAddEnvAdr, s_aUcodeAddFaceAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+    { { s_aUcodeEnvNullAdr, s_aUcodeBackAdr, s_aUcodeProBackAdr, s_aUcodeAddEnvNullAdr, s_aUcodeAddBackAdr, s_aUcodeTexEnv, s_aUcodeDrop } },
+};
+
+GsTagWord g_aGsTag[162] = { { 0 } };
 
 extern int g_aSubWindow[4];
 

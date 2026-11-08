@@ -595,8 +595,19 @@ union NmlStealthModelView {
     struct NmlStealthGeometry *stealthParts[10];
     } fields;
 };
-extern struct NmlStealthDescriptor s_aStealthDat[10];
-extern struct NmlStealthDescriptor s_inStealthUnitDat;
+struct NmlStealthDescriptor s_aStealthDat[10] = {
+    { 9, 12, { 0 }, 1, 0.18f, 0.18f, 0.0f, -0.1f, { 1.0f, 0.95f, 0.9f, 0.6f } },
+    { 1, 2, { 0 }, 1, 0.14f, 0.14f, 0.1f, 0.0f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 2, 3, { 0 }, 1, 0.12f, 0.18f, -0.1f, 0.1f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 5, 6, { 0 }, 1, 0.14f, 0.14f, 0.1f, 0.0f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 6, 7, { 0 }, 1, 0.12f, 0.18f, -0.1f, 0.1f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 12, 13, { 0 }, 1, 0.17f, 0.17f, -0.25f, 0.05f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 15, 17, { 0 }, 1, 0.08f, 0.08f, 0.0f, 0.0f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 17, 19, { 0 }, 1, 0.09f, 0.09f, -0.0f, 0.15f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 21, 23, { 0 }, 1, 0.08f, 0.08f, 0.0f, 0.0f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+    { 23, 25, { 0 }, 1, 0.09f, 0.09f, -0.0f, 0.15f, { 1.0f, 0.9f, 0.7f, 0.0f } },
+};
+struct NmlStealthDescriptor s_inStealthUnitDat = { 10000, 10000, { 0 }, 1, 0.06f, 0.06f, 0.0f, 0.0f, { 1.0f, 0.95f, 0.9f, 0.6f } };
 extern void *nmlPacketSetAttributeAlloc16N(int records);
 extern void xglVectorNormal(Vector4 *destination, const Vector4 *source);
 extern void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);

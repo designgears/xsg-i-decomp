@@ -1,6 +1,8 @@
 #include "common.h"
 #include "ssd_3.h"
 
+RssdStreamWork RssdStrWork = { { 0 } };
+
 enum {
     RSSD_CMD_INIT_PCM_STREAM              = 0xa0,
     RSSD_CMD_DISPOSE_PCM_STREAM           = 0xa1,
