@@ -404,6 +404,14 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 }
                 break;
             }
+            if (o.text[2] == 1 + 7 && (o.text[3] == 3 || o.text[3] == 2)) {   // num_uv's '/' and ':' between numbers: font glyphs
+                const char* g = o.text[3] == 3 ? "/" : ":";
+                const float fs = std::max(8.0f, float(o.dh)) * 1.2f * k;
+                const ImVec2 gs = font->CalcTextSizeA(fs, 1e9f, 0, g);
+                const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh);
+                dl->AddText(font, fs, ImVec2(c.x - gs.x * 0.5f, c.y - fs * 0.95f), Alpha(col::kTextDim, tw), g);
+                break;
+            }
             if (o.text[2] == 1 + 2 && o.text[3] >= 0 && o.text[3] < 4) {   // pad_uv[0..3]: the face buttons
                 static const int kPad[4] = {1, 0, 3, 2};   // pad_uv: circle, cross, triangle, square (u 0, 22, 44, 66)
                 const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
