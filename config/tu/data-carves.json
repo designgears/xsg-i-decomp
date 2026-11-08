@@ -11735,6 +11735,32 @@
    ]
   },
   "main/tu181": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated_by": [
+      "TexTest",
+      "TexTrans"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_1_0036DDB0",
+      "TestEnv_2_0036DE40"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -11765,27 +11791,28 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c9cd8",
-      "0x004c9ce8"
+      "0x004c9bf0",
+      "0x004c9dd0"
      ],
      "generated": [
-      "0x004c9cd8",
-      "0x004c9ce1"
+      "0x004c9bf0",
+      "0x004c9dc7"
      ],
      "generated_by": [
-      "CfTest"
+      "CfTest",
+      "KarakamaTest",
+      "SePacketTest",
+      "SetMapUnitTest",
+      "TexTest"
      ],
      "c_owned_symbols": [
-      "D_004C9CD8"
-     ],
-     "also_referenced_by_c": [
       "D_004C9BF0",
       "D_004C9C08",
       "D_004C9C20",
@@ -11797,6 +11824,7 @@
       "D_004C9CA0",
       "D_004C9CB0",
       "D_004C9CC8",
+      "D_004C9CD8",
       "D_004C9CE8",
       "D_004C9CF8",
       "D_004C9D08",
@@ -11809,10 +11837,43 @@
       "D_004C9D90",
       "D_004C9DB0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated_by": [
+      "CfTest",
+      "KarakamaTest",
+      "PrimTest",
+      "SePacketTest"
+     ],
+     "c_owned_symbols": [
+      "D_004DB6A8",
+      "D_004DB6B0",
+      "D_004DB6B8",
+      "rgba_0"
+     ],
+     "also_referenced_by_c": [
+      "MapNo"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ]

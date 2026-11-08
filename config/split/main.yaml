@@ -646,7 +646,7 @@ segments:
       - [0x2CAAB0, rodata, ether_tree]
       - [0x2CABC0, rodata, data]
       - [0x2CABF0, rodata, karakama_test]
-      - [0x2CAF20, rodata, init_uwamono_sys]
+      - [0x2CADD0, rodata, init_uwamono_sys]
       - [0x2CB280, rodata, init_map_door]
       - [0x2CB3F8, rodata, init_map_trap]
       - [0x2CB4D0, rodata, create_evt_item_get_task]

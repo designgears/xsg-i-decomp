@@ -2796,7 +2796,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C9F20",
+          "end": "0x004C9DD0",
           "ordinal": 181,
           "piece": "karakama_test",
           "start": "0x004C9BF0",
@@ -2807,7 +2807,7 @@
           "end": "0x004CA280",
           "ordinal": 182,
           "piece": "init_uwamono_sys",
-          "start": "0x004C9F20",
+          "start": "0x004C9DD0",
           "tu": "init_uwamono_sys"
         },
         {
@@ -54223,20 +54223,20 @@
           ],
           "bounds": [
             "0x004C9BEC",
-            "0x004C9F20"
+            "0x004C9DD0"
           ],
-          "end": "0x004C9F20",
+          "end": "0x004C9DD0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C9F20",
+              "end": "0x004C9DD0",
               "name": "karakama_test",
               "start": "0x004C9BF0"
             }
           ],
           "rule": "anchored start",
-          "size": 816,
+          "size": 480,
           "splat_type": "rodata",
           "start": "0x004C9BF0"
         },
@@ -55054,7 +55054,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C9F20",
+            "0x004C9DD0",
             "0x004CA261"
           ],
           "bounds": [
@@ -55068,13 +55068,13 @@
               "c_split": false,
               "end": "0x004CA280",
               "name": "init_uwamono_sys",
-              "start": "0x004C9F20"
+              "start": "0x004C9DD0"
             }
           ],
-          "rule": "anchored start",
-          "size": 864,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 1200,
           "splat_type": "rodata",
-          "start": "0x004C9F20"
+          "start": "0x004C9DD0"
         },
         ".sdata": {
           "anchored": [
