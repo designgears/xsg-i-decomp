@@ -1931,6 +1931,41 @@
     }
    ]
   },
+  "main/tu117": {
+   ".data": [
+    {
+     "range": [
+      "0x003626b0",
+      "0x00362790"
+     ],
+     "generated": [
+      "0x003626b0",
+      "0x00362790"
+     ],
+     "generated_by": [
+      "DrawShadow",
+      "GamePauseDispBG",
+      "GamePauseDispCf",
+      "GamePauseDispEvent"
+     ],
+     "c_owned_symbols": [
+      "ShadowEnv",
+      "pause_0",
+      "D_0036272D",
+      "msg1_1",
+      "D_0036275C",
+      "msg2_2",
+      "D_00362783"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_pause_disp.o"
+     }
+    }
+   ]
+  },
   "main/tu118": {
    ".data": [
     {

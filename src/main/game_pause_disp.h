@@ -9,7 +9,7 @@ extern void PauseMenu(void);
 
 extern void GamePauseDispBG(void);
 
-extern unsigned char ShadowEnv[];
+
 
 /*
  * Only the packet handle at +0x00 is evidenced (DrawShadow). The rest of the
@@ -36,13 +36,7 @@ extern void GamePauseDispCf(void);
 
 extern int xglFontGetStringWidth(const char *text);
 
-extern const char pause_0[];
-
 void GamePauseDispEvent(void);
-
-extern const char msg1_1[];
-
-extern const char msg2_2[];
 
 /* The pause menu reads these fields from the game loop's global state. */
 typedef struct PauseGameLoopState {
