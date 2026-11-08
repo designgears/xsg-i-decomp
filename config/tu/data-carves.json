@@ -7167,21 +7167,53 @@
    ]
   },
   "main/tu192": {
+   ".data": [
+    {
+     "range": [
+      "0x003b1c10",
+      "0x003b1e2c"
+     ],
+     "generated": [
+      "0x003b1c10",
+      "0x003b1e2c"
+     ],
+     "generated_by": [
+      "Fly_to_Ladder",
+      "On_Ladder"
+     ],
+     "c_owned_symbols": [
+      "AdjTable_X",
+      "AdjTable_Z",
+      "LadderStep"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/get_ladder.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
-      "0x004d8074",
+      "0x004d8068",
       "0x004d80fc"
      ],
      "generated": [
-      "0x004d8074",
+      "0x004d8068",
       "0x004d80fc"
      ],
      "generated_by": [
+      "Fly_to_Ladder",
+      "Get_Off_Ladder",
       "On_Ladder",
       "Ready_Ladder"
      ],
      "c_owned_symbols": [
+      "D_004D8068",
+      "D_004D806C",
+      "D_004D8070",
       "D_004D8074",
       "D_004D8078",
       "D_004D807C",
@@ -7217,15 +7249,11 @@
       "D_004D80F4",
       "D_004D80F8"
      ],
-     "also_referenced_by_c": [
-      "D_004D8068",
-      "D_004D806C",
-      "D_004D8070"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get_ladder.o"
+      "object": "build/main/build/c/get_ladder.o"
      }
     }
    ],
@@ -7233,15 +7261,16 @@
     {
      "range": [
       "0x004cac20",
-      "0x004cad30"
+      "0x004cad60"
      ],
      "generated": [
       "0x004cac20",
-      "0x004cad30"
+      "0x004cad5c"
      ],
      "generated_by": [
       "Get_Arrival",
       "Get_Ladder",
+      "Ladder_Main",
       "On_Ladder",
       "Ready_Ladder"
      ],
@@ -7257,37 +7286,15 @@
       "D_004CACD8",
       "D_004CACF0",
       "D_004CAD08",
-      "D_004CAD20"
-     ],
-     "also_referenced_by_c": [
-      "D_004CAD30"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get_ladder.o"
-     }
-    },
-    {
-     "range": [
-      "0x004cad40",
-      "0x004cad60"
-     ],
-     "generated": [
-      "0x004cad40",
-      "0x004cad5c"
-     ],
-     "generated_by": [
-      "Ladder_Main"
-     ],
-     "c_owned_symbols": [
+      "D_004CAD20",
+      "D_004CAD30",
       "jtbl_004CAD40"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get_ladder.o"
+      "object": "build/main/build/c/get_ladder.o"
      }
     }
    ],
@@ -7295,25 +7302,27 @@
     {
      "range": [
       "0x004db848",
-      "0x004db850"
+      "0x004db856"
      ],
      "generated": [
       "0x004db848",
-      "0x004db850"
+      "0x004db856"
      ],
      "generated_by": [
+      "Fly_to_Ladder",
       "On_Ladder"
      ],
      "c_owned_symbols": [
-      "D_004DB848"
+      "D_004DB848",
+      "NowLadderStep",
+      "SelNum",
+      "PhCunt"
      ],
-     "also_referenced_by_c": [
-      "NowLadderStep"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/get_ladder.o"
+      "object": "build/main/build/c/get_ladder.o"
      }
     }
    ]
