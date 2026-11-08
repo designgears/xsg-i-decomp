@@ -93,15 +93,6 @@ typedef struct CardFontCode8 {
 extern const CardFontCode5 D_00A4C780;
 extern const CardFontCode8 D_00A4C7C8;
 extern const CardFontCode5 D_00A4C7D0;
-extern char D_00A4C790[];
-extern char D_00A4C868[];
-extern char D_00A4C870[];
-extern char D_00A4C5A0[];
-extern char D_00A4C5B8[];
-extern char D_00A4C5D0[];
-extern char D_00A4C5E8[];
-extern char D_00A4C600[];
-extern char D_00A4C618[];
 
 extern void CardPlaySound1(void);
 extern void CardPlaySound2(void);

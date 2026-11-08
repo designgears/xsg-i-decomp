@@ -4,6 +4,8 @@
 #include "common.h"
 #include "shared.h"
 #include "card_play_sound1.h"
+extern const char D_00A4C868[];
+extern const char D_00A4C870[];
 
 /* .bss (file-local, original order) */
 static u8 D_00A56F10;
@@ -32,8 +34,6 @@ extern int xglSoundSendSwd(void *swd, int bank);
 extern void xglSoundSendSmd2(void *smd, int bank);
 extern void xglSoundSequenceNormal2(int channel, int volume);
 extern char BGFileNameList[6][16];
-extern char D_00A4BDA0[];
-extern char D_00A4BDA8[];
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
 
@@ -92,9 +92,6 @@ void CardPlaySound4(void)
 }
 
 extern int CardFread(unsigned int mode, char *filename);
-extern char D_00A4BCC0[];
-extern char D_00A4BCD0[];
-extern char D_00A4BCF0[];
 extern unsigned char IDdata[];
 extern int printf(const char *, ...);
 
@@ -104,8 +101,8 @@ int CardDataLoad(unsigned short *arg0) {
     unsigned char *p;
     unsigned char *id;
 
-    if (CardFread(0x01000000, D_00A4BCC0) < 0) {
-        printf(D_00A4BCD0);
+    if (CardFread(0x01000000, "card.dat") < 0) {
+        printf("Card Data File Not Found!!\n");
         return 0;
     }
     *arg0 = *(unsigned short *)0x01000000;
@@ -116,7 +113,7 @@ int CardDataLoad(unsigned short *arg0) {
     id = IDdata;
     for (i = 0, p = (unsigned char *)0x01000004; i < 12; i++) {
         if (*p++ != *(unsigned char *)(i + (int)id)) {
-            printf(D_00A4BCF0);
+            printf("ID Not Mutch!!\n");
             return 0;
         }
     }
@@ -126,19 +123,12 @@ int CardDataLoad(unsigned short *arg0) {
 typedef signed int s32;
 
 extern s32 CardFread(u32 mode, char *filename);
-extern char D_00A4BD00[];
 
 u32 CardGraphicLoad(void) {
-    return (u32) ~CardFread(0x0100C000, D_00A4BD00) >> 0x1F;
+    return (u32) ~CardFread(0x0100C000, "CARDGRAP.BIN") >> 0x1F;
 }
 
 extern void xglMatrixUnit(float (*matrix)[4]);
-extern char D_00A4BD10[];
-extern char D_00A4BD28[];
-extern char D_00A4BD40[];
-extern char D_00A4BD58[];
-extern char D_00A4BD70[];
-extern char D_00A4BD88[];
 
 void CardTitleInit(CardGameWork *work) {
     int i;
@@ -161,12 +151,12 @@ void CardTitleInit(CardGameWork *work) {
     xglMatrixUnit(work->models[14].matrix);
     work->models[14].matrix[3][1] = -1.37f;
     work->models[14].matrix[3][2] = 0.1f;
-    CardFread(0x01900000, D_00A4BD10);
-    CardFread(0x01901000, D_00A4BD28);
-    CardFread(0x01902000, D_00A4BD40);
-    CardFread(0x01A10050, D_00A4BD58);
-    CardFread(0x01A200A0, D_00A4BD70);
-    CardFread(0x01A300E0, D_00A4BD88);
+    CardFread(0x01900000, "title\\m_game.lex");
+    CardFread(0x01901000, "title\\m_card.lex");
+    CardFread(0x01902000, "title\\m_help.lex");
+    CardFread(0x01A10050, "title\\m_game.xtx");
+    CardFread(0x01A200A0, "title\\m_card.xtx");
+    CardFread(0x01A300E0, "title\\m_help.xtx");
 }
 
 void CMIBGInit(CardGameWork *work)
@@ -174,11 +164,11 @@ void CMIBGInit(CardGameWork *work)
     char filename[32];
 
     strcpy(filename, BGFileNameList[work->save->background]);
-    strcat(filename, D_00A4BDA0);
+    strcat(filename, ".lex");
     CardFread(0x01E40000, filename);
 
     strcpy(filename, BGFileNameList[work->save->background]);
-    strcat(filename, D_00A4BDA8);
+    strcat(filename, ".xtx");
     CardFread(0x01FB0300, filename);
 }
 
@@ -190,155 +180,6 @@ typedef int Q16 __attribute__((mode(TI)));
 typedef struct { u8 pad[0x5BB0]; u32 a[4]; u32 b[4]; } CardMainSub;
 extern float s_asIntensity[4][4];
 extern float s_asDirection[4][4];
-extern char D_00A4BDB0[];
-extern char D_00A4BDD0[];
-extern char D_00A4BDF0[];
-extern char D_00A4BE08[];
-extern char D_00A4BE20[];
-extern char D_00A4BE38[];
-extern char D_00A4BE50[];
-extern char D_00A4BE68[];
-extern char D_00A4BE80[];
-extern char D_00A4BE98[];
-extern char D_00A4BEB0[];
-extern char D_00A4BEC8[];
-extern char D_00A4BEE0[];
-extern char D_00A4BEF8[];
-extern char D_00A4BF10[];
-extern char D_00A4BF20[];
-extern char D_00A4BF38[];
-extern char D_00A4BF50[];
-extern char D_00A4BF68[];
-extern char D_00A4BF80[];
-extern char D_00A4BF90[];
-extern char D_00A4BFA0[];
-extern char D_00A4BFB0[];
-extern char D_00A4BFC0[];
-extern char D_00A4BFD8[];
-extern char D_00A4BFE8[];
-extern char D_00A4C000[];
-extern char D_00A4C018[];
-extern char D_00A4C030[];
-extern char D_00A4C048[];
-extern char D_00A4C060[];
-extern char D_00A4C078[];
-extern char D_00A4C090[];
-extern char D_00A4C0A8[];
-extern char D_00A4C0C0[];
-extern char D_00A4C0D8[];
-extern char D_00A4C0F0[];
-extern char D_00A4C100[];
-extern char D_00A4C110[];
-extern char D_00A4C120[];
-extern char D_00A4C130[];
-extern char D_00A4C140[];
-extern char D_00A4C150[];
-extern char D_00A4C160[];
-extern char D_00A4C170[];
-extern char D_00A4C180[];
-extern char D_00A4C190[];
-extern char D_00A4C1A0[];
-extern char D_00A4C1B0[];
-extern char D_00A4C1C0[];
-extern char D_00A4C1D0[];
-extern char D_00A4C1E0[];
-extern char D_00A4C1F8[];
-extern char D_00A4C210[];
-extern char D_00A4C218[];
-extern char D_00A4C220[];
-extern char D_00A4C228[];
-extern char D_00A4C230[];
-extern char D_00A4C238[];
-extern char D_00A4C240[];
-extern char D_00A4C248[];
-extern char D_00A4C250[];
-extern char D_00A4C258[];
-extern char D_00A4C260[];
-extern char D_00A4C268[];
-extern char D_00A4C270[];
-extern char D_00A4C278[];
-extern char D_00A4C280[];
-extern char D_00A4C288[];
-extern char D_00A4C290[];
-extern char D_00A4C298[];
-extern char D_00A4C2A0[];
-extern char D_00A4C2A8[];
-extern char D_00A4C2B0[];
-extern char D_00A4C2C0[];
-extern char D_00A4C2D0[];
-extern char D_00A4C2E0[];
-extern char D_00A4C2F0[];
-extern char D_00A4C300[];
-extern char D_00A4C310[];
-extern char D_00A4C320[];
-extern char D_00A4C330[];
-extern char D_00A4C340[];
-extern char D_00A4C350[];
-extern char D_00A4C360[];
-extern char D_00A4C370[];
-extern char D_00A4C380[];
-extern char D_00A4C390[];
-extern char D_00A4C3A0[];
-extern char D_00A4C3B0[];
-extern char D_00A4C3C0[];
-extern char D_00A4C3D0[];
-extern char D_00A4C3E0[];
-extern char D_00A4C3F0[];
-extern char D_00A4C400[];
-extern char D_00A4C408[];
-extern char D_00A4C410[];
-extern char D_00A4C418[];
-extern char D_00A4C420[];
-extern char D_00A4C428[];
-extern char D_00A4C430[];
-extern char D_00A4C438[];
-extern char D_00A4C440[];
-extern char D_00A4C448[];
-extern char D_00A4C450[];
-extern char D_00A4C458[];
-extern char D_00A4C460[];
-extern char D_00A4C468[];
-extern char D_00A4C470[];
-extern char D_00A4C478[];
-extern char D_00A4C480[];
-extern char D_00A4C488[];
-extern char D_00A4C490[];
-extern char D_00A4C498[];
-extern char D_00A4C4A0[];
-extern char D_00A4C4B0[];
-extern char D_00A4C4C0[];
-extern char D_00A4C4D0[];
-extern char D_00A4C4E0[];
-extern char D_00A4C4F0[];
-extern char D_00A4C500[];
-extern char D_00A4C510[];
-extern char D_00A4C520[];
-extern char D_00A4C530[];
-extern char D_00A4C540[];
-extern char D_00A4C550[];
-extern char D_00A4C560[];
-extern char D_00A4C570[];
-extern char D_00A4C580[];
-extern char D_00A4C590[];
-extern char D_00A4C5A0[];
-extern char D_00A4C5B8[];
-extern char D_00A4C5D0[];
-extern char D_00A4C5E8[];
-extern char D_00A4C600[];
-extern char D_00A4C618[];
-extern char D_00A4C630[];
-extern char D_00A4C648[];
-extern char D_00A4C660[];
-extern char D_00A4C678[];
-extern char D_00A4C690[];
-extern char D_00A4C6A0[];
-extern char D_00A4C6B8[];
-extern char D_00A4C6D0[];
-extern char D_00A4C6E8[];
-extern char D_00A4C700[];
-extern char D_00A4C718[];
-extern char D_00A4C730[];
-extern char D_00A4C748[];
 extern int CardAddList(void *o, int idx);
 extern void xglMatrixScale(float (*dst)[4], float (*src)[4], float *scale);
 extern void CardHelpFileLoad(void);
@@ -466,173 +307,173 @@ s32 CardMainInit(CardGameWork *work)
   work->definitions = (CardDefinition *) defs;
   if (defs == 0)
   {
-    printf(D_00A4BDB0);
+    printf("Card Data Load ERROR!!!\n");
     return 0;
   }
   if (((u32 (*)(int, int)) CardGraphicLoad)(defs, *((u16 *) &work->cardCount)) == 0)
   {
-    printf(D_00A4BDD0);
+    printf("Card Graphic Load ERROR!!!\n");
     return 0;
   }
-  CardFread(0x01D00000, D_00A4BDF0);
-  CardFread(0x01D00510, D_00A4BE08);
-  CardFread(0x01D00A20, D_00A4BE20);
-  CardFread(0x01D00F30, D_00A4BE38);
-  CardFread(0x01D01440, D_00A4BE50);
-  CardFread(0x01D01950, D_00A4BE68);
-  CardFread(0x01D02000, D_00A4BE80);
-  CardFread(0x01D02510, D_00A4BE98);
-  CardFread(0x01D02A20, D_00A4BEB0);
-  CardFread(0x01D02F30, D_00A4BEC8);
-  CardFread(0x01D03440, D_00A4BEE0);
-  CardFread(0x01D03950, D_00A4BEF8);
-  CardFread(0x01D06000, D_00A4BF10);
-  CardFread(0x01D08000, D_00A4BF20);
-  CardFread(0x01D0C000, D_00A4BF38);
-  CardFread(0x01D10000, D_00A4BF50);
-  CardFread(0x01D12000, D_00A4BF68);
-  CardFread(0x01D14000, D_00A4BF80);
-  CardFread(0x01D18000, D_00A4BF90);
-  CardFread(0x01D1C000, D_00A4BFA0);
-  CardFread(0x01D20000, D_00A4BFB0);
-  CardFread(0x01D60000, D_00A4BFC0);
-  CardFread(0x01D80000, D_00A4BFD8);
+  CardFread(0x01D00000, "game\\cur2D_11.lex");
+  CardFread(0x01D00510, "game\\cur2D_12.lex");
+  CardFread(0x01D00A20, "game\\cur2D_13.lex");
+  CardFread(0x01D00F30, "game\\cur2D_14.lex");
+  CardFread(0x01D01440, "game\\cur2D_15.lex");
+  CardFread(0x01D01950, "game\\cur2D_16.lex");
+  CardFread(0x01D02000, "game\\cur2D_01.lex");
+  CardFread(0x01D02510, "game\\cur2D_02.lex");
+  CardFread(0x01D02A20, "game\\cur2D_03.lex");
+  CardFread(0x01D02F30, "game\\cur2D_04.lex");
+  CardFread(0x01D03440, "game\\cur2D_05.lex");
+  CardFread(0x01D03950, "game\\cur2D_06.lex");
+  CardFread(0x01D06000, "game\\black.lex");
+  CardFread(0x01D08000, "game\\Cur_WakuY.lex");
+  CardFread(0x01D0C000, "game\\Cur_WakuG.lex");
+  CardFread(0x01D10000, "game\\Cur_WakuR.lex");
+  CardFread(0x01D12000, "game\\Cur_WakuW.lex");
+  CardFread(0x01D14000, "game\\waku6.lex");
+  CardFread(0x01D18000, "game\\1p.lex");
+  CardFread(0x01D1C000, "game\\2p.lex");
+  CardFread(0x01D20000, "game\\cur2D.xtx");
+  CardFread(0x01D60000, "game\\Cur_Waku.xtx");
+  CardFread(0x01D80000, "game\\1p2p.xtx");
   *((u32 *) (((char *) work) + 0x5BBC)) = 0x01D00000;
   *((u32 *) (((char *) work) + 0x5BC0)) = 0x01D02000;
   *((u32 *) (((char *) work) + 0x5BC4)) = 0x01D08000;
   *((u32 *) (((char *) work) + 0x5BCC)) = 0x01D20000;
   *((u32 *) (((char *) work) + 0x5BD0)) = 0x01D20000;
   *((u32 *) (((char *) work) + 0x5BD4)) = 0x01D60000;
-  CardFread(0x01DA0000, D_00A4BFE8);
-  CardFread(0x01DA2B00, D_00A4C000);
-  CardFread(0x01DA5600, D_00A4C018);
-  CardFread(0x01DA8100, D_00A4C030);
-  CardFread(0x01DAAC00, D_00A4C048);
-  CardFread(0x01DAD700, D_00A4C060);
-  CardFread(0x01DB0200, D_00A4C078);
-  CardFread(0x01DB2D00, D_00A4C090);
-  CardFread(0x01DB5800, D_00A4C0A8);
-  CardFread(0x01DDF800, D_00A4C0C0);
-  CardFread(0x01DDFC00, D_00A4C0D8);
-  CardFread(0x016E0000, D_00A4C0F0);
-  CardFread(0x016F8100, D_00A4C100);
-  CardFread(0x016F8500, D_00A4C110);
-  CardFread(0x016F8900, D_00A4C120);
-  CardFread(0x016FD440, D_00A4C130);
-  CardFread(0x01701F80, D_00A4C140);
-  CardFread(0x01706AC0, D_00A4C150);
-  CardFread(0x0170B600, D_00A4C160);
-  CardFread(0x0170D600, D_00A4C170);
-  CardFread(0x0170F600, D_00A4C180);
-  CardFread(0x01713600, D_00A4C190);
-  CardFread(0x01714600, D_00A4C1A0);
-  CardFread(0x01715600, D_00A4C1B0);
-  CardFread(0x01716600, D_00A4C1C0);
-  CardFread(0x01717600, D_00A4C1D0);
-  CardFread(0x01C73000, D_00A4C1E0);
-  CardFread(0x01C74000, D_00A4C1F8);
-  CardFread(0x01C80000, D_00A4C210);
-  CardFread(0x01C80400, D_00A4C218);
-  CardFread(0x01C80800, D_00A4C220);
-  CardFread(0x01C80C00, D_00A4C228);
-  CardFread(0x01C81000, D_00A4C230);
-  CardFread(0x01C81400, D_00A4C238);
-  CardFread(0x01C81800, D_00A4C240);
-  CardFread(0x01C81C00, D_00A4C248);
-  CardFread(0x01C82000, D_00A4C250);
-  CardFread(0x01C82400, D_00A4C258);
-  CardFread(0x01C82800, D_00A4C260);
-  CardFread(0x01C82C00, D_00A4C268);
-  CardFread(0x01C83000, D_00A4C270);
-  CardFread(0x01C83400, D_00A4C278);
-  CardFread(0x01C83800, D_00A4C280);
-  CardFread(0x01C83C00, D_00A4C288);
-  CardFread(0x01C84000, D_00A4C290);
-  CardFread(0x01C84400, D_00A4C298);
-  CardFread(0x01C84800, D_00A4C2A0);
-  CardFread(0x01C84C00, D_00A4C2A8);
-  CardFread(0x01C85000, D_00A4C2B0);
-  CardFread(0x01C85400, D_00A4C2C0);
-  CardFread(0x01C85800, D_00A4C2D0);
-  CardFread(0x01C85C00, D_00A4C2E0);
-  CardFread(0x01C86000, D_00A4C2F0);
-  CardFread(0x01C86400, D_00A4C300);
-  CardFread(0x01C86800, D_00A4C310);
-  CardFread(0x01C86C00, D_00A4C320);
-  CardFread(0x01C87000, D_00A4C330);
-  CardFread(0x01C87400, D_00A4C340);
-  CardFread(0x01C87800, D_00A4C350);
-  CardFread(0x01C87C00, D_00A4C360);
-  CardFread(0x01C88000, D_00A4C370);
+  CardFread(0x01DA0000, "title\\window1.lex");
+  CardFread(0x01DA2B00, "title\\window2.lex");
+  CardFread(0x01DA5600, "title\\window3.lex");
+  CardFread(0x01DA8100, "title\\window4.lex");
+  CardFread(0x01DAAC00, "title\\window5.lex");
+  CardFread(0x01DAD700, "title\\window6.lex");
+  CardFread(0x01DB0200, "title\\window7.lex");
+  CardFread(0x01DB2D00, "title\\window8.lex");
+  CardFread(0x01DB5800, "title\\window.bin");
+  CardFread(0x01DDF800, "deckmake\\comp.lex");
+  CardFread(0x01DDFC00, "deckmake\\comp.xtx");
+  CardFread(0x016E0000, "NewCardBase.bin");
+  CardFread(0x016F8100, "name.lex");
+  CardFread(0x016F8500, "cardgrap.lex");
+  CardFread(0x016F8900, "NewCard_B.lex");
+  CardFread(0x016FD440, "NewCard_E.lex");
+  CardFread(0x01701F80, "NewCard_S.lex");
+  CardFread(0x01706AC0, "card_kage.lex");
+  CardFread(0x0170B600, "title\\menu1.lex");
+  CardFread(0x0170D600, "title\\menu2.lex");
+  CardFread(0x0170F600, "title\\menu.bin");
+  CardFread(0x01713600, "line1.lex");
+  CardFread(0x01714600, "line2.lex");
+  CardFread(0x01715600, "line3.lex");
+  CardFread(0x01716600, "line4.lex");
+  CardFread(0x01717600, "line.xtx");
+  CardFread(0x01C73000, "deckmake\\xg_ura_up.lex");
+  CardFread(0x01C74000, "deckmake\\xg_ura_up.xtx");
+  CardFread(0x01C80000, "o0.lex");
+  CardFread(0x01C80400, "o1.lex");
+  CardFread(0x01C80800, "o2.lex");
+  CardFread(0x01C80C00, "o3.lex");
+  CardFread(0x01C81000, "o4.lex");
+  CardFread(0x01C81400, "o5.lex");
+  CardFread(0x01C81800, "o6.lex");
+  CardFread(0x01C81C00, "o7.lex");
+  CardFread(0x01C82000, "o8.lex");
+  CardFread(0x01C82400, "o9.lex");
+  CardFread(0x01C82800, "s0.lex");
+  CardFread(0x01C82C00, "s1.lex");
+  CardFread(0x01C83000, "s2.lex");
+  CardFread(0x01C83400, "s3.lex");
+  CardFread(0x01C83800, "s4.lex");
+  CardFread(0x01C83C00, "s5.lex");
+  CardFread(0x01C84000, "s6.lex");
+  CardFread(0x01C84400, "s7.lex");
+  CardFread(0x01C84800, "s8.lex");
+  CardFread(0x01C84C00, "s9.lex");
+  CardFread(0x01C85000, "Ftype_1.lex");
+  CardFread(0x01C85400, "Ftype_2.lex");
+  CardFread(0x01C85800, "Ftype_3.lex");
+  CardFread(0x01C85C00, "Ftype_4.lex");
+  CardFread(0x01C86000, "Ftype_5.lex");
+  CardFread(0x01C86400, "Ftype_6.lex");
+  CardFread(0x01C86800, "Ftype_Any1.lex");
+  CardFread(0x01C86C00, "Ftype_No1.lex");
+  CardFread(0x01C87000, "Ftype_Which.lex");
+  CardFread(0x01C87400, "Btype_1.lex");
+  CardFread(0x01C87800, "Btype_2.lex");
+  CardFread(0x01C87C00, "Btype_3.lex");
+  CardFread(0x01C88000, "Btype_4.lex");
   new_var = work;
-  CardFread(0x01C88400, D_00A4C380);
-  CardFread(0x01C88800, D_00A4C390);
-  CardFread(0x01C88C00, D_00A4C3A0);
-  CardFread(0x01C89000, D_00A4C3B0);
-  CardFread(0x01C89400, D_00A4C3C0);
-  CardFread(0x01C89800, D_00A4C3D0);
-  CardFread(0x01C89C00, D_00A4C3E0);
-  CardFread(0x01C8A000, D_00A4C3F0);
-  CardFread(0x01C8A400, D_00A4C400);
-  CardFread(0x01C8A800, D_00A4C408);
-  CardFread(0x01C8AC00, D_00A4C410);
-  CardFread(0x01C8B000, D_00A4C418);
-  CardFread(0x01C8B400, D_00A4C420);
-  CardFread(0x01C8B800, D_00A4C428);
-  CardFread(0x01C8BC00, D_00A4C430);
-  CardFread(0x01C8C000, D_00A4C438);
-  CardFread(0x01C8C400, D_00A4C440);
-  CardFread(0x01C8C800, D_00A4C448);
-  CardFread(0x01C8CC00, D_00A4C450);
-  CardFread(0x01C8D000, D_00A4C458);
-  CardFread(0x01C8D400, D_00A4C460);
-  CardFread(0x01C8D800, D_00A4C468);
-  CardFread(0x01C8DC00, D_00A4C470);
-  CardFread(0x01C8E000, D_00A4C478);
-  CardFread(0x01C8E400, D_00A4C480);
-  CardFread(0x01C8E800, D_00A4C488);
-  CardFread(0x01C8EC00, D_00A4C490);
-  CardFread(0x01C8F000, D_00A4C498);
-  CardFread(0x01C8F400, D_00A4C4A0);
-  CardFread(0x01C8F800, D_00A4C4B0);
-  CardFread(0x01C8FD10, D_00A4C4C0);
-  CardFread(0x01C90220, D_00A4C4D0);
-  CardFread(0x01C90730, D_00A4C4E0);
-  CardFread(0x01C91000, D_00A4C4F0);
-  CardFread(0x01C94050, D_00A4C500);
-  CardFread(0x01C990A0, D_00A4C510);
-  CardFread(0x01C9BB70, D_00A4C520);
-  CardFread(0x01CA1000, D_00A4C530);
-  CardFread(0x01CA1C00, D_00A4C540);
-  CardFread(0x01CA2B00, D_00A4C550);
-  CardFread(0x01CA4000, D_00A4C560);
-  CardFread(0x01CA6000, D_00A4C570);
-  CardFread(0x01CB0000, D_00A4C580);
-  CardFread(0x01CC0050, D_00A4C590);
-  CardFread(0x01930000, D_00A4C5A0);
-  CardFread(0x01931800, D_00A4C5B8);
-  CardFread(0x01933000, D_00A4C5D0);
-  CardFread(0x01934800, D_00A4C5E8);
-  CardFread(0x01936000, D_00A4C600);
-  CardFread(0x01937800, D_00A4C618);
-  CardFread(0x01DE0000, D_00A4C630);
-  CardFread(0x01DF0400, D_00A4C648);
-  CardFread(0x01DF6000, D_00A4C660);
-  CardFread(0x01E00000, D_00A4C678);
-  CardFread(0x01E10000, D_00A4C690);
-  CardFread(0x01E20000, D_00A4C6A0);
-  CardFread(0x01E30000, D_00A4C6B8);
-  CardFread(0x01E38000, D_00A4C6D0);
+  CardFread(0x01C88400, "Btype_5.lex");
+  CardFread(0x01C88800, "Btype_6.lex");
+  CardFread(0x01C88C00, "Btype_7.lex");
+  CardFread(0x01C89000, "Btype_8.lex");
+  CardFread(0x01C89400, "Atype_1.lex");
+  CardFread(0x01C89800, "Atype_2.lex");
+  CardFread(0x01C89C00, "Atype_3.lex");
+  CardFread(0x01C8A000, "Atype_4.lex");
+  CardFread(0x01C8A400, "L0.lex");
+  CardFread(0x01C8A800, "L1.lex");
+  CardFread(0x01C8AC00, "L2.lex");
+  CardFread(0x01C8B000, "L3.lex");
+  CardFread(0x01C8B400, "L4.lex");
+  CardFread(0x01C8B800, "L5.lex");
+  CardFread(0x01C8BC00, "L6.lex");
+  CardFread(0x01C8C000, "L7.lex");
+  CardFread(0x01C8C400, "L8.lex");
+  CardFread(0x01C8C800, "L9.lex");
+  CardFread(0x01C8CC00, "R0.lex");
+  CardFread(0x01C8D000, "R1.lex");
+  CardFread(0x01C8D400, "R2.lex");
+  CardFread(0x01C8D800, "R3.lex");
+  CardFread(0x01C8DC00, "R4.lex");
+  CardFread(0x01C8E000, "R5.lex");
+  CardFread(0x01C8E400, "R6.lex");
+  CardFread(0x01C8E800, "R7.lex");
+  CardFread(0x01C8EC00, "R8.lex");
+  CardFread(0x01C8F000, "R9.lex");
+  CardFread(0x01C8F400, "game\\field.lex");
+  CardFread(0x01C8F800, "card_m_c.lex");
+  CardFread(0x01C8FD10, "card_m_u.lex");
+  CardFread(0x01C90220, "card_m_r.lex");
+  CardFread(0x01C90730, "card_m_p.lex");
+  CardFread(0x01C91000, "CardInfo0.bin");
+  CardFread(0x01C94050, "CardInfo1.bin");
+  CardFread(0x01C990A0, "CardInfo2.bin");
+  CardFread(0x01C9BB70, "card_Rare.xtx");
+  CardFread(0x01CA1000, "help\\help1.lex");
+  CardFread(0x01CA1C00, "help\\help2.lex");
+  CardFread(0x01CA2B00, "help\\help3.lex");
+  CardFread(0x01CA4000, "help\\Hmenu1.lex");
+  CardFread(0x01CA6000, "help\\Hmenu2.lex");
+  CardFread(0x01CB0000, "help\\help1.xtx");
+  CardFread(0x01CC0050, "help\\help2.xtx");
+  CardFread(0x01930000, "deckmake\\battlewin1.lex");
+  CardFread(0x01931800, "deckmake\\battlewin2.lex");
+  CardFread(0x01933000, "deckmake\\battlewin3.lex");
+  CardFread(0x01934800, "deckmake\\battlewin4.lex");
+  CardFread(0x01936000, "deckmake\\battlewin5.lex");
+  CardFread(0x01937800, "deckmake\\battlewin.bin");
+  CardFread(0x01DE0000, "title\\NewTitle.lex");
+  CardFread(0x01DF0400, "deckmake\\viewer.lex");
+  CardFread(0x01DF6000, "deckmake\\decklist.lex");
+  CardFread(0x01E00000, "deckmake\\deckmake.lex");
+  CardFread(0x01E10000, "game\\mat_fg.lex");
+  CardFread(0x01E20000, "game\\mat_moji.lex");
+  CardFread(0x01E30000, "game\\mat_info.lex");
+  CardFread(0x01E38000, "game\\mat_hpatk.lex");
   strcpy(filename, BGFileNameList[new_var->save->background]);
-  strcat(filename, D_00A4BDA0);
+  strcat(filename, ".lex");
   CardFread(0x01E40000, filename);
-  CardFread(0x01EF0000, D_00A4C6E8);
-  CardFread(0x01F30100, D_00A4C700);
-  CardFread(0x01996000, D_00A4C718);
-  CardFread(0x0199A000, D_00A4C730);
-  CardFread(0x01F70200, D_00A4C748);
+  CardFread(0x01EF0000, "title\\NewTitle.xtx");
+  CardFread(0x01F30100, "deckmake\\deck_gra.bin");
+  CardFread(0x01996000, "game\\mat_mojiJ.lex");
+  CardFread(0x0199A000, "game\\mat_mojiJ.xtx");
+  CardFread(0x01F70200, "game\\mat_fg.xtx");
   strcpy(filename, BGFileNameList[work->save->background]);
-  strcat(filename, D_00A4BDA8);
+  strcat(filename, ".xtx");
   CardFread(0x01FB0300, filename);
   work->models[0].model = (void *) 0x01DE0000;
   new_var->models[0].texture = (void *) 0x01EF0000;
@@ -790,20 +631,8 @@ void CardMainAddItemSub(CardGameWork *work, int *prizes)
     }
 }
 
-extern char D_00A4C778[];
-extern char D_00A4C798[];
-extern char D_00A4C7A8[];
-extern char D_00A4C7B8[];
-extern char D_00A4C7D8[];
-extern char D_00A4C7E8[];
-extern char D_00A4C7F8[];
-extern char D_00A4C808[];
-extern char D_00A4C818[];
-extern char D_00A4C830[];
-extern char D_00A4C848[];
-extern char D_00A4C858[];
-extern char D_00A4C788[];
-extern char D_00A4C870[];
+extern const char D_00A4C778[];
+extern const char D_00A4C788[];
 extern float atColor[4][4];
 extern float auColor[4][4];
 extern char *CardPlayTMessList[];
@@ -941,7 +770,7 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         nmlModelSetLight(auColor, asDir);
     }
     xglFontPrint(0, 0, 0, D_00A4C788);
-    xglFontPrint(0xE2, 0x8A, 0xFFF0, D_00A4C790);
+    xglFontPrint(0xE2, 0x8A, 0xFFF0, " Help");
     position[1] = 0.58869994f;
     xglMatrixTrans(placement, matrix, position);
     xglMatrixScale(placement, placement, scale);
@@ -957,7 +786,7 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         nmlModelSetLight(auColor, asDir);
     }
     xglFontPrint(0, 0, 0, D_00A4C788);
-    xglFontPrint(0xD8, 0xAF, 0xFFF0, D_00A4C798);
+    xglFontPrint(0xD8, 0xAF, 0xFFF0, " Options");
     position[1] = 0.0098f;
     xglMatrixTrans(placement, matrix, position);
     xglMatrixScale(placement, placement, scale);
@@ -973,7 +802,7 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         nmlModelSetLight(auColor, asDir);
     }
     xglFontPrint(0, 0, 0, D_00A4C788);
-    xglFontPrint(0xC4, 0xD5, 0xFFF0, D_00A4C7A8);
+    xglFontPrint(0xC4, 0xD5, 0xFFF0, "   End Phase");
     position[1] = 0.3f;
     xglMatrixTrans(placement, matrix, position);
     xglMatrixScale(placement, placement, scale);
@@ -989,7 +818,7 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         nmlModelSetLight(auColor, asDir);
     }
     xglFontPrint(0, 0, 0, D_00A4C788);
-    xglFontPrint(0xCE, 0xFB, 0xFFF0, D_00A4C7B8);
+    xglFontPrint(0xCE, 0xFB, 0xFFF0, " Game Over");
     position[1] = -0.2792f;
     xglMatrixTrans(placement, matrix, position);
     xglMatrixScale(placement, placement, scale);
@@ -1006,9 +835,9 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         }
         xglFontPrint(0, 0, 0, D_00A4C788);
         if (*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 8) {
-            xglFontPrint(0x168, 0x9B, 0xFFF0, D_00A4C7D8);
+            xglFontPrint(0x168, 0x9B, 0xFFF0, "1P: Auto");
         } else {
-            xglFontPrint(0x168, 0x9B, 0xFFF0, D_00A4C7E8);
+            xglFontPrint(0x168, 0x9B, 0xFFF0, "1P: Manual");
         }
         position[1] = 0.4415f;
         xglMatrixTrans(placement, matrix, position);
@@ -1024,9 +853,9 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         }
         xglFontPrint(0, 0, 0, D_00A4C788);
         if (*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 4) {
-            xglFontPrint(0x168, 0xC1, 0xFFF0, D_00A4C7F8);
+            xglFontPrint(0x168, 0xC1, 0xFFF0, "2P: Auto");
         } else {
-            xglFontPrint(0x168, 0xC1, 0xFFF0, D_00A4C808);
+            xglFontPrint(0x168, 0xC1, 0xFFF0, "2P: Manual");
         }
         position[1] = 0.1509f;
         xglMatrixTrans(placement, matrix, position);
@@ -1042,9 +871,9 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         }
         xglFontPrint(0, 0, 0, D_00A4C788);
         if (!(*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 2)) {
-            xglFontPrint(0x155, 0xE6, 0xFFF0, D_00A4C818);
+            xglFontPrint(0x155, 0xE6, 0xFFF0, " Turn indicator on");
         } else {
-            xglFontPrint(0x155, 0xE6, 0xFFF0, D_00A4C830);
+            xglFontPrint(0x155, 0xE6, 0xFFF0, " Turn indicator off");
         }
         position[1] = -0.1376f;
         xglMatrixTrans(placement, matrix, position);
@@ -1060,9 +889,9 @@ s32 NewCMPGameModeExit(int arg0, void *arg1)
         }
         xglFontPrint(0, 0, 0, D_00A4C788);
         if (!(*(unsigned char *)(*(unsigned char **)((char *)arg1 + 0xC)) & 0x10)) {
-            xglFontPrint(0x168, 0x109, 0xFFF0, D_00A4C848);
+            xglFontPrint(0x168, 0x109, 0xFFF0, "Auto spin off");
         } else {
-            xglFontPrint(0x168, 0x109, 0xFFF0, D_00A4C858);
+            xglFontPrint(0x168, 0x109, 0xFFF0, "Auto spin on");
         }
         position[1] = -0.40780002f;
         xglMatrixTrans(placement, matrix, position);
@@ -1415,7 +1244,7 @@ void CaedGameWinMode(s32 arg0, void *arg1, s32 arg2)
     }
 }
 
-extern char D_00A4C788[];
+extern const char D_00A4C788[];
 
 void CMTSetFontColor(s32 count, s32 player)
 {
@@ -1436,12 +1265,12 @@ static inline void CardHideModels(CardGameWork *work) {
 }
 
 static inline void CardLoadBattleWindows(void) {
-    CardFread(0x01930000, D_00A4C5A0);
-    CardFread(0x01931800, D_00A4C5B8);
-    CardFread(0x01933000, D_00A4C5D0);
-    CardFread(0x01934800, D_00A4C5E8);
-    CardFread(0x01936000, D_00A4C600);
-    CardFread(0x01937800, D_00A4C618);
+    CardFread(0x01930000, "deckmake\\battlewin1.lex");
+    CardFread(0x01931800, "deckmake\\battlewin2.lex");
+    CardFread(0x01933000, "deckmake\\battlewin3.lex");
+    CardFread(0x01934800, "deckmake\\battlewin4.lex");
+    CardFread(0x01936000, "deckmake\\battlewin5.lex");
+    CardFread(0x01937800, "deckmake\\battlewin.bin");
 }
 
 s32 CardMainProc(CardGameWork *work) {
@@ -1673,7 +1502,7 @@ s32 CardMainProc(CardGameWork *work) {
                         nmlModelSetLight(asColor, asDir);
                     }
                     xglFontPrint(0, 0, 0, D_00A4C788);
-                    xglFontPrint(0xDE, 0xD6, 0xFFF0, D_00A4C790);
+                    xglFontPrint(0xDE, 0xD6, 0xFFF0, " Help");
                     position[1] = -0.0202f;
                     xglMatrixTrans(placement, matrix, position);
                     nmlModelSetPlace(placement);
