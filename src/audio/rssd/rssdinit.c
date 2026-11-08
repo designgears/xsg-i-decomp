@@ -104,6 +104,15 @@ typedef struct SsdGlobalWork {
 
 extern char _fdata[];
 
+typedef struct ModuleInfo {
+    const char *name;
+    unsigned short version;
+} ModuleInfo;
+
+/* The module name is the first .rodata string ("PS2_SSDRemote"), still
+ * provided by the original .rodata scaffold through _fdata. */
+ModuleInfo Module = { _fdata, 0x0205 };
+
 extern int printf(const char *format, ...);
 
 extern void SsdResetFuncErrorCode(void);

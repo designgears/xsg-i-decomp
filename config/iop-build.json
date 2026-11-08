@@ -91,6 +91,12 @@
         ],
         "generated_data": [
           {
+            "offset": 12352,
+            "section": ".data",
+            "sha256": "479f9b8b86d28f1dfa749d0a4d20981d4cf719d16684d5b7b2fd4267a9d35c01",
+            "size": 8
+          },
+          {
             "offset": 12368,
             "section": ".bss",
             "sha256": "5341e6b2646979a70e57653007a1f310169421ec9bdd9f1a5648f75ade005af1",
@@ -98,7 +104,7 @@
           }
         ],
         "source": "src/audio/rssd/rssdinit.c",
-        "source_sha256": "83a711cd8d39f2db6f35134efd2d8123b9adef2e813a74f2a6a5c1ed9f3c9fc2"
+        "source_sha256": "abeb6a57a5ce094377bd11c73edf86b93da1ecb823b9443113eff03260ae917d"
       },
       {
         "fdr_filename": "rssdfunc.c",
