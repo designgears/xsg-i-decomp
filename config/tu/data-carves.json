@@ -9902,15 +9902,16 @@
     {
      "range": [
       "0x004cbb60",
-      "0x004cbbd0"
+      "0x004cbbe0"
      ],
      "generated": [
       "0x004cbb60",
-      "0x004cbbca"
+      "0x004cbbe0"
      ],
      "generated_by": [
       "InitTest_002D9430",
-      "PrintDisp_002D9E90"
+      "PrintDisp_002D9E90",
+      "WindTest"
      ],
      "c_owned_symbols": [
       "D_004CBB60",
@@ -9918,11 +9919,10 @@
       "D_004CBB80",
       "D_004CBB90",
       "D_004CBBA0",
-      "D_004CBBB8"
-     ],
-     "also_referenced_by_c": [
+      "D_004CBBB8",
       "D_004CBBD0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

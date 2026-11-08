@@ -444,3 +444,6 @@ void WindTest(void)
         EXM_InitWind();
     }
 }
+
+/* Directional-light color record copied by WindTest: RGBA {0xFF, 0xFF, 0xFF, 0x50} as two dwords. */
+const unsigned long long D_004CBBD0[2] = { 0x000000FF000000FFULL, 0x00000050000000FFULL };
