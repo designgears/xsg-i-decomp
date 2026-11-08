@@ -23027,6 +23027,39 @@
    ]
   },
   "ov12/tu001_00a00088": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f4c8",
+      "0x00a4f520"
+     ],
+     "generated": [
+      "0x00a4f4c8",
+      "0x00a4f520"
+     ],
+     "generated_by": [
+      "_GetEnemyHardLevelBySerial",
+      "_GetEnemyLevelBySerial",
+      "_GetStageDataBySerial",
+      "_SelectOneChar",
+      "_pop",
+      "_push"
+     ],
+     "c_owned_symbols": [
+      "s_aeBgTbl_0",
+      "s_anEnemyLevel_1",
+      "s_anEnemyLevel_2",
+      "abInit_3",
+      "s_stack"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_main.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

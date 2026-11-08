@@ -163,7 +163,7 @@ extern const char D_00A514D8[];
 extern const char D_00A51450[];
 
 /* Stage id per serial, indexed 0..3 (ov12:0x00a4f4c8, size 0x10). */
-extern int s_aeBgTbl_0[4];
+int s_aeBgTbl_0[4] = { 0, 1, 2, 3 };
 
 static void _GetStageData(int stageId, void *data);
 
@@ -189,7 +189,7 @@ static void _GetStageHardDataBySerial(int serial, void *data)
 
 extern const char D_00A51450[];
 extern const char D_00A514D8[];
-extern int s_anEnemyLevel_1[4];
+int s_anEnemyLevel_1[4] = { 0x1000, 0xB15, 0x5FE, 0x1DEF };
 
 static int _GetEnemyLevelBySerial(u32 serial)
 {
@@ -208,7 +208,7 @@ static int _GetEnemyLevelBySerial(u32 serial)
 extern const char D_00A51500[];
 
 /* Enemy level per serial for hard mode, indexed 0..3 (ov12:0x00a4f4e8, size 0x10). */
-extern int s_anEnemyLevel_2[4];
+int s_anEnemyLevel_2[4] = { 0x1DEF, 0x1DEF, 0x1DEF, 0x1DEF };
 
 static int _GetEnemyHardLevelBySerial(u32 serial)
 {
@@ -388,7 +388,8 @@ typedef struct RgSelectState {
     unsigned char unmodeled_08[0x240];
 } RgSelectState;
 extern RgSelectState D_00A59490[2];
-extern int abInit_3[2];
+int abInit_3[2] = { 0, 0 };
+int s_stack[8] = { 0 };
 extern const char D_00A51620[];
 extern const char D_00A51630[];
 extern void InitRgSelectAGWSData(RgSelectState *state);
