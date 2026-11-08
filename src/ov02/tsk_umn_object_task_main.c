@@ -355,3 +355,23 @@ void UmnMain2(int menu_id) {
     GameCFSoundMenuReload();
     GameLoopState.flags &= ~0x04000000;
 }
+
+/*
+ * The UMN menu globals this TU owns (ov02 .data 0x00A0FEF0-0x00A1049C, all
+ * zero-initialized; original symbol names). UmnVecMat and UmnModel have no
+ * reference in the overlay's code; UmnModel's 16-byte alignment is the
+ * original's (the TU's .data starts 16-aligned at 0x00A0FEF0).
+ */
+int UmnWorkEnd = 0;
+int UmnTexAddr = 0;
+int UmnBgCubeXtx = 0;
+int UmnBgCubeLex = 0;
+int UmnModelUkn = 0;
+int UmnModelSon = 0;
+unsigned char *task_xmx = 0;
+int UmnVecMat = 0;
+unsigned char UmnModel[0x500] __attribute__((aligned(16))) = { 0 };
+UmnWorkData UmnWork = { 0 };
+unsigned char *umn_task = 0;
+int UmnMemory = 0;
+int UmnWorkEndTop = 0;

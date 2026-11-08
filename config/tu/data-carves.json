@@ -28107,6 +28107,48 @@
    ]
   },
   "ov02/tu005_00a023a8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a0fef0",
+      "0x00a1049c"
+     ],
+     "generated": [
+      "0x00a0fef0",
+      "0x00a1049c"
+     ],
+     "generated_by": [
+      "UmnChangeTopLevel",
+      "UmnFirstLoad",
+      "UmnInit",
+      "UmnMain",
+      "UmnMain2",
+      "UmnObjectTaskCreate",
+      "tskUmnObjectTaskMain"
+     ],
+     "c_owned_symbols": [
+      "UmnWorkEnd",
+      "UmnTexAddr",
+      "UmnBgCubeXtx",
+      "UmnBgCubeLex",
+      "UmnModelUkn",
+      "UmnModelSon",
+      "task_xmx",
+      "UmnVecMat",
+      "UmnModel",
+      "UmnWork",
+      "umn_task",
+      "UmnMemory",
+      "UmnWorkEndTop"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_object_task_main.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -28142,6 +28184,32 @@
    ]
   },
   "ov02/tu006_00a02d68": {
+   ".data": [
+    {
+     "range": [
+      "0x00a104a0",
+      "0x00a104a8"
+     ],
+     "generated": [
+      "0x00a104a0",
+      "0x00a104a8"
+     ],
+     "generated_by": [
+      "UmnInterface2Init",
+      "UmnInterface2Main"
+     ],
+     "c_owned_symbols": [
+      "UmnBackRgba",
+      "UmnInterface2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/umn_interface2.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
