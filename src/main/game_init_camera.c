@@ -6,19 +6,19 @@
 
 #include "game_init_camera.h"
 
-extern int dbCX;
+static int dbCX = 0;
 
 
-extern int dbCY;
+static int dbCY = 0;
 
 
-extern int dbCZ;
+static int dbCZ = 0x00FFFFFF;
 
 
-extern int dbCH;
+static int dbCH = 24;
 
 
-extern int dbMODE;
+static int dbMODE = 0;
 
 
 extern void xglLightSetDefault(StudioLight *light);
@@ -226,3 +226,6 @@ char *DB_pathFindName(char *path)
 
     return (slash != NULL) ? (slash + 1) : path;
 }
+
+/* Unreferenced 8-byte .sdata word pair that closes this TU's data. */
+unsigned long long D_004DA660 = 0x0000A3C6F3B10019ULL;

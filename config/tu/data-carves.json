@@ -2474,7 +2474,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_init_camera.o"
+      "object": "build/main/build/c/game_init_camera.o"
      }
     }
    ],
@@ -2498,37 +2498,64 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_init_camera.o"
+      "object": "build/main/build/c/game_init_camera.o"
      }
     }
    ],
    ".sdata": [
     {
      "range": [
-      "0x004da658",
-      "0x004da660"
+      "0x004da640",
+      "0x004da654"
      ],
      "generated": [
-      "0x004da658",
-      "0x004da65c"
+      "0x004da640",
+      "0x004da654"
      ],
      "generated_by": [
-      "DB_pathGetShortPath"
+      "DB_cmode",
+      "DB_incPos",
+      "DB_params",
+      "DB_printf",
+      "DB_println",
+      "DB_reset",
+      "DB_reset2"
      ],
      "c_owned_symbols": [
-      "D_004DA658"
-     ],
-     "also_referenced_by_c": [
       "dbCX",
       "dbCY",
       "dbCZ",
       "dbCH",
       "dbMODE"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_init_camera.o"
+      "object": "build/main/build/c/game_init_camera.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da658",
+      "0x004da668"
+     ],
+     "generated": [
+      "0x004da658",
+      "0x004da668"
+     ],
+     "generated_by": [
+      "DB_pathGetShortPath"
+     ],
+     "c_owned_symbols": [
+      "D_004DA658",
+      "D_004DA660"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_init_camera.o"
      }
     }
    ]
