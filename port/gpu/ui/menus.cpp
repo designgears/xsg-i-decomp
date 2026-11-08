@@ -552,7 +552,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     // then the user's high-resolution logo where the original sat
                     const float row = 272.0f / 448.0f;
                     dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, row), ImVec2(1, row), IM_COL32(255, 255, 255, 255));
-                    dl->AddImage(pic, P(0, 380), P(512, 448), ImVec2(0, 380.0f / 448.0f), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+
                 } else {
                     dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
                 }
@@ -583,6 +583,25 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 const float top = 34.0f + std::max(0.0f, (200.0f - h2) * 0.5f);
                 dl->AddImage(logo, P(256 - w2 * 0.5f, top), P(256 + w2 * 0.5f, top + h2), ImVec2(0, 0), ImVec2(1, 1),
                              IM_COL32(255, 255, 255, int(255 * std::min(1.0f, tw))));
+            }
+            if (logo && lw && lh && ArtImage(1)) {   // the copyright lines, set in the UI font
+                const char* l1 = "Xenosaga\xe2\x84\xa2 EPISODE I  Der Wille zur Macht";
+                const char* l2 = "\xc2\xa9 2001 NAMCO LTD.  ALL RIGHTS RESERVED";
+                const float s1 = 9.5f * k, s2 = 9.0f * k;
+                const ImU32 c1 = IM_COL32(70, 80, 105, int(230 * tw)), c2 = IM_COL32(95, 105, 130, int(220 * tw));
+                const ImVec2 w1 = font->CalcTextSizeA(s1, 1e9f, 0, l1), w2 = font->CalcTextSizeA(s2, 1e9f, 0, l2);
+                const ImVec2 c = P(256, 412);
+                // "Xenosaga" + a small raised TM + the rest (the font has no U+2122)
+                const char* a1 = "Xenosaga";
+                const char* b1 = " EPISODE I  Der Wille zur Macht";
+                const float tms = s1 * 0.55f;
+                const float wa = font->CalcTextSizeA(s1, 1e9f, 0, a1).x, wt = font->CalcTextSizeA(tms, 1e9f, 0, "TM").x,
+                            wb = font->CalcTextSizeA(s1, 1e9f, 0, b1).x;
+                float lx = c.x - (wa + wt + wb) * 0.5f;
+                dl->AddText(font, s1, ImVec2(lx, c.y - w1.y), c1, a1);
+                dl->AddText(font, tms, ImVec2(lx + wa, c.y - w1.y), c1, "TM");
+                dl->AddText(font, s1, ImVec2(lx + wa + wt, c.y - w1.y), c1, b1);
+                dl->AddText(font, s2, ImVec2(c.x - w2.x * 0.5f, c.y + 3 * k), c2, l2);
             }
             int rows[3], n = 0;
             rows[n++] = 0;
