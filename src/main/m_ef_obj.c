@@ -4,7 +4,7 @@
 #include "m_ef_obj.h"
 
 /* The object-pool storage remains scaffold-owned; its record layout is unresolved. */
-extern u8 mefObjBuff[];
+static u8 mefObjBuff[0x18c00];
 static u32 mefObjSysFlags = 0;
 extern void MOutputDebugStringWarn(const char *format, ...);
 

@@ -168,13 +168,13 @@ typedef struct EMessageIconKinds {
 typedef struct EMessageIconCode {
     char code[3];
 } EMessageIconCode;
-extern unsigned char moji[];
+static unsigned char moji[0x1000];
 static unsigned char otb[28] = {
     0x0B, 0x0C, 0x80, 0x80, 0x80, 0x0D, 0x02, 0x0E, 0x02, 0x02, 0x00, 0x00,
     0x00, 0x0F, 0x44, 0x00, 0x7F, 0x18, 0x00, 0x19, 0x03, 0x15, 0x02, 0x01,
     0x0C, 0x00, 0x00, 0x00,
 };
-extern EMessageSprite msg_spr[];
+static EMessageSprite msg_spr[16];
 extern int xglFontGetStringWidth(const char *text);
 extern void xglFontPrint(int x, int y, int color, const char *text);
 extern void endSpriteSet(void *sprite, int flags);
