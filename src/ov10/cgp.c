@@ -4765,10 +4765,10 @@ extern void CardPlayShuffleYama(CardPlaySide *side);
 extern s32 CardPlayCntDsp(CardPlaySide *side, s16 cardId);
 extern int CardPlayDrawCard(CardPlaySide *side);
 extern s32 CardPlayCntAllOpe(CardGameWork *work, s32 opeId);
-extern s32 D_00A57DC0;
-extern u8 D_00A57DC4;
-extern u8 D_00A57DC5;
-extern s8 D_00A57DC6;
+static s32 D_00A57DC0;
+static u8 D_00A57DC4;
+static u8 D_00A57DC5;
+static s8 D_00A57DC6;
 
 void CGPDrawFaseProc(s32 side, CardGameWork *work, CardPlaySide *own, CardPlaySide *opp)
 {
@@ -5070,8 +5070,8 @@ void CGPDrawFaseProc(s32 side, CardGameWork *work, CardPlaySide *own, CardPlaySi
     }
 }
 
-extern s16 D_00A57DC8;
-extern CGPCursorPosition D_00A57DD0;
+static s16 D_00A57DC8;
+static CGPCursorPosition D_00A57DD0;
 extern s32 CardPlayDisposeCnt(CardHand *hand);
 extern s32 CardPlayBattleCnt(CardPlaySide *side);
 #define CGP_ERRPLUS ((void (*)(s32, CardGameWork *, u8, s16))CGPSetErrorMessPlus)
@@ -5394,8 +5394,8 @@ extern void CGCPHandDispSub2(CardDefinition *defs, CardHand *hand, s32 index, s3
 extern void CGCPHandDispSub3(CardDefinition *defs, CardHand *hand, s32 index, s32 mode, s32 flag);
 extern void CGPSetErrorMessPlusI(s32 code, CardGameWork *work, u8 reason, s16 value) __asm__("CGPSetErrorMessPlus");
 extern float BattlePos1P[][3];
-extern CGPCursorPosition D_00A57DD8;
-extern s32 D_00A57DE0;
+static CGPCursorPosition D_00A57DD8;
+static s32 D_00A57DE0;
 extern char ZenkakuListB[];
 const char D_00A4F068[] = "\013\031\003\015\000Cards to be discarded:";
 const char D_00A4F088[] = "\013\031\003\015\000Where do you want to put it?";
@@ -5831,7 +5831,7 @@ extern void CardPlayCleanYama(CardPlaySide *side);
 extern void CardPlayShuffleYama(CardPlaySide *side);
 extern s32 CardPlayYamaCnt(CardPlaySide *side);
 extern void xglFontPrint(int x, int y, int color, const char *text);
-extern CGPCursorPosition D_00A57DE8;
+static CGPCursorPosition D_00A57DE8;
 typedef struct CGPCFPair {
     s16 a;
     s16 b;
@@ -5840,12 +5840,12 @@ typedef struct CGPCFStackSlot {
     CardLayerStackView battle;
     float nextShunt[3];
 } CGPCFStackSlot;
-extern s16 D_00A57DF0[1];
+static s16 D_00A57DF0[2];
 extern s16 D_00A57DF2[1] __asm__("D_00A57DF0+2");
-extern CGPCFPair D_00A57DF8;
-extern s32 D_00A57E00;
-extern s32 D_00A57E04;
-extern s32 D_00A57E08;
+static CGPCursorPosition D_00A57DF8;
+static s32 D_00A57E00;
+static s32 D_00A57E04;
+static s32 D_00A57E08;
 const char D_00A4F108[] = "\013\031\003\015\000Cards to be discarded: \243\262";
 const char D_00A4F128[] = "\013\031\003\015\000Cards to be discarded: \243\261";
 
@@ -6042,7 +6042,7 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
                 CGPSetErrorMess(side, work, 0xD);
                 ret = 1;
             } else {
-                D_00A57DF8.b = 0;
+                D_00A57DF8.index = 0;
                 work->command.step++;
             }
             break;
@@ -6056,24 +6056,24 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
             } else {
                 flag = work->rotStageId == 0;
             }
-            CGCPHandDispSub(&own->hand, D_00A57DF8.b, flag);
+            CGCPHandDispSub(&own->hand, D_00A57DF8.index, flag);
             cnt = CardPlayHandCnt(&own->hand);
             if (repeat & 0x2000) {
-                if (D_00A57DF8.b < cnt - 1) {
+                if (D_00A57DF8.index < cnt - 1) {
                     xglSoundEffectNormalID(3, 0);
-                    D_00A57DF8.b++;
+                    D_00A57DF8.index++;
                 }
             } else if (repeat & 0x8000) {
-                if (D_00A57DF8.b > 0) {
+                if (D_00A57DF8.index > 0) {
                     xglSoundEffectNormalID(3, 0);
-                    D_00A57DF8.b--;
+                    D_00A57DF8.index--;
                 }
             }
             if (pressed & 0x20) {
-                if (work->definitions[own->hand.cards[D_00A57DF8.b]].flags & 4) {
-                    D_00A57DF8.a = 9;
+                if (work->definitions[own->hand.cards[D_00A57DF8.index]].flags & 4) {
+                    D_00A57DF8.zone = 9;
                     if (side != 0) {
-                        D_00A57DF8.a = 0;
+                        D_00A57DF8.zone = 0;
                     }
                     work->command.step++;
                     xglSoundEffectNormalID(1, 0);
@@ -6084,11 +6084,11 @@ s32 CGPCFPlayCommOperation(s16 side, CardGameWork *work, s16 comm)
             break;
         }
         case 2:
-            CGPDispErrorMessPlus(side, 0x19, own->hand.cards[D_00A57DF8.b]);
+            CGPDispErrorMessPlus(side, 0x19, own->hand.cards[D_00A57DF8.index]);
             if (pressed & 0x20) {
                 D_00A57E00 = 0;
                 work->command.step++;
-                CardPlayDesertCard(&own->hand, D_00A57DF8.b);
+                CardPlayDesertCard(&own->hand, D_00A57DF8.index);
             }
             if (pressed & 0x40) {
                 work->command.phaseTimer = (s16)work->command.phaseTimer - 1;
@@ -6587,11 +6587,10 @@ typedef struct CGPCommSide {
     s16 operations[40];            /* +0xF7C */
     s16 operationFlags[40];        /* +0xFCC */
 } CGPCommSide;
-extern CGPCursorPosition D_00A57E10;
-extern s16 D_00A57E18;
-extern s16 D_00A57E12;
-extern s16 D_00A57E1A;
-extern s16 D_00A57E1C;
+static CGPCursorPosition D_00A57E10;
+static s16 D_00A57E18;
+static s16 D_00A57E1A;
+static s16 D_00A57E1C;
 extern float CLColor[4][4];
 extern int CardEnemyCommandRequest(s32 side, CardGameWork *work);
 extern int CardEnemyOperationPlay(s32 side, CardGameWork *work);
@@ -6827,9 +6826,9 @@ void CGPCommFaseSub(s32 side, CardGameWork *work, u16 autoA, u16 autoB)
         if (r != 0) {
             if (r < 0) {
                 if (work->definitions[D_00A57E18].kind == 4) {
-                    CardPlayDesertOperation((CardPlaySide *)own, D_00A57E12);
+                    CardPlayDesertOperation((CardPlaySide *)own, D_00A57E10.index);
                 } else {
-                    own->battle[D_00A57E12].battle.layers[0].life = 0;
+                    own->battle[D_00A57E10.index].battle.layers[0].life = 0;
                 }
             }
             work->command.phaseTimer++;
@@ -7424,10 +7423,10 @@ int CGPEndFaseSub(s32 side, CardHand *own, CardHand *other, CardGameWork *work)
     }
 }
 
-extern s32 D_00A57E20;
-extern s32 D_00A57E24;
-extern u8 D_00A57E28;
-extern s8 D_00A57E29;
+static s32 D_00A57E20;
+static s32 D_00A57E24;
+static u8 D_00A57E28;
+static s8 D_00A57E29;
 extern s32 CardPlayBattleCnt(CardPlaySide *side);
 extern void CGPSetErrorMessPlusI(s32 code, CardGameWork *work, u8 reason, s16 value) __asm__("CGPSetErrorMessPlus");
 
@@ -7791,8 +7790,8 @@ extern int CardPlayCommandExecute(s16 command, CardGameWork *work);
 extern void CGCPHandDispSub(CardHand *hand, int sel, int side);
 extern int CardPlayDesertCard(CardHand *hand, int index);
 extern void CardEnemyEnd(int side, CardGameWork *work);
-extern s32 D_00A57E2C;
-extern s32 D_00A57E30;
+static s32 D_00A57E2C;
+static s32 D_00A57E30;
 static inline s32 CGPEndFaseLastIndex(CardHand *hand)
 {
     return CardPlayHandCnt(hand) - 1;
