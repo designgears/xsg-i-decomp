@@ -4195,88 +4195,71 @@
    ]
   },
   "main/tu126": {
+   ".data": [
+    {
+     "range": [
+      "0x00367a50",
+      "0x00367a98"
+     ],
+     "generated": [
+      "0x00367a50",
+      "0x00367a98"
+     ],
+     "generated_by": [
+      "PauseMenuPage2",
+      "PauseMenuPage3"
+     ],
+     "c_owned_symbols": [
+      "tbl_0_00367A50",
+      "D_00367A6C",
+      "tbl_1_00367A70"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_debug_menu.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x004c0300",
-      "0x004c0310"
-     ],
-     "generated": [
-      "0x004c0300",
-      "0x004c0310"
-     ],
-     "generated_by": [
-      "PauseMenuPage0"
-     ],
-     "c_owned_symbols": [
-      "D_004C0300"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/game_debug_menu.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c03a8",
-      "0x004c03d0"
-     ],
-     "generated": [
-      "0x004c03a8",
-      "0x004c03c8"
-     ],
-     "generated_by": [
-      "PauseMenuPage2"
-     ],
-     "c_owned_symbols": [
-      "D_004C03A8"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/game_debug_menu.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c03d0",
-      "0x004c0410"
-     ],
-     "generated": [
-      "0x004c03d0",
-      "0x004c0410"
-     ],
-     "generated_by": [
-      "PauseMenuPage2"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C03D0",
-      "jtbl_004C03F0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/game_debug_menu.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c04b0",
       "0x004c0618"
      ],
      "generated": [
-      "0x004c04b0",
+      "0x004c0300",
       "0x004c0618"
      ],
      "generated_by": [
       "GameDebugMenu",
+      "PauseMenuPage0",
+      "PauseMenuPage2",
       "PauseMenuPage3"
      ],
      "c_owned_symbols": [
+      "D_004C0300",
+      "D_004C0310",
+      "D_004C0328",
+      "D_004C0340",
+      "D_004C0358",
+      "D_004C0368",
+      "D_004C0380",
+      "D_004C0390",
+      "D_004C03A8",
+      "jtbl_004C03D0",
+      "jtbl_004C03F0",
+      "D_004C0410",
+      "D_004C0420",
+      "D_004C0430",
+      "D_004C0440",
+      "D_004C0450",
+      "D_004C0460",
+      "D_004C0470",
+      "D_004C0480",
+      "D_004C0490",
+      "D_004C04A0",
       "D_004C04B0",
       "D_004C04D0",
       "D_004C04E0",
@@ -4293,6 +4276,25 @@
       "jtbl_004C0600"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C0310": "tbl_0_00367A50",
+      "D_004C0328": "tbl_0_00367A50",
+      "D_004C0340": "tbl_0_00367A50",
+      "D_004C0358": "tbl_0_00367A50",
+      "D_004C0368": "tbl_0_00367A50",
+      "D_004C0380": "tbl_0_00367A50",
+      "D_004C0390": "tbl_0_00367A50",
+      "D_004C0410": "tbl_1_00367A70",
+      "D_004C0420": "tbl_1_00367A70",
+      "D_004C0430": "tbl_1_00367A70",
+      "D_004C0440": "tbl_1_00367A70",
+      "D_004C0450": "tbl_1_00367A70",
+      "D_004C0460": "tbl_1_00367A70",
+      "D_004C0470": "tbl_1_00367A70",
+      "D_004C0480": "tbl_1_00367A70",
+      "D_004C0490": "tbl_1_00367A70",
+      "D_004C04A0": "tbl_1_00367A70"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
