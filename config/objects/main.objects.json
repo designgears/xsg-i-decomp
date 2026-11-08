@@ -4440,7 +4440,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB5E0",
+          "end": "0x004DB5D0",
           "ordinal": 176,
           "piece": "menu_system",
           "start": "0x004DB540",
@@ -4451,7 +4451,7 @@
           "end": "0x004DB680",
           "ordinal": 178,
           "piece": "menu_skill",
-          "start": "0x004DB5E0",
+          "start": "0x004DB5D0",
           "tu": "menu_skill"
         },
         {
@@ -51889,20 +51889,20 @@
           ],
           "bounds": [
             "0x004DB511",
-            "0x004DB5E0"
+            "0x004DB5D0"
           ],
-          "end": "0x004DB5E0",
+          "end": "0x004DB5D0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB5E0",
+              "end": "0x004DB5D0",
               "name": "menu_system",
               "start": "0x004DB540"
             }
           ],
           "rule": "moved boundary (data ownership by reference)",
-          "size": 160,
+          "size": 144,
           "splat_type": "sdata",
           "start": "0x004DB540"
         }
@@ -53076,7 +53076,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DB5E0",
+            "0x004DB5D0",
             "0x004DB651"
           ],
           "bounds": [
@@ -53090,13 +53090,13 @@
               "c_split": false,
               "end": "0x004DB680",
               "name": "menu_skill",
-              "start": "0x004DB5E0"
+              "start": "0x004DB5D0"
             }
           ],
-          "rule": "anchored start",
-          "size": 160,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 176,
           "splat_type": "sdata",
-          "start": "0x004DB5E0"
+          "start": "0x004DB5D0"
         }
       },
       "shared_contract": {

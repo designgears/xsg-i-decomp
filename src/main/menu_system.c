@@ -318,7 +318,6 @@ typedef struct MenuSystemWorkUp {
     unsigned char options[7];
 } MenuSystemWorkUp;
 typedef const char *MenuSystemOptionNamesUp[2];
-extern MenuSystemOptionNamesUp *const D_004C9530[];
 extern MenuSystemWorkUp MenuWorkUp __asm__("MenuWork");
 
 void MenuSystemMenuMain(void)
@@ -462,8 +461,12 @@ void MenuSystemMenuMain(void)
         WindowDXMain(titleWindow);
     }
     {
-        MenuSystemOptionNamesUp *settingLabels[7];
-        __builtin_memcpy(settingLabels, D_004C9530, sizeof(settingLabels));
+        MenuSystemOptionNamesUp *settingLabels[7] = {
+            (MenuSystemOptionNamesUp *)msg01, (MenuSystemOptionNamesUp *)msg02,
+            (MenuSystemOptionNamesUp *)msg02, (MenuSystemOptionNamesUp *)msg02,
+            (MenuSystemOptionNamesUp *)msg02, (MenuSystemOptionNamesUp *)msg02,
+            (MenuSystemOptionNamesUp *)msg02,
+        };
         for (row = 0; row < 7; row++) {
             if (row == 5)
                 continue;

@@ -893,7 +893,7 @@ segments:
       - [0x2DC278, sdata, menu_ether]
       - [0x2DC378, sdata, menu_tec]
       - [0x2DC540, sdata, menu_system]
-      - [0x2DC5E0, sdata, menu_skill]
+      - [0x2DC5D0, sdata, menu_skill]
       - [0x2DC680, sdata, ether_tree]
       - [0x2DC6A8, sdata, karakama_test]
       - [0x2DC6D8, sdata, init_uwamono_sys]

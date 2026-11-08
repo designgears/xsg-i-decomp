@@ -10986,11 +10986,11 @@
     {
      "range": [
       "0x004c9328",
-      "0x004c9530"
+      "0x004c9550"
      ],
      "generated": [
       "0x004c9328",
-      "0x004c952a"
+      "0x004c954c"
      ],
      "generated_by": [
       "MenuSystemInfoMain",
@@ -11014,11 +11014,10 @@
       "D_004C94F0",
       "D_004C9500",
       "D_004C9510",
-      "D_004C9520"
-     ],
-     "also_referenced_by_c": [
+      "D_004C9520",
       "D_004C9530"
      ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_004C9328": "msg00_0_0036DCF8",
       "D_004C9338": "D_004C9480",
@@ -11116,7 +11115,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     }
    ],
@@ -11158,7 +11157,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     },
     {
@@ -11184,7 +11183,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     },
     {
@@ -11208,7 +11207,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     }
    ],
@@ -11246,7 +11245,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     },
     {
@@ -11280,7 +11279,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_skill.o"
+      "object": "build/main/build/c/menu_skill.o"
      }
     }
    ]
