@@ -5,13 +5,16 @@ static char *command_enenpcse(int command, char *cursor, int mode);
 extern void GameDiskChange(int disk_number);
 extern void Intermission(int save_number);
 extern int xglCdGetFileSize(const char *name);
-extern int arcfilepreload;
+/* .sbss (file-local, original order) */
+static u32 *arcfileaddr;
+static u8 arcno;
+static int arcfilepreload;
+static u8 GameResourceWorkReloadLeader;
 extern char scene_txt_buffer[];
 extern void SCRIPT_fade(int time);
 static char *command_mpeg2_core(int command, char *cursor, int mode);
 static int next_arc_size(void *address);
 extern void Enemy_LoadPreset(void *address, const char *name);
-extern u32 *arcfileaddr;
 extern void *AdrsEnemyPreset;
 #include "main/xgl_thread.h"
 
@@ -801,7 +804,6 @@ unsigned int GameResourceGetFreeAddr(void)
     return a;
 }
 
-extern u8 GameResourceWorkReloadLeader;
 
 extern u8 GameResourceWorkReloadTable[];
 
@@ -907,7 +909,6 @@ int GameResourceRealloc(int resource, int size)
 }
 
 extern u32 archeader[];
-extern u8 arcno;
 extern int xglArxExtract(void *destination, void *source);
 extern void *memcpy(void *destination, const void *source, unsigned int count);
 

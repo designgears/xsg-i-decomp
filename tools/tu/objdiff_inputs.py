@@ -160,6 +160,38 @@ def section_relative_data_relocs(target, base_elf):
     Path(target).write_bytes(bytes(data))
 
 
+def size_bss_symbols(path):
+    """Size every BSS/SBSS label up to the next label (or the section end), on both sides.
+
+    splat's `dlabel` + `.space` and cc1's `.lcomm` both leave uninitialised
+    objects sizeless, and objdiff's BSS diff compares (offset, size) of sized
+    symbols only: with none on either side every BSS section measured 100%
+    whatever the C defined. Sized by the same rule on both objects, a BSS
+    section matches only when the C defines objects at the original offsets.
+    splat's `.NON_MATCHING` markers are left as they are (objdiff ignores them).
+    """
+    elf = Elf(Path(path).read_bytes())
+    data = bytearray(elf.data)
+    symtab = next(x for x in elf.sections if x.type == 2)
+    for section in elf.sections:
+        if section.type != 8 or not section.flags & 2:
+            continue
+        labels = sorted((y for y in elf.symbols if y.shndx == section.index and y.type != 3
+                         and y.name and not y.name.endswith('.NON_MATCHING')),
+                        key=lambda y: y.value)
+        starts = sorted({y.value for y in labels})
+        for y in labels:
+            nxt = next((v for v in starts if v > y.value), None)
+            # the last object runs to the section end, which differs by the
+            # link fill: round it to a word on both sides
+            size = nxt - y.value if nxt is not None else (section.size - y.value + 3) & ~3
+            struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, size)
+            if y.type == 0:
+                at = symtab.offset + 16 * y.index + 12
+                data[at] = (data[at] & 0xf0) | 1          # STT_OBJECT
+    Path(path).write_bytes(bytes(data))
+
+
 def anchor_data_sections(prefix, base, cwd):
     """A local symbol at offset 0 of every data section of the compiled object.
 
@@ -518,6 +550,7 @@ def prepare(root, evidence):
             stripped_base = destination / 'base.nodebug.o'
             strip_debug(prefix, base, stripped_base, unit_dir)
             anchor_data_sections(prefix, stripped_base, unit_dir)
+            size_bss_symbols(stripped_base)
             unit_config['base_path'] = str(stripped_base)
             base_elf = Elf(stripped_base.read_bytes())
         runs = dict(registry['tus'].get(tu.get('id'), {})) if base_elf is not None else {}
@@ -576,6 +609,7 @@ def prepare(root, evidence):
         run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
              '-o', target, stripped, *data], unit_dir)
         preserve_gp0(stripped, target)
+        size_bss_symbols(target)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
             trim_leading_fill(target, base_elf)

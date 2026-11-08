@@ -34621,7 +34621,7 @@
         ".bss": "asm",
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
