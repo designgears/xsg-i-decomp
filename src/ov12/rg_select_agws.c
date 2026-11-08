@@ -7,6 +7,7 @@
 #include "ov12/rg_piclist.h"
 #include "ov12/rg_draw.h"
 #include "rg_select_agws.h"
+#include "rg_font.h"
 
 /* Player highlight colour record (upstream recovery of s_aPlayerCol). */
 typedef struct XrgPlayerColor { int r; int g; int b; int a; } XrgPlayerColor;
@@ -187,6 +188,8 @@ static void _SetSelectableSelectChar(SelChar *pSelChar, unsigned int charIDMask)
     }
 }
 
+const char s_str_00A56650[] __asm__("D_00A56650") = "pSelChar != NIL";
+const char s_str_00A56660[] __asm__("D_00A56660") = "../rg_select_agws.euc.c";
 const char D_00A56678[] = "eCharID != RG_ACTOR_CHAR_NOP";
 
 static void _SetCharSelectChar(SelChar *pSelChar, int charID)
@@ -387,6 +390,11 @@ static void _SetCursorSelWep(SelWep *pSelWep, int nCur)
 }
 
 extern int strcmp(const char *a, const char *b);
+const char s_str_00A56698[] __asm__("D_00A56698") = "pSelWep != NIL";
+const char s_str_00A566A8[] __asm__("D_00A566A8") = "uSize > 0";
+const char s_str_00A566B8[] __asm__("D_00A566B8") = "uSize <= WEP_MAX";
+const char s_str_00A566D0[] __asm__("D_00A566D0") = "pSelWep->m_uSize > 0";
+const char s_str_00A566E8[] __asm__("D_00A566E8") = "0 <= nCur && nCur < pSelWep->m_uSize";
 const char D_00A56710[] = "pszName != NIL";
 
 static int _SetCursorByNameSelWep(SelWep *pSelWep, const char *pszName)
@@ -463,6 +471,7 @@ static void _PassTimeSelWep(SelWep *pSelWep)
 extern const char D_00A56720[]; /* "unknown type select ID %d" */
 extern void RgError(const char *message, const char *source_file, int line, ...);
 
+const char s_str_00A56720[] __asm__("D_00A56720") = "unknown type select ID %d";
 static int _EquipCurIDToEquipType(int curID)
 {
     int eType;
@@ -625,6 +634,8 @@ static void _GetAllSelType(SelType *pSelType, int *out)
     }
 }
 
+const char s_str_00A56758[] __asm__("D_00A56758") = "pSelType != NIL";
+const char s_str_00A56768[] __asm__("D_00A56768") = "eType != RG_EQUIP_TYPE_INVALID";
 const char D_00A56788[] = "aszName != NIL";
 const char D_00A56798[] = "pDisp != NIL";
 const char D_00A567A8[] = "fnt02on.bmp";
@@ -1043,6 +1054,7 @@ static void _InitSelectData(SelDat *pSelDat)
 }
 
 extern void XrgLog(const char *format, const char *source_file, int line, ...);
+const char s_str_00A56838[] __asm__("D_00A56838") = "pSelDat != NIL";
 const char D_00A56848[] = "---------------- %s %d ----------------------\n";
 const char D_00A56878[] = "char %d (selectable %x)\n";
 const char D_00A56898[] = "   **** char %d type %d : '%s' ***\n";
@@ -1185,6 +1197,7 @@ static void _LoadWepSelectData(SelDat *pSel, int *pData)
     }
 }
 
+const char s_str_00A568C0[] __asm__("D_00A568C0") = "pData != NIL";
 const char D_00A568D0[] = "pResult != NIL";
 typedef struct { long long d[0x49]; } BaseSelData;
 
@@ -1396,6 +1409,8 @@ static int _GetWepSelection(SelDat *pSelDat, int *apCollects)
     return mask;
 }
 
+const char s_str_00A568E0[] __asm__("D_00A568E0") = "pSel != NIL";
+const char s_str_00A568F0[] __asm__("D_00A568F0") = "_GetSelectChar(&pSel->m_inChar) != RG_ACTOR_CHAR_NOP";
 const char D_00A56928[] = "pBxx != NIL";
 const char D_00A56938[] = "frm12_1p.bmp";
 const char D_00A56948[] = "frm12_2p.bmp";
@@ -1661,6 +1676,31 @@ extern void XrgDispMainFont(int x, int y, const char *pszString, int bright);
 extern const char D_00A56B88[];
 extern const char D_00A56B90[];
 extern const char D_00A56B98[];
+const char s_str_00A56968[] __asm__("D_00A56968") = "frm11on_ul.bmp";
+const char s_str_00A56978[] __asm__("D_00A56978") = "frm11on_ur.bmp";
+const char s_str_00A56988[] __asm__("D_00A56988") = "frm11on_bl.bmp";
+const char s_str_00A56998[] __asm__("D_00A56998") = "frm11on_br.bmp";
+const char s_str_00A569A8[] __asm__("D_00A569A8") = "frm11on_cl.bmp";
+const char s_str_00A569B8[] __asm__("D_00A569B8") = "frm11on_cr.bmp";
+const char s_str_00A569C8[] __asm__("D_00A569C8") = "frm11on_cc.bmp";
+const char s_str_00A569D8[] __asm__("D_00A569D8") = "icon_leftarrow.bmp";
+const char s_str_00A569F0[] __asm__("D_00A569F0") = "icon_rightarrow.bmp";
+const char s_str_00A56A08[] __asm__("D_00A56A08") = "say_yes.bmp";
+const char s_str_00A56A18[] __asm__("D_00A56A18") = "say_no.bmp";
+const char s_str_00A56A28[] __asm__("D_00A56A28") = "pWinInfo->m_pTop[0] != NIL";
+const char s_str_00A56A48[] __asm__("D_00A56A48") = "pWinInfo->m_pTop[1] != NIL";
+const char s_str_00A56A68[] __asm__("D_00A56A68") = "pWinInfo->m_pBtm[0] != NIL";
+const char s_str_00A56A88[] __asm__("D_00A56A88") = "pWinInfo->m_pBtm[1] != NIL";
+const char s_str_00A56AA8[] __asm__("D_00A56AA8") = "pWinInfo->m_pSide[0] != NIL";
+const char s_str_00A56AC8[] __asm__("D_00A56AC8") = "pWinInfo->m_pSide[1] != NIL";
+const char s_str_00A56AE8[] __asm__("D_00A56AE8") = "pWinInfo->m_pInner != NIL";
+const char s_str_00A56B08[] __asm__("D_00A56B08") = "pWinInfo->m_pLeft != NIL";
+const char s_str_00A56B28[] __asm__("D_00A56B28") = "pWinInfo->m_pRight != NIL";
+const char s_str_00A56B48[] __asm__("D_00A56B48") = "pWinInfo->m_pMaru != NIL";
+const char s_str_00A56B68[] __asm__("D_00A56B68") = "pWinInfo->m_pBatu != NIL";
+const char D_00A56B88[] = "\243\314";
+const char D_00A56B90[] = "\243\322";
+const char D_00A56B98[] = "\243\314\243\322";
 const char D_00A56BA0[] = "Confirm";
 const char D_00A56BA8[] = "Cancel";
 typedef struct DetermPic {
@@ -1846,6 +1886,12 @@ static void _SetWepSelPicList(RgPicList *pList, SelDat *pSelDat)
     }
 }
 
+const char s_str_00A56BB0[] __asm__("D_00A56BB0") = "pDat->m_apPic[0] != NIL";
+const char s_str_00A56BC8[] __asm__("D_00A56BC8") = "pDat->m_apPic[1] != NIL";
+const FloatArrowDir s_arrowDir_00A56BE0 __asm__("D_00A56BE0") = { { -1, 1 } };
+const WepSelPicTbl s_picTbl_00A56BE8 __asm__("D_00A56BE8") = { { 0, 1, 2 } };
+const WepSelColor s_colorOn_00A56C00 __asm__("D_00A56C00") __attribute__((aligned(16))) = { 128, 32, 32, 127 };
+const WepSelColor s_colorOff_00A56C10 __asm__("D_00A56C10") __attribute__((aligned(16))) = { 128, 128, 128, 127 };
 const char D_00A56C20[] = "pPaint != NIL";
 
 static void _DispWepSelOverlaps(XrgPaint2D *paint, RgBxx *pBxx, SelDat *pSelDat, int ofsX, int ofsY)
@@ -1978,6 +2024,7 @@ extern void RgSelectRobotSetMode(RgSelectRobot *pRobot, int mode);
 extern void RgSelectRobotPassTime(RgSelectRobot *pRobot, float deltaTime);
 extern void RgSelectRobotSet(RgSelectRobot *pRobot, int *selection);
 extern void RgPicListSetDrawEnable(RgPicList *pList, int enable);
+const char s_str_00A56C48[] __asm__("D_00A56C48") = "pView != NIL";
 const char D_00A56C58[] = "unknown select mode %d";
 static inline void _CancelOffSelect(RgSelectAGWS *pSel, SelDat *pSelDat)
 {
@@ -2448,3 +2495,77 @@ void RgSelectAGWSDisp(RgSelectAGWS *pSel)
     }
     _Disp(pSel);
 }
+
+const char s_str_00A56C90[] __asm__("D_00A56C90") = "pszFileName != NIL";
+const char s_str_00A56CA8[] __asm__("D_00A56CA8") = "data\\nisimori\\";
+const char s_str_00A56CB8[] __asm__("D_00A56CB8") = "select.bxx";
+const char s_str_00A56CC8[] __asm__("D_00A56CC8") = "cannot load select.bxx";
+const char s_str_00A56CE0[] __asm__("D_00A56CE0") = "agwsseltop.r2d";
+const char s_str_00A56CF0[] __asm__("D_00A56CF0") = "agwssel.r2d";
+const char s_str_00A56D00[] __asm__("D_00A56D00") = "wepseltop.r2d";
+const char s_str_00A56D10[] __asm__("D_00A56D10") = "wepsel.r2d";
+/* Sized to keep the original trailing section pad. */
+const char s_str_00A56D20[24] __asm__("D_00A56D20") = "apCollects != NIL";
+/* Two player colors (RGBA ints) viewed as the declared byte rows. */
+int s_playerCol_00A50120[2][4] __asm__("s_aPlayerCol") = {
+    { 51, 124, 62, 127 },
+    { 123, 90, 64, 127 },
+};
+
+RgFontGlyph s_fontTbl_00A50140[41] __asm__("s_aFontTbl_0") = {
+    { ' ', 0, 0, 0, { 0, 0 }, 0, 4 },
+    { 'A', 0, 1, 1, { 13, 14 }, 0, -3 },
+    { 'B', 0, 15, 1, { 12, 14 }, 0, -3 },
+    { 'C', 0, 28, 1, { 12, 14 }, 0, -3 },
+    { 'D', 0, 41, 1, { 13, 14 }, 0, -3 },
+    { 'E', 0, 55, 1, { 12, 14 }, 0, -3 },
+    { 'F', 0, 68, 1, { 11, 14 }, 0, -3 },
+    { 'G', 0, 80, 1, { 13, 14 }, 0, -3 },
+    { 'H', 0, 94, 1, { 13, 14 }, 0, -3 },
+    { 'I', 0, 108, 1, { 10, 14 }, 0, -3 },
+    { 'J', 0, 119, 1, { 10, 14 }, 0, -3 },
+    { 'K', 0, 130, 1, { 13, 14 }, 0, -3 },
+    { 'L', 0, 144, 1, { 11, 14 }, 0, -3 },
+    { 'M', 0, 156, 1, { 15, 14 }, 0, -3 },
+    { 'N', 0, 172, 1, { 13, 14 }, 0, -3 },
+    { 'O', 0, 186, 1, { 14, 14 }, 0, -3 },
+    { 'P', 0, 201, 1, { 12, 14 }, 0, -3 },
+    { 'Q', 0, 214, 1, { 14, 14 }, 0, -3 },
+    { 'R', 0, 229, 1, { 13, 14 }, 0, -3 },
+    { 'S', 0, 243, 1, { 12, 14 }, 0, -3 },
+    { 'T', 0, 256, 1, { 12, 14 }, 0, -3 },
+    { 'U', 0, 269, 1, { 13, 14 }, 0, -3 },
+    { 'V', 0, 283, 1, { 12, 14 }, 0, -3 },
+    { 'W', 0, 296, 1, { 17, 14 }, 0, -3 },
+    { 'X', 0, 314, 1, { 12, 14 }, 0, -3 },
+    { 'Y', 0, 327, 1, { 12, 14 }, 0, -3 },
+    { 'Z', 0, 340, 1, { 12, 14 }, 0, -3 },
+    { '0', 0, 1, 17, { 12, 14 }, 0, -3 },
+    { '1', 0, 14, 17, { 12, 14 }, 0, -3 },
+    { '2', 0, 27, 17, { 12, 14 }, 0, -3 },
+    { '3', 0, 40, 17, { 12, 14 }, 0, -3 },
+    { '4', 0, 53, 17, { 12, 14 }, 0, -3 },
+    { '5', 0, 66, 17, { 12, 14 }, 0, -3 },
+    { '6', 0, 79, 17, { 12, 14 }, 0, -3 },
+    { '7', 0, 92, 17, { 12, 14 }, 0, -3 },
+    { '8', 0, 105, 17, { 12, 14 }, 0, -3 },
+    { '9', 0, 118, 17, { 12, 14 }, 0, -3 },
+    { '-', 0, 131, 17, { 9, 14 }, 0, -3 },
+    { '?', 0, 141, 17, { 11, 14 }, 0, -3 },
+    { '!', 0, 153, 17, { 16, 14 }, 0, -3 },
+    { '@', 0, 170, 17, { 16, 14 }, 0, -3 },
+};
+short D_00A5037E = 0; /* alignment pad */
+float s_fSinRad = 0.0f;
+int D_00A50384 = 0; /* alignment pad */
+int s_aeCharTbl[6] = { 0, 4, 2, 5, 3, 1 };
+AgwsFontColor s_aRed_1[2] = { { 80, 16, 16, 127 }, { 128, 32, 32, 127 } };
+AgwsFontColor s_aWhite_2[2] = { { 80, 80, 80, 127 }, { 128, 128, 128, 127 } };
+RgSelCharPicEntry s_ainPics_3[6] = {
+    { { 38, 45, 51, 60, 66, 72 } },
+    { { 43, 50, 56, 65, 71, 77 } },
+    { { 39, 47, 53, 62, 68, 74 } },
+    { { 41, 49, 55, 64, 70, 76 } },
+    { { 40, 46, 52, 61, 67, 73 } },
+    { { 42, 48, 54, 63, 69, 75 } },
+};

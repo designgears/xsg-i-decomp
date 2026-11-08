@@ -705,3 +705,7 @@ void DisposeArrayOfXrgParticle(XrgParticle *array)
     }
     RgHeapFree(InstanceOfRgHeapData(), array, D_00A58F30, 544);
 }
+
+/* Trailing alignment pad of the original .data section. */
+unsigned int D_00A511F8 = 0;
+unsigned int D_00A511FC = 0;

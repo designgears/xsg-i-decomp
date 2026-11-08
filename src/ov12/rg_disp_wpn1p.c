@@ -401,3 +401,6 @@ void RgDispWpn1PDisp(RgDispWpn1P *pDisp)
         XrgPaint2DFlush(paint);
     }
 }
+
+/* Trailing alignment pad of the original .data section. */
+unsigned int D_00A4FB14 = 0;

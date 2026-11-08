@@ -310,6 +310,7 @@ static inline int _Clamp(int value, int low, int high)
 #define weaponDbModelKeyword D_00A53AC0
 extern const short D_00A53AC8[];
 #define weaponDbRobotModelDirectory D_00A53AC8
+const char s_szRobotModelDir_00A53AC8[] __asm__("D_00A53AC8") = "data\\weapon\\robo\\";
 const char D_00A53AE0[] = "modelall";
 const char D_00A53AF0[] = "use";
 const char D_00A53AF8[] = "unknown char name '%s'";

@@ -696,6 +696,39 @@ static inline void _dispInitHelper7(RgAnnounce *ann, unsigned int kind)
     RgAnnounceDispInit(ann, kind);
 }
 
+const char D_00A514D8[] = "over stage-serial ID for enemy (%d)";
+const char D_00A51500[] = "over stage-serial ID for (hard) enemy (%d)";
+const char s_str_00A51530[] __asm__("D_00A51530") = "SMG32VX";
+const char s_str_00A51538[] __asm__("D_00A51538") = "BA15VX";
+const char s_str_00A51540[] __asm__("D_00A51540") = "SMP53AG";
+const char s_str_00A51548[] __asm__("D_00A51548") = "DLC02AG4";
+const char s_str_00A51558[] __asm__("D_00A51558") = "UNARMED";
+const char s_str_00A51560[] __asm__("D_00A51560") = "CB85VX";
+const char s_str_00A51568[] __asm__("D_00A51568") = "HMP-AG5";
+const char s_str_00A51570[] __asm__("D_00A51570") = "HGG-AG5";
+const char s_str_00A51578[] __asm__("D_00A51578") = "BMP-AG5";
+const char s_str_00A51580[] __asm__("D_00A51580") = "HG75VX";
+const char s_str_00A51588[] __asm__("D_00A51588") = "ECM1-VX";
+const char s_str_00A51590[] __asm__("D_00A51590") = "LG10AG";
+const char s_str_00A51598[] __asm__("D_00A51598") = "BSW13AG";
+const char s_str_00A515A0[] __asm__("D_00A515A0") = "AIRD-AG2";
+const char s_str_00A515B0[] __asm__("D_00A515B0") = "FLM64AG";
+const char s_str_00A515B8[] __asm__("D_00A515B8") = "LG24VX";
+const char s_str_00A515C0[] __asm__("D_00A515C0") = "BMP45VX";
+const char D_00A515C8[] = "rg_robot_spec.info";
+const char D_00A515E0[] = "rg_shot.info";
+const char D_00A515F0[] = "rg_weapon.info";
+const char D_00A51600[] = "title.npr";
+const char D_00A51610[] = "data\\nisimori\\";
+const char D_00A51620[] = "pInfo != NIL";
+const char s_str_00A51630[] __asm__("D_00A51630") = "";
+/* RGBA { 90, 90, 90, 127 } as the two 64-bit halves of the quad. */
+const XrgColorQuad s_color_00A51640 __asm__("D_00A51640") __attribute__((aligned(16))) = {
+    0x0000005A0000005AULL, 0x0000007F0000005AULL
+};
+const char D_00A51650[] = "PAUSE";
+const char D_00A51658[] = "HARD MODE";
+const char D_00A51668[] = "pMgr != NIL";
 static int _OneBattle(RgBattleMgr *battle, RgBattleInit *init, RgGameInfo *info, int difficulty)
 {
     int sp0;
@@ -1098,6 +1131,21 @@ extern void RgFileSysClear(RgFileSys *fileSys);
 extern void RgError(const char *message, const char *file, int line, ...);
 extern const char D_00A517D8[];
 
+const char D_00A516A8[] = "This game is 'HARD' mode";
+const char D_00A516C8[] = "--------------------------------------------------\n";
+const char D_00A51700[] = "stage %s : level %d\n";
+const char D_00A51718[] = "mode %x\n";
+const char D_00A51728[] = "enemy lev %x\n";
+const char D_00A51738[] = "\n";
+const char D_00A51740[] = "player 1 '%s'\n";
+const char D_00A51750[] = "pos %f %f %f\n";
+const char D_00A51760[] = "dir %f %f %f\n";
+const char D_00A51770[] = "weapon left  '%s'\n";
+const char D_00A51788[] = "weapon right '%s'\n";
+const char D_00A517A0[] = "weapon back  '%s'\n";
+const char D_00A517B8[] = "player 2 '%s'\n";
+const char D_00A517C8[] = "help.npr";
+const char D_00A517D8[] = "unknown title status";
 void RobotGameMain(void)
 {
     int running;
