@@ -150,14 +150,9 @@ extern LayoutStore s_inLayout;
 
 extern unsigned int s_nShadowVec;
 
-extern Vector4 s_inShadowVec;
 
 /* The four fade-control instances nmlModelSendSignalMovieStart initializes
  * through INIT_FADE_CONTROL; see the FadeControl comment above. */
-extern FadeControl s_inFadeIn;
-extern FadeControl s_inFadeOut;
-extern FadeControl s_inActiveFadeIn;
-extern FadeControl s_inActiveFadeOut;
 
 /* TU-local scalar state referenced by the recovered model-system setters. */
 extern int s_nMapClip;
@@ -179,8 +174,6 @@ extern int s_nMapLast;
  * zero; s_aAlphaGroup/s_aNonAlphaGroup (main 0x00957940/0x00959940) are the
  * arrays they index into elsewhere in this TU.
  */
-extern int s_nAlphaGroup;
-extern int s_nNonAlphaGroup;
 
 /*
  * Allocation counter CONSTRUCT_PARENT_BUF/FLUSH_PARENT_BUF reset to zero:
@@ -220,7 +213,6 @@ extern int D_0095BB44[];
  * keeps GCC from routing it through gp-relative small-data addressing,
  * which the original object never uses for these words.
  */
-extern int s_inBackBuffer[];
 
 /*
  * One named mesh block in a loaded model.  The name matcher below witnesses
