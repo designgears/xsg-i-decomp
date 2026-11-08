@@ -377,7 +377,7 @@ const char D_00A53C00[] = "0 <= uDatIdx && uDatIdx < 8";
 #define RG_WEAPON_CONTROL_LOCKON 0x20
 #define RG_WEAPON_CONTROL_ADV 0x40
 #define RG_WEAPON_CONTROL_NO_ROBMOT 0x80
-extern int s_aeJntTbl_0[8];
+static int s_aeJntTbl_0[8] = {8, 9, 10, 11, 12, 13, 14, 15};
 extern float dptofp(double value);
 extern double atof(const char *s);
 extern char *strcat(char *d, const char *s);

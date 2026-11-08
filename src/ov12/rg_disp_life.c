@@ -322,7 +322,7 @@ extern void *RgRobotGetSpec(RgStatus *pRobot);
 extern void RgGaugeDraw(RgGauge *pGauge, void *pPaint);
 extern void XrgPaint2DFlush(void *paint);
 typedef struct { int x; int y; } RgDispLifePos;
-extern const int s_anPos_1[4];
+static int s_anPos_1[4] = {0, 0x40, 0x1D0, 0x40};
 typedef struct RgDispLifeView {
     unsigned char pad00[0x24];
     void *lifeTex[2][3];  /* +0x24 */

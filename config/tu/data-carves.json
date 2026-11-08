@@ -14299,6 +14299,31 @@
    ]
   },
   "ov12/tu008_00a0d178": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f5e0",
+      "0x00a4f5e4"
+     ],
+     "generated": [
+      "0x00a4f5e0",
+      "0x00a4f5e4"
+     ],
+     "generated_by": [
+      "_AnaAutoHoming",
+      "_ResetAnaAutoHoming"
+     ],
+     "c_owned_symbols": [
+      "s_nAnaAutoHomingID"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_robot_spec.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -15288,6 +15313,30 @@
    ]
   },
   "ov12/tu027_00a1c7d8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f648",
+      "0x00a4f668"
+     ],
+     "generated": [
+      "0x00a4f648",
+      "0x00a4f668"
+     ],
+     "generated_by": [
+      "_ReadCommon_00A1CD08"
+     ],
+     "c_owned_symbols": [
+      "s_aeJntTbl_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_weapon_db.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -16153,21 +16202,21 @@
     {
      "range": [
       "0x00a4fb30",
-      "0x00a4fbf0"
+      "0x00a4fc00"
      ],
      "generated": [
       "0x00a4fb30",
-      "0x00a4fbf0"
+      "0x00a4fc00"
      ],
      "generated_by": [
+      "RgDispLifeDisp",
       "_GetAgwsNameUVWH"
      ],
      "c_owned_symbols": [
-      "s_aCharIDToUVWH_0"
-     ],
-     "also_referenced_by_c": [
+      "s_aCharIDToUVWH_0",
       "s_anPos_1"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -16590,6 +16639,36 @@
    ".rodata": [
     {
      "range": [
+      "0x00a54e18",
+      "0x00a54e40"
+     ],
+     "generated": [
+      "0x00a54e18",
+      "0x00a54e40"
+     ],
+     "generated_by": [
+      "InitRgBattleInit",
+      "RgBattleInitCopy",
+      "RgBattleInitCreateBg",
+      "RgBattleInitCreatePlayers",
+      "RgBattleInitDump",
+      "_CreateBg"
+     ],
+     "c_owned_symbols": [
+      "D_00A54E18",
+      "D_00A54E28"
+     ],
+     "also_referenced_by_c": [
+      "D_00A54E40"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_battle_init.o"
+     }
+    },
+    {
+     "range": [
       "0x00a54e48",
       "0x00a54f40"
      ],
@@ -16616,11 +16695,7 @@
       "D_00A54F10",
       "D_00A54F28"
      ],
-     "also_referenced_by_c": [
-      "D_00A54E18",
-      "D_00A54E28",
-      "D_00A54E40"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

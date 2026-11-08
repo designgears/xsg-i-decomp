@@ -9,8 +9,9 @@
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 
-extern const char D_00A54E18[]; /* "pInfo != NIL" */
-extern const char D_00A54E28[]; /* "../rg_battle_init.euc.c" */
+const char D_00A54E18[] = "pInfo != NIL";
+const char D_00A54E28[] = "../rg_battle_init.euc.c";
+extern const unsigned char D_00A54E40[];
 const char D_00A54E48[] = "pDst != NIL && pSrc != NIL";
 const char D_00A54E68[] = "UNARMED";
 const char D_00A54E70[] = "rg_bg.info";
@@ -22,7 +23,6 @@ const char D_00A54EF0[] = "  BG : %s\n";
 const char D_00A54F00[] = "  PLAYER : %s\n";
 const char D_00A54F10[] = "  POS    : %f %f %f\n";
 const char D_00A54F28[] = "     WPN (%d) : %s\n";
-extern const unsigned char D_00A54E40[];
 extern void XrgSetVectorXYZ(RgVector destination, float x, float y, float z);
 extern char *strcpy(char *destination, const char *source);
 

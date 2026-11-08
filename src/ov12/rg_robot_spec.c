@@ -6,6 +6,7 @@
 #include "rg_robot_spec.h"
 
 extern void assert_prog(const char *expression, const char *source_file, int line);
+int s_nAnaAutoHomingID = 0;
 const char D_00A51E68[] = "pSpec != NIL";
 const char D_00A51E78[] = "../rg_robot_spec.euc.c";
 typedef struct RgSpecName { long long v; } RgSpecName;
