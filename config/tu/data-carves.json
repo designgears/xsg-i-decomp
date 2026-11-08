@@ -15032,37 +15032,18 @@
     {
      "range": [
       "0x00a51220",
-      "0x00a51270"
+      "0x00a512b0"
      ],
      "generated": [
       "0x00a51220",
-      "0x00a51268"
+      "0x00a512b0"
      ],
      "generated_by": [
       "MEfCreate"
      ],
      "c_owned_symbols": [
       "D_00A51220",
-      "D_00A51240"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51270",
-      "0x00a512b0"
-     ],
-     "generated": [
-      "0x00a51270",
-      "0x00a512b0"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "D_00A51240",
       "McEfSTQtbl"
      ],
      "also_referenced_by_c": [],
@@ -15647,16 +15628,17 @@
     {
      "range": [
       "0x00a11d40",
-      "0x00a11df0"
+      "0x00a11e60"
      ],
      "generated": [
       "0x00a11d40",
-      "0x00a11de8"
+      "0x00a11e60"
      ],
      "generated_by": [
       "UmnFirstLoad",
       "UmnInit",
-      "UmnMain"
+      "UmnMain",
+      "UmnMain2"
      ],
      "c_owned_symbols": [
       "D_00A11D40",
@@ -15664,28 +15646,7 @@
       "D_00A11D70",
       "D_00A11D90",
       "D_00A11DB0",
-      "jtbl_00A11DD0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_object_task_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a11df0",
-      "0x00a11e60"
-     ],
-     "generated": [
-      "0x00a11df0",
-      "0x00a11e60"
-     ],
-     "generated_by": [
-      "UmnMain2"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A11DD0",
       "D_00A11DF0"
      ],
      "also_referenced_by_c": [],

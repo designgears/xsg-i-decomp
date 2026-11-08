@@ -247,7 +247,7 @@ int pauseFlag = 0;
 int cameraFlag = 1;
 
 int entryPhase00(void) {
-    static Vector4 sIntPararel2 = { 0.0f, 0.0f, 0.0f, 1.0f };
+    static Vector4 sIntPararel2 __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f, 1.0f };
     static Vector4 sIntAmbient = { 0.5f, 0.5f, 0.5f, 1.0f };
     StudioLight *light;
     int cfEncount;

@@ -276,7 +276,7 @@ extern void GameResourceWorkReload(void);
 extern void GameCfPlayerLoadResource(int flag);
 
 void UmnMain2(int menu_id) {
-    static const UmnMain2LightTable light_table = {
+    static const UmnMain2LightTable light_table __attribute__((aligned(16))) = {
         { value: { 0.3f, 0.3f, 0.3f, 1.0f } },
         {
             { value: { 0.5f, 0.5f, 0.5f, 1.0f } },
