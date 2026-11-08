@@ -93,6 +93,74 @@
    ]
   },
   "main/tu087": {
+   ".data": [
+    {
+     "range": [
+      "0x004906e0",
+      "0x00490a73"
+     ],
+     "generated": [
+      "0x004906e0",
+      "0x00490a73"
+     ],
+     "generated_by": [
+      "xglFontAscii2Euc",
+      "xglFontCheckProportional",
+      "xglFontDebugMode",
+      "xglFontFlushCore",
+      "xglFontGetSPcodeSize",
+      "xglFontReloadTexture"
+     ],
+     "c_owned_symbols": [
+      "ModeEnv",
+      "KanjiClutEnv",
+      "ascii2euc",
+      "spcode_0",
+      "normal_2",
+      "back0_3",
+      "back1_4",
+      "nearest_5",
+      "biliner_6",
+      "tbl_7"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_font.o"
+     }
+    },
+    {
+     "range": [
+      "0x00490a80",
+      "0x00490d60"
+     ],
+     "generated": [
+      "0x00490a80",
+      "0x00490d60"
+     ],
+     "generated_by": [
+      "xglFontFlush",
+      "xglFontReloadTexture"
+     ],
+     "c_owned_symbols": [
+      "KanjiTex0Env_8",
+      "KanjiTex1Env_9",
+      "WinTexEnv_10",
+      "TestEnv_11_00490BC0",
+      "TestEnv_12_00490C20",
+      "TestEnv_13",
+      "zbuf_14",
+      "test_15"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_font.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -115,7 +183,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_font.o"
+      "object": "build/main/build/c/xgl_font.o"
      }
     },
     {
@@ -141,7 +209,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_font.o"
+      "object": "build/main/build/c/xgl_font.o"
      }
     }
    ],
@@ -167,7 +235,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_font.o"
+      "object": "build/main/build/c/xgl_font.o"
      }
     }
    ]
