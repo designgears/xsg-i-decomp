@@ -571,48 +571,62 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             }
             break;
         }
-        case GPU_KG_PAUSE: {   // a centred title between two rules that sweep outward, and a resume hint
-            AnimState& pa = Anim(0x50415553ull, 0, 0);
-            const float t = FadeIn(pa, 5.0f) * tw;
+        case GPU_KG_PAUSE: {   // a centred card: title, a rule, two prompts in a column
+            AnimState& pa = Anim(0x50415553ull, 0, 8);
+            const float t = FadeIn(pa, 6.0f) * tw;
+            const float rise = Spring(pa, 0, 0, 16.0f).y;
             const float age = float(now - pa.born);
             anchor = kCentre;
-            const ImVec2 c = P(256, 214);
-            const char* title = "P A U S E";
-            const float fs = 34.0f * k;
-            const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, title);
-            HaloText(dl, font, fs, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), col::kText, title, t);
-            const float gap = ts.x * 0.5f + 24 * kx, len = 150 * kx;   // the rules stop short of the title
-            SweepRule(dl, ImVec2(c.x + gap, c.y), ImVec2(c.x + gap + len, c.y), k, t, age, col::kCyan);
-            SweepRule(dl, ImVec2(c.x - gap, c.y), ImVec2(c.x - gap - len, c.y), k, t, age, col::kCyan);
-            // two hints: [Start] Resume   [View] Settings, the buttons named for the layout
-            const std::string lay = xsgcfg::Get("gamepad.layout");
-            const char* start = lay == "playstation" ? "OPTIONS" : lay == "nintendo" ? "+" : "MENU";
-            const char* view = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
-            const float hs = 12.0f * k, ph = hs + 8 * k, hgap = 18 * kx;
-            struct H { const char *b, *l; float pw, lw; int icon; } hint[2] = {{start, "Resume", 0, 0, kStart}, {view, "Settings", 0, 0, kBack}};
-            float total = 0;
-            for (H& h : hint) {
-                h.pw = PromptIcon(h.icon) ? ph * 1.5f : font->CalcTextSizeA(hs, 1e9f, 0, h.b).x + 14 * kx;
-                h.lw = font->CalcTextSizeA(hs, 1e9f, 0, h.l).x;
-                total += h.pw + 7 * kx + h.lw;
+            // a vignette over the game's dim layer: the card's area stays clearest
+            {
+                const ImVec4 ar = LayoutArea();
+                const ImVec2 c0(ar.x, ar.y), c1(ar.z, ar.w);
+                const float ex = (c1.x - c0.x) * 0.22f;
+                const ImU32 e = IM_COL32(2, 2, 10, int(150 * t)), z = IM_COL32(2, 2, 10, 0);
+                dl->AddRectFilledMultiColor(c0, ImVec2(c0.x + ex, c1.y), e, z, z, e);
+                dl->AddRectFilledMultiColor(ImVec2(c1.x - ex, c0.y), c1, z, e, e, z);
+                dl->AddRectFilled(c0, c1, IM_COL32(2, 2, 12, int(60 * t)));
             }
-            total += hgap;
-            float hx = c.x - total * 0.5f;
-            const float hy = c.y + 26 * k;
-            for (const H& h : hint) {
-                if (PromptIcon(h.icon)) {
-                    PromptDraw(dl, h.icon, ImVec2(hx + h.pw * 0.5f, hy + ph * 0.5f), ph * 1.5f, t);
-                    const ImVec2 ls = font->CalcTextSizeA(hs, 1e9f, 0, h.l);
-                    HaloText(dl, font, hs, ImVec2(hx + h.pw + 7 * kx, hy + (ph - ls.y) * 0.5f), col::kTextDim, h.l, t);
-                    hx += h.pw + 7 * kx + h.lw + hgap;
-                    continue;
+            const float cw = 176, chh = 112, cx0 = 256 - cw * 0.5f, cy0 = 224 - chh * 0.5f + rise;
+            const ImVec2 a = P(cx0, cy0), b2 = P(cx0 + cw, cy0 + chh);
+            Panel(dl, a, b2, k, t);
+            // title
+            const char* title = "P A U S E D";
+            const float fs = 22.0f * k;
+            const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, title);
+            const ImVec2 tc = P(256, cy0 + 26 + rise * 0);
+            HaloText(dl, font, fs, ImVec2(tc.x - ts.x * 0.5f, tc.y - ts.y * 0.5f), col::kText, title, t);
+            // a short rule under it that sweeps out from the centre
+            {
+                const float u = std::clamp(age / 0.4f, 0.0f, 1.0f), e = 1 - (1 - u) * (1 - u);
+                const float half = 56.0f * e;
+                const ImVec2 l = P(256 - half, cy0 + 44), r = P(256 + half, cy0 + 44);
+                dl->AddRectFilledMultiColor(ImVec2(l.x, l.y), ImVec2((l.x + r.x) * 0.5f, l.y + 1.2f * k), Alpha(col::kCyan, 0), Alpha(col::kCyan, 0.9f * t),
+                                            Alpha(col::kCyan, 0.9f * t), Alpha(col::kCyan, 0));
+                dl->AddRectFilledMultiColor(ImVec2((l.x + r.x) * 0.5f, l.y), ImVec2(r.x, r.y + 1.2f * k), Alpha(col::kCyan, 0.9f * t), Alpha(col::kCyan, 0),
+                                            Alpha(col::kCyan, 0), Alpha(col::kCyan, 0.9f * t));
+            }
+            // two rows: [button] label, the buttons in one column, equal slots
+            const std::string lay = xsgcfg::Get("gamepad.layout");
+            const int fam = PromptFamily();
+            const char* start = fam == 3 ? "ENTER" : lay == "playstation" ? "OPTIONS" : lay == "nintendo" ? "+" : "MENU";
+            const char* view = fam == 3 ? "BKSP" : lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
+            struct Row { int icon; const char *b, *l; } rows2[2] = {{kStart, start, "Resume"}, {kBack, view, "Settings"}};
+            const float hs = 13.0f * k, slot = 22.0f;
+            for (int r = 0; r < 2; ++r) {
+                const float ry = cy0 + 62 + 22.0f * float(r);
+                const ImVec2 sc = P(cx0 + 46, ry + 9);
+                if (!PromptDraw(dl, rows2[r].icon, sc, slot * k, t)) {
+                    const float bh = 15 * k, bw = std::max(slot * kx, font->CalcTextSizeA(10.0f * k, 1e9f, 0, rows2[r].b).x + 10 * kx);
+                    dl->AddRectFilled(ImVec2(sc.x - bw * 0.5f, sc.y - bh * 0.5f), ImVec2(sc.x + bw * 0.5f, sc.y + bh * 0.5f),
+                                      Alpha(IM_COL32(12, 12, 30, 240), t), bh * 0.5f);
+                    dl->AddRect(ImVec2(sc.x - bw * 0.5f, sc.y - bh * 0.5f), ImVec2(sc.x + bw * 0.5f, sc.y + bh * 0.5f),
+                                Alpha(col::kFrame, 0.8f * t), bh * 0.5f, 0, 1.0f);
+                    const ImVec2 bs = font->CalcTextSizeA(10.0f * k, 1e9f, 0, rows2[r].b);
+                    dl->AddText(font, 10.0f * k, ImVec2(sc.x - bs.x * 0.5f, sc.y - bs.y * 0.5f), Alpha(col::kText, t), rows2[r].b);
                 }
-                dl->AddRectFilled(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(IM_COL32(12, 12, 30, 235), t), ph * 0.5f);
-                dl->AddRect(ImVec2(hx, hy), ImVec2(hx + h.pw, hy + ph), Alpha(col::kFrame, 0.8f * t), ph * 0.5f, 0, 1.0f);
-                const ImVec2 bs = font->CalcTextSizeA(hs, 1e9f, 0, h.b);
-                dl->AddText(font, hs, ImVec2(hx + (h.pw - bs.x) * 0.5f, hy + (ph - bs.y) * 0.5f), Alpha(col::kText, t), h.b);
-                HaloText(dl, font, hs, ImVec2(hx + h.pw + 7 * kx, hy + (ph - bs.y) * 0.5f), col::kTextDim, h.l, t);
-                hx += h.pw + 7 * kx + h.lw + hgap;
+                const ImVec2 ls = font->CalcTextSizeA(hs, 1e9f, 0, rows2[r].l);
+                HaloText(dl, font, hs, ImVec2(P(cx0 + 66, 0).x, sc.y - ls.y * 0.5f), r == 0 ? col::kText : col::kTextDim, rows2[r].l, t);
             }
             break;
         }
