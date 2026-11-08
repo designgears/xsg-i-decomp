@@ -8909,6 +8909,144 @@
    ]
   },
   "main/tu193": {
+   ".data": [
+    {
+     "range": [
+      "0x003b1e30",
+      "0x003b2018"
+     ],
+     "generated": [
+      "0x003b1e30",
+      "0x003b2018"
+     ],
+     "generated_by": [
+      "Move_BeltConveyer",
+      "Sound_FootStep"
+     ],
+     "c_owned_symbols": [
+      "FootStep",
+      "idx_0",
+      "vec_1",
+      "rate_2_003B2008"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2020",
+      "0x003b254e"
+     ],
+     "generated": [
+      "0x003b2020",
+      "0x003b254e"
+     ],
+     "generated_by": [
+      "Set_PlayerHistory"
+     ],
+     "c_owned_symbols": [
+      "PlayHis",
+      "BackPos",
+      "TabEnemy_Ang",
+      "LocaterAngle",
+      "EneTerritoryID",
+      "EfTab_Code"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2550",
+      "0x003b256e"
+     ],
+     "generated": [
+      "0x003b2550",
+      "0x003b256e"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Intr"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b2570",
+      "0x003b25ac"
+     ],
+     "generated": [
+      "0x003b2570",
+      "0x003b25ac"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Scal"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b25b0",
+      "0x003b25ce"
+     ],
+     "generated": [
+      "0x003b25b0",
+      "0x003b25ce"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "EfTab_Loop"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    },
+    {
+     "range": [
+      "0x003b25d0",
+      "0x003b2650"
+     ],
+     "generated": [
+      "0x003b25d0",
+      "0x003b2650"
+     ],
+     "generated_by": [
+      "Move_BeltConveyer"
+     ],
+     "c_owned_symbols": [
+      "UnduTemp",
+      "UnduTest"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/set_motion.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -8949,7 +9087,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/set_motion.o"
+      "object": "build/main/build/c/set_motion.o"
      }
     }
    ],
@@ -8975,7 +9113,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/set_motion.o"
+      "object": "build/main/build/c/set_motion.o"
      }
     }
    ]
