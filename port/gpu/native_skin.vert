@@ -49,7 +49,7 @@ layout(std140, set = 0, binding = 2) uniform SkinConst {
     vec4 mirror;        // 1017 (.z)
     vec4 e1004[3];
     vec4 c1009;         // env pass colour (integers as floats)
-    ivec4 cfg;          // x group, y variant, z unused (the pass is Batch.mv.w: 0 A, 1 spec strip, 2 env strip), w flags (1 renorm, 2 mirror, 4 has prev)
+    ivec4 cfg;          // x group, y variant, z 1: per-pixel lighting (native.frag SKIN_PPL) (the pass is Batch.mv.w: 0 A, 1 spec strip, 2 env strip), w flags (1 renorm, 2 mirror, 4 has prev)
     ivec4 cfg2;         // x spec squarings, y ifirst (float bits), z fog F, w palette base (qw in Pal)
     ivec4 cfg3;         // x previous palette base
     vec4 pm[4];         // previous frame's vf28-31
@@ -63,6 +63,11 @@ layout(location = 1) out vec2 v_st;
 layout(location = 2) out float v_fog;
 layout(location = 3) out vec4 v_cur;
 layout(location = 4) out vec4 v_prev;
+// Per-pixel lighting ([renderer] lighting = perpixel; native.frag built with SKIN_PPL):
+// the skinned normal and position (object space) and the vertex colour C.
+layout(location = 5) out vec3 v_n;
+layout(location = 6) out vec3 v_p;
+layout(location = 7) out vec4 v_c;
 
 vec4 Q(bool prev, int i) { return pal.q[(prev ? s.cfg3.x : s.cfg2.w) + i]; }
 
@@ -152,6 +157,9 @@ void main() {
         }
     }
     v_col = vec4(floor(rgb), floor(alpha));
+    v_n = nrm;
+    v_p = pos;
+    v_c = a_c;
     v_st = st;
     v_fog = float(s.cfg2.z);
 

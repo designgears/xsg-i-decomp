@@ -69,6 +69,12 @@ foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.co
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
+# native.frag again with per-pixel character lighting (SKIN_PPL), for native_skin.cpp.
+set(out ${CMAKE_CURRENT_BINARY_DIR}/native_ppl.frag.inc)
+add_custom_command(OUTPUT ${out}
+  COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -DSKIN_PPL -fshader-stage=frag -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/native.frag
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/native.frag VERBATIM)
+list(APPEND XSG_NATIVE_INC ${out})
 # In-game menu (menu/, port/docs/MENU.md): Dear ImGui (MIT, vendored in
 # port/third_party/imgui) with its SDL3 platform backend, drawn through Granite.
 set(XSG_IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/imgui)

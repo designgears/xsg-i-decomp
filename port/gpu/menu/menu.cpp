@@ -437,6 +437,11 @@ void TabRenderer(float scale) {
     if (!xsgcfg::GetBool("renderer.native")) opt_disable_next("Only with the native renderer.");
     opt_slider("renderer.native_scale", "Native internal scale", 1, 8, 1, "%dx",
                "The native renderer's resolution as a multiple of the PS2 frame. 4x is about 2048 x 1792.");
+    static const char* kLighting[] = {"PS2 (per vertex)", "Per pixel"};
+    opt_choice("renderer.lighting", "Character lighting", kLighting,
+               "PS2: the game's lights evaluated per vertex, as the VU1 programs did.\n"
+               "Per pixel: the same lights, colours and specular evaluated for every pixel from the interpolated "
+               "normal: smoother shading on characters, the same look otherwise.");
     opt_group("PARALLEL-GS");
     static const char* kSsaa[] = {"Off", "2x", "4x", "8x", "16x"};
     opt_choice("renderer.ssaa", "Super-sampling", kSsaa,

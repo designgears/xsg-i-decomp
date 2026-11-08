@@ -25,7 +25,7 @@ const uint32_t kVert[] = {
 #include "native_skin.vert.inc"
 };
 const uint32_t kFrag[] = {
-#include "native.frag.inc"
+#include "native_ppl.frag.inc"   // native.frag with SKIN_PPL: per-pixel lighting
 };
 const uint32_t kMv[] = {
 #include "native_mv.comp.inc"
@@ -109,6 +109,7 @@ void FillUbo(const Draw& d) {
     std::memcpy(&c1008x, &b.c1008[0], 4);
     uint32_t c1008z;
     std::memcpy(&c1008z, &b.c1008[2], 4);
+    u->cfg[2] = xsgcfg::Get("renderer.lighting") == "perpixel" ? 1 : 0;
     u->cfg[0] = d.group;
     u->cfg[1] = d.variant;
     u->cfg[3] = ((c1008z & 0xffff) ? 1 : 0) | (b.mirror_on ? 2 : 0) | (prev ? 4 : 0) | (prev && d.pmirror_on ? 8 : 0);
@@ -148,13 +149,14 @@ bool Init(Vulkan::Device* dev) {
     vl.sets[0].storage_buffer_mask = 8;
     for (int i = 0; i < 4; ++i) vl.sets[0].meta[i].array_size = 1;
     fl.output_mask = 3;
-    fl.sets[0].uniform_buffer_mask = 1;
+    fl.sets[0].uniform_buffer_mask = 1 | 4;   // + SkinConst (per-pixel lighting)
     fl.sets[0].sampled_image_mask = 2;
     fl.sets[0].meta[0].array_size = 1;
     fl.sets[0].meta[1].array_size = 1;
     g_prog = dev->request_program(dev->request_shader(kVert, sizeof kVert, &vl), dev->request_shader(kFrag, sizeof kFrag, &fl));
     cl.sets[0].sampled_image_mask = 7;
     cl.sets[0].storage_image_mask = 8 | 16;
+    fl.sets[0].meta[2].array_size = 1;
     cl.sets[0].storage_buffer_mask = 32;
     for (int i = 0; i < 6; ++i) cl.sets[0].meta[i].array_size = 1;
     cl.push_constant_size = 28;
@@ -341,6 +343,7 @@ void ResolveMv(Vulkan::CommandBuffer& cmd, Vulkan::Image& out, Vulkan::Image& co
     cmd.set_storage_buffer(0, 5, gs);
     cmd.set_storage_texture(0, 3, out.get_view());
     cmd.set_storage_texture(0, 4, g_mv->get_view());
+    u.cfg[2] = 0;
     struct { int32_t w, h, view; float full; int32_t s; float zmul; int32_t own; } pc = {
         int32_t(w), int32_t(h), g_view ? 1 : 0, g_view_full * float(scale), scale, zmul, own ? 1 : 0};
     cmd.push_constants(&pc, 0, sizeof pc);

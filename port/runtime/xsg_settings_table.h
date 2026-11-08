@@ -44,6 +44,7 @@ XSG_SETTING("renderer.gs", "XSG_GS", "gpu", "gpu|soft|both", 0,
             "GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare).")
 XSG_SETTING("renderer.native", "XSG_GPU_NATIVE", "0", "0|1", 1, "Native Vulkan renderer (NATIVE_RENDERER.md).")
 XSG_SETTING("renderer.native_scale", "XSG_GPU_NATIVE_SCALE", "2", "1..8", 1, "Native renderer internal scale.")
+XSG_SETTING("renderer.lighting", "XSG_GPU_LIGHTING", "ps2", "ps2|perpixel", 1, "Character lighting: the PS2's per-vertex, or the same lights per pixel (native renderer).")
 XSG_SETTING("renderer.neural", "XSG_GPU_NEURAL", "0", "0|1", 0, "DLSS 5 Neural Rendering via DLSS5VKLayer (off by default; needs the layer + nvngx_dlssnr.dll; on takes a restart).")
 XSG_SETTING("renderer.ssaa", "XSG_GPU_SSAA", "1", "1|2|4|8|16", 1, "paraLLEl-GS super-sampling.")
 XSG_SETTING("renderer.ssaa_textures", "XSG_GPU_SSAA_TEX", "0", "0|1", 1, "Super-sampled textures (SSAA >= 2).")
