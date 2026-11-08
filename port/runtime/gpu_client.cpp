@@ -175,10 +175,10 @@ bool Start(const char* stream) {
     posix_spawn_file_actions_init(&fa);
     posix_spawn_file_actions_adddup2(&fa, fd, XSG_GPU_FD);
     pid_t pid;
-    // DLSS 5 Neural Rendering ([renderer] neural): the DLSS5VKLayer implicit layer
-    // activates only with VKLayer_DLSS5=1.  It is loaded whenever it is installed, so
-    // the menu can switch the model on and off live (xsg-gpu, through the helper's
-    // shared settings); with the model off, frames pass through.
+    // DLSS 5 Neural Rendering ([renderer] neural, off by default): the DLSS5VKLayer
+    // implicit layer activates only with VKLayer_DLSS5=1, given when the setting is on
+    // at start and the layer is installed (turning it on later takes a restart; off
+    // again is live, through the helper's shared settings).
     std::vector<char*> env;
     for (char** e = environ; *e; ++e)
         if (std::strncmp(*e, "VKLayer_DLSS5=", 14)) env.push_back(*e);
@@ -196,9 +196,13 @@ bool Start(const char* stream) {
     // e.g. a test run, would otherwise attach to the one helper the main game uses).
     const char* forced = getenv("VKLayer_DLSS5");
     if (forced && std::strcmp(forced, "0") == 0) layer = false;
+    {
+        const char* nr = xsg_cfg("renderer.neural");
+        if (!(nr && std::atoi(nr))) layer = false;   // off: no layer in the present path at all
+    }
     if (layer) {
         env.push_back(neural_on);
-        xsg_logf("[gpu] DLSS5VKLayer installed: loaded (the model follows [renderer] neural, live)\n");
+        xsg_logf("[gpu] DLSS 5 Neural Rendering on: DLSS5VKLayer loaded\n");
     }
     env.push_back(nullptr);
     int rc = posix_spawn(&pid, bin.c_str(), &fa, nullptr, argv, env.data());

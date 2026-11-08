@@ -754,10 +754,11 @@ struct Renderer {
        it is not running. */
     int neural_state = -1;
     void Neural(bool on) {
-        if (!getenv("VKLayer_DLSS5") || int(on) == neural_state) return;
-        const bool first = neural_state < 0;
+        // Only the instance the layer is attached to (VKLayer_DLSS5=1) drives the helper; it
+        // always syncs it at start, so a model left on by another run cannot linger.
+        const char* layer = getenv("VKLayer_DLSS5");
+        if (!layer || std::strcmp(layer, "1") != 0 || int(on) == neural_state) return;
         neural_state = on;
-        if (first && !on) return;   // off at start: leave a helper another instance uses alone
         const std::string shm = "/tmp/dlssnr-" + std::to_string(getuid()) + "/shm.bin";
         auto run = [](std::vector<std::string> a) {
             std::vector<char*> argv;

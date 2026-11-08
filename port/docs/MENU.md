@@ -43,7 +43,7 @@ held while a field is open.
 |---|---|---|---|
 | Display | Fullscreen, Window size, Present mode, Aspect ratio, Scaling, Filter | `[display]` all | live (present: swapchain recreated) |
 | Renderer | GS backend | `[renderer] gs` | restart |
-| | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout, neural` | live |
+| | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout` | live |
 | | DLSS / frame generation | — (disabled, "coming soon") | — |
 | Game | FPS limit | `[game] fps_limit` | live (game process) |
 | | Play movies, ffmpeg program | `[game] movies, ffmpeg` | restart |
@@ -183,7 +183,7 @@ environment variable the setting took over; it is no longer read.
 | `[renderer] gs` | `gpu` | gpu, soft, both | restart | `XSG_GS` | GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare). |
 | `[renderer] native` | `0` | 0, 1 | live | `XSG_GPU_NATIVE` | Native Vulkan renderer (NATIVE_RENDERER.md). |
 | `[renderer] native_scale` | `2` | 1..8 | live | `XSG_GPU_NATIVE_SCALE` | Native renderer internal scale. |
-| `[renderer] neural` | `0` | 0, 1 | live | `XSG_GPU_NEURAL` | DLSS 5 Neural Rendering via DLSS5VKLayer (the layer loads whenever installed; the model is switched through the helper). |
+| `[renderer] neural` | `0` | 0, 1 | restart | `XSG_GPU_NEURAL` | DLSS 5 Neural Rendering via DLSS5VKLayer, off by default (the layer only loads when this is on at start). |
 | `[renderer] ssaa` | `1` | 1, 2, 4, 8, 16 | live | `XSG_GPU_SSAA` | paraLLEl-GS super-sampling. |
 | `[renderer] ssaa_textures` | `0` | 0, 1 | live | `XSG_GPU_SSAA_TEX` | Super-sampled textures (SSAA >= 2). |
 | `[renderer] hires_scanout` | `0` | 0, 1 | live | `XSG_GPU_HIRES` | High-resolution scanout (SSAA >= 4). |

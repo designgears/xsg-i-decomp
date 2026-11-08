@@ -452,7 +452,7 @@ void TabRenderer(float scale) {
                "Re-renders every presented frame with NVIDIA's DLSS 5 neural model for a high-fidelity look "
                "(through the DLSS5VKLayer Vulkan layer and its Wine/Proton helper). Needs the layer installed and "
                "nvngx_dlssnr.dll imported (dlssnr-helper import-binaries); without them frames pass through unchanged. "
-               "Style and strength are set in dlssnr-gui (or dlssnr-shmctl).");
+               "Style and strength are set in dlssnr-gui (or dlssnr-shmctl). Off by default; turning it on takes a restart.");
     if (RestartPending()) opt_text("Renderer changes apply after a restart: use Restart now below.", true);
     opt_end();
 }
