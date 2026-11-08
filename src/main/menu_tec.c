@@ -1429,7 +1429,7 @@ typedef struct MenuTecMwView {
     signed char partyCursor;
 } MenuTecMwView;
 extern MenuTecMwView MenuTecMw __asm__("MenuWork");
-extern short MenuTecParty[];
+static short MenuTecParty[8];
 extern MenuTecStatusWork *MenuTecStatus;
 extern void MenuStatusDisp(MenuTecStatRecord *record);
 char *MenuTagTextGet(int kind);
