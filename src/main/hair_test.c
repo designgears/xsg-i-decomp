@@ -110,11 +110,18 @@ typedef struct HairTestActInitial {
     unsigned char jointMatrix;
 } HairTestActInitial;
 
-extern int listnum;
-extern int listnow;
-extern int listpos;
-extern int mot;
-extern int pause;
+/* .sbss / .bss (file-local, original order) */
+static StudioCamera *pCamera_004DC634 __asm__("pCamera");
+static struct HairTestAct *pAct_004DC638 __asm__("pAct");
+static int listpos;
+static int listnum;
+static int mot;
+static int listnow;
+static float lookY;
+static float crx_004DC650 __asm__("crx");
+static float cry_004DC654 __asm__("cry");
+static int pause;
+static HairTestParticle cpos_00585200 __asm__("cpos");
 static HairResourceEntry list[107] = {
     { 1, "shion" },
     { 9, "shion1" },
@@ -224,13 +231,7 @@ static HairResourceEntry list[107] = {
     { 1605, "cle_oba" },
     { 0, "" },
 };
-extern float crx_004DC650;
-extern float cry_004DC654;
-extern float lookY;
-extern HairTestParticle cpos_00585200;
 static const HairTestVectorBlock D_004CBBE0 = { { 1.0f, 1.0f, 1.0f, 1.0f } };
-extern StudioCamera *pCamera_004DC634;
-extern struct HairTestAct *pAct_004DC638;
 extern void GameResourceInit(int resourceType, int resourceGroup);
 extern void ppInit(HairTestParticle *particle);
 extern void ppSetPos(HairTestParticle *particle, float x, float y, float z);
