@@ -10,19 +10,15 @@
 
 void dataCdSyncClear(void);
 
-extern int cdReqNum;
 
 /* The ELF symbol table names these padMode (0x00a597bc) and padData
  * (0x00a597c0); dataVPadModeSet stores the virtual-pad mode and clears the
  * accumulated virtual-pad data. */
-extern int padMode;
-extern short padData;
 
 void dataNBreadCB(int result);
 
 /* The party leader's character id: dataLeaderCidGet returns it and
    dataLeaderCidReset clears it. */
-extern int leaderCid;
 
 int dataLeaderCidGet(void);
 void dataLeaderCidReset(void);
@@ -84,7 +80,6 @@ typedef struct UnitFileInfo {
     unsigned char unmodeled_4[0x12c];
 } UnitFileInfo;
 
-extern UnitFileInfo unitFileInfo[6];
 
 extern CalcUnitParam *calcUPGet(ObjectTask *unit);
 

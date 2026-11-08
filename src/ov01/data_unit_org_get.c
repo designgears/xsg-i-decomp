@@ -900,8 +900,14 @@ typedef struct BattleUnitInfo {
 } BattleUnitInfo;
 
 extern void dataFileInfoInit(void);
-extern BattleUnitInfo playerData[7];
-extern BattleUnitInfo enemyData[5];
+static BattleUnitInfo playerData[7];
+static BattleUnitInfo enemyData[5];
+static UnitFileInfo unitFileInfo[6];
+static int cdReqNum;
+static int leaderCid;
+static int leaderId;
+static int padMode;
+static short padData;
 
 void dataBattleInit(void)
 {
@@ -1465,7 +1471,6 @@ typedef struct EnemyMdlFile {
     unsigned char *end;
     unsigned char pad24[0x130 - 0x24];
 } EnemyMdlFile;
-extern EnemyMdlFile D_00A59420[];
 
 void dataEnemyMdlChk(EnemyMdlEnt *tbl)
 {
@@ -1491,7 +1496,7 @@ void dataEnemyMdlChk(EnemyMdlEnt *tbl)
       if (((((h->top != 0) && (h->mid != 0)) && (h->end != 0)) && (h->top < ((unsigned int) h->mid))) && (h->mid < h->end))
       {
         id = tbl[i].id;
-        dst = &D_00A59420[i];
+        dst = &((EnemyMdlFile *)&unitFileInfo[3])[i];
         do
         {
           n = dst->base;
