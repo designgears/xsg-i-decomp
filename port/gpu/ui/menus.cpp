@@ -269,7 +269,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float hTarget = float(fitBottom[size_t(it.order)] ? fitBottom[size_t(it.order)] - o.y : o.dh);
             if (ah.v == 0) ah.v = hTarget;
             const float hh = Tween(ah, hTarget, 14.0f);
-            const ImVec2 a = P(x, y + dy), b = P(x + o.dw, y + hh + dy);
+            const float wx0 = std::max(x, 8.0f), wx1 = std::min(x + float(o.dw), 504.0f);   // inside the screen edge
+            if (wx1 - wx0 < float(o.dw) * 0.5f) break;   // mostly off-screen (waiting to slide in): not drawn
+            const ImVec2 a = P(wx0, y + dy), b = P(wx1, y + hh + dy);
             if (o.b) {
                 // a corner under a header ribbon or another window gets no bracket
                 int corners = 15;
@@ -301,13 +303,25 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float rh = std::min(float(o.dh), clampB - float(o.y));
             // the game's ribbons (title bars, info bars, highlight bars) as tinted glass: the
             // game's hue, capped opacity, a fade to the right, a sheen and an underline
-            const ImVec2 a = P(x, y), b = P(x + o.dw, y + rh);
+            // inside the safe area (16 px from the edges): the game runs bars off the screen
+            const float rx0 = std::max(x, 16.0f), rx1 = std::min(x + float(o.dw), 496.0f);
+            if (o.dw > 40 && rx1 - rx0 < 8) break;
+            const ImVec2 a = P(o.dw > 40 ? rx0 : x, y), b = P(o.dw > 40 ? rx1 : x + o.dw, y + rh);
             if (o.dw <= 1 && o.dh <= 1) {
                 dl->AddRectFilled(a, ImVec2(a.x + k, a.y + k), Ps2(o.rgba, tw));
                 break;
             }
-            auto glass = [&](uint32_t c, float cap) {
+            // one palette: the game's purple / magenta info bars become indigo glass, its red
+            // accents cyan; other hues keep their colour
+            auto recolour = [&](uint32_t c) -> ImU32 {
                 const ImU32 g = Ps2(c);
+                const int r = g & 0xff, gr = (g >> 8) & 0xff, bl = (g >> 16) & 0xff;
+                if (r > gr + 30 && bl > gr + 10) return (g & 0xff000000u) | IM_COL32(52, 64, 140, 0);   // purple / magenta
+                if (r > gr + 60 && r > bl + 60) return (g & 0xff000000u) | IM_COL32(118, 214, 255, 0);  // red accents
+                return g;
+            };
+            auto glass = [&](uint32_t c, float cap) {
+                const ImU32 g = recolour(c);
                 const float al = std::min(float((g >> 24) & 0xff) / 255.0f, cap) * tw;
                 return Alpha(g | 0xff000000u, al);
             };
@@ -338,6 +352,18 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     const float ax = c.x - (w + gx + ch) * 0.5f;
                     dl->AddTriangleFilled(ImVec2(ax + ch, c.y - ch), ImVec2(ax, c.y), ImVec2(ax + ch, c.y + ch), Alpha(col::kCyan, tw));
                     ShoulderGlyph(dl, font, ax + ch + gx, c.y, h, 0);
+                }
+                break;
+            }
+            if (o.text[2] == 1 + 11 && (o.text[3] == 1 || o.text[3] == 2)) {
+                // the help bar's red top strip (others2_uv[1]) and left bar ([2]): the cyan accent
+                const ImVec2 a = P(x, y), b = P(x + o.dw, y + o.dh);
+                if (o.text[3] == 1) {
+                    const float yy = a.y + (b.y - a.y) * 0.5f;
+                    dl->AddRectFilledMultiColor(ImVec2(a.x, yy - 0.75f * k), ImVec2(b.x, yy + 0.75f * k), Alpha(col::kCyan, 0.75f * tw),
+                                                Alpha(col::kCyan, 0.15f * tw), Alpha(col::kCyan, 0.15f * tw), Alpha(col::kCyan, 0.75f * tw));
+                } else {
+                    dl->AddRectFilled(ImVec2(a.x + 3 * kx, a.y), ImVec2(a.x + 6 * kx, b.y), Alpha(col::kCyan, 0.7f * tw));
                 }
                 break;
             }
@@ -375,6 +401,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 }
                 break;
             }
+            if (cursor && ((o.rgba >> 24) & 0xff) < 0x40) break;   // a fading cursor left behind: not drawn
             if (cursor) {   // the hand cursor glides between rows over a soft glow
                 AnimState& cu = Anim(0x43555253ull + uint64_t(ord[size_t(it.order)]) * 0, x, y);
                 const ImVec2 q = Spring(cu, x, y, 24.0f);
