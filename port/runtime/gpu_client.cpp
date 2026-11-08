@@ -543,6 +543,23 @@ extern "C" void xsg_ui_kg_end(void) {
     __atomic_store_n(&k->seq, s + 2, __ATOMIC_RELEASE);
 }
 extern "C" void xsg_ui_cap_end(void) { xsg_ui_kg_end(); }
+extern "C" void xsg_ui_dmg(int key, int x, int y, int value, int type, int count) {
+    if (!xsggpu::shm) return;
+    GpuUiDmgList* l = reinterpret_cast<GpuUiDmgList*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_DMG_OFF);
+    int slot = -1;
+    for (int i = 0; i < XSG_GPU_UI_DMGS && slot < 0; ++i)
+        if (l->d[i].key == key && l->d[i].frame && xsg_frame - l->d[i].frame < 8) slot = i;
+    for (int i = 0; i < XSG_GPU_UI_DMGS && slot < 0; ++i)
+        if (!l->d[i].frame || xsg_frame - l->d[i].frame > 8) slot = i;
+    if (slot < 0) return;
+    const uint32_t s = l->seq;
+    __atomic_store_n(&l->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    GpuUiDmg& d = l->d[slot];
+    d.key = key; d.x = x; d.y = y; d.value = value; d.type = type; d.count = count;
+    d.frame = xsg_frame;
+    __atomic_store_n(&l->seq, s + 2, __ATOMIC_RELEASE);
+}
 extern "C" void xsg_ui_battle_cmd(int x, int y, int sel, int sel_cnt, int agws, const int* rows) {
     if (!xsggpu::shm) return;
     GpuUiBattleCmd* c =

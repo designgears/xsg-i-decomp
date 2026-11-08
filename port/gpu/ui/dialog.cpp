@@ -27,6 +27,8 @@ GpuUiBattle g_bsnap;
 GpuUiBattleCmd* g_c;
 GpuUiBattleCmd g_csnap;
 GpuUiKeyGuide* g_k;
+GpuUiDmgList* g_dm;
+GpuUiDmgList g_dmsnap;
 GpuUiKeyGuide g_ksnap[XSG_GPU_UI_KG_CHANNELS];
 GpuUiDialog g_snap;   // the last consistent copy
 
@@ -103,6 +105,7 @@ void Init(void* shm_base) {
     g_b = reinterpret_cast<GpuUiBattle*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_BATTLE_OFF);
     g_c = reinterpret_cast<GpuUiBattleCmd*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_CMD_OFF);
     g_k = reinterpret_cast<GpuUiKeyGuide*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_KG_OFF);
+    g_dm = reinterpret_cast<GpuUiDmgList*>(static_cast<uint8_t*>(shm_base) + XSG_GPU_UI_DMG_OFF);
 }
 
 bool DialogActive(uint32_t vsync) {
@@ -214,6 +217,16 @@ bool BattleActive(uint32_t vsync) {
     }
     for (const GpuUiKeyGuide& kg : g_ksnap)
         if (Fresh(vsync, kg.frame)) return true;
+    for (int tries = 0; g_dm && tries < 4; ++tries) {
+        const uint32_t s0 = __atomic_load_n(&g_dm->seq, __ATOMIC_ACQUIRE);
+        if (s0 & 1) continue;
+        GpuUiDmgList c;
+        std::memcpy(&c, const_cast<const GpuUiDmgList*>(g_dm), sizeof c);
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+        if (__atomic_load_n(&g_dm->seq, __ATOMIC_ACQUIRE) == s0) { g_dmsnap = c; break; }
+    }
+    for (const GpuUiDmg& d : g_dmsnap.d)
+        if (Fresh(vsync, d.frame)) return true;
     if (Fresh(vsync, g_csnap.frame)) return true;
     for (const GpuUiUnit& u : g_bsnap.unit)
         if (Fresh(vsync, u.frame)) return true;
@@ -448,6 +461,43 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
     }
 }
 
+/* Damage / heal numbers: pop in oversized and settle, a soft glow in the type's colour
+   under a dark outline, and a fade as the game's countdown runs out. */
+void DmgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, uint32_t vsync) {
+    const float k = gh / 448.0f, kx = gw / 512.0f;
+    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    char b[16];
+    for (const GpuUiDmg& d : g_dmsnap.d) {
+        if (!Fresh(vsync, d.frame)) continue;
+        AnimState& an = Anim(0xD3610000ull ^ uint32_t(d.key), 0, 0);
+        const float age = float(AnimNow() - an.born);
+        const float pop = age < 0.18f ? 1.0f + 0.55f * (1.0f - age / 0.18f) * (1.0f - age / 0.18f) : 1.0f;
+        const float t = std::min(1.0f, age / 0.06f) * std::clamp(float(d.count) / 6.0f, 0.0f, 1.0f);
+        ImU32 core, glow;
+        switch (d.type) {
+        case 2: case 4: core = IM_COL32(200, 255, 205, 255); glow = IM_COL32(60, 230, 120, 255); break;
+        case 3: case 9: case 10: core = IM_COL32(205, 245, 255, 255); glow = IM_COL32(60, 200, 255, 255); break;
+        default: core = IM_COL32(255, 248, 236, 255); glow = IM_COL32(255, 150, 60, 255); break;
+        }
+        std::snprintf(b, sizeof b, "%d", d.value);
+        const float fs = 38.0f * k * pop;
+        const ImVec2 sz = font->CalcTextSizeA(fs, 1e9f, 0, b);
+        const ImVec2 c = P(float(d.x), float(d.y) + 4);
+        const ImVec2 p(c.x - sz.x * 0.5f, c.y - sz.y * 0.5f);
+        dl->AddCallback(xsgmenu::BlendAdd, nullptr);
+        for (int g = 3; g >= 1; --g)
+            dl->AddCircleFilled(c, sz.y * (0.35f + 0.18f * g), Alpha(glow, 0.07f * t), 24);
+        dl->AddCallback(xsgmenu::BlendAlpha, nullptr);
+        const float o = std::max(1.5f, fs * 0.075f);
+        for (int i = 0; i < 8; ++i) {
+            const float a = float(i) * 0.785398f;
+            dl->AddText(font, fs, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), IM_COL32(10, 8, 24, int(220 * t)), b);
+        }
+        dl->AddText(font, fs, ImVec2(p.x, p.y + o * 0.6f), Alpha(glow, 0.9f * t), b);
+        dl->AddText(font, fs, p, Alpha(core, t), b);
+    }
+}
+
 /* The command menu (menuBatObjDraw): five rows sliding in from the left, the
    selected one framed in cyan.  The game shows only the selected row's label;
    here every row is labelled, unavailable ones dimmed. */
@@ -504,6 +554,7 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     const float k = gh / 448.0f, kx = gw / 512.0f;
     auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
     char b[32];
+    DmgDraw(dl, font, gx, gy, gw, gh, vsync);
     for (int ch = 0; ch < XSG_GPU_UI_KG_CHANNELS; ++ch)
         if (Fresh(vsync, g_ksnap[ch].frame)) KgDraw(dl, font, gx, gy, gw, gh, g_ksnap[ch], 0x4B47000000000000ull + (uint64_t(ch) << 32), ch == 0);
     if (Fresh(vsync, g_csnap.frame)) CmdDraw(dl, font, gx, gy, gw, gh);

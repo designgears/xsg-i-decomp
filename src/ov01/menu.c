@@ -3245,6 +3245,16 @@ void objDmgNumDraw(ObjectTask *task)
             dmgMsgPut((int)packet, x, y + dy, 2);
             break;
         case 1: case 2: case 3: case 4: case 7: case 8: case 9: case 10:
+#ifdef PORT_HOST
+            {   /* rebuilt UI: the number is xsg-gpu's (port/gpu/ui/); the game keeps its labels */
+                extern int xsg_ui_rebuilt(void);
+                extern void xsg_ui_dmg(int key, int x, int y, int value, int type, int count);
+                if (xsg_ui_rebuilt()) {
+                    xsg_ui_dmg((int)task, x, y + dy, *(int *)(work + 0x74), type, *(int *)(work + 0x70));
+                    break;
+                }
+            }
+#endif
             dmgNumPut((int)packet, x, y + dy, *(int *)(work + 0x74), type);
             break;
         }

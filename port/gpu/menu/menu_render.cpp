@@ -102,7 +102,7 @@ void RenderDraw(Vulkan::CommandBuffer& cmd, ImDrawData* dd, uint32_t fbw, uint32
         for (const ImDrawCmd& c : l->CmdBuffer) {
             if (c.UserCallback) {
                 if (c.UserCallback == BlendAdd)
-                    cmd.set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_FACTOR_ONE);
+                    cmd.set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE);   // src colour, src alpha, dst colour, dst alpha
                 else if (c.UserCallback == BlendAlpha)
                     cmd.set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
                                           VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);

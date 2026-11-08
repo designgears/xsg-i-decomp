@@ -197,10 +197,8 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 Panel(dl, a, b, k, t, false, tint, corners);
                 SweepRule(dl, ImVec2(a.x + 3 * k, a.y + 1 * k), ImVec2(b.x - 3 * k, a.y + 1 * k), k, t * 0.6f,
                           float(now - an.born), col::kCyan);
-            } else {   // the open / close frame
-                dl->AddRect(a, b, Alpha(col::kCyan, 0.8f * t), 0, 0, 1.2f * k);
-                DrawBrackets(dl, ImVec2(a.x - 2 * k, a.y - 2 * k), ImVec2(b.x + 2 * k, b.y + 2 * k), Alpha(col::kCyan, t), 7 * k,
-                             1.2f * k);
+            } else {   // the open / close animation's frames (a trail of several): faint outlines
+                dl->AddRect(a, b, Alpha(col::kCyan, 0.28f * t), 0, 0, 1.0f);
             }
             break;
         }

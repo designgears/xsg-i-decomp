@@ -219,6 +219,21 @@ typedef struct {
     GpuUiCmdRow row[5];
 } GpuUiBattleCmd;
 
+/* Rebuilt UI: battle damage / heal numbers (ov01 menu.c objDmgNumDraw, PORT_HOST). */
+#define XSG_GPU_UI_DMG_OFF 3712u
+#define XSG_GPU_UI_DMGS 12
+typedef struct {
+    volatile uint32_t frame;        /* game vblank of the last publish (0: unused) */
+    int32_t key;                    /* the number's task, a slot per number */
+    int32_t x, y;                   /* its centre, PS2 pixels (rises as it ages) */
+    int32_t value, type;            /* type: 1 damage, 2 / 4 heal, 3 / 9 / 10 EP */
+    int32_t count;                  /* the game's countdown (30 -> 0) */
+} GpuUiDmg;
+typedef struct {
+    volatile uint32_t seq;
+    GpuUiDmg d[XSG_GPU_UI_DMGS];
+} GpuUiDmgList;
+
 /* Rebuilt UI: captured battle widgets (ov01 menu.c, PORT_HOST).  The game runs its own
    code in a capture mode: the helpers it draws with record what they would draw
    (gpu_client.cpp xsg_ui_kg_op), and xsg-gpu redraws it.  One GpuUiKeyGuide per channel,
@@ -299,7 +314,8 @@ static_assert(sizeof(GpuUiKgOp) == 68 && sizeof(GpuUiKeyGuide) == 16 + 68 * XSG_
 static_assert(sizeof(GpuUiBattleCmd) == 28 + 5 * 20 && sizeof(GpuUiUnit) == 52, "battle layout (32 / 64-bit)");
 static_assert(XSG_GPU_UI_KG_OFF + XSG_GPU_UI_KG_CHANNELS * sizeof(GpuUiKeyGuide) <= XSG_GPU_UI_MENU_OFF, "ui capture channels overlap the menu list");
 static_assert(XSG_GPU_UI_MENU_OFF + sizeof(GpuUiMenuList) <= XSG_GPU_HDR, "the menu list overruns the header");
-static_assert(XSG_GPU_UI_CMD_OFF + sizeof(GpuUiBattleCmd) <= XSG_GPU_UI_KG_OFF, "battle command block overlaps");
+static_assert(XSG_GPU_UI_CMD_OFF + sizeof(GpuUiBattleCmd) <= XSG_GPU_UI_DMG_OFF, "battle command block overlaps");
+static_assert(XSG_GPU_UI_DMG_OFF + sizeof(GpuUiDmgList) <= XSG_GPU_UI_KG_OFF && sizeof(GpuUiDmg) == 28, "damage list layout");
 static_assert(XSG_GPU_UI_BATTLE_OFF + sizeof(GpuUiBattle) <= XSG_GPU_UI_CMD_OFF, "battle block overlaps");
 #endif
 
