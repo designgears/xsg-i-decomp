@@ -305,11 +305,12 @@ int calcHpDmg(ObjectTask *src, ObjectTask *dst, unsigned char type, int val)
  */
 extern CalcCharParaData *calcTotalParaMenuSub(int charaId, int *attack, int *defense, unsigned char *table);
 
-/* The per-charaId table calcTotalParaMenu hands calcTotalParaMenuSub. */
-extern unsigned char D_00A57CE8[];
-
 CalcCharParaData *calcTotalParaMenu(int charaId, int *attack, int *defense)
 {
+    /* The per-charaId work record calcTotalParaMenu hands
+     * calcTotalParaMenuSub (0x180 bytes, no ELF symbol: function-local). */
+    static unsigned char D_00A57CE8[0x180] __asm__("D_00A57CE8");
+
     return calcTotalParaMenuSub(charaId, attack, defense, D_00A57CE8);
 }
 
@@ -2590,9 +2591,9 @@ int calcDmgItem(ObjectTask *attacker, CalcHitItemArg *arg)
 }
 
 typedef struct TgtFindCmd TgtFindCmd;
-extern ObjectTask *tgtTbl[8];
-extern int tgtIdx;
-extern int tgtNum;
+static ObjectTask *tgtTbl[8];
+static int tgtIdx;
+static int tgtNum;
 extern int tgtFindChk(ObjectTask *a, ObjectTask *b, TgtFindCmd *c);
 static inline int tgtSideBit(ObjectTask *u)
 {
