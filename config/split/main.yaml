@@ -467,6 +467,7 @@ segments:
       - [0x1636B0, data, game_pause_disp]
       - [0x163790, data, map_1]
       - [0x163858, data, maptbl]
+      - [0x163E80, data, game_camera]
       - [0x165910, data, look_at_player]
       - [0x165988, data, res_get_path]
       - [0x167E20, data, game_snap_shot]

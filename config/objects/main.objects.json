@@ -726,11 +726,19 @@
         },
         {
           "c_split": false,
-          "end": "0x00364910",
+          "end": "0x00362E80",
           "ordinal": 119,
           "piece": "maptbl",
           "start": "0x00362858",
           "tu": "maptbl"
+        },
+        {
+          "c_split": false,
+          "end": "0x00364910",
+          "ordinal": 120,
+          "piece": "game_camera",
+          "start": "0x00362E80",
+          "tu": "game_camera"
         },
         {
           "c_split": false,
@@ -33429,20 +33437,20 @@
           ],
           "bounds": [
             "0x00362840",
-            "0x00364910"
+            "0x00362E80"
           ],
-          "end": "0x00364910",
+          "end": "0x00362E80",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x00364910",
+              "end": "0x00362E80",
               "name": "maptbl",
               "start": "0x00362858"
             }
           ],
           "rule": "anchored start",
-          "size": 8376,
+          "size": 1576,
           "splat_type": "data",
           "start": "0x00362858"
         },
@@ -33744,7 +33752,8 @@
         ".lit4": "asm",
         ".rodata": "asm",
         ".sbss": "c",
-        ".text": "c"
+        ".text": "c",
+        ".data": "asm"
       },
       "path": "src/main/game_camera.c",
       "scaffold_path": "scaffold/src/main/game_camera.c",
@@ -33844,6 +33853,30 @@
           "size": 12,
           "splat_type": "sbss",
           "start": "0x004DC51C"
+        },
+        ".data": {
+          "anchored": [
+            "0x00362E80",
+            "0x00362E80"
+          ],
+          "bounds": [
+            "0x00362E80",
+            "0x00364910"
+          ],
+          "end": "0x00364910",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x00364910",
+              "name": "game_camera",
+              "start": "0x00362E80"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 6800,
+          "splat_type": "data",
+          "start": "0x00362E80"
         }
       },
       "shared_contract": {
