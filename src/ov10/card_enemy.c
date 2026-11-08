@@ -41,7 +41,7 @@ void InitCpuDeck(void) {
 extern int CC_Kara_MoveFase(int side, CardGameWork *work);
 extern void CGPShuntPosSub(CardPlaySide *side);
 extern void CGPRecalcPosSub(CardPlaySide *side);
-extern s8 D_00A57E34;
+static s8 D_00A57E34;
 
 void CardEnemyMove(int side, CardGameWork *work) {
     CardPlaySide *ownSide = side == 0 ? &work->player : &work->enemy;

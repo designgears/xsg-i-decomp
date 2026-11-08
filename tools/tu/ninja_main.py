@@ -597,7 +597,8 @@ def main(argv=None):
                     if mm:
                         cur = mm[1]
                         continue
-                    am = re.match(r"\s*/\* [0-9A-F]+ ([0-9A-F]{8}) ", line)
+                    # data lines carry "<file offset> <va>", BSS lines (.space) only "<va>"
+                    am = re.match(r"\s*/\* (?:[0-9A-F]+ )?([0-9A-F]{8}) ", line)
                     if cur and am:
                         c_alias.append(f'PROVIDE("{cur}" = {piece_sym(n, sec)} + 0x{int(am[1], 16) - base:X});')
                         cur = None

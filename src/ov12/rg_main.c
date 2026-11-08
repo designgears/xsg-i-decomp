@@ -387,7 +387,7 @@ typedef struct RgSelectState {
     int availableCharacters;
     unsigned char unmodeled_08[0x240];
 } RgSelectState;
-extern RgSelectState D_00A59490[2];
+static RgSelectState D_00A59490[2];
 int abInit_3[2] = { 0, 0 };
 int s_stack[8] = { 0 };
 extern const char D_00A51620[];

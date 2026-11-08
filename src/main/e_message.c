@@ -671,7 +671,7 @@ void eMessageDraw(EMessageParam *message)
 }
 
 /* Current write position of the message text being built. */
-extern char *MessageCpyEnd;
+static char *MessageCpyEnd;
 
 extern void eMessageCat(char *src);
 

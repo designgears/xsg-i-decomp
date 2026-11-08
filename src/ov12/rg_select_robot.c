@@ -22,6 +22,13 @@ static void _JobAct(RgSelectRobot *pCont, float deltaTime);
 /* Linker witness for the original literal at ov12:0x00a56ef8 ("pCont != NIL"). */
 /* Linker witness for the original literal at ov12:0x00a56d90 ("who are you ?"). */
 int s_bLoading = 0;
+
+/* .bss (file-local, original order) */
+static unsigned int s_uReqNum;
+static unsigned int s_uOkNum;
+static char s_aszData[4][64];
+static void *s_apBuf[4];
+static void *s_pWhoAreYou;
 const char D_00A56D90[] = "who are you ?";
 const char D_00A56DA0[] = "../rg_select_robot.euc.c";
 const char D_00A56DC0[] = "uFileNum <= DAT_MAX";
@@ -78,8 +85,6 @@ static void _KillLoadIfMe(void *owner)
     }
 }
 
-extern void *s_apBuf[4];
-extern char s_aszData[4][64];
 extern char *strcpy(char *, const char *);
 
 static int _ReqLoad(char **names, void **bufs, unsigned int uFileNum, void *who)
@@ -114,8 +119,6 @@ static int _IsEndOfLoad(void)
 }
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
-extern void *s_apBuf[4];
-extern char s_aszData[4][64];
 
 static void _JobLoad(void)
 {

@@ -36,11 +36,12 @@ static void splitName(unsigned char *filename, unsigned char *path, unsigned cha
 
 void splitName(unsigned char *filename, unsigned char *path, unsigned char *name);
 void srsSetViewPath(unsigned char *path);
-extern unsigned char name_1[];
-extern unsigned char path_0[];
 
 void setPath(unsigned char *filename)
 {
+    static unsigned char path_0[0x80] __asm__("path.0");
+    static unsigned char name_1[0x40] __asm__("name.1");
+
     splitName(filename, path_0, name_1);
     srsSetViewPath(path_0);
 }
@@ -60,7 +61,6 @@ typedef struct CfSelectState {
     unsigned char selectedPath[1];
 } CfSelectState;
 
-extern CfSelectState cfs;
 
 extern int xglCdFileSelect(CfSelectState *state);
 
@@ -90,7 +90,7 @@ typedef struct CfSelectStateU {
     unsigned char selectedPath[1];
     unsigned char unmodeled_11d[0x268 - 0x11d];
 } CfSelectStateU;
-extern CfSelectStateU cfsU __asm__("cfs");
+static CfSelectStateU cfsU __asm__("cfs");
 static char basepath[0x17] = "host0:/home/xeno/work/";
 static char *filelist = 0;
 static char *gridlexTop = 0;
@@ -146,15 +146,15 @@ int execFileSelect(void)
 
     for (;;) {
         xglRenderClearFrame();
-        result = xglCdFileSelect(&cfs);
+        result = xglCdFileSelect((CfSelectState *)&cfsU);
         switch (result) {
         case 0:
             break;
         case 1:
-            setPath(cfs.selectedPath);
+            setPath(cfsU.selectedPath);
             return 1;
         case 2:
-            setPath(cfs.selectedPath);
+            setPath(cfsU.selectedPath);
             return 2;
         }
         xglSleep();
@@ -661,7 +661,6 @@ extern void sdbExecEffect(void);
 extern void dummyMapDraw(void);
 extern s16 casdisp;
 extern s16 tgtdisp;
-extern int prm_8[];
 extern s16 _sdrawFloor;
 
 static void seffectDebugDb(void)
@@ -669,6 +668,7 @@ static void seffectDebugDb(void)
     int sel;
     unsigned long long held;
     int *prm;
+    static int prm_8[12] __asm__("prm.8");
 
     SinitCamera();
     sel = debugEffectSelect();
@@ -729,7 +729,6 @@ typedef struct DmyActorCf {
     short enabled;
     unsigned char unmodeled_88[0xa70 - 0x88];
 } DmyActorCf;
-extern DmyActorCf dmyActor_12;
 extern void sefDestroyEffectCf(void);
 extern void sefKillEffect(int);
 extern void *sefCreateEffectCf(int, const void *, const void *);
@@ -743,6 +742,7 @@ static void seffectDebugCf(void)
     static SetPathEffectPeer *handle_9 __asm__("handle.9") = 0;
     static unsigned char point_10[0x10] __asm__("point.10") = { 0 };
     static unsigned char angle_11[0x10] __asm__("angle.11") = { 0 };
+    static DmyActorCf dmyActor_12 __asm__("dmyActor.12");
     int effect;
 
     SinitCamera();
@@ -829,7 +829,6 @@ typedef struct PadDataMenuLayoutSB {
     } buttons;
     u8 unmodeled_30[0x68 - 0x30];
 } PadDataMenuLayoutSB;
-extern SetPathEffectParamsSB prm_13;
 extern s16 mapdisp;
 static void dummyMapLoad(void);
 extern void func_A31840(void);
@@ -845,6 +844,7 @@ static void seffectDebugBattle(void)
 {
     extern PadDataMenuLayoutSB PadDataSB[2] __asm__("PadData");
     int effect;
+    static SetPathEffectParamsSB prm_13 __asm__("prm.13");
     struct {
         int kind;
         int variant;

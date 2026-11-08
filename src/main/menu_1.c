@@ -290,7 +290,6 @@ int MenuMainAgwsCheck(int charId)
 extern char *strcat(char *destination, const char *source);
 extern long long __divdi3(long long, long long);
 extern long long __moddi3(long long, long long);
-extern char msg_2_00532A78[];
 /* The digit strings "0".."9" sit just before this TU's .sdata; the split gives them to menu_item. */
 extern char D_004DAB38[], D_004DAB40[], D_004DAB48[], D_004DAB50[], D_004DAB58[];
 extern char D_004DAB60[], D_004DAB68[], D_004DAB70[], D_004DAB78[], D_004DAB80[];
@@ -299,6 +298,7 @@ char *MenuNumberTextGet(long long value, int width, int mode)
 {
     char *tbl[10] = { D_004DAB38, D_004DAB40, D_004DAB48, D_004DAB50, D_004DAB58,
                       D_004DAB60, D_004DAB68, D_004DAB70, D_004DAB78, D_004DAB80 };
+    static char msg_2_00532A78[0x18] __asm__("msg.2");
     unsigned char empty[] = "";
     long long p;
     long long rem;
@@ -1463,12 +1463,13 @@ static void MenuSortSubType00(unsigned int *first, unsigned int *second)
 
 typedef signed int s32;
 
+static int sort[2][0x100];
+
 void MenuSortChange(s32 arg0, s32 arg1)
 {
   static void (*f_11[6])() __asm__("f.11") = {
       (void (*)())MenuSortSubType00, (void (*)())MenuSortSubType01, (void (*)())MenuSortSubType02,
       (void (*)())MenuSortSubType03, (void (*)())MenuSortSubType04, (void (*)())MenuSortSubType05 };
-  extern int sort[2][0x100];
   s32 *temp_20;
   s32 *var_17;
   s32 *var_3;
@@ -1526,7 +1527,6 @@ void MenuSortChange(s32 arg0, s32 arg1)
   }
 }
 
-extern int sort[2][0x100];
 
 int MenuSortCheck(int listIndex)
 {
@@ -1831,12 +1831,8 @@ void subListMake01(MenuListEntry *entry, int index)
 }
 
 
-/*
- * mw_list is defined below, right before MenuListGet, which is the only
- * other function reading it directly; forward-declared again here since
- * MenuListMake needs it earlier in the file.
- */
-extern MenuListEntry mw_list[2][256];
+/* Both menu lists (MenuListMake fills them, MenuListGet returns one). */
+static MenuListEntry mw_list[2][256];
 
 /*
  * mode == -10 selects the shop price fill (subListMake01, which fills
@@ -1873,18 +1869,17 @@ MenuListEntry *MenuListMake(int listIndex, int mode)
     return list;
 }
 
-extern MenuListEntry mw_list[2][256];
 
 MenuListEntry *MenuListGet(int listIndex)
 {
     return mw_list[listIndex];
 }
 
-extern char fname_13[];
 void RES_GetMdlFileName(char *name, int charaId);
 
 char *MenuFileNameGet(short arg0, unsigned int arg1)
 {
+    static char fname_13[0x80] __asm__("fname.13");
     static char *f_base_14[] __asm__("f_base.14") = { "data\\motion\\", "data\\yamamoto\\mot\\", "data\\robo\\etc\\" };
     static char *f_exten_15[] __asm__("f_exten.15") = { ".lex", ".xtx", ".jnt", ".fpk", ".bin" };
     static char *f_ukn_name_16[] __asm__("f_ukn_name.16") = { "ukunS", "ukunB" };

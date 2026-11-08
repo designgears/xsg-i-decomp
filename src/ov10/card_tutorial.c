@@ -62,8 +62,11 @@ char *tutoxtx_tbl[64] = {
     "Tu_046",
 };
 /* ".xtx" */
+static void *lex;
 /* The tutorial texture buffer xglCdReadFile loads the file into. */
-extern void *tuxtx;
+static void *tuxtx;
+static void *tulex_tbl[2];
+static void *tuxtx_tbl[2];
 
 void CardTutorialFileLoad(int tutorialIndex)
 {
@@ -77,9 +80,6 @@ void CardTutorialFileLoad(int tutorialIndex)
 }
 
 typedef struct { char *name[2]; } TutoNames;
-extern void *tuxtx_tbl;
-extern void *tulex_tbl;
-extern void *lex;
 
 void CardTutorialInit(void)
 {
@@ -105,7 +105,7 @@ void CardTutorialInit(void)
         strcpy(path, datapath);
         strcat(path, names.name[i]);
         strcat(path, ".lex");
-        (&tulex_tbl)[i] = buf;
+        tulex_tbl[i] = buf;
         size = xglCdReadFile(path, buf, 0, 1);
         if (size > 0) {
             buf += size;
@@ -115,7 +115,7 @@ void CardTutorialInit(void)
         strcpy(path, datapath);
         strcat(path, names.name[i]);
         strcat(path, ".xtx");
-        (&tuxtx_tbl)[i] = buf;
+        tuxtx_tbl[i] = buf;
         size = xglCdReadFile(path, buf, 0, 1);
         if (size > 0) {
             buf += size;
@@ -133,9 +133,6 @@ extern void nmlModelSetPlace(float matrix[4][4]);
 extern void nmlModelSetRenderLevel(int level);
 extern void nmlModelEntry(void *model);
 extern void xglSoundEffectNormalID(int id, int flag);
-extern void *tuxtx_tbl;
-extern void *tulex_tbl;
-extern void *lex;
 typedef union { float v[4]; long d[2]; } TutoVec16;
 
 int CardTutorialProc(void *work)
@@ -172,10 +169,10 @@ int CardTutorialProc(void *work)
         return 0;
     }
     xglMatrixTrans(place, base, pos.v);
-    nmlModelSetTexture(tuxtx_tbl);
+    nmlModelSetTexture(tuxtx_tbl[0]);
     nmlModelSetPlace(place);
     nmlModelSetRenderLevel(2);
-    nmlModelEntry(tulex_tbl);
+    nmlModelEntry(tulex_tbl[0]);
     xglMatrixUnit(base);
     base[3][2] = -1.0f;
     nmlModelSetPlace(base);

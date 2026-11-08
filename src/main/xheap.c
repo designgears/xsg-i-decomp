@@ -5,6 +5,12 @@
 
 extern void reloadClassEntry(void *heap_boundary);
 
+/* .sbss (file-local, original order) */
+static xheap_block *heap_top;
+static int heap_size;
+static xheap_frame *frame_stack;
+static xheap_block *freeBlock;
+
 static void xmemchk() {
 }
 

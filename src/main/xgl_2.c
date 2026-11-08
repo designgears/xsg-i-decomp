@@ -8,7 +8,7 @@
 
 extern unsigned int D_004ADE80[];
 
-extern unsigned long long iRandSeed;
+static unsigned long long iRandSeed;
 
 
 extern void xglDmaDirectSrcChain(unsigned int channel, unsigned int address);

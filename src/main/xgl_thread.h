@@ -51,20 +51,12 @@ extern int GetThreadId(void);
 
 extern void SleepThread(void);
 
-extern ee_sema_t sSemaParam;
-
-extern int iRotateSignal;
-
 extern int CancelWakeupThread(int thread_id);
 
 extern int SignalSema(int sema_id);
 
 void xglThreadInitial(void);
 
-extern active_thread_t asActiveThreadList[];
-
 void xglThreadRotate(void);
-
-extern unsigned int iCurrentThread;
 
 #endif /* SRC_MAIN_XGL_THREAD_H */

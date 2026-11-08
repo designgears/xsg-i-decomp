@@ -94,9 +94,9 @@ segments:
       - { type: bss, vram: 0x00A57838, name: ov10/card_deck_chk }
       - { type: .bss, vram: 0x00A57848, name: ov10/card_view_proc }
       - { type: .bss, vram: 0x00A578C8, name: ov10/card_disp }
-      - { type: bss, vram: 0x00A57DA8, name: ov10/card_tutorial }
+      - { type: .bss, vram: 0x00A57DA8, name: ov10/card_tutorial }
       - { type: bss, vram: 0x00A57DC0, name: ov10/cgp }
-      - { type: bss, vram: 0x00A57E34, name: ov10/card_enemy }
+      - { type: .bss, vram: 0x00A57E34, name: ov10/card_enemy }
   - [0x50A10, pad, ov10_bss_file_image]
   - [0x58E36, bin, elf_shstrtab]
   - [0x58E58, bin, elf_section_headers]

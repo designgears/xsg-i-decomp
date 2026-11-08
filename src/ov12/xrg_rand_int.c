@@ -498,8 +498,8 @@ float XrgCalcRotY(const Vector4 *vector)
     return (float) atan2((double) vector->x, (double) vector->z);
 }
 
-extern unsigned char s_aStack[];
-extern float *s_paTop;
+static unsigned char s_aStack[0x400];
+static float *s_paTop;
 
 void XrgClearMatStack(void)
 {
@@ -507,10 +507,6 @@ void XrgClearMatStack(void)
     XrgUnitMatrix((float *) s_aStack);
 }
 
-/* The current matrix-stack top. The data is still scaffold-owned
- * (docs/naming.md); the scaffold defines it under the original ELF symbol
- * name s_paTop, imported through config/symbols/ov12.txt. */
-extern float *s_paTop;
 
 void XrgPushMatStack(void)
 {

@@ -74,17 +74,9 @@ static int xglCdGetFilePos(CdFilePosition *file_position, const char *path,
 
 void xglCdPowerOffCB(void);
 
-extern unsigned char LW[];
-
-extern signed char ReadClockInterval;
-
-extern unsigned char PresentTime[8];
-
 extern int sceCdReadClock(unsigned char *clock);
 
 int xglCdSync(void);
-
-extern CdStreamParam *StrList;
 
 int sceCdStSeek(int descriptor);
 
@@ -111,8 +103,6 @@ extern int sceCdDiskReady(int mode);
 extern int sceCdRead(int lbn, int sectors, void *destination, CdReadMode *read_mode);
 
 void xglCdArcCheck(void);
-
-extern unsigned char ArcHeader[];
 
 static void xglCdArcInit(void);
 

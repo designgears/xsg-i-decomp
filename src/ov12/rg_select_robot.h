@@ -55,11 +55,6 @@ typedef struct RgSelectAction {
 /* Loader state evidenced by the bounded adjacent load routines. */
 extern int s_bLoading;
 
-extern unsigned int s_uReqNum;
-
-extern unsigned int s_uOkNum;
-
-extern void *s_pWhoAreYou;
 
 /* Shared main-unit CD read cancellation/reset entry. */
 extern void xglCdReadCancel(void);

@@ -1748,6 +1748,7 @@ void Java_xeno_Unit_getScale__(JThread *thread, UnitObjectCall *arguments,
     JavaField *peer_field;
     u8 *object;
     UnitPeer *peer;
+    static UnitScaleVector scale_0_007C0A58 __asm__("scale.0");
 
     object = arguments->object;
     peer_field = lookupClassField(classJava_xeno_Unit,

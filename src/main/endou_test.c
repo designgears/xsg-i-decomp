@@ -146,7 +146,6 @@ extern void *test_data;
 extern char fname_67[64];
 
 
-extern float size_68;
 
 
 extern unsigned int TestEnv_66[32];
@@ -2590,6 +2589,7 @@ void ReLoadTest(void)
 
 static void endCallback(int result, int amount)
 {
+    static float size_68 __asm__("size.68");
     switch (result) {
     case 0: {
         const char *source = (const char *)amount;
@@ -2724,11 +2724,11 @@ void JpegTest(void)
 extern const char D_004C2DB8[];
 extern const char D_004C2DD0[];
 extern const char D_004C2DE0[];
-extern char *buffer_72;
 extern char mm_73[];
 
 void UmlTest(void)
 {
+    static char *buffer_72 __asm__("buffer.72");
   char *buffer;
   unsigned char *p;
   char *d;
