@@ -8,7 +8,7 @@
  * .bss for this TU is still scaffold-owned: the flag word keeps its ledger
  * name (config/symbols/ov01.txt) and the MPEG context its splat name.
  */
-extern int mvFlags_00A43724;
+int mvFlags_00A43724 = 0;
 extern unsigned char D_00A5B838[0xC0];
 
 #define MV2_FLAG_INITIALIZED 0x1

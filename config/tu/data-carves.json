@@ -21443,6 +21443,35 @@
    ]
   },
   "ov01/tu020_00a332e0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43724",
+      "0x00a43728"
+     ],
+     "generated": [
+      "0x00a43724",
+      "0x00a43728"
+     ],
+     "generated_by": [
+      "MMv2Exec",
+      "MMv2Init",
+      "MMv2IsPlaying",
+      "MMv2Play",
+      "MMv2SkipEnabled",
+      "MMv2Stop"
+     ],
+     "c_owned_symbols": [
+      "mvFlags_00A43724"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_mv2.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -21464,7 +21493,12 @@
       "D_00A511C8",
       "D_00A51200"
      ],
-     "also_referenced_by_c": []
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_mv2.o"
+     }
     }
    ]
   },
