@@ -990,7 +990,7 @@
         },
         {
           "c_split": false,
-          "end": "0x0036D898",
+          "end": "0x0036D890",
           "ordinal": 169,
           "piece": "menu_1",
           "start": "0x0036D6C8",
@@ -1001,7 +1001,7 @@
           "end": "0x0036D940",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
-          "start": "0x0036D898",
+          "start": "0x0036D890",
           "tu": "menu_para_pt_rate_get"
         },
         {
@@ -2708,7 +2708,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004C5510",
@@ -2719,7 +2719,7 @@
           "end": "0x004C7340",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004C6F38",
+          "start": "0x004C6BC0",
           "tu": "menu_agws_para_set"
         },
         {
@@ -4392,7 +4392,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004DAD18",
@@ -4403,7 +4403,7 @@
           "end": "0x004DB090",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004DAF28",
+          "start": "0x004DAEB0",
           "tu": "menu_agws_para_set"
         },
         {
@@ -49120,20 +49120,20 @@
           ],
           "bounds": [
             "0x0036D6C8",
-            "0x0036D898"
+            "0x0036D890"
           ],
-          "end": "0x0036D898",
+          "end": "0x0036D890",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x0036D898",
+              "end": "0x0036D890",
               "name": "menu_1",
               "start": "0x0036D6C8"
             }
           ],
           "rule": "anchored start",
-          "size": 464,
+          "size": 456,
           "splat_type": "data",
           "start": "0x0036D6C8"
         },
@@ -49581,7 +49581,7 @@
         },
         ".data": {
           "anchored": [
-            "0x0036D898",
+            "0x0036D890",
             "0x0036D940"
           ],
           "bounds": [
@@ -49595,13 +49595,13 @@
               "c_split": false,
               "end": "0x0036D940",
               "name": "menu_para_pt_rate_get",
-              "start": "0x0036D898"
+              "start": "0x0036D890"
             }
           ],
-          "rule": "anchored start",
-          "size": 168,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 176,
           "splat_type": "data",
-          "start": "0x0036D898"
+          "start": "0x0036D890"
         },
         ".lit4": {
           "anchored": [
@@ -49634,20 +49634,20 @@
           ],
           "bounds": [
             "0x004C5508",
-            "0x004C6F38"
+            "0x004C6BC0"
           ],
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C6F38",
+              "end": "0x004C6BC0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004C5510"
             }
           ],
           "rule": "anchored start",
-          "size": 6696,
+          "size": 5808,
           "splat_type": "rodata",
           "start": "0x004C5510"
         },
@@ -49682,20 +49682,20 @@
           ],
           "bounds": [
             "0x004DAB89",
-            "0x004DAF28"
+            "0x004DAEB0"
           ],
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DAF28",
+              "end": "0x004DAEB0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004DAD18"
             }
           ],
           "rule": "anchored start",
-          "size": 528,
+          "size": 408,
           "splat_type": "sdata",
           "start": "0x004DAD18"
         }
@@ -50013,7 +50013,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C6F38",
+            "0x004C6BC0",
             "0x004C72D1"
           ],
           "bounds": [
@@ -50027,17 +50027,17 @@
               "c_split": false,
               "end": "0x004C7340",
               "name": "menu_agws_para_set",
-              "start": "0x004C6F38"
+              "start": "0x004C6BC0"
             }
           ],
-          "rule": "anchored start",
-          "size": 1032,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 1920,
           "splat_type": "rodata",
-          "start": "0x004C6F38"
+          "start": "0x004C6BC0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DAF28",
+            "0x004DAEB0",
             "0x004DAFF9"
           ],
           "bounds": [
@@ -50051,13 +50051,13 @@
               "c_split": false,
               "end": "0x004DB090",
               "name": "menu_agws_para_set",
-              "start": "0x004DAF28"
+              "start": "0x004DAEB0"
             }
           ],
-          "rule": "anchored start",
-          "size": 360,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 480,
           "splat_type": "sdata",
-          "start": "0x004DAF28"
+          "start": "0x004DAEB0"
         }
       },
       "shared_contract": {
