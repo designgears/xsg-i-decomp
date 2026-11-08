@@ -1742,9 +1742,30 @@
      "also_referenced_by_c": [
       "D_004D8940",
       "D_004D8944",
-      "D_004D8948",
+      "D_004D8948"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_model_set.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d894c",
+      "0x004d8950"
+     ],
+     "generated": [
+      "0x004d894c",
+      "0x004d8950"
+     ],
+     "generated_by": [
+      "nmlModelRenderCircle"
+     ],
+     "c_owned_symbols": [
       "D_004D894C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10204,41 +10225,20 @@
     {
      "range": [
       "0x004d7e60",
-      "0x004d7e64"
+      "0x004d7e74"
      ],
      "generated": [
       "0x004d7e60",
-      "0x004d7e64"
+      "0x004d7e74"
      ],
      "generated_by": [
+      "MenuShopIcon",
       "MenuShopModelDisp"
      ],
      "c_owned_symbols": [
-      "D_004D7E60"
-     ],
-     "also_referenced_by_c": [
+      "D_004D7E60",
       "D_004D7E64",
-      "D_004D7E68"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d7e6c",
-      "0x004d7e74"
-     ],
-     "generated": [
-      "0x004d7e6c",
-      "0x004d7e74"
-     ],
-     "generated_by": [
-      "MenuShopIcon"
-     ],
-     "c_owned_symbols": [
+      "D_004D7E68",
       "D_004D7E6C",
       "D_004D7E70"
      ],
@@ -14271,6 +14271,39 @@
    ".lit4": [
     {
      "range": [
+      "0x004d82d8",
+      "0x004d82dc"
+     ],
+     "generated": [
+      "0x004d82d8",
+      "0x004d82dc"
+     ],
+     "generated_by": [
+      "sefRandf"
+     ],
+     "c_owned_symbols": [
+      "sef_rand_unit_scale_literal"
+     ],
+     "also_referenced_by_c": [
+      "D_004D82B4",
+      "D_004D82B8",
+      "D_004D82BC",
+      "D_004D82C0",
+      "D_004D82C4",
+      "D_004D82C8",
+      "D_004D82CC",
+      "D_004D82D0",
+      "D_004D82D4",
+      "effect_scale_literal_0_1"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sef.o"
+     }
+    },
+    {
+     "range": [
       "0x004d82e0",
       "0x004d82e8"
      ],
@@ -14286,17 +14319,6 @@
       "D_004D82E4"
      ],
      "also_referenced_by_c": [
-      "D_004D82B4",
-      "D_004D82B8",
-      "D_004D82BC",
-      "D_004D82C0",
-      "D_004D82C4",
-      "D_004D82C8",
-      "D_004D82CC",
-      "D_004D82D0",
-      "D_004D82D4",
-      "sef_rand_unit_scale_literal",
-      "effect_scale_literal_0_1",
       "circle_angle_scale_literal"
      ],
      "basis": {
@@ -14308,20 +14330,20 @@
     {
      "range": [
       "0x004d82ec",
-      "0x004d82f4"
+      "0x004d8318"
      ],
      "generated": [
       "0x004d82ec",
-      "0x004d82f4"
+      "0x004d8318"
      ],
      "generated_by": [
-      "sefGetCubePosBtm"
+      "sefGetCubePos",
+      "sefGetCubePosBtm",
+      "sefGetOfsRange"
      ],
      "c_owned_symbols": [
       "D_004D82EC",
-      "D_004D82F0"
-     ],
-     "also_referenced_by_c": [
+      "D_004D82F0",
       "D_004D82F4",
       "D_004D82F8",
       "D_004D82FC",
@@ -14330,15 +14352,41 @@
       "D_004D8308",
       "D_004D830C",
       "D_004D8310",
-      "D_004D8314",
-      "D_004D8318",
+      "D_004D8314"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8318"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sef.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d831c",
+      "0x004d8338"
+     ],
+     "generated": [
+      "0x004d831c",
+      "0x004d8338"
+     ],
+     "generated_by": [
+      "sefAnalyzeAnim",
+      "sefExecLineLocalData",
+      "sefInitLineData"
+     ],
+     "c_owned_symbols": [
       "D_004D831C",
       "D_004D8320",
       "D_004D8324",
       "D_004D8328",
       "D_004D832C",
       "D_004D8330",
-      "D_004D8334",
+      "D_004D8334"
+     ],
+     "also_referenced_by_c": [
       "D_004D8338"
      ],
      "basis": {
@@ -14350,24 +14398,26 @@
     {
      "range": [
       "0x004d833c",
-      "0x004d834c"
+      "0x004d8354"
      ],
      "generated": [
       "0x004d833c",
-      "0x004d834c"
+      "0x004d8354"
      ],
      "generated_by": [
-      "sefCreateParticle"
+      "sefAddLightActor",
+      "sefCreateParticle",
+      "sefExecLineData"
      ],
      "c_owned_symbols": [
       "D_004D833C",
       "D_004D8340",
       "D_004D8344",
-      "D_004D8348"
+      "D_004D8348",
+      "D_004D834C",
+      "D_004D8350"
      ],
      "also_referenced_by_c": [
-      "D_004D834C",
-      "D_004D8350",
       "lit4_004d8354"
      ],
      "basis": {

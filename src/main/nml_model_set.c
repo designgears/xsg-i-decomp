@@ -5190,7 +5190,6 @@ done:
     ;
 }
 
-extern float D_004D894C;
 static int nmlModelRenderProreal();
 extern void nmlPacketSendCircleTexture(void *texture, void *clut);
 extern unsigned char s_aCircleShadow[];
@@ -5204,7 +5203,7 @@ static int nmlModelRenderCircle(void *arg0, int arg1, int arg2)
 
     var_16 = 0;
     var_9 = 0;
-    if (!(*(float *)(*(int *)((char *)arg0 + 0xC) + 0x26C) <= D_004D894C)) {
+    if (!(*(float *)(*(int *)((char *)arg0 + 0xC) + 0x26C) <= 0.001f)) {
         var_6 = *(short *)arg0 - arg1;
         goto test;
 loop:

@@ -2788,8 +2788,6 @@ static void MenuShopEx02(TskObject *task, struct MenuShopUnitPanel *work)
 }
 
 float xglCos(float angle);
-extern const float D_004D7E64;
-extern const float D_004D7E68;
 struct MenuShopIconSprite {
     signed char state;
     unsigned char unmodeled_01[3];
@@ -2889,7 +2887,7 @@ static void MenuShopIcon(TskObject *task, void *data)
             }
             if (work->slide != 0)
                 work->slide--;
-            work->scale += D_004D7E64;
+            work->scale += 0.2f;
             if (work->scale > 1.0f)
                 work->scale = 1.0f;
             break;
@@ -2903,7 +2901,7 @@ static void MenuShopIcon(TskObject *task, void *data)
         default:
             if (work->slide != 0)
                 work->slide--;
-            work->scale -= D_004D7E68;
+            work->scale -= 0.2f;
             if (work->scale < 0.0f)
                 work->scale = 0.0f;
             break;

@@ -202,12 +202,11 @@ static int sefRandSeed = 0x12345678;
 
 static float sefRandf(void)
 {
-    extern const float sef_rand_unit_scale_literal;
     int bits;
 
     sefRandSeed = sefRandSeed * 0x41C64E6D + 0x3039;
     bits = ((unsigned int)sefRandSeed >> 16) & 0x7FFF;
-    return (float)bits * sef_rand_unit_scale_literal;
+    return (float)bits * 3.051851e-05f;
 }
 
 /*
@@ -1238,8 +1237,6 @@ static void sefGetCubePosTop(Vector4 *pos, const int *extent)
     pos->y = -pos->y;
 }
 
-extern float D_004D82F4;
-extern float D_004D82F8;
 
 static void sefGetCubePos(Vector4 *pos, const int *extent)
 {
@@ -1260,7 +1257,7 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&extent_vector) : "memory");
     random_vector.w = 0.0f;
 
-    random_scale = D_004D82F4;
+    random_scale = 3.051851e-05f;
     seed_1 = sefRandSeed * 0x41C64E6Du + 0x3039u;
     seed_2 = seed_1 * 0x41C64E6Du + 0x3039u;
     seed_3 = seed_2 * 0x41C64E6Du + 0x3039u;
@@ -1288,20 +1285,13 @@ static void sefGetCubePos(Vector4 *pos, const int *extent)
     __asm__ __volatile__("vsub.xyz vf1, vf1, vf2" : : : "memory");
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
 
-    final_scale = D_004D82F8;
+    final_scale = 0.1f;
     __asm__ __volatile__("lqc2 vf1, 0(%0)" : : "r"(&random_vector) : "memory");
     __asm__ __volatile__("mfc1 $8, %0\n\tqmtc2 $8, vf2" : : "f"(final_scale) : "$8", "memory");
     __asm__ __volatile__("vmulx.xyz vf1, vf1, vf2x" : : : "memory");
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(pos) : "memory");
 }
 
-extern const float D_004D82FC;
-extern const float D_004D8300;
-extern const float D_004D8304;
-extern const float D_004D8308;
-extern const float D_004D830C;
-extern const float D_004D8310;
-extern const float D_004D8314;
 extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
 
@@ -1317,7 +1307,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         if (!__builtin_expect(offsets[0], 0)) {
             return;
         }
-        radius = (float)offsets[0] * D_004D82FC;
+        radius = (float)offsets[0] * 0.1f;
         sefGetSpherePos(position, radius * sefRandf());
         return;
     }
@@ -1325,7 +1315,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         if (!__builtin_expect(offsets[0], 0)) {
             return;
         }
-        sefGetSpherePos(position, (float)offsets[0] * D_004D8300);
+        sefGetSpherePos(position, (float)offsets[0] * 0.1f);
         return;
     }
     if (index == 2) {
@@ -1344,7 +1334,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         Matrix4 rotation;
         Vector4 circle_position;
 
-        sefGetCirclePos(&circle_position, (float)offsets[0] * D_004D8304);
+        sefGetCirclePos(&circle_position, (float)offsets[0] * 0.1f);
         __asm__ __volatile__(
             "vmr32.xyzw vf1, vf0\n\t"
             "vmr32.xyzw vf2, vf1\n\t"
@@ -1358,10 +1348,10 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
             : "memory");
 
         if (offsets[1] != 0) {
-            MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * D_004D8308);
+            MMathRotateMatrixX(&rotation, &rotation, (float)offsets[1] * 0.017453292f);
         }
         if (offsets[2] != 0) {
-            MMathRotateMatrixZ(&rotation, &rotation, (float)offsets[2] * D_004D830C);
+            MMathRotateMatrixZ(&rotation, &rotation, (float)offsets[2] * 0.017453292f);
         }
         MMathApplyMatrix(position, &rotation, &circle_position);
         return;
@@ -1375,8 +1365,8 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         sample = (int)((seed >> 16) & 0x7FFFu);
         sefRandSeed = seed;
         sefGetCirclePos(position,
-                        (float)sample * D_004D8310 * range * D_004D8314);
-        position->y = sefRandf() * (float)offsets[1] * D_004D8314;
+                        (float)sample * 3.051851e-05f * range * 0.1f);
+        position->y = sefRandf() * (float)offsets[1] * 0.1f;
         return;
     }
     tracePrint("bad range prm : %d", index);
@@ -2080,7 +2070,6 @@ typedef struct SefLineData {
     unsigned char unmodeled_81A[6];
 } SefLineData;
 
-extern float D_004D831C;
 extern int D_00794334[];
 static int sefFreeLocalData(unsigned char *line_data, unsigned int index);
 static int sefAnimate(unsigned char *object, unsigned char *state, int advance);
@@ -2165,7 +2154,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
                             "qmtc2 $8, $vf2\n\t"
                             "vmulx.xyz $vf1xyz, $vf1xyz, $vf2x\n\t"
                             "sqc2 $vf1, 0(%0)"
-                            : : "r"(&particle->size), "f"(D_004D831C)
+                            : : "r"(&particle->size), "f"(0.01f)
                             : "$8", "memory");
                     }
                     sefLerpFloat(float_keys, (SefProgressState *)&particle->float_progress);
@@ -2331,11 +2320,6 @@ static inline float sefLineRandomOffset(short *range_word)
     }
     return 0.0f;
 }
-extern const float D_004D8320;
-extern const float D_004D8324;
-extern const float D_004D8328;
-extern const float D_004D832C;
-extern const float D_004D8330;
 
 static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
                             unsigned short *script_table, int link_index,
@@ -2382,9 +2366,9 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     line_data->start_time = start_time;
     line_data->loop_mode = frame;
     line_data->global_data_count = global_data_count;
-    line_data->gravity = (float)gravity_input * D_004D8320;
+    line_data->gravity = (float)gravity_input * 0.001f;
     line_data->collision_progress = collision_input;
-    line_data->height = (float)height_input * D_004D8324;
+    line_data->height = (float)height_input * 0.01f;
     line_data->field_80E = 0;
     line_data->local_result = 0;
     line_data->frame = 0;
@@ -2422,7 +2406,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
 
     if (line_data->scale_keys != 0 && ((short *)line_data->scale_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->scale_keys + 8, &line_data->global_position_source);
-        vector_scale = D_004D8328;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2435,7 +2419,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     }
     if (line_data->rotation_keys != 0 && ((short *)line_data->rotation_keys)[9] == 0x400) {
         sefLerpVectorA(line_data->rotation_keys + 8, &line_data->parent_position_source);
-        vector_scale = D_004D832C;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2449,7 +2433,7 @@ static void sefInitLineData(SefLineData *line_data, int start_time, int frame,
     if (line_data->position_keys != 0 && line_data->position_keys[9] == 0x400) {
         sefLerpVectorA(line_data->position_keys + 4,
                        (Vector4 *)line_data->position_source);
-        vector_scale = D_004D8330;
+        vector_scale = 0.1f;
         __asm__ __volatile__(
             "lqc2 $vf1, 0(%0)\n\t"
             "mfc1 $8, %1\n\t"
@@ -2543,7 +2527,6 @@ typedef struct SefImageItem {
     unsigned short u30;
 } SefImageItem;
 extern void *svGetImageListItem(int type, int image_id);
-extern const float D_004D8334;
 
 static void sefAnalyzeAnim(unsigned char *object)
 {
@@ -2555,7 +2538,7 @@ static void sefAnalyzeAnim(unsigned char *object)
     if (records->image_id <= 0) {
         return;
     }
-    scale = D_004D8334;
+    scale = 0.005f;
     do {
         SefImageItem *item_a;
         SefImageItem *item_b;
@@ -3041,7 +3024,6 @@ static int sefExecLineGlobalData(void *line_arg, int frame)
 }
 
 int sefExecLineGlobalData(void *arg0, int arg1);
-extern float D_004D834C;
 static inline short *sefKeyPtr(void *a)
 {
     return *(short **)((char *)a + 0x1F4);
@@ -3084,7 +3066,7 @@ static int sefExecLineData(void *arg0, int arg1)
   block_7:
   {
     short s816 = *((short *) (((char *) arg0) + 0x816));
-    float k = D_004D834C;
+    float k = 0.01f;
     void *key1d0;
     float g = *((float *) (((char *) arg0) + 0x5F8));
     float h = *((float *) (((char *) arg0) + 0x5FC));
@@ -4605,14 +4587,13 @@ int sefIsSeSignal(SefActor *actor)
 typedef struct SefLightSet {
     unsigned long long words[30];
 } SefLightSet;
-extern float D_004D8350;
 extern Vector4 _defLight[15];
 extern void *MMathNormalizeVector2(void *destination, const Vector4 *source);
 extern float MMathVectorDotProduct(const Vector4 *first, const Vector4 *second);
 
 static void sefAddLightActor(const Vector4 *position, const SefLightInput *light)
 {
-    float range_squared = (float)light->range * D_004D8350;
+    float range_squared = (float)light->range * 0.01f;
     int actor_index;
     SefBattleActor *battle_actor;
     Vector4 *lights;
