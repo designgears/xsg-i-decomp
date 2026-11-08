@@ -12,7 +12,9 @@ static int s_aePosToJntID[8] = {0, 2, 4, 1, 3, 5, 6, 7};
 const char D_00A53E10[] = "(RG_EQUIP_POS_LEFT_HAND <= (ePos) && (ePos) <= RG_EQUIP_POS_BACK_RIGHT) || (ePos) == RG_EQUIP_POS_INVALID";
 const char D_00A53E80[] = "../rg_equip_type.euc.c";
 const char D_00A53E98[] = "pEquip != NIL";
+const char D_00A53EA8[] = "pDst != NIL && pSrc != NIL";
 const char D_00A53EC8[] = "RG_EQUIP_TYPE_MIN <= (eType) && (eType) < RG_EQUIP_TYPE_NUM";
+const char D_00A53F08[] = "pEquip->m_nMountNum < RG_EQUIP_MOUNT_MAX";
 
 #define RG_EQUIP_TYPE_COUNT 3
 
@@ -51,7 +53,6 @@ typedef struct RgEquipRecordView {
     int mountCount;
 } RgEquipRecordView;
 
-extern const char D_00A53EA8[];
 
 void CopyRgEquip(RgEquipRecord *pDst, RgEquipRecord *pSrc)
 {
@@ -68,7 +69,6 @@ void CopyRgEquip(RgEquipRecord *pDst, RgEquipRecord *pSrc)
     }
 }
 
-extern const char D_00A53F08[];
 int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask)
 {
     unsigned int n;
@@ -93,6 +93,8 @@ int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask)
 
 extern int s_aePosToType[8];
 const char D_00A53F38[] = "nMount >= 0";
+const char D_00A53F48[] = "apEquip != NIL";
+const char D_00A53F58[] = "RG_EQUIP_TYPE_MIN <= eType && eType < RG_EQUIP_TYPE_NUM";
 int RgEquipAddMount(RgEquipRecord *pEquip, int eType, int nMount, int mask);
 
 void RgEquipSetDefault(RgEquipRecord *pEquip, int arg1)
@@ -139,6 +141,9 @@ const char D_00A53F90[] = "left";
 const char D_00A53F98[] = "right";
 const char D_00A53FA0[] = "back";
 const char D_00A53FA8[] = "???";
+const char D_00A53FB0[] = "BMP45VX";
+const char D_00A53FB8[] = "SMP53AG";
+const char D_00A53FC0[] = "CB85VX";
 
 int RgEquipIsEquipable(RgEquipRecord *pEquip, int eType)
 {
@@ -155,8 +160,6 @@ int RgEquipIsEquipable(RgEquipRecord *pEquip, int eType)
     return 0;
 }
 
-extern const char D_00A53F48[];
-extern const char D_00A53F58[];
 
 int RgEquipCheckConfrict(RgEquipRecord **apEquip, unsigned int eType)
 {
@@ -242,9 +245,6 @@ static void *_GetMountData(RgEquipRecord *pEquip, int eType)
     return 0;
 }
 
-extern const char D_00A53FB0[];
-extern const char D_00A53FB8[];
-extern const char D_00A53FC0[];
 extern int strcmp(const char *, const char *);
 
 int RgEquipMountPos(RgEquipRecord *pEquip, int eType, int kind, const char *name)

@@ -35,9 +35,22 @@ extern void *RgHeapAlloc(RgHeap *heap, unsigned int size,
 extern void RgHeapFree(RgHeap *heap, void *ptr, const char *source_file,
                        int line);
 
-extern const char D_00A54158[];
-extern const char D_00A54168[];
-extern const char D_00A542A8[];
+const char D_00A54158[] = "pEnv != NIL";
+const char D_00A54168[] = "../rg_battle_common_data.euc.c";
+const char D_00A54188[] = "already loaded battle common data";
+const char D_00A541B0[] = "already loaded battle common disp tex";
+const char D_00A541D8[] = "already loaded announce add tex";
+const char D_00A541F8[] = "already loaded announce sub tex";
+const char D_00A54218[] = "weponall.fpk";
+const char D_00A54228[] = "data\\nisimori\\";
+const char D_00A54238[] = "btl_all.bxx";
+const char D_00A54248[] = "bullet.bmp";
+const char D_00A54258[] = "time.bmp";
+const char D_00A54268[] = "wpn_font.bmp";
+const char D_00A54278[] = "announce_p.bxx";
+const char D_00A54288[] = "announce_n.bxx";
+const char D_00A54298[] = "time_pt.bmp";
+const char D_00A542A8[] = "not loaded battle common data";
 
 extern unsigned char s_aBulletFontTbl_0[];
 extern unsigned char s_aFontTbl_1[];
@@ -185,26 +198,13 @@ RgBattleCommonDataEnv *InstanceOfRgBattleCommonData(void)
  * RgBattleCommonDataLoad reports when the matching field (struct comment
  * above) is already non-null.
  */
-extern const char D_00A54188[];
-extern const char D_00A541B0[];
-extern const char D_00A541D8[];
-extern const char D_00A541F8[];
 
 /* ov12:0x00a54218 "weponall.fpk", 0x00a54228 "data\nisimori\" (RgFileSysRead's root path). */
-extern const char D_00A54218[];
-extern const char D_00A54228[];
 
 /* ov12:0x00a54238 "btl_all.bxx" */
-extern const char D_00A54238[];
 /* ov12:0x00a54248 "bullet.bmp", 0x00a54258 "time.bmp", 0x00a54268 "wpn_font.bmp" */
-extern const char D_00A54248[];
-extern const char D_00A54258[];
-extern const char D_00A54268[];
 /* ov12:0x00a54278 "announce_p.bxx", 0x00a54288 "announce_n.bxx" */
-extern const char D_00A54278[];
-extern const char D_00A54288[];
 /* ov12:0x00a54298 "time_pt.bmp" */
-extern const char D_00A54298[];
 
 void RgBattleCommonDataLoad(RgBattleCommonDataEnv *pEnv)
 {

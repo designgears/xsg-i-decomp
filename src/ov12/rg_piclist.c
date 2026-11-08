@@ -60,11 +60,16 @@ extern void DisposeRgPicList(RgPicList *pList);
  * none registered with a name in config/symbols/ov12.txt.
  */
 const char D_00A57338[] = "pBxx != NIL";
+const char D_00A57348[] = "pBuf != NIL";
 const char D_00A57358[] = "pszName != NIL";
+const char D_00A57368[] = "pPic->m_pPic != NIL";
 const char D_00A57380[] = "pPaint != NIL";
 const char D_00A57390[] = "pList != NIL";
 const char D_00A573A0[] = "pList->m_uNum < PIC_MAX";
 const char D_00A573B8[] = "pDebug != NIL";
+const char D_00A573C8[] = "host0:place2d.bin";
+const char D_00A573E0[] = "pDebug->m_pList != NIL";
+const char D_00A573F8[] = "unknown debug edit mode %d";
 
 static void _draw_add(int paintId, int picGroup, int picIndex, int x, int y)
 {
@@ -171,7 +176,6 @@ int RgPicBinarySize(void)
     return RG_PIC_BINARY_SIZE;
 }
 
-extern const char D_00A57348[];
 typedef union { RgPicName n; RgPicWord w[16]; } RgPicU;
 
 RgPic *CreateRgPicFromBinary(RgBxx *bxx, void *buffer)
@@ -225,7 +229,6 @@ RgPic *RgPicRead(int handle, RgBxx *bxx)
     return CreateRgPicFromBinary(bxx, buffer);
 }
 
-extern const char D_00A57368[];
 extern char *strcpy(char *, const char *);
 
 RgPic *CreateRgPic(RgBxx *bxx, const char *pszName)
@@ -698,9 +701,6 @@ extern int XrgHostCreateOpen(const char *filename);
 extern int XrgHostReadOpen(const char *filename);
 extern void XrgHostClose(int handle);
 extern void RgError(const char *message, const char *source_file, int line, ...);
-extern const char D_00A573C8[];
-extern const char D_00A573E0[];
-extern const char D_00A573F8[];
 typedef struct {
     unsigned char _p[0x28];
     unsigned short held;
@@ -891,15 +891,15 @@ extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern int RgBxxGetPicID(RgBxx *pBxx, unsigned int id);
 extern const char D_00A57418[];
 extern const char D_00A57440[];
-extern const char D_00A57458[];
+const char D_00A57458[] = "%s\n%3d,%3d(a:%d)";
 extern const char D_00A57470[];
-extern const char D_00A57490[];
+const char D_00A57490[] = "TEX NAME %3d:%s";
 extern const char D_00A574A0[];
 extern const char D_00A574B8[];
 extern const char D_00A574D0[];
 extern const char D_00A574E8[];
 extern const char D_00A57500[];
-extern const char D_00A57520[];
+const char D_00A57520[] = "offset %3d %3d";
 
 void RgPicDebugDisp(RgPicDebug *pDebug, int paint)
 {

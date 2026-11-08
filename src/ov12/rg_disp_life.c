@@ -41,8 +41,22 @@ static AgwsNameRecord s_aCharIDToUVWH_0[6] = {
 const char D_00A54810[] = "pPic != NIL";
 const char D_00A54820[] = "../rg_disp_life.euc.c";
 const char D_00A54838[] = "pDisp != NIL";
+const char D_00A54848[] = "pBxx != NIL";
+const char D_00A54858[] = "pTimeFont != NIL";
 const char D_00A54870[] = "board_na.bmp";
 const char D_00A54880[] = "board_nb.bmp";
+const char D_00A54890[] = "agwsname.bmp";
+const char D_00A548A0[] = "l_a_0win.bmp";
+const char D_00A548B0[] = "l_a_1win.bmp";
+const char D_00A548C0[] = "l_a_2win.bmp";
+const char D_00A548D0[] = "r_a_0win.bmp";
+const char D_00A548E0[] = "r_a_1win.bmp";
+const char D_00A548F0[] = "r_a_2win.bmp";
+const char D_00A54900[] = "left_b.bmp";
+const char D_00A54910[] = "right_b.bmp";
+const char D_00A54920[] = "bar_top1.bmp";
+const char D_00A54930[] = "bar_topd.bmp";
+const char D_00A54940[] = "bar_top2.bmp";
 const char D_00A54950[] = "board_nc.bmp";
 const char D_00A54960[] = "board_nd.bmp";
 
@@ -107,22 +121,8 @@ static void _DispAgwsName(void *paint, void *pPic, int nameIndex, int x,
     }
 }
 
-extern const char D_00A54848[];
-extern const char D_00A54858[];
 extern const char D_00A54870[];
 extern const char D_00A54880[];
-extern const char D_00A54890[];
-extern const char D_00A548A0[];
-extern const char D_00A548B0[];
-extern const char D_00A548C0[];
-extern const char D_00A548D0[];
-extern const char D_00A548E0[];
-extern const char D_00A548F0[];
-extern const char D_00A54900[];
-extern const char D_00A54910[];
-extern const char D_00A54920[];
-extern const char D_00A54930[];
-extern const char D_00A54940[];
 extern void *RgBxxGetPic(struct RgBxx *bxx, const char *picture_name);
 extern RgGauge *CreateRgGauge(void);
 extern void *RgGaugeGetDisp(RgGauge *gauge);

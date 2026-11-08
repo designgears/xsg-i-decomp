@@ -21,11 +21,11 @@
  */
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
-extern const char rg_singleton_manager_nonnull_expression[];
-extern const char rg_singleton_id_source_file[];
-extern const char rg_singleton_id_range_expression[];
-extern const char D_00A53038[];
-extern const char D_00A53058[];
+const char rg_singleton_manager_nonnull_expression[] = "pMgr != NIL";
+const char rg_singleton_id_source_file[] = "../rg_singleton_id.euc.c";
+const char D_00A53038[] = "pMgr->m_apPtrTbl[eID] == NIL";
+const char D_00A53058[] = "pPtr != NIL";
+const char rg_singleton_id_range_expression[] = "0 <= eID && eID < RG_SID_MAX";
 extern RgSingletonManager s_inIDmgr;
 
 static void _Entry(RgSingletonManager *manager, unsigned int singleton_id,

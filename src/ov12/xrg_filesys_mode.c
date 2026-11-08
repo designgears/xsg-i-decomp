@@ -17,12 +17,13 @@ extern unsigned int s_uStackTop;
 extern const char root_name_name_check[];
 extern const char root_name_source_file[];
 extern const char root_name_result_check[];
-extern const char mode_stack_depth_check[];
-extern const char mode_source_file[];
-extern const char mode_stack_top_check[];
-extern const char file_sys_size_check[];
-extern const char unknown_filesys_mode[];
-extern const char allocate_error[];
+const char mode_stack_depth_check[] = "s_uStackTop < MODE_STACK_DEPTH";
+const char mode_source_file[] = "../xrg_filesys_mode.euc.c";
+const char mode_stack_top_check[] = "s_uStackTop > 1";
+const char file_sys_size_check[] = "uSize > 0";
+const char unknown_filesys_mode[] = "unknown filesys mode %d\n";
+const char allocate_error[] = "allocate error";
+const char D_00A58F00[] = "pBuf != NIL";
 extern void *RgHeapAlloc(void *heap, unsigned int size, const char *source_file,
                          int line);
 extern void RgError(const char *message, const char *source_file, int line, ...);
@@ -32,7 +33,6 @@ extern void RgHeapFree(RgHeap *heap, void *ptr, const char *source_file,
                        int line);
 extern int RgHeapIsInSelf(RgHeap *pHeap, void *pPtr);
 /* Assertion text "pBuf != NIL"; scaffold-owned .rodata keeps its splat name. */
-extern const char D_00A58F00[];
 
 static void _PushMode(int eMode)
 {

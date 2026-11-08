@@ -19,11 +19,15 @@ static void _DestructSelRob(RgSelectRobot *pCont);
 static void _JobAct(RgSelectRobot *pCont, float deltaTime);
 
 /* Linker witness: this TU's own source-file name, used by every assert here. */
-extern const char D_00A56DA0[];
 /* Linker witness for the original literal at ov12:0x00a56ef8 ("pCont != NIL"). */
-extern const char D_00A56EF8[];
 /* Linker witness for the original literal at ov12:0x00a56d90 ("who are you ?"). */
-extern const char D_00A56D90[];
+const char D_00A56D90[] = "who are you ?";
+const char D_00A56DA0[] = "../rg_select_robot.euc.c";
+const char D_00A56DC0[] = "uFileNum <= DAT_MAX";
+const char D_00A56DD8[] = "pAct != NIL";
+const char D_00A56DE8[] = "sel_yuka.rbg";
+const char D_00A56DF8[] = "data\\nisimori\\";
+const char D_00A56E08[] = "SA_yuka";
 
 /* jal RgWarn(format, file, line, ...), the XrgLogSys-shaped debug warning
    (also declared this way by src/ov12/rg_main.c, its accepted caller). */
@@ -73,7 +77,6 @@ static void _KillLoadIfMe(void *owner)
     }
 }
 
-extern const char D_00A56DC0[];
 extern void *s_apBuf[4];
 extern char s_aszData[4][64];
 extern char *strcpy(char *, const char *);
@@ -147,10 +150,6 @@ static void _InitLoad(void)
     xglCdReadCancel();
 }
 
-extern const char D_00A56DD8[];
-extern const char D_00A56DE8[];
-extern const char D_00A56DF8[];
-extern const char D_00A56E08[];
 extern RgFileSysData *RgFileSysRead(RgFileSys *pSys, const char *pszName, const char *pszRoot);
 RgFileSys *InstanceOfRgFileSys(void);
 extern RgDispModel *CreateXrgDispModelImpl(const char *name, const char *variant);
@@ -324,10 +323,17 @@ static void _ActorPosUpdate(RgSelectRobot *pCont)
 }
 
 extern const char D_00A56DD8[];
-extern const char D_00A56E50[];
-extern const char D_00A56E68[];
-extern const char D_00A56E80[];
-extern const char D_00A56E98[];
+const char D_00A56E50[] = "pAct->m_eStat == OK";
+const char D_00A56E68[] = "pAct->m_uDataNum >= 3";
+const char D_00A56E80[] = "pAct->m_pActor == NIL";
+const char D_00A56E98[] = "pNew != NIL";
+const char D_00A56EA8[] = "apWepEss != NIL";
+const char D_00A56EB8[] = "unknow Act stat %d";
+const char D_00A56ED0[] = "hoge ? %d";
+const char D_00A56EE0[] = "pAct->m_apBuf[i] != NIL";
+const char D_00A56EF8[] = "pCont != NIL";
+const char D_00A56F08[] = "ROB %d";
+const char D_00A56F10[] = "WEP(%d) %d";
 static void _DumpHead();
 extern void *ACT_create(int type, int id);
 extern void ACT_allocMatrix(void *pXenoAct, int flags);
@@ -435,9 +441,6 @@ static void _ActivateAct(RgSelectRobot *pAct)
     _ActorPosUpdate(pAct);
 }
 
-extern const char D_00A56EA8[];
-extern const char D_00A56EB8[];
-extern const char D_00A56ED0[];
 extern int strcmp(const char *left, const char *right);
 extern void RgError(const char *message, const char *source_file, int line, ...);
 extern void ACT_resetParent(void *self, void *parent);
@@ -584,7 +587,6 @@ static void _DestructAct(RgSelectRobot *pCont)
     }
 }
 
-extern const char D_00A56EE0[];
 extern void ACT_dispose(void *actor);
 
 static void _JobAct(RgSelectRobot *pCont, float deltaTime)
@@ -832,8 +834,6 @@ void RgSelectRobotPassTime(RgSelectRobot *pCont, float deltaTime)
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void ACT_draw(void);
 static void _DrawAct(RgSelectRobot *pCont);
-extern const char D_00A56F08[];
-extern const char D_00A56F10[];
 
 void RgSelectRobotDisp(RgSelectRobot *pCont)
 {
