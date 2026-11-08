@@ -23901,30 +23901,130 @@
    ".data": [
     {
      "range": [
-      "0x00a0b9d8",
-      "0x00a0ba10"
+      "0x00a09228",
+      "0x00a0ba20"
      ],
      "generated": [
-      "0x00a0b9d8",
-      "0x00a0ba10"
+      "0x00a09228",
+      "0x00a0ba20"
      ],
      "generated_by": [
-      "VW_SamMode"
+      "AddCoin",
+      "DecPrint2",
+      "DrawNgPanel",
+      "MUSIC_CALL",
+      "NgCheckReal",
+      "NgGame_Key",
+      "NgGame_Paid",
+      "NgGetsDownBtnPrint",
+      "NgLamp",
+      "NgSpinBtnPrint",
+      "NgStopBtnPrint",
+      "NgStopGuidPt",
+      "NgTimePrint",
+      "NineGameBG_Draw",
+      "PoBgDraw",
+      "PoBonusBGDraw",
+      "PoBonusCardAnime",
+      "PoCardDraw",
+      "PoCardDrawAnime",
+      "PoCardFlip",
+      "PoCurDraw",
+      "PoDialog",
+      "PoKey",
+      "PoMoneyPrint",
+      "PoRateTableDraw",
+      "PoResultLamp",
+      "PoSelectMarkDraw",
+      "PoShuffleCard",
+      "PoWindowMessage",
+      "PokerMain",
+      "SlBgDraw",
+      "SlCashPrint",
+      "SlChangeRealEffect",
+      "SlCoinEntry",
+      "SlDecPrintSmall",
+      "SlEvent",
+      "SlGetPic",
+      "SlGuidPrint",
+      "SlLineCheck",
+      "SlModePrint",
+      "SlPayWindowPrint",
+      "SlPrizeEffect",
+      "SlRateTableDraw",
+      "SlRealDraw",
+      "SlResultDraw",
+      "SlStopBtnPrint",
+      "SpinBtnPrint",
+      "UtlCurPrint",
+      "VW_Main",
+      "VW_SamMode",
+      "VW_SamlistInit",
+      "VW_ViewMode",
+      "VW_ViewModeInit",
+      "check_spin",
+      "coin_main",
+      "decprint",
+      "exchange_select",
+      "get_ngreal_shape",
+      "init_shpmenu",
+      "level_select",
+      "linepay_check",
+      "menu_mode",
+      "paid_action",
+      "shop_main",
+      "slot_key",
+      "sub_window",
+      "submenu_select",
+      "test_mode"
      ],
      "c_owned_symbols": [
-      "sam_rect_117",
-      "back_tex_118",
-      "cur_119",
-      "ofs_120",
-      "init_121"
-     ],
-     "also_referenced_by_c": [
       "SaveWork",
+      "D_00A0922C",
+      "real01array",
+      "D_00A0925A",
+      "real02array",
+      "D_00A0928A",
+      "real03array",
+      "D_00A092BA",
+      "real11array",
+      "D_00A092EA",
+      "real12array",
+      "D_00A0931A",
+      "real13array",
+      "D_00A0934A",
+      "real21array",
+      "D_00A0937A",
+      "real22array",
+      "D_00A093AA",
+      "real23array",
+      "D_00A093DA",
+      "real31array",
+      "D_00A0940A",
+      "real32array",
+      "D_00A0943A",
+      "real33array",
+      "D_00A0946A",
+      "real41array",
+      "D_00A0949A",
+      "real42array",
+      "D_00A094CA",
+      "real43array",
+      "D_00A094FA",
+      "real51array",
+      "D_00A0952A",
+      "real52array",
+      "D_00A0955A",
+      "real53array",
+      "D_00A0958A",
       "realpt",
       "slot_window_0",
+      "D_00A095F4",
       "slot_window_rect_1",
       "Real_2",
+      "D_00A09724",
       "xpos_3",
+      "D_00A09734",
       "decfont",
       "pay_window",
       "pay_window_rect_4",
@@ -23932,69 +24032,141 @@
       "status_keep_5",
       "spinbt_rect_6",
       "pushcnt_7",
+      "D_00A09944",
       "stopbt",
+      "D_00A0999C",
       "stopbt_rect_8",
       "PicTable",
+      "D_00A09A94",
       "OptionText",
+      "D_00A09B24",
       "DeciList_9",
       "pos_10",
       "rate_11",
       "double_rate_12",
       "Pic_13",
+      "D_00A09DA4",
       "Total_14",
+      "D_00A09DC4",
       "linetex_15",
+      "D_00A09DE4",
       "linerect_16",
       "Text_17",
+      "D_00A09ECC",
       "Bar_18",
+      "D_00A09EEC",
       "TimeBar_19",
+      "D_00A09F0C",
       "GuidPtTex",
       "point_rect_20",
       "seq_21",
+      "D_00A0A0BC",
       "BoxSpr",
+      "D_00A0A0DC",
       "BoxRect",
       "pat_22",
       "inter_23",
       "mode_24",
+      "D_00A0A134",
       "tex_30",
       "mode_33",
       "busy_35",
+      "D_00A0A15C",
       "tex_36",
+      "D_00A0A17C",
       "tex_37",
+      "D_00A0A1D4",
       "rect_38",
       "count_39",
+      "D_00A0A1EC",
       "rect_40",
       "count_41",
+      "D_00A0A204",
       "RateLamp_Rect",
       "anm_42",
+      "D_00A0A29C",
       "NineGameBG_Tex_43",
+      "D_00A0A2BC",
       "NineGameBG_Rect_44",
       "seq_45",
+      "D_00A0A2D4",
       "GuidPt_46",
       "stopbtn_pos_47",
+      "ng_real01array",
+      "D_00A0A3A2",
+      "ng_real02array",
+      "D_00A0A3D2",
+      "ng_real03array",
+      "D_00A0A402",
+      "ng_real04array",
+      "D_00A0A432",
+      "ng_real05array",
+      "D_00A0A462",
+      "ng_real06array",
+      "D_00A0A492",
+      "ng_real07array",
+      "D_00A0A4C2",
+      "ng_real08array",
+      "D_00A0A4F2",
+      "ng_real09array",
+      "D_00A0A522",
+      "ng_real10array",
+      "D_00A0A552",
+      "ng_real11array",
+      "D_00A0A582",
+      "ng_real12array",
+      "D_00A0A5B2",
+      "ng_real13array",
+      "D_00A0A5E2",
+      "ng_real14array",
+      "D_00A0A612",
+      "ng_real15array",
+      "D_00A0A642",
+      "ng_real16array",
+      "D_00A0A672",
+      "ng_real17array",
+      "D_00A0A6A2",
+      "ng_real18array",
+      "D_00A0A6D2",
+      "ng_real19array",
+      "D_00A0A702",
+      "ng_real20array",
+      "D_00A0A732",
       "ng_realtbl",
       "NgReal_Tex_48",
       "NgReal_49",
+      "D_00A0A7E4",
       "ptmove_50",
       "se_51",
+      "D_00A0A844",
       "fontlist_52",
       "waku_53",
       "PoCurTex",
       "cnt_54",
+      "D_00A0AA7C",
       "Ltex_56",
+      "D_00A0AA9C",
       "Rtex_57",
+      "D_00A0AABC",
       "tex_58",
+      "D_00A0AADC",
       "tex_59",
+      "D_00A0AAFC",
       "rect_60",
       "type0_tex_61",
+      "D_00A0AB3C",
       "type0_rect_62",
       "type1_tex_63",
+      "D_00A0AB6C",
       "type1_rect_64",
       "type0_pos_65",
       "type1_pos_66",
       "dialog_cur_67",
       "tex_68",
+      "D_00A0ABB4",
       "rect_69",
       "CardTex",
+      "D_00A0AD6C",
       "CardPos",
       "CardBuf_70",
       "range_71",
@@ -24003,34 +24175,46 @@
       "tex_76",
       "status_77",
       "tex_80",
+      "D_00A0AE4C",
       "rect_81",
       "cnt_82",
       "add_83",
       "rate_84",
+      "D_00A0AE6C",
       "tex_85",
+      "D_00A0AE8C",
       "rect_86",
       "MarkerTex_87",
+      "D_00A0AEBC",
       "MarkerPos_88",
       "PtrTex_89",
+      "D_00A0AF2C",
       "PtrPos_90",
       "wait_91",
+      "D_00A0AF74",
       "PoSelecterTex",
       "PoSelecterPos",
       "cur_92",
       "mode_93",
       "selpos_94",
+      "D_00A0B02C",
       "chgpos_95",
       "status_96",
       "result_rect_97",
       "tex_98",
+      "D_00A0B0E4",
       "PokerCoinRate",
       "PokerRate",
       "init_99",
+      "D_00A0B124",
       "EntryBG_Tex",
+      "D_00A0B144",
       "EntryBG_Rect",
       "SubWindow_Tex",
+      "D_00A0B174",
       "Level_Tex",
       "ExChange_Tex",
+      "D_00A0B23C",
       "Cursor_Tex",
       "Cursor_Rect",
       "anm_100",
@@ -24038,11 +24222,15 @@
       "cur_int_102",
       "menu_mode_103",
       "BGTEST_Tex",
+      "D_00A0B38C",
       "BGTEST_Rect",
       "flg_104",
+      "D_00A0B3A4",
       "BG_Tex",
+      "D_00A0B3C4",
       "BG_Rect",
       "tex_105",
+      "D_00A0B50C",
       "Tex_106",
       "anm_107",
       "cur_108",
@@ -24052,41 +24240,105 @@
       "top_112",
       "ViewSamTex",
       "fileinfo",
+      "D_00A0B97E",
       "old_113",
+      "D_00A0B984",
       "tex_114",
+      "D_00A0B9A4",
       "keytex_115",
+      "D_00A0B9C4",
       "keyrect_116",
+      "sam_rect_117",
+      "back_tex_118",
+      "cur_119",
+      "ofs_120",
+      "init_121",
       "mode_123",
+      "D_00A0BA14",
       "MUSICLIST_125",
       "oldreq_126"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x00a0bb60",
-      "0x00a0bb80"
+      "0x00a0bb30",
+      "0x00a0c720"
      ],
      "generated": [
-      "0x00a0bb60",
-      "0x00a0bb80"
+      "0x00a0bb30",
+      "0x00a0c720"
      ],
      "generated_by": [
-      "SetDrawStatus"
+      "DrawNonTextureBox",
+      "GameModeChange",
+      "MUSIC_CALL",
+      "MakeSprite",
+      "MiniG_Init",
+      "MiniG_Main",
+      "NgHelpMode",
+      "NgTimePrint",
+      "PoCardCheck",
+      "PoChk1",
+      "PoChk2",
+      "PoChk3",
+      "PoChk4",
+      "PoChk5",
+      "PoChk6",
+      "PoChk7",
+      "PoChk8",
+      "PoChk9",
+      "PoGetMark",
+      "PoMoneyPrint",
+      "PoMultiChk",
+      "PoShuffleCard",
+      "PoSortCard",
+      "PoWindowMessage",
+      "PokerInit",
+      "PokerMain",
+      "PokerReadyMes",
+      "RES_Load",
+      "RES_SoundEffect",
+      "RES_SoundEffectStop",
+      "SetDrawStatus",
+      "SetRegAD",
+      "SetTest",
+      "SlChangeRealEffect",
+      "SlCoinEntry",
+      "SlEvent",
+      "SlHelpMode",
+      "SlLineCheck",
+      "SlModePrint",
+      "SlPrizeCheck",
+      "SlPrizeEffect",
+      "SlRateTableDraw",
+      "SlResultDraw",
+      "VW_Init",
+      "VW_SamMode",
+      "VW_ViewModeInit",
+      "coin_main",
+      "init_coin",
+      "init_menu_mode",
+      "init_shop",
+      "init_shpmenu",
+      "init_slot",
+      "init_test_mode",
+      "linepay_check",
+      "pay_print",
+      "shop_main"
      ],
      "c_owned_symbols": [
-      "jtbl_00A0BB60"
-     ],
-     "also_referenced_by_c": [
       "D_00A0BB30",
       "D_00A0BB40",
       "D_00A0BB50",
+      "jtbl_00A0BB60",
       "D_00A0BB80",
       "D_00A0BB90",
       "D_00A0BBA0",
@@ -24105,113 +24357,24 @@
       "D_00A0BCB8",
       "D_00A0BCC8",
       "D_00A0BCD8",
-      "D_00A0BCE8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0bcf0",
-      "0x00a0bd10"
-     ],
-     "generated": [
-      "0x00a0bcf0",
-      "0x00a0bd10"
-     ],
-     "generated_by": [
-      "SlPrizeCheck"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0BCF0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0BCE8",
+      "jtbl_00A0BCF0",
       "D_00A0BD10",
       "D_00A0BD28",
-      "D_00A0BD40"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0bd50",
-      "0x00a0bd68"
-     ],
-     "generated": [
-      "0x00a0bd50",
-      "0x00a0bd68"
-     ],
-     "generated_by": [
-      "linepay_check"
-     ],
-     "c_owned_symbols": [
-      "D_00A0BD50"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0BD40",
+      "D_00A0BD50",
       "D_00A0BD68",
-      "D_00A0BD88"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0bda0",
-      "0x00a0bde0"
-     ],
-     "generated": [
-      "0x00a0bda0",
-      "0x00a0bde0"
-     ],
-     "generated_by": [
-      "SlChangeRealEffect",
-      "SlEvent"
-     ],
-     "c_owned_symbols": [
+      "D_00A0BD88",
       "jtbl_00A0BDA0",
-      "jtbl_00A0BDC0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A0BDC0",
       "D_00A0BDE0",
       "D_00A0BE00",
       "D_00A0BE10",
       "D_00A0BE28",
       "D_00A0BE40",
       "D_00A0BE58",
-      "D_00A0BE70"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0be90",
-      "0x00a0bea0"
-     ],
-     "generated": [
-      "0x00a0be90",
-      "0x00a0bea0"
-     ],
-     "generated_by": [
-      "NgTimePrint"
-     ],
-     "c_owned_symbols": [
-      "D_00A0BE90"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0BE70",
+      "D_00A0BE90",
       "D_00A0BEA0",
       "D_00A0BEC0",
       "D_00A0BEE0",
@@ -24220,61 +24383,16 @@
       "D_00A0BF10",
       "D_00A0BF20",
       "D_00A0BF30",
-      "D_00A0BF38"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0bf40",
-      "0x00a0c030"
-     ],
-     "generated": [
-      "0x00a0bf40",
-      "0x00a0c030"
-     ],
-     "generated_by": [
-      "PoGetMark",
-      "PoShuffleCard"
-     ],
-     "c_owned_symbols": [
+      "D_00A0BF38",
       "jtbl_00A0BF40",
-      "jtbl_00A0BF60"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A0BF60",
       "D_00A0C030",
       "D_00A0C038",
       "D_00A0C040",
       "D_00A0C048",
       "D_00A0C050",
-      "D_00A0C058"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c060",
-      "0x00a0c078"
-     ],
-     "generated": [
-      "0x00a0c060",
-      "0x00a0c078"
-     ],
-     "generated_by": [
-      "PoMultiChk"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0C060"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0C058",
+      "jtbl_00A0C060",
       "D_00A0C078",
       "D_00A0C088",
       "D_00A0C098",
@@ -24285,63 +24403,23 @@
       "D_00A0C0E8",
       "D_00A0C100",
       "D_00A0C120",
+      "D_00A0C130",
+      "D_00A0C150",
+      "D_00A0C170",
+      "D_00A0C190",
       "D_00A0C1B8",
       "D_00A0C1C8",
       "D_00A0C1D8",
       "D_00A0C1F8",
-      "D_00A0C208"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c220",
-      "0x00a0c270"
-     ],
-     "generated": [
-      "0x00a0c220",
-      "0x00a0c270"
-     ],
-     "generated_by": [
-      "PokerMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0C220"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0C208",
+      "jtbl_00A0C220",
       "D_00A0C270",
       "D_00A0C288",
       "D_00A0C2A0",
       "D_00A0C2B8",
       "D_00A0C2D0",
-      "D_00A0C2E8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c300",
-      "0x00a0c320"
-     ],
-     "generated": [
-      "0x00a0c300",
-      "0x00a0c320"
-     ],
-     "generated_by": [
-      "GameModeChange"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0C300"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0C2E8",
+      "jtbl_00A0C300",
       "D_00A0C320",
       "D_00A0C338",
       "D_00A0C350",
@@ -24352,56 +24430,12 @@
       "D_00A0C380",
       "D_00A0C388",
       "D_00A0C390",
-      "D_00A0C3B0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c3d0",
-      "0x00a0c4a0"
-     ],
-     "generated": [
-      "0x00a0c3d0",
-      "0x00a0c4a0"
-     ],
-     "generated_by": [
-      "init_shpmenu"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0C3D0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0C3B0",
+      "jtbl_00A0C3D0",
       "D_00A0C4A0",
       "D_00A0C4A8",
-      "D_00A0C4B0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c4c0",
-      "0x00a0c590"
-     ],
-     "generated": [
-      "0x00a0c4c0",
-      "0x00a0c590"
-     ],
-     "generated_by": [
-      "shop_main"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A0C4C0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A0C4B0",
+      "jtbl_00A0C4C0",
       "D_00A0C590",
       "D_00A0C5B0",
       "D_00A0C5C8",
@@ -24414,6 +24448,7 @@
       "D_00A0C638",
       "D_00A0C640",
       "D_00A0C650",
+      "D_00A0C658",
       "D_00A0C660",
       "D_00A0C680",
       "D_00A0C6A0",
@@ -24421,34 +24456,14 @@
       "D_00A0C6C0",
       "D_00A0C6D0",
       "D_00A0C6E0",
-      "D_00A0C6F0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a0c700",
-      "0x00a0c720"
-     ],
-     "generated": [
-      "0x00a0c700",
-      "0x00a0c720"
-     ],
-     "generated_by": [
-      "MiniG_Main"
-     ],
-     "c_owned_symbols": [
+      "D_00A0C6F0",
       "jtbl_00A0C700"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov11/build/scaffold/src/ov11/mini_g.o"
+      "object": "build/ov11/build/scaffold/src/ov11/mini_g.o"
      }
     }
    ]
