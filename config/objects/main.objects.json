@@ -2412,7 +2412,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C00A8",
+          "end": "0x004BF7A0",
           "ordinal": 121,
           "piece": "look_at_player",
           "start": "0x004BF768",
@@ -2423,7 +2423,7 @@
           "end": "0x004C01C8",
           "ordinal": 122,
           "piece": "res_get_path",
-          "start": "0x004C00A8",
+          "start": "0x004BF7A0",
           "tu": "res_get_path"
         },
         {
@@ -4176,7 +4176,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004D9EA8",
+          "end": "0x004D8AA8",
           "ordinal": 121,
           "piece": "look_at_player",
           "start": "0x004D8A90",
@@ -4187,7 +4187,7 @@
           "end": "0x004D9EEC",
           "ordinal": 122,
           "piece": "res_get_path",
-          "start": "0x004D9EA8",
+          "start": "0x004D8AA8",
           "tu": "res_get_path"
         },
         {
@@ -33962,20 +33962,20 @@
           ],
           "bounds": [
             "0x004BF764",
-            "0x004C00A8"
+            "0x004BF7A0"
           ],
-          "end": "0x004C00A8",
+          "end": "0x004BF7A0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C00A8",
+              "end": "0x004BF7A0",
               "name": "look_at_player",
               "start": "0x004BF768"
             }
           ],
           "rule": "anchored start",
-          "size": 2368,
+          "size": 56,
           "splat_type": "rodata",
           "start": "0x004BF768"
         },
@@ -34010,20 +34010,20 @@
           ],
           "bounds": [
             "0x004D8A71",
-            "0x004D9EA8"
+            "0x004D8AA8"
           ],
-          "end": "0x004D9EA8",
+          "end": "0x004D8AA8",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004D9EA8",
+              "end": "0x004D8AA8",
               "name": "look_at_player",
               "start": "0x004D8A90"
             }
           ],
           "rule": "anchored start",
-          "size": 5144,
+          "size": 24,
           "splat_type": "sdata",
           "start": "0x004D8A90"
         }
@@ -34678,7 +34678,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C00A8",
+            "0x004BF7A0",
             "0x004C01B1"
           ],
           "bounds": [
@@ -34692,13 +34692,13 @@
               "c_split": false,
               "end": "0x004C01C8",
               "name": "res_get_path",
-              "start": "0x004C00A8"
+              "start": "0x004BF7A0"
             }
           ],
-          "rule": "anchored start",
-          "size": 288,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 2600,
           "splat_type": "rodata",
-          "start": "0x004C00A8"
+          "start": "0x004BF7A0"
         },
         ".sbss": {
           "anchored": [
@@ -34726,7 +34726,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004D9EA8",
+            "0x004D8AA8",
             "0x004D9EE6"
           ],
           "bounds": [
@@ -34740,13 +34740,13 @@
               "c_split": false,
               "end": "0x004D9EEC",
               "name": "res_get_path",
-              "start": "0x004D9EA8"
+              "start": "0x004D8AA8"
             }
           ],
-          "rule": "anchored start",
-          "size": 68,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 5188,
           "splat_type": "sdata",
-          "start": "0x004D9EA8"
+          "start": "0x004D8AA8"
         }
       },
       "shared_contract": {
