@@ -2974,15 +2974,42 @@
    ]
   },
   "main/tu155": {
+   ".data": [
+    {
+     "range": [
+      "0x0036b1a8",
+      "0x0036b248"
+     ],
+     "generated": [
+      "0x0036b1a8",
+      "0x0036b248"
+     ],
+     "generated_by": [
+      "EW_setDrawEnv",
+      "frame_put",
+      "label_put"
+     ],
+     "c_owned_symbols": [
+      "sprt_base_register",
+      "frameUV"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ew_sprt_set_cursor_uv.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x004c2340",
-      "0x004c23c0"
+      "0x004c23d8"
      ],
      "generated": [
       "0x004c2340",
-      "0x004c23bc"
+      "0x004c23d7"
      ],
      "generated_by": [
       "EW_create",
@@ -2991,13 +3018,66 @@
      "c_owned_symbols": [
       "D_004C2340",
       "jtbl_004C2360",
-      "jtbl_004C2390"
+      "jtbl_004C2390",
+      "D_004C23C0"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/ew_sprt_set_cursor_uv.o"
+      "object": "build/main/build/c/ew_sprt_set_cursor_uv.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da5b0",
+      "0x004da5b4"
+     ],
+     "generated": [
+      "0x004da5b0",
+      "0x004da5b4"
+     ],
+     "generated_by": [
+      "EW_draw",
+      "EW_drawComoponent",
+      "EW_sendPacket"
+     ],
+     "c_owned_symbols": [
+      "ew_send_mode"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ew_sprt_set_cursor_uv.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da5b8",
+      "0x004da5c4"
+     ],
+     "generated": [
+      "0x004da5b8",
+      "0x004da5c4"
+     ],
+     "generated_by": [
+      "EW_drawComoponent"
+     ],
+     "c_owned_symbols": [
+      "D_004DA5B8",
+      "tmp_0"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA5B8": "tmp_0"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/ew_sprt_set_cursor_uv.o"
      }
     }
    ]
