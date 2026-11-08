@@ -428,9 +428,16 @@
             "size": 80
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 67744,
+            "section": ".bss",
+            "sha256": "3743c2d2a2587707fb5829cfd02ee157fb2d5e6ace79d4f978a4ce4a7bc0a6cf",
+            "size": 12960
+          }
+        ],
         "source": "src/audio/ssd/ssd_init.c",
-        "source_sha256": "aff1300f19c240af7745225ab9d422ebc7c4c116ab11d5e2f634b0b2a0d22d77"
+        "source_sha256": "1d7141bb51ed4d274dbb43c9258990bf85f18ef3e200da6dea4d7ee3048fc088"
       },
       {
         "fdr_filename": "ssd_mem.c",

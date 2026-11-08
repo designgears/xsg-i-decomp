@@ -179,8 +179,10 @@ def compiler_streams(assembly, object_elf=None):
             require(symbol["size"] == int(size), "COMMON declaration/object size differs")
             alignment = symbol["value"] if symbol["section_index"] == 0xfff2 else 1
             require(alignment > 0 and not alignment & (alignment-1), "invalid COMMON alignment")
-            streams[".bss"].extend([f".balign {alignment}",
-                                      (".local " if kind == "lcomm" else ".globl ") + name,
+            # No `.balign`: the mapping places the object with `.org` at its
+            # original address (the emission audit proves it), and a raised
+            # input-section alignment would pad the module's .bss size.
+            streams[".bss"].extend([(".local " if kind == "lcomm" else ".globl ") + name,
                                       f".type {name},@object", name + ":",
                                       f".space {size}", f".size {name},{size}"])
             continue

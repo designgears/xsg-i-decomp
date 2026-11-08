@@ -67,9 +67,10 @@ struct SsdWorkState {
     int reverb_clear_result;
     SsdProc *processes;
     int random_state;
+    unsigned char unmodeled_3288[0x32a0 - 0x3288]; /* original object is 0x32a0 bytes */
 };
 
-extern SsdWorkState SsdWork;
+SsdWorkState SsdWork;
 extern const char _fdata[];
 extern int StopHardTimer(int timer);
 extern int printf(const char *format, ...);

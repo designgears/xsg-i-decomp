@@ -161,7 +161,19 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
     funcs = group['functions']
     start = min(f['offset'] for f in funcs)
     end = max(f['offset'] + f['size'] for f in funcs)
-    pools = group.get('generated_data', [])
+    pools = [p for p in group.get('generated_data', []) if p['section'] not in ('.bss', '.sbss')]
+    # a C-owned BSS range (COMMON or static storage mapped in iop-build.json)
+    # is measured as the original's objects in it, like the EXTR-owned ones
+    for p in group.get('generated_data', []):
+        if p['section'] in ('.bss', '.sbss'):
+            for sym in original.symbols:
+                if (sym['type'] == 1 and sym['size'] and sym['name'] and
+                        0 < sym['section_index'] < len(original.sections) and
+                        original.sections[sym['section_index']]['name'] == p['section'] and
+                        p['offset'] <= sym['value'] < p['offset'] + p['size'] and
+                        not any(b['name'] == sym['name'] for b in bss)):
+                    bss = bss + [dict(section=p['section'], offset=sym['value'], size=sym['size'],
+                                      name=sym['name'])]
     original_globals = [s for s in original.symbols if s['name'] and s['binding'] in (1, 2) and
                         0 < s['section_index'] < len(original.sections) and
                         re.fullmatch(r'[A-Za-z_.$][A-Za-z_0-9.$]*', s['name'])]
