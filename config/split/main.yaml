@@ -919,7 +919,7 @@ segments:
       - [0x2DCA90, sdata, srs]
       - [0x2DCB30, sdata, sc_get]
       - [0x2DCB5C, sdata, sdv]
-      - [0x2DCB70, sdata, m_ef_obj]
+      - [0x2DCB68, sdata, m_ef_obj]
       - [0x2DCB78, sdata, sef_print]
       - [0x2DCFD0, sdata, init_class_db]
       - [0x2DCFDC, sdata, string_utf_get_hash]

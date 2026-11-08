@@ -5,6 +5,7 @@
 
 /* The object-pool storage remains scaffold-owned; its record layout is unresolved. */
 static u8 mefObjBuff[0x18c00];
+long long moneyBox = 0;
 static u32 mefObjSysFlags = 0;
 extern void MOutputDebugStringWarn(const char *format, ...);
 

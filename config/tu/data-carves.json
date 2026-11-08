@@ -16579,45 +16579,25 @@
     {
      "range": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated_by": [
+      "sdvDrawAlter",
       "sdvProgressPrm",
       "sdvSetCameraOffset",
-      "sdvSetCameraParam"
+      "sdvSetCameraParam",
+      "sdvTransOffset"
      ],
      "c_owned_symbols": [
       "D_004D835C",
       "D_004D8360",
       "D_004D8364",
-      "D_004D8368"
-     ],
-     "also_referenced_by_c": [
-      "D_004D836C"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sdv.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated_by": [
-      "sdvDrawAlter"
-     ],
-     "c_owned_symbols": [
+      "D_004D8368",
+      "D_004D836C",
       "D_004D8370"
      ],
      "also_referenced_by_c": [],
@@ -16790,11 +16770,11 @@
    ".sdata": [
     {
      "range": [
-      "0x004dbb70",
+      "0x004dbb68",
       "0x004dbb74"
      ],
      "generated": [
-      "0x004dbb70",
+      "0x004dbb68",
       "0x004dbb74"
      ],
      "generated_by": [
@@ -16806,6 +16786,7 @@
       "MEfObjInit"
      ],
      "c_owned_symbols": [
+      "moneyBox",
       "mefObjSysFlags"
      ],
      "also_referenced_by_c": [],
