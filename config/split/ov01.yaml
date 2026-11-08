@@ -154,7 +154,7 @@ segments:
       - { type: bss, vram: 0x00A5AA40, name: ov01/debug_entry }
       - { type: bss, vram: 0x00A5AA70, name: ov01/m_cam }
       - { type: bss, vram: 0x00A5B630, name: ov01/m_mv }
-      - { type: bss, vram: 0x00A5B7B0, name: ov01/m_mv2 }
+      - { type: .bss, vram: 0x00A5B7B0, name: ov01/m_mv2 }
   - [0x52970, pad, ov01_bss_file_image]
   - [0x5C8F8, bin, elf_shstrtab]
   - [0x5C918, bin, elf_section_headers]
