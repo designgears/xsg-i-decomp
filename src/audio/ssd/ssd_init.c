@@ -1,8 +1,6 @@
-/* Original ssd_init.c translation unit. Unrecovered data remains external. */
+/* Original ssd_init.c translation unit. */
 
 
-
-enum { SSD_VERSION_BANNER = 0x18 };
 
 typedef struct SsdWorkState SsdWorkState;
 typedef struct SsdProc SsdProc;
@@ -70,8 +68,17 @@ struct SsdWorkState {
     unsigned char unmodeled_3288[0x32a0 - 0x3288]; /* original object is 0x32a0 bytes */
 };
 
-SsdWorkState SsdWork;
+typedef struct ModuleInfo {
+    const char *name;
+    unsigned short version;
+} ModuleInfo;
+
+/* The module name is the first .rodata string ("PS2_SuzukiSoundDriver"),
+ * still provided by the original .rodata scaffold through _fdata. */
 extern const char _fdata[];
+ModuleInfo Module = { _fdata, 0x0205 };
+
+SsdWorkState SsdWork;
 extern int StopHardTimer(int timer);
 extern int printf(const char *format, ...);
 extern int SsdIrqInterruptProcess(int core, SsdWorkState *work);
@@ -133,7 +140,7 @@ void *SsdQuit(void);
 
 int SsdStart(int argc, char **argv)
 {
-    printf(&_fdata[SSD_VERSION_BANNER], 96, 1);
+    printf(&_fdata[0x18], 96, 1);
     RegisterLibraryEntries(&ssd_entry);
     return 0;
 }
