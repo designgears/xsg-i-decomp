@@ -46,7 +46,6 @@ extern int sceRemove(const char *path);
 
 extern u8 system_cnf[];
 
-extern u8 HddActive;
 
 extern u8 mount_device[];
 

@@ -24,13 +24,6 @@ typedef struct xheap_block {
 
 void *xheap_push(void);
 
-extern xheap_block *heap_top;
-
-extern int heap_size;
-
-extern xheap_frame *frame_stack;
-
-extern xheap_block *freeBlock;
 
 extern void *jthreadCurrent;
 

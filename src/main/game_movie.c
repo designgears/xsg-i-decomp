@@ -6,7 +6,7 @@
 
 extern int xglMovieClose(void *movie);
 
-extern MovieInfo mi;
+static MovieInfo mi;
 
 
 /* Defined in src/main/xgl_1.c, still INCLUDE_ASM there. */

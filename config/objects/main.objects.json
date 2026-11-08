@@ -25075,7 +25075,7 @@
       "owners": {
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -35389,7 +35389,7 @@
       "name_confidence": "low",
       "ordinal": 125,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
         ".text": "c"
@@ -46055,7 +46055,7 @@
       "owners": {
         ".bss": "asm",
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -68262,7 +68262,7 @@
       "name_confidence": "low",
       "ordinal": 225,
       "owners": {
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xheap.c",
@@ -69414,7 +69414,7 @@
       "name_confidence": "low",
       "ordinal": 231,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -75045,7 +75045,7 @@
       "name_confidence": "low",
       "ordinal": 249,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
