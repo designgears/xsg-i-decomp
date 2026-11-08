@@ -303,6 +303,19 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     for (const Item& it : items) {
         const GpuUiKgOp& o = *it.o;
         anchor = anchors[size_t(it.order)];
+        // a list entry (a window and its header tag) that does not fit whole above the help bar is not
+        // shown at all: lists show complete items, never the top of the next one
+        {
+            const GpuUiKgOp& o2 = *it.o;
+            bool cut = false;
+            for (uint32_t j = 0; j < m.nops && helpTop < 1e8f && !cut && o2.a <= helpZ; ++j) {   // the help bar's own content stays
+                const GpuUiKgOp& w = m.op[j];
+                if (w.type != GPU_KG_WINDOW || !w.b || w.y + w.dh <= helpTop - 4 || w.dw >= 400) continue;
+                // the window itself, anything inside it, and its header (tag / ribbon) just above it
+                if (o2.x >= w.x - 4 && o2.x <= w.x + w.dw && o2.y >= w.y - 20 && o2.y <= w.y + w.dh) cut = true;
+            }
+            if (cut) continue;
+        }
         // anything under the help bar (below its top, behind it in depth) is hidden, not shown through the glass
         if (helpTop < 1e8f && it.o->y >= helpTop - 8 && it.o->a < helpZ && it.o->type != GPU_KG_PAUSE) continue;
         ImVec4 cr = it.clip;
