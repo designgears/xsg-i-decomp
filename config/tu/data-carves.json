@@ -16071,11 +16071,11 @@
    ".lit4": [
     {
      "range": [
-      "0x004d82d8",
+      "0x004d82b4",
       "0x004d8358"
      ],
      "generated": [
-      "0x004d82d8",
+      "0x004d82b4",
       "0x004d8358"
      ],
      "generated_by": [
@@ -16093,9 +16093,19 @@
       "sefInitLineData",
       "sefLerpFloat",
       "sefLerpVectorSC",
-      "sefRandf"
+      "sefRandf",
+      "srsAtan2"
      ],
      "c_owned_symbols": [
+      "D_004D82B4",
+      "D_004D82B8",
+      "D_004D82BC",
+      "D_004D82C0",
+      "D_004D82C4",
+      "D_004D82C8",
+      "D_004D82CC",
+      "D_004D82D0",
+      "D_004D82D4",
       "sef_rand_unit_scale_literal",
       "effect_scale_literal_0_1",
       "D_004D82E0",
@@ -16129,17 +16139,7 @@
       "D_004D8350",
       "lit4_004d8354"
      ],
-     "also_referenced_by_c": [
-      "D_004D82B4",
-      "D_004D82B8",
-      "D_004D82BC",
-      "D_004D82C0",
-      "D_004D82C4",
-      "D_004D82C8",
-      "D_004D82CC",
-      "D_004D82D0",
-      "D_004D82D4"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
