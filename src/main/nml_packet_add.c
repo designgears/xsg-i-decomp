@@ -2,6 +2,123 @@
 #include "shared.h"
 #include "main/xgl_2.h"
 #include "nml_packet_add.h"
+
+static const float s_aNormalTbl[114][4] __attribute__((aligned(16))) = {
+    { 0.0f, -1.0f, 0.0f, 1.0f },
+    { 0.0f, -0.866f, 0.5f, 1.0f },
+    { 0.191f, -0.866f, 0.462f, 1.0f },
+    { 0.354f, -0.866f, 0.354f, 1.0f },
+    { 0.462f, -0.866f, 0.191f, 1.0f },
+    { 0.5f, -0.866f, 0.0f, 1.0f },
+    { 0.462f, -0.866f, -0.191f, 1.0f },
+    { 0.354f, -0.866f, -0.354f, 1.0f },
+    { 0.191f, -0.866f, -0.462f, 1.0f },
+    { 0.0f, -0.866f, -0.5f, 1.0f },
+    { -0.191f, -0.866f, -0.462f, 1.0f },
+    { -0.354f, -0.866f, -0.354f, 1.0f },
+    { -0.462f, -0.866f, -0.191f, 1.0f },
+    { -0.5f, -0.866f, -0.0f, 1.0f },
+    { -0.462f, -0.866f, 0.191f, 1.0f },
+    { -0.354f, -0.866f, 0.354f, 1.0f },
+    { -0.191f, -0.866f, 0.462f, 1.0f },
+    { 0.0f, -0.707f, 0.707f, 1.0f },
+    { 0.271f, -0.707f, 0.653f, 1.0f },
+    { 0.5f, -0.707f, 0.5f, 1.0f },
+    { 0.653f, -0.707f, 0.271f, 1.0f },
+    { 0.707f, -0.707f, 0.0f, 1.0f },
+    { 0.653f, -0.707f, -0.271f, 1.0f },
+    { 0.5f, -0.707f, -0.5f, 1.0f },
+    { 0.271f, -0.707f, -0.653f, 1.0f },
+    { 0.0f, -0.707f, -0.707f, 1.0f },
+    { -0.271f, -0.707f, -0.653f, 1.0f },
+    { -0.5f, -0.707f, -0.5f, 1.0f },
+    { -0.653f, -0.707f, -0.271f, 1.0f },
+    { -0.707f, -0.707f, -0.0f, 1.0f },
+    { -0.653f, -0.707f, 0.271f, 1.0f },
+    { -0.5f, -0.707f, 0.5f, 1.0f },
+    { -0.271f, -0.707f, 0.653f, 1.0f },
+    { 0.0f, -0.5f, 0.866f, 1.0f },
+    { 0.331f, -0.5f, 0.8f, 1.0f },
+    { 0.612f, -0.5f, 0.612f, 1.0f },
+    { 0.8f, -0.5f, 0.331f, 1.0f },
+    { 0.866f, -0.5f, 0.0f, 1.0f },
+    { 0.8f, -0.5f, -0.331f, 1.0f },
+    { 0.612f, -0.5f, -0.612f, 1.0f },
+    { 0.331f, -0.5f, -0.8f, 1.0f },
+    { 0.0f, -0.5f, -0.866f, 1.0f },
+    { -0.331f, -0.5f, -0.8f, 1.0f },
+    { -0.612f, -0.5f, -0.612f, 1.0f },
+    { -0.8f, -0.5f, -0.331f, 1.0f },
+    { -0.866f, -0.5f, -0.0f, 1.0f },
+    { -0.8f, -0.5f, 0.331f, 1.0f },
+    { -0.612f, -0.5f, 0.612f, 1.0f },
+    { -0.331f, -0.5f, 0.8f, 1.0f },
+    { 0.0f, 0.0f, 1.0f, 1.0f },
+    { 0.383f, 0.0f, 0.924f, 1.0f },
+    { 0.707f, 0.0f, 0.707f, 1.0f },
+    { 0.924f, 0.0f, 0.383f, 1.0f },
+    { 1.0f, 0.0f, 0.0f, 1.0f },
+    { 0.924f, 0.0f, -0.383f, 1.0f },
+    { 0.707f, 0.0f, -0.707f, 1.0f },
+    { 0.383f, 0.0f, -0.924f, 1.0f },
+    { 0.0f, 0.0f, -1.0f, 1.0f },
+    { -0.383f, 0.0f, -0.924f, 1.0f },
+    { -0.707f, 0.0f, -0.707f, 1.0f },
+    { -0.924f, 0.0f, -0.383f, 1.0f },
+    { -1.0f, 0.0f, -0.0f, 1.0f },
+    { -0.924f, 0.0f, 0.383f, 1.0f },
+    { -0.707f, 0.0f, 0.707f, 1.0f },
+    { -0.383f, 0.0f, 0.924f, 1.0f },
+    { 0.0f, 0.5f, 0.866f, 1.0f },
+    { 0.331f, 0.5f, 0.8f, 1.0f },
+    { 0.612f, 0.5f, 0.612f, 1.0f },
+    { 0.8f, 0.5f, 0.331f, 1.0f },
+    { 0.866f, 0.5f, 0.0f, 1.0f },
+    { 0.8f, 0.5f, -0.331f, 1.0f },
+    { 0.612f, 0.5f, -0.612f, 1.0f },
+    { 0.331f, 0.5f, -0.8f, 1.0f },
+    { 0.0f, 0.5f, -0.866f, 1.0f },
+    { -0.331f, 0.5f, -0.8f, 1.0f },
+    { -0.612f, 0.5f, -0.612f, 1.0f },
+    { -0.8f, 0.5f, -0.331f, 1.0f },
+    { -0.866f, 0.5f, -0.0f, 1.0f },
+    { -0.8f, 0.5f, 0.331f, 1.0f },
+    { -0.612f, 0.5f, 0.612f, 1.0f },
+    { -0.331f, 0.5f, 0.8f, 1.0f },
+    { 0.0f, 0.707f, 0.707f, 1.0f },
+    { 0.271f, 0.707f, 0.653f, 1.0f },
+    { 0.5f, 0.707f, 0.5f, 1.0f },
+    { 0.653f, 0.707f, 0.271f, 1.0f },
+    { 0.707f, 0.707f, 0.0f, 1.0f },
+    { 0.653f, 0.707f, -0.271f, 1.0f },
+    { 0.5f, 0.707f, -0.5f, 1.0f },
+    { 0.271f, 0.707f, -0.653f, 1.0f },
+    { 0.0f, 0.707f, -0.707f, 1.0f },
+    { -0.271f, 0.707f, -0.653f, 1.0f },
+    { -0.5f, 0.707f, -0.5f, 1.0f },
+    { -0.653f, 0.707f, -0.271f, 1.0f },
+    { -0.707f, 0.707f, -0.0f, 1.0f },
+    { -0.653f, 0.707f, 0.271f, 1.0f },
+    { -0.5f, 0.707f, 0.5f, 1.0f },
+    { -0.271f, 0.707f, 0.653f, 1.0f },
+    { 0.0f, 0.866f, 0.5f, 1.0f },
+    { 0.191f, 0.866f, 0.462f, 1.0f },
+    { 0.354f, 0.866f, 0.354f, 1.0f },
+    { 0.462f, 0.866f, 0.191f, 1.0f },
+    { 0.5f, 0.866f, 0.0f, 1.0f },
+    { 0.462f, 0.866f, -0.191f, 1.0f },
+    { 0.354f, 0.866f, -0.354f, 1.0f },
+    { 0.191f, 0.866f, -0.462f, 1.0f },
+    { 0.0f, 0.866f, -0.5f, 1.0f },
+    { -0.191f, 0.866f, -0.462f, 1.0f },
+    { -0.354f, 0.866f, -0.354f, 1.0f },
+    { -0.462f, 0.866f, -0.191f, 1.0f },
+    { -0.5f, 0.866f, -0.0f, 1.0f },
+    { -0.462f, 0.866f, 0.191f, 1.0f },
+    { -0.354f, 0.866f, 0.354f, 1.0f },
+    { -0.191f, 0.866f, 0.462f, 1.0f },
+    { 0.0f, 1.0f, 0.0f, 1.0f },
+};
 #include "main/xgl_packet.h"
 
 /*
@@ -480,10 +597,10 @@ typedef union NmlLightColor {
 extern NmlLightColor s_inLc0;
 extern int s_nPixelTestType;
 extern int s_nModelParts;
-extern void *s_pCacheTexture;
-extern void *s_pMatrixCache;
-extern void *s_pModelCache;
-extern void *s_pLightLayout;
+static void *s_pCacheTexture;
+static void *s_pMatrixCache;
+static void *s_pModelCache;
+static void *s_pLightLayout;
 extern float xglSin(float angle);
 
 void nmlPacketAddTransMicrocodeInit(void)
@@ -528,7 +645,6 @@ extern int D_004B9700[];
 extern u8 D_004B9710[];
 extern int D_004BD490[];
 extern u8 D_004BD4A0[];
-extern u8 s_aNormalTbl[];
 
 void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
                                 const NmlModelRenderState *model)
@@ -566,7 +682,7 @@ void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
         s_nProgType = prog;
         sceVif1PkCnt(s_pPacket, 0);
         sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
-        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkAddUpkData128N(s_pPacket, (void *)s_aNormalTbl, 0x72);
         sceVif1PkCloseUpkCode(s_pPacket);
         return;
     case 4:
@@ -584,7 +700,7 @@ void nmlPacketAddTransMicrocode(const NmlMaterialRenderState *material,
         s_nProgType = prog;
         sceVif1PkCnt(s_pPacket, 0);
         sceVif1PkOpenUpkCode(s_pPacket, 0x350, 0x6C, 1, 1);
-        sceVif1PkAddUpkData128N(s_pPacket, s_aNormalTbl, 0x72);
+        sceVif1PkAddUpkData128N(s_pPacket, (void *)s_aNormalTbl, 0x72);
         sceVif1PkCloseUpkCode(s_pPacket);
         return;
     case 6:
@@ -856,8 +972,6 @@ typedef struct NmlZbufRenderState {
     u16 display_buffer_base; /* +0x20 */
 } NmlZbufRenderState;
 
-extern float D_004D8970;
-extern const float D_004D8974;
 typedef union NmlCircleVector {
     Vector4 vector;
     int words[4];
@@ -877,8 +991,8 @@ typedef struct NmlCircleGsRecord {
     GsTag value;
     GsTag address;
 } NmlCircleGsRecord;
-extern const NmlCircleOffsetTable D_004D3090;
-extern const NmlCircleOffsetTable D_004D30A0;
+extern float D_004D8970;
+extern const float D_004D8974;
 static inline NmlCircleGsRecord *nmlCircleGsRecord(unsigned int index)
 {
     return (NmlCircleGsRecord *)(0x70001000u +
@@ -923,16 +1037,13 @@ void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
     float radius_scale;
     float height_offset;
     float *matrix;
-    NmlCircleOffsetTable x_offsets;
-    NmlCircleOffsetTable z_offsets;
+    NmlCircleOffsetTable x_offsets = { { -1.0f, 1.0f, -1.0f, 1.0f } };
+    NmlCircleOffsetTable z_offsets = { { -1.0f, -1.0f, 1.0f, 1.0f } };
     u32 texture_base;
     int i;
     int first_clip_flags;
     int second_clip_flags;
     int third_clip_flags;
-
-    x_offsets = D_004D3090;
-    z_offsets = D_004D30A0;
 
     matrix = (float *)transform;
 
@@ -1148,7 +1259,7 @@ static void nmlPacketTextureTrans(NmlModelRenderState *model)
 /* The cached texture built by the (still asm) texture cache builder;
  * cleared to invalidate it, like s_pMatrixCache/s_pModelCache/
  * s_pModelLayout/s_pLightLayout below. */
-extern void *s_pCacheTexture;
+static void *s_pCacheTexture;
 
 void nmlPacketClrTextureCache(void)
 {
@@ -1158,10 +1269,10 @@ void nmlPacketClrTextureCache(void)
 /* The cached VU1 upload state a model was last sent with: matrix data,
  * model geometry and the light/model attribute layouts. Cleared together
  * to force the next nmlPacket* draw call to resend all four. */
-extern void *s_pMatrixCache;
-extern void *s_pModelCache;
-extern void *s_pModelLayout;
-extern void *s_pLightLayout;
+static void *s_pMatrixCache;
+static void *s_pModelCache;
+static void *s_pModelLayout;
+static void *s_pLightLayout;
 
 void nmlPacketClrModelCache(void)
 {
@@ -2300,3 +2411,19 @@ void nmlPacketAddGsPrmodecont(u64 prmode_control)
     g_aGsTag[g_nGsEntry * 2 + 3].d = 26;
     g_nGsEntry++;
 }
+
+static XglPacket *s_pPacket = 0;
+static void *s_pCacheTexture = 0;
+static void *s_pMatrixCache = 0;
+static void *s_pModelCache = 0;
+static void *s_pModelLayout = 0;
+static int s_nModelParts = 0;
+static void *s_pLightLayout = 0;
+static int s_nLightPara = 0;
+static int s_nProgType = -1;
+static int s_nPixelTestType = 0;
+static int s_nReflRotType = -1;
+static float s_inReflRotX = 0.0f;
+static float s_inReflRotY = 0.0f;
+char eye_name[] = "eye";
+char lenz_name[] = "lenz";
