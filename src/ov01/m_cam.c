@@ -25,12 +25,27 @@ extern UnitInitData *dataUnitInitGet(int id);
  * data_ownership); the scaffold defines it under the original ELF's own
  * local symbol names, imported through config/symbols/ov01.txt.
  */
-extern StudioCamera *sysCam;
-extern unsigned char sysCamBuff[0x5F0];
-extern int camFlags;
-extern unsigned char camParams[0x5B0];
-extern float D_00A5B220;
-extern float D_00A5B224;
+static StudioCamera *sysCam;
+static unsigned char sysCamBuff[0x5F0] __attribute__((aligned(16)));
+static int camFlags;
+/* camParams is one 0x5B0-byte block (MCamInit memsets all of it); the
+ * fields below are addressed at their offsets inside it. */
+static unsigned char camParams[0x5B0] __attribute__((aligned(16)));
+#define D_00A5B1E0 (*(Vector4 *)(camParams + 0x160))
+#define D_00A5B1F0 (*(Vector4 *)(camParams + 0x170))
+#define D_00A5B200 (*(Vector4 *)(camParams + 0x180))
+#define D_00A5B210 (*(Vector4 *)(camParams + 0x190))
+#define D_00A5B220 (*(float *)(camParams + 0x1A0))
+#define D_00A5B224 (*(float *)(camParams + 0x1A4))
+#define D_00A5B230 (*(Vector4 *)(camParams + 0x1B0))
+#define D_00A5B240 (*(Vector4 *)(camParams + 0x1C0))
+#define D_00A5B250 (*(Vector4 *)(camParams + 0x1D0))
+#define D_00A5B270 (*(float *)(camParams + 0x1F0))
+#define D_00A5B280 (*(MCamCoordMove *)(camParams + 0x200))
+#define D_00A5B430 (*(MCamCoordMove *)(camParams + 0x3B0))
+#define D_00A5B5E0 (*(MCamMoveState *)(camParams + 0x560))
+#define D_00A5B5F8 (*(MCamMoveState *)(camParams + 0x578))
+#define D_00A5B610 (*(MCamShakeBlock *)(camParams + 0x590))
 
 #define CAM_FLAG_ACTIVE 0x1
 #define CAM_FLAG_DUMP_DISABLED 0x10
@@ -55,8 +70,6 @@ void *MCamGetSysCam(void)
     return sysCam;
 }
 
-extern Vector4 D_00A5B200;
-extern Vector4 D_00A5B210;
 
 Vector4 *MCamGetCurrentBaseCoord(Vector4 *out, int type)
 {
@@ -74,8 +87,6 @@ end:
     return out;
 }
 
-extern Vector4 D_00A5B230;
-extern Vector4 D_00A5B240;
 
 Vector4 *MCamGetCurrentCoord(Vector4 *out, int type)
 {
@@ -94,12 +105,6 @@ end:
     return out;
 }
 
-extern Vector4 D_00A5B200;
-extern Vector4 D_00A5B210;
-extern Vector4 D_00A5B230;
-extern Vector4 D_00A5B240;
-extern Vector4 D_00A5B1E0;
-extern Vector4 D_00A5B1F0;
 
 Vector4 *MCamGetCurrentAngle(Vector4 *out, int type)
 {
@@ -117,7 +122,6 @@ end:
     return out;
 }
 
-extern Vector4 D_00A5B250;
 
 Vector4 *MCamGetCurrentEye(Vector4 *out)
 {
@@ -330,7 +334,6 @@ int MCamIsActive(void)
     return camFlags & CAM_FLAG_ACTIVE;
 }
 
-extern float D_00A5B270;
 static void MCamExec_SetParams_Base(void);
 typedef struct MCamSetBlock {
     long long v[14];
@@ -472,7 +475,6 @@ typedef struct MCamShakeBlock {
     int unk1C;
 } MCamShakeBlock;
 
-extern MCamShakeBlock D_00A5B610;
 
 void MCamShake(int arg0, int arg1, int arg2, int arg3, int arg4)
 {
@@ -685,10 +687,6 @@ typedef struct MCamCoordMove {
     int extra[4];
 } MCamCoordMove;
 
-extern MCamCoordMove D_00A5B280;
-extern MCamCoordMove D_00A5B430;
-extern MCamMoveState D_00A5B5E0;
-extern MCamMoveState D_00A5B5F8;
 static int MCamMoveProc_Coord(MCamCoordMove *m);
 static int MCamMoveProc_Bank(MCamMoveState *state);
 static int MCamMoveProc_Pers(MCamMoveState *state);
@@ -820,8 +818,6 @@ typedef struct MCamCoordRequest {
     int extra[3];
     short shake;
 } MCamCoordRequest;
-extern MCamCoordMove D_00A5B280;
-extern MCamCoordMove D_00A5B430;
 
 static void MCamMove_Coord(int which, MCamCoordRequest *req)
 {
@@ -873,7 +869,6 @@ static void MCamMove_Coord(int which, MCamCoordRequest *req)
     }
 }
 
-extern MCamMoveState D_00A5B5E0;
 typedef struct MCamBankRequest {
     unsigned char unmodeled_00[0xA0];
     float bank;
@@ -906,7 +901,6 @@ static void MCamMove_Bank(MCamBankRequest *request)
  * function's own lui/addiu is the TU's only relocation into it, so it is
  * typed as MCamMoveState here instead of left as bytes.
  */
-extern MCamMoveState D_00A5B5F8;
 
 /*
  * The float 0x384 bytes before D_00A5B5F8: the compiled form reuses
