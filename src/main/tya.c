@@ -1,7 +1,6 @@
 #include "common.h"
 
 #include "shared.h"
-extern unsigned char flag_0;
 
 
 typedef struct ActorModelParam {
@@ -66,7 +65,6 @@ extern ActorHead actor[ACTOR_COUNT];
  * index, so only the one actor or map unit the current capture pass wants
  * is drawn. */
 
-extern u16 layer;
 
 
 /* Defined in src/main/act_3.c (main/tu265). */
@@ -174,23 +172,25 @@ typedef struct {
 
 #define CAPTURE_HEIGHT 448
 
-extern char *pnum;
+static char *pnum;
 
-extern char *pext;
+static char *pext;
 
-extern TyaCaptureCallback cascade;
+static TyaCaptureCallback cascade;
 
-extern void *TmpBuffer;
+static void *TmpBuffer;
 
-extern u16 zpicf;
+static u16 layer;
 
-extern int alpha;
+static u16 zpicf;
+
+static int alpha;
 
 typedef struct { int v; } TyaAlpha;
 
-extern int transparency;
+static int transparency;
 
-extern char outpath[256];
+static char outpath[256];
 
 
 static u8 BmpHeader[0x36] = {
@@ -493,7 +493,7 @@ int tyaSiPicOutput(char *path, char *zpath, u8 *pixels)
 
 static int tyaCaptureMain(int command)
 {
-    /* storage: flag_0 */
+    static unsigned char flag_0 __asm__("flag.0");
 
     TyaCaptureCallback *savedCapture = &cascade;
     char buffer[256];

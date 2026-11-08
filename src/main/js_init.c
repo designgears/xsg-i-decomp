@@ -67,13 +67,13 @@ static int D_0036B1A4 __attribute__((section(".data"))) = 0;
 extern char D_004DA590[];
 char D_004DA590[8] = ".[](),";
 
-extern char *tokenCurrent;
+static char *tokenCurrent;
 
 
-extern char *tokenLimit;
+static char *tokenLimit;
 
 
-extern int tokenType;
+static int tokenType;
 
 
 extern int strcmp(const char *left, const char *right);

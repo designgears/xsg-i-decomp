@@ -320,7 +320,6 @@ typedef struct MenuSkillStatusWork {
 
 extern MenuSkillStatusWork *MenuSkillStatus;
 
-extern short MenuSkillParty[];
 
 char *MenuTagTextGet(int kind);
 
@@ -569,7 +568,7 @@ extern SkillScreenState *MenuSkillInfo;
 
 extern SkillScreenState *MenuSkillEx;
 
-extern short MenuSkillParty[8];
+static short MenuSkillParty[8];
 
 #define KEEP_EQUIP 4
 

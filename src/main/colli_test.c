@@ -299,21 +299,23 @@ typedef struct ParticleState {
 
 extern void ppSetPos(ParticleState *particle, float x, float y, float z);
 
-extern ParticleState pos1;
+static ParticleState pos1 __attribute__((aligned(16)));
 
-extern ParticleState pos2;
+static ParticleState pos2 __attribute__((aligned(16)));
 
-extern CollisionPoint box1;
+static CollisionPoint box1 __attribute__((aligned(16)));
 
-extern CollisionPoint box2;
+static CollisionPoint box2 __attribute__((aligned(16)));
 
-extern CollisionPoint box3;
+static CollisionPoint hitpos __attribute__((aligned(16)));
 
-extern CollisionPoint box4;
+static CollisionPoint box3 __attribute__((aligned(16)));
 
-extern CollisionPoint hitpos;
+static CollisionPoint box4 __attribute__((aligned(16)));
 
-extern float radius;
+static struct InitTestCamera *pCamera_004DC65C __asm__("pCamera");
+
+static float radius;
 
 static int mode = 0;
 
@@ -338,7 +340,6 @@ extern float D_004D827C;
 extern float D_004D8280;
 extern float D_004D8284;
 extern float D_004D8288;
-extern InitTestCamera *pCamera_004DC65C;
 extern void xglStudioInit(void);
 extern void xglStudioChange(int);
 extern void xglStudioMainCameraInit(void);

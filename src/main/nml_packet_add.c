@@ -594,7 +594,7 @@ typedef union NmlLightColor {
     Quadword rows[4];
     float m[4][4];
 } NmlLightColor;
-extern NmlLightColor s_inLc0;
+static NmlLightColor s_inLc0;
 extern int s_nPixelTestType;
 extern int s_nModelParts;
 static void *s_pCacheTexture;

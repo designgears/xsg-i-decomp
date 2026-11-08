@@ -182,7 +182,7 @@ typedef struct UnduQuery {
 #endif /* SRC_MAIN_UNDULATE_H */
 
 
-extern unsigned char *CurrentColiHead;
+static unsigned char *CurrentColiHead;
 
 
 extern int StudioEntrySkip;
