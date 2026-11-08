@@ -3541,24 +3541,41 @@
     {
      "range": [
       "0x004c3310",
-      "0x004c3380"
+      "0x004c3640"
      ],
      "generated": [
       "0x004c3310",
-      "0x004c337c"
+      "0x004c3640"
      ],
      "generated_by": [
       "eNumberMain"
      ],
      "c_owned_symbols": [
       "jtbl_004C3310",
-      "jtbl_004C3350"
+      "jtbl_004C3350",
+      "D_004C3380",
+      "D_004C33D8",
+      "D_004C33E8",
+      "D_004C3408",
+      "D_004C3438",
+      "D_004C3468",
+      "D_004C34A0",
+      "D_004C34E8",
+      "D_004C3520",
+      "D_004C3540",
+      "D_004C3580",
+      "D_004C35D0",
+      "D_004C35E0",
+      "D_004C35F8",
+      "D_004C3608",
+      "D_004C3618",
+      "D_004C3628"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/e_number_main.o"
+      "object": "build/main/build/c/e_number_main.o"
      }
     }
    ]
