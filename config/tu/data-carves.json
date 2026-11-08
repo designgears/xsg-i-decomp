@@ -25895,11 +25895,11 @@
     {
      "range": [
       "0x00a437a0",
-      "0x00a43a91"
+      "0x00a437c0"
      ],
      "generated": [
       "0x00a437a0",
-      "0x00a43a91"
+      "0x00a437c0"
      ],
      "generated_by": [
       "CardLoadDeckProc",
@@ -25915,26 +25915,7 @@
       "ActiveCursol_0",
       "ActiveCursol_2",
       "ActiveCursol_4",
-      "ActiveCursol_6",
-      "ZenkakuListA",
-      "D_00A437D4",
-      "ZenkakuListB",
-      "D_00A437EC",
-      "CardConvertNameLst",
-      "ST1RariLst",
-      "D_00A439D6",
-      "ST1CardLst",
-      "D_00A439FF",
-      "BS1RariLst",
-      "BS1UncoLst",
-      "D_00A43A27",
-      "BS1ComoLst",
-      "D_00A43A54",
-      "BS2RariLst",
-      "D_00A43A6C",
-      "BS2UncoLst",
-      "D_00A43A79",
-      "BS2ComoLst"
+      "ActiveCursol_6"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -25984,98 +25965,46 @@
    ".data": [
     {
      "range": [
-      "0x00a43a94",
-      "0x00a43a99"
+      "0x00a437c0",
+      "0x00a43bca"
      ],
      "generated": [
-      "0x00a43a94",
-      "0x00a43a99"
+      "0x00a437c0",
+      "0x00a43bca"
      ],
      "generated_by": [
       "CardOpenProc"
      ],
      "c_owned_symbols": [
+      "ZenkakuListA",
+      "D_00A437D4",
+      "ZenkakuListB",
+      "D_00A437EC",
+      "CardConvertNameLst",
+      "ST1RariLst",
+      "D_00A439D6",
+      "ST1CardLst",
+      "D_00A439FF",
+      "BS1RariLst",
+      "BS1UncoLst",
+      "D_00A43A27",
+      "BS1ComoLst",
+      "D_00A43A54",
+      "BS2RariLst",
+      "D_00A43A6C",
+      "BS2UncoLst",
+      "D_00A43A79",
+      "BS2ComoLst",
+      "D_00A43A91",
       "rotval_7",
-      "CursorTimer_9"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43aa0",
-      "0x00a43aa7"
-     ],
-     "generated": [
-      "0x00a43aa0",
-      "0x00a43aa7"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "TitleMaxList"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43aa8",
-      "0x00a43aaf"
-     ],
-     "generated": [
-      "0x00a43aa8",
-      "0x00a43aaf"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "SkipStartList"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43ab0",
-      "0x00a43b61"
-     ],
-     "generated": [
-      "0x00a43ab0",
-      "0x00a43b61"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "PageStatusLst"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43b68",
-      "0x00a43bca"
-     ],
-     "generated": [
-      "0x00a43b68",
-      "0x00a43bca"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "CursorTimer_9",
+      "D_00A43A99",
+      "TitleMaxList",
+      "D_00A43AA7",
+      "SkipStartList",
+      "D_00A43AAF",
+      "PageStatusLst",
+      "D_00A43B61",
       "SkipPageLst"
      ],
      "also_referenced_by_c": [],
