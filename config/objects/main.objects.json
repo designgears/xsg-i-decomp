@@ -69823,7 +69823,7 @@
       "name_confidence": "low",
       "ordinal": 234,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".text": "c"
       },
       "path": "src/main/spline.c",
@@ -76432,7 +76432,7 @@
       "name_confidence": "low",
       "ordinal": 255,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",

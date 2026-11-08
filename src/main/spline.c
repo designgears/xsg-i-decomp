@@ -55,20 +55,20 @@ typedef struct SplineValueVector {
     float w;
     int pad;
 } SplineValueVector;
-extern SplineValueVector value_0;
 extern SceneClass *classJava_xeno_util_Vector4f;
 extern void SPL_getValueXYZ(float *destination, void *spline, float frame);
 
 void Java_xeno_util_Spline_getValue__I(void *environment, void *arguments, int *result)
 {
+    static SplineValueVector value;
     union { int i; float f; void *p; } *args = arguments;
     float point[3];
 
     SPL_getValueXYZ(point, args[0].p, (float)args[1].i);
-    value_0.x = point[0];
-    value_0.y = point[1];
-    value_0.z = point[2];
-    value_0.w = 1.0f;
-    value_0.class_ref = classJava_xeno_util_Vector4f->instance_class_ref;
-    ((union { int i; float f; void *p; } *)result)->p = &value_0;
+    value.x = point[0];
+    value.y = point[1];
+    value.z = point[2];
+    value.w = 1.0f;
+    value.class_ref = classJava_xeno_util_Vector4f->instance_class_ref;
+    ((union { int i; float f; void *p; } *)result)->p = &value;
 }
