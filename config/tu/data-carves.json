@@ -14849,11 +14849,11 @@
     {
      "range": [
       "0x00a4e130",
-      "0x00a4e768"
+      "0x00a4e880"
      ],
      "generated": [
       "0x00a4e130",
-      "0x00a4e768"
+      "0x00a4e875"
      ],
      "generated_by": [
       "dataSndMuLoad",
@@ -14863,6 +14863,10 @@
       "dataSndSeRegLoad",
       "dataSndStEdNameGet",
       "dataSndStEdNumSub",
+      "sndConvRegNo",
+      "sndMuTransPlay",
+      "sndSePlay",
+      "sndSeStop",
       "sndSeTrans"
      ],
      "c_owned_symbols": [
@@ -15035,12 +15039,17 @@
       "D_00A4E6E8",
       "D_00A4E708",
       "D_00A4E728",
-      "D_00A4E740"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E740",
       "D_00A4E768",
-      "D_00A4E788"
+      "D_00A4E788",
+      "D_00A4E7B0",
+      "D_00A4E7C8",
+      "D_00A4E7E8",
+      "D_00A4E810",
+      "D_00A4E828",
+      "D_00A4E860"
      ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_00A4E130": "sndSeNameBase",
       "D_00A4E148": "sndSeNameExt",
@@ -15206,35 +15215,6 @@
       "D_00A4E658": "bted",
       "D_00A4E660": "bted"
      },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e7b0",
-      "0x00a4e810"
-     ],
-     "generated": [
-      "0x00a4e7b0",
-      "0x00a4e80e"
-     ],
-     "generated_by": [
-      "sndSePlay",
-      "sndSeTrans"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E7B0",
-      "D_00A4E7C8",
-      "D_00A4E7E8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A4E810",
-      "D_00A4E828",
-      "D_00A4E860"
-     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

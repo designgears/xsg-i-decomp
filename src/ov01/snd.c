@@ -689,8 +689,6 @@ void dataSndSeRegLoad2(ObjectTask *unit)
 extern int sndConvRegNo(int id);
 extern int xglSoundSendSed(void *sed, int bank);
 extern void SsdCheckSpuMemory(int mode);
-extern const char D_00A4E768[];
-extern const char D_00A4E788[];
 
 int sndSeTrans(int seId, int volume)
 {
@@ -723,12 +721,12 @@ int sndSeTrans(int seId, int volume)
             return 0;
         }
         if (sed[2] > 0x10000) {
-            printf(D_00A4E768, sed[2]);
+            printf("** sndSeTrans: err! sedSize %d\n", sed[2]);
             return 0;
         }
         swd = *(int **)&bank->unmodeled_0c[4];
         if (swd[0] != 0x6D647773) {
-            printf(D_00A4E788, swd[0], swd);
+            printf("** sndSeTrans: err! swdType %X %X\n", swd[0], swd);
             return 0;
         }
         r1 = xglSoundSendSed(sed, b);
@@ -794,7 +792,6 @@ int sndSePlay(int unit, int id, int no)
 
 extern int sndBankGet();
 extern void xglSoundEffectStopID(int sound_id, int flags);
-extern const char D_00A4E810[];
 
 int sndSeStop(int unused, int pack)
 {
@@ -802,7 +799,7 @@ int sndSeStop(int unused, int pack)
 
     if (pack != 0) {
         xglSoundEffectStopID(sndBankGet() << 0x10, 0);
-        printf(D_00A4E810, pack);
+        printf("<< SE Stop pack=%d >>\n", pack);
         stopped = 1;
     }
     return stopped;
@@ -815,7 +812,6 @@ typedef struct {
 typedef struct {
     SndConvRegPair pair[7];
 } SndConvRegTable;
-extern const SndConvRegTable D_00A4E828;
 
 /*
  * ov01:0x00a2dbc8. Searches a sentinel-terminated sound conversion pair
@@ -823,10 +819,9 @@ extern const SndConvRegTable D_00A4E828;
  */
 int sndConvRegNo(int id)
 {
-    SndConvRegTable table;
+    SndConvRegTable table = { { { 1, 0 }, { 2, 1 }, { 3, 2 }, { 4, 3 }, { 5, 4 }, { 0x17, 4 }, { 0, 0 } } };
     int i;
 
-    table = D_00A4E828;
     for (i = 0; table.pair[i].key != 0; i++) {
         if (table.pair[i].key == id) {
             return table.pair[i].value;
@@ -1115,13 +1110,12 @@ void sndMuFadeIn(void)
     xglSoundSequenceNormal3(0, SND_MU_VOLUME_MAX, SND_MU_FADE_TIME);
 }
 
-extern const char D_00A4E860[];
 void sndMuTransPlayObj(ObjectTask *task);
 
 void sndMuTransPlay(int mode)
 {
     if (sndMuTrans(mode) != 0) {
-        printf(D_00A4E860, mode);
+        printf("<< MU Play no=%d >>\n", mode);
         objEntryPure(sndMuTransPlayObj);
     }
 }
