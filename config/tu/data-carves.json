@@ -20690,18 +20690,19 @@
     {
      "range": [
       "0x00a4faf0",
-      "0x00a4fb14"
+      "0x00a4fb18"
      ],
      "generated": [
       "0x00a4faf0",
-      "0x00a4fb14"
+      "0x00a4fb18"
      ],
      "generated_by": [
       "_DispWepDisp"
      ],
      "c_owned_symbols": [
       "s_anTextPos_0",
-      "s_abOrder_1"
+      "s_abOrder_1",
+      "D_00A4FB14"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -23221,17 +23222,18 @@
     {
      "range": [
       "0x00a50860",
-      "0x00a50898"
+      "0x00a508a0"
      ],
      "generated": [
       "0x00a50860",
-      "0x00a50898"
+      "0x00a508a0"
      ],
      "generated_by": [
       "RgAnnounceDispInit"
      ],
      "c_owned_symbols": [
-      "s_apFuncs_0"
+      "s_apFuncs_0",
+      "D_00A50898"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -23574,18 +23576,19 @@
     {
      "range": [
       "0x00a511f4",
-      "0x00a511f8"
+      "0x00a51200"
      ],
      "generated": [
       "0x00a511f4",
-      "0x00a511f8"
+      "0x00a51200"
      ],
      "generated_by": [
       "_Disp_00A49318",
       "_DrawDriver"
      ],
      "c_owned_symbols": [
-      "s_pCurView_00A511F4"
+      "s_pCurView_00A511F4",
+      "D_00A511F8"
      ],
      "also_referenced_by_c": [],
      "basis": {
