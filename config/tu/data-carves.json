@@ -1792,7 +1792,7 @@
      ],
      "generated": [
       "0x004be2b0",
-      "0x004be304"
+      "0x004be308"
      ],
      "generated_by": [
       "Game",
@@ -8778,11 +8778,11 @@
     {
      "range": [
       "0x003b1c10",
-      "0x003b1e2c"
+      "0x003b1e30"
      ],
      "generated": [
       "0x003b1c10",
-      "0x003b1e2c"
+      "0x003b1e30"
      ],
      "generated_by": [
       "Fly_to_Ladder",
@@ -8791,7 +8791,8 @@
      "c_owned_symbols": [
       "AdjTable_X",
       "AdjTable_Z",
-      "LadderStep"
+      "LadderStep",
+      "D_003B1E2C"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -8872,7 +8873,7 @@
      ],
      "generated": [
       "0x004cac20",
-      "0x004cad5c"
+      "0x004cad60"
      ],
      "generated_by": [
       "Get_Arrival",
@@ -8909,11 +8910,11 @@
     {
      "range": [
       "0x004db848",
-      "0x004db856"
+      "0x004db858"
      ],
      "generated": [
       "0x004db848",
-      "0x004db856"
+      "0x004db858"
      ],
      "generated_by": [
       "Fly_to_Ladder",
@@ -8923,7 +8924,8 @@
       "D_004DB848",
       "NowLadderStep",
       "SelNum",
-      "PhCunt"
+      "PhCunt",
+      "D_004DB856"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -9954,7 +9956,7 @@
      ],
      "generated": [
       "0x004cbc30",
-      "0x004cbcd6"
+      "0x004cbcd8"
      ],
      "generated_by": [
       "CheckBallBoxCollision",

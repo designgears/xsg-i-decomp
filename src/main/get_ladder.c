@@ -847,3 +847,12 @@ int Ladder_Main(LadderActor *actor)
     ACT_updateMotion(actor);
     return 1;
 }
+
+/* Unreferenced zero fill that ends the original .data (alignment of the next TU). */
+static int D_003B1E2C __attribute__((section(".data"))) = 0;
+
+/* Unreferenced zero fill that ends the original .rodata (alignment of the next TU). */
+static const int D_004CAD5C __attribute__((section(".rodata"))) = 0;
+
+/* Unreferenced zero fill that ends the original .sdata (alignment of the next TU). */
+static short D_004DB856 = 0;
