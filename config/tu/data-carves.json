@@ -16443,21 +16443,22 @@
    ".sdata": [
     {
      "range": [
-      "0x004dc3b8",
+      "0x004dc3b4",
       "0x004dc3bd"
      ],
      "generated": [
-      "0x004dc3b8",
+      "0x004dc3b4",
       "0x004dc3bd"
      ],
-     "generated_by": [],
+     "generated_by": [
+      "UnduCheckSubCrossCheck"
+     ],
      "c_owned_symbols": [
+      "D_004DC3B4",
       "StudioEntrySkip",
       "FLAG_FRAME_60"
      ],
-     "also_referenced_by_c": [
-      "D_004DC3B4"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
