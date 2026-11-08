@@ -92,8 +92,8 @@ segments:
       - { type: bss, vram: 0x00A56F10, name: ov10/card_play_sound1 }
       - { type: bss, vram: 0x00A57750, name: ov10/ccu_038_exec_sub }
       - { type: bss, vram: 0x00A57838, name: ov10/card_deck_chk }
-      - { type: bss, vram: 0x00A57848, name: ov10/card_view_proc }
-      - { type: bss, vram: 0x00A578C8, name: ov10/card_disp }
+      - { type: .bss, vram: 0x00A57848, name: ov10/card_view_proc }
+      - { type: .bss, vram: 0x00A578C8, name: ov10/card_disp }
       - { type: bss, vram: 0x00A57DA8, name: ov10/card_tutorial }
       - { type: bss, vram: 0x00A57DC0, name: ov10/cgp }
       - { type: bss, vram: 0x00A57E34, name: ov10/card_enemy }

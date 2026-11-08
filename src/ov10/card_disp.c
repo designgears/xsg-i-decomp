@@ -61,6 +61,7 @@ typedef struct CHPTitleList {
     s16 step;        /* +0x0E: row step */
     s16 count;       /* +0x10: TitleMaxList[category], sign-extended */
     s16 limit;       /* +0x12: TitleMaxList[category], sign-extended */
+    u8 unmodeled_14[0x270 - 0x14];
 } CHPTitleList;
 
 extern const u8 TitleMaxList[7];
@@ -1045,8 +1046,8 @@ void CardDispHelpCard(char mode, Matrix4 matrix)
     }
 }
 
-extern CHPTitleList D_00A578C8;
-extern CHPTitleList D_00A57B38;
+static CHPTitleList D_00A578C8;
+static CHPTitleList D_00A57B38;
 extern s8 SkipStartList[7];
 extern u8 SkipPageLst[7][14];
 extern s8 PageStatusLst[][3];
