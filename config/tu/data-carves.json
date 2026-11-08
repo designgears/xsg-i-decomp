@@ -11441,50 +11441,33 @@
    ]
   },
   "main/tu174": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x004c7af0",
-      "0x004c7cd0"
+      "0x0036dc00",
+      "0x0036dc58"
      ],
      "generated": [
-      "0x004c7af0",
-      "0x004c7cd0"
+      "0x0036dc00",
+      "0x0036dc58"
      ],
      "generated_by": [
-      "MenuEtherPasMain"
+      "MenuEther",
+      "MenuEtherExMain",
+      "MenuEtherInfoMain",
+      "MenuEtherMenuMain",
+      "MenuEtherPasMain",
+      "MenuEtherStatusMain",
+      "MenuEtherStatusMain2"
      ],
      "c_owned_symbols": [
-      "jtbl_004C7AF0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C7DC8",
-      "D_004C7E50",
-      "D_004C7F98",
-      "D_004C8040",
-      "D_004C8060",
-      "D_004C80A0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_ether.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c80b0",
-      "0x004c8290"
-     ],
-     "generated": [
-      "0x004c80b0",
-      "0x004c8290"
-     ],
-     "generated_by": [
-      "MenuEtherInfoMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C80B0"
+      "msg_0_0036DC00",
+      "msg00_1_0036DC18",
+      "msg01_2_0036DC20",
+      "msg00_3_0036DC28",
+      "msg01_4_0036DC30",
+      "D_0036DC34",
+      "MenuEtherParty"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -11492,79 +11475,184 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/menu_ether.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x004c82f0",
-      "0x004c8670"
+      "0x004c7ad0",
+      "0x004c88a0"
      ],
      "generated": [
-      "0x004c82f0",
-      "0x004c8670"
+      "0x004c7ad0",
+      "0x004c889c"
      ],
      "generated_by": [
+      "MenuEther",
       "MenuEtherExMain",
+      "MenuEtherInfoMain",
+      "MenuEtherListMain",
+      "MenuEtherListMain2",
+      "MenuEtherMenuMain",
+      "MenuEtherPasMain",
       "MenuEtherStatusMain"
      ],
      "c_owned_symbols": [
+      "D_004C7AD0",
+      "D_004C7AE0",
+      "jtbl_004C7AF0",
+      "D_004C7CD0",
+      "D_004C7D00",
+      "D_004C7D20",
+      "D_004C7D78",
+      "D_004C7DC8",
+      "D_004C7DE0",
+      "D_004C7E08",
+      "D_004C7E50",
+      "D_004C7E60",
+      "D_004C7E80",
+      "D_004C7E90",
+      "D_004C7EA8",
+      "D_004C7ED0",
+      "D_004C7EF0",
+      "D_004C7F38",
+      "D_004C7F70",
+      "D_004C7F98",
+      "D_004C7FC0",
+      "D_004C7FD0",
+      "D_004C7FE8",
+      "D_004C8010",
+      "D_004C8040",
+      "D_004C8060",
+      "D_004C80A0",
+      "jtbl_004C80B0",
+      "D_004C8290",
+      "D_004C82A8",
+      "D_004C82C8",
+      "D_004C82D8",
       "jtbl_004C82F0",
-      "jtbl_004C8490"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004C8490",
       "D_004C8670",
       "D_004C8680",
       "D_004C8690",
-      "D_004C86A0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_ether.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c86b0",
-      "0x004c8810"
-     ],
-     "generated": [
-      "0x004c86b0",
-      "0x004c8810"
-     ],
-     "generated_by": [
-      "MenuEtherListMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C86B0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C8810"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_ether.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c8820",
-      "0x004c8870"
-     ],
-     "generated": [
-      "0x004c8820",
-      "0x004c886c"
-     ],
-     "generated_by": [
-      "MenuEtherListMain2"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C8820"
-     ],
-     "also_referenced_by_c": [
+      "D_004C86A0",
+      "jtbl_004C86B0",
+      "D_004C8810",
+      "jtbl_004C8820",
       "D_004C8870",
       "D_004C8890"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C7AD0": "msg_0_0036DC00",
+      "D_004C7AE0": "msg_0_0036DC00",
+      "D_004C7CD0": "D_004DB278",
+      "D_004C7D00": "D_004C7DC8",
+      "D_004C7D20": "D_004C7DC8",
+      "D_004C7D78": "D_004C7DC8",
+      "D_004C7DE0": "D_004C7E50",
+      "D_004C7E08": "D_004C7E50",
+      "D_004C7E60": "D_004C7F98",
+      "D_004C7E80": "D_004C7F98",
+      "D_004C7E90": "D_004C7F98",
+      "D_004C7EA8": "D_004C7F98",
+      "D_004C7ED0": "D_004C7F98",
+      "D_004C7EF0": "D_004C7F98",
+      "D_004C7F38": "D_004C7F98",
+      "D_004C7F70": "D_004C7F98",
+      "D_004C7FC0": "D_004C8040",
+      "D_004C7FD0": "D_004C8040",
+      "D_004C7FE8": "D_004C8040",
+      "D_004C8010": "D_004C8040",
+      "D_004C8290": "msg00_1_0036DC18",
+      "D_004C82A8": "msg00_1_0036DC18",
+      "D_004C82C8": "msg01_2_0036DC20",
+      "D_004C82D8": "msg01_4_0036DC30"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_ether.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db258",
+      "0x004db370"
+     ],
+     "generated": [
+      "0x004db258",
+      "0x004db370"
+     ],
+     "generated_by": [
+      "MenuEther",
+      "MenuEtherDataGet",
+      "MenuEtherExMain",
+      "MenuEtherInfoMain",
+      "MenuEtherL1R1Main",
+      "MenuEtherListMain",
+      "MenuEtherListMain2",
+      "MenuEtherMenuMain",
+      "MenuEtherPasMain",
+      "MenuEtherStatusMain",
+      "MenuEtherStatusMain2"
+     ],
+     "c_owned_symbols": [
+      "D_004DB258",
+      "D_004DB260",
+      "D_004DB268",
+      "D_004DB270",
+      "D_004DB278",
+      "D_004DB280",
+      "D_004DB288",
+      "D_004DB290",
+      "D_004DB298",
+      "D_004DB2A0",
+      "D_004DB2A8",
+      "D_004DB2B0",
+      "D_004DB2B8",
+      "D_004DB2C0",
+      "D_004DB2C8",
+      "D_004DB2D0",
+      "D_004DB2D8",
+      "D_004DB2E0",
+      "D_004DB2E8",
+      "D_004DB2F0",
+      "D_004DB2F8",
+      "D_004DB300",
+      "D_004DB308",
+      "D_004DB310",
+      "D_004DB318",
+      "D_004DB320",
+      "D_004DB328",
+      "D_004DB330",
+      "D_004DB338",
+      "D_004DB340",
+      "MenuEtherDataBuf",
+      "MenuEtherPas",
+      "MenuEtherInfo",
+      "MenuEtherMenu",
+      "MenuEtherEx",
+      "MenuEtherL1R1",
+      "MenuEtherStatus",
+      "MenuEtherStatus2",
+      "MenuEtherList",
+      "MenuEtherList2"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DB258": "msg_0_0036DC00",
+      "D_004DB260": "msg_0_0036DC00",
+      "D_004DB268": "msg_0_0036DC00",
+      "D_004DB270": "msg_0_0036DC00",
+      "D_004DB280": "D_004C7E50",
+      "D_004DB290": "D_004C8040",
+      "D_004DB2C0": "msg01_2_0036DC20",
+      "D_004DB2D8": "msg00_3_0036DC28",
+      "D_004DB2E0": "msg00_3_0036DC28"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -11963,11 +12051,11 @@
     {
      "range": [
       "0x004db540",
-      "0x004db5c4"
+      "0x004db5d0"
      ],
      "generated": [
       "0x004db540",
-      "0x004db5c4"
+      "0x004db5d0"
      ],
      "generated_by": [
       "MenuSystemInfoMain",
@@ -11994,7 +12082,9 @@
       "D_004DB5B0",
       "MenuSystemPas",
       "MenuSystemInfo",
-      "MenuSystemMenu"
+      "MenuSystemMenu",
+      "D_004DB5C4",
+      "_CountTime"
      ],
      "also_referenced_by_c": [],
      "reached_through": {
@@ -12393,6 +12483,32 @@
    ]
   },
   "main/tu181": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated_by": [
+      "TexTest",
+      "TexTrans"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_1_0036DDB0",
+      "TestEnv_2_0036DE40"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -12430,20 +12546,21 @@
    ".rodata": [
     {
      "range": [
-      "0x004c9cd8",
-      "0x004c9ce8"
+      "0x004c9bf0",
+      "0x004c9dd0"
      ],
      "generated": [
-      "0x004c9cd8",
-      "0x004c9ce1"
+      "0x004c9bf0",
+      "0x004c9dc7"
      ],
      "generated_by": [
-      "CfTest"
+      "CfTest",
+      "KarakamaTest",
+      "SePacketTest",
+      "SetMapUnitTest",
+      "TexTest"
      ],
      "c_owned_symbols": [
-      "D_004C9CD8"
-     ],
-     "also_referenced_by_c": [
       "D_004C9BF0",
       "D_004C9C08",
       "D_004C9C20",
@@ -12455,6 +12572,7 @@
       "D_004C9CA0",
       "D_004C9CB0",
       "D_004C9CC8",
+      "D_004C9CD8",
       "D_004C9CE8",
       "D_004C9CF8",
       "D_004C9D08",
@@ -12466,6 +12584,39 @@
       "D_004C9D80",
       "D_004C9D90",
       "D_004C9DB0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated_by": [
+      "CfTest",
+      "KarakamaTest",
+      "PrimTest",
+      "SePacketTest"
+     ],
+     "c_owned_symbols": [
+      "D_004DB6A8",
+      "D_004DB6B0",
+      "D_004DB6B8",
+      "rgba_0"
+     ],
+     "also_referenced_by_c": [
+      "MapNo"
      ],
      "basis": {
       "kind": "derived",
@@ -29299,11 +29450,11 @@
     {
      "range": [
       "0x00a437c0",
-      "0x00a43bca"
+      "0x00a43bd0"
      ],
      "generated": [
       "0x00a437c0",
-      "0x00a43bca"
+      "0x00a43bd0"
      ],
      "generated_by": [
       "CardOpenProc"
@@ -29338,7 +29489,9 @@
       "D_00A43AAF",
       "PageStatusLst",
       "D_00A43B61",
-      "SkipPageLst"
+      "SkipPageLst",
+      "D_00A43BCA",
+      "ChangeCnt"
      ],
      "also_referenced_by_c": [],
      "basis": {
