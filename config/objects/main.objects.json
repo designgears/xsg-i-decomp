@@ -1222,11 +1222,19 @@
         },
         {
           "c_split": false,
-          "end": "0x0043B450",
+          "end": "0x0043B090",
           "ordinal": 215,
           "piece": "sdv",
           "start": "0x004228F0",
           "tu": "sdv"
+        },
+        {
+          "c_split": false,
+          "end": "0x0043B450",
+          "ordinal": 222,
+          "piece": "empty_002f0c64",
+          "start": "0x0043B090",
+          "tu": "empty_002f0c64"
         },
         {
           "c_split": false,
@@ -3052,11 +3060,19 @@
         },
         {
           "c_split": false,
-          "end": "0x004CD090",
+          "end": "0x004CCC50",
           "ordinal": 221,
           "piece": "jni",
           "start": "0x004CCA70",
           "tu": "jni"
+        },
+        {
+          "c_split": false,
+          "end": "0x004CD090",
+          "ordinal": 222,
+          "piece": "empty_002f0c64",
+          "start": "0x004CCC50",
+          "tu": "empty_002f0c64"
         },
         {
           "c_split": false,
@@ -4688,11 +4704,19 @@
         },
         {
           "c_split": false,
-          "end": "0x004DBFD0",
+          "end": "0x004DBB80",
           "ordinal": 209,
           "piece": "sef_print",
           "start": "0x004DBB78",
           "tu": "sef_print"
+        },
+        {
+          "c_split": false,
+          "end": "0x004DBFD0",
+          "ordinal": 222,
+          "piece": "empty_002f0c64",
+          "start": "0x004DBB80",
+          "tu": "empty_002f0c64"
         },
         {
           "c_split": false,
@@ -61887,20 +61911,20 @@
           ],
           "bounds": [
             "0x004DBB74",
-            "0x004DBFD0"
+            "0x004DBB80"
           ],
-          "end": "0x004DBFD0",
+          "end": "0x004DBB80",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DBFD0",
+              "end": "0x004DBB80",
               "name": "sef_print",
               "start": "0x004DBB78"
             }
           ],
           "rule": "anchored start",
-          "size": 1112,
+          "size": 8,
           "splat_type": "sdata",
           "start": "0x004DBB78"
         }
@@ -66173,20 +66197,20 @@
           ],
           "bounds": [
             "0x004228F0",
-            "0x0043B450"
+            "0x0043B090"
           ],
-          "end": "0x0043B450",
+          "end": "0x0043B090",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x0043B450",
+              "end": "0x0043B090",
               "name": "sdv",
               "start": "0x004228F0"
             }
           ],
           "rule": "anchored start",
-          "size": 101216,
+          "size": 100256,
           "splat_type": "data",
           "start": "0x004228F0"
         },
@@ -67743,20 +67767,20 @@
           ],
           "bounds": [
             "0x004CCA59",
-            "0x004CD090"
+            "0x004CCC50"
           ],
-          "end": "0x004CD090",
+          "end": "0x004CCC50",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004CD090",
+              "end": "0x004CCC50",
               "name": "jni",
               "start": "0x004CCA70"
             }
           ],
           "rule": "anchored start",
-          "size": 1568,
+          "size": 480,
           "splat_type": "rodata",
           "start": "0x004CCA70"
         }
@@ -67841,17 +67865,94 @@
       "functions": [],
       "id": "main/tu222",
       "in_scope": true,
-      "kind": "data-only",
+      "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "empty_002f0c64",
       "name_basis": "no .text and no static symbols (empty file or global-data-only member)",
       "name_confidence": "low",
       "ordinal": 222,
-      "owners": {},
+      "owners": {
+        ".sdata": "asm",
+        ".rodata": "asm",
+        ".data": "asm"
+      },
       "path": "src/main/empty_002f0c64.c",
       "scaffold_path": "scaffold/src/main/empty_002f0c64.c",
-      "sections": {},
+      "sections": {
+        ".sdata": {
+          "anchored": [
+            "0x004DBB80",
+            "0x004DBB80"
+          ],
+          "bounds": [
+            "0x004DBB80",
+            "0x004DBFD0"
+          ],
+          "end": "0x004DBFD0",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004DBFD0",
+              "name": "empty_002f0c64",
+              "start": "0x004DBB80"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 1104,
+          "splat_type": "sdata",
+          "start": "0x004DBB80"
+        },
+        ".rodata": {
+          "anchored": [
+            "0x004CCC50",
+            "0x004CCC50"
+          ],
+          "bounds": [
+            "0x004CCC50",
+            "0x004CD090"
+          ],
+          "end": "0x004CD090",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004CD090",
+              "name": "empty_002f0c64",
+              "start": "0x004CCC50"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 1088,
+          "splat_type": "rodata",
+          "start": "0x004CCC50"
+        },
+        ".data": {
+          "anchored": [
+            "0x0043B090",
+            "0x0043B090"
+          ],
+          "bounds": [
+            "0x0043B090",
+            "0x0043B450"
+          ],
+          "end": "0x0043B450",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x0043B450",
+              "name": "empty_002f0c64",
+              "start": "0x0043B090"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 960,
+          "splat_type": "data",
+          "start": "0x0043B090"
+        }
+      },
       "shared_contract": {
         "cc1": "tool:ee-gcc2.96-realconv-lp7/cc1",
         "cc1_sha256": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625",
@@ -67869,7 +67970,22 @@
         "start": "0x002f0c64"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "empty_002f0c64 (game): data-only TU; the VM debug mask and instruction-code name table, written as C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/empty_002f0c64.c"
+        },
+        "flags": [
+          "-O2",
+          "-G8"
+        ]
+      }
     },
     {
       "accepted": {
