@@ -238,15 +238,16 @@ static void _MergeBlocks(struct RgHeapBlock *pHead)
 /*
  * ov12:0x00a59aa0 (0x10 bytes) and 0x00a5a2b0 (0x10 bytes) are the two
  * RgHeap singletons; 0x00a59ab0 and 0x00a5a2c0 (0x800 bytes each) are the
- * raw memory arenas InitRgHeap hands to _SetHeapHead. asm-owned scaffold
- * data, no config/symbols/ov12.txt entry.
+ * raw memory arenas InitRgHeap hands to _SetHeapHead. Function-local
+ * statics of the two accessors (original names unknown).
  */
-extern RgHeap D_00A59AA0;
-extern u8 D_00A59AB0[0x800];
 extern int s_bInit1_0;
 
 RgHeap *InstanceOfRgHeap(void)
 {
+    static RgHeap D_00A59AA0 __asm__("D_00A59AA0");
+    static u8 D_00A59AB0[0x800] __asm__("D_00A59AB0");
+
     if (s_bInit1_0 == 0) {
         s_bInit1_0 = 1;
         InitRgHeap(&D_00A59AA0, D_00A59AB0, 0x800);
@@ -254,12 +255,13 @@ RgHeap *InstanceOfRgHeap(void)
     return &D_00A59AA0;
 }
 
-extern RgHeap D_00A5A2B0;
-extern u8 D_00A5A2C0[0x800];
 extern int s_bInit2_3;
 
 RgHeap *InstanceOfRgHeapData(void)
 {
+    static RgHeap D_00A5A2B0 __asm__("D_00A5A2B0");
+    static u8 D_00A5A2C0[0x800] __asm__("D_00A5A2C0");
+
     if (s_bInit2_3 == 0) {
         s_bInit2_3 = 1;
         InitRgHeap(&D_00A5A2B0, D_00A5A2C0, 0x800);

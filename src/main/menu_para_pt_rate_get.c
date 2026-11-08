@@ -246,7 +246,9 @@ typedef struct CharParaData {
 
 /* The menu's two parameter records: MenuCharParaSet always writes the
  * recalculated record to [1] and, unless previewOnly, copies it to [0] too. */
-extern CharParaData paraUnit[2];
+static unsigned short UpPara[8];
+static unsigned short MenuCharParty[8];
+static CharParaData paraUnit[2];
 
 /* Weapon slot per party character (chrNo 1..7), indexing calcTotalParaMenu's
  * attack words. */
@@ -927,9 +929,7 @@ typedef struct MenuTextRecord {
 
 /* The step one improvement adds to each parameter, and the character ids of
  * the party positions and of the reserve list. */
-extern unsigned short UpPara[8];
-extern unsigned short MenuCharParty[8];
-extern unsigned short MenuCharPartyReser[4];
+static unsigned short MenuCharPartyReser[4];
 
 int MenuCharEquipCalcPointGet(int chrNo);
 void MenuInfoWindow(CharInfoWindow *window, CharInfoText *text);
@@ -2523,7 +2523,7 @@ int MenuSortCheck(int listIndex);
 
 /* The two list windows of CharList the selection calls work on: the
  * weapon/accessory list (+0x504) and the parameter-up list (+0x1C3C). */
-extern CharListSPWindow *CharWinSP[2];
+static CharListSPWindow *CharWinSP[2];
 /*
  * CharParameter is the parameter window's work block. MenuCharactor carves it
  * out of the menu heap and CharParameterMain drives it: state 0 builds the
@@ -3689,8 +3689,8 @@ extern MenuCamVec2B D_004C6580;
 extern MenuCamVec2 D_004C65A0;
 extern MenuCamVec2 D_004C65C0;
 extern MenuCamVec1 D_004C65E0;
-extern MenuCamVec1 TairetuPos;
-extern MenuCamVec1 TairetuRot;
+static MenuCamVec1 TairetuRot;
+static MenuCamVec1 TairetuPos;
 
 void MenuCharCameraSet(void) {
     MenuCamVec2B pos = D_004C6580;

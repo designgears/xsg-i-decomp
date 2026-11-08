@@ -90,7 +90,6 @@ typedef struct SeisanCountData {
     unsigned char unmodeled_A0[0x10];
 } SeisanCountData;
 
-extern SeisanCountData SeisanCN;
 
 /*
  * SeisanResult (0x004db0cc, config/symbols/main.txt, size 0x4): a pointer to

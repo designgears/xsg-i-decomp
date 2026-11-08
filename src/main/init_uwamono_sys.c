@@ -737,7 +737,7 @@ void CalcNearCrossPointBox(Vector4 *first, Vector4 *second,
 extern int CrossCheckMapUnitBox(Vector4 *first, Vector4 *second,
                                 UwamonoCrossUnit *unit);
 
-extern unsigned char uwamono_dat[];
+static unsigned char uwamono_dat[0x50000];
 extern unsigned char ItemBoxTbl[0x12C8];
 extern unsigned char EvtItemTbl[0x7F80];
 extern unsigned char *WorkEnd;

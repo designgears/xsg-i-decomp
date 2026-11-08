@@ -22951,11 +22951,11 @@
       "name_confidence": "low",
       "ordinal": 93,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_mc.c",
@@ -26999,9 +26999,9 @@
       "name_confidence": "low",
       "ordinal": 103,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_packet.c",
@@ -27270,8 +27270,8 @@
       "name_confidence": "low",
       "ordinal": 104,
       "owners": {
-        ".bss": "asm",
-        ".sbss": "asm",
+        ".bss": "c",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_studio.c",
@@ -33651,10 +33651,10 @@
       "name_confidence": "low",
       "ordinal": 120,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/game_camera.c",
@@ -34618,7 +34618,7 @@
       "name_confidence": "low",
       "ordinal": 122,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
         ".sbss": "c",
@@ -38932,7 +38932,7 @@
       "name_confidence": "low",
       "ordinal": 141,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".rodata": "asm",
         ".sdata": "asm",
         ".text": "c"
@@ -39327,7 +39327,7 @@
       "owners": {
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -49544,11 +49544,11 @@
       "name_confidence": "low",
       "ordinal": 170,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -50327,7 +50327,7 @@
       "name_confidence": "low",
       "ordinal": 172,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
@@ -54161,7 +54161,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -54970,7 +54970,7 @@
       "name_confidence": "low",
       "ordinal": 182,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
@@ -69823,7 +69823,7 @@
       "name_confidence": "low",
       "ordinal": 234,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".text": "c"
       },
       "path": "src/main/spline.c",
@@ -71044,7 +71044,7 @@
       "owners": {
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -76432,7 +76432,7 @@
       "name_confidence": "low",
       "ordinal": 255,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",

@@ -1090,8 +1090,6 @@ typedef struct ActInitMotionEnemy {
     unsigned char unmodeled_3888[0x38b0 - 0x3888];
 } ActInitMotionEnemy;
 extern ActInitMotionEnemy act_im_enepc[16] __asm__("enepc");
-extern float min_0[];
-extern float max_1[];
 extern void *JNT_computeMatrix(void *work, void *channels, int argument);
 extern void *LOOK_sebo_cont(void *work, void *channels, int argument);
 extern void *LOOK_head_cont(void *work, void *channels, int argument);
@@ -1105,6 +1103,8 @@ extern void *LOOK_eyeR_cont(void *work, void *channels, int argument);
 
 void ACT_initMotion(Actor *actor)
 {
+    static float min[4];
+    static float max[4];
     ActorAnimationState *animation = &actor->animation;
     ActorAnimSlot *slot = &animation->slot;
     int enemyIndex;
@@ -1141,13 +1141,13 @@ void ACT_initMotion(Actor *actor)
             act_im_enepc[enemyIndex].look_target.lookat_point = 0;
             act_im_enepc[enemyIndex].look_target.control = 0;
             act_im_enepc[enemyIndex].look_angles.x = act_im_enepc[enemyIndex].look_angles.y = act_im_enepc[enemyIndex].look_angles.z = 0.0f;
-            act_im_enepc[enemyIndex].look_limits.minimum = min_0;
-            act_im_enepc[enemyIndex].look_limits.maximum = max_1;
-            min_0[0] = -0.52359879f;
-            min_0[1] = -1.39626348f;
-            min_0[2] = max_1[0] = 0.52359879f;
-            max_1[1] = 1.39626348f;
-            max_1[2] = 1.91986215f;
+            act_im_enepc[enemyIndex].look_limits.minimum = min;
+            act_im_enepc[enemyIndex].look_limits.maximum = max;
+            min[0] = -0.52359879f;
+            min[1] = -1.39626348f;
+            min[2] = max[0] = 0.52359879f;
+            max[1] = 1.39626348f;
+            max[2] = 1.91986215f;
         }
         ACT_IM_ADD(actor->jointProducer, 36, LOOK_sebo_cont, actor);
         ACT_IM_ADD(actor->jointProducer, 48, LOOK_head_cont, actor);

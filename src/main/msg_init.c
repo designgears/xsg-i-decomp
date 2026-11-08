@@ -898,9 +898,9 @@ void MSG_setArgs(Mif2Argument *args, int n, const char **argv)
     }
 }
 
-extern int rubyX1;
-extern int rubyX2;
-extern int rubyY;
+static int rubyX1;
+static int rubyX2;
+static int rubyY;
 typedef struct RubyGlyph { char pad[8]; short x; short y; char pad2[12]; unsigned char flags; } RubyGlyph;
 
 static void rubyFont(RubyGlyph *g, unsigned int code)
@@ -1180,8 +1180,8 @@ static MsgFuncEntry *findMsgFunc(const char *name)
     return 0;
 }
 
-extern int cnvCH;
-extern int cnvCW;
+static int cnvCW;
+static int cnvCH;
 static void _copyCTRLCode(unsigned char **dstp, unsigned char **srcp);
 unsigned int MSG_convert(unsigned char *destination, int capacity, const char *text, int length)
 {

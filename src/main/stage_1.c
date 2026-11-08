@@ -2,6 +2,9 @@
 #include "shared.h"
 #include "stage_1.h"
 
+/* the 0x30-byte default stage record STAGE_create hands out */
+static u16 defaultStage[0x18];
+
 void *STAGE_create(u16 stage_id)
 {
     defaultStage[2] = stage_id;

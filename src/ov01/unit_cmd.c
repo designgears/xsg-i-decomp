@@ -13,9 +13,12 @@ typedef union UnitTableStorage {
 } UnitTableStorage;
 
 
-extern unsigned char unitTbl[0x20];
-extern int unitPlNum;
-extern int unitEnNum;
+static unsigned char unitTbl[0x20];
+static int unitPlNum;
+static int unitEnNum;
+/* spline work and its control points (no ELF symbols) */
+static unsigned char D_00A57268[0x18];
+static float D_00A57280[0x20];
 
 void unitInit(void)
 {
@@ -2502,7 +2505,6 @@ motion:
     return 0;
 }
 
-extern unsigned char D_00A57268[];
 extern int calcSpline(void *spline, float *out, int type);
 
 int unitCmdHover(ObjectTask *unit, int arg1, int arg2)
@@ -2767,7 +2769,6 @@ void unitCmdDivSet(UnitRecord *unit, float distance, float step)
     target->z = motionActor->position.z + (target->z - motionActor->position.z) * ratio;
 }
 
-extern float D_00A57280[];
 extern void calcSplineInit(void *a, void *b, int c, int d);
 
 void unitCmdVASet(ObjectTask *unit, s32 arg1, s32 arg2)

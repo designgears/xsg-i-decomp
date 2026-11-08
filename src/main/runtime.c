@@ -379,7 +379,7 @@ typedef struct {
     int argument;
 } DeferredJumpCall;
 
-extern DeferredJumpCall args_jump;
+static DeferredJumpCall args_jump;
 
 static void scriptReset_jump(void)
 {
