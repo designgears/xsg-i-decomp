@@ -20482,9 +20482,9 @@
       "name_confidence": "low",
       "ordinal": 86,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_thread.c",
@@ -22527,10 +22527,10 @@
       "name_confidence": "low",
       "ordinal": 92,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -45204,7 +45204,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -45731,7 +45731,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -48095,7 +48095,7 @@
       "name_confidence": "low",
       "ordinal": 167,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
@@ -48397,7 +48397,7 @@
       "name_confidence": "low",
       "ordinal": 168,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
@@ -49079,7 +49079,7 @@
       "name_confidence": "low",
       "ordinal": 169,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
@@ -49929,7 +49929,7 @@
       "name_confidence": "low",
       "ordinal": 171,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
@@ -65909,11 +65909,11 @@
       "name_confidence": "low",
       "ordinal": 215,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "split",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -66436,7 +66436,7 @@
       "name_confidence": "low",
       "ordinal": 218,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".rodata": "asm",
         ".text": "c"
       },
@@ -76837,7 +76837,7 @@
       "name_confidence": "low",
       "ordinal": 256,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
@@ -79719,7 +79719,7 @@
       "name_confidence": "low",
       "ordinal": 267,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",

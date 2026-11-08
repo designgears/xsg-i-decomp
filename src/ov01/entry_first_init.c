@@ -25,12 +25,33 @@ void entryFirstInit(void) {
 extern int printf(const char *format, ...);
 extern int rnd(int n);
 extern int pauseFlag;
-extern int frameCnt;
 extern int sRender[];
 extern unsigned int GameLoopState[];
 typedef struct { unsigned char pad_00[0x2A]; unsigned short trg; unsigned char pad_2c[4]; unsigned short on; } BpPadView;
 extern BpPadView PadData;
-extern unsigned char battleSeqWk[];
+typedef struct EntryCamEvent {
+    int type;                  /* +0x00 */
+    unsigned char unmodeled_04[4];
+    BattleUnit *unit;          /* +0x08 */
+    unsigned char unmodeled_0c[4];
+} EntryCamEvent;
+
+/* This TU's file-local work (BSS), in original address order. */
+static int frameCnt;
+static EntryPhaseFunc battleSeq;
+static unsigned char battleSeqWk[0x20];
+static int fadeFlag;
+static int D_00A5A214;
+static int battleDispMode;
+static int unitIdx;
+static EntryCamEvent D_00A5A220;
+static FadeObjTask *pFadeIn;
+static int pCreateUnit;
+static int pCvUnit;
+static int encEffCmd;
+static int encObjCnt;
+static float theta;
+static float thetaInc;
 extern void objExec2(void);
 extern void xglRenderClearOn(void);
 extern int pauseProc(void);
@@ -132,7 +153,6 @@ void battleProcEnd(void) {
     xglSoundEffectStopBank(0);
 }
 
-extern int frameCnt;
 
 int frameCntGet(void) {
     return frameCnt;
@@ -242,7 +262,6 @@ extern int printf(const char *format, ...);
 extern void GameDefocusQuickSet(int first, int second, int third, int fourth);
 extern int sndSysSePlay(int soundId);
 int entryPhase10(void);
-extern int battleDispMode;
 int pauseFlag = 0;
 int cameraFlag = 1;
 
@@ -296,10 +315,8 @@ extern void dataLeaderChk(void *tbl);
 extern void *thinkMonsTblGet(int no);
 extern void dataEnemyMdlChk(void *tbl);
 extern int dataCdSync(void);
-extern int D_00A5A214;
 extern void dataSndMuLoad(int kind);
 int fadeIn(int speed, int delay);
-extern FadeObjTask *pFadeIn;
 extern void encEffObjInit(void);
 int entryPhase15(void);
 
@@ -323,10 +340,8 @@ int entryPhase10(void) {
 }
 
 extern int dataCdSync(void);
-extern int D_00A5A214;
 extern void sndMuTransPlay(int id);
 extern void dataXtxLoad(void);
-extern FadeObjTask *pFadeIn;
 int entryPhase16(void);
 
 int entryPhase15(void)
@@ -360,13 +375,7 @@ int entryPhase16(void)
  * caller (src/ov01/battle_init.c's D_00A57B80) fills the same two fields,
  * a type code at +0x00 and the acting unit at +0x08, before the call.
  */
-typedef struct EntryCamEvent {
-    int type;                  /* +0x00 */
-    unsigned char unmodeled_04[4];
-    BattleUnit *unit;          /* +0x08 */
-} EntryCamEvent;
 
-extern EntryCamEvent D_00A5A220;
 
 /*
  * This TU's own call site sets up only the event-record argument, unlike
@@ -379,8 +388,6 @@ extern int camEventExec(EntryCamEvent *event);
 extern void mapInit(int mapNo);
 extern void camInit(void);
 extern int camInitExec(void);
-extern int encEffCmd;
-extern int unitIdx;
 int entryPhase25(void);
 
 int entryPhase20(void)
@@ -409,7 +416,6 @@ extern int unitPlCreate(s16 *pl);
 extern void menuStatDispCreate(void);
 extern int entryPhase26(void);
 extern int entryPhase30(void);
-extern int pCreateUnit;
 
 int entryPhase25(void)
 {
@@ -446,7 +452,6 @@ int entryPhase25(void)
 int entryPhase25(void);
 extern int sefCheckLoad(void);
 extern void dataUnitFileLoad2(int unit);
-extern int pCreateUnit;
 
 int entryPhase26(void)
 {
@@ -465,8 +470,6 @@ extern int selectPL(int excludeUnit);
 extern void dataSndSeLoad(int unit, int seId);
 extern int entryPhase31(void);
 
-extern int D_00A5A214;
-extern int pCvUnit;
 
 int entryPhase30(void) {
     int unit;
@@ -481,7 +484,6 @@ int entryPhase30(void) {
     return 1;
 }
 
-extern int unitIdx;
 extern void dataSndSeLoad2(int unit);
 extern void sndSeTransPlay(int unit, int seId, int volume);
 extern int entryPhase35(void);
@@ -524,7 +526,6 @@ int entryPhase35(void)
 extern void dataUnitFileLoad2(int unit);
 extern int entryPhase35(void);
 extern int sefCheckLoad(void);
-extern int pCreateUnit;
 
 int entryPhase36(void)
 {
@@ -975,9 +976,6 @@ void encEnvMake(void *packet)
     GS_REG_SET(packet, 0x14, 0x60);
 }
 
-extern float thetaInc;
-extern float theta;
-extern int encObjCnt;
 void encEffObj(ObjectTask *task);
 void encEffObjDraw();
 typedef struct EncGridPt {
@@ -1174,9 +1172,6 @@ void encEffObjInit(void)
   task->delay = 0;
 }
 
-extern float thetaInc;
-extern float theta;
-extern int encObjCnt;
 void effCalcMatrix(void *unused, float (*m)[4], int t);
 extern void xglVectorMulMat(Vector4 *destination, const Matrix4 matrix, const Vector4 *vector);
 typedef struct EncEffVtx {
@@ -1275,7 +1270,6 @@ extern void xglMatrixUnit(float (*matrix)[4]);
 extern void xglMatrixTrans(float (*destination)[4], float (*source)[4], const float translation[4]);
 extern void xglMatrixScale(float (*destination)[4], float (*source)[4], const float scale[4]);
 extern void grRotMatrix(float (*destination)[4], float (*source)[4], float *angles);
-extern float theta;
 
 void effCalcMatrix(void *unused, float (*m)[4], int t) {
     float rot[4];
@@ -1315,7 +1309,6 @@ typedef struct EncEffDrawArg {
     int env;
     int size;
 } EncEffDrawArg;
-extern int encObjCnt;
 extern void encEffVramCopy(int size);
 extern void encEffAppend(void);
 extern void grOpenFT4(void *packet);

@@ -4,12 +4,9 @@
 #include "common.h"
 #include "shared.h"
 
-/*
- * .bss for this TU is still scaffold-owned: the flag word keeps its ledger
- * name (config/symbols/ov01.txt) and the MPEG context its splat name.
- */
+/* The flag word keeps its ledger name (config/symbols/ov01.txt); the BSS
+ * parameter block and MPEG context keep their splat names (no overlay symtab). */
 int mvFlags_00A43724 = 0;
-extern unsigned char D_00A5B838[0xC0];
 
 #define MV2_FLAG_INITIALIZED 0x1
 #define MV2_FLAG_PLAYING 0x2
@@ -20,12 +17,13 @@ extern void xglRenderCopyDisp2Draw(void);
 extern int xglMpeg2Close(unsigned char *mpegContext);
 
 /*
- * D_00A5B7B0 (0x88 bytes, scaffold-owned, immediately precedes D_00A5B838)
+ * D_00A5B7B0 (0x88 bytes, immediately precedes D_00A5B838)
  * is the movie-parameter block MMv2Play fills in: MMv2Play strncpy()s its
  * filename argument into the first 0x80 bytes (n=128, byte 0x7f forced to
  * '\0') and MMv2Exec/MMv2Play both read, increment and clear a retry counter
  * at +0x80 (lhu/lh/sh 128(base)). The 6 bytes past the counter are untouched
- * by either function.
+ * by either function; MMv2Play's (context - sizeof(Mv2Params)) and its
+ * 0x148-byte memset fix sizeof at 0x88.
  */
 typedef struct Mv2Params {
     char filename[0x80];
@@ -33,7 +31,8 @@ typedef struct Mv2Params {
     unsigned char unmodeled_82[6];
 } Mv2Params;
 
-extern Mv2Params D_00A5B7B0;
+static Mv2Params D_00A5B7B0;
+static unsigned char D_00A5B838[0xC0];
 
 extern void xglSleep(void);
 extern int xglMpeg2Play(unsigned char *mpegContext);

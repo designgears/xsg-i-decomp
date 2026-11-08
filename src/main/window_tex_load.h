@@ -147,7 +147,6 @@ extern XglRenderFadeCallback MenuCfTaiki[8];
 extern void endPrintInit(void);
 extern unsigned char *MenuWinAddr;
 extern int xglFontLoad(int font, void (*callback)(int));
-extern int original_font_no_1;
 extern void xglSoundEffectNormalID(int sound, int channel);
 
 typedef struct {
