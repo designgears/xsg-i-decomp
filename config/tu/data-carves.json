@@ -19998,113 +19998,195 @@
    ]
   },
   "ov01/tu009_00a26018": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a46740",
-      "0x00a46758"
+      "0x00a3f038",
+      "0x00a3f7e0"
      ],
      "generated": [
-      "0x00a46740",
-      "0x00a46758"
+      "0x00a3f038",
+      "0x00a3f7e0"
      ],
      "generated_by": [
-      "menuCmdExecChk"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A46740"
-     ],
-     "also_referenced_by_c": [
-      "D_00A46758",
-      "D_00A46768",
-      "D_00A46890",
-      "D_00A46898",
-      "D_00A468E8",
-      "D_00A468F0",
-      "D_00A46960",
-      "D_00A46968",
-      "D_00A46970",
-      "D_00A46978"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/menu.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a46980",
-      "0x00a46a70"
-     ],
-     "generated": [
-      "0x00a46980",
-      "0x00a46a70"
-     ],
-     "generated_by": [
+      "keyGideDisp",
+      "menuBatObjDraw",
+      "menuBatObjFree",
+      "menuDFontIdxGet",
+      "menuFontIdxGet",
+      "menuKeyGuideDisp",
       "menuKeyGuideHelp",
-      "objDmgNum",
-      "objDmgNumDraw"
+      "menuOpenBat",
+      "menuStatIconChk",
+      "menuStatIconPut"
      ],
      "c_owned_symbols": [
-      "jtbl_00A46980",
-      "D_00A469C0",
-      "jtbl_00A46A40"
-     ],
-     "also_referenced_by_c": [
-      "D_00A46A70"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/menu.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a46ac0",
-      "0x00a46af8"
-     ],
-     "generated": [
-      "0x00a46ac0",
-      "0x00a46af8"
-     ],
-     "generated_by": [
-      "dmgNumPut"
-     ],
-     "c_owned_symbols": [
-      "D_00A46AC0",
-      "jtbl_00A46AD0"
+      "chaTbl_00A3F038",
+      "agwsTbl_00A3F088",
+      "statBA",
+      "D_00A3F18C",
+      "statMA",
+      "statBB",
+      "D_00A3F2BC",
+      "statMB",
+      "D_00A3F32C",
+      "statAA1",
+      "statAA2",
+      "statAB",
+      "D_00A3F444",
+      "statTbl",
+      "keyDispL",
+      "keyDispU",
+      "keyDispLL",
+      "D_00A3F484",
+      "keyDispLU",
+      "D_00A3F494",
+      "keyDispUU",
+      "D_00A3F4A4",
+      "keyDispUL",
+      "D_00A3F4B4",
+      "keyDispLR",
+      "D_00A3F4C4",
+      "keyDispUR",
+      "D_00A3F4D4",
+      "keyDispR",
+      "keyDispRL",
+      "D_00A3F4EC",
+      "keyDispRU",
+      "D_00A3F4FC",
+      "keyDispRR",
+      "D_00A3F50C",
+      "keyGuideNull",
+      "keyGuideL",
+      "keyGuideU",
+      "keyGuideLL",
+      "keyGuideLU",
+      "keyGuideUU",
+      "keyGuideUL",
+      "keyGuideLR",
+      "keyGuideUR",
+      "keyGuideR",
+      "keyGuideD",
+      "keyGuideTblChr",
+      "keyGuideTblAgws",
+      "uvTbl",
+      "atr1Name",
+      "D_00A3F7AC",
+      "atr2Name",
+      "atr3Name",
+      "font_0",
+      "font_1"
      ],
      "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/menu.o"
+      "object": "build/ov01/build/scaffold/src/ov01/menu.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x00a46c08",
-      "0x00a46c10"
+      "0x00a46730",
+      "0x00a46c18"
      ],
      "generated": [
-      "0x00a46c08",
-      "0x00a46c0b"
+      "0x00a46730",
+      "0x00a46c15"
      ],
      "generated_by": [
-      "menuFontPut"
+      "dmgMsgPut",
+      "dmgNumPut",
+      "menuBatObjDraw",
+      "menuBoostObjDrawCha",
+      "menuBoostObjDrawSel",
+      "menuCmdExecChk",
+      "menuDFontIdxGet",
+      "menuEventTimerDispSub",
+      "menuFontIdxGet",
+      "menuFontPut",
+      "menuGuideFrameDisp",
+      "menuKeyGuideHelp",
+      "menuMapDisp",
+      "menuMapItemDispSub",
+      "menuNumPut",
+      "menuOpenEth",
+      "menuOpenItm",
+      "menuStatDispCreate",
+      "menuStatNamePut",
+      "menuStatSprite",
+      "menuStatSprite2",
+      "menuStockDead",
+      "objDmgNum",
+      "objDmgNumDraw"
      ],
      "c_owned_symbols": [
-      "D_00A46C08"
-     ],
-     "also_referenced_by_c": [
+      "D_00A46730",
+      "jtbl_00A46740",
+      "D_00A46758",
+      "D_00A46768",
+      "D_00A46774",
+      "D_00A46780",
+      "D_00A46860",
+      "D_00A46870",
+      "D_00A46880",
+      "D_00A46890",
+      "D_00A46898",
+      "D_00A468B0",
+      "D_00A468C0",
+      "D_00A468D0",
+      "D_00A468E0",
+      "D_00A468E8",
+      "D_00A468F0",
+      "D_00A46900",
+      "D_00A46908",
+      "D_00A46910",
+      "D_00A46918",
+      "D_00A46920",
+      "D_00A46928",
+      "D_00A46930",
+      "D_00A46938",
+      "D_00A46940",
+      "D_00A46948",
+      "D_00A46950",
+      "D_00A46958",
+      "D_00A46960",
+      "D_00A46968",
+      "D_00A46970",
+      "D_00A46978",
+      "jtbl_00A46980",
+      "D_00A469C0",
+      "jtbl_00A46A40",
+      "D_00A46A70",
+      "D_00A46AC0",
+      "jtbl_00A46AD0",
+      "D_00A46AF8",
+      "D_00A46BE0",
+      "D_00A46C08",
       "D_00A46C10"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A46900": "atr1Name",
+      "D_00A46908": "atr1Name",
+      "D_00A46910": "atr1Name",
+      "D_00A46918": "atr3Name",
+      "D_00A46920": "atr2Name",
+      "D_00A46928": "atr2Name",
+      "D_00A46930": "atr2Name",
+      "D_00A46938": "atr3Name",
+      "D_00A46940": "atr3Name",
+      "D_00A46948": "atr3Name",
+      "D_00A46950": "atr3Name",
+      "D_00A46958": "atr3Name",
+      "D_00A46AF8": "font_0",
+      "D_00A46BE0": "font_1"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/menu.o"
+      "object": "build/ov01/build/scaffold/src/ov01/menu.o"
      }
     }
    ]
