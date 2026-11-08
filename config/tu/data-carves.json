@@ -18683,14 +18683,16 @@
     {
      "range": [
       "0x004d85c8",
-      "0x004d85f0"
+      "0x004d860c"
      ],
      "generated": [
       "0x004d85c8",
-      "0x004d85f0"
+      "0x004d860c"
      ],
      "generated_by": [
       "DrawCircleShadow",
+      "DrawDropCircle",
+      "DrawDropShadowSub",
       "DrawZeldaShadow",
       "DrawZeldaShadowSub",
       "Footstep"
@@ -18705,32 +18707,8 @@
       "D_004D85E0",
       "D_004D85E4",
       "D_004D85E8",
-      "D_004D85EC"
-     ],
-     "also_referenced_by_c": [
-      "D_004D85F0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/act_3.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d85f4",
-      "0x004d860c"
-     ],
-     "generated": [
-      "0x004d85f4",
-      "0x004d860c"
-     ],
-     "generated_by": [
-      "DrawDropCircle",
-      "DrawDropShadowSub",
-      "DrawZeldaShadow"
-     ],
-     "c_owned_symbols": [
+      "D_004D85EC",
+      "D_004D85F0",
       "D_004D85F4",
       "D_004D85F8",
       "D_004D85FC",

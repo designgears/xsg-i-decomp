@@ -904,7 +904,6 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
     nmlModelDirectSend(1, (u8 *)&scratchpad->packet, 0x12);
 }
 
-extern volatile float D_004D85F0;
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern float atan2f(float y, float x);
 extern float sqrtf(float x);
@@ -917,7 +916,7 @@ static void DrawZeldaShadow(char *obj) {
     if (!(h != -1000.0f)) {
         *(float *)0x70000130 = *(float *)(obj + 0x14) + 0.02f;
     } else {
-        *(float *)0x70000130 = h + D_004D85F0;
+        *(float *)0x70000130 = h + 0.02f;
     }
     for (i = 0; i < 8; i++) {
         if (xglStudioGetCamera2(i)->active == 1) {
