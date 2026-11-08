@@ -21148,7 +21148,7 @@
       "ordinal": 88,
       "owners": {
         ".data": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_dma.c",
@@ -46538,7 +46538,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/end_print.c",
@@ -72583,7 +72583,7 @@
       "name_confidence": "low",
       "ordinal": 245,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".sdata": "asm",
         ".text": "c"

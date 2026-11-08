@@ -76,7 +76,7 @@ typedef struct EffectScaleVector {
     float fc;
     float f10;
 } EffectScaleVector;
-extern EffectScaleVector scale_0_007C0A28;
+static EffectScaleVector scale_0_007C0A28 __asm__("scale.0");
 extern SceneClass *classJava_xeno_util_Vector4f;
 
 void Java_xeno_Effect_getScale__(JThread *thread, EffectCall *arguments, u32 *failure_result)

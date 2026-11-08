@@ -30,7 +30,7 @@ extern EndPrintRenderState sRender;
 static PrintFuncEntry PrintFunc[512];
 
 
-extern PrintFuncEntry *pPrintFuncTop;
+static PrintFuncEntry *pPrintFuncTop;
 
 
 extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int count);
