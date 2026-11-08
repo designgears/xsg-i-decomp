@@ -99,6 +99,28 @@ void ArtSnapshot(uint32_t slot) {
         if (t.set == key) t.gen = ~0u;
 }
 
+void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem) {
+    auto bits = [&](int lo, int n) { return uint32_t((tex0 >> lo) & ((1ull << n) - 1)); };
+    const uint32_t tbp = bits(0, 14), psm = bits(20, 6), tw = 1u << std::min(10u, bits(26, 4)), th = 1u << std::min(10u, bits(30, 4));
+    const uint32_t bpp = psm == 0x14 ? 4 : psm == 0x13 ? 8 : (psm == 0x02 || psm == 0x0a) ? 16 : 32;   // T4, T8, CT16(S), CT32/24
+    // a page is 8 KB whatever the format; the image spans tw * th * bpp / 8 bytes from TBP (whole pages)
+    const size_t off = size_t(tbp) * 256, len = std::min<size_t>((size_t(tw) * th * bpp / 8 + 8191) & ~size_t(8191), (4u << 20) - off);
+    const size_t coff = size_t(bits(37, 14)) * 256, clen = std::min<size_t>(8192, (4u << 20) - coff);
+    uint64_t h = 1469598103934665603ull;
+    for (size_t i = 0; i < len / 8; ++i) h = (h ^ reinterpret_cast<const uint64_t*>(mem + off)[i]) * 1099511628211ull;
+    for (size_t i = 0; i < clen / 8; ++i) h = (h ^ reinterpret_cast<const uint64_t*>(mem + coff)[i]) * 1099511628211ull;
+    h ^= tex0 * 0x9e3779b97f4a7c15ull;
+    static std::unordered_map<uint32_t, uint64_t> last;
+    auto& m = g_sets[key];
+    if (m && last[key] == h) return;
+    if (!m) m = std::make_unique<ps2host::gs::Memory>();
+    std::memcpy(m->data() + off, mem + off, len);
+    std::memcpy(m->data() + coff, mem + coff, clen);
+    last[key] = h;
+    for (auto& [k, t] : g_tex)
+        if (t.set == key) t.gen = ~0u;
+}
+
 void ArtFrame() { ++g_frame; }
 
 ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, uint32_t texset) {
@@ -110,7 +132,7 @@ ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, u
         auto it = g_sets.find(texset);
         if (it == g_sets.end()) return ImTextureID(0);
         t.set = texset;
-        if (!t.id || t.gen == ~0u || (texset < 0x5A000000u && t.gen != g_set_gen)) {
+        if (!t.id || t.gen == ~0u || (texset < 0x5A000000u && t.gen != g_set_gen)) {   // snapshot sets: on change
             uint32_t tw = 0, th = 0;
             std::vector<uint32_t> px = xsgnative::DecodeVramTexture(it->second->data(), tex0, texa, &tw, &th);
             if (!px.empty()) {

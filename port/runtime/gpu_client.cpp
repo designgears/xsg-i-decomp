@@ -493,11 +493,27 @@ extern "C" void xsg_ui_dialog_lines(const char* const* lines, int first, int end
 /* Capture mode (menu.c menuKeyGuideDisp, battle_init.c monsNameDisp): ops collect here
    and go to the channel's shared-memory block in one seqlocked copy. */
 extern "C" { int xsg_ui_kg_capture; }
-static GpuUiKgOp g_kg[XSG_GPU_UI_KG_OPS];
-static uint32_t g_kg_n;
+static GpuUiKgOp g_kgbuf[XSG_GPU_UI_KG_CHANNELS][XSG_GPU_UI_KG_OPS];
+static uint32_t g_kgcount[XSG_GPU_UI_KG_CHANNELS], g_kgframe[XSG_GPU_UI_KG_CHANNELS];
 static int g_kg_ch;
+#define g_kg g_kgbuf[g_kg_ch]
+#define g_kg_n g_kgcount[g_kg_ch]
 static uint64_t g_cap_tex0, g_cap_alpha = 0x44;
-extern "C" void xsg_ui_cap_begin(int channel) { g_kg_n = 0; g_kg_ch = channel; xsg_ui_kg_capture = 1; g_cap_alpha = 0x44; }
+extern "C" void xsg_ui_cap_begin(int channel) {
+    g_kg_ch = channel & (XSG_GPU_UI_KG_CHANNELS - 1);
+    g_kg_n = 0;
+    g_kgframe[g_kg_ch] = xsg_frame;
+    xsg_ui_kg_capture = 1;
+    g_cap_alpha = 0x44;
+}
+/* The same, but several calls in one frame add up (one per party member, ...). */
+extern "C" void xsg_ui_cap_append(int channel) {
+    g_kg_ch = channel & (XSG_GPU_UI_KG_CHANNELS - 1);
+    if (g_kgframe[g_kg_ch] != xsg_frame) g_kg_n = 0;
+    g_kgframe[g_kg_ch] = xsg_frame;
+    xsg_ui_kg_capture = 1;
+    g_cap_alpha = 0x44;
+}
 extern "C" void xsg_ui_kg_begin(void) { xsg_ui_cap_begin(0); }
 extern "C" void xsg_ui_kg_op(int type, int x, int y, int a, int b, const char* text) {
     if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
@@ -505,6 +521,17 @@ extern "C" void xsg_ui_kg_op(int type, int x, int y, int a, int b, const char* t
     o.type = type; o.x = x; o.y = y; o.a = a; o.b = b;
     std::memset(o.text, 0, sizeof o.text);
     if (text) std::strncpy(o.text, text, sizeof o.text - 1);
+}
+/* A captured texture (TEX0) gets a snapshot slot: xsg-gpu copies its pages and CLUT from the
+   GS-memory mirror when the stream reaches the marker, into texture set 0x5B000000 + slot (one
+   slot per texture, 8 in all), so art whose VRAM is reused later in the frame stays right. */
+extern "C" int xsg_ui_mirror_on(void);
+static uint32_t g_cap_set;
+extern "C" unsigned xsg_ui_cap_texmark(unsigned long long tex0) {
+    const uint64_t key = (tex0 & 0x3fffull) ^ ((tex0 >> 37) & 0x3fffull) * 0x9e37ull;
+    const unsigned slot = unsigned(key % 8);
+    g_cap_set = 0x5B000000u + slot;
+    return 0x200u | slot;
 }
 extern "C" void xsg_ui_cap_reg(int reg, unsigned long long value) {
     if (reg == 6) g_cap_tex0 = value;
@@ -518,6 +545,7 @@ extern "C" void xsg_ui_cap_spr(int x0, int y0, int x1, int y1, int u0, int v0, i
     o.x = x0; o.y = y0; o.dw = int16_t(x1 - x0); o.dh = int16_t(y1 - y0);
     o.u = int16_t(u0); o.v = int16_t(v0); o.w = int16_t(u1 - u0); o.h = int16_t(v1 - v0);
     o.tex0_lo = uint32_t(g_cap_tex0); o.tex0_hi = uint32_t(g_cap_tex0 >> 32);
+    if (xsg_ui_mirror_on()) std::memcpy(o.text + 4, &g_cap_set, 4);   // its texture set (0: GS memory)
     o.a = int32_t(g_cap_alpha & 0xff);
     o.b = int32_t((g_cap_alpha >> 32) & 0xff);   // FIX
     o.rgba = uint32_t(col[0]) | uint32_t(col[1]) << 8 | uint32_t(col[2]) << 16 | uint32_t(col[3]) << 24;

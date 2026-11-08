@@ -864,6 +864,13 @@ void grGsRegSet(GrPacket *packet, unsigned long long register_id,
 #endif
     grGifAppendRegister(packet, 14, 0x1000000000008001ULL);
     grGifAppendRegister(packet, register_id, value);
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture && register_id == 6) {   /* a texture marker after it (see GS_REG_SET) */
+        extern unsigned xsg_ui_cap_texmark(unsigned long long tex0);
+        grGifAppendRegister(packet, 14, 0x1000000000008001ULL);
+        grGifAppendRegister(packet, 0x3F, ((unsigned long long)0x5853474DULL << 32) | xsg_ui_cap_texmark(value));
+    }
+#endif
 }
 
 typedef struct GrGsRegListEntry {
@@ -899,8 +906,24 @@ void GS_REG_SET(GrPacket *packet, long long register_id, long long control)
     int *count;
     int tag_index;
 #ifdef PORT_HOST
-    if (xsg_ui_kg_capture)
+    if (xsg_ui_kg_capture) {
         xsg_ui_cap_reg((int)register_id, (unsigned long long)control);
+        if (register_id == 6) {   /* after it: a marker (TEXFLUSH "XSGM", kind 2) so xsg-gpu snapshots the texture */
+            extern unsigned xsg_ui_cap_texmark(unsigned long long tex0);
+            unsigned long long mark = ((unsigned long long)0x5853474DULL << 32) | xsg_ui_cap_texmark((unsigned long long)control);
+            grGifOpenRegister(packet, register_id);
+            count = &packet->count;
+            tags = packet->data;
+            tag_index = *count;
+            tags[tag_index].control.bits = control;
+            *count = tag_index + 1;
+            grGifOpenRegister(packet, 0x3F);
+            tag_index = *count;
+            tags[tag_index].control.bits = mark;
+            *count = tag_index + 1;
+            return;
+        }
+    }
 #endif
 
     grGifOpenRegister(packet, register_id);

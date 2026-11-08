@@ -19,6 +19,8 @@ void ArtTexset(uint32_t key, uint32_t entries, const void* payload, uint32_t len
 /* A rebuilt-UI marker reached the GS stream: copy the menu texture region of the GS-memory
    mirror into texture set 0x5A000000 + slot (re-decoded only when it changed). */
 void ArtSnapshot(uint32_t slot);
+/* The same for one texture: the pages of tex0's image and CLUT, from a 4 MB GS image, into set `key`. */
+void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem);
 /* Once per frame, before drawing (counts frames for the re-check). */
 void ArtFrame();
 /* The ImGui texture for a TEX0 (0: not available); *w / *h: its size in texels.  texset:

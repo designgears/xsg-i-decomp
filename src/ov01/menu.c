@@ -2577,6 +2577,11 @@ void menuPlStatPut(ObjectTask *task, int packet, BattleUnit *unit)
             cy = (chrId / 6) * 0x50;
             xsg_ui_battle_unit((int)unit, x, y, actUnitGet() == unit, (int)*pA4, *(short *)up, (int)*pA8, up->maxEp,
                                (int)*pA0, (signed char)up->unmodeled_3a[2], (int)*pC0, calcIdol2Chk((ObjectTask *)unit) != 0);
+            {   /* the portrait and the turn glow too: captured (channel 3, all units) */
+                extern void xsg_ui_cap_append(int channel);
+                extern void xsg_ui_kg_end(void);
+                xsg_ui_cap_append(3);
+            }
             menuFaceEnvMake(packet);
             frame = (frameCntGet() * 2) & 0xFF;
             if (frame >= 0x80) {
@@ -2592,6 +2597,10 @@ void menuPlStatPut(ObjectTask *task, int packet, BattleUnit *unit)
             grOpenSpr(packet);
             menuStatSprite(packet, x + 0x10, y - 8, 0x28, 0x50, cx, cy);
             grCloseSpr();
+            {
+                extern void xsg_ui_kg_end(void);
+                xsg_ui_kg_end();
+            }
             return;
         }
     }
@@ -2909,8 +2918,9 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
         menuStatSprite((int)gp, 8, 0x1A8, 0xB2, 0xB, 0x4C, 0xAF);
         grCloseSpr();
 #ifdef PORT_HOST
-        if (capture) {
+        if (capture) {   /* the packet holds only state and texture markers now (no sprites) */
             xsg_ui_kg_end();
+            grPacketSend((int)gp);
             return;
         }
 #endif

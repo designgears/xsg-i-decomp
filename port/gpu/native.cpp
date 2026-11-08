@@ -155,7 +155,8 @@ PathParse g_path[4];
 void SetReg(uint32_t a, uint64_t v) {
     a &= 0xff;
     if (a == 0x3f && (v >> 32) == 0x5853474Du) {   // rebuilt-UI marker (end_print.c xsgMark, a TEXFLUSH)
-        xsgui::ArtSnapshot(uint32_t(v & 0xff));
+        if (v & 0x200) xsgui::ArtSnapshotTex(0x5B000000u + uint32_t(v & 0xff), g_reg[0x06], g_mem.data());
+        else xsgui::ArtSnapshot(uint32_t(v & 0xff));
         return;
     }
     g_reg[a] = v;

@@ -6115,6 +6115,7 @@ void objDispEnCur(CursorObject *cursor)
                 xsg_ui_cap_begin(1);
                 monsNameDisp(packet, tgtUnitGet(), 8, 0x5c, isEn);
                 xsg_ui_cap_end();
+                grPacketSend(packet);   /* state and texture markers only */
                 return;
             }
         }
