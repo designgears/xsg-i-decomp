@@ -1055,16 +1055,17 @@
     {
      "range": [
       "0x004a8c20",
-      "0x004a8ce0"
+      "0x004a8cf2"
      ],
      "generated": [
       "0x004a8c20",
-      "0x004a8ce0"
+      "0x004a8cf2"
      ],
      "generated_by": [
       "xglCameraScreenInit",
       "xglCameraTravelInit",
-      "xglCameraTravelReset"
+      "xglCameraTravelReset",
+      "xglCameraViewVolume"
      ],
      "c_owned_symbols": [
       "sClipRange_0",
@@ -1078,11 +1079,10 @@
       "sChaseRefPos_8",
       "sChaseIntPos_9",
       "sShootAngleA_10",
-      "sShootPlaceA_11"
-     ],
-     "also_referenced_by_c": [
+      "sShootPlaceA_11",
       "aaiVertexIndex"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -2384,11 +2384,11 @@
     {
      "range": [
       "0x00366f60",
-      "0x00367320"
+      "0x00367345"
      ],
      "generated": [
       "0x00366f60",
-      "0x00367320"
+      "0x00367345"
      ],
      "generated_by": [
       "DefocusMainType01",
@@ -2408,11 +2408,10 @@
       "Head_5",
       "Head_6_00367240",
       "Head_7",
-      "Head_8"
-     ],
-     "also_referenced_by_c": [
+      "Head_8",
       "rate_9"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -5466,6 +5465,26 @@
   },
   "main/tu165": {
    ".data": [
+    {
+     "range": [
+      "0x0036d2f0",
+      "0x0036d32a"
+     ],
+     "generated": [
+      "0x0036d2f0",
+      "0x0036d32a"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "guno_eid_tbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_model.o"
+     }
+    },
     {
      "range": [
       "0x0036d330",
