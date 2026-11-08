@@ -27270,8 +27270,8 @@
       "name_confidence": "low",
       "ordinal": 104,
       "owners": {
-        ".bss": "asm",
-        ".sbss": "asm",
+        ".bss": "c",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_studio.c",
