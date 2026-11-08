@@ -44349,7 +44349,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "split",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
