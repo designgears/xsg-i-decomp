@@ -14,7 +14,6 @@ typedef union EnemyPresetPathStorage {
     EnemyPresetPathParts parts;
     char bytes[256];
 } EnemyPresetPathStorage;
-extern const EnemyPresetPathPrefix D_004CAEE0;
 extern char *strcat(char *destination, const char *source);
 
 void Enemy_SystemInit(void) {
@@ -40,14 +39,12 @@ void Enemy_SystemInit(void) {
 
 int Enemy_LoadPreset(void *buffer, const char *preset_name)
 {
-    EnemyPresetPathStorage path;
+    char path[256] = "data\\matumoto\\";
 
-    path.parts.prefix = D_004CAEE0;
-    memset(path.parts.suffix, 0, sizeof(path.parts.suffix));
-    strcat(path.bytes, preset_name);
-    strcat(path.bytes, ".dat");
+    strcat(path, preset_name);
+    strcat(path, ".dat");
     AdrsEnemyPreset = buffer;
-    return xglCdReadFile(path.bytes, buffer, 0, 0);
+    return xglCdReadFile(path, buffer, 0, 0);
 }
 
 typedef struct {

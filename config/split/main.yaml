@@ -659,7 +659,7 @@ segments:
       - [0x2CBDA0, rodata, enemy_2]
       - [0x2CBDF0, rodata, enemy_3]
       - [0x2CBE30, rodata, enemy_system_init]
-      - [0x2CBFB0, rodata, pause_menu_page_enemy]
+      - [0x2CBEF0, rodata, pause_menu_page_enemy]
       - [0x2CCAD0, rodata, call_java_method]
       - [0x2CCB60, rodata, wind_test]
       - [0x2CCBE0, rodata, hair_test]

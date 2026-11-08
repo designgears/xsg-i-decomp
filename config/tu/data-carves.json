@@ -13053,13 +13053,14 @@
     {
      "range": [
       "0x004cae30",
-      "0x004caee0"
+      "0x004caef0"
      ],
      "generated": [
       "0x004cae30",
-      "0x004caed9"
+      "0x004caeef"
      ],
      "generated_by": [
+      "Enemy_LoadPreset",
       "Enemy_SystemInit"
      ],
      "c_owned_symbols": [
@@ -13068,11 +13069,10 @@
       "D_004CAE68",
       "D_004CAE88",
       "D_004CAEA8",
-      "D_004CAEC0"
-     ],
-     "also_referenced_by_c": [
+      "D_004CAEC0",
       "D_004CAEE0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -13133,17 +13133,28 @@
    ".rodata": [
     {
      "range": [
-      "0x004cafb0",
+      "0x004caef0",
       "0x004cbad0"
      ],
      "generated": [
-      "0x004cafb0",
+      "0x004caef0",
       "0x004cbacc"
      ],
      "generated_by": [
       "PauseMenuPageEnemy"
      ],
      "c_owned_symbols": [
+      "D_004CAEF0",
+      "D_004CAF08",
+      "D_004CAF18",
+      "D_004CAF28",
+      "D_004CAF38",
+      "D_004CAF50",
+      "D_004CAF60",
+      "D_004CAF70",
+      "D_004CAF80",
+      "D_004CAF90",
+      "D_004CAFA0",
       "D_004CAFB0",
       "D_004CAFF8",
       "D_004CB008",
@@ -13251,6 +13262,17 @@
      ],
      "also_referenced_by_c": [],
      "reached_through": {
+      "D_004CAEF0": "D_004CAFB0",
+      "D_004CAF08": "D_004CAFB0",
+      "D_004CAF18": "D_004CAFB0",
+      "D_004CAF28": "D_004CAFB0",
+      "D_004CAF38": "D_004CAFB0",
+      "D_004CAF50": "D_004CAFB0",
+      "D_004CAF60": "D_004CAFB0",
+      "D_004CAF70": "D_004CAFB0",
+      "D_004CAF80": "D_004CAFB0",
+      "D_004CAF90": "D_004CAFB0",
+      "D_004CAFA0": "D_004CAFB0",
       "D_004CAFF8": "D_004CB048",
       "D_004CB008": "D_004CB048",
       "D_004CB018": "D_004CB048",

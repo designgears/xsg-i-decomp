@@ -32,20 +32,18 @@
         : "$2", "memory")
 
 
-/* Status strings of the enemy_system_init rodata; the original names no
- * label for them, so they are addressed from the preceding labelled item. */
-extern const char D_004CAEE0[];
-#define PauseMenuPageEnemyNotInitializedText (D_004CAEE0 + 0x10)
-#define PauseMenuPageEnemyAlertPoseText (D_004CAEE0 + 0x28)
-#define PauseMenuPageEnemyAlertIntimidationText (D_004CAEE0 + 0x38)
-#define PauseMenuPageEnemyAlertTurningText (D_004CAEE0 + 0x48)
-#define PauseMenuPageEnemyAlertPatrolText (D_004CAEE0 + 0x58)
-#define PauseMenuPageEnemyUniqueActionText (D_004CAEE0 + 0x70)
-#define PauseMenuPageEnemyExplosionDamageText (D_004CAEE0 + 0x80)
-#define PauseMenuPageEnemyElectricDamageText (D_004CAEE0 + 0x90)
-#define PauseMenuPageEnemySealDamageText (D_004CAEE0 + 0xa0)
-#define PauseMenuPageEnemyFleeRouteText (D_004CAEE0 + 0xb0)
-#define PauseMenuPageEnemyPursueRouteText (D_004CAEE0 + 0xc0)
+/* Actor status labels (anonymous string literals in the original). */
+#define PauseMenuPageEnemyNotInitializedText ("\275\351\264\374\262\275\244\267\244\306\244\244\244\312\244\244")
+#define PauseMenuPageEnemyAlertPoseText ("\267\331\262\374\303\346\241\247\245\335\241\274\245\272")
+#define PauseMenuPageEnemyAlertIntimidationText ("\267\331\262\374\303\346\241\247\260\322\263\305")
+#define PauseMenuPageEnemyAlertTurningText ("\267\331\262\374\303\346\241\247\262\363\305\276")
+#define PauseMenuPageEnemyAlertPatrolText ("\267\331\262\374\303\346\241\247\245\353\241\274\245\310\260\334\306\260")
+#define PauseMenuPageEnemyUniqueActionText ("\245\346\245\313\241\274\245\257\306\260\272\356")
+#define PauseMenuPageEnemyExplosionDamageText ("\307\372\310\257\245\300\245\341\241\274\245\270\303\346")
+#define PauseMenuPageEnemyElectricDamageText ("\305\305\267\342\245\300\245\341\241\274\245\270\303\346")
+#define PauseMenuPageEnemySealDamageText ("\311\365\260\365\245\300\245\341\241\274\245\270\303\346")
+#define PauseMenuPageEnemyFleeRouteText ("\245\353\241\274\245\310\276\345\244\362\306\250\313\264")
+#define PauseMenuPageEnemyPursueRouteText ("\245\353\241\274\245\310\276\345\244\362\304\311\300\327")
 
 /* Types, data and functions of other translation units used here. */
 typedef Vector4 DoublewordAlignedVector4 __attribute__((aligned(8)));
