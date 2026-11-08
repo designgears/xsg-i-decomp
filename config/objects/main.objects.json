@@ -2708,7 +2708,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004C5510",
@@ -2716,10 +2716,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004C7340",
+          "end": "0x004C72E0",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004C6F38",
+          "start": "0x004C6BC0",
           "tu": "menu_agws_para_set"
         },
         {
@@ -2727,7 +2727,7 @@
           "end": "0x004C7390",
           "ordinal": 172,
           "piece": "seisan_count_init1",
-          "start": "0x004C7340",
+          "start": "0x004C72E0",
           "tu": "seisan_count_init1"
         },
         {
@@ -4392,7 +4392,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004DAD18",
@@ -4400,18 +4400,18 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB090",
+          "end": "0x004DB020",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004DAF28",
+          "start": "0x004DAEB0",
           "tu": "menu_agws_para_set"
         },
         {
           "c_split": false,
-          "end": "0x004DB138",
+          "end": "0x004DB0E0",
           "ordinal": 172,
           "piece": "seisan_count_init1",
-          "start": "0x004DB090",
+          "start": "0x004DB020",
           "tu": "seisan_count_init1"
         },
         {
@@ -4419,7 +4419,7 @@
           "end": "0x004DB278",
           "ordinal": 173,
           "piece": "menu_shop",
-          "start": "0x004DB138",
+          "start": "0x004DB0E0",
           "tu": "menu_shop"
         },
         {
@@ -49634,20 +49634,20 @@
           ],
           "bounds": [
             "0x004C5508",
-            "0x004C6F38"
+            "0x004C6BC0"
           ],
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C6F38",
+              "end": "0x004C6BC0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004C5510"
             }
           ],
           "rule": "anchored start",
-          "size": 6696,
+          "size": 5808,
           "splat_type": "rodata",
           "start": "0x004C5510"
         },
@@ -49682,20 +49682,20 @@
           ],
           "bounds": [
             "0x004DAB89",
-            "0x004DAF28"
+            "0x004DAEB0"
           ],
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DAF28",
+              "end": "0x004DAEB0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004DAD18"
             }
           ],
           "rule": "anchored start",
-          "size": 528,
+          "size": 408,
           "splat_type": "sdata",
           "start": "0x004DAD18"
         }
@@ -50013,51 +50013,51 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C6F38",
+            "0x004C6BC0",
             "0x004C72D1"
           ],
           "bounds": [
             "0x004C6BC0",
-            "0x004C7340"
+            "0x004C72E0"
           ],
-          "end": "0x004C7340",
+          "end": "0x004C72E0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C7340",
+              "end": "0x004C72E0",
               "name": "menu_agws_para_set",
-              "start": "0x004C6F38"
+              "start": "0x004C6BC0"
             }
           ],
-          "rule": "anchored start",
-          "size": 1032,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 1824,
           "splat_type": "rodata",
-          "start": "0x004C6F38"
+          "start": "0x004C6BC0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DAF28",
+            "0x004DAEB0",
             "0x004DAFF9"
           ],
           "bounds": [
             "0x004DAE71",
-            "0x004DB090"
+            "0x004DB020"
           ],
-          "end": "0x004DB090",
+          "end": "0x004DB020",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB090",
+              "end": "0x004DB020",
               "name": "menu_agws_para_set",
-              "start": "0x004DAF28"
+              "start": "0x004DAEB0"
             }
           ],
-          "rule": "anchored start",
-          "size": 360,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 368,
           "splat_type": "sdata",
-          "start": "0x004DAF28"
+          "start": "0x004DAEB0"
         }
       },
       "shared_contract": {
@@ -50386,7 +50386,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C7340",
+            "0x004C72E0",
             "0x004C7351"
           ],
           "bounds": [
@@ -50400,37 +50400,37 @@
               "c_split": false,
               "end": "0x004C7390",
               "name": "seisan_count_init1",
-              "start": "0x004C7340"
+              "start": "0x004C72E0"
             }
           ],
-          "rule": "anchored start",
-          "size": 80,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 176,
           "splat_type": "rodata",
-          "start": "0x004C7340"
+          "start": "0x004C72E0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DB090",
+            "0x004DB020",
             "0x004DB0B9"
           ],
           "bounds": [
             "0x004DAFF9",
-            "0x004DB138"
+            "0x004DB0E0"
           ],
-          "end": "0x004DB138",
+          "end": "0x004DB0E0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB138",
+              "end": "0x004DB0E0",
               "name": "seisan_count_init1",
-              "start": "0x004DB090"
+              "start": "0x004DB020"
             }
           ],
-          "rule": "anchored start",
-          "size": 168,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 192,
           "splat_type": "sdata",
-          "start": "0x004DB090"
+          "start": "0x004DB020"
         }
       },
       "shared_contract": {
@@ -50899,7 +50899,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DB138",
+            "0x004DB0E0",
             "0x004DB251"
           ],
           "bounds": [
@@ -50913,13 +50913,13 @@
               "c_split": false,
               "end": "0x004DB278",
               "name": "menu_shop",
-              "start": "0x004DB138"
+              "start": "0x004DB0E0"
             }
           ],
-          "rule": "anchored start",
-          "size": 320,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 408,
           "splat_type": "sdata",
-          "start": "0x004DB138"
+          "start": "0x004DB0E0"
         }
       },
       "shared_contract": {

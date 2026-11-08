@@ -10082,6 +10082,53 @@
    ]
   },
   "main/tu171": {
+   ".data": [
+    {
+     "range": [
+      "0x0036d940",
+      "0x0036da8e"
+     ],
+     "generated": [
+      "0x0036d940",
+      "0x0036da8e"
+     ],
+     "generated_by": [
+      "AgwsInfoMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "AgwsStatusMain",
+      "MenuAgwsParaSet"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_0036D940",
+      "D_0036D984",
+      "msg00_1_0036D988",
+      "D_0036D98C",
+      "msg01_2_0036D990",
+      "msg02_3_0036D9A0",
+      "msg03_4_0036D9B8",
+      "D_0036D9CC",
+      "msg04_5",
+      "msg05_6",
+      "D_0036D9F4",
+      "msg_7_0036D9F8",
+      "D_0036DA3C",
+      "msg01_8_0036DA40",
+      "D_0036DA4C",
+      "msg_10",
+      "D_0036DA6C",
+      "MenuAgwsPara",
+      "D_0036DA7E",
+      "MenuAgwsPara2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_agws_para_set.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -10104,90 +10151,188 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c6f50",
-      "0x004c7190"
+      "0x004c6bc0",
+      "0x004c72e0"
      ],
      "generated": [
-      "0x004c6f50",
-      "0x004c7190"
+      "0x004c6bc0",
+      "0x004c72de"
      ],
      "generated_by": [
+      "AgwsInfoMain",
       "AgwsListMain",
-      "AgwsNameMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C6F50",
-      "jtbl_004C7000",
-      "jtbl_004C7090"
-     ],
-     "also_referenced_by_c": [
-      "D_004C6F38",
-      "D_004C7190",
-      "D_004C71B0",
-      "D_004C71D0",
-      "D_004C7240"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated_by": [
+      "AgwsNameMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "MenuAgws",
+      "MenuAgwsCameraMove",
+      "MenuAgwsCameraSet",
+      "MenuAgwsListMake_Pilot",
       "MenuAgwsModelMain"
      ],
      "c_owned_symbols": [
-      "jtbl_004C7250"
-     ],
-     "also_referenced_by_c": [
+      "D_004C6BC0",
+      "D_004C6BD0",
+      "D_004C6BE0",
+      "D_004C6BF0",
+      "D_004C6C00",
+      "D_004C6C10",
+      "D_004C6C20",
+      "D_004C6C30",
+      "D_004C6C48",
+      "D_004C6C78",
+      "D_004C6C98",
+      "D_004C6CC8",
+      "D_004C6CE8",
+      "D_004C6CF8",
+      "D_004C6D08",
+      "D_004C6D28",
+      "D_004C6D48",
+      "D_004C6D60",
+      "D_004C6D80",
+      "D_004C6D98",
+      "D_004C6DA8",
+      "D_004C6DC0",
+      "D_004C6DE0",
+      "D_004C6E00",
+      "D_004C6E18",
+      "D_004C6E28",
+      "D_004C6E38",
+      "D_004C6E48",
+      "D_004C6E60",
+      "D_004C6E70",
+      "D_004C6EC0",
+      "D_004C6ED0",
+      "D_004C6EF0",
+      "D_004C6F08",
+      "D_004C6F20",
+      "D_004C6F38",
+      "jtbl_004C6F50",
+      "jtbl_004C7000",
+      "jtbl_004C7090",
+      "D_004C7190",
+      "D_004C71B0",
+      "D_004C71D0",
+      "D_004C7240",
+      "jtbl_004C7250",
       "D_004C72D0"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C6BC0": "msg00_0_0036D940",
+      "D_004C6BD0": "msg00_0_0036D940",
+      "D_004C6BE0": "msg00_0_0036D940",
+      "D_004C6BF0": "msg00_0_0036D940",
+      "D_004C6C00": "msg00_0_0036D940",
+      "D_004C6C10": "msg00_0_0036D940",
+      "D_004C6C20": "msg00_0_0036D940",
+      "D_004C6C30": "msg00_1_0036D988",
+      "D_004C6C48": "msg01_2_0036D990",
+      "D_004C6C78": "msg01_2_0036D990",
+      "D_004C6C98": "msg01_2_0036D990",
+      "D_004C6CC8": "msg01_2_0036D990",
+      "D_004C6CE8": "msg02_3_0036D9A0",
+      "D_004C6CF8": "msg02_3_0036D9A0",
+      "D_004C6D08": "msg03_4_0036D9B8",
+      "D_004C6D28": "msg03_4_0036D9B8",
+      "D_004C6D48": "msg03_4_0036D9B8",
+      "D_004C6D60": "msg03_4_0036D9B8",
+      "D_004C6D80": "msg04_5",
+      "D_004C6D98": "msg04_5",
+      "D_004C6DA8": "msg04_5",
+      "D_004C6DC0": "msg04_5",
+      "D_004C6DE0": "msg05_6",
+      "D_004C6E00": "msg05_6",
+      "D_004C6E18": "msg_7_0036D9F8",
+      "D_004C6E28": "msg_7_0036D9F8",
+      "D_004C6E38": "msg_7_0036D9F8",
+      "D_004C6E48": "msg_7_0036D9F8",
+      "D_004C6E60": "msg_7_0036D9F8",
+      "D_004C6E70": "msg_7_0036D9F8",
+      "D_004C6EC0": "msg_7_0036D9F8",
+      "D_004C6ED0": "msg_7_0036D9F8",
+      "D_004C6EF0": "msg_7_0036D9F8",
+      "D_004C6F08": "msg_7_0036D9F8",
+      "D_004C6F20": "msg01_8_0036DA40"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ],
    ".sdata": [
     {
      "range": [
-      "0x004dafd0",
-      "0x004dafd8"
+      "0x004daeb0",
+      "0x004db020"
      ],
      "generated": [
-      "0x004dafd0",
-      "0x004dafd7"
+      "0x004daeb0",
+      "0x004db020"
      ],
      "generated_by": [
-      "AgwsStatusMain"
+      "AgwsFaceMain",
+      "AgwsInfoMain",
+      "AgwsListMain",
+      "AgwsNameMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "AgwsStatusMain",
+      "AgwsSwitchMain",
+      "AgwsWeapon2Main",
+      "MenuAgws",
+      "MenuAgwsListMake_Acc",
+      "MenuAgwsListMake_Gun",
+      "MenuAgwsListMake_Pilot",
+      "MenuAgwsListMake_Wpn"
      ],
      "c_owned_symbols": [
-      "D_004DAFD0"
-     ],
-     "also_referenced_by_c": [
+      "D_004DAEB0",
+      "D_004DAEB8",
+      "D_004DAEC0",
+      "D_004DAEC8",
+      "D_004DAED0",
+      "D_004DAED8",
+      "D_004DAEE0",
+      "D_004DAEE8",
+      "D_004DAEF0",
+      "D_004DAEF8",
+      "D_004DAF00",
+      "D_004DAF08",
+      "D_004DAF10",
+      "D_004DAF18",
+      "D_004DAF20",
       "D_004DAF28",
+      "D_004DAF30",
+      "D_004DAF38",
       "D_004DAF40",
       "D_004DAF48",
+      "D_004DAF50",
+      "D_004DAF58",
+      "D_004DAF60",
+      "D_004DAF68",
+      "D_004DAF70",
+      "D_004DAF78",
       "D_004DAF80",
       "D_004DAF88",
       "D_004DAF90",
+      "D_004DAF98",
+      "D_004DAFA0",
+      "D_004DAFA8",
+      "D_004DAFB0",
+      "D_004DAFB8",
+      "D_004DAFC0",
+      "D_004DAFC8",
+      "D_004DAFD0",
       "D_004DAFD8",
       "D_004DAFE0",
       "D_004DAFE8",
@@ -10203,10 +10348,43 @@
       "AgwsFace",
       "AgwsSwitch"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DAEB0": "msg00_0_0036D940",
+      "D_004DAEB8": "msg00_0_0036D940",
+      "D_004DAEC0": "msg00_0_0036D940",
+      "D_004DAEC8": "msg00_0_0036D940",
+      "D_004DAED0": "msg00_0_0036D940",
+      "D_004DAED8": "msg00_0_0036D940",
+      "D_004DAEE0": "msg00_0_0036D940",
+      "D_004DAEE8": "msg00_0_0036D940",
+      "D_004DAEF0": "msg00_0_0036D940",
+      "D_004DAEF8": "msg00_0_0036D940",
+      "D_004DAF00": "msg02_3_0036D9A0",
+      "D_004DAF08": "msg02_3_0036D9A0",
+      "D_004DAF10": "msg02_3_0036D9A0",
+      "D_004DAF18": "msg02_3_0036D9A0",
+      "D_004DAF20": "msg03_4_0036D9B8",
+      "D_004DAF30": "msg05_6",
+      "D_004DAF38": "msg05_6",
+      "D_004DAF50": "msg_7_0036D9F8",
+      "D_004DAF58": "msg_7_0036D9F8",
+      "D_004DAF60": "msg_7_0036D9F8",
+      "D_004DAF68": "msg_7_0036D9F8",
+      "D_004DAF70": "msg01_8_0036DA40",
+      "D_004DAF78": "msg01_8_0036DA40",
+      "D_004DAF98": "msg_10",
+      "D_004DAFA0": "msg_10",
+      "D_004DAFA8": "msg_10",
+      "D_004DAFB0": "msg_10",
+      "D_004DAFB8": "msg_10",
+      "D_004DAFC0": "msg_10",
+      "D_004DAFC8": "msg_10"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ]
@@ -10248,22 +10426,38 @@
    ".rodata": [
     {
      "range": [
-      "0x004c7340",
+      "0x004c72e0",
       "0x004c7390"
      ],
      "generated": [
-      "0x004c7340",
+      "0x004c72e0",
       "0x004c738c"
      ],
      "generated_by": [
       "SeisanDisp",
+      "SeisanTimeEx",
+      "tskSeisanItem",
       "tskSeisanStatus"
      ],
      "c_owned_symbols": [
+      "D_004C72E0",
+      "D_004C72F0",
+      "D_004C7300",
+      "D_004C7310",
+      "D_004C7320",
+      "D_004C7330",
       "D_004C7340",
       "D_004C7350"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C72E0": "msg00_0_0036DAB8",
+      "D_004C72F0": "msg00_2_0036DAD0",
+      "D_004C7300": "msg00_2_0036DAD0",
+      "D_004C7310": "msg00_3_0036DAD8",
+      "D_004C7320": "msg01_4_0036DAE8",
+      "D_004C7330": "msg01_4_0036DAE8"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10274,11 +10468,11 @@
    ".sdata": [
     {
      "range": [
-      "0x004db090",
+      "0x004db020",
       "0x004db0dc"
      ],
      "generated": [
-      "0x004db090",
+      "0x004db020",
       "0x004db0dc"
      ],
      "generated_by": [
@@ -10299,6 +10493,20 @@
       "tskTskMain2"
      ],
      "c_owned_symbols": [
+      "D_004DB020",
+      "D_004DB028",
+      "D_004DB030",
+      "D_004DB038",
+      "D_004DB040",
+      "D_004DB048",
+      "D_004DB050",
+      "D_004DB058",
+      "D_004DB060",
+      "D_004DB068",
+      "D_004DB070",
+      "D_004DB078",
+      "D_004DB080",
+      "D_004DB088",
       "D_004DB090",
       "D_004DB098",
       "D_004DB0A0",
@@ -10315,6 +10523,20 @@
      ],
      "also_referenced_by_c": [],
      "reached_through": {
+      "D_004DB020": "msg_number",
+      "D_004DB028": "msg_number",
+      "D_004DB030": "msg_number",
+      "D_004DB038": "msg_number",
+      "D_004DB040": "msg_number",
+      "D_004DB048": "msg_number",
+      "D_004DB050": "msg_number",
+      "D_004DB058": "msg_number",
+      "D_004DB060": "msg_number",
+      "D_004DB068": "msg_number",
+      "D_004DB070": "msg00_0_0036DAB8",
+      "D_004DB078": "msg00_0_0036DAB8",
+      "D_004DB080": "msg00_1_0036DAC8",
+      "D_004DB088": "msg00_1_0036DAC8",
       "D_004DB0A0": "msg00_3_0036DAD8",
       "D_004DB0A8": "msg00_3_0036DAD8",
       "D_004DB0B0": "msg00_3_0036DAD8"
