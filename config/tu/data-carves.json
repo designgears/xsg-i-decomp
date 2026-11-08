@@ -5776,22 +5776,157 @@
    ]
   },
   "main/tu132": {
+   ".data": [
+    {
+     "range": [
+      "0x0036a030",
+      "0x0036a938"
+     ],
+     "generated": [
+      "0x0036a030",
+      "0x0036a938"
+     ],
+     "generated_by": [
+      "FontTestLine",
+      "FontTestP0",
+      "FontTestP1",
+      "FontTestP2",
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummyFolder",
+      "UmlDispTestSub",
+      "XenoMovieCheck",
+      "YajimaTest",
+      "mt_GetPortName",
+      "testfunc"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_0036A030",
+      "test_1",
+      "D_0036A0D6",
+      "test_4",
+      "test_5",
+      "test1_6",
+      "D_0036A119",
+      "test2_7",
+      "D_0036A12F",
+      "test_10",
+      "D_0036A13D",
+      "txt_11",
+      "D_0036A14F",
+      "xy3_12",
+      "D_0036A15C",
+      "xy5_13",
+      "D_0036A17C",
+      "xy7_14",
+      "D_0036A1B4",
+      "xy9_15",
+      "D_0036A20C",
+      "test_16",
+      "D_0036A229",
+      "test_17",
+      "D_0036A25B",
+      "test_18",
+      "test_19",
+      "D_0036A2A7",
+      "init_20",
+      "D_0036A2B5",
+      "test_21",
+      "D_0036A2D9",
+      "test_22",
+      "D_0036A2F5",
+      "test_23",
+      "D_0036A319",
+      "test_24",
+      "D_0036A33F",
+      "test_25",
+      "D_0036A35A",
+      "test00_26",
+      "D_0036A393",
+      "test01_27",
+      "D_0036A3CB",
+      "test02_28",
+      "D_0036A403",
+      "test03_29",
+      "D_0036A43B",
+      "test04_30",
+      "D_0036A473",
+      "test05_31",
+      "D_0036A4AB",
+      "test06_32",
+      "D_0036A4E3",
+      "test07_33",
+      "TestEnv_34",
+      "test0_37",
+      "test1_38",
+      "D_0036A5BB",
+      "test2_39",
+      "D_0036A5D4",
+      "test3_40",
+      "D_0036A5FC",
+      "test4_41",
+      "D_0036A623",
+      "TestEnv_42",
+      "name_43",
+      "D_0036A82C",
+      "name_44",
+      "D_0036A846",
+      "name_45",
+      "D_0036A852",
+      "menu_46",
+      "name_47",
+      "D_0036A8A4",
+      "func_51",
+      "D_0036A8C4",
+      "i1_52",
+      "l1_53",
+      "D_0036A91C",
+      "m_54"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "i1_52": "l1_53",
+      "l1_53": "m_54"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/yajima_test.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x004c07f0",
-      "0x004c0958"
+      "0x004c1530"
      ],
      "generated": [
       "0x004c07f0",
-      "0x004c0958"
+      "0x004c1530"
      ],
      "generated_by": [
       "DatabaseTest",
       "FontTestP0",
       "FontTestP2",
       "FontTestSub",
-      "UmlDispTest"
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummySave",
+      "HddTestFormat",
+      "HddTestHddFull",
+      "HddTestMakeYourSaves",
+      "HddTestMountCommon",
+      "HddTestShutdown",
+      "HddTestUnmountCommon",
+      "MemcardTest",
+      "UmlDispTest",
+      "XenoMovieCheck",
+      "XtxDecode",
+      "YajimaTest",
+      "mt_GetPortName",
+      "xtxdec_sleep",
+      "xtxdec_sub"
      ],
      "c_owned_symbols": [
       "D_004C07F0",
@@ -5808,32 +5943,11 @@
       "D_004C0918",
       "D_004C0928",
       "D_004C0938",
-      "D_004C0948"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0978",
-      "0x004c0a80"
-     ],
-     "generated": [
-      "0x004c0978",
-      "0x004c0a80"
-     ],
-     "generated_by": [
-      "XenoMovieCheck"
-     ],
-     "c_owned_symbols": [
+      "D_004C0948",
+      "D_004C0958",
+      "D_004C0968",
       "D_004C0978",
-      "D_004C0A68"
-     ],
-     "also_referenced_by_c": [
+      "D_004C0A68",
       "hdd_format_start_message",
       "hdd_format_result_format",
       "hdd_common_device",
@@ -5849,60 +5963,26 @@
       "hdd_mkdir_result_format",
       "hdd_zone_size_format",
       "hdd_zone_free_format",
-      "hdd_chstat_failure_format"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0bb8",
-      "0x004c0c18"
-     ],
-     "generated": [
-      "0x004c0bb8",
-      "0x004c0c18"
-     ],
-     "generated_by": [
-      "HddTestDummySave"
-     ],
-     "c_owned_symbols": [
+      "hdd_chstat_failure_format",
       "D_004C0BB8",
       "D_004C0BC8",
       "D_004C0BD8",
       "D_004C0BE8",
       "D_004C0BF8",
-      "D_004C0C08"
-     ],
-     "also_referenced_by_c": [
+      "D_004C0C08",
+      "D_004C0C18",
+      "D_004C0C28",
+      "D_004C0C38",
+      "D_004C0C48",
+      "D_004C0C58",
+      "D_004C0C68",
       "hdd_status_format",
       "hdd_status_error_format",
       "hdd_free_format",
       "hdd_test_title",
-      "hdd_no_use_title"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0d08",
-      "0x004c11c0"
-     ],
-     "generated": [
-      "0x004c0d08",
-      "0x004c11c0"
-     ],
-     "generated_by": [
-      "MemcardTest"
-     ],
-     "c_owned_symbols": [
+      "hdd_no_use_title",
+      "D_004C0CE8",
+      "D_004C0CF8",
       "D_004C0D08",
       "D_004C0D18",
       "D_004C0D30",
@@ -5943,31 +6023,7 @@
       "D_004C1158",
       "D_004C1170",
       "D_004C1188",
-      "D_004C11A0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c11c0",
-      "0x004c1508"
-     ],
-     "generated": [
-      "0x004c11c0",
-      "0x004c1508"
-     ],
-     "generated_by": [
-      "MemcardTest",
-      "XtxDecode",
-      "xtxdec_sleep",
-      "xtxdec_sub"
-     ],
-     "c_owned_symbols": [
+      "D_004C11A0",
       "jtbl_004C11C0",
       "D_004C13D8",
       "D_004C13E8",
@@ -5977,31 +6033,24 @@
       "jtbl_004C1440",
       "D_004C14B8",
       "D_004C14C8",
-      "D_004C14F8"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c1518",
-      "0x004c1530"
-     ],
-     "generated": [
-      "0x004c1518",
-      "0x004c1530"
-     ],
-     "generated_by": [
-      "YajimaTest"
-     ],
-     "c_owned_symbols": [
+      "D_004C14F8",
+      "D_004C1508",
       "D_004C1518"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C0958": "name_43",
+      "D_004C0968": "name_43",
+      "D_004C0C18": "menu_46",
+      "D_004C0C28": "menu_46",
+      "D_004C0C38": "menu_46",
+      "D_004C0C48": "menu_46",
+      "D_004C0C58": "menu_46",
+      "D_004C0C68": "menu_46",
+      "D_004C0CE8": "name_47",
+      "D_004C0CF8": "name_47",
+      "D_004C1508": "i1_52"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -6012,107 +6061,158 @@
    ".sdata": [
     {
      "range": [
-      "0x004d9f78",
-      "0x004d9f80"
+      "0x004d9f60",
+      "0x004da358"
      ],
      "generated": [
-      "0x004d9f78",
-      "0x004d9f80"
+      "0x004d9f60",
+      "0x004da358"
      ],
      "generated_by": [
-      "FontTestP2"
+      "DatabaseTest",
+      "FontTestP0",
+      "FontTestP2",
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummyFolder",
+      "HddTestDummySave",
+      "HddTestFormat",
+      "HddTestHddFull",
+      "HddTestMakeYourSaves",
+      "HddTestMountCommon",
+      "HddTestShutdown",
+      "HddTestUnmountCommon",
+      "MemcardTest",
+      "UmlDispTest",
+      "XenoMovieCheck",
+      "mt_GetPortName"
      ],
      "c_owned_symbols": [
-      "D_004D9F78"
-     ],
-     "also_referenced_by_c": [
       "rate_2_004D9F60",
       "dir_3",
       "rate_8",
       "dir_9",
       "width_35",
-      "test_36"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d9f88",
-      "0x004d9fa8"
-     ],
-     "generated": [
-      "0x004d9f88",
-      "0x004d9fa8"
-     ],
-     "generated_by": [
-      "DatabaseTest",
-      "FontTestP2",
-      "UmlDispTest"
-     ],
-     "c_owned_symbols": [
+      "D_004D9F74",
+      "D_004D9F78",
+      "test_36",
+      "D_004D9F86",
       "D_004D9F88",
       "D_004D9F90",
       "D_004D9F98",
-      "D_004D9FA0"
-     ],
-     "also_referenced_by_c": [
+      "D_004D9FA0",
+      "D_004D9FA8",
+      "D_004D9FB0",
+      "D_004D9FB8",
+      "D_004D9FC0",
+      "D_004D9FC8",
+      "D_004D9FD0",
+      "D_004D9FD8",
+      "D_004D9FE0",
+      "D_004D9FE8",
+      "D_004D9FF0",
+      "D_004D9FF8",
+      "D_004DA000",
+      "D_004DA008",
+      "D_004DA010",
+      "D_004DA018",
+      "D_004DA020",
+      "D_004DA028",
+      "D_004DA030",
+      "D_004DA038",
+      "D_004DA040",
+      "D_004DA048",
+      "D_004DA050",
+      "D_004DA058",
+      "D_004DA060",
+      "D_004DA068",
+      "D_004DA070",
+      "D_004DA078",
+      "D_004DA080",
+      "D_004DA088",
+      "D_004DA090",
+      "D_004DA098",
+      "D_004DA0A0",
+      "D_004DA0A8",
+      "D_004DA0B0",
+      "D_004DA0B8",
+      "D_004DA0C0",
+      "D_004DA0C8",
+      "D_004DA0D0",
+      "D_004DA0D8",
+      "D_004DA0E0",
+      "D_004DA0E8",
+      "D_004DA0F0",
+      "D_004DA0F8",
+      "D_004DA100",
+      "D_004DA108",
+      "D_004DA110",
+      "D_004DA118",
+      "D_004DA120",
+      "D_004DA128",
+      "D_004DA130",
+      "D_004DA138",
+      "D_004DA140",
+      "D_004DA148",
+      "D_004DA150",
+      "D_004DA158",
+      "D_004DA160",
+      "D_004DA168",
+      "D_004DA170",
+      "D_004DA178",
+      "D_004DA180",
+      "D_004DA188",
+      "D_004DA190",
+      "D_004DA198",
+      "D_004DA1A0",
+      "D_004DA1A8",
+      "D_004DA1B0",
+      "D_004DA1B8",
+      "D_004DA1C0",
+      "D_004DA1C8",
+      "D_004DA1D0",
+      "D_004DA1D8",
+      "D_004DA1E0",
+      "D_004DA1E8",
+      "D_004DA1F0",
+      "D_004DA1F8",
+      "D_004DA200",
+      "D_004DA208",
+      "D_004DA210",
+      "D_004DA218",
+      "D_004DA220",
+      "D_004DA228",
+      "D_004DA230",
+      "D_004DA238",
+      "D_004DA240",
+      "D_004DA248",
+      "D_004DA250",
+      "D_004DA258",
+      "D_004DA260",
+      "D_004DA268",
+      "D_004DA270",
+      "D_004DA278",
+      "D_004DA280",
+      "D_004DA288",
+      "D_004DA290",
+      "D_004DA298",
+      "D_004DA2A0",
+      "D_004DA2A8",
+      "D_004DA2B0",
+      "D_004DA2B8",
+      "D_004DA2C0",
+      "D_004DA2C8",
       "hdd_device",
       "pfs_device_name",
       "hdd_device_name",
       "hdd_partition_size",
-      "hdd_mount_point"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da2f8",
-      "0x004da308"
-     ],
-     "generated": [
-      "0x004da2f8",
-      "0x004da308"
-     ],
-     "generated_by": [
-      "HddTest1024Save",
-      "HddTestDummyFolder",
-      "HddTestDummySave"
-     ],
-     "c_owned_symbols": [
+      "hdd_mount_point",
       "D_004DA2F8",
-      "D_004DA300"
-     ],
-     "also_referenced_by_c": [
+      "D_004DA300",
+      "D_004DA308",
       "hdd_use_title",
-      "menu_cursor"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da328",
-      "0x004da358"
-     ],
-     "generated": [
-      "0x004da328",
-      "0x004da358"
-     ],
-     "generated_by": [
-      "MemcardTest"
-     ],
-     "c_owned_symbols": [
+      "menu_cursor",
+      "D_004DA320",
       "D_004DA328",
       "D_004DA330",
       "D_004DA338",
@@ -6121,6 +6221,111 @@
       "D_004DA350"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004D9FA8": "name_43",
+      "D_004D9FB0": "name_43",
+      "D_004D9FB8": "name_43",
+      "D_004D9FC0": "name_43",
+      "D_004D9FC8": "name_43",
+      "D_004D9FD0": "name_43",
+      "D_004D9FD8": "name_43",
+      "D_004D9FE0": "name_43",
+      "D_004D9FE8": "name_43",
+      "D_004D9FF0": "name_43",
+      "D_004D9FF8": "name_43",
+      "D_004DA000": "name_43",
+      "D_004DA008": "name_43",
+      "D_004DA010": "name_43",
+      "D_004DA018": "name_43",
+      "D_004DA020": "name_43",
+      "D_004DA028": "name_43",
+      "D_004DA030": "name_43",
+      "D_004DA038": "name_43",
+      "D_004DA040": "name_43",
+      "D_004DA048": "name_43",
+      "D_004DA050": "name_43",
+      "D_004DA058": "name_43",
+      "D_004DA060": "name_43",
+      "D_004DA068": "name_43",
+      "D_004DA070": "name_43",
+      "D_004DA078": "name_43",
+      "D_004DA080": "name_43",
+      "D_004DA088": "name_43",
+      "D_004DA090": "name_43",
+      "D_004DA098": "name_43",
+      "D_004DA0A0": "name_43",
+      "D_004DA0A8": "name_43",
+      "D_004DA0B0": "name_43",
+      "D_004DA0B8": "name_43",
+      "D_004DA0C0": "name_43",
+      "D_004DA0C8": "name_43",
+      "D_004DA0D0": "name_43",
+      "D_004DA0D8": "name_43",
+      "D_004DA0E0": "name_43",
+      "D_004DA0E8": "name_43",
+      "D_004DA0F0": "name_43",
+      "D_004DA0F8": "name_43",
+      "D_004DA100": "name_43",
+      "D_004DA108": "name_43",
+      "D_004DA110": "name_43",
+      "D_004DA118": "name_43",
+      "D_004DA120": "name_43",
+      "D_004DA128": "name_43",
+      "D_004DA130": "name_43",
+      "D_004DA138": "name_43",
+      "D_004DA140": "name_43",
+      "D_004DA148": "name_43",
+      "D_004DA150": "name_43",
+      "D_004DA158": "name_43",
+      "D_004DA160": "name_43",
+      "D_004DA168": "name_43",
+      "D_004DA170": "name_43",
+      "D_004DA178": "name_43",
+      "D_004DA180": "name_43",
+      "D_004DA188": "name_43",
+      "D_004DA190": "name_43",
+      "D_004DA198": "name_43",
+      "D_004DA1A0": "name_43",
+      "D_004DA1A8": "name_43",
+      "D_004DA1B0": "name_43",
+      "D_004DA1B8": "name_43",
+      "D_004DA1C0": "name_43",
+      "D_004DA1C8": "name_43",
+      "D_004DA1D0": "name_43",
+      "D_004DA1D8": "name_43",
+      "D_004DA1E0": "name_43",
+      "D_004DA1E8": "name_43",
+      "D_004DA1F0": "name_43",
+      "D_004DA1F8": "name_43",
+      "D_004DA200": "name_43",
+      "D_004DA208": "name_43",
+      "D_004DA210": "name_43",
+      "D_004DA218": "name_43",
+      "D_004DA220": "name_43",
+      "D_004DA228": "name_43",
+      "D_004DA230": "name_43",
+      "D_004DA238": "name_43",
+      "D_004DA240": "name_43",
+      "D_004DA248": "name_43",
+      "D_004DA250": "name_43",
+      "D_004DA258": "name_43",
+      "D_004DA260": "name_43",
+      "D_004DA268": "name_43",
+      "D_004DA270": "name_43",
+      "D_004DA278": "name_43",
+      "D_004DA280": "name_43",
+      "D_004DA288": "name_43",
+      "D_004DA290": "name_43",
+      "D_004DA298": "name_43",
+      "D_004DA2A0": "name_43",
+      "D_004DA2A8": "name_43",
+      "D_004DA2B0": "name_43",
+      "D_004DA2B8": "name_43",
+      "D_004DA2C0": "name_43",
+      "D_004DA2C8": "name_43",
+      "D_004DA308": "menu_46",
+      "D_004DA320": "name_47"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -6142,9 +6347,7 @@
      "c_owned_symbols": [
       "D_004DA360"
      ],
-     "also_referenced_by_c": [
-      "h_50"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -6153,20 +6356,34 @@
     },
     {
      "range": [
-      "0x004da3a0",
+      "0x004da370",
       "0x004da3a8"
      ],
      "generated": [
-      "0x004da3a0",
+      "0x004da370",
       "0x004da3a7"
      ],
      "generated_by": [
-      "YajimaTest"
+      "YajimaTest",
+      "xtxdec_sub"
      ],
      "c_owned_symbols": [
+      "h_50",
+      "D_004DA378",
+      "D_004DA380",
+      "D_004DA388",
+      "D_004DA390",
+      "D_004DA398",
       "D_004DA3A0"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA378": "i1_52",
+      "D_004DA380": "i1_52",
+      "D_004DA388": "i1_52",
+      "D_004DA390": "i1_52",
+      "D_004DA398": "i1_52"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10433,6 +10650,53 @@
    ]
   },
   "main/tu171": {
+   ".data": [
+    {
+     "range": [
+      "0x0036d940",
+      "0x0036da8e"
+     ],
+     "generated": [
+      "0x0036d940",
+      "0x0036da8e"
+     ],
+     "generated_by": [
+      "AgwsInfoMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "AgwsStatusMain",
+      "MenuAgwsParaSet"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_0036D940",
+      "D_0036D984",
+      "msg00_1_0036D988",
+      "D_0036D98C",
+      "msg01_2_0036D990",
+      "msg02_3_0036D9A0",
+      "msg03_4_0036D9B8",
+      "D_0036D9CC",
+      "msg04_5",
+      "msg05_6",
+      "D_0036D9F4",
+      "msg_7_0036D9F8",
+      "D_0036DA3C",
+      "msg01_8_0036DA40",
+      "D_0036DA4C",
+      "msg_10",
+      "D_0036DA6C",
+      "MenuAgwsPara",
+      "D_0036DA7E",
+      "MenuAgwsPara2"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_agws_para_set.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -10455,90 +10719,188 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c6f50",
-      "0x004c7190"
+      "0x004c6bc0",
+      "0x004c72e0"
      ],
      "generated": [
-      "0x004c6f50",
-      "0x004c7190"
+      "0x004c6bc0",
+      "0x004c72de"
      ],
      "generated_by": [
+      "AgwsInfoMain",
       "AgwsListMain",
-      "AgwsNameMain"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C6F50",
-      "jtbl_004C7000",
-      "jtbl_004C7090"
-     ],
-     "also_referenced_by_c": [
-      "D_004C6F38",
-      "D_004C7190",
-      "D_004C71B0",
-      "D_004C71D0",
-      "D_004C7240"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated": [
-      "0x004c7250",
-      "0x004c72d0"
-     ],
-     "generated_by": [
+      "AgwsNameMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "MenuAgws",
+      "MenuAgwsCameraMove",
+      "MenuAgwsCameraSet",
+      "MenuAgwsListMake_Pilot",
       "MenuAgwsModelMain"
      ],
      "c_owned_symbols": [
-      "jtbl_004C7250"
-     ],
-     "also_referenced_by_c": [
+      "D_004C6BC0",
+      "D_004C6BD0",
+      "D_004C6BE0",
+      "D_004C6BF0",
+      "D_004C6C00",
+      "D_004C6C10",
+      "D_004C6C20",
+      "D_004C6C30",
+      "D_004C6C48",
+      "D_004C6C78",
+      "D_004C6C98",
+      "D_004C6CC8",
+      "D_004C6CE8",
+      "D_004C6CF8",
+      "D_004C6D08",
+      "D_004C6D28",
+      "D_004C6D48",
+      "D_004C6D60",
+      "D_004C6D80",
+      "D_004C6D98",
+      "D_004C6DA8",
+      "D_004C6DC0",
+      "D_004C6DE0",
+      "D_004C6E00",
+      "D_004C6E18",
+      "D_004C6E28",
+      "D_004C6E38",
+      "D_004C6E48",
+      "D_004C6E60",
+      "D_004C6E70",
+      "D_004C6EC0",
+      "D_004C6ED0",
+      "D_004C6EF0",
+      "D_004C6F08",
+      "D_004C6F20",
+      "D_004C6F38",
+      "jtbl_004C6F50",
+      "jtbl_004C7000",
+      "jtbl_004C7090",
+      "D_004C7190",
+      "D_004C71B0",
+      "D_004C71D0",
+      "D_004C7240",
+      "jtbl_004C7250",
       "D_004C72D0"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C6BC0": "msg00_0_0036D940",
+      "D_004C6BD0": "msg00_0_0036D940",
+      "D_004C6BE0": "msg00_0_0036D940",
+      "D_004C6BF0": "msg00_0_0036D940",
+      "D_004C6C00": "msg00_0_0036D940",
+      "D_004C6C10": "msg00_0_0036D940",
+      "D_004C6C20": "msg00_0_0036D940",
+      "D_004C6C30": "msg00_1_0036D988",
+      "D_004C6C48": "msg01_2_0036D990",
+      "D_004C6C78": "msg01_2_0036D990",
+      "D_004C6C98": "msg01_2_0036D990",
+      "D_004C6CC8": "msg01_2_0036D990",
+      "D_004C6CE8": "msg02_3_0036D9A0",
+      "D_004C6CF8": "msg02_3_0036D9A0",
+      "D_004C6D08": "msg03_4_0036D9B8",
+      "D_004C6D28": "msg03_4_0036D9B8",
+      "D_004C6D48": "msg03_4_0036D9B8",
+      "D_004C6D60": "msg03_4_0036D9B8",
+      "D_004C6D80": "msg04_5",
+      "D_004C6D98": "msg04_5",
+      "D_004C6DA8": "msg04_5",
+      "D_004C6DC0": "msg04_5",
+      "D_004C6DE0": "msg05_6",
+      "D_004C6E00": "msg05_6",
+      "D_004C6E18": "msg_7_0036D9F8",
+      "D_004C6E28": "msg_7_0036D9F8",
+      "D_004C6E38": "msg_7_0036D9F8",
+      "D_004C6E48": "msg_7_0036D9F8",
+      "D_004C6E60": "msg_7_0036D9F8",
+      "D_004C6E70": "msg_7_0036D9F8",
+      "D_004C6EC0": "msg_7_0036D9F8",
+      "D_004C6ED0": "msg_7_0036D9F8",
+      "D_004C6EF0": "msg_7_0036D9F8",
+      "D_004C6F08": "msg_7_0036D9F8",
+      "D_004C6F20": "msg01_8_0036DA40"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ],
    ".sdata": [
     {
      "range": [
-      "0x004dafd0",
-      "0x004dafd8"
+      "0x004daeb0",
+      "0x004db020"
      ],
      "generated": [
-      "0x004dafd0",
-      "0x004dafd7"
+      "0x004daeb0",
+      "0x004db020"
      ],
      "generated_by": [
-      "AgwsStatusMain"
+      "AgwsFaceMain",
+      "AgwsInfoMain",
+      "AgwsListMain",
+      "AgwsNameMain",
+      "AgwsPasMain",
+      "AgwsSelectMain",
+      "AgwsStatusMain",
+      "AgwsSwitchMain",
+      "AgwsWeapon2Main",
+      "MenuAgws",
+      "MenuAgwsListMake_Acc",
+      "MenuAgwsListMake_Gun",
+      "MenuAgwsListMake_Pilot",
+      "MenuAgwsListMake_Wpn"
      ],
      "c_owned_symbols": [
-      "D_004DAFD0"
-     ],
-     "also_referenced_by_c": [
+      "D_004DAEB0",
+      "D_004DAEB8",
+      "D_004DAEC0",
+      "D_004DAEC8",
+      "D_004DAED0",
+      "D_004DAED8",
+      "D_004DAEE0",
+      "D_004DAEE8",
+      "D_004DAEF0",
+      "D_004DAEF8",
+      "D_004DAF00",
+      "D_004DAF08",
+      "D_004DAF10",
+      "D_004DAF18",
+      "D_004DAF20",
       "D_004DAF28",
+      "D_004DAF30",
+      "D_004DAF38",
       "D_004DAF40",
       "D_004DAF48",
+      "D_004DAF50",
+      "D_004DAF58",
+      "D_004DAF60",
+      "D_004DAF68",
+      "D_004DAF70",
+      "D_004DAF78",
       "D_004DAF80",
       "D_004DAF88",
       "D_004DAF90",
+      "D_004DAF98",
+      "D_004DAFA0",
+      "D_004DAFA8",
+      "D_004DAFB0",
+      "D_004DAFB8",
+      "D_004DAFC0",
+      "D_004DAFC8",
+      "D_004DAFD0",
       "D_004DAFD8",
       "D_004DAFE0",
       "D_004DAFE8",
@@ -10554,10 +10916,43 @@
       "AgwsFace",
       "AgwsSwitch"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DAEB0": "msg00_0_0036D940",
+      "D_004DAEB8": "msg00_0_0036D940",
+      "D_004DAEC0": "msg00_0_0036D940",
+      "D_004DAEC8": "msg00_0_0036D940",
+      "D_004DAED0": "msg00_0_0036D940",
+      "D_004DAED8": "msg00_0_0036D940",
+      "D_004DAEE0": "msg00_0_0036D940",
+      "D_004DAEE8": "msg00_0_0036D940",
+      "D_004DAEF0": "msg00_0_0036D940",
+      "D_004DAEF8": "msg00_0_0036D940",
+      "D_004DAF00": "msg02_3_0036D9A0",
+      "D_004DAF08": "msg02_3_0036D9A0",
+      "D_004DAF10": "msg02_3_0036D9A0",
+      "D_004DAF18": "msg02_3_0036D9A0",
+      "D_004DAF20": "msg03_4_0036D9B8",
+      "D_004DAF30": "msg05_6",
+      "D_004DAF38": "msg05_6",
+      "D_004DAF50": "msg_7_0036D9F8",
+      "D_004DAF58": "msg_7_0036D9F8",
+      "D_004DAF60": "msg_7_0036D9F8",
+      "D_004DAF68": "msg_7_0036D9F8",
+      "D_004DAF70": "msg01_8_0036DA40",
+      "D_004DAF78": "msg01_8_0036DA40",
+      "D_004DAF98": "msg_10",
+      "D_004DAFA0": "msg_10",
+      "D_004DAFA8": "msg_10",
+      "D_004DAFB0": "msg_10",
+      "D_004DAFB8": "msg_10",
+      "D_004DAFC0": "msg_10",
+      "D_004DAFC8": "msg_10"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_agws_para_set.o"
+      "object": "build/main/build/c/menu_agws_para_set.o"
      }
     }
    ]
@@ -10599,22 +10994,38 @@
    ".rodata": [
     {
      "range": [
-      "0x004c7340",
+      "0x004c72e0",
       "0x004c7390"
      ],
      "generated": [
-      "0x004c7340",
+      "0x004c72e0",
       "0x004c738c"
      ],
      "generated_by": [
       "SeisanDisp",
+      "SeisanTimeEx",
+      "tskSeisanItem",
       "tskSeisanStatus"
      ],
      "c_owned_symbols": [
+      "D_004C72E0",
+      "D_004C72F0",
+      "D_004C7300",
+      "D_004C7310",
+      "D_004C7320",
+      "D_004C7330",
       "D_004C7340",
       "D_004C7350"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C72E0": "msg00_0_0036DAB8",
+      "D_004C72F0": "msg00_2_0036DAD0",
+      "D_004C7300": "msg00_2_0036DAD0",
+      "D_004C7310": "msg00_3_0036DAD8",
+      "D_004C7320": "msg01_4_0036DAE8",
+      "D_004C7330": "msg01_4_0036DAE8"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -10625,11 +11036,11 @@
    ".sdata": [
     {
      "range": [
-      "0x004db090",
+      "0x004db020",
       "0x004db0dc"
      ],
      "generated": [
-      "0x004db090",
+      "0x004db020",
       "0x004db0dc"
      ],
      "generated_by": [
@@ -10650,6 +11061,20 @@
       "tskTskMain2"
      ],
      "c_owned_symbols": [
+      "D_004DB020",
+      "D_004DB028",
+      "D_004DB030",
+      "D_004DB038",
+      "D_004DB040",
+      "D_004DB048",
+      "D_004DB050",
+      "D_004DB058",
+      "D_004DB060",
+      "D_004DB068",
+      "D_004DB070",
+      "D_004DB078",
+      "D_004DB080",
+      "D_004DB088",
       "D_004DB090",
       "D_004DB098",
       "D_004DB0A0",
@@ -10666,6 +11091,20 @@
      ],
      "also_referenced_by_c": [],
      "reached_through": {
+      "D_004DB020": "msg_number",
+      "D_004DB028": "msg_number",
+      "D_004DB030": "msg_number",
+      "D_004DB038": "msg_number",
+      "D_004DB040": "msg_number",
+      "D_004DB048": "msg_number",
+      "D_004DB050": "msg_number",
+      "D_004DB058": "msg_number",
+      "D_004DB060": "msg_number",
+      "D_004DB068": "msg_number",
+      "D_004DB070": "msg00_0_0036DAB8",
+      "D_004DB078": "msg00_0_0036DAB8",
+      "D_004DB080": "msg00_1_0036DAC8",
+      "D_004DB088": "msg00_1_0036DAC8",
       "D_004DB0A0": "msg00_3_0036DAD8",
       "D_004DB0A8": "msg00_3_0036DAD8",
       "D_004DB0B0": "msg00_3_0036DAD8"
@@ -12079,6 +12518,32 @@
    ]
   },
   "main/tu181": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated": [
+      "0x0036ddb0",
+      "0x0036de90"
+     ],
+     "generated_by": [
+      "TexTest",
+      "TexTrans"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_1_0036DDB0",
+      "TestEnv_2_0036DE40"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -12109,27 +12574,28 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c9cd8",
-      "0x004c9ce8"
+      "0x004c9bf0",
+      "0x004c9dd0"
      ],
      "generated": [
-      "0x004c9cd8",
-      "0x004c9ce1"
+      "0x004c9bf0",
+      "0x004c9dc7"
      ],
      "generated_by": [
-      "CfTest"
+      "CfTest",
+      "KarakamaTest",
+      "SePacketTest",
+      "SetMapUnitTest",
+      "TexTest"
      ],
      "c_owned_symbols": [
-      "D_004C9CD8"
-     ],
-     "also_referenced_by_c": [
       "D_004C9BF0",
       "D_004C9C08",
       "D_004C9C20",
@@ -12141,6 +12607,7 @@
       "D_004C9CA0",
       "D_004C9CB0",
       "D_004C9CC8",
+      "D_004C9CD8",
       "D_004C9CE8",
       "D_004C9CF8",
       "D_004C9D08",
@@ -12153,10 +12620,43 @@
       "D_004C9D90",
       "D_004C9DB0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/karakama_test.o"
+      "object": "build/main/build/c/karakama_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated": [
+      "0x004db6a8",
+      "0x004db6c8"
+     ],
+     "generated_by": [
+      "CfTest",
+      "KarakamaTest",
+      "PrimTest",
+      "SePacketTest"
+     ],
+     "c_owned_symbols": [
+      "D_004DB6A8",
+      "D_004DB6B0",
+      "D_004DB6B8",
+      "rgba_0"
+     ],
+     "also_referenced_by_c": [
+      "MapNo"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/karakama_test.o"
      }
     }
    ]
@@ -12696,11 +13196,11 @@
     {
      "range": [
       "0x004ca4d0",
-      "0x004ca698"
+      "0x004ca680"
      ],
      "generated": [
       "0x004ca4d0",
-      "0x004ca698"
+      "0x004ca680"
      ],
      "generated_by": [
       "GetItemName",
@@ -12728,8 +13228,7 @@
       "jtbl_004CA610",
       "D_004CA640",
       "D_004CA648",
-      "D_004CA650",
-      "D_004CA680"
+      "D_004CA650"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -12767,24 +13266,52 @@
    ]
   },
   "main/tu187": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d7f80",
+      "0x004d7f88"
+     ],
+     "generated": [
+      "0x004d7f80",
+      "0x004d7f88"
+     ],
+     "generated_by": [
+      "DispCollUwamono"
+     ],
+     "c_owned_symbols": [
+      "D_004D7F80",
+      "D_004D7F84"
+     ],
+     "also_referenced_by_c": [
+      "D_004D7F88",
+      "D_004D7F8C"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/pause_menu_page_uwamono.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x004ca7b0",
-      "0x004ca7e8"
+      "0x004ca680",
+      "0x004ca940"
      ],
      "generated": [
-      "0x004ca7b0",
-      "0x004ca7e8"
+      "0x004ca680",
+      "0x004ca93c"
      ],
      "generated_by": [
+      "DebDispEvtItem",
+      "DebDispItemBox",
+      "DispDebugUwamono",
       "PauseMenuPageUwamono"
      ],
      "c_owned_symbols": [
-      "jtbl_004CA7B0",
-      "jtbl_004CA7D0"
-     ],
-     "also_referenced_by_c": [
+      "D_004CA680",
       "D_004CA698",
       "D_004CA6B0",
       "D_004CA6C8",
@@ -12797,6 +13324,8 @@
       "D_004CA770",
       "D_004CA788",
       "D_004CA7A0",
+      "jtbl_004CA7B0",
+      "jtbl_004CA7D0",
       "D_004CA7E8",
       "D_004CA7F8",
       "D_004CA808",
@@ -12815,27 +13344,7 @@
       "D_004CA8D8",
       "D_004CA8E8",
       "D_004CA8F8",
-      "D_004CA908"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/pause_menu_page_uwamono.o"
-     }
-    },
-    {
-     "range": [
-      "0x004ca920",
-      "0x004ca940"
-     ],
-     "generated": [
-      "0x004ca920",
-      "0x004ca93c"
-     ],
-     "generated_by": [
-      "DispDebugUwamono"
-     ],
-     "c_owned_symbols": [
+      "D_004CA908",
       "jtbl_004CA920"
      ],
      "also_referenced_by_c": [],
@@ -19556,20 +20065,7 @@
       "D_004D864C",
       "D_004D8650",
       "D_004D8654",
-      "D_004D8658",
-      "D_004D865C",
-      "D_004D8660",
-      "D_004D8664",
-      "D_004D8668",
-      "D_004D866C",
-      "D_004D8670",
-      "D_004D8674",
-      "D_004D8678",
-      "D_004D867C",
-      "D_004D8680",
-      "D_004D8684",
-      "D_004D8688",
-      "D_004D868C"
+      "D_004D8658"
      ],
      "basis": {
       "kind": "derived",
@@ -19579,17 +20075,74 @@
     },
     {
      "range": [
-      "0x004d8690",
+      "0x004d865c",
+      "0x004d8660"
+     ],
+     "generated": [
+      "0x004d865c",
+      "0x004d8660"
+     ],
+     "generated_by": [
+      "EXM_PresetHair"
+     ],
+     "c_owned_symbols": [
+      "D_004D865C"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8660"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d8664",
+      "0x004d8668"
+     ],
+     "generated": [
+      "0x004d8664",
+      "0x004d8668"
+     ],
+     "generated_by": [
+      "EXM_PresetHair"
+     ],
+     "c_owned_symbols": [
+      "D_004D8664"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8668",
+      "D_004D866C",
+      "D_004D8670",
+      "D_004D8674",
+      "D_004D8678",
+      "D_004D867C",
+      "D_004D8680",
+      "D_004D8684",
+      "D_004D8688"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d868c",
       "0x004d869c"
      ],
      "generated": [
-      "0x004d8690",
+      "0x004d868c",
       "0x004d869c"
      ],
      "generated_by": [
       "EXM_PresetHair"
      ],
      "c_owned_symbols": [
+      "D_004D868C",
       "D_004D8690",
       "D_004D8694",
       "D_004D8698"
@@ -19630,11 +20183,7 @@
       "D_004D86C4",
       "D_004D86C8",
       "D_004D86CC",
-      "D_004D86D0",
-      "D_004D86D4",
-      "D_004D86D8",
-      "D_004D86DC",
-      "D_004D86E0"
+      "D_004D86D0"
      ],
      "basis": {
       "kind": "derived",
@@ -19644,19 +20193,46 @@
     },
     {
      "range": [
-      "0x004d86e4",
+      "0x004d86d4",
+      "0x004d86d8"
+     ],
+     "generated": [
+      "0x004d86d4",
+      "0x004d86d8"
+     ],
+     "generated_by": [
+      "GetHairTypeSelection"
+     ],
+     "c_owned_symbols": [
+      "D_004D86D4"
+     ],
+     "also_referenced_by_c": [
+      "D_004D86D8",
+      "D_004D86DC"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d86e0",
       "0x004d8770"
      ],
      "generated": [
-      "0x004d86e4",
+      "0x004d86e0",
       "0x004d8770"
      ],
      "generated_by": [
       "CheckSkirtCollisionSub",
       "EXM_CalcExMotion",
-      "EXM_CheckExCollision"
+      "EXM_CheckExCollision",
+      "GetHairTypeSelection"
      ],
      "c_owned_symbols": [
+      "D_004D86E0",
       "D_004D86E4",
       "D_004D86E8",
       "D_004D86EC",
@@ -19898,26 +20474,6 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/map_2.o"
      }
-    },
-    {
-     "range": [
-      "0x004d2170",
-      "0x004d2188"
-     ],
-     "generated": [
-      "0x004d2170",
-      "0x004d2186"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "D_004D2170"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/map_2.o"
-     }
     }
    ]
   },
@@ -19981,42 +20537,23 @@
    ".rodata": [
     {
      "range": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated_by": [
-      "unit6003_update"
-     ],
-     "c_owned_symbols": [
-      "D_004D2188",
-      "D_004D21A0",
-      "D_004D21B8",
-      "D_004D21D0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/unit6003.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d2200"
      ],
      "generated": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d21f4"
      ],
      "generated_by": [
+      "unit6003_draw",
       "unit6003_update"
      ],
      "c_owned_symbols": [
+      "D_004D2170",
+      "D_004D2188",
+      "D_004D21A0",
+      "D_004D21B8",
+      "D_004D21D0",
       "jtbl_004D21E0"
      ],
      "also_referenced_by_c": [],
@@ -25164,23 +25701,582 @@
    ]
   },
   "ov01/tu014_00a2e4b0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a42dc0",
+      "0x00a4368c"
+     ],
+     "generated": [
+      "0x00a42dc0",
+      "0x00a4368c"
+     ],
+     "generated_by": [
+      "configEnMuteki",
+      "configEqu",
+      "configGain",
+      "configPlIchigeki",
+      "configPlMuteki",
+      "configStat",
+      "debugBattleConfig",
+      "debugCmdPrint",
+      "debugNameGet",
+      "debugThinkPrint",
+      "debugThinkRegName",
+      "debugWpnGet",
+      "enMutekiGet",
+      "equipAcc",
+      "equipAgws",
+      "equipAtt",
+      "equipChar",
+      "equipEngine",
+      "equipEther",
+      "equipFrame",
+      "equipSkill",
+      "equipSpec",
+      "equipWpn",
+      "plIchigekiGet",
+      "plMutekiGet"
+     ],
+     "c_owned_symbols": [
+      "err",
+      "D_00A42DC4",
+      "nameTbl",
+      "D_00A430D4",
+      "wpnTbl",
+      "cmdStrTbl",
+      "D_00A4336C",
+      "thinkExpTbl",
+      "regName",
+      "thinkStrTbl",
+      "configSeq",
+      "configPos",
+      "statId",
+      "equipId",
+      "gainId",
+      "equipPos",
+      "equipPosX",
+      "slot",
+      "plMuteki",
+      "enMuteki",
+      "plIchigeki",
+      "posName",
+      "szName",
+      "D_00A435AC",
+      "configCmdTbl",
+      "D_00A43604",
+      "equipCmdTbl",
+      "D_00A43654",
+      "specPos",
+      "etherPos",
+      "skillPos"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/debug_entry.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a50490",
-      "0x00a50550"
+      "0x00a4e880",
+      "0x00a50ea8"
      ],
      "generated": [
-      "0x00a50490",
-      "0x00a50550"
+      "0x00a4e880",
+      "0x00a50ea4"
      ],
      "generated_by": [
-      "debugCmdPrint"
+      "debugBattleConfig",
+      "debugCmdPrint",
+      "debugNameGet",
+      "debugParaDisp",
+      "debugSpecDisp",
+      "debugStatDisp",
+      "debugThinkPrint",
+      "debugThinkRegName",
+      "debugWpnGet"
      ],
      "c_owned_symbols": [
-      "jtbl_00A50490"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E880",
+      "D_00A4E888",
+      "D_00A4E898",
+      "D_00A4E8A8",
+      "D_00A4E8B8",
+      "D_00A4E8C8",
+      "D_00A4E8D8",
+      "D_00A4E8E8",
+      "D_00A4E8F8",
+      "D_00A4E908",
+      "D_00A4E918",
+      "D_00A4E928",
+      "D_00A4E938",
+      "D_00A4E948",
+      "D_00A4E958",
+      "D_00A4E968",
+      "D_00A4E978",
+      "D_00A4E988",
+      "D_00A4E998",
+      "D_00A4E9A8",
+      "D_00A4E9B8",
+      "D_00A4E9C8",
+      "D_00A4E9D8",
+      "D_00A4E9E8",
+      "D_00A4E9F8",
+      "D_00A4EA08",
+      "D_00A4EA18",
+      "D_00A4EA28",
+      "D_00A4EA38",
+      "D_00A4EA48",
+      "D_00A4EA58",
+      "D_00A4EA68",
+      "D_00A4EA78",
+      "D_00A4EA88",
+      "D_00A4EA98",
+      "D_00A4EAA8",
+      "D_00A4EAB8",
+      "D_00A4EAC8",
+      "D_00A4EAD8",
+      "D_00A4EAE8",
+      "D_00A4EAF8",
+      "D_00A4EB08",
+      "D_00A4EB18",
+      "D_00A4EB28",
+      "D_00A4EB38",
+      "D_00A4EB48",
+      "D_00A4EB58",
+      "D_00A4EB68",
+      "D_00A4EB78",
+      "D_00A4EB88",
+      "D_00A4EB98",
+      "D_00A4EBA8",
+      "D_00A4EBB8",
+      "D_00A4EBC8",
+      "D_00A4EBD8",
+      "D_00A4EBE8",
+      "D_00A4EBF8",
+      "D_00A4EC08",
+      "D_00A4EC18",
+      "D_00A4EC28",
+      "D_00A4EC38",
+      "D_00A4EC48",
+      "D_00A4EC58",
+      "D_00A4EC68",
+      "D_00A4EC78",
+      "D_00A4EC88",
+      "D_00A4EC98",
+      "D_00A4ECA8",
+      "D_00A4ECB8",
+      "D_00A4ECC8",
+      "D_00A4ECD8",
+      "D_00A4ECE8",
+      "D_00A4ECF8",
+      "D_00A4ED08",
+      "D_00A4ED18",
+      "D_00A4ED28",
+      "D_00A4ED38",
+      "D_00A4ED48",
+      "D_00A4ED58",
+      "D_00A4ED68",
+      "D_00A4ED78",
+      "D_00A4ED88",
+      "D_00A4ED98",
+      "D_00A4EDA8",
+      "D_00A4EDB8",
+      "D_00A4EDC8",
+      "D_00A4EDD8",
+      "D_00A4EDE8",
+      "D_00A4EDF8",
+      "D_00A4EE08",
+      "D_00A4EE18",
+      "D_00A4EE28",
+      "D_00A4EE38",
+      "D_00A4EE48",
+      "D_00A4EE58",
+      "D_00A4EE68",
+      "D_00A4EE78",
+      "D_00A4EE88",
+      "D_00A4EE98",
+      "D_00A4EEA8",
+      "D_00A4EEB8",
+      "D_00A4EEC8",
+      "D_00A4EED8",
+      "D_00A4EEE8",
+      "D_00A4EEF8",
+      "D_00A4EF08",
+      "D_00A4EF18",
+      "D_00A4EF28",
+      "D_00A4EF38",
+      "D_00A4EF48",
+      "D_00A4EF58",
+      "D_00A4EF68",
+      "D_00A4EF78",
+      "D_00A4EF88",
+      "D_00A4EF98",
+      "D_00A4EFA8",
+      "D_00A4EFB8",
+      "D_00A4EFC8",
+      "D_00A4EFD8",
+      "D_00A4EFE8",
+      "D_00A4EFF8",
+      "D_00A4F008",
+      "D_00A4F018",
+      "D_00A4F028",
+      "D_00A4F038",
+      "D_00A4F048",
+      "D_00A4F058",
+      "D_00A4F068",
+      "D_00A4F078",
+      "D_00A4F088",
+      "D_00A4F098",
+      "D_00A4F0A8",
+      "D_00A4F0B8",
+      "D_00A4F0C8",
+      "D_00A4F0D8",
+      "D_00A4F0E8",
+      "D_00A4F0F8",
+      "D_00A4F108",
+      "D_00A4F118",
+      "D_00A4F128",
+      "D_00A4F138",
+      "D_00A4F148",
+      "D_00A4F158",
+      "D_00A4F168",
+      "D_00A4F178",
+      "D_00A4F188",
+      "D_00A4F198",
+      "D_00A4F1A8",
+      "D_00A4F1B8",
+      "D_00A4F1C8",
+      "D_00A4F1D8",
+      "D_00A4F1E8",
+      "D_00A4F1F8",
+      "D_00A4F208",
+      "D_00A4F218",
+      "D_00A4F228",
+      "D_00A4F238",
+      "D_00A4F248",
+      "D_00A4F258",
+      "D_00A4F268",
+      "D_00A4F278",
+      "D_00A4F288",
+      "D_00A4F298",
+      "D_00A4F2A8",
+      "D_00A4F2B8",
+      "D_00A4F2C8",
+      "D_00A4F2D8",
+      "D_00A4F2E8",
+      "D_00A4F2F8",
+      "D_00A4F308",
+      "D_00A4F318",
+      "D_00A4F328",
+      "D_00A4F338",
+      "D_00A4F348",
+      "D_00A4F358",
+      "D_00A4F368",
+      "D_00A4F378",
+      "D_00A4F388",
+      "D_00A4F398",
+      "D_00A4F3A8",
+      "D_00A4F3B8",
+      "D_00A4F3C8",
+      "D_00A4F3D8",
+      "D_00A4F3E8",
+      "D_00A4F3F8",
+      "D_00A4F408",
+      "D_00A4F418",
+      "D_00A4F428",
+      "D_00A4F438",
+      "D_00A4F448",
+      "D_00A4F458",
+      "D_00A4F468",
+      "D_00A4F478",
+      "D_00A4F488",
+      "D_00A4F498",
+      "D_00A4F4A8",
+      "D_00A4F4B8",
+      "D_00A4F4C8",
+      "D_00A4F4D8",
+      "D_00A4F4E8",
+      "D_00A4F4F8",
+      "D_00A4F508",
+      "D_00A4F518",
+      "D_00A4F528",
+      "D_00A4F538",
+      "D_00A4F548",
+      "D_00A4F558",
+      "D_00A4F568",
+      "D_00A4F578",
+      "D_00A4F588",
+      "D_00A4F598",
+      "D_00A4F5A8",
+      "D_00A4F5B8",
+      "D_00A4F5C8",
+      "D_00A4F5D8",
+      "D_00A4F5E8",
+      "D_00A4F5F8",
+      "D_00A4F608",
+      "D_00A4F618",
+      "D_00A4F628",
+      "D_00A4F638",
+      "D_00A4F648",
+      "D_00A4F658",
+      "D_00A4F668",
+      "D_00A4F678",
+      "D_00A4F688",
+      "D_00A4F698",
+      "D_00A4F6A8",
+      "D_00A4F6B8",
+      "D_00A4F6C8",
+      "D_00A4F6D8",
+      "D_00A4F6E8",
+      "D_00A4F6F8",
+      "D_00A4F708",
+      "D_00A4F718",
+      "D_00A4F728",
+      "D_00A4F738",
+      "D_00A4F748",
+      "D_00A4F758",
+      "D_00A4F768",
+      "D_00A4F778",
+      "D_00A4F788",
+      "D_00A4F798",
+      "D_00A4F7A8",
+      "D_00A4F7B8",
+      "D_00A4F7C8",
+      "D_00A4F7D8",
+      "D_00A4F7E8",
+      "D_00A4F7F8",
+      "D_00A4F808",
+      "D_00A4F818",
+      "D_00A4F828",
+      "D_00A4F838",
+      "D_00A4F848",
+      "D_00A4F858",
+      "D_00A4F868",
+      "D_00A4F870",
+      "D_00A4F878",
+      "D_00A4F880",
+      "D_00A4F888",
+      "D_00A4F890",
+      "D_00A4F898",
+      "D_00A4F8A0",
+      "D_00A4F8A8",
+      "D_00A4F8B0",
+      "D_00A4F8B8",
+      "D_00A4F8C0",
+      "D_00A4F8D0",
+      "D_00A4F8E0",
+      "D_00A4F8F0",
+      "D_00A4F900",
+      "D_00A4F910",
+      "D_00A4F920",
+      "D_00A4F930",
+      "D_00A4F940",
+      "D_00A4F950",
+      "D_00A4F960",
+      "D_00A4F970",
+      "D_00A4F980",
+      "D_00A4F990",
+      "D_00A4F9A0",
+      "D_00A4F9B0",
+      "D_00A4F9C0",
+      "D_00A4F9D0",
+      "D_00A4F9E0",
+      "D_00A4F9F0",
+      "D_00A4FA00",
+      "D_00A4FA10",
+      "D_00A4FA20",
+      "D_00A4FA30",
+      "D_00A4FA40",
+      "D_00A4FA50",
+      "D_00A4FA60",
+      "D_00A4FA70",
+      "D_00A4FA80",
+      "D_00A4FA90",
+      "D_00A4FAA0",
+      "D_00A4FAB0",
+      "D_00A4FAC0",
+      "D_00A4FAD0",
+      "D_00A4FAE0",
+      "D_00A4FAF0",
+      "D_00A4FB00",
+      "D_00A4FB10",
+      "D_00A4FB20",
+      "D_00A4FB30",
+      "D_00A4FB40",
+      "D_00A4FB50",
+      "D_00A4FB60",
+      "D_00A4FB70",
+      "D_00A4FB80",
+      "D_00A4FB90",
+      "D_00A4FB98",
+      "D_00A4FBA0",
+      "D_00A4FBA8",
+      "D_00A4FBB0",
+      "D_00A4FBC0",
+      "D_00A4FBD0",
+      "D_00A4FBE0",
+      "D_00A4FBE8",
+      "D_00A4FBF0",
+      "D_00A4FBF8",
+      "D_00A4FC00",
+      "D_00A4FC08",
+      "D_00A4FC18",
+      "D_00A4FC28",
+      "D_00A4FC38",
+      "D_00A4FC48",
+      "D_00A4FC58",
+      "D_00A4FC68",
+      "D_00A4FC78",
+      "D_00A4FC88",
+      "D_00A4FC98",
+      "D_00A4FCA8",
+      "D_00A4FCB8",
+      "D_00A4FCC8",
+      "D_00A4FCD8",
+      "D_00A4FCE8",
+      "D_00A4FCF8",
+      "D_00A4FD08",
+      "D_00A4FD18",
+      "D_00A4FD28",
+      "D_00A4FD30",
+      "D_00A4FD38",
+      "D_00A4FD40",
+      "D_00A4FD48",
+      "D_00A4FD50",
+      "D_00A4FD58",
+      "D_00A4FD60",
+      "D_00A4FD68",
+      "D_00A4FD70",
+      "D_00A4FD78",
+      "D_00A4FD80",
+      "D_00A4FD88",
+      "D_00A4FD90",
+      "D_00A4FD98",
+      "D_00A4FDA0",
+      "D_00A4FDA8",
+      "D_00A4FDB0",
+      "D_00A4FDB8",
+      "D_00A4FDC0",
+      "D_00A4FDC8",
+      "D_00A4FDD0",
+      "D_00A4FDD8",
+      "D_00A4FDE0",
+      "D_00A4FDE8",
+      "D_00A4FDF0",
+      "D_00A4FE00",
+      "D_00A4FE08",
+      "D_00A4FE10",
+      "D_00A4FE18",
+      "D_00A4FE28",
+      "D_00A4FE30",
+      "D_00A4FE38",
+      "D_00A4FE48",
+      "D_00A4FE50",
+      "D_00A4FE58",
+      "D_00A4FE60",
+      "D_00A4FE68",
+      "D_00A4FE78",
+      "D_00A4FE88",
+      "D_00A4FE98",
+      "D_00A4FEA8",
+      "D_00A4FEB8",
+      "D_00A4FEC8",
+      "D_00A4FED8",
+      "D_00A4FEE8",
+      "D_00A4FEF8",
+      "D_00A4FF08",
+      "D_00A4FF18",
+      "D_00A4FF28",
+      "D_00A4FF38",
+      "D_00A4FF48",
+      "D_00A4FF58",
+      "D_00A4FF68",
+      "D_00A4FF78",
+      "D_00A4FF88",
+      "D_00A4FF90",
+      "D_00A4FFA0",
+      "D_00A4FFB0",
+      "D_00A4FFC0",
+      "D_00A4FFD0",
+      "D_00A4FFE0",
+      "D_00A4FFF0",
+      "D_00A50008",
+      "D_00A50018",
+      "D_00A50028",
+      "D_00A50038",
+      "D_00A50048",
+      "D_00A50058",
+      "D_00A50068",
+      "D_00A50078",
+      "D_00A50088",
+      "D_00A50098",
+      "D_00A500A8",
+      "D_00A500C0",
+      "D_00A500D8",
+      "D_00A500F0",
+      "D_00A50108",
+      "D_00A50118",
+      "D_00A50128",
+      "D_00A50138",
+      "D_00A50148",
+      "D_00A50158",
+      "D_00A50168",
+      "D_00A50178",
+      "D_00A50188",
+      "D_00A50198",
+      "D_00A501A8",
+      "D_00A501B8",
+      "D_00A501C8",
+      "D_00A501D8",
+      "D_00A501E0",
+      "D_00A501E8",
+      "D_00A501F8",
+      "D_00A50208",
+      "D_00A50210",
+      "D_00A50220",
+      "D_00A50230",
+      "D_00A50238",
+      "D_00A50240",
+      "D_00A50248",
+      "D_00A50258",
+      "D_00A50268",
+      "D_00A50270",
+      "D_00A50278",
+      "D_00A50280",
+      "D_00A50290",
+      "D_00A502A0",
+      "D_00A502A8",
+      "D_00A502B0",
+      "D_00A502B8",
+      "D_00A502C0",
+      "D_00A502C8",
+      "D_00A502D0",
+      "D_00A502D8",
+      "D_00A502E0",
+      "D_00A502E8",
+      "D_00A502F0",
+      "D_00A502F8",
+      "D_00A50300",
+      "D_00A50308",
+      "D_00A50310",
+      "D_00A50318",
+      "D_00A50320",
+      "D_00A50328",
+      "D_00A50330",
+      "D_00A50338",
+      "D_00A50340",
+      "D_00A50348",
+      "D_00A50350",
+      "D_00A50358",
+      "D_00A50360",
+      "D_00A50368",
+      "D_00A50370",
+      "D_00A50378",
       "D_00A50380",
       "D_00A503A8",
       "D_00A503C0",
@@ -25190,6 +26286,7 @@
       "D_00A50438",
       "D_00A50440",
       "D_00A50468",
+      "jtbl_00A50490",
       "D_00A50550",
       "D_00A50558",
       "D_00A50560",
@@ -25203,30 +26300,8 @@
       "D_00A505C0",
       "D_00A505D0",
       "D_00A505D8",
-      "D_00A505E8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/debug_entry.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a505f0",
-      "0x00a50650"
-     ],
-     "generated": [
-      "0x00a505f0",
-      "0x00a50650"
-     ],
-     "generated_by": [
-      "debugThinkPrint"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A505F0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A505E8",
+      "jtbl_00A505F0",
       "D_00A50650",
       "D_00A50668",
       "D_00A50690",
@@ -25241,12 +26316,595 @@
       "D_00A50748",
       "D_00A50778",
       "D_00A507B0",
-      "D_00A507C8"
+      "D_00A507C8",
+      "D_00A50800",
+      "D_00A50808",
+      "D_00A50810",
+      "D_00A50818",
+      "D_00A50820",
+      "D_00A50828",
+      "D_00A50830",
+      "D_00A50838",
+      "D_00A50840",
+      "D_00A50848",
+      "D_00A50850",
+      "D_00A50858",
+      "D_00A50860",
+      "D_00A50868",
+      "D_00A50870",
+      "D_00A50878",
+      "D_00A50898",
+      "D_00A508B0",
+      "D_00A508C0",
+      "D_00A508D8",
+      "D_00A508E8",
+      "D_00A508F8",
+      "D_00A50908",
+      "D_00A50918",
+      "D_00A50930",
+      "D_00A50948",
+      "D_00A50960",
+      "D_00A50978",
+      "D_00A50990",
+      "D_00A509A8",
+      "D_00A509C0",
+      "D_00A509D8",
+      "D_00A509E8",
+      "D_00A509F8",
+      "D_00A50A08",
+      "D_00A50A18",
+      "D_00A50A28",
+      "D_00A50A38",
+      "D_00A50A40",
+      "D_00A50A58",
+      "D_00A50A70",
+      "D_00A50A88",
+      "D_00A50AA0",
+      "D_00A50AB8",
+      "D_00A50AD0",
+      "D_00A50AE8",
+      "D_00A50B00",
+      "D_00A50B18",
+      "D_00A50B30",
+      "D_00A50B48",
+      "D_00A50B60",
+      "D_00A50B78",
+      "D_00A50B90",
+      "D_00A50BA8",
+      "D_00A50BC0",
+      "D_00A50BD8",
+      "D_00A50BF0",
+      "D_00A50C00",
+      "D_00A50C10",
+      "D_00A50C20",
+      "D_00A50C30",
+      "D_00A50C48",
+      "D_00A50C60",
+      "D_00A50C78",
+      "D_00A50C88",
+      "D_00A50C98",
+      "D_00A50CA8",
+      "D_00A50CB8",
+      "D_00A50CC8",
+      "D_00A50CD8",
+      "D_00A50D00",
+      "D_00A50D20",
+      "D_00A50D40",
+      "D_00A50D60",
+      "D_00A50D78",
+      "D_00A50D88",
+      "D_00A50D98",
+      "D_00A50DA8",
+      "D_00A50DB8",
+      "D_00A50DC8",
+      "D_00A50DD8",
+      "D_00A50DF8",
+      "D_00A50E08",
+      "D_00A50E18",
+      "D_00A50E28",
+      "D_00A50E38",
+      "D_00A50E48",
+      "D_00A50E58",
+      "D_00A50E68",
+      "D_00A50E88"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A4E880": "err",
+      "D_00A4E888": "nameTbl",
+      "D_00A4E898": "nameTbl",
+      "D_00A4E8A8": "nameTbl",
+      "D_00A4E8B8": "nameTbl",
+      "D_00A4E8C8": "nameTbl",
+      "D_00A4E8D8": "nameTbl",
+      "D_00A4E8E8": "nameTbl",
+      "D_00A4E8F8": "nameTbl",
+      "D_00A4E908": "nameTbl",
+      "D_00A4E918": "nameTbl",
+      "D_00A4E928": "nameTbl",
+      "D_00A4E938": "nameTbl",
+      "D_00A4E948": "nameTbl",
+      "D_00A4E958": "nameTbl",
+      "D_00A4E968": "nameTbl",
+      "D_00A4E978": "nameTbl",
+      "D_00A4E988": "nameTbl",
+      "D_00A4E998": "nameTbl",
+      "D_00A4E9A8": "nameTbl",
+      "D_00A4E9B8": "nameTbl",
+      "D_00A4E9C8": "nameTbl",
+      "D_00A4E9D8": "nameTbl",
+      "D_00A4E9E8": "nameTbl",
+      "D_00A4E9F8": "nameTbl",
+      "D_00A4EA08": "nameTbl",
+      "D_00A4EA18": "nameTbl",
+      "D_00A4EA28": "nameTbl",
+      "D_00A4EA38": "nameTbl",
+      "D_00A4EA48": "nameTbl",
+      "D_00A4EA58": "nameTbl",
+      "D_00A4EA68": "nameTbl",
+      "D_00A4EA78": "nameTbl",
+      "D_00A4EA88": "nameTbl",
+      "D_00A4EA98": "nameTbl",
+      "D_00A4EAA8": "nameTbl",
+      "D_00A4EAB8": "nameTbl",
+      "D_00A4EAC8": "nameTbl",
+      "D_00A4EAD8": "nameTbl",
+      "D_00A4EAE8": "nameTbl",
+      "D_00A4EAF8": "nameTbl",
+      "D_00A4EB08": "nameTbl",
+      "D_00A4EB18": "nameTbl",
+      "D_00A4EB28": "nameTbl",
+      "D_00A4EB38": "nameTbl",
+      "D_00A4EB48": "nameTbl",
+      "D_00A4EB58": "nameTbl",
+      "D_00A4EB68": "nameTbl",
+      "D_00A4EB78": "nameTbl",
+      "D_00A4EB88": "nameTbl",
+      "D_00A4EB98": "nameTbl",
+      "D_00A4EBA8": "nameTbl",
+      "D_00A4EBB8": "nameTbl",
+      "D_00A4EBC8": "nameTbl",
+      "D_00A4EBD8": "nameTbl",
+      "D_00A4EBE8": "nameTbl",
+      "D_00A4EBF8": "nameTbl",
+      "D_00A4EC08": "nameTbl",
+      "D_00A4EC18": "nameTbl",
+      "D_00A4EC28": "nameTbl",
+      "D_00A4EC38": "nameTbl",
+      "D_00A4EC48": "nameTbl",
+      "D_00A4EC58": "nameTbl",
+      "D_00A4EC68": "nameTbl",
+      "D_00A4EC78": "nameTbl",
+      "D_00A4EC88": "nameTbl",
+      "D_00A4EC98": "nameTbl",
+      "D_00A4ECA8": "nameTbl",
+      "D_00A4ECB8": "nameTbl",
+      "D_00A4ECC8": "nameTbl",
+      "D_00A4ECD8": "nameTbl",
+      "D_00A4ECE8": "nameTbl",
+      "D_00A4ECF8": "nameTbl",
+      "D_00A4ED08": "nameTbl",
+      "D_00A4ED18": "nameTbl",
+      "D_00A4ED28": "nameTbl",
+      "D_00A4ED38": "nameTbl",
+      "D_00A4ED48": "nameTbl",
+      "D_00A4ED58": "nameTbl",
+      "D_00A4ED68": "nameTbl",
+      "D_00A4ED78": "nameTbl",
+      "D_00A4ED88": "nameTbl",
+      "D_00A4ED98": "nameTbl",
+      "D_00A4EDA8": "nameTbl",
+      "D_00A4EDB8": "nameTbl",
+      "D_00A4EDC8": "nameTbl",
+      "D_00A4EDD8": "nameTbl",
+      "D_00A4EDE8": "nameTbl",
+      "D_00A4EDF8": "nameTbl",
+      "D_00A4EE08": "nameTbl",
+      "D_00A4EE18": "nameTbl",
+      "D_00A4EE28": "nameTbl",
+      "D_00A4EE38": "nameTbl",
+      "D_00A4EE48": "nameTbl",
+      "D_00A4EE58": "nameTbl",
+      "D_00A4EE68": "nameTbl",
+      "D_00A4EE78": "nameTbl",
+      "D_00A4EE88": "nameTbl",
+      "D_00A4EE98": "nameTbl",
+      "D_00A4EEA8": "nameTbl",
+      "D_00A4EEB8": "nameTbl",
+      "D_00A4EEC8": "nameTbl",
+      "D_00A4EED8": "nameTbl",
+      "D_00A4EEE8": "nameTbl",
+      "D_00A4EEF8": "nameTbl",
+      "D_00A4EF08": "nameTbl",
+      "D_00A4EF18": "nameTbl",
+      "D_00A4EF28": "nameTbl",
+      "D_00A4EF38": "nameTbl",
+      "D_00A4EF48": "nameTbl",
+      "D_00A4EF58": "nameTbl",
+      "D_00A4EF68": "nameTbl",
+      "D_00A4EF78": "nameTbl",
+      "D_00A4EF88": "nameTbl",
+      "D_00A4EF98": "nameTbl",
+      "D_00A4EFA8": "nameTbl",
+      "D_00A4EFB8": "nameTbl",
+      "D_00A4EFC8": "nameTbl",
+      "D_00A4EFD8": "nameTbl",
+      "D_00A4EFE8": "nameTbl",
+      "D_00A4EFF8": "nameTbl",
+      "D_00A4F008": "nameTbl",
+      "D_00A4F018": "nameTbl",
+      "D_00A4F028": "nameTbl",
+      "D_00A4F038": "nameTbl",
+      "D_00A4F048": "nameTbl",
+      "D_00A4F058": "nameTbl",
+      "D_00A4F068": "nameTbl",
+      "D_00A4F078": "nameTbl",
+      "D_00A4F088": "nameTbl",
+      "D_00A4F098": "nameTbl",
+      "D_00A4F0A8": "nameTbl",
+      "D_00A4F0B8": "nameTbl",
+      "D_00A4F0C8": "nameTbl",
+      "D_00A4F0D8": "nameTbl",
+      "D_00A4F0E8": "nameTbl",
+      "D_00A4F0F8": "nameTbl",
+      "D_00A4F108": "nameTbl",
+      "D_00A4F118": "nameTbl",
+      "D_00A4F128": "nameTbl",
+      "D_00A4F138": "nameTbl",
+      "D_00A4F148": "nameTbl",
+      "D_00A4F158": "nameTbl",
+      "D_00A4F168": "nameTbl",
+      "D_00A4F178": "nameTbl",
+      "D_00A4F188": "nameTbl",
+      "D_00A4F198": "nameTbl",
+      "D_00A4F1A8": "nameTbl",
+      "D_00A4F1B8": "nameTbl",
+      "D_00A4F1C8": "nameTbl",
+      "D_00A4F1D8": "nameTbl",
+      "D_00A4F1E8": "nameTbl",
+      "D_00A4F1F8": "nameTbl",
+      "D_00A4F208": "nameTbl",
+      "D_00A4F218": "nameTbl",
+      "D_00A4F228": "nameTbl",
+      "D_00A4F238": "nameTbl",
+      "D_00A4F248": "nameTbl",
+      "D_00A4F258": "nameTbl",
+      "D_00A4F268": "nameTbl",
+      "D_00A4F278": "nameTbl",
+      "D_00A4F288": "nameTbl",
+      "D_00A4F298": "nameTbl",
+      "D_00A4F2A8": "nameTbl",
+      "D_00A4F2B8": "nameTbl",
+      "D_00A4F2C8": "nameTbl",
+      "D_00A4F2D8": "nameTbl",
+      "D_00A4F2E8": "nameTbl",
+      "D_00A4F2F8": "nameTbl",
+      "D_00A4F308": "nameTbl",
+      "D_00A4F318": "nameTbl",
+      "D_00A4F328": "nameTbl",
+      "D_00A4F338": "nameTbl",
+      "D_00A4F348": "nameTbl",
+      "D_00A4F358": "nameTbl",
+      "D_00A4F368": "nameTbl",
+      "D_00A4F378": "nameTbl",
+      "D_00A4F388": "nameTbl",
+      "D_00A4F398": "nameTbl",
+      "D_00A4F3A8": "nameTbl",
+      "D_00A4F3B8": "nameTbl",
+      "D_00A4F3C8": "nameTbl",
+      "D_00A4F3D8": "nameTbl",
+      "D_00A4F3E8": "nameTbl",
+      "D_00A4F3F8": "nameTbl",
+      "D_00A4F408": "nameTbl",
+      "D_00A4F418": "nameTbl",
+      "D_00A4F428": "nameTbl",
+      "D_00A4F438": "nameTbl",
+      "D_00A4F448": "nameTbl",
+      "D_00A4F458": "nameTbl",
+      "D_00A4F468": "nameTbl",
+      "D_00A4F478": "nameTbl",
+      "D_00A4F488": "nameTbl",
+      "D_00A4F498": "nameTbl",
+      "D_00A4F4A8": "wpnTbl",
+      "D_00A4F4B8": "wpnTbl",
+      "D_00A4F4C8": "wpnTbl",
+      "D_00A4F4D8": "wpnTbl",
+      "D_00A4F4E8": "wpnTbl",
+      "D_00A4F4F8": "wpnTbl",
+      "D_00A4F508": "wpnTbl",
+      "D_00A4F518": "wpnTbl",
+      "D_00A4F528": "wpnTbl",
+      "D_00A4F538": "wpnTbl",
+      "D_00A4F548": "wpnTbl",
+      "D_00A4F558": "wpnTbl",
+      "D_00A4F568": "wpnTbl",
+      "D_00A4F578": "wpnTbl",
+      "D_00A4F588": "wpnTbl",
+      "D_00A4F598": "wpnTbl",
+      "D_00A4F5A8": "wpnTbl",
+      "D_00A4F5B8": "wpnTbl",
+      "D_00A4F5C8": "wpnTbl",
+      "D_00A4F5D8": "wpnTbl",
+      "D_00A4F5E8": "wpnTbl",
+      "D_00A4F5F8": "wpnTbl",
+      "D_00A4F608": "wpnTbl",
+      "D_00A4F618": "wpnTbl",
+      "D_00A4F628": "wpnTbl",
+      "D_00A4F638": "wpnTbl",
+      "D_00A4F648": "wpnTbl",
+      "D_00A4F658": "wpnTbl",
+      "D_00A4F668": "wpnTbl",
+      "D_00A4F678": "wpnTbl",
+      "D_00A4F688": "wpnTbl",
+      "D_00A4F698": "wpnTbl",
+      "D_00A4F6A8": "wpnTbl",
+      "D_00A4F6B8": "wpnTbl",
+      "D_00A4F6C8": "wpnTbl",
+      "D_00A4F6D8": "wpnTbl",
+      "D_00A4F6E8": "wpnTbl",
+      "D_00A4F6F8": "wpnTbl",
+      "D_00A4F708": "wpnTbl",
+      "D_00A4F718": "wpnTbl",
+      "D_00A4F728": "wpnTbl",
+      "D_00A4F738": "wpnTbl",
+      "D_00A4F748": "wpnTbl",
+      "D_00A4F758": "wpnTbl",
+      "D_00A4F768": "wpnTbl",
+      "D_00A4F778": "wpnTbl",
+      "D_00A4F788": "wpnTbl",
+      "D_00A4F798": "wpnTbl",
+      "D_00A4F7A8": "wpnTbl",
+      "D_00A4F7B8": "wpnTbl",
+      "D_00A4F7C8": "wpnTbl",
+      "D_00A4F7D8": "wpnTbl",
+      "D_00A4F7E8": "wpnTbl",
+      "D_00A4F7F8": "wpnTbl",
+      "D_00A4F808": "wpnTbl",
+      "D_00A4F818": "wpnTbl",
+      "D_00A4F828": "wpnTbl",
+      "D_00A4F838": "wpnTbl",
+      "D_00A4F848": "wpnTbl",
+      "D_00A4F858": "wpnTbl",
+      "D_00A4F868": "wpnTbl",
+      "D_00A4F870": "wpnTbl",
+      "D_00A4F878": "wpnTbl",
+      "D_00A4F880": "wpnTbl",
+      "D_00A4F888": "wpnTbl",
+      "D_00A4F890": "wpnTbl",
+      "D_00A4F898": "wpnTbl",
+      "D_00A4F8A0": "wpnTbl",
+      "D_00A4F8A8": "wpnTbl",
+      "D_00A4F8B0": "wpnTbl",
+      "D_00A4F8B8": "wpnTbl",
+      "D_00A4F8C0": "wpnTbl",
+      "D_00A4F8D0": "wpnTbl",
+      "D_00A4F8E0": "wpnTbl",
+      "D_00A4F8F0": "wpnTbl",
+      "D_00A4F900": "wpnTbl",
+      "D_00A4F910": "wpnTbl",
+      "D_00A4F920": "wpnTbl",
+      "D_00A4F930": "wpnTbl",
+      "D_00A4F940": "wpnTbl",
+      "D_00A4F950": "wpnTbl",
+      "D_00A4F960": "wpnTbl",
+      "D_00A4F970": "wpnTbl",
+      "D_00A4F980": "wpnTbl",
+      "D_00A4F990": "wpnTbl",
+      "D_00A4F9A0": "wpnTbl",
+      "D_00A4F9B0": "wpnTbl",
+      "D_00A4F9C0": "wpnTbl",
+      "D_00A4F9D0": "wpnTbl",
+      "D_00A4F9E0": "wpnTbl",
+      "D_00A4F9F0": "wpnTbl",
+      "D_00A4FA00": "wpnTbl",
+      "D_00A4FA10": "wpnTbl",
+      "D_00A4FA20": "wpnTbl",
+      "D_00A4FA30": "wpnTbl",
+      "D_00A4FA40": "wpnTbl",
+      "D_00A4FA50": "wpnTbl",
+      "D_00A4FA60": "wpnTbl",
+      "D_00A4FA70": "wpnTbl",
+      "D_00A4FA80": "wpnTbl",
+      "D_00A4FA90": "wpnTbl",
+      "D_00A4FAA0": "wpnTbl",
+      "D_00A4FAB0": "wpnTbl",
+      "D_00A4FAC0": "wpnTbl",
+      "D_00A4FAD0": "wpnTbl",
+      "D_00A4FAE0": "wpnTbl",
+      "D_00A4FAF0": "wpnTbl",
+      "D_00A4FB00": "wpnTbl",
+      "D_00A4FB10": "wpnTbl",
+      "D_00A4FB20": "wpnTbl",
+      "D_00A4FB30": "wpnTbl",
+      "D_00A4FB40": "wpnTbl",
+      "D_00A4FB50": "wpnTbl",
+      "D_00A4FB60": "wpnTbl",
+      "D_00A4FB70": "wpnTbl",
+      "D_00A4FB80": "wpnTbl",
+      "D_00A4FB90": "cmdStrTbl",
+      "D_00A4FB98": "cmdStrTbl",
+      "D_00A4FBA0": "cmdStrTbl",
+      "D_00A4FBA8": "cmdStrTbl",
+      "D_00A4FBB0": "cmdStrTbl",
+      "D_00A4FBC0": "cmdStrTbl",
+      "D_00A4FBD0": "cmdStrTbl",
+      "D_00A4FBE0": "cmdStrTbl",
+      "D_00A4FBE8": "cmdStrTbl",
+      "D_00A4FBF0": "cmdStrTbl",
+      "D_00A4FBF8": "cmdStrTbl",
+      "D_00A4FC00": "cmdStrTbl",
+      "D_00A4FC08": "cmdStrTbl",
+      "D_00A4FC18": "cmdStrTbl",
+      "D_00A4FC28": "cmdStrTbl",
+      "D_00A4FC38": "cmdStrTbl",
+      "D_00A4FC48": "cmdStrTbl",
+      "D_00A4FC58": "cmdStrTbl",
+      "D_00A4FC68": "cmdStrTbl",
+      "D_00A4FC78": "cmdStrTbl",
+      "D_00A4FC88": "cmdStrTbl",
+      "D_00A4FC98": "cmdStrTbl",
+      "D_00A4FCA8": "cmdStrTbl",
+      "D_00A4FCB8": "cmdStrTbl",
+      "D_00A4FCC8": "cmdStrTbl",
+      "D_00A4FCD8": "cmdStrTbl",
+      "D_00A4FCE8": "cmdStrTbl",
+      "D_00A4FCF8": "cmdStrTbl",
+      "D_00A4FD08": "cmdStrTbl",
+      "D_00A4FD18": "cmdStrTbl",
+      "D_00A4FD28": "cmdStrTbl",
+      "D_00A4FD30": "cmdStrTbl",
+      "D_00A4FD38": "cmdStrTbl",
+      "D_00A4FD40": "cmdStrTbl",
+      "D_00A4FD48": "cmdStrTbl",
+      "D_00A4FD50": "cmdStrTbl",
+      "D_00A4FD58": "cmdStrTbl",
+      "D_00A4FD60": "cmdStrTbl",
+      "D_00A4FD68": "cmdStrTbl",
+      "D_00A4FD70": "cmdStrTbl",
+      "D_00A4FD78": "cmdStrTbl",
+      "D_00A4FD80": "cmdStrTbl",
+      "D_00A4FD88": "cmdStrTbl",
+      "D_00A4FD90": "cmdStrTbl",
+      "D_00A4FD98": "cmdStrTbl",
+      "D_00A4FDA0": "cmdStrTbl",
+      "D_00A4FDA8": "cmdStrTbl",
+      "D_00A4FDB0": "cmdStrTbl",
+      "D_00A4FDB8": "cmdStrTbl",
+      "D_00A4FDC0": "thinkExpTbl",
+      "D_00A4FDC8": "thinkExpTbl",
+      "D_00A4FDD0": "thinkExpTbl",
+      "D_00A4FDD8": "thinkExpTbl",
+      "D_00A4FDE0": "thinkExpTbl",
+      "D_00A4FDE8": "thinkExpTbl",
+      "D_00A4FDF0": "regName",
+      "D_00A4FE00": "regName",
+      "D_00A4FE08": "regName",
+      "D_00A4FE10": "regName",
+      "D_00A4FE18": "regName",
+      "D_00A4FE28": "regName",
+      "D_00A4FE30": "regName",
+      "D_00A4FE38": "regName",
+      "D_00A4FE48": "regName",
+      "D_00A4FE50": "regName",
+      "D_00A4FE58": "regName",
+      "D_00A4FE60": "regName",
+      "D_00A4FE68": "thinkStrTbl",
+      "D_00A4FE78": "thinkStrTbl",
+      "D_00A4FE88": "thinkStrTbl",
+      "D_00A4FE98": "thinkStrTbl",
+      "D_00A4FEA8": "thinkStrTbl",
+      "D_00A4FEB8": "thinkStrTbl",
+      "D_00A4FEC8": "thinkStrTbl",
+      "D_00A4FED8": "thinkStrTbl",
+      "D_00A4FEE8": "thinkStrTbl",
+      "D_00A4FEF8": "thinkStrTbl",
+      "D_00A4FF08": "thinkStrTbl",
+      "D_00A4FF18": "thinkStrTbl",
+      "D_00A4FF28": "thinkStrTbl",
+      "D_00A4FF38": "thinkStrTbl",
+      "D_00A4FF48": "thinkStrTbl",
+      "D_00A4FF58": "thinkStrTbl",
+      "D_00A4FF68": "thinkStrTbl",
+      "D_00A4FF78": "thinkStrTbl",
+      "D_00A4FF88": "thinkStrTbl",
+      "D_00A4FF90": "thinkStrTbl",
+      "D_00A4FFA0": "thinkStrTbl",
+      "D_00A4FFB0": "thinkStrTbl",
+      "D_00A4FFC0": "thinkStrTbl",
+      "D_00A4FFD0": "thinkStrTbl",
+      "D_00A4FFE0": "thinkStrTbl",
+      "D_00A4FFF0": "thinkStrTbl",
+      "D_00A50008": "thinkStrTbl",
+      "D_00A50018": "thinkStrTbl",
+      "D_00A50028": "thinkStrTbl",
+      "D_00A50038": "thinkStrTbl",
+      "D_00A50048": "thinkStrTbl",
+      "D_00A50058": "thinkStrTbl",
+      "D_00A50068": "thinkStrTbl",
+      "D_00A50078": "thinkStrTbl",
+      "D_00A50088": "thinkStrTbl",
+      "D_00A50098": "thinkStrTbl",
+      "D_00A500A8": "thinkStrTbl",
+      "D_00A500C0": "thinkStrTbl",
+      "D_00A500D8": "thinkStrTbl",
+      "D_00A500F0": "thinkStrTbl",
+      "D_00A50108": "thinkStrTbl",
+      "D_00A50118": "thinkStrTbl",
+      "D_00A50128": "thinkStrTbl",
+      "D_00A50138": "thinkStrTbl",
+      "D_00A50148": "thinkStrTbl",
+      "D_00A50158": "thinkStrTbl",
+      "D_00A50168": "thinkStrTbl",
+      "D_00A50178": "thinkStrTbl",
+      "D_00A50188": "thinkStrTbl",
+      "D_00A50198": "thinkStrTbl",
+      "D_00A501A8": "thinkStrTbl",
+      "D_00A501B8": "thinkStrTbl",
+      "D_00A501C8": "thinkStrTbl",
+      "D_00A501D8": "thinkStrTbl",
+      "D_00A501E0": "thinkStrTbl",
+      "D_00A501E8": "thinkStrTbl",
+      "D_00A501F8": "thinkStrTbl",
+      "D_00A50208": "thinkStrTbl",
+      "D_00A50210": "thinkStrTbl",
+      "D_00A50220": "thinkStrTbl",
+      "D_00A50230": "thinkStrTbl",
+      "D_00A50238": "thinkStrTbl",
+      "D_00A50240": "thinkStrTbl",
+      "D_00A50248": "thinkStrTbl",
+      "D_00A50258": "thinkStrTbl",
+      "D_00A50268": "thinkStrTbl",
+      "D_00A50270": "thinkStrTbl",
+      "D_00A50278": "posName",
+      "D_00A50280": "thinkStrTbl",
+      "D_00A50290": "thinkStrTbl",
+      "D_00A502A0": "thinkStrTbl",
+      "D_00A502A8": "thinkStrTbl",
+      "D_00A502B0": "thinkStrTbl",
+      "D_00A502B8": "thinkStrTbl",
+      "D_00A502C0": "thinkStrTbl",
+      "D_00A502C8": "thinkStrTbl",
+      "D_00A502D0": "thinkStrTbl",
+      "D_00A502D8": "thinkStrTbl",
+      "D_00A502E0": "thinkStrTbl",
+      "D_00A502E8": "thinkStrTbl",
+      "D_00A502F0": "thinkStrTbl",
+      "D_00A502F8": "thinkStrTbl",
+      "D_00A50300": "thinkStrTbl",
+      "D_00A50308": "thinkStrTbl",
+      "D_00A50310": "thinkStrTbl",
+      "D_00A50318": "thinkStrTbl",
+      "D_00A50320": "thinkStrTbl",
+      "D_00A50328": "thinkStrTbl",
+      "D_00A50330": "thinkStrTbl",
+      "D_00A50338": "thinkStrTbl",
+      "D_00A50340": "thinkStrTbl",
+      "D_00A50348": "thinkStrTbl",
+      "D_00A50350": "thinkStrTbl",
+      "D_00A50358": "thinkStrTbl",
+      "D_00A50360": "thinkStrTbl",
+      "D_00A50368": "thinkStrTbl",
+      "D_00A50370": "thinkStrTbl",
+      "D_00A50378": "thinkStrTbl",
+      "D_00A50800": "posName",
+      "D_00A50808": "posName",
+      "D_00A50810": "posName",
+      "D_00A50818": "posName",
+      "D_00A50820": "posName",
+      "D_00A50828": "posName",
+      "D_00A50830": "posName",
+      "D_00A50838": "posName",
+      "D_00A50840": "posName",
+      "D_00A50848": "szName",
+      "D_00A50850": "szName",
+      "D_00A50858": "szName",
+      "D_00A50860": "szName",
+      "D_00A50868": "szName"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov01/build/scaffold/src/ov01/debug_entry.o"
+      "object": "build/ov01/build/scaffold/src/ov01/debug_entry.o"
      }
     }
    ]

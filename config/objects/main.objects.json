@@ -2716,7 +2716,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004C5510",
@@ -2724,10 +2724,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004C7340",
+          "end": "0x004C72E0",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004C6F38",
+          "start": "0x004C6BC0",
           "tu": "menu_agws_para_set"
         },
         {
@@ -2735,7 +2735,7 @@
           "end": "0x004C7390",
           "ordinal": 172,
           "piece": "seisan_count_init1",
-          "start": "0x004C7340",
+          "start": "0x004C72E0",
           "tu": "seisan_count_init1"
         },
         {
@@ -2804,7 +2804,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004C9F20",
+          "end": "0x004C9DD0",
           "ordinal": 181,
           "piece": "karakama_test",
           "start": "0x004C9BF0",
@@ -2815,7 +2815,7 @@
           "end": "0x004CA280",
           "ordinal": 182,
           "piece": "init_uwamono_sys",
-          "start": "0x004C9F20",
+          "start": "0x004C9DD0",
           "tu": "init_uwamono_sys"
         },
         {
@@ -2836,7 +2836,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004CA698",
+          "end": "0x004CA680",
           "ordinal": 186,
           "piece": "create_evt_item_get_task",
           "start": "0x004CA4D0",
@@ -2847,7 +2847,7 @@
           "end": "0x004CA940",
           "ordinal": 187,
           "piece": "pause_menu_page_uwamono",
-          "start": "0x004CA698",
+          "start": "0x004CA680",
           "tu": "pause_menu_page_uwamono"
         },
         {
@@ -3164,7 +3164,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004D2188",
+          "end": "0x004D2170",
           "ordinal": 269,
           "piece": "map_2",
           "start": "0x004D2130",
@@ -3175,7 +3175,7 @@
           "end": "0x004D2200",
           "ordinal": 271,
           "piece": "unit6003",
-          "start": "0x004D2188",
+          "start": "0x004D2170",
           "tu": "unit6003"
         },
         {
@@ -4400,7 +4400,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
           "start": "0x004DAD18",
@@ -4408,10 +4408,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004DB090",
+          "end": "0x004DB020",
           "ordinal": 171,
           "piece": "menu_agws_para_set",
-          "start": "0x004DAF28",
+          "start": "0x004DAEB0",
           "tu": "menu_agws_para_set"
         },
         {
@@ -4419,7 +4419,7 @@
           "end": "0x004DB0E0",
           "ordinal": 172,
           "piece": "seisan_count_init1",
-          "start": "0x004DB090",
+          "start": "0x004DB020",
           "tu": "seisan_count_init1"
         },
         {
@@ -49642,20 +49642,20 @@
           ],
           "bounds": [
             "0x004C5508",
-            "0x004C6F38"
+            "0x004C6BC0"
           ],
-          "end": "0x004C6F38",
+          "end": "0x004C6BC0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C6F38",
+              "end": "0x004C6BC0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004C5510"
             }
           ],
           "rule": "anchored start",
-          "size": 6696,
+          "size": 5808,
           "splat_type": "rodata",
           "start": "0x004C5510"
         },
@@ -49690,20 +49690,20 @@
           ],
           "bounds": [
             "0x004DAB89",
-            "0x004DAF28"
+            "0x004DAEB0"
           ],
-          "end": "0x004DAF28",
+          "end": "0x004DAEB0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DAF28",
+              "end": "0x004DAEB0",
               "name": "menu_para_pt_rate_get",
               "start": "0x004DAD18"
             }
           ],
           "rule": "anchored start",
-          "size": 528,
+          "size": 408,
           "splat_type": "sdata",
           "start": "0x004DAD18"
         }
@@ -50021,51 +50021,51 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C6F38",
+            "0x004C6BC0",
             "0x004C72D1"
           ],
           "bounds": [
             "0x004C6BC0",
-            "0x004C7340"
+            "0x004C72E0"
           ],
-          "end": "0x004C7340",
+          "end": "0x004C72E0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C7340",
+              "end": "0x004C72E0",
               "name": "menu_agws_para_set",
-              "start": "0x004C6F38"
+              "start": "0x004C6BC0"
             }
           ],
-          "rule": "anchored start",
-          "size": 1032,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 1824,
           "splat_type": "rodata",
-          "start": "0x004C6F38"
+          "start": "0x004C6BC0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DAF28",
+            "0x004DAEB0",
             "0x004DAFF9"
           ],
           "bounds": [
             "0x004DAE71",
-            "0x004DB090"
+            "0x004DB020"
           ],
-          "end": "0x004DB090",
+          "end": "0x004DB020",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DB090",
+              "end": "0x004DB020",
               "name": "menu_agws_para_set",
-              "start": "0x004DAF28"
+              "start": "0x004DAEB0"
             }
           ],
-          "rule": "anchored start",
-          "size": 360,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 368,
           "splat_type": "sdata",
-          "start": "0x004DAF28"
+          "start": "0x004DAEB0"
         }
       },
       "shared_contract": {
@@ -50394,7 +50394,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C7340",
+            "0x004C72E0",
             "0x004C7351"
           ],
           "bounds": [
@@ -50408,17 +50408,17 @@
               "c_split": false,
               "end": "0x004C7390",
               "name": "seisan_count_init1",
-              "start": "0x004C7340"
+              "start": "0x004C72E0"
             }
           ],
-          "rule": "anchored start",
-          "size": 80,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 176,
           "splat_type": "rodata",
-          "start": "0x004C7340"
+          "start": "0x004C72E0"
         },
         ".sdata": {
           "anchored": [
-            "0x004DB090",
+            "0x004DB020",
             "0x004DB0B9"
           ],
           "bounds": [
@@ -50432,13 +50432,13 @@
               "c_split": false,
               "end": "0x004DB0E0",
               "name": "seisan_count_init1",
-              "start": "0x004DB090"
+              "start": "0x004DB020"
             }
           ],
-          "rule": "anchored start",
-          "size": 80,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 192,
           "splat_type": "sdata",
-          "start": "0x004DB090"
+          "start": "0x004DB020"
         }
       },
       "shared_contract": {
@@ -54231,20 +54231,20 @@
           ],
           "bounds": [
             "0x004C9BEC",
-            "0x004C9F20"
+            "0x004C9DD0"
           ],
-          "end": "0x004C9F20",
+          "end": "0x004C9DD0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004C9F20",
+              "end": "0x004C9DD0",
               "name": "karakama_test",
               "start": "0x004C9BF0"
             }
           ],
           "rule": "anchored start",
-          "size": 816,
+          "size": 480,
           "splat_type": "rodata",
           "start": "0x004C9BF0"
         },
@@ -55062,7 +55062,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004C9F20",
+            "0x004C9DD0",
             "0x004CA261"
           ],
           "bounds": [
@@ -55076,13 +55076,13 @@
               "c_split": false,
               "end": "0x004CA280",
               "name": "init_uwamono_sys",
-              "start": "0x004C9F20"
+              "start": "0x004C9DD0"
             }
           ],
-          "rule": "anchored start",
-          "size": 864,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 1200,
           "splat_type": "rodata",
-          "start": "0x004C9F20"
+          "start": "0x004C9DD0"
         },
         ".sdata": {
           "anchored": [
@@ -56052,20 +56052,20 @@
           ],
           "bounds": [
             "0x004CA4C1",
-            "0x004CA698"
+            "0x004CA680"
           ],
-          "end": "0x004CA698",
+          "end": "0x004CA680",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004CA698",
+              "end": "0x004CA680",
               "name": "create_evt_item_get_task",
               "start": "0x004CA4D0"
             }
           ],
           "rule": "anchored start",
-          "size": 456,
+          "size": 432,
           "splat_type": "rodata",
           "start": "0x004CA4D0"
         },
@@ -56247,7 +56247,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004CA698",
+            "0x004CA680",
             "0x004CA93C"
           ],
           "bounds": [
@@ -56261,13 +56261,13 @@
               "c_split": false,
               "end": "0x004CA940",
               "name": "pause_menu_page_uwamono",
-              "start": "0x004CA698"
+              "start": "0x004CA680"
             }
           ],
-          "rule": "anchored start",
-          "size": 680,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 704,
           "splat_type": "rodata",
-          "start": "0x004CA698"
+          "start": "0x004CA680"
         },
         ".sdata": {
           "anchored": [
@@ -80322,20 +80322,20 @@
           ],
           "bounds": [
             "0x004D2128",
-            "0x004D2188"
+            "0x004D2170"
           ],
-          "end": "0x004D2188",
+          "end": "0x004D2170",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004D2188",
+              "end": "0x004D2170",
               "name": "map_2",
               "start": "0x004D2130"
             }
           ],
           "rule": "anchored start",
-          "size": 88,
+          "size": 64,
           "splat_type": "rodata",
           "start": "0x004D2130"
         }
@@ -80743,7 +80743,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004D2188",
+            "0x004D2170",
             "0x004D21F4"
           ],
           "bounds": [
@@ -80757,13 +80757,13 @@
               "c_split": false,
               "end": "0x004D2200",
               "name": "unit6003",
-              "start": "0x004D2188"
+              "start": "0x004D2170"
             }
           ],
-          "rule": "anchored start",
-          "size": 120,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 144,
           "splat_type": "rodata",
-          "start": "0x004D2188"
+          "start": "0x004D2170"
         }
       },
       "shared_contract": {

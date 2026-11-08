@@ -15,8 +15,205 @@ void debugEntry(int page)
     debugBattle(page);
 }
 
-extern char *err; /* fallback string returned for an out-of-range debug table index */
-extern char *nameTbl[0xC3]; /* debug menu's character name table */
+char *err = "(ERR)"; /* fallback string returned for an out-of-range debug table index */
+/* debug menu's character name table */
+char *nameTbl[0xC3] = {
+    "NULL    ",
+    "CHAOS   ",
+    "KOSMOS  ",
+    "SHION   ",
+    "SHITAN  ",
+    "ZIGGY   ",
+    "MOMO    ",
+    "JR      ",
+    "CECILIA ",
+    "CATHERINE",
+    "VIRGIL  ",
+    "MARY    ",
+    "SHELLEY ",
+    "NULL13  ",
+    "NULL14  ",
+    "NULL15  ",
+    "NULL16  ",
+    "VX_01   ",
+    "VX_02   ",
+    "VX_03   ",
+    "VX_04   ",
+    "VX_05   ",
+    "VX_06   ",
+    "AG_01   ",
+    "AG_02   ",
+    "AG_03   ",
+    "AG_04   ",
+    "AG_05   ",
+    "AG_06   ",
+    "UKN     ",
+    "AGWS14  ",
+    "AGWS15  ",
+    "AGWS16  ",
+    "HEI00   ",
+    "GUNO001 ",
+    "GUNO002 ",
+    "GUNO003 ",
+    "GUNO004 ",
+    "GUNO005 ",
+    "GUNO006 ",
+    "GUNO007 ",
+    "GUNO008 ",
+    "GUNO009 ",
+    "GUNO010 ",
+    "GUNO011 ",
+    "GUNO012 ",
+    "GUNO013 ",
+    "GUNO014 ",
+    "GUNO015 ",
+    "GUNO016 ",
+    "GUNO017 ",
+    "GUNO018 ",
+    "GUNO019 ",
+    "GUNO020 ",
+    "GUNO021 ",
+    "GUNO022 ",
+    "GUNO023 ",
+    "GUNO024 ",
+    "GUNO025 ",
+    "GUNO101 ",
+    "GUNO102 ",
+    "GUNO103 ",
+    "GUNO114 ",
+    "FEMA001 ",
+    "FEMA002 ",
+    "FEMA003 ",
+    "FEMA004 ",
+    "FEMA005 ",
+    "FEMA006 ",
+    "FERE001 ",
+    "FERE002 ",
+    "FERE003 ",
+    "FERO001 ",
+    "FESO001 ",
+    "FESO002 ",
+    "FESO003 ",
+    "FESO004 ",
+    "UTMA001 ",
+    "UTMA002 ",
+    "UTMA003 ",
+    "UTMA004 ",
+    "UTMA005 ",
+    "UTMA006 ",
+    "UTMA007 ",
+    "UTMA008 ",
+    "UTMA009 ",
+    "UTMA010 ",
+    "UTMA011 ",
+    "UTMA012 ",
+    "UTMA013 ",
+    "UTMA014 ",
+    "UTRE001 ",
+    "UTRE002 ",
+    "UTRE003 ",
+    "UTRE004 ",
+    "UTRE005 ",
+    "UTRE006 ",
+    "UTRO001 ",
+    "UTRO002 ",
+    "UTRO003 ",
+    "UTRO004 ",
+    "UTRO005 ",
+    "UTRO006 ",
+    "UTRO007 ",
+    "UTSO001 ",
+    "UTSO002 ",
+    "UTSO003 ",
+    "UTSO004 ",
+    "UTSO005 ",
+    "UTSO006 ",
+    "UTSO007 ",
+    "MONS001 ",
+    "MONS002 ",
+    "MONS003 ",
+    "MONS004 ",
+    "MONS005 ",
+    "MONS006 ",
+    "MONS007 ",
+    "MONS008 ",
+    "MONS009 ",
+    "MONS010 ",
+    "MONS011 ",
+    "MONS012 ",
+    "MONS013 ",
+    "MONS014 ",
+    "MONS015 ",
+    "MONS016 ",
+    "MONS017 ",
+    "MONS018 ",
+    "MONS019 ",
+    "MONS020 ",
+    "MONS021 ",
+    "MONS022 ",
+    "MONS023 ",
+    "MONS024 ",
+    "MONS025 ",
+    "MONS026 ",
+    "MONS027 ",
+    "MONS028 ",
+    "MONS029 ",
+    "MONS030 ",
+    "MONS031 ",
+    "MONS032 ",
+    "MONS033 ",
+    "MONS034 ",
+    "MONS035 ",
+    "MONS036 ",
+    "MONS037 ",
+    "MONS038 ",
+    "MONS039 ",
+    "MONS040 ",
+    "BOSS001 ",
+    "BOSS002 ",
+    "BOSS003 ",
+    "BOSS004 ",
+    "BOSS005 ",
+    "BOSS006 ",
+    "BOSS007 ",
+    "BOSS008 ",
+    "BOSS009 ",
+    "BOSS010 ",
+    "BOSS011 ",
+    "BOSS012 ",
+    "BOSS013 ",
+    "BOSS014 ",
+    "BOSS015 ",
+    "BOSS016 ",
+    "BOSS017 ",
+    "BOSS018 ",
+    "BOSS019 ",
+    "BOSS020 ",
+    "BOSS021 ",
+    "BOSS022 ",
+    "BOSS023 ",
+    "BOSS024 ",
+    "BOSS025 ",
+    "BOSS026 ",
+    "BOSS027 ",
+    "BOSS028 ",
+    "BOSS029 ",
+    "BOSS030 ",
+    "BOSS031 ",
+    "BOSS032 ",
+    "BOSS033 ",
+    "BOSS103 ",
+    "BOSS104 ",
+    "BOSS120 ",
+    "SKJ_JR1 ",
+    "SKJ_JR2 ",
+    "SKJ_MOMO1",
+    "SKJ_SHION1",
+    "SKJ_SHION2",
+    "SKJ_SHION3",
+    "SKJ_SHION4",
+    "SKJ_KOSMOS1"
+};
 
 char *debugNameGet(int charaId) {
     if (charaId < 0xC3) {
@@ -25,7 +222,125 @@ char *debugNameGet(int charaId) {
     return err;
 }
 
-extern char *wpnTbl[0x74]; /* debug menu's weapon name table */
+/* debug menu's weapon name table */
+char *wpnTbl[0x74] = {
+    "NULL    ",
+    "CHA_GR01",
+    "CHA_GR02",
+    "CHA_GR03",
+    "CHA_GR04",
+    "CHA_GR05",
+    "CHA_GR06",
+    "CHA_GR07",
+    "CHA_GR08",
+    "CHA_GR09",
+    "CHA_GR10",
+    "CHA_WING",
+    "KOS_HW01",
+    "KOS_HW02",
+    "KOS_HW03",
+    "KOS_HW04",
+    "KOS_HW05",
+    "KOS_HW06",
+    "KOS_BW01",
+    "KOS_BW02",
+    "KOS_BW03",
+    "KOS_BW04",
+    "KOS_BW05",
+    "KOS_BW06",
+    "MMO_RD01",
+    "MMO_RD02",
+    "MMO_RD03",
+    "MMO_RD04",
+    "MMO_RD05",
+    "MMO_RD06",
+    "MMO_RD07",
+    "MMO_RD08",
+    "MMO_RD09",
+    "MMO_RD10",
+    "MMO_RD11",
+    "MMO_RD12",
+    "MMO_RD13",
+    "MMO_RD14",
+    "MMO_RD15",
+    "MMO_RD16",
+    "MMO_RD17",
+    "ZIG_SW01",
+    "ZIG_BW01",
+    "ZIG_BW02",
+    "ZIG_BW03",
+    "ZIG_BW04",
+    "JR_HG01",
+    "JR_HG02",
+    "JR_HG03",
+    "JR_HG04",
+    "JR_HG05",
+    "JR_HG06",
+    "JR_HG07",
+    "JR_HG08",
+    "JR_HG09",
+    "JR_HG10",
+    "JR_HG11",
+    "STN_SW01",
+    "STN_SW02",
+    "STN_SW03",
+    "STN_SW04",
+    "STN_SW05",
+    "STN_SW06",
+    "STN_SW07",
+    "STN_SW08",
+    "STN_SW09",
+    "STN_SW10",
+    "STN_SW11",
+    "STN_SW12",
+    "SON_MBOX",
+    "SUT00   ",
+    "AX00    ",
+    "BD00    ",
+    "BD01    ",
+    "BDF00   ",
+    "HG00    ",
+    "HG01    ",
+    "HMR00   ",
+    "HMR01   ",
+    "HMR02   ",
+    "MG00    ",
+    "MG01    ",
+    "RF00    ",
+    "RF01    ",
+    "RF02    ",
+    "BAM00   ",
+    "BS00    ",
+    "LSR00   ",
+    "PBK00   ",
+    "FL00    ",
+    "GND00   ",
+    "GLG00   ",
+    "HB00    ",
+    "MSP00   ",
+    "MSP02   ",
+    "BL00    ",
+    "CB00    ",
+    "EAC00   ",
+    "BP00    ",
+    "LGC00   ",
+    "AMP02   ",
+    "SHB00   ",
+    "FSD00   ",
+    "VSD00   ",
+    "BBC00   ",
+    "EAD00   ",
+    "ECM01   ",
+    "ECM02   ",
+    "SMP01   ",
+    "WIR00   ",
+    "SOL00   ",
+    "DEF00   ",
+    "GLG00R  ",
+    "HB00R   ",
+    "MSP02R  ",
+    "HEI     "
+};
 
 char *debugWpnGet(int wpnId) {
     if (wpnId < 0x74) {
@@ -81,22 +396,201 @@ extern DebugUnitPara *calcUPGet(ObjectTask *unit);
 
 extern int unitNoGet(ObjectTask *unit);
 
-extern char *cmdStrTbl[];
+char *cmdStrTbl[] = {
+    "FREE",
+    "ATK",
+    "ETHER",
+    "ITEM",
+    "GUARD",
+    "AGWS",
+    "MOVE",
+    "STAND",
+    "END",
+    "DMG",
+    "EVA",
+    "DEF",
+    "DEAD",
+    "MOT",
+    "TGTSET",
+    "TURNCHA",
+    "TURNPOS",
+    "MOVECHA",
+    "MOVEPOS",
+    "MOVECHA_NORM",
+    "MOVEPOS_NORM",
+    "MOVECHA_RUN",
+    "MOVEPOS_RUN",
+    "MOVECHA_JUMP",
+    "MOVEPOS_JUMP",
+    "MOVECHA_HOVER",
+    "MOVEPOS_HOVER",
+    "MOVECHA_WARP",
+    "MOVEPOS_WARP",
+    "MOVECHA_JUMP2",
+    "MOVEPOS_JUMP2",
+    "MOVECHA_HOVER2",
+    "MOVEPOS_HOVER2",
+    "MOVECHA_FLOAT",
+    "MOVEPOS_FLOAT",
+    "MOVECHA_HOVER3",
+    "MOVEPOS_HOVER3",
+    "BTST",
+    "BTED",
+    "REC",
+    "WAKE",
+    "STAT",
+    "READWAIT",
+    "UNITCHANGE",
+    "TURNCENTER",
+    "AGWS2",
+    "ESCAPE",
+    "FADEIN",
+    "FADEOUT"
+};
+
+char *thinkExpTbl[] = {
+    "EQ",
+    "NE",
+    "GT",
+    "GE",
+    "LT",
+    "LE"
+};
+
+char *regName[] = {
+    "UNIT",
+    "CMD",
+    "ID",
+    "TGT",
+    "UNIT_ATK",
+    "CMD_ATK",
+    "TID_ATK",
+    "PARA_ATK",
+    "RRT",
+    "PL_NUM",
+    "EN_NUM",
+    "CAM_MODE"
+};
+
+char *thinkStrTbl[] = {
+    "EXIT",
+    "GO",
+    "GOSUB",
+    "RETURN",
+    "BRA",
+    "ONGO",
+    "ONGOSUB",
+    "RSET",
+    "RINC",
+    "RDEC",
+    "RADD",
+    "RSUB",
+    "RMUL",
+    "RDIV",
+    "RMOD",
+    "R_AND",
+    "R_OR",
+    "R_XOR",
+    "R_NOT",
+    "R_NEG",
+    "RRRND",
+    "RPUSH",
+    "RPOP",
+    "TBLGET",
+    "TBLSET",
+    "RPUT",
+    "PRINT",
+    "MEMDUMP",
+    "CMDPUTON",
+    "CMDPUTOFF",
+    "NULL",
+    "NULL",
+    "MSGPOS",
+    "MSG",
+    "THINKSET",
+    "THINKSET2",
+    "BOOST",
+    "STATCHK",
+    "LINECHK",
+    "UNITPARA_GET",
+    "UNITPARA_SET",
+    "UNITTBL",
+    "UNIT_CREATE",
+    "UNIT_CHANGE",
+    "ATKTBL",
+    "ATKSET",
+    "ATKTBL_SORT",
+    "ATKTBL_SORT_REV",
+    "ATKTBL_SEARCH",
+    "TECPARA_GET",
+    "MONSSETNO_GET",
+    "PARTYSIZE_GET",
+    "LIGHT_AMB",
+    "LIGHT_COL",
+    "LIGHT_DIR",
+    "CAM_REF_MODE",
+    "CAM_CAM_MODE",
+    "CAM_PERS_MODE",
+    "CAM_BANK_MODE",
+    "CAM_REF_MOVE_MODE",
+    "CAM_CAM_MOVE_MODE",
+    "CAM_PERS_MOVE_MODE",
+    "CAM_BANK_MOVE_MODE",
+    "CAM_LOCK",
+    "CAM_COPY",
+    "CAM_SET_POS",
+    "CAM_SET_ACT",
+    "CAM_SET_ACT2",
+    "CAM_SET_ACT3",
+    "CAM_OFFS_POS",
+    "CAM_OFFS_ANG",
+    "CAM_MOVE",
+    "CAM_SHAKE",
+    "CAM_CENTER_LENGTH",
+    "CAM_UNIT_HEIGHT",
+    "CAM_COORD_GET",
+    "CAM_BANK",
+    "CAM_PERS",
+    "CAM_TBL_SET",
+    "CAM_MOVE_STOP",
+    "EVENT",
+    "WAIT_EVENT",
+    "WAIT_CNT",
+    "WAIT_CAM_MOVE",
+    "WAIT_MSG",
+    "VPAD_ENEBLE",
+    "VPAD_DISABLE",
+    "VPAD_SET",
+    "MAP_MULSET",
+    "HP_PER_GET",
+    "EVENT_SLOT_GET",
+    "THINK_CAM_EVENT",
+    "CF_ENCOUNT_GET",
+    "CF_EVENT_GET",
+    "THINKNO_GET",
+    "STAT_GET",
+    "STAT_SET",
+    "STAT_RESET",
+    "DEAD_TIME"
+};
+
+int configSeq = 0;
+int configPos = 0;
+int statId = 1;
+int equipId = 1;
+int gainId = 1;
+int equipPos = 0;
+int equipPosX = 0;
+int slot = 0;
+int plMuteki = 0;
+int enMuteki = 0;
+int plIchigeki = 0;
 
 extern int *unitCmdPtrGet(ObjectTask *unit);
 extern int frameCntGet(void);
 extern unsigned char *dataItmGet(int index);
 extern int dataTecGet(int tecId);
 extern int printf(const char *format, ...);
-extern const char D_00A50380[];
-extern const char D_00A503A8[];
-extern const char D_00A503C0[];
-extern const char D_00A503E0[];
-extern const char D_00A50400[];
-extern const char D_00A50430[];
-extern const char D_00A50438[];
-extern const char D_00A50440[];
-extern const char D_00A50468[];
 
 void debugCmdPrint(ObjectTask *unit, int cmd)
 {
@@ -114,27 +608,27 @@ void debugCmdPrint(ObjectTask *unit, int cmd)
     case 1:
     case 2:
     case 3:
-        printf(D_00A50380, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s tid=%d para=%d\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, para);
         break;
     case 15: case 17: case 19: case 21: case 23:
     case 25: case 27: case 29: case 31: case 33:
-        printf(D_00A503A8, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd]);
         break;
     case 5: case 6: case 16: case 18: case 20: case 22:
     case 24: case 26: case 28: case 30: case 32: case 34:
-        printf(D_00A503C0, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s pos=%d\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd], tid);
         break;
     case 13:
-        printf(D_00A503E0, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s mot=%d\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd], tid);
         break;
     case 4: case 8: case 9: case 10: case 11: case 12:
     case 37: case 38: case 39: case 40: case 41: case 42:
     case 44: case 45: case 46: case 47: case 48:
-        printf(D_00A503A8, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd]);
         break;
     case 14:
@@ -143,17 +637,17 @@ void debugCmdPrint(ObjectTask *unit, int cmd)
         } else {
             flag = *(unsigned char *)dataTecGet(tid);
         }
-        printf(D_00A50400, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s tid=%d tgt=%1d)%s %s\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, unitNoGet(tgt),
-               debugNameGet(calcUPGet(tgt)->charaId), (flag & 0x10) ? D_00A50430 : D_00A50438);
+               debugNameGet(calcUPGet(tgt)->charaId), (flag & 0x10) ? "ALL" : "");
         break;
     case 43:
-        printf(D_00A50440, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+        printf("%6d: %1d)%s AP=%2d %s pos=%d id=%d\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                calcUPGet(unit)->ap, cmdStrTbl[cmd], tid, p[2]);
         break;
     default:
         do {
-            printf(D_00A50468, frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
+            printf("%6d: %1d)%s AP=%2d ERROR=%d\n", frameCntGet(), unitNoGet(unit), debugNameGet(calcUPGet(unit)->charaId),
                    calcUPGet(unit)->ap, p[0]);
         } while (0);
         break;
@@ -161,10 +655,6 @@ void debugCmdPrint(ObjectTask *unit, int cmd)
 }
 
 static char D_00A5AA40[0x10];
-extern const char D_00A50550[];
-extern const char D_00A50558[];
-extern const char D_00A50560[];
-extern const char D_00A50568[];
 
 #define DEBUG_THINK_REG_VALID 0x8000
 #define DEBUG_THINK_REG_TEXT 0x4000
@@ -180,15 +670,15 @@ char *debugThinkRegName(int reg_code)
     if (reg_code & DEBUG_THINK_REG_VALID) {
         if (reg_code & DEBUG_THINK_REG_TEXT) {
             if (reg_index < DEBUG_THINK_NUMERIC_LIMIT) {
-                sprintf(D_00A5AA40, D_00A50550, reg_index);
+                sprintf(D_00A5AA40, "@R%02d", reg_index);
             } else {
-                sprintf(D_00A5AA40, D_00A50558, cmdStrTbl[CMD_STR_TBL_REG_NAMES + reg_index]);
+                sprintf(D_00A5AA40, "@R%s", cmdStrTbl[CMD_STR_TBL_REG_NAMES + reg_index]);
             }
         } else {
             if (reg_index < DEBUG_THINK_NUMERIC_LIMIT) {
-                sprintf(D_00A5AA40, D_00A50560, reg_index);
+                sprintf(D_00A5AA40, "R%02d", reg_index);
             } else {
-                sprintf(D_00A5AA40, D_00A50568, cmdStrTbl[CMD_STR_TBL_REG_NAMES + reg_index]);
+                sprintf(D_00A5AA40, "R%s", cmdStrTbl[CMD_STR_TBL_REG_NAMES + reg_index]);
             }
         }
     } else {
@@ -204,27 +694,17 @@ extern short thinkRegGet(unsigned short regIndex);
 extern short cmdNum(short pc);
 extern char *thinkStrTbl[];
 extern char *thinkExpTbl[];
-extern const char D_00A50570[];
-extern const char D_00A50580[];
-extern const char D_00A50588[];
-extern const char D_00A505A0[];
-extern const char D_00A505A8[];
-extern const char D_00A505B0[];
-extern const char D_00A505C0[];
-extern const char D_00A505D0[];
-extern const char D_00A505D8[];
-extern const char D_00A505E8[];
 
 void debugThinkPrint(int cmd, short pc, short jmp)
 {
     int r, a, b, c;
     char *name;
 
-    printf(D_00A50570, pc, thinkStrTbl[cmd]);
+    printf("%04X: %s ", pc, thinkStrTbl[cmd]);
     switch (cmd) {
     case 1:
     case 2:
-        printf(D_00A50580, jmp);
+        printf("%Xh\n", jmp);
         break;
     case 4:
         pc += 2;
@@ -232,26 +712,26 @@ void debugThinkPrint(int cmd, short pc, short jmp)
         pc += 2;
         b = cmdNum(pc);
         c = cmdNum(pc + 2);
-        printf(D_00A50588, r, thinkExpTbl[b], c, jmp);
+        printf("%d %s %d -> %Xh\n", r, thinkExpTbl[b], c, jmp);
         break;
     case 5:
     case 6:
         a = cmdNum(pc + 2);
-        printf(D_00A505A0, a, jmp);
+        printf("%d %Xh\n", a, jmp);
         break;
     case 7:
         pc += 2;
         r = thinkRegNo(pc);
         a = cmdNum(pc + 2);
         name = debugThinkRegName(r);
-        printf(D_00A505A8, name, a);
+        printf("%s %d\n", name, a);
         break;
     case 8:
     case 9:
     case 18:
     case 19:
         pc += 2;
-        printf(D_00A505B0, debugThinkRegName(thinkRegNo(pc)), cmdNum(pc));
+        printf("%s -> %d\n", debugThinkRegName(thinkRegNo(pc)), cmdNum(pc));
         break;
     case 10:
     case 11:
@@ -268,17 +748,17 @@ void debugThinkPrint(int cmd, short pc, short jmp)
         a = cmdNum(pc);
         jmp = cmdNum(pc - 2);
         name = debugThinkRegName(r);
-        printf(D_00A505C0, name, a, jmp);
+        printf("%s %d -> %d\n", name, a, jmp);
         break;
     case 21:
         a = cmdNum(pc + 2);
-        printf(D_00A505D0, a);
+        printf("%d\n", a);
         break;
     case 22:
         r = thinkRegNo(pc + 2);
         jmp = thinkRegGet(r);
         name = debugThinkRegName(r);
-        printf(D_00A505B0, name, jmp);
+        printf("%s -> %d\n", name, jmp);
         break;
     case 23:
     case 24:
@@ -289,10 +769,10 @@ void debugThinkPrint(int cmd, short pc, short jmp)
         b = cmdNum(pc + 2);
         jmp = thinkRegGet(r);
         name = debugThinkRegName(r);
-        printf(D_00A505D8, name, a, b, jmp);
+        printf("%s %d %d -> %d\n", name, a, b, jmp);
         break;
     default:
-        printf(D_00A505E8);
+        printf("\n");
         r = 0;
         break;
     }
@@ -318,19 +798,10 @@ extern int unitTblGet(int side, BattleUnit ***table);
 extern char *debugNameGet(int charaId);
 
  /* "** UNIT PARA **\n" */
-extern const char D_00A50668[];
 
  /* " WCT=%3d/%3d AGLPLUS=%3d ETHERDIS=%04X WPNATKADJ=%3d\n" */
 extern int printf(const char *format, ...);
 
-extern const char D_00A50650[];
-extern const char D_00A50690[];
-extern const char D_00A50698[];
-extern const char D_00A505E8[];
-extern const char D_00A506A0[];
-extern const char D_00A506A8[];
-extern const char D_00A506B0[];
-extern const char D_00A506B8[];
 
 int debugStatDisp(void)
 {
@@ -344,49 +815,45 @@ int debugStatDisp(void)
     int k;
 
     count = unitTblGet(2, &units);
-    printf(D_00A50650);
+    printf("** UNIT STAT **\n");
     for (i = 0; i < count; i++) {
         if (units[i] != 0) {
             up = calcUPGet((ObjectTask *)units[i]);
             base = (unsigned char *)up + 0xC;
-            printf(D_00A50668, unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
+            printf("** %d) %s LV=%d HP=%d/%d EP=%d/%d\n", unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
                    up->level, up->hp, up->maxHp, up->ep, up->maxEp);
-            printf(D_00A50690);
+            printf(" ST  ");
             for (j = 0; j < 8; j++) {
-                printf(D_00A50698, ((unsigned short *)((unsigned char *)up + 0xAC))[j]);
+                printf("%04X ", ((unsigned short *)((unsigned char *)up + 0xAC))[j]);
             }
-            printf(D_00A505E8);
-            printf(D_00A506A0);
+            printf("\n");
+            printf(" STA ");
             for (j = 0; j < 8; j++) {
-                printf(D_00A50698, ((unsigned short *)(base + 0xB0))[j]);
+                printf("%04X ", ((unsigned short *)(base + 0xB0))[j]);
             }
-            printf(D_00A505E8);
-            printf(D_00A506A8);
+            printf("\n");
+            printf(" STP ");
             for (j = 0; j < 8; j++) {
-                printf(D_00A50698, ((unsigned short *)((unsigned char *)up + 0x24))[j]);
+                printf("%04X ", ((unsigned short *)((unsigned char *)up + 0x24))[j]);
             }
-            printf(D_00A505E8);
-            printf(D_00A506B0);
+            printf("\n");
+            printf(" STT ");
             for (j = 0; j < 8; j++) {
                 p = base + j * 16 + 0xC0;
                 for (k = 0; k < 16; k++) {
                     if (*p != 0) {
-                        printf(D_00A506B8, *p);
+                        printf("%d ", *p);
                     }
                     p++;
                 }
             }
-            printf(D_00A505E8);
+            printf("\n");
         }
     }
     return 1;
 }
 
-extern const char D_00A506C0[]; /* "** %d) %s LV=%d HP=%d/%d EP=%d/%d\n" */
-extern const char D_00A506D8[]; /* " STR=%3d VIT=%3d EATK=%3d EDEF=%3d HIT=%3d EVA=%3d\n" */
-extern const char D_00A50710[]; /* " AGL=%3d BC =%3d BP = %3d MVTYPE=%1d C_RATE=%3d\n" */
-extern const char D_00A50748[]; /* " WEAK=%04X SPEC=%04X INFO=%04X OBJSTAT=%04X\n" */
-extern const char D_00A50778[];int debugParaDisp(void)
+int debugParaDisp(void)
 {
     BattleUnit **units;
     DebugUnitPara *up;
@@ -395,17 +862,17 @@ extern const char D_00A50778[];int debugParaDisp(void)
     int i;
 
     count = unitTblGet(2, &units);
-    printf(D_00A506C0);
+    printf("** UNIT PARA **\n");
     for (i = 0; i < count; i++) {
         if (units[i] != 0) {
             up = calcUPGet((ObjectTask *)units[i]);
-            printf(D_00A50668, unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
+            printf("** %d) %s LV=%d HP=%d/%d EP=%d/%d\n", unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
                    up->level, up->hp, up->maxHp, up->ep, up->maxEp);
-            printf(D_00A506D8, up->str, up->vit, up->eatk, up->edef, up->hit, up->eva);
-            printf(D_00A50710, up->agility, up->bc, up->bp, up->moveKindId, up->cRate);
+            printf(" STR=%3d VIT=%3d EATK=%3d EDEF=%3d HIT=%3d EVA=%3d\n", up->str, up->vit, up->eatk, up->edef, up->hit, up->eva);
+            printf(" AGL=%3d BC =%3d BP = %3d MVTYPE=%1d C_RATE=%3d\n", up->agility, up->bc, up->bp, up->moveKindId, up->cRate);
             objStat = ((ObjectTask *)units[i])->work;
-            printf(D_00A50748, up->weak, up->spec, up->flags, *objStat);
-            printf(D_00A50778, up->waitCount, up->waitCountBase, up->turnBias,
+            printf(" WEAK=%04X SPEC=%04X INFO=%04X OBJSTAT=%04X\n", up->weak, up->spec, up->flags, *objStat);
+            printf(" WCT=%3d/%3d AGLPLUS=%3d ETHERDIS=%04X WPNATKADJ=%3d\n", up->waitCount, up->waitCountBase, up->turnBias,
                    up->etherDis, up->wpnAtkAdj);
         }
     }
@@ -421,8 +888,6 @@ typedef struct DebugSpecSlot {
     short kill;
 } DebugSpecSlot;
 extern char *dataPlChaGet(int cid);
-extern const char D_00A507B0[];
-extern const char D_00A507C8[];
 
 int debugSpecDisp(void)
 {
@@ -434,15 +899,15 @@ int debugSpecDisp(void)
     int j;
 
     count = unitTblGet(2, &units);
-    printf(D_00A507B0);
+    printf("** SPEC PARA **\n");
     for (i = 0; i < count; i++) {
         if (units[i] != 0 && !(*(int *)((ObjectTask *)units[i])->work & 0x40)) {
             up = calcUPGet((ObjectTask *)units[i]);
             sp = (DebugSpecSlot *)(dataPlChaGet(up->charaId) + 0x48);
-            printf(D_00A50668, unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
+            printf("** %d) %s LV=%d HP=%d/%d EP=%d/%d\n", unitNoGet((ObjectTask *)units[i]), debugNameGet(up->charaId),
                    up->level, up->hp, up->maxHp, up->ep, up->maxEp);
             for (j = 0; j < 8; j++) {
-                printf(D_00A507C8, j, sp->id, sp->spd, sp->pow, sp->agl, sp->use, sp->kill);
+                printf("%1d: tid=%3d spd=%d pow=%d agl=%d use=%d kill=%d\n", j, sp->id, sp->spd, sp->pow, sp->agl, sp->use, sp->kill);
                 sp++;
             }
         }
@@ -680,84 +1145,25 @@ extern int configPos;
 extern int equipPos;
 extern int (*configCmdTbl[21])(int *);
 extern int (*equipCmdTbl[])();
-extern const char *posName[10];
-extern const char *szName[5];
-extern const char D_00A50870[];
-extern const char D_00A50878[];
-extern const char D_00A50898[];
-extern const char D_00A508B0[];
-extern const char D_00A508C0[];
-extern const char D_00A508D8[];
-extern const char D_00A508E8[];
-extern const char D_00A508F8[];
-extern const char D_00A50908[];
-extern const char D_00A50918[];
-extern const char D_00A50930[];
-extern const char D_00A50948[];
-extern const char D_00A50960[];
-extern const char D_00A50978[];
-extern const char D_00A50990[];
-extern const char D_00A509A8[];
-extern const char D_00A509C0[];
-extern const char D_00A509D8[];
-extern const char D_00A509E8[];
-extern const char D_00A509F8[];
-extern const char D_00A50A08[];
-extern const char D_00A50A18[];
-extern const char D_00A50A28[];
-extern const char D_00A50A38[];
-extern const char D_00A50A40[];
-extern const char D_00A50A58[];
-extern const char D_00A50A70[];
-extern const char D_00A50A88[];
-extern const char D_00A50AA0[];
-extern const char D_00A50AB8[];
-extern const char D_00A50AD0[];
-extern const char D_00A50AE8[];
-extern const char D_00A50B00[];
-extern const char D_00A50B18[];
-extern const char D_00A50B30[];
-extern const char D_00A50B48[];
-extern const char D_00A50B60[];
-extern const char D_00A50B78[];
-extern const char D_00A50B90[];
-extern const char D_00A50BA8[];
-extern const char D_00A50BC0[];
-extern const char D_00A50BD8[];
-extern const char D_00A50BF0[];
-extern const char D_00A50C00[];
-extern const char D_00A50C10[];
-extern const char D_00A50C20[];
-extern const char D_00A50C30[];
-extern const char D_00A50C48[];
-extern const char D_00A50C60[];
-extern const char D_00A50C78[];
-extern const char D_00A50C88[];
-extern const char D_00A50C98[];
-extern const char D_00A50CA8[];
-extern const char D_00A50CB8[];
-extern const char D_00A50CC8[];
-extern const char D_00A50CD8[];
-extern const char D_00A50D00[];
-extern const char D_00A50D20[];
-extern const char D_00A50D40[];
-extern const char D_00A50D60[];
-extern const char D_00A50D78[];
-extern const char D_00A50D88[];
-extern const char D_00A50D98[];
-extern const char D_00A50DA8[];
-extern const char D_00A50DB8[];
-extern const char D_00A50DC8[];
-extern const char D_00A50DD8[];
-extern const char D_00A50DF8[];
-extern const char D_00A50E08[];
-extern const char D_00A50E18[];
-extern const char D_00A50E28[];
-extern const char D_00A50E38[];
-extern const char D_00A50E48[];
-extern const char D_00A50E58[];
-extern const char D_00A50E68[];
-extern const char D_00A50E88[];
+const char *posName[10] = {
+    "NULL",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "A1",
+    "A2",
+    "A3"
+};
+const char *szName[5] = {
+    "SS",
+    "S",
+    "M",
+    "L",
+    "LL"
+};
 
 void debugBattleConfig(void)
 {
@@ -805,34 +1211,34 @@ void debugBattleConfig(void)
                 float word = *(float *)party;
 
                 *(float *)party = word;
-                xglFontDebugPrintf(12, cursorY, D_00A50870);
+                xglFontDebugPrintf(12, cursorY, ">");
             }
             { union { int i; float f; } *view = (void *)configCmdTbl; float f = view->f; view->f = f; }
             pos = &configPos;
             cmdResult = configCmdTbl[*pos](pos);
             pos = 0;
             pos = &configPos;
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50878);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50898);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A508B0, D_00A5AA60);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A508C0, monsSet);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A508D8, mapNo);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A508E8, debugNameGet(party[0].player));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A508F8, debugNameGet(party[1].player));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50908, debugNameGet(party[2].player));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50918, posName[party[0].position]);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50930, posName[party[1].position]);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50948, posName[party[2].position]);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50960, cameraFlagGet());
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50978, plMutekiGet());
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50990, enMutekiGet());
-            xglFontDebugPrintf(12, h * row++ + x, D_00A509A8, plIchigekiGet());
-            xglFontDebugPrintf(12, h * row++ + x, D_00A509C0, cfEncount);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A509D8, cfEvent);
-            xglFontDebugPrintf(12, h * row++ + x, D_00A509E8, debugNameGet(statId));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A509F8, debugNameGet(equipId));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50A08, debugNameGet(gainId));
-            xglFontDebugPrintf(12, h * row++ + x, D_00A50A18);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 --BATTLE CONFIG 2001/10/01--");
+            xglFontDebugPrintf(12, h * row++ + x, "\014\200\000\000 BATTLE START");
+            xglFontDebugPrintf(12, h * row++ + x, "\013 THINK= %2d", D_00A5AA60);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 MONSTER SET= %2d", monsSet);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 MAP= %2d", mapNo);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER1= %s", debugNameGet(party[0].player));
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER2= %s", debugNameGet(party[1].player));
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER3= %s", debugNameGet(party[2].player));
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER1 POS= %s", posName[party[0].position]);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER2 POS= %s", posName[party[1].position]);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PLAYER3 POS= %s", posName[party[2].position]);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 CAMERA FLAG= %1d", cameraFlagGet());
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PL MUTEKI= %1d", plMutekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, "\013 EN MUTEKI= %1d", enMutekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, "\013 PL ICHIGEKI= %1d", plIchigekiGet());
+            xglFontDebugPrintf(12, h * row++ + x, "\013 CF ENCOUNT= %4x", cfEncount);
+            xglFontDebugPrintf(12, h * row++ + x, "\013 CF EVENT= %4x", cfEvent);
+            xglFontDebugPrintf(12, h * row++ + x, "\014\200\000\000 STAT = %s", debugNameGet(statId));
+            xglFontDebugPrintf(12, h * row++ + x, "\014\200\000\000 EQUIP= %s", debugNameGet(equipId));
+            xglFontDebugPrintf(12, h * row++ + x, "\014\200\000\000 GAIN = %s", debugNameGet(gainId));
+            xglFontDebugPrintf(12, h * row++ + x, "\014\200\000\000 YADOYA");
             if (cmdResult == 1 && (PadData.half_2a & PAD_CIRCLE)) {
                 goto done;
             }
@@ -856,28 +1262,28 @@ void debugBattleConfig(void)
                 norm = dataNormInitGet(statId);
                 ether = dataEtherInitGet(statId);
             }
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A28);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(statId));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A40, hp, rec->maxHp);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A58, ep, rec->maxEp);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A70, rec->str, rec->vit);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A88, rec->eatk, rec->edef);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AA0, rec->hit, rec->eva);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AB8, rec->agility, rec->moveKindId);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50AD0, rec->atkRange, rec->defRange);
-            { const char *sz = szName[rec->size]; xglFontDebugPrintf(12, h * row++ + 12, D_00A50AE8, rec->level, sz); }
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B00, rec->cRate, rec->ecap);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B18, rec->weak, rec->spec);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B30, rec->flags, rec->weight);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B48, rec->bRate, rec->bNum);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B60, norm[0], norm[1], norm[2]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B78, norm[3], norm[4], norm[5]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50B90, ether[0], ether[1], ether[2], ether[3]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BA8, ether[4], ether[5], ether[6], ether[7]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BA8, ether[8], ether[9], ether[10], ether[11]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BC0, rec->protect[0], rec->protect[1],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 --STAT--");
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ID=%s", debugNameGet(statId));
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 HP   =%4d MAX HP=%4d", hp, rec->maxHp);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 EP   =%4d MAX EP=%4d", ep, rec->maxEp);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 STR  =%4d VIT   =%4d", rec->str, rec->vit);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 EATK =%4d EDEF  =%4d", rec->eatk, rec->edef);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 HIT  =%4d EVA   =%4d", rec->hit, rec->eva);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 AGL  =%4d MVTYPE=%4d", rec->agility, rec->moveKindId);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 AAREA=%4d DAREA =%4d", rec->atkRange, rec->defRange);
+            { const char *sz = szName[rec->size]; xglFontDebugPrintf(12, h * row++ + 12, "\013 LV   =%4d SIZE  =%s", rec->level, sz); }
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 COUNT=%4d ECAP  =%4d", rec->cRate, rec->ecap);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 WEAK =%4x SPEC  =%4x", rec->weak, rec->spec);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 INFO =%4x WEIGHT=%4d", rec->flags, rec->weight);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 BRATE=%4d BNUM  =%4d", rec->bRate, rec->bNum);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 NORM =%4d %4d %4d", norm[0], norm[1], norm[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013       %4d %4d %4d", norm[3], norm[4], norm[5]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ETHER=%4d %4d %4d %4d", ether[0], ether[1], ether[2], ether[3]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013       %4d %4d %4d %4d", ether[4], ether[5], ether[6], ether[7]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013       %4d %4d %4d %4d", ether[8], ether[9], ether[10], ether[11]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 PROTC=%4x %4x %4x %4x", rec->protect[0], rec->protect[1],
                                rec->protect[2], rec->protect[3]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BD8, rec->protect[4], rec->protect[5],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013       %4x %4x %4x %4x", rec->protect[4], rec->protect[5],
                                rec->protect[6], rec->protect[7]);
             if (PadData.half_2a & PAD_CROSS) {
                 configSeq = 0;
@@ -891,35 +1297,35 @@ void debugBattleConfig(void)
                 equipPosX = 0;
             }
             column = w;
-            xglFontDebugPrintf(column * equipPosX + 12, h * (equipPos + 1) + 12, D_00A50870);
+            xglFontDebugPrintf(column * equipPosX + 12, h * (equipPos + 1) + 12, ">");
             equipCmdTbl[equipPos]();
             rec = dataUnitOrgGet(equipId);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50BF0);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(equipId));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C00, debugNameGet(rec->agwsId));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C10, rec->engineId);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C20, rec->frameId);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C30, rec->weaponVariant[0],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 --EQUIP--");
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ID=%s", debugNameGet(equipId));
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 AGWS  =%s", debugNameGet(rec->agwsId));
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ENGINE=%3d", rec->engineId);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 FRAME =%3d", rec->frameId);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 WPN0  =%3d WID =%s", rec->weaponVariant[0],
                                debugWpnGet(rec->weaponId[0]));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C48, rec->weaponVariant[1],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 WPN1  =%3d WID =%s", rec->weaponVariant[1],
                                debugWpnGet(rec->weaponId[1]));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C60, rec->weaponVariant[2],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 WPN2  =%3d WID =%s", rec->weaponVariant[2],
                                debugWpnGet(rec->weaponId[2]));
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C78, rec->attachment[0]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C88, rec->attachment[1]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50C98, rec->attachment[2]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CA8, rec->accessory[0]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CB8, rec->accessory[1]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CC8, rec->accessory[2]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50CD8, rec->special[0], rec->special[1],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ATT0  =%3d", rec->attachment[0]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ATT1  =%3d", rec->attachment[1]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ATT2  =%3d", rec->attachment[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ACC0  =%3d", rec->accessory[0]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ACC1  =%3d", rec->accessory[1]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ACC2  =%3d", rec->accessory[2]);
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 SPEC  =%3d %3d %3d %3d %3d %3d", rec->special[0], rec->special[1],
                                rec->special[2], rec->special[3], rec->special[4], rec->special[5]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D00, rec->ether[0], rec->ether[1],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ETH0  =%4d %4d %4d %4d", rec->ether[0], rec->ether[1],
                                rec->ether[2], rec->ether[3]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D20, rec->ether[4], rec->ether[5],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ETH4  =%4d %4d %4d %4d", rec->ether[4], rec->ether[5],
                                rec->ether[6], rec->ether[7]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D40, rec->ether[8], rec->ether[9],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ETH8  =%4d %4d %4d %4d", rec->ether[8], rec->ether[9],
                                rec->ether[10], rec->ether[11]);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D60, rec->skill[0], rec->skill[1],
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 SKILL =%4d %4d %4d", rec->skill[0], rec->skill[1],
                                rec->skill[2]);
             if (PadData.half_2a & PAD_CROSS) {
                 configSeq = 0;
@@ -927,32 +1333,32 @@ void debugBattleConfig(void)
         } else if (configSeq == 3) {
             valLR(&gainId, 1, DEBUG_CHARA_ID_MAX, 1);
             row = 0;
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50D78);
-            xglFontDebugPrintf(12, h * row++ + 12, D_00A50A38, debugNameGet(gainId));
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 --GAIN--");
+            xglFontDebugPrintf(12, h * row++ + 12, "\013 ID=%s", debugNameGet(gainId));
             if (gainId >= 0x21) {
                 gain = dataGainGet(gainId);
-                xglFontDebugPrintf(12, h * row++ + 12, D_00A50D88, gain->exp);
-                xglFontDebugPrintf(12, h * row++ + 12, D_00A50D98, gain->money);
-                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DA8, gain->tp);
-                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DB8, gain->ep);
-                xglFontDebugPrintf(12, h * row++ + 12, D_00A50DC8, gain->sp);
+                xglFontDebugPrintf(12, h * row++ + 12, "\013 EXP   =%8d", gain->exp);
+                xglFontDebugPrintf(12, h * row++ + 12, "\013 MONEY =%8d", gain->money);
+                xglFontDebugPrintf(12, h * row++ + 12, "\013 TP    =%4d", gain->tp);
+                xglFontDebugPrintf(12, h * row++ + 12, "\013 EP    =%4d", gain->ep);
+                xglFontDebugPrintf(12, h * row++ + 12, "\013 SP    =%4d", gain->sp);
                 for (i = 0; i < 3; i++) {
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50DD8, gain->layer[i],
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 LAY =%3d GRP =%3d ITEM =%3d", gain->layer[i],
                                        gain->group[i], gain->item[i]);
                 }
             } else {
                 if (gainId < 0x11) {
                     grow = (DebugGrowRecord *)dataPlChaGet(gainId);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50DF8, grow->exp);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E08, grow->nextExp);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E18, grow->weaponOffset);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E28, grow->weaponCount);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E38, grow->tp);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E48, grow->ep);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E58, grow->sp);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E68, grow->grow[0], grow->grow[1],
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 EXP      =%8d", grow->exp);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 NEXT EXP =%8d", grow->nextExp);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 W OFS    =%4d", grow->weaponOffset);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 W CNT    =%4d", grow->weaponCount);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 TP       =%4d", grow->tp);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 EP       =%4d", grow->ep);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 SP       =%4d", grow->sp);
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013 GROW PARA=%4d %4d %4d %4d", grow->grow[0], grow->grow[1],
                                        grow->grow[2], grow->grow[3]);
-                    xglFontDebugPrintf(12, h * row++ + 12, D_00A50E88, grow->grow[4], grow->grow[5],
+                    xglFontDebugPrintf(12, h * row++ + 12, "\013          =%4d %4d %4d %4d", grow->grow[4], grow->grow[5],
                                        grow->grow[6], grow->grow[7]);
                 }
             }
@@ -1446,3 +1852,32 @@ int equipSkill(void) {
     }
     return 0;
 }
+
+/* debug battle-config menu: one handler per config row, 0-terminated */
+int (*configCmdTbl[21])(int *) = {
+    (int (*)(int *))configStart,      (int (*)(int *))configThink,
+    (int (*)(int *))configMonsSet,    (int (*)(int *))configMap,
+    (int (*)(int *))configPlayer1,    (int (*)(int *))configPlayer2,
+    (int (*)(int *))configPlayer3,    (int (*)(int *))configPlPos1,
+    (int (*)(int *))configPlPos2,     (int (*)(int *))configPlPos3,
+    (int (*)(int *))configCamera,     (int (*)(int *))configPlMuteki,
+    (int (*)(int *))configEnMuteki,   (int (*)(int *))configPlIchigeki,
+    (int (*)(int *))configCFEncount,  (int (*)(int *))configCFEvent,
+    (int (*)(int *))configStat,       (int (*)(int *))configEqu,
+    (int (*)(int *))configGain,       (int (*)(int *))configYadoya,
+    0,
+};
+
+/* debug equip menu: one handler per equip row, 0-terminated */
+int (*equipCmdTbl[])() = {
+    equipChar, equipAgws, equipEngine, equipFrame,
+    equipWpn0, equipWpn1, equipWpn2,
+    equipAtt0, equipAtt1, equipAtt2,
+    equipAcc0, equipAcc1, equipAcc2,
+    equipSpec, equipEther0, equipEther1, equipEther2, equipSkill,
+    0,
+};
+
+int specPos[6] = { 0, 9, 12, 15, 18, 21 };
+int etherPos[4] = { 0, 10, 14, 18 };
+int skillPos[3] = { 0, 10, 14 };

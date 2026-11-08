@@ -6,6 +6,7 @@
 #define SRC_MAIN_YAJIMA_TEST_H
 
 #include "shared.h"
+#include "main/xgl_menu.h"
 
 typedef unsigned int SceStatRawWords[64 / sizeof(unsigned int)];
 
@@ -28,7 +29,8 @@ typedef unsigned char LittleEndianWord[4];
  * recovered.
  */
 typedef struct YajimaMenuState {
-    unsigned char unmodeled_00[0x14];
+    int unmodeled_00[4];
+    XglMenuNode *menu;
     int *selection;
 } YajimaMenuState;
 
