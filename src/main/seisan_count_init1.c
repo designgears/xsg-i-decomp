@@ -26,7 +26,7 @@ extern XglTaskScheduler *SeisanTask;
 extern SeisanResultData *SeisanResult;
 
 
-extern SeisanCountData SeisanCN;
+static SeisanCountData SeisanCN;
 
 
 /* The original eight-byte prompt-pointer table remains in data scaffolding. */
