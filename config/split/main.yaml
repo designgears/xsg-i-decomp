@@ -627,7 +627,7 @@ segments:
       - [0x2C3FD0, rodata, open_close_main]
       - [0x2C4200, rodata, window_tex_load]
       - [0x2C4310, rodata, e_number_main]
-      - [0x2C4640, rodata, menu_top_command_check]
+      - [0x2C4380, rodata, menu_top_command_check]
       - [0x2C47C0, rodata, end_print]
       - [0x2C47D0, rodata, menu_model]
       - [0x2C4960, rodata, e_battle_win_open]

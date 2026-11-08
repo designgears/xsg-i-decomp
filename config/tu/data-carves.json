@@ -8357,35 +8357,18 @@
     {
      "range": [
       "0x004c3310",
-      "0x004c3640"
+      "0x004c3380"
      ],
      "generated": [
       "0x004c3310",
-      "0x004c3640"
+      "0x004c337c"
      ],
      "generated_by": [
       "eNumberMain"
      ],
      "c_owned_symbols": [
       "jtbl_004C3310",
-      "jtbl_004C3350",
-      "D_004C3380",
-      "D_004C33D8",
-      "D_004C33E8",
-      "D_004C3408",
-      "D_004C3438",
-      "D_004C3468",
-      "D_004C34A0",
-      "D_004C34E8",
-      "D_004C3520",
-      "D_004C3540",
-      "D_004C3580",
-      "D_004C35D0",
-      "D_004C35E0",
-      "D_004C35F8",
-      "D_004C3608",
-      "D_004C3618",
-      "D_004C3628"
+      "jtbl_004C3350"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -8397,6 +8380,38 @@
    ]
   },
   "main/tu162": {
+   ".data": [
+    {
+     "range": [
+      "0x0036c298",
+      "0x0036c36c"
+     ],
+     "generated": [
+      "0x0036c298",
+      "0x0036c36c"
+     ],
+     "generated_by": [
+      "TopFaceExWinMain",
+      "TopInfoMain",
+      "TopMenu",
+      "TopMenuWinMain"
+     ],
+     "c_owned_symbols": [
+      "text",
+      "MenuTopCommand",
+      "D_0036C2D2",
+      "command_0",
+      "D_0036C35C",
+      "msg_1_0036C360"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_top_command_check.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -8425,11 +8440,14 @@
       "D_004D7D90",
       "D_004D7D94"
      ],
-     "also_referenced_by_c": [],
+     "also_referenced_by_c": [
+      "D_004D7D98",
+      "D_004D7D9C"
+     ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_top_command_check.o"
+      "object": "build/main/build/c/menu_top_command_check.o"
      }
     },
     {
@@ -8451,43 +8469,131 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_top_command_check.o"
+      "object": "build/main/build/c/menu_top_command_check.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004c3380",
+      "0x004c3640"
+     ],
+     "generated": [
+      "0x004c3380",
+      "0x004c3631"
+     ],
+     "generated_by": [
+      "TopFaceExWinMain",
+      "TopInfoMain",
+      "TopMenuWinMain"
+     ],
+     "c_owned_symbols": [
+      "D_004C3380",
+      "D_004C33D8",
+      "D_004C33E8",
+      "D_004C3408",
+      "D_004C3438",
+      "D_004C3468",
+      "D_004C34A0",
+      "D_004C34E8",
+      "D_004C3520",
+      "D_004C3540",
+      "D_004C3580",
+      "D_004C35D0",
+      "D_004C35E0",
+      "D_004C35F8",
+      "D_004C3608",
+      "D_004C3618",
+      "D_004C3628"
+     ],
+     "also_referenced_by_c": [
+      "D_004C3640",
+      "D_004C3650",
+      "D_004C36C0",
+      "D_004C3720",
+      "D_004C3790"
+     ],
+     "reached_through": {
+      "D_004C3380": "text",
+      "D_004C33D8": "text",
+      "D_004C33E8": "text",
+      "D_004C3408": "text",
+      "D_004C3438": "text",
+      "D_004C3468": "text",
+      "D_004C34A0": "text",
+      "D_004C34E8": "text",
+      "D_004C3520": "text",
+      "D_004C3540": "text",
+      "D_004C3580": "text",
+      "D_004C35D0": "command_0",
+      "D_004C35E0": "command_0",
+      "D_004C35F8": "command_0",
+      "D_004C3608": "command_0",
+      "D_004C3618": "command_0",
+      "D_004C3628": "msg_1_0036C360"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_top_command_check.o"
      }
     }
    ],
    ".sdata": [
     {
      "range": [
-      "0x004da8d8",
-      "0x004da900"
+      "0x004da890",
+      "0x004da914"
      ],
      "generated": [
-      "0x004da8d8",
-      "0x004da8fd"
+      "0x004da890",
+      "0x004da914"
      ],
      "generated_by": [
-      "MenuStatusDisp"
+      "MenuBackModelSet",
+      "MenuInfoWindow",
+      "MenuStatusDisp",
+      "TopFaceExWinMain",
+      "TopInfoMain",
+      "TopMenu",
+      "TopMenuWinMain",
+      "TopStatusWinMain"
      ],
      "c_owned_symbols": [
+      "D_004DA890",
+      "D_004DA898",
+      "D_004DA8A0",
+      "D_004DA8A8",
+      "D_004DA8B0",
+      "D_004DA8B8",
+      "D_004DA8C0",
+      "D_004DA8C8",
+      "D_004DA8D0",
       "D_004DA8D8",
       "D_004DA8E0",
       "D_004DA8E8",
       "D_004DA8F0",
-      "D_004DA8F8"
-     ],
-     "also_referenced_by_c": [
-      "D_004DA890",
-      "D_004DA8B8",
-      "D_004DA8D0",
+      "D_004DA8F8",
+      "MenuVecMat",
       "TopStatusWin",
       "TopInfo",
       "TopMenuWin",
       "TopFaceExWin"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA898": "command_0",
+      "D_004DA8A0": "command_0",
+      "D_004DA8A8": "command_0",
+      "D_004DA8B0": "command_0",
+      "D_004DA8C0": "msg_1_0036C360",
+      "D_004DA8C8": "msg_1_0036C360"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/menu_top_command_check.o"
+      "object": "build/main/build/c/menu_top_command_check.o"
      }
     }
    ]

@@ -836,23 +836,3 @@ void eTagFontSet(ETagFont *tag, int value)
     tag->color[0] = -128;
     tag->value = value;
 }
-
-/* Main-menu captions and help lines kept in this TU's .rodata; no code here
- * refers to them. */
-const char D_004C3380[] = "Items\nEther\nTech Attack\nSkills\nCharacters\nA.G.W.S.\nBattle Formation\nU.M.N.\nGame Options";
-const char D_004C33D8[] = "Save/Load data.";
-const char D_004C33E8[] = "Set various game play options.";
-const char D_004C3408[] = "Access the U.M.N. (Unus Mundus Network).";
-const char D_004C3438[] = "Select combatants and change battle formation.";
-const char D_004C3468[] = "Equip A.G.W.S. weapons and accessories. Assign pilots.";
-const char D_004C34A0[] = "Equip character weapons and accessories. Change on-screen characters.";
-const char D_004C34E8[] = "Set skills and extract new skills from accessories.";
-const char D_004C3520[] = "Set and improve Tech Attacks.";
-const char D_004C3540[] = "Use, set, and evolve Ether. Transfer Ether to other characters.";
-const char D_004C3580[] = "Use items. View your inventory of special items, weapons, and accessories.";
-const char D_004C35D0[] = "Game Options";
-const char D_004C35E0[] = "Battle Formation";
-const char D_004C35F8[] = "A.G.W.S.";
-const char D_004C3608[] = "Characters";
-const char D_004C3618[] = "Tech Attacks";
-const char D_004C3628[24] = "\x01Reserve";
