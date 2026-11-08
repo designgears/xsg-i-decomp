@@ -8802,31 +8802,11 @@
     {
      "range": [
       "0x0036d2f0",
-      "0x0036d32a"
+      "0x0036d600"
      ],
      "generated": [
       "0x0036d2f0",
-      "0x0036d32a"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "guno_eid_tbl"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x0036d330",
-      "0x0036d4fc"
-     ],
-     "generated": [
-      "0x0036d330",
-      "0x0036d4fc"
+      "0x0036d600"
      ],
      "generated_by": [
       "MenuModelCreate",
@@ -8834,62 +8814,24 @@
       "MenuModelMemoryInit",
       "MenuModelMemorySet",
       "MenuModelMenuMotionCheck",
-      "MenuModelMenuMotionLoad",
-      "MenuModelResourceCancel3",
-      "MenuModelUnitActorSet"
-     ],
-     "c_owned_symbols": [
-      "MenuModelMemoryState"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x0036d500",
-      "0x0036d5cc"
-     ],
-     "generated": [
-      "0x0036d500",
-      "0x0036d5cc"
-     ],
-     "generated_by": [
       "MenuModelMenuMotionGet",
       "MenuModelMenuMotionLoad",
       "MenuModelResourceCancel",
       "MenuModelResourceCancel3",
       "MenuModelResourceInit",
       "MenuModelResourceMain",
-      "MenuModelResourceRequest"
-     ],
-     "c_owned_symbols": [
-      "MenuModelResourceState"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x0036d5d0",
-      "0x0036d600"
-     ],
-     "generated": [
-      "0x0036d5d0",
-      "0x0036d600"
-     ],
-     "generated_by": [
+      "MenuModelResourceRequest",
       "MenuModelSubWindowSet",
-      "MenuModelSubWindowinit"
+      "MenuModelSubWindowinit",
+      "MenuModelUnitActorSet"
      ],
      "c_owned_symbols": [
+      "guno_eid_tbl",
+      "D_0036D32A",
+      "MenuModelMemoryState",
+      "D_0036D4FC",
+      "MenuModelResourceState",
+      "D_0036D5CC",
       "MenuModelSubWindow"
      ],
      "also_referenced_by_c": [],
@@ -8996,39 +8938,15 @@
     {
      "range": [
       "0x004da930",
-      "0x004da938"
-     ],
-     "generated": [
-      "0x004da930",
-      "0x004da938"
-     ],
-     "generated_by": [
-      "MenuModelWeaponActorSet"
-     ],
-     "c_owned_symbols": [
-      "D_004DA930"
-     ],
-     "also_referenced_by_c": [
-      "D_004DA938",
-      "D_004DA940"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da948",
       "0x004da950"
      ],
      "generated": [
-      "0x004da948",
+      "0x004da930",
       "0x004da950"
      ],
      "generated_by": [
       "MenuModelAllBreak",
+      "MenuModelControl2",
       "MenuModelCreate",
       "MenuModelInit",
       "MenuModelMain",
@@ -9037,11 +8955,15 @@
       "MenuModelMenuMotionLoad",
       "MenuModelResourceMain",
       "MenuModelSubWindowMainSub",
+      "MenuModelWeaponActorSet",
       "MenuModelWeaponCreate",
       "tskMenuModelTaskMain",
       "tskMenuModelWeaponTaskMain"
      ],
      "c_owned_symbols": [
+      "D_004DA930",
+      "D_004DA938",
+      "D_004DA940",
       "MenuModelTask",
       "MenuModelFlag"
      ],
