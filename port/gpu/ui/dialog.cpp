@@ -281,9 +281,9 @@ void Glyph(ImDrawList* dl, ImFont* font, float cx, float cy, float r, int pos, b
 
 float ShoulderGlyph(ImDrawList* dl, ImFont* font, float x, float cy, float h, int side) {
     if (PromptIcon(side ? kRB : kLB)) {   // the icon pack (square art, drawn a little taller than the tag)
-        const float s2 = h * 1.7f;
-        PromptDraw(dl, side ? kRB : kLB, ImVec2(x + s2 * 0.5f, cy), s2, 1.0f);
-        return s2;
+        const float s2 = h * 1.45f;   // the art's shoulder shape fills ~70% of its square
+        PromptDraw(dl, side ? kRB : kLB, ImVec2(x + s2 * 0.5f - s2 * 0.12f, cy), s2, 1.0f);
+        return s2 * 0.76f;   // the visible width (the square's transparent margin trimmed)
     }
     const int lay = Layout();
     static const char* const k[3][2] = {{"LB", "RB"}, {"L1", "R1"}, {"L", "R"}};
@@ -429,17 +429,25 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
         }
     }
     if (strip) {   // the footer: LB Change ... Boost RB, in a bar under the stack
-        const float fy = float(strip->y) - 2, fw = rw;
-        const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 16);
+        const float fy = float(strip->y) - 3, fw = rw;
+        const ImVec2 a = P(x0, fy), b = P(x0 + fw, fy + 20);
         Panel(dl, a, b, k, 0.85f, false, 0, 0);
-        const float cy = (a.y + b.y) * 0.5f, h = 11.0f * k, ts = 10.0f * k;
-        float cx = a.x + 4 * kx;
-        cx += ShoulderGlyph(dl, font, cx, cy, h, 0) + 5 * kx;
+        const float cy = (a.y + b.y) * 0.5f, pad = 7 * kx, gap = 5 * kx, ts = 10.0f * k;
+        // the glyph fills the bar's height less a margin; the icon art is square with a wide
+        // shoulder shape inside, so it is drawn at that height and measured by what it returns
+        const float h = (b.y - a.y) - 8 * k;
         const ImVec2 cs = font->CalcTextSizeA(ts, 1e9f, 0, "Change"), bs = font->CalcTextSizeA(ts, 1e9f, 0, "Boost");
-        dl->AddText(font, ts, ImVec2(cx, cy - cs.y * 0.5f), col::kTextDim, "Change");
-        const float w = font->CalcTextSizeA(h * 0.78f, 1e9f, 0, "RB").x + h * 0.7f;
-        ShoulderGlyph(dl, font, b.x - 4 * kx - w, cy, h, 1);
-        dl->AddText(font, ts, ImVec2(b.x - 4 * kx - w - 5 * kx - bs.x, cy - bs.y * 0.5f), col::kTextDim, "Boost");
+        // measure RB without drawing it, by drawing into a scratch list
+        static ImDrawList* scratch = nullptr;
+        if (!scratch) scratch = IM_NEW(ImDrawList)(ImGui::GetDrawListSharedData());
+        scratch->_ResetForNewFrame();
+        scratch->PushClipRectFullScreen();
+        scratch->PushTextureID(ImGui::GetIO().Fonts->TexID);
+        const float rbw = ShoulderGlyph(scratch, font, 0, 0, h, 1);
+        const float lbw = ShoulderGlyph(dl, font, a.x + pad, cy, h, 0);
+        dl->AddText(font, ts, ImVec2(a.x + pad + lbw + gap, cy - cs.y * 0.5f), col::kTextDim, "Change");
+        ShoulderGlyph(dl, font, b.x - pad - rbw, cy, h, 1);
+        dl->AddText(font, ts, ImVec2(b.x - pad - rbw - gap - bs.x, cy - bs.y * 0.5f), col::kTextDim, "Boost");
     }
 }
 
