@@ -160,7 +160,7 @@ def section_relative_data_relocs(target, base_elf):
     Path(target).write_bytes(bytes(data))
 
 
-def size_bss_symbols(path, real_names=None):
+def size_bss_symbols(path, real_names=None, base_elf=None):
     """Size every BSS/SBSS label up to the next label (or the section end), on both sides.
 
     splat's `dlabel` + `.space` and cc1's `.lcomm` both leave uninitialised
@@ -179,6 +179,15 @@ def size_bss_symbols(path, real_names=None):
         labels = sorted((y for y in elf.symbols if y.shndx == section.index and y.type != 3
                          and y.name and not y.name.endswith('.NON_MATCHING')),
                         key=lambda y: y.value)
+        if base_elf is not None:
+            bsec = [x for x in base_elf.sections if x.name == section.name]
+            starts_c = {y.value for y in base_elf.symbols
+                        if bsec and y.shndx == bsec[0].index and y.type != 3 and y.name}
+            inner = [y for y in labels if y.value not in starts_c
+                     and re.fullmatch(r'D_[0-9A-F]{8}', y.name)] if starts_c else []
+            for y in inner:
+                struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, 0)
+            labels = [y for y in labels if y not in inner]
         if real_names is not None:
             # splat labels the code's references into the middle of an object
             # (`D_<addr>`); the original symbol table names the objects
@@ -619,7 +628,13 @@ def prepare(root, evidence):
         run([str(prefix) + 'ld', '-EL', '-m', 'elf32lr5900', '-r',
              '-o', target, stripped, *data], unit_dir)
         preserve_gp0(stripped, target)
-        size_bss_symbols(target, original_names if unit == 'main' else None)
+        if unit == 'main':
+            size_bss_symbols(target, original_names)
+        else:
+            # overlays have no original symbol table: a splat `D_<addr>` BSS
+            # label where the C object starts no object lies inside the C's
+            # object before it (whose size is then compared as one)
+            size_bss_symbols(target, None, base_elf)
         if base_elf is not None:
             pair_verified_names(prefix, target, base_elf, checked['functions'], unit_dir)
             trim_leading_fill(target, base_elf)
