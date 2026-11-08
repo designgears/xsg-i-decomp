@@ -667,7 +667,11 @@ def prepare(root, evidence):
         carved = next((c for c in ([unit_dir / f'build/c/{stem}.carved.o'] if unit == 'main'
                                    else [unit_dir / f'build/src/{unit}/{stem}.carved.o',
                                          unit_dir / f'build/scaffold/src/{unit}/{stem}.carved.o'])
-                       if c.is_file()), None)
+                       if c.is_file() and c.with_name(c.name.replace('.carved.o', '.o')).is_file()
+                       and c.stat().st_mtime_ns >= c.with_name(c.name.replace('.carved.o', '.o')).stat().st_mtime_ns),
+                      None)
+        # (a split object older than its compiled object is left over from an
+        # earlier build whose runs have since merged into one: not this build's)
         assemble = lambda source, output: run(
             [str(prefix) + 'as', '-EL', '-march=r5900', '-mabi=eabi', '-mgp64', '-G0',
              '-no-pad-sections', '-mno-fix-r5900', '-I.', '-Iinclude', '-o', output, source], unit_dir)
