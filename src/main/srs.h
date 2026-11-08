@@ -7,7 +7,7 @@
 
 void srsSetLoadMode(int load_mode);
 
-extern int srsLoadMode;
+static int srsLoadMode;
 
 int srsGetLoadMode(void);
 

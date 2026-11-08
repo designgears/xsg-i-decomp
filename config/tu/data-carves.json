@@ -12828,6 +12828,77 @@
       "object": "build/main/build/c/srs.o"
      }
     }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dba90",
+      "0x004dbb30"
+     ],
+     "generated": [
+      "0x004dba90",
+      "0x004dbb2d"
+     ],
+     "generated_by": [
+      "fileLoad",
+      "srsAnalyzeEftNo",
+      "srsGetComboData",
+      "srsGetComboName",
+      "srsGetEffectName",
+      "srsGetEffectName2",
+      "srsGetFileLen",
+      "srsGetLoadMode",
+      "srsMakeFileName",
+      "srsSetLoadMode"
+     ],
+     "c_owned_symbols": [
+      "srsLoadMode",
+      "D_004DBA94",
+      "_loadCommonData",
+      "D_004DBA9C",
+      "D_004DBAA0",
+      "_loadCfCommonData",
+      "D_004DBAAC",
+      "D_004DBAB0",
+      "D_004DBAB8",
+      "D_004DBAC0",
+      "D_004DBAC8",
+      "D_004DBAD0",
+      "D_004DBAD8",
+      "D_004DBAE0",
+      "D_004DBAE8",
+      "D_004DBAF0",
+      "D_004DBAF8",
+      "D_004DBB00",
+      "D_004DBB08",
+      "D_004DBB10",
+      "D_004DBB18",
+      "D_004DBB20",
+      "D_004DBB28"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DBAA0": "_loadComboData",
+      "D_004DBAB0": "_loadCfCommonData",
+      "D_004DBAB8": "_loadComboData",
+      "D_004DBAC0": "_loadComboData",
+      "D_004DBAC8": "_loadComboData",
+      "D_004DBAD0": "_loadComboData",
+      "D_004DBAD8": "_loadComboData",
+      "D_004DBAE0": "_loadComboData",
+      "D_004DBAE8": "_loadComboData",
+      "D_004DBAF0": "_loadComboData",
+      "D_004DBAF8": "_loadComboData",
+      "D_004DBB00": "_loadComboData",
+      "D_004DBB08": "_loadComboData",
+      "D_004DBB10": "_loadComboData"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/srs.o"
+     }
+    }
    ]
   },
   "main/tu213": {

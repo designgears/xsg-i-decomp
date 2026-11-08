@@ -2,6 +2,10 @@
 #include "shared.h"
 #include "srs.h"
 
+static int srsLoadMode = 0;
+char *_loadCommonData[1] = { "default" };
+char *_loadCfCommonData[1] = { "cf_def" };
+
 extern char D_004CBFC0[];
 extern char D_004CBFD0[];
 extern char D_004CBFE0[];
@@ -110,27 +114,14 @@ extern char D_004CC640[];
 extern char D_004CC650[];
 extern char D_004CC660[];
 extern char D_004CC670[];
-extern char D_004DBAA0[];
-extern char D_004DBAB8[];
-extern char D_004DBAC0[];
-extern char D_004DBAC8[];
-extern char D_004DBAD0[];
-extern char D_004DBAD8[];
-extern char D_004DBAE0[];
-extern char D_004DBAE8[];
-extern char D_004DBAF0[];
-extern char D_004DBAF8[];
-extern char D_004DBB00[];
-extern char D_004DBB08[];
-extern char D_004DBB10[];
 
 static unsigned char srsViewPath[256] = { 0 };
 
 char *_loadComboData[195] = {
-    D_004DBAA0, D_004DBB10, D_004DBB08, D_004DBB00,
-    D_004DBAF8, D_004DBAF0, D_004DBAE8, D_004DBAE0,
-    D_004DBAD8, D_004CC670, D_004DBAD0, D_004DBAC8,
-    D_004DBAC0, 0, 0, 0,
+    "default", "chaos", "kosmos", "shion",
+    "shitan", "ziggy", "momo", "jr",
+    "cecilia", D_004CC670, "virgil", "mary",
+    "shelley", 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0,
@@ -173,9 +164,9 @@ char *_loadComboData[195] = {
     D_004CC070, D_004CC060, D_004CC050, D_004CC040,
     D_004CC030, D_004CC020, D_004CC010, D_004CC000,
     D_004CBFF0, D_004CBFE0, D_004CBFD0, D_004CBFC0,
-    D_004CC1A0, D_004CC190, D_004CC090, D_004DBAB8,
-    D_004DBAB8, D_004DBAB8, D_004DBAB8, D_004DBAB8,
-    D_004DBAB8, D_004DBAB8, D_004DBAB8,
+    D_004CC1A0, D_004CC190, D_004CC090, "",
+    "", "", "", "",
+    "", "", "",
 };
 
 extern char _loadEsdData[]; /* 0xC800-byte effect-name table. */ /* 0xC800-byte table (config/symbols/main.txt) */
@@ -251,7 +242,6 @@ typedef struct SrsChrEf2Entry {
 } SrsChrEf2Entry;
 static SrsChrEfEntry _srsChrEfTbl[12];
 static SrsChrEf2Entry _srsChrEfTbl2[161];
-extern char *_loadCfCommonData;
 extern char *_loadComboData[];
 
 char *srsAnalyzeEftNo(int effectNo, int *chrEftNo, int *effectCategory)
@@ -281,7 +271,7 @@ char *srsAnalyzeEftNo(int effectNo, int *chrEftNo, int *effectCategory)
         return 0;
     }
     if ((u32) (effectNo - 0x258) < 0x190) {
-        ret = _loadCfCommonData;
+        ret = _loadCfCommonData[0];
         *effectCategory = 0xF;
         return ret;
     }
@@ -400,7 +390,6 @@ extern char *strcat(char *destination, const char *source);
 typedef struct { char s[15]; } SrsPath15;
 typedef struct { char s[23]; } SrsPath23;
 typedef struct { char s[7]; } SrsPath7;
-extern char D_004DBB18[];
 
 static int srsMakeFileName(char *path, char *name)
 {
@@ -416,7 +405,7 @@ static int srsMakeFileName(char *path, char *name)
         strcat(path, (char *)srsViewPath);
         strcat(path, name);
     } else if (srsLoadMode == 2) {
-        *(SrsPath7 *)path = *(SrsPath7 *)D_004DBB18;
+        *(SrsPath7 *)path = *(SrsPath7 *)"usb0:/";
         strcat(path, (char *)srsViewPath);
         strcat(path, name);
     }
@@ -559,7 +548,6 @@ char **srsGetComboData(int index)
 }
 
 extern char msg_0_00795120[];
-extern char D_004DBB20[]; /* ".esd" */
 
 char *srsGetEffectName(int effectNo)
 {
@@ -572,7 +560,7 @@ char *srsGetEffectName(int effectNo)
     if (*name == 0) {
         return 0;
     }
-    sprintf(msg_0_00795120, "esd/%s%s", name, D_004DBB20);
+    sprintf(msg_0_00795120, "esd/%s%s", name, ".esd");
     return msg_0_00795120;
 }
 
@@ -649,7 +637,6 @@ short srsEftNo2WeaponID(void)
 }
 
 extern char msg_1_007951A0[];
-extern char D_004DBB28[]; /* ".esp" */
 
 char *srsGetEffectName2(int effectNo)
 {
@@ -659,7 +646,7 @@ char *srsGetEffectName2(int effectNo)
     if (name == 0) {
         return name;
     }
-    sprintf(msg_1_007951A0, "esp/%s%s", name, D_004DBB28);
+    sprintf(msg_1_007951A0, "esp/%s%s", name, ".esp");
     return msg_1_007951A0;
 }
 
@@ -678,7 +665,7 @@ static char *srsGetComboName(int index)
     if (value == 0) {
         return 0;
     }
-    sprintf(msg_2_00795220, "esp/%s%s", value, D_004DBB28);
+    sprintf(msg_2_00795220, "esp/%s%s", value, ".esp");
     return msg_2_00795220;
 }
 
