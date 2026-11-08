@@ -5989,6 +5989,57 @@
    ]
   },
   "main/tu149": {
+   ".data": [
+    {
+     "range": [
+      "0x0036aed0",
+      "0x0036b170"
+     ],
+     "generated": [
+      "0x0036aed0",
+      "0x0036b170"
+     ],
+     "generated_by": [
+      "drawAxis",
+      "drawBox2",
+      "drawCircle2",
+      "drawCircle3",
+      "drawGrid",
+      "drawRect2",
+      "drawVector2",
+      "drawVector4",
+      "drawVector4S",
+      "initLight",
+      "initLight2",
+      "initLight3",
+      "updateCursor",
+      "updateCursorMode0",
+      "updateCursorModePlane",
+      "updateLight"
+     ],
+     "c_owned_symbols": [
+      "col",
+      "cursorSpeed",
+      "D_0036AF2C",
+      "vGridXZ",
+      "vCursor",
+      "cCursor",
+      "cursorModeName",
+      "D_0036B00C",
+      "vRect",
+      "vBox",
+      "lightDir",
+      "lightCol",
+      "lightSpeedTbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/db_light_write.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -6046,54 +6097,37 @@
    ".rodata": [
     {
      "range": [
-      "0x004c20f0",
-      "0x004c2108"
+      "0x004c2020",
+      "0x004c2308"
      ],
      "generated": [
-      "0x004c20f0",
-      "0x004c2108"
+      "0x004c2020",
+      "0x004c2305"
      ],
      "generated_by": [
-      "changeCameraMode"
+      "DB_lightWrite",
+      "changeCameraMode",
+      "printM",
+      "updateCursor",
+      "updateCursorMode0",
+      "updateCursorModePlane",
+      "updateLight",
+      "updateWind"
      ],
      "c_owned_symbols": [
-      "jtbl_004C20F0"
-     ],
-     "also_referenced_by_c": [
       "D_004C2020",
       "D_004C2050",
       "D_004C2088",
       "D_004C20B8",
       "D_004C20C8",
+      "jtbl_004C20F0",
       "D_004C2108",
       "D_004C2128",
       "D_004C2148",
       "D_004C2158",
       "D_004C2170",
-      "D_004C2190"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/db_light_write.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c21b0",
-      "0x004c21c8"
-     ],
-     "generated": [
-      "0x004c21b0",
-      "0x004c21c8"
-     ],
-     "generated_by": [
-      "updateLight"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C21B0"
-     ],
-     "also_referenced_by_c": [
+      "D_004C2190",
+      "jtbl_004C21B0",
       "D_004C21C8",
       "D_004C21D8",
       "D_004C21F0",
@@ -6109,6 +6143,52 @@
       "D_004C22C8",
       "D_004C22F8"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/db_light_write.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da518",
+      "0x004da590"
+     ],
+     "generated": [
+      "0x004da518",
+      "0x004da58b"
+     ],
+     "generated_by": [
+      "MAP_serach",
+      "updateLight",
+      "updateWind"
+     ],
+     "c_owned_symbols": [
+      "visible_0",
+      "D_004DA51C",
+      "D_004DA520",
+      "lightColIndex",
+      "lightSpeed",
+      "lightStateOffset",
+      "D_004DA530",
+      "D_004DA538",
+      "D_004DA540",
+      "D_004DA548",
+      "csr_1",
+      "dispy_2",
+      "D_004DA554",
+      "D_004DA558",
+      "D_004DA560",
+      "D_004DA568",
+      "D_004DA570",
+      "D_004DA578",
+      "D_004DA580",
+      "D_004DA588"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

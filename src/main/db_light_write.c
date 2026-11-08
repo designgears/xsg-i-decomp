@@ -109,22 +109,17 @@ extern MapGameLoopStateView GameLoopState;
 
 extern DbLightWritePadData PadData;
 
-extern int visible_0;
 
 extern int partsIndex;
 
-extern const char D_004C2158[];
 
-extern const char D_004DA520[];
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 
 extern void nmlModelSetPartsVisible(MapPartListView *parts,
                                     int part_index, int visible);
 
-extern Vector4 lightDir[6];
 
-extern Vector4 lightCol[6];
 
 extern void xglLightIntensityParallel(void *light, int index,
                                       const Vector4 *intensity);
@@ -143,9 +138,6 @@ extern float xglCos(float angle);
 
 extern int sceWrite(int descriptor, const void *buffer, int size);
 extern double fptodp(float value);
-extern const char D_004C2020[];
-extern const char D_004C2050[];
-extern const char D_004C2088[];
 typedef struct { float f[28]; } LightFloats;
 
 void DB_lightWrite(int descriptor)
@@ -158,7 +150,7 @@ void DB_lightWrite(int descriptor)
     xglStudioGetLight(&light);
     sceWrite(descriptor, buffer,
              sprintf(buffer,
-                     D_004C2020,
+                     "light.setColor(%2d, %7.3ff, %7.3ff, %7.3ff);\n",
                      0, light->ambient_color.x, light->ambient_color.y,
                      light->ambient_color.z));
 
@@ -166,12 +158,12 @@ void DB_lightWrite(int descriptor)
     do {
         lightNumber = lightIndex + 1;
         sceWrite(descriptor, buffer,
-                 sprintf(buffer, D_004C2020, lightNumber,
+                 sprintf(buffer, "light.setColor(%2d, %7.3ff, %7.3ff, %7.3ff);\n", lightNumber,
                          ((LightFloats *)light)->f[lightIndex * 8 + 4],
                          ((LightFloats *)light)->f[lightIndex * 8 + 5],
                          ((LightFloats *)light)->f[lightIndex * 8 + 6]));
         sceWrite(descriptor, buffer,
-                 sprintf(buffer, D_004C2050, lightNumber,
+                 sprintf(buffer, "light.setDirection2(%2d, %7.3ff, %7.3ff, %7.3ff);\n", lightNumber,
                          ((LightFloats *)light)->f[lightIndex * 8 + 8],
                          ((LightFloats *)light)->f[lightIndex * 8 + 9],
                          ((LightFloats *)light)->f[lightIndex * 8 + 10]));
@@ -179,7 +171,7 @@ void DB_lightWrite(int descriptor)
     } while (lightIndex < 3);
 
     {
-        const char *stage_format = D_004C2088;
+        const char *stage_format = "Stage.setColor(%1.3ff, %1.3ff, %1.3ff);\n";
         double stage_red;
         double stage_green;
         double stage_blue;
@@ -202,13 +194,24 @@ typedef struct TransformParams {
 
 typedef struct { unsigned char r, g, b, a; } DbColor;
 
+static DbColor col[14] = { { 0xC0, 0xC0, 0xC0, 0x80 }, { 0xC0, 0x00, 0x00, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 }, { 0x00, 0xC0, 0x00, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 }, { 0x00, 0x00, 0xC0, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 }, { 0xC0, 0xC0, 0x00, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 }, { 0x00, 0xC0, 0xC0, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 }, { 0xC0, 0x00, 0xC0, 0x80 }, { 0x10, 0x10, 0x10, 0x80 }, { 0xC0, 0xC0, 0xC0, 0x80 } };
+static float cursorSpeed[9] = { 0.010000001f, 0.016666668f, 0.06666667f, 0.13333334f, 0.26666668f, 0.33333334f, 0.53333336f, 1.0666667f, 4.266667f };
+static Vector4 vGridXZ[5] = { { -0.5f, 0.0f, -0.5f, 1.0f }, { 0.5f, 0.0f, -0.5f, 1.0f }, { 0.5f, 0.0f, 0.5f, 1.0f }, { -0.5f, 0.0f, 0.5f, 1.0f }, { -0.5f, 0.0f, -0.5f, 1.0f } };
+static Vector4 vCursor[6] = { { -0.5f, 0.0f, 0.0f, 1.0f }, { 0.5f, 0.0f, 0.0f, 1.0f }, { 0.0f, -0.5f, 0.0f, 1.0f }, { 0.0f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f, -0.5f, 1.0f }, { 0.0f, 0.0f, 0.5f, 1.0f } };
+unsigned char cCursor[24] = { 0xC0, 0xC0, 0xC0, 0x80, 0xC0, 0x00, 0x00, 0x80, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0xC0, 0x00, 0x80, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0x00, 0xC0, 0x80 };
+/* The mode names sit in .sdata just before this TU's own, where the split puts them in script. */
+extern char D_004DA4F0[], D_004DA4F8[], D_004DA500[], D_004DA508[], D_004DA510[];
+static char *cursorModeName[5] = { D_004DA510, D_004DA508, D_004DA500, D_004DA4F8, D_004DA4F0 };
+static Vector4 vRect[4] = { { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f, 1.0f }, { 1.0f, -1.0f, 0.0f, 1.0f } };
+extern Vector4 lightDir[6];
+extern Vector4 lightCol[6];
+static Vector4 vBox[5] = { { -0.5f, 0.5f, 0.0f, 1.0f }, { 0.5f, 0.5f, 0.0f, 1.0f }, { 0.5f, -0.5f, 0.0f, 1.0f }, { -0.5f, -0.5f, 0.0f, 1.0f }, { -0.5f, 0.5f, 0.0f, 1.0f } };
+
 extern void xglMatrixStackUnit(void);
 extern void xglMatrixStackSave(float matrix[4][4]);
 extern void transformVector(Vector4 *destination, const Vector4 *vectors, int count,
                             TransformParams *params);
 extern void xglPrimAddGifTagDirect(void *packet, const void *data, int count);
-extern Vector4 vRect[4];
-extern DbColor col[14];
 
 void drawRect2(Matrix4 *m, int mode)
 {
@@ -259,8 +262,6 @@ extern void xglMatrixStackSave(float matrix[4][4]);
 extern void transformVector(Vector4 *destination, const Vector4 *vectors, int count,
                             TransformParams *params);
 extern void xglPrimAddGifTagDirect(void *packet, const void *data, int count);
-extern DbColor col[14];
-extern Vector4 vBox[5];
 #define SPR_PARAMS ((TransformParams *)0x70000400)
 
 void drawBox2(Matrix4 *m, int mode)
@@ -489,7 +490,6 @@ void drawVector4S(Vector4 *arg0, Matrix4 *arg1, int arg2, void *arg3)
 extern void xglMatrixStackLoad(float matrix[4][4]);
 extern unsigned char cCursor[24];
 typedef struct { Matrix4 m; } MatBlockG;
-extern Vector4 vGridXZ[5];
 
 void drawGrid(Matrix4 matrix, float scale)
 {
@@ -572,7 +572,6 @@ static StudioCamera *getCurrentCamera(void)
 
 extern unsigned char cCursor[24];
 typedef struct { Matrix4 m; } MatBlockAx;
-extern Vector4 vCursor[6];
 
 void drawAxis(Matrix4 matrix, float scale)
 {
@@ -1100,9 +1099,6 @@ typedef struct DbCursorView {
     unsigned char unmodeled_58[8];
 } DbCursorView;
 #define DB_CAMERA_TO_WORLD(camera) ((float *)((unsigned char *)(camera) + 0x170))
-extern float cursorSpeed[];
-extern const char D_004C20B8[];
-extern const char D_004C20C8[];
 extern float UnduGet(float x, float z);
 
 void updateCursorModePlane(void)
@@ -1254,11 +1250,11 @@ void updateCursorModePlane(void)
     if (keys[0] & 0x40) {
         height = UnduGet(position->x, position->z);
         if (height != -1000.0f) {
-            height_format = D_004C20B8;
+            height_format = "MAP-HEIGHT: %f";
             position->y = height;
             xglFontDebugPrintf(4, 0xC4, height_format, fptodp(height));
         } else {
-            missing_format = D_004C20C8;
+            missing_format = "MAP-HEIGHT:\x0C\x80\0\0HOLE_HEIGHT\x0C\x80\x80\x80 ";
             xglFontDebugPrintf(4, 0xC4, missing_format, fptodp(height));
         }
         if (((DbCursorView *)cursor)->flag_34 != 0) {
@@ -1423,11 +1419,11 @@ void updateCursorMode0(void)
     if (keys[0] & 0x40) {
         height = UnduGet(position->x, position->z);
         if (height != -1000.0f) {
-            height_format = D_004C20B8;
+            height_format = "MAP-HEIGHT: %f";
             position->y = height;
             xglFontDebugPrintf(4, 0xC4, height_format, fptodp(height));
         } else {
-            missing_format = D_004C20C8;
+            missing_format = "MAP-HEIGHT:\x0C\x80\0\0HOLE_HEIGHT\x0C\x80\x80\x80 ";
             xglFontDebugPrintf(4, 0xC4, missing_format, fptodp(height));
         }
         if (((DbCursorView *)cursor)->flag_34 != 0) {
@@ -1511,10 +1507,6 @@ void changeCameraMode(void)
 
 extern int toolFlags;
 extern int cursorMode;
-extern int cursorModeName[];
-extern const char D_004C2108[];
-extern const char D_004C2128[];
-extern const char D_004C2148[];
 extern void PAD_getKey(unsigned short *keys, int port, int mask);
 
 void updateCursor(int mode)
@@ -1620,11 +1612,11 @@ void updateCursor(int mode)
         updateCursorMode2();
         if (toolFlags == 0) {
             camera_position = &camera->position;
-            position_format = D_004C2108;
+            position_format = "IX:%7.3f\nIY:%7.3f\nIZ:%7.3f";
             sprintf(text, position_format, fptodp(position->x), fptodp(position->y),
                     fptodp(position->z));
             xglFontDebugPrintf(0xAA, 0xAA, text);
-            camera_format = D_004C2128;
+            camera_format = "PX:%7.3f\nPY:%7.3f\nPZ:%7.3f";
             sprintf(text, camera_format, fptodp(camera_position->x), fptodp(camera_position->y),
                     fptodp(camera_position->z));
             xglFontDebugPrintf(0xAA, 0xC6, text);
@@ -1639,7 +1631,7 @@ void updateCursor(int mode)
         selected = ((DbCursorView *)cursor)->mode;
     }
     if (toolFlags == 0) {
-        xglFontDebugPrintf(4, 0xB4, D_004C2148, cursorModeName[selected], ((DbCursorView *)cursor)->flag_04,
+        xglFontDebugPrintf(4, 0xB4, "%s %1d SPD:%1d", cursorModeName[selected], ((DbCursorView *)cursor)->flag_04,
                            ((DbCursorView *)cursor)->step + 1);
     }
 }
@@ -1718,7 +1710,7 @@ static void printM(int x, int y, const float *matrix)
     rowIndex = 0;
     do {
         rowIndex++;
-        sprintf(buffer, D_004C2158,
+        sprintf(buffer, "%6.2f %6.2f %6.2f %6.2f",
                 rowEnd[-3], rowEnd[-2], rowEnd[-1], rowEnd[0]);
         xglFontDebugPrintf(x, y, buffer);
         if (rowIndex > 3)
@@ -1730,6 +1722,7 @@ static void printM(int x, int y, const float *matrix)
 
 void MAP_serach(void)
 {
+    static int visible_0 __asm__("visible.0") = 0;
     MapStageModelView *model;
     MapPartListView *parts;
     DbLightWritePadSecondPrefix *mapPad;
@@ -1762,7 +1755,7 @@ void MAP_serach(void)
                 partsIndex = 0;
             matrix_data = matrix_base + partsIndex * sizeof(Matrix4);
             printM(0x20, 0x40, matrix_data);
-            sprintf(buffer, D_004DA520, partsIndex);
+            sprintf(buffer, "%3d", partsIndex);
             xglFontDebugPrintf(8, 0x20, buffer);
             nmlModelSetPartsVisible(model->parts, partsIndex,
                                     (visible_0 >> 4) & 1);
@@ -1970,24 +1963,19 @@ typedef struct FloatLight {
     RgVector ambient_color;
     FloatLightEntry lights[3];
 } FloatLight;
-extern int lightColIndex;
 extern int lightIndex;
-extern int lightStateOffset;
-extern int lightSpeed;
 extern float lightSpeedTbl[4];
-extern const char D_004DA530[];
-extern const char D_004C2170[];
-extern const char D_004C2190[];
-extern const char D_004DA538[];
-extern const char D_004DA540[];
-extern const char D_004DA548[];
+
+static int lightColIndex = 3;
+static int lightSpeed = 1;
+static int lightStateOffset = 0;
 
 void updateLight(int mode)
 {
     /* drawCircle2 with the radius/color order of this call site. */
     extern void drawCircle2RadiusFirst(Matrix4 *matrix, float radius, int color_index) __asm__("drawCircle2");
     /* lightCol as rows of RgVector (the TU declares it as Vector4). */
-    extern RgVector lightColRows[6] __asm__("lightCol");
+    extern RgVector lightColRows[] __asm__("lightCol");
     const struct CursorPadKeyResult *keys =
         (const struct CursorPadKeyResult *)(const void *)&keyData;
     Matrix4 matrix;
@@ -2198,17 +2186,17 @@ void updateLight(int mode)
     }
 
     baseX = 192 + lightStateOffset / 2;
-    sprintf(text, D_004DA530, 1 + lightSpeed);
+    sprintf(text, "SPD: %d", 1 + lightSpeed);
     xglFontDebugPrintf(baseX, 160, text);
-    sprintf(text, D_004C2170, stick.x, stick.y, stick.z);
+    sprintf(text, "R: %4.3f\nG: %4.3f\nB: %4.3f", stick.x, stick.y, stick.z);
     xglFontDebugPrintf(baseX, 170, text);
-    sprintf(text, D_004C2190, direction.vector.x, direction.vector.y, direction.vector.z);
+    sprintf(text, "X:%6.3f\nY:%6.3f\nZ:%6.3f", direction.vector.x, direction.vector.y, direction.vector.z);
     xglFontDebugPrintf(baseX, 198, text);
 
     baseX = 200 + lightStateOffset / 2;
-    xglFontDebugPrintf(baseX, 88, D_004DA538);
-    xglFontDebugPrintf(baseX + 4, 114, D_004DA540);
-    xglFontDebugPrintf(baseX, 140, D_004DA548);
+    xglFontDebugPrintf(baseX, 88, "AMB");
+    xglFontDebugPrintf(baseX + 4, 114, "BG");
+    xglFontDebugPrintf(baseX, 140, "MAP");
     stick.x = 116.0f;
     stick.y = 56.0f;
     stick.z = 1.0f;
@@ -2292,22 +2280,27 @@ void updateLight(int mode)
 
         i = 0;
         xglStudioGetLight((StudioLight **)&dumpLight);
-        sprintf(dumpText, D_004C2020, i, dumpLight->ambient_color[0],
+        sprintf(dumpText, "light.setColor(%2d, %7.3ff, %7.3ff, %7.3ff);\n", i, dumpLight->ambient_color[0],
                 dumpLight->ambient_color[1], dumpLight->ambient_color[2]);
         state = &GameLoopState;
         do {
-            sprintf(dumpText, D_004C2020, i + 1, dumpLight->lights[i].color[0],
+            sprintf(dumpText, "light.setColor(%2d, %7.3ff, %7.3ff, %7.3ff);\n", i + 1, dumpLight->lights[i].color[0],
                     dumpLight->lights[i].color[1],
                     dumpLight->lights[i].color[2]);
-            sprintf(dumpText, D_004C2050, i + 1, dumpLight->lights[i].direction[0],
+            sprintf(dumpText, "light.setDirection2(%2d, %7.3ff, %7.3ff, %7.3ff);\n", i + 1, dumpLight->lights[i].direction[0],
                     dumpLight->lights[i].direction[1],
                     dumpLight->lights[i].direction[2]);
-            sprintf(dumpText, D_004C2088, state->stage_color.x,
+            sprintf(dumpText, "Stage.setColor(%1.3ff, %1.3ff, %1.3ff);\n", state->stage_color.x,
                     state->stage_color.y,
                     state->stage_color.z);
         } while (++i < 3);
     }
 }
+
+/* Defined after updateLight, whose lightColRows view is a separate extern. */
+static Vector4 lightDir[6] = { { 0.0f, 1.0f, 0.78f, 1.0f }, { 0.78f, 1.0f, 0.0f, 1.0f }, { -0.615f, -1.0f, -0.615f, 1.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f } };
+static Vector4 lightCol[6] = { { 0.6f, 0.6f, 0.6f, 1.0f }, { 0.6f, 0.6f, 0.6f, 1.0f }, { 0.6f, 0.6f, 0.6f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } };
+float lightSpeedTbl[4] = { 0.005f, 0.01f, 0.02f, 0.03f };
 
 typedef struct WindRecord {
     signed char mode;
@@ -2329,32 +2322,11 @@ typedef struct WindMarker {
     int color[4];
 } WindMarker;
 extern void EXM_ResetWind(void);
-extern int dispy_2;
-extern int csr_1;
-extern const char D_004DA558[];
-extern const char D_004DA560[];
-extern const char D_004DA568[];
-extern const char D_004DA570[];
-extern const char D_004DA578[];
-extern const char D_004DA580[];
-extern const char D_004DA588[];
-extern const char D_004C21C8[];
-extern const char D_004C21D8[];
-extern const char D_004C21F0[];
-extern const char D_004C2200[];
-extern const char D_004C2210[];
-extern const char D_004C2220[];
-extern const char D_004C2230[];
-extern const char D_004C2240[];
-extern const char D_004C2250[];
-extern const char D_004C2260[];
-extern const char D_004C2270[];
-extern const char D_004C2290[];
-extern const char D_004C22C8[];
-extern const char D_004C22F8[];
 
 void updateWind(WindRecord *wind)
 {
+    static int csr_1 __asm__("csr.1") = 0;
+    static int dispy_2 __asm__("dispy.2") = 32;
     StudioCamera *camera;
     DbLightWritePadSecondPrefix *pad;
     char text[256];
@@ -2459,43 +2431,43 @@ void updateWind(WindRecord *wind)
         }
     }
 
-    xglFontDebugPrintf(0, 0, D_004DA558);
-    xglFontDebugPrintf(150, dispy_2 - 12, D_004DA560);
+    xglFontDebugPrintf(0, 0, "\xC9\xF7\xC0\xDF\xC4\xEA");
+    xglFontDebugPrintf(150, dispy_2 - 12, "\x0BTYPE");
     mode = wind->mode;
     if (mode == 0) {
-        xglFontDebugPrintf(162, dispy_2, D_004C21C8);
+        xglFontDebugPrintf(162, dispy_2, "\x0B\x0C\x80\0\0OFF");
     } else {
-        xglFontDebugPrintf(162, dispy_2, D_004DA568);
+        xglFontDebugPrintf(162, dispy_2, "\x0BOFF");
     }
     if (mode == 1) {
-        xglFontDebugPrintf(162, dispy_2 + 12, D_004C21D8);
+        xglFontDebugPrintf(162, dispy_2 + 12, "\x0B\x0C\x80\0\0DIRECTIONAL");
     } else {
-        xglFontDebugPrintf(162, dispy_2 + 12, D_004C21F0);
+        xglFontDebugPrintf(162, dispy_2 + 12, "\x0B" "DIRECTIONAL");
     }
     if (mode == 2) {
-        xglFontDebugPrintf(162, dispy_2 + 24, D_004C2200);
+        xglFontDebugPrintf(162, dispy_2 + 24, "\x0B\x0C\x80\0\0POINT");
     } else {
-        xglFontDebugPrintf(162, dispy_2 + 24, D_004DA570);
+        xglFontDebugPrintf(162, dispy_2 + 24, "\x0BPOINT");
     }
-    xglFontDebugPrintf(150, dispy_2 + 36, D_004DA578);
-    format1 = D_004C2210;
+    xglFontDebugPrintf(150, dispy_2 + 36, "\x0BSHAKE");
+    format1 = "\x0BPOW:%+2.3f";
     sprintf(text, format1, fptodp(wind->offset_a));
     xglFontDebugPrintf(162, dispy_2 + 48, text);
-    format2 = D_004C2220;
+    format2 = "\x0BSPD:%+2.3f";
     sprintf(text, format2, fptodp(wind->offset_b));
     xglFontDebugPrintf(162, dispy_2 + 60, text);
-    xglFontDebugPrintf(170, dispy_2 + 72, D_004DA580);
-    format3 = D_004C2230;
+    xglFontDebugPrintf(170, dispy_2 + 72, "\x0BVECTOR");
+    format3 = "\x0BX: %4.4f";
     line = text_line;
     sprintf(line, format3, fptodp(wind->x));
     xglFontDebugPrintf(182, dispy_2 + 80, line);
-    format4 = D_004C2240;
+    format4 = "\x0BY: %4.4f";
     sprintf(line, format4, fptodp(wind->y));
     xglFontDebugPrintf(182, dispy_2 + 88, line);
-    format5 = D_004C2250;
+    format5 = "\x0BZ: %4.4f";
     sprintf(line, format5, fptodp(wind->z));
     xglFontDebugPrintf(182, dispy_2 + 96, line);
-    format6 = D_004C2260;
+    format6 = "\x0BW: %4.4f";
     sprintf(line, format6, fptodp(wind->w));
     xglFontDebugPrintf(182, dispy_2 + 104, line);
     if (wind->mode == 1) {
@@ -2511,25 +2483,25 @@ void updateWind(WindRecord *wind)
         marker.from.vector.w = 0.05f;
     }
     if (csr_1 < 3) {
-        xglFontDebugPrintf(150, dispy_2 + csr_1 * 12, D_004DA588);
+        xglFontDebugPrintf(150, dispy_2 + csr_1 * 12, "\x0B>");
     } else {
-        xglFontDebugPrintf(150, dispy_2 + csr_1 * 12 + 12, D_004DA588);
+        xglFontDebugPrintf(150, dispy_2 + csr_1 * 12 + 12, "\x0B>");
     }
     if (pad->half_2a & 0x100) {
         wide_text = text_wide;
-        format7 = D_004C2270;
+        format7 = "setWindShake(%3.4ff, %3.4ff);\n";
         sprintf(wide_text, format7, fptodp(wind->offset_a), fptodp(wind->offset_b));
         switch (wind->mode) {
         case 1:
-            format8 = D_004C2290;
+            format8 = "setDirectionalWind(%3.4ff, %3.4ff, %3.4ff, %3.4ff);\n";
             sprintf(wide_text, format8, fptodp(wind->x), fptodp(wind->y), fptodp(wind->z), fptodp(wind->w));
             break;
         case 2:
-            format9 = D_004C22C8;
+            format9 = "setPointWind(%3.4ff, %3.4ff, %3.4ff, %3.4ff);\n";
             sprintf(wide_text, format9, fptodp(wind->x), fptodp(wind->y), fptodp(wind->z), fptodp(wind->w));
             break;
         case 0:
-            format10 = D_004C22F8;
+            format10 = "stopWind();\n";
             sprintf(wide_text, format10);
             break;
         }
