@@ -50,7 +50,10 @@ order = m['sections'][sec]['order']
 i = next(k for k, p in enumerate(order) if p['tu'] == prev)
 assert not any(p['tu'] == new for p in order), f'{new} already has a {sec} piece'
 nxt = order[i + 1] if i + 1 < len(order) else None
-assert tus[prev]['ordinal'] < tus[new]['ordinal'] and (nxt is None or tus[new]['ordinal'] < tus[nxt['tu']]['ordinal']), 'ordinal order'
+# SDK library objects are linked after every game object, whatever their ordinal
+after_ok = (nxt is None or tus[new]['ordinal'] < tus[nxt['tu']]['ordinal']
+            or (tus[nxt['tu']].get('category') == 'sdk' and tus[new].get('category') != 'sdk'))
+assert tus[prev]['ordinal'] < tus[new]['ordinal'] and after_ok, 'ordinal order'
 p = order[i]
 end = int(p['end'], 16)
 assert int(p['start'], 16) < start < end
