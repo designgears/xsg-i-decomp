@@ -3,7 +3,7 @@
  */
 #include "common.h"
 
-unsigned char TitleMaxList[7] = {6, 9, 14, 9, 3, 5, 6};
+extern unsigned char TitleMaxList[7];
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void xglFontPrint(int x, int y, int color, const char *text);
@@ -498,11 +498,11 @@ extern int D_00A578B8;
 extern int D_00A578BC;
 extern int D_00A578C0;
 extern int D_00A578C4;
-extern float rotval_7;
-extern u8 CursorTimer_9;
 
 void CardOpenProc(CardGameWork *work, s16 *exiting)
 {
+    static float rotval __asm__("rotval.7") = 0.0f;
+    static u8 CursorTimer __asm__("CursorTimer.9") = 0;
     Matrix4 cardMatrix;
     Matrix4 placement;
     float cardOffset[4];
@@ -606,7 +606,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         }
         break;
     case CARD_OPEN_STEP_COUNT:
-        rotval_7 = 0.0f;
+        rotval = 0.0f;
         D_00A578B0 = -1;
         D_00A578B4 = 0;
         for (i = 0; i < CARD_PACK_COUNT; i += 1) {
@@ -655,20 +655,20 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
                 xglSoundEffectNormalID(CARD_SE_CURSOR, 0);
                 D_00A578B0 = COPSerachPackL(D_00A57848, D_00A578B0);
             }
-            CursorTimer_9 += 1;
-            if (CursorTimer_9 >= CARD_CURSOR_FRAMES) {
-                CursorTimer_9 = 0;
+            CursorTimer += 1;
+            if (CursorTimer >= CARD_CURSOR_FRAMES) {
+                CursorTimer = 0;
             }
             cardOffset[1] = 0.6271f;
             cardOffset[2] = 0.6271f;
-            cardOffset[0] = (((float) CursorTimer_9 * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME) + CARD_CURSOR_REST_X;
+            cardOffset[0] = (((float) CursorTimer * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME) + CARD_CURSOR_REST_X;
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
             nmlModelEntryCard(CARD_CURSOR_R_MODEL);
             cardOffset[1] = 0.6271f;
             cardOffset[2] = 0.6271f;
-            cardOffset[0] = -CARD_CURSOR_REST_X - (((float) CursorTimer_9 * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME);
+            cardOffset[0] = -CARD_CURSOR_REST_X - (((float) CursorTimer * CARD_CURSOR_TRAVEL) / CARD_CURSOR_LAST_FRAME);
             xglMatrixTrans(placement, cardMatrix, cardOffset);
             nmlModelSetPlace(placement);
             nmlModelSetTexture(CARD_CURSOR_TEXTURE);
@@ -682,7 +682,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         cardOffset[1] = 0.6271f;
         cardOffset[2] = 0.3881f;
         cardOffset[0] = 0.0f;
-        rotval_7 += CARD_PACK_SPIN_STEP;
+        rotval += CARD_PACK_SPIN_STEP;
         xglMatrixTrans(placement, cardMatrix, cardOffset);
         switch (D_00A578B0) {
         case CARD_PACK_ST1: packModel = CARD_PACK1_MODEL; break;
@@ -690,7 +690,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         case CARD_PACK_BS2: packModel = CARD_PACK3_MODEL; break;
         default: packModel = CARD_PACK4_MODEL; break;
         }
-        xglMatrixRotY(placement, placement, rotval_7);
+        xglMatrixRotY(placement, placement, rotval);
         nmlModelSetPlace(placement);
         nmlModelSetTexture(CARD_PACK_TEXTURE);
         nmlModelEntry(packModel);
@@ -705,7 +705,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         xglFontPrint(234, 312, CARD_TEXT_COLOR, "\x19\x03\r\0?");
         xglFontPrint(10, 384, CARD_TEXT_COLOR, "\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\xA1\x0C\x80@@\xA1\xFB \v\x19\x03\r\0Okay");
         xglFontPrint(120, 288, CARD_TEXT_COLOR, "\v");
-        rotval_7 += CARD_PACK_OPEN_SPIN_STEP;
+        rotval += CARD_PACK_OPEN_SPIN_STEP;
         cardOffset[1] = 0.6271f;
         cardOffset[2] = 0.3881f;
         cardOffset[0] = 0.0f;
@@ -716,7 +716,7 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         case CARD_PACK_BS2: packModel = CARD_PACK3_MODEL; break;
         default: packModel = CARD_PACK4_MODEL; break;
         }
-        xglMatrixRotY(placement, placement, rotval_7);
+        xglMatrixRotY(placement, placement, rotval);
         nmlModelSetPlace(placement);
         nmlModelSetTexture(CARD_PACK_TEXTURE);
         nmlModelEntryCard(packModel);
@@ -1050,3 +1050,77 @@ void CardOpenProc(CardGameWork *work, s16 *exiting)
         break;
     }
 }
+
+/* Book page tables, also read by card_disp. */
+unsigned char TitleMaxList[7] = {6, 9, 14, 9, 3, 5, 6};
+signed char SkipStartList[7] = {0, 6, 15, 29, 38, 41, 46};
+signed char PageStatusLst[59][3] = {
+    {0, 0, 0},
+    {0, 1, 0},
+    {0, 2, 0},
+    {0, 3, 0},
+    {0, 4, 0},
+    {0, 5, 0},
+    {1, 0, 0},
+    {1, 1, 0},
+    {1, 2, 0},
+    {1, 3, 0},
+    {1, 4, 0},
+    {1, 5, 0},
+    {1, 6, 0},
+    {1, 7, 0},
+    {1, 8, 0},
+    {2, 0, 0},
+    {2, 1, 0},
+    {2, 2, 0},
+    {2, 3, 0},
+    {2, 4, 0},
+    {2, 5, 0},
+    {2, 6, 0},
+    {2, 7, 0},
+    {2, 8, 0},
+    {2, 9, 0},
+    {2, 10, 0},
+    {2, 11, 0},
+    {2, 12, 0},
+    {2, 13, 0},
+    {2, 14, 0},
+    {3, 0, 0},
+    {3, 1, 0},
+    {3, 2, 0},
+    {3, 3, 0},
+    {3, 4, 0},
+    {3, 5, 0},
+    {3, 6, 0},
+    {3, 7, 0},
+    {3, 8, 0},
+    {3, 9, 0},
+    {3, 10, 0},
+    {3, 11, 0},
+    {3, 12, 0},
+    {3, 13, 0},
+    {4, 0, 0},
+    {4, 1, 0},
+    {4, 2, 0},
+    {4, 3, 0},
+    {5, 0, 0},
+    {5, 1, 0},
+    {5, 2, 0},
+    {5, 3, 0},
+    {5, 4, 0},
+    {6, 0, 0},
+    {6, 1, 0},
+    {6, 2, 0},
+    {6, 3, 0},
+    {6, 4, 0},
+    {6, 5, 0},
+};
+unsigned char SkipPageLst[7][14] = {
+    {0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0},
+    {6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 0, 0, 0, 0},
+    {15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29},
+    {30, 31, 33, 34, 35, 38, 40, 41, 43, 0, 0, 0, 0, 0},
+    {44, 45, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {48, 49, 50, 51, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {53, 54, 55, 56, 57, 58, 0, 0, 0, 0, 0, 0, 0, 0},
+};

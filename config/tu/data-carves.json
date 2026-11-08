@@ -17807,6 +17807,29 @@
    ".data": [
     {
      "range": [
+      "0x00a43a94",
+      "0x00a43a99"
+     ],
+     "generated": [
+      "0x00a43a94",
+      "0x00a43a99"
+     ],
+     "generated_by": [
+      "CardOpenProc"
+     ],
+     "c_owned_symbols": [
+      "rotval_7",
+      "CursorTimer_9"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
+     }
+    },
+    {
+     "range": [
       "0x00a43aa0",
       "0x00a43aa7"
      ],
@@ -17818,10 +17841,67 @@
      "c_owned_symbols": [
       "TitleMaxList"
      ],
-     "also_referenced_by_c": [
-      "rotval_7",
-      "CursorTimer_9"
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a43aa8",
+      "0x00a43aaf"
      ],
+     "generated": [
+      "0x00a43aa8",
+      "0x00a43aaf"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "SkipStartList"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a43ab0",
+      "0x00a43b61"
+     ],
+     "generated": [
+      "0x00a43ab0",
+      "0x00a43b61"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "PageStatusLst"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a43b68",
+      "0x00a43bca"
+     ],
+     "generated": [
+      "0x00a43b68",
+      "0x00a43bca"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "SkipPageLst"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
