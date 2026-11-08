@@ -54970,7 +54970,7 @@
       "name_confidence": "low",
       "ordinal": 182,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
