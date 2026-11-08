@@ -1948,8 +1948,8 @@ extern void xsg_ui_mop_art(int op, unsigned tex0_lo, unsigned tex0_hi, int u, in
 extern void xsg_ui_mop_uv(int op, int u, int v);
 extern void xsg_ui_mop_text(int op, const char *text, int len);
 extern void xsg_ui_mop_icon(int slot);
+extern void xsg_ui_mop_uvid(int op, int uvIndex);
 extern unsigned xsg_ui_texset(const void *directory);
-extern void xsg_ui_menu_end(void);
 extern unsigned char FS[];
 
 enum { MOP_TEXT = 3, MOP_NUMBER = 4, MOP_ART = 6, MOP_RECT = 7, MOP_SCISSOR = 8, MOP_LINE = 10, MOP_WINDOW = 11,
@@ -1966,6 +1966,7 @@ static void xsgArt(int x, int y, int w, int h, int z, unsigned rgba, int uvIndex
     int op = xsg_ui_mop(MOP_ART, x, y, w, h, z, rgba, 0);
     xsg_ui_mop_art(op, (unsigned)tex0, (unsigned)(tex0 >> 32), e->u + e->width * column, e->v + e->height * row, e->width,
                    e->height, texset);
+    xsg_ui_mop_uvid(op, uvIndex);   /* the uv table and entry: pad icons become controller glyphs */
 }
 
 /* A marker in the GIF stream (TEXFLUSH, whose data the GS ignores, carrying "XSGM"):
@@ -2104,6 +2105,6 @@ void xsg_ui_print_capture(EndPrintContext *context)
                 texset = xsgMark(context, slot++, ((void **)FS)[1]);   /* it uploaded its image */
         }
     }
-    xsg_ui_menu_end();
+    /* published with the frame's text at the end of xglFontFlush (xsg_ui_frame_end) */
 }
 #endif

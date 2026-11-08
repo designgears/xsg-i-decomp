@@ -352,6 +352,13 @@ static void xglFontPrintDirectCore(const char *text);
 void xglFontPrint(int x, int y, int color, const char *text)
 {
     if (*(unsigned short *)D_00881188 & 1 & 0xFFFF) {
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the text goes to xsg-gpu (gpu_client.cpp xsg_ui_font_text) */
+            extern int xsg_ui_font_text(int x, int y, int color, const char *text);
+            if (xsg_ui_font_text(x, y, color, text))
+                return;
+        }
+#endif
         set_xyz(x, y, color);
         xglFontPrintDirectCore(text);
     }
@@ -1683,6 +1690,12 @@ void xglFontFlush(void)
     sceVif1PkAddDirectDataN(cursor->packet, test_15, 2);
     sceVif1PkCloseDirectHLCode(cursor->packet);
     buffer_reset();
+#ifdef PORT_HOST
+    {   /* rebuilt UI: this frame's captured list (print list, text) goes to xsg-gpu */
+        extern void xsg_ui_frame_end(void);
+        xsg_ui_frame_end();
+    }
+#endif
 }
 
 int xglFontGetStringWidth2(const char *text, int arg1)

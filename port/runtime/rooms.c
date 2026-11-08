@@ -69,6 +69,7 @@ static const struct { const char *name, *scene, *pad, *what; int give, call; } r
     {"battle", "cf9011", 0, "Shion + KOS-MOS vs U-TIC soldier"},
     {"battle_fx", "cf9021", 0, "battle whose opening is a large effect"},
     {"field", "cf9051", 0, "plays a short scene, then free walking in MC_KOU01"},
+    {"pause", "cf9051", "+600:START", "field, then the pause screen", 0},
     {"menu", "cf9051", MENU, "field, then the main menu", 1},
     {"menu_items", "cf9051", MENU ",+800:CIRCLE", "main menu > Items", 1},
     {"menu_ether", "cf9051", MENU_PICK(1), "main menu > Ether > Shion", 1},

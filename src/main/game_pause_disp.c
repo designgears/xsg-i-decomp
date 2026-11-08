@@ -52,6 +52,16 @@ void PauseMenu(void)
     switch (pause_mode) {
     case 0:
         xglFontPrintExtFunc(0x00FFFFFF, DrawShadow, 0);
+#ifdef PORT_HOST
+        {   /* rebuilt UI: the pause title is xsg-gpu's (port/gpu/ui/menus.cpp); the game keeps its dim layer */
+            extern int xsg_ui_rebuilt(void);
+            extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
+            if (xsg_ui_rebuilt()) {
+                xsg_ui_mop(14, 0, 0, 512, 448, 0xFFFFFF, 0, 0);
+                return;
+            }
+        }
+#endif
         GamePauseDispCf();
         return;
     case 100:

@@ -264,6 +264,7 @@ enum {
     GPU_KG_WINDOW = 11,  /* a window: (x, y, dw, dh), rgba; b = 1 with its fill, 0 the frame only */
     GPU_KG_TAG = 12,     /* the bitmap title letters (ASCII) */
     GPU_KG_CIRCLE = 13,  /* (x, y), radius dw, rgba centre, b rim colour */
+    GPU_KG_PAUSE = 14,   /* the pause screen (game_pause_disp.c): the rebuilt title */
 };
 /* GPU_MSG_UI_TEX: one host->local upload of a texture directory (xtx), replayed by xsg-gpu
    into a private GS memory image per set (the menus swap sets at one VRAM address). */

@@ -630,6 +630,12 @@ extern "C" void xsg_ui_mop_icon(int slot) {
     o.text[0] = 1;
     o.text[1] = char(slot);
 }
+/* ART: text[2] = 1 + uv table, text[3] = entry (end_print.c uv_clut). */
+extern "C" void xsg_ui_mop_uvid(int op, int uvIndex) {
+    if (op < 0) return;
+    g_mops[op].text[2] = char(1 + ((uvIndex >> 8) & 0x7f));
+    g_mops[op].text[3] = char(uvIndex & 0xff);
+}
 extern "C" void xsg_ui_mop_uv(int op, int u, int v) {
     if (op < 0) return;
     g_mops[op].u = int16_t(u);
@@ -645,6 +651,25 @@ extern "C" void xsg_ui_mop_text(int op, const char* text, int len) {
     std::memcpy(g_mpool + g_mpool_n, text, size_t(len));
     g_mpool[g_mpool_n + uint32_t(len)] = 0;
     g_mpool_n += uint32_t(len) + 1;
+}
+/* xglFontPrint (any caller): the stream's length by the font engine's code sizes (arguments
+   may hold zero bytes), then the same capture as the menu text. */
+extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* text, int len);
+extern "C" unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char* text);
+extern "C" int xsg_ui_font_text(int x, int y, int color, const char* text) {
+    if (!xsg_ui_rebuilt() || !text) return 0;
+    const unsigned char* t = reinterpret_cast<const unsigned char*>(text);
+    int i = 0;
+    while (t[i] && i < 4096) {
+        if (t[i] < 0x20) i += 1 + std::max(0, int(xglFontGetSPcodeSize(t[i], const_cast<unsigned char*>(t + i))));
+        else i += t[i] >= 0x80 ? 2 : 1;
+    }
+    return xsg_ui_menu_text(x, y, color, t, i) || i == 0;
+}
+/* The end of the frame's font flush: publish whatever was captured (possibly nothing). */
+extern "C" void xsg_ui_menu_end(void);
+extern "C" void xsg_ui_frame_end(void) {
+    if (xsg_ui_rebuilt()) xsg_ui_menu_end();
 }
 extern "C" void xsg_ui_menu_end(void) {
     if (xsggpu::shm) {
@@ -670,7 +695,7 @@ extern "C" void xsg_ui_menu_end(void) {
 extern "C" unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char* text);
 extern "C" int xsg_ui_rebuilt(void);
 extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* text, int len) {
-    if (!xsg_ui_rebuilt() || !g_menu_last || xsg_frame - g_menu_last > 3 || len <= 0) return 0;
+    if (!xsg_ui_rebuilt() || len <= 0) return 0;
     char out[1024];
     int n = 0;
     // inline icons: "19 00 c0 c1 19 ctl" placeholders, msg_spr slots in order, ending at msg_spr_count
@@ -696,7 +721,13 @@ extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* te
             i++;
         } else {
             const int args = xglFontGetSPcodeSize(c, const_cast<unsigned char*>(text + i));
-            if (c == 0x0a) out[n++] = '\n';
+            if (c >= 1 && c <= 5 && i + 1 < len) {   // set x / y: 0x04 / 0x05 + an offset from the origin (+0x4000)
+                const int v = ((c << 8) | text[i + 1]) - (c <= 3 ? 0x100 : 0x400);
+                const int d = (c <= 3 ? v - x : v - y) + 0x4000;
+                out[n++] = char(c <= 3 ? 4 : 5);
+                out[n++] = char((d >> 7) | 0x80);
+                out[n++] = char((d & 0x7f) | 0x80);
+            } else if (c == 0x0a) out[n++] = '\n';
             else if (c == 0x09) out[n++] = '\t';
             else if (c == 0x0c && i + 3 < len) {
                 out[n++] = 1;
