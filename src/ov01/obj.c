@@ -15,7 +15,9 @@ typedef union ObjectTaskStorage {
 } ObjectTaskStorage;
 
 
-extern unsigned char taskBuf[];
+static ObjectWork objWork[60];
+static TaskManager taskMan;
+static unsigned char taskBuf[0x1900];
 extern void *memset(void *destination, int value, unsigned int size);
 extern void *xglTaskInitial(void *manager, int capacity, int flags);
 extern void objWorkInit(void);

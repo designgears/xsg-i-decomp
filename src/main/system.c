@@ -125,7 +125,7 @@ static char *getStrIndex(char *string, int length, int ch)
     return 0;
 }
 
-extern char tmpString[];
+static char tmpString[0x200];
 extern char D_004DC090[];
 extern char *strncpy(char *, const char *, unsigned int);
 extern int sprintf(char *, const char *, ...);

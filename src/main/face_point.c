@@ -35,9 +35,10 @@ typedef struct CullingMap {
     s32 count;
     s32 source;
     s32 model;
+    u8 unmodeled_dec[0x14];
 } CullingMap;
 
-extern CullingMap s_inCulling;
+static CullingMap s_inCulling __attribute__((aligned(16)));
 
 typedef struct AVec4 { float v[4]; } __attribute__((aligned(16))) AVec4;
 extern void xglMatrixStackUnit(void);
@@ -437,17 +438,9 @@ next:;
     return r;
 }
 
-/*
- * Declared as an incomplete array, not a scalar: cc1 -G8 would otherwise
- * classify a plain scalar extern as small data and emit a single
- * gp-relative load, but the original site is two absolute hi/lo
- * instructions; an incomplete-extent declaration keeps the target's
- * unknown size ineligible for that optimization.
- */
-extern s32 D_00969760[];
 
 s32 xglCullingExist(void) {
-    return D_00969760[0];
+    return s_inCulling.count;
 }
 
 extern void nmlModelSetMapLastEntry(int model_id, int entry);

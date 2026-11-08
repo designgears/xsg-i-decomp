@@ -437,7 +437,6 @@ extern AgwsSelectWork *AgwsSelect;
 extern const char D_004DAF80[];
 extern const char D_004DAF88[];
 extern const char D_004DAF90[];
-extern char mmsg_9[];
 extern const char *msg_7_0036D9F8[];
 extern const char *msg01_8_0036DA40[];
 void MenuSelectWindow(void);
@@ -449,6 +448,7 @@ void AgwsSelectMain(void)
     short x[8];
     short y[8];
     int i;
+    static char mmsg_9[0x80] __asm__("mmsg.9");
     signed char *p;
     int c;
 
@@ -1322,7 +1322,7 @@ typedef struct AgwsWeapon2Cursol {
     int color;                              /* +0x08 */
     unsigned char unmodeled_0c[0x24 - 0x0C];
 } AgwsWeapon2Cursol;
-extern unsigned short AgwsNo[];
+static unsigned short AgwsNo[16];
 typedef struct AgwsNamePoint {
     short x, y;
     int depth;
@@ -1982,7 +1982,7 @@ void dataWpnBoxDec(int);
 void dataWpnBoxInc(int);
 void xglFontDebugHex(int x, int y, int value, int digits);
 extern unsigned char *MainMenuWorkEnd;
-extern AgwsListSPWindow *AgwsWinSP[4];
+static AgwsListSPWindow *AgwsWinSP[4];
 extern unsigned char D_004C72D0[];
 extern unsigned char D_004DAFF0[];
 extern unsigned char D_004DAFF8[];

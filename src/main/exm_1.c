@@ -6,7 +6,7 @@ typedef struct ExHairTypeBuf {
     unsigned int flags;
 } ExHairTypeBuf;
 
-extern ExHairTypeBuf htypebuf[];
+static ExHairTypeBuf htypebuf[24];
 
 static signed char GetLastWord(signed char *text)
 {
@@ -1249,7 +1249,6 @@ typedef struct ExCollisionRequest_XC {
 typedef struct JntMatrix_XC {
     Matrix4 transform;
 } JntMatrix_XC;
-extern float vel_0[4];
 
 static int EXM_CheckExCollision(ExMotionJointWork_XC *work, const float position[3],
                                const Matrix4 jointMatrix, ExCollisionRequest_XC *request_XC)
@@ -1257,6 +1256,7 @@ static int EXM_CheckExCollision(ExMotionJointWork_XC *work, const float position
     JntMatrix_XC startMatrix;
     Vector4 difference;
     float correctionScale;
+    static float vel_0[4] __asm__("vel.0");
     int count = 0;
     int index;
     vel_0[0] = vel_0[1] = vel_0[2] = 0.0f;

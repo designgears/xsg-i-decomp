@@ -189,8 +189,8 @@ static void _DestructDoubleEffector(MatrixEffector *effector)
 
 extern void RgError(const char *message, const char *source_file, int line,
                     ...);
-extern int s_inSingleIdentifier;
-extern int s_inDoubleIdentifier;
+static int s_inSingleIdentifier;
+static int s_inDoubleIdentifier;
 
 static void _DestructEffector(MatrixEffector *effector)
 {

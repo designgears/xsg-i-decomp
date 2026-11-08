@@ -61,6 +61,17 @@ static void StreamReadRingCoreXss(CdStreamParam *stream);
 
 typedef void CdCompletionCallback(int event, int value);
 
+/* File-local work areas (LOCAL in the original symbol table), in original address order. */
+static CdCompletionCallback *callback;
+static signed char ReadClockInterval;
+static unsigned char PresentTime[8];
+static CdStreamParam *StrList;
+static unsigned char loaded_overlay;
+/* CdReadControl (0x40-byte header + 32 0x80-byte requests); ArcHeader: four 0x18-byte archive slots. */
+static unsigned char LW[0x1040];
+static unsigned char ArcHeader[0x60];
+#define ARC_ENTRY(i) (*(CdArchiveEntry *)(ArcHeader + (i) * 0x18))
+
 /*
  * The queue entries occupy 0x80 bytes; only their used prefix is named.
  * xglCdReadFilePart (0x0021DEB8..0x0021E30C, still INCLUDE_ASM) enqueues by
@@ -400,7 +411,6 @@ static void xglCdDummyCallback(int event, int value)
     (void)value;
 }
 
-extern CdCompletionCallback *callback;
 
 void xglCdReset(void)
 {
@@ -581,12 +591,6 @@ typedef struct CdArcView {
     int stored_bytes;
     int size_bytes;
 } CdArcView;
-extern CdArchiveEntry D_0093DC58;
-typedef struct SearchLayerBytes {
-    unsigned char byte;
-    unsigned char unmodeled_01[0x10];
-} SearchLayerBytes;
-extern SearchLayerBytes D_0093CC32;
 extern int sceCdSync(int mode);
 extern int sceCdLayerSearchFile(CdFilePosition *position, signed char *name, unsigned char layer);
 extern int sceOpen(const char *path, int flags, ...);
@@ -631,7 +635,7 @@ static int xglCdGetFilePos(CdFilePosition *file_position, const char *name,
             position->source = entry->state;
             break;
         }
-        entry = (CdArcView *)&D_0093DC58;
+        entry = (CdArcView *)&ARC_ENTRY(1);
         if (entry->state != 0xff && xglCdGetFilePosSub((CdPathPos *)entry, (signed char *)name) != 0) {
             name = arcname_2;
             position->source = entry->state;
@@ -714,7 +718,7 @@ resolved:
         } else {
             sceCdSync(0);
             sceCdDiskReady(0);
-            if (sceCdLayerSearchFile((CdFilePosition *)position, (signed char *)buffer, D_0093CC32.byte) == 0)
+            if (sceCdLayerSearchFile((CdFilePosition *)position, (signed char *)buffer, LW[0x32]) == 0)
                 return 0;
             position->packed = 1;
             position->size_bytes = position->stored_bytes;
@@ -1661,7 +1665,6 @@ void xglCdSifLoadModule(char *name, char *argp) {
 
 extern void FlushCache(int);
 extern int sceSifLoadElf(char *, void *);
-extern unsigned char loaded_overlay;
 
 void xglCdLoadOverlay(int arg0)
 {
@@ -1806,8 +1809,6 @@ static unsigned char *xglCdArcInitSub2(unsigned char *archive_data)
     return cursor;
 }
 
-extern CdArchiveEntry D_0093DC58;
-extern CdArchiveEntry D_0093DC70;
 
 static void xglCdArcInit(void)
 {
@@ -1835,20 +1836,20 @@ static void xglCdArcInit(void)
     if (LW[0x33] != 0) {
         unsigned char *(*sub2)(unsigned char *) = xglCdArcInitSub2;
         base = sub2(base);
-        while (xglCdArcInitSub1(&D_0093DC58, "xenosaga.10", base) <= 0)
+        while (xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.10", base) <= 0)
             ;
         base = xglCdArcInitSub2(base);
         LW[0x32] = 1;
-        while (xglCdArcInitSub1(&D_0093DC70, "xenosaga.20", base) <= 0)
+        while (xglCdArcInitSub1(&ARC_ENTRY(2), "xenosaga.20", base) <= 0)
             ;
         LW[0x32] = 0;
         p = xglCdArcInitSub2(base);
         base += ((int)(p - base) + 0x7FF) & -0x800;
     } else {
-        while ((base += 0x2D000, xglCdArcInitSub1(&D_0093DC58, "xenosaga.10", base) <= 0) &&
-               xglCdArcInitSub1(&D_0093DC58, "xenosaga.20", base) <= 0) {
-            if (xglCdArcInitSub1(&D_0093DC58, "xenosaga.30", base) <= 0) {
-                D_0093DC58.state = -1;
+        while ((base += 0x2D000, xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.10", base) <= 0) &&
+               xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.20", base) <= 0) {
+            if (xglCdArcInitSub1(&ARC_ENTRY(1), "xenosaga.30", base) <= 0) {
+                ARC_ENTRY(1).state = -1;
                 base[0] = 0;
                 base[1] = 0;
             }

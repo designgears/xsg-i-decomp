@@ -1,6 +1,10 @@
 #include "common.h"
 
-extern int mode_004DC5A8;
+/* .sbss (file-local, original order) */
+static int mode_004DC5A8 __asm__("mode");
+static int toolFlags;
+static int partsIndex;
+static int lightIndex;
 
 
 #include "shared.h"
@@ -110,7 +114,6 @@ extern MapGameLoopStateView GameLoopState;
 extern DbLightWritePadData PadData;
 
 
-extern int partsIndex;
 
 
 
@@ -886,7 +889,7 @@ typedef struct {
     signed char unk8;
     signed char unk9;
 } KeyDataView;
-extern KeyDataView keyData;
+static KeyDataView keyData;
 typedef int TIq __attribute__((mode(TI)));
 typedef union {
     Matrix4 m;
@@ -1505,7 +1508,6 @@ void changeCameraMode(void)
     }
 }
 
-extern int toolFlags;
 extern int cursorMode;
 extern void PAD_getKey(unsigned short *keys, int port, int mask);
 
@@ -1963,7 +1965,6 @@ typedef struct FloatLight {
     RgVector ambient_color;
     FloatLightEntry lights[3];
 } FloatLight;
-extern int lightIndex;
 extern float lightSpeedTbl[4];
 
 static int lightColIndex = 3;

@@ -354,7 +354,7 @@ typedef struct FileMcLoadRequest {
     void *buffer;
     int size;
 } FileMcLoadRequest;
-extern TyaGaugeArgs gauge;
+static TyaGaugeArgs gauge;
 extern int xglHddMcUmount(void);
 extern int xglHddMcLoadMount(void);
 extern int xglHddMcLoadCore(void *save);

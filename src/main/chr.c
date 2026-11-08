@@ -1410,7 +1410,6 @@ typedef struct ChrScaleResult {
     float w;
     float z;
 } ChrScaleResult;
-extern ChrScaleResult scale_0_007C0A40;
 
 void Java_xeno_Chr_getScale__(JThread *thread, ChrScaleCall *arguments,
                               u32 *failure_result)
@@ -1418,6 +1417,7 @@ void Java_xeno_Chr_getScale__(JThread *thread, ChrScaleCall *arguments,
     JavaField *field;
     Actor *peer;
     u8 *object;
+    static ChrScaleResult scale_0_007C0A40 __asm__("scale.0");
 
     object = arguments->object;
     field = lookupClassField(classJava_xeno_Chr,
