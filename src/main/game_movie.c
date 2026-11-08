@@ -45,9 +45,9 @@ extern volatile unsigned char GameMovieAlpha;
 
 extern short GameMovieFrame;
 
-extern const char D_004C0290[24];
+const char D_004C0290[24] = "\015\003\031\003\025\002\001\015\025\002\002\010\025\003\003";
 
-extern const char D_004C02A8[88];
+const char D_004C02A8[88] = "\013\015\003A seek error has occured.\n\n\n\014\200  \241\373\014\200\200\200Button: Replay\n\n\014 \200 \242\244\014\200\200\200Button: Skip";
 
 extern int xglMoviePlay(void *movie);
 
