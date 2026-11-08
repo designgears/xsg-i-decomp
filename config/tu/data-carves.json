@@ -22648,6 +22648,46 @@
    ]
   },
   "ov12/tu069_00a380d8": {
+   ".data": [
+    {
+     "range": [
+      "0x00a50120",
+      "0x00a50470"
+     ],
+     "generated": [
+      "0x00a50120",
+      "0x00a50470"
+     ],
+     "generated_by": [
+      "_CharCursorToCharID",
+      "_CharIDToCharCursor",
+      "_CreateSelectWepFont",
+      "_DrawWepListDisp",
+      "_SetCharSelDisp",
+      "_SinGet",
+      "_SinInit",
+      "_SinPassTime",
+      "_disp_pic_pl"
+     ],
+     "c_owned_symbols": [
+      "s_aPlayerCol",
+      "s_aFontTbl_0",
+      "D_00A5037E",
+      "s_fSinRad",
+      "D_00A50384",
+      "s_aeCharTbl",
+      "s_aRed_1",
+      "s_aWhite_2",
+      "s_ainPics_3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
