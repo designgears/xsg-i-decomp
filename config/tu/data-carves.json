@@ -11299,6 +11299,52 @@
     }
    ]
   },
+  "ov01/tu017_00a314b8": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a50ec8",
+      "0x00a510a0"
+     ],
+     "generated": [
+      "0x00a50ec8",
+      "0x00a5109f"
+     ],
+     "generated_by": [
+      "MCamGetActorCoord",
+      "MCamGetAtkRange",
+      "MCamGetDefRange",
+      "MCamIsMoving",
+      "MCamMove",
+      "MCamMoveProc_CalcRatio",
+      "MCamReleaseControl",
+      "MCamSet",
+      "MCamStopMove",
+      "MCamTakeControl"
+     ],
+     "c_owned_symbols": [
+      "D_00A50EC8",
+      "D_00A50EF0",
+      "D_00A50F20",
+      "D_00A50F38",
+      "D_00A50F60",
+      "D_00A50F98",
+      "D_00A50FB8",
+      "D_00A50FD8",
+      "D_00A51000",
+      "D_00A51028",
+      "zero_duration_message",
+      "invalid_interpolation_message"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/m_cam.o"
+     }
+    }
+   ]
+  },
   "ov01/tu019_00a32e78": {
    ".data": [
     {
