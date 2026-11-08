@@ -150,6 +150,27 @@ def section_relative_data_relocs(target, base_elf):
     Path(target).write_bytes(bytes(data))
 
 
+def anchor_data_sections(prefix, base, cwd):
+    """A local symbol at offset 0 of every data section of the compiled object.
+
+    objdiff compares a data section only up to the end of its last symbol and
+    from its first. cc1's literal pools (`.lit4`/`.lit8` from li.s/li.d) and
+    leading anonymous items carry no symbol, so their bytes were never compared
+    and the section could not be measured. An anchor at 0 (objdiff sizes it up
+    to the next symbol) makes every byte count; it adds no credit by itself.
+    """
+    elf = Elf(Path(base).read_bytes())
+    args = []
+    for section in elf.sections:
+        if section.type != 1 or not section.size or not section.flags & 2 or section.flags & 4:
+            continue
+        if any(s.shndx == section.index and s.type != 3 and s.value == 0 for s in elf.symbols):
+            continue
+        args.append(f'--add-symbol=$anchor{section.name}={section.name}:0,local,object')
+    if args:
+        run([str(prefix) + 'objcopy', *args, base], cwd)
+
+
 def fold_constant_labels(target):
     """Undo splat's reading of data constants as addresses (`.word D_8000 + 0x1`).
 
@@ -194,8 +215,9 @@ def trim_link_padding(target, base_elf):
     splat gives a data item the zero fill the original linker inserted to align
     the next object's section, so the target section is a few bytes longer than
     the compiled one. Only zero bytes past the compiled section's size, fewer
-    than 16, are dropped from the covering symbol's size; objdiff still compares
-    every byte both objects contain.
+    than 16 and with no relocation, are dropped: the covering symbol and the
+    section end where the compiled section ends. objdiff still compares every
+    byte both objects contain.
     """
     elf = Elf(Path(target).read_bytes())
     data = bytearray(elf.data)
@@ -209,11 +231,27 @@ def trim_link_padding(target, base_elf):
         if not 0 < section.size - size < 16 or any(
                 elf.data[section.offset + size:section.offset + section.size]):
             continue
+        referenced = {struct.unpack_from('<I', elf.data, at + 4)[0] >> 8
+                      for r in elf.sections if r.type == 9
+                      for at in range(r.offset, r.offset + r.size, 8)}
+        fill_labels = [y for y in elf.symbols if y.shndx == section.index and y.type != 3
+                       and y.value >= size and not y.name.endswith('.NON_MATCHING')]
+        # Only fill: every label in the dropped bytes is an unreferenced splat
+        # pad label (`D_<addr>`); a named or referenced item there is data the
+        # C object lacks, and stays measured.
+        if any(not re.fullmatch(r'D_[0-9A-F]{8}', y.name) or y.index in referenced
+               for y in fill_labels):
+            continue
+        if any(r.type == 9 and r.info == section.index and any(
+                struct.unpack_from('<I', elf.data, at)[0] >= size
+                for at in range(r.offset, r.offset + r.size, 8)) for r in elf.sections):
+            continue
         for symbol in elf.symbols:
-            if symbol.shndx == section.index and symbol.size and \
-                    symbol.value <= size < symbol.value + symbol.size:
+            # clamp to the new end; a label of the fill itself ends empty
+            if symbol.shndx == section.index and symbol.value + symbol.size > size:
                 struct.pack_into('<I', data, symtab.offset + 16 * symbol.index + 8,
-                                 size - symbol.value)
+                                 max(0, size - symbol.value))
+        struct.pack_into('<I', data, elf.shoff + section.index * elf.shentsize + 20, size)
     Path(target).write_bytes(bytes(data))
 
 
@@ -344,6 +382,7 @@ def prepare(root, evidence):
                                  f'{name}: SKIP_ASM emission differs from verified C scope')
             stripped_base = destination / 'base.nodebug.o'
             strip_debug(prefix, base, stripped_base, unit_dir)
+            anchor_data_sections(prefix, stripped_base, unit_dir)
             unit_config['base_path'] = str(stripped_base)
             base_elf = Elf(stripped_base.read_bytes())
         runs = dict(registry['tus'].get(tu.get('id'), {})) if base_elf is not None else {}
