@@ -589,7 +589,7 @@ def prepare(root, evidence):
             contract = tu.get('contract', {})
             ccdir = Path(contract.get('cc_dir', '.'))
             assembler = Path(contract.get('assembler_path', '.'))
-            flags = contract.get('flags', [])
+            flags = (tu.get('import') or {}).get('flags', contract.get('flags', []))  # as ninja_main
             data_sources = [unit_dir / (piece.get('file') or
                             f'asm/main/data/{piece["piece"]}.{section[1:]}.s')
                             for section, entry in main['sections'].items()
@@ -616,7 +616,11 @@ def prepare(root, evidence):
             source_path=obj['source'], progress_categories=[unit], complete=checked['complete']))
         allowed = {f.get('c_symbol', f['original_symbol']): f['size'] for f in checked['functions']}
         base_elf = None
-        if allowed:
+        # a data-only C TU (no functions; its source defines only data) is
+        # compiled and measured too
+        data_only_c = (not allowed and not obj['functions'] and obj.get('source') and
+                       (root / obj['source']).is_file() and str(obj['source']).endswith('.c'))
+        if allowed or data_only_c:
             base = destination / 'base.o'
             assembly = compile_source(root, unit_dir, root / obj['source'], base,
                                       ccdir, assembler, flags, skip_asm=True,
@@ -718,7 +722,7 @@ def prepare(root, evidence):
                              sum(target_functions.values()) == sum(f[2] for f in obj['functions']),
                              f'{name}: target function scope differs from tracked TU')
         return unit_config, dict(functions=target_functions, allowed={**allowed, **{f['original_symbol']: f['size'] for f in checked['functions']}},
-                                 complete=checked['complete'])
+                                 complete=checked['complete'], c_object=base_elf is not None)
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         prepared = list(pool.map(prepare_object, objects))
@@ -761,7 +765,7 @@ def validate(report, expected):
                                  f'{name}/{function["name"]}: scaffolding received matching credit')
         # Keep objdiff's native BSS measure. It describes uninitialized storage
         # matching, never recovered C declarations or source/link completeness.
-        if not checked['allowed']:
+        if not checked['allowed'] and not checked.get('c_object'):
             verification.require(not any(int(s.get('size', 0)) and s['name'] not in ('.bss', '.sbss')
                                          and s.get('fuzzy_match_percent') == 100
                                          for s in unit.get('sections', [])),

@@ -2404,11 +2404,19 @@
         },
         {
           "c_split": false,
-          "end": "0x004BF750",
+          "end": "0x004BE338",
           "ordinal": 118,
           "piece": "map_1",
           "start": "0x004BE308",
           "tu": "map_1"
+        },
+        {
+          "c_split": false,
+          "end": "0x004BF750",
+          "ordinal": 119,
+          "piece": "maptbl",
+          "start": "0x004BE338",
+          "tu": "maptbl"
         },
         {
           "c_split": false,
@@ -4176,11 +4184,19 @@
         },
         {
           "c_split": false,
-          "end": "0x004D8A90",
+          "end": "0x004D8A80",
           "ordinal": 116,
           "piece": "game",
           "start": "0x004D8A50",
           "tu": "game"
+        },
+        {
+          "c_split": false,
+          "end": "0x004D8A90",
+          "ordinal": 119,
+          "piece": "maptbl",
+          "start": "0x004D8A80",
+          "tu": "maptbl"
         },
         {
           "c_split": false,
@@ -32838,20 +32854,20 @@
           ],
           "bounds": [
             "0x004D8A39",
-            "0x004D8A90"
+            "0x004D8A80"
           ],
-          "end": "0x004D8A90",
+          "end": "0x004D8A80",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004D8A90",
+              "end": "0x004D8A80",
               "name": "game",
               "start": "0x004D8A50"
             }
           ],
           "rule": "anchored start",
-          "size": 64,
+          "size": 48,
           "splat_type": "sdata",
           "start": "0x004D8A50"
         }
@@ -33305,20 +33321,20 @@
           ],
           "bounds": [
             "0x004BE304",
-            "0x004BF750"
+            "0x004BE338"
           ],
-          "end": "0x004BF750",
+          "end": "0x004BE338",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004BF750",
+              "end": "0x004BE338",
               "name": "map_1",
               "start": "0x004BE308"
             }
           ],
           "rule": "anchored start",
-          "size": 5192,
+          "size": 48,
           "splat_type": "rodata",
           "start": "0x004BE308"
         }
@@ -33391,15 +33407,17 @@
       "functions": [],
       "id": "main/tu119",
       "in_scope": true,
-      "kind": "data-only",
+      "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "maptbl",
       "name_basis": "no .text; named after its static data (maptbl0000, maptbl0100, maptbl0200, maptbl0300)",
       "name_confidence": "low",
       "ordinal": 119,
       "owners": {
-        ".data": "asm"
+        ".data": "asm",
+        ".rodata": "asm",
+        ".sdata": "asm"
       },
       "path": "src/main/maptbl.c",
       "scaffold_path": "scaffold/src/main/maptbl.c",
@@ -33427,6 +33445,54 @@
           "size": 8376,
           "splat_type": "data",
           "start": "0x00362858"
+        },
+        ".rodata": {
+          "anchored": [
+            "0x004BE338",
+            "0x004BE338"
+          ],
+          "bounds": [
+            "0x004BE338",
+            "0x004BF750"
+          ],
+          "end": "0x004BF750",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004BF750",
+              "name": "maptbl",
+              "start": "0x004BE338"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 5144,
+          "splat_type": "rodata",
+          "start": "0x004BE338"
+        },
+        ".sdata": {
+          "anchored": [
+            "0x004D8A80",
+            "0x004D8A80"
+          ],
+          "bounds": [
+            "0x004D8A80",
+            "0x004D8A90"
+          ],
+          "end": "0x004D8A90",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004D8A90",
+              "name": "maptbl",
+              "start": "0x004D8A80"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 16,
+          "splat_type": "sdata",
+          "start": "0x004D8A80"
         }
       },
       "shared_contract": {
@@ -33446,7 +33512,22 @@
         "start": "0x00246918"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "maptbl (game): data-only TU; its map-name tables, written as C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/maptbl.c"
+        },
+        "flags": [
+          "-O2",
+          "-G8"
+        ]
+      }
     },
     {
       "accepted": {

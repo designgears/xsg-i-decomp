@@ -2703,9 +2703,6 @@ void Game(void)
 
 unsigned char SnapDrawCreditFlag = 0;
 u8 UseTestPath = 0;
-/* Unreferenced: eight zero bytes and a test-path tag in this TU's .sdata. */
-long long D_004D8A80 = 0;
-const char D_004D8A88[] = "MC_TEST";
 
 /* 0x2a030-byte loop state (main 0x00338680), last item of this TU's .data. */
 GameLoopStateLayout GameLoopState = {0};
