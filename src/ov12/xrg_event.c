@@ -185,84 +185,84 @@ int XrgEventIsUsableWeapon(struct XrgEventWeaponFilter *event)
 
 
 
-const char D_00A59328[8] = "DEF-VX";
+const char D_00A59328[8] __attribute__((weak)) = "DEF-VX";
 
-const char D_00A59330[8] = "LW-VX4";
+const char D_00A59330[8] __attribute__((weak)) = "LW-VX4";
 
-const char D_00A59338[8] = "LC-AG5";
+const char D_00A59338[8] __attribute__((weak)) = "LC-AG5";
 
-const char D_00A59340[8] = "BBC-AG5";
+const char D_00A59340[8] __attribute__((weak)) = "BBC-AG5";
 
-const char D_00A59348[8] = "HGG-AG5";
+const char D_00A59348[8] __attribute__((weak)) = "HGG-AG5";
 
-const char D_00A59350[8] = "HMP-AG5";
+const char D_00A59350[8] __attribute__((weak)) = "HMP-AG5";
 
-const char D_00A59358[8] = "BMP-AG5";
+const char D_00A59358[8] __attribute__((weak)) = "BMP-AG5";
 
-const char D_00A59360[16] = "AIRC-AG2";
+const char D_00A59360[16] __attribute__((weak)) = "AIRC-AG2";
 
-const char D_00A59370[8] = "HMR-AG5";
+const char D_00A59370[8] __attribute__((weak)) = "HMR-AG5";
 
-const char D_00A59378[16] = "AIRD-AG2";
+const char D_00A59378[16] __attribute__((weak)) = "AIRD-AG2";
 
-const char D_00A59388[8] = "BA15VX";
+const char D_00A59388[8] __attribute__((weak)) = "BA15VX";
 
-const char D_00A59390[8] = "LM11VX";
+const char D_00A59390[8] __attribute__((weak)) = "LM11VX";
 
-const char D_00A59398[8] = "ECM2-VX";
+const char D_00A59398[8] __attribute__((weak)) = "ECM2-VX";
 
-const char D_00A593A0[8] = "SMG32VX";
+const char D_00A593A0[8] __attribute__((weak)) = "SMG32VX";
 
-const char D_00A593A8[8] = "SMP53AG";
+const char D_00A593A8[8] __attribute__((weak)) = "SMP53AG";
 
-const char D_00A593B0[8] = "AXE11AG";
+const char D_00A593B0[8] __attribute__((weak)) = "AXE11AG";
 
-const char D_00A593B8[8] = "BL24AG";
+const char D_00A593B8[8] __attribute__((weak)) = "BL24AG";
 
-const char D_00A593C0[8] = "BSW13AG";
+const char D_00A593C0[8] __attribute__((weak)) = "BSW13AG";
 
-const char D_00A593C8[8] = "SHB67AG";
+const char D_00A593C8[8] __attribute__((weak)) = "SHB67AG";
 
-const char D_00A593D0[16] = "WCT02AG4";
+const char D_00A593D0[16] __attribute__((weak)) = "WCT02AG4";
 
-const char D_00A593E0[16] = "DLC02AG4";
+const char D_00A593E0[16] __attribute__((weak)) = "DLC02AG4";
 
-const char D_00A593F0[8] = "FLM64AG";
+const char D_00A593F0[8] __attribute__((weak)) = "FLM64AG";
 
-const char D_00A593F8[8] = "GLG76AG";
+const char D_00A593F8[8] __attribute__((weak)) = "GLG76AG";
 
-const char D_00A59400[8] = "HG75VX";
+const char D_00A59400[8] __attribute__((weak)) = "HG75VX";
 
-const char D_00A59408[8] = "BMP45VX";
+const char D_00A59408[8] __attribute__((weak)) = "BMP45VX";
 
-const char D_00A59410[8] = "ER-VX";
+const char D_00A59410[8] __attribute__((weak)) = "ER-VX";
 
-const char D_00A59418[8] = "ECM1-VX";
+const char D_00A59418[8] __attribute__((weak)) = "ECM1-VX";
 
-const char D_00A59420[8] = "CB85VX";
+const char D_00A59420[8] __attribute__((weak)) = "CB85VX";
 
-const char D_00A59428[8] = "HMR55AG";
+const char D_00A59428[8] __attribute__((weak)) = "HMR55AG";
 
-const char D_00A59430[8] = "SWD34VX";
+const char D_00A59430[8] __attribute__((weak)) = "SWD34VX";
 
-const char D_00A59438[8] = "LG100VX";
+const char D_00A59438[8] __attribute__((weak)) = "LG100VX";
 
-const char D_00A59440[8] = "SHD12VX";
+const char D_00A59440[8] __attribute__((weak)) = "SHD12VX";
 
-const char D_00A59448[8] = "SHD02AG";
+const char D_00A59448[8] __attribute__((weak)) = "SHD02AG";
 
-const char D_00A59450[8] = "PB55AG";
+const char D_00A59450[8] __attribute__((weak)) = "PB55AG";
 
-const char D_00A59458[8] = "HMP33AG";
+const char D_00A59458[8] __attribute__((weak)) = "HMP33AG";
 
-const char D_00A59460[8] = "GRD20AG";
+const char D_00A59460[8] __attribute__((weak)) = "GRD20AG";
 
-const char D_00A59468[8] = "SMG99AG";
+const char D_00A59468[8] __attribute__((weak)) = "SMG99AG";
 
-const char D_00A59470[8] = "LG10AG";
+const char D_00A59470[8] __attribute__((weak)) = "LG10AG";
 
-const char D_00A59478[8] = "HG45VX";
+const char D_00A59478[8] __attribute__((weak)) = "HG45VX";
 
-const char D_00A59480[8] = "LG24VX";
+const char D_00A59480[8] __attribute__((weak)) = "LG24VX";
 
-const char D_00A59488[8] = "SWD21AG";
+const char D_00A59488[8] __attribute__((weak)) = "SWD21AG";
