@@ -237,16 +237,6 @@ struct MenuShopEquipScratch {
 };
 
 /* 22 bytes: copied as 8+8+4+2 blocks, read as eleven halfword IDs. */
-typedef union MenuShopIconIds {
-    struct {
-        unsigned char first[8];
-        unsigned char second[8];
-        unsigned char third[4];
-        unsigned short last;
-    } blocks;
-    short ids[11];
-} MenuShopIconIds;
-
 typedef struct MenuShopDividerVertex {
     short x;
     short y;
@@ -438,7 +428,6 @@ void MenuShopModelDisp(unsigned char *unit)
     }
 }
 
-extern const long long D_004C7390[2];
 extern int MenuModelOut[4];
 void MenuModelCreate(int *model, int chrNo);
 void MenuModelExtFuncSet(int model, void (*func)(void), int argument);
@@ -446,6 +435,7 @@ void MenuModelExtFuncSet(int model, void (*func)(void), int argument);
 static void MenuShopModelMain(TskObject *task, void *data);
 
 typedef long long s64;
+typedef struct MenuShopCameraVector { float x, y, z, w; } __attribute__((aligned(8))) MenuShopCameraVector;
 typedef struct MenuShopModelTask {
     TskObject base;
     int modelId;
@@ -459,8 +449,6 @@ static inline MenuShopWorkData *MenuShopWorkRead(void)
 static void MenuShopModelMain(TskObject *task, void *data)
 {
     MenuShopModelTask *model = (MenuShopModelTask *)task;
-    s64 position[2];
-    s64 rotation[2];
     StudioCamera *camera;
     StudioCamera *camera2;
     MenuShopWorkData *work;
@@ -475,10 +463,11 @@ static void MenuShopModelMain(TskObject *task, void *data)
         return;
 
     switch (task->state) {
-    case 0:
+    case 0: {
+        MenuShopCameraVector position = {-2.0f, 1.8f, 8.5f, 1.0f};
+        s64 rotation[2];
+
         *modelId = 0;
-        position[0] = ((s64 *)D_004C7390)[0];
-        position[1] = ((s64 *)D_004C7390)[1];
         MenuModelOut[0] = 0;
         memset(rotation, 0, 16);
         ((float *)rotation)[3] = 1.0f;
@@ -487,12 +476,13 @@ static void MenuShopModelMain(TskObject *task, void *data)
         camera->state = 1;
         ((s64 *)&camera->rotation)[0] = rotation[0];
         ((s64 *)&camera->rotation)[1] = rotation[1];
-        ((s64 *)&camera->position)[0] = position[0];
-        ((s64 *)&camera->position)[1] = position[1];
+        ((s64 *)&camera->position)[0] = ((s64 *)&position)[0];
+        ((s64 *)&camera->position)[1] = ((s64 *)&position)[1];
         camera2 = xglStudioGetCamera2(2);
         camera2->active = 1;
         camera2->state = 1;
         break;
+    }
     case 2:
         if (MenuShopWork->mode != 0)
             break;
@@ -557,11 +547,28 @@ typedef struct MenuShopHelpWork {
     MenuShopPasMessageSlot messages[16];
     MenuShopPasBounds bounds;
 } MenuShopHelpWork;
-extern const char *msg00_0_0036DAF0[];
 extern void endPrintExtFunc(int depth, int mode, void *vertices);
 
 static void MenuShopPas(TskObject *task, void *data)
 {
+    static const char *msg00[] __asm__("msg00.0") = {
+        "Shop",
+        "Buy",
+        "Sell",
+        "Items",
+        "Character Weapons",
+        "Character Accessories",
+        "Character Ammo",
+        "A.G.W.S. Weapons",
+        "A.G.W.S. Accessories",
+        "A.G.W.S. Ammo",
+        "A.G.W.S.",
+        "Cards",
+        "A.G.W.S. Tuning",
+        "FHP Restoration",
+        "Buy Frame",
+        "Buy Generator ",
+    };
     MenuShopHelpWork *work = data;
     short messageX[16];
     short windowX;
@@ -585,7 +592,7 @@ static void MenuShopPas(TskObject *task, void *data)
         work->window.state = 1;
         WindowDXMain(window);
         work->window.state = 3;
-        text = msg00_0_0036DAF0;
+        text = msg00;
         for (i = 0; i < 16; i++, text++) {
             eMessageSet((MenuShopMessage *)&work->messages[i], (int)*text);
             work->messages[i].mode = 32;
@@ -696,14 +703,6 @@ typedef struct MenuShopInfoT48 { const char *p[4]; } MenuShopInfoT48;
 typedef struct MenuShopInfoT64 { const char *p[3]; } MenuShopInfoT64;
 typedef struct MenuShopInfoT80 { const char *p[8]; } MenuShopInfoT80;
 typedef struct MenuShopInfoT112 { const char *p[2]; } MenuShopInfoT112;
-extern const char *D_004C74B0[4];
-extern const char *D_004C7500[4];
-extern const char *D_004C7520[3];
-extern const char *D_004C7580[4];
-extern const char *D_004C75A0[3];
-extern const char *D_004C7650[8];
-extern const char *D_004DB138[];
-extern const char D_004DB140[];
 void *func_A191C0(int);
 extern MenuTextEntry *func_A2C918(unsigned int itemId);
 extern MenuTextEntry *func_A2C968(unsigned int itemId);
@@ -712,26 +711,53 @@ extern const char *MenuNumberTextGet(long value, int digits, int flag);
 
 static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
 {
-    MenuShopInfoT0 tab0;
-    MenuShopInfoT16 tab16;
-    MenuShopInfoT32 tab32;
-    MenuShopInfoT48 tab48;
-    MenuShopInfoT64 tab64;
-    MenuShopInfoT80 tab80;
-    MenuShopInfoT112 tab112;
+    MenuShopInfoT0 tab0 = { {
+        "Buy items and weapons.",
+        "Sell items and weapons.",
+        "Tune A.G.W.S.",
+        "Quit.",
+    } };
+    MenuShopInfoT16 tab16 = { {
+        "Buy items.",
+        "Sell items.",
+        "Select ",
+        "quantity.\nPress \036\001 to accept.",
+    } };
+    MenuShopInfoT32 tab32 = { {
+        " is ",
+        "G.",
+        " unit(s) of ",
+    } };
+    MenuShopInfoT48 tab48 = { {
+        "Buy an A.G.W.S. Frame.",
+        "Buy an A.G.W.S. Generator.",
+        "Restore A.G.W.S. FHP.",
+        "Quit.",
+    } };
+    MenuShopInfoT64 tab64 = { {
+        " unit(s) of ",
+        " purchased.\037",
+        " sold.\037",
+    } };
+    MenuShopInfoT80 tab80 = { {
+        " FHP will be fully restored.",
+        " equipped with ",
+        ".\n",
+        "Exchange with ",
+        "'s frame ",
+        "'s generator ",
+        "has been exchanged with ",
+        " FHP has been fully restored. \037",
+    } };
+    MenuShopInfoT112 tab112 = { {
+        "Hyams Heavy Industries - AG Series",
+        "Vector Industries - VX Series",
+    } };
     short targetY;
     short targetH;
     MenuShopInfoPanel *panel;
     unsigned char *unit;
     short value;
-
-    tab0 = *(MenuShopInfoT0 *)D_004C74B0;
-    tab16 = *(MenuShopInfoT16 *)D_004C7500;
-    tab32 = *(MenuShopInfoT32 *)D_004C7520;
-    tab48 = *(MenuShopInfoT48 *)D_004C7580;
-    tab64 = *(MenuShopInfoT64 *)D_004C75A0;
-    tab80 = *(MenuShopInfoT80 *)D_004C7650;
-    tab112 = *(MenuShopInfoT112 *)D_004DB138;
 
     switch (task->state) {
     case 0:
@@ -770,7 +796,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
     case 48:
     case 144:
         if (MenuShopWork->itemId == 0) {
-            eMessageCpy(work->message, D_004DB140);
+            eMessageCpy(work->message, "");
         } else if ((MenuShopWork->itemId >> 16) == 7) {
             if (MenuShopWork->modelId >= 23)
                 eMessageCpy(work->message, tab112.p[0]);
@@ -811,7 +837,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
             eMessageCpy(work->message, MenuNumberTextGet(MenuShopWork->quantity, 2, 0));
             eMessageCat(tab64.p[0]);
             eMessageCat(MenuTextGet(MenuShopWork->itemId)->name);
-            eMessageCat(D_004DB140);
+            eMessageCat("");
             eMessageCat(tab64.p[MenuShopWork->mode + 1]);
         }
         break;
@@ -829,7 +855,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
         break;
     case 208:
         if (MenuShopWork->listIndex < 0 || MenuShopWork->equipmentId == 0) {
-            eMessageCpy(work->message, D_004DB140);
+            eMessageCpy(work->message, "");
         } else {
             eMessageCpy(work->message, (const char *)func_A2C968(MenuShopWork->equipmentId)->auxiliary);
         }
@@ -859,7 +885,7 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
             }
             eMessageCat(".");
         } else {
-            eMessageCpy(work->message, D_004DB140);
+            eMessageCpy(work->message, "");
         }
         break;
     case 214:
@@ -890,6 +916,22 @@ static void MenuShopInfo(TskObject *task, MenuShopInfoWork *work)
 
 static void MenuShopSelect(TskObject *task, void *data)
 {
+    static const char *msg00[] __asm__("msg00.1") = {
+        "Buy",
+        "Sell",
+        "A.G.W.S. Tuning",
+        "Quit",
+        "Buy Frame",
+        "Buy Generator",
+        "Restore FHP ",
+        "Quit",
+    };
+    static const char *msg01[] __asm__("msg01.2") = {
+        " Buy it?",
+        " Sell it?",
+        " Restore it?",
+        "Yes\nNo",
+    };
     MenuShopSelectWork *work = data;
 
     MenuShopSelectCommand *ListMake(int menuIndex)
@@ -902,7 +944,7 @@ static void MenuShopSelect(TskObject *task, void *data)
 
             for (commandIndex = 0; commandIndex < 4; commandIndex++) {
                 work->menus[menuIndex].commands[commandIndex].text =
-                    msg00_1_0036DB30[menuIndex * 4 + commandIndex];
+                    msg00[menuIndex * 4 + commandIndex];
                 work->menus[menuIndex].commands[commandIndex].locked = 0;
             }
             work->menus[menuIndex].commands[commandIndex].text = 0;
@@ -947,8 +989,8 @@ static void MenuShopSelect(TskObject *task, void *data)
             work->choices[i].window.height = 102;
             work->choices[i].window.style = work->depth;
             work->choices[i].window.tag_id = "Select";
-            work->choices[i].panel.choices = msg01_2_0036DB50[3];
-            work->choices[i].panel.prompt = msg01_2_0036DB50[0];
+            work->choices[i].panel.choices = msg01[3];
+            work->choices[i].panel.prompt = msg01[0];
             work->choices[i].window.close_callback_arg = &work->choices[i].panel;
             work->choices[i].window.close_callback = (void (*)(MenuShopSelectWindow *, void *))MenuSelectWindow;
             work->choices[i].panel.cursor = 0;
@@ -1001,7 +1043,7 @@ static void MenuShopSelect(TskObject *task, void *data)
             if (updatePopup) {
                 switch (*mode) {
                 case 0:
-                    work->choices[0].panel.prompt = msg01_2_0036DB50[0];
+                    work->choices[0].panel.prompt = msg01[0];
                     switch (mode[1]) {
                     case 0:
                         work->choices[0].window.x = 528;
@@ -1026,7 +1068,7 @@ static void MenuShopSelect(TskObject *task, void *data)
                     }
                     break;
                 default:
-                    work->choices[0].panel.prompt = msg01_2_0036DB50[1];
+                    work->choices[0].panel.prompt = msg01[1];
                     switch (mode[1]) {
                     case 0:
                     case 8:
@@ -1075,7 +1117,7 @@ static void MenuShopSelect(TskObject *task, void *data)
         }
         case 0xc4:
             if (shop->stateFlags & 1) {
-                work->choices[0].panel.prompt = msg01_2_0036DB50[2];
+                work->choices[0].panel.prompt = msg01[2];
                 work->choices[0].window.x = -136;
                 work->choices[0].window.y = 192;
                 work->popupFlags |= 1;
@@ -1085,7 +1127,7 @@ static void MenuShopSelect(TskObject *task, void *data)
             break;
         case 0xd4:
             if (shop->stateFlags & 1) {
-                work->choices[0].panel.prompt = msg01_2_0036DB50[0];
+                work->choices[0].panel.prompt = msg01[0];
                 work->choices[0].window.x = 528;
                 work->choices[0].window.y = 176;
                 work->popupFlags &= ~1;
@@ -1113,20 +1155,30 @@ typedef struct MenuShopSortTab {
 typedef struct MenuShopSortTabs {
     MenuShopSortTab e[11];
 } MenuShopSortTabs;
-extern const MenuShopSortTabs D_004C7738;
 
 void MenuShopSortSet(int list, int type, int order, int option)
 {
   int *new_var;
-  MenuShopSortTabs tabs;
   int *sorted = ((int *(*)(int)) MenuSortAddrGet)(list);
+  MenuShopSortTabs tabs = { {
+    { (short *)&ShopData.cat[0], 1, 20 },
+    { (short *)&ShopData.cat[1], 3, 20 },
+    { (short *)&ShopData.cat[2], 5, 20 },
+    { (short *)&ShopData.cat[3], 4, 20 },
+    { (short *)&ShopData.cat[4], 3, 20 },
+    { (short *)&ShopData.cat[5], 5, 20 },
+    { (short *)&ShopData.cat[6], 4, 20 },
+    { (short *)&ShopData.tail, 7, 4 },
+    { 0, 0, 0 },
+    { (short *)&ShopData.cat[7], 11, 20 },
+    { (short *)&ShopData.cat[8], 12, 20 },
+  } };
   int *hp;
   int *countp;
   short *p;
   int n;
   char *high_base;
   char *count_base;
-  tabs = D_004C7738;
   if (type == 0x12)
   {
     type = 9;
@@ -1352,7 +1404,6 @@ typedef struct MenuShopSortPair {
     unsigned char type;
     int order;
 } MenuShopSortPair;
-extern const char *msg00_4_0036DB60[];
 
 void MenuShopListChange00(void)
 {
@@ -1375,11 +1426,15 @@ void MenuShopListChange00(void)
   }
   {
     unsigned char rows[18] = {11, 9, 9, 9, 6, 9, 9, 4, 3, 11, 7, 9, 9, 6, 9, 9, 4, 3};
+    static const char *msg00[] __asm__("msg00.4") = {
+        "List\003\215\003\030Price",
+        "List\003\215\003\014Stock",
+    };
     (*new_var)->width = 0x110 - ((*new_var2)->mode << 5);
     MenuShopWinSP->height = (rows[MenuShopWork->category + (MenuShopWork->mode * 9)] * 24) + 6;
     MenuShopWinSP->rows = rows[MenuShopWork->category + (MenuShopWork->mode * 9)];
     MenuShopWinSP->columns = 1;
-    MenuShopWinSP->title = msg00_4_0036DB60[MenuShopWork->mode];
+    MenuShopWinSP->title = msg00[MenuShopWork->mode];
     MenuShopWinSP->row_count = 7;
     MenuShopWinSP->items = MenuListGet(0);
     WindowSPItemChange(MenuShopWinSP);
@@ -1425,7 +1480,6 @@ extern int MenuShopListChange00I(int list) __asm__("MenuShopListChange00");
 extern int MenuShopListChange01I(int list) __asm__("MenuShopListChange01");
 void WindowSPSet(void *cursor);
 void WindowSPMain(void *cursor);
-extern const char D_004DB140[];
 typedef struct MsWindowSPCursorV {
     unsigned char state;
     unsigned char draw_flags;
@@ -1465,7 +1519,7 @@ static void MenuShopList(TskObject *task, struct MenuShopListDisplay *work)
         work->color = 0xffff0;
         work->window.style = 0xffff0;
         work->window.draw_flags = 7;
-        work->window.title = D_004DB140;
+        work->window.title = "";
         work->window.rows = 0xb;
         work->window.height = 0x10e;
         work->window.state = 0;
@@ -1804,7 +1858,6 @@ struct MenuShopExDisplay {
     struct MenuShopExHeader equipment;
     struct MenuShopExBullet bullet;
 };
-extern const char *msg00_5_0036DB68[];
 extern unsigned short MenuFaceEpidGet(int unitId, int smallPortrait);
 void eNumberMain(void *number);
 void eNumberSet(void *data, int unused);
@@ -1817,6 +1870,13 @@ void eTagFontSet(void *tag, const char *text);
 
 static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
 {
+    static const char *msg00[] __asm__("msg00.5") = {
+        "\001Stock",
+        "\001Money",
+        "\001Target",
+        "\001Equip",
+        "\001Price",
+    };
     /* dataMoneyBoxChk's word result (the TU declares it long). */
     extern int dataMoneyBoxChkWord(void) __asm__("dataMoneyBoxChk");
     MenuShopWorkData **shop = &MenuShopWork;
@@ -1843,7 +1903,7 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
             work->headers[i].ribbon.x = 0x220;
             work->headers[i].ribbon.y = 0x53 + 0x20 * i;
             work->headers[i].ribbon.style = work->depth;
-            eTagFontSet((ETagFont *)(void *)&work->headers[i].label, msg00_5_0036DB68[i]);
+            eTagFontSet((ETagFont *)(void *)&work->headers[i].label, msg00[i]);
             work->headers[i].label.style = work->depth + 2;
             eNumberSet((void *)&work->headers[i].number, 0);
             work->headers[i].number.style = work->depth + 2;
@@ -1854,7 +1914,7 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
             work->parties[i].ribbon.style = work->depth;
             work->parties[i].ribbon.x = 0x220;
             work->parties[i].ribbon.y = 0x93;
-            eTagFontSet((ETagFont *)(void *)&work->parties[i].label, msg00_5_0036DB68[2]);
+            eTagFontSet((ETagFont *)(void *)&work->parties[i].label, msg00[2]);
             work->parties[i].label.style = work->depth + 2;
         }
         work->parties[0].ribbon.height = 0x30;
@@ -1880,7 +1940,7 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
                 *(const char **)(void *)&work->equipment.ribbon = head;
             }
             style = ((union { int value; short half[2]; } *)(void *)&work->depth)->value;
-            labels = msg00_5_0036DB68;
+            labels = msg00;
             top = 0x93;
             height = 0x18;
             width = 0x100;
@@ -1918,9 +1978,9 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
         case 0xa4:
             if ((unsigned char)((*shop)->stateFlags & 1)) {
                 if ((*shop)->mode == 0)
-                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00_5_0036DB68[0]);
+                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00[0]);
                 else
-                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00_5_0036DB68[4]);
+                    eTagFontSet((ETagFont *)(void *)&work->headers[0].label, msg00[4]);
                 work->slideFlags |= 2;
             }
             for (i = 0; i < 2; i++) {
@@ -1937,7 +1997,7 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
             case 2:
                 work->equipment.ribbon.y = totalY[0] = 0xcb;
                 totalX[0] = 0x130;
-                eTagFontSet((ETagFont *)(void *)&work->parties[0].label, msg00_5_0036DB68[2]);
+                eTagFontSet((ETagFont *)(void *)&work->parties[0].label, msg00[2]);
                 rosterX[0] = 0x130;
                 rosterY[0] = 0x93;
                 work->parties[0].ribbon.y = 0x93;
@@ -1948,7 +2008,7 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
             case 5:
                 work->equipment.ribbon.y = totalY[0] = 0xfb;
                 totalX[0] = 0x130;
-                eTagFontSet((ETagFont *)(void *)&work->parties[1].label, msg00_5_0036DB68[2]);
+                eTagFontSet((ETagFont *)(void *)&work->parties[1].label, msg00[2]);
                 rosterX[1] = 0x130;
                 rosterY[1] = 0x93;
                 work->parties[1].ribbon.y = 0x93;
@@ -2112,8 +2172,6 @@ static void MenuShopEx(TskObject *task, struct MenuShopExDisplay *work)
     }
 }
 
-extern const char *msg00_6[3];
-extern const char *msg01_7[4];
 void eSpriteSet(void *sprite, short spriteId);
 void eTagFontSet(void *tag, const char *text);
 void eRibbonSet(void *ribbon, int style);
@@ -2124,6 +2182,17 @@ void eNumberSet(void *data, int unused);
 void eNumberMain(void *number);
 
 static void MenuShopSeisan(TskObject *arg0, void *arg1) {
+    static const char *msg00[] __asm__("msg00.6") = {
+        "Buy",
+        "Sell",
+        "Pay",
+    };
+    static const char *msg01[] __asm__("msg01.7") = {
+        "\001Stock",
+        "\001Total",
+        "\001Money",
+        "\001Result",
+    };
     unsigned char *p = (unsigned char *)arg1;
     MenuShopWorkData *w2;
     int i;
@@ -2146,14 +2215,14 @@ static void MenuShopSeisan(TskObject *arg0, void *arg1) {
             *(short *)(p + 0xA) = 0x50;
             *(short *)(p + 0x10) = 0xC0;
             *(short *)(p + 0x12) = 0x98;
-            *(int *)(p + 0x14) = (int)msg00_6[0];
+            *(int *)(p + 0x14) = (int)msg00[0];
             p[0x18] = 1;
             WindowDXMain((MenuShopWindowDX *)(p + 0x8));
             p[0x18] = 3;
             p14 = p + 0x14;
             dst = (int *)(p + 0x1A4);
             tag = p + 0x19C;
-            msg = msg01_7;
+            msg = msg01;
             i = 3;
             do {
                 cur1 = tag;
@@ -2249,7 +2318,7 @@ static void MenuShopSeisan(TskObject *arg0, void *arg1) {
                 sp[0] = 0x130;
             }
             MoveSlide((short *)(p + 0x8), sp, 3.0f);
-            *(int *)(p + 0xA4) = (int)msg00_6[MenuShopWork->mode & 1];
+            *(int *)(p + 0xA4) = (int)msg00[MenuShopWork->mode & 1];
             WindowDXMain((MenuShopWindowDX *)(p + 0x8));
         }
         {
@@ -2368,9 +2437,12 @@ static inline float MenuShopF3(void) {
     u.i = 0x40400000;
     return u.f;
 }
-extern const char *msg01_8_0036DBA0[];
 
 static void MenuShopSeisan02(TskObject *arg0, void *arg1) {
+    static const char *msg01[] __asm__("msg01.8") = {
+        "\001Money",
+        "\001Result",
+    };
     unsigned char *p = (unsigned char *)arg1;
     short sp0;
     short sp2;
@@ -2401,7 +2473,7 @@ static void MenuShopSeisan02(TskObject *arg0, void *arg1) {
             WindowDXMain(w);
             p[0x18] = 3;
             {
-                const char **msg = msg01_8_0036DBA0;
+                const char **msg = msg01;
                 i = 1;
                 do {
                     eTagFontSet(tag, *msg);
@@ -2814,7 +2886,6 @@ struct MenuShopIconDisplay {
     float scale;
     struct MenuShopIconSprite sprites[11];
 };
-extern const union MenuShopIconIds D_004C79F8;
 static void MenuShopIcon(TskObject *task, void *data)
 {
     struct MenuShopIconDisplay *work = data;
@@ -2823,10 +2894,13 @@ static void MenuShopIcon(TskObject *task, void *data)
     switch (task->state) {
     case 0:
         {
-            union MenuShopIconIds spriteIds = D_004C79F8;
+            short spriteIds[11] = {
+                0x109, 0x10A, 0x322, 0x324, 0x325, 0x328,
+                0x326, 0x327, 0x329, 0x32A, 0x323,
+            };
             work->depth = 0xfffff0;
             for (i = 0; i < 11; i++) {
-                eSpriteSet(&work->sprites[i], spriteIds.ids[i]);
+                eSpriteSet(&work->sprites[i], spriteIds[i]);
                 work->sprites[i].depth = work->depth;
             }
         }
@@ -3239,18 +3313,31 @@ struct MenuShopParameterDisplay {
 };
 struct MenuShopParameterDigits8 { unsigned char digits[8]; };
 struct MenuShopParameterDigits7 { signed char digits[7]; };
-extern const struct MenuShopParameterDigits8 D_004DB220[];
-extern const struct MenuShopParameterDigits7 D_004DB228[];
-extern const char *msg00_9[];
-extern const char *msg01_10[];
 
 static void MenuShopParameter(TskObject *task, void *data)
 {
+    static const char *msg00[] __asm__("msg00.9") = {
+        "\001STR",
+        "\001VIT",
+        "\001EATK",
+        "\001EDEF",
+        "\001DEX",
+        "\001EVA",
+        "\001AGL",
+    };
+    static const char *msg01[] __asm__("msg01.10") = {
+        "\001FHP",
+        "\001DPOW",
+        "\001PARM",
+        "\001EARM",
+        "\001AGL",
+        "\001WAGL",
+    };
     extern MsParaV MenuShopParaV __asm__("MenuShopPara");
     extern MsParaV MenuShopPara2V __asm__("MenuShopPara2");
     struct MenuShopParameterDisplay *work = data;
-    struct MenuShopParameterDigits8 characterDigits = D_004DB220[0];
-    struct MenuShopParameterDigits7 agwsDigits = D_004DB228[0];
+    struct MenuShopParameterDigits8 characterDigits = { { 3, 3, 3, 3, 2, 2, 2, 3 } };
+    struct MenuShopParameterDigits7 agwsDigits = { { 4, 3, 3, 3, 2, 2, 3 } };
     short targetX;
     int i;
 
@@ -3297,7 +3384,7 @@ static void MenuShopParameter(TskObject *task, void *data)
                     work->twoColumns = 0;
                     work->count = 7;
                     for (i = 0; i < work->count; i++)
-                        work->labels[i].text = msg00_9[i];
+                        work->labels[i].text = msg00[i];
                     for (i = 0; i < work->count; i++) {
                         work->numbers[i].format = 5;
                         work->numbers[i].digits = characterDigits.digits[i];
@@ -3319,7 +3406,7 @@ static void MenuShopParameter(TskObject *task, void *data)
                     work->count = 6;
                     work->twoColumns = 1;
                     for (i = 0; i < work->count; i++)
-                        work->labels[i].text = msg01_10[i];
+                        work->labels[i].text = msg01[i];
                     for (i = 0; i < work->count; i++) {
                         work->numbers[i].format = 5;
                         work->numbers[i].digits = agwsDigits.digits[i];
@@ -3348,7 +3435,7 @@ static void MenuShopParameter(TskObject *task, void *data)
             work->count = 6;
             work->twoColumns = 1;
             for (i = 0; i < work->count; i++)
-                work->labels[i].text = msg01_10[i];
+                work->labels[i].text = msg01[i];
             for (i = 0; i < work->count; i++) {
                 work->numbers[i].format = 5;
                 work->numbers[i].digits = agwsDigits.digits[i];
@@ -3373,7 +3460,7 @@ static void MenuShopParameter(TskObject *task, void *data)
             work->count = 6;
             work->twoColumns = 1;
             for (i = 0; i < work->count; i++)
-                work->labels[i].text = msg01_10[i];
+                work->labels[i].text = msg01[i];
             for (i = 0; i < work->count; i++) {
                 work->numbers[i].format = 5;
                 work->numbers[i].comparisonColor = 0;
@@ -3420,6 +3507,9 @@ static void MenuShopParameter(TskObject *task, void *data)
         return;
     }
 }
+
+AgwsParaDisplay MenuShopPara = { { 0 } };
+AgwsParaDisplay MenuShopPara2 = { { 0 } };
 
 static void MenuShopEx2(TskObject *task, MenuShopEx2Work *work)
 {
