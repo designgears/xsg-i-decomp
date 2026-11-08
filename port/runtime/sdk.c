@@ -562,18 +562,26 @@ static int pad_parse_mask(const char **sp, unsigned *mask)
 
 unsigned xsg_pad_script_buttons(void)
 {
-    typedef struct { unsigned frame, mask, hold, count, every; } PadEv;
+    /* "+N:..." entries count from the test-room jump (rooms.c, debug.jump). */
+    typedef struct { unsigned frame, mask, hold, count, every, rel; } PadEv;
+    extern volatile unsigned xsg_room_frame;
     static PadEv ev[512];
     static int nev = -1;
     static int log_on;
     static unsigned last;
     if (nev < 0) {
+        extern const char *xsg_room_pad(void);
         const char *s = xsg_cfg("debug.pad"), *l = xsg_cfg("debug.pad_log");
+        const char *more = xsg_room_pad();   /* rooms.c: debug.room's entries */
         log_on = l && *l && *l != '0';
         nev = 0;
+        if (!(s && *s))
+            s = more, more = 0;
+    again:
         while (s && *s && nev < 512) {
-            PadEv e = {0, 0, 6, 1, 60};
+            PadEv e = {0, 0, 6, 1, 60, 0};
             char *end;
+            if (*s == '+') { e.rel = 1; s++; }
             e.frame = strtoul(s, &end, 0);
             s = end;
             if (*s != ':' || (s++, !pad_parse_mask(&s, &e.mask))) {
@@ -593,17 +601,28 @@ unsigned xsg_pad_script_buttons(void)
                 break;
             s++;
         }
+        if (more) {
+            s = more;
+            more = 0;
+            goto again;
+        }
         if (nev)
             xsg_logf("[pad] %d scripted entries\n", nev);
     }
     unsigned m = 0, f = xsg_frame;
     for (int i = 0; i < nev; i++) {
-        if (f < ev[i].frame)
+        unsigned at = ev[i].frame;
+        if (ev[i].rel) {
+            if (!xsg_room_frame)
+                continue;
+            at += xsg_room_frame;
+        }
+        if (f < at)
             continue;
-        unsigned k = ev[i].every ? (f - ev[i].frame) / ev[i].every : 0;
+        unsigned k = ev[i].every ? (f - at) / ev[i].every : 0;
         if (k >= ev[i].count)
             k = ev[i].count - 1;
-        if (f - (ev[i].frame + k * ev[i].every) < ev[i].hold)
+        if (f - (at + k * ev[i].every) < ev[i].hold)
             m |= ev[i].mask;
     }
     if (log_on && m != last) {

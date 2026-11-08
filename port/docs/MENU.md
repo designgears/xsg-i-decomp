@@ -214,6 +214,10 @@ environment variable the setting took over; it is no longer read.
 | `[debug] vulkan_validation` | `0` | 0, 1 | restart | `XSG_GPU_VVL` | Allow the Vulkan validation layer. |
 | `[debug] pmode_raw` | `0` | 0, 1 | restart | `XSG_GPU_PMODE_RAW` | Scan out PMODE as the game wrote it. |
 | `[debug] stream` | (empty) | text | restart | `XSG_STREAM` | Raw 512x448 RGB24 live stream FIFO path. |
+| `[debug] jump` | (empty) | text | restart | — | Test room: once the first field runs, jump to this scene (cf1234, ev0123). |
+| `[debug] room` | (empty) | text | restart | — | Test room by name: a scene plus pad steps (see Test rooms below). |
+| `[debug] give_all` | `0` | 0, 1 | restart | — | At the first field: whole party, A.G.W.S., money, every item, weapon, ammo and accessory. |
+| `[debug] scene_list` | `0` | 0, 1 | restart | — | Log every scene file on the disc at the first field. |
 | `[debug] skip_events` | `0` | 0, 1 | restart | `XSG_SKIP_EVENTS` | Skip story events (test runs). |
 | `[debug] frame_us` | (empty) | text | restart | `XSG_FRAME_US` | Fixed vblank period in us (overrides game.fps_limit; 0 = unthrottled). |
 | `[debug] fast_until` | (empty) | text | restart | `XSG_FAST_UNTIL` | Unthrottled until this vblank. |
@@ -369,6 +373,33 @@ paraLLEl-GS as EN1 + MMOD + ALP 0xFF, i.e. circuit 1 opaque, like the software G
 leaves PMODE alone when only EN2 is set. `[debug] pmode_raw = 1` restores the raw register.
 The root cause is probably in the libgraph stubs (`sdk.c` labels bit 2 as MMOD, but bit 2 is
 CRTMD). That was not investigated further.
+
+### Test rooms (`port/runtime/rooms.c`)
+
+These jump straight to a screen for UI work. Once the first field scene runs, `debug.jump`
+jumps to a scene the way the developers' debug menu does. `debug.room` picks a named
+scene plus pad steps. Pad entries written `+N:BUTTON` count N vblanks from the moment the
+jumped-to scene starts, so they don't depend on how long the title screen took. The title
+still needs its own presses (`300:START,1100:START,1200:CROSS` with an empty memory card).
+The log shows every scene change as `[room] vblank V scene cfNNNN map NAME`.
+`scene_list = 1` lists the 568 scenes on the disc.
+
+| room | scene | shows |
+|---|---|---|
+| `battle_tutorial` | cf9001 | Shion + KOS-MOS vs attack drones, with tutorial pages and dialog |
+| `battle_kosmos`, `battle_kosmos2` | cf9002, cf9003 | KOS-MOS: full command menu, AP, boost |
+| `battle_boss` | cf9005 | boss, three-member turn list |
+| `battle`, `battle_fx` | cf9011, cf9021 | U-TIC soldier; a battle that opens on a large effect |
+| `field`, `menu` | cf9051 | free walking in MC_KOU01; the main menu |
+| `menu_items`, `menu_agws`, `menu_options`, `menu_formation` | cf9051 | those main-menu pages |
+| `menu_ether`, `menu_tech`, `menu_skills`, `menu_characters` | cf9051 | those pages, with Shion picked |
+| `save`, `save_files` | cf9051 | a save point's file menu, opened the way the field loop opens it; slot 1's file list |
+| `shop`, `shop2`, `shop3`, `shop_buy`, `shop_sell` | cf9051 | shops 1-3 (`MenuShopMain`); shop 1's Buy and Sell lists |
+
+The menu rooms imply `give_all` (from the developers' `ShopTest` set-up plus the full
+item tables), so lists are full and A.G.W.S. is unlocked. U.M.N. stays locked (a story
+flag). The cf90xx scenes are the developers' battle tests. cf9999 is the game's exit id, which
+hangs the field loop.
 
 ## Not done / limits
 

@@ -2697,6 +2697,12 @@ void Game(void)
             gameLoopCG.frame_hook(2);
         }
         nmlModelSendPauseSignal(gameLoopCG.flags & 1);
+#ifdef PORT_HOST
+        {   /* test rooms (port/runtime/rooms.c): debug.jump, debug.scene_list */
+            extern void xsg_room_tick(int kind, unsigned event_id);
+            xsg_room_tick(gameLoopCG.kind, gameLoopCG.current_event_id);
+        }
+#endif
         SCRIPT_sceneChangeTimeDec();
         Disp_Homing();
         if (gameLoopCG.status != 0) {
