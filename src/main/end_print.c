@@ -27,7 +27,7 @@ extern EndPrintRenderState sRender;
 /* 511 callback entries plus the adjacent terminal/overflow entry. The
  * scaffold's D_00532A38 label is the interior address PrintFunc[511]. */
 
-extern PrintFuncEntry PrintFunc[512];
+static PrintFuncEntry PrintFunc[512];
 
 
 extern PrintFuncEntry *pPrintFuncTop;
