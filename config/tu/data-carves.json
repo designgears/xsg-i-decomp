@@ -10670,6 +10670,38 @@
    ]
   },
   "ov01/tu006_00a1d348": {
+   ".data": [
+    {
+     "range": [
+      "0x00a3edc8",
+      "0x00a3ef58"
+     ],
+     "generated": [
+      "0x00a3edc8",
+      "0x00a3ef58"
+     ],
+     "generated_by": [
+      "battleMsgEndChk",
+      "battleMsgPut",
+      "battleMsgPut2",
+      "cmdWaitMsg",
+      "msgObj",
+      "msgObj2",
+      "thinkExecSub",
+      "thinkInit"
+     ],
+     "c_owned_symbols": [
+      "cmdTbl",
+      "pMsgObj"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/cmd.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
