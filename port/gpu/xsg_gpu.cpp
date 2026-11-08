@@ -26,6 +26,8 @@
 #include "xsg_input.h"
 #include "native.h"
 #include "glyphs.h"
+#include "ui/art.h"
+#include "ui/menus.h"
 #include "ui/dialog.h"
 #include "menu/cfg.h"
 #include "menu/menu.h"
@@ -372,7 +374,9 @@ struct Renderer {
         InitCrt();
         xsgglyph::Init();
         xsgglyph::SetGs(&gs);
+        xsgui::ArtInit(&gs);
         xsgui::Init(shm);
+        xsgui::MenuInit(shm);
         const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
@@ -994,6 +998,7 @@ int main(int argc, char** argv) {
         }
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
         case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); r.native_msgs++; break;
+        case GPU_MSG_UI_TEX: xsgui::ArtTexset(h.a, h.b, payload, h.len); break;
         case GPU_MSG_READ_VRAM: {
             r.gs.flush();
             const void* v = r.gs.map_vram_read(0, 4u << 20);

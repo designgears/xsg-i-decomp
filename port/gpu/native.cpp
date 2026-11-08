@@ -13,6 +13,7 @@
 #include "device.hpp"
 #include "gs_interface.hpp"
 #include "ps2host/gs.h"
+#include "ui/art.h"
 
 #define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -153,6 +154,10 @@ PathParse g_path[4];
 
 void SetReg(uint32_t a, uint64_t v) {
     a &= 0xff;
+    if (a == 0x3f && (v >> 32) == 0x5853474Du) {   // rebuilt-UI marker (end_print.c xsgMark, a TEXFLUSH)
+        xsgui::ArtSnapshot(uint32_t(v & 0xff));
+        return;
+    }
     g_reg[a] = v;
     if (a == 0x53) {   // TRXDIR: a host->local transfer starts
         Xfer& t = g_xfer;
@@ -1462,6 +1467,7 @@ std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t
     return DecodeTexture(g_mem.data(), tex0, texa, w, h);
 }
 uint32_t MirrorGen() { return g_upload_gen; }
+const uint8_t* MirrorData() { return g_mem.data(); }
 uint32_t TextureGen(uint64_t tex0) {
     uint32_t p0, np, gen = 0;
     PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);

@@ -41,6 +41,8 @@ int Scale();
 /* A TEX0 texture decoded from the GS-memory mirror (RGBA8), and the mirror's upload generation. */
 std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h);
 uint32_t MirrorGen();
+/* The GS-memory mirror itself (4 MB, GS block layout). */
+const uint8_t* MirrorData();
 /* The newest upload generation of a TEX0 texture's pages (and its CLUT's). */
 uint32_t TextureGen(uint64_t tex0);
 /* A TEX0 texture decoded from a 4 MB GS-memory image (RGBA8). */

@@ -7,6 +7,7 @@
 #include "device.hpp"
 
 #include <cstring>
+#include <unordered_map>
 
 namespace xsgmenu {
 namespace {
@@ -21,6 +22,8 @@ const uint32_t kFrag[] = {
 Vulkan::Device* g_dev;
 Vulkan::Program* g_prog;
 Vulkan::ImageHandle g_font;
+std::unordered_map<uint64_t, Vulkan::ImageHandle> g_tex;
+uint64_t g_next_tex = 2;
 
 }  // namespace
 
@@ -49,6 +52,19 @@ void RenderFonts() {
     g_font = g_dev->create_image(info, &init);
     io.Fonts->SetTexID(ImTextureID(1));
 }
+
+uint64_t RenderTexture(uint64_t id, const uint32_t* rgba, uint32_t w, uint32_t h) {
+    if (!g_dev || !w || !h) return 0;
+    if (!id) id = g_next_tex++;
+    auto info = Vulkan::ImageCreateInfo::immutable_2d_image(w, h, VK_FORMAT_R8G8B8A8_UNORM);
+    Vulkan::ImageInitialData init = {};
+    init.data = rgba;
+    g_tex[id] = g_dev->create_image(info, &init);
+    return id;
+}
+
+void BlendAdd(const ImDrawList*, const ImDrawCmd*) {}
+void BlendAlpha(const ImDrawList*, const ImDrawCmd*) {}
 
 void RenderDraw(Vulkan::CommandBuffer& cmd, ImDrawData* dd, uint32_t fbw, uint32_t fbh) {
     if (!dd || dd->TotalVtxCount == 0 || !g_font) return;
@@ -85,7 +101,12 @@ void RenderDraw(Vulkan::CommandBuffer& cmd, ImDrawData* dd, uint32_t fbw, uint32
     for (const ImDrawList* l : dd->CmdLists) {
         for (const ImDrawCmd& c : l->CmdBuffer) {
             if (c.UserCallback) {
-                if (c.UserCallback != ImDrawCallback_ResetRenderState) c.UserCallback(l, &c);
+                if (c.UserCallback == BlendAdd)
+                    cmd.set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_FACTOR_ONE);
+                else if (c.UserCallback == BlendAlpha)
+                    cmd.set_blend_factors(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                          VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+                else if (c.UserCallback != ImDrawCallback_ResetRenderState) c.UserCallback(l, &c);
                 continue;
             }
             const ImVec2 fs = dd->FramebufferScale;
@@ -98,6 +119,17 @@ void RenderDraw(Vulkan::CommandBuffer& cmd, ImDrawData* dd, uint32_t fbw, uint32
             if (x1 <= x0 || y1 <= y0) continue;
             VkRect2D sc = {{int32_t(x0), int32_t(y0)}, {uint32_t(x1 - x0), uint32_t(y1 - y0)}};
             cmd.set_scissor(sc);
+            {   // the font (1) or a registered texture
+                const uint64_t tid = uint64_t(c.GetTexID());
+                static uint64_t bound = 1;
+                auto it = tid > 1 ? g_tex.find(tid) : g_tex.end();
+                const Vulkan::ImageView& view = it != g_tex.end() && it->second ? it->second->get_view() : g_font->get_view();
+                const uint64_t want = it != g_tex.end() ? tid : 1;
+                if (want != bound || &c == &l->CmdBuffer[0]) {
+                    cmd.set_texture(0, 0, view, Vulkan::StockSampler::LinearClamp);
+                    bound = want;
+                }
+            }
             cmd.draw_indexed(c.ElemCount, 1, c.IdxOffset + uint32_t(io), int32_t(c.VtxOffset) + vo, 0);
         }
         vo += l->VtxBuffer.Size;
