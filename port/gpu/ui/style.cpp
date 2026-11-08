@@ -150,12 +150,14 @@ void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, con
         const float a = float(i) * 0.785398f;
         dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
     }
+    const float bold = std::max(0.5f, size * 0.03f);
     dl->AddText(font, size, p, Alpha(col, t), s);
+    dl->AddText(font, size, ImVec2(p.x + bold, p.y), Alpha(col, t), s);
 }
 
 // labels and numbers: shadow, outline and a faux-bold double strike (Michroma has one weight)
 void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    const float sh = std::max(1.0f, size * 0.08f), o = std::max(1.0f, size * 0.06f), bold = std::max(0.6f, size * 0.035f);
+    const float sh = std::max(1.0f, size * 0.08f), o = std::max(1.0f, size * 0.06f), bold = std::max(0.8f, size * 0.045f);
     dl->AddText(font, size, ImVec2(p.x + sh, p.y + sh), IM_COL32(0, 0, 6, int(190 * t)), s);
     const ImU32 oc = IM_COL32(4, 6, 18, int(235 * t));
     for (int i = 0; i < 8; ++i) {
@@ -165,6 +167,8 @@ void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, 
     }
     dl->AddText(font, size, p, Alpha(col, t), s);
     dl->AddText(font, size, ImVec2(p.x + bold, p.y), Alpha(col, t), s);
+    dl->AddText(font, size, ImVec2(p.x + bold * 0.5f, p.y + bold * 0.5f), Alpha(col, t), s);
+    dl->AddText(font, size, ImVec2(p.x + bold * 1.6f, p.y), Alpha(col, t), s);
 }
 
 float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw) {

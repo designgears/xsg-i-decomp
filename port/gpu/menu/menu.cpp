@@ -63,7 +63,7 @@ const unsigned char kGameBody[] = {
 #include "Exo2-Medium.ttf.inc"
 };
 const unsigned char kGameBold[] = {
-#include "Exo2-SemiBold.ttf.inc"
+#include "Exo2-Bold.ttf.inc"   // the original's heavy game text
 };
 const unsigned char kGameLabel[] = {
 #include "Michroma-Regular.ttf.inc"
