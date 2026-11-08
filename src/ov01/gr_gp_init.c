@@ -448,6 +448,14 @@ typedef union GrQuad {
 float grRotTransPers(GrScreenVertex *vertex, const Matrix4 matrix,
                      const Vector4 *point, int *clipFlags);
 
+#ifdef PORT_HOST
+/* rebuilt UI capture mode (port/runtime/gpu_client.cpp): sprites and the TEX0 / ALPHA
+   they use are recorded instead of packed */
+extern int xsg_ui_kg_capture;
+extern void xsg_ui_cap_reg(int reg, unsigned long long value);
+extern void xsg_ui_cap_spr(int x0, int y0, int x1, int y1, int u0, int v0, int u1, int v1, const unsigned char *col);
+#endif
+
 typedef struct GrF2 {
     Vector4 vertex[2];      /* +0x00 */
     unsigned char col[4];   /* +0x20 */
@@ -465,6 +473,14 @@ void grPutF2(GrPacket *packet, GrF2 *prim, const Matrix4 matrix)
     Vector4 *w;
 
     clip = 0;
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture && matrix == 0) {
+        extern void xsg_ui_cap_line(int x0, int y0, int x1, int y1, const unsigned char *col);
+        xsg_ui_cap_line((int)prim->vertex[0].x, (int)prim->vertex[0].y, (int)prim->vertex[1].x, (int)prim->vertex[1].y,
+                        prim->col);
+        return;
+    }
+#endif
     count = &packet->count;
     v = prim->vertex;
     w = v;
@@ -650,6 +666,19 @@ void grPutSpr(GrPacket *packet, GrSpr *prim, int flag)
   int i;
   int n;
   int idx;
+#ifdef PORT_HOST
+  if (xsg_ui_kg_capture)
+  {
+    if (flag == 0)
+      xsg_ui_cap_spr((int) prim->vertex[0].x, (int) prim->vertex[0].y, (int) prim->vertex[1].x, (int) prim->vertex[1].y,
+                     prim->u[0], prim->v[0], prim->u[1], prim->v[1], prim->col);
+    else
+      xsg_ui_cap_spr(((int) prim->vertex[0].x - 0x7000) >> 4, ((int) prim->vertex[0].y - 0x7200) >> 4,
+                     ((int) prim->vertex[1].x - 0x7000) >> 4, ((int) prim->vertex[1].y - 0x7200) >> 4,
+                     prim->u[0], prim->v[0], prim->u[1], prim->v[1], prim->col);
+    return;
+  }
+#endif
   count = &packet->count;
   for (i = 0; i < 2; i++)
   {
@@ -829,6 +858,10 @@ int grBBCalc(MatrixCommand *command, int *screen_x, int *screen_y)
 void grGsRegSet(GrPacket *packet, unsigned long long register_id,
                 unsigned long long value)
 {
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture)
+        xsg_ui_cap_reg((int)register_id, value);
+#endif
     grGifAppendRegister(packet, 14, 0x1000000000008001ULL);
     grGifAppendRegister(packet, register_id, value);
 }
@@ -865,6 +898,10 @@ void GS_REG_SET(GrPacket *packet, long long register_id, long long control)
     GrGifOpenTag *tags;
     int *count;
     int tag_index;
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture)
+        xsg_ui_cap_reg((int)register_id, (unsigned long long)control);
+#endif
 
     grGifOpenRegister(packet, register_id);
     count = &packet->count;

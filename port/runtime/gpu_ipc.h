@@ -31,9 +31,9 @@
 #include <stdint.h>
 
 #define XSG_GPU_MAGIC 0x55504758u /* "XGPU" */
-#define XSG_GPU_VERSION 4u
+#define XSG_GPU_VERSION 7u
 #define XSG_GPU_FD 3
-#define XSG_GPU_HDR 4096u
+#define XSG_GPU_HDR (256u << 10)
 #define XSG_GPU_RING (64u << 20)
 #define XSG_GPU_REPLY (4u << 20)
 #define XSG_GPU_SHM_SIZE (XSG_GPU_HDR + XSG_GPU_RING + XSG_GPU_REPLY)
@@ -47,6 +47,7 @@ enum {
     GPU_MSG_READ_FIFO = 5, /* a = seq, b = qwords: local->host transfer data (TRXDIR 1) */
     GPU_MSG_QUIT = 6,
     GPU_MSG_NATIVE = 7,    /* a = kind (GPU_NATIVE_*), b = vertex count; payload: GpuNativeBatch + vertices */
+    GPU_MSG_UI_TEX = 8,    /* a = texture-set key, b = entries; payload: GpuUiTexEntry[b] then their PSMCT32 words */
 };
 
 /* Native renderer (port/docs/NATIVE_RENDERER.md, XSG_GPU_NATIVE=1): the inputs
@@ -201,6 +202,85 @@ typedef struct {
     GpuUiUnit unit[XSG_GPU_UI_UNITS];
 } GpuUiBattle;
 
+/* Rebuilt UI: the battle command menu (ov01 menu.c menuBatObjDraw, PORT_HOST). */
+#define XSG_GPU_UI_CMD_OFF 3584u
+typedef struct {
+    int32_t label;                  /* 0 Ether, 1 Item, 2 Move, 3 A.G.W.S. board, 4 A.G.W.S. leave, 5 Guard, 6 (A.G.W.S. top row) */
+    int32_t cmd;                    /* the command id (menuCmdExecChk) */
+    int32_t enabled;
+    int32_t x, y;                   /* the row origin, PS2 pixels (slides in) */
+} GpuUiCmdRow;
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t frame;        /* game vblank of the last publish (0: never) */
+    int32_t x, y;
+    int32_t sel, sel_cnt;           /* the selected row, its 0..3 open animation */
+    int32_t agws;                   /* the A.G.W.S. command table */
+    GpuUiCmdRow row[5];
+} GpuUiBattleCmd;
+
+/* Rebuilt UI: captured battle widgets (ov01 menu.c, PORT_HOST).  The game runs its own
+   code in a capture mode: the helpers it draws with record what they would draw
+   (gpu_client.cpp xsg_ui_kg_op), and xsg-gpu redraws it.  One GpuUiKeyGuide per channel,
+   at XSG_GPU_UI_KG_OFF + channel * sizeof(GpuUiKeyGuide). */
+#define XSG_GPU_UI_KG_OFF 4096u
+#define XSG_GPU_UI_KG_OPS 64
+#define XSG_GPU_UI_KG_CHANNELS 4   /* 0 key guide, 1 target name, 2..3 spare */
+/* The menus' whole 2D display list (end_print.c PrintFlush, PORT_HOST): a bigger capture. */
+#define XSG_GPU_UI_MENU_OFF (32u << 10)
+#define XSG_GPU_UI_MENU_OPS 2048
+#define XSG_GPU_UI_MENU_POOL (32u << 10)   /* text bytes (GPU_KG_TEXT / GPU_KG_TAG: b = offset, u = length) */
+enum {
+    GPU_KG_BUTTON = 1,   /* keyGideDisp: a = the icon id (uvTbl, 1-based) */
+    GPU_KG_FRAME = 2,    /* menuGuideFrameDisp: a = half width, b = colour (0, 1, 2) */
+    GPU_KG_TEXT = 3,     /* menuFontPut: text */
+    GPU_KG_NUMBER = 4,   /* menuNumPut: a = value, b = digits */
+    GPU_KG_SPRITE = 5,   /* menuStatSprite: a = u, b = v (the EP / AP labels, the L1 / R1 strip) */
+    GPU_KG_ART = 6,      /* a textured sprite drawn as is: tex0 (TEX0_1 incl. CLUT), u v w h in texels,
+                            (x, y) + (dw, dh) on screen, rgba (PS2 0x80 = 1.0), a = blend (0 alpha, 1 add) */
+    GPU_KG_RECT = 7,     /* a flat or gradient rectangle: rgba (top) / a (bottom) */
+    GPU_KG_SCISSOR = 8,  /* clip to (x, y, dw, dh); dw = 0: no clip */
+    GPU_KG_GROUP = 9,    /* a semantic marker for what follows: a = kind (GPU_UI_*), b = key */
+    GPU_KG_LINE = 10,    /* a line (x, y) -> (x + dw, y + dh), rgba */
+    /* menu list ops (end_print.c xsg_ui_print_capture): a = depth (larger in front) for all;
+       ART: b = texture-set key (GPU_MSG_UI_TEX); RECT: rgba left, b right colour;
+       NUMBER: b = value, u = digits, v = flags (0xF style, 0x10 right-aligned);
+       TAG / TEXT: b = pool offset, u = length; TAG v... (TAG: w = right-aligned) */
+    GPU_KG_WINDOW = 11,  /* a window: (x, y, dw, dh), rgba; b = 1 with its fill, 0 the frame only */
+    GPU_KG_TAG = 12,     /* the bitmap title letters (ASCII) */
+    GPU_KG_CIRCLE = 13,  /* (x, y), radius dw, rgba centre, b rim colour */
+};
+/* GPU_MSG_UI_TEX: one host->local upload of a texture directory (xtx), replayed by xsg-gpu
+   into a private GS memory image per set (the menus swap sets at one VRAM address). */
+typedef struct {
+    uint32_t dbp, dbw, w, h;        /* PSMCT32 rectangle at (0, 0) */
+    uint32_t words;                 /* data words that follow (w * h) */
+} GpuUiTexEntry;
+
+/* No 64-bit members: the game is a 32-bit build (i386 aligns them to 4) and xsg-gpu 64-bit. */
+typedef struct {
+    int32_t type, x, y, a, b;
+    uint32_t tex0_lo, tex0_hi;
+    int16_t u, v, w, h, dw, dh;
+    uint32_t rgba;
+    char text[24];
+} GpuUiKgOp;
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t frame;
+    uint32_t nops, pad_;
+    GpuUiKgOp op[XSG_GPU_UI_KG_OPS];
+} GpuUiKeyGuide;
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t frame;
+    uint32_t nops, pad_;
+    uint32_t texa_lo, texa_hi;      /* TEXA at capture (16 / 24-bit alpha expansion) */
+    uint32_t pool_used, pad2_;
+    GpuUiKgOp op[XSG_GPU_UI_MENU_OPS];
+    char pool[XSG_GPU_UI_MENU_POOL];
+} GpuUiMenuList;
+
 #define XSG_GPU_SETTINGS_OFF 2048u
 #define XSG_GPU_FRAME_US_KEEP 0xffffffffu /* frame_us: leave the game's pacing alone */
 typedef struct {
@@ -213,5 +293,14 @@ typedef struct {
     volatile uint32_t menu_open;   /* diagnostics: the menu is open (game input neutral) */
     uint32_t reserved[22];
 } GpuSettings;
+
+#ifdef __cplusplus
+static_assert(sizeof(GpuUiKgOp) == 68 && sizeof(GpuUiKeyGuide) == 16 + 68 * XSG_GPU_UI_KG_OPS, "ui op layout (32 / 64-bit)");
+static_assert(sizeof(GpuUiBattleCmd) == 28 + 5 * 20 && sizeof(GpuUiUnit) == 52, "battle layout (32 / 64-bit)");
+static_assert(XSG_GPU_UI_KG_OFF + XSG_GPU_UI_KG_CHANNELS * sizeof(GpuUiKeyGuide) <= XSG_GPU_UI_MENU_OFF, "ui capture channels overlap the menu list");
+static_assert(XSG_GPU_UI_MENU_OFF + sizeof(GpuUiMenuList) <= XSG_GPU_HDR, "the menu list overruns the header");
+static_assert(XSG_GPU_UI_CMD_OFF + sizeof(GpuUiBattleCmd) <= XSG_GPU_UI_KG_OFF, "battle command block overlaps");
+static_assert(XSG_GPU_UI_BATTLE_OFF + sizeof(GpuUiBattle) <= XSG_GPU_UI_CMD_OFF, "battle block overlaps");
+#endif
 
 #endif

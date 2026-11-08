@@ -490,6 +490,75 @@ extern "C" void xsg_ui_dialog_lines(const char* const* lines, int first, int end
 }
 
 /* Rebuilt UI: one battle party panel (ov01 menu.c, PORT_HOST). */
+/* Capture mode (menu.c menuKeyGuideDisp, battle_init.c monsNameDisp): ops collect here
+   and go to the channel's shared-memory block in one seqlocked copy. */
+extern "C" { int xsg_ui_kg_capture; }
+static GpuUiKgOp g_kg[XSG_GPU_UI_KG_OPS];
+static uint32_t g_kg_n;
+static int g_kg_ch;
+static uint64_t g_cap_tex0, g_cap_alpha = 0x44;
+extern "C" void xsg_ui_cap_begin(int channel) { g_kg_n = 0; g_kg_ch = channel; xsg_ui_kg_capture = 1; g_cap_alpha = 0x44; }
+extern "C" void xsg_ui_kg_begin(void) { xsg_ui_cap_begin(0); }
+extern "C" void xsg_ui_kg_op(int type, int x, int y, int a, int b, const char* text) {
+    if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
+    GpuUiKgOp& o = g_kg[g_kg_n++];
+    o.type = type; o.x = x; o.y = y; o.a = a; o.b = b;
+    std::memset(o.text, 0, sizeof o.text);
+    if (text) std::strncpy(o.text, text, sizeof o.text - 1);
+}
+extern "C" void xsg_ui_cap_reg(int reg, unsigned long long value) {
+    if (reg == 6) g_cap_tex0 = value;
+    else if (reg == 0x42) g_cap_alpha = value;
+}
+extern "C" void xsg_ui_cap_spr(int x0, int y0, int x1, int y1, int u0, int v0, int u1, int v1, const unsigned char* col) {
+    if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
+    GpuUiKgOp& o = g_kg[g_kg_n++];
+    std::memset(&o, 0, sizeof o);
+    o.type = GPU_KG_ART;
+    o.x = x0; o.y = y0; o.dw = int16_t(x1 - x0); o.dh = int16_t(y1 - y0);
+    o.u = int16_t(u0); o.v = int16_t(v0); o.w = int16_t(u1 - u0); o.h = int16_t(v1 - v0);
+    o.tex0_lo = uint32_t(g_cap_tex0); o.tex0_hi = uint32_t(g_cap_tex0 >> 32);
+    o.a = int32_t(g_cap_alpha & 0xff);
+    o.b = int32_t((g_cap_alpha >> 32) & 0xff);   // FIX
+    o.rgba = uint32_t(col[0]) | uint32_t(col[1]) << 8 | uint32_t(col[2]) << 16 | uint32_t(col[3]) << 24;
+}
+extern "C" void xsg_ui_cap_line(int x0, int y0, int x1, int y1, const unsigned char* col) {
+    if (g_kg_n >= XSG_GPU_UI_KG_OPS) return;
+    GpuUiKgOp& o = g_kg[g_kg_n++];
+    std::memset(&o, 0, sizeof o);
+    o.type = GPU_KG_LINE;
+    o.x = x0; o.y = y0; o.dw = int16_t(x1 - x0); o.dh = int16_t(y1 - y0);
+    o.rgba = uint32_t(col[0]) | uint32_t(col[1]) << 8 | uint32_t(col[2]) << 16 | uint32_t(col[3]) << 24;
+}
+extern "C" void xsg_ui_kg_end(void) {
+    xsg_ui_kg_capture = 0;
+    if (!xsggpu::shm || g_kg_ch < 0 || g_kg_ch >= XSG_GPU_UI_KG_CHANNELS) return;
+    GpuUiKeyGuide* k = reinterpret_cast<GpuUiKeyGuide*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_KG_OFF) + g_kg_ch;
+    const uint32_t s = k->seq;
+    __atomic_store_n(&k->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    std::memcpy(k->op, g_kg, sizeof(GpuUiKgOp) * g_kg_n);
+    k->nops = g_kg_n;
+    k->frame = xsg_frame;
+    __atomic_store_n(&k->seq, s + 2, __ATOMIC_RELEASE);
+}
+extern "C" void xsg_ui_cap_end(void) { xsg_ui_kg_end(); }
+extern "C" void xsg_ui_battle_cmd(int x, int y, int sel, int sel_cnt, int agws, const int* rows) {
+    if (!xsggpu::shm) return;
+    GpuUiBattleCmd* c =
+        reinterpret_cast<GpuUiBattleCmd*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_CMD_OFF);
+    const uint32_t s = c->seq;
+    __atomic_store_n(&c->seq, s + 1, __ATOMIC_RELAXED);
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    c->x = x; c->y = y; c->sel = sel; c->sel_cnt = sel_cnt; c->agws = agws;
+    for (int i = 0; i < 5; ++i) {
+        GpuUiCmdRow& r = c->row[i];
+        r.label = rows[i * 5]; r.cmd = rows[i * 5 + 1]; r.enabled = rows[i * 5 + 2];
+        r.x = rows[i * 5 + 3]; r.y = rows[i * 5 + 4];
+    }
+    c->frame = xsg_frame;
+    __atomic_store_n(&c->seq, s + 2, __ATOMIC_RELEASE);
+}
 extern "C" void xsg_ui_battle_unit(int key, int x, int y, int active, int hp, int hp_max, int ep, int ep_max, int ap,
                                    int bg, int bp, int idol) {
     if (!xsggpu::shm) return;
@@ -508,4 +577,171 @@ extern "C" void xsg_ui_battle_unit(int key, int x, int y, int active, int hp, in
     u.hp = hp; u.hp_max = hp_max; u.ep = ep; u.ep_max = ep_max; u.ap = ap; u.bg = bg; u.bp = bp; u.idol = idol;
     u.frame = xsg_frame;
     __atomic_store_n(&b->seq, s + 2, __ATOMIC_RELEASE);
+}
+
+/* ---- rebuilt UI: the menus' display list (end_print.c xsg_ui_print_capture) ---------- */
+namespace {
+GpuUiKgOp g_mops[XSG_GPU_UI_MENU_OPS];
+uint32_t g_mop_n;
+uint32_t g_mop_start;    // the frame the buffer started filling
+uint32_t g_menu_last;    // the frame of the last captured flush
+char g_mpool[XSG_GPU_UI_MENU_POOL];
+uint32_t g_mpool_n;
+}  // namespace
+
+extern "C" int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b) {
+    if (g_mop_n && xsg_frame - g_mop_start > 2) g_mop_n = 0, g_mpool_n = 0;   // a stale partial frame
+    if (!g_mop_n) g_mop_start = xsg_frame;
+    if (g_mop_n >= XSG_GPU_UI_MENU_OPS) return -1;
+    GpuUiKgOp& o = g_mops[g_mop_n];
+    std::memset(&o, 0, sizeof o);
+    o.type = type; o.x = x; o.y = y; o.dw = int16_t(w); o.dh = int16_t(h);
+    o.a = z; o.b = b; o.rgba = rgba;
+    return int(g_mop_n++);
+}
+extern "C" void xsg_ui_mop_art(int op, unsigned tex0_lo, unsigned tex0_hi, int u, int v, int tw, int th, unsigned texset) {
+    if (op < 0) return;
+    GpuUiKgOp& o = g_mops[op];
+    o.tex0_lo = tex0_lo; o.tex0_hi = tex0_hi;
+    o.u = int16_t(u); o.v = int16_t(v); o.w = int16_t(tw); o.h = int16_t(th);
+    o.b = int32_t(texset);
+}
+/* The last op is an inline text icon (e_message.c msg_spr[slot]): text[0] = 1, text[1] = slot. */
+extern "C" void xsg_ui_mop_icon(int slot) {
+    if (!g_mop_n) return;
+    GpuUiKgOp& o = g_mops[g_mop_n - 1];
+    o.text[0] = 1;
+    o.text[1] = char(slot);
+}
+extern "C" void xsg_ui_mop_uv(int op, int u, int v) {
+    if (op < 0) return;
+    g_mops[op].u = int16_t(u);
+    g_mops[op].v = int16_t(v);
+}
+extern "C" void xsg_ui_mop_text(int op, const char* text, int len) {
+    if (op < 0 || len < 0) return;
+    if (g_mpool_n + uint32_t(len) + 1 > XSG_GPU_UI_MENU_POOL) len = 0;
+    GpuUiKgOp& o = g_mops[op];
+    if (o.type != GPU_KG_TEXT) o.w = int16_t(o.b);   // TAG: keep the right-aligned flag
+    o.b = int32_t(g_mpool_n);
+    o.u = int16_t(len);
+    std::memcpy(g_mpool + g_mpool_n, text, size_t(len));
+    g_mpool[g_mpool_n + uint32_t(len)] = 0;
+    g_mpool_n += uint32_t(len) + 1;
+}
+extern "C" void xsg_ui_menu_end(void) {
+    if (xsggpu::shm) {
+        GpuUiMenuList* m = reinterpret_cast<GpuUiMenuList*>(reinterpret_cast<uint8_t*>(xsggpu::shm) + XSG_GPU_UI_MENU_OFF);
+        const uint32_t s = m->seq;
+        __atomic_store_n(&m->seq, s + 1, __ATOMIC_RELAXED);
+        __atomic_thread_fence(__ATOMIC_RELEASE);
+        std::memcpy(m->op, g_mops, sizeof(GpuUiKgOp) * g_mop_n);
+        std::memcpy(m->pool, g_mpool, g_mpool_n);
+        m->nops = g_mop_n;
+        m->pool_used = g_mpool_n;
+        m->frame = xsg_frame;
+        __atomic_store_n(&m->seq, s + 2, __ATOMIC_RELEASE);
+    }
+    g_mop_n = 0;
+    g_mpool_n = 0;
+    g_menu_last = xsg_frame;
+}
+
+/* eMessageDrawType01's stream for one message box: in a captured menu (a list flushed in
+   the last frames), normalised for xsg-gpu and kept from the GS.  Normal form: text (ASCII
+   and EUC pairs), '\n', 0x01 r g b (colour). */
+extern "C" unsigned char xglFontGetSPcodeSize(unsigned char code, unsigned char* text);
+extern "C" int xsg_ui_rebuilt(void);
+extern "C" int xsg_ui_menu_text(int x, int y, int param, const unsigned char* text, int len) {
+    if (!xsg_ui_rebuilt() || !g_menu_last || xsg_frame - g_menu_last > 3 || len <= 0) return 0;
+    char out[1024];
+    int n = 0;
+    // inline icons: "19 00 c0 c1 19 ctl" placeholders, msg_spr slots in order, ending at msg_spr_count
+    extern int msg_spr_count;
+    int icons = 0;
+    for (int i = 0; i + 5 < len; ++i)
+        if (text[i] == 0x19 && text[i + 1] == 0 && text[i + 4] == 0x19) icons++, i += 5;
+    int slot = msg_spr_count - icons;
+    for (int i = 0; i < len && n < int(sizeof out) - 8;) {
+        const unsigned char c = text[i];
+        if (c == 0x19 && i + 5 < len && text[i + 1] == 0 && text[i + 4] == 0x19) {
+            out[n++] = 2;
+            out[n++] = char(1 + std::max(0, slot++));   // never 0 (the pool is NUL-terminated)
+            i += 6;
+            continue;
+        }
+        if (c >= 0x80) {
+            out[n++] = char(c);
+            if (i + 1 < len) out[n++] = char(text[i + 1]);
+            i += 2;
+        } else if (c >= 0x20) {
+            out[n++] = char(c);
+            i++;
+        } else {
+            const int args = xglFontGetSPcodeSize(c, const_cast<unsigned char*>(text + i));
+            if (c == 0x0a) out[n++] = '\n';
+            else if (c == 0x09) out[n++] = '\t';
+            else if (c == 0x0c && i + 3 < len) {
+                out[n++] = 1;
+                out[n++] = char(text[i + 1] | 1); out[n++] = char(text[i + 2] | 1); out[n++] = char(text[i + 3] | 1);
+            }
+            i += 1 + (args < 0 ? 0 : args);
+        }
+    }
+    const int op = xsg_ui_mop(GPU_KG_TEXT, x, y, 0, 0, param & 0xffffff, 0x80808080u, 0);
+    xsg_ui_mop_text(op, out, n);
+    return 1;
+}
+
+/* The native renderer keeps the GS-memory mirror the menu art is snapshotted from. */
+extern "C" int xsg_native_on(void);
+extern "C" int xsg_ui_mirror_on(void) { return xsg_native_on(); }
+
+/* A texture directory (xtx: +8 count, +0xC first entry; entries {DBW << 16 | RRW, RRH,
+   VRAM word offset from 0xF0000, qwords, data offset}, uploaded as PSMCT32): its key, sent
+   to xsg-gpu when its content (sampled) is new. */
+extern "C" unsigned xsg_ui_texset(const void* directory) {
+    if (!directory || !xsggpu::shm) return 0;
+    const uint8_t* d = static_cast<const uint8_t*>(directory);
+    int32_t n, first;
+    std::memcpy(&n, d + 8, 4);
+    std::memcpy(&first, d + 12, 4);
+    if (n <= 0 || n > 64 || first <= 0 || first > 4096) return 0;
+    struct E { uint32_t pos, size; int32_t addr, count, offset; };
+    const E* e = reinterpret_cast<const E*>(d + first);
+    uint64_t h = 1469598103934665603ull;
+    size_t words = 0;
+    for (int i = 0; i < n; ++i) {
+        const uint32_t w = e[i].pos & 0xffff, hh = e[i].size;
+        const size_t nw = size_t(w) * hh;
+        const uint32_t* px = reinterpret_cast<const uint32_t*>(d + e[i].offset);
+        // the data may start with its own GIF IMAGE tag
+        if (uint32_t(e[i].count) == nw / 4 + 1) px += 4;
+        // every word: the game patches palettes inside the loaded texture (portraits)
+        const uint64_t* q = reinterpret_cast<const uint64_t*>(px);
+        for (size_t k = 0; k < nw / 2; ++k) h = (h ^ q[k]) * 1099511628211ull;
+        h = (h ^ (uint64_t(e[i].addr) << 20 ^ e[i].pos)) * 1099511628211ull;
+        words += nw;
+    }
+    const unsigned key = unsigned(h ^ (h >> 32)) | 1u;
+    static unsigned sent[8];
+    for (unsigned k : sent)
+        if (k == key) return key;
+    static int next;
+    sent[next++ & 7] = key;
+    std::vector<uint8_t> buf(sizeof(GpuUiTexEntry) * size_t(n) + words * 4);
+    GpuUiTexEntry* te = reinterpret_cast<GpuUiTexEntry*>(buf.data());
+    uint8_t* out = buf.data() + sizeof(GpuUiTexEntry) * size_t(n);
+    for (int i = 0; i < n; ++i) {
+        const uint32_t w = e[i].pos & 0xffff, hh = e[i].size;
+        const size_t nw = size_t(w) * hh;
+        const uint32_t* px = reinterpret_cast<const uint32_t*>(d + e[i].offset);
+        if (uint32_t(e[i].count) == nw / 4 + 1) px += 4;
+        te[i] = {uint32_t(e[i].addr + 0xF0000) >> 6, e[i].pos >> 16, w, hh, uint32_t(nw)};
+        std::memcpy(out, px, nw * 4);
+        out += nw * 4;
+    }
+    xsggpu::Send(GPU_MSG_UI_TEX, key, uint32_t(n), buf.data(), uint32_t(buf.size()));
+    xsg_logf("[ui] texture set %08x: %d uploads, %zu KB\n", key, n, words * 4 / 1024);
+    return key;
 }

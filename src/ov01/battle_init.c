@@ -6106,6 +6106,19 @@ void objDispEnCur(CursorObject *cursor)
     isEn = flags != 0;
     if (isEn != mode || (tgtUnitGet() != 0 && !(*(int *)tgtUnitGet()->work & 0x80))) {
         grGpInit(packet);
+#ifdef PORT_HOST
+        {   /* rebuilt UI ([display] ui = rebuilt): the target's name plate is captured (channel 1) */
+            extern int xsg_ui_rebuilt(void);
+            extern void xsg_ui_cap_begin(int channel);
+            extern void xsg_ui_cap_end(void);
+            if (xsg_ui_rebuilt()) {
+                xsg_ui_cap_begin(1);
+                monsNameDisp(packet, tgtUnitGet(), 8, 0x5c, isEn);
+                xsg_ui_cap_end();
+                return;
+            }
+        }
+#endif
         monsNameDisp(packet, tgtUnitGet(), 8, 0x5c, isEn);
         grPacketSend(packet);
     }

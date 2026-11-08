@@ -18,6 +18,11 @@ extern void menuStatSprite();
 
 extern ObjectTask *pMenuBat;
 
+#ifdef PORT_HOST
+extern int xsg_ui_kg_capture;   /* port/runtime/gpu_client.cpp: the rebuilt key guide records instead */
+extern void xsg_ui_kg_op(int type, int x, int y, int a, int b, const char *text);
+#endif
+
 void menuInitBat(void) {
     pMenuBat = 0;
 }
@@ -199,6 +204,34 @@ void menuBatObjDraw(ObjectTask *task)
   x = (int) fx;
   y = (int) fy;
   tbl = (int *) ((calcUPGet(unit)->flags & 0x40) ? (agwsTbl_00A3F088) : (chaTbl_00A3F038));
+#ifdef PORT_HOST
+  {   /* rebuilt UI ([display] ui = rebuilt): the command menu goes to xsg-gpu (port/gpu/ui/);
+         the selection animation (menuSelCnt) advances as in the sprite version */
+    extern int xsg_ui_rebuilt(void);
+    extern void xsg_ui_battle_cmd(int x, int y, int sel, int sel_cnt, int agws, const int *rows);
+    if (xsg_ui_rebuilt())
+    {
+      int rows[5 * 5];
+      for (i = 0; i < 5; i++)
+      {
+        int *e = (int *) (tbl + i * 0x10);
+        cx = (int) pos[24];
+        if (!(pos[24] < ((float) e[2]))) cx = e[2];
+        cy = (int) pos[26];
+        if (!(pos[26] < ((float) e[3]))) cy = e[3];
+        rows[i * 5 + 0] = e[0];
+        rows[i * 5 + 1] = e[1];
+        rows[i * 5 + 2] = menuCmdExecChk(unit, e[1]) != 0;
+        rows[i * 5 + 3] = x + cx;
+        rows[i * 5 + 4] = y + cy;
+      }
+      if (menuSelCnt < 3) menuSelCnt++;
+      xsg_ui_battle_cmd(x, y, menuSel, menuSelCnt, tbl == agwsTbl_00A3F088, rows);
+      calcSpline(D_00A5A310, ((char *) pos) + 0x60, 2);
+      return;
+    }
+  }
+#endif
   grGpInit((int) packet);
   menuTexTrans();
   menuEnvMake((int) packet);
@@ -2612,6 +2645,12 @@ extern NumCol2 D_00A468E0;
 int menuNumPut(int packet, int x, int y, int value, int digits, int style)
 {
     NumCol2 col = D_00A468E0;
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture) {
+        xsg_ui_kg_op(4, x, y, value, digits, 0);
+        return 0;
+    }
+#endif
     int kind;
     int w;
     int h;
@@ -2808,6 +2847,14 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
     int k;
     int id;
     int i;
+#ifdef PORT_HOST
+    /* rebuilt UI ([display] ui = rebuilt): run as usual with the drawing helpers
+       recording (xsg_ui_kg_op), then hand the record to xsg-gpu */
+    extern int xsg_ui_rebuilt(void);
+    extern void xsg_ui_kg_begin(void);
+    extern void xsg_ui_kg_end(void);
+    int capture = xsg_ui_rebuilt();
+#endif
 
     if (task != 0 && (*(int *)task->work & 8) && menuChk() == 0 && phase != 0x1A && (phase < 0xB || calcTuigekiChk(task) != 0)) {
         t = (char *)*(int *)(packet + 0x10);
@@ -2815,6 +2862,10 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
         y = (int)*(float *)(t + 0x98);
         grGpInit((int)gp);
         menuStatEnvMake((int)gp);
+#ifdef PORT_HOST
+        if (capture)
+            xsg_ui_kg_begin();
+#endif
         tgt = tgtUnitGet();
         if (calcUPGet(task)->flags & 0x40) {
             rows = keyGuideTblAgws[phase].rows;
@@ -2857,6 +2908,12 @@ void menuKeyGuideDisp(int packet, ObjectTask *task, int phase)
         grOpenSpr((int)gp);
         menuStatSprite((int)gp, 8, 0x1A8, 0xB2, 0xB, 0x4C, 0xAF);
         grCloseSpr();
+#ifdef PORT_HOST
+        if (capture) {
+            xsg_ui_kg_end();
+            return;
+        }
+#endif
         grPacketSend((int)gp);
     }
 }
@@ -2866,6 +2923,12 @@ extern KeyGideUV uvTbl[];
 
 void keyGideDisp(int packet, int x, int y, int id)
 {
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture) {
+        xsg_ui_kg_op(1, x, y, id, 0, 0);
+        return;
+    }
+#endif
     grOpenSpr(packet);
     id--;
     menuStatSprite(packet, x, y, uvTbl[id].w, uvTbl[id].h, uvTbl[id].u, uvTbl[id].v);
@@ -2880,6 +2943,12 @@ void menuGuideFrameDisp(int packet, int x, int y, int h, int sel)
 {
     GuideFrameCol col;
 
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture) {
+        xsg_ui_kg_op(2, x, y, h, sel, 0);
+        return;
+    }
+#endif
     col = D_00A468F0;
     grGsRegSet(packet, 0x42, 0x2000000029ULL);
     grOpenSpr(packet);
@@ -3316,6 +3385,12 @@ void menuFontPut(int packet, int x, int y, signed char *text) {
     int i;
     signed char *p;
 
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture) {
+        xsg_ui_kg_op(3, x, y, 0, 0, (const char *)text);
+        return;
+    }
+#endif
     i = 0;
     grOpenSpr(packet);
     while (text[i] != 0) {
@@ -3386,6 +3461,12 @@ void menuStatSprite(int packet, int x, int y, int width, int height, int srcX, i
     MenuSprPrim spr;
     union { MenuSprCol c; int i; } col;
 
+#ifdef PORT_HOST
+    if (xsg_ui_kg_capture && ((srcY == 0xAE && (srcX == 0x12 || srcX == 0x24)) || (srcX == 0x4C && srcY == 0xAF))) {
+        xsg_ui_kg_op(5, x, y, srcX, srcY, 0);   /* the EP / AP labels, the L1 / R1 strip: restyled */
+        return;
+    }
+#endif
     col.c = D_00A46C10;
     spr.x0 = x;
     spr.y0 = y;

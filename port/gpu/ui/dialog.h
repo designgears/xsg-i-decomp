@@ -18,6 +18,17 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
 /* Battle party panels (GpuUiBattle): any published within the last few vblanks. */
 bool BattleActive(uint32_t vsync);
 void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, uint32_t vsync);
+/* A controller face button, drawn for [gamepad] layout (xbox, playstation,
+   nintendo) by position: 0 south (PS cross), 1 east (circle), 2 west (square),
+   3 north (triangle).  c: the centre, r: the radius. */
+void Glyph(ImDrawList* dl, ImFont* font, float cx, float cy, float r, int pos, bool dim);
+/* A shoulder button: 0 left, 1 right, as "LB" / "L1" / "L" in a rounded tag. */
+float ShoulderGlyph(ImDrawList* dl, ImFont* font, float x, float cy, float h, int side);
+/* UTF-8 text with a soft halo (style.h HaloText) where the PlayStation button symbols
+   (U+25B3 triangle, U+25CB circle, U+25A1 square, U+00D7 cross) become controller
+   glyphs (Glyph) for the layout.  Returns the width drawn. */
+float RichText(ImDrawList* dl, ImFont* font, float size, float x, float y, unsigned col, const char* utf8, float t);
+float RichTextWidth(ImFont* font, float size, const char* utf8);
 /* The game's text encoding -> UTF-8 (exposed for tests). */
 std::string Decode(const char* s);
 
