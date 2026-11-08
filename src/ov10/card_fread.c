@@ -13,15 +13,12 @@
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
 extern char *strcat(char *destination, const char *source);
-extern char D_00A4D130[];
+extern char *strcpy(char *destination, const char *source);
 
 int CardFread(void *buffer, char *name)
 {
     char path[256];
-    *(long long *)&path[0] = *(long long *)&D_00A4D130[0];
-    *(int *)&path[8] = *(int *)&D_00A4D130[8];
-    *(short *)&path[12] = *(short *)&D_00A4D130[12];
-    path[14] = D_00A4D130[14];
+    __builtin_memcpy(path, "data\\carddata\\", 15);
     strcat(path, name);
     return xglCdReadFile(path, buffer, 0, 0);
 }
@@ -351,21 +348,14 @@ extern void xglFontPrint(int x, int y, int color, const char *text);
 
 extern int sprintf(char *buf, const char *fmt, ...);
 
-extern char D_00A4D148[];
 
-extern char D_00A4D150[];
 
-extern char D_00A4D158[];
 
-extern char D_00A4D160[];
 
-extern char D_00A4D168[];
 
-extern char D_00A4D170[];
 
 typedef struct { u8 pad[0x18]; int name; u8 pad1C[8]; } CardListInfo;
 
-extern char D_00A4D140[];
 
 void CardDeckDisp(CardListWin *w, CardListInfo *info)
 {
@@ -378,7 +368,7 @@ void CardDeckDisp(CardListWin *w, CardListInfo *info)
     char *name;
 
     i = 0;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D140);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19\0\r");
     for (; i < w->count; i++) {
         if (i < w->num) {
             id = w->ent[i + w->top].id;
@@ -386,34 +376,33 @@ void CardDeckDisp(CardListWin *w, CardListInfo *info)
                 off = id * sizeof(CardListInfo);
                 name = (char *)(((CardListInfo *)((char *)info + off))->name + 0x01000000);
                 if (i == w->sel) {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
                 } else {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
                 }
                 for (j = 0; j < w->len * 2; j++) {
                     buf[j] = name[j];
                 }
                 buf[j] = 0;
                 CardNameConvert((unsigned char *)buf);
-                xglFontPrint(0, 0, 0, D_00A4D158);
+                xglFontPrint(0, 0, 0, "\x19\x03");
                 xglFontPrint(w->x, w->y + i * 25, 0xFFF0, buf);
                 if (i == w->sel) {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
                 } else {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D160);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0c@@");
                 }
-                sprintf(num, D_00A4D168, w->ent[i + w->top].pad);
+                sprintf(num, "%d", w->ent[i + w->top].pad);
                 xglFontPrint(w->x + w->len * 10 + 6, w->y + i * 25, 0xFFF0, num);
             }
         }
     }
     *(s16 *)w->unkE = w->num;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D170);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19");
 }
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
 extern char *strcat(char *destination, const char *source);
-extern char D_00A4D130[];
 int CDTSGetStrLen(unsigned char *s) {
     int n = 0;
     int k;
@@ -431,7 +420,6 @@ int CDTSGetStrLen(unsigned char *s) {
     return n;
 }
 
-extern char D_00A4D180[];
 
 void CardDispTxtSub(u16 x, u16 y, unsigned char *text, u16 color)
 {
@@ -444,7 +432,7 @@ void CardDispTxtSub(u16 x, u16 y, unsigned char *text, u16 color)
     unsigned char *r;
     unsigned char ch;
 
-    xglFontPrint(0, 0, 0, D_00A4D180);
+    xglFontPrint(0, 0, 0, "\x0b\r\0\x19\x03  \x15\x02\x01\n");
     c = color * 21;
     col[3] = c >> 8;
     col[4] = c;
@@ -485,11 +473,10 @@ void CardDispTxtSub(u16 x, u16 y, unsigned char *text, u16 color)
 }
 
 typedef struct { char c[6]; } CardTxtCol;
-extern const CardTxtCol D_00A4D190;
 
 void CardDispTxtSub2(u16 x, u16 y, unsigned char *text)
 {
-    CardTxtCol col = D_00A4D190;
+    CardTxtCol col = {"\x15\x03\x03"};
     int len;
     int i;
     unsigned char *p;
@@ -497,7 +484,7 @@ void CardDispTxtSub2(u16 x, u16 y, unsigned char *text)
     unsigned char *r;
     unsigned char ch;
 
-    xglFontPrint(0, 0, 0, D_00A4D180);
+    xglFontPrint(0, 0, 0, "\x0b\r\0\x19\x03  \x15\x02\x01\n");
     xglFontPrint(0, 0, 0, col.c);
     len = CDTSGetStrLen(text);
     for (i = 0; i < len && text[i] != 0; i++) {
@@ -926,10 +913,6 @@ extern float CardStnbyPos[3];
 extern float CardAttriPos[3];
 extern float CardAttakPos[3];
 extern float CardCondPos[4][3];
-extern char D_00A4D340[];
-extern char D_00A4D350[];
-extern char D_00A4D368[];
-extern char D_00A4D370[];
 typedef struct {
     u8 type;
     u8 pad1;
@@ -1141,21 +1124,21 @@ void CardDisp(float (*place)[4], s16 no, s16 flag, s16 disp)
         return;
     }
     if (info->name) {
-        xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4D150);
+        xglFontPrint(0x78, 0x120, 0xFFF0, "\x0b\r");
         if (flag > 0) {
             CardDispTxtSub(0x18, 0x138, (unsigned char *)(info->name + 0x01000000), 0x17);
         } else {
-            CardDispTxtSub(0x18, 0x138, (unsigned char *)D_00A4D340, 0x17);
+            CardDispTxtSub(0x18, 0x138, (unsigned char *)"\x0b\r\0\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9", 0x17);
         }
     }
     if (flag <= 0) {
-        xglFontPrint(0x18, 0x19C, 0xFFF0, D_00A4D350);
+        xglFontPrint(0x18, 0x19C, 0xFFF0, "\x0b\r\0\x0c@@\x80\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9");
     } else if (info->text) {
-        xglFontPrint(0x18, 0x120, 0xFFF0, D_00A4D368);
-        xglFontPrint(0, 0, 0, D_00A4D158);
+        xglFontPrint(0x18, 0x120, 0xFFF0, "\x0b\r\0\x0c@@\x80");
+        xglFontPrint(0, 0, 0, "\x19\x03");
         xglFontPrint(0x18, 0x19C, 0xFFF0, (char *)(info->text + 0x01000000));
     }
-    xglFontPrint(0x78, 0x120, 0xFFF0, D_00A4D370);
+    xglFontPrint(0x78, 0x120, 0xFFF0, "\x0b");
     if (disp & 4) {
         vec[1] = -1.2f;
         vec[2] = 0.8f;
@@ -2578,8 +2561,6 @@ void CardPlayCursorMove(CPCMCursor *cursor, CardHand *hand, u16 pressed, u16 hel
 extern char DeckListStr[][16];
 
 typedef struct { u8 pad[8]; CardListInfo *info; u8 padC[4]; s16 cnt[1]; } CardListSrc;
-extern char D_00A4D500[];
-extern char D_00A4D508[];
 void CardListDisp(CardListWin *w, CardListSrc *src)
 {
     char buf[32];
@@ -2595,7 +2576,7 @@ void CardListDisp(CardListWin *w, CardListSrc *src)
 
     i = 0;
     info = src->info;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D500);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x19\0\r");
     cnts = src->cnt;
     for (; i < w->count; i++) {
         if (i < w->num) {
@@ -2604,44 +2585,43 @@ void CardListDisp(CardListWin *w, CardListSrc *src)
                 off = id * sizeof(CardListInfo);
                 name = (char *)(((CardListInfo *)((char *)info + off))->name + 0x01000000);
                 if (i == w->sel) {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
                 } else {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
                 }
                 for (j = 0; j < w->len * 2; j++) {
                     buf[j] = name[j];
                 }
                 buf[j] = 0;
                 CardNameConvert((unsigned char *)buf);
-                xglFontPrint(0, 0, 0, D_00A4D158);
+                xglFontPrint(0, 0, 0, "\x19\x03");
                 xglFontPrint(w->x, w->y + i * 25, 0xFFF0, buf);
                 if (w->flags & 1) {
                     n = cnts[id];
                     if (n >= 10) {
                         n = 9;
                     }
-                    sprintf(num, D_00A4D168, n);
+                    sprintf(num, "%d", n);
                     if (i == w->sel) {
-                        xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                        xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
                     } else {
-                        xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D160);
+                        xglFontPrint(w->x, w->y, 0xFFF0, "\x0c@@");
                     }
                     xglFontPrint(w->x + w->len * 10 + 6, w->y + i * 25, 0xFFF0, num);
                 }
             } else {
                 if (i == w->sel) {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
                 } else {
-                    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
                 }
-                xglFontPrint(w->x, w->y + i * 25, 0xFFF0, D_00A4D508);
+                xglFontPrint(w->x, w->y + i * 25, 0xFFF0, "\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9\xa1\xa9");
             }
         }
     }
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D170);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19");
 }
 
-extern char D_00A4D518[];
 
 void CardDeckListDisp(CardListWin *w)
 {
@@ -2651,16 +2631,16 @@ void CardDeckListDisp(CardListWin *w)
     char *src;
 
     i = 0;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D518);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x19\x03\r");
     buf[0] = 0x19;
     buf[1] = 3;
     for (; i < w->count; i++) {
         if (i < w->num) {
             src = DeckListStr[i];
             if (i == w->sel) {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
             } else {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
             }
             for (j = 0; j < w->len; j++) {
                 buf[j + 2] = src[j];
@@ -2669,7 +2649,7 @@ void CardDeckListDisp(CardListWin *w)
             xglFontPrint(w->x, w->y + i * 0x18, 0xFFF0, buf);
         }
     }
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D170);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19");
 }
 
 void CardStrListDisp(CardListWin *w, char **strs, int sel)
@@ -2680,16 +2660,16 @@ void CardStrListDisp(CardListWin *w, char **strs, int sel)
     char *src;
 
     i = 0;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D518);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x19\x03\r");
     buf[0] = 0x19;
     buf[1] = 3;
     for (; i < w->count; i++) {
         if (i < w->num) {
             src = strs[i];
             if (i == sel) {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
             } else {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
             }
             for (j = 0; j < w->len; j++) {
                 buf[j + 2] = src[j];
@@ -2698,10 +2678,9 @@ void CardStrListDisp(CardListWin *w, char **strs, int sel)
             xglFontPrint(w->x, w->y + i * 0x19, 0xFFF0, buf);
         }
     }
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D170);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19");
 }
 
-extern char D_00A4D500[];
 
 void CardEnemyListDisp(CardListWin *w, int *ids, int sel)
 {
@@ -2711,14 +2690,14 @@ void CardEnemyListDisp(CardListWin *w, int *ids, int sel)
     char *src;
 
     i = 0;
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D500);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x19\0\r");
     for (; i < w->count; i++) {
         if (i < w->num) {
             src = DeckListStr[ids[i]];
             if (i == sel) {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D148);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0c\x80");
             } else {
-                xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D150);
+                xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\r");
             }
             for (j = 0; j < w->len; j++) {
                 buf[j] = src[j];
@@ -2727,7 +2706,7 @@ void CardEnemyListDisp(CardListWin *w, int *ids, int sel)
             xglFontPrint(w->x, w->y + i * 0x18, 0xFFF0, buf);
         }
     }
-    xglFontPrint(w->x, w->y, 0xFFF0, D_00A4D170);
+    xglFontPrint(w->x, w->y, 0xFFF0, "\x0b\x19");
 }
 
 /*
@@ -4590,7 +4569,6 @@ void CGCPHandDispSub(CardHand *hand, int sel, int side)
     CGCPHandDispSubCore(hand, sel, mat, side);
 }
 
-extern char D_00A4D710[];
 
 void CGCPYamaDispSub(CardPlaySide *side, int index, int count, unsigned short buttons, int rotated)
 {
@@ -4697,10 +4675,9 @@ void CGCPYamaDispSub(CardPlaySide *side, int index, int count, unsigned short bu
     nmlModelSetTexture((char *)0x01DB5800);
     nmlModelSetPlace(mat);
     nmlModelEntryCard((void *)0x01DAAC00);
-    xglFontPrint(0x16, 0x8C, 0xFFF8, D_00A4D710);
+    xglFontPrint(0x16, 0x8C, 0xFFF8, "\r\0\x19\x03" "Deck");
 }
 
-extern char D_00A4D720[];
 
 void CGCPJunkDispSub(CardPlaySide *side, int sel)
 {
@@ -4764,7 +4741,7 @@ void CGCPJunkDispSub(CardPlaySide *side, int sel)
     nmlModelSetTexture((char *)0x01DB5800);
     nmlModelSetPlace(mat);
     nmlModelEntryCard((void *)0x01DAAC00);
-    xglFontPrint(0x16, 0x8C, 0xFFF8, D_00A4D720);
+    xglFontPrint(0x16, 0x8C, 0xFFF8, "\r\0\x19\x03" "Junk");
 }
 
 int CardPlayCntAllOpe(char *p, s16 v)

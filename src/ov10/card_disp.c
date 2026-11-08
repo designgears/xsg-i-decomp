@@ -35,7 +35,7 @@ extern const CardHelpPackedVector D_00A4E0B0;
 extern const CardHelpPackedVector D_00A4E0C0;
 extern void nmlModelSetLight(Matrix4 color, Matrix4 direction);
 extern float xglSin(float angle);
-int ChangeCnt = 0;
+extern int ChangeCnt;
 extern Matrix4 asDir;
 
 /*

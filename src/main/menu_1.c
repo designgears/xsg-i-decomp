@@ -291,13 +291,10 @@ extern char *strcat(char *destination, const char *source);
 extern long long __divdi3(long long, long long);
 extern long long __moddi3(long long, long long);
 /* The digit strings "0".."9" sit just before this TU's .sdata; the split gives them to menu_item. */
-extern char D_004DAB38[], D_004DAB40[], D_004DAB48[], D_004DAB50[], D_004DAB58[];
-extern char D_004DAB60[], D_004DAB68[], D_004DAB70[], D_004DAB78[], D_004DAB80[];
 
 char *MenuNumberTextGet(long long value, int width, int mode)
 {
-    char *tbl[10] = { D_004DAB38, D_004DAB40, D_004DAB48, D_004DAB50, D_004DAB58,
-                      D_004DAB60, D_004DAB68, D_004DAB70, D_004DAB78, D_004DAB80 };
+    char *tbl[10] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
     static char msg_2_00532A78[0x18] __asm__("msg.2");
     unsigned char empty[] = "";
     long long p;
