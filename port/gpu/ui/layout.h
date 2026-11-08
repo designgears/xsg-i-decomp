@@ -11,7 +11,9 @@
  *   wide            the UI area is the whole window (less a margin): left-anchored UI
  *                   moves out to the window's left edge, right-anchored to its right
  *                   edge.  With a 4:3 picture that previews a widescreen layout; a native
- *                   widescreen picture will use the same anchors. */
+ *                   widescreen picture will use the same anchors.
+ * [display] widescreen = 1 (native renderer): the game area is the 16:9 picture's centre 4:3
+ * and edge UI is anchored to the picture's edges, whatever ui_layout says. */
 #pragma once
 #include "imgui.h"
 

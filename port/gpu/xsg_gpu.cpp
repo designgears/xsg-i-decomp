@@ -407,10 +407,15 @@ struct Renderer {
     /* Destination size in a bw x bh backbuffer: the display aspect (4:3 unless
        "stretch"), and with integer scaling the largest whole multiple of the
        scanout height that fits (fit scaling if even 1x does not). */
+    /* [display] widescreen (native renderer): the picture is the native layer's 684 x 448,
+       at the 4:3 display's pixel aspect (684/512 x 4:3, about 16:9), never stretched. */
+    static constexpr int kWideW = 684, kNarrowW = 512;
+    static bool Widescreen() { return xsgnative::On() && xsgcfg::GetBool("display.widescreen"); }
     void Fit(int bw, int bh, int src_h, int* dw, int* dh) const {
-        if (aspect == "stretch") { *dw = bw; *dh = bh; return; }
         int an = 4, ad = 3;
-        if (aspect == "16:9") { an = 16; ad = 9; }
+        if (Widescreen()) { an = 4 * kWideW; ad = 3 * kNarrowW; }
+        else if (aspect == "stretch") { *dw = bw; *dh = bh; return; }
+        else if (aspect == "16:9") { an = 16; ad = 9; }
         int h = bh, w = bh * an / ad;
         if (w > bw) { w = bw; h = bw * ad / an; }
         if (integer_scale && src_h > 0) {
@@ -425,9 +430,13 @@ struct Renderer {
 
     /* The game image a present shows: the native composite (cropped to the
        scanned-out rectangle) when this vsync has one, else the scanout. */
-    const Vulkan::Image* Source(const ScanoutResult& so, int* sx0, int* sy0, int* sw, int* sh, int* src_h) {
-        uint32_t nfw = 0, nfh = 0;
-        const Vulkan::ImageHandle* live = xsgnative::On() ? &xsgnative::LiveImage(&nfw, &nfh) : nullptr;
+    /* Widescreen: *wide is set when the image has the native side bands (the crop then
+       spans them); without them the image is the 4:3 frame, shown pillarboxed. */
+    const Vulkan::Image* Source(const ScanoutResult& so, int* sx0, int* sy0, int* sw, int* sh, int* src_h,
+                                bool* wide = nullptr) {
+        uint32_t nfw = 0, nfh = 0, margin = 0;
+        if (wide) *wide = false;
+        const Vulkan::ImageHandle* live = xsgnative::On() ? &xsgnative::LiveImage(&nfw, &nfh, &margin) : nullptr;
         const Vulkan::Image* src = so.image.get();
         *sx0 = 0;
         *sy0 = 0;
@@ -443,11 +452,12 @@ struct Renderer {
             const int w = std::min(int(so.internal_width), int(nfw) - dbx), h = std::min(int(so.internal_height), int(nfh) - dby);
             if (w > 0 && h > 0) {
                 src = live->get();
-                *sx0 = dbx * s;
+                *sx0 = dbx * s;   // with side bands: the GS frame's x = 0 is at margin, so the crop starts margin earlier
                 *sy0 = dby * s;
-                *sw = w * s;
+                *sw = (w + 2 * int(margin)) * s;
                 *sh = h * s;
                 *src_h = h;
+                if (wide) *wide = margin > 0;
             }
         }
         return src;
@@ -514,16 +524,23 @@ struct Renderer {
         VkClearValue clear = {};
         cmd.clear_image(bb, clear);
         int sx0, sy0, sw, sh, src_h;
-        const Vulkan::Image* src = Source(so, &sx0, &sy0, &sw, &sh, &src_h);
+        bool wide = false;
+        const Vulkan::Image* src = Source(so, &sx0, &sy0, &sw, &sh, &src_h, &wide);
         if (native) *native = false;
         if (!src) return;
         int dw = int(bb.get_width()), dh = int(bb.get_height());
         if (fit) Fit(int(bb.get_width()), int(bb.get_height()), src_h, &dw, &dh);
-        const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
+        int x0 = (int(bb.get_width()) - dw) / 2;
+        const int y0 = (int(bb.get_height()) - dh) / 2;
+        // Widescreen: the 16:9 picture's centre 4:3 is the GS frame (and the UI's game area);
+        // a frame without side bands is pillarboxed into it.
+        const bool ws = fit && Widescreen();
+        const int cw = ws ? dw * kNarrowW / kWideW : dw, cx0 = x0 + (dw - cw) / 2;
+        if (ws && !wide) { x0 = cx0; dw = cw; }
         cmd.barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT);
         if (native) *native = src != so.image.get();
-        game_rect[0] = float(x0); game_rect[1] = float(y0); game_rect[2] = float(dw); game_rect[3] = float(dh);
+        game_rect[0] = float(cx0); game_rect[1] = float(y0); game_rect[2] = float(cw); game_rect[3] = float(dh);
         last_image_w = uint32_t(sw);
         last_image_h = uint32_t(sh);
         // A source larger than the target (the native layer at 4-8x in a window) is

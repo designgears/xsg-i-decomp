@@ -389,6 +389,10 @@ void TabDisplay(float scale) {
     opt_choice("display.aspect", "Aspect ratio", kAspect,
                "4:3 is the original picture, letter- or pillarboxed. 16:9 stretches it to a wide frame (the game does not "
                "render more of the scene). Stretch fills the window.");
+    opt_toggle("display.widescreen", "Widescreen",
+               "Native 16:9 (needs the native renderer): the 3D scene is drawn wider, the PS2's 2D stays in the "
+               "centre 4:3 and edge UI moves to the picture's edges. Frames the native renderer cannot draw "
+               "are shown 4:3 with black bars. Overrides the aspect ratio.");
     static const char* kScale[] = {"Fit", "Integer"};
     opt_choice("display.scale_mode", "Scaling", kScale,
                "Fit: as large as the window allows. Integer: the largest whole multiple of the scanout height that fits "

@@ -21,9 +21,20 @@ void LayoutBegin(float gx, float gy, float gw, float gh) {
     g_ux0 = gx + (gw - uiw) * 0.5f;
     g_ux1 = g_ux0 + uiw;
     static std::string mode;
+    static bool wide_picture;
     static unsigned tick;
-    if (tick++ % 30 == 0) mode = xsgcfg::Get("display.ui_layout");
-    if (mode == "wide") {
+    if (tick++ % 30 == 0) {
+        mode = xsgcfg::Get("display.ui_layout");
+        wide_picture = xsgcfg::GetBool("display.widescreen") && xsgcfg::GetBool("renderer.native");
+    }
+    if (wide_picture) {
+        // [display] widescreen: the game area is the 16:9 picture's centre 4:3; edge UI is
+        // anchored to the picture's own edges (684 PS2 px wide, xsg_gpu.cpp kWideW), within
+        // the window.  This is the wide layout, relative to the picture.
+        const float sw = ImGui::GetIO().DisplaySize.x, band = 86.0f * g_kx;
+        g_ux0 = std::max(0.0f, g_ux0 - band);
+        g_ux1 = std::min(sw, g_ux1 + band);
+    } else if (mode == "wide") {
         const float sw = ImGui::GetIO().DisplaySize.x;
         // edge UI moves out toward the window's edges, but stays near the picture (at most 72 game
         // px beyond it, never past a 2% margin), so it reads as part of the scene
