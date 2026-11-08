@@ -331,7 +331,7 @@ typedef struct DrillEnemyWork {
 
 extern DrillContainerDef container[31];
 extern DrillItemBox ItemBoxTbl[];
-extern u32 *pDrillFlag;
+static u32 *pDrillFlag;
 extern DrillHitActor actor[64];
 extern DrillEnemyWork enepc[16];
 
