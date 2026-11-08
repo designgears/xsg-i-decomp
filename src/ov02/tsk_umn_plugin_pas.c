@@ -21,7 +21,7 @@ struct UmnPluginState {
 extern struct UmnPluginState UmnWork;
 extern unsigned char *UmnWorkEnd;
 extern unsigned char plugin_folder[16] __attribute__((aligned(8)));
-extern char msg00_1_00A10C48[];
+
 extern unsigned short D_4A1A0C[];
 
 /* PadData's +0x2a halfword records newly pressed controller buttons. */
@@ -430,6 +430,7 @@ struct UmnPluginExWinWork {
 
 void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
 {
+    static char msg00[] = "\x01Num";
     struct UmnPluginTask *task = task_opaque;
     struct UmnPluginExWinWork *work = work_opaque;
 
@@ -449,7 +450,7 @@ void tskUmnPluginExWin(void *task_opaque, void *work_opaque)
                 eRibbonSet(&work->item[i].ribbon, 3);
                 work->item[i].ribbon.width = 0x100;
                 work->item[i].ribbon.height = 0x18;
-                eTagFontSet(&work->item[i].tag, msg00_1_00A10C48);
+                eTagFontSet(&work->item[i].tag, msg00);
                 eNumberSet(&work->item[i].number, 0);
             }
             }
