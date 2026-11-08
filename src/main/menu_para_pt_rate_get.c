@@ -190,7 +190,6 @@ typedef union SpotLightTable {
     u64 doublewords[12];
 } SpotLightTable;
 
-extern const SpotLightTable D_004C6770;
 
 /* Scaffold .lit4 constants: the pulse step (1/24) and the easing factor
  * (0.4) tskCharSpotLight loads gp-relative. */
@@ -4346,7 +4345,10 @@ static int tskCharLineField(XglTaskPrefix *task)
 
 static void tskCharSpotLight(CharSpotLightTask *light)
 {
-    SpotLightTable positions = D_004C6770;
+    SpotLightTable positions = { {
+        { 1.0f, 0.0f, 0.6f, 1.0f }, { 0.0f, 0.0f, 0.6f, 1.0f }, { -1.0f, 0.0f, 0.6f, 1.0f },
+        { 1.0f, 0.0f, -0.6f, 1.0f }, { 0.0f, 0.0f, -0.6f, 1.0f }, { -1.0f, 0.0f, -0.6f, 1.0f },
+    } };
     DirectCircle circle;
     int screen[4];
 
@@ -4495,7 +4497,6 @@ extern XglTaskScheduler *MenuTask_XMX;
 
 /* The parameter table file read into ParaDataBuf (2 KB aligned). */
 /* The debug caption printed above the state dump. */
-extern const char D_004C67F0[];
 
 /* Sound effect ids. */
 #define SE_DECIDE 1
@@ -5601,7 +5602,7 @@ void MenuCharactor(int partyMode)
     CharSwitchMain();
     CharCategoryMain();
     CharL1R1Main();
-    xglFontDebugPrintf(0, 0x40, D_004C67F0);
+    xglFontDebugPrintf(0, 0x40, "\013charactor");
     xglFontDebugHex(0, 0x48, MenuWork.state, 2);
     xglFontDebugHex(0x10, 0x48, MenuWork.partyMode, 2);
     xglFontDebugHex(0, 0x38, MenuWork.accessoryList, 2);
