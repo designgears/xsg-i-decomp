@@ -22651,102 +22651,116 @@
    ".rodata": [
     {
      "range": [
-      "0x00a56678",
-      "0x00a56698"
+      "0x00a56650",
+      "0x00a56d38"
      ],
      "generated": [
-      "0x00a56678",
-      "0x00a56698"
+      "0x00a56650",
+      "0x00a56d38"
      ],
      "generated_by": [
-      "_SetCharSelectChar"
+      "CreateRgSelectAGWS",
+      "DisposeRgSelectAGWS",
+      "InitRgSelectAGWSData",
+      "RgSelectAGWSDisp",
+      "RgSelectAGWSGetCharacter",
+      "RgSelectAGWSGetCollectData",
+      "RgSelectAGWSGetSelectData",
+      "RgSelectAGWSGetWeapon",
+      "RgSelectAGWSIsEnd",
+      "RgSelectAGWSPassTime",
+      "RgSelectAGWSSetSelectData",
+      "_CreateSelectData",
+      "_CreateWepListDisp",
+      "_DestructWepListDisp",
+      "_Destruct_00A3B940",
+      "_DetachWeaponIfConfrictSelType",
+      "_DispDetermWindow",
+      "_DispFloatArrow",
+      "_DispWepSelOverlaps",
+      "_Disp_00A3BE70",
+      "_DisposeSelectData",
+      "_DisposeWepListDisp",
+      "_DrawPlayerMode",
+      "_DrawWepListDisp",
+      "_DumpSelect__",
+      "_EquipCurIDToEquipType",
+      "_GetAllNameOnCursorSelType",
+      "_GetBaseSelectData",
+      "_GetConfrictSelType",
+      "_GetCurSelType",
+      "_GetCurrentConfrictSelType",
+      "_GetCurrentWeaponSelType",
+      "_GetCursorSelType",
+      "_GetCursorSelWep",
+      "_GetEssListSelWep",
+      "_GetEssListSizeSelWep",
+      "_GetEssSelWep",
+      "_GetModeSelectData",
+      "_GetNameOnCursorSelWep",
+      "_GetPlayerModeSelectData",
+      "_GetSelWepSelType",
+      "_GetSelectChar",
+      "_GetSelectCharID",
+      "_GetSelectCursor",
+      "_GetSelectWeps",
+      "_GetSelectableSelectChar",
+      "_GetTypeSelType",
+      "_GetWepSelection",
+      "_InitByCharSelType",
+      "_InitCharTypeSelWep",
+      "_InitDetermWin",
+      "_InitFloatArrowHori",
+      "_InitSelType",
+      "_InitSelWep",
+      "_InitSelect",
+      "_InitSelectChar",
+      "_InitSelectData",
+      "_InitWepListDisp",
+      "_IsExistItemLower",
+      "_IsExistItemUpper",
+      "_LoadCharSelectData",
+      "_LoadPicList",
+      "_LoadWepSelectData",
+      "_PassTimeSelType",
+      "_PassTimeSelWep",
+      "_PassTimeSelectChar",
+      "_PassTimeSelectData",
+      "_PassTime_00A3B9E8",
+      "_SaveCharSelectData",
+      "_SaveWepSelectData",
+      "_SetAllCursorByNameSelType",
+      "_SetBaseSelectData",
+      "_SetCharSelDisp",
+      "_SetCharSelectChar",
+      "_SetCursorByNameSelWep",
+      "_SetCursorSelWep",
+      "_SetDetermModeSelType",
+      "_SetPlayerModeSelectData",
+      "_SetSelTypeCursor",
+      "_SetSelectableSelectChar",
+      "_SetSelectorWepListDisp",
+      "_SetSpecModeSelType",
+      "_SetWepSelPicList",
+      "_TransitToCharSelect",
+      "_TransitToOffSelect",
+      "_TransitToWeaponSelect",
+      "_init_camera"
      ],
      "c_owned_symbols": [
-      "D_00A56678"
-     ],
-     "also_referenced_by_c": [
       "D_00A56650",
       "D_00A56660",
+      "D_00A56678",
       "D_00A56698",
       "D_00A566A8",
       "D_00A566B8",
       "D_00A566D0",
-      "D_00A566E8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56710",
-      "0x00a56720"
-     ],
-     "generated": [
-      "0x00a56710",
-      "0x00a56720"
-     ],
-     "generated_by": [
-      "_SetCursorByNameSelWep"
-     ],
-     "c_owned_symbols": [
-      "D_00A56710"
-     ],
-     "also_referenced_by_c": [
-      "D_00A56720"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56740",
-      "0x00a56758"
-     ],
-     "generated": [
-      "0x00a56740",
-      "0x00a56758"
-     ],
-     "generated_by": [
-      "_EquipCurIDToEquipType"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A56740"
-     ],
-     "also_referenced_by_c": [
+      "D_00A566E8",
+      "D_00A56710",
+      "D_00A56720",
+      "jtbl_00A56740",
       "D_00A56758",
-      "D_00A56768"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56788",
-      "0x00a56838"
-     ],
-     "generated": [
-      "0x00a56788",
-      "0x00a56838"
-     ],
-     "generated_by": [
-      "_DestructWepListDisp",
-      "_DisposeWepListDisp",
-      "_DrawWepListDisp",
-      "_GetAllNameOnCursorSelType",
-      "_InitWepListDisp",
-      "_SetAllCursorByNameSelType",
-      "_SetSelectorWepListDisp"
-     ],
-     "c_owned_symbols": [
+      "D_00A56768",
       "D_00A56788",
       "D_00A56798",
       "D_00A567A8",
@@ -22755,90 +22769,19 @@
       "D_00A567D8",
       "D_00A567F0",
       "D_00A56808",
-      "D_00A56820"
-     ],
-     "also_referenced_by_c": [
-      "D_00A56838"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56848",
-      "0x00a568c0"
-     ],
-     "generated": [
-      "0x00a56848",
-      "0x00a568c0"
-     ],
-     "generated_by": [
-      "_DumpSelect__"
-     ],
-     "c_owned_symbols": [
+      "D_00A56820",
+      "D_00A56838",
       "D_00A56848",
       "D_00A56878",
-      "D_00A56898"
-     ],
-     "also_referenced_by_c": [
-      "D_00A568C0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a568d0",
-      "0x00a568e0"
-     ],
-     "generated": [
-      "0x00a568d0",
-      "0x00a568e0"
-     ],
-     "generated_by": [
-      "_GetBaseSelectData"
-     ],
-     "c_owned_symbols": [
-      "D_00A568D0"
-     ],
-     "also_referenced_by_c": [
+      "D_00A56898",
+      "D_00A568C0",
+      "D_00A568D0",
       "D_00A568E0",
-      "D_00A568F0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56928",
-      "0x00a56968"
-     ],
-     "generated": [
-      "0x00a56928",
-      "0x00a56968"
-     ],
-     "generated_by": [
-      "_DispWepSelOverlaps",
-      "_DrawPlayerMode",
-      "_LoadPicList",
-      "_SetCharSelDisp"
-     ],
-     "c_owned_symbols": [
+      "D_00A568F0",
       "D_00A56928",
       "D_00A56938",
       "D_00A56948",
-      "D_00A56958"
-     ],
-     "also_referenced_by_c": [
+      "D_00A56958",
       "D_00A56968",
       "D_00A56978",
       "D_00A56988",
@@ -22863,86 +22806,20 @@
       "D_00A56B68",
       "D_00A56B88",
       "D_00A56B90",
-      "D_00A56B98"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56ba0",
-      "0x00a56bb0"
-     ],
-     "generated": [
-      "0x00a56ba0",
-      "0x00a56bb0"
-     ],
-     "generated_by": [
-      "_DispDetermWindow"
-     ],
-     "c_owned_symbols": [
+      "D_00A56B98",
       "D_00A56BA0",
-      "D_00A56BA8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A56BA8",
       "D_00A56BB0",
       "D_00A56BC8",
       "D_00A56BE0",
       "D_00A56BE8",
       "D_00A56C00",
-      "D_00A56C10"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56c20",
-      "0x00a56c48"
-     ],
-     "generated": [
-      "0x00a56c20",
-      "0x00a56c48"
-     ],
-     "generated_by": [
-      "_DispWepSelOverlaps"
-     ],
-     "c_owned_symbols": [
+      "D_00A56C10",
       "D_00A56C20",
-      "jtbl_00A56C30"
-     ],
-     "also_referenced_by_c": [
-      "D_00A56C48"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_select_agws.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a56c58",
-      "0x00a56c90"
-     ],
-     "generated": [
-      "0x00a56c58",
-      "0x00a56c90"
-     ],
-     "generated_by": [
-      "_PassTime_00A3B9E8"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A56C30",
+      "D_00A56C48",
       "D_00A56C58",
-      "jtbl_00A56C70"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A56C70",
       "D_00A56C90",
       "D_00A56CA8",
       "D_00A56CB8",
@@ -22953,6 +22830,7 @@
       "D_00A56D10",
       "D_00A56D20"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
