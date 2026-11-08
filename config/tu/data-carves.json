@@ -11264,24 +11264,58 @@
      }
     }
    ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004d16b0",
+      "0x004d16c0"
+     ],
+     "generated": [
+      "0x004d16b0",
+      "0x004d16c0"
+     ],
+     "generated_by": [
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_I",
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_II",
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_Ljava_lang_Object_I",
+      "getPeer_Chr",
+      "getPeer_Enepc",
+      "getPeer_Unit",
+      "getPeer_Uwamono"
+     ],
+     "c_owned_symbols": [
+      "unit_field_algorithm"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/toolkit.o"
+     }
+    }
+   ],
    ".sdata": [
     {
      "range": [
-      "0x004dc118",
+      "0x004dc0d8",
       "0x004dc120"
      ],
      "generated": [
-      "0x004dc118",
+      "0x004dc0d8",
       "0x004dc120"
      ],
      "generated_by": [
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_I",
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_II",
+      "Java_xeno_util_Toolkit_loadResource__Ljava_lang_Object_Ljava_lang_Object_I",
       "getPeer_Chr",
-      "getPeer_Enepc"
+      "getPeer_Effect",
+      "getPeer_Enepc",
+      "getPeer_Stage",
+      "getPeer_Unit",
+      "getPeer_Uwamono"
      ],
      "c_owned_symbols": [
-      "D_004DC118"
-     ],
-     "also_referenced_by_c": [
       "unit_field_id",
       "unit_field_px",
       "unit_field_py",
@@ -11289,8 +11323,10 @@
       "unit_field_rx",
       "unit_field_ry",
       "unit_field_rz",
-      "unit_field_peer"
+      "unit_field_peer",
+      "D_004DC118"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
