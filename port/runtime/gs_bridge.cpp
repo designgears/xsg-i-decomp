@@ -1250,3 +1250,6 @@ extern "C" int xsg_native_real_shadows(void) {
     }
     return on && g_mode == Mode::Gpu && NativeOn();
 }
+
+/* The rebuilt UI snapshots menu art from xsg-gpu's GS-memory mirror (kept by the native renderer). */
+extern "C" int xsg_native_on(void) { return g_mode == Mode::Gpu && NativeOn(); }

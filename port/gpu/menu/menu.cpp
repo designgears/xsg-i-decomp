@@ -21,6 +21,9 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "../ui/dialog.h"
+#include "../ui/style.h"
+#include "../ui/art.h"
+#include "../ui/menus.h"
 #ifdef XSG_GPU_SDL
 #include "imgui_impl_sdl3.h"
 #include <SDL3/SDL.h>
@@ -1186,7 +1189,8 @@ void Frame(uint32_t vsync, const Stats& s) {
     const bool rebuilt = xsgcfg::Get("display.ui") == "rebuilt" && s.game_w > 0;
     const bool dialog = rebuilt && xsgui::DialogActive(vsync);
     const bool battle = rebuilt && xsgui::BattleActive(vsync);
-    if (!g_open && !g_overlay && !dialog && !battle) { PadFrame(); return; }
+    const bool menus = rebuilt && xsgui::MenuActive(vsync);
+    if (!g_open && !g_overlay && !dialog && !battle && !menus) { PadFrame(); return; }
 
     ImGuiIO& io = ImGui::GetIO();
     float fb = 1.0f;
@@ -1225,6 +1229,12 @@ void Frame(uint32_t vsync, const Stats& s) {
         opt_focus_first();
     }
     ImGui::NewFrame();
+    xsgui::AnimFrame(Now());
+    xsgui::ArtFrame();
+    xsgui::AnimGc();
+    if (menus)   // the game's menus, under the battle HUD and dialog
+        xsgui::MenuDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
+                        s.game_h / fb);
     if (battle)
         xsgui::BattleDraw(ImGui::GetBackgroundDrawList(), ImGui::GetFont(), s.game_x / fb, s.game_y / fb, s.game_w / fb,
                           s.game_h / fb, vsync);

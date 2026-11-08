@@ -412,12 +412,26 @@ void endPrintWinTexLoad(XglPacket *packet)
     }
 }
 
+#ifdef PORT_HOST
+extern int xsg_ui_rebuilt(void);
+void xsg_ui_print_capture(EndPrintContext *context);
+#endif
 static void PrintFlush(EndPrintContext *context)
 {
     PrintFuncEntry *cursor;
     void (*func)(EndPrintContext *context, int param);
     int param;
 
+#ifdef PORT_HOST
+    if (xsg_ui_rebuilt()) {   /* rebuilt UI: the list goes to xsg-gpu (xsg_ui_print_capture) */
+        xglFontReloadTexture(context, 2);
+        xsg_ui_print_capture(context);
+        endPrintInit();
+        xglFontReloadTexture(context, 1);
+        eMessageSpriteReset();
+        return;
+    }
+#endif
     xglFontReloadTexture(context, 2);
     cursor = PrintFunc;
     do {
@@ -1919,4 +1933,177 @@ void endPrintJpeg(PrintJpegInfo *jpeg)
 
 #ifndef PORT_HOST
 __asm__("FrameCopyEnv.6 = FrameCopyEnv.0");
+#endif
+
+#ifdef PORT_HOST
+/*
+ * Rebuilt UI ([display] ui = rebuilt, port/gpu/ui/): the menus' display list is
+ * captured instead of drawn.  Each PrintFunc entry becomes one or more ops
+ * (port/runtime/gpu_ipc.h GpuUiMenuList), read from its param at flush time as
+ * the GS path would; xsg-gpu redraws them in depth order with the game's art.
+ * Entries this does not know are drawn by the game as before.
+ */
+extern int xsg_ui_mop(int type, int x, int y, int w, int h, int z, unsigned rgba, int b);
+extern void xsg_ui_mop_art(int op, unsigned tex0_lo, unsigned tex0_hi, int u, int v, int tw, int th, unsigned texset);
+extern void xsg_ui_mop_uv(int op, int u, int v);
+extern void xsg_ui_mop_text(int op, const char *text, int len);
+extern void xsg_ui_mop_icon(int slot);
+extern unsigned xsg_ui_texset(const void *directory);
+extern void xsg_ui_menu_end(void);
+extern unsigned char FS[];
+
+enum { MOP_TEXT = 3, MOP_NUMBER = 4, MOP_ART = 6, MOP_RECT = 7, MOP_SCISSOR = 8, MOP_LINE = 10, MOP_WINDOW = 11,
+       MOP_TAG = 12, MOP_CIRCLE = 13 };
+
+static unsigned xsgRgba(const unsigned char *c) { return c[0] | c[1] << 8 | c[2] << 16 | (unsigned)c[3] << 24; }
+
+static void xsgArt(int x, int y, int w, int h, int z, unsigned rgba, int uvIndex, int column, int row, unsigned texset)
+{
+    const UvClutEntry *t = &uv_clut[(uvIndex >> 8) & 0xFF];
+    const SpriteUv *e = (const SpriteUv *)t->uv + (uvIndex & 0xFF);
+    unsigned long long tex0 = t->clut != 0 ? 0x2000000629343C00ULL | ((unsigned long long)((unsigned)t->clut >> 6) << 37)
+                                           : 0x5DC00BC00ULL;
+    int op = xsg_ui_mop(MOP_ART, x, y, w, h, z, rgba, 0);
+    xsg_ui_mop_art(op, (unsigned)tex0, (unsigned)(tex0 >> 32), e->u + e->width * column, e->v + e->height * row, e->width,
+                   e->height, texset);
+}
+
+/* A marker in the GIF stream (TEXFLUSH, whose data the GS ignores, carrying "XSGM"):
+   xsg-gpu snapshots the menu texture region of its GS-memory mirror when the stream
+   reaches it, so the art is exactly what the GS would sample at this point (texture-set
+   key 0x5A000000 + slot).  Without the mirror (native renderer off) the xtx upload message
+   (xsg_ui_texset) is the fallback. */
+extern int xsg_ui_mirror_on(void);
+static unsigned xsgMark(EndPrintContext *context, int slot, const void *directory)
+{
+    u64 *c = context->scratch;
+    if (!xsg_ui_mirror_on())
+        return xsg_ui_texset(directory);
+    c[0] = 1 | ((u64)1 << 60);   /* NLOOP 1, NREG 1, PACKED */
+    c[1] = 0xE;                  /* A+D */
+    c[2] = ((u64)0x5853474DULL << 32) | (unsigned)slot;
+    c[3] = 0x3F;                 /* TEXFLUSH */
+    xglPrimAddGifTagDirect(context->packet, c, 2);
+    return 0x5A000000u + (unsigned)slot;
+}
+
+void xsg_ui_print_capture(EndPrintContext *context)
+{
+    PrintFuncEntry *cursor;
+    int slot = 0;
+    unsigned texDefault = xsgMark(context, slot++, ((void **)FS)[1]);
+    unsigned texset = texDefault;
+
+    for (cursor = PrintFunc; cursor->func != NULL; cursor++) {
+        void (*f)(EndPrintContext *, int) = cursor->func;
+        int param = cursor->param;
+
+        if (f == (void (*)(EndPrintContext *, int))PrintSprite00) {
+            PrintSpriteInfo *s = (PrintSpriteInfo *)param;
+            extern unsigned char msg_spr[];   /* e_message.c: 16 inline text icons, 0x14 bytes each */
+            int slot = ((unsigned char *)s >= msg_spr && (unsigned char *)s < msg_spr + 16 * 0x14)
+                           ? (int)(((unsigned char *)s - msg_spr) / 0x14) : -1;
+            xsgArt(s->x, s->y, s->width, s->height, s->depth & 0xFFFFFF, xsgRgba(s->color), (unsigned short)s->uv, s->column,
+                   s->row, texset);
+            if (slot >= 0)
+                xsg_ui_mop_icon(slot);   /* drawn inline by xsg-gpu, where its text placeholder lands */
+        } else if (f == (void (*)(EndPrintContext *, int))PrintSprite01) {
+            PrintSpriteQuad *q = (PrintSpriteQuad *)param;
+            const SpriteUv *e = (const SpriteUv *)uv_clut[q->uv >> 8].uv + (q->uv & 0xFF);
+            int x0, y0, x1, y1, i;
+            unsigned rgba = (q->flags & 1) ? 0x80808080u : xsgRgba(&q->colors[0].red);
+            if (q->coordinateMode == 0) {
+                x0 = q->vertices[0].position[0];
+                y0 = q->vertices[0].position[1];
+                x1 = x0 + e->width;
+                y1 = y0 + e->height;
+            } else {
+                x0 = y0 = 0x7FFFFFFF;
+                x1 = y1 = -0x7FFFFFFF;
+                for (i = 0; i < 4; i++) {
+                    int vx = q->vertices[i].position[0], vy = q->vertices[i].position[1];
+                    if (q->coordinateMode != 1) {
+                        vx = (vx - 0x6FF8) >> 4;
+                        vy = (vy - 0x71F8) >> 4;
+                    }
+                    x0 = vx < x0 ? vx : x0; x1 = vx > x1 ? vx : x1;
+                    y0 = vy < y0 ? vy : y0; y1 = vy > y1 ? vy : y1;
+                }
+            }
+            xsgArt(x0, y0, x1 - x0, y1 - y0, q->vertices[0].position[2] & 0xFFFFFF, rgba, q->uv, 0, 0, texset);
+        } else if (f == (void (*)(EndPrintContext *, int))PrintWindow || f == (void (*)(EndPrintContext *, int))PrintFrame) {
+            const PrintWindowInfo *w = (const PrintWindowInfo *)param;
+            /* the GS gets (c0, c2, c1, c3): green and blue swapped */
+            unsigned rgba = w->color[0] | w->color[2] << 8 | w->color[1] << 16 | (unsigned)w->color[3] << 24;
+            xsg_ui_mop(MOP_WINDOW, (short)w->x, (short)w->y, w->width, w->height, w->depth & 0xFFFFFF, rgba,
+                       f == (void (*)(EndPrintContext *, int))PrintWindow);
+        } else if (f == (void (*)(EndPrintContext *, int))PrintRibbon) {
+            /* a horizontal gradient strip: its bounds, the colour at its left and right edges */
+            PrintPointInfo *p = (PrintPointInfo *)param;
+            int n = 0, z = p[0].depth & 0xFFFFFF, i, l = 0, r = 0;
+            int x0 = 0x7FFF, y0 = 0x7FFF, x1 = -0x7FFF, y1 = -0x7FFF;
+            while (p[n].depth != 0 && n < 64)
+                n++;
+            for (i = 0; i < n; i++) {
+                if (p[i].x < x0) { x0 = p[i].x; l = i; }
+                if (p[i].x > x1) { x1 = p[i].x; r = i; }
+                y0 = p[i].y < y0 ? p[i].y : y0;
+                y1 = p[i].y > y1 ? p[i].y : y1;
+            }
+            if (n >= 3)
+                xsg_ui_mop(MOP_RECT, x0, y0, x1 - x0, y1 - y0, z, xsgRgba(p[l].color), (int)xsgRgba(p[r].color));
+        } else if (f == (void (*)(EndPrintContext *, int))PrintLine) {
+            PrintPointInfo *p = (PrintPointInfo *)param;
+            int z = p[0].depth & 0xFFFFFF, i;
+            for (i = 0; p[i].depth != 0 && p[i + 1].depth != 0 && i < 64; i++)
+                xsg_ui_mop(MOP_LINE, p[i].x, p[i].y, p[i + 1].x - p[i].x, p[i + 1].y - p[i].y, z, xsgRgba(p[i].color), 0);
+        } else if (f == (void (*)(EndPrintContext *, int))PrintLine2) {
+            PrintLinePoint *p = (PrintLinePoint *)param;
+            int i;
+            for (i = 0; p[i].terminator != 0 && p[i + 1].terminator != 0 && i < 64; i++) {
+                int ax = (p[i].x - 0x6FF8) >> 4, ay = (p[i].y - 0x71F8) >> 4;
+                int bx = (p[i + 1].x - 0x6FF8) >> 4, by = (p[i + 1].y - 0x71F8) >> 4;
+                xsg_ui_mop(MOP_LINE, ax, ay, bx - ax, by - ay, p[i].z & 0xFFFFFF, xsgRgba(p[i].color), 0);
+            }
+        } else if (f == (void (*)(EndPrintContext *, int))PrintPoint) {
+            PrintPointInfo *p = (PrintPointInfo *)param;
+            xsg_ui_mop(MOP_RECT, p->x, p->y, 1, 1, p->depth & 0xFFFFFF, xsgRgba(p->color), (int)xsgRgba(p->color));
+        } else if (f == (void (*)(EndPrintContext *, int))PrintTagFont) {
+            PrintTagFontInfo *t = (PrintTagFontInfo *)param;
+            const char *s = (const char *)t->text;
+            int right = s[0] == 1, len = 0;
+            int op = xsg_ui_mop(MOP_TAG, t->x, t->y, 0, 16, (t->depth - 1) & 0xFFFFFF, xsgRgba(t->color), right);
+            while (s[right + len] != 0 && len < 64)
+                len++;
+            xsg_ui_mop_text(op, s + right, len);
+        } else if (f == (void (*)(EndPrintContext *, int))PrintNumber) {
+            PrintNumberInfo *n = (PrintNumberInfo *)param;
+            int op = xsg_ui_mop(MOP_NUMBER, n->x, n->y, 0, 0, n->depth & 0xFFFFFF, xsgRgba(n->color), n->value);
+            xsg_ui_mop_uv(op, n->digits, n->flags);
+        } else if (f == (void (*)(EndPrintContext *, int))ScissorSet) {
+            PrintRect *r = (PrintRect *)param;
+            xsg_ui_mop(MOP_SCISSOR, r->x, r->y, r->width, r->height, 0, 0, 0);
+        } else if (f == (void (*)(EndPrintContext *, int))ScissorReset) {
+            xsg_ui_mop(MOP_SCISSOR, 0, 0, 0, 0, 0, 0, 0);
+        } else if (f == (void (*)(EndPrintContext *, int))PrintCircle) {
+            PrintCircleInfo *c = (PrintCircleInfo *)param;
+            int op = xsg_ui_mop(MOP_CIRCLE, c->x, c->y, c->radius, c->radius, c->depth & 0xFFFFFF, xsgRgba(c->color),
+                                (int)xsgRgba(c->pointColor));
+            (void)op;
+        } else if (f == (void (*)(EndPrintContext *, int))FontTexChange) {
+            f(context, param);   /* the upload, so the mirror sees it */
+            texset = xsgMark(context, slot < 15 ? slot++ : 15, *(void **)param);
+        } else if (f == (void (*)(EndPrintContext *, int))FontTexReload) {
+            f(context, param);
+            texset = xsgMark(context, slot < 15 ? slot++ : 15, ((void **)FS)[1]);
+        } else if (f == (void (*)(EndPrintContext *, int))ZScissor) {
+            f(context, param);   /* writes depth only (no colour): the 3D models test against it */
+        } else {
+            f(context, param);   /* thumbnails, ether lines: the game draws them */
+            if (f == (void (*)(EndPrintContext *, int))PrintThumbnail && slot < 15)
+                texset = xsgMark(context, slot++, ((void **)FS)[1]);   /* it uploaded its image */
+        }
+    }
+    xsg_ui_menu_end();
+}
 #endif

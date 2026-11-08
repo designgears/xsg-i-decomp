@@ -303,6 +303,57 @@ pad = 300:START,1100:START,1200:CROSS,1500:CIRCLE*400@60
 **Change:** Esc no longer maps to CROSS by default, because it opens the menu. K is still
 CROSS.
 
+## Rebuilt game UI (`[display] ui = rebuilt`)
+
+The game publishes UI state in the shared-memory header (`gpu_ipc.h`, 256 KB since version 7),
+and xsg-gpu draws it with Dear ImGui in the menu's style (`port/gpu/ui/dialog.cpp`). The game
+keeps its painted art (portraits, the turn glow) and skips the sprites that are redrawn.
+
+| piece | game side (`PORT_HOST`) | shared memory |
+|---|---|---|
+| dialog window | `twsys_init.c` TWIN_draw2, `ew_sprt_set_cursor_uv.c` | `GpuUiDialog` @2560 |
+| battle party panels | ov01 `menu.c` menuPlStatPut | `GpuUiBattle` @3328 |
+| battle command menu (CROSS) | ov01 `menu.c` menuBatObjDraw | `GpuUiBattleCmd` @3584 |
+| battle key guide (attacks, L1/R1) | ov01 `menu.c` menuKeyGuideDisp, in capture mode | `GpuUiKeyGuide` channel 0 @4096 |
+| battle target name plate | ov01 `battle_init.c` monsNameDisp, in capture mode | `GpuUiKeyGuide` channel 1 |
+| every menu (camp menu and its pages, shops, save / load, battle lists) | `end_print.c` PrintFlush -> xsg_ui_print_capture, `e_message.c` text | `GpuUiMenuList` @32 KB |
+
+### The menus (`port/gpu/ui/menus.cpp`)
+
+All menu screens draw 2D through one display list (`PrintFunc`, flushed by `PrintFlush`). Under
+the rebuilt UI the flush records each entry as an op instead of drawing it: windows, the
+game's gradient ribbons, sprites (with their uv table, palette and texture set), title tags,
+numbers, lines, circles and scissors. The menu text from `eMessageDrawType01` is recorded too,
+with control codes normalised to text, newlines, colour changes and inline-icon slots. xsg-gpu
+redraws the whole list in the game's depth order (a stable sort, with text after entries at
+equal depth), each op under the scissor active at its queue position:
+
+* windows: layered glass panels (drop shadow, gradient, hatch, sheen, brackets) that fade and
+  settle in, keyed by their order in the list so the game's own slides stay smooth;
+* ribbons: tinted glass with capped opacity, a sheen and an underline;
+* neutral rules: fine periwinkle hairlines that fade at the ends;
+* the cursor: the game's art, gliding between rows over a soft glow;
+* numbers, tags and text: the UI font with a halo; PlayStation button symbols in text become
+  controller glyphs for `[gamepad] layout`;
+* everything else: the game's own art.
+
+Art: the menu texture shares VRAM with a kanji font page, and the game swaps a second atlas in
+mid-list, so it is never read at frame end. The capture puts a marker in the GIF stream (a
+TEXFLUSH carrying "XSGM" and a slot) after each texture change; when xsg-gpu's GS-memory mirror
+(kept by the native renderer) reaches it, the 256 KB menu region is snapshotted as that slot's
+texture set, so the art is exactly what the GS would sample there. With the native renderer off,
+the capture falls back to sending the atlas files themselves (`GPU_MSG_UI_TEX`); portraits the
+game patches in VRAM are not covered by that fallback.
+
+Not captured (still the game's): the menu background (the frozen frame), 3D models (camp menu,
+shop, formation), save thumbnails, the battle radar (rendered into VRAM each frame).
+
+Capture mode: the key guide runs its own code unchanged while its drawing helpers (`keyGideDisp`,
+`menuGuideFrameDisp`, `menuFontPut`, `menuNumPut`, `menuStatSprite`) record what they would draw.
+xsg-gpu redraws the record, so every game rule (unavailable moves, help modes, A.G.W.S. tables)
+stays the game's. Button icons are drawn by position for `[gamepad] layout`: Xbox letters,
+PlayStation shapes, or Nintendo letters (□ west, △ north, ○ east, × south).
+
 ## Performance overlay (F10)
 
 * **fps:** the frame rate over the last half second, in the top-right corner.
@@ -322,6 +373,33 @@ menu_test = <vsync>[:<vsyncs per page>[:<W>x<H>]]   open the menu at that vsync 
 menu_test_set = <vsync>:<key>=<value>[,...][;...]   timed settings without input;
     special keys SAVE=1, OPEN=0|1, TAB=n, SHOT=<png path>, RESTART=1.
 ```
+
+### Test rooms (`port/runtime/rooms.c`)
+
+These jump straight to a screen for UI work. Once the first field scene runs, `debug.jump`
+jumps to a scene the way the developers' debug menu does. `debug.room` picks a named
+scene plus pad steps. Pad entries written `+N:BUTTON` count N vblanks from the moment the
+jumped-to scene starts, so they don't depend on how long the title screen took. The title
+still needs its own presses (`300:START,1100:START,1200:CROSS` with an empty memory card).
+The log shows every scene change as `[room] vblank V scene cfNNNN map NAME`.
+`scene_list = 1` lists the 568 scenes on the disc.
+
+| room | scene | shows |
+|---|---|---|
+| `battle_tutorial` | cf9001 | Shion + KOS-MOS vs attack drones, with tutorial pages and dialog |
+| `battle_kosmos`, `battle_kosmos2` | cf9002, cf9003 | KOS-MOS: full command menu, AP, boost |
+| `battle_boss` | cf9005 | boss, three-member turn list |
+| `battle`, `battle_fx` | cf9011, cf9021 | U-TIC soldier; a battle that opens on a large effect |
+| `field`, `menu` | cf9051 | free walking in MC_KOU01; the main menu |
+| `menu_items`, `menu_agws`, `menu_options`, `menu_formation` | cf9051 | those main-menu pages |
+| `menu_ether`, `menu_tech`, `menu_skills`, `menu_characters` | cf9051 | those pages, with Shion picked |
+| `save`, `save_files` | cf9051 | a save point's file menu, opened the way the field loop opens it; slot 1's file list |
+| `shop`, `shop2`, `shop3`, `shop_buy`, `shop_sell` | cf9051 | shops 1-3 (`MenuShopMain`); shop 1's Buy and Sell lists |
+
+The menu rooms imply `give_all` (from the developers' `ShopTest` set-up plus the full
+item tables), so lists are full and A.G.W.S. is unlocked. U.M.N. stays locked (a story
+flag). The cf90xx scenes are the developers' battle tests. cf9999 is the game's exit id, which
+hangs the field loop.
 
 `[debug] input_test` (STAGE10_INPUT.md) also drives the menu. Its synthetic key events go
 through the menu first, both windowed and headless.
@@ -373,33 +451,6 @@ paraLLEl-GS as EN1 + MMOD + ALP 0xFF, i.e. circuit 1 opaque, like the software G
 leaves PMODE alone when only EN2 is set. `[debug] pmode_raw = 1` restores the raw register.
 The root cause is probably in the libgraph stubs (`sdk.c` labels bit 2 as MMOD, but bit 2 is
 CRTMD). That was not investigated further.
-
-### Test rooms (`port/runtime/rooms.c`)
-
-These jump straight to a screen for UI work. Once the first field scene runs, `debug.jump`
-jumps to a scene the way the developers' debug menu does. `debug.room` picks a named
-scene plus pad steps. Pad entries written `+N:BUTTON` count N vblanks from the moment the
-jumped-to scene starts, so they don't depend on how long the title screen took. The title
-still needs its own presses (`300:START,1100:START,1200:CROSS` with an empty memory card).
-The log shows every scene change as `[room] vblank V scene cfNNNN map NAME`.
-`scene_list = 1` lists the 568 scenes on the disc.
-
-| room | scene | shows |
-|---|---|---|
-| `battle_tutorial` | cf9001 | Shion + KOS-MOS vs attack drones, with tutorial pages and dialog |
-| `battle_kosmos`, `battle_kosmos2` | cf9002, cf9003 | KOS-MOS: full command menu, AP, boost |
-| `battle_boss` | cf9005 | boss, three-member turn list |
-| `battle`, `battle_fx` | cf9011, cf9021 | U-TIC soldier; a battle that opens on a large effect |
-| `field`, `menu` | cf9051 | free walking in MC_KOU01; the main menu |
-| `menu_items`, `menu_agws`, `menu_options`, `menu_formation` | cf9051 | those main-menu pages |
-| `menu_ether`, `menu_tech`, `menu_skills`, `menu_characters` | cf9051 | those pages, with Shion picked |
-| `save`, `save_files` | cf9051 | a save point's file menu, opened the way the field loop opens it; slot 1's file list |
-| `shop`, `shop2`, `shop3`, `shop_buy`, `shop_sell` | cf9051 | shops 1-3 (`MenuShopMain`); shop 1's Buy and Sell lists |
-
-The menu rooms imply `give_all` (from the developers' `ShopTest` set-up plus the full
-item tables), so lists are full and A.G.W.S. is unlocked. U.M.N. stays locked (a story
-flag). The cf90xx scenes are the developers' battle tests. cf9999 is the game's exit id, which
-hangs the field loop.
 
 ## Not done / limits
 

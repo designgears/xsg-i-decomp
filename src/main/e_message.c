@@ -475,8 +475,18 @@ draw:
             cursor = 1;
         }
     }
+#ifdef PORT_HOST
+    {   /* rebuilt UI: in a captured menu the message goes to xsg-gpu (gpu_client.cpp) */
+        extern int xsg_ui_menu_text(int x, int y, int param, const unsigned char *text, int len);
+        if (!xsg_ui_menu_text(message->x + message->text_x_offset, message->y + message->text_y_offset - 1,
+                              message->draw_parameter, (const unsigned char *)moji, (int)(mp - (unsigned char *)moji)))
+            xglFontPrint(message->x + message->text_x_offset, message->y + message->text_y_offset - 1,
+                         message->draw_parameter, moji);
+    }
+#else
     xglFontPrint(message->x + message->text_x_offset, message->y + message->text_y_offset - 1,
                  message->draw_parameter, moji);
+#endif
     if (message->page_available) {
         if (cursor) {
             message->cursol_x = message->x + message->text_x_offset + xw + 2;
