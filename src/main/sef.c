@@ -1,7 +1,6 @@
 #include "common.h"
 #include "shared.h"
 #include "sef.h"
-extern int offset_2[];
 
 typedef struct SefActor {
     unsigned int flags;
@@ -99,10 +98,20 @@ extern volatile const float D_004D82C8;
 extern volatile const float D_004D82CC;
 extern volatile const float D_004D82D0;
 extern volatile const float D_004D82D4;
-extern float *atanTbl_0;
+static int _parentLine = -1;
+static float _gravity = 0.0f;
+static float _colision = 0.0f;
+static float _height = 0.0f;
+static short _revDirZ = 0;
+static short _initialize = 0;
+short _hitFlag = 0;
+short _hitSignal = 0;
+short _seSignal = 0;
+short _sefBattleMode = 0;
 
 float srsAtan2(float x, float y)
 {
+    static float *atanTbl_0 __asm__("atanTbl.0") = (float *)0x2040FAC0;
     int y_is_positive;
     int x_is_positive;
     float result = 0.0f;
@@ -166,9 +175,10 @@ float srsAtan2(float x, float y)
     return angle;
 }
 
+static int sefRandSeed = 0x12345678;
+
 static float sefRandf(void)
 {
-    extern int sefRandSeed;
     extern const float sef_rand_unit_scale_literal;
     int bits;
 
@@ -840,7 +850,6 @@ void sefGetWeaponPosition(SefQuadBlock *out, void *actor, unsigned int id)
     }
 }
 
-extern int _parentLine;
 extern int _nowParentLocal;
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
 extern unsigned char D_00795100[];
@@ -939,7 +948,8 @@ void sefGetPoint(Vector4 *position, unsigned char *source, int target)
 }
 
 extern void sefGetPoint(Vector4 *position, unsigned char *source, int target);
-extern unsigned char _zeroPos_004CBF00[];
+static const float _zeroPos[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static const float _zeroAng[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 /*
  * sefGetPosition (main:0x002e2240): fills `position`'s XYZ via sefGetPoint
@@ -950,7 +960,7 @@ void sefGetPosition(Vector4 *position, unsigned char *source, int target) {
     unsigned char *point = source;
 
     if (point == 0) {
-        point = _zeroPos_004CBF00;
+        point = (unsigned char *)_zeroPos;
     }
     sefGetPoint(position, point, target);
     position->w = 1.0f;
@@ -1002,7 +1012,6 @@ static void sefGetCirclePos(Vector4 *pos, float radius)
     pos->z = z_unit * radius;
 }
 
-extern int sefRandSeed;
 
 static void sefGetSpherePos(Vector4 *pos, float radius)
 {
@@ -1273,7 +1282,6 @@ extern const float D_004D8308;
 extern const float D_004D830C;
 extern const float D_004D8310;
 extern const float D_004D8314;
-extern const char D_004CBF20[];
 extern Matrix4 *MMathRotateMatrixX(Matrix4 *out, Matrix4 *matrix, float angle);
 extern Matrix4 *MMathRotateMatrixZ(Matrix4 *out, Matrix4 *matrix, float angle);
 
@@ -1351,7 +1359,7 @@ static void sefGetOfsRange(Vector4 *position, const void *offset_table, int inde
         position->y = sefRandf() * (float)offsets[1] * D_004D8314;
         return;
     }
-    tracePrint(D_004CBF20, index);
+    tracePrint("bad range prm : %d", index);
 }
 
 static void sefGetDirMatrix(Matrix4 *dest, Vector4 *dir)
@@ -1506,7 +1514,6 @@ static void sefGetTargetPos(Vector4 *position, SefParticleOffset *record) {
     __asm__ __volatile__("sqc2 vf1, 0(%0)" : : "r"(position) : "memory");
 }
 
-extern int _parentLine;
 extern int _nowParentLocal;
 extern void MMathSpecialVectorSub(Vector4 *destination, Vector4 *left, Vector4 *right, float scale);
 extern void *MMathApplyMatrix(Vector4 *destination, void *matrix, Vector4 *point);
@@ -1563,9 +1570,6 @@ static void sefGetSpeed(Vector4 *speed_out, unsigned char *record, int type, int
         : "$8", "memory");
 }
 
-extern float _gravity;
-extern float _colision;
-extern float _height;
 
 void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 {
@@ -1690,7 +1694,6 @@ void sefMoveParticle(unsigned char *particle, unsigned char *line, int frame)
 #define SEF_PARENT_DIR_MATRIX    0x120
 
 extern unsigned char _battleData[];
-extern int _parentLine;
 extern int _nowParentLocal;
 extern unsigned char _ptAlloc[];
 /* _battleData + 0x200, still owned by the scaffold, so it keeps the original
@@ -2063,7 +2066,6 @@ typedef struct SefLineData {
 
 extern float D_004D831C;
 extern int D_00794334[];
-extern short _revDirZ;
 static int sefFreeLocalData(unsigned char *line_data, unsigned int index);
 static int sefAnimate(unsigned char *object, unsigned char *state, int advance);
 static void sefAddLightActor(const Vector4 *position, const SefLightInput *light);
@@ -2103,7 +2105,7 @@ static int sefExecLineLocalData(SefLineData *line_data, unsigned short frame)
     reverse_direction = _revDirZ;
     point_part = loop_mode & ~0xe000;
     if (point_part >= 5) {
-        sefGetPoint((Vector4 *)D_00794310, _zeroPos_004CBF00, point_part);
+        sefGetPoint((Vector4 *)D_00794310, (unsigned char *)_zeroPos, point_part);
     }
 
     index = 0;
@@ -2672,7 +2674,6 @@ found:
     return result;
 }
 
-extern short _revDirZ;
 
 typedef struct SefLocalData {
     unsigned char *position_keys;                    /* +0x000 */
@@ -3254,9 +3255,6 @@ typedef struct SefEffectCommand {
     short count;                     /* +0x8 */
     short flags;                     /* +0xa */
 } SefEffectCommand;
-extern short _hitSignal;
-extern short _seSignal;
-extern const char D_004CBF38[];
 extern void tracePrint(char *fmt, ...);
 static void sefSetSeSignal(SefActor *actor);
 
@@ -3369,7 +3367,7 @@ int sefExecEffectData(EffectData *effect, int frame, short *active_count)
                                     continue;
                                 }
                             } else {
-                                tracePrint(D_004CBF38);
+                                tracePrint("line empty!!");
                             }
                         }
                     }
@@ -3460,10 +3458,10 @@ void sefInitScheduler(void)
 
 extern const volatile struct { unsigned short value, pad; } _nowEvent;
 extern int _nowScript;
-extern int _schridx_1;
 
 static int sefAllocScheduler(int arg0)
 {
+    static int _schridx_1 __asm__("_schridx.1") = 0;
     int start = _schridx_1;
     int end = (start + 0x7f) % 0x80;
     int i = start;
@@ -3814,7 +3812,7 @@ int sefCreateScheduler2(int effect_no, int parameters, int position, int table, 
     sefSchedulerCreateTable[scheduler_index].casterUnit = 0;
     sefSchedulerCreateTable[scheduler_index].target = ((SefEffectRequest *)parameters)->target;
     if (origin == 0) {
-        origin = (void *)_zeroPos_004CBF00;
+        origin = (void *)_zeroPos;
     }
     __asm__ __volatile__("lq $8, 0(%1)\n" "sq $8, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].position), "r"(origin) : "$8", "memory");
     __asm__ __volatile__("sq $0, 0(%0)\n" : : "r"(&sefSchedulerCreateTable[scheduler_index].rotation) : "memory");
@@ -3877,6 +3875,7 @@ int sefCreateScheduler(int effect_no, int value2, int value3, int value4, int va
  * ints); sefCreateReactionEffect and sefCnvDeathEffectNo are its callers.
  */
 static int sefGetSizeOffset(int index) {
+    static const int offset_2[5] __asm__("offset.2") = {0, 0, 1, 2, 2};
     return offset_2[index];
 }
 
@@ -4139,8 +4138,7 @@ extern unsigned char D_0065B030[];
 #ifndef offsetof
 #define offsetof(type, member) ((unsigned int)&((type *)0)->member)
 #endif
-extern short _hitFlag;
-extern int _nowEftNo;
+int _nowEftNo = 0;
 #define SLOT(f) (*(__typeof__(((SchedulerState *)0)->f) *)(control_address + (offsetof(SchedulerState, f) - 0xa80)))
 #define BATTLE ((SefBattleStatus *)_battleData)
 
@@ -4679,7 +4677,6 @@ extern void sresLoadCommonMemory(void);
 extern unsigned char _eftBuffer[];
 extern unsigned char _battlePrm[];
 extern int _sefLoadEftQue;
-extern short _initialize;
 
 /*
  * sefInitEffect (main:0x002e6b60): the effect subsystem's one-time
@@ -4721,7 +4718,6 @@ typedef struct {
     short pendingHandle;                      /* +0x10c */
 } SefMemRes;
 extern SefMemRes _srsMemRes;
-extern short _sefBattleMode;
 extern void sdvInitAlters(void);
 extern void sefDestroyEffect(void);
 extern void sefDestroyEffectCf(void);
@@ -4765,7 +4761,6 @@ void sefInitEffectCf(void)
     sRender.cfDrawCallback = sefDrawEffect2D;
 }
 
-extern char D_004CBF60[];
 extern void tracePrint(char *fmt, ...);
 void sefSetupEffect(void);
 typedef struct {
@@ -4809,10 +4804,9 @@ void sefSetupPlayer(int id, int a, int b, int c)
     }
   }
 
-  tracePrint(D_004CBF60, id);
+  tracePrint("\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363", id);
 }
 
-extern char D_004CBF78[];
 extern void sresFreeReloaderMemoryNo(int no);
 typedef struct {
     s16 pid[3];
@@ -4860,10 +4854,9 @@ void sefSetupEnemy(int id)
     }
   }
 
-  tracePrint(D_004CBF78, id);
+  tracePrint("\305\250\245\255\245\343\245\351\244\254\304\311\262\303\244\307\244\255\244\336\244\273\244\363 : %d", id);
 }
 
-extern char D_004CBF98[];
 
 void sefReleaseID(int id)
 {
@@ -4895,7 +4888,7 @@ void sefReleaseID(int id)
     }
   }
 
-  tracePrint(D_004CBF98, id);
+  tracePrint("\273\330\304\352\243\311\243\304\244\316\245\255\245\343\245\351(%d)\244\317\302\270\272\337\244\267\244\336\244\273\244\363!!", id);
 }
 
 extern void sresLoadBattleData(unsigned char *battle_prm);
@@ -5017,9 +5010,6 @@ int sefCheckLoad(void)
 
 extern void scExecEffect(void);
 extern void sdvExecAlters(void);
-extern short _hitFlag;
-extern short _hitSignal;
-extern short _seSignal;
 
 void sefExecEffect(void)
 {
@@ -5071,7 +5061,6 @@ void sefDrawEffect(void)
 }
 
 extern void svDrawScheduler3D(int flags);
-extern short _initialize;
 
 /*
  * sefDrawEffect3D (main:0x002e7220): while `_initialize` is set and
@@ -6012,3 +6001,113 @@ void sefLerpIVectorB(void *first, Vector4 *dest, float factor)
         : "$8", "$9", "$10", "$11", "memory"
     );
 }
+
+/* Effect names (the table in srs points at them). */
+const char D_004CBFC0[16] = "boss_033";
+const char D_004CBFD0[16] = "boss_032";
+const char D_004CBFE0[16] = "boss_031";
+const char D_004CBFF0[16] = "boss_030";
+const char D_004CC000[16] = "boss_029";
+const char D_004CC010[16] = "boss_028";
+const char D_004CC020[16] = "boss_027";
+const char D_004CC030[16] = "boss_026";
+const char D_004CC040[16] = "boss_025";
+const char D_004CC050[16] = "boss_024";
+const char D_004CC060[16] = "boss_023";
+const char D_004CC070[16] = "boss_022";
+const char D_004CC080[16] = "boss_021";
+const char D_004CC090[16] = "boss_020";
+const char D_004CC0A0[16] = "boss_019";
+const char D_004CC0B0[16] = "boss_018";
+const char D_004CC0C0[16] = "boss_017";
+const char D_004CC0D0[16] = "boss_016";
+const char D_004CC0E0[16] = "boss_015";
+const char D_004CC0F0[16] = "boss_014";
+const char D_004CC100[16] = "boss_013";
+const char D_004CC110[16] = "boss_012";
+const char D_004CC120[16] = "boss_011";
+const char D_004CC130[16] = "boss_010";
+const char D_004CC140[16] = "boss_009";
+const char D_004CC150[16] = "boss_008";
+const char D_004CC160[16] = "boss_007";
+const char D_004CC170[16] = "boss_006";
+const char D_004CC180[16] = "boss_005";
+const char D_004CC190[16] = "boss_004";
+const char D_004CC1A0[16] = "boss_003";
+const char D_004CC1B0[16] = "boss_002";
+const char D_004CC1C0[16] = "boss_001";
+const char D_004CC1D0[16] = "utso_007";
+const char D_004CC1E0[16] = "utso_006";
+const char D_004CC1F0[16] = "utso_005";
+const char D_004CC200[16] = "utso_004";
+const char D_004CC210[16] = "utso_003";
+const char D_004CC220[16] = "utso_002";
+const char D_004CC230[16] = "utso_001";
+const char D_004CC240[16] = "utro_007";
+const char D_004CC250[16] = "utro_006";
+const char D_004CC260[16] = "utro_005";
+const char D_004CC270[16] = "utro_004";
+const char D_004CC280[16] = "utro_003";
+const char D_004CC290[16] = "utro_002";
+const char D_004CC2A0[16] = "utro_001";
+const char D_004CC2B0[16] = "utre_006";
+const char D_004CC2C0[16] = "utre_005";
+const char D_004CC2D0[16] = "utre_004";
+const char D_004CC2E0[16] = "utre_003";
+const char D_004CC2F0[16] = "utre_002";
+const char D_004CC300[16] = "utre_001";
+const char D_004CC310[16] = "utma_014";
+const char D_004CC320[16] = "utma_013";
+const char D_004CC330[16] = "utma_012";
+const char D_004CC340[16] = "utma_011";
+const char D_004CC350[16] = "utma_010";
+const char D_004CC360[16] = "utma_009";
+const char D_004CC370[16] = "utma_008";
+const char D_004CC380[16] = "utma_007";
+const char D_004CC390[16] = "utma_006";
+const char D_004CC3A0[16] = "utma_005";
+const char D_004CC3B0[16] = "utma_004";
+const char D_004CC3C0[16] = "utma_003";
+const char D_004CC3D0[16] = "utma_002";
+const char D_004CC3E0[16] = "utma_001";
+const char D_004CC3F0[16] = "feso_004";
+const char D_004CC400[16] = "feso_003";
+const char D_004CC410[16] = "feso_002";
+const char D_004CC420[16] = "feso_001";
+const char D_004CC430[16] = "fero_001";
+const char D_004CC440[16] = "fere_003";
+const char D_004CC450[16] = "fere_002";
+const char D_004CC460[16] = "fere_001";
+const char D_004CC470[16] = "fema_006";
+const char D_004CC480[16] = "fema_005";
+const char D_004CC490[16] = "fema_004";
+const char D_004CC4A0[16] = "fema_003";
+const char D_004CC4B0[16] = "fema_002";
+const char D_004CC4C0[16] = "fema_001";
+const char D_004CC4D0[16] = "guno_114";
+const char D_004CC4E0[16] = "guno_025";
+const char D_004CC4F0[16] = "guno_024";
+const char D_004CC500[16] = "guno_023";
+const char D_004CC510[16] = "guno_022";
+const char D_004CC520[16] = "guno_021";
+const char D_004CC530[16] = "guno_020";
+const char D_004CC540[16] = "guno_019";
+const char D_004CC550[16] = "guno_018";
+const char D_004CC560[16] = "guno_017";
+const char D_004CC570[16] = "guno_016";
+const char D_004CC580[16] = "guno_015";
+const char D_004CC590[16] = "guno_014";
+const char D_004CC5A0[16] = "guno_013";
+const char D_004CC5B0[16] = "guno_012";
+const char D_004CC5C0[16] = "guno_011";
+const char D_004CC5D0[16] = "guno_010";
+const char D_004CC5E0[16] = "guno_009";
+const char D_004CC5F0[16] = "guno_008";
+const char D_004CC600[16] = "guno_007";
+const char D_004CC610[16] = "guno_006";
+const char D_004CC620[16] = "guno_005";
+const char D_004CC630[16] = "guno_004";
+const char D_004CC640[16] = "guno_003";
+const char D_004CC650[16] = "guno_002";
+const char D_004CC660[16] = "guno_001";
+const char D_004CC670[16] = "catherin";
