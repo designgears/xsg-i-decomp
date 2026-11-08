@@ -3969,7 +3969,6 @@ void MenuCharModelMain(void *unit_arg, void *argument)
 }
 
 typedef struct { MenuCamVec1 v[6]; } BattleModelPosTable;
-extern BattleModelPosTable D_004C6680;
 int PartyAttackPosGet(int party_id);
 typedef struct BattleModelPose {
     Vector4 pos;
@@ -3997,7 +3996,6 @@ void MenuModelUnitOpen(BattleModelUnit *unit, int mode);
 
 void MenuBattleModelMain(BattleModelUnit *unit)
 {
-    BattleModelPosTable tbl;
     BattleModelActor *actor;
     BattleModelPose *pose;
     Vector4 *src;
@@ -4013,7 +4011,12 @@ void MenuBattleModelMain(BattleModelUnit *unit)
     if (unit->active == 0) {
         return;
     }
-    tbl = D_004C6680;
+    {
+    BattleModelPosTable tbl = { {
+        { { 1.0f, 0.0f, 0.6f, 1.0f } }, { { 0.0f, 0.0f, 0.6f, 1.0f } }, { { -1.0f, 0.0f, 0.6f, 1.0f } },
+        { { 1.0f, 0.0f, -0.6f, 1.0f } }, { { 0.0f, 0.0f, -0.6f, 1.0f } }, { { -1.0f, 0.0f, -0.6f, 1.0f } },
+    } };
+
     pose = &actor->pose;
     party = PartyDataGet();
     slot = 1;
@@ -4087,6 +4090,7 @@ void MenuBattleModelMain(BattleModelUnit *unit)
     pose->pos.x += (src->x - pose->pos.x) * 0.2f;
     pose->pos.y += (src->y - pose->pos.y) * 0.2f;
     pose->pos.z += (src->z - pose->pos.z) * 0.2f;
+    }
 }
 
 /* Types ported from the derwetterfrosch fork (2026-10-19). */
