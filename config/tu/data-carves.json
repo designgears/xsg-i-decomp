@@ -14431,6 +14431,41 @@
       "object": "build/main/build/c/exm_1.o"
      }
     }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc270",
+      "0x004dc290"
+     ],
+     "generated": [
+      "0x004dc270",
+      "0x004dc290"
+     ],
+     "generated_by": [
+      "CheckSkirtCollisionSub",
+      "EXM_CalcExMotion",
+      "EXM_CheckSkirtCollision",
+      "EXM_PresetHair",
+      "GetHairTypeSelection"
+     ],
+     "c_owned_symbols": [
+      "collibuf",
+      "ibuf",
+      "startjnt",
+      "skirtColliSize",
+      "skirtColliSizeB",
+      "skirtColliSizeS",
+      "skirtColliFootRad",
+      "rootBorn"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    }
    ]
   },
   "main/tu268": {

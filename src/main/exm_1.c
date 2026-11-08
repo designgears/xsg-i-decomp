@@ -35,10 +35,14 @@ typedef struct HairSelectionActor {
     signed char *hair_joint_name;
 } HairSelectionActor;
 
-extern float skirtColliSize;
-extern float skirtColliSizeB;
-extern float skirtColliSizeS;
-extern float skirtColliFootRad;
+static void *collibuf[1] = {0};
+static int ibuf = 0;
+static int startjnt = 0x4A;
+static float skirtColliSize = 1.0f;
+static float skirtColliSizeB = 1.0f;
+static float skirtColliSizeS = 1.0f;
+static float skirtColliFootRad = 0.05f;
+static int rootBorn = 0;
 typedef unsigned int XglQuadword_XP __attribute__((mode(TI)));
 typedef union Matrix_XP {
     float elements[16];
@@ -94,9 +98,6 @@ typedef struct ExMotionJointWork_XP {
     unsigned char unmodeled_814[0x820 - 0x814];
     struct Actor_XP *owner;
 } ExMotionJointWork_XP;
-extern void *collibuf[1];
-extern int ibuf;
-extern int startjnt;
 /* Joint collision entries: joint number, shape kind, then two float[4]
  * shape parameters; a zero joint ends the table. */
 typedef struct ExCollisionEntry {
@@ -1028,10 +1029,6 @@ extern const float D_004D86D4;
 extern const float D_004D86D8;
 extern const float D_004D86DC;
 extern const float D_004D86E0;
-extern float skirtColliSize;
-extern float skirtColliSizeB;
-extern float skirtColliSizeS;
-extern float skirtColliFootRad;
 
 static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
 {
@@ -1528,7 +1525,6 @@ typedef struct JntMatrix_XS {
     Matrix4 transform;
 } JntMatrix_XS;
 void xglVectorNormal(Vector4 *destination, const Vector4 *source);
-extern int rootBorn;
 
 static void CheckSkirtCollisionSub(ExMotionJointWork_XS *work, float position[4],
                             float referencePosition[4], u32 flags)
@@ -1988,7 +1984,6 @@ static void CheckSkirtCollisionSub(ExMotionJointWork_XS *work, float position[4]
     }
 }
 
-extern int rootBorn;
 void CheckSkirtCollisionSub();
 
 static void EXM_CheckSkirtCollision(int arg0, int arg1, int arg2, int arg3)
@@ -2103,8 +2098,6 @@ typedef struct ExHairTypeSelection_XM {
     int kind;
     unsigned int flags;
 } ExHairTypeSelection_XM;
-extern void *collibuf[1];
-extern int ibuf;
 typedef struct ExCollisionPrimitive_XM {
     unsigned short joint;
     unsigned short kind;
