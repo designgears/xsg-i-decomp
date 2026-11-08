@@ -1030,6 +1030,16 @@ def plan_split(elf, csec, specs, want, check_items=False):
                                  f'runs {h8(r["lo"])}-{h8(r["hi"])} and {h8(specs[k + 1]["lo"])}; it is neither '
                                  f'unreferenced zero fill nor the original bytes that follow the run')
             length = cap
+        elif k + 1 == len(specs) and length > cap and length - cap < 16:
+            # The section's last run: the assembler pads the C section to its
+            # alignment (9 bytes -> 0x10) where the original continues with a
+            # trailing pad piece. Unreferenced zero fill only.
+            fill = range(o + cap, end)
+            if not any(data[o + cap:end]) and not any(x in relocated for x in fill) \
+                    and not any(s.value in fill for s in own) \
+                    and not any(o + cap <= ref['target'] < end for ref in refs):
+                notes.append(f'run {h8(r["lo"])}: C section fill +0x{o + cap:x}..+0x{end:x} left out')
+                length = cap
         if not r['last'] - r['lo'] < length <= cap:
             raise CarveError(
                 f'{csec.name}: the C object gives the run {h8(r["lo"])}-{h8(r["hi"])} 0x{length:x} bytes '
