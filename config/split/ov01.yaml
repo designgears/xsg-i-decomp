@@ -147,9 +147,9 @@ segments:
       - { type: bss, vram: 0x00A57E90, name: ov01/data_unit_org_get }
       - { type: bss, vram: 0x00A597D0, name: ov01/cmd }
       - { type: bss, vram: 0x00A5A1E8, name: ov01/entry_first_init }
-      - { type: bss, vram: 0x00A5A250, name: ov01/gr_gp_init }
+      - { type: .bss, vram: 0x00A5A250, name: ov01/gr_gp_init }
       - { type: bss, vram: 0x00A5A2A0, name: ov01/menu }
-      - { type: bss, vram: 0x00A5A920, name: ov01/map_disp }
+      - { type: .bss, vram: 0x00A5A920, name: ov01/map_disp }
       - { type: .bss, vram: 0x00A5A940, name: ov01/snd }
       - { type: bss, vram: 0x00A5AA40, name: ov01/debug_entry }
       - { type: bss, vram: 0x00A5AA70, name: ov01/m_cam }

@@ -325,7 +325,6 @@ extern const char D_004C39D0[];
 extern const char D_004DA9D8[];
 extern const char *msg00_1_0036D600[];
 extern const char *msg01_2_0036D610[];
-extern unsigned short msg03_3[3];
 typedef struct BattleWinConditionLabelTable {
     const unsigned short *rows[10];
 } BattleWinConditionLabelTable;
@@ -396,6 +395,7 @@ extern UpBattleWindow3 *UBW3 __asm__("BW3");
 void eBattleWinOpen3(void *data)
 {
     const BattleWinAnalysisParams *param = data;
+    static unsigned short msg03_3[3] __asm__("msg03.3");
     BattleWinConditionLabelTable condition_labels = D_004C39A8;
     unsigned char code_ids[2];
     unsigned char code_kinds[2];

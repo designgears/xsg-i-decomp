@@ -28,13 +28,11 @@ static int _nEffect2D;
 
 
 
-extern int charID_3;
 
 
-extern int eftCate_4;
 
 
-extern int _nowImage;
+static int _nowImage;
 
 
 /*
@@ -2726,6 +2724,8 @@ const char D_004DBA58[8] = {'%', 's', '.', 'c', 'l', 't', '\0', '\0'};
 
 static void svDrawSchedulerBlk(int eftCate, int eftNo)
 {
+    static int charID_3 __asm__("charID.3");
+    static int eftCate_4 __asm__("eftCate.4");
     static int eft __asm__("eft.5") = -1;
     short effectId;
     int schedulerIndex;
