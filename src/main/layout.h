@@ -34,19 +34,6 @@ extern SceneClass *classJava_xeno_Chr;
 extern SceneClass *classJava_xeno_Effect;
 extern SceneClass *classJava_xeno_util_Layout;
 
-extern const char layout_peer[];
-extern const char layout_px[];
-extern const char layout_py[];
-extern const char layout_pz[];
-extern const char layout_ry[];
-extern const float layout_unit_pi;
-extern const float layout_chr_pi;
-/* Same role as layout_unit_pi/layout_chr_pi (div.s at 0x2f70c0, a scaled
- * conversion applied to the effect's stored rotation component) but not
- * present in config/symbols/main.txt under this address, so it keeps its
- * splat name. */
-extern float D_004D83A4;
-
 extern LayoutHeader *UnduDataGetHeader(int map_index, int unit_index);
 extern void *loadConstString(const char *bytes, int length);
 /* canon: config/header-canon.json, as src/main/toolkit.h and src/main/chr.h

@@ -8846,6 +8846,66 @@
     }
    ]
   },
+  "main/tu237": {
+   ".lit4": [
+    {
+     "range": [
+      "0x004d839c",
+      "0x004d83a8"
+     ],
+     "generated": [
+      "0x004d839c",
+      "0x004d83a8"
+     ],
+     "generated_by": [
+      "LAYOUT_mapID_setChr",
+      "LAYOUT_mapID_setEffect",
+      "LAYOUT_mapID_setUnit"
+     ],
+     "c_owned_symbols": [
+      "layout_unit_pi",
+      "layout_chr_pi",
+      "D_004D83A4"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/layout.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc0b0",
+      "0x004dc0d8"
+     ],
+     "generated": [
+      "0x004dc0b0",
+      "0x004dc0d3"
+     ],
+     "generated_by": [
+      "LAYOUT_mapID_setChr",
+      "LAYOUT_mapID_setEffect",
+      "LAYOUT_mapID_setUnit"
+     ],
+     "c_owned_symbols": [
+      "layout_peer",
+      "layout_px",
+      "layout_py",
+      "layout_pz",
+      "layout_ry"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/layout.o"
+     }
+    }
+   ]
+  },
   "main/tu238": {
    ".rodata": [
     {
