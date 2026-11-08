@@ -97,6 +97,22 @@ void TopStatusWinMain(void)
     }
 }
 
+static const char *text[12] = {
+    "Use items. View your inventory of special items, weapons, and accessories.",
+    "Use, set, and evolve Ether. Transfer Ether to other characters.",
+    "Set and improve Tech Attacks.",
+    "Set skills and extract new skills from accessories.",
+    "Equip character weapons and accessories. Change on-screen characters.",
+    "Equip A.G.W.S. weapons and accessories. Assign pilots.",
+    "Select combatants and change battle formation.",
+    "Access the U.M.N. (Unus Mundus Network).",
+    "Set various game play options.",
+    "Save/Load data.",
+    "Items\nEther\nTech Attack\nSkills\nCharacters\nA.G.W.S.\nBattle Formation\nU.M.N.\nGame Options",
+    "Items\nEther\nTech Attack\nSkills\nCharacters\nA.G.W.S.\nBattle Formation\nU.M.N.\nGame Options",
+};
+static unsigned char MenuTopCommand[10] = { 1, 2, 9, 10, 3, 4, 5, 6, 7, 12 };
+
 void TopInfoMain(void)
 {
     MenuTopInfo *info = TopInfo;
@@ -137,7 +153,7 @@ void TopInfoMain(void)
         if (MenuWork.topCursor < 9) {
             info->panel.text = text[MenuWork.topCursor];
         } else {
-            info->panel.text = D_004DA890;
+            info->panel.text = "";
         }
         MoveSlide(&info->window.y, &slideTarget, 5.0f);
         WindowDXMain(&info->window);
@@ -151,6 +167,10 @@ void TopMenuWinMain(void)
     int menuState;
     short slideTarget;
     int i;
+    static MenuTopCommandEntry command_0[11] __asm__("command.0") = {
+        { "Items" }, { "Ether" }, { "Tech Attacks" }, { "Skills" }, { "Characters" },
+        { "A.G.W.S." }, { "Battle Formation" }, { "U.M.N." }, { "Game Options" }, { "" }, { 0 },
+    };
 
     switch (menu->state) {
     case 0:
@@ -170,7 +190,7 @@ void TopMenuWinMain(void)
         menu->window.height = 0xDE;
         menu->window.draw = MenuSelectWindow;
         menu->window.panel = &menu->panel;
-        menu->window.title = D_004DA8B8;
+        menu->window.title = "Menu";
         menu->panel.commands = command_0;
         menu->panel.cursor = 0;
         menu->panel.rows = 2;
@@ -204,6 +224,7 @@ void TopFaceExWinMain(void)
     int count;
     int i;
     int j;
+    static const char *msg_1_0036C360[3] __asm__("msg.1") = { "\001Reserve", "\001Time", "\001Money" };
 
     switch (face->state) {
     case 0:
@@ -389,7 +410,7 @@ void TopMenu(void)
     TopMenuWinMain();
     TopFaceExWinMain();
     if (debug_flag != 0) {
-        xglFontDebugPrintf(0, 0x38, D_004DA8D0);
+        xglFontDebugPrintf(0, 0x38, "topmemu");
         xglFontDebugHex(0, 0x40, MenuWork.topCursor, 2);
     }
 }
@@ -1507,7 +1528,7 @@ int MenuInfoWindow(MenuStatusPanelWindow *window, MenuTopInfoPanel *panelIn)
         scan = panel->text;
         panel->lineCount = 1;
         if (scan == 0) {
-            scan = D_004DA890;
+            scan = "";
         }
         while (*scan != 0) {
             if (*scan == '\n') {
@@ -1891,3 +1912,9 @@ int MenuSelectWindow(MenuStatusPanelWindow *window, MenuTopMenuPanelSW *panel)
 void MenuPasWindow(void) {
 
 }
+
+MenuModelTransform *MenuVecMat = 0;
+MenuTopStatusWin *TopStatusWin = 0;
+MenuTopInfo *TopInfo = 0;
+MenuTopMenuWin *TopMenuWin = 0;
+MenuTopFaceEx *TopFaceExWin = 0;

@@ -1421,8 +1421,6 @@ typedef struct MenuModelActorC2 {
 void MenuModelControl2(MenuModelUnit *unit, int preset)
 {
     extern MenuModelPadRecordC2 PadDataC2[2] __asm__("PadData");
-    extern const MenuModelScaleLimitsC2 D_004DA938C2[] __asm__("D_004DA938");
-    extern const MenuModelScaleLimitsC2 D_004DA940C2[] __asm__("D_004DA940");
     MenuModelActorC2 *actor = (MenuModelActorC2 *)unit->actor;
     MenuModelTransformVectorC2 *rotation = &actor->menu.rotation;
     MenuModelTransformVectorC2 *scale = &actor->menu.scale;
@@ -1458,14 +1456,14 @@ void MenuModelControl2(MenuModelUnit *unit, int preset)
         } else if ((PadDataC2[0].buttons & 1) || (PadDataC2[1].buttons & 1)) {
             if ((PadDataC2[0].buttons & 0x1000) ||
                 (PadDataC2[1].buttons & 0x1000)) {
-                minimum = D_004DA938C2[0];
+                minimum = (MenuModelScaleLimitsC2){ { 0.8f, 0.725f } };
                 scale->value.x -= 0.02f;
                 if (actor->scale.value.x <= minimum.value[preset])
                     scale->value.x = minimum.value[preset];
             }
             if ((PadDataC2[0].buttons & 0x4000) ||
                 (PadDataC2[1].buttons & 0x4000)) {
-                maximum = D_004DA940C2[0];
+                maximum = (MenuModelScaleLimitsC2){ { 2.0f, 1.0f } };
                 scale->value.x += 0.02f;
                 if (actor->scale.value.x >= maximum.value[preset])
                     scale->value.x = maximum.value[preset];

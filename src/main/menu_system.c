@@ -28,7 +28,6 @@ typedef struct MenuSystemWork {
 extern MenuSystemWork MenuWork;
 
 extern unsigned char *MenuSystemPas;
-extern char *msg00_0_0036DCF8[];
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
 extern void MoveSlide(short *value, short *destination, float speed);
@@ -67,6 +66,7 @@ void MenuSystemPasMain(void)
     short dest[8];
     unsigned char *m;
     int c20, cB, c120;
+    static char *msg00_0_0036DCF8[1] __asm__("msg00.0") __attribute__((section(".data"), aligned(8))) = { "Game Options" };
 
     switch (w->state) {
     case 0:
@@ -173,10 +173,9 @@ typedef struct MenuSystemInfoBlock {
     unsigned char text[128];
 } MenuSystemInfoBlock;
 typedef struct MenuSystemMessageTable {
-    int messages[7];
+    const char *messages[7];
 } MenuSystemMessageTable;
 extern MenuSystemInfoBlock *MenuSystemInfo;
-extern const MenuSystemMessageTable D_004C9480;
 extern void MenuInfoWindow(void);
 extern void WindowDXSet(void *window);
 extern void WindowDXMain(void *window);
@@ -187,7 +186,15 @@ extern void *memset(void *destination, int value, unsigned int count);
 void MenuSystemInfoMain(void)
 {
     MenuSystemInfoBlock *info = MenuSystemInfo;
-    MenuSystemMessageTable messageTable = D_004C9480;
+    MenuSystemMessageTable messageTable = { {
+        "Set all sound output during game to stereo or mono. \nDefault: Stereo",
+        "Remember cursor location.\nDefault: On",
+        "Set vibration On/Off.\nDefault: On",
+        "Set radar display On/Off.\nDefault: On",
+        "Adjust game display position on TV monitor.",
+        "Set data location.\nOn: Hard Disk Drive\nOff: DVD-ROM",
+        "Return to default settings.",
+    } };
     short targetY;
 
     if (info->state != 0) {
@@ -224,7 +231,7 @@ void MenuSystemInfoMain(void)
     case 0x50:
     case 0x60:
     case 0x70:
-        eMessageCpy(info->text, messageTable.messages[MenuWork.messageIndex]);
+        eMessageCpy(info->text, (int)messageTable.messages[MenuWork.messageIndex]);
         break;
     default:
         targetY = 512;
@@ -239,12 +246,6 @@ extern unsigned char *MenuSystemMenu;
 extern void eCursolSet(void *cursol, signed char width);
 extern void eCursolMain(void *cursol);
 extern void MenuSelectWindow(void);
-extern char D_004C9510[];
-extern char D_004C9520[];
-extern char *msg00_1_0036DD00[];
-extern char *msg01_2_0036DD20[];
-extern char *msg02_3_0036DD28[];
-extern char *msg03_4_0036DD30[];
 typedef struct WindowDXUp {
     short x;
     short y;
@@ -317,7 +318,6 @@ typedef struct MenuSystemWorkUp {
     unsigned char options[7];
 } MenuSystemWorkUp;
 typedef const char *MenuSystemOptionNamesUp[2];
-extern MenuSystemOptionNamesUp *const D_004C9530[];
 extern MenuSystemWorkUp MenuWorkUp __asm__("MenuWork");
 
 void MenuSystemMenuMain(void)
@@ -331,6 +331,12 @@ void MenuSystemMenuMain(void)
     WindowDXUp *confirmWindow;
     WindowDXUp *choiceWindow;
     MenuSystemCursorUp *choiceCursor;
+    static char *msg00_1_0036DD00[7] __asm__("msg00.1") __attribute__((section(".data"), aligned(8))) = {
+        "Sound Output", "Cursor Location Memory", "Vibration", "Radar Display", "Monitor Settings", "HDD", "Default",
+    };
+    static char *msg01_2_0036DD20[2] __asm__("msg01.2") __attribute__((section(".data"), aligned(8))) = { "Stereo", "Mono" };
+    static char *msg02_3_0036DD28[2] __asm__("msg02.3") __attribute__((section(".data"), aligned(8))) = { "On", "Off" };
+    static char *msg03_4_0036DD30[2] __asm__("msg03.4") __attribute__((section(".data"), aligned(8))) = { " Proceed?", "Yes\nNo" };
 
     switch (menu->state) {
     case 0:
@@ -341,7 +347,7 @@ void MenuSystemMenuMain(void)
         menu->titleWindow.style = menu->color;
         menu->titleWindow.width = 397;
         menu->titleWindow.height = 174;
-        menu->titleWindow.tag_id = D_004C9510;
+        menu->titleWindow.tag_id = "Configuration";
         menu->titleWindow.state = 1;
         WindowDXMain(&menu->titleWindow);
         menu->titleWindow.state = 3;
@@ -372,7 +378,7 @@ void MenuSystemMenuMain(void)
         menu->choiceWindow.style = menu->color;
         menu->choiceWindow.width = 113;
         menu->choiceWindow.height = 70;
-        menu->choiceWindow.tag_id = D_004C9520;
+        menu->choiceWindow.tag_id = "Selection";
         menu->choiceWindow.state = 1;
         WindowDXMain(choiceWindow);
         menu->choiceWindow.state = 3;
@@ -392,7 +398,7 @@ void MenuSystemMenuMain(void)
         menu->confirmWindow.style = menu->color;
         menu->confirmWindow.width = 169;
         menu->confirmWindow.height = 102;
-        menu->confirmWindow.tag_id = D_004C9520;
+        menu->confirmWindow.tag_id = "Selection";
         menu->confirm.choices = msg03_4_0036DD30[1];
         menu->confirmWindow.close_callback = (void (*)(WindowDXUp *, void *))MenuSelectWindow;
         menu->confirmWindow.close_callback_arg = &menu->confirm;
@@ -454,8 +460,10 @@ void MenuSystemMenuMain(void)
         WindowDXMain(titleWindow);
     }
     {
-        MenuSystemOptionNamesUp *settingLabels[7];
-        __builtin_memcpy(settingLabels, D_004C9530, sizeof(settingLabels));
+        MenuSystemOptionNamesUp *settingLabels[7] = {
+            &msg01_2_0036DD20, &msg02_3_0036DD28, &msg02_3_0036DD28, &msg02_3_0036DD28,
+            &msg02_3_0036DD28, &msg02_3_0036DD28, &msg02_3_0036DD28,
+        };
         for (row = 0; row < 7; row++) {
             if (row == 5)
                 continue;
@@ -524,15 +532,7 @@ void MenuSystemInitSet(void)
 }
 
 extern void xglSleep(void);
-extern unsigned char D_004DB578[];
 extern int MenuModelWorkTop;
-extern int D_004DB580[];
-extern int D_004DB588[];
-extern int D_004DB590[];
-extern int D_004DB598[];
-extern int D_004DB5A0[];
-extern char D_004DB5A8[];
-extern char D_004DB5B0[];
 typedef struct MenuSystemWorkSM {
     unsigned char unmodeled_00[3];
     unsigned char menuState;
@@ -562,14 +562,21 @@ typedef struct MenuSystemPadSM {
     unsigned char vibrationStatus;
 } MenuSystemPadSM;
 
+typedef struct { unsigned char v[7]; } MenuSystemOptionStates;
+typedef struct { int v[2]; } MenuSystemOutputModes;
+typedef struct { int v[2]; } MenuSystemDisplayModes;
+typedef struct { int v[2]; } MenuSystemVibrationModes;
+typedef struct { int v[2]; } MenuSystemPadModes;
+typedef struct { int v[2]; } MenuSystemHddModes;
+
 void subMenuSystemMain(void)
 {
-    unsigned char optionStates[7];
-    int outputModes[2];
-    int displayModes[2];
-    int vibrationModes[2];
-    int padModes[2];
-    int hddModes[2];
+    MenuSystemOptionStates optionStates;
+    MenuSystemOutputModes outputModes;
+    MenuSystemDisplayModes displayModes;
+    MenuSystemVibrationModes vibrationModes;
+    MenuSystemPadModes padModes;
+    MenuSystemHddModes hddModes;
     int flags;
 
     if (((MenuSystemWorkSM *)&MenuWork)->state != ((MenuSystemWorkSM *)&MenuWork)->nextState) {
@@ -590,7 +597,7 @@ void subMenuSystemMain(void)
             if (((MenuSystemWorkSM *)&MenuWork)->messageIndex == 5)
                 ((MenuSystemWorkSM *)&MenuWork)->messageIndex = selection + (selection - previousSelection);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
-                __builtin_memcpy(optionStates, D_004DB578, sizeof(optionStates));
+                optionStates = (MenuSystemOptionStates){ { 0x20, 0x50, 0x40, 0x30, 0x00, 0x70, 0x60 } };
                 if (((MenuSystemWorkSM *)&MenuWork)->messageIndex == 4) {
                     xglSoundEffectNormalID(1, 0);
                     MenuModelMemorySet(0);
@@ -598,8 +605,8 @@ void subMenuSystemMain(void)
                     tyaDisplaySetting(MenuModelWorkTop);
                 } else if (((MenuSystemWorkSM *)&MenuWork)->messageIndex == 5 && ((MenuSystemWorkSM *)&MenuWork)->hddMounted == 0) {
                     xglSoundEffectNormalID(5, 0);
-                } else if (optionStates[((MenuSystemWorkSM *)&MenuWork)->messageIndex] != 0) {
-                    ((MenuSystemWorkSM *)&MenuWork)->nextState = optionStates[((MenuSystemWorkSM *)&MenuWork)->messageIndex];
+                } else if (optionStates.v[((MenuSystemWorkSM *)&MenuWork)->messageIndex] != 0) {
+                    ((MenuSystemWorkSM *)&MenuWork)->nextState = optionStates.v[((MenuSystemWorkSM *)&MenuWork)->messageIndex];
                     ((MenuSystemWorkSM *)&MenuWork)->inputDelay = 8;
                     xglSoundEffectNormalID(1, 0);
                 }
@@ -618,9 +625,9 @@ void subMenuSystemMain(void)
         {
             ((MenuSystemWorkSM *)&MenuWork)->choiceIndex = MenuSelectMove(((MenuSystemWorkSM *)&MenuWork)->choiceIndex, 2, 0);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
-                __builtin_memcpy(outputModes, D_004DB580, sizeof(outputModes));
-                SsdSetOutputMode(outputModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
-                SaveData[0x28] = outputModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                outputModes = (MenuSystemOutputModes){ { 1, 0 } };
+                SsdSetOutputMode(outputModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
+                SaveData[0x28] = outputModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
                 ((MenuSystemWorkSM *)&MenuWork)->nextState = 0x10;
                 ((MenuSystemWorkSM *)&MenuWork)->inputDelay = 8;
                 ((MenuSystemWorkSM *)&MenuWork)->soundOutput = SaveData[0x28] ^ 1;
@@ -642,8 +649,8 @@ void subMenuSystemMain(void)
             ((MenuSystemWorkSM *)&MenuWork)->choiceIndex = MenuSelectMove(((MenuSystemWorkSM *)&MenuWork)->choiceIndex, 2, 0);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
                 MenuSystemPartyDataPrefix *party;
-                __builtin_memcpy(displayModes, D_004DB588, sizeof(displayModes));
-                PartyRadarDispSet(displayModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
+                displayModes = (MenuSystemDisplayModes){ { 1, 0 } };
+                PartyRadarDispSet(displayModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
                 party = (MenuSystemPartyDataPrefix *)PartyDataGet();
                 ((MenuSystemWorkSM *)&MenuWork)->displayMode = party->radar_disp ^ 1;
                 ((MenuSystemWorkSM *)&MenuWork)->nextState = 0x10;
@@ -665,12 +672,12 @@ void subMenuSystemMain(void)
         {
             ((MenuSystemWorkSM *)&MenuWork)->choiceIndex = MenuSelectMove(((MenuSystemWorkSM *)&MenuWork)->choiceIndex, 2, 0);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
-                __builtin_memcpy(vibrationModes, D_004DB590, sizeof(vibrationModes));
-                ((MenuSystemPadSM *)&PadData)->vibrationReset = vibrationModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
-                SaveData[0x3c] = vibrationModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
-                ((MenuSystemPadSM *)&PadData)->vibrationStatus = vibrationModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
-                ((MenuSystemWorkSM *)&MenuWork)->radarMode = vibrationModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
-                if (vibrationModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex] == 0)
+                vibrationModes = (MenuSystemVibrationModes){ { 0, 1 } };
+                ((MenuSystemPadSM *)&PadData)->vibrationReset = vibrationModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                SaveData[0x3c] = vibrationModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                ((MenuSystemPadSM *)&PadData)->vibrationStatus = vibrationModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                ((MenuSystemWorkSM *)&MenuWork)->radarMode = vibrationModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                if (vibrationModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex] == 0)
                     MenuBibrationSet(0, 1, 128, 32);
                 ((MenuSystemWorkSM *)&MenuWork)->nextState = 0x10;
                 ((MenuSystemWorkSM *)&MenuWork)->inputDelay = 8;
@@ -691,9 +698,9 @@ void subMenuSystemMain(void)
         {
             ((MenuSystemWorkSM *)&MenuWork)->choiceIndex = MenuSelectMove(((MenuSystemWorkSM *)&MenuWork)->choiceIndex, 2, 0);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
-                __builtin_memcpy(padModes, D_004DB598, sizeof(padModes));
-                SaveData[0x44] = padModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
-                ((MenuSystemWorkSM *)&MenuWork)->padMode = padModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                padModes = (MenuSystemPadModes){ { 0, 1 } };
+                SaveData[0x44] = padModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
+                ((MenuSystemWorkSM *)&MenuWork)->padMode = padModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex];
                 ((MenuSystemWorkSM *)&MenuWork)->nextState = 0x10;
                 ((MenuSystemWorkSM *)&MenuWork)->inputDelay = 8;
                 xglSoundEffectNormalID(1, 0);
@@ -739,9 +746,9 @@ void subMenuSystemMain(void)
         {
             ((MenuSystemWorkSM *)&MenuWork)->choiceIndex = MenuSelectMove(((MenuSystemWorkSM *)&MenuWork)->choiceIndex, 2, 0);
             if (((MenuSystemPadSM *)&PadData)->pressed & 0x20) {
-                __builtin_memcpy(hddModes, D_004DB5A0, sizeof(hddModes));
-                SaveData[0x40] = hddModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex] ^ 1;
-                xglHddActivate(hddModes[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
+                hddModes = (MenuSystemHddModes){ { 1, 0 } };
+                SaveData[0x40] = hddModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex] ^ 1;
+                xglHddActivate(hddModes.v[((MenuSystemWorkSM *)&MenuWork)->choiceIndex]);
                 ((MenuSystemWorkSM *)&MenuWork)->hddActive = SaveData[0x40];
                 ((MenuSystemWorkSM *)&MenuWork)->nextState = 0x10;
                 ((MenuSystemWorkSM *)&MenuWork)->inputDelay = 8;
@@ -764,8 +771,8 @@ void subMenuSystemMain(void)
     MenuSystemPasMain();
     MenuSystemInfoMain();
     MenuSystemMenuMain();
-    xglFontDebugPrintf(0, 64, D_004DB5A8);
-    xglFontDebugPrintf(0, 80, D_004DB5B0, ((MenuSystemWorkSM *)&MenuWork)->messageIndex);
+    xglFontDebugPrintf(0, 64, "\vsystem");
+    xglFontDebugPrintf(0, 80, "\vms %2d", ((MenuSystemWorkSM *)&MenuWork)->messageIndex);
 }
 
 extern int MenuHddCheck;
@@ -857,3 +864,7 @@ typedef union MenuSystemMessageStorage {
     unsigned int words[8];
 } MenuSystemMessageStorage;
 
+unsigned char *MenuSystemPas = 0;
+MenuSystemInfoBlock *MenuSystemInfo = 0;
+unsigned char *MenuSystemMenu = 0;
+XglClock _CountTime __attribute__((aligned(8))) = { 0 };
