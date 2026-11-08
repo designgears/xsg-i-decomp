@@ -25302,6 +25302,143 @@
    ]
   },
   "ov10/tu001_00a00410": {
+   ".data": [
+    {
+     "range": [
+      "0x00a42040",
+      "0x00a43420"
+     ],
+     "generated": [
+      "0x00a42040",
+      "0x00a43420"
+     ],
+     "generated_by": [
+      "CMIBGInit",
+      "CardDataLoad",
+      "CardMainInit",
+      "CardMainProc",
+      "NewCMPGameModeExit"
+     ],
+     "c_owned_symbols": [
+      "IDdata",
+      "D_00A4204D",
+      "CardErrTxt01",
+      "CardErrTxt02",
+      "CardErrTxt03",
+      "CardErrTxt04",
+      "CardErrTxt05",
+      "CardErrorList",
+      "CardPlayTMessTxt00",
+      "CardPlayTMessTxt01",
+      "CardPlayTMessTxt02",
+      "CardPlayTMessTxt03",
+      "CardPlayTMessTxt04",
+      "CardPlayTMessTxt05",
+      "CardPlayTMessTxt06",
+      "CardPlayTMessTxt07",
+      "CardPlayTMessTxt08",
+      "CardPlayTMessTxt09",
+      "CardPlayTMessTxt10",
+      "CardPlayTMessTxt11",
+      "CardPlayTMessTxt12",
+      "CardPlayTMessTxt13",
+      "CardPlayTMessTxt14",
+      "CardPlayPMessTxt01",
+      "CardPlayPMessTxt02",
+      "CardPlayPMessTxt03",
+      "CardPlayDMessTxt01",
+      "CardPlayDMessTxt02",
+      "CardPlayDMessTxt03",
+      "CardPlayDMessTxt04",
+      "CardPlayDMessTxt05",
+      "CardPlayDMessTxt11",
+      "CardPlayDMessTxt12",
+      "CardPlayDMessTxt13",
+      "CardPlayDMessTxt14",
+      "CardMenuMessTxt00",
+      "CardMenuMessTxt01",
+      "CardMenuMessTxt02",
+      "CardMenuMessTxt03",
+      "CardMenuMessTxt10",
+      "CardMenuMessTxt11",
+      "CardMenuMessTxt12",
+      "CardMenuMessTxt20",
+      "CardMenuMessTxt21",
+      "CardMenuMessTxt22",
+      "CardMenuMessTxt23",
+      "CardMenuMessTxt24",
+      "CardMenuMessTxt30",
+      "CardMenuMessTxt31",
+      "CardExitMessTxt00",
+      "CardExitMessTxt02",
+      "CardExitMessTxt03",
+      "CardExitMessTxt01",
+      "CardExitMessTxt10",
+      "CardExitMessTxt11",
+      "CardExitMessTxt12",
+      "CardExitMessTxt13",
+      "P1DeckLoadStr",
+      "P2DeckLoadStr",
+      "ModeEndMess0",
+      "ModeEndMess1",
+      "ModeEndMess2",
+      "ModeEndMess3",
+      "ModeContMess0",
+      "ModeContMess1",
+      "CardPlayPMessList",
+      "D_00A42C1C",
+      "CardPlayTMessList",
+      "D_00A42D5C",
+      "s_asIntensity",
+      "s_asDirection",
+      "asDir",
+      "asColor",
+      "atColor",
+      "auColor",
+      "CCColor",
+      "KKColor",
+      "CardInitialDataPack",
+      "SampleDeckA",
+      "SampleDeckB",
+      "BGFileNameList",
+      "TitleMdlLst",
+      "MenuNo_1",
+      "SubNo_2",
+      "SubMenu_3",
+      "ModeExit_4",
+      "CCtimer_5",
+      "D_00A43069",
+      "Message_6",
+      "MessageCnt_7",
+      "p0num_17",
+      "p1num_18",
+      "vol_19",
+      "HalfColor",
+      "MiddleColor",
+      "CLColor",
+      "CNColor",
+      "CLP1Color",
+      "CLP2Color",
+      "CMColor",
+      "HandPos1P",
+      "DisposePos1P",
+      "OperationPos1P",
+      "BattlePos1P",
+      "JunkPos1P",
+      "HandPos2P",
+      "DisposePos2P",
+      "OperationPos2P",
+      "BattlePos2P",
+      "JunkPos2P"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -25509,7 +25646,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
      }
     },
     {
@@ -25613,7 +25750,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_play_sound1.o"
      }
     }
    ]
