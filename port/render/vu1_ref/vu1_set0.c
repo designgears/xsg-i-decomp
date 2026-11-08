@@ -12,8 +12,8 @@
  *   entry 0x0bd8 (Adr[0])      -> loop 0x0c18 "strip"        plain strip
  *   entry 0x0f90 (FaceAdr[0])  -> loop 0x0fd0 "strip_face"   + per-vertex facing ADC
  *   entry 0x12d8 (BackAdr[0])  -> loop 0x0fd0 with the facing table swapped
- * The other entries of the set (lit loop 0x1458 and friends) do not run in the
- * captured frames and have no reference yet (VU1REF_UNSUPPORTED).
+ * The lit loops 0x1458 / 0x1fa0 (resume 0x05e8) are in vu1_set0_lit.c; 0x16f8 / 0x1b08
+ * and the 0x0de0 / 0x11e0 forms have no reference yet (VU1REF_UNSUPPORTED).
  *
  * Constants (data memory qw; EE builder in nml_packet_add.c):
  *   962-965 vf28-31  object -> clip matrix (nmlPacketAddParts, 0x3C2:
@@ -35,6 +35,9 @@
 
 typedef struct { vu_f v[4]; } Q4;
 
+void set0_init_0050(Vu1Ref* r);
+int set0_lit(Vu1Ref* r, const char** variant);   /* vu1_set0_lit.c: 0x1418 0x1f60 (+Face/Back), resume 0x05e8 */
+
 static Q4 ld(Vu1Ref* r, uint32_t q) { Q4 o; memcpy(o.v, vu1_ref_qw(r, q), 16); return o; }
 static void st(Vu1Ref* r, uint32_t q, const vu_f* v, unsigned mask /* x8 y4 z2 w1 */) {
     uint8_t* p = vu1_ref_qw(r, q);
@@ -47,7 +50,7 @@ static const vu_f ONE = 0x3f800000u;
 static const vu_f F255 = 0x437f0000u;
 
 /* 0x0050: the entry prologue every set-0 entry calls (jalr vi15, 0xa*8). */
-static void init_0050(Vu1Ref* r) {
+void set0_init_0050(Vu1Ref* r) {
     static const struct { int vf, q; } ld_tab[] = {
         {8, 976}, {12, 732}, {13, 733}, {14, 734}, {15, 735}, {16, 970}, {17, 973}, {18, 974},
         {19, 975}, {20, 977}, {21, 978}, {22, 979}, {23, 980}, {24, 971}, {25, 968}, {26, 966},
@@ -254,15 +257,15 @@ int vu1_ref_set0(Vu1Ref* r, const char** variant) {
     switch (r->pc) {
     case 0x0bd8:   /* entries: constants, then stop at 0x160 until the first batch */
         if (variant) *variant = "set0_entry_strip";
-        init_0050(r); VI(14) = 0x2c; VI(15) = 0xc18 / 8;
+        set0_init_0050(r); VI(14) = 0x2c; VI(15) = 0xc18 / 8;
         return VU1REF_OK;
     case 0x0f90:
         if (variant) *variant = "set0_entry_strip_face";
-        init_0050(r); VI(14) = 0x2c; VI(15) = 0xfd0 / 8;
+        set0_init_0050(r); VI(14) = 0x2c; VI(15) = 0xfd0 / 8;
         return VU1REF_OK;
     case 0x12d8:
         if (variant) *variant = "set0_entry_strip_back";
-        init_0050(r);
+        set0_init_0050(r);
         vu1_ref_isw(r, 1013, 3, 0);
         vu1_ref_isw(r, 1015, 3, 0x4000);
         VI(2) = 0x4000; VI(14) = 0x2c; VI(15) = 0xfd0 / 8;
@@ -276,5 +279,5 @@ int vu1_ref_set0(Vu1Ref* r, const char** variant) {
         return VU1REF_OK;
     }
     }
-    return VU1REF_UNSUPPORTED;
+    return set0_lit(r, variant);
 }
