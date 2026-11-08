@@ -161,10 +161,10 @@ extern ActShadowRenderState sRender;
 
 extern void nmlModelDirectSend(int mode, u8 *data, int count);
 
-extern ActShadowCommand Head_9;
+extern ActShadowCommand Head_9 __asm__("Head.9");
 
 
-extern ActShadowEndPacket Tail_10;
+extern ActShadowEndPacket Tail_10 __asm__("Tail.10");
 
 
 typedef unsigned int ActShadowQuadword __attribute__((mode(TI)));
@@ -472,7 +472,7 @@ typedef struct {
     ActShadowQuadword qwords[4];
 } ActShadowMatrixStorage;
 
-extern u8 TestEnv_3_00478D80[0x30];
+extern u8 TestEnv_3_00478D80[0x30] __asm__("TestEnv.3");
 
 
 
@@ -682,9 +682,9 @@ typedef struct {
 
 extern void xglMatrixUnit(float matrix[4][4]);
 extern void xglMatrixRotY(Matrix4 destination, Matrix4 source, float angle);
-extern u8 Head_1[80];
-extern u8 Tail_2[48];
-extern u8 rgbaw_0[16];
+extern u8 Head_1[80] __asm__("Head.1");
+extern u8 Tail_2[48] __asm__("Tail.2");
+extern u8 rgbaw_0[16] __asm__("rgbaw.0");
 
 static void DrawCircleShadow(void *actor_pointer)
 {
@@ -1365,8 +1365,8 @@ typedef struct {
     u16 kind_value;
     DropShadowContactRecord *contacts;
 } DropShadowContactDefinition;
-extern DropShadowHeadPacket Head_4_00478DB0;
-extern ActShadowEndPacket Tail_5;
+extern DropShadowHeadPacket Head_4_00478DB0 __asm__("Head.4");
+extern ActShadowEndPacket Tail_5 __asm__("Tail.5");
 extern DropShadowContactDefinition DropShadowDefineTable[10];
 
 static void DrawDropShadow(ActShadowActor *actor_pointer)
@@ -1450,9 +1450,9 @@ static void DrawDropShadow(ActShadowActor *actor_pointer)
     nmlModelDirectSend(1, (u8 *)&Tail_5, 3);
 }
 
-extern DropShadowHeadPacket Head_6_00478E30;
-extern u8 TestEnv_7[48];
-extern ActShadowEndPacket Tail_8;
+extern DropShadowHeadPacket Head_6_00478E30 __asm__("Head.6");
+extern u8 TestEnv_7[48] __asm__("TestEnv.7");
+extern ActShadowEndPacket Tail_8 __asm__("Tail.8");
 const DrawDropCircleIndexTable D_004D1DD8 = { 4, 0, 1, 6, 1, 6, 7, 2, 7, 2, 3, 5, 0xC, 9, 8, 0xF, 8, 0xF, 0xE, 0xB, 0xE, 0xB, 0xA, 0xD, 0, 4, 8, 0xC, 4, 1, 0xC, 9, 1, 7, 9, 0xF, 7, 3, 0xF, 0xB, 3, 5, 0xB, 0xD, 5, 2, 0xD, 0xA, 2, 6, 0xA, 0xE, 6, 0, 0xE, 8 };
 
 static void DrawDropCircle(ActShadowActor *actor)
@@ -1632,3 +1632,23 @@ void ACT_DrawShadow(ActDrawShadowActor *actor)
 void ACT_DrawShadowInit(void)
 {
 }
+
+/* ---- initialized .data (original order) ---- */
+static u8 foot_sion[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_kosmos[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_chaos[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_momo[4] __attribute__((section(".data"))) = { 2, 0xF, 1, 0xC };
+static u8 foot_ziggy[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 foot_jr[4] __attribute__((section(".data"))) = { 2, 0x10, 1, 0xC };
+static u8 *foot_tbl[6] = { foot_sion, foot_kosmos, foot_chaos, foot_momo, foot_ziggy, foot_jr };
+static u8 rgbaw_0[16] __asm__("rgbaw.0") = { 2, 3, 1, 1, 1, 1, 1, 0, 2, 3, 1, 1, 1, 1, 1, 0 };
+static u8 Head_1[80] __asm__("Head.1") __attribute__((aligned(16))) = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x30, 0xEE, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x31, 1, 0, 0, 0, 0x4E, 0, 0, 0, 0, 0, 0, 0, 1, 0x30, 5, 0, 0, 0, 0, 0, 0x47, 0, 0, 0, 0, 0, 0, 0, 0x44, 0, 0, 0, 0, 0, 0, 0, 0x42, 0, 0, 0, 0, 0, 0, 0 };
+static u8 Tail_2[48] __asm__("Tail.2") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x31, 0, 0, 0, 0, 0x4E, 0, 0, 0, 0, 0, 0, 0 };
+static u8 TestEnv_3_00478D80[0x30] __asm__("TestEnv.3") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0 };
+static DropShadowHeadPacket Head_4_00478DB0 __asm__("Head.4") = { 0, 0, 0x51000004, 0x8001, 0x30000000, 0xEEE, 0, 0, 0x42, 0, 0, 6, 0, 0, 0x14, 0 };
+static ActShadowEndPacket Tail_5 __asm__("Tail.5") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0, 0x4C, 0 };
+static DropShadowHeadPacket Head_6_00478E30 __asm__("Head.6") = { 0, 0, 0x51000004, 0x8001, 0x30000000, 0xEEE, 0, 0, 0x42, 0, 0, 6, 0, 0, 0x14, 0 };
+static u8 TestEnv_7[48] __asm__("TestEnv.7") = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0x51, 1, 0x80, 0, 0, 0, 0, 0, 0x10, 0xE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3F, 0, 0, 0, 0, 0, 0, 0 };
+static ActShadowEndPacket Tail_8 __asm__("Tail.8") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0, 0x4C, 0 };
+static ActShadowCommand Head_9 __asm__("Head.9") = { 0, 0, 0x51000009, 0x8001, 0x80034000, 0xE551EEEE, 0, 0x131000000LL, 0x4E, 0, 0x71001LL, 0x47, 0, 0x6FC007FC00ALL, 8, 0, 0, 0x4C, 0, 0, 0, 0x80, 0x6FF8, 0, 0x71F7, 0, 0xF00000, 0, 0x8FF8, 0, 0x8DF7, 0, 0xF00000, 0, 0, 0x4C, 0 };
+static ActShadowEndPacket Tail_10 __asm__("Tail.10") = { 0, 0, 0x51000002, 0x8001, 0x10000000, 0xE, 0, 0x31000000LL, 0x4E, 0 };

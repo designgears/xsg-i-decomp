@@ -15628,6 +15628,79 @@
    ]
   },
   "main/tu265": {
+   ".data": [
+    {
+     "range": [
+      "0x00478ca0",
+      "0x00478ccc"
+     ],
+     "generated": [
+      "0x00478ca0",
+      "0x00478ccc"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "foot_sion",
+      "D_00478CA4",
+      "foot_kosmos",
+      "D_00478CAC",
+      "foot_chaos",
+      "D_00478CB4",
+      "foot_momo",
+      "D_00478CBC",
+      "foot_ziggy",
+      "D_00478CC4",
+      "foot_jr"
+     ],
+     "also_referenced_by_c": [
+      "D_00478CCC"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_3.o"
+     }
+    },
+    {
+     "range": [
+      "0x00478cd0",
+      "0x00478fb0"
+     ],
+     "generated": [
+      "0x00478cd0",
+      "0x00478fb0"
+     ],
+     "generated_by": [
+      "ACT_DrawShadowBegin",
+      "ACT_DrawShadowEnd",
+      "DrawCircleShadow",
+      "DrawDropCircle",
+      "DrawDropShadow",
+      "DrawDropShadowSub"
+     ],
+     "c_owned_symbols": [
+      "foot_tbl",
+      "rgbaw_0",
+      "D_00478CF8",
+      "Head_1",
+      "Tail_2",
+      "TestEnv_3_00478D80",
+      "Head_4_00478DB0",
+      "Tail_5",
+      "Head_6_00478E30",
+      "TestEnv_7",
+      "Tail_8",
+      "Head_9",
+      "Tail_10"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/act_3.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
