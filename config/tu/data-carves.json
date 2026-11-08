@@ -1600,6 +1600,101 @@
    ]
   },
   "main/tu124": {
+   ".data": [
+    {
+     "range": [
+      "0x00366f60",
+      "0x00367320"
+     ],
+     "generated": [
+      "0x00366f60",
+      "0x00367320"
+     ],
+     "generated_by": [
+      "DefocusMainType01",
+      "DefocusMainType02",
+      "DefocusMainType03",
+      "DefocusMainType05",
+      "DefocusMainType06",
+      "DefocusMainType07",
+      "DefocusMainType08"
+     ],
+     "c_owned_symbols": [
+      "Head_0",
+      "TestPrim_1",
+      "TestPrim_2",
+      "TestPrim_3",
+      "Head_4_00367170",
+      "Head_5",
+      "Head_6_00367240",
+      "Head_7",
+      "Head_8"
+     ],
+     "also_referenced_by_c": [
+      "rate_9"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_defocus.o"
+     }
+    },
+    {
+     "range": [
+      "0x00367350",
+      "0x003674fc"
+     ],
+     "generated": [
+      "0x00367350",
+      "0x003674fc"
+     ],
+     "generated_by": [
+      "DefocusMain",
+      "DefocusMainType10",
+      "DefocusMainType11"
+     ],
+     "c_owned_symbols": [
+      "Copy_10",
+      "Head_11",
+      "Head_12",
+      "Head_13",
+      "func_14"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_defocus.o"
+     }
+    },
+    {
+     "range": [
+      "0x00367500",
+      "0x00367980"
+     ],
+     "generated": [
+      "0x00367500",
+      "0x00367980"
+     ],
+     "generated_by": [
+      "DefocusMain",
+      "GameDefocusCheck",
+      "GameDefocusFinalize",
+      "GameDefocusQuickSet",
+      "GameDefocusSet"
+     ],
+     "c_owned_symbols": [
+      "Tail_15",
+      "GameDefocusParam"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_defocus.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -1625,34 +1720,34 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_defocus.o"
+      "object": "build/main/build/c/game_defocus.o"
      }
     }
    ],
    ".rodata": [
     {
      "range": [
-      "0x004c0260",
+      "0x004c0200",
       "0x004c0290"
      ],
      "generated": [
-      "0x004c0260",
+      "0x004c0200",
       "0x004c028c"
      ],
      "generated_by": [
-      "GameDefocusQuickSet"
+      "GameDefocusQuickSet",
+      "GameDefocusSet"
      ],
      "c_owned_symbols": [
+      "D_004C0200",
+      "D_004C0228",
       "jtbl_004C0260"
      ],
-     "also_referenced_by_c": [
-      "D_004C0200",
-      "D_004C0228"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/game_defocus.o"
+      "object": "build/main/build/c/game_defocus.o"
      }
     }
    ]
