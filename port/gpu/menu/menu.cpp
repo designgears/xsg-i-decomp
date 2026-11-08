@@ -395,8 +395,13 @@ void TabDisplay(float scale) {
     static const char* kUi[] = {"Original", "Rebuilt"};
     opt_choice("display.ui", "Game UI", kUi,
                "Original: the game's own 2D, drawn for a TV at 512 x 448.\n"
-               "Rebuilt: redrawn by the port, sharp at any window size. Screens done so far: the dialog window; "
-               "the rest stay original.");
+               "Rebuilt: redrawn by the port, sharp at any window size: dialog, menus, shops, save screens and the "
+               "battle HUD.");
+    static const char* kLayout[] = {"Game", "Wide"};
+    opt_choice("display.ui_layout", "UI layout", kLayout,
+               "Game: the rebuilt UI sits on the picture, as on the PS2.\n"
+               "Wide: edge UI moves out to the window's edges (left panels left, right panels right); the "
+               "groundwork for widescreen.");
     opt_group("CRT FILTER");
     static const char* kCrt[] = {"Off", "Scanlines", "Consumer TV", "Trinitron", "PVM", "Shadow mask"};
     const std::string crt_before = xsgcfg::Get("display.crt");

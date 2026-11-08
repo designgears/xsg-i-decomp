@@ -94,7 +94,7 @@ foreach(font Rajdhani-Medium.ttf Rajdhani-SemiBold.ttf)
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/menu/fonts/${font} ${CMAKE_CURRENT_SOURCE_DIR}/menu/embed.cmake VERBATIM)
   list(APPEND XSG_NATIVE_INC ${out})
 endforeach()
-set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
+set(XSG_MENU_SRCS ui/dialog.cpp ui/style.cpp ui/art.cpp ui/menus.cpp ui/layout.cpp menu/menu.cpp menu/menu_render.cpp menu/option_rows.cpp menu/cfg.cpp
   ${XSG_IMGUI_DIR}/imgui.cpp ${XSG_IMGUI_DIR}/imgui_draw.cpp ${XSG_IMGUI_DIR}/imgui_tables.cpp
   ${XSG_IMGUI_DIR}/imgui_widgets.cpp)
 find_package(Git QUIET)

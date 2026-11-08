@@ -1,0 +1,56 @@
+/* Rebuilt UI: layout.  See layout.h. */
+#include "layout.h"
+
+#include "../menu/cfg.h"
+
+#include <algorithm>
+#include <string>
+
+namespace xsgui {
+namespace {
+float g_gx, g_gy, g_gw, g_gh;   // the game image
+float g_ux0, g_ux1;             // the UI area, horizontally
+float g_kx = 1, g_k = 1;
+}  // namespace
+
+void LayoutBegin(float gx, float gy, float gw, float gh) {
+    g_gx = gx; g_gy = gy; g_gw = gw; g_gh = gh;
+    g_k = gh / 448.0f;
+    g_kx = g_k * 448.0f / 512.0f * 4.0f / 3.0f;   // the 4:3 display's pixel aspect, whatever the picture's
+    const float uiw = 512.0f * g_kx;
+    g_ux0 = gx + (gw - uiw) * 0.5f;
+    g_ux1 = g_ux0 + uiw;
+    static std::string mode;
+    static unsigned tick;
+    if (tick++ % 30 == 0) mode = xsgcfg::Get("display.ui_layout");
+    if (mode == "wide") {
+        const float sw = ImGui::GetIO().DisplaySize.x;
+        const float margin = std::max(8.0f, sw * 0.02f);
+        g_ux0 = std::min(g_ux0, margin);
+        g_ux1 = std::max(g_ux1, sw - margin);
+    }
+}
+
+ImVec2 Map(float x, float y, int anchor) {
+    const float sy = g_gy + y * g_k;
+    if (anchor == kStretch) anchor = x < 256.0f ? kLeft : kRight;
+    switch (anchor) {
+    case kLeft: return ImVec2(g_ux0 + x * g_kx, sy);
+    case kRight: return ImVec2(g_ux1 - (512.0f - x) * g_kx, sy);
+    default: return ImVec2((g_ux0 + g_ux1) * 0.5f + (x - 256.0f) * g_kx, sy);
+    }
+}
+
+int AnchorFor(float x0, float x1) {
+    if (x1 - x0 >= 440.0f || (x0 <= 8.0f && x1 >= 504.0f)) return kStretch;
+    const float c = (x0 + x1) * 0.5f;
+    if (c < 512.0f / 3.0f) return kLeft;
+    if (c > 512.0f * 2.0f / 3.0f) return kRight;
+    return kCentre;
+}
+
+float LayoutKx() { return g_kx; }
+float LayoutK() { return g_k; }
+ImVec4 LayoutArea() { return ImVec4(g_ux0, g_gy, g_ux1, g_gy + g_gh); }
+
+}  // namespace xsgui

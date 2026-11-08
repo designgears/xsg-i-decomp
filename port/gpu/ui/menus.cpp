@@ -11,8 +11,10 @@
 #include "art.h"
 #include "dialog.h"
 #include "style.h"
+#include "layout.h"
 #include "gpu_ipc.h"
 #include "../menu/option_rows.h"
+#include "../menu/cfg.h"
 
 #include <algorithm>
 #include <cmath>
@@ -67,6 +69,12 @@ void DrawText(ImDrawList* dl, ImFont* font, const char* s, int len, ImVec2 p, fl
             colr = (r >= 0x7e && g >= 0x7e && b >= 0x7e) ? col::kText
                                                           : IM_COL32(std::min(255, r * 2), std::min(255, g * 2), std::min(255, b * 2), 255);
             i += 3;
+        } else if ((c == 4 || c == 5) && i + 2 < len) {   // set x / y (an offset from the origin, game pixels)
+            flush();
+            const int d = (((static_cast<unsigned char>(s[i + 1]) & 0x7f) << 7) | (static_cast<unsigned char>(s[i + 2]) & 0x7f)) - 0x4000;
+            if (c == 4) x = p.x + float(d) * lh / 24.0f * (LayoutKx() / LayoutK());
+            else y = p.y + float(d) * lh / 24.0f;
+            i += 2;
         } else if (c == 2 && i + 1 < len) {   // an inline icon: drawn here, advancing by its width
             flush();
             x += icon(static_cast<unsigned char>(s[i + 1]) - 1, ImVec2(x, y), fs);
@@ -107,8 +115,10 @@ bool MenuActive(uint32_t vsync) {
 
 void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
     using namespace xsgmenu;
-    const float k = gh / 448.0f, kx = gw / 512.0f;
-    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    int anchor = kCentre;   // the current op's (layout.h); P maps under it
+    auto P = [&](float x, float y) { return Map(x, y, anchor); };
     const GpuUiMenuList& m = *g_snap;
     const double now = AnimNow();
 
@@ -164,9 +174,57 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     }
     char buf[32];
     // the GS clipped at the screen edge (windows wait off-screen for their slide-in)
-    dl->PushClipRect(P(0, 0), P(512, 448), true);
+    // anchors: each op follows the smallest window containing it (or its own extent)
+    std::vector<int> anchors(m.nops, kCentre);
+    for (uint32_t i = 0; i < m.nops; ++i) {
+        const GpuUiKgOp& o = m.op[i];
+        const float ow = o.type == GPU_KG_TEXT || o.type == GPU_KG_TAG || o.type == GPU_KG_NUMBER ? 60.0f : float(std::max<int>(o.dw, 1));
+        int best = -1, area = 1 << 30;
+        if (o.type != GPU_KG_WINDOW)
+            for (uint32_t j = 0; j < m.nops; ++j) {
+                const GpuUiKgOp& w = m.op[j];
+                if (w.type != GPU_KG_WINDOW || o.x < w.x - 2 || o.x > w.x + w.dw || o.y < w.y - 18 || o.y > w.y + w.dh) continue;
+                if (w.dw * w.dh < area) area = w.dw * w.dh, best = int(j);
+            }
+        anchors[i] = best >= 0 ? AnchorFor(float(m.op[best].x), float(m.op[best].x + m.op[best].dw))
+                               : AnchorFor(float(o.x), float(o.x) + ow);
+        if (best < 0 && o.type != GPU_KG_WINDOW) anchors[i] = 100 + int(i);   // loose: clustered below
+    }
+    {   // loose elements on one row with small gaps (an icon bar, a label and its value) move as one
+        std::vector<int> root(m.nops);
+        for (uint32_t i = 0; i < m.nops; ++i) root[i] = int(i);
+        auto find = [&](int a) { while (root[size_t(a)] != a) a = root[size_t(a)] = root[size_t(root[size_t(a)])]; return a; };
+        auto ext = [&](const GpuUiKgOp& o) {
+            const float w = o.type == GPU_KG_TEXT || o.type == GPU_KG_TAG || o.type == GPU_KG_NUMBER ? 60.0f : float(std::max<int>(o.dw, 1));
+            return ImVec2(float(o.x), float(o.x) + w);
+        };
+        for (uint32_t i = 0; i < m.nops; ++i) {
+            if (anchors[i] < 100) continue;
+            for (uint32_t j = i + 1; j < m.nops; ++j) {
+                if (anchors[j] < 100 || std::abs(m.op[i].y - m.op[j].y) > 10) continue;
+                const ImVec2 a = ext(m.op[i]), b = ext(m.op[j]);
+                if (a.x <= b.y + 16 && b.x <= a.y + 16) root[size_t(find(int(i)))] = find(int(j));
+            }
+        }
+        std::vector<ImVec2> span(m.nops, ImVec2(1e9f, -1e9f));
+        for (uint32_t i = 0; i < m.nops; ++i)
+            if (anchors[i] >= 100) {
+                ImVec2& sp = span[size_t(find(int(i)))];
+                const ImVec2 e = ext(m.op[i]);
+                sp.x = std::min(sp.x, e.x);
+                sp.y = std::max(sp.y, e.y);
+            }
+        for (uint32_t i = 0; i < m.nops; ++i)
+            if (anchors[i] >= 100) {
+                const ImVec2 sp = span[size_t(find(int(i)))];
+                anchors[i] = AnchorFor(sp.x, sp.y);
+            }
+    }
+    const ImVec4 area = LayoutArea();
+    dl->PushClipRect(ImVec2(area.x, area.y), ImVec2(area.z, area.w), true);
     for (const Item& it : items) {
         const GpuUiKgOp& o = *it.o;
+        anchor = anchors[size_t(it.order)];
         const bool clipped = it.clip.z > it.clip.x;
         if (clipped) dl->PushClipRect(P(it.clip.x, it.clip.y), P(it.clip.z, it.clip.w), true);
         const float x = float(o.x), y = float(o.y);
@@ -234,6 +292,12 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_ART: {
             if (o.text[0] == 1) break;   // an inline text icon: drawn with its text
+            if (o.text[2] == 1 + 2 && o.text[3] >= 0 && o.text[3] < 4) {   // pad_uv[0..3]: the face buttons
+                static const int kPad[4] = {1, 0, 3, 2};   // pad_uv: circle, cross, triangle, square (u 0, 22, 44, 66)
+                const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
+                Glyph(dl, font, c.x, c.y, std::min(o.dw * kx, o.dh * k) * 0.46f, kPad[size_t(o.text[3])], false);
+                break;
+            }
             const uint64_t tex0 = uint64_t(o.tex0_lo) | uint64_t(o.tex0_hi) << 32;
             const bool cursor = o.w == 16 && o.h == 16 && ((o.u == 0 && (o.v == 192 || o.v == 176)) || (o.u == 64 && (o.v == 160 || o.v == 176)));
             if (o.u == 512 && o.v == 186 && o.w == 165 && o.h == 24) {   // the info bar (win_uv[11]): tinted glass
@@ -329,6 +393,12 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                     if (ic.type != GPU_KG_ART || ic.text[0] != 1 || ic.text[1] != slot) continue;
                     const float iw = float(ic.dw) * kx, ih = float(ic.dh) * k;
                     const float cy = at.y + h * 0.55f;
+                    if (ic.text[2] == 1 + 2 && ic.text[3] >= 0 && ic.text[3] < 4) {   // a pad button: the controller's
+                        static const int kPad[4] = {1, 0, 3, 2};
+                        const float r = h * 0.42f;
+                        Glyph(dl, font, at.x + r + h * 0.08f, cy, r, kPad[size_t(ic.text[3])], false);
+                        return 2 * r + h * 0.16f;
+                    }
                     const uint64_t t0 = uint64_t(ic.tex0_lo) | uint64_t(ic.tex0_hi) << 32;
                     ArtSprite(dl, t0, 0, float(ic.u), float(ic.v), float(ic.w), float(ic.h), ImVec2(at.x + 1 * kx, cy - ih * 0.5f),
                               ImVec2(at.x + 1 * kx + iw, cy + ih * 0.5f), ic.rgba, tw, false, uint32_t(ic.b));
@@ -364,6 +434,32 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const ImVec2 c = P(x, y);
             dl->AddCircleFilled(c, float(o.dw) * k, Ps2(uint32_t(o.b), tw), 32);
             dl->AddCircleFilled(c, float(o.dw) * k * 0.4f, Ps2(o.rgba, tw), 24);
+            break;
+        }
+        case GPU_KG_PAUSE: {   // a centred title between two rules that sweep outward, and a resume hint
+            AnimState& pa = Anim(0x50415553ull, 0, 0);
+            const float t = FadeIn(pa, 5.0f) * tw;
+            const float age = float(now - pa.born);
+            anchor = kCentre;
+            const ImVec2 c = P(256, 214);
+            const char* title = "P A U S E";
+            const float fs = 34.0f * k;
+            const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, title);
+            HaloText(dl, font, fs, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), col::kText, title, t);
+            const float gap = ts.x * 0.5f + 18 * kx, len = 150 * kx;
+            SweepRule(dl, ImVec2(c.x + gap, c.y), ImVec2(c.x + gap + len, c.y), k, t, age, col::kCyan);
+            SweepRule(dl, ImVec2(c.x - gap, c.y), ImVec2(c.x - gap - len, c.y), k, t, age, col::kCyan);
+            // "Start  Resume", the start button named for the layout
+            const std::string lay = xsgcfg::Get("gamepad.layout");
+            const char* start = lay == "playstation" ? "START" : lay == "nintendo" ? "+" : "MENU";
+            const float hs = 13.0f * k;
+            const ImVec2 sw = font->CalcTextSizeA(hs, 1e9f, 0, start), rw = font->CalcTextSizeA(hs, 1e9f, 0, "Resume");
+            const float pill = sw.x + 14 * kx, total = pill + 8 * kx + rw.x;
+            const ImVec2 h0(c.x - total * 0.5f, c.y + 30 * k);
+            dl->AddRectFilled(h0, ImVec2(h0.x + pill, h0.y + hs + 6 * k), Alpha(IM_COL32(12, 12, 30, 230), t), (hs + 6 * k) * 0.5f);
+            dl->AddRect(h0, ImVec2(h0.x + pill, h0.y + hs + 6 * k), Alpha(col::kFrame, 0.7f * t), (hs + 6 * k) * 0.5f, 0, 1.0f);
+            dl->AddText(font, hs, ImVec2(h0.x + 7 * kx, h0.y + 3 * k), Alpha(col::kText, t), start);
+            dl->AddText(font, hs, ImVec2(h0.x + pill + 8 * kx, h0.y + 3 * k), Alpha(col::kTextDim, t), "Resume");
             break;
         }
         default:

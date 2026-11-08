@@ -4,6 +4,7 @@
 #include "../menu/cfg.h"
 #include "../menu/option_rows.h"
 #include "style.h"
+#include "layout.h"
 #include "art.h"
 #include "../menu/menu_render.h"
 
@@ -132,8 +133,9 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     const float sx = gw / 512.0f, sy = gh / 448.0f;
     // the game's window rectangle, a little roomier
     // where the game's own frame sits (its text box starts 26 px under the window origin)
-    float x0 = gx + (d.x - 16) * sx, y0 = gy + (d.y + 24) * sy;
-    float x1 = gx + (d.x + d.w + 4) * sx, y1 = gy + std::min(d.y + d.h + 34, 442) * sy;
+    LayoutBegin(gx, gy, gw, gh);
+    const ImVec2 m0 = Map(float(d.x - 16), float(d.y + 24), kCentre), m1 = Map(float(d.x + d.w + 4), float(std::min(d.y + d.h + 34, 442)), kCentre);
+    float x0 = m0.x, y0 = m0.y, x1 = m1.x, y1 = m1.y;
     // the menu's look (menu/option_rows.h col::, menu.cpp Panel): indigo glass, a doubled
     // periwinkle frame and corner brackets; cyan for the accents
     const float k = sy;   // one PS2 pixel on screen
@@ -351,8 +353,9 @@ namespace {
    +4 the unavailable variant. */
 void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, const GpuUiKeyGuide& g, uint64_t akey, bool rows) {
     using namespace xsgmenu;
-    const float k = gh / 448.0f, kx = gw / 512.0f;
-    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    auto P = [&](float x, float y) { return Map(x, y, kLeft); };
     static const int kPos[] = {2, 3, 0, 1};   // id 1..4 -> west, north, south, east
     static const ImU32 kAccent[] = {IM_COL32(118, 170, 255, 255), IM_COL32(255, 96, 170, 255), IM_COL32(110, 220, 150, 255)};
     char b[16];
@@ -464,8 +467,9 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
 /* Damage / heal numbers: pop in oversized and settle, a soft glow in the type's colour
    under a dark outline, and a fade as the game's countdown runs out. */
 void DmgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, uint32_t vsync) {
-    const float k = gh / 448.0f, kx = gw / 512.0f;
-    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    auto P = [&](float x, float y) { return Map(x, y, kCentre); };
     char b[16];
     for (const GpuUiDmg& d : g_dmsnap.d) {
         if (!Fresh(vsync, d.frame)) continue;
@@ -504,8 +508,9 @@ void DmgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float g
 void CmdDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh) {
     using namespace xsgmenu;
     static const char* const kLabel[] = {"Ether", "Item", "Move", "A.G.W.S.", "A.G.W.S.", "Guard", "Double"};
-    const float k = gh / 448.0f, kx = gw / 512.0f;
-    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    auto P = [&](float x, float y) { return Map(x, y, kLeft); };
     const GpuUiBattleCmd& c = g_csnap;
     const double now = AnimNow();
     AnimState& menu = Anim(0xC0DE000000000000ull, 0, 0);
@@ -551,8 +556,10 @@ void CmdDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float g
 
 void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, uint32_t vsync) {
     using namespace xsgmenu;
-    const float k = gh / 448.0f, kx = gw / 512.0f;
-    auto P = [&](float x, float y) { return ImVec2(gx + x * kx, gy + y * k); };
+    LayoutBegin(gx, gy, gw, gh);
+    const float k = LayoutK(), kx = LayoutKx();
+    int anchor = kCentre;
+    auto P = [&](float x, float y) { return Map(x, y, anchor); };
     char b[32];
     DmgDraw(dl, font, gx, gy, gw, gh, vsync);
     for (int ch = 0; ch < XSG_GPU_UI_KG_CHANNELS; ++ch)
@@ -564,6 +571,7 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         AnimState& an = Anim(0xBA770000ull ^ uint32_t(u.key), 0, -14);
         const float t = FadeIn(an, 6.0f);
         const float x = float(u.x), y = float(u.y) + Spring(an, 0, 0, 14.0f).y;
+        anchor = AnchorFor(x + 0x10, x + 0xa2);
         // the stats panel to the right of the portrait (portrait: x+16..x+56)
         const ImVec2 a = P(x + 0x3a, y - 5), c = P(x + 0xa2, y + 0x40);
         Panel(dl, a, c, k, t, u.active != 0);
