@@ -3156,7 +3156,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004D2188",
+          "end": "0x004D2170",
           "ordinal": 269,
           "piece": "map_2",
           "start": "0x004D2130",
@@ -3167,7 +3167,7 @@
           "end": "0x004D2200",
           "ordinal": 271,
           "piece": "unit6003",
-          "start": "0x004D2188",
+          "start": "0x004D2170",
           "tu": "unit6003"
         },
         {
@@ -80289,20 +80289,20 @@
           ],
           "bounds": [
             "0x004D2128",
-            "0x004D2188"
+            "0x004D2170"
           ],
-          "end": "0x004D2188",
+          "end": "0x004D2170",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004D2188",
+              "end": "0x004D2170",
               "name": "map_2",
               "start": "0x004D2130"
             }
           ],
           "rule": "anchored start",
-          "size": 88,
+          "size": 64,
           "splat_type": "rodata",
           "start": "0x004D2130"
         }
@@ -80710,7 +80710,7 @@
         },
         ".rodata": {
           "anchored": [
-            "0x004D2188",
+            "0x004D2170",
             "0x004D21F4"
           ],
           "bounds": [
@@ -80724,13 +80724,13 @@
               "c_split": false,
               "end": "0x004D2200",
               "name": "unit6003",
-              "start": "0x004D2188"
+              "start": "0x004D2170"
             }
           ],
-          "rule": "anchored start",
-          "size": 120,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 144,
           "splat_type": "rodata",
-          "start": "0x004D2188"
+          "start": "0x004D2170"
         }
       },
       "shared_contract": {

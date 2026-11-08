@@ -18252,26 +18252,6 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/map_2.o"
      }
-    },
-    {
-     "range": [
-      "0x004d2170",
-      "0x004d2188"
-     ],
-     "generated": [
-      "0x004d2170",
-      "0x004d2186"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "D_004D2170"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/map_2.o"
-     }
     }
    ]
   },
@@ -18335,42 +18315,23 @@
    ".rodata": [
     {
      "range": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated_by": [
-      "unit6003_update"
-     ],
-     "c_owned_symbols": [
-      "D_004D2188",
-      "D_004D21A0",
-      "D_004D21B8",
-      "D_004D21D0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/unit6003.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d2200"
      ],
      "generated": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d21f4"
      ],
      "generated_by": [
+      "unit6003_draw",
       "unit6003_update"
      ],
      "c_owned_symbols": [
+      "D_004D2170",
+      "D_004D2188",
+      "D_004D21A0",
+      "D_004D21B8",
+      "D_004D21D0",
       "jtbl_004D21E0"
      ],
      "also_referenced_by_c": [],

@@ -191,22 +191,6 @@ extern void nmlModelDirectSendXtx(int mode, void *texture);
 extern float xglRotTransPers(int *result, float matrix[4][4],
                              float *position, int camera);
 
-extern const char D_004D2170[24];
-
-static const char D_004D2188[24] =
-    "fm%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n";
-
-static const char D_004D21A0[24] =
-    "mvs%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n";
-
-static const char D_004D21B8[24] = "movie work broken!\n";
-
-static const char D_004D21D0[16] = "%08x->%08x\n";
-
-
-
-
-
 static void unit6003_draw(void *object)
 {
     static Unit6003DrawEnvironment TestEnv __attribute__((aligned(16))) = {
@@ -241,7 +225,7 @@ static void unit6003_draw(void *object)
         break;
     }
     default:
-        printf(D_004D2170, unit->frame_type);
+        printf("frame_type error(%d)\n", unit->frame_type);
         break;
     }
 
@@ -385,7 +369,7 @@ void unit6003_update(Unit6003Work *unit)
             UNIT6003_RESOURCE_GROUP_SIZE) {
             unsigned int resource_file_id =
                 resource_index % UNIT6003_RESOURCE_GROUP_SIZE;
-            printf(D_004D2188, resource_file_id);
+            printf("fm%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n", resource_file_id);
             resource_index = GameResourceGetIndex(
                 RES_loadFile(-1, 11, resource_file_id, 0));
             unit->resource_id = resource_index;
@@ -393,7 +377,7 @@ void unit6003_update(Unit6003Work *unit)
                    UNIT6003_RESOURCE_GROUP_SIZE) {
             unsigned int resource_file_id =
                 resource_index % UNIT6003_RESOURCE_GROUP_SIZE;
-            printf(D_004D21A0, resource_file_id);
+            printf("mvs%04d \244\362\306\311\244\337\271\376\244\337\244\336\244\271\n", resource_file_id);
             resource_index = GameResourceGetIndex(
                 RES_loadFile(-1, 10, resource_file_id, 0));
             unit->resource_id = resource_index;
@@ -492,11 +476,11 @@ void unit6003_update(Unit6003Work *unit)
                 UNIT6003_XTX_SIGNATURE) {
             MoviePlaybackWork *repaired_work;
 
-            printf(D_004D21B8);
+            printf("movie work broken!\n");
             repaired_work = movie_work_setup(
                 (void *)GameResource[unit->resource_id].address,
                 GameResource[unit->resource_id].size);
-            printf(D_004D21D0, (u32)unit->movie_work,
+            printf("%08x->%08x\n", (u32)unit->movie_work,
                    (u32)repaired_work);
             unit->movie_work = repaired_work;
         }
