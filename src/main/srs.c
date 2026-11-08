@@ -547,7 +547,7 @@ char **srsGetComboData(int index)
     return (_loadComboData[index] != 0) ? &_loadComboData[index] : 0;
 }
 
-extern char msg_0_00795120[];
+static char msg_0_00795120[0x80] __asm__("msg.0");
 
 char *srsGetEffectName(int effectNo)
 {
@@ -636,7 +636,7 @@ short srsEftNo2WeaponID(void)
     return weaponID;
 }
 
-extern char msg_1_007951A0[];
+static char msg_1_007951A0[0x80] __asm__("msg.1");
 
 char *srsGetEffectName2(int effectNo)
 {
@@ -650,7 +650,7 @@ char *srsGetEffectName2(int effectNo)
     return msg_1_007951A0;
 }
 
-extern char msg_2_00795220[];
+static char msg_2_00795220[0x80] __asm__("msg.2");
 
 static char *srsGetComboName(int index)
 {

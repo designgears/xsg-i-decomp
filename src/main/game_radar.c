@@ -28,21 +28,14 @@ typedef struct RadarActor {
 
 
 
-extern u8 *image_004DC554;
-
-
-extern u8 rate;
+static u32 cnt_2 __asm__("cnt.2");
+static u8 *image_004DC554 __asm__("image");
+static u8 rate;
+static u8 ping;
 
 
 static const char D_004C0618[32] = "data\\yajima\\cf_rader00.xtx";
 
-extern u8 *image_004DC554;
-
-extern u8 rate;
-
-extern u8 ping;
-
-extern u32 cnt_2;
 
 
 

@@ -490,14 +490,14 @@ extern unsigned char ST1CardLst[];
 extern char ZenkakuListA[];
 extern char ZenkakuListB[];
 extern char CardConvertNameLst[CARD_PACK_COUNT][24];
-extern u8 D_00A57848[CARD_PACK_COUNT];
-extern s16 D_00A57860[CARD_OPEN_LIST_MAX];
-extern int D_00A578B0;
-extern int D_00A578B4;
-extern int D_00A578B8;
-extern int D_00A578BC;
-extern int D_00A578C0;
-extern int D_00A578C4;
+static u8 D_00A57848[CARD_PACK_COUNT];
+static s16 D_00A57860[CARD_OPEN_LIST_MAX];
+static int D_00A578B0;
+static int D_00A578B4;
+static int D_00A578B8;
+static int D_00A578BC;
+static int D_00A578C0;
+static int D_00A578C4;
 
 void CardOpenProc(CardGameWork *work, s16 *exiting)
 {
