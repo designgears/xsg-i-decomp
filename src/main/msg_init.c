@@ -1151,12 +1151,12 @@ static MsgFuncEntry mfunc[] = {
     { 0, 0 }
 };
 
-char digits[16] = "0123456789abcdef";
+char digits[16] __attribute__((aligned(16))) = "0123456789abcdef";
 unsigned char radixTenTenths[100] =
     "0000000000111111111122222222223333333333"
     "4444444444555555555566666666667777777777"
     "88888888889999999999";
-unsigned char radixTenUnits[100] =
+unsigned char radixTenUnits[100] __attribute__((aligned(8))) =
     "0123456789012345678901234567890123456789"
     "0123456789012345678901234567890123456789"
     "01234567890123456789";
