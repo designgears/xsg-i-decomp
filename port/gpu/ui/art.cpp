@@ -130,26 +130,25 @@ namespace {
 std::unordered_map<uint32_t, ImTextureID> g_images;
 }
 
-void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len) {
-    if (!w || !h || len < w * h * 4) return;
-    const uint8_t* src = static_cast<const uint8_t*>(rgba);
-    const uint32_t S = 4, W = w * S, H = h * S;
+// Catmull-Rom upscale by S, then a light unsharp mask on colour; src: RGBA8 (alpha kept)
+std::vector<uint32_t> Upscale(const uint32_t* src32, uint32_t w, uint32_t h, uint32_t S, bool opaque) {
+    const uint8_t* src = reinterpret_cast<const uint8_t*>(src32);
+    const uint32_t W = w * S, H = h * S;
     auto px = [&](int x, int y, int c) -> float {
         x = std::clamp(x, 0, int(w) - 1);
         y = std::clamp(y, 0, int(h) - 1);
-        float v = float(src[(size_t(y) * w + x) * 4 + c]);
-        return c == 3 ? 255.0f : v;   // a whole picture: opaque (its alpha is the GS blend's, not coverage)
+        return (c == 3 && opaque) ? 255.0f : float(src[(size_t(y) * w + x) * 4 + c]);
     };
-    auto cub = [](float t, float a, float b, float c, float d) {   // Catmull-Rom
+    auto cub = [](float t, float a, float b, float c, float d) {
         return b + 0.5f * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
     };
     std::vector<float> up(size_t(W) * H * 4);
     for (uint32_t y = 0; y < H; ++y) {
-        const float fy = (float(y) + 0.5f) / S - 0.5f;
+        const float fy = (float(y) + 0.5f) / float(S) - 0.5f;
         const int iy = int(std::floor(fy));
         const float ty = fy - float(iy);
         for (uint32_t x = 0; x < W; ++x) {
-            const float fx = (float(x) + 0.5f) / S - 0.5f;
+            const float fx = (float(x) + 0.5f) / float(S) - 0.5f;
             const int ix = int(std::floor(fx));
             const float tx = fx - float(ix);
             for (int c = 0; c < 4; ++c) {
@@ -160,7 +159,6 @@ void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t
             }
         }
     }
-    // unsharp mask (3x3 box blur, amount 0.6) on colour
     std::vector<uint32_t> out(size_t(W) * H);
     for (uint32_t y = 0; y < H; ++y)
         for (uint32_t x = 0; x < W; ++x) {
@@ -180,6 +178,13 @@ void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t
             }
             out[size_t(y) * W + x] = o;
         }
+    return out;
+}
+
+void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len) {
+    if (!w || !h || len < w * h * 4) return;
+    const uint32_t S = 4, W = w * S, H = h * S;
+    std::vector<uint32_t> out = Upscale(static_cast<const uint32_t*>(rgba), w, h, S, true);
     g_images[id] = ImTextureID(xsgmenu::RenderTexture(uint64_t(g_images[id]), out.data(), W, H));
 }
 
@@ -227,6 +232,12 @@ ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, u
             std::vector<uint32_t> px = xsgnative::DecodeVramTexture(it->second->data(), tex0, texa, &tw, &th);
             if (!px.empty()) {
                 Expand(px);
+                // the menu's art (portraits, icons) upscaled 2x: smooth and sharp at high resolutions; uvs stay
+                // normalised, so the bigger page needs no other change
+                if (tw * th <= 1024u * 512u) {
+                    std::vector<uint32_t> up = Upscale(px.data(), tw, th, 2, false);
+                    t.id = xsgmenu::RenderTexture(t.id, up.data(), tw * 2, th * 2);
+                } else
                 t.id = xsgmenu::RenderTexture(t.id, px.data(), tw, th);
                 t.w = tw;
                 t.h = th;
