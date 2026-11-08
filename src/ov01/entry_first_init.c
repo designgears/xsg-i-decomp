@@ -22,9 +22,7 @@ void entryFirstInit(void) {
     mapNoSet(1);
 }
 
-extern const char D_00A465E0[];
 extern const char D_00A465F8[];
-extern const char D_00A46608[];
 extern int printf(const char *format, ...);
 extern int rnd(int n);
 extern int pauseFlag;
@@ -56,7 +54,7 @@ void battleProc(void) {
     XglClock clk;
     int mask;
 
-    printf(D_00A465E0);
+    printf("** Battle Start! **\n");
     xglClockRead(&clk);
     clk.second = clk.second * 100;
     while (--clk.second != 0xFF) {
@@ -96,7 +94,7 @@ void battleProc(void) {
     }
 end:
     battleSeq = entryPhase00;
-    printf(D_00A46608);
+    printf("** Battle End! **\n");
 }
 
 extern int pauseFlag;
@@ -241,7 +239,6 @@ extern int monsSetNoGet(void);
 extern int thinkMonsTblNumGet(void);
 extern int thinkNoGet(void);
 extern int cfEncountGet(void);
-extern const char D_00A46620[];
 extern int printf(const char *format, ...);
 extern void GameDefocusQuickSet(int first, int second, int third, int fourth);
 extern int sndSysSePlay(int soundId);
@@ -285,7 +282,7 @@ int entryPhase00(void) {
     thinkMonsTblNum = thinkMonsTblNumGet();
     thinkNo = thinkNoGet();
     cfEncount = cfEncountGet();
-    printf(D_00A46620, mapNo, monsSetNo, thinkMonsTblNum, thinkNo, cfEncount, cfEventGet());
+    printf("** map=%d monsSet=%d/%d Think=%d cfEncount=%X cfEvent=%X**\n", mapNo, monsSetNo, thinkMonsTblNum, thinkNo, cfEncount, cfEventGet());
     GameDefocusQuickSet(0, 1, 0xFFFFFF, 0);
     sndSysSePlay(0x25);
     battleSeq = entryPhase10;
@@ -675,9 +672,6 @@ int entryPhase70(void) {
     return 1;
 }
 
-extern const char D_00A46660[];
-extern const char D_00A46678[];
-extern const char D_00A46698[];
 extern int entryPhase90(void);
 typedef struct {
     int exp, tp, ep, sp, money;
@@ -693,10 +687,10 @@ int entryPhase80(void) {
 
     i = 0;
     g = monsGainPtrGet();
-    printf(D_00A46660, g->exp, g->money);
-    printf(D_00A46678, g->tp, g->ep, g->sp);
+    printf("** Exp = %d Money = %d\n", g->exp, g->money);
+    printf("** Tp = %d Ep = %d Sp = %d\n", g->tp, g->ep, g->sp);
     for (; i < g->num; i++) {
-        printf(D_00A46698, i, g->grp[i], g->item[i]);
+        printf("** %d: grp=%d item=%d\n", i, g->grp[i], g->item[i]);
     }
     battleSeq = entryPhase90;
     return 1;
@@ -980,7 +974,6 @@ void encEnvMake(void *packet)
     GS_REG_SET(packet, 0x14, 0x60);
 }
 
-extern const char D_00A466B0[];
 extern float thetaInc;
 extern float theta;
 extern int encObjCnt;
@@ -1163,7 +1156,7 @@ void encEffObjInit(void)
 
   }
 
-  printf(D_00A466B0, 0x01D9E000, obj);
+  printf("** free top=%X end=%X\n", 0x01D9E000, obj);
   task = (FadeObjTask *) objEntry2(encEffObj, (void (*)(ObjectTask *)) encEffObjDraw);
   task->life = 0x80;
   task->speed = 8;

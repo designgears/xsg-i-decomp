@@ -188,8 +188,6 @@ typedef struct UmnSimInfoWork {
 } UmnSimInfoWork;
 extern void MenuInfoWindow(void);
 extern char D_00A13218;
-extern const char D_00A13220[] __attribute__((aligned(8)));
-extern char D_00A13230[];
 extern char *ListText[];
 extern char *strcat(char *, const char *);
 
@@ -243,9 +241,9 @@ void tskUmnSimulationInfo(UmnTaskCommand *task, void *arg)
         if (tab < 0x12) {
             if (tab >= 0x10) {
                 if (UmnWork.list_index >= 0) {
-                    __builtin_memcpy(&work->str.head, D_00A13220, 10);
+                    __builtin_memcpy(&work->str.head, "Simulate ", 10);
                     strcat(work->str.buf, ListText[UmnWork.list_index]);
-                    strcat(work->str.buf, D_00A13230);
+                    strcat(work->str.buf, ".");
                 }
             } else {
                 slideTarget = 512;
@@ -270,7 +268,6 @@ extern UmnGameLoopState GameLoopState;
 
 extern PadPrefix PadData;
 
-extern const char D_00A13238[];
 extern void WindowSPSet(void *window);
 extern void WindowSPMain(void *window);
 extern int WindowSPSelect(void *window, int pad);
@@ -339,7 +336,7 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
             work->window.y = work->y;
             work->window.color = work->color;
             work->window.mode = 3;
-            work->window.title = D_00A13238;
+            work->window.title = "Information";
             work->window.rows = 1;
             work->window.cols = 7;
             work->window.width = 0x1A6;
@@ -394,7 +391,6 @@ void tskUmnSimulationList(UmnTaskCommand *task, void *arg)
 extern int UmnWorkEnd;
 extern int UmnSimulationScriptNoTbl[];
 extern int UmnSimulationNo;
-extern const char D_00A132F8[];
 extern int MenuScenarioNoGet(void);
 extern void tskUmnSimulationInfo(UmnTaskCommand *task, void *work);
 extern void tskUmnSimulationList(UmnTaskCommand *task, void *work);
@@ -486,6 +482,6 @@ int UmnSimulation(void)
     if (UmnWork.countdown != 0) {
         UmnWork.countdown--;
     }
-    xglFontDebugPrintf(32, 208, D_00A132F8);
+    xglFontDebugPrintf(32, 208, "\xA5\xB7\xA5\xDF\xA5\xE5\xA5\xEC\xA1\xBC\xA5\xB7\xA5\xE7\xA5\xF3");
     return xglFontDebugHex(0, 64, UmnWork.tab_state, 2);
 }
