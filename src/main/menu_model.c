@@ -1210,7 +1210,7 @@ typedef union MenuModelTransformVectorWA {
         float w;
     } value;
     unsigned long long words[2];
-} MenuModelTransformVectorWA;
+} MenuModelTransformVectorWA __attribute__((aligned(16)));
 typedef struct MenuModelTransformControlWA {
     MenuModelTransformVectorWA offset;
     MenuModelTransformVectorWA rotation;

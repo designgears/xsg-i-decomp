@@ -4900,11 +4900,11 @@
     {
      "range": [
       "0x004c2fd0",
-      "0x004c31b0"
+      "0x004c3200"
      ],
      "generated": [
       "0x004c2fd0",
-      "0x004c31a8"
+      "0x004c3200"
      ],
      "generated_by": [
       "OpenCloseMain",
@@ -4912,26 +4912,7 @@
      ],
      "c_owned_symbols": [
       "D_004C2FD0",
-      "jtbl_004C2FE0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/open_close_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c31b0",
-      "0x004c3200"
-     ],
-     "generated": [
-      "0x004c31b0",
-      "0x004c31f5"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "jtbl_004C2FE0",
       "D_004C31B0",
       "D_004C31C8",
       "D_004C31E0"
@@ -5414,11 +5395,11 @@
     {
      "range": [
       "0x004c37d0",
-      "0x004c3950"
+      "0x004c3960"
      ],
      "generated": [
       "0x004c37d0",
-      "0x004c3948"
+      "0x004c3960"
      ],
      "generated_by": [
       "MenuModelDrawTypeSet",
@@ -5426,7 +5407,8 @@
       "MenuModelNavelMove",
       "MenuModelResourceLoad",
       "MenuModelResourceMain",
-      "MenuModelUnitActorSet"
+      "MenuModelUnitActorSet",
+      "tskMenuModelTaskMain"
      ],
      "c_owned_symbols": [
       "jtbl_004C37D0",
@@ -5439,28 +5421,7 @@
       "D_004C3900",
       "D_004C3910",
       "D_004C3920",
-      "jtbl_004C3930"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_model.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c3950",
-      "0x004c3960"
-     ],
-     "generated": [
-      "0x004c3950",
-      "0x004c3960"
-     ],
-     "generated_by": [
-      "tskMenuModelTaskMain"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004C3930",
       "D_004C3950"
      ],
      "also_referenced_by_c": [],

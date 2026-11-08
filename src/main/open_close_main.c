@@ -483,6 +483,6 @@ void eCursolSet(ECursol *cursol, signed char width)
 }
 
 /* Window texture paths kept in this TU's .rodata; nothing here uses them. */
-const char D_004C31B0[] = "data\\endou\\menu02.xtx";
-const char D_004C31C8[] = "data\\endou\\menu01.xtx";
-const char D_004C31E0[] = "data\\endou\\cfwin.xtx";
+const char D_004C31B0[24] __attribute__((aligned(16))) = "data\\endou\\menu02.xtx";
+const char D_004C31C8[24] = "data\\endou\\menu01.xtx";
+const char D_004C31E0[32] = "data\\endou\\cfwin.xtx";
