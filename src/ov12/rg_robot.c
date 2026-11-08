@@ -296,21 +296,21 @@ static int _ExecHitByBody(RgRobotStatus *status, RgBody *body, RgCmd *command);
 const char D_00A51830[] = "pThread != NIL";
 const char D_00A51840[] = "../rg_robot.euc.c";
 const char D_00A51858[] = "fBaseSpeed > RG_FCONST(0.0)";
-const char D_00A51878[] __attribute__((weak)) = "H_BB";
-const char D_00A51880[] __attribute__((weak)) = "B_NB";
-const char D_00A51888[] __attribute__((weak)) = "B_HB";
-const char D_00A51890[] __attribute__((weak)) = "INVA";
-const char D_00A51898[] __attribute__((weak)) = "HITW";
-const char D_00A518A0[] __attribute__((weak)) = "WEAK";
-const char D_00A518A8[] __attribute__((weak)) = "DMG ";
-const char D_00A518B0[] __attribute__((weak)) = "DROP";
-const char D_00A518B8[] __attribute__((weak)) = "DSHC";
-const char D_00A518C0[] __attribute__((weak)) = "DASH";
-const char D_00A518C8[] __attribute__((weak)) = "BRK ";
-const char D_00A518D0[] __attribute__((weak)) = "TGT ";
-const char D_00A518D8[] __attribute__((weak)) = "ATK ";
-const char D_00A518E0[] __attribute__((weak)) = "ROT ";
-const char D_00A518E8[] __attribute__((weak)) = "ACC ";
+const char D_00A51878[] = "H_BB";
+const char D_00A51880[] = "B_NB";
+const char D_00A51888[] = "B_HB";
+const char D_00A51890[] = "INVA";
+const char D_00A51898[] = "HITW";
+const char D_00A518A0[] = "WEAK";
+const char D_00A518A8[] = "DMG ";
+const char D_00A518B0[] = "DROP";
+const char D_00A518B8[] = "DSHC";
+const char D_00A518C0[] = "DASH";
+const char D_00A518C8[] = "BRK ";
+const char D_00A518D0[] = "TGT ";
+const char D_00A518D8[] = "ATK ";
+const char D_00A518E0[] = "ROT ";
+const char D_00A518E8[] = "ACC ";
 const char D_00A518F0[] = "pStatus != NIL";
 static int _AllowAllCmdInMoving(RgRobotStatus *status, int param, RgBody *cmd)
 {
@@ -3735,8 +3735,7 @@ const char D_00A51B78[] = "unknown equip type (drop weapon) %d";
 const char s_str_00A51BA0[] __asm__("D_00A51BA0") = "eff06.ptcl";
 const char D_00A51BB0[] = "pRobot != NIL";
 const char D_00A51BC0[] = "already disposed robot %p\n";
-/* Sized to keep the original trailing section pad. */
-const char D_00A51BE0[64] = "RG_EQUIP_TYPE_MIN <= (eSide) && (eSide) < RG_EQUIP_TYPE_NUM";
+const char D_00A51BE0[] = "RG_EQUIP_TYPE_MIN <= (eSide) && (eSide) < RG_EQUIP_TYPE_NUM";
 const char *s_aszCommandName[15] = {
     D_00A518E8,
     D_00A518E0,

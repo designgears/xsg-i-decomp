@@ -22321,7 +22321,7 @@
      ],
      "generated": [
       "0x00a51830",
-      "0x00a51c20"
+      "0x00a51c1c"
      ],
      "generated_by": [
       "CreateRgRobot",
@@ -24202,11 +24202,11 @@
     {
      "range": [
       "0x00a4f6a8",
-      "0x00a4faf0"
+      "0x00a4faea"
      ],
      "generated": [
       "0x00a4f6a8",
-      "0x00a4faf0"
+      "0x00a4faea"
      ],
      "generated_by": [
       "_CreateAnnounceNumFont",
@@ -24221,8 +24221,7 @@
       "D_00A4F824",
       "s_aFontTbl_2",
       "D_00A4FA4A",
-      "s_aBulletFontTbl_3",
-      "D_00A4FAEA"
+      "s_aBulletFontTbl_3"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -24563,19 +24562,18 @@
     {
      "range": [
       "0x00a4faf0",
-      "0x00a4fb18"
+      "0x00a4fb14"
      ],
      "generated": [
       "0x00a4faf0",
-      "0x00a4fb18"
+      "0x00a4fb14"
      ],
      "generated_by": [
       "_DispWepDisp"
      ],
      "c_owned_symbols": [
       "s_anTextPos_0",
-      "s_abOrder_1",
-      "D_00A4FB14"
+      "s_abOrder_1"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -26332,7 +26330,7 @@
      ],
      "generated": [
       "0x00a56650",
-      "0x00a56d38"
+      "0x00a56d32"
      ],
      "generated_by": [
       "CreateRgSelectAGWS",
@@ -27135,18 +27133,17 @@
     {
      "range": [
       "0x00a50860",
-      "0x00a508a0"
+      "0x00a50898"
      ],
      "generated": [
       "0x00a50860",
-      "0x00a508a0"
+      "0x00a50898"
      ],
      "generated_by": [
       "RgAnnounceDispInit"
      ],
      "c_owned_symbols": [
-      "s_apFuncs_0",
-      "D_00A50898"
+      "s_apFuncs_0"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -27466,7 +27463,7 @@
      ],
      "generated": [
       "0x00a587b0",
-      "0x00a58d10"
+      "0x00a58d0c"
      ],
      "generated_by": [
       "CreateXrgActor",
@@ -27687,19 +27684,18 @@
     {
      "range": [
       "0x00a511f4",
-      "0x00a51200"
+      "0x00a511f8"
      ],
      "generated": [
       "0x00a511f4",
-      "0x00a51200"
+      "0x00a511f8"
      ],
      "generated_by": [
       "_Disp_00A49318",
       "_DrawDriver"
      ],
      "c_owned_symbols": [
-      "s_pCurView_00A511F4",
-      "D_00A511F8"
+      "s_pCurView_00A511F4"
      ],
      "also_referenced_by_c": [],
      "basis": {

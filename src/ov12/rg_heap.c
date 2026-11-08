@@ -26,7 +26,7 @@ const char D_00A52A80[] = "%s (in %s at %d)\n\n";
 const char D_00A52A98[] = "heap = %p top = %p size = %d\n\n";
 const char D_00A52AB8[] = "heap-dump";
 const char D_00A52AC8[] = "heap = NIL\n";
-const char D_00A52AD8[] __attribute__((weak)) = "gAMe sHoW 2001.10.15";
+const char D_00A52AD8[] = "gAMe sHoW 2001.10.15";
 const char D_00A52AF0[] = "HEAD_SIZE < nBlockSize";
 const char D_00A52B08[] = "make block";
 const char D_00A52B18[] = "pHeap != NIL";

@@ -921,6 +921,3 @@ void RgAnnounceSetGameClear(RgAnnounce *pAnn, const unsigned int *auTime,
     pAnn->stageClearTick = 0;
 }
 
-/* Trailing alignment pad of the original .data section. */
-unsigned int D_00A50898 = 0;
-unsigned int D_00A5089C = 0;

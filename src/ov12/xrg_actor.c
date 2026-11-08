@@ -1638,18 +1638,18 @@ void XrgActorDebugDisp(XrgActor *pActor)
 const char s_str_00A587B0[] __asm__("D_00A587B0") = "_ActJntToAccID_sub joint=%d error(%s:%d)";
 const char D_00A587E0[] = "../xrg_actor.euc.c";
 const char D_00A587F8[] = "pXenoAct != NIL";
-const char D_00A58808[] __attribute__((weak)) = "data\\robo\\ag\\ag_02";
-const char D_00A58820[] __attribute__((weak)) = "data\\nisimori\\ag02_all.fpk";
-const char D_00A58840[] __attribute__((weak)) = "data\\robo\\vx\\vx_06";
-const char D_00A58858[] __attribute__((weak)) = "data\\nisimori\\vx06_all.fpk";
-const char D_00A58878[] __attribute__((weak)) = "data\\robo\\ag\\ag_04";
-const char D_00A58890[] __attribute__((weak)) = "data\\nisimori\\ag04_all.fpk";
-const char D_00A588B0[] __attribute__((weak)) = "data\\robo\\vx\\vx_02";
-const char D_00A588C8[] __attribute__((weak)) = "data\\nisimori\\vx02_all.fpk";
-const char D_00A588E8[] __attribute__((weak)) = "data\\robo\\ag\\ag_05";
-const char D_00A58900[] __attribute__((weak)) = "data\\nisimori\\ag05_all.fpk";
-const char D_00A58920[] __attribute__((weak)) = "data\\robo\\vx\\vx_01";
-const char D_00A58938[] __attribute__((weak)) = "data\\nisimori\\vx01_all.fpk";
+const char D_00A58808[] = "data\\robo\\ag\\ag_02";
+const char D_00A58820[] = "data\\nisimori\\ag02_all.fpk";
+const char D_00A58840[] = "data\\robo\\vx\\vx_06";
+const char D_00A58858[] = "data\\nisimori\\vx06_all.fpk";
+const char D_00A58878[] = "data\\robo\\ag\\ag_04";
+const char D_00A58890[] = "data\\nisimori\\ag04_all.fpk";
+const char D_00A588B0[] = "data\\robo\\vx\\vx_02";
+const char D_00A588C8[] = "data\\nisimori\\vx02_all.fpk";
+const char D_00A588E8[] = "data\\robo\\ag\\ag_05";
+const char D_00A58900[] = "data\\nisimori\\ag05_all.fpk";
+const char D_00A58920[] = "data\\robo\\vx\\vx_01";
+const char D_00A58938[] = "data\\nisimori\\vx01_all.fpk";
 const char D_00A58958[] = "invalid actor char ID = %d";
 const char s_str_00A58978[] __asm__("D_00A58978") = "joint id error (jnt:%d elm:%d)\nat %s %d";
 const char s_str_00A589A0[] __asm__("D_00A589A0") = "pJnt->numElement > 1";
@@ -1685,8 +1685,7 @@ const char D_00A58C88[] = "pWpn != NIL";
 const char D_00A58C98[] = "eff over (%d)->%d";
 const char D_00A58CB0[] = "actor %p (xeno %p) ---------\n";
 const char D_00A58CD0[] = "time = %f start %f end %f\n";
-/* Sized to keep the original trailing section pad. */
-const char D_00A58CF0[32] = "flags = %x(end %x) next %x\n";
+const char D_00A58CF0[] = "flags = %x(end %x) next %x\n";
 int s_jntIDToAccIDTbl_00A50920[21] __asm__("s_aJntIDToAccID_0") = {
     24, 32, 25, 33, 26, 34, 27, 35, 0, 1, 2, 3, 4, 5, 6, 7, 17, 18, 15, 16, 23,
 };

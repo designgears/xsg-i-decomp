@@ -143,9 +143,6 @@ RgFontGlyph s_aBulletFontTbl_3[11] = {
     { '9', 0, 126, 0, { 13, 15 }, 0, 12 },
 };
 
-/* Trailing alignment pad of the original .data section. */
-short D_00A4FAEA = 0;
-int D_00A4FAEC = 0;
 
 extern int RgBxxGetPic(int archive, const char *pictureName);
 extern int CreateRgFont(void *table, int glyphCount, int pic);

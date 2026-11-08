@@ -2504,8 +2504,7 @@ const char s_str_00A56CE0[] __asm__("D_00A56CE0") = "agwsseltop.r2d";
 const char s_str_00A56CF0[] __asm__("D_00A56CF0") = "agwssel.r2d";
 const char s_str_00A56D00[] __asm__("D_00A56D00") = "wepseltop.r2d";
 const char s_str_00A56D10[] __asm__("D_00A56D10") = "wepsel.r2d";
-/* Sized to keep the original trailing section pad. */
-const char s_str_00A56D20[24] __asm__("D_00A56D20") = "apCollects != NIL";
+const char s_str_00A56D20[] __asm__("D_00A56D20") = "apCollects != NIL";
 /* Two player colors (RGBA ints) viewed as the declared byte rows. */
 int s_playerCol_00A50120[2][4] __asm__("s_aPlayerCol") = {
     { 51, 124, 62, 127 },
