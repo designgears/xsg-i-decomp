@@ -79637,9 +79637,9 @@
       "functions": [],
       "id": "main/tu266",
       "in_scope": true,
-      "kind": "data-only",
+      "kind": "gcc",
       "map_class": "game",
-      "mode": "asm",
+      "mode": "c",
       "name": "debug",
       "name_basis": "no .text; named after its static data (debug0, debug1, debug2, debug3)",
       "name_confidence": "low",
@@ -79692,7 +79692,18 @@
         "start": "0x0031a190"
       },
       "toolchain_classification": "game",
-      "unit": "main"
+      "unit": "main",
+      "import": {
+        "mode": "c",
+        "note": "debug (game): data-only TU; drop-shadow contact tables, written as C.",
+        "source": {
+          "include_dirs": [
+            "include"
+          ],
+          "kind": "file",
+          "path": "src/main/debug.c"
+        }
+      }
     },
     {
       "accepted": {
