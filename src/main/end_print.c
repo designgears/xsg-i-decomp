@@ -2101,6 +2101,10 @@ void xsg_ui_print_capture(EndPrintContext *context)
             f(context, param);   /* writes depth only (no colour): the 3D models test against it */
         } else {
             f(context, param);   /* thumbnails, ether lines: the game draws them */
+            if (f == (void (*)(EndPrintContext *, int))PrintThumbnail) {
+                PrintThumbnailInfo *t = (PrintThumbnailInfo *)param;
+                xsg_ui_mop(18, t->x, t->y, 128, 94, t->depth & 0xFFFFFF, 0x80808080u, 0);
+            }
             if (f == (void (*)(EndPrintContext *, int))PrintThumbnail && slot < 15)
                 texset = xsgMark(context, slot++, ((void **)FS)[1]);   /* it uploaded its image */
         }

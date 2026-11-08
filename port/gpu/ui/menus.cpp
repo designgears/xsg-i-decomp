@@ -209,6 +209,28 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         const int want = bottom + 10;
         if (want < w.y + w.dh - 24) fitBottom[i] = std::max(want, w.y + 40);
     }
+    // the help bar: a full-width window near the bottom; content above it never runs under it
+    float helpTop = 1e9f;
+    int helpZ = 0;
+    for (uint32_t i = 0; i < m.nops; ++i) {
+        const GpuUiKgOp& w = m.op[i];
+        if (w.type == GPU_KG_WINDOW && w.b && w.y > 330 && w.dw >= 400 && float(w.y) < helpTop) helpTop = float(w.y), helpZ = w.a;
+    }
+    // title windows (top left, one line): as wide as their title plus padding
+    std::vector<int> fitRight(m.nops, 0);
+    for (uint32_t i = 0; i < m.nops; ++i) {
+        const GpuUiKgOp& w = m.op[i];
+        if (w.type != GPU_KG_WINDOW || !w.b || w.y > 24 || w.dh > 40 || w.dw < 120) continue;
+        float right = 0;
+        for (uint32_t j = 0; j < m.nops; ++j) {
+            const GpuUiKgOp& c = m.op[j];
+            if ((c.type != GPU_KG_TEXT && c.type != GPU_KG_TAG) || c.y < w.y - 4 || c.y > w.y + w.dh || c.x < w.x || c.x > w.x + w.dw) continue;
+            const char* t = m.pool + std::min<uint32_t>(uint32_t(c.b), XSG_GPU_UI_MENU_POOL - 1);
+            const float tw2 = font->CalcTextSizeA(15.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
+            right = std::max(right, float(c.x) + tw2 * (448.0f / 512.0f) * 1.1f);
+        }
+        if (right > 0 && right + 24 < w.x + w.dw) fitRight[i] = int(std::max(right + 24, float(w.x) + 120));
+    }
     char buf[32];
     // the GS clipped at the screen edge (windows wait off-screen for their slide-in)
     // anchors: each op follows the smallest window containing it (or its own extent)
@@ -262,8 +284,16 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     for (const Item& it : items) {
         const GpuUiKgOp& o = *it.o;
         anchor = anchors[size_t(it.order)];
-        const bool clipped = it.clip.z > it.clip.x;
-        if (clipped) dl->PushClipRect(P(it.clip.x, it.clip.y), P(it.clip.z, it.clip.w), true);
+        // anything under the help bar (below its top, behind it in depth) is hidden, not shown through the glass
+        if (helpTop < 1e8f && it.o->y >= helpTop - 8 && it.o->a < helpZ && it.o->type != GPU_KG_PAUSE) continue;
+        ImVec4 cr = it.clip;
+        if (helpTop < 1e8f && it.o->y < helpTop - 8 && it.o->y + std::max<int>(it.o->dh, 1) > helpTop - 4) {
+            // runs under the help bar: cut at its top
+            if (cr.z <= cr.x) cr = ImVec4(-512, -448, 1024, 896);
+            cr.w = std::min(cr.w, helpTop - 4);
+        }
+        const bool clipped = cr.z > cr.x;
+        if (clipped) dl->PushClipRect(P(cr.x, cr.y), P(cr.z, cr.w), true);
         const float x = float(o.x), y = float(o.y);
         switch (o.type) {
         case GPU_KG_WINDOW: {
@@ -275,8 +305,9 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const float hTarget = float(fitBottom[size_t(it.order)] ? fitBottom[size_t(it.order)] - o.y : o.dh);
             if (ah.v == 0) ah.v = hTarget;
             const float hh = Tween(ah, hTarget, 14.0f);
-            const float wx0 = std::max(x, 8.0f), wx1 = std::min(x + float(o.dw), 504.0f);   // inside the screen edge
-            if (wx1 - wx0 < float(o.dw) * 0.5f) break;   // mostly off-screen (waiting to slide in): not drawn
+            const float wx0 = std::max(x, 8.0f);
+            const float wx1 = std::min(fitRight[size_t(it.order)] ? float(fitRight[size_t(it.order)]) : x + float(o.dw), 504.0f);   // inside the edge; titles fitted
+            if (wx1 - wx0 < std::min(float(o.dw), wx1 - x) * 0.5f || wx1 <= wx0 + 8) break;   // mostly off-screen: not drawn
             const ImVec2 a = P(wx0, y + dy), b = P(wx1, y + hh + dy);
             if (o.b) {
                 // a corner under a header ribbon or another window gets no bracket
@@ -408,7 +439,19 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 break;
             }
             if (cursor && ((o.rgba >> 24) & 0xff) < 0x40) break;   // a fading cursor left behind: not drawn
-            if (cursor) {   // the hand cursor glides between rows over a soft glow
+            if (cursor) {   // the hand cursor glides between rows over a soft glow, just outside its window
+                float cxp = x;
+                {
+                    int best = -1, area = 1 << 30;
+                    const float mx = x + o.dw * 0.5f, my = y + o.dh * 0.5f;
+                    for (uint32_t j = 0; j < m.nops; ++j) {
+                        const GpuUiKgOp& w = m.op[j];
+                        if (w.type != GPU_KG_WINDOW || !w.b || mx < w.x - 4 || mx > w.x + w.dw || my < w.y || my > w.y + w.dh) continue;
+                        if (w.dw * w.dh < area) area = w.dw * w.dh, best = int(j);
+                    }
+                    if (best >= 0) cxp = float(std::max(8, m.op[best].x - o.dw - 1));
+                }
+                const float x = cxp;
                 AnimState& cu = Anim(0x43555253ull + uint64_t(ord[size_t(it.order)]) * 0, x, y);
                 const ImVec2 q = Spring(cu, x, y, 24.0f);
                 const ImVec2 c = P(q.x + o.dw * 0.5f, q.y + o.dh * 0.5f);
@@ -629,6 +672,12 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
                 HaloText(dl, font, fs, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), sel ? col::kText : col::kTextDim,
                          kItem[rows[r]], t);
             }
+            break;
+        }
+        case GPU_KG_THUMB: {   // a save thumbnail (the game draws the picture): a frame and brackets around it
+            const ImVec2 a = P(x - 1, y - 1), b = P(x + o.dw + 1, y + o.dh + 1);
+            dl->AddRect(a, b, Alpha(col::kFrame, 0.85f * tw), 0, 0, 1.0f * k);
+            DrawBrackets(dl, ImVec2(a.x - 2 * k, a.y - 2 * k), ImVec2(b.x + 2 * k, b.y + 2 * k), Alpha(col::kCyan, 0.8f * tw), 6 * k, 1.2f * k);
             break;
         }
         case GPU_KG_PAUSE: {   // a centred card: title, a rule, two prompts in a column
