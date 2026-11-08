@@ -21,6 +21,89 @@ extern void *CreateXrgPaint2D_sub(const char *source_file, int line);
 extern RgBxx *LoadRgBxx_sub(const char *name, const char *source_file, int line);
 extern RgBxxPic *RgBxxGetPic(RgBxx *archive, const char *picture_name);
 extern void RgWarn(const char *format, const char *source_file, int line, ...);
+const char D_00A57550[] __attribute__((weak)) = "help_bg_pad.bxx";
+const char D_00A57560[] __attribute__((weak)) = "help_bg_grad.bxx";
+const char D_00A57578[] __attribute__((weak)) = "help_03_03_low.bxx";
+const char D_00A57590[] __attribute__((weak)) = "help_03_03_high2.bxx";
+const char D_00A575A8[] __attribute__((weak)) = "help_03_03_high.bxx";
+const char D_00A575C0[] __attribute__((weak)) = "help_03_02.bxx";
+const char D_00A575D0[] __attribute__((weak)) = "help_03_01.bxx";
+const char D_00A575E0[] __attribute__((weak)) = "help_02_03_mid2.bxx";
+const char D_00A575F8[] __attribute__((weak)) = "help_02_03_mid.bxx";
+const char D_00A57610[] __attribute__((weak)) = "help_02_03_09.bxx";
+const char D_00A57628[] __attribute__((weak)) = "help_02_03_low2.bxx";
+const char D_00A57640[] __attribute__((weak)) = "help_02_03_low.bxx";
+const char D_00A57658[] __attribute__((weak)) = "help_02_03_high.bxx";
+const char D_00A57670[] __attribute__((weak)) = "help_01_03_mid.bxx";
+const char D_00A57688[] __attribute__((weak)) = "help_01_03_low.bxx";
+const char D_00A576A0[] __attribute__((weak)) = "help_01_03_high.bxx";
+const char D_00A576B8[] __attribute__((weak)) = "help_01_03_high2.bxx";
+const char D_00A576D0[] __attribute__((weak)) = "help_01_02.bxx";
+const char D_00A576E0[] __attribute__((weak)) = "help_01_01.bxx";
+const char D_00A576F0[] __attribute__((weak)) = "bg_ctrlr";
+const char D_00A57700[] __attribute__((weak)) = "bg_grad";
+const char D_00A57708[] __attribute__((weak)) = "03_03_09";
+const char D_00A57718[] __attribute__((weak)) = "03_03_01";
+const char D_00A57728[] __attribute__((weak)) = "03_03_22";
+const char D_00A57738[] __attribute__((weak)) = "03_03_21";
+const char D_00A57748[] __attribute__((weak)) = "03_03_20";
+const char D_00A57758[] __attribute__((weak)) = "03_03_17";
+const char D_00A57768[] __attribute__((weak)) = "03_03_16";
+const char D_00A57778[] __attribute__((weak)) = "03_03_15";
+const char D_00A57788[] __attribute__((weak)) = "03_03_14";
+const char D_00A57798[] __attribute__((weak)) = "03_03_13";
+const char D_00A577A8[] __attribute__((weak)) = "03_03_12";
+const char D_00A577B8[] __attribute__((weak)) = "03_03_11";
+const char D_00A577C8[] __attribute__((weak)) = "03_03_10";
+const char D_00A577D8[] __attribute__((weak)) = "03_02_01";
+const char D_00A577E8[] __attribute__((weak)) = "03_01_04";
+const char D_00A577F8[] __attribute__((weak)) = "03_01_03";
+const char D_00A57808[] __attribute__((weak)) = "03_01_02";
+const char D_00A57818[] __attribute__((weak)) = "03_01_01";
+const char D_00A57828[] __attribute__((weak)) = "02_03_17";
+const char D_00A57838[] __attribute__((weak)) = "02_03_16";
+const char D_00A57848[] __attribute__((weak)) = "02_03_15";
+const char D_00A57858[] __attribute__((weak)) = "02_03_14";
+const char D_00A57868[] __attribute__((weak)) = "02_03_13";
+const char D_00A57878[] __attribute__((weak)) = "02_03_12";
+const char D_00A57888[] __attribute__((weak)) = "02_03_11";
+const char D_00A57898[] __attribute__((weak)) = "02_03_10";
+const char D_00A578A8[] __attribute__((weak)) = "02_03_09_";
+const char D_00A578B8[] __attribute__((weak)) = "02_03_08";
+const char D_00A578C8[] __attribute__((weak)) = "02_03_07";
+const char D_00A578D8[] __attribute__((weak)) = "02_03_06";
+const char D_00A578E8[] __attribute__((weak)) = "02_03_05";
+const char D_00A578F8[] __attribute__((weak)) = "02_03_04";
+const char D_00A57908[] __attribute__((weak)) = "02_03_03";
+const char D_00A57918[] __attribute__((weak)) = "02_03_02";
+const char D_00A57928[] __attribute__((weak)) = "02_03_01";
+const char D_00A57938[] __attribute__((weak)) = "02_03_22";
+const char D_00A57948[] __attribute__((weak)) = "02_03_21";
+const char D_00A57958[] __attribute__((weak)) = "02_03_20";
+const char D_00A57968[] __attribute__((weak)) = "01_03_09";
+const char D_00A57978[] __attribute__((weak)) = "01_03_08";
+const char D_00A57988[] __attribute__((weak)) = "01_03_07";
+const char D_00A57998[] __attribute__((weak)) = "01_03_06";
+const char D_00A579A8[] __attribute__((weak)) = "01_03_05";
+const char D_00A579B8[] __attribute__((weak)) = "01_03_04";
+const char D_00A579C8[] __attribute__((weak)) = "01_03_03";
+const char D_00A579D8[] __attribute__((weak)) = "01_03_02";
+const char D_00A579E8[] __attribute__((weak)) = "01_03_01";
+const char D_00A579F8[] __attribute__((weak)) = "01_03_22";
+const char D_00A57A08[] __attribute__((weak)) = "01_03_21";
+const char D_00A57A18[] __attribute__((weak)) = "01_03_20";
+const char D_00A57A28[] __attribute__((weak)) = "01_03_19";
+const char D_00A57A38[] __attribute__((weak)) = "01_03_18";
+const char D_00A57A48[] __attribute__((weak)) = "01_03_16";
+const char D_00A57A58[] __attribute__((weak)) = "01_03_14";
+const char D_00A57A68[] __attribute__((weak)) = "01_03_12";
+const char D_00A57A78[] __attribute__((weak)) = "01_03_11";
+const char D_00A57A88[] __attribute__((weak)) = "01_02_02";
+const char D_00A57A98[] __attribute__((weak)) = "01_02_01";
+const char D_00A57AA8[] __attribute__((weak)) = "01_01_02";
+const char D_00A57AB8[] __attribute__((weak)) = "01_01_01";
+const char s_str_00A57AC8[] __asm__("D_00A57AC8") = "pHelp != NIL";
+const char s_str_00A57AD8[] __asm__("D_00A57AD8") = "../rg_help.euc.c";
 const char D_00A57AF0[] = "i < LOAD_CAPA";
 const char D_00A57B00[] = "'%s' pic is not exist in '%s'";
 const char D_00A57B20[] = "'%s' bxx is not loaded";
@@ -441,6 +524,9 @@ typedef union RgHelpAlignedUvRect {
 extern const RgHelpAlignedUvRect D_00A57B50;
 extern const RgHelpAlignedUvRect D_00A57B60;
 
+const RgHelpColor s_color_00A57B40 __asm__("D_00A57B40") __attribute__((aligned(16))) = { { 0x0000008000000080LL, 0x0000007F00000080LL } };
+const RgHelpAlignedUvRect s_upperCrop_00A57B50 __asm__("D_00A57B50") __attribute__((aligned(16))) = { { 0, 0, 432, 160 } };
+const RgHelpAlignedUvRect s_sideCrop_00A57B60 __asm__("D_00A57B60") __attribute__((aligned(16))) = { { 80, 0, 432, 160 } };
 static void _paint_mode_left(RgHelp *pHelp)
 {
     RgHelpAlignedUvRect upper_crop;
@@ -611,3 +697,112 @@ static void _paint_mode_right(RgHelp *pHelp)
     _paint_lin(paintContext, pictures[1], 0, 0);
     _paint_lin(paintContext, pictures[45], 0, 360);
 }
+
+int s_aColor[4] = { 128, 128, 128, 128 };
+
+const char *s_apszFileTbl_0[19] = {
+    D_00A576E0,
+    D_00A576D0,
+    D_00A576B8,
+    D_00A576A0,
+    D_00A57688,
+    D_00A57670,
+    D_00A57658,
+    D_00A57640,
+    D_00A57628,
+    D_00A57610,
+    D_00A575F8,
+    D_00A575E0,
+    D_00A575D0,
+    D_00A575C0,
+    D_00A575A8,
+    D_00A57590,
+    D_00A57578,
+    D_00A57560,
+    D_00A57550,
+};
+int D_00A5056C = 0; /* alignment pad */
+
+const char *s_ainPicNameTbl_1[62][2] = {
+    { D_00A576E0, D_00A57AB8 },
+    { D_00A576E0, D_00A57AA8 },
+    { D_00A576D0, D_00A57A98 },
+    { D_00A576D0, D_00A57A88 },
+    { D_00A576A0, D_00A57A78 },
+    { D_00A576A0, D_00A57A68 },
+    { D_00A576A0, D_00A57A58 },
+    { D_00A576A0, D_00A57A48 },
+    { D_00A576A0, D_00A57A38 },
+    { D_00A576B8, D_00A57A28 },
+    { D_00A576B8, D_00A57A18 },
+    { D_00A576B8, D_00A57A08 },
+    { D_00A576B8, D_00A579F8 },
+    { D_00A57688, D_00A579E8 },
+    { D_00A57688, D_00A579D8 },
+    { D_00A57688, D_00A579C8 },
+    { D_00A57688, D_00A579B8 },
+    { D_00A57670, D_00A579A8 },
+    { D_00A57670, D_00A57998 },
+    { D_00A57670, D_00A57988 },
+    { D_00A57670, D_00A57978 },
+    { D_00A57670, D_00A57968 },
+    { D_00A57658, D_00A57958 },
+    { D_00A57658, D_00A57948 },
+    { D_00A57658, D_00A57938 },
+    { D_00A57640, D_00A57928 },
+    { D_00A57640, D_00A57918 },
+    { D_00A57640, D_00A57908 },
+    { D_00A57640, D_00A578F8 },
+    { D_00A57628, D_00A578E8 },
+    { D_00A57628, D_00A578D8 },
+    { D_00A57628, D_00A578C8 },
+    { D_00A57628, D_00A578B8 },
+    { D_00A57610, D_00A578A8 },
+    { D_00A575F8, D_00A57898 },
+    { D_00A575F8, D_00A57888 },
+    { D_00A575F8, D_00A57878 },
+    { D_00A575F8, D_00A57868 },
+    { D_00A575F8, D_00A57858 },
+    { D_00A575F8, D_00A57848 },
+    { D_00A575E0, D_00A57838 },
+    { D_00A575E0, D_00A57828 },
+    { D_00A575D0, D_00A57818 },
+    { D_00A575D0, D_00A57808 },
+    { D_00A575D0, D_00A577F8 },
+    { D_00A575D0, D_00A577E8 },
+    { D_00A575C0, D_00A577D8 },
+    { D_00A575A8, D_00A577C8 },
+    { D_00A575A8, D_00A577B8 },
+    { D_00A575A8, D_00A577A8 },
+    { D_00A575A8, D_00A57798 },
+    { D_00A575A8, D_00A57788 },
+    { D_00A575A8, D_00A57778 },
+    { D_00A575A8, D_00A57768 },
+    { D_00A575A8, D_00A57758 },
+    { D_00A57590, D_00A57748 },
+    { D_00A57590, D_00A57738 },
+    { D_00A57590, D_00A57728 },
+    { D_00A57578, D_00A57718 },
+    { D_00A57578, D_00A57708 },
+    { D_00A57560, D_00A57700 },
+    { D_00A57550, D_00A576F0 },
+};
+
+RgHelpMoveEntry s_moveTbl_00A50760[16] __asm__("s_anMoveTbl_2") = {
+    { -1, 4, -1, 1 },
+    { -1, 5, 0, 2 },
+    { -1, 6, 1, 3 },
+    { -1, 7, 2, 4 },
+    { 0, 8, 3, 5 },
+    { 1, 8, 4, 6 },
+    { 2, 9, 5, 7 },
+    { 3, 9, 6, 8 },
+    { 4, 10, 7, 9 },
+    { 7, 12, 8, 10 },
+    { 8, 13, 9, 11 },
+    { 8, 14, 10, 12 },
+    { 9, 15, 11, 13 },
+    { 10, -1, 12, 14 },
+    { 11, -1, 13, 15 },
+    { 12, -1, 14, -1 },
+};

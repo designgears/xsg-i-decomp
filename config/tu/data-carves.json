@@ -23341,50 +23341,148 @@
    ]
   },
   "ov12/tu076_00a420e0": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a57af0",
-      "0x00a57b40"
+      "0x00a50510",
+      "0x00a50860"
      ],
      "generated": [
-      "0x00a57af0",
-      "0x00a57b40"
+      "0x00a50510",
+      "0x00a50860"
      ],
      "generated_by": [
-      "_InitHelp"
+      "_InitHelp",
+      "_color",
+      "_control_mode_left",
+      "_set_global_blight"
      ],
      "c_owned_symbols": [
-      "D_00A57AF0",
-      "D_00A57B00",
-      "D_00A57B20"
+      "s_aColor",
+      "s_apszFileTbl_0",
+      "D_00A5056C",
+      "s_ainPicNameTbl_1",
+      "s_anMoveTbl_2"
      ],
-     "also_referenced_by_c": [
-      "D_00A57AC8",
-      "D_00A57AD8",
-      "D_00A57B40",
-      "D_00A57B50",
-      "D_00A57B60"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/ov12/build/scaffold/src/ov12/rg_help.o"
      }
-    },
+    }
+   ],
+   ".rodata": [
     {
      "range": [
-      "0x00a57b70",
+      "0x00a57550",
       "0x00a57bb0"
      ],
      "generated": [
-      "0x00a57b70",
+      "0x00a57550",
       "0x00a57bb0"
      ],
      "generated_by": [
+      "CreateRgHelp",
+      "DisposeRgHelp",
+      "RgHelpDisp",
+      "RgHelpIsEnd",
+      "RgHelpPassTime",
+      "_DestructHelp",
+      "_InitHelp",
+      "_paint_b",
       "_paint_mode_left"
      ],
      "c_owned_symbols": [
+      "D_00A57550",
+      "D_00A57560",
+      "D_00A57578",
+      "D_00A57590",
+      "D_00A575A8",
+      "D_00A575C0",
+      "D_00A575D0",
+      "D_00A575E0",
+      "D_00A575F8",
+      "D_00A57610",
+      "D_00A57628",
+      "D_00A57640",
+      "D_00A57658",
+      "D_00A57670",
+      "D_00A57688",
+      "D_00A576A0",
+      "D_00A576B8",
+      "D_00A576D0",
+      "D_00A576E0",
+      "D_00A576F0",
+      "D_00A57700",
+      "D_00A57708",
+      "D_00A57718",
+      "D_00A57728",
+      "D_00A57738",
+      "D_00A57748",
+      "D_00A57758",
+      "D_00A57768",
+      "D_00A57778",
+      "D_00A57788",
+      "D_00A57798",
+      "D_00A577A8",
+      "D_00A577B8",
+      "D_00A577C8",
+      "D_00A577D8",
+      "D_00A577E8",
+      "D_00A577F8",
+      "D_00A57808",
+      "D_00A57818",
+      "D_00A57828",
+      "D_00A57838",
+      "D_00A57848",
+      "D_00A57858",
+      "D_00A57868",
+      "D_00A57878",
+      "D_00A57888",
+      "D_00A57898",
+      "D_00A578A8",
+      "D_00A578B8",
+      "D_00A578C8",
+      "D_00A578D8",
+      "D_00A578E8",
+      "D_00A578F8",
+      "D_00A57908",
+      "D_00A57918",
+      "D_00A57928",
+      "D_00A57938",
+      "D_00A57948",
+      "D_00A57958",
+      "D_00A57968",
+      "D_00A57978",
+      "D_00A57988",
+      "D_00A57998",
+      "D_00A579A8",
+      "D_00A579B8",
+      "D_00A579C8",
+      "D_00A579D8",
+      "D_00A579E8",
+      "D_00A579F8",
+      "D_00A57A08",
+      "D_00A57A18",
+      "D_00A57A28",
+      "D_00A57A38",
+      "D_00A57A48",
+      "D_00A57A58",
+      "D_00A57A68",
+      "D_00A57A78",
+      "D_00A57A88",
+      "D_00A57A98",
+      "D_00A57AA8",
+      "D_00A57AB8",
+      "D_00A57AC8",
+      "D_00A57AD8",
+      "D_00A57AF0",
+      "D_00A57B00",
+      "D_00A57B20",
+      "D_00A57B40",
+      "D_00A57B50",
+      "D_00A57B60",
       "jtbl_00A57B70"
      ],
      "also_referenced_by_c": [],
