@@ -10707,34 +10707,10 @@
     {
      "range": [
       "0x0041e290",
-      "0x0041e3c4"
-     ],
-     "generated": [
-      "0x0041e290",
-      "0x0041e3c4"
-     ],
-     "generated_by": [
-      "scCreateTask",
-      "scParseScript"
-     ],
-     "c_owned_symbols": [
-      "_zeroPos_0041E290",
-      "_scFuncHandler"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sc_get.o"
-     }
-    },
-    {
-     "range": [
-      "0x0041e3d0",
       "0x004228d0"
      ],
      "generated": [
-      "0x0041e3d0",
+      "0x0041e290",
       "0x004228d0"
      ],
      "generated_by": [
@@ -10763,10 +10739,14 @@
       "scMOVIEScript",
       "scOBJEVEScript",
       "scPRINTScript",
+      "scParseScript",
       "scREVEScript",
       "scSetReg"
      ],
      "c_owned_symbols": [
+      "_zeroPos_0041E290",
+      "_scFuncHandler",
+      "D_0041E3C4",
       "_scriptWork"
      ],
      "also_referenced_by_c": [],
@@ -10780,20 +10760,27 @@
    ".rodata": [
     {
      "range": [
-      "0x004cc880",
-      "0x004cc898"
+      "0x004cc790",
+      "0x004cc8b0"
      ],
      "generated": [
-      "0x004cc880",
-      "0x004cc898"
+      "0x004cc790",
+      "0x004cc8ad"
      ],
      "generated_by": [
-      "scBRAScript"
+      "scAnalyzeScriptCf",
+      "scBRAScript",
+      "scCreateScript",
+      "scCreateTask",
+      "scDestroyScript2",
+      "scGOSUBScript",
+      "scGetReg",
+      "scGetRegAdr",
+      "scMOVIEScript",
+      "scRETURNScript",
+      "scSetReg"
      ],
      "c_owned_symbols": [
-      "jtbl_004CC880"
-     ],
-     "also_referenced_by_c": [
       "D_004CC790",
       "D_004CC7B8",
       "D_004CC7E8",
@@ -10802,8 +10789,71 @@
       "D_004CC830",
       "D_004CC850",
       "D_004CC870",
+      "jtbl_004CC880",
       "D_004CC898"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/sc_get.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dbb30",
+      "0x004dbb5c"
+     ],
+     "generated": [
+      "0x004dbb30",
+      "0x004dbb5c"
+     ],
+     "generated_by": [
+      "scABORTScript",
+      "scAdrToImm",
+      "scCMDPUTOFFScript",
+      "scCMDPUTONScript",
+      "scEFFECT2Script",
+      "scEFFECT3Script",
+      "scEFFECTScript",
+      "scExecScript",
+      "scFreezeCamera",
+      "scGetAdrIdx",
+      "scGetAdrImmScript",
+      "scGetCmdAdrScript",
+      "scGetCmdScript",
+      "scGetImmAdrImmIdx",
+      "scGetReg",
+      "scGetRegAdr",
+      "scGetTableAdrIdx",
+      "scGetTableAdrImmIdx",
+      "scGetTableNumIdx",
+      "scInitScript",
+      "scMISSILE3Script",
+      "scMISSILEScript",
+      "scMOVIEScript",
+      "scOBJEVEScript",
+      "scPRINTScript",
+      "scParseScript",
+      "scRDUMPScript",
+      "scREVEScript",
+      "scSetAmbient",
+      "scSetReg"
+     ],
+     "c_owned_symbols": [
+      "_cmdPut",
+      "D_004DBB32",
+      "_scMslCate",
+      "D_004DBB38",
+      "D_004DBB40",
+      "D_004DBB48",
+      "_nowScript",
+      "_nowEvent",
+      "_nowDataIdx"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
