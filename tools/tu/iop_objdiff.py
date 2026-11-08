@@ -269,6 +269,87 @@ def assemble_reference(root, destination, group, original, rows, contract, tools
     return obj, spans
 
 
+def measured_pair(prefix, target, base, root):
+    """Make the reference's attributed data and the C object comparable, byte for byte.
+
+    The reference keeps the original's attributed pools in `<sec>.iop_original`
+    sections, which objdiff never pairs with the C object's `.rodata`/`.data`/
+    `.bss`: the C's data was never measured. A report copy of the reference
+    gives them their real names; the C object gets the EE report's treatment
+    (an anchor so anonymous literals are compared, its own end alignment fill
+    trimmed where the reference section is shorter, COMMON objects placed in
+    .bss at the reference's offset when name and size agree: the IRX code is
+    byte-identical, so every reference to them resolves to that address).
+    """
+    from tu import objdiff_inputs
+    from tu.elfinfo import Elf
+    telf = Elf(Path(target).read_bytes())
+    names = {x.name for x in telf.sections}
+    measured = Path(target).with_name('target.measured.o')
+    args = []
+    for x in sorted(names):
+        if x.endswith('.iop_original'):
+            plain = x[:-len('.iop_original')]
+            if plain in names:
+                args.append(f'--remove-section={plain}')
+            args.append(f'--rename-section={x}={plain}')
+    run([str(prefix) + 'objcopy', *args, target, measured], root)
+    objdiff_inputs.anchor_data_sections(prefix, base, root)
+    place_common(base, measured)
+    trim_base_fill(base, measured)
+    objdiff_inputs.size_bss_symbols(measured)
+    objdiff_inputs.size_bss_symbols(base)
+    return measured
+
+
+def place_common(base, target):
+    """COMMON objects of the C object at the reference's .bss offset (same name and size)."""
+    from tu.elfinfo import Elf
+    belf, telf = Elf(Path(base).read_bytes()), Elf(Path(target).read_bytes())
+    tbss = [x for x in telf.sections if x.name == '.bss']
+    bbss = [x for x in belf.sections if x.name == '.bss']
+    if not tbss or not bbss:
+        return
+    want = {y.name: y for y in telf.symbols if y.shndx == tbss[0].index and y.size}
+    data = bytearray(belf.data)
+    symtab = next(x for x in belf.sections if x.type == 2)
+    end = bbss[0].size
+    for y in belf.symbols:
+        t = want.get(y.name)
+        if y.shndx == 0xfff2 and t is not None and t.size == y.size:
+            at = symtab.offset + 16 * y.index
+            struct.pack_into('<I', data, at + 4, t.value)
+            struct.pack_into('<H', data, at + 14, bbss[0].index)
+            end = max(end, t.value + t.size)
+    struct.pack_into('<I', data, belf.shoff + bbss[0].index * belf.shentsize + 20, end)
+    Path(base).write_bytes(bytes(data))
+
+
+def trim_base_fill(base, target):
+    """Drop the C section's end alignment fill (< 16 zero bytes, nothing in it) the reference lacks."""
+    from tu.elfinfo import Elf
+    belf, telf = Elf(Path(base).read_bytes()), Elf(Path(target).read_bytes())
+    tsize = {x.name: x.size for x in telf.sections}
+    data = bytearray(belf.data)
+    symtab = next(x for x in belf.sections if x.type == 2)
+    relocated = {belf.sections[r.info].name: [struct.unpack_from('<I', belf.data, at)[0]
+                                              for at in range(r.offset, r.offset + r.size, 8)]
+                 for r in belf.sections if r.type == 9 and r.info < len(belf.sections)}
+    for x in belf.sections:
+        n = tsize.get(x.name)
+        if x.type != 1 or n is None or not 0 < x.size - n < 16 or any(belf.data[x.offset + n:x.offset + x.size]):
+            continue
+        if any(o >= n for o in relocated.get(x.name, [])) or any(
+                y.shndx == x.index and y.type != 3 and y.value >= n and not y.name.startswith('$anchor')
+                for y in belf.symbols):
+            continue
+        for y in belf.symbols:
+            if y.shndx == x.index and y.value + y.size > n:
+                struct.pack_into('<I', data, symtab.offset + 16 * y.index + 8, max(0, n - y.value))
+        struct.pack_into('<I', data, belf.shoff + x.index * belf.shentsize + 20, n)
+    Path(base).write_bytes(bytes(data))
+
+
 def prepare(root, project, report_path, *, reporting=False):
     from tu import objdiff_inputs
     groups, contract, tools, report = load_evidence(root, report_path, reporting=reporting)
@@ -285,6 +366,7 @@ def prepare(root, project, report_path, *, reporting=False):
         assigned.setdefault(unit, []).extend(spans)
         base = destination / 'base.o'
         objdiff_inputs.strip_debug(prefix, Path(candidate['object']), base, root)
+        target = measured_pair(prefix, target, base, root)
         scope = {f['name']: f['size'] for f in group['functions']}
         verification.require(objdiff_inputs.functions(target) == scope == objdiff_inputs.functions(base),
                              name + ': native object function scope differs')
