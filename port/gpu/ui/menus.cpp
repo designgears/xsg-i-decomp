@@ -323,6 +323,24 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         }
         case GPU_KG_ART: {
             if (o.text[0] == 1) break;   // an inline text icon: drawn with its text
+            if (o.text[2] == 1 + 1 && o.text[3] >= 9 && o.text[3] <= 22 && o.w == 29 && o.h == 20) {
+                // others_uv shoulder tabs (L1 / R1 arrows): the layout's shoulder button with an outward chevron
+                const bool right = o.text[3] == 16 || o.text[3] == 14 || o.text[3] == 12 || o.text[3] == 10 || o.text[3] == 20 || o.text[3] == 22;
+                const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
+                const float h = 13.0f * k;
+                const float w = font->CalcTextSizeA(h * 0.78f, 1e9f, 0, "RB").x + h * 0.7f;
+                const float ch = 4.5f * k, gx = 3 * kx;
+                if (right) {
+                    ShoulderGlyph(dl, font, c.x - (w + gx + ch) * 0.5f, c.y, h, 1);
+                    const float ax = c.x + (w + gx + ch) * 0.5f - ch;
+                    dl->AddTriangleFilled(ImVec2(ax, c.y - ch), ImVec2(ax + ch, c.y), ImVec2(ax, c.y + ch), Alpha(col::kCyan, tw));
+                } else {
+                    const float ax = c.x - (w + gx + ch) * 0.5f;
+                    dl->AddTriangleFilled(ImVec2(ax + ch, c.y - ch), ImVec2(ax, c.y), ImVec2(ax + ch, c.y + ch), Alpha(col::kCyan, tw));
+                    ShoulderGlyph(dl, font, ax + ch + gx, c.y, h, 0);
+                }
+                break;
+            }
             if (o.text[2] == 1 + 2 && o.text[3] >= 0 && o.text[3] < 4) {   // pad_uv[0..3]: the face buttons
                 static const int kPad[4] = {1, 0, 3, 2};   // pad_uv: circle, cross, triangle, square (u 0, 22, 44, 66)
                 const ImVec2 c = P(x + o.dw * 0.5f, y + o.dh * 0.5f);
