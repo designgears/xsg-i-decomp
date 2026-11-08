@@ -889,7 +889,7 @@ segments:
       - [0x2DBD18, sdata, menu_para_pt_rate_get]
       - [0x2DBF28, sdata, menu_agws_para_set]
       - [0x2DC090, sdata, seisan_count_init1]
-      - [0x2DC138, sdata, menu_shop]
+      - [0x2DC0E0, sdata, menu_shop]
       - [0x2DC278, sdata, menu_ether]
       - [0x2DC378, sdata, menu_tec]
       - [0x2DC540, sdata, menu_system]
