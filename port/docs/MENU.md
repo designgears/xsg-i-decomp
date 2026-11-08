@@ -178,6 +178,7 @@ environment variable the setting took over; it is no longer read.
 | `[display] window_scale` | `2` | 1..4 | live | `XSG_GPU_SCALE` | Window size as a multiple of 512x448. |
 | `[display] present` | `mailbox` | mailbox, fifo, immediate, auto | live | `XSG_GPU_PRESENT` | Swapchain present mode (fifo = vsync; replaces XSG_GPU_VSYNC=1). |
 | `[display] aspect` | `4:3` | 4:3, 16:9, stretch | live | `XSG_GPU_ASPECT` | Display aspect ratio. |
+| `[display] widescreen` | `0` | 0, 1 | live | – | Native 16:9 (needs `[renderer] native`): the game widens its screen-edge culling, the native layer draws 684 x 448 with the GS frame pillarboxed in the centre; frames without a native layer stay 4:3 with bars. Overrides `aspect`. |
 | `[display] scale_mode` | `fit` | fit, integer | live | `XSG_GPU_SCALEMODE` | Fit the window or integer scaling. |
 | `[display] filter` | `linear` | linear, nearest | live | `XSG_GPU_FILTER` | Blit filter. |
 | `[renderer] gs` | `gpu` | gpu, soft, both | restart | `XSG_GS` | GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare). |
@@ -363,7 +364,8 @@ place. Without it the title picture is shown upscaled.
 
 Layout (`[display] ui_layout`, `port/gpu/ui/layout.cpp`): every element is placed with an anchor
 (left, right, centre, stretch) at the 4:3 display's proportions. `game` keeps the UI on the
-picture; `wide` moves edge UI out to the window's edges, the groundwork for a widescreen picture.
+picture; `wide` moves edge UI out to the window's edges, the groundwork for a widescreen picture. With `[display] widescreen = 1` the
+game area is the 16:9 picture's centre 4:3 and edge UI is anchored to the picture's edges.
 
 Not captured (still the game's): the menu background (the frozen frame), 3D models (camp menu,
 shop, formation), save thumbnails, the minigames (ov10 Xenocard, ov11 casino, ov12 robot battle: their own 2D painters), and the HDD install screen.
