@@ -216,6 +216,23 @@ def size_bss_symbols(path, real_names=None, base_elf=None, overlay_inner=False):
     Path(path).write_bytes(bytes(data))
 
 
+def unpair_empty_objects(prefix, base, cwd):
+    """Keep the C's zero-size data objects out of objdiff's name pairing.
+
+    An empty table (`char *maptbl0200[] = {}`) is a zero-size symbol sharing
+    its address with the next object; splat's target label of the same name
+    covers that next object's bytes, and objdiff fails pairing the two. A
+    zero-size object covers no bytes, so it is renamed out of the pairing;
+    every byte is still compared through the other symbols and the anchor.
+    """
+    elf = Elf(Path(base).read_bytes())
+    args = [f'--redefine-sym={y.name}={y.name}$empty' for y in elf.symbols
+            if y.type == 1 and y.size == 0 and y.name and 0 < y.shndx < len(elf.sections)
+            and elf.sections[y.shndx].type == 1 and not elf.sections[y.shndx].flags & 4]
+    if args:
+        run([str(prefix) + 'objcopy', *args, base], cwd)
+
+
 def anchor_data_sections(prefix, base, cwd):
     """A local symbol at offset 0 of every data section of the compiled object.
 
@@ -635,6 +652,7 @@ def prepare(root, evidence):
             stripped_base = destination / 'base.nodebug.o'
             strip_debug(prefix, base, stripped_base, unit_dir)
             anchor_data_sections(prefix, stripped_base, unit_dir)
+            unpair_empty_objects(prefix, stripped_base, unit_dir)
             size_bss_symbols(stripped_base)
             unit_config['base_path'] = str(stripped_base)
             base_elf = Elf(stripped_base.read_bytes())
