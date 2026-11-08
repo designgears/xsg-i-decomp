@@ -852,53 +852,94 @@ struct FileFormatTexts { char *text[3]; };
 struct FileFinishTexts { char *text[2]; };
 struct FileProgressTexts { char *text[4]; };
 
-extern char *D_004C3D48[3];
-extern char *D_004C3DF0[3];
-extern char *D_004C3EA0[4];
-extern char *D_004DAA28[];
-extern char *D_004C4018[12];
-extern char *D_004C40E0[3];
-extern char *D_004C41B0[6];
-extern char *D_004C4290[7];
-extern char *D_004C42E8[9];
-extern char *D_004C4418[3];
-extern char *D_004DAA38[];
-extern char *D_004C45E0[4];
-extern char D_004DAA40[], D_004DAA48[], D_004C4310[];
-
 static void MenuFileInfo(TskObject *task, void *data)
 {
-    char *device_text[3];
-    char *operation_text[3];
-    char *selection_text[4];
-    char *list_text[2];
-    char *confirmation_text[12];
-    char *slot_text[3];
-    char *slot_state_text[2][3];
-    char *card_text[7];
-    char *request_text[9];
-    char *status_text;
-    char *format_text[3];
-    char *finish_text[2];
-    char *progress_text[4];
+    struct FileDeviceTexts device_text = { {
+        "Cancel.",
+        "Save",
+        "Load",
+    } };
+    struct FileOperationTexts operation_text = { {
+        ".\nDo not remove Memory Card (PS2), reset, or switch off the console.",
+        ".\nDo not turn power off.",
+        "Checking Memory Card (PS2) in MEMORY CARD ",
+    } };
+    struct FileSelectionTexts selection_text = { {
+        "Select MEMORY CARD slot to save.",
+        "Select MEMORY CARD slot to load.",
+        "No Memory Card (PS2) in MEMORY CARD ",
+        "Hard Disk Drive is not connected.",
+    } };
+    struct FileListTexts list_text = { {
+        "Select location for save data.",
+        "Select the data you wish to load.",
+    } };
+    struct FileConfirmationTexts confirmation_text = { {
+        "New data will be saved to the Memory Card (PS2) in\nMEMORY CARD ",
+        "Overwrite selected save data?",
+        "Formatting Memory Card (PS2) in MEMORY CARD ",
+        "Save complete! \x1f",
+        "Saving to Memory Card (PS2) in MEMORY CARD ",
+        "Loading from Memory Card (PS2) in MEMORY CARD ",
+        ".\nDo not turn power off.",
+        "Saving to Memory Card (PS2) in MEMORY CARD ",
+        "Loading from Memory Card (PS2) in MEMORY CARD ",
+        ".\nDo not remove Memory Card (PS2), reset, or switch off the console.",
+        "Saving new game data.",
+        ".\nDo not remove Memory Card (PS2), reset, or switch off the console.",
+    } };
+    struct FileSlotTexts slot_text = { {
+        "Load selected data from Memory Card (PS2) in \nMEMORY CARD ",
+        "Load complete! \x1f",
+        "Load selected data from Memory Card (PS2) in\nMEMORY CARD ",
+    } };
+    struct FileSlotStateTexts slot_state_text = { {
+        { "Save failed. \x1f",
+          "Selected save data is corrupted and cannot be overwritten. \x1f",
+          "" },
+        { "Load failed. \x1f",
+          "Load failed. Selected save data is corrupted. \x1f",
+          "Load failed. Save data does not exist. \x1f" },
+    } };
+    struct FileCardTexts card_text = { {
+        "Memory Card (PS2) in MEMORY CARD ",
+        "Format Memory Card (PS2) in MEMORY CARD ",
+        "Formatting complete! \x1f",
+        "Formatting failed. \x1f",
+        "The Memory Card (PS2) in MEMORY CARD\n",
+        " is unformatted. \x1f",
+        " is unformatted. \x1f",
+    } };
+    struct FileRequestTexts request_text = { {
+        "Save failed. \x1f",
+        "Load failed. \x1f",
+        "Cancel Save.",
+        "Cancel load.",
+        "No Memory Card (PS2) in MEMORY CARD ",
+        "Memory Card (PS2) in MEMORY CARD ",
+        "Memory Card (PS2) in MEMORY CARD ",
+        "\ncannot be accessed. \x1f",
+        "\ncannot be accessed. \x1f",
+    } };
+    char *status_text = "Insert a Memory Card (PS2)\nin MEMORY CARD slot 1 or slot 2. Press \x1e\x01 to continue. \x1f";
+    struct FileFormatTexts format_text = { {
+        "Insufficient space on the Memory Card (PS2) in \nMEMORY CARD ",
+        "Insufficient free space to\ncreate save data. \x1f",
+        ". Xenosaga requires 165KB of free \nspace to save data. \x1f",
+    } };
+    struct FileFinishTexts finish_text = { {
+        "Xenosaga save data does not exist. \x1f",
+        "Xenosaga save data does not exist\non Memory Card (PS2) in MEMORY CARD ",
+    } };
+    struct FileProgressTexts progress_text = { {
+        "Exceeds the maximum number of save files\non Hard Disk Drive.Additional save files cannot be\ncreated. \x1f",
+        "Exceeds the maximum number of folders that\nmay be created.\nAdditional folders may not be created. \x1f",
+        "Not enough free space exists to\ncreate save files. \x1f",
+        "Exceeds the maximum number of save\nfiles on Hard Disk Drive.",
+    } };
     short target_y;
     short target_height;
-    struct FileInfoContext *view;
-
-    *(struct FileDeviceTexts *)device_text = *(struct FileDeviceTexts *)D_004C3D48;
-    *(struct FileOperationTexts *)operation_text = *(struct FileOperationTexts *)D_004C3DF0;
-    *(struct FileSelectionTexts *)selection_text = *(struct FileSelectionTexts *)D_004C3EA0;
-    view = data;
-    *(struct FileListTexts *)list_text = *(struct FileListTexts *)D_004DAA28;
-    *(struct FileConfirmationTexts *)confirmation_text = *(struct FileConfirmationTexts *)D_004C4018;
-    *(struct FileSlotTexts *)slot_text = *(struct FileSlotTexts *)D_004C40E0;
-    *(struct FileSlotStateTexts *)slot_state_text = *(struct FileSlotStateTexts *)D_004C41B0;
-    *(struct FileCardTexts *)card_text = *(struct FileCardTexts *)D_004C4290;
-    *(struct FileRequestTexts *)request_text = *(struct FileRequestTexts *)D_004C42E8;
-    status_text = D_004C4310;
-    *(struct FileFormatTexts *)format_text = *(struct FileFormatTexts *)D_004C4418;
-    *(struct FileFinishTexts *)finish_text = *(struct FileFinishTexts *)D_004DAA38;
-    *(struct FileProgressTexts *)progress_text = *(struct FileProgressTexts *)D_004C45E0;
+    struct FileInfoContext *view = data;
 
     switch (task->state) {
     case 0: {
@@ -930,7 +971,7 @@ static void MenuFileInfo(TskObject *task, void *data)
         target_height = 54;
         switch (FileWork->state) {
         case 36:
-            eMessageCpy(view->text, selection_text[FileWork->text_index]);
+            eMessageCpy(view->text, selection_text.text[FileWork->text_index]);
             switch (FileWork->device_selection) {
             case 0:
             case 1: {
@@ -940,7 +981,7 @@ static void MenuFileInfo(TskObject *task, void *data)
                 case 0:
                 case 129:
                 case 130:
-                    eMessageCpy(view->text, selection_text[2]);
+                    eMessageCpy(view->text, selection_text.text[2]);
                     eMessageCat(FileSlotNameGet(FileWork->device_selection));
                     eMessageCat(".");
                     break;
@@ -948,7 +989,7 @@ static void MenuFileInfo(TskObject *task, void *data)
                 break;
             }
             case 2:
-                eMessageCpy(view->text, device_text[0]);
+                eMessageCpy(view->text, device_text.text[0]);
                 break;
             }
             break;
@@ -959,13 +1000,13 @@ static void MenuFileInfo(TskObject *task, void *data)
 
             if (update_text) {
                 if (FileWork->use_hdd) {
-                    eMessageCpy(view->text, operation_text[2]);
+                    eMessageCpy(view->text, operation_text.text[2]);
                     eMessageCat(FileSlotNameGet(2));
-                    eMessageCat(operation_text[1]);
+                    eMessageCat(operation_text.text[1]);
                 } else {
-                    eMessageCpy(view->text, operation_text[2]);
+                    eMessageCpy(view->text, operation_text.text[2]);
                     eMessageCat(FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(operation_text[0]);
+                    eMessageCat(operation_text.text[0]);
                 }
             }
             target_y = 352;
@@ -974,20 +1015,20 @@ static void MenuFileInfo(TskObject *task, void *data)
         }
         case 40:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, list_text[FileWork->text_index]);
+                eMessageCpy(view->text, list_text.text[FileWork->text_index]);
             target_y = 404;
             target_height = 30;
             break;
         case 41:
             switch (((UpFileObjectSystem *)FileObjectDataSystem)->state[FileWork->selected_slot]) {
             case 2:
-                eMessageCpy(view->text, slot_state_text[FileWork->text_index][2]);
+                eMessageCpy(view->text, slot_state_text.text[FileWork->text_index][2]);
                 break;
             case 3:
-                eMessageCpy(view->text, slot_state_text[FileWork->text_index][0]);
+                eMessageCpy(view->text, slot_state_text.text[FileWork->text_index][0]);
                 break;
             case 4:
-                eMessageCpy(view->text, slot_state_text[FileWork->text_index][1]);
+                eMessageCpy(view->text, slot_state_text.text[FileWork->text_index][1]);
                 break;
             }
             break;
@@ -997,27 +1038,27 @@ static void MenuFileInfo(TskObject *task, void *data)
                     if (FileWork->use_hdd) {
                         eMessageCpy(view->text, FileSlotNameGet(2));
                         if (((UpFileObjectSystem *)FileObjectDataSystem)->state[FileWork->selected_slot] == 2)
-                            eMessageCat(confirmation_text[10]);
+                            eMessageCat(confirmation_text.text[10]);
                         else
-                            eMessageCpy(view->text, confirmation_text[1]);
+                            eMessageCpy(view->text, confirmation_text.text[1]);
                     } else {
                         int card_slot = FileWork->selected_slot;
 
                         if (((UpFileObjectSystem *)FileObjectDataSystem)->state[card_slot] == 2) {
-                            eMessageCpy(view->text, confirmation_text[0]);
+                            eMessageCpy(view->text, confirmation_text.text[0]);
                             eMessageCat(FileSlotNameGet(FileWork->card_number));
                             eMessageCat(".");
                         } else {
-                            eMessageCpy(view->text, confirmation_text[1]);
+                            eMessageCpy(view->text, confirmation_text.text[1]);
                         }
                     }
                 } else {
                     if (FileWork->use_hdd) {
-                        eMessageCpy(view->text, slot_text[2]);
+                        eMessageCpy(view->text, slot_text.text[2]);
                         eMessageCat(FileSlotNameGet(2));
                         eMessageCat(".");
                     } else {
-                        eMessageCpy(view->text, slot_text[0]);
+                        eMessageCpy(view->text, slot_text.text[0]);
                         eMessageCat(FileSlotNameGet(FileWork->card_number));
                         eMessageCat(".");
                     }
@@ -1030,18 +1071,18 @@ static void MenuFileInfo(TskObject *task, void *data)
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
                     if (FileWork->text_index == 0)
-                        eMessageCpy(view->text, confirmation_text[4]);
+                        eMessageCpy(view->text, confirmation_text.text[4]);
                     else
-                        eMessageCpy(view->text, confirmation_text[5]);
+                        eMessageCpy(view->text, confirmation_text.text[5]);
                     eMessageCat(FileSlotNameGet(2));
-                    eMessageCat(confirmation_text[6]);
+                    eMessageCat(confirmation_text.text[6]);
                 } else {
                     if (FileWork->text_index == 0)
-                        eMessageCpy(view->text, confirmation_text[7]);
+                        eMessageCpy(view->text, confirmation_text.text[7]);
                     else
-                        eMessageCpy(view->text, confirmation_text[8]);
+                        eMessageCpy(view->text, confirmation_text.text[8]);
                     eMessageCat(FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(confirmation_text[9]);
+                    eMessageCat(confirmation_text.text[9]);
                 }
             }
             target_y = 336;
@@ -1049,56 +1090,56 @@ static void MenuFileInfo(TskObject *task, void *data)
             break;
         case 132:
             if ((FileWork->input_flags & 1) && !FileWork->use_hdd) {
-                eMessageCpy(view->text, confirmation_text[2]);
+                eMessageCpy(view->text, confirmation_text.text[2]);
                 eMessageCat(FileSlotNameGet(FileWork->card_number));
-                eMessageCat(confirmation_text[11]);
+                eMessageCat(confirmation_text.text[11]);
             }
             target_y = 336;
             target_height = 78;
             break;
         case 46:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, confirmation_text[3]);
+                eMessageCpy(view->text, confirmation_text.text[3]);
             break;
         case 82:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, slot_text[1]);
+                eMessageCpy(view->text, slot_text.text[1]);
             break;
         case 128:
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
-                    eMessageCpy(view->text, card_text[4]);
+                    eMessageCpy(view->text, card_text.text[4]);
                     eMessageCat(FileSlotNameGet(2));
-                    eMessageCat(card_text[6]);
+                    eMessageCat(card_text.text[6]);
                 } else {
-                    eMessageCpy(view->text, card_text[0]);
+                    eMessageCpy(view->text, card_text.text[0]);
                     eMessageCat(FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(card_text[5]);
+                    eMessageCat(card_text.text[5]);
                 }
             }
             break;
         case 130:
             if (FileWork->input_flags & 1) {
-                eMessageCpy(view->text, card_text[1]);
+                eMessageCpy(view->text, card_text.text[1]);
                 eMessageCat(FileSlotNameGet(FileWork->card_number));
                 eMessageCat(".");
             }
             break;
         case 134:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, card_text[2]);
+                eMessageCpy(view->text, card_text.text[2]);
             break;
         case 135:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, card_text[3]);
+                eMessageCpy(view->text, card_text.text[3]);
             break;
         case 144:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, request_text[FileWork->text_index]);
+                eMessageCpy(view->text, request_text.text[FileWork->text_index]);
             break;
         case 145:
             if (FileWork->input_flags & 1) {
-                eMessageCpy(view->text, request_text[4]);
+                eMessageCpy(view->text, request_text.text[4]);
                 eMessageCat(FileSlotNameGet(FileWork->card_number));
                 eMessageCat(". \037");
             }
@@ -1106,13 +1147,13 @@ static void MenuFileInfo(TskObject *task, void *data)
         case 146:
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
-                    eMessageCpy(view->text, request_text[6]);
+                    eMessageCpy(view->text, request_text.text[6]);
                     eMessageCat(FileSlotNameGet(2));
-                    eMessageCat(request_text[8]);
+                    eMessageCat(request_text.text[8]);
                 } else {
-                    eMessageCpy(view->text, request_text[5]);
+                    eMessageCpy(view->text, request_text.text[5]);
                     eMessageCat(FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(request_text[7]);
+                    eMessageCat(request_text.text[7]);
                 }
             }
             break;
@@ -1120,7 +1161,7 @@ static void MenuFileInfo(TskObject *task, void *data)
         case 149:
         case 150:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, progress_text[FileWork->state - 148]);
+                eMessageCpy(view->text, progress_text.text[FileWork->state - 148]);
             target_y = 336;
             target_height = 78;
             break;
@@ -1128,18 +1169,18 @@ static void MenuFileInfo(TskObject *task, void *data)
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
                     eMessageCpy(view->text, FileSlotNameGet(2));
-                    eMessageCat(request_text[6]);
+                    eMessageCat(request_text.text[6]);
                 } else {
                     char *card_message = view->text;
 
                     eMessageCpy(card_message, FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(request_text[5]);
+                    eMessageCat(request_text.text[5]);
                 }
             }
             break;
         case 160:
             if (FileWork->input_flags & 1)
-                eMessageCpy(view->text, request_text[FileWork->text_index + 2]);
+                eMessageCpy(view->text, request_text.text[FileWork->text_index + 2]);
             break;
         case 161:
             if (FileWork->input_flags & 1)
@@ -1151,11 +1192,11 @@ static void MenuFileInfo(TskObject *task, void *data)
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
                     eMessageCpy(view->text, FileSlotNameGet(2));
-                    eMessageCat(format_text[1]);
+                    eMessageCat(format_text.text[1]);
                 } else {
-                    eMessageCpy(view->text, format_text[0]);
+                    eMessageCpy(view->text, format_text.text[0]);
                     eMessageCat(FileSlotNameGet(FileWork->card_number));
-                    eMessageCat(format_text[2]);
+                    eMessageCat(format_text.text[2]);
                 }
             }
             if (FileWork->use_hdd) {
@@ -1169,11 +1210,11 @@ static void MenuFileInfo(TskObject *task, void *data)
         case 184:
             if (FileWork->input_flags & 1) {
                 if (FileWork->use_hdd) {
-                    eMessageCpy(view->text, finish_text[1]);
+                    eMessageCpy(view->text, finish_text.text[1]);
                     eMessageCat(FileSlotNameGet(2));
                     eMessageCat(". \037");
                 } else {
-                    eMessageCpy(view->text, finish_text[0]);
+                    eMessageCpy(view->text, finish_text.text[0]);
                 }
             }
             break;

@@ -119,8 +119,6 @@ typedef struct MenuShopSelectWork {
     MenuShopChoicePane choices[1];
 } MenuShopSelectWork;
 
-extern const char *msg00_1_0036DB30[8];
-extern const char *msg01_2_0036DB50[4];
 extern int MenuSelectWindow();
 
 /* MenuShopCore (ported from upstream) declarations. */

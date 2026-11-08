@@ -9841,55 +9841,10 @@
     {
      "range": [
       "0x004c3a90",
-      "0x004c3d48"
-     ],
-     "generated": [
-      "0x004c3a90",
-      "0x004c3d48"
-     ],
-     "generated_by": [
-      "FileSlotNameGet",
-      "MenuFilePas"
-     ],
-     "c_owned_symbols": [
-      "D_004C3A90",
-      "D_004C3AA0",
-      "D_004C3AB8",
-      "D_004C3AD0",
-      "jtbl_004C3AF0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C3D48",
-      "D_004C3DF0",
-      "D_004C3EA0",
-      "D_004C4018",
-      "D_004C40E0",
-      "D_004C41B0",
-      "D_004C4290",
-      "D_004C42E8",
-      "D_004C4310",
-      "D_004C4418",
-      "D_004C45E0"
-     ],
-     "reached_through": {
-      "D_004C3A90": "name_0_0036D628",
-      "D_004C3AA0": "msg00_1_0036D638",
-      "D_004C3AB8": "msg00_1_0036D638",
-      "D_004C3AD0": "msg00_1_0036D638"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c45f0",
       "0x004c4de0"
      ],
      "generated": [
-      "0x004c45f0",
+      "0x004c3a90",
       "0x004c4ddd"
      ],
      "generated_by": [
@@ -9897,11 +9852,65 @@
       "MenuFile",
       "MenuFileInfo",
       "MenuFileMain",
+      "MenuFilePas",
       "tskFileData",
-      "tskFileEx",
       "tskFileSelect"
      ],
      "c_owned_symbols": [
+      "D_004C3A90",
+      "D_004C3AA0",
+      "D_004C3AB8",
+      "D_004C3AD0",
+      "jtbl_004C3AF0",
+      "D_004C3D48",
+      "D_004C3D58",
+      "D_004C3DA0",
+      "D_004C3DC0",
+      "D_004C3DF0",
+      "D_004C3E00",
+      "D_004C3E28",
+      "D_004C3E50",
+      "D_004C3E78",
+      "D_004C3EA0",
+      "D_004C3EF8",
+      "D_004C3F38",
+      "D_004C3F58",
+      "D_004C3F88",
+      "D_004C3FA0",
+      "D_004C3FD0",
+      "D_004C4000",
+      "D_004C4018",
+      "D_004C4048",
+      "D_004C4088",
+      "D_004C40A0",
+      "D_004C40E0",
+      "D_004C40F0",
+      "D_004C4100",
+      "D_004C4140",
+      "D_004C4150",
+      "D_004C4180",
+      "D_004C41B0",
+      "D_004C41C8",
+      "D_004C41F0",
+      "D_004C4220",
+      "D_004C4238",
+      "D_004C4250",
+      "D_004C4278",
+      "D_004C4290",
+      "D_004C42B0",
+      "D_004C42C0",
+      "D_004C42D0",
+      "D_004C42E8",
+      "D_004C4310",
+      "D_004C4368",
+      "D_004C43A8",
+      "D_004C43D8",
+      "D_004C4418",
+      "D_004C4498",
+      "D_004C4500",
+      "D_004C4568",
+      "D_004C45A0",
+      "D_004C45E0",
       "jtbl_004C45F0",
       "D_004C4848",
       "D_004C4858",
@@ -9922,12 +9931,6 @@
       "D_004C4DC8"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "D_004C4848": "msg01_2_0036D650",
-      "D_004C4888": "msg00_4_0036D658",
-      "D_004C4898": "msg00_4_0036D658",
-      "D_004C48A8": "msg00_4_0036D658"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -9939,47 +9942,10 @@
     {
      "range": [
       "0x004da9f8",
-      "0x004daa20"
-     ],
-     "generated": [
-      "0x004da9f8",
-      "0x004daa20"
-     ],
-     "generated_by": [
-      "FileSlotNameGet",
-      "MenuFilePas"
-     ],
-     "c_owned_symbols": [
-      "D_004DA9F8",
-      "D_004DAA00",
-      "D_004DAA08",
-      "D_004DAA10",
-      "D_004DAA18"
-     ],
-     "also_referenced_by_c": [
-      "D_004DAA28",
-      "D_004DAA38"
-     ],
-     "reached_through": {
-      "D_004DA9F8": "name_0_0036D628",
-      "D_004DAA00": "name_0_0036D628",
-      "D_004DAA08": "msg00_1_0036D638",
-      "D_004DAA10": "msg00_1_0036D638",
-      "D_004DAA18": "msg00_1_0036D638"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
-     }
-    },
-    {
-     "range": [
-      "0x004daa40",
       "0x004daab8"
      ],
      "generated": [
-      "0x004daa40",
+      "0x004da9f8",
       "0x004daab8"
      ],
      "generated_by": [
@@ -10003,6 +9969,15 @@
       "tskTskMain"
      ],
      "c_owned_symbols": [
+      "D_004DA9F8",
+      "D_004DAA00",
+      "D_004DAA08",
+      "D_004DAA10",
+      "D_004DAA18",
+      "D_004DAA20",
+      "D_004DAA28",
+      "D_004DAA30",
+      "D_004DAA38",
       "D_004DAA40",
       "D_004DAA48",
       "D_004DAA50",
@@ -10025,11 +10000,6 @@
       "FileObjectDataSystem"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "D_004DAA50": "msg01_2_0036D650",
-      "D_004DAA68": "msg00_5_0036D668",
-      "D_004DAA70": "msg00_5_0036D668"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -11469,6 +11439,55 @@
    ]
   },
   "main/tu173": {
+   ".data": [
+    {
+     "range": [
+      "0x0036daf0",
+      "0x0036dc00"
+     ],
+     "generated": [
+      "0x0036daf0",
+      "0x0036dbfe"
+     ],
+     "generated_by": [
+      "ListMake_3",
+      "MenuShopEx",
+      "MenuShopListChange00",
+      "MenuShopParaSet",
+      "MenuShopParaSet2",
+      "MenuShopParameter",
+      "MenuShopPas",
+      "MenuShopSeisan",
+      "MenuShopSeisan02",
+      "MenuShopSelect"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_0036DAF0",
+      "msg00_1_0036DB30",
+      "msg01_2_0036DB50",
+      "msg00_4_0036DB60",
+      "msg00_5_0036DB68",
+      "D_0036DB7C",
+      "msg00_6",
+      "D_0036DB8C",
+      "msg01_7",
+      "msg01_8_0036DBA0",
+      "msg00_9",
+      "D_0036DBC4",
+      "msg01_10",
+      "MenuShopPara",
+      "D_0036DBEE",
+      "MenuShopPara2",
+      "D_0036DBFE"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/menu_shop.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
@@ -11501,130 +11520,87 @@
    ".rodata": [
     {
      "range": [
-      "0x004c7710",
-      "0x004c7738"
+      "0x004c7390",
+      "0x004c7ad0"
      ],
      "generated": [
-      "0x004c7710",
-      "0x004c7738"
+      "0x004c7390",
+      "0x004c7ac5"
      ],
      "generated_by": [
-      "MenuShopSelect"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004C7710"
-     ],
-     "also_referenced_by_c": [
-      "D_004C7390",
-      "D_004C74B0",
-      "D_004C7500",
-      "D_004C7520",
-      "D_004C7580",
-      "D_004C75A0",
-      "D_004C7650",
-      "D_004C7738"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c77c0",
-      "0x004c7838"
-     ],
-     "generated": [
-      "0x004c77c0",
-      "0x004c7838"
-     ],
-     "generated_by": [
+      "MenuShopCore",
+      "MenuShopEx",
+      "MenuShopEx02",
+      "MenuShopIcon",
+      "MenuShopInfo",
+      "MenuShopList",
       "MenuShopListChange00",
+      "MenuShopListChange01",
+      "MenuShopMain",
+      "MenuShopModelMain",
+      "MenuShopParaSet",
+      "MenuShopSeisan02",
+      "MenuShopSelect",
+      "MenuShopSortSet",
       "subMenuShopEquipCheck"
      ],
      "c_owned_symbols": [
+      "D_004C7390",
+      "D_004C73A0",
+      "D_004C73B0",
+      "D_004C73C0",
+      "D_004C73D0",
+      "D_004C73E0",
+      "D_004C73F0",
+      "D_004C7400",
+      "D_004C7418",
+      "D_004C7430",
+      "D_004C7440",
+      "D_004C7458",
+      "D_004C7470",
+      "D_004C7488",
+      "D_004C74A0",
+      "D_004C74B0",
+      "D_004C74C0",
+      "D_004C74D0",
+      "D_004C74E0",
+      "D_004C7500",
+      "D_004C7510",
+      "D_004C7520",
+      "D_004C7530",
+      "D_004C7548",
+      "D_004C7568",
+      "D_004C7580",
+      "D_004C7590",
+      "D_004C75A0",
+      "D_004C75B0",
+      "D_004C75D0",
+      "D_004C75E0",
+      "D_004C75F0",
+      "D_004C7600",
+      "D_004C7610",
+      "D_004C7630",
+      "D_004C7650",
+      "D_004C76B8",
+      "D_004C76C8",
+      "D_004C76D8",
+      "D_004C76E8",
+      "D_004C76F8",
+      "jtbl_004C7710",
+      "D_004C7738",
       "jtbl_004C77C0",
       "D_004C77D8",
-      "D_004C7820"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c7858",
-      "0x004c79f8"
-     ],
-     "generated": [
-      "0x004c7858",
-      "0x004c79f8"
-     ],
-     "generated_by": [
-      "MenuShopEx",
-      "MenuShopEx02",
-      "MenuShopList",
-      "MenuShopListChange01",
-      "MenuShopSeisan02"
-     ],
-     "c_owned_symbols": [
+      "D_004C7820",
+      "D_004C7838",
+      "D_004C7848",
       "D_004C7858",
       "jtbl_004C7880",
       "jtbl_004C7900",
       "jtbl_004C7920",
       "jtbl_004C7940",
-      "jtbl_004C79A0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C79F8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c7a10",
-      "0x004c7a20"
-     ],
-     "generated": [
-      "0x004c7a10",
-      "0x004c7a18"
-     ],
-     "generated_by": [
-      "MenuShopIcon"
-     ],
-     "c_owned_symbols": [
-      "D_004C7A10"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c7a20",
-      "0x004c7ad0"
-     ],
-     "generated": [
-      "0x004c7a20",
-      "0x004c7ac5"
-     ],
-     "generated_by": [
-      "MenuShopCore",
-      "MenuShopMain",
-      "MenuShopParaSet"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004C79A0",
+      "D_004C79F8",
+      "D_004C7A10",
       "jtbl_004C7A20",
       "D_004C7A68",
       "D_004C7A78",
@@ -11643,114 +11619,66 @@
    ".sdata": [
     {
      "range": [
-      "0x004db148",
-      "0x004db158"
-     ],
-     "generated": [
-      "0x004db148",
-      "0x004db158"
-     ],
-     "generated_by": [
-      "MenuShopInfo"
-     ],
-     "c_owned_symbols": [
-      "D_004DB148",
-      "D_004DB150"
-     ],
-     "also_referenced_by_c": [
-      "D_004DB138",
-      "D_004DB140"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004db168",
-      "0x004db178"
-     ],
-     "generated": [
-      "0x004db168",
-      "0x004db178"
-     ],
-     "generated_by": [
-      "MenuShopSelect"
-     ],
-     "c_owned_symbols": [
-      "D_004DB168",
-      "D_004DB170"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004db1a0",
-      "0x004db1a8"
-     ],
-     "generated": [
-      "0x004db1a0",
-      "0x004db1a8"
-     ],
-     "generated_by": [
-      "MenuShopSeisan02"
-     ],
-     "c_owned_symbols": [
-      "D_004DB1A0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004db1b8",
-      "0x004db1c0"
-     ],
-     "generated": [
-      "0x004db1b8",
-      "0x004db1c0"
-     ],
-     "generated_by": [
-      "MenuShopEx02"
-     ],
-     "c_owned_symbols": [
-      "D_004DB1B8"
-     ],
-     "also_referenced_by_c": [
-      "D_004DB220",
-      "D_004DB228"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/menu_shop.o"
-     }
-    },
-    {
-     "range": [
-      "0x004db230",
+      "0x004db0e0",
       "0x004db258"
      ],
      "generated": [
-      "0x004db230",
+      "0x004db0e0",
       "0x004db252"
      ],
      "generated_by": [
       "MenuShopCore",
-      "MenuShopEx2"
+      "MenuShopEx02",
+      "MenuShopEx2",
+      "MenuShopInfo",
+      "MenuShopList",
+      "MenuShopParameter",
+      "MenuShopSeisan02",
+      "MenuShopSelect"
      ],
      "c_owned_symbols": [
+      "D_004DB0E0",
+      "D_004DB0E8",
+      "D_004DB0F0",
+      "D_004DB0F8",
+      "D_004DB100",
+      "D_004DB108",
+      "D_004DB110",
+      "D_004DB118",
+      "D_004DB120",
+      "D_004DB128",
+      "D_004DB130",
+      "D_004DB138",
+      "D_004DB140",
+      "D_004DB148",
+      "D_004DB150",
+      "D_004DB158",
+      "D_004DB160",
+      "D_004DB168",
+      "D_004DB170",
+      "D_004DB178",
+      "D_004DB180",
+      "D_004DB188",
+      "D_004DB190",
+      "D_004DB198",
+      "D_004DB1A0",
+      "D_004DB1A8",
+      "D_004DB1B0",
+      "D_004DB1B8",
+      "D_004DB1C0",
+      "D_004DB1C8",
+      "D_004DB1D0",
+      "D_004DB1D8",
+      "D_004DB1E0",
+      "D_004DB1E8",
+      "D_004DB1F0",
+      "D_004DB1F8",
+      "D_004DB200",
+      "D_004DB208",
+      "D_004DB210",
+      "D_004DB218",
+      "D_004DB220",
+      "D_004DB228",
       "D_004DB230",
       "D_004DB238",
       "D_004DB240",
