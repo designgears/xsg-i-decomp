@@ -691,7 +691,7 @@ segments:
       - [0x2D2DA0, rodata, act_3]
       - [0x2D2E40, rodata, exm_1]
       - [0x2D3130, rodata, map_2]
-      - [0x2D3188, rodata, unit6003]
+      - [0x2D3170, rodata, unit6003]
       - [0x2D3200, rodata, xgl_font]
       - [0x2D3468, rodata, xgl_cd]
       - [0x2D34E0, rodata, xgl_mc]

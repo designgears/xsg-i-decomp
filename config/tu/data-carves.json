@@ -18331,20 +18331,7 @@
       "D_004D864C",
       "D_004D8650",
       "D_004D8654",
-      "D_004D8658",
-      "D_004D865C",
-      "D_004D8660",
-      "D_004D8664",
-      "D_004D8668",
-      "D_004D866C",
-      "D_004D8670",
-      "D_004D8674",
-      "D_004D8678",
-      "D_004D867C",
-      "D_004D8680",
-      "D_004D8684",
-      "D_004D8688",
-      "D_004D868C"
+      "D_004D8658"
      ],
      "basis": {
       "kind": "derived",
@@ -18354,17 +18341,74 @@
     },
     {
      "range": [
-      "0x004d8690",
+      "0x004d865c",
+      "0x004d8660"
+     ],
+     "generated": [
+      "0x004d865c",
+      "0x004d8660"
+     ],
+     "generated_by": [
+      "EXM_PresetHair"
+     ],
+     "c_owned_symbols": [
+      "D_004D865C"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8660"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d8664",
+      "0x004d8668"
+     ],
+     "generated": [
+      "0x004d8664",
+      "0x004d8668"
+     ],
+     "generated_by": [
+      "EXM_PresetHair"
+     ],
+     "c_owned_symbols": [
+      "D_004D8664"
+     ],
+     "also_referenced_by_c": [
+      "D_004D8668",
+      "D_004D866C",
+      "D_004D8670",
+      "D_004D8674",
+      "D_004D8678",
+      "D_004D867C",
+      "D_004D8680",
+      "D_004D8684",
+      "D_004D8688"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d868c",
       "0x004d869c"
      ],
      "generated": [
-      "0x004d8690",
+      "0x004d868c",
       "0x004d869c"
      ],
      "generated_by": [
       "EXM_PresetHair"
      ],
      "c_owned_symbols": [
+      "D_004D868C",
       "D_004D8690",
       "D_004D8694",
       "D_004D8698"
@@ -18405,11 +18449,7 @@
       "D_004D86C4",
       "D_004D86C8",
       "D_004D86CC",
-      "D_004D86D0",
-      "D_004D86D4",
-      "D_004D86D8",
-      "D_004D86DC",
-      "D_004D86E0"
+      "D_004D86D0"
      ],
      "basis": {
       "kind": "derived",
@@ -18419,19 +18459,46 @@
     },
     {
      "range": [
-      "0x004d86e4",
+      "0x004d86d4",
+      "0x004d86d8"
+     ],
+     "generated": [
+      "0x004d86d4",
+      "0x004d86d8"
+     ],
+     "generated_by": [
+      "GetHairTypeSelection"
+     ],
+     "c_owned_symbols": [
+      "D_004D86D4"
+     ],
+     "also_referenced_by_c": [
+      "D_004D86D8",
+      "D_004D86DC"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/exm_1.o"
+     }
+    },
+    {
+     "range": [
+      "0x004d86e0",
       "0x004d8770"
      ],
      "generated": [
-      "0x004d86e4",
+      "0x004d86e0",
       "0x004d8770"
      ],
      "generated_by": [
       "CheckSkirtCollisionSub",
       "EXM_CalcExMotion",
-      "EXM_CheckExCollision"
+      "EXM_CheckExCollision",
+      "GetHairTypeSelection"
      ],
      "c_owned_symbols": [
+      "D_004D86E0",
       "D_004D86E4",
       "D_004D86E8",
       "D_004D86EC",
@@ -18673,26 +18740,6 @@
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/map_2.o"
      }
-    },
-    {
-     "range": [
-      "0x004d2170",
-      "0x004d2188"
-     ],
-     "generated": [
-      "0x004d2170",
-      "0x004d2186"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "D_004D2170"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/map_2.o"
-     }
     }
    ]
   },
@@ -18756,42 +18803,23 @@
    ".rodata": [
     {
      "range": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated": [
-      "0x004d2188",
-      "0x004d21e0"
-     ],
-     "generated_by": [
-      "unit6003_update"
-     ],
-     "c_owned_symbols": [
-      "D_004D2188",
-      "D_004D21A0",
-      "D_004D21B8",
-      "D_004D21D0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/unit6003.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d2200"
      ],
      "generated": [
-      "0x004d21e0",
+      "0x004d2170",
       "0x004d21f4"
      ],
      "generated_by": [
+      "unit6003_draw",
       "unit6003_update"
      ],
      "c_owned_symbols": [
+      "D_004D2170",
+      "D_004D2188",
+      "D_004D21A0",
+      "D_004D21B8",
+      "D_004D21D0",
       "jtbl_004D21E0"
      ],
      "also_referenced_by_c": [],

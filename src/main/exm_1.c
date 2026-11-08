@@ -264,9 +264,7 @@ extern const float D_004D864C;
 extern const float D_004D8650;
 extern const float D_004D8654;
 extern const float D_004D8658;
-extern const float D_004D865C;
 extern const float D_004D8660;
-extern const float D_004D8664;
 extern const float D_004D8668;
 extern const float D_004D866C;
 extern const float D_004D8670;
@@ -276,7 +274,6 @@ extern const float D_004D867C;
 extern const float D_004D8680;
 extern const float D_004D8684;
 extern const float D_004D8688;
-extern const float D_004D868C;
 extern const float D_004D869C;
 extern const float D_004D86A0;
 extern const float D_004D86AC;
@@ -586,10 +583,10 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
             break;
         case 'E':
             collibuf[0] = helmercol;
-            skirtColliSize = D_004D865C;
+            skirtColliSize = 1.7f;
             skirtColliSizeB = D_004D8660;
             skirtColliSizeS = 1.0f;
-            skirtColliFootRad = D_004D8664;
+            skirtColliFootRad = 0.1f;
             htypebuf[0].flags = 0x5400;
             htypebuf[1].flags = 0x6400;
             htypebuf[2].flags = 0x11c00;
@@ -742,7 +739,7 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
                 }
                 skirtColliSize = D_004D8688;
                 skirtColliSizeS = skirtColliSizeB = 1.0f;
-                skirtColliFootRad = D_004D868C;
+                skirtColliFootRad = 0.06f;
                 htypebuf[0].flags = 0x4400;
                 htypebuf[1].flags = 0xc00;
                 htypebuf[1].kind = htypebuf[0].kind = 16;
@@ -1025,10 +1022,8 @@ void EXM_PresetHair(ExMotionJointWork_XP *work)
     }
 }
 
-extern const float D_004D86D4;
 extern const float D_004D86D8;
 extern const float D_004D86DC;
-extern const float D_004D86E0;
 
 static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
 {
@@ -1043,7 +1038,7 @@ static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
     case 'P': {
         short type = *(short *)(obj + 0x4C2);
         *col = humancol;
-        skirtColliSize = D_004D86D4;
+        skirtColliSize = 0.8f;
         skirtColliSizeB = 1.0f;
         skirtColliSizeS = 1.0f;
         skirtColliFootRad = D_004D86D8;
@@ -1102,7 +1097,7 @@ static int GetHairTypeSelection(unsigned int *flag, int **col, char *obj)
         skirtColliSize = 1.0f;
         skirtColliSizeB = 1.0f;
         skirtColliSizeS = 1.0f;
-        skirtColliFootRad = D_004D86E0;
+        skirtColliFootRad = 0.15f;
         switch (type) {
         case 0x71:
             ret = 0x10;
