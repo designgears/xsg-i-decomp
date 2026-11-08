@@ -557,8 +557,6 @@ static int debugCfSelect(void)
 extern void func_A31688(void);
 extern void func_A31920(int kind, float *params);
 extern void func_A318B8(void);
-extern float D_004D8298;
-extern float D_004D829C;
 extern void *memset(void *destination, int value, unsigned int count);
 
 static void SCamTake(void)
@@ -568,8 +566,8 @@ static void SCamTake(void)
     func_A31688();
     memset(params, 0, sizeof(params));
     params[0] = 0.0f;
-    params[4] = D_004D8298;
-    params[5] = D_004D829C;
+    params[4] = 0.1f;
+    params[5] = 2.6f;
     params[6] = 5.0f;
     params[7] = 1.0f;
     func_A31920(0, params);

@@ -613,8 +613,6 @@ extern float xglPointLength(const void *point1, const void *point2);
 extern FlushQ s_inMainCameraPos;
 extern FlushQ s_inMainCameraAng;
 extern int s_nMainCameraWarp;
-extern float D_004D88D8;
-extern float D_004D88DC;
 
 static void FLUSH_MODELSYSTEM(void) {
     char *cam;
@@ -1193,7 +1191,7 @@ int nmlModelAskNonLinearCamera(void) {
                     : "r"(vu_result), "r"(cam_ptr), "r"(ang_ptr)
                     : "memory");
                 y_diff = __builtin_fabsf(vu_result[1]);
-                if (D_004D88D8 < y_diff && y_diff < D_004D88DC) {
+                if (1.0471976f < y_diff && y_diff < 5.2359877f) {
                     s_nMainCameraWarp = 2;
                 }
             }
@@ -2558,7 +2556,6 @@ done:
 extern int s_nCount;
 
 extern int s_aShapeMathPara[10];
-extern float D_004D88E0;
 
 static void nmlModelLexBlockDoit(NmlModel *model)
 {
@@ -2651,7 +2648,7 @@ static void nmlModelLexBlockDoit(NmlModel *model)
                 }
                 if ((float)block->shapeWeight <= s_aShapeWeight[s_nShapeNum]) {
                     s_aShapeWeight[s_nShapeNum] =
-                        (float)block->shapeWeight - D_004D88E0;
+                        (float)block->shapeWeight - 0.001f;
                 }
                 ++s_nShapeNum;
             }
@@ -2661,7 +2658,6 @@ static void nmlModelLexBlockDoit(NmlModel *model)
 }
 
 extern float tanf(float);
-extern float D_004D88E4, D_004D88E8, D_004D88EC;
 extern void nmlFilterStealthMake(int index, float scale, char *camera, LayoutSlot *layout);
 typedef struct {
     char pad0[0xC];
@@ -2681,7 +2677,7 @@ static void nmlModelStealthEntry(char *model, char *camera)
     _CurSetMatrix((float (*)[4])(camera + 0x470));
     _CurSetViewScaleTrans((const float *)(camera + 0x80), (const float *)(camera + 0x70));
     _CurRotTransPersClip((Vector4 *)screen, (Vector4 *)((char *)&s_inLayout + 0x1f0));
-    scale = ((float)screen[2] * D_004D88E4) / tanf(*(float *)(camera + 0x94) * 0.5f);
+    scale = ((float)screen[2] * 0.019f) / tanf(*(float *)(camera + 0x94) * 0.5f);
     if (*(int *)(model + 0x48) != 0) {
         for (i = 0; i < 10; i++) {
             nmlFilterStealthMake(i, scale, camera, s_inLayout.slots);
@@ -2694,9 +2690,9 @@ static void nmlModelStealthEntry(char *model, char *camera)
             p = (StealthEnt **)s_inLayout.slots;
             for (i = 0xa1; i < 0xaa; i++) {
                 StealthEnt *a = p[i - 1];
-                if (a->alpha > D_004D88E8) {
+                if (a->alpha > 0.01f) {
                     StealthEnt *b = p[i];
-                    if (a->z + D_004D88EC < b->z) {
+                    if (a->z + 0.1f < b->z) {
                         p[i - 1] = b;
                         swapped = 1;
                         p[i] = a;
@@ -2711,7 +2707,6 @@ static void nmlModelStealthEntry(char *model, char *camera)
     }
 }
 
-extern float D_004D88F0;
 
 static void nmlModelCalcSample(void *arg0, void **arg1)
 {
@@ -2760,7 +2755,7 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
             }
         }
     }
-    if (s_inLayout.slots[0x1FC / 4].f < D_004D88F0) {
+    if (s_inLayout.slots[0x1FC / 4].f < 0.01f) {
         s_inLayout.slots[0x1FC / 4].f = 1.0f;
     }
     fx = s_inLayout.slots[0x80 / 4].f * s_inLayout.slots[0x80 / 4].f
@@ -2774,7 +2769,6 @@ static void nmlModelCalcSample(void *arg0, void **arg1)
 }
 
 extern int nmlModelCalcClipStudio(Vector4 *, int);
-extern float D_004D88F4;
 
 typedef struct NmlModelSampleView {
     unsigned char unmodeled_000[0x48];
@@ -2803,7 +2797,7 @@ static int nmlModelCalcEntryClip(NmlModelSampleView *model)
             : "r"(&clip), "r"(&s_inLayout.slots[0x7C])
                 : "$2", "memory"
         );
-        clip.w *= D_004D88F4;
+        clip.w *= 1.3f;
 
         if (model->sampleCount != 0) {
             anySubwindow = 0;
@@ -2864,14 +2858,9 @@ static float deapth_for_studio(int studio, const Vector4 *vector, float size)
 }
 
 extern const char D_004DC470[];
-extern float D_004D88F8;
 extern volatile float D_004D88FC;
-extern float D_004D8900;
 extern volatile float D_004D8904;
 extern volatile float D_004D8908;
-extern float D_004D890C;
-extern float D_004D8910;
-extern float D_004D8914;
 extern volatile float D_004D8918;
 
 static void nmlModelCalcSpecularClip(void *arg0, int arg1)
@@ -2898,10 +2887,10 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
     if (!(s_inLayout.slots[0xAC].i & 2)) {
         f3 = __builtin_fabsf(f4);
         if (!(s_inLayout.slots[0xAC].i & 0x20)) {
-            if (f3 < D_004D88F8) {
+            if (f3 < 62582.0f) {
                 s_inLayout.slots[0xAC].i |= 2;
             } else if (f3 <= D_004D88FC) {
-                s_inLayout.slots[0x8A].f = (s_inLayout.slots[0x8A].f * (f3 - D_004D88F8)) / D_004D8900;
+                s_inLayout.slots[0x8A].f = (s_inLayout.slots[0x8A].f * (f3 - 62582.0f)) / 84941.0f;
             }
             if (*(float *)((char *)arg0 + 0x9C) > 10.0f) {
                 s_inLayout.slots[0x8A].f = 1.0f;
@@ -2925,17 +2914,17 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
             s_inLayout.slots[0xAC].i |= 2;
         }
         s_inLayout.slots[0xC0 + s_inLayout.slots[0x9F].i].f = s_inLayout.slots[0x8A].f;
-        temp_f22 = D_004D890C;
-        temp_f21 = D_004D8910;
+        temp_f22 = 147523.0f;
+        temp_f21 = 84941.0f;
         for (i = 0; i < 4; i++) {
             if (s_inLayout.slots[0x9F].i != i && g_aSubWindow[i] != 0) {
                 f4 = deapth_for_studio(i, (Vector4 *)&s_inLayout.slots[0x7C], size);
                 f1 = __builtin_fabsf(f4);
-                if (f1 < D_004D8914) {
+                if (f1 < 62582.0f) {
                     s_inLayout.slots[0xC0 + i].i = 0;
                 } else {
                     if (f1 <= temp_f22) {
-                        s_inLayout.slots[0xC0 + i].f = (s_inLayout.slots[0xC0 + i].f * (f1 - D_004D8914)) / temp_f21;
+                        s_inLayout.slots[0xC0 + i].f = (s_inLayout.slots[0xC0 + i].f * (f1 - 62582.0f)) / temp_f21;
                     }
                 }
             }

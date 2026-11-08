@@ -188,8 +188,6 @@ extern const SpotLightTable D_004C6770;
 
 /* Scaffold .lit4 constants: the pulse step (1/24) and the easing factor
  * (0.4) tskCharSpotLight loads gp-relative. */
-extern const float D_004D7E50;
-extern const float D_004D7E54;
 
 /* xglRotTransPersN (VA 0x00229ab0): projects count points through the
  * optional matrix and the camera, writing four words per point. */
@@ -3691,7 +3689,6 @@ extern MenuCamVec2B D_004C6580;
 extern MenuCamVec2 D_004C65A0;
 extern MenuCamVec2 D_004C65C0;
 extern MenuCamVec1 D_004C65E0;
-extern const float D_004D7E1C;
 extern MenuCamVec1 TairetuPos;
 extern MenuCamVec1 TairetuRot;
 
@@ -3712,7 +3709,7 @@ void MenuCharCameraSet(void) {
     TairetuRot.v = trot.v[MenuWork.partyMode].v;
     tpos = D_004C65E0;
     memset(&r, 0, sizeof(r));
-    r.v.x = D_004D7E1C;
+    r.v.x = (-0.7853982f);
     TairetuPos = tpos;
     TairetuRot = r;
 }
@@ -3722,9 +3719,6 @@ extern MenuCamVec2 D_004C65F0;
 extern MenuCamVec2 D_004C6610;
 extern MenuCamVec2 D_004C6630;
 extern MenuCamVec2 D_004C6650;
-extern const float D_004D7E20;
-extern const float D_004D7E24;
-extern const float D_004D7E28;
 
 void MenuCharCameraMove(void) {
     MenuCamVec2 pos;
@@ -3762,10 +3756,10 @@ void MenuCharCameraMove(void) {
         idx = 1;
     done:
         off = idx << 4;
-        cpos_22->x += (ldf_off(pos.v, off) - cpos_22->x) * D_004D7E20;
-        cpos_22->y += (ldf_off(pos.v, off + 4) - cpos_22->y) * D_004D7E20;
-        cpos_22->z += (ldf_off(pos.v, off + 8) - cpos_22->z) * D_004D7E20;
-        crot_22->x += (ldf_off(rot.v, off) - crot_22->x) * D_004D7E24;
+        cpos_22->x += (ldf_off(pos.v, off) - cpos_22->x) * 0.1f;
+        cpos_22->y += (ldf_off(pos.v, off + 4) - cpos_22->y) * 0.1f;
+        cpos_22->z += (ldf_off(pos.v, off + 8) - cpos_22->z) * 0.1f;
+        crot_22->x += (ldf_off(rot.v, off) - crot_22->x) * 0.05f;
         return;
     }
     idx_39 = (MenuWork.state >> 4) == 0xB;
@@ -3777,9 +3771,9 @@ void MenuCharCameraMove(void) {
     crot = &camera->rotation;
     cpos = &camera->position;
     tp = &TairetuPos.v;
-    TairetuRot.v.x += (*(float *)((char *)&trot + idx_39) - TairetuRot.v.x) * D_004D7E28;
-    TairetuRot.v.y += (*(float *)((char *)&trot + iy) - TairetuRot.v.y) * D_004D7E28;
-    TairetuRot.v.z += (*(float *)((char *)&trot + iz) - TairetuRot.v.z) * D_004D7E28;
+    TairetuRot.v.x += (*(float *)((char *)&trot + idx_39) - TairetuRot.v.x) * 0.1f;
+    TairetuRot.v.y += (*(float *)((char *)&trot + iy) - TairetuRot.v.y) * 0.1f;
+    TairetuRot.v.z += (*(float *)((char *)&trot + iz) - TairetuRot.v.z) * 0.1f;
     memset(&r, 0, sizeof(r));
     r.v.z = 6.5f;
     xglMatrixStackUnit();
@@ -3794,9 +3788,9 @@ void MenuCharCameraMove(void) {
     cpos->x = m1[3][0];
     cpos->y = m1[3][1];
     cpos->z = m1[3][2];
-    tp->x += (*(float *)((char *)&tpos + idx_39) - tp->x) * D_004D7E28;
-    tp->y += (*(float *)((char *)&tpos + iy) - tp->y) * D_004D7E28;
-    tp->z += (*(float *)((char *)&tpos + iz) - tp->z) * D_004D7E28;
+    tp->x += (*(float *)((char *)&tpos + idx_39) - tp->x) * 0.1f;
+    tp->y += (*(float *)((char *)&tpos + iy) - tp->y) * 0.1f;
+    tp->z += (*(float *)((char *)&tpos + iz) - tp->z) * 0.1f;
     xglMatrixStackUnit();
     xglMatrixStackRotY(TairetuRot.v.y);
     xglMatrixStackRotX(TairetuRot.v.x);
@@ -3851,8 +3845,6 @@ typedef struct MCUnit {
 } MCUnit;
 extern MCVector D_004C6670;
 extern int MenuModelOut[];
-extern float D_004D7E2C;
-extern float D_004D7E30;
 static inline void MCClearSwapOut(void)
 {
     MenuWork.swapOutId = 0;
@@ -3925,9 +3917,9 @@ void MenuCharModelMain(void *unit_arg, void *argument)
             float x = current->x;
             float y = current->y;
             float z = current->z;
-            current->x = x + (position.vector.x - x) * D_004D7E2C;
-            current->y = y + (position.vector.y - y) * D_004D7E2C;
-            current->z = z + (position.vector.z - z) * D_004D7E2C;
+            current->x = x + (position.vector.x - x) * 0.2f;
+            current->y = y + (position.vector.y - y) * 0.2f;
+            current->z = z + (position.vector.z - z) * 0.2f;
         }
         if (MenuWork.state == 33) {
             MenuModelControl2(unit, 0);
@@ -3943,27 +3935,27 @@ void MenuCharModelMain(void *unit_arg, void *argument)
             float x = current->x;
             float y = current->y;
             float z = current->z;
-            current->x = x + (position.vector.x - x) * D_004D7E30;
-            current->y = y + (position.vector.y - y) * D_004D7E30;
-            current->z = z + (position.vector.z - z) * D_004D7E30;
+            current->x = x + (position.vector.x - x) * 0.2f;
+            current->y = y + (position.vector.y - y) * 0.2f;
+            current->z = z + (position.vector.z - z) * 0.2f;
         }
         {
             Vector4 *current = &transform->rotation.vector;
             float x = current->x;
             float y = current->y;
             float z = current->z;
-            current->x = x + (rotation.vector.x - x) * D_004D7E30;
-            current->y = y + (rotation.vector.y - y) * D_004D7E30;
-            current->z = z + (rotation.vector.z - z) * D_004D7E30;
+            current->x = x + (rotation.vector.x - x) * 0.2f;
+            current->y = y + (rotation.vector.y - y) * 0.2f;
+            current->z = z + (rotation.vector.z - z) * 0.2f;
         }
         {
             Vector4 *current = &transform->scale.vector;
             float x = current->x;
             float y = current->y;
             float z = current->z;
-            current->x = x + (scale.vector.x - x) * D_004D7E30;
-            current->y = y + (scale.vector.y - y) * D_004D7E30;
-            current->z = z + (scale.vector.z - z) * D_004D7E30;
+            current->x = x + (scale.vector.x - x) * 0.2f;
+            current->y = y + (scale.vector.y - y) * 0.2f;
+            current->z = z + (scale.vector.z - z) * 0.2f;
         }
     }
     }
@@ -4189,10 +4181,6 @@ typedef struct DirectLineColor { unsigned char red; unsigned char green; unsigne
 typedef struct DirectLineVertex { LineProjection coordinates; DirectLineColor color; unsigned char unmodeled_14[12]; } DirectLineVertex;
 void endPrintDirectLine(DirectLineVertex *vertices);
 extern const MenuCharacterVector D_004C6760;
-extern const float D_004D7E38;
-extern const float D_004D7E3C;
-extern const float D_004D7E40;
-extern const float D_004D7E44;
 extern const unsigned char D_004DAE68[];
 extern const unsigned char D_004DAE70[];
 
@@ -4232,14 +4220,14 @@ static int tskCharLineField(XglTaskPrefix *task)
         break;
     case 10:
         {
-            float step = D_004D7E38;
+            float step = 0.2f;
             float x = line->scale.vector.x;
             float deltaX = 1.0f - x;
             float z = line->scale.vector.z;
             float deltaZ = 1.0f - z;
             float alpha = line->alpha;
             deltaX *= step;
-            alpha += D_004D7E3C;
+            alpha += 0.02f;
             deltaZ *= step;
             x += deltaX;
             z += deltaZ;
@@ -4263,14 +4251,14 @@ static int tskCharLineField(XglTaskPrefix *task)
             line->state = 10;
         }
         {
-            float step = D_004D7E40;
+            float step = 0.2f;
             float x = line->scale.vector.x;
             float deltaX = 0.0f - x;
             float z = line->scale.vector.z;
             float deltaZ = 0.0f - z;
             float alpha = line->alpha;
             deltaX *= step;
-            alpha -= D_004D7E44;
+            alpha -= 0.02f;
             deltaZ *= step;
             x += deltaX;
             z += deltaZ;
@@ -4369,7 +4357,7 @@ static void tskCharSpotLight(CharSpotLightTask *light)
         if ((MenuWork.state >> 4) == MENU_STATE_GROUP_FORMATION) {
             light->mode = SPOTLIGHT_SHOWN;
             light->pulse = 1.0f;
-            light->pulseStep = D_004D7E50;
+            light->pulseStep = 0.041666668f;
             light->size = 0.0f;
             light->position = positions.position[MenuWork.formationSlot - 1];
             light->visible = 1;
@@ -4403,9 +4391,9 @@ static void tskCharSpotLight(CharSpotLightTask *light)
         light->pulseStep = -light->pulseStep;
     }
     if (light->visible) {
-        light->position.x += (positions.position[MenuWork.formationSlot - 1].x - light->position.x) * D_004D7E54;
-        light->position.y += (positions.position[MenuWork.formationSlot - 1].y - light->position.y) * D_004D7E54;
-        light->position.z += (positions.position[MenuWork.formationSlot - 1].z - light->position.z) * D_004D7E54;
+        light->position.x += (positions.position[MenuWork.formationSlot - 1].x - light->position.x) * 0.4f;
+        light->position.y += (positions.position[MenuWork.formationSlot - 1].y - light->position.y) * 0.4f;
+        light->position.z += (positions.position[MenuWork.formationSlot - 1].z - light->position.z) * 0.4f;
         xglRotTransPersN(screen, 0, &light->position, 1, 0);
         screen[0] = screen[0] / 16 - CIRCLE_ORIGIN_X;
         screen[1] = screen[1] / 16 - CIRCLE_ORIGIN_Y;

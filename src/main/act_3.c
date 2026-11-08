@@ -402,7 +402,6 @@ typedef struct {
 
 extern u8 *D_00478CCC[];
 
-extern float D_004D85C8;
 
 extern int F2I(float value);
 
@@ -565,7 +564,7 @@ static void Footstep(ActShadowActor *actor)
             sound = 0;
             contacts = D_00478CCC[((ActFootstepSaveData *)SaveData)->language];
             if (motion == 3) contacts += 2;
-            frame = F2I(actor->motion_frame / D_004D85C8);
+            frame = F2I(actor->motion_frame / 0.033333335f);
             contact_frame = contacts[0];
             before_first = previous < contact_frame;
             if ((before_first != 0 && frame >= contact_frame) ||
@@ -905,9 +904,7 @@ static void DrawZeldaShadowSub(ActShadowScratchpad *scratchpad,
     nmlModelDirectSend(1, (u8 *)&scratchpad->packet, 0x12);
 }
 
-extern float D_004D85EC;
 extern volatile float D_004D85F0;
-extern float D_004D85F4;
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern float atan2f(float y, float x);
 extern float sqrtf(float x);
@@ -918,7 +915,7 @@ static void DrawZeldaShadow(char *obj) {
 
     float h = *(float *)(obj + 0x4DC);
     if (!(h != -1000.0f)) {
-        *(float *)0x70000130 = *(float *)(obj + 0x14) + D_004D85EC;
+        *(float *)0x70000130 = *(float *)(obj + 0x14) + 0.02f;
     } else {
         *(float *)0x70000130 = h + D_004D85F0;
     }
@@ -936,8 +933,8 @@ static void DrawZeldaShadow(char *obj) {
         : : "r"((void *)0x70000010), "r"(*(void **)(obj + 0x824)) : "$2", "memory");
     dir = (float *)(obj + 0xA0);
     *(float *)0x70000138 = __builtin_sqrtf(1.0f - dir[1] * dir[1]) * 0.5f;
-    if (*(float *)0x70000138 < D_004D85F4) {
-        *(float *)0x70000138 = D_004D85F4;
+    if (*(float *)0x70000138 < 0.15f) {
+        *(float *)0x70000138 = 0.15f;
     }
     *(float *)0x70000134 = atan2f(-dir[0], -dir[2]);
     DrawZeldaShadowSub((void *)0x70000000, *(char **)(obj + 0x824) + 0x780);
@@ -1115,7 +1112,6 @@ static void DrawDropShadowSubFront(ActDropShadowFrontState *shadow, int count)
     }
 }
 
-extern const float D_004D85F8;
 extern void xglMatrixTrans(Matrix4 destination, const Matrix4 source,
                            const float translation[4]);
 extern void xglVectorOuter(Vector4 *destination, const Vector4 *left,
@@ -1178,7 +1174,7 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
                 work->temporary[1] = 0.0f;
                 work->temporary[2] = 0.0f;
                 work->temporary[(signed char)next_contact[2]] =
-                    I2F((signed char)next_contact[1]) * D_004D85F8;
+                    I2F((signed char)next_contact[1]) * 0.01f;
                 work->temporary[3] = 1.0f;
                 xglMatrixTrans(translated_end->elements,
                                 first->elements, work->temporary);
@@ -1200,12 +1196,12 @@ static u8 *DrawDropShadowSub(ActShadowActor *actor,
             xglVectorOuter(perpendicular, (const Vector4 *)(const void *)work->temporary,
                              light_direction);
             xglVectorLength(&length, perpendicular);
-            xglVectorScaleXYZ(I2F((signed char)contact[1]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[1]) * 0.01f / length,
                                 &work->outer_offset, perpendicular);
-            xglVectorScaleXYZ(I2F((signed char)contact[2]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[2]) * 0.01f / length,
                                 inner_offset, perpendicular);
             xglVectorLength(&length, (const Vector4 *)(const void *)work->temporary);
-            xglVectorScaleXYZ(I2F((signed char)contact[1]) * D_004D85F8 / length,
+            xglVectorScaleXYZ(I2F((signed char)contact[1]) * 0.01f / length,
                                 axial_offset, (const Vector4 *)(const void *)work->temporary);
 
             work->temporary[3] = ground_height;
@@ -1458,8 +1454,6 @@ extern DropShadowHeadPacket Head_6_00478E30;
 extern u8 TestEnv_7[48];
 extern ActShadowEndPacket Tail_8;
 extern const DrawDropCircleIndexTable D_004D1DD8;
-extern const float D_004D8604;
-extern const float D_004D8608;
 
 static void DrawDropCircle(ActShadowActor *actor)
 {
@@ -1499,7 +1493,7 @@ static void DrawDropCircle(ActShadowActor *actor)
         work->temporary[1] = actor->height_override + 0.02f;
     }
     radius = actor->shadow_radius;
-    corner = radius * D_004D8604;
+    corner = radius * 0.7f;
     vertices[4].x = vertices[5].x = center[0];
     vertices[0].x = vertices[2].x = center[0] + corner;
     vertices[1].x = vertices[3].x = center[0] - corner;
@@ -1507,7 +1501,7 @@ static void DrawDropCircle(ActShadowActor *actor)
     vertices[7].x = center[0] - radius;
     vertices[0].y = vertices[1].y = vertices[2].y =
         vertices[3].y = vertices[4].y = vertices[5].y =
-        vertices[6].y = vertices[7].y = work->temporary[1] + D_004D8608;
+        vertices[6].y = vertices[7].y = work->temporary[1] + 0.2f;
     vertices[6].z = vertices[7].z = center[2];
     vertices[0].z = vertices[1].z = center[2] + corner;
     vertices[2].z = vertices[3].z = center[2] - corner;
