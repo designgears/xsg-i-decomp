@@ -23546,73 +23546,158 @@
    ]
   },
   "ov10/tu007_00a21348": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a4e498",
-      "0x00a4e4a0"
+      "0x00a487c8",
+      "0x00a488e8"
      ],
      "generated": [
-      "0x00a4e498",
-      "0x00a4e4a0"
+      "0x00a487c8",
+      "0x00a488e8"
      ],
      "generated_by": [
       "CardTutorialFileLoad",
-      "CardTutorialInit"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E498"
-     ],
-     "also_referenced_by_c": [
-      "D_00A4E4B0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e4b8",
-      "0x00a4e4d0"
-     ],
-     "generated": [
-      "0x00a4e4b8",
-      "0x00a4e4d0"
-     ],
-     "generated_by": [
-      "CardTutorialInit"
-     ],
-     "c_owned_symbols": [
-      "D_00A4E4B8",
-      "D_00A4E4C8"
-     ],
-     "also_referenced_by_c": [
-      "D_00A4E4D0"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4e4e0",
-      "0x00a4e4f0"
-     ],
-     "generated": [
-      "0x00a4e4e0",
-      "0x00a4e4e9"
-     ],
-     "generated_by": [
+      "CardTutorialInit",
       "CardTutorialProc"
      ],
      "c_owned_symbols": [
+      "tutopage",
+      "D_00A487CC",
+      "datapath",
+      "D_00A487E4",
+      "tutoxtx_tbl"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_tutorial.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a4e320",
+      "0x00a4e4f0"
+     ],
+     "generated": [
+      "0x00a4e320",
+      "0x00a4e4e9"
+     ],
+     "generated_by": [
+      "CardTutorialFileLoad",
+      "CardTutorialInit",
+      "CardTutorialProc"
+     ],
+     "c_owned_symbols": [
+      "D_00A4E320",
+      "D_00A4E328",
+      "D_00A4E330",
+      "D_00A4E338",
+      "D_00A4E340",
+      "D_00A4E348",
+      "D_00A4E350",
+      "D_00A4E358",
+      "D_00A4E360",
+      "D_00A4E368",
+      "D_00A4E370",
+      "D_00A4E378",
+      "D_00A4E380",
+      "D_00A4E388",
+      "D_00A4E390",
+      "D_00A4E398",
+      "D_00A4E3A0",
+      "D_00A4E3A8",
+      "D_00A4E3B0",
+      "D_00A4E3B8",
+      "D_00A4E3C0",
+      "D_00A4E3C8",
+      "D_00A4E3D0",
+      "D_00A4E3D8",
+      "D_00A4E3E0",
+      "D_00A4E3E8",
+      "D_00A4E3F0",
+      "D_00A4E3F8",
+      "D_00A4E400",
+      "D_00A4E408",
+      "D_00A4E410",
+      "D_00A4E418",
+      "D_00A4E420",
+      "D_00A4E428",
+      "D_00A4E430",
+      "D_00A4E438",
+      "D_00A4E440",
+      "D_00A4E448",
+      "D_00A4E450",
+      "D_00A4E458",
+      "D_00A4E460",
+      "D_00A4E468",
+      "D_00A4E470",
+      "D_00A4E478",
+      "D_00A4E480",
+      "D_00A4E488",
+      "D_00A4E490",
+      "D_00A4E498",
+      "D_00A4E4A0",
+      "D_00A4E4B0",
+      "D_00A4E4B8",
+      "D_00A4E4C8",
+      "D_00A4E4D0",
       "D_00A4E4E0"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A4E320": "tutoxtx_tbl",
+      "D_00A4E328": "tutoxtx_tbl",
+      "D_00A4E330": "tutoxtx_tbl",
+      "D_00A4E338": "tutoxtx_tbl",
+      "D_00A4E340": "tutoxtx_tbl",
+      "D_00A4E348": "tutoxtx_tbl",
+      "D_00A4E350": "tutoxtx_tbl",
+      "D_00A4E358": "tutoxtx_tbl",
+      "D_00A4E360": "tutoxtx_tbl",
+      "D_00A4E368": "tutoxtx_tbl",
+      "D_00A4E370": "tutoxtx_tbl",
+      "D_00A4E378": "tutoxtx_tbl",
+      "D_00A4E380": "tutoxtx_tbl",
+      "D_00A4E388": "tutoxtx_tbl",
+      "D_00A4E390": "tutoxtx_tbl",
+      "D_00A4E398": "tutoxtx_tbl",
+      "D_00A4E3A0": "tutoxtx_tbl",
+      "D_00A4E3A8": "tutoxtx_tbl",
+      "D_00A4E3B0": "tutoxtx_tbl",
+      "D_00A4E3B8": "tutoxtx_tbl",
+      "D_00A4E3C0": "tutoxtx_tbl",
+      "D_00A4E3C8": "tutoxtx_tbl",
+      "D_00A4E3D0": "tutoxtx_tbl",
+      "D_00A4E3D8": "tutoxtx_tbl",
+      "D_00A4E3E0": "tutoxtx_tbl",
+      "D_00A4E3E8": "tutoxtx_tbl",
+      "D_00A4E3F0": "tutoxtx_tbl",
+      "D_00A4E3F8": "tutoxtx_tbl",
+      "D_00A4E400": "tutoxtx_tbl",
+      "D_00A4E408": "tutoxtx_tbl",
+      "D_00A4E410": "tutoxtx_tbl",
+      "D_00A4E418": "tutoxtx_tbl",
+      "D_00A4E420": "tutoxtx_tbl",
+      "D_00A4E428": "tutoxtx_tbl",
+      "D_00A4E430": "tutoxtx_tbl",
+      "D_00A4E438": "tutoxtx_tbl",
+      "D_00A4E440": "tutoxtx_tbl",
+      "D_00A4E448": "tutoxtx_tbl",
+      "D_00A4E450": "tutoxtx_tbl",
+      "D_00A4E458": "tutoxtx_tbl",
+      "D_00A4E460": "tutoxtx_tbl",
+      "D_00A4E468": "tutoxtx_tbl",
+      "D_00A4E470": "tutoxtx_tbl",
+      "D_00A4E478": "tutoxtx_tbl",
+      "D_00A4E480": "tutoxtx_tbl",
+      "D_00A4E488": "tutoxtx_tbl",
+      "D_00A4E490": "tutoxtx_tbl",
+      "D_00A4E4A0": "D_00A4E4B0"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
