@@ -259,8 +259,12 @@ void sceVif1PkAlign(sceVif1Packet *p, unsigned bit, unsigned pos)
     while ((((uintptr_t)p->pCurrent >> 2) & mask) != pos)
         *p->pCurrent++ = 0;
 }
-void sceVif1PkOpenDirectCode(sceVif1Packet *p, int i) { p->pVifCode = p->pCurrent; *p->pCurrent++ = 0x50000000u | (i ? 0x80000000u : 0); }
-void sceVif1PkOpenDirectHLCode(sceVif1Packet *p, int i) { p->pVifCode = p->pCurrent; *p->pCurrent++ = 0x51000000u | (i ? 0x80000000u : 0); }
+/* libvifpk first pads with VIF NOPs to word 3 of a qword (sceVif1PkAlign(p, 2, 3)),
+ * so the DIRECT code ends the qword and the GIF data after it is qword-aligned.
+ * Callers that build a packet as Cnt + OpenDirectCode (no explicit VIF code in
+ * between, e.g. the casino's ov11 sprites) depend on it. */
+void sceVif1PkOpenDirectCode(sceVif1Packet *p, int i) { sceVif1PkAlign(p, 2, 3); p->pVifCode = p->pCurrent; *p->pCurrent++ = 0x50000000u | (i ? 0x80000000u : 0); }
+void sceVif1PkOpenDirectHLCode(sceVif1Packet *p, int i) { sceVif1PkAlign(p, 2, 3); p->pVifCode = p->pCurrent; *p->pCurrent++ = 0x51000000u | (i ? 0x80000000u : 0); }
 static unsigned close_direct(sceVif1Packet *p)
 {
     unsigned qw;
@@ -300,20 +304,29 @@ void sceVif1PkOpenGifTag(sceVif1Packet *p, ps2_u128 tag)
     memcpy(p->pCurrent, &tag, 16);
     p->pCurrent += 4;
 }
-/* NLOOP from the data written since the tag. */
+/* NLOOP from the data written since the tag, as libvifpk computes it: in
+ * 64-bit units for REGLIST, qwords otherwise, rounded up to whole loops (IMAGE:
+ * the qword count).  Then the packet is padded with zero words to the next
+ * qword, so a following GIF tag / VIF code is aligned again.  The casino
+ * (ov11 MakeSprite) writes a one-register REGLIST tag with a single 64-bit
+ * value: truncating to whole qwords gave NLOOP 0 and left the next tag half a
+ * qword off, desyncing PATH2 for the rest of the run. */
 unsigned sceVif1PkCloseGifTag(sceVif1Packet *p)
 {
-    unsigned *t = p->pGifTag, qw, nreg, flg, nloop;
+    unsigned *t = p->pGifTag, n64, units, nreg, flg, nloop;
     if (!t)
         return 0;
-    qw = (unsigned)((p->pCurrent - (t + 4)) / 4);
+    n64 = (unsigned)((p->pCurrent - (t + 4)) / 2);
     nreg = (t[1] >> 28) & 15;
     if (!nreg)
         nreg = 16;
     flg = (t[1] >> 26) & 3;
-    nloop = flg == 0 ? qw / nreg : flg == 1 ? qw * 2 / nreg : qw;
+    units = flg == 1 ? n64 : n64 / 2;
+    nloop = flg == 2 ? units : (units + nreg - 1) / nreg;
     t[0] = (t[0] & ~0x7fffu) | (nloop & 0x7fff);
     p->pGifTag = 0;
+    while (((uintptr_t)p->pCurrent & 15) != 0)
+        *p->pCurrent++ = 0;
     return nloop;
 }
 
