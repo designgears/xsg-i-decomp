@@ -1260,9 +1260,7 @@ typedef struct CameraEnemyWork {
     unsigned char unmodeled_3832[0x38b0 - 0x3832];
 } CameraEnemyWork;
 extern CameraEnemyWork enepc[16];
-extern unsigned char pre_mode;
-extern float pa_0;
-extern int t_1;
+static unsigned char pre_mode;
 extern void nmlModelSetGlobalFogDist(float start, float end, float parameter0, float parameter1);
 extern void nmlModelSetGlobalFogCol(const Vector4 *color);
 #define CLAP (*(Vector4 *)CamLookAtPos)
@@ -1271,6 +1269,8 @@ extern void nmlModelSetGlobalFogCol(const Vector4 *color);
 
 void GameCamera(void)
 {
+    static float pa;
+    static int t;
     UpCamScratch *scratchpad = (void *)0x70000000;
     const CameraDefinition *previous;
     unsigned char mode;
@@ -1446,14 +1446,14 @@ void GameCamera(void)
     pre_mode = GLS.camera_mode;
     if (scratchpad->definition->pedestal_mode == 0) {
         distance = scratchpad->target->facing_enabled != 0.0f ? scratchpad->target->facing_angle : 100.0f;
-        if (pa_0 != distance) {
-            pa_0 = distance;
-            t_1 = 0;
+        if (pa != distance) {
+            pa = distance;
+            t = 0;
             count = 0;
         } else {
-            count = t_1;
+            count = t;
             count++;
-            t_1 = count;
+            t = count;
         }
         if (distance == 100.0f) {
             if (scratchpad->definition->parameters.offset.second_mode < count) {

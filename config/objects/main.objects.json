@@ -33654,7 +33654,7 @@
         ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/game_camera.c",
