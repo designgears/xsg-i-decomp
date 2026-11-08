@@ -834,9 +834,6 @@ extern char D_004C8B98[];
 extern char D_004C8BD8[];
 extern char D_004C8BF0[];
 extern char D_004C8D90[];
-extern char D_004DB410[];
-extern char D_004DB418[];
-extern char D_004DB420[];
 typedef struct { unsigned char b[8]; } MenuTecInfoBlk8;
 typedef struct { MenuTecInfoBlk8 lo; int hi; } MenuTecInfoBlk12;
 typedef struct { MenuTecInfoBlk8 lo; MenuTecInfoBlk8 mid; int hi; } MenuTecInfoBlk20;
@@ -1117,9 +1114,9 @@ void MenuTecInfoMain(void)
                 break;
             }
             if (MenuWork.state == 0x54) {
-                eMessageCat(D_004DB418);
+                eMessageCat(".");
             } else {
-                eMessageCat(D_004DB420);
+                eMessageCat(". \037");
             }
         }
         break;
@@ -1589,7 +1586,6 @@ void MenuTecStatusMain(void)
 
 extern unsigned char MenuKeepSelect[];
 extern char D_004C90F0[];
-extern char D_004DB458[];
 typedef struct MenuTecSPWindowView {
     unsigned char state;                /* +0x00 */
     unsigned char drawFlags;             /* +0x01 */
@@ -1691,7 +1687,7 @@ void MenuTecListMain(void)
                     work->window.rows = 8;
                     work->window.x = -224;
                     work->window.drawFlags = 3;
-                    work->window.title = D_004DB458;
+                    work->window.title = "List";
                     work->window.columns = 1;
                     work->window.items = MenuListGet(0);
                     WindowSPItemChange(window);
@@ -1782,8 +1778,6 @@ typedef struct MenuTecList2MessageIds {
 extern const MenuTecList2MessageIds D_004C91D8;
 extern const MenuTecList2SpriteIds D_004C9210;
 
-extern const char D_004C91F0[];
-extern const char D_004C9200[];
 extern const char *msg00_4_0036DC90[];
 extern const char *msg01_5[];
 
@@ -1851,9 +1845,9 @@ void MenuTecListMain2(void)
             work->row[i].window.width = 285;
             work->row[i].window.height = rowHeight;
             if (i == 0)
-                work->row[i].window.title = D_004C91F0;
+                work->row[i].window.title = "SetList/HI";
             else
-                work->row[i].window.title = D_004C9200;
+                work->row[i].window.title = "SetList/LW";
             work->row[i].window.state = 1;
             WindowDXMain(&work->row[i].window);
             work->row[i].window.state = 3;
@@ -2302,9 +2296,7 @@ typedef struct MenuTecList2WorkMT {
 } MenuTecList2WorkMT;
 extern MenuTecList2WorkMT *MenuTecList2;
 extern unsigned char *MainMenuWorkEnd;
-extern char D_004C9308[];
 extern signed char D_004DB4E8[];
-extern char D_004DB4F0[];
 extern char D_004DB4F8[];
 extern char D_004DB500[];
 extern char D_004DB508[];
@@ -2354,7 +2346,7 @@ void MenuTec(void)
         MenuTecL1R1Work *shoulder;
         heap = MainMenuWorkEnd;
         MenuTecDataBuf = (void *)heap;
-        dataSize = xglCdReadFile(D_004C9308, heap, 0, 1);
+        dataSize = xglCdReadFile("data\134endou\134tec\134tecdata.bin", heap, 0, 1);
         heap = (unsigned char *)MenuTecDataBuf + dataSize;
         pas = (void *)heap;
         MenuTecPas = pas;
@@ -2706,7 +2698,7 @@ void MenuTec(void)
     MenuTecExMain();
     MenuTecL1R1Main();
     MenuWork.resetFlags |= 2;
-    xglFontDebugPrintf(0, 64, D_004DB4F0);
+    xglFontDebugPrintf(0, 64, "\013tec");
     xglFontDebugPrintf(0, 80, D_004DB4F8, MenuWork.listCursor);
     xglFontDebugPrintf(0, 88, D_004DB500, MenuWork.mode);
     xglFontDebugPrintf(0, 96, D_004DB508, MenuWork.selectedTechnique);

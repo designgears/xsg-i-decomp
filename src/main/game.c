@@ -2707,3 +2707,6 @@ const char D_004D8A88[] = "MC_TEST";
 
 /* 0x2a030-byte loop state (main 0x00338680), last item of this TU's .data. */
 GameLoopStateLayout GameLoopState = {0};
+
+/* Unreferenced zero fill that ends the original .rodata (alignment of the next TU). */
+static const int D_004BE334 __attribute__((section(".rodata"))) = 0;

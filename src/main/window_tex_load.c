@@ -127,7 +127,6 @@ typedef union {
     unsigned long long words[14];
 } MenuLightConfig;
 extern const MenuLightConfig D_004C3240;
-extern const char D_004C32B0[];
 
 /* The external data witness covers these 0x9c bytes; the spans around the
  * two evidenced bit sets remain unmodelled (see UmnDataBase). */
@@ -649,7 +648,7 @@ void MainMenu(void)
         xglTaskExecute(MenuTask);
         MenuModelMain();
         MenuBibrationMain();
-        xglFontDebugPrintf(0, 0, D_004C32B0);
+        xglFontDebugPrintf(0, 0, "mainmenu");
         xglFontDebugHex(0, 0x10, MenuWork.menu_state[1], 2);
         xglFontDebugHex(0, 0x18, MenuWork.item_selection, 2);
         xglFontDebugHex(0, 0x20, MenuWork.sub_selection, 2);

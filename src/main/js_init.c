@@ -60,6 +60,9 @@ static JSPrimitive js_type_float = { 4 };
 
 static JSPrimitive js_type_string = { 5 };
 
+/* Unreferenced zero fill that ends the original .data (to its 16-byte end). */
+static int D_0036B1A4 __attribute__((section(".data"))) = 0;
+
 
 extern char D_004DA590[];
 char D_004DA590[8] = ".[](),";
