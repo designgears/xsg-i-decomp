@@ -21279,11 +21279,11 @@
     {
      "range": [
       "0x00a54e18",
-      "0x00a54e40"
+      "0x00a54f40"
      ],
      "generated": [
       "0x00a54e18",
-      "0x00a54e40"
+      "0x00a54f3c"
      ],
      "generated_by": [
       "InitRgBattleInit",
@@ -21295,33 +21295,8 @@
      ],
      "c_owned_symbols": [
       "D_00A54E18",
-      "D_00A54E28"
-     ],
-     "also_referenced_by_c": [
-      "D_00A54E40"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_battle_init.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a54e48",
-      "0x00a54f40"
-     ],
-     "generated": [
-      "0x00a54e48",
-      "0x00a54f3c"
-     ],
-     "generated_by": [
-      "RgBattleInitCopy",
-      "RgBattleInitCreatePlayers",
-      "RgBattleInitDump",
-      "_CreateBg"
-     ],
-     "c_owned_symbols": [
+      "D_00A54E28",
+      "D_00A54E40",
       "D_00A54E48",
       "D_00A54E68",
       "D_00A54E70",

@@ -12,6 +12,7 @@ extern void assert_prog(const char *expression, const char *source_file,
 const char D_00A54E18[] = "pInfo != NIL";
 const char D_00A54E28[] = "../rg_battle_init.euc.c";
 extern const unsigned char D_00A54E40[];
+const unsigned char s_szEmptyName_00A54E40[8] __asm__("D_00A54E40") = "";
 const char D_00A54E48[] = "pDst != NIL && pSrc != NIL";
 const char D_00A54E68[] = "UNARMED";
 const char D_00A54E70[] = "rg_bg.info";
