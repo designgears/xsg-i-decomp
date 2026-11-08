@@ -25853,20 +25853,33 @@
    ".rodata": [
     {
      "range": [
-      "0x00a4d178",
-      "0x00a4d180"
+      "0x00a4d130",
+      "0x00a4d730"
      ],
      "generated": [
-      "0x00a4d178",
-      "0x00a4d180"
+      "0x00a4d130",
+      "0x00a4d729"
      ],
      "generated_by": [
-      "CardDispTxtSub"
+      "CGCPJunkDispSub",
+      "CGCPNeedDispSub",
+      "CGCPYamaDispSub",
+      "CardCursorActive",
+      "CardDeckDisp",
+      "CardDeckListDisp",
+      "CardDisp",
+      "CardDispCard",
+      "CardDispLight",
+      "CardDispTxtSub",
+      "CardDispTxtSub2",
+      "CardEnemyListDisp",
+      "CardFread",
+      "CardListDisp",
+      "CardPlayDispBattle",
+      "CardPlayDispCursor",
+      "CardStrListDisp"
      ],
      "c_owned_symbols": [
-      "D_00A4D178"
-     ],
-     "also_referenced_by_c": [
       "D_00A4D130",
       "D_00A4D140",
       "D_00A4D148",
@@ -25875,98 +25888,30 @@
       "D_00A4D160",
       "D_00A4D168",
       "D_00A4D170",
+      "D_00A4D178",
       "D_00A4D180",
-      "D_00A4D190"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4d1a0",
-      "0x00a4d340"
-     ],
-     "generated": [
-      "0x00a4d1a0",
-      "0x00a4d340"
-     ],
-     "generated_by": [
-      "CardDispCard",
-      "CardDispLight"
-     ],
-     "c_owned_symbols": [
+      "D_00A4D190",
       "jtbl_00A4D1A0",
       "jtbl_00A4D2A0",
-      "D_00A4D320"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4D320",
       "D_00A4D340",
       "D_00A4D350",
       "D_00A4D368",
-      "D_00A4D370"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4d380",
-      "0x00a4d500"
-     ],
-     "generated": [
-      "0x00a4d380",
-      "0x00a4d500"
-     ],
-     "generated_by": [
-      "CardDisp"
-     ],
-     "c_owned_symbols": [
+      "D_00A4D370",
       "jtbl_00A4D380",
-      "jtbl_00A4D480"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A4D480",
       "D_00A4D500",
       "D_00A4D508",
-      "D_00A4D518"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a4d520",
-      "0x00a4d710"
-     ],
-     "generated": [
-      "0x00a4d520",
-      "0x00a4d70c"
-     ],
-     "generated_by": [
-      "CGCPNeedDispSub",
-      "CardCursorActive",
-      "CardPlayDispBattle",
-      "CardPlayDispCursor"
-     ],
-     "c_owned_symbols": [
+      "D_00A4D518",
       "jtbl_00A4D520",
       "jtbl_00A4D620",
       "jtbl_00A4D640",
       "jtbl_00A4D660",
-      "jtbl_00A4D690"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A4D690",
       "D_00A4D710",
       "D_00A4D720"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
