@@ -141,22 +141,30 @@ void SweepRule(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float age, 
     if (u < 1) dl->AddCircleFilled(ImVec2(x, b.y), 2.2f * k, Alpha(IM_COL32(220, 245, 255, 255), t));
 }
 
+// the original's game text: a drop shadow down-right, a crisp dark outline, then the glyphs
 void HaloText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    const ImU32 h = IM_COL32(4, 4, 20, int(150 * t));
-    const float o = std::max(1.0f, size * 0.07f);
-    dl->AddText(font, size, ImVec2(p.x + o, p.y + o), h, s);
-    dl->AddText(font, size, ImVec2(p.x - o * 0.5f, p.y + o * 0.5f), IM_COL32(4, 4, 20, int(70 * t)), s);
-    dl->AddText(font, size, p, Alpha(col, t), s);
-}
-
-void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
-    const float o = std::max(1.0f, size * 0.06f);
-    const ImU32 oc = IM_COL32(4, 6, 18, int(230 * t));
+    const float sh = std::max(1.0f, size * 0.085f), o = std::max(1.0f, size * 0.05f);
+    dl->AddText(font, size, ImVec2(p.x + sh, p.y + sh), IM_COL32(0, 0, 6, int(190 * t)), s);
+    const ImU32 oc = IM_COL32(6, 8, 20, int(225 * t));
     for (int i = 0; i < 8; ++i) {
         const float a = float(i) * 0.785398f;
         dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
     }
     dl->AddText(font, size, p, Alpha(col, t), s);
+}
+
+// labels and numbers: shadow, outline and a faux-bold double strike (Michroma has one weight)
+void OutlineText(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t) {
+    const float sh = std::max(1.0f, size * 0.08f), o = std::max(1.0f, size * 0.06f), bold = std::max(0.6f, size * 0.035f);
+    dl->AddText(font, size, ImVec2(p.x + sh, p.y + sh), IM_COL32(0, 0, 6, int(190 * t)), s);
+    const ImU32 oc = IM_COL32(4, 6, 18, int(235 * t));
+    for (int i = 0; i < 8; ++i) {
+        const float a = float(i) * 0.785398f;
+        dl->AddText(font, size, ImVec2(p.x + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
+        dl->AddText(font, size, ImVec2(p.x + bold + std::cos(a) * o, p.y + std::sin(a) * o), oc, s);
+    }
+    dl->AddText(font, size, p, Alpha(col, t), s);
+    dl->AddText(font, size, ImVec2(p.x + bold, p.y), Alpha(col, t), s);
 }
 
 float SmallCaps(ImDrawList* dl, ImFont* font, float size, ImVec2 p, ImU32 col, const char* s, float t, bool draw) {

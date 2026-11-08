@@ -147,34 +147,32 @@ namespace {
 // "[View] Settings" as part of the help bar: right-aligned inside it, vertically centred, set off
 // by a thin divider, in the help text's own type and colour (barTop / barBottom / barRight: game px;
 // barTop < 0: no help bar, the top-right corner instead)
-void SettingsHint(ImDrawList* dl, ImFont* font, float t, float barTop, float barBottom, float barRight) {
+// the camp menu's own row under Money: same width and look as the Reserve / Time / Money rows
+void SettingsHint(ImDrawList* dl, ImFont* font, float t, float x0, float x1, float y) {
     using namespace xsgmenu;
     const float k = LayoutK(), kx = LayoutKx();
-    ImFont* const bf = UiFont(kFontBody, font);
+    ImFont* const bf = UiFont(kFontBodyBold, font);
     const std::string lay = xsgcfg::Get("gamepad.layout");
     const char* btn = lay == "playstation" ? "SHARE" : lay == "nintendo" ? "\xe2\x88\x92" : "VIEW";
-    const float hs = 17.0f * k;                       // a little under the help text's 22
-    const float ih = hs * 1.35f;                      // the button icon's height
+    const float hs = 17.0f * k, ih = hs * 1.4f;
     const bool icon = PromptIcon(kBack) != 0;
+    const ImVec2 a = Map(x0, y, kRight), b = Map(x1, y + 22, kRight);
+    dl->AddRectFilledMultiColor(a, b, IM_COL32(52, 64, 140, int(150 * t)), IM_COL32(52, 64, 140, int(60 * t)),
+                                IM_COL32(52, 64, 140, int(60 * t)), IM_COL32(52, 64, 140, int(150 * t)));
+    dl->AddLine(ImVec2(a.x, b.y - 0.5f), ImVec2(b.x, b.y - 0.5f), Alpha(IM_COL32(52, 64, 140, 255), 0.55f * t), 1.0f);
+    const float cy = (a.y + b.y) * 0.5f;
     const ImVec2 lw = bf->CalcTextSizeA(hs, 1e9f, 0, "Settings");
     const float bw = icon ? ih : bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn).x + 12 * kx;
-    float top = barTop, bottom = barBottom, right = barRight;
-    if (barTop < 0) { top = 6; bottom = 28; right = 506; }
-    const float cy = Map(0, (top + bottom) * 0.5f, kRight).y;
-    const float rx = Map(right - 20, 0, kRight).x;
-    const float lx = rx - lw.x, bx = lx - 7 * kx - bw;
-    // divider
-    const float dx = bx - 10 * kx, dh = (bottom - top) * 0.32f * k;
-    dl->AddLine(ImVec2(dx, cy - dh), ImVec2(dx, cy + dh), Alpha(col::kFrame, 0.55f * t), std::max(1.0f, k));
+    const float bx = Map(x0 + 46, 0, kRight).x;
     if (icon) {
         PromptDraw(dl, kBack, ImVec2(bx + bw * 0.5f, cy), ih, t);
     } else {
         const float ph = hs * 0.95f;
         dl->AddRect(ImVec2(bx, cy - ph * 0.5f), ImVec2(bx + bw, cy + ph * 0.5f), Alpha(col::kFrame, 0.7f * t), ph * 0.5f, 0, 1.0f);
-        const ImVec2 b = bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn);
-        dl->AddText(bf, hs * 0.7f, ImVec2(bx + (bw - b.x) * 0.5f, cy - b.y * 0.5f), Alpha(col::kText, t), btn);
+        const ImVec2 bb = bf->CalcTextSizeA(hs * 0.7f, 1e9f, 0, btn);
+        dl->AddText(bf, hs * 0.7f, ImVec2(bx + (bw - bb.x) * 0.5f, cy - bb.y * 0.5f), Alpha(col::kText, t), btn);
     }
-    HaloText(dl, bf, hs, ImVec2(lx, cy - lw.y * 0.5f), col::kTextDim, "Settings", t);
+    HaloText(dl, bf, hs, ImVec2(bx + bw + 8 * kx, cy - lw.y * 0.5f), col::kText, "Settings", t);
 }
 }  // namespace
 
@@ -255,7 +253,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             if ((c.type != GPU_KG_TEXT && c.type != GPU_KG_TAG) || c.y < w.y - 4 || c.y > w.y + w.dh || c.x < w.x || c.x > w.x + w.dw) continue;
             const char* t = m.pool + std::min<uint32_t>(uint32_t(c.b), XSG_GPU_UI_MENU_POOL - 1);
             // in game px, as drawn: the body font at 22 game px
-            const float tw2 = UiFont(kFontBody, font)->CalcTextSizeA(22.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
+            const float tw2 = UiFont(kFontBodyBold, font)->CalcTextSizeA(22.0f, 1e9f, 0, Decode(std::string(t, size_t(std::max<int>(c.u, 0))).c_str()).c_str()).x;
             right = std::max(right, float(c.x) + tw2 / 1.1667f * 1.05f + 4);   // screen / kx, k = 1
         }
         (void)right;   // title windows keep the game's width: they span the header bar behind them
@@ -520,7 +518,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
             const float fs = 19.0f * k;   // the original's tag caps are 16 px tall
             ImFont* const lf = UiFont(kFontLabel, font);   // the original's wide small caps, pale teal
-            const ImU32 kLabelCol = IM_COL32(168, 218, 220, 255);
+            const ImU32 kLabelCol = IM_COL32(200, 224, 224, 255);   // the original's pale grey-teal
             struct Seg { std::string t; float dx; };
             std::vector<Seg> segs(1);
             float width = 0;
@@ -572,7 +570,7 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             break;
         }
         case GPU_KG_TEXT: {
-            ImFont* const tfont = UiFont(kFontBody, font);   // Exo 2, the original's clean wide sans
+            ImFont* const tfont = UiFont(kFontBodyBold, font);   // Exo 2 SemiBold: the original's heavy text
             const char* s = m.pool + std::min<uint32_t>(uint32_t(o.b), XSG_GPU_UI_MENU_POOL - 1);
             // proportions: when the game measured the string (o.dw), the widest line takes the same width
             float fs = 22.0f * k;   // the original's text: 16 px capitals at 2x
@@ -812,14 +810,21 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
     dl->PopClipRect();
     bool pause = false;
     for (uint32_t i = 0; i < m.nops; ++i) pause |= m.op[i].type == GPU_KG_PAUSE;
-    if (!pause && MenuWantsSettings()) {   // the pause screen names it in its own row
-        float bt = -1, bb = -1, br = 504;
-        for (uint32_t i = 0; i < m.nops; ++i) {
-            const GpuUiKgOp& w = m.op[i];
-            if (w.type == GPU_KG_WINDOW && w.b && w.y > 330 && w.dw >= 400 && (bt < 0 || w.y < bt))
-                bt = float(w.y), bb = float(std::min(w.y + w.dh, 444)), br = float(std::min(w.x + w.dw, 504));
+    if (!pause) {   // the camp menu (its list has "Game Options"): a Settings row under Money
+        bool camp = false;
+        for (uint32_t i = 0; i < m.nops && !camp; ++i)
+            if (m.op[i].type == GPU_KG_TEXT) {
+                const char* t = m.pool + std::min<uint32_t>(uint32_t(m.op[i].b), XSG_GPU_UI_MENU_POOL - 1);
+                camp = std::strstr(std::string(t, size_t(std::max<int>(m.op[i].u, 0))).c_str(), "Game Options") != nullptr;
+            }
+        // the Reserve / Time / Money rows: the lowest ribbon in the right half, above the help bar
+        float x0 = 0, x1 = 0, ybot = 0;
+        for (uint32_t i = 0; camp && i < m.nops; ++i) {
+            const GpuUiKgOp& r = m.op[i];
+            if (r.type == GPU_KG_RECT && r.x > 250 && r.dw > 100 && r.dh >= 16 && r.y < helpTop - 20 && r.y + r.dh > ybot)
+                x0 = float(std::max(r.x, 16)), x1 = float(std::min(r.x + r.dw, 496)), ybot = float(r.y + r.dh);
         }
-        SettingsHint(dl, font, tw, bt, bb, br);
+        if (camp && ybot > 0 && ybot + 34 < helpTop) SettingsHint(dl, font, tw, x0, x1, ybot + 9);
     }
 }
 

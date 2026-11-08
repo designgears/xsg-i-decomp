@@ -167,7 +167,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     float ty = y0 + 12 * sy;
     for (uint32_t i = 0; i < d.nlines && i < XSG_GPU_UI_LINES; ++i) {
         const std::string tx = Decode(d.line[i]);
-        if (!tx.empty()) RichText(dl, font, fs, x0 + 22 * sx, ty, col::kText, tx.c_str(), t);
+        if (!tx.empty()) RichText(dl, UiFont(kFontBodyBold, font), fs * 0.92f, x0 + 22 * sx, ty, col::kText, tx.c_str(), t);
         ty += 26.0f * sy;
     }
     // page arrow (the game waits for a key)
