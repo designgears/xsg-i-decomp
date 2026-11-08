@@ -1,5 +1,6 @@
 #include "common.h"
 #include "init_vm.h"
+#include "java_class.h"
 
 /*
  * initBaseClasses and initPrimitiveTypes are file-local (LOCAL in the
@@ -1414,5 +1415,5 @@ static void initWrapperClass(VMClass **class_slot, const char *name,
 
 VMClass *classBoolean = 0;
 /* java.lang.Class's record, until initVM's class loader resolves it. */
-extern JavaClass _dummyClass;
+static JavaClass _dummyClass;
 JavaClass *classClass = &_dummyClass;

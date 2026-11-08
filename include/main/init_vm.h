@@ -5,13 +5,12 @@
 
 /*
  * The class records of java.lang.Class, java.lang.Object, java.lang.String
- * and java.lang.StringBuffer, resolved by initVM (main/tu226).  _dummyClass
- * itself is the static class record find_native_method.c allocates for
- * java.lang.Class; classClass points at it.  classObject and classClass are
+ * and java.lang.StringBuffer, resolved by initVM (main/tu226).  classClass
+ * starts out pointing at init_vm.c's file-local _dummyClass record (original
+ * local `b` symbol at 0x007C07D0).  classObject and classClass are
  * only read by the class loader, through its full JavaClass layout;
  * classString and classStringBuffer are passed to newObject.
  */
-extern JavaClass _dummyClass;
 extern JavaClass *classClass;
 extern JavaClass *classObject;
 extern SceneClass *classString;
