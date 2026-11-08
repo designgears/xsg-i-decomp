@@ -586,14 +586,14 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             }
             if (logo && lw && lh && ArtImage(1)) {   // the copyright lines, set in the UI font
                 const char* l1 = "Xenosaga\xe2\x84\xa2 EPISODE I  Der Wille zur Macht";
-                const char* l2 = "\xc2\xa9 2001 NAMCO LTD.  ALL RIGHTS RESERVED";
+                const char* l2 = "\xc2\xa9 2001 NAMCO LTD., ALL RIGHTS RESERVED";
                 const float s1 = 9.5f * k, s2 = 9.0f * k;
                 const ImU32 c1 = IM_COL32(70, 80, 105, int(230 * tw)), c2 = IM_COL32(95, 105, 130, int(220 * tw));
                 const ImVec2 w1 = font->CalcTextSizeA(s1, 1e9f, 0, l1), w2 = font->CalcTextSizeA(s2, 1e9f, 0, l2);
                 const ImVec2 c = P(256, 412);
                 // "Xenosaga" + a small raised TM + the rest (the font has no U+2122)
                 const char* a1 = "Xenosaga";
-                const char* b1 = " EPISODE I  Der Wille zur Macht";
+                const char* b1 = " EPISODE I Der Wille zur Macht &";
                 const float tms = s1 * 0.55f;
                 const float wa = font->CalcTextSizeA(s1, 1e9f, 0, a1).x, wt = font->CalcTextSizeA(tms, 1e9f, 0, "TM").x,
                             wb = font->CalcTextSizeA(s1, 1e9f, 0, b1).x;
