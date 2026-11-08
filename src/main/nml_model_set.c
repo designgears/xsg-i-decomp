@@ -3,6 +3,79 @@
 #include "nml_model_set.h"
 #include "nml_packet_add.h"
 
+typedef struct {
+    int data;
+    short attr;
+    short type;
+} DirectEntry;
+typedef struct {
+    u16 block;
+    u16 kind;
+    LayoutStore *sort;
+    u32 status;
+    int pad;
+} AlphaGroupEntry;
+typedef struct {
+    char *model;
+    int pad[3];
+} ParentBufEntry;
+typedef struct {
+    s16 block;
+    s16 kind;
+    int unk4;
+    u32 status;
+    LayoutStore *sort;
+} NonAlphaGroupEntry;
+typedef struct { float u, v; } TexOfs;
+typedef int MulColor16 __attribute__((mode(TI)));
+typedef int FlushQ __attribute__((mode(TI)));
+typedef int qword_t __attribute__((mode(TI)));
+
+/* Uninitialized statics, in the original's address order. */
+static LayoutStore *s_apBlock[0x1000];
+static u16 s_aBlockLayout[0x1000];
+static LayoutStore *s_aBPsave[0x100];
+static u16 s_aBLsave[0x100];
+static LayoutStore *s_apBlockLast[32];
+static u16 s_aBlockLayoutLast[32];
+static MulColor16 s_inMulColor;
+static Vector4 s_inScale;
+static char s_aDispVisible[0x400];
+static int s_aToumeiId[16];
+static float s_aToumei[16];
+static int s_aShapeId[32];
+static float s_aShapeWeight[32];
+static int s_aMapLast[12];
+static Vector4 s_inShadowVec;
+static LayoutStore *s_apModelLayout[0x200];
+static Vector4 s_inGblPos;
+static unsigned char s_inGblPlace[0x40];
+static unsigned char s_aCircleShadow[0x1020];
+static unsigned char s_aCircleShadowClut[0x1020];
+static AlphaGroupEntry s_aAlphaGroup[0x200];
+static NonAlphaGroupEntry s_aNonAlphaGroup[0x200];
+static unsigned char s_inProReal[0x1e0];
+static int s_inBackBuffer[12];
+static ParentBufEntry s_aParentBuf[0x200];
+static unsigned char s_inMapHandle[0x10];
+static FadeControl s_inFadeOut __attribute__((aligned(16)));
+static FadeControl s_inFadeIn __attribute__((aligned(16)));
+static FadeControl s_inActiveFadeOut __attribute__((aligned(16)));
+static FadeControl s_inActiveFadeIn __attribute__((aligned(16)));
+static DirectEntry s_aDirect[0xABE0 / 8] __attribute__((aligned(16)));
+static char s_aTexName[0x20];
+static char s_aMatName[0x20];
+static qword_t s_inGblPointP[4];
+static Vector4 s_inGblPointC[4];
+static Vector4 s_inGblFogCol;
+static Vector4 s_inGblFogPara;
+static FlushQ s_inMainCameraPos;
+static FlushQ s_inMainCameraAng;
+
+static TexOfs s_aTexOffset;
+static int s_nAlphaGroup;
+static int s_nNonAlphaGroup;
+
 /* Types recovered upstream (origin/master); kept for reference. */
 /*
  * The renderer passes this 0x1e0-byte block to nmlPacketSetAttributeData16N
@@ -606,7 +679,6 @@ static void INIT_MODELSYSTEM(void)
     CONSTRUCT_MODELSYSTEM();
 }
 
-typedef int FlushQ __attribute__((mode(TI)));
 extern int s_nBlocks, s_nUseZwrite, s_nModel, s_nDirect, s_nBlocksAlpha, s_nBlocksAlphaLast, s_nAnotherStudio, s_nUseStealth, s_nUseGnosys, s_nMapAlphaEntry;
 extern void *xglStudioSelectGetActiveCamera(int studio_index);
 extern float xglPointLength(const void *point1, const void *point2);
@@ -1282,7 +1354,6 @@ void nmlModelSetSortOffset(float offset)
     s_fSortOffsetEntry = offset;
 }
 
-typedef int qword_t __attribute__((mode(TI)));
 extern qword_t s_inGblPointP[];
 extern Vector4 s_inGblPointC[];
 void xglVectorScaleXYZ(float scale, Vector4 *destination, const Vector4 *source);
@@ -1815,7 +1886,6 @@ typedef struct { char s[32]; } TexName32;
 
 typedef union { TexName32 n; float f; } TexAlias;
 
-typedef struct { float u, v; } TexOfs;
 
 extern TexOfs s_aTexOffset;
 
@@ -1829,7 +1899,6 @@ void nmlModelSetTexOffset(TexAlias *name, float u, float v)
 
 typedef struct { char s[32]; } MatName32;
 
-typedef int MulColor16 __attribute__((mode(TI)));
 
 extern MulColor16 s_inMulColor;
 
@@ -2151,11 +2220,6 @@ void nmlModelSetNameVisible(NmlModel *model, const char *name, int visible, int 
     }
 }
 
-typedef struct {
-    int data;
-    short attr;
-    short type;
-} DirectEntry;
 extern DirectEntry s_aDirect[];
 extern int nmlPacketSetAttributeData16N(void *, int);
 
@@ -2315,13 +2379,6 @@ static void AlphaGroupSortEntry(Vector4 *pos)
     D_00957944[s_nAlphaGroup * 4] = dist + s_fSortOffset;
 }
 
-typedef struct {
-    u16 block;
-    u16 kind;
-    LayoutStore *sort;
-    u32 status;
-    int pad;
-} AlphaGroupEntry;
 extern AlphaGroupEntry s_aAlphaGroup[];
 extern LayoutStore *s_apBlockLast[];
 extern u16 s_aBlockLayoutLast[];
@@ -2458,10 +2515,6 @@ static int is_block_last_entry(void *m)
     return ret;
 }
 
-typedef struct {
-    char *model;
-    int pad[3];
-} ParentBufEntry;
 
 extern ParentBufEntry s_aParentBuf[];
 
@@ -3817,15 +3870,15 @@ extern int U_s_nBlocksAlpha NMLE_SYM(s_nBlocksAlpha);
 extern int U_s_nBlocksAlphaLast NMLE_SYM(s_nBlocksAlphaLast);
 extern int U_s_nUseGnosys NMLE_SYM(s_nUseGnosys);
 extern int U_s_nMapAlphaEntry NMLE_SYM(s_nMapAlphaEntry);
-extern U_NmlBlockGroup U_s_aAlphaGroup[512] NMLE_SYM(s_aAlphaGroup);
+extern U_NmlBlockGroup U_s_aAlphaGroup[] NMLE_SYM(s_aAlphaGroup);
 extern float U_s_fSortOffset NMLE_SYM(s_fSortOffset);
 extern U_LayoutStore U_s_inLayout NMLE_SYM(s_inLayout);
 extern U_Vector4 U_s_inGblPointC[] NMLE_SYM(s_inGblPointC);
 extern U_NmlPointQuadword U_s_inGblPointP[] NMLE_SYM(s_inGblPointP);
 extern U_NmlPointQuadword U_s_inGblFogCol[] NMLE_SYM(s_inGblFogCol);
-extern U_Vector4 U_s_inGblFogPara NMLE_SYM(s_inGblFogPara);
-extern int U_s_nAlphaGroup NMLE_SYM(s_nAlphaGroup);
-extern int U_s_nNonAlphaGroup NMLE_SYM(s_nNonAlphaGroup);
+#define U_s_inGblFogPara (*(U_Vector4 *)&s_inGblFogPara)
+#define U_s_nAlphaGroup s_nAlphaGroup
+#define U_s_nNonAlphaGroup s_nNonAlphaGroup
 extern U_StudioCamera *U_xglStudioSelectGetActiveCamera(int studio_index) NMLE_SYM(xglStudioSelectGetActiveCamera);
 union U_NmlStealthXYZ {
     U_Vector4 vector;
@@ -3910,23 +3963,23 @@ extern int U_s_nClip NMLE_SYM(s_nClip);
 extern int U_s_nShapeNum NMLE_SYM(s_nShapeNum);
 extern int U_s_nMapClip NMLE_SYM(s_nMapClip);
 extern int U_s_nDispVisible NMLE_SYM(s_nDispVisible);
-extern unsigned char U_s_aDispVisible[1024] NMLE_SYM(s_aDispVisible);
-extern int U_s_aToumeiId[16] NMLE_SYM(s_aToumeiId);
-extern U_LayoutSlot U_s_aToumei[16] NMLE_SYM(s_aToumei);
-extern int U_s_aShapeId[32] NMLE_SYM(s_aShapeId);
-extern float U_s_aShapeWeight[32] NMLE_SYM(s_aShapeWeight);
-extern U_NmlProRealState U_s_inProReal[1] NMLE_SYM(s_inProReal);
-extern int U_s_inMapHandle[4] NMLE_SYM(s_inMapHandle);
-extern void * U_s_apBlock[4096] NMLE_SYM(s_apBlock);
-extern unsigned short U_s_aBlockLayout[4096] NMLE_SYM(s_aBlockLayout);
-extern void * U_s_apBlockLast[32] NMLE_SYM(s_apBlockLast);
-extern unsigned short U_s_aBlockLayoutLast[32] NMLE_SYM(s_aBlockLayoutLast);
-extern U_LayoutStore * U_s_apModelLayout[512] NMLE_SYM(s_apModelLayout);
-extern U_NmlBlockGroup U_s_aNonAlphaGroup[512] NMLE_SYM(s_aNonAlphaGroup);
+extern unsigned char U_s_aDispVisible[] NMLE_SYM(s_aDispVisible);
+extern int U_s_aToumeiId[] NMLE_SYM(s_aToumeiId);
+extern U_LayoutSlot U_s_aToumei[] NMLE_SYM(s_aToumei);
+extern int U_s_aShapeId[] NMLE_SYM(s_aShapeId);
+extern float U_s_aShapeWeight[] NMLE_SYM(s_aShapeWeight);
+extern U_NmlProRealState U_s_inProReal[] NMLE_SYM(s_inProReal);
+extern int U_s_inMapHandle[] NMLE_SYM(s_inMapHandle);
+extern void * U_s_apBlock[] NMLE_SYM(s_apBlock);
+extern unsigned short U_s_aBlockLayout[] NMLE_SYM(s_aBlockLayout);
+extern void * U_s_apBlockLast[] NMLE_SYM(s_apBlockLast);
+extern unsigned short U_s_aBlockLayoutLast[] NMLE_SYM(s_aBlockLayoutLast);
+extern U_LayoutStore * U_s_apModelLayout[] NMLE_SYM(s_apModelLayout);
+extern U_NmlBlockGroup U_s_aNonAlphaGroup[] NMLE_SYM(s_aNonAlphaGroup);
 extern unsigned short U_blockLayout1[] NMLE_SYM(D_00952412);
 extern void *U_block1[] NMLE_SYM(D_0094E414);
-extern unsigned short U_s_aBLsave[256] NMLE_SYM(s_aBLsave);
-extern unsigned int U_s_aBPsave[256] NMLE_SYM(s_aBPsave);
+extern unsigned short U_s_aBLsave[] NMLE_SYM(s_aBLsave);
+extern unsigned int U_s_aBPsave[] NMLE_SYM(s_aBPsave);
 extern U_NmlParentBuffer *U_parent_buf_entry(U_LayoutStore *inLayout) NMLE_SYM(parent_buf_entry);
 extern int U_nmlModelCalcEntryClip(U_NmlModel *model, U_StudioCamera *camera) NMLE_SYM(nmlModelCalcEntryClip);
 extern void U_nmlModelCalcDropShadow(U_NmlModel *model) NMLE_SYM(nmlModelCalcDropShadow);
@@ -4240,13 +4293,6 @@ void nmlModelEntry(U_NmlModel *model)
     nmlModelClear();
 }
 
-typedef struct {
-    s16 block;
-    s16 kind;
-    int unk4;
-    u32 status;
-    LayoutStore *sort;
-} NonAlphaGroupEntry;
 
 extern NonAlphaGroupEntry s_aNonAlphaGroup[];
 
@@ -4895,7 +4941,7 @@ void nmlPacketGsInit(void);
 
 static int nmlModelRenderProreal(NmlLayoutRp *model, int frame)
 {
-    extern int s_inMapHandleView[4] __asm__("s_inMapHandle");
+    extern int s_inMapHandleView[] __asm__("s_inMapHandle");
     extern NmlNonAlphaGroupRp s_aNonAlphaGroupView[] __asm__("s_aNonAlphaGroup");
     extern NmlParentBuffer *parent_buf_entryUp(NmlLayoutRp *inLayout) __asm__("parent_buf_entry");
     extern int nmlModelCalcEntryClipUp(NmlModelSampleView *model, StudioCamera *camera) __asm__("nmlModelCalcEntryClip");

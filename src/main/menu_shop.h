@@ -50,7 +50,6 @@ struct MenuShopWorkData {
     short partyIds[6];
 };
 
-extern MenuShopWorkData *MenuShopWork;
 
 /* MenuShopSelect work (ported from upstream): two command panes and one
  * yes/no pane, each a 0x194-byte WindowDX followed by its panel. */

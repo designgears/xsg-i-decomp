@@ -29057,11 +29057,11 @@
       "name_confidence": "low",
       "ordinal": 106,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "split",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -32720,7 +32720,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -50766,11 +50766,11 @@
       "name_confidence": "low",
       "ordinal": 173,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -76024,7 +76024,7 @@
       "name_confidence": "low",
       "ordinal": 254,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".lit4": "asm",
         ".rodata": "asm",
         ".sdata": "asm",
