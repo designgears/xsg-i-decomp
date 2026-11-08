@@ -77,7 +77,7 @@ void Shadow(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float rounding
     }
 }
 
-void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, ImU32 tint) {
+void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, ImU32 tint, int corners) {
     Shadow(dl, a, b, k, t);
     dl->AddRectFilledMultiColor(a, b, Alpha(kTop, t), Alpha(kTop, t), Alpha(kBottom, t), Alpha(kBottom, t));
     if (tint) dl->AddRectFilled(a, b, Alpha(tint, t));
@@ -96,10 +96,10 @@ void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent, Im
     const ImU32 bc = Alpha(accent ? kCyan : IM_COL32(150, 180, 235, 210), t);
     const float L = std::min(8 * k, std::min(b.x - a.x, b.y - a.y) * 0.3f), w = 1.3f * k, g = 2 * k;
     const ImVec2 p0(a.x - g, a.y - g), p1(b.x + g, b.y + g);
-    dl->AddLine(p0, ImVec2(p0.x + L, p0.y), bc, w); dl->AddLine(p0, ImVec2(p0.x, p0.y + L), bc, w);
-    dl->AddLine(ImVec2(p1.x, p0.y), ImVec2(p1.x - L, p0.y), bc, w); dl->AddLine(ImVec2(p1.x, p0.y), ImVec2(p1.x, p0.y + L), bc, w);
-    dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p0.x + L, p1.y), bc, w); dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p0.x, p1.y - L), bc, w);
-    dl->AddLine(p1, ImVec2(p1.x - L, p1.y), bc, w); dl->AddLine(p1, ImVec2(p1.x, p1.y - L), bc, w);
+    if (corners & 1) { dl->AddLine(p0, ImVec2(p0.x + L, p0.y), bc, w); dl->AddLine(p0, ImVec2(p0.x, p0.y + L), bc, w); }
+    if (corners & 2) { dl->AddLine(ImVec2(p1.x, p0.y), ImVec2(p1.x - L, p0.y), bc, w); dl->AddLine(ImVec2(p1.x, p0.y), ImVec2(p1.x, p0.y + L), bc, w); }
+    if (corners & 4) { dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p0.x + L, p1.y), bc, w); dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p0.x, p1.y - L), bc, w); }
+    if (corners & 8) { dl->AddLine(p1, ImVec2(p1.x - L, p1.y), bc, w); dl->AddLine(p1, ImVec2(p1.x, p1.y - L), bc, w); }
 }
 
 void GlowBar(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, double now, ImU32 col) {

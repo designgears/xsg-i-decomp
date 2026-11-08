@@ -136,6 +136,32 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         return (a.o->type == GPU_KG_TEXT) < (b.o->type == GPU_KG_TEXT);
     });
 
+    // windows fit their content: one whose content ends well above its bottom (a five-item
+    // list in an eleven-row window) shrinks to it plus padding; the rectangles inside it follow
+    std::vector<int> fitBottom(m.nops, 0);
+    for (uint32_t i = 0; i < m.nops; ++i) {
+        const GpuUiKgOp& w = m.op[i];
+        if (w.type != GPU_KG_WINDOW || !w.b || w.dh < 80) continue;
+        int bottom = 0, items = 0;
+        for (uint32_t j = 0; j < m.nops; ++j) {
+            const GpuUiKgOp& c = m.op[j];
+            if (c.a < w.a || c.x < w.x - 2 || c.x > w.x + w.dw || c.y < w.y + 2 || c.y > w.y + w.dh) continue;
+            int cb = 0;
+            if (c.type == GPU_KG_TEXT) {
+                int lines = 1;
+                const char* t = m.pool + std::min<uint32_t>(uint32_t(c.b), XSG_GPU_UI_MENU_POOL - 1);
+                for (int q = 0; q < c.u; ++q) lines += t[q] == '\n';
+                cb = c.y + 24 * lines;
+            } else if (c.type == GPU_KG_ART || c.type == GPU_KG_TAG) cb = c.y + std::max<int>(c.dh, 16);
+            else if (c.type == GPU_KG_NUMBER) cb = c.y + 16;
+            else continue;
+            bottom = std::max(bottom, cb);
+            items++;
+        }
+        if (!items) continue;
+        const int want = bottom + 10;
+        if (want < w.y + w.dh - 24) fitBottom[i] = std::max(want, w.y + 40);
+    }
     char buf[32];
     // the GS clipped at the screen edge (windows wait off-screen for their slide-in)
     dl->PushClipRect(P(0, 0), P(512, 448), true);
@@ -149,11 +175,26 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             AnimState& an = Anim(Key(o, ord[size_t(it.order)]), 0, 6);
             const float t = FadeIn(an, 6.5f) * tw;
             const float dy = Spring(an, 0, 0, 15.0f).y;
-            const ImVec2 a = P(x, y + dy), b = P(x + o.dw, y + o.dh + dy);
+            // its height (fitted to the content) springs when the content changes
+            AnimState& ah = Anim(Key(o, ord[size_t(it.order)]) ^ 0x4848ull, 0, 0);
+            const float hTarget = float(fitBottom[size_t(it.order)] ? fitBottom[size_t(it.order)] - o.y : o.dh);
+            if (ah.v == 0) ah.v = hTarget;
+            const float hh = Tween(ah, hTarget, 14.0f);
+            const ImVec2 a = P(x, y + dy), b = P(x + o.dw, y + hh + dy);
             if (o.b) {
+                // a corner under a header ribbon or another window gets no bracket
+                int corners = 15;
+                const int cx[4] = {o.x, o.x + o.dw, o.x, o.x + o.dw}, cy[4] = {o.y, o.y, o.y + o.dh, o.y + o.dh};
+                for (uint32_t j = 0; j < m.nops; ++j) {
+                    const GpuUiKgOp& h = m.op[j];
+                    if (&h == &o || (h.type != GPU_KG_RECT && h.type != GPU_KG_WINDOW && h.type != GPU_KG_TAG) || h.a < o.a) continue;
+                    const int hw = h.type == GPU_KG_TAG ? 64 : h.dw, hh = h.type == GPU_KG_TAG ? 16 : h.dh;
+                    for (int c = 0; c < 4; ++c)
+                        if (cx[c] >= h.x - 4 && cx[c] <= h.x + hw + 4 && cy[c] >= h.y - 4 && cy[c] <= h.y + hh + 4) corners &= ~(1 << c);
+                }
                 // the game's window colour tints the glass a little (its blue / red / green windows)
                 const ImU32 tint = Alpha(Ps2(o.rgba), 0.10f);
-                Panel(dl, a, b, k, t, false, tint);
+                Panel(dl, a, b, k, t, false, tint, corners);
                 SweepRule(dl, ImVec2(a.x + 3 * k, a.y + 1 * k), ImVec2(b.x - 3 * k, a.y + 1 * k), k, t * 0.6f,
                           float(now - an.born), col::kCyan);
             } else {   // the open / close frame
@@ -164,9 +205,16 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
             break;
         }
         case GPU_KG_RECT: {
+            float clampB = 1e9f;
+            for (uint32_t j = 0; j < m.nops; ++j)
+                if (fitBottom[j] && o.x >= m.op[j].x - 2 && o.x + o.dw <= m.op[j].x + m.op[j].dw + 2 && o.y >= m.op[j].y - 2 &&
+                    o.y + o.dh <= m.op[j].y + m.op[j].dh + 2)
+                    clampB = std::min(clampB, float(fitBottom[j]));
+            if (o.y >= clampB) break;
+            const float rh = std::min(float(o.dh), clampB - float(o.y));
             // the game's ribbons (title bars, info bars, highlight bars) as tinted glass: the
             // game's hue, capped opacity, a fade to the right, a sheen and an underline
-            const ImVec2 a = P(x, y), b = P(x + o.dw, y + o.dh);
+            const ImVec2 a = P(x, y), b = P(x + o.dw, y + rh);
             if (o.dw <= 1 && o.dh <= 1) {
                 dl->AddRectFilled(a, ImVec2(a.x + k, a.y + k), Ps2(o.rgba, tw));
                 break;

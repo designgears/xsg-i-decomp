@@ -16,6 +16,7 @@
 #include <cstring>
 #include <iconv.h>
 #include <set>
+#include <vector>
 
 namespace xsgui {
 namespace {
@@ -138,7 +139,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
     const float t = FadeIn(an, 6.0f);
     const float rise = Spring(an, 0, 0, 16.0f).y;
     y0 += rise; y1 += rise;
-    Panel(dl, ImVec2(x0, y0), ImVec2(x1, y1), k, t);
+    Panel(dl, ImVec2(x0, y0), ImVec2(x1, y1), k, t, false, 0, d.name[0] ? 14 : 15);   // the speaker plate takes the top-left
     dl->AddRect(ImVec2(x0 + 2 * k, y0 + 2 * k), ImVec2(x1 - 2 * k, y1 - 2 * k), IM_COL32(150, 180, 235, int(36 * t)), 0, 0, 1.0f);
     const float fs = 21.0f * sy;   // body text size
     // speaker: a plate on the frame's top edge, a cyan rule under the name
@@ -342,8 +343,31 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
     static const int kPos[] = {2, 3, 0, 1};   // id 1..4 -> west, north, south, east
     static const ImU32 kAccent[] = {IM_COL32(118, 170, 255, 255), IM_COL32(255, 96, 170, 255), IM_COL32(110, 220, 150, 255)};
     char b[16];
-    for (uint32_t i = 0; i < g.nops; ++i) {
-        const GpuUiKgOp& o = g.op[i];
+    // layout: each name frame fits its text (padding either side, a minimum width) instead of
+    // the game's fixed 172 px; whatever sits to its right in the row moves in by the same amount
+    std::vector<GpuUiKgOp> ops(g.op, g.op + g.nops);
+    for (size_t f = 0; f < ops.size(); ++f) {
+        GpuUiKgOp& fr = ops[f];
+        if (fr.type != GPU_KG_FRAME) continue;
+        const int fx0 = fr.x, fx1 = fr.x + 2 * fr.a;
+        for (size_t t = f + 1; t < ops.size(); ++t) {
+            GpuUiKgOp& tx = ops[t];
+            if (tx.type == GPU_KG_FRAME) break;
+            if (tx.type != GPU_KG_TEXT || tx.y < fr.y || tx.y >= fr.y + 24 || tx.x < fx0 || tx.x >= fx1) continue;
+            const std::string u = Decode(tx.text);
+            const float want = RichTextWidth(font, 13.0f * k, u.c_str()) / kx + 30.0f;
+            const int half = std::min(fr.a, std::max(44, int(std::ceil(want * 0.5f))));
+            const int delta = 2 * (fr.a - half);
+            fr.a = half;
+            tx.x = fr.x + 2;   // stays inside its frame (centred there when drawn)
+            if (delta > 0)
+                for (GpuUiKgOp& r : ops)
+                    if (&r != &fr && r.y >= fr.y - 2 && r.y < fr.y + 24 && r.x >= fx1) r.x -= delta;
+            break;
+        }
+    }
+    for (uint32_t i = 0; i < uint32_t(ops.size()); ++i) {
+        const GpuUiKgOp& o = ops[i];
         // each row (keyed by its y) eases in from the left, a beat after the one above
         AnimState& ra = Anim(rows ? akey + uint32_t(o.y / 28) : akey, rows ? -18.0f : 0.0f, 0);
         if (rows && AnimNow() - ra.born < (o.y / 28 % 8) * 0.04) ra.a = 0;
@@ -372,7 +396,7 @@ void KgDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh
             const ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t.c_str());
             float fl = float(o.x) - 2, fr = fl + 10 * float(std::strlen(o.text)) + 4;
             for (uint32_t j = i; j-- > 0;) {
-                const GpuUiKgOp& f = g.op[j];
+                const GpuUiKgOp& f = ops[j];
                 if (f.type == GPU_KG_FRAME && o.y >= f.y && o.y < f.y + 24 && o.x >= f.x && o.x < f.x + 2 * f.a) {
                     fl = float(f.x) + Spring(ra, 0, 0, 16.0f).x * 0;
                     fr = float(f.x + 2 * f.a);

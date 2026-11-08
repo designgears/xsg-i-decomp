@@ -38,7 +38,9 @@ void AnimGc(double ttl = 2.0);
 
 /* Styled pieces.  `t`: an alpha 0..1 applied to everything. */
 void Shadow(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, float rounding = 0);
-void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent = false, ImU32 tint = 0);
+/* corners: bit 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right get a bracket (one
+   covered by a header or plate gets none). */
+void Panel(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, bool accent = false, ImU32 tint = 0, int corners = 15);
 void GlowBar(ImDrawList* dl, ImVec2 a, ImVec2 b, float k, float t, double now, ImU32 col);
 void Chevron(ImDrawList* dl, ImVec2 tip, float size, float t, double now);
 /* A thin rule with a bright head that sweeps once on open (age seconds since open). */
