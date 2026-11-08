@@ -62,10 +62,8 @@ extern void MenuModelExtFuncSet(int model,
 extern void MenuModelMain(void);
 
 
-extern const char not_found_format[16];
 
 
-extern const char read_error_format[24];
 
 
 typedef struct GifPackedTag {
@@ -129,7 +127,6 @@ enum {
 
 extern BgTestRenderState sRender;
 
-extern BgTestEnvironment TestEnv_47;
 
 
 extern void sceVif1PkCloseDirectHLCode(XglPacket *packet);
@@ -143,12 +140,10 @@ extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int cou
 extern void *test_data;
 
 
-extern char fname_67[64];
 
 
 
 
-extern unsigned int TestEnv_66[32];
 
 
 typedef struct WinTexEnvironment {
@@ -166,7 +161,6 @@ typedef struct WinTexEnvironment {
 
 /* VIF DIRECTHL carries a GIF PACKED tag and five GS A+D register writes. */
 
-extern WinTexEnvironment WinTexEnv_65;
 
 
 /*
@@ -303,9 +297,7 @@ extern void endPrintExtFunc(int mode, int amount, void *data);
 
 extern void xglFontDebugHex(int x, int y, int value, int digits);
 
-extern const char *msg_45[5];
 
-extern const char text00_46[];
 
 
 #include "main/control_entry.h"
@@ -391,39 +383,22 @@ typedef struct JpegTestDisplay {
 
 extern int GameSnapShotSaveThumbnail(int quality, void *jpeg_buffer);
 
-extern const char D_004C2DA8[];
 
-extern int Select_74;
 
-extern int Select_76;
 
-extern int Select_78;
 
-extern int Select_80;
 
-extern const char D_004C2DF0[];
 
-extern const char D_004C2E08[];
 
-extern const char D_004C2E38[];
 
-extern const char D_004C2E58[];
 
-extern const char D_004C2E88[];
 
-extern const char D_004C2EA8[];
 
-extern const char D_004C2EC0[];
 
-extern const char D_004DA768[];
 
-extern const char *text00_75[];
 
-extern const char *text00_77[];
 
-extern const char *text00_79[];
 
-extern const char *text00_81[];
 
 extern char *MenuCharNameGet(int characterId);
 
@@ -634,8 +609,6 @@ typedef struct TexturTestDrawEnvironment {
 extern void func_A22628(void);
 extern int dataMoneyBoxInc(int amount);
 extern void MenuShopMain(int menu_selection);
-extern const char D_004DA668[], D_004DA670[], D_004DA678[], D_004DA680[], D_004DA688[];
-extern const char D_004DA690[], D_004DA698[], D_004DA6A0[], D_004DA6A8[], D_004DA6B0[];
 static inline void endouShopHeading(int y, const char *format, int shop_number)
 {
     xglFontDebugPrintf(0, y, format, shop_number);
@@ -702,17 +675,17 @@ void ShopTest(void)
             u16 (*const page)[0xb8] =
                 &shop_file->records[menu_selection];
 
-            endouShopHeading(0x40, D_004DA668, menu_selection);
-            endouShopHeading(0x50, D_004DA670, menu_selection);
+            endouShopHeading(0x40, "\013I ", menu_selection);
+            endouShopHeading(0x50, "\013CW", menu_selection);
             selected_page = page - 1;
-            endouShopHeading(0x60, D_004DA678, menu_selection);
-            endouShopHeading(0x70, D_004DA680, menu_selection);
-            endouShopHeading(0x80, D_004DA688, menu_selection);
-            endouShopHeading(0x90, D_004DA690, menu_selection);
-            endouShopHeading(0xa0, D_004DA698, menu_selection);
-            endouShopHeading(0xb0, D_004DA6A0, menu_selection);
-            endouShopHeading(0xc0, D_004DA6A8, menu_selection);
-            endouShopHeading(0xd0, D_004DA6B0, menu_selection);
+            endouShopHeading(0x60, "\013CA", menu_selection);
+            endouShopHeading(0x70, "\013CB", menu_selection);
+            endouShopHeading(0x80, "\013AW", menu_selection);
+            endouShopHeading(0x90, "\013AA", menu_selection);
+            endouShopHeading(0xa0, "\013AB", menu_selection);
+            endouShopHeading(0xb0, "\013AF", menu_selection);
+            endouShopHeading(0xc0, "\013AE", menu_selection);
+            endouShopHeading(0xd0, "\013A ", menu_selection);
 
             row_index = 0;
             extra_values = page[-1] + 4;
@@ -836,7 +809,7 @@ typedef struct EndouTestLighting {
     EndouDwordVector4 ambient;
     EndouDwordVector4 parallel_intensity[3];
     Vector4 direction[3];
-} EndouTestLighting;
+} __attribute__((aligned(16))) EndouTestLighting;
 typedef struct EndouModelLineVertex {
     int x;
     int y;
@@ -894,37 +867,11 @@ extern void xglMatrixStackSave(float matrix[4][4]);
 extern void xglMatrixStackTrans(const float translation[4]);
 extern void xglMatrixStackUnit(void);
 extern void xglRotTransPersN(void *destination, Matrix4 *matrix, const void *points, int count, int cameraId);
-extern const EndouTestLighting D_004C25E0;
-extern const char D_004C2658[];
-extern const EndouDwordVector4 D_004C2720[4];
-extern const char D_004DA6C0[8];
-extern const char D_004DA6C8[8];
-extern unsigned char D_004DA6E0[];
-extern unsigned char D_004DA6E8[];
-extern float ang_0[4];
-extern float pos_1[4];
-extern f32 pipo_2;
-extern int time_10;
-extern int no_13;
-extern const char *msg00_14[4];
-extern EndouModelMessageWindow msg_11;
-extern EndouModelLinePoint line00_3[7];
-extern EndouModelLinePoint line01_4[7];
-extern EndouModelLinePoint line02_5[7];
-extern EndouModelLinePoint line03_6[7];
-extern EndouModelLinePoint line10_7[7];
-extern EndouModelLinePoint line11_8[7];
-extern EndouModelLinePoint line12_9[7];
-extern EndouModelBackQuad bsp_12;
-#define modelTestLighting D_004C25E0
-#define modelTestFpkName D_004C2658
+#define modelTestFpkName "newd\\yamamoto\\fpk\\ag02.fpk"
 #define modelTestMotionName "newd\\motion\\chaos_cf.fpk"
-#define modelTestQuadWordTable D_004C2720
-#define modelTestLexExtension D_004DA6C0
-#define modelTestXtxExtension D_004DA6C8
+#define modelTestLexExtension ".lex"
+#define modelTestXtxExtension ".xtx"
 #define modelTestJntExtension ".jnt"
-#define modelTestColumnAlphaTable D_004DA6E0
-#define modelTestRowAlphaTable D_004DA6E8
 #define GAME_RESOURCE_BASE_ADDRESS 0x07000000
 #define GAME_RESOURCE_BUFFER_SIZE 0x06000000
 static inline void endModelCameraPosition(StudioCamera *camera, float x, float y, float z)
@@ -933,27 +880,31 @@ static inline void endModelCameraPosition(StudioCamera *camera, float x, float y
     camera->position.y = y;
     camera->position.z = z;
 }
-static __inline__ void EndouApplyModelLighting(struct StudioLight **light_slot, EndouTestLighting profile)
-{
-    xglStudioGetLight(light_slot);
-    xglLightIntensityAmbient(*light_slot, &profile.ambient);
-    xglLightIntensityParallel(*light_slot, 0, &profile.parallel_intensity[0]);
-    xglLightDirection(*light_slot, 0, &profile.direction[0]);
-    xglLightIntensityParallel(*light_slot, 1, &profile.parallel_intensity[1]);
-    xglLightDirection(*light_slot, 1, &profile.direction[1]);
-    xglLightIntensityParallel(*light_slot, 2, &profile.parallel_intensity[2]);
-    xglLightDirection(*light_slot, 2, &profile.direction[2]);
-}
 
 void ModelTest(void) {
     struct StudioLight *light;
     u8 **work_end = &WorkEnd;
-    int *message_time = &time_10;
+    static float ang[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    static float pos[4] = {0.0f, 0.0f, 4.0f, 1.0f};
     int motion;
 
     motion = 1;
     xglStudioChange(0);
-    EndouApplyModelLighting(&light, modelTestLighting);
+    {
+    EndouTestLighting lighting = {
+        {0.3f, 0.3f, 0.3f, 1.0f},
+        {{0.6f, 0.6f, 0.6f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+        {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+    };
+    xglStudioGetLight(&light);
+    xglLightIntensityAmbient(light, &lighting.ambient);
+    xglLightIntensityParallel(light, 0, &lighting.parallel_intensity[0]);
+    xglLightDirection(light, 0, &lighting.direction[0]);
+    xglLightIntensityParallel(light, 1, &lighting.parallel_intensity[1]);
+    xglLightDirection(light, 1, &lighting.direction[1]);
+    xglLightIntensityParallel(light, 2, &lighting.parallel_intensity[2]);
+    xglLightDirection(light, 2, &lighting.direction[2]);
+    }
     {
     int point_index;
     StudioCamera *temp_17_4;
@@ -1021,7 +972,6 @@ void ModelTest(void) {
     {
     char sp70[128] = "\0";
     char spF0[128] = "\0";
-    EndouTestLighting unused_lighting;
 
     RES_GetMdlFileName(sp70, temp_2_3->inUseId);
     resource_buffer = (u8 *)((u32)((*work_end) + 0x7f) & ~0x7fU);
@@ -1056,6 +1006,23 @@ void ModelTest(void) {
     ACT_setMotion(temp_2_3, 1);
     temp_2_12 = ACT_create(-1, 1);
     ACT_initMotion(temp_2_12);
+    /* Unused second lighting set: its constant (0x004C2680) and its 0x70-byte
+     * frame slot are in the original, but no code reads them. */
+    if (0) {
+    EndouTestLighting dim_lighting = {
+        {0.2f, 0.2f, 0.2f, 1.0f},
+        {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+        {{0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}},
+    };
+    xglStudioGetLight(&light);
+    xglLightIntensityAmbient(light, &dim_lighting.ambient);
+    xglLightIntensityParallel(light, 0, &dim_lighting.parallel_intensity[0]);
+    xglLightDirection(light, 0, &dim_lighting.direction[0]);
+    xglLightIntensityParallel(light, 1, &dim_lighting.parallel_intensity[1]);
+    xglLightDirection(light, 1, &dim_lighting.direction[1]);
+    xglLightIntensityParallel(light, 2, &dim_lighting.parallel_intensity[2]);
+    xglLightDirection(light, 2, &dim_lighting.direction[2]);
+    }
     {
     char sp1E0[128] = "\0";
     char sp260[128] = "\0";
@@ -1151,9 +1118,14 @@ void ModelTest(void) {
             float world_points[ENDOU_GRID_ROWS][ENDOU_GRID_COLUMNS][4];
             EndouModelLineVertex screen_points[ENDOU_GRID_ROWS][ENDOU_GRID_COLUMNS];
             Matrix4 projection_matrix;
-            unsigned char column_alphas[ENDOU_GRID_ROWS];
-            unsigned char row_alphas[ENDOU_GRID_COLUMNS];
-            EndouDwordVector4 quad_words[4];
+            static float pipo = 0.0f;
+            static EndouModelLinePoint line00[7];
+            static EndouModelLinePoint line01[7];
+            static EndouModelLinePoint line02[7];
+            static EndouModelLinePoint line03[7];
+            static EndouModelLinePoint line10[7];
+            static EndouModelLinePoint line11[7];
+            static EndouModelLinePoint line12[7];
             if (temp_4 & PAD_TRIANGLE) {
                 if (temp_4 & PAD_RIGHT) {
                     temp_2_3->scale.x += 0.1f;
@@ -1207,29 +1179,29 @@ void ModelTest(void) {
             }
             temp_17_4 = xglStudioGetCamera2(0);
             if (ENDOU_MODEL_TEST_PAD->stick_axis[2] < -ENDOU_STICK_DEADZONE) {
-                ang_0[1] += 0.04f;
+                ang[1] += 0.04f;
             }
             if (ENDOU_MODEL_TEST_PAD->stick_axis[2] >= ENDOU_STICK_DEADZONE + 1) {
-                ang_0[1] -= 0.04f;
+                ang[1] -= 0.04f;
             }
             if (ENDOU_MODEL_TEST_PAD->stick_axis[3] < -ENDOU_STICK_DEADZONE) {
-                ang_0[0] += 0.04f;
+                ang[0] += 0.04f;
             }
             if (ENDOU_MODEL_TEST_PAD->stick_axis[3] >= ENDOU_STICK_DEADZONE + 1) {
-                ang_0[0] -= 0.04f;
+                ang[0] -= 0.04f;
             }
             xglMatrixStackUnit();
-            xglMatrixStackRotZ(ang_0[2]);
-            xglMatrixStackRotY(ang_0[1]);
-            xglMatrixStackRotX(ang_0[0]);
-            xglMatrixStackTrans(pos_1);
+            xglMatrixStackRotZ(ang[2]);
+            xglMatrixStackRotY(ang[1]);
+            xglMatrixStackRotX(ang[0]);
+            xglMatrixStackTrans(pos);
             xglMatrixStackSave(camera_matrix);
-            temp_f0_21 = ang_0[0];
+            temp_f0_21 = ang[0];
             temp_16 = ENDOU_MODEL_TEST_PAD->held;
             temp_17_4->rotation.x = temp_f0_21;
-            temp_f0_22 = ang_0[1];
+            temp_f0_22 = ang[1];
             temp_17_4->rotation.y = temp_f0_22;
-            temp_f1 = ang_0[2];
+            temp_f1 = ang[2];
             temp_17_4->rotation.z = temp_f1;
             temp_f2 = camera_matrix[3][0];
             temp_17_4->position.x = temp_f2;
@@ -1238,14 +1210,14 @@ void ModelTest(void) {
             temp_f20 = camera_matrix[3][2];
             temp_17_4->position.z = temp_f20;
             if (temp_16 & PAD_R1) {
-                temp_f0_24 = pipo_2 + 0.2;
-                pipo_2 = temp_f0_24;
+                temp_f0_24 = pipo + 0.2;
+                pipo = temp_f0_24;
             }
             if (temp_16 & PAD_R2) {
-                temp_f0_26 = pipo_2 - 0.2;
-                pipo_2 = temp_f0_26;
+                temp_f0_26 = pipo - 0.2;
+                pipo = temp_f0_26;
             }
-            temp_f0_25 = pipo_2;
+            temp_f0_25 = pipo;
             temp_f0_27 = temp_f20 + temp_f0_25;
             temp_17_4->position.z = temp_f0_27;
             temp_2_12->position = temp_2_3->position;
@@ -1285,138 +1257,157 @@ void ModelTest(void) {
                     }
                 }
             }
-            __builtin_memcpy(column_alphas, modelTestColumnAlphaTable,
-                             sizeof(column_alphas));
-            __builtin_memcpy(row_alphas, modelTestRowAlphaTable, sizeof(row_alphas));
+            {
+            unsigned char column_alphas[ENDOU_GRID_ROWS] = {0x00, 0x60, 0x80, 0x60, 0x00};
+            unsigned char row_alphas[ENDOU_GRID_COLUMNS] = {0x00, 0x60, 0x80, 0x80, 0x60, 0x00};
+            static int time = 0;
+            static EndouModelMessageWindow msg;
+            static EndouModelBackQuad bsp;
+            static int no = 0;
+            int *message_time = &time;
             xglMatrixStackUnit();
             xglMatrixStackSave(projection_matrix);
             xglRotTransPersN(screen_points, &projection_matrix, world_points, ENDOU_GRID_POINT_COUNT, 0);
             {
                 for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
                     unsigned char *color;
-                    line00_3[point_index].vertex = screen_points[point_index][1];
-                    color = line00_3[point_index].color;
+                    line00[point_index].vertex = screen_points[point_index][1];
+                    color = line00[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = column_alphas[point_index];
-                    line00_3[point_index].vertex.terminator = 1;
+                    line00[point_index].vertex.terminator = 1;
                 }
-                line00_3[5].vertex.terminator = 0;
+                line00[5].vertex.terminator = 0;
 
                 {
                 for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
                     unsigned char *color;
-                    line01_4[point_index].vertex = screen_points[point_index][2];
-                    color = line01_4[point_index].color;
+                    line01[point_index].vertex = screen_points[point_index][2];
+                    color = line01[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = column_alphas[point_index];
-                    line01_4[point_index].vertex.terminator = 1;
+                    line01[point_index].vertex.terminator = 1;
                 }
-                (line01_4 + point_index)->vertex.terminator = 0;
-                }
-
-                {
-                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
-                    unsigned char *color;
-                    line02_5[point_index].vertex = screen_points[point_index][3];
-                    color = line02_5[point_index].color;
-                    color[0] = -0x80;
-                    color[2] = -0x10;
-                    color[1] = -0x10;
-                    color[3] = column_alphas[point_index];
-                    line02_5[point_index].vertex.terminator = 1;
-                }
-                (line02_5 + point_index)->vertex.terminator = 0;
+                (line01 + point_index)->vertex.terminator = 0;
                 }
 
                 {
                 for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
                     unsigned char *color;
-                    line03_6[point_index].vertex = screen_points[point_index][4];
-                    color = line03_6[point_index].color;
+                    line02[point_index].vertex = screen_points[point_index][3];
+                    color = line02[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = column_alphas[point_index];
-                    line03_6[point_index].vertex.terminator = 1;
+                    line02[point_index].vertex.terminator = 1;
                 }
-                (line03_6 + point_index)->vertex.terminator = 0;
+                (line02 + point_index)->vertex.terminator = 0;
+                }
+
+                {
+                for (point_index = 0; point_index < ENDOU_GRID_ROWS; point_index++) {
+                    unsigned char *color;
+                    line03[point_index].vertex = screen_points[point_index][4];
+                    color = line03[point_index].color;
+                    color[0] = -0x80;
+                    color[2] = -0x10;
+                    color[1] = -0x10;
+                    color[3] = column_alphas[point_index];
+                    line03[point_index].vertex.terminator = 1;
+                }
+                (line03 + point_index)->vertex.terminator = 0;
                 }
 
                 {
                 for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
                     unsigned char *color;
-                    line10_7[point_index].vertex = screen_points[1][point_index];
-                    color = line10_7[point_index].color;
+                    line10[point_index].vertex = screen_points[1][point_index];
+                    color = line10[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = row_alphas[point_index];
-                    line10_7[point_index].vertex.terminator = 1;
+                    line10[point_index].vertex.terminator = 1;
                 }
-                (line10_7 + point_index)->vertex.terminator = 0;
+                (line10 + point_index)->vertex.terminator = 0;
                 }
 
                 {
                 for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
                     unsigned char *color;
-                    line11_8[point_index].vertex = screen_points[2][point_index];
-                    color = line11_8[point_index].color;
+                    line11[point_index].vertex = screen_points[2][point_index];
+                    color = line11[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = row_alphas[point_index];
-                    line11_8[point_index].vertex.terminator = 1;
+                    line11[point_index].vertex.terminator = 1;
                 }
-                (line11_8 + point_index)->vertex.terminator = 0;
+                (line11 + point_index)->vertex.terminator = 0;
                 }
 
                 {
                 for (point_index = 0; point_index < ENDOU_GRID_COLUMNS; point_index++) {
                     unsigned char *color;
-                    line12_9[point_index].vertex = screen_points[3][point_index];
-                    color = line12_9[point_index].color;
+                    line12[point_index].vertex = screen_points[3][point_index];
+                    color = line12[point_index].color;
                     color[0] = -0x80;
                     color[2] = -0x10;
                     color[1] = -0x10;
                     color[3] = row_alphas[point_index];
-                    line12_9[point_index].vertex.terminator = 1;
+                    line12[point_index].vertex.terminator = 1;
                 }
-                (line12_9 + point_index)->vertex.terminator = 0;
+                (line12 + point_index)->vertex.terminator = 0;
                 }
             }
-            endPrintExtFunc(0xFFFFF0, END_PRINT_CMD_LINE_RAW, line00_3);
-            endPrintExtFunc(0xFFFFF1, END_PRINT_CMD_LINE_RAW, line01_4);
-            endPrintExtFunc(0xFFFFF2, END_PRINT_CMD_LINE_RAW, line02_5);
-            endPrintExtFunc(0xFFFFF3, END_PRINT_CMD_LINE_RAW, line03_6);
-            endPrintExtFunc(0xFFFFF4, END_PRINT_CMD_LINE_RAW, line10_7);
-            endPrintExtFunc(0xFFFFF5, END_PRINT_CMD_LINE_RAW, line11_8);
-            endPrintExtFunc(0xFFFFF6, END_PRINT_CMD_LINE_RAW, line12_9);
-            __builtin_memcpy(quad_words, modelTestQuadWordTable, sizeof(quad_words));
+            endPrintExtFunc(0xFFFFF0, END_PRINT_CMD_LINE_RAW, line00);
+            endPrintExtFunc(0xFFFFF1, END_PRINT_CMD_LINE_RAW, line01);
+            endPrintExtFunc(0xFFFFF2, END_PRINT_CMD_LINE_RAW, line02);
+            endPrintExtFunc(0xFFFFF3, END_PRINT_CMD_LINE_RAW, line03);
+            endPrintExtFunc(0xFFFFF4, END_PRINT_CMD_LINE_RAW, line10);
+            endPrintExtFunc(0xFFFFF5, END_PRINT_CMD_LINE_RAW, line11);
+            endPrintExtFunc(0xFFFFF6, END_PRINT_CMD_LINE_RAW, line12);
+            {
+            EndouDwordVector4 quad_words[4] = {
+                {-0.5f, 0.1f, 0.0f, 1.0f},
+                {-0.5f, -0.1f, 0.0f, 1.0f},
+                {0.5f, 0.1f, 0.0f, 1.0f},
+                {0.5f, -0.1f, 0.0f, 1.0f},
+            };
+            static const char *msg00[4] = {
+                "\245\342\245\307\245\353\245\306\245\271\245\310",
+                "\244\342\244\307\244\353\245\306\245\271\245\310",
+                "\245\342\245\307\245\353\244\306\244\271\244\310",
+                "\244\342\244\307\244\353\244\306\244\271\244\310"
+            };
             endPrintExtFunc(0, 0x6A, NULL);
             endPrintExtFunc(0, 0x6C, NULL);
             if (*message_time == 0) {
-                eMessageSet(&msg_11.message, msg00_14[no_13]);
-                msg_11.message.mode = EMESSAGE_MODE_LINE_START;
+                eMessageSet(&msg.message, msg00[no]);
+                msg.message.mode = EMESSAGE_MODE_LINE_START;
                 *message_time = ENDOU_MODEL_MESSAGE_FRAMES;
-                no_13 = (no_13 + 1) & 3;
+                no = (no + 1) & 3;
             }
             (*message_time)--;
-            msg_11.message.x = 0;
-            msg_11.message.draw_parameter = 0xFFFFF0;
-            msg_11.message.y = 0;
-            eMessageMain(&msg_11.message);
+            msg.message.x = 0;
+            msg.message.draw_parameter = 0xFFFFF0;
+            msg.message.y = 0;
+            eMessageMain(&msg.message);
             endPrintExtFunc(0, 0x6B, NULL);
-            bsp_12.uv[0] = 0.0f;
-            bsp_12.uv[2] = 0.234375f;
-            bsp_12.uv[3] = 0.046875f;
-            bsp_12.uv[1] = 0.0f;
-            xglRotTransPersN(bsp_12.vertices, NULL, quad_words, 4, 0);
-            endPrintExtFunc(0, 0x6D, &bsp_12);
+            bsp.uv[0] = 0.0f;
+            bsp.uv[2] = 0.234375f;
+            bsp.uv[3] = 0.046875f;
+            bsp.uv[1] = 0.0f;
+            xglRotTransPersN(bsp.vertices, NULL, quad_words, 4, 0);
+            endPrintExtFunc(0, 0x6D, &bsp);
             xglSleep();
+            }
+            }
             }
         }
     }
@@ -1437,14 +1428,6 @@ extern void eBattleWinClose3(void);
 extern void eBattleWinClose4(void);
 extern int eBattleWinPageCheck4(void);
 extern void eBattleWinInit(void);
-extern char data_15[];
-extern void *tag_16[];
-extern char text_17[];
-extern char tag_20[];
-extern void *msg_19[];
-extern char D_004DA720[];
-extern const char D_004DA730[];
-extern int count_18;
 typedef struct EndouBwArg0 {
     int a;
     int b;
@@ -1488,18 +1471,47 @@ typedef struct EndouBwArg2 {
     void *f;
 } EndouBwArg2;
 
+typedef struct EndouBattleWindowItem {
+    const char *name;
+    const char *help;
+    int flags;
+} EndouBattleWindowItem;
+
 void BattleWindowTest(void)
 {
+    static EndouBattleWindowItem data[20] = {
+        {"\245\325\245\247\245\326\245\351\245\352\241\274\243\323", "\245\300\241\274\245\310\262\246\267\350\304\352\300\357", 0x201},
+        {"\271\342\276\276\265\334\265\255\307\260", "\275\325\244\316\303\273\265\367\316\245\262\246\267\350\304\352\300\357", 0x301},
+        {"\272\371\262\326\276\336", "\314\306\307\317\245\257\245\351\245\267\245\303\245\257\302\350\260\354\303\306", 0x401},
+        {"\273\251\267\356\276\336", "\262\264\307\317\245\257\245\351\245\267\245\303\245\257\302\350\260\354\303\306", 0x401},
+        {"\305\267\271\304\276\336\241\312\275\325\241\313", "\275\325\244\316\270\305\307\317\304\271\265\367\316\245\262\246\267\350\304\352\300\357", 0x401},
+        {"\243\316\243\310\243\313\245\336\245\244\245\353\243\303", "\263\260\271\361\273\272\307\317\243\263\272\320\245\336\245\244\245\353\262\246\267\350\304\352\300\357", 0x501},
+        {"\245\252\241\274\245\257\245\271", "\314\306\307\317\245\257\245\351\245\267\245\303\245\257\302\350\306\363\303\306\241\241\314\306\307\317\315\245\275\331", 0x500},
+        {"\306\374\313\334\245\300\241\274\245\323\241\274", "\262\264\307\317\245\257\245\351\245\267\245\303\245\257\302\350\306\363\303\306\241\241\305\354\265\376\315\245\275\331", 0x500},
+        {"\260\302\305\304\265\255\307\260", "\275\325\244\316\245\336\245\244\245\353\262\246\267\350\304\352\300\357", 0x500},
+        {"\312\365\304\315\265\255\307\260", "\275\325\244\316\245\260\245\351\245\363\245\327\245\352", 0x600},
+        {"\245\271\245\327\245\352\245\363\245\277\241\274\245\272\243\323", "\275\251\244\316\303\273\265\367\316\245\262\246\267\350\304\352\300\357", 0xA00},
+        {"\275\251\262\332\276\336", "\314\306\307\317\245\257\245\351\245\267\245\303\245\257\302\350\273\260\303\306", 0xA00},
+        {"\265\306\262\326\276\336", "\262\264\307\317\245\257\245\351\245\267\245\303\245\257\302\350\273\260\303\306", 0xA00},
+        {"\305\267\271\304\276\336\241\312\275\251\241\313", "\270\305\307\317\262\246\306\273\241\241\313\342\244\316\305\267\271\304\276\336", 0xA00},
+        {"\245\250\245\352\245\266\245\331\245\271\275\367\262\246\307\325", "\314\306\307\317\275\367\262\246\267\350\304\352\300\357", 0xB00},
+        {"\245\336\245\244\245\353\243\303\243\323", "\275\251\244\316\245\336\245\244\245\353\262\246\267\350\304\352\300\357", 0xB00},
+        {"\245\270\245\343\245\321\245\363\245\253\245\303\245\327", "\270\305\307\317\262\246\306\273\241\241\300\244\263\246\244\316\312\311", 0xB00},
+        {"\272\345\277\300\243\312\243\306", "\243\262\272\320\314\306\307\317\245\301\245\343\245\363\245\324\245\252\245\363", 0xB00},
+        {"\315\255\307\317\265\255\307\260", "\245\260\245\351\245\363\245\327\245\352", 0xB00},
+        {NULL, NULL, 0x0},
+    };
+    static char *tag[] = {"G One"};
+    static char text[] = "\244\242\037\244\242\244\242\244\242\012\244\244\241\241\244\244\241\241\036\001\245\334\245\277\245\363\241\241\241\241\244\244\244\244\244\244\241\241\241\241\241\241\244\244\244\244\244\244\244\244\244\244\012\014\200\000\000\300\326\300\326\300\326\300\326\300\326\300\326\300\326\300\326\300\326\300\326\300\326\014\000\000\200\300\304\300\304\300\304\300\304\300\304\300\304\300\304\300\304\300\304\300\304\300\304\037\014\200\200\200\244\246\012\244\250\244\250\244\250\244\250\244\250\244\250\037\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\244\252\241\252\241\252";
     EndouBwArg0 s0;
     EndouBwArg4 s30;
     EndouBwArg3 s50;
     EndouBwArg2 s90;
-    void **mp;
 
     s0.a = 0x10;
     s0.c = 0xFFFFFD;
-    *(int *)&s0.g = (int)tag_16[0];
-    s0.f = data_15;
+    *(int *)&s0.g = (int)tag[0];
+    s0.f = data;
     s0.b = 0x90;
     *(char **)&s0.e = (char *)0xA0;
     s0.d = 0;
@@ -1508,15 +1520,14 @@ void BattleWindowTest(void)
     xglCdLoadOverlay(1);
     eBattleWinInit();
     if ((PadData.buttons.button_state & 0x08000100) != 0x08000100) {
-        mp = msg_19;
         do {
             xglFontDebugPrintf(0, 0, "\013\245\320\245\310\245\353\245\246\245\243\245\363\245\311\241\274\245\306\245\271\245\310");
             if (PadData.buttons.input.pressed & 0x10) {
                 s30.a = 0x10;
                 s30.c = 0xFFFFFD;
                 s30.b = 0x20;
-                s30.d = D_004DA720;
-                s30.e = text_17;
+                s30.d = "Test";
+                s30.e = text;
                 eBattleWinOpen4(&s30);
             }
             if ((PadData.buttons.input.pressed & 0x80) && (eBattleWinPageCheck4() != 0)) {
@@ -1545,14 +1556,18 @@ void BattleWindowTest(void)
             }
             eBattleWinMain3();
             if (PadData.buttons.input.pressed & 4) {
+                static int count = 0;
+                static char *msg[] = {"\241\241\245\271\245\355\245\246\012", "\315\266\317\307\012\315\266\317\307\315\266\317\307"};
+                static char tag[] = "BattleWindowTest";
+
                 s90.d = 0x800000B4;
                 s90.a = 0x10;
                 s90.b = 0x20;
-                s90.e = msg_19[count_18];
+                s90.e = msg[count];
                 s90.c = 0xFFFFF0;
-                s90.f = tag_20;
+                s90.f = tag;
                 eBattleWinOpen2(&s90);
-                count_18 ^= 1;
+                count ^= 1;
             }
             if (PadData.buttons.input.pressed & 1) {
                 eBattleWinClose2();
@@ -1565,7 +1580,7 @@ void BattleWindowTest(void)
                 eBattleWinClose(&s0);
             }
             s0.h = PadData.buttons.input.repeat;
-            xglFontDebugPrintf(0, 0x20, D_004DA730, s0.h);
+            xglFontDebugPrintf(0, 0x20, "%d", s0.h);
             eBattleWinMain(&s0);
             xglSleep();
         } while ((PadData.buttons.button_state & 0x08000100) != 0x08000100);
@@ -1655,7 +1670,7 @@ typedef struct EndouSpriteQuad {
     unsigned char unmodeled_004[12];
     EndouSpriteQuadVertex vertices[4];
     unsigned char unmodeled_050[16];
-} EndouSpriteQuad;
+} __attribute__((aligned(16))) EndouSpriteQuad;
 typedef struct ENumberSpriteDescriptor {
     short x, y;
     int work;
@@ -1811,33 +1826,20 @@ extern void xglStudioChange(int studio_index);
 extern StudioCamera *xglStudioGetCamera2(int camera_id);
 extern void xglStudioGetCamera(StudioCamera **camera_out, int camera_index);
 #define eNumberTestLabel "\013\244\244\244\355\244\244\244\355\245\306\245\271\245\310"
-extern char moji_26[27];
-extern char moji2_27[27];
-extern EndouPrintPoint line_34[6];
-extern EndouPrintPoint d_42[7];
-extern EndouPrintPoint d_43;
-extern u8 time_37;
-extern ECursolMainData cur_25;
-extern EndouSpriteQuad d_28;
-extern ENumberSpriteDescriptor d_33;
-extern ENumberSpriteDescriptor d_35[2];
-extern ENumberSpriteDescriptor d_36;
-extern ENumberSpriteDescriptor d_38;
-extern ENumberRenderDescriptor d_39;
-extern ENumberRenderDescriptor d_40;
-extern ENumberSpriteDescriptor d_41;
-extern EndouQuadDescriptor d_44;
-extern EndouELineEntry line_23[4];
-extern ENumberMainData num_29[1];
-extern ENumberMainData num_30[1];
-extern ENumberMainData num_31[1];
-extern ENumberMainData num_32[1];
-extern ERibbonMainData rbn_21[4];
-extern ESprite spr_22[4];
-extern EndouTagFontViews tgf_24[2];
+
+/* d.43: the original takes its address before the loop (the pointer is
+ * rematerialized at each use), which a block-scope static cannot express. */
+static EndouPrintPoint cursor_point __asm__("d.43");
 
 void eNumberTest(void) {
-    EndouPrintLinePoint line[3];
+    static ERibbonMainData rbn[4];
+    static ESprite spr[4];
+    static EndouELineEntry line[4];
+    static EndouTagFontViews tgf[4];
+    static ECursolMainData cur[2];
+    static char moji[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static char moji2[] = "abcdefghijklmnopqrstuvwxyz";
+    EndouPrintLinePoint direct_line[3];
     XglClock sp60;
     short sp70[2];
     StudioCamera *camera;
@@ -1850,22 +1852,24 @@ void eNumberTest(void) {
     short blink_sprite_id;
     int cursor_pressed;
     EndouPrintPoint *cursor;
+    /* Unreferenced in the original's code; only the literal remains (0x004C2AC0). */
+    const char *bustup_texture = "data\\endou\\bustup.xtx";
 
-    eSpriteSet(&spr_22[0], 0x200);
-    eSpriteSet(&spr_22[1], 0x200);
-    eSpriteSet(&spr_22[2], 0x200);
-    eSpriteSet(&spr_22[3], 0x200);
-    eRibbonSet(&rbn_21[0], 1);
-    eRibbonSet(&rbn_21[1], 0);
-    eRibbonSet(&rbn_21[2], 0);
-    eLineSet(&line_23[0], 0);
-    eLineSet(&line_23[1], 0);
-    eLineSet(&line_23[2], 0);
-    eLineSet(&line_23[3], 0);
-    eCursolSet(&cur_25, 0);
-    eTagFontSet(&tgf_24[0].control, moji_26);
-    eTagFontSet(&tgf_24[1].control, moji2_27);
-    cursor = &d_43;
+    eSpriteSet(&spr[0], 0x200);
+    eSpriteSet(&spr[1], 0x200);
+    eSpriteSet(&spr[2], 0x200);
+    eSpriteSet(&spr[3], 0x200);
+    eRibbonSet(&rbn[0], 1);
+    eRibbonSet(&rbn[1], 0);
+    eRibbonSet(&rbn[2], 0);
+    eLineSet(&line[0], 0);
+    eLineSet(&line[1], 0);
+    eLineSet(&line[2], 0);
+    eLineSet(&line[3], 0);
+    eCursolSet(&cur[0], 0);
+    eTagFontSet(&tgf[0].control, moji);
+    eTagFontSet(&tgf[1].control, moji2);
+    cursor = &cursor_point;
     xglRenderClearFrame();
     xglStudioChange(0);
     xglStudioGetCamera(&camera, 0);
@@ -1895,149 +1899,204 @@ void eNumberTest(void) {
         sprite_order = 0x02FFFFF0;
         do {
             xglFontDebugPrintf(0, 0, eNumberTestLabel);
-            d_28.uv = 0xE00;
-            d_28.vertices[0].x = 0x100;
-            d_28.vertices[0].y = 0x40;
-            d_28.vertices[0].depth = primary_order;
-            d_28.coordinate_mode = 0;
-            d_28.flags = 1;
-            endPrintExtFunc(0, END_PRINT_CMD_SPRITE_QUAD, &d_28);
-            line[0].x = 0x70F8;
-            line[0].y = 0x84B8;
-            line[1].x = 0x8F38;
-            line[1].y = 0x7BF8;
-            line[0].z = primary_order;
-            line[0].color[1] = 0x40;
-            line[0].color[0] = 0x40;
-            line[0].color[3] = 0x80;
-            line[0].color[2] = 0x80;
-            line[1].z = primary_order;
-            line[1].color[0] = 0x80;
-            line[1].color[3] = 0;
-            line[1].color[2] = 0;
-            line[1].color[1] = 0;
-            line[2].z = 0;
-            endPrintDirectLine(line);
-            eNumberSet(num_29, 0);
-            num_29[0].x = 0x10;
-            num_29[0].y = 0x80;
-            num_29[0].digits = 5;
-            num_29[0].work = number_order;
-            num_29[0].value = -1;
-            num_29[0].format = 0;
-            eNumberMain(num_29);
+            {
+            static EndouSpriteQuad d;
+            d.uv = 0xE00;
+            d.vertices[0].x = 0x100;
+            d.vertices[0].y = 0x40;
+            d.vertices[0].depth = primary_order;
+            d.coordinate_mode = 0;
+            d.flags = 1;
+            endPrintExtFunc(0, END_PRINT_CMD_SPRITE_QUAD, &d);
+            }
+            direct_line[0].x = 0x70F8;
+            direct_line[0].y = 0x84B8;
+            direct_line[1].x = 0x8F38;
+            direct_line[1].y = 0x7BF8;
+            direct_line[0].z = primary_order;
+            direct_line[0].color[1] = 0x40;
+            direct_line[0].color[0] = 0x40;
+            direct_line[0].color[3] = 0x80;
+            direct_line[0].color[2] = 0x80;
+            direct_line[1].z = primary_order;
+            direct_line[1].color[0] = 0x80;
+            direct_line[1].color[3] = 0;
+            direct_line[1].color[2] = 0;
+            direct_line[1].color[1] = 0;
+            direct_line[2].z = 0;
+            endPrintDirectLine(direct_line);
+            {
+            static ENumberMainData num[1];
+            eNumberSet(num, 0);
+            num[0].x = 0x10;
+            num[0].y = 0x80;
+            num[0].digits = 5;
+            num[0].work = number_order;
+            num[0].value = -1;
+            num[0].format = 0;
+            eNumberMain(num);
+            }
             xglClockRead(&sp60);
-            eNumberSet(&num_30[0], 0);
-            num_30[0].x = 0x10;
-            num_30[0].y = 0xA0;
-            __builtin_memcpy(&num_30[0].value, &sp60,
-                             sizeof(num_30[0].value));
-            num_30[0].work = number_order;
-            num_30[0].format = 2;
-            eNumberMain(num_30);
-            eNumberSet(&num_31[0], 0);
-            num_31[0].x = 0x40;
-            num_31[0].y = 0xC0;
-            num_31[0].work = number_order;
-            num_31[0].format = 3;
+            {
+            static ENumberMainData num[1];
+            eNumberSet(&num[0], 0);
+            num[0].x = 0x10;
+            num[0].y = 0xA0;
+            __builtin_memcpy(&num[0].value, &sp60,
+                             sizeof(num[0].value));
+            num[0].work = number_order;
+            num[0].format = 2;
+            eNumberMain(num);
+            }
+            {
+            static ENumberMainData num[1];
+            eNumberSet(&num[0], 0);
+            num[0].x = 0x40;
+            num[0].y = 0xC0;
+            num[0].work = number_order;
+            num[0].format = 3;
             sp70[1] = 0xC8;
             sp70[0] = 0;
-            num_31[0].value = *(int *)sp70;
-            num_31[0].digits = 3;
-            num_31[0].colorModeFirst = 1;
-            num_31[0].colorModeSecond = 2;
-            num_31[0].alignment = 0;
-            num_31[0].firstOnly = 0;
-            eNumberMain(num_31);
-            eNumberSet(&num_32[0], 0);
-            num_32[0].x = 0x40;
-            num_32[0].y = 0xE0;
-            num_32[0].format = 7;
-            num_32[0].digits = 4;
-            num_32[0].value = 0x4D2;
-            num_32[0].work = number_order;
-            eNumberMain(num_32);
-            d_33.spriteId = 1024;
-            endSpriteSet(&d_33, 0xFF);
-            d_33.x = 0x64;
-            d_33.y = 0x60;
-            d_33.work = sprite_order;
-            endPrintExtFunc(d_33.work, END_PRINT_CMD_SPRITE, &d_33);
-            endPrintExtFunc(0xFFFFFF, END_PRINT_CMD_LINE, line_34);
-            d_35[0].spriteId = 0x31C;
-            d_35[1].spriteId = 0x31F;
-            endSpriteSet(&d_35[0], 0xFF);
-            endSpriteSet(&d_35[1], 0xFF);
-            d_35[0].x = 0xC8;
-            d_35[0].y = 0x60;
-            d_35[1].x = d_35[0].x + d_35[0].width - d_35[1].width;
-            d_35[1].y = d_35[0].y + d_35[0].height - d_35[1].height;
-            d_35[1].work = 0x02FFFFF2;
-            d_35[0].work = sprite_order;
-            d_35[1].color[0] = 0xFF;
-            d_35[1].color[1] = 0x20;
-            d_35[1].color[2] = d_35[1].color[1];
-            endPrintExtFunc(d_35[0].work, END_PRINT_CMD_SPRITE, &d_35[0]);
-            endPrintExtFunc(d_35[1].work, END_PRINT_CMD_SPRITE, &d_35[1]);
-            sprite_tick = time_37++;
-            blink_sprite_id = ((sprite_tick >> 4) & 1) + 0x10D;
-            d_36.spriteId = blink_sprite_id;
-            endSpriteSet(&d_36, 0xFF);
-            d_36.x = 0x108;
-            d_36.y = 0x60;
-            d_36.work = sprite_order;
-            endPrintExtFunc(d_36.work, END_PRINT_CMD_SPRITE, &d_36);
-            d_38.spriteId = 0x609;
-            endSpriteSet(&d_38, 0xFF);
-            d_38.x = 0x108;
-            d_38.y = 0x80;
-            d_38.work = sprite_order;
-            endPrintExtFunc(d_38.work, END_PRINT_CMD_SPRITE, &d_38);
-            rbn_21[0].work = 0xFFFFF0;
-            rbn_21[0].x = 0x40;
-            rbn_21[0].y = 0x80;
-            rbn_21[0].width = 0x100;
-            rbn_21[0].height = 0x20;
-            eRibbonMain(&rbn_21[0]);
-            d_39.payload.number.value = 0x7B;
-            d_39.argument1 = 3;
-            d_39.x = 0xA;
-            d_39.y = 0x40;
-            d_39.work = primary_order;
-            d_39.payload.number.alpha = -0x80;
-            d_39.argument2 = 0;
-            d_39.payload.number.blue = -0x80;
-            d_39.payload.number.green = -0x80;
-            d_39.payload.number.red = -0x80;
-            endPrintExtFunc(d_39.work, END_PRINT_CMD_NUMBER, &d_39);
+            num[0].value = *(int *)sp70;
+            num[0].digits = 3;
+            num[0].colorModeFirst = 1;
+            num[0].colorModeSecond = 2;
+            num[0].alignment = 0;
+            num[0].firstOnly = 0;
+            eNumberMain(num);
+            }
             {
+            static ENumberMainData num[1];
+            eNumberSet(&num[0], 0);
+            num[0].x = 0x40;
+            num[0].y = 0xE0;
+            num[0].format = 7;
+            num[0].digits = 4;
+            num[0].value = 0x4D2;
+            num[0].work = number_order;
+            eNumberMain(num);
+            }
+            {
+            static ENumberSpriteDescriptor d;
+            static EndouPrintPoint line[6] = {
+                {64, 256, 0x1FFFFF0, {0x60, 0x60, 0x80, 0x00}},
+                {128, 256, 0x1FFFFF0, {0x60, 0x60, 0x80, 0x60}},
+                {256, 256, 0x1FFFFF0, {0x60, 0x60, 0x80, 0x80}},
+                {384, 256, 0x1FFFFF0, {0x60, 0x60, 0x80, 0x60}},
+                {448, 256, 0x1FFFFF0, {0x60, 0x60, 0x80, 0x00}},
+                {0, 0, 0x0, {0x00, 0x00, 0x00, 0x00}}
+            };
+            d.spriteId = 1024;
+            endSpriteSet(&d, 0xFF);
+            d.x = 0x64;
+            d.y = 0x60;
+            d.work = sprite_order;
+            endPrintExtFunc(d.work, END_PRINT_CMD_SPRITE, &d);
+            endPrintExtFunc(0xFFFFFF, END_PRINT_CMD_LINE, line);
+            }
+            {
+            static ENumberSpriteDescriptor d[2];
+            d[0].spriteId = 0x31C;
+            d[1].spriteId = 0x31F;
+            endSpriteSet(&d[0], 0xFF);
+            endSpriteSet(&d[1], 0xFF);
+            d[0].x = 0xC8;
+            d[0].y = 0x60;
+            d[1].x = d[0].x + d[0].width - d[1].width;
+            d[1].y = d[0].y + d[0].height - d[1].height;
+            d[1].work = 0x02FFFFF2;
+            d[0].work = sprite_order;
+            d[1].color[0] = 0xFF;
+            d[1].color[1] = 0x20;
+            d[1].color[2] = d[1].color[1];
+            endPrintExtFunc(d[0].work, END_PRINT_CMD_SPRITE, &d[0]);
+            endPrintExtFunc(d[1].work, END_PRINT_CMD_SPRITE, &d[1]);
+            }
+            {
+            static ENumberSpriteDescriptor d;
+            static u8 time = 0;
+            sprite_tick = time++;
+            blink_sprite_id = ((sprite_tick >> 4) & 1) + 0x10D;
+            d.spriteId = blink_sprite_id;
+            endSpriteSet(&d, 0xFF);
+            d.x = 0x108;
+            d.y = 0x60;
+            d.work = sprite_order;
+            endPrintExtFunc(d.work, END_PRINT_CMD_SPRITE, &d);
+            }
+            {
+            static ENumberSpriteDescriptor d;
+            d.spriteId = 0x609;
+            endSpriteSet(&d, 0xFF);
+            d.x = 0x108;
+            d.y = 0x80;
+            d.work = sprite_order;
+            endPrintExtFunc(d.work, END_PRINT_CMD_SPRITE, &d);
+            }
+            rbn[0].work = 0xFFFFF0;
+            rbn[0].x = 0x40;
+            rbn[0].y = 0x80;
+            rbn[0].width = 0x100;
+            rbn[0].height = 0x20;
+            eRibbonMain(&rbn[0]);
+            {
+            static ENumberRenderDescriptor d;
+            d.payload.number.value = 0x7B;
+            d.argument1 = 3;
+            d.x = 0xA;
+            d.y = 0x40;
+            d.work = primary_order;
+            d.payload.number.alpha = -0x80;
+            d.argument2 = 0;
+            d.payload.number.blue = -0x80;
+            d.payload.number.green = -0x80;
+            d.payload.number.red = -0x80;
+            endPrintExtFunc(d.work, END_PRINT_CMD_NUMBER, &d);
+            }
+            {
+            static ENumberRenderDescriptor d;
             short c5 = 5, c1 = 1, c80 = 0x50;
-            d_40.x = 0xA;
-            d_40.work = primary_order;
-            d_40.argument1 = c5;
-            d_40.y = c80;
-            d_40.argument2 = c1;
-            d_40.payload.number.alpha = -0x80;
-            d_40.payload.number.value = 0;
-            d_40.payload.number.blue = -0x80;
-            d_40.payload.number.green = -0x80;
-            d_40.payload.number.red = -0x80;
-            endPrintExtFunc(d_40.work, END_PRINT_CMD_NUMBER, &d_40);
+            d.x = 0xA;
+            d.work = primary_order;
+            d.argument1 = c5;
+            d.y = c80;
+            d.argument2 = c1;
+            d.payload.number.alpha = -0x80;
+            d.payload.number.value = 0;
+            d.payload.number.blue = -0x80;
+            d.payload.number.green = -0x80;
+            d.payload.number.red = -0x80;
+            endPrintExtFunc(d.work, END_PRINT_CMD_NUMBER, &d);
             }
-            d_41.spriteId = 258;
-            d_41.x = 0xA;
-            d_41.y = 0x60;
-            d_41.work = primary_order;
-            endPrintExtFunc(d_41.work, END_PRINT_CMD_SPRITE, &d_41);
+            {
+            static ENumberSpriteDescriptor d;
+            d.spriteId = 258;
+            d.x = 0xA;
+            d.y = 0x60;
+            d.work = primary_order;
+            endPrintExtFunc(d.work, END_PRINT_CMD_SPRITE, &d);
+            }
             cursor_pressed = PadData.buttons.input.pressed & PAD_CIRCLE;
-            cur_25.x = 0x10;
-            cur_25.y = 0xC8;
-            cur_25.work = 0xFFFFF4;
+            cur[0].x = 0x10;
+            cur[0].y = 0xC8;
+            cur[0].work = 0xFFFFF4;
             if (cursor_pressed) {
-                cur_25.state = E_MODE_SHOW_START;
+                cur[0].state = E_MODE_SHOW_START;
             }
-            eCursolMain(&cur_25);
-            endPrintExtFunc(0x01000000, END_PRINT_CMD_RIBBON, d_42);
+            eCursolMain(&cur[0]);
+            {
+            static EndouPrintPoint d[7] = {
+                {100, 300, 0xFFFFF0, {0x40, 0x40, 0x80, 0x00}},
+                {100, 316, 0xFFFFF0, {0x40, 0x40, 0x80, 0x00}},
+                {200, 300, 0xFFFFF0, {0x40, 0x40, 0x80, 0x70}},
+                {200, 316, 0xFFFFF0, {0x40, 0x40, 0x80, 0x80}},
+                {400, 300, 0xFFFFF0, {0x40, 0x40, 0x80, 0x00}},
+                {400, 316, 0xFFFFF0, {0x40, 0x40, 0x80, 0x00}},
+                {0, 0, 0x0, {0x00, 0x00, 0x00, 0x00}}
+            };
+            endPrintExtFunc(0x01000000, END_PRINT_CMD_RIBBON, d);
+            }
+            {
             if ((PadData.buttons.input.held & PAD_UP) != 0) {
                 int cursor_y = cursor->y;
 
@@ -2049,178 +2108,184 @@ void eNumberTest(void) {
                 cursor->y = cursor_y + 2;
             }
             endPrintExtFunc(cursor->depth, END_PRINT_CMD_POINT, cursor);
-            if (PadData.buttons.input.pressed & PAD_CIRCLE) {
-                spr_22[0].state = 0x22;
-                spr_22[1].state = 0x22;
-                spr_22[2].state = 0x22;
-                spr_22[3].state = 0x22;
             }
-            spr_22[0].x = 0x64;
-            spr_22[0].y = 0xC8;
-            spr_22[0].work = primary_order;
-            eSpriteMain((ESpriteMainData *)&spr_22[0]);
-            spr_22[1].y = 0xC8;
-            spr_22[1].x = 0xA4;
-            spr_22[1].work = primary_order;
-            eSpriteMain((ESpriteMainData *)&spr_22[1]);
-            spr_22[2].x = 0xC8;
-            spr_22[2].y = spr_22[2].x;
-            spr_22[2].work = primary_order;
-            eSpriteMain((ESpriteMainData *)&spr_22[2]);
-            spr_22[3].x = 0x190;
-            spr_22[3].y = spr_22[3].x;
-            spr_22[3].work = primary_order;
-            eSpriteMain((ESpriteMainData *)&spr_22[3]);
-            tgf_24[0].draw.x = 0x40;
-            tgf_24[0].draw.y = 0x12C;
-            tgf_24[0].draw.work = primary_order;
-            eTagFontMain(&tgf_24[0].draw);
-            tgf_24[1].draw.y = 0x140;
-            tgf_24[1].draw.x = 0x40;
-            tgf_24[1].draw.work = primary_order;
-            eTagFontMain(&tgf_24[1].draw);
-            d_44.points[0].depth = 0x01FFFFF0;
-            d_44.points[1].depth = 0x01FFFFF0;
-            d_44.points[2].depth = 0x01FFFFF0;
-            d_44.points[3].depth = 0x01FFFFF0;
-            d_44.points[0].y = 0x32;
-            d_44.points[1].y = 0x64;
-            d_44.points[2].y = 0x14;
-            d_44.points[3].y = 0x82;
-            d_44.colors[3].red = -0x80;
-            d_44.colors[2].red = -0x80;
-            d_44.colors[1].red = -0x80;
-            d_44.colors[0].red = -0x80;
-            d_44.colors[3].green = -0x80;
-            d_44.colors[2].green = -0x80;
-            d_44.colors[1].green = -0x80;
-            d_44.colors[0].green = -0x80;
-            d_44.colors[3].blue = -0x80;
-            d_44.colors[2].blue = -0x80;
-            d_44.colors[1].blue = -0x80;
-            d_44.colors[0].blue = -0x80;
-            d_44.colors[0].alpha = -0x80;
-            d_44.colors[1].alpha = -0x80;
-            d_44.colors[2].alpha = -0x80;
-            d_44.colors[3].alpha = -0x80;
-            d_44.points[0].x = 0;
-            d_44.points[1].x = 0;
-            d_44.points[2].x = 0xA0;
-            d_44.points[3].x = 0xA0;
-            d_44.format = 0x1A11;
-            line_23[1].count = 4;
-            line_23[1].points[0].x = 0xB4;
-            line_23[1].points[0].y = 0x46;
-            line_23[1].points[0].work = 0x7FFFFFFF;
-            line_23[1].points[1].x = 0xB4;
-            line_23[1].points[1].y = 0x78;
-            line_23[1].points[1].work = 0x7FFFFFFF;
-            line_23[1].points[2].x = 0x96;
-            line_23[1].points[2].y = 0x96;
-            line_23[1].points[2].work = 0x7FFFFFFF;
-            line_23[1].points[3].x = 0x64;
-            line_23[1].points[3].y = 0x96;
-            line_23[1].points[3].work = 0x7FFFFFFF;
-            line_23[1].points[0].red = -1;
-            line_23[1].points[0].green = 0;
-            line_23[1].points[0].blue = 0;
-            line_23[1].points[0].alpha = -0x80;
-            line_23[1].points[1].red = 0;
-            line_23[1].points[1].green = 0;
-            line_23[1].points[1].blue = -1;
-            line_23[1].points[1].alpha = -0x80;
-            line_23[1].points[2].red = 0;
-            line_23[1].points[2].green = -1;
-            line_23[1].points[2].blue = 0;
-            line_23[1].points[2].alpha = -0x80;
-            line_23[1].points[3].red = -1;
-            line_23[1].points[3].green = -1;
-            line_23[1].points[3].blue = -1;
-            line_23[1].points[3].alpha = -0x80;
+            if (PadData.buttons.input.pressed & PAD_CIRCLE) {
+                spr[0].state = 0x22;
+                spr[1].state = 0x22;
+                spr[2].state = 0x22;
+                spr[3].state = 0x22;
+            }
+            spr[0].x = 0x64;
+            spr[0].y = 0xC8;
+            spr[0].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr[0]);
+            spr[1].y = 0xC8;
+            spr[1].x = 0xA4;
+            spr[1].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr[1]);
+            spr[2].x = 0xC8;
+            spr[2].y = spr[2].x;
+            spr[2].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr[2]);
+            spr[3].x = 0x190;
+            spr[3].y = spr[3].x;
+            spr[3].work = primary_order;
+            eSpriteMain((ESpriteMainData *)&spr[3]);
+            tgf[0].draw.x = 0x40;
+            tgf[0].draw.y = 0x12C;
+            tgf[0].draw.work = primary_order;
+            eTagFontMain(&tgf[0].draw);
+            tgf[1].draw.y = 0x140;
+            tgf[1].draw.x = 0x40;
+            tgf[1].draw.work = primary_order;
+            eTagFontMain(&tgf[1].draw);
+            {
+            static EndouQuadDescriptor d __asm__("d.44");
+            d.points[0].depth = 0x01FFFFF0;
+            d.points[1].depth = 0x01FFFFF0;
+            d.points[2].depth = 0x01FFFFF0;
+            d.points[3].depth = 0x01FFFFF0;
+            d.points[0].y = 0x32;
+            d.points[1].y = 0x64;
+            d.points[2].y = 0x14;
+            d.points[3].y = 0x82;
+            d.colors[3].red = -0x80;
+            d.colors[2].red = -0x80;
+            d.colors[1].red = -0x80;
+            d.colors[0].red = -0x80;
+            d.colors[3].green = -0x80;
+            d.colors[2].green = -0x80;
+            d.colors[1].green = -0x80;
+            d.colors[0].green = -0x80;
+            d.colors[3].blue = -0x80;
+            d.colors[2].blue = -0x80;
+            d.colors[1].blue = -0x80;
+            d.colors[0].blue = -0x80;
+            d.colors[0].alpha = -0x80;
+            d.colors[1].alpha = -0x80;
+            d.colors[2].alpha = -0x80;
+            d.colors[3].alpha = -0x80;
+            d.points[0].x = 0;
+            d.points[1].x = 0;
+            d.points[2].x = 0xA0;
+            d.points[3].x = 0xA0;
+            d.format = 0x1A11;
+            }
+            line[1].count = 4;
+            line[1].points[0].x = 0xB4;
+            line[1].points[0].y = 0x46;
+            line[1].points[0].work = 0x7FFFFFFF;
+            line[1].points[1].x = 0xB4;
+            line[1].points[1].y = 0x78;
+            line[1].points[1].work = 0x7FFFFFFF;
+            line[1].points[2].x = 0x96;
+            line[1].points[2].y = 0x96;
+            line[1].points[2].work = 0x7FFFFFFF;
+            line[1].points[3].x = 0x64;
+            line[1].points[3].y = 0x96;
+            line[1].points[3].work = 0x7FFFFFFF;
+            line[1].points[0].red = -1;
+            line[1].points[0].green = 0;
+            line[1].points[0].blue = 0;
+            line[1].points[0].alpha = -0x80;
+            line[1].points[1].red = 0;
+            line[1].points[1].green = 0;
+            line[1].points[1].blue = -1;
+            line[1].points[1].alpha = -0x80;
+            line[1].points[2].red = 0;
+            line[1].points[2].green = -1;
+            line[1].points[2].blue = 0;
+            line[1].points[2].alpha = -0x80;
+            line[1].points[3].red = -1;
+            line[1].points[3].green = -1;
+            line[1].points[3].blue = -1;
+            line[1].points[3].alpha = -0x80;
             if (PadData.buttons.input.pressed & PAD_START) {
-                line_23[1].state = ELINE_STATE_DRAW_ALL;
+                line[1].state = ELINE_STATE_DRAW_ALL;
             }
             if (PadData.buttons.input.pressed & PAD_SELECT) {
-                line_23[1].state = ELINE_STATE_DRAW_SEQUENTIAL;
+                line[1].state = ELINE_STATE_DRAW_SEQUENTIAL;
             }
-            eLineMain(&line_23[1]);
-            line_23[2].count = 4;
-            line_23[2].points[0].x = 0x64;
-            line_23[2].points[0].y = 0x64;
-            line_23[2].points[0].work = 0x7FFFFFFF;
-            line_23[2].points[1].y = 0x46;
-            line_23[2].points[1].x = 0x82;
-            line_23[2].points[1].work = 0x7FFFFFFF;
-            line_23[2].points[2].x = 0x82;
-            line_23[2].points[2].y = 0x78;
-            line_23[2].points[2].work = 0x7FFFFFFF;
-            line_23[2].points[3].y = 0x78;
-            line_23[2].points[3].x = 0xB4;
-            line_23[2].points[3].work = 0x7FFFFFFF;
-            line_23[2].points[0].red = -1;
-            line_23[2].points[0].green = 0;
-            line_23[2].points[0].blue = 0;
-            line_23[2].points[0].alpha = -0x80;
-            line_23[2].points[1].red = 0;
-            line_23[2].points[1].green = 0;
-            line_23[2].points[1].blue = -1;
-            line_23[2].points[1].alpha = -0x80;
-            line_23[2].points[2].red = 0;
-            line_23[2].points[2].green = -1;
-            line_23[2].points[2].blue = 0;
-            line_23[2].points[2].alpha = -0x80;
-            line_23[2].points[3].red = -1;
-            line_23[2].points[3].green = -1;
-            line_23[2].points[3].blue = -1;
-            line_23[2].points[3].alpha = -0x80;
+            eLineMain(&line[1]);
+            line[2].count = 4;
+            line[2].points[0].x = 0x64;
+            line[2].points[0].y = 0x64;
+            line[2].points[0].work = 0x7FFFFFFF;
+            line[2].points[1].y = 0x46;
+            line[2].points[1].x = 0x82;
+            line[2].points[1].work = 0x7FFFFFFF;
+            line[2].points[2].x = 0x82;
+            line[2].points[2].y = 0x78;
+            line[2].points[2].work = 0x7FFFFFFF;
+            line[2].points[3].y = 0x78;
+            line[2].points[3].x = 0xB4;
+            line[2].points[3].work = 0x7FFFFFFF;
+            line[2].points[0].red = -1;
+            line[2].points[0].green = 0;
+            line[2].points[0].blue = 0;
+            line[2].points[0].alpha = -0x80;
+            line[2].points[1].red = 0;
+            line[2].points[1].green = 0;
+            line[2].points[1].blue = -1;
+            line[2].points[1].alpha = -0x80;
+            line[2].points[2].red = 0;
+            line[2].points[2].green = -1;
+            line[2].points[2].blue = 0;
+            line[2].points[2].alpha = -0x80;
+            line[2].points[3].red = -1;
+            line[2].points[3].green = -1;
+            line[2].points[3].blue = -1;
+            line[2].points[3].alpha = -0x80;
             if (ENDOU_MODEL_PAD->pressed & PAD_START) {
-                line_23[2].state = ELINE_STATE_DRAW_ALL;
+                line[2].state = ELINE_STATE_DRAW_ALL;
             }
             if (ENDOU_MODEL_PAD->pressed & PAD_SELECT) {
-                line_23[2].state = ELINE_STATE_DRAW_SEQUENTIAL;
+                line[2].state = ELINE_STATE_DRAW_SEQUENTIAL;
             }
-            eLineMain(&line_23[2]);
-            line_23[3].count = 4;
-            line_23[3].points[0].x = 0x82;
-            line_23[3].points[0].y = 0x78;
-            line_23[3].points[0].work = 0x7FFFFFFF;
-            line_23[3].points[1].x = 0x64;
-            line_23[3].points[1].y = 0x96;
-            line_23[3].points[1].work = 0x7FFFFFFF;
-            line_23[3].points[2].x = 0x64;
-            line_23[3].points[2].y = 0x64;
-            line_23[3].points[2].work = 0x7FFFFFFF;
-            line_23[3].points[3].x = 0x96;
-            line_23[3].points[3].y = 0x64;
-            line_23[3].points[3].work = 0x7FFFFFFF;
-            line_23[3].points[0].red = -1;
-            line_23[3].points[0].green = 0;
-            line_23[3].points[0].blue = 0;
-            line_23[3].points[0].alpha = -0x80;
-            line_23[3].points[1].red = 0;
-            line_23[3].points[1].green = 0;
-            line_23[3].points[1].blue = -1;
-            line_23[3].points[1].alpha = -0x80;
-            line_23[3].points[2].red = 0;
-            line_23[3].points[2].green = -1;
-            line_23[3].points[2].blue = 0;
-            line_23[3].points[2].alpha = -0x80;
-            line_23[3].points[3].red = -1;
-            line_23[3].points[3].green = -1;
-            line_23[3].points[3].blue = -1;
-            line_23[3].points[3].alpha = -0x80;
+            eLineMain(&line[2]);
+            line[3].count = 4;
+            line[3].points[0].x = 0x82;
+            line[3].points[0].y = 0x78;
+            line[3].points[0].work = 0x7FFFFFFF;
+            line[3].points[1].x = 0x64;
+            line[3].points[1].y = 0x96;
+            line[3].points[1].work = 0x7FFFFFFF;
+            line[3].points[2].x = 0x64;
+            line[3].points[2].y = 0x64;
+            line[3].points[2].work = 0x7FFFFFFF;
+            line[3].points[3].x = 0x96;
+            line[3].points[3].y = 0x64;
+            line[3].points[3].work = 0x7FFFFFFF;
+            line[3].points[0].red = -1;
+            line[3].points[0].green = 0;
+            line[3].points[0].blue = 0;
+            line[3].points[0].alpha = -0x80;
+            line[3].points[1].red = 0;
+            line[3].points[1].green = 0;
+            line[3].points[1].blue = -1;
+            line[3].points[1].alpha = -0x80;
+            line[3].points[2].red = 0;
+            line[3].points[2].green = -1;
+            line[3].points[2].blue = 0;
+            line[3].points[2].alpha = -0x80;
+            line[3].points[3].red = -1;
+            line[3].points[3].green = -1;
+            line[3].points[3].blue = -1;
+            line[3].points[3].alpha = -0x80;
             if (ENDOU_MODEL_PAD->pressed & PAD_START) {
-                line_23[3].state = ELINE_STATE_DRAW_ALL;
+                line[3].state = ELINE_STATE_DRAW_ALL;
             }
             if (ENDOU_MODEL_PAD->pressed & PAD_SELECT) {
-                line_23[3].state = ELINE_STATE_DRAW_SEQUENTIAL;
+                line[3].state = ELINE_STATE_DRAW_SEQUENTIAL;
             }
-            eLineMain(&line_23[3]);
+            eLineMain(&line[3]);
             endPrintExtFunc(0xFFFFFF, END_PRINT_CMD_EXT_BASE + END_PRINT_EXT_FLUSH, NULL);
             xglSleep();
         } while ((PadData.buttons.button_state & ENDOU_EXIT_CHORD_U) != ENDOU_EXIT_CHORD_U);
     }
 }
+
+static EndouPrintPoint cursor_point = {256, 256, 0xFFFFFFF, {0xFF, 0xFF, 0xFF, 0x80}};
 
 void eModelTestMain(EModelTestState *unit)
 {
@@ -2269,18 +2334,26 @@ void ePrintTest(void)
 
 void eMessageTest(void)
 {
+    static const char *msg[5] __asm__("msg.45") = {
+        "\015\002\031\001\031\002\243\320\243\354\243\341\243\371\243\323\243\364\243\341\243\364\243\351\243\357\243\356\243\262\012\031\000\245\274\245\316\245\265\241\274\245\254\012\031\001\014\200\000\000\243\315\243\305\243\315\243\317\243\322\243\331\243\303\243\301\243\322\243\304\012\031\000\272\271\271\376\270\375\243\261\012\031\001\014\000\200\000\243\315\243\305\243\315\243\317\243\322\243\331\243\303\243\301\243\322\243\304\012\031\000\272\271\271\376\270\375\243\262\037\031\000\014\000\000\200\245\317\241\274\245\311\245\307\245\243\245\271\245\257",
+        "\015\002\014\037\037\037\305\267\271\304\276\336\275\325\275\251\317\242\307\306\012\245\271\245\332\245\267\245\343\245\353\245\246\245\243\241\274\245\257\012\245\260\245\351\245\363\245\327\245\352\243\263\317\242\307\306\012\245\260\245\351\245\271\245\357\245\363\245\300\241\274\012\245\250\245\353\245\263\245\363\245\311\245\353\245\321\245\265\241\274\012\245\265\245\363\245\307\241\274\245\265\245\244\245\354\245\363\245\271\012\273\251\267\356\276\336\012\306\374\313\334\245\300\241\274\245\323\241\274\012\265\306\262\326\276\336",
+        "\015\002\031\001\014?\000\000\244\242\012\244\244\012\244\246\012\244\250\012\244\252",
+        "\015\002\012\245\271\245\332\245\267\245\343\245\353\245\246\245\243\241\274\245\257\012\014\200\000\000\245\260\245\351\245\271\245\357\245\363\245\300\241\274\012\245\250\245\353\245\263\245\363\245\311\245\353\245\321\245\265\241\274",
+        NULL
+    };
+    static char text00[] __asm__("text00.46") = "\031\001\243\320\243\354\036:\243\341\243\371\012\243\323\243\364\243\341\243\364\243\351\243\357\243\356\243\262\037\031\000\036:\036;\245\250\036<\245\353\036=\245\263\036>\245\363\036?\245\311\036\011\245\353\036\012\245\321\036\013\245\265\036\014\241\274\037\036\001\245\271\245\332\036\033\036\034\036\035\036\036\245\267\245\343\245\353\245\246\245\243\241\274\245\257\037\036\002\245\260\245\351\245\271\245\357\245\363\245\300\241\274\037\036\037\036 \036!\036\"\245\273\245\244\245\246\245\363\245\271\245\253\245\244\037\245\255\245\363\245\260\245\330\245\244\245\355\241\274\241\274\241\274\241\274\241\274\241\274\241\274\241\274\241\274\241\274\037\244\242";
     EMessageTestWindow windows[2];
     EMessageTestWindow current;
     int message_index = 0;
 
     WindowTexLoad(0, 0);
     endPrintInit();
-    eMessageSet(&windows[0], msg_45[0]);
-    eMessageSet(&windows[1], msg_45[0]);
+    eMessageSet(&windows[0], msg[0]);
+    eMessageSet(&windows[1], msg[0]);
     windows[1].mode = 0x20;
-    eMessageSet(&current, text00_46);
+    eMessageSet(&current, text00);
     current.page_state = 1;
-    eMessageTextChange(&current, text00_46);
+    eMessageTextChange(&current, text00);
 
     PadData.buttons.input.pressed = 0;
     current.message_x = 0x40;
@@ -2303,7 +2376,7 @@ void eMessageTest(void)
                 if (message_index >= 5) {
                     message_index = 0;
                 }
-                windows[0].message_text = msg_45[message_index];
+                windows[0].message_text = msg[message_index];
             }
             if ((PadData.buttons.input.pressed & 8U) != 0) {
                 windows[0].mode = 0x22;
@@ -2346,14 +2419,26 @@ void eMessageTest(void)
 
 void BgTest(void)
 {
+    static BgTestEnvironment TestEnv __asm__("TestEnv.47") = {
+        {0x0, 0x0, 0x0}, 0x50000009,
+        {0x8001, 0x808B4000, 0x53531EEEULL},
+        {0x20ULL, 0x14ULL},
+        {0x0ULL, 0x6ULL},
+        {0x50000ULL, 0x47ULL},
+        {0x80, 0x80, 0x80, 0x80},
+        {0x0, 0x0, 0x0, 0x0},
+        {0x6FF8, 0x71F8, 0x0, 0x0},
+        {0x2000, 0x1C00, 0x0, 0x0},
+        {0x8FF8, 0x8DF8, 0x0, 0x0},
+    };
     XglPacket *packet;
     int packet_command = BG_TEST_COMMAND_BASE << BG_TEST_COMMAND_BASE_SHIFT;
 
     packet_command |= sRender.packetControl << BG_TEST_CONTROL_SHIFT;
-    TestEnv_47.packet_write.value = packet_command |
+    TestEnv.packet_write.value = packet_command |
         ((u64)BG_TEST_COMMAND_HIGH << BG_TEST_COMMAND_HIGH_SHIFT);
     packet = xglPacketGetCurrent();
-    sceVif1PkRef(packet, &TestEnv_47, 10, 0, 0, 0);
+    sceVif1PkRef(packet, &TestEnv, 10, 0, 0, 0);
 }
 
 typedef struct TexturTestEntry {
@@ -2370,37 +2455,28 @@ typedef struct TexturTestHeader {
     int offset;
 } TexturTestHeader;
 typedef struct TexturTestTexEnv {
-    u8 unmodeled_00[0x20];
+    u64 header[4];
     u64 w20;
-    u8 unmodeled_28[0x18];
+    u64 w28[3];
     u64 w40;
-} TexturTestTexEnv;
+    u64 w48[3];
+} __attribute__((aligned(16))) TexturTestTexEnv;
 typedef struct TexturTestEnv {
-    u8 unmodeled_00[0x50];
+    u64 header[10];
     u64 packetWord;
-} TexturTestEnv;
+    u64 tail[13];
+} __attribute__((aligned(16))) TexturTestEnv;
 extern void xglRenderClearDepth(void);
-extern TexturTestTexEnv eNumberTexEnv_48;
-extern TexturTestEnv TestEnv_52;
-extern int x_53;
-static inline void TexturTestEnvSend(XglPacket *packet)
-{
-    int x;
-
-        xglFontDebugHex(0, 0x20, x_53, 5);
-        x = x_53;
-        if (PadData.buttons.input.repeat & 0x2000) {
-            x_53 = x += 0x100;
-        }
-        if (PadData.buttons.input.repeat & 0x8000) {
-            x_53 = x -= 0x100;
-        }
-        TestEnv_52.packetWord = ((u64)((unsigned int)(x + 0xE0000) >> 6) << 37) | 0x2000000629343800ULL;
-        sceVif1PkRef(packet, &TestEnv_52, 12, 0, 0, 0);
-}
 
 void TexturTest(void)
 {
+    static TexturTestTexEnv eNumberTexEnv __asm__("eNumberTexEnv.48") = {
+        {0x0000000000000000ULL, 0x5100000511000000ULL, 0x1000000000000004ULL, 0x000000000000000EULL},
+        0x00083C0000000000ULL,
+        {0x0000000000000050ULL, 0x0000000000000000ULL, 0x0000000000000051ULL},
+        0x0000008000000400ULL,
+        {0x0000000000000052ULL, 0x0000000000000000ULL, 0x0000000000000053ULL},
+    };
     TexturTestEntry *entry;
     TexturTestTexEnv *env;
     u8 *save;
@@ -2447,15 +2523,203 @@ void TexturTest(void)
                     hi = (int)(lo + 0x3F) >> 6;
                 }
                 i++;
-                eNumberTexEnv_48.w40 = lo | ((u64)entry->w4 << 32);
-                eNumberTexEnv_48.w20 = ((u64)((unsigned int)(entry->addr + 0xE0000) >> 6) << 32) | ((u64)hi << 48);
+                eNumberTexEnv.w40 = lo | ((u64)entry->w4 << 32);
+                eNumberTexEnv.w20 = ((u64)((unsigned int)(entry->addr + 0xE0000) >> 6) << 32) | ((u64)hi << 48);
                 FlushCache(0);
-                sceVif1PkRef(packet, &eNumberTexEnv_48, 6, 0, 0, 0);
+                sceVif1PkRef(packet, &eNumberTexEnv, 6, 0, 0, 0);
                 sceVif1PkRef(packet, data + entry->offset, entry->qwc, 0, 0, 0);
                 entry++;
             } while (i < ((TexturTestHeader *)data)->count);
         }
-        TexturTestEnvSend(packet);
+            /* TestEnv.49..64 and x.50..xx.62: alternative texture packets the original
+             * defines here; only TestEnv.52/x.53 are used. */
+            {
+            static u64 TestEnv[24] __asm__("TestEnv.49") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000A00000000ULL,
+                0xB08B400000008001ULL, 0x0000053531EEEEEEULL,
+                0x00000000003FFFF0ULL, 0x0000000000000008ULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x2007E78669343C00ULL, 0x0000000000000006ULL,
+                0x0000000000030003ULL, 0x0000000000000047ULL,
+                0x0000000000000000ULL, 0x000000000000003FULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x00007FF800006FF8ULL, 0x0000000000040000ULL,
+                0x0000100000003000ULL, 0x0000000000000000ULL,
+                0x00008DF800008FF8ULL, 0x0000000000040000ULL
+            };
+            static int x __asm__("x.50") = 0;
+            }
+            {
+            static int x __asm__("x.51") = 0xDE00;
+            }
+            {
+            static TexturTestEnv TestEnv __asm__("TestEnv.52") = {
+                {
+                    0x0000000000000000ULL, 0x5100000B00000000ULL,
+                    0xA00B400000008001ULL, 0x00000042421EEEEEULL,
+                    0x0000000000000000ULL, 0x000000000000003FULL,
+                    0x0000000000000044ULL, 0x0000000000000042ULL,
+                    0x01BF000001FF0000ULL, 0x0000000000000040ULL
+                },
+                0x0000000000000000ULL,
+                {
+                    0x0000000000000006ULL, 0x0000000000030003ULL,
+                    0x0000000000000047ULL, 0x0000008000000080ULL,
+                    0x0000008000000080ULL, 0x0000000000000000ULL,
+                    0x000000003F800000ULL, 0x000071F800006FF8ULL,
+                    0x0000000000040000ULL, 0x3F8000003F800000ULL,
+                    0x000000003F800000ULL, 0x00008DF800008FF8ULL,
+                    0x0000000000040000ULL
+                },
+            };
+            static int x __asm__("x.53") = 0xDE00;
+            XglPacket *send_packet = packet;
+            int position;
+
+            xglFontDebugHex(0, 0x20, x, 5);
+            position = x;
+            if (PadData.buttons.input.repeat & 0x2000) {
+                x = position += 0x100;
+            }
+            if (PadData.buttons.input.repeat & 0x8000) {
+                x = position -= 0x100;
+            }
+            TestEnv.packetWord = ((u64)((unsigned int)(position + 0xE0000) >> 6) << 37) | 0x2000000629343800ULL;
+            sceVif1PkRef(send_packet, &TestEnv, 12, 0, 0, 0);
+            }
+            {
+            static u64 TestEnv[20] __asm__("TestEnv.54") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000900000000ULL,
+                0x808B400000008001ULL, 0x0000000053531EEEULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x2007EF8669343C00ULL, 0x0000000000000006ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000000000001000ULL, 0x0000000000000000ULL,
+                0x00007FF800007FF8ULL, 0x0000000000040000ULL,
+                0x0000100000002000ULL, 0x0000000000000000ULL,
+                0x00008DF800008FF8ULL, 0x0000000000040000ULL
+            };
+            static int x __asm__("x.55") = 0xDF00;
+            }
+            {
+            static u64 TestEnv[22] __asm__("TestEnv.56") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000A00000000ULL,
+                0x908B400000008001ULL, 0x000000053531EEEEULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x00000000003FDFF0ULL, 0x0000000000000008ULL,
+                0x2007EF0669343C00ULL, 0x0000000000000006ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x000071F800006FF8ULL, 0x0000000000040000ULL,
+                0x0000100000003000ULL, 0x0000000000000000ULL,
+                0x00007FF800008FF8ULL, 0x0000000000040000ULL
+            };
+            static int x __asm__("x.57") = 0xDE00;
+            }
+            {
+            static u64 TestEnv[24] __asm__("TestEnv.58") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000B00000000ULL,
+                0xA18B400000008001ULL, 0x000000E5353EEEEEULL,
+                0x00000000000401E0ULL, 0x000000000000004DULL,
+                0x0000000000000000ULL, 0x0000000000000019ULL,
+                0x00000000FF000FFFULL, 0x0000000000000009ULL,
+                0x0000000668013C00ULL, 0x0000000000000007ULL,
+                0x0000000000031001ULL, 0x0000000000000048ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x0000100000001000ULL, 0x0000000000000000ULL,
+                0x0000100000000800ULL, 0x0000000000000000ULL,
+                0x0000000000000000ULL, 0x000000000000003FULL
+            };
+            }
+            {
+            static u64 TestEnv[22] __asm__("TestEnv.59") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000A00000000ULL,
+                0x908B400000008001ULL, 0x000000053531EEEEULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x00000000003FDFF0ULL, 0x0000000000000008ULL,
+                0x2007EF0669343C00ULL, 0x0000000000000006ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x000071F800006FF8ULL, 0x0000000000040000ULL,
+                0x0000100000002000ULL, 0x0000000000000000ULL,
+                0x00007FF800008FF8ULL, 0x0000000000040000ULL
+            };
+            }
+            {
+            static u64 TestEnv[24] __asm__("TestEnv.60") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000B00000000ULL,
+                0xA18B400000008001ULL, 0x000000E5353EEEEEULL,
+                0x0000000000000000ULL, 0x000000000000004DULL,
+                0x0000000000000000ULL, 0x0000000000000019ULL,
+                0x00000000007FDFF0ULL, 0x0000000000000009ULL,
+                0x2007EF0669343C00ULL, 0x0000000000000007ULL,
+                0x0000000000031001ULL, 0x0000000000000048ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x0000100000002000ULL, 0x0000000000000000ULL,
+                0x0000100000002000ULL, 0x0000000000000000ULL,
+                0x0000000000000000ULL, 0x000000000000003FULL
+            };
+            }
+            {
+            static u64 TestEnv[22] __asm__("TestEnv.61") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000A00000000ULL,
+                0x908B400000008001ULL, 0x000000053531EEEEULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x00000000FF000FFFULL, 0x0000000000000008ULL,
+                0x0000000000000000ULL, 0x0000000000000006ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000000000000000ULL, 0x0000000000000000ULL,
+                0x00007FF800006FF8ULL, 0x0000000000040000ULL,
+                0x0000100000002000ULL, 0x0000000000000000ULL,
+                0x00008DF800008FF8ULL, 0x0000000000040000ULL
+            };
+            static int xx __asm__("xx.62") = 0;
+            }
+            {
+            static u64 TestEnv[34] __asm__("TestEnv.63") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100001000000000ULL,
+                0x1000000000008002ULL, 0x000000000000000EULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x2026C00000008006ULL, 0x0000000000000051ULL,
+                0x0000008000000080ULL, 0x0000008000000080ULL,
+                0x0000800000008000ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x0000760000007400ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x0000760000008C00ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x00008A0000008C00ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x00008A0000007400ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x0000760000007400ULL, 0x0000000000FFFFFFULL
+            };
+            }
+            {
+            static u64 TestEnv[26] __asm__("TestEnv.64") __attribute__((aligned(16))) = {
+                0x0000000000000000ULL, 0x5100000C00000000ULL,
+                0x1000000000008002ULL, 0x000000000000000EULL,
+                0x0000000000000044ULL, 0x0000000000000042ULL,
+                0x0000000000050000ULL, 0x0000000000000047ULL,
+                0x8026400000008001ULL, 0x00000000515151D1ULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x0000760000007400ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x00008A0000007400ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x0000760000008C00ULL, 0x0000000000FFFFFFULL,
+                0x0000008000000080ULL, 0x0000000000000080ULL,
+                0x00008A0000008C00ULL, 0x0000000000FFFFFFULL
+            };
+            }
         xglSleep();
         }
     }
@@ -2532,13 +2796,32 @@ void UmnMailDispTest(void)
 
 static void e_test(ETestContext *context)
 {
+    static WinTexEnvironment WinTexEnv __asm__("WinTexEnv.65") = {
+        0x0, 0x0, 0x11000000, 0x51000006,
+        {0x8005, 0x10000000, 0xEULL},
+        {0x0ULL, 0x3FULL},
+        {0x0008380000000000ULL, 0x50ULL},
+        {0x0ULL, 0x51ULL},
+        {0x0000008000000200ULL, 0x52ULL},
+        {0x0ULL, 0x53ULL},
+    };
+    static unsigned int TestEnv[32] __asm__("TestEnv.66") __attribute__((aligned(16))) = {
+        0x00008001, 0x208B4000, 0x000000EE, 0x00000000,
+        0x00000000, 0x00000000, 0x0000003F, 0x00000000,
+        0xDD343840, 0x20070005, 0x00000006, 0x00000000,
+        0x00000080, 0x00000080, 0x00000080, 0x00000080,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00007C00, 0x00007BF8, 0x10000000, 0x00000000,
+        0x00000800, 0x00000800, 0x00000000, 0x00000000,
+        0x00008400, 0x000083F8, 0x10000000, 0x00000000
+    };
     sceVif1PkCloseDirectHLCode(context->packet);
-    sceVif1PkRef(context->packet, (unsigned char *)&WinTexEnv_65,
+    sceVif1PkRef(context->packet, (unsigned char *)&WinTexEnv,
                  7, 0, 0, 0);
     sceVif1PkRef(context->packet, (unsigned char *) test_data + 0x30, 0x4002, 0, 0, 0);
     sceVif1PkCnt(context->packet, 0);
     sceVif1PkOpenDirectHLCode(context->packet, 0);
-    sceVif1PkAddDirectDataN(context->packet, TestEnv_66, 8);
+    sceVif1PkAddDirectDataN(context->packet, TestEnv, 8);
     xglFontReloadTexture(context, 0);
 }
 
@@ -2561,18 +2844,19 @@ void ReLoadTest(void)
 
 static void endCallback(int result, int amount)
 {
-    static float size_68 __asm__("size.68");
+    static char fname[64] __asm__("fname.67");
+    static float size __asm__("size.68");
     switch (result) {
     case 0: {
         const char *source = (const char *)amount;
-        char *destination = fname_67;
+        char *destination = fname;
         do {
             *destination = *source++;
         } while (((unsigned int)*destination++ << 24) != 0);
         break;
     }
     case 1:
-        size_68 = I2F(amount) * progress_percent;
+        size = I2F(amount) * progress_percent;
         break;
     case 2:
     case 3:
@@ -2581,13 +2865,13 @@ static void endCallback(int result, int amount)
         break;
     case -1: {
         for (;;) {
-            xglFontDebugPrintf(8, 216, not_found_format, fname_67);
+            xglFontDebugPrintf(8, 216, "%s/NotFound", fname);
             xglSleep();
         }
     }
     case -2: {
         for (;;) {
-            xglFontDebugPrintf(8, 216, read_error_format, fname_67);
+            xglFontDebugPrintf(8, 216, "%s/ReadError", fname);
             xglSleep();
         }
     }
@@ -2605,21 +2889,42 @@ extern FileLoadCallback xglCdSetCallback(FileLoadCallback callback);
 typedef struct FileLoadTestFiles {
     int state;
     unsigned char *buffer;
-    int pad[2];
+    char name[64];
 } FileLoadTestFiles;
 typedef struct FileLoadTestEnv {
-    u8 unmodeled_00[0x30];
+    u64 header[6];
     u64 packetWord;
-} FileLoadTestEnv;
-extern FileLoadTestFiles files;
-extern unsigned char eNumberTexEnv_69[];
-extern FileLoadTestEnv TestEnv_70;
-extern int x_71;
-extern const char D_004C2D80[];
-extern const char D_004C2D98[];
+    u64 tail[13];
+} __attribute__((aligned(16))) FileLoadTestEnv;
+static FileLoadTestFiles files = {-1, NULL, "data\\endou\\menu00.xtx"};
 
 void FileLoadTest(void)
 {
+    static TexturTestTexEnv eNumberTexEnv __asm__("eNumberTexEnv.69") = {
+        {0x0000000000000000ULL, 0x5100000511000000ULL, 0x1000000000000004ULL, 0x000000000000000EULL},
+        0x00083C0000000000ULL,
+        {0x0000000000000050ULL, 0x0000000000000000ULL, 0x0000000000000051ULL},
+        0x0000008000000200ULL,
+        {0x0000000000000052ULL, 0x0000000000000000ULL, 0x0000000000000053ULL},
+    };
+    static FileLoadTestEnv TestEnv __asm__("TestEnv.70") = {
+        {
+            0x0000000000000000ULL, 0x5100000900000000ULL,
+            0x80AB400000008001ULL, 0x0000000053531EEEULL,
+            0x0000000000000044ULL, 0x0000000000000042ULL
+        },
+        0x2007EF8669343C00ULL,
+        {
+            0x0000000000000006ULL, 0x0000000000050000ULL,
+            0x0000000000000047ULL, 0x0000008000000080ULL,
+            0x0000008000000080ULL, 0x0000000000001000ULL,
+            0x0000000000000000ULL, 0x00007FF800007FF8ULL,
+            0x0000000040000000ULL, 0x0000100000002000ULL,
+            0x0000000000000000ULL, 0x00008DF800008FF8ULL,
+            0x0000000040000000ULL
+        },
+    };
+    static int x __asm__("x.71") = 0xCF00;
     XglPacket *packet;
     FileLoadCallback old;
 
@@ -2628,23 +2933,23 @@ void FileLoadTest(void)
     files.buffer = (unsigned char *)(((int)WorkEnd + 0x7F) & ~0x7F);
     WorkEnd = files.buffer + 0x100000;
     old = xglCdSetCallback(endCallback);
-    xglCdReadFile(D_004C2D80, files.buffer, 0, 0);
+    xglCdReadFile("data\\endou\\menu00.xtx", files.buffer, 0, 0);
     files.state = 1;
     while ((((FileLoadPadView *)&PadData)->button_state & 0x08000100U) != 0x08000100U) {
-        xglFontDebugPrintf(0, 0, D_004C2D98);
+        xglFontDebugPrintf(0, 0, "\013\245\355\241\274\245\311\245\306\245\271\245\310");
         if (files.state == 1) {
             packet = xglPacketGetCurrent();
-            sceVif1PkRef(packet, eNumberTexEnv_69, 6, 0, 0, 0);
+            sceVif1PkRef(packet, &eNumberTexEnv, 6, 0, 0, 0);
             sceVif1PkRef(packet, files.buffer + 0x30, 0x4002, 0, 0, 0);
-            xglFontDebugHex(0, 0x20, x_71, 5);
+            xglFontDebugHex(0, 0x20, x, 5);
             if (((UmnMailDispTestPad *)&PadData)->rep & 0x2000) {
-                x_71 += 0x100;
+                x += 0x100;
             }
             if (((UmnMailDispTestPad *)&PadData)->rep & 0x8000) {
-                x_71 -= 0x100;
+                x -= 0x100;
             }
-            TestEnv_70.packetWord = ((u64)((unsigned int)(x_71 + 0xF0000) >> 6) << 37) | 0x2000000669343C00ULL;
-            sceVif1PkRef(packet, &TestEnv_70, 10, 0, 0, 0);
+            TestEnv.packetWord = ((u64)((unsigned int)(x + 0xF0000) >> 6) << 37) | 0x2000000669343C00ULL;
+            sceVif1PkRef(packet, &TestEnv, 10, 0, 0, 0);
         }
         xglSleep();
     }
@@ -2687,21 +2992,18 @@ void JpegTest(void)
     display.image_data = destination_buffer;
 
     while ((PadData.buttons.button_state & 0x08000100U) != 0x08000100U) {
-        xglFontDebugPrintf(0, 0, D_004C2DA8);
+        xglFontDebugPrintf(0, 0, "\013\243\312\243\320\243\305\243\307\245\306\245\271\245\310");
         endPrintExtFunc(0, 0x0d, &display);
         xglSleep();
     }
 }
 
-extern const char D_004C2DB8[];
-extern const char D_004C2DD0[];
-extern const char D_004C2DE0[];
-extern char mm_73[];
 
 void UmlTest(void)
 {
-    static char *buffer_72 __asm__("buffer.72");
-  char *buffer;
+    static char *buffer __asm__("buffer.72");
+    static char mm[0x160] __asm__("mm.73");
+  char *work;
   unsigned char *p;
   char *d;
   unsigned char c;
@@ -2715,13 +3017,13 @@ void UmlTest(void)
   unsigned char m;
   xglRenderClearFrame();
   xglSleep();
-  buffer = (char *) ((((int) WorkEnd) + 0x7F) ^ 0x7F);
-  WorkEnd = ((u8 *) buffer) + 0x20000;
-  buffer_72 = buffer;
-  memset(buffer, 0, 0x10000);
-  xglCdReadFile(D_004C2DB8, buffer, 0, 0);
-  d = mm_73;
-  p = (unsigned char *) buffer_72;
+  work = (char *) ((((int) WorkEnd) + 0x7F) ^ 0x7F);
+  WorkEnd = ((u8 *) work) + 0x20000;
+  buffer = work;
+  memset(work, 0, 0x10000);
+  xglCdReadFile("data\\endou\\test00.txt", work, 0, 0);
+  d = mm;
+  p = (unsigned char *) buffer;
   ci = *p;
   goto test;
   do
@@ -2807,9 +3109,9 @@ void UmlTest(void)
   *d = 0;
   while ((PadData.buttons.button_state & 0x08000100U) != 0x08000100U)
   {
-    xglFontDebugPrintf(0, 0, D_004C2DD0);
-    xglFontPrint(0, 0x40, 0xFFFFF0, D_004C2DE0);
-    xglFontPrint(0, 0x40, 0xFFFFFF, mm_73);
+    xglFontDebugPrintf(0, 0, "\013\243\325\243\315\243\314\245\306\245\271\245\310");
+    xglFontPrint(0, 0x40, 0xFFFFF0, "\015\000\025\002\001\014\014\255");
+    xglFontPrint(0, 0x40, 0xFFFFFF, mm);
     xglSleep();
   }
 
@@ -2817,208 +3119,214 @@ void UmlTest(void)
 
 void PauseMenuPagePartyDebugTakeAgws(void)
 {
+    static int Select __asm__("Select.74") = 0;
+    static char *text00[] __asm__("text00.75") = {"\244\312\244\267", "\244\242\244\352"};
     int i;
 
     switch (PadData.buttons.input.repeat) {
     case 0x8000:
-        Select_74 -= 1;
+        Select -= 1;
         break;
     case 0x2000:
-        Select_74 += 1;
+        Select += 1;
         break;
     case 0x1000:
-        Select_74 -= 2;
+        Select -= 2;
         break;
     case 0x4000:
-        Select_74 += 2;
+        Select += 2;
         break;
     default:
         break;
     }
 
-    if (Select_74 < 0) {
-        Select_74 += 0xc;
+    if (Select < 0) {
+        Select += 0xc;
     }
-    Select_74 %= 0xc;
+    Select %= 0xc;
 
     if (PadData.buttons.input.pressed & 0x20) {
-        if (PartyTakeAgwsCheck(Select_74 + 0x11) != 0) {
-            PartyTakeAgwsOff(Select_74 + 0x11);
+        if (PartyTakeAgwsCheck(Select + 0x11) != 0) {
+            PartyTakeAgwsOff(Select + 0x11);
         } else {
-            PartyTakeAgwsOn(Select_74 + 0x11);
+            PartyTakeAgwsOn(Select + 0x11);
         }
     }
 
-    xglFontDebugPrintf(8, 0x20, D_004C2DF0);
-    xglFontDebugPrintf((Select_74 % 2) * 0x80 + 8, (Select_74 / 2) * 0x10 + 0x30, D_004DA768);
+    xglFontDebugPrintf(8, 0x20, "\241\274\241\241\243\301\243\307\243\327\243\323\300\337\304\352\241\241\241\274");
+    xglFontDebugPrintf((Select % 2) * 0x80 + 8, (Select / 2) * 0x10 + 0x30, "\241\344");
     for (i = 0; i < 0xc; i++) {
         xglFontDebugPrintf((i % 2) * 0x80 + 0x10, (i / 2) * 0x10 + 0x30, MenuCharNameGet(i + 0x11));
-        xglFontDebugPrintf((i % 2) * 0x80 + 0x68, (i / 2) * 0x10 + 0x30, text00_75[PartyTakeAgwsCheck(i + 0x11)]);
+        xglFontDebugPrintf((i % 2) * 0x80 + 0x68, (i / 2) * 0x10 + 0x30, text00[PartyTakeAgwsCheck(i + 0x11)]);
     }
-    xglFontDebugPrintf(8, 0xc0, D_004C2E08);
+    xglFontDebugPrintf(8, 0xc0, "\275\275\273\372\245\255\241\274\241\247\245\253\241\274\245\275\245\353\260\334\306\260\241\241\241\241\241\241\241\373\241\247\244\242\244\352\241\277\244\312\244\267");
 }
 
 void PauseMenuPagePartyDebugLockParty(void)
 {
+    static int Select __asm__("Select.76") = 0;
+    static char *text00[] __asm__("text00.77") = {"\245\252\245\325", "\245\252\245\363"};
     int i;
 
     switch (PadData.buttons.input.repeat) {
     case 0x8000:
-        Select_76 -= 1;
+        Select -= 1;
         break;
     case 0x2000:
-        Select_76 += 1;
+        Select += 1;
         break;
     case 0x1000:
-        Select_76 -= 2;
+        Select -= 2;
         break;
     case 0x4000:
-        Select_76 += 2;
+        Select += 2;
         break;
     default:
         break;
     }
 
-    if (Select_76 < 0) {
-        Select_76 += 0xc;
+    if (Select < 0) {
+        Select += 0xc;
     }
-    Select_76 %= 0xc;
+    Select %= 0xc;
 
     if (PadData.buttons.input.pressed & 0x20) {
-        if (PartyLockPartyCheck(Select_76 + 1) != 0) {
-            PartyLockPartyOff(Select_76 + 1);
+        if (PartyLockPartyCheck(Select + 1) != 0) {
+            PartyLockPartyOff(Select + 1);
         } else {
-            PartyLockPartyOn(Select_76 + 1);
+            PartyLockPartyOn(Select + 1);
         }
     }
 
-    xglFontDebugPrintf(8, 0x20, D_004C2E38);
-    xglFontDebugPrintf((Select_76 % 2) * 0x80 + 8, (Select_76 / 2) * 0x10 + 0x30, D_004DA768);
+    xglFontDebugPrintf(8, 0x20, "\241\274\241\241\245\355\245\303\245\257\245\321\241\274\245\306\245\243\241\274\300\337\304\352\241\241\241\274");
+    xglFontDebugPrintf((Select % 2) * 0x80 + 8, (Select / 2) * 0x10 + 0x30, "\241\344");
     for (i = 0; i < 0xc; i++) {
         xglFontDebugPrintf((i % 2) * 0x80 + 0x10, (i / 2) * 0x10 + 0x30, MenuCharNameGet(i + 1));
-        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00_77[PartyLockPartyCheck(i + 1)]);
+        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00[PartyLockPartyCheck(i + 1)]);
     }
-    xglFontDebugPrintf(8, 0xc0, D_004C2E58);
+    xglFontDebugPrintf(8, 0xc0, "\275\275\273\372\245\255\241\274\241\247\245\253\241\274\245\275\245\353\260\334\306\260\241\241\241\241\241\241\241\373\241\247\245\252\245\363\241\277\245\252\245\325");
 }
 
 void PauseMenuPagePartyDebugOutFriend(void)
 {
+    static int Select __asm__("Select.78") = 0;
+    static char *text00[] __asm__("text00.79") = {"\245\252\245\325", "\245\252\245\363"};
     int i;
 
     switch (PadData.buttons.input.repeat) {
     case 0x8000:
-        Select_78 -= 1;
+        Select -= 1;
         break;
     case 0x2000:
-        Select_78 += 1;
+        Select += 1;
         break;
     case 0x1000:
-        Select_78 -= 2;
+        Select -= 2;
         break;
     case 0x4000:
-        Select_78 += 2;
+        Select += 2;
         break;
     default:
         break;
     }
 
-    if (Select_78 < 0) {
-        Select_78 += 0xc;
+    if (Select < 0) {
+        Select += 0xc;
     }
-    Select_78 %= 0xc;
+    Select %= 0xc;
 
     if (PadData.buttons.input.pressed & 0x20) {
-        if (PartyOutFriendCheck(Select_78 + 1) != 0) {
-            PartyOutFriendOff(Select_78 + 1);
+        if (PartyOutFriendCheck(Select + 1) != 0) {
+            PartyOutFriendOff(Select + 1);
         } else {
-            PartyOutFriendOn(Select_78 + 1);
+            PartyOutFriendOn(Select + 1);
         }
     }
 
-    xglFontDebugPrintf(8, 0x20, D_004C2E88);
-    xglFontDebugPrintf((Select_78 % 2) * 0x80 + 8, (Select_78 / 2) * 0x10 + 0x30, D_004DA768);
+    xglFontDebugPrintf(8, 0x20, "\241\274\241\241\245\242\245\246\245\310\245\325\245\354\245\363\245\311\300\337\304\352\241\241\241\274");
+    xglFontDebugPrintf((Select % 2) * 0x80 + 8, (Select / 2) * 0x10 + 0x30, "\241\344");
     for (i = 0; i < 0xc; i++) {
         xglFontDebugPrintf((i % 2) * 0x80 + 0x10, (i / 2) * 0x10 + 0x30, MenuCharNameGet(i + 1));
-        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00_79[PartyOutFriendCheck(i + 1)]);
+        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00[PartyOutFriendCheck(i + 1)]);
     }
-    xglFontDebugPrintf(8, 0xc0, D_004C2E58);
+    xglFontDebugPrintf(8, 0xc0, "\275\275\273\372\245\255\241\274\241\247\245\253\241\274\245\275\245\353\260\334\306\260\241\241\241\241\241\241\241\373\241\247\245\252\245\363\241\277\245\252\245\325");
 }
 
 void PauseMenuPagePartyDebugFriend(void)
 {
+    static int Select __asm__("Select.80") = 0;
+    static char *text00[] __asm__("text00.81") = {"\244\244\244\312\244\244", "\244\244\244\353"};
     int i;
 
     switch (PadData.buttons.input.repeat) {
     case 0x8000:
-        Select_80 -= 1;
+        Select -= 1;
         break;
     case 0x2000:
-        Select_80 += 1;
+        Select += 1;
         break;
     case 0x1000:
-        Select_80 -= 2;
+        Select -= 2;
         break;
     case 0x4000:
-        Select_80 += 2;
+        Select += 2;
         break;
     default:
         break;
     }
 
-    if (Select_80 < 0) {
-        Select_80 += 7;
+    if (Select < 0) {
+        Select += 7;
     }
-    Select_80 %= 7;
+    Select %= 7;
 
     if (PadData.buttons.input.pressed & 0x20) {
-        if (PartyFriendCheck(Select_80 + 1) != 0) {
-            PartyFriendOff(Select_80 + 1);
+        if (PartyFriendCheck(Select + 1) != 0) {
+            PartyFriendOff(Select + 1);
         } else {
-            PartyFriendOn(Select_80 + 1);
+            PartyFriendOn(Select + 1);
         }
     }
 
-    xglFontDebugPrintf(8, 0x20, D_004C2EA8);
-    xglFontDebugPrintf((Select_80 % 2) * 0x80 + 8, (Select_80 / 2) * 0x10 + 0x30, D_004DA768);
+    xglFontDebugPrintf(8, 0x20, "\241\274\241\241\245\325\245\354\245\363\245\311\300\337\304\352\241\241\241\274");
+    xglFontDebugPrintf((Select % 2) * 0x80 + 8, (Select / 2) * 0x10 + 0x30, "\241\344");
     for (i = 0; i < 7; i++) {
         xglFontDebugPrintf((i % 2) * 0x80 + 0x10, (i / 2) * 0x10 + 0x30, MenuCharNameGet(i + 1));
-        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00_81[PartyFriendCheck(i + 1)]);
+        xglFontDebugPrintf((i % 2) * 0x80 + 0x58, (i / 2) * 0x10 + 0x30, text00[PartyFriendCheck(i + 1)]);
     }
-    xglFontDebugPrintf(8, 0xc0, D_004C2EC0);
+    xglFontDebugPrintf(8, 0xc0, "\275\275\273\372\245\255\241\274\241\247\245\253\241\274\245\275\245\353\260\334\306\260\241\241\241\241\241\241\241\373\241\247\244\244\244\353\241\277\244\244\244\312\244\244");
 }
 
-extern int Select_82;
-extern char *text00_83[];
-extern char *text01_84[];
-extern char *text02_85[];
-extern char D_004C2F10[];
-extern char D_004C2F30[];
 unsigned char *PartyDataGet(void);
 typedef struct { unsigned short id; signed char lv; unsigned char pad; } AttackerEntry;
 
 int PauseMenuPagePartyDebugAttacker(void)
 {
+    static int Select __asm__("Select.82") = 0;
+    static char *text00[] __asm__("text00.83") = {"\243\316\243\325\243\314\243\314", "\243\320\243\261", "\243\320\243\262", "\243\320\243\263", "\243\320\243\264", "\243\320\243\265", "\243\320\243\266", "\243\301\243\261", "\243\301\243\262", "\243\301\243\263"};
+    static char *text01[] __asm__("text01.84") = {"\243\261\241\245", "\243\262\241\245", "\243\263\241\245"};
+    static char *text02[] __asm__("text02.85") = {"\245\255\245\343\245\351", "\245\335\245\270\245\267\245\347\245\363"};
     int i;
     int y;
     unsigned char *party;
     unsigned char *p;
 
     if (PadData.buttons.input.repeat & 0x1000) {
-        if (Select_82 == 0) {
-            Select_82 = 5;
+        if (Select == 0) {
+            Select = 5;
         } else {
-            Select_82 -= 1;
+            Select -= 1;
         }
     }
     if (PadData.buttons.input.repeat & 0x4000) {
-        if (Select_82 == 5) {
-            Select_82 = 0;
+        if (Select == 5) {
+            Select = 0;
         } else {
-            Select_82 += 1;
+            Select += 1;
         }
     }
-    if (Select_82 < 3) {
-        unsigned int v = *(unsigned short *)(PartyDataGet() + Select_82 * 4 + 0x30);
+    if (Select < 3) {
+        unsigned int v = *(unsigned short *)(PartyDataGet() + Select * 4 + 0x30);
         unsigned short rep = PadData.buttons.input.repeat;
         if (rep & 0x8000) {
             v = v != 0 ? v - 1 : 0x1D;
@@ -3026,9 +3334,9 @@ int PauseMenuPagePartyDebugAttacker(void)
         if (rep & 0x2000) {
             v = v != 0x1D ? v + 1 : 0;
         }
-        *(unsigned short *)(PartyDataGet() + Select_82 * 4 + 0x30) = v;
+        *(unsigned short *)(PartyDataGet() + Select * 4 + 0x30) = v;
     } else {
-        int v = *(signed char *)(PartyDataGet() + Select_82 * 4 + 0x26);
+        int v = *(signed char *)(PartyDataGet() + Select * 4 + 0x26);
         unsigned short rep = PadData.buttons.input.repeat;
         if (rep & 0x8000) {
             v = v != 0 ? v - 1 : 9;
@@ -3036,46 +3344,44 @@ int PauseMenuPagePartyDebugAttacker(void)
         if (rep & 0x2000) {
             v = v != 9 ? v + 1 : 0;
         }
-        *(signed char *)(PartyDataGet() + Select_82 * 4 + 0x26) = v;
+        *(signed char *)(PartyDataGet() + Select * 4 + 0x26) = v;
     }
     party = PartyDataGet();
-    xglFontDebugPrintf(8, 0x20, D_004C2F10);
-    xglFontDebugPrintf(8, Select_82 * 16 + 0x30, D_004DA768);
+    xglFontDebugPrintf(8, 0x20, "\241\274\241\241\245\320\245\310\245\353\245\341\245\363\245\320\241\274\300\337\304\352\241\241\241\274");
+    xglFontDebugPrintf(8, Select * 16 + 0x30, "\241\344");
     for (i = 0; i < 3; i++) {
         y = i * 16 + 0x30;
-        xglFontDebugPrintf(0x10, y, text01_84[i]);
-        xglFontDebugPrintf(0x30, y, text02_85[0]);
+        xglFontDebugPrintf(0x10, y, text01[i]);
+        xglFontDebugPrintf(0x30, y, text02[0]);
         xglFontDebugPrintf(0x70, y, MenuCharNameGet(*(unsigned short *)(party + i * 4 + 0x30)));
     }
     for (i = 0; i < 3; i++) {
         y = i * 16 + 0x60;
-        xglFontDebugPrintf(0x10, y, text01_84[i]);
-        xglFontDebugPrintf(0x30, y, text02_85[1]);
-        xglFontDebugPrintf(0x70, y, text00_83[((AttackerEntry *)(party + 0x30))[i].lv]);
+        xglFontDebugPrintf(0x10, y, text01[i]);
+        xglFontDebugPrintf(0x30, y, text02[1]);
+        xglFontDebugPrintf(0x70, y, text00[((AttackerEntry *)(party + 0x30))[i].lv]);
     }
-    xglFontDebugPrintf(8, 0xC0, D_004C2F30);
+    xglFontDebugPrintf(8, 0xC0, "\242\254\242\255\241\247\245\253\241\274\245\275\245\353\260\334\306\260\241\241\242\253\242\252\241\247\245\255\245\343\245\351\241\277\245\335\245\270\245\267\245\347\245\363\312\321\271\271");
 }
 
-extern int TopMode_86;
-extern char D_004C2F68[];
-extern char D_004C2F90[];
 int PauseMenuPagePartyDebugAttacker(void);
 
 int PauseMenuPagePartyDebug(void)
 {
+    static int TopMode __asm__("TopMode.86") = 0;
     unsigned int x;
 
-    xglFontDebugPrintf(8, 0x10, D_004C2F68);
-    xglFontDebugPrintf(8, 0xB0, D_004C2F90);
+    xglFontDebugPrintf(8, 0x10, "\241\341\241\341\241\241\245\321\241\274\245\306\245\243\241\274\245\307\245\320\245\303\245\257\245\341\245\313\245\345\241\274\241\241\241\341\241\341");
+    xglFontDebugPrintf(8, 0xB0, "\242\242\241\247\300\337\304\352\300\332\244\352\302\330\244\250");
     if ((PadData.buttons.input.repeat & 0x80) != 0) {
-        if (TopMode_86 == 4) {
-            TopMode_86 = 0;
+        if (TopMode == 4) {
+            TopMode = 0;
         } else {
-            TopMode_86 += 1;
+            TopMode += 1;
         }
     }
-    x = TopMode_86 < 5U;
-    switch (TopMode_86) {
+    x = TopMode < 5U;
+    switch (TopMode) {
     case 0:
         return ((int (*)(void))PauseMenuPagePartyDebugFriend)();
     case 1:
@@ -3092,3 +3398,5 @@ int PauseMenuPagePartyDebug(void)
     }
     return x;
 }
+
+void *test_data = NULL;
