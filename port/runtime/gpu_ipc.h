@@ -61,6 +61,8 @@ enum {
     GPU_NATIVE_SET2_PALETTE = 3,   /* b = palette seq; payload: qw 732..961 of VU1 data (the bone palette) */
     GPU_NATIVE_SET2_ENV = 4,       /* the env pass of the last set-2 batch starts (its A+D state is now set) */
     GPU_NATIVE_CAMERA = 5,         /* GpuNativeCamera: the world -> clip camera the following batches were built with */
+    GPU_NATIVE_SET0_LIT = 6,       /* set 0 lit loops 0x1458 / 0x1fa0 (object-space P/N, no bones): as GPU_NATIVE_SET2,
+                                      no palette; per-vertex fog from GpuNativeSkin.fog */
 };
 /* The scene camera (StudioCamera.viewMatrix: frustum x inverse camera transform),
  * queued by nmlPacketAddParts at packet build and sent when the VIF stream reaches
@@ -108,6 +110,7 @@ typedef struct {
     uint32_t c1009[4];  /* env-pass colour */
     uint32_t tag1010[4], tag1011[4], tag1012[4];
     uint32_t facing, ifirst, mirror_on, pad;   /* 995.y; I at entry; 1017.z != 0 (ILW) */
+    float fog[4];       /* set 0 only: the loop's fog (vf9: x min, y max, z bias, w scale; fog = clamp(z + w q)) */
 } GpuNativeSkin;
 /* followed by n GpuNativeSkinVertex, then (n+31)/32 u32 of ADC bits (from the
    reference's XYZF2: bit set = the triangle ending at this vertex is not drawn) */

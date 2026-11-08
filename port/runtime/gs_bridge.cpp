@@ -495,6 +495,108 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
     return true;
 }
 
+/* XSG_GPU_NATIVE=1, set 0 lit loops (VU1_PROGRAMS.md §2): MSCNT batches (resume
+   0x05e8) into loop 0x1458 "lit" or 0x1fa0 "lit_env" (six kicks) run the C
+   reference (vu1_set0_lit.c, bit-exact) as NativeSkin does, and vertex batches
+   send GPU_NATIVE_SET0_LIT: a GpuNativeSkin with no bone streams (P and N are
+   already object space) plus the loop's fog (vf9 after the run: 1007 for 0x1458,
+   whatever an earlier loop left for 0x1fa0).  KOS-MOS's armour, weapon and face
+   patches in battle.  debug.native_set0_lit = 0 keeps them on the interpreter. */
+bool NativeSet0Lit(u32 pc, u32 top, u32 itop) {
+    if ((pc & 0x3ff8) != 0x5e8) return false;
+    static const bool on = !(xsg_cfg("debug.native_set0_lit") && !std::atoi(xsg_cfg("debug.native_set0_lit"))) &&
+                           !(xsg_cfg("debug.native_vu1") && std::atoi(xsg_cfg("debug.native_vu1")));
+    if (!on) return false;
+    static Vu1Ref* R = static_cast<Vu1Ref*>(std::calloc(1, sizeof(Vu1Ref)));
+    static u32 gen = 0;
+    static bool is_set0 = false;
+    if (gen != g_micro_gen) {
+        gen = g_micro_gen;
+        is_set0 = (Crc(Vu1Micro(), 0x2458, 0xffffffffu) ^ 0xffffffffu) == 0x9dc1acd8u;
+    }
+    if (!is_set0) return false;
+    xsgvu::SaveRegs(R->regs);
+    const u32 loop = (R->regs.vi[15] & 0xffff) * 8;
+    if (loop != 0x1458 && loop != 0x1fa0) return false;
+    u8* d = Vu1Data();
+    auto Q = [&](u32 q) { return d + (q & 0x3ff) * 16; };
+    auto ilw = [&](u32 q, int l) { u32 v; std::memcpy(&v, Q(q) + 4 * l, 4); return v & 0xffff; };
+    const u32 hx = ilw(top, 0), hy = ilw(top, 1);
+    const bool vb = hy != 0x4000 && (hx & 0x7fff);
+    const u32 ifirst = R->regs.I;
+    R->memp = d;
+    R->set = 0;
+    R->pc = pc;
+    R->top = top;
+    R->itop = itop;
+    const unsigned csr = vu_ref_fpu_enter();
+    const int rc = vu1_ref_run(R, nullptr);
+    vu_ref_fpu_leave(csr);
+    if (rc != VU1REF_OK) {
+        xsg_logf("[native] set-0 lit reference refused pc 0x%x loop 0x%x\n", pc, loop);
+        return false;
+    }
+    xsgvu::LoadRegs(R->regs);
+    xsgvu::GetStats().runs++;
+    const bool env = loop == 0x1fa0;
+    if (vb) {
+        const u32 n = hx & 0x7fff;
+        static std::vector<u8> buf;
+        const u32 nbits = (n + 31) / 32;
+        buf.assign(sizeof(GpuNativeSkin) + n * sizeof(GpuNativeSkinVertex) + nbits * 4, 0);
+        GpuNativeSkin* b = reinterpret_cast<GpuNativeSkin*>(buf.data());
+        const Vu1CapRegs& g = R->regs;
+        b->loop = loop;
+        b->n = n;
+        NativeKey(&b->key, &b->occ);
+        static u32 seq;
+        b->frame = xsg_frame;
+        b->seq = seq++;
+        b->fogw = ilw(998, 3);
+        std::memcpy(b->m, g.vf[28], 64);
+        std::memcpy(b->scale, g.vf[26], 16);
+        std::memcpy(b->offset, g.vf[27], 16);
+        std::memcpy(b->lmat, g.vf[17], 48);
+        std::memcpy(b->lcol, g.vf[20], 64);
+        std::memcpy(b->diffuse, g.vf[25], 16);
+        std::memcpy(b->env, g.vf[24], 16);
+        std::memcpy(b->fog, g.vf[9], 16);
+        std::memcpy(b->eye, Q(976), 16);
+        std::memcpy(b->c970, Q(970), 16);
+        std::memcpy(b->uv, Q(972), 16);
+        std::memcpy(b->c1008, Q(1008), 16);
+        std::memcpy(b->e1004, Q(1004), 48);
+        std::memcpy(b->c1009, Q(1009), 16);
+        std::memcpy(b->tag1010, Q(1010), 16);
+        std::memcpy(b->tag1011, Q(1011), 16);
+        std::memcpy(b->tag1012, Q(1012), 16);
+        b->facing = ilw(995, 1);
+        b->ifirst = ifirst;
+        b->mirror_on = 0;   /* set 0 has no mirror */
+        if (!env) {   /* loop 0x1458 ignores 1008.z (no renormalise) */
+            u32 z = 0;
+            std::memcpy(&b->c1008[2], &z, 4);
+        }
+        GpuNativeSkinVertex* v = reinterpret_cast<GpuNativeSkinVertex*>(b + 1);
+        u32* adc = reinterpret_cast<u32*>(v + n);
+        const u32 p = top + 1, out = ilw(1017, 0);
+        for (u32 i = 0; i < n; ++i) {
+            std::memcpy(v[i].p, Q(p + i), 16);
+            std::memcpy(v[i].n, Q(p + n + i), 16);
+            std::memcpy(v[i].c, Q(p + 2 * n + i), 16);
+            u32 xw;
+            std::memcpy(&xw, Q(out + 1 + 3 * i + 2) + 12, 4);
+            if (xw & 0x8000) adc[i >> 5] |= 1u << (i & 31);
+        }
+        xsggpu::Native(GPU_NATIVE_SET0_LIT, n, buf.data(), u32(buf.size()));
+    }
+    for (u32 k = 0; k < R->nkick; ++k) {
+        if (vb && env && k == 3 && R->nkick == 6) xsggpu::Native(GPU_NATIVE_SET2_ENV, 0, nullptr, 0);
+        KickRef(R, k);
+    }
+    return true;
+}
+
 void RunVu1(u32 pc) {
     // TOP/ITOP as VIF1 hands them over; then the double buffer flips.
     const u32 top = vif.tops, itop = vif.itops;
@@ -503,7 +605,8 @@ void RunVu1(u32 pc) {
     static bool init = false;
     if (!init) { init = true; xsgvu::SetKick(Path1Kick); }
     static const bool off = xsg_cfg("debug.vu1") && !std::atoi(xsg_cfg("debug.vu1"));
-    if (!off && g_mode == Mode::Gpu && NativeOn() && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop))) return;
+    if (!off && g_mode == Mode::Gpu && NativeOn() && (NativeStrip(pc, top, itop) || NativeSkin(pc, top, itop) ||
+                                                        NativeSet0Lit(pc, top, itop))) return;
     if (!off) xsgvu::Run(pc, top, itop);
 }
 

@@ -146,6 +146,7 @@ XSG_SETTING("debug.wav", "XSG_WAV", "", 0, 0, "Record the mix to this WAV file."
 /* ---- debug: native renderer (xsg-gpu) */
 XSG_SETTING("debug.native_vu1", "XSG_GPU_NATIVE_VU1", "0", "0|1", 0, "Native renderer: interpret VU1 programs.")
 XSG_SETTING("debug.native_skin", "XSG_GPU_NATIVE_SKIN", "1", "0|1", 0, "Native renderer: GPU skinning.")
+XSG_SETTING("debug.native_set0_lit", "XSG_GPU_NATIVE_SET0_LIT", "1", "0|1", 0, "Native renderer: set-0 lit loops (0x1458, 0x1fa0).")
 XSG_SETTING("debug.native_live", "XSG_GPU_NATIVE_LIVE", "", 0, 0, "0: native renderer shots only.")
 XSG_SETTING("debug.native_thr", "XSG_GPU_NATIVE_THR", "", 0, 0, "Native renderer threshold.")
 XSG_SETTING("debug.native_dir", "XSG_GPU_NATIVE_DIR", "", 0, 0, "Native renderer shot folder.")
