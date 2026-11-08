@@ -4648,7 +4648,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DBB70",
+          "end": "0x004DBB68",
           "ordinal": 215,
           "piece": "sdv",
           "start": "0x004DBB5C",
@@ -4659,7 +4659,7 @@
           "end": "0x004DBB78",
           "ordinal": 220,
           "piece": "m_ef_obj",
-          "start": "0x004DBB70",
+          "start": "0x004DBB68",
           "tu": "m_ef_obj"
         },
         {
@@ -4968,7 +4968,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DC488",
+          "end": "0x004DC480",
           "ordinal": 106,
           "piece": "nml_model_set",
           "start": "0x004DC3E0",
@@ -4976,10 +4976,10 @@
         },
         {
           "c_split": false,
-          "end": "0x004DC4D4",
+          "end": "0x004DC4D0",
           "ordinal": 107,
           "piece": "nml_packet_add",
-          "start": "0x004DC488",
+          "start": "0x004DC480",
           "tu": "nml_packet_add"
         },
         {
@@ -4987,7 +4987,7 @@
           "end": "0x004DC4D8",
           "ordinal": 109,
           "piece": "face_point",
-          "start": "0x004DC4D4",
+          "start": "0x004DC4D0",
           "tu": "face_point"
         }
       ],
@@ -29239,20 +29239,20 @@
           ],
           "bounds": [
             "0x004DC3CC",
-            "0x004DC488"
+            "0x004DC480"
           ],
-          "end": "0x004DC488",
+          "end": "0x004DC480",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DC488",
+              "end": "0x004DC480",
               "name": "nml_model_set",
               "start": "0x004DC3E0"
             }
           ],
           "rule": "anchored start",
-          "size": 168,
+          "size": 160,
           "splat_type": "sdata",
           "start": "0x004DC3E0"
         }
@@ -30006,27 +30006,27 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DC488",
+            "0x004DC480",
             "0x004DC4C9"
           ],
           "bounds": [
             "0x004DC479",
-            "0x004DC4D4"
+            "0x004DC4D0"
           ],
-          "end": "0x004DC4D4",
+          "end": "0x004DC4D0",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DC4D4",
+              "end": "0x004DC4D0",
               "name": "nml_packet_add",
-              "start": "0x004DC488"
+              "start": "0x004DC480"
             }
           ],
-          "rule": "anchored start",
-          "size": 76,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 80,
           "splat_type": "sdata",
-          "start": "0x004DC488"
+          "start": "0x004DC480"
         }
       },
       "shared_contract": {
@@ -30740,7 +30740,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DC4D4",
+            "0x004DC4D0",
             "0x004DC4D8"
           ],
           "bounds": [
@@ -30754,13 +30754,13 @@
               "c_split": false,
               "end": "0x004DC4D8",
               "name": "face_point",
-              "start": "0x004DC4D4"
+              "start": "0x004DC4D0"
             }
           ],
-          "rule": "anchored start",
-          "size": 4,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 8,
           "splat_type": "sdata",
-          "start": "0x004DC4D4"
+          "start": "0x004DC4D0"
         }
       },
       "shared_contract": {
@@ -63922,7 +63922,7 @@
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".sdata": "asm",
         ".text": "c"
       },
@@ -66181,20 +66181,20 @@
           ],
           "bounds": [
             "0x004DBB49",
-            "0x004DBB70"
+            "0x004DBB68"
           ],
-          "end": "0x004DBB70",
+          "end": "0x004DBB68",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DBB70",
+              "end": "0x004DBB68",
               "name": "sdv",
               "start": "0x004DBB5C"
             }
           ],
           "rule": "anchored start",
-          "size": 20,
+          "size": 12,
           "splat_type": "sdata",
           "start": "0x004DBB5C"
         }
@@ -67411,7 +67411,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DBB70",
+            "0x004DBB68",
             "0x004DBB74"
           ],
           "bounds": [
@@ -67425,13 +67425,13 @@
               "c_split": false,
               "end": "0x004DBB78",
               "name": "m_ef_obj",
-              "start": "0x004DBB70"
+              "start": "0x004DBB68"
             }
           ],
-          "rule": "anchored start",
-          "size": 8,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 16,
           "splat_type": "sdata",
-          "start": "0x004DBB70"
+          "start": "0x004DBB68"
         }
       },
       "shared_contract": {

@@ -1,7 +1,7 @@
 #include "common.h"
 #include "shared.h"
 
-static int s_nIgnoreCulling = 0;
+static int s_nIgnoreCulling;
 
 typedef int s32;
 
@@ -1439,8 +1439,6 @@ extern const char D_004D49A8[16];
 extern const char D_004D49B8[16];
 extern const char D_004D49C8[16];
 extern const char D_004D49D8[16];
-/* The empty name ending the table: a string the original stores in nml_packet_add .sdata. */
-extern const char D_004DC4D0[];
 
 static CullingMapEntry s_aCullingMap[70] __attribute__((section(".rodata"))) = {
     { D_004D49D8, (s32)s_aMapCullingVok03, (s32)s_aMapLastVok03 },
@@ -1512,8 +1510,10 @@ static CullingMapEntry s_aCullingMap[70] __attribute__((section(".rodata"))) = {
     { D_004D45B8, 0, (s32)s_aMapLastKas31 },
     { D_004D45A8, 0, (s32)s_aMapLastUtk04 },
     { D_004D4598, 0, (s32)s_aMapLastUtk05 },
-    { D_004DC4D0, 0, 0 }
+    { "", 0, 0 }
 };
+
+static int s_nIgnoreCulling = 0;
 
 const char D_004D4598[16] = "MC_UTK05";
 const char D_004D45A8[16] = "MC_UTK04";

@@ -919,7 +919,7 @@ segments:
       - [0x2DCA90, sdata, srs]
       - [0x2DCB30, sdata, sc_get]
       - [0x2DCB5C, sdata, sdv]
-      - [0x2DCB70, sdata, m_ef_obj]
+      - [0x2DCB68, sdata, m_ef_obj]
       - [0x2DCB78, sdata, sef_print]
       - [0x2DCFD0, sdata, init_class_db]
       - [0x2DCFDC, sdata, string_utf_get_hash]
@@ -959,8 +959,8 @@ segments:
       - [0x2DD3B4, sdata, Undulate]
       - [0x2DD3C0, sdata, xgl_render]
       - [0x2DD3E0, sdata, nml_model_set]
-      - [0x2DD488, sdata, nml_packet_add]
-      - [0x2DD4D4, sdata, face_point]
+      - [0x2DD480, sdata, nml_packet_add]
+      - [0x2DD4D0, sdata, face_point]
       - { type: sbss, vram: 0x004DC500, name: game }
       - { type: sbss, vram: 0x004DC51C, name: game_camera }
       - { type: sbss, vram: 0x004DC528, name: look_at_player }

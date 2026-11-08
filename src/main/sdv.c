@@ -637,7 +637,6 @@ void sdvScheduleCamera(SdvCameraTask *task)
     }
 }
 
-extern float D_004D836C;
 extern void *sefGetNowScheduler(void);
 extern void MMathMulMatrix(void *, void *, void *);
 extern void MMathApplyMatrix(void *, void *, void *);
@@ -664,7 +663,7 @@ static int sdvTransOffset(int *out, void *src, void *mtx, unsigned short *arg3)
     }
     sched = sefGetNowScheduler();
     __asm__ __volatile__("lqc2 vf1, 0(%0)\n\tvitof0.xyzw vf1, vf1\n\tsqc2 vf1, 0(%1)" : : "r"(src), "r"(tmp) : "memory");
-    tmp[2] *= D_004D836C;
+    tmp[2] *= 0.01f;
     tmp[3] = 1.0f;
     sefGetPosition(pos, tmp, type);
     if (*(int *)(sched + 0xA8C) & 2) {

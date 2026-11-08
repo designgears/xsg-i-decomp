@@ -1549,19 +1549,114 @@
    ]
   },
   "main/tu106": {
+   ".data": [
+    {
+     "range": [
+      "0x004a9140",
+      "0x004a9500"
+     ],
+     "generated": [
+      "0x004a9140",
+      "0x004a9500"
+     ],
+     "generated_by": [
+      "AlphaGroupSortEntry",
+      "CONSTRUCT_MODELSYSTEM",
+      "nmlModelCalcDropShadow",
+      "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryPartsClip",
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
+      "nmlModelCalcSample",
+      "nmlModelCalcSpecularClip",
+      "nmlModelClear",
+      "nmlModelConstruct",
+      "nmlModelDirectXtxSub",
+      "nmlModelEntry",
+      "nmlModelEntryCard",
+      "nmlModelEntryEffect",
+      "nmlModelFlush",
+      "nmlModelFlushSubAlpha",
+      "nmlModelFlushSubNonAlpha",
+      "nmlModelGetFogPara",
+      "nmlModelGetFogParaStudio",
+      "nmlModelInit",
+      "nmlModelLexBlockDoit",
+      "nmlModelSetAlpha",
+      "nmlModelSetAxisSymmetry",
+      "nmlModelSetFaceModel",
+      "nmlModelSetFilter",
+      "nmlModelSetFogCancel",
+      "nmlModelSetFogCol",
+      "nmlModelSetFogDist",
+      "nmlModelSetGlobalFogCol",
+      "nmlModelSetGlobalFogDist",
+      "nmlModelSetGlobalFogReset",
+      "nmlModelSetGlobalPointLight",
+      "nmlModelSetGlobalPointLightCol",
+      "nmlModelSetGlobalPointLightPos",
+      "nmlModelSetGlobalPointLightReset",
+      "nmlModelSetHumanModel",
+      "nmlModelSetLight",
+      "nmlModelSetMapEntry",
+      "nmlModelSetMapShadowParts",
+      "nmlModelSetMatrix",
+      "nmlModelSetMulColor",
+      "nmlModelSetPartsPixelAlpha",
+      "nmlModelSetPixelAlpha",
+      "nmlModelSetPlace",
+      "nmlModelSetPointLight",
+      "nmlModelSetProreal",
+      "nmlModelSetReflTransparency",
+      "nmlModelSetRenderLevel",
+      "nmlModelSetRenderStatus",
+      "nmlModelSetScale",
+      "nmlModelSetShadowHeight",
+      "nmlModelSetShadowMapEntry",
+      "nmlModelSetSpecularOff",
+      "nmlModelSetStencil",
+      "nmlModelSetTexMap",
+      "nmlModelSetTexProreal",
+      "nmlModelSetTexfunc",
+      "nmlModelSetTexture",
+      "nmlModelSetToumei",
+      "nmlModelSetTransparency",
+      "nmlModelSetWindow",
+      "nmlModelSetZwrite",
+      "nmlModelStealthEntry",
+      "nmlModelUseSubWindow"
+     ],
+     "c_owned_symbols": [
+      "s_aShapeMathPara",
+      "D_004A9168",
+      "TestEnv_0_004A9170",
+      "g_aSubWindow",
+      "s_inLayout"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_model_set.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d88d8",
-      "0x004d88fc"
+      "0x004d8940"
      ],
      "generated": [
       "0x004d88d8",
-      "0x004d88fc"
+      "0x004d8940"
      ],
      "generated_by": [
       "nmlModelAskNonLinearCamera",
+      "nmlModelCalcDropShadow",
       "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
       "nmlModelCalcSample",
       "nmlModelCalcSpecularClip",
       "nmlModelLexBlockDoit",
@@ -1576,83 +1671,15 @@
       "D_004D88EC",
       "D_004D88F0",
       "D_004D88F4",
-      "D_004D88F8"
-     ],
-     "also_referenced_by_c": [
-      "D_004D88FC"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8900",
-      "0x004d8904"
-     ],
-     "generated": [
-      "0x004d8900",
-      "0x004d8904"
-     ],
-     "generated_by": [
-      "nmlModelCalcSpecularClip"
-     ],
-     "c_owned_symbols": [
-      "D_004D8900"
-     ],
-     "also_referenced_by_c": [
+      "D_004D88F8",
+      "D_004D88FC",
+      "D_004D8900",
       "D_004D8904",
-      "D_004D8908"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d890c",
-      "0x004d8918"
-     ],
-     "generated": [
-      "0x004d890c",
-      "0x004d8918"
-     ],
-     "generated_by": [
-      "nmlModelCalcSpecularClip"
-     ],
-     "c_owned_symbols": [
+      "D_004D8908",
       "D_004D890C",
       "D_004D8910",
-      "D_004D8914"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8918"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d891c",
-      "0x004d8940"
-     ],
-     "generated": [
-      "0x004d891c",
-      "0x004d8940"
-     ],
-     "generated_by": [
-      "nmlModelCalcDropShadow",
-      "nmlModelCalcEntryProjectCircle",
-      "nmlModelCalcEntryProjectMap"
-     ],
-     "c_owned_symbols": [
+      "D_004D8914",
+      "D_004D8918",
       "D_004D891C",
       "D_004D8920",
       "D_004D8924",
@@ -1664,9 +1691,7 @@
       "D_004D893C"
      ],
      "also_referenced_by_c": [
-      "D_004D8940",
-      "D_004D8944",
-      "D_004D8948"
+      "D_004D8940"
      ],
      "basis": {
       "kind": "derived",
@@ -1676,17 +1701,21 @@
     },
     {
      "range": [
-      "0x004d894c",
+      "0x004d8944",
       "0x004d8950"
      ],
      "generated": [
-      "0x004d894c",
+      "0x004d8944",
       "0x004d8950"
      ],
      "generated_by": [
-      "nmlModelRenderCircle"
+      "nmlModelEntry",
+      "nmlModelRenderCircle",
+      "nmlModelRenderTexture"
      ],
      "c_owned_symbols": [
+      "D_004D8944",
+      "D_004D8948",
       "D_004D894C"
      ],
      "also_referenced_by_c": [],
@@ -1701,68 +1730,28 @@
     {
      "range": [
       "0x004d2800",
-      "0x004d2820"
+      "0x004d2910"
      ],
      "generated": [
       "0x004d2800",
-      "0x004d2820"
+      "0x004d2910"
      ],
      "generated_by": [
-      "nmlModelSendSignalMovieFinish"
+      "nmlModelCalcEntryProjectCircle",
+      "nmlModelCalcEntryProjectMap",
+      "nmlModelCalcSample",
+      "nmlModelDirectSend",
+      "nmlModelLexDataCheck",
+      "nmlModelSendSignalMovieFinish",
+      "nmlModelSetProreal"
      ],
      "c_owned_symbols": [
-      "jtbl_004D2800"
-     ],
-     "also_referenced_by_c": [
-      "D_004D2820"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d2830",
-      "0x004d2890"
-     ],
-     "generated": [
-      "0x004d2830",
-      "0x004d2890"
-     ],
-     "generated_by": [
-      "nmlModelDirectSend"
-     ],
-     "c_owned_symbols": [
+      "jtbl_004D2800",
+      "D_004D2820",
       "jtbl_004D2830",
-      "jtbl_004D2860"
-     ],
-     "also_referenced_by_c": [
-      "D_004D2890"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/nml_model_set.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d28a0",
-      "0x004d28b0"
-     ],
-     "generated": [
-      "0x004d28a0",
-      "0x004d28a9"
-     ],
-     "generated_by": [
-      "nmlModelCalcSample"
-     ],
-     "c_owned_symbols": [
-      "D_004D28A0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004D2860",
+      "D_004D2890",
+      "D_004D28A0",
       "D_004D28B0",
       "D_004D28C0",
       "D_004D28D0",
@@ -1770,6 +1759,121 @@
       "D_004D28F0",
       "D_004D2900"
      ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/nml_model_set.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc3e0",
+      "0x004dc480"
+     ],
+     "generated": [
+      "0x004dc3e0",
+      "0x004dc47c"
+     ],
+     "generated_by": [
+      "AlphaGroupLastEntry",
+      "AlphaGroupSortEntry",
+      "CLEAR_MODEL_ENTRY",
+      "CONSTRUCT_CIRCLR_SHADOW",
+      "CONSTRUCT_MODELSYSTEM",
+      "CONSTRUCT_PARENT_BUF",
+      "FLUSH_MODELSYSTEM",
+      "FLUSH_PARENT_BUF",
+      "is_block_last_entry",
+      "is_parts_transparency",
+      "nmlFadePacketWrite",
+      "nmlModelAskNonLinearCamera",
+      "nmlModelCalcDropShadow",
+      "nmlModelCalcEntryClip",
+      "nmlModelCalcEntryProjectMap",
+      "nmlModelCalcSpecularClip",
+      "nmlModelDirectSend",
+      "nmlModelDirectSendXtx",
+      "nmlModelEntry",
+      "nmlModelEntryCard",
+      "nmlModelEntryEffect",
+      "nmlModelFlush",
+      "nmlModelFlushSub",
+      "nmlModelFlushSubAlpha",
+      "nmlModelFlushSubNonAlpha",
+      "nmlModelGetMenuStatus",
+      "nmlModelGetRenderCancel",
+      "nmlModelLexBlockDoit",
+      "nmlModelRenderDrop",
+      "nmlModelRenderTexture",
+      "nmlModelSendBackBufferSignal",
+      "nmlModelSendMenuEnd",
+      "nmlModelSendMenuStart",
+      "nmlModelSendPacketChangeSignal",
+      "nmlModelSendPauseSignal",
+      "nmlModelSendSignalEventFinish",
+      "nmlModelSendSignalStartBattle",
+      "nmlModelSetClip",
+      "nmlModelSetEffectWrite",
+      "nmlModelSetFadeDoit",
+      "nmlModelSetFilter",
+      "nmlModelSetMapClip",
+      "nmlModelSetMapLastEntry",
+      "nmlModelSetMapLastInit",
+      "nmlModelSetMapShadowParts",
+      "nmlModelSetParent",
+      "nmlModelSetPartsVisible",
+      "nmlModelSetShadowVec",
+      "nmlModelSetShapeId",
+      "nmlModelSetSortOffset",
+      "nmlModelSetToumeiParts",
+      "parent_buf_entry",
+      "parent_buf_search",
+      "set_group_status"
+     ],
+     "c_owned_symbols": [
+      "s_pMapLast",
+      "s_nCircleShadow",
+      "s_nParentBuf",
+      "s_nToumeiNum",
+      "s_nShadowVec",
+      "s_nMapShadowParts",
+      "s_fSortOffsetEntry",
+      "s_fSortOffset",
+      "s_nParent",
+      "s_nClip",
+      "s_nShapeNum",
+      "s_nDispVisible",
+      "s_nMapClip",
+      "s_nStencilVal",
+      "s_nCount",
+      "s_nPacketSignal",
+      "s_nModel",
+      "s_nBlocks",
+      "s_nDirect",
+      "s_nBlocksAlpha",
+      "s_nBlocksAlphaLast",
+      "s_nAnotherStudio",
+      "s_nUseStealth",
+      "s_nUseGnosys",
+      "s_nUseZwrite",
+      "s_nUseBackBuffer",
+      "s_nMapAlphaEntry",
+      "s_nEffectWrite",
+      "s_nMapLast",
+      "s_nFadeDoit",
+      "s_nPause",
+      "s_nMenu",
+      "s_nFrameLockOff",
+      "s_nMainCameraWarp",
+      "s_nRenderCancel",
+      "s_nRenderCancelOld",
+      "D_004DC470",
+      "D_004DC478"
+     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -1852,11 +1956,11 @@
    ".sdata": [
     {
      "range": [
-      "0x004dc488",
+      "0x004dc480",
       "0x004dc4d0"
      ],
      "generated": [
-      "0x004dc488",
+      "0x004dc480",
       "0x004dc4cd"
      ],
      "generated_by": [
@@ -1865,14 +1969,34 @@
       "nmlPacketAddFog",
       "nmlPacketAddGifTag",
       "nmlPacketAddGifTagStandard",
+      "nmlPacketAddGsAlpha",
+      "nmlPacketAddGsAlpha1",
+      "nmlPacketAddGsClamp",
+      "nmlPacketAddGsFBA",
+      "nmlPacketAddGsFBA1",
+      "nmlPacketAddGsFba",
       "nmlPacketAddGsFlush",
       "nmlPacketAddGsFlushWide",
+      "nmlPacketAddGsFogCol",
+      "nmlPacketAddGsFrame",
+      "nmlPacketAddGsFrame1",
+      "nmlPacketAddGsPAbe",
+      "nmlPacketAddGsPixeltest",
+      "nmlPacketAddGsPixeltest1",
+      "nmlPacketAddGsPrmode",
+      "nmlPacketAddGsPrmodecont",
+      "nmlPacketAddGsScissor",
+      "nmlPacketAddGsScissor1",
+      "nmlPacketAddGsTexture",
+      "nmlPacketAddGsZbuf",
+      "nmlPacketAddGsZbuf1",
       "nmlPacketAddParts",
       "nmlPacketAddPixelControl",
       "nmlPacketAddPixelTestPacket",
       "nmlPacketAddReflRot",
       "nmlPacketAddReflectParam",
       "nmlPacketAddScreen",
+      "nmlPacketAddScreenClear",
       "nmlPacketAddTexture",
       "nmlPacketAddTextureParam",
       "nmlPacketAddTransData",
@@ -1882,6 +2006,8 @@
       "nmlPacketClrModelCache",
       "nmlPacketClrTextureCache",
       "nmlPacketDirectData",
+      "nmlPacketGsInit",
+      "nmlPacketMakeCircleTexture",
       "nmlPacketSendCircleTexture",
       "nmlPacketSetAttributeAlloc16N",
       "nmlPacketSetAttributeData",
@@ -1889,9 +2015,13 @@
       "nmlPacketSetAttributeData64",
       "nmlPacketSetAttributeData64N",
       "nmlPacketSetCurrent",
-      "nmlPacketTextureTrans"
+      "nmlPacketTextureTrans",
+      "packet_gs_entry32",
+      "packet_gs_entry64"
      ],
      "c_owned_symbols": [
+      "g_nPacketOver",
+      "g_nGsEntry",
       "s_pPacket",
       "s_pCacheTexture",
       "s_pMatrixCache",
@@ -2159,23 +2289,29 @@
    ".sdata": [
     {
      "range": [
-      "0x004dc4d4",
+      "0x004dc4d0",
       "0x004dc4d8"
      ],
      "generated": [
-      "0x004dc4d4",
+      "0x004dc4d0",
       "0x004dc4d8"
      ],
      "generated_by": [
+      "check_culling_map",
       "xglCullingCheck",
       "xglCullingIgnore",
       "xglCullingIgnoreOff",
-      "xglCullingMapInit"
+      "xglCullingMapInit",
+      "xglCullingMapSet"
      ],
      "c_owned_symbols": [
+      "D_004DC4D0",
       "s_nIgnoreCulling"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DC4D0": "s_aCullingMap"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -15717,76 +15853,35 @@
     {
      "range": [
       "0x004d82d8",
-      "0x004d82dc"
+      "0x004d8358"
      ],
      "generated": [
       "0x004d82d8",
-      "0x004d82dc"
+      "0x004d8358"
      ],
      "generated_by": [
+      "sefAddLightActor",
+      "sefAnalyzeAnim",
+      "sefCalcRotChange",
+      "sefCreateParticle",
+      "sefDeg2RadVector",
+      "sefExecLineData",
+      "sefExecLineLocalData",
+      "sefGetCirclePos",
+      "sefGetCubePos",
+      "sefGetCubePosBtm",
+      "sefGetOfsRange",
+      "sefInitLineData",
+      "sefLerpFloat",
+      "sefLerpVectorSC",
       "sefRandf"
      ],
      "c_owned_symbols": [
-      "sef_rand_unit_scale_literal"
-     ],
-     "also_referenced_by_c": [
-      "D_004D82B4",
-      "D_004D82B8",
-      "D_004D82BC",
-      "D_004D82C0",
-      "D_004D82C4",
-      "D_004D82C8",
-      "D_004D82CC",
-      "D_004D82D0",
-      "D_004D82D4",
-      "effect_scale_literal_0_1"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d82e0",
-      "0x004d82e8"
-     ],
-     "generated": [
-      "0x004d82e0",
-      "0x004d82e8"
-     ],
-     "generated_by": [
-      "sefLerpFloat"
-     ],
-     "c_owned_symbols": [
+      "sef_rand_unit_scale_literal",
+      "effect_scale_literal_0_1",
       "D_004D82E0",
-      "D_004D82E4"
-     ],
-     "also_referenced_by_c": [
-      "circle_angle_scale_literal"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d82ec",
-      "0x004d8318"
-     ],
-     "generated": [
-      "0x004d82ec",
-      "0x004d8318"
-     ],
-     "generated_by": [
-      "sefGetCubePos",
-      "sefGetCubePosBtm",
-      "sefGetOfsRange"
-     ],
-     "c_owned_symbols": [
+      "D_004D82E4",
+      "circle_angle_scale_literal",
       "D_004D82EC",
       "D_004D82F0",
       "D_004D82F4",
@@ -15797,73 +15892,34 @@
       "D_004D8308",
       "D_004D830C",
       "D_004D8310",
-      "D_004D8314"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8318"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d831c",
-      "0x004d8338"
-     ],
-     "generated": [
-      "0x004d831c",
-      "0x004d8338"
-     ],
-     "generated_by": [
-      "sefAnalyzeAnim",
-      "sefExecLineLocalData",
-      "sefInitLineData"
-     ],
-     "c_owned_symbols": [
+      "D_004D8314",
+      "D_004D8318",
       "D_004D831C",
       "D_004D8320",
       "D_004D8324",
       "D_004D8328",
       "D_004D832C",
       "D_004D8330",
-      "D_004D8334"
-     ],
-     "also_referenced_by_c": [
-      "D_004D8338"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sef.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d833c",
-      "0x004d8354"
-     ],
-     "generated": [
-      "0x004d833c",
-      "0x004d8354"
-     ],
-     "generated_by": [
-      "sefAddLightActor",
-      "sefCreateParticle",
-      "sefExecLineData"
-     ],
-     "c_owned_symbols": [
+      "D_004D8334",
+      "D_004D8338",
       "D_004D833C",
       "D_004D8340",
       "D_004D8344",
       "D_004D8348",
       "D_004D834C",
-      "D_004D8350"
+      "D_004D8350",
+      "lit4_004d8354"
      ],
      "also_referenced_by_c": [
-      "lit4_004d8354"
+      "D_004D82B4",
+      "D_004D82B8",
+      "D_004D82BC",
+      "D_004D82C0",
+      "D_004D82C4",
+      "D_004D82C8",
+      "D_004D82CC",
+      "D_004D82D0",
+      "D_004D82D4"
      ],
      "basis": {
       "kind": "derived",
@@ -16519,45 +16575,25 @@
     {
      "range": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated": [
       "0x004d835c",
-      "0x004d836c"
+      "0x004d8374"
      ],
      "generated_by": [
+      "sdvDrawAlter",
       "sdvProgressPrm",
       "sdvSetCameraOffset",
-      "sdvSetCameraParam"
+      "sdvSetCameraParam",
+      "sdvTransOffset"
      ],
      "c_owned_symbols": [
       "D_004D835C",
       "D_004D8360",
       "D_004D8364",
-      "D_004D8368"
-     ],
-     "also_referenced_by_c": [
-      "D_004D836C"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/sdv.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated": [
-      "0x004d8370",
-      "0x004d8374"
-     ],
-     "generated_by": [
-      "sdvDrawAlter"
-     ],
-     "c_owned_symbols": [
+      "D_004D8368",
+      "D_004D836C",
       "D_004D8370"
      ],
      "also_referenced_by_c": [],
@@ -16730,11 +16766,11 @@
    ".sdata": [
     {
      "range": [
-      "0x004dbb70",
+      "0x004dbb68",
       "0x004dbb74"
      ],
      "generated": [
-      "0x004dbb70",
+      "0x004dbb68",
       "0x004dbb74"
      ],
      "generated_by": [
@@ -16746,6 +16782,7 @@
       "MEfObjInit"
      ],
      "c_owned_symbols": [
+      "moneyBox",
       "mefObjSysFlags"
      ],
      "also_referenced_by_c": [],

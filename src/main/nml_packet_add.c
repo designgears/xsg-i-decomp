@@ -2412,6 +2412,9 @@ void nmlPacketAddGsPrmodecont(u64 prmode_control)
     g_nGsEntry++;
 }
 
+/* Packet-builder globals (g_nPacketOver is read and set by nml_model_set). */
+int g_nPacketOver = 0;
+int g_nGsEntry = 0;
 static XglPacket *s_pPacket = 0;
 static void *s_pCacheTexture = 0;
 static void *s_pMatrixCache = 0;
