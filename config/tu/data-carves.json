@@ -9073,55 +9073,10 @@
     {
      "range": [
       "0x004c3a90",
-      "0x004c3d48"
-     ],
-     "generated": [
-      "0x004c3a90",
-      "0x004c3d48"
-     ],
-     "generated_by": [
-      "FileSlotNameGet",
-      "MenuFilePas"
-     ],
-     "c_owned_symbols": [
-      "D_004C3A90",
-      "D_004C3AA0",
-      "D_004C3AB8",
-      "D_004C3AD0",
-      "jtbl_004C3AF0"
-     ],
-     "also_referenced_by_c": [
-      "D_004C3D48",
-      "D_004C3DF0",
-      "D_004C3EA0",
-      "D_004C4018",
-      "D_004C40E0",
-      "D_004C41B0",
-      "D_004C4290",
-      "D_004C42E8",
-      "D_004C4310",
-      "D_004C4418",
-      "D_004C45E0"
-     ],
-     "reached_through": {
-      "D_004C3A90": "name_0_0036D628",
-      "D_004C3AA0": "msg00_1_0036D638",
-      "D_004C3AB8": "msg00_1_0036D638",
-      "D_004C3AD0": "msg00_1_0036D638"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c45f0",
       "0x004c4de0"
      ],
      "generated": [
-      "0x004c45f0",
+      "0x004c3a90",
       "0x004c4ddd"
      ],
      "generated_by": [
@@ -9129,11 +9084,65 @@
       "MenuFile",
       "MenuFileInfo",
       "MenuFileMain",
+      "MenuFilePas",
       "tskFileData",
-      "tskFileEx",
       "tskFileSelect"
      ],
      "c_owned_symbols": [
+      "D_004C3A90",
+      "D_004C3AA0",
+      "D_004C3AB8",
+      "D_004C3AD0",
+      "jtbl_004C3AF0",
+      "D_004C3D48",
+      "D_004C3D58",
+      "D_004C3DA0",
+      "D_004C3DC0",
+      "D_004C3DF0",
+      "D_004C3E00",
+      "D_004C3E28",
+      "D_004C3E50",
+      "D_004C3E78",
+      "D_004C3EA0",
+      "D_004C3EF8",
+      "D_004C3F38",
+      "D_004C3F58",
+      "D_004C3F88",
+      "D_004C3FA0",
+      "D_004C3FD0",
+      "D_004C4000",
+      "D_004C4018",
+      "D_004C4048",
+      "D_004C4088",
+      "D_004C40A0",
+      "D_004C40E0",
+      "D_004C40F0",
+      "D_004C4100",
+      "D_004C4140",
+      "D_004C4150",
+      "D_004C4180",
+      "D_004C41B0",
+      "D_004C41C8",
+      "D_004C41F0",
+      "D_004C4220",
+      "D_004C4238",
+      "D_004C4250",
+      "D_004C4278",
+      "D_004C4290",
+      "D_004C42B0",
+      "D_004C42C0",
+      "D_004C42D0",
+      "D_004C42E8",
+      "D_004C4310",
+      "D_004C4368",
+      "D_004C43A8",
+      "D_004C43D8",
+      "D_004C4418",
+      "D_004C4498",
+      "D_004C4500",
+      "D_004C4568",
+      "D_004C45A0",
+      "D_004C45E0",
       "jtbl_004C45F0",
       "D_004C4848",
       "D_004C4858",
@@ -9154,12 +9163,6 @@
       "D_004C4DC8"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "D_004C4848": "msg01_2_0036D650",
-      "D_004C4888": "msg00_4_0036D658",
-      "D_004C4898": "msg00_4_0036D658",
-      "D_004C48A8": "msg00_4_0036D658"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -9171,47 +9174,10 @@
     {
      "range": [
       "0x004da9f8",
-      "0x004daa20"
-     ],
-     "generated": [
-      "0x004da9f8",
-      "0x004daa20"
-     ],
-     "generated_by": [
-      "FileSlotNameGet",
-      "MenuFilePas"
-     ],
-     "c_owned_symbols": [
-      "D_004DA9F8",
-      "D_004DAA00",
-      "D_004DAA08",
-      "D_004DAA10",
-      "D_004DAA18"
-     ],
-     "also_referenced_by_c": [
-      "D_004DAA28",
-      "D_004DAA38"
-     ],
-     "reached_through": {
-      "D_004DA9F8": "name_0_0036D628",
-      "D_004DAA00": "name_0_0036D628",
-      "D_004DAA08": "msg00_1_0036D638",
-      "D_004DAA10": "msg00_1_0036D638",
-      "D_004DAA18": "msg00_1_0036D638"
-     },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/file.o"
-     }
-    },
-    {
-     "range": [
-      "0x004daa40",
       "0x004daab8"
      ],
      "generated": [
-      "0x004daa40",
+      "0x004da9f8",
       "0x004daab8"
      ],
      "generated_by": [
@@ -9235,6 +9201,15 @@
       "tskTskMain"
      ],
      "c_owned_symbols": [
+      "D_004DA9F8",
+      "D_004DAA00",
+      "D_004DAA08",
+      "D_004DAA10",
+      "D_004DAA18",
+      "D_004DAA20",
+      "D_004DAA28",
+      "D_004DAA30",
+      "D_004DAA38",
       "D_004DAA40",
       "D_004DAA48",
       "D_004DAA50",
@@ -9257,11 +9232,6 @@
       "FileObjectDataSystem"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "D_004DAA50": "msg01_2_0036D650",
-      "D_004DAA68": "msg00_5_0036D668",
-      "D_004DAA70": "msg00_5_0036D668"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
