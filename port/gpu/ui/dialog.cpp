@@ -408,15 +408,21 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
             // letter-spaced, as the original's plates
             const float track = ls * 0.22f;
             const ImVec2 lsz = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str());
-            const float tw = lsz.x + track * float(std::max<size_t>(up.size(), 1) - 1);
+            size_t nch = 0;
+            for (unsigned char c : up) nch += (c & 0xc0) != 0x80;
+            const float tw = lsz.x + track * float(std::max<size_t>(nch, 1) - 1);
             float lx = (P(rx + 28, 0).x + P(right, 0).x - tw) * 0.5f;
             const float ly = P(0, ry + rh * 0.5f).y - lsz.y * 0.5f;
             const ImU32 lc = off ? col::kTextOff : IM_COL32(236, 240, 232, 255);
-            char one[2] = {0, 0};
-            for (char ch : up) {
-                one[0] = ch;
-                OutlineText(dl, rf, ls, ImVec2(lx, ly), lc, one, t);
-                lx += rf->CalcTextSizeA(ls, 1e9f, 0, one).x + track;
+            std::string one;   // one UTF-8 character at a time (a multi-byte character must not be split)
+            for (size_t q = 0; q < up.size();) {
+                size_t n = 1;
+                const unsigned char c0 = static_cast<unsigned char>(up[q]);
+                if (c0 >= 0xf0) n = 4; else if (c0 >= 0xe0) n = 3; else if (c0 >= 0xc0) n = 2;
+                one.assign(up, q, n);
+                q += n;
+                OutlineText(dl, rf, ls, ImVec2(lx, ly), lc, one.c_str(), t);
+                lx += rf->CalcTextSizeA(ls, 1e9f, 0, one.c_str()).x + track;
             }
         }
         if (!r.cost.empty()) {   // cost box: ammo, EP cost, AP cost
@@ -497,8 +503,8 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             if (tx.type != GPU_KG_TEXT || tx.y < fr.y || tx.y >= fr.y + 24 || tx.x < fx0 || tx.x >= fx1) continue;
             const std::string u = Decode(tx.text);
             // measured in the plate's own type (a condensed face at 15 px with tracking, KgDraw GPU_KG_TEXT)
-            const float want = (UiFont(kFontLabel, font)->CalcTextSizeA(15.0f * k, 1e9f, 0, u.c_str()).x +
-                                15.0f * k * 0.18f * float(u.size())) / kx + 32.0f;
+            const float want = (UiFont(kFontLabel, font)->CalcTextSizeA(24.0f * k, 1e9f, 0, u.c_str()).x +
+                                24.0f * k * 0.14f * float(u.size())) / kx + 36.0f;
             const int half = std::min(fr.a, std::max(44, int(std::ceil(want * 0.5f))));
             const int delta = 2 * (fr.a - half);
             fr.a = half;
@@ -538,7 +544,7 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             // the original sets names in letter-spaced type: the label face with tracking
             const std::string t = Decode(o.text);
             ImFont* const font = UiFont(kFontLabel, font_in);
-            const float fs = 15.0f * k, track = fs * 0.18f;
+            const float fs = 24.0f * k, track = fs * 0.14f;
             ImVec2 ts = font->CalcTextSizeA(fs, 1e9f, 0, t.c_str());
             ts.x += track * float(t.size() > 0 ? t.size() - 1 : 0);
             float fl = float(o.x) - 2, fr = fl + 10 * float(std::strlen(o.text)) + 4;
@@ -555,11 +561,15 @@ void KgDraw(ImDrawList* dl, ImFont* font_in, float gx, float gy, float gw, float
             {
                 float cx = (l.x + r.x - ts.x) * 0.5f;
                 const float cy = P(x, y + 12).y - ts.y * 0.5f;
-                char one[2] = {0, 0};
-                for (char ch : t) {
-                    one[0] = ch;
-                    OutlineText(dl, font, fs, ImVec2(cx, cy), IM_COL32(236, 240, 232, 255), one, rt);
-                    cx += font->CalcTextSizeA(fs, 1e9f, 0, one).x + track;
+                std::string one;   // one UTF-8 character at a time (a multi-byte character must not be split)
+                for (size_t q = 0; q < t.size();) {
+                    size_t n = 1;
+                    const unsigned char c0 = static_cast<unsigned char>(t[q]);
+                    if (c0 >= 0xf0) n = 4; else if (c0 >= 0xe0) n = 3; else if (c0 >= 0xc0) n = 2;
+                    one.assign(t, q, n);
+                    q += n;
+                    OutlineText(dl, font, fs, ImVec2(cx, cy), IM_COL32(236, 240, 232, 255), one.c_str(), rt);
+                    cx += font->CalcTextSizeA(fs, 1e9f, 0, one.c_str()).x + track;
                 }
             }
             break;
