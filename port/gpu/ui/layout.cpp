@@ -25,9 +25,11 @@ void LayoutBegin(float gx, float gy, float gw, float gh) {
     if (tick++ % 30 == 0) mode = xsgcfg::Get("display.ui_layout");
     if (mode == "wide") {
         const float sw = ImGui::GetIO().DisplaySize.x;
-        const float margin = std::max(8.0f, sw * 0.02f);
-        g_ux0 = std::min(g_ux0, margin);
-        g_ux1 = std::max(g_ux1, sw - margin);
+        // edge UI moves out toward the window's edges, but stays near the picture (at most 72 game
+        // px beyond it, never past a 2% margin), so it reads as part of the scene
+        const float margin = std::max(8.0f, sw * 0.02f), reach = 72.0f * g_kx;
+        g_ux0 = std::max(margin, g_ux0 - reach);
+        g_ux1 = std::min(sw - margin, g_ux1 + reach);
     }
 }
 

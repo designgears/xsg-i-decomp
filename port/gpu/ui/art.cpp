@@ -234,7 +234,7 @@ ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, u
                 Expand(px);
                 // the menu's art (portraits, icons) upscaled 2x: smooth and sharp at high resolutions; uvs stay
                 // normalised, so the bigger page needs no other change
-                if (tw * th <= 1024u * 512u) {
+                if (tw * th <= 1024u * 512u && (texset & 0xff000000u) == 0x5A000000u) {   // menu sets only (battle art changes per frame)
                     std::vector<uint32_t> up = Upscale(px.data(), tw, th, 2, false);
                     t.id = xsgmenu::RenderTexture(t.id, up.data(), tw * 2, th * 2);
                 } else
