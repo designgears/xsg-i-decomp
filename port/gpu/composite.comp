@@ -38,6 +38,19 @@ void main() {
         bool ok;
         if (p.own != 0) {
             ok = gs[2 * p.w * p.h + gi] != 0u;
+            // Silhouettes: the ownership plane is per 1x pixel, so a pixel whose centre
+            // the GS left to the background is wholly GS, a 1x stair step across the
+            // native edge at 4-8x.  Next to a native-owned pixel, take the native sample
+            // where the native render covers this sub-pixel and is not behind the GS Z.
+            if (!ok) {
+                bool edge = false;
+                for (int k = 0; k < 4; ++k) {
+                    ivec2 n = g + ivec2(k == 0 ? -1 : k == 1 ? 1 : 0, k == 2 ? -1 : k == 3 ? 1 : 0);
+                    if (n.x < 0 || n.y < 0 || n.x >= p.w || n.y >= p.h) continue;
+                    edge = edge || gs[2 * p.w * p.h + n.y * p.w + n.x] != 0u;
+                }
+                ok = edge && nd * p.zmul + max(64.0, float(zg) * 2e-4) >= float(zg);
+            }
         } else {
             float eps = max(64.0, float(zg) * 2e-4);
             ok = nd * p.zmul + eps >= float(zg);

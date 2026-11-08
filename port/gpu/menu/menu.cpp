@@ -387,6 +387,36 @@ void TabDisplay(float scale) {
                "(sharp pixels; falls back to fit below 1x).");
     static const char* kFilter[] = {"Linear", "Nearest"};
     opt_choice("display.filter", "Filter", kFilter, "How the picture is scaled to the window: smooth (linear) or sharp (nearest).");
+    opt_group("CRT FILTER");
+    static const char* kCrt[] = {"Off", "Scanlines", "Consumer TV", "Trinitron", "PVM", "Shadow mask"};
+    const std::string crt_before = xsgcfg::Get("display.crt");
+    opt_choice("display.crt", "CRT filter", kCrt,
+               "The picture as on the tube television the game was made for: beams at the PS2's line structure, "
+               "a phosphor mask, glow and a soft composite signal. The game's fonts and HUD were drawn for it.\n"
+               "Scanlines: dark gaps only. Consumer TV: soft composite, slot mask, curved glass. Trinitron: aperture "
+               "grille, sharper. PVM: a studio monitor, crisp lines, fine grille. Shadow mask: dot triads, the most glow.");
+    if (xsgcfg::Get("display.crt") != crt_before)   // a new style: its own tuning
+        for (const char* k : {"display.crt_scanlines", "display.crt_mask", "display.crt_halation", "display.crt_bloom",
+                              "display.crt_curvature"})
+            xsgcfg::Set(k, "-1");
+    const bool crt_on = xsgcfg::Get("display.crt") != "off";
+    if (!crt_on) opt_disable_next("Only with a CRT filter.");
+    opt_slider("display.crt_strength", "CRT strength", 0, 100, 5, "%d%%", "How much of the CRT look is mixed in.");
+    if (!crt_on) opt_disable_next("Only with a CRT filter.");
+    opt_toggle("display.crt_interlace", "Interlace blend",
+               "One beam per field line, averaging the frame's odd and even lines as an interlaced TV did: the "
+               "fonts' striped fill reads solid. Off: one beam per frame line.");
+    static const struct { const char* key; const char* label; const char* desc; } kTune[] = {
+        {"display.crt_scanlines", "Scanlines", "How dark the gaps between beams are. -1: the style's."},
+        {"display.crt_mask", "Phosphor mask", "Strength of the fine pattern of stripes or dots. -1: the style's."},
+        {"display.crt_halation", "Halation", "The wide glow of light scattered in the glass. -1: the style's."},
+        {"display.crt_bloom", "Bloom", "How far bright areas spread softly. -1: the style's."},
+        {"display.crt_curvature", "Curvature", "The screen's bulge. -1: the style's."},
+    };
+    for (const auto& t : kTune) {
+        if (!crt_on) opt_disable_next("Only with a CRT filter.");
+        opt_slider(t.key, t.label, -1, 100, 1, "%d", t.desc);
+    }
     opt_end();
 }
 
@@ -417,10 +447,12 @@ void TabRenderer(float scale) {
     if (xsgcfg::GetInt("renderer.ssaa") < 4) opt_disable_next("Needs super-sampling 4x or more.");
     opt_toggle("renderer.hires_scanout", "High-resolution scanout",
                "Scans out the super-sampled frame at full resolution instead of resolving it to 512 x 448.");
-    opt_group("UPSCALING");
-    opt_disable_next("Not available yet.");
-    opt_info("##dlss", "DLSS / frame generation", "COMING SOON",
-             "DLSS super resolution and frame generation will use the native renderer's motion vectors. Not implemented yet.");
+    opt_group("NEURAL RENDERING");
+    opt_toggle("renderer.neural", "DLSS 5 Neural Rendering",
+               "Re-renders every presented frame with NVIDIA's DLSS 5 neural model for a high-fidelity look "
+               "(through the DLSS5VKLayer Vulkan layer and its Wine/Proton helper). Needs the layer installed and "
+               "nvngx_dlssnr.dll imported (dlssnr-helper import-binaries); without them frames pass through unchanged. "
+               "Style and strength are set in dlssnr-gui (or dlssnr-shmctl).");
     if (RestartPending()) opt_text("Renderer changes apply after a restart: use Restart now below.", true);
     opt_end();
 }
@@ -740,6 +772,50 @@ void OverlayDraw(float scale) {
 }
 
 /* ------------------------------------------------------------- the menu window */
+ImGuiID g_footer_first;   // CONTINUE, where Down from the last option row lands
+ImGuiID g_footer[3];      // CONTINUE, RESTART NOW, QUIT GAME
+ImGuiWindow* g_footer_row_win;
+
+/* Keyboard / gamepad focus for the footer buttons (CONTINUE, RESTART NOW, QUIT
+   GAME).  Down past the last option row has nothing below it inside the rows'
+   scroll area, so ImGui's move request ends without a result: it lands on
+   CONTINUE here.  On the footer, Left/Right step between the buttons and Up goes
+   back to the row it came from (handled here: ImGui's own move requests find
+   nothing from a programmatic focus outside the rows' scope). */
+ImGuiID g_footer_row;   // the option row Down left from
+
+void FooterNav() {
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* menu = ImGui::FindWindowByName("##menu");
+    if (!g_footer[0] || !menu) return;
+    int on = -1;
+    for (int i = 0; i < 3; ++i)
+        if (g_footer[i] && g.NavId == g_footer[i]) on = i;
+    auto pressed = [](ImGuiKey a, ImGuiKey b) { return ImGui::IsKeyPressed(a, true) || ImGui::IsKeyPressed(b, true); };
+    auto focus = [&](ImGuiID id, ImGuiWindow* w) {
+        ImGui::NavMoveRequestCancel();
+        ImGui::SetFocusID(id, w);
+        ImGui::SetNavCursorVisible(true);
+    };
+    if (on >= 0) {
+        if (pressed(ImGuiKey_LeftArrow, ImGuiKey_GamepadDpadLeft)) focus(g_footer[(on + 2) % 3], menu);
+        else if (pressed(ImGuiKey_RightArrow, ImGuiKey_GamepadDpadRight)) focus(g_footer[(on + 1) % 3], menu);
+        else if (pressed(ImGuiKey_UpArrow, ImGuiKey_GamepadDpadUp)) {
+            if (g_footer_row) {
+                ImGui::NavMoveRequestCancel();
+                ImGui::SetFocusID(g_footer_row, g_footer_row_win);
+                ImGui::SetNavCursorVisible(true);
+            }
+        } else if (g.NavMoveDir != ImGuiDir_None) ImGui::NavMoveRequestCancel();   // Down: the bottom row, no wrap
+        return;
+    }
+    if (g.NavMoveDir != ImGuiDir_Down || !g.NavMoveScoringItems || !g.NavWindow) return;
+    if (g.NavMoveResultLocal.ID || g.NavMoveResultLocalVisible.ID || g.NavMoveResultOther.ID) return;
+    g_footer_row = g.NavId;
+    g_footer_row_win = g.NavWindow;
+    focus(g_footer[0], menu);
+}
+
 void Bottom(float scale, float w) {
     float bh = std::round(44 * scale), bw = std::round(190 * scale);
     auto button = [&](const char* id, const char* label, bool accent) {
@@ -756,15 +832,20 @@ void Bottom(float scale, float w) {
         return click;
     };
     if (button("##continue", "CONTINUE", false)) SetOpen(false);
+    g_footer_first = g_footer[0] = ImGui::GetItemID();
     ImGui::SameLine();
     bool pend = RestartPending();
-    if (button("##restart", pend ? "RESTART NOW  *" : "RESTART NOW", pend)) {
+    const bool restart_click = button("##restart", pend ? "RESTART NOW  *" : "RESTART NOW", pend);
+    g_footer[1] = ImGui::GetItemID();
+    if (restart_click) {
         xsgcfg::SaveNow();
         Log("restart: asking the game to restart");
         Publish(true);
     }
     ImGui::SameLine();
-    if (button("##quit", "QUIT GAME", false) && g_host.quit) {
+    const bool quit_click = button("##quit", "QUIT GAME", false);
+    g_footer[2] = ImGui::GetItemID();
+    if (quit_click && g_host.quit) {
         xsgcfg::SaveNow();
         g_host.quit();
     }
@@ -855,6 +936,7 @@ void LayoutMenu(float scale) {
     }
     ImGui::SetCursorScreenPos(ImVec2(tp.x, win->Pos.y + h - ImGui::GetStyle().WindowPadding.y - std::round(44 * scale)));
     Bottom(scale, w);
+    FooterNav();
     // the capture prompt
     if (g_cap) {
         ImVec2 c(win->Pos.x + w * 0.5f, win->Pos.y + h * 0.5f);

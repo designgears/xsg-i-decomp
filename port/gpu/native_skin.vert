@@ -66,13 +66,24 @@ layout(location = 4) out vec4 v_prev;
 
 vec4 Q(bool prev, int i) { return pal.q[(prev ? s.cfg3.x : s.cfg2.w) + i]; }
 
+// VU1 floats have no infinity: results clamp at +-FLT_MAX.  The game parks bones it
+// hides (parts of KOS-MOS's hair, weapons) as matrices of +-FLT_MAX; on the VU those
+// vertices collapse onto the screen offset, in IEEE floats they overflow to inf/NaN
+// and the triangles explode across the screen or vanish.  S() clamps like the VU.
+const float VMAX = 3.4028235e38;
+vec3 S(vec3 v) { return clamp(v, vec3(-VMAX), vec3(VMAX)); }
+vec4 S(vec4 v) { return clamp(v, vec4(-VMAX), vec4(VMAX)); }
+float S(float v) { return clamp(v, -VMAX, VMAX); }
+
 // One bone at qw address a: pos/nrm += w * M (P,1) / M3 N.
 void Bone(bool prev, uint a, float w, vec3 p, vec3 n, inout vec3 pos, inout vec3 nrm) {
     int i = int(a & 0x3ffu) - 732;
     if (i < 0 || i + 3 >= 230 || w == 0.0) return;
     vec4 m0 = Q(prev, i), m1 = Q(prev, i + 1), m2 = Q(prev, i + 2), m3 = Q(prev, i + 3);
-    pos += w * (m0.xyz * p.x + m1.xyz * p.y + m2.xyz * p.z + m3.xyz);
-    nrm += w * (m0.xyz * n.x + m1.xyz * n.y + m2.xyz * n.z);
+    vec3 t = S(S(S(S(m0.xyz * p.x) + S(m1.xyz * p.y)) + S(m2.xyz * p.z)) + m3.xyz);
+    vec3 u = S(S(S(m0.xyz * n.x) + S(m1.xyz * n.y)) + S(m2.xyz * n.z));
+    pos = S(pos + S(w * t));
+    nrm = S(nrm + S(w * u));
 }
 
 void Skin(bool prev, vec3 p, vec3 n, out vec3 pos, out vec3 nrm) {
@@ -102,8 +113,9 @@ void main() {
     vec3 pos, nrm;
     Skin(false, a_p.xyz, a_n.xyz, pos, nrm);
     if ((s.cfg.w & 2) != 0) pos.y = s.mirror.z - pos.y;
-    vec4 clip = s.m[0] * pos.x + s.m[1] * pos.y + s.m[2] * pos.z + s.m[3];
+    vec4 clip = S(S(S(S(s.m[0] * pos.x) + S(s.m[1] * pos.y)) + S(s.m[2] * pos.z)) + s.m[3]);
     float q = 1.0 / clip.w;
+    if (abs(q) < 1.1754944e-38) q = 0.0;   // the VU flushes denormals: such a vertex lands on the offset
 
     // Diffuse: 3 directional lights + ambient, times the material and C.
     vec3 L = max(L3(nrm), vec3(0.0));
@@ -143,12 +155,14 @@ void main() {
     v_st = st;
     v_fog = float(s.cfg2.z);
 
-    vec3 scr = s.offset.xyz + clip.xyz * q * s.scale.xyz;
+    vec3 scr = s.offset.xyz + S(S(clip.xyz * q) * s.scale.xyz);
     scr.xy = trunc(scr.xy * 16.0) / 16.0;
     vec2 px = scr.xy - b.target.xy + 0.5;
     vec2 ndc = px * b.target.zw * 2.0 - 1.0;
     float depth = clamp(floor(scr.z) * b.zscale.x, 0.0, 1.0);
-    gl_Position = vec4(ndc * clip.w, depth * clip.w, clip.w);
+    // A saturated vertex (q flushed to 0) has no usable w: place it in screen space.
+    const float cw = q == 0.0 || abs(clip.w) > 1e30 ? 1.0 : clip.w;
+    gl_Position = vec4(ndc * cw, depth * cw, cw);
 
     // Motion vectors: the same vertex last frame (previous P, palette, matrix).
     v_cur = clip;

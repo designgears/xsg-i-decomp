@@ -8,6 +8,20 @@
 #ifndef PS2_HOST_COMPAT_H
 #define PS2_HOST_COMPAT_H
 
+/* EE FPU division: x/0 is +-FLT_MAX (sign of x xor 0's sign), never inf/NaN, so
+ * expressions like 0 * (1/0) stay finite (0) where IEEE gives NaN.  For host
+ * fixes of game code that divides by a possibly-zero float (PORT_HOST only). */
+static inline float xsg_ee_divf(float a, float b)
+{
+    if (b == 0.0f) {
+        union { float f; unsigned u; } ua = {a}, ub = {b}, r;
+        r.u = ((ua.u ^ ub.u) & 0x80000000u) | 0x7f7fffffu;
+        return r.f;
+    }
+    return a / b;
+}
+
+
 /* Scaffold macros: the PS2 build turns these into .include of MIPS asm.
  * include/include_asm.h already honours SKIP_ASM; define them here too. */
 #ifndef SKIP_ASM

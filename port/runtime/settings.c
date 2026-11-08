@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <strings.h>
 
 extern char **environ;
@@ -49,6 +50,7 @@ static int find(const char *key)
     return -1;
 }
 
+static void read_file(void);
 static void load(void)
 {
     const char *p = getenv("XSG_CONFIG");
@@ -59,10 +61,26 @@ static void load(void)
         snprintf(g_path, sizeof g_path, "%s/xsg/settings.ini", x);
     else
         snprintf(g_path, sizeof g_path, "%s/.config/xsg/settings.ini", h && *h ? h : ".");
+    read_file();
+}
+
+/* Change counter for live settings: bumped by every reload. */
+volatile unsigned xsg_cfg_gen;
+static struct timespec g_mtime;
+
+static void read_file(void)
+{
+    struct stat st;
+    if (stat(g_path, &st) == 0)
+        g_mtime = st.st_mtim;
     FILE *f = fopen(g_path, "r");
     if (!f)
         return;
     g_read = 0;
+    /* A reload: entries no longer in the file go back to their defaults.  The old
+       strings are not freed (another thread may still hold one); a few bytes per save. */
+    for (int i = 0; i < N_ENTRIES; i++)
+        g_val[i] = NULL;
     char line[2048], sec[64] = "";
     while (fgets(line, sizeof line, f)) {
         char *l = trim(line);
@@ -90,11 +108,25 @@ static void load(void)
         int i = find(full);
         if (i < 0)
             continue;   /* bindings ([keyboard], [gamepad]) and unknown keys: xsg-gpu's */
-        free(g_val[i]);
         g_val[i] = strdup(v);
         g_read++;
     }
     fclose(f);
+}
+
+/* The menu (xsg-gpu) saved settings.ini: read it again.  Called once per vblank. */
+int xsg_cfg_poll(void)
+{
+    pthread_once(&g_once, load);
+    struct stat st;
+    if (stat(g_path, &st) != 0)
+        return 0;
+    if (st.st_mtim.tv_sec == g_mtime.tv_sec && st.st_mtim.tv_nsec == g_mtime.tv_nsec)
+        return 0;
+    read_file();
+    __atomic_add_fetch(&xsg_cfg_gen, 1, __ATOMIC_RELEASE);
+    xsg_logf("[settings] %s changed: reloaded (%d settings)\n", g_path, g_read);
+    return 1;
 }
 
 const char *xsg_cfg(const char *key)

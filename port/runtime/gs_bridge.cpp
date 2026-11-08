@@ -278,8 +278,14 @@ void KickRef(const Vu1Ref* R, u32 k) {
     st.p1_qw += kk.nqw;
 }
 
-int NativeOn() {
-    static const int on = xsg_cfg("renderer.native") ? std::atoi(xsg_cfg("renderer.native")) : 0;
+int NativeOn() {   /* live: re-read after each settings.ini reload */
+    static unsigned gen = ~0u;
+    static int on;
+    const unsigned g = __atomic_load_n(&xsg_cfg_gen, __ATOMIC_ACQUIRE);
+    if (g != gen) {
+        gen = g;
+        on = xsg_cfg("renderer.native") ? std::atoi(xsg_cfg("renderer.native")) : 0;
+    }
     return on;
 }
 
@@ -407,6 +413,10 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
     const u32 hx = ilw(top, 0), hy = ilw(top, 1);
     const bool vb = hy != 0x4000 && (hx & 0x7fff);
     const u32 ifirst = R->regs.I;
+    /* The bone palette as the program finds it (a copy after the run would
+       include whatever a long batch's output strip wrote past qw 732). */
+    static u8 pal_in[GPU_SKIN_PAL_NQW * 16];
+    std::memcpy(pal_in, Q(GPU_SKIN_PAL_QW0), sizeof pal_in);
     R->memp = d;
     R->set = 2;
     R->pc = pc;
@@ -425,8 +435,8 @@ bool NativeSkin(u32 pc, u32 top, u32 itop) {
     if (vb) {
         static u8 pal[GPU_SKIN_PAL_NQW * 16];
         static u32 palseq;
-        if (!palseq || std::memcmp(pal, Q(GPU_SKIN_PAL_QW0), sizeof pal)) {
-            std::memcpy(pal, Q(GPU_SKIN_PAL_QW0), sizeof pal);
+        if (!palseq || std::memcmp(pal, pal_in, sizeof pal)) {
+            std::memcpy(pal, pal_in, sizeof pal);
             xsggpu::Native(GPU_NATIVE_SET2_PALETTE, ++palseq, pal, sizeof pal);
         }
         const u32 n = hx & 0x7fff;

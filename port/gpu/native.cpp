@@ -938,15 +938,52 @@ void Shot(uint32_t vsync, ParallelGS::GSInterface& gs) {
     Log("  images: %s/native_%06u_*.png", g_dir.c_str(), vsync);
 }
 
+bool g_ready;   // pipelines, the skin and fx state and the ownership GS exist
+bool InitResources();
+
 }  // namespace
 
+/* The device; the resources are made when the renderer is first turned on
+   (here or from the menu, Apply). */
 bool Init(Vulkan::Device* dev) {
-    const char* e = xsgcfg::CStr("renderer.native");
-    g_on = e && *e && std::strcmp(e, "0") != 0;
-    if (!g_on) return false;
     g_dev = dev;
-    xsgprof::Init();
     if (const char* s = xsgcfg::CStr("renderer.native_scale")) g_scale = std::max(1, std::min(8, std::atoi(s)));
+    const char* e = xsgcfg::CStr("renderer.native");
+    if (!(e && *e && std::strcmp(e, "0") != 0)) return false;
+    if (!InitResources()) return false;
+    g_on = true;
+    return true;
+}
+
+/* Live settings ([renderer] native, native_scale) after a menu change.  Turned on
+   mid-game, the renderer has not followed the GS stream: its upload mirror and the
+   ownership GS start from the main GS's memory, its register mirror refills from
+   the game's next packets (the composite can be off for a frame). */
+void Apply(ParallelGS::GSInterface& gs) {
+    g_scale = std::max(1, std::min(8, xsgcfg::GetInt("renderer.native_scale")));
+    const bool want = xsgcfg::GetBool("renderer.native");
+    if (want == g_on) return;
+    if (!want) {
+        g_on = false;
+        g_live_img.reset();
+        Log("off (menu)");
+        return;
+    }
+    if (!g_ready && !InitResources()) { Log("cannot turn on: resource setup failed"); return; }
+    gs.flush();
+    const uint8_t* v = static_cast<const uint8_t*>(gs.map_vram_read(0, 4u << 20));
+    std::memcpy(g_mem.data(), v, 4u << 20);
+    g_upload_gen++;
+    for (auto& pg : g_page_gen) pg = g_upload_gen;
+    xsgfx::SeedOwn(v);
+    g_on = true;
+    Log("on (menu): scale %dx, state seeded from the GS", g_scale);
+}
+
+namespace {
+bool InitResources() {
+    Vulkan::Device* dev = g_dev;
+    xsgprof::Init();
     if (const char* s = xsgcfg::CStr("debug.native_live"); s && *s) g_live = std::atoi(s) != 0;
     if (const char* s = xsgcfg::CStr("debug.native_thr"); s && *s) g_thr = std::atoi(s);
     if (const char* s = xsgcfg::CStr("debug.native_dir"); s && *s) g_dir = s;
@@ -981,8 +1018,10 @@ bool Init(Vulkan::Device* dev) {
     xsgfx::Init(dev);
     Log("on: set-0 strip batches, scale %dx, live %s, %zu shot vsyncs -> %s", g_scale, g_live ? "on" : "off",
         g_shots.size(), g_dir.c_str());
-    return g_prog != nullptr && g_comp != nullptr;
+    g_ready = g_prog != nullptr && g_comp != nullptr;
+    return g_ready;
 }
+}  // namespace
 
 bool On() { return g_on; }
 
@@ -1151,7 +1190,7 @@ void Batch(uint32_t kind, uint32_t nvert, const uint8_t* payload, uint32_t len) 
     Push(std::move(s));
 }
 
-void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
+void Vsync(uint32_t frame, ParallelGS::GSInterface& gs, bool show) {
     g_last_vsync = frame;
     {
         xsgprof::Scope ps(xsgprof::FxVsync);
@@ -1161,7 +1200,7 @@ void Vsync(uint32_t frame, ParallelGS::GSInterface& gs) {
         xsgprof::Scope ps(xsgprof::Other);
         xsgskin::Vsync(frame);
     }
-    if (g_live) Live(gs);
+    if (g_live && show) Live(gs);
     if (g_shots.count(frame)) Shot(frame, gs);
     if (frame % 600 == 0)
         Log("vsync %u: %llu batches, %llu vertices, %llu live composites so far", frame, (unsigned long long)g_nbatch,
@@ -1187,6 +1226,16 @@ std::vector<uint32_t> DecodeMirrorTexture(uint64_t tex0, uint64_t texa, uint32_t
     return DecodeTexture(g_mem.data(), tex0, texa, w, h);
 }
 uint32_t MirrorGen() { return g_upload_gen; }
+uint32_t TextureGen(uint64_t tex0) {
+    uint32_t p0, np, gen = 0;
+    PageRange(Bits(tex0, 0, 14), std::max(1u, Bits(tex0, 14, 6)), Bits(tex0, 20, 6), 1u << std::min(10u, Bits(tex0, 30, 4)), &p0, &np);
+    for (uint32_t i = 0; i < np; ++i) gen = std::max(gen, g_page_gen[(p0 + i) & 511]);
+    const uint32_t cpage = Bits(tex0, 37, 14) / 32;
+    return std::max(gen, std::max(g_page_gen[cpage & 511], g_page_gen[(cpage + 1) & 511]));
+}
+std::vector<uint32_t> DecodeVramTexture(const uint8_t* vram, uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h) {
+    return DecodeTexture(vram, tex0, texa, w, h);
+}
 
 void ParallelRows(uint32_t h, const std::function<void(uint32_t, uint32_t)>& fn) {
     constexpr uint32_t kThreads = 4;

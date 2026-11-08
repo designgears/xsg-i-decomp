@@ -690,7 +690,13 @@ block_12:
                     }
                 }
                 JNT_setFlags(var_18);
+#ifdef PORT_HOST
+                /* A zero blend length: the EE gives 1/0 = FLT_MAX and 0 * FLT_MAX = 0 (factor 1);
+                   IEEE made 0 * inf = NaN joint matrices (exploding hair and weapons). */
+                JNT_setInterpMatrix(actor->previousJointMatrices, 1.0f - ((anim->blendEndFrame - anim->slot.frame) * xsg_ee_divf(1.0f, *(float *)((char *)anim + 0x24))));
+#else
                 JNT_setInterpMatrix(actor->previousJointMatrices, 1.0f - ((anim->blendEndFrame - anim->slot.frame) * (1.0f / *(float *)((char *)anim + 0x24))));
+#endif
                 JNT_setCurve(actor->staticValueRecords, actor->valueRecords);
             } else {
                 var_5 = 0x8000;

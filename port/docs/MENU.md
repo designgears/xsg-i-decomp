@@ -43,7 +43,7 @@ held while a field is open.
 |---|---|---|---|
 | Display | Fullscreen, Window size, Present mode, Aspect ratio, Scaling, Filter | `[display]` all | live (present: swapchain recreated) |
 | Renderer | GS backend | `[renderer] gs` | restart |
-| | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout` | restart |
+| | Renderer (paraLLEl-GS / native), Native internal scale, Super-sampling, Super-sampled textures, High-resolution scanout | `[renderer] native, native_scale, ssaa, ssaa_textures, hires_scanout, neural` | live |
 | | DLSS / frame generation | — (disabled, "coming soon") | — |
 | Game | FPS limit | `[game] fps_limit` | live (game process) |
 | | Play movies, ffmpeg program | `[game] movies, ffmpeg` | restart |
@@ -181,16 +181,17 @@ environment variable the setting took over; it is no longer read.
 | `[display] scale_mode` | `fit` | fit, integer | live | `XSG_GPU_SCALEMODE` | Fit the window or integer scaling. |
 | `[display] filter` | `linear` | linear, nearest | live | `XSG_GPU_FILTER` | Blit filter. |
 | `[renderer] gs` | `gpu` | gpu, soft, both | restart | `XSG_GS` | GS backend: gpu (xsg-gpu, the menu), soft (software GS, no window/menu), both (compare). |
-| `[renderer] native` | `0` | 0, 1 | restart | `XSG_GPU_NATIVE` | Native Vulkan renderer (NATIVE_RENDERER.md). |
-| `[renderer] native_scale` | `2` | 1..8 | restart | `XSG_GPU_NATIVE_SCALE` | Native renderer internal scale. |
-| `[renderer] ssaa` | `1` | 1, 2, 4, 8, 16 | restart | `XSG_GPU_SSAA` | paraLLEl-GS super-sampling. |
-| `[renderer] ssaa_textures` | `0` | 0, 1 | restart | `XSG_GPU_SSAA_TEX` | Super-sampled textures (SSAA >= 2). |
-| `[renderer] hires_scanout` | `0` | 0, 1 | restart | `XSG_GPU_HIRES` | High-resolution scanout (SSAA >= 4). |
+| `[renderer] native` | `0` | 0, 1 | live | `XSG_GPU_NATIVE` | Native Vulkan renderer (NATIVE_RENDERER.md). |
+| `[renderer] native_scale` | `2` | 1..8 | live | `XSG_GPU_NATIVE_SCALE` | Native renderer internal scale. |
+| `[renderer] neural` | `0` | 0, 1 | live | `XSG_GPU_NEURAL` | DLSS 5 Neural Rendering via DLSS5VKLayer (the layer loads whenever installed; the model is switched through the helper). |
+| `[renderer] ssaa` | `1` | 1, 2, 4, 8, 16 | live | `XSG_GPU_SSAA` | paraLLEl-GS super-sampling. |
+| `[renderer] ssaa_textures` | `0` | 0, 1 | live | `XSG_GPU_SSAA_TEX` | Super-sampled textures (SSAA >= 2). |
+| `[renderer] hires_scanout` | `0` | 0, 1 | live | `XSG_GPU_HIRES` | High-resolution scanout (SSAA >= 4). |
 | `[game] fps_limit` | `60` | 60, 30, 120, uncapped | live | `XSG_FAST` | Vblank rate = game speed; uncapped replaces XSG_FAST=1. |
-| `[game] movies` | `1` | 0, 1 | restart | `XSG_MPEG` | Play the FMV movies (needs ffmpeg). |
-| `[game] ffmpeg` | (empty) | text | restart | `XSG_FFMPEG` | ffmpeg binary for movies (empty: ffmpeg on PATH). |
-| `[game] memcard` | `1` | 0, 1 | restart | `XSG_MC` | Memory card in slot 1. |
-| `[game] memcard_dir` | (empty) | text | restart | `XSG_MC_DIR` | Memory card folder (empty: ~/.local/share/xsg/mc0). |
+| `[game] movies` | `1` | 0, 1 | live | `XSG_MPEG` | Play the FMV movies (needs ffmpeg). |
+| `[game] ffmpeg` | (empty) | text | live | `XSG_FFMPEG` | ffmpeg binary for movies (empty: ffmpeg on PATH). |
+| `[game] memcard` | `1` | 0, 1 | live | `XSG_MC` | Memory card in slot 1. |
+| `[game] memcard_dir` | (empty) | text | live | `XSG_MC_DIR` | Memory card folder (empty: ~/.local/share/xsg/mc0). |
 | `[game] game_dir` | (empty) | text | restart | `XSG_GAME_DIR` | Game data folder with iso/ and extracted-iso/ (empty: build default). |
 | `[game] iso` | (empty) | text | restart | `XSG_ISO` | Disc image path (empty: the first image in <game_dir>/iso). |
 | `[game] elf` | (empty) | text | restart | `XSG_ELF` | SLUS_204.69 path (empty: <game_dir>/extracted-iso/SLUS_204.69). |

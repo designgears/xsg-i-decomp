@@ -59,6 +59,8 @@ size_t PostCount(uint32_t fbp);
 const char* PostTrigger(uint32_t fbp);   // the draw that started the post phase
 /* Record the replay of the post draws on (color, z) at scale s; both images
    in GENERAL layout, and they stay there. */
+/* The renderer turned on mid-game: the ownership GS starts from the main GS memory. */
+void SeedOwn(const uint8_t* vram);
 void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_t h, const Vulkan::Image& color,
             const Vulkan::Image& z);
 /* The PMODE circuit blend over `color`, when the read circuits ask for one. */

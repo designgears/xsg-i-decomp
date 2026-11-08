@@ -661,11 +661,12 @@ static void *audio_thread(void *p)
         int frames = budget > 0 ? (int)budget : 0, gated = 0;
         /* The game clock: the EE feeds streams and starts sounds per game
          * frame, so the IOP must not run ahead of the EE's vblanks (800
-         * samples each, 2 vblanks of slack).  When the game runs at full
+         * samples each, 8 vblanks of slack: a
+         * renderer hitch shorter than ~130 ms no longer gaps the music).  When the game runs at full
          * speed this is the same as real time; when it runs slow, so does
          * the sound, at the right pitch (XSG_SOUND_CLOCK=real: wall clock). */
         if (game_clock) {
-            long long allow = (long long)(xsg_frame - frame0 + 2) * (RATE / 60) - (long long)rendered;
+            long long allow = (long long)(xsg_frame - frame0 + 8) * (RATE / 60) - (long long)rendered;
             if (allow < frames) {
                 frames = allow > 0 ? (int)allow : 0;
                 clock_waits++;

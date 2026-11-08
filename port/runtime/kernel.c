@@ -86,6 +86,7 @@ static void settings_poll(void)
 {
     unsigned fu;
     int on, vol[4];
+    xsg_cfg_poll();   /* live settings the game reads from settings.ini (native renderer, movies, memory card) */
     if (!xsg_gpu_settings_poll(&fu, &on, vol))
         return;
     if (fu != 0xffffffffu && !frame_env) {

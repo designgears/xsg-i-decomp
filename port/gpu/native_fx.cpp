@@ -92,6 +92,8 @@ static_assert(sizeof(GpuPrim) == 4 * (12 + 12 + 4 * 9), "std430 layout");
 struct Tex {
     uint32_t w, h;
     std::vector<uint32_t> px;
+    uint64_t tex0 = 0, texa = 0;
+    bool from_snap = false;   // decoded at Replay from the trigger-time GS memory
     Vulkan::ImageHandle img;
 };
 
@@ -104,6 +106,9 @@ struct PostFrame {
     uint64_t texels = 0;
     uint32_t fbw = 8, psm = 0, zbp = 0, zpsm = 0;
     bool snapped = false;                     // g_snap[fbp] holds the pre-effect VRAM
+    uint32_t trig_gen = 0;                    // upload generation at the trigger
+    std::set<uint32_t> post_drawn;            // other FBPs the GS drew into after the trigger
+    std::map<std::pair<uint64_t, uint64_t>, std::shared_ptr<Tex>> snap_tex;   // one decode per texture
     uint32_t nat_zbp[4], nzbp = 0;            // Z buffers of its native batches (the composite decodes them)
     std::vector<GpuPrim> prims;
     std::vector<std::shared_ptr<Tex>> texs;   // per prim (null: none / frame)
@@ -116,7 +121,9 @@ struct SnapVram {
     std::vector<uint8_t> main, own;
 };
 std::map<uint32_t, SnapVram> g_snap;
-std::set<uint32_t> g_drawn;   // FBPs drawn this interval
+std::set<uint32_t> g_drawn;      // FBPs drawn this interval
+std::set<uint32_t> g_rendered;   // FBPs the GS has ever drawn into (render targets)
+std::map<uint32_t, uint32_t> g_rt_read;   // render-target FBP -> frame an effect last read it as a texture
 
 /* ---------------------------------------------------------------- GIF parse with vertices */
 struct Vtx {
@@ -137,6 +144,10 @@ struct Gs {
 
 uint32_t g_native_next;   // PATH1 GIF tags still to come from the last native batch
 bool g_in_native, g_snap_req, g_restore_after;
+// A local->local copy during a post phase: its destination bytes, refreshed in the
+// snapshots from the GS memory right after the copy (the effect samples them).
+bool g_copy_req;
+uint32_t g_copy_off, g_copy_len;
 uint64_t g_ndraw, g_npost_frames, g_nbad, g_ncancel;
 uint64_t g_saved[4];   // PRMODECONT, FOGCOL, FOG, DTHE around a native packet
 
@@ -219,7 +230,7 @@ bool Overlaps(uint32_t tbp, uint32_t tsize_blocks, uint32_t fbp_blocks) {
 
 void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type) {
     if (pf.bad) return;
-    if (pf.prims.size() >= 4096) { Bad(pf, "more than 4096 post draws"); return; }
+    if (pf.prims.size() >= 32768) { Bad(pf, "more than 32768 post draws"); return; }
     const uint64_t prim = g.reg[0x00];
     const int c = Bits(prim, 9, 1);
     const uint64_t tex0 = g.reg[0x06 + c], frame = g.reg[0x4c + c], zbuf = g.reg[0x4e + c];
@@ -276,8 +287,35 @@ void Record(PostFrame& pf, uint32_t fbp, const Vtx* v, int n, uint32_t type) {
             Bad(pf, "Z buffer read as a texture");
             return;
         } else {
-            for (uint32_t d : g_drawn)
-                if (Overlaps(tbp, tblocks, d * 32)) { Bad(pf, "texture rendered by the GS this frame"); return; }
+            for (uint32_t d : pf.post_drawn)
+                if (Overlaps(tbp, tblocks, d * 32)) { Bad(pf, "texture rendered by the GS after the effect started"); return; }
+            // A render target read back (the previous frame for a motion blur): the upload
+            // mirror never sees GS drawing, so take it from the GS memory at the trigger
+            // (unless an upload replaced those pages since).
+            bool rt = false;
+            for (uint32_t d : g_rendered)
+                if (Overlaps(tbp, tblocks, d * 32)) {
+                    // Snapshots copy this target's pages from now on; this frame's was taken
+                    // already, so the first frame that reads it is not replayed.
+                    if (!g_rt_read.count(d)) { g_rt_read[d] = g_frame; Bad(pf, "render target read first time (snapshotted from now on)"); return; }
+                    g_rt_read[d] = g_frame;
+                    rt = true;
+                }
+            if (rt && xsgnative::TextureGen(tex0) <= pf.trig_gen) {
+                auto& nt = pf.snap_tex[{tex0 & ((1ull << 61) - 1), g.reg[0x3b]}];
+                if (!nt) {
+                    nt = std::make_shared<Tex>();
+                    nt->w = 1u << tw;
+                    nt->h = 1u << th;
+                    nt->tex0 = tex0;
+                    nt->texa = g.reg[0x3b];
+                    nt->from_snap = true;
+                }
+                p.kind[2] = 1;
+                pf.prims.push_back(p);
+                pf.texs.push_back(nt);
+                return;
+            }
             static std::map<std::tuple<uint64_t, uint64_t, uint32_t>, std::shared_ptr<Tex>> cache;
             if (cache.size() > 256) cache.clear();
             const auto key = std::make_tuple(tex0 & ((1ull << 61) - 1), g.reg[0x3b], xsgnative::MirrorGen());
@@ -312,7 +350,12 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
         Record(it->second, fbp, v, n, type);
         return;
     }
-    if (writes) g_drawn.insert(fbp);
+    if (writes) {
+        g_drawn.insert(fbp);
+        g_rendered.insert(fbp);
+        for (auto& [f, q] : g_post)
+            if (q.active && f != fbp) q.post_drawn.insert(fbp);
+    }
     if (it == g_post.end() || it->second.nat_frame != g_frame) return;
     PostFrame& pf = it->second;
     // Trigger: a read of this buffer (or its Z) as a texture, or a draw over most of the screen.
@@ -353,10 +396,13 @@ void Draw(uint32_t path, const Vtx* v, int n, uint32_t type) {
     pf.why.clear();
     pf.prims.clear();
     pf.texs.clear();
+    pf.snap_tex.clear();
     pf.fbw = std::max(1u, Bits(frame, 16, 6));
     pf.psm = Bits(frame, 24, 6);
     pf.zbp = Bits(g.reg[0x4e + c], 0, 9);
     pf.zpsm = Bits(g.reg[0x4e + c], 24, 4);
+    pf.trig_gen = xsgnative::MirrorGen();
+    pf.post_drawn.clear();
     g_snap_req = true;
     g_npost_frames++;
     {
@@ -419,6 +465,16 @@ void SetReg(uint32_t path, uint32_t a, uint64_t v) {
         // A transfer into a buffer whose post phase runs cannot be replayed.
         for (auto& [fbp, pf] : g_post)
             if (pf.active && (v & 3) != 1 && Overlaps(Bits(bb, 32, 14), 1, fbp * 32)) Bad(pf, "transfer into the frame");
+        if ((v & 3) == 2) {
+            // GS-side copy: its destination is GS-made content the upload mirror lacks.
+            const uint32_t dbp = Bits(bb, 32, 14), dbw = std::max(1u, Bits(bb, 48, 6)), dpsm = Bits(bb, 56, 6);
+            const uint32_t rows = Bits(pos, 48, 11) + Bits(rg, 32, 12);
+            const uint32_t bpp = dpsm == 0 || dpsm == 1 ? 4 : dpsm == 2 || dpsm == 0xa ? 2 : 4;
+            g_rendered.insert(dbp / 32);
+            g_copy_off = (dbp * 256) & 0x3fffff;
+            g_copy_len = std::min<uint32_t>((4u << 20) - g_copy_off, ((dbw * 64 * rows * bpp + 8191) / 8192 + 1) * 8192);
+            for (auto& [fbp, pf] : g_post) g_copy_req |= pf.active && pf.snapped;
+        }
     }
 }
 
@@ -643,10 +699,18 @@ void Snapshot(ParallelGS::GSInterface& gs) {
             }
         };
         gs.flush();
+        // This buffer and its Z, and the render targets effects read as textures lately
+        // (the previous frame of a motion blur, local-copy scratch).  Copying all 4 MB at
+        // every trigger cost a GPU readback of the whole memory twice a frame.
         copy(gs, sv.main, fbp);
         copy(gs, sv.main, pf.zbp);
         for (uint32_t i = 0; i < pf.nzbp; ++i)
             if (pf.nat_zbp[i] != pf.zbp) copy(gs, sv.main, pf.nat_zbp[i]);
+        for (auto it = g_rt_read.begin(); it != g_rt_read.end();) {
+            if (g_frame - it->second > 120) { it = g_rt_read.erase(it); continue; }
+            copy(gs, sv.main, it->first);
+            ++it;
+        }
         if (g_worker) {   // on the ownership thread, after the data before the trigger
             OwnHandOff();
             std::vector<uint8_t>* dst = &sv.own;
@@ -746,6 +810,16 @@ bool Init(Vulkan::Device* dev) {
     return true;
 }
 
+void SeedOwn(const uint8_t* vram) {
+    g_post.clear();
+    g_drawn.clear();
+    if (!g_own) return;
+    OwnSync();
+    void* w = g_own->map_vram_write(0, 4u << 20);
+    std::memcpy(w, vram, 4u << 20);
+    g_own->end_vram_write(0, 4u << 20);
+}
+
 void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterface& gs) {
     path &= 3;
     PathParse& p = g_path[path];
@@ -763,6 +837,15 @@ void Gif(uint32_t path, const uint8_t* data, uint32_t len, ParallelGS::GSInterfa
             Snapshot(gs);
         }
         g_obuf.insert(g_obuf.end(), oq, oq + 16);
+        if (g_copy_req) {
+            g_copy_req = false;
+            gs.gif_transfer(path, data + start, i + 16 - start);   // through the copy
+            start = i + 16;
+            const uint8_t* v = static_cast<const uint8_t*>(gs.map_vram_read(g_copy_off, g_copy_len));
+            for (auto& [fbp, pf] : g_post)
+                if (pf.active && pf.snapped && g_snap[fbp].main.size() == (4u << 20))
+                    std::memcpy(g_snap[fbp].main.data() + g_copy_off, v, g_copy_len);
+        }
         if (g_restore_after) {
             g_restore_after = false;
             if (g_own) {
@@ -895,10 +978,25 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
     static Vulkan::ImageHandle white;
     if (!white) { const uint32_t px = 0xffffffffu; white = Storage(1, 1, VK_FORMAT_R8G8B8A8_UNORM, &px); }
     cmd.set_program(g_prog);
+    // Rectangles written since the last barrier: a primitive waits for the earlier ones
+    // only where it overlaps them (GS order).  Effects of thousands of small sprites
+    // (particles, the battle transition's 8000 strips) mostly do not overlap, and a
+    // barrier after every dispatch serialised them (30-45 ms frames).
+    struct Rect { int x0, y0, x1, y1; };
+    static std::vector<Rect> pending;
+    pending.clear();
+    auto flush_pending = [&] {
+        if (pending.empty()) return;
+        cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+        pending.clear();
+    };
     for (size_t i = 0; i < pf.prims.size(); ++i) {
         const GpuPrim& p = pf.prims[i];
         const Vulkan::Image* src = white.get();
         if (p.kind[2] == 2) {
+            pending.clear();   // the copy's barrier below orders everything before it
             cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
             cmd.copy_image(*copy, color);
@@ -908,6 +1006,13 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
             cmd.set_program(g_prog);
         } else if (p.kind[2] == 1 && pf.texs[i]) {
             Tex& t = *pf.texs[i];
+            if (t.from_snap && t.px.empty() && pf.snapped) {
+                uint32_t tw, th;
+                t.px = xsgnative::DecodeVramTexture(g_snap[fbp].main.data(), t.tex0, t.texa, &tw, &th);
+                t.w = tw;
+                t.h = th;
+            }
+            if (t.px.empty()) { t.px.assign(1, 0); t.w = t.h = 1; }
             if (!t.img) t.img = Storage(t.w, t.h, VK_FORMAT_R8G8B8A8_UNORM, t.px.data());
             src = t.img.get();
         }
@@ -927,14 +1032,19 @@ void Replay(Vulkan::CommandBuffer& cmd, uint32_t fbp, int s, uint32_t w, uint32_
         const int by1 = std::min(int(h * s), int(std::ceil(y1 * s)) + s + 1);
         if (bx1 <= bx0 || by1 <= by0) continue;
         const uint32_t zmax = p.fb[3] == 0 ? 0xffffffffu : (p.fb[3] == 1 ? 0xffffffu : 0xffffu);
+        // dispatch rows/cols are 8-aligned from (bx0, by0): the written area
+        const Rect r = {bx0, by0, bx0 + (bx1 - bx0 + 7) / 8 * 8, by0 + (by1 - by0 + 7) / 8 * 8};
+        bool hit = pending.size() >= 64;
+        for (const Rect& q : pending)
+            if (!hit && r.x0 < q.x1 && q.x0 < r.x1 && r.y0 < q.y1 && q.y0 < r.y1) hit = true;
+        if (hit) flush_pending();
         struct { int32_t prim, s, w, h, ox, oy, pad0, pad1; uint32_t pmode, bg, zmax, pad2; } pc = {
             int32_t(i), s, int32_t(w), int32_t(h), bx0, by0, 0, 0, 0, 0, zmax, 0};
         cmd.push_constants(&pc, 0, sizeof pc);
         cmd.dispatch((bx1 - bx0 + 7) / 8, (by1 - by0 + 7) / 8, 1);
-        cmd.barrier(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+        pending.push_back(r);
     }
+    flush_pending();
 }
 
 bool Pmode(Vulkan::CommandBuffer& cmd, const ParallelGS::GSInterface& gs, int s, uint32_t w, uint32_t h,

@@ -39,6 +39,11 @@ static void done(int cmd, int result) { pending_cmd = cmd; pending_result = resu
 
 static int card_present(int port, int slot)
 {
+    static unsigned gen = ~0u;
+    if (gen != xsg_cfg_gen) {   /* live: game.memcard / memcard_dir re-read after a settings.ini reload */
+        gen = xsg_cfg_gen;
+        enabled = -1;
+    }
     if (enabled < 0) {
         const char *e = xsg_cfg("game.memcard");
         enabled = !(e && e[0] == '0');

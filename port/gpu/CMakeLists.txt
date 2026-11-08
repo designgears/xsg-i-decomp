@@ -31,6 +31,23 @@ if(NOT parallel_gs_POPULATED)
   FetchContent_Populate(parallel_gs)
 endif()
 
+# Fix at the pinned commit: gif_transfer's batched-vertex path sizes its run from
+# the whole buffer (size / nreg) instead of what is left after i, so a transfer
+# that ends mid-packet runs past its end and the next transfer draws those
+# vertices again.  The native renderer splits transfers at its effect snapshots;
+# the battle help page's frame-feedback blend was drawn twice (washed-out,
+# flickering frames).
+set(_pgs_if ${parallel_gs_SOURCE_DIR}/gs/gs_interface.cpp)
+file(READ ${_pgs_if} _pgs_src)
+string(REPLACE "std::min<uint32_t>(size / nreg, path.tag.NLOOP - path.loop)"
+               "std::min<uint32_t>((size - i) / nreg, path.tag.NLOOP - path.loop)" _pgs_fixed "${_pgs_src}")
+# ...and with less than one whole loop left, take the per-register path (0 loops would not advance).
+string(REPLACE "if (path.reg == 0 && optimized_draw_handler[path_index])"
+               "if (path.reg == 0 && optimized_draw_handler[path_index] && size - i >= nreg)" _pgs_fixed "${_pgs_fixed}")
+if(NOT _pgs_fixed STREQUAL _pgs_src)
+  file(WRITE ${_pgs_if} "${_pgs_fixed}")
+endif()
+
 # Standalone mode (what upstream's PCSX2 integration uses): prebuilt shaders, no
 # runtime shader compiler, no Granite application framework, GRANITE_PLATFORM=null.
 # Window system integration is done here with SDL3.
@@ -45,7 +62,7 @@ set(XSG_GS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/ps2-port-engine-gs)
 # Native renderer shaders (native.vert/.frag, composite.comp) -> SPIR-V word lists included by native.cpp.
 find_program(XSG_GLSLC glslc REQUIRED)
 set(XSG_NATIVE_INC)
-foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp)
+foreach(src native.vert native.frag composite.comp native_skin.vert native_mv.comp native_fx.comp crt.vert crt.frag)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/${src}.inc)
   add_custom_command(OUTPUT ${out}
     COMMAND ${XSG_GLSLC} -O --target-env=vulkan1.1 -mfmt=num -o ${out} ${CMAKE_CURRENT_SOURCE_DIR}/${src}

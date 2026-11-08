@@ -28,6 +28,15 @@
 #include "menu/cfg.h"
 #include "menu/menu.h"
 
+namespace {
+const uint32_t kCrtVert[] = {
+#include "crt.vert.inc"
+};
+const uint32_t kCrtFrag[] = {
+#include "crt.frag.inc"
+};
+}  // namespace
+
 #include "context.hpp"
 #include "device.hpp"
 #include "wsi.hpp"
@@ -57,6 +66,8 @@
 #include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <spawn.h>
 #include <vector>
 
 // File-local stb_image_write (static): the menu's screenshots and test shots.
@@ -342,6 +353,7 @@ struct Renderer {
         xsginput::Init(reinterpret_cast<GpuPad*>(reinterpret_cast<uint8_t*>(shm) + XSG_GPU_PAD_OFF), sdl_input);
         if (!dev && !InitHeadless()) { Log("no Vulkan device"); return false; }
         GSOptions o = {};
+        o.dynamic_super_sampling = true;   // the menu changes the rate live (ApplyLive)
         int ss = xsgcfg::CStr("renderer.ssaa") ? std::atoi(xsgcfg::CStr("renderer.ssaa")) : 1;
         switch (ss) {
         case 2: o.super_sampling = SuperSampling::X2; break;
@@ -355,6 +367,7 @@ struct Renderer {
         if (!gs.init(dev, o)) { Log("GSInterface::init failed"); return false; }
         xsgnative::Init(dev);
         InitMenu();
+        InitCrt();
         const auto& p = dev->get_gpu_properties();
         Log("paraLLEl-GS on \"%s\" (Vulkan %u.%u), %s, SSAA %dx%s%s", p.deviceName, VK_API_VERSION_MAJOR(p.apiVersion),
             VK_API_VERSION_MINOR(p.apiVersion), windowed ? "windowed" : "headless", ss,
@@ -432,7 +445,63 @@ struct Renderer {
     }
 
     /* Clear bb (TRANSFER_DST) and blit the game image into it, fitted. */
-    void BlitGame(Vulkan::CommandBuffer& cmd, const Vulkan::Image& bb, const ScanoutResult& so, bool fit, bool* native) {
+    /* CRT filter ([display] crt): the game image goes to crt_src (sampled) instead of
+       the target, and DrawCrt draws it into the target's render pass. */
+    Vulkan::Program* crt_prog = nullptr;
+    Vulkan::ImageHandle crt_src;
+    int crt_rect[4] = {0, 0, 0, 0}, crt_lines[2] = {448, 512};
+    struct CrtParams { float scan, mask, halation, bloom, curvature, blur; int masktype; };
+    bool CrtOn() const { return crt_prog && xsgcfg::Get("display.crt") != "off" && !xsgcfg::Get("display.crt").empty(); }
+    CrtParams CrtStyle() {
+        const std::string m = xsgcfg::Get("display.crt");
+        CrtParams c = {0.55f, 0.0f, 0.0f, 0.10f, 0.0f, 0.35f, 0};   // scanlines
+        if (m == "consumer") c = {0.35f, 0.40f, 0.25f, 0.25f, 0.06f, 1.10f, 2};
+        else if (m == "trinitron") c = {0.50f, 0.40f, 0.15f, 0.15f, 0.03f, 0.60f, 1};
+        else if (m == "pvm") c = {0.75f, 0.30f, 0.05f, 0.05f, 0.00f, 0.30f, 4};
+        else if (m == "shadow") c = {0.40f, 0.50f, 0.20f, 0.20f, 0.08f, 0.80f, 3};
+        auto ovr = [](const char* key, float& v, float scale) {
+            const int x = xsgcfg::GetInt(key);
+            if (x >= 0) v = float(x) * scale;
+        };
+        ovr("display.crt_scanlines", c.scan, 0.01f);
+        ovr("display.crt_mask", c.mask, 0.01f);
+        ovr("display.crt_halation", c.halation, 0.01f);
+        ovr("display.crt_bloom", c.bloom, 0.01f);
+        ovr("display.crt_curvature", c.curvature, 0.0025f);   // 0..100 -> 0..0.25
+        return c;
+    }
+    void InitCrt() {
+        Vulkan::ResourceLayout vl, fl;
+        fl.output_mask = 1;
+        fl.sets[0].sampled_image_mask = 1;
+        fl.sets[0].meta[0].array_size = 1;
+        fl.push_constant_size = 52;
+        vl.push_constant_size = 52;
+        crt_prog = dev->request_program(dev->request_shader(kCrtVert, sizeof kCrtVert, &vl),
+                                        dev->request_shader(kCrtFrag, sizeof kCrtFrag, &fl));
+    }
+    void DrawCrt(Vulkan::CommandBuffer& cmd) {
+        if (!crt_src) return;
+        const CrtParams c = CrtStyle();
+        cmd.set_opaque_state();
+        cmd.set_program(crt_prog);
+        cmd.set_depth_test(false, false);
+        cmd.set_cull_mode(VK_CULL_MODE_NONE);
+        cmd.set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        VkViewport vp = {float(crt_rect[0]), float(crt_rect[1]), float(crt_rect[2]), float(crt_rect[3]), 0, 1};
+        cmd.set_viewport(vp);
+        cmd.set_texture(0, 0, crt_src->get_view(), Vulkan::StockSampler::LinearClamp);
+        struct { float lines[2], outsz[2], scan, mask, halation, bloom, curvature, blur, strength; int32_t masktype, interlace; } pc = {
+            {float(crt_lines[0]), float(crt_lines[1])}, {float(crt_rect[2]), float(crt_rect[3])}, c.scan, c.mask, c.halation,
+            c.bloom, c.curvature, c.blur, std::max(0, std::min(100, xsgcfg::GetInt("display.crt_strength"))) * 0.01f,
+            c.masktype, xsgcfg::GetBool("display.crt_interlace") ? 1 : 0};
+        static_assert(sizeof pc == 52, "crt push constants");
+        cmd.push_constants(&pc, 0, sizeof pc);
+        cmd.draw(3);
+    }
+
+    void BlitGame(Vulkan::CommandBuffer& cmd, const Vulkan::Image& bb, const ScanoutResult& so, bool fit, bool* native,
+                  bool crt = false) {
         VkClearValue clear = {};
         cmd.clear_image(bb, clear);
         int sx0, sy0, sw, sh, src_h;
@@ -444,13 +513,69 @@ struct Renderer {
         const int x0 = (int(bb.get_width()) - dw) / 2, y0 = (int(bb.get_height()) - dh) / 2;
         cmd.barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT);
-        cmd.blit_image(bb, *src, {x0, y0, 0}, {dw, dh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
-                       nearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
         if (native) *native = src != so.image.get();
         last_image_w = uint32_t(sw);
         last_image_h = uint32_t(sh);
+        // A source larger than the target (the native layer at 4-8x in a window) is
+        // brought down by 2x linear halvings, each a 2x2 box filter, until it is within
+        // 2x of the target.  One nearest (or even linear) blit from 4x+ skips most source
+        // pixels: jagged edges and lost detail.  "nearest" applies to upscaling only.
+        static std::vector<Vulkan::ImageHandle> chain;
+        chain.clear();
+        while (sw >= 2 * dw && sh >= 2 * dh) {
+            const int hw = sw / 2, hh = sh / 2;
+            auto ci = Vulkan::ImageCreateInfo::immutable_2d_image(uint32_t(hw), uint32_t(hh), VK_FORMAT_R8G8B8A8_UNORM);
+            ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            ci.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            ci.layout = Vulkan::ImageLayout::General;
+            auto half = dev->create_image(ci);
+            cmd.image_barrier(*half, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_2_NONE, 0,
+                              VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            cmd.blit_image(*half, *src, {0, 0, 0}, {hw, hh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
+                           VK_FILTER_LINEAR);
+            cmd.barrier(VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                        VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            chain.push_back(half);
+            src = half.get();
+            sx0 = sy0 = 0;
+            sw = hw;
+            sh = hh;
+        }
+        const bool down = sw > dw || sh > dh;
+        if (crt) {
+            // the (downsampled) game image into a sampled image for DrawCrt
+            if (!crt_src || int(crt_src->get_width()) != sw || int(crt_src->get_height()) != sh) {
+                auto ci = Vulkan::ImageCreateInfo::immutable_2d_image(uint32_t(sw), uint32_t(sh), VK_FORMAT_R8G8B8A8_UNORM);
+                ci.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                ci.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+                ci.layout = Vulkan::ImageLayout::General;
+                crt_src = dev->create_image(ci);
+                cmd.image_barrier(*crt_src, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_2_NONE, 0,
+                                  VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            } else {
+                cmd.barrier(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                            VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            }
+            cmd.blit_image(*crt_src, *src, {0, 0, 0}, {sw, sh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
+                           VK_FILTER_NEAREST);
+            cmd.barrier(VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+            crt_rect[0] = x0;
+            crt_rect[1] = y0;
+            crt_rect[2] = dw;
+            crt_rect[3] = dh;
+            crt_lines[0] = src_h;
+            crt_lines[1] = std::max(1, int(int64_t(src_h) * last_image_w / std::max<uint32_t>(1, last_image_h)));
+            return;
+        }
+        cmd.blit_image(bb, *src, {x0, y0, 0}, {dw, dh, 1}, {sx0, sy0, 0}, {sw, sh, 1}, 0, 0, 0, 0, 1,
+                       nearest && !down ? VK_FILTER_NEAREST : VK_FILTER_LINEAR);
     }
     uint32_t last_image_w = 0, last_image_h = 0;
+    double worst_ms = 0;
+    const Vulkan::Image* last_live = nullptr;
+    uint64_t repeats = 0;
+    uint32_t worst_at = 0, slow_frames = 0;
 
     void Present(const ScanoutResult& so, bool menu) {
 #ifdef XSG_GPU_SDL
@@ -470,10 +595,12 @@ struct Renderer {
         // displayed buffer, cropped to the scanned-out rectangle, replaces the
         // paraLLEl-GS scanout.  Frames without native batches show the scanout.
         bool native = false;
-        BlitGame(*cmd, bb, so, true, &native);
+        const bool crt = CrtOn();
+        if (!crt) crt_src.reset();
+        BlitGame(*cmd, bb, so, true, &native, crt);
         native_presents += native;
         // The in-game menu / overlay (menu/menu.cpp) is drawn over the game image.
-        const bool draw_menu = menu && xsgmenu::Visible();
+        const bool draw_menu = (menu && xsgmenu::Visible()) || crt;
         cmd->image_barrier(bb, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                            VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
                            draw_menu ? VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_2_NONE,
@@ -485,7 +612,8 @@ struct Renderer {
             rp.load_attachments = 1;
             rp.store_attachments = 1;
             cmd->begin_render_pass(rp);
-            xsgmenu::Draw(*cmd, bb.get_width(), bb.get_height());
+            if (crt) DrawCrt(*cmd);
+            if (menu && xsgmenu::Visible()) xsgmenu::Draw(*cmd, bb.get_width(), bb.get_height());
             cmd->end_render_pass();
         }
         dev->submit(cmd);
@@ -589,7 +717,68 @@ struct Renderer {
         g_stream->cv.notify_one();
     }
 
+    /* Settings the menu changes take effect here, with no restart: paraLLEl-GS
+       super-sampling (dynamic), hi-res scanout, the native renderer and DLSS 5. */
+    unsigned live_version = 0;
+    int live_ss = -1, live_tex = -1;
+    void ApplyLive() {
+        if (xsgcfg::Version() == live_version) return;
+        live_version = xsgcfg::Version();
+        int ss = xsgcfg::GetInt("renderer.ssaa");
+        SuperSampling rate = SuperSampling::X1;
+        switch (ss) {
+        case 2: rate = SuperSampling::X2; break;
+        case 4: rate = SuperSampling::X4; break;
+        case 8: rate = SuperSampling::X8; break;
+        case 16: rate = SuperSampling::X16; break;
+        default: ss = 1; break;
+        }
+        const int tex = ss > 1 && xsgcfg::GetBool("renderer.ssaa_textures");
+        if (ss != live_ss || tex != live_tex) {
+            if (live_ss >= 0) {
+                gs.flush();
+                gs.set_super_sampling_rate(rate, true, tex != 0);
+                Log("SSAA %dx%s (live)", ss, tex ? " +textures" : "");
+            }
+            live_ss = ss;
+            live_tex = tex;
+        }
+        hires = ss >= 4 && xsgcfg::GetBool("renderer.hires_scanout");
+        xsgnative::Apply(gs);
+        Neural(xsgcfg::GetBool("renderer.neural"));
+    }
+
+    /* DLSS 5 Neural Rendering: the game starts xsg-gpu with the DLSS5VKLayer
+       loaded whenever it is installed; the setting switches the helper's model on
+       and off through its shared settings (dlssnr-shmctl), starting the helper if
+       it is not running. */
+    int neural_state = -1;
+    void Neural(bool on) {
+        if (!getenv("VKLayer_DLSS5") || int(on) == neural_state) return;
+        const bool first = neural_state < 0;
+        neural_state = on;
+        if (first && !on) return;   // off at start: leave a helper another instance uses alone
+        const std::string shm = "/tmp/dlssnr-" + std::to_string(getuid()) + "/shm.bin";
+        auto run = [](std::vector<std::string> a) {
+            std::vector<char*> argv;
+            for (auto& s : a) argv.push_back(&s[0]);
+            argv.push_back(nullptr);
+            pid_t pid;
+            if (posix_spawnp(&pid, argv[0], nullptr, nullptr, argv.data(), environ) == 0) {
+                int st;
+                waitpid(pid, &st, 0);
+                return WIFEXITED(st) && WEXITSTATUS(st) == 0;
+            }
+            return false;
+        };
+        if (on && access(shm.c_str(), F_OK) != 0) run({"dlssnr-helper", "start"});
+        const bool ok = run({"dlssnr-shmctl", shm, "set", "enabled", on ? "1" : "0"});
+        Log("DLSS 5 Neural Rendering %s%s", on ? "on" : "off", ok ? "" : " (dlssnr-shmctl failed: is the helper installed?)");
+    }
+
+
     void Vsync(uint32_t frame, uint32_t field) {
+        ApplyLive();
         if (xsgnative::On()) xsgnative::Vsync(frame, gs);
         VSyncInfo info = {};
         info.phase = field;
@@ -643,7 +832,20 @@ struct Renderer {
         st.native_batches = native_last;
         st.native_on = xsgnative::On();
         xsgmenu::Frame(frame, st);
-        Present(so, !test);
+        // A 30 fps scene shows each frame for two vsyncs: the native composite is then the
+        // same image, and presenting it again only doubles the present work (and, with DLSS 5,
+        // the neural model's).  Skipped while the menu is open (it animates).
+        bool repeat = false;
+        if (xsgnative::On() && !xsgmenu::IsOpen() && !test) {
+            uint32_t nw, nh;
+            const Vulkan::Image* live = xsgnative::LiveImage(&nw, &nh).get();
+            repeat = live && live == last_live;
+            last_live = live;
+        } else {
+            last_live = nullptr;
+        }
+        if (!repeat) Present(so, !test);
+        else repeats++;
         if (std::string p = xsgmenu::TestShot(&tw, &th); !p.empty()) WritePngOf(so, p, tw, th, true);
         if (!shot_path.empty()) {
             WritePngOf(so, shot_path, 0, 0, false);
@@ -653,10 +855,21 @@ struct Renderer {
         if (StreamWants()) Stream();
         vsyncs++;
         __atomic_store_n(&shm->vsyncs_done, uint32_t(vsyncs), __ATOMIC_RELEASE);
+        {   // frame-time spikes (the 600-vsync average hides them): worst frame, frames over 20 ms
+            static auto last = std::chrono::steady_clock::now();
+            const auto now = std::chrono::steady_clock::now();
+            const double ms = std::chrono::duration<double, std::milli>(now - last).count();
+            last = now;
+            if (ms > worst_ms) { worst_ms = ms; worst_at = frame; }
+            slow_frames += ms > 20.0;
+        }
         if (vsyncs % 600 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native)", frame, 600.0 / s,
-                gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents);
+            Log("vsync %u: %.1f vsyncs/s, %.1f MB/s GIF, %llu presents (%llu native); worst %.1f ms at vsync %u, %u over 20 ms, %llu repeats not presented", frame,
+                600.0 / s, gif_bytes / s / 1e6, (unsigned long long)presents, (unsigned long long)native_presents, worst_ms,
+                worst_at, slow_frames, (unsigned long long)repeats);
+            worst_ms = 0;
+            slow_frames = 0;
             t0 = std::chrono::steady_clock::now();
             gif_bytes = 0;
         }

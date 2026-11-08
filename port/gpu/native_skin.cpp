@@ -378,7 +378,8 @@ static void DumpMv(Vulkan::Image& img, VkImageLayout layout, const std::string& 
     };
     std::vector<float> f(size_t(w) * h * 2);
     for (size_t i = 0; i < f.size(); ++i) f[i] = half(hv[i]);
-    if (std::FILE* fp = std::fopen((prefix + "mv.f32").c_str(), "wb")) {
+    static const bool dump = xsgcfg::CStr("debug.native_mv_dump") && std::atoi(xsgcfg::CStr("debug.native_mv_dump"));
+    if (std::FILE* fp = dump ? std::fopen((prefix + "mv.f32").c_str(), "wb") : nullptr) {
         uint32_t hdr[2] = {w, h};
         std::fwrite(hdr, 4, 2, fp);
         std::fwrite(f.data(), 4, f.size(), fp);
