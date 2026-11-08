@@ -64,6 +64,24 @@ void main() {
             res.rgb = texelFetch(hc, o, 0).rgb;
             zo = uint(clamp(nd * p.zmul, 0.0, 4294967040.0));
         }
+    } else if (p.own != 0 && gs[2 * p.w * p.h + gi] != 0u) {
+        // A 1x pixel the native layer owns (hair, an alpha-tested cutout) where this
+        // sub-sample has no native geometry: the GS pixel holds the 1x cutout's colour,
+        // which showed as a blocky low-resolution ghost around the high-resolution edge.
+        // Take what lies behind it instead: the nearest GS pixel the native layer does not own.
+        vec4 bg = vec4(-1.0);
+        float bd = 1e9;
+        for (int y = -2; y <= 2; ++y)
+            for (int x = -2; x <= 2; ++x) {
+                ivec2 n = g + ivec2(x, y);
+                if (n.x < 0 || n.y < 0 || n.x >= p.w || n.y >= p.h) continue;
+                int ni = n.y * p.w + n.x;
+                if (gs[2 * p.w * p.h + ni] != 0u) continue;
+                vec2 d = (vec2(n) + 0.5) * float(p.s) - (vec2(o) + 0.5);
+                float dd = dot(d, d);
+                if (dd < bd) { bd = dd; bg = unpackUnorm4x8(gs[ni]); }
+            }
+        if (bg.a >= 0.0) res.rgb = bg.rgb;
     }
     imageStore(o_img, o, res);
     imageStore(o_z, o, uvec4(zo));
