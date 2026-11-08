@@ -2627,6 +2627,71 @@
    ]
   },
   "main/tu142": {
+   ".data": [
+    {
+     "range": [
+      "0x0036ad00",
+      "0x0036ad68"
+     ],
+     "generated": [
+      "0x0036ad00",
+      "0x0036ad68"
+     ],
+     "generated_by": [
+      "findMsgFunc"
+     ],
+     "c_owned_symbols": [
+      "mfunc"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/msg_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036ad70",
+      "0x0036ade4"
+     ],
+     "generated": [
+      "0x0036ad70",
+      "0x0036ade4"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "digits",
+      "radixTenTenths"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/msg_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x0036ade8",
+      "0x0036ae4c"
+     ],
+     "generated": [
+      "0x0036ade8",
+      "0x0036ae4c"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "radixTenUnits"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/msg_init.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -2662,7 +2727,88 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/msg_init.o"
+      "object": "build/main/build/c/msg_init.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004da3a8",
+      "0x004da3ac"
+     ],
+     "generated": [
+      "0x004da3a8",
+      "0x004da3ac"
+     ],
+     "generated_by": [
+      "MSG_copyln",
+      "MSG_init",
+      "MSG_queueGetInfo",
+      "MSG_queuePop",
+      "MSG_queueReset",
+      "_copyCTRLCode",
+      "_skipCTRLCode"
+     ],
+     "c_owned_symbols": [
+      "ctrlCodeFlags"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/msg_init.o"
+     }
+    },
+    {
+     "range": [
+      "0x004da3b0",
+      "0x004da420"
+     ],
+     "generated": [
+      "0x004da3b0",
+      "0x004da41d"
+     ],
+     "generated_by": [
+      "MSG_convert",
+      "MSG_queuePop",
+      "findMsgFunc"
+     ],
+     "c_owned_symbols": [
+      "D_004DA3B0",
+      "D_004DA3B8",
+      "D_004DA3C0",
+      "D_004DA3C8",
+      "D_004DA3D0",
+      "D_004DA3D8",
+      "D_004DA3E0",
+      "D_004DA3E8",
+      "D_004DA3F0",
+      "D_004DA3F8",
+      "D_004DA400",
+      "D_004DA408",
+      "D_004DA410",
+      "D_004DA418"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA3B8": "mfunc",
+      "D_004DA3C0": "mfunc",
+      "D_004DA3C8": "mfunc",
+      "D_004DA3D0": "mfunc",
+      "D_004DA3D8": "mfunc",
+      "D_004DA3E0": "mfunc",
+      "D_004DA3E8": "mfunc",
+      "D_004DA3F0": "mfunc",
+      "D_004DA3F8": "mfunc",
+      "D_004DA400": "mfunc",
+      "D_004DA408": "mfunc",
+      "D_004DA410": "mfunc"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/msg_init.o"
      }
     }
    ]
