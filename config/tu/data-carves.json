@@ -553,51 +553,70 @@
    ]
   },
   "main/tu102": {
-   ".lit4": [
+   ".data": [
     {
      "range": [
-      "0x004d885c",
-      "0x004d8868"
+      "0x004a8c20",
+      "0x004a8ce0"
      ],
      "generated": [
-      "0x004d885c",
-      "0x004d8868"
+      "0x004a8c20",
+      "0x004a8ce0"
      ],
      "generated_by": [
-      "xglCameraTravelFocus",
-      "xglCameraTravelInit"
+      "xglCameraScreenInit",
+      "xglCameraTravelInit",
+      "xglCameraTravelReset"
      ],
      "c_owned_symbols": [
-      "D_004D885C",
-      "D_004D8860",
-      "D_004D8864"
+      "sClipRange_0",
+      "sPortEffect_1",
+      "sShootAngleR_2",
+      "sShootAngleV_3",
+      "sShootAngleA_4",
+      "sShootPlaceR_5",
+      "sShootPlaceV_6",
+      "sShootPlaceA_7",
+      "sChaseRefPos_8",
+      "sChaseIntPos_9",
+      "sShootAngleA_10",
+      "sShootPlaceA_11"
      ],
      "also_referenced_by_c": [
-      "D_004D8868",
-      "D_004D886C"
+      "aaiVertexIndex"
      ],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_camera.o"
+      "object": "build/main/build/c/xgl_camera.o"
      }
-    },
+    }
+   ],
+   ".lit4": [
     {
      "range": [
-      "0x004d8870",
+      "0x004d885c",
       "0x004d88d8"
      ],
      "generated": [
-      "0x004d8870",
+      "0x004d885c",
       "0x004d88d8"
      ],
      "generated_by": [
       "xglCameraClipRangeDefault",
       "xglCameraTravelChase",
+      "xglCameraTravelFocus",
+      "xglCameraTravelInit",
       "xglCameraTravelManual",
+      "xglCameraTravelScale",
       "xglCameraViewScreen"
      ],
      "c_owned_symbols": [
+      "D_004D885C",
+      "D_004D8860",
+      "D_004D8864",
+      "D_004D8868",
+      "D_004D886C",
       "D_004D8870",
       "D_004D8874",
       "D_004D8878",
@@ -629,7 +648,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_camera.o"
+      "object": "build/main/build/c/xgl_camera.o"
      }
     }
    ],
@@ -653,7 +672,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_camera.o"
+      "object": "build/main/build/c/xgl_camera.o"
      }
     }
    ]
@@ -7471,7 +7490,62 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/enemy_system_init.o"
+      "object": "build/main/build/c/enemy_system_init.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x004cae30",
+      "0x004caee0"
+     ],
+     "generated": [
+      "0x004cae30",
+      "0x004caed9"
+     ],
+     "generated_by": [
+      "Enemy_SystemInit"
+     ],
+     "c_owned_symbols": [
+      "D_004CAE30",
+      "D_004CAE48",
+      "D_004CAE68",
+      "D_004CAE88",
+      "D_004CAEA8",
+      "D_004CAEC0"
+     ],
+     "also_referenced_by_c": [
+      "D_004CAEE0"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/enemy_system_init.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db858",
+      "0x004db860"
+     ],
+     "generated": [
+      "0x004db858",
+      "0x004db85d"
+     ],
+     "generated_by": [
+      "Enemy_LoadPreset"
+     ],
+     "c_owned_symbols": [
+      "D_004DB858"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/enemy_system_init.o"
      }
     }
    ]
@@ -9211,7 +9285,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/toolkit.o"
+      "object": "build/main/build/c/toolkit.o"
      }
     }
    ],
@@ -9245,7 +9319,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/toolkit.o"
+      "object": "build/main/build/c/toolkit.o"
      }
     }
    ]
