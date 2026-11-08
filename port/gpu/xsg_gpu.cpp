@@ -999,6 +999,7 @@ int main(int argc, char** argv) {
         case GPU_MSG_VSYNC: r.Vsync(h.a, h.b); break;
         case GPU_MSG_NATIVE: xsgnative::Batch(h.a, h.b, payload, h.len); r.native_msgs++; break;
         case GPU_MSG_UI_TEX: xsgui::ArtTexset(h.a, h.b, payload, h.len); break;
+        case GPU_MSG_UI_IMAGE: xsgui::ArtImageSet(h.a, h.b & 0xffff, h.b >> 16, payload, h.len); break;
         case GPU_MSG_READ_VRAM: {
             r.gs.flush();
             const void* v = r.gs.map_vram_read(0, 4u << 20);

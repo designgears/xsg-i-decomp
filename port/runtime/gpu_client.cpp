@@ -882,3 +882,9 @@ extern "C" unsigned xsg_ui_texset(const void* directory) {
     xsg_logf("[ui] texture set %08x: %d uploads, %zu KB\n", key, n, words * 4 / 1024);
     return key;
 }
+
+/* A whole picture for the rebuilt UI (the title screen's): sent once, upscaled by xsg-gpu. */
+extern "C" void xsg_ui_image(int id, const void* rgba, int w, int h) {
+    if (!xsggpu::shm || !rgba || w <= 0 || h <= 0) return;
+    xsggpu::Send(GPU_MSG_UI_IMAGE, uint32_t(id), uint32_t(w) | uint32_t(h) << 16, rgba, uint32_t(w * h * 4));
+}

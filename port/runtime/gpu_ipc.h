@@ -47,6 +47,7 @@ enum {
     GPU_MSG_READ_FIFO = 5, /* a = seq, b = qwords: local->host transfer data (TRXDIR 1) */
     GPU_MSG_QUIT = 6,
     GPU_MSG_NATIVE = 7,    /* a = kind (GPU_NATIVE_*), b = vertex count; payload: GpuNativeBatch + vertices */
+    GPU_MSG_UI_IMAGE = 9,  /* a = image id (1: the title picture), b = w | h << 16; payload: RGBA32 (PS2 alpha) */
     GPU_MSG_UI_TEX = 8,    /* a = texture-set key, b = entries; payload: GpuUiTexEntry[b] then their PSMCT32 words */
 };
 

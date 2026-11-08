@@ -440,6 +440,12 @@ sel_done:
     F.sp40[0] = (void *)jpg;
     F.sp40[1] = buf;
     xglJpegDecode(F.sp40);
+#ifdef PORT_HOST
+    {   /* rebuilt UI: the title picture goes to xsg-gpu once (upscaled there) */
+        extern void xsg_ui_image(int id, const void *rgba, int w, int h);
+        xsg_ui_image(1, buf, 512, 448);
+    }
+#endif
     for (i = 0; i < 0x100; i++) {
         particle_reset((TitleParticleView *)0x01000000, i);
     }

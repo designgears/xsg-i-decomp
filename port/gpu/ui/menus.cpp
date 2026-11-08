@@ -543,6 +543,30 @@ void MenuDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float 
         case GPU_KG_TITLE: {   // the title choices: the original's place and spacing (y 288 + 18 per row)
             static const char* const kItem[] = {"New Game", "Continue", "Install to HDD", "Uninstall from HDD"};
             anchor = kCentre;
+            // the picture, upscaled once (art.cpp ArtImageSet), then a starfield drifting over it
+            if (ImTextureID pic = ArtImage(1)) {
+                dl->AddImage(pic, P(0, 0), P(512, 448), ImVec2(0, 0), ImVec2(1, 1), IM_COL32(255, 255, 255, 255));
+                static float sx[160], sy[160], sp[160], ph[160];
+                static bool init = false;
+                if (!init) {
+                    uint32_t r = 0x9e3779b9u;
+                    auto rnd = [&]() { r ^= r << 13; r ^= r >> 17; r ^= r << 5; return float(r & 0xffffff) / float(0xffffff); };
+                    for (int i = 0; i < 160; ++i) sx[i] = rnd() * 512, sy[i] = rnd() * 448, sp[i] = 4 + rnd() * 14, ph[i] = rnd() * 6.28f;
+                    init = true;
+                }
+                for (int i = 0; i < 160; ++i) {
+                    // the stars live in the dark side bands (the centre is a white glow)
+                    const float xx = std::fmod(sx[i] + float(now) * sp[i], 512.0f);
+                    const float edge = std::min(xx, 512.0f - xx);
+                    if (edge > 120) continue;
+                    const float tw2 = 0.5f + 0.5f * std::sin(float(now) * 2.2f + ph[i]);
+                    const float fade = std::clamp((120 - edge) / 60.0f, 0.0f, 1.0f);
+                    const ImVec2 c = P(xx, sy[i]);
+                    const float rr = (0.6f + 0.8f * tw2) * k;
+                    dl->AddCircleFilled(c, rr * 2.4f, IM_COL32(170, 210, 255, int(30 * tw2 * fade)), 10);
+                    dl->AddCircleFilled(c, rr, IM_COL32(235, 245, 255, int(220 * tw2 * fade)), 8);
+                }
+            }
             const float t = tw * (1.0f - std::clamp(float(o.rgba) / 128.0f, 0.0f, 1.0f));
             int rows[3], n = 0;
             rows[n++] = 0;

@@ -21,6 +21,10 @@ void ArtTexset(uint32_t key, uint32_t entries, const void* payload, uint32_t len
 void ArtSnapshot(uint32_t slot);
 /* The same for one texture: the pages of tex0's image and CLUT, from a 4 MB GS image, into set `key`. */
 void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem);
+/* GPU_MSG_UI_IMAGE: a picture (PS2 RGBA) is upscaled 4x (bicubic, then a light unsharp mask)
+   and kept as image `id`; ArtImage returns it (0: none yet). */
+void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len);
+ImTextureID ArtImage(uint32_t id);
 /* Once per frame, before drawing (counts frames for the re-check). */
 void ArtFrame();
 /* The ImGui texture for a TEX0 (0: not available); *w / *h: its size in texels.  texset:

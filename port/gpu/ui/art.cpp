@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cmath>
 #include <cstring>
 #include <unordered_map>
 #include <vector>
@@ -119,6 +120,68 @@ void ArtSnapshotTex(uint32_t key, uint64_t tex0, const uint8_t* mem) {
     last[key] = h;
     for (auto& [k, t] : g_tex)
         if (t.set == key) t.gen = ~0u;
+}
+
+namespace {
+std::unordered_map<uint32_t, ImTextureID> g_images;
+}
+
+void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len) {
+    if (!w || !h || len < w * h * 4) return;
+    const uint8_t* src = static_cast<const uint8_t*>(rgba);
+    const uint32_t S = 4, W = w * S, H = h * S;
+    auto px = [&](int x, int y, int c) -> float {
+        x = std::clamp(x, 0, int(w) - 1);
+        y = std::clamp(y, 0, int(h) - 1);
+        float v = float(src[(size_t(y) * w + x) * 4 + c]);
+        return c == 3 ? std::min(255.0f, v * 2.0f) : v;   // PS2 alpha: 0x80 = opaque
+    };
+    auto cub = [](float t, float a, float b, float c, float d) {   // Catmull-Rom
+        return b + 0.5f * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
+    };
+    std::vector<float> up(size_t(W) * H * 4);
+    for (uint32_t y = 0; y < H; ++y) {
+        const float fy = (float(y) + 0.5f) / S - 0.5f;
+        const int iy = int(std::floor(fy));
+        const float ty = fy - float(iy);
+        for (uint32_t x = 0; x < W; ++x) {
+            const float fx = (float(x) + 0.5f) / S - 0.5f;
+            const int ix = int(std::floor(fx));
+            const float tx = fx - float(ix);
+            for (int c = 0; c < 4; ++c) {
+                float col[4];
+                for (int j = 0; j < 4; ++j)
+                    col[j] = cub(tx, px(ix - 1, iy - 1 + j, c), px(ix, iy - 1 + j, c), px(ix + 1, iy - 1 + j, c), px(ix + 2, iy - 1 + j, c));
+                up[(size_t(y) * W + x) * 4 + c] = cub(ty, col[0], col[1], col[2], col[3]);
+            }
+        }
+    }
+    // unsharp mask (3x3 box blur, amount 0.6) on colour
+    std::vector<uint32_t> out(size_t(W) * H);
+    for (uint32_t y = 0; y < H; ++y)
+        for (uint32_t x = 0; x < W; ++x) {
+            uint32_t o = 0;
+            for (int c = 0; c < 4; ++c) {
+                float v = up[(size_t(y) * W + x) * 4 + c];
+                if (c < 3) {
+                    float blur = 0;
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx) {
+                            const uint32_t xx = uint32_t(std::clamp(int(x) + dx, 0, int(W) - 1)), yy = uint32_t(std::clamp(int(y) + dy, 0, int(H) - 1));
+                            blur += up[(size_t(yy) * W + xx) * 4 + c];
+                        }
+                    v += 0.6f * (v - blur / 9.0f);
+                }
+                o |= uint32_t(std::clamp(v, 0.0f, 255.0f) + 0.5f) << (8 * c);
+            }
+            out[size_t(y) * W + x] = o;
+        }
+    g_images[id] = ImTextureID(xsgmenu::RenderTexture(uint64_t(g_images[id]), out.data(), W, H));
+}
+
+ImTextureID ArtImage(uint32_t id) {
+    auto it = g_images.find(id);
+    return it == g_images.end() ? ImTextureID(0) : it->second;
 }
 
 void ArtFrame() { ++g_frame; }
