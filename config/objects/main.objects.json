@@ -22951,11 +22951,11 @@
       "name_confidence": "low",
       "ordinal": 93,
       "owners": {
-        ".bss": "asm",
+        ".bss": "c",
         ".data": "asm",
         ".lit4": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/xgl_mc.c",

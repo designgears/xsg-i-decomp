@@ -20,7 +20,6 @@ typedef union McRequestStorage {
 } McRequestStorage;
 
 
-extern unsigned char D_0093E120[];
 
 int sceMcOpen(int port, int slot, const char *name, int mode);
 int sceMcClose(int fd);
@@ -46,7 +45,18 @@ typedef struct
     int c;
     unsigned char name[0x6C];
 } XglMcQueue;
-extern XglMcQueue queue[];
+/* file-local, original order (.sbss, then .bss) */
+static unsigned char queue_top;
+static unsigned char queue_end;
+static XglMcQueue queue[8];
+/* the memory-card workspace (0x160 bytes); its sub-buffers are addressed
+ * at fixed offsets from it */
+static unsigned char mw[0x160];
+#define D_0093E0A1 ((char *)mw + 0x01)
+#define D_0093E0A4 ((int *)(mw + 0x04))
+#define D_0093E0C0 ((char *)mw + 0x20)
+#define D_0093E120 ((unsigned char *)mw + 0x80)
+#define D_0093E144 ((unsigned char *)mw + 0xA4)
 
 int xglMcRequest(int port, int type, XglMcParam *param, int *result)
 {
@@ -275,7 +285,6 @@ void xglMcWriteMapName(char *buffer, int slot)
     buffer[227] = value % 10 + 'O';
 }
 
-extern char D_0093E0C0[];
 
 /*
  * xglMcSetFullPath (main:0x0021fed8): builds "<base><card 2 digits>" in
@@ -354,7 +363,6 @@ int sceMcGetDir(int port, int slot, const char *name, unsigned mode, int maxent,
 int sceMcMkdir(int port, int slot, const char *name);
 int sceMcFormat(int port, int slot);
 int sceMcUnformat(int port, int slot);
-extern char D_0093E0A1[];
 static void execute(XglMcQueue *q)
 {
     int v = 4;
@@ -557,8 +565,6 @@ store_error:
     return -1;
 }
 
-extern unsigned char D_0093E144[];
-extern int D_0093E0A4[];
 int create_sub2(int);
 static inline unsigned char *mw_addr(void)
 {
