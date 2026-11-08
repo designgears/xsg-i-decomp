@@ -31,7 +31,6 @@ extern void nmlModelSetActiveFadeInCancel(int fadeTime);
 
 #include "main/party.h"
 
-extern MovieOverlayPacket TestEnv_0_00367980;
 
 
 extern MovieGameLoopState GameLoopState;
@@ -129,6 +128,23 @@ static inline char caption_peek(char *cursor)
 
 void GameMovieMain(void)
 {
+    static MovieOverlayPacket TestEnv_0_00367980 __asm__("TestEnv.0") __attribute__((aligned(16))) = {
+        { 0x0ULL, 0x5100000C00000000ULL },
+        { 0xB0AB400000008001ULL, 0x53531EEEEEEULL },
+        {
+            { 0x0ULL, 0x3FULL },
+            { 0x60ULL, 0x14ULL },
+            { 0x0ULL, 0x6ULL },
+            { 0x0ULL, 0x8ULL },
+            { 0x7000DULL, 0x47ULL },
+            { 0x0ULL, 0x42ULL }
+        },
+        { 0x80, 0x80, 0x80, 0x80 },
+        { 0x0, 0x0, 0x0, 0x0 },
+        { 0x6FF8, 0x71F7, 0xF00000, 0x0 },
+        { 0x2000, 0x1C00, 0x0, 0x0 },
+        { 0x8FF8, 0x8DF7, 0xF00000, 0x0 }
+    };
     if (mi.state != 0) {
         if (!(GameLoopState.flags & 1)) {
             mi.transparent = GameMovieTransparent;

@@ -522,6 +522,36 @@
     }
    ]
   },
+  "main/tu101": {
+   ".data": [
+    {
+     "range": [
+      "0x004a8b80",
+      "0x004a8c20"
+     ],
+     "generated": [
+      "0x004a8b80",
+      "0x004a8c20"
+     ],
+     "generated_by": [
+      "xglLightInit",
+      "xglLightSetDefault"
+     ],
+     "c_owned_symbols": [
+      "asIntensity_0",
+      "asDirection_1",
+      "sIntensity0_2",
+      "sIntensity1_3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_light.o"
+     }
+    }
+   ]
+  },
   "main/tu102": {
    ".lit4": [
     {
@@ -624,6 +654,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/xgl_camera.o"
+     }
+    }
+   ]
+  },
+  "main/tu103": {
+   ".data": [
+    {
+     "range": [
+      "0x004a8d00",
+      "0x004a8dc0"
+     ],
+     "generated": [
+      "0x004a8d00",
+      "0x004a8dc0"
+     ],
+     "generated_by": [
+      "xglPacketInterpolate"
+     ],
+     "c_owned_symbols": [
+      "TestPrim_0_004A8D00"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_packet.o"
      }
     }
    ]
@@ -1017,23 +1073,24 @@
    ".rodata": [
     {
      "range": [
-      "0x004d4aa0",
+      "0x004d4a60",
       "0x004d4ac0"
      ],
      "generated": [
-      "0x004d4aa0",
+      "0x004d4a60",
       "0x004d4ab9"
      ],
      "generated_by": [
+      "RssdCallFunc",
+      "RssdInitIop",
       "SsdGetResultValue"
      ],
      "c_owned_symbols": [
+      "D_004D4A60",
+      "D_004D4A80",
       "D_004D4AA0"
      ],
-     "also_referenced_by_c": [
-      "D_004D4A60",
-      "D_004D4A80"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -1748,6 +1805,32 @@
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/game_defocus.o"
+     }
+    }
+   ]
+  },
+  "main/tu125": {
+   ".data": [
+    {
+     "range": [
+      "0x00367980",
+      "0x00367a50"
+     ],
+     "generated": [
+      "0x00367980",
+      "0x00367a50"
+     ],
+     "generated_by": [
+      "GameMovieMain"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_00367980"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/game_movie.o"
      }
     }
    ]
@@ -8821,25 +8904,25 @@
    ".sdata": [
     {
      "range": [
-      "0x004dc09c",
-      "0x004dc0a0"
+      "0x004dc098",
+      "0x004dc0a8"
      ],
      "generated": [
-      "0x004dc09c",
-      "0x004dc0a0"
+      "0x004dc098",
+      "0x004dc0a3"
      ],
      "generated_by": [
+      "Java_xeno_util_Format_toString__C",
       "Java_xeno_util_Format_toString__F",
       "Java_xeno_util_Format_toString__I",
       "Java_xeno_util_Format_toString__Z"
      ],
      "c_owned_symbols": [
-      "JAVA_tmpString"
-     ],
-     "also_referenced_by_c": [
       "D_004DC098",
+      "JAVA_tmpString",
       "D_004DC0A0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

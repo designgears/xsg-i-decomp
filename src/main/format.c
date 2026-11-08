@@ -2,7 +2,6 @@
 #include "shared.h"
 #include "format.h"
 
-FormatString *JAVA_tmpString = 0;
 
 /*
  * The script VM's per-thread context, recovered as `JThread` in
@@ -29,24 +28,22 @@ void Java_xeno_util_Format_toInt__Ljava_lang_String_(JThread *thread, void *argu
 
 extern int sprintf(char *buf, const char *fmt, ...);
 extern int strlen(const char *s);
-extern char D_004DC098[];
-
 void Java_xeno_util_Format_toString__C(JThread *thread, union { int i; short s; void *p; } *args, int *result)
 {
     FormatByteArray *arr;
     FormatString *str;
     str = newObject(classString);
     str->value = newArray(classByte, 0xFF);
-    sprintf((char *)str->value->data, D_004DC098, args[0].s);
+    sprintf((char *)str->value->data, "%d", args[0].s);
     arr = str->value;
     arr->length = strlen((char *)arr->data);
     *result = (int)str;
 }
 
+FormatString *JAVA_tmpString = 0;
+
 typedef struct { FormatString *string; } FormatTmpStringViewF;
 extern double fptodp(float value);
-extern char D_004DC0A0[];
-
 void Java_xeno_util_Format_toString__F(JThread *thread, union { int i; float f; void *p; } *args, int *result)
 {
     FormatByteArray *arr;
@@ -57,7 +54,7 @@ void Java_xeno_util_Format_toString__F(JThread *thread, union { int i; float f; 
         JAVA_tmpString = newObject(classString);
         JAVA_tmpString->value = newArray(classByte, 0xFF);
     }
-    fmt = D_004DC0A0;
+    fmt = "%f";
     buf = (char *)JAVA_tmpString->value->data;
     sprintf(buf, fmt, fptodp(args[0].f));
     arr = JAVA_tmpString->value;
@@ -95,7 +92,7 @@ void Java_xeno_util_Format_toString__Z(JThread *thread, union { int i; unsigned 
         JAVA_tmpString = newObject(classString);
         JAVA_tmpString->value = newArray(classByte, 0xFF);
     }
-    sprintf((char *)JAVA_tmpString->value->data, D_004DC098, args[0].b);
+    sprintf((char *)JAVA_tmpString->value->data, "%d", args[0].b);
     arr = JAVA_tmpString->value;
     arr->length = strlen((char *)arr->data);
     *result = (int)((FormatTmpStringView *)&JAVA_tmpString)->string;
