@@ -391,6 +391,60 @@ def trim_leading_fill(target, base_elf):
         Path(target).write_bytes(bytes(data))
 
 
+def resolve_raw_pointers(base, target, starts, addresses):
+    """Where the original stores a pointer as a plain word, compare the C's at its linked value.
+
+    splat leaves some pointers of the original data as raw numbers (`.word
+    0x004CB150`, no symbol near enough), while the C writes `&x` and cc1 emits
+    an R_MIPS_32. In the report's copy of the compiled object such a relocation
+    is resolved to its link-time address (the TU's original section start for
+    a section-relative one, the linked symbol table for a named one) and
+    replaced by that word, only where the original holds exactly that word and
+    no relocation at the same offset.
+    """
+    belf, telf = Elf(Path(base).read_bytes()), Elf(Path(target).read_bytes())
+    data = bytearray(belf.data)
+    tsecs = {x.name: x for x in telf.sections}
+    trel = {}
+    for r in telf.sections:
+        if r.type == 9 and r.info < len(telf.sections):
+            trel.setdefault(telf.sections[r.info].name, set()).update(
+                struct.unpack_from('<I', telf.data, at)[0] for at in range(r.offset, r.offset + r.size, 8))
+    changed = False
+    for rel in belf.sections:
+        if rel.type != 9:
+            continue
+        applies = belf.sections[rel.info]
+        t = tsecs.get(applies.name)
+        if not applies.flags & 2 or applies.flags & 4 or t is None or t.type == 8:
+            continue
+        tdata = telf.section_bytes(t)
+        kept = []
+        for at in range(rel.offset, rel.offset + rel.size, 8):
+            offset, info = struct.unpack_from('<II', data, at)
+            sym = belf.symbols[info >> 8]
+            word = struct.unpack_from('<I', data, applies.offset + offset)[0]
+            value = None
+            if info & 255 == 2 and offset + 4 <= len(tdata) and offset not in trel.get(applies.name, ()):
+                if sym.shndx and 0 < sym.shndx < len(belf.sections):
+                    home = starts.get(belf.sections[sym.shndx].name)
+                    if home is not None:
+                        value = home + (0 if sym.type == 3 else sym.value) + word
+                elif sym.name in addresses:
+                    value = addresses[sym.name] + word
+            if value is not None and (value & 0xffffffff) == struct.unpack_from('<I', tdata, offset)[0]:
+                struct.pack_into('<I', data, applies.offset + offset, value & 0xffffffff)
+                changed = True
+                continue
+            kept.append((offset, info))
+        if len(kept) * 8 != rel.size:
+            for k, entry in enumerate(kept):
+                struct.pack_into('<II', data, rel.offset + 8 * k, *entry)
+            struct.pack_into('<I', data, belf.shoff + rel.index * belf.shentsize + 20, len(kept) * 8)
+    if changed:
+        Path(base).write_bytes(bytes(data))
+
+
 def trim_link_padding(target, base_elf):
     """End a target data section's last symbol where the C object's section ends.
 
@@ -501,6 +555,7 @@ def prepare(root, evidence):
     expected = {}
     main_elf = build / 'main/build/carve/main.rom.elf'
     registry = data_carve.load_registry(root)
+    layouts = {u: verification.read(root / f'config/objects/{u}.layout.json') for u in cov.OVERLAY_UNITS}
     original_names = {y.name for y in Elf((build / 'main/orig/SLUS_204.69').read_bytes()).symbols}
     linked = {unit: Elf((build / 'main/build/carve/main.rom.elf' if unit == 'main' else
                          build / unit / f'build/{unit}.rom.elf').read_bytes())
@@ -648,6 +703,13 @@ def prepare(root, evidence):
             section_relative_data_relocs(target, base_elf)
             fold_constant_labels(target)
             resolve_external_data_relocs(target, base_elf, addresses[unit])
+            if unit == 'main':
+                starts = {k: int(v['start'], 16) for k, v in tu.get('sections', {}).items()}
+            else:
+                starts = {k: int(next(e for e in v if e[0] == f'{unit}/{stem}')[1], 16)
+                          for k, v in layouts[unit]['families'].items()
+                          if any(e[0] == f'{unit}/{stem}' for e in v)}
+            resolve_raw_pointers(stripped_base, target, starts, addresses[unit])
         if literal_labels:
             mark_compiler_literals(target, literal_labels)
         target_functions = functions(target)
