@@ -195,6 +195,38 @@
     }
    ]
   },
+  "main/tu091": {
+   ".sdata": [
+    {
+     "range": [
+      "0x004dc2b8",
+      "0x004dc2e8"
+     ],
+     "generated": [
+      "0x004dc2b8",
+      "0x004dc2e5"
+     ],
+     "generated_by": [
+      "xglMenuDrawType1Sub"
+     ],
+     "c_owned_symbols": [
+      "D_004DC2B8",
+      "D_004DC2C0",
+      "D_004DC2C8",
+      "ActiveMenuNo",
+      "D_004DC2D0",
+      "D_004DC2D8",
+      "D_004DC2E0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/xgl_menu.o"
+     }
+    }
+   ]
+  },
   "main/tu093": {
    ".rodata": [
     {
