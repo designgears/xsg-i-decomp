@@ -65,7 +65,7 @@ segments:
       - [0xCB30, rodata, ov11/mini_g]
       - [0xD720, rodata, ov11/cajino_get]
       - [0xEC28]
-      - { type: bss, vram: 0x00A0DC28, name: ov11/mini_g }
+      - { type: .bss, vram: 0x00A0DC28, name: ov11/mini_g }
   - [0xEC28, pad, ov11_bss_file_image]
   - [0xF078, bin, elf_shstrtab]
   - [0xF098, bin, elf_section_headers]

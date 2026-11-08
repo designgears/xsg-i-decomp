@@ -5,14 +5,22 @@
 #include "shared.h"
 #include "res.h"
 #include "mini_g.h"
+
+/* .bss file-scope statics (original order) */
+static int Gwork[148];
+static XglPacket *Pkt;
+static short BoxRGBA[4];
+static unsigned long BoxPOS[4];
+static CasinoResourcePrefix *ResData;
+static int shpmenu_work[51];
+static int MenuNum;
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned short PadData[];
 extern unsigned char BG_Rect[0x10];
-extern int D_00A0DD14;
 extern char ViewSamTex[];
-extern int D_00A0DEE8[];
+#define D_00A0DEE8 (((int *)((char *)Gwork + 0x1C8)))
 extern const char D_00A0C4A0[];
 extern const char D_00A0C4B0[];
 extern const char D_00A0C638[];
@@ -48,7 +56,7 @@ extern unsigned char PoCurTex[8][28];
 
 extern short selpos_94[5][2];
 
-extern short D_00A0DEB8[5];
+#define D_00A0DEB8 (((short *)((char *)Gwork + 0x198)))
 
 extern unsigned char point_rect_20[9][16];
 
@@ -99,7 +107,6 @@ extern void sceVif1PkCloseGifTag(XglPacket *packet);
 
 extern void sceVif1PkCloseDirectCode(XglPacket *packet);
 
-extern XglPacket *Pkt;
 
 extern void sceVif1PkAddGsData(XglPacket *packet, u64 data);
 const SetRegADTag D_00A0BB30 = { { 0x1400000000008000LL, 0x6LL } };
@@ -230,7 +237,6 @@ static void SetRegAD(XglPacket *packet, int reg, int value)
     sceVif1PkCloseDirectCode(packet);
 }
 
-extern short BoxRGBA[4];
 
 static void ResetRGBA(void)
 {
@@ -246,7 +252,6 @@ static void ResetRGBA(void)
 /* ov11:0x00a007e0. Stores the four caller-supplied components in the
  * shared untextured box color state (original LOCAL data symbol
  * BoxRGBA, ov11:0x00a0df78). */
-extern short BoxRGBA[4];
 
 static void SetRGBA(short red, short green, short blue, short alpha)
 {
@@ -256,7 +261,6 @@ static void SetRGBA(short red, short green, short blue, short alpha)
     BoxRGBA[3] = alpha;
 }
 
-extern unsigned long BoxPOS[4];
 
 static void MakeBoxPos(int x, int y, int w, int h)
 {
@@ -407,7 +411,7 @@ static int AddCoin(int amount)
 }
 
 extern short *realpt[18];
-extern int D_00A0DD34[];
+#define D_00A0DD34 (((int *)((char *)Gwork + 0x14)))
 
 static short SlGetPic(int reel, int positionOffset, int row)
 {
@@ -499,7 +503,7 @@ static void decprint(int value, int digits, int x, int y)
 }
 
 static void decprint(int value, int digits, int x, int y);
-extern int D_00A0DDC8;
+#define D_00A0DDC8 (*(int *)((char *)Gwork + 0xA8))
 
 static void SlCashPrint(void)
 {
@@ -527,7 +531,7 @@ static void pay_print(XglPacket *pkt)
 /* ov11:0x00a01060. Draws the three-digit slot total stake at its fixed
  * screen position through decprint (ov11:0x00a00de0, LOCAL asm sibling). */
 static void decprint(int value, int digits, int x, int y);
-extern short D_00A0DD74;
+#define D_00A0DD74 (*(short *)((char *)Gwork + 0x54))
 
 static void total_pay_print(XglPacket *pkt)
 {
@@ -736,7 +740,7 @@ typedef struct {
     short flag;
 } SlPrize;
 
-extern SlPrize D_00A0DD8A[];
+#define D_00A0DD8A (((SlLineGwork *)Gwork)->line)
 
 typedef struct {
     char pad0[0x48];
@@ -903,7 +907,7 @@ static void SlGuidPrint(int index)
     seq_21 %= 10;
 }
 
-extern int D_00A0DD5C;
+#define D_00A0DD5C (*(int *)((char *)Gwork + 0x3C))
 
 static void point_control(XglPacket *pkt)
 {
@@ -1034,7 +1038,7 @@ static void SlCoinEntry(void)
     }
 }
 
-extern short D_00A0DD6A;
+#define D_00A0DD6A (*(short *)((char *)Gwork + 0x4A))
 
 static void SlPrizeCheck(int line)
 {
@@ -1141,10 +1145,9 @@ static void SlLineCheck(void)
             p1->reel[r] = SlGetPic(r, pat_22[i * 3 + j].pos, ((SlLineGwork *)Gwork)->row);
         }
     }
-    p2 = D_00A0DD8A;
     for (i = 0; i < 5; i++) {
+        p2 = &((SlLineGwork *)Gwork)->line[i];
         dprintf(D_00A0BD10, i, p2->reel[0], p2->reel[1], p2->reel[2]);
-        p2++;
     }
     best = 0;
     for (i = 0; i < 5; i++) {
@@ -1180,7 +1183,6 @@ static void SlLineCheck(void)
  * whether the resulting payout is nonzero. SlLineCheck is a LOCAL asm
  * sibling. */
 static void SlLineCheck(void);
-extern int D_00A0DDC8;
 
 static int check_real(void)
 {
@@ -1343,16 +1345,16 @@ typedef struct {
     int f[4];
 } SlPrizeRct;
 extern int mode_24;
-extern int D_00A0DC28;
-extern int D_00A0DC2C;
-extern int D_00A0DC30;
 const SlPrizeTex D_00A0BD68 = { 0, 0, 0x100, 0x40, 0, 0x40, 0 };
-extern SlPrizeTex D_00A0DC38;
 const SlPrizeRct D_00A0BD88 = { 0x80, 0x70, 0x400, 0 };
-extern SlPrizeRct D_00A0DC58;
 
 static int SlPrizeEffect(int arg0)
 {
+    static int D_00A0DC28 __asm__("D_00A0DC28");
+    static int D_00A0DC2C __asm__("D_00A0DC2C");
+    static int D_00A0DC30 __asm__("D_00A0DC30");
+    static SlPrizeTex D_00A0DC38 __asm__("D_00A0DC38");
+    static SlPrizeRct D_00A0DC58 __asm__("D_00A0DC58");
     switch (mode_24) {
     case 0:
         D_00A0DC38 = D_00A0BD68;
@@ -1452,10 +1454,7 @@ static int SlPrizeEffect(int arg0)
 }
 
 typedef struct { int on; int wait; int h; } SlRealEff;
-extern SlRealEff D_00A0DC68[3];
-extern SlRealEff *D_00A0DC8C;
-extern int D_00A0DC90;
-extern short D_00A0DD68;
+#define D_00A0DD68 (*(short *)((char *)Gwork + 0x48))
 typedef struct { int a; int y; int b; int h; int c[3]; } SlEffTex;
 extern SlEffTex tex_30;
 extern int mode_33;
@@ -1463,6 +1462,9 @@ typedef struct { int x, y, w, h; } SlCrRect;
 
 static int SlChangeRealEffect(int arg0)
 {
+    static SlRealEff D_00A0DC68[3] __asm__("D_00A0DC68");
+    static SlRealEff *D_00A0DC8C __asm__("D_00A0DC8C");
+    static int D_00A0DC90 __asm__("D_00A0DC90");
     SlCrRect rect;
     int i;
     int cnt;
@@ -1571,7 +1573,7 @@ static int SlChangeRealEffect(int arg0)
 }
 
 extern int busy_35;
-extern int D_00A0DDD0;
+#define D_00A0DDD0 (*(int *)((char *)Gwork + 0xB0))
 int SlChangeRealEffect(int arg0);
 typedef struct {
     char pad0[0x4A];
@@ -1928,7 +1930,7 @@ static void NgStopBtnPrint(void)
     }
 }
 
-extern short D_00A0DDE2[];
+#define D_00A0DDE2 (((short *)((char *)Gwork + 0xC2)))
 
 static void NgAllStop(void)
 {
@@ -2332,10 +2334,10 @@ static void PoMoneyPrint(int type, int value)
 }
 
 extern int cnt_54;
-extern int D_00A0DC98[4];
 
 static void PoCurDraw(short *pos)
 {
+    static int D_00A0DC98[4] __asm__("D_00A0DC98");
     xglPacketTextureTrans((void *)0x013CF800);
     SetRegAD(Pkt, 0x3F, 0);
     D_00A0DC98[2] = D_00A0DC98[3] = 0x18;
@@ -2488,12 +2490,12 @@ static void PoCardDraw(void)
 extern int status_73;
 extern unsigned char tex_72[];
 typedef struct { int x, y, w, h; } PoCardRectS;
-extern PoCardRectS D_00A0DCA8[5];
-extern int D_00A0DCF8;
 typedef struct { int w[4]; } __attribute__((packed)) PoCardAnimeRect;
 
 static int PoCardDrawAnime(void)
 {
+    static PoCardRectS D_00A0DCA8[5] __asm__("D_00A0DCA8");
+    static int D_00A0DCF8 __asm__("D_00A0DCF8");
     int i;
     int done;
 
@@ -2539,13 +2541,13 @@ static int PoCardDrawAnime(void)
 
 extern int status_77;
 extern unsigned char tex_76[];
-extern PoCardRectS D_00A0DD00;
-extern int D_00A0DD10;
 typedef struct { char pad[0x176]; short hand[17]; short flag[5]; } PoBonusWork;
 typedef struct { PoCardRectS r[5]; } CardPosWork;
 
 static int PoBonusCardAnime(void)
 {
+    static PoCardRectS D_00A0DD00 __asm__("D_00A0DD00");
+    static int D_00A0DD10 __asm__("D_00A0DD10");
     int i;
 
     xglPacketTextureTrans((void *)0x0128D000);
@@ -3297,7 +3299,7 @@ static void PoResultLamp(int category)
 
 /* ov11:0x00a06308. Stores the caller-supplied poker sequence state in the
  * global sequence word. */
-extern int D_00A0DEA8;
+#define D_00A0DEA8 (*(int *)((char *)Gwork + 0x188))
 
 static void PoSeqChange(int sequenceState)
 {
@@ -3322,7 +3324,7 @@ typedef struct {
 } PokerReadyWidthTable;
 
 static void PoWindowMessage(const char *message, int width);
-extern int D_00A0DD2C;
+#define D_00A0DD2C (*(int *)((char *)Gwork + 0xC))
 const PokerReadyMessageTable D_00A0C1B8 = { { D_00A0C130, D_00A0C150, D_00A0C170, D_00A0C190 } };
 const PokerReadyWidthTable D_00A0C1C8 = { 0x1D, 0x1E, 0x1E, 0x1F };
 
@@ -3409,7 +3411,7 @@ union CasinoWorkU {
     int words[148];
     struct PokerDealWorkU poker_deal;
 };
-extern union CasinoWorkU GworkU __asm__("Gwork");
+#define GworkU (*(union CasinoWorkU *)Gwork)
 extern int init_99;
 extern int PokerCoinRate[4];
 #define CASINO_MENU 0
@@ -3900,7 +3902,6 @@ static void sub_window(int windowId, int y, int x);
 static int submenu_select(int windowId, int y, int x, int iconCount,
                           void *icons, int *selected);
 extern unsigned char Level_Tex[];
-extern int D_00A0DD2C;
 
 static int level_select(int windowId, int y, int x)
 {
@@ -3913,7 +3914,7 @@ static int level_select(int windowId, int y, int x)
  * uses above; exchange_select's own tail call (`j submenu_select`) is why its
  * return value is submenu_select's. */
 extern unsigned char ExChange_Tex[];
-extern int D_00A0DD24;
+#define D_00A0DD24 (*(int *)((char *)Gwork + 0x4))
 
 static int exchange_select(int windowId, int y, int x)
 {
@@ -4287,8 +4288,6 @@ static void init_shop(void)
 }
 
 extern int xglFlagsGet1(int flag);
-extern int MenuNum;
-extern int shpmenu_work[];
 
 static void init_shpmenu(void)
 {
@@ -4939,6 +4938,7 @@ unsigned char keyrect_116[0x10] = { 0x11, 0, 0, 0, 0x7D, 1, 0, 0, 0xE0, 1, 0, 0,
 
 static int VW_SamMode(int enable)
 {
+    static int D_00A0DD14 __asm__("D_00A0DD14");
     int i;
     int *p;
     int *base;
@@ -5021,10 +5021,10 @@ static int VW_SamMode(int enable)
 static int VW_ViewMode(int index);
 static int VW_SamMode(int enable);
 extern int mode_123;
-extern int D_00A0DD18;
 
 static void VW_Main(void)
 {
+    static int D_00A0DD18 __asm__("D_00A0DD18");
     XglPacket **pkt = &Pkt;
 
     *pkt = xglPacketGetCurrent();
