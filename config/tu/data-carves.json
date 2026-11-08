@@ -10070,6 +10070,50 @@
     }
    ]
   },
+  "ov01/tu001_00a00218": {
+   ".rodata": [
+    {
+     "range": [
+      "0x00a437e0",
+      "0x00a438f0"
+     ],
+     "generated": [
+      "0x00a437e0",
+      "0x00a438ea"
+     ],
+     "generated_by": [
+      "fifoPop",
+      "fifoPush",
+      "objCmdPop",
+      "objCmdPush",
+      "objEntryPure",
+      "objEntrySub",
+      "objRemove",
+      "objRemovePure",
+      "objWorkFree",
+      "objWorkGet"
+     ],
+     "c_owned_symbols": [
+      "D_00A437E0",
+      "objRemoveError",
+      "D_00A43810",
+      "objRemovePureError",
+      "D_00A43848",
+      "D_00A43860",
+      "D_00A43880",
+      "D_00A438A0",
+      "D_00A438C0",
+      "D_00A438D8"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/obj.o"
+     }
+    }
+   ]
+  },
   "ov01/tu002_00a00d60": {
    ".rodata": [
     {
@@ -12431,29 +12475,30 @@
    ".rodata": [
     {
      "range": [
-      "0x00a13470",
-      "0x00a13540"
+      "0x00a13450",
+      "0x00a13550"
      ],
      "generated": [
-      "0x00a13470",
-      "0x00a1353c"
+      "0x00a13450",
+      "0x00a1354b"
      ],
      "generated_by": [
+      "UmnPlugin",
+      "tskUmnPluginInfo",
       "tskUmnPluginList"
      ],
      "c_owned_symbols": [
-      "jtbl_00A13470"
-     ],
-     "also_referenced_by_c": [
       "D_00A13450",
       "D_00A13458",
       "D_00A13460",
+      "jtbl_00A13470",
       "D_00A13540"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
      }
     }
    ]

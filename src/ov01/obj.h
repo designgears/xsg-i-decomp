@@ -148,20 +148,9 @@ void objWorkInit(void);
 
 extern void objWorkFree(void *work);
 
-extern const char D_00A43810[];
-extern const char D_00A43848[];
-extern const char D_00A43880[];
-extern const char D_00A438C0[];
-
-extern const char D_00A43860[];
-
 void objStdInit(ObjectTask *task);
 
 extern int printf(const char *format, ...);
-
-extern const char objRemoveError[];
-
-extern const char objRemovePureError[];
 
 void objCmdClear(ObjectTask *task);
 
@@ -169,15 +158,11 @@ void *objCmdPtrGet(ObjectTask *task);
 
 void *objCmdTailGet(ObjectTask *task);
 
-extern const char D_00A438A0[];
-
 void *objCmdPop(ObjectTask *task);
 
 int objCmdNext(ObjectTask *task);
 
 void fifoInit(Fifo *fifo, int capacity);
-
-extern const char D_00A438D8[];
 
 int fifoPop(Fifo *fifo);
 
