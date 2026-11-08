@@ -14972,36 +14972,28 @@
    ]
   },
   "ov01/tu013_00a2c9f8": {
-   ".rodata": [
+   ".data": [
     {
      "range": [
-      "0x00a4e670",
-      "0x00a4e768"
+      "0x00a424b8",
+      "0x00a424cc"
      ],
      "generated": [
-      "0x00a4e670",
-      "0x00a4e768"
+      "0x00a424b8",
+      "0x00a424cc"
      ],
      "generated_by": [
-      "dataSndSeLoad",
-      "dataSndSeLoadSub",
-      "dataSndSeRegLoad",
-      "dataSndStEdNumSub",
-      "sndSeTrans"
+      "dataSndMuLoad",
+      "dataSndSeLoadSub"
      ],
      "c_owned_symbols": [
-      "jtbl_00A4E670",
-      "D_00A4E6A8",
-      "D_00A4E6D0",
-      "D_00A4E6E8",
-      "D_00A4E708",
-      "D_00A4E728",
-      "D_00A4E740"
+      "sndSeNameBase",
+      "sndSeNameExt",
+      "sndMuNameBase",
+      "sndMuNameExt1",
+      "sndMuNameExt2"
      ],
-     "also_referenced_by_c": [
-      "D_00A4E768",
-      "D_00A4E788"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -15010,27 +15002,530 @@
     },
     {
      "range": [
-      "0x00a4e7b0",
-      "0x00a4e810"
+      "0x00a424d0",
+      "0x00a424dc"
      ],
      "generated": [
-      "0x00a4e7b0",
-      "0x00a4e80e"
+      "0x00a424d0",
+      "0x00a424dc"
      ],
      "generated_by": [
+      "dataSndMuLoad"
+     ],
+     "c_owned_symbols": [
+      "muName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a424e0",
+      "0x00a427f4"
+     ],
+     "generated": [
+      "0x00a424e0",
+      "0x00a427f4"
+     ],
+     "generated_by": [
+      "dataSndMuLoad",
+      "dataSndSeNameGet"
+     ],
+     "c_owned_symbols": [
+      "mu2Name",
+      "D_00A424EC",
+      "plChaBaseSeName",
+      "plAgwsBaseSeName",
+      "enemyBaseSeName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a427f8",
+      "0x00a42864"
+     ],
+     "generated": [
+      "0x00a427f8",
+      "0x00a42864"
+     ],
+     "generated_by": [
+      "dataSndSeNameGet"
+     ],
+     "c_owned_symbols": [
+      "plChaMidSeName",
+      "plAgwsMidSeName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a42868",
+      "0x00a42874"
+     ],
+     "generated": [
+      "0x00a42868",
+      "0x00a42874"
+     ],
+     "generated_by": [
+      "dataSndSeNameGet"
+     ],
+     "c_owned_symbols": [
+      "enemyMidSeName"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a42878",
+      "0x00a42dac"
+     ],
+     "generated": [
+      "0x00a42878",
+      "0x00a42dac"
+     ],
+     "generated_by": [
+      "dataSndMuLoad",
+      "dataSndStEdNameGet",
+      "sndBankGet",
+      "sndInit",
+      "sndInit2",
+      "sndMuTrans",
+      "sndSeAdrGet",
       "sndSePlay",
+      "sndSeRegAdrChk",
+      "sndSeRegAdrGet",
+      "sndSeRegRemove",
       "sndSeTrans"
      ],
      "c_owned_symbols": [
+      "btst",
+      "bted",
+      "sndSeRegDat",
+      "sndSeDat",
+      "sndMuDat",
+      "ctrlId",
+      "dmgBankOffs"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a42db0",
+      "0x00a42dbc"
+     ],
+     "generated": [
+      "0x00a42db0",
+      "0x00a42dbc"
+     ],
+     "generated_by": [
+      "sndInit2"
+     ],
+     "c_owned_symbols": [
+      "dmgBankStat"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov01/build/scaffold/src/ov01/snd.o"
+     }
+    }
+   ],
+   ".rodata": [
+    {
+     "range": [
+      "0x00a4e130",
+      "0x00a4e880"
+     ],
+     "generated": [
+      "0x00a4e130",
+      "0x00a4e875"
+     ],
+     "generated_by": [
+      "dataSndMuLoad",
+      "dataSndSeLoad",
+      "dataSndSeLoadSub",
+      "dataSndSeNameGet",
+      "dataSndSeRegLoad",
+      "dataSndStEdNameGet",
+      "dataSndStEdNumSub",
+      "sndConvRegNo",
+      "sndMuTransPlay",
+      "sndSePlay",
+      "sndSeStop",
+      "sndSeTrans"
+     ],
+     "c_owned_symbols": [
+      "D_00A4E130",
+      "D_00A4E148",
+      "D_00A4E150",
+      "D_00A4E168",
+      "D_00A4E170",
+      "D_00A4E178",
+      "D_00A4E180",
+      "D_00A4E188",
+      "D_00A4E190",
+      "D_00A4E198",
+      "D_00A4E1A0",
+      "D_00A4E1A8",
+      "D_00A4E1B0",
+      "D_00A4E1B8",
+      "D_00A4E1C0",
+      "D_00A4E1C8",
+      "D_00A4E1D0",
+      "D_00A4E1D8",
+      "D_00A4E1E0",
+      "D_00A4E1E8",
+      "D_00A4E1F0",
+      "D_00A4E1F8",
+      "D_00A4E200",
+      "D_00A4E208",
+      "D_00A4E210",
+      "D_00A4E218",
+      "D_00A4E220",
+      "D_00A4E228",
+      "D_00A4E230",
+      "D_00A4E238",
+      "D_00A4E240",
+      "D_00A4E248",
+      "D_00A4E250",
+      "D_00A4E258",
+      "D_00A4E260",
+      "D_00A4E268",
+      "D_00A4E270",
+      "D_00A4E278",
+      "D_00A4E280",
+      "D_00A4E288",
+      "D_00A4E290",
+      "D_00A4E298",
+      "D_00A4E2A0",
+      "D_00A4E2A8",
+      "D_00A4E2B0",
+      "D_00A4E2B8",
+      "D_00A4E2C0",
+      "D_00A4E2C8",
+      "D_00A4E2D0",
+      "D_00A4E2D8",
+      "D_00A4E2E0",
+      "D_00A4E2E8",
+      "D_00A4E2F0",
+      "D_00A4E2F8",
+      "D_00A4E300",
+      "D_00A4E308",
+      "D_00A4E310",
+      "D_00A4E318",
+      "D_00A4E320",
+      "D_00A4E328",
+      "D_00A4E330",
+      "D_00A4E338",
+      "D_00A4E340",
+      "D_00A4E348",
+      "D_00A4E350",
+      "D_00A4E358",
+      "D_00A4E360",
+      "D_00A4E368",
+      "D_00A4E370",
+      "D_00A4E378",
+      "D_00A4E380",
+      "D_00A4E388",
+      "D_00A4E390",
+      "D_00A4E398",
+      "D_00A4E3A0",
+      "D_00A4E3A8",
+      "D_00A4E3B0",
+      "D_00A4E3B8",
+      "D_00A4E3C0",
+      "D_00A4E3C8",
+      "D_00A4E3D0",
+      "D_00A4E3D8",
+      "D_00A4E3E0",
+      "D_00A4E3E8",
+      "D_00A4E3F0",
+      "D_00A4E3F8",
+      "D_00A4E400",
+      "D_00A4E408",
+      "D_00A4E410",
+      "D_00A4E418",
+      "D_00A4E420",
+      "D_00A4E428",
+      "D_00A4E430",
+      "D_00A4E438",
+      "D_00A4E440",
+      "D_00A4E448",
+      "D_00A4E450",
+      "D_00A4E458",
+      "D_00A4E460",
+      "D_00A4E468",
+      "D_00A4E470",
+      "D_00A4E478",
+      "D_00A4E480",
+      "D_00A4E488",
+      "D_00A4E490",
+      "D_00A4E498",
+      "D_00A4E4A0",
+      "D_00A4E4A8",
+      "D_00A4E4B0",
+      "D_00A4E4B8",
+      "D_00A4E4C0",
+      "D_00A4E4C8",
+      "D_00A4E4D0",
+      "D_00A4E4D8",
+      "D_00A4E4E0",
+      "D_00A4E4E8",
+      "D_00A4E4F0",
+      "D_00A4E4F8",
+      "D_00A4E500",
+      "D_00A4E508",
+      "D_00A4E510",
+      "D_00A4E518",
+      "D_00A4E520",
+      "D_00A4E528",
+      "D_00A4E530",
+      "D_00A4E538",
+      "D_00A4E540",
+      "D_00A4E548",
+      "D_00A4E550",
+      "D_00A4E558",
+      "D_00A4E560",
+      "D_00A4E568",
+      "D_00A4E570",
+      "D_00A4E578",
+      "D_00A4E580",
+      "D_00A4E588",
+      "D_00A4E590",
+      "D_00A4E598",
+      "D_00A4E5A0",
+      "D_00A4E5A8",
+      "D_00A4E5B0",
+      "D_00A4E5B8",
+      "D_00A4E5C0",
+      "D_00A4E5C8",
+      "D_00A4E5D0",
+      "D_00A4E5D8",
+      "D_00A4E5E0",
+      "D_00A4E5E8",
+      "D_00A4E5F0",
+      "D_00A4E5F8",
+      "D_00A4E600",
+      "D_00A4E608",
+      "D_00A4E610",
+      "D_00A4E618",
+      "D_00A4E620",
+      "D_00A4E628",
+      "D_00A4E630",
+      "D_00A4E638",
+      "D_00A4E640",
+      "D_00A4E648",
+      "D_00A4E650",
+      "D_00A4E658",
+      "D_00A4E660",
+      "jtbl_00A4E670",
+      "D_00A4E6A8",
+      "D_00A4E6D0",
+      "D_00A4E6E8",
+      "D_00A4E708",
+      "D_00A4E728",
+      "D_00A4E740",
+      "D_00A4E768",
+      "D_00A4E788",
       "D_00A4E7B0",
       "D_00A4E7C8",
-      "D_00A4E7E8"
-     ],
-     "also_referenced_by_c": [
+      "D_00A4E7E8",
       "D_00A4E810",
       "D_00A4E828",
       "D_00A4E860"
      ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A4E130": "sndSeNameBase",
+      "D_00A4E148": "sndSeNameExt",
+      "D_00A4E150": "sndMuNameBase",
+      "D_00A4E168": "sndMuNameExt1",
+      "D_00A4E170": "sndMuNameExt2",
+      "D_00A4E178": "muName",
+      "D_00A4E180": "muName",
+      "D_00A4E188": "muName",
+      "D_00A4E190": "mu2Name",
+      "D_00A4E198": "mu2Name",
+      "D_00A4E1A0": "plChaBaseSeName",
+      "D_00A4E1A8": "plChaBaseSeName",
+      "D_00A4E1B0": "plChaBaseSeName",
+      "D_00A4E1B8": "plChaBaseSeName",
+      "D_00A4E1C0": "plChaBaseSeName",
+      "D_00A4E1C8": "plChaBaseSeName",
+      "D_00A4E1D0": "plChaBaseSeName",
+      "D_00A4E1D8": "plAgwsBaseSeName",
+      "D_00A4E1E0": "plAgwsBaseSeName",
+      "D_00A4E1E8": "plAgwsBaseSeName",
+      "D_00A4E1F0": "plAgwsBaseSeName",
+      "D_00A4E1F8": "plAgwsBaseSeName",
+      "D_00A4E200": "plAgwsBaseSeName",
+      "D_00A4E208": "plAgwsBaseSeName",
+      "D_00A4E210": "plAgwsBaseSeName",
+      "D_00A4E218": "enemyBaseSeName",
+      "D_00A4E220": "enemyBaseSeName",
+      "D_00A4E228": "enemyBaseSeName",
+      "D_00A4E230": "enemyBaseSeName",
+      "D_00A4E238": "enemyBaseSeName",
+      "D_00A4E240": "enemyBaseSeName",
+      "D_00A4E248": "enemyBaseSeName",
+      "D_00A4E250": "enemyBaseSeName",
+      "D_00A4E258": "enemyBaseSeName",
+      "D_00A4E260": "enemyBaseSeName",
+      "D_00A4E268": "enemyBaseSeName",
+      "D_00A4E270": "enemyBaseSeName",
+      "D_00A4E278": "enemyBaseSeName",
+      "D_00A4E280": "enemyBaseSeName",
+      "D_00A4E288": "enemyBaseSeName",
+      "D_00A4E290": "enemyBaseSeName",
+      "D_00A4E298": "enemyBaseSeName",
+      "D_00A4E2A0": "enemyBaseSeName",
+      "D_00A4E2A8": "enemyBaseSeName",
+      "D_00A4E2B0": "enemyBaseSeName",
+      "D_00A4E2B8": "enemyBaseSeName",
+      "D_00A4E2C0": "enemyBaseSeName",
+      "D_00A4E2C8": "enemyBaseSeName",
+      "D_00A4E2D0": "enemyBaseSeName",
+      "D_00A4E2D8": "enemyBaseSeName",
+      "D_00A4E2E0": "enemyBaseSeName",
+      "D_00A4E2E8": "enemyBaseSeName",
+      "D_00A4E2F0": "enemyBaseSeName",
+      "D_00A4E2F8": "enemyBaseSeName",
+      "D_00A4E300": "enemyBaseSeName",
+      "D_00A4E308": "enemyBaseSeName",
+      "D_00A4E310": "enemyBaseSeName",
+      "D_00A4E318": "enemyBaseSeName",
+      "D_00A4E320": "enemyBaseSeName",
+      "D_00A4E328": "enemyBaseSeName",
+      "D_00A4E330": "enemyBaseSeName",
+      "D_00A4E338": "enemyBaseSeName",
+      "D_00A4E340": "enemyBaseSeName",
+      "D_00A4E348": "enemyBaseSeName",
+      "D_00A4E350": "enemyBaseSeName",
+      "D_00A4E358": "enemyBaseSeName",
+      "D_00A4E360": "enemyBaseSeName",
+      "D_00A4E368": "enemyBaseSeName",
+      "D_00A4E370": "enemyBaseSeName",
+      "D_00A4E378": "enemyBaseSeName",
+      "D_00A4E380": "enemyBaseSeName",
+      "D_00A4E388": "enemyBaseSeName",
+      "D_00A4E390": "enemyBaseSeName",
+      "D_00A4E398": "enemyBaseSeName",
+      "D_00A4E3A0": "enemyBaseSeName",
+      "D_00A4E3A8": "enemyBaseSeName",
+      "D_00A4E3B0": "enemyBaseSeName",
+      "D_00A4E3B8": "enemyBaseSeName",
+      "D_00A4E3C0": "enemyBaseSeName",
+      "D_00A4E3C8": "enemyBaseSeName",
+      "D_00A4E3D0": "enemyBaseSeName",
+      "D_00A4E3D8": "enemyBaseSeName",
+      "D_00A4E3E0": "enemyBaseSeName",
+      "D_00A4E3E8": "enemyBaseSeName",
+      "D_00A4E3F0": "enemyBaseSeName",
+      "D_00A4E3F8": "enemyBaseSeName",
+      "D_00A4E400": "enemyBaseSeName",
+      "D_00A4E408": "enemyBaseSeName",
+      "D_00A4E410": "enemyBaseSeName",
+      "D_00A4E418": "enemyBaseSeName",
+      "D_00A4E420": "enemyBaseSeName",
+      "D_00A4E428": "enemyBaseSeName",
+      "D_00A4E430": "enemyBaseSeName",
+      "D_00A4E438": "enemyBaseSeName",
+      "D_00A4E440": "enemyBaseSeName",
+      "D_00A4E448": "enemyBaseSeName",
+      "D_00A4E450": "enemyBaseSeName",
+      "D_00A4E458": "enemyBaseSeName",
+      "D_00A4E460": "enemyBaseSeName",
+      "D_00A4E468": "enemyBaseSeName",
+      "D_00A4E470": "enemyBaseSeName",
+      "D_00A4E478": "enemyBaseSeName",
+      "D_00A4E480": "enemyBaseSeName",
+      "D_00A4E488": "enemyBaseSeName",
+      "D_00A4E490": "enemyBaseSeName",
+      "D_00A4E498": "enemyBaseSeName",
+      "D_00A4E4A0": "enemyBaseSeName",
+      "D_00A4E4A8": "enemyBaseSeName",
+      "D_00A4E4B0": "enemyBaseSeName",
+      "D_00A4E4B8": "enemyBaseSeName",
+      "D_00A4E4C0": "enemyBaseSeName",
+      "D_00A4E4C8": "enemyBaseSeName",
+      "D_00A4E4D0": "enemyBaseSeName",
+      "D_00A4E4D8": "enemyBaseSeName",
+      "D_00A4E4E0": "enemyBaseSeName",
+      "D_00A4E4E8": "enemyBaseSeName",
+      "D_00A4E4F0": "enemyBaseSeName",
+      "D_00A4E4F8": "enemyBaseSeName",
+      "D_00A4E500": "enemyBaseSeName",
+      "D_00A4E508": "enemyBaseSeName",
+      "D_00A4E510": "enemyBaseSeName",
+      "D_00A4E518": "enemyBaseSeName",
+      "D_00A4E520": "enemyBaseSeName",
+      "D_00A4E528": "enemyBaseSeName",
+      "D_00A4E530": "enemyBaseSeName",
+      "D_00A4E538": "enemyBaseSeName",
+      "D_00A4E540": "enemyBaseSeName",
+      "D_00A4E548": "plChaMidSeName",
+      "D_00A4E550": "plChaMidSeName",
+      "D_00A4E558": "plChaMidSeName",
+      "D_00A4E560": "plChaMidSeName",
+      "D_00A4E568": "plChaMidSeName",
+      "D_00A4E570": "plChaMidSeName",
+      "D_00A4E578": "plChaMidSeName",
+      "D_00A4E580": "plChaMidSeName",
+      "D_00A4E588": "plChaMidSeName",
+      "D_00A4E590": "plChaMidSeName",
+      "D_00A4E598": "plChaMidSeName",
+      "D_00A4E5A0": "plChaMidSeName",
+      "D_00A4E5A8": "plChaMidSeName",
+      "D_00A4E5B0": "plChaMidSeName",
+      "D_00A4E5B8": "plChaMidSeName",
+      "D_00A4E5C0": "plChaMidSeName",
+      "D_00A4E5C8": "plChaMidSeName",
+      "D_00A4E5D0": "plChaMidSeName",
+      "D_00A4E5D8": "plChaMidSeName",
+      "D_00A4E5E0": "plChaMidSeName",
+      "D_00A4E5E8": "plChaMidSeName",
+      "D_00A4E5F0": "enemyMidSeName",
+      "D_00A4E5F8": "enemyMidSeName",
+      "D_00A4E600": "enemyMidSeName",
+      "D_00A4E608": "btst",
+      "D_00A4E610": "btst",
+      "D_00A4E618": "btst",
+      "D_00A4E620": "btst",
+      "D_00A4E628": "btst",
+      "D_00A4E630": "btst",
+      "D_00A4E638": "bted",
+      "D_00A4E640": "bted",
+      "D_00A4E648": "bted",
+      "D_00A4E650": "bted",
+      "D_00A4E658": "bted",
+      "D_00A4E660": "bted"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -15343,37 +15838,18 @@
     {
      "range": [
       "0x00a51220",
-      "0x00a51270"
+      "0x00a512b0"
      ],
      "generated": [
       "0x00a51220",
-      "0x00a51268"
+      "0x00a512b0"
      ],
      "generated_by": [
       "MEfCreate"
      ],
      "c_owned_symbols": [
       "D_00A51220",
-      "D_00A51240"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov01/build/scaffold/src/ov01/m_ef_create.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51270",
-      "0x00a512b0"
-     ],
-     "generated": [
-      "0x00a51270",
-      "0x00a512b0"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
+      "D_00A51240",
       "McEfSTQtbl"
      ],
      "also_referenced_by_c": [],
@@ -15958,16 +16434,17 @@
     {
      "range": [
       "0x00a11d40",
-      "0x00a11df0"
+      "0x00a11e60"
      ],
      "generated": [
       "0x00a11d40",
-      "0x00a11de8"
+      "0x00a11e60"
      ],
      "generated_by": [
       "UmnFirstLoad",
       "UmnInit",
-      "UmnMain"
+      "UmnMain",
+      "UmnMain2"
      ],
      "c_owned_symbols": [
       "D_00A11D40",
@@ -15975,28 +16452,7 @@
       "D_00A11D70",
       "D_00A11D90",
       "D_00A11DB0",
-      "jtbl_00A11DD0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_object_task_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a11df0",
-      "0x00a11e60"
-     ],
-     "generated": [
-      "0x00a11df0",
-      "0x00a11e60"
-     ],
-     "generated_by": [
-      "UmnMain2"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A11DD0",
       "D_00A11DF0"
      ],
      "also_referenced_by_c": [],
@@ -16119,14 +16575,18 @@
     {
      "range": [
       "0x00a12060",
-      "0x00a120f0"
+      "0x00a12240"
      ],
      "generated": [
       "0x00a12060",
-      "0x00a120e8"
+      "0x00a12240"
      ],
      "generated_by": [
+      "LocalLightSet",
       "UmnManzaiControl",
+      "UmnProcuratorMail",
+      "UmnProcuratorManzai",
+      "UmnProcuratorManzai2",
       "tskUmnManzaiWin"
      ],
      "c_owned_symbols": [
@@ -16134,58 +16594,12 @@
       "D_00A12070",
       "D_00A12078",
       "D_00A12080",
-      "jtbl_00A12090"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/umn_procurator.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a120f0",
-      "0x00a121a0"
-     ],
-     "generated": [
-      "0x00a120f0",
-      "0x00a12198"
-     ],
-     "generated_by": [
-      "LocalLightSet",
-      "UmnProcuratorManzai",
-      "UmnProcuratorManzai2"
-     ],
-     "c_owned_symbols": [
+      "jtbl_00A12090",
       "D_00A120F0",
       "D_00A12160",
       "D_00A12170",
       "D_00A12180",
-      "D_00A12190"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/umn_procurator.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a121a0",
-      "0x00a12240"
-     ],
-     "generated": [
-      "0x00a121a0",
-      "0x00a12240"
-     ],
-     "generated_by": [
-      "UmnProcuratorMail",
-      "UmnProcuratorManzai",
-      "UmnProcuratorManzai2"
-     ],
-     "c_owned_symbols": [
+      "D_00A12190",
       "jtbl_00A121A0",
       "D_00A121D0",
       "D_00A121E0",
@@ -16520,13 +16934,14 @@
     {
      "range": [
       "0x00a13180",
-      "0x00a13218"
+      "0x00a13310"
      ],
      "generated": [
       "0x00a13180",
-      "0x00a13218"
+      "0x00a13309"
      ],
      "generated_by": [
+      "UmnSimulation",
       "tskUmnSimulationInfo",
       "tskUmnSimulationList",
       "tskUmnSimulationPas"
@@ -16539,11 +16954,15 @@
       "D_00A131D0",
       "D_00A131D8",
       "D_00A131E8",
-      "D_00A13200"
+      "D_00A13200",
+      "D_00A13218",
+      "D_00A13220",
+      "D_00A13230",
+      "D_00A13238",
+      "jtbl_00A13250",
+      "D_00A132F8"
      ],
-     "also_referenced_by_c": [
-      "D_00A13218"
-     ],
+     "also_referenced_by_c": [],
      "reached_through": {
       "D_00A13180": "ListText",
       "D_00A13198": "ListText",
@@ -16554,55 +16973,6 @@
       "D_00A131E8": "ListText",
       "D_00A13200": "msg00_0_00A10888"
      },
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13220",
-      "0x00a13250"
-     ],
-     "generated": [
-      "0x00a13220",
-      "0x00a13248"
-     ],
-     "generated_by": [
-      "tskUmnSimulationInfo",
-      "tskUmnSimulationList"
-     ],
-     "c_owned_symbols": [
-      "D_00A13220",
-      "D_00A13230",
-      "D_00A13238"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_simulation_pas.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a13250",
-      "0x00a13310"
-     ],
-     "generated": [
-      "0x00a13250",
-      "0x00a13309"
-     ],
-     "generated_by": [
-      "UmnSimulation",
-      "tskUmnSimulationList"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A13250",
-      "D_00A132F8"
-     ],
-     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -16692,22 +17062,73 @@
    ]
   },
   "ov02/tu013_00a0de20": {
+   ".data": [
+    {
+     "range": [
+      "0x00a10c40",
+      "0x00a10c44"
+     ],
+     "generated": [
+      "0x00a10c40",
+      "0x00a10c44"
+     ],
+     "generated_by": [
+      "tskUmnPluginPas"
+     ],
+     "c_owned_symbols": [
+      "msg00_0_00A10C40"
+     ],
+     "also_referenced_by_c": [
+      "msg00_1_00A10C48"
+     ],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+     }
+    },
+    {
+     "range": [
+      "0x00a10c50",
+      "0x00a10c60"
+     ],
+     "generated": [
+      "0x00a10c50",
+      "0x00a10c60"
+     ],
+     "generated_by": [
+      "UmnPlugin",
+      "tskUmnPluginList"
+     ],
+     "c_owned_symbols": [
+      "plugin_folder"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov02/build/scaffold/src/ov02/tsk_umn_plugin_pas.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a13450",
+      "0x00a13440",
       "0x00a13550"
      ],
      "generated": [
-      "0x00a13450",
+      "0x00a13440",
       "0x00a1354b"
      ],
      "generated_by": [
       "UmnPlugin",
       "tskUmnPluginInfo",
-      "tskUmnPluginList"
+      "tskUmnPluginList",
+      "tskUmnPluginPas"
      ],
      "c_owned_symbols": [
+      "D_00A13440",
       "D_00A13450",
       "D_00A13458",
       "D_00A13460",
@@ -16715,6 +17136,9 @@
       "D_00A13540"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_00A13440": "msg00_0_00A10C40"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

@@ -68,7 +68,7 @@ int MEfCreate(MEfCreateParam *param)
 int D_00A4377C = 0;
 
 /* GIF ST/Q texture coordinates of a quad's four corners (s, t, q, 0). */
-const float McEfSTQtbl[4][4] = {
+const float McEfSTQtbl[4][4] __attribute__((aligned(16))) = {
     { 0.0f, 0.0f, 1.0f, 0.0f },
     { 0.0f, 1.0f, 1.0f, 0.0f },
     { 1.0f, 0.0f, 1.0f, 0.0f },

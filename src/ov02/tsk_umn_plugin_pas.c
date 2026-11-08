@@ -20,8 +20,7 @@ struct UmnPluginState {
 
 extern struct UmnPluginState UmnWork;
 extern unsigned char *UmnWorkEnd;
-extern unsigned char plugin_folder[16];
-extern void *msg00_0_00A10C40;
+extern unsigned char plugin_folder[16] __attribute__((aligned(8)));
 extern char msg00_1_00A10C48[];
 extern unsigned short D_4A1A0C[];
 
@@ -122,6 +121,7 @@ void MoveSlide(short *current, short *target, float rate);
 
 void tskUmnPluginPas(void *task_opaque, void *work_opaque)
 {
+    static const char *msg00 = "Plug-ins";
     struct UmnPluginTask *task = task_opaque;
     struct UmnPluginPasWork *work = work_opaque;
 
@@ -145,7 +145,7 @@ void tskUmnPluginPas(void *task_opaque, void *work_opaque)
             work->window.state = initial_state;
             WindowDXMain(&work->window);
             work->window.state = 3;
-            eMessageSet(work->label.message, msg00_0_00A10C40);
+            eMessageSet(work->label.message, (void *)msg00);
             {
             struct UmnPluginPasLabel *label = &work->label;
             label->message[1] = label_font_size;
@@ -559,3 +559,5 @@ void UmnPlugin(void)
     xglFontDebugPrintf(32, 208, "\xA5\xD7\xA5\xE9\xA5\xB0\xA5\xA4\xA5\xF3");
     xglFontDebugHex(0, 64, UmnWork.plugin_mode, 2);
 }
+
+unsigned char plugin_folder[16] __attribute__((aligned(8))) = { 0 };
