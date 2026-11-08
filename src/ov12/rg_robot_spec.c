@@ -6,8 +6,9 @@
 #include "rg_robot_spec.h"
 
 extern void assert_prog(const char *expression, const char *source_file, int line);
-extern const char D_00A51E68[];
-extern const char D_00A51E78[];
+int s_nAnaAutoHomingID = 0;
+const char D_00A51E68[] = "pSpec != NIL";
+const char D_00A51E78[] = "../rg_robot_spec.euc.c";
 typedef struct RgSpecName { long long v; } RgSpecName;
 extern const RgSpecName D_00A51E90[];
 typedef struct RgRobotSpecFull {
@@ -69,6 +70,9 @@ void InitRgRobotSpec(RgRobotSpecFull *pSpec)
     pSpec->type = 0;
 }
 
+/* "UNARMED" */
+const RgSpecName D_00A51E90[1] = {{0x0044454D52414E55LL}};
+
 static void _ResetAnaAutoHoming(void)
 {
     s_nAnaAutoHomingID = -1;
@@ -77,12 +81,12 @@ static void _ResetAnaAutoHoming(void)
 extern double atof(const char *);
 extern int strcmp(const char *, const char *);
 extern void RgError(const char *message, const char *source_file, int line, ...);
-extern const char D_00A51E98[];
-extern const char D_00A51EE0[];
-extern const char D_00A51EF0[];
-extern const char D_00A51EF8[];
-extern const char D_00A51F00[];
-extern const char D_00A51F08[];
+const char D_00A51E98[] = "nID < sizeof(pSpec->m_aAutoHoming) / sizeof(pSpec->m_aAutoHoming[0])";
+const char D_00A51EE0[] = "see-target";
+const char D_00A51EF0[] = "lock-on";
+const char D_00A51EF8[] = "shot";
+const char D_00A51F00[] = "in-scrn";
+const char D_00A51F08[] = "unknown autohoming-keyword '%s'";
 typedef struct RgAutoHoming {
     float angle;
     unsigned int flags;
@@ -153,57 +157,72 @@ extern int strcasecmp(const char *, const char *);
 #define RG_DASH_MODE_NEO 2
 #define RG_DASH_MODE_NEO2 3
 #define RG_DASH_MODE_NEO3 4
-extern const char D_00A51F30[];
+const char D_00A51F30[] = "engine-power";
+const char D_00A51F40[] = "engine-impulse";
+const char D_00A51F50[] = "move-spd-max";
+const char D_00A51F60[] = "dash-spd-max";
+const char D_00A51F70[] = "rot-spd-bottom-rate";
+const char D_00A51F88[] = "weight";
+const char D_00A51F90[] = "move-resist";
+const char D_00A51FA0[] = "rot-resist";
+const char D_00A51FB0[] = "dash-time";
+const char D_00A51FC0[] = "dash-power";
+const char D_00A51FD0[] = "dash-cooldown";
+const char D_00A51FE0[] = "life";
+const char D_00A51FE8[] = "damage-stiff-time";
+const char D_00A52000[] = "body-attack-damage";
+const char D_00A52018[] = "jet-eff";
+const char D_00A52020[] = "dash-eff";
+const char D_00A52030[] = "sude";
+const char D_00A52038[] = "roll-power";
+const char D_00A52048[] = "auto-homing";
+const char D_00A52058[] = "rot-spd-max";
+const char D_00A52068[] = "dash-mode";
+const char D_00A52078[] = "normal";
+const char D_00A52080[] = "vr";
+const char D_00A52088[] = "neo";
+const char D_00A52090[] = "neo2";
+const char D_00A52098[] = "neo3";
+const char D_00A520A0[] = "engine-power         %f\n";
+const char D_00A520C0[] = "roll-power           %f\n";
+const char D_00A520E0[] = "move-spd-max         %f\n";
+const char D_00A52100[] = "rot-spd-max          %f\n";
+const char D_00A52120[] = "rot-spd-bottom-rate  %f\n";
+const char D_00A52140[] = "weight               %f\n";
+const char D_00A52160[] = "move-resist          %f\n";
+const char D_00A52180[] = "rot-resist           %f\n";
+const char D_00A521A0[] = "dash-time            %f\n";
+const char D_00A521C0[] = "dash-power           %f\n";
+const char D_00A521E0[] = "dash-cooldown        %f\n";
+const char D_00A52200[] = "auto-homing 0        %f (%x)\n";
+const char D_00A52220[] = "auto-homing 1        %f (%x)\n";
+const char D_00A52240[] = "life                 %f\n";
+const char D_00A52260[] = "damage-stiff-time    %f\n";
 #define robotSpecEnginePowerKey D_00A51F30
-extern const char D_00A51F40[];
 #define robotSpecEngineImpulseKey D_00A51F40
-extern const char D_00A51F50[];
 #define robotSpecMoveSpeedMaxKey D_00A51F50
-extern const char D_00A51F60[];
 #define robotSpecDashSpeedMaxKey D_00A51F60
-extern const char D_00A51F70[];
 #define robotSpecRotSpeedBottomRateKey D_00A51F70
-extern const char D_00A51F88[];
 #define robotSpecWeightKey D_00A51F88
-extern const char D_00A51F90[];
 #define robotSpecMoveResistKey D_00A51F90
-extern const char D_00A51FA0[];
 #define robotSpecRotResistKey D_00A51FA0
-extern const char D_00A51FB0[];
 #define robotSpecDashTimeKey D_00A51FB0
-extern const char D_00A51FC0[];
 #define robotSpecDashPowerKey D_00A51FC0
-extern const char D_00A51FD0[];
 #define robotSpecDashCooldownKey D_00A51FD0
-extern const char D_00A51FE0[];
 #define robotSpecLifeKey D_00A51FE0
-extern const char D_00A51FE8[];
 #define robotSpecDamageStiffTimeKey D_00A51FE8
-extern const char D_00A52000[];
 #define robotSpecBodyAttackDamageKey D_00A52000
-extern const char D_00A52018[];
 #define robotSpecJetEffectKey D_00A52018
-extern const char D_00A52020[];
 #define robotSpecDashEffectKey D_00A52020
-extern const char D_00A52030[];
 #define robotSpecBareHandKey D_00A52030
-extern const char D_00A52038[];
 #define robotSpecRollPowerKey D_00A52038
-extern const char D_00A52048[];
 #define robotSpecAutoHomingKey D_00A52048
-extern const char D_00A52058[];
 #define robotSpecRotSpeedMaxKey D_00A52058
-extern const char D_00A52068[];
 #define robotSpecDashModeKey D_00A52068
-extern const char D_00A52078[];
 #define robotSpecDashModeNormalKeyword D_00A52078
-extern const char D_00A52080[];
 #define robotSpecDashModeVrKeyword D_00A52080
-extern const char D_00A52088[];
 #define robotSpecDashModeNeoKeyword D_00A52088
-extern const char D_00A52090[];
 #define robotSpecDashModeNeo2Keyword D_00A52090
-extern const char D_00A52098[];
 #define robotSpecDashModeNeo3Keyword D_00A52098
 
 void RgRobotSpecReadFromText(RgRobotSpecFull *pSpec, struct RgReadText *pReader)
@@ -278,21 +297,6 @@ void RgRobotSpecReadFromText(RgRobotSpecFull *pSpec, struct RgReadText *pReader)
 }
 
 extern void XrgLog(const char *format, const char *source_file, int line, ...);
-extern const char D_00A520A0[];
-extern const char D_00A520C0[];
-extern const char D_00A520E0[];
-extern const char D_00A52100[];
-extern const char D_00A52120[];
-extern const char D_00A52140[];
-extern const char D_00A52160[];
-extern const char D_00A52180[];
-extern const char D_00A521A0[];
-extern const char D_00A521C0[];
-extern const char D_00A521E0[];
-extern const char D_00A52200[];
-extern const char D_00A52220[];
-extern const char D_00A52240[];
-extern const char D_00A52260[];
 
 void RgRobotSpecDump(RgRobotSpecFull *pSpec)
 {

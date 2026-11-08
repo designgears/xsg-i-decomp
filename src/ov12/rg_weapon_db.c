@@ -60,6 +60,40 @@ const char D_00A53858[] = "unknown equip type '%s'";
 const char D_00A53870[] = "'%c' is not 'o' or 'x'";
 const char D_00A53888[] = "'%s' is not '???-??-???'";
 const char D_00A538A8[] = "'%s' is not '???-??-???' format";
+const char D_00A538C8[] = "cont";
+const char D_00A538D0[] = ".";
+const char D_00A538D8[] = "notlock";
+const char D_00A538E0[] = "full-mot";
+const char D_00A538F0[] = "'full-mot' cannot spec to AttackWeapon";
+const char D_00A53918[] = "'full-mot' cannot spec to ShieldWeapon";
+const char D_00A53940[] = "'full-mot' cannot spec to UnArmedWeapon";
+const char D_00A53968[] = "not-adv";
+const char D_00A53970[] = "adv";
+const char D_00A53978[] = "no-robmot";
+const char D_00A53988[] = "target";
+const char D_00A53990[] = "not";
+const char D_00A53998[] = "aft";
+const char D_00A539A0[] = "wth";
+const char D_00A539A8[] = "unknown keyword '%s-target'\ncollect not,aft,wth";
+const char D_00A539D8[] = "'%s' is error in 'cont'";
+const char D_00A539F0[] = "num";
+const char D_00A539F8[] = "energy";
+const char D_00A53A00[] = "hardness";
+const char D_00A53A10[] = "inf";
+const char D_00A53A18[] = "lock-range";
+const char D_00A53A28[] = "ignored 'lock-range'";
+const char D_00A53A40[] = "lock";
+const char D_00A53A48[] = "shot";
+const char D_00A53A50[] = "unknown shot '%s'";
+const char D_00A53A68[] = "mot";
+const char D_00A53A70[] = "mot-all";
+const char D_00A53A78[] = "szStr[0] == '('";
+const char D_00A53A88[] = "def";
+const char D_00A53A90[] = "selfmot";
+const char D_00A53A98[] = "selfmot-all";
+const char D_00A53AA8[] = "basemot";
+const char D_00A53AB0[] = "basemot-all";
+const char D_00A53AC0[] = "model";
 
 extern void RgSimpleDBClear(RgSimpleDB *pDB);
 extern int RgSimpleDBFind(RgSimpleDB *pDB, const char *pszName);
@@ -240,127 +274,93 @@ static inline int _Clamp(int value, int low, int high)
     return high < value ? high : value;
 }
 
-extern const char D_00A538C8[];
 #define weaponDbContinueKeyword D_00A538C8
-extern const char D_00A538D0[];
 #define weaponDbEndMarkerKeyword D_00A538D0
-extern const char D_00A538D8[];
 #define weaponDbNotLockKeyword D_00A538D8
-extern const char D_00A538E0[];
 #define weaponDbFullMotionKeyword D_00A538E0
-extern const char D_00A538F0[];
 #define weaponDbFullMotionAttackErrorText D_00A538F0
-extern const char D_00A53918[];
 #define weaponDbFullMotionShieldErrorText D_00A53918
-extern const char D_00A53940[];
 #define weaponDbFullMotionUnarmedErrorText D_00A53940
-extern const char D_00A53968[];
 #define weaponDbNotAdvanceKeyword D_00A53968
-extern const char D_00A53970[];
 #define weaponDbAdvanceKeyword D_00A53970
-extern const char D_00A53978[];
 #define weaponDbNoRobotMotionKeyword D_00A53978
-extern const char D_00A53988[];
 #define weaponDbTargetSuffixKeyword D_00A53988
-extern const char D_00A53990[];
 #define weaponDbNotPrefixKeyword D_00A53990
-extern const char D_00A53998[];
 #define weaponDbAfterKeyword D_00A53998
-extern const char D_00A539A0[];
 #define weaponDbWithKeyword D_00A539A0
-extern const char D_00A539A8[];
 #define weaponDbUnknownTargetKeywordFormat D_00A539A8
-extern const char D_00A539D8[];
 #define weaponDbContinueErrorFormat D_00A539D8
-extern const char D_00A539F0[];
 #define weaponDbNumKeyword D_00A539F0
-extern const char D_00A539F8[];
 #define weaponDbEnergyKeyword D_00A539F8
-extern const char D_00A53A00[];
 #define weaponDbHardnessKeyword D_00A53A00
-extern const char D_00A53A10[];
 #define weaponDbInfiniteKeyword D_00A53A10
-extern const char D_00A53A18[];
 #define weaponDbLockRangeKeyword D_00A53A18
-extern const char D_00A53A28[];
 #define weaponDbIgnoredLockRangeText D_00A53A28
-extern const char D_00A53A40[];
 #define weaponDbLockKeyword D_00A53A40
-extern const char D_00A53A48[];
 #define weaponDbShotKeyword D_00A53A48
-extern const char D_00A53A50[];
 #define weaponDbUnknownShotFormat D_00A53A50
-extern const char D_00A53A68[];
 #define weaponDbMotionKeyword D_00A53A68
-extern const char D_00A53A70[];
 #define weaponDbMotionAllKeyword D_00A53A70
-extern const char D_00A53A78[];
 #define weaponDbAssertOpenParen D_00A53A78
-extern const char D_00A53A88[];
 #define weaponDbDefaultKeyword D_00A53A88
-extern const char D_00A53A90[];
 #define weaponDbSelfMotionKeyword D_00A53A90
-extern const char D_00A53A98[];
 #define weaponDbSelfMotionAllKeyword D_00A53A98
-extern const char D_00A53AA8[];
 #define weaponDbBaseMotionKeyword D_00A53AA8
-extern const char D_00A53AB0[];
 #define weaponDbBaseMotionAllKeyword D_00A53AB0
-extern const char D_00A53AC0[];
 #define weaponDbModelKeyword D_00A53AC0
 extern const short D_00A53AC8[];
 #define weaponDbRobotModelDirectory D_00A53AC8
-extern const char D_00A53AE0[];
+const char D_00A53AE0[] = "modelall";
+const char D_00A53AF0[] = "use";
+const char D_00A53AF8[] = "unknown char name '%s'";
+const char D_00A53B10[] = "equip";
+const char D_00A53B18[] = "occupy";
+const char D_00A53B20[] = "fake";
+const char D_00A53B28[] = "mass";
+const char D_00A53B30[] = "weight";
+const char D_00A53B38[] = "name";
+const char D_00A53B40[] = "v-dir";
+const char D_00A53B48[] = "h-dir";
+const char D_00A53B50[] = "hitsnd";
+const char D_00A53B58[] = "shotsnd";
+const char D_00A53B60[] = "bgsnd";
+const char D_00A53B68[] = "lifesnd";
+const char D_00A53B70[] = "vhitsnd";
+const char D_00A53B78[] = "vshotsnd";
+const char D_00A53B88[] = "vbgsnd";
+const char D_00A53B90[] = "vlifesnd";
+const char D_00A53BA0[] = "1wa";
+const char D_00A53BA8[] = "2wa";
+const char D_00A53BB0[] = "3wa";
+const char D_00A53BB8[] = "default";
+const char D_00A53BC0[] = "shot-pnt";
+const char D_00A53BD0[] = "pEss->m_uShotPntNum <= RG_WEAPON_SHOTPNT_MAX";
+const char D_00A53C00[] = "0 <= uDatIdx && uDatIdx < 8";
 #define weaponDbModelAllKeyword D_00A53AE0
-extern const char D_00A53AF0[];
 #define weaponDbUseKeyword D_00A53AF0
-extern const char D_00A53AF8[];
 #define weaponDbUnknownCharNameFormat D_00A53AF8
-extern const char D_00A53B10[];
 #define weaponDbEquipKeyword D_00A53B10
-extern const char D_00A53B18[];
 #define weaponDbOccupyKeyword D_00A53B18
-extern const char D_00A53B20[];
 #define weaponDbFakeKeyword D_00A53B20
-extern const char D_00A53B28[];
 #define weaponDbMassKeyword D_00A53B28
-extern const char D_00A53B30[];
 #define weaponDbWeightKeyword D_00A53B30
-extern const char D_00A53B38[];
 #define weaponDbNameKeyword D_00A53B38
-extern const char D_00A53B40[];
 #define weaponDbVerticalDirectionKeyword D_00A53B40
-extern const char D_00A53B48[];
 #define weaponDbHorizontalDirectionKeyword D_00A53B48
-extern const char D_00A53B50[];
 #define weaponDbHitSoundKeyword D_00A53B50
-extern const char D_00A53B58[];
 #define weaponDbShotSoundKeyword D_00A53B58
-extern const char D_00A53B60[];
 #define weaponDbBackgroundSoundKeyword D_00A53B60
-extern const char D_00A53B68[];
 #define weaponDbLifeSoundKeyword D_00A53B68
-extern const char D_00A53B70[];
 #define weaponDbVoiceHitSoundKeyword D_00A53B70
-extern const char D_00A53B78[];
 #define weaponDbVoiceShotSoundKeyword D_00A53B78
-extern const char D_00A53B88[];
 #define weaponDbVoiceBackgroundSoundKeyword D_00A53B88
-extern const char D_00A53B90[];
 #define weaponDbVoiceLifeSoundKeyword D_00A53B90
-extern const char D_00A53BA0[];
 #define weaponDbFirstWeaponArmKeyword D_00A53BA0
-extern const char D_00A53BA8[];
 #define weaponDbSecondWeaponArmKeyword D_00A53BA8
-extern const char D_00A53BB0[];
 #define weaponDbThirdWeaponArmKeyword D_00A53BB0
-extern const char D_00A53BB8[];
 #define weaponDbDefaultArmKeyword D_00A53BB8
-extern const char D_00A53BC0[];
 #define weaponDbShotPointKeyword D_00A53BC0
-extern const char D_00A53BD0[];
 #define weaponDbAssertShotPointCountInRange D_00A53BD0
-extern const char D_00A53C00[];
 #define weaponDbAssertDataIndexInRange D_00A53C00
 #define weaponDbSourcePath D_00A53828
 #define XRG_PI 3.1415927f
@@ -377,7 +377,7 @@ extern const char D_00A53C00[];
 #define RG_WEAPON_CONTROL_LOCKON 0x20
 #define RG_WEAPON_CONTROL_ADV 0x40
 #define RG_WEAPON_CONTROL_NO_ROBMOT 0x80
-extern int s_aeJntTbl_0[8];
+static int s_aeJntTbl_0[8] = {8, 9, 10, 11, 12, 13, 14, 15};
 extern float dptofp(double value);
 extern double atof(const char *s);
 extern char *strcat(char *d, const char *s);

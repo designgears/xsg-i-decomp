@@ -187,7 +187,7 @@ static void _SetSelectableSelectChar(SelChar *pSelChar, unsigned int charIDMask)
     }
 }
 
-extern const char D_00A56678[];
+const char D_00A56678[] = "eCharID != RG_ACTOR_CHAR_NOP";
 
 static void _SetCharSelectChar(SelChar *pSelChar, int charID)
 {
@@ -387,7 +387,7 @@ static void _SetCursorSelWep(SelWep *pSelWep, int nCur)
 }
 
 extern int strcmp(const char *a, const char *b);
-extern const char D_00A56710[];
+const char D_00A56710[] = "pszName != NIL";
 
 static int _SetCursorByNameSelWep(SelWep *pSelWep, const char *pszName)
 {
@@ -625,7 +625,15 @@ static void _GetAllSelType(SelType *pSelType, int *out)
     }
 }
 
-extern const char D_00A56788[];
+const char D_00A56788[] = "aszName != NIL";
+const char D_00A56798[] = "pDisp != NIL";
+const char D_00A567A8[] = "fnt02on.bmp";
+const char D_00A567B8[] = "pTex != NIL";
+const char D_00A567C8[] = "frm08on.bmp";
+const char D_00A567D8[] = "icon_uparrow.bmp";
+const char D_00A567F0[] = "icon_downarrow.bmp";
+const char D_00A56808[] = "Cannot equip for battle";
+const char D_00A56820[] = "Cannot equip together";
 
 static void _GetAllNameOnCursorSelType(SelType *pSelType, char *names)
 {
@@ -775,13 +783,7 @@ static int _DetachWeaponIfConfrictSelType(SelType *pSelType)
     return 0;
 }
 
-extern const char D_00A56798[];
 extern void *RgBxxGetPic(RgBxx *pBxx, const char *pszName);
-extern const char D_00A567A8[];
-extern const char D_00A567B8[];
-extern const char D_00A567C8[];
-extern const char D_00A567D8[];
-extern const char D_00A567F0[];
 
 static void _InitWepListDisp(WepListDisp *pDisp, int equipType)
 {
@@ -878,8 +880,6 @@ typedef struct AgwsEss {
 typedef struct AgwsFontColor { int r, g, b, a; } AgwsFontColor;
 extern AgwsFontColor s_aRed_1[2];
 extern AgwsFontColor s_aWhite_2[2];
-extern const char D_00A56808[];
-extern const char D_00A56820[];
 extern void RgFontSetColor(int font, AgwsFontColor *color);
 extern void RgFontSetDefaultColor(int font);
 extern void RgFontStr(XrgPaint2D *paint, int font, const char *text, int x, int y, int flag);
@@ -1043,9 +1043,9 @@ static void _InitSelectData(SelDat *pSelDat)
 }
 
 extern void XrgLog(const char *format, const char *source_file, int line, ...);
-extern const char D_00A56848[];
-extern const char D_00A56878[];
-extern const char D_00A56898[];
+const char D_00A56848[] = "---------------- %s %d ----------------------\n";
+const char D_00A56878[] = "char %d (selectable %x)\n";
+const char D_00A56898[] = "   **** char %d type %d : '%s' ***\n";
 typedef struct SelDump {
     int cursor;
     unsigned int selectableMask;
@@ -1185,7 +1185,7 @@ static void _LoadWepSelectData(SelDat *pSel, int *pData)
     }
 }
 
-extern const char D_00A568D0[];
+const char D_00A568D0[] = "pResult != NIL";
 typedef struct { long long d[0x49]; } BaseSelData;
 
 static void _GetBaseSelectData(SelDat *pSelDat, void *pResult)
@@ -1396,9 +1396,10 @@ static int _GetWepSelection(SelDat *pSelDat, int *apCollects)
     return mask;
 }
 
-extern const char D_00A56928[];
-extern const char D_00A56938[];
-extern const char D_00A56948[];
+const char D_00A56928[] = "pBxx != NIL";
+const char D_00A56938[] = "frm12_1p.bmp";
+const char D_00A56948[] = "frm12_2p.bmp";
+const char D_00A56958[] = "pList != NIL";
 extern void *RgBxxGetPic(RgBxx *pBxx, const char *pszName);
 
 static void _DrawPlayerMode(XrgPaint2D *paint, RgBxx *pBxx, int playerMode)
@@ -1427,7 +1428,6 @@ typedef struct RgSelCharPicEntry {
     int m_idx[6];
 } RgSelCharPicEntry;
 extern RgSelCharPicEntry s_ainPics_3[6];
-extern const char D_00A56958[];
 extern void *RgPicListGetPic(RgPicList *pList, int index);
 extern void RgPicSetAlpha(void *pic, int alpha);
 extern void RgPicSetDark(void *pic, int dark);
@@ -1661,8 +1661,8 @@ extern void XrgDispMainFont(int x, int y, const char *pszString, int bright);
 extern const char D_00A56B88[];
 extern const char D_00A56B90[];
 extern const char D_00A56B98[];
-extern const char D_00A56BA0[];
-extern const char D_00A56BA8[];
+const char D_00A56BA0[] = "Confirm";
+const char D_00A56BA8[] = "Cancel";
 typedef struct DetermPic {
     char pad[0x34];
     int w;
@@ -1846,7 +1846,7 @@ static void _SetWepSelPicList(RgPicList *pList, SelDat *pSelDat)
     }
 }
 
-extern const char D_00A56C20[];
+const char D_00A56C20[] = "pPaint != NIL";
 
 static void _DispWepSelOverlaps(XrgPaint2D *paint, RgBxx *pBxx, SelDat *pSelDat, int ofsX, int ofsY)
 {
@@ -1978,7 +1978,7 @@ extern void RgSelectRobotSetMode(RgSelectRobot *pRobot, int mode);
 extern void RgSelectRobotPassTime(RgSelectRobot *pRobot, float deltaTime);
 extern void RgSelectRobotSet(RgSelectRobot *pRobot, int *selection);
 extern void RgPicListSetDrawEnable(RgPicList *pList, int enable);
-extern const char D_00A56C58[];
+const char D_00A56C58[] = "unknown select mode %d";
 static inline void _CancelOffSelect(RgSelectAGWS *pSel, SelDat *pSelDat)
 {
     pSel->state = 2;

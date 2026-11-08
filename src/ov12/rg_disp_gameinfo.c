@@ -102,6 +102,15 @@ extern void XrgPaint2DUseTexture(XrgPaint2D *paint, void *pic);
  * ov12:0x00a54590 contains the error message "not exist '%s' picture".
  */
 const char D_00A54590[24] = "not exist '%s' picture";
+const char D_00A545A8[] = "unknown lock-on-stat %d";
+const char D_00A545C0[] = "001.bmp";
+const char D_00A545C8[] = "002.bmp";
+const char D_00A545D0[] = "003.bmp";
+const char D_00A545D8[] = "polygon.bmp";
+const char D_00A545E8[] = "011.bmp";
+const char D_00A545F0[] = "012.bmp";
+const char D_00A545F8[] = "013.bmp";
+const char D_00A54600[] = "014.bmp";
 
 void _paint_one_texture_alpha(RgDispGameInfo *pInfo, const char *pictureName,
                               int x, int y, int blendMode) {
@@ -174,15 +183,6 @@ void _paint_xy_color(RgDispGameInfo *pInfo, int x, int y, int intensity,
     XrgPaint2DDrawRect(pInfo->paint, &rectangle);
 }
 
-extern const char D_00A545A8[];
-extern const char D_00A545C0[];
-extern const char D_00A545C8[];
-extern const char D_00A545D0[];
-extern const char D_00A545D8[];
-extern const char D_00A545E8[];
-extern const char D_00A545F0[];
-extern const char D_00A545F8[];
-extern const char D_00A54600[];
 extern unsigned int RgRobotGetStatusFlags(void *robot);
 extern void *RgRobotGetGeom(void *robot);
 extern void __RgGeomPointGetPos(void *point, float *pos, const char *file, int line);

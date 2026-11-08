@@ -23,11 +23,10 @@ int XrgRandIntRange(int lower, int upper)
     return (rand() % (upper - lower)) + lower;
 }
 
-extern RgVector s_aRes_0;
-
 float *XrgVectorZero(void)
 {
-    return s_aRes_0;
+    static RgVector s_aRes = {0.0f, 0.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
 
 void XrgUnitVector(RgVector vector)
@@ -36,25 +35,22 @@ void XrgUnitVector(RgVector vector)
     vector[3] = 1.0f;
 }
 
-extern RgVector s_aRes_1;
-
 float *XrgVectorX(void)
 {
-    return s_aRes_1;
+    static RgVector s_aRes = {1.0f, 0.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
-
-extern RgVector s_aRes_2;
 
 float *XrgVectorY(void)
 {
-    return s_aRes_2;
+    static RgVector s_aRes = {0.0f, 1.0f, 0.0f, 0.0f};
+    return s_aRes;
 }
-
-extern RgVector s_aRes_3;
 
 float *XrgVectorZ(void)
 {
-    return s_aRes_3;
+    static RgVector s_aRes = {0.0f, 0.0f, 1.0f, 0.0f};
+    return s_aRes;
 }
 
 void XrgSetVector(RgVector destination, float x, float y, float z, float w)

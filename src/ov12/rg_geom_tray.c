@@ -6,6 +6,11 @@
 #include "rg_geom_tray.h"
 #include "ov12/xrg_rand_int.h"
 
+const char D_00A55218[] = "pTray != NIL";
+const char D_00A55228[] = "../rg_geom_tray.euc.c";
+const char D_00A55240[] = "pCheck != NIL";
+const char D_00A55250[] = "pResult != NIL";
+
 #define RgGeomLocalMatricesAt(geom) \
     ((RgGeomLocalMatrices *)((unsigned char *)(geom) + 0x20))
 #define RgGeomLocalMatricesConstAt(geom) \
@@ -272,8 +277,6 @@ static int _CalcIntersect(RgVector clipped_position, RgVector last_contact,
     return hit_count;
 }
 
-extern const char D_00A55240[];
-extern const char D_00A55250[];
 static inline void RgGeomTrayApply(float *dst, float *mtx, float *src)
 {
     __asm__ __volatile__(

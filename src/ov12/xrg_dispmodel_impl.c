@@ -66,6 +66,9 @@ typedef struct XrgDispModelImpl {
     const char *pLexData;
 } XrgDispModelImpl;
 
+float aAmbVec[4][4] = {0};
+float aAmbCol[4][4] = {0};
+
 extern void nmlModelEntry(const char *pLexData);
 extern void nmlModelSetAlpha(int alpha);
 extern void nmlModelSetFogCol(float *);

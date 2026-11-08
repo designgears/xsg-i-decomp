@@ -11,6 +11,7 @@ extern void assert_prog(const char *expression, const char *source_file,
 const char D_00A532E8[16] = "pShot != NIL";
 const char D_00A532F8[24] = "../rg_shot.euc.c";
 const char D_00A53310[16] = "pGeom != NIL";
+const char D_00A53320[] = "pShotGroup != NIL";
 const char D_00A53338[16] = "pExtInfo != NIL";
 const char D_00A53348[16] = "pEssence != NIL";
 const char D_00A53358[16] = "pInfo != NIL";
@@ -19,9 +20,12 @@ const char D_00A53378[8] = "tama";
 const char D_00A53380[16] = "eff11.ptcl";
 const char D_00A53390[16] = "pEss != NIL";
 const char D_00A533A0[16] = "pFire != NIL";
+const char D_00A533B0[] = "unknown fire status %d";
 const char D_00A533C8[16] = "pBeam != NIL";
 const char D_00A533D8[16] = "pRob != NIL";
 const char D_00A533E8[16] = "pBgObj != NIL";
+const char D_00A533F8[] = "pRobot != NIL";
+const char D_00A53408[] = "eff06.ptcl";
 
 extern void *RgCharAlloc(unsigned int size, int type);
 static void *_InitBeam(void *beam, void *essence, void *info);
@@ -223,7 +227,6 @@ static int _ShotCommonIsReleased(RgShot *shot)
     return 1;
 }
 
-extern const char D_00A53320[];
 extern RgShotEffect *CreateRgShotEffect(void);
 extern RgGeomBall *CreateRgGeomBall(float radius, float weight);
 extern RgGeom *RgGeomGroupCreateBall(void *pGroup, RgGeom *parent);
@@ -759,7 +762,6 @@ static void _FireKill(RgShot *shot)
 
 extern void RgGeomSetStatus(RgGeom *geom, unsigned int flags);
 extern void RgError(const char *message, const char *source_file, int line, ...);
-extern const char D_00A533B0[];
 
 static void _FirePassTime(RgChar *pChar, float deltaTime)
 {
@@ -1185,8 +1187,6 @@ void RgShotHitBg(RgShot *shot, int bgObject, RgVector position)
         shot->notifyHit(shot, position);
 }
 
-extern const char D_00A533F8[];
-extern const char D_00A53408[];
 extern void CreateRgHitEffectPosDir(RgVector position, RgVector direction, char *name1, char *name2);
 extern void RgRobotGiveDamage(int robot, RgVector direction, int flags, float damage);
 extern void RgRobotGiveWeakDamage(int robot, RgVector direction, float damage,

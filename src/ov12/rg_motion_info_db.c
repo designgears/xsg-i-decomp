@@ -8,8 +8,21 @@
 
 const char D_00A52460[16] = "pInfo != NIL";
 const char D_00A52470[32] = "../rg_motion_info_db.euc.c";
+const char D_00A52490[] = "pInfo->m_uActTblSiz < RG_MOTINFO_ACT_TABLE_SIZE";
 const char D_00A524C0[32] = "pTable->m_uTblSize < ENTRY_MAX";
 const char D_00A524E0[16] = "pDB != NIL";
+const char D_00A524F0[] = "rg_motion.info";
+const char D_00A52500[] = "action";
+const char D_00A52508[] = "fStartTime <= fEndTime";
+const char D_00A52520[] = "action-f";
+const char D_00A52530[] = "fStart <= fEnd";
+const char D_00A52540[] = "next";
+const char D_00A52548[] = "pAct != NIL";
+const char D_00A52558[] = "event";
+const char D_00A52560[] = "hit-shift-f";
+const char D_00A52570[] = "shot-body";
+const char D_00A52580[] = "shot-notfix";
+const char D_00A52590[] = "char";
 const char D_00A52598[16] = "pMotInfo != NIL";
 const char D_00A525A8[48] = "dump shot info %d ----------------------\n";
 const char D_00A525D8[24] = "--- list mot %d ---\n";
@@ -39,7 +52,6 @@ static void _InitRgMotionShotInfo(RgMotionShotInfo *info, int motionNo)
     info->charId = -1;
 }
 
-extern const char D_00A52490[];
 
 static RgMotionAction *_AddActionRgMotion(RgMotionShotInfo *pInfo, int actionNo, float startTime, float endTime)
 {
@@ -224,18 +236,6 @@ extern void RgReadTextUnget(RgReadText *pReader, char *pszToken);
 extern int RgActorMotIDGetFromName(char *name);
 extern int RgActorNameToCharID(char *name);
 extern int strcasecmp(const char *a, const char *b);
-extern const char D_00A524F0[];
-extern const char D_00A52500[];
-extern const char D_00A52508[];
-extern const char D_00A52520[];
-extern const char D_00A52530[];
-extern const char D_00A52540[];
-extern const char D_00A52548[];
-extern const char D_00A52558[];
-extern const char D_00A52560[];
-extern const char D_00A52570[];
-extern const char D_00A52580[];
-extern const char D_00A52590[];
 RgMotionShotInfo *_TableGet(RgMotionInfoDB *db, int motionNo);
 static void _TableEntry(RgMotionInfoDB *db, RgMotionShotInfo *entry);
 

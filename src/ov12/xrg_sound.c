@@ -35,6 +35,10 @@ const SoundPathStandardPrefix D_00A59270 = {
 static const char D_00A59280[8] = ".SMD";
 static const char D_00A59288[24] = "../xrg_sound.euc.c";
 static const char D_00A592A0[8] = "MINIBAT";
+const char D_00A592A8[] = "BATTLE1";
+const char D_00A592B0[] = "BATTLE2";
+const char D_00A592B8[] = "BATTLE3";
+const char D_00A592C0[] = "Umnmode";
 static int s_eLoadedSeq = -1;
 static int s_bNowPlaying = 0;
 extern int xglSoundSendSwd(void *swd, int bank);
@@ -110,10 +114,6 @@ void DisposeXrgSoundSystem(void)
     _LoadSequence(0, 0, 0);
 }
 
-extern const char D_00A592A8[];
-extern const char D_00A592B0[];
-extern const char D_00A592B8[];
-extern const char D_00A592C0[];
 extern void xglSoundSequenceStop2(int channel);
 
 void _LoadSeq(int seq)

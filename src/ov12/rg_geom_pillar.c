@@ -33,8 +33,8 @@ extern void assert_prog(const char *expression, const char *source_file,
 /* Referenced by InitRgGeomPillar: the assertion text "pPillar != NIL" and
  * this TU's own original file name "../rg_geom_pillar.euc.c", both
  * scaffold-owned .rodata (config/tu-build.json, data_ownership.rodata). */
-extern const char D_00A55260[];
-extern const char D_00A55270[];
+const char D_00A55260[] = "pPillar != NIL";
+const char D_00A55270[] = "../rg_geom_pillar.euc.c";
 
 /* The type tag InitRgGeomPillar and CreateRgGeomPillar pass to
  * RgGeomSetType; no other OV12 translation unit names this value yet. */

@@ -222,7 +222,7 @@ typedef union XrgParticleRectQ {
     int i[4];
 } XrgParticleRectQ;
 
-extern RgDrawView *s_pCurView_00A511F4;
+static RgDrawView *s_pCurView_00A511F4 = 0;
 
 #define SCE_GS_PABE 0x49
 #define SCE_GS_TEXFLUSH 0x3F
@@ -442,6 +442,8 @@ const char D_00A58F78[] = "pDrv->m_uReqCalcNum < REQ_CALC_MAX";
 const char D_00A58FA0[] = "pPoints != NIL";
 const char D_00A58FB0[] = "pDrv->m_uReqDispNum < REQ_DISP_MAX";
 const char D_00A58FD8[] = "pPic != NIL";
+const char D_00A58FE8[] = "pEnv != NIL";
+const char D_00A58FF8[] = "pView != NIL";
 const char D_00A59008[] = "p != NIL";
 const char D_00A59018[] = "pArray != NIL";
 
@@ -572,8 +574,6 @@ void XrgParticleDriverPassTime(XrgParticleDriver *pDrv, float elapsed)
     pDrv->m_uReqCalcNum = 0;
 }
 
-extern const char D_00A58FE8[];
-extern const char D_00A58FF8[];
 extern RgDrawView *RgDrawStudioGetView(void *pStudio);
 extern void *RgBxxGetXtx(void *pBxx);
 extern void nmlModelDirectSendXtx(int modelId, void *data);

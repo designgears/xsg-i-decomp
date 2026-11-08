@@ -11,13 +11,20 @@ extern void assert_prog(const char *expression, const char *source_file,
 
 const char D_00A53648[16] = "pAttach != NIL";
 const char D_00A53658[24] = "../rg_weapon.euc.c";
+const char D_00A53670[] = "pAttach->m_uAttachNum < ATTACH_MAX";
+const char D_00A53698[] = "RG_EQUIP_TYPE_MIN <= (eEquipType) && (eEquipType) < RG_EQUIP_TYPE_NUM";
+const char D_00A536E0[] = "p != NIL";
 const char D_00A536F0[16] = "pWpn != NIL";
+const char D_00A53700[] = "pRob != NIL";
 const char D_00A53710[16] = "pEss != NIL";
 const char D_00A53720[16] = "pInfo != NIL";
 const char D_00A53730[16] = "eff15.ptcl";
 const char D_00A53740[16] = "eff11.ptcl";
+const char D_00A53750[] = "pWpn->m_pAtkGeom != NIL";
 const char D_00A53768[32] = "pEss != NIL && pInfo != NIL";
 const char D_00A53788[32] = "pEss->m_pCreateMethod != NIL";
+const char D_00A537A8[] = "pWeapon != NIL";
+const char D_00A537B8[] = "weapon not have essence %p(%d)";
 const char D_00A537D8[48] = "0 <= eCharID && eCharID < RG_ACTOR_CHAR_ROBNUM";
 const char D_00A53808[16] = "pRobot != NIL";
 
@@ -134,7 +141,6 @@ static unsigned int _GetAllAttach(RgWeaponAttach *pAttach, RgShot **shots)
     return pAttach->m_uAttachNum;
 }
 
-extern const char D_00A53670[];
 
 static void _AddShotAttach(RgWeaponAttach *pAttach, RgShot *pShot)
 {
@@ -290,7 +296,6 @@ typedef struct EssenceCommonView {
     int f_3a4;
 } EssenceCommonView;
 
-extern const char D_00A53698[];
 extern XrgActor *CreateXrgActor(void *essence);
 extern void CopyRgEquip(void *dst, void *src);
 static inline float _NormAngle(float a)
@@ -461,7 +466,6 @@ void _InitEssenceCommon(void *essence)
     e->f_3a4 = 0;
 }
 
-extern const char D_00A536E0[];
 extern void _GetShotInfo(RgWeapon *weapon, RgWeaponShotRequest *info);
 extern void *CreateRgShotFromEssence(void *essence, void *info);
 extern void RgShotSetSoundDriver(RgShot *shot, int driver);
@@ -538,7 +542,6 @@ void _ShotTypePassTime(RgWeaponShotType *weapon, float dt)
     }
 }
 
-extern const char D_00A53700[];
 extern int XrgActorCreateEffConstraint(XrgActor *actor, int kind, XrgActor *target);
 
 void _InitWeaponCommonEffector(RgWeaponShotType *weapon, int a, int b)
@@ -736,7 +739,6 @@ void _HitRobotAttackType(RgWeaponAttackType *weapon, int robotId, int damage)
     }
 }
 
-extern const char D_00A53750[];
 extern void *RgGeomGroupCreateBall(void *pGroup, void *parent);
 extern void *CreateRgGeomBall(float radius, float weight);
 extern void RgGeomBallSetRadius(void *ball, float radius);
@@ -1232,8 +1234,6 @@ int RgWeaponIsNotBusy(void *weapon)
     return 1;
 }
 
-extern const char D_00A537A8[];
-extern const char D_00A537B8[];
 extern void RgWarn(const char *fmt, const char *file, int line, ...);
 extern int RgWeaponGetEss(RgWeapon *weapon);
 extern RgWeaponShotEssence *RgWeaponEssCastToShot(RgWeaponEssenceCommon *ess);

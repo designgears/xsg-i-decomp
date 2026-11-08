@@ -40,8 +40,14 @@ extern void RgSimpleDBClear(RgSimpleDB *pDB);
  * ov12:0x00a52280 contains the assertion expression "pDB != NIL".
  * ov12:0x00a52290 contains the source filename "../rg_robot_db.euc.c".
  */
-extern const char D_00A52280[];
-extern const char D_00A52290[];
+const char D_00A52280[] = "pDB != NIL";
+const char D_00A52290[] = "../rg_robot_db.euc.c";
+const char D_00A522A8[] = "char id (%d) has no char-name";
+const char D_00A522C8[] = "pReader != NIL";
+const char D_00A522D8[] = "character";
+const char D_00A522E8[] = "character '%s' is defined more than twice";
+const char D_00A52318[] = "character name '%s' cannot be used";
+const char D_00A52340[] = "NAME [%s] -------\n";
 
 void RgRobotDBClear(RgSimpleDB *database)
 {
@@ -70,7 +76,6 @@ extern const char *RgActorCharIDToName(int charID);
 /*
  * ov12:0x00a522a8 contains "char id (%d) has no char-name".
  */
-extern const char D_00A522A8[];
 
 void *RgRobotDBGetByID(RgSimpleDB *database, int charID)
 {
@@ -136,10 +141,6 @@ extern void RgSimpleDBEntry(RgSimpleDB *pDB, void *pDat, const char *pszName);
  * ov12:0x00a52318 contains the format string
  *   "character name '%s' cannot be used".
  */
-extern const char D_00A522C8[];
-extern const char D_00A522D8[];
-extern const char D_00A522E8[];
-extern const char D_00A52318[];
 
 void RgRobotDBRead(RgSimpleDB *database, RgReadText *pReader)
 {
@@ -187,7 +188,6 @@ extern void RgRobotSpecDump(RgRobotSpec *pSpec);
 /*
  * ov12:0x00a52340 contains the format string "NAME [%s] -------\n".
  */
-extern const char D_00A52340[];
 
 void RgRobotDBDump(RgSimpleDB *database)
 {

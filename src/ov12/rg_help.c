@@ -21,9 +21,9 @@ extern void *CreateXrgPaint2D_sub(const char *source_file, int line);
 extern RgBxx *LoadRgBxx_sub(const char *name, const char *source_file, int line);
 extern RgBxxPic *RgBxxGetPic(RgBxx *archive, const char *picture_name);
 extern void RgWarn(const char *format, const char *source_file, int line, ...);
-extern const char D_00A57AF0[];
-extern const char D_00A57B00[];
-extern const char D_00A57B20[];
+const char D_00A57AF0[] = "i < LOAD_CAPA";
+const char D_00A57B00[] = "'%s' pic is not exist in '%s'";
+const char D_00A57B20[] = "'%s' bxx is not loaded";
 extern const char *s_apszFileTbl_0[19];
 extern const char *s_ainPicNameTbl_1[62][2];
 extern void DisposeXrgPaint2D_sub(void *paintContext, const char *source_file,

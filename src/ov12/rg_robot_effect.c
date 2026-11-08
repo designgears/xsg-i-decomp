@@ -34,14 +34,15 @@ extern void RgRobotEffectTermJet(RgRobotEffect *effect);
 
 extern void InitRgParticleEffectEssence(void *essence);
 typedef struct { long long a; unsigned short b; } JetTexName;
-extern JetTexName D_00A52358;
+typedef union { char name[16]; JetTexName s; } JetTexNameData;
+extern const JetTexNameData D_00A52358;
 
 static int _InitJetDefault(void *essence)
 {
     char *buffer = essence;
     InitRgParticleEffectEssence(buffer);
-    ((JetTexName *)buffer)->a = D_00A52358.a;
-    ((JetTexName *)buffer)->b = D_00A52358.b;
+    ((JetTexName *)buffer)->a = D_00A52358.s.a;
+    ((JetTexName *)buffer)->b = D_00A52358.s.b;
     *(int *)(buffer + 0x40) = 0x20;
     *(float *)(buffer + 0x70) = 5.0f;
     *(float *)(buffer + 0x50) = 0.26f;
@@ -56,18 +57,21 @@ static int _InitJetDefault(void *essence)
     return 1;
 }
 
+const JetTexNameData D_00A52358 = { "cld01.bmp" };
+
 typedef struct { long long a; unsigned short b; unsigned char c; } DashTexName;
-extern DashTexName D_00A52368;
+typedef union { char name[16]; DashTexName s; } DashTexNameData;
+extern const DashTexNameData D_00A52368;
 
 static int _InitDashDefault(void *essence)
 {
     char *buffer = essence;
-    DashTexName *t;
+    const DashTexName *t;
     unsigned char c;
     long long a;
     unsigned short b;
     InitRgParticleEffectEssence(buffer);
-    t = &D_00A52368;
+    t = &D_00A52368.s;
     b = t->b;
     c = t->c;
     a = t->a;
@@ -87,6 +91,8 @@ static int _InitDashDefault(void *essence)
     *(int *)(buffer + 0x9C) = 1;
     return 1;
 }
+
+const DashTexNameData D_00A52368 = { "tama03.bmp" };
 
 static void _InitEffect(RgRobotEffectItem *item)
 {

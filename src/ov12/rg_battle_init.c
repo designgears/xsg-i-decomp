@@ -9,10 +9,20 @@
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
 
-extern const char D_00A54E18[]; /* "pInfo != NIL" */
-extern const char D_00A54E28[]; /* "../rg_battle_init.euc.c" */
-extern const char D_00A54E48[];
+const char D_00A54E18[] = "pInfo != NIL";
+const char D_00A54E28[] = "../rg_battle_init.euc.c";
 extern const unsigned char D_00A54E40[];
+const char D_00A54E48[] = "pDst != NIL && pSrc != NIL";
+const char D_00A54E68[] = "UNARMED";
+const char D_00A54E70[] = "rg_bg.info";
+const char D_00A54E80[] = "pBgGroup != NIL && pszBgName != NIL";
+const char D_00A54EA8[] = "cannot open '%s'";
+const char D_00A54EC0[] = "pDst != NIL";
+const char D_00A54ED0[] = "**** dump battle init %p ****\n";
+const char D_00A54EF0[] = "  BG : %s\n";
+const char D_00A54F00[] = "  PLAYER : %s\n";
+const char D_00A54F10[] = "  POS    : %f %f %f\n";
+const char D_00A54F28[] = "     WPN (%d) : %s\n";
 extern void XrgSetVectorXYZ(RgVector destination, float x, float y, float z);
 extern char *strcpy(char *destination, const char *source);
 
@@ -90,7 +100,6 @@ extern RgPlayer *CreateRgPlayer(RgPlayerEssence *pDat);
 extern int RgActorNameToCharID(const char *pszName);
 extern void *RgRobotDBGetByID(RgSimpleDB *database, int charID);
 extern void *RgWeaponDBGetEssence(RgSimpleDB *pDB, const char *pszName);
-extern const char D_00A54E68[];
 static inline void *GetSpare(RgSimpleDB *db, void *spec)
 {
     if (spec == 0) {
@@ -154,9 +163,6 @@ void RgBattleInitCreateBg(RgBattleInitInfo *pInfo, int bgId)
     _CreateBg(bgId, pInfo->bg);
 }
 
-extern const char D_00A54E70[];
-extern const char D_00A54E80[];
-extern const char D_00A54EA8[];
 extern void *CreateRgReadText(const char *path);
 extern void RgWarn(const char *fmt, const char *file, int line, ...);
 extern void *CreateRgBgBuilder(int bgId);
@@ -190,12 +196,6 @@ static void *_CreateBg(int bgId, void *dst)
     return data;
 }
 
-extern const char D_00A54EC0[];
-extern const char D_00A54ED0[];
-extern const char D_00A54EF0[];
-extern const char D_00A54F00[];
-extern const char D_00A54F10[];
-extern const char D_00A54F28[];
 extern void XrgLog(const char *format, const char *source_file, int line, ...);
 extern double fptodp(float value);
 

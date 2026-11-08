@@ -60,11 +60,18 @@ extern void DisposeRgPicList(RgPicList *pList);
  * none registered with a name in config/symbols/ov12.txt.
  */
 const char D_00A57338[] = "pBxx != NIL";
+const char D_00A57348[] = "pBuf != NIL";
 const char D_00A57358[] = "pszName != NIL";
+const char D_00A57368[] = "pPic->m_pPic != NIL";
 const char D_00A57380[] = "pPaint != NIL";
 const char D_00A57390[] = "pList != NIL";
 const char D_00A573A0[] = "pList->m_uNum < PIC_MAX";
 const char D_00A573B8[] = "pDebug != NIL";
+const char D_00A573C8[] = "host0:place2d.bin";
+const char D_00A573E0[] = "pDebug->m_pList != NIL";
+const char D_00A573F8[] = "unknown debug edit mode %d";
+const char D_00A57418[] = "\241\373\304\311\262\303\241\241\241\337\272\357\275\374\241\241\243\322\243\261\246\301\241\241\242\244\242\242\300\332\302\330";
+const char D_00A57440[] = "\263\250\310\326\271\346%3d\241\312\301\264\311\364\244\307%3d\241\313";
 
 static void _draw_add(int paintId, int picGroup, int picIndex, int x, int y)
 {
@@ -91,7 +98,7 @@ static void _draw_linear(int paintId, int picGroup, int picIndex, int x, int y)
 }
 
 extern void XrgPaint2DColor(int paint, const RgPicColor *color);
-extern int s_nColor_0;
+static int s_nColor_0 = 0x20;
 typedef struct { RgPicColor c; } __attribute__((aligned(8))) RgPicColorA8;
 
 static void _draw_nontex(int paint, int x, int y, int width, int height)
@@ -171,7 +178,6 @@ int RgPicBinarySize(void)
     return RG_PIC_BINARY_SIZE;
 }
 
-extern const char D_00A57348[];
 typedef union { RgPicName n; RgPicWord w[16]; } RgPicU;
 
 RgPic *CreateRgPicFromBinary(RgBxx *bxx, void *buffer)
@@ -225,7 +231,6 @@ RgPic *RgPicRead(int handle, RgBxx *bxx)
     return CreateRgPicFromBinary(bxx, buffer);
 }
 
-extern const char D_00A57368[];
 extern char *strcpy(char *, const char *);
 
 RgPic *CreateRgPic(RgBxx *bxx, const char *pszName)
@@ -698,9 +703,6 @@ extern int XrgHostCreateOpen(const char *filename);
 extern int XrgHostReadOpen(const char *filename);
 extern void XrgHostClose(int handle);
 extern void RgError(const char *message, const char *source_file, int line, ...);
-extern const char D_00A573C8[];
-extern const char D_00A573E0[];
-extern const char D_00A573F8[];
 typedef struct {
     unsigned char _p[0x28];
     unsigned short held;
@@ -889,17 +891,15 @@ void RgPicDebugControl(RgPicDebug *pDebug)
 
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern int RgBxxGetPicID(RgBxx *pBxx, unsigned int id);
-extern const char D_00A57418[];
-extern const char D_00A57440[];
-extern const char D_00A57458[];
-extern const char D_00A57470[];
-extern const char D_00A57490[];
-extern const char D_00A574A0[];
-extern const char D_00A574B8[];
-extern const char D_00A574D0[];
-extern const char D_00A574E8[];
-extern const char D_00A57500[];
-extern const char D_00A57520[];
+const char D_00A57458[] = "%s\n%3d,%3d(a:%d)";
+const char D_00A57470[] = "\241\373\267\350\304\352\241\241\241\337\245\255\245\343\245\363\245\273\245\353\241\241\242\244\242\242\301\252\302\362";
+const char D_00A57490[] = "TEX NAME %3d:%s";
+const char D_00A574A0[] = "\241\373\272\357\275\374\241\241\241\337\245\255\245\343\245\363\245\273\245\353";
+const char D_00A574B8[] = "\245\273\241\274\245\326\244\267\244\336\244\271\244\253\241\251";
+const char D_00A574D0[] = "\241\373\267\350\304\352\241\241\241\337\245\255\245\343\245\363\245\273\245\353";
+const char D_00A574E8[] = "\245\355\241\274\245\311\244\267\244\336\244\271\244\253\241\251";
+const char D_00A57500[] = "\241\373\275\252\244\357\244\352\241\241\243\322\243\261\263\250\274\253\302\316\260\334\306\260";
+const char D_00A57520[] = "offset %3d %3d";
 
 void RgPicDebugDisp(RgPicDebug *pDebug, int paint)
 {

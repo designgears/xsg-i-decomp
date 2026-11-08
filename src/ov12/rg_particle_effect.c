@@ -44,6 +44,9 @@ static void _InitEffect(RgParticleEffect *effect, RgParticleEffectEssence *essen
 const char D_00A542C8[16] = "pEff != NIL";
 const char D_00A542D8[32] = "../rg_particle_effect.euc.c";
 const char D_00A542F8[16] = "aEss != NIL";
+const char D_00A54308[] = "pBxx != NIL";
+const char D_00A54318[] = "too many particle total (%d)";
+const char D_00A54338[] = "there is not texture named '%s' for particle";
 const char D_00A54368[16] = "pEss != NIL";
 const char D_00A54378[16] = "pData != NIL";
 const char D_00A54388[16] = "pSrc != NIL";
@@ -212,9 +215,6 @@ extern struct RgBxx *RgEffectEnvGetBxx(struct RgEffectEnv *env);
 extern void *RgBxxGetPic(struct RgBxx *bxx, const char *picture_name);
 extern void RgError(const char *fmt, const char *source_file, int line, ...);
 extern XrgParticle *CreateArrayOfXrgParticle(unsigned int count);
-extern const char D_00A54308[];
-extern const char D_00A54318[];
-extern const char D_00A54338[];
 
 static void _InitEffect(RgParticleEffect *effect, RgParticleEffectEssence *essence,
                         int context)
