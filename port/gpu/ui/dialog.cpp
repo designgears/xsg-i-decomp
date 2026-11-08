@@ -2,8 +2,10 @@
 #include "dialog.h"
 #include "gpu_ipc.h"
 #include "../menu/cfg.h"
+#include "../menu/option_rows.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include <algorithm>
 #include <cmath>
@@ -109,31 +111,32 @@ bool DialogActive(uint32_t vsync) {
 }
 
 void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, float gh, double now) {
+    using namespace xsgmenu;   // the menu theme: col::, DrawBrackets
     const GpuUiDialog& d = g_snap;
     const float sx = gw / 512.0f, sy = gh / 448.0f;
     // the game's window rectangle, a little roomier
     // where the game's own frame sits (its text box starts 26 px under the window origin)
     const float x0 = gx + (d.x - 16) * sx, y0 = gy + (d.y + 24) * sy;
     const float x1 = gx + (d.x + d.w + 4) * sx, y1 = gy + std::min(d.y + d.h + 34, 442) * sy;
-    const float r = 10.0f * sy;
-    // panel: deep navy glass, cyan rim, a brighter top edge
-    dl->AddRectFilled(ImVec2(x0 + 4 * sx, y0 + 6 * sy), ImVec2(x1 + 4 * sx, y1 + 6 * sy), IM_COL32(0, 0, 0, 90), r);
-    dl->AddRectFilledMultiColor(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(18, 32, 70, 225), IM_COL32(18, 32, 70, 225),
-                                IM_COL32(8, 14, 36, 235), IM_COL32(8, 14, 36, 235));
-    dl->AddRect(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(110, 200, 255, 200), r, 0, 1.6f * sy);
-    dl->AddLine(ImVec2(x0 + r, y0 + 1.5f * sy), ImVec2(x1 - r, y0 + 1.5f * sy), IM_COL32(190, 235, 255, 140), 1.0f * sy);
+    // the menu's look (menu/option_rows.h col::, menu.cpp Panel): indigo glass, a doubled
+    // periwinkle frame and corner brackets; cyan for the accents
+    const float k = sy;   // one PS2 pixel on screen
+    dl->AddRectFilledMultiColor(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(26, 25, 66, 228), IM_COL32(26, 25, 66, 228),
+                                IM_COL32(14, 13, 40, 238), IM_COL32(14, 13, 40, 238));
+    dl->AddRect(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(150, 180, 235, 150), 0, 0, 1.0f * k);
+    dl->AddRect(ImVec2(x0 + 2 * k, y0 + 2 * k), ImVec2(x1 - 2 * k, y1 - 2 * k), IM_COL32(150, 180, 235, 40), 0, 0, 1.0f);
+    DrawBrackets(dl, ImVec2(x0 - 2 * k, y0 - 2 * k), ImVec2(x1 + 2 * k, y1 + 2 * k), col::kFrame, 10 * k, 1.2f * k);
     const float fs = 21.0f * sy;   // body text size
-    // speaker tab
+    // speaker: a plate on the frame's top edge, a cyan rule under the name
     if (d.name[0]) {
         const std::string name = Decode(d.name);
-        const float ns = 17.0f * sy;
+        const float ns = 16.0f * k;
         const ImVec2 tsz = font->CalcTextSizeA(ns, 1e9f, 0, name.c_str());
-        const float tx0 = x0 + 14 * sx, ty1 = y0 + 4 * sy, ty0 = ty1 - ns - 8 * sy;
-        dl->AddRectFilled(ImVec2(tx0, ty0), ImVec2(tx0 + tsz.x + 24 * sx, ty1), IM_COL32(30, 90, 150, 235), 6 * sy,
-                          ImDrawFlags_RoundCornersTop);
-        dl->AddRect(ImVec2(tx0, ty0), ImVec2(tx0 + tsz.x + 24 * sx, ty1), IM_COL32(140, 215, 255, 220), 6 * sy,
-                    ImDrawFlags_RoundCornersTop, 1.2f * sy);
-        dl->AddText(font, ns, ImVec2(tx0 + 12 * sx, ty0 + 4 * sy), IM_COL32(235, 248, 255, 255), name.c_str());
+        const float px0 = x0 + 12 * k, px1 = px0 + tsz.x + 20 * k, py1 = y0 + 1 * k, py0 = py1 - ns - 7 * k;
+        dl->AddRectFilled(ImVec2(px0, py0), ImVec2(px1, py1), IM_COL32(40, 40, 96, 240));
+        dl->AddRect(ImVec2(px0, py0), ImVec2(px1, py1), IM_COL32(150, 180, 235, 150), 0, 0, 1.0f * k);
+        dl->AddRectFilled(ImVec2(px0, py1 - 1.5f * k), ImVec2(px0 + 28 * k, py1 + 0.5f * k), col::kCyan);
+        dl->AddText(font, ns, ImVec2(px0 + 10 * k, py0 + 3 * k), col::kText, name.c_str());
     }
     // body: the lines typed out so far, with a soft shadow
     float ty = y0 + 12 * sy;
@@ -141,7 +144,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         const std::string t = Decode(d.line[i]);
         if (!t.empty()) {
             dl->AddText(font, fs, ImVec2(x0 + 22 * sx + 1.5f * sy, ty + 1.5f * sy), IM_COL32(0, 0, 0, 160), t.c_str());
-            dl->AddText(font, fs, ImVec2(x0 + 22 * sx, ty), IM_COL32(240, 246, 255, 255), t.c_str());
+            dl->AddText(font, fs, ImVec2(x0 + 22 * sx, ty), col::kText, t.c_str());
         }
         ty += 26.0f * sy;
     }
@@ -150,7 +153,7 @@ void DialogDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         const float b = float(std::sin(now * 5.0) * 2.5) * sy;
         const float ax = x1 - 26 * sx, ay = y1 - 18 * sy + b, a = 7.0f * sy;
         dl->AddTriangleFilled(ImVec2(ax - a, ay - a * 0.6f), ImVec2(ax + a, ay - a * 0.6f), ImVec2(ax, ay + a * 0.6f),
-                              IM_COL32(120, 210, 255, 240));
+                              col::kCyan);
     }
 }
 
