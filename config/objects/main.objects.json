@@ -37546,7 +37546,7 @@
         ".bss": "c",
         ".data": "asm",
         ".rodata": "asm",
-        ".sbss": "asm",
+        ".sbss": "c",
         ".text": "c"
       },
       "path": "src/main/tya.c",
