@@ -23175,6 +23175,67 @@
    ]
   },
   "ov10/tu002_00a08670": {
+   ".data": [
+    {
+     "range": [
+      "0x00a43420",
+      "0x00a4379c"
+     ],
+     "generated": [
+      "0x00a43420",
+      "0x00a4379c"
+     ],
+     "generated_by": [
+      "CGCPHandDispSub2",
+      "CGCPHandDispSub3",
+      "CGCPHandDispSubCore",
+      "CGCPJunkDispSub",
+      "CGCPYamaDispSub",
+      "CardDeckListDisp",
+      "CardDisp",
+      "CardDispLight",
+      "CardEnemyListDisp",
+      "CardPlayCursorMove",
+      "CardPlayDispBattle",
+      "CardPlayDispDispose"
+     ],
+     "c_owned_symbols": [
+      "CursorTbl_00A43420",
+      "CardHpPos01",
+      "D_00A4346C",
+      "CardHpPos10",
+      "D_00A4347C",
+      "CardPowPos01",
+      "D_00A4348C",
+      "CardPowPos10",
+      "D_00A4349C",
+      "CardStnbyPos",
+      "D_00A434AC",
+      "CardAttriPos",
+      "D_00A434BC",
+      "CardAttakPos",
+      "D_00A434CC",
+      "CardCondPos",
+      "oldno_0",
+      "D_00A43504",
+      "DeckListStr",
+      "CPSInfoPos",
+      "CardStackPos",
+      "D_00A435D4",
+      "DisposeHP10pos",
+      "DisposeHP01pos",
+      "win0pos",
+      "NewWin0pos",
+      "CardCommandPlay"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
@@ -23206,7 +23267,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
@@ -23236,7 +23297,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
@@ -23263,7 +23324,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     },
     {
@@ -23295,7 +23356,7 @@
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/srv/projects/xsg-i-decomp/build/ov10/build/scaffold/src/ov10/card_fread.o"
+      "object": "build/ov10/build/scaffold/src/ov10/card_fread.o"
      }
     }
    ]

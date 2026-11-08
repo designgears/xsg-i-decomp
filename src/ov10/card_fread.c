@@ -539,7 +539,6 @@ extern void nmlModelSetTexture(const char *texture);
 extern void nmlModelEntryCard(void *model);
 extern void xglMatrixTrans(float (*destination)[4], float (*source)[4], const float translation[4]);
 extern int CCColor;
-extern int oldno_0;
 extern char asDir[];
 extern float CardHpPos01[3];
 extern float CardHpPos10[3];
@@ -566,8 +565,45 @@ extern unsigned char *EnemyDeckLst[];
     nmlModelEntryCard((void *)mdl_); \
 }
 
+/* Cursor anchor table and card-face number positions. */
+extern float DisposePos1P[][3];
+extern float OperationPos1P[][3];
+extern float BattlePos1P[][3];
+float *CursorTbl_00A43420[16] = {
+    DisposePos1P[0],
+    BattlePos1P[0],
+    BattlePos1P[1],
+    OperationPos1P[0],
+    DisposePos1P[1],
+    BattlePos1P[0],
+    BattlePos1P[1],
+    OperationPos1P[1],
+    DisposePos1P[2],
+    BattlePos1P[2],
+    BattlePos1P[3],
+    OperationPos1P[2],
+    DisposePos1P[3],
+    BattlePos1P[2],
+    BattlePos1P[3],
+    OperationPos1P[3]
+};
+float CardHpPos01[3] = {1.3422f, 0.5992f, 0.01f};
+float CardHpPos10[3] = {1.2442f, 0.5994f, 0.01f};
+float CardPowPos01[3] = {1.3422f, 0.4406f, 0.01f};
+float CardPowPos10[3] = {1.2442f, 0.4406f, 0.01f};
+float CardStnbyPos[3] = {1.3422f, -0.644f, 0.01f};
+float CardAttriPos[3] = {1.2788f, 0.8446f, 0.01f};
+float CardAttakPos[3] = {1.1657f, 0.2592f, 0.01f};
+float CardCondPos[4][3] = {
+    {1.0554f, -0.1168f, 0.01f},
+    {1.2679f, -0.1571f, 0.01f},
+    {1.0554f, -0.3955f, 0.01f},
+    {1.268f, -0.4356f, 0.01f}
+};
+
 void CardDispLight(float (*place)[4], short no, short disp, unsigned char arg3)
 {
+    static int oldno_0 __asm__("oldno.0") = 0xFFFF;
     float f;
     float trans[4];
     float mat[4][4];
@@ -4118,7 +4154,7 @@ int CardPlayIdentityCheck(CardGameWork *work, CardHand *hand, u16 identity)
     return found;
 }
 
-extern float win0pos[4];
+extern float win0pos[6];
 
 void CGCPHandDispSubCore(CardHand *hand, int sel, float (*place)[4], int side)
 {
@@ -4408,7 +4444,7 @@ void CGCPHandDispSub3(CardDefinition *definitions, CardHand *hand, int selected,
     CGCPNeedDispSub(1, (u8 *)&definitions[hand->cards[selected]].unmodeled_04, base, gen);
 }
 
-extern float NewWin0pos[4];
+extern float NewWin0pos[12];
 extern char CLColor[];
 
 void CGCPHandDispSub2(CardDefinition *definitions, CardHand *hand, int selected, int mode)
@@ -4957,3 +4993,39 @@ int CardPlayCntFld(CardGameWork *work, s16 cardId) {
     count = count + CardPlayCntDsp(enemyHand, cardId);
     return count + CardPlayCntBtl(enemyHand, cardId);
 }
+
+/* Deck names, layout positions and the play-command id list. */
+char DeckListStr[10][16] = {"Deck 1", "Deck 2", "Deck 3", "Deck 4", "Deck 5", "Deck 6", "Deck 7", "Deck 8", "Deck 9", "Deck 0"};
+float CPSInfoPos[4][2] = {
+    {-1.574f, -0.397f},
+    {1.574f, -0.397f},
+    {-1.574f, -1.18f},
+    {1.574f, -1.18f}
+};
+float CardStackPos[3] = {0.6724f, -0.3779f, 0.02f};
+float DisposeHP10pos[4][2] = {
+    {-2.406f, -0.3319f},
+    {-2.406f, -0.699f},
+    {-2.406f, -1.079f},
+    {-2.406f, -1.459f}
+};
+float DisposeHP01pos[4][3] = {
+    {-2.319f, -0.3319f, 0.0f},
+    {-2.319f, -0.699f, 0.0f},
+    {-2.319f, -1.079f, 0.0f},
+    {-2.319f, -1.459f, 0.0f}
+};
+float win0pos[6] = {-1.8912001f, 0.0f, 0.001f, 1.8912001f, 0.0f, 0.001f};
+float NewWin0pos[12] = {-2.324f, 0.0f, 0.001f, 0.7f, 0.0f, 0.001f, -0.7f, 0.0f, 0.001f, 2.324f, 0.0f, 0.001f};
+u16 CardCommandPlay[150] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 2, 58, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 19, 20, 21, 22, 23, 24, 25, 26,
+    27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42,
+    43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
