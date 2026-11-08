@@ -14185,30 +14185,48 @@
    ]
   },
   "ov12/tu006_00a09ba0": {
+   ".data": [
+    {
+     "range": [
+      "0x00a4f59c",
+      "0x00a4f5a0"
+     ],
+     "generated": [
+      "0x00a4f59c",
+      "0x00a4f5a0"
+     ],
+     "generated_by": [
+      "_dbgThinkTool"
+     ],
+     "c_owned_symbols": [
+      "csr_0"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/rg_enemy.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
-      "0x00a51d90",
+      "0x00a51c60",
       "0x00a51e08"
      ],
      "generated": [
-      "0x00a51d90",
+      "0x00a51c60",
       "0x00a51e03"
      ],
      "generated_by": [
       "CreateRgEnemyControl",
       "_DestructEnemy",
       "_InitEnemy",
-      "_JobEnemy"
+      "_JobEnemy",
+      "_dbgThinkTool"
      ],
      "c_owned_symbols": [
-      "D_00A51D90",
-      "jtbl_00A51DB0",
-      "D_00A51DD0",
-      "D_00A51DE0",
-      "D_00A51DF0"
-     ],
-     "also_referenced_by_c": [
       "D_00A51C60",
       "D_00A51C68",
       "D_00A51C70",
@@ -14228,8 +14246,14 @@
       "D_00A51D38",
       "D_00A51D48",
       "D_00A51D70",
-      "D_00A51D88"
+      "D_00A51D88",
+      "D_00A51D90",
+      "jtbl_00A51DB0",
+      "D_00A51DD0",
+      "D_00A51DE0",
+      "D_00A51DF0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
