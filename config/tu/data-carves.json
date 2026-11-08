@@ -10759,70 +10759,75 @@
     {
      "range": [
       "0x004caac0",
-      "0x004cab00"
+      "0x004cac20"
      ],
      "generated": [
       "0x004caac0",
-      "0x004cab00"
+      "0x004cac20"
      ],
      "generated_by": [
+      "ACT_updateEnemy",
+      "Enemy_Init",
+      "Enemy_Pause",
       "Get_EffectCode"
      ],
      "c_owned_symbols": [
-      "D_004CAAC0"
-     ],
-     "also_referenced_by_c": [
-      "D_004CAB00"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/enemy_1.o"
-     }
-    },
-    {
-     "range": [
-      "0x004cab10",
-      "0x004cab48"
-     ],
-     "generated": [
-      "0x004cab10",
-      "0x004cab48"
-     ],
-     "generated_by": [
-      "Enemy_Pause"
-     ],
-     "c_owned_symbols": [
-      "jtbl_004CAB10"
-     ],
-     "also_referenced_by_c": [
+      "D_004CAAC0",
+      "D_004CAB00",
+      "jtbl_004CAB10",
       "D_004CAB48",
       "D_004CAB60",
       "D_004CAB78",
       "D_004CAB90",
       "D_004CABA8",
-      "D_004CABC0"
+      "D_004CABC0",
+      "jtbl_004CABE0"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
       "object": "build/main/build/c/enemy_1.o"
      }
-    },
+    }
+   ],
+   ".sdata": [
     {
      "range": [
-      "0x004cabe0",
-      "0x004cac20"
+      "0x004db7f8",
+      "0x004db848"
      ],
      "generated": [
-      "0x004cabe0",
-      "0x004cac20"
+      "0x004db7f8",
+      "0x004db848"
      ],
      "generated_by": [
-      "ACT_updateEnemy"
+      "Disp_EnemyMark",
+      "Enemy_Chase",
+      "Enemy_Escape",
+      "Enemy_Init",
+      "Enemy_Route_Chase",
+      "Enemy_Tentacle"
      ],
      "c_owned_symbols": [
-      "jtbl_004CABE0"
+      "D_004DB7F8",
+      "D_004DB800",
+      "D_004DB808",
+      "D_004DB810",
+      "D_004DB818",
+      "CoolDown_0",
+      "CoolDown_1",
+      "D_004DB822",
+      "AdrsEnemyPreset",
+      "AdrsEnemySpline",
+      "AdrsEnemyExclamation",
+      "AdrsEnemyQuestion",
+      "AdrsEnemySphere",
+      "AdrsEnemySquare",
+      "AdrsEnemy",
+      "MostNearActor",
+      "D_004DB842",
+      "MostNear"
      ],
      "also_referenced_by_c": [],
      "basis": {

@@ -106,8 +106,6 @@ typedef struct EnemyMarkSet {
 extern EnemyActor actor[64];
 extern EnemyWorkEntry enepc[16];
 extern EnemyActor *GameLoopState[64];
-extern unsigned short CoolDown_0;
-extern unsigned short CoolDown_1;
 extern void *AdrsEnemyExclamation;
 extern void *AdrsEnemyQuestion;
 extern void *AdrsEnemySphere;
