@@ -162,7 +162,9 @@ static void GameCFSoundReload(void)
     GameCFSoundPurgeSub();
 }
 
-extern u8 GameCFSoundMenuPurgeFlag;
+static short pause_check;
+static int shopNo;
+static u8 GameCFSoundMenuPurgeFlag;
 typedef struct GameSeqSlot { u16 a; u16 seq; } GameSeqSlot;
 extern GameSeqSlot SoundWork[];
 int SsdGetSeqPlayStatus(int sequence);
@@ -880,7 +882,7 @@ void InitCfSystem(void)
   xglRenderCopyDisp2Draw();
 }
 
-extern u64 attrPrev;
+static u64 attrPrev;
 
 typedef struct GameActorAttributeView {
     u8 unmodeled_00[0x4e8];
@@ -2097,7 +2099,7 @@ extern void *const stageVM;
 extern short NowTester;
 extern signed char FLAG_FRAME_60;
 #define actorCG ((ActorHead_CG *)actor)
-extern int prevTouch;
+static int prevTouch;
 typedef struct GameRadarParams_CG3 {
     int x;
     int y;
