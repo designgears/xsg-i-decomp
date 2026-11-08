@@ -3722,10 +3722,6 @@ void MenuCharCameraSet(void) {
 }
 
 extern inline float ldf_off(void *base, unsigned int o) { return *(float *)((char *)base + o); }
-extern MenuCamVec2 D_004C65F0;
-extern MenuCamVec2 D_004C6610;
-extern MenuCamVec2 D_004C6630;
-extern MenuCamVec2 D_004C6650;
 
 void MenuCharCameraMove(void) {
     MenuCamVec2 pos;
@@ -3752,8 +3748,8 @@ void MenuCharCameraMove(void) {
         cpos_22 = &camera->position;
         crot_22 = &camera->rotation;
         state = MenuWork.state;
-        pos = D_004C65F0;
-        rot = D_004C6610;
+        pos = (MenuCamVec2){ { { { 0.45f, 0.9f, 2.3f, 1.0f } }, { { -0.8f, 0.7f, 3.6f, 1.0f } } } };
+        rot = (MenuCamVec2){ { { { -0.4f, 0.0f, 0.0f, 1.0f } }, { { 0.0f, 0.0f, 0.0f, 1.0f } } } };
         idx = 0;
         if (state < 0x40) goto done;
         if (state < 0x42) goto one;
@@ -3773,8 +3769,8 @@ void MenuCharCameraMove(void) {
     idx_39 <<= 4;
     iy = idx_39 + 4;
     iz = idx_39 + 8;
-    trot = D_004C6630;
-    tpos = D_004C6650;
+    trot = (MenuCamVec2){ { { { -0.7853982f, 0.0f, 0.0f, 0.0f } }, { { -1.5707964f, 0.0f, 1.5707964f, 0.0f } } } };
+    tpos = (MenuCamVec2){ { { { -1.7f, -0.2f, 1.5f, 0.0f } }, { { -1.8f, -0.3f, 1.0f, 0.0f } } } };
     crot = &camera->rotation;
     cpos = &camera->position;
     tp = &TairetuPos.v;
@@ -4192,7 +4188,6 @@ typedef struct LineProjection { int component[4]; } LineProjection;
 typedef struct DirectLineColor { unsigned char red; unsigned char green; unsigned char blue; unsigned char alpha; } DirectLineColor;
 typedef struct DirectLineVertex { LineProjection coordinates; DirectLineColor color; unsigned char unmodeled_14[12]; } DirectLineVertex;
 void endPrintDirectLine(DirectLineVertex *vertices);
-extern const MenuCharacterVector D_004C6760;
 
 static int tskCharLineField(XglTaskPrefix *task)
 {
@@ -4213,7 +4208,7 @@ static int tskCharLineField(XglTaskPrefix *task)
     }
     switch (line->state) {
     case 0:
-        __builtin_memcpy(initialScale.words, D_004C6760.words, sizeof(initialScale.words));
+        initialScale = (MenuCharacterVector){ { 0.0f, 1.0f, 0.0f, 1.0f } };
         line->wait = 8;
         __builtin_memcpy(line->scale.words, initialScale.words, sizeof(line->scale.words));
         line->state = 2;
