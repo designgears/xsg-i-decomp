@@ -990,7 +990,7 @@
         },
         {
           "c_split": false,
-          "end": "0x0036D898",
+          "end": "0x0036D890",
           "ordinal": 169,
           "piece": "menu_1",
           "start": "0x0036D6C8",
@@ -1001,7 +1001,7 @@
           "end": "0x0036D940",
           "ordinal": 170,
           "piece": "menu_para_pt_rate_get",
-          "start": "0x0036D898",
+          "start": "0x0036D890",
           "tu": "menu_para_pt_rate_get"
         },
         {
@@ -49128,20 +49128,20 @@
           ],
           "bounds": [
             "0x0036D6C8",
-            "0x0036D898"
+            "0x0036D890"
           ],
-          "end": "0x0036D898",
+          "end": "0x0036D890",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x0036D898",
+              "end": "0x0036D890",
               "name": "menu_1",
               "start": "0x0036D6C8"
             }
           ],
           "rule": "anchored start",
-          "size": 464,
+          "size": 456,
           "splat_type": "data",
           "start": "0x0036D6C8"
         },
@@ -49589,7 +49589,7 @@
         },
         ".data": {
           "anchored": [
-            "0x0036D898",
+            "0x0036D890",
             "0x0036D940"
           ],
           "bounds": [
@@ -49603,13 +49603,13 @@
               "c_split": false,
               "end": "0x0036D940",
               "name": "menu_para_pt_rate_get",
-              "start": "0x0036D898"
+              "start": "0x0036D890"
             }
           ],
-          "rule": "anchored start",
-          "size": 168,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 176,
           "splat_type": "data",
-          "start": "0x0036D898"
+          "start": "0x0036D890"
         },
         ".lit4": {
           "anchored": [
@@ -50039,7 +50039,7 @@
             }
           ],
           "rule": "moved boundary (data ownership by reference)",
-          "size": 1824,
+          "size": 1920,
           "splat_type": "rodata",
           "start": "0x004C6BC0"
         },
@@ -50063,7 +50063,7 @@
             }
           ],
           "rule": "moved boundary (data ownership by reference)",
-          "size": 368,
+          "size": 480,
           "splat_type": "sdata",
           "start": "0x004DAEB0"
         }
@@ -51220,8 +51220,8 @@
               "start": "0x004C7AD0"
             }
           ],
-          "rule": "moved boundary (data ownership by reference)",
-          "size": 3536,
+          "rule": "anchored start",
+          "size": 3504,
           "splat_type": "rodata",
           "start": "0x004C7AD0"
         },
@@ -51244,8 +51244,8 @@
               "start": "0x004DB258"
             }
           ],
-          "rule": "moved boundary (data ownership by reference)",
-          "size": 280,
+          "rule": "anchored start",
+          "size": 248,
           "splat_type": "sdata",
           "start": "0x004DB258"
         }
@@ -51652,8 +51652,8 @@
               "start": "0x004C88A0"
             }
           ],
-          "rule": "anchored start",
-          "size": 2664,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 2696,
           "splat_type": "rodata",
           "start": "0x004C88A0"
         },
@@ -51676,8 +51676,8 @@
               "start": "0x004DB370"
             }
           ],
-          "rule": "anchored start",
-          "size": 456,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 464,
           "splat_type": "sdata",
           "start": "0x004DB370"
         }

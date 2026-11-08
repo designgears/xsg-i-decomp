@@ -71,7 +71,7 @@ segments:
       - [0x43040, data, ov10/card_play_sound1]
       - [0x44420, data, ov10/card_fread]
       - [0x447A0, data, ov10/card_deck_chk]
-      - [0x44A94, data, ov10/card_view_proc]
+      - [0x447C0, data, ov10/card_view_proc]
       - [0x44BD0, data, ov10/card_disp]
       - [0x497C8, data, ov10/card_tutorial]
       - [0x498F0, data, ov10/cgp]

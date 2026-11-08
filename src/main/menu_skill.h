@@ -135,7 +135,6 @@ void endPrintExtFunc(int color, int operation, void *box);
 
 extern SkillPasWork *MenuSkillPas;
 
-extern const char *msg_0_0036DD58[];
 
 typedef struct MenuSkillWorkState {
     unsigned char unmodeled_00[0x03];
@@ -349,11 +348,8 @@ extern MenuSkillMenuWork *MenuSkillMenu;
 
 void MenuSelectWindow(SkillSetWindow *window, SkillMenuList *list);
 
-extern const char D_004DB610[];
 
-extern const char *msg00_1_0036DD68[];
 
-extern const char *msg01_2_0036DD70[];
 
 typedef struct SkillL1R1Sprite {
     unsigned char unmodeled_00[0x04];
@@ -377,13 +373,11 @@ typedef struct SkillL1R1SpriteIdPair {
     short id[2];
 } SkillL1R1SpriteIdPair;
 
-extern const SkillL1R1SpriteIdPair D_004DB628[];
 
 typedef struct SkillL1R1SlideStep {
     signed char side[2];
 } SkillL1R1SlideStep;
 
-extern const SkillL1R1SlideStep D_004DB630[];
 
 typedef struct MenuSkillSetListWork {
     unsigned char state;                /* +0x00 */
@@ -395,9 +389,7 @@ typedef struct MenuSkillSetListWork {
 
 extern MenuSkillSetListWork *MenuSkillSetList;
 
-extern const char D_004C99F8[];
 
-extern const char *msg00_4_0036DD88[];
 
 typedef struct SkillCategorySprite {
     unsigned char unmodeled_00[0x04];
@@ -433,13 +425,11 @@ typedef struct SkillCategoryIconIds {
     short id[5];
 } SkillCategoryIconIds;
 
-extern const SkillCategoryIconIds D_004C9A08;
 
 typedef struct SkillCategoryEdgeStep {
     signed char side[2];
 } SkillCategoryEdgeStep;
 
-extern const SkillCategoryEdgeStep D_004DB638[];
 
 float xglCos(float radians);
 
@@ -520,9 +510,7 @@ void WindowSPSetSelect(SkillSPWindow *window, unsigned char *savedSelection);
 
 int WindowSPSelect(SkillSPWindow *window, int input);
 
-extern const char D_004DB640[];
 
-extern const char D_004C9A18[];
 
 static int MenuSkillListChange00(void);
 static int MenuSkillListChange01(void);
@@ -542,7 +530,6 @@ typedef struct MenuSkillPartyData {
 
 typedef struct SkillScreenState { unsigned char state; } SkillScreenState;
 
-extern const char D_004C9A88[];
 
 extern unsigned char *MainMenuWorkEnd;
 

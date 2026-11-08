@@ -500,7 +500,7 @@ segments:
       - [0x16E628, data, file]
       - [0x16E670, data, menu_item]
       - [0x16E6C8, data, menu_1]
-      - [0x16E898, data, menu_para_pt_rate_get]
+      - [0x16E890, data, menu_para_pt_rate_get]
       - [0x16E940, data, menu_agws_para_set]
       - [0x16EA90, data, seisan_count_init1]
       - [0x16EAF0, data, menu_shop]

@@ -36,9 +36,6 @@ typedef struct UwamonoMapUnit {
     signed char crossType;            /* +0x1CD */
 } UwamonoMapUnit;
 
-/* Runtime-loaded object message with a hexadecimal unit identifier. */
-
-const char D_004CA028[24] = "\xBE\xEF\xC3\xF3\xBE\xE5\xCA\xAA\xA5\xED\xA1\xBC\xA5\xC9 %x\n";
 
 extern int uwares_tbl[14];
 
@@ -384,7 +381,6 @@ typedef struct UwamonoCreatedUnit {
     UwamonoCreatedState state;
 } UwamonoCreatedUnit;
 
-extern const char D_004CA1B0[32];
 
 extern UwamonoCreatedUnit *MAP_createUnit(int index, int resourceId);
 
@@ -431,7 +427,6 @@ typedef struct UwamonoKowareUnit {
 
 extern UwamonoKowareKind KowareKind_t[];
 
-extern const char D_004CA1D0[];
 
 extern void MAP_updateUnitKoware(void *unit);
 
@@ -744,23 +739,31 @@ extern unsigned char *WorkEnd;
 extern int xglCdReadFile(const char *name, void *buffer, int offset, int mode);
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
-typedef struct UwamonoNameTbl { unsigned char b[0x38]; } UwamonoNameTbl;
-extern UwamonoNameTbl D_004C9F20;
-extern const char D_004C9F58[];
-extern const char D_004C9F88[];
-extern const char D_004C9FB0[];
-extern const char D_004C9FD0[];
 
 void InitUwamonoSys(void)
 {
     char sp[0x80];
-    char *names[14];
+    char *names[14] = {
+        "data\\obj\\muobj\\MU_001",
+        "data\\obj\\muobj\\MU_002",
+        "data\\obj\\muobj\\MU_003",
+        "data\\obj\\muobj\\MU_004",
+        "data\\obj\\muobj\\Tre_001",
+        "data\\obj\\muobj\\Save_P",
+        "data\\obj\\muobj\\Shop_P",
+        "data\\obj\\muobj\\Tre_002",
+        "data\\obj\\muobj\\MU_009",
+        "data\\obj\\muobj\\MU_010",
+        "data\\obj\\muobj\\MU_011",
+        "data\\obj\\muobj\\MU_012",
+        "data\\obj\\muobj\\MU_013",
+        "data\\obj\\muobj\\MU_014",
+    };
     unsigned char *cur;
     int i;
     int used;
     unsigned char *work;
 
-    *(UwamonoNameTbl *)names = D_004C9F20;
     cur = uwamono_dat;
     for (i = 0; i < 14; i++) {
         memset(sp, 0, 0x80);
@@ -779,17 +782,17 @@ void InitUwamonoSys(void)
 
     used = cur - uwamono_dat;
     if (used > 0x50000) {
-        printf(D_004C9F58, used / 1024);
+        printf("\242\243\242\243\242\243\276\345\312\252\276\357\303\363\312\252\245\252\241\274\245\320\241\274\245\325\245\355\241\274 %dK byte\242\243\242\243\242\243\n", used / 1024);
     } else {
-        printf(D_004C9F88, used / 1024, i);
+        printf("use uwamono dat=%dK byte obj count=%d\n", used / 1024, i);
     }
 
     memset(ItemBoxTbl, 0, 0x12C8);
     memset(EvtItemTbl, 0, 0x7F80);
     work = WorkEnd;
-    xglCdReadFile(D_004C9FB0, work, 0, 1);
+    xglCdReadFile("data\\karakama\\itembox.dat", work, 0, 1);
     __builtin_memcpy(ItemBoxTbl, work, 0x12C8);
-    xglCdReadFile(D_004C9FD0, work, 0, 1);
+    xglCdReadFile("data\\karakama\\evtitem.dat", work, 0, 1);
     __builtin_memcpy(EvtItemTbl, work, 0x7F80);
 
     GameLoopState.selectionDistance = 3.0f;
@@ -798,8 +801,6 @@ void InitUwamonoSys(void)
 
 extern int unitSequence[];
 extern signed char printflg;
-extern const char D_004C9FF0[24];
-extern const char D_004CA008[];
 void InitUwamono(UwamonoCreatedUnit *arg0);
 
 UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
@@ -826,7 +827,7 @@ UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
       {
         if (printflg != 0)
         {
-          printf(D_004C9FF0, arg1);
+          printf("ID=%d already MapUnit\n", arg1);
         }
         unit = (UwamonoCreatedUnit *) temp;
         break;
@@ -840,7 +841,7 @@ UwamonoCreatedUnit *Unit_CreateUwamono(int arg0, int arg1)
     unit = MAP_createUnit(arg0, arg1);
     if (unit == 0)
     {
-      printf(D_004CA008);
+      printf("Create Uwamono over flow!\n");
       return 0;
     }
   }
@@ -907,7 +908,7 @@ void MAP_LoadUwamonoResource(UwamonoResourceUnit *unit, int resourceId)
     int uwaresId;
     int xtxresId;
 
-    printf((const char *) D_004CA028);
+    printf("\276\357\303\363\276\345\312\252\245\355\241\274\245\311 %x\n");
     if (resourceId != 0x7012 && resourceId >= 0x1000) {
         index = resourceId - 0x7001;
         uwaresId = uwares_tbl[index];
@@ -945,8 +946,6 @@ void SendBrokenSignal(UwamonoMapUnit *unit)
 }
 
 extern signed char printflg;
-extern const char D_004CA040[];
-extern const char D_004CA050[];
 
 int GetPartsSize(void *arg0)
 {
@@ -963,8 +962,8 @@ int GetPartsSize(void *arg0)
         *(float *)(u + 0xB4) = *(float *)(sub + 0x10);
         *(float *)(u + 0xB8) = *(float *)(sub + 0x14) * 0.5f;
         if (pf) {
-            printf(D_004CA040);
-            printf(D_004CA050, *(float *)(sub + 0xC), *(float *)(sub + 0x10), *(float *)(sub + 0x14));
+            printf("SetSize\n");
+            printf("x=%f y=%f z=%f\n", *(float *)(sub + 0xC), *(float *)(sub + 0x10), *(float *)(sub + 0x14));
         }
     } else {
         *(UwamonoKowareDimensions *)(u + 0xB0) = KowareKind_t[kind].dimensions;
@@ -1115,9 +1114,6 @@ void InitUwamono(UwamonoCreatedUnit *arg0)
     }
 }
 
-const char D_004CA0D0[24] = "Illegal Parts Type %d\n";
-const char D_004CA170[32] = "Create Save Symbol %f %f %f\n";
-const char D_004CA190[32] = "Create Shop Symbol %f %f %f\n";
 
 void InitMapParts(InitMapPartsUnit *unit)
 {
@@ -1133,7 +1129,7 @@ void InitMapParts(InitMapPartsUnit *unit)
         InitDrill(unit);
         break;
     default:
-        printf(D_004CA0D0, unit->mapType);
+        printf("Illegal Parts Type %d\n", unit->mapType);
         unit->update = 0;
         break;
     }
@@ -1142,9 +1138,6 @@ void InitMapParts(InitMapPartsUnit *unit)
 extern signed char printflg;
 int GetPartsSize(void *);
 void SetHideObject(void *);
-extern const char D_004CA0E8[];
-extern const char D_004CA108[];
-extern const char D_004CA138[];
 
 void InitMapKoware(InitMapPartsUnit *unit)
 {
@@ -1155,7 +1148,7 @@ void InitMapKoware(InitMapPartsUnit *unit)
     short id;
 
     if (kind < 0) {
-        printf(D_004CA0E8, kind);
+        printf("Illegal Koware Kind = %d\n", kind);
     }
     GetPartsPos((GetPartsPosUnit *)u);
     GetPartsSize(u);
@@ -1170,12 +1163,12 @@ void InitMapKoware(InitMapPartsUnit *unit)
     if (id >= 0 && id < *(int *)((char *)res + 0x40)) {
         nmlModelSetPartsVisible(res, id, 1);
     } else {
-        printf(D_004CA108, *(short *)(u + 0xA4));
+        printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", *(short *)(u + 0xA4));
         *(short *)(u + 0xA4) = -1;
         *(void **)(u + 4) = 0;
     }
     if (printflg) {
-        printf(D_004CA138, *(short *)(u + 0xA4), kind,
+        printf("Create Kowaremono id=%d kind=%d pos x=%f y=%f z=%f\n", *(short *)(u + 0xA4), kind,
                *(float *)(u + 0x10), *(float *)(u + 0x14), *(float *)(u + 0x18));
     }
 }
@@ -1219,7 +1212,7 @@ void InitSaveSymbol(SaveSymbolUnit *unit)
   unit->flags |= 0x20000000;
   if (printflg)
   {
-    printf(D_004CA170, position[0], new_var = unit->position[1], unit->position[2]);
+    printf("Create Save Symbol %f %f %f\n", position[0], new_var = unit->position[1], unit->position[2]);
   }
 }
 
@@ -1256,7 +1249,7 @@ void InitShopSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x40000000;
   if (printflg)
   {
-    printf(D_004CA190, position[0], unit->position[1], unit->position[2]);
+    printf("Create Shop Symbol %f %f %f\n", position[0], unit->position[1], unit->position[2]);
   }
 }
 
@@ -1286,7 +1279,7 @@ void InitEvsSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x10000;
   if (printflg)
   {
-    printf(D_004CA190, fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
+    printf("Create Shop Symbol %f %f %f\n", fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
   }
 }
 
@@ -1316,7 +1309,7 @@ void InitRetSymbol(UwamonoCreatedUnit *arg0)
   unit->flags |= 0x10000;
   if (printflg)
   {
-    printf(D_004CA190, fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
+    printf("Create Shop Symbol %f %f %f\n", fptodp(position[0]), fptodp(unit->position[1]), fptodp(unit->position[2]));
   }
 }
 
@@ -1385,7 +1378,7 @@ void SetHideObject(void *arg0)
         nmlModelSetPartsVisible(res, (int) serial, 0);
         return;
       }
-      printf(D_004CA108, (short) ((unsigned short) slot->serial), effect, res);
+      printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", (short) ((unsigned short) slot->serial), effect, res);
       slot->serial = -1;
       slot->update = 0;
     }
@@ -1446,7 +1439,7 @@ UwamonoCreatedUnit *CreateUwamono(float x, float y, float z, float rotationY, in
     int inactiveValue;
 
     if (unit == 0) {
-        printf(D_004CA1B0);
+        printf("Create Uwamono unit over flow!\n");
         return 0;
     }
     MAP_loadUnitResource(unit, resourceId);
@@ -1475,7 +1468,7 @@ UwamonoKowareUnit *CreateKowaremono(short resourceId, short kindIndex)
     UwamonoKowareUnit *unit = (UwamonoKowareUnit *)MAP_createUnit(-1, resourceId);
     UwamonoMapUnitState *state;
     if (unit == 0) {
-        printf(D_004CA1D0);
+        printf("Create Kowaremono unit over flow!\n");
         return 0;
     }
     GetPartsPos((GetPartsPosUnit *)unit);
@@ -1510,7 +1503,6 @@ extern void *sefCreateEffectCf(int, int, int);
 extern void SetUwaWind(UwamonoWindUnit *unit);
 extern void CallMethod_I(const char *name, int arg);
 extern void EXM_ClearWindStruct(void);
-extern const char D_004CA1F8[32];
 
 void MAP_updateUnitKoware(void *unit) {
     char *temp_17;
@@ -1557,7 +1549,7 @@ void MAP_updateUnitKoware(void *unit) {
         }
         if (*(int *)(temp_17 + 0x3C) < *(short *)((char *)unit + 0xA8)) {
             if (printflg != 0) {
-                printf(D_004CA1F8, *(short *)((char *)unit + 0xA4), *(unsigned char *)((char *)unit + 0xA0));
+                printf("unit koware delete id=0x%x serial=%d\n", *(short *)((char *)unit + 0xA4), *(unsigned char *)((char *)unit + 0xA0));
             }
             *(int *)unit = 0;
             *(short *)((char *)unit + 0xA4) = -1;
@@ -1641,7 +1633,7 @@ void MAP_updateUnitHide(UwamonoMapSlot *unit)
       }
       else
       {
-        printf(D_004CA108, (short) (unsigned short) unit->serial);
+        printf("\262\365\244\354\312\252\300\270\300\256\245\250\245\351\241\274 \245\321\241\274\245\304\245\312\245\363\245\320\241\274\244\254\311\324\300\265\244\307\244\271 %d\n", (short) (unsigned short) unit->serial);
         unit->serial = -1;
         unit->update = 0;
       }
@@ -2181,10 +2173,6 @@ typedef union UwamonoCollisionPosition {
     Vector4 value;
     XglQuadword quadword;
 } UwamonoCollisionPosition;
-extern const char D_004CA220[];
-extern const char D_004CA230[];
-extern const char D_004CA240[];
-extern const char D_004CA250[];
 typedef struct UwamonoCornerCollisionUnit {
     unsigned char unmodeled_00[0x10];
     UwamonoAlignedVector position;
@@ -2246,19 +2234,19 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
         xglMatrixStackSave(unit->matrix);
     }
 
-    xglFontDebugPrintf(8, 0x80, D_004CA220,
+    xglFontDebugPrintf(8, 0x80, "MAT %f %f %f",
                        basis[0][0],
                        basis[0][1],
                        basis[0][2]);
-    xglFontDebugPrintf(8, 0x88, D_004CA220,
+    xglFontDebugPrintf(8, 0x88, "MAT %f %f %f",
                        basis[1][0],
                        basis[1][1],
                        basis[1][2]);
-    xglFontDebugPrintf(8, 0x90, D_004CA220,
+    xglFontDebugPrintf(8, 0x90, "MAT %f %f %f",
                        basis[2][0],
                        basis[2][1],
                        basis[2][2]);
-    xglFontDebugPrintf(8, 0x98, D_004CA230,
+    xglFontDebugPrintf(8, 0x98, "POS %f %f %f",
                        basis[3][0],
                        basis[3][1],
                        basis[3][2]);
@@ -2307,10 +2295,10 @@ int HitCheckBoxTest(UwamonoCollisionActor *actor, UwamonoCollisionUnitView *unit
     xglFontDebugPrintf(8, 0x54, "u=%f", dx);
     xglFontDebugPrintf(8, 0x5C, "v=%f", dy);
     xglFontDebugPrintf(8, 0x64, "w=%f", dz);
-    xglFontDebugPrintf(8, 0x6C, D_004CA240,
+    xglFontDebugPrintf(8, 0x6C, "len=%f r=%f",
                        distance, radiusSquared);
     if (distance < radiusSquared) {
-        xglFontDebugPrintf(8, 8, D_004CA250);
+        xglFontDebugPrintf(8, 8, "MATRIX_HIT");
     }
 
     return 0;
@@ -2608,7 +2596,6 @@ extern void Vibration_Set_Weak(int level);
 extern void Enemy_FindByEar(void *actor, void *pos);
 extern signed char dispflg;
 extern signed char collflg;
-extern char D_004CA260[];
 typedef struct ShootActor {
     unsigned char unmodeled_00[0x10];
     Vector4 pos;
@@ -2690,7 +2677,7 @@ void ShootMapUnit(void)
     }
     if (actor->motionTime > 0.36f && sub->found == 0) {
         if (printflg) {
-            printf(D_004CA260, G.shootUnit);
+            printf("Act Shoot MapUnit=%d\n", G.shootUnit);
         }
         Enemy_FindByEar(actor, (char *)MapUnit + 0x10 + no * 0x300);
         sub->found = 1;
