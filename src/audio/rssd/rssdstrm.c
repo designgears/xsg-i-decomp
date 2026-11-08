@@ -19,7 +19,9 @@ typedef struct RssdIopStreamWork {
     unsigned char channel_count;
     int chunk_size;
     StreamChannel pcm;
-    StreamChannel vag[0];
+    /* SsdInitVagStreamMono rejects more than four channels. */
+    StreamChannel vag[4];
+    unsigned char unmodeled_044[0x6c - 0x44]; /* original object is 0x6c bytes */
 } RssdIopStreamWork;
 
 typedef struct StreamRequest {
@@ -28,7 +30,7 @@ typedef struct StreamRequest {
     unsigned char data[0];
 } StreamRequest;
 
-extern RssdIopStreamWork RssdStrWork;
+RssdIopStreamWork RssdStrWork;
 
 extern RingBuffer *InitRingBuffer(int, int);
 

@@ -102,16 +102,13 @@ typedef struct SsdGlobalWork {
     int intervalTotal;
 } SsdGlobalWork;
 
-extern char _fdata[];
 
 typedef struct ModuleInfo {
     const char *name;
     unsigned short version;
 } ModuleInfo;
 
-/* The module name is the first .rodata string ("PS2_SSDRemote"), still
- * provided by the original .rodata scaffold through _fdata. */
-ModuleInfo Module = { _fdata, 0x0205 };
+ModuleInfo Module = { "PS2_SSDRemote", 0x0205 };
 
 extern int printf(const char *format, ...);
 
@@ -740,7 +737,7 @@ void RssdExecFunc(RssdRpcPacket *packet)
         SsdCompellingKeyoff();
         break;
     default:
-        printf(&_fdata[0x10], packet->command);
+        printf("Rssd illegal function No.0x%04x\n", packet->command);
         packet->error = -1;
         break;
     }
