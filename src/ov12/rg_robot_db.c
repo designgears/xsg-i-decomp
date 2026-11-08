@@ -91,7 +91,7 @@ void *RgRobotDBGetByID(RgSimpleDB *database, int charID)
     return RgRobotDBGet(database, name);
 }
 
-typedef struct RgRobotSpec RgRobotSpec;
+#include "rg_robot.h"
 
 extern void InitRgRobotSpec(RgRobotSpec *pSpec);
 
@@ -99,7 +99,7 @@ extern void InitRgRobotSpec(RgRobotSpec *pSpec);
  * Scaffold-owned (.bss still owner: asm): the default robot spec instance
  * RgRobotDBGetDefault fills in place and returns.
  */
-extern RgRobotSpec D_00A599E0;
+static RgRobotSpec D_00A599E0;
 
 RgRobotSpec *RgRobotDBGetDefault(void)
 {

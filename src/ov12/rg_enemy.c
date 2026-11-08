@@ -31,7 +31,7 @@ extern int RgWeaponIsTargetting(RgWeapon *weapon);
 extern void xglFontDebugPrintf(int x, int y, const char *format, ...);
 extern void xglSleep(void);
 static int csr_0 = 0;
-extern int D_00A599D8;
+static int D_00A599D8;
 const char D_00A51C60[] = "\013\243\317\243\316";
 const char D_00A51C68[] = "\013\243\317\243\306\243\306";
 const char D_00A51C70[] = "\013\261\356\260\312\262\274";
