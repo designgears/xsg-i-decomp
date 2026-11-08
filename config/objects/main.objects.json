@@ -4968,7 +4968,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004DC488",
+          "end": "0x004DC480",
           "ordinal": 106,
           "piece": "nml_model_set",
           "start": "0x004DC3E0",
@@ -4979,7 +4979,7 @@
           "end": "0x004DC4D0",
           "ordinal": 107,
           "piece": "nml_packet_add",
-          "start": "0x004DC488",
+          "start": "0x004DC480",
           "tu": "nml_packet_add"
         },
         {
@@ -29239,20 +29239,20 @@
           ],
           "bounds": [
             "0x004DC3CC",
-            "0x004DC488"
+            "0x004DC480"
           ],
-          "end": "0x004DC488",
+          "end": "0x004DC480",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004DC488",
+              "end": "0x004DC480",
               "name": "nml_model_set",
               "start": "0x004DC3E0"
             }
           ],
           "rule": "anchored start",
-          "size": 168,
+          "size": 160,
           "splat_type": "sdata",
           "start": "0x004DC3E0"
         }
@@ -30006,7 +30006,7 @@
         },
         ".sdata": {
           "anchored": [
-            "0x004DC488",
+            "0x004DC480",
             "0x004DC4C9"
           ],
           "bounds": [
@@ -30020,13 +30020,13 @@
               "c_split": false,
               "end": "0x004DC4D0",
               "name": "nml_packet_add",
-              "start": "0x004DC488"
+              "start": "0x004DC480"
             }
           ],
-          "rule": "anchored start",
-          "size": 72,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 80,
           "splat_type": "sdata",
-          "start": "0x004DC488"
+          "start": "0x004DC480"
         }
       },
       "shared_contract": {

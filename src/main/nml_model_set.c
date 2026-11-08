@@ -3,6 +3,44 @@
 #include "nml_model_set.h"
 #include "nml_packet_add.h"
 
+/* TU-local scalar state (.sdata), in the original definition order. */
+static void *s_pMapLast = 0;
+static int s_nCircleShadow = 0;
+static int s_nParentBuf = 0;
+static int s_nToumeiNum = 0;
+static unsigned int s_nShadowVec = 0;
+static int s_nMapShadowParts = 0;
+static float s_fSortOffsetEntry = 0.0f;
+static float s_fSortOffset = 0.0f;
+static int s_nParent = 0;
+static int s_nClip = 0;
+static int s_nShapeNum = 0;
+static int s_nDispVisible = -1;
+static int s_nMapClip = 0;
+static int *s_nStencilVal = (int *)0x80000000;
+static int s_nCount = 0;
+static int s_nPacketSignal = 0;
+static int s_nModel = 0;
+static int s_nBlocks = 1;
+static int s_nDirect = 0;
+static int s_nBlocksAlpha = 0;
+static int s_nBlocksAlphaLast = 0;
+static int s_nAnotherStudio = 0;
+static int s_nUseStealth = 0;
+static int s_nUseGnosys = 0;
+static int s_nUseZwrite = 0;
+static int s_nUseBackBuffer = 0;
+static int s_nMapAlphaEntry = 0;
+static int s_nEffectWrite = 1;
+static int s_nMapLast = 0;
+static int s_nFadeDoit = 0;
+static int s_nPause = 0;
+static int s_nMenu = 0;
+static int s_nFrameLockOff = 0;
+static int s_nMainCameraWarp = 0;
+static int s_nRenderCancel = 0;
+static int s_nRenderCancelOld = 0;
+
 static int s_aShapeMathPara[10] = {
     0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x800,
 };
@@ -2511,7 +2549,6 @@ extern int s_aToumeiId[];
 extern float s_aToumei[];
 extern Vector4 s_inScale;
 void xglMatrixInverse(void *dst, void *src);
-extern int s_pMapLast;
 extern int s_aMapLast[];
 static int is_block_last_entry(void *m)
 {
@@ -2919,7 +2956,6 @@ static float deapth_for_studio(int studio, const Vector4 *vector, float size)
     return ret;
 }
 
-extern const char D_004DC470[];
 
 static void nmlModelCalcSpecularClip(void *arg0, int arg1)
 {
@@ -2935,7 +2971,7 @@ static void nmlModelCalcSpecularClip(void *arg0, int arg1)
     int i;
 
     size = s_inLayout.slots[0x7F].f;
-    if (strstr((char *)arg0 + 0x10, D_004DC470) == 0 && s_nParent != 0) {
+    if (strstr((char *)arg0 + 0x10, "_face") == 0 && s_nParent != 0) {
         size = *(float *)((char *)s_nParent + 0x9C);
     }
     if (arg1 != 0) {
@@ -3862,14 +3898,14 @@ typedef struct U_NmlParentBuffer {
     int alphaCount;
 } U_NmlParentBuffer;
 typedef U_NmlParentBuffer U_NmlParentBuf;
-extern int U_s_nModel NMLE_SYM(s_nModel);
-extern int U_s_nBlocks NMLE_SYM(s_nBlocks);
-extern int U_s_nBlocksAlpha NMLE_SYM(s_nBlocksAlpha);
-extern int U_s_nBlocksAlphaLast NMLE_SYM(s_nBlocksAlphaLast);
-extern int U_s_nUseGnosys NMLE_SYM(s_nUseGnosys);
-extern int U_s_nMapAlphaEntry NMLE_SYM(s_nMapAlphaEntry);
+#define U_s_nModel s_nModel
+#define U_s_nBlocks s_nBlocks
+#define U_s_nBlocksAlpha s_nBlocksAlpha
+#define U_s_nBlocksAlphaLast s_nBlocksAlphaLast
+#define U_s_nUseGnosys s_nUseGnosys
+#define U_s_nMapAlphaEntry s_nMapAlphaEntry
 extern U_NmlBlockGroup U_s_aAlphaGroup[] NMLE_SYM(s_aAlphaGroup);
-extern float U_s_fSortOffset NMLE_SYM(s_fSortOffset);
+#define U_s_fSortOffset s_fSortOffset
 extern U_LayoutStore U_s_inLayout NMLE_SYM(s_inLayout);
 extern U_Vector4 U_s_inGblPointC[] NMLE_SYM(s_inGblPointC);
 extern U_NmlPointQuadword U_s_inGblPointP[] NMLE_SYM(s_inGblPointP);
@@ -3944,7 +3980,6 @@ typedef struct U_NmlProRealState {
     U_u64 unmodeled_1d0;
     unsigned char unmodeled_1d8[0x1e0 - 0x1d8];
 } U_NmlProRealState;
-extern char U_faceNameSuffix[] NMLE_SYM(D_004DC470);
 extern void U_xglCullingMapLastCheck(void) NMLE_SYM(xglCullingMapLastCheck);
 extern void U_xglMemCopy2(void *destination, const void *source, int count) NMLE_SYM(xglMemCopy2);
 extern void U_xglMemCopy4(void *destination, const void *source, int count) NMLE_SYM(xglMemCopy4);
@@ -3952,15 +3987,15 @@ extern void *U_nmlPacketSetAttributeAlloc16N(int count) NMLE_SYM(nmlPacketSetAtt
 extern void *U_nmlPacketSetAttributeData64N(const void *data, int count) NMLE_SYM(nmlPacketSetAttributeData64N);
 extern unsigned char U_nmlModelCalcClipMat2AllCam(const void *a, const void *b, void *c) NMLE_SYM(nmlModelCalcClipMat2AllCam);
 extern int U_g_aSubWindow[4] NMLE_SYM(g_aSubWindow);
-extern void *U_s_pMapLast NMLE_SYM(s_pMapLast);
-extern int U_s_nToumeiNum NMLE_SYM(s_nToumeiNum);
-extern int U_s_nMapShadowParts NMLE_SYM(s_nMapShadowParts);
-extern float U_s_fSortOffsetEntry NMLE_SYM(s_fSortOffsetEntry);
-extern void *U_s_nParent NMLE_SYM(s_nParent);
-extern int U_s_nClip NMLE_SYM(s_nClip);
-extern int U_s_nShapeNum NMLE_SYM(s_nShapeNum);
-extern int U_s_nMapClip NMLE_SYM(s_nMapClip);
-extern int U_s_nDispVisible NMLE_SYM(s_nDispVisible);
+#define U_s_pMapLast s_pMapLast
+#define U_s_nToumeiNum s_nToumeiNum
+#define U_s_nMapShadowParts s_nMapShadowParts
+#define U_s_fSortOffsetEntry s_fSortOffsetEntry
+#define U_s_nParent ((void *)s_nParent)
+#define U_s_nClip s_nClip
+#define U_s_nShapeNum s_nShapeNum
+#define U_s_nMapClip s_nMapClip
+#define U_s_nDispVisible s_nDispVisible
 extern unsigned char U_s_aDispVisible[] NMLE_SYM(s_aDispVisible);
 extern int U_s_aToumeiId[] NMLE_SYM(s_aToumeiId);
 extern U_LayoutSlot U_s_aToumei[] NMLE_SYM(s_aToumei);
@@ -4050,7 +4085,7 @@ void nmlModelEntry(U_NmlModel *model)
             if (U_s_inLayout.fields.render_status & U_NML_RENDER_BACK_CLEAR) {
                 (U_s_inLayout.slots[(0x220) / 4].f) = 1.0f;
             }
-            if (strstr((char *)model + 0x11, U_faceNameSuffix) != 0) {
+            if (strstr((char *)model + 0x11, "_face") != 0) {
                 U_s_inLayout.fields.render_status |= U_NML_RENDER_FACE_MODEL;
             }
             U_xglCullingMapLastCheck();
@@ -5311,7 +5346,6 @@ typedef struct {
     int f48;
 } NonAlphaRS;
 extern int *s_nStencilVal;
-extern const char D_004DC478[];
 void nmlPacketClrModelCache(void);
 extern void nmlPacketAddGsFrame(int fbp, int mask);
 void nmlPacketAddGsFogCol(float *color);
@@ -5409,7 +5443,7 @@ static int nmlModelFlushSubNonAlpha(int viewport, StudioCamera *camera)
         nmlPacketAddGsFlush();
         if (material->slots[0x30].i & 0x1000)
         {
-          if ((!(model->slots[0xAC].i & 0x10)) || ((model->slots[0x94].i & 0x100000) && (strstr((char *) material, D_004DC478) != 0)))
+          if ((!(model->slots[0xAC].i & 0x10)) || ((model->slots[0x94].i & 0x100000) && (strstr((char *) material, "eye") != 0)))
           {
             nmlPacketAddReflRot(mat, mdl);
             nmlPacketAddReflectParam(mat, mdl);
@@ -5636,7 +5670,7 @@ static int nmlModelFlushSubAlpha(int viewport, StudioCamera *camera)
                 if ((material->material_flags & 0x1000) != 0 &&
                     (((*(unsigned int *)&layout->slots[0xAC]) & 0x10) == 0 ||
                      (((*(unsigned int *)&layout->slots[0x94]) & 0x100000) != 0 &&
-                      strstr(material->name, D_004DC478) != 0))) {
+                      strstr(material->name, "eye") != 0))) {
                     nmlPacketAddReflRot(material, model);
                 }
                 nmlPacketAddBlockMaterial(material, model, 0, viewport);
@@ -5656,7 +5690,7 @@ static int nmlModelFlushSubAlpha(int viewport, StudioCamera *camera)
                 if ((material->material_flags & 0x1000) != 0 &&
                     (((*(unsigned int *)&layout->slots[0xAC]) & 0x10) == 0 ||
                      (((*(unsigned int *)&layout->slots[0x94]) & 0x100000) != 0 &&
-                      strstr(material->name, D_004DC478) != 0))) {
+                      strstr(material->name, "eye") != 0))) {
                     nmlPacketAddReflectParam(material, model);
                 }
                 nmlPacketAddExecProg(material, model, 1, 0);

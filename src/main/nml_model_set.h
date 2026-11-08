@@ -167,6 +167,7 @@ extern int s_nEffectWrite;
 extern float s_fSortOffsetEntry;
 extern int s_nParent;
 extern int s_nMapLast;
+extern int s_nBlocks;
 
 
 /*
