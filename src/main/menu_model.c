@@ -306,9 +306,7 @@ typedef struct MenuModelResourceStateBuffer {
 MenuModelResourceStateBuffer MenuModelResourceState = {0};
 
 
-/* Still scaffold data: all-zero, so the carve cannot place it after
- * MenuModelResourceState unambiguously. */
-extern MenuModelSubWindowAccess MenuModelSubWindow[3];
+MenuModelSubWindowAccess MenuModelSubWindow[3] = {{{0}}};
 
 
 
