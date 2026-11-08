@@ -107,7 +107,6 @@ char *MenuSegmentItemNameGet(int n)
     return p;
 }
 
-extern char f_name_0_0036D6C8[];
 extern int map_ex_text;
 
 /*
@@ -120,6 +119,7 @@ extern int MenuLoadFile(const char *name, void *buffer);
 
 int MenuMapExTextLoad(int work, int mode)
 {
+    static char f_name_0_0036D6C8[] __asm__("f_name.0") = "data\\endou\\mapex.bin";
     int aligned = (work + 0xF) & ~0xF;
     int next = aligned + 0x2000;
 
@@ -158,11 +158,11 @@ SaveMapText *MenuSaveMapNameGet(int id)
  */
 extern int MenuLoadFile(const char *name, void *buffer);
 
-extern char f_name_1[];
 extern int save_map_text;
 
 int MenuSaveMapTextLoad(int work, int mode)
 {
+    static char f_name_1[] __asm__("f_name.1") = "data\\endou\\savemap.bin";
     int aligned = (work + 0xF) & ~0xF;
     int next = aligned + 0x1000;
 
@@ -291,20 +291,22 @@ extern char *strcat(char *destination, const char *source);
 extern long long __divdi3(long long, long long);
 extern long long __moddi3(long long, long long);
 extern char msg_2_00532A78[];
-extern unsigned char D_004DAB88[];
-extern char D_004C5180[];
+/* The digit strings "0".."9" sit just before this TU's .sdata; the split gives them to menu_item. */
+extern char D_004DAB38[], D_004DAB40[], D_004DAB48[], D_004DAB50[], D_004DAB58[];
+extern char D_004DAB60[], D_004DAB68[], D_004DAB70[], D_004DAB78[], D_004DAB80[];
 
 char *MenuNumberTextGet(long long value, int width, int mode)
 {
-    char *tbl[10];
+    char *tbl[10] = { D_004DAB38, D_004DAB40, D_004DAB48, D_004DAB50, D_004DAB58,
+                      D_004DAB60, D_004DAB68, D_004DAB70, D_004DAB78, D_004DAB80 };
+    unsigned char empty[] = "";
     long long p;
     long long rem;
     int n;
     int i;
     int w;
 
-    __builtin_memcpy(tbl, D_004C5180, 40);
-    msg_2_00532A78[0] = D_004DAB88[0];
+    msg_2_00532A78[0] = empty[0];
     if (width < 0) {
         p = 10;
         w = 1;
@@ -337,19 +339,15 @@ char *MenuNumberTextGet(long long value, int width, int mode)
     return msg_2_00532A78;
 }
 
-extern char *tag_name_3[];
 
 char *MenuTagTextGet(int index)
 {
+    static char *tag_name_3[] __asm__("tag_name.3") = { 0, "Combatant", "Reserve", "Registered Combatant", "Registered Reserve", "User", "From", "Target", "To" };
     return tag_name_3[index];
 }
 
 typedef struct { unsigned short v[12]; } FaceEpidTbl12;
 typedef struct { unsigned short v[16]; } FaceEpidTbl16;
-extern FaceEpidTbl12 D_004C51E8;
-extern FaceEpidTbl12 D_004C5200;
-extern FaceEpidTbl16 D_004C5218;
-extern FaceEpidTbl12 D_004C5238;
 
 int MenuFaceEpidGet(int id, int kind)
 {
@@ -364,47 +362,51 @@ int MenuFaceEpidGet(int id, int kind)
     }
     if (kind == 0) {
         if ((unsigned)(id - 1) < 12) {
-            t0 = D_004C51E8;
+            t0 = (FaceEpidTbl12){ { 0xD00, 0xC01, 0xC00, 0xF00, 0xE01, 0xD01, 0xE00, 0xD00, 0xD00, 0xF01, 0x1000, 0xF00 } };
             return t0.v[id - 1];
         }
         if ((unsigned)(id - 0x11) < 12) {
             p = &t1;
-            *p = D_004C5200;
+            *p = (FaceEpidTbl12){ { 0x902, 0x901, 0x906, 0x907, 0x902, 0x900, 0x903, 0x903, 0x903, 0x904, 0x905, 0x903 } };
         } else {
             goto zero;
         }
     } else {
         p = &t3;
         if ((unsigned)(id - 1) < 12) {
-            t2 = D_004C5218;
+            t2 = (FaceEpidTbl16){ { 0x402, 0x401, 0x400, 0x406, 0x405, 0x403, 0x404, 0x402, 0x402, 0x407, 0x408, 0x406, 0x409, 0x409, 0x409, 0x409 } };
             return t2.v[id - 1];
         }
-        *p = D_004C5238;
+        *p = (FaceEpidTbl12){ { 0x90A, 0x909, 0x906, 0x907, 0x90A, 0x908, 0x90B, 0x90B, 0x90B, 0x90C, 0x90D, 0x90B } };
     }
     return p->v[id - 0x11];
 zero:
     return 0;
 }
 
-extern char *para_name_4[];
 
 char *MenuParaNameGet(int index)
 {
+    static char *para_name_4[] __asm__("para_name.4") = { "HP", "EP", "Strength", "Vitality", "Ether Attack", "Ether Defense", "Dexterity", "Evasion" };
     return para_name_4[index];
 }
 
-extern char *para_name2_5[];
 
 char *MenuParaNameGet2(int index)
 {
+    static char *para_name2_5[] __asm__("para_name2.5") = { "HP", "EP", "STR", "VIT", "EATK", "EDEF", "DEX", "EVA" };
     return para_name2_5[index];
 }
 
-extern char *char_name_6[];
-extern char *char_name2_7[];
 
 char *MenuCharNameGet(int no)
 {
+    static char *char_name_6[] __asm__("char_name.6") = {
+        "None", "chaos", "KOS-MOS", "Shion", "\xA1\xBC\xA1\xBC\xA1\xBC\xA1\xBC\xA1\xBC", "Ziggy", "MOMO", "Jr.",
+        "\xA5\xAD\xA5\xE3\xA5\xB7\xA5\xEA\xA5\xA2", "\xA5\xAB\xA5\xBF\xA5\xEA\xA5\xCA", "Virgil", "Mary", "Soldier",
+        "BIC-13", "BIC-14", "BIC-15", "BIC-16", "VX-10000", "VX-7000", "VX-9000", "VX-20000", "VX-05", "VX-4000",
+        "AG-01", "AG-02", "AG-03", "AG-04", "AG-05", "AG-06", "Bunnie" };
+    static char *char_name2_7[] __asm__("char_name2.7") = { "Ziggurat 8" };
     char *name = char_name_6[no];
 
     if (no == 5 && MenuScenarioNoGet() < 0x6C) {
@@ -418,9 +420,6 @@ typedef struct {
     const unsigned char *auxiliary;
     const unsigned char *sortName;
 } UpTextEntry;
-extern MenuTextEntry dumm_msg_8;
-extern MenuTextEntry dumm_9;
-extern UpTextEntry dumm2_10;
 extern MenuTextEntry *func_A2C5F8(int);
 extern MenuTextEntry *func_A2C648(int);
 extern MenuTextEntry *func_A2C698(int);
@@ -436,6 +435,10 @@ extern int MenuShionMwsCheck(void);
 
 MenuTextEntry *MenuTextGet(int index)
 {
+    /* "\0": the original's empty text here is a separate constant from the one in MenuNumberTextGet. */
+    static MenuTextEntry dumm_msg_8 __asm__("dumm_msg.8") = { "None", {}, "\0", "\0" };
+    static MenuTextEntry dumm_9 __asm__("dumm.9") = { 0, {}, "\0", "\0" };
+    static UpTextEntry dumm2_10 __asm__("dumm2.10") = { 0, 0, 0 };
     unsigned int encodedIndex = (unsigned int)index;
     unsigned int itemId = encodedIndex & 0xFFFF;
     unsigned int highIndex = encodedIndex >> 16;
@@ -674,13 +677,10 @@ extern void *func_A1A4E8(int itemId);
 extern MbmBulletPrice *func_A1A428(int bulletId);
 extern void *func_A1A598(int frameId);
 extern void *func_A1A5E8(int engineId);
-extern const int D_004C5388[3];
 
 int MenuBoxMoneyGet(int index, int priceMode)
 {
     float rate[5];
-    int priceValues[3];
-    int agwsPrices[12];
     int itemId = index & 0xffff;
     int price = 0;
     int category = (unsigned int)index >> 16;
@@ -713,7 +713,8 @@ int MenuBoxMoneyGet(int index, int priceMode)
         break;
     case 2:
         if ((unsigned int)(itemId - 53) < 3U) {
-            __builtin_memcpy(priceValues, D_004C5388, sizeof(priceValues));
+            int priceValues[3] = { 400, 100, 100 };
+
             price = priceValues[itemId - 53];
         }
         break;
@@ -751,11 +752,11 @@ int MenuBoxMoneyGet(int index, int priceMode)
         price = ((MbmItemPrice *)func_A1A5E8(itemId))->price.value;
         break;
     case 7:
-        memset(agwsPrices, 0, sizeof(agwsPrices));
-        agwsPrices[5] = 50000;
-        agwsPrices[9] = 80000;
-        agwsPrices[10] = 300000;
-        price = (int)(agwsPrices[itemId - 17] * rate[1]);
+        {
+            int agwsPrices[12] = { 0, 0, 0, 0, 0, 50000, 0, 0, 0, 80000, 300000, 0 };
+
+            price = (int)(agwsPrices[itemId - 17] * rate[1]);
+        }
         break;
     }
     }
@@ -822,7 +823,7 @@ int MenuRWeaponCheck2(int id)
     return id;
 }
 
-extern unsigned char opt_mnt_tbl[8][2];
+static unsigned char opt_mnt_tbl[8][2] = { { 0x20, 0x00 }, { 0x21, 0x00 }, { 0x22, 0x00 }, { 0x23, 0x00 }, { 0x18, 0x00 }, { 0x19, 0x00 }, { 0x1A, 0x00 }, { 0x1B, 0x00 } };
 
 unsigned char PosEquipToOptMnt(int posEquip)
 {
@@ -1461,10 +1462,12 @@ static void MenuSortSubType00(unsigned int *first, unsigned int *second)
 }
 
 typedef signed int s32;
-extern char f_11[24];
 
 void MenuSortChange(s32 arg0, s32 arg1)
 {
+  static void (*f_11[6])() __asm__("f.11") = {
+      (void (*)())MenuSortSubType00, (void (*)())MenuSortSubType01, (void (*)())MenuSortSubType02,
+      (void (*)())MenuSortSubType03, (void (*)())MenuSortSubType04, (void (*)())MenuSortSubType05 };
   extern int sort[2][0x100];
   s32 *temp_20;
   s32 *var_17;
@@ -1479,7 +1482,7 @@ void MenuSortChange(s32 arg0, s32 arg1)
   s32 var_18;
   temp_20 = sort[arg0];
   var_21 = 0;
-  var_3 = f_11;
+  var_3 = (s32 *)f_11;
   temp_23 = ((void (**)(s32 *, s32 *))var_3)[arg1];
   var_3 = &temp_20[1];
   if ((*temp_20) != 0)
@@ -1542,7 +1545,6 @@ int MenuSortCheck(int listIndex)
     return count;
 }
 
-extern unsigned char D_004C5438[];
 int MenuIdChange(short id, int highPart);
 typedef struct { unsigned char unmodeled_00[0xC]; unsigned short categoryMask; unsigned char mountMask; } WeaponViewSS;
 typedef struct { unsigned char unmodeled_00[0xA]; unsigned short category; unsigned char unmodeled_0C[0x2]; unsigned short associatedId; } AccessoryViewSS;
@@ -1553,8 +1555,7 @@ void MenuSortSet(int bufferIndex, int categoryMask, int filter)
     struct MenuWeaponRangePair {
         unsigned char first;
         unsigned char last;
-    } weaponRanges[9];
-    int party[8];
+    };
     int *entry = sort[bufferIndex];
     int id;
     int first;
@@ -1612,7 +1613,10 @@ inventory_bound:
         }
     }
     if ((categoryMask & 4) && MenuEquipStealMaskCheck() == 0) {
-        __builtin_memcpy(weaponRanges, D_004C5438, sizeof(weaponRanges));
+        struct MenuWeaponRangePair weaponRanges[9] = {
+            { 0x01, 0x0B }, { 0x0C, 0x17 }, { 0x45, 0x45 }, { 0x00, 0x00 }, { 0x29, 0x2D },
+            { 0x18, 0x28 }, { 0x2E, 0x38 }, { 0x46, 0x72 }, { 0x01, 0x45 } };
+
         weaponPosition = 0;
         switch (filter) {
         case -2:
@@ -1733,6 +1737,8 @@ inventory_bound:
         }
     }
     if ((categoryMask & 0x20) && filter == 1) {
+        int party[8];
+
         partyMember = party;
         partyCount = PartyAllPartyGet(partyMember, 1);
         id = 0;
@@ -1824,7 +1830,6 @@ void subListMake01(MenuListEntry *entry, int index)
     entry->flag = 0;
 }
 
-extern const char msg_12[];
 
 /*
  * mw_list is defined below, right before MenuListGet, which is the only
@@ -1841,6 +1846,7 @@ extern MenuListEntry mw_list[2][256];
  */
 MenuListEntry *MenuListMake(int listIndex, int mode)
 {
+    static char msg_12[] __asm__("msg.12") = "No data.";
     MenuListEntry *list = mw_list[listIndex];
     MenuListEntry *entry = list;
     int *row = sort[listIndex];
@@ -1875,15 +1881,15 @@ MenuListEntry *MenuListGet(int listIndex)
 }
 
 extern char fname_13[];
-extern char *f_base_14[3];
-extern char *f_exten_15[5];
-extern char *f_ukn_name_16[4];
-extern char *f_char_mot_17[3];
-extern char *f_mons_mot_18[3];
 void RES_GetMdlFileName(char *name, int charaId);
 
 char *MenuFileNameGet(short arg0, unsigned int arg1)
 {
+    static char *f_base_14[] __asm__("f_base.14") = { "data\\motion\\", "data\\yamamoto\\mot\\", "data\\robo\\etc\\" };
+    static char *f_exten_15[] __asm__("f_exten.15") = { ".lex", ".xtx", ".jnt", ".fpk", ".bin" };
+    static char *f_ukn_name_16[] __asm__("f_ukn_name.16") = { "ukunS", "ukunB" };
+    static char *f_char_mot_17[] __asm__("f_char_mot.17") = { "mtn_meqp", "ukn_g", "menuagws" };
+    static char *f_mons_mot_18[] __asm__("f_mons_mot.18") = { "guno_000" };
     char *var_5;
     int temp_5;
     int temp_16;
@@ -1959,3 +1965,6 @@ char *MenuFileNameGet(short arg0, unsigned int arg1)
 done:
     return fname_13;
 }
+
+int map_ex_text = 0;
+int save_map_text = 0;
