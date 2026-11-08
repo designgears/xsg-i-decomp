@@ -1830,9 +1830,16 @@
             "size": 140
           }
         ],
-        "generated_data": [],
+        "generated_data": [
+          {
+            "offset": 59200,
+            "section": ".data",
+            "sha256": "34724b68a828f7b784d3f37945e07be8c739cf366ef302795cf162d9bae2daca",
+            "size": 512
+          }
+        ],
         "source": "src/audio/ssd/ssd_trap.c",
-        "source_sha256": "f98f5aae6fe005dc16932964baffc036ee0721dcc40793fbdafd606d6d6a7d65"
+        "source_sha256": "aaceac4818677118cd6ddfd7c46f1ca85db0a642a3b1bec77baa30adae0d88b1"
       },
       {
         "fdr_filename": "ssd_chan.c",
