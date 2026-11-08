@@ -4311,17 +4311,18 @@
     {
      "range": [
       "0x0036b198",
-      "0x0036b1a4"
+      "0x0036b1a8"
      ],
      "generated": [
       "0x0036b198",
-      "0x0036b1a4"
+      "0x0036b1a8"
      ],
      "generated_by": [
       "JS_findObject"
      ],
      "c_owned_symbols": [
-      "js_type_string"
+      "js_type_string",
+      "D_0036B1A4"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -10167,15 +10168,16 @@
     {
      "range": [
       "0x0040fac0",
-      "0x00410ac4"
+      "0x00410ac8"
      ],
      "generated": [
       "0x0040fac0",
-      "0x00410ac4"
+      "0x00410ac8"
      ],
      "generated_by": [],
      "c_owned_symbols": [
-      "sefAtanTbl"
+      "sefAtanTbl",
+      "D_00410AC4"
      ],
      "also_referenced_by_c": [],
      "basis": {

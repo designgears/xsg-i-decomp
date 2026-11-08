@@ -1115,6 +1115,9 @@ float sefAtanTbl[1025] __attribute__((aligned(64))) = {
     0.783441f, 0.783931f, 0.784421f, 0.78491f, 0.785398f
 };
 
+/* Unreferenced zero fill that ends the original .data (to its 8-byte end). */
+static int D_00410AC4 __attribute__((section(".data"))) = 0;
+
 static void svInitRefImage(void)
 {
     SvImageMapperStorage *storage;
