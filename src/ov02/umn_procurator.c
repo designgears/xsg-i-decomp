@@ -279,7 +279,7 @@ typedef struct LocalLightTable {
 
 static void LocalLightSet(unsigned int *model)
 {
-    static const LocalLightTable light_table = {
+    static const LocalLightTable light_table __attribute__((aligned(16))) = {
         { value: { 0.3f, 0.3f, 0.3f, 1.0f } },
         {
             { value: { 0.55f, 0.55f, 0.55f, 1.0f } },
@@ -321,9 +321,9 @@ typedef struct Manzai2Win {
 
 void UmnProcuratorManzai2(void *task)
 {
-    static const LocalLightVector m2_v0 = { value: { 0.0f, 0.0f, 2.5f, 1.0f } };
-    static const LocalLightVector m2_v1 = { value: { 0.5f, 0.5f, 0.5f, 1.0f } };
-    static const LocalLightVector m2_v1b = { value: { 0.0f, 0.88f, 0.5f, 1.0f } };
+    static const LocalLightVector m2_v0 __attribute__((aligned(16))) = { value: { 0.0f, 0.0f, 2.5f, 1.0f } };
+    static const LocalLightVector m2_v1 __attribute__((aligned(16))) = { value: { 0.5f, 0.5f, 0.5f, 1.0f } };
+    static const LocalLightVector m2_v1b __attribute__((aligned(16))) = { value: { 0.0f, 0.88f, 0.5f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
@@ -531,9 +531,9 @@ typedef struct ManzaiSubWindow {
 
 void UmnProcuratorManzai(void *task)
 {
-    static const LocalLightVector m_rot = { value: { -0.13090007f, -2.1264544f, -0.055850357f, 1.0f } };
-    static const LocalLightVector m_pos = { value: { -1.165374f, 1.183991f, 0.2238139f, 1.0f } };
-    static const LocalLightVector m_pos2 = { value: { 0.04f, 1.0f, 2.25f, 1.0f } };
+    static const LocalLightVector m_rot __attribute__((aligned(16))) = { value: { -0.13090007f, -2.1264544f, -0.055850357f, 1.0f } };
+    static const LocalLightVector m_pos __attribute__((aligned(16))) = { value: { -1.165374f, 1.183991f, 0.2238139f, 1.0f } };
+    static const LocalLightVector m_pos2 __attribute__((aligned(16))) = { value: { 0.04f, 1.0f, 2.25f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
@@ -689,7 +689,7 @@ extern StudioCamera *xglStudioGetCamera2(int camera_id);
 
 void UmnProcuratorMail(void *task)
 {
-    static const LocalLightVector mail_pos = { value: { 0.0f, 0.0f, 4.0f, 1.0f } };
+    static const LocalLightVector mail_pos __attribute__((aligned(16))) = { value: { 0.0f, 0.0f, 4.0f, 1.0f } };
     unsigned char *t = (unsigned char *)task;
     unsigned int *model;
     float *a;
