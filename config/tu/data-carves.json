@@ -5755,22 +5755,157 @@
    ]
   },
   "main/tu132": {
+   ".data": [
+    {
+     "range": [
+      "0x0036a030",
+      "0x0036a938"
+     ],
+     "generated": [
+      "0x0036a030",
+      "0x0036a938"
+     ],
+     "generated_by": [
+      "FontTestLine",
+      "FontTestP0",
+      "FontTestP1",
+      "FontTestP2",
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummyFolder",
+      "UmlDispTestSub",
+      "XenoMovieCheck",
+      "YajimaTest",
+      "mt_GetPortName",
+      "testfunc"
+     ],
+     "c_owned_symbols": [
+      "TestEnv_0_0036A030",
+      "test_1",
+      "D_0036A0D6",
+      "test_4",
+      "test_5",
+      "test1_6",
+      "D_0036A119",
+      "test2_7",
+      "D_0036A12F",
+      "test_10",
+      "D_0036A13D",
+      "txt_11",
+      "D_0036A14F",
+      "xy3_12",
+      "D_0036A15C",
+      "xy5_13",
+      "D_0036A17C",
+      "xy7_14",
+      "D_0036A1B4",
+      "xy9_15",
+      "D_0036A20C",
+      "test_16",
+      "D_0036A229",
+      "test_17",
+      "D_0036A25B",
+      "test_18",
+      "test_19",
+      "D_0036A2A7",
+      "init_20",
+      "D_0036A2B5",
+      "test_21",
+      "D_0036A2D9",
+      "test_22",
+      "D_0036A2F5",
+      "test_23",
+      "D_0036A319",
+      "test_24",
+      "D_0036A33F",
+      "test_25",
+      "D_0036A35A",
+      "test00_26",
+      "D_0036A393",
+      "test01_27",
+      "D_0036A3CB",
+      "test02_28",
+      "D_0036A403",
+      "test03_29",
+      "D_0036A43B",
+      "test04_30",
+      "D_0036A473",
+      "test05_31",
+      "D_0036A4AB",
+      "test06_32",
+      "D_0036A4E3",
+      "test07_33",
+      "TestEnv_34",
+      "test0_37",
+      "test1_38",
+      "D_0036A5BB",
+      "test2_39",
+      "D_0036A5D4",
+      "test3_40",
+      "D_0036A5FC",
+      "test4_41",
+      "D_0036A623",
+      "TestEnv_42",
+      "name_43",
+      "D_0036A82C",
+      "name_44",
+      "D_0036A846",
+      "name_45",
+      "D_0036A852",
+      "menu_46",
+      "name_47",
+      "D_0036A8A4",
+      "func_51",
+      "D_0036A8C4",
+      "i1_52",
+      "l1_53",
+      "D_0036A91C",
+      "m_54"
+     ],
+     "also_referenced_by_c": [],
+     "reached_through": {
+      "i1_52": "l1_53",
+      "l1_53": "m_54"
+     },
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/yajima_test.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [
       "0x004c07f0",
-      "0x004c0958"
+      "0x004c1530"
      ],
      "generated": [
       "0x004c07f0",
-      "0x004c0958"
+      "0x004c1530"
      ],
      "generated_by": [
       "DatabaseTest",
       "FontTestP0",
       "FontTestP2",
       "FontTestSub",
-      "UmlDispTest"
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummySave",
+      "HddTestFormat",
+      "HddTestHddFull",
+      "HddTestMakeYourSaves",
+      "HddTestMountCommon",
+      "HddTestShutdown",
+      "HddTestUnmountCommon",
+      "MemcardTest",
+      "UmlDispTest",
+      "XenoMovieCheck",
+      "XtxDecode",
+      "YajimaTest",
+      "mt_GetPortName",
+      "xtxdec_sleep",
+      "xtxdec_sub"
      ],
      "c_owned_symbols": [
       "D_004C07F0",
@@ -5787,32 +5922,11 @@
       "D_004C0918",
       "D_004C0928",
       "D_004C0938",
-      "D_004C0948"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0978",
-      "0x004c0a80"
-     ],
-     "generated": [
-      "0x004c0978",
-      "0x004c0a80"
-     ],
-     "generated_by": [
-      "XenoMovieCheck"
-     ],
-     "c_owned_symbols": [
+      "D_004C0948",
+      "D_004C0958",
+      "D_004C0968",
       "D_004C0978",
-      "D_004C0A68"
-     ],
-     "also_referenced_by_c": [
+      "D_004C0A68",
       "hdd_format_start_message",
       "hdd_format_result_format",
       "hdd_common_device",
@@ -5828,60 +5942,26 @@
       "hdd_mkdir_result_format",
       "hdd_zone_size_format",
       "hdd_zone_free_format",
-      "hdd_chstat_failure_format"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0bb8",
-      "0x004c0c18"
-     ],
-     "generated": [
-      "0x004c0bb8",
-      "0x004c0c18"
-     ],
-     "generated_by": [
-      "HddTestDummySave"
-     ],
-     "c_owned_symbols": [
+      "hdd_chstat_failure_format",
       "D_004C0BB8",
       "D_004C0BC8",
       "D_004C0BD8",
       "D_004C0BE8",
       "D_004C0BF8",
-      "D_004C0C08"
-     ],
-     "also_referenced_by_c": [
+      "D_004C0C08",
+      "D_004C0C18",
+      "D_004C0C28",
+      "D_004C0C38",
+      "D_004C0C48",
+      "D_004C0C58",
+      "D_004C0C68",
       "hdd_status_format",
       "hdd_status_error_format",
       "hdd_free_format",
       "hdd_test_title",
-      "hdd_no_use_title"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c0d08",
-      "0x004c11c0"
-     ],
-     "generated": [
-      "0x004c0d08",
-      "0x004c11c0"
-     ],
-     "generated_by": [
-      "MemcardTest"
-     ],
-     "c_owned_symbols": [
+      "hdd_no_use_title",
+      "D_004C0CE8",
+      "D_004C0CF8",
       "D_004C0D08",
       "D_004C0D18",
       "D_004C0D30",
@@ -5922,31 +6002,7 @@
       "D_004C1158",
       "D_004C1170",
       "D_004C1188",
-      "D_004C11A0"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c11c0",
-      "0x004c1508"
-     ],
-     "generated": [
-      "0x004c11c0",
-      "0x004c1508"
-     ],
-     "generated_by": [
-      "MemcardTest",
-      "XtxDecode",
-      "xtxdec_sleep",
-      "xtxdec_sub"
-     ],
-     "c_owned_symbols": [
+      "D_004C11A0",
       "jtbl_004C11C0",
       "D_004C13D8",
       "D_004C13E8",
@@ -5956,31 +6012,24 @@
       "jtbl_004C1440",
       "D_004C14B8",
       "D_004C14C8",
-      "D_004C14F8"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004c1518",
-      "0x004c1530"
-     ],
-     "generated": [
-      "0x004c1518",
-      "0x004c1530"
-     ],
-     "generated_by": [
-      "YajimaTest"
-     ],
-     "c_owned_symbols": [
+      "D_004C14F8",
+      "D_004C1508",
       "D_004C1518"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004C0958": "name_43",
+      "D_004C0968": "name_43",
+      "D_004C0C18": "menu_46",
+      "D_004C0C28": "menu_46",
+      "D_004C0C38": "menu_46",
+      "D_004C0C48": "menu_46",
+      "D_004C0C58": "menu_46",
+      "D_004C0C68": "menu_46",
+      "D_004C0CE8": "name_47",
+      "D_004C0CF8": "name_47",
+      "D_004C1508": "i1_52"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -5991,107 +6040,158 @@
    ".sdata": [
     {
      "range": [
-      "0x004d9f78",
-      "0x004d9f80"
+      "0x004d9f60",
+      "0x004da358"
      ],
      "generated": [
-      "0x004d9f78",
-      "0x004d9f80"
+      "0x004d9f60",
+      "0x004da358"
      ],
      "generated_by": [
-      "FontTestP2"
+      "DatabaseTest",
+      "FontTestP0",
+      "FontTestP2",
+      "HddTest",
+      "HddTest1024Save",
+      "HddTestDummyFolder",
+      "HddTestDummySave",
+      "HddTestFormat",
+      "HddTestHddFull",
+      "HddTestMakeYourSaves",
+      "HddTestMountCommon",
+      "HddTestShutdown",
+      "HddTestUnmountCommon",
+      "MemcardTest",
+      "UmlDispTest",
+      "XenoMovieCheck",
+      "mt_GetPortName"
      ],
      "c_owned_symbols": [
-      "D_004D9F78"
-     ],
-     "also_referenced_by_c": [
       "rate_2_004D9F60",
       "dir_3",
       "rate_8",
       "dir_9",
       "width_35",
-      "test_36"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004d9f88",
-      "0x004d9fa8"
-     ],
-     "generated": [
-      "0x004d9f88",
-      "0x004d9fa8"
-     ],
-     "generated_by": [
-      "DatabaseTest",
-      "FontTestP2",
-      "UmlDispTest"
-     ],
-     "c_owned_symbols": [
+      "D_004D9F74",
+      "D_004D9F78",
+      "test_36",
+      "D_004D9F86",
       "D_004D9F88",
       "D_004D9F90",
       "D_004D9F98",
-      "D_004D9FA0"
-     ],
-     "also_referenced_by_c": [
+      "D_004D9FA0",
+      "D_004D9FA8",
+      "D_004D9FB0",
+      "D_004D9FB8",
+      "D_004D9FC0",
+      "D_004D9FC8",
+      "D_004D9FD0",
+      "D_004D9FD8",
+      "D_004D9FE0",
+      "D_004D9FE8",
+      "D_004D9FF0",
+      "D_004D9FF8",
+      "D_004DA000",
+      "D_004DA008",
+      "D_004DA010",
+      "D_004DA018",
+      "D_004DA020",
+      "D_004DA028",
+      "D_004DA030",
+      "D_004DA038",
+      "D_004DA040",
+      "D_004DA048",
+      "D_004DA050",
+      "D_004DA058",
+      "D_004DA060",
+      "D_004DA068",
+      "D_004DA070",
+      "D_004DA078",
+      "D_004DA080",
+      "D_004DA088",
+      "D_004DA090",
+      "D_004DA098",
+      "D_004DA0A0",
+      "D_004DA0A8",
+      "D_004DA0B0",
+      "D_004DA0B8",
+      "D_004DA0C0",
+      "D_004DA0C8",
+      "D_004DA0D0",
+      "D_004DA0D8",
+      "D_004DA0E0",
+      "D_004DA0E8",
+      "D_004DA0F0",
+      "D_004DA0F8",
+      "D_004DA100",
+      "D_004DA108",
+      "D_004DA110",
+      "D_004DA118",
+      "D_004DA120",
+      "D_004DA128",
+      "D_004DA130",
+      "D_004DA138",
+      "D_004DA140",
+      "D_004DA148",
+      "D_004DA150",
+      "D_004DA158",
+      "D_004DA160",
+      "D_004DA168",
+      "D_004DA170",
+      "D_004DA178",
+      "D_004DA180",
+      "D_004DA188",
+      "D_004DA190",
+      "D_004DA198",
+      "D_004DA1A0",
+      "D_004DA1A8",
+      "D_004DA1B0",
+      "D_004DA1B8",
+      "D_004DA1C0",
+      "D_004DA1C8",
+      "D_004DA1D0",
+      "D_004DA1D8",
+      "D_004DA1E0",
+      "D_004DA1E8",
+      "D_004DA1F0",
+      "D_004DA1F8",
+      "D_004DA200",
+      "D_004DA208",
+      "D_004DA210",
+      "D_004DA218",
+      "D_004DA220",
+      "D_004DA228",
+      "D_004DA230",
+      "D_004DA238",
+      "D_004DA240",
+      "D_004DA248",
+      "D_004DA250",
+      "D_004DA258",
+      "D_004DA260",
+      "D_004DA268",
+      "D_004DA270",
+      "D_004DA278",
+      "D_004DA280",
+      "D_004DA288",
+      "D_004DA290",
+      "D_004DA298",
+      "D_004DA2A0",
+      "D_004DA2A8",
+      "D_004DA2B0",
+      "D_004DA2B8",
+      "D_004DA2C0",
+      "D_004DA2C8",
       "hdd_device",
       "pfs_device_name",
       "hdd_device_name",
       "hdd_partition_size",
-      "hdd_mount_point"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da2f8",
-      "0x004da308"
-     ],
-     "generated": [
-      "0x004da2f8",
-      "0x004da308"
-     ],
-     "generated_by": [
-      "HddTest1024Save",
-      "HddTestDummyFolder",
-      "HddTestDummySave"
-     ],
-     "c_owned_symbols": [
+      "hdd_mount_point",
       "D_004DA2F8",
-      "D_004DA300"
-     ],
-     "also_referenced_by_c": [
+      "D_004DA300",
+      "D_004DA308",
       "hdd_use_title",
-      "menu_cursor"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/main/build/c/yajima_test.o"
-     }
-    },
-    {
-     "range": [
-      "0x004da328",
-      "0x004da358"
-     ],
-     "generated": [
-      "0x004da328",
-      "0x004da358"
-     ],
-     "generated_by": [
-      "MemcardTest"
-     ],
-     "c_owned_symbols": [
+      "menu_cursor",
+      "D_004DA320",
       "D_004DA328",
       "D_004DA330",
       "D_004DA338",
@@ -6100,6 +6200,111 @@
       "D_004DA350"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004D9FA8": "name_43",
+      "D_004D9FB0": "name_43",
+      "D_004D9FB8": "name_43",
+      "D_004D9FC0": "name_43",
+      "D_004D9FC8": "name_43",
+      "D_004D9FD0": "name_43",
+      "D_004D9FD8": "name_43",
+      "D_004D9FE0": "name_43",
+      "D_004D9FE8": "name_43",
+      "D_004D9FF0": "name_43",
+      "D_004D9FF8": "name_43",
+      "D_004DA000": "name_43",
+      "D_004DA008": "name_43",
+      "D_004DA010": "name_43",
+      "D_004DA018": "name_43",
+      "D_004DA020": "name_43",
+      "D_004DA028": "name_43",
+      "D_004DA030": "name_43",
+      "D_004DA038": "name_43",
+      "D_004DA040": "name_43",
+      "D_004DA048": "name_43",
+      "D_004DA050": "name_43",
+      "D_004DA058": "name_43",
+      "D_004DA060": "name_43",
+      "D_004DA068": "name_43",
+      "D_004DA070": "name_43",
+      "D_004DA078": "name_43",
+      "D_004DA080": "name_43",
+      "D_004DA088": "name_43",
+      "D_004DA090": "name_43",
+      "D_004DA098": "name_43",
+      "D_004DA0A0": "name_43",
+      "D_004DA0A8": "name_43",
+      "D_004DA0B0": "name_43",
+      "D_004DA0B8": "name_43",
+      "D_004DA0C0": "name_43",
+      "D_004DA0C8": "name_43",
+      "D_004DA0D0": "name_43",
+      "D_004DA0D8": "name_43",
+      "D_004DA0E0": "name_43",
+      "D_004DA0E8": "name_43",
+      "D_004DA0F0": "name_43",
+      "D_004DA0F8": "name_43",
+      "D_004DA100": "name_43",
+      "D_004DA108": "name_43",
+      "D_004DA110": "name_43",
+      "D_004DA118": "name_43",
+      "D_004DA120": "name_43",
+      "D_004DA128": "name_43",
+      "D_004DA130": "name_43",
+      "D_004DA138": "name_43",
+      "D_004DA140": "name_43",
+      "D_004DA148": "name_43",
+      "D_004DA150": "name_43",
+      "D_004DA158": "name_43",
+      "D_004DA160": "name_43",
+      "D_004DA168": "name_43",
+      "D_004DA170": "name_43",
+      "D_004DA178": "name_43",
+      "D_004DA180": "name_43",
+      "D_004DA188": "name_43",
+      "D_004DA190": "name_43",
+      "D_004DA198": "name_43",
+      "D_004DA1A0": "name_43",
+      "D_004DA1A8": "name_43",
+      "D_004DA1B0": "name_43",
+      "D_004DA1B8": "name_43",
+      "D_004DA1C0": "name_43",
+      "D_004DA1C8": "name_43",
+      "D_004DA1D0": "name_43",
+      "D_004DA1D8": "name_43",
+      "D_004DA1E0": "name_43",
+      "D_004DA1E8": "name_43",
+      "D_004DA1F0": "name_43",
+      "D_004DA1F8": "name_43",
+      "D_004DA200": "name_43",
+      "D_004DA208": "name_43",
+      "D_004DA210": "name_43",
+      "D_004DA218": "name_43",
+      "D_004DA220": "name_43",
+      "D_004DA228": "name_43",
+      "D_004DA230": "name_43",
+      "D_004DA238": "name_43",
+      "D_004DA240": "name_43",
+      "D_004DA248": "name_43",
+      "D_004DA250": "name_43",
+      "D_004DA258": "name_43",
+      "D_004DA260": "name_43",
+      "D_004DA268": "name_43",
+      "D_004DA270": "name_43",
+      "D_004DA278": "name_43",
+      "D_004DA280": "name_43",
+      "D_004DA288": "name_43",
+      "D_004DA290": "name_43",
+      "D_004DA298": "name_43",
+      "D_004DA2A0": "name_43",
+      "D_004DA2A8": "name_43",
+      "D_004DA2B0": "name_43",
+      "D_004DA2B8": "name_43",
+      "D_004DA2C0": "name_43",
+      "D_004DA2C8": "name_43",
+      "D_004DA308": "menu_46",
+      "D_004DA320": "name_47"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -6121,9 +6326,7 @@
      "c_owned_symbols": [
       "D_004DA360"
      ],
-     "also_referenced_by_c": [
-      "h_50"
-     ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -6132,20 +6335,34 @@
     },
     {
      "range": [
-      "0x004da3a0",
+      "0x004da370",
       "0x004da3a8"
      ],
      "generated": [
-      "0x004da3a0",
+      "0x004da370",
       "0x004da3a7"
      ],
      "generated_by": [
-      "YajimaTest"
+      "YajimaTest",
+      "xtxdec_sub"
      ],
      "c_owned_symbols": [
+      "h_50",
+      "D_004DA378",
+      "D_004DA380",
+      "D_004DA388",
+      "D_004DA390",
+      "D_004DA398",
       "D_004DA3A0"
      ],
      "also_referenced_by_c": [],
+     "reached_through": {
+      "D_004DA378": "i1_52",
+      "D_004DA380": "i1_52",
+      "D_004DA388": "i1_52",
+      "D_004DA390": "i1_52",
+      "D_004DA398": "i1_52"
+     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
