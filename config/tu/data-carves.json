@@ -18507,14 +18507,27 @@
     {
      "range": [
       "0x00a51468",
-      "0x00a514d8"
+      "0x00a51808"
      ],
      "generated": [
       "0x00a51468",
-      "0x00a514d8"
+      "0x00a51808"
      ],
      "generated_by": [
-      "_GetStageData"
+      "RobotGameMain",
+      "_DispPause",
+      "_GetEnemyHardLevelBySerial",
+      "_GetEnemyLevelBySerial",
+      "_GetHardEnemyChar",
+      "_GetStageData",
+      "_GetStageDataBySerial",
+      "_Help",
+      "_InitDataBase",
+      "_OneBattle",
+      "_SelectOneChar",
+      "_Title",
+      "_VsCpuGame",
+      "_disp_hardmode"
      ],
      "c_owned_symbols": [
       "D_00A51468",
@@ -18523,9 +18536,7 @@
       "D_00A51488",
       "D_00A51498",
       "D_00A514A0",
-      "jtbl_00A514C0"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_00A514C0",
       "D_00A514D8",
       "D_00A51500",
       "D_00A51530",
@@ -18555,30 +18566,8 @@
       "D_00A51640",
       "D_00A51650",
       "D_00A51658",
-      "D_00A51668"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a51680",
-      "0x00a516a8"
-     ],
-     "generated": [
-      "0x00a51680",
-      "0x00a516a8"
-     ],
-     "generated_by": [
-      "_OneBattle"
-     ],
-     "c_owned_symbols": [
-      "jtbl_00A51680"
-     ],
-     "also_referenced_by_c": [
+      "D_00A51668",
+      "jtbl_00A51680",
       "D_00A516A8",
       "D_00A516C8",
       "D_00A51700",
@@ -18593,27 +18582,7 @@
       "D_00A517A0",
       "D_00A517B8",
       "D_00A517C8",
-      "D_00A517D8"
-     ],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov12/build/scaffold/src/ov12/rg_main.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a517f0",
-      "0x00a51808"
-     ],
-     "generated": [
-      "0x00a517f0",
-      "0x00a51808"
-     ],
-     "generated_by": [
-      "RobotGameMain"
-     ],
-     "c_owned_symbols": [
+      "D_00A517D8",
       "jtbl_00A517F0"
      ],
      "also_referenced_by_c": [],
