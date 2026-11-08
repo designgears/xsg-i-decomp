@@ -743,10 +743,10 @@ typedef union FontStateStorage {
 } FontStateStorage;
 
 extern void sceVif1PkAddDirectDataN(XglPacket *packet, const void *data, int size);
-extern signed char tbl_1_004DC2A8[4][2];
 
 static void xglFontFlushSub(int texture_u, int texture_v, int size, int flags)
 {
+    static signed char tbl_1_004DC2A8[4][2] __asm__("tbl.1") = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
     /* FS read through its typed view (the TU declares it as bytes). */
     extern FontStateStorage xglFontStateView __asm__("FS");
     struct FontDrawCursor *cursor = (struct FontDrawCursor *)0x70000000;
@@ -1919,8 +1919,6 @@ void xglFontSetFlags(int flags)
 }
 
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
-extern char D_004D2448[];
-extern char D_004D2458[];
 
 int xglFontLoad(int type, int callback)
 {
@@ -1944,11 +1942,11 @@ int xglFontLoad(int type, int callback)
   }
   if (type == 0)
   {
-    xglCdReadFile(D_004D2448, *((void **) FS), mode, callback);
+    xglCdReadFile("data\\font0.tex", *((void **) FS), mode, callback);
   }
   else
   {
-    xglCdReadFile(D_004D2458, *((void **) FS), mode, callback);
+    xglCdReadFile("data\\font1.tex", *((void **) FS), mode, callback);
   }
   return old;
 }

@@ -189,23 +189,23 @@
     {
      "range": [
       "0x004d23b0",
-      "0x004d2448"
+      "0x004d2468"
      ],
      "generated": [
       "0x004d23b0",
-      "0x004d2444"
+      "0x004d2467"
      ],
      "generated_by": [
-      "xglFontFlushCore"
+      "xglFontFlushCore",
+      "xglFontLoad"
      ],
      "c_owned_symbols": [
       "jtbl_004D23B0",
-      "jtbl_004D2430"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004D2430",
       "D_004D2448",
       "D_004D2458"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
@@ -217,21 +217,21 @@
     {
      "range": [
       "0x004dc2a0",
-      "0x004dc2a8"
+      "0x004dc2b0"
      ],
      "generated": [
       "0x004dc2a0",
-      "0x004dc2a8"
+      "0x004dc2b0"
      ],
      "generated_by": [
+      "xglFontFlushSub",
       "xglFontGetSPcodeSize"
      ],
      "c_owned_symbols": [
-      "D_004DC2A0"
-     ],
-     "also_referenced_by_c": [
+      "D_004DC2A0",
       "tbl_1_004DC2A8"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
