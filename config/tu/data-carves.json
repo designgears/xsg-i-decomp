@@ -7966,18 +7966,43 @@
    ]
   },
   "main/tu206": {
+   ".data": [
+    {
+     "range": [
+      "0x003b2d10",
+      "0x003b2d40"
+     ],
+     "generated": [
+      "0x003b2d10",
+      "0x003b2d40"
+     ],
+     "generated_by": [],
+     "c_owned_symbols": [
+      "col1",
+      "col2",
+      "col3"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/colli_test.o"
+     }
+    }
+   ],
    ".lit4": [
     {
      "range": [
       "0x004d8268",
-      "0x004d828c"
+      "0x004d8290"
      ],
      "generated": [
       "0x004d8268",
-      "0x004d828c"
+      "0x004d8290"
      ],
      "generated_by": [
       "CheckBallBoxCollision",
+      "ColliTest",
       "InitTest_002DBE88"
      ],
      "c_owned_symbols": [
@@ -7989,15 +8014,14 @@
       "D_004D827C",
       "D_004D8280",
       "D_004D8284",
-      "D_004D8288"
-     ],
-     "also_referenced_by_c": [
+      "D_004D8288",
       "D_004D828C"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/colli_test.o"
+      "object": "build/main/build/c/colli_test.o"
      }
     }
    ],
@@ -8005,26 +8029,57 @@
     {
      "range": [
       "0x004cbc30",
-      "0x004cbc58"
+      "0x004cbcd8"
      ],
      "generated": [
       "0x004cbc30",
-      "0x004cbc58"
+      "0x004cbcd6"
      ],
      "generated_by": [
-      "CheckBallBoxCollision"
+      "CheckBallBoxCollision",
+      "ColliTest"
      ],
      "c_owned_symbols": [
-      "jtbl_004CBC30"
-     ],
-     "also_referenced_by_c": [
+      "jtbl_004CBC30",
       "D_004CBC58",
-      "D_004CBC70"
+      "D_004CBC70",
+      "D_004CBC80",
+      "D_004CBC90",
+      "D_004CBCA0",
+      "D_004CBCB0",
+      "D_004CBCC8"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
-      "object": "/home/bobby/Projects/decomp/xsg-i-decomp/build/main/build/c/colli_test.o"
+      "object": "build/main/build/c/colli_test.o"
+     }
+    }
+   ],
+   ".sdata": [
+    {
+     "range": [
+      "0x004db9d8",
+      "0x004db9e0"
+     ],
+     "generated": [
+      "0x004db9d8",
+      "0x004db9e0"
+     ],
+     "generated_by": [
+      "ColliTest",
+      "InitTest_002DBE88"
+     ],
+     "c_owned_symbols": [
+      "mode_004DB9D8",
+      "hit"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/main/build/c/colli_test.o"
      }
     }
    ]
