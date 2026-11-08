@@ -1470,7 +1470,7 @@
         },
         {
           "c_split": false,
-          "end": "0x004AA2B0",
+          "end": "0x004A9E20",
           "ordinal": 107,
           "piece": "nml_packet_add",
           "start": "0x004A9500",
@@ -1478,10 +1478,34 @@
         },
         {
           "c_split": false,
+          "end": "0x004AA080",
+          "ordinal": 108,
+          "piece": "nml_filter_set",
+          "start": "0x004A9E20",
+          "tu": "nml_filter_set"
+        },
+        {
+          "c_split": false,
+          "end": "0x004AA280",
+          "ordinal": 110,
+          "piece": "ssd_init",
+          "start": "0x004AA080",
+          "tu": "ssd_init"
+        },
+        {
+          "c_split": false,
+          "end": "0x004AA2A0",
+          "ordinal": 114,
+          "piece": "ssd_3",
+          "start": "0x004AA280",
+          "tu": "ssd_3"
+        },
+        {
+          "c_split": false,
           "end": "0x004AA2B4",
           "ordinal": 9,
           "piece": "sifcmd",
-          "start": "0x004AA2B0",
+          "start": "0x004AA2A0",
           "tu": "sifcmd"
         },
         {
@@ -9107,7 +9131,7 @@
         },
         ".data": {
           "anchored": [
-            "0x004AA2B0",
+            "0x004AA2A0",
             "0x004AA2B4"
           ],
           "bounds": [
@@ -9121,13 +9145,13 @@
               "c_split": false,
               "end": "0x004AA2B4",
               "name": "sifcmd",
-              "start": "0x004AA2B0"
+              "start": "0x004AA2A0"
             }
           ],
-          "rule": "anchored start",
-          "size": 4,
+          "rule": "moved boundary (data ownership by reference)",
+          "size": 20,
           "splat_type": "data",
-          "start": "0x004AA2B0"
+          "start": "0x004AA2A0"
         }
       },
       "shared_contract": {
@@ -29933,20 +29957,20 @@
           ],
           "bounds": [
             "0x004A91D0",
-            "0x004AA2B0"
+            "0x004A9E20"
           ],
-          "end": "0x004AA2B0",
+          "end": "0x004A9E20",
           "evidence_source": "map",
           "pieces": [
             {
               "c_split": false,
-              "end": "0x004AA2B0",
+              "end": "0x004A9E20",
               "name": "nml_packet_add",
               "start": "0x004A9500"
             }
           ],
           "rule": "anchored start",
-          "size": 3504,
+          "size": 2336,
           "splat_type": "data",
           "start": "0x004A9500"
         },
@@ -30242,7 +30266,8 @@
       "owners": {
         ".lit4": "asm",
         ".rodata": "asm",
-        ".text": "c"
+        ".text": "c",
+        ".data": "asm"
       },
       "path": "src/main/nml_filter_set.c",
       "scaffold_path": "scaffold/src/main/nml_filter_set.c",
@@ -30294,6 +30319,30 @@
           "size": 112,
           "splat_type": "rodata",
           "start": "0x004D30D0"
+        },
+        ".data": {
+          "anchored": [
+            "0x004A9E20",
+            "0x004A9E20"
+          ],
+          "bounds": [
+            "0x004A9E20",
+            "0x004AA080"
+          ],
+          "end": "0x004AA080",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004AA080",
+              "name": "nml_filter_set",
+              "start": "0x004A9E20"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 608,
+          "splat_type": "data",
+          "start": "0x004A9E20"
         }
       },
       "shared_contract": {
@@ -31052,7 +31101,8 @@
       "owners": {
         ".bss": "c",
         ".rodata": "asm",
-        ".text": "c"
+        ".text": "c",
+        ".data": "asm"
       },
       "path": "src/main/ssd_init.c",
       "scaffold_path": "scaffold/src/main/ssd_init.c",
@@ -31104,6 +31154,30 @@
           "size": 96,
           "splat_type": "rodata",
           "start": "0x004D4A60"
+        },
+        ".data": {
+          "anchored": [
+            "0x004AA080",
+            "0x004AA080"
+          ],
+          "bounds": [
+            "0x004AA080",
+            "0x004AA280"
+          ],
+          "end": "0x004AA280",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004AA280",
+              "name": "ssd_init",
+              "start": "0x004AA080"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 512,
+          "splat_type": "data",
+          "start": "0x004AA080"
         }
       },
       "shared_contract": {
@@ -32126,11 +32200,37 @@
       "name_confidence": "low",
       "ordinal": 114,
       "owners": {
-        ".text": "c"
+        ".text": "c",
+        ".data": "asm"
       },
       "path": "src/main/ssd_3.c",
       "scaffold_path": "scaffold/src/main/ssd_3.c",
-      "sections": {},
+      "sections": {
+        ".data": {
+          "anchored": [
+            "0x004AA280",
+            "0x004AA280"
+          ],
+          "bounds": [
+            "0x004AA280",
+            "0x004AA2A0"
+          ],
+          "end": "0x004AA2A0",
+          "evidence_source": "map",
+          "pieces": [
+            {
+              "c_split": false,
+              "end": "0x004AA2A0",
+              "name": "ssd_3",
+              "start": "0x004AA280"
+            }
+          ],
+          "rule": "created piece (data ownership by reference)",
+          "size": 32,
+          "splat_type": "data",
+          "start": "0x004AA280"
+        }
+      },
       "shared_contract": {
         "cc1": "tool:ee-gcc2.96-realconv-lp7/cc1",
         "cc1_sha256": "790f9f8ca43d2de4cb3621730d287f779f18102f36e2925768d25245b36f5625",
