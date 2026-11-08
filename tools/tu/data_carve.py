@@ -897,7 +897,9 @@ def section_references(elf, csec):
                     raise CarveError(f'relocation type {rtype} at {where} against {csec.name} is not supported '
                                      f'by the split')
             target = base + addend
-            if not 0 <= target <= csec.size:
+            # `array[i - 1]` reaches a little before the section (GCC folds the
+            # -4 into the address); the linked address is still inside the object
+            if not -0x100 <= target <= csec.size:
                 raise CarveError(f'relocation at {where} reaches {csec.name}+{target:#x}, outside the section '
                                  f'(0x{csec.size:x} bytes)')
             refs.append(dict(rel=rs.index, entry=i, offset=off, type=rtype, sym=symi, target=target))

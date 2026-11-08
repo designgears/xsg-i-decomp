@@ -36771,6 +36771,33 @@
    ]
   },
   "ov12/tu083_00a48918": {
+   ".data": [
+    {
+     "range": [
+      "0x00a511d0",
+      "0x00a511f4"
+     ],
+     "generated": [
+      "0x00a511d0",
+      "0x00a511f4"
+     ],
+     "generated_by": [
+      "_CurMode",
+      "_PopMode",
+      "_PushMode"
+     ],
+     "c_owned_symbols": [
+      "s_aeModeStack",
+      "s_uStackTop"
+     ],
+     "also_referenced_by_c": [],
+     "basis": {
+      "kind": "derived",
+      "tool": "tools/tu/data_carve.py derive",
+      "object": "build/ov12/build/scaffold/src/ov12/xrg_filesys_mode.o"
+     }
+    }
+   ],
    ".rodata": [
     {
      "range": [

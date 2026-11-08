@@ -7,13 +7,13 @@
 #define MODE_STACK_DEPTH 8
 extern void assert_prog(const char *expression, const char *source_file,
                         int line);
-extern int s_aeModeStack[MODE_STACK_DEPTH];
+static int s_aeModeStack[MODE_STACK_DEPTH] = {0};
 extern unsigned int strlen(const char *string);
 extern char *strcpy(char *destination, const char *source);
 extern char *strcat(char *destination, const char *source);
 extern int xglCdGetFileSize(const char *name);
 extern int xglCdReadFile(const char *name, void *buffer, int mode, int flags);
-extern unsigned int s_uStackTop;
+static unsigned int s_uStackTop = 1;
 extern const char root_name_name_check[];
 extern const char root_name_source_file[];
 extern const char root_name_result_check[];
