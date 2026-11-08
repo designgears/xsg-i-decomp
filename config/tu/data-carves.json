@@ -25936,18 +25936,19 @@
     {
      "range": [
       "0x00a43a94",
-      "0x00a43a99"
+      "0x00a43aa0"
      ],
      "generated": [
       "0x00a43a94",
-      "0x00a43a99"
+      "0x00a43a9c"
      ],
      "generated_by": [
       "CardOpenProc"
      ],
      "c_owned_symbols": [
       "rotval_7",
-      "CursorTimer_9"
+      "CursorTimer_9",
+      "D_00A43A99"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -25959,75 +25960,23 @@
     {
      "range": [
       "0x00a43aa0",
-      "0x00a43aa7"
+      "0x00a43bd0"
      ],
      "generated": [
       "0x00a43aa0",
-      "0x00a43aa7"
+      "0x00a43bd0"
      ],
      "generated_by": [],
      "c_owned_symbols": [
-      "TitleMaxList"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43aa8",
-      "0x00a43aaf"
-     ],
-     "generated": [
-      "0x00a43aa8",
-      "0x00a43aaf"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "SkipStartList"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43ab0",
-      "0x00a43b61"
-     ],
-     "generated": [
-      "0x00a43ab0",
-      "0x00a43b61"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "PageStatusLst"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_view_proc.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43b68",
-      "0x00a43bca"
-     ],
-     "generated": [
-      "0x00a43b68",
-      "0x00a43bca"
-     ],
-     "generated_by": [],
-     "c_owned_symbols": [
-      "SkipPageLst"
+      "TitleMaxList",
+      "D_00A43AA7",
+      "SkipStartList",
+      "D_00A43AAF",
+      "PageStatusLst",
+      "D_00A43B61",
+      "SkipPageLst",
+      "D_00A43BCA",
+      "ChangeCnt"
      ],
      "also_referenced_by_c": [],
      "basis": {
@@ -26089,66 +26038,11 @@
    ".data": [
     {
      "range": [
-      "0x00a43bcc",
-      "0x00a43bd0"
-     ],
-     "generated": [
-      "0x00a43bcc",
-      "0x00a43bd0"
-     ],
-     "generated_by": [
-      "CardDispFieldPoint",
-      "CardDispFieldPointScale",
-      "CardDispHelpCard",
-      "CardDispHelpSlide1",
-      "CardDispHelpSlide2",
-      "CardDispHelpSlide3",
-      "CardDispPhase",
-      "CardDispTejyun"
-     ],
-     "c_owned_symbols": [
-      "ChangeCnt"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
-     }
-    },
-    {
-     "range": [
       "0x00a43bd0",
-      "0x00a43bf0"
-     ],
-     "generated": [
-      "0x00a43bd0",
-      "0x00a43be8"
-     ],
-     "generated_by": [
-      "CardDispHelpSlide1"
-     ],
-     "c_owned_symbols": [
-      "list16_0",
-      "list17_1",
-      "D_00A43BDE",
-      "list18_2",
-      "D_00A43BE6"
-     ],
-     "also_referenced_by_c": [],
-     "basis": {
-      "kind": "derived",
-      "tool": "tools/tu/data_carve.py derive",
-      "object": "build/ov10/build/scaffold/src/ov10/card_disp.o"
-     }
-    },
-    {
-     "range": [
-      "0x00a43bf0",
       "0x00a487c8"
      ],
      "generated": [
-      "0x00a43bf0",
+      "0x00a43bd0",
       "0x00a487c8"
      ],
      "generated_by": [
@@ -26169,6 +26063,11 @@
       "CardHelpProc"
      ],
      "c_owned_symbols": [
+      "list16_0",
+      "list17_1",
+      "D_00A43BDE",
+      "list18_2",
+      "D_00A43BE6",
       "trans_3",
       "list19_4",
       "D_00A43C06",
