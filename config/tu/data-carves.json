@@ -1974,16 +1974,17 @@
     {
      "range": [
       "0x004d8950",
-      "0x004d8970"
+      "0x004d8978"
      ],
      "generated": [
       "0x004d8950",
-      "0x004d8970"
+      "0x004d8978"
      ],
      "generated_by": [
       "nmlPacketAddBlockMaterial",
       "nmlPacketAddScreen",
-      "nmlPacketAddTransMicrocodeInit"
+      "nmlPacketAddTransMicrocodeInit",
+      "nmlPacketMakeCircleTexture"
      ],
      "c_owned_symbols": [
       "D_004D8950",
@@ -1993,12 +1994,11 @@
       "D_004D8960",
       "D_004D8964",
       "D_004D8968",
-      "D_004D896C"
-     ],
-     "also_referenced_by_c": [
+      "D_004D896C",
       "D_004D8970",
       "D_004D8974"
      ],
+     "also_referenced_by_c": [],
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",

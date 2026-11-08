@@ -1074,8 +1074,6 @@ typedef struct NmlCircleGsRecord {
     GsTag value;
     GsTag address;
 } NmlCircleGsRecord;
-extern float D_004D8970;
-extern const float D_004D8974;
 static inline NmlCircleGsRecord *nmlCircleGsRecord(unsigned int index)
 {
     return (NmlCircleGsRecord *)(0x70001000u +
@@ -1130,7 +1128,7 @@ void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
 
     matrix = (float *)transform;
 
-    matrix[14] = 1.0f;
+    radius_scale = 0.4f;
     matrix[0] = 0.0f;
     matrix[1] = 0.0f;
     matrix[2] = 1.0f;
@@ -1141,12 +1139,12 @@ void nmlPacketMakeCircleTexture(NmlModelRenderState *model,
     matrix[9] = 1.0f;
     matrix[10] = 1.0f;
     matrix[12] = 1.0f;
-    radius_scale = D_004D8970;
     matrix[13] = 1.0f;
+    matrix[14] = 1.0f;
 
     _CurSetViewScaleTrans(&camera->screenScale, &camera->screenOffset);
     _CurSetMatrix(camera->viewMatrix);
-    height_offset = D_004D8974;
+    height_offset = 0.005f;
 
     for (i = 0; i < 4;) {
         int clip_flags;
