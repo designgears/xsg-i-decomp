@@ -5808,10 +5808,6 @@
       "m_54"
      ],
      "also_referenced_by_c": [],
-     "reached_through": {
-      "i1_52": "l1_53",
-      "l1_53": "m_54"
-     },
      "basis": {
       "kind": "derived",
       "tool": "tools/tu/data_carve.py derive",
