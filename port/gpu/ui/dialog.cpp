@@ -379,8 +379,17 @@ void KeyGuideRows(ImDrawList* dl, ImFont* font, const GpuUiKeyGuide& g) {
     ImFont* const rf = UiFont(kFontLabel, font);   // the original's tall condensed caps
     const float ls = 26.0f * k, rh = 24.0f, x0 = 8.0f;
     float labelW = 0;
-    for (const Row& r : rows) labelW = std::max(labelW, rf->CalcTextSizeA(ls, 1e9f, 0, r.label.c_str()).x / kx);
-    const float rw = std::max(150.0f, labelW + 60.0f);
+    for (const Row& r : rows) {   // as drawn: in capitals, tracked (ls * 0.05 per gap)
+        std::string up = r.label;
+        size_t nch = 0;
+        for (char& ch : up) {
+            if (ch >= 'a' && ch <= 'z') ch = char(ch - 32);
+            nch += (static_cast<unsigned char>(ch) & 0xc0) != 0x80;
+        }
+        const float w = rf->CalcTextSizeA(ls, 1e9f, 0, up.c_str()).x + ls * 0.05f * float(nch > 0 ? nch - 1 : 0);
+        labelW = std::max(labelW, w / kx);
+    }
+    const float rw = std::max(150.0f, 34.0f + labelW + 14.0f);   // button column, label, right margin
     const double now = AnimNow();
     for (size_t i = 0; i < rows.size(); ++i) {
         const Row& r = rows[i];
