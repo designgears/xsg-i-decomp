@@ -3,9 +3,11 @@
 
 #include "../menu/menu_render.h"
 #include "../native.h"
+#include "../native_prof.h"
 #include "gs_interface.hpp"
 #include "ps2host/gs.h"
 
+#include <future>
 #include <memory>
 
 #include <algorithm>
@@ -23,6 +25,8 @@ namespace xsgui {
 namespace {
 ParallelGS::GSInterface* g_gs;
 uint32_t g_frame;
+uint64_t g_decode_ns;   // [debug] gpu_prof: art decode time this frame
+uint32_t g_decodes;
 
 struct Tex {
     uint64_t id = 0;
@@ -31,7 +35,10 @@ struct Tex {
     uint32_t checked = 0;      // the frame of the last check
     uint64_t hash = 0;
     uint32_t set = 0;
+    uint32_t ticket = 0;       // the latest upscale started for it (an older one finishing is dropped)
 };
+struct Upscaling { uint64_t key; uint32_t ticket, w, h; std::future<std::vector<uint32_t>> px; };
+std::vector<Upscaling> g_upscales;
 std::unordered_map<uint64_t, Tex> g_tex;   // key: TEX0 (+ TEXA) (+ set)
 std::unordered_map<uint32_t, std::unique_ptr<ps2host::gs::Memory>> g_sets;   // texture sets (GPU_MSG_UI_TEX)
 uint32_t g_set_gen;
@@ -78,11 +85,12 @@ void ArtTexset(uint32_t key, uint32_t entries, const void* payload, uint32_t len
         px += e[i].words;
     }
     ++g_set_gen;
-    // decoded pages of dropped sets go; the rest re-decode on next use
+    // decoded pages of dropped sets go; this set's re-decode on next use.  The other sets keep
+    // theirs: re-decoding (and upscaling) every set's art on each arrival stalled a frame for
+    // ~80 ms at a battle attack.
     for (auto it = g_tex.begin(); it != g_tex.end();) {
         if (it->second.set && !g_sets.count(it->second.set)) { it = g_tex.erase(it); continue; }
-        it->second.checked = 0;
-        it->second.gen = ~0u;
+        if (it->second.set == key) it->second.gen = ~0u;
         ++it;
     }
 }
@@ -181,11 +189,49 @@ std::vector<uint32_t> Upscale(const uint32_t* src32, uint32_t w, uint32_t h, uin
     return out;
 }
 
+/* The 4x upscale of a whole picture takes ~240 ms: it runs on a worker, and the picture already
+   shown stays until it is done.  The game sends the title picture each time the title comes up:
+   an unchanged picture is not upscaled again. */
+namespace {
+struct PendingImage { uint32_t w, h; std::future<std::vector<uint32_t>> px; };
+std::unordered_map<uint32_t, PendingImage> g_pending;
+std::unordered_map<uint32_t, uint64_t> g_image_hash;
+}  // namespace
+
 void ArtImageSet(uint32_t id, uint32_t w, uint32_t h, const void* rgba, uint32_t len) {
     if (!w || !h || len < w * h * 4) return;
-    const uint32_t S = 4, W = w * S, H = h * S;
-    std::vector<uint32_t> out = Upscale(static_cast<const uint32_t*>(rgba), w, h, S, true);
-    g_images[id] = ImTextureID(xsgmenu::RenderTexture(uint64_t(g_images[id]), out.data(), W, H));
+    uint64_t hash = 0xcbf29ce484222325ull ^ (uint64_t(w) << 32 | h);
+    const uint64_t* q = static_cast<const uint64_t*>(rgba);
+    for (uint32_t i = 0; i < w * h / 2; ++i) hash = (hash ^ q[i]) * 0x100000001b3ull;
+    auto old = g_image_hash.find(id);
+    if (old != g_image_hash.end() && old->second == hash) return;
+    g_image_hash[id] = hash;
+    constexpr uint32_t S = 4;
+    std::vector<uint32_t> src(static_cast<const uint32_t*>(rgba), static_cast<const uint32_t*>(rgba) + size_t(w) * h);
+    g_pending[id] = PendingImage{w * S, h * S, std::async(std::launch::async, [src = std::move(src), w, h] {
+                                     return Upscale(src.data(), w, h, S, true);
+                                 })};
+}
+
+static void UpscalesPoll() {
+    for (size_t i = 0; i < g_upscales.size();) {
+        Upscaling& u = g_upscales[i];
+        if (u.px.wait_for(std::chrono::seconds(0)) != std::future_status::ready) { ++i; continue; }
+        const std::vector<uint32_t> out = u.px.get();
+        auto it = g_tex.find(u.key);
+        if (it != g_tex.end() && it->second.ticket == u.ticket && it->second.id)
+            xsgmenu::RenderTexture(it->second.id, out.data(), u.w, u.h);
+        g_upscales.erase(g_upscales.begin() + ptrdiff_t(i));
+    }
+}
+
+static void ImagesPoll() {
+    for (auto it = g_pending.begin(); it != g_pending.end();) {
+        if (it->second.px.wait_for(std::chrono::seconds(0)) != std::future_status::ready) { ++it; continue; }
+        const std::vector<uint32_t> out = it->second.px.get();
+        g_images[it->first] = ImTextureID(xsgmenu::RenderTexture(uint64_t(g_images[it->first]), out.data(), it->second.w, it->second.h));
+        it = g_pending.erase(it);
+    }
 }
 
 ImTextureID ArtOverride(const char* name, uint32_t* w, uint32_t* h) {
@@ -216,29 +262,46 @@ ImTextureID ArtImage(uint32_t id) {
     return it == g_images.end() ? ImTextureID(0) : it->second;
 }
 
-void ArtFrame() { ++g_frame; }
+void ArtFrame() {
+    if (xsgprof::g_on && g_decode_ns > 5000000)
+        std::fprintf(stderr, "[ui] [prof] frame %u: %u art decodes, %.1f ms\n", g_frame, g_decodes, double(g_decode_ns) * 1e-6);
+    g_decode_ns = 0;
+    g_decodes = 0;
+    ++g_frame;
+    ImagesPoll();
+    UpscalesPoll();
+}
 
 ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, uint32_t texset) {
     // the parts of TEX0 that name the image: TBP0 TBW PSM TW TH, CBP CPSM CSM CSA
     const uint64_t key = ((tex0 & 0x3fffffffull) | (tex0 & (0x7ffffull << 37))) ^ (texa * 0x9e3779b97f4a7c15ull) ^
                          (uint64_t(texset) * 0xc2b2ae3d27d4eb4full);
     Tex& t = g_tex[key];
+    const uint64_t prof_t0 = xsgprof::g_on ? xsgprof::Now() : 0;
+    struct Acc { uint64_t t0; ~Acc() { if (xsgprof::g_on) g_decode_ns += xsgprof::Now() - t0; } } acc{prof_t0};
+    struct Log1 { const Tex& t; uint64_t t0; uint32_t n0, set; bool m; ~Log1() { if (xsgprof::g_on && g_decodes != n0 && xsgprof::Now() - t0 > 3000000)
+        std::fprintf(stderr, "[ui] [prof]   decode set %08x mirror %d %ux%u: %.1f ms\n", set, m, t.w, t.h, double(xsgprof::Now() - t0) * 1e-6); } } log1{t, prof_t0, g_decodes, texset, xsgnative::On()};
     if (texset) {   // a texture set: decoded once per arrival
         auto it = g_sets.find(texset);
         if (it == g_sets.end()) return ImTextureID(0);
         t.set = texset;
-        if (!t.id || t.gen == ~0u || (texset < 0x5A000000u && t.gen != g_set_gen)) {   // snapshot sets: on change
+        if (!t.id || t.gen == ~0u) {   // invalidated when its set changes (ArtTexset / ArtSnapshot*)
             uint32_t tw = 0, th = 0;
+            ++g_decodes;
             std::vector<uint32_t> px = xsgnative::DecodeVramTexture(it->second->data(), tex0, texa, &tw, &th);
             if (!px.empty()) {
                 Expand(px);
                 // the menu's art (portraits, icons) upscaled 2x: smooth and sharp at high resolutions; uvs stay
                 // normalised, so the bigger page needs no other change
-                if (tw * th <= 1024u * 512u && (texset & 0xff000000u) == 0x5A000000u) {   // menu sets only (battle art changes per frame)
-                    std::vector<uint32_t> up = Upscale(px.data(), tw, th, 2, false);
-                    t.id = xsgmenu::RenderTexture(t.id, up.data(), tw * 2, th * 2);
-                } else
+                // (menu sets only: battle art changes per frame).  The upscale takes ~75 ms for the 1024x256
+                // menu page: it runs on a worker, the plain page is shown until it is done.
                 t.id = xsgmenu::RenderTexture(t.id, px.data(), tw, th);
+                if (tw * th <= 1024u * 512u && (texset & 0xff000000u) == 0x5A000000u) {
+                    const uint32_t ticket = ++t.ticket;
+                    g_upscales.push_back({key, ticket, tw * 2, th * 2, std::async(std::launch::async, [px = std::move(px), tw, th] {
+                                              return Upscale(px.data(), tw, th, 2, false);
+                                          })});
+                }
                 t.w = tw;
                 t.h = th;
             }
@@ -255,6 +318,7 @@ ImTextureID ArtTexture(uint64_t tex0, uint64_t texa, uint32_t* w, uint32_t* h, u
         decode = mirror ? xsgnative::TextureGen(tex0) != t.gen : true;
     }
     if (decode) {
+        ++g_decodes;
         uint32_t tw = 0, th = 0;
         std::vector<uint32_t> px;
         uint32_t gen = 0;
