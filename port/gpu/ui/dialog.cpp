@@ -811,7 +811,8 @@ void BattleDraw(ImDrawList* dl, ImFont* font, float gx, float gy, float gw, floa
         // AP: six chevrons, centred on the row, spanning the gauge column
         label(2, "AP");
         {
-            const float span = colRight - colGauge, step = span / 6.0f, h = 9.0f, w = 6.5f;
+            // the same span as the BG gauge below: first chevron at its left edge, last ending at its right
+            const float h = 9.0f, w = 6.5f, span = (colRight - 14) - colGauge - w, step = span / 5.0f;
             for (int i2 = 0; i2 < 6; ++i2) {
                 const ImVec2 o = P(colGauge + i2 * step, rowY[2] - h * 0.5f);
                 const ImU32 cc = i2 < u.ap ? col::kCyan : IM_COL32(118, 214, 255, 45);
